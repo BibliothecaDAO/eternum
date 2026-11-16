@@ -2,7 +2,6 @@ import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 import {
-  ARMY_CHARGE_MODELS,
 
   configManager,
   divideByPrecision,
@@ -50,7 +49,6 @@ export const useBattleLabLiveData = (
   alt = false,
 ): BattleLabLiveData => {
   const facts = useNativeFacts([
-    ...ARMY_CHARGE_MODELS,
     "ArmySlot",
     "ArmyRelicEffect",
     "ArmyProgress",
@@ -178,15 +176,5 @@ export const useBattleLabLiveData = (
     targetRelicIds,
   ]);
 
-  const attackingArmy = facts.store.get("ExplorerTroops", {
-    game_id: configManager.getActiveGameId(),
-    explorer_id: attackerEntityId,
-  });
-  const chargePercent =
-    !enabled || snapshot?.attackerType === "structure"
-      ? 0
-      : attackingArmy && target
-        ? openingChargePercent(facts.store, attackingArmy, BigInt(target.id))
-        : undefined;
-  return { chargePercent, snapshot, target, targetResources, isLoading };
+  return { snapshot, target, targetResources, isLoading };
 };

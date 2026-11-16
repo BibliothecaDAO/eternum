@@ -55,7 +55,6 @@ export interface NativePreset {
     /** Wheat a Rations pick takes off each deployed troop. */
     rationStep: number;
     /** Total Barracks purchases needed to construct training. */
-    trainingGateTier: number;
     /** Troop storage in full deployments; wheat/labor base caps by realm level, in whole units. */
     troopStoreDeploys: number;
     resourceStoreCaps: readonly [number, number, number, number];

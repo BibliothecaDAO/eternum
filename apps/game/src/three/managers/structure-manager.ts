@@ -489,7 +489,6 @@ export class StructureManager {
             change.model === "StructureBuildings" ||
             change.model === "Hyperstructure" ||
             change.model === "HyperstructureProgress" ||
-            change.model === "AspectHyperstructure" ||
             change.model === "HyperstructureShares"
           ) {
             const row = change.current ?? change.previous;

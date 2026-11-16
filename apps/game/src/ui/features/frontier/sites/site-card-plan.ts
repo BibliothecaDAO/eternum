@@ -2,7 +2,6 @@ import { readStandingFrontierBeast, type FrontierBeast } from "@/three/structure
 import {
   availableRuinLords,
   armyRelicReward,
-  armyRelicXp,
   configManager,
   getBlockTimestamp,
   ResourceManager,
@@ -62,7 +61,6 @@ export interface SiteCardPlan {
   guard: { type: TroopType; tier: TroopTier; count: number } | null | undefined;
   kind: AttackTargetKind;
   /** The XP a clear pays; another player's army pays none this card can promise. */
-  xp: number | undefined;
   /** A ruin's stored tier and whole LORDS; unknown until its chest fact arrives. */
   ruinDepth?: string;
   chest: { tier: number; amount: number; funded: boolean } | null | undefined;
@@ -101,15 +99,12 @@ export const readSiteCard = (
       ? chest && { resourceType: ResourcesIds.Lords, amount: chest.amount * PRECISION }
       : payout.known?.reward;
   const reward = baseReward && attack ? armyRelicReward(store, attack.army, baseReward, attack.timestamp) : baseReward;
-  const baseXp = payout.known?.xp;
-  const xp = attack && baseXp !== undefined ? armyRelicXp(store, attack.army, baseXp, attack.timestamp) : baseXp;
   const beast = readStandingFrontierBeast(store, site.game_id, safeInteger(site.entity_id));
   return {
     name: beast?.name ?? attackTargetName(kind),
     beast,
     guard: guards === undefined ? undefined : guard ? troopsOf(guard.troops) : null,
     kind,
-    xp,
     ruinDepth:
       kind === "Ruin"
         ? siteDepthName(Math.floor(site.row / store.require("SettlementRules", { game_id: site.game_id }).spacing) % 4)
@@ -144,7 +139,6 @@ export const readArmyCard = (
     name: "Army",
     guard: troops === undefined ? undefined : troops.count > 0n ? troopsOf(troops) : null,
     kind: "Army",
-    xp: undefined,
     chest: null,
     payout: null,
     attackStamina: configManager.getCombatRules().stamina.stamina_attack_req,

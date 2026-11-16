@@ -1,20 +1,15 @@
 import { useGame } from "@/hooks/context/game-context";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { useQuery } from "@/hooks/helpers/use-query";
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { ASPECT_PAGE_WORDS } from "@/ui/design-system/kit/words";
 import { configManager, getStructureName } from "@bibliothecadao/eternum";
 import {
   RACE_MODELS,
   readRaceBoard,
-  readRaceMonument,
   nativeRaceConstants,
   type RaceBoard,
 } from "@bibliothecadao/eternum/game-client";
 import { aspects, RESOURCE_PRECISION } from "@bibliothecadao/types";
-import { useMemo } from "react";
 import { useFrontierRealm } from "../frontier-home";
 import { lordsWorth } from "./aspect-worth";
 import { AspectInvite } from "../invite/aspect-invite";
@@ -28,17 +23,6 @@ export function useAspectBoard() {
   const now = useNowSeconds();
   useNativeRevision(RACE_MODELS);
   return readRaceBoard(setup.store, configManager.getActiveGameId(), home?.entity_id ?? null, now);
-}
-
-export function useSelectedRaceMonument(): bigint | null {
-  const { setup } = useGame();
-  const { isMapView } = useQuery();
-  useNativeRevision(["AspectHyperstructure"]);
-  const selected = useUIStore((state) => state.selectedHex);
-  const hexes = useMemo(() => (selected ? [selected] : []), [selected]);
-  const [tile] = useWorldSpatialTiles(hexes);
-  if (!isMapView || !tile) return null;
-  return readRaceMonument(setup.store, configManager.getActiveGameId(), tile.occupierId)?.entity_id ?? null;
 }
 
 export function FrontierAspectPage({ onClose }: { onClose: () => void }) {

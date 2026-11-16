@@ -9,7 +9,7 @@ import {
   revealLine,
   xpGainedLine,
 } from "@/ui/design-system/kit/words";
-import { configManager, findGain, readRevealXp } from "@bibliothecadao/eternum";
+import { configManager, findGain } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { formatExact, LORDS, type RankedWords, ResourcesIds, scaledToUnits } from "@bibliothecadao/types";
 
@@ -48,9 +48,9 @@ export const dayLogLine = (story: LoggedStory, store: NativeFactStore, fight?: L
     case "BattleEvent":
       return fightLogLine(story, store) ?? story.presentation.title;
     case "ExplorationReward":
-      return withRevealXp(revealPayLine(payload) ?? story.presentation.title, payload.coord, store);
+      return revealPayLine(payload) ?? story.presentation.title;
     case "SitePayout":
-      return withClearXp(withFightCost(story.presentation.title, fight), payload.xp);
+      return withFightCost(story.presentation.title, fight);
     case "SkillPointSpent":
       return titleOf(story);
     case "BuildingPaymentStory":
@@ -69,17 +69,6 @@ const withFightCost = (line: string, fight: LoggedStory | undefined): string => 
   const lost = fight && fightCost(fight);
   return lost ? clearCostLine(line, lost) : line;
 };
-
-/** The recorded tile keeps historical XP correct after an army changes depth or leaves the map. */
-const withRevealXp = (line: string, coord: unknown, store: NativeFactStore): string => {
-  if (!coord || typeof coord !== "object" || !("y" in coord)) return line;
-  const xp = readRevealXp(store, configManager.getActiveGameId(), { y: Number(coord.y) });
-  return xp === undefined ? line : xpGainedLine(line, formatExact(xp));
-};
-
-/** A clear records its exact award, including effects that have since ended. */
-const withClearXp = (line: string, xp: unknown): string =>
-  xp === undefined ? line : xpGainedLine(line, formatExact(Number(xp)));
 
 /** "Farm built": the building by the name on its build card. */
 const builtLineOf = (payload: Record<string, unknown>): string | null => {

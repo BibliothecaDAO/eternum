@@ -46,6 +46,4 @@ export * from "./frontier-beast-band";
 
 export * from "./ruins";
 
-export * from "./skill-points";
 
-export * from "./army-charge";

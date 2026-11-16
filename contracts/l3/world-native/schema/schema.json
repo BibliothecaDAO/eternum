@@ -3,40 +3,16 @@
     "RELIC_BLADE_BPS": 1000,
     "RELIC_WARD_BPS": 500,
     "RELIC_PLUNDER_BPS": 2000,
-    "RELIC_TOME_BPS": 4000,
     "RELIC_SECONDS_PER_RANK": 1800,
     "RELIC_TILES_PER_RANK": 6,
-    "SHRINE_COMMON_BPS": 5000,
-    "SHRINE_UNCOMMON_BPS": 3000,
-    "SHRINE_RARE_BPS": 1500,
-    "SHRINE_EPIC_BPS": 400,
-    "SHRINE_LEGENDARY_BPS": 100,
     "ATTRIBUTE_CAP": 5,
     "SCOUT_EXPLORE_STAMINA": 10,
     "SCOUT_DAMAGE_PERCENT": 75,
-    "CHARGE_PERCENT_PER_TIER": 10,
-    "SKILL_POINT_REFILL_BASE": 10,
-    "SKILL_POINT_REFILL_STEP": 10,
-    "BATTLE_COMMON_BPS": 1000,
-    "BATTLE_UNCOMMON_BPS": 2500,
-    "BATTLE_RARE_BPS": 4500,
-    "BATTLE_EPIC_BPS": 7000,
-    "BATTLE_LEGENDARY_BPS": 10000,
     "LOGISTICS_COMMON_STAMINA": 20,
     "LOGISTICS_UNCOMMON_STAMINA": 45,
     "LOGISTICS_RARE_STAMINA": 75,
     "LOGISTICS_EPIC_STAMINA": 110,
     "LOGISTICS_LEGENDARY_STAMINA": 150,
-    "SCOUTING_COMMON_BPS": 1000,
-    "SCOUTING_UNCOMMON_BPS": 1500,
-    "SCOUTING_RARE_BPS": 2000,
-    "SCOUTING_EPIC_BPS": 2500,
-    "SCOUTING_LEGENDARY_BPS": 3000,
-    "HOMECOMING_COMMON_BPS": 300,
-    "HOMECOMING_UNCOMMON_BPS": 800,
-    "HOMECOMING_RARE_BPS": 1400,
-    "HOMECOMING_EPIC_BPS": 2100,
-    "HOMECOMING_LEGENDARY_BPS": 3000,
     "MAX_BLITZ_ROSTER_PLAYERS": 24,
     "ENTRY_ENTITLEMENT": 0,
     "ENTRY_OPEN": 1,
@@ -50,8 +26,6 @@
     "CAPTURE_VILLAGES": 64,
     "DEPTH_CONTENTS": 128,
     "REVEAL_SUPPLIES": 262144,
-    "COMBAT_DICE": 524288,
-    "COMBAT_DICE_ETHEREAL": 1048576,
     "DISCOVER_SPIRES": 2097152,
     "SAME_OWNER_TRANSFER": 256,
     "SEASON_CLOSE": 1024,
@@ -102,30 +76,20 @@
   "researchConstants": {
     "ROW_FARM": 0,
     "ROW_WORKSHOP": 1,
-    "ROW_BARRACKS": 2,
     "ROW_HUT": 3,
-    "ROW_WAR_HALL": 4,
     "ROW_SUPPLY_YARD": 5,
-    "ROW_SCOUTS_LODGE": 6,
-    "ROW_HEARTH": 7,
     "ROW_SHRINE": 8,
     "ROW_WELL": 9,
     "ROW_DEPTH": 10,
-    "ROW_COUNT": 11,
     "CHOICE_MAKE": 0,
     "CHOICE_STORE": 1,
-    "KIND_CAMPS": 0,
-    "KIND_RIFTS": 1,
-    "KIND_SANCTUARIES": 2,
     "HUT": 1,
     "WORKSHOP": 25,
     "BARRACKS": 28,
     "FARM": 37,
-    "WAR_HALL": 41,
     "SUPPLY_YARD": 42,
     "SCOUTS_LODGE": 43,
-    "SCOUTS_LODGE_LEVEL": 1,
-    "HEARTH": 44
+    "SCOUTS_LODGE_LEVEL": 1
   },
   "tileOccupierConstants": {
     "CHEST_OCCUPIER": 34,
@@ -2760,65 +2724,6 @@
       "derivedFrom": "preset"
     },
     {
-      "name": "ArmyProgressionRules",
-      "identity": "0x41726d7950726f6772657373696f6e52756c6573",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "reveal_xp",
-          "type": "core::integer::u32",
-          "id": "0x72657665616c5f7870",
-          "feltLength": 1
-        },
-        {
-          "name": "reveal_xp_per_depth",
-          "type": "core::integer::u32",
-          "id": "0x72657665616c5f78705f7065725f6465707468",
-          "feltLength": 1
-        },
-        {
-          "name": "common_xp",
-          "type": "core::integer::u32",
-          "id": "0x636f6d6d6f6e5f7870",
-          "feltLength": 1
-        },
-        {
-          "name": "uncommon_xp",
-          "type": "core::integer::u32",
-          "id": "0x756e636f6d6d6f6e5f7870",
-          "feltLength": 1
-        },
-        {
-          "name": "rare_xp",
-          "type": "core::integer::u32",
-          "id": "0x726172655f7870",
-          "feltLength": 1
-        },
-        {
-          "name": "epic_xp",
-          "type": "core::integer::u32",
-          "id": "0x657069635f7870",
-          "feltLength": 1
-        },
-        {
-          "name": "legendary_xp",
-          "type": "core::integer::u32",
-          "id": "0x6c6567656e646172795f7870",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 7,
-      "derivedFrom": "preset"
-    },
-    {
       "name": "FrontierDiscoveryRules",
       "identity": "0x46726f6e74696572446973636f7665727952756c6573",
       "scope": "game",
@@ -3186,34 +3091,10 @@
           "type": "core::integer::u16",
           "id": "0x73706f696c735f70657263656e74",
           "feltLength": 1
-        },
-        {
-          "name": "first",
-          "type": "world_native::troops::Coord",
-          "id": "0x6669727374",
-          "feltLength": 3
-        },
-        {
-          "name": "second",
-          "type": "world_native::troops::Coord",
-          "id": "0x7365636f6e64",
-          "feltLength": 3
-        },
-        {
-          "name": "third",
-          "type": "world_native::troops::Coord",
-          "id": "0x7468697264",
-          "feltLength": 3
-        },
-        {
-          "name": "fourth",
-          "type": "world_native::troops::Coord",
-          "id": "0x666f75727468",
-          "feltLength": 3
         }
       ],
       "keyLength": 1,
-      "valueLength": 20,
+      "valueLength": 8,
       "derivedFrom": "preset"
     },
     {
@@ -3276,12 +3157,6 @@
       ],
       "members": [
         {
-          "name": "entity_id",
-          "type": "core::integer::u64",
-          "id": "0x656e746974795f6964",
-          "feltLength": 1
-        },
-        {
           "name": "height",
           "type": "core::integer::u32",
           "id": "0x686569676874",
@@ -3289,7 +3164,7 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": 2
+      "valueLength": 1
     },
     {
       "name": "TriumphDay",
@@ -4049,33 +3924,6 @@
       ],
       "keyLength": 2,
       "valueLength": 3
-    },
-    {
-      "name": "ShrineReward",
-      "identity": "0x536872696e65526577617264",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "entity_id",
-          "type": "core::integer::u64",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "rank",
-          "type": "core::integer::u8",
-          "id": "0x72616e6b",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 2,
-      "valueLength": 1
     },
     {
       "name": "RelicChest",
@@ -5584,74 +5432,14 @@
       ],
       "members": [
         {
-          "name": "xp",
-          "type": "core::integer::u32",
-          "id": "0x7870",
-          "feltLength": 1
-        },
-        {
-          "name": "common_points",
-          "type": "core::integer::u32",
-          "id": "0x636f6d6d6f6e5f706f696e7473",
-          "feltLength": 1
-        },
-        {
-          "name": "uncommon_points",
-          "type": "core::integer::u32",
-          "id": "0x756e636f6d6d6f6e5f706f696e7473",
-          "feltLength": 1
-        },
-        {
-          "name": "rare_points",
-          "type": "core::integer::u32",
-          "id": "0x726172655f706f696e7473",
-          "feltLength": 1
-        },
-        {
-          "name": "epic_points",
-          "type": "core::integer::u32",
-          "id": "0x657069635f706f696e7473",
-          "feltLength": 1
-        },
-        {
-          "name": "legendary_points",
-          "type": "core::integer::u32",
-          "id": "0x6c6567656e646172795f706f696e7473",
-          "feltLength": 1
-        },
-        {
-          "name": "battle",
-          "type": "core::integer::u8",
-          "id": "0x626174746c65",
-          "feltLength": 1
-        },
-        {
           "name": "logistics",
           "type": "core::integer::u8",
           "id": "0x6c6f67697374696373",
           "feltLength": 1
-        },
-        {
-          "name": "scouting",
-          "type": "core::integer::u8",
-          "id": "0x73636f7574696e67",
-          "feltLength": 1
-        },
-        {
-          "name": "homecoming",
-          "type": "core::integer::u8",
-          "id": "0x686f6d65636f6d696e67",
-          "feltLength": 1
-        },
-        {
-          "name": "scouting_kinds",
-          "type": "core::integer::u16",
-          "id": "0x73636f7574696e675f6b696e6473",
-          "feltLength": 1
         }
       ],
       "keyLength": 2,
-      "valueLength": 11
+      "valueLength": 1
     },
     {
       "name": "ArmyDay",
@@ -6500,12 +6288,6 @@
           "feltLength": 1
         },
         {
-          "name": "training_gate_tier",
-          "type": "core::integer::u8",
-          "id": "0x747261696e696e675f676174655f74696572",
-          "feltLength": 1
-        },
-        {
           "name": "troop_store_deploys",
           "type": "core::integer::u8",
           "id": "0x74726f6f705f73746f72655f6465706c6f7973",
@@ -6537,7 +6319,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 12,
+      "valueLength": 11,
       "derivedFrom": "preset"
     },
     {
@@ -8357,20 +8139,6 @@
         }
       ]
     },
-    "core::option::Option::<world_native::progression::ArmyProgressionRules>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::progression::ArmyProgressionRules>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::progression::ArmyProgressionRules"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
     "core::option::Option::<world_native::quests::QuestRules>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::quests::QuestRules>",
@@ -8434,20 +8202,6 @@
         {
           "name": "Some",
           "type": "world_native::relics::LordsBudget"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::relics::ShrineReward>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::relics::ShrineReward>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::relics::ShrineReward"
         },
         {
           "name": "None",
@@ -8765,10 +8519,6 @@
         },
         {
           "name": "FarEye",
-          "type": "()"
-        },
-        {
-          "name": "Tome",
           "type": "()"
         }
       ]
@@ -9256,10 +9006,6 @@
         {
           "name": "ration_step",
           "type": "core::integer::u128"
-        },
-        {
-          "name": "training_gate_tier",
-          "type": "core::integer::u8"
         },
         {
           "name": "troop_store_deploys",
@@ -9855,11 +9601,6 @@
           "name": "Research",
           "type": "world_native::research::Research",
           "wireId": 67
-        },
-        {
-          "name": "SpendSkillPoint",
-          "type": "world_native::progression::SpendSkillPoint",
-          "wireId": 68
         },
         {
           "name": "InteractSite",
@@ -10494,10 +10235,6 @@
       "type": "struct",
       "name": "world_native::expeditions::SiteClear",
       "members": [
-        {
-          "name": "xp",
-          "type": "core::integer::u32"
-        },
         {
           "name": "explorer_id",
           "type": "core::integer::u64"
@@ -11592,10 +11329,6 @@
           "type": "core::option::Option::<world_native::relics::ChestRules>"
         },
         {
-          "name": "progression",
-          "type": "core::option::Option::<world_native::progression::ArmyProgressionRules>"
-        },
-        {
           "name": "discovery",
           "type": "core::option::Option::<world_native::expeditions::FrontierDiscoveryRules>"
         },
@@ -11850,82 +11583,8 @@
       "name": "world_native::progression::ArmyProgress",
       "members": [
         {
-          "name": "xp",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "common_points",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "uncommon_points",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "rare_points",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "epic_points",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "legendary_points",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "battle",
-          "type": "core::integer::u8"
-        },
-        {
           "name": "logistics",
           "type": "core::integer::u8"
-        },
-        {
-          "name": "scouting",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "homecoming",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "scouting_kinds",
-          "type": "core::integer::u16"
-        }
-      ]
-    },
-    "world_native::progression::ArmyProgressionRules": {
-      "type": "struct",
-      "name": "world_native::progression::ArmyProgressionRules",
-      "members": [
-        {
-          "name": "reveal_xp",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "reveal_xp_per_depth",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "common_xp",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "uncommon_xp",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "rare_xp",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "epic_xp",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "legendary_xp",
-          "type": "core::integer::u32"
         }
       ]
     },
@@ -11977,24 +11636,6 @@
         }
       ]
     },
-    "world_native::progression::ScoutingKind": {
-      "type": "enum",
-      "name": "world_native::progression::ScoutingKind",
-      "variants": [
-        {
-          "name": "Camp",
-          "type": "()"
-        },
-        {
-          "name": "Rift",
-          "type": "()"
-        },
-        {
-          "name": "Sanctuaries",
-          "type": "()"
-        }
-      ]
-    },
     "world_native::progression::SkillPointSpent": {
       "type": "struct",
       "name": "world_native::progression::SkillPointSpent",
@@ -12018,60 +11659,6 @@
         {
           "name": "stamina",
           "type": "core::integer::u64"
-        }
-      ]
-    },
-    "world_native::progression::SkillPointUse": {
-      "type": "enum",
-      "name": "world_native::progression::SkillPointUse",
-      "variants": [
-        {
-          "name": "Battle",
-          "type": "()"
-        },
-        {
-          "name": "Logistics",
-          "type": "()"
-        },
-        {
-          "name": "Scouting",
-          "type": "world_native::progression::ScoutingKind"
-        },
-        {
-          "name": "Homecoming",
-          "type": "()"
-        },
-        {
-          "name": "Stamina",
-          "type": "core::integer::u8"
-        }
-      ]
-    },
-    "world_native::progression::SpendSkillPoint": {
-      "type": "struct",
-      "name": "world_native::progression::SpendSkillPoint",
-      "members": [
-        {
-          "name": "explorer_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "choice",
-          "type": "world_native::progression::SkillPointUse"
-        }
-      ]
-    },
-    "world_native::progression::XpAward": {
-      "type": "enum",
-      "name": "world_native::progression::XpAward",
-      "variants": [
-        {
-          "name": "Reveal",
-          "type": "world_native::troops::Coord"
-        },
-        {
-          "name": "Clear",
-          "type": "core::integer::u32"
         }
       ]
     },
@@ -12129,10 +11716,6 @@
       "type": "struct",
       "name": "world_native::race::AspectHyperstructure",
       "members": [
-        {
-          "name": "entity_id",
-          "type": "core::integer::u64"
-        },
         {
           "name": "height",
           "type": "core::integer::u32"
@@ -12238,22 +11821,6 @@
         {
           "name": "spoils_percent",
           "type": "core::integer::u16"
-        },
-        {
-          "name": "first",
-          "type": "world_native::troops::Coord"
-        },
-        {
-          "name": "second",
-          "type": "world_native::troops::Coord"
-        },
-        {
-          "name": "third",
-          "type": "world_native::troops::Coord"
-        },
-        {
-          "name": "fourth",
-          "type": "world_native::troops::Coord"
         }
       ]
     },
@@ -12706,16 +12273,6 @@
         {
           "name": "amount",
           "type": "core::integer::u128"
-        }
-      ]
-    },
-    "world_native::relics::ShrineReward": {
-      "type": "struct",
-      "name": "world_native::relics::ShrineReward",
-      "members": [
-        {
-          "name": "rank",
-          "type": "core::integer::u8"
         }
       ]
     },
@@ -14188,10 +13745,6 @@
         {
           "name": "stamina",
           "type": "world_native::troops::StaminaSource"
-        },
-        {
-          "name": "battle_bonus_percent",
-          "type": "core::integer::u16"
         }
       ]
     },
@@ -14528,5 +14081,5 @@
       ]
     }
   },
-  "identity": "e02baa4aea84e7b1d6f361ee57a28d4b583cbde4b298f0b784048f41bb098889"
+  "identity": "7e557ac7fdabdc9f15381a2e8071373c3d0bb8436de4411cf9b18d4c31e452e2"
 }

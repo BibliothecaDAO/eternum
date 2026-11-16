@@ -71,7 +71,7 @@ export const usePlaceReader = (): ((place: SharedPlace) => PlaceReading) => {
       return { name: now.name, icon: now.icon, open, gone: open === null, elsewhere: false };
     }
     if (placeLoaded(store, place.game, place)) return { ...asSent, open: null, gone: true, elsewhere: false };
-    if (place.kind === "site" || !place.tile || !place.owner)
+    if (!place.tile || !place.owner)
       return { ...asSent, open: null, gone: false, elsewhere: false };
     const { tile, owner } = place;
     const select =
@@ -85,12 +85,6 @@ export const usePlaceReader = (): ((place: SharedPlace) => PlaceReading) => {
   };
 };
 
-/** A site's tile opened on its layer, the tile selected. */
-const openTile = ({ col, row, alt }: PlaceTile) => {
-  useUIStore.getState().setMapLayer(alt);
-  openOnMap(Position.fromContract({ x: col, y: row }), "tile");
-};
-
 const openerOf = (
   store: ReturnType<typeof useGame>["setup"]["store"],
   place: SharedPlace,
@@ -99,7 +93,6 @@ const openerOf = (
   const gameId = place.game.gameId;
   if (place.kind === "army")
     return store.entityOccupancy(gameId, place.entityId) ? linkFrom(place.at, () => selectArmy(place.entityId)) : null;
-  if (place.kind === "site") return linkFrom(place.at, () => openTile(place.tile));
   // A Frontier realm stands on its day's site; any other structure on the tile it occupies, none once it is gone.
   const structure = store.get("Structure", { game_id: gameId, entity_id: place.entityId });
   const onMap = structure && (isExpeditionRealm(store, structure) || store.entityOccupancy(gameId, place.entityId));

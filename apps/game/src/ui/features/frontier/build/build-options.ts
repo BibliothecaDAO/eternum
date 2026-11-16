@@ -30,13 +30,11 @@ import { type SidePick, sidePicks } from "../research/sides-taken";
  * research is.
  */
 /** A Frontier board's buildings: one per building row of the castle's tree, as research.cairo's row_category names them. */
-const FRONTIER_BUILDINGS = Object.values(researchRowCategory) as BuildingType[];
+const FRONTIER_BUILDINGS = [...Object.values(researchRowCategory), nativeResearchConstants.BARRACKS, nativeResearchConstants.SCOUTS_LODGE] as BuildingType[];
 
 /** Each training building and the attribute it trains every new army in. */
-const TRAINS: Partial<Record<BuildingType, "Battle" | "Logistics" | "Scouting" | "Homecoming">> = {
-  [BuildingType.WarHall]: "Battle",
+const TRAINS: Partial<Record<BuildingType, "Logistics">> = {
   [BuildingType.SupplyYard]: "Logistics",
-  [BuildingType.Hearth]: "Homecoming",
 };
 
 /** What a Frontier building makes: what one of the realm's made stores holds. */
@@ -47,7 +45,7 @@ const isProduct = (resource: ResourcesIds | undefined): resource is Product => m
 export type BuildEffect =
   | { kind: "produces"; resource: Product; perHour: number; output: BuildingOutput }
   | { kind: "population"; amount: number }
-  | { kind: "trains"; attribute: "Battle" | "Logistics" | "Scouting" | "Homecoming" };
+  | { kind: "trains"; attribute: "Logistics" };
 
 export interface BuildOption {
   category: BuildingType;
@@ -78,8 +76,6 @@ export const readBuildOptions = (
   const learned = realmLearned(store, realm.game_id, realm.entity_id);
   if (learned === undefined) return undefined;
   const wheat = new ResourceManager(store, safeInteger(realm.entity_id)).wheatPerHour(tick);
-  const board = store.require("BoardRules", { game_id: realm.game_id });
-  const barracksPurchases = researchPurchases(learned, nativeResearchConstants.ROW_BARRACKS);
   const options: BuildOption[] = [];
   for (const category of FRONTIER_BUILDINGS) {
     const cost = getBuildingCosts(safeInteger(realm.entity_id), store, category, useSimpleCost);
@@ -98,7 +94,7 @@ export const readBuildOptions = (
       rise: buildingCostRise(safeInteger(realm.entity_id), category, store),
       effect,
       populationCost: rule.population_cost,
-      standing: buildingStanding(store, realm, category, { gate: board.training_gate_tier, bought: barracksPurchases }),
+      standing: buildingStanding(store, realm, category),
       wheat: { change, after: wheat === undefined ? undefined : wheat + change },
     });
   }
@@ -109,13 +105,12 @@ const buildingStanding = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
   category: BuildingType,
-  training: { gate: number; bought: number },
 ): BuildOption["standing"] => {
   if (category === BuildingType.ScoutsLodge && realm.base.level < nativeResearchConstants.SCOUTS_LODGE_LEVEL)
     return { level: nativeResearchConstants.SCOUTS_LODGE_LEVEL };
   if (!TRAINS[category]) return "open";
   if (getBuildingQuantity(safeInteger(realm.entity_id), category, store) > 0) return "built";
-  return training.bought < training.gate ? training : "open";
+  return "open";
 };
 
 /**

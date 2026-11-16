@@ -12,7 +12,6 @@ type TileOccupantKind =
   | "army"
   | "chest"
   | "spire"
-  | "usable-site"
   | "dormant-spire"
   | "deep-site";
 
@@ -45,8 +44,6 @@ const TILE_OCCUPANT_KINDS: Record<TileOccupier, TileOccupantKind> = {
   [TileOccupier.Camp]: "structure",
   [TileOccupier.BitcoinMine]: "structure",
   [TileOccupier.ReservedHyperstructure]: "reserved-hyperstructure",
-  [TileOccupier.Shrine]: "usable-site",
-  [TileOccupier.Well]: "usable-site",
   [TileOccupier.Rift]: "structure",
   [TileOccupier.Ruin]: "structure",
   [TileOccupier.Beasts]: "structure",
@@ -68,11 +65,9 @@ export const isTileOccupierArmy = (tileOccupier: number) => tileOccupantKind(til
 /** A shrine, a well or a dormant spire: a tile object with no Structure, which no army may enter. */
 export const isTileOccupierMapSite = (tileOccupier: number) => {
   const kind = tileOccupantKind(tileOccupier);
-  return kind === "usable-site" || kind === "dormant-spire" || kind === "deep-site";
+  return kind === "dormant-spire" || kind === "deep-site";
 };
 
-/** A shrine or a well: a single-use site an army beside it uses where it stands (the contract's InteractSite). */
-export const isTileOccupierUsableSite = (tileOccupier: number) => tileOccupantKind(tileOccupier) === "usable-site";
 
 export const isTileOccupierChest = (tileOccupier: TileOccupier) => {
   return tileOccupantKind(tileOccupier) === "chest";

@@ -12,7 +12,6 @@ describe("the shop's prices in LORDS", () => {
     expect(lordsFor(SEAL_CENTS.web.realm, PRICE)).toBe(1_375);
     // A full bar of stamina: 90 Fragments, $0.90, is 247.5 LORDS.
     expect(lordsFor(90 * FRAGMENT.cents, PRICE)).toBe(250);
-    expect(lordsFor(FRAGMENT_PRICES.questReroll * FRAGMENT.cents, PRICE)).toBe(140);
   });
 
   it("rounds up to a multiple of 5, never down, so a price cannot undercharge and always ends in 5 or 0", () => {

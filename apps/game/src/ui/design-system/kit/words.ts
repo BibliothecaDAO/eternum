@@ -2052,12 +2052,11 @@ export const ARMY_MANAGEMENT = {
 
 export const RELIC_WORDS = {
   title: "Relics",
-  kinds: { Blade: "Blade", Ward: "Ward", Plunder: "Plunder", FarEye: "Far-Eye", Tome: "Tome" },
+  kinds: { Blade: "Blade", Ward: "Ward", Plunder: "Plunder", FarEye: "Far-Eye" },
   blade: (amount: string) => `+${amount} damage dealt`,
   ward: (amount: string) => `−${amount} damage taken`,
   plunder: (amount: string) => `+${amount} labor and Essence from a cleared site`,
   farEye: (tiles: number) => `Reveals the ${tiles} nearest tiles at once`,
-  tome: (amount: string) => `+${amount} XP`,
   empty: "Empty slot",
   switchOn: "Switch on",
   switching: "Switching on…",

@@ -517,20 +517,6 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
-  /** Spends an army's point on one rank, or on stamina alone. */
-  public async spend_skill_point(
-    props: SystemProps.SystemSigner & {
-      explorerId: number;
-      choice: NativeCommandPayloads["SpendSkillPoint"]["choice"];
-    },
-  ) {
-    return this.submitCommand(
-      props.signer,
-      { kind: "SpendSkillPoint", value: { explorer_id: props.explorerId, choice: props.choice } },
-      TransactionType.SPEND_SKILL_POINT,
-    );
-  }
-
   public async claim_daily_quest(props: SystemProps.SystemSigner & { home: number; day: number }) {
     return this.submitCommand(
       props.signer,

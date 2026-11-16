@@ -1,10 +1,9 @@
 import { frontierSeasonOnePreset as preset } from "../../../../../../../config/source/frontier/season-one";
 import { WELL_REFILL_PERCENT } from "@bibliothecadao/eternum/troop-stamina";
-import { frontierArmyRules } from "../army/progression-rules-fixture";
 import { learnResearch } from "@bibliothecadao/eternum";
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 
-import type { ArmyDetailFacts } from "../army/army-detail";
+import type { ArmyView } from "../army/army-detail";
 import type { LearnedRow, RealmResearchFacts } from "./research-tree";
 
 /**
@@ -26,7 +25,6 @@ const realmOn = (
   essence: number,
   labor: number,
   standing: Partial<Record<number, number>>,
-  learned: Partial<Record<number, LearnedRow>>,
 ): RealmResearchFacts => {
   const storeroomPicks = (learned[research.ROW_WORKSHOP]?.sides ?? []).filter((side) => side === 1).length;
   return {
@@ -40,7 +38,6 @@ const realmOn = (
       outputStepBps: preset.board.outputStepBps,
       storageStepBps: preset.board.storageStepBps,
       populationStepBps: preset.board.populationStepBps,
-      trainingGateTier: preset.board.trainingGateTier,
     },
     laborStore: (level) =>
       (preset.board.resourceStoreCaps[level]! * (10_000 + storeroomPicks * preset.board.storageStepBps)) / 10_000,
@@ -53,7 +50,7 @@ export const EARLY_REALM = realmOn(
   0,
   300,
   718,
-  { [research.ROW_FARM]: 2, [research.ROW_BARRACKS]: 1, [research.ROW_HUT]: 1 },
+  { [research.ROW_FARM]: 2, [research.ROW_HUT]: 1 },
   {},
 );
 
@@ -68,54 +65,33 @@ export const MID_REALM = realmOn(
   {
     [research.ROW_FARM]: 4,
     [research.ROW_WORKSHOP]: 2,
-    [research.ROW_BARRACKS]: 3,
     [research.ROW_HUT]: 3,
-    [research.ROW_WAR_HALL]: 1,
-    [research.ROW_SCOUTS_LODGE]: 1,
   },
   {
     [research.ROW_FARM]: { tier: 1, sides: [0, 1] },
     [research.ROW_WORKSHOP]: { tier: 1, sides: [0] },
-    [research.ROW_BARRACKS]: { tier: 2, sides: [0, 0] },
     [research.ROW_HUT]: { tier: 1, sides: [] },
-    [research.ROW_WAR_HALL]: { tier: 1, sides: [] },
-    [research.ROW_SCOUTS_LODGE]: { tier: 1, sides: [1] },
     [research.ROW_SHRINE]: { tier: 1, sides: [] },
   },
 );
 
-const ARMY_RULES = {
-  rules: frontierArmyRules(),
-};
 
 /** The owner's Army 1: 1,500 troops, 12 XP, 4 of 120 stamina, every attribute common. */
-export const EARLY_ARMY: ArmyDetailFacts = {
-  category: "Knight",
-  learned: 0n,
+export const EARLY_ARMY: ArmyView = {
   name: "Army 1",
   art: "knight-t1",
   troops: 1_500,
-  xp: 12,
   stamina: { current: 4, max: 120, perExplore: 20 },
   secondsToFull: 4 * 3_600,
   revealYield: 75,
-  progress: { battle: 0, logistics: 0, scouting: 0, homecoming: 0, scoutingKinds: [] },
-  points: [0, 0, 0, 0, 0],
-  ...ARMY_RULES,
 };
 
 /** A veteran: 260 XP after a few clears, Battle II, Logistics III (170 stamina), Scouting II on rifts. */
-export const VETERAN_ARMY: ArmyDetailFacts = {
-  category: "Knight",
-  learned: learnResearch(0n, research.ROW_SHRINE, 0),
+export const VETERAN_ARMY: ArmyView = {
   name: "Army 2",
   art: "knight-t1",
   troops: 1_240,
-  xp: 620,
   stamina: { current: 96, max: 120, perExplore: 20 },
   secondsToFull: 2 * 3_600,
   revealYield: 120,
-  progress: { battle: 2, logistics: 0, scouting: 0, homecoming: 0, scoutingKinds: [] },
-  points: [1, 0, 1, 0, 0],
-  ...ARMY_RULES,
 };

@@ -1033,10 +1033,6 @@ span.ui-row__choose {
   color: rgb(var(--hud-gold));
 }
 
-/* An army's way to its next skill point: the ring around its portrait is the HUD's gold (XpRing in hud-elements.tsx). */
-.ui-xp-ring {
-  color: rgb(var(--hud-gold));
-}
 
 /* ── Window: a panel the size of a task (Military, Transfer), its title bar and a way out. ── */
 /* ── Sheet: a panel over the stage; on a phone it rises from the place bar, as tall as what it holds and at most the

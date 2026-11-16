@@ -68,7 +68,6 @@ export enum TransactionType {
   TOGGLE_ALTERNATE = "toggle_alternate",
   ENTER_DEPTH = "enter_depth",
   RESEARCH = "research",
-  SPEND_SKILL_POINT = "spend_skill_point",
   EXPLORER_CREATE = "explorer_create",
   EXPLORER_ADD = "explorer_add",
   EXPLORER_DELETE = "explorer_delete",

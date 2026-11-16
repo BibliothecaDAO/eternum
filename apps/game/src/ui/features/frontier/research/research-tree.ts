@@ -1,3 +1,4 @@
+import { logisticsStamina, researchHasIndependentSides } from "@bibliothecadao/eternum";
 import type { IconMeaning, IconMark } from "@/ui/design-system/icon";
 import {
   depthName,
@@ -9,18 +10,9 @@ import {
   type Tier,
   WELL,
 } from "@/ui/design-system/kit/words";
-import {
-  battleBonusBps,
-
-  homecomingBps,
-  logisticsStamina,
-  researchHasIndependentSides,
-  scoutingIncrementBps,
-} from "@bibliothecadao/eternum";
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, formatExact, formatFigure, formatPercent, rankName } from "@bibliothecadao/types";
 
-import { POINT_CHOICES, availableScoutingChoices, scoutingChoices, type AttributeKey } from "../progression-choices";
 
 import { buildingIcon, buildingName } from "../build/building-names";
 import { sideMarks } from "./sides-taken";
@@ -31,7 +23,6 @@ import { sideMarks } from "./sides-taken";
  * what it gives now and next.
  *
  *   - A building row opens once a building of its type stands, and climbs 0 to legendary (five buys);
- *   - the training buildings open at their configured Charge tier;
  *   - a tier's labor must fit the castle's labor store, which grows with the castle's level and Storeroom picks;
  *   - the Shrine and the Well are one buy each, Essence only;
  *   - the Ethereal reaches are bought in order, I then II then III, Essence only.
@@ -54,7 +45,6 @@ export interface RealmResearchFacts {
     outputStepBps: number;
     storageStepBps: number;
     populationStepBps: number;
-    trainingGateTier: number;
   };
   /** The castle's labor store at a level, with the realm's Storeroom picks. */
   laborStore: (level: number) => number;
@@ -128,46 +118,16 @@ export interface TreeNode {
 const ROWS = {
   farm: research.ROW_FARM,
   workshop: research.ROW_WORKSHOP,
-  barracks: research.ROW_BARRACKS,
   hut: research.ROW_HUT,
   shrine: research.ROW_SHRINE,
   well: research.ROW_WELL,
   depth: research.ROW_DEPTH,
 } as const;
 
-type Attribute = AttributeKey;
-type ResearchRow = Exclude<Extract<keyof typeof research, `ROW_${string}`>, "ROW_COUNT">;
-/** Each attribute's mark, as a training building's gain shows it. */
-export const ATTRIBUTE_MARKS: Record<Exclude<keyof typeof POINT_CHOICES, "Stamina">, IconMeaning> = {
-  Battle: POINT_CHOICES.Battle.mark,
-  Logistics: POINT_CHOICES.Logistics.mark,
-  Scouting: POINT_CHOICES.Scouting.mark,
-  Homecoming: POINT_CHOICES.Homecoming.mark,
-};
-const TRAINING = {
-  Battle: { row: research.ROW_WAR_HALL, category: BuildingType.WarHall, attribute: "battle", word: "Battle" },
-  Logistics: {
-    row: research.ROW_SUPPLY_YARD,
-    category: BuildingType.SupplyYard,
-    attribute: "logistics",
-    word: "Logistics",
-  },
-  Scouting: {
-    row: research.ROW_SCOUTS_LODGE,
-    category: BuildingType.ScoutsLodge,
-    attribute: "scouting",
-    word: "Scouting",
-  },
-  Homecoming: { row: research.ROW_HEARTH, category: BuildingType.Hearth, attribute: "homecoming", word: "Homecoming" },
-} satisfies {
-  [K in keyof typeof ATTRIBUTE_MARKS]: { row: number; category: BuildingType; attribute: Lowercase<K>; word: K };
-};
+type ResearchRow = Extract<keyof typeof research, `ROW_${string}`>;
 const DEPTH_MARKS: IconMeaning[] = ["depth-1", "depth-2", "depth-3"];
 
 const percent = (bps: number) => formatPercent(bps / 10_000, { signed: true });
-/** What one level of Scouting adds to the kind picked with it, in basis points of that kind's base rate. */
-const scoutingStep = (level: number) => scoutingIncrementBps(level);
-
 /** The realm's tree: Economy (Farm, Workshop, Hut), Army (Barracks, then the four training rows), Castle. */
 export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
   const learned = (row: number) => realm.learned[row] ?? { tier: 0, sides: [] };
@@ -210,10 +170,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     const tier = researchHasIndependentSides(row) ? Math.max(picks(row, 0), picks(row, 1)) : learned(row).tier;
     const name = buildingName(category);
     const icon = buildingIcon(category);
-    const constructionGrant =
-      tier === 0 &&
-      row !== research.ROW_SCOUTS_LODGE &&
-      Object.values(TRAINING).some((training) => training.row === row);
+    const constructionGrant = tier === 0 && row === research.ROW_SUPPLY_YARD;
     const next = tier < 5 ? tier + 1 : undefined;
     const nextNeeds = (at: number) => {
       const needs = buildingNeeds(row, name, icon, at, options.extra ?? []);
@@ -313,51 +270,6 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     { words: sides.tools, at: output },
     { words: sides.storeroom, at: storage },
   ];
-  // Charge has one tier per purchase.
-  const barracksBought = learned(ROWS.barracks).tier;
-  const gateBarracks = `${buildingName(BuildingType.ResourceKnightT1)} ${purchasesOfGate(barracksBought, realm.board.trainingGateTier)} purchases`;
-  const gateNeed: Need = {
-    kind: "tier",
-    met: barracksBought >= realm.board.trainingGateTier,
-    node: gateBarracks,
-    icon: buildingIcon(BuildingType.ResourceKnightT1),
-  };
-
-  const gateLine = gateNeed.met ? RESEARCH_TREE.gateOpen : RESEARCH_TREE.gateLine;
-
-  const trainingNode = ({ row, category, attribute, word }: (typeof TRAINING)[keyof typeof TRAINING]): TreeNode =>
-    buildingNode(row, category, "army", (tier) => trainingGives(attribute, word, tier), {
-      extra: row === research.ROW_SCOUTS_LODGE ? [] : [gateNeed],
-      figures: (tier) => [
-        {
-          icon: ATTRIBUTE_MARKS[word],
-          name: word,
-          line: RESEARCH_TREE.everyNewArmy,
-          ...attributeStep(attribute, tier),
-        },
-      ],
-      ...(row === research.ROW_SCOUTS_LODGE
-        ? {
-            sides: (tier: number, done: boolean) =>
-              availableScoutingChoices((row) => learned(row).tier).map((kind) => {
-                // A lodge tier starts new armies' Scouting one level higher, on the kind it picked.
-                const now = learned(row)
-                  .sides.map((side, at) => (side === kind.side ? scoutingStep(at + 1) : 0))
-                  .reduce((sum, step) => sum + step, 0);
-                return {
-                  choice: kind.side,
-                  icon: kind.icon,
-                  name: kind.name,
-                  line: RESEARCH_TREE.foundMore,
-                  now: percent(now),
-                  next: done ? percent(now) : percent(now + scoutingStep(tier + 1)),
-                };
-              }),
-            taken: () => learned(row).sides.map((side) => scoutingChoices.find((kind) => kind.side === side)!.icon),
-          }
-        : {}),
-    });
-
   const rows = {
     ROW_FARM: [
       buildingNode(
@@ -390,42 +302,16 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         },
       ),
     ],
-    ROW_BARRACKS: [
-      buildingNode(
-        ROWS.barracks,
-        BuildingType.ResourceKnightT1,
-        "army",
-        (tier) => ({
-          line: RESEARCH_TREE.chargeLine,
-          now: formatPercent(chargePercent(tier) / 100),
-          next: tier < 5 ? formatPercent(chargePercent(tier + 1) / 100) : undefined,
-        }),
-        {
-          figures: (tier) => [
-            {
-              icon: "upgrade",
-              name: RESEARCH_TREE.charge,
-              line: RESEARCH_TREE.chargeLine,
-              now: formatPercent(chargePercent(tier) / 100),
-              next: tier < 5 ? formatPercent(chargePercent(tier + 1) / 100) : undefined,
-            },
-          ],
-          leadsTo: Object.values(TRAINING)
-            .filter(({ row }) => row !== research.ROW_SCOUTS_LODGE)
-            .map(({ row }) => `row-${row}`),
-          gate: { name: gateBarracks, met: gateNeed.met, line: gateLine },
-        },
-      ),
-    ],
-    ROW_WAR_HALL: [trainingNode(TRAINING.Battle)],
-    ROW_SUPPLY_YARD: [trainingNode(TRAINING.Logistics)],
-    ROW_SCOUTS_LODGE: [trainingNode(TRAINING.Scouting)],
-    ROW_HEARTH: [trainingNode(TRAINING.Homecoming)],
+    ROW_SUPPLY_YARD: [buildingNode(
+      research.ROW_SUPPLY_YARD, BuildingType.SupplyYard, "army",
+      (tier) => ({ line: RESEARCH_TREE.newArmiesStart("Logistics"), ...logisticsStep(tier) }),
+      { figures: (tier) => [{ icon: "stamina", name: "Logistics", line: RESEARCH_TREE.everyNewArmy, ...logisticsStep(tier) }] },
+    )],
     ROW_SHRINE: [
       castleNode("shrine", ROWS.shrine, SHRINE, "shrine", {
         line: RESEARCH_TREE.armiesFind(SHRINE),
         now: "—",
-        next: RESEARCH_TREE.each("1 skill point"),
+        next: RESEARCH_TREE.opens,
       }),
     ],
     ROW_WELL: [
@@ -496,28 +382,9 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
   }
 };
 
-/** A training row: the level every new army of the realm starts the attribute at, and what that level gives. */
-const trainingGives = (attribute: Attribute, word: string, tier: number): TreeNode["gives"] => {
-  const at = (level: number) => RESEARCH_TREE.at(level, attributeEffect(attribute, level));
-  return { line: RESEARCH_TREE.newArmiesStart(word), now: at(tier), next: tier < 5 ? at(tier + 1) : undefined };
-};
-
-/** What a training row's attribute gives every new army now, and with the next tier: "+10% damage". */
-const attributeStep = (attribute: Attribute, tier: number): Pick<Figure, "now" | "next"> => ({
-  now: attributeEffect(attribute, tier),
-  next: tier < 5 ? attributeEffect(attribute, tier + 1) : undefined,
-});
-
-/** What an attribute gives at a level (1 common to 5 legendary), as the contract's tables apply it. */
-const attributeEffect = (attribute: Attribute, level: number): string => {
-  const { effects } = RESEARCH_TREE;
-  if (attribute === "battle") return effects.battle(percent(battleBonusBps(level)));
-  if (attribute === "logistics") return effects.logistics(formatFigure(logisticsStamina(level), { signed: true }));
-  if (attribute === "scouting") {
-    const total = Array.from({ length: level }, (_, index) => scoutingStep(index + 1)).reduce((a, b) => a + b, 0);
-    return effects.scouting(percent(total));
-  }
-  return effects.homecoming(formatPercent(homecomingBps(level) / 10_000));
+const logisticsStep = (tier: number): Pick<Figure, "now" | "next"> => {
+  const effect = (level: number) => RESEARCH_TREE.effects.logistics(formatFigure(logisticsStamina(level), { signed: true }));
+  return { now: effect(tier), next: tier < 5 ? effect(tier + 1) : undefined };
 };
 
 /** A node's state from its needs: a missing step locks it; held short of Essence or labor, it waits on them. */

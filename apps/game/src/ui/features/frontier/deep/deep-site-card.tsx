@@ -11,7 +11,7 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { costLine } from "@/ui/design-system/kit/price-faces";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { toast } from "@/ui/features/event-feed/notify";
-import { ARMY_CHARGE_MODELS, configManager, getStructureName, journeyDistance } from "@bibliothecadao/eternum";
+import { configManager, getStructureName, journeyDistance } from "@bibliothecadao/eternum";
 import {
   deepArmyLife,
   readDeepSites,
@@ -29,7 +29,6 @@ import { useSelectedOwnArmy } from "../sites/selected-army";
 import { DeepSiteView, type DeepBlock, type DeepGuard, type DeepOrder, type DeepTickPay } from "./deep-site-view";
 
 const MODELS = [
-  ...ARMY_CHARGE_MODELS,
   ...STAMINA_MODELS,
   ...GUARD_MODELS,
   "DeepSite",

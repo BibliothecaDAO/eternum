@@ -5,7 +5,7 @@ import { knownAmount } from "@/ui/utils/utils";
 import {
   getBalance,
   realmLearned,
-  researchChoice,
+  RESEARCH_ROWS,
   researchHasIndependentSides,
   researchPicks,
   researchRowCategory,
@@ -32,7 +32,6 @@ const RESEARCH_MODELS = [
   "StructureBuildings",
   "ResourceBalance",
   "ResourceProduction",
-  "ArmyProgressionRules",
 ] as const;
 
 const whole = (amount: bigint): number => Number(amount / BigInt(RESOURCE_PRECISION));
@@ -91,7 +90,6 @@ const readResearchFacts = (
       outputStepBps: board.output_step_bps,
       storageStepBps: board.storage_step_bps,
       populationStepBps: board.population_step_bps,
-      trainingGateTier: board.training_gate_tier,
     },
     laborStore: (level) => {
       const base = ResourceManager.castleStoreLimit(store, realm.game_id, level);
@@ -105,13 +103,11 @@ const readResearchFacts = (
 /** Each row's highest tier and bought sides; only Scouts retains purchase order. */
 const decodeLearned = (learned: bigint): Partial<Record<number, LearnedRow>> =>
   Object.fromEntries(
-    Array.from({ length: research.ROW_COUNT }, (_, row) => {
+    RESEARCH_ROWS.map((row) => {
       const tier = researchTier(learned, row);
       const sides = researchHasIndependentSides(row)
         ? [0, 1].flatMap((side) => Array.from({ length: researchPicks(learned, row, side) }, () => side))
-        : row === research.ROW_SCOUTS_LODGE
-          ? Array.from({ length: tier }, (_, index) => researchChoice(learned, row, index + 1))
-          : [];
+        : [];
       return [row, { tier, sides }];
     }),
   );

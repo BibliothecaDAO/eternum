@@ -16,15 +16,12 @@ import {
   getGuardsByStructure,
   getTroopResourceId,
   StaminaManager,
-
-  ARMY_CHARGE_MODELS,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { resolveAttackStaminaState } from "./attack-stamina-state";
-import { keptAcross } from "./battle-range";
 import { CombatModal } from "./combat-modal";
 import { troopMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon } from "@/ui/design-system/icon";
@@ -82,7 +79,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     "ArmySlot",
     "ArmyRelicEffect",
     "ArmyProgress",
-    ...ARMY_CHARGE_MODELS,
     "Structure",
     ...GUARD_MODELS,
     "ExplorerTroops",
@@ -412,14 +408,14 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
                   label="Your forces"
                   mark={attackerArmyData && <Icon name={troopMeaning(attackerArmyData.troops)} size={24} />}
                   before={attackerArmyData ? Math.round(attackerTroopsTotal) : undefined}
-                  kept={attackerSide ? keptAcross(attackerSide) : undefined}
+                  kept={attackerSide?.remaining}
                   side="ours"
                 />
                 <FightSide
                   label={isStructureTarget ? "Active guard" : "Enemy army"}
                   mark={<Icon name={troopMeaning(targetArmyData.troops)} size={24} />}
                   before={Math.round(defenderTroopsTotal)}
-                  kept={defenderSide ? keptAcross(defenderSide) : undefined}
+                  kept={defenderSide?.remaining}
                   side="theirs"
                 />
               </div>

@@ -61,8 +61,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
   const settle_season = (props: Parameters<typeof provider.settle_season>[0]) => provider.settle_season(props);
   const enter_depth = (props: Parameters<typeof provider.enter_depth>[0]) => provider.enter_depth(props);
   const research = (props: Parameters<typeof provider.research>[0]) => provider.research(props);
-  const spend_skill_point = (props: Parameters<typeof provider.spend_skill_point>[0]) =>
-    provider.spend_skill_point(props);
 
   const bitcoin_mine_contribute_labor = async (
     props: SystemProps.BitcoinMineContributeLaborProps,
@@ -329,7 +327,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     claim_daily_quest: withAuth(claim_daily_quest),
     enter_depth: withAuth(enter_depth),
     research: withAuth(research),
-    spend_skill_point: withAuth(spend_skill_point),
     bridge_deposit_into_realm: withAuth(bridge_deposit_into_realm),
     bridge_withdraw_from_realm: withAuth(bridge_withdraw_from_realm),
 

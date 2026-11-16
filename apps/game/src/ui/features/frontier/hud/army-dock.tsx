@@ -8,7 +8,6 @@ import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deplo
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { DEPLOY, DEPLOYING } from "@/ui/design-system/kit/words";
 
-import { attributeBadgeTarget } from "../attributes/attributes";
 import type { SlotStart } from "../deploy/deploy-plan";
 import { slotStartLine } from "../deploy/slot-start";
 import { useDeployPlan } from "../deploy/use-deploy-plan";
@@ -57,7 +56,6 @@ export const ArmyDock = ({
         <Army
           key={entry.army.explorerId}
           army={entry.army}
-          returnsHome={lastHour ? entry.army.returnsHome : undefined}
           pickable={own}
           onOpenArmy={own ? onOpenArmy : undefined}
         />
@@ -109,12 +107,10 @@ const useDockArmy = (army: DockArmy, pickable: boolean, onOpenArmy: ((explorerId
 
 const DockToken = ({
   army,
-  returnsHome,
   pickable,
   onOpenArmy,
 }: {
   army: DockArmy;
-  returnsHome: number | undefined;
   pickable: boolean;
   onOpenArmy?: (explorerId: number) => void;
 }) => {
@@ -122,15 +118,11 @@ const DockToken = ({
   return (
     <ArmyToken
       label={army.label}
-      returnsHome={returnsHome}
       drain={army.drain}
       number={army.number}
       art={army.art}
-      xp={army.xp}
-      xpGoal={army.xpGoal}
       stamina={stamina}
       troops={army.troops}
-      canSpendSkillPoint={army.canSpendSkillPoint}
       ethereal={army.ethereal}
       selected={selected}
       flyTarget={attributeBadgeTarget(army.explorerId)}
@@ -141,12 +133,10 @@ const DockToken = ({
 
 const DockArmyRow = ({
   army,
-  returnsHome,
   pickable,
   onOpenArmy,
 }: {
   army: DockArmy;
-  returnsHome: number | undefined;
   pickable: boolean;
   onOpenArmy?: (explorerId: number) => void;
 }) => {
@@ -154,15 +144,11 @@ const DockArmyRow = ({
   return (
     <ArmyRow
       label={army.label}
-      returnsHome={returnsHome}
       drain={army.drain}
       number={army.number}
       art={army.art}
       troops={army.troops}
       stamina={stamina}
-      xp={army.xp}
-      xpGoal={army.xpGoal}
-      canSpendSkillPoint={army.canSpendSkillPoint}
       ethereal={army.ethereal}
       selected={selected}
       flyTarget={attributeBadgeTarget(army.explorerId)}

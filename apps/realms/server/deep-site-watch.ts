@@ -8,7 +8,6 @@ import {
 import { dayOf, expeditionDepth, readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
 import { resolveExplorerCombatTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import {
-  ARMY_CHARGE_MODELS,
 
   forecastFight,
   mapCenter,
@@ -168,7 +167,6 @@ export async function readDeepSiteWatches(
     player.gameId,
     [
       ...STAMINA_MODELS,
-      ...ARMY_CHARGE_MODELS,
       "PlayerEntry",
       "RealmKnowledge",
       "ArmyRelicEffect",

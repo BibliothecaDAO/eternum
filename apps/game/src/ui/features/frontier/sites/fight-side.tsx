@@ -6,10 +6,10 @@ import { fightLost, NONE_LOST } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 /**
- * What a side keeps after the fight: one number when it is known, a range when the dice decide it (low to high), and
+ * What a side keeps after the fight: one exact number when it is known, and
  * undefined when no forecast is known (the fight cannot be fought yet).
  */
-export type Kept = number | { low: number; high: number } | undefined;
+export type Kept = number | undefined;
 
 /**
  * One side of a fight, as every card that shows a fight draws it, in every state (owner, 10-27: "this panel doesnt
@@ -39,12 +39,11 @@ export const FightSide = ({
   side: "ours" | "theirs";
   tip?: string;
 }) => {
-  const range = keptRange(kept);
-  const figures = fightFigures(before, range);
+  const figures = fightFigures(before, kept);
   return (
     <span
       role="img"
-      aria-label={[`${label} ${formatExact(before)} → ${spokenKept(range)}`, figures.lost].filter(Boolean).join(", ")}
+      aria-label={[`${label} ${formatExact(before)} → ${formatExact(kept)}`, figures.lost].filter(Boolean).join(", ")}
       data-tip={tip}
       className="flex min-w-0 flex-1 basis-0"
     >
@@ -66,13 +65,13 @@ export const FightSide = ({
           aria-hidden
           className={cn(
             "max-w-full whitespace-nowrap text-hud-display leading-none tabular-nums",
-            !range ? "text-hud-muted" : range.high === 0 ? "text-hud-bad" : "text-hud-ink",
+            kept === undefined ? "text-hud-muted" : kept === 0 ? "text-hud-bad" : "text-hud-ink",
           )}
           style={{ fontSize: fittedSize("display", figures.kept) }}
         >
           {figures.kept}
         </span>
-        <FightBar before={before} range={range} side={side} />
+        <FightBar before={before} kept={kept} side={side} />
         {figures.lost && (
           <span
             aria-hidden
@@ -88,18 +87,6 @@ export const FightSide = ({
       </HudPanel>
     </span>
   );
-};
-
-type KeptRange = { low: number; high: number } | undefined;
-
-const keptRange = (kept: Kept): KeptRange =>
-  kept === undefined ? undefined : typeof kept === "number" ? { low: kept, high: kept } : kept;
-
-/** What a screen reader hears for the troops kept: exact, a range read as one, or the dash of a figure not known. */
-const spokenKept = (range: KeptRange): string => {
-  if (!range) return formatExact(undefined);
-  if (range.low === range.high) return formatExact(range.low);
-  return `${formatExact(range.low)} to ${formatExact(range.high)}`;
 };
 
 /** The width a line's characters take at most, in ems: a bold tabular digit's, with room to spare. */
@@ -120,33 +107,22 @@ const SHORT_FROM = 10_000_000;
 /**
  * A side's figures as it shows them: exact below ten million, short from there as the HUD writes amounts ("12.3M"),
  * unless two different figures would read alike, which reads as a fight that cost nothing: then exact, set smaller to
- * fit. A range reads low to high ("3,900–4,006"), one figure when the dice cannot move it; what is not known is a dash.
+ * fit. What is not known is a dash.
  * What the fight costs reads in the same figures with its share ("−601 · 76% lost"), and is absent while the side's
  * troops or the fight are not known.
  */
 export const fightFigures = (
   before: number | undefined,
-  range: KeptRange,
+  kept: Kept,
 ): { before: string; kept: string; lost?: string } => {
-  const known = [before, range?.low, range?.high].filter((value): value is number => value !== undefined);
+  const known = [before, kept].filter((value): value is number => value !== undefined);
   const readsAlike = known.some((a) => known.some((b) => a !== b && formatShort(a) === formatShort(b)));
   const format = Math.max(0, ...known) < SHORT_FROM || readsAlike ? formatExact : formatShort;
   const write = (value: number | undefined) => (value === undefined ? formatExact(undefined) : format(value));
-  const [low, high] = [write(range?.low), write(range?.high)];
-  const figures = { before: write(before), kept: low === high ? low : `${low}–${high}` };
-  if (before === undefined || !range) return figures;
-  return { ...figures, lost: lostLine(before, range, format) };
-};
-
-/** What the fight takes of a side, in its figures' format and as its share; the dice's range low to high. */
-const lostLine = (before: number, range: { low: number; high: number }, format: (value: number) => string): string => {
-  const [least, most] = [before - range.high, before - range.low];
-  if (most <= 0) return NONE_LOST;
-  const between = (low: string, high: string) => (low === high ? low : `${low}–${high}`);
-  return fightLost(
-    between(format(least), format(most)),
-    between(String(lostShare(before, range.high)), String(lostShare(before, range.low))),
-  );
+  const figures = { before: write(before), kept: write(kept) };
+  if (before === undefined || kept === undefined) return figures;
+  const lost = Math.max(0, before - kept);
+  return { ...figures, lost: lost === 0 ? NONE_LOST : fightLost(format(lost), String(lostShare(before, kept))) };
 };
 
 /**
@@ -159,33 +135,19 @@ const lostShare = (before: number, kept: number): number => {
   return Math.min(99, Math.max(1, Math.round(((before - kept) / before) * 100)));
 };
 
-/**
- * A side's troops through a fight as one bar (the owner, 22 October: "Clarity is important"): the part surely kept in
- * the side's colour (the player's green, the enemy's red), the part the dice may keep paler, and the part the fight
- * takes in the HUD's neutral grey. With no forecast the bar is empty: nothing is claimed.
- */
-const FightBar = ({
-  before,
-  range,
-  side,
-}: {
+/** The troops kept in the side's colour, and the troops lost in grey; empty while unknown. */
+const FightBar = ({ before, kept, side }: {
   before: number | undefined;
-  range: KeptRange;
+  kept: Kept;
   side: "ours" | "theirs";
 }) => {
-  const share = (value: number) => (before && before > 0 ? Math.max(0, Math.min(1, value / before)) : 0);
-  const sure = range ? share(range.low) : 0;
-  const may = range ? share(range.high) - sure : 0;
-  const colour = side === "ours" ? "bg-hud-good" : "bg-hud-bad";
+  const share = before && before > 0 && kept !== undefined ? Math.max(0, Math.min(1, kept / before)) : 0;
   return (
     <span aria-hidden className="flex h-2 w-full overflow-hidden rounded-full bg-hud-well">
-      {range && (
-        <>
-          <span className={cn("h-full", colour)} style={{ width: `${sure * 100}%` }} />
-          {may > 0 && <span className={cn("h-full opacity-50", colour)} style={{ width: `${may * 100}%` }} />}
-          <span className="h-full bg-hud-neutral" style={{ width: `${(1 - sure - may) * 100}%` }} />
-        </>
-      )}
+      {kept !== undefined && <>
+        <span className={cn("h-full", side === "ours" ? "bg-hud-good" : "bg-hud-bad")} style={{ width: `${share * 100}%` }} />
+        <span className="h-full bg-hud-neutral" style={{ width: `${(1 - share) * 100}%` }} />
+      </>}
     </span>
   );
 };

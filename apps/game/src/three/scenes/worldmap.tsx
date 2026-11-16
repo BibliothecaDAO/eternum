@@ -18,9 +18,6 @@ import { isMapPreviewAction } from "./worldmap-action-preview-policy";
 import { projectHexToScreen, projectPointsToScreen } from "@/three/utils/project-hex-to-screen";
 import { playRevealYield } from "@/ui/motion/moments/reveal-yield";
 import { playSiteClear } from "@/ui/features/frontier/sites/site-clear-moment";
-import { sendSiteUse, siteUseFacts, usableSiteAt } from "@/ui/features/frontier/sites/use-site";
-import { type ArmyProgressFacts, xpGained } from "@/ui/features/frontier/attributes/attributes";
-import { playArmyProgress } from "@/ui/features/frontier/attributes/progress-moment";
 import { canIssueOrders, refusedBeforePlay } from "@/utils/can-issue-orders";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
@@ -1858,33 +1855,6 @@ export default class WorldmapScene extends WarpTravel {
     this.registerExplorerRewardWorldUpdateSubscriptions();
     this.registerChestWorldUpdateSubscriptions();
     this.registerSitePayoutWorldUpdateSubscriptions();
-    this.registerArmyProgressWorldUpdateSubscriptions();
-  }
-
-  /**
-   * The player's own army progressing (design §3.11 §2): an XP gain floats "+N XP" from the army and each level gained
-   * plays its beat with a ring burst there. A progress row arriving with the snapshot is history, not a gain; the
-   * army's card renders the fact, and this is only the flourish.
-   */
-  private registerArmyProgressWorldUpdateSubscriptions(): void {
-    this.addWorldUpdateSubscription(
-      this.game.store.subscribe((changes) => {
-        for (const change of changes) {
-          if (change.model !== "ArmyProgress" || !change.previous || !change.current) continue;
-          if (change.current.game_id !== configManager.getActiveGameId()) continue;
-          const owner = this.getEntityOwnerAddress(safeInteger(change.current.explorer_id));
-          if (owner === undefined || !isAddressEqualToAccount(owner)) continue;
-          this.playOwnArmyProgress(change.previous, change.current);
-        }
-      }),
-    );
-  }
-
-  private playOwnArmyProgress(before: ArmyProgressFacts, after: ArmyProgressFacts): void {
-    const xp = xpGained(before, after);
-    if (xp <= 0) return;
-    const hex = this.getArmyDisplayPosition(safeInteger(after.explorer_id));
-    playArmyProgress({ xp, at: hex ? projectHexToScreen(hex, this.camera) : null });
   }
 
   /**
@@ -2569,7 +2539,6 @@ export default class WorldmapScene extends WarpTravel {
     const key = ActionPaths.posKey(hexCoords, true);
     const path = getLiveWorldmapEntityActions().actionPaths.get(key);
     const armyTroops = this.selectedArmyRow()?.troops;
-    const site = this.usableSiteAt(hexCoords);
     const short = refusal?.reason === "stamina" ? this.selectedArmyShortOf(refusal.need) : undefined;
     return orderTip({
       path,
@@ -2579,9 +2548,6 @@ export default class WorldmapScene extends WarpTravel {
       refusal,
       staminaWait: short?.wait,
       staminaHeld: short?.held,
-      site: site
-        ? siteUseFacts(this.game.store, site, this.selectedArmyRow(), getBlockTimestamp().currentDefaultTick)
-        : undefined,
       byRealm: getLiveWorldmapEntityActions().selectedEntityId != null && this.selectedArmyId() === null,
     });
   }
@@ -2979,7 +2945,6 @@ export default class WorldmapScene extends WarpTravel {
     const path = actionPaths.get(ActionPaths.posKey(hexCoords, true));
     const action = path && ActionPaths.getActionType(path);
     return (
-      action === ActionType.UseSite ||
       action === ActionType.EnterDepth ||
       action === ActionType.CreateArmy ||
       action === ActionType.Help
@@ -3259,7 +3224,6 @@ export default class WorldmapScene extends WarpTravel {
           ActionType.Move,
           ActionType.Attack,
           ActionType.SpireTravel,
-          ActionType.UseSite,
         ];
         const isArmySelection = this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined;
         if (actionType && armyActions.includes(actionType) && isArmySelection) {
@@ -3277,8 +3241,7 @@ export default class WorldmapScene extends WarpTravel {
           this.onArmyHelp(actionPath, selectedEntityId);
         } else if (actionType === ActionType.Chest) {
           this.onChestSelection(actionPath, selectedEntityId);
-        } else if (actionType === ActionType.UseSite) {
-          this.onSiteUse(actionPath, selectedEntityId);
+
         } else if (actionType === ActionType.CreateArmy) {
           this.onArmyCreate(actionPath, selectedEntityId);
         } else if (actionType === ActionType.EnterDepth) {
@@ -4394,33 +4357,9 @@ export default class WorldmapScene extends WarpTravel {
     })();
   }
 
-  /** The army uses the site its order names, where it stands: the card's own sender, with no card in between. */
-  private onSiteUse(actionPath: ActionPath[], selectedEntityId: ID) {
-    const account = useAccountStore.getState().account;
-    const target = actionPath[actionPath.length - 1].hex;
-    const site = this.usableSiteAt(sceneHexOf(target));
-    if (!account || !site) return;
-    void sendSiteUse({
-      systemCalls: this.game.systemCalls,
-      signer: account,
-      explorerId: safeInteger(selectedEntityId),
-      site,
-    });
-  }
-
   private hasSiteCardAt(hexCoords: HexPosition): boolean {
-    if (this.usableSiteAt(hexCoords) !== null) return true;
     const { col, row } = contractHexOf(hexCoords);
     return getTileAt(this.game.store, activeMapLayer(), col, row)?.occupier_type === TileOccupier.DeepSite;
-  }
-
-  /**
-   * The usable site (a Shrine or a Well) on this normalized tile of the shown layer, in contract coordinates; null where
-   * the tile holds none.
-   */
-  private usableSiteAt(hexCoords: HexPosition) {
-    const contract = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
-    return usableSiteAt(this.game.store, { col: contract.x, row: contract.y, alt: activeMapLayer() });
   }
 
   /** Right-click on a chest with the adjacent army selected opens it. */

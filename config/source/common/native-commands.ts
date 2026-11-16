@@ -10,8 +10,7 @@ export const arenaModeRules =
   rule.RESERVED_HYPERSTRUCTURES |
   rule.OWNER_ONLY_SHARES |
   rule.HYPERSTRUCTURE_MULTIPLIERS |
-  rule.PRODUCTION_START |
-  rule.COMBAT_DICE_ETHEREAL;
+  rule.PRODUCTION_START;
 
 function commandMask(disabled: Array<keyof typeof nativeCommandBits>): bigint {
   let mask = Object.values(nativeCommandBits).reduce((mask, bit) => mask | BigInt(bit), 0n);

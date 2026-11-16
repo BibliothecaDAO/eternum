@@ -152,11 +152,9 @@ const FrontierHudBody = ({
     if (surface !== "research") setResearchPick(undefined);
   }, [surface]);
   // Selecting one of the realm's armies opens its panel; a pick in the dock or Today goes the same way.
-  const [armyChoosing, setArmyChoosing] = useState(false);
   const armyPanel = useArmyPanelOpens(
     visit ? null : realm,
-    (choosing) => {
-      setArmyChoosing(choosing);
+    () => {
       setSurface("army");
     },
     desktop,
@@ -253,7 +251,7 @@ const FrontierHudBody = ({
       <FrontierSurfaces realm={realm} rules={rules} />
       {showsCard && card?.sheet}
       {surface === "realms" && realm && !visit && <FrontierRealms labor={realmLabor} onClose={close} />}
-      {surface === "army" && realm && !visit && <FrontierArmy realm={realm} choosing={armyChoosing} onClose={close} />}
+      {surface === "army" && realm && !visit && <FrontierArmy realm={realm} onClose={close} />}
       {surface === "army-lost" && <ArmyLostSheet onClose={close} />}
       {surface === "settings" && (
         <HudSheet label={SETTINGS} onClose={close}>
@@ -425,7 +423,7 @@ const ArmyAction = ({
   rules: ExpeditionRules;
   realm: NativeRows["Structure"];
   /** Opens an army's panel (useArmyPanelOpens), on its level-up choices when `choosing`; none on a visit. */
-  onOpenArmy?: (explorerId: number, choosing?: boolean) => void;
+  onOpenArmy?: (explorerId: number) => void;
 }) => {
   const armies = useDockArmies(realm);
   const order = useArmyOrder();
@@ -447,7 +445,7 @@ const ActingArmy = ({
   onOpenArmy,
 }: {
   army: DockArmy;
-  onOpenArmy: (explorerId: number, choosing?: boolean) => void;
+  onOpenArmy: (explorerId: number) => void;
 }) => {
   const spire = useArmySpireStatus(army.explorerId);
   return (
@@ -456,7 +454,6 @@ const ActingArmy = ({
       refill={army.stamina && <StaminaReading stamina={army.stamina} />}
       spire={spire}
       onDetails={() => onOpenArmy(army.explorerId)}
-      onLevelUp={() => onOpenArmy(army.explorerId, army.canSpendSkillPoint)}
     />
   );
 };

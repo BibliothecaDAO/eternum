@@ -1,7 +1,7 @@
 import { formatPercent, formatExact } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudMeter } from "@/ui/design-system/kit/hud-elements";
-import { survivalOf, type SideOutcome } from "../battle-range";
+import { survivalOf, type SideOutcome } from "../battle-outcome";
 
 interface OutcomeStripProps {
   side: SideOutcome;

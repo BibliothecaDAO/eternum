@@ -52,7 +52,6 @@ export const nativeCommandBits = {
   "SetEntityName": "36893488147419103232",
   "EnterDepth": "73786976294838206464",
   "Research": "147573952589676412928",
-  "SpendSkillPoint": "295147905179352825856",
   "InteractSite": "590295810358705651712"
 } as const;
 export interface NativeCommandPayloads {
@@ -107,7 +106,6 @@ export interface NativeCommandPayloads {
   SetEntityName: { readonly entity_id: BigNumberish; readonly name: BigNumberish };
   EnterDepth: { readonly explorer_id: BigNumberish; readonly depth: BigNumberish };
   Research: { readonly structure_id: BigNumberish; readonly row: BigNumberish; readonly choice: BigNumberish };
-  SpendSkillPoint: { readonly explorer_id: BigNumberish; readonly choice: { readonly kind: "Battle"; readonly value: undefined } | { readonly kind: "Logistics"; readonly value: undefined } | { readonly kind: "Scouting"; readonly value: { readonly kind: "Camp"; readonly value: undefined } | { readonly kind: "Rift"; readonly value: undefined } | { readonly kind: "Sanctuaries"; readonly value: undefined } } | { readonly kind: "Homecoming"; readonly value: undefined } | { readonly kind: "Stamina"; readonly value: BigNumberish } };
   InteractSite: { readonly explorer_id: BigNumberish; readonly coord: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish } };
 }
 export type NativeCommand = { [K in keyof NativeCommandPayloads]: { kind: K; value: NativeCommandPayloads[K] } }[keyof NativeCommandPayloads];

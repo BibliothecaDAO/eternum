@@ -1,13 +1,11 @@
 import { buildHeraldGameStreamUrl, nativeModelDefinition } from "@bibliothecadao/eternum/game-client";
 import { HeraldGameSyncTransport, type HeraldSocket } from "@bibliothecadao/eternum/game-sync";
 import type { NativeWorldBindings } from "@bibliothecadao/types";
-import { ARMY_CHARGE_MODELS } from "@bibliothecadao/eternum";
 import { STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 
 const WATCH_INPUTS = new Set([
   ...STAMINA_MODELS,
-  ...ARMY_CHARGE_MODELS,
   "DeepSite",
   "Guard",
   "ArmyRelicEffect",

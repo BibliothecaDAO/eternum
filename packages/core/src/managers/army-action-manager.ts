@@ -1,5 +1,4 @@
 import { armyCombatRefusal } from "../utils/army-opponents";
-import { readRaceMonument } from "../client/views/race";
 import { currentArmy } from "../utils/deep";
 import { safeInteger } from "../utils/safe-integer";
 import { entityMapPosition } from "../utils/tile";
@@ -30,7 +29,7 @@ import { StaminaManager } from "./stamina-manager";
 import { computeExploreFoodCosts, computeTravelFoodCosts } from "./utils/army-movement-utils";
 import { isViewerOwner } from "../utils/viewer";
 import { armyRealmSpire, isAtExpeditionSpire } from "../utils/expeditions";
-import { isTileOccupierMapSite, isTileOccupierUsableSite } from "../utils/map/hex";
+import { isTileOccupierMapSite } from "../utils/map/hex";
 
 /**
  * What bounds an army's orders as chain time passes: its spendable stamina, the steps its stamina and its owner's food
@@ -158,28 +157,10 @@ export class ArmyActionManager {
     return tile?.occupier_type === TileOccupier.Spire;
   }
 
-  // A shrine, well or dormant spire holds its tile: no path enters or crosses it.
+  // A dormant spire or Deep site holds its tile: no path enters or crosses it.
   private isMapSiteHex(position: HexPosition): boolean {
     const tile = getTileAt(this.store, this._getCurrentPosition().alt, position.col, position.row);
     return tile !== undefined && isTileOccupierMapSite(tile.occupier_type);
-  }
-
-  /**
-   * A shrine or a well the game lets an army use (InteractSite): the army beside it uses it where it stands, so the
-   * order is offered from the next tile and a site further off is a step away from it.
-   */
-  private isUsableSiteHex(position: HexPosition): boolean {
-    const tile = getTileAt(this.store, this._getCurrentPosition().alt, position.col, position.row);
-    return (
-      tile !== undefined &&
-      isTileOccupierUsableSite(tile.occupier_type) &&
-      configManager.isCommandEnabled("InteractSite")
-    );
-  }
-
-  /** Why a held tile offers no order: a usable site wants the army beside it, anything else holds its tile. */
-  private heldTileRefusal(position: HexPosition): OrderRefusal {
-    return this.isUsableSiteHex(position) ? { reason: "too-far" } : { reason: "occupied" };
   }
 
   /**
@@ -192,11 +173,10 @@ export class ArmyActionManager {
     return tile !== undefined && tile.occupier_type !== TileOccupier.None;
   }
 
-  /** Race monuments and owned structures excluded by the game's targeting rule offer no attack order. */
+  /** Owned structures excluded by the game's targeting rule offer no attack order. */
   private isStructureOffLimits(structure: HexEntityInfo | undefined): boolean {
     if (!structure) return false;
     return (
-      readRaceMonument(this.store, configManager.getActiveGameId(), structure.id) !== undefined ||
       (BigInt(structure.owner) !== 0n && configManager.attacksOnlyUnownedStructures())
     );
   }
@@ -370,14 +350,6 @@ export class ArmyActionManager {
       const biome = exploredHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
       const key = ActionPaths.posKey({ col, row });
 
-      // A usable site beside a living army is its order there: the army stays where it stands, and the use costs nothing.
-      if (alive && this.isUsableSiteHex({ col, row })) {
-        actionPaths.set(key, [
-          { hex: { col: startPos.col, row: startPos.row }, actionType: ActionType.Move },
-          { hex: { col, row }, actionType: ActionType.UseSite, staminaCost: 0 },
-        ]);
-        continue;
-      }
       // Each tile skipped here says why (ActionPaths.refuse), so the map can name the reason where no order leads.
       if (!isSpire && !isExplored && !canExplore) {
         actionPaths.refuse(key, this.exploreRefusal(armyStamina));
@@ -506,7 +478,7 @@ export class ArmyActionManager {
           // A target ends a route where it stands: the attack paths or the distance decide it below.
           if (hasSpire || hasArmy || hasStructure || hasChest) continue;
           if (this.isOccupiedHex({ col, row })) {
-            actionPaths.refuse(neighborKey, this.heldTileRefusal({ col, row }));
+            actionPaths.refuse(neighborKey, { reason: "occupied" });
             continue;
           }
           if (!isExplored) continue;
@@ -560,7 +532,6 @@ export class ArmyActionManager {
 
     this.refuseTargetsBeyondStep(actionPaths, startPos, [armyHexes, structureHexes, chestHexes]);
     this.addDepthEntry(actionPaths, startPos, currentDefaultTick);
-    this.refuseSitesBeyondStep(actionPaths, startPos);
     return actionPaths;
   }
 
@@ -602,21 +573,8 @@ export class ArmyActionManager {
           const hex = { col: col + this.FELT_CENTER, row: row + this.FELT_CENTER };
           const key = ActionPaths.posKey(hex);
           if (key === startKey || actionPaths.decided(key)) continue;
-          actionPaths.refuse(key, this.isMapSiteHex(hex) ? this.heldTileRefusal(hex) : { reason: "too-far" });
+          actionPaths.refuse(key, this.isMapSiteHex(hex) ? { reason: "occupied" } : { reason: "too-far" });
         }
-  }
-
-  /**
-   * Every usable site this client holds on the army's layer that no rule above decided stands beyond its step: the
-   * army uses it from beside it, so the reason is the distance. The indexes leave these sites out, so their tiles say.
-   */
-  private refuseSitesBeyondStep(actionPaths: ActionPaths, startPos: HexPosition & { alt: boolean }) {
-    if (!configManager.isCommandEnabled("InteractSite")) return;
-    for (const occupancy of this.store.inGame("TileOccupancy", configManager.getActiveGameId())) {
-      if (occupancy.alt !== startPos.alt || !isTileOccupierUsableSite(occupancy.category)) continue;
-      const key = ActionPaths.posKey({ col: occupancy.col, row: occupancy.row });
-      if (!actionPaths.decided(key)) actionPaths.refuse(key, { reason: "too-far" });
-    }
   }
 
   private readonly _findDirection = (path: HexPosition[], spire = false) => {

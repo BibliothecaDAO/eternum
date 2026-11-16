@@ -11,7 +11,10 @@ pub struct CommandRoute {
 
 pub const SETTLE_BLITZ_ROSTER: u32 = 7;
 
-pub const COMMAND_IDS: [u32; 52] = [72, 0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 38, 39, 40, 41, 42, 43, 44, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 62, 63, 64, 65, 66, 67, 69, ];
+pub const COMMAND_IDS: [u32; 52] = [
+    72, 0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 38, 39, 40,
+    41, 42, 43, 44, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 62, 63, 64, 65, 66, 67, 69,
+];
 pub const COMMAND_ROUTES: [Option<CommandRoute>; 73] = [
     Some(CommandRoute { logic: 6, selector: selector!("create_explorer"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 16, selector: selector!("explore"), items_offset: None, batch: false }),
@@ -98,8 +101,7 @@ pub const COMMAND_ROUTES: [Option<CommandRoute>; 73] = [
     ),
     Some(CommandRoute { logic: 5, selector: selector!("set_entity_name"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 16, selector: selector!("enter_depth"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 3, selector: selector!("research"), items_offset: None, batch: false }),
-    None,
+    Some(CommandRoute { logic: 3, selector: selector!("research"), items_offset: None, batch: false }), None,
     Some(CommandRoute { logic: 16, selector: selector!("interact_site"), items_offset: None, batch: false }), None,
     None, Some(CommandRoute { logic: 14, selector: selector!("claim_daily_quest"), items_offset: None, batch: false }),
 ];
@@ -456,6 +458,7 @@ pub impl CommandSerde of Serde<Command> {
             65 => Some(Command::SetEntityName(Serde::deserialize(ref serialized)?)),
             66 => Some(Command::EnterDepth(Serde::deserialize(ref serialized)?)),
             67 => Some(Command::Research(Serde::deserialize(ref serialized)?)),
+            68 => None,
             69 => Some(Command::InteractSite(Serde::deserialize(ref serialized)?)),
             70 => None,
             71 => None,

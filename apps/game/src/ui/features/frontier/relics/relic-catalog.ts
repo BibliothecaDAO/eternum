@@ -19,7 +19,7 @@ const percent = (bps: number, rank: number) => `${(bps * rank) / 100}%`;
 
 /**
  * Each kind's painting, name and what one relic of a tier does, from the contract's rule constants: one step a tier
- * (docs/plans/frontier-season-1.md, relics). The Tome is new; it wears the book.
+ * (docs/plans/frontier-season-1.md, relics). 
  */
 const RELICS = {
   Blade: { icon: "damage-relic-2", effect: (rank) => RELIC_WORDS.blade(percent(rule.RELIC_BLADE_BPS, rank)) },
@@ -29,7 +29,6 @@ const RELICS = {
     effect: (rank) => RELIC_WORDS.plunder(percent(rule.RELIC_PLUNDER_BPS, rank)),
   },
   FarEye: { icon: "exploration-relic-2", effect: (rank) => RELIC_WORDS.farEye(rule.RELIC_TILES_PER_RANK * rank) },
-  Tome: { icon: "book", effect: (rank) => RELIC_WORDS.tome(percent(rule.RELIC_TOME_BPS, rank)) },
 } satisfies Record<RelicKind, { icon: IconMeaning; effect: (rank: number) => string }>;
 
 /** Each kind's word, held to every kind the contract has. */

@@ -365,12 +365,6 @@ export class ArmyManager {
         return;
       }
       for (const change of changes) {
-        if (change.model === "ArmyProgress" && change.current) {
-          // Its XP moves the ring on its token.
-          const army = this.armyPresentations.get(safeInteger(change.current.explorer_id));
-          if (army) this.refreshArmyCompactLabel(army);
-          continue;
-        }
         const explorer =
           change.model === "ExplorerTroops"
             ? change.current
@@ -1298,14 +1292,6 @@ export class ArmyManager {
     return slot;
   }
 
-  /** The viewer's army's way to its next skill point, from its progress and the game's thresholds; none while unknown. */
-  private xpShareOf(entityId: ID): number | undefined {
-    const gameId = configManager.getActiveGameId();
-    const progress = this.store?.get("ArmyProgress", { game_id: gameId, explorer_id: entityId });
-    const rules = this.store?.get("ArmyProgressionRules", { game_id: gameId });
-    return progress && rules ? nextSkillPoint(progress.xp, rules).share : undefined;
-  }
-
   private updateArmyCompactLabel(army: ArmyData, position: Vector3): void {
     if (!this.shouldShowArmyCompactLabel(army)) {
       this.plates.removeLabel(army.entityId);
@@ -1320,7 +1306,6 @@ export class ArmyManager {
         {
           ...army,
           watched: watchedSide(this.store, army.owner.address),
-          xpShare: army.isMine ? this.xpShareOf(army.entityId) : undefined,
         },
         this.resolveHomeRealmName(army),
         configManager.getExploreStaminaCost(army.category),

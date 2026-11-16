@@ -16,7 +16,6 @@ import { toast } from "@/ui/features/event-feed/notify";
 
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import {
-  ARMY_CHARGE_MODELS,
   biomeTypeOf,
   configManager,
   getStructureName,
@@ -55,7 +54,6 @@ const SITE_MODELS = [
   "SiteChest",
   "ExplorerTroops",
   "ArmyProgress",
-  ...ARMY_CHARGE_MODELS,
   "ArmyRelicEffect",
   "ArmySlot",
   "DeepArmy",
@@ -222,7 +220,6 @@ export const TileCard = ({
           <RelicReplacement carried={relics.state.carried} chosen={relics.state.chosen} onChoose={relics.replace} />
         )
       }
-      xp={plan.xp}
       verb={verb}
       onRealm={() => {
         onClose();

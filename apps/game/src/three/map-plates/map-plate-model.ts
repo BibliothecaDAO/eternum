@@ -56,7 +56,6 @@ export interface ArmyPlate {
   /** Whose it is to a watching viewer; absent while the viewer plays. */
   watched?: PlateWatched;
   /** The viewer's own army's way to its next skill point, 0 to 1 (nextSkillPoint): its token's ring. None for another's. */
-  xpShare?: number;
 }
 
 /**
@@ -239,7 +238,7 @@ export const buildArmyPlate = (
     | "currentStamina"
     | "maxStamina"
     | "battleTimerLeft"
-  > & { isAlly?: boolean; watched?: SeatSide | null; xpShare?: number },
+  > & { isAlly?: boolean; watched?: SeatSide | null },
   homeName: string,
   /** The stamina one explore costs: a segment of its bar. */
   perExplore: number,
@@ -259,7 +258,6 @@ export const buildArmyPlate = (
         },
   ...(inBattle(army.battleTimerLeft) ? { inBattle: true } : {}),
   ...watchedOf(army.watched, ownerOf(army.owner)),
-  ...(army.xpShare === undefined ? {} : { xpShare: army.xpShare }),
 });
 
 /**

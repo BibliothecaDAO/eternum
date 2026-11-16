@@ -27,7 +27,6 @@ const BONUS_PER_RANK = {
   Ward: nativeRuleConstants.RELIC_WARD_BPS,
   Plunder: nativeRuleConstants.RELIC_PLUNDER_BPS,
   FarEye: 0,
-  Tome: nativeRuleConstants.RELIC_TOME_BPS,
 } satisfies Record<RelicKind, number>;
 
 /** A missing effect is zero only once the army's snapshot proves its absence. */
@@ -60,13 +59,3 @@ export function armyRelicReward(
   return bonus === undefined ? undefined : { ...reward, amount: (reward.amount * BigInt(10_000 + bonus)) / 10_000n };
 }
 
-/** Tome follows the contract's integer rounding after the base XP calculation. */
-export function armyRelicXp(
-  store: Pick<NativeFactStore, "requireOrAbsent">,
-  army: ArmyKey,
-  amount: number,
-  timestamp: number,
-): number | undefined {
-  const bonus = armyRelicBonus(store, army, "Tome", timestamp);
-  return bonus === undefined ? undefined : Number((BigInt(amount) * BigInt(10_000 + bonus)) / 10_000n);
-}

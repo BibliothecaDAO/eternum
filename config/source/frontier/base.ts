@@ -7,12 +7,6 @@ import { mergeConfigPatches } from "../common/merge-config";
 import { arenaBaseConfig } from "../common/arena/base";
 
 const resourceIds = Array.from({ length: 58 }, (_, index) => index + 1);
-const trainingBuildings: readonly number[] = [
-  research.WAR_HALL,
-  research.SUPPLY_YARD,
-  research.SCOUTS_LODGE,
-  research.HEARTH,
-];
 const laborCosts: Record<number, number> = {
   [research.HUT]: 300,
   [research.WORKSHOP]: 2000,
@@ -32,8 +26,8 @@ const rates: Record<number, number> = {
 };
 const buildingCosts = Object.fromEntries(
   buildingIds.map((id) => {
-    if (trainingBuildings.includes(id)) {
-      const row = research.ROW_WAR_HALL + id - research.WAR_HALL;
+    if (id === research.SUPPLY_YARD) {
+      const row = research.ROW_SUPPLY_YARD;
       const rank = frontierPreset.research!.find((price) => price.row === row && price.tier === 1)!;
       return [
         id,

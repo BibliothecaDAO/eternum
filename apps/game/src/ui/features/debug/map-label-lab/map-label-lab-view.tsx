@@ -31,7 +31,6 @@ import { seatSide } from "@/tokens";
 import { SeatMark } from "@/ui/design-system/seat-mark";
 
 import { useHudMode } from "@/hooks/use-hud-mode";
-import { SiteUseLab } from "./site-use-lab";
 import { drawPathStudy, PATH_STUDIES, studyFocus, type PathStudy } from "./path-study";
 
 type MapZoom = "play" | "close" | "far";
@@ -125,7 +124,6 @@ export const MapLabelLabView = () => {
                 set("select", tileUnder(world, canvasRef.current, event.nativeEvent.offsetX, event.nativeEvent.offsetY))
         }
       />
-      {sites && <SiteUseLab world={world} canvasRef={canvasRef} plates={layer} aim={aimAt} />}
       <div ref={overlayRef} className="pointer-events-none absolute inset-0 z-[2] overflow-hidden" />
       <Tooltip />
       <aside

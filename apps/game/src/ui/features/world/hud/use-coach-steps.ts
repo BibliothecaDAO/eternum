@@ -20,8 +20,6 @@ import {
   ArmyActionManager,
   biomeTypeOf,
   configManager,
-
-  ARMY_CHARGE_MODELS,
   getGuardsByStructure,
   getBalance,
   getTileAt,
@@ -230,7 +228,7 @@ const largestStack = (store: NativeFactStore, entityId: number, tick: number): T
  */
 const useCertainLoss = () => {
   const timestamp = useCurrentDefaultTick();
-  const facts = useNativeFacts([...STAMINA_MODELS, ...GUARD_MODELS, ...ARMY_CHARGE_MODELS]);
+  const facts = useNativeFacts([...STAMINA_MODELS, ...GUARD_MODELS]);
   return useMemo(() => {
     const gameId = configManager.getActiveGameId();
     return (army: CoachArmy, target: CoachTarget): boolean => {
@@ -245,8 +243,6 @@ const useCertainLoss = () => {
       const troops = explorer ? resolveExplorerTroops(facts.store, explorer) : undefined;
       if (!guard || !troops || !explorer || !structure) return false;
       const biome = tile && tile.biome !== 0 ? biomeTypeOf(tile.biome) : BiomeType.None;
-      const chargePercent = openingChargePercent(facts.store, explorer, structure.entity_id);
-      if (chargePercent === undefined) return false;
       const circumstances = {
 
         timestamp,
@@ -256,7 +252,7 @@ const useCertainLoss = () => {
         attackerIsStructureGuard: false,
         defenderIsStructureGuard: true,
       };
-      const rules = { rules: configManager.getCombatRules(), rollsDice: configManager.rollsCombatDice(false) };
+      const rules = { rules: configManager.getCombatRules() };
       return forecastAttack(troops, guard.troops, circumstances, rules).certainLoss;
     };
   }, [timestamp, facts]);

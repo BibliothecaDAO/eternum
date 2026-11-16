@@ -20,7 +20,7 @@ import { useLatest } from "@/hooks/use-latest";
 
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { resolveAttackStaminaState } from "../attack-stamina-state";
-import { attackerSide, defenderSide } from "../battle-range";
+import { attackerSide, defenderSide } from "../battle-outcome";
 import { TargetType } from "../types";
 import { ActionFooter } from "./action-footer";
 import { ArmyColumn } from "./army-column";

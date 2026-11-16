@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { attackerSideRange, defenderSideRange, formatAcross, survivalOf } from "./battle-range";
+import { attackerSideRange, defenderSideRange, formatAcross, survivalOf } from "./battle-outcome";
 
 const outcome = (attackerDamage: number, defenderDamage: number) => ({
   attackerDamage,

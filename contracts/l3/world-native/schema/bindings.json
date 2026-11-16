@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "e02baa4aea84e7b1d6f361ee57a28d4b583cbde4b298f0b784048f41bb098889",
+  "schemaIdentity": "7e557ac7fdabdc9f15381a2e8071373c3d0bb8436de4411cf9b18d4c31e452e2",
   "commandAbi": [
     {
       "type": "interface",
@@ -277,11 +277,6 @@
           "name": "Research",
           "type": "world_native::research::Research",
           "wireId": 67
-        },
-        {
-          "name": "SpendSkillPoint",
-          "type": "world_native::progression::SpendSkillPoint",
-          "wireId": 68
         },
         {
           "name": "InteractSite",
@@ -1168,64 +1163,6 @@
     },
     {
       "type": "struct",
-      "name": "world_native::progression::SpendSkillPoint",
-      "members": [
-        {
-          "name": "explorer_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "choice",
-          "type": "world_native::progression::SkillPointUse"
-        }
-      ]
-    },
-    {
-      "type": "enum",
-      "name": "world_native::progression::SkillPointUse",
-      "variants": [
-        {
-          "name": "Battle",
-          "type": "()"
-        },
-        {
-          "name": "Logistics",
-          "type": "()"
-        },
-        {
-          "name": "Scouting",
-          "type": "world_native::progression::ScoutingKind"
-        },
-        {
-          "name": "Homecoming",
-          "type": "()"
-        },
-        {
-          "name": "Stamina",
-          "type": "core::integer::u8"
-        }
-      ]
-    },
-    {
-      "type": "enum",
-      "name": "world_native::progression::ScoutingKind",
-      "variants": [
-        {
-          "name": "Camp",
-          "type": "()"
-        },
-        {
-          "name": "Rift",
-          "type": "()"
-        },
-        {
-          "name": "Sanctuaries",
-          "type": "()"
-        }
-      ]
-    },
-    {
-      "type": "struct",
       "name": "world_native::relics::InteractSite",
       "members": [
         {
@@ -1304,10 +1241,6 @@
     },
     {
       "name": "RelicRules",
-      "scope": "game"
-    },
-    {
-      "name": "ArmyProgressionRules",
       "scope": "game"
     },
     {
@@ -1420,10 +1353,6 @@
     },
     {
       "name": "SiteChest",
-      "scope": "game"
-    },
-    {
-      "name": "ShrineReward",
       "scope": "game"
     },
     {

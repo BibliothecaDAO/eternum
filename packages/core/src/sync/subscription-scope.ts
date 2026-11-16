@@ -7,7 +7,6 @@ import {
   seasonDay,
   type ExpeditionRules,
 } from "../utils/expeditions";
-import { isTileOccupierUsableSite } from "../utils/map/hex";
 import { hasSingleTilePosition } from "../client/native-occupancy";
 import { gameSyncRegion, syncScalar, type GameSyncScope, type SCOPE_INPUT_MODELS } from "./model-manifest";
 
@@ -88,13 +87,9 @@ export function deriveGameSyncScope(
   )) {
     entities.add(syncScalar(value.home));
   }
-  for (const { value } of read("AspectHyperstructure", spacing, [scopeLookup.monuments])) {
-    entities.add(syncScalar(value.entity_id));
-  }
   for (const { value } of read("TileOccupancy", spacing, [...regions].map(scopeLookup.occupancyIn))) {
     if (
       Number(value.category) === TileOccupier.Chest ||
-      isTileOccupierUsableSite(Number(value.category)) ||
       hasSingleTilePosition({ entity_id: syncScalar(value.entity_id), category: syncScalar(value.category) })
     )
       entities.add(syncScalar(value.entity_id));
@@ -131,7 +126,6 @@ function resolveOwners(account: string | undefined, spacing: number, read: Scope
 /** The lookups subscriptionScope makes, spelled once: rows are indexed under them and a scope is taken through them. */
 export const scopeLookup = {
   deepSites: "DeepSite.all",
-  monuments: "AspectHyperstructure.all",
   homeAspect: (home: unknown) => `HomeAspect.home:${syncScalar(home)}`,
   aspectHomes: (aspect: unknown) => `HomeAspect.aspect:${syncScalar(aspect)}`,
   guard: (entity: unknown) => `DeepGuard.entity:${syncScalar(entity)}`,
@@ -150,7 +144,6 @@ export const scopeLookup = {
 /** The lookups that can find this row; a region key needs the expedition spacing, and without one there is none. */
 export function scopeInputKeys(model: string, row: Record<string, unknown>, spacing: number | undefined): string[] {
   if (model === "DeepSite") return [scopeLookup.deepSites];
-  if (model === "AspectHyperstructure") return [scopeLookup.monuments];
   if (model === "HomeAspect") return [scopeLookup.homeAspect(row.home), scopeLookup.aspectHomes(row.aspect)];
   if (model === "DeepGuard") return [scopeLookup.guard(row.explorer_id), scopeLookup.guardsAt(row.site_id)];
   if (model === "ArmyDay") return [scopeLookup.armyDay(row.explorer_id)];

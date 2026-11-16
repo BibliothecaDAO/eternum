@@ -53,7 +53,6 @@ export const FrontierToday = ({
   const step = (to: number) => setChosen(to === today ? null : to);
   const ended = day !== undefined && today !== undefined && day < today;
   const { onShare, sheet } = useDayShare(realm, ended ? day : undefined, played);
-  const buyers = useDockArmies(onOpenArmy ? realm : null).filter(({ canSpendSkillPoint }) => canSpendSkillPoint);
   const week =
     onOpenArmy && realm && today !== undefined && day === today ? (
       <OpeningPartGate part="today">
@@ -71,8 +70,6 @@ export const FrontierToday = ({
         dayEnd={dayEnd}
         week={week}
         lines={logLines(played.stories, setup.store)}
-        armiesToUpgrade={onOpenArmy && day === today ? buyers.length : undefined}
-        onArmies={onOpenArmy && buyers[0] ? () => onOpenArmy(buyers[0]!.explorerId) : undefined}
         history={played.history}
         onRetry={played.retry}
         onShare={onShare}

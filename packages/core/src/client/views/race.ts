@@ -41,11 +41,6 @@ export interface RaceBoard {
   } | null;
 }
 
-/** A fixed race monument's identity is published with its height, shared across every player's map. */
-export function readRaceMonument(store: NativeFactStore, gameId: number, entityId: number | bigint) {
-  return [...store.inGame("AspectHyperstructure", gameId)].find((row) => row.entity_id === BigInt(entityId));
-}
-
 /** Null means the preset has no race; incomplete native facts never become zero Glory or an empty leaderboard. */
 export function readRaceBoard(
   store: NativeFactStore,

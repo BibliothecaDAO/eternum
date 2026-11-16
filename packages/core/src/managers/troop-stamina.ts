@@ -7,7 +7,7 @@ import { entityMapOccupancy } from "../utils/tile";
 import { troopTierIndex, TroopTier, TroopType, type Troops, type StaminaEffects } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { armyRelicBonus } from "../utils/army-relics";
-import { battleBonusBps, logisticsStamina } from "../utils/attribute-tiers";
+import { logisticsStamina } from "../utils/attribute-tiers";
 import { nativeRuleConstants, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 export const WELL_REFILL_PERCENT = 100 / nativeRuleConstants.WELL_STAMINA_DIVISOR;
@@ -198,11 +198,6 @@ export function resolveExplorerTroops(
     stamina: result.known.stamina,
     staminaMax: base + logisticsStamina(progress.logistics),
     staminaEffects: effects.known,
-    boosts: {
-      ...explorer.troops.boosts,
-      incr_damage_dealt_percent_num: battleBonusBps(progress.battle),
-      incr_damage_dealt_end_at: 0,
-    },
   };
 }
 

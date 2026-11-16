@@ -12,7 +12,6 @@ import {
   UNEXPLORED,
   USE,
 } from "@/ui/design-system/kit/words";
-import { type MapSiteKind, siteGainLine } from "../sites/map-site-plan";
 import {
   type ActionPath,
   ActionPaths,
@@ -37,10 +36,6 @@ type TileOrder = {
   staminaWait: number | undefined;
   /** The stamina the army holds now, for a refused stamina need; undefined when that is unknown. */
   staminaHeld: number | undefined;
-  /** The site a Use order uses: its kind, what one use gives, and the army's bar a Well fills; undefined elsewhere. */
-  site:
-    | { kind: MapSiteKind; gain: number | undefined; stamina: { current: number; max: number } | undefined }
-    | undefined;
   /** The selection is the player's realm, not an army: its Help raises troops into the army beside it. */
   byRealm: boolean;
 };
@@ -63,11 +58,10 @@ export type OrderTip = {
  */
 export const orderTip = (order: TileOrder): OrderTip | null => {
   const ordered = orderOf(order);
-  const reward = order.site ? siteGainLine(order.site.kind, order.site.gain, order.site.stamina) : null;
   if (ordered) return ordered;
 
   const refused = refusalLine(order);
-  return refused === null ? (reward ? { line: reward, cost: null } : null) : { line: refused, cost: reward };
+  return refused === null ? null : { line: refused, cost: null };
 };
 
 const OPEN_CRATE = "Open crate";
@@ -80,10 +74,9 @@ const ORDERS: Partial<Record<ActionType, string>> = {
   [ActionType.Help]: `${TRANSFER} troops`,
   [ActionType.SpireTravel]: "Travel through the spire",
   [ActionType.EnterDepth]: SPIRE_WORDS.order,
-  [ActionType.UseSite]: USE,
 };
 
-const orderOf = ({ path, exploreStamina, food, site, byRealm }: TileOrder): OrderTip | null => {
+const orderOf = ({ path, exploreStamina, food, byRealm }: TileOrder): OrderTip | null => {
   const actionType = path && path.length >= 2 ? ActionPaths.getActionType(path) : undefined;
   // The realm's Help is a reinforcement, priced on its sheet.
   if (path && byRealm && actionType === ActionType.Help) return { line: REINFORCE.verb, cost: null };
@@ -91,12 +84,8 @@ const orderOf = ({ path, exploreStamina, food, site, byRealm }: TileOrder): Orde
   if (!path || line === undefined) return null;
   // A crate costs nothing; the spire's entry is free, and its card picks the Ethereal layer to enter.
   if (actionType === ActionType.Chest || actionType === ActionType.EnterDepth) return { line, cost: null };
-  if (actionType === ActionType.UseSite)
-    return { line, cost: site ? siteGainLine(site.kind, site.gain, site.stamina) : null };
   const stamina = computeEffectiveStaminaCost(path.slice(1), actionType, exploreStamina);
-  const gain = site ? siteGainLine(site.kind, site.gain, site.stamina) : null;
   const pieces = [
-    ...(gain ? [gain] : []),
     ...(stamina > 0 ? [`${formatCharge(stamina)} ${STAMINA}`] : []),
     ...(food.wheat > 0 ? [`${formatCharge(food.wheat)} wheat`] : []),
     ...(food.fish > 0 ? [`${formatCharge(food.fish)} fish`] : []),

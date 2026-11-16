@@ -1,17 +1,14 @@
 import { DEEP_SITE_FACES } from "@/ui/features/frontier/deep/deep-site-faces";
 import { configManager } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { deepSites, MineKinds, TileOccupier, skillPointGain } from "@bibliothecadao/types";
-import { mapSite } from "@/ui/features/frontier/sites/map-site-plan";
+import { deepSites, MineKinds, TileOccupier } from "@bibliothecadao/types";
 import type { MapPlateInput, MapPlateScope } from "../map-plates/map-plate-layer";
 import { PLATE_CLEARANCE } from "./structure-visible-presentation";
 import { presentResult } from "@/three/presented-results";
 import { activeMapLayer } from "@/three/map-layer";
-import { getGameModeConfig } from "@/config/game-modes";
 import { frontierPaintedPath } from "../structures/frontier-painted-buildings";
 import InstancedModel from "@/three/managers/instanced-model";
 import { FELT_CENTER } from "@/ui/config";
-import { MAP_SITES, type MapSiteKind, mapSiteOf } from "@/config/map-sites";
 import {
   projectionChangesForLayer,
   type WorldSpatialProjection,
@@ -24,12 +21,6 @@ import { gltfLoader } from "../utils/utils";
 import { publishMapSelection } from "@/observability/map-selection";
 import { HYPERSTRUCTURE_BASE_HEIGHT } from "../structures/hyperstructure-design";
 import { HyperstructureModel } from "../structures/hyperstructure-model";
-
-/** Each site of the map's catalog (MAP_SITES), as the renderer draws it outside Frontier (Frontier's own are painted). */
-const SITE_MODELS: Record<MapSiteKind, string> = {
-  Shrine: "/models/outposts/shrine.glb",
-  Well: "/models/outposts/well.glb",
-};
 
 /** How a Deep site stands on the map: the hyperstructure's own foundation, or a model's file. */
 type DeepSiteLook = { kind: "hyperstructure-foundation" } | { kind: "model"; path: () => string };
@@ -56,7 +47,7 @@ type SiteHex = { col: number; row: number };
 type PlacedSite = SiteHex & { entityId: number };
 
 /**
- * Draws each Shrine and Well where its tile says it stands, and lets it go the moment its occupancy is consumed. A
+ * Draws each Deep site where its tile says it stands. A
  * kind's model loads only once a tile of it is seen, so a game without them never requests the assets.
  */
 export class MapSiteManager {
@@ -69,16 +60,6 @@ export class MapSiteManager {
   private modelVisible = true;
   private destroyed = false;
   private readonly sites: DrawnSite[] = [
-    ...MAP_SITES.map((site) => ({
-      key: site.kind,
-      name: site.kind,
-      stands: (tile: TileSpatialRenderable) => tile.occupierType === site.occupier,
-      model: () =>
-        modelOf(
-          getGameModeConfig().id === "frontier" ? frontierPaintedPath(site.kind.toLowerCase()) : SITE_MODELS[site.kind],
-          site.kind,
-        ),
-    })),
     ...deepSites.map((kind) => {
       const look: DeepSiteLook = DEEP_SITE_LOOKS[kind.position];
       return {
@@ -113,7 +94,6 @@ export class MapSiteManager {
     });
     this.unsubscribeRewards = store.subscribe((changes) => {
       if (changes.some(({ model }) => model === "DeepSite")) this.refresh();
-      else if (changes.some(({ model }) => model === "ShrineReward")) this.refreshPlates();
     });
     this.refresh();
   }
@@ -127,7 +107,7 @@ export class MapSiteManager {
           (row) =>
             row.hexCoords.col === tile.col &&
             row.hexCoords.row === tile.row &&
-            (mapSiteOf(row.occupierType)?.kind === "Shrine" || row.occupierType === TileOccupier.DeepSite),
+            row.occupierType === TileOccupier.DeepSite,
         );
     if (site) this.plates.setHover(site.occupierId);
     else this.plates.clearHover();
@@ -195,13 +175,13 @@ export class MapSiteManager {
       ? this.projection
           .getTiles(activeMapLayer())
           .filter(
-            (tile) => mapSiteOf(tile.occupierType)?.kind === "Shrine" || tile.occupierType === TileOccupier.DeepSite,
+            (tile) => tile.occupierType === TileOccupier.DeepSite,
           )
           .slice(0, SITE_CAPACITY)
       : [];
     const placed: number[] = [];
     for (const tile of sites) {
-      const plate = tile.occupierType === TileOccupier.DeepSite ? this.deepPlate(tile) : this.shrinePlate(tile);
+      const plate = this.deepPlate(tile);
       if (!plate) continue;
       this.plates.setLabel(plate);
       placed.push(safeInteger(plate.entityId));
@@ -233,36 +213,6 @@ export class MapSiteManager {
         icon: DEEP_SITE_FACES[kind.position].icon,
         guards: null,
         arrivals: [],
-      },
-    };
-  }
-
-  private shrinePlate(tile: TileSpatialRenderable): MapPlateInput | undefined {
-    const reward = this.store.get("ShrineReward", {
-      game_id: configManager.getActiveGameId(),
-      entity_id: tile.occupierId,
-    });
-    const height = this.heights.get("Shrine");
-    if (!reward || height === undefined) return undefined;
-    const position = getWorldPositionForHex({
-      col: tile.hexCoords.col - FELT_CENTER(),
-      row: tile.hexCoords.row - FELT_CENTER(),
-    });
-    placePositionOnTerrain(position, this.terrain, height + PLATE_CLEARANCE);
-    const face = mapSite("Shrine");
-    return {
-      entityId: tile.occupierId,
-      position,
-      plate: {
-        kind: "structure",
-        relation: "neutral",
-        name: face.name,
-        named: false,
-        owner: "",
-        icon: face.icon,
-        guards: null,
-        arrivals: [],
-        reward: skillPointGain(reward.rank),
       },
     };
   }
@@ -321,4 +271,4 @@ const modelOf = async (path: string, name: string) => {
 const foundationModel = () => ({ model: new HyperstructureModel(SITE_CAPACITY), height: HYPERSTRUCTURE_BASE_HEIGHT });
 
 const isMapSite = (occupier: number | undefined): boolean =>
-  mapSiteOf(occupier) !== null || occupier === TileOccupier.DeepSite;
+  occupier === TileOccupier.DeepSite;
