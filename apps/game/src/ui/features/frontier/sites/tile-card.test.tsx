@@ -654,7 +654,7 @@ it("refreshes the open forecast and XP when only an army relic effect arrives", 
   try {
     act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
     expect(fightSides(host)).toEqual(FORECAST);
-    act(() => store.applyFacts([relicEffectFact("Blade"), relicEffectFact("Ward"), relicEffectFact("Tome")]));
+    act(() => store.applyFacts([relicEffectFact("Blade"), relicEffectFact("Ward")]));
     expect(fightSides(host)).toEqual(["Army 1,498 → 1,064, −434 · 29% lost", "Troll 1,100 → 416, −684 · 62% lost"]);
     expect(host.textContent).toContain("172 XP");
   } finally {

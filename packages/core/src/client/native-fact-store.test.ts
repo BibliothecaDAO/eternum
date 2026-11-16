@@ -816,11 +816,11 @@ it("keys a fact by an enum field: an army's running relic of each kind, read bac
     {
       model: "ArmyRelicEffect",
       key: "0xa3",
-      value: { game_id: 1, explorer_id: 201, kind: "Tome", rank: 2, expires_at: 900 },
+      value: { game_id: 1, explorer_id: 201, kind: "Plunder", rank: 2, expires_at: 900 },
     },
   ] as never);
   expect(store.get("ArmyRelicEffect", { game_id: 1, explorer_id: 201, kind: "Ward" })?.rank).toBe(3);
-  expect(store.get("ArmyRelicEffect", { game_id: 1, explorer_id: 201, kind: "Tome" })?.expires_at).toBe(900n);
+  expect(store.get("ArmyRelicEffect", { game_id: 1, explorer_id: 201, kind: "Plunder" })?.expires_at).toBe(900n);
   expect(store.get("ArmyRelicEffect", { game_id: 1, explorer_id: 201, kind: "Blade" })).toBeUndefined();
   expect(() => store.get("ArmyRelicEffect", { game_id: 1, explorer_id: 201, kind: "Spear" as never })).toThrow();
 });

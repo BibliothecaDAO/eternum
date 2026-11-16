@@ -1,28 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import * as timestamp from "./timestamp";
-import {
-  armyEtherealLayer,
-  dayOf,
-  entityHomeNamespace,
-  seasonDay,
-  expeditionDayEndsAt,
-  expeditionRealmSite,
-  expeditionSpires,
-  expeditionSpireTile,
-  isArmyCrossing,
-  isAtExpeditionSpire,
-  isEtherealTile,
-  liveHomeArmies,
-  structureMapPosition,
-  structureLocalPosition,
-  siteReward,
-  siteClearXp,
-  spireEtherealView,
-  viewInLayer,
-  regionSpire,
-  LOCAL_VIEW_REACH,
-} from "./expeditions";
+import { armyEtherealLayer, dayOf, entityHomeNamespace, seasonDay, expeditionDayEndsAt, expeditionRealmSite, expeditionSpires, expeditionSpireTile, isArmyCrossing, isAtExpeditionSpire, isEtherealTile, liveHomeArmies, structureMapPosition, structureLocalPosition, siteReward, spireEtherealView, viewInLayer, regionSpire, LOCAL_VIEW_REACH } from "./expeditions";
 
 const structure = (overrides: { realm_id?: number; category?: StructureType } = {}) =>
   ({
@@ -396,7 +375,7 @@ describe("siteReward", () => {
         row: 0,
         category: StructureType.Camp,
         initial_guard_count: guard,
-        clear: { xp: 0, explorer_id: 1n, home_id: 7n, reward: null },
+        clear: { explorer_id: 1n, home_id: 7n, reward: null },
       }),
     ).toBeNull();
     expect(
@@ -405,64 +384,9 @@ describe("siteReward", () => {
         row: 0,
         category: StructureType.Rift,
         initial_guard_count: guard,
-        clear: { xp: 0, explorer_id: 1n, home_id: 7n, reward: null },
+        clear: { explorer_id: 1n, home_id: 7n, reward: null },
       }),
     ).toBeNull();
-  });
-});
-
-describe("siteClearXp", () => {
-  it.each([
-    [430n, 51],
-    [1300n, 90],
-    [3000n, 136],
-    [25000n, 395],
-    [49500n, 556],
-  ])("matches the contract's clear vector for %s troops", (troops, xp) => {
-    expect(
-      siteClearXp(storeWith(expeditionRules) as never, {
-        category: StructureType.Camp,
-        game_id: 7,
-        row: 0,
-        initial_guard_count: troops * 1_000_000_000n,
-      }),
-    ).toBe(xp);
-  });
-
-  it("floors fractional troops and keeps integer square-root boundaries exact", () => {
-    expect(
-      siteClearXp(storeWith(expeditionRules) as never, {
-        category: StructureType.Camp,
-        game_id: 7,
-        row: 0,
-        initial_guard_count: 999_999_999n,
-      }),
-    ).toBe(0);
-    expect(
-      siteClearXp(storeWith(expeditionRules) as never, {
-        category: StructureType.Camp,
-        game_id: 7,
-        row: 0,
-        initial_guard_count: 1_999_999_999n,
-      }),
-    ).toBe(2);
-    const square = (2n * 30_000_000n) ** 2n;
-    expect(
-      siteClearXp(storeWith(expeditionRules) as never, {
-        category: StructureType.Camp,
-        game_id: 7,
-        row: 0,
-        initial_guard_count: (square - 1n) * 1_000_000_000n,
-      }),
-    ).toBe(149_999_999);
-    expect(
-      siteClearXp(storeWith(expeditionRules) as never, {
-        category: StructureType.Camp,
-        game_id: 7,
-        row: 0,
-        initial_guard_count: square * 1_000_000_000n,
-      }),
-    ).toBe(150_000_000);
   });
 });
 
@@ -512,7 +436,7 @@ it.each([
   [1, 1.5, 76],
   [2, 2, 102],
   [3, 2.5, 127],
-])("previews depth %s resources and XP from the site's day band", (depth, multiplier, xp) => {
+])("previews depth %s resources from the site's day band", (depth, multiplier) => {
   const store = storeWith(expeditionRules) as never;
   const site = {
     game_id: 7,
@@ -525,10 +449,9 @@ it.each([
     resourceType: ResourcesIds.Essence,
     amount: BigInt(1290 * multiplier) * 1_000_000_000n,
   });
-  expect(siteClearXp(store, site)).toBe(xp);
 });
 
-it("gives Wraiths triple XP without resources, using the initial band", () => {
+it("distinguishes a Band without resources from a Herd with wheat", () => {
   const store = storeWith(expeditionRules) as never;
   const site = {
     game_id: 7,
@@ -538,10 +461,8 @@ it("gives Wraiths triple XP without resources, using the initial band", () => {
     clear: null,
   };
   expect(siteReward(store, site)).toBeNull();
-  expect(siteClearXp(store, site)).toBe(159);
   expect(siteReward(store, { ...site, initial_guard_count: 350_000_000_000n })).toEqual({
     resourceType: ResourcesIds.Wheat,
     amount: 1400_000_000_000n,
   });
-  expect(siteClearXp(store, { ...site, initial_guard_count: 350_000_000_000n })).toBe(46);
 });

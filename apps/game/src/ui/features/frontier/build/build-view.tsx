@@ -1,38 +1,10 @@
 import { rankName } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import {
-  formatExact,
-  formatCharge,
-  formatPopulation,
-  formatPopulationInWords,
-  formatShort,
-  formatShortDuration,
-} from "@bibliothecadao/types";
+import { formatExact, formatCharge, formatPopulation, formatPopulationInWords, formatShort, formatShortDuration } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import {
-  HudButton,
-  HudCard,
-  HudChip,
-  HudConfirm,
-  HudCost,
-  HudNotice,
-  HudSheet,
-  HudWindowFoot,
-  rankedTip,
-} from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudCard, HudChip, HudConfirm, HudCost, HudNotice, HudSheet, HudWindowFoot, rankedTip } from "@/ui/design-system/kit/hud-elements";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
-import {
-  BARRACKS,
-  BUILD,
-  BUILDING,
-  needsResearchPurchases,
-  POPULATION,
-  PRICE_UP,
-  purchasesOfGate,
-  type Rank,
-  type RankedWords,
-  ROOM_ASK,
-} from "@/ui/design-system/kit/words";
+import { BUILD, BUILDING, POPULATION, PRICE_UP, type Rank, type RankedWords, ROOM_ASK } from "@/ui/design-system/kit/words";
 
 import { PRICE_FACES, costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import type { ReactNode } from "react";
@@ -73,7 +45,6 @@ export type BuildTile = {
         short?: { of: Price["of"]; wait: number | undefined } | { of: "population" };
       }
     | { kind: "built" }
-    | { kind: "locked"; gate: number; bought: number }
     | { kind: "level"; level: number };
 };
 
@@ -303,7 +274,6 @@ const bandTone = (standing: BuildTile["standing"]) =>
 const Band = ({ standing }: { standing: BuildTile["standing"] }) => (
   <HudChip
     tone={bandTone(standing)}
-    tip={standing.kind === "locked" ? needsResearchPurchases(BARRACKS, standing.bought, standing.gate) : undefined}
   >
     <span className="flex items-center gap-1 whitespace-nowrap tabular-nums">
       {standing.kind === "level" && (
@@ -313,12 +283,6 @@ const Band = ({ standing }: { standing: BuildTile["standing"] }) => (
         </>
       )}
       {standing.kind === "built" && <SemanticIcon name="check" size={16} />}
-      {standing.kind === "locked" && (
-        <>
-          <SemanticIcon name="lock" size={14} />
-          {purchasesOfGate(standing.bought, standing.gate)} research
-        </>
-      )}
       {standing.kind === "price" && <Price standing={standing} />}
     </span>
   </HudChip>

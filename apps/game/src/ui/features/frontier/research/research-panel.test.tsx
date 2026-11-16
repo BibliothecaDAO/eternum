@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 // @vitest-environment jsdom
+// @vitest-environment jsdom
+// @vitest-environment jsdom
 import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -30,7 +32,7 @@ afterEach(() => {
 
 const nodes = readResearchTree({
   ...MID_REALM,
-  learned: { ...MID_REALM.learned, [research.ROW_BARRACKS]: { tier: 4, sides: [0, 0, 0, 0] } },
+  learned: { ...MID_REALM.learned, [research.ROW_SUPPLY_YARD]: { tier: 4, sides: [0, 0, 0, 0] } },
 });
 const draw = (picked: string | null, onResearch = vi.fn(), onPick = vi.fn(), onFix = vi.fn(), onClose = vi.fn()) =>
   act(() =>
@@ -266,7 +268,4 @@ it("says on every side of every row what it does, in sight on the side, never on
     node.sides!.forEach((side, index) => expect(shown[index]).toContain(`${side.name}${side.line}`));
     expect(choice.querySelector("[title]")).toBeNull();
   }
-  draw("row-5");
-  expect(host.textContent).toContain(nodes.find((n) => n.key === "row-5")!.gate!.line);
-  expect(host.textContent).toContain("Charge");
 });

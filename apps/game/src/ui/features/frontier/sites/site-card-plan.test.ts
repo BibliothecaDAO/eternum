@@ -1,4 +1,4 @@
-import { deepChargeScenario } from "@/lab/game/charge-scenario";
+import { deepBattleTargetScenario } from "@/lab/game/battle-target-scenario";
 import { readDeepSites } from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { afterEach, describe, expect, it } from "vitest";
@@ -18,7 +18,6 @@ describe("Frontier's tile card", () => {
     expect(plan.beast?.beast).toBe("troll");
     expect(plan.guard).toEqual({ type: TroopType.Knight, tier: TroopTier.T1, count: 1_100 });
     expect(plan.payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 825, fits: 825 });
-    expect(plan.xp).toBe(123);
     expect(plan.attackStamina).toBe(preset.rules.troop_stamina_config.stamina_attack_req);
     // The one attack Attack sends now, as the contract resolves it and its result will show it: this attack's losses
     // and the guard it leaves standing (a second attack would clear the camp; the card speaks of none but this one).
@@ -69,7 +68,6 @@ describe("Frontier's tile card", () => {
     expect(plan.payout).toEqual({ resourceId: ResourcesIds.Lords, amount: 500, fits: 500 });
     expect(plan.chest).toMatchObject({ tier: 3, amount: 500, funded: true });
     expect(plan.ruinDepth).toBe("Ethereal I");
-    expect(plan.xp).toBe(123);
     const rift = campBeside("Rift");
     expect(readSiteCard(rift.store, rift.site, rift.structure, SITE_TILE, null).payout).toEqual({
       resourceId: ResourcesIds.Essence,
@@ -106,7 +104,6 @@ it("reads another player's army as a target: its troops, the same exact fight ne
   expect(plan.kind).toBe("Army");
   expect(plan.guard).toEqual({ type: TroopType.Knight, tier: TroopTier.T1, count: 300 });
   expect(plan.payout).toBeNull();
-  expect(plan.xp).toBeUndefined();
   expect(plan.fight).toEqual({ troopsLost: 134, guardLeft: 0 });
   expect(plan.inReach).toBe(true);
   const far = readArmyCard(store, other, { col: 44, row: 12, alt: false }, attack({ col: 41, row: 12, alt: false }));
@@ -148,7 +145,6 @@ it("shows Cyclops wheat from initial guards alongside clear XP", () => {
   ]);
   const plan = readSiteCard(store, site, structure, SITE_TILE, own);
   expect(plan.payout).toEqual({ resourceId: ResourcesIds.Wheat, amount: 6000, fits: 10 });
-  expect(plan.xp).toBe(118);
 });
 
 describe("the recorded Blightglow Rift under Frontier's current combat rules", () => {
@@ -174,23 +170,21 @@ describe("the recorded Blightglow Rift under Frontier's current combat rules", (
   });
 });
 
-it("forecasts Blade and Ward, Plunder and Tome at the attack second and drops them exactly at expiry", () => {
+it("forecasts Blade, Ward and Plunder at the attack second and drops them exactly at expiry", () => {
   const { store, site, structure, attack } = campBeside();
   const action = attack({ col: 41, row: 12, alt: false });
   const read = (timestamp: number) => readSiteCard(store, site, structure, SITE_TILE, { ...action, timestamp });
-  expect(read(350)).toMatchObject({ fight: { troopsLost: 457, guardLeft: 478 }, xp: 123, payout: { amount: 825 } });
+  expect(read(350)).toMatchObject({ fight: { troopsLost: 457, guardLeft: 478 }, payout: { amount: 825 } });
   store.applyFacts([
     relicEffectFact("Blade"),
     relicEffectFact("Ward"),
     relicEffectFact("Plunder"),
-    relicEffectFact("Tome"),
   ]);
   expect(read(379)).toMatchObject({
     fight: { troopsLost: 434, guardLeft: 416 },
-    xp: 172,
     payout: { amount: 990, fits: 990 },
   });
-  expect(read(380)).toMatchObject({ fight: { troopsLost: 457, guardLeft: 478 }, xp: 123, payout: { amount: 825 } });
+  expect(read(380)).toMatchObject({ fight: { troopsLost: 457, guardLeft: 478 }, payout: { amount: 825 } });
   expect(action.army.troops.boosts.incr_damage_dealt_percent_num).toBe(0);
   expect(action.army.troops.boosts.decr_damage_gotten_percent_num).toBe(0);
 });
@@ -302,7 +296,7 @@ it("keeps the same site's opening Charge spent after a confirmed update and a fr
 });
 
 it("keys a Deep beast's opening by the site and a new guard's opening by that army", () => {
-  const { store, startsAt } = deepChargeScenario();
+  const { store, startsAt } = deepBattleTargetScenario();
   setBlockTimestampSource(() => startsAt);
   const key = { game_id: 1, explorer_id: 201n };
   const army = store.require("ExplorerTroops", key);

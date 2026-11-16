@@ -11,12 +11,12 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 
 import { PRICE_FACES, type PriceKind } from "@/ui/design-system/kit/price-faces";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
-import { BARRACKS, BUILD, makes, needsResearchPurchases, ONE_A_REALM, POPULATION, priceRaised, RESEARCH, ROOM_ASK, startsNewArmies, type RankedWords, takesPopulation } from "@/ui/design-system/kit/words";
+import { makes, ONE_A_REALM, POPULATION, priceRaised, ROOM_ASK, startsNewArmies, type RankedWords, takesPopulation } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { knownAmount } from "@/ui/utils/utils";
 import { plotKey, sendBuilding, useStillShowing } from "@/ui/features/settlement/construction/send-building";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import { buildableRadius, configManager, getBalance, getBuildingQuantity, getRealmInfo, resolveUseSimpleCost } from "@bibliothecadao/eternum";
+import { buildableRadius, configManager, getBalance, getRealmInfo, resolveUseSimpleCost } from "@bibliothecadao/eternum";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BUILDINGS_CENTER, BuildingType, formatAmount, formatCharge, formatGain, formatRate, getHexDistance, type HexPosition } from "@bibliothecadao/types";
@@ -78,13 +78,11 @@ export const useOpenPlot = (realm: NativeRows["Structure"] | null): HexPosition 
 export const BuildSheet = ({
   realm,
   plot,
-  onResearch,
   onClose,
 }: {
   realm: NativeRows["Structure"];
   plot: HexPosition;
   /** Opens Research, where two Barracks purchases unlock training buildings. */
-  onResearch?: () => void;
   onClose: () => void;
 }) => {
   const { setup } = useGame();
@@ -150,19 +148,12 @@ export const BuildSheet = ({
     setPicked(category);
     setAsking(false);
   };
-  const priceOf = (category: BuildingType) =>
-    options
-      .find((candidate) => candidate.category === category)!
-      .cost.map(({ resource, amount }) => ({ of: priceKind(resource), amount }));
   /** Where the chosen building stands: open, refused with its reason, or open but for free population. */
   const standing = (): { refusal?: Refusal; noRoom?: true } => {
     if (option.standing === "built") return { refusal: { reason: { kind: "failed", line: ONE_A_REALM } } };
     if (option.standing !== "open")
       return {
-        refusal:
-          "level" in option.standing
-            ? { reason: { kind: "failed", line: `Requires ${rankName(option.standing.level)}` } }
-            : gateRefusal(option.standing),
+        refusal: { reason: { kind: "failed", line: `Requires ${rankName(option.standing.level)}` } },
       };
     const shortCost = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
     if (shortCost) {
@@ -193,23 +184,6 @@ export const BuildSheet = ({
     if (verdict.code !== "insufficient_population" && verdict.code !== "insufficient_capacity")
       return { refusal: { reason: { kind: "failed", line: verdict.reason ?? "" } } };
     return { noRoom: true };
-  };
-  /**
-   * A training building waits for the Barracks purchases (the contract's assert_board_category): Research raises it
-   * once a Barracks stands, and until one does the fix is to build it.
-   */
-  const gateRefusal = ({ gate, bought }: { gate: number; bought: number }): Refusal => {
-    const reason = { kind: "failed", line: needsResearchPurchases(BARRACKS, bought, gate) } as const;
-    if (getBuildingQuantity(realmId, BuildingType.ResourceKnightT1, setup.store) === 0)
-      return {
-        reason,
-        fix: {
-          word: `${BUILD} ${BARRACKS}`,
-          prices: priceOf(BuildingType.ResourceKnightT1),
-          onFix: () => choose(BuildingType.ResourceKnightT1),
-        },
-      };
-    return { reason, fix: onResearch && { icon: "research", word: RESEARCH, onFix: onResearch } };
   };
   const holdings: Holdings = {
     held,
@@ -280,9 +254,7 @@ const buildTile = (option: BuildOption, holdings: Holdings): BuildTile => ({
 const standingOf = (option: BuildOption, { held, perHour, free }: Holdings): BuildTile["standing"] => {
   if (option.standing === "built") return { kind: "built" };
   if (option.standing !== "open")
-    return "level" in option.standing
-      ? { kind: "level", level: option.standing.level }
-      : { kind: "locked", ...option.standing };
+    return { kind: "level", level: option.standing.level };
   const missing = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
   const short: Extract<BuildTile["standing"], { kind: "price" }>["short"] = missing
     ? {

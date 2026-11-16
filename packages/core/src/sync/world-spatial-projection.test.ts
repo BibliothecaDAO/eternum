@@ -5,11 +5,7 @@ import { setBlockTimestampSource } from "../utils/timestamp";
 import explorerFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import type { GameSyncFact } from "./game-sync-types";
 import { describe, expect, it, vi } from "vitest";
-import {
-  WorldSpatialProjection,
-  ArmySpatialProjectionChange,
-  projectionChangesForLayer,
-} from "./world-spatial-projection";
+import { WorldSpatialProjection, ArmySpatialProjectionChange, projectionChangesForLayer } from "./world-spatial-projection";
 
 const createHarness = () => {
   const facts = new NativeFactStore();
@@ -222,7 +218,7 @@ const createHarness = () => {
         alt: false,
         col: input.col,
         row: input.row,
-        clear: { xp: 0, explorer_id: 74n, home_id: 7n, reward: null },
+        clear: { explorer_id: 74n, home_id: 7n, reward: null },
       },
       false,
     );

@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+// @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -196,17 +197,6 @@ const mount = async (mode: "frontier" | "blitz") => {
                     base: { ...realm.base, category: StructureType.Camp },
                   }),
                 },
-                ...MAP_SITES.map((site, index) => ({
-                  model: "TileOccupancy",
-                  key: `0x5170${index}`,
-                  value: {
-                    game_id: 1,
-                    ...siteTile(index),
-                    entity_id: 900 + index,
-                    category: site.occupier,
-                    is_structure: false,
-                  },
-                })),
                 ...(mode === "blitz"
                   ? [
                       { model: "SliceRules", key: "0x100", value: json({ ...rules, day_unit_seconds: 0 }) },
@@ -448,45 +438,6 @@ describe("places in chat, in a Frontier game", () => {
     act(() => useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 1, row: 1 } }));
     expect(placeButton().disabled).toBe(true);
   });
-
-  // Every site of the map's own catalog (MAP_SITES, which the renderer draws from): one it adds is covered here.
-  it.each(MAP_SITES.map((entry, index) => [entry.kind, { ...entry, ...mapSite(entry.kind) }, index] as const))(
-    "shares a %s selected on its tile, opens its tile, and marks it gone once spent",
-    async (_, site, index) => {
-      const tile = siteTile(index);
-      act(() => useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: tile.col, row: tile.row } }));
-      expect(placeButton().disabled).toBe(false);
-      act(() => placeButton().click());
-      const picked = host.querySelector<HTMLElement>("form [data-place]")!;
-      expect(picked.textContent).toBe(site.name);
-      await send();
-      const place = {
-        kind: "site",
-        site: site.kind,
-        tile,
-        game: LAB,
-        name: site.name,
-        icon: site.icon,
-        at: expect.any(Number),
-      };
-      expect(sentPlace()).toEqual({ content: site.name, zoneId: GLOBAL_CHAT_CHANNEL_ID, metadata: { place } });
-
-      arrives("m11", site.name, sentPlace().metadata!);
-      expect(chip("m11").textContent).toBe(site.name);
-      expect(chip("m11").getAttribute("data-place-key")).toBe(
-        `0x1ab:1/site:${site.kind}@${tile.col},${tile.row},surface`,
-      );
-      act(() => chip("m11").querySelector("button")!.click());
-      const [position, select] = moved.openOnMap.mock.calls.at(-1)!;
-      expect(position.getContract()).toEqual({ x: tile.col, y: tile.row });
-      expect(select).toBe("tile");
-
-      // Used: its tile empties, and the place it was opens nothing.
-      act(() => game.store.applyFacts([{ model: "TileOccupancy", key: `0x5170${index}`, value: null }] as never));
-      expect(chip("m11").querySelector("button")!.disabled).toBe(true);
-      expect(chip("m11").textContent).toBe(`${site.name} · gone`);
-    },
-  );
 });
 
 describe("places in chat, in a game with one map all game (Blitz)", () => {

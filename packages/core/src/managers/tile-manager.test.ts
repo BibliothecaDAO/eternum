@@ -45,11 +45,11 @@ describe("building occupancy errors", () => {
   });
 });
 
-it("uses the highest production side for Farms and Workshops and the Charge tier for Barracks", () => {
+it("uses the highest production side for Farms and Workshops and the Logistics tier for Supply yards", () => {
   for (const [category, offset, independentSides] of [
     [research.FARM, 0n, true],
     [research.WORKSHOP, 7n, true],
-    [research.BARRACKS, 14n, false],
+    [research.SUPPLY_YARD, 27n, false],
   ] as const) {
     for (let a = 0; a <= 5; a++)
       for (let b = 0; b <= 5; b++) {

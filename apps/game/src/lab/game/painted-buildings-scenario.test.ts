@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { buildingTypeTier, readFrontierBeast } from "@bibliothecadao/eternum";
-import { BiomeType, BiomeTypeToId, BuildingType, StructureType, TileOccupier } from "@bibliothecadao/types";
+import { BiomeType, BiomeTypeToId, BuildingType, StructureType } from "@bibliothecadao/types";
 import { nativeTilePackingConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { paintedBuildingsScenario } from "./painted-buildings-scenario";
 import { SANDS } from "./spire-scenario";
@@ -14,13 +14,9 @@ it("opens a Kingdom with eight distinct buildings, tier III production and two u
   for (const category of [
     BuildingType.ResourceWheat,
     BuildingType.ResourceLabor,
-    BuildingType.ResourceKnightT1,
     BuildingType.WorkersHut,
   ]) {
     expect(buildingTypeTier(store, 1, 7, category)).toBe(3);
-  }
-  for (const category of [TileOccupier.Shrine, TileOccupier.Well]) {
-    expect([...store.rows("TileOccupancy")].filter((tile) => tile.category === category)).toHaveLength(1);
   }
   // Frontier's sites as its contracts make them: nobody's, standing, guarded.
   for (const [entityId, guard] of [

@@ -6,7 +6,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { wire } from "@/lab/game/lab-chain";
-import { deepChargeScenario } from "@/lab/game/charge-scenario";
+import { deepBattleTargetScenario } from "@/lab/game/battle-target-scenario";
 import { deepScenario } from "@/lab/game/deep-scenario";
 import { raceScenario } from "@/lab/game/race-scenario";
 import { baneScenario } from "@/lab/game/bane-scenario";
@@ -258,7 +258,7 @@ it("prices Deep movement from the troops left at the requested second", () => {
 });
 
 it("previews the Deep guard's opening and repeated exchange before sending each attack", async () => {
-  const hud = draw(undefined, deepChargeScenario());
+  const hud = draw(undefined, deepBattleTargetScenario());
   const labels = () =>
     [...hud.host.querySelectorAll('[role="img"][aria-label*="→"]')].map((node) => node.getAttribute("aria-label"));
   try {

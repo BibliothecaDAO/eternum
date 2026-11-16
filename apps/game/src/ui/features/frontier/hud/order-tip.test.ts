@@ -13,7 +13,6 @@ const tip = (
     staminaWait: number;
     staminaHeld: number;
     food: { wheat: number; fish: number };
-    site: Parameters<typeof orderTip>[0]["site"];
     byRealm: boolean;
   }> = {},
 ) =>
@@ -25,7 +24,6 @@ const tip = (
     refusal: undefined,
     staminaWait: undefined,
     staminaHeld: undefined,
-    site: undefined,
     byRealm: false,
     ...more,
   });
@@ -47,20 +45,6 @@ describe("what a right-click on a tile does, said before the click", () => {
     const help = [step(ActionType.Move), step(ActionType.Help)];
     expect(tip(help, { byRealm: true })).toEqual({ line: "Reinforce", cost: null });
     expect(line([step(ActionType.Move), step(ActionType.CreateArmy)], { byRealm: true })).toBeNull();
-  });
-
-  it("says under a site's Use what it gives, which costs nothing: a Shrine's point, the stamina a Well lands", () => {
-    const use = [step(ActionType.Move), step(ActionType.UseSite, 0)];
-    const at = (site: NonNullable<Parameters<typeof tip>[1]>["site"]) => cost(use, { site });
-    expect(at({ kind: "Shrine", gain: 3, stamina: undefined })).toEqual([{ rank: 3 }, " +1"]);
-    expect(at({ kind: "Well", gain: 60, stamina: { current: 30, max: 120 } })).toBe("+60 stamina");
-    // A Well never fills past the bar: what lands, and nothing at a full bar, which the line warns of.
-    expect(at({ kind: "Well", gain: 60, stamina: { current: 100, max: 120 } })).toBe("+20 stamina, to full");
-    expect(at({ kind: "Well", gain: 60, stamina: { current: 120, max: 120 } })).toBe(
-      "Stamina full: the well would be wasted",
-    );
-    // A Shrine whose reward has not synced names no gain rather than a wrong one.
-    expect(at({ kind: "Shrine", gain: undefined, stamina: undefined })).toBeNull();
   });
 
   it("puts what the order costs on one compact line under it, rounded as every charge reads", () => {

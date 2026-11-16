@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
+// @vitest-environment jsdom
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it } from "vitest";
 
 import { GameProvider } from "@/hooks/context/game-context";
-import { setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { setBlockTimestampSource, RESEARCH_ROWS } from "@bibliothecadao/eternum";
 import { type GameClientSetup, nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 
@@ -35,20 +36,6 @@ const Probe = ({ realm }: { realm: Parameters<typeof useResearchTree>[0] }) => {
 };
 
 const PRECISION = BigInt(RESOURCE_PRECISION);
-const XP_RULES = {
-  model: "ArmyProgressionRules",
-  key: "0xa1",
-  value: {
-    common_xp: 100,
-    game_id: 1,
-    reveal_xp: 2,
-    reveal_xp_per_depth: 1,
-    uncommon_xp: 250,
-    rare_xp: 500,
-    epic_xp: 1000,
-    legendary_xp: 2000,
-  },
-};
 /** Every row's price at every tier, the Shrine's at 2,000 Essence and 0 labor; each building tier 4,000 and 3,000. */
 const price = (row: number, tier: number) => ({
   model: "ResearchPrice",
@@ -61,13 +48,12 @@ const price = (row: number, tier: number) => ({
     labor: String((row === research.ROW_SHRINE ? 0n : 3_000n) * PRECISION),
   },
 });
-const ALL_PRICES = Array.from({ length: research.ROW_COUNT }, (_, row) =>
+const ALL_PRICES = RESEARCH_ROWS.map((row) =>
   [1, 2, 3, 4].map((tier) => price(row, tier)),
 ).flat();
 
 it("keeps the tree unknown while a price it reads is missing, then reads each node's exact price once it arrives", () => {
   const { store, realm } = realmBoard();
-  store.applyFacts([XP_RULES] as never);
   act(() =>
     root.render(
       <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
@@ -91,7 +77,7 @@ it("keeps the tree unknown while a price it reads is missing, then reads each no
 
 it("says the tree is on its way while a fact it reads is missing, and draws the tree once it arrives", () => {
   const { store, realm } = realmBoard();
-  store.applyFacts([XP_RULES, ...ALL_PRICES.filter(({ value }) => value.row !== research.ROW_SHRINE)] as never);
+  store.applyFacts([...ALL_PRICES.filter(({ value }) => value.row !== research.ROW_SHRINE)] as never);
   act(() =>
     root.render(
       <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
@@ -110,7 +96,7 @@ it("says the tree is on its way while a fact it reads is missing, and draws the 
 
 it("opens on the tree alone, to browse, and brings a node's choice only when its tile is tapped", () => {
   const { store, realm } = realmBoard();
-  store.applyFacts([XP_RULES, ...ALL_PRICES] as never);
+  store.applyFacts([...ALL_PRICES] as never);
   act(() =>
     root.render(
       <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>

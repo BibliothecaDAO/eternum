@@ -1,18 +1,4 @@
-import {
-  BiomeType,
-  Direction,
-  ETHEREAL_STRIDE,
-  getLayerNeighborHexes,
-  getDirectionBetweenAdjacentHexes,
-  getHexDistance,
-  getHexesWithinRadius,
-  getNeighborHexes,
-  type HexEntityInfo,
-  type HexPosition,
-  RESOURCE_PRECISION,
-  TileOccupier,
-  TroopType,
-} from "@bibliothecadao/types";
+import { BiomeType, Direction, ETHEREAL_STRIDE, getLayerNeighborHexes, getDirectionBetweenAdjacentHexes, getHexDistance, getHexesWithinRadius, getNeighborHexes, type HexEntityInfo, type HexPosition, RESOURCE_PRECISION, TileOccupier, TroopType } from "@bibliothecadao/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ArmyActionManager } from "./army-action-manager";
 import { configManager } from "./config-manager";
@@ -192,83 +178,6 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     expect(ActionPaths.getActionType(spireActionPath ?? [])).toBe(ActionType.SpireTravel);
   });
 
-  it("offers Use at a shrine or a well beside the army, where it stands and for no stamina, and no move onto either", () => {
-    const { manager, components, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } =
-      createTestSetup();
-    const [shrineHex, wellHex, openHex, dormantHex] = getNeighborHexes(oldFeltStart.col, oldFeltStart.row);
-    for (const [hex, occupierType] of [
-      [shrineHex, TileOccupier.Shrine],
-      [wellHex, TileOccupier.Well],
-      [dormantHex, TileOccupier.DormantSpire],
-    ] as const) {
-      components.TileOpt.set(
-        toTileEntityKey(false, hex.col, hex.row),
-        buildTileOptData({ ...hex, biome: 1, occupierType, occupierId: 900 + occupierType }),
-      );
-    }
-    // No stamina at all: a use costs none.
-    vi.spyOn(StaminaManager.prototype, "getStamina").mockReturnValue({
-      amount: 0n,
-      settled_at: 0,
-      remainder: 0,
-    } as any);
-
-    const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
-
-    for (const hex of [shrineHex, wellHex]) {
-      expect(actionPaths.get(ActionPaths.posKey(hex))).toEqual([
-        { hex: oldFeltStart, actionType: ActionType.Move },
-        { hex: { col: hex.col, row: hex.row }, actionType: ActionType.UseSite, staminaCost: 0 },
-      ]);
-    }
-    expect(actionPaths.get(ActionPaths.posKey(dormantHex))).toBeUndefined();
-    expect(actionPaths.getRefusals().get(ActionPaths.posKey(dormantHex))).toEqual({ reason: "occupied" });
-    expect(actionPaths.getRefusals().get(ActionPaths.posKey(openHex))).toEqual({ reason: "stamina", need: 1 });
-  });
-
-  it("tells a shrine or a well beyond the army's step to move next to it, near its routes or far off", () => {
-    const { manager, components, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } =
-      createTestSetup();
-    const openHex = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
-    // Two steps out, at the edge of the explored ring the army moves through, and one far off that no route reaches.
-    const nearWell = getNeighborHexes(openHex.col, openHex.row).find((hex) => getHexDistance(hex, oldFeltStart) === 2)!;
-    const farShrine = { col: oldFeltStart.col + 9, row: oldFeltStart.row };
-    for (const [hex, occupierType] of [
-      [nearWell, TileOccupier.Well],
-      [farShrine, TileOccupier.Shrine],
-    ] as const) {
-      setNestedMapValue(exploredHexes, hex.col - TEST_FELT_CENTER, hex.row - TEST_FELT_CENTER, 1 as BiomeType);
-      components.TileOpt.set(
-        toTileEntityKey(false, hex.col, hex.row),
-        buildTileOptData({ ...hex, biome: 1, occupierType, occupierId: 900 + occupierType }),
-      );
-    }
-
-    const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
-
-    for (const hex of [nearWell, farShrine]) {
-      expect(actionPaths.get(ActionPaths.posKey(hex))).toBeUndefined();
-      expect(actionPaths.getRefusals().get(ActionPaths.posKey(hex))).toEqual({ reason: "too-far" });
-    }
-  });
-
-  it("offers nothing at a shrine or a well where the game allows no site use, as the contract refuses it", () => {
-    const { manager, components, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } = createTestSetup(
-      {},
-      { InteractSite: false },
-    );
-    const [shrineHex] = getNeighborHexes(oldFeltStart.col, oldFeltStart.row);
-    components.TileOpt.set(
-      toTileEntityKey(false, shrineHex.col, shrineHex.row),
-      buildTileOptData({ ...shrineHex, biome: 1, occupierType: TileOccupier.Shrine, occupierId: 940 }),
-    );
-
-    const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
-
-    expect(actionPaths.get(ActionPaths.posKey(shrineHex))).toBeUndefined();
-    expect(actionPaths.getRefusals().get(ActionPaths.posKey(shrineHex))).toEqual({ reason: "occupied" });
-  });
-
   it("offers no move or explore onto a tile anything else holds, and no route across one, as the contract refuses both", () => {
     const { manager, components, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } =
       createTestSetup();
@@ -380,30 +289,6 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
 
     expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(targetHex)) ?? [])).toBe(ActionType.Attack);
-  });
-
-  it("offers no capture of a fixed race monument, while an ordinary unowned structure remains attackable", () => {
-    const { manager, components, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } =
-      createTestSetup();
-    const [monument, ordinary] = getNeighborHexes(oldFeltStart.col, oldFeltStart.row);
-    components.AspectHyperstructure.push({ game_id: 1, aspect: 1, entity_id: 900n, height: 2000 });
-    setNestedMapValue(structureHexes, monument.col - TEST_FELT_CENTER, monument.row - TEST_FELT_CENTER, {
-      id: 900,
-      owner: 0n,
-    } as HexEntityInfo);
-    setNestedMapValue(structureHexes, ordinary.col - TEST_FELT_CENTER, ordinary.row - TEST_FELT_CENTER, {
-      id: 901,
-      owner: 0n,
-    } as HexEntityInfo);
-    vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({
-      amount: 150n,
-      settled_at: 0,
-      remainder: 0,
-    } as any);
-    const paths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
-    expect(paths.get(ActionPaths.posKey(monument))).toBeUndefined();
-    expect(paths.getRefusals().get(ActionPaths.posKey(monument))).toEqual({ reason: "off-limits" });
-    expect(ActionPaths.getActionType(paths.get(ActionPaths.posKey(ordinary))!)).toBe(ActionType.Attack);
   });
 
   it("offers no attack on another player's structure where the game allows only unowned targets, and keeps a site", () => {

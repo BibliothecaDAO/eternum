@@ -76,8 +76,6 @@ describe("the selected tile panel", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 4, row: 5 } });
     expect(panelFor(TileOccupier.ExplorerPaladinT2)).toBe("army");
-    expect(panelFor(TileOccupier.Shrine)).toBe("tile");
-    expect(panelFor(TileOccupier.Well)).toBe("tile");
     useUIStore.getState().selectOnMap(null);
   });
 });

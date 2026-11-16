@@ -79,7 +79,7 @@ const ruinCard = (carried: [unknown, unknown, unknown], rewardDelivered = true) 
 
 const FULL = [
   { kind: "Ward", rank: 1 },
-  { kind: "Tome", rank: 2 },
+  { kind: "Plunder", rank: 2 },
   { kind: "Plunder", rank: 1 },
 ] as [unknown, unknown, unknown];
 
@@ -105,10 +105,10 @@ it("holds a full army's attack until the player picks the relic it replaces, the
   expect(host.textContent).toContain("Choose the relic to replace first");
   // No Attack can leave before the choice: the card's step says why instead.
   expect(button("Attack")?.disabled ?? true).toBe(true);
-  const replaceTome = host.querySelector<HTMLButtonElement>(
-    '[data-relic-replacement] button[aria-label="Replace Uncommon Tome"]',
+  const replacePlunder = host.querySelector<HTMLButtonElement>(
+    '[data-relic-replacement] button[aria-label="Replace Uncommon Plunder"]',
   )!;
-  act(() => replaceTome.click());
+  act(() => replacePlunder.click());
   await act(async () => button("Attack")!.click());
   expect(attack).toHaveBeenCalledTimes(1);
   expect(attack).toHaveBeenCalledWith(expect.objectContaining({ explorer_id: 201, structure_id: SITE, relic_slot: 1 }));
@@ -116,8 +116,8 @@ it("holds a full army's attack until the player picks the relic it replaces, the
 
 it("asks again when the chosen slot's relic changes, and sends only the fresh choice", async () => {
   const { host, attack, button, store } = ruinCard(FULL);
-  act(() => host.querySelector<HTMLButtonElement>('[aria-label="Replace Uncommon Tome"]')!.click());
-  // The chain moves a Legendary Ward into that slot: the choice named the Tome, so it no longer stands.
+  act(() => host.querySelector<HTMLButtonElement>('[aria-label="Replace Uncommon Plunder"]')!.click());
+  // The chain moves a Legendary Ward into that slot: the choice named the Plunder, so it no longer stands.
   act(() =>
     store.applyFacts([
       {
@@ -170,7 +170,7 @@ it("withholds the attack while the army's relics are not known, saying it reads 
 it("holds a choice only for the army and the ruin it was made for", () => {
   const { store } = ruinCard(FULL);
   const site = store.require("ExpeditionSite", { game_id: 1, entity_id: SITE });
-  const choice = { armyId: 201, ruinId: SITE, slot: 1 as const, held: { kind: "Tome" as const, rank: 2 } };
+  const choice = { armyId: 201, ruinId: SITE, slot: 1 as const, held: { kind: "Plunder" as const, rank: 2 } };
   const chosen = (ruinId: number, armyId: number) => {
     const state = ruinRelicState(store, { ...site, entity_id: BigInt(ruinId) }, armyId, 350, choice);
     return state.kind === "full" ? state.chosen : state.kind;
@@ -215,7 +215,7 @@ it("withholds the attack while what the ruin pays is still arriving, then asks a
   expect(host.querySelector("[data-relic-replacement]")).not.toBeNull();
   expect(host.textContent).toContain("Choose the relic to replace first");
   expect(button("Attack")?.disabled ?? true).toBe(true);
-  act(() => host.querySelector<HTMLButtonElement>('[aria-label="Replace Uncommon Tome"]')!.click());
+  act(() => host.querySelector<HTMLButtonElement>('[aria-label="Replace Uncommon Plunder"]')!.click());
   await act(async () => button("Attack")!.click());
   expect(attack).toHaveBeenCalledTimes(1);
   expect(attack).toHaveBeenCalledWith(expect.objectContaining({ explorer_id: 201, structure_id: SITE, relic_slot: 1 }));

@@ -5,10 +5,9 @@ vi.mock("@/hooks/context/game-context", () => ({
   useGame: () => ({
     setup: {
       store: {
-        get: (model: "ExplorerTroops" | "ArmyProgressionRules" | "SliceRules" | "GameRegistry" | "SettlementRules") =>
+        get: (model: "ExplorerTroops" | "SliceRules" | "GameRegistry" | "SettlementRules") =>
           ({
             ExplorerTroops: { owner: 1n, troops: {} },
-            ArmyProgressionRules: { reveal_xp: 2, reveal_xp_per_depth: 1 },
             SliceRules: { day_unit_seconds: 7200 },
             SettlementRules: { spacing: 100 },
             GameRegistry: { start_main_at: 0, seed: 1n },
@@ -71,10 +70,3 @@ describe("an order's wheat, held exactly against its charge", () => {
     expect(wheat.wait).toBeCloseTo(3, 6);
   });
 });
-
-it.each([
-  [2, 2],
-  [102, 3],
-  [202, 4],
-  [302, 5],
-])("previews the revealed tile's XP at row %s", (row, xp) => expect(useOrderAt({ col: 1, row })!.xp).toBe(xp));

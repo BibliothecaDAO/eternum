@@ -43,7 +43,6 @@ const boardRealm = (wheat: bigint) => {
         storage_step_bps: 5000,
         population_step_bps: 2500,
         ration_step: PRECISION / 4n,
-        training_gate_tier: 2,
       },
     }),
     ...upsert("0x3", { Structure: realm(0) }),

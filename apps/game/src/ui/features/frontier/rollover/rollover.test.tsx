@@ -51,7 +51,6 @@ describe("the day's end", () => {
           onRetry={vi.fn()}
           armies={3}
           troopsLost={6_021}
-          returned={{ sent: 470, fitted: 200 }}
           onContinue={onContinue}
         />,
       ),
@@ -88,7 +87,6 @@ describe("the day's end", () => {
             onRetry={vi.fn()}
             armies={armies}
             troopsLost={6_021}
-            returned={undefined}
             onContinue={vi.fn()}
           />,
         ),

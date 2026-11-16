@@ -562,61 +562,6 @@ describe("the build sheet", () => {
     expect(hutGives(2)).toBe(6 + 1);
   });
 
-  it("says what opens a locked training building, with the way there on the gold button", () => {
-    const { store, realm } = realmBoard();
-    const onResearch = vi.fn();
-    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-    const host = document.createElement("div");
-    document.body.append(host);
-    const root = createRoot(host);
-    const render = () =>
-      act(() =>
-        root.render(
-          <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
-            <BuildSheet realm={realm} plot={{ col: 11, row: 10 }} onResearch={onResearch} onClose={() => undefined} />
-          </GameProvider>,
-        ),
-      );
-    const card = (name: string) =>
-      [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")].find(
-        (card) => card.querySelector(".ui-card__title")?.textContent === name,
-      )!;
-    const gold = () => [...host.querySelectorAll("button")].at(-1)!;
-    render();
-    act(() => card("War hall").click());
-    // Training needs two Barracks purchases; no Barracks stands yet.
-    expect(host.querySelector('[role="status"]')!.textContent).toBe("Needs 2 more Barracks research purchases (0/2)");
-    expect(gold().textContent).toMatch(/^Build Barracks/);
-    act(() => gold().click());
-    expect(card("Barracks").getAttribute("aria-pressed")).toBe("true");
-
-    store.applyFacts([
-      fact("0x72", "StructureBuildings", {
-        game_id: 1,
-        entity_id: 7,
-        ...countsWith(BuildingType.ResourceKnightT1, 1),
-        population: { current: 3, max: 6 },
-      }),
-    ] as never);
-    render();
-    act(() => card("War hall").click());
-    expect(gold().textContent).toBe("Research");
-    act(() => gold().click());
-    expect(onResearch).toHaveBeenCalledOnce();
-
-    // Charge I counts toward the gate and leaves one tier to buy.
-    store.applyFacts([
-      fact("0x77", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: String(1n << 14n) }),
-    ] as never);
-    render();
-    act(() => card("War hall").click());
-    expect(host.querySelector('[role="status"]')!.textContent).toBe("Needs 1 more Barracks research purchase (1/2)");
-    expect(card("War hall").closest(".ui-card")!.querySelector(".ui-chip")!.textContent).toBe("1/2 research");
-    expect(gold().textContent).toBe("Research");
-    act(() => root.unmount());
-    host.remove();
-  });
-
   it("says how much labor a building needs against what is held, and sends nobody to the map for it", () => {
     const { store, realm } = realmBoard();
     labor(store, 0n);

@@ -353,10 +353,10 @@ it("matches native refunds and cooldowns when an attack wipes the defender or ne
     };
     expect(resolveExchange(attacker, { ...attacker, count: 1_000_000_000n }, context, rules)).toMatchObject({
       ok: true,
-      attackerLoss: 0n,
+      attackerLoss: shielded ? 0n : 1_000_000_000n,
       defenderLoss: shielded ? 0n : 1_000_000_000n,
       attacker: {
-        count: 1000_000_000_000n,
+        count: (shielded ? 1000n : 999n) * 1_000_000_000n,
         stamina: { amount: shielded ? 90n : 100n },
         battle_cooldown_end: context.timestamp + (shielded ? 100 : 0),
       },

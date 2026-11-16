@@ -87,7 +87,7 @@ it("resolves effects through the actual realm ID inside a home namespace", () =>
   ]);
   expect(readSiteEffects(store, site)).toEqual({ known: { beastBps: 7500, spoilsPercent: 200 } });
   expect(getGuardsByStructure(structure, store)?.[0].troops.count).toBe(825_000_000_000n);
-  expect(readSiteReward(store, site).known).toMatchObject({ xp: 246, reward: { amount: 1_650_000_000_000n } });
+  expect(readSiteReward(store, site).known).toMatchObject({ reward: { amount: 1_650_000_000_000n } });
 });
 
 it("stops Blood Moon at the recorded quorum while preserving Pale Moon and base losses", () => {
@@ -102,10 +102,9 @@ it("stops Blood Moon at the recorded quorum while preserving Pale Moon and base 
   expect(readSiteCard(store, site, structure, SITE_TILE, null).guard?.count).toBe(400);
 });
 
-it("uses Spoils for the card and map reward, but a receipt keeps its exact earned XP", () => {
+it("uses Spoils for the preview while receipts retain the exact credited reward", () => {
   const { store, site, structure } = effectSite(false, false, true);
   expect(readSiteCard(store, site, structure, SITE_TILE, null)).toMatchObject({
-    xp: 246,
     payout: { resourceId: ResourcesIds.Labor, amount: 1650, fits: 1650 },
   });
   expect(
@@ -115,11 +114,11 @@ it("uses Spoils for the card and map reward, but a receipt keeps its exact earne
     {
       model: "ExpeditionSite",
       key: "0x72",
-      value: { ...site, clear: { explorer_id: 201n, home_id: 7n, reward: null, } },
+      value: { ...site, clear: { explorer_id: 201n, home_id: 7n, reward: { resource_type: ResourcesIds.Labor, amount: 1_980_000_000_000n } } },
     },
   ]);
   setBlockTimestampSource(() => 950);
-  expect(readClearedSite(store, 1, SITE_TILE)?.xp).toBe(344);
+  expect(readClearedSite(store, 1, SITE_TILE)?.site.clear?.reward).toEqual({ resource_type: ResourcesIds.Labor, amount: 1_980_000_000_000n });
 });
 
 it("leaves the Deep unchanged and refuses unknown effect facts", () => {
@@ -127,7 +126,7 @@ it("leaves the Deep unchanged and refuses unknown effect facts", () => {
   const deep = { ...site, row: 32 };
   store.applyFacts([{ model: "ExpeditionSite", key: "0x72", value: deep }]);
   expect(getGuardsByStructure(structure, store)?.[0].troops.count).toBe(1_100_000_000_000n);
-  expect(readSiteReward(store, deep).known?.xp).toBe(205);
+  expect(readSiteReward(store, deep).known?.reward).toEqual({ resourceType: ResourcesIds.Labor, amount: 1_375_000_000_000n });
   store.applyFacts([
     { model: "ExpeditionSite", key: "0x72", value: site },
     { model: "HomeAspect", key: "0xa002", value: null },
@@ -136,16 +135,14 @@ it("leaves the Deep unchanged and refuses unknown effect facts", () => {
   expect(getGuardsByStructure(structure, store)).toBeUndefined();
 });
 
-it("composes Spoils with Plunder and Tome at the selected attack second", () => {
+it("composes Spoils with Plunder at the selected attack second", () => {
   const { store, site, structure, attack } = effectSite(false, false, true);
   const action = { ...attack({ col: 41, row: 12, alt: false }), timestamp: 450 };
-  store.applyFacts([relicEffectFact("Plunder", 1, 500), relicEffectFact("Tome", 1, 500)]);
+  store.applyFacts([relicEffectFact("Plunder", 1, 500)]);
   expect(readSiteCard(store, site, structure, SITE_TILE, action)).toMatchObject({
-    xp: 344,
     payout: { amount: 1980, fits: 1980 },
   });
   expect(readSiteCard(store, site, structure, SITE_TILE, { ...action, timestamp: 500 })).toMatchObject({
-    xp: 246,
     payout: { amount: 1650, fits: 1650 },
   });
 });

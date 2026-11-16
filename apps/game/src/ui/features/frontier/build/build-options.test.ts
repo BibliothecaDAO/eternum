@@ -80,7 +80,7 @@ describe("Frontier's build options", () => {
     // research.cairo names each board building by its category (FARM, WORKSHOP, …): a building it adds is offered,
     // or this fails (the catalog rule, audit 10-27 F7), never a hand-written list missing it.
     const named = Object.entries(nativeResearchConstants)
-      .filter(([name]) => Object.hasOwn(nativeResearchConstants, `ROW_${name}`))
+      .filter(([name]) => !name.startsWith("ROW_") && !name.startsWith("CHOICE_") && !name.endsWith("_LEVEL"))
       .map(([, category]) => category)
       .sort((a, b) => a - b);
     const offered = readBuildOptions(store, realm, true, 350)!.map(({ category }) => category);
@@ -93,26 +93,15 @@ describe("Frontier's build options", () => {
     expect(readBuildOptions(store, realm, true, 350)).toBeUndefined();
   });
 
-  it("opens training after Barracks tiers, trained at the training building’s own tier", () => {
+  it("offers Logistics training without a Barracks research gate", () => {
     const { store, realm } = realmBoard();
-    const warHall = () =>
-      readBuildOptions(store, realm, true, 350)!.find(({ category }) => category === BuildingType.WarHall)!;
-    const gate = store.require("BoardRules", { game_id: 1 }).training_gate_tier;
-    expect(warHall()).toMatchObject({
-      standing: { gate, bought: 0 },
-      effect: { kind: "trains", attribute: "Battle" },
+    const supplyYard = () =>
+      readBuildOptions(store, realm, true, 350)!.find(({ category }) => category === BuildingType.SupplyYard)!;
+    expect(supplyYard()).toMatchObject({
+      standing: "open",
+      effect: { kind: "trains", attribute: "Logistics" },
       tier: 1,
     });
-    const learn = (learned: bigint) =>
-      store.applyFacts([
-        { model: "RealmKnowledge", key: "0x77", value: { game_id: 1, structure_id: realm.entity_id, learned } },
-      ] as never);
-    // Charge I does not yet open training.
-    learn(1n << 14n);
-    expect(warHall().standing).toEqual({ gate: 2, bought: 1 });
-    // Charge II meets the two-purchase gate.
-    learn(2n << 14n);
-    expect(warHall().standing).toBe("open");
   });
 });
 

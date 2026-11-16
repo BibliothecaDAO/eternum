@@ -33,11 +33,11 @@ describe("the interface that opens as you play", () => {
     const barracks = new Set<OpeningMoment>(["launch", "barracks"]);
     expect(partShown(barracks, "troops-store")).toBe(true);
     expect(partShown(barracks, "building-list")).toBe(true);
-    expect(partShown(barracks, "army-xp")).toBe(false);
+    expect(partShown(barracks, "essence-store")).toBe(false);
   });
 
   it("keeps a part earned on an earlier day: only the moment counts, not what is held now", () => {
-    expect(partShown(new Set<OpeningMoment>(["essence"]), "army-xp")).toBe(true);
+    expect(partShown(new Set<OpeningMoment>(["essence"]), "essence-store")).toBe(true);
   });
 
   it("shows every part with Show everything, outside the game's HUD or while watching", () => {
@@ -54,7 +54,6 @@ describe("the interface that opens as you play", () => {
     expect(line("launch")).toContain("This is your Realm. Build on the lit plot, then send an army into the mist.");
     expect(line("barracks")).toContain("A Barracks raises 100 Knights an hour. Knights fill your armies.");
     expect(line("guard")).toContain("Send 150% of the guard's troops to win.");
-    expect(line("essence")).toContain("Armies earn XP by fighting. Enough XP gives a skill point.");
     expect(line("essence")).toContain("Essence buys research and lores.");
     expect(line("well-lore")).toContain("Your armies can now find wells.");
     expect(line("shrine-lore")).toContain("Your armies can now find shrines.");

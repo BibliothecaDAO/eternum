@@ -4,8 +4,8 @@ import { usePlayerNames } from "@/hooks/use-player-profile";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { storyMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon } from "@/ui/design-system/icon";
-import { type RankedWords, XP } from "@/ui/design-system/kit/words";
-import { formatClockTime, formatShort } from "@bibliothecadao/types";
+import { type RankedWords } from "@/ui/design-system/kit/words";
+import { formatClockTime } from "@bibliothecadao/types";
 
 import { readFeedStory, type ToldReading } from "./feed-reading";
 import { useStoryOpener } from "./story-feed-row";
@@ -59,17 +59,7 @@ export const FeedLine = ({ story, own = false }: { story: ProcessedStoryEvent; o
           {reading.reward.amountText}
         </span>
       )}
-      {"clearXp" in reading && reading.clearXp !== undefined && <ClearXp xp={reading.clearXp} />}
     </div>
-  );
-};
-
-/** The XP a clear paid, at the row's end beside what it paid, as the site's receipt says it; none until it is known. */
-const ClearXp = ({ xp }: { xp: number }) => {
-  return (
-    <span className="ui-feed-line__reward" data-feed-xp>
-      {formatShort(xp, { signed: true })} {XP}
-    </span>
   );
 };
 

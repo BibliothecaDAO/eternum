@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 // @vitest-environment jsdom
+// @vitest-environment jsdom
+// @vitest-environment jsdom
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
@@ -29,16 +31,15 @@ vi.mock("@bibliothecadao/eternum", async (original) => {
 const { buildStoryEventPresentation } = await import("@bibliothecadao/eternum");
 const { ResourcesIds } = await import("@bibliothecadao/types");
 const { useArmyRevealYield } = await import("./frontier-reveal-yield");
-const { ArmyDetail, useArmyStep } = await import("./army/army-panel");
-const { readArmyDetail } = await import("./army/army-detail");
+const { ArmyDetail } = await import("./army/army-panel");
 const { EARLY_ARMY } = await import("./research/progression-fixture");
 
 const PanelOverTheReading = () => {
-  const army = readArmyDetail({
+  const army = {
     ...EARLY_ARMY,
     revealYield: useArmyRevealYield({ explorerId: 7, troopsFact: {} } as never),
-  });
-  return <ArmyDetail army={army} sending={false} step={useArmyStep(army.available)} />;
+  };
+  return <ArmyDetail army={army} />;
 };
 
 it("writes a reveal's fractional reward the same in the army panel and in the Log", () => {
@@ -83,11 +84,9 @@ it("writes the same 57.6 reveal on Today's line, and keeps its fraction until th
     viewerAddress: null,
   } as never);
   const { frontierDay } = await import("./deploy/deploy-fixture");
-  const { frontierArmyRules } = await import("./army/progression-rules-fixture");
   const { store } = frontierDay();
-  store.applyFacts([]);
   expect(dayLogLine({ story: "ExplorationReward", storyPayload, presentation } as never, store)).toBe(
-    "+58 Essence, +2 XP",
+    "+58 Essence",
   );
 
   const fiveReveals = Array.from({ length: 5 }, () => ({

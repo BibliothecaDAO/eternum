@@ -1,14 +1,8 @@
 // @vitest-environment jsdom
+// @vitest-environment jsdom
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
-import {
-  buildStoryEventPresentation,
-  configManager,
-  expeditionDepth,
-  readExpeditionRules,
-  siteDisplayName,
-  siteClearXp,
-} from "@bibliothecadao/eternum";
+import { buildStoryEventPresentation, configManager, expeditionDepth, readExpeditionRules, siteDisplayName } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { FALLEN_REALM_DEPTHS, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -307,7 +301,7 @@ it("keeps a site's guard once the player's map lets the site go, as when their a
   expect(paintings()).toEqual(["attack", "beast-troll"]);
 });
 
-it("says a clear's XP at the row's end beside what it paid, as the site's receipt does, near or far", async () => {
+it("reads a clear's credited resources near or far without retired progression rewards", async () => {
   const clear = (site: number, xp?: number) =>
     story(DJIZUS, "SitePayout", {
       xp,
@@ -319,10 +313,9 @@ it("says a clear's XP at the row's end beside what it paid, as the site's receip
     [...host.querySelectorAll("[data-feed-line] .ui-feed-line__reward")].map((each) => each.textContent);
   // The camp the map holds: 1,400 guards at the start pay floor(sqrt(25 × 1,400) / 2) = 93 base XP, scaled by Ethereal I to 139.
   const near = game.store.require("ExpeditionSite", { game_id: 1, entity_id: CAMP });
-  expect(siteClearXp(game.store, near)).toBe(139);
   const read = await draw(clear(CAMP, 139), true);
   expect(read.words).toBe(`djizus cleared ${siteDisplayName(CAMP)}`);
-  expect(xps()).toEqual(["+700", "+139 XP"]);
+  expect(xps()).toEqual(["+700"]);
   // One the map does not hold, from Herald's row of that site.
   const far = 4_400;
   herald.set(far, {
@@ -336,7 +329,7 @@ it("says a clear's XP at the row's end beside what it paid, as the site's receip
     clear: null,
   });
   await draw(clear(far, 129));
-  expect(xps()).toEqual(["+700", "+129 XP"]);
+  expect(xps()).toEqual(["+700"]);
   // Neither holds it: what it paid alone, never a guessed XP.
   await draw(clear(4_401));
   expect(xps()).toEqual(["+700"]);

@@ -17,7 +17,7 @@ import { ArmyRelicSlots } from "./army-relic-slots";
 let root: ReturnType<typeof createRoot> | null = null;
 afterEach(() => act(() => root?.unmount()));
 
-/** Army 201 carrying an Uncommon Blade and a Common Tome, a Rare Ward running until second 2,800, at second 1,000. */
+/** Army 201 carrying an Uncommon Blade and a Common Plunder, a Rare Ward running until second 2,800, at second 1,000. */
 const armyWithRelics = () => {
   const { store } = campBeside();
   configManager.setActiveGame(1, 7);
@@ -30,7 +30,7 @@ const armyWithRelics = () => {
         explorer_id: 201,
         first: { kind: "Blade", rank: 2 },
         second: null,
-        third: { kind: "Tome", rank: 1 },
+        third: { kind: "Plunder", rank: 1 },
       },
     },
     {
@@ -41,7 +41,7 @@ const armyWithRelics = () => {
     {
       model: "ArmyRelicEffect",
       key: "0xa3",
-      value: { game_id: 1, explorer_id: 201, kind: "Tome", rank: 2, expires_at: 900 },
+      value: { game_id: 1, explorer_id: 201, kind: "Plunder", rank: 2, expires_at: 900 },
     },
   ] as never);
   return store;
@@ -66,15 +66,15 @@ const draw = (store: ReturnType<typeof armyWithRelics>) => {
 
 it("shows the relics running with their time left, then the three slots with what each relic does", () => {
   const { host } = draw(armyWithRelics());
-  // The Tome's effect ended at second 900: only the Ward runs, 30 minutes left.
+  // The Plunder's effect ended at second 900: only the Ward runs, 30 minutes left.
   expect(host.querySelector("[data-relics-running]")?.textContent).toBe("Rare Ward · 30m left");
   const rows = [...host.querySelectorAll("[data-army-relics] .ui-row")].map((row) => row.textContent);
-  expect(rows).toEqual(["Uncommon Blade+20% damage dealtSwitch on", "Empty slot", "Common Tome+40% XPSwitch on"]);
+  expect(rows).toEqual(["Uncommon Blade+20% damage dealtSwitch on", "Empty slot", "Common Plunder+20% labor and Essence from a cleared siteSwitch on"]);
 });
 
 it("switches a relic on for free, naming its slot and the id the contract decodes", async () => {
   const { host, apply } = draw(armyWithRelics());
-  const button = host.querySelector<HTMLButtonElement>('button[aria-label="Switch on Common Tome"]')!;
+  const button = host.querySelector<HTMLButtonElement>('button[aria-label="Switch on Common Plunder"]')!;
   await act(async () => button.click());
   expect(apply).toHaveBeenCalledTimes(1);
   expect(apply).toHaveBeenCalledWith(expect.objectContaining({ entity_id: 201, relic_resource_id: 21, relic_slot: 2 }));

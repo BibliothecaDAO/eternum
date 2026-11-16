@@ -12,7 +12,7 @@ import { canResearchNow, readResearchTree } from "../research/research-tree";
 import { secondsUntilHeld } from "./army-order";
 import { ArmyRow } from "./army-row";
 import { OpenSlotRow } from "./army-row";
-import { ArmyToken, OpenSlot, xpLine } from "./army-token";
+import { ArmyToken, OpenSlot } from "./army-token";
 import { useChatKey } from "./chat-key";
 import { dayClock, dayBounds, endedDay, seasonDay } from "./day-clock";
 import { HudBands } from "./hud-bands";
@@ -219,28 +219,7 @@ describe("the army token", () => {
     ]);
   });
 
-  it("says what the XP buys next on its badge's tooltip, and the balance alone once nothing is left to buy", () => {
-    expect(xpLine(8, { at: 100, rank: 1, share: 0.08 })).toEqual(["XP 8 of 100 · next ", { rank: 1 }, " point"]);
-    expect(xpLine(260, { at: 900, rank: 4, share: 0.2 })).toEqual(["XP 260 of 900 · next ", { rank: 4 }, " point"]);
-    expect(xpLine(2_000, undefined)).toBe("XP 2,000");
-    const markup = renderToStaticMarkup(
-      <ArmyToken
-        label="Army 1"
-        art={undefined}
-        stamina={undefined}
-        troops={154}
-        selected={false}
-      />,
-    );
-    // No XP number: a ring around the portrait, 8% filled, with the tip's plain words and its rank for the gem.
-    expect(markup).toContain('aria-label="XP: 8% of the way to the next skill point"');
-    expect(markup).toContain('data-tip="XP 8 of 100 · next I point"');
-    expect(markup).toContain(
-      `data-tip-ranks="${JSON.stringify(["XP 8 of 100 · next ", { rank: 1 }, " point"]).replaceAll('"', "&quot;")}"`,
-    );
-  });
-
-  it("reads an army on a desktop's list: its troops, its stamina exact, its XP as a ring with what it buys next", () => {
+  it("reads an army on a desktop's list: its troops, its stamina exact", () => {
     const onPick = vi.fn();
     act(() =>
       root.render(
@@ -257,11 +236,9 @@ describe("the army token", () => {
     );
     // No XP number: the ring around the portrait says the way to the next point.
     expect(host.textContent).toBe("22Army 21 troop90/150");
-    expect(host.querySelector('[aria-label="XP: 25% of the way to the next skill point"]')).not.toBeNull();
     // The meter reads the stamina itself, as the phone's token does, never a rounded share of it.
     const meter = host.querySelector('[role="meter"]')!;
     expect([meter.getAttribute("aria-valuenow"), meter.getAttribute("aria-valuemax")]).toEqual(["90", "150"]);
-    expect(host.querySelector('[data-tip="XP 25 of 100 · next I point"]')).not.toBeNull();
     // The button is named for the army alone, as a phone's token is, so a click by name finds it.
     const row = host.querySelector<HTMLButtonElement>('button[aria-label="Army 2"]')!;
     expect(row.getAttribute("aria-pressed")).toBe("true");

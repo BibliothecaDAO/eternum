@@ -48,10 +48,9 @@ export interface BuildOption {
   effect: BuildEffect;
   populationCost: number;
   /**
-   * Whether it can rise now: a training building is unique on the board and opens when purchases across both
-   * Charge tiers reach the board's gate (the contract's assert_board_category).
+   * Whether it can rise now: Supply yard is unique, while Scout production requires City.
    */
-  standing: "open" | "built" | { gate: number; bought: number } | { level: number };
+  standing: "open" | "built" | { level: number };
   /** What it adds to the realm's wheat an hour, and the realm's wheat an hour once it stands (unknown while that is). */
   wheat: { change: number; after: number | undefined };
 }

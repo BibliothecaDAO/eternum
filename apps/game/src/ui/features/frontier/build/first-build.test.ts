@@ -19,5 +19,5 @@ it("offers the first Barracks alone while it can be raised, and every option onc
 it("keeps the Hut reachable for a realm that has no room for the Barracks, with no Show everything", () => {
   expect(disclosedBuildOptions([hut, barracks], false, 2)).toEqual([hut, barracks]);
   expect(disclosedBuildOptions([hut, barracks], false, undefined)).toEqual([hut, barracks]);
-  expect(disclosedBuildOptions([hut, option(FIRST_BUILD, { gate: 3, bought: 1 })], false, 12)).toHaveLength(2);
+  expect(disclosedBuildOptions([hut, option(FIRST_BUILD, "built")], false, 12)).toHaveLength(2);
 });

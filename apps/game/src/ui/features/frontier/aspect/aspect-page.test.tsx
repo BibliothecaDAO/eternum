@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { expiredRaceScenario, raceScenario } from "@/lab/game/race-scenario";
 import { rowsOf, wire } from "@/lab/game/lab-chain";
-import { NativeFactStore, readRaceBoard, readRaceMonument } from "@bibliothecadao/eternum/game-client";
-import { configManager, getHyperstructureProgress, getStructureName } from "@bibliothecadao/eternum";
+import { NativeFactStore, readRaceBoard } from "@bibliothecadao/eternum/game-client";
+import { configManager, getStructureName } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { aspectPage } from "./aspect-page";
 
@@ -55,17 +55,12 @@ describe("the race board from native facts", () => {
     expect(page.own?.bar).toEqual({ charge: 300, threshold: 1500 });
   });
 
-  it("recovers the exact board and the monument's height after a complete snapshot reload", () => {
+  it("recovers the exact board and each Aspect's height after a complete snapshot reload", () => {
     const { store, read, startsAt, player } = fixture();
     const restored = new NativeFactStore();
     restored.applyFacts(rowsOf(store).map((fact) => ({ ...fact, value: wire(fact.value) })));
     restored.setSnapshot({ gameId: 1, actor: player, timestamp: startsAt, complete: true });
     expect(readRaceBoard(restored, 1, 7n, startsAt)).toEqual(read());
-    expect(readRaceMonument(restored, 1, 901)?.aspect).toBe(1);
-    expect(getHyperstructureProgress(901, restored)).toEqual({ percentage: 52, initialized: true, completed: false });
-    expect(getStructureName(restored.require("Structure", { game_id: 1, entity_id: 901 }), restored).name).toBe(
-      "Might Hyperstructure",
-    );
   });
 
   it("reads the winner and both dates after early finish without future guard projections", () => {
@@ -81,7 +76,6 @@ describe("the race board from native facts", () => {
     expect(game.end_at).toBeLessThan(game.scheduled_end_at);
     expect(board.own!.members.every((member) => member.guards.length === 0)).toBe(true);
     expect(aspectPage(board, () => "Realm").race?.result?.winner).toBe("Harmony");
-    expect(getHyperstructureProgress(902, store)).toEqual({ percentage: 100, initialized: true, completed: true });
   });
 
   it("accepts a known zero receipt only for an existing member and keeps incomplete snapshots unknown", () => {
