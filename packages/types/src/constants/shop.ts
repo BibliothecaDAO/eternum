@@ -30,12 +30,15 @@ const LORDS_STEP = 5;
 
 /**
  * Whole LORDS for an amount in wei, rounded up to the next multiple of 5 so the shop never undercharges and a price ends
- * in 5 or 0. The amount is a market quote already, so only the rounding lives here.
+ * in 5 or 0. The amount is a market quote already, so only the rounding lives here. A result a number cannot hold exactly
+ * is refused, never rounded again by the conversion.
  */
 export const roundUpLords = (wei: bigint): number => {
   if (wei <= 0n) throw new Error(`LORDS amount ${wei} is not positive`);
   const step = BigInt(LORDS_STEP) * 10n ** 18n;
-  return Number(((wei + step - 1n) / step) * BigInt(LORDS_STEP));
+  const lords = ((wei + step - 1n) / step) * BigInt(LORDS_STEP);
+  if (lords > BigInt(Number.MAX_SAFE_INTEGER)) throw new Error(`LORDS amount ${lords} is more than a number holds`);
+  return Number(lords);
 };
 
 /**

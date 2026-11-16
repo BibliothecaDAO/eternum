@@ -111,6 +111,10 @@ async function getStarknetPrices(): Promise<Record<string, number>> {
   );
 }
 
+/**
+ * The treasury across Ethereum and Starknet, or a rejection: an aggregate missing a chain's balances or a token's price
+ * is never returned as the total, so no surface shows an understated treasury as real.
+ */
 export async function getTreasuryBalance(): Promise<TokenTotals> {
   function getAddressUrl(address: string) {
     return `https://api.ethplorer.io/getAddressInfo/${address}?apiKey=${import.meta.env.VITE_ETHPLORER_APIKEY}&chainId=1`;
@@ -141,20 +145,15 @@ export async function getTreasuryBalance(): Promise<TokenTotals> {
   const ethFetchPromise = Promise.all(daoAddresses.map((addr) => fetch(getAddressUrl(addr)).then((r) => r.json())));
 
   const starknetFetchPromise = (async () => {
-    try {
-      const [prices, ...balances] = await Promise.all([
-        getStarknetPrices(),
-        ...Object.entries(STARKNET_TOKENS).map(async ([symbol, config]) => {
-          const raw = await fetchStarknetBalance(config.address, STARKNET_DAO_WALLET);
-          const amount = Number(raw) / Math.pow(10, config.decimals);
-          return { symbol, amount };
-        }),
-      ]);
-      return { prices: prices as Record<string, number>, balances: balances as { symbol: string; amount: number }[] };
-    } catch (e) {
-      console.warn("[getTreasuryBalance] Starknet fetch failed, skipping:", e);
-      return null;
-    }
+    const [prices, ...balances] = await Promise.all([
+      getStarknetPrices(),
+      ...Object.entries(STARKNET_TOKENS).map(async ([symbol, config]) => {
+        const raw = await fetchStarknetBalance(config.address, STARKNET_DAO_WALLET);
+        const amount = Number(raw) / Math.pow(10, config.decimals);
+        return { symbol, amount };
+      }),
+    ]);
+    return { prices: prices as Record<string, number>, balances: balances as { symbol: string; amount: number }[] };
   })();
 
   const [ethData, starknetData] = await Promise.all([ethFetchPromise, starknetFetchPromise]);
@@ -181,14 +180,12 @@ export async function getTreasuryBalance(): Promise<TokenTotals> {
   });
 
   // ── Merge Starknet balances ──
-  if (starknetData) {
-    const { prices, balances } = starknetData;
-    for (const { symbol, amount } of balances) {
-      if (symbol in totals) {
-        const key = symbol as keyof TokenTotals;
-        totals[key].amount += amount;
-        totals[key].usdValue += amount * (prices[symbol] ?? 0);
-      }
+  const { prices, balances } = starknetData;
+  for (const { symbol, amount } of balances) {
+    if (symbol in totals) {
+      const key = symbol as keyof TokenTotals;
+      totals[key].amount += amount;
+      totals[key].usdValue += amount * prices[symbol]!;
     }
   }
 

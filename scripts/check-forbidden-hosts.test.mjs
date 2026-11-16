@@ -54,20 +54,27 @@ test("first-party endpoints and unrelated patches/dependencies stay prohibited",
   );
 });
 
-test("a price read from CoinGecko's API is refused wherever it is fetched; links to its pages and docs are not", () => {
-  const priceHost = ["api", "coingecko", "com"].join(".");
+test("CoinGecko is refused in code however a host is built from it; its web links and docs are not", () => {
+  const name = ["coin", "gecko"].join("");
   const result = checkFixture({
-    "apps/realms/server/price.ts": `fetch("https://${priceHost}/api/v3/simple/price");`,
-    "apps/web/src/treasury.ts": `fetch("https://pro-${priceHost}/api/v3/simple/price");`,
-    "apps/game/src/community.ts": `const href = "https://www.coingecko.com/en/coins/lords";`,
-    "docs/notes.md": `the old reader called ${priceHost}`,
+    "apps/realms/server/contiguous.ts": `fetch("https://api.${name}.com/api/v3/simple/price");`,
+    "apps/realms/server/pro.ts": `fetch("https://pro-api.${name}.com/api/v3/simple/price");`,
+    "apps/realms/server/split.ts": `fetch("https://api." + "${name}.com/api/v3/simple/price");`,
+    "apps/web/src/config.ts": `export const market = { subdomain: "api", host: "${name}.com" };`,
+    "apps/web/src/upper.tsx": `const host = ["API", "${name.toUpperCase()}", "COM"].join(".");`,
+    "apps/game/src/shell/community.ts": `const href = "https://www.${name}.com/en/coins/lords";`,
+    "docs/notes.md": `the old reader called api.${name}.com`,
+    [`apps/game/public/tokens/brand-${name}.svg`]: "<svg/>",
   });
   assert.equal(result.ok, false);
   assert.deepEqual(
     result.violations.map(({ path, rule }) => ({ path, rule })).sort((a, b) => a.path.localeCompare(b.path)),
     [
-      { path: "apps/realms/server/price.ts", rule: "forbidden-price-source" },
-      { path: "apps/web/src/treasury.ts", rule: "forbidden-price-source" },
+      { path: "apps/realms/server/contiguous.ts", rule: "forbidden-price-source" },
+      { path: "apps/realms/server/pro.ts", rule: "forbidden-price-source" },
+      { path: "apps/realms/server/split.ts", rule: "forbidden-price-source" },
+      { path: "apps/web/src/config.ts", rule: "forbidden-price-source" },
+      { path: "apps/web/src/upper.tsx", rule: "forbidden-price-source" },
     ],
   );
 });

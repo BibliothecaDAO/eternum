@@ -9,8 +9,8 @@ export const avnuQuote: LordsQuoteReader = (cents) => avnuLordsWeiFor(cents);
 
 /**
  * The one pricing of a LORDS amount: `cents` dollars-first, quoted by the market at the moment of asking, in whole LORDS
- * rounded up to a multiple of 5. Null while the market cannot quote, so no amount is offered and no payment starts:
- * there is no stored price to fall back on.
+ * rounded up to a multiple of 5. Null while the market cannot quote, or quotes an amount a number cannot hold: no amount is
+ * offered, and there is no stored price to fall back on.
  */
 export const quoteLords = async (cents: number, read: LordsQuoteReader): Promise<number | null> => {
   try {

@@ -11,20 +11,85 @@ const USDC_PER_CENT = 10_000n;
 
 const normalized = (address: string) => `0x${BigInt(address).toString(16)}`;
 
+/** AVNU must answer within this, headers and body together; a stalled read is "no answer", never a pending one. */
+const READ_DEADLINE_MS = 10_000;
+/** Starknet mainnet, as AVNU names it in a quote. */
+const MAINNET_CHAIN_ID = "0x534e5f4d41494e";
+
 const fetchJson = async (
   get: typeof fetch,
   url: string,
   init?: RequestInit,
 ): Promise<unknown> => {
-  const response = await get(url, { ...init, redirect: "manual" });
-  if (!response.ok)
-    throw new Error(`AVNU ${new URL(url).pathname}: ${response.status}`);
-  return response.json();
+  const path = new URL(url).pathname;
+  const abort = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      abort.abort();
+      reject(new Error(`AVNU ${path}: no answer in ${READ_DEADLINE_MS} ms`));
+    }, READ_DEADLINE_MS);
+  });
+  const read = async () => {
+    const response = await get(url, {
+      ...init,
+      redirect: "manual",
+      signal: abort.signal,
+    });
+    if (!response.ok) throw new Error(`AVNU ${path}: ${response.status}`);
+    return response.json();
+  };
+  try {
+    return await Promise.race([read(), deadline]);
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+const hexAmount = (value: unknown): bigint | null =>
+  typeof value === "string" && /^0x[0-9a-f]+$/i.test(value)
+    ? BigInt(value)
+    : null;
+
+const isAddress = (value: unknown, expected: string) =>
+  hexAmount(value) !== null &&
+  normalized(String(value)) === normalized(expected);
+
+interface Quote {
+  sellTokenAddress?: unknown;
+  sellAmount?: unknown;
+  buyTokenAddress?: unknown;
+  buyAmount?: unknown;
+  chainId?: unknown;
+  routes?: unknown;
+}
+
+/**
+ * The LORDS wei of an answer that sells LORDS on Starknet mainnet for exactly `buyAmount` of USDC through at least one
+ * route, or null: an answer that does not buy the dollars asked gives no amount.
+ */
+const lordsSoldFor = (quotes: unknown, buyAmount: bigint): bigint | null => {
+  const quote = Array.isArray(quotes)
+    ? (quotes[0] as Quote | undefined)
+    : undefined;
+  if (typeof quote !== "object" || quote === null) return null;
+  const sellAmount = hexAmount(quote.sellAmount);
+  const buysTheDollarsAsked =
+    isAddress(quote.sellTokenAddress, LORDS_ADDRESS) &&
+    isAddress(quote.buyTokenAddress, USDC_ADDRESS) &&
+    hexAmount(quote.buyAmount) === buyAmount &&
+    quote.chainId === MAINNET_CHAIN_ID &&
+    Array.isArray(quote.routes) &&
+    quote.routes.length > 0;
+  return buysTheDollarsAsked && sellAmount !== null && sellAmount > 0n
+    ? sellAmount
+    : null;
 };
 
 /**
  * What `cents` costs in LORDS wei right now: AVNU's quote to sell LORDS for exactly that many dollars of USDC. The
- * quote's price impact and fees are part of the amount, so paying it covers the dollars. Throws when AVNU has no quote.
+ * quote's price impact and fees are part of the amount, so paying it covers the dollars. Throws when AVNU has no quote
+ * that buys exactly those dollars.
  */
 export const avnuLordsWeiFor = async (
   cents: number,
@@ -37,17 +102,13 @@ export const avnuLordsWeiFor = async (
     buyAmount: `0x${buyAmount.toString(16)}`,
     size: "1",
   });
-  const quotes = (await fetchJson(get, `${QUOTES_URL}?${query}`)) as {
-    sellAmount?: unknown;
-  }[];
-  const sellAmount = quotes[0]?.sellAmount;
-  if (
-    typeof sellAmount !== "string" ||
-    !/^0x[0-9a-f]+$/i.test(sellAmount) ||
-    BigInt(sellAmount) <= 0n
-  )
-    throw new Error("AVNU: no LORDS quote");
-  return BigInt(sellAmount);
+  const sold = lordsSoldFor(
+    await fetchJson(get, `${QUOTES_URL}?${query}`),
+    buyAmount,
+  );
+  if (sold === null)
+    throw new Error("AVNU: no LORDS quote for the dollars asked");
+  return sold;
 };
 
 /** What each token is worth in dollars on Starknet right now, by the address it was asked by. Throws on a missing price. */

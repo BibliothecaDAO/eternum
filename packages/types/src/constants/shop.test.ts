@@ -12,6 +12,15 @@ describe("the shop's prices in LORDS", () => {
     expect(roundUpLords(lords(2_000.000001))).toBe(2_005);
   });
 
+  it("keeps the amount exact to the largest whole number a number holds, and refuses what it cannot", () => {
+    // 9,007,199,254,740,990 is the largest multiple of 5 at or below Number.MAX_SAFE_INTEGER.
+    const largest = 9_007_199_254_740_990n;
+    expect(roundUpLords(largest * 10n ** 18n)).toBe(9_007_199_254_740_990);
+    expect(roundUpLords((largest - 4n) * 10n ** 18n)).toBe(9_007_199_254_740_990);
+    expect(() => roundUpLords((largest + 1n) * 10n ** 18n)).toThrow("more than a number holds");
+    expect(() => roundUpLords(10n ** 400n)).toThrow("more than a number holds");
+  });
+
   it("refuses an amount that is missing or zero", () => {
     expect(() => roundUpLords(0n)).toThrow();
     expect(() => roundUpLords(-1n)).toThrow();

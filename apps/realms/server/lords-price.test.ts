@@ -22,3 +22,8 @@ it("offers no amount while the market cannot quote or answers an amount that is 
   expect(await quoteLords(1_000, () => Promise.reject(new Error("AVNU: 429")))).toBeNull();
   expect(await quoteLords(1_000, async () => 0n)).toBeNull();
 });
+
+it("offers no amount for a quote a number cannot hold exactly", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => undefined);
+  expect(await quoteLords(1_000, async () => 10n ** 400n)).toBeNull();
+});
