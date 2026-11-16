@@ -1,1 +1,73 @@
+import type { IdentityAuth } from "./auth";
+import { gameDayStarts, readEnrolledAccounts } from "./day-open";
+import { fetchShardGames, gamesUrl, listedShards } from "./directory";
+import type { IdentityEnv } from "./env";
+import { json } from "./http";
+import { playerAccounts } from "./campaign-entry";
+
+/** The game a shop request names: the chain of its shard and its id. */
+export interface NamedGame {
+  chainId: string;
+  gameId: number;
+}
+
 export const gameKey = (chainId: string) => `0x${BigInt(chainId).toString(16)}`;
+
+/** The game a request names, or null when it names none or a malformed one. */
+export const namedGame = (chain: unknown, game: unknown): NamedGame | null => {
+  const gameId = typeof game === "string" || typeof game === "number" ? Number(game) : 0;
+  if (typeof chain !== "string" || !Number.isSafeInteger(gameId) || gameId <= 0) return null;
+  try {
+    return { chainId: gameKey(chain), gameId };
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * The one rule of the shop: the account plays in a running Frontier game. True when the game runs and the account is one
+ * of its players; throws while its shard cannot say.
+ */
+export type ShopAccess = (realmsId: string, game: NamedGame) => Promise<boolean>;
+
+/** The shop's rule, read from the game's shard: its directory says the game runs, its enrollment says who plays. */
+export const shopAccessOf = (
+  env: Pick<IdentityEnv, "DB" | "GUARDIAN">,
+  fetchShard: typeof fetch,
+  now: () => number,
+): ShopAccess => {
+  const accountOf = playerAccounts(env);
+  return async (realmsId, { chainId, gameId }) => {
+    const shard = (await listedShards(env.DB)).find((listed) => gameKey(listed.chainId) === chainId);
+    if (!shard) return false;
+    const games = gameDayStarts(await fetchShardGames(shard, gamesUrl(shard, null), fetchShard), now());
+    if (!games.some((running) => running.gameId === gameId)) return false;
+    const account = BigInt(await accountOf(realmsId));
+    return (await readEnrolledAccounts(shard.url, gameId)).some((owner) => BigInt(owner) === account);
+  };
+};
+
+/**
+ * Every shop read goes through here: the signed-in account and its seat in the game the request names, or the response
+ * that refuses it. No session is 401, no valid game 400, a shard that cannot say 503, and a game that does not run or
+ * does not have this account as a player 404: there is no shop outside a running Frontier game one plays in.
+ */
+export async function authorizeShop(
+  request: Request,
+  auth: IdentityAuth,
+  access: ShopAccess,
+  named: NamedGame | null,
+): Promise<{ owner: string } | Response> {
+  const session = await auth.api.getSession({ headers: request.headers });
+  const owner = session?.user.realmsId;
+  if (!owner) return json({ error: "unauthorized" }, 401);
+  if (!named) return json({ error: "invalid_game" }, 400);
+  let plays: boolean;
+  try {
+    plays = await access(owner, named);
+  } catch (error) {
+    console.error("[shop] the game's shard could not say who plays", error);
+    return json({ error: "shop_unavailable" }, 503);
+  }
+  return plays ? { owner } : json({ error: "no_shop_outside_a_frontier_game" }, 404);
+}

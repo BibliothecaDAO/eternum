@@ -2,7 +2,9 @@ import { afterEach, expect, it, vi } from "vitest";
 
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
 
+import type { IdentityAuth } from "./auth";
 import { handleLordsPrice, marketLordsPrice, readPriceDay, refreshLordsPrice } from "./lords-price";
+import type { ShopAccess } from "./shop-game";
 import { createTestD1 } from "./test-d1";
 import { migrationStatements } from "./workerd-harness";
 
@@ -25,13 +27,28 @@ const migrated = async () => {
   return database.db;
 };
 
-const quote = async (db: D1Database) => {
-  const response = await handleLordsPrice(db);
+const signedIn = (realmsId: string | null) =>
+  ({ api: { getSession: async () => (realmsId ? { user: { realmsId } } : null) } }) as unknown as IdentityAuth;
+const plays: ShopAccess = async () => true;
+const quote = async (
+  db: D1Database,
+  access: ShopAccess = plays,
+  query = `?chain=${CHAIN}&game=1`,
+  realmsId: string | null = "0xa1",
+) => {
+  const response = await handleLordsPrice(
+    new Request(`https://realms.test/api/shop/price${query}`),
+    signedIn(realmsId),
+    {
+      db,
+      access,
+    },
+  );
   return [response.status, await response.json()];
 };
 const down = () => Promise.reject(new Error("CoinGecko: 429"));
 
-it("prices a day by its first successful read and keeps it, and quotes it", async () => {
+it("prices a day by its first successful read and keeps it, quoting the same price to every player", async () => {
   const db = await migrated();
   const read = vi.fn(async () => 0.003637);
   expect(await refreshLordsPrice(db, read, MORNING, DAY)).toBe("read");
@@ -39,6 +56,7 @@ it("prices a day by its first successful read and keeps it, and quotes it", asyn
   expect(read).toHaveBeenCalledTimes(1);
   const quoted = [200, { usd: 0.003637, dayStart: DAY, readAt: MORNING }];
   expect(await quote(db)).toEqual(quoted);
+  expect(await quote(db, plays, `?chain=0x2&game=7`, "0xb2")).toEqual(quoted);
 });
 
 it("quotes only the current day: until a new day's read succeeds the shop says so, never yesterday's", async () => {
@@ -76,6 +94,19 @@ it("keeps the price day it had while the calendar cannot be read, and opens none
   expect(await refreshLordsPrice(db, market, MORNING + 3_600, null)).toBe("held");
   expect(market).not.toHaveBeenCalled();
   expect((await quote(db))[1]).toMatchObject({ usd: 0.003637, dayStart: DAY });
+});
+
+it("gives the shop only to a signed-in player of a running Frontier game, and says so when its shard cannot", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => undefined);
+  const db = await migrated();
+  await refreshLordsPrice(db, async () => 0.003637, MORNING, DAY);
+  expect(await quote(db, plays, undefined, null)).toEqual([401, { error: "unauthorized" }]);
+  expect(await quote(db, async () => false)).toEqual([404, { error: "no_shop_outside_a_frontier_game" }]);
+  expect(await quote(db, plays, "")).toEqual([400, { error: "invalid_game" }]);
+  expect((await quote(db, plays, `?chain=${CHAIN}&game=zero`))[0]).toBe(400);
+  expect((await quote(db, plays, "?game=1"))[0]).toBe(400);
+  const unreadable: ShopAccess = () => Promise.reject(new Error("shard down"));
+  expect(await quote(db, unreadable)).toEqual([503, { error: "shop_unavailable" }]);
 });
 
 it("reads the market's price and refuses an answer that is not one", async () => {

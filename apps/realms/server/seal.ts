@@ -5,6 +5,7 @@ import { type TicketTier } from "@realms-world/identity";
 import type { IdentityAuth } from "./auth";
 import { json } from "./http";
 import { RealmHoldingsUnavailableError } from "./realm-holdings";
+import { authorizeShop, namedGame, type ShopAccess } from "./shop-game";
 
 /** What an account holds that the seal's price and free parts read: its Realms, and the tier of the campaign ticket it came by. */
 export interface HolderFacts {
@@ -63,21 +64,30 @@ export async function handleSealLaunchPrice(request: Request, db: D1Database, no
   return (await readSealLaunchPrice(db)) === usd ? json({ usd }) : json({ error: "seal_price_already_set" }, 409);
 }
 
-/** What the seal's route reads beyond D1: the account's holder facts. */
+/** What the seal's route reads beyond D1: the account's holder facts and the shop's rule. */
 export interface SealWorld {
   db: D1Database;
+  access: ShopAccess;
   holderFacts: (realmsId: string) => Promise<HolderFacts>;
 }
 
 /**
- * GET /api/shop/seal: the signed-in account's holder level, whether it holds the seal, and the seal's price in cents on
- * the web and in a store with what is free to this holder. An account that holds the seal is offered no purchase. The web price carries its LORDS amount, fixed at the season's launch (null before it is set).
+ * GET /api/shop/seal?chain=&game=: for an account that plays in that running Frontier game (the shop's one rule), its
+ * holder level, whether it holds the seal, and the seal's price in cents on the web and in a store with what is free to
+ * this holder. An account that holds the seal is offered no purchase. The web price carries its LORDS amount, fixed at
+ * the season's launch (null before it is set).
  */
 export async function handleSeal(request: Request, auth: IdentityAuth, world: SealWorld): Promise<Response> {
   if (request.method !== "GET") return json({ error: "method_not_allowed" }, 405);
-  const session = await auth.api.getSession({ headers: request.headers });
-  const owner = session?.user.realmsId;
-  if (!owner) return json({ error: "unauthorized" }, 401);
+  const url = new URL(request.url);
+  const seat = await authorizeShop(
+    request,
+    auth,
+    world.access,
+    namedGame(url.searchParams.get("chain"), url.searchParams.get("game")),
+  );
+  if (seat instanceof Response) return seat;
+  const { owner } = seat;
   if (await readSeal(world.db, owner)) return json({ owned: true, web: null, store: null });
   const facts = await readHolderFacts(world, owner);
   if (!facts) return json({ error: "holdings_unavailable" }, 503);

@@ -5,6 +5,7 @@ import { accountDeletion } from "./account-deletion";
 import type { IdentityAuth } from "./auth";
 import { RealmHoldingsUnavailableError } from "./realm-holdings";
 import { readSeal } from "./seal";
+import type { ShopAccess } from "./shop-game";
 import { handleStoreReceipt, type ReceiptWorld, type StoreVerifier } from "./store-receipts";
 import { createTestD1 } from "./test-d1";
 import { migrationStatements } from "./workerd-harness";
@@ -40,6 +41,10 @@ const store: StoreVerifier = async (evidence) => {
   return transactionId && productId ? { transactionId, productId } : null;
 };
 
+/** An account that plays in whichever game the receipt names. */
+const seated: ShopAccess = async () => true;
+const GAME = { chain: "0x1", game: 1 };
+
 const sendAs = async (
   db: D1Database,
   realmsId: string | null,
@@ -53,12 +58,13 @@ const sendAs = async (
     new Request("https://realms.test/api/shop/receipt", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ ...GAME, ...(body as object) }),
     }),
     auth,
     {
       db,
       holderFacts: async () => ({ heldRealmIds: [], ticket: null }),
+      access: seated,
       verifiers: { apple: store },
       now: () => 100,
       ...overrides,
@@ -354,4 +360,46 @@ it("resolves a pending payment to unfulfilled when the buyer turns out not to ho
   expect(await sendAs(db, OWNER, receipt)).toEqual([409, { error: "seal_price_not_for_holder" }]);
   expect(await ledger(db)).toEqual([{ receipt: "apple:tx-1", owner: OWNER, outcome: "unfulfilled_price" }]);
   expect(await seals(db)).toEqual([]);
+});
+
+it("records a verified payment of an account outside the named game for refund, grants nothing, and answers its retry the same", async () => {
+  const db = await migrated();
+  const outside: ShopAccess = async () => false;
+  for (const receipt of ["tx-1|fragments-500", "tx-2|seal"]) {
+    const request = { store: "apple", receipt };
+    const refused = [404, { error: "no_shop_outside_a_frontier_game" }];
+    expect(await sendAs(db, OWNER, request, { access: outside })).toEqual(refused);
+    expect(await sendAs(db, OWNER, request, { access: outside })).toEqual(refused);
+  }
+  expect(await ledger(db)).toEqual([
+    { receipt: "apple:tx-1", owner: OWNER, outcome: "unfulfilled_not_in_game" },
+    { receipt: "apple:tx-2", owner: OWNER, outcome: "unfulfilled_not_in_game" },
+  ]);
+  expect(await credits(db)).toEqual([]);
+  expect(await readSeal(db, OWNER)).toBeNull();
+});
+
+it("records a payment while the game's shard cannot say who plays, and settles the retry once it can", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => undefined);
+  const db = await migrated();
+  const request = { store: "apple", receipt: "tx-1|fragments-500" };
+  const unreadable: ShopAccess = () => Promise.reject(new Error("shard down"));
+  expect(await sendAs(db, OWNER, request, { access: unreadable })).toEqual([503, { error: "holdings_unavailable" }]);
+  expect(await ledger(db)).toEqual([{ receipt: "apple:tx-1", owner: OWNER, outcome: "pending_eligibility" }]);
+  expect(await credits(db)).toEqual([]);
+  expect(await sendAs(db, OWNER, request)).toEqual([200, { status: "fragments", fragments: 500, repeated: false }]);
+  expect(await credits(db)).toEqual([{ receipt: "apple:tx-1", owner: OWNER, fragments: 500, status: "pending" }]);
+});
+
+it("asks the game the receipt names, and refuses a receipt that names none", async () => {
+  const db = await migrated();
+  const asked: unknown[] = [];
+  const access: ShopAccess = async (realmsId, game) => {
+    asked.push([realmsId, game]);
+    return true;
+  };
+  const request = { store: "apple", receipt: "tx-1|fragments-500", chain: "0x2a", game: 7 };
+  expect((await sendAs(db, OWNER, request, { access }))[0]).toBe(200);
+  expect(asked).toEqual([[OWNER, { chainId: "0x2a", gameId: 7 }]]);
+  expect((await sendAs(db, OWNER, { ...request, game: undefined }, { access }))[0]).toBe(400);
 });

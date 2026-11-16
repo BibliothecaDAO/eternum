@@ -23,6 +23,7 @@ import { handleBuildOrders } from "./build-orders";
 import { handleLordsPrice } from "./lords-price";
 import { handleSeal, handleSealLaunchPrice } from "./seal";
 import { holderFactsOf } from "./seal-facts";
+import { shopAccessOf } from "./shop-game";
 import { handleStoreReceipt, storeVerifiersOf } from "./store-receipts";
 import { handleOpeningProgress } from "./opening-progress";
 import {
@@ -153,14 +154,20 @@ export const routeIdentityRequest = async (
   if (pathname === "/api/shop/receipt")
     return handleStoreReceipt(request, auth, {
       db: env.DB,
+      access: shopAccessOf(env, platform.fetchShard, nowSeconds),
       holderFacts: holderFactsOf(env),
       verifiers: storeVerifiersOf(env),
-      now: () => Math.floor(Date.now() / 1000),
+      now: nowSeconds,
     });
-  if (pathname === "/api/shop/seal") return handleSeal(request, auth, { db: env.DB, holderFacts: holderFactsOf(env) });
+  if (pathname === "/api/shop/seal")
+    return handleSeal(request, auth, {
+      db: env.DB,
+      access: shopAccessOf(env, platform.fetchShard, nowSeconds),
+      holderFacts: holderFactsOf(env),
+    });
   if (pathname === "/api/shop/price" && request.method === "GET") {
     if (!(await withinPublicBudget(env, "shop-price", request))) return json({ error: "too_many_requests" }, 429);
-    return handleLordsPrice(env.DB);
+    return handleLordsPrice(request, auth, { db: env.DB, access: shopAccessOf(env, platform.fetchShard, nowSeconds) });
   }
   if (pathname === "/api/operator/seal-price") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
@@ -246,6 +253,8 @@ const codeAccess = async (env: IdentityEnv, request: Request, sendsCode: boolean
     return json({ error: "too_many_codes" }, 429);
   return null;
 };
+
+const nowSeconds = () => Math.floor(Date.now() / 1000);
 
 const isOperator = (env: IdentityEnv, request: Request) => presentsOperatorToken(request, env.OPERATOR_TOKEN);
 

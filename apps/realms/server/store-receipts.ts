@@ -5,6 +5,7 @@ import type { IdentityEnv } from "./env";
 import { json, readBody } from "./http";
 import { RealmHoldingsUnavailableError } from "./realm-holdings";
 import { holderLevelOf, readSeal, type HolderFacts } from "./seal";
+import { namedGame, type NamedGame, type ShopAccess } from "./shop-game";
 
 const BODY_BYTES = 32 * 1024;
 const STORES = ["apple", "google"] as const;
@@ -21,6 +22,7 @@ export type StoreVerifier = (evidence: string) => Promise<VerifiedPurchase | nul
 export interface ReceiptWorld {
   db: D1Database;
   holderFacts: (realmsId: string) => Promise<HolderFacts>;
+  access: ShopAccess;
   /** Only the stores that are set up: a store without a verifier is refused, never believed. */
   verifiers: Partial<Record<(typeof STORES)[number], StoreVerifier>>;
   now: () => number;
@@ -34,16 +36,19 @@ type Outcome =
   | "unfulfilled_price"
   | "unfulfilled_product"
   | "unfulfilled_deleted"
+  | "unfulfilled_not_in_game"
   | "pending_eligibility";
 
 type Product = (typeof STORE_PRODUCTS)[keyof typeof STORE_PRODUCTS];
 
 /**
- * POST /api/shop/receipt: a store purchase of the signed-in account, checked with its store. Every verified payment is
+ * POST /api/shop/receipt {store, receipt, chain, game}: a store purchase of the signed-in account in the named game,
+ * checked with its store. Every verified payment is
  * written once to the receipt ledger with its outcome, in one transaction with what it buys: the seal, when the
  * product's price covers the seal's store price for this account's holder level, or a pending Fragment credit for the
- * co-signed hand-off. A payment that cannot be honoured (an unknown product, a price below the buyer's, a seal the account already holds, an account already deleted) is recorded as unfulfilled for the owner to refund; one whose
- * holder level cannot be read is recorded as pending, grants nothing, and is resolved when the same receipt is sent
+ * co-signed hand-off. A payment that cannot be honoured (an unknown product, a price below the buyer's, a seal the account already holds, an account already deleted, an account
+ * that does not play in the named running Frontier game) is recorded as unfulfilled for the owner to refund; one whose
+ * holder level or game seat cannot be read is recorded as pending, grants nothing, and is resolved when the same receipt is sent
  * again. The same receipt sent again answers as it did the first time; one another account used is refused.
  */
 export async function handleStoreReceipt(request: Request, auth: IdentityAuth, world: ReceiptWorld): Promise<Response> {
@@ -62,7 +67,7 @@ export async function handleStoreReceipt(request: Request, auth: IdentityAuth, w
     return json({ error: "store_unavailable" }, 503);
   }
   if (!purchase) return json({ error: "receipt_refused" }, 402);
-  return settleReceipt(world, owner, `${asked.store}:${purchase.transactionId}`, purchase.productId);
+  return settleReceipt(world, owner, `${asked.store}:${purchase.transactionId}`, purchase.productId, asked.game);
 }
 
 const SETTLE_ATTEMPTS = 3;
@@ -75,7 +80,13 @@ const SETTLE_ATTEMPTS = 3;
  * that loses a race (the same receipt, or a seal this account just bought with another receipt) writes nothing, and the
  * next pass reads the winner.
  */
-const settleReceipt = async (world: ReceiptWorld, owner: string, receipt: string, productId: string) => {
+const settleReceipt = async (
+  world: ReceiptWorld,
+  owner: string,
+  receipt: string,
+  productId: string,
+  game: NamedGame,
+) => {
   const product = productOf(productId);
   let lastError: unknown;
   for (let attempt = 0; attempt < SETTLE_ATTEMPTS; attempt += 1) {
@@ -83,7 +94,7 @@ const settleReceipt = async (world: ReceiptWorld, owner: string, receipt: string
     if (recorded && recorded.owner !== owner) return json({ error: "receipt_used" }, 409);
     if (recorded && recorded.outcome !== "pending_eligibility")
       return answerFor(recorded.outcome, productOf(recorded.product), true);
-    const outcome = await outcomeOf(world, owner, product);
+    const outcome = await outcomeOf(world, owner, product, game);
     if (recorded && outcome === "pending_eligibility") return answerFor(outcome, product, true);
     const now = world.now();
     try {
@@ -110,17 +121,38 @@ const readLedger = (db: D1Database, receipt: string) =>
     .bind(receipt)
     .first<{ owner: string | null; product: string; outcome: Outcome }>();
 
-/** What this payment can buy this account now: a seal already held settles it first, then the price against the account's live holder level. */
-const outcomeOf = async (world: ReceiptWorld, owner: string, product: Product | undefined): Promise<Outcome> => {
+/**
+ * What this payment can buy this account now: a seal already held settles it first, then the shop's rule (the account
+ * plays in the named running Frontier game), then the price against the account's live holder level.
+ */
+const outcomeOf = async (
+  world: ReceiptWorld,
+  owner: string,
+  product: Product | undefined,
+  game: NamedGame,
+): Promise<Outcome> => {
   if (!product) return "unfulfilled_product";
+  if (product.kind === "seal" && (await readSeal(world.db, owner))) return "unfulfilled_seal_held";
+  const plays = await playsInGame(world, owner, game);
+  if (plays === null) return "pending_eligibility";
+  if (!plays) return "unfulfilled_not_in_game";
   if (product.kind === "fragments") return "fragments";
-  if (await readSeal(world.db, owner)) return "unfulfilled_seal_held";
   try {
     const holder = product.cents < SEAL_CENTS.store.none ? holderLevelOf(await world.holderFacts(owner)) : "none";
     return product.cents < SEAL_CENTS.store[holder] ? "unfulfilled_price" : "seal";
   } catch (error) {
     if (error instanceof RealmHoldingsUnavailableError) return "pending_eligibility";
     throw error;
+  }
+};
+
+/** Whether the account plays in the named running Frontier game; null while its shard cannot say. */
+const playsInGame = async (world: ReceiptWorld, owner: string, game: NamedGame): Promise<boolean | null> => {
+  try {
+    return await world.access(owner, game);
+  } catch (error) {
+    console.error("[shop] the game's shard could not say who plays", error);
+    return null;
   }
 };
 
@@ -190,18 +222,23 @@ const answerFor = (outcome: Outcome, product: Product | undefined, repeated: boo
       return json({ error: "unknown_product" }, 422);
     case "unfulfilled_deleted":
       return json({ error: "account_deleted" }, 410);
+    case "unfulfilled_not_in_game":
+      return json({ error: "no_shop_outside_a_frontier_game" }, 404);
     case "pending_eligibility":
       return json({ error: "holdings_unavailable" }, 503);
   }
 };
 
-const readRequest = async (request: Request): Promise<{ store: (typeof STORES)[number]; evidence: string } | null> => {
+const readRequest = async (
+  request: Request,
+): Promise<{ store: (typeof STORES)[number]; evidence: string; game: NamedGame } | null> => {
   if (request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json") return null;
   try {
     const body = JSON.parse(await readBody(request, BODY_BYTES)) as Record<string, unknown>;
     const store = STORES.find((name) => name === body.store);
-    return store && typeof body.receipt === "string" && body.receipt.length > 0
-      ? { store, evidence: body.receipt }
+    const game = namedGame(body.chain, body.game);
+    return store && game && typeof body.receipt === "string" && body.receipt.length > 0
+      ? { store, evidence: body.receipt, game }
       : null;
   } catch {
     return null;

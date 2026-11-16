@@ -3,6 +3,7 @@ import { afterEach, expect, it } from "vitest";
 import type { IdentityAuth } from "./auth";
 import { handleSeal, handleSealLaunchPrice, holderLevelOf, sealOffer, type HolderFacts } from "./seal";
 import { RealmHoldingsUnavailableError } from "./realm-holdings";
+import type { ShopAccess } from "./shop-game";
 import { createTestD1 } from "./test-d1";
 import { migrationStatements } from "./workerd-harness";
 
@@ -34,6 +35,9 @@ const migrated = async () => {
   return db;
 };
 
+const GAME = "?chain=0x1&game=1";
+const seated: ShopAccess = async () => true;
+
 const facts = (overrides: Partial<HolderFacts>): HolderFacts => ({ heldRealmIds: [], ticket: null, ...overrides });
 
 it("tells each holder level from what the account holds", () => {
@@ -56,9 +60,9 @@ it("serves the signed-in account its level, whether it holds the seal, and the t
   const db = await migrated();
   const auth = (realmsId: string | null) =>
     ({ api: { getSession: async () => (realmsId ? { user: { realmsId } } : null) } }) as unknown as IdentityAuth;
-  const world = { db, holderFacts: async () => facts({ ticket: "regular" }) };
+  const world = { db, access: seated, holderFacts: async () => facts({ ticket: "regular" }) };
   const ask = (realmsId: string | null) =>
-    handleSeal(new Request("https://realms.test/api/shop/seal"), auth(realmsId), world);
+    handleSeal(new Request(`https://realms.test/api/shop/seal${GAME}`), auth(realmsId), world);
   expect((await ask(null)).status).toBe(401);
   expect(await (await ask(OWNER)).json()).toEqual({
     holder: "realm",
@@ -86,8 +90,9 @@ it("serves the signed-in account its level, whether it holds the seal, and the t
 it("offers no price while holdings cannot be verified", async () => {
   const db = await migrated();
   const auth = { api: { getSession: async () => ({ user: { realmsId: OWNER } }) } } as unknown as IdentityAuth;
-  const response = await handleSeal(new Request("https://realms.test/api/shop/seal"), auth, {
+  const response = await handleSeal(new Request(`https://realms.test/api/shop/seal${GAME}`), auth, {
     db,
+    access: seated,
     holderFacts: () => Promise.reject(new RealmHoldingsUnavailableError()),
   });
   expect([response.status, await response.json()]).toEqual([503, { error: "holdings_unavailable" }]);
@@ -113,4 +118,21 @@ it("fixes the seal's LORDS price at launch: set once, the same value again is a 
   expect(await launch(0.003637)).toEqual([200, { usd: 0.003637 }]);
   expect(await launch(0.01)).toEqual([409, { error: "seal_price_already_set" }]);
   expect(await held()).toEqual([200, { usd: 0.003637 }]);
+});
+
+it("offers the seal only to a player of a running Frontier game the request names", async () => {
+  const db = await migrated();
+  const auth = { api: { getSession: async () => ({ user: { realmsId: OWNER } }) } } as unknown as IdentityAuth;
+  const ask = async (query: string, access: ShopAccess) => {
+    const response = await handleSeal(new Request(`https://realms.test/api/shop/seal${query}`), auth, {
+      db,
+      access,
+      holderFacts: async () => facts({ heldRealmIds: [PLAIN_REALM] }),
+    });
+    return [response.status, await response.json()];
+  };
+  const outside = [404, { error: "no_shop_outside_a_frontier_game" }];
+  expect(await ask(GAME, async () => false)).toEqual(outside);
+  expect(await ask("", seated)).toEqual([400, { error: "invalid_game" }]);
+  expect((await ask(GAME, seated))[0]).toBe(200);
 });

@@ -1,7 +1,8 @@
 import { gameDayStarts } from "./day-open";
 import { fetchShardGames, gamesUrl, listedShards } from "./directory";
 import { json } from "./http";
-import { gameKey } from "./shop-game";
+import type { IdentityAuth } from "./auth";
+import { authorizeShop, gameKey, namedGame, type ShopAccess } from "./shop-game";
 
 /** LORDS's price in dollars, from the market; throws when the market cannot say. */
 type LordsPriceReader = () => Promise<number>;
@@ -98,13 +99,27 @@ export const refreshLordsPrice = async (
   }
 };
 
+/** What the price route reads: D1 and the shop's rule. */
+interface PriceWorld {
+  db: D1Database;
+  access: ShopAccess;
+}
+
 /**
- * GET /api/shop/price: the one LORDS price in dollars, with the start of the price day it was read for. While the current
- * day has no price the answer is 503 `price_not_read_yet` with the day's start: an earlier day's price is never given as
- * today's.
+ * GET /api/shop/price?chain=&game=: the one LORDS price in dollars, with the start of the price day it was read for, to a
+ * signed-in player of a running Frontier game. While the current day has no price the answer is 503 `price_not_read_yet`
+ * with the day's start: an earlier day's price is never given as today's.
  */
-export const handleLordsPrice = async (db: D1Database): Promise<Response> => {
-  const day = await currentDay(db);
+export const handleLordsPrice = async (request: Request, auth: IdentityAuth, world: PriceWorld): Promise<Response> => {
+  const url = new URL(request.url);
+  const seat = await authorizeShop(
+    request,
+    auth,
+    world.access,
+    namedGame(url.searchParams.get("chain"), url.searchParams.get("game")),
+  );
+  if (seat instanceof Response) return seat;
+  const day = await currentDay(world.db);
   if (!day) return json({ error: "price_not_read_yet", dayStart: null }, 503);
   if (day.usd === null || day.read_at === null)
     return json({ error: "price_not_read_yet", dayStart: day.day_start }, 503);
