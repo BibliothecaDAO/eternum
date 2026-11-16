@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { buildingTypeTier, learnResearch, realmLearned, researchedDepth, researchPicks, researchPurchases, researchTier } from "./realm-research";
+import {
+  buildingTypeTier,
+  learnResearch,
+  realmLearned,
+  researchedDepth,
+  researchPicks,
+  researchPurchases,
+  researchTier,
+} from "./realm-research";
 
 // Matches the Cairo packing test, with independent Farm side counts.
 const learned =

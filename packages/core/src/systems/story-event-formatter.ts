@@ -1,5 +1,32 @@
 import { type RankedWords, rankedText, skillPointGain } from "@bibliothecadao/types";
-import { siteUsedLine, buildingName, CHEST_EARNED, fightVerdict, formatCharge, formatClockTime, formatDuration, formatExact, formatGain, formatPoints, frontierSiteName, GuardSlot, guardSlotName, LORDS, rankName, RealmLevels, relicChestDelivery, relicEffect, relicName, resourceName, scaledToUnits, StructureType, troopPlural, type ResourcesIds, VERDICT_WORDS, wholePoints } from "@bibliothecadao/types";
+import {
+  siteUsedLine,
+  buildingName,
+  CHEST_EARNED,
+  fightVerdict,
+  formatCharge,
+  formatClockTime,
+  formatDuration,
+  formatExact,
+  formatGain,
+  formatPoints,
+  frontierSiteName,
+  GuardSlot,
+  guardSlotName,
+  LORDS,
+  rankName,
+  RealmLevels,
+  relicChestDelivery,
+  relicEffect,
+  relicName,
+  resourceName,
+  scaledToUnits,
+  StructureType,
+  troopPlural,
+  type ResourcesIds,
+  VERDICT_WORDS,
+  wholePoints,
+} from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { displayPlayerName, getStructureName, siteDisplayName, type PlayerNameResolver } from "../utils/entities";
 import { readExpeditionRules } from "../utils/expeditions";

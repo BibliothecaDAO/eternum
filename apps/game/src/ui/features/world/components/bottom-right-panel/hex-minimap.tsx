@@ -5,13 +5,34 @@ import { minimapMarkersView, type MinimapMarker } from "./minimap-markers";
 import { latticeHexAt, latticeHexBoundsForWorldRect, latticeToWorld } from "@/three/utils/hex-lattice";
 import { fromRenderHex, worldOrigin } from "@/three/world-origin";
 import { WORLDMAP_CAMERA_ZOOM } from "@/three/scenes/worldmap-camera-view-profile";
-import { readCameraView, subscribeCameraView, type CameraView, type GroundPoint } from "@/three/scenes/worldmap-camera-view";
+import {
+  readCameraView,
+  subscribeCameraView,
+  type CameraView,
+  type GroundPoint,
+} from "@/three/scenes/worldmap-camera-view";
 import { useFactView } from "@/hooks/use-fact-view";
 import { FELT_CENTER } from "@/ui/config";
 import { requireBiomeColor, resolveBiomeTypeFromId } from "@/three/managers/biome-colors";
-import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier, hasTileOccupier, isTileOccupierReservedHyperstructure, isTileOccupierStructure, Position } from "@bibliothecadao/eternum";
+import {
+  getExplorerInfoFromTileOccupier,
+  getStructureInfoFromTileOccupier,
+  hasTileOccupier,
+  isTileOccupierReservedHyperstructure,
+  isTileOccupierStructure,
+  Position,
+} from "@bibliothecadao/eternum";
 import { HexPosition, TileOccupier, type StructureNamingMode } from "@bibliothecadao/types";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent,
+  type WheelEvent,
+} from "react";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 
 export interface MinimapTile {

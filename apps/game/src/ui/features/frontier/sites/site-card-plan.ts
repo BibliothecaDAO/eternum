@@ -1,8 +1,38 @@
 import { readStandingFrontierBeast, type FrontierBeast } from "@/three/structures/frontier-beast";
-import { availableRuinLords, armyRelicReward, configManager, getBlockTimestamp, ResourceManager, hasCastleLimit, resolveExchange, getGuardsByStructure, siteKindOf } from "@bibliothecadao/eternum";
-import { readSiteReward, safeInteger, type DeepSiteView, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { inlineTroops, resolveExplorerCombatTroops, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
-import { type BiomeType, getLayeredAttackDistance, getTroopAttackRange, RESOURCE_PRECISION, ResourcesIds, StructureType, type Troops, type TroopTier, type TroopType } from "@bibliothecadao/types";
+import {
+  availableRuinLords,
+  armyRelicReward,
+  configManager,
+  getBlockTimestamp,
+  ResourceManager,
+  hasCastleLimit,
+  resolveExchange,
+  getGuardsByStructure,
+  siteKindOf,
+} from "@bibliothecadao/eternum";
+import {
+  readSiteReward,
+  safeInteger,
+  type DeepSiteView,
+  type NativeFactStore,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
+import {
+  inlineTroops,
+  resolveExplorerCombatTroops,
+  resolveExplorerTroops,
+} from "@bibliothecadao/eternum/troop-stamina";
+import {
+  type BiomeType,
+  getLayeredAttackDistance,
+  getTroopAttackRange,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  StructureType,
+  type Troops,
+  type TroopTier,
+  type TroopType,
+} from "@bibliothecadao/types";
 
 import { siteDepthName } from "@/ui/design-system/kit/words";
 
@@ -29,11 +59,11 @@ export interface SiteCardPlan {
   beast?: FrontierBeast;
   guard: { type: TroopType; tier: TroopTier; count: number } | null | undefined;
   kind: AttackTargetKind;
-  
+
   /** A ruin's stored tier and whole LORDS; unknown until its chest fact arrives. */
   ruinDepth?: string;
   chest: { tier: number; amount: number; funded: boolean } | null | undefined;
-  
+
   payout: { resourceId: ResourcesIds; amount: number; fits: number } | null | undefined;
   attackStamina: number;
   /** Whether the selected army's troops reach the target from where they stand: Attack now, or Move first. */
@@ -193,7 +223,6 @@ const reachOf = (
 
 /** Where an army out of reach attacks from: the tile beside the target, where its Move leads. */
 const BESIDE = 1;
-
 
 const attackNow = (
   store: NativeFactStore,

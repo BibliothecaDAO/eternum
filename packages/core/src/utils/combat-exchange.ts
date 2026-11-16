@@ -2,7 +2,23 @@ import { bonusActive } from "./relic";
 import { BiomeType, RESOURCE_PRECISION, type Troops } from "@bibliothecadao/types";
 import { nativeRuleConstants, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { staminaAt } from "../managers/troop-stamina";
-import { add, ceil, div, type Fixed, fixed, gte, lte, mul, ONE, pow, round, sub, toWhole, unscaled, ZERO } from "./cubit-fixed";
+import {
+  add,
+  ceil,
+  div,
+  type Fixed,
+  fixed,
+  gte,
+  lte,
+  mul,
+  ONE,
+  pow,
+  round,
+  sub,
+  toWhole,
+  unscaled,
+  ZERO,
+} from "./cubit-fixed";
 
 /**
  * One combat exchange exactly as the contract resolves it (logic/combat.cairo damage_with_context and

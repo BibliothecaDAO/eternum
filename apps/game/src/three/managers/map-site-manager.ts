@@ -9,7 +9,11 @@ import { activeMapLayer } from "@/three/map-layer";
 import { frontierPaintedPath } from "../structures/frontier-painted-buildings";
 import InstancedModel from "@/three/managers/instanced-model";
 import { FELT_CENTER } from "@/ui/config";
-import { projectionChangesForLayer, type WorldSpatialProjection, type TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
+import {
+  projectionChangesForLayer,
+  type WorldSpatialProjection,
+  type TileSpatialRenderable,
+} from "@bibliothecadao/eternum/game-sync";
 import { Box3, Object3D, Scene } from "three";
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain, type TerrainSurface } from "../terrain/terrain-surface";
 import { getWorldPositionForHex } from "../utils";

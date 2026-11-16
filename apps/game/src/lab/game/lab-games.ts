@@ -16,7 +16,13 @@ import { etherealDepthsScenario } from "./ethereal-depths-scenario";
 import { REALM_SKIN_MODELS } from "@/three/structures/realm-skins";
 import { campaignScenario, devconSeasonScenario, fullLaborCampaignScenario } from "./campaign-scenario";
 import { dayEndScenario } from "./day-end-scenario";
-import { afterBattleScenario, fightLostScenario, fightScenario, lowStaminaScenario, pointSpentScenario } from "./after-battle-scenario";
+import {
+  afterBattleScenario,
+  fightLostScenario,
+  fightScenario,
+  lowStaminaScenario,
+  pointSpentScenario,
+} from "./after-battle-scenario";
 import { campScenario } from "./camp-scenario";
 import { claimScenario } from "./claim-scenario";
 import { clearedCampScenario } from "./cleared-camp-scenario";

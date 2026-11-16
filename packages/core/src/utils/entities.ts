@@ -1,7 +1,16 @@
 import { safeInteger } from "./safe-integer";
 import { entityMapPosition } from "./tile";
 import { structureMapPosition } from "./expeditions";
-import { armyName, realmName, CapacityConfig, ContractAddress, ID, NEUTRAL_OWNER_NAME, StructureType, siteName } from "@bibliothecadao/types";
+import {
+  armyName,
+  realmName,
+  CapacityConfig,
+  ContractAddress,
+  ID,
+  NEUTRAL_OWNER_NAME,
+  StructureType,
+  siteName,
+} from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { shortString } from "starknet";

@@ -1,5 +1,12 @@
 import { safeInteger } from "./safe-integer";
-import { type ID, formatRate, ResourcesIds, StructureType, structureName, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import {
+  type ID,
+  formatRate,
+  ResourcesIds,
+  StructureType,
+  structureName,
+  RESOURCE_PRECISION,
+} from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { configManager } from "../managers/config-manager";

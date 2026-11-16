@@ -318,7 +318,7 @@ it.each([2, 3, 4])(
       ["Army 2", "1,100"],
     ]);
     // Army 2 holds 100 stamina; the merge leaves it Army 1's 7.
-    expect(host.textContent).toContain(`100/${120 + [0,20,45,75,110,150][tappedLogistics]!}→7`);
+    expect(host.textContent).toContain(`100/${120 + [0, 20, 45, 75, 110, 150][tappedLogistics]!}→7`);
     expect(swap).not.toHaveBeenCalled();
     await act(async () => button("Merge into Army 2")!.click());
     expect(button("Confirm merge into Army 2")).toBeDefined();

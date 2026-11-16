@@ -1,4 +1,11 @@
-import { BUILDINGS_CENTER, BuildingType, getHexesWithinRadius, getNeighborHexes, TileOccupier, StructureType } from "@bibliothecadao/types";
+import {
+  BUILDINGS_CENTER,
+  BuildingType,
+  getHexesWithinRadius,
+  getNeighborHexes,
+  TileOccupier,
+  StructureType,
+} from "@bibliothecadao/types";
 import { type LabFact, type LabScenario, wire } from "./lab-chain";
 import { spireScenario, type LabGround } from "./spire-scenario";
 

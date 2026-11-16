@@ -23,7 +23,6 @@ import ROW_SET from "../../../../../../../contracts/l3/world-native/schema/fixtu
 import { PLAYER } from "./fixture-game";
 import { LabGame } from "./lab-game";
 
-
 const VIEWS = {
   blitz: { preset: 2, spectating: false, finished: false, army: false, attack: false },
   "blitz-build": { preset: 2, spectating: false, finished: false, army: false, attack: false, stocked: true },

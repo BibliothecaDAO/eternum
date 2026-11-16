@@ -27,8 +27,7 @@ export const ArmyDock = ({
 }: {
   realm: NativeRows["Structure"];
   armies: DockArmy[];
-  
-  
+
   onOpenArmy?: (explorerId: number) => void;
 }) => {
   const ordersAllowed = useUIStore(canIssueOrders);

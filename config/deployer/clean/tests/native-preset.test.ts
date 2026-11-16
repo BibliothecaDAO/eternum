@@ -129,13 +129,12 @@ describe("native presets", () => {
     }
   });
 
-  test("progression presets cannot grant or import resource relics into an army", () => {
-    const progressionPresets = Object.values(nativePresets).filter(({ progression }) => progression !== null);
-    expect(progressionPresets.length).toBeGreaterThan(0);
-    for (const source of progressionPresets) {
+  test("Frontier presets cannot grant or import resource relics into an army", () => {
+    const frontierPresets = Object.values(nativePresets).filter(({ gameType }) => gameType === "frontier");
+    expect(frontierPresets.length).toBeGreaterThan(0);
+    for (const source of frontierPresets) {
       expect(source.gameType).toBe("frontier");
       const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id);
-      expect(preset.economy.progression.isSome()).toBe(true);
       expect(preset.economy.chests.isSome()).toBe(source.chests !== null);
       expect(preset.rules.day_unit_seconds).toBeGreaterThan(0);
       expect(preset.economy.relics).toEqual([]);
@@ -556,15 +555,6 @@ describe("native presets", () => {
       stamina_paladin_max: 120,
     });
     expect(design.economy.relics).toEqual([]);
-    expect(design.economy.progression.unwrap()).toEqual({
-      common_xp: 75,
-      reveal_xp: 2,
-      reveal_xp_per_depth: 1,
-      uncommon_xp: 200,
-      rare_xp: 400,
-      epic_xp: 800,
-      legendary_xp: 1500,
-    });
     expect(design.settlement.realms.resources).toEqual([
       { resource_type: 26, amount: 1_500_000_000_000n },
       { resource_type: 35, amount: 4_500_000_000_000n },
@@ -853,7 +843,6 @@ describe("Devcon's fast Frontier preset", () => {
     expect(fast.settlement.realms.resources).toEqual(normal.settlement.realms.resources);
     expect(fast.structures.buildings).toEqual(normal.structures.buildings);
     expect(fast.structures.upgrades).toEqual(normal.structures.upgrades);
-    expect(fast.economy.progression).toEqual(normal.economy.progression);
     expect(fast.resources.resources).toEqual(
       normal.resources.resources.map((resource) => ({
         ...resource,
@@ -1367,7 +1356,6 @@ test("preset 7 activates the complete Slice 1 rules while fixtures and historica
       stamina_defense_req: 0,
     });
     expect(built.rules.troop_limit_config.explore_reward_strength_cap).toBe(10000);
-    expect(built.economy.progression.unwrap()).toMatchObject({ common_xp: 60 });
     const scouts = built.resources.production.find(({ resource_type }) => resource_type === 32)!.recipe;
     expect(scouts.simple_inputs).toEqual([{ resource_type: 35, amount: 2_000_000_000n }]);
     expect(scouts.simple_output).toBe(1_000_000_000n);

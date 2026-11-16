@@ -108,7 +108,6 @@ export const FRONTIER = {
     shrine: pct(frontierPreset.discovery.shrineBps),
     well: pct(frontierPreset.discovery.wellBps),
     emptyRevealLimit: n(frontierPreset.discovery.emptyRevealLimit),
-
   },
   depths: frontierPreset.depths.map((depth, index) => ({
     name: DEPTH_NAMES[index],
@@ -165,7 +164,6 @@ export const FRONTIER = {
     labor: n(frontierPreset.dailyQuest.labor),
     essence: n(frontierPreset.dailyQuest.essence),
   },
-
 };
 
 /** Retired paying seasons; only the historical chest page reads these values. */

@@ -9,7 +9,13 @@ import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { openPlace } from "@/play/navigation/open-place";
 import { requestLayerView } from "@/three/scenes/worldmap-layer-request";
 import { MapViewControls } from "@/ui/features/world/containers/top-header/map-view-controls";
-import { type ExpeditionRules, expeditionDayEndsAt, readExpeditionRules, seasonDay, setBlockTimestampSource } from "@bibliothecadao/eternum";
+import {
+  type ExpeditionRules,
+  expeditionDayEndsAt,
+  readExpeditionRules,
+  seasonDay,
+  setBlockTimestampSource,
+} from "@bibliothecadao/eternum";
 import { deepCenter, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { StructureType } from "@bibliothecadao/types";
 import { frontierPreset } from "../../../../../../../config/source/frontier/native";

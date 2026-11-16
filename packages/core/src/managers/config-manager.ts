@@ -1,6 +1,20 @@
 import { exploreStaminaCost } from "../utils/explore-stamina";
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
-import { BiomeType, BuildingType, CapacityConfig, EntityType, getProducedResource, RESOURCE_PRECISION, wholePoints, ResourcesIds, StructureType, TickIds, troopTierIndex, TroopTier, TroopType } from "@bibliothecadao/types";
+import {
+  BiomeType,
+  BuildingType,
+  CapacityConfig,
+  EntityType,
+  getProducedResource,
+  RESOURCE_PRECISION,
+  wholePoints,
+  ResourcesIds,
+  StructureType,
+  TickIds,
+  troopTierIndex,
+  TroopTier,
+  TroopType,
+} from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 
 /** The first relic's resource id: the game's relic rules are listed from it (relics.cairo FIRST_RELIC). */

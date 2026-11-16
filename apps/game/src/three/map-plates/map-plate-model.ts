@@ -55,7 +55,6 @@ export interface ArmyPlate {
   inBattle?: boolean;
   /** Whose it is to a watching viewer; absent while the viewer plays. */
   watched?: PlateWatched;
-  
 }
 
 /**

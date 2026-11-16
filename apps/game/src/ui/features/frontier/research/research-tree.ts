@@ -1,6 +1,14 @@
 import { logisticsStamina, researchHasIndependentSides } from "@bibliothecadao/eternum";
 import type { IconMeaning, IconMark } from "@/ui/design-system/icon";
-import { depthName, RESEARCH_TREE, SHRINE, STAMINA, type RankedWords, type Tier, WELL } from "@/ui/design-system/kit/words";
+import {
+  depthName,
+  RESEARCH_TREE,
+  SHRINE,
+  STAMINA,
+  type RankedWords,
+  type Tier,
+  WELL,
+} from "@/ui/design-system/kit/words";
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, formatExact, formatFigure, formatPercent, rankName } from "@bibliothecadao/types";
 

@@ -35,7 +35,6 @@ function equalArmies(lastTarget: number | undefined) {
             value: {
               game_id: GAME_ID,
               explorer_id: ARMY,
-              charge: 5,
               last_target: lastTarget === -1 ? opponent : lastTarget,
             },
           },
@@ -62,20 +61,9 @@ function equalArmies(lastTarget: number | undefined) {
   return { store, timestamp };
 }
 
-it("plans a Deep site opportunity from the opening still available to this army", () => {
-  const fresh = equalArmies(0);
-  const spent = equalArmies(-1);
-  expect(planDeepSiteWatches(fresh.store, player, fresh.timestamp * 1000).map(({ dueAt }) => dueAt)).toEqual([
-    fresh.timestamp * 1000,
+it.each([0, -1, undefined])("plans an exact Deep opportunity independently of last target %s", (lastTarget) => {
+  const { store, timestamp } = equalArmies(lastTarget);
+  expect(planDeepSiteWatches(store, player, timestamp * 1000).map(({ dueAt }) => dueAt)).toEqual([
+    (Math.floor(timestamp / ARMIES_TICK_SECONDS) + 1) * ARMIES_TICK_SECONDS * 1000,
   ]);
-  expect(planDeepSiteWatches(spent.store, player, spent.timestamp * 1000).map(({ dueAt }) => dueAt)).toEqual([
-    (Math.floor(spent.timestamp / ARMIES_TICK_SECONDS) + 1) * ARMIES_TICK_SECONDS * 1000,
-  ]);
-});
-
-it("does not plan a Deep site opportunity from an unknown opening", () => {
-  const { store, timestamp } = equalArmies(undefined);
-  expect(() => planDeepSiteWatches(store, player, timestamp * 1000)).toThrow(
-    "Deep alert is missing the attacker's Charge fact",
-  );
 });

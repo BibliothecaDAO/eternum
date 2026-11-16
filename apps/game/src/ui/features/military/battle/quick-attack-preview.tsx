@@ -26,7 +26,18 @@ import { combatTitle, describeFightCost, forecastAttack } from "./fight-forecast
 import { useAttackTargetData } from "./hooks/use-attack-target";
 import { AttackTarget, TargetType } from "./types";
 
-import { BiomeType, getDirectionBetweenAdjacentHexes, getLayeredAttackDistance, getTroopAttackRange, RESOURCE_PRECISION, type ActorType, type ID, type Troops, formatWait, formatExact } from "@bibliothecadao/types";
+import {
+  BiomeType,
+  getDirectionBetweenAdjacentHexes,
+  getLayeredAttackDistance,
+  getTroopAttackRange,
+  RESOURCE_PRECISION,
+  type ActorType,
+  type ID,
+  type Troops,
+  formatWait,
+  formatExact,
+} from "@bibliothecadao/types";
 import { TierChip } from "../utils/tier-chip";
 import { toast } from "@/ui/features/event-feed/notify";
 

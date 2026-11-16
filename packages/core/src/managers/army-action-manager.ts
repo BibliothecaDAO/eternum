@@ -2,7 +2,22 @@ import { armyCombatRefusal } from "../utils/army-opponents";
 import { currentArmy } from "../utils/deep";
 import { safeInteger } from "../utils/safe-integer";
 import { entityMapPosition } from "../utils/tile";
-import { type BiomeType, type ContractAddress, type GameplayAccount, getLayerNeighborHexes, getLayeredAttackDistance, getNeighborHexes, getTroopAttackRange, type HexEntityInfo, type HexPosition, type ID, ResourcesIds, TileOccupier, type SystemCalls, type TroopType } from "@bibliothecadao/types";
+import {
+  type BiomeType,
+  type ContractAddress,
+  type GameplayAccount,
+  getLayerNeighborHexes,
+  getLayeredAttackDistance,
+  getNeighborHexes,
+  getTroopAttackRange,
+  type HexEntityInfo,
+  type HexPosition,
+  type ID,
+  ResourcesIds,
+  TileOccupier,
+  type SystemCalls,
+  type TroopType,
+} from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { Account, AccountInterface } from "starknet";
 import { divideByPrecision, FELT_CENTER } from "../utils/utils";

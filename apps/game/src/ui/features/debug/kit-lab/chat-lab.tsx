@@ -11,7 +11,11 @@ import { placeMetadata, sharedPlaceOf } from "@/ui/features/social/realtime-chat
 import { replyMetadata } from "@/ui/features/social/realtime-chat/model/reply";
 import { setActiveGame } from "@/runtime/world/store";
 import { useRealtimeChatStore } from "@/ui/features/social/realtime-chat/model/store";
-import type { DirectMessage, DirectMessageThreadState, WorldChatMessage } from "@/ui/features/social/realtime-chat/model/types";
+import type {
+  DirectMessage,
+  DirectMessageThreadState,
+  WorldChatMessage,
+} from "@/ui/features/social/realtime-chat/model/types";
 import { HudButton, HudEventRow, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { HudChatWindow } from "@/ui/features/world/containers/hud-chat-window";
 import { EventsPanel } from "@/ui/features/world/hud/events-card";

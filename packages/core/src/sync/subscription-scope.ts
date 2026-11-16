@@ -1,5 +1,12 @@
 import { TileOccupier } from "@bibliothecadao/types";
-import { expeditionRealmSite, entityHomeNamespace, isCurrentExpeditionArmy, isRealmCategory, seasonDay, type ExpeditionRules } from "../utils/expeditions";
+import {
+  expeditionRealmSite,
+  entityHomeNamespace,
+  isCurrentExpeditionArmy,
+  isRealmCategory,
+  seasonDay,
+  type ExpeditionRules,
+} from "../utils/expeditions";
 import { hasSingleTilePosition } from "../client/native-occupancy";
 import { gameSyncRegion, syncScalar, type GameSyncScope, type SCOPE_INPUT_MODELS } from "./model-manifest";
 

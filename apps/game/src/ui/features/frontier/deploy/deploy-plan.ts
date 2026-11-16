@@ -1,9 +1,32 @@
 import { exploreStaminaOf } from "@/lib/army-stamina/explore-stamina";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
-import { configManager, type GameActions, getBalance, getTroopResourceId, canPayTroopRaise, readTroopRaiseCost, realmLearned, researchTier } from "@bibliothecadao/eternum";
-import { nativeResearchConstants as research, safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  configManager,
+  type GameActions,
+  getBalance,
+  getTroopResourceId,
+  canPayTroopRaise,
+  readTroopRaiseCost,
+  realmLearned,
+  researchTier,
+} from "@bibliothecadao/eternum";
+import {
+  nativeResearchConstants as research,
+  safeInteger,
+  type NativeFactStore,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 import { musterStamina, type OpenArmySlot, openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
-import { type Direction, RESOURCE_PRECISION, ResourcesIds, TickIds, TROOP_TIERS, TROOP_TYPES, type TroopTier, type TroopType } from "@bibliothecadao/types";
+import {
+  type Direction,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  TickIds,
+  TROOP_TIERS,
+  TROOP_TYPES,
+  type TroopTier,
+  type TroopType,
+} from "@bibliothecadao/types";
 
 /**
  * An open army slot and the stamina a new army starts on in it (the owner, 20 October 2026: "stamina is slot tied"):

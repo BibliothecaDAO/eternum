@@ -6,8 +6,6 @@ import { nativeResearchConstants as research } from "@bibliothecadao/eternum/gam
 import type { ArmyView } from "../army/army-detail";
 import type { RealmResearchFacts } from "./research-tree";
 
-
-
 const price = (row: number, tier: number) => {
   const entry = preset.research.find((candidate) => candidate.row === row && candidate.tier === tier);
   if (!entry) throw new Error(`Missing research price ${row}/${tier}`);

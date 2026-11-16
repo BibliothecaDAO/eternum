@@ -323,7 +323,26 @@ import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import { SHARED_MOMENT_WORDS, type CampaignKey, type SocialProvider } from "@realms-world/identity";
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
 import type { RuinChest } from "@bibliothecadao/eternum";
-import { BuildingType, buildingName, formatAmount, formatExact, formatCount, formatClockTime, formatDuration, getRelicInfo, relicEffect, ResourcesIds, formatCharge, resourceName, formatHeldAgainst, structureName, StructureType, tierNumeral as rankNumeral, asRanked, type RankedWords } from "@bibliothecadao/types";
+import {
+  BuildingType,
+  buildingName,
+  formatAmount,
+  formatExact,
+  formatCount,
+  formatClockTime,
+  formatDuration,
+  getRelicInfo,
+  relicEffect,
+  ResourcesIds,
+  formatCharge,
+  resourceName,
+  formatHeldAgainst,
+  structureName,
+  StructureType,
+  tierNumeral as rankNumeral,
+  asRanked,
+  type RankedWords,
+} from "@bibliothecadao/types";
 
 /** One scale for chests, building types and attributes. */
 export { TIER_WORDS } from "@bibliothecadao/types";
@@ -419,7 +438,6 @@ export const LATER = "Later";
 export const CLOSE = "Close";
 /** The safe choice on a confirm: the primary. */
 export const KEEP = "Keep";
-
 
 /** The resources Frontier's stores hold, by the catalog's names: one casing, at a line's start or inside it. */
 export const ESSENCE = resourceName(ResourcesIds.Essence);

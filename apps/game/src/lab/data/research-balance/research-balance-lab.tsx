@@ -3,7 +3,21 @@ import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudPanel, HudTier, HudTabs } from "@/ui/design-system/kit/hud-elements";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { beastReplay, CAMP_LABOR, capacity, DEPTHS, effect, LIVE_CAPACITY, nextPrice, number, REALMS, REVEAL_LABOR, ROWS, type Counts, type StudyRow } from "./balance-options";
+import {
+  beastReplay,
+  CAMP_LABOR,
+  capacity,
+  DEPTHS,
+  effect,
+  LIVE_CAPACITY,
+  nextPrice,
+  number,
+  REALMS,
+  REVEAL_LABOR,
+  ROWS,
+  type Counts,
+  type StudyRow,
+} from "./balance-options";
 
 /** The October 2026 balance study, retained with its original replay inputs. */
 export function ResearchBalanceLab() {
@@ -232,8 +246,8 @@ function BeastStudy() {
             <Reward name="Stronger beasts" guards={rules.strong} labor={range(rules.strong, 4)} />
             <Reward name="Camp / Trolls" guards={rules.camp} labor={range(rules.camp, 2)} />
             <p className="text-hud-label text-hud-muted">
-              Labor pays once on the clear, based on the starting guard. No extra depth multiplier; deeper
-              beasts already have more guards.
+              Labor pays once on the clear, based on the starting guard. No extra depth multiplier; deeper beasts
+              already have more guards.
             </p>
           </HudPanel>
         </div>

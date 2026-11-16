@@ -641,11 +641,7 @@ pub fn assert_capture_at(
     assert_eq!(
         site_after,
         crate::expeditions::ExpeditionSite {
-            clear: Some(
-                crate::expeditions::SiteClear {
-                    explorer_id, home_id: home.entity_id, reward: camp_reward,
-                },
-            ),
+            clear: Some(crate::expeditions::SiteClear { explorer_id, home_id: home.entity_id, reward: camp_reward }),
             ..site_before,
         },
     );

@@ -18,7 +18,6 @@ import { type LogLine, TodaySheet } from "./today-sheet";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof readExpeditionRules>>;
 
-
 export const FrontierToday = ({
   rules,
   realm,

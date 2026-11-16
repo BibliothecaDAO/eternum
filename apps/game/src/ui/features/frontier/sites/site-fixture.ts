@@ -1,7 +1,11 @@
 import { BiomeType, StructureType, TileOccupier } from "@bibliothecadao/types";
 import type { SiteKind } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { nativeFactModels, type NativeModelName, type NativeRows } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
+import {
+  nativeFactModels,
+  type NativeModelName,
+  type NativeRows,
+} from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";

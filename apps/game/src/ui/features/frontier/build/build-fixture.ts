@@ -1,6 +1,12 @@
 import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { type BuildingType, RESOURCE_PRECISION, ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
+import {
+  type BuildingType,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  StructureType,
+  TileOccupier,
+} from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 
 const set = (key: string, model: string, value: Record<string, unknown>) => ({ model, key, value });

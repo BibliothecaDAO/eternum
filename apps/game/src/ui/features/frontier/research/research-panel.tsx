@@ -3,13 +3,30 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, IconGroup, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudPage, HudRanked, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
 import type { Fix } from "@/ui/design-system/kit/refusal";
-import { CLOSE, RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank, type RankedWords, tierNumeral } from "@/ui/design-system/kit/words";
+import {
+  CLOSE,
+  RESEARCH,
+  RESEARCH_TREE,
+  RESEARCHING,
+  type Rank,
+  type RankedWords,
+  tierNumeral,
+} from "@/ui/design-system/kit/words";
 import { formatAmount, formatExact } from "@bibliothecadao/types";
 import { useState } from "react";
 
 import { useLayout } from "@/shell/frame/layout";
 
-import { type Branch, researchSideNode, researchSideChoice, firstMissing, type Need, needLine, type NodeState, type TreeNode } from "./research-tree";
+import {
+  type Branch,
+  researchSideNode,
+  researchSideChoice,
+  firstMissing,
+  type Need,
+  needLine,
+  type NodeState,
+  type TreeNode,
+} from "./research-tree";
 
 /**
  * Research as a tree (the owner's pick, 20 October: "Branches"): three branches side by side, Economy, Army and Castle;

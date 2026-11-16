@@ -10,7 +10,6 @@ const BEASTS = [
 ] as const;
 const troops = (count: bigint) => String(count * BigInt(RESOURCE_PRECISION));
 
-
 export const ownerDayLog = (now: number) => {
   const { store } = campBeside("Rift");
   store.applyFacts([

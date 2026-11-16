@@ -21,7 +21,6 @@ const RELIC = { kind: "Blade", rank: 2 } as const;
 /** An attack's stamina, as the map's order line names it for this army. */
 const ATTACK_STAMINA = 50n;
 
-
 export const ruinFightScenario = (): LabScenario => ruinScenario(ARMY_TROOPS, GUARD_TROOPS, besideOnOpenLand);
 
 /**

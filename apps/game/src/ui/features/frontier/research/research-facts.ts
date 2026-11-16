@@ -2,8 +2,22 @@ import { WELL_REFILL_PERCENT } from "@bibliothecadao/eternum/troop-stamina";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { knownAmount } from "@/ui/utils/utils";
-import { getBalance, realmLearned, RESEARCH_ROWS, researchHasIndependentSides, researchPicks, researchRowCategory, researchTier, ResourceManager } from "@bibliothecadao/eternum";
-import { nativeResearchConstants as research, safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  getBalance,
+  realmLearned,
+  RESEARCH_ROWS,
+  researchHasIndependentSides,
+  researchPicks,
+  researchRowCategory,
+  researchTier,
+  ResourceManager,
+} from "@bibliothecadao/eternum";
+import {
+  nativeResearchConstants as research,
+  safeInteger,
+  type NativeFactStore,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
@@ -56,7 +70,7 @@ const readResearchFacts = (
   const entity = safeInteger(realm.entity_id);
   const essence = knownAmount(getBalance(entity, ResourcesIds.Essence, tick, store).balance);
   const labor = knownAmount(getBalance(entity, ResourcesIds.Labor, tick, store).balance);
-  
+
   const board = store.get("BoardRules", { game_id: realm.game_id });
   if (learned === undefined || essence === undefined || labor === undefined || !board) return undefined;
   const rows = decodeLearned(learned);

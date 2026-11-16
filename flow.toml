@@ -123,7 +123,7 @@ paths = "flow.toml contracts/l3/"
 estimate_gb = 1
 
 [kind.generate-native-retirement]
-cmd = '''trap 'git diff --binary > "$FLOW_TMP/generated.patch"' EXIT; node contracts/l3/world-native/scripts/generate-story-serde.mjs && bash contracts/l3/check-native.sh build && pnpm run schema:native && pnpm run fixtures:native-presets && (cd contracts/l3/world-native && scarb fmt) && (cd contracts/l3/world-native/tests && scarb fmt) && pnpm run format && git add -N -- contracts/l3/world-native/tests/fixtures/current-presets && git diff --binary > "$FLOW_TMP/generated.patch"'''
+cmd = '''trap 'git diff --binary > "$FLOW_TMP/generated.patch"' EXIT; node contracts/l3/world-native/scripts/generate-story-serde.mjs && bash contracts/l3/check-native.sh build && pnpm run schema:native && pnpm --dir config run config:generate && pnpm run fixtures:native-presets && (cd contracts/l3/world-native && scarb fmt) && (cd contracts/l3/world-native/tests && scarb fmt) && pnpm run format && git add -N -- contracts/l3/world-native/tests/fixtures/current-presets && git diff --binary > "$FLOW_TMP/generated.patch"'''
 estimate_gb = 9
 
 [kind.playtest-economy]
@@ -343,7 +343,7 @@ cmd = "bash contracts/l3/test-native.sh --package world_tests_lifecycle* ::tests
 estimate_gb = 9
 
 [kind.test-ruin-effects]
-cmd = "bash contracts/l3/test-native.sh --package world_tests_resources* fixture_grants_preserve_the_existing_production_clock && bash contracts/l3/test-native.sh --package world_tests_lifecycle* far_eye_discovers_pays_and_grants_xp_for_each_new_tile_only_once && bash contracts/l3/test-native.sh --package world_tests_lifecycle* spoils_doubles_numeric_clears_and_records_xp_but_keeps_ruin_relics"
+cmd = "bash contracts/l3/test-native.sh --package world_tests_resources* fixture_grants_preserve_the_existing_production_clock && bash contracts/l3/test-native.sh --package world_tests_lifecycle* far_eye_discovers_and_pays_for_each_new_tile_only_once && bash contracts/l3/test-native.sh --package world_tests_lifecycle* spoils_doubles_numeric_clears_and_keeps_ruin_relics"
 estimate_gb = 9
 
 [kind.playtest-supply-post]

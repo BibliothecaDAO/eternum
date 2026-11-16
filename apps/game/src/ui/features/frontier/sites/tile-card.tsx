@@ -16,7 +16,13 @@ import { toast } from "@/ui/features/event-feed/notify";
 
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { biomeTypeOf, configManager, getStructureName, isViewerOwner, ruinDisappeared } from "@bibliothecadao/eternum";
-import { armyCombatRefusal, safeInteger, type GameClientSetup, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  armyCombatRefusal,
+  safeInteger,
+  type GameClientSetup,
+  type NativeFactStore,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useEffect, useMemo, type ReactNode } from "react";
@@ -109,7 +115,6 @@ const readTarget = (store: NativeFactStore, target: AttackTarget, attack: SiteAt
 
 const targetId = (target: AttackTarget): number =>
   safeInteger(target.kind === "site" ? target.site.entity_id : target.army.explorer_id);
-
 
 export const TileCard = ({
   selected,

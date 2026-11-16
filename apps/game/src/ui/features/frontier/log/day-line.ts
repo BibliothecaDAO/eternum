@@ -1,4 +1,13 @@
-import { builtLine, clearCostLine, deployedLine, disbandedLine, EXPLORED, ESSENCE, LABOR, revealLine } from "@/ui/design-system/kit/words";
+import {
+  builtLine,
+  clearCostLine,
+  deployedLine,
+  disbandedLine,
+  EXPLORED,
+  ESSENCE,
+  LABOR,
+  revealLine,
+} from "@/ui/design-system/kit/words";
 import { findGain } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { LORDS, type RankedWords, ResourcesIds, scaledToUnits } from "@bibliothecadao/types";
@@ -24,7 +33,6 @@ const REVEAL_WORDS: Partial<Record<number, string>> = {
   [ResourcesIds.Labor]: LABOR,
   [ResourcesIds.Lords]: LORDS,
 };
-
 
 export const dayLogLine = (story: LoggedStory, store: NativeFactStore, fight?: LoggedStory): RankedWords | string => {
   const payload = story.storyPayload;

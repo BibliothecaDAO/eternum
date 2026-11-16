@@ -4,7 +4,13 @@
 // @vitest-environment jsdom
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
-import { buildStoryEventPresentation, configManager, expeditionDepth, readExpeditionRules, siteDisplayName } from "@bibliothecadao/eternum";
+import {
+  buildStoryEventPresentation,
+  configManager,
+  expeditionDepth,
+  readExpeditionRules,
+  siteDisplayName,
+} from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { FALLEN_REALM_DEPTHS, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -359,7 +365,6 @@ it("reads a historical skill purchase through the story formatter", async () => 
   });
   expect((await draw(row)).words).toBe("Krump · Battle IV");
   expect(gems()).toEqual([["IV", "line"]]);
-
 });
 
 it("draws a tier bought and a Shrine's point in the story's own words, each rank as its gem", async () => {

@@ -1,14 +1,48 @@
 import { MEDAL_COLORS } from "@/tokens";
-import { formatTypedNumber, formatExact, formatPercent, formatShortDuration, readTypedNumber, typedNumberText, formatAmount } from "@bibliothecadao/types";
+import {
+  formatTypedNumber,
+  formatExact,
+  formatPercent,
+  formatShortDuration,
+  readTypedNumber,
+  typedNumberText,
+  formatAmount,
+} from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { type ButtonHTMLAttributes, createContext, forwardRef, Fragment, type HTMLAttributes, type InputHTMLAttributes, type KeyboardEvent, type MouseEvent, type ReactNode, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import {
+  type ButtonHTMLAttributes,
+  createContext,
+  forwardRef,
+  Fragment,
+  type HTMLAttributes,
+  type InputHTMLAttributes,
+  type KeyboardEvent,
+  type MouseEvent,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 
 import { useModalLayer } from "./modal-layer";
 import { revealOwnPlace } from "./own-place";
 import { useDragDownCloses, useSheetCloses } from "./sheet-closes";
-import { CLOSE, type RankedWords, rankedText, STAMINA, type Tier, type Rank, tierNumeral, TIER_WORDS, TRY_AGAIN } from "./words";
+import {
+  CLOSE,
+  type RankedWords,
+  rankedText,
+  STAMINA,
+  type Tier,
+  type Rank,
+  tierNumeral,
+  TIER_WORDS,
+  TRY_AGAIN,
+} from "./words";
 
 /**
  * The HUD's elements: everything the game draws over the map, each built only from the HUD scope of the token file

@@ -11,7 +11,12 @@
 import { RealmLevelNames } from "../constants/realmLevels";
 import { ResourcesIds } from "../constants/resource-ids";
 import { resources } from "../constants/resources";
-import { BuildingType, BuildingTypeToString, getMinePresentation, StructureTypeToNameMapping } from "../constants/structures";
+import {
+  BuildingType,
+  BuildingTypeToString,
+  getMinePresentation,
+  StructureTypeToNameMapping,
+} from "../constants/structures";
 import { GUARD_SLOT_NAMES, type GuardSlot } from "../constants/troops";
 import { StructureType } from "../constants/structure-type";
 import { TROOP_TYPES, TroopType } from "../types/common";

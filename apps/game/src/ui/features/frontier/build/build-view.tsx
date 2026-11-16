@@ -1,10 +1,35 @@
 import { rankName } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { formatExact, formatCharge, formatPopulation, formatPopulationInWords, formatShort, formatShortDuration } from "@bibliothecadao/types";
+import {
+  formatExact,
+  formatCharge,
+  formatPopulation,
+  formatPopulationInWords,
+  formatShort,
+  formatShortDuration,
+} from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudCard, HudChip, HudConfirm, HudCost, HudNotice, HudSheet, HudWindowFoot, rankedTip } from "@/ui/design-system/kit/hud-elements";
+import {
+  HudButton,
+  HudCard,
+  HudChip,
+  HudConfirm,
+  HudCost,
+  HudNotice,
+  HudSheet,
+  HudWindowFoot,
+  rankedTip,
+} from "@/ui/design-system/kit/hud-elements";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
-import { BUILD, BUILDING, POPULATION, PRICE_UP, type Rank, type RankedWords, ROOM_ASK } from "@/ui/design-system/kit/words";
+import {
+  BUILD,
+  BUILDING,
+  POPULATION,
+  PRICE_UP,
+  type Rank,
+  type RankedWords,
+  ROOM_ASK,
+} from "@/ui/design-system/kit/words";
 
 import { PRICE_FACES, costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import type { ReactNode } from "react";

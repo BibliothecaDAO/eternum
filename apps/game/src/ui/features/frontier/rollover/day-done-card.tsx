@@ -1,7 +1,18 @@
 import { formatShort } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudNotice, HudPanel } from "@/ui/design-system/kit/hud-elements";
-import { ARMIES_ENDED, CONTINUE, DAY, DAY_DONE, DAY_SHARE_WORDS, DAY_TOTALS_UNKNOWN, DAY_OPEN, REALM_KEPT, TROOPS, tomorrowLasts } from "@/ui/design-system/kit/words";
+import {
+  ARMIES_ENDED,
+  CONTINUE,
+  DAY,
+  DAY_DONE,
+  DAY_SHARE_WORDS,
+  DAY_TOTALS_UNKNOWN,
+  DAY_OPEN,
+  REALM_KEPT,
+  TROOPS,
+  tomorrowLasts,
+} from "@/ui/design-system/kit/words";
 
 import { DayEnds } from "../day-ends";
 import type { DayClock } from "../hud/day-clock";

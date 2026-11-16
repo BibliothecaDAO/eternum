@@ -115,13 +115,6 @@ const buildingPrice = (config, id) =>
   config.buildings.simpleBuildingCost[id]
     .map(({ resource, amount }) => `${n(amount)} ${resourceName(resource)}`)
     .join(" + ");
-const FARM = 37;
-const WAR_HALL = 41;
-
-/** One Knight's wheat, as its recipe takes it per troop made: Frontier deploys Knights only. */
-const wheatPerTroop = (config) =>
-  config.resources.productionBySimpleRecipe[26].find((input) => input.resource === 35).amount /
-  config.resources.productionBySimpleRecipeOutputs[26];
 
 /**
  * Frontier's numbers, from its generated config (stamina, tick, start, castle) and its native preset (days' depths,
@@ -159,24 +152,17 @@ export const frontierPhrases = (config, preset, riftGuardBound, nativeRules) => 
     limit.kingdomDeploymentCap,
     limit.empireDeploymentCap,
   ];
-  const revealXp = preset.depths
-    .map((_, depth) => n(preset.progression.revealXp + depth * preset.progression.revealXpPerDepth))
-    .join(" / ");
   return [
     {
       page: "frontier/armies",
       phrases: [
         `An army holds ${n(stamina.staminaKnightMax)} stamina and recovers ${stamina.staminaGainPerTick} every ${tick / 60} minutes, so an empty bar fills in ${((stamina.staminaKnightMax / stamina.staminaGainPerTick) * tick) / 3600} hours.`,
         `Revealing a tile costs ${stamina.staminaExploreStaminaCost} for Knights and ${nativeRules.SCOUT_EXPLORE_STAMINA} for Scouts, a step over known ground ${stamina.staminaTravelStaminaCost}, and an attack needs ${stamina.staminaAttackReq}.`,
-        `An army earns ${revealXp} XP per revealed tile at ${DEPTH_NAMES.join(" / ")}.`,
-        `At ${TIERS.map((tier) => n(preset.progression[`${tier}Xp`])).join(" / ")} XP it earns Common I, Uncommon II, Rare III, Epic IV and Legendary V skill points.`,
-        `The same milestones repeat every ${n(preset.progression.legendaryXp)} XP.`,
       ],
     },
     {
       page: "frontier/expedition",
       phrases: [
-        `Each reveal also gives the army ${revealXp} XP at ${DEPTH_NAMES.join(" / ")}.`,
         ...frontierGuardPhrases(preset, riftGuardBound),
         ...preset.depths.map((depth, index) => `${DEPTH_NAMES[index]} ${depth.revealPercent}%`),
       ],
@@ -186,12 +172,11 @@ export const frontierPhrases = (config, preset, riftGuardBound, nativeRules) => 
       phrases: [
         `A new realm starts with ${start(26)} troops, ${start(35)} wheat and ${start(23)} labor.`,
         `receive ${n(preset.dailyQuest.labor)} Labor and ${n(preset.dailyQuest.essence)} Essence.`,
-        `The Barracks researches Charge: new Knight armies land ${Array.from({ length: 5 }, (_, index) => `${(index + 1) * nativeRules.CHARGE_PERCENT_PER_TIER}%`).join(" / ")} of their opening hit before the defender answers`,
         ...armies.map((count, index) => `${index + 1} ${n(count)} ${n(caps[index])}`),
         // An ordinary building and a training building: each price whole, by resource (a training building takes two).
-        `Farm Wheat ${buildingPrice(config, FARM)}`,
+        `Farm Wheat ${buildingPrice(config, BuildingType.ResourceWheat)}`,
         `Scouts' lodge Scouts ${buildingPrice(config, BuildingType.ScoutsLodge)}`,
-        `War hall, Supply yard, Hearth A tier for every new army ${buildingPrice(config, WAR_HALL)}`,
+        `Supply yard Logistics training ${buildingPrice(config, BuildingType.SupplyYard)}`,
       ],
     },
   ];

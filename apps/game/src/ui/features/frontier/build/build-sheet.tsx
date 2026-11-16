@@ -11,15 +11,39 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 
 import { PRICE_FACES, type PriceKind } from "@/ui/design-system/kit/price-faces";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
-import { makes, ONE_A_REALM, POPULATION, priceRaised, ROOM_ASK, startsNewArmies, type RankedWords, takesPopulation } from "@/ui/design-system/kit/words";
+import {
+  makes,
+  ONE_A_REALM,
+  POPULATION,
+  priceRaised,
+  ROOM_ASK,
+  startsNewArmies,
+  type RankedWords,
+  takesPopulation,
+} from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { knownAmount } from "@/ui/utils/utils";
 import { plotKey, sendBuilding, useStillShowing } from "@/ui/features/settlement/construction/send-building";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import { buildableRadius, configManager, getBalance, getRealmInfo, resolveUseSimpleCost } from "@bibliothecadao/eternum";
+import {
+  buildableRadius,
+  configManager,
+  getBalance,
+  getRealmInfo,
+  resolveUseSimpleCost,
+} from "@bibliothecadao/eternum";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { BUILDINGS_CENTER, BuildingType, formatAmount, formatCharge, formatGain, formatRate, getHexDistance, type HexPosition } from "@bibliothecadao/types";
+import {
+  BUILDINGS_CENTER,
+  BuildingType,
+  formatAmount,
+  formatCharge,
+  formatGain,
+  formatRate,
+  getHexDistance,
+  type HexPosition,
+} from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 
 import { readRealmPopulation } from "../realm/realm-population";

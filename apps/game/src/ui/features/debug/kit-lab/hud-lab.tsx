@@ -17,7 +17,19 @@ import { TransferTroopsSheet, useSelectedTransfer } from "@/ui/features/frontier
 import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { HudIconButton, HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { ARMY, ARMY_MANAGEMENT, EVENTS_WORDS, LINK_WALLET_FOR_LORDS, OFFLINE, PAYOUTS_PAUSED, ROOM_ASK, type Rank, WITHDRAWALS_CLOSED, YOU, siteDepthName } from "@/ui/design-system/kit/words";
+import {
+  ARMY,
+  ARMY_MANAGEMENT,
+  EVENTS_WORDS,
+  LINK_WALLET_FOR_LORDS,
+  OFFLINE,
+  PAYOUTS_PAUSED,
+  ROOM_ASK,
+  type Rank,
+  WITHDRAWALS_CLOSED,
+  YOU,
+  siteDepthName,
+} from "@/ui/design-system/kit/words";
 import { ArmyList, ArmyRow, OpenSlotRow } from "@/ui/features/frontier/hud/army-row";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
 import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
@@ -385,7 +397,15 @@ const BUILD_TILES: LabTile[] = [
     price(6_800),
   ),
   tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, gem(1), 0, price(5_100)),
-  tile("supply", "supply-yard", buildingName(BuildingType.SupplyYard), { icon: "order-skill" }, gem(1), 2, trainingPrice),
+  tile(
+    "supply",
+    "supply-yard",
+    buildingName(BuildingType.SupplyYard),
+    { icon: "order-skill" },
+    gem(1),
+    2,
+    trainingPrice,
+  ),
 ];
 /**
  * The owner's realm on 3 November: every training building's Essence short while its Labor is held, and the Hut's Labor
@@ -427,7 +447,15 @@ const EARLY_TILES: LabTile[] = [
     price(800),
   ),
   tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, gem(1), 0, price(300)),
-  tile("supply", "supply-yard", buildingName(BuildingType.SupplyYard), { icon: "order-skill" }, gem(1), 2, trainingPrice),
+  tile(
+    "supply",
+    "supply-yard",
+    buildingName(BuildingType.SupplyYard),
+    { icon: "order-skill" },
+    gem(1),
+    2,
+    trainingPrice,
+  ),
 ];
 const CASTLE_SIDE = (level: number, limit: number) => ({
   level,

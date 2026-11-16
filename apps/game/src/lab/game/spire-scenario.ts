@@ -3,7 +3,13 @@ import { raceRules } from "./race-scenario";
 import { installLabGame } from "@/ui/features/debug/kit-lab/fixture-game";
 import { SPIRE_ARMY, SPIRE_DAY_NOW, applySpireDiscovery, spireDay } from "@/ui/features/frontier/spire-fixture";
 import { entityHomeNamespace, expeditionRealmSite, readExpeditionRules } from "@bibliothecadao/eternum";
-import { BiomeType, BiomeTypeToId, getHexesWithinRadius, getNeighborHexes, type ResourcesIds } from "@bibliothecadao/types";
+import {
+  BiomeType,
+  BiomeTypeToId,
+  getHexesWithinRadius,
+  getNeighborHexes,
+  type ResourcesIds,
+} from "@bibliothecadao/types";
 
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 

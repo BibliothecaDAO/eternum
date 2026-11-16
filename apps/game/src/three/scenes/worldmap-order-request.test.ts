@@ -1,7 +1,14 @@
 import { ActionType } from "@bibliothecadao/eternum";
 import { describe, expect, it } from "vitest";
 
-import { attackConfirmsOnTileCard, isTouchHold, orderOnTap, orderVerbOnHud, pinsOrder, stepBackOnEscape } from "./worldmap-order-request";
+import {
+  attackConfirmsOnTileCard,
+  isTouchHold,
+  orderOnTap,
+  orderVerbOnHud,
+  pinsOrder,
+  stepBackOnEscape,
+} from "./worldmap-order-request";
 
 const step = (actionType: ActionType) => ({ hex: { col: 0, row: 0 }, actionType });
 const tap = (path: ReturnType<typeof step>[] | undefined, site = false, ownSpire = false) =>

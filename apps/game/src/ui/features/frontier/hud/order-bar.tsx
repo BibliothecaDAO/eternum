@@ -2,7 +2,19 @@ import { formatDuration, formatShort } from "@bibliothecadao/types";
 import { type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudIconButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 
-import { CANCEL, ESSENCE, EXPLORE, LABOR, LEFT, MOVE, NEXT_ORDER, AFTER_THIS_ONE, STAMINA, WHEAT, heldAgainstNeed } from "@/ui/design-system/kit/words";
+import {
+  CANCEL,
+  ESSENCE,
+  EXPLORE,
+  LABOR,
+  LEFT,
+  MOVE,
+  NEXT_ORDER,
+  AFTER_THIS_ONE,
+  STAMINA,
+  WHEAT,
+  heldAgainstNeed,
+} from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 import { type Cost, isCovered } from "./army-order";

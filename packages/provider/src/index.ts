@@ -200,11 +200,33 @@ import { requireBatchReceipt } from "./native-batch";
 import * as SystemProps from "@bibliothecadao/types";
 import EventEmitter from "eventemitter3";
 import type { Abi } from "starknet";
-import { Account, AccountInterface, AllowArray, BigNumberish, Call, CallData, GetTransactionReceiptResponse, RpcProvider, shortString, uint256 } from "starknet";
+import {
+  Account,
+  AccountInterface,
+  AllowArray,
+  BigNumberish,
+  Call,
+  CallData,
+  GetTransactionReceiptResponse,
+  RpcProvider,
+  shortString,
+  uint256,
+} from "starknet";
 import { classifyTransactionError, extractErrorMessage, TransactionFailure } from "./classify-transaction-error";
 import { encodeNativeCommand, type NativeCommand } from "./native-command";
 import { ACTION_CHECKING_AFTER_MS, TransactionNotSentError } from "./transaction-not-sent";
-import { TransactionFailedPayload, TransactionFailureStage, TransactionLifecycleMeta, TransactionProviderState, TransactionRetrySafety, TransactionStreamWaiter, TransactionSubmitFailureKind, TransactionSubmitGuard, TransactionSubmitGuardContext, TransactionType } from "./types";
+import {
+  TransactionFailedPayload,
+  TransactionFailureStage,
+  TransactionLifecycleMeta,
+  TransactionProviderState,
+  TransactionRetrySafety,
+  TransactionStreamWaiter,
+  TransactionSubmitFailureKind,
+  TransactionSubmitGuard,
+  TransactionSubmitGuardContext,
+  TransactionType,
+} from "./types";
 /** Sends one game command as the signer's own transaction; resolves with its hash as soon as the send returns. */
 export type NativeSubmission = (signer: AccountInterface, calls: AllowArray<Call>) => Promise<SubmittedTransaction>;
 /**

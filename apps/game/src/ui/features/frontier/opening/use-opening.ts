@@ -4,7 +4,13 @@ import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { type ExpeditionRules, DAILY_QUEST_MODELS, getBuildingQuantity, readDailyQuest } from "@bibliothecadao/eternum";
-import { isDeepTile, RACE_MODELS, readRaceBoard, safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  isDeepTile,
+  RACE_MODELS,
+  readRaceBoard,
+  safeInteger,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useEffect } from "react";
 
@@ -14,7 +20,14 @@ import { useDockArmies } from "../hud/dock-armies";
 import { useRacesAspects } from "../aspect/races-aspects";
 import { useRealmStores } from "../realm-stores";
 import { type Opened, type OpeningMoment } from "./opening";
-import { type OpeningHeld, accountProgress, nextLine, siteAlertOfferDue, openedMoments, reachedOnState } from "./opening-state";
+import {
+  type OpeningHeld,
+  accountProgress,
+  nextLine,
+  siteAlertOfferDue,
+  openedMoments,
+  reachedOnState,
+} from "./opening-state";
 import { SITE_ALERT_OFFER } from "./use-site-alert-offer";
 import { flush, loadOpening, reachMoments, seeLine, useOpeningStore } from "./opening-store";
 

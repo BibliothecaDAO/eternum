@@ -12,7 +12,15 @@ import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import { getStructureModelPaths } from "../constants/scene-constants";
 import { getGameModeConfig } from "@/config/game-modes";
 import { resolveStructureRotationY } from "./structure-orientation";
-import { FRONTIER_BEASTS, FALLEN_REALM_DEPTHS, beastBand, frontierBeast, frontierBeastModelIndex, readStandingFrontierBeast, frontierSiteComposition } from "./frontier-beast";
+import {
+  FRONTIER_BEASTS,
+  FALLEN_REALM_DEPTHS,
+  beastBand,
+  frontierBeast,
+  frontierBeastModelIndex,
+  readStandingFrontierBeast,
+  frontierSiteComposition,
+} from "./frontier-beast";
 
 const DEPTH_BOUNDS = [
   { beast_weak_lower: 300, beast_weak_upper: 350, beast_strong_lower: 450, beast_strong_upper: 550 },

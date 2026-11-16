@@ -10,7 +10,6 @@ import { useSearchParams } from "react-router-dom";
 
 const noop = () => undefined;
 
-
 export const ProgressionLab = () => {
   useHudMode("frontier");
   const [params, setParams] = useSearchParams();

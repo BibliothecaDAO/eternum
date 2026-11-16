@@ -31,7 +31,18 @@ import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { ActionPaths, ActionType, ArmyActionManager, configManager, expeditionDepth, expeditionDayEndsAt, expeditionSpires, armyRealmSpire, armySpireChance, setBlockTimestampSource } from "@bibliothecadao/eternum";
+import {
+  ActionPaths,
+  ActionType,
+  ArmyActionManager,
+  configManager,
+  expeditionDepth,
+  expeditionDayEndsAt,
+  expeditionSpires,
+  armyRealmSpire,
+  armySpireChance,
+  setBlockTimestampSource,
+} from "@bibliothecadao/eternum";
 import { StructureType, TileOccupier } from "@bibliothecadao/types";
 import { attachMapSelectionPositions } from "@/hooks/store/map-selection";
 import { useArmyPanelOpens } from "./army/army-opens";

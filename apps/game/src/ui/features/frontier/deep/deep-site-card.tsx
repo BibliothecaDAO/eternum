@@ -12,7 +12,14 @@ import { costLine } from "@/ui/design-system/kit/price-faces";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { toast } from "@/ui/features/event-feed/notify";
 import { configManager, getStructureName, journeyDistance } from "@bibliothecadao/eternum";
-import { deepArmyLife, readDeepSites, safeInteger, nativeRuleConstants, type DeepSiteView as Site, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import {
+  deepArmyLife,
+  readDeepSites,
+  safeInteger,
+  nativeRuleConstants,
+  type DeepSiteView as Site,
+  type NativeFactStore,
+} from "@bibliothecadao/eternum/game-client";
 import { BiomeType, aspects, deepSites, formatDuration, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { isCovered, useArmyStamina, useOrderAt } from "../hud/army-order";
 import { useApproachTile } from "../sites/approach";

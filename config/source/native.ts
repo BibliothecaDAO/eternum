@@ -4,7 +4,12 @@ import { buildingIds, frontierPreset } from "./frontier/native";
 import { frontierDevconPreset } from "./frontier/devcon";
 import { blitzPreset } from "./blitz/native";
 import type { NativePreset } from "./common/native-preset";
-import { FRONTIER_ACCELERATED_PRESET_ID, FRONTIER_FIXTURE_PRESET_ID, FRONTIER_PLAYGROUND_PRESET_ID, nativeGameModeOf } from "./common/native-preset-modes";
+import {
+  FRONTIER_ACCELERATED_PRESET_ID,
+  FRONTIER_FIXTURE_PRESET_ID,
+  FRONTIER_PLAYGROUND_PRESET_ID,
+  nativeGameModeOf,
+} from "./common/native-preset-modes";
 import { ResourcesIds } from "../../packages/types/src/constants";
 import type { GameType } from "./common/types";
 

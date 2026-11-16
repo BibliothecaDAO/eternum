@@ -25,7 +25,6 @@ interface TokenReading {
   stamina: StaminaBar | null;
   /** To a watching viewer, its player's initial on the disk, in their seat's colour. */
   mark: PlateWatched["mark"];
-  
 }
 
 export const tokenReading = (plate: MapPlate): TokenReading => {

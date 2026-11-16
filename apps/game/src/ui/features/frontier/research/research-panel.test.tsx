@@ -221,34 +221,31 @@ it.each([
   [3, "+75 max stamina → +110 max stamina"],
   [4, "+110 max stamina → +150 max stamina"],
   [5, "+150 max stamina"],
-] as const)(
-  "shows the Supply yard's exact stamina gain at rank %s",
-  (tier, label) => {
-    const ranked = readResearchTree({
-      ...MID_REALM,
-      learned: { ...MID_REALM.learned, 5: { tier, sides: [] } },
-    });
-    act(() =>
-      root.render(
-        <ResearchPanel
-          nodes={ranked}
-          picked="row-5"
-          onPick={vi.fn()}
-          sending={new Set()}
-          fixFor={() => undefined}
-          onResearch={vi.fn()}
-          onClose={vi.fn()}
-        />,
-      ),
-    );
-    const card = host.querySelector("[data-lab='node-choice']")!;
-    const effect = [...card.querySelectorAll(":scope > span")].find((line) =>
-      line.textContent?.startsWith("New armies start with Logistics"),
-    );
-    // Each rank is its gem, read by its name, never a numeral in the words.
-    expect(saidWithGems(effect!)).toBe(`New armies start with Logistics · ${label}`);
-  },
-);
+] as const)("shows the Supply yard's exact stamina gain at rank %s", (tier, label) => {
+  const ranked = readResearchTree({
+    ...MID_REALM,
+    learned: { ...MID_REALM.learned, 5: { tier, sides: [] } },
+  });
+  act(() =>
+    root.render(
+      <ResearchPanel
+        nodes={ranked}
+        picked="row-5"
+        onPick={vi.fn()}
+        sending={new Set()}
+        fixFor={() => undefined}
+        onResearch={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    ),
+  );
+  const card = host.querySelector("[data-lab='node-choice']")!;
+  const effect = [...card.querySelectorAll(":scope > span")].find((line) =>
+    line.textContent?.startsWith("New armies start with Logistics"),
+  );
+  // Each rank is its gem, read by its name, never a numeral in the words.
+  expect(saidWithGems(effect!)).toBe(`New armies start with Logistics · ${label}`);
+});
 
 /** An element's words with each gem said by its name, as a screen reader reads the line. */
 const saidWithGems = (element: Element): string => {

@@ -44,14 +44,6 @@ function rejectsStaleValue(page, currentText, historicalText) {
   assert.ok(missing[0].run[0].includes(currentText));
 }
 
-test("the rendered armies check rejects the historical first-point XP", () => {
-  rejectsStaleValue(
-    "frontier/armies",
-    `At ${n(current.progression.commonXp)} /`,
-    `At ${n(historical.progression.commonXp)} /`,
-  );
-});
-
 for (const [index, depth] of current.depths.entries()) {
   for (const strength of ["Weak", "Strong"]) {
     test(`the rendered expedition check rejects historical ${strength.toLowerCase()} beasts at depth ${index}`, () => {

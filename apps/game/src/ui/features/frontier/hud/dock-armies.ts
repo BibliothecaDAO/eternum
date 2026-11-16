@@ -7,8 +7,20 @@ import { buildStaminaDisplayModel } from "@/lib/army-stamina/presentation";
 import { exploreStaminaOf } from "@/lib/army-stamina/explore-stamina";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
-import { armyEtherealLayer, configManager, type EtherealLayer, getArmyName, liveHomeArmies } from "@bibliothecadao/eternum";
-import { armyDrain, safeInteger, type DeepArmyLife, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  armyEtherealLayer,
+  configManager,
+  type EtherealLayer,
+  getArmyName,
+  liveHomeArmies,
+} from "@bibliothecadao/eternum";
+import {
+  armyDrain,
+  safeInteger,
+  type DeepArmyLife,
+  type NativeFactStore,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 import { armyNumber, resolveExplorerTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useMemo } from "react";
@@ -35,13 +47,12 @@ export type DockArmy = {
   troopsFact: NativeRows["ExplorerTroops"]["troops"];
   label: string;
   art: IconMeaning;
-  
+
   /** Its tier in each attribute, 0 to 5, by its field on the progress; unknown while its progress is. */
   stamina: StaminaBar | undefined;
   secondsToFull: number | undefined;
   troops: number;
-  
-  
+
   /** The Ethereal layer it stands in (armyEtherealLayer); none on the surface. */
   ethereal: EtherealLayer | undefined;
   /** What holding a Deep site costs it: its troops fall each tick. None while it holds no site. */

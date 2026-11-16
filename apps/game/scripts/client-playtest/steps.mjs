@@ -4538,8 +4538,7 @@ const SITE_EFFECT_STEPS = [
     },
     settleMs: 0,
     verify: ({ played }) =>
-      played.opened.after.sides.some((side) => side.includes("500")) &&
-      /3k|3,000/.test(played.text)
+      played.opened.after.sides.some((side) => side.includes("500")) && /3k|3,000/.test(played.text)
         ? completed(played)
         : failed("The camp must show 500 guards and the doubled resource payout", played),
   },

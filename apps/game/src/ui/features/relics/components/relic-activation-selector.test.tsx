@@ -4,7 +4,14 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { shortString } from "starknet";
 import { configManager, readResourceManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup, NativeRows } from "@bibliothecadao/eternum/game-client";
-import { createSystemCalls, EntityType, RelicRecipientType, RelicRecipientTypeParam, ResourcesIds, TileOccupier } from "@bibliothecadao/types";
+import {
+  createSystemCalls,
+  EntityType,
+  RelicRecipientType,
+  RelicRecipientTypeParam,
+  ResourcesIds,
+  TileOccupier,
+} from "@bibliothecadao/types";
 import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";

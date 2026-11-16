@@ -482,11 +482,7 @@ const main = async () => {
           run("press", "ArrowLeft");
           run("wait", "--text", "Move 499 to Army 3");
           const partial = readSheet();
-          if (
-            partial.text.includes(confirmLabel) ||
-            partial.struck !== null ||
-            partial.notice !== null
-          ) {
+          if (partial.text.includes(confirmLabel) || partial.struck !== null || partial.notice !== null) {
             throw new Error(`${shot}: changing the amount must clear confirmation and the merge's losses`);
           }
           if (partial.typed !== "499" || partial.slid !== "499") {

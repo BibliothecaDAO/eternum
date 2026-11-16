@@ -5,7 +5,13 @@ import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { HudCheck, HudNotice, HudWindow } from "@/ui/design-system/kit/hud-elements";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
-import { type Army, CombatParameters, CombatSimulator, configManager, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
+import {
+  type Army,
+  CombatParameters,
+  CombatSimulator,
+  configManager,
+  getGuildFromPlayerAddress,
+} from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { ActorType, BiomeType, ContractAddress, getLayeredAttackDistance, ID } from "@bibliothecadao/types";
 

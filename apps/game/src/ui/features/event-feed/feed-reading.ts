@@ -4,7 +4,19 @@ import { type IconMeaning, resourceMeaning } from "@/ui/design-system/icon-meani
 
 import { configManager, findGain, siteDisplayName } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { buildingName, CHEST_EARNED, fightVerdict, formatCharge, formatGain, type RankedWords, resourceName, type ResourcesIds, scaledToUnits, StructureType, VERDICT_WORDS } from "@bibliothecadao/types";
+import {
+  buildingName,
+  CHEST_EARNED,
+  fightVerdict,
+  formatCharge,
+  formatGain,
+  type RankedWords,
+  resourceName,
+  type ResourcesIds,
+  scaledToUnits,
+  StructureType,
+  VERDICT_WORDS,
+} from "@bibliothecadao/types";
 
 /**
  * A Feed row as Frontier's Feed draws it (owner, 26 October 2026: "in the feed I wanna see the player names even for

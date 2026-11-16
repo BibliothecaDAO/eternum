@@ -1,5 +1,10 @@
 import { learnResearch } from "@bibliothecadao/eternum";
-import { deepCenter, nativeRuleConstants, nativeResearchConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  deepCenter,
+  nativeRuleConstants,
+  nativeResearchConstants,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 import { deepSites, RESOURCE_PRECISION, TileOccupier } from "@bibliothecadao/types";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { type LabFact, type LabScenario, wire } from "./lab-chain";

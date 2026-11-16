@@ -14,11 +14,23 @@ import type { ProceduralMeleeContactEvent, ProceduralRangedReleaseEvent } from "
 import type { ArrowImpactEvent } from "@/three/projectiles/arrow-projectile-system";
 import type { ProceduralImpactAuthority } from "@/three/characters/collision/procedural-impact";
 import type { ProjectileSweepHit, ProjectileSweepRequest } from "@/three/projectiles/projectile-hit-query";
-import { ProceduralArmyCharacterLayer, type ProceduralArmyCharacterLayerStats, type ProceduralArmyCharacterPresentation } from "@/three/characters/procedural-army-character-layer";
-import { PROCEDURAL_CHARACTER_ATTACHMENT_SLOTS, reconcileProceduralArmyRepresentations, shouldPresentArmyProcedurally } from "@/three/characters/procedural-army-representation";
+import {
+  ProceduralArmyCharacterLayer,
+  type ProceduralArmyCharacterLayerStats,
+  type ProceduralArmyCharacterPresentation,
+} from "@/three/characters/procedural-army-character-layer";
+import {
+  PROCEDURAL_CHARACTER_ATTACHMENT_SLOTS,
+  reconcileProceduralArmyRepresentations,
+  shouldPresentArmyProcedurally,
+} from "@/three/characters/procedural-army-representation";
 import { resolveArmyOwnerState } from "@/three/managers/army-owner-resolution";
 import { ArmyModel } from "@/three/managers/army-model";
-import { incrementWorldmapRenderCounter, recordWorldmapRenderDuration, setWorldmapRenderGauge } from "@/three/perf/worldmap-render-diagnostics";
+import {
+  incrementWorldmapRenderCounter,
+  recordWorldmapRenderDuration,
+  setWorldmapRenderGauge,
+} from "@/three/perf/worldmap-render-diagnostics";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { resolveWorldmapContentLadder, type WorldmapContentLadder } from "@/three/scenes/worldmap-content-ladder";
 import { playerColorManager, PlayerColorProfile } from "@/three/systems/player-colors";
@@ -26,15 +38,40 @@ import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain } from "@/three/terrain/te
 import type { TerrainMovementInteraction, TerrainMovementMode } from "@/three/terrain/terrain-movement-effects";
 import type { AnimationVisibilityContext } from "@/three/types/animation";
 import { isAnimationPositionVisible } from "@/three/utils/animation-visibility";
-import { ARMY_MODEL_SCALE, ARMY_PLATE_HEIGHT, isShipModel, TROOP_TO_SHIP_MODEL } from "@/three/constants/army-constants";
+import {
+  ARMY_MODEL_SCALE,
+  ARMY_PLATE_HEIGHT,
+  isShipModel,
+  TROOP_TO_SHIP_MODEL,
+} from "@/three/constants/army-constants";
 import { ModelType } from "@/three/types/army";
 import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { readArmyMovementReadiness } from "@/ui/features/world/components/armies/army-movement-readiness";
-import { currentArmy, isAspectAlly, safeInteger, type GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
-import { FELT_CENTER, Position, StaminaManager, configManager, divideByPrecision, getBlockTimestamp, getExplorerOwner, isArmyCrossing, ResourceManager, storedBiomeAt } from "@bibliothecadao/eternum";
-import type { ArmySpatialProjectionChange, ArmySpatialRenderable, WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
+import {
+  currentArmy,
+  isAspectAlly,
+  safeInteger,
+  type GameClientSetup as SetupResult,
+} from "@bibliothecadao/eternum/game-client";
+import {
+  FELT_CENTER,
+  Position,
+  StaminaManager,
+  configManager,
+  divideByPrecision,
+  getBlockTimestamp,
+  getExplorerOwner,
+  isArmyCrossing,
+  ResourceManager,
+  storedBiomeAt,
+} from "@bibliothecadao/eternum";
+import type {
+  ArmySpatialProjectionChange,
+  ArmySpatialRenderable,
+  WorldSpatialProjection,
+} from "@bibliothecadao/eternum/game-sync";
 import { BiomeType, ID, TROOP_TIERS, TROOP_TYPES, TroopTier, TroopType } from "@bibliothecadao/types";
 import { getEntityName } from "@bibliothecadao/eternum";
 import { Color, Euler, Scene, Vector3 } from "three";
@@ -42,7 +79,12 @@ import { env } from "../../../env";
 import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
 import { CosmeticAttachmentManager, resolveArmyCosmetic, resolveArmyMountTransforms } from "../cosmetics";
 import { ArmyData, RenderChunkSize } from "../types";
-import { getHexForWorldPosition, getWorldPositionForHex, getWorldPositionForHexCoordsInto, hashCoordinates } from "../utils";
+import {
+  getHexForWorldPosition,
+  getWorldPositionForHex,
+  getWorldPositionForHexCoordsInto,
+  hashCoordinates,
+} from "../utils";
 import { CentralizedVisibilityManager } from "../utils/centralized-visibility-manager";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { trackGuiFolder, type TrackableGuiFolder } from "../utils/gui-folder-lifecycle";
@@ -63,15 +105,31 @@ import { finalizeArmyChunkTransition } from "./army-chunk-transition-finalizer";
 import { reconcileVisibleArmySet } from "./army-visible-set-reconciler";
 import { createManagerVisibilityDiff } from "./manager-visibility-diff";
 import { resolveArmySlotCompactionPlan } from "./army-slot-compaction";
-import { auditArmyRenderIntegrity, auditArmySlots, type ArmySlotAuditEntry, type DrawnSlotPositionEntry } from "./army-slot-auditor";
+import {
+  auditArmyRenderIntegrity,
+  auditArmySlots,
+  type ArmySlotAuditEntry,
+  type DrawnSlotPositionEntry,
+} from "./army-slot-auditor";
 import { reportArmyIntegrityHealOnce } from "./army-integrity-diagnostics";
 import { presentResult } from "@/three/presented-results";
 import { isRoutable, orderedRouteFor, resolveMovementPath } from "./army-move-path";
 import { shouldUseWorkerPathForArmy } from "./army-movement-path-strategy";
 import { addVisibleArmyOrderEntry, removeVisibleArmyOrderEntry, replaceVisibleArmyOrder } from "./army-visible-order";
 import { resolveArmyVisibilityBoundsDecision } from "./army-visibility";
-import { bindManagerChunkRuntimeState, recoverManagerChunkRuntimeAfterStall, type RecoverManagerChunkRuntimeAfterStallInput, type ManagerChunkUpdateOptions, runManagerChunkUpdateRuntime } from "./manager-chunk-runtime";
-import { isCommittedManagerChunk, MANAGER_UNCOMMITTED_CHUNK, shouldAcceptManagerChunkRequest, shouldRunManagerChunkUpdate } from "./manager-update-convergence";
+import {
+  bindManagerChunkRuntimeState,
+  recoverManagerChunkRuntimeAfterStall,
+  type RecoverManagerChunkRuntimeAfterStallInput,
+  type ManagerChunkUpdateOptions,
+  runManagerChunkUpdateRuntime,
+} from "./manager-chunk-runtime";
+import {
+  isCommittedManagerChunk,
+  MANAGER_UNCOMMITTED_CHUNK,
+  shouldAcceptManagerChunkRequest,
+  shouldRunManagerChunkUpdate,
+} from "./manager-update-convergence";
 import { getRendererDiagnosticActiveMode } from "../renderer-diagnostics";
 import { scheduleFrameBudgetWork, type FrameBudgetWorkScheduler } from "../frame-budget-work-queue";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";

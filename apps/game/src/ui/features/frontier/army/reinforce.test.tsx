@@ -14,7 +14,13 @@ vi.mock("@/sync/action-outcome", async (original) => ({
 import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { configManager, entityHomeNamespace, expeditionRealmSite, readExpeditionRules, setBlockTimestampSource } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  entityHomeNamespace,
+  expeditionRealmSite,
+  readExpeditionRules,
+  setBlockTimestampSource,
+} from "@bibliothecadao/eternum";
 import { formatExact, getNeighborHexes, RESOURCE_PRECISION, ResourcesIds, TroopTier } from "@bibliothecadao/types";
 
 import { useDockArmies } from "../hud/dock-armies";

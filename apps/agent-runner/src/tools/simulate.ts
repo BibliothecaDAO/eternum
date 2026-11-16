@@ -1,7 +1,6 @@
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import {
   CombatSimulator,
-  openingChargePercent,
   configManager,
   divideByPrecision,
   getBuildingCosts,
@@ -95,12 +94,6 @@ const simulateCombat = (client: GameClient, attackerId: ID, defenderId: ID): str
   const defenders = explorerCombatant(client, defenderId) ?? strongestGuard(client, defenderId);
   if (!defenders) return `${defenderId} is neither an explorer nor a structure with guards.`;
   const biome = biomeAt(client, defenders.hex);
-  const nativeAttacker = client.setup.store.require("ExplorerTroops", {
-    game_id: client.gameId,
-    explorer_id: attackerId,
-  });
-  const chargePercent = openingChargePercent(client.setup.store, nativeAttacker, BigInt(defenderId));
-  if (chargePercent === undefined) return `Explorer ${attackerId}'s combat facts have not arrived.`;
   const result = new CombatSimulator(configManager.getCombatConfig(), configManager.getCombatRules()).simulateBattle(
     Math.floor(Date.now() / 1000),
     attacker.army,
@@ -108,7 +101,7 @@ const simulateCombat = (client: GameClient, attackerId: ID, defenderId: ID): str
     biome,
     [],
     [],
-    { chargePercent, defenderIsStructureGuard: defenders.isStructureGuard },
+    { defenderIsStructureGuard: defenders.isStructureGuard },
   );
   if (!result.ok) return `Attack refused: ${result.refusal}.`;
   return [

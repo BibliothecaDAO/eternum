@@ -4,7 +4,26 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 
-import { HudButton, HudCard, HudChip, HudConfirm, HudCost, HudDeploy, HudEventRow, HudField, HudIconButton, HudRow, HudSelect, HudSheet, HudSlider, HudTableRow, HudTabs, HudTransfer, HudWindow, HudWindowFoot } from "./hud-elements";
+import {
+  HudButton,
+  HudCard,
+  HudChip,
+  HudConfirm,
+  HudCost,
+  HudDeploy,
+  HudEventRow,
+  HudField,
+  HudIconButton,
+  HudRow,
+  HudSelect,
+  HudSheet,
+  HudSlider,
+  HudTableRow,
+  HudTabs,
+  HudTransfer,
+  HudWindow,
+  HudWindowFoot,
+} from "./hud-elements";
 import { costLine } from "./price-faces";
 
 let host: HTMLDivElement;

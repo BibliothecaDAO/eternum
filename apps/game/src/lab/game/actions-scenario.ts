@@ -1,8 +1,29 @@
-import { getExplorerInfoFromTileOccupier, entityHomeNamespace, researchTier, seasonDay, expeditionRealmSite, getTroopResourceId, readExpeditionRules, readTroopRaiseCost } from "@bibliothecadao/eternum";
-import { BiomeType, BUILDINGS_CENTER, getNeighborOffsets, RESOURCE_PRECISION, TileOccupier, TROOP_TYPES, TROOP_TIERS } from "@bibliothecadao/types";
+import {
+  getExplorerInfoFromTileOccupier,
+  entityHomeNamespace,
+  researchTier,
+  seasonDay,
+  expeditionRealmSite,
+  getTroopResourceId,
+  readExpeditionRules,
+  readTroopRaiseCost,
+} from "@bibliothecadao/eternum";
+import {
+  BiomeType,
+  BUILDINGS_CENTER,
+  getNeighborOffsets,
+  RESOURCE_PRECISION,
+  TileOccupier,
+  TROOP_TYPES,
+  TROOP_TIERS,
+} from "@bibliothecadao/types";
 
 import { exploreStaminaCost, musterStamina, openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
-import { nativeResearchConstants as research, safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import {
+  nativeResearchConstants as research,
+  safeInteger,
+  type NativeFactStore,
+} from "@bibliothecadao/eternum/game-client";
 
 import { standTheArmyAtTheEdge } from "./explore-scenario";
 import { wire, type LabCommand, type LabFact, type LabScenario } from "./lab-chain";

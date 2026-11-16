@@ -1,7 +1,25 @@
 import type { RankedWords } from "@/ui/design-system/kit/words";
 import { formatAmount, formatClockTime } from "@bibliothecadao/types";
-import { HudButton, HudEventRow, HudIconButton, HudNotice, HudRanked, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { DAY, DAY_SHARE_WORDS, DAY_TOTALS_UNKNOWN, dayOfSeason, dayEnds, dayLeft, phraseText, TODAY, TODAY_ERROR, tomorrowLasts } from "@/ui/design-system/kit/words";
+import {
+  HudButton,
+  HudEventRow,
+  HudIconButton,
+  HudNotice,
+  HudRanked,
+  HudSheet,
+} from "@/ui/design-system/kit/hud-elements";
+import {
+  DAY,
+  DAY_SHARE_WORDS,
+  DAY_TOTALS_UNKNOWN,
+  dayOfSeason,
+  dayEnds,
+  dayLeft,
+  phraseText,
+  TODAY,
+  TODAY_ERROR,
+  tomorrowLasts,
+} from "@/ui/design-system/kit/words";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import type { ReactNode } from "react";

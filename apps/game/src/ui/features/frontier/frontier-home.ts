@@ -2,7 +2,14 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { configManager, isArmyCurrent, isExpeditionRealm, Position, readExpeditionRules, structureMapPosition } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  isArmyCurrent,
+  isExpeditionRealm,
+  Position,
+  readExpeditionRules,
+  structureMapPosition,
+} from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { useMemo } from "react";
