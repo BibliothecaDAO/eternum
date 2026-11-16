@@ -49,7 +49,7 @@ describe("a guarded site's card", () => {
       ),
     );
     expect(document.querySelector(".ui-frame__body header")?.textContent).toBe(
-      "This attack earns+5,000Full: the rest did not fit+1 site",
+      "BladeThis attack earns+5,000Full: the rest did not fit+1 site",
     );
   });
 
@@ -74,7 +74,7 @@ describe("a guarded site's card", () => {
     );
     const card = document.querySelector("section[aria-label='Troll']")!;
     // The owner, 26 October 2026: "moving the clear rewards in the 'this attack clears it' -> This attack earns xxx".
-    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("This attack earns+550+1 site");
+    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("BladeThis attack earns+550+1 site");
     // Owner, 28 October 2026 ("v1 token header yes"): the guard heads the card as a token; with an army its strength is
     // the fight's to say, once.
     expect(card.querySelector("header [role='img']")?.getAttribute("aria-label")).toBe("Troll");
@@ -144,7 +144,7 @@ describe("a guarded site's card", () => {
     // The site's painting and the guard's side name the Basilisk.
     expect(card.querySelectorAll('[data-icon="beast-basilisk"]')).toHaveLength(2);
     // The headline says the loss, and the chest this attack does not win stands dimmed beside it.
-    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("Your army is lost+128Rare+1 site");
+    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("BladeYour army is lost+128Rare+1 site");
     expect(card.querySelector(".ui-frame__body header .opacity-50")?.textContent).toBe("+128Rare+1 site");
     expect(card.querySelector('[data-icon="troops"]')).toBeNull();
     expect(card.querySelector('[data-tip="Knight"]')).not.toBeNull();
@@ -181,7 +181,7 @@ describe("a guarded site's card", () => {
     );
     const card = document.querySelector("section[aria-label='Blightglow Rift']")!;
     const header = card.querySelector(".ui-frame__body header")!;
-    expect(header.textContent).toBe("The guard holds+4,200+1 site");
+    expect(header.textContent).toBe("BladeThe guard holds+4,200+1 site");
     expect(header.querySelector(".opacity-50")?.textContent).toBe("+4,200+1 site");
     expect(card.textContent).toContain("794");
     expect(card.textContent).toContain("193");
@@ -217,7 +217,7 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector(".ui-frame__body header")?.textContent).toBe("This attack earns+1 site");
+    expect(document.querySelector(".ui-frame__body header")?.textContent).toBe("BladeThis attack earns+1 site");
     // The chip says what the board ranks by on its tip.
     expect(document.querySelector('[aria-label="Sites cleared +1 site"]')?.getAttribute("data-tip")).toBe(
       "Ranked by sites cleared, then deepest depth",
@@ -260,7 +260,7 @@ describe("a guarded site's card", () => {
       ),
     );
     const header = document.querySelector(".ui-frame__body header")!;
-    expect(header.textContent).toBe("This attack earns+120Full: the rest did not fit+1 site");
+    expect(header.textContent).toBe("BladeThis attack earns+120Full: the rest did not fit+1 site");
     // The loss is said in sight on the chip, never only on a hover a phone has not got.
     expect(header.querySelector('[data-tip*="did not fit"]')).toBeNull();
     act(() =>
@@ -357,7 +357,7 @@ describe("a guarded site's card with no army chosen", () => {
     const card = document.querySelector("section[aria-label='North Watch Ruin']")!;
     expect(card.textContent?.match(/North Watch/g)).toHaveLength(1);
     // Its kind is in its title, as the hover says it; the guard's token, its strength under it, then its beast.
-    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Basilisk+1 site");
+    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100BladeBasilisk+1 site");
     expect(card.querySelector("header [role='img']")?.getAttribute("aria-label")).toBe("Basilisk 1,100");
     expect(card.textContent?.match(/1,100|1\.1K/g)).toHaveLength(1);
   });
@@ -379,7 +379,7 @@ describe("a guarded site's card with no army chosen", () => {
       ),
     );
     const card = document.querySelector("section[data-kit-sheet]")!;
-    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Dark fey+3,300+1 site");
+    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100BowDark fey+3,300+1 site");
     expect(card.querySelectorAll(".ui-row")).toHaveLength(0);
     expect(card.querySelectorAll("button")).toHaveLength(1);
     expect(card.textContent).not.toContain("Pick an army");
@@ -485,6 +485,7 @@ it("titles a single roaming Wraith by its species", () => {
     ),
   );
   expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Wraith");
+  expect(host.querySelector("[data-combat-mark]")?.textContent).toBe("Bow");
 });
 
 it.each([

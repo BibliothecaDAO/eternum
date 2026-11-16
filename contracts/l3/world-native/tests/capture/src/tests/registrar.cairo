@@ -1066,7 +1066,7 @@ fn frontier_sites_persist_the_seeded_guard_and_initial_count() {
                     (count >= depth.beast_weak_lower && count <= depth.beast_weak_upper)
                         || (count >= depth.beast_strong_lower && count <= depth.beast_strong_upper),
                 );
-                assert_eq!(guard.troops.category, crate::troops::TroopType::Knight);
+                assert_eq!(guard.troops.category, if count <= depth.beast_weak_upper { crate::troops::TroopType::Knight } else { crate::troops::TroopType::Crossbowman });
                 assert_eq!(guard.troops.tier, crate::troops::TroopTier::T1);
             }
             let site = snforge_std::interact_with_state(
