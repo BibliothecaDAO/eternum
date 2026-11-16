@@ -194,7 +194,7 @@ function buildStructures(config: Config, preset: ReturnType<typeof nativePresetF
       tier,
       price: { essence: scaled(essenceCost, precision), labor: scaled(laborCost, precision) },
     })),
-    buildings: buildingIds.map((category) => {
+    buildings: buildingIds.map((category: number) => {
       // Essence is mine-only, and only a realm board has training buildings; legacy presets have no storehouse recipe.
       const isNotBuilt = category === 39 || (category > 40 && board === null);
       const hasNoRecipe = isNotBuilt || (category === 2 && board === null);

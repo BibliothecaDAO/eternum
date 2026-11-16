@@ -1,7 +1,6 @@
 use starknet::ContractAddress;
 use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
 use crate::structures::Structure;
-use crate::troops::IBattleResolutionDispatcherTrait;
 
 pub fn active_explorer(
     key: ExplorerKey, timestamp: u64, game_context: crate::commands::ExecutionContext,

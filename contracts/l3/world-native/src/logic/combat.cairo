@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess, SubPointersForward};
+use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::combat::{CombatContext, TroopsTrait};
 use crate::combat_actions::battle_side;
 use crate::commands::{Battle, ExecutionContext};

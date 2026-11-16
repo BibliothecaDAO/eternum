@@ -1087,7 +1087,7 @@ fn frontier_sites_persist_the_seeded_guard_and_initial_count() {
 
 
 #[test]
-fn frontier_site_discovery_reads_home_knowledge_and_stores_the_shrine_reward() {
+fn frontier_discovery_reads_home_knowledge_without_placing_shrines_or_wells() {
     let d = setup();
     let (game_id, _, category) = expedition_home(d);
     let (key, _) = expedition_armies(d, game_id, category);

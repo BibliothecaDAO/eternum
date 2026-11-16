@@ -8,7 +8,7 @@ import { fetchHeraldGameHistory } from "@bibliothecadao/eternum/game-client";
 import {
   ArmyActionManager,
   canPayTroopRaise,
-  realmLearned,
+  RESEARCH_ROWS,
   researchRowCategory,
   researchTier,
   createGameActions,
@@ -721,10 +721,10 @@ function planUpgrade(client: GameClient, player: Player): Action | undefined {
       action: { kind: "LevelUp", value: player.realmId },
       type: TransactionType.LEVEL_UP,
     });
-  // Research the cheapest open row's next tier, always on its first side: Fields, Tools, Drill, camps.
+  // Research the cheapest open row's next tier on its first side.
   const learned = store.require("RealmKnowledge", { game_id: client.gameId, structure_id: player.realmId }).learned;
   const labor = balance(client, player, 23);
-  for (let row = 0; row < research.ROW_COUNT; row++) {
+  for (const row of RESEARCH_ROWS) {
     const category = researchRowCategory[row];
     if (category !== undefined && !standing(client, player, category)) continue;
     const price = store.get("ResearchPrice", { game_id: client.gameId, row, tier: researchTier(learned, row) + 1 });

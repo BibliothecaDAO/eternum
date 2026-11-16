@@ -14,7 +14,7 @@ pub mod RelicState {
     };
     use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
     use crate::stamina::{StaminaSourceTrait, StaminaTrait};
-    use crate::troops::{ExplorerKey, ExplorerRecordTrait, TroopType};
+    use crate::troops::{ExplorerKey, ExplorerRecordTrait};
 
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
