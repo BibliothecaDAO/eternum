@@ -24,7 +24,7 @@ import { handleLordsPrice } from "./lords-price";
 import { handleSeal } from "./seal";
 import { holderFactsOf } from "./seal-facts";
 import { shopAccessOf } from "./shop-game";
-import { handleStoreReceipt, storeVerifiersOf } from "./store-receipts";
+import { handlePurchaseStart, handleStoreReceipt, storeVerifiersOf } from "./store-receipts";
 import { handleOpeningProgress } from "./opening-progress";
 import {
   campaignStandings,
@@ -151,6 +151,11 @@ export const routeIdentityRequest = async (
   if (pathname === "/api/notifications/preferences") return handleNotificationPreferences(request, auth, env.DB);
   if (pathname === "/api/build-orders") return handleBuildOrders(request, auth, env.DB);
   if (pathname === "/api/opening") return handleOpeningProgress(request, auth, env.DB);
+  if (pathname === "/api/shop/purchase")
+    return handlePurchaseStart(request, auth, {
+      db: env.DB,
+      access: shopAccessOf(env, platform.fetchShard, nowSeconds),
+    });
   if (pathname === "/api/shop/receipt")
     return handleStoreReceipt(request, auth, {
       db: env.DB,

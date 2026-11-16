@@ -6,7 +6,7 @@ import type { IdentityAuth } from "./auth";
 import { RealmHoldingsUnavailableError } from "./realm-holdings";
 import { readSeal } from "./seal";
 import type { ShopAccess } from "./shop-game";
-import { handleStoreReceipt, type ReceiptWorld, type StoreVerifier } from "./store-receipts";
+import { handlePurchaseStart, handleStoreReceipt, type ReceiptWorld, type StoreVerifier } from "./store-receipts";
 import { createTestD1 } from "./test-d1";
 import { migrationStatements } from "./workerd-harness";
 
@@ -402,4 +402,55 @@ it("asks the game the receipt names, and refuses a receipt that names none", asy
   expect((await sendAs(db, OWNER, request, { access }))[0]).toBe(200);
   expect(asked).toEqual([[OWNER, { chainId: "0x2a", gameId: 7 }]]);
   expect((await sendAs(db, OWNER, { ...request, game: undefined }, { access }))[0]).toBe(400);
+});
+
+/** The purchase start as the shop's screens ask it before any payment is taken. */
+const startAs = async (db: D1Database, realmsId: string | null, body: unknown, access: ShopAccess = seated) => {
+  const auth = {
+    api: { getSession: async () => (realmsId ? { user: { realmsId } } : null) },
+  } as unknown as IdentityAuth;
+  const response = await handlePurchaseStart(
+    new Request("https://realms.test/api/shop/purchase", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ...GAME, ...(body as object) }),
+    }),
+    auth,
+    { db, access },
+  );
+  return [response.status, await response.json()] as const;
+};
+
+it("refuses a purchase before payment for an account that does not play in the named running Frontier game", async () => {
+  const db = await migrated();
+  const outside: ShopAccess = async () => false;
+  for (const product of ["fragments-500", "seal"])
+    expect(await startAs(db, OWNER, { product }, outside)).toEqual([404, { error: "no_shop_outside_a_frontier_game" }]);
+  expect(await startAs(db, null, { product: "seal" })).toEqual([401, { error: "unauthorized" }]);
+  expect((await startAs(db, OWNER, { product: "seal", game: undefined }))[0]).toBe(400);
+  expect(await ledger(db)).toEqual([]);
+});
+
+it("starts a purchase of a product the shop sells for a player of the game it names, once per seal", async () => {
+  const db = await migrated();
+  const asked: unknown[] = [];
+  const access: ShopAccess = async (realmsId, game) => {
+    asked.push([realmsId, game]);
+    return true;
+  };
+  expect(await startAs(db, OWNER, { product: "fragments-500", chain: "0x2a", game: 7 }, access)).toEqual([
+    200,
+    { status: "ok" },
+  ]);
+  expect(asked).toEqual([[OWNER, { chainId: "0x2a", gameId: 7 }]]);
+  expect(await startAs(db, OWNER, { product: "gold-pack" })).toEqual([422, { error: "unknown_product" }]);
+  expect(await startAs(db, OWNER, { product: "seal" })).toEqual([200, { status: "ok" }]);
+  await db
+    .prepare(
+      'INSERT INTO "seal" ("owner", "paid_cents", "source", "receipt", "granted_at") VALUES (?, 999, \'store\', \'tx-1\', 1)',
+    )
+    .bind(OWNER)
+    .run();
+  expect(await startAs(db, OWNER, { product: "seal" })).toEqual([409, { error: "seal_already_held" }]);
+  expect(await startAs(db, OTHER, { product: "seal" })).toEqual([200, { status: "ok" }]);
 });

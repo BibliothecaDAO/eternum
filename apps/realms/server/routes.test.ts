@@ -73,6 +73,7 @@ it.each([
   ["/api/build-orders", "POST"],
   ["/api/opening", "POST"],
   ["/api/shop/receipt", "POST"],
+  ["/api/shop/purchase", "POST"],
   ["/api/notifications/push/subscribe", "POST"],
 ])("rejects sibling-origin and originless cookie mutations at %s", async (path, method) => {
   for (const originHeader of [null, "https://herald.realms.party", "null"]) {

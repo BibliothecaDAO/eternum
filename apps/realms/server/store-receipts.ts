@@ -5,7 +5,7 @@ import type { IdentityEnv } from "./env";
 import { json, readBody } from "./http";
 import { RealmHoldingsUnavailableError } from "./realm-holdings";
 import { holderLevelOf, readSeal, type HolderFacts } from "./seal";
-import { namedGame, type NamedGame, type ShopAccess } from "./shop-game";
+import { authorizeShop, namedGame, type NamedGame, type ShopAccess } from "./shop-game";
 
 const BODY_BYTES = 32 * 1024;
 const STORES = ["apple", "google"] as const;
@@ -42,14 +42,48 @@ type Outcome =
 type Product = (typeof STORE_PRODUCTS)[keyof typeof STORE_PRODUCTS];
 
 /**
+ * POST /api/shop/purchase {chain, game, product}: asked before any payment is taken. Refuses, taking nothing, a caller
+ * who is not a signed-in player of that running Frontier game (the shop's one rule), a product the shop does not sell,
+ * and a second seal for an account that already holds one; otherwise 200. A refused purchase is never started, so there
+ * is nothing to refund.
+ */
+export async function handlePurchaseStart(
+  request: Request,
+  auth: IdentityAuth,
+  world: Pick<ReceiptWorld, "db" | "access">,
+): Promise<Response> {
+  if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
+  const asked = await readPurchase(request);
+  const seat = await authorizeShop(request, auth, world.access, asked?.game ?? null);
+  if (seat instanceof Response) return seat;
+  const product = asked?.product === undefined ? undefined : productOf(asked.product);
+  if (!product) return json({ error: "unknown_product" }, 422);
+  if (product.kind === "seal" && (await readSeal(world.db, seat.owner)))
+    return json({ error: "seal_already_held" }, 409);
+  return json({ status: "ok" });
+}
+
+const readPurchase = async (request: Request): Promise<{ game: NamedGame | null; product: string } | null> => {
+  if (request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json") return null;
+  try {
+    const body = JSON.parse(await readBody(request, BODY_BYTES)) as Record<string, unknown>;
+    return typeof body.product === "string" ? { game: namedGame(body.chain, body.game), product: body.product } : null;
+  } catch {
+    return null;
+  }
+};
+
+/**
  * POST /api/shop/receipt {store, receipt, chain, game}: a store purchase of the signed-in account in the named game,
  * checked with its store. Every verified payment is
  * written once to the receipt ledger with its outcome, in one transaction with what it buys: the seal, when the
  * product's price covers the seal's store price for this account's holder level, or a pending Fragment credit for the
- * co-signed hand-off. A payment that cannot be honoured (an unknown product, a price below the buyer's, a seal the account already holds, an account already deleted, an account
- * that does not play in the named running Frontier game) is recorded as unfulfilled for the owner to refund; one whose
- * holder level or game seat cannot be read is recorded as pending, grants nothing, and is resolved when the same receipt is sent
- * again. The same receipt sent again answers as it did the first time; one another account used is refused.
+ * co-signed hand-off. A payment that cannot be honoured (an unknown product, a price below the buyer's, a seal the
+ * account already holds, an account already deleted) is recorded as unfulfilled for the owner to refund; one whose
+ * holder level or game seat cannot be read is recorded as pending, grants nothing, and is resolved when the same receipt
+ * is sent again. The same receipt sent again answers as it did the first time; one another account used is refused.
+ * Whoever is not a player of the named running Frontier game was refused at `/api/shop/purchase` before paying, so a
+ * payment of one that still arrives is the last net: recorded as unfulfilled for refund, never granted.
  */
 export async function handleStoreReceipt(request: Request, auth: IdentityAuth, world: ReceiptWorld): Promise<Response> {
   if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
