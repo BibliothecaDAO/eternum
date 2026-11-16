@@ -35,25 +35,25 @@ function click(prefix: string) {
   act(() => button(prefix).click());
 }
 
-it("lets the player raise Drill to level 3 then open Rations at level 2 for its own first price", () => {
+it("lets the player raise Fields to level 3 then open Granary at level 2 for its own first price", () => {
   open("tree");
-  click("Add Drill");
-  expect(button("Drill").textContent).toContain("rank 2");
-  expect(button("Rations").textContent).toContain("2,000 Essence + 1,500 labor");
-  click("Rations");
-  click("Add Rations");
-  expect(button("Rations").textContent).toContain("rank 1");
-  expect(host.querySelector("[data-plan-cost]")?.textContent).toBe("Added cost: 6,000 Essence · 4,500 labor");
-  expect(button("Add Rations").disabled).toBe(false);
+  click("Add Fields");
+  expect(button("Fields").textContent).toContain("rank 2");
+  expect(button("Granary").textContent).toContain("500 Essence + 500 labor");
+  click("Granary");
+  click("Add Granary");
+  expect(button("Granary").textContent).toContain("rank 1");
+  expect(host.querySelector("[data-plan-cost]")?.textContent).toBe("Added cost: 1,500 Essence · 1,500 labor");
+  expect(button("Add Granary").disabled).toBe(false);
 });
 it("separate levels let both sides reach 5", () => {
   open("tree");
-  for (let i = 0; i < 4; i++) click("Add Drill");
-  click("Rations");
-  for (let i = 0; i < 5; i++) click("Add Rations");
-  expect(button("Drill").textContent).toContain("rank 5");
-  expect(button("Rations").textContent).toContain("rank 5");
-  expect(button("Add Rations").disabled).toBe(true);
+  for (let i = 0; i < 4; i++) click("Add Fields");
+  click("Granary");
+  for (let i = 0; i < 5; i++) click("Add Granary");
+  expect(button("Fields").textContent).toContain("rank 5");
+  expect(button("Granary").textContent).toContain("rank 5");
+  expect(button("Add Granary").disabled).toBe(true);
 });
 it("S2 keeps storage research and previews a real Granary upgrade", () => {
   open("storage");
@@ -82,9 +82,9 @@ it("keeps the realm upgrade payable under the alternative storage curve", () => 
 });
 it("preserves exact replay totals and independent-side prices through the last purchase", () => {
   expect(beastReplay()).toEqual({ total: 2807.25, median: 85.125 });
-  expect(nextPrice(2, [5, 4], 1)).toEqual({ essence: 120000, labor: 60000 });
-  expect(nextPrice(2, [5, 5], 1)).toBeUndefined();
-  expect(nextPrice(2, [5, 0], 1)).toEqual({ essence: 2000, labor: 1500 });
+  expect(nextPrice(0, [5, 4], 1)).toEqual({ essence: 30000, labor: 20000 });
+  expect(nextPrice(0, [5, 5], 1)).toBeUndefined();
+  expect(nextPrice(0, [5, 0], 1)).toEqual({ essence: 500, labor: 500 });
   expect(DEPTHS.map((depth) => depth.strong.map((guard) => guard / 4))).toEqual([
     [112.5, 137.5],
     [337.5, 412.5],
@@ -93,11 +93,3 @@ it("preserves exact replay totals and independent-side prices through the last p
   ]);
 });
 
-it("shows paid training, the retained ladder and Common I", () => {
-  open("tree");
-  expect(host.textContent).toContain("grants Common training immediately");
-  expect(host.textContent).toContain("48,000 Essence + 9,000 labor");
-  expect(host.textContent).toContain("Choose camps, rifts or beasts when building");
-  const common = host.querySelector('.ui-tier[aria-label="I"]')!;
-  expect(common.textContent).toBe("I");
-});

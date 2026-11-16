@@ -10,12 +10,7 @@ import { useSearchParams } from "react-router-dom";
 
 const noop = () => undefined;
 
-/**
- * Dev only: Frontier's progression as the owner picked it (20 October: "Branches I believe is good for the progression.
- * For the army C is best."), at /lab/kit/progression: the Research tree and the army's detail, the game's own panels on
- * the Frontier preset's numbers, on the owner's realm (the default, with Army 1 at 12 XP) or one some days in
- * (`?realm=mid`, with a veteran army). `?part=research|army` shows one alone at the screen's width, for a phone.
- */
+
 export const ProgressionLab = () => {
   useHudMode("frontier");
   const [params, setParams] = useSearchParams();

@@ -5,7 +5,7 @@ import { actionsScenario } from "./actions-scenario";
 import { chainOf, wire, type LabCommand, type LabFact, type LabScenario } from "./lab-chain";
 /** The army's stamina after a day of exploring. */
 const STAMINA_LEFT = 40n;
-/** The army has spent stamina and holds a skill point; its orders use the ordinary upkeep rules. */
+
 export const upkeepScenario = (): LabScenario => {
   const actions = actionsScenario();
   // Its rows rewritten under the keys the chain serves them by, so a fact below changes the row it names.

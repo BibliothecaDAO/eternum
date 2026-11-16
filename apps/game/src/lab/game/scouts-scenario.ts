@@ -3,7 +3,7 @@ import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { actionsScenario } from "./actions-scenario";
 import { wire, type LabScenario } from "./lab-chain";
 
-/** A City's two troop stocks, with Scouting I researched and enough wheat to choose either army. */
+
 export function seedScouts(store: NativeFactStore): void {
   const home = store.require("Structure", { game_id: 1, entity_id: 7 });
   const recipe = store.require("ProductionRecipe", { game_id: 1, resource_type: ResourcesIds.Knight });

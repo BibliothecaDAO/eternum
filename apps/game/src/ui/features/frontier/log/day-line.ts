@@ -25,13 +25,7 @@ const REVEAL_WORDS: Partial<Record<number, string>> = {
   [ResourcesIds.Lords]: LORDS,
 };
 
-/**
- * The day log's line for one of the player's actions, by its story, in the names the rest of Frontier uses: a fight by
- * its site and how it ended, a reveal's pay as a whole number, a building by its build card's name, an army by its
- * number; any other story keeps its title. A clear is one line with the attack that won it (`fight`, the one
- * fightConcludedBy finds): what the attack cost. Each story that moved XP says how much, as the contract counted it: a
- * reveal's `reveal_xp`, a clear's XP from the guard its site started with, a point spent keeps XP unchanged.
- */
+
 export const dayLogLine = (story: LoggedStory, store: NativeFactStore, fight?: LoggedStory): RankedWords | string => {
   const payload = story.storyPayload;
   switch (story.story) {

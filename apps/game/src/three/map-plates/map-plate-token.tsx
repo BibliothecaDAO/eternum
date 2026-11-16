@@ -25,7 +25,7 @@ interface TokenReading {
   stamina: StaminaBar | null;
   /** To a watching viewer, its player's initial on the disk, in their seat's colour. */
   mark: PlateWatched["mark"];
-  /** The viewer's own army's way to its next skill point: a ring around the disk. */
+  
 }
 
 export const tokenReading = (plate: MapPlate): TokenReading => {

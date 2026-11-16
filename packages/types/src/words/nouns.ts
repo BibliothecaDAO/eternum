@@ -3,15 +3,15 @@
  * troops, structures, ranks, guard walls and the three ages. Never a table's raw value ("KnightT2") or an enum's key
  * ("AncientFragment"); unknown is a dash.
  */
+/**
+ * The game's nouns as a player reads them, each read from the game's own table through one function: resources,
+ * troops, structures, ranks, guard walls and the three ages. Never a table's raw value ("KnightT2") or an enum's key
+ * ("AncientFragment"); unknown is a dash.
+ */
 import { RealmLevelNames } from "../constants/realmLevels";
 import { ResourcesIds } from "../constants/resource-ids";
 import { resources } from "../constants/resources";
-import {
-  BuildingType,
-  BuildingTypeToString,
-  getMinePresentation,
-  StructureTypeToNameMapping,
-} from "../constants/structures";
+import { BuildingType, BuildingTypeToString, getMinePresentation, StructureTypeToNameMapping } from "../constants/structures";
 import { GUARD_SLOT_NAMES, type GuardSlot } from "../constants/troops";
 import { StructureType } from "../constants/structure-type";
 import { TROOP_TYPES, TroopType } from "../types/common";
@@ -19,13 +19,9 @@ import { TROOP_TYPES, TroopType } from "../types/common";
 const UNKNOWN = "—";
 
 export const LORDS = "LORDS";
-export const XP = "XP";
 /** A chest's rarity, common to legendary. */
 export const TIER_WORDS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"] as const;
-/**
- * A rank a player levels, by its numeral, I to V: an attribute's tier, a skill point's rank, a research tier. Every
- * surface names ranks this way: the army panel, its level-ups, research, the Feed and the day log.
- */
+
 const TIER_NUMERALS = ["I", "II", "III", "IV", "V"] as const;
 export const tierNumeral = (rank: number): string => {
   const numeral = Number.isInteger(rank) && TIER_NUMERALS[rank - 1];
@@ -47,7 +43,7 @@ export const rankedText = (words: RankedWords | string): string =>
 /** What a skill point of a rank gives: the point itself, "[III] +1" (owner, 3 November 2026: "I like B"). */
 export const skillPointGain = (rank: number): RankedWords => [{ rank }, " +1"];
 export const siteUsedLine = (kind: "Shrine" | "Well", amount: string) =>
-  kind === "Shrine" ? xpGainedLine("Shrine used", amount) : `Well used, +${amount} stamina`;
+  kind === "Shrine" ? `Shrine used, +${amount} XP` : `Well used, +${amount} stamina`;
 /** What scores: "250 points", "1 point" (formatPoints). Never VP or pts. */
 export const POINTS = "points";
 export const POINT = "point";

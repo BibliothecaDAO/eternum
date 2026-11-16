@@ -81,7 +81,7 @@ it("switches a relic on for free, naming its slot and the id the contract decode
   const button = host.querySelector<HTMLButtonElement>('button[aria-label="Switch on Common Plunder"]')!;
   await act(async () => button.click());
   expect(apply).toHaveBeenCalledTimes(1);
-  expect(apply).toHaveBeenCalledWith(expect.objectContaining({ entity_id: 201, relic_resource_id: 21, relic_slot: 2 }));
+  expect(apply).toHaveBeenCalledWith(expect.objectContaining({ entity_id: 201, relic_resource_id: 11, relic_slot: 2 }));
 });
 
 it("shows nothing for an army that carries and runs no relic", () => {

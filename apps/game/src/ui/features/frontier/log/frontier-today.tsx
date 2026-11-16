@@ -18,12 +18,7 @@ import { type LogLine, TodaySheet } from "./today-sheet";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof readExpeditionRules>>;
 
-/**
- * Today over the stories of the realm's owner: the player's own realm, or the one a spectator watches. Today's totals
- * (the ruin's LORDS among them) and log, stepping back through earlier days, and, for the player's own realm, today's
- * armies with a tier their XP can buy, the row opening the first of them, and on an earlier day they played the way to
- * share it.
- */
+
 export const FrontierToday = ({
   rules,
   realm,

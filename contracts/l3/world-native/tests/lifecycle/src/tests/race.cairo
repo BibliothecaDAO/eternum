@@ -147,7 +147,7 @@ fn factory_initializes_four_height_counters_without_map_structures() {
             for aspect in 1_u8..5 {
                 assert_eq!(race(game_id).aspect_hyperstructure(AspectKey { game_id, aspect }).height, 0);
             }
-            for entity_id in 1_u64..before {
+            for entity_id in 1_u64..before.into() {
                 if let Some(structure) = crate::logic::structures::structure(ResourceKey { game_id, entity_id }) {
                     assert!(structure.base.category != crate::taxonomy::HYPERSTRUCTURE_CATEGORY);
                 }

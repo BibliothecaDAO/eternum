@@ -59,7 +59,7 @@ fn site_payout_keeps_initial_scaled_guard_count_and_has_no_clock_factor() {
         site_reward(
             camp_category,
             ExpeditionSite {
-                clear: Some(crate::expeditions::SiteClear { xp: 0, explorer_id: 7, home_id: 1, reward: None }), ..site,
+                clear: Some(crate::expeditions::SiteClear { explorer_id: 7, home_id: 1, reward: None }), ..site,
             },
             0,
             false,
@@ -100,7 +100,7 @@ fn site_payout_counts_all_initial_guard_troops_without_tier_weighting() {
         assert_eq!(
             site_reward(crate::taxonomy::CAMP_CATEGORY, site, 0, false).unwrap().amount, 550 * RESOURCE_PRECISION,
         );
-        let receipt = crate::expeditions::SiteClear { xp: 0, explorer_id: 7, home_id: 1, reward: None };
+        let receipt = crate::expeditions::SiteClear { explorer_id: 7, home_id: 1, reward: None };
         crate::logic::expeditions::clear_site(key, receipt);
         let cleared = crate::logic::expeditions::expedition_site(key).unwrap();
         assert_eq!(cleared.clear, Some(receipt));
@@ -142,7 +142,7 @@ fn every_guarded_site_keeps_terrain_and_receipt_and_removes_structure_and_guards
                 crate::logic::expeditions::create_site(
                     key, array![Troops { count: 100 * RESOURCE_PRECISION, ..Default::default() }].span(),
                 );
-                let result = crate::expeditions::SiteClear { xp: 0, explorer_id: 20, home_id: 30, reward: None };
+                let result = crate::expeditions::SiteClear { explorer_id: 20, home_id: 30, reward: None };
                 crate::logic::expeditions::clear_site(key, result);
                 let site = crate::logic::expeditions::expedition_site(key).unwrap();
                 assert_eq!(site.clear, Some(result));
@@ -178,7 +178,7 @@ fn a_site_cannot_clear_again_after_an_army_enters_its_tile() {
     crate::logic::expeditions::create_site(
         key, array![Troops { count: RESOURCE_PRECISION, ..Default::default() }].span(),
     );
-    let result = crate::expeditions::SiteClear { xp: 0, explorer_id: 2, home_id: 3, reward: None };
+    let result = crate::expeditions::SiteClear { explorer_id: 2, home_id: 3, reward: None };
     crate::logic::expeditions::clear_site(key, result);
     crate::logic::map::MapState::occupy(tile, 2, crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER, false);
     crate::logic::expeditions::clear_site(key, result);

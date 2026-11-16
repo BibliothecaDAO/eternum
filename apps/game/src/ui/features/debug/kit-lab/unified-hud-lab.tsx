@@ -23,12 +23,7 @@ import ROW_SET from "../../../../../../../contracts/l3/world-native/schema/fixtu
 import { PLAYER } from "./fixture-game";
 import { LabGame } from "./lab-game";
 
-/**
- * The views the lab draws: each mode's player (Blitz's, its Build order panel read from the lab realm, and its army's
- * attack forecast on an enemy army beside it, or stocked for its build steps, also as the game begins with its news
- * over the HUD; Frontier's, and with an army out holding skill points), a spectator
- * of a game running and of one finished, and a Blitz player whose last realm fell, still holding a Hyperstructure, then watching.
- */
+
 const VIEWS = {
   blitz: { preset: 2, spectating: false, finished: false, army: false, attack: false },
   "blitz-build": { preset: 2, spectating: false, finished: false, army: false, attack: false, stocked: true },

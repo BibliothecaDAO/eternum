@@ -158,12 +158,172 @@
  * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
  * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
  */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
 import { APP_HOST } from "@/config/app-address";
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import { SHARED_MOMENT_WORDS, type CampaignKey, type SocialProvider } from "@realms-world/identity";
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
 import type { RuinChest } from "@bibliothecadao/eternum";
-import { BuildingType, XP, buildingName, formatAmount, formatPercent, formatExact, formatCount, formatClockTime, formatDuration, getRelicInfo, relicEffect, ResourcesIds, formatCharge, resourceName, formatHeldAgainst, structurePlural, structureName, StructureType, tierNumeral as rankNumeral, asRanked, type RankedWords } from "@bibliothecadao/types";
+import { BuildingType, buildingName, formatAmount, formatExact, formatCount, formatClockTime, formatDuration, getRelicInfo, relicEffect, ResourcesIds, formatCharge, resourceName, formatHeldAgainst, structureName, StructureType, tierNumeral as rankNumeral, asRanked, type RankedWords } from "@bibliothecadao/types";
 
 /** One scale for chests, building types and attributes. */
 export { TIER_WORDS } from "@bibliothecadao/types";
@@ -172,7 +332,7 @@ export type Tier = 1 | 2 | 3 | 4 | 5;
 export type Rank = 0 | Tier;
 /** A tier by its numeral, Common I to Legendary V; untrained is 0. */
 export const tierNumeral = (tier: Rank): string => (tier === 0 ? "0" : rankNumeral(tier));
-/** Words with ranks in them, a skill point's gain, and their plain text: one way to write a rank in a line. */
+
 export { type RankedWords, rankedText, skillPointGain } from "@bibliothecadao/types";
 
 /** Species names shared by Frontier's models, plates and selected-site cards. */
@@ -330,7 +490,6 @@ export const BUILD_ORDER_WORDS = {
   /** A step's verb: the row's reason already names what it builds or deploys, or the level it reaches. */
   build: "Build",
   deploy: "Deploy",
-  levelUp: "Level up",
   nothingNow: "Nothing to build now",
   /** The maker: the player's orders, saved on their account, one of them followed. */
   page: "Build orders",
@@ -812,10 +971,8 @@ export const TRANSFER_TROOPS = {
   waiting: "Waiting for both armies’ progress.",
   stale: "The armies changed: review the merge",
   merge: (army: string) => `Merge into ${army}`,
-  totalXp: "Total XP",
-  totalXpFor: (army: string) => `${army} total XP`,
   losesProgress: (army: string) => `${army} loses its Logistics training.`,
-  /** The second press of a merge that loses a lot: the leaving army's total XP and the chosen target. */
+  /** A second press confirms the loss of stronger Logistics training. */
   confirmMerge: (army: string) => `Confirm merge into ${army}`,
   amount: (from: string, to: string) => `Troops ${from} sends to ${to}`,
   pick: "Pick how many to send",
@@ -2053,36 +2210,16 @@ export const RESEARCH_TREE = {
     tools: ["Tools", "Workshop labor"],
     storeroom: ["Storeroom", "Labor storage"],
   },
-  /** The kinds a Scouting level finds more of; Frontier's camp is its Troll (the shared structure naming rule). */
-  kinds: {
-    camp: structurePlural(StructureType.Camp, undefined, "frontier"),
-    rift: structurePlural(StructureType.Rift, undefined, "frontier"),
-    sanctuaries: "Sanctuaries",
-  },
-  /** A Scouts' lodge kind's side: new armies find more of it. */
-  foundMore: "Found more",
   sidesLine: (made: string) => `Improve ${made} output and storage separately`,
-  charge: "Charge",
-  chargeLine: "Charge opening",
   hutLine: "Hut population",
   population: "Population",
-  gateLine: "Opens the 4 training buildings",
-  gateOpen: "Training buildings open",
-  gate: (barracks: string) => `${barracks} opens`,
   newArmiesStart: (attribute: string) => `New armies start with ${attribute}`,
   /** A training building's figure, under the attribute's name on its card: what that level is given to. */
   everyNewArmy: "Every new army",
   /** A level and what it gives: "[II] · +10% damage". */
   at: (tier: number, effect: string): RankedWords => [{ rank: tier }, ` · ${effect}`],
-  /**
-   * What an attribute gives, said as the figure and what it is a figure of, the one wording Research and an army's
-   * panel share (the owner, 22 October: by attribute, Homecoming compact): "+10% damage", "3% come home".
-   */
   effects: {
-    battle: (value: string) => `${value} damage`,
     logistics: (value: string) => `${value} max stamina`,
-    scouting: (value: string) => `${value} discovery`,
-    homecoming: (value: string) => `${value} come home`,
   },
   nouns: { essence: ESSENCE, labor: LABOR },
   armiesFind: (site: string) => `Armies find ${site}s`,
@@ -2102,22 +2239,15 @@ export const RESEARCH_TREE = {
 } as const;
 
 /**
- * An army's detail: status, attributes, the next skill point and level-up choices.
+ * An army's per-tile resource reward.
  */
 export const ARMY_DETAIL = {
-  /** A Scouting effect on the kind its levels went to: "+10% discovery on Rifts". */
-  onKind: (effect: string, kind: string) => `${effect} on ${kind}`,
-  scoutingNext: (now: string, step: string) => `${now} · ${step} on the kind you pick`,
   /**
    * What each tile the army explores sends home, on its stamina row: Essence or Labor, one of the two each reveal, as
    * the contract draws it (exploration_rewards.cairo's reveal_reward). The chip's name reads the label then the amount.
    */
   revealPays: (amount: string) => `+${amount} a tile`,
   revealPaysLabel: `${ESSENCE} or ${LABOR},`,
-  levelUp: "Level up",
-  levelUps: "Level-ups",
-  /** An attribute tile's hover: what its next tier gives and costs, "Rare: +10% → +20% damage · 200 XP". */
-  legendary: (attribute: string) => `${attribute} is legendary`,
 } as const;
 
 /** Deleting the picked army, for good. */

@@ -6,7 +6,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudButton, HudChip, HudCost, HudNotice, HudRarity, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import { type Reason, reasonLine } from "@/ui/design-system/kit/reasons";
-import { type Tier, ARMY, ATTACK, ATTACKING, MOVE, ON_ITS_WAY, REALM, REST_DID_NOT_FIT, ruinRule, SEASON_CLIMB, siteTitle, SITES_CLEARED, STORAGE, tooFarFrom, TROOPS, FIGHT_WORDS } from "@/ui/design-system/kit/words";
+import { type Tier, ARMY, ATTACK, ATTACKING, MOVE, REALM, REST_DID_NOT_FIT, ruinRule, SEASON_CLIMB, siteTitle, SITES_CLEARED, STORAGE, tooFarFrom, TROOPS, FIGHT_WORDS } from "@/ui/design-system/kit/words";
 
 import type { OrderInFlight } from "@/hooks/store/use-actions-in-flight";
 import type { ReactNode } from "react";

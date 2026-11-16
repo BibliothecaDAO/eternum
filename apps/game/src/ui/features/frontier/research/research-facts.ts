@@ -56,7 +56,7 @@ const readResearchFacts = (
   const entity = safeInteger(realm.entity_id);
   const essence = knownAmount(getBalance(entity, ResourcesIds.Essence, tick, store).balance);
   const labor = knownAmount(getBalance(entity, ResourcesIds.Labor, tick, store).balance);
-  // The tree stays unknown until the realm's knowledge, its balances and the game's board and XP rules are all in.
+  
   const board = store.get("BoardRules", { game_id: realm.game_id });
   if (learned === undefined || essence === undefined || labor === undefined || !board) return undefined;
   const rows = decodeLearned(learned);

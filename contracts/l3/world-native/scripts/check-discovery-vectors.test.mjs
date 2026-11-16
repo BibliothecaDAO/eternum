@@ -15,14 +15,14 @@ test("the omitted daily quest vector fails before compiling the discovery suites
 
 test("adding a vector without its root cases is refused", () => {
   const [vectors, cases] = discoveryVectorSources();
-  const previous = cases.replace(/^#\[test_case\(name: "route_52_roots_.*\n/gm, "");
+  const previous = cases.replace(/^#\[test_case\(name: "route_00_roots_.*\n/gm, "");
   assert.notEqual(previous, cases);
   assert.throws(() => checkDiscoveryVectors(vectors, previous), /both discovery refusal tests/);
 });
 
 test("both refusal functions need every root group even when other tests reuse case names", () => {
   const [vectors, cases] = discoveryVectorSources();
-  const missing = cases.replace(/^#\[test_case\(name: "route_52_roots_00_07".*\n/m, "");
+  const missing = cases.replace(/^#\[test_case\(name: "route_00_roots_00_07".*\n/m, "");
   assert.notEqual(missing, cases);
   assert.throws(() => checkDiscoveryVectors(vectors, missing), /both discovery refusal tests/);
 });

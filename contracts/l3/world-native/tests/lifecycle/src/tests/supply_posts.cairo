@@ -111,7 +111,7 @@ fn a_supply_post_requires_the_clearing_home_today_above_the_deep() {
         alt: false,
         col: 10,
         row: 65,
-        clear: Some(crate::expeditions::SiteClear { xp: 0, explorer_id: 8, home_id: 7, reward: None }),
+        clear: Some(crate::expeditions::SiteClear { explorer_id: 8, home_id: 7, reward: None }),
     };
     assert!(crate::expeditions::is_supply_post(site, 7, 1, 10));
     assert!(!crate::expeditions::is_supply_post(site, 8, 1, 10));

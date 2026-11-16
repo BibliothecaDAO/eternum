@@ -291,13 +291,7 @@ fn far_eye_discovers_pays_and_grants_xp_for_each_new_tile_only_once() {
         }
         assert_eq!(payments, 6);
         let after = far_eye_totals(d, home);
-        let (before_resources, before_xp) = before;
-        let (after_resources, after_xp) = after;
-        assert_eq!(after_resources - before_resources, 6 * (troops / 10));
-        let reveal_xp = interact_with_state(
-            d.games, || crate::logic::progression::rules(key.game_id).unwrap().reveal_xp,
-        );
-        assert_eq!(after_xp - before_xp, 6 * reveal_xp);
+        assert_eq!(after - before, 6 * (troops / 10));
         if spires {
             let spire = interact_with_state(
                 d.games,

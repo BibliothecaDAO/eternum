@@ -27,8 +27,8 @@ export const ArmyDock = ({
 }: {
   realm: NativeRows["Structure"];
   armies: DockArmy[];
-  /** The day's last hour: each army shows what its Homecoming sends home when the day ends. */
-  /** An army's panel: its figures, its XP and its level-ups. */
+  
+  
   onOpenArmy?: (explorerId: number) => void;
 }) => {
   const ordersAllowed = useUIStore(canIssueOrders);

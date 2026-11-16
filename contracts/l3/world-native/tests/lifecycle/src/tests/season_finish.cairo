@@ -103,7 +103,6 @@ fn published_season_one_starts_all_systems_and_settles_its_fiftieth_day() {
             for aspect in 1_u8..5 {
                 let monument = race.aspect_hyperstructure(crate::race::AspectKey { game_id, aspect });
                 assert_eq!(monument.height, 0);
-                assert!(monument.entity_id != 0);
             }
             assert_eq!(game.end_at, crate::days::day_at_index(game, preset.rules.day_unit_seconds, 49).end);
             game.end_at

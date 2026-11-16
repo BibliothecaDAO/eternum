@@ -110,17 +110,7 @@ const readTarget = (store: NativeFactStore, target: AttackTarget, attack: SiteAt
 const targetId = (target: AttackTarget): number =>
   safeInteger(target.kind === "site" ? target.site.entity_id : target.army.explorer_id);
 
-/**
- * A target's card over the game's facts: the selected army's matchup and exact forecast, what a clear pays and its
- * XP, then Attack in reach, Move until the army arrives, or the stamina it lacks. With no army selected, what the site
- * is and pays, and its guard. The card stays between attacks and closes when the target falls. It is the one surface an
- * army's attack is confirmed on, whatever it attacks.
- *
- * Once an attack settles, applied or refused, the panel is the still-selected army's again, not this card (owner, 30
- * October 2026: "when I fight, since the army stays selected, I'd like the army panel to be opened after the fight
- * ends"): the HUD's one panel hands it back (useOnePanel). Selecting the target later shows its card. An army lost lets
- * go of the map itself.
- */
+
 export const TileCard = ({
   selected,
   onClose,

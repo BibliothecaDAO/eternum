@@ -29,14 +29,11 @@ export interface SiteCardPlan {
   beast?: FrontierBeast;
   guard: { type: TroopType; tier: TroopTier; count: number } | null | undefined;
   kind: AttackTargetKind;
-  /** The XP a clear pays; another player's army pays none this card can promise. */
+  
   /** A ruin's stored tier and whole LORDS; unknown until its chest fact arrives. */
   ruinDepth?: string;
   chest: { tier: number; amount: number; funded: boolean } | null | undefined;
-  /**
-   * Whole units paid home and what fits beside what the store holds; null for XP-only sites, undefined until the home's
-   * facts arrive.
-   */
+  
   payout: { resourceId: ResourcesIds; amount: number; fits: number } | null | undefined;
   attackStamina: number;
   /** Whether the selected army's troops reach the target from where they stand: Attack now, or Move first. */
@@ -197,12 +194,7 @@ const reachOf = (
 /** Where an army out of reach attacks from: the tile beside the target, where its Move leads. */
 const BESIDE = 1;
 
-/**
- * The attack as the contract would resolve it at the army's clock, with no dice: Frontier's combat is exact. An army
- * out of reach is read from beside the target, with the stamina it holds now: how far it stands decides only whether
- * Attack can be sent yet (owner, 31 October 2026: "I should still have the projection even if I'm too far I think").
- * Both sides' stamina and the attacker's opening Charge come from the current facts.
- */
+
 const attackNow = (
   store: NativeFactStore,
   guard: Troops,

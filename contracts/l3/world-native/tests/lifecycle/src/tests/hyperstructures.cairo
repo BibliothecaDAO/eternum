@@ -272,7 +272,6 @@ fn hyperstructure_configuration_requires_authority_and_initialization_requires_o
         economy: crate::presets::EconomyPreset {
             race: None,
             banes: None,
-            progression: None,
             hyperstructures: HyperstructureRules { resources: array![].span(), ..rules() },
             ..preset.economy,
         },

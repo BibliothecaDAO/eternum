@@ -21,13 +21,7 @@ const RELIC = { kind: "Blade", rank: 2 } as const;
 /** An attack's stamina, as the map's order line names it for this army. */
 const ATTACK_STAMINA = 50n;
 
-/**
- * The owner's army beside the ruin before the fight (/lab/game?scenario=ruin-fight): realm 7's 4,015 knights, stamina
- * to attack, beside a ruin guarded by 999, neither on cooldown. The chain answers the attack (BattleGuard) as
- * combat_actions.cairo clears a site: the guard falls, the ruin's structure, guard and tile go, the site keeps its
- * receipt, the army loses 4 troops and the attack's stamina and gains the clear's XP, and the transaction emits the
- * ruin's payout story with its winning battle. Every other command is the spire's.
- */
+
 export const ruinFightScenario = (): LabScenario => ruinScenario(ARMY_TROOPS, GUARD_TROOPS, besideOnOpenLand);
 
 /**

@@ -71,11 +71,11 @@ import { useSiteAlertOffer } from "./opening/use-site-alert-offer";
 import { FrontierToday } from "./log/frontier-today";
 import { CARD_STORE_KINDS, type CardStore, FrontierStoreCard, isCardStore } from "./production/frontier-store-card";
 import { FrontierResearch } from "./research/frontier-research";
-import { dayClock } from "./hud/day-clock";
+
 import { BuildingsInFlight } from "./build/build-sheet";
 import { DayDone } from "./rollover/day-done";
 import { useRealmPopulation } from "./realm/realm-population";
-import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
+
 import { useDocumentClass } from "@/hooks/use-document-class";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
@@ -245,7 +245,7 @@ const FrontierHudBody = ({
     </>
   );
   // A phone's dock picks an army, the map first; a desktop's opens its panel too.
-  const dock = shown && <DockFor rules={rules} realm={shown} onOpenArmy={desktop ? openArmy : pickArmy} />;
+  const dock = shown && <DockFor realm={shown} onOpenArmy={desktop ? openArmy : pickArmy} />;
   const sheets = (
     <>
       <FrontierSurfaces realm={realm} rules={rules} />
@@ -454,20 +454,17 @@ const ActingArmy = ({ army, onOpenArmy }: { army: DockArmy; onOpenArmy: (explore
 
 /** The dock over the realm's armies today; on a phone the action row takes its place while an army is picked. */
 const DockFor = ({
-  rules,
   realm,
   onOpenArmy,
 }: {
-  rules: ExpeditionRules;
   realm: NativeRows["Structure"];
   onOpenArmy?: (explorerId: number) => void;
 }) => {
   const armies = useDockArmies(realm);
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
   const phone = useLayout() === "phone";
-  const lastHour = dayClock(rules, useNowSeconds()).tone === "ember";
   if (phone && armies.some((army) => army.explorerId === selectedId)) return null;
-  return <ArmyDock realm={realm} armies={armies} lastHour={lastHour} onOpenArmy={onOpenArmy} />;
+  return <ArmyDock realm={realm} armies={armies} onOpenArmy={onOpenArmy} />;
 };
 
 const PendingOrder = ({

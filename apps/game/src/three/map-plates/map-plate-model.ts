@@ -55,7 +55,7 @@ export interface ArmyPlate {
   inBattle?: boolean;
   /** Whose it is to a watching viewer; absent while the viewer plays. */
   watched?: PlateWatched;
-  /** The viewer's own army's way to its next skill point, 0 to 1 (nextSkillPoint): its token's ring. None for another's. */
+  
 }
 
 /**

@@ -23,7 +23,7 @@ export type ArmyOrder = {
   tiles: number;
   stamina: Cost;
   wheat: Cost;
-  /** Explore only: XP per new tile (read from the preset). */
+  
 };
 
 /** Whether a cost is covered now; unknown is never covered. */

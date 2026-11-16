@@ -1,12 +1,11 @@
 import { frontierPreset } from "../../../../../../config/source/frontier/native";
 
 export type Counts = readonly [number, number];
-export type StudyRow = 0 | 1 | 2;
+export type StudyRow = 0 | 1;
 
 export const ROWS = [
   { row: 0, name: "Farm", icon: "farm", sides: ["Fields", "Granary"], baseRate: 302.4, unit: "wheat / hour" },
   { row: 1, name: "Workshop", icon: "workshop", sides: ["Tools", "Storeroom"], baseRate: 201.6, unit: "labor / hour" },
-  { row: 2, name: "Barracks", icon: "barracks", sides: ["Drill", "Rations"], baseRate: 100.8, unit: "troops / hour" },
 ] as const;
 export const REALMS = ["Settlement", "City", "Kingdom", "Empire"];
 export const LIVE_CAPACITY = [6000, 18000, 50000, 120000];
@@ -41,7 +40,6 @@ export function capacity(level: number, picks: number) {
 export function effect(row: StudyRow, side: number, picks: number, level: number) {
   const item = ROWS[row];
   if (side === 0) return `${number(item.baseRate * (1 + picks * 0.2))} ${item.unit}`;
-  if (row === 2) return `${number(2 - picks * 0.2)} wheat / deployed troop`;
   return `${number(capacity(level, picks))} ${row === 0 ? "wheat" : "labor"} capacity`;
 }
 

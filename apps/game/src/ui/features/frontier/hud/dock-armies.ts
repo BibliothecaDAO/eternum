@@ -35,13 +35,13 @@ export type DockArmy = {
   troopsFact: NativeRows["ExplorerTroops"]["troops"];
   label: string;
   art: IconMeaning;
-  /** The attribute tier its XP buys next: its XP price and the tier it reaches; none at legendary or while unknown. */
+  
   /** Its tier in each attribute, 0 to 5, by its field on the progress; unknown while its progress is. */
   stamina: StaminaBar | undefined;
   secondsToFull: number | undefined;
   troops: number;
-  /** Its XP buys a tier of an attribute now: the card fan on its token. */
-  /** The whole troops its Homecoming returns when its day ends; unknown while its progress is. */
+  
+  
   /** The Ethereal layer it stands in (armyEtherealLayer); none on the surface. */
   ethereal: EtherealLayer | undefined;
   /** What holding a Deep site costs it: its troops fall each tick. None while it holds no site. */

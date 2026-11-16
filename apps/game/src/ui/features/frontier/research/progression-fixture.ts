@@ -6,12 +6,7 @@ import { nativeResearchConstants as research } from "@bibliothecadao/eternum/gam
 import type { ArmyView } from "../army/army-detail";
 import type { RealmResearchFacts } from "./research-tree";
 
-/**
- * Two realms and two armies on the Frontier preset's numbers (config/source/frontier/native.ts), for the lab and the
- * tests: the owner's realm on 20 October (owner-research.png and owner-armies.png: a Settlement with 300 Essence and 718
- * labor, Farm, Barracks and a Hut standing, nothing researched; Army 1 with 1,500 troops and 12 XP) and one some days in,
- * where every state of the tree shows at once. The game reads the same facts from the store.
- */
+
 
 const price = (row: number, tier: number) => {
   const entry = preset.research.find((candidate) => candidate.row === row && candidate.tier === tier);

@@ -623,7 +623,6 @@ pub fn assert_capture_at(
     assert_eq!((site_before.col, site_before.row, site_before.alt), (coord.x, coord.y, coord.alt));
     let camp_credit = labor_room
         .unwrap_or(site_before.initial_guard_count / 2 * (2 + Into::<u8, u128>::into(depth)) / 2);
-    let camp_xp = *array![4_u32, 7, 10, 15].at(depth.into());
     let camp_reward = Some(
         crate::resources::ResourceAmount { resource_type: crate::resources::LABOR, amount: camp_credit },
     );
@@ -644,7 +643,7 @@ pub fn assert_capture_at(
         crate::expeditions::ExpeditionSite {
             clear: Some(
                 crate::expeditions::SiteClear {
-                    xp: camp_xp, explorer_id, home_id: home.entity_id, reward: camp_reward,
+                    explorer_id, home_id: home.entity_id, reward: camp_reward,
                 },
             ),
             ..site_before,
