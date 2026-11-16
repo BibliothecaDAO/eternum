@@ -164,10 +164,10 @@
           "apps/game/src/three/structures/hyperstructure-kit.ts": "c07bccfb3db16bfc3ee3d61103b92e619f38db2fef8cf9489202e214d3da07dd",
           "apps/game/src/three/structures/hyperstructure-design.ts": "38e9ae3b979ab15786e464e4860d76129c538f6ca456f5884eaba583f7ead369",
           "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "edcb0230aae42d2864749056008104452a64b2e75a49eaa3e2409bb86c652aca",
-          "apps/game/src/three/structures/hyperstructure-model.ts": "21371539ed2c8910d9db34c36d491ee608a46c63afc004cfc3030f0e498f1853",
+          "apps/game/src/three/structures/hyperstructure-model.ts": "3d4904a412854f2188646839987ee63e59eb860847c5224a9b765139bcdaa712",
           "apps/game/src/three/structures/hyperstructure-power.ts": "676b2984ac5ab209f6d483181ff2294f1d8f951d9be916c23ddc2a9409cb8057"
         },
-        "sha256": "5a821ec79eeb77d98b9f5bd9248a2ff5acfcd29caaccd9ffcadfa5642c370a2c"
+        "sha256": "25234ea9e5d21e096670c50ec19ec3f2f499192b9cebd668899c3c8622f65cad"
       }
     },
     {
