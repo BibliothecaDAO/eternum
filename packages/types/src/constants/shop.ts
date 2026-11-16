@@ -6,9 +6,6 @@
  */
 export const FRAGMENT = { cents: 1, staminaPoints: 2 } as const;
 
-/** What a Fragment buys besides stamina, in Fragments: a name, a banner line or a badge. */
-export const FRAGMENT_PRICES = { look: 200 } as const;
-
 /**
  * Who the Ancient Seal's buyer is: a holder of nothing, of a Realm or a Devcon (regular) ticket home, or of a Wonder or a
  * golden ticket home. The last two have the labor bonus free; the Wonder or golden holder has the Fragments free too.

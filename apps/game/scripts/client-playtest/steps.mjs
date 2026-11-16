@@ -362,12 +362,10 @@ const FAR_EYE_STEPS = [
     verify: ({ played }) =>
       played.answer.filter((row) => row.model === "TileOpt").length === 6 &&
       played.answer.some((row) => row.model === "ResourceBalance" && BigInt(row.value.balance) > 0n) &&
-      played.answer.some((row) => row.model === "ArmyProgress" && row.value.xp === 6) &&
       played.answer.some((row) => row.model === "ArmyRelics" && row.value.first === null) &&
-      played.panel.includes("6 / 75 XP") &&
       !played.panel.includes("Switch on Common Far-Eye")
         ? completed(played)
-        : failed("Far-Eye must spend its slot, reveal six tiles, find the Spire and pay resources and XP", played),
+        : failed("Far-Eye must spend its slot, reveal six tiles, find the Spire and pay resources", played),
   },
 ];
 
@@ -386,7 +384,7 @@ const RELIC_FORECAST_STEPS = [
       const beforeText = browser.read(`JSON.stringify(document.querySelector('[data-kit-sheet]')?.textContent ?? '')`);
       browser.press("Escape");
       await openTheArmyPanel(browser);
-      for (const [index, name] of ["Uncommon Blade", "Common Tome"].entries()) {
+      for (const [index, name] of ["Uncommon Blade", "Common Ward"].entries()) {
         browser.run(["find", "role", "button", "click", "--name", `Switch on ${name}`]);
         await readUntil(
           () => browser.read(`window.__labChain?.sent.filter(row => row.command.kind === 'ApplyRelic').length ?? 0`),
@@ -420,12 +418,10 @@ const RELIC_FORECAST_STEPS = [
       return played.before.sides.length === 2 &&
         played.after.sides.length === 2 &&
         JSON.stringify(played.before.sides) !== JSON.stringify(played.after.sides) &&
-        /136\s*XP/.test(played.beforeText) &&
-        /190\s*XP/.test(played.afterText) &&
         effects.some((effect) => effect.kind === "Blade" && effect.rank === 2) &&
-        effects.some((effect) => effect.kind === "Tome" && effect.rank === 1)
+        effects.some((effect) => effect.kind === "Ward" && effect.rank === 1)
         ? completed(played)
-        : failed("switching on Blade and Tome must change the fight and the ruin's XP from 136 to 190", played);
+        : failed("switching on Blade and Ward must change the forecast and record both active effects", played);
     },
   },
 ];
@@ -599,99 +595,6 @@ const tokensShowTheChainsCounts = (browser, kind) => {
       (BigInt(value.troops.count) / 1000000000n).toLocaleString("en-US"));
 })()`;
 };
-
-/**
- * A Shrine and a Well used (the lab's sites game): each beside the army, used as a player uses it (a desktop's
- * right-click on the tile whose hover offers Use and what it gives; a phone's tap, which opens the site's sheet, then
- * Use); the result is that site leaving the map from its tile.
- */
-const SITE_ACTION_STEPS = [
-  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
-  clickToResultStep(
-    "shrine",
-    "InteractSite",
-    (context) => useTheSite(context, "Shrine", "III skill point"),
-    shrinePointGranted,
-  ),
-  clickToResultStep("well", "InteractSite", (context) => useTheSite(context, "Well", "+97 stamina"), wellRefilled),
-];
-
-async function useTheSite({ browser }, site, gives) {
-  await focusTheArmyFromItsDock(browser);
-  const armyAt = armyOnScreen(browser, browser.observe().selection?.army?.id);
-  if (!armyAt) return { site, offered: [] };
-  const offered = [];
-  for (const [dx, dy] of NEIGHBOUR_RING) {
-    const offset = [armyAt[0] + dx, armyAt[1] + dy];
-    if (onADesktop()) {
-      browser.hover(offset);
-      await sleep(HOVER_SETTLE_MS);
-      const tip = browser.read(TOOLTIP_TEXT);
-      offered.push(tip);
-      if (/^Use\b/.test(tip ?? "") && tip.includes(gives)) {
-        browser.rightClick(offset);
-        return { site, offered, target: offset, region: tileRegion(offset) };
-      }
-      continue;
-    }
-    browser.tap(offset);
-    const sheet = await readUntil(
-      () => browser.read(SHEET_NAME),
-      (name) => name !== null,
-      SHEET_WAIT_MS,
-    );
-    offered.push(sheet);
-    if (sheet === site) {
-      // A phone frames the tapped tile above the site's sheet: its result shows where the map now draws it.
-      const at = await settledHexOnScreen(browser);
-      browser.click("Use");
-      return { site, offered, target: offset, region: at && tileRegionAt(at) };
-    }
-    if (sheet !== null) browser.press("Escape");
-    if (!browser.observe().selection?.army) await focusTheArmyFromItsDock(browser);
-  }
-  return { site, offered };
-}
-
-// The pointer's tooltip whole: its order, then what it costs or gives ("Use", "III skill point").
-const TOOLTIP_TEXT = `JSON.stringify(document.querySelector('[role="tooltip"][aria-hidden="false"]')?.innerText.replace(/\\s+/g, " ").trim() ?? null)`;
-
-/** The discovery fixture promises one III point; using it leaves the army's XP alone. */
-function shrinePointGranted(context) {
-  const answer = (context.actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "InteractSite").at(-1);
-  const progress = answer?.answered.find(({ model }) => model === "ArmyProgress")?.value;
-  const consumed = answer?.answered.some(({ model, value }) => model === "ShrineReward" && value === null);
-  if (
-    !consumed ||
-    progress?.xp !== 40 ||
-    progress?.rare_points !== 1 ||
-    progress.common_points !== 0 ||
-    progress.uncommon_points !== 0 ||
-    progress.epic_points !== 0 ||
-    progress.legendary_points !== 0
-  )
-    return false;
-  return siteUsedUp(context);
-}
-
-/** Logistics III raises the bar to 195; the Well adds floor(195 / 2) to its 40 stamina. */
-function wellRefilled(context) {
-  const answer = (context.actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "InteractSite").at(-1);
-  const slot = answer?.answered.find(({ model }) => model === "ArmySlot")?.value;
-  if (BigInt(slot?.stamina.amount ?? 0) !== 137n) return false;
-  return siteUsedUp(context);
-}
-
-/** The site the lab's chain consumed for the step's InteractSite: its tile, vacated. */
-function siteUsedUp({ actionLatency }) {
-  const vacated = (actionLatency.chainAnswers ?? [])
-    .filter(({ kind }) => kind === "InteractSite")
-    .at(-1)
-    ?.answered.find(({ model, value }) => model === "TileOccupancy" && value === null);
-  const [, , col, row] = vacated?.key.split(":") ?? [];
-  return col && { presented: `site-gone:${col},${row}` };
-}
 
 /**
  * Two of the realm's armies merged (the lab's merge game): the spire's army picked, the other right-clicked for the
@@ -1317,19 +1220,8 @@ const realmClaimed = `(() => {
   return String(grant?.value.home) === "7" && today?.getAttribute("data-state") === "claimed";
 })()`;
 
-/** Open an army's panel, spend a Battle skill point, and read the tier the command changed. */
-const ARMY_ACTION_STEPS = [
-  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  clickToResultStep(
-    "tier",
-    "SpendSkillPoint",
-    levelUpTheArmy,
-    ({ played }) => played.watching && { watch: "tier-bought" },
-  ),
-];
-
 const CLEAR_MIST_STEPS = [
-  ARMY_ACTION_STEPS[0],
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   {
     name: "clear-mist-odds",
     play: async ({ browser }) => {
@@ -1354,7 +1246,7 @@ const CLEAR_MIST_STEPS = [
 
 function staminaEffectSteps(wind) {
   return [
-    ARMY_ACTION_STEPS[0],
+    { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
     {
       name: "effect-refill",
       play: async ({ browser }) => {
@@ -1379,7 +1271,6 @@ function staminaEffectSteps(wind) {
           : failed("Army bar and refill time must reflect the recorded stamina effects", played);
       },
     },
-    ARMY_ACTION_STEPS[1],
   ];
 }
 
@@ -1416,33 +1307,6 @@ async function openTheArmyPanel(browser) {
     region: sheet === army ? browser.read(sheetRegion(`[data-kit-sheet][aria-label="${army}"]`)) : null,
   };
 }
-
-async function levelUpTheArmy({ browser }) {
-  const panel = await openTheArmyPanel(browser);
-  if (panel.sheet !== panel.army) return panel;
-  const choose = browser.read(sheetButton("^Level up$"));
-  if (!choose) return { ...panel, choose };
-  browser.tap(choose.offset);
-  const battle = await readUntil(() => browser.read(sheetButton("^Battle")), Boolean, SHEET_WAIT_MS);
-  if (!battle) return { ...panel, battle };
-  const buy = browser.read(sheetButton("^Level up$"));
-  if (!buy) return { ...panel, buy };
-  watchFor(browser, "tier-bought", panelShowsTheChainsTier(panel.army));
-  browser.tap(buy.offset);
-  return { ...panel, watching: true };
-}
-
-/**
- * The army's panel shows the Battle tier the lab's chain bought, back on its status: the point was its last, so the
- * choices have nothing left to buy and the panel returns to the army, its Battle tile at that tier.
- */
-const panelShowsTheChainsTier = (army) => `(() => {
-  const bought = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "SpendSkillPoint").at(-1);
-  const tier = bought?.answered.find(({ model }) => model === "ArmyProgress")?.value.battle;
-  const sheet = document.querySelector('[data-kit-sheet][aria-label="${army}"]');
-  return tier !== undefined &&
-    sheet?.querySelector('[data-army-step="stats"] button[aria-label^="Battle "] .ui-tier[data-tier="' + tier + '"]') != null;
-})()`;
 
 /**
  * A building demolished (the lab's upkeep game): the realm, a first-ring building tapped for its card, Delete, then
@@ -4095,9 +3959,6 @@ const ARMY_SIDES = `JSON.stringify(Object.fromEntries([...document.querySelector
   getComputedStyle(slot.querySelector("[style*='--mp-side']") ?? slot.firstElementChild ?? slot).getPropertyValue("--mp-side").trim(),
 ])))`;
 
-/** Every XP ring on the page: an army's portrait ring on its dock row or token, and in its open panel. */
-const XP_RINGS = `JSON.stringify([...document.querySelectorAll('svg[aria-label^="XP: "]')].map((ring) => ring.getAttribute("aria-label")))`;
-
 /**
  * The site models the map draws, by kind (`deep:<position>` for the Deep's three): how many of each, and the plates of
  * the Deep's three sites (the icons their catalog gives them) with whether each stands wholly inside the page.
@@ -4242,23 +4103,6 @@ const DEEP_JOIN_STEPS = [
         : failed("An ally's army must be drawn in a side colour other than the player's own", played),
   },
   { name: "pick-army", play: pickTheSpireArmy, settleMs: 1_500, verify: spireArmyPicked },
-  {
-    name: "xp-ring-fills",
-    settleMs: 0,
-    play: async ({ browser, extraScreenshot }) => {
-      const rings = await readUntil(
-        () => browser.read(XP_RINGS),
-        (state) => state.length > 0,
-        SHEET_WAIT_MS,
-      );
-      extraScreenshot("xp-ring");
-      return { rings };
-    },
-    verify: ({ played }) =>
-      played.rings.length > 0 && played.rings.every((label) => label === "XP: 80% of the way to the next skill point")
-        ? completed(played)
-        : failed("An army four fifths of the way to its next skill point wears a ring four fifths filled", played),
-  },
   {
     name: "field-army-drains",
     settleMs: 0,
@@ -4695,10 +4539,9 @@ const SITE_EFFECT_STEPS = [
     settleMs: 0,
     verify: ({ played }) =>
       played.opened.after.sides.some((side) => side.includes("500")) &&
-      played.text.includes("272") &&
       /3k|3,000/.test(played.text)
         ? completed(played)
-        : failed("The camp must show 500 guards, doubled payout and 272 XP", played),
+        : failed("The camp must show 500 guards and the doubled resource payout", played),
   },
 ];
 
@@ -5154,7 +4997,7 @@ async function pressMerge({ browser }) {
   return { merge, confirm, before, after };
 }
 
-/** The merge asked again only where it loses XP, in those words; it sent the transfer, and only the army tapped is left. */
+/** The merge asked again only where it loses stronger Logistics training, in those words; it sent the transfer, and only the army tapped is left. */
 function mergedIntoTheTapped({ played }, confirm) {
   if (!played.merge) return failed("no Merge to press", played);
   if (played.confirm !== confirm)
@@ -5870,7 +5713,7 @@ function armyManagementSteps() {
           });
         })())`);
         extraScreenshot("delete-confirmation");
-        if (!fits || !loss?.includes("troops, skills, XP and carried resources are lost")) return { loss, fits };
+        if (!fits || !loss?.includes("troops and carried resources are lost")) return { loss, fits };
         await press(browser, "Cancel", true);
         const retained = count(browser) === "10";
         if (!retained) return { armyId, loss, retained };
@@ -6173,7 +6016,7 @@ export const STEP_SETS = {
   "lab-no-lords": {
     game: labSpireGame("upkeep"),
     steps: [
-      ARMY_ACTION_STEPS[0],
+      { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
       {
         name: "no-lords-controls",
         play: async ({ browser }) => {
@@ -6191,7 +6034,6 @@ export const STEP_SETS = {
       },
     ],
   },
-  "lab-actions-army": { game: labSpireGame("upkeep"), steps: ARMY_ACTION_STEPS },
   "lab-actions-demolish": { game: labSpireGame("upkeep"), steps: DEMOLISH_ACTION_STEPS },
   "lab-actions-settle": { game: LAB_SETTLE, steps: SETTLE_ACTION_STEPS },
   "lab-aspect-settle": { game: { ...labSpireGame("aspect-settle"), entersFromHome: true }, steps: ASPECT_SETTLE_STEPS },
@@ -6201,7 +6043,6 @@ export const STEP_SETS = {
   },
   "lab-actions-fight": { game: labSpireGame("fight"), steps: FIGHT_ACTION_STEPS },
   "lab-actions-fight-lost": { game: labSpireGame("fight-lost"), steps: FIGHT_LOST_STEPS },
-  "lab-actions-sites": { game: labSpireGame("sites"), steps: SITE_ACTION_STEPS },
   "lab-hud-devices": { game: labSpireGame("sites"), steps: HUD_DEVICE_STEPS },
   "lab-after-battle": { game: labSpireGame("after-battle"), steps: LAB_AFTER_BATTLE_STEPS },
   "lab-visit": { game: labSpireGame("visit"), steps: LAB_VISIT_STEPS, devOverlays: true },

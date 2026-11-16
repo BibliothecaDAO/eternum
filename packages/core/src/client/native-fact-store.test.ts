@@ -576,7 +576,7 @@ describe("declared fact absence", () => {
     expect(resolveExplorerTroops(store, army)?.staminaMax).toBe(
       Number(preset.rules.troop_stamina_config.stamina_knight_max) + 75,
     );
-    expect(resolveExplorerTroops(store, army)?.boosts).toEqual(army.boosts);
+    expect(resolveExplorerTroops(store, army)?.boosts).toEqual(army.troops.boosts);
     store.applyFacts([set("0x70", "ArmySlot", { ...occupied, explorer_id: army.explorer_id + 1n })]);
     expect(() => resolveExplorerTroops(store, army)).toThrow("occupant mismatch");
     store.applyFacts([remove("0x70", "ArmySlot")]);
