@@ -15,7 +15,7 @@ import { MapSiteManager } from "../managers/map-site-manager";
 import { activeMapLayer } from "@/three/map-layer";
 import type { ReactNode } from "react";
 import { isMapPreviewAction } from "./worldmap-action-preview-policy";
-import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
+import { projectHexToScreen, projectPointsToScreen } from "@/three/utils/project-hex-to-screen";
 import { playRevealYield } from "@/ui/motion/moments/reveal-yield";
 import { playSiteClear } from "@/ui/features/frontier/sites/site-clear-moment";
 import { sendSiteUse, siteUseFacts, usableSiteAt } from "@/ui/features/frontier/sites/use-site";
@@ -958,7 +958,19 @@ export default class WorldmapScene extends WarpTravel {
     useUIStore.getState().setCameraTargetHex(camera);
     publishMapSelection({ camera, layer: useUIStore.getState().mapLayer });
     this.publishSelectedHexOnScreen();
+    this.publishTowersOnScreen();
   };
+
+  /** Where the screen draws each hyperstructure's tower, foot to crown, as the selection report carries it. */
+  private publishTowersOnScreen(): void {
+    publishMapSelection({
+      towerBoxes: Object.fromEntries(
+        this.structureManager
+          .towerCornersDrawn()
+          .map(([id, corners]) => [id, projectPointsToScreen(corners, this.camera)]),
+      ),
+    });
+  }
 
   /** Where the screen draws the selected hex, as the selection report carries it (observability/map-selection). */
   private publishSelectedHexOnScreen(): void {

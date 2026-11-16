@@ -1,4 +1,16 @@
-import { Color, Euler, Matrix4, Mesh, MeshStandardMaterial, Quaternion, type Texture, Vector3 } from "three";
+import {
+  Box3,
+  type BufferAttribute,
+  type BufferGeometry,
+  Color,
+  Euler,
+  Matrix4,
+  Mesh,
+  MeshStandardMaterial,
+  Quaternion,
+  type Texture,
+  Vector3,
+} from "three";
 import InstancedModel from "../managers/instanced-model";
 import { queueInstanceUpdate } from "../utils/instance-update-ranges";
 import {
@@ -47,6 +59,7 @@ export class HyperstructureModel extends InstancedModel {
   private readonly stoneTexture: Texture;
   private readonly parts: { name: string; family?: string; course?: number; masonry: boolean }[];
   private readonly masonryTint = new Color();
+  private readonly partBoxes = new WeakMap<BufferGeometry, Box3>();
   private readonly local = new Matrix4();
   private readonly composed = new Matrix4();
   private readonly scale = new Vector3();
@@ -115,6 +128,32 @@ export class HyperstructureModel extends InstancedModel {
     placement.matrix.copy(matrix);
     this.placements.set(index, placement);
     this.writeTower(index, placement);
+  }
+
+  /** A part's own extent from its vertices: its geometry's bounds are stretched over every instance the model places. */
+  private partBox(geometry: BufferGeometry): Box3 {
+    let box = this.partBoxes.get(geometry);
+    if (!box) {
+      box = new Box3().setFromBufferAttribute(geometry.getAttribute("position") as BufferAttribute);
+      this.partBoxes.set(geometry, box);
+    }
+    return box;
+  }
+
+  /** Every corner of every part of the tower at `index` that is drawn now, in the world: what the player can see of it. */
+  drawnCornersAt(index: number): Vector3[] {
+    const matrix = new Matrix4();
+    return this.instancedMeshes.flatMap((mesh, meshIndex) => {
+      if (!this.visibleSlots.get(meshIndex)?.has(index)) return [];
+      const box = this.partBox(mesh.geometry);
+      mesh.getMatrixAt(index, matrix);
+      matrix.premultiply(mesh.matrixWorld);
+      return [box.min.x, box.max.x].flatMap((x) =>
+        [box.min.y, box.max.y].flatMap((y) =>
+          [box.min.z, box.max.z].map((z) => new Vector3(x, y, z).applyMatrix4(matrix)),
+        ),
+      );
+    });
   }
 
   setConstructionAt(index: number, construction: HyperstructureConstruction, animateFromFoundation = false): void {

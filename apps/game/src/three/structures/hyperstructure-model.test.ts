@@ -73,6 +73,27 @@ describe("procedural hyperstructures", () => {
     model.dispose();
   });
 
+  it("reports the corners of what it draws where it is placed: a taller tower as it rises, none once removed", async () => {
+    const { HyperstructureModel } = await import("./hyperstructure-model");
+    const model = new HyperstructureModel(1);
+    expect(model.drawnCornersAt(0)).toEqual([]);
+    model.setMatrixAt(0, new Matrix4().makeTranslation(4, 1, -2));
+    model.setCount(1);
+    const topOf = () => Math.max(...model.drawnCornersAt(0).map((corner) => corner.y));
+    model.setConstructionAt(0, { entityId: 7, progress: 20, completed: false });
+    const bottom = Math.min(...model.drawnCornersAt(0).map((corner) => corner.y));
+    expect(bottom).toBeCloseTo(1, 1);
+    const early = topOf();
+    model.setConstructionAt(0, { entityId: 7, progress: 100, completed: true });
+    model.updateAnimations(5);
+    model.updateAnimations(5);
+    expect(topOf()).toBeGreaterThan(early);
+    expect(topOf() - bottom).toBeLessThanOrEqual(HYPERSTRUCTURE_HEIGHT + 0.1);
+    model.setMatrixAt(0, new Matrix4().makeScale(0, 0, 0));
+    expect(model.drawnCornersAt(0)).toEqual([]);
+    model.dispose();
+  });
+
   it("builds additively inside the hex and preserves the completed landmark height", async () => {
     const { HyperstructureModel } = await import("./hyperstructure-model");
     const model = new HyperstructureModel(1);

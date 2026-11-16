@@ -4041,24 +4041,35 @@ function raceBoardSteps(result) {
         for (const id of Object.keys(TOWERS_AFTER_THE_BLOCK)) {
           await panToHex(browser, hexes[id]);
           await sleep(HOVER_SETTLE_MS);
+          // A tall tower may rise out of the frame the camera centres on its foot: the player zooms out until it fits.
+          let notches = 0;
+          while (!towerFitsOnScreen(browser.read(towerOnScreen(id))) && notches < TOWER_ZOOM_OUT_LIMIT) {
+            browser.run(["eval", `void window.__playtest.wheel(100, 1)`]);
+            notches += 1;
+            await sleep(ZOOM_SETTLE_MS);
+            await panToHex(browser, hexes[id]);
+            await sleep(HOVER_SETTLE_MS);
+          }
           extraScreenshot(`tower-${id}`);
-          visits.push({
-            id,
-            drawn: browser.read(DRAWN_TOWERS)[id],
-            target: hexes[id],
-            camera: browser.read(`window.__eternumMapSelection?.camera ?? null`),
-          });
+          visits.push({ id, notches, drawn: browser.read(DRAWN_TOWERS)[id], seen: browser.read(towerOnScreen(id)) });
+          if (notches > 0) {
+            browser.run(["eval", `void window.__playtest.wheel(-100, ${notches})`]);
+            await sleep(ZOOM_SETTLE_MS);
+          }
         }
         return { visits };
       },
       verify: ({ played }) =>
         played.visits.every(
           (visit) =>
-            Math.hypot(visit.camera.col - visit.target.col, visit.camera.row - visit.target.row) <= HEX_CLOSE &&
+            towerFitsOnScreen(visit.seen) &&
             JSON.stringify(visit.drawn) === JSON.stringify(TOWERS_AFTER_THE_BLOCK[visit.id]),
         )
           ? completed(played)
-          : failed("The camera must reach each tower, drawn at the stage the chain wrote", played),
+          : failed(
+              "Each tower, foot to crown, must stand wholly inside the screen and clear of the HUD, drawn at the stage the chain wrote",
+              played,
+            ),
     },
     {
       name: "no-site-rank-requests",
@@ -4103,6 +4114,33 @@ const DRAWN_SITES = `JSON.stringify({
 
 /** What each drawn hyperstructure's tower shows, by structure id: its animated progress in percent and whether its crown is awake. */
 const DRAWN_TOWERS = `JSON.stringify(window.__eternumMapSelection?.towers ?? {})`;
+
+/** Zoom-out notches a visit may spend to fit a tower in the frame. */
+const TOWER_ZOOM_OUT_LIMIT = 6;
+
+const towerFitsOnScreen = (seen) => seen?.inside === true && seen.clear === true;
+
+/**
+ * Where a tower falls on the page (the map's projection of its foot and crown, observability/map-selection): whether
+ * its whole box is inside the window, and whether its foot, middle and crown are drawn on the map (its canvas or a map
+ * plate) and not under a HUD panel.
+ */
+const towerOnScreen = (id) => `(() => {
+  const box = window.__eternumMapSelection?.towerBoxes?.[${JSON.stringify(id)}];
+  if (!box) return null;
+  const canvas = document.getElementById("main-canvas");
+  const middle = (low, high) => (low + high) / 2;
+  const x = middle(box.left, box.right);
+  const onTheMap = (y) => {
+    const hit = document.elementFromPoint(x, y);
+    return hit === canvas || !!hit?.closest(".mp-at");
+  };
+  return {
+    box,
+    inside: box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight,
+    clear: [box.top, middle(box.top, box.bottom), box.bottom].every(onTheMap),
+  };
+})()`;
 
 /** The lab's Aspects' heights 5,200, 6,400, 2,800 and 900 over a 2,000 stage: two, three, one and no stage built. */
 const TOWERS_AT_THE_START = {

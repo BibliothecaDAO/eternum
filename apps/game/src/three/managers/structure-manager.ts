@@ -1628,6 +1628,17 @@ export class StructureManager {
   /** The contract hex each hyperstructure drawn stands on: published for the towers' proof, and let go with the instance. */
   private readonly towerHexes = new Map<number, { col: number; row: number }>();
 
+  /** The world corners of what each hyperstructure drawn shows now, by structure id, for the camera's report of where they fall on screen. */
+  towerCornersDrawn(): [number, Vector3[]][] {
+    return [...this.structureInstanceBindings].flatMap(([entityId, bindings]) =>
+      bindings.flatMap(({ model, instanceIndex }) =>
+        model instanceof HyperstructureModel
+          ? [[entityId, model.drawnCornersAt(instanceIndex)] as [number, Vector3[]]]
+          : [],
+      ),
+    );
+  }
+
   private addVisibleStructureInstance(
     structure: StructureInfo,
     attachmentRetain: Set<number>,

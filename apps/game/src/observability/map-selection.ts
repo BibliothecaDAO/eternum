@@ -26,6 +26,8 @@ interface MapSelectionSnapshot {
   siteHexes: Record<string, { col: number; row: number }>;
   /** The contract hex each drawn hyperstructure stands on, by structure id. */
   towerHexes: Record<string, { col: number; row: number }>;
+  /** The page box (px) each drawn hyperstructure's tower fills, foot to crown, by structure id; follows the camera. */
+  towerBoxes: Record<string, { left: number; top: number; right: number; bottom: number }>;
   /** What each drawn hyperstructure's tower shows now, by structure id: its animated progress in percent, and whether its crown is awake (the stages proof). */
   towers: Record<string, { progress: number; awake: boolean }>;
   /** The layer the map shows: the depth below (true) or the surface. */
