@@ -76,7 +76,8 @@ function fixture(guardCounts = [1000]) {
 it("forecasts every rival guard in order with the same surviving attacker", () => {
   const single = fixture();
   expect(single.plan()).toHaveLength(1);
-  expect(single.plan()[0]!.dueAt).toBe(single.startsAt * 1000);
+  const tickSeconds = Number(single.store.require("SliceRules", { game_id: 1 }).tick_config.armies_tick_in_seconds);
+  expect(single.plan()[0]!.dueAt).toBe((Math.floor(single.startsAt / tickSeconds) + 1) * tickSeconds * 1000);
   const pair = fixture([1000, 1000]);
   const watches = pair.plan();
   expect(watches).toHaveLength(1);

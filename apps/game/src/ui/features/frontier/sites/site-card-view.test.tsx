@@ -147,7 +147,7 @@ describe("a guarded site's card", () => {
     expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("BladeYour army is lost+128Rare+1 site");
     expect(card.querySelector(".ui-frame__body header .opacity-50")?.textContent).toBe("+128Rare+1 site");
     expect(card.querySelector('[data-icon="troops"]')).toBeNull();
-    expect(card.querySelector('[data-tip="Knight"]')).not.toBeNull();
+    expect(card.querySelector('[data-combat-mark="Blade"]')?.textContent).toBe("Blade");
     expect(card.textContent).toContain("2,300");
     expect(card.querySelector('[aria-label="128 LORDS"]')).not.toBeNull();
     // The chest's rarity is its word on its plate, never pips.

@@ -100,7 +100,7 @@ fn delayed_altar_ticks_preserve_the_prepared_world_day_and_issue_for_the_followi
     let mut preset = race_preset(2000);
     preset.economy.deep = Some(crate::deep::DeepRules { altar_threshold: 5, ..preset.economy.deep.unwrap() });
     let (d, game_id) = super::aspects::setup_aspect_preset(5, preset);
-    let key = deployed(d, game_id, 1, 3);
+    let key = deployed(d, game_id, 1, 2);
     let home = ResourceKey { game_id, entity_id: army(d, key).owner };
     let target = site(d, game_id, crate::rules::DEEP_ALTAR);
     beside(d, key, target, 0);

@@ -5,6 +5,8 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import realmAssets from "../../src/three/structures/realm-assets.json" with { type: "json" };
 import realmSkins from "../../src/three/structures/realm-skins.json" with { type: "json" };
 import sharp from "sharp";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import {
   blocked,
@@ -436,7 +438,7 @@ const DEEP_BATTLE_TARGET_STEPS = battleTargetSteps(attackFromTheDeepCard, "Deep"
 
 function battleTargetSteps(attack, place) {
   const values = readFileSync(
-    new URL("../../../../contracts/l3/world-native/tests/fixtures/frontier-marks.txt", import.meta.url),
+    resolve(dirname(fileURLToPath(import.meta.url)), "../../../../contracts/l3/world-native/tests/fixtures/frontier-marks.txt"),
     "utf8",
   )
     .trim()

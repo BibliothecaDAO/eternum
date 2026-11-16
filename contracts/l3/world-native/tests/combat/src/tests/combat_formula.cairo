@@ -1,3 +1,4 @@
+use snforge_std::fs::{FileTrait, read_txt};
 pub use world_test_support::tests::combat_formula::*;
 
 
@@ -470,7 +471,6 @@ fn a_blade_killed_by_the_first_shot_never_replies() {
 
 #[test]
 fn frontier_bow_exchanges_match_the_browser_receipts_against_a_beast_and_a_knight_slot() {
-    use snforge_std::fs::{FileTrait, read_txt};
     let values = read_txt(@FileTrait::new("../fixtures/frontier-marks.txt"));
     let mut fields = values.span();
     let damage = TroopDamageConfig {
@@ -480,7 +480,7 @@ fn frontier_bow_exchanges_match_the_browser_receipts_against_a_beast_and_a_knigh
     for defender_is_structure_guard in array![false, true] {
         let mut attacker = test_troops(TroopType::Crossbowman, TroopTier::T1, 1000, 100);
         let mut defender = test_troops(TroopType::Knight, TroopTier::T1, 1000, 100);
-        for i in 0..2 {
+        for attack_number in array![1_u64, 2] {
             let (before_a, before_b, after_a, after_b): (u128, u128, u128, u128) = Serde::deserialize(ref fields)
                 .unwrap();
             assert_eq!(attacker.count, before_a * RESOURCE_PRECISION);
@@ -496,7 +496,7 @@ fn frontier_bow_exchanges_match_the_browser_receipts_against_a_beast_and_a_knigh
                 );
             assert_eq!(attacker.count, after_a * RESOURCE_PRECISION);
             assert_eq!(defender.count, after_b * RESOURCE_PRECISION);
-            assert_eq!(attacker.stamina.inline().amount, 100 - (i + 1) * 30);
+            assert_eq!(attacker.stamina.inline().amount, 100 - attack_number * 30);
         }
     }
     assert!(fields.is_empty());

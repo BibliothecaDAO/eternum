@@ -519,7 +519,7 @@ fn blood_and_pale_moons_project_each_battle_and_preserve_base_losses() {
             world_test_support::tests::play_fixture::play(
                 d.games,
                 world_test_support::tests::play_fixture::TestAction {
-                    game_id, actor: d.actor, command: super::army_activity::muster(home.entity_id, 0, 0, 10),
+                    game_id, actor: d.actor, command: super::army_activity::muster(home.entity_id, 0, 0, 30),
                 },
                 super::banes::root_for(game_id, 1, 20, if blood {
                     crate::banes::BLOOD_MOON
