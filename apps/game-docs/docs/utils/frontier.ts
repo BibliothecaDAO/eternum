@@ -39,9 +39,6 @@ export const LONG_DAY_UNITS = 6;
 const DAYS_PER_BAG = CONTRACT.daysPerBag;
 const UNITS_PER_BAG = CONTRACT.unitsPerBag;
 
-// Refill's price, from logic/relics.cairo: 1 LORDS per missing point.
-const REFILL_LORDS_PER_POINT = 1;
-
 const tickMinutes = config.tick.armiesTickIntervalInSeconds / 60;
 
 // What one troop costs to deploy, in wheat: the Knight recipe's wheat over its output (Scouts have the same base price).
@@ -101,8 +98,6 @@ export const FRONTIER = {
     attack: n(stamina.staminaAttackReq),
     wheatPerTroop: n(stamina.staminaExploreWheatCost),
     well: `${n(100 / rule.WELL_STAMINA_DIVISOR)}% of its maximum`,
-    pointRefills: [1, 2, 3, 4, 5].map((rank) => n(rule.SKILL_POINT_REFILL_BASE + rank * rule.SKILL_POINT_REFILL_STEP)),
-    refillLords: n(REFILL_LORDS_PER_POINT),
     logisticsMax: n(rule.LOGISTICS_LEGENDARY_STAMINA),
   },
   discovery: {
@@ -113,14 +108,7 @@ export const FRONTIER = {
     shrine: pct(frontierPreset.discovery.shrineBps),
     well: pct(frontierPreset.discovery.wellBps),
     emptyRevealLimit: n(frontierPreset.discovery.emptyRevealLimit),
-    /** A Shrine's skill point on the surface, Common to Legendary; each depth below lifts it one rank. */
-    shrineRanks: [
-      rule.SHRINE_COMMON_BPS,
-      rule.SHRINE_UNCOMMON_BPS,
-      rule.SHRINE_RARE_BPS,
-      rule.SHRINE_EPIC_BPS,
-      rule.SHRINE_LEGENDARY_BPS,
-    ].map(pct),
+
   },
   depths: frontierPreset.depths.map((depth, index) => ({
     name: DEPTH_NAMES[index],
@@ -140,24 +128,12 @@ export const FRONTIER = {
     weakBeast: BEAST_NAMES[ROAMING_BEASTS.lowly.beast],
     strongBeast: BEAST_NAMES[ROAMING_BEASTS.stronger.beast],
   },
-  xp: {
-    reveal: frontierPreset.depths.map((_, depth) =>
-      n(frontierPreset.progression.revealXp + depth * frontierPreset.progression.revealXpPerDepth),
-    ),
-    pointThresholds: [
-      frontierPreset.progression.commonXp,
-      frontierPreset.progression.uncommonXp,
-      frontierPreset.progression.rareXp,
-      frontierPreset.progression.epicXp,
-      frontierPreset.progression.legendaryXp,
-    ].map(n),
-  },
   buildings: [
     ["Farm", research.FARM, "Wheat"],
     ["Barracks", research.BARRACKS, "Troops"],
     ["Workshop", research.WORKSHOP, "Labor"],
     ["Workers' hut", research.HUT, "Population"],
-    ["War hall, Supply yard, Hearth", research.WAR_HALL, "A tier for every new army"],
+    ["Supply yard", research.SUPPLY_YARD, "Logistics training"],
     ["Scouts' lodge", research.SCOUTS_LODGE, "Scouts"],
   ].map(([name, id, makes]) => ({
     name: name as string,
@@ -172,48 +148,24 @@ export const FRONTIER = {
   research: {
     farm: researchRow(research.ROW_FARM),
     workshop: researchRow(research.ROW_WORKSHOP),
-    barracks: researchRow(research.ROW_BARRACKS),
     hut: researchRow(research.ROW_HUT),
-    training: researchRow(research.ROW_WAR_HALL),
+    training: researchRow(research.ROW_SUPPLY_YARD),
     shrine: researchRow(research.ROW_SHRINE)[0],
     well: researchRow(research.ROW_WELL)[0],
     depths: researchRow(research.ROW_DEPTH),
-    trainingGate: frontierPreset.board.trainingGateTier,
     outputStep: pct(frontierPreset.board.outputStepBps),
     storageStep: pct(frontierPreset.board.storageStepBps),
-    charge: Array.from({ length: 5 }, (_, index) => pct((index + 1) * rule.CHARGE_PERCENT_PER_TIER * 100)),
     troopWheat: n(wheatPerTroop),
     populationStep: pct(frontierPreset.board.populationStepBps),
   },
   attributes: {
-    battleMax: pct(rule.BATTLE_LEGENDARY_BPS),
-    scouting: [
-      rule.SCOUTING_COMMON_BPS,
-      rule.SCOUTING_UNCOMMON_BPS,
-      rule.SCOUTING_RARE_BPS,
-      rule.SCOUTING_EPIC_BPS,
-      rule.SCOUTING_LEGENDARY_BPS,
-    ].map(pct),
-    scoutingOneKind: pct(
-      rule.SCOUTING_COMMON_BPS +
-        rule.SCOUTING_UNCOMMON_BPS +
-        rule.SCOUTING_RARE_BPS +
-        rule.SCOUTING_EPIC_BPS +
-        rule.SCOUTING_LEGENDARY_BPS,
-    ),
     scoutDamageReduction: `${100 - rule.SCOUT_DAMAGE_PERCENT}%`,
   },
   quest: {
     labor: n(frontierPreset.dailyQuest.labor),
     essence: n(frontierPreset.dailyQuest.essence),
   },
-  homecoming: [
-    rule.HOMECOMING_COMMON_BPS,
-    rule.HOMECOMING_UNCOMMON_BPS,
-    rule.HOMECOMING_RARE_BPS,
-    rule.HOMECOMING_EPIC_BPS,
-    rule.HOMECOMING_LEGENDARY_BPS,
-  ].map(pct),
+
 };
 
 /** Retired paying seasons; only the historical chest page reads these values. */

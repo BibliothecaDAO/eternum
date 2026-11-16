@@ -1,3 +1,4 @@
+import { buildingIds } from "../../../source/frontier/native";
 import developmentRelease from "../../../../deploy/release/dev.json";
 import productionRelease from "../../../../deploy/release/production.json";
 import { registerEnvironmentPreset } from "../registrar/register-preset";
@@ -343,16 +344,15 @@ describe("native presets", () => {
         [BigInt(price.essence) / precision, BigInt(price.labor) / precision],
       ]),
     );
-    expect(preset.structures.research).toHaveLength(45);
+    expect(preset.structures.research).toHaveLength(25);
     expect(prices).toMatchObject({
       [`${research.ROW_FARM}:1`]: [500n, 500n],
       [`${research.ROW_FARM}:5`]: [30000n, 20000n],
       [`${research.ROW_WORKSHOP}:3`]: [8000n, 6000n],
-      [`${research.ROW_BARRACKS}:4`]: [48000n, 24000n],
       [`${research.ROW_HUT}:5`]: [15000n, 10000n],
-      [`${research.ROW_WAR_HALL}:1`]: [6000n, 1500n],
-      [`${research.ROW_WAR_HALL}:2`]: [16000n, 3000n],
-      [`${research.ROW_HEARTH}:5`]: [360000n, 60000n],
+      [`${research.ROW_SUPPLY_YARD}:1`]: [6000n, 1500n],
+      [`${research.ROW_SUPPLY_YARD}:2`]: [16000n, 3000n],
+      [`${research.ROW_SUPPLY_YARD}:5`]: [360000n, 60000n],
       [`${research.ROW_SHRINE}:1`]: [2000n, 0n],
       [`${research.ROW_WELL}:1`]: [6000n, 0n],
       [`${research.ROW_DEPTH}:1`]: [100000n, 0n],
@@ -364,15 +364,14 @@ describe("native presets", () => {
       storage_step_bps: 4000,
       population_step_bps: 2000,
       ration_step: precision / 5n,
-      training_gate_tier: 2,
       troop_store_deploys: 2,
       settlement_resource_cap: 6000,
       city_resource_cap: 18000,
       kingdom_resource_cap: 40000,
       empire_resource_cap: 80000,
     });
-    expect(preset.structures.buildings).toHaveLength(research.HEARTH);
-    for (const category of [research.WAR_HALL, research.SUPPLY_YARD, research.SCOUTS_LODGE, research.HEARTH]) {
+    expect(preset.structures.buildings).toHaveLength(buildingIds.length);
+    for (const category of [research.SUPPLY_YARD]) {
       const rule = preset.structures.buildings.find((row) => row.category === category)!.rule;
       expect([rule.population_cost, rule.simple_cost]).toEqual([
         2,

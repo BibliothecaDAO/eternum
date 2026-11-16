@@ -198,7 +198,7 @@ fn discover_far_eye(d: Deployment, key: ExplorerKey, rules: crate::expeditions::
 }
 
 #[test]
-fn far_eye_discovers_pays_and_grants_xp_for_each_new_tile_only_once() {
+fn far_eye_discovers_and_pays_for_each_new_tile_only_once() {
     for kind in array![crate::quests::RELICS, crate::quests::REVEALS] {
         let (d, key, rules) = setup(kind);
         let home = home(d, key);

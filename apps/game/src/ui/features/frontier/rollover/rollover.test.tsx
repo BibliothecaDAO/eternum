@@ -65,7 +65,6 @@ describe("the day's end", () => {
     // The troops the armies took stand under the troops' mark, with no empty portrait beside them.
     expect(card.querySelector('[aria-label="troops"] [data-icon="troops"]')).not.toBeNull();
     expect(card.querySelector(".rounded-full.border")).toBeNull();
-    expect(card.textContent).toContain("470");
     act(() => host.querySelector<HTMLButtonElement>("button")!.click());
     expect(onContinue).toHaveBeenCalled();
     act(() => root.unmount());

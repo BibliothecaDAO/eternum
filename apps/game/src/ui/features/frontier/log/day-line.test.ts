@@ -90,7 +90,7 @@ describe("the day log's line for a story", () => {
 });
 
 it.each([
-  [{ Shrine: 200 }, "Shrine used"],
+  [{ Shrine: 200 }, "Shrine used, +200 XP"],
   [{ ShrinePoint: 3 }, "Shrine used, III +1"],
   [{ Well: 60 }, "Well used, +60 stamina"],
   [{ Well: 5 }, "Well used, +5 stamina"],

@@ -197,7 +197,7 @@ describe("Frontier's selection sheet", () => {
           foreign ? "Army" : `Supply post · ${expectedName}`,
         );
         expect(host.querySelector("[data-kit-sheet]")!.textContent).toContain(expectedName);
-        expect(host.querySelector("[data-site-rewards]")?.textContent).toBe("550 Labor123 XP");
+        expect(host.querySelector("[data-site-rewards]")?.textContent).toBe("550 Labor");
       } finally {
         act(() => root.unmount());
         useUIStore.getState().selectOnMap(null);
@@ -550,10 +550,7 @@ it("the map's actual transfer selection shows the survivor before the player con
       ),
     );
     expect(host.querySelector('[role="dialog"]')?.getAttribute("aria-label")).toBe("Transfer troops");
-    // Army 1 loses its 200 total XP (100 unspent, 100 in an upgrade); Army 2 keeps its progression and merged stamina.
     const expectMergePreview = () => {
-      expect(host.querySelector('[aria-label="Army 1 total XP"]')?.textContent).toBe("Total XP100→0");
-      expect(host.querySelector('[aria-label="Army 2 total XP"]')?.textContent).toBe("Total XP0→0");
       expect(host.querySelector(".ui-notice")?.textContent).toBe("Army 1 loses its Logistics training.");
       expect(host.querySelector("s")).toBeNull();
       expect(host.textContent).toContain("100/120→7");

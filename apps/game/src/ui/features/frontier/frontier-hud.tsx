@@ -283,7 +283,7 @@ const FrontierHudBody = ({
           <FrontierRealmPanel
             rules={rules}
             realm={shown}
-            own={Boolean(own)}
+            own={own}
             waiting={claimWaiting}
             storeCards={storeCards}
             onSurface={setSurface}

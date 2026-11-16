@@ -52,25 +52,19 @@ at once and stores more wheat and labor:
 At the castle, each research side climbs from 0 to Common I through Legendary V, paid in Essence and labor. A tier lifts
 every building of its type at once. Farms and workshops have independent output and storage sides:
 {FRONTIER.research.outputStep} more output or {FRONTIER.research.storageStep} more storage per tier. Each Hut tier
-houses {FRONTIER.research.populationStep} more workers. The Barracks researches Charge: new Knight armies land
-{FRONTIER.research.charge.join(" / ")} of their opening hit before the defender answers. Repeated attacks on that target
-use Charge only once; changing targets starts a new fight. Research learned later does not change an army already sent
-out.
+houses {FRONTIER.research.populationStep} more workers. 
 
 | Type                   | Common I                                                                                     | Uncommon II                                                                                  | Rare III                                                                                     | Epic IV                                                                                      | Legendary V                                                                                  |
 | ---------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | Farm                   | {FRONTIER.research.farm[0].essence} Essence, {FRONTIER.research.farm[0].labor} labor         | {FRONTIER.research.farm[1].essence} Essence, {FRONTIER.research.farm[1].labor} labor         | {FRONTIER.research.farm[2].essence} Essence, {FRONTIER.research.farm[2].labor} labor         | {FRONTIER.research.farm[3].essence} Essence, {FRONTIER.research.farm[3].labor} labor         | {FRONTIER.research.farm[4].essence} Essence, {FRONTIER.research.farm[4].labor} labor         |
 | Workshop               | {FRONTIER.research.workshop[0].essence} Essence, {FRONTIER.research.workshop[0].labor} labor | {FRONTIER.research.workshop[1].essence} Essence, {FRONTIER.research.workshop[1].labor} labor | {FRONTIER.research.workshop[2].essence} Essence, {FRONTIER.research.workshop[2].labor} labor | {FRONTIER.research.workshop[3].essence} Essence, {FRONTIER.research.workshop[3].labor} labor | {FRONTIER.research.workshop[4].essence} Essence, {FRONTIER.research.workshop[4].labor} labor |
-| Barracks               | {FRONTIER.research.barracks[0].essence} Essence, {FRONTIER.research.barracks[0].labor} labor | {FRONTIER.research.barracks[1].essence} Essence, {FRONTIER.research.barracks[1].labor} labor | {FRONTIER.research.barracks[2].essence} Essence, {FRONTIER.research.barracks[2].labor} labor | {FRONTIER.research.barracks[3].essence} Essence, {FRONTIER.research.barracks[3].labor} labor | {FRONTIER.research.barracks[4].essence} Essence, {FRONTIER.research.barracks[4].labor} labor |
 | Workers' hut           | {FRONTIER.research.hut[0].essence} Essence, {FRONTIER.research.hut[0].labor} labor           | {FRONTIER.research.hut[1].essence} Essence, {FRONTIER.research.hut[1].labor} labor           | {FRONTIER.research.hut[2].essence} Essence, {FRONTIER.research.hut[2].labor} labor           | {FRONTIER.research.hut[3].essence} Essence, {FRONTIER.research.hut[3].labor} labor           | {FRONTIER.research.hut[4].essence} Essence, {FRONTIER.research.hut[4].labor} labor           |
-| Each training building | {FRONTIER.research.training[0].essence} Essence, {FRONTIER.research.training[0].labor} labor | {FRONTIER.research.training[1].essence} Essence, {FRONTIER.research.training[1].labor} labor | {FRONTIER.research.training[2].essence} Essence, {FRONTIER.research.training[2].labor} labor | {FRONTIER.research.training[3].essence} Essence, {FRONTIER.research.training[3].labor} labor | {FRONTIER.research.training[4].essence} Essence, {FRONTIER.research.training[4].labor} labor |
+| Supply yard | {FRONTIER.research.training[0].essence} Essence, {FRONTIER.research.training[0].labor} labor | {FRONTIER.research.training[1].essence} Essence, {FRONTIER.research.training[1].labor} labor | {FRONTIER.research.training[2].essence} Essence, {FRONTIER.research.training[2].labor} labor | {FRONTIER.research.training[3].essence} Essence, {FRONTIER.research.training[3].labor} labor | {FRONTIER.research.training[4].essence} Essence, {FRONTIER.research.training[4].labor} labor |
 
-**Training buildings.** After {FRONTIER.research.trainingGate} Barracks research purchases, raise a War hall, a Supply
-yard and a Hearth. Construction includes rank I in Battle, Logistics or Homecoming. Research raises that starting rank
-to II–V. Rebuilding grants no extra rank.
+**Supply yards.** Construction includes Logistics rank I for new armies. Research raises that starting rank to II–V.
+Rebuilding grants no extra rank.
 
-**Scouts’ lodges** open at City and can be built more than once. Each produces its own Scouts. Research chooses which
-finds new Scout armies favour: camps, rifts or sanctuaries.
+**Scouts’ lodges** open at City and can be built more than once. Each produces its own Scouts.
 
 **Shrines and wells.** Research them ({FRONTIER.research.shrine.essence} and {FRONTIER.research.well.essence} Essence)
 before reveals can find them.
@@ -82,7 +76,7 @@ before reveals can find them.
 <Shot
   frame="panel"
   name="frontier/research"
-  caption="Research: each building's ranks, the rank that opens the next building, and the castle's own line."
+  caption="Research: building ranks and the castle's own line."
 />
 
 ## Daily quests

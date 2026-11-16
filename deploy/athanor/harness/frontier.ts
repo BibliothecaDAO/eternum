@@ -1,5 +1,4 @@
 import { seasonDayUnitSeconds } from "../../../config/source/common/season-clock";
-import { lowestFittingPoint } from "@bibliothecadao/eternum";
 import { openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
 import { safeInteger } from "../../../packages/core/src/utils/safe-integer";
 import { entityHomeNamespace } from "@bibliothecadao/eternum/expeditions";
@@ -912,23 +911,6 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
   const stamina = rules.troop_stamina_config;
   for (const army of activeArmies(client, player)) {
     const amount = game.explorerStamina(safeInteger(army.explorer_id), game.currentTicks().default);
-    const upgrade = affordableUpgrade(client, safeInteger(army.explorer_id));
-    if (upgrade)
-      return command(
-        client,
-        player,
-        {
-          kind: "SpendSkillPoint",
-          value: {
-            explorer_id: army.explorer_id,
-            choice:
-              upgrade === "Scouting"
-                ? { kind: "Scouting", value: { kind: "Rift", value: undefined } }
-                : { kind: upgrade, value: undefined },
-          },
-        },
-        TransactionType.SPEND_SKILL_POINT,
-      );
     const coord = entityMapPosition(client.setup.store, client.gameId, army.explorer_id);
     const neighbors = getNeighborHexes(coord.x, coord.y);
     const spacing = client.setup.store.require("SettlementRules", { game_id: client.gameId }).spacing;
@@ -1073,22 +1055,6 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
   }
 }
 /** An army beside a guard site waits to attack it: exploring on would walk it away from the capture it found. */
-/** The army's lowest attribute it can afford to Upgrade, as a player spreading XP would; none while it cannot pay. */
-function affordableUpgrade(client: GameClient, explorerId: number) {
-  const progress = client.setup.store.require("ArmyProgress", { game_id: client.gameId, explorer_id: explorerId });
-  const tiers = [
-    ["Battle", progress.battle],
-    ["Logistics", progress.logistics],
-    ["Scouting", progress.scouting],
-    ["Homecoming", progress.homecoming],
-  ] as const;
-  const [attribute] =
-    tiers
-      .filter(([, tier]) => lowestFittingPoint(progress, tier + 1) !== undefined)
-      .toSorted((a, b) => a[1] - b[1])[0] ?? [];
-  return attribute;
-}
-
 export function holdsForSite(stamina: number, attackRequirement: number): boolean {
   return stamina < attackRequirement;
 }
@@ -1118,13 +1084,6 @@ function observeProgress(client: GameClient, game: HarnessGame, player: Player) 
   const realm = home(client, player);
   for (const [lane, level] of [
     ["castle", realm.base.level],
-    [
-      "barracks",
-      researchTier(
-        known(realmLearned(client.setup.store, client.gameId, player.realmId), player.realmId, "realm knowledge"),
-        research.ROW_BARRACKS,
-      ),
-    ],
     ["depth", realm.metadata.deepest_depth],
   ] as const) {
     if (level > 0 && !player.rungs.some((rung) => rung.lane === lane && rung.level === level))

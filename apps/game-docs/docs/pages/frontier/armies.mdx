@@ -1,6 +1,6 @@
 ---
 title: Armies
-description: Deploying, stamina, merging, XP and fights
+description: Deploying, stamina, merging and fights
 ---
 
 import { FRONTIER } from "@/utils/frontier";
@@ -29,10 +29,7 @@ tile costs {FRONTIER.stamina.reveal} for Knights and {FRONTIER.stamina.scoutReve
 {FRONTIER.stamina.step}, and an attack needs {FRONTIER.stamina.attack}. Every step and every reveal also costs
 {FRONTIER.stamina.wheatPerTroop} wheat per troop, so a big army needs farms behind it.
 
-**Refill** buys an army stamina at once for {FRONTIER.stamina.refillLords} LORDS a point, paid from your realm's LORDS:
-as much as it is missing, or as much as your LORDS cover. A well adds {FRONTIER.stamina.well} stamina, rounded down and
-capped at full. Skill points also restore stamina, and Logistics raises an army's maximum by up to
-{FRONTIER.stamina.logisticsMax}.
+Logistics training raises an army's maximum by up to {FRONTIER.stamina.logisticsMax}.
 
 ### Stamina stays with the slot
 
@@ -45,44 +42,20 @@ deploying if you like.
   recovering.
 - The next army deployed into that slot starts with that stamina, not a full bar. Replacing a tired army never brings a
   fresh one.
-- The new army's own maximum still caps it. Its XP and tiers start again from your realm's training; only the stamina
+- The new army's own maximum still caps it. Its Logistics rank starts from your realm's training; only the stamina
   carries over.
 - When the day ends, every slot is cleared, so each slot's first army tomorrow starts full again.
 
 ## Merging and disbanding
 
 Two of your armies standing side by side can merge, keeping the lower of their two staminas. The army you merge into is
-the one that stays; when the other holds more XP, ranks or points, Frontier asks once more before they are lost. An army
+the one that stays; when the other has stronger Logistics training, Frontier asks once more before it is lost. An army
 you disband loses its troops; Frontier asks first.
 
-## XP and attributes
+## Logistics training
 
-An army earns {FRONTIER.xp.reveal.join(" / ")} XP per revealed tile at {FRONTIER.depths.map((depth) =>
-depth.name).join(" / ")}. It also earns XP for cleared guards. Shrines grant one skill point of the rank shown when
-discovered. XP only increases. At {FRONTIER.xp.pointThresholds.join(" / ")} XP it earns Common I, Uncommon II, Rare III,
-Epic IV and Legendary V skill points. The same milestones repeat every {FRONTIER.xp.pointThresholds[4]} XP.
-
-Each attribute starts at 0, an empty socket. A point raises one attribute one rank, up to the point's own rank. Level up
-uses the lowest fitting point you hold. Raising restores {FRONTIER.stamina.pointRefills.join(" / ")} stamina according
-to the point spent. Choose Stamina instead to restore double that amount, up to your current maximum.
-
-- **Battle** hits up to {FRONTIER.attributes.battleMax} harder.
-- **Logistics** carries up to {FRONTIER.stamina.logisticsMax} more stamina.
-- **Scouting**, for Scouts only, adds {FRONTIER.attributes.scouting.join(" / ")} to one kind’s find rate when all ranks
-  go to that kind. The kinds are Trolls (camps), Rifts, and Sanctuaries (Shrines and Wells together, once either is
-  researched). Putting all five ranks into one kind adds {FRONTIER.attributes.scoutingOneKind}.
-- **Homecoming** sends a share of survivors home when the day ends
-  ([The expedition](/frontier/expedition#the-days-end)).
-
-XP, ranks and unspent points end with the army. A full merge keeps the receiving army's progress and discards the
-source's. War halls, Supply yards and Hearths grant new armies rank I, and research raises their starting rank through
-V. Scouts inherit their Lodge’s researched Scouting choices ([Your realm](/frontier/realm#research)).
-
-<Shot
-  frame="panel"
-  name="frontier/level-up"
-  caption="An army's panel: its troops and stamina, each attribute's rank, the skill points it holds by rank, and its XP to the next point."
-/>
+A Supply yard grants new armies Logistics rank I. Research raises their starting rank through V. A full merge keeps
+the receiving army's Logistics training.
 
 ## Fights
 
@@ -91,9 +64,3 @@ troops before and after, and what clearing it pays. The ground does not matter: 
 
 Scouts deal {FRONTIER.attributes.scoutDamageReduction} less damage when attacking or defending.
 
-## Charge
-
-Knights keep the Charge tier their home had when they were raised. Each tier puts {FRONTIER.research.charge[0]} of their
-opening hit ahead of the defender’s answer, up to {FRONTIER.research.charge[4]} at tier V. It works against beasts and
-armies. Further attacks on the same target use ordinary combat; attacking a different target opens a new fight. Scouts
-do not gain Charge.

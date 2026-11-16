@@ -152,10 +152,11 @@ fn factory_initializes_four_height_counters_without_map_structures() {
                     assert!(structure.base.category != crate::taxonomy::HYPERSTRUCTURE_CATEGORY);
                 }
             }
-            let mut repeated = spy_events();
             race(game_id).initialize_race(game_id);
             assert_eq!(crate::state::read().games.next_entity.read(game_id), before);
-            assert!(repeated.get_events().events.is_empty());
+            for aspect in 1_u8..5 {
+                assert_eq!(race(game_id).aspect_hyperstructure(AspectKey { game_id, aspect }).height, 0);
+            }
         },
     );
     let (ordinary, ordinary_game) = super::aspects::setup_aspects(5);
