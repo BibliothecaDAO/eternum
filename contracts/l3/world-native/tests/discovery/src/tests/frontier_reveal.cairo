@@ -186,9 +186,7 @@ fn a_site_cannot_clear_again_after_an_army_enters_its_tile() {
 
 #[test]
 fn herd_pays_wheat_and_band_pays_no_resources() {
-    for (depth, strength, wheat) in array![
-        (0_u8, 350_u128, 1400_u128), (1, 700, 4200), (2, 1400, 11200),
-    ] {
+    for (depth, strength, wheat) in array![(0_u8, 350_u128, 1400_u128), (1, 700, 4200), (2, 1400, 11200)] {
         let site = ExpeditionSite {
             category: BEASTS_CATEGORY,
             initial_guard_count: strength * RESOURCE_PRECISION,

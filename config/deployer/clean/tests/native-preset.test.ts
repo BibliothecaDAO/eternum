@@ -1181,7 +1181,6 @@ const raceFixture = (): NonNullable<(typeof nativePresets)[number]["race"]> => (
   secondWindPercent: 200,
   paleMoonPercent: 50,
   spoilsPercent: 200,
-
 });
 
 test("the race codec preserves whole Glory payments and height rules", () => {
