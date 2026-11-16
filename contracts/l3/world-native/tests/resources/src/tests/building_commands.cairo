@@ -820,14 +820,14 @@ fn camp_research_settles_and_raises_every_troop_building_while_rations_is_indepe
                     coord: crate::geometry::neighbor(Coord { alt: false, x: 10, y: 10 }, 5),
                 },
             ),
-            220,
+            190,
         ),
     );
     assert_eq!(rate(d, home, 29), 56);
     assert_eq!(
         resources
             .resource_balance(ResourceSlot { game_id: home.game_id, entity_id: home.entity_id, resource_type: 29 }),
-        12000,
+        8640,
     );
 }
 
