@@ -237,8 +237,8 @@ fn emit_guard_battle(
             winner_id: winner,
             coord: target.coord,
             max_reward: array![].span(),
-            attacker: battle_side(actor, attacker_before, attacker.troops, 0),
-            defender: battle_side(defender.actor, defender_before, defender.army.troops, 0),
+            attacker: battle_side(actor, attacker_before, attacker.troops),
+            defender: battle_side(defender.actor, defender_before, defender.army.troops),
             timestamp: context.timestamp,
         },
     );
@@ -294,8 +294,8 @@ pub fn battle(
             winner_id: battle_winner(attacker, defender),
             coord: defender.coord,
             max_reward: command.steal_resources,
-            attacker: battle_side(actor, attacker_before, attacker.troops, 0),
-            defender: battle_side(defender_owner, defender_before, defender.troops, 0),
+            attacker: battle_side(actor, attacker_before, attacker.troops),
+            defender: battle_side(defender_owner, defender_before, defender.troops),
             timestamp: context.timestamp,
         },
     );
@@ -354,8 +354,8 @@ pub fn guard_attack(
             winner_id: battle_winner(ExplorerTroops { troops: guard.troops, ..attacker }, defender),
             coord: defender.coord,
             max_reward: array![].span(),
-            attacker: battle_side(actor, attacker.troops.count, guard.troops, 0),
-            defender: battle_side(defender_owner, before, defender.troops, 0),
+            attacker: battle_side(actor, attacker.troops.count, guard.troops),
+            defender: battle_side(defender_owner, before, defender.troops),
             timestamp: context.timestamp,
         },
     );

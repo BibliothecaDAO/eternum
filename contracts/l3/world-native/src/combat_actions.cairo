@@ -23,9 +23,9 @@ pub struct BattleSide {
 }
 
 pub fn battle_side(
-    player: starknet::ContractAddress, before: u128, after: crate::troops::Troops, roll: u8,
+    player: starknet::ContractAddress, before: u128, after: crate::troops::Troops,
 ) -> BattleSide {
-    BattleSide { player, category: after.category, tier: after.tier, before, after: after.count, roll }
+    BattleSide { player, category: after.category, tier: after.tier, before, after: after.count, roll: 0 }
 }
 
 #[starknet::interface]

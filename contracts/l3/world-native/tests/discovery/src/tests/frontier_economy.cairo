@@ -89,7 +89,7 @@ fn stores_pay_every_second_independently_of_the_armies_tick() {
 }
 
 #[test]
-fn charge_tiers_do_not_change_the_wheat_paid_for_each_muster() {
+fn each_muster_pays_the_wheat_price_for_its_troops() {
     let (deployment, home) = frontier_realm(frontier_preset());
     allow_armies(deployment, home);
     grant(deployment, home, KNIGHT, 20 * RESOURCE_PRECISION);

@@ -3,11 +3,7 @@ import { create } from "zustand";
 
 import { type Opened, type OpeningPart, partShown } from "./opening";
 
-/**
- * What the Frontier HUD has opened to, as one reading for every surface that draws a part, in the HUD's React tree or in
- * the map's own roots (a map token's XP ring): outside the game's HUD every part shows, and only the Frontier HUD says
- * what its player has reached.
- */
+
 const useOpened = create<{ opened: Opened }>(() => ({ opened: "all" }));
 
 /** Publishes the HUD's reading to every part that waits on a moment, and takes it back when the HUD is gone. */

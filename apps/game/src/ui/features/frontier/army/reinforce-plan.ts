@@ -16,11 +16,7 @@ import {
 
 import { readTroopRaise, troopRange, type TroopRaise, type TroopRange } from "../deploy/deploy-plan";
 
-/**
- * What reinforcing an army from its realm needs, read from facts with no UI of its own: the troops it holds and the
- * most it may hold, the realm's stock of its own troop (the contract's recruit_explorer draws that stock and no other,
- * and credits no Homecoming), and what raising them costs, priced as Deploy prices it.
- */
+
 export interface ReinforcePlan {
   current: number;
   cap: number;

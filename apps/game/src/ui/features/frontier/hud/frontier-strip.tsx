@@ -10,11 +10,7 @@ import { FRONTIER_STORES, STORE_KINDS, type StoreKind } from "../stores";
 import { dayClock } from "./day-clock";
 import { StatusStrip, type StoreReading } from "./status-strip";
 
-/**
- * The strip over the game's facts: today on the season's calendar, and what the realm holds against each store's limit,
- * its tone amber within the hour of full and ember at the limit (a visited realm's when visiting). Troops count what
- * the next deploy finds, Homecoming's return included.
- */
+
 export const FrontierStrip = ({
   rules,
   realm,

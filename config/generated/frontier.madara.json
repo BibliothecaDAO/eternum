@@ -797,16 +797,7 @@
       "38": [],
       "39": [],
       "40": [],
-      "41": [
-        {
-          "resource": 38,
-          "amount": 6000
-        },
-        {
-          "resource": 23,
-          "amount": 1500
-        }
-      ],
+      "41": [],
       "42": [
         {
           "resource": 38,
@@ -817,26 +808,8 @@
           "amount": 1500
         }
       ],
-      "43": [
-        {
-          "resource": 38,
-          "amount": 6000
-        },
-        {
-          "resource": 23,
-          "amount": 1500
-        }
-      ],
-      "44": [
-        {
-          "resource": 38,
-          "amount": 6000
-        },
-        {
-          "resource": 23,
-          "amount": 1500
-        }
-      ]
+      "43": [],
+      "44": []
     },
     "buildingFixedCostScalePercent": 10000
   },

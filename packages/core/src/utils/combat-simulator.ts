@@ -16,7 +16,6 @@ export interface CombatSimulationContext {
   defenderAlt?: boolean;
   attackerIsStructureGuard?: boolean;
   defenderIsStructureGuard?: boolean;
-  /** Each side's d20 where the battle rolls dice: it adds that many percent to the side's damage; 0 without dice. */
 }
 
 export interface CombatParameters {

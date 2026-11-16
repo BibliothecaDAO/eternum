@@ -8,7 +8,7 @@ import { useMemo } from "react";
 import { useExpeditionRules } from "../frontier-home";
 import { readDeployPlan } from "./deploy-plan";
 
-// Research sets what a troop costs and the Logistics a new army starts at; ended armies send Homecoming's troops back.
+
 const DEPLOY_MODELS = [
   ...STAMINA_MODELS,
   "ArmyProgress",

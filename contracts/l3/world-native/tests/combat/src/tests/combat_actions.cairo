@@ -30,7 +30,7 @@ fn a_surviving_explorer_loots_the_defeated_army_before_its_resources_are_deleted
     home.entity_id.serialize(ref expected);
     defender_before.coord.serialize(ref expected);
     resources(70).serialize(ref expected);
-    crate::combat_actions::battle_side(d.actor, attacker_before.troops.count, troop(d, attacker).unwrap().troops, 0)
+    crate::combat_actions::battle_side(d.actor, attacker_before.troops.count, troop(d, attacker).unwrap().troops)
         .serialize(ref expected);
     crate::combat_actions::battle_side(
         999.try_into().unwrap(), defender_before.troops.count, Troops { count: 0, ..defender_before.troops }, 0,
@@ -135,8 +135,6 @@ fn blitz_ethereal_battle_records_exact_damage_and_zero_rolls() {
     let before_defender = troop(d, defender).unwrap();
     let game = crate::game::IGameDispatcher { contract_address: d.games };
     let rules = crate::game::IGameDispatcherTrait::rules(game, 3);
-    let attacker_roll = 0;
-    let defender_roll = 0;
     let mut expected_attacker = before_attacker.troops;
     let mut expected_defender = before_defender.troops;
     expected_attacker
@@ -175,10 +173,10 @@ fn blitz_ethereal_battle_records_exact_damage_and_zero_rolls() {
     before_defender.coord.serialize(ref expected);
     let empty: Span<ResourceAmount> = array![].span();
     empty.serialize(ref expected);
-    crate::combat_actions::battle_side(d.actor, before_attacker.troops.count, expected_attacker, attacker_roll)
+    crate::combat_actions::battle_side(d.actor, before_attacker.troops.count, expected_attacker)
         .serialize(ref expected);
     crate::combat_actions::battle_side(
-        999.try_into().unwrap(), before_defender.troops.count, expected_defender, defender_roll,
+        999.try_into().unwrap(), before_defender.troops.count, expected_defender,
     )
         .serialize(ref expected);
     80_u64.serialize(ref expected);
@@ -265,8 +263,6 @@ fn surface_battle_records_exact_damage_and_zero_rolls() {
     let before_defender = troop(d, defender).unwrap();
     let game = crate::game::IGameDispatcher { contract_address: d.games };
     let rules = crate::game::IGameDispatcherTrait::rules(game, 3);
-    let attacker_roll = 0;
-    let defender_roll = 0;
     let mut expected_attacker = before_attacker.troops;
     let mut expected_defender = before_defender.troops;
     expected_attacker
@@ -304,10 +300,10 @@ fn surface_battle_records_exact_damage_and_zero_rolls() {
     before_defender.coord.serialize(ref expected);
     let empty: Span<ResourceAmount> = array![].span();
     empty.serialize(ref expected);
-    crate::combat_actions::battle_side(d.actor, before_attacker.troops.count, expected_attacker, attacker_roll)
+    crate::combat_actions::battle_side(d.actor, before_attacker.troops.count, expected_attacker)
         .serialize(ref expected);
     crate::combat_actions::battle_side(
-        999.try_into().unwrap(), before_defender.troops.count, expected_defender, defender_roll,
+        999.try_into().unwrap(), before_defender.troops.count, expected_defender,
     )
         .serialize(ref expected);
     80_u64.serialize(ref expected);

@@ -46,39 +46,6 @@ fn current_frontier_rejects_a_reintroduced_supply_pool() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn current_frontier_requires_complete_progression_rules() {
-    let d = super::registrar::setup();
-    start_cheat_caller_address(d.games, super::authority());
-    for invalid in 0_u8..8 {
-        let (preset_id, mut definition) = current_definition("frontier-check");
-        let mut progression = definition.economy.progression.unwrap();
-        if invalid == 1 {
-            progression.reveal_xp = 0;
-        } else if invalid == 2 {
-            progression.common_xp = 0;
-        } else if invalid == 3 {
-            progression.uncommon_xp = 0;
-        } else if invalid == 4 {
-            progression.rare_xp = 0;
-        } else if invalid == 5 {
-            progression.epic_xp = 0;
-        } else if invalid == 6 {
-            progression.legendary_xp = 0;
-        } else if invalid == 7 {
-            progression.reveal_xp_per_depth = 0xffffffff;
-        }
-        definition.economy.progression = if invalid == 0 {
-            None
-        } else {
-            Some(progression)
-        };
-        assert!(IRegistrarSafeDispatcher { contract_address: d.games }.register_preset(preset_id, definition).is_err());
-        assert_eq!(IRegistrarDispatcher { contract_address: d.games }.preset_commitment(preset_id), 0);
-    }
-}
-
-#[test]
-#[feature("safe_dispatcher")]
 fn current_frontier_requires_discovery_rejects_cash_rules_and_refuses_sequential_odds() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
@@ -314,7 +281,7 @@ fn malformed_banes_and_banes_without_quests_refuse_registration() {
 
 
 #[test]
-fn an_optional_race_preset_stores_exact_payments_stages_triumphs_and_positions() {
+fn an_optional_race_preset_stores_exact_payments_stages_and_triumphs() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
     let (preset_id, mut definition) = current_definition("frontier-check");

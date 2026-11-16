@@ -316,8 +316,7 @@ export type FightForecast =
 
 /**
  * Attack after attack at the same moment until one side has no troops or the attacker lacks the stamina for another
- * exchange: how many exchanges a fight takes and what it costs, as the contract would resolve each one. Where the game
- * rolls dice every exchange takes the context's rolls, so a range is the forecast at the worst and best rolls.
+ * exchange: how many exchanges a fight takes and what it costs, as the contract would resolve each one.
  */
 export const forecastFight = (
   attacker: ExchangeTroops,

@@ -120,7 +120,6 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
     preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DEPTH_CONTENTS;
     preset.rules.map_config.camp_win_probability = 0;
     preset.rules.map_config.shards_mines_win_probability = 0;
-    preset.economy.progression = Some(super::preset_projection::frontier_progression_rules());
     preset.rules.mode_rules = HOME_REWARDS | crate::rules::UNOWNED_TARGETS | crate::rules::DEPTH_CONTENTS;
     preset.settlement.spacing = 1024;
     let limits = crate::rules::TroopLimitConfig {
@@ -323,7 +322,6 @@ fn depth_entry_requires_research_and_keeps_stamina_at_every_depth() {
     preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DEPTH_CONTENTS;
     preset.rules.map_config.camp_win_probability = 0;
     preset.rules.map_config.shards_mines_win_probability = 0;
-    preset.economy.progression = Some(super::preset_projection::frontier_progression_rules());
     preset.rules.mode_rules = HOME_REWARDS | crate::rules::DEPTH_CONTENTS;
     preset.rules.command_mask = 0xffffffffffffffffffffffffffffffff;
     preset.settlement.spacing = 1024;
@@ -564,17 +562,17 @@ fn an_army_enters_a_depth_only_from_its_realms_spire_which_turns_each_day() {
 
 
 #[test]
-fn a_herd_clear_pays_wheat_once_keeps_xp_and_removes_its_blocker() {
+fn a_herd_clear_pays_wheat_once_and_removes_its_blocker() {
     beast_clear_payout(false, false);
 }
 
 #[test]
-fn a_herd_clear_clips_wheat_at_storage_but_keeps_all_xp() {
+fn a_herd_clear_clips_wheat_at_storage() {
     beast_clear_payout(true, false);
 }
 
 #[test]
-fn a_band_clear_pays_triple_xp_without_resources() {
+fn a_band_clear_pays_no_resources() {
     beast_clear_payout(false, true);
 }
 
@@ -770,7 +768,6 @@ fn frontier_refuses_off_map_economy_commands_before_reading_positions() {
     preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DEPTH_CONTENTS;
     preset.rules.map_config.camp_win_probability = 0;
     preset.rules.map_config.shards_mines_win_probability = 0;
-    preset.economy.progression = Some(super::preset_projection::frontier_progression_rules());
     preset.settlement.spacing = 1024;
     preset
         .rules
