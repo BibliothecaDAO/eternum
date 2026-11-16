@@ -103,8 +103,14 @@ it("fixes the seal's LORDS price at launch: set once, the same value again is a 
     );
     return [response.status, await response.json()];
   };
+  const held = async () => {
+    const response = await handleSealLaunchPrice(new Request("https://realms.test/"), db, 5);
+    return [response.status, await response.json()];
+  };
+  expect(await held()).toEqual([404, { error: "seal_price_not_set" }]);
   expect(await launch(0)).toEqual([400, { error: "invalid_price" }]);
   expect(await launch(0.003637)).toEqual([200, { usd: 0.003637 }]);
   expect(await launch(0.003637)).toEqual([200, { usd: 0.003637 }]);
   expect(await launch(0.01)).toEqual([409, { error: "seal_price_already_set" }]);
+  expect(await held()).toEqual([200, { usd: 0.003637 }]);
 });

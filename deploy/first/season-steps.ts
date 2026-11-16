@@ -167,6 +167,22 @@ async function currentCalendar(context: Season) {
   const phases = calendar.phases.filter((phase) => Date.parse(phase.endsAt) > now);
   return phases;
 }
+/** The reviewed dollars-per-LORDS the season's inputs carry for the Seal; a season without one does not open. */
+function approvedSealPrice(context: Season): number {
+  const usd = context.inputs!.sealLordsUsd;
+  if (typeof usd !== "number" || !(usd > 0) || !Number.isFinite(usd))
+    throw new PublicError("Set sealLordsUsd in inputs.json to the reviewed dollars per LORDS for the Ancient Seal");
+  return usd;
+}
+/** The price the service holds for the Seal, or null before the launch has set it. */
+async function sealLaunchPrice(context: Season): Promise<number | null> {
+  try {
+    return (await service<{ usd: number }>(context, "/api/operator/seal-price")).usd;
+  } catch (error) {
+    if (error instanceof PublicError && error.code === "seal_price_not_set") return null;
+    throw error;
+  }
+}
 export function seasonSteps(context: Season): Step[] {
   const wait = (detail: string) => ({ done: false, waiting: detail, detail });
   return [
@@ -293,6 +309,26 @@ export function seasonSteps(context: Season): Step[] {
       },
       apply: async () => {
         await waitFor(context, () => poolPublished(context), "Waiting for the published deposit.");
+      },
+    },
+    {
+      name: "Seal launch price",
+      payer: "operator token",
+      cost: "0 STRK",
+      inspect: async () => {
+        if (!context.assets) return wait("Deployed services needed");
+        const approved = approvedSealPrice(context);
+        const held = await sealLaunchPrice(context);
+        if (held !== null && held !== approved)
+          throw new PublicError(
+            `The Seal's launch price is $${held} a LORDS, not the reviewed $${approved}; it is set once`,
+          );
+        return { done: held === approved, detail: `$${approved} a LORDS, the reviewed value, fixed for the season` };
+      },
+      apply: async () => {
+        const usd = approvedSealPrice(context);
+        await service(context, "/api/operator/seal-price", "POST", { usd });
+        context.store.write("seal-launch-price.json", { usd, setAt: new Date().toISOString() });
       },
     },
   ];

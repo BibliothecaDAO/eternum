@@ -44,10 +44,15 @@ const readSealLaunchPrice = async (db: D1Database): Promise<number | null> =>
   (await db.prepare('SELECT "usd" FROM "seal_launch_price" WHERE "id" = 1').first<{ usd: number }>())?.usd ?? null;
 
 /**
- * POST /api/operator/seal-price {usd}: the season's launch sets the seal's LORDS price once (dollars a LORDS). Setting the
- * same value again is a no-op; a different one is refused, the price holds for the season.
+ * /api/operator/seal-price: the season's launch sets the seal's LORDS price once. POST {usd} (dollars a LORDS) sets it;
+ * the same value again is a no-op, a different one is refused, the price holds for the season. GET answers the value
+ * set, or 404 `seal_price_not_set` before the launch has set it.
  */
 export async function handleSealLaunchPrice(request: Request, db: D1Database, now: number): Promise<Response> {
+  if (request.method === "GET") {
+    const set = await readSealLaunchPrice(db);
+    return set === null ? json({ error: "seal_price_not_set" }, 404) : json({ usd: set });
+  }
   if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
   const usd = ((await request.json().catch(() => null)) as { usd?: unknown } | null)?.usd;
   if (typeof usd !== "number" || !(usd > 0) || !Number.isFinite(usd)) return json({ error: "invalid_price" }, 400);

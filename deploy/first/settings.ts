@@ -88,6 +88,8 @@ export interface Inputs extends SeasonDates, SignInClients, ApnsKeyInputs {
   /** Where the status monitor emails incidents: production's only, required there and refused on dev. */
   alertEmail?: string;
   amount: string;
+  /** The reviewed market price of one LORDS in dollars that fixes the Ancient Seal's LORDS price for the season. */
+  sealLordsUsd?: number;
   admin?: string;
   treasury?: string;
 }
