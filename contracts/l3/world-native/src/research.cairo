@@ -55,14 +55,12 @@ pub struct Research {
 }
 
 pub fn row_category(row: u8) -> u8 {
-    match row {
-        crate::research::ROW_FARM => FARM,
-        crate::research::ROW_WORKSHOP => WORKSHOP,
-        crate::research::ROW_HUT => HUT,
-        crate::research::ROW_SUPPLY_YARD => SUPPLY_YARD,
-        crate::research::ROW_SHRINE | crate::research::ROW_WELL | crate::research::ROW_DEPTH => 0,
-        _ => panic!("invalid research row"),
-    }
+    if row == ROW_FARM { FARM }
+    else if row == ROW_WORKSHOP { WORKSHOP }
+    else if row == ROW_HUT { HUT }
+    else if row == ROW_SUPPLY_YARD { SUPPLY_YARD }
+    else if row == ROW_SHRINE || row == ROW_WELL || row == ROW_DEPTH { 0 }
+    else { panic!("invalid research row") }
 }
 
 pub fn is_training(category: u8) -> bool { category == SUPPLY_YARD }
@@ -70,12 +68,10 @@ pub fn is_training(category: u8) -> bool { category == SUPPLY_YARD }
 pub const ROWS: [u8; 7] = [ROW_FARM, ROW_WORKSHOP, ROW_HUT, ROW_SUPPLY_YARD, ROW_SHRINE, ROW_WELL, ROW_DEPTH];
 
 pub fn max_tier(row: u8) -> u8 {
-    match row {
-        crate::research::ROW_FARM | crate::research::ROW_WORKSHOP | crate::research::ROW_HUT | crate::research::ROW_SUPPLY_YARD => 5,
-        crate::research::ROW_SHRINE | crate::research::ROW_WELL => 1,
-        crate::research::ROW_DEPTH => 3,
-        _ => panic!("invalid research row"),
-    }
+    if row == ROW_FARM || row == ROW_WORKSHOP || row == ROW_HUT || row == ROW_SUPPLY_YARD { 5 }
+    else if row == ROW_SHRINE || row == ROW_WELL { 1 }
+    else if row == ROW_DEPTH { 3 }
+    else { panic!("invalid research row") }
 }
 
 // Farm and Workshop have two independent sides.
