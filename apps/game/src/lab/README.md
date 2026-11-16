@@ -303,7 +303,7 @@ pnpm --dir apps/game prove:studio --port 4199 --out <fresh-evidence-directory>
 `--game frontier` uses Frontier's light; `--takes battle,explore` rolls only those.
 
 `/lab/game?scenario=battle-target` sends Crossbows through two attacks on a blade beast; `deep-battle-target` faces
-Knights in a guard slot. Select the army, open the site card and Attack twice. `build.sh playtest-charge` and
-`build.sh playtest-deep-charge` drive those paths on desktop and phone, compare the exact preview and resulting facts
-with the native-tested `frontier-marks.txt` receipts, and retain screenshots. Site cards show the guard's Blade/Bow mark
-from its troop fact. These are lab proofs.
+Knights in a guard slot. Select the army, open the site card and Attack twice. `build.sh playtest-battle-target` and
+`build.sh playtest-deep-battle-target` drive those paths on desktop and phone, compare the exact preview and resulting
+facts with the native-tested `frontier-marks.txt` receipts, and retain screenshots. Site cards show the guard's
+Blade/Bow mark from its troop fact. These are lab proofs.
