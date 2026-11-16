@@ -476,7 +476,13 @@ fn frontier_bow_exchanges_match_the_browser_receipts_against_a_beast_and_a_knigh
     let damage = TroopDamageConfig {
         damage_biome_bonus_num: 0, damage_scaling_factor: 36893488147419103232, ..damage_config(),
     };
-    let stamina = TroopStaminaConfig { damage_stamina_refund: false, stamina_attack_req: 30, ..stamina_config() };
+    let stamina = TroopStaminaConfig {
+        damage_stamina_refund: false,
+        stamina_attack_req: 10,
+        stamina_defense_req: 0,
+        stamina_gain_per_tick: 0,
+        ..stamina_config(),
+    };
     for defender_is_structure_guard in array![false, true] {
         let mut attacker = test_troops(TroopType::Crossbowman, TroopTier::T1, 1000, 100);
         let mut defender = test_troops(TroopType::Knight, TroopTier::T1, 1000, 100);
@@ -496,7 +502,7 @@ fn frontier_bow_exchanges_match_the_browser_receipts_against_a_beast_and_a_knigh
                 );
             assert_eq!(attacker.count, after_a * RESOURCE_PRECISION);
             assert_eq!(defender.count, after_b * RESOURCE_PRECISION);
-            assert_eq!(attacker.stamina.inline().amount, 100 - attack_number * 30);
+            assert_eq!(attacker.stamina.inline().amount, 100 - attack_number * 10);
         }
     }
     assert!(fields.is_empty());
