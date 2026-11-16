@@ -1,7 +1,6 @@
 import { forecastFight, resolveExchange, type CombatRules, type FightForecast } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, type Troops, formatCount } from "@bibliothecadao/types";
 
-
 /** Whole troops from a scaled count, as the contract counts them. */
 export const wholeTroops = (scaled: bigint): number => Number(scaled / BigInt(RESOURCE_PRECISION));
 
@@ -36,9 +35,11 @@ export const forecastAttack = (
   const exchange = resolveExchange(attacker, defender, context, rules);
   const forecast = forecastFight(attacker, defender, context, rules);
   const side = (loss: bigint, remaining: bigint) => ({ losses: wholeTroops(loss), remaining: wholeTroops(remaining) });
-  const sides = exchange.ok ? {
-    attacker: side(exchange.attackerLoss, exchange.attacker.count),
-    defender: side(exchange.defenderLoss, exchange.defender.count),
-  } : null;
+  const sides = exchange.ok
+    ? {
+        attacker: side(exchange.attackerLoss, exchange.attacker.count),
+        defender: side(exchange.defenderLoss, exchange.defender.count),
+      }
+    : null;
   return { exchange, forecast, sides, certainLoss: sides !== null && sides.attacker.remaining === 0 };
 };

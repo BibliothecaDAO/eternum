@@ -1,11 +1,6 @@
 import { afterEach, expect, it } from "vitest";
 import { getGuardsByStructure, setBlockTimestampSource } from "@bibliothecadao/eternum";
-import {
-  nativeBaneConstants,
-  nativeRaceConstants,
-  readSiteEffects,
-  readSiteReward,
-} from "@bibliothecadao/eternum/game-client";
+import { nativeBaneConstants, nativeRaceConstants, readSiteEffects, readSiteReward } from "@bibliothecadao/eternum/game-client";
 import { raceRules } from "@/lab/game/race-scenario";
 import { readPlateReward } from "@/three/map-plates/plate-reward";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
@@ -120,7 +115,7 @@ it("uses Spoils for the card and map reward, but a receipt keeps its exact earne
     {
       model: "ExpeditionSite",
       key: "0x72",
-      value: { ...site, clear: { explorer_id: 201n, home_id: 7n, reward: null, xp: 344 } },
+      value: { ...site, clear: { explorer_id: 201n, home_id: 7n, reward: null, } },
     },
   ]);
   setBlockTimestampSource(() => 950);

@@ -15,7 +15,11 @@ import { type SidePick, sidePicks } from "../research/sides-taken";
  * research is.
  */
 /** A Frontier board's buildings: one per building row of the castle's tree, as research.cairo's row_category names them. */
-const FRONTIER_BUILDINGS = [...Object.values(researchRowCategory), nativeResearchConstants.BARRACKS, nativeResearchConstants.SCOUTS_LODGE] as BuildingType[];
+const FRONTIER_BUILDINGS = [
+  ...Object.values(researchRowCategory),
+  nativeResearchConstants.BARRACKS,
+  nativeResearchConstants.SCOUTS_LODGE,
+] as BuildingType[];
 
 /** Each training building and the attribute it trains every new army in. */
 const TRAINS: Partial<Record<BuildingType, "Logistics">> = {

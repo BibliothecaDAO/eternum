@@ -21,7 +21,11 @@ const ArmyPanel = ({ army, onClose }: { army: DockArmy; onClose: () => void }) =
   const [deleting, setDeleting] = useState(false);
   if (!army.stamina) return null;
   return (
-    <HudSheet label={army.label} beside={<ArmyDeleteButton army={army} onPress={() => setDeleting(true)} />} onClose={onClose}>
+    <HudSheet
+      label={army.label}
+      beside={<ArmyDeleteButton army={army} onPress={() => setDeleting(true)} />}
+      onClose={onClose}
+    >
       <ArmyDetail army={{ ...army, name: army.label, stamina: army.stamina, revealYield }} />
       <ArmyRelicSlots explorerId={army.explorerId} />
       {deleting && <ArmyDeleteConfirm army={army} onCancel={() => setDeleting(false)} onDeleted={onClose} />}

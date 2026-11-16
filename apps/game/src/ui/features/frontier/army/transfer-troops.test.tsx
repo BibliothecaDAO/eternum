@@ -205,7 +205,7 @@ it("keeps a receiving army's total XP unchanged when it spends a point on a rank
 
 it("waits for the XP price rules without substituting unspent XP or zero for either total", () => {
   const store = transferTrainedArmies();
-  store.applyFacts([{ model: "ArmyProgressionRules", key: "0xf1", value: null }]);
+  store.applyFacts([]);
   const { swap } = render(store);
   expect(xpOn("Army 1")).toBeNull();
   expect(xpOn("Army 3")).toBeNull();

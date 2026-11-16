@@ -5,14 +5,7 @@ import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudCost, HudRanked, HudSheet, HudTier, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import type { Fix, Refusal } from "@/ui/design-system/kit/refusal";
-import {
-  BUILDING_FIGURES,
-  RESEARCH,
-  RESEARCH_TREE,
-  RESEARCHING,
-  type Rank,
-  type RankedWords,
-} from "@/ui/design-system/kit/words";
+import { BUILDING_FIGURES, RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank, type RankedWords } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { DestroyBuildingButton } from "@/ui/features/world/components/bottom-right-panel/destroy-building-button";
 import { requireActiveGameClient } from "@/sync/active-game-client";
@@ -28,14 +21,7 @@ import { buildingsMake, standingBuildings } from "../production/store-makers";
 import { RefusedVerb } from "../refused-verb";
 import { useResearchActions } from "../research/research-actions";
 import { useResearchTree } from "../research/research-facts";
-import {
-  researchSideNode,
-  researchSideChoice,
-  firstMissing,
-  type Need,
-  needLine,
-  type TreeNode,
-} from "../research/research-tree";
+import { researchSideNode, researchSideChoice, firstMissing, type Need, needLine, type TreeNode } from "../research/research-tree";
 import type { TappedBuilding } from "../research/selected-building";
 import { CompareRows } from "./compare-rows";
 
@@ -189,7 +175,6 @@ export const BuildingCardView = ({
             }))}
           />
         )}
-        {node?.gate && <span className="px-2 text-hud-label text-hud-muted">{node.gate.line}</span>}
         {next && orders && (
           <ResearchFoot
             node={next}

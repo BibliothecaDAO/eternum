@@ -7,7 +7,6 @@ import { type ExpeditionRules, getBalance, ResourceManager } from "@bibliothecad
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, type ResourcesIds } from "@bibliothecadao/types";
 
-
 import { realmPerHour, secondsUntilHeld } from "./hud/army-order";
 import { FRONTIER_STORES, STORE_KINDS, type StoreKind } from "./stores";
 

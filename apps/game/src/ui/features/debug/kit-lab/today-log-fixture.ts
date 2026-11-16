@@ -1,4 +1,3 @@
-
 import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import { dayLogLine } from "@/ui/features/frontier/log/day-line";
 import { campBeside, SITE } from "@/ui/features/frontier/sites/site-fixture";

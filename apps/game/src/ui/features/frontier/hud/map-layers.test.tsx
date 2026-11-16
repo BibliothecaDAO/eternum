@@ -9,13 +9,7 @@ import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { openPlace } from "@/play/navigation/open-place";
 import { requestLayerView } from "@/three/scenes/worldmap-layer-request";
 import { MapViewControls } from "@/ui/features/world/containers/top-header/map-view-controls";
-import {
-  type ExpeditionRules,
-  expeditionDayEndsAt,
-  readExpeditionRules,
-  seasonDay,
-  setBlockTimestampSource,
-} from "@bibliothecadao/eternum";
+import { type ExpeditionRules, expeditionDayEndsAt, readExpeditionRules, seasonDay, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { deepCenter, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { StructureType } from "@bibliothecadao/types";
 import { frontierPreset } from "../../../../../../../config/source/frontier/native";
@@ -232,7 +226,7 @@ const receipt = (rules: ExpeditionRules, home: number, day: number, depth: numbe
     alt: false,
     col: (home - 1) * rules.spacing + 1,
     row: (day * 4 + depth) * rules.spacing + 1,
-    clear: { xp: 0, explorer_id: 201n, home_id: BigInt(home), reward: null },
+    clear: { explorer_id: 201n, home_id: BigInt(home), reward: null },
   },
 });
 

@@ -5,7 +5,9 @@ import { nativeResearchConstants as research } from "../../../../contracts/l3/wo
  * Where each research row keeps its tier in RealmKnowledge.learned, exactly as research.cairo packs it: the field's
  * bit offset and width. Farm and Workshop keep two three-bit side counts.
  */
-export const RESEARCH_ROWS = Object.entries(research).filter(([name]) => name.startsWith("ROW_")).map(([, row]) => row);
+export const RESEARCH_ROWS = Object.entries(research)
+  .filter(([name]) => name.startsWith("ROW_"))
+  .map(([, row]) => row);
 
 const tierFields: Record<number, readonly [offset: bigint, width: bigint]> = {
   [research.ROW_FARM]: [0n, 3n],

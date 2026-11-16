@@ -5,8 +5,6 @@ import { nativeResearchConstants as research, safeInteger, type NativeFactStore,
 import { musterStamina, type OpenArmySlot, openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
 import { type Direction, RESOURCE_PRECISION, ResourcesIds, TickIds, TROOP_TIERS, TROOP_TYPES, type TroopTier, type TroopType } from "@bibliothecadao/types";
 
-
-
 /**
  * An open army slot and the stamina a new army starts on in it (the owner, 20 October 2026: "stamina is slot tied"):
  * full at its own maximum when the slot is fresh today, else the bar the slot's last army left, recovering since.
@@ -116,7 +114,12 @@ const readTroopsAtHome = (
   const choices: DeployPlan["choices"] = [];
   for (const tier of TROOP_TIERS)
     for (const type of TROOP_TYPES) {
-      const stock = getBalance(safeInteger(realm.entity_id), getTroopResourceId(type, tier), clock.defaultTick, store).balance;
+      const stock = getBalance(
+        safeInteger(realm.entity_id),
+        getTroopResourceId(type, tier),
+        clock.defaultTick,
+        store,
+      ).balance;
       if (stock === undefined) return undefined;
       const atHome = Number(stock) / RESOURCE_PRECISION;
       if (atHome > 0) choices.push({ type, tier, atHome, cap: configManager.getMaxArmySize(realm.base.level, tier) });

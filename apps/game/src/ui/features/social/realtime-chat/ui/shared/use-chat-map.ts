@@ -71,8 +71,7 @@ export const usePlaceReader = (): ((place: SharedPlace) => PlaceReading) => {
       return { name: now.name, icon: now.icon, open, gone: open === null, elsewhere: false };
     }
     if (placeLoaded(store, place.game, place)) return { ...asSent, open: null, gone: true, elsewhere: false };
-    if (!place.tile || !place.owner)
-      return { ...asSent, open: null, gone: false, elsewhere: false };
+    if (!place.tile || !place.owner) return { ...asSent, open: null, gone: false, elsewhere: false };
     const { tile, owner } = place;
     const select =
       place.kind === "army"

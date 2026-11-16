@@ -15,7 +15,6 @@ import { useMemo } from "react";
 
 import { ARMY } from "@/ui/design-system/kit/words";
 
-
 const ARMY_MODELS = [
   ...STAMINA_MODELS,
   "EntityName",

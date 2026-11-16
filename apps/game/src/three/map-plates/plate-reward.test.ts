@@ -56,7 +56,7 @@ const site = (store: NativeFactStore, cleared: boolean, category: StructureType,
         alt: false,
         col: 1,
         row: 1,
-        clear: cleared ? { xp: 0, explorer_id: "1", home_id: "7", reward: null } : null,
+        clear: cleared ? { explorer_id: "1", home_id: "7", reward: null } : null,
       },
     },
   ] as never);

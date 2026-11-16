@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
+// @vitest-environment jsdom
 import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, expect, it } from "vitest";
 
+// The playtest's own step and its own browser read of the armies, not a second reader.
 // The playtest's own step and its own browser read of the armies, not a second reader.
 import { STEP_SETS } from "../../../../../scripts/client-playtest/steps.mjs";
 import { ArmyRow } from "./army-row";
@@ -34,9 +36,7 @@ it.each([
           label={`Army ${index + 1}`}
           art={undefined}
           stamina={stamina}
-          xp={0}
           troops={500}
-          canSpendSkillPoint={false}
           selected={false}
           onPick={() => {}}
         />

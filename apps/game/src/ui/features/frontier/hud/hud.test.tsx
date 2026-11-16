@@ -176,10 +176,8 @@ describe("the army token", () => {
       <ArmyToken
         label="Army 1"
         art={undefined}
-        xp={260}
         stamina={{ ...stamina, perExplore: 20 }}
         troops={5_000}
-        canSpendSkillPoint
         selected={false}
       />,
     );
@@ -229,11 +227,8 @@ describe("the army token", () => {
       <ArmyToken
         label="Army 1"
         art={undefined}
-        xp={8}
-        xpGoal={{ at: 100, rank: 1, share: 0.08 }}
         stamina={undefined}
         troops={154}
-        canSpendSkillPoint={false}
         selected={false}
       />,
     );
@@ -253,11 +248,8 @@ describe("the army token", () => {
           label="Army 2"
           number={2}
           art={undefined}
-          xp={25}
-          xpGoal={{ at: 100, rank: 1, share: 0.25 }}
           stamina={{ current: 90, max: 150, perExplore: 20 }}
           troops={1}
-          canSpendSkillPoint
           selected
           onPick={onPick}
         />,
@@ -286,10 +278,8 @@ describe("the army token", () => {
           <ArmyToken
             label="Army 1"
             art={undefined}
-            xp={undefined}
             stamina={undefined}
             troops={undefined}
-            canSpendSkillPoint={false}
             selected
             onPick={onPick}
           />
@@ -442,7 +432,6 @@ describe("the order bar", () => {
           wheat={{ cost: 100, held: 4_410, wait: undefined }}
           revealYield={500}
           laborFits={0}
-          xp={2}
           onCancel={() => {}}
           onGo={() => {}}
         />,
@@ -464,7 +453,6 @@ describe("the order bar", () => {
           stamina={covered}
           wheat={{ cost: 100, held: 4_410, wait: undefined }}
           revealYield={500}
-          xp={2}
           onCancel={onCancel}
           onGo={() => {}}
         />,
@@ -493,7 +481,6 @@ describe("the order bar", () => {
           stamina={{ cost: 30, held: 13, wait: 111 }}
           wheat={{ cost: 100, held: 4_410, wait: undefined }}
           revealYield={500}
-          xp={2}
           refill={<button type="button">Refill</button>}
           onCancel={() => {}}
           onGo={() => {}}
@@ -514,7 +501,6 @@ describe("the order bar", () => {
           stamina={covered}
           wheat={{ ...wheat, wait: undefined }}
           revealYield={null}
-          xp={undefined}
           onCancel={() => {}}
           onGo={() => {}}
         />,
@@ -542,7 +528,6 @@ describe("the order bar", () => {
             stamina={{ cost: 21, held: 120, wait: undefined }}
             wheat={{ ...wheat, wait: undefined }}
             revealYield={500}
-            xp={2}
             onCancel={() => {}}
             onGo={onGo}
           />,
@@ -591,7 +576,6 @@ describe("the order bar", () => {
             stamina={covered}
             wheat={{ cost: 4, held: 4_410, wait: undefined }}
             revealYield={null}
-            xp={undefined}
             onCancel={() => {}}
             onGo={onGo}
           />
@@ -616,7 +600,6 @@ describe("the order bar", () => {
           stamina={covered}
           wheat={{ cost: 300, held: 40, wait: 4 * 60 }}
           revealYield={null}
-          xp={undefined}
           onCancel={() => {}}
           onGo={() => {}}
         />,

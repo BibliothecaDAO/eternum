@@ -86,13 +86,7 @@ export const DayDoneCard = ({
 /**
  * How many armies ended with the day, counted ("×3"), and the troops they took.
  */
-const ArmiesLine = ({
-  armies,
-  troopsLost,
-}: {
-  armies: number;
-  troopsLost: number;
-}) => (
+const ArmiesLine = ({ armies, troopsLost }: { armies: number; troopsLost: number }) => (
   <div className="flex items-center justify-center gap-1.5" aria-label={TROOPS}>
     <HudChip icons={["army"]} label={ARMIES_ENDED}>{`×${formatShort(armies)}`}</HudChip>
     <HudChip icons={["troops"]} label={TROOPS}>{`−${formatShort(troopsLost)}`}</HudChip>

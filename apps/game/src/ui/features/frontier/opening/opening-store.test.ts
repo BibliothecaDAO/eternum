@@ -59,19 +59,19 @@ it("keeps a change a failed request carried, and sends it again with the next re
   void reachMoments(["launch"]);
   await settle();
   // Launch is in flight; fight is added behind it, and the in-flight request answers first.
-  void reachMoments(["fight"]);
+  void reachMoments(["essence"]);
   calls[1]!.answer({ reached: ["launch"], seen: [] });
   await settle();
-  expect(unsent()).toEqual({ reached: ["fight"], seen: [] });
-  expect(calls[2]!.sent).toEqual({ reached: ["fight"], seen: [] });
+  expect(unsent()).toEqual({ reached: ["essence"], seen: [] });
+  expect(calls[2]!.sent).toEqual({ reached: ["essence"], seen: [] });
   // Fight's request fails: it stays unsent, and nothing clears it but the answer that carries it.
   calls[2]!.fail();
   await settle();
-  expect(unsent()).toEqual({ reached: ["fight"], seen: [] });
+  expect(unsent()).toEqual({ reached: ["essence"], seen: [] });
   void flush();
   await settle();
-  expect(calls[3]!.sent).toEqual({ reached: ["fight"], seen: [] });
-  calls[3]!.answer({ reached: ["fight", "launch"], seen: [] });
+  expect(calls[3]!.sent).toEqual({ reached: ["essence"], seen: [] });
+  calls[3]!.answer({ reached: ["essence", "launch"], seen: [] });
   await settle();
   expect(unsent()).toEqual({ reached: [], seen: [] });
 });
@@ -103,7 +103,7 @@ it("opens a reload as the session left it, with its unsent change still to send"
   await settle();
   calls[0]!.answer({ reached: ["launch"], seen: [] });
   await settle();
-  void reachMoments(["fight"]);
+  void reachMoments(["essence"]);
   await settle();
   calls[1]!.fail();
   await settle();
@@ -111,11 +111,11 @@ it("opens a reload as the session left it, with its unsent change still to send"
   useOpeningStore.setState({ owner: null, status: "signed-out", reached: new Set(), seen: new Set() });
   void loadOpening("a");
   const state = useOpeningStore.getState();
-  expect([...state.reached].sort()).toEqual(["fight", "launch"]);
+  expect([...state.reached].sort()).toEqual(["essence", "launch"]);
   expect(state.status).toBe("loading");
   await settle();
-  expect(calls[2]!.sent).toEqual({ reached: ["fight"], seen: [] });
-  calls[2]!.answer({ reached: ["fight", "launch"], seen: [] });
+  expect(calls[2]!.sent).toEqual({ reached: ["essence"], seen: [] });
+  calls[2]!.answer({ reached: ["essence", "launch"], seen: [] });
   await settle();
 });
 
@@ -126,7 +126,7 @@ it("never lets one account's answer or progress reach another's", async () => {
   void loadOpening("b");
   await settle();
   // A's answer arrives after the switch: B's progress holds none of it.
-  calls[0]!.answer({ reached: ["launch", "fight"], seen: ["launch"] });
+  calls[0]!.answer({ reached: ["launch", "essence"], seen: ["launch"] });
   await settle();
   const state = useOpeningStore.getState();
   expect(state.owner).toBe("b");
@@ -159,7 +159,7 @@ it("says whether this device kept the account's progress: a cold load has none, 
   void loadOpening("a");
   await settle();
   expect(useOpeningStore.getState().onDevice).toBe(false);
-  calls[0]!.answer({ reached: ["fight"], seen: [] });
+  calls[0]!.answer({ reached: ["essence"], seen: [] });
   await settle();
   useOpeningStore.setState({ owner: null, status: "signed-out", reached: new Set(), seen: new Set() });
   void loadOpening("a");
@@ -180,7 +180,7 @@ it("does not take a cache of this device's own additions for the account's progr
   reload();
   expect(accountProgress("a", useOpeningStore.getState()).ownsParts).toBe(false);
   // Once the service has answered, what the device keeps is the account's, and survives further additions.
-  calls[0]!.answer({ reached: ["fight", "launch", "barracks"], seen: [] });
+  calls[0]!.answer({ reached: ["essence", "launch", "barracks"], seen: [] });
   await settle();
   void reachMoments(["essence"]);
   await settle();

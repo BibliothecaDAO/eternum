@@ -6,7 +6,9 @@ import { FRONTIER_PRESET_ID } from "../common/native-preset-modes";
 import { FRONTIER_DAY_UNIT_SECONDS } from "./clock";
 
 /** Every building a Frontier board can raise, by its category id. */
-export const buildingIds = Object.values(BuildingType).filter((id): id is BuildingType => typeof id === "number" && id !== BuildingType.None);
+export const buildingIds = Object.values(BuildingType).filter(
+  (id): id is BuildingType => typeof id === "number" && id !== BuildingType.None,
+);
 
 // Common I is half the old first price; II–V retain the four established prices.
 const essenceLadder = [0.5, 1, 4, 12, 30];
@@ -63,7 +65,7 @@ export const frontierPreset = {
       "LevelUp",
       "Research",
       "EnterDepth",
-          "InteractSite",
+      "InteractSite",
       "OpenRelicChest",
       "SetEntityName",
       "MarkGameSettled",
@@ -87,8 +89,7 @@ export const frontierPreset = {
       essenceLadder.map((factor, index) => ({
         row,
         tier: index + 1,
-        essenceCost:
-          row === research.ROW_SUPPLY_YARD && index === 1 ? 16000 : essence * factor,
+        essenceCost: row === research.ROW_SUPPLY_YARD && index === 1 ? 16000 : essence * factor,
         laborCost: labor * laborLadder[index]!,
       })),
     ),

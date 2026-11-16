@@ -2327,4 +2327,3 @@ export const HudMinimapFrame = ({
     </div>
   </section>
 );
-

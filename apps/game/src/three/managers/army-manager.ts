@@ -1,4 +1,3 @@
-
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { armyNumber, resolveExplorerTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";

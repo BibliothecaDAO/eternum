@@ -164,4 +164,3 @@ const siteObject = (entityId: unknown): ToldReading["object"] => {
   const id = Number(entityId);
   return { name: siteDisplayName(id), site: id };
 };
-

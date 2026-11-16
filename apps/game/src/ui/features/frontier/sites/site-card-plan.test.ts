@@ -266,17 +266,7 @@ it("adds active relics to a slot army's Battle skill without modifying stored tr
       value: {
         game_id: 1,
         explorer_id: army.explorer_id,
-        xp: 0,
-        battle: 3,
         logistics: 0,
-        scouting: 0,
-        scouting_kinds: 0,
-        homecoming: 0,
-        common_points: 0,
-        uncommon_points: 0,
-        rare_points: 0,
-        epic_points: 0,
-        legendary_points: 0,
       },
     },
     relicEffectFact("Blade"),
@@ -303,7 +293,7 @@ it("keeps the same site's opening Charge spent after a confirmed update and a fr
   store.applyFacts([{ model: "ArmyCombat", key: wireKey, value: { ...combat, charge: 5 } }]);
   expect(readSiteCard(store, site, structure, SITE_TILE, army).fight).toEqual({ troopsLost: 327, guardLeft: 478 });
   store.applyFacts([
-    { model: "ArmyCombat", key: wireKey, value: { ...combat, charge: 5, last_target: site.entity_id } },
+    { model: "ArmyCombat", key: wireKey, value: { ...combat, last_target: site.entity_id } },
   ]);
   expect(readSiteCard(store, site, structure, SITE_TILE, army).fight).toEqual({ troopsLost: 457, guardLeft: 478 });
   const restored = reloadSiteFacts(store);

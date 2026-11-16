@@ -4,7 +4,6 @@ import { type IconMeaning, iconMeanings } from "@/ui/design-system/icon-meaning"
 import { getEntityName, isExpeditionRealm, isRealmCategory, structureMapPosition } from "@bibliothecadao/eternum";
 import type { GameRef, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
-
 /** A tile of the map, on its layer (the surface, or the depth below). */
 export interface PlaceTile {
   col: number;

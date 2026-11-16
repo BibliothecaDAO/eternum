@@ -1,4 +1,3 @@
-
 import { getNeighborHexes } from "@bibliothecadao/types";
 import { campBeside } from "../sites/site-fixture";
 
@@ -88,7 +87,7 @@ export const transferTrainedArmies = () => {
         {
           model: "ArmyProgress",
           key: `0xf${id}2`,
-          value: { ...progress, logistics: 1, },
+          value: { ...progress, logistics: 1 },
         },
         {
           model: "ArmySlot",

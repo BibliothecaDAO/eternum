@@ -89,12 +89,8 @@ const ARMIES_OUT = [
   troopsFact: {} as never,
   label: `Army ${army.number}`,
   art: "knight-t1" as const,
-  xp: 40,
-  xpGoal: undefined,
-  tiers: undefined,
   stamina: { current: 60, max: 120, perExplore: 20 },
   secondsToFull: undefined,
-  canSpendSkillPoint: false,
 }));
 
 it.each(["phone", "desktop"] as const)(

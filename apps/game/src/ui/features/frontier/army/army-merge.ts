@@ -2,7 +2,13 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
 type Progress = NativeRows["ArmyProgress"];
 
-export const explorerTransferPlan = ({ sourceCount, targetCount, targetCap, sourceProgress, targetProgress }: {
+export const explorerTransferPlan = ({
+  sourceCount,
+  targetCount,
+  targetCap,
+  sourceProgress,
+  targetProgress,
+}: {
   sourceCount: number;
   targetCount: number;
   targetCap: number | null;

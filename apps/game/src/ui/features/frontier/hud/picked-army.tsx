@@ -1,4 +1,3 @@
-
 import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { PICKED_ARMY } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
@@ -9,22 +8,10 @@ import type { DockArmy } from "./dock-armies";
 /** What the picked army's row reads of an army: the dock's own, so the lab draws it on its fiction. */
 export type PickedArmyView = Pick<
   DockArmy,
-  | "explorerId"
-  | "label"
-  | "number"
-  | "art"
-  | "stamina"
-  | "secondsToFull"
-  | "troops"
-  | "ethereal"
-  | "drain"
+  "explorerId" | "label" | "number" | "art" | "stamina" | "secondsToFull" | "troops" | "ethereal" | "drain"
 >;
 
-/**
- * A phone's picked army, in the dock's place (owner, 22 October 2026: mobile direction A; 27 October: D, its stamina
- * over Level up): its token, a tap opening its card; its four sides with their tiers, which the token does not show;
- * then its stamina, which is its refill, over Level up, and Spire where it stands at its spire. Level up opens the card on its choices while a skill point can be spent, else the card. A tap on an empty tile lets the army go, and the dock comes back.
- */
+/** A phone's selected army: tap its token for details, with refill and Spire actions beside it. */
 export const PickedArmy = ({
   army,
   refill,
@@ -50,8 +37,6 @@ export const PickedArmy = ({
       selected
       onPick={onDetails}
     />
-    <span data-picked-army className="min-w-0 flex-1">
-    </span>
     <span className="grid w-24 shrink-0 gap-1.5">
       {refill}
       {spire}

@@ -66,8 +66,6 @@ export const EtherealMark = ({ layer, at = "corner" }: { layer: EtherealLayer | 
     </span>
   );
 
-
-
 export const ArmyToken = ({
   label,
   number,
@@ -88,9 +86,9 @@ export const ArmyToken = ({
   /** The Ethereal layer it stands in; none on the surface. */
   ethereal?: EtherealLayer;
   art: IconMeaning | undefined;
-    stamina: StaminaBar | undefined;
+  stamina: StaminaBar | undefined;
   troops: number | undefined;
-    selected: boolean;
+  selected: boolean;
   /** Where a gain flies into the portrait. */
   flyTarget?: string;
   /** Absent on a visit: the token is shown, never picked. */
@@ -187,7 +185,6 @@ export const SlotRing = ({ pulse, filling }: { pulse: boolean; filling?: string 
     {filling === undefined ? "+" : "…"}
   </span>
 );
-
 
 /**
  * What a Deep guard's site costs it: its troops fall each tick, so the chip says how many ticks it holds and its bar

@@ -1,4 +1,3 @@
-
 import { nativeResearchConstants as research, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { actionsScenario } from "./actions-scenario";
@@ -31,7 +30,6 @@ export function seedScouts(store: NativeFactStore): void {
         balance: 600n * BigInt(RESOURCE_PRECISION),
       }),
     },
-
   ]);
 }
 

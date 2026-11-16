@@ -50,13 +50,7 @@ import { ChestOpenings } from "@/ui/features/military/chest/chest-openings";
 import { campBeside, otherArmyAt, reloadSiteFacts, SITE, SITE_TILE } from "./sites/site-fixture";
 import { attachMapSelectionPositions } from "@/hooks/store/map-selection";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import {
-  configManager,
-  expeditionSpireTile,
-  readExpeditionRules,
-  setBlockTimestampSource,
-  setEntityNameLocalStorage,
-} from "@bibliothecadao/eternum";
+import { configManager, expeditionSpireTile, readExpeditionRules, setBlockTimestampSource, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
 import { BuildingType, getNeighborHexes, siteName, TileOccupier } from "@bibliothecadao/types";
 import { transferArmies, TRANSFER_TAPPED } from "./army/transfer-fixture";
 import { useSelectionCard } from "./frontier-selection-sheet";
@@ -113,7 +107,6 @@ const clearedCamp = ({ occupied, reload }: { occupied: boolean; reload: boolean 
       value: {
         ...fixture.site,
         clear: {
-          xp: 123,
           explorer_id: 201n,
           home_id: 7n,
           reward: { resource_type: 23, amount: 550_000_000_000n },

@@ -546,9 +546,7 @@ function buildRace(preset: ReturnType<typeof nativePresetForId>) {
   });
 }
 
-function validateRace(
-  race: NonNullable<ReturnType<typeof nativePresetForId>["race"]>,
-) {
+function validateRace(race: NonNullable<ReturnType<typeof nativePresetForId>["race"]>) {
   const amounts = [race.seasonDays, race.gloryPerTick, race.heightPerTick, race.stageHeight];
   if (
     amounts.some((value) => !Number.isSafeInteger(value) || value <= 0) ||

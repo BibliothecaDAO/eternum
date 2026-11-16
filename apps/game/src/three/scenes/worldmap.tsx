@@ -2666,11 +2666,7 @@ export default class WorldmapScene extends WarpTravel {
     if (selectedEntityId === null || selectedEntityId === undefined) return false;
     const path = actionPaths.get(ActionPaths.posKey(hexCoords, true));
     const action = path && ActionPaths.getActionType(path);
-    return (
-      action === ActionType.EnterDepth ||
-      action === ActionType.CreateArmy ||
-      action === ActionType.Help
-    );
+    return action === ActionType.EnterDepth || action === ActionType.CreateArmy || action === ActionType.Help;
   }
 
   protected onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void {
@@ -2941,12 +2937,7 @@ export default class WorldmapScene extends WarpTravel {
         const actionType = ActionPaths.getActionType(actionPath);
 
         // Only validate army availability for army-specific actions
-        const armyActions = [
-          ActionType.Explore,
-          ActionType.Move,
-          ActionType.Attack,
-          ActionType.SpireTravel,
-        ];
+        const armyActions = [ActionType.Explore, ActionType.Move, ActionType.Attack, ActionType.SpireTravel];
         const isArmySelection = this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined;
         if (actionType && armyActions.includes(actionType) && isArmySelection) {
           // The army isn't drawn in the map's view now (a chunk on its way): no order, and the army stays selected.
@@ -2963,7 +2954,6 @@ export default class WorldmapScene extends WarpTravel {
           this.onArmyHelp(actionPath, selectedEntityId);
         } else if (actionType === ActionType.Chest) {
           this.onChestSelection(actionPath, selectedEntityId);
-
         } else if (actionType === ActionType.CreateArmy) {
           this.onArmyCreate(actionPath, selectedEntityId);
         } else if (actionType === ActionType.EnterDepth) {

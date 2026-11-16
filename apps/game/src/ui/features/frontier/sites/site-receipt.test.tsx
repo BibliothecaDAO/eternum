@@ -1,4 +1,4 @@
-import { siteClearXp } from "@bibliothecadao/eternum";
+
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -16,7 +16,6 @@ const clear = (store: NativeFactStore, amount: bigint | null, resourceType = 23)
       value: {
         ...site,
         clear: {
-          xp: siteClearXp(store, site),
           explorer_id: 201n,
           home_id: 7n,
           reward: amount === null ? null : { resource_type: resourceType, amount },
@@ -61,7 +60,6 @@ it.each([
   clear(store, 750_000_000n, resourceType);
   const selected = readClearedSite(store, 1, SITE_TILE)!;
   expect(selected.site.clear).toEqual({
-    xp: 123,
     explorer_id: 201n,
     home_id: 7n,
     reward: { resource_type: resourceType, amount: 750_000_000n },

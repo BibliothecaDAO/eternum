@@ -136,18 +136,19 @@ const lostShare = (before: number, kept: number): number => {
 };
 
 /** The troops kept in the side's colour, and the troops lost in grey; empty while unknown. */
-const FightBar = ({ before, kept, side }: {
-  before: number | undefined;
-  kept: Kept;
-  side: "ours" | "theirs";
-}) => {
+const FightBar = ({ before, kept, side }: { before: number | undefined; kept: Kept; side: "ours" | "theirs" }) => {
   const share = before && before > 0 && kept !== undefined ? Math.max(0, Math.min(1, kept / before)) : 0;
   return (
     <span aria-hidden className="flex h-2 w-full overflow-hidden rounded-full bg-hud-well">
-      {kept !== undefined && <>
-        <span className={cn("h-full", side === "ours" ? "bg-hud-good" : "bg-hud-bad")} style={{ width: `${share * 100}%` }} />
-        <span className="h-full bg-hud-neutral" style={{ width: `${(1 - share) * 100}%` }} />
-      </>}
+      {kept !== undefined && (
+        <>
+          <span
+            className={cn("h-full", side === "ours" ? "bg-hud-good" : "bg-hud-bad")}
+            style={{ width: `${share * 100}%` }}
+          />
+          <span className="h-full bg-hud-neutral" style={{ width: `${(1 - share) * 100}%` }} />
+        </>
+      )}
     </span>
   );
 };

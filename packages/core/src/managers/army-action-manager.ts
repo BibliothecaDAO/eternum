@@ -161,9 +161,7 @@ export class ArmyActionManager {
   /** Owned structures excluded by the game's targeting rule offer no attack order. */
   private isStructureOffLimits(structure: HexEntityInfo | undefined): boolean {
     if (!structure) return false;
-    return (
-      (BigInt(structure.owner) !== 0n && configManager.attacksOnlyUnownedStructures())
-    );
+    return BigInt(structure.owner) !== 0n && configManager.attacksOnlyUnownedStructures();
   }
 
   /** Whether the game takes an army's attack on this target: another army (Battle), or a structure's guard (BattleGuard). */

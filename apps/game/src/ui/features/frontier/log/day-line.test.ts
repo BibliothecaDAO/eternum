@@ -3,7 +3,7 @@ import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import { describe, expect, it } from "vitest";
 
 import { campBeside, SITE } from "../sites/site-fixture";
-import { frontierArmyRules } from "../army/progression-rules-fixture";
+
 import { dayLogLine } from "./day-line";
 
 const story = (name: string, storyPayload: Record<string, unknown>, title = "The story's own title") => ({
@@ -58,20 +58,6 @@ describe("the day log's line for a story", () => {
     // Prod's rules: 2 XP a reveal. The fixture's site started with 1,100 guards, at depth I pays 123 XP whatever
     // the last attack killed (√(25 × 1,100) = 165, halved then multiplied by 1.5).
     store.applyFacts([
-      {
-        model: "ArmyProgressionRules",
-        key: "0x101",
-        value: {
-          common_xp: 100,
-          game_id: 1,
-          reveal_xp: 2,
-          reveal_xp_per_depth: 1,
-          uncommon_xp: 250,
-          rare_xp: 500,
-          epic_xp: 1000,
-          legendary_xp: 2000,
-        },
-      },
     ] as never);
     const reveal = { resource_type: ResourcesIds.Labor, amount: "98400000000", coord: { x: 1, y: 1 } };
     expect(dayLogLine(story("ExplorationReward", reveal), store)).toBe("+98 Labor, +2 XP");
@@ -158,7 +144,7 @@ it.each([
   [3, 5],
 ])("keeps historical reveal XP at depth %s without a living army", (depth, xp) => {
   const { store } = campBeside();
-  store.applyFacts([{ model: "ArmyProgressionRules", key: "0x101", value: frontierArmyRules() }] as never);
+  store.applyFacts([] as never);
   const spacing = store.require("SettlementRules", { game_id: 1 }).spacing;
   const payload = {
     explorer_id: 999,

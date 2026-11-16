@@ -34,7 +34,7 @@ describe("the day log's line for a fight", () => {
       {
         model: "ExpeditionSite",
         key: "0x72",
-        value: { ...site, clear: { xp: 0, explorer_id: 201n, home_id: 7n, reward: null } },
+        value: { ...site, clear: { explorer_id: 201n, home_id: 7n, reward: null } },
       },
       { model: "Structure", key: "0x71", value: null },
       { model: "Guard", key: "0x73", value: null },

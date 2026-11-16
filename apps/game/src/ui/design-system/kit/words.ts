@@ -38,6 +38,46 @@
  * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
  * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
  */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
 import { APP_HOST } from "@/config/app-address";
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import { SHARED_MOMENT_WORDS, type CampaignKey, type SocialProvider } from "@realms-world/identity";
@@ -578,7 +618,7 @@ export const DAY_BANNER_WORDS = {
     1: (percent: number) => `Sites are found at ${formatExact(percent)}% of the usual odds`,
     2: (percent: number) => `Stamina returns at ${formatExact(percent)}%`,
     3: (percent: number) => `Guarded sites have ${formatExact(percent)}% strength`,
-    4: (percent: number) => `Site rewards and XP are ${formatExact(percent)}%`,
+    4: (percent: number) => `Site rewards are ${formatExact(percent)}%`,
   },
   baneBar: "Your Aspect's bane bar",
   barCharge: (charge: number, threshold: number) => `${formatExact(charge)} of ${formatExact(threshold)}`,
@@ -746,7 +786,7 @@ export const TRANSFER_TROOPS = {
   merge: (army: string) => `Merge into ${army}`,
   totalXp: "Total XP",
   totalXpFor: (army: string) => `${army} total XP`,
-  losesProgress: (army: string) => `${army} loses its XP, points and upgrades.`,
+  losesProgress: (army: string) => `${army} loses its Logistics training.`,
   /** The second press of a merge that loses a lot: the leaving army's total XP and the chosen target. */
   confirmMerge: (army: string) => `Confirm merge into ${army}`,
   amount: (from: string, to: string) => `Troops ${from} sends to ${to}`,
@@ -2058,7 +2098,7 @@ export const ARMY_DETAIL = {
 export const ARMY_MANAGEMENT = {
   remove: "Delete",
   confirmDelete: "Delete this army?",
-  loss: "Its troops, skills, XP and carried resources are lost. Its slot keeps its stamina.",
+  loss: "Its troops and carried resources are lost. Its slot keeps its stamina.",
   deleteFailed: "The army could not be deleted.",
 } as const;
 

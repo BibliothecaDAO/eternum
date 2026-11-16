@@ -58,4 +58,3 @@ export function armyRelicReward(
   const bonus = armyRelicBonus(store, army, "Plunder", timestamp);
   return bonus === undefined ? undefined : { ...reward, amount: (reward.amount * BigInt(10_000 + bonus)) / 10_000n };
 }
-

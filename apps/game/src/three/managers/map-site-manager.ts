@@ -170,9 +170,7 @@ export class MapSiteManager {
     const sites = this.modelVisible
       ? this.projection
           .getTiles(activeMapLayer())
-          .filter(
-            (tile) => tile.occupierType === TileOccupier.DeepSite,
-          )
+          .filter((tile) => tile.occupierType === TileOccupier.DeepSite)
           .slice(0, SITE_CAPACITY)
       : [];
     const placed: number[] = [];
@@ -266,5 +264,4 @@ const modelOf = async (path: string, name: string) => {
 /** The Foundation's model: a hyperstructure's own, standing at its foundation, its plate just over that base. */
 const foundationModel = () => ({ model: new HyperstructureModel(SITE_CAPACITY), height: HYPERSTRUCTURE_BASE_HEIGHT });
 
-const isMapSite = (occupier: number | undefined): boolean =>
-  occupier === TileOccupier.DeepSite;
+const isMapSite = (occupier: number | undefined): boolean => occupier === TileOccupier.DeepSite;

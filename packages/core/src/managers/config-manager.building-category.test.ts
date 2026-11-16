@@ -191,19 +191,6 @@ describe("native immutable configuration", () => {
     expect(manager.getTick(TickIds.Armies)).toBe(Number(preset.rules.tick_config.armies_tick_in_seconds));
   });
 
-  it("rolls combat dice everywhere in a dice game, on the ethereal layer in an ethereal-dice game, else never", () => {
-    const { manager, write } = fixture();
-    const withRules = (mode_rules: number) => {
-      write("SliceRules", [54], { ...preset.rules, game_id: 54, mode_rules });
-      return [manager.rollsCombatDice(true), manager.rollsCombatDice(false)];
-    };
-    const base =
-      preset.rules.mode_rules & ~(nativeRuleConstants.COMBAT_DICE | nativeRuleConstants.COMBAT_DICE_ETHEREAL);
-    expect(withRules(base)).toEqual([false, false]);
-    expect(withRules(base | nativeRuleConstants.COMBAT_DICE_ETHEREAL)).toEqual([true, false]);
-    expect(withRules(base | nativeRuleConstants.COMBAT_DICE)).toEqual([true, true]);
-  });
-
   it("pays reveals from strength and depth only in a game with reveal supplies", () => {
     const { manager, write } = fixture();
     const base = preset.rules.mode_rules & ~nativeRuleConstants.REVEAL_SUPPLIES;

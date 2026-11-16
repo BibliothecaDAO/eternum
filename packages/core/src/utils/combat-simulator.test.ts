@@ -39,31 +39,31 @@ const army: Army = {
   battle_cooldown_end: 0,
 };
 const simulator = new CombatSimulator(parameters, rules);
-const simulate = (attacker: Army, defender: Army, chargePercent = 0) =>
-  simulator.simulateBattle(100, attacker, defender, BiomeType.None, [], [], { chargePercent });
+const simulate = (attacker: Army, defender: Army) =>
+  simulator.simulateBattle(100, attacker, defender, BiomeType.None, [], []);
 
 describe("battle lab exchange", () => {
-  it("shows the exact native opening losses and stamina, with Charge on only the first exchange", () => {
-    expect(simulate(army, army, 50)).toEqual({
+  it("shows exact losses and stamina across two attacks", () => {
+    expect(simulate(army, army)).toEqual({
       ok: true,
       attackerDamage: 437,
-      defenderDamage: 342,
+      defenderDamage: 437,
       attackerStamina: 90,
       defenderStamina: 100,
       attackerCooldownEnd: 100,
       defenderCooldownEnd: 100,
     });
-    expect(simulate({ ...army, troopCount: 658, stamina: 90 }, { ...army, troopCount: 563 }, 0)).toMatchObject({
+    expect(simulate({ ...army, troopCount: 563, stamina: 90 }, { ...army, troopCount: 563 })).toMatchObject({
       ok: true,
-      attackerDamage: 318,
-      defenderDamage: 272,
+      attackerDamage: 246,
+      defenderDamage: 246,
       attackerStamina: 80,
     });
   });
 
-  it("keeps Scouts at three quarters damage and never gives them Charge", () => {
+  it("keeps Scouts at three quarters damage", () => {
     const scout = { ...army, troopType: TroopType.Paladin };
-    expect(simulate(scout, army, 50)).toMatchObject({ ok: true, attackerDamage: 328, defenderDamage: 437 });
+    expect(simulate(scout, army)).toMatchObject({ ok: true, attackerDamage: 328, defenderDamage: 437 });
     expect(simulate(army, scout)).toMatchObject({ ok: true, attackerDamage: 437, defenderDamage: 328 });
   });
 
@@ -85,7 +85,7 @@ describe("battle lab exchange", () => {
       BiomeType.None,
       [],
       [],
-      { chargePercent: 50, attackDistance: 2, defenderIsStructureGuard: true },
+      { attackDistance: 2, defenderIsStructureGuard: true },
     );
     expect(result).toEqual({
       ok: true,
@@ -96,16 +96,5 @@ describe("battle lab exchange", () => {
       attackerCooldownEnd: 130,
       defenderCooldownEnd: 130,
     });
-  });
-
-  it("resolves both dice extremes, and one identical outcome without dice", () => {
-    const range = simulator.simulateBattleRange(100, army, army, BiomeType.None, [], [], { chargePercent: 0 }, true);
-    expect(range).toMatchObject({
-      ok: true,
-      worst: { attackerDamage: 442, defenderDamage: 525 },
-      best: { attackerDamage: 525, defenderDamage: 442 },
-    });
-    const plain = simulator.simulateBattleRange(100, army, army, BiomeType.None, [], [], { chargePercent: 0 }, false);
-    expect(plain).toEqual({ ok: true, worst: simulate(army, army), best: simulate(army, army) });
   });
 });

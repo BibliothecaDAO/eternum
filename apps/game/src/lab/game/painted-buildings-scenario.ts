@@ -96,7 +96,6 @@ export const paintedBuildingsScenario = (ground?: LabGround): LabScenario => {
         labor_paid: "0",
       },
     })),
-
   ];
   const occupied = new Set([...game.store.rows("TileOccupancy")].map((tile) => `${tile.col},${tile.row}`));
   const sitePlots = getHexesWithinRadius(game.opensOn.col, game.opensOn.row, 2).filter(

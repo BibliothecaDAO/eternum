@@ -22,7 +22,7 @@ it("answers ApplyRelic as army_relics.cairo applies it: the slot spent, its kind
   chain.applyFacts(answered.map(keyedAsHeldOnChain) as never);
   const carried = chain.require("ArmyRelics", { game_id: 1, explorer_id: 201 });
   expect([carried.first?.kind, carried.second, carried.third?.kind]).toEqual(["Blade", null, "Plunder"]);
-  const tome = chain.require("ArmyRelicEffect", { game_id: 1, explorer_id: 201, kind: "Tome" });
+  const tome = chain.require("ArmyRelicEffect", { game_id: 1, explorer_id: 201, kind: "Ward" });
   expect([tome.rank, tome.expires_at]).toEqual([1, BigInt(now + 1_800)]);
 });
 

@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+// @vitest-environment jsdom
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { StructureType, TileOccupier } from "@bibliothecadao/types";
 import { Vector3 } from "three";
@@ -139,7 +140,7 @@ it("presents a cleared standard from its receipt after the structure and guard a
     {
       model: "ExpeditionSite",
       key: "0x72",
-      value: { ...site, clear: { xp: 0, explorer_id: 201n, home_id: 7n, reward: null } },
+      value: { ...site, clear: { explorer_id: 201n, home_id: 7n, reward: null } },
     },
     { model: "Structure", key: "0x71", value: null },
     { model: "Guard", key: "0x73", value: null },
@@ -177,7 +178,7 @@ it("sets no plate on a cleared site, and takes away the one it had: the standard
     {
       model: "ExpeditionSite",
       key: "0x72",
-      value: { ...site, clear: { xp: 0, explorer_id: 201n, home_id: 7n, reward: null } },
+      value: { ...site, clear: { explorer_id: 201n, home_id: 7n, reward: null } },
     },
     { model: "Structure", key: "0x71", value: null },
     { model: "Guard", key: "0x73", value: null },

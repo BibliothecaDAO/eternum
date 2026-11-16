@@ -4,14 +4,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { shortString } from "starknet";
 import { configManager, readResourceManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup, NativeRows } from "@bibliothecadao/eternum/game-client";
-import {
-  createSystemCalls,
-  EntityType,
-  RelicRecipientType,
-  RelicRecipientTypeParam,
-  ResourcesIds,
-  TileOccupier,
-} from "@bibliothecadao/types";
+import { createSystemCalls, EntityType, RelicRecipientType, RelicRecipientTypeParam, ResourcesIds, TileOccupier } from "@bibliothecadao/types";
 import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -222,19 +215,9 @@ it("keeps missing army facts unavailable, reports them in development, and resum
         model: "ArmyProgress",
         key: "0xa9",
         value: {
-          common_points: 0,
-          uncommon_points: 0,
-          rare_points: 0,
-          epic_points: 0,
-          legendary_points: 0,
           game_id: 1,
           explorer_id: ARMY_ID,
-          xp: 0,
-          battle: 1,
           logistics: 1,
-          scouting: 0,
-          scouting_kinds: 0,
-          homecoming: 1,
         },
       },
     ] as never),

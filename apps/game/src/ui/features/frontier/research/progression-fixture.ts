@@ -47,13 +47,7 @@ const realmOn = (
 };
 
 /** The owner's realm on 20 October: a Settlement, nothing researched, short of everything. */
-export const EARLY_REALM = realmOn(
-  0,
-  300,
-  718,
-  { [research.ROW_FARM]: 2, [research.ROW_HUT]: 1 },
-  {},
-);
+export const EARLY_REALM = realmOn(0, 300, 718, { [research.ROW_FARM]: 2, [research.ROW_HUT]: 1 }, {});
 
 /**
  * Some days in, a City: Farm uncommon on both sides (Fields, Granary), Workshop uncommon (Tools), Barracks with Charge II, a Hut
@@ -67,15 +61,16 @@ export const MID_REALM = realmOn(
     [research.ROW_FARM]: 4,
     [research.ROW_WORKSHOP]: 2,
     [research.ROW_HUT]: 3,
+    [research.ROW_SUPPLY_YARD]: 1,
   },
   {
     [research.ROW_FARM]: { tier: 1, sides: [0, 1] },
     [research.ROW_WORKSHOP]: { tier: 1, sides: [0] },
     [research.ROW_HUT]: { tier: 1, sides: [] },
+    [research.ROW_SUPPLY_YARD]: { tier: 1, sides: [] },
     [research.ROW_SHRINE]: { tier: 1, sides: [] },
   },
 );
-
 
 /** The owner's Army 1: 1,500 troops, 12 XP, 4 of 120 stamina, every attribute common. */
 export const EARLY_ARMY: ArmyView = {

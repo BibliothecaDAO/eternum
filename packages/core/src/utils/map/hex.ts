@@ -15,6 +15,22 @@
  * Hexagonal coordinate system implementation
  * Based on https://www.redblobgames.com/grids/hexagons/
  */
+/**
+ * Hexagonal coordinate system implementation
+ * Based on https://www.redblobgames.com/grids/hexagons/
+ */
+/**
+ * Hexagonal coordinate system implementation
+ * Based on https://www.redblobgames.com/grids/hexagons/
+ */
+/**
+ * Hexagonal coordinate system implementation
+ * Based on https://www.redblobgames.com/grids/hexagons/
+ */
+/**
+ * Hexagonal coordinate system implementation
+ * Based on https://www.redblobgames.com/grids/hexagons/
+ */
 import { TileOccupier } from "@bibliothecadao/types";
 
 type TileOccupantKind =
@@ -79,7 +95,6 @@ export const isTileOccupierMapSite = (tileOccupier: number) => {
   const kind = tileOccupantKind(tileOccupier);
   return kind === "dormant-spire" || kind === "deep-site";
 };
-
 
 export const isTileOccupierChest = (tileOccupier: TileOccupier) => {
   return tileOccupantKind(tileOccupier) === "chest";

@@ -85,7 +85,7 @@ it.each(KINDS)(
             key: "0x72",
             value: {
               ...store.require("ExpeditionSite", { game_id: 1, entity_id: SITE }),
-              clear: { xp: 0, explorer_id: 201, home_id: 7, reward: null },
+              clear: { explorer_id: 201, home_id: 7, reward: null },
             },
           },
           { model: "Structure", key: "0x71", value: null },

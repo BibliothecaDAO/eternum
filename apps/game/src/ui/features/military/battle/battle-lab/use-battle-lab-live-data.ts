@@ -15,7 +15,6 @@ const toResourceIds = (effects: RelicEffect[]): ResourcesIds[] =>
   effects.map((effect) => Number(effect.id)) as ResourcesIds[];
 
 interface BattleLabLiveData {
-
   snapshot: LiveSnapshot | null;
   target: AttackTarget | null;
   targetResources: Array<{ resourceId: number; amount: number }>;

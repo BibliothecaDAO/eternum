@@ -225,7 +225,6 @@ const useCertainLoss = () => {
       if (!guard || !troops || !explorer || !structure) return false;
       const biome = tile && tile.biome !== 0 ? biomeTypeOf(tile.biome) : BiomeType.None;
       const circumstances = {
-
         timestamp,
         attackDistance: 1,
         attackerBiome: biome,

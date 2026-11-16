@@ -29,7 +29,7 @@ export const ArmyRow = ({
   ethereal?: EtherealLayer;
   art: IconMeaning | undefined;
   troops: number | undefined;
-    stamina: StaminaBar | undefined;
+  stamina: StaminaBar | undefined;
   selected: boolean;
   /** Where a gain flies into the portrait. */
   flyTarget?: string;

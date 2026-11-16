@@ -44,7 +44,6 @@ describe("a guarded site's card", () => {
           guard={plan.guard?.count}
           fight={{ troopsLost: 30, guardLeft: 0 }}
           pay={{ icon: resourceMeaning(payout.resourceId), amount: payout.amount, fits: payout.fits }}
-          xp={plan.xp}
           verb={{ kind: "attack", stamina: plan.attackStamina, onAttack: () => {} }}
           onClose={() => {}}
         />,
@@ -69,7 +68,6 @@ describe("a guarded site's card", () => {
             guardLeft: 0,
           }}
           pay={{ icon: "labor", amount: 550 }}
-          xp={82}
           verb={{ kind: "attack", stamina: 30, onAttack }}
           onClose={() => {}}
         />,
@@ -109,7 +107,6 @@ describe("a guarded site's card", () => {
             guardLeft: 740,
           }}
           pay={{ icon: "wood", amount: 650, fits: 120 }}
-          xp={90}
           verb={{ kind: "attack", stamina: 30, onAttack: () => {} }}
           onRealm={() => {}}
           onClose={() => {}}
@@ -140,7 +137,6 @@ describe("a guarded site's card", () => {
           }}
           pay={null}
           chest={{ tier: 3, lords: 128 }}
-          xp={145}
           verb={{ kind: "attack", stamina: 30, onAttack: () => {} }}
           onClose={() => {}}
         />,
@@ -180,7 +176,6 @@ describe("a guarded site's card", () => {
           guard={1_400}
           fight={{ troopsLost: 601, guardLeft: 1_033 }}
           pay={{ icon: "essence", amount: 4_200 }}
-          xp={93}
           verb={{ kind: "attack", stamina: 30, onAttack }}
           onClose={() => {}}
         />,
@@ -219,7 +214,6 @@ describe("a guarded site's card", () => {
             guardLeft: 0,
           }}
           pay={null}
-          xp={undefined}
           verb={{ kind: "attack", stamina: 30, onAttack: () => {} }}
           onClose={() => {}}
         />,
@@ -239,7 +233,6 @@ describe("a guarded site's card", () => {
           guard={1_100}
           fight={{ troopsLost: 180, guardLeft: 0 }}
           pay={null}
-          xp={undefined}
           verb={{ kind: "attack", stamina: 30, onAttack: () => {} }}
           onClose={() => {}}
         />,
@@ -262,7 +255,6 @@ describe("a guarded site's card", () => {
             guardLeft: 0,
           }}
           pay={{ icon: "labor", amount: 550, fits: 120 }}
-          xp={82}
           verb={{ kind: "attack", stamina: 30, onAttack: () => {} }}
           onRealm={onRealm}
           onClose={() => {}}
@@ -297,7 +289,6 @@ describe("a guarded site's card", () => {
             guardLeft: 0,
           }}
           pay={{ icon: "labor", amount: 550 }}
-          xp={82}
           verb={{ kind: "short", stamina: { cost: 30, held: 10, wait: 40 * 60 } }}
           onClose={() => {}}
         />,
@@ -340,7 +331,6 @@ describe("a guarded site's card with no army chosen", () => {
             guard={1_200}
             fight={undefined}
             pay={{ icon: "essence", amount: 3_600 }}
-            xp={86}
             verb={null}
             onClose={() => {}}
           />,
@@ -361,7 +351,6 @@ describe("a guarded site's card with no army chosen", () => {
           guard={1_100}
           fight={undefined}
           pay={null}
-          xp={undefined}
           verb={null}
           onClose={() => {}}
         />,
@@ -386,7 +375,6 @@ describe("a guarded site's card with no army chosen", () => {
           guard={1_100}
           fight={undefined}
           pay={{ icon: "essence", amount: 3_300 }}
-          xp={82}
           verb={null}
           onClose={() => {}}
         />,
@@ -413,7 +401,6 @@ describe("Enter on a guarded site's card", () => {
         guardLeft: fight === "wins" ? 0 : 900,
       }}
       pay={{ icon: "labor", amount: 550 }}
-      xp={82}
       verb={{ kind: "attack", stamina: 30, onAttack }}
       onClose={() => {}}
     />
@@ -445,7 +432,6 @@ describe("a guarded site's card for an army out of reach", () => {
           guard={1_100}
           fight={undefined}
           pay={{ icon: "essence", amount: 300 }}
-          xp={82}
           verb={{ kind: "far" }}
           onClose={() => {}}
         />,
@@ -466,7 +452,6 @@ describe("a guarded site's card for an army out of reach", () => {
           guard={1_100}
           fight={undefined}
           pay={{ icon: "essence", amount: 300 }}
-          xp={82}
           verb={{ kind: "move", prices: [{ of: "stamina", amount: 20 }], onMove }}
           onClose={() => {}}
         />,
@@ -496,7 +481,6 @@ it("titles a single roaming Wraith by its species", () => {
         guard={314}
         fight={undefined}
         pay={null}
-        xp={44}
         verb={null}
         onClose={() => {}}
       />,
@@ -519,7 +503,6 @@ it.each([
         fight={undefined}
         pay={null}
         chest={{ tier: 4, lords: 500 }}
-        xp={80}
         ruinChoice={{ depth: "Ethereal II", perDepth }}
         verb={{ kind: "blocked", reason: "Today's LORDS budget cannot fund this ruin." }}
         onClose={() => {}}
@@ -614,7 +597,6 @@ describe("one fight panel for every state of every target (owner, 10-27: 'this p
               guard={1_100}
               fight={fight}
               pay={null}
-              xp={undefined}
               verb={verb}
               onClose={() => {}}
             />,

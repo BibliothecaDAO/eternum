@@ -440,13 +440,7 @@ const ArmyAction = ({
 };
 
 /** The picked army in a phone's action row, with Spire while it stands at its spire. */
-const ActingArmy = ({
-  army,
-  onOpenArmy,
-}: {
-  army: DockArmy;
-  onOpenArmy: (explorerId: number) => void;
-}) => {
+const ActingArmy = ({ army, onOpenArmy }: { army: DockArmy; onOpenArmy: (explorerId: number) => void }) => {
   const spire = useArmySpireStatus(army.explorerId);
   return (
     <PickedArmy

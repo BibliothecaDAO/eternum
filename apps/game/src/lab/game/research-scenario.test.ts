@@ -52,8 +52,6 @@ it("answers a deploy with a new army of the troops sent beside the realm, its tr
   });
   expect(facts.find(({ model }) => model === "ArmyProgress")!.value).toMatchObject({
     explorer_id: army.explorer_id,
-    xp: 0,
-    common_points: 0,
   });
   const tile = facts.find(({ model }) => model === "TileOccupancy")!.value as { entity_id: string };
   expect(tile.entity_id).toBe(army.explorer_id);

@@ -53,12 +53,7 @@ export const ArmyDock = ({
     if ("army" in entry) {
       const Army = desktop ? DockArmyRow : DockToken;
       return (
-        <Army
-          key={entry.army.explorerId}
-          army={entry.army}
-          pickable={own}
-          onOpenArmy={own ? onOpenArmy : undefined}
-        />
+        <Army key={entry.army.explorerId} army={entry.army} pickable={own} onOpenArmy={own ? onOpenArmy : undefined} />
       );
     }
     return (

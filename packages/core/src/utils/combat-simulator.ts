@@ -40,8 +40,6 @@ export interface BattleOutcome {
   defenderCooldownEnd: number;
 }
 
-
-
 type RefusedBattle = { ok: false; refusal: ExchangeRefusal };
 type BattleSimulation = ({ ok: true } & BattleOutcome) | RefusedBattle;
 
@@ -102,8 +100,6 @@ export class CombatSimulator {
       defenderCooldownEnd: result.defender.battle_cooldown_end,
     };
   }
-
-
 }
 
 const combatTroops = (army: Army, relics: ResourcesIds[], now: number): ExchangeTroops => {

@@ -786,7 +786,6 @@ const ORDER_LINES = [
     refusal: undefined,
     staminaWait: undefined,
     staminaHeld: undefined,
-    site: undefined,
     byRealm: false,
     ...order,
   });

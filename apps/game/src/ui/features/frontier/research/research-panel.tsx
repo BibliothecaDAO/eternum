@@ -3,30 +3,13 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, IconGroup, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudPage, HudRanked, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
 import type { Fix } from "@/ui/design-system/kit/refusal";
-import {
-  CLOSE,
-  RESEARCH,
-  RESEARCH_TREE,
-  RESEARCHING,
-  type Rank,
-  type RankedWords,
-  tierNumeral,
-} from "@/ui/design-system/kit/words";
+import { CLOSE, RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank, type RankedWords, tierNumeral } from "@/ui/design-system/kit/words";
 import { formatAmount, formatExact } from "@bibliothecadao/types";
 import { useState } from "react";
 
 import { useLayout } from "@/shell/frame/layout";
 
-import {
-  type Branch,
-  researchSideNode,
-  researchSideChoice,
-  firstMissing,
-  type Need,
-  needLine,
-  type NodeState,
-  type TreeNode,
-} from "./research-tree";
+import { type Branch, researchSideNode, researchSideChoice, firstMissing, type Need, needLine, type NodeState, type TreeNode } from "./research-tree";
 
 /**
  * Research as a tree (the owner's pick, 20 October: "Branches"): three branches side by side, Economy, Army and Castle;
@@ -63,7 +46,6 @@ export const ResearchPanel = ({
     <NodeTile key={item.key} node={item} picked={item.key === node?.key} onPick={() => onPick(item.key)} />
   );
   const branch = (key: Branch) => nodes.filter((item) => item.branch === key);
-  const [barracks, ...training] = branch("army");
   return (
     <HudPage label={RESEARCH} icon="research" onClose={onClose}>
       <div className="grid min-h-0 flex-1 grid-cols-3 content-start gap-2 overflow-y-auto">
@@ -72,9 +54,7 @@ export const ResearchPanel = ({
         ))}
         <div className="flex flex-col gap-2">{branch("economy").map(tile)}</div>
         <div className="flex flex-col gap-2">
-          {barracks && tile(barracks)}
-          {barracks?.gate && <Gate met={barracks.gate.met} word={RESEARCH_TREE.gate(barracks.gate.name)} />}
-          {training.map(tile)}
+          {branch("army").map(tile)}
         </div>
         <div className="flex flex-col">
           {branch("castle").map((item) => (
@@ -113,19 +93,6 @@ const BranchHead = ({ branch }: { branch: Branch }) => (
   <span className="flex items-center gap-1 text-hud-label uppercase tracking-wide text-hud-muted">
     <Icon name={BRANCH_ICONS[branch]} size={16} />
     {RESEARCH_TREE.branches[branch]}
-  </span>
-);
-
-/** The Barracks' gate to the training buildings, lit once reached. */
-const Gate = ({ met, word }: { met: boolean; word: string }) => (
-  <span
-    className={cn(
-      "flex items-center justify-center gap-1 border-y border-dashed py-0.5 text-hud-label",
-      met ? "border-hud-good text-hud-good" : "border-hud-line text-hud-muted",
-    )}
-  >
-    <Icon name={met ? "unlock" : "lock"} size={14} />
-    {word}
   </span>
 );
 
@@ -280,7 +247,6 @@ const NodeChoice = ({
           </span>
         </span>
       )}
-      {node.gate && <span className="text-hud-label text-hud-muted">{node.gate.line}</span>}
       {missing && !isPrice(missing) && (
         <span className="flex items-center gap-2 text-hud-label text-hud-bad">
           <Icon name={needIcon(missing)} size={16} />

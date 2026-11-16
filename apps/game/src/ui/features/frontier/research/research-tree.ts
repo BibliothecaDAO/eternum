@@ -4,7 +4,6 @@ import { depthName, RESEARCH_TREE, SHRINE, STAMINA, type RankedWords, type Tier,
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, formatExact, formatFigure, formatPercent, rankName } from "@bibliothecadao/types";
 
-
 import { buildingIcon, buildingName } from "../build/building-names";
 import { sideMarks } from "./sides-taken";
 
@@ -102,8 +101,6 @@ export interface TreeNode {
   figures: Figure[];
   /** The nodes this one leads to (the tree's lines). */
   leadsTo: string[];
-  /** The Barracks purchase gate to the training buildings, whether it is reached, and that in words. */
-  gate?: { name: string; met: boolean; line: string };
 }
 
 const ROWS = {
@@ -155,7 +152,6 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       /** The row's figures where it has no sides; a row with sides shows its sides. */
       figures?: (tier: number) => Figure[];
       leadsTo?: string[];
-      gate?: TreeNode["gate"];
     } = {},
   ): TreeNode => {
     const tier = researchHasIndependentSides(row) ? Math.max(picks(row, 0), picks(row, 1)) : learned(row).tier;
@@ -216,7 +212,6 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
           }))
         : (options.figures?.(tier) ?? []),
       leadsTo: options.leadsTo ?? [],
-      gate: options.gate,
     };
   };
 
@@ -293,11 +288,19 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         },
       ),
     ],
-    ROW_SUPPLY_YARD: [buildingNode(
-      research.ROW_SUPPLY_YARD, BuildingType.SupplyYard, "army",
-      (tier) => ({ line: RESEARCH_TREE.newArmiesStart("Logistics"), ...logisticsStep(tier) }),
-      { figures: (tier) => [{ icon: "stamina", name: "Logistics", line: RESEARCH_TREE.everyNewArmy, ...logisticsStep(tier) }] },
-    )],
+    ROW_SUPPLY_YARD: [
+      buildingNode(
+        research.ROW_SUPPLY_YARD,
+        BuildingType.SupplyYard,
+        "army",
+        (tier) => ({ line: RESEARCH_TREE.newArmiesStart("Logistics"), ...logisticsStep(tier) }),
+        {
+          figures: (tier) => [
+            { icon: "stamina", name: "Logistics", line: RESEARCH_TREE.everyNewArmy, ...logisticsStep(tier) },
+          ],
+        },
+      ),
+    ],
     ROW_SHRINE: [
       castleNode("shrine", ROWS.shrine, SHRINE, "shrine", {
         line: RESEARCH_TREE.armiesFind(SHRINE),
@@ -374,7 +377,8 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
 };
 
 const logisticsStep = (tier: number): Pick<Figure, "now" | "next"> => {
-  const effect = (level: number) => RESEARCH_TREE.effects.logistics(formatFigure(logisticsStamina(level), { signed: true }));
+  const effect = (level: number) =>
+    RESEARCH_TREE.effects.logistics(formatFigure(logisticsStamina(level), { signed: true }));
   return { now: effect(tier), next: tier < 5 ? effect(tier + 1) : undefined };
 };
 

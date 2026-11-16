@@ -19,7 +19,7 @@ const percent = (bps: number, rank: number) => `${(bps * rank) / 100}%`;
 
 /**
  * Each kind's painting, name and what one relic of a tier does, from the contract's rule constants: one step a tier
- * (docs/plans/frontier-season-1.md, relics). 
+ * (docs/plans/frontier-season-1.md, relics).
  */
 const RELICS = {
   Blade: { icon: "damage-relic-2", effect: (rank) => RELIC_WORDS.blade(percent(rule.RELIC_BLADE_BPS, rank)) },

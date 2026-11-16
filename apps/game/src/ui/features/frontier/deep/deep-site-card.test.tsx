@@ -140,7 +140,6 @@ describe("the Deep site's live native binding", () => {
       hud.render(
         <FrontierArmy
           realm={hud.store.require("Structure", { game_id: 1, entity_id: army.owner })}
-          choosing={false}
           onClose={() => {}}
         />,
       );

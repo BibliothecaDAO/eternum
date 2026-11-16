@@ -1,24 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
-import {
-  buildingTypeTier,
-  learnResearch,
-  realmLearned,
-  researchChoice,
-  researchedDepth,
-  researchPicks,
-  researchPurchases,
-  researchTier,
-} from "./realm-research";
+import { buildingTypeTier, learnResearch, realmLearned, researchedDepth, researchPicks, researchPurchases, researchTier } from "./realm-research";
 
-// Matches the Cairo packing test, with independent Farm side counts and ordered Scouts kinds.
+// Matches the Cairo packing test, with independent Farm side counts.
 const learned =
   1n + // Farm Fields uncommon
   (1n << 3n) + // Farm Granary uncommon
   (1n << 7n) + // Workshop uncommon, Tools
-  (3n << 30n) + // Scouts' lodge epic
-  (1n << 36n) + // ...first tier on rifts
-  (2n << 40n) + // ...third tier on Sanctuaries
   (1n << 46n) + // Shrine
   (2n << 48n); // Ethereal II
 
@@ -26,22 +14,10 @@ const store = (value: bigint | undefined) =>
   ({ get: () => (value === undefined ? undefined : { game_id: 7, structure_id: 9, learned: value }) }) as never;
 
 describe("realm research", () => {
-  it("requires either site research before buying Sanctuaries and preserves the chosen rank", () => {
-    expect(() => learnResearch(0n, research.ROW_SCOUTS_LODGE, research.KIND_SANCTUARIES)).toThrow(
-      "Research Shrine or Well first",
-    );
-    for (const row of [research.ROW_SHRINE, research.ROW_WELL]) {
-      const unlocked = learnResearch(0n, row, 0);
-      const bought = learnResearch(unlocked, research.ROW_SCOUTS_LODGE, research.KIND_SANCTUARIES);
-      expect(researchTier(bought, research.ROW_SCOUTS_LODGE)).toBe(1);
-      expect(researchChoice(bought, research.ROW_SCOUTS_LODGE, 1)).toBe(research.KIND_SANCTUARIES);
-    }
-  });
   it("reads each row's tier from the chain's packing", () => {
     expect(researchTier(learned, research.ROW_FARM)).toBe(1);
     expect(researchTier(learned, research.ROW_WORKSHOP)).toBe(1);
-    expect(researchTier(learned, research.ROW_BARRACKS)).toBe(0);
-    expect(researchTier(learned, research.ROW_SCOUTS_LODGE)).toBe(3);
+    expect(researchTier(learned, research.ROW_SUPPLY_YARD)).toBe(0);
     expect(researchTier(learned, research.ROW_SHRINE)).toBe(1);
     expect(researchTier(learned, research.ROW_WELL)).toBe(0);
     expect(researchTier(learned, research.ROW_DEPTH)).toBe(2);
@@ -50,13 +26,6 @@ describe("realm research", () => {
   it("reads the choice made at each learned tier", () => {
     expect([0, 1].map((side) => researchPicks(learned, research.ROW_FARM, side))).toEqual([1, 1]);
     expect(researchPurchases(learned, research.ROW_FARM)).toBe(2);
-    expect([1, 2, 3].map((tier) => researchChoice(learned, research.ROW_SCOUTS_LODGE, tier))).toEqual([
-      research.KIND_RIFTS,
-      research.KIND_CAMPS,
-      research.KIND_SANCTUARIES,
-    ]);
-    expect(() => researchChoice(learned, research.ROW_FARM, 1)).toThrow("has no choice");
-    expect(() => researchChoice(learned, research.ROW_HUT, 1)).toThrow("has no choice");
   });
 
   it("uses the higher side for building display and retains all ten purchases", () => {
@@ -82,9 +51,6 @@ describe("realm research", () => {
     expect(researchPicks(farmRare, research.ROW_FARM, research.CHOICE_MAKE)).toBe(1);
     expect(researchPicks(farmRare, research.ROW_FARM, research.CHOICE_STORE)).toBe(2);
     expect(farmRare - learned).toBe(1n << 3n);
-    const scouts = learnResearch(learned, research.ROW_SCOUTS_LODGE, 1);
-    expect(researchTier(scouts, research.ROW_SCOUTS_LODGE)).toBe(4);
-    expect(researchChoice(scouts, research.ROW_SCOUTS_LODGE, 4)).toBe(1);
     const well = learnResearch(learned, research.ROW_WELL, 0);
     expect(researchTier(well, research.ROW_WELL)).toBe(1);
     expect(well - learned).toBe(1n << 47n);

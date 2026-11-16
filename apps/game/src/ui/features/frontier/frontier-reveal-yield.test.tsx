@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+// @vitest-environment jsdom
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
@@ -37,7 +38,7 @@ const PanelOverTheReading = () => {
     ...EARLY_ARMY,
     revealYield: useArmyRevealYield({ explorerId: 7, troopsFact: {} } as never),
   });
-  return <ArmyDetail army={army} sending={false} step={useArmyStep(army.available)} onLevelUp={() => undefined} />;
+  return <ArmyDetail army={army} sending={false} step={useArmyStep(army.available)} />;
 };
 
 it("writes a reveal's fractional reward the same in the army panel and in the Log", () => {
@@ -84,7 +85,7 @@ it("writes the same 57.6 reveal on Today's line, and keeps its fraction until th
   const { frontierDay } = await import("./deploy/deploy-fixture");
   const { frontierArmyRules } = await import("./army/progression-rules-fixture");
   const { store } = frontierDay();
-  store.applyFacts([{ model: "ArmyProgressionRules", key: "0x101", value: frontierArmyRules() }]);
+  store.applyFacts([]);
   expect(dayLogLine({ story: "ExplorationReward", storyPayload, presentation } as never, store)).toBe(
     "+58 Essence, +2 XP",
   );

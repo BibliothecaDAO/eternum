@@ -1,4 +1,3 @@
-
 import type { EtherealLayer } from "@bibliothecadao/eternum";
 import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
@@ -1647,9 +1646,7 @@ const LabArmy = ({ army }: { army: LabArmySheet }) => {
   return (
     <HudSheet
       label={base.name}
-      beside={
-        <HudIconButton icon="trash" label={ARMY_MANAGEMENT.remove} kind="danger" size="sm" onClick={noop} />
-      }
+      beside={<HudIconButton icon="trash" label={ARMY_MANAGEMENT.remove} kind="danger" size="sm" onClick={noop} />}
       onClose={noop}
     >
       <ArmyDetail

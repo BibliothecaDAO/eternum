@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+// @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -193,11 +194,6 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
           key: "0x9a2",
           value: {
             ...progress,
-            common_points: 0,
-            uncommon_points: 0,
-            rare_points: 0,
-            epic_points: 0,
-            legendary_points: 0,
           },
         },
       ] as never),

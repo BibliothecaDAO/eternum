@@ -217,15 +217,12 @@ const attackNow = (
     troops,
     guard,
     {
-
       timestamp: attack.timestamp,
       attackDistance: reachOf(store, attack, siteTile) ?? BESIDE,
       attackerBiome: attack.biome,
       defenderBiome: attack.biome,
       attackerIsStructureGuard: false,
       defenderIsStructureGuard,
-
-
     },
     configManager.getCombatRules(),
   );

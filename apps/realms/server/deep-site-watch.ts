@@ -116,15 +116,12 @@ function clearsEveryGuard(
       attacker,
       defender,
       {
-
         timestamp,
         attackDistance: 1,
         attackerBiome: BiomeType.Underground,
         defenderBiome: BiomeType.Underground,
         attackerIsStructureGuard: false,
         defenderIsStructureGuard: true,
-
-
       },
       rules,
     );
@@ -154,15 +151,7 @@ export async function readDeepSiteWatches(
   const snapshot = await fetchHeraldGameSnapshot(
     { url: shardUrl },
     player.gameId,
-    [
-      ...STAMINA_MODELS,
-      "PlayerEntry",
-      "RealmKnowledge",
-      "ArmyRelicEffect",
-      "ChestRules",
-      "DeepSite",
-      "Guard",
-    ],
+    [...STAMINA_MODELS, "PlayerEntry", "RealmKnowledge", "ArmyRelicEffect", "ChestRules", "DeepSite", "Guard"],
     player.actor,
   );
   if (BigInt(snapshot.game_id) !== BigInt(player.gameId)) throw new Error("Site watch read another game");

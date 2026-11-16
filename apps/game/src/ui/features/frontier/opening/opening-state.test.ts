@@ -4,26 +4,26 @@ import { accountProgress, nextLine, siteAlertOfferDue, openedMoments, reachedOnS
 
 it("reaches the launch always and each moment whose state is held", () => {
   expect(reachedOnState({})).toEqual(["launch"]);
-  expect(reachedOnState({ barracks: true, fight: false, deep: true })).toEqual(["launch", "barracks", "deep"]);
+  expect(reachedOnState({ barracks: true, essence: false, deep: true })).toEqual(["launch", "barracks", "deep"]);
 });
 
 it("keeps a moment the account reached before although its state has passed, and drops no moment", () => {
-  const opened = openedMoments(new Set(["fight", "not-a-moment"]), ["launch", "barracks"]);
-  expect([...opened].sort()).toEqual(["barracks", "fight", "launch"]);
+  const opened = openedMoments(new Set(["essence", "not-a-moment"]), ["launch", "barracks"]);
+  expect([...opened].sort()).toEqual(["barracks", "essence", "launch"]);
 });
 
 it("says the first unseen line of the moments reached, in the table's order, once each", () => {
-  const opened = openedMoments(new Set(), ["launch", "barracks", "fight"]);
+  const opened = openedMoments(new Set(), ["launch", "barracks", "essence"]);
   expect(nextLine(opened, new Set())).toBe("launch");
   expect(nextLine(opened, new Set(["launch"]))).toBe("barracks");
-  expect(nextLine(opened, new Set(["launch", "barracks", "fight"]))).toBeNull();
+  expect(nextLine(opened, new Set(["launch", "barracks", "essence"]))).toBeNull();
 });
 
 it("reads only the current account's progress, and calls it known only once its service has answered", () => {
   const progress = (owner: string | null, status: "signed-out" | "loading" | "ready" | "error", onDevice = false) => ({
     owner,
     status,
-    reached: new Set(["fight"]),
+    reached: new Set(["essence"]),
     seen: new Set(["launch"]),
     onDevice,
   });

@@ -25,9 +25,7 @@ export const OutcomeStrip = ({ side, total, staminaBefore, staminaAfter }: Outco
         <span className="text-hud-label text-hud-muted">Losses</span>
         <span className="text-hud-strong text-hud-bad">
           −{formatExact(side.losses)}{" "}
-          <span className="text-hud-label text-hud-cue">
-            ({percentOf(total)(side.losses)})
-          </span>
+          <span className="text-hud-label text-hud-cue">({percentOf(total)(side.losses)})</span>
         </span>
       </div>
       <div className="flex items-center justify-between">

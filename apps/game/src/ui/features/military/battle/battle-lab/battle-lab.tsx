@@ -121,7 +121,6 @@ export const BattleLab = ({
 
   const combatContext = useMemo(
     () => ({
-
       defenderAlt: state.defenderAlt,
       attackDistance: liveAttackDistance,
       attackerIsStructureGuard: snapshot?.attackerType === "structure",

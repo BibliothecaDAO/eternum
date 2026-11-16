@@ -52,4 +52,3 @@ export const endedHomeArmies = (
   [...store.armiesAtHome(realm.game_id, realm.entity_id)].filter(
     (army) => army.troops.count > 0n && !isArmyCurrent(store, realm.game_id, army.explorer_id, now),
   );
-

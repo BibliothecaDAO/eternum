@@ -11,7 +11,6 @@ import { getHyperstructureName } from "./hyperstructure";
 import { getRealmNameById } from "./realm";
 import { isViewerOwner } from "./viewer";
 
-
 const knownAddressesJSON: Record<string, string> = knownAddressesJSONData;
 
 export const getEntityInfo = (entityId: ID, playerAccount: ContractAddress | null, store: NativeFactStore) => {

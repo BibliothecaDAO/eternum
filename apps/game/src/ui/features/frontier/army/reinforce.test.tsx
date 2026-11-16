@@ -14,13 +14,7 @@ vi.mock("@/sync/action-outcome", async (original) => ({
 import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import {
-  configManager,
-  entityHomeNamespace,
-  expeditionRealmSite,
-  readExpeditionRules,
-  setBlockTimestampSource,
-} from "@bibliothecadao/eternum";
+import { configManager, entityHomeNamespace, expeditionRealmSite, readExpeditionRules, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { formatExact, getNeighborHexes, RESOURCE_PRECISION, ResourcesIds, TroopTier } from "@bibliothecadao/types";
 
 import { useDockArmies } from "../hud/dock-armies";
@@ -228,7 +222,7 @@ it("reinforces through a cleared camp with its id and refuses it after the army 
     alt: false,
     col: camp.col,
     row: camp.row,
-    clear: { xp: 90, explorer_id: 201n, home_id: fixture.realm.entity_id, reward: null },
+    clear: { explorer_id: 201n, home_id: fixture.realm.entity_id, reward: null },
   };
   fixture.store.applyFacts([{ model: "ExpeditionSite", key: "0x712", value: site }] as never);
   const add = vi.fn().mockResolvedValue({ transaction_hash: "0x2" });
