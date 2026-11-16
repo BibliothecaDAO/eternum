@@ -3,7 +3,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import type { IdentityAuth } from "./auth";
 import { handleSeal, holderLevelOf, sealOffer, type HolderFacts } from "./seal";
 import { RealmHoldingsUnavailableError } from "./realm-holdings";
-import type { LordsPriceReader } from "./lords-price";
+import type { LordsQuoteReader } from "./lords-price";
 import type { ShopAccess } from "./shop-game";
 import { createTestD1 } from "./test-d1";
 import { migrationStatements } from "./workerd-harness";
@@ -39,10 +39,10 @@ const migrated = async () => {
 const GAME = "?chain=0x1&game=1";
 /** The market as the Seal route reads it: a price in dollars, or an outage. */
 const market =
-  (usd: number): LordsPriceReader =>
+  (usd: number): LordsQuoteReader =>
   async () =>
     usd;
-const marketDown: LordsPriceReader = () => Promise.reject(new Error("CoinGecko: 429"));
+const marketDown: LordsQuoteReader = () => Promise.reject(new Error("AVNU: 429"));
 const seated: ShopAccess = async () => true;
 
 const facts = (overrides: Partial<HolderFacts>): HolderFacts => ({ heldRealmIds: [], ticket: null, ...overrides });
@@ -71,7 +71,7 @@ it("serves the signed-in account its level, whether it holds the seal, and the t
     db,
     access: seated,
     holderFacts: async () => facts({ ticket: "regular" }),
-    readLordsPrice: marketDown,
+    readLordsQuote: marketDown,
   };
   const ask = (realmsId: string | null) =>
     handleSeal(new Request(`https://realms.test/api/shop/seal${GAME}`), auth(realmsId), world);
@@ -82,7 +82,7 @@ it("serves the signed-in account its level, whether it holds the seal, and the t
     web: { cents: 499, free: { labor: true, fragments: false }, lords: null },
     store: { cents: 499, free: { labor: true, fragments: false } },
   });
-  world.readLordsPrice = market(0.003637);
+  world.readLordsQuote = market(0.003637);
   expect(((await (await ask(OWNER)).json()) as { web: { lords: number } }).web.lords).toBe(1_375);
   await db
     .prepare(
@@ -100,7 +100,7 @@ it("offers no price while holdings cannot be verified", async () => {
     db,
     access: seated,
     holderFacts: () => Promise.reject(new RealmHoldingsUnavailableError()),
-    readLordsPrice: market(0.003637),
+    readLordsQuote: market(0.003637),
   });
   expect([response.status, await response.json()]).toEqual([503, { error: "holdings_unavailable" }]);
 });
@@ -109,14 +109,14 @@ it("prices the web seal in LORDS from the market as it is asked, rounded up to 5
   vi.spyOn(console, "error").mockImplementation(() => undefined);
   const db = await migrated();
   const auth = { api: { getSession: async () => ({ user: { realmsId: OWNER } }) } } as unknown as IdentityAuth;
-  const lords = async (holderFacts: HolderFacts, readLordsPrice: LordsPriceReader) =>
+  const lords = async (holderFacts: HolderFacts, readLordsQuote: LordsQuoteReader) =>
     (
       (await (
         await handleSeal(new Request(`https://realms.test/api/shop/seal${GAME}`), auth, {
           db,
           access: seated,
           holderFacts: async () => holderFacts,
-          readLordsPrice,
+          readLordsQuote,
         })
       ).json()) as { web: { lords: number | null } }
     ).web.lords;
@@ -137,7 +137,7 @@ it("offers the seal only to a player of a running Frontier game the request name
       db,
       access,
       holderFacts: async () => facts({ heldRealmIds: [PLAIN_REALM] }),
-      readLordsPrice: market(0.003637),
+      readLordsQuote: market(0.003637),
     });
     return [response.status, await response.json()];
   };

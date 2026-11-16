@@ -13,6 +13,9 @@ const allowedIdentityConnectorPackages = [
   forbiddenScope + "penpal",
 ];
 const forbiddenHost = "cartridge" + ".gg";
+// AVNU is the one market source (`packages/chain/src/avnu.ts`): no price is read from CoinGecko's API. Links to its
+// website pages do not match.
+const forbiddenPriceHost = "api." + "coingecko" + ".com";
 const plainHttp = "http" + "://";
 
 function listRepositoryFiles() {
@@ -113,6 +116,9 @@ function runChecks() {
     }
     if (isOutsideDocumentation(path) && !isIdentityConnectorPatch(path)) {
       recordLiteralMatches(violations, path, contents, forbiddenHost, "forbidden-host");
+    }
+    if (isOutsideDocumentation(path)) {
+      recordLiteralMatches(violations, path, contents, forbiddenPriceHost, "forbidden-price-source");
     }
     checkBrowserFacingHttp(violations, path, contents);
   }

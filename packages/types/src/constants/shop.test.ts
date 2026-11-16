@@ -1,28 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { FRAGMENT, lordsFor, SEAL_CENTS, SEAL_FREE, SEAL_HOLDERS, STORE_PRODUCTS } from "./shop";
-
-/** The frozen design's price: LORDS at $0.003637, so $1 is 275 LORDS. */
-const PRICE = 0.003637;
+import { FRAGMENT, roundUpLords, SEAL_CENTS, SEAL_FREE, SEAL_HOLDERS, STORE_PRODUCTS } from "./shop";
 
 describe("the shop's prices in LORDS", () => {
-  it("quotes the design's numbers at that price", () => {
-    expect(lordsFor(100 * FRAGMENT.cents, PRICE)).toBe(275);
-    expect(lordsFor(SEAL_CENTS.web.none, PRICE)).toBe(2_750);
-    // The design says about 1,372; 1,373 whole LORDS rounds up to the next multiple of 5.
-    expect(lordsFor(SEAL_CENTS.web.realm, PRICE)).toBe(1_375);
-    // A full bar of stamina: 90 Fragments, $0.90, is 247.5 LORDS.
-    expect(lordsFor(90 * FRAGMENT.cents, PRICE)).toBe(250);
+  const lords = (amount: number) => BigInt(Math.round(amount * 1e6)) * 10n ** 12n;
+
+  it("rounds a quote up to a multiple of 5, never down, so a price cannot undercharge and always ends in 5 or 0", () => {
+    expect(roundUpLords(lords(2_749.5))).toBe(2_750);
+    expect(roundUpLords(lords(1_372.01))).toBe(1_375);
+    expect(roundUpLords(lords(2_000))).toBe(2_000);
+    expect(roundUpLords(lords(0.000001))).toBe(5);
+    expect(roundUpLords(lords(2_000.000001))).toBe(2_005);
   });
 
-  it("rounds up to a multiple of 5, never down, so a price cannot undercharge and always ends in 5 or 0", () => {
-    expect(lordsFor(1, 0.01)).toBe(5);
-    expect(lordsFor(500, 0.01)).toBe(500);
-    expect(lordsFor(501, 0.01)).toBe(505);
-    expect(lordsFor(1, 0.0099)).toBe(5);
-  });
-
-  it("refuses a price that is missing, zero or broken", () => {
-    for (const price of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) expect(() => lordsFor(100, price)).toThrow();
+  it("refuses an amount that is missing or zero", () => {
+    expect(() => roundUpLords(0n)).toThrow();
+    expect(() => roundUpLords(-1n)).toThrow();
   });
 });
 

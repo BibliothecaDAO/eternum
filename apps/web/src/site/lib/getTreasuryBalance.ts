@@ -1,4 +1,4 @@
-import { resolveEndpoint } from "@realms-world/chain";
+import { avnuUsdPrices, resolveEndpoint } from "@realms-world/chain";
 import { env } from "env";
 
 export interface EthplorerAddressInfoResponse {
@@ -53,31 +53,26 @@ const STARKNET_RPC = resolveEndpoint(env.VITE_PUBLIC_IDENTITY_RPC_URL, {
 });
 const STARKNET_DAO_WALLET = "0x049FB4281D13E1f5f488540Cd051e1507149E99CC2E22635101041Ec5E4e4557";
 
-const STARKNET_TOKENS: Record<string, { address: string; decimals: number; coingeckoId: string }> = {
+const STARKNET_TOKENS: Record<string, { address: string; decimals: number }> = {
   LORDS: {
     address: "0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49",
     decimals: 18,
-    coingeckoId: "lords",
   },
   ETH: {
     address: "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
     decimals: 18,
-    coingeckoId: "ethereum",
   },
   STRK: {
     address: "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
     decimals: 18,
-    coingeckoId: "starknet",
   },
   EKUBO: {
     address: "0x075afe6402ad5a5c20dd25e10ec3b3986acaa647b77e4ae24b0cbc9a54a27a87",
     decimals: 18,
-    coingeckoId: "ekubo-protocol",
   },
   SURVIVOR: {
     address: "0x042dd777885ad2c116be96d4d634abc90a26a790ffb5871e037dd5ae7d2ec86b",
     decimals: 18,
-    coingeckoId: "survivor-2",
   },
 };
 
@@ -110,14 +105,10 @@ async function fetchStarknetBalance(tokenAddress: string, walletAddress: string)
 }
 
 async function getStarknetPrices(): Promise<Record<string, number>> {
-  const ids = [...new Set(Object.values(STARKNET_TOKENS).map((t) => t.coingeckoId))].join(",");
-  const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
-  const data = await res.json();
-  const prices: Record<string, number> = {};
-  for (const [symbol, config] of Object.entries(STARKNET_TOKENS)) {
-    prices[symbol] = data[config.coingeckoId]?.usd ?? 0;
-  }
-  return prices;
+  const byAddress = await avnuUsdPrices(Object.values(STARKNET_TOKENS).map((token) => token.address));
+  return Object.fromEntries(
+    Object.entries(STARKNET_TOKENS).map(([symbol, token]) => [symbol, byAddress[token.address]!]),
+  );
 }
 
 export async function getTreasuryBalance(): Promise<TokenTotals> {

@@ -1,7 +1,7 @@
 /**
  * What the shop sells and what it costs, in dollars (the stores' unit): one source for the shop's screens, their
  * LORDS amounts and the store relay. A Fragment is 1 cent and refills 2 points of stamina outside the Deep; on the web an amount
- * of dollars is paid in LORDS, rounded up to 5 (`lordsFor`), at the market's price as the payment is requested.
+ * of dollars is paid in LORDS, rounded up to 5 (`roundUpLords`), from AVNU's quote as the payment is requested.
  */
 export const FRAGMENT = { cents: 1, staminaPoints: 2 } as const;
 
@@ -29,13 +29,13 @@ export const SEAL_CENTS = {
 const LORDS_STEP = 5;
 
 /**
- * LORDS that `cents` is worth at `usdPerLords`, rounded up to the next multiple of 5 so the shop never undercharges and
- * a price ends in 5 or 0. A price that is not a positive number is a fault: nothing quotes from a missing or broken
- * price.
+ * Whole LORDS for an amount in wei, rounded up to the next multiple of 5 so the shop never undercharges and a price ends
+ * in 5 or 0. The amount is a market quote already, so only the rounding lives here.
  */
-export const lordsFor = (cents: number, usdPerLords: number): number => {
-  if (!Number.isFinite(usdPerLords) || usdPerLords <= 0) throw new Error(`LORDS price ${usdPerLords} is not positive`);
-  return Math.ceil(cents / 100 / usdPerLords / LORDS_STEP) * LORDS_STEP;
+export const roundUpLords = (wei: bigint): number => {
+  if (wei <= 0n) throw new Error(`LORDS amount ${wei} is not positive`);
+  const step = BigInt(LORDS_STEP) * 10n ** 18n;
+  return Number(((wei + step - 1n) / step) * BigInt(LORDS_STEP));
 };
 
 /**

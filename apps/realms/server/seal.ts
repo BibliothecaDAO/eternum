@@ -5,7 +5,7 @@ import { type TicketTier } from "@realms-world/identity";
 import type { IdentityAuth } from "./auth";
 import { json } from "./http";
 import { RealmHoldingsUnavailableError } from "./realm-holdings";
-import { quoteLords, type LordsPriceReader } from "./lords-price";
+import { quoteLords, type LordsQuoteReader } from "./lords-price";
 import { authorizeShop, namedGame, type ShopAccess } from "./shop-game";
 
 /** What an account holds that the seal's price and free parts read: its Realms, and the tier of the campaign ticket it came by. */
@@ -46,14 +46,14 @@ export interface SealWorld {
   db: D1Database;
   access: ShopAccess;
   holderFacts: (realmsId: string) => Promise<HolderFacts>;
-  readLordsPrice: LordsPriceReader;
+  readLordsQuote: LordsQuoteReader;
 }
 
 /**
  * GET /api/shop/seal?chain=&game=: for an account that plays in that running Frontier game (the shop's one rule), its
  * holder level, whether it holds the seal, and the seal's price in cents on the web and in a store with what is free to
- * this holder. An account that holds the seal is offered no purchase. The web price carries its LORDS amount, quoted from
- * the market as the request is answered (null while the market cannot be read).
+ * this holder. An account that holds the seal is offered no purchase. The web price carries its LORDS amount, quoted by
+ * AVNU as the request is answered (null while it cannot quote).
  */
 export async function handleSeal(request: Request, auth: IdentityAuth, world: SealWorld): Promise<Response> {
   if (request.method !== "GET") return json({ error: "method_not_allowed" }, 405);
@@ -78,9 +78,9 @@ export async function handleSeal(request: Request, auth: IdentityAuth, world: Se
   });
 }
 
-/** The web price in whole LORDS at the market's price now; null while the market cannot be read, never a made-up amount. */
-const sealLords = ({ readLordsPrice }: SealWorld, holder: Holder) =>
-  quoteLords(sealOffer(holder, "web").cents, readLordsPrice);
+/** The web price in whole LORDS at AVNU's quote now; null while it cannot quote, never a made-up amount. */
+const sealLords = ({ readLordsQuote }: SealWorld, holder: Holder) =>
+  quoteLords(sealOffer(holder, "web").cents, readLordsQuote);
 
 /** The account's holder facts, or null while the chain cannot say: no offer is made on a guess. */
 const readHolderFacts = async (world: SealWorld, owner: string) => {

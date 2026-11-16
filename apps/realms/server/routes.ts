@@ -20,7 +20,7 @@ import { ACCOUNT_CLASS_HASH, socialProvidersOf, type IdentityEnv } from "./env";
 import { json } from "./http";
 import { keepBrowser, noteBrowser } from "./browsers";
 import { handleBuildOrders } from "./build-orders";
-import { marketLordsPrice } from "./lords-price";
+import { avnuQuote } from "./lords-price";
 import { handleSeal } from "./seal";
 import { holderFactsOf } from "./seal-facts";
 import { shopAccessOf } from "./shop-game";
@@ -170,7 +170,7 @@ export const routeIdentityRequest = async (
       db: env.DB,
       access: shopAccessOf(env, platform.fetchShard, nowSeconds),
       holderFacts: holderFactsOf(env),
-      readLordsPrice: marketLordsPrice(),
+      readLordsQuote: avnuQuote,
     });
   if (pathname === "/api/operator/campaign-draw" && request.method === "POST") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);

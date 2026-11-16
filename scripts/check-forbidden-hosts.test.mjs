@@ -53,3 +53,21 @@ test("first-party endpoints and unrelated patches/dependencies stay prohibited",
     ].sort((a, b) => a.path.localeCompare(b.path)),
   );
 });
+
+test("a price read from CoinGecko's API is refused wherever it is fetched; links to its pages and docs are not", () => {
+  const priceHost = ["api", "coingecko", "com"].join(".");
+  const result = checkFixture({
+    "apps/realms/server/price.ts": `fetch("https://${priceHost}/api/v3/simple/price");`,
+    "apps/web/src/treasury.ts": `fetch("https://pro-${priceHost}/api/v3/simple/price");`,
+    "apps/game/src/community.ts": `const href = "https://www.coingecko.com/en/coins/lords";`,
+    "docs/notes.md": `the old reader called ${priceHost}`,
+  });
+  assert.equal(result.ok, false);
+  assert.deepEqual(
+    result.violations.map(({ path, rule }) => ({ path, rule })).sort((a, b) => a.path.localeCompare(b.path)),
+    [
+      { path: "apps/realms/server/price.ts", rule: "forbidden-price-source" },
+      { path: "apps/web/src/treasury.ts", rule: "forbidden-price-source" },
+    ],
+  );
+});
