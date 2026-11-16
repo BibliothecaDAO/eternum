@@ -137,7 +137,7 @@ const DELETED_BY_REALMS_ID = [
  * One transaction: the account's rows removed, its wallet link closed, its `user` row left anonymous, and the deletion
  * recorded with its chat still to close.
  */
-const accountDeletion = (db: D1Database, user: User, realmsId: string, now: number): D1PreparedStatement[] => [
+export const accountDeletion = (db: D1Database, user: User, realmsId: string, now: number): D1PreparedStatement[] => [
   ...DELETED_BY_REALMS_ID.map(([table, column]) =>
     db.prepare(`DELETE FROM "${table}" WHERE "${column}" = ?`).bind(realmsId),
   ),

@@ -27,7 +27,14 @@ export interface ReceiptWorld {
 }
 
 /** What came of a verified payment, as the ledger records it. */
-type Outcome = "seal" | "seal_held" | "fragments" | "unfulfilled_price" | "unfulfilled_product";
+type Outcome =
+  | "seal"
+  | "seal_held"
+  | "fragments"
+  | "unfulfilled_price"
+  | "unfulfilled_product"
+  | "unfulfilled_deleted"
+  | "pending_eligibility";
 
 type Product = (typeof STORE_PRODUCTS)[keyof typeof STORE_PRODUCTS];
 
@@ -35,8 +42,9 @@ type Product = (typeof STORE_PRODUCTS)[keyof typeof STORE_PRODUCTS];
  * POST /api/shop/receipt: a store purchase of the signed-in account, checked with its store. Every verified payment is
  * written once to the receipt ledger with its outcome, in one transaction with what it buys: the seal, when the
  * product's price covers the seal's store price for this account's holder level, or a pending Fragment credit for the
- * co-signed hand-off. A payment that cannot be honoured is recorded as unfulfilled for the owner to refund. The same
- * receipt sent again answers as it did the first time; one another account used is refused.
+ * co-signed hand-off. A payment that cannot be honoured is recorded as unfulfilled for the owner to refund; one whose
+ * holder level cannot be read is recorded as pending, grants nothing, and is resolved when the same receipt is sent
+ * again. The same receipt sent again answers as it did the first time; one another account used is refused.
  */
 export async function handleStoreReceipt(request: Request, auth: IdentityAuth, world: ReceiptWorld): Promise<Response> {
   if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
@@ -54,87 +62,115 @@ export async function handleStoreReceipt(request: Request, auth: IdentityAuth, w
     return json({ error: "store_unavailable" }, 503);
   }
   if (!purchase) return json({ error: "receipt_refused" }, 402);
-  try {
-    return await settleReceipt(world, owner, `${asked.store}:${purchase.transactionId}`, purchase.productId);
-  } catch (error) {
-    if (error instanceof RealmHoldingsUnavailableError) return json({ error: "holdings_unavailable" }, 503);
-    throw error;
-  }
+  return settleReceipt(world, owner, `${asked.store}:${purchase.transactionId}`, purchase.productId);
 }
 
 const SETTLE_ATTEMPTS = 3;
 
 /**
- * Settles a verified payment through the ledger: an earlier row for the receipt answers it; otherwise the ledger row and
- * what it buys are written in one batch. A batch that loses a race (the same receipt, or a seal this account just
- * bought with another receipt) writes nothing, and the next pass reads the winner.
+ * Settles a verified payment through the ledger. The receipt is recorded first, whatever else can fail: an earlier row
+ * answers it; a payment whose eligibility cannot be read is recorded as pending and resolved by its retry; every other
+ * outcome is written with what it buys in one batch. What a batch buys is written only where the ledger row of that
+ * batch stands for this owner, so an account deleted before the batch runs (its row owner cleared) buys nothing. A batch
+ * that loses a race (the same receipt, or a seal this account just bought with another receipt) writes nothing, and the
+ * next pass reads the winner.
  */
 const settleReceipt = async (world: ReceiptWorld, owner: string, receipt: string, productId: string) => {
   const product = productOf(productId);
-  const now = world.now();
   let lastError: unknown;
   for (let attempt = 0; attempt < SETTLE_ATTEMPTS; attempt += 1) {
-    const recorded = await world.db
-      .prepare('SELECT "owner", "product", "outcome" FROM "store_receipts" WHERE "receipt" = ?')
-      .bind(receipt)
-      .first<{ owner: string | null; product: string; outcome: Outcome }>();
-    if (recorded)
-      return recorded.owner === owner
-        ? answerFor(recorded.outcome, productOf(recorded.product), true)
-        : json({ error: "receipt_used" }, 409);
+    const recorded = await readLedger(world.db, receipt);
+    if (recorded && recorded.owner !== owner) return json({ error: "receipt_used" }, 409);
+    if (recorded && recorded.outcome !== "pending_eligibility")
+      return answerFor(recorded.outcome, productOf(recorded.product), true);
     const outcome = await outcomeOf(world, owner, product);
+    if (recorded && outcome === "pending_eligibility") return answerFor(outcome, product, true);
+    const now = world.now();
     try {
       await world.db.batch([
-        ledgerRow(world.db, { receipt, owner, productId, outcome, now }),
+        recorded
+          ? resolvePending(world.db, { receipt, owner, outcome })
+          : ledgerRow(world.db, { receipt, owner, productId, outcome, now }),
         ...fulfilment(world.db, { receipt, owner, product, outcome, now }),
       ]);
-      return answerFor(outcome, product, false);
     } catch (error) {
       lastError = error;
+      continue;
     }
+    const settled = await readLedger(world.db, receipt);
+    if (!settled) throw new Error("ledger_row_missing_after_settlement");
+    return answerFor(settled.outcome, product, false);
   }
   throw lastError;
 };
+
+const readLedger = (db: D1Database, receipt: string) =>
+  db
+    .prepare('SELECT "owner", "product", "outcome" FROM "store_receipts" WHERE "receipt" = ?')
+    .bind(receipt)
+    .first<{ owner: string | null; product: string; outcome: Outcome }>();
 
 /** What this payment can buy this account now; the seal's price is judged by the account's live holder level. */
 const outcomeOf = async (world: ReceiptWorld, owner: string, product: Product | undefined): Promise<Outcome> => {
   if (!product) return "unfulfilled_product";
   if (product.kind === "fragments") return "fragments";
-  const holder = product.cents < SEAL_CENTS.store.none ? holderLevelOf(await world.holderFacts(owner)) : "none";
-  if (product.cents < SEAL_CENTS.store[holder]) return "unfulfilled_price";
-  return (await readSeal(world.db, owner)) ? "seal_held" : "seal";
+  try {
+    const holder = product.cents < SEAL_CENTS.store.none ? holderLevelOf(await world.holderFacts(owner)) : "none";
+    if (product.cents < SEAL_CENTS.store[holder]) return "unfulfilled_price";
+    return (await readSeal(world.db, owner)) ? "seal_held" : "seal";
+  } catch (error) {
+    if (error instanceof RealmHoldingsUnavailableError) return "pending_eligibility";
+    throw error;
+  }
 };
 
 const productOf = (productId: string): Product | undefined =>
   Object.hasOwn(STORE_PRODUCTS, productId) ? STORE_PRODUCTS[productId as keyof typeof STORE_PRODUCTS] : undefined;
 
+/** The first record of a payment; an owner already deleted is not written, the payment stays recorded for a refund. */
 const ledgerRow = (
   db: D1Database,
   row: { receipt: string; owner: string; productId: string; outcome: Outcome; now: number },
 ) =>
   db
     .prepare(
-      'INSERT INTO "store_receipts" ("receipt", "product", "received_at", "owner", "outcome") VALUES (?, ?, ?, ?, ?)',
+      `INSERT INTO "store_receipts" ("receipt", "product", "received_at", "owner", "outcome")
+       SELECT ?1, ?2, ?3, CASE WHEN "deleted" THEN NULL ELSE ?4 END, CASE WHEN "deleted" THEN 'unfulfilled_deleted' ELSE ?5 END
+       FROM (SELECT EXISTS (SELECT 1 FROM "account_deletions" WHERE "realms_id" = ?4) AS "deleted")`,
     )
     .bind(row.receipt, row.productId, row.now, row.owner, row.outcome);
 
-/** The rows an outcome buys, written in the same batch as its ledger row. */
+/** A pending payment's outcome, once eligibility is known; only the owner who sent it, only while it is still pending. */
+const resolvePending = (db: D1Database, row: { receipt: string; owner: string; outcome: Outcome }) =>
+  db
+    .prepare(
+      'UPDATE "store_receipts" SET "outcome" = ? WHERE "receipt" = ? AND "owner" = ? AND "outcome" = \'pending_eligibility\'',
+    )
+    .bind(row.outcome, row.receipt, row.owner);
+
+/** Written in the same batch as the ledger row, and only where that row stands as this outcome for this owner. */
 const fulfilment = (
   db: D1Database,
   buy: { receipt: string; owner: string; product: Product | undefined; outcome: Outcome; now: number },
 ) => {
   const { receipt, owner, product, outcome, now } = buy;
+  const stands =
+    'WHERE EXISTS (SELECT 1 FROM "store_receipts" WHERE "receipt" = ?1 AND "owner" = ?2 AND "outcome" = ?3)';
   if (outcome === "seal" && product?.kind === "seal")
     return [
       db
-        .prepare('INSERT INTO "seal" ("owner", "paid_cents", "source", "receipt", "granted_at") VALUES (?, ?, ?, ?, ?)')
-        .bind(owner, product.cents, "store", receipt, now),
+        .prepare(
+          `INSERT INTO "seal" ("owner", "paid_cents", "source", "receipt", "granted_at") SELECT ?2, ?4, 'store', ?1, ?5 ${stands}`,
+        )
+        .bind(receipt, owner, outcome, product.cents, now),
     ];
   if (outcome === "fragments" && product?.kind === "fragments")
     return [
       db
-        .prepare('INSERT INTO "fragment_credits" ("receipt", "owner", "fragments", "created_at") VALUES (?, ?, ?, ?)')
-        .bind(receipt, owner, product.fragments, now),
+        .prepare(
+          `INSERT INTO "fragment_credits" ("receipt", "owner", "fragments", "created_at") SELECT ?1, ?2, ?4, ?5 ${stands}`,
+        )
+        .bind(receipt, owner, outcome, product.fragments, now),
     ];
   return [];
 };
@@ -152,6 +188,10 @@ const answerFor = (outcome: Outcome, product: Product | undefined, repeated: boo
       return json({ error: "seal_price_not_for_holder" }, 409);
     case "unfulfilled_product":
       return json({ error: "unknown_product" }, 422);
+    case "unfulfilled_deleted":
+      return json({ error: "account_deleted" }, 410);
+    case "pending_eligibility":
+      return json({ error: "holdings_unavailable" }, 503);
   }
 };
 
