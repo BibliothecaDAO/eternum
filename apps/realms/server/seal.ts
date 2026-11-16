@@ -40,7 +40,7 @@ export const readSeal = (db: D1Database, owner: string) =>
     .first<{ paid_cents: number; source: "web" | "store"; granted_at: number }>();
 
 /** The market price of one LORDS in dollars fixed at the season's launch, or null before a season's launch has set it. */
-export const readSealLaunchPrice = async (db: D1Database): Promise<number | null> =>
+const readSealLaunchPrice = async (db: D1Database): Promise<number | null> =>
   (await db.prepare('SELECT "usd" FROM "seal_launch_price" WHERE "id" = 1').first<{ usd: number }>())?.usd ?? null;
 
 /**

@@ -95,6 +95,7 @@ const dropEndedGames = async (db: D1Database, { days, readChains }: ShopCalendar
       readChains.includes(row.chain_id) &&
       !days.some((day) => day.chainId === row.chain_id && day.gameId === row.game_id),
   );
+  if (ended.length === 0) return;
   await db.batch(
     ended.map((row) =>
       db.prepare('DELETE FROM "lords_price" WHERE "chain_id" = ? AND "game_id" = ?').bind(row.chain_id, row.game_id),
