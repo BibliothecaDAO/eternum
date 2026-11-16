@@ -304,12 +304,25 @@ fn a_city_builds_lodges_and_deploys_their_scout_stock_at_two_wheat_each() {
 }
 
 #[test]
-fn range_produces_deployable_crossbows_and_depot_prices_deployment_and_reinforcement_at_each_tier() {
+#[test_case(false, name: "precision_recipe")]
+#[test_case(true, name: "whole_recipe")]
+fn range_produces_deployable_crossbows_and_depot_prices_deployment_and_reinforcement_at_each_tier(whole_recipe: bool) {
     let (_, source) = super::preset_projection::current_definition("frontier-check");
     let mut preset = frontier_preset();
     preset.structures.board = source.structures.board;
     preset.structures.buildings = source.structures.buildings;
     preset.rules.building_config.base_population = 40;
+    if whole_recipe {
+        let mut recipes = array![];
+        for entry in preset.resources.production {
+            recipes.append(if *entry.resource_type == 29 {
+                crate::production::RecipeConfig {resource_type: 29, recipe: crate::production::ProductionRecipe {
+                    simple_output: 1, simple_inputs: array![ResourceAmount {resource_type: WHEAT, amount: 2}].span(), ..*entry.recipe
+                }}
+            } else { *entry });
+        }
+        preset.resources.production = recipes.span();
+    }
     let (d, home) = frontier_realm(with_realm_rate(preset, 29, RESOURCE_PRECISION.try_into().unwrap()));
     allow_armies(d, home);
     grant(d, home, crate::resources::LABOR, 100000 * RESOURCE_PRECISION);

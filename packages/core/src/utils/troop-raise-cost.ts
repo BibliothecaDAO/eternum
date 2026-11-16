@@ -37,6 +37,7 @@ export const readTroopRaiseCost = (
   const recipe = store.require("ProductionRecipe", { game_id: gameId, resource_type: troopResource });
   if (recipe.simple_output === 0n) throw new Error(`Troop ${troopResource} has no recipe to deploy from`);
   const deployed = BigInt(troops) * BigInt(RESOURCE_PRECISION);
+  const denominator = recipe.simple_output * BigInt(RESOURCE_PRECISION);
   const manager = new ResourceManager(store, structureId, gameId);
   const costs: TroopRaiseCost[] = [];
   for (const input of recipe.simple_inputs) {
@@ -44,12 +45,13 @@ export const readTroopRaiseCost = (
     if (held === undefined) return undefined;
     const discount =
       input.resource_type === ResourcesIds.Wheat
-        ? (board.ration_step * rations * recipe.simple_output) / BigInt(RESOURCE_PRECISION)
+        ? board.ration_step * rations * recipe.simple_output
         : 0n;
-    const amount = input.amount > discount ? input.amount - discount : 0n;
+    const base = input.amount * BigInt(RESOURCE_PRECISION);
+    const amount = base > discount ? base - discount : 0n;
     costs.push({
       resource: input.resource_type,
-      amount: (amount * deployed + recipe.simple_output - 1n) / recipe.simple_output,
+      amount: (amount * deployed + denominator - 1n) / denominator,
       held: BigInt(held),
     });
   }

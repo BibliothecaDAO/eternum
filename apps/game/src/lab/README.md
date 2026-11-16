@@ -312,3 +312,7 @@ Frontier town: open the Realm, tap a free plot and choose Range or Conscription 
 from Kingdom. The Range produces Crossbows for Deploy. Tap the Camp or Depot to buy its next tier: Camp increases
 all troop buildings’ output; Depot reduces deployment and reinforcement wheat. Each is unique and construction buys
 its first tier. Logistics remains on the Supply Yard. The painted-buildings lab includes every town building.
+
+`build.sh playtest-town` opens `/lab/game?scenario=town` on desktop and phone, selects Crossbows in Deploy,
+then deploys 400. It checks the new army, the 200 Crossbows left, and the 280 wheat left after the first Depot tier.
+This is a lab proof; the native command suite proves Range production and both town research ladders.

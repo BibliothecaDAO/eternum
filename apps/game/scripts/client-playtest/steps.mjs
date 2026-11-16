@@ -720,6 +720,11 @@ const SCOUT_DEPLOY_STEPS = [
   ),
 ];
 
+const TOWN_DEPLOY_STEPS = [
+  {name: "enter-on-map", settleMs: 3000, verify: inScene("map")},
+  clickToResultStep("deploy-crossbows", "CreateExplorer", (context) => deployFromTheDock(context, 400, "Crossbows"), crossbowsDeployed),
+];
+
 const DEPLOY_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   clickToResultStep("deploy", "CreateExplorer", deployFromTheDock, armyDeployed),
@@ -748,19 +753,27 @@ async function deployFromTheDock({ browser }, amount, troopName) {
 }
 
 function scoutsDeployed(context) {
+  return troopDeployment(context, "Paladin", 32, 200_000_000_000n);
+}
+
+function crossbowsDeployed(context) {
+  return troopDeployment(context, "Crossbowman", 29, 280_000_000_000n);
+}
+
+function troopDeployment(context, category, resource, wheat) {
   const answer = (context.actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "CreateExplorer").at(-1);
   if (!answer) return undefined;
   const army = answer.answered.find(({ model }) => model === "ExplorerTroops")?.value;
   const balances = answer.answered.filter(({ model }) => model === "ResourceBalance").map(({ value }) => value);
   const balance = (resource) => balances.find(({ resource_type }) => Number(resource_type) === resource)?.balance;
   if (
-    army?.troops.category !== "Paladin" ||
+    army?.troops.category !== category ||
     BigInt(army.troops.count) !== 400_000_000_000n ||
-    BigInt(balance(32) ?? -1) !== 200_000_000_000n ||
-    BigInt(balance(35) ?? -1) !== 200_000_000_000n ||
+    BigInt(balance(resource) ?? -1) !== 200_000_000_000n ||
+    BigInt(balance(35) ?? -1) !== wheat ||
     balance(26) !== undefined
   )
-    throw new Error("Scout deployment changed the wrong troops or price");
+    throw new Error("Deployment changed the wrong troops or price");
   return armyDeployed(context);
 }
 
@@ -6006,6 +6019,7 @@ export const STEP_SETS = {
   "lab-actions-transfer": { game: labSpireGame("merge-loses-training"), steps: transferActionSteps() },
   "lab-battle-target": { game: labSpireGame("battle-target"), steps: BATTLE_TARGET_STEPS },
   "lab-deep-battle-target": { game: labSpireGame("deep-battle-target"), steps: DEEP_BATTLE_TARGET_STEPS },
+  "lab-town": {game: labSpireGame("town"), steps: TOWN_DEPLOY_STEPS},
   "lab-scouts": { game: labSpireGame("scouts"), steps: SCOUT_DEPLOY_STEPS },
   "lab-actions-deploy": { game: labSpireGame("actions"), steps: DEPLOY_ACTION_STEPS },
   "lab-actions-research": { game: labSpireGame("research"), steps: RESEARCH_ACTION_STEPS },

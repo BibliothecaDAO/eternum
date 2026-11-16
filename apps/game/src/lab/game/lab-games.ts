@@ -1,4 +1,5 @@
 import { battleTargetScenario, deepBattleTargetScenario } from "./battle-target-scenario";
+import { townScenario } from "./town-scenario";
 import { scoutsScenario } from "./scouts-scenario";
 import { siteEffectsScenario } from "./site-effects-scenario";
 import { farEyeScenario } from "./far-eye-scenario";
@@ -64,6 +65,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "from-home": () => ({ ...spireScenario(), entersFromHome: true }),
   actions: actionsScenario,
   scouts: scoutsScenario,
+  town: townScenario,
   "battle-target": battleTargetScenario,
   "high-ground": highGroundScenario,
   "day-end": dayEndScenario,
