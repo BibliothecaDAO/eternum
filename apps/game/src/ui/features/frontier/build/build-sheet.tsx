@@ -253,8 +253,7 @@ const buildTile = (option: BuildOption, holdings: Holdings): BuildTile => ({
  */
 const standingOf = (option: BuildOption, { held, perHour, free }: Holdings): BuildTile["standing"] => {
   if (option.standing === "built") return { kind: "built" };
-  if (option.standing !== "open")
-    return { kind: "level", level: option.standing.level };
+  if (option.standing !== "open") return { kind: "level", level: option.standing.level };
   const missing = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
   const short: Extract<BuildTile["standing"], { kind: "price" }>["short"] = missing
     ? {

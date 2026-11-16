@@ -57,8 +57,7 @@ describe("the day log's line for a story", () => {
     const { store } = campBeside();
     // Prod's rules: 2 XP a reveal. The fixture's site started with 1,100 guards, at depth I pays 123 XP whatever
     // the last attack killed (√(25 × 1,100) = 165, halved then multiplied by 1.5).
-    store.applyFacts([
-    ] as never);
+    store.applyFacts([] as never);
     const reveal = { resource_type: ResourcesIds.Labor, amount: "98400000000", coord: { x: 1, y: 1 } };
     expect(dayLogLine(story("ExplorationReward", reveal), store)).toBe("+98 Labor, +2 XP");
     expect(dayLogLine(story("SitePayout", { site_id: SITE, reward: null, xp: 123 }, "Troll cleared"), store)).toBe(

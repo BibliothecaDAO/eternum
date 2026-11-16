@@ -263,7 +263,7 @@ const FrontierHudBody = ({
           rules={rules}
           realm={realm ?? visited}
           dayEnd={own && <DayEndBlock dayEnd={dayEnd} />}
-          onOpenArmy={realm && !visit ? openArmy : undefined}
+          own={own}
           onClose={close}
         />
       )}

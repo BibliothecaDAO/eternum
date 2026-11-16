@@ -389,3 +389,11 @@ estimate_gb = 4
 [kind.audit-army-ui]
 cmd = 'pnpm run build:packages && pnpm exec tsc -p apps/game/tsconfig.json --noEmit'
 estimate_gb = 6
+
+[kind.test-army-ui]
+cmd = 'pnpm run build:packages && pnpm --dir apps/game test'
+estimate_gb = 6
+
+[kind.audit-army-knip]
+cmd = 'pnpm run knip'
+estimate_gb = 6

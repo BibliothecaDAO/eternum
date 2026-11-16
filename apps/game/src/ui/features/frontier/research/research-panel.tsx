@@ -53,9 +53,7 @@ export const ResearchPanel = ({
           <BranchHead key={key} branch={key} />
         ))}
         <div className="flex flex-col gap-2">{branch("economy").map(tile)}</div>
-        <div className="flex flex-col gap-2">
-          {branch("army").map(tile)}
-        </div>
+        <div className="flex flex-col gap-2">{branch("army").map(tile)}</div>
         <div className="flex flex-col">
           {branch("castle").map((item) => (
             <div key={item.key} className="flex flex-col pb-2">

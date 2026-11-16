@@ -1,7 +1,5 @@
 import { expect, it } from "vitest";
 
-
-
 import { messageWords, placeMetadata, placeOf } from "./place";
 
 const GAME = { chainId: "0x1ab", gameId: 3, name: "Frontier 3" };

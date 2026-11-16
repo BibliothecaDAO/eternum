@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 // @vitest-environment jsdom
+// @vitest-environment jsdom
+// @vitest-environment jsdom
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it } from "vitest";
@@ -9,9 +11,14 @@ let host: HTMLDivElement;
 let root: Root;
 beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  host = document.createElement("div"); document.body.append(host); root = createRoot(host);
+  host = document.createElement("div");
+  document.body.append(host);
+  root = createRoot(host);
 });
-afterEach(() => { act(() => root.unmount()); host.remove(); });
+afterEach(() => {
+  act(() => root.unmount());
+  host.remove();
+});
 it("reads on its first step when the stamina is full again and what each tile explored sends home", () => {
   act(() => root.render(<ArmyDetail army={EARLY_ARMY} />));
   const stats = host.querySelector('[data-army-step="stats"]')!;
@@ -41,14 +48,7 @@ it("reads on its first step when the stamina is full again and what each tile ex
 it("reads its stamina on one line: 18/140, a bar of one segment per explore's 20 stamina, and when it is full", () => {
   // The owner's army (26 October): 18 of 140 stamina, one explore costing 20; layout A (27 October).
   const army = { ...EARLY_ARMY, stamina: { current: 18, max: 140, perExplore: 20 } };
-  act(() =>
-    root.render(
-      <ArmyDetail
-        army={army}
-        refill={<button type="button">Refill</button>}
-      />,
-    ),
-  );
+  act(() => root.render(<ArmyDetail army={army} refill={<button type="button">Refill</button>} />));
   const meter = host.querySelector('[role="meter"][aria-label="stamina"]')!;
   expect([meter.getAttribute("aria-valuenow"), meter.getAttribute("aria-valuemax")]).toEqual(["18", "140"]);
   const fills = [...meter.querySelectorAll<HTMLElement>(".ui-meter > i")].map((fill) => fill.style.width);

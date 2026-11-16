@@ -1,12 +1,11 @@
 // @vitest-environment jsdom
 
-
+// @vitest-environment jsdom
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { skillPointGain } from "@bibliothecadao/types";
 import { Plate } from "./map-plates";
-
 
 import { Token, tokenReading, tokenSize } from "./map-plate-token";
 import type { ArmyPlate, StructurePlate } from "./map-plate-model";

@@ -23,11 +23,13 @@ describe("army merge choice", () => {
     [5, 1, true],
     [5, 5, false],
   ])("confirms the loss of Logistics %s into %s", (source, target, confirmLoss) => {
-    expect(explorerTransferPlan({
-      ...base,
-      sourceProgress: { ...common, logistics: source },
-      targetProgress: { ...common, logistics: target },
-    })).toEqual({ known: true, confirmLoss, fullFits: true, partialMax: 2 });
+    expect(
+      explorerTransferPlan({
+        ...base,
+        sourceProgress: { ...common, logistics: source },
+        targetProgress: { ...common, logistics: target },
+      }),
+    ).toEqual({ known: true, confirmLoss, fullFits: true, partialMax: 2 });
   });
   it("refuses a full merge that exceeds the target cap even when the source has more progression", () => {
     expect(explorerTransferPlan({ ...base, targetCap: 3, sourceProgress: { ...common, logistics: 5 } })).toMatchObject({

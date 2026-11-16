@@ -28,7 +28,7 @@ export const FrontierToday = ({
   rules,
   realm,
   dayEnd,
-  onOpenArmy,
+  own,
   onClose,
 }: {
   rules: ExpeditionRules;
@@ -36,8 +36,8 @@ export const FrontierToday = ({
   realm: NativeRows["Structure"] | null;
   /** The player's own day end (DayEndBlock); none for a realm that is not theirs. */
   dayEnd?: ReactNode;
-  /** Opens an army's sheet, for the row of armies with a tier to buy; none for a realm that is not the player's. */
-  onOpenArmy?: (explorerId: number) => void;
+  /** Whether this is the player’s own realm, whose quests can be shown. */
+  own?: boolean;
   onClose: () => void;
 }) => {
   const { setup } = useGame();
@@ -54,7 +54,7 @@ export const FrontierToday = ({
   const ended = day !== undefined && today !== undefined && day < today;
   const { onShare, sheet } = useDayShare(realm, ended ? day : undefined, played);
   const week =
-    onOpenArmy && realm && today !== undefined && day === today ? (
+    own && realm && today !== undefined && day === today ? (
       <OpeningPartGate part="today">
         <TodayWeek week={readQuestWeek(setup.store, realm.game_id, realm.entity_id, today - 1)} />
       </OpeningPartGate>

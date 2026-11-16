@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 // @vitest-environment jsdom
+// @vitest-environment jsdom
+// @vitest-environment jsdom
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -207,9 +209,7 @@ it("lets the owner choose the other research side after the first reaches V", ()
 
 it("says under every research figure, on every building's card, what the figure does", () => {
   const buildings = readResearchTree(MID_REALM).filter((node) => node.maxTier === 5);
-  expect(buildings.map(({ name }) => name)).toEqual(
-    ["Farm", "Workshop", "Hut", "Supply yard"],
-  );
+  expect(buildings.map(({ name }) => name)).toEqual(["Farm", "Workshop", "Hut", "Supply yard"]);
   for (const node of buildings) {
     draw(node.row);
     const shown = rows().map(([word, line]) => [word, line]);

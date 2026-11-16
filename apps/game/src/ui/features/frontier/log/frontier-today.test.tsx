@@ -20,7 +20,7 @@ const asked = vi.hoisted(() => ({
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowSeconds: () => NOW }));
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: new NativeFactStore() } }) }));
 vi.mock("../hud/dock-armies", () => ({
-  useDockArmies: (realm: unknown) => (realm ? [{ explorerId: 9, }] : []),
+  useDockArmies: (realm: unknown) => (realm ? [{ explorerId: 9 }] : []),
 }));
 // History answers for the owner it is asked about: the watched player lost an army to a camp and cleared it with another
 // in one transaction today, then a guard held.

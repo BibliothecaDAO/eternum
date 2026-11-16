@@ -272,9 +272,7 @@ const bandTone = (standing: BuildTile["standing"]) =>
  * refusal names the Barracks), or a tick.
  */
 const Band = ({ standing }: { standing: BuildTile["standing"] }) => (
-  <HudChip
-    tone={bandTone(standing)}
-  >
+  <HudChip tone={bandTone(standing)}>
     <span className="flex items-center gap-1 whitespace-nowrap tabular-nums">
       {standing.kind === "level" && (
         <>

@@ -114,11 +114,21 @@ it("uses Spoils for the preview while receipts retain the exact credited reward"
     {
       model: "ExpeditionSite",
       key: "0x72",
-      value: { ...site, clear: { explorer_id: 201n, home_id: 7n, reward: { resource_type: ResourcesIds.Labor, amount: 1_980_000_000_000n } } },
+      value: {
+        ...site,
+        clear: {
+          explorer_id: 201n,
+          home_id: 7n,
+          reward: { resource_type: ResourcesIds.Labor, amount: 1_980_000_000_000n },
+        },
+      },
     },
   ]);
   setBlockTimestampSource(() => 950);
-  expect(readClearedSite(store, 1, SITE_TILE)?.site.clear?.reward).toEqual({ resource_type: ResourcesIds.Labor, amount: 1_980_000_000_000n });
+  expect(readClearedSite(store, 1, SITE_TILE)?.site.clear?.reward).toEqual({
+    resource_type: ResourcesIds.Labor,
+    amount: 1_980_000_000_000n,
+  });
 });
 
 it("leaves the Deep unchanged and refuses unknown effect facts", () => {
@@ -126,7 +136,10 @@ it("leaves the Deep unchanged and refuses unknown effect facts", () => {
   const deep = { ...site, row: 32 };
   store.applyFacts([{ model: "ExpeditionSite", key: "0x72", value: deep }]);
   expect(getGuardsByStructure(structure, store)?.[0].troops.count).toBe(1_100_000_000_000n);
-  expect(readSiteReward(store, deep).known?.reward).toEqual({ resourceType: ResourcesIds.Labor, amount: 1_375_000_000_000n });
+  expect(readSiteReward(store, deep).known?.reward).toEqual({
+    resourceType: ResourcesIds.Labor,
+    amount: 1_375_000_000_000n,
+  });
   store.applyFacts([
     { model: "ExpeditionSite", key: "0x72", value: site },
     { model: "HomeAspect", key: "0xa002", value: null },

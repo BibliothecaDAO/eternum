@@ -1,4 +1,3 @@
-
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";

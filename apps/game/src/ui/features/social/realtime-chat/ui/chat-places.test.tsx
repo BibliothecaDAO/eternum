@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 // @vitest-environment jsdom
+// @vitest-environment jsdom
+// @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -48,8 +50,6 @@ const { layOutChatLists } = await import("@/hooks/use-stick-to-latest.test-suppo
 const { LabGame } = await import("@/ui/features/debug/kit-lab/lab-game");
 const { useUIStore } = await import("@/hooks/store/use-ui-store");
 const { readStructureMeaning } = await import("@/ui/design-system/domain-icon-meaning");
-const { MAP_SITES } = await import("@/config/map-sites");
-const { mapSite } = await import("@/ui/features/frontier/sites/map-site-plan");
 const { useGameChat } = await import("@/ui/features/world/containers/hud-chat-window");
 const { GLOBAL_ROOM } = await import("../model/chat-rooms");
 const { useRealtimeChatStore } = await import("../model/store");

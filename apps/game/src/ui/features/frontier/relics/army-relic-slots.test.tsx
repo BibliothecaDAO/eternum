@@ -69,7 +69,11 @@ it("shows the relics running with their time left, then the three slots with wha
   // The Plunder's effect ended at second 900: only the Ward runs, 30 minutes left.
   expect(host.querySelector("[data-relics-running]")?.textContent).toBe("Rare Ward · 30m left");
   const rows = [...host.querySelectorAll("[data-army-relics] .ui-row")].map((row) => row.textContent);
-  expect(rows).toEqual(["Uncommon Blade+20% damage dealtSwitch on", "Empty slot", "Common Plunder+20% labor and Essence from a cleared siteSwitch on"]);
+  expect(rows).toEqual([
+    "Uncommon Blade+20% damage dealtSwitch on",
+    "Empty slot",
+    "Common Plunder+20% labor and Essence from a cleared siteSwitch on",
+  ]);
 });
 
 it("switches a relic on for free, naming its slot and the id the contract decodes", async () => {

@@ -1,7 +1,6 @@
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { describe, expect, it } from "vitest";
 
-
 import { EARLY_REALM, MID_REALM } from "./progression-fixture";
 import { canResearchNow, firstMissing, needLine, readResearchTree, type RealmResearchFacts } from "./research-tree";
 

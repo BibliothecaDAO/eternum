@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 // @vitest-environment jsdom
+// @vitest-environment jsdom
+// @vitest-environment jsdom
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it } from "vitest";
@@ -48,9 +50,7 @@ const price = (row: number, tier: number) => ({
     labor: String((row === research.ROW_SHRINE ? 0n : 3_000n) * PRECISION),
   },
 });
-const ALL_PRICES = RESEARCH_ROWS.map((row) =>
-  [1, 2, 3, 4].map((tier) => price(row, tier)),
-).flat();
+const ALL_PRICES = RESEARCH_ROWS.map((row) => [1, 2, 3, 4].map((tier) => price(row, tier))).flat();
 
 it("keeps the tree unknown while a price it reads is missing, then reads each node's exact price once it arrives", () => {
   const { store, realm } = realmBoard();

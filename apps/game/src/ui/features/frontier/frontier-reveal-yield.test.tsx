@@ -2,6 +2,10 @@
 // @vitest-environment jsdom
 // @vitest-environment jsdom
 // @vitest-environment jsdom
+// @vitest-environment jsdom
+// @vitest-environment jsdom
+// @vitest-environment jsdom
+// @vitest-environment jsdom
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
@@ -85,9 +89,7 @@ it("writes the same 57.6 reveal on Today's line, and keeps its fraction until th
   } as never);
   const { frontierDay } = await import("./deploy/deploy-fixture");
   const { store } = frontierDay();
-  expect(dayLogLine({ story: "ExplorationReward", storyPayload, presentation } as never, store)).toBe(
-    "+58 Essence",
-  );
+  expect(dayLogLine({ story: "ExplorationReward", storyPayload, presentation } as never, store)).toBe("+58 Essence");
 
   const fiveReveals = Array.from({ length: 5 }, () => ({
     story: "ExplorationReward",

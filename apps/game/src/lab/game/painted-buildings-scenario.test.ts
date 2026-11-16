@@ -11,11 +11,7 @@ it("opens a Kingdom with eight distinct buildings, tier III production and two u
   const buildings = [...store.rows("Building")];
   expect(buildings).toHaveLength(9);
   expect(new Set(buildings.map((building) => building.category)).size).toBe(8);
-  for (const category of [
-    BuildingType.ResourceWheat,
-    BuildingType.ResourceLabor,
-    BuildingType.WorkersHut,
-  ]) {
+  for (const category of [BuildingType.ResourceWheat, BuildingType.ResourceLabor, BuildingType.WorkersHut]) {
     expect(buildingTypeTier(store, 1, 7, category)).toBe(3);
   }
   // Frontier's sites as its contracts make them: nobody's, standing, guarded.

@@ -175,11 +175,7 @@ it("forecasts Blade, Ward and Plunder at the attack second and drops them exactl
   const action = attack({ col: 41, row: 12, alt: false });
   const read = (timestamp: number) => readSiteCard(store, site, structure, SITE_TILE, { ...action, timestamp });
   expect(read(350)).toMatchObject({ fight: { troopsLost: 457, guardLeft: 478 }, payout: { amount: 825 } });
-  store.applyFacts([
-    relicEffectFact("Blade"),
-    relicEffectFact("Ward"),
-    relicEffectFact("Plunder"),
-  ]);
+  store.applyFacts([relicEffectFact("Blade"), relicEffectFact("Ward"), relicEffectFact("Plunder")]);
   expect(read(379)).toMatchObject({
     fight: { troopsLost: 434, guardLeft: 416 },
     payout: { amount: 990, fits: 990 },
@@ -286,9 +282,7 @@ it("keeps the same site's opening Charge spent after a confirmed update and a fr
   const army = attack({ col: 41, row: 12, alt: false });
   store.applyFacts([{ model: "ArmyCombat", key: wireKey, value: { ...combat, charge: 5 } }]);
   expect(readSiteCard(store, site, structure, SITE_TILE, army).fight).toEqual({ troopsLost: 327, guardLeft: 478 });
-  store.applyFacts([
-    { model: "ArmyCombat", key: wireKey, value: { ...combat, last_target: site.entity_id } },
-  ]);
+  store.applyFacts([{ model: "ArmyCombat", key: wireKey, value: { ...combat, last_target: site.entity_id } }]);
   expect(readSiteCard(store, site, structure, SITE_TILE, army).fight).toEqual({ troopsLost: 457, guardLeft: 478 });
   const restored = reloadSiteFacts(store);
   restored.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });

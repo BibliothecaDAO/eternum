@@ -17,7 +17,7 @@ import { TransferTroopsSheet, useSelectedTransfer } from "@/ui/features/frontier
 import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { HudIconButton, HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { ARMY, ARMY_MANAGEMENT, EVENTS_WORDS, LINK_WALLET_FOR_LORDS, OFFLINE, PAYOUTS_PAUSED, ROOM_ASK, type Rank, startsNewArmies, TRAINING_BUILDINGS, WITHDRAWALS_CLOSED, YOU, siteDepthName } from "@/ui/design-system/kit/words";
+import { ARMY, ARMY_MANAGEMENT, EVENTS_WORDS, LINK_WALLET_FOR_LORDS, OFFLINE, PAYOUTS_PAUSED, ROOM_ASK, type Rank, WITHDRAWALS_CLOSED, YOU, siteDepthName } from "@/ui/design-system/kit/words";
 import { ArmyList, ArmyRow, OpenSlotRow } from "@/ui/features/frontier/hud/army-row";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
 import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
@@ -334,8 +334,6 @@ const sides = (make: [LabTile["icon"], Rank], other: [LabTile["icon"], Rank]): L
   [make, other].map(([side, tier]) => ({ side, tier }));
 const price = (labor: number, short?: Extract<LabTile["standing"], { kind: "price" }>["short"], raised?: string) =>
   ({ kind: "price", prices: [{ of: "labor", amount: labor, short: short?.of === "labor" }], short, raised }) as const;
-/** A training building waiting for the two Barracks research purchases. */
-const LOCKED = { kind: "locked", gate: 2, bought: 0 } as const;
 
 const trainingPrice: LabTile["standing"] = {
   kind: "price",
@@ -387,14 +385,7 @@ const BUILD_TILES: LabTile[] = [
     price(6_800),
   ),
   tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, gem(1), 0, price(5_100)),
-  // Its hover line as the build sheet words a training building: what every new army starts with, its tier a gem.
-  {
-    ...tile("war", "war-hall", TRAINING_BUILDINGS[0], { icon: "order-rage" }, gem(1), 2, { kind: "built" }),
-    tip: [`${TRAINING_BUILDINGS[0]}: `, ...startsNewArmies("Battle", 1)],
-  },
-  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { icon: "order-skill" }, gem(1), 2, trainingPrice),
-  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { icon: "order-detection" }, gem(1), 2, trainingPrice),
-  tile("hearth", "hearth", TRAINING_BUILDINGS[3], { icon: "order-enlightenment" }, gem(1), 2, { kind: "built" }),
+  tile("supply", "supply-yard", buildingName(BuildingType.SupplyYard, true), { icon: "order-skill" }, gem(1), 2, trainingPrice),
 ];
 /**
  * The owner's realm on 3 November: every training building's Essence short while its Labor is held, and the Hut's Labor
@@ -414,7 +405,7 @@ const FULL_TILES: LabTile[] = BUILD_TILES.map((card) =>
     : card,
 );
 const FULL_POPULATION = { used: 18, total: 18 };
-/** A fresh realm: the training buildings locked behind the two Barracks research purchases. */
+/** A fresh realm with its first building prices. */
 const EARLY_TILES: LabTile[] = [
   tile("farm", "farm", "Farm", { icon: "wheat", value: "+5/min" }, sides(["fields", 0], ["granary", 0]), 1, price(800)),
   tile(
@@ -436,11 +427,7 @@ const EARLY_TILES: LabTile[] = [
     price(800),
   ),
   tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, gem(1), 0, price(300)),
-  // The training buildings are grant Common (I) when built, each locked behind the Barracks.
-  tile("war", "war-hall", TRAINING_BUILDINGS[0], { icon: "order-rage" }, gem(1), 2, LOCKED),
-  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { icon: "order-skill" }, gem(1), 2, LOCKED),
-  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { icon: "order-detection" }, gem(1), 2, LOCKED),
-  tile("hearth", "hearth", TRAINING_BUILDINGS[3], { icon: "order-enlightenment" }, gem(1), 2, LOCKED),
+  tile("supply", "supply-yard", buildingName(BuildingType.SupplyYard, true), { icon: "order-skill" }, gem(1), 2, trainingPrice),
 ];
 const CASTLE_SIDE = (level: number, limit: number) => ({
   level,
@@ -1926,14 +1913,12 @@ const LabResults = ({
       clock={clock}
       totals={{ reveals: 19, cleared: 2, chests: 0, essence: 4_150, labor: 550, lords: 0 }}
       dayEnd={<DayEndBlock dayEnd={labDayEnd(clock)} />}
-      armiesToUpgrade={2}
       lines={results === "today-sites" ? siteUseDayLog(NOW) : readTodayLog()}
       history={results === "today-failed" ? "failed" : "whole"}
       onRetry={noop}
       onShare={results === "today-earlier" ? noop : undefined}
       onEarlier={noop}
       onLater={results === "today-earlier" ? noop : undefined}
-      onArmies={noop}
       onClose={noop}
     />
   );

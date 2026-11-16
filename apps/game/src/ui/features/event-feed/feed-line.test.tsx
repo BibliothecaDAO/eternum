@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 // @vitest-environment jsdom
+// @vitest-environment jsdom
+// @vitest-environment jsdom
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import { buildStoryEventPresentation, configManager, expeditionDepth, readExpeditionRules, siteDisplayName } from "@bibliothecadao/eternum";

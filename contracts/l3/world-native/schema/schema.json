@@ -5397,12 +5397,6 @@
       ],
       "members": [
         {
-          "name": "charge",
-          "type": "core::integer::u8",
-          "id": "0x636861726765",
-          "feltLength": 1
-        },
-        {
           "name": "last_target",
           "type": "core::integer::u64",
           "id": "0x6c6173745f746172676574",
@@ -5410,7 +5404,7 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": 2
+      "valueLength": 1
     },
     {
       "name": "ArmyProgress",
@@ -9269,10 +9263,6 @@
       "type": "struct",
       "name": "world_native::combat::ArmyCombat",
       "members": [
-        {
-          "name": "charge",
-          "type": "core::integer::u8"
-        },
         {
           "name": "last_target",
           "type": "core::integer::u64"
@@ -14079,5 +14069,5 @@
       ]
     }
   },
-  "identity": "d0936c5707cab6f970e8b4812cc9b1a38ad136e15926e533014dc92dad8bde5f"
+  "identity": "46fa8fabaa04eb8d3e31cdd5e7aac78d207ba7d2dc4ed4d95e221e025b0a0626"
 }

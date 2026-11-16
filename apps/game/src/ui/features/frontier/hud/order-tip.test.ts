@@ -38,7 +38,6 @@ describe("what a right-click on a tile does, said before the click", () => {
     expect(line([step(ActionType.Move), step(ActionType.Attack, 30)])).toBe("Attack");
     expect(line([step(ActionType.Move), step(ActionType.Help)])).toBe("Transfer troops");
     expect(line([step(ActionType.Move), step(ActionType.SpireTravel)])).toBe("Travel through the spire");
-    expect(line([step(ActionType.Move), step(ActionType.UseSite, 0)])).toBe("Use");
   });
 
   it("names the realm's Help on its army beside it a reinforcement, priced on its sheet", () => {

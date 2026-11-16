@@ -1,27 +1,8 @@
 import type { RankedWords } from "@/ui/design-system/kit/words";
 import { formatAmount, formatClockTime } from "@bibliothecadao/types";
-import {
-  HudButton,
-  HudEventRow,
-  HudIconButton,
-  HudNotice,
-  HudRanked,
-  HudRow,
-  HudSheet,
-} from "@/ui/design-system/kit/hud-elements";
-import {
-  DAY,
-  DAY_SHARE_WORDS,
-  DAY_TOTALS_UNKNOWN,
-  dayOfSeason,
-  dayEnds,
-  dayLeft,
-  phraseText,
-  TODAY,
-  TODAY_ERROR,
-  tomorrowLasts,
-} from "@/ui/design-system/kit/words";
-import { Icon } from "@/ui/design-system/icon";
+import { HudButton, HudEventRow, HudIconButton, HudNotice, HudRanked, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { DAY, DAY_SHARE_WORDS, DAY_TOTALS_UNKNOWN, dayOfSeason, dayEnds, dayLeft, phraseText, TODAY, TODAY_ERROR, tomorrowLasts } from "@/ui/design-system/kit/words";
+
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import type { ReactNode } from "react";
 
@@ -36,7 +17,7 @@ export type LogLine = { id: string; at: number; text: RankedWords | string };
 
 /**
  * Today (wireframe 12), a sheet from the day's dial: today's clock line (when it ends, the time left, how long tomorrow
- * lasts; the strip keeps only the dial), on today's page what the day's end takes and what is left to do, the day's totals, the armies with a tier to buy, the day's log newest first,
+ * lasts; the strip keeps only the dial), on today's page what the day's end takes and what is left to do, the day's totals, the day's log newest first,
  * and the stepper to earlier days. An ended day the player played has Share your day under its totals, the day-done
  * card's way to post it, so a day missed at its end can still be shared. When the log did not answer, its
  * card says so, with Try again; when the history no longer reaches back to the day's start, it says so above the log.
@@ -49,14 +30,12 @@ export const TodaySheet = ({
   totals,
   dayEnd,
   week,
-  armiesToUpgrade,
   lines,
   history,
   onRetry,
   onShare,
   onEarlier,
   onLater,
-  onArmies,
   onClose,
 }: {
   day: number | undefined;
@@ -71,8 +50,6 @@ export const TodaySheet = ({
   dayEnd?: ReactNode;
   /** The week's quests, drawn once the player has reached Essence; none where the page has no quest week to show. */
   week?: ReactNode;
-  /** Armies with an attribute tier their XP can buy; absent until the army's XP is read. */
-  armiesToUpgrade?: number;
   lines: readonly LogLine[];
   /** How much of the day the player's history gives. */
   history: DayHistory;
@@ -83,7 +60,6 @@ export const TodaySheet = ({
   onEarlier?: () => void;
   /** Absent on today. */
   onLater?: () => void;
-  onArmies?: () => void;
   onClose: () => void;
 }) => {
   const title =
@@ -102,9 +78,7 @@ export const TodaySheet = ({
           {DAY_SHARE_WORDS.share}
         </HudButton>
       )}
-      {armiesToUpgrade !== undefined && armiesToUpgrade > 0 && (
-        <HudRow lead={<Icon name="picks" size={22} />} title={formatAmount(armiesToUpgrade)} onClick={onArmies} />
-      )}
+
       {history === "short" && <HudNotice line={DAY_TOTALS_UNKNOWN} />}
       {history === "failed" ? (
         <HudNotice tone="bad" line={TODAY_ERROR} retry={onRetry} />

@@ -1,32 +1,5 @@
 import { type RankedWords, rankedText, skillPointGain } from "@bibliothecadao/types";
-import {
-  siteUsedLine,
-  buildingName,
-  CHEST_EARNED,
-  fightVerdict,
-  formatCharge,
-  formatClockTime,
-  formatDuration,
-  formatExact,
-  formatGain,
-  formatPoints,
-  frontierSiteName,
-  GuardSlot,
-  guardSlotName,
-  LORDS,
-  rankName,
-  RealmLevels,
-  relicChestDelivery,
-  relicEffect,
-  relicName,
-  resourceName,
-  scaledToUnits,
-  StructureType,
-  troopPlural,
-  type ResourcesIds,
-  VERDICT_WORDS,
-  wholePoints,
-} from "@bibliothecadao/types";
+import { siteUsedLine, buildingName, CHEST_EARNED, fightVerdict, formatCharge, formatClockTime, formatDuration, formatExact, formatGain, formatPoints, frontierSiteName, GuardSlot, guardSlotName, LORDS, rankName, RealmLevels, relicChestDelivery, relicEffect, relicName, resourceName, scaledToUnits, StructureType, troopPlural, type ResourcesIds, VERDICT_WORDS, wholePoints } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { displayPlayerName, getStructureName, siteDisplayName, type PlayerNameResolver } from "../utils/entities";
 import { readExpeditionRules } from "../utils/expeditions";
@@ -267,7 +240,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
     const category = toNumber(payload.category);
     if (category === null || payload.reward === undefined) throw new Error("Incomplete site payout story");
     const label = frontierSiteName(category);
-    const reward = payload.reward === null ? "XP only" : formatResourceList([payload.reward]);
+    const reward = payload.reward === null ? "No resource reward" : formatResourceList([payload.reward]);
     if (!reward) throw new Error("Incomplete site resource reward");
     const siteId = toNumber(payload.site_id);
     if (siteId === null) throw new Error("Site payout story names no site");

@@ -2,13 +2,15 @@
 // @vitest-environment jsdom
 // @vitest-environment jsdom
 // @vitest-environment jsdom
+// @vitest-environment jsdom
+// @vitest-environment jsdom
+// @vitest-environment jsdom
+// @vitest-environment jsdom
 import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
-
-
 
 import { MID_REALM } from "./progression-fixture";
 import { ResearchPanel } from "./research-panel";
@@ -89,7 +91,19 @@ it("researches the Farm's next tier with the side picked", () => {
 it("holds a locked node's verb, says why, and offers the step that opens it", () => {
   const onFix = vi.fn();
   const limited = readResearchTree({ ...MID_REALM, learned: { ...MID_REALM.learned, 5: { tier: 4, sides: [] } } });
-  act(() => root.render(<ResearchPanel nodes={limited} picked="row-5" onPick={vi.fn()} sending={new Set()} fixFor={() => ({ icon: "realm", word: "Level up the castle", onFix })} onResearch={vi.fn()} onClose={vi.fn()} />));
+  act(() =>
+    root.render(
+      <ResearchPanel
+        nodes={limited}
+        picked="row-5"
+        onPick={vi.fn()}
+        sending={new Set()}
+        fixFor={() => ({ icon: "realm", word: "Level up the castle", onFix })}
+        onResearch={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    ),
+  );
   expect(host.textContent).toContain("Labor storage 18,000 / 25,000 · Kingdom");
   expect(button(/^Research /)!.disabled).toBe(true);
   act(() => button(/Level up the castle/)!.click());
@@ -207,32 +221,35 @@ it.each([
   [3, "III · +75 max stamina → IV · +7+0 max stamina", ["III", "IV"]],
   [4, "IV · +7+0 max stamina → V · +10+0 max stamina", ["IV", "V"]],
   [5, "V · +10+0 max stamina", ["V"]],
-] as const)("labels the Supply yard's current and next training ranks at rank %s as their gems", (tier, label, gems) => {
-  const ranked = readResearchTree({
-    ...MID_REALM,
-    learned: { ...MID_REALM.learned, 5: { tier, sides: [] } },
-  });
-  act(() =>
-    root.render(
-      <ResearchPanel
-        nodes={ranked}
-        picked="row-5"
-        onPick={vi.fn()}
-        sending={new Set()}
-        fixFor={() => undefined}
-        onResearch={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    ),
-  );
-  const card = host.querySelector("[data-lab='node-choice']")!;
-  const effect = [...card.querySelectorAll(":scope > span")].find((line) =>
-    line.textContent?.startsWith("New armies start with Logistics"),
-  );
-  // Each rank is its gem, read by its name, never a numeral in the words.
-  expect([...effect!.querySelectorAll(".ui-tier")].map((gem) => gem.getAttribute("aria-label"))).toEqual(gems);
-  expect(saidWithGems(effect!)).toBe(`New armies start with Logistics · ${label}`);
-});
+] as const)(
+  "labels the Supply yard's current and next training ranks at rank %s as their gems",
+  (tier, label, gems) => {
+    const ranked = readResearchTree({
+      ...MID_REALM,
+      learned: { ...MID_REALM.learned, 5: { tier, sides: [] } },
+    });
+    act(() =>
+      root.render(
+        <ResearchPanel
+          nodes={ranked}
+          picked="row-5"
+          onPick={vi.fn()}
+          sending={new Set()}
+          fixFor={() => undefined}
+          onResearch={vi.fn()}
+          onClose={vi.fn()}
+        />,
+      ),
+    );
+    const card = host.querySelector("[data-lab='node-choice']")!;
+    const effect = [...card.querySelectorAll(":scope > span")].find((line) =>
+      line.textContent?.startsWith("New armies start with Logistics"),
+    );
+    // Each rank is its gem, read by its name, never a numeral in the words.
+    expect([...effect!.querySelectorAll(".ui-tier")].map((gem) => gem.getAttribute("aria-label"))).toEqual(gems);
+    expect(saidWithGems(effect!)).toBe(`New armies start with Logistics · ${label}`);
+  },
+);
 
 /** An element's words with each gem said by its name, as a screen reader reads the line. */
 const saidWithGems = (element: Element): string => {
@@ -253,8 +270,6 @@ it("renders every generated research row", () => {
     .map(([, row]) => row);
   expect([...new Set(renderedRows)].sort((a, b) => a - b)).toEqual(catalogRows.sort((a, b) => a - b));
   expect(new Set(renderedRows).size).toBe(catalogRows.length);
-
-
 });
 
 it("says on every side of every row what it does, in sight on the side, never only on a hover", () => {

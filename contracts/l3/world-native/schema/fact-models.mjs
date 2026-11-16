@@ -3,11 +3,15 @@ import { readFileSync } from "node:fs";
 const combatSource = readFileSync(new URL("../src/combat.cairo", import.meta.url), "utf8");
 const combatBody = /pub struct ArmyCombat \{([^}]+)\}/.exec(combatSource)?.[1];
 if (!combatBody) throw new Error("Missing ArmyCombat declaration");
-const combatMembers = combatBody.split(",").filter((field) => field.trim()).map((field) => {
-  const member = /^\s*pub (\w+): (u(?:8|16|32|64|128)),?\s*$/.exec(field);
-  if (!member) throw new Error("ArmyCombat wire fields must be unsigned integers; extend the source decoder for this field");
-  return { name: member[1], type: `core::integer::${member[2]}` };
-});
+const combatMembers = combatBody
+  .split(",")
+  .filter((field) => field.trim())
+  .map((field) => {
+    const member = /^\s*pub (\w+): (u(?:8|16|32|64|128)),?\s*$/.exec(field);
+    if (!member)
+      throw new Error("ArmyCombat wire fields must be unsigned integers; extend the source decoder for this field");
+    return { name: member[1], type: `core::integer::${member[2]}` };
+  });
 
 // Fact-only Cairo wire types replace the removed fixture getter ABIs.
 // Production definitions, when present, must agree exactly with these fields.

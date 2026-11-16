@@ -53,6 +53,54 @@ import { requireBatchReceipt } from "./native-batch";
  * @param contracts - The shard's command entrypoint and bridge addresses
  * @param url - Optional RPC URL for the provider
  */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
 import * as SystemProps from "@bibliothecadao/types";
 import EventEmitter from "eventemitter3";
 import type { Abi } from "starknet";

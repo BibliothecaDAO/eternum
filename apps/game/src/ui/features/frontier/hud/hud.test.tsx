@@ -252,14 +252,7 @@ describe("the army token", () => {
     act(() =>
       root.render(
         <>
-          <ArmyToken
-            label="Army 1"
-            art={undefined}
-            stamina={undefined}
-            troops={undefined}
-            selected
-            onPick={onPick}
-          />
+          <ArmyToken label="Army 1" art={undefined} stamina={undefined} troops={undefined} selected onPick={onPick} />
           <OpenSlot label="Deploy" pulse onDeploy={onDeploy} />
         </>,
       ),

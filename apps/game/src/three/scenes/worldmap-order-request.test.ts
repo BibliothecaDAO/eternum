@@ -122,21 +122,18 @@ describe("a tap on a phone, where the HUD carries the verb (owner, 22 October 20
     expect(onPhone(undefined)).toBeNull();
   });
 
-  it.each([ActionType.EnterDepth])(
-    "keeps %s on its card even when the phone target is pinned",
-    (actionType) => {
-      expect(
-        orderOnTap({
-          path: [step(ActionType.Move), step(actionType)],
-          armySelected: true,
-          site: false,
-          ownSpire: actionType === ActionType.EnterDepth,
-          onPhone: true,
-          hud: { pinned: true, refused: false },
-        }),
-      ).toBe("site-card");
-    },
-  );
+  it.each([ActionType.EnterDepth])("keeps %s on its card even when the phone target is pinned", (actionType) => {
+    expect(
+      orderOnTap({
+        path: [step(ActionType.Move), step(actionType)],
+        armySelected: true,
+        site: false,
+        ownSpire: actionType === ActionType.EnterDepth,
+        onPhone: true,
+        hud: { pinned: true, refused: false },
+      }),
+    ).toBe("site-card");
+  });
 
   it("still opens the attack's preview on a target, which has its own confirm", () => {
     expect(onPhone([step(ActionType.Move), step(ActionType.Attack)], { pinned: true })).toBe("attack");

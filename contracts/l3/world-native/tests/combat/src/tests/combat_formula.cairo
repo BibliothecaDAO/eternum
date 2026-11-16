@@ -380,7 +380,11 @@ fn wipeout_and_zero_damage_have_defined_refunds_and_cooldowns() {
             defender.boosts.decr_damage_gotten_percent_num = 10000;
         }
         attacker.attack_with_context(ref defender, context, stamina, damage, 1, 100);
-        assert_eq!(attacker.count, (if shielded { 1000 } else { 999 }) * RESOURCE_PRECISION);
+        assert_eq!(attacker.count, (if shielded {
+            1000
+        } else {
+            999
+        }) * RESOURCE_PRECISION);
         assert_eq!(defender.count, if shielded {
             RESOURCE_PRECISION
         } else {
