@@ -54,15 +54,20 @@ const calendarOf = (game: DayOpenGame) => {
   };
 };
 
-/**
- * When the latest game day opened, in seconds: the newest start, across the running Frontier games, of the day each is
- * in at `now`. Null while no Frontier game is running a day.
- */
-export function latestGameDayStart(games: readonly DayOpenGame[], now: number): number | null {
-  const starts = games
+/** The day a running Frontier game is in, by when it opened (seconds). */
+export interface GameDayStart {
+  gameId: number;
+  dayStart: number;
+}
+
+/** The day each running Frontier game is in at `now`; a game between days, or not running, is left out. */
+export function gameDayStarts(games: readonly DayOpenGame[], now: number): GameDayStart[] {
+  return games
     .filter((game) => game.mode === "frontier" && game.status !== "Ended" && game.status !== "Settled")
-    .flatMap((game) => dayOf(calendarOf(game), now)?.start ?? []);
-  return starts.length > 0 ? Math.max(...starts) : null;
+    .flatMap((game) => {
+      const day = dayOf(calendarOf(game), now);
+      return day ? [{ gameId: game.game_id, dayStart: day.start }] : [];
+    });
 }
 
 function nextOpening(game: DayOpenGame, now: number): DayOpening | null {

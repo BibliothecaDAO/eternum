@@ -160,7 +160,7 @@ export const routeIdentityRequest = async (
   if (pathname === "/api/shop/seal") return handleSeal(request, auth, { db: env.DB, holderFacts: holderFactsOf(env) });
   if (pathname === "/api/shop/price" && request.method === "GET") {
     if (!(await withinPublicBudget(env, "shop-price", request))) return json({ error: "too_many_requests" }, 429);
-    return handleLordsPrice(env.DB);
+    return handleLordsPrice(env.DB, new URL(request.url));
   }
   if (pathname === "/api/operator/campaign-draw" && request.method === "POST") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
