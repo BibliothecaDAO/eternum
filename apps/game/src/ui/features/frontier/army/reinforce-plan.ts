@@ -16,7 +16,6 @@ import {
 
 import { readTroopRaise, troopRange, type TroopRaise, type TroopRange } from "../deploy/deploy-plan";
 
-
 export interface ReinforcePlan {
   current: number;
   cap: number;

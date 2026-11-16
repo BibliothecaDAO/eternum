@@ -10,7 +10,6 @@ import { FRONTIER_STORES, STORE_KINDS, type StoreKind } from "../stores";
 import { dayClock } from "./day-clock";
 import { StatusStrip, type StoreReading } from "./status-strip";
 
-
 export const FrontierStrip = ({
   rules,
   realm,

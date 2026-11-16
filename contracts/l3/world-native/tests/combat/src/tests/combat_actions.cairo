@@ -33,7 +33,7 @@ fn a_surviving_explorer_loots_the_defeated_army_before_its_resources_are_deleted
     crate::combat_actions::battle_side(d.actor, attacker_before.troops.count, troop(d, attacker).unwrap().troops)
         .serialize(ref expected);
     crate::combat_actions::battle_side(
-        999.try_into().unwrap(), defender_before.troops.count, Troops { count: 0, ..defender_before.troops }, 0,
+        999.try_into().unwrap(), defender_before.troops.count, Troops { count: 0, ..defender_before.troops },
     )
         .serialize(ref expected);
     80_u64.serialize(ref expected);
@@ -175,9 +175,7 @@ fn blitz_ethereal_battle_records_exact_damage_and_zero_rolls() {
     empty.serialize(ref expected);
     crate::combat_actions::battle_side(d.actor, before_attacker.troops.count, expected_attacker)
         .serialize(ref expected);
-    crate::combat_actions::battle_side(
-        999.try_into().unwrap(), before_defender.troops.count, expected_defender,
-    )
+    crate::combat_actions::battle_side(999.try_into().unwrap(), before_defender.troops.count, expected_defender)
         .serialize(ref expected);
     80_u64.serialize(ref expected);
     let mut found = false;
@@ -302,9 +300,7 @@ fn surface_battle_records_exact_damage_and_zero_rolls() {
     empty.serialize(ref expected);
     crate::combat_actions::battle_side(d.actor, before_attacker.troops.count, expected_attacker)
         .serialize(ref expected);
-    crate::combat_actions::battle_side(
-        999.try_into().unwrap(), before_defender.troops.count, expected_defender,
-    )
+    crate::combat_actions::battle_side(999.try_into().unwrap(), before_defender.troops.count, expected_defender)
         .serialize(ref expected);
     80_u64.serialize(ref expected);
     let mut found = false;

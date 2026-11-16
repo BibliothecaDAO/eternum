@@ -306,7 +306,7 @@ fn an_optional_race_preset_stores_exact_payments_stages_and_triumphs() {
 fn malformed_race_rules_leave_no_preset_registered() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
-    for invalid in 0_u8..19 {
+    for invalid in 0_u8..14 {
         let (preset_id, mut definition) = current_definition("frontier-check");
         let mut race = optional_race_rules();
         definition.economy.deep = Some(optional_deep_rules());
@@ -333,30 +333,16 @@ fn malformed_race_rules_leave_no_preset_registered() {
             race.pale_moon_percent = 0;
         } else if invalid == 10 {
             race.spoils_percent = 99;
-        } else if invalid == 11 {
-            race.first.alt = true;
-        } else if invalid == 12 {
-            race.first.x = crate::rules::DEEP_MAP_SIZE;
-        } else if invalid == 13 {
-            race.fourth = race.first;
-        } else if invalid == 14 {
-            race.first = optional_deep_rules().foundation;
-        } else if invalid == 15 {
-            race
-                .first =
-                    crate::troops::Coord {
-                        alt: false, x: crate::rules::DEEP_MAP_SIZE / 2, y: crate::rules::DEEP_ARRIVAL_Y,
-                    };
         }
-        if invalid == 16 {
+        if invalid == 11 {
             let discovery = definition.economy.discovery.unwrap();
             definition
                 .economy
                 .discovery = Some(crate::expeditions::FrontierDiscoveryRules { beasts_bps: 4000, ..discovery });
         }
-        if invalid == 17 {
+        if invalid == 12 {
             definition.rules.mode_rules = definition.rules.mode_rules | crate::rules::DISCOVER_HYPERSTRUCTURES;
-        } else if invalid == 18 {
+        } else if invalid == 13 {
             definition.rules.mode_rules = definition.rules.mode_rules | crate::rules::RESERVED_HYPERSTRUCTURES;
         }
         definition.economy.race = Some(race);

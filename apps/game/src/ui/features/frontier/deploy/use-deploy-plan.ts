@@ -8,7 +8,6 @@ import { useMemo } from "react";
 import { useExpeditionRules } from "../frontier-home";
 import { readDeployPlan } from "./deploy-plan";
 
-
 const DEPLOY_MODELS = [
   ...STAMINA_MODELS,
   "ArmyProgress",

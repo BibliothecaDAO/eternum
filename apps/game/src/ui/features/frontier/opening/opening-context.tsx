@@ -3,7 +3,6 @@ import { create } from "zustand";
 
 import { type Opened, type OpeningPart, partShown } from "./opening";
 
-
 const useOpened = create<{ opened: Opened }>(() => ({ opened: "all" }));
 
 /** Publishes the HUD's reading to every part that waits on a moment, and takes it back when the HUD is gone. */
