@@ -398,7 +398,7 @@ pub fn discovery_guards(category: u8, seed: u256, rules: crate::rules::SliceRule
     guards.span()
 }
 
-// Every Frontier guard is Knight T1, so counts order encounters without changing combat matchups.
+// A family determines its mark; the same draw determines a roaming family and its size.
 pub fn frontier_guard(
     category: u8, depth: crate::expeditions::DepthRules, seed: u256, rules: crate::rules::SliceRules, timestamp: u64,
 ) -> Troops {
@@ -412,8 +412,9 @@ pub fn frontier_guard(
     };
     let lower: u128 = lower.into();
     let upper: u128 = upper.into();
+    let band = category == crate::taxonomy::BEASTS_CATEGORY && crate::random::range(seed, 2, 2) != 0;
     let count = if category == crate::taxonomy::BEASTS_CATEGORY {
-        let (lower, upper) = if crate::random::range(seed, 2, 2) == 0 {
+        let (lower, upper) = if !band {
             (depth.beast_weak_lower, depth.beast_weak_upper)
         } else {
             (depth.beast_strong_lower, depth.beast_strong_upper)
@@ -424,7 +425,12 @@ pub fn frontier_guard(
         let step: u128 = depth.guard_step.into();
         lower + step * crate::random::range(seed, 1, (upper - lower) / step + 1)
     };
-    discovered_guard(TroopType::Knight, TroopTier::T1, count, rules, timestamp)
+    let troop = if band || category == crate::taxonomy::RIFT_CATEGORY {
+        TroopType::Crossbowman
+    } else {
+        TroopType::Knight
+    };
+    discovered_guard(troop, TroopTier::T1, count, rules, timestamp)
 }
 
 pub fn ruin_guard(

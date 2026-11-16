@@ -158,7 +158,8 @@ export const FRONTIER = {
     populationStep: pct(frontierPreset.board.populationStepBps),
   },
   attributes: {
-    scoutDamageReduction: `${100 - rule.SCOUT_DAMAGE_PERCENT}%`,
+    lightDamageReduction: `${100 - rule.FRONTIER_LIGHT_DAMAGE_PERCENT}%`,
+    knightGuardReduction: `${100 - rule.FRONTIER_KNIGHT_GUARD_DAMAGE_PERCENT}%`,
   },
   quest: {
     labor: n(frontierPreset.dailyQuest.labor),

@@ -324,7 +324,7 @@ describe("a guarded site's card with no army chosen", () => {
           <SiteCardView
             site="Rift"
             name="Brimdeep"
-            beast={{ name: "Dark fey", beast: "dark-fey", combatClass: "Paladin" }}
+            beast={{ name: "Dark fey", beast: "dark-fey", combatClass: "Crossbowman" }}
             army={chosen}
             guard={1_200}
             fight={undefined}
@@ -368,7 +368,7 @@ describe("a guarded site's card with no army chosen", () => {
       root.render(
         <SiteCardView
           site="Rift"
-          beast={{ name: "Dark fey", beast: "dark-fey", combatClass: "Knight" }}
+          beast={{ name: "Dark fey", beast: "dark-fey", combatClass: "Crossbowman" }}
           army={null}
           guard={1_100}
           fight={undefined}
@@ -425,7 +425,7 @@ describe("a guarded site's card for an army out of reach", () => {
       root.render(
         <SiteCardView
           site="Rift"
-          beast={{ name: "Dark fey", beast: "dark-fey", combatClass: "Knight" }}
+          beast={{ name: "Dark fey", beast: "dark-fey", combatClass: "Crossbowman" }}
           army={army}
           guard={1_100}
           fight={undefined}
@@ -445,7 +445,7 @@ describe("a guarded site's card for an army out of reach", () => {
       root.render(
         <SiteCardView
           site="Rift"
-          beast={{ name: "Dark fey", beast: "dark-fey", combatClass: "Knight" }}
+          beast={{ name: "Dark fey", beast: "dark-fey", combatClass: "Crossbowman" }}
           army={army}
           guard={1_100}
           fight={undefined}
@@ -474,7 +474,7 @@ it("titles a single roaming Wraith by its species", () => {
     root.render(
       <SiteCardView
         site="Beasts"
-        beast={{ name: "Wraith", beast: "wraith", combatClass: "Knight" }}
+        beast={{ name: "Wraith", beast: "wraith", combatClass: "Crossbowman" }}
         army={null}
         guard={314}
         fight={undefined}

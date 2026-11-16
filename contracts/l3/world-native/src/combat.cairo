@@ -137,6 +137,14 @@ pub impl TroopsImpl of TroopsTrait {
         return (ratio - _2_POINT_5) / (_10_POINT_0 - _2_POINT_5);
     }
 
+    fn _surviving_fraction(troops: Fixed, damage: Fixed) -> Fixed {
+        if damage >= troops {
+            FixedTrait::ZERO()
+        } else {
+            (troops - damage) / troops
+        }
+    }
+
     fn _effective_beta() -> Fixed {
         // effective beta is 0.2
         return FixedTrait::new_unscaled(2, false) / FixedTrait::new_unscaled(10, false);
@@ -153,7 +161,7 @@ pub impl TroopsImpl of TroopsTrait {
     }
 
     fn _is_ranged_attack_context(context: CombatContext) -> bool {
-        context.attack_distance > 1
+        context.day_unit_seconds == 0 && context.attack_distance > 1
     }
 
     fn _is_ranged_crossbow_attack(ref self: Troops, context: CombatContext) -> bool {
@@ -200,8 +208,12 @@ pub impl TroopsImpl of TroopsTrait {
     }
 
     fn _incoming_damage_multiplier(ref self: Troops, is_structure_guard: bool, day_unit_seconds: u32) -> Fixed {
-        if day_unit_seconds == 0 && is_structure_guard && self.category == TroopType::Knight {
-            return Self::_combat_percent_multiplier(85);
+        if is_structure_guard && self.category == TroopType::Knight {
+            return Self::_combat_percent_multiplier(if day_unit_seconds == 0 {
+                85
+            } else {
+                crate::rules::FRONTIER_KNIGHT_GUARD_DAMAGE_PERCENT.into()
+            });
         }
 
         1_u8.into()
@@ -319,11 +331,11 @@ pub impl TroopsImpl of TroopsTrait {
         BRAVO_DAMAGE_DEALT *= alpha
             ._incoming_damage_multiplier(context.attacker_is_structure_guard, context.day_unit_seconds);
         if context.day_unit_seconds != 0 {
-            if alpha.category == TroopType::Paladin {
-                ALPHA_DAMAGE_DEALT *= Self::_combat_percent_multiplier(crate::rules::SCOUT_DAMAGE_PERCENT.into());
+            if alpha.category != TroopType::Knight {
+                ALPHA_DAMAGE_DEALT *= Self::_combat_percent_multiplier(crate::rules::FRONTIER_LIGHT_DAMAGE_PERCENT.into());
             }
-            if bravo.category == TroopType::Paladin {
-                BRAVO_DAMAGE_DEALT *= Self::_combat_percent_multiplier(crate::rules::SCOUT_DAMAGE_PERCENT.into());
+            if bravo.category != TroopType::Knight {
+                BRAVO_DAMAGE_DEALT *= Self::_combat_percent_multiplier(crate::rules::FRONTIER_LIGHT_DAMAGE_PERCENT.into());
             }
         }
         if is_ranged_attack {
@@ -368,6 +380,16 @@ pub impl TroopsImpl of TroopsTrait {
         ALPHA_DAMAGE_DEALT -= ALPHA_DAMAGE_DEALT
             * bravo.boosts.decr_damage_gotten_percent_num.into()
             / PercentageValueImpl::_100().into();
+
+        if context.day_unit_seconds != 0 {
+            let alpha_bow = alpha.category == TroopType::Crossbowman;
+            let bravo_bow = bravo.category == TroopType::Crossbowman;
+            if alpha_bow && !bravo_bow {
+                BRAVO_DAMAGE_DEALT *= Self::_surviving_fraction(BRAVO_NUM_TROOPS, ALPHA_DAMAGE_DEALT);
+            } else if bravo_bow && !alpha_bow {
+                ALPHA_DAMAGE_DEALT *= Self::_surviving_fraction(ALPHA_NUM_TROOPS, BRAVO_DAMAGE_DEALT);
+            }
+        }
 
         if is_ranged_attack {
             let half_battle_timer_length: u32 = (cooldown_seconds / 2).try_into().unwrap();

@@ -116,7 +116,7 @@ export const readSiteCard = (
     payout: reward && fittingPayout(store, site.game_id, reward, attack),
     attackStamina: configManager.getCombatRules().stamina.stamina_attack_req,
     inReach: attack !== null && reachOf(store, attack, siteTile) !== undefined,
-    fight: guard && attack ? attackNow(store, guard.troops, siteTile, attack, true) : undefined,
+    fight: guard && attack ? attackNow(store, guard.troops, siteTile, attack, false) : undefined,
   };
 };
 
@@ -166,7 +166,7 @@ export function readDeepSiteFight(
   return {
     army: Number(attack.army.troops.count / PRECISION),
     defender: Number(troops.count / PRECISION),
-    result: attackNow(store, troops, tile, attack, true),
+    result: attackNow(store, troops, tile, attack, first !== undefined),
   };
 }
 

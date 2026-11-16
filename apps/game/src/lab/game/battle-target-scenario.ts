@@ -8,18 +8,15 @@ import { type LabFact, type LabScenario, wire } from "./lab-chain";
 import { besideOnOpenLand, spireScenario } from "./spire-scenario";
 
 const PRECISION = 1_000_000_000n;
-/** Two exact exchanges against the same target. */
-const EXCHANGES = [
-  { before: 1000n, attacker: 563n, defender: 563n },
-  { before: 563n, attacker: 287n, defender: 287n },
-];
+import marks from "../../../../../contracts/l3/world-native/tests/fixtures/frontier-marks.txt?raw";
+const EXCHANGES = marks.trim().split(/\s+/).map(BigInt);
 
 export function battleTargetScenario(): LabScenario {
   const game = spireScenario();
   const troops = prepareBattleArmy(game);
   const tile = besideOnOpenLand(game.store, game.store.entityOccupancy(1, SPIRE_ARMY)!);
   game.store.applyFacts(
-    siteAt(game.store, tile, troops, StructureType.Camp).map((fact) => ({ ...fact, value: wire(fact.value) })),
+    siteAt(game.store, tile, { ...troops, category: "Knight" }, StructureType.Camp).map((fact) => ({ ...fact, value: wire(fact.value) })),
   );
   return {
     ...game,
@@ -41,7 +38,7 @@ export function deepBattleTargetScenario(): LabScenario {
   const rules = store.require("SliceRules", { game_id: 1 });
   const tickSeconds = 3600;
   store.applyFacts([
-    { model: "ExplorerTroops", key: store.wireKeyOf("ExplorerTroops", guard)!, value: wire({ ...guard, troops }) },
+    { model: "ExplorerTroops", key: store.wireKeyOf("ExplorerTroops", guard)!, value: wire({ ...guard, troops: { ...troops, category: "Knight" } }) },
     { model: "HomeAspect", key: store.wireKeyOf("HomeAspect", aspect)!, value: wire({ ...aspect, aspect: 2 }) },
     {
       model: "SliceRules",
@@ -73,6 +70,7 @@ function prepareBattleArmy(game: LabScenario) {
   const rules = store.require("SliceRules", { game_id: 1 });
   const troops = {
     ...army.troops,
+    category: "Crossbowman" as const,
     count: 1000n * PRECISION,
     battle_cooldown_end: 0,
     stamina: { Inline: { amount: 100n, settled_at: game.startsAt, remainder: 0 } },
@@ -124,8 +122,10 @@ function exchange(
       : store.require("ExplorerTroops", { game_id: 1, explorer_id: guardId });
   const guardModel = guardId === undefined ? "Guard" : "ExplorerTroops";
   const target = guardId ?? siteId;
-  const next = EXCHANGES.find(({ before }) => army.troops.count === before * PRECISION);
-  if (!next || !("Inline" in army.troops.stamina)) throw new Error("Battle proof has no matching exchange");
+  const offset = (guardId === undefined ? 0 : 8) + (combat.last_target === target ? 4 : 0);
+  const [before, guardBefore, attackerAfter, defenderAfter] = EXCHANGES.slice(offset, offset + 4);
+  if (army.troops.count !== before! * PRECISION || guard.troops.count !== guardBefore! * PRECISION || !("Inline" in army.troops.stamina))
+    throw new Error("Battle proof has no matching exchange");
   return [
     {
       model: "ExplorerTroops",
@@ -134,7 +134,7 @@ function exchange(
         ...army,
         troops: {
           ...army.troops,
-          count: next.attacker * PRECISION,
+          count: attackerAfter! * PRECISION,
           stamina: { Inline: { amount: army.troops.stamina.Inline.amount - 10n, settled_at: now, remainder: 0 } },
         },
       }),
@@ -142,7 +142,7 @@ function exchange(
     {
       model: guardModel,
       key: store.wireKeyOf(guardModel, guard)!,
-      value: wire({ ...guard, troops: { ...guard.troops, count: next.defender * PRECISION } }),
+      value: wire({ ...guard, troops: { ...guard.troops, count: defenderAfter! * PRECISION } }),
     },
     ...(combat.last_target === target
       ? []

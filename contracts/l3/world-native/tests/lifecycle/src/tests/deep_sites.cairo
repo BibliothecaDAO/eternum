@@ -157,6 +157,8 @@ fn distinct_homes_enter_one_deep_and_move_on_its_fixed_terrain() {
         let target = site(d, game_id, kind);
         assert!(target.entity_id != 0);
         assert_eq!(interact_with_state(d.games, || crate::logic::deep_sites::site(target).unwrap().day), 0);
+        let guard = interact_with_state(d.games, || crate::logic::guards::guard(crate::guards::GuardKey { game_id, structure_id: target.entity_id, slot: 0 }));
+        assert_eq!(guard.troops.category, if kind == crate::rules::DEEP_ALTAR { crate::troops::TroopType::Crossbowman } else { crate::troops::TroopType::Knight });
     }
     let mut direction = 0_u8;
     while crate::geometry::neighbor(a, direction) == b {

@@ -104,6 +104,11 @@ fn reset_beast(key: ResourceKey, kind: u8, day: u64, count: u128, timestamp: u64
         GuardKey { game_id: key.game_id, structure_id: key.entity_id, slot: 0 },
         Guard {
             troops: crate::troops::Troops {
+                category: if kind == crate::rules::DEEP_ALTAR {
+                    crate::troops::TroopType::Crossbowman
+                } else {
+                    crate::troops::TroopType::Knight
+                },
                 count,
                 stamina: crate::troops::Stamina { amount: 0, settled_at: timestamp.try_into().unwrap(), remainder: 0 }
                     .into(),

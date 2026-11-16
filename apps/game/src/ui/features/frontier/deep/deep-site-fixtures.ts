@@ -12,6 +12,7 @@ const slot = (slot: number, realm: string, troops: number, mine = false): DeepSl
   return {
     slot,
     armyId: 100 + slot,
+    category: "Knight",
     realm,
     troops,
     ticks: { left, time: formatDuration(left * TICK_SECONDS, { days: false }) },
@@ -36,14 +37,14 @@ export const DEEP_SITE_CASES = {
     ...base,
     site: "foundation",
     pay: { ...pay, height: 5 },
-    guard: { kind: "beast", troops: 10_000 },
+    guard: { kind: "beast", category: "Knight", troops: 10_000 },
     order: { kind: "act", verb: "attack", onAct: noop },
   },
   "Quarry, army short of stamina": {
     ...base,
     site: "quarry",
     pay: { glory: 0, height: 0, resources: 500, bar: null },
-    guard: { kind: "beast", troops: 10_000 },
+    guard: { kind: "beast", category: "Knight", troops: 10_000 },
     order: { kind: "short", verb: "attack", line: "Needs 30 stamina, holds 12" },
   },
   "Altar, open, army away": {

@@ -5,7 +5,8 @@ pub const RELIC_SECONDS_PER_RANK: u32 = 1800;
 pub const RELIC_TILES_PER_RANK: u8 = 6;
 pub const ATTRIBUTE_CAP: u8 = 5;
 pub const SCOUT_EXPLORE_STAMINA: u8 = 10;
-pub const SCOUT_DAMAGE_PERCENT: u8 = 75;
+pub const FRONTIER_LIGHT_DAMAGE_PERCENT: u8 = 75;
+pub const FRONTIER_KNIGHT_GUARD_DAMAGE_PERCENT: u8 = 75;
 // Rank 0 is untrained; Common I through Legendary V retain the original ceilings.
 
 pub const LOGISTICS_COMMON_STAMINA: u32 = 20;

@@ -196,7 +196,7 @@ describe("an exchange resolves as the contract resolves it", () => {
   });
 });
 
-it("uses the same expedition damage for Knights attacking armies and site guards", () => {
+it("protects Frontier Knights only when they hold a guard slot", () => {
   const { rules, cases } = readFixture();
   const recorded = cases[0]!;
   const expeditionRules: CombatRules = {
@@ -225,7 +225,11 @@ it("uses the same expedition damage for Knights attacking armies and site guards
           { ...context, attackerIsStructureGuard, defenderIsStructureGuard },
           expeditionRules,
         ),
-      ).toEqual(field);
+      ).toMatchObject({
+        ok: true,
+        attackerLoss: (attackerIsStructureGuard ? 314n : 418n) * 1_000_000_000n,
+        defenderLoss: (defenderIsStructureGuard ? 471n : 627n) * 1_000_000_000n,
+      });
     }
   }
   const exhausted = { ...defender, stamina: { ...defender.stamina, amount: 0n } };
@@ -363,5 +367,41 @@ it("matches native refunds and cooldowns when an attack wipes the defender or ne
         battle_cooldown_end: context.timestamp + 100,
       },
     });
+  }
+});
+
+it("resolves bow-first exchanges in both directions, including annihilation and repeated shots", () => {
+  const fixture = readFixture();
+  const base = fixture.cases[0]!;
+  const rules: CombatRules = {
+    ...fixture.rules, dayUnitSeconds: 100, cooldownSeconds: 0,
+    damage: { ...fixture.rules.damage, damage_scaling_factor: 36893488147419103232n, damage_biome_bonus_num: 0 },
+    stamina: { ...fixture.rules.stamina, stamina_attack_req: 30, damage_stamina_refund: false },
+  };
+  const army = (category: ExchangeTroops["category"], count = 1000n): ExchangeTroops => ({
+    ...base.attacker, category, tier: "T1", count: count * 1_000_000_000n,
+    stamina: { amount: 100n, settled_at: base.context.timestamp, remainder: 0 },
+    boosts: { ...base.attacker.boosts, incr_damage_dealt_percent_num: 0 },
+  });
+  const context = { ...base.context, attackerIsStructureGuard: false, defenderIsStructureGuard: false };
+  const cases: [ExchangeTroops["category"], ExchangeTroops["category"], bigint, bigint][] = [
+    ["Crossbowman", "Knight", 328n, 294n], ["Knight", "Crossbowman", 294n, 328n],
+    ["Crossbowman", "Paladin", 328n, 220n], ["Paladin", "Crossbowman", 220n, 328n],
+    ["Crossbowman", "Crossbowman", 328n, 328n],
+  ];
+  for (const [a, b, dealt, taken] of cases) for (const attackDistance of [1, 2]) {
+    const result = resolveExchange(army(a), army(b), { ...context, attackDistance }, rules);
+    expect(result).toMatchObject({ ok: true, attackerLoss: taken * 1_000_000_000n, defenderLoss: dealt * 1_000_000_000n });
+    if (!result.ok) throw new Error(result.refusal);
+    expect(result.attacker.stamina.amount).toBe(70n);
+    const next = resolveExchange(result.attacker, result.defender, { ...context, attackDistance }, rules);
+    expect(next.ok && next.attacker.stamina.amount).toBe(40n);
+    expect(next.ok && next.attackerLoss).not.toBe(0n);
+    expect(next.ok && next.defenderLoss).not.toBe(0n);
+  }
+  for (const bowAttacks of [false, true]) {
+    const bow = army("Crossbowman"); const blade = army("Knight", 1n);
+    const result = resolveExchange(bowAttacks ? bow : blade, bowAttacks ? blade : bow, context, rules);
+    expect(result).toMatchObject({ ok: true, attackerLoss: bowAttacks ? 0n : 1_000_000_000n, defenderLoss: bowAttacks ? 1_000_000_000n : 0n });
   }
 });

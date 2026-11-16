@@ -9,10 +9,11 @@ import {
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
 import { ARMY, DEEP_WORDS, MOVE, TROOPS } from "@/ui/design-system/kit/words";
-import { deepSites, formatExact } from "@bibliothecadao/types";
+import { type Troops, deepSites, formatExact } from "@bibliothecadao/types";
 import { nativeRuleConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 
 import { FightSide } from "../sites/fight-side";
+import { CombatMark } from "../sites/combat-mark";
 import type { DeepSiteFight } from "../sites/site-card-plan";
 
 import { DEEP_SITE_FACES } from "./deep-site-faces";
@@ -32,6 +33,7 @@ export interface DeepTickPay {
 export interface DeepSlot {
   slot: number;
   armyId: number;
+  category: Troops["category"];
   realm: string;
   troops: number;
   ticks: { left: number; time: string };
@@ -42,7 +44,7 @@ export interface DeepSlot {
 
 /** Who stands on the site today: its beast, its holder's slots (any order), or nobody. */
 export type DeepGuard =
-  | { kind: "beast"; troops: number }
+  | { kind: "beast"; troops: number; category: Troops["category"] }
   | { kind: "held"; aspect: string; slots: readonly DeepSlot[]; next: number }
   | { kind: "open" };
 
@@ -128,7 +130,7 @@ const TickPay = ({ pay }: { pay: DeepTickPay }) => (
 
 const GuardRows = ({ guard }: { guard: DeepGuard }) => {
   if (guard.kind === "beast")
-    return <HudRow lead={<Icon name="beasts" size={32} />} title={DEEP_WORDS.beast(guard.troops)} state="beast" />;
+    return <HudRow lead={<Icon name="beasts" size={32} />} title={DEEP_WORDS.beast(guard.troops)} trail={<CombatMark category={guard.category} />} state="beast" />;
   if (guard.kind === "open") return <HudRow lead={<Icon name="flag" size={32} />} title={DEEP_WORDS.open} />;
   return (
     <div data-deep-slots className="flex flex-col gap-1">
@@ -148,7 +150,7 @@ const GuardRows = ({ guard }: { guard: DeepGuard }) => {
 
 const SlotRow = ({ slot, next }: { slot: DeepSlot; next: boolean }) => (
   <HudRow
-    lead={<Icon name="troops" size={32} />}
+    lead={<CombatMark category={slot.category} />}
     title={next ? `${slot.realm} · ${DEEP_WORDS.facesNext}` : slot.realm}
     selected={slot.mine}
     detail={`${DEEP_WORDS.lasts(slot.ticks.left, slot.ticks.time)} · ${DEEP_WORDS.share(slot.share)}`}

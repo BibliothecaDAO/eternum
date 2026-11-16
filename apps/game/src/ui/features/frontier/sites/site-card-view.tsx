@@ -1,5 +1,5 @@
 import type { FrontierBeast } from "@/three/structures/frontier-beast";
-import { formatExact, LORDS } from "@bibliothecadao/types";
+import { type Troops, formatExact, LORDS } from "@bibliothecadao/types";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -40,6 +40,7 @@ import { useEnterConfirms } from "../hud/enter-confirms";
 import type { Cost } from "../hud/army-order";
 import { GuardToken } from "../hud/army-token";
 import { FightSide } from "./fight-side";
+import { CombatMark } from "./combat-mark";
 import type { SiteFight } from "./site-card-plan";
 import { type AttackTargetKind, TARGET_MARKS, attackTargetName } from "./site-marks";
 import type { ArmyRelic } from "../relics/relic-catalog";
@@ -92,7 +93,7 @@ export const SiteCardView = ({
   site: AttackTargetKind;
   /** The site's own name, the one its map plate and every list give it: the card's title with its kind, as the hover. */
   name?: string;
-  beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: string }) | undefined;
+  beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: Troops["category"] }) | undefined;
   army: { art: IconMeaning; troops: number } | null;
   guard: number | null | undefined;
   fight: SiteFight | undefined;
@@ -151,6 +152,7 @@ export const SiteCardView = ({
           <SiteMark icon={beast ? beastMeaning(beast.beast) : icon} />
         )}
         <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+          {beast && <CombatMark category={beast.combatClass} />}
           {facing ? (
             <Outcome facing={facing} earns={reward !== null} />
           ) : (
@@ -233,7 +235,7 @@ const FightPanel = ({
   army: { art: IconMeaning; troops: number } | null;
   guard: number | null | undefined;
   facing: Facing | undefined;
-  beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: string }) | undefined;
+  beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: Troops["category"] }) | undefined;
   guardIcon: IconMeaning;
 }) =>
   army || guard !== null ? (

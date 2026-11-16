@@ -288,7 +288,7 @@ fn combat_relics_change_casualties_for_their_full_window_and_replace_on_reapplic
 }
 
 #[test]
-fn expedition_knights_use_one_damage_formula_for_armies_and_guards_even_without_defender_stamina() {
+fn frontier_knights_take_less_damage_in_guard_slots_even_without_stamina() {
     let damage = TroopDamageConfig {
         damage_scaling_factor: 36893488147419103232, damage_biome_bonus_num: 0, ..damage_config(),
     };
@@ -312,8 +312,8 @@ fn expedition_knights_use_one_damage_formula_for_armies_and_guards_even_without_
                         120,
                         0,
                     );
-                assert_eq!(attacker.count, (1500 - 418) * RESOURCE_PRECISION);
-                assert_eq!(defender.count, (1000 - 627) * RESOURCE_PRECISION);
+                assert_eq!(attacker.count, (1500 - if attacker_is_structure_guard { 314 } else { 418 }) * RESOURCE_PRECISION);
+                assert_eq!(defender.count, (1000 - if defender_is_structure_guard { 471 } else { 627 }) * RESOURCE_PRECISION);
                 assert_eq!(attacker.stamina.inline().amount, 50);
                 assert_eq!(defender.stamina.inline().amount, if defender_stamina == 0 {
                     0
@@ -404,4 +404,69 @@ fn wipeout_and_zero_damage_have_defined_refunds_and_cooldowns() {
         });
         assert_eq!(defender.battle_cooldown_end, now + 100);
     }
+}
+
+#[test]
+fn frontier_bows_hit_before_blades_on_every_attack_and_both_bows_fire_together() {
+    let damage = TroopDamageConfig { damage_biome_bonus_num: 0, damage_scaling_factor: 36893488147419103232, ..damage_config() };
+    let stamina = TroopStaminaConfig { damage_stamina_refund: false, stamina_attack_req: 30, ..stamina_config() };
+    for (a, b, dealt, taken) in array![
+        (TroopType::Crossbowman, TroopType::Knight, 328_u128, 294_u128),
+        (TroopType::Knight, TroopType::Crossbowman, 294, 328),
+        (TroopType::Crossbowman, TroopType::Paladin, 328, 220),
+        (TroopType::Paladin, TroopType::Crossbowman, 220, 328),
+        (TroopType::Crossbowman, TroopType::Crossbowman, 328, 328),
+    ] {
+        for distance in array![1_u32, 2] {
+            let mut attacker = test_troops(a, TroopTier::T1, 1000, 100);
+            let mut defender = test_troops(b, TroopTier::T1, 1000, 100);
+            let battle = CombatContext { day_unit_seconds: 100, attack_distance: distance, ..context(Biome::Underground) };
+            attacker.attack_with_context(ref defender, battle, stamina, damage, 120, 0);
+            assert_eq!(attacker.count, (1000 - taken) * RESOURCE_PRECISION);
+            assert_eq!(defender.count, (1000 - dealt) * RESOURCE_PRECISION);
+            assert_eq!(attacker.stamina.inline().amount, 70);
+            let before_a = attacker.count;
+            let before_b = defender.count;
+            attacker.attack_with_context(ref defender, battle, stamina, damage, 120, 0);
+            assert!(attacker.count < before_a && defender.count < before_b);
+            assert_eq!(attacker.stamina.inline().amount, 40);
+        }
+    }
+}
+
+#[test]
+fn a_blade_killed_by_the_first_shot_never_replies() {
+    let damage = TroopDamageConfig { damage_biome_bonus_num: 0, damage_scaling_factor: 36893488147419103232, ..damage_config() };
+    for bow_attacks in array![false, true] {
+        let mut bow = test_troops(TroopType::Crossbowman, TroopTier::T1, 1000, 100);
+        let mut blade = test_troops(TroopType::Knight, TroopTier::T1, 1, 100);
+        let battle = CombatContext { day_unit_seconds: 100, ..context(Biome::Underground) };
+        if bow_attacks { bow.attack_with_context(ref blade, battle, stamina_config(), damage, 120, 0); }
+        else { blade.attack_with_context(ref bow, battle, stamina_config(), damage, 120, 0); }
+        assert_eq!(bow.count, 1000 * RESOURCE_PRECISION);
+        assert_eq!(blade.count, 0);
+    }
+}
+
+#[test]
+fn frontier_bow_exchanges_match_the_browser_receipts_against_a_beast_and_a_knight_slot() {
+    use snforge_std::fs::{FileTrait, read_txt};
+    let values = read_txt(@FileTrait::new("../fixtures/frontier-marks.txt"));
+    let mut fields = values.span();
+    let damage = TroopDamageConfig { damage_biome_bonus_num: 0, damage_scaling_factor: 36893488147419103232, ..damage_config() };
+    let stamina = TroopStaminaConfig { damage_stamina_refund: false, stamina_attack_req: 30, ..stamina_config() };
+    for defender_is_structure_guard in array![false, true] {
+        let mut attacker = test_troops(TroopType::Crossbowman, TroopTier::T1, 1000, 100);
+        let mut defender = test_troops(TroopType::Knight, TroopTier::T1, 1000, 100);
+        for i in 0..2 {
+            let (before_a, before_b, after_a, after_b): (u128, u128, u128, u128) = Serde::deserialize(ref fields).unwrap();
+            assert_eq!(attacker.count, before_a * RESOURCE_PRECISION);
+            assert_eq!(defender.count, before_b * RESOURCE_PRECISION);
+            attacker.attack_with_context(ref defender, CombatContext { day_unit_seconds: 100, defender_is_structure_guard, ..context(Biome::Underground) }, stamina, damage, 120, 0);
+            assert_eq!(attacker.count, after_a * RESOURCE_PRECISION);
+            assert_eq!(defender.count, after_b * RESOURCE_PRECISION);
+            assert_eq!(attacker.stamina.inline().amount, 100 - (i + 1) * 30);
+        }
+    }
+    assert!(fields.is_empty());
 }

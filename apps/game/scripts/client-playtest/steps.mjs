@@ -1,7 +1,7 @@
 import { ECONOMY_STEPS } from "./economy-steps.mjs";
 import depthLooks from "../../src/three/terrain/ethereal-depths.json" with { type: "json" };
 import homeIcons from "../../src/ui/design-system/home-icons.json" with { type: "json" };
-import { existsSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import realmAssets from "../../src/three/structures/realm-assets.json" with { type: "json" };
 import realmSkins from "../../src/three/structures/realm-skins.json" with { type: "json" };
 import sharp from "sharp";
@@ -435,12 +435,14 @@ const BATTLE_TARGET_STEPS = battleTargetSteps(attackFromTheSiteCard, "Map");
 const DEEP_BATTLE_TARGET_STEPS = battleTargetSteps(attackFromTheDeepCard, "Deep");
 
 function battleTargetSteps(attack, place) {
+  const values = readFileSync(new URL("../../../../contracts/l3/world-native/tests/fixtures/frontier-marks.txt", import.meta.url), "utf8").trim().split(/\s+/).map(Number);
+  const offset = place === "Deep" ? 8 : 0;
   return [
     { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", place) },
     { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
     ...[
-      ["first-attack", 563, 563],
-      ["same-fight", 287, 287],
+      ["first-attack", values[offset + 2], values[offset + 3]],
+      ["same-fight", values[offset + 6], values[offset + 7]],
     ].map(([name, attacker, defender]) =>
       clickToResultStep(name, "BattleGuard", attack, ({ played, actionLatency }) => {
         const answer = (actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "BattleGuard").at(-1);

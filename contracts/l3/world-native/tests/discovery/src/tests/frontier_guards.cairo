@@ -2,7 +2,7 @@ pub use world_test_support::tests::frontier_guards::*;
 
 
 #[test]
-fn seeded_site_guards_are_knights_on_the_inclusive_preset_grid() {
+fn seeded_site_guards_keep_their_family_mark_on_the_inclusive_preset_grid() {
     let (_, preset) = super::preset_projection::current_definition("frontier-check");
     let rifts = array![(1400_u32, 1600_u32), (2800, 3200), (5400, 6600), (10700, 13200)];
     for depth_index in 0_u32..4 {
@@ -23,9 +23,8 @@ fn seeded_site_guards_are_knights_on_the_inclusive_preset_grid() {
                 assert_eq!((count - Into::<u32, u128>::into(lower)) % depth.guard_step.into(), 0);
                 saw_lower = saw_lower || count == lower.into();
                 saw_upper = saw_upper || count == upper.into();
-                // One troop type: every guard is T1 and its strength is its count.
                 assert_eq!(guard.tier, TroopTier::T1);
-                assert_eq!(guard.category, TroopType::Knight);
+                assert_eq!(guard.category, if category == RIFT_CATEGORY { TroopType::Crossbowman } else { TroopType::Knight });
             }
             assert!(saw_lower && saw_upper, "inclusive endpoint never drawn");
         }
@@ -55,7 +54,7 @@ fn beasts_draw_two_depth_scaled_ranges_below_every_other_site_guard() {
         let mut strong_max = strong_lower;
         for seed in 0_u32..2000 {
             let guard = frontier_guard(BEASTS_CATEGORY, depth, seed.into(), preset.rules, 360);
-            assert_eq!(guard.category, TroopType::Knight);
+            assert_eq!(guard.category, if guard.count / RESOURCE_PRECISION <= weak_upper { TroopType::Knight } else { TroopType::Crossbowman });
             assert_eq!(guard.tier, TroopTier::T1);
             assert_eq!(guard.count % RESOURCE_PRECISION, 0);
             let count = guard.count / RESOURCE_PRECISION;

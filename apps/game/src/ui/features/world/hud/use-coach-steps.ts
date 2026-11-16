@@ -249,7 +249,7 @@ const useCertainLoss = () => {
         attackerBiome: biome,
         defenderBiome: biome,
         attackerIsStructureGuard: false,
-        defenderIsStructureGuard: true,
+        defenderIsStructureGuard: configManager.getCombatRules().dayUnitSeconds === 0 || structure.owner !== 0n,
       };
       const rules = { rules: configManager.getCombatRules() };
       return forecastAttack(troops, guard.troops, circumstances, rules).certainLoss;

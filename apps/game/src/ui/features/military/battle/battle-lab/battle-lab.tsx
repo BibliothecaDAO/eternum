@@ -130,9 +130,9 @@ export const BattleLab = ({
       defenderAlt: state.defenderAlt,
       attackDistance: liveAttackDistance,
       attackerIsStructureGuard: snapshot?.attackerType === "structure",
-      defenderIsStructureGuard: target?.targetType === TargetType.Structure,
+      defenderIsStructureGuard: target?.targetType === TargetType.Structure && (parameters.day_unit_seconds === 0 || target.addressOwner !== 0n),
     }),
-    [state.defenderAlt, liveAttackDistance, snapshot?.attackerType, target?.targetType],
+    [state.defenderAlt, liveAttackDistance, snapshot?.attackerType, target?.targetType, target?.addressOwner, parameters.day_unit_seconds],
   );
   // CombatParameters holds bigint fields, so stringify with a bigint-safe replacer.
   const defaultParamsKey = useMemo(() => serializeParams(configManager.getCombatConfig()), []);

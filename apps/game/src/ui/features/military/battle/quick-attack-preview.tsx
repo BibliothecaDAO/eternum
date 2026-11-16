@@ -190,7 +190,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         attackerBiome: biome,
         defenderBiome: biome,
         attackerIsStructureGuard: attackerType === AttackerType.Structure,
-        defenderIsStructureGuard: isStructureTarget,
+        defenderIsStructureGuard: isStructureTarget && (configManager.getCombatRules().dayUnitSeconds === 0 || targetData.addressOwner !== 0n),
       },
       { rules: configManager.getCombatRules() },
     );
