@@ -5,7 +5,7 @@ fn logistics_tiers_set_the_maximum_stamina_by_the_ruled_table() {
     let (_, frontier) = super::preset_projection::current_definition("frontier-check");
     let rules = frontier.rules.troop_stamina_config;
     for (logistics, maximum) in array![(0_u8, 120_u64), (1, 140), (2, 165), (3, 195), (4, 230), (5, 270)] {
-        let progress = ArmyProgress { logistics, ..Default::default() };
+        let progress = ArmyProgress { logistics };
         assert_eq!(crate::progression::stamina_max(progress, crate::troops::TroopType::Knight, rules), maximum);
     }
 }
@@ -15,7 +15,7 @@ fn added_stamina_stops_at_the_armys_own_maximum() {
     let (_, frontier) = super::preset_projection::current_definition("frontier-check");
     let rules = frontier.rules.troop_stamina_config;
     let maximum = crate::progression::stamina_max(
-        ArmyProgress { logistics: 3, ..Default::default() }, crate::troops::TroopType::Knight, rules,
+        ArmyProgress { logistics: 3 }, crate::troops::TroopType::Knight, rules,
     );
     assert_eq!(maximum, 195);
     let mut boosts: crate::troops::TroopBoosts = Default::default();
@@ -33,7 +33,7 @@ fn an_armys_own_maximum_reads_its_logistics_tier_and_a_troops_without_progress()
     let (game_id, preset, category) = super::registrar::expedition_home(d);
     let (key, _) = super::registrar::expedition_armies(d, game_id, category);
     let rules = preset.rules.troop_stamina_config;
-    write_progress(d, key, ArmyProgress { logistics: 3, ..Default::default() });
+    write_progress(d, key, ArmyProgress { logistics: 3 });
     let (troops, own, other) = snforge_std::interact_with_state(
         d.games,
         || {

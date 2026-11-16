@@ -1,5 +1,4 @@
 use snforge_std::{EventSpyTrait, EventsFilterTrait, interact_with_state, spy_events};
-use starknet::storage::StorageMapReadAccess;
 use world_test_support::tests::Deployment;
 use world_test_support::tests::registrar::{discovery_root, explore_with_root};
 use world_test_support::tests::resource_commands::{execute_in_game, grant};
