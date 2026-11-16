@@ -379,7 +379,6 @@ fn assert_army_opponents(game_id: u32, attacker: ExplorerTroops, defender: Explo
     assert!(attacker_aspect != defender_aspect, "cannot attack an allied army");
 }
 
-// Requested loot is a deterministic refusal, independent of whether the combat roll wins.
 fn assert_loot_available(
     game_id: u32, from: u64, resources: Span<crate::resources::ResourceAmount>, context: ExecutionContext,
 ) {

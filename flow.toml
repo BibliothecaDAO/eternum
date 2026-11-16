@@ -94,7 +94,7 @@ source = "contracts/l3/check-native-plan.sh"
 kinds = "gate-prelude gate-vrf gate-world gate-drift gate-events test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world"
 
 [land]
-kinds = "sizes gate-prelude gate-vrf gate-world gate-events gate-drift test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world test-native-plan workflow-parity ci-static-knip ci-client-test-client ci-herald-history-and-stream ci-services-workers ci-portal-portal ci-native-service-class-sizes-game_ledger ci-native-service-class-sizes-realms_vrf_verifier ci-native-player-account ci-native-native-deployer ci-native-native-stamping ci-native-native-provider ci-runtime-offline-tests-runner ci-runtime-offline-tests-harness ci-runtime-offline-tests-sandbox-proxy ci-amm-test-ammv2 ci-collectibles-test-collectibles ci-mmr-test-mmr ci-season_pass-test-season-pass ci-contract_scripts-runtime-tests ci-docs-docs playtest-supply-post playtest-scouts playtest-battle-target playtest-deep-battle-target"
+kinds = "sizes gate-prelude gate-vrf gate-world gate-events gate-drift test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world test-native-plan workflow-parity ci-static-knip ci-client-test-client ci-herald-history-and-stream ci-services-workers ci-portal-portal ci-native-service-class-sizes-game_ledger ci-native-service-class-sizes-realms_vrf_verifier ci-native-player-account ci-native-native-deployer ci-native-native-stamping ci-native-native-provider ci-runtime-offline-tests-runner ci-runtime-offline-tests-harness ci-runtime-offline-tests-sandbox-proxy ci-amm-test-ammv2 ci-collectibles-test-collectibles ci-mmr-test-mmr ci-season_pass-test-season-pass ci-contract_scripts-runtime-tests ci-docs-docs playtest-supply-post playtest-scouts playtest-charge playtest-deep-charge"
 forbid = "co-authored-by|claude|anthropic|codex|openai|generated with|session"
 
 [kind.test-client-retirement]
@@ -360,7 +360,7 @@ cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps
 paths = "apps/game/src/lab/game/scouts-scenario apps/game/src/lab/game/actions-scenario apps/game/src/ui/features/frontier/deploy packages/core/src/utils/explore-stamina.ts"
 estimate_gb = 6
 
-[kind.playtest-battle-target]
+[kind.playtest-charge]
 cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && for view in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4194 --steps lab-battle-target --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$view" --out "$FLOW_TMP/playtest/$view" || exit; done'
 paths = "apps/game/src/lab/game/battle-target-scenario apps/game/src/ui/features/frontier/sites/site-card-plan.ts packages/core/src/utils/combat-exchange.ts"
 estimate_gb = 4
@@ -373,7 +373,7 @@ estimate_gb = 9
 cmd = "pnpm run build:packages && pnpm --dir apps/game test src/ui/features/frontier/army/army-opens.test.tsx src/ui/features/frontier/army/army-panel.test.tsx src/ui/features/frontier/army/frontier-army.test.tsx src/ui/features/frontier/building/building-card.test.tsx src/ui/features/frontier/hud/realm-panel.test.tsx src/ui/features/frontier/production/frontier-store-card.test.tsx src/ui/features/frontier/production/store-makers.test.ts src/ui/features/frontier/research/research-panel.test.tsx src/ui/features/frontier/research/research-tree.test.ts src/ui/features/military/components/army-deployment-picker.test.tsx && pnpm --dir packages/types exec vitest run && pnpm --dir packages/chain test && pnpm --dir packages/ammv2-sdk test"
 estimate_gb = 4
 
-[kind.playtest-deep-battle-target]
+[kind.playtest-deep-charge]
 cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && for view in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4195 --steps lab-deep-battle-target --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$view" --out "$FLOW_TMP/playtest/$view" || exit; done'
 paths = "apps/game/src/lab/game/battle-target-scenario apps/game/src/ui/features/frontier/deep/deep-site-card apps/game/src/ui/features/frontier/deep/deep-site-view apps/game/src/ui/features/frontier/sites/site-card-plan.ts packages/core/src/utils/combat-exchange.ts"
 estimate_gb = 4
