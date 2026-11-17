@@ -37,7 +37,7 @@ pub trait IOaths<T> {
         command: ChooseOath,
         context: crate::commands::ActionContext,
     );
-    fn offer_oaths(ref self: T, key: crate::troops::ExplorerKey, seed: u256);
+    fn offer_oaths(ref self: T, key: crate::troops::ExplorerKey, coord: crate::troops::Coord, seed: u256);
 }
 
 pub fn bit(oath: u8) -> u16 {

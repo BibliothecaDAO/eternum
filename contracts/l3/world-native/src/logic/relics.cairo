@@ -232,7 +232,7 @@ pub mod RelicState {
                     && crate::expeditions::is_band(
                         captured, crate::logic::expeditions::depth_rules(site.game_id, depth),
                     ) {
-                    crate::logic::oaths::offer(explorer_key, context.raw_root);
+                    crate::logic::oaths::offer(explorer_key, explorer.coord, context.raw_root);
                 }
             }
             self.refund_capture_stamina(explorer_key, explorer, context);

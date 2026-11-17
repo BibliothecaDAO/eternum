@@ -1,8 +1,7 @@
 use crate::troops::ExplorerKey;
 
-pub fn offer(key: ExplorerKey, seed: u256) {
-    let army = crate::logic::troops::explorer(key).expect('missing oath army');
-    if crate::logic::expeditions::depth_at(key.game_id, army.coord) >= 3 {
+pub fn offer(key: ExplorerKey, coord: crate::troops::Coord, seed: u256) {
+    if crate::logic::expeditions::depth_at(key.game_id, coord) >= 3 {
         return;
     }
     let mut progress = crate::logic::progression::require(key);

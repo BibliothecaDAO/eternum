@@ -43,11 +43,11 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
             );
         },
     );
-    explore(d, key, root, 360);
+    explore(d, key, root, 360, 0);
     let first = read_progress(d, key);
     assert!(first.oath_pick != 0);
     assert_eq!(first.oaths, 0);
-    explore(d, key, root, 361);
+    explore(d, key, root, 361, 1);
     assert_eq!(read_progress(d, key).oath_pick, first.oath_pick);
     let taken = card(first.oath_pick, 0);
     let take = ChooseOath {
@@ -70,7 +70,7 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
     assert_eq!(chosen.oath_pick, 0);
     assert!(!super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(take), 363));
     assert_eq!(read_progress(d, key), chosen);
-    explore(d, key, root, 364);
+    explore(d, key, root, 364, 2);
     let second = read_progress(d, key);
     let replacement = card(second.oath_pick, 1);
     let replace = ChooseOath { expected_pick: second.oath_pick, oath: Some(replacement), ..take };
@@ -82,7 +82,7 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
         ),
     );
     assert_eq!(read_progress(d, key).oaths, crate::oaths::bit(replacement));
-    explore(d, key, root, 367);
+    explore(d, key, root, 367, 4);
     let third = read_progress(d, key);
     assert!(
         super::resource_commands::execute_in_game(
@@ -100,7 +100,8 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
 fn the_offer_entry_grants_on_the_surface_and_preserves_progress_in_the_deep() {
     let (d, _, key) = super::registrar::setup_frontier_relics();
     let offers = crate::oaths::IOathsLibraryDispatcher { class_hash: super::declare_logic("RelicsLogic") };
-    snforge_std::interact_with_state(d.games, || crate::oaths::IOathsDispatcherTrait::offer_oaths(offers, key, 1));
+    let surface_coord = snforge_std::interact_with_state(d.games, || crate::logic::troops::explorer(key).unwrap().coord);
+    snforge_std::interact_with_state(d.games, || crate::oaths::IOathsDispatcherTrait::offer_oaths(offers, key, surface_coord, 1));
     let surface = read_progress(d, key);
     assert_eq!(surface.oath_pick, draw(0, 1));
     assert!(surface.oath_pick != 0);
@@ -110,7 +111,8 @@ fn the_offer_entry_grants_on_the_surface_and_preserves_progress_in_the_deep() {
     assert!(super::resource_commands::execute_in_game(d, key.game_id, decline, 360));
     let before = read_progress(d, key);
     super::progression::place_army_at_depth(d, key, 3);
-    snforge_std::interact_with_state(d.games, || crate::oaths::IOathsDispatcherTrait::offer_oaths(offers, key, 2));
+    let deep_coord = snforge_std::interact_with_state(d.games, || crate::logic::troops::explorer(key).unwrap().coord);
+    snforge_std::interact_with_state(d.games, || crate::oaths::IOathsDispatcherTrait::offer_oaths(offers, key, deep_coord, 2));
     assert_eq!(read_progress(d, key), before);
     assert_eq!(before.oath_pick, 0);
 }
@@ -123,9 +125,14 @@ fn packing_preserves_all_sixteen_held_bits_and_the_offer() {
     );
 }
 
-fn explore(d: super::Deployment, key: crate::troops::ExplorerKey, root: u256, timestamp: u64) {
+fn explore(d: super::Deployment, key: crate::troops::ExplorerKey, root: u256, timestamp: u64, direction: u8) {
     let mut spy = snforge_std::spy_events();
-    if !super::registrar::explore_with_root(d, key.game_id, key.explorer_id, root, timestamp) {
+    if !super::play_fixture::play(
+        d.games,
+        super::play_fixture::TestAction { game_id: key.game_id, actor: d.actor,
+            command: crate::commands::Command::Explore(crate::commands::Explore { explorer_id: key.explorer_id, direction }),
+        }, root, timestamp,
+    ) {
         let rejected = super::play_fixture::rejection(ref spy, d.games);
         panic!("exploration rejected: {}", rejected.reason);
     }

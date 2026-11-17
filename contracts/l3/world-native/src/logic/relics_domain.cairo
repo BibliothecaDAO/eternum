@@ -43,8 +43,8 @@ pub mod RelicsLogic {
         ) {
             crate::logic::oaths::choose(game_id, actor, command, context);
         }
-        fn offer_oaths(ref self: ContractState, key: crate::troops::ExplorerKey, seed: u256) {
-            crate::logic::oaths::offer(key, seed);
+        fn offer_oaths(ref self: ContractState, key: crate::troops::ExplorerKey, coord: crate::troops::Coord, seed: u256) {
+            crate::logic::oaths::offer(key, coord, seed);
         }
     }
 
