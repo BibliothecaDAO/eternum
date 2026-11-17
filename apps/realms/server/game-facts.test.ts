@@ -60,9 +60,9 @@ const REFUSED = [
 describe("the notification snapshot readers", () => {
   it.each(REFUSED)("refuse %s before any fact is interpreted", async (_case, releases, current) => {
     heraldServing(releases, current);
-    await expect(
-      readActorArmies(SHARD, GAME_ID, PLAYER_ACCOUNT, Date.now(), await caught()),
-    ).rejects.toBeInstanceOf(ShardReleaseMismatchError);
+    await expect(readActorArmies(SHARD, GAME_ID, PLAYER_ACCOUNT, Date.now(), await caught())).rejects.toBeInstanceOf(
+      ShardReleaseMismatchError,
+    );
     await expect(
       readDeepSiteWatches(
         SHARD,
