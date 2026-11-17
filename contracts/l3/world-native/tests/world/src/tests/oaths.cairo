@@ -130,14 +130,13 @@ fn packing_preserves_all_sixteen_held_bits_and_the_offer() {
 fn explore(d: super::Deployment, key: crate::troops::ExplorerKey, root: u256, timestamp: u64) {
     for command in array![
         crate::commands::Command::Explore(crate::commands::Explore { explorer_id: key.explorer_id, direction: 0 }),
-        crate::commands::Command::Move(crate::commands::Move { explorer_id: key.explorer_id, directions: array![0].span() }),
+        crate::commands::Command::Move(
+            crate::commands::Move { explorer_id: key.explorer_id, directions: array![0].span() },
+        ),
     ] {
         let mut spy = snforge_std::spy_events();
         if !super::play_fixture::play(
-            d.games,
-            super::play_fixture::TestAction { game_id: key.game_id, actor: d.actor, command },
-            root,
-            timestamp,
+            d.games, super::play_fixture::TestAction { game_id: key.game_id, actor: d.actor, command }, root, timestamp,
         ) {
             let rejected = super::play_fixture::rejection(ref spy, d.games);
             panic!("shrine route rejected: {}", rejected.reason);
