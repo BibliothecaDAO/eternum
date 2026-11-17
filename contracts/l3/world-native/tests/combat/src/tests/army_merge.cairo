@@ -14,8 +14,12 @@ fn full_merges_keep_the_chosen_target_even_with_less_progression() {
         } else {
             (first, second, 0, 1)
         };
-        write_progress(d, source, ArmyProgress { logistics: source_logistics, oath_slots: 1, oaths: 1, oath_pick: 571 });
-        write_progress(d, target, ArmyProgress { logistics: target_logistics, oath_slots: 1, oaths: 8, oath_pick: 571 });
+        write_progress(
+            d, source, ArmyProgress { logistics: source_logistics, oath_slots: 1, oaths: 1, oath_pick: 571 },
+        );
+        write_progress(
+            d, target, ArmyProgress { logistics: target_logistics, oath_slots: 1, oaths: 8, oath_pick: 571 },
+        );
         let (winner, loser) = (target, source);
         let state = GameState { contract_address: d.games };
         let before = state.explorer(winner).unwrap();

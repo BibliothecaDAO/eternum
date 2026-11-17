@@ -1,3 +1,4 @@
+use starknet::storage_access::StorePacking;
 use crate::oaths::{ChooseOath, card, count, draw, held};
 use super::progression::read_progress;
 
@@ -97,7 +98,6 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
 
 #[test]
 fn packing_preserves_all_sixteen_held_bits_and_the_offer() {
-    use starknet::storage_access::StorePacking;
     let value = crate::progression::ArmyProgress { logistics: 5, oath_slots: 4, oaths: 65535, oath_pick: 4095 };
     assert_eq!(
         crate::progression::ArmyProgressPacking::unpack(crate::progression::ArmyProgressPacking::pack(value)), value,

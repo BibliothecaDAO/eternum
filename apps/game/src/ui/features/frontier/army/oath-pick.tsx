@@ -6,10 +6,16 @@ import { useGame } from "@/hooks/context/game-context";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import { HudButton } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudCard } from "@/ui/design-system/kit/hud-elements";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { toast } from "@/ui/features/event-feed/notify";
 import { oathName } from "./oath-names";
+
+const colourClass = {
+  red: "border-hud-bad text-hud-bad",
+  blue: "border-hud-ally text-hud-ally",
+  gold: "border-hud-gold text-hud-gold",
+} satisfies Record<(typeof oathColours)[number]["colour"], string>;
 
 export function ArmyOathPick({ explorerId, progress }: { explorerId: number; progress: NativeRows["ArmyProgress"] }) {
   const { setup, account } = useGame();
@@ -37,20 +43,11 @@ export function ArmyOathPick({ explorerId, progress }: { explorerId: number; pro
       {picked === null ? (
         <div className="grid grid-cols-3 gap-1">
           {oathCards(progress.oath_pick).map((id, index) => (
-            <HudButton
-              key={id}
-              kind="secondary"
-              disabled={!allowed || sending}
-              data-oath-id={id}
-              aria-label={`Take ${oathName(id)}`}
-              onClick={() => (full ? setPicked(id) : void choose(id))}
-            >
-              <span className="flex flex-col items-center gap-1">
-                <OrderEmblem order={id} size={32} />
-                <span>{oathName(id)}</span>
-                <span className="text-hud-muted">{oathColours[index]!.name}</span>
-              </span>
-            </HudButton>
+            <div key={id} data-oath-id={id} className={`min-w-0 rounded border-t-4 ${colourClass[oathColours[index]!.colour]}`}>
+              <HudCard size="sm" title={oathName(id)} picture={<OrderEmblem order={id} size={40} />}
+                detail={<span className={colourClass[oathColours[index]!.colour]}>{oathColours[index]!.name}</span>}
+                disabled={!allowed || sending} onClick={() => (full ? setPicked(id) : void choose(id))} />
+            </div>
           ))}
         </div>
       ) : (
