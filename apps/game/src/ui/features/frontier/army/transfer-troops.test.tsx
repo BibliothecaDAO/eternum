@@ -587,9 +587,8 @@ it("labels the amount's two ends, none and all the picked army holds, each takin
   expect(swap).toHaveBeenCalledWith(expect.objectContaining({ count: 600 * Number(PRECISION) }));
 });
 
-it.each([{ oaths: 1, oath_pick: 0 }])(
-  "confirms loss of the source Oath record %j even with equal capacity",
-  async (record) => {
+it("confirms loss of held Oaths even with equal capacity", async () => {
+    const record = { oaths: 1, oath_pick: 0 };
     const store = transferArmies(1, 1);
     for (const id of [201, 202])
       store.applyFacts([
@@ -612,5 +611,4 @@ it.each([{ oaths: 1, oath_pick: 0 }])(
     expect(swap).toHaveBeenCalledWith(
       expect.objectContaining({ from_explorer_id: 201, to_explorer_id: 202, count: 600 * Number(PRECISION) }),
     );
-  },
-);
+});

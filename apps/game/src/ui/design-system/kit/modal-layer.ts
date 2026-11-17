@@ -68,7 +68,7 @@ const refreshInertOutside = () => {
     }
   }
   restoreOutside = () => made.forEach((element) => element.removeAttribute("inert"));
-  if (active) focusDialog(active);
+  return active;
 };
 
 const focusDialog = (element: HTMLElement) => {
@@ -86,7 +86,8 @@ const useInertOutside = (layer: RefObject<HTMLElement | null>) => {
     refreshInertOutside();
     return () => {
       layers.delete(element);
-      refreshInertOutside();
+      const active = refreshInertOutside();
+      if (active) focusDialog(active);
     };
   }, [layer]);
 };
