@@ -295,6 +295,15 @@ pub mod SeasonLogic {
                 );
                 context.game = BoxTrait::new(crate::logic::game::game(game_id));
             }
+            if rules.day_unit_seconds != 0 {
+                let mut fields = arguments;
+                let command = Serde::deserialize(ref fields).ok_or(rejection('INVALID_COMMAND'))?;
+                if crate::logic::oath_commands::requires_answer(game_id, command) {
+                    return Err(crate::commands::Rejection {
+                        status_class: 'GAMEPLAY_REJECTED', reason: "ANSWER_OATH_FIRST",
+                    });
+                }
+            }
             let result = dispatch(self.release.classes(game_id), route, game_id, actor, payload, context)
                 .map_err(|error| domain_rejection(error))?;
             if route.batch {

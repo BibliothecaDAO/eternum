@@ -20,6 +20,7 @@ pub const RED: u16 = 11537;
 pub const BLUE: u16 = 53288;
 pub const GOLD: u16 = 710;
 pub const VITRIOL_LOSS_PER_TICK: u16 = 75;
+pub const PASS_STAMINA: u16 = 20;
 
 pub fn deep_loss_per_tick(oaths: u16, base: u128) -> u128 {
     if held(oaths, VITRIOL) {

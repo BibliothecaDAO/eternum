@@ -1,6 +1,3 @@
-import { ArmyOathPick } from "./oath-pick";
-import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
-import { configManager } from "@bibliothecadao/eternum";
 import { TroopOathSlots } from "./oath-slots";
 import { ArmyRelicSlots } from "../relics/army-relic-slots";
 import { useState } from "react";
@@ -20,12 +17,6 @@ export const FrontierArmy = ({ realm, onClose }: { realm: NativeRows["Structure"
 };
 
 const ArmyPanel = ({ army, onClose }: { army: DockArmy; onClose: () => void }) => {
-  const { store } = useNativeFacts(["ArmyProgress"]);
-  const progress = store.get("ArmyProgress", {
-    game_id: configManager.getActiveGameId(),
-    explorer_id: army.explorerId,
-  });
-  const waiting = progress !== undefined && progress.oath_pick !== 0;
   const revealYield = useArmyRevealYield(army);
   const spire = useArmySpireStatus(army.explorerId);
   const [deleting, setDeleting] = useState(false);
@@ -33,22 +24,16 @@ const ArmyPanel = ({ army, onClose }: { army: DockArmy; onClose: () => void }) =
   return (
     <HudSheet
       label={army.label}
-      beside={!waiting && <ArmyDeleteButton army={army} onPress={() => setDeleting(true)} />}
+      beside={<ArmyDeleteButton army={army} onPress={() => setDeleting(true)} />}
       onClose={onClose}
     >
-      {waiting ? (
-        <ArmyOathPick key={progress.oath_pick} explorerId={army.explorerId} progress={progress} />
-      ) : (
-        <>
-          <ArmyDetail army={{ ...army, name: army.label, stamina: army.stamina, revealYield }} />
-          <TroopOathSlots category={army.troopsFact.category} explorerId={army.explorerId} />
-          <ArmyRelicSlots explorerId={army.explorerId} />
-        </>
-      )}
-      {!waiting && deleting && (
+      <ArmyDetail army={{ ...army, name: army.label, stamina: army.stamina, revealYield }} />
+      <TroopOathSlots category={army.troopsFact.category} explorerId={army.explorerId} />
+      <ArmyRelicSlots explorerId={army.explorerId} />
+      {deleting && (
         <ArmyDeleteConfirm army={army} onCancel={() => setDeleting(false)} onDeleted={onClose} />
       )}
-      {!waiting && spire && <HudWindowFoot>{spire}</HudWindowFoot>}
+      {spire && <HudWindowFoot>{spire}</HudWindowFoot>}
     </HudSheet>
   );
 };

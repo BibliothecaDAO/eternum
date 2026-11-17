@@ -333,28 +333,6 @@ pub mod RelicState {
             }
         }
 
-        /// Adds stamina to a slot army's bar, up to its own maximum: a well's or a skill point's.
-        fn grant_stamina(
-            self: @ComponentState<TContractState>,
-            key: ExplorerKey,
-            explorer: crate::troops::ExplorerTroops,
-            amount: u64,
-            maximum: u64,
-        ) -> u64 {
-            let mut stamina = explorer.troops.stamina.inline();
-            let before = stamina.amount;
-            stamina.amount += amount;
-            stamina.clamp(maximum);
-            crate::troops::IArmySlotStaminaDispatcherTrait::army_slot_stamina(
-                crate::troops::IArmySlotStaminaLibraryDispatcher {
-                    class_hash: self.logic_classes(key.game_id).relics.read(),
-                },
-                key,
-                crate::troops::ArmySlotAction::Persist(crate::troops::StaminaSource::Inline(stamina)),
-            );
-            stamina.amount - before
-        }
-
         fn refund_capture_stamina(
             self: @ComponentState<TContractState>,
             key: ExplorerKey,

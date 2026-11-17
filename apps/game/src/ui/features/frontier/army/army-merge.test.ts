@@ -63,9 +63,8 @@ it("warns before a larger Oath capacity is lost with the source army", () => {
   ).toBe(true);
 });
 
-it("warns when a merge discards held Oaths or a waiting pick", () => {
+it("warns when a merge discards held Oaths", () => {
   expect(explorerTransferPlan({ ...base, sourceProgress: { ...common, oaths: 1 } }).confirmLoss).toBe(true);
-  expect(explorerTransferPlan({ ...base, sourceProgress: { ...common, oath_pick: 571 } }).confirmLoss).toBe(true);
   expect(
     explorerTransferPlan({ ...base, sourceProgress: { ...common, oaths: 1 }, targetProgress: { ...common, oaths: 1 } })
       .confirmLoss,

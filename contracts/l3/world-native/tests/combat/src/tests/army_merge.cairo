@@ -15,10 +15,10 @@ fn full_merges_keep_the_chosen_target_even_with_less_progression() {
             (first, second, 0, 1)
         };
         write_progress(
-            d, source, ArmyProgress { logistics: source_logistics, oath_slots: source_slots, oaths: 1, oath_pick: 571 },
+            d, source, ArmyProgress { logistics: source_logistics, oath_slots: source_slots, oaths: 1, oath_pick: 0 },
         );
         write_progress(
-            d, target, ArmyProgress { logistics: target_logistics, oath_slots: target_slots, oaths: 8, oath_pick: 571 },
+            d, target, ArmyProgress { logistics: target_logistics, oath_slots: target_slots, oaths: 8, oath_pick: 0 },
         );
         let (winner, loser) = (target, source);
         let state = GameState { contract_address: d.games };
@@ -52,7 +52,7 @@ fn partial_transfers_keep_both_progress_bundles_and_slots() {
     let d = setup();
     let (game_id, _, category) = expedition_home(d);
     let (source, target) = expedition_armies(d, game_id, category);
-    let veteran = ArmyProgress { logistics: 3, oath_slots: 4, oaths: 1, oath_pick: 571 };
+    let veteran = ArmyProgress { logistics: 3, oath_slots: 4, oaths: 1, oath_pick: 0 };
     write_progress(d, source, veteran);
     timers(d, source, 0, 390);
     timers(d, target, 100, 400);
@@ -208,5 +208,26 @@ fn a_loaded_loser_cannot_be_destroyed_in_either_merge_direction() {
         assert_eq!(state.explorer(target).unwrap(), before_target);
         assert_eq!(progress(d, winner).unwrap().logistics, 5);
         assert!(progress(d, loser).is_some());
+    }
+}
+
+#[test]
+fn waiting_picks_on_either_army_refuse_full_and_partial_transfers_without_losing_a_pick() {
+    for pending_source in array![true, false] {
+        for amount in array![1_u128, 3] {
+            let d = setup();
+            let (game_id, _, category) = expedition_home(d);
+            let (source, target) = expedition_armies(d, game_id, category);
+            let key = if pending_source { source } else { target };
+            let waiting = ArmyProgress { oath_pick: crate::oaths::draw(0, 1), ..Default::default() };
+            write_progress(d, key, waiting);
+            let state = GameState { contract_address: d.games };
+            let before = (state.explorer(source), state.explorer(target));
+            let mut spy = snforge_std::spy_events();
+            assert!(!execute_in_game(d, game_id, transfer(source, target, amount), 360));
+            assert_eq!(super::play_fixture::rejection(ref spy, d.games).reason, "ANSWER_OATH_FIRST");
+            assert_eq!((state.explorer(source), state.explorer(target)), before);
+            assert_eq!(progress(d, key), Some(waiting));
+        }
     }
 }

@@ -1,4 +1,5 @@
 use crate::troops::ExplorerKey;
+use crate::stamina::{StaminaSourceTrait, StaminaTrait};
 
 pub fn offer(key: ExplorerKey, coord: crate::troops::Coord, seed: u256) {
     if crate::logic::expeditions::depth_at(key.game_id, coord) >= 3 {
@@ -25,5 +26,25 @@ pub fn choose(
     let army = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, execution);
     assert!(army.troops.count != 0, "explorer is dead");
     let progress = crate::oaths::choose(crate::logic::progression::require(key), command);
+    if command.oath.is_none() {
+        grant_pass_stamina(key, army, progress, execution.rules.unbox().troop_stamina_config);
+    }
     crate::logic::progression::write(key, progress);
+}
+
+fn grant_pass_stamina(
+    key: ExplorerKey,
+    army: crate::troops::ExplorerTroops,
+    progress: crate::progression::ArmyProgress,
+    rules: crate::rules::TroopStaminaConfig,
+) {
+    let maximum = crate::progression::stamina_max(progress, army.troops.category, rules);
+    let mut stamina = army.troops.stamina.inline();
+    stamina.amount += crate::oaths::PASS_STAMINA.into();
+    stamina.clamp(maximum);
+    crate::logic::army_slot_storage::persist(
+        key,
+        crate::troops::ExplorerRecordTrait::into_record(crate::logic::troops::explorer(key).expect('missing explorer')),
+        crate::troops::Troops { stamina: crate::troops::StaminaSource::Inline(stamina), ..army.troops },
+    );
 }

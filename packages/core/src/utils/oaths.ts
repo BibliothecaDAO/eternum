@@ -45,6 +45,10 @@ export function chooseOath(
   return { ...progress, oaths, oath_pick: 0 };
 }
 
+export function oathPassStamina(current: number, maximum: number): number {
+  return Math.min(current + oathRules.PASS_STAMINA, maximum);
+}
+
 export function oathDeepLossPerTick(oaths: number, base: bigint): bigint {
   return (oaths & (1 << (oathRules.VITRIOL - 1))) !== 0
     ? BigInt(oathRules.VITRIOL_LOSS_PER_TICK) * BigInt(RESOURCE_PRECISION)

@@ -143,3 +143,22 @@ it("shows the army's captured Oath capacity rather than later home research", ()
   expect(host.querySelector("[data-oath-slots]")?.getAttribute("data-oath-slots")).toBe("4");
   expect(host.querySelector("[data-oath-slots]")?.textContent).not.toContain("Locked");
 });
+
+it("opens the earned pick without a selection and keeps it through Escape and outside presses", async () => {
+  const { FrontierOathPick } = await import("./oath-pick");
+  const { nativeOathConstants: oaths } = await import("@bibliothecadao/eternum/game-client");
+  game.progress.oath_slots = 1;
+  game.progress.oaths = 0;
+  game.progress.oath_pick = oaths.POWER - 1 + ((oaths.FOX - 1) << 4) + ((oaths.RAGE - 1) << 8);
+  act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
+  expect(host.querySelectorAll("[data-oath-id]")).toHaveLength(3);
+  expect(host.querySelector('button[aria-label="Close"]')).toBeNull();
+  act(() => {
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    host.querySelector<HTMLElement>(".ui-modal")!.click();
+  });
+  expect(host.querySelector("[data-oath-pick]")).not.toBeNull();
+  expect(host.querySelector<HTMLElement>("[data-oath-pass-result]")!.dataset.oathPassResult).toBe(String(army.stamina.current + oaths.PASS_STAMINA));
+  act(() => { game.progress.oath_pick = 0; root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />); });
+  expect(host.querySelector("[data-oath-pick]")).toBeNull();
+});

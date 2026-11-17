@@ -36,6 +36,7 @@ pub mod map;
 pub mod mines;
 pub mod movement;
 pub mod oaths;
+pub mod oath_commands;
 pub mod placement;
 pub mod preset_record;
 pub mod presets;

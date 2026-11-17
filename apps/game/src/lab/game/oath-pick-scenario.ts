@@ -1,5 +1,6 @@
+import { resolveExplorerTroops, staminaAt } from "@bibliothecadao/eternum/troop-stamina";
 import { seasonOneResearchPrices } from "./season-one-research";
-import { chooseOath } from "@bibliothecadao/eternum";
+import { chooseOath, oathPassStamina } from "@bibliothecadao/eternum";
 import { nativeOathConstants as oaths } from "@bibliothecadao/eternum/game-client";
 import { encodeNativeCommand } from "@bibliothecadao/provider";
 import { nativeBindings } from "@/runtime/world/native-bindings";
@@ -15,6 +16,17 @@ export function oathPickScenario(full = false, game = spireScenario(), fightOath
     answer: (command, chain, now) =>
       answerDeletion(command, chain) ?? answerChoice(command, chain, now) ?? game.answer(command, chain, now),
   };
+}
+
+export function oathPassCappedScenario(): LabScenario {
+  const game = oathPickScenario(true);
+  const army = game.store.require("ExplorerTroops", { game_id: 1, explorer_id: SPIRE_ARMY });
+  const troops = resolveExplorerTroops(game.store, army, game.startsAt);
+  if (!troops || troops.staminaMax === undefined || !("Slot" in army.troops.stamina)) throw new Error("Missing pass fixture stamina");
+  const day = game.store.require("ArmyDay", army);
+  const slot = game.store.require("ArmySlot", { game_id: 1, structure_id: army.owner, epoch: day.day, slot: army.troops.stamina.Slot });
+  game.store.applyFacts([{ model: "ArmySlot", key: game.store.wireKeyOf("ArmySlot", slot)!, value: wire({ ...slot, stamina: { ...slot.stamina, amount: troops.staminaMax - oaths.PASS_STAMINA / 2 } }) }]);
+  return game;
 }
 
 function prepareOathArmy(store: NativeFactStore, full: boolean, fightOath: number) {
@@ -70,12 +82,30 @@ function answerChoice(command: LabCommand, chain: NativeFactStore, now: number):
   const chosen = chooseOath(current, expected, oath, replace);
   return [
     ...settleDeepChoice(chain, explorer_id, now),
+    ...(oath === null ? passStamina(chain, explorer_id, now) : []),
     {
       model: "ArmyProgress",
       key: chain.wireKeyOf("ArmyProgress", current)!,
       value: wire(chosen),
     },
   ];
+}
+
+function passStamina(chain: NativeFactStore, explorer_id: number, now: number): LabFact[] {
+  const key = { game_id: 1, explorer_id };
+  const army = chain.require("ExplorerTroops", key);
+  if (!("Slot" in army.troops.stamina)) throw new Error("Oath army must have a slot");
+  const troops = resolveExplorerTroops(chain, army, now);
+  if (!troops || troops.staminaMax === undefined) throw new Error("Missing Oath army stamina");
+  const rules = chain.require("SliceRules", { game_id: key.game_id });
+  const bar = staminaAt(troops, now, rules.troop_stamina_config, Number(rules.tick_config.armies_tick_in_seconds));
+  const amount = oathPassStamina(Number(bar.amount), troops.staminaMax);
+  const day = chain.require("ArmyDay", key);
+  const slot = chain.require("ArmySlot", { game_id: key.game_id, structure_id: army.owner, epoch: day.day, slot: army.troops.stamina.Slot });
+  return [{
+    model: "ArmySlot", key: chain.wireKeyOf("ArmySlot", slot)!,
+    value: wire({ ...slot, stamina: { amount, settled_at: now, remainder: amount === troops.staminaMax ? 0 : bar.remainder } }),
+  }];
 }
 
 function answerDeletion(command: LabCommand, chain: NativeFactStore): LabFact[] | null {

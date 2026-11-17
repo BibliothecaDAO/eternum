@@ -49,7 +49,7 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
     let first = read_progress(d, key);
     assert!(first.oath_pick != 0);
     assert_eq!(first.oaths, 0);
-    explore(d, key, root, 361);
+    assert_army_commands_refused(d, key, first.oath_pick, 361);
     assert_eq!(read_progress(d, key).oath_pick, first.oath_pick);
     let taken = card(first.oath_pick, 0);
     let take = ChooseOath {
@@ -165,12 +165,8 @@ fn packing_preserves_all_sixteen_held_bits_and_the_offer() {
 }
 
 fn explore(d: super::Deployment, key: crate::troops::ExplorerKey, root: u256, timestamp: u64) {
-    for command in array![
-        crate::commands::Command::Explore(crate::commands::Explore { explorer_id: key.explorer_id, direction: 0 }),
-        crate::commands::Command::Move(
-            crate::commands::Move { explorer_id: key.explorer_id, directions: array![0].span() },
-        ),
-    ] {
+    for _ in 0..2 {
+        let command = crate::commands::Command::Explore(crate::commands::Explore { explorer_id: key.explorer_id, direction: 0 });
         let mut spy = snforge_std::spy_events();
         if !super::play_fixture::play(
             d.games, super::play_fixture::TestAction { game_id: key.game_id, actor: d.actor, command }, root, timestamp,
@@ -178,7 +174,9 @@ fn explore(d: super::Deployment, key: crate::troops::ExplorerKey, root: u256, ti
             let rejected = super::play_fixture::rejection(ref spy, d.games);
             panic!("shrine route rejected: {}", rejected.reason);
         }
+        if read_progress(d, key).oath_pick != 0 { return; }
     }
+    panic!("no shrine pick");
 }
 
 #[test]
@@ -194,5 +192,76 @@ fn deep_loss_matches_the_client_vectors_with_and_without_vitriol() {
         let loss = crate::oaths::deep_loss_per_tick(oaths, base);
         assert_eq!(loss, expected_loss);
         assert_eq!(crate::deep::troops_after_ticks(troops, 10, 10 + ticks, loss), expected_troops);
+    }
+}
+
+fn assert_army_commands_refused(d: super::Deployment, key: crate::troops::ExplorerKey, pick: u16, timestamp: u64) {
+    use crate::commands::{Command, Explore, Move, Battle, EnterDepth};
+    use crate::troop_management::{ManageTroops, RecruitExplorer, TransferTroops, Army};
+    let state = GameState { contract_address: d.games };
+    let before = state.explorer(key).unwrap();
+    for command in array![
+        Command::Explore(Explore { explorer_id: key.explorer_id, direction: 0 }),
+        Command::Move(Move { explorer_id: key.explorer_id, directions: array![0].span() }),
+        Command::BattleGuard(Battle { attacker_id: key.explorer_id, defender_id: 1, relic_slot: None }),
+        Command::EnterDepth(EnterDepth { explorer_id: key.explorer_id, depth: 1 }),
+        Command::InteractSite(crate::relics::InteractSite { explorer_id: key.explorer_id, coord: before.coord }),
+        Command::ApplyRelic(crate::relics::ApplyRelic { entity_id: key.explorer_id, relic_id: 1, recipient: crate::relics::Recipient::ArmySlot(0) }),
+        Command::ManageTroops(ManageTroops::RemoveExplorer(key.explorer_id)),
+        Command::ManageTroops(ManageTroops::RecruitExplorer(RecruitExplorer { explorer_id: key.explorer_id, amount: 1, supply_post: None })),
+        Command::ManageTroops(ManageTroops::Transfer(TransferTroops { source: Army::Explorer(key.explorer_id), target: Army::Explorer(999), amount: 1 })),
+        Command::ManageTroops(ManageTroops::Transfer(TransferTroops { source: Army::Explorer(999), target: Army::Explorer(key.explorer_id), amount: 1 })),
+        Command::SetEntityName(crate::names::SetEntityName { entity_id: key.explorer_id, name: 'waiting' }),
+    ] {
+        let mut spy = snforge_std::spy_events();
+        assert!(!super::resource_commands::execute_in_game(d, key.game_id, command, timestamp));
+        assert_eq!(super::play_fixture::rejection(ref spy, d.games).reason, "ANSWER_OATH_FIRST");
+        assert_eq!(read_progress(d, key).oath_pick, pick);
+        assert_eq!(state.explorer(key).unwrap(), before);
+    }
+}
+
+#[test]
+fn passing_matches_client_vectors_and_cannot_be_replayed_with_empty_or_full_slots() {
+    use crate::stamina::{StaminaSourceTrait, StaminaTrait};
+    use crate::troops::{StaminaSource, ExplorerRecordTrait};
+    let fields = read_txt(@FileTrait::new("../fixtures/oath-pass-stamina.txt"));
+    assert_eq!(fields.len(), 8);
+    for full in array![false, true] {
+        let mut values = fields.span();
+        while !values.is_empty() {
+            let (deficit, gain): (u64, u64) = Serde::deserialize(ref values).unwrap();
+            let (d, game_id, key) = super::registrar::setup_frontier_relics();
+            let (before, maximum, pick) = snforge_std::interact_with_state(d.games, || {
+                let mut progress = crate::logic::progression::require(key);
+                progress.oaths = if full { crate::oaths::bit(crate::oaths::GIANTS) } else { 0 };
+                progress.oath_pick = draw(progress.oaths, 1);
+                crate::logic::progression::write(key, progress);
+                let original = crate::logic::troops::explorer(key).unwrap();
+                let mut army = crate::logic::army_slot_storage::resolve(key, original, None);
+                let rules = crate::commands::load_context(game_id, 0, 360).rules.unbox();
+                let maximum = crate::progression::stamina_max(progress, army.troops.category, rules.troop_stamina_config);
+                let mut bar = army.troops.stamina.inline();
+                bar.amount = maximum - deficit;
+                bar.settled_at = 360;
+                bar.remainder = 0;
+                army.troops.stamina = StaminaSource::Inline(bar);
+                crate::logic::army_slot_storage::persist(key, original.into_record(), army.troops);
+                (bar.amount, maximum, progress.oath_pick)
+            });
+            let command = crate::commands::Command::ChooseOath(ChooseOath { explorer_id: key.explorer_id, expected_pick: pick, oath: None, replace: None });
+            assert!(super::resource_commands::execute_in_game(d, game_id, command, 360));
+            let after = snforge_std::interact_with_state(d.games, || {
+                crate::logic::army_slot_storage::resolve(key, crate::logic::troops::explorer(key).unwrap(), None).troops.stamina.inline()
+            });
+            assert_eq!(after.amount, before + gain);
+            assert!(after.amount <= maximum);
+            assert_eq!(read_progress(d, key).oath_pick, 0);
+            assert_eq!(read_progress(d, key).oaths, if full { crate::oaths::bit(crate::oaths::GIANTS) } else { 0 });
+            assert!(!super::resource_commands::execute_in_game(d, game_id, command, 360));
+            assert_eq!(snforge_std::interact_with_state(d.games, || {
+                crate::logic::army_slot_storage::resolve(key, crate::logic::troops::explorer(key).unwrap(), None).troops.stamina.inline()
+            }), after);
+        }
     }
 }

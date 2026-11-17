@@ -1,5 +1,5 @@
 import { nativeOathConstants as oaths } from "@bibliothecadao/eternum/game-client";
-import { oathPickScenario } from "./oath-pick-scenario";
+import { oathPickScenario, oathPassCappedScenario } from "./oath-pick-scenario";
 import { oathSlotsScenario } from "./oath-slots-scenario";
 import { battleTargetScenario, deepBattleTargetScenario } from "./battle-target-scenario";
 import { townScenario } from "./town-scenario";
@@ -73,6 +73,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "oath-vitriol": () => oathPickScenario(false, deepScenario(), oaths.VITRIOL),
   "oath-pick": () => oathPickScenario(),
   "oath-replace": () => oathPickScenario(true),
+  "oath-pass-capped": oathPassCappedScenario,
   "battle-target": battleTargetScenario,
   "high-ground": highGroundScenario,
   "day-end": dayEndScenario,

@@ -1094,23 +1094,59 @@ function deleteOathArmyStep() {
   };
 }
 
+const oathRules = JSON.parse(readFileSync(new URL("../../../../contracts/l3/world-native/schema/schema.json", import.meta.url), "utf8")).oathConstants;
+
+function oathPassSteps(capped) {
+  return [
+    ...oathPickSteps(true).slice(0, 2),
+    {
+      name: "decline-oath",
+      play: async ({ browser }) => {
+        const before = browser.read("window.__labChain.sent.length");
+        const preview = browser.read(`(() => {
+          const button = document.querySelector('[data-oath-pass-result]');
+          return { current: Number(button.dataset.oathPassCurrent), maximum: Number(button.dataset.oathPassMaximum), result: Number(button.dataset.oathPassResult) };
+        })()`);
+        const pass = browser.read(elementAt('[data-oath-pass-result]'));
+        browser.tap(pass.offset);
+        const declined = await readUntil(() => browser.read(`(() => {
+          const answer = window.__labChain.sent.at(-1);
+          const progress = answer?.answered.find(({model}) => model === "ArmyProgress")?.value;
+          return window.__labChain.sent.length === ${before + 1} && answer.command.kind === "ChooseOath" &&
+            Number(progress?.oaths) === 1 && Number(progress?.oath_pick) === 0 && !document.querySelector('[data-oath-pick]');
+        })()`), Boolean, ORDER_OUTCOME_WAIT_MS);
+        const answer = JSON.parse(browser.read("JSON.stringify(window.__labChain.sent.at(-1))"));
+        const slot = answer.answered.find(({model}) => model === "ArmySlot")?.value;
+        const shown = browser.read("document.querySelector('[data-oath-slots]')?.closest('[role=dialog]')?.textContent ?? ''");
+        return { declined, answer, slot, preview, shown };
+      },
+      verify: ({ played }) => {
+        const amount = Number(played.slot?.stamina.amount);
+        const expected = capped ? oathRules.PASS_STAMINA / 2 : oathRules.PASS_STAMINA;
+        return played.declined && amount === played.preview.result &&
+          amount === Math.min(played.preview.current + oathRules.PASS_STAMINA, played.preview.maximum) &&
+          amount - played.preview.current === expected
+          ? completed({ ...played, expectedGain: expected })
+          : failed("Pass must retain the held Oath, clear the offer and write stamina", played);
+      },
+    },
+  ];
+}
+
 function oathPickSteps(full, layer = "Map") {
   return [
     { name: "enter-on-map", settleMs: 3000, verify: inScene("map", layer) },
     {
       name: "open-oath-pick",
       play: async ({ browser }) => {
-        const army = browser.read(buttonLabelled("^Army 1$"));
-        if (army) browser.tap(army.offset);
-        const details = await readUntil(
-          () => browser.read(buttonLabelled("^Army 1: details$")),
-          Boolean,
-          SHEET_WAIT_MS,
-        );
-        if (details) browser.tap(details.offset);
         const pick = await readUntil(() => browser.read(elementAt("[data-oath-pick]")), Boolean, SHEET_WAIT_MS);
+        const before = browser.read("window.__labChain.sent.length");
+        browser.press("Escape");
+        browser.tap({ x: 5, y: 5 });
+        const locked = browser.read(`Boolean(document.querySelector('[data-oath-pick]')) &&
+          !document.querySelector('.ui-modal button[aria-label="Close"]') && window.__labChain.sent.length === ${before}`);
         return {
-          pick,
+          pick, locked,
           cards: browser.read("document.querySelectorAll('[data-oath-id]').length"),
           visible: browser.read(`(() => {
             const nodes = [...document.querySelectorAll('[data-oath-id], [data-oath-pick] > button')];
@@ -1124,7 +1160,7 @@ function oathPickSteps(full, layer = "Map") {
         };
       },
       verify: ({ played }) =>
-        played.pick && played.cards === 3 && played.visible
+        played.pick && played.locked && played.cards === 3 && played.visible
           ? completed(played)
           : failed("Three Oath cards did not appear", played),
     },
@@ -6348,35 +6384,8 @@ export const STEP_SETS = {
   "lab-race-finished": { game: labSpireGame("race-finished"), steps: raceBoardSteps("won") },
 
   "lab-discovered-spire": { game: labSpireGame("discovered-spire"), steps: DISCOVERED_SPIRE_STEPS },
-  "lab-oath-decline": {
-    game: labSpireGame("oath-replace"),
-    steps: [
-      ...oathPickSteps(true).slice(0, 2),
-      {
-        name: "decline-oath",
-        play: async ({ browser }) => {
-          const before = browser.read("window.__labChain.sent.length");
-          browser.click("Keep my Oaths");
-          const declined = await readUntil(
-            () =>
-              browser.read(`(() => {
-          const answer = window.__labChain.sent.at(-1);
-          const progress = answer?.answered.find(({model}) => model === "ArmyProgress")?.value;
-          return window.__labChain.sent.length === ${before + 1} && answer.command.kind === "ChooseOath" &&
-            Number(progress?.oaths) === 1 && Number(progress?.oath_pick) === 0 && !document.querySelector('[data-oath-pick]');
-        })()`),
-            Boolean,
-            ORDER_OUTCOME_WAIT_MS,
-          );
-          return { declined, answer: browser.read("JSON.stringify(window.__labChain.sent.at(-1))") };
-        },
-        verify: ({ played }) =>
-          played.declined
-            ? completed(played)
-            : failed("Decline must preserve the held Oath and clear only the offer", played),
-      },
-    ],
-  },
+  "lab-oath-decline": { game: labSpireGame("oath-replace"), steps: oathPassSteps(false) },
+  "lab-oath-pass-capped": { game: labSpireGame("oath-pass-capped"), steps: oathPassSteps(true) },
   "lab-oath-vitriol": {
     game: labSpireGame("oath-vitriol"),
     steps: [

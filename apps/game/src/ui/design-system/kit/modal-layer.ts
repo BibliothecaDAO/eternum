@@ -7,7 +7,7 @@ import { useSheetCloses } from "./sheet-closes";
  * everything outside it inert while it is mounted, the keyboard's focus held in it (taken as it opens, Tab and Shift+Tab
  * going round its controls, given back to what opened it once it closes), and `onClose` on Escape or the system back.
  */
-export const useModalLayer = (layer: RefObject<HTMLElement | null>, onClose: () => void) => {
+export const useModalLayer = (layer: RefObject<HTMLElement | null>, onClose?: () => void) => {
   useSheetCloses(onClose);
   useInertOutside(layer);
   useFocusHeld(layer);
