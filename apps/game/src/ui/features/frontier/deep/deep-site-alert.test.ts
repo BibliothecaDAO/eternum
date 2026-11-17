@@ -10,7 +10,10 @@ function fixture(guardCounts = [1000]) {
   const slot = store.require("ArmySlot", { game_id: 1, structure_id: army.owner, epoch: 0n, slot: 0 });
   const progress = store.require("ArmyProgress", { game_id: 1, explorer_id: 201 });
   let key = 0x9000;
-  const write = <M extends NativeModelName>(model: M, row: NativeRows[M]) => {
+  const write = <M extends NativeModelName>(
+    model: M,
+    row: NativeRows[M] & Parameters<typeof store.wireKeyOf<M>>[1],
+  ) => {
     store.applyFacts([{ model, key: store.wireKeyOf(model, row) ?? `0x${(key++).toString(16)}`, value: row }]);
   };
   const change = <M extends NativeModelName>(
