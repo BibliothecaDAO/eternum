@@ -143,10 +143,21 @@ for (const historical of [true, false]) {
       upsert("0x6", "BoardRules", { ...store.require("BoardRules", { game_id: 1 }), ration_step: PRECISION / 5n }),
       upsert("0x9", "GameRelease", { game_id: 1, created_release_id: 1, release_id: 2, preset_commitment: "0x789" }),
     ]);
-    const gate = followGameRelease(store, {
-      gameId: 1, schemaIdentity: nativeFactSchemaIdentity,
-      shard: { url: "http://shard.test", releaseSchemas: { "1": historical ? retiredTown.schemaIdentity : nativeFactSchemaIdentity, "2": nativeFactSchemaIdentity } },
-    }, () => undefined);
+    const gate = followGameRelease(
+      store,
+      {
+        gameId: 1,
+        schemaIdentity: nativeFactSchemaIdentity,
+        shard: {
+          url: "http://shard.test",
+          releaseSchemas: {
+            "1": historical ? retiredTown.schemaIdentity : nativeFactSchemaIdentity,
+            "2": nativeFactSchemaIdentity,
+          },
+        },
+      },
+      () => undefined,
+    );
     let forecast: ReturnType<typeof readTroopRaiseCost>;
     const reading = gate.ready().then(() => (forecast = readTroopRaiseCost(store, 1, 7, 26, 5, 100)));
     try {

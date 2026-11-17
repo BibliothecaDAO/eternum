@@ -67,27 +67,27 @@ const releaseSnapshot = {
   ],
 };
 const reviewRegistry = {
-          model: "GameRegistry",
-          rows: [
-            {
-              key: "0x36",
-              value: {
-                name: "0x7465737432",
-                seed: "0x1",
-                ready: true,
-                scheduled_end_at: "0x6ad5da80",
-                end_at: "0x6ad5da80",
-                game_id: "0x36",
-                settled: true,
-                preset_id: "0x2",
-                dev_mode_on: false,
-                start_main_at: "0x6ad5cf60",
-                end_grace_seconds: "0x0",
-                start_settling_at: "0x6ad5ce34",
-              },
-            },
-          ],
-        };
+  model: "GameRegistry",
+  rows: [
+    {
+      key: "0x36",
+      value: {
+        name: "0x7465737432",
+        seed: "0x1",
+        ready: true,
+        scheduled_end_at: "0x6ad5da80",
+        end_at: "0x6ad5da80",
+        game_id: "0x36",
+        settled: true,
+        preset_id: "0x2",
+        dev_mode_on: false,
+        start_main_at: "0x6ad5cf60",
+        end_grace_seconds: "0x0",
+        start_settling_at: "0x6ad5ce34",
+      },
+    },
+  ],
+};
 
 const snapshotEnd = { epoch: "epoch-a", seq: 0, type: "snapshot_end" };
 
@@ -353,9 +353,7 @@ describe("createGameClient", () => {
     const review = {
       confirmed_block: 640,
       game_id: "54",
-      models: [rulesSnapshot, releaseSnapshot]
-        .map(({ model, rows }) => ({ model, rows }))
-        .concat(reviewRegistry),
+      models: [rulesSnapshot, releaseSnapshot].map(({ model, rows }) => ({ model, rows })).concat(reviewRegistry),
     };
     vi.stubGlobal(
       "fetch",
@@ -602,25 +600,53 @@ for (const archived of [false, true]) {
   for (const incompatible of [null, 1, 2, 3]) {
     it(`reads town state and history only across matching releases: archived=${archived}, incompatible=${incompatible}`, async () => {
       const harness = createHarness();
-      const releaseSchemas = Object.fromEntries([1, 2, 3].map((id) => [String(id), id === incompatible ? retiredTown.schemaIdentity : bindings.schemaIdentity]));
+      const releaseSchemas = Object.fromEntries(
+        [1, 2, 3].map((id) => [String(id), id === incompatible ? retiredTown.schemaIdentity : bindings.schemaIdentity]),
+      );
       expect(retiredTown.schemaIdentity).not.toBe(bindings.schemaIdentity);
       harness.input.shard.releaseSchemas = releaseSchemas;
-      const release = { ...releaseSnapshot, rows: [{ ...releaseSnapshot.rows[0]!, value: { ...releaseSnapshot.rows[0]!.value, release_id: 3 } }] };
-      const knowledge = { ...rulesSnapshot, model: "RealmKnowledge", rows: [{ key: "0x99", value: { game_id: 54, structure_id: 7, learned: retiredTown.learned } }] };
+      const release = {
+        ...releaseSnapshot,
+        rows: [{ ...releaseSnapshot.rows[0]!, value: { ...releaseSnapshot.rows[0]!.value, release_id: 3 } }],
+      };
+      const knowledge = {
+        ...rulesSnapshot,
+        model: "RealmKnowledge",
+        rows: [{ key: "0x99", value: { game_id: 54, structure_id: 7, learned: retiredTown.learned } }],
+      };
       const models = [rulesSnapshot, release, knowledge, reviewRegistry];
-      harness.fetchManifest.mockImplementation(async (url) => new Response(JSON.stringify(String(url).endsWith("/review/snapshot")
-        ? { game_id: "54", confirmed_block: 12, models }
-        : { ...harness.manifest, releaseSchemas })));
+      harness.fetchManifest.mockImplementation(
+        async (url) =>
+          new Response(
+            JSON.stringify(
+              String(url).endsWith("/review/snapshot")
+                ? { game_id: "54", confirmed_block: 12, models }
+                : { ...harness.manifest, releaseSchemas },
+            ),
+          ),
+      );
       const read = vi.fn((client: Awaited<ReturnType<typeof createGameClient>>) => {
         const learned = client.setup.store.require("RealmKnowledge", { game_id: 54, structure_id: 7 }).learned;
         return {
           camp: researchTier(learned, research.ROW_CONSCRIPTION),
           depot: researchTier(learned, research.ROW_RATIONS),
-          slots: [TroopType.Knight, TroopType.Paladin, TroopType.Crossbowman].map((troop) => troopOathSlots(learned, troop)),
-          titles: retiredTown.buildings.map(({ category }) => buildStoryEventPresentation({
-            storyType: "BuildingPlacementStory", storyPayload: { category, change: { Created: {} } },
-            entityId: null, ownerAddress: "0x123", viewerAddress: null,
-          } as Parameters<typeof buildStoryEventPresentation>[0], client.setup.store, () => "Player").title),
+          slots: [TroopType.Knight, TroopType.Paladin, TroopType.Crossbowman].map((troop) =>
+            troopOathSlots(learned, troop),
+          ),
+          titles: retiredTown.buildings.map(
+            ({ category }) =>
+              buildStoryEventPresentation(
+                {
+                  storyType: "BuildingPlacementStory",
+                  storyPayload: { category, change: { Created: {} } },
+                  entityId: null,
+                  ownerAddress: "0x123",
+                  viewerAddress: null,
+                } as Parameters<typeof buildStoryEventPresentation>[0],
+                client.setup.store,
+                () => "Player",
+              ).title,
+          ),
         };
       });
       const creation = createGameClient(harness.input);
@@ -641,7 +667,9 @@ for (const archived of [false, true]) {
         expect(socket.closed).toBe(true);
       } else {
         expect(await harness.settle(reading)).toEqual({
-          camp: 1, depot: 1, slots: [2, 4, 2],
+          camp: 1,
+          depot: 1,
+          slots: [2, 4, 2],
           titles: ["Player built a Rations Depot", "Player built a Conscription Camp"],
         });
         (await creation).dispose();

@@ -126,17 +126,34 @@ for (const origin of [0, 3]) {
 
 it("refreshes a missing historical release before allowing the game", async () => {
   const store = new NativeFactStore();
-  store.applyFacts([{
-    model: "GameRelease", key: "0x1",
-    value: { game_id: 1, release_id: 2, created_release_id: 1, preset_commitment: "0x789" },
-  }]);
-  const fetched = vi.fn().mockResolvedValue(new Response(JSON.stringify({
-    version: 1, chainId: "0x1", releaseSchemas: { "1": "old", "2": "schema" },
-    rpcUrl: "http://rpc.test", l2GasBound: "0x47868c00", contracts: { games: "0x1" }, accountClassHash: "0x2", guardianPublicKey: "0x3",
-  })));
+  store.applyFacts([
+    {
+      model: "GameRelease",
+      key: "0x1",
+      value: { game_id: 1, release_id: 2, created_release_id: 1, preset_commitment: "0x789" },
+    },
+  ]);
+  const fetched = vi.fn().mockResolvedValue(
+    new Response(
+      JSON.stringify({
+        version: 1,
+        chainId: "0x1",
+        releaseSchemas: { "1": "old", "2": "schema" },
+        rpcUrl: "http://rpc.test",
+        l2GasBound: "0x47868c00",
+        contracts: { games: "0x1" },
+        accountClassHash: "0x2",
+        guardianPublicKey: "0x3",
+      }),
+    ),
+  );
   vi.stubGlobal("fetch", fetched);
   const failed = vi.fn();
-  const gate = followGameRelease(store, { gameId: 1, shard: { url: "http://shard.test", releaseSchemas: { "2": "schema" } }, schemaIdentity: "schema" }, failed);
+  const gate = followGameRelease(
+    store,
+    { gameId: 1, shard: { url: "http://shard.test", releaseSchemas: { "2": "schema" } }, schemaIdentity: "schema" },
+    failed,
+  );
   await expect(gate.ready()).rejects.toThrow("release 1");
   expect(fetched).toHaveBeenCalledOnce();
   expect(failed).toHaveBeenCalledOnce();
