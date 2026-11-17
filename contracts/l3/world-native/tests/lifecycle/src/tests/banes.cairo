@@ -221,7 +221,8 @@ pub fn complete(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) {
         let mut events = spy_events();
         if !world_test_support::tests::registrar::explore_with_root(d, home.game_id, explorer_id, root, timestamp) {
             panic!(
-                "quest exploration rejected: {}", world_test_support::tests::play_fixture::rejection(ref events, d.games).reason,
+                "quest exploration rejected: {}",
+                world_test_support::tests::play_fixture::rejection(ref events, d.games).reason,
             );
         }
     }
