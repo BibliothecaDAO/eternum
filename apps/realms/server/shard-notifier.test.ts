@@ -107,6 +107,14 @@ const createHerald = () => {
     ownerReads: [] as string[],
     /** The players the snapshot reads were scoped to as actors, in order. */
     actorReads: [] as string[],
+    /** The players whose scoped stream has been sent its whole snapshot. */
+    streamedSnapshots: [] as string[],
+    /** The releases the manifest lists. */
+    catalogue: { "1": bindings.schemaIdentity } as Record<string, string>,
+    /** The pin a player's scoped snapshot shows, where it is not release 1. */
+    pins: new Map<string, { release_id: number; created_release_id: number }>(),
+    /** Releases published into the catalogue once the player's own armies have been read. */
+    publishAfterPlayerRead: null as null | Record<string, string>,
   };
   const answer = (url: URL): unknown => {
     if (url.pathname === "/games") state.gamesReads++;
@@ -122,7 +130,7 @@ const createHerald = () => {
         version: 1,
         chainId: state.chain,
         contracts: { games: "0x5e45" },
-        releaseSchemas: { "1": bindings.schemaIdentity },
+        releaseSchemas: state.catalogue,
       };
     if (url.pathname === "/games")
       return {
@@ -168,11 +176,21 @@ const createHerald = () => {
         state.homeSource,
         state.secondArmy,
       );
-      return siteSnapshot(
+      const scoped = siteSnapshot(
         { ...read, models: [...read.models, ...mistFacts(state.mistEndedAt)] },
         state.site,
         url.searchParams.get("owner"),
       );
+      const pin = state.pins.get(url.searchParams.get("owner") ?? "");
+      if (pin)
+        scoped.models.find(({ model }) => model === "GameRelease")!.rows = [
+          { key: "0x1", value: { game_id: GAME_ID, preset_commitment: "0x1", ...pin } },
+        ];
+      if (url.searchParams.get("owner") === PLAYER_ACCOUNT && state.publishAfterPlayerRead) {
+        Object.assign(state.catalogue, state.publishAfterPlayerRead);
+        state.publishAfterPlayerRead = null;
+      }
+      return scoped;
     }
     const page = { chain: state.chain, world_address: "0x5e45", complete_through_block: 10 + log.length };
     const after = url.searchParams.get("after");
@@ -229,12 +247,12 @@ const createHerald = () => {
     });
   };
   /** Any story of the player's on the next block, written as the explore story was recorded. */
-  const story = (variant: string, payload: Record<string, unknown>) => {
+  const story = (variant: string, payload: Record<string, unknown>, owner = PLAYER_ACCOUNT) => {
     const recorded = recordedItem("StoryEvent", "ExplorationReward");
     append(recorded, {
       ...recorded.value,
       game_id: GAME_ID,
-      owner: PLAYER_ACCOUNT,
+      owner,
       timestamp: Math.floor(Date.now() / 1000),
       story: { [variant]: payload },
     });
@@ -261,6 +279,7 @@ const createHerald = () => {
       for (const model of snap.models)
         server.send(JSON.stringify({ type: "snapshot", epoch: "site-test", seq: connection.seq, ...model }));
       server.send(JSON.stringify({ type: "snapshot_end", epoch: "site-test", seq: connection.seq }));
+      if (actor) state.streamedSnapshots.push(actor);
     });
     server.send(
       JSON.stringify({ type: "hello", epoch: "site-test", seq: 0, confirmed_block: 10, preconfirmed_block: null }),
@@ -431,26 +450,38 @@ const seed = async (db: D1Database, level: string, device: { p256dh: string; aut
 
 // Each case owns its Worker, persistent storage and network fixtures.
 describe.concurrent("shard notifications", () => {
-  it("finds a Deep site opportunity when private research makes the idle army eligible", async () => {
-    const { herald, push, worker } = await createHarness("important");
-    herald.state.site = { troops: 1000, aspect: 2, lore: false, lastTick: armiesTick() };
-    const heartbeat = setInterval(herald.heartbeat, 2000);
-    try {
-      await worker.runCron();
-      await pause(polls(3));
-      expect(push.received).toEqual([]);
-      herald.state.site.lore = true;
-      herald.state.site.lastTick = armiesTick();
-      herald.researchChanged();
-      await waitUntil(() => push.received.length === 1, 20000);
-      expect(await push.words()).toEqual([
-        "Quarry can be taken / Your largest army outside the Deep can clear its remaining guards.",
-      ]);
-    } finally {
-      clearInterval(heartbeat);
-      await worker.dispose();
-    }
-  }, 60000);
+  describe.each([
+    ["just after a guard tick", (): boolean => Date.now() % ticks(1) < 500],
+    ["just before a guard tick", (): boolean => Date.now() % ticks(1) > ticks(1) - 1_500],
+  ])("private research completed %s", (_phase, atPhase) => {
+    it("makes the idle army eligible: nothing before the first tick that clears the guards, one alert after it", async () => {
+      const { herald, push, worker } = await createHarness("important");
+      herald.state.site = { troops: 1000, aspect: 2, lore: false, lastTick: armiesTick() };
+      const heartbeat = setInterval(herald.heartbeat, 2000);
+      try {
+        await worker.runCron();
+        await waitUntil(() => herald.state.streamedSnapshots.includes(PLAYER_ACCOUNT), 30_000);
+        await waitUntil(atPhase, 15_000);
+        const changedAt = Date.now();
+        const earliest = (Math.floor(changedAt / ticks(1)) + 1) * ticks(1);
+        herald.state.site.lore = true;
+        herald.state.site.lastTick = armiesTick();
+        herald.researchChanged();
+        await waitUntil(() => Date.now() >= earliest - 100, 15_000);
+        expect(push.received).toEqual([]);
+        await waitUntil(() => push.received.length === 1, ticks(2) + polls(3));
+        expect(Date.now()).toBeGreaterThanOrEqual(earliest);
+        expect(await push.words()).toEqual([
+          "Quarry can be taken / Your largest army outside the Deep can clear its remaining guards.",
+        ]);
+        await pause(polls(3));
+        expect(push.received).toEqual([201]);
+      } finally {
+        clearInterval(heartbeat);
+        await worker.dispose();
+      }
+    }, 90_000);
+  });
 
   it("arms a quiet game's watches after one failed release check, with no fact change in between", async () => {
     const { herald, push, worker } = await createHarness("important");
@@ -634,6 +665,51 @@ describe.concurrent("shard notifications", () => {
     expect(new Set(await push.tags())).toEqual(new Set([`army-rested:/g/${CHAIN_ID}/${GAME_ID}`]));
     await worker.dispose();
   }, 420_000);
+
+  describe("a release published while a story page's rested armies are read", () => {
+    const NEIGHBOUR = "0x7e1";
+    const play = async (published: Record<string, string>) => {
+      const harness = await createHarness("important");
+      const { herald, worker } = harness;
+      await worker.db
+        .prepare(`INSERT INTO "realms_accounts" ("address", "realmsId") VALUES (?, ?)`)
+        .bind(NEIGHBOUR, OWNER)
+        .run();
+      await worker.runCron();
+      await pause(polls(5));
+      herald.state.army = null;
+      herald.state.neighbourArmy = { amount: 0, settledAt: Math.floor(Date.now() / 1000), day: TODAY };
+      herald.state.pins.set(NEIGHBOUR, { release_id: 2, created_release_id: 1 });
+      herald.state.publishAfterPlayerRead = published;
+      herald.story("ExplorationReward", {});
+      herald.story("ExplorationReward", {}, NEIGHBOUR);
+      return harness;
+    };
+
+    it("alerts the second actor once the catalogue is read again, with no further action", async () => {
+      const { herald, push, worker } = await play({ "2": bindings.schemaIdentity });
+      try {
+        await waitUntil(() => push.received.length >= 1, 90_000);
+        expect(herald.state.publishAfterPlayerRead).toBeNull();
+        expect(await push.words()).toEqual(["Your armies are rested / Frontier: their stamina is full."]);
+        await pause(polls(5));
+        expect(push.received).toEqual([201]);
+      } finally {
+        await worker.dispose();
+      }
+    }, 150_000);
+
+    it("sends nothing when the release it names cannot be read", async () => {
+      const { herald, push, worker } = await play({ "2": "0x1" });
+      try {
+        await waitUntil(() => herald.state.publishAfterPlayerRead === null, 30_000);
+        await pause(ticks(REST_TICKS + 3) + polls(5));
+        expect(push.received).toEqual([]);
+      } finally {
+        await worker.dispose();
+      }
+    }, 150_000);
+  });
 
   it("does not alert held or exhausted Deep armies", async () => {
     const { herald, push, worker } = await createHarness("important");

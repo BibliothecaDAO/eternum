@@ -37,6 +37,7 @@ import {
   type RestWatch,
 } from "./army-rest";
 import { followDeepSites } from "./deep-site-stream";
+import { ShardReleaseMismatchError } from "@bibliothecadao/eternum/game-client";
 import { readReleaseCatalogue, type ReleaseCatalogue } from "./game-facts";
 import { readDeepSiteWatches, type DeepSiteWatch } from "./deep-site-watch";
 import { decodeIdentityEnv, type IdentityEnv } from "./env";
@@ -771,26 +772,22 @@ const watchRestingArmies = (env: IdentityEnv, shard: Required<WatchedShard>, pag
         const owner = realmsIds.get(actor);
         return owner && wanted.has(owner) ? [{ gameId, actor, owner }] : [];
       });
-      let catalogue: Promise<ReleaseCatalogue> | undefined;
+      let catalogue: ReleaseCatalogue | undefined;
+      const armiesOf = async ({ gameId, actor }: RestingActor) => {
+        catalogue ??= await readReleaseCatalogue(shard.url);
+        try {
+          return await readActorArmies(shard.url, gameId, actor, now, catalogue);
+        } catch (error) {
+          if (!(error instanceof ShardReleaseMismatchError)) throw error;
+          catalogue = await readReleaseCatalogue(shard.url);
+          return readActorArmies(shard.url, gameId, actor, now, catalogue);
+        }
+      };
       // A player whose armies cannot be read keeps the watches they had; the rest of the page goes on.
       const watched = yield* Effect.forEach(resting, (actor) =>
         Effect.promise(async () => {
           try {
-            return [
-              {
-                actor,
-                watches: restWatchesOf(
-                  actor,
-                  await readActorArmies(
-                    shard.url,
-                    actor.gameId,
-                    actor.actor,
-                    now,
-                    await (catalogue ??= readReleaseCatalogue(shard.url)),
-                  ),
-                ),
-              },
-            ];
+            return [{ actor, watches: restWatchesOf(actor, await armiesOf(actor)) }];
           } catch (error) {
             console.error(
               "shard_notifier_armies_unread",
