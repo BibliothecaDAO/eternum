@@ -43,11 +43,11 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
             );
         },
     );
-    explore(d, key, root, 360, 0);
+    explore(d, key, root, 360);
     let first = read_progress(d, key);
     assert!(first.oath_pick != 0);
     assert_eq!(first.oaths, 0);
-    explore(d, key, root, 361, 1);
+    explore(d, key, root, 361);
     assert_eq!(read_progress(d, key).oath_pick, first.oath_pick);
     let taken = card(first.oath_pick, 0);
     let take = ChooseOath {
@@ -66,7 +66,7 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
     assert_eq!(chosen.oath_pick, 0);
     assert!(!super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(take), 363));
     assert_eq!(read_progress(d, key), chosen);
-    explore(d, key, root, 364, 2);
+    explore(d, key, root, 364);
     let second = read_progress(d, key);
     let replacement = card(second.oath_pick, 1);
     let replace = ChooseOath { expected_pick: second.oath_pick, oath: Some(replacement), ..take };
@@ -78,7 +78,7 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
         ),
     );
     assert_eq!(read_progress(d, key).oaths, crate::oaths::bit(replacement));
-    explore(d, key, root, 367, 4);
+    explore(d, key, root, 367);
     let third = read_progress(d, key);
     assert!(
         super::resource_commands::execute_in_game(
@@ -127,21 +127,20 @@ fn packing_preserves_all_sixteen_held_bits_and_the_offer() {
     );
 }
 
-fn explore(d: super::Deployment, key: crate::troops::ExplorerKey, root: u256, timestamp: u64, direction: u8) {
-    let mut spy = snforge_std::spy_events();
-    if !super::play_fixture::play(
-        d.games,
-        super::play_fixture::TestAction {
-            game_id: key.game_id,
-            actor: d.actor,
-            command: crate::commands::Command::Explore(
-                crate::commands::Explore { explorer_id: key.explorer_id, direction },
-            ),
-        },
-        root,
-        timestamp,
-    ) {
-        let rejected = super::play_fixture::rejection(ref spy, d.games);
-        panic!("exploration rejected: {}", rejected.reason);
+fn explore(d: super::Deployment, key: crate::troops::ExplorerKey, root: u256, timestamp: u64) {
+    for command in array![
+        crate::commands::Command::Explore(crate::commands::Explore { explorer_id: key.explorer_id, direction: 0 }),
+        crate::commands::Command::Move(crate::commands::Move { explorer_id: key.explorer_id, directions: array![0].span() }),
+    ] {
+        let mut spy = snforge_std::spy_events();
+        if !super::play_fixture::play(
+            d.games,
+            super::play_fixture::TestAction { game_id: key.game_id, actor: d.actor, command },
+            root,
+            timestamp,
+        ) {
+            let rejected = super::play_fixture::rejection(ref spy, d.games);
+            panic!("shrine route rejected: {}", rejected.reason);
+        }
     }
 }
