@@ -2,7 +2,9 @@ use crate::troops::ExplorerKey;
 
 pub fn offer(key: ExplorerKey, seed: u256) {
     let army = crate::logic::troops::explorer(key).expect('missing oath army');
-    assert!(crate::logic::expeditions::depth_at(key.game_id, army.coord) < 3, "no oaths in the Deep");
+    if crate::logic::expeditions::depth_at(key.game_id, army.coord) >= 3 {
+        return;
+    }
     let mut progress = crate::logic::progression::require(key);
     if progress.oath_pick != 0 {
         return;
