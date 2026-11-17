@@ -2284,7 +2284,7 @@ export const ARMY_DETAIL = {
 export const ARMY_MANAGEMENT = {
   remove: "Delete",
   confirmDelete: "Delete this army?",
-  loss: "Its troops and carried resources are lost. Its slot keeps its stamina.",
+  loss: "Its troops, carried resources and held Oaths are lost. Its slot keeps its stamina.",
   deleteFailed: "The army could not be deleted.",
 } as const;
 

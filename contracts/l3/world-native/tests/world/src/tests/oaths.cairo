@@ -1,5 +1,6 @@
 use crate::oaths::{ChooseOath, card, count, draw, held};
 use super::progression::read_progress;
+use super::state::{GameState, TroopObservationTrait};
 
 #[test]
 fn every_draw_has_three_colours_and_excludes_every_held_oath_even_with_four_of_one_colour() {
@@ -90,6 +91,34 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
     );
     assert_eq!(read_progress(d, key).oaths, crate::oaths::bit(replacement));
     assert_eq!(read_progress(d, key).oath_pick, 0);
+    let troops = GameState { contract_address: d.games };
+    let army = troops.explorer(key).unwrap();
+    let crate::troops::StaminaSource::Slot(slot) = army.troops.stamina else {
+        panic!("expected expedition slot");
+    };
+    let slot_key = crate::troops::ArmySlotKey { game_id, structure_id: army.owner, epoch: 0, slot };
+    let read_slot = || snforge_std::interact_with_state(d.games, || crate::logic::army_slot_storage::read(slot_key).unwrap());
+    let stamina = read_slot().stamina;
+    assert!(
+        super::resource_commands::execute_in_game(
+            d, game_id,
+            crate::commands::Command::ManageTroops(crate::troop_management::ManageTroops::RemoveExplorer(key.explorer_id)),
+            369,
+        ),
+    );
+    assert!(troops.explorer(key).is_none());
+    assert!(snforge_std::interact_with_state(d.games, || crate::logic::progression::read(key)).is_none());
+    assert_eq!(read_slot().explorer_id, 0);
+    assert_eq!(read_slot().stamina, stamina);
+    assert!(super::resource_commands::execute_in_game(
+        d, game_id, super::registrar::muster_slot_command(army.troops.category.into(), 0, slot), 370,
+    ));
+    let remustered = read_slot();
+    assert!(remustered.explorer_id != 0 && remustered.explorer_id != key.explorer_id);
+    assert_eq!(remustered.stamina, stamina);
+    let fresh = read_progress(d, crate::troops::ExplorerKey { explorer_id: remustered.explorer_id, ..key });
+    assert_eq!(fresh.oaths, 0);
+    assert_eq!(fresh.oath_pick, 0);
 }
 
 #[test]

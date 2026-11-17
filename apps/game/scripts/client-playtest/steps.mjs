@@ -1009,6 +1009,70 @@ const RESEARCH_ACTION_STEPS = [
   ),
 ];
 
+function deleteOathArmyStep() {
+  const press = async (browser, verb, confirming = false) => {
+    const within = confirming ? '[data-kit-sheet] [role="alertdialog"]' : "[data-kit-sheet]";
+    const button = await readUntil(() => browser.read(sheetButton(`^${verb}$`, within)), Boolean, SHEET_WAIT_MS);
+    if (!button) throw new Error(`Oath army has no ${verb} button`);
+    browser.tap(button.offset);
+  };
+  return {
+    name: "delete-oath-army",
+    play: async ({ browser, extraScreenshot }) => {
+      const before = browser.read(`JSON.stringify((() => {
+        const answer = (window.__labChain?.sent ?? []).filter(({command}) => command.kind === "ChooseOath").at(-1);
+        const progress = answer?.answered.find(({model}) => model === "ArmyProgress");
+        return { progress, held: document.querySelector('[data-oath-slots]')?.textContent,
+          commands: window.__labChain?.sent.length };
+      })())`);
+      const armyId = Number(before.progress?.value?.explorer_id);
+      const stamina = browser.armies().find(({label}) => label === "Army 1")?.stamina;
+      if (!armyId || !Number(before.progress?.value?.oaths) || !before.held || stamina === undefined)
+        return { before, stamina };
+      await press(browser, "Delete");
+      const confirmation = browser.read(`JSON.stringify((() => {
+        const dialog = document.querySelector('[role="alertdialog"]');
+        const nodes = dialog ? [dialog, ...dialog.querySelectorAll('button')] : [];
+        return { text: dialog?.textContent, fits: nodes.length === 3 && nodes.every(node => {
+          const box = node.getBoundingClientRect();
+          return box.width > 0 && box.height > 0 && box.left >= 0 && box.right <= innerWidth &&
+            box.top >= 0 && box.bottom <= innerHeight &&
+            node.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2));
+        }) };
+      })())`);
+      extraScreenshot("delete-oath-confirmation");
+      if (!confirmation.fits || !confirmation.text?.includes("troops, carried resources and held Oaths are lost"))
+        return { before, confirmation };
+      await press(browser, "Cancel", true);
+      const retained = browser.read(`(() =>
+        !document.querySelector('[role="alertdialog"]') &&
+        document.querySelector('[data-oath-slots]')?.textContent === ${JSON.stringify(before.held)} &&
+        !!document.querySelector('.mp-at[data-key="army:${armyId}"]') &&
+        window.__labChain?.sent.length === ${before.commands})()`);
+      if (!retained) return { before, confirmation, retained };
+      await press(browser, "Delete");
+      await press(browser, "Delete", true);
+      const removed = await readUntil(() => browser.read(`(() => {
+        const answer = (window.__labChain?.sent ?? []).at(-1);
+        const facts = answer?.answered ?? [];
+        const progress = facts.find(({model, key}) => model === "ArmyProgress" && key === ${JSON.stringify(before.progress.key)});
+        const army = facts.find(({model}) => model === "ExplorerTroops");
+        const slot = facts.find(({model}) => model === "ArmySlot")?.value;
+        return answer?.command.kind === "ManageTroops" &&
+          window.__labChain.sent.length === ${before.commands + 1} && progress?.value === null && army?.value === null &&
+          Number(slot?.explorer_id) === 0 && Number(slot?.stamina.amount) === ${stamina} &&
+          !document.querySelector('.mp-at[data-key="army:${armyId}"]') &&
+          !document.querySelector('[data-oath-slots]') && !window.__eternumMapSelection?.army;
+      })()`), Boolean, ORDER_OUTCOME_WAIT_MS);
+      const answer = browser.read("JSON.stringify(window.__labChain?.sent.at(-1))");
+      return { before, confirmation, stamina, retained, removed, answer };
+    },
+    verify: ({ played }) => played.confirmation?.fits && played.retained && played.removed
+      ? completed(played)
+      : failed("Oath army deletion or cancellation did not settle", played),
+  };
+}
+
 function oathPickSteps(full) {
   return [
     { name: "enter-on-map", settleMs: 3000, verify: inScene("map") },
@@ -1076,6 +1140,7 @@ function oathPickSteps(full) {
         return played.watching && { watch: "oath-chosen" };
       },
     ),
+    deleteOathArmyStep(),
   ];
 }
 
@@ -5956,7 +6021,7 @@ function armyManagementSteps() {
           });
         })())`);
         extraScreenshot("delete-confirmation");
-        if (!fits || !loss?.includes("troops and carried resources are lost")) return { loss, fits };
+        if (!fits || !loss?.includes("troops, carried resources and held Oaths are lost")) return { loss, fits };
         await press(browser, "Cancel", true);
         const retained = count(browser) === "10";
         if (!retained) return { armyId, loss, retained };

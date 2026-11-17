@@ -1,9 +1,12 @@
 import { seasonOneResearchPrices } from "./season-one-research";
 import { chooseOath } from "@bibliothecadao/eternum";
 import { nativeOathConstants as oaths } from "@bibliothecadao/eternum/game-client";
+import { encodeNativeCommand } from "@bibliothecadao/provider";
+import { nativeBindings } from "@/runtime/world/native-bindings";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { spireScenario } from "./spire-scenario";
-import { wire, type LabScenario } from "./lab-chain";
+import { wire, type LabCommand, type LabFact, type LabScenario } from "./lab-chain";
 
 export function oathPickScenario(full = false): LabScenario {
   const game = spireScenario();
@@ -25,6 +28,8 @@ export function oathPickScenario(full = false): LabScenario {
   return {
     ...game,
     answer(command, chain, now) {
+      const deleted = answerDeletion(command, chain);
+      if (deleted) return deleted;
       if (command.kind !== "ChooseOath") return game.answer(command, chain, now);
       const fields = command.calldata.slice(5).map(Number);
       const explorer_id = fields.shift()!;
@@ -42,4 +47,34 @@ export function oathPickScenario(full = false): LabScenario {
       ];
     },
   };
+}
+
+function answerDeletion(command: LabCommand, chain: NativeFactStore): LabFact[] | null {
+  if (command.kind !== "ManageTroops") return null;
+  const explorer_id = BigInt(command.calldata.at(-1)!);
+  const encoded = encodeNativeCommand(nativeBindings.commandAbi, {
+    kind: "ManageTroops",
+    value: { kind: "RemoveExplorer", value: explorer_id },
+  });
+  const payload = command.calldata.slice(4);
+  if (payload.length !== encoded.length || payload.some((field, index) => BigInt(field) !== BigInt(encoded[index]!)))
+    return null;
+  const key = { game_id: 1, explorer_id };
+  chain.require("ExplorerTroops", key);
+  chain.require("ArmyProgress", key);
+  const slot = [...chain.entries("ArmySlot")].find(([, row]) => row.game_id === key.game_id && row.explorer_id === explorer_id);
+  const tile = [...chain.entries("TileOccupancy")].find(([, row]) => row.game_id === key.game_id && row.entity_id === explorer_id);
+  if (!slot || !tile) throw new Error("Deleted army has no slot or tile");
+  return [
+    ...(["ExplorerTroops", "ArmyProgress", "ArmyDay"] as const).map(model => ({
+      model, key: chain.wireKeyOf(model, key)!, value: null,
+    })),
+    ...(["ResourceBalance", "ResourceProduction", "ResourceWeight"] as const).flatMap(model =>
+      [...chain.entries(model)]
+        .filter(([, row]) => row.game_id === key.game_id && row.entity_id === explorer_id)
+        .map(([key]) => ({ model, key, value: null })),
+    ),
+    { model: "TileOccupancy", key: tile[0], value: null },
+    { model: "ArmySlot", key: slot[0], value: wire({ ...slot[1], explorer_id: 0 }) },
+  ];
 }

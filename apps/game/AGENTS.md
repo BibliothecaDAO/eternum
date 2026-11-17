@@ -602,5 +602,7 @@ immutable army capacity.
 
 An army with a waiting Oath shows three cards in its detail panel. Choose a card; with full slots, choose the held Oath
 it replaces, or Keep my Oaths to decline. `build.sh playtest-oath-pick` plays `/lab/game?scenario=oath-pick` and
-`oath-replace` on desktop and phone, recording the signed choice and resulting held Oath. Native tests cover Shrine
-reveals and persistence; these browser proofs use recorded offers.
+`oath-replace` on desktop and phone, recording the signed choice and resulting held Oath. Each path opens Delete,
+checks the Oath loss warning, cancels to retain the army, then confirms and checks the army and Oath record disappear.
+The freed slot retains its stamina. Native tests cover Shrine reveals, persistence, deletion and remustering with an
+empty Oath record; these browser proofs use recorded offers.
