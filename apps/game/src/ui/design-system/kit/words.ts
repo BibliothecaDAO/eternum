@@ -832,13 +832,9 @@ export const DAY_BANNER_WORDS = {
 /** What a moment's one line needs from the game's rules; the caller reads them, the line only names them. */
 export interface OpeningRules {
   knightsAnHour: number;
-  deepTick: { tickSeconds: number; lossPerTick: number };
+  deepTickSeconds: number;
 }
 
-/**
- * The interface that opens as you play (the frozen design's table, word for word): the one line each moment brings,
- * shown once, and the switch that opens everything at once.
- */
 export const OPENING_WORDS = {
   lines: {
     launch: () => "This is your Realm. Build on the lit plot, then send an army into the mist.",
@@ -849,7 +845,7 @@ export const OPENING_WORDS = {
     "well-lore": () => "Your armies can now find wells.",
     "shrine-lore": () => "Your armies can now find shrines.",
     deep: (rules: OpeningRules) =>
-      `Every tick (${formatAmount(rules.deepTick.tickSeconds)} seconds) here, each army loses ${formatAmount(rules.deepTick.lossPerTick)} troops. Hold a site to earn.`,
+      `Every tick (${formatAmount(rules.deepTickSeconds)} seconds) drains troops. Your army panel shows its loss and time left. Hold a site to earn.`,
     bane: () => "A bane. Today's quest is the bane quest. Your Aspect ends the bane when enough members finish it.",
     aspects: () => "Your Aspect races to build its hyperstructure. Its page shows where every Aspect stands.",
   },

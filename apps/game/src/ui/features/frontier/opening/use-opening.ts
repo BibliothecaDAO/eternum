@@ -11,7 +11,6 @@ import {
   safeInteger,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useEffect } from "react";
 
 import type { OpeningRules } from "@/ui/design-system/kit/words";
@@ -97,14 +96,10 @@ function useOpeningRules(rules: ExpeditionRules, realm: NativeRows["Structure"] 
   if (!realm || troops === undefined) return null;
   const barracks = getBuildingQuantity(safeInteger(realm.entity_id), FIRST_BUILD, setup.store);
   const slice = setup.store.get("SliceRules", { game_id: realm.game_id });
-  const deep = setup.store.get("DeepRules", { game_id: realm.game_id });
-  if (!slice || !deep) return null;
+  if (!slice) return null;
   return {
     knightsAnHour: troops / Math.max(1, barracks),
-    deepTick: {
-      tickSeconds: Number(slice.tick_config.armies_tick_in_seconds),
-      lossPerTick: Number(deep.loss_per_tick) / RESOURCE_PRECISION,
-    },
+    deepTickSeconds: Number(slice.tick_config.armies_tick_in_seconds),
   };
 }
 
