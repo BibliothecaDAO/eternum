@@ -220,7 +220,9 @@ pub fn complete(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) {
     for _ in 0..reveals {
         let mut events = spy_events();
         if !world_test_support::tests::registrar::explore_with_root(d, home.game_id, explorer_id, root, timestamp) {
-            panic!("quest exploration rejected: {}", world_test_support::tests::play_fixture::rejection(ref events, d.games).reason);
+            panic!(
+                "quest exploration rejected: {}", world_test_support::tests::play_fixture::rejection(ref events, d.games).reason,
+            );
         }
     }
     if fight {
@@ -233,6 +235,19 @@ pub fn complete(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) {
                 home.game_id,
                 Command::BattleGuard(
                     crate::commands::Battle { attacker_id: explorer_id, defender_id: site.entity_id, relic_slot: None },
+                ),
+                timestamp,
+            ),
+        );
+    }
+    let pick = interact_with_state(d.games, || crate::logic::progression::require(key).oath_pick);
+    if pick != 0 {
+        assert!(
+            execute_in_game(
+                d,
+                home.game_id,
+                Command::ChooseOath(
+                    crate::oaths::ChooseOath { explorer_id, expected_pick: pick, oath: None, replace: None },
                 ),
                 timestamp,
             ),
