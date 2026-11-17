@@ -6,10 +6,6 @@ const { BuildingType, ResourcesIds } = await import("@bibliothecadao/types");
 const { dayEndScenario } = await import("@/lab/game/day-end-scenario");
 const { buildingsMake, storeMakerLines } = await import("./store-makers");
 
-/**
- * Nexonik's realm on prod (reports/frontier-production-rate-1.md) as the lab's day-end game holds it, at Frontier's
- * rates: three Workshops with Tools twice, three Farms with Fields, two Barracks with Charge, and the castle's labor.
- */
 const realm = () => {
   const { store } = dayEndScenario();
   return { store, row: store.require("Structure", { game_id: 1, entity_id: 7 }) };
@@ -51,7 +47,6 @@ it("says what all of a type's buildings make together for its card, and nothing 
   const farms = buildingsMake(store, row, BuildingType.ResourceWheat)!;
   // Three Farms at 5 wheat a minute with one Fields pick: 3 × 6.3, the one figure the card shows.
   expect(farms.perSecond * 60).toBeCloseTo(3 * 5.04 * 1.25, 6);
-  // Nothing a building type makes is stored for a War hall.
   expect(buildingsMake(store, row, BuildingType.RationsDepot)).toBeUndefined();
   const knowledge = store.require("RealmKnowledge", { game_id: 1, structure_id: 7 });
   store.applyFacts([{ model: "RealmKnowledge", key: "0xd", value: null }] as never);

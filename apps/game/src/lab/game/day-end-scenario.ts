@@ -1,7 +1,7 @@
-import { RESEARCH_ROWS } from "@bibliothecadao/eternum";
+import { learnResearch, RESEARCH_ROWS } from "@bibliothecadao/eternum";
 
 import { readExpeditionRules, setBuildingCount } from "@bibliothecadao/eternum";
-import { type NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { nativeResearchConstants as research, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import {
   BUILDINGS_CENTER,
   BuildingType,
@@ -51,18 +51,12 @@ const STANDING: BuildingType[] = [
 ];
 const BARRACKS = 2;
 
-/**
- * Workshop tier 2 (Tools, Tools), Farm tier 1 (Fields), Barracks tier 1 (Charge), as research.cairo packs them; the
- * Ethereal reaches the spire's realm learned stay.
- */
-const LEARNED = (1n << 0n) | (2n << 7n) | (1n << 14n);
+const LEARNED = learnResearch(
+  learnResearch(learnResearch(0n, research.ROW_FARM, 0), research.ROW_WORKSHOP, 0),
+  research.ROW_WORKSHOP,
+  0,
+);
 
-/**
- * The spire's game in the day's last hour, the realm a City producing at Frontier's rates under its research: three Workshops (Tools twice),
- * three Farms (Fields) and two Barracks (Charge), the castle's own labor producer beside them, each store's rate as
- * buildings.cairo's board_output sums it; the army at Uncommon Logistics and Homecoming, 70 stamina held
- * (/lab/game?scenario=day-end).
- */
 export const dayEndScenario = (): LabScenario => {
   const spire = spireScenario();
   const { store } = spire;

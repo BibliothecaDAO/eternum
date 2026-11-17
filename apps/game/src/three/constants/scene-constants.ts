@@ -147,7 +147,7 @@ export const buildingModelPaths = () => {
       [BuildingType.RationsDepot]: BUILDINGS_MODELS_PATH + BuildingFilenames.Storehouse,
       [BuildingType.SupplyYard]: BUILDINGS_MODELS_PATH + BuildingFilenames.Market,
       [BuildingType.ScoutsLodge]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
-      [BuildingType.ConscriptionCamp]: CAMP_MODEL_PATH,
+      [BuildingType.ConscriptionCamp]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
     },
     [BUILDINGS_GROUPS.RESOURCES_MINING]: {
       [ResourceMiningTypes.Forge]: BUILDINGS_MODELS_PATH + BuildingFilenames.Forge,
