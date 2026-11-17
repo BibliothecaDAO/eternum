@@ -184,7 +184,8 @@ it("forecasts the same opportunity regardless of the last attacked guard", () =>
   f.change("ExplorerTroops", key, { troops: { ...army.troops, count: 1000n * BigInt(RESOURCE_PRECISION) } });
   f.change("ArmyCombat", key, { last_target: 301n });
   const due = f.plan().map(({ dueAt }) => dueAt);
-  expect(due).toEqual([(Math.floor(f.startsAt / Number(rules.tick_config.armies_tick_in_seconds)) + 1) * Number(rules.tick_config.armies_tick_in_seconds) * 1000]);
+  const tickSeconds = Number(rules.tick_config.armies_tick_in_seconds);
+  expect(due).toEqual([(Math.floor(f.startsAt / tickSeconds) + 1) * tickSeconds * 1000]);
   expect(f.store.require("ArmyCombat", key).last_target).toBe(301n);
   f.change("ArmyCombat", key, { last_target: 302n });
   expect(f.plan().map(({ dueAt }) => dueAt)).toEqual(due);

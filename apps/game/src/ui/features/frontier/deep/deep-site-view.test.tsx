@@ -60,8 +60,9 @@ describe("a Deep site's card", () => {
     expect(rows.indexOf("Aldor · fought next")).toBeGreaterThan(-1);
     expect(rows.indexOf("Aldor")).toBeLessThan(rows.indexOf("Brek"));
     expect(rows.match(/Free slot/g)).toHaveLength(2);
-    for (const slot of fixture.guard.slots)
+    for (const slot of fixture.guard.slots) {
       expect(rows).toContain(`${slot.ticks.left} ticks left (${slot.ticks.time})`);
+    }
     expect(rows).toContain("75% of each tick");
     expect(rows).toContain("25% of each tick");
     expect(text()).toContain("Another Aspect holds it");
@@ -71,8 +72,9 @@ describe("a Deep site's card", () => {
     const fixture = DEEP_SITE_CASES["Quarry held by the player's Aspect, a free slot to join"];
     draw(fixture);
     expect(labels(["Join"])).toHaveLength(1);
-    for (const slot of fixture.guard.slots)
+    for (const slot of fixture.guard.slots) {
       expect(text()).toContain(`${slot.ticks.left} ticks left (${slot.ticks.time})`);
+    }
     expect(text()).toContain("100% of each tick");
   });
 });

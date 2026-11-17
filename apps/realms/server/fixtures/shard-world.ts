@@ -5,7 +5,8 @@ import { deepSites, RESOURCE_PRECISION, TileOccupier } from "@bibliothecadao/typ
 import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import explorerFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 
-export const siteGuardTroops = (ticksUntilClear: number) => 800 + ticksUntilClear * frontierSeasonOnePreset.deep.lossPerTick;
+export const siteGuardTroops = (ticksUntilClear: number) =>
+  800 + ticksUntilClear * frontierSeasonOnePreset.deep.lossPerTick;
 
 export const GAME_ID = 1;
 export const PLAYER_ACCOUNT = "0x4b1d";
