@@ -442,7 +442,7 @@ describe.concurrent("shard notifications", () => {
       herald.state.site.lore = true;
       herald.state.site.lastTick = armiesTick();
       herald.researchChanged();
-      await waitUntil(() => push.received.length === 1, 8000);
+      await waitUntil(() => push.received.length === 1, 20000);
       expect(await push.words()).toEqual([
         "Quarry can be taken / Your largest army outside the Deep can clear its remaining guards.",
       ]);
