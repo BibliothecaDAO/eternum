@@ -588,27 +588,27 @@ it("labels the amount's two ends, none and all the picked army holds, each takin
 });
 
 it("confirms loss of held Oaths even with equal capacity", async () => {
-    const record = { oaths: 1, oath_pick: 0 };
-    const store = transferArmies(1, 1);
-    for (const id of [201, 202])
-      store.applyFacts([
-        {
-          model: "ArmyProgress",
-          key: `0xf${id}2`,
-          value: { ...store.require("ArmyProgress", { game_id: 1, explorer_id: id }), ...record },
-        },
-      ]);
-    const { swap } = render(store);
-    slide(50);
-    expect(host.textContent).not.toMatch(LOSS_NOTICE);
-    expect(button(CONFIRM_MERGE)).toBeUndefined();
-    slide(600);
-    expect(host.textContent).toMatch(LOSS_NOTICE);
-    await act(async () => button("Merge into Army 2")!.click());
-    expect(swap).not.toHaveBeenCalled();
-    await act(async () => button("Confirm merge into Army 2")!.click());
-    expect(swap).toHaveBeenCalledOnce();
-    expect(swap).toHaveBeenCalledWith(
-      expect.objectContaining({ from_explorer_id: 201, to_explorer_id: 202, count: 600 * Number(PRECISION) }),
-    );
+  const record = { oaths: 1, oath_pick: 0 };
+  const store = transferArmies(1, 1);
+  for (const id of [201, 202])
+    store.applyFacts([
+      {
+        model: "ArmyProgress",
+        key: `0xf${id}2`,
+        value: { ...store.require("ArmyProgress", { game_id: 1, explorer_id: id }), ...record },
+      },
+    ]);
+  const { swap } = render(store);
+  slide(50);
+  expect(host.textContent).not.toMatch(LOSS_NOTICE);
+  expect(button(CONFIRM_MERGE)).toBeUndefined();
+  slide(600);
+  expect(host.textContent).toMatch(LOSS_NOTICE);
+  await act(async () => button("Merge into Army 2")!.click());
+  expect(swap).not.toHaveBeenCalled();
+  await act(async () => button("Confirm merge into Army 2")!.click());
+  expect(swap).toHaveBeenCalledOnce();
+  expect(swap).toHaveBeenCalledWith(
+    expect.objectContaining({ from_explorer_id: 201, to_explorer_id: 202, count: 600 * Number(PRECISION) }),
+  );
 });

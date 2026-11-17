@@ -14,7 +14,14 @@ it("keeps the shell dialog usable over a required game choice, then restores the
     const [oath, setOath] = useState(false);
     return (
       <>
-        <button onClick={() => { setWallet(true); setOath(true); }}>Map order</button>
+        <button
+          onClick={() => {
+            setWallet(true);
+            setOath(true);
+          }}
+        >
+          Map order
+        </button>
         {oath && (
           <HudModalLayer>
             <section role="dialog" aria-label="Oath">

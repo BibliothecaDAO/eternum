@@ -1096,7 +1096,10 @@ function deleteOathArmyStep() {
 }
 
 const oathRules = JSON.parse(
-  readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), "../../../../contracts/l3/world-native/schema/schema.json"), "utf8"),
+  readFileSync(
+    resolve(dirname(fileURLToPath(import.meta.url)), "../../../../contracts/l3/world-native/schema/schema.json"),
+    "utf8",
+  ),
 ).oathConstants;
 
 function oathPassSteps(capped) {
@@ -1126,7 +1129,9 @@ function oathPassSteps(capped) {
         const answer = browser.read("JSON.stringify(window.__labChain.sent.at(-1))");
         const slot = answer.answered.find(({ model }) => model === "ArmySlot")?.value;
         await openTheArmyPanel(browser);
-        const shown = browser.read(`Number(document.querySelector('[data-kit-sheet] [data-stamina-line] [role="meter"]')?.getAttribute('aria-valuenow'))`);
+        const shown = browser.read(
+          `Number(document.querySelector('[data-kit-sheet] [data-stamina-line] [role="meter"]')?.getAttribute('aria-valuenow'))`,
+        );
         return { declined, answer, slot, preview, shown };
       },
       verify: ({ played }) => {
@@ -1153,7 +1158,7 @@ function oathPickSteps(full, layer = "Map") {
         const pick = await readUntil(() => browser.read(elementAt("[data-oath-pick]")), Boolean, SHEET_WAIT_MS);
         const before = browser.read("window.__labChain.sent.length");
         browser.press("Escape");
-        browser.tap({ x: 5, y: 5 });
+        browser.tap([5, 5]);
         browser.run(["back"]);
         const locked = browser.read(`Boolean(document.querySelector('[data-oath-pick]')) &&
           !document.querySelector('.ui-modal button[aria-label="Close"]') && window.__labChain.sent.length === ${before}`);

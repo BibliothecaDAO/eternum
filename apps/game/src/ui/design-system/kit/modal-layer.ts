@@ -56,9 +56,9 @@ let restoreOutside = () => {};
 
 const refreshInertOutside = () => {
   restoreOutside();
-  const active = [...layers].sort((a, b) =>
-    a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1,
-  ).at(-1);
+  const active = [...layers]
+    .sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
+    .at(-1);
   const made: Element[] = [];
   for (let node = active; node?.parentElement && node !== document.body; node = node.parentElement) {
     for (const sibling of node.parentElement.children) {
