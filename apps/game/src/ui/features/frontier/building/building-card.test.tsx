@@ -22,8 +22,7 @@ afterEach(() => {
   host.remove();
 });
 
-const nodeOf = (realm: RealmResearchFacts, row: number) =>
-  readResearchTree(realm).find((node) => node.row === row)!;
+const nodeOf = (realm: RealmResearchFacts, row: number) => readResearchTree(realm).find((node) => node.row === row)!;
 
 /** The card as a building's tap opens it, on the lab's realm some days in (a City; Farm rare, Barracks rare). */
 const draw = (

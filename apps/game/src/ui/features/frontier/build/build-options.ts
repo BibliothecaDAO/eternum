@@ -89,7 +89,10 @@ export const readBuildOptions = (
       category,
       tier: (row === undefined
         ? 1
-        : Math.max(isTraining(category) || isOathResearch(row) ? 1 : 0, researchTier(learned, row))) as BuildOption["tier"],
+        : Math.max(
+            isTraining(category) || isOathResearch(row) ? 1 : 0,
+            researchTier(learned, row),
+          )) as BuildOption["tier"],
       sides: row === undefined ? undefined : sidePicks(learned, row),
       cost,
       rise: buildingCostRise(safeInteger(realm.entity_id), category, store),
