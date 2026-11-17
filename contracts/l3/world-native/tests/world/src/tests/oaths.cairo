@@ -55,7 +55,9 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
     };
     let other = super::bind_authority(d);
     let mut refused = snforge_std::spy_events();
-    assert!(!super::resource_commands::execute_in_game(other, game_id, crate::commands::Command::ChooseOath(take), 362));
+    assert!(
+        !super::resource_commands::execute_in_game(other, game_id, crate::commands::Command::ChooseOath(take), 362),
+    );
     assert_eq!(super::play_fixture::rejection(ref refused, d.games).reason, "actor does not own structure");
     assert_eq!(read_progress(d, key), first);
     assert!(super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(take), 362));
