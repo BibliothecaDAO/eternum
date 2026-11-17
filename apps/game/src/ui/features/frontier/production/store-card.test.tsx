@@ -47,28 +47,18 @@ const renderCard = (card: StoreLine, onSpend = vi.fn(), onBuild = vi.fn()) => {
 describe("a store's card", () => {
   it("says the store's rate, what it holds against its limit and when it is full", () => {
     const card = renderCard(line({ kind: "wheat" }));
-    expect(card.text()).toBe("WheatFull in 16h 44m+8.3/min9,640 / 18K");
+    expect(card.text()).toBe("WheatFull in 16h 44m+8/min9,640 / 18K");
     // Found by the store it is for, as the playtest's wheat-store step finds it (steps.mjs).
     expect(document.querySelectorAll('[data-store-card="wheat"]')).toHaveLength(1);
     card.done();
-  });
-
-  it("tells the town's crossbow rates apart on the card: 100, 120 and 140 an hour", () => {
-    const rates = [100, 120, 140].map((perHour) => {
-      const card = renderCard(line({ kind: "wheat", perHour }));
-      const text = card.text()!;
-      card.done();
-      return text;
-    });
-    expect(rates.map((text) => /[+][\d.]+\/min/.exec(text)![0])).toEqual(["+1.7/min", "+2/min", "+2.3/min"]);
   });
 
   it("shows each side of its row's research inline after the rate: the side's mark, then its rank gem", () => {
     // Fields V and Granary III, in the Farm row's two three-bit fields.
     const card = renderCard(line({ kind: "wheat", sides: sidePicks(5n + (3n << 3n), research.ROW_FARM) }));
     expect(card.sides()).toEqual([
-      ["fields", true, "V", "+8.3/min"],
-      ["granary", true, "III", "+8.3/min"],
+      ["fields", true, "V", "+8/min"],
+      ["granary", true, "III", "+8/min"],
     ]);
     card.done();
     const unknown = renderCard(line({ kind: "wheat", sides: undefined }));

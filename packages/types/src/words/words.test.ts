@@ -84,8 +84,22 @@ describe("numbers", () => {
     expect(formatPercent(undefined)).toBe("—");
   });
 
-  it("keeps the town's three crossbow rates apart: 100, 120 and 140 an hour", () => {
-    expect([100, 120, 140].map((perHour) => formatRate(perHour / 3600))).toEqual(["+1.7/min", "+2/min", "+2.3/min"]);
+  it("writes a minute's rate whole from 1 a minute up, and to two figures below 1 (owner's rule of 26 October)", () => {
+    expect([6.3, 8.6, 12.4, 1, 1.4, 1.6, 66].map((perMinute) => formatRate(perMinute / 60))).toEqual([
+      "+6/min",
+      "+9/min",
+      "+12/min",
+      "+1/min",
+      "+1/min",
+      "+2/min",
+      "+66/min",
+    ]);
+    expect([0.6, 0.25, 0.05].map((perMinute) => formatRate(perMinute / 60))).toEqual([
+      "+0.6/min",
+      "+0.25/min",
+      "+0.05/min",
+    ]);
+    expect(formatRate(-0.25)).toBe("-15/min");
   });
 
   it("writes every rate a minute's, never a second's or an hour's", () => {
@@ -95,9 +109,6 @@ describe("numbers", () => {
     expect(formatRate(2.5)).toBe("+150/min");
     expect(formatRate(1_000)).toBe("+60,000/min");
     expect(formatRate(0.5)).toBe("+30/min");
-    expect(formatRate(6.3 / 60)).toBe("+6.3/min");
-    expect(formatRate(8.6 / 60)).toBe("+8.6/min");
-    expect(formatRate(12.4 / 60)).toBe("+12/min");
     expect(formatRate(0.01)).toBe("+0.6/min");
     expect(formatRate(-0.25)).toBe("-15/min");
     expect(formatRate(0)).toBe("0/min");
