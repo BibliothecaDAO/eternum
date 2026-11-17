@@ -332,9 +332,7 @@ fn waiting_oath(d: Deployment, key: ExplorerKey, red: u8) -> crate::oaths::Choos
             crate::logic::progression::write(key, crate::progression::ArmyProgress { oath_pick: pick, ..progress });
         },
     );
-    crate::oaths::ChooseOath {
-        explorer_id: key.explorer_id, expected_pick: pick, oath: Some(red), replace: None,
-    }
+    crate::oaths::ChooseOath { explorer_id: key.explorer_id, expected_pick: pick, oath: Some(red), replace: None }
 }
 
 #[test]
