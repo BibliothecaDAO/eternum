@@ -21,10 +21,10 @@ const pin = (created: number, release: number) => ({
 });
 
 const SITE = { troops: 1000, aspect: 2, lore: true, lastTick: 0 };
-const world = () => {
+const world = (owner: string | null = null) => {
   const bar = { amount: 120, settledAt: Math.floor(Date.now() / 1000), day: TODAY };
-  const read = snapshot(bar, bar, PLAYER_ACCOUNT, [PLAYER_ACCOUNT], "golden", null);
-  return siteSnapshot({ ...read, models: [...read.models, ...mistFacts(undefined)] }, SITE, PLAYER_ACCOUNT);
+  const read = snapshot(bar, bar, owner, [PLAYER_ACCOUNT], "golden", null);
+  return siteSnapshot({ ...read, models: [...read.models, ...mistFacts(undefined)] }, SITE, owner);
 };
 
 const heraldServing = (releases: Record<string, string>, current: ReturnType<typeof pin>) =>
@@ -33,7 +33,7 @@ const heraldServing = (releases: Record<string, string>, current: ReturnType<typ
     vi.fn(async (input: string | URL | Request) => {
       const url = new URL(String(input));
       if (url.pathname === "/manifest") return Response.json({ version: 1, releaseSchemas: releases });
-      const read = world();
+      const read = world(url.searchParams.get("owner"));
       read.models.find(({ model }) => model === "GameRelease")!.rows = [{ key: "0x1", value: current }];
       return Response.json(read);
     }),
@@ -93,8 +93,8 @@ const watching = (releases: Record<string, string>) => {
   socket.receive({ type: "hello", epoch: "e", seq: 0, confirmed_block: 10, preconfirmed_block: null });
   let seq = 0;
   const models = world().models.filter(({ model }) => model === "GameRelease" || model === "DeepRules");
-  for (const model of models) socket.receive({ type: "snapshot", epoch: "e", seq: seq++, ...model });
-  socket.receive({ type: "snapshot_end", epoch: "e", seq: seq++ });
+  for (const model of models) socket.receive({ type: "snapshot", epoch: "e", seq: 0, ...model });
+  socket.receive({ type: "snapshot_end", epoch: "e", seq: 0 });
   const release = (current: ReturnType<typeof pin>) =>
     socket.receive({
       type: "diff",

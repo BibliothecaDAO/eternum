@@ -33,6 +33,7 @@ VALUE_READERS = [
 ]
 DEEP_ALERT_READERS = [
     "apps/realms/server/deep-site-watch.ts",
+    "apps/realms/server/game-facts.ts",
     "apps/realms/server/fixtures/shard-world.ts",
 ]
 NATIVE_FACT_SCHEMA = [
