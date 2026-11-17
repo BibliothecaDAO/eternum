@@ -21,8 +21,7 @@ function definitions(jobs: ValidationJob[], paths: Record<string, string[]>): st
     .map((job) => {
       const areaPaths = job.area === "static" ? [] : paths[job.area];
       if (!areaPaths) throw new Error(`No validation paths for ${job.area}`);
-      const estimate = ["amm", "collectibles", "mmr", "season_pass", "native"].includes(job.area) ? 9 : 6;
-      return `[kind.${kindName(job)}]\ncmd = "bun scripts/ci/run.ts ${job.id}"\n${areaPaths.length ? `paths = "${areaPaths.join(" ")}"\n` : ""}estimate_gb = ${estimate}\n`;
+      return `[kind.${kindName(job)}]\ncmd = "bun scripts/ci/run.ts ${job.id}"\n${areaPaths.length ? `paths = "${areaPaths.join(" ")}"\n` : ""}`;
     })
     .join("\n");
 }
