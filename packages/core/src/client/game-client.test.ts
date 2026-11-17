@@ -614,7 +614,7 @@ for (const archived of [false, true]) {
         model: "RealmKnowledge",
         rows: [{ key: "0x99", value: { game_id: 54, structure_id: 7, learned: retiredTown.learned } }],
       };
-      const models = [rulesSnapshot, release, knowledge, reviewRegistry];
+      const models = [rulesSnapshot, release, knowledge, { ...rulesSnapshot, ...reviewRegistry }];
       harness.fetchManifest.mockImplementation(
         async (url) =>
           new Response(
