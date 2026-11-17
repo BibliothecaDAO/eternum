@@ -13,7 +13,7 @@ pub mod RelicState {
         Recipient, RelicRule,
     };
     use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
-    use crate::stamina::{StaminaSourceTrait, StaminaTrait};
+    use crate::stamina::StaminaSourceTrait;
     use crate::troops::{ExplorerKey, ExplorerRecordTrait};
 
     #[storage]

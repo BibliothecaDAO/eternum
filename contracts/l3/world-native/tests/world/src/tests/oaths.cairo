@@ -1,3 +1,5 @@
+use crate::stamina::StaminaSourceTrait;
+use crate::troops::{ExplorerRecordTrait, StaminaSource};
 use snforge_std::fs::{FileTrait, read_txt};
 use crate::oaths::{ChooseOath, card, count, draw, held};
 use super::progression::read_progress;
@@ -165,7 +167,7 @@ fn packing_preserves_all_sixteen_held_bits_and_the_offer() {
 }
 
 fn explore(d: super::Deployment, key: crate::troops::ExplorerKey, root: u256, timestamp: u64) {
-    for _ in 0..2 {
+    for _ in 0_u8..2 {
         let command = crate::commands::Command::Explore(
             crate::commands::Explore { explorer_id: key.explorer_id, direction: 0 },
         );
@@ -243,8 +245,6 @@ fn assert_army_commands_refused(d: super::Deployment, key: crate::troops::Explor
 
 #[test]
 fn passing_matches_client_vectors_and_cannot_be_replayed_with_empty_or_full_slots() {
-    use crate::stamina::{StaminaSourceTrait, StaminaTrait};
-    use crate::troops::{ExplorerRecordTrait, StaminaSource};
     let fields = read_txt(@FileTrait::new("../fixtures/oath-pass-stamina.txt"));
     assert_eq!(fields.len(), 8);
     for full in array![false, true] {

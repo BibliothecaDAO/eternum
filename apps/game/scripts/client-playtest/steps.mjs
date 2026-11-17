@@ -1026,6 +1026,7 @@ function deleteOathArmyStep() {
   return {
     name: "delete-oath-army",
     play: async ({ browser, extraScreenshot }) => {
+      await openTheArmyPanel(browser);
       const before = browser.read(`JSON.stringify((() => {
         const answer = (window.__labChain?.sent ?? []).filter(({command}) => command.kind === "ChooseOath").at(-1);
         const progress = answer?.answered.find(({model}) => model === "ArmyProgress");
@@ -1122,7 +1123,7 @@ function oathPassSteps(capped) {
           Boolean,
           ORDER_OUTCOME_WAIT_MS,
         );
-        const answer = JSON.parse(browser.read("JSON.stringify(window.__labChain.sent.at(-1))"));
+        const answer = browser.read("JSON.stringify(window.__labChain.sent.at(-1))");
         const slot = answer.answered.find(({ model }) => model === "ArmySlot")?.value;
         const shown = browser.read(
           "document.querySelector('[data-oath-slots]')?.closest('[role=dialog]')?.textContent ?? ''",
@@ -4486,6 +4487,7 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
     name: "field-army-drains",
     settleMs: 0,
     play: async ({ browser, extraScreenshot }) => {
+      await openTheArmyPanel(browser);
       const drain = await readUntil(
         () => browser.read(DEEP_DRAIN_STATE),
         (state) => state.all.length > 0,
