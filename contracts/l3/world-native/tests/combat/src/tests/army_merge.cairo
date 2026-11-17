@@ -218,7 +218,11 @@ fn waiting_picks_on_either_army_refuse_full_and_partial_transfers_without_losing
             let d = setup();
             let (game_id, _, category) = expedition_home(d);
             let (source, target) = expedition_armies(d, game_id, category);
-            let key = if pending_source { source } else { target };
+            let key = if pending_source {
+                source
+            } else {
+                target
+            };
             let waiting = ArmyProgress { oath_pick: crate::oaths::draw(0, 1), ..Default::default() };
             write_progress(d, key, waiting);
             let state = GameState { contract_address: d.games };

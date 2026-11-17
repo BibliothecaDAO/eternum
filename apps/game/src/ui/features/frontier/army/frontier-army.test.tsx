@@ -158,7 +158,12 @@ it("opens the earned pick without a selection and keeps it through Escape and ou
     host.querySelector<HTMLElement>(".ui-modal")!.click();
   });
   expect(host.querySelector("[data-oath-pick]")).not.toBeNull();
-  expect(host.querySelector<HTMLElement>("[data-oath-pass-result]")!.dataset.oathPassResult).toBe(String(army.stamina.current + oaths.PASS_STAMINA));
-  act(() => { game.progress.oath_pick = 0; root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />); });
+  expect(host.querySelector<HTMLElement>("[data-oath-pass-result]")!.dataset.oathPassResult).toBe(
+    String(army.stamina.current + oaths.PASS_STAMINA),
+  );
+  act(() => {
+    game.progress.oath_pick = 0;
+    root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />);
+  });
   expect(host.querySelector("[data-oath-pick]")).toBeNull();
 });

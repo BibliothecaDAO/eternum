@@ -30,9 +30,7 @@ const ArmyPanel = ({ army, onClose }: { army: DockArmy; onClose: () => void }) =
       <ArmyDetail army={{ ...army, name: army.label, stamina: army.stamina, revealYield }} />
       <TroopOathSlots category={army.troopsFact.category} explorerId={army.explorerId} />
       <ArmyRelicSlots explorerId={army.explorerId} />
-      {deleting && (
-        <ArmyDeleteConfirm army={army} onCancel={() => setDeleting(false)} onDeleted={onClose} />
-      )}
+      {deleting && <ArmyDeleteConfirm army={army} onCancel={() => setDeleting(false)} onDeleted={onClose} />}
       {spire && <HudWindowFoot>{spire}</HudWindowFoot>}
     </HudSheet>
   );

@@ -25,12 +25,15 @@ export function FrontierOathPick({ realm }: { realm: NativeRows["Structure"] | n
   const { store } = useNativeFacts(["ArmyProgress"]);
   const allowed = useUIStore(canIssueOrders);
   const armies = useDockArmies(realm);
-  const waiting = allowed ? armies.flatMap((army) => {
-    const progress = store.get("ArmyProgress", {
-      game_id: configManager.getActiveGameId(), explorer_id: army.explorerId,
-    });
-    return progress && progress.oath_pick !== 0 ? [{ army, progress }] : [];
-  })[0] : undefined;
+  const waiting = allowed
+    ? armies.flatMap((army) => {
+        const progress = store.get("ArmyProgress", {
+          game_id: configManager.getActiveGameId(),
+          explorer_id: army.explorerId,
+        });
+        return progress && progress.oath_pick !== 0 ? [{ army, progress }] : [];
+      })[0]
+    : undefined;
   const explorerId = waiting?.army.explorerId;
   useEffect(() => {
     if (explorerId === undefined) return;
@@ -40,13 +43,26 @@ export function FrontierOathPick({ realm }: { realm: NativeRows["Structure"] | n
   return (
     <HudModalLayer>
       <HudWindow title={waiting.army.label} size="task">
-        <ArmyOathPick key={`${explorerId}:${waiting.progress.oath_pick}`} explorerId={waiting.army.explorerId} progress={waiting.progress} stamina={waiting.army.stamina} />
+        <ArmyOathPick
+          key={`${explorerId}:${waiting.progress.oath_pick}`}
+          explorerId={waiting.army.explorerId}
+          progress={waiting.progress}
+          stamina={waiting.army.stamina}
+        />
       </HudWindow>
     </HudModalLayer>
   );
 }
 
-function ArmyOathPick({ explorerId, progress, stamina }: { explorerId: number; progress: NativeRows["ArmyProgress"]; stamina: { current: number; max: number } }) {
+function ArmyOathPick({
+  explorerId,
+  progress,
+  stamina,
+}: {
+  explorerId: number;
+  progress: NativeRows["ArmyProgress"];
+  stamina: { current: number; max: number };
+}) {
   const { setup, account } = useGame();
   const allowed = useUIStore(canIssueOrders);
   const sending = useInFlight("army", explorerId) !== undefined;
@@ -112,9 +128,18 @@ function ArmyOathPick({ explorerId, progress, stamina }: { explorerId: number; p
           </HudButton>
         </div>
       )}
-      <HudButton kind="secondary" disabled={!allowed || sending} onClick={() => choose(null)} data-oath-pass-current={stamina.current} data-oath-pass-maximum={stamina.max} data-oath-pass-result={oathPassStamina(stamina.current, stamina.max)}>
+      <HudButton
+        kind="secondary"
+        disabled={!allowed || sending}
+        onClick={() => choose(null)}
+        data-oath-pass-current={stamina.current}
+        data-oath-pass-maximum={stamina.max}
+        data-oath-pass-result={oathPassStamina(stamina.current, stamina.max)}
+      >
         Pass: +{nativeOathConstants.PASS_STAMINA} stamina
-        <span className="text-hud-muted">{stamina.current} → {oathPassStamina(stamina.current, stamina.max)} / {stamina.max}</span>
+        <span className="text-hud-muted">
+          {stamina.current} → {oathPassStamina(stamina.current, stamina.max)} / {stamina.max}
+        </span>
       </HudButton>
     </section>
   );

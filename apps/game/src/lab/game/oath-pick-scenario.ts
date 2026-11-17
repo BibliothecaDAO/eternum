@@ -22,10 +22,22 @@ export function oathPassCappedScenario(): LabScenario {
   const game = oathPickScenario(true);
   const army = game.store.require("ExplorerTroops", { game_id: 1, explorer_id: SPIRE_ARMY });
   const troops = resolveExplorerTroops(game.store, army, game.startsAt);
-  if (!troops || troops.staminaMax === undefined || !("Slot" in army.troops.stamina)) throw new Error("Missing pass fixture stamina");
+  if (!troops || troops.staminaMax === undefined || !("Slot" in army.troops.stamina))
+    throw new Error("Missing pass fixture stamina");
   const day = game.store.require("ArmyDay", army);
-  const slot = game.store.require("ArmySlot", { game_id: 1, structure_id: army.owner, epoch: day.day, slot: army.troops.stamina.Slot });
-  game.store.applyFacts([{ model: "ArmySlot", key: game.store.wireKeyOf("ArmySlot", slot)!, value: wire({ ...slot, stamina: { ...slot.stamina, amount: troops.staminaMax - oaths.PASS_STAMINA / 2 } }) }]);
+  const slot = game.store.require("ArmySlot", {
+    game_id: 1,
+    structure_id: army.owner,
+    epoch: day.day,
+    slot: army.troops.stamina.Slot,
+  });
+  game.store.applyFacts([
+    {
+      model: "ArmySlot",
+      key: game.store.wireKeyOf("ArmySlot", slot)!,
+      value: wire({ ...slot, stamina: { ...slot.stamina, amount: troops.staminaMax - oaths.PASS_STAMINA / 2 } }),
+    },
+  ]);
   return game;
 }
 
@@ -101,11 +113,22 @@ function passStamina(chain: NativeFactStore, explorer_id: number, now: number): 
   const bar = staminaAt(troops, now, rules.troop_stamina_config, Number(rules.tick_config.armies_tick_in_seconds));
   const amount = oathPassStamina(Number(bar.amount), troops.staminaMax);
   const day = chain.require("ArmyDay", key);
-  const slot = chain.require("ArmySlot", { game_id: key.game_id, structure_id: army.owner, epoch: day.day, slot: army.troops.stamina.Slot });
-  return [{
-    model: "ArmySlot", key: chain.wireKeyOf("ArmySlot", slot)!,
-    value: wire({ ...slot, stamina: { amount, settled_at: now, remainder: amount === troops.staminaMax ? 0 : bar.remainder } }),
-  }];
+  const slot = chain.require("ArmySlot", {
+    game_id: key.game_id,
+    structure_id: army.owner,
+    epoch: day.day,
+    slot: army.troops.stamina.Slot,
+  });
+  return [
+    {
+      model: "ArmySlot",
+      key: chain.wireKeyOf("ArmySlot", slot)!,
+      value: wire({
+        ...slot,
+        stamina: { amount, settled_at: now, remainder: amount === troops.staminaMax ? 0 : bar.remainder },
+      }),
+    },
+  ];
 }
 
 function answerDeletion(command: LabCommand, chain: NativeFactStore): LabFact[] | null {

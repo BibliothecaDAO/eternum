@@ -36,9 +36,12 @@ for (const [name, id] of [
   }
 }
 write("../oath-deep-loss.txt", oathDeepLossVectors());
-write("../oath-pass-stamina.txt", [0, oaths.PASS_STAMINA / 2, oaths.PASS_STAMINA, oaths.PASS_STAMINA * 2].flatMap(
-  deficit => [deficit, Math.min(deficit, oaths.PASS_STAMINA)].map(String),
-));
+write(
+  "../oath-pass-stamina.txt",
+  [0, oaths.PASS_STAMINA / 2, oaths.PASS_STAMINA, oaths.PASS_STAMINA * 2].flatMap((deficit) =>
+    [deficit, Math.min(deficit, oaths.PASS_STAMINA)].map(String),
+  ),
+);
 console.log("Generated current Blitz, Frontier and Frontier check preset inputs and Herald projections");
 
 // Shared conformance conditions are independent of the playable preset catalog.

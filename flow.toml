@@ -101,6 +101,9 @@ forbid = "co-authored-by|claude|anthropic|codex|openai|generated with|session"
 cmd = "pnpm run build:packages && pnpm --dir packages/notifications test && pnpm --dir packages/provider test && pnpm --dir packages/core test && pnpm --dir apps/game test src/utils/automation-presets.test.ts src/utils/automation-signature.test.ts src/hooks/store/use-automation-store.test.ts src/ui/features/settlement/production/production-controls.test.tsx src/ui/features/economy/transfers/transfer-window.test.tsx src/ui/features/world/containers/left-facets/use-structure-actions.test.ts src/ui/lib/structure-capabilities.test.ts src/ui/features/military/battle/battle-lab/battle-share-names.test.tsx src/shell/play/play-board.test.ts src/shell/play/play-page.test.tsx src/utils/entity-ownership.test.ts src/ui/design-system/domain-icon-meaning.test.ts src/sync/chain-time-binding.test.ts src/three/effects/endgame/renderer.test.ts src/three/managers/structure-manager.guard-stamina.test.ts src/ui/features/frontier/build/build-options.test.ts src/ui/features/frontier/build/build-sheet.test.tsx src/ui/features/frontier/sites/site-card-plan.test.ts src/ui/features/social/components/player-id-hyperstructures.test.tsx src/ui/features/social/player/hs-held-points.test.tsx && pnpm --dir apps/agent-runner test"
 estimate_gb = 5
 
+[kind.schema-write]
+cmd = 'bash contracts/l3/check-native.sh build && pnpm run schema:native && pnpm run fixtures:native-presets && git diff --binary > "$FLOW_TMP/schema.patch"'
+
 [kind.format-write]
 cmd = 'pnpm run format && (cd contracts/l3/world-native && scarb fmt) && (cd contracts/l3/world-native/tests && scarb fmt) && git diff --binary > "$FLOW_TMP/format.patch"'
 estimate_gb = 4

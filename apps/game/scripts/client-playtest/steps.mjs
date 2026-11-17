@@ -1094,7 +1094,9 @@ function deleteOathArmyStep() {
   };
 }
 
-const oathRules = JSON.parse(readFileSync(new URL("../../../../contracts/l3/world-native/schema/schema.json", import.meta.url), "utf8")).oathConstants;
+const oathRules = JSON.parse(
+  readFileSync(new URL("../../../../contracts/l3/world-native/schema/schema.json", import.meta.url), "utf8"),
+).oathConstants;
 
 function oathPassSteps(capped) {
   return [
@@ -1107,23 +1109,31 @@ function oathPassSteps(capped) {
           const button = document.querySelector('[data-oath-pass-result]');
           return { current: Number(button.dataset.oathPassCurrent), maximum: Number(button.dataset.oathPassMaximum), result: Number(button.dataset.oathPassResult) };
         })()`);
-        const pass = browser.read(elementAt('[data-oath-pass-result]'));
+        const pass = browser.read(elementAt("[data-oath-pass-result]"));
         browser.tap(pass.offset);
-        const declined = await readUntil(() => browser.read(`(() => {
+        const declined = await readUntil(
+          () =>
+            browser.read(`(() => {
           const answer = window.__labChain.sent.at(-1);
           const progress = answer?.answered.find(({model}) => model === "ArmyProgress")?.value;
           return window.__labChain.sent.length === ${before + 1} && answer.command.kind === "ChooseOath" &&
             Number(progress?.oaths) === 1 && Number(progress?.oath_pick) === 0 && !document.querySelector('[data-oath-pick]');
-        })()`), Boolean, ORDER_OUTCOME_WAIT_MS);
+        })()`),
+          Boolean,
+          ORDER_OUTCOME_WAIT_MS,
+        );
         const answer = JSON.parse(browser.read("JSON.stringify(window.__labChain.sent.at(-1))"));
-        const slot = answer.answered.find(({model}) => model === "ArmySlot")?.value;
-        const shown = browser.read("document.querySelector('[data-oath-slots]')?.closest('[role=dialog]')?.textContent ?? ''");
+        const slot = answer.answered.find(({ model }) => model === "ArmySlot")?.value;
+        const shown = browser.read(
+          "document.querySelector('[data-oath-slots]')?.closest('[role=dialog]')?.textContent ?? ''",
+        );
         return { declined, answer, slot, preview, shown };
       },
       verify: ({ played }) => {
         const amount = Number(played.slot?.stamina.amount);
         const expected = capped ? oathRules.PASS_STAMINA / 2 : oathRules.PASS_STAMINA;
-        return played.declined && amount === played.preview.result &&
+        return played.declined &&
+          amount === played.preview.result &&
           amount === Math.min(played.preview.current + oathRules.PASS_STAMINA, played.preview.maximum) &&
           amount - played.preview.current === expected
           ? completed({ ...played, expectedGain: expected })
@@ -1146,7 +1156,8 @@ function oathPickSteps(full, layer = "Map") {
         const locked = browser.read(`Boolean(document.querySelector('[data-oath-pick]')) &&
           !document.querySelector('.ui-modal button[aria-label="Close"]') && window.__labChain.sent.length === ${before}`);
         return {
-          pick, locked,
+          pick,
+          locked,
           cards: browser.read("document.querySelectorAll('[data-oath-id]').length"),
           visible: browser.read(`(() => {
             const nodes = [...document.querySelectorAll('[data-oath-id], [data-oath-pick] > button')];

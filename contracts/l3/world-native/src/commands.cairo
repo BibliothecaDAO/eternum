@@ -320,5 +320,6 @@ pub fn validated_command(
 #[starknet::interface]
 pub trait ICommandIngress<T> {
     fn validate_command(self: @T, command: Span<felt252>) -> u32;
+    fn requires_oath_answer(self: @T, game_id: u32, command: Span<felt252>) -> bool;
     fn assign_open_home(ref self: T, game_id: u32, actor: ContractAddress);
 }

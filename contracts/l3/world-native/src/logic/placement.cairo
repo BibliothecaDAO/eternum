@@ -20,6 +20,11 @@ pub mod PlacementLogic {
             let (index, _, _) = crate::commands::validated_command(command).expect('INVALID_COMMAND');
             index
         }
+        fn requires_oath_answer(self: @ContractState, game_id: u32, command: Span<felt252>) -> bool {
+            let mut fields = command;
+            let command = Serde::deserialize(ref fields).expect('INVALID_COMMAND');
+            crate::logic::oath_commands::requires_answer(game_id, command)
+        }
         fn assign_open_home(ref self: ContractState, game_id: u32, actor: starknet::ContractAddress) {
             crate::entity_ids::assign_open_home(game_id, actor);
         }

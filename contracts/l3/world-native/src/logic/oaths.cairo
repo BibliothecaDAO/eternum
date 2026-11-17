@@ -1,5 +1,5 @@
-use crate::troops::ExplorerKey;
 use crate::stamina::{StaminaSourceTrait, StaminaTrait};
+use crate::troops::ExplorerKey;
 
 pub fn offer(key: ExplorerKey, coord: crate::troops::Coord, seed: u256) {
     if crate::logic::expeditions::depth_at(key.game_id, coord) >= 3 {

@@ -62,7 +62,13 @@ it("matches the native Deep loss vectors for each held set and tick boundary", a
 it("matches the native pass vectors below, at and near the maximum", async () => {
   const { readFileSync } = await import("node:fs");
   const { oathPassStamina } = await import("./oaths");
-  const fields = readFileSync(new URL("../../../../contracts/l3/world-native/tests/fixtures/oath-pass-stamina.txt", import.meta.url), "utf8").trim().split(/\s+/).map(Number);
+  const fields = readFileSync(
+    new URL("../../../../contracts/l3/world-native/tests/fixtures/oath-pass-stamina.txt", import.meta.url),
+    "utf8",
+  )
+    .trim()
+    .split(/\s+/)
+    .map(Number);
   expect(fields).toHaveLength(8);
   for (const maximum of [150, 240, 420]) {
     for (let i = 0; i < fields.length; i += 2) {

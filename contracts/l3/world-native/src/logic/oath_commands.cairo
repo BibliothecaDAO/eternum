@@ -18,7 +18,8 @@ pub fn requires_answer(game_id: u32, command: Command) -> bool {
         Command::SettleVillage(_) => false,
         Command::ReceiveVillageArmy(_) => false,
         Command::BurnStructureResources(_) => false,
-        Command::TransferExplorerResources(value) => waiting(game_id, value.from_entity_id) || waiting(game_id, value.to_entity_id),
+        Command::TransferExplorerResources(value) => waiting(game_id, value.from_entity_id)
+            || waiting(game_id, value.to_entity_id),
         Command::OffloadArrival(_) => false,
         Command::SendResources(_) => false,
         Command::TransferExplorerResourcesToStructure(value) => waiting(game_id, value.from_entity_id),
@@ -38,7 +39,8 @@ pub fn requires_answer(game_id: u32, command: Command) -> bool {
         Command::SetConstructionAccess(_) => false,
         Command::OpenRelicChest(value) => waiting(game_id, value.explorer_id),
         Command::ApplyRelic(value) => match value.recipient {
-            crate::relics::Recipient::Explorer | crate::relics::Recipient::ArmySlot(_) => waiting(game_id, value.entity_id),
+            crate::relics::Recipient::Explorer |
+            crate::relics::Recipient::ArmySlot(_) => waiting(game_id, value.entity_id),
             crate::relics::Recipient::StructureProduction | crate::relics::Recipient::StructureGuard => false,
         },
         Command::CloseSeason(_) => false,
@@ -53,7 +55,8 @@ pub fn requires_answer(game_id: u32, command: Command) -> bool {
         Command::ManageTroops(value) => match value {
             ManageTroops::RecruitExplorer(value) => waiting(game_id, value.explorer_id),
             ManageTroops::RemoveExplorer(id) => waiting(game_id, id),
-            ManageTroops::Transfer(value) => managed_waiting(game_id, value.source) || managed_waiting(game_id, value.target),
+            ManageTroops::Transfer(value) => managed_waiting(game_id, value.source)
+                || managed_waiting(game_id, value.target),
             ManageTroops::RecruitGuard(_) | ManageTroops::RemoveGuard(_) => false,
         },
         Command::GuardAttack(_) => false,
