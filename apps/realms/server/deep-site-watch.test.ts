@@ -9,6 +9,7 @@ import {
   PLAYER_ACCOUNT,
   TODAY,
   siteSnapshot,
+  siteGuardTroops,
   snapshot,
 } from "./fixtures/shard-world";
 
@@ -18,7 +19,7 @@ function equalArmies(lastTarget: number | undefined) {
   const timestamp = Math.floor(Date.now() / 1000);
   const bar = { amount: 120, settledAt: timestamp, day: TODAY };
   const facts = siteSnapshot(snapshot(bar, bar, null, [], "realm", null), {
-    troops: 1000,
+    troops: siteGuardTroops(1),
     aspect: 2,
     lore: true,
     lastTick: Math.floor(timestamp / ARMIES_TICK_SECONDS),

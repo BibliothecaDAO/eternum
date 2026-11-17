@@ -2,6 +2,7 @@ import {
   type ArmyState,
   snapshot,
   siteSnapshot,
+  siteGuardTroops,
   mistFacts,
   GAME_ID,
   PLAYER_ACCOUNT,
@@ -456,7 +457,7 @@ describe.concurrent("shard notifications", () => {
   ])("private research completed %s", (_phase, atPhase) => {
     it("makes the idle army eligible: nothing before the first tick that clears the guards, one alert after it", async () => {
       const { herald, push, worker } = await createHarness("important");
-      herald.state.site = { troops: 1000, aspect: 2, lore: false, lastTick: armiesTick() };
+      herald.state.site = { troops: siteGuardTroops(1), aspect: 2, lore: false, lastTick: armiesTick() };
       const heartbeat = setInterval(herald.heartbeat, 2000);
       try {
         await worker.runCron();
@@ -485,7 +486,7 @@ describe.concurrent("shard notifications", () => {
 
   it("arms a quiet game's watches after one failed release check, with no fact change in between", async () => {
     const { herald, push, worker } = await createHarness("important");
-    herald.state.site = { troops: 1000, aspect: 2, lore: true, lastTick: armiesTick() };
+    herald.state.site = { troops: siteGuardTroops(1), aspect: 2, lore: true, lastTick: armiesTick() };
     herald.state.manifestFailures = 1;
     const heartbeat = setInterval(herald.heartbeat, 2000);
     try {
@@ -507,7 +508,7 @@ describe.concurrent("shard notifications", () => {
       ),
     );
     herald.state.members = [PLAYER_ACCOUNT, ...others];
-    herald.state.site = { troops: 1000, aspect: 2, lore: true, lastTick: armiesTick() };
+    herald.state.site = { troops: siteGuardTroops(1), aspect: 2, lore: true, lastTick: armiesTick() };
     const heartbeat = setInterval(herald.heartbeat, 2000);
     try {
       await worker.runCron();
@@ -526,7 +527,7 @@ describe.concurrent("shard notifications", () => {
 
   it("pushes a Deep site opportunity on a rival's confirmed change for an idle player, once across restart", async () => {
     const { herald, push, worker, start } = await createHarness("important");
-    herald.state.site = { troops: 1000, aspect: 1, lore: true, lastTick: armiesTick() };
+    herald.state.site = { troops: siteGuardTroops(1), aspect: 1, lore: true, lastTick: armiesTick() };
     await worker.runCron();
     await pause(polls(3));
     expect(push.received).toEqual([]);
@@ -556,7 +557,7 @@ describe.concurrent("shard notifications", () => {
 
   it("wakes a Deep site opportunity at its computed drain tick without another player action", async () => {
     const { herald, push, worker } = await createHarness("important");
-    herald.state.site = { troops: 2000, aspect: 2, lore: true, lastTick: armiesTick() };
+    herald.state.site = { troops: siteGuardTroops(6), aspect: 2, lore: true, lastTick: armiesTick() };
     try {
       await worker.runCron();
       await pause(polls(2));
@@ -572,7 +573,7 @@ describe.concurrent("shard notifications", () => {
 
   it("cancels a waiting Deep site opportunity when the rival reinforces before a delivery retry", async () => {
     const { herald, push, worker } = await createHarness("important");
-    herald.state.site = { troops: 1000, aspect: 2, lore: true, lastTick: armiesTick() };
+    herald.state.site = { troops: siteGuardTroops(1), aspect: 2, lore: true, lastTick: armiesTick() };
     push.status = 503;
     try {
       await worker.runCron();
@@ -590,7 +591,7 @@ describe.concurrent("shard notifications", () => {
 
   it("suppresses a Deep site opportunity on a foreground device", async () => {
     const { herald, push, worker } = await createHarness("important");
-    herald.state.site = { troops: 1000, aspect: 2, lore: true, lastTick: armiesTick() };
+    herald.state.site = { troops: siteGuardTroops(1), aspect: 2, lore: true, lastTick: armiesTick() };
     await worker.db
       .prepare('UPDATE "notification_push_subscriptions" SET "gameForegroundUntil" = ?')
       .bind(Date.now() + 60000)

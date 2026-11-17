@@ -3,6 +3,7 @@ import { readDeepSiteWatches } from "../../realms/server/deep-site-watch";
 import {
   snapshot,
   siteSnapshot,
+  siteGuardTroops,
   GAME_ID,
   PLAYER_ACCOUNT,
   ARMIES_TICK_SECONDS,
@@ -16,7 +17,7 @@ import type { MadaraRpc } from "./madara-rpc";
 async function heldQuarry(now: number) {
   const { decoder, fold, native } = setup();
   const facts = siteSnapshot(snapshot(null, null, null, [PLAYER_ACCOUNT], "realm", null), {
-    troops: 1000,
+    troops: siteGuardTroops(1),
     aspect: 2,
     lore: true,
     lastTick: Math.floor(now / ARMIES_TICK_SECONDS),
