@@ -52,6 +52,7 @@ describe("one source per fact: no copy of a catalog outside its modules", () => 
     ],
     ["an image path", "export const art = '/images/biomes/ocean.png';"],
     ["a layer's name", "export const word = 'Veil';"],
+    ["a layer's name before a qualification", "export const word = 'Deep (locked)';"],
     ["a layer's old name", "export const word = 'Ethereal II';"],
     ["a layer's name in a template", "export const line = (n: string) => `${n} · Hollow`;"],
     ["an image path built in a template", "export const art = (name: string) => `/icons/facets/64/${name}.webp`;"],

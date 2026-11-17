@@ -70,7 +70,7 @@ const declaredType = (object) => {
 };
 
 const IMAGE_PATH = /^\/(images|icons|tokens)\//;
-const LAYER_SPELLING = /\b(Veil|Hollow)\b|\bEthereal I{1,3}\b|\b(Surface|Deep)\b(?! (Ocean|[Cc]rystal|miss|\())/;
+const LAYER_SPELLING = /\b(Surface|Veil|Hollow|Ethereal I{1,3})\b|\bDeep\b(?! (Ocean|Crystal)\b)/;
 
 const COPY = "copy";
 const IMAGE = "image";
