@@ -1026,6 +1026,7 @@ function deleteOathArmyStep() {
           commands: window.__labChain?.sent.length };
       })())`);
       const armyId = Number(before.progress?.value?.explorer_id);
+      const progressKey = before.progress?.key.split(":").map((felt) => BigInt(felt).toString()).join(":");
       const stamina = browser.armies().find(({ label }) => label === "Army 1")?.stamina;
       if (!armyId || !Number(before.progress?.value?.oaths) || !before.held || stamina === undefined)
         return { before, stamina };
@@ -1057,7 +1058,8 @@ function deleteOathArmyStep() {
           browser.read(`(() => {
         const answer = (window.__labChain?.sent ?? []).at(-1);
         const facts = answer?.answered ?? [];
-        const progress = facts.find(({model, key}) => model === "ArmyProgress" && key === ${JSON.stringify(before.progress.key)});
+        const progress = facts.find(({model, key}) => model === "ArmyProgress" &&
+          key.split(":").map(felt => BigInt(felt).toString()).join(":") === ${JSON.stringify(progressKey)});
         const army = facts.find(({model}) => model === "ExplorerTroops");
         const slot = facts.find(({model}) => model === "ArmySlot")?.value;
         return answer?.command.kind === "ManageTroops" &&
