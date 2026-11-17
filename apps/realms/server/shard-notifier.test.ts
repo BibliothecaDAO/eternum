@@ -105,6 +105,8 @@ const createHerald = () => {
     homeSource: "golden" as "realm" | "campaign" | "golden" | null,
     /** The accounts snapshot reads were narrowed to, in order. */
     ownerReads: [] as string[],
+    /** The players the snapshot reads were scoped to as actors, in order. */
+    actorReads: [] as string[],
   };
   const answer = (url: URL): unknown => {
     if (url.pathname === "/games") state.gamesReads++;
@@ -144,8 +146,9 @@ const createHerald = () => {
     if (url.pathname === `/games/${GAME_ID}/snapshot`) {
       state.snapshotReads++;
       state.requestedModels.push(url.searchParams.get("models") ?? "");
-      if (url.searchParams.get("owner")) {
-        state.ownerReads.push(url.searchParams.get("owner")!);
+      if (url.searchParams.get("owner")) state.ownerReads.push(url.searchParams.get("owner")!);
+      if (url.searchParams.get("actor")) {
+        state.actorReads.push(url.searchParams.get("actor")!);
         state.reads.push("snapshot");
       }
     }
@@ -477,9 +480,9 @@ describe.concurrent("shard notifications", () => {
     const heartbeat = setInterval(herald.heartbeat, 2000);
     try {
       await worker.runCron();
-      await waitUntil(() => herald.state.ownerReads.length >= 3, 20000);
+      await waitUntil(() => herald.state.actorReads.length >= 3, 20000);
       await pause(polls(1));
-      expect(new Set(herald.state.ownerReads.slice(0, 3)).size).toBe(3);
+      expect(new Set(herald.state.actorReads.slice(0, 3)).size).toBe(3);
       const first = herald.state.reads.indexOf("snapshot");
       const third = herald.state.reads.indexOf("snapshot", first + 2);
       expect(herald.state.reads.slice(first, third + 1)).toEqual(["snapshot", "snapshot", "snapshot"]);
