@@ -29,9 +29,12 @@ fn every_draw_has_three_colours_and_excludes_every_held_oath_even_with_four_of_o
 #[test]
 fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_and_declines() {
     let discovery = crate::expeditions::FrontierDiscoveryRules {
-        camp_bps: 0, rift_bps: 0, ruin_bps: 0, beasts_bps: 0, shrine_bps: 10000, well_bps: 0, empty_reveal_limit: 7,
+        camp_bps: 1, rift_bps: 0, ruin_bps: 0, beasts_bps: 0, shrine_bps: 5000, well_bps: 0, empty_reveal_limit: 7,
     };
     let (d, game_id, key) = super::registrar::setup_frontier_relics_with_rules(Some(discovery));
+    let root = super::registrar::discovery_root(
+        game_id, discovery, 100, 0, None, crate::discovery::Discovery::Shrine,
+    );
     snforge_std::interact_with_state(
         d.games,
         || {
@@ -42,11 +45,11 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
             );
         },
     );
-    assert!(super::registrar::explore_with_root(d, game_id, key.explorer_id, 123, 360));
+    assert!(super::registrar::explore_with_root(d, game_id, key.explorer_id, root, 360));
     let first = read_progress(d, key);
     assert!(first.oath_pick != 0);
     assert_eq!(first.oaths, 0);
-    assert!(super::registrar::explore_with_root(d, game_id, key.explorer_id, 456, 361));
+    assert!(super::registrar::explore_with_root(d, game_id, key.explorer_id, root, 361));
     assert_eq!(read_progress(d, key).oath_pick, first.oath_pick);
     let taken = card(first.oath_pick, 0);
     let take = ChooseOath {
@@ -69,7 +72,7 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
     assert_eq!(chosen.oath_pick, 0);
     assert!(!super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(take), 363));
     assert_eq!(read_progress(d, key), chosen);
-    assert!(super::registrar::explore_with_root(d, game_id, key.explorer_id, 789, 364));
+    assert!(super::registrar::explore_with_root(d, game_id, key.explorer_id, root, 364));
     let second = read_progress(d, key);
     let replacement = card(second.oath_pick, 1);
     let replace = ChooseOath { expected_pick: second.oath_pick, oath: Some(replacement), ..take };
@@ -81,7 +84,7 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
         ),
     );
     assert_eq!(read_progress(d, key).oaths, crate::oaths::bit(replacement));
-    assert!(super::registrar::explore_with_root(d, game_id, key.explorer_id, 999, 367));
+    assert!(super::registrar::explore_with_root(d, game_id, key.explorer_id, root, 367));
     let third = read_progress(d, key);
     assert!(
         super::resource_commands::execute_in_game(

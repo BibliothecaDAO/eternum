@@ -7,7 +7,8 @@ import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { HudButton, HudCard } from "@/ui/design-system/kit/hud-elements";
-import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
+import { Icon } from "@/ui/design-system/icon";
+import { orderMeaning } from "@/ui/design-system/icon-meaning";
 import { toast } from "@/ui/features/event-feed/notify";
 import { oathName } from "./oath-names";
 
@@ -51,7 +52,7 @@ export function ArmyOathPick({ explorerId, progress }: { explorerId: number; pro
               <HudCard
                 size="sm"
                 title={oathName(id)}
-                picture={<OrderEmblem order={id} size={40} />}
+                picture={<Icon name={orderMeaning(id)} size={40} />}
                 detail={<span className={colourClass[oathColours[index]!.colour]}>{oathColours[index]!.name}</span>}
                 disabled={!allowed || sending}
                 onClick={() => (full ? setPicked(id) : void choose(id))}
@@ -70,7 +71,7 @@ export function ArmyOathPick({ explorerId, progress }: { explorerId: number; pro
               data-replace-oath={id}
               aria-label={`Replace ${oathName(id)}`}
             >
-              <OrderEmblem order={id} />
+              <Icon name={orderMeaning(id)} />
               {oathName(id)}
             </HudButton>
           ))}

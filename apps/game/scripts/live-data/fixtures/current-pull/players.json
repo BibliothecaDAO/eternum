@@ -36,7 +36,9 @@
             "game_id": "0x1",
             "explorer_id": "0x11",
             "logistics": "0x2",
-            "oath_slots": "0x1"
+            "oath_slots": "0x1",
+            "oaths": "0x0",
+            "oath_pick": "0x0"
           }
         }
       ],

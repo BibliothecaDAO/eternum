@@ -1024,10 +1024,17 @@ function oathPickSteps(full) {
         );
         if (details) browser.tap(details.offset);
         const pick = await readUntil(() => browser.read(elementAt("[data-oath-pick]")), Boolean, SHEET_WAIT_MS);
-        return { pick, cards: browser.read("document.querySelectorAll('[data-oath-id]').length") };
+        return { pick, cards: browser.read("document.querySelectorAll('[data-oath-id]').length"),
+          visible: browser.read(`(() => {
+            const nodes = [...document.querySelectorAll('[data-oath-id], [data-oath-pick] > button')];
+            return nodes.length === 4 && nodes.every(node => {
+              const box = node.getBoundingClientRect();
+              return box.width > 0 && box.height > 0 && box.top >= 0 && box.bottom <= innerHeight;
+            });
+          })()`) };
       },
       verify: ({ played }) =>
-        played.pick && played.cards === 3 ? completed(played) : failed("Three Oath cards did not appear", played),
+        played.pick && played.cards === 3 && played.visible ? completed(played) : failed("Three Oath cards did not appear", played),
     },
     clickToResultStep(
       "choose-oath",

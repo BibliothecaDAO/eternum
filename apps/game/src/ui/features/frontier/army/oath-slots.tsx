@@ -1,7 +1,7 @@
 import { heldOaths } from "@bibliothecadao/eternum";
-import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
+import { Icon } from "@/ui/design-system/icon";
+import { orderMeaning } from "@/ui/design-system/icon-meaning";
 import { oathName } from "./oath-names";
-import { ArmyOathPick } from "./oath-pick";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { HudCost } from "@/ui/design-system/kit/hud-elements";
 import { costLine } from "@/ui/design-system/kit/price-faces";
@@ -48,7 +48,7 @@ export function TroopOathSlots({
             >
               {oath ? (
                 <>
-                  <OrderEmblem order={oath} />
+                  <Icon name={orderMeaning(oath)} />
                   <span>{oathName(oath)}</span>
                 </>
               ) : open ? (
@@ -68,9 +68,6 @@ export function TroopOathSlots({
           );
         })}
       </div>
-      {progress && progress.oath_pick !== 0 && explorerId !== undefined && (
-        <ArmyOathPick key={progress.oath_pick} explorerId={explorerId} progress={progress} />
-      )}
       {count < research.OATH_SLOTS_MAX && (
         <span className="text-hud-label text-hud-muted">{RESEARCH_TREE.oathResearch}</span>
       )}

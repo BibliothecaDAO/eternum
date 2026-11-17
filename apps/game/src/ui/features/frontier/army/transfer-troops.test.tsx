@@ -135,7 +135,7 @@ const sides = () =>
     name.parentElement!.querySelector(".text-hud-title")!.textContent,
   ]);
 
-const LOSS_NOTICE = /loses its Logistics and Oath slots\./;
+const LOSS_NOTICE = /loses its Logistics, Oath slots, held Oaths and waiting pick\./;
 const CONFIRM_MERGE = /^Confirm merge /;
 
 const withOaths = (store: ReturnType<typeof transferArmies>, source: number, target: number) => {
@@ -162,7 +162,7 @@ it("confirms the loss of stronger Logistics in a 500 into 1,500 merge", async ()
   expect(amount()).toBe("500");
   expect(host.textContent).toContain("5/165");
   expect(host.textContent).toContain("15/140→5");
-  expect(host.textContent).toContain("Army 1 loses its Logistics and Oath slots.");
+  expect(host.textContent).toContain("Army 1 loses its Logistics, Oath slots, held Oaths and waiting pick.");
   expect(host.querySelector("s")).toBeNull();
   await act(async () => button("Merge into Army 3")!.click());
   expect(swap).not.toHaveBeenCalled();
@@ -462,7 +462,7 @@ it("asks before dissolving an army with a whole upgrade more progression, then s
   await act(async () => button("Merge into Army 2")!.click());
   expect(swap).not.toHaveBeenCalled();
   expect(close).not.toHaveBeenCalled();
-  expect(host.querySelector(".ui-notice")?.textContent).toContain("Army 1 loses its Logistics and Oath slots.");
+  expect(host.querySelector(".ui-notice")?.textContent).toContain("Army 1 loses its Logistics, Oath slots, held Oaths and waiting pick.");
   await act(async () => button("Confirm merge into Army 2")!.click());
   expect(swap).toHaveBeenCalledOnce();
   expect(swap).toHaveBeenCalledWith(

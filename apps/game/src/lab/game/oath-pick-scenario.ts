@@ -1,3 +1,4 @@
+import { seasonOneResearchPrices } from "./season-one-research";
 import { chooseOath } from "@bibliothecadao/eternum";
 import { nativeOathConstants as oaths } from "@bibliothecadao/eternum/game-client";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
@@ -9,6 +10,7 @@ export function oathPickScenario(full = false): LabScenario {
   const key = { game_id: 1, explorer_id: SPIRE_ARMY };
   const progress = game.store.require("ArmyProgress", key);
   game.store.applyFacts([
+    ...seasonOneResearchPrices(game.store),
     {
       model: "ArmyProgress",
       key: game.store.wireKeyOf("ArmyProgress", key)!,
