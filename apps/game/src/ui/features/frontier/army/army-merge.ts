@@ -22,7 +22,7 @@ export const explorerTransferPlan = ({
       known &&
       (sourceProgress.logistics > targetProgress.logistics ||
         sourceProgress.oath_slots > targetProgress.oath_slots ||
-        (sourceProgress.oaths & ~targetProgress.oaths) !== 0 ||
+        sourceProgress.oaths !== 0 ||
         sourceProgress.oath_pick !== 0),
     fullFits: known && targetCap !== null && sourceCount + targetCount <= targetCap,
     partialMax: Math.min(Math.max(0, sourceCount - 1), Math.max(0, (targetCap ?? 0) - targetCount)),

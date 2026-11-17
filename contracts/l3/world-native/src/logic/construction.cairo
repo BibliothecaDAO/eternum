@@ -45,6 +45,15 @@ pub mod ConstructionLogic {
     }
 
     #[abi(embed_v0)]
+    impl PresetStructures of crate::presets::IPresetStructures<ContractState> {
+        fn store_structure_preset(
+            ref self: ContractState, commitment: felt252, structures: crate::presets::StructurePreset,
+        ) {
+            crate::logic::preset_record::store_structures(commitment, structures);
+        }
+    }
+
+    #[abi(embed_v0)]
     impl BuildingRules of crate::buildings::IBuildingRules<ContractState> {
         #[cfg(feature: "test_support")]
         fn building_rule(

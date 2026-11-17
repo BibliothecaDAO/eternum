@@ -326,14 +326,6 @@ pub mod MapLogic {
     }
 
     #[abi(embed_v0)]
-    impl PresetStructures of crate::presets::IPresetStructures<ContractState> {
-        fn store_structure_preset(
-            ref self: ContractState, commitment: felt252, structures: crate::presets::StructurePreset,
-        ) {
-            crate::logic::preset_record::store_structures(commitment, structures);
-        }
-    }
-    #[abi(embed_v0)]
     impl Map of crate::map::IMapLogic<ContractState> {
         fn biome(self: @ContractState, key: TileKey, game_context: crate::commands::BiomeContext) -> u8 {
             crate::logic::map::biome(key, game_context)

@@ -68,9 +68,11 @@ export function learnResearch(learned: bigint, row: number, side: number): bigin
   const maximum =
     row === research.ROW_SHRINE || row === research.ROW_WELL
       ? 1
-      : row === research.ROW_DEPTH || isOathResearch(row)
-        ? 3
-        : 5;
+      : isOathResearch(row)
+        ? research.OATH_SLOTS_MAX - research.OATH_SLOTS_BASE
+        : row === research.ROW_DEPTH
+          ? 3
+          : 5;
   if (next > maximum) throw new Error("Research side is complete");
   if (researchHasIndependentSides(row)) return learned + (1n << (offset + BigInt(side) * 3n));
   return learned + (1n << offset);

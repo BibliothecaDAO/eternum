@@ -3,8 +3,8 @@ pub use world_test_support::tests::army_merge::*;
 
 #[test]
 fn full_merges_keep_the_chosen_target_even_with_less_progression() {
-    for (source_logistics, target_logistics, reverse) in array![
-        (5_u8, 0_u8, false), (5, 0, true), (0, 1, false), (0, 0, false),
+    for (source_logistics, target_logistics, source_slots, target_slots, reverse) in array![
+        (5_u8, 0_u8, 4_u8, 1_u8, false), (5, 0, 4, 1, true), (0, 1, 1, 4, false), (0, 0, 1, 4, true),
     ] {
         let d = setup();
         let (game_id, _, category) = expedition_home(d);
@@ -15,10 +15,10 @@ fn full_merges_keep_the_chosen_target_even_with_less_progression() {
             (first, second, 0, 1)
         };
         write_progress(
-            d, source, ArmyProgress { logistics: source_logistics, oath_slots: 1, oaths: 1, oath_pick: 571 },
+            d, source, ArmyProgress { logistics: source_logistics, oath_slots: source_slots, oaths: 1, oath_pick: 571 },
         );
         write_progress(
-            d, target, ArmyProgress { logistics: target_logistics, oath_slots: 1, oaths: 8, oath_pick: 571 },
+            d, target, ArmyProgress { logistics: target_logistics, oath_slots: target_slots, oaths: 8, oath_pick: 571 },
         );
         let (winner, loser) = (target, source);
         let state = GameState { contract_address: d.games };
@@ -34,6 +34,7 @@ fn full_merges_keep_the_chosen_target_even_with_less_progression() {
         assert_eq!(after.troops.count, 6 * RESOURCE_PRECISION);
         assert_eq!(after.troops.battle_cooldown_end, 400);
         assert_eq!(progress(d, winner), Some(kept));
+        assert_eq!(progress(d, winner).unwrap().oath_slots, target_slots);
         assert!(progress(d, loser).is_none());
         assert!(state.explorer(loser).is_none());
         assert_eq!(slot(d, winner, winner_slot).stamina.amount, 7);
@@ -51,7 +52,7 @@ fn partial_transfers_keep_both_progress_bundles_and_slots() {
     let d = setup();
     let (game_id, _, category) = expedition_home(d);
     let (source, target) = expedition_armies(d, game_id, category);
-    let veteran = ArmyProgress { logistics: 3, oath_slots: 1, ..Default::default() };
+    let veteran = ArmyProgress { logistics: 3, oath_slots: 4, oaths: 1, oath_pick: 571 };
     write_progress(d, source, veteran);
     timers(d, source, 0, 390);
     timers(d, target, 100, 400);
@@ -61,6 +62,8 @@ fn partial_transfers_keep_both_progress_bundles_and_slots() {
     assert_eq!(state.explorer(target).unwrap().troops.count, 4 * RESOURCE_PRECISION);
     assert_eq!(progress(d, source), Some(veteran));
     assert_eq!(progress(d, target), Some(Default::default()));
+    assert_eq!(progress(d, source).unwrap().oath_slots, 4);
+    assert_eq!(progress(d, target).unwrap().oath_slots, 1);
     assert_eq!(slot(d, source, 0).explorer_id, source.explorer_id);
     assert_eq!(slot(d, target, 1).explorer_id, target.explorer_id);
     assert_eq!(slot(d, source, 0).stamina.amount, 0);

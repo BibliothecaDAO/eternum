@@ -69,5 +69,5 @@ it("warns when a merge discards held Oaths or a waiting pick", () => {
   expect(
     explorerTransferPlan({ ...base, sourceProgress: { ...common, oaths: 1 }, targetProgress: { ...common, oaths: 1 } })
       .confirmLoss,
-  ).toBe(false);
+  ).toBe(true);
 });

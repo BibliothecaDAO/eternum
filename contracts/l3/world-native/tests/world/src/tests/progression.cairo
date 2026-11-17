@@ -150,5 +150,14 @@ fn deployed_armies_keep_their_troops_oath_count_after_home_research_changes() {
         assert_eq!(read_progress(d, new).oath_slots, 2);
         assert_eq!(read_progress(d, old).oath_slots, 1);
         assert_eq!(read_progress(d, new).logistics, 0);
+        assert!(
+            super::resource_commands::execute_in_game(
+                d, game_id, super::frontier_economy::reinforce(old.explorer_id, 2), 351,
+            ),
+        );
+        let troops = super::state::GameState { contract_address: d.games }.resolved_explorer(old).unwrap().troops;
+        assert_eq!(troops.count, 5 * crate::rules::RESOURCE_PRECISION);
+        assert_eq!(read_progress(d, old).oath_slots, 1);
+        assert_eq!(read_progress(d, new).oath_slots, 2);
     }
 }

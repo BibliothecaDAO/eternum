@@ -2,7 +2,7 @@
  * The usage audit's findings, strongest cut first: what each control is and what would replace it are written once
  * here; the evidence line is counted again from every pull, so the lab's Data → UI usage page refreshes with it.
  */
-import type { CommandRow, Mode } from "./commands";
+import { type CommandRow, type Mode, researchRows } from "./commands";
 
 export interface LeaderboardEntry {
   address: string;
@@ -229,18 +229,18 @@ const FINDINGS: Finding[] = [
     kind: "command",
     where: "Season → a realm's row → its detail, Reach.",
     evidence: (c) =>
-      `${n(c.count("frontier", "Enter depth"))} depth entries, ${n(research(c, "Ethereal"))} Ethereal research among ${n(c.count("frontier", "Research"))} researches by ${n(c.players("frontier", "Research"))} players, deepest reach 0 for ${n(c.leaderboard.filter((e) => e.deepest_depth === 0).length)} of ${n(c.leaderboard.length)} realms.`,
+      `${n(c.count("frontier", "Enter depth"))} depth entries, ${n(c.count("frontier", "Research"))} researches by ${n(c.players("frontier", "Research"))} players, deepest reach 0 for ${n(c.leaderboard.filter((e) => e.deepest_depth === 0).length)} of ${n(c.leaderboard.length)} realms.`,
     replace: "Draw Reach only above 0, as the board's badge already does.",
     risk: "None. The Spire itself is late-game: no cut on this evidence.",
     shot: "season.png",
   },
   {
-    title: "Research sides almost never picked (rules, not UI)",
+    title: "Research purchases by row and side",
     modes: ["frontier"],
     kind: "rules",
     where: "Research → a row → its side.",
     evidence: (c) =>
-      `${n(c.count("frontier", "Research"))} researches. Farm: Make ${research(c, "Farm", "Make")}, Store ${research(c, "Farm", "Store")}. Workshop: Make ${research(c, "Workshop", "Make")}, Store ${research(c, "Workshop", "Store")}. Barracks: Drill ${research(c, "Barracks", "Drill")}, Rations ${research(c, "Barracks", "Rations")}. Scouts' Lodge: Camps ${research(c, "Scouts' Lodge", "Camps")}, Rifts ${research(c, "Scouts' Lodge", "Rifts")}, Beasts ${research(c, "Scouts' Lodge", "Beasts")}. War Hall ${research(c, "War Hall")}, Supply Yard ${research(c, "Supply Yard")}, Hearth ${research(c, "Hearth")}, Ethereal ${research(c, "Ethereal")}. Hut ${research(c, "Hut")}, Shrine ${research(c, "Shrine")}, Well ${research(c, "Well")}.`,
+      `${n(c.count("frontier", "Research"))} researches. ${researchRows.map(({ name, sides }) => `${name}: ${sides.map((side) => `${side.name === null ? "" : `${side.name} `}${research(c, name, side.name)}`).join(", ")}`).join(". ")}.`,
     replace: "A question for the rules lane and the research balance study (Data → Balance & data).",
     risk: "Changes the game; owner and rules lane.",
     shot: "research.png",
