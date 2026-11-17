@@ -1096,7 +1096,7 @@ function deleteOathArmyStep() {
 }
 
 const oathRules = JSON.parse(
-  readFileSync(new URL("../../../../contracts/l3/world-native/schema/schema.json", import.meta.url), "utf8"),
+  readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), "../../../../contracts/l3/world-native/schema/schema.json"), "utf8"),
 ).oathConstants;
 
 function oathPassSteps(capped) {

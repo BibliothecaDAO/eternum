@@ -1,7 +1,7 @@
-use crate::stamina::StaminaSourceTrait;
-use crate::troops::{ExplorerRecordTrait, StaminaSource};
 use snforge_std::fs::{FileTrait, read_txt};
 use crate::oaths::{ChooseOath, card, count, draw, held};
+use crate::stamina::StaminaSourceTrait;
+use crate::troops::{ExplorerRecordTrait, StaminaSource};
 use super::progression::read_progress;
 use super::state::{GameState, TroopObservationTrait};
 

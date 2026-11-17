@@ -299,11 +299,13 @@ pub mod SeasonLogic {
                 && crate::commands::ICommandIngressDispatcherTrait::requires_oath_answer(
                     crate::commands::ICommandIngressLibraryDispatcher {
                         class_hash: self.release.classes(game_id).placement.read(),
-                    }, game_id, arguments,
+                    },
+                    game_id,
+                    arguments,
                 ) {
-                return Err(crate::commands::Rejection {
-                    status_class: 'GAMEPLAY_REJECTED', reason: "ANSWER_OATH_FIRST",
-                });
+                return Err(
+                    crate::commands::Rejection { status_class: 'GAMEPLAY_REJECTED', reason: "ANSWER_OATH_FIRST" },
+                );
             }
             let result = dispatch(self.release.classes(game_id), route, game_id, actor, payload, context)
                 .map_err(|error| domain_rejection(error))?;
