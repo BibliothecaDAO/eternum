@@ -1158,7 +1158,9 @@ function oathPickSteps(full, layer = "Map") {
         const pick = await readUntil(() => browser.read(elementAt("[data-oath-pick]")), Boolean, SHEET_WAIT_MS);
         const before = browser.read("window.__labChain.sent.length");
         browser.press("Escape");
-        browser.tap([5, 5]);
+        const outside = browser.read('document.elementFromPoint(5, 5)?.classList.contains("ui-modal")');
+        if (!outside) throw new Error("The outside press must land on the Oath backdrop");
+        browser.tap([5 - VIEWPORT.width / 2, 5 - VIEWPORT.height / 2]);
         browser.run(["back"]);
         const locked = browser.read(`Boolean(document.querySelector('[data-oath-pick]')) &&
           !document.querySelector('.ui-modal button[aria-label="Close"]') && window.__labChain.sent.length === ${before}`);
