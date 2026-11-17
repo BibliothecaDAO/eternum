@@ -1,10 +1,11 @@
+import { frontierSeasonOnePreset } from "../../../../config/source/frontier/season-one";
 import {
   FRONTIER_FIXTURE_PRESET_ID,
   FRONTIER_S1_PRESET_ID,
 } from "../../../../config/source/common/native-preset-modes";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { NativeFactStore } from "../../../../packages/core/src/client/native-fact-store";
-import { TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
 import { ClientConfigManager } from "../../../../packages/core/src/managers/config-manager";
 import { affordableAt, musterStamina, staminaAt } from "../../../../packages/core/src/managers/troop-stamina";
 import { describe, expect, it, vi } from "vitest";
@@ -413,7 +414,7 @@ it("projects optional Deep rules from verified registration and publishes no row
     quarry: { alt: false, x: 12, y: 20 },
     altar: { alt: false, x: 38, y: 20 },
     beast_count: 10_000_000_000_000n,
-    loss_per_tick: 200_000_000_000n,
+    loss_per_tick: BigInt(frontierSeasonOnePreset.deep.lossPerTick) * BigInt(RESOURCE_PRECISION),
     quarry_per_tick: 500_000_000_000n,
     altar_per_tick: 5,
     altar_threshold: 1_500,
@@ -508,7 +509,7 @@ it("projects optional race rules from verified registration into the native fact
           quarry: { alt: false, x: 12, y: 20 },
           altar: { alt: false, x: 38, y: 20 },
           beast_count: 10000_000000000n,
-          loss_per_tick: 200_000000000n,
+          loss_per_tick: BigInt(frontierSeasonOnePreset.deep.lossPerTick) * BigInt(RESOURCE_PRECISION),
           quarry_per_tick: 500_000000000n,
           altar_per_tick: 5,
           altar_threshold: 1500,

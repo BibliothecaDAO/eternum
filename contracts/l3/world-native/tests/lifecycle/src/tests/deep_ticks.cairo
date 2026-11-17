@@ -314,9 +314,14 @@ fn a_refused_guard_move_keeps_the_tick_paid_and_cannot_pay_it_twice() {
 fn vitriol_setup(seed: felt252) -> (Deployment, u32) {
     let mut preset = without_passive_labor(super::deep_sites::preset());
     let (_, current) = world_test_support::tests::preset_projection::current_definition("frontier");
-    preset.economy.deep = Some(crate::deep::DeepRules {
-        loss_per_tick: current.economy.deep.unwrap().loss_per_tick, ..preset.economy.deep.unwrap()
-    });
+    preset
+        .economy
+        .deep =
+            Some(
+                crate::deep::DeepRules {
+                    loss_per_tick: current.economy.deep.unwrap().loss_per_tick, ..preset.economy.deep.unwrap(),
+                },
+            );
     super::aspects::setup_aspect_preset(seed, preset)
 }
 

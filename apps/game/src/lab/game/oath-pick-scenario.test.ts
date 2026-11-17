@@ -36,5 +36,7 @@ it("settles the lab's old Deep rate before the Oath response, matching the nativ
   expect(chain.require("DeepArmy", key).last_tick).toBe(BigInt(boundary / interval));
   expect(chain.require("ArmyProgress", key).oaths).toBe(1 << (oaths.VITRIOL - 1));
   expect(currentArmy(chain, after, boundary).troops.count).toBe(after.troops.count);
-  expect(currentArmy(chain, after, boundary + interval).troops.count).toBe(after.troops.count - BigInt(oaths.VITRIOL_LOSS_PER_TICK) * BigInt(RESOURCE_PRECISION));
+  expect(currentArmy(chain, after, boundary + interval).troops.count).toBe(
+    after.troops.count - BigInt(oaths.VITRIOL_LOSS_PER_TICK) * BigInt(RESOURCE_PRECISION),
+  );
 });

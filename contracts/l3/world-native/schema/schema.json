@@ -125,7 +125,7 @@
     "RED": 11537,
     "BLUE": 53288,
     "GOLD": 710,
-    "VITRIOL_LOSS_PER_TICK": 150
+    "VITRIOL_LOSS_PER_TICK": 75
   },
   "tileOccupierConstants": {
     "CHEST_OCCUPIER": 34,
@@ -14162,5 +14162,5 @@
       ]
     }
   },
-  "identity": "d34872a34e0c19d6c3b16665ab5e33a833ed7a9e65cfdd5ec0f35b7631a16109"
+  "identity": "75fb0bcf4a24400f23b65ee9de5aa1190e945651fb9000e2159ade3378417f70"
 }

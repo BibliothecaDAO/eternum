@@ -1,3 +1,4 @@
+import { frontierSeasonOnePreset } from "../../../source/frontier/season-one";
 import { buildingIds } from "../../../source/frontier/native";
 import developmentRelease from "../../../../deploy/release/dev.json";
 import productionRelease from "../../../../deploy/release/production.json";
@@ -1055,7 +1056,7 @@ const deepFixture = () => ({
   quarry: { x: 12, y: 20 },
   altar: { x: 38, y: 20 },
   beastCount: 10_000,
-  lossPerTick: 200,
+  lossPerTick: frontierSeasonOnePreset.deep.lossPerTick,
   quarryPerTick: 500,
   altarPerTick: 5,
   altarThreshold: 1_500,
@@ -1072,7 +1073,7 @@ test("an optional Deep preset serializes exact coordinates, resource precision a
       quarry: { alt: false, x: 12, y: 20 },
       altar: { alt: false, x: 38, y: 20 },
       beast_count: 10_000n * BigInt(RESOURCE_PRECISION),
-      loss_per_tick: 200n * BigInt(RESOURCE_PRECISION),
+      loss_per_tick: BigInt(frontierSeasonOnePreset.deep.lossPerTick) * BigInt(RESOURCE_PRECISION),
       quarry_per_tick: 500n * BigInt(RESOURCE_PRECISION),
       altar_per_tick: 5,
       altar_threshold: 1_500,

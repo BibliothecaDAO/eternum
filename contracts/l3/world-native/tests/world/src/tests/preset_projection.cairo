@@ -65,12 +65,13 @@ fn current_frontier_requires_discovery_rejects_cash_rules_and_refuses_sequential
 
 fn optional_deep_rules() -> crate::deep::DeepRules {
     let precision = crate::rules::RESOURCE_PRECISION;
+    let (_, current) = current_definition("frontier");
     crate::deep::DeepRules {
         foundation: crate::troops::Coord { alt: false, x: 25, y: 35 },
         quarry: crate::troops::Coord { alt: false, x: 12, y: 20 },
         altar: crate::troops::Coord { alt: false, x: 38, y: 20 },
         beast_count: 10000 * precision,
-        loss_per_tick: 200 * precision,
+        loss_per_tick: current.economy.deep.unwrap().loss_per_tick,
         quarry_per_tick: 500 * precision,
         altar_per_tick: 5,
         altar_threshold: 1500,
