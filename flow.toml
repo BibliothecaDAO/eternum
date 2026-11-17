@@ -413,11 +413,11 @@ paths = ".github/actions/checkout-without-media/ .github/workflows/test-docs.yml
 estimate_gb = 6
 
 [kind.playtest-oath-pick]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && for view in 1920x1080 390x844; do for scenario in lab-actions-oath-pick lab-actions-oath-replace; do pnpm --dir apps/game playtest --port 4198 --steps "$scenario" --iterations 3 --renderer-modes webgpu-force-webgl --viewport "$view" --out "$FLOW_TMP/playtest/$view/$scenario" || exit; done; done'
+cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4198.lock" && flock 8 && for view in 1920x1080 390x844; do for scenario in lab-actions-oath-pick lab-actions-oath-replace; do pnpm --dir apps/game playtest --port 4198 --steps "$scenario" --iterations 3 --renderer-modes webgpu-force-webgl --viewport "$view" --out "$FLOW_TMP/playtest/$view/$scenario" || exit; done; done'
 paths = "apps/game/src/ui/features/frontier/army/ apps/game/src/lab/game/oath-pick-scenario.ts packages/core/src/utils/oaths.ts"
 estimate_gb = 4
 
 [kind.playtest-oath-vitriol]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && for view in 1920x1080 390x844; do for scenario in lab-oath-vitriol lab-oath-decline; do pnpm --dir apps/game playtest --port 4199 --steps "$scenario" --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$view" --out "$FLOW_TMP/playtest/$view/$scenario" || exit; done; done'
+cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4199.lock" && flock 8 && for view in 1920x1080 390x844; do for scenario in lab-oath-vitriol lab-oath-decline; do pnpm --dir apps/game playtest --port 4199 --steps "$scenario" --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$view" --out "$FLOW_TMP/playtest/$view/$scenario" || exit; done; done'
 paths = "apps/game/src/ui/features/frontier/army/ apps/game/src/ui/features/frontier/deep/ apps/game/src/lab/game/oath-pick-scenario.ts packages/core/src/utils/deep.ts packages/core/src/utils/deep-army-life.ts packages/core/src/utils/oaths.ts"
 estimate_gb = 4
