@@ -1026,7 +1026,7 @@ function deleteOathArmyStep() {
           commands: window.__labChain?.sent.length };
       })())`);
       const armyId = Number(before.progress?.value?.explorer_id);
-      const stamina = browser.armies().find(({label}) => label === "Army 1")?.stamina;
+      const stamina = browser.armies().find(({ label }) => label === "Army 1")?.stamina;
       if (!armyId || !Number(before.progress?.value?.oaths) || !before.held || stamina === undefined)
         return { before, stamina };
       await press(browser, "Delete");
@@ -1052,7 +1052,9 @@ function deleteOathArmyStep() {
       if (!retained) return { before, confirmation, retained };
       await press(browser, "Delete");
       await press(browser, "Delete", true);
-      const removed = await readUntil(() => browser.read(`(() => {
+      const removed = await readUntil(
+        () =>
+          browser.read(`(() => {
         const answer = (window.__labChain?.sent ?? []).at(-1);
         const facts = answer?.answered ?? [];
         const progress = facts.find(({model, key}) => model === "ArmyProgress" && key === ${JSON.stringify(before.progress.key)});
@@ -1063,13 +1065,17 @@ function deleteOathArmyStep() {
           Number(slot?.explorer_id) === 0 && Number(slot?.stamina.amount) === ${stamina} &&
           !document.querySelector('.mp-at[data-key="army:${armyId}"]') &&
           !document.querySelector('[data-oath-slots]') && !window.__eternumMapSelection?.army;
-      })()`), Boolean, ORDER_OUTCOME_WAIT_MS);
+      })()`),
+        Boolean,
+        ORDER_OUTCOME_WAIT_MS,
+      );
       const answer = browser.read("JSON.stringify(window.__labChain?.sent.at(-1))");
       return { before, confirmation, stamina, retained, removed, answer };
     },
-    verify: ({ played }) => played.confirmation?.fits && played.retained && played.removed
-      ? completed(played)
-      : failed("Oath army deletion or cancellation did not settle", played),
+    verify: ({ played }) =>
+      played.confirmation?.fits && played.retained && played.removed
+        ? completed(played)
+        : failed("Oath army deletion or cancellation did not settle", played),
   };
 }
 

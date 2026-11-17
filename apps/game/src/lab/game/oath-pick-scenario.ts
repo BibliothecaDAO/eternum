@@ -62,14 +62,20 @@ function answerDeletion(command: LabCommand, chain: NativeFactStore): LabFact[] 
   const key = { game_id: 1, explorer_id };
   chain.require("ExplorerTroops", key);
   chain.require("ArmyProgress", key);
-  const slot = [...chain.entries("ArmySlot")].find(([, row]) => row.game_id === key.game_id && row.explorer_id === explorer_id);
-  const tile = [...chain.entries("TileOccupancy")].find(([, row]) => row.game_id === key.game_id && row.entity_id === explorer_id);
+  const slot = [...chain.entries("ArmySlot")].find(
+    ([, row]) => row.game_id === key.game_id && row.explorer_id === explorer_id,
+  );
+  const tile = [...chain.entries("TileOccupancy")].find(
+    ([, row]) => row.game_id === key.game_id && row.entity_id === explorer_id,
+  );
   if (!slot || !tile) throw new Error("Deleted army has no slot or tile");
   return [
-    ...(["ExplorerTroops", "ArmyProgress", "ArmyDay"] as const).map(model => ({
-      model, key: chain.wireKeyOf(model, key)!, value: null,
+    ...(["ExplorerTroops", "ArmyProgress", "ArmyDay"] as const).map((model) => ({
+      model,
+      key: chain.wireKeyOf(model, key)!,
+      value: null,
     })),
-    ...(["ResourceBalance", "ResourceProduction", "ResourceWeight"] as const).flatMap(model =>
+    ...(["ResourceBalance", "ResourceProduction", "ResourceWeight"] as const).flatMap((model) =>
       [...chain.entries(model)]
         .filter(([, row]) => row.game_id === key.game_id && row.entity_id === explorer_id)
         .map(([key]) => ({ model, key, value: null })),

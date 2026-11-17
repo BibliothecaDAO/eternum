@@ -47,11 +47,13 @@ const PanelDelete = ({ army, onDeleted }: { army: DockArmy; onDeleted: () => voi
 const render = () => {
   const store = transferArmies();
   const progress = store.require("ArmyProgress", { game_id: 1, explorer_id: 201 });
-  store.applyFacts([{
-    model: "ArmyProgress",
-    key: store.wireKeyOf("ArmyProgress", progress)!,
-    value: { ...progress, explorer_id: "201", oaths: 1 << (nativeOathConstants.POWER - 1) },
-  }]);
+  store.applyFacts([
+    {
+      model: "ArmyProgress",
+      key: store.wireKeyOf("ArmyProgress", progress)!,
+      value: { ...progress, explorer_id: "201", oaths: 1 << (nativeOathConstants.POWER - 1) },
+    },
+  ]);
   const remove = vi.fn().mockResolvedValue({ transaction_hash: "0x2" });
   const deleted = vi.fn();
   act(() =>
@@ -80,9 +82,13 @@ it("deletes from the trash only after confirming every loss, then closes the arm
   expect(host.querySelector('[role="alertdialog"]')).toBeNull();
   await trash();
   expect(remove).not.toHaveBeenCalled();
-  expect(host.querySelector('[role="alertdialog"]')?.textContent).toContain("troops, carried resources and held Oaths are lost");
+  expect(host.querySelector('[role="alertdialog"]')?.textContent).toContain(
+    "troops, carried resources and held Oaths are lost",
+  );
   await verb("Cancel");
-  expect(store.require("ArmyProgress", { game_id: 1, explorer_id: 201 }).oaths).toBe(1 << (nativeOathConstants.POWER - 1));
+  expect(store.require("ArmyProgress", { game_id: 1, explorer_id: 201 }).oaths).toBe(
+    1 << (nativeOathConstants.POWER - 1),
+  );
   expect(host.querySelector('[role="alertdialog"]')).toBeNull();
   expect(remove).not.toHaveBeenCalled();
   await trash();
