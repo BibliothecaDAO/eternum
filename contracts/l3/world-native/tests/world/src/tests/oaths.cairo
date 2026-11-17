@@ -32,9 +32,7 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
         camp_bps: 1, rift_bps: 0, ruin_bps: 0, beasts_bps: 0, shrine_bps: 5000, well_bps: 0, empty_reveal_limit: 7,
     };
     let (d, game_id, key) = super::registrar::setup_frontier_relics_with_rules(Some(discovery));
-    let root = super::registrar::discovery_root(
-        game_id, discovery, 100, 0, None, crate::discovery::Discovery::Shrine,
-    );
+    let root = super::registrar::discovery_root(game_id, discovery, 100, 0, None, crate::discovery::Discovery::Shrine);
     snforge_std::interact_with_state(
         d.games,
         || {
@@ -45,11 +43,11 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
             );
         },
     );
-    assert!(super::registrar::explore_with_root(d, game_id, key.explorer_id, root, 360));
+    explore(d, key, root, 360);
     let first = read_progress(d, key);
     assert!(first.oath_pick != 0);
     assert_eq!(first.oaths, 0);
-    assert!(super::registrar::explore_with_root(d, game_id, key.explorer_id, root, 361));
+    explore(d, key, root, 361);
     assert_eq!(read_progress(d, key).oath_pick, first.oath_pick);
     let taken = card(first.oath_pick, 0);
     let take = ChooseOath {
@@ -72,7 +70,7 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
     assert_eq!(chosen.oath_pick, 0);
     assert!(!super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(take), 363));
     assert_eq!(read_progress(d, key), chosen);
-    assert!(super::registrar::explore_with_root(d, game_id, key.explorer_id, root, 364));
+    explore(d, key, root, 364);
     let second = read_progress(d, key);
     let replacement = card(second.oath_pick, 1);
     let replace = ChooseOath { expected_pick: second.oath_pick, oath: Some(replacement), ..take };
@@ -84,7 +82,7 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
         ),
     );
     assert_eq!(read_progress(d, key).oaths, crate::oaths::bit(replacement));
-    assert!(super::registrar::explore_with_root(d, game_id, key.explorer_id, root, 367));
+    explore(d, key, root, 367);
     let third = read_progress(d, key);
     assert!(
         super::resource_commands::execute_in_game(
@@ -104,4 +102,12 @@ fn packing_preserves_all_sixteen_held_bits_and_the_offer() {
     assert_eq!(
         crate::progression::ArmyProgressPacking::unpack(crate::progression::ArmyProgressPacking::pack(value)), value,
     );
+}
+
+fn explore(d: super::Deployment, key: crate::troops::ExplorerKey, root: u256, timestamp: u64) {
+    let mut spy = snforge_std::spy_events();
+    if !super::registrar::explore_with_root(d, key.game_id, key.explorer_id, root, timestamp) {
+        let rejected = super::play_fixture::rejection(ref spy, d.games);
+        panic!("exploration rejected: {}", rejected.reason);
+    }
 }

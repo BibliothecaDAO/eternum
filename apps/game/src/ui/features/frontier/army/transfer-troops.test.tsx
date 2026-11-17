@@ -462,7 +462,9 @@ it("asks before dissolving an army with a whole upgrade more progression, then s
   await act(async () => button("Merge into Army 2")!.click());
   expect(swap).not.toHaveBeenCalled();
   expect(close).not.toHaveBeenCalled();
-  expect(host.querySelector(".ui-notice")?.textContent).toContain("Army 1 loses its Logistics, Oath slots, held Oaths and waiting pick.");
+  expect(host.querySelector(".ui-notice")?.textContent).toContain(
+    "Army 1 loses its Logistics, Oath slots, held Oaths and waiting pick.",
+  );
   await act(async () => button("Confirm merge into Army 2")!.click());
   expect(swap).toHaveBeenCalledOnce();
   expect(swap).toHaveBeenCalledWith(
