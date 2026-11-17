@@ -1,10 +1,16 @@
 import { mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { STEP_SETS } from "./client-playtest/steps.mjs";
-import { allocateRunDirectory, buildRunUrl, readPlaytestOptions } from "./run-client-playtest.mjs";
+import {
+  allocateRunDirectory,
+  buildRunUrl,
+  finish,
+  playtestExitCode,
+  readPlaytestOptions,
+} from "./run-client-playtest.mjs";
 
 describe("allocateRunDirectory", () => {
   it("gives every invocation a new directory and never writes into an existing one", () => {
@@ -197,5 +203,62 @@ describe("the page a run opens", () => {
       "spire",
       "webgpu-auto",
     ]);
+  });
+});
+
+describe("playtestExitCode", () => {
+  const loaded = "webgpu-force-webgl #1: load average reached 12.5: its timings are not evidence";
+  const real = "webgpu-auto #1: 2 browser errors";
+  const untimed = 'webgpu-auto move: no timed run (verdicts {"completed":2})';
+  const blocked = 'webgpu-auto move: no timed run (verdicts {"blocked":2})';
+  const slower =
+    "webgpu-auto move: click to result median 900ms (n=2) is past the baseline's slowest 500ms and a frame";
+
+  it("ends a run refused only for load with 128, a status the build service does not remember", () => {
+    expect(playtestExitCode(false, [loaded, loaded.replace("#1", "#2")], [])).toBe(128);
+  });
+
+  it("keeps 1 for a real failure, alone or beside a load refusal, and 0 for a pass", () => {
+    expect(playtestExitCode(false, [real], [])).toBe(1);
+    expect(playtestExitCode(false, [loaded, real], [])).toBe(1);
+    expect(playtestExitCode(false, [], [])).toBe(1);
+    expect(playtestExitCode(true, [], [])).toBe(0);
+  });
+
+  it("reads a baseline action every run completed but none timed as the load's doing, and any other baseline failure as real", () => {
+    expect(playtestExitCode(false, [loaded], [untimed])).toBe(128);
+    expect(playtestExitCode(false, [loaded], [blocked])).toBe(1);
+    expect(playtestExitCode(false, [loaded], [untimed, slower])).toBe(1);
+  });
+});
+
+describe("the runner's exit status", () => {
+  const owner = { releaseFailures: [], held: () => [] };
+  const bootedRun = {
+    ok: true,
+    expectedSteps: ["map-idle"],
+    steps: [{ name: "map-idle", verdict: { status: "completed" } }],
+    diagnostics: { activeMode: "webgpu", requestedMode: "webgpu-auto" },
+    metrics: { entryReadyMs: 2500, worldInteractiveMs: 3500 },
+    rendererMode: "webgpu-auto",
+    iteration: 1,
+  };
+  const finishWith = (run) => {
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    finish({ options: readPlaytestOptions([]), output: { stage: "done" }, owner, results: [run], runDir: undefined });
+    return process.exitCode;
+  };
+
+  afterEach(() => {
+    process.exitCode = undefined;
+    vi.restoreAllMocks();
+  });
+
+  it("is 128 when the machine's load alone refused the run, 1 for a real failure, 0 for a pass", () => {
+    expect(finishWith({ ...bootedRun, machine: { cpus: 16, loadAverageMax: 31.4, loadSamples: [31.4] } })).toBe(128);
+    expect(
+      finishWith({ ...bootedRun, errors: ["boom"], machine: { cpus: 16, loadAverageMax: 3, loadSamples: [3] } }),
+    ).toBe(1);
+    expect(finishWith({ ...bootedRun, machine: { cpus: 16, loadAverageMax: 3, loadSamples: [3] } })).toBe(0);
   });
 });

@@ -7,6 +7,7 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 const RENDERER_STALL_THRESHOLD_MS = 7_000;
 // Above this one-minute load average the machine, not the client, sets the numbers: such a run is not evidence.
 const MAX_LOAD_AVERAGE = 12;
+export const LOAD_REFUSAL_NOTE = "its timings are not evidence";
 const JANK_FRAME_MS = 1000 / 30;
 // A revealed tile turns from fog to terrain; the same patch of screen, unchanged, differs by a few levels at most.
 const REVEALED_TILE_CHANGE_MIN = 12;
@@ -644,9 +645,7 @@ export function evaluatePlaytestSummary(summary, options = {}) {
       failures.push(describeRun(result, `world-interactive exceeded ${entryReadyTimeoutMs}ms`));
     }
     if (result.machine?.loadAverageMax > MAX_LOAD_AVERAGE) {
-      failures.push(
-        describeRun(result, `load average reached ${result.machine.loadAverageMax}: its timings are not evidence`),
-      );
+      failures.push(describeRun(result, `load average reached ${result.machine.loadAverageMax}: ${LOAD_REFUSAL_NOTE}`));
     }
     if (result.errors?.length) {
       failures.push(describeRun(result, `${result.errors.length} browser errors`));
@@ -722,6 +721,8 @@ export function comparePlaytestSummary(baseline, current) {
 const CLICK_TO_RESULT_TOTAL = "verdict.clickToResult.totalMs";
 /** A result shows only at a frame: a run landing one 60 Hz frame later than the baseline's slowest is not a regression. */
 const ONE_FRAME_MS = 1000 / 60;
+
+export const isUntimedOnlyByExclusion = (failure) => /: no timed run \(verdicts \{"completed":\d+\}\)$/.test(failure);
 
 /**
  * Every action the baseline timed, judged in the current summary: it fails when its renderer mode or its timed runs are

@@ -34,6 +34,8 @@ import {
   comparePlaytestSummary,
   deriveBootMetrics,
   evaluatePlaytestSummary,
+  isUntimedOnlyByExclusion,
+  LOAD_REFUSAL_NOTE,
   failed,
   hasEntryFinished,
   RENDERER_MODES,
@@ -250,7 +252,7 @@ async function main(argv) {
 }
 
 /** The summary is written whatever happened: a failed start or a cancel leaves a structured reason beside the log. */
-function finish({ options, output, owner, results, runDir }) {
+export function finish({ options, output, owner, results, runDir }) {
   const judged = options ? judgeRuns(results, options) : {};
   const failures = [...(judged.gateEvaluation?.failures ?? [])];
   if (output.failure) failures.unshift(`${output.failure.stage} failed: ${output.failure.error}`);
@@ -266,7 +268,16 @@ function finish({ options, output, owner, results, runDir }) {
   const actionTable = clickToResultTable(summary.byMode ?? {});
   if (runDir && actionTable) writeFileSync(join(runDir, "click-to-result.md"), `${actionTable}\n`);
   console.log(JSON.stringify({ runDir, ok: summary.ok, failures, warnings: judged.gateEvaluation?.warnings }, null, 2));
-  process.exitCode = summary.ok ? 0 : 1;
+  process.exitCode = playtestExitCode(summary.ok, failures, judged.baselineComparison?.failures ?? []);
+}
+
+const LOAD_REFUSED_STATUS = 128;
+
+export function playtestExitCode(ok, failures, baselineFailures) {
+  if (ok) return 0;
+  if (!baselineFailures.every(isUntimedOnlyByExclusion)) return 1;
+  const refusedForLoad = failures.length > 0 && failures.every((failure) => failure.endsWith(LOAD_REFUSAL_NOTE));
+  return refusedForLoad ? LOAD_REFUSED_STATUS : 1;
 }
 
 /** A first signal cancels: the run stops at its next checkpoint and unwinds normally. A second one only hurries it. */
