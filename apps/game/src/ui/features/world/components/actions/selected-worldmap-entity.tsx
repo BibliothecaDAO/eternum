@@ -14,7 +14,7 @@ import { StructureBannerEntityDetail } from "@/ui/features/world/components/enti
 import { useArmyEntityDetail } from "@/ui/features/world/components/entities/hooks/use-army-entity-detail";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import { BattleLab } from "@/ui/features/military/battle/battle-lab";
-import { BiomeType, HexPosition, ID, TileOccupier, TroopType } from "@bibliothecadao/types";
+import { BiomeType, HexPosition, ID, TileOccupier, TroopType, eternumMapName } from "@bibliothecadao/types";
 import {
   biomeTypeOf,
   hasTileOccupier,
@@ -260,7 +260,7 @@ const SpireTravelPanel = ({ mapLayer, onLookAtOtherLayer }: { mapLayer: boolean;
     <p className="text-hud-title text-hud-ink">Spire</p>
     <div>
       <HudButton kind="secondary" size="sm" onClick={onLookAtOtherLayer}>
-        {mapLayer ? "Look at the surface" : "Look at the ethereal layer"}
+        Look at the {eternumMapName(!mapLayer)}
       </HudButton>
     </div>
   </div>
