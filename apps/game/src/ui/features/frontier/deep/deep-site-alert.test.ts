@@ -1,10 +1,11 @@
+import { siteGuardTroops } from "../../../../../../realms/server/fixtures/shard-world";
 import { expect, it } from "vitest";
 import { deepScenario } from "@/lab/game/deep-scenario";
 import { planDeepSiteWatches } from "../../../../../../realms/server/deep-site-watch";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { type NativeModelName, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
-function fixture(guardCounts = [1000]) {
+function fixture(guardCounts = [siteGuardTroops(1)]) {
   const { store, startsAt, player } = deepScenario();
   const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
   const slot = store.require("ArmySlot", { game_id: 1, structure_id: army.owner, epoch: 0n, slot: 0 });
@@ -81,13 +82,13 @@ it("forecasts every rival guard in order with the same surviving attacker", () =
   expect(single.plan()).toHaveLength(1);
   const tickSeconds = Number(single.store.require("SliceRules", { game_id: 1 }).tick_config.armies_tick_in_seconds);
   expect(single.plan()[0]!.dueAt).toBe((Math.floor(single.startsAt / tickSeconds) + 1) * tickSeconds * 1000);
-  const pair = fixture([1000, 1000]);
+  const pair = fixture([siteGuardTroops(1), siteGuardTroops(1)]);
   const watches = pair.plan();
   expect(watches).toHaveLength(1);
   expect(watches[0]!.dueAt).toBeGreaterThan(pair.startsAt * 1000);
   expect(pair.plan(watches[0]!.dueAt / 1000)[0]!.dueAt).toBe(watches[0]!.dueAt);
   expect(pair.store.require("ExplorerTroops", { game_id: 1, explorer_id: 301 }).troops.count).toBe(
-    1000n * BigInt(RESOURCE_PRECISION),
+    BigInt(siteGuardTroops(1)) * BigInt(RESOURCE_PRECISION),
   );
 });
 
@@ -169,7 +170,7 @@ it("uses the largest army across all of the player's homes without substituting 
 });
 
 it("forecasts the same opportunity regardless of the last attacked guard", () => {
-  const f = fixture([1000, 1]);
+  const f = fixture([siteGuardTroops(1), 1]);
   const rules = f.store.require("SliceRules", { game_id: 1 });
   f.change(
     "SliceRules",
@@ -183,7 +184,7 @@ it("forecasts the same opportunity regardless of the last attacked guard", () =>
   f.change("ExplorerTroops", key, { troops: { ...army.troops, count: 1000n * BigInt(RESOURCE_PRECISION) } });
   f.change("ArmyCombat", key, { last_target: 301n });
   const due = f.plan().map(({ dueAt }) => dueAt);
-  expect(due).toEqual([360000]);
+  expect(due).toEqual([(Math.floor(f.startsAt / Number(rules.tick_config.armies_tick_in_seconds)) + 1) * Number(rules.tick_config.armies_tick_in_seconds) * 1000]);
   expect(f.store.require("ArmyCombat", key).last_target).toBe(301n);
   f.change("ArmyCombat", key, { last_target: 302n });
   expect(f.plan().map(({ dueAt }) => dueAt)).toEqual(due);
