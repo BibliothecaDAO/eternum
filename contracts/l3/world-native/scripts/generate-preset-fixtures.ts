@@ -1,3 +1,6 @@
+import { frontierSeasonOnePreset } from "../../../../config/source/frontier/season-one";
+import { nativeOathConstants as oaths } from "../schema/client.gen";
+import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { shortString } from "starknet";
 import { schema as compiledSchema } from "../../../../apps/herald/src/native/fixtures";
 import { schemaIdentity, type NativeMember, type NativeSchema } from "../../../../apps/herald/src/native/schema";
@@ -32,6 +35,7 @@ for (const [name, id] of [
     writeFileSync(new URL("../frontier-command-mask.txt", directory), `${fixture.definition.rules.command_mask}\n`);
   }
 }
+write("../oath-deep-loss.txt", oathDeepLossVectors());
 console.log("Generated current Blitz, Frontier and Frontier check preset inputs and Herald projections");
 
 // Shared conformance conditions are independent of the playable preset catalog.
@@ -187,4 +191,27 @@ function feltLength(schema: NativeSchema, name: string): number | null {
 
 function sumLengths(lengths: (number | null)[]): number | null {
   return lengths.includes(null) ? null : lengths.reduce<number>((sum, length) => sum + length!, 0);
+}
+
+function oathDeepLossVectors(): string[] {
+  const precision = BigInt(RESOURCE_PRECISION);
+  const base = BigInt(frontierSeasonOnePreset.deep.lossPerTick) * precision;
+  const vitriol = BigInt(oaths.VITRIOL_LOSS_PER_TICK) * precision;
+  const mask = 1 << (oaths.VITRIOL - 1);
+  const power = 1 << (oaths.POWER - 1);
+  const troops = 1000n * precision;
+  const cases: [number, bigint, bigint, bigint][] = [
+    [0, troops, 2n, base],
+    [mask, troops, 2n, vitriol],
+    [mask | power, troops, 2n, vitriol],
+    [power, troops, 2n, base],
+    [mask, vitriol + 1n, 1n, vitriol],
+    [mask, vitriol, 1n, vitriol],
+    [mask, troops, 0n, vitriol],
+    [mask, troops, (troops + vitriol - 1n) / vitriol, vitriol],
+  ];
+  return cases.flatMap(([held, count, ticks, loss]) => {
+    const remaining = count - ticks * loss;
+    return [held, base, count, ticks, loss, remaining > 0n ? remaining : 0n].map(String);
+  });
 }

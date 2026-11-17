@@ -1,3 +1,4 @@
+import { frontierSeasonOnePreset } from "../../../../config/source/frontier/season-one";
 import type { HeraldGameSnapshot } from "@bibliothecadao/eternum/game-sync";
 import { nativeBaneConstants } from "@bibliothecadao/eternum/game-client";
 import { deepSites, RESOURCE_PRECISION, TileOccupier } from "@bibliothecadao/types";
@@ -338,7 +339,7 @@ export function siteSnapshot(
     row(1, {
       ...offsets,
       beast_count: 10000 * RESOURCE_PRECISION,
-      loss_per_tick: 200 * RESOURCE_PRECISION,
+      loss_per_tick: frontierSeasonOnePreset.deep.lossPerTick * RESOURCE_PRECISION,
       quarry_per_tick: 500 * RESOURCE_PRECISION,
       altar_per_tick: 5,
       altar_threshold: 1500,

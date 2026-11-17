@@ -4403,7 +4403,11 @@ async function attackFromTheDeepCard({ browser, extraScreenshot }) {
   return { forecast, watching: true };
 }
 
-const deepJoinSteps = (lossPerTick = 200, minimumStamina = 60) => [
+const deepLossVectors = readFileSync(
+  resolve(dirname(fileURLToPath(import.meta.url)), "../../../../contracts/l3/world-native/tests/fixtures/oath-deep-loss.txt"),
+  "utf8",
+).trim().split(/\s+/).map(Number);
+const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, minimumStamina = 60) => [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", "Deep") },
   {
     name: "ally-is-marked",
@@ -6369,7 +6373,7 @@ export const STEP_SETS = {
   },
   "lab-oath-vitriol": {
     game: labSpireGame("oath-vitriol"),
-    steps: [...oathPickSteps(false, "Deep").slice(0, -1), ...deepJoinSteps(150, 40).slice(3)],
+    steps: [...oathPickSteps(false, "Deep").slice(0, -1), ...deepJoinSteps(deepLossVectors[10] / RESOURCE_PRECISION, 40).slice(3)],
   },
   "lab-deep-join": { game: labSpireGame("deep"), steps: deepJoinSteps() },
   "lab-no-lords": {

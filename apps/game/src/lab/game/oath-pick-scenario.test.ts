@@ -1,3 +1,4 @@
+import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { expect, it } from "vitest";
 import { currentArmy, nativeOathConstants as oaths } from "@bibliothecadao/eternum/game-client";
 import { encodeNativeCommand } from "@bibliothecadao/provider";
@@ -31,9 +32,9 @@ it("settles the lab's old Deep rate before the Oath response, matching the nativ
     ) as never,
   );
   const after = chain.require("ExplorerTroops", key);
-  expect(after.troops.count).toBe(before.troops.count - 200_000_000_000n);
+  expect(after.troops.count).toBe(before.troops.count - chain.require("DeepRules", { game_id: 1 }).loss_per_tick);
   expect(chain.require("DeepArmy", key).last_tick).toBe(BigInt(boundary / interval));
   expect(chain.require("ArmyProgress", key).oaths).toBe(1 << (oaths.VITRIOL - 1));
   expect(currentArmy(chain, after, boundary).troops.count).toBe(after.troops.count);
-  expect(currentArmy(chain, after, boundary + interval).troops.count).toBe(after.troops.count - 150_000_000_000n);
+  expect(currentArmy(chain, after, boundary + interval).troops.count).toBe(after.troops.count - BigInt(oaths.VITRIOL_LOSS_PER_TICK) * BigInt(RESOURCE_PRECISION));
 });

@@ -1,3 +1,4 @@
+import { frontierSeasonOnePreset } from "../../../../../config/source/frontier/season-one";
 import { learnResearch } from "@bibliothecadao/eternum";
 import {
   deepCenter,
@@ -35,7 +36,7 @@ export const deepScenario = (): LabScenario => {
     game_id: 1,
     ...local,
     beast_count: 10_000n * BigInt(RESOURCE_PRECISION),
-    loss_per_tick: 200n * BigInt(RESOURCE_PRECISION),
+    loss_per_tick: BigInt(frontierSeasonOnePreset.deep.lossPerTick) * BigInt(RESOURCE_PRECISION),
     quarry_per_tick: 500n * BigInt(RESOURCE_PRECISION),
     altar_per_tick: 5,
     altar_threshold: 1500,

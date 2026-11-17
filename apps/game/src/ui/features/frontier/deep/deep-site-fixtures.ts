@@ -1,10 +1,10 @@
+import { frontierSeasonOnePreset } from "../../../../../../../config/source/frontier/season-one";
 import { formatDuration } from "@bibliothecadao/types";
 
 import type { DeepSiteProps, DeepSlot } from "./deep-site-view";
 
-/** Season 1's Deep: an army tick is 120 seconds and takes 200 troops from each army there. */
 const TICK_SECONDS = 120;
-const LOSS_PER_TICK = 200;
+const LOSS_PER_TICK = frontierSeasonOnePreset.deep.lossPerTick;
 
 /** A guard slot whose lifetime follows from its troops: they last until the drain takes them all. */
 const slot = (slot: number, realm: string, troops: number, mine = false): DeepSlot => {

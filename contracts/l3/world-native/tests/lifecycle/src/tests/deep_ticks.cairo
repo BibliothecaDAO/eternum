@@ -313,10 +313,10 @@ fn a_refused_guard_move_keeps_the_tick_paid_and_cannot_pay_it_twice() {
 
 fn vitriol_setup(seed: felt252) -> (Deployment, u32) {
     let mut preset = without_passive_labor(super::deep_sites::preset());
-    preset
-        .economy
-        .deep =
-            Some(crate::deep::DeepRules { loss_per_tick: 200 * RESOURCE_PRECISION, ..preset.economy.deep.unwrap() });
+    let (_, current) = world_test_support::tests::preset_projection::current_definition("frontier");
+    preset.economy.deep = Some(crate::deep::DeepRules {
+        loss_per_tick: current.economy.deep.unwrap().loss_per_tick, ..preset.economy.deep.unwrap()
+    });
     super::aspects::setup_aspect_preset(seed, preset)
 }
 
@@ -338,16 +338,21 @@ fn waiting_oath(d: Deployment, key: ExplorerKey, red: u8) -> crate::oaths::Choos
 #[test]
 fn choosing_and_replacing_vitriol_settles_field_ticks_under_the_previous_oath() {
     let (d, game_id) = vitriol_setup(103);
+    let (_, current) = world_test_support::tests::preset_projection::current_definition("frontier");
+    let base = current.economy.deep.unwrap().loss_per_tick;
+    let loss: u128 = crate::oaths::VITRIOL_LOSS_PER_TICK.into();
+    let loss = loss * RESOURCE_PRECISION;
+    let initial = 1500 * RESOURCE_PRECISION;
     let key = deployed(d, game_id, 1, 1500);
     let choice = waiting_oath(d, key, crate::oaths::VITRIOL);
     let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
     let boundary = (360 / interval + 1) * interval;
     applied(d, game_id, Command::ChooseOath(choice), boundary);
-    assert_eq!(army(d, key).troops.count, 1300 * RESOURCE_PRECISION);
+    assert_eq!(army(d, key).troops.count, initial - base);
     advance(d, key, 0, boundary + interval);
-    assert_eq!(army(d, key).troops.count, 1150 * RESOURCE_PRECISION);
+    assert_eq!(army(d, key).troops.count, initial - base - loss);
     advance(d, key, 3, boundary + interval);
-    assert_eq!(army(d, key).troops.count, 1150 * RESOURCE_PRECISION);
+    assert_eq!(army(d, key).troops.count, initial - base - loss);
     let replacement = waiting_oath(d, key, crate::oaths::POWER);
     applied(
         d,
@@ -359,14 +364,16 @@ fn choosing_and_replacing_vitriol_settles_field_ticks_under_the_previous_oath() 
         ),
         boundary + 2 * interval,
     );
-    assert_eq!(army(d, key).troops.count, 1000 * RESOURCE_PRECISION);
+    assert_eq!(army(d, key).troops.count, initial - base - 2 * loss);
     advance(d, key, 0, boundary + 3 * interval);
-    assert_eq!(army(d, key).troops.count, 800 * RESOURCE_PRECISION);
+    assert_eq!(army(d, key).troops.count, initial - 2 * base - 2 * loss);
 }
 
 #[test]
-fn vitriol_guards_lose_exactly_150_per_tick_while_the_beast_is_unchanged() {
+fn vitriol_guards_lose_the_rule_amount_per_tick_while_the_beast_is_unchanged() {
     let (d, game_id) = vitriol_setup(104);
+    let loss: u128 = crate::oaths::VITRIOL_LOSS_PER_TICK.into();
+    let loss = loss * RESOURCE_PRECISION;
     let key = deployed(d, game_id, 1, 1000);
     let choice = waiting_oath(d, key, crate::oaths::VITRIOL);
     applied(d, game_id, Command::ChooseOath(choice), 360);
@@ -380,9 +387,9 @@ fn vitriol_guards_lose_exactly_150_per_tick_while_the_beast_is_unchanged() {
     let boundary = (360 / interval + 2) * interval;
     let touch = Command::SetEntityName(crate::names::SetEntityName { entity_id: home, name: 'Vitriol' });
     applied(d, game_id, touch, boundary);
-    assert_eq!(army(d, key).troops.count, before - 300 * RESOURCE_PRECISION);
+    assert_eq!(army(d, key).troops.count, before - 2 * loss);
     applied(d, game_id, touch, boundary);
-    assert_eq!(army(d, key).troops.count, before - 300 * RESOURCE_PRECISION);
+    assert_eq!(army(d, key).troops.count, before - 2 * loss);
     let beast = site(d, game_id, crate::rules::DEEP_ALTAR);
     interact_with_state(
         d.games,
