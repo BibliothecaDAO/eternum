@@ -343,7 +343,7 @@ describe("native presets", () => {
         [BigInt(price.essence) / precision, BigInt(price.labor) / precision],
       ]),
     );
-    expect(preset.structures.research).toHaveLength(35);
+    expect(preset.structures.research).toHaveLength(44);
     expect(prices).toMatchObject({
       [`${research.ROW_FARM}:1`]: [500n, 500n],
       [`${research.ROW_FARM}:5`]: [30000n, 20000n],
@@ -358,6 +358,14 @@ describe("native presets", () => {
       [`${research.ROW_DEPTH}:2`]: [250000n, 0n],
       [`${research.ROW_DEPTH}:3`]: [500000n, 0n],
     });
+    for (const row of [research.ROW_KNIGHT_OATHS, research.ROW_SCOUT_OATHS, research.ROW_CROSSBOW_OATHS]) {
+      expect([1, 2, 3].map((tier) => prices[`${row}:${tier}`])).toEqual([
+        [5000n, 1000n],
+        [35000n, 7500n],
+        [150000n, 35000n],
+      ]);
+      expect(prices[`${row}:4`]).toBeUndefined();
+    }
     for (const row of [research.ROW_CONSCRIPTION, research.ROW_RATIONS]) {
       expect([1, 2, 3, 4, 5].map((tier) => prices[`${row}:${tier}`])).toEqual([
         [2500n, 500n],
