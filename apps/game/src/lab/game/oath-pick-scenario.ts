@@ -3,7 +3,7 @@ import { chooseOath } from "@bibliothecadao/eternum";
 import { nativeOathConstants as oaths } from "@bibliothecadao/eternum/game-client";
 import { encodeNativeCommand } from "@bibliothecadao/provider";
 import { nativeBindings } from "@/runtime/world/native-bindings";
-import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { currentArmy, currentResourceWeight, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { spireScenario } from "./spire-scenario";
 import { wire, type LabCommand, type LabFact, type LabScenario } from "./lab-chain";
@@ -13,7 +13,7 @@ export function oathPickScenario(full = false, game = spireScenario(), fightOath
   return {
     ...game,
     answer: (command, chain, now) =>
-      answerDeletion(command, chain) ?? answerChoice(command, chain) ?? game.answer(command, chain, now),
+      answerDeletion(command, chain) ?? answerChoice(command, chain, now) ?? game.answer(command, chain, now),
   };
 }
 
@@ -58,7 +58,7 @@ function prepareOathArmy(store: NativeFactStore, full: boolean, fightOath: numbe
   ]);
 }
 
-function answerChoice(command: LabCommand, chain: NativeFactStore): LabFact[] | null {
+function answerChoice(command: LabCommand, chain: NativeFactStore, now: number): LabFact[] | null {
   if (command.kind !== "ChooseOath") return null;
   const fields = command.calldata.slice(5).map(Number);
   const explorer_id = fields.shift()!;
@@ -67,11 +67,13 @@ function answerChoice(command: LabCommand, chain: NativeFactStore): LabFact[] | 
   const replace = fields.shift() === 0 ? fields.shift()! : null;
   if (fields.length) throw new Error("Extra Oath command fields");
   const current = chain.require("ArmyProgress", { game_id: 1, explorer_id });
+  const chosen = chooseOath(current, expected, oath, replace);
   return [
+    ...settleDeepChoice(chain, explorer_id, now),
     {
       model: "ArmyProgress",
       key: chain.wireKeyOf("ArmyProgress", current)!,
-      value: wire(chooseOath(current, expected, oath, replace)),
+      value: wire(chosen),
     },
   ];
 }
@@ -109,5 +111,20 @@ function answerDeletion(command: LabCommand, chain: NativeFactStore): LabFact[] 
     ),
     { model: "TileOccupancy", key: tile[0], value: null },
     { model: "ArmySlot", key: slot[0], value: wire({ ...slot[1], explorer_id: 0 }) },
+  ];
+}
+
+function settleDeepChoice(chain: NativeFactStore, explorer_id: number, now: number): LabFact[] {
+  const key = { game_id: 1, explorer_id };
+  const deep = chain.get("DeepArmy", key);
+  if (!deep) return [];
+  const source = chain.require("ExplorerTroops", key);
+  const army = currentArmy(chain, source, now);
+  const rules = chain.require("SliceRules", { game_id: key.game_id });
+  const weight = chain.get("ResourceWeight", { game_id: key.game_id, entity_id: explorer_id });
+  return [
+    { model: "ExplorerTroops", key: chain.wireKeyOf("ExplorerTroops", key)!, value: wire(army) },
+    { model: "DeepArmy", key: chain.wireKeyOf("DeepArmy", key)!, value: wire({ ...deep, last_tick: Math.floor(now / Number(rules.tick_config.armies_tick_in_seconds)) }) },
+    ...(weight ? [{ model: "ResourceWeight", key: chain.wireKeyOf("ResourceWeight", weight)!, value: wire(currentResourceWeight(chain, weight, now)) }] : []),
   ];
 }

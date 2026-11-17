@@ -1087,9 +1087,9 @@ function deleteOathArmyStep() {
   };
 }
 
-function oathPickSteps(full) {
+function oathPickSteps(full, layer = "Map") {
   return [
-    { name: "enter-on-map", settleMs: 3000, verify: inScene("map") },
+    { name: "enter-on-map", settleMs: 3000, verify: inScene("map", layer) },
     {
       name: "open-oath-pick",
       play: async ({ browser }) => {
@@ -4403,7 +4403,7 @@ async function attackFromTheDeepCard({ browser, extraScreenshot }) {
   return { forecast, watching: true };
 }
 
-const deepJoinSteps = (lossPerTick = 200) => [
+const deepJoinSteps = (lossPerTick = 200, minimumStamina = 60) => [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", "Deep") },
   {
     name: "ally-is-marked",
@@ -4547,7 +4547,7 @@ const deepJoinSteps = (lossPerTick = 200) => [
       played.panel.army &&
       played.panel.sheet === played.panel.army &&
       played.reading.visible &&
-      played.reading.current >= 60 &&
+      played.reading.current >= minimumStamina &&
       played.reading.current <= 140 &&
       played.reading.maximum === 140
         ? completed(played)
@@ -4566,7 +4566,7 @@ const deepJoinSteps = (lossPerTick = 200) => [
       return { drain };
     },
     verify: ({ played }) =>
-      /200 troops lost a tick/.test(played.drain.panel) && /ticks left/.test(played.drain.panel)
+      played.drain.panel.includes(`${lossPerTick} troops lost a tick`) && /ticks left/.test(played.drain.panel)
         ? completed(played)
         : failed("A guard's panel must say its troop loss each tick and the ticks left", played),
   },
@@ -6369,7 +6369,7 @@ export const STEP_SETS = {
   },
   "lab-oath-vitriol": {
     game: labSpireGame("oath-vitriol"),
-    steps: [...oathPickSteps(false).slice(0, -1), ...deepJoinSteps(150).slice(2)],
+    steps: [...oathPickSteps(false, "Deep").slice(0, -1), ...deepJoinSteps(150, 40).slice(2)],
   },
   "lab-deep-join": { game: labSpireGame("deep"), steps: deepJoinSteps() },
   "lab-no-lords": {

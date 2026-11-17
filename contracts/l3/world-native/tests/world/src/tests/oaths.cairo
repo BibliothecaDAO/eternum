@@ -1,3 +1,4 @@
+use snforge_std::fs::{FileTrait, read_txt};
 use crate::oaths::{ChooseOath, card, count, draw, held};
 use super::progression::read_progress;
 use super::state::{GameState, TroopObservationTrait};
@@ -182,7 +183,6 @@ fn explore(d: super::Deployment, key: crate::troops::ExplorerKey, root: u256, ti
 
 #[test]
 fn deep_loss_matches_the_client_vectors_with_and_without_vitriol() {
-    use snforge_std::fs::{FileTrait, read_txt};
     let data = read_txt(@FileTrait::new("../fixtures/oath-deep-loss.txt"));
     let mut fields = data.span();
     while !fields.is_empty() {
