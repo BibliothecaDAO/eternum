@@ -28,10 +28,7 @@ const useFocusHeld = (layer: RefObject<HTMLElement | null>) => {
     if (!element) return;
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const dialog = element.querySelector<HTMLElement>('[role="dialog"]') ?? element;
-    if (!element.contains(document.activeElement)) {
-      if (!dialog.hasAttribute("tabindex")) dialog.setAttribute("tabindex", "-1");
-      dialog.focus({ preventScroll: true });
-    }
+    if (!element.closest("[inert]")) focusDialog(element);
     const onKey = (event: globalThis.KeyboardEvent) => {
       if (event.key !== "Tab" || element.closest("[inert]")) return;
       const controls = [...element.querySelectorAll<HTMLElement>(FOCUSABLE)];
@@ -71,11 +68,14 @@ const refreshInertOutside = () => {
     }
   }
   restoreOutside = () => made.forEach((element) => element.removeAttribute("inert"));
-  if (active && !active.contains(document.activeElement)) {
-    const dialog = active.querySelector<HTMLElement>('[role="dialog"]') ?? active;
-    if (!dialog.hasAttribute("tabindex")) dialog.setAttribute("tabindex", "-1");
-    dialog.focus({ preventScroll: true });
-  }
+  if (active) focusDialog(active);
+};
+
+const focusDialog = (element: HTMLElement) => {
+  if (element.contains(document.activeElement)) return;
+  const dialog = element.querySelector<HTMLElement>('[role="dialog"]') ?? element;
+  if (!dialog.hasAttribute("tabindex")) dialog.setAttribute("tabindex", "-1");
+  dialog.focus({ preventScroll: true });
 };
 
 const useInertOutside = (layer: RefObject<HTMLElement | null>) => {

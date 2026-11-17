@@ -1154,6 +1154,7 @@ function oathPickSteps(full, layer = "Map") {
         const before = browser.read("window.__labChain.sent.length");
         browser.press("Escape");
         browser.tap({ x: 5, y: 5 });
+        browser.run(["back"]);
         const locked = browser.read(`Boolean(document.querySelector('[data-oath-pick]')) &&
           !document.querySelector('.ui-modal button[aria-label="Close"]') && window.__labChain.sent.length === ${before}`);
         return {
