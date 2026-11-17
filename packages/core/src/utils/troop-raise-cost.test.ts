@@ -3,6 +3,9 @@ import { NativeFactStore } from "../client/native-fact-store";
 import type { GameSyncFact } from "../sync/game-sync-types";
 import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { canPayTroopRaise, readTroopRaiseCost } from "./troop-raise-cost";
+import { followGameRelease } from "../client/game-release";
+import { nativeFactSchemaIdentity } from "../../../../contracts/l3/world-native/schema/client.gen";
+import retiredTown from "../client/fixtures/retired-town.json";
 
 const PRECISION = 1_000_000_000n;
 const upsert = (key: string, model: string, value: Record<string, unknown>): GameSyncFact => ({ model, key, value });
@@ -131,3 +134,30 @@ it("keeps fractional Rations discounts when the recipe is expressed in whole uni
   ]);
   expect(readTroopRaiseCost(store, 1, 7, 26, 1, 100)![0]!.amount).toBe((7n * PRECISION) / 4n);
 });
+
+for (const historical of [true, false]) {
+  it(`rejects retired War Hall knowledge before forecasting a Depot discount: historical=${historical}`, async () => {
+    const store = realm(true, 10n * PRECISION);
+    store.applyFacts([
+      upsert("0x8", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: BigInt(retiredTown.learned) }),
+      upsert("0x6", "BoardRules", { ...store.require("BoardRules", { game_id: 1 }), ration_step: PRECISION / 5n }),
+      upsert("0x9", "GameRelease", { game_id: 1, created_release_id: 1, release_id: 2, preset_commitment: "0x789" }),
+    ]);
+    const gate = followGameRelease(store, {
+      gameId: 1, schemaIdentity: nativeFactSchemaIdentity,
+      shard: { url: "http://shard.test", releaseSchemas: { "1": historical ? retiredTown.schemaIdentity : nativeFactSchemaIdentity, "2": nativeFactSchemaIdentity } },
+    }, () => undefined);
+    let forecast: ReturnType<typeof readTroopRaiseCost>;
+    const reading = gate.ready().then(() => (forecast = readTroopRaiseCost(store, 1, 7, 26, 5, 100)));
+    try {
+      if (historical) {
+        await expect(reading).rejects.toThrow("release 1");
+        expect(forecast).toBeUndefined();
+      } else {
+        expect(await reading).toEqual([{ resource: 35, amount: 9n * PRECISION, held: 10n * PRECISION }]);
+      }
+    } finally {
+      gate.dispose();
+    }
+  });
+}

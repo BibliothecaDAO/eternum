@@ -13,6 +13,11 @@ import { HERALD_GAME_FINALIZED_CLOSE } from "../sync/herald-http-types";
 import { createManualGameSyncScheduler } from "../sync/scheduler";
 import { createGameClient, type CreateGameClientInput } from "./game-client";
 import * as shardMetadata from "./shard";
+import retiredTown from "./fixtures/retired-town.json";
+import { researchTier, troopOathSlots } from "../utils/realm-research";
+import { buildStoryEventPresentation } from "../systems/story-event-formatter";
+import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { TroopType } from "@bibliothecadao/types";
 
 class FakeSocket implements HeraldSocket {
   public onclose: (() => void) | null = null;
@@ -100,7 +105,7 @@ const createHarness = (overrides: Partial<CreateGameClientInput> = {}) => {
     l2GasBound: "0x47868c00",
     releaseSchemas: { "1": bindings.schemaIdentity, "2": bindings.schemaIdentity },
   };
-  const fetchManifest = vi.fn(async () => new Response(JSON.stringify(manifest)));
+  const fetchManifest = vi.fn(async (_url?: string) => new Response(JSON.stringify(manifest)));
   vi.stubGlobal("fetch", fetchManifest);
 
   const settle = async <T>(promise: Promise<T>): Promise<T> => {
@@ -590,3 +595,55 @@ describe("createGameClient", () => {
     expect(harness.sockets).toHaveLength(1);
   });
 });
+
+for (const archived of [false, true]) {
+  for (const incompatible of [null, 1, 2, 3]) {
+    it(`reads town state and history only across matching releases: archived=${archived}, incompatible=${incompatible}`, async () => {
+      const harness = createHarness();
+      const releaseSchemas = Object.fromEntries([1, 2, 3].map((id) => [String(id), id === incompatible ? retiredTown.schemaIdentity : bindings.schemaIdentity]));
+      expect(retiredTown.schemaIdentity).not.toBe(bindings.schemaIdentity);
+      harness.input.shard.releaseSchemas = releaseSchemas;
+      const release = { ...releaseSnapshot, rows: [{ ...releaseSnapshot.rows[0]!, value: { ...releaseSnapshot.rows[0]!.value, release_id: 3 } }] };
+      const knowledge = { ...rulesSnapshot, model: "RealmKnowledge", rows: [{ key: "0x99", value: { game_id: 54, structure_id: 7, learned: retiredTown.learned } }] };
+      const models = [rulesSnapshot, release, knowledge];
+      harness.fetchManifest.mockImplementation(async (url) => new Response(JSON.stringify(String(url).endsWith("/review/snapshot")
+        ? { game_id: "54", confirmed_block: 12, models }
+        : { ...harness.manifest, releaseSchemas })));
+      const read = vi.fn((client: Awaited<ReturnType<typeof createGameClient>>) => {
+        const learned = client.setup.store.require("RealmKnowledge", { game_id: 54, structure_id: 7 }).learned;
+        return {
+          camp: researchTier(learned, research.ROW_CONSCRIPTION),
+          depot: researchTier(learned, research.ROW_RATIONS),
+          slots: [TroopType.Knight, TroopType.Paladin, TroopType.Crossbowman].map((troop) => troopOathSlots(learned, troop)),
+          titles: retiredTown.buildings.map(({ category }) => buildStoryEventPresentation({
+            storyType: "BuildingPlacementStory", storyPayload: { category, change: { Created: {} } },
+            entityId: null, ownerAddress: "0x123", viewerAddress: null,
+          } as Parameters<typeof buildStoryEventPresentation>[0], client.setup.store, () => "Player").title),
+        };
+      });
+      const creation = createGameClient(harness.input);
+      const reading = creation.then(read);
+      const assertion = incompatible === null ? undefined : expect(reading).rejects.toThrow(`release ${incompatible}`);
+      await vi.waitFor(() => expect(harness.sockets).toHaveLength(1));
+      const socket = harness.sockets[0]!;
+      if (archived) {
+        (socket.onclose as unknown as (event: { code: number }) => void)({ code: HERALD_GAME_FINALIZED_CLOSE });
+      } else {
+        socket.receive(hello);
+        await flushMicrotasks();
+        for (const message of [...models, snapshotEnd]) socket.receive(message);
+      }
+      if (incompatible !== null) {
+        await harness.settle(assertion!);
+        expect(read).not.toHaveBeenCalled();
+        expect(socket.closed).toBe(true);
+      } else {
+        expect(await harness.settle(reading)).toEqual({
+          camp: 1, depot: 1, slots: [2, 4, 2],
+          titles: ["Player built a Rations Depot", "Player built a Conscription Camp"],
+        });
+        (await creation).dispose();
+      }
+    });
+  }
+}
