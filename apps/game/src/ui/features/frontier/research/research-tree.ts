@@ -1,4 +1,4 @@
-import { logisticsStamina, researchHasIndependentSides } from "@bibliothecadao/eternum";
+import { logisticsStamina, researchHasIndependentSides, isOathResearch } from "@bibliothecadao/eternum";
 import type { IconMeaning, IconMark } from "@/ui/design-system/icon";
 import {
   depthName,
@@ -170,7 +170,8 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     const constructionGrant =
       tier === 0 &&
       [research.ROW_SUPPLY_YARD, research.ROW_CONSCRIPTION, research.ROW_RATIONS].some((value) => value === row);
-    const next = tier < 5 ? tier + 1 : undefined;
+    const maximum = isOathResearch(row) ? research.OATH_SLOTS_MAX - research.OATH_SLOTS_BASE : 5;
+    const next = tier < maximum ? tier + 1 : undefined;
     const nextNeeds = (at: number) => {
       const needs = buildingNeeds(row, name, icon, at, options.extra ?? []);
       return constructionGrant ? needs.filter((need) => need.kind === "stands" || need.kind === "tier") : needs;
@@ -198,7 +199,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       icon,
       name,
       tier,
-      maxTier: 5,
+      maxTier: maximum,
       state: constructionGrant ? "locked" : (available?.state ?? stateOf(next === undefined, needs)),
       nextTier: available ? available.nextTier : next === undefined ? undefined : (next as Tier),
       price: constructionGrant
@@ -331,6 +332,11 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         },
       ),
     ],
+    ROW_KNIGHT_OATHS: oathNode(research.ROW_KNIGHT_OATHS, BuildingType.ResourceKnightT1),
+    ROW_SCOUT_OATHS: realm.castleLevel >= research.SCOUTS_LODGE_LEVEL
+      ? oathNode(research.ROW_SCOUT_OATHS, BuildingType.ScoutsLodge) : [],
+    ROW_CROSSBOW_OATHS: realm.castleLevel >= research.RANGE_LEVEL
+      ? oathNode(research.ROW_CROSSBOW_OATHS, BuildingType.ResourceCrossbowmanT1) : [],
     ROW_SUPPLY_YARD: [
       buildingNode(
         research.ROW_SUPPLY_YARD,
@@ -384,6 +390,18 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     }),
   } satisfies Record<ResearchRow, TreeNode[]>;
   return Object.values(rows).flat();
+
+  function oathNode(row: number, category: BuildingType): TreeNode[] {
+    const step = (tier: number) => ({
+      now: RESEARCH_TREE.oathSlots(tier + research.OATH_SLOTS_BASE),
+      next: tier + research.OATH_SLOTS_BASE < research.OATH_SLOTS_MAX
+        ? RESEARCH_TREE.oathSlots(tier + research.OATH_SLOTS_BASE + 1) : undefined,
+    });
+    return [buildingNode(row, category, "army",
+      (tier) => ({ line: RESEARCH_TREE.newArmiesStart(RESEARCH_TREE.oaths), ...step(tier) }),
+      { figures: (tier) => [{ icon: "troops", name: RESEARCH_TREE.oaths, line: RESEARCH_TREE.everyNewArmy, ...step(tier) }] },
+    )];
+  }
 
   function castleNode(
     key: string,

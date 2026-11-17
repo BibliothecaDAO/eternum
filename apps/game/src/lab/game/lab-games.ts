@@ -1,3 +1,4 @@
+import { oathSlotsScenario } from "./oath-slots-scenario";
 import { battleTargetScenario, deepBattleTargetScenario } from "./battle-target-scenario";
 import { townScenario } from "./town-scenario";
 import { scoutsScenario } from "./scouts-scenario";
@@ -66,6 +67,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   actions: actionsScenario,
   scouts: scoutsScenario,
   town: townScenario,
+  "oath-slots": oathSlotsScenario,
   "battle-target": battleTargetScenario,
   "high-ground": highGroundScenario,
   "day-end": dayEndScenario,

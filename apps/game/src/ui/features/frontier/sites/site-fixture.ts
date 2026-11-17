@@ -226,6 +226,7 @@ export const blightglowRift = ({
       game_id: 1,
       explorer_id: 201,
       logistics: 0,
+      oath_slots: 1,
     }),
     set("0x9", "ArmySlot", {
       game_id: 1,

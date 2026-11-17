@@ -121,6 +121,7 @@ function startingArmyRows(
         game_id: 1,
         explorer_id: id,
         logistics: 0,
+        oath_slots: 1,
       }),
     },
     {

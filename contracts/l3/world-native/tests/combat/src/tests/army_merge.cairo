@@ -14,8 +14,8 @@ fn full_merges_keep_the_chosen_target_even_with_less_progression() {
         } else {
             (first, second, 0, 1)
         };
-        write_progress(d, source, ArmyProgress { logistics: source_logistics });
-        write_progress(d, target, ArmyProgress { logistics: target_logistics });
+        write_progress(d, source, ArmyProgress { logistics: source_logistics, oath_slots: 1 });
+        write_progress(d, target, ArmyProgress { logistics: target_logistics, oath_slots: 1 });
         let (winner, loser) = (target, source);
         let state = GameState { contract_address: d.games };
         let before = state.explorer(winner).unwrap();
@@ -47,7 +47,7 @@ fn partial_transfers_keep_both_progress_bundles_and_slots() {
     let d = setup();
     let (game_id, _, category) = expedition_home(d);
     let (source, target) = expedition_armies(d, game_id, category);
-    let veteran = ArmyProgress { logistics: 3 };
+    let veteran = ArmyProgress { logistics: 3, oath_slots: 1 };
     write_progress(d, source, veteran);
     timers(d, source, 0, 390);
     timers(d, target, 100, 400);
@@ -72,8 +72,8 @@ fn different_logistics_caps_and_exhausted_slots_never_refill_a_merge() {
         let d = setup();
         let (game_id, preset, category) = expedition_home(d);
         let (source, target) = expedition_armies(d, game_id, category);
-        let winning = ArmyProgress { logistics: winner_logistics };
-        let losing = ArmyProgress { logistics: loser_logistics };
+        let winning = ArmyProgress { logistics: winner_logistics, oath_slots: 1 };
+        let losing = ArmyProgress { logistics: loser_logistics, oath_slots: 1 };
         write_progress(d, target, winning);
         write_progress(d, source, losing);
         let state = GameState { contract_address: d.games };
@@ -106,7 +106,7 @@ fn a_full_merge_over_the_survivor_cap_is_atomic_and_expired_armies_cannot_merge(
     let d = setup();
     let (game_id, preset, category) = expedition_home(d);
     let (source, target) = expedition_armies(d, game_id, category);
-    write_progress(d, source, ArmyProgress { logistics: 5 });
+    write_progress(d, source, ArmyProgress { logistics: 5, oath_slots: 1 });
     let state = GameState { contract_address: d.games };
     // The source belongs to a higher-level home; its cap must not replace the chosen target cap.
     // Recreate the fixture's source at that home, with its own daily slot and home index.
@@ -183,7 +183,7 @@ fn a_loaded_loser_cannot_be_destroyed_in_either_merge_direction() {
         } else {
             (target, source)
         };
-        write_progress(d, winner, ArmyProgress { logistics: 5 });
+        write_progress(d, winner, ArmyProgress { logistics: 5, oath_slots: 1 });
         let key = crate::resources::ResourceKey { game_id, entity_id: loser.explorer_id };
         let weight = snforge_std::interact_with_state(d.games, || crate::logic::resources::weight(key));
         super::resource_commands::set_fixture(

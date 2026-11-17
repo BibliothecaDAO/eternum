@@ -198,6 +198,7 @@ const armyProgressed = (store: NativeFactStore, startsAt: number): LabFact[] => 
         game_id: 1,
         explorer_id: "201",
         logistics: 2,
+        oath_slots: 1,
       },
     },
   ];

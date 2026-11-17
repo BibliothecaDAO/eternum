@@ -1,3 +1,4 @@
+import { TroopType } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
 
@@ -16,6 +17,9 @@ const tierFields: Record<number, readonly [offset: bigint, width: bigint]> = {
   [research.ROW_HUT]: [21n, 3n],
   [research.ROW_RATIONS]: [24n, 3n],
   [research.ROW_SUPPLY_YARD]: [27n, 3n],
+  [research.ROW_KNIGHT_OATHS]: [30n, 2n],
+  [research.ROW_SCOUT_OATHS]: [32n, 2n],
+  [research.ROW_CROSSBOW_OATHS]: [34n, 2n],
   [research.ROW_SHRINE]: [46n, 1n],
   [research.ROW_WELL]: [47n, 1n],
   [research.ROW_DEPTH]: [48n, 2n],
@@ -61,7 +65,7 @@ export function learnResearch(learned: bigint, row: number, side: number): bigin
   if (offset === undefined) throw new Error(`Unknown research row ${row}`);
   const picks = researchPicks(learned, row, side);
   const next = (researchHasIndependentSides(row) ? picks : researchTier(learned, row)) + 1;
-  const maximum = row === research.ROW_SHRINE || row === research.ROW_WELL ? 1 : row === research.ROW_DEPTH ? 3 : 5;
+  const maximum = row === research.ROW_SHRINE || row === research.ROW_WELL ? 1 : row === research.ROW_DEPTH || isOathResearch(row) ? 3 : 5;
   if (next > maximum) throw new Error("Research side is complete");
   if (researchHasIndependentSides(row)) return learned + (1n << (offset + BigInt(side) * 3n));
   return learned + (1n << offset);
@@ -94,6 +98,9 @@ export const researchRowCategory: Readonly<Partial<Record<number, number>>> = {
   [research.ROW_CONSCRIPTION]: research.CONSCRIPTION_CAMP,
   [research.ROW_RATIONS]: research.RATIONS_DEPOT,
   [research.ROW_SUPPLY_YARD]: research.SUPPLY_YARD,
+  [research.ROW_KNIGHT_OATHS]: research.BARRACKS,
+  [research.ROW_SCOUT_OATHS]: research.SCOUTS_LODGE,
+  [research.ROW_CROSSBOW_OATHS]: research.RANGE,
 };
 
 /** The building model's tier: unresearched 0 and Common I share the first of five models. */
@@ -120,4 +127,18 @@ export function buildingMakePicks(learned: bigint, category: number): number {
   if (category === research.BARRACKS || category === research.RANGE || category === research.SCOUTS_LODGE)
     return researchTier(learned, research.ROW_CONSCRIPTION);
   return 0;
+}
+
+export const oathResearchRow = {
+  [TroopType.Knight]: research.ROW_KNIGHT_OATHS,
+  [TroopType.Crossbowman]: research.ROW_CROSSBOW_OATHS,
+  [TroopType.Paladin]: research.ROW_SCOUT_OATHS,
+} satisfies Record<TroopType, number>;
+
+export function isOathResearch(row: number): boolean {
+  return Object.values(oathResearchRow).some((value) => value === row);
+}
+
+export function troopOathSlots(learned: bigint, category: TroopType): number {
+  return research.OATH_SLOTS_BASE + researchTier(learned, oathResearchRow[category]);
 }

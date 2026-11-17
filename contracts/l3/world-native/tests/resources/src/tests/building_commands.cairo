@@ -889,3 +889,39 @@ fn range_and_camp_open_at_city_and_depot_at_kingdom() {
     assert_eq!(crate::research::tier(learned(d, home), crate::research::ROW_CONSCRIPTION), 1);
     assert_eq!(crate::research::tier(learned(d, home), crate::research::ROW_RATIONS), 1);
 }
+
+#[test]
+fn each_troop_buys_three_oath_slots_at_its_building_for_the_exact_price() {
+    for (row, category, troop) in array![
+        (crate::research::ROW_KNIGHT_OATHS, crate::research::BARRACKS, crate::troops::TroopType::Knight),
+        (crate::research::ROW_SCOUT_OATHS, crate::research::SCOUTS_LODGE, crate::troops::TroopType::Paladin),
+        (crate::research::ROW_CROSSBOW_OATHS, crate::research::RANGE, crate::troops::TroopType::Crossbowman),
+    ] {
+        let (d, home, _) = research_world();
+        let resources = IResourceOperationsDispatcher { contract_address: d.games };
+        let essence = ResourceSlot { game_id: home.game_id, entity_id: home.entity_id, resource_type: crate::resources::ESSENCE };
+        let labor = ResourceSlot { resource_type: crate::resources::LABOR, ..essence };
+        assert_eq!(crate::research::oath_slots(learned(d, home), troop), 1);
+        assert_terminal_rejection(d, research(home, row, 0), 40);
+        assert!(execute(d, build_toward(home, category, 0), 40));
+        assert_eq!(crate::research::oath_slots(learned(d, home), troop), 1);
+        let prices = array![(5000_u128, 1000_u128), (35000, 7500), (150000, 35000)];
+        for at in 0_u32..3 {
+            let before_e = resources.resource_balance(essence);
+            let before_l = resources.resource_balance(labor);
+            assert!(execute(d, research(home, row, 0), 40));
+            let (cost_e, cost_l) = *prices.at(at);
+            assert_eq!(before_e - resources.resource_balance(essence), cost_e * crate::rules::RESOURCE_PRECISION);
+            assert_eq!(before_l - resources.resource_balance(labor), cost_l * crate::rules::RESOURCE_PRECISION);
+            assert_eq!(crate::research::oath_slots(learned(d, home), troop), at.try_into().unwrap() + 2_u8);
+            for other in array![crate::troops::TroopType::Knight, crate::troops::TroopType::Paladin, crate::troops::TroopType::Crossbowman] {
+                if other != troop { assert_eq!(crate::research::oath_slots(learned(d, home), other), 1); }
+            }
+        }
+        assert_terminal_rejection(d, research(home, row, 0), 40);
+        assert_terminal_rejection(d, research(home, row, 1), 40);
+        assert!(execute(d, Command::DestroyBuilding(change(home)), 40));
+        assert!(execute(d, build_toward(home, category, 0), 40));
+        assert_eq!(crate::research::oath_slots(learned(d, home), troop), 4);
+    }
+}

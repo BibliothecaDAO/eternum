@@ -19,6 +19,7 @@ import { madeStoreOf } from "../stores";
 import { secondsUntilHeld } from "../hud/army-order";
 import { armyArt } from "../hud/dock-armies";
 import { deployArmy, deployDirection, deployRange, previewDeploy, wheatStopsAt } from "./deploy-plan";
+import { TroopOathSlots } from "../army/oath-slots";
 import { DeployView } from "./deploy-view";
 import { useDeployPlan } from "./use-deploy-plan";
 
@@ -101,6 +102,7 @@ export const DeploySheet = ({
 
   return (
     <DeployView
+      oathSlots={plan?.troops && <TroopOathSlots category={plan.troops.type} homeId={realmId} />}
       troopSelection={{
         choices:
           plan?.choices.map((troops) => ({

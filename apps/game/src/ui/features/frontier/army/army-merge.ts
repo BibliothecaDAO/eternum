@@ -18,7 +18,7 @@ export const explorerTransferPlan = ({
   const known = sourceProgress !== undefined && targetProgress !== undefined;
   return {
     known,
-    confirmLoss: known && sourceProgress.logistics > targetProgress.logistics,
+    confirmLoss: known && (sourceProgress.logistics > targetProgress.logistics || sourceProgress.oath_slots > targetProgress.oath_slots),
     fullFits: known && targetCap !== null && sourceCount + targetCount <= targetCap,
     partialMax: Math.min(Math.max(0, sourceCount - 1), Math.max(0, (targetCap ?? 0) - targetCount)),
   };

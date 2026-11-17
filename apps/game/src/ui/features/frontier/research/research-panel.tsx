@@ -1,4 +1,4 @@
-import { researchHasIndependentSides } from "@bibliothecadao/eternum";
+import { researchHasIndependentSides, isOathResearch } from "@bibliothecadao/eternum";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, IconGroup, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudPage, HudRanked, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
@@ -129,7 +129,7 @@ export const NodeTile = ({
 }) => {
   const look = STATE_LOOK[node.state];
   const reading =
-    node.maxTier === 5 ? (
+    isOathResearch(node.row) ? <span className="text-hud-label">{node.gives.now}</span> : node.maxTier === 5 ? (
       researchHasIndependentSides(node.row) && node.sides ? (
         <span className="flex gap-2">
           {node.sides.map((side) => (
@@ -204,7 +204,7 @@ const NodeChoice = ({
   const missing = firstMissing(node);
   const fixing = missing && fix(missing);
   const verb: RankedWords | string =
-    node.sides?.[side]?.name ?? (node.nextTier ? [`${node.name} `, { rank: node.nextTier }] : node.name);
+    node.sides?.[side]?.name ?? (isOathResearch(node.row) ? RESEARCH_TREE.oaths : node.nextTier ? [`${node.name} `, { rank: node.nextTier }] : node.name);
   const price = node.needs.filter(isPrice);
   return (
     <div
@@ -314,6 +314,7 @@ const needIcon = (need: Need): IconMeaning =>
 
 /** The node's tier and its next as gems, complete at Legendary, or a one-off node's price. */
 const LevelLine = ({ node }: { node: TreeNode }) => {
+  if (isOathResearch(node.row)) return <span className="text-hud-label">{node.gives.now}</span>;
   if (node.maxTier === 5 && node.nextTier) return <HudTierStep from={tierOf(node)} to={node.nextTier} />;
   if (node.maxTier === 5)
     return (

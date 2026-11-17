@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { type TroopType, formatExact, formatWait } from "@bibliothecadao/types";
 import {
@@ -46,6 +47,7 @@ import { slotStartLine } from "./slot-start";
  */
 export const DeployView = ({
   troopSelection,
+  oathSlots,
   art,
   troopsAtHome,
   count,
@@ -63,6 +65,7 @@ export const DeployView = ({
   onGoToRealm,
   onClose,
 }: {
+  oathSlots?: ReactNode;
   troopSelection?: {
     choices: { category: TroopType; name: string; art: IconMeaning }[];
     selected: TroopType | undefined;
@@ -137,6 +140,7 @@ export const DeployView = ({
     ) : (
       tile === "none" && <HudNotice tone="warn" line={NO_OPEN_TILE} />
     )}
+    {oathSlots}
     {wheatLimit && (
       <HudNotice
         tone="bad"

@@ -1,3 +1,4 @@
+import { TroopOathSlots } from "./oath-slots";
 import { ArmyRelicSlots } from "../relics/army-relic-slots";
 import { useState } from "react";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -27,6 +28,7 @@ const ArmyPanel = ({ army, onClose }: { army: DockArmy; onClose: () => void }) =
       onClose={onClose}
     >
       <ArmyDetail army={{ ...army, name: army.label, stamina: army.stamina, revealYield }} />
+      <TroopOathSlots category={army.troopsFact.category} explorerId={army.explorerId} />
       <ArmyRelicSlots explorerId={army.explorerId} />
       {deleting && <ArmyDeleteConfirm army={army} onCancel={() => setDeleting(false)} onDeleted={onClose} />}
       {spire && <HudWindowFoot>{spire}</HudWindowFoot>}

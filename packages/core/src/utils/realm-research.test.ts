@@ -80,3 +80,21 @@ it("keeps both town rows independent of every other packed research field", () =
       expect(researchTier(value, research.ROW_DEPTH)).toBe(2);
     }
 });
+
+it("keeps all troop slot ladders independent with one free slot and three purchases", async () => {
+  const { oathResearchRow, troopOathSlots, RESEARCH_ROWS } = await import("./realm-research");
+  const { TROOP_TYPES } = await import("@bibliothecadao/types");
+  let value = 0n;
+  for (const troop of TROOP_TYPES) {
+    expect(troopOathSlots(value, troop)).toBe(1);
+    for (let count = 2; count <= 4; count++) {
+      value = learnResearch(value, oathResearchRow[troop], 0);
+      expect(troopOathSlots(value, troop)).toBe(count);
+    }
+    expect(() => learnResearch(value, oathResearchRow[troop], 0)).toThrow("Research side is complete");
+  }
+  expect(TROOP_TYPES.map((troop) => troopOathSlots(value, troop))).toEqual([4, 4, 4]);
+  for (const row of RESEARCH_ROWS.filter((row) => !Object.values(oathResearchRow).some((oath) => oath === row)))
+    expect(researchTier(value, row)).toBe(0);
+  expect(value).toBe((3n << 30n) + (3n << 32n) + (3n << 34n));
+});

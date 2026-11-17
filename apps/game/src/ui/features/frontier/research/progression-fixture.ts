@@ -46,10 +46,6 @@ const realmOn = (
 /** The owner's realm on 20 October: a Settlement, nothing researched, short of everything. */
 export const EARLY_REALM = realmOn(0, 300, 718, { [research.ROW_FARM]: 2, [research.ROW_HUT]: 1 }, {});
 
-/**
- * Some days in, a City: Farm uncommon on both sides (Fields, Granary), Workshop uncommon (Tools), Barracks with Charge II, a Hut
- * uncommon, a War hall and a Scouts' lodge standing (the lodge uncommon on rifts), the Shrine learned.
- */
 export const MID_REALM = realmOn(
   1,
   18_250,
@@ -69,7 +65,6 @@ export const MID_REALM = realmOn(
   },
 );
 
-/** The owner's Army 1: 1,500 troops, 12 XP, 4 of 120 stamina, every attribute common. */
 export const EARLY_ARMY: ArmyView = {
   name: "Army 1",
   art: "knight-t1",
@@ -79,7 +74,6 @@ export const EARLY_ARMY: ArmyView = {
   revealYield: 75,
 };
 
-/** A veteran: 260 XP after a few clears, Battle II, Logistics III (170 stamina), Scouting II on rifts. */
 export const VETERAN_ARMY: ArmyView = {
   name: "Army 2",
   art: "knight-t1",

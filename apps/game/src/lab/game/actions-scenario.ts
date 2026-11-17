@@ -2,6 +2,7 @@ import {
   getExplorerInfoFromTileOccupier,
   entityHomeNamespace,
   researchTier,
+  troopOathSlots,
   seasonDay,
   expeditionRealmSite,
   getTroopResourceId,
@@ -168,7 +169,7 @@ const deployArmy: Answer = (command, chain, now) => {
     allowedSlots: realm.base.troop_max_explorer_count,
   })?.find((slot) => slot.slot === Number(command.fields.slot));
   if (!slot) throw new Error("The lab deployment requires an open army slot");
-  const progress = deploymentProgress(chain, structureId, explorerId);
+  const progress = deploymentProgress(chain, structureId, explorerId, category);
   const rules = chain.require("SliceRules", { game_id: 1 });
   const maximum = musterStamina(
     { ...slot, inherited: null },
@@ -237,11 +238,12 @@ const deployArmy: Answer = (command, chain, now) => {
 };
 
 /** A new army starts with its realm's training and no earned XP or unspent points. */
-const deploymentProgress = (chain: NativeFactStore, home: bigint, explorerId: bigint) => {
+const deploymentProgress = (chain: NativeFactStore, home: bigint, explorerId: bigint, category: (typeof TROOP_TYPES)[number]) => {
   const { learned } = chain.require("RealmKnowledge", { game_id: 1, structure_id: home });
   return {
     game_id: 1,
     explorer_id: explorerId,
     logistics: researchTier(learned, research.ROW_SUPPLY_YARD),
+    oath_slots: troopOathSlots(learned, category),
   };
 };

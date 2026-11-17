@@ -225,6 +225,7 @@ it("keeps missing army facts unavailable, reports them in development, and resum
           game_id: 1,
           explorer_id: ARMY_ID,
           logistics: 1,
+          oath_slots: 1,
         },
       },
     ] as never),

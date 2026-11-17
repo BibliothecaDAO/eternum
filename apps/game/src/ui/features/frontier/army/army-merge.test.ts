@@ -6,6 +6,7 @@ const common: NativeRows["ArmyProgress"] = {
   game_id: 1,
   explorer_id: 1n,
   logistics: 1,
+  oath_slots: 1,
 };
 const base = {
   sourceCount: 3,
@@ -46,4 +47,11 @@ describe("army merge choice", () => {
       confirmLoss: false,
     });
   });
+});
+
+it("warns before a larger Oath capacity is lost with the source army", () => {
+  expect(explorerTransferPlan({
+    sourceCount: 100, targetCount: 100, targetCap: 500,
+    sourceProgress: { ...common, oath_slots: 4 }, targetProgress: { ...common, oath_slots: 1 },
+  }).confirmLoss).toBe(true);
 });

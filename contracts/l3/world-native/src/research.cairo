@@ -14,6 +14,11 @@ pub const ROW_CONSCRIPTION: u8 = 2;
 pub const ROW_HUT: u8 = 3;
 pub const ROW_RATIONS: u8 = 4;
 pub const ROW_SUPPLY_YARD: u8 = 5;
+pub const ROW_KNIGHT_OATHS: u8 = 6;
+pub const ROW_SCOUT_OATHS: u8 = 7;
+pub const ROW_CROSSBOW_OATHS: u8 = 11;
+pub const OATH_SLOTS_BASE: u8 = 1;
+pub const OATH_SLOTS_MAX: u8 = 4;
 pub const ROW_SHRINE: u8 = 8;
 pub const ROW_WELL: u8 = 9;
 pub const ROW_DEPTH: u8 = 10;
@@ -73,6 +78,12 @@ pub fn row_category(row: u8) -> u8 {
         HUT
     } else if row == ROW_SUPPLY_YARD {
         SUPPLY_YARD
+    } else if row == ROW_KNIGHT_OATHS {
+        BARRACKS
+    } else if row == ROW_SCOUT_OATHS {
+        SCOUTS_LODGE
+    } else if row == ROW_CROSSBOW_OATHS {
+        RANGE
     } else if row == ROW_SHRINE || row == ROW_WELL || row == ROW_DEPTH {
         0
     } else {
@@ -84,9 +95,22 @@ pub fn is_training(category: u8) -> bool {
     category == SUPPLY_YARD || category == CONSCRIPTION_CAMP || category == RATIONS_DEPOT
 }
 
-pub const ROWS: [u8; 9] = [
-    ROW_FARM, ROW_WORKSHOP, ROW_CONSCRIPTION, ROW_HUT, ROW_RATIONS, ROW_SUPPLY_YARD, ROW_SHRINE, ROW_WELL, ROW_DEPTH,
+pub const ROWS: [u8; 12] = [
+    ROW_FARM, ROW_WORKSHOP, ROW_CONSCRIPTION, ROW_HUT, ROW_RATIONS, ROW_SUPPLY_YARD, ROW_KNIGHT_OATHS, ROW_SCOUT_OATHS, ROW_CROSSBOW_OATHS, ROW_SHRINE, ROW_WELL, ROW_DEPTH,
 ];
+
+pub fn is_oath_row(row: u8) -> bool {
+    row == ROW_KNIGHT_OATHS || row == ROW_SCOUT_OATHS || row == ROW_CROSSBOW_OATHS
+}
+
+pub fn oath_slots(learned: u64, category: crate::troops::TroopType) -> u8 {
+    let row = match category {
+        crate::troops::TroopType::Knight => ROW_KNIGHT_OATHS,
+        crate::troops::TroopType::Crossbowman => ROW_CROSSBOW_OATHS,
+        crate::troops::TroopType::Paladin => ROW_SCOUT_OATHS,
+    };
+    OATH_SLOTS_BASE + tier(learned, row)
+}
 
 pub fn max_tier(row: u8) -> u8 {
     if row == ROW_FARM
@@ -98,6 +122,8 @@ pub fn max_tier(row: u8) -> u8 {
         5
     } else if row == ROW_SHRINE || row == ROW_WELL {
         1
+    } else if is_oath_row(row) {
+        OATH_SLOTS_MAX - OATH_SLOTS_BASE
     } else if row == ROW_DEPTH {
         3
     } else {
@@ -122,6 +148,9 @@ fn tier_slot(row: u8) -> (u64, u64) {
         3 => (0x200000, 8),
         4 => (0x1000000, 8),
         5 => (0x8000000, 8),
+        6 => (0x40000000, 4),
+        7 => (0x100000000, 4),
+        11 => (0x400000000, 4),
         8 => (0x400000000000, 2),
         9 => (0x800000000000, 2),
         10 => (0x1000000000000, 4),

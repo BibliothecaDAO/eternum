@@ -56,6 +56,7 @@ it("accepts safe numeric native keys with the same identity as bigint and refuse
         game_id: 1,
         explorer_id: id,
         logistics: 0,
+        oath_slots: 1,
       },
     },
   ]);

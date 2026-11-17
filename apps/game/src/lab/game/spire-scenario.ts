@@ -188,6 +188,7 @@ export const armyProgress = (key: string, explorerId: number, logistics = 1): La
     game_id: 1,
     explorer_id: String(explorerId),
     logistics,
+    oath_slots: 1,
   },
 });
 

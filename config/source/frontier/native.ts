@@ -104,6 +104,14 @@ export const frontierPreset = {
         laborCost: [500, 1000, 2500, 5000, 12500][index]!,
       })),
     ),
+    ...[research.ROW_KNIGHT_OATHS, research.ROW_SCOUT_OATHS, research.ROW_CROSSBOW_OATHS].flatMap((row) =>
+      [[5000, 1000], [35000, 7500], [150000, 35000]].map(([essenceCost, laborCost], index) => ({
+        row,
+        tier: index + 1,
+        essenceCost: essenceCost!,
+        laborCost: laborCost!,
+      })),
+    ),
     { row: research.ROW_SHRINE, tier: 1, essenceCost: 2000, laborCost: 0 },
     { row: research.ROW_WELL, tier: 1, essenceCost: 6000, laborCost: 0 },
     ...[100000, 250000, 500000].map((essenceCost, index) => ({

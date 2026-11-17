@@ -28,9 +28,16 @@ pub struct SkillPointSpent {
 }
 
 /// Logistics captured when the army leaves home.
-#[derive(Copy, Drop, Default, Serde, Debug, PartialEq, starknet::Store)]
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct ArmyProgress {
     pub logistics: u8,
+    pub oath_slots: u8,
+}
+
+pub impl ArmyProgressDefault of Default<ArmyProgress> {
+    fn default() -> ArmyProgress {
+        ArmyProgress { logistics: 0, oath_slots: crate::research::OATH_SLOTS_BASE }
+    }
 }
 
 #[starknet::interface]
@@ -38,8 +45,11 @@ pub trait IArmyProgression<T> {
     fn army_progress(self: @T, key: ExplorerKey) -> Option<ArmyProgress>;
 }
 
-pub fn trained(learned: u64) -> ArmyProgress {
-    ArmyProgress { logistics: crate::research::tier(learned, crate::research::ROW_SUPPLY_YARD) }
+pub fn trained(learned: u64, category: crate::troops::TroopType) -> ArmyProgress {
+    ArmyProgress {
+        logistics: crate::research::tier(learned, crate::research::ROW_SUPPLY_YARD),
+        oath_slots: crate::research::oath_slots(learned, category),
+    }
 }
 
 pub fn stamina_max(

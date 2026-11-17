@@ -296,4 +296,5 @@ const AttackForecast = ({ store }: { store: NativeFactStore }) => {
 const LAB_PROGRESS = {
   game_id: 1,
   logistics: 1,
+  oath_slots: 1,
 };
