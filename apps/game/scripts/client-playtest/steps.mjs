@@ -1026,7 +1026,10 @@ function deleteOathArmyStep() {
           commands: window.__labChain?.sent.length };
       })())`);
       const armyId = Number(before.progress?.value?.explorer_id);
-      const progressKey = before.progress?.key.split(":").map((felt) => BigInt(felt).toString()).join(":");
+      const progressKey = before.progress?.key
+        .split(":")
+        .map((felt) => BigInt(felt).toString())
+        .join(":");
       const stamina = browser.armies().find(({ label }) => label === "Army 1")?.stamina;
       if (!armyId || !Number(before.progress?.value?.oaths) || !before.held || stamina === undefined)
         return { before, stamina };
