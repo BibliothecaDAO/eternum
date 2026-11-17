@@ -6369,7 +6369,7 @@ export const STEP_SETS = {
   },
   "lab-oath-vitriol": {
     game: labSpireGame("oath-vitriol"),
-    steps: [...oathPickSteps(false, "Deep").slice(0, -1), ...deepJoinSteps(150, 40).slice(2)],
+    steps: [...oathPickSteps(false, "Deep").slice(0, -1), ...deepJoinSteps(150, 40).slice(3)],
   },
   "lab-deep-join": { game: labSpireGame("deep"), steps: deepJoinSteps() },
   "lab-no-lords": {
