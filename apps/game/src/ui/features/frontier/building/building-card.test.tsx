@@ -221,7 +221,7 @@ it("says under every research figure, on every building's card, what the figure 
 
 for (const row of [research.ROW_KNIGHT_OATHS, research.ROW_SCOUT_OATHS, research.ROW_CROSSBOW_OATHS]) {
   it(`shows the free Oath slot and lets its building research another on row ${row}`, () => {
-    const { onResearch } = draw(row, { realm: RICH });
+    const { onResearch } = draw(row, { realm: { ...RICH, standing: { ...RICH.standing, [row]: 1 } } });
     expect(card().textContent).toContain("1 Oath slot");
     expect(card().textContent).toContain("2 Oath slots");
     expect(card().textContent).not.toContain("Untrained");

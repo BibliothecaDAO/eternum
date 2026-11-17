@@ -1072,6 +1072,28 @@ const OATH_SLOTS_STEPS = [
       return armyDeployed(context);
     },
   ),
+  {
+    name: "read-army-oath-slots",
+    play: async ({ browser }) => {
+      const army = browser.read(buttonLabelled("^Army 2$"));
+      if (!army) return { army };
+      browser.tap(army.offset);
+      const details = await readUntil(() => browser.read(buttonLabelled("^Army 2: details$")), Boolean, SHEET_WAIT_MS);
+      if (details) browser.tap(details.offset);
+      await readUntil(() => browser.read(elementAt('[data-oath-slots="2"]')), Boolean, SHEET_WAIT_MS);
+      return browser.read(`(() => {
+        const slots = document.querySelector('[data-oath-slots="2"]');
+        const rect = slots?.getBoundingClientRect();
+        return { text: slots?.textContent, open: slots?.querySelectorAll('[aria-label$="· Open"]').length,
+          locked: slots?.querySelectorAll('[aria-label$="· Locked"]').length,
+          visible: Boolean(rect && rect.width && rect.height && rect.top >= 0 && rect.bottom <= innerHeight) };
+      })()`);
+    },
+    verify: ({ played }) =>
+      played.visible && played.open === 2 && played.locked === 2 && played.text.includes("2 Oath slots")
+        ? completed(played)
+        : failed("The army's two open and two priced locked slots were not visible", played),
+  },
 ];
 
 const SHRINE_NODE = '[data-node="shrine"]';
