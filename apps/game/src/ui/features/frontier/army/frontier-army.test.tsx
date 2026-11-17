@@ -125,7 +125,7 @@ it("keeps Delete as a trash right after the army's name, asking before it delete
   expect(host.querySelector('[role="alertdialog"]')).toBeNull();
   act(() => trash!.click());
   expect(host.querySelector('.ui-frame__body [role="alertdialog"]')?.textContent).toContain(
-    "troops and carried resources are lost",
+    "troops, carried resources and held Oaths are lost",
   );
 });
 

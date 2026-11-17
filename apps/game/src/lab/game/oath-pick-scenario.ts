@@ -12,8 +12,28 @@ export function oathPickScenario(full = false): LabScenario {
   const game = spireScenario();
   const key = { game_id: 1, explorer_id: SPIRE_ARMY };
   const progress = game.store.require("ArmyProgress", key);
+  const army = game.store.require("ExplorerTroops", key);
+  const day = game.store.require("ArmyDay", key);
+  const rules = game.store.require("SliceRules", { game_id: key.game_id });
+  if (!("Inline" in army.troops.stamina)) throw new Error("Spire fixture no longer has inline stamina");
+  const slot = { game_id: key.game_id, structure_id: army.owner, epoch: BigInt(day.day), slot: 0 };
   game.store.applyFacts([
     ...seasonOneResearchPrices(game.store),
+    {
+      model: "ExplorerTroops",
+      key: game.store.wireKeyOf("ExplorerTroops", key)!,
+      value: wire({ ...army, troops: { ...army.troops, stamina: { Slot: slot.slot } } }),
+    },
+    {
+      model: "ArmySlot",
+      key: game.store.wireKeyOf("ArmySlot", slot) ?? `${slot.game_id}:${slot.structure_id}:${slot.epoch}:${slot.slot}`,
+      value: wire({ ...slot, explorer_id: army.explorer_id, stamina: army.troops.stamina.Inline }),
+    },
+    {
+      model: "SliceRules",
+      key: game.store.wireKeyOf("SliceRules", rules)!,
+      value: wire({ ...rules, troop_stamina_config: { ...rules.troop_stamina_config, stamina_gain_per_tick: 0 } }),
+    },
     {
       model: "ArmyProgress",
       key: game.store.wireKeyOf("ArmyProgress", key)!,
