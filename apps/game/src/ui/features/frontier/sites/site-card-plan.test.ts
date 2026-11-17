@@ -309,7 +309,7 @@ it("keeps a replacement Knight guard protected and removes that protection from 
   expect(readDeepSiteFight(store, quarry(), attack)?.result).toEqual({ troopsLost: 330, guardLeft: 754 });
   const oldGuard = { game_id: 1, explorer_id: 301n };
   for (const [index, model] of (
-    ["ExplorerTroops", "DeepArmy", "ArmyDay", "ArmyCombat", "DeepGuard"] as const
+    ["ExplorerTroops", "DeepArmy", "ArmyDay", "ArmyCombat", "ArmyProgress", "DeepGuard"] as const
   ).entries()) {
     const row = store.require(model, oldGuard);
     store.applyFacts([{ model, key: `0xeef${index}`, value: { ...row, explorer_id: 302n } }]);

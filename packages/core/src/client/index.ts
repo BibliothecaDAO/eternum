@@ -29,7 +29,7 @@ export { armyCombatRefusal, isAspectAlly } from "../utils/army-opponents";
 export { armyDrain, deepArmyLife, type DeepArmyLife } from "../utils/deep-army-life";
 export { readDeepSites, type DeepSiteView } from "./views/deep-sites";
 export { readRaceBoard, RACE_MODELS, type RaceBoard } from "./views/race";
-export { currentArmy } from "../utils/deep";
+export { currentArmy, currentResourceWeight } from "../utils/deep";
 export { deepCenter, isDeepTile } from "../utils/deep-geometry";
 export { questWeek } from "../utils/daily-quest";
 export { readActiveTriumph, TRIUMPH_MODELS } from "./views/triumphs";

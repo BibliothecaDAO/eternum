@@ -124,7 +124,19 @@ function settleDeepChoice(chain: NativeFactStore, explorer_id: number, now: numb
   const weight = chain.get("ResourceWeight", { game_id: key.game_id, entity_id: explorer_id });
   return [
     { model: "ExplorerTroops", key: chain.wireKeyOf("ExplorerTroops", key)!, value: wire(army) },
-    { model: "DeepArmy", key: chain.wireKeyOf("DeepArmy", key)!, value: wire({ ...deep, last_tick: Math.floor(now / Number(rules.tick_config.armies_tick_in_seconds)) }) },
-    ...(weight ? [{ model: "ResourceWeight", key: chain.wireKeyOf("ResourceWeight", weight)!, value: wire(currentResourceWeight(chain, weight, now)) }] : []),
+    {
+      model: "DeepArmy",
+      key: chain.wireKeyOf("DeepArmy", key)!,
+      value: wire({ ...deep, last_tick: Math.floor(now / Number(rules.tick_config.armies_tick_in_seconds)) }),
+    },
+    ...(weight
+      ? [
+          {
+            model: "ResourceWeight",
+            key: chain.wireKeyOf("ResourceWeight", weight)!,
+            value: wire(currentResourceWeight(chain, weight, now)),
+          },
+        ]
+      : []),
   ];
 }

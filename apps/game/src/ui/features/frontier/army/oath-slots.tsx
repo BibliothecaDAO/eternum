@@ -1,7 +1,7 @@
 import { heldOaths } from "@bibliothecadao/eternum";
 import { Icon } from "@/ui/design-system/icon";
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
-import { oathEffectDescription, oathName } from "./oath-names";
+import { oathEffectDescription, oathName } from "./oath-details";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { HudCost } from "@/ui/design-system/kit/hud-elements";
 import { costLine } from "@/ui/design-system/kit/price-faces";

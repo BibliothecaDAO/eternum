@@ -10,7 +10,7 @@ import { HudButton, HudCard } from "@/ui/design-system/kit/hud-elements";
 import { Icon } from "@/ui/design-system/icon";
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
 import { toast } from "@/ui/features/event-feed/notify";
-import { oathEffectDescription, oathName } from "./oath-names";
+import { oathEffectDescription, oathName } from "./oath-details";
 
 const colourClass = {
   red: "border-hud-bad text-hud-bad",

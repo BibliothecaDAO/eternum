@@ -16,9 +16,20 @@ it("settles the lab's old Deep rate before the Oath response, matching the nativ
   const boundary = (Math.floor(game.startsAt / interval) + 1) * interval;
   const span = encodeNativeCommand(nativeBindings.commandAbi, {
     kind: "ChooseOath",
-    value: { explorer_id: SPIRE_ARMY, expected_pick: progress.oath_pick, oath: { kind: "Some", value: oaths.VITRIOL }, replace: { kind: "None", value: undefined } },
+    value: {
+      explorer_id: SPIRE_ARMY,
+      expected_pick: progress.oath_pick,
+      oath: { kind: "Some", value: oaths.VITRIOL },
+      replace: { kind: "None", value: undefined },
+    },
   });
-  chain.applyFacts(game.answer({ kind: "ChooseOath", fields: {}, calldata: ["1", "0", "0", String(span.length), ...span] }, chain, boundary) as never);
+  chain.applyFacts(
+    game.answer(
+      { kind: "ChooseOath", fields: {}, calldata: ["1", "0", "0", String(span.length), ...span] },
+      chain,
+      boundary,
+    ) as never,
+  );
   const after = chain.require("ExplorerTroops", key);
   expect(after.troops.count).toBe(before.troops.count - 200_000_000_000n);
   expect(chain.require("DeepArmy", key).last_tick).toBe(BigInt(boundary / interval));

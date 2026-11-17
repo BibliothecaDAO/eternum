@@ -320,8 +320,8 @@ fn vitriol_setup(seed: felt252) -> (Deployment, u32) {
     super::aspects::setup_aspect_preset(seed, preset)
 }
 
-fn waiting_vitriol(d: Deployment, key: ExplorerKey) -> crate::oaths::ChooseOath {
-    let pick = Into::<u8, u16>::into(crate::oaths::VITRIOL)
+fn waiting_oath(d: Deployment, key: ExplorerKey, red: u8) -> crate::oaths::ChooseOath {
+    let pick = Into::<u8, u16>::into(red)
         - 1
         + (Into::<u8, u16>::into(crate::oaths::FOX) - 1) * 16
         + (Into::<u8, u16>::into(crate::oaths::RAGE) - 1) * 256;
@@ -333,7 +333,7 @@ fn waiting_vitriol(d: Deployment, key: ExplorerKey) -> crate::oaths::ChooseOath 
         },
     );
     crate::oaths::ChooseOath {
-        explorer_id: key.explorer_id, expected_pick: pick, oath: Some(crate::oaths::VITRIOL), replace: None,
+        explorer_id: key.explorer_id, expected_pick: pick, oath: Some(red), replace: None,
     }
 }
 
@@ -341,7 +341,7 @@ fn waiting_vitriol(d: Deployment, key: ExplorerKey) -> crate::oaths::ChooseOath 
 fn choosing_and_replacing_vitriol_settles_field_ticks_under_the_previous_oath() {
     let (d, game_id) = vitriol_setup(103);
     let key = deployed(d, game_id, 1, 1500);
-    let choice = waiting_vitriol(d, key);
+    let choice = waiting_oath(d, key, crate::oaths::VITRIOL);
     let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
     let boundary = (360 / interval + 1) * interval;
     applied(d, game_id, Command::ChooseOath(choice), boundary);
@@ -350,7 +350,7 @@ fn choosing_and_replacing_vitriol_settles_field_ticks_under_the_previous_oath() 
     assert_eq!(army(d, key).troops.count, 1150 * RESOURCE_PRECISION);
     advance(d, key, 3, boundary + interval);
     assert_eq!(army(d, key).troops.count, 1150 * RESOURCE_PRECISION);
-    let replacement = waiting_vitriol(d, key);
+    let replacement = waiting_oath(d, key, crate::oaths::POWER);
     applied(
         d,
         game_id,
@@ -370,7 +370,7 @@ fn choosing_and_replacing_vitriol_settles_field_ticks_under_the_previous_oath() 
 fn vitriol_guards_lose_exactly_150_per_tick_while_the_beast_is_unchanged() {
     let (d, game_id) = vitriol_setup(104);
     let key = deployed(d, game_id, 1, 1000);
-    let choice = waiting_vitriol(d, key);
+    let choice = waiting_oath(d, key, crate::oaths::VITRIOL);
     applied(d, game_id, Command::ChooseOath(choice), 360);
     let target = site(d, game_id, crate::rules::DEEP_QUARRY);
     beside(d, key, target, 0);
