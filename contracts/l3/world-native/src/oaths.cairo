@@ -31,7 +31,10 @@ pub struct ChooseOath {
 #[starknet::interface]
 pub trait IOaths<T> {
     fn choose_oath(
-        ref self: T, game_id: u32, actor: starknet::ContractAddress, command: ChooseOath,
+        ref self: T,
+        game_id: u32,
+        actor: starknet::ContractAddress,
+        command: ChooseOath,
         context: crate::commands::ActionContext,
     );
     fn offer_oaths(ref self: T, key: crate::troops::ExplorerKey, seed: u256);
@@ -40,7 +43,9 @@ pub trait IOaths<T> {
 pub fn bit(oath: u8) -> u16 {
     assert!(oath >= 1 && oath <= 16, "invalid oath");
     let mut value = 1;
-    for _ in 1_u8..oath { value *= 2; }
+    for _ in 1_u8..oath {
+        value *= 2;
+    }
     value
 }
 
@@ -50,13 +55,21 @@ pub fn held(oaths: u16, oath: u8) -> bool {
 
 pub fn count(oaths: u16) -> u8 {
     let mut total = 0;
-    for oath in 1_u8..17 { if held(oaths, oath) { total += 1; } }
+    for oath in 1_u8..17 {
+        if held(oaths, oath) {
+            total += 1;
+        }
+    }
     total
 }
 
 pub fn card(pick: u16, colour: u8) -> u8 {
     assert!(pick != 0 && colour < 3, "missing oath card");
-    let scale = match colour { 0 => 1, 1 => 16, _ => 256 };
+    let scale = match colour {
+        0 => 1,
+        1 => 16,
+        _ => 256,
+    };
     (pick / scale % 16 + 1).try_into().unwrap()
 }
 
@@ -64,10 +77,15 @@ pub fn draw(oaths: u16, seed: u256) -> u16 {
     let mut pick = 0;
     let mut scale = 1;
     for colour in 0_u8..3 {
-        let pool = match colour { 0 => RED, 1 => BLUE, _ => GOLD };
+        let pool = match colour {
+            0 => RED,
+            1 => BLUE,
+            _ => GOLD,
+        };
         let random: u256 = core::poseidon::poseidon_hash_span(
             array!['oath', seed.low.into(), seed.high.into(), colour.into()].span(),
-        ).into();
+        )
+            .into();
         let choices = pool ^ (pool & oaths);
         let mut index: u8 = (random % count(choices).into()).try_into().unwrap();
         for oath in 1_u8..17 {
@@ -89,8 +107,10 @@ pub fn choose(progress: ArmyProgress, command: ChooseOath) -> ArmyProgress {
     let mut oaths = progress.oaths;
     if let Some(oath) = command.oath {
         assert!(
-            oath == card(progress.oath_pick, 0) || oath == card(progress.oath_pick, 1)
-                || oath == card(progress.oath_pick, 2), "oath not offered",
+            oath == card(progress.oath_pick, 0)
+                || oath == card(progress.oath_pick, 1)
+                || oath == card(progress.oath_pick, 2),
+            "oath not offered",
         );
         assert!(!held(oaths, oath), "oath already held");
         if count(oaths) == progress.oath_slots {

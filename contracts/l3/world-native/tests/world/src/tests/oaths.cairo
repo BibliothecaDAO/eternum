@@ -10,7 +10,9 @@ fn every_draw_has_three_colours_and_excludes_every_held_oath_even_with_four_of_o
     for pool in array![crate::oaths::RED, crate::oaths::BLUE, crate::oaths::GOLD] {
         let mut oaths = 0;
         for oath in 1_u8..17 {
-            if held(pool, oath) && count(oaths) < 4 { oaths += crate::oaths::bit(oath); }
+            if held(pool, oath) && count(oaths) < 4 {
+                oaths += crate::oaths::bit(oath);
+            }
         }
         for seed in 0_u64..32 {
             let pick = draw(oaths, seed.into());
@@ -30,12 +32,16 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
         camp_bps: 0, rift_bps: 0, ruin_bps: 0, beasts_bps: 0, shrine_bps: 10000, well_bps: 0, empty_reveal_limit: 7,
     };
     let (d, game_id, key) = super::registrar::setup_frontier_relics_with_rules(Some(discovery));
-    snforge_std::interact_with_state(d.games, || {
-        let home = crate::resources::ResourceKey { game_id, entity_id: 1 };
-        crate::logic::research::write(home, crate::research::RealmKnowledge {
-            learned: crate::research::learn(0, crate::research::ROW_SHRINE, 0),
-        });
-    });
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let home = crate::resources::ResourceKey { game_id, entity_id: 1 };
+            crate::logic::research::write(
+                home,
+                crate::research::RealmKnowledge { learned: crate::research::learn(0, crate::research::ROW_SHRINE, 0) },
+            );
+        },
+    );
     assert!(super::registrar::explore_with_root(d, game_id, key.explorer_id, 123, 360));
     let first = read_progress(d, key);
     assert!(first.oath_pick != 0);
@@ -43,11 +49,19 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
     assert!(super::registrar::explore_with_root(d, game_id, key.explorer_id, 456, 361));
     assert_eq!(read_progress(d, key).oath_pick, first.oath_pick);
     let taken = card(first.oath_pick, 0);
-    let take = ChooseOath { explorer_id: key.explorer_id, expected_pick: first.oath_pick, oath: Some(taken), replace: None };
-    assert!(!world_test_support::tests::play_fixture::play(d.games,
-        world_test_support::tests::play_fixture::TestAction {
-            game_id, actor: 999.try_into().unwrap(), command: crate::commands::Command::ChooseOath(take),
-        }, 123, 362));
+    let take = ChooseOath {
+        explorer_id: key.explorer_id, expected_pick: first.oath_pick, oath: Some(taken), replace: None,
+    };
+    assert!(
+        !world_test_support::tests::play_fixture::play(
+            d.games,
+            world_test_support::tests::play_fixture::TestAction {
+                game_id, actor: 999.try_into().unwrap(), command: crate::commands::Command::ChooseOath(take),
+            },
+            123,
+            362,
+        ),
+    );
     assert_eq!(read_progress(d, key), first);
     assert!(super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(take), 362));
     let chosen = read_progress(d, key);
@@ -61,11 +75,22 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
     let replace = ChooseOath { expected_pick: second.oath_pick, oath: Some(replacement), ..take };
     assert!(!super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(replace), 365));
     assert_eq!(read_progress(d, key), second);
-    assert!(super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(ChooseOath { replace: Some(taken), ..replace }), 366));
+    assert!(
+        super::resource_commands::execute_in_game(
+            d, game_id, crate::commands::Command::ChooseOath(ChooseOath { replace: Some(taken), ..replace }), 366,
+        ),
+    );
     assert_eq!(read_progress(d, key).oaths, crate::oaths::bit(replacement));
     assert!(super::registrar::explore_with_root(d, game_id, key.explorer_id, 999, 367));
     let third = read_progress(d, key);
-    assert!(super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(ChooseOath { expected_pick: third.oath_pick, oath: None, ..take }), 368));
+    assert!(
+        super::resource_commands::execute_in_game(
+            d,
+            game_id,
+            crate::commands::Command::ChooseOath(ChooseOath { expected_pick: third.oath_pick, oath: None, ..take }),
+            368,
+        ),
+    );
     assert_eq!(read_progress(d, key).oaths, crate::oaths::bit(replacement));
     assert_eq!(read_progress(d, key).oath_pick, 0);
 }
@@ -74,5 +99,7 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
 fn packing_preserves_all_sixteen_held_bits_and_the_offer() {
     use starknet::storage_access::StorePacking;
     let value = crate::progression::ArmyProgress { logistics: 5, oath_slots: 4, oaths: 65535, oath_pick: 4095 };
-    assert_eq!(crate::progression::ArmyProgressPacking::unpack(crate::progression::ArmyProgressPacking::pack(value)), value);
+    assert_eq!(
+        crate::progression::ArmyProgressPacking::unpack(crate::progression::ArmyProgressPacking::pack(value)), value,
+    );
 }

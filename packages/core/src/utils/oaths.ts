@@ -1,4 +1,7 @@
-import { nativeOathConstants as oathRules, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import {
+  nativeOathConstants as oathRules,
+  type NativeRows,
+} from "../../../../contracts/l3/world-native/schema/client.gen";
 
 export const oathColours = [
   { name: "Fight", mask: oathRules.RED, colour: "red" },
@@ -20,7 +23,12 @@ export function oathCards(pick: number): number[] {
   });
 }
 
-export function chooseOath(progress: NativeRows["ArmyProgress"], expected: number, oath: number | null, replace: number | null) {
+export function chooseOath(
+  progress: NativeRows["ArmyProgress"],
+  expected: number,
+  oath: number | null,
+  replace: number | null,
+) {
   if (expected === 0 || progress.oath_pick !== expected) throw new Error("Oath pick changed");
   let oaths = progress.oaths;
   const held = heldOaths(oaths);

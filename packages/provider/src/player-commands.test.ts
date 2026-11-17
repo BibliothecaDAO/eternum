@@ -41,6 +41,19 @@ function setup() {
   return { provider, calls: createSystemCalls({ provider }), submit, signer, wait, decoded };
 }
 describe("player command callers", () => {
+  it("encodes an Oath choice, replacement and decline through the signed command caller", async () => {
+    const { calls, signer, decoded } = setup();
+    await calls.choose_oath({ signer, explorerId: 90, expectedPick: 571, oath: 12, replace: 1 });
+    const chosen = decoded();
+    expect(chosen.explorer_id).toBe(90n);
+    expect(chosen.expected_pick).toBe(571n);
+    expect(chosen.oath.unwrap()).toBe(12n);
+    expect(chosen.replace.unwrap()).toBe(1n);
+    await calls.choose_oath({ signer, explorerId: 90, expectedPick: 571, oath: null, replace: null });
+    expect(decoded().oath.isNone()).toBe(true);
+    expect(decoded().replace.isNone()).toBe(true);
+  });
+
   it("encodes both home and cleared-camp reinforcement through the compiled command ABI", async () => {
     const { calls, signer, decoded } = setup();
     await calls.explorer_add({ signer, to_explorer_id: 90, amount: 1000000000, supply_post: 711 });

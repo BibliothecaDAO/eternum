@@ -2,8 +2,15 @@ import { describe, expect, it } from "vitest";
 import { nativeOathConstants as oaths, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { chooseOath, heldOaths, oathCards, oathColours } from "./oaths";
 
-const pick = (oaths.POWER - 1) + ((oaths.FOX - 1) << 4) + ((oaths.RAGE - 1) << 8);
-const progress: NativeRows["ArmyProgress"] = { game_id: 1, explorer_id: 1n, logistics: 0, oath_slots: 1, oaths: 0, oath_pick: pick };
+const pick = oaths.POWER - 1 + ((oaths.FOX - 1) << 4) + ((oaths.RAGE - 1) << 8);
+const progress: NativeRows["ArmyProgress"] = {
+  game_id: 1,
+  explorer_id: 1n,
+  logistics: 0,
+  oath_slots: 1,
+  oaths: 0,
+  oath_pick: pick,
+};
 
 describe("Oath picks", () => {
   it("partitions the sixteen Orders and reads the three actual cards", () => {

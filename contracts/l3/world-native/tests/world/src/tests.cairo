@@ -540,6 +540,8 @@ mod entity_ids;
 mod guilds;
 
 mod lane_interfaces;
+
+mod oaths;
 mod preset_projection;
 mod progression;
 mod race;
@@ -551,5 +553,3 @@ mod structure_rules;
 mod structure_storage;
 mod terrain;
 mod wire_ids;
-
-mod oaths;

@@ -41,7 +41,8 @@ pub fn reveal(
     if result == crate::discovery::Discovery::Shrine {
         crate::oaths::IOathsDispatcherTrait::offer_oaths(
             crate::oaths::IOathsLibraryDispatcher { class_hash: classes.relics.read() },
-            crate::troops::ExplorerKey { game_id: key.game_id, explorer_id }, seed,
+            crate::troops::ExplorerKey { game_id: key.game_id, explorer_id },
+            seed,
         );
     }
     result

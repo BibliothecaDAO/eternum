@@ -182,7 +182,10 @@ const researchConstants = Object.fromEntries(
 
 const oathSource = await readFile(new URL("src/oaths.cairo", root), "utf8");
 const oathConstants = Object.fromEntries(
-  [...oathSource.matchAll(/^pub const ([A-Z][A-Z0-9_]*): u(?:8|16) = ([0-9]+);$/gm)].map(([, name, value]) => [name, Number(value)]),
+  [...oathSource.matchAll(/^pub const ([A-Z][A-Z0-9_]*): u(?:8|16) = ([0-9]+);$/gm)].map(([, name, value]) => [
+    name,
+    Number(value),
+  ]),
 );
 
 const arrivalSource = await readFile(new URL("src/arrivals.cairo", root), "utf8");

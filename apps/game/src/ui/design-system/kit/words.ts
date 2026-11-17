@@ -990,7 +990,7 @@ export const TRANSFER_TROOPS = {
   waiting: "Waiting for both armies’ progress.",
   stale: "The armies changed: review the merge",
   merge: (army: string) => `Merge into ${army}`,
-  losesProgress: (army: string) => `${army} loses its Logistics and Oath slots.`,
+  losesProgress: (army: string) => `${army} loses its Logistics, Oath slots, held Oaths and waiting pick.`,
   /** A second press confirms the loss of stronger Logistics training. */
   confirmMerge: (army: string) => `Confirm merge into ${army}`,
   amount: (from: string, to: string) => `Troops ${from} sends to ${to}`,

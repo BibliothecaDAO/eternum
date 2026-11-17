@@ -50,7 +50,7 @@ pub fn trained(learned: u64, category: crate::troops::TroopType) -> ArmyProgress
     ArmyProgress {
         logistics: crate::research::tier(learned, crate::research::ROW_SUPPLY_YARD),
         oath_slots: crate::research::oath_slots(learned, category),
-        ..Default::default()
+        ..Default::default(),
     }
 }
 
@@ -66,7 +66,8 @@ pub impl ArmyProgressPacking of starknet::storage_access::StorePacking<ArmyProgr
         assert!(value.logistics <= 5, "invalid logistics");
         assert!(value.oath_slots >= 1 && value.oath_slots <= 4, "invalid oath slots");
         assert!(value.oath_pick < 4096, "invalid oath pick");
-        value.oaths.into() + Into::<u8, u64>::into(value.oath_slots) * 65536
+        value.oaths.into()
+            + Into::<u8, u64>::into(value.oath_slots) * 65536
             + Into::<u16, u64>::into(value.oath_pick) * 524288
             + Into::<u8, u64>::into(value.logistics) * 2147483648
     }

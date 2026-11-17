@@ -1012,38 +1012,56 @@ const RESEARCH_ACTION_STEPS = [
 function oathPickSteps(full) {
   return [
     { name: "enter-on-map", settleMs: 3000, verify: inScene("map") },
-    { name: "open-oath-pick", play: async ({ browser }) => {
-      const army = browser.read(buttonLabelled("^Army 1$"));
-      if (army) browser.tap(army.offset);
-      const details = await readUntil(() => browser.read(buttonLabelled("^Army 1: details$")), Boolean, SHEET_WAIT_MS);
-      if (details) browser.tap(details.offset);
-      const pick = await readUntil(() => browser.read(elementAt("[data-oath-pick]")), Boolean, SHEET_WAIT_MS);
-      return { pick, cards: browser.read("document.querySelectorAll('[data-oath-id]').length") };
-    }, verify: ({ played }) => played.pick && played.cards === 3 ? completed(played) : failed("Three Oath cards did not appear", played) },
-    clickToResultStep("choose-oath", "ChooseOath", async ({ browser }) => {
-      const chosen = browser.read("Number(document.querySelector('[data-oath-id]')?.dataset.oathId)");
-      const card = browser.read(elementAt("[data-oath-id]"));
-      if (!card) return { chosen, missing: true };
-      watchFor(browser, "oath-chosen", `(() => {
+    {
+      name: "open-oath-pick",
+      play: async ({ browser }) => {
+        const army = browser.read(buttonLabelled("^Army 1$"));
+        if (army) browser.tap(army.offset);
+        const details = await readUntil(
+          () => browser.read(buttonLabelled("^Army 1: details$")),
+          Boolean,
+          SHEET_WAIT_MS,
+        );
+        if (details) browser.tap(details.offset);
+        const pick = await readUntil(() => browser.read(elementAt("[data-oath-pick]")), Boolean, SHEET_WAIT_MS);
+        return { pick, cards: browser.read("document.querySelectorAll('[data-oath-id]').length") };
+      },
+      verify: ({ played }) =>
+        played.pick && played.cards === 3 ? completed(played) : failed("Three Oath cards did not appear", played),
+    },
+    clickToResultStep(
+      "choose-oath",
+      "ChooseOath",
+      async ({ browser }) => {
+        const chosen = browser.read("Number(document.querySelector('[data-oath-id]')?.dataset.oathId)");
+        const card = browser.read(elementAt("[data-oath-id]"));
+        if (!card) return { chosen, missing: true };
+        watchFor(
+          browser,
+          "oath-chosen",
+          `(() => {
         const result = (window.__labChain?.sent ?? []).filter(({command}) => command.kind === "ChooseOath").at(-1);
         const row = result?.answered.find(({model}) => model === "ArmyProgress")?.value;
         return row && Number(row.oaths) === (1 << (${chosen} - 1)) && Number(row.oath_pick) === 0 && !document.querySelector('[data-oath-pick]');
-      })()`);
-      browser.tap(card.offset);
-      if (full) {
-        const replace = await readUntil(() => browser.read(elementAt("[data-replace-oath]")), Boolean, SHEET_WAIT_MS);
-        if (!replace) return { chosen, missing: true };
-        browser.tap(replace.offset);
-      }
-      return { chosen, watching: true };
-    }, ({ played, actionLatency }) => {
-      const answer = (actionLatency.chainAnswers ?? []).filter(({kind}) => kind === "ChooseOath").at(-1);
-      if (!answer) return undefined;
-      const row = answer.answered.find(({model}) => model === "ArmyProgress")?.value;
-      if (Number(row?.oaths) !== (1 << (played.chosen - 1)) || Number(row?.oath_pick) !== 0)
-        return failed("The choice did not write exactly the selected Oath", { row });
-      return played.watching && { watch: "oath-chosen" };
-    }),
+      })()`,
+        );
+        browser.tap(card.offset);
+        if (full) {
+          const replace = await readUntil(() => browser.read(elementAt("[data-replace-oath]")), Boolean, SHEET_WAIT_MS);
+          if (!replace) return { chosen, missing: true };
+          browser.tap(replace.offset);
+        }
+        return { chosen, watching: true };
+      },
+      ({ played, actionLatency }) => {
+        const answer = (actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "ChooseOath").at(-1);
+        if (!answer) return undefined;
+        const row = answer.answered.find(({ model }) => model === "ArmyProgress")?.value;
+        if (Number(row?.oaths) !== 1 << (played.chosen - 1) || Number(row?.oath_pick) !== 0)
+          return failed("The choice did not write exactly the selected Oath", { row });
+        return played.watching && { watch: "oath-chosen" };
+      },
+    ),
   ];
 }
 

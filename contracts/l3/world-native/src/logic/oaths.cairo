@@ -4,13 +4,19 @@ pub fn offer(key: ExplorerKey, seed: u256) {
     let army = crate::logic::troops::explorer(key).expect('missing oath army');
     assert!(crate::logic::expeditions::depth_at(key.game_id, army.coord) < 3, "no oaths in the Deep");
     let mut progress = crate::logic::progression::require(key);
-    if progress.oath_pick != 0 { return; }
+    if progress.oath_pick != 0 {
+        return;
+    }
     progress.oath_pick = crate::oaths::draw(progress.oaths, seed);
     crate::logic::progression::write(key, progress);
 }
 
-pub fn choose(game_id: u32, actor: starknet::ContractAddress, command: crate::oaths::ChooseOath,
-    context: crate::commands::ActionContext) {
+pub fn choose(
+    game_id: u32,
+    actor: starknet::ContractAddress,
+    command: crate::oaths::ChooseOath,
+    context: crate::commands::ActionContext,
+) {
     let execution = crate::commands::execution_context(game_id, context);
     crate::game::assert_playing(execution.game.unbox(), context.timestamp);
     assert!(execution.rules.unbox().day_unit_seconds != 0, "oaths require a day game");
