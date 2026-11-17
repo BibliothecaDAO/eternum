@@ -297,4 +297,6 @@ const LAB_PROGRESS = {
   game_id: 1,
   logistics: 1,
   oath_slots: 1,
+  oaths: 0,
+  oath_pick: 0,
 };

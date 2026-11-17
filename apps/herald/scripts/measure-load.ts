@@ -173,7 +173,7 @@ const frontierArmy = (game: number, player: number, army: number, x: number) => 
       "troops.count": "1000",
       "troops.stamina": ["1", String(army)],
     }),
-    row("ArmyProgress", [game, entity], { logistics: "1", oath_slots: "1" }),
+    row("ArmyProgress", [game, entity], { logistics: "1", oath_slots: "1", oaths: "0", oath_pick: "0" }),
     row("ArmySlot", [game, realm(game, player), seasonDay(expedition(), Math.floor(now / 1000))!, army], {
       explorer_id: String(entity),
       "stamina.amount": String(preset.definition.rules.troop_stamina_config.stamina_initial),

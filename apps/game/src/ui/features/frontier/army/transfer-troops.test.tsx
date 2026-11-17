@@ -511,6 +511,8 @@ it("asks again after progress changes while a loss confirmation is open", async 
           explorer_id: "201",
           logistics: 3,
           oath_slots: 1,
+          oaths: 0,
+          oath_pick: 0,
         },
       },
     ] as never),
@@ -539,6 +541,8 @@ it("refuses facts arriving just before the final confirmation click", async () =
           explorer_id: "202",
           logistics: 1,
           oath_slots: 1,
+          oaths: 0,
+          oath_pick: 0,
         },
       },
     ] as never);

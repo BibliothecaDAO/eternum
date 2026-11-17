@@ -189,6 +189,8 @@ export const armyProgress = (key: string, explorerId: number, logistics = 1): La
     explorer_id: String(explorerId),
     logistics,
     oath_slots: 1,
+    oaths: 0,
+    oath_pick: 0,
   },
 });
 

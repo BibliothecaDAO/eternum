@@ -32,6 +32,17 @@ pub mod RelicsLogic {
         }
     }
 
+    #[abi(embed_v0)]
+    impl Oaths of crate::oaths::IOaths<ContractState> {
+        fn choose_oath(ref self: ContractState, game_id: u32, actor: starknet::ContractAddress,
+            command: crate::oaths::ChooseOath, context: crate::commands::ActionContext) {
+            crate::logic::oaths::choose(game_id, actor, command, context);
+        }
+        fn offer_oaths(ref self: ContractState, key: crate::troops::ExplorerKey, seed: u256) {
+            crate::logic::oaths::offer(key, seed);
+        }
+    }
+
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {

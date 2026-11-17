@@ -703,6 +703,15 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
+  public async choose_oath(props: SystemProps.SystemSigner & {
+    explorerId: number; expectedPick: number; oath: number | null; replace: number | null;
+  }) {
+    return this.submitCommand(props.signer, {
+      kind: "ChooseOath",
+      value: { explorer_id: props.explorerId, expected_pick: props.expectedPick, oath: props.oath, replace: props.replace },
+    }, TransactionType.CHOOSE_OATH);
+  }
+
   public async claim_daily_quest(props: SystemProps.SystemSigner & { home: number; day: number }) {
     return this.submitCommand(
       props.signer,

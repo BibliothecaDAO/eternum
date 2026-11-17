@@ -1,3 +1,7 @@
+import { heldOaths } from "@bibliothecadao/eternum";
+import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
+import { oathName } from "./oath-names";
+import { ArmyOathPick } from "./oath-pick";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { HudCost } from "@/ui/design-system/kit/hud-elements";
 import { costLine } from "@/ui/design-system/kit/price-faces";
@@ -23,12 +27,15 @@ export function TroopOathSlots({
       ? learned && troopOathSlots(learned.learned, category)
       : store.get("ArmyProgress", { game_id, explorer_id: explorerId })?.oath_slots;
   if (count === undefined) return null;
+  const progress = explorerId === undefined ? undefined : store.get("ArmyProgress", { game_id, explorer_id: explorerId });
+  const held = heldOaths(progress?.oaths ?? 0);
   return (
     <div data-oath-slots={count} className="flex flex-col gap-1">
       <span className="text-hud-label text-hud-ink">{RESEARCH_TREE.oathSlots(count)}</span>
       <div className="grid grid-cols-4 gap-1">
         {Array.from({ length: research.OATH_SLOTS_MAX }, (_, index) => {
           const open = index < count;
+          const oath = held[index];
           const price = open
             ? undefined
             : store.get("ResearchPrice", { game_id, row: oathResearchRow[category], tier: index });
@@ -38,7 +45,7 @@ export function TroopOathSlots({
               aria-label={`${RESEARCH_TREE.oathSlots(index + 1)} · ${open ? RESEARCH_TREE.oathOpen : RESEARCH_TREE.oathLocked}`}
               className="flex flex-col gap-1 rounded border border-hud-line p-1 text-hud-label text-hud-muted"
             >
-              {open ? RESEARCH_TREE.oathOpen : RESEARCH_TREE.oathLocked}
+              {oath ? <><OrderEmblem order={oath} /><span>{oathName(oath)}</span></> : open ? RESEARCH_TREE.oathOpen : RESEARCH_TREE.oathLocked}
               {price && (
                 <HudCost
                   line={costLine([
@@ -51,6 +58,7 @@ export function TroopOathSlots({
           );
         })}
       </div>
+      {progress && progress.oath_pick !== 0 && explorerId !== undefined && <ArmyOathPick key={progress.oath_pick} explorerId={explorerId} progress={progress} />}
       {count < research.OATH_SLOTS_MAX && (
         <span className="text-hud-label text-hud-muted">{RESEARCH_TREE.oathResearch}</span>
       )}

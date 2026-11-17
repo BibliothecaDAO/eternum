@@ -1,5 +1,6 @@
 // Live routes define dispatch; permanent wire IDs live in wire-ids.json. Payload types come from production ABIs.
 export const commandRoutes = [
+  { name: "ChooseOath", logic: "relics", entrypoint: "choose_oath" },
   { name: "ClaimDailyQuest", logic: "bridge", entrypoint: "claim_daily_quest" },
   {
     name: "CreateExplorer",

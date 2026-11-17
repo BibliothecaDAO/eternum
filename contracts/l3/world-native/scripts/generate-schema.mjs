@@ -180,6 +180,11 @@ const researchConstants = Object.fromEntries(
   ]),
 );
 
+const oathSource = await readFile(new URL("src/oaths.cairo", root), "utf8");
+const oathConstants = Object.fromEntries(
+  [...oathSource.matchAll(/^pub const ([A-Z][A-Z0-9_]*): u(?:8|16) = ([0-9]+);$/gm)].map(([, name, value]) => [name, Number(value)]),
+);
+
 const arrivalSource = await readFile(new URL("src/arrivals.cairo", root), "utf8");
 const slotsPerDay = arrivalSource.match(/^pub const SLOTS_PER_DAY: u8 = ([0-9]+);$/m)?.[1];
 if (!slotsPerDay) throw new Error("Missing Cairo arrival slot count");
@@ -216,6 +221,7 @@ const schema = {
   baneConstants,
   raceConstants,
   researchConstants,
+  oathConstants,
   tileOccupierConstants,
   tilePackingConstants,
   logicClasses,
@@ -468,6 +474,7 @@ const declarations = [
   `export const nativeBaneConstants = ${JSON.stringify(baneConstants, null, 2)} as const;`,
   `export const nativeRaceConstants = ${JSON.stringify(raceConstants, null, 2)} as const;`,
   `export const nativeArrivalConstants = ${JSON.stringify(arrivalConstants, null, 2)} as const;`,
+  `export const nativeOathConstants = ${JSON.stringify(oathConstants, null, 2)} as const;`,
   `export const nativeResearchConstants = ${JSON.stringify(researchConstants, null, 2)} as const;`,
   typeScriptEnum(
     "NativeStructureCategory",

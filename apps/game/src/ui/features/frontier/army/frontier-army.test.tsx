@@ -17,6 +17,8 @@ const game = vi.hoisted(() => ({
     explorer_id: 12n,
     logistics: 0,
     oath_slots: 1,
+    oaths: 0,
+    oath_pick: 0,
   },
   rules: {
     common_xp: 75,

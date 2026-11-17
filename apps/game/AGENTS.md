@@ -599,3 +599,8 @@ Deploy shows the current troop's capacity; an army's panel keeps its capacity fr
 `/lab/game?scenario=oath-slots` and `build.sh playtest-oath-slots` buy the second Knight slot through Research, check
 the exact price and deploy an army with two slots on desktop and phone. These are lab proofs; native tests cover
 immutable army capacity.
+
+An army with a waiting Oath shows three cards in its detail panel. Choose a card; with full slots, choose the held
+Oath it replaces, or Keep my Oaths to decline. `build.sh playtest-oath-pick` plays `/lab/game?scenario=oath-pick`
+and `oath-replace` on desktop and phone, recording the signed choice and resulting held Oath. Native tests cover
+Shrine reveals and persistence; these browser proofs use recorded offers.

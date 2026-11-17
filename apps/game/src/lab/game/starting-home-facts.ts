@@ -122,6 +122,8 @@ function startingArmyRows(
         explorer_id: id,
         logistics: 0,
         oath_slots: 1,
+        oaths: 0,
+        oath_pick: 0,
       }),
     },
     {

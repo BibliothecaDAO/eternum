@@ -7,6 +7,8 @@ const common: NativeRows["ArmyProgress"] = {
   explorer_id: 1n,
   logistics: 1,
   oath_slots: 1,
+  oaths: 0,
+  oath_pick: 0,
 };
 const base = {
   sourceCount: 3,

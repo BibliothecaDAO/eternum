@@ -1,3 +1,4 @@
+import { oathPickScenario } from "./oath-pick-scenario";
 import { oathSlotsScenario } from "./oath-slots-scenario";
 import { battleTargetScenario, deepBattleTargetScenario } from "./battle-target-scenario";
 import { townScenario } from "./town-scenario";
@@ -68,6 +69,8 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   scouts: scoutsScenario,
   town: townScenario,
   "oath-slots": oathSlotsScenario,
+  "oath-pick": () => oathPickScenario(),
+  "oath-replace": () => oathPickScenario(true),
   "battle-target": battleTargetScenario,
   "high-ground": highGroundScenario,
   "day-end": dayEndScenario,

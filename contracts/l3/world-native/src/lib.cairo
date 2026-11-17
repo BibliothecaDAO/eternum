@@ -43,6 +43,7 @@ pub mod ownership;
 pub mod presets;
 pub mod production;
 pub mod progression;
+pub mod oaths;
 pub mod quests;
 pub mod race;
 pub mod random;

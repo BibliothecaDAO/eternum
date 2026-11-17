@@ -42,6 +42,7 @@ pub mod prizes;
 pub mod production;
 pub mod production_domain;
 pub mod progression;
+pub mod oaths;
 pub mod quest_progress;
 pub mod quests;
 pub mod race;

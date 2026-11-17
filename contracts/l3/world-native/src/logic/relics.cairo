@@ -225,6 +225,13 @@ pub mod RelicState {
                     .category == crate::taxonomy::RUIN_CATEGORY {
                 crate::logic::army_relics::award(explorer_key, site, relic_slot);
             }
+            if context.rules.unbox().day_unit_seconds != 0 {
+                let captured = crate::logic::expeditions::expedition_site(site).expect('missing expedition site');
+                let depth = crate::logic::expeditions::depth_at(site.game_id, explorer.coord);
+                if depth < 3 && crate::expeditions::is_band(captured, crate::logic::expeditions::depth_rules(site.game_id, depth)) {
+                    crate::logic::oaths::offer(explorer_key, context.raw_root);
+                }
+            }
             self.refund_capture_stamina(explorer_key, explorer, context);
             if context.rules.unbox().day_unit_seconds != 0 {
                 crate::expeditions::ISiteRewardsDispatcherTrait::pay_expedition_site(

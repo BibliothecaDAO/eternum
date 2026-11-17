@@ -26,6 +26,8 @@ export const transferArmies = (pickedLogistics = 1, tappedLogistics = 0) => {
           explorer_id: id,
           logistics: slot === 0 ? pickedLogistics : tappedLogistics,
           oath_slots: 1,
+          oaths: 0,
+          oath_pick: 0,
         },
       },
       {

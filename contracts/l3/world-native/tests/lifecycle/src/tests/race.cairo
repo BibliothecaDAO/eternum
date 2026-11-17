@@ -735,6 +735,7 @@ fn spoils_doubles_numeric_clears_and_keeps_ruin_relics() {
             || {
                 let receipt = crate::logic::expeditions::expedition_site(site_key).unwrap().clear.unwrap();
                 let band = crate::expeditions::is_band(site, crate::logic::expeditions::depth_rules(game_id, 0));
+                assert_eq!(crate::logic::progression::require(key).oath_pick != 0, band);
                 if category == crate::taxonomy::RUIN_CATEGORY {
                     assert_eq!(receipt.reward, None);
                     assert!(discovered_relic.is_some());

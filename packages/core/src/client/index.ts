@@ -10,6 +10,7 @@ export * from "./story-participants";
 export type { NativeRows, NativeKeys, NativeModelName } from "../../../../contracts/l3/world-native/schema/client.gen";
 export {
   nativeResearchConstants,
+  nativeOathConstants,
   nativeRuleConstants,
   nativeQuestConstants,
   nativeBaneConstants,

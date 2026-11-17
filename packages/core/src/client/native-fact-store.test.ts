@@ -560,6 +560,8 @@ describe("declared fact absence", () => {
         explorer_id: army.explorer_id,
         logistics: 3,
         oath_slots: 1,
+        oaths: 0,
+        oath_pick: 0,
       }),
     ]);
     store.applyFacts([

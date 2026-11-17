@@ -249,5 +249,7 @@ const deploymentProgress = (
     explorer_id: explorerId,
     logistics: researchTier(learned, research.ROW_SUPPLY_YARD),
     oath_slots: troopOathSlots(learned, category),
+    oaths: 0,
+    oath_pick: 0,
   };
 };

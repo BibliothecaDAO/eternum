@@ -364,6 +364,11 @@
       "id": 72,
       "name": "ClaimDailyQuest",
       "retired": false
+    },
+    {
+      "id": 73,
+      "name": "ChooseOath",
+      "retired": false
     }
   ],
   "stories": [
