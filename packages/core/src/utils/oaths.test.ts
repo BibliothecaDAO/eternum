@@ -1,3 +1,4 @@
+import { orders } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import { nativeOathConstants as oaths, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { chooseOath, heldOaths, oathCards, oathColours } from "./oaths";
@@ -13,6 +14,13 @@ const progress: NativeRows["ArmyProgress"] = {
 };
 
 describe("Oath picks", () => {
+  it("uses the existing Order ids for every named Oath", () => {
+    const names = Object.entries(oaths).filter(([name]) => !["RED", "BLUE", "GOLD"].includes(name));
+    expect(names).toHaveLength(orders.length - 1);
+    for (const [name, id] of names) {
+      expect(orders.find(({ orderId }) => orderId === id)?.orderName.toUpperCase()).toBe(name);
+    }
+  });
   it("partitions the sixteen Orders and reads the three actual cards", () => {
     expect(oathColours.map(({ mask }) => heldOaths(mask).length)).toEqual([6, 5, 5]);
     expect(oathColours.reduce((mask, colour) => mask | colour.mask, 0)).toBe(65535);

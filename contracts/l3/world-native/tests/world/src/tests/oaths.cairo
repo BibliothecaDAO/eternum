@@ -1,4 +1,3 @@
-use starknet::storage_access::StorePacking;
 use crate::oaths::{ChooseOath, card, count, draw, held};
 use super::progression::read_progress;
 

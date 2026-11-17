@@ -11,6 +11,9 @@ pub const ROOTS: u64 = 32;
 // refusals.
 pub fn typed_commands() -> Array<Command> {
     array![
+        Command::ChooseOath(
+            crate::oaths::ChooseOath { explorer_id: 999999, expected_pick: 571, oath: None, replace: None },
+        ),
         Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: 999999, day: 0 }),
         Command::CreateExplorer(
             crate::commands::CreateExplorer {

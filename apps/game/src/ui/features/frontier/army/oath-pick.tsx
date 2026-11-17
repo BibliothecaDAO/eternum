@@ -43,10 +43,19 @@ export function ArmyOathPick({ explorerId, progress }: { explorerId: number; pro
       {picked === null ? (
         <div className="grid grid-cols-3 gap-1">
           {oathCards(progress.oath_pick).map((id, index) => (
-            <div key={id} data-oath-id={id} className={`min-w-0 rounded border-t-4 ${colourClass[oathColours[index]!.colour]}`}>
-              <HudCard size="sm" title={oathName(id)} picture={<OrderEmblem order={id} size={40} />}
+            <div
+              key={id}
+              data-oath-id={id}
+              className={`min-w-0 rounded border-t-4 ${colourClass[oathColours[index]!.colour]}`}
+            >
+              <HudCard
+                size="sm"
+                title={oathName(id)}
+                picture={<OrderEmblem order={id} size={40} />}
                 detail={<span className={colourClass[oathColours[index]!.colour]}>{oathColours[index]!.name}</span>}
-                disabled={!allowed || sending} onClick={() => (full ? setPicked(id) : void choose(id))} />
+                disabled={!allowed || sending}
+                onClick={() => (full ? setPicked(id) : void choose(id))}
+              />
             </div>
           ))}
         </div>
