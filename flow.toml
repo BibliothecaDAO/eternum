@@ -94,7 +94,7 @@ source = "contracts/l3/check-native-plan.sh"
 kinds = "gate-prelude gate-vrf gate-world gate-drift gate-events test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world"
 
 [land]
-kinds = "sizes gate-prelude gate-vrf gate-world gate-events gate-drift test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world test-native-plan workflow-parity playtest-supply-post playtest-scouts playtest-town playtest-oath-slots playtest-oath-pick playtest-battle-target playtest-deep-battle-target ci-static-knip ci-client-test-client ci-herald-history-and-stream ci-services-workers ci-portal-portal ci-native-service-class-sizes-game_ledger ci-native-service-class-sizes-realms_vrf_verifier ci-native-player-account ci-native-native-deployer ci-native-native-stamping ci-native-native-provider ci-runtime-offline-tests-runner ci-runtime-offline-tests-harness ci-runtime-offline-tests-sandbox-proxy ci-amm-test-ammv2 ci-collectibles-test-collectibles ci-mmr-test-mmr ci-season_pass-test-season-pass ci-contract_scripts-runtime-tests ci-docs-docs"
+kinds = "sizes gate-prelude gate-vrf gate-world gate-events gate-drift test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world test-native-plan workflow-parity playtest-supply-post playtest-scouts playtest-town playtest-oath-slots playtest-oath-pick playtest-oath-vitriol playtest-battle-target playtest-deep-battle-target ci-static-knip ci-client-test-client ci-herald-history-and-stream ci-services-workers ci-portal-portal ci-native-service-class-sizes-game_ledger ci-native-service-class-sizes-realms_vrf_verifier ci-native-player-account ci-native-native-deployer ci-native-native-stamping ci-native-native-provider ci-runtime-offline-tests-runner ci-runtime-offline-tests-harness ci-runtime-offline-tests-sandbox-proxy ci-amm-test-ammv2 ci-collectibles-test-collectibles ci-mmr-test-mmr ci-season_pass-test-season-pass ci-contract_scripts-runtime-tests ci-docs-docs"
 forbid = "co-authored-by|claude|anthropic|codex|openai|generated with|session"
 
 [kind.test-client-retirement]
@@ -415,4 +415,9 @@ estimate_gb = 6
 [kind.playtest-oath-pick]
 cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && for view in 1920x1080 390x844; do for scenario in lab-actions-oath-pick lab-actions-oath-replace; do pnpm --dir apps/game playtest --port 4198 --steps "$scenario" --iterations 3 --renderer-modes webgpu-force-webgl --viewport "$view" --out "$FLOW_TMP/playtest/$view/$scenario" || exit; done; done'
 paths = "apps/game/src/ui/features/frontier/army/ apps/game/src/lab/game/oath-pick-scenario.ts packages/core/src/utils/oaths.ts"
+estimate_gb = 4
+
+[kind.playtest-oath-vitriol]
+cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && for view in 1920x1080 390x844; do for scenario in lab-oath-vitriol lab-oath-decline; do pnpm --dir apps/game playtest --port 4199 --steps "$scenario" --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$view" --out "$FLOW_TMP/playtest/$view/$scenario" || exit; done; done'
+paths = "apps/game/src/ui/features/frontier/army/ apps/game/src/ui/features/frontier/deep/ apps/game/src/lab/game/oath-pick-scenario.ts packages/core/src/utils/deep.ts packages/core/src/utils/deep-army-life.ts packages/core/src/utils/oaths.ts"
 estimate_gb = 4

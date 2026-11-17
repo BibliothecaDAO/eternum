@@ -1,3 +1,4 @@
+import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import {
   nativeOathConstants as oathRules,
   type NativeRows,
@@ -42,4 +43,10 @@ export function chooseOath(
   } else if (replace !== null) throw new Error("Decline cannot replace");
   if (heldOaths(oaths).length > progress.oath_slots) throw new Error("Too many Oaths");
   return { ...progress, oaths, oath_pick: 0 };
+}
+
+export function oathDeepLossPerTick(oaths: number, base: bigint): bigint {
+  return (oaths & (1 << (oathRules.VITRIOL - 1))) !== 0
+    ? BigInt(oathRules.VITRIOL_LOSS_PER_TICK) * BigInt(RESOURCE_PRECISION)
+    : base;
 }

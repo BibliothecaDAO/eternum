@@ -10,7 +10,7 @@ import { HudButton, HudCard } from "@/ui/design-system/kit/hud-elements";
 import { Icon } from "@/ui/design-system/icon";
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
 import { toast } from "@/ui/features/event-feed/notify";
-import { oathName } from "./oath-names";
+import { oathEffectDescription, oathName } from "./oath-names";
 
 const colourClass = {
   red: "border-hud-bad text-hud-bad",
@@ -53,7 +53,7 @@ export function ArmyOathPick({ explorerId, progress }: { explorerId: number; pro
                 size="sm"
                 title={oathName(id)}
                 picture={<Icon name={orderMeaning(id)} size={40} />}
-                detail={<span className={colourClass[oathColours[index]!.colour]}>{oathColours[index]!.name}</span>}
+                detail={<span className={colourClass[oathColours[index]!.colour]}>{oathEffectDescription(id) ?? oathColours[index]!.name}</span>}
                 disabled={!allowed || sending}
                 onClick={() => (full ? setPicked(id) : choose(id))}
               />

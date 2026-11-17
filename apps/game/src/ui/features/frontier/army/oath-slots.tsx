@@ -1,7 +1,7 @@
 import { heldOaths } from "@bibliothecadao/eternum";
 import { Icon } from "@/ui/design-system/icon";
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
-import { oathName } from "./oath-names";
+import { oathEffectDescription, oathName } from "./oath-names";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { HudCost } from "@/ui/design-system/kit/hud-elements";
 import { costLine } from "@/ui/design-system/kit/price-faces";
@@ -50,6 +50,7 @@ export function TroopOathSlots({
                 <>
                   <Icon name={orderMeaning(oath)} />
                   <span>{oathName(oath)}</span>
+                  {oathEffectDescription(oath) && <span>{oathEffectDescription(oath)}</span>}
                 </>
               ) : open ? (
                 RESEARCH_TREE.oathOpen

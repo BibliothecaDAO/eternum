@@ -179,3 +179,17 @@ fn explore(d: super::Deployment, key: crate::troops::ExplorerKey, root: u256, ti
         }
     }
 }
+
+#[test]
+fn deep_loss_matches_the_client_vectors_with_and_without_vitriol() {
+    use snforge_std::fs::{FileTrait, read_txt};
+    let data = read_txt(@FileTrait::new("../fixtures/oath-deep-loss.txt"));
+    let mut fields = data.span();
+    while !fields.is_empty() {
+        let (oaths, base, troops, ticks, expected_loss, expected_troops): (u16, u128, u128, u64, u128, u128) =
+            Serde::deserialize(ref fields).unwrap();
+        let loss = crate::oaths::deep_loss_per_tick(oaths, base);
+        assert_eq!(loss, expected_loss);
+        assert_eq!(crate::deep::troops_after_ticks(troops, 10, 10 + ticks, loss), expected_troops);
+    }
+}

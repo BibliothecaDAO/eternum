@@ -15,7 +15,7 @@ const progress: NativeRows["ArmyProgress"] = {
 
 describe("Oath picks", () => {
   it("uses the existing Order ids for every named Oath", () => {
-    const names = Object.entries(oaths).filter(([name]) => !["RED", "BLUE", "GOLD"].includes(name));
+    const names = Object.entries(oaths).filter(([, value]) => value >= 1 && value <= 16);
     expect(names).toHaveLength(orders.length - 1);
     for (const [name, id] of names) {
       expect(orders.find(({ orderId }) => orderId === id)?.orderName.toUpperCase()).toBe(name);
@@ -39,4 +39,16 @@ describe("Oath picks", () => {
     expect(() => chooseOath(progress, pick, oaths.GIANTS, null)).toThrow("not offered");
     expect(() => chooseOath(progress, pick, oaths.FOX, oaths.POWER)).toThrow("Empty");
   });
+});
+
+it("matches the native Deep loss vectors for each held set and tick boundary", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { oathDeepLossPerTick } = await import("./oaths");
+  const fields = readFileSync(new URL("../../../../contracts/l3/world-native/tests/fixtures/oath-deep-loss.txt", import.meta.url), "utf8").trim().split(/\s+/).map(BigInt);
+  expect(fields.length).toBe(48);
+  while (fields.length) {
+    const [held, base, , , expectedLoss] = fields.splice(0, 6) as [bigint, bigint, bigint, bigint, bigint, bigint];
+    const loss = oathDeepLossPerTick(Number(held), base);
+    expect(loss).toBe(expectedLoss);
+  }
 });

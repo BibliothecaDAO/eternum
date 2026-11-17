@@ -8,9 +8,8 @@ import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { spireScenario } from "./spire-scenario";
 import { wire, type LabCommand, type LabFact, type LabScenario } from "./lab-chain";
 
-export function oathPickScenario(full = false): LabScenario {
-  const game = spireScenario();
-  prepareOathArmy(game.store, full);
+export function oathPickScenario(full = false, game = spireScenario(), fightOath: number = oaths.POWER): LabScenario {
+  prepareOathArmy(game.store, full, fightOath);
   return {
     ...game,
     answer: (command, chain, now) =>
@@ -18,13 +17,12 @@ export function oathPickScenario(full = false): LabScenario {
   };
 }
 
-function prepareOathArmy(store: NativeFactStore, full: boolean) {
+function prepareOathArmy(store: NativeFactStore, full: boolean, fightOath: number) {
   const key = { game_id: 1, explorer_id: SPIRE_ARMY };
   const progress = store.require("ArmyProgress", key);
   const army = store.require("ExplorerTroops", key);
   const day = store.require("ArmyDay", key);
   const rules = store.require("SliceRules", { game_id: key.game_id });
-  if (!("Inline" in army.troops.stamina)) throw new Error("Spire fixture no longer has inline stamina");
   const slot = { game_id: key.game_id, structure_id: army.owner, epoch: BigInt(day.day), slot: 0 };
   store.applyFacts([
     ...seasonOneResearchPrices(store),
@@ -36,7 +34,7 @@ function prepareOathArmy(store: NativeFactStore, full: boolean) {
     {
       model: "ArmySlot",
       key: store.wireKeyOf("ArmySlot", slot) ?? `${slot.game_id}:${slot.structure_id}:${slot.epoch}:${slot.slot}`,
-      value: wire({ ...slot, explorer_id: army.explorer_id, stamina: army.troops.stamina.Inline }),
+      value: wire({ ...slot, explorer_id: army.explorer_id, stamina: "Inline" in army.troops.stamina ? army.troops.stamina.Inline : store.require("ArmySlot", slot).stamina }),
     },
     {
       model: "SliceRules",
@@ -50,7 +48,7 @@ function prepareOathArmy(store: NativeFactStore, full: boolean) {
         ...progress,
         oath_slots: 1,
         oaths: full ? 1 << (oaths.GIANTS - 1) : 0,
-        oath_pick: oaths.POWER - 1 + ((oaths.FOX - 1) << 4) + ((oaths.RAGE - 1) << 8),
+        oath_pick: fightOath - 1 + ((oaths.FOX - 1) << 4) + ((oaths.RAGE - 1) << 8),
       }),
     },
   ]);

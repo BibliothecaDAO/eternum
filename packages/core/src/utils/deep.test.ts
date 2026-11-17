@@ -24,6 +24,7 @@ const fixture = () => {
     DeepRules: [{ game_id: 7, loss_per_tick: precision, beast_count: 10n * precision }],
     DeepArmy: [{ game_id: 7, explorer_id: 11n, last_tick: 6n }],
     ArmyDay: [{ game_id: 7, explorer_id: 11n, day: 0n }],
+    ArmyProgress: [{ game_id: 7, explorer_id: 11n, logistics: 0, oath_slots: 1, oaths: 0, oath_pick: 0 }],
     ExplorerTroops: [{ game_id: 7, explorer_id: 11n, owner: 1n, troops: { count: 10n * precision } }],
     ResourceWeight: [{ game_id: 7, entity_id: 11n, weight: 0n, capacity: 100n * precision }],
     TileOccupancy: [{ game_id: 7, entity_id: 11n, col: 512, row: 3584, alt: false }],
@@ -123,6 +124,7 @@ describe("the shared Deep", () => {
     rows.ExplorerTroops!.push({ game_id: 7, explorer_id: 12n, owner: 2n, troops: { count: 20n * precision } });
     rows.DeepArmy!.push({ game_id: 7, explorer_id: 12n, last_tick: 6n });
     rows.ArmyDay!.push({ game_id: 7, explorer_id: 12n, day: 0n });
+    rows.ArmyProgress!.push({ ...rows.ArmyProgress![0], explorer_id: 12n });
     rows.DeepGuard = [
       { game_id: 7, explorer_id: 11n, site_id: 20n, slot: 0 },
       { game_id: 7, explorer_id: 12n, site_id: 20n, slot: 3 },
@@ -140,4 +142,30 @@ describe("the shared Deep", () => {
     rows.DeepSite.pop();
     expect(() => readDeepSites(store, 420, 7)).toThrow("Incomplete Deep site facts");
   });
+});
+
+it("projects Vitriol's exact native troop vectors and refuses a missing progress record", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { deepArmyLife } = await import("./deep-army-life");
+  const fields = readFileSync(new URL("../../../../contracts/l3/world-native/tests/fixtures/oath-deep-loss.txt", import.meta.url), "utf8").trim().split(/\s+/).map(BigInt);
+  expect(fields.length).toBe(48);
+  while (fields.length) {
+    const [held, base, troops, ticks, expectedLoss, expectedTroops] = fields.splice(0, 6) as [bigint, bigint, bigint, bigint, bigint, bigint];
+    const { rows, store } = fixture();
+    rows.ArmyProgress![0]!.oaths = Number(held);
+    rows.DeepRules![0]!.loss_per_tick = base;
+    rows.ExplorerTroops![0]!.troops = { count: troops };
+    const source = store.require("ExplorerTroops", { game_id: 7, explorer_id: 11n });
+    const now = 360 + Number(ticks) * 60;
+    const projected = currentArmy(store, source, now);
+    expect(projected.troops.count).toBe(expectedTroops);
+    expect(deepArmyLife(store, projected, now)).toMatchObject({
+      lossPerTick: expectedLoss,
+      ticksToEmpty: Number((expectedTroops + expectedLoss - 1n) / expectedLoss),
+    });
+    expect(currentArmy(store, projected, now).troops.count).toBe(expectedTroops);
+    expect(source.troops.count).toBe(troops);
+    rows.ArmyProgress = [];
+    expect(() => currentArmy(store, source, now)).toThrow("army progress");
+  }
 });

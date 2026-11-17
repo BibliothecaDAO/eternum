@@ -193,7 +193,7 @@ function guardView(store: NativeFactStore, game_id: number, site: Site, selected
     next: safeInteger(next.army.explorer_id),
     slots: site.guards.map(({ slot, army }) => {
       const home = store.require("Structure", { game_id, entity_id: army.owner });
-      const life = deepArmyLife(store, game_id, army.troops.count, now);
+      const life = deepArmyLife(store, army, now);
       return {
         slot,
         armyId: safeInteger(army.explorer_id),

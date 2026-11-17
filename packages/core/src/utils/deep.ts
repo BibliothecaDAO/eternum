@@ -1,3 +1,4 @@
+import { oathDeepLossPerTick } from "./oaths";
 import { deepCenter, isDeepTile } from "./deep-geometry";
 import { dayAtIndex } from "./days";
 import { readExpeditionRules } from "./expeditions";
@@ -58,7 +59,7 @@ export function currentArmy(
   const now = timestamp ?? getBlockTimestamp().currentDefaultTick;
   const tick = BigInt(Math.floor(Math.min(now, end) / interval));
   const elapsed = tick > deep.last_tick ? tick - deep.last_tick : 0n;
-  const loss = elapsed * rules.loss_per_tick;
+  const loss = elapsed * armyDeepLossPerTick(store, key);
   const count = loss >= source.troops.count ? 0n : source.troops.count - loss;
   return { ...source, troops: { ...source.troops, count } };
 }
@@ -80,4 +81,14 @@ export function currentResourceWeight(
     BigInt(rules.capacity_config.troop_capacity);
   if (loss > source.capacity) throw new Error("Deep loss exceeds troop capacity");
   return { ...source, capacity: source.capacity - loss };
+}
+
+export function armyDeepLossPerTick(
+  store: Pick<NativeFactStore, "get">,
+  key: Pick<NativeRows["ArmyProgress"], "game_id" | "explorer_id">,
+): bigint {
+  const rules = store.get("DeepRules", { game_id: key.game_id });
+  const progress = store.get("ArmyProgress", key);
+  if (!rules || !progress) throw new Error("Deep attrition requires its rules and army progress");
+  return oathDeepLossPerTick(progress.oaths, rules.loss_per_tick);
 }

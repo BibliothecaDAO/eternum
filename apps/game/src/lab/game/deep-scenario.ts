@@ -65,6 +65,7 @@ export const deepScenario = (): LabScenario => {
       key: "0xded4",
       value: wire({ game_id: 1, explorer_id: allyArmy, last_target: 0 }),
     },
+    { model: "ArmyProgress", key: "0xded5", value: wire({ ...store.require("ArmyProgress", { game_id: 1, explorer_id: SPIRE_ARMY }), explorer_id: allyArmy }) },
     { model: "ArmyDay", key: "0xdee5", value: { game_id: 1, explorer_id: String(allyArmy), day: "0" } },
     { model: "DeepArmy", key: "0xdee6", value: { game_id: 1, explorer_id: String(allyArmy), last_tick: String(tick) } },
     { model: "DeepArmy", key: "0xdee7", value: { game_id: 1, explorer_id: SPIRE_ARMY, last_tick: String(tick) } },

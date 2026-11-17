@@ -15,6 +15,7 @@ const calendar = {
 const tick = 600;
 const rows: Record<string, unknown> = {
   DeepRules: { loss_per_tick: 20n },
+  ArmyProgress: { oaths: 0 },
   SliceRules: { day_unit_seconds: 14_400, tick_config: { armies_tick_in_seconds: tick } },
   GameRegistry: {
     start_main_at: start,
@@ -33,13 +34,13 @@ it("holds for the troops' ticks when they run out before the day, else to the da
   const day = dayOf(calendar, start)!;
   const now = day.start;
   const dayTicks = (day.end - day.start) / tick;
-  const short = deepArmyLife(store, 1, 100n, now);
+  const short = deepArmyLife(store, army(1, 100n), now);
   expect(short).toMatchObject({ lossPerTick: 20n, ticksToEmpty: 5, ticksLeft: 5, ticksInDay: dayTicks });
   expect(short.secondsLeft).toBe(5 * tick);
-  const long = deepArmyLife(store, 1, 20n * BigInt(dayTicks + 10), now);
+  const long = deepArmyLife(store, army(1, 20n * BigInt(dayTicks + 10)), now);
   expect(long.ticksLeft).toBe(dayTicks);
   expect(long.secondsLeft).toBe(day.end - now);
-  expect(deepArmyLife(store, 1, 101n, now).ticksToEmpty).toBe(6);
+  expect(deepArmyLife(store, army(1, 101n), now).ticksToEmpty).toBe(6);
 });
 
 /** Armies keyed by explorer: the facts an army's place in the Deep leaves, as the native store holds them. */
@@ -47,8 +48,9 @@ const armies = (held: { field?: number[]; guard?: number[]; count: bigint; lastT
   const keyed: Record<string, Record<number, unknown>> = {
     DeepArmy: Object.fromEntries((held.field ?? []).map((id) => [id, { last_tick: BigInt(held.lastTick) }])),
     DeepGuard: Object.fromEntries((held.guard ?? []).map((id) => [id, { site_id: 800n, slot: 0 }])),
+    ArmyProgress: Object.fromEntries([1, 2, 3].map((id) => [id, { oaths: 0 }])),
     ArmyDay: Object.fromEntries([1, 2, 3].map((id) => [id, { day: 0n }])),
-    ExplorerTroops: Object.fromEntries([1, 2, 3].map((id) => [id, { troops: { count: held.count } }])),
+    ExplorerTroops: Object.fromEntries([1, 2, 3].map((id) => [id, { game_id: 1, explorer_id: BigInt(id), troops: { count: held.count } }])),
   };
   return {
     get: (model: string, key: { explorer_id?: bigint }) =>

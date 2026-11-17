@@ -606,3 +606,8 @@ it replaces, or Keep my Oaths to decline. `build.sh playtest-oath-pick` plays `/
 the Oath loss warning, cancels to retain the army, then confirms and checks the army and Oath record disappear. The
 freed slot retains its stamina. Native tests cover Shrine reveals, persistence, deletion and remustering with an empty
 Oath record; these browser proofs use recorded offers.
+
+Vitriol changes the Deep's field and guard loss to 150 troops per tick. `/lab/game?scenario=oath-vitriol` and
+`build.sh playtest-oath-vitriol` choose it through the Oath panel, read the reduced field drain, and join the Quarry
+on desktop and phone. Native command tests prove the old rate settles before a choice or replacement and the new
+rate applies only to later ticks; shared vectors check exact troop counts in the contract and client.

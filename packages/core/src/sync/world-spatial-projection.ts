@@ -630,7 +630,7 @@ export class WorldSpatialProjection {
         }
       }
       if (change.model === "ExplorerTroops") this.applyExplorerTroopsUpdate([change.current, change.previous]);
-      if (change.model === "DeepGuard" || change.model === "DeepArmy" || change.model === "ArmyDay") {
+      if (change.model === "DeepGuard" || change.model === "DeepArmy" || change.model === "ArmyDay" || change.model === "ArmyProgress") {
         const key = change.current ?? change.previous;
         if (key) {
           const army = this.store.get("ExplorerTroops", { game_id: key.game_id, explorer_id: key.explorer_id });
@@ -638,7 +638,7 @@ export class WorldSpatialProjection {
         }
       }
     }
-    if (changes.some((change) => change.model === "DeepArmy" || change.model === "ArmyDay"))
+    if (changes.some((change) => change.model === "DeepArmy" || change.model === "ArmyDay" || change.model === "ArmyProgress"))
       this.nextTimeRefresh = this.nextTimedChangeAt();
     for (const change of changes) {
       if (change.model === "Structure" || change.model === "ExpeditionSite" || change.model === "TileOccupancy") {

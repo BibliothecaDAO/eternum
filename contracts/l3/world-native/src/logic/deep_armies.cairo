@@ -27,7 +27,10 @@ pub fn settle(key: ExplorerKey, mut army: ExplorerTroops, context: ExecutionCont
         return army;
     }
     let before = army.troops.count;
-    army.troops.count = crate::deep::troops_after_ticks(before, last_tick, tick, rules.loss_per_tick.read());
+    let loss = crate::oaths::deep_loss_per_tick(
+        crate::logic::progression::require(key).oaths, rules.loss_per_tick.read(),
+    );
+    army.troops.count = crate::deep::troops_after_ticks(before, last_tick, tick, loss);
     write_tick(key, tick);
     crate::logic::combat::combat_troops(key.game_id)
         .finish_battle(key, army, before, crate::commands::action_context(context));

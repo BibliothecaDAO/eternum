@@ -1,7 +1,7 @@
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { dayOf } from "./days";
-import { currentArmy } from "./deep";
+import { armyDeepLossPerTick, currentArmy } from "./deep";
 import { readExpeditionRules } from "./expeditions";
 
 /** What a Deep guard's troops can still do: how long they last at the army tick's loss, and how much of the day is left. */
@@ -16,8 +16,10 @@ export interface DeepArmyLife {
   secondsLeft: number;
 }
 
-export function deepArmyLife(store: NativeFactStore, game_id: number, troops: bigint, now: number): DeepArmyLife {
-  const { loss_per_tick: lossPerTick } = store.require("DeepRules", { game_id });
+export function deepArmyLife(store: NativeFactStore, army: NativeRows["ExplorerTroops"], now: number): DeepArmyLife {
+  const { game_id } = army;
+  const troops = army.troops.count;
+  const lossPerTick = armyDeepLossPerTick(store, army);
   const interval = Number(store.require("SliceRules", { game_id }).tick_config.armies_tick_in_seconds);
   const calendar = readExpeditionRules(store, game_id);
   if (!calendar) throw new Error("Deep guards require expedition days");
@@ -46,5 +48,5 @@ export function armyDrain(
 ): DeepArmyLife | undefined {
   const key = { game_id: army.game_id, explorer_id: army.explorer_id };
   if (!store.get("DeepArmy", key) && !store.get("DeepGuard", key)) return undefined;
-  return deepArmyLife(store, army.game_id, currentArmy(store, army, now).troops.count, now);
+  return deepArmyLife(store, currentArmy(store, army, now), now);
 }
