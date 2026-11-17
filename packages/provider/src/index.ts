@@ -708,7 +708,7 @@ export class EternumProvider extends EventEmitter {
   }) {
     return this.submitCommand(props.signer, {
       kind: "ChooseOath",
-      value: { explorer_id: props.explorerId, expected_pick: props.expectedPick, oath: props.oath, replace: props.replace },
+      value: { explorer_id: props.explorerId, expected_pick: props.expectedPick, oath: props.oath === null ? { kind: "None", value: undefined } : { kind: "Some", value: props.oath }, replace: props.replace === null ? { kind: "None", value: undefined } : { kind: "Some", value: props.replace } },
     }, TransactionType.CHOOSE_OATH);
   }
 

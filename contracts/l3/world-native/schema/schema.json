@@ -105,6 +105,27 @@
     "SCOUTS_LODGE": 43,
     "SCOUTS_LODGE_LEVEL": 1
   },
+  "oathConstants": {
+    "GIANTS": 1,
+    "PERFECTION": 2,
+    "RAGE": 3,
+    "FOX": 4,
+    "TWINS": 5,
+    "FURY": 6,
+    "REFLECTION": 7,
+    "DETECTION": 8,
+    "SKILL": 9,
+    "BRILLIANCE": 10,
+    "PROTECTION": 11,
+    "POWER": 12,
+    "TITANS": 13,
+    "VITRIOL": 14,
+    "ANGER": 15,
+    "ENLIGHTENMENT": 16,
+    "RED": 11537,
+    "BLUE": 53288,
+    "GOLD": 710
+  },
   "tileOccupierConstants": {
     "CHEST_OCCUPIER": 34,
     "SPIRE_OCCUPIER": 35
@@ -5448,10 +5469,22 @@
           "type": "core::integer::u8",
           "id": "0x6f6174685f736c6f7473",
           "feltLength": 1
+        },
+        {
+          "name": "oaths",
+          "type": "core::integer::u16",
+          "id": "0x6f61746873",
+          "feltLength": 1
+        },
+        {
+          "name": "oath_pick",
+          "type": "core::integer::u16",
+          "id": "0x6f6174685f7069636b",
+          "feltLength": 1
         }
       ],
       "keyLength": 2,
-      "valueLength": 2
+      "valueLength": 4
     },
     {
       "name": "ArmyDay",
@@ -9356,6 +9389,11 @@
       "name": "world_native::commands::Command",
       "variants": [
         {
+          "name": "ChooseOath",
+          "type": "world_native::oaths::ChooseOath",
+          "wireId": 73
+        },
+        {
           "name": "ClaimDailyQuest",
           "type": "world_native::quests::ClaimDailyQuest",
           "wireId": 72
@@ -10939,6 +10977,28 @@
         }
       ]
     },
+    "world_native::oaths::ChooseOath": {
+      "type": "struct",
+      "name": "world_native::oaths::ChooseOath",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "expected_pick",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "oath",
+          "type": "core::option::Option::<core::integer::u8>"
+        },
+        {
+          "name": "replace",
+          "type": "core::option::Option::<core::integer::u8>"
+        }
+      ]
+    },
     "world_native::ownership::BuildingChange": {
       "type": "enum",
       "name": "world_native::ownership::BuildingChange",
@@ -11597,6 +11657,14 @@
         {
           "name": "oath_slots",
           "type": "core::integer::u8"
+        },
+        {
+          "name": "oaths",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "oath_pick",
+          "type": "core::integer::u16"
         }
       ]
     },
@@ -14093,5 +14161,5 @@
       ]
     }
   },
-  "identity": "090a6aadc4b8a745ec01e24006269b39f5bdfdc10a92d258a76b270d9de3b312"
+  "identity": "f94bad83322a425ef9c3ed2541b8457e881e17fe956ee992cc0190369ae01a41"
 }

@@ -11,11 +11,11 @@ pub struct CommandRoute {
 
 pub const SETTLE_BLITZ_ROSTER: u32 = 7;
 
-pub const COMMAND_IDS: [u32; 52] = [
-    72, 0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 38, 39, 40,
-    41, 42, 43, 44, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 62, 63, 64, 65, 66, 67, 69,
+pub const COMMAND_IDS: [u32; 53] = [
+    73, 72, 0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 38, 39,
+    40, 41, 42, 43, 44, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 62, 63, 64, 65, 66, 67, 69,
 ];
-pub const COMMAND_ROUTES: [Option<CommandRoute>; 73] = [
+pub const COMMAND_ROUTES: [Option<CommandRoute>; 74] = [
     Some(CommandRoute { logic: 6, selector: selector!("create_explorer"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 16, selector: selector!("explore"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 12, selector: selector!("battle"), items_offset: Some(2), batch: false }),
@@ -104,6 +104,7 @@ pub const COMMAND_ROUTES: [Option<CommandRoute>; 73] = [
     Some(CommandRoute { logic: 3, selector: selector!("research"), items_offset: None, batch: false }), None,
     Some(CommandRoute { logic: 16, selector: selector!("interact_site"), items_offset: None, batch: false }), None,
     None, Some(CommandRoute { logic: 14, selector: selector!("claim_daily_quest"), items_offset: None, batch: false }),
+    Some(CommandRoute { logic: 15, selector: selector!("choose_oath"), items_offset: None, batch: false }),
 ];
 
 pub fn logic_class(
@@ -134,6 +135,7 @@ pub fn logic_class(
 // Decode the complete command before reading a roll; routes retain the same wire discriminants.
 #[derive(Copy, Drop, Debug, PartialEq)]
 pub enum Command {
+    ChooseOath: crate::oaths::ChooseOath,
     ClaimDailyQuest: crate::quests::ClaimDailyQuest,
     CreateExplorer: crate::commands::CreateExplorer,
     Explore: crate::commands::Explore,
@@ -191,6 +193,10 @@ pub enum Command {
 pub impl CommandSerde of Serde<Command> {
     fn serialize(self: @Command, ref output: Array<felt252>) {
         match self {
+            Command::ChooseOath(value) => {
+                output.append(73);
+                Serde::serialize(value, ref output);
+            },
             Command::ClaimDailyQuest(value) => {
                 output.append(72);
                 Serde::serialize(value, ref output);
@@ -463,6 +469,7 @@ pub impl CommandSerde of Serde<Command> {
             70 => None,
             71 => None,
             72 => Some(Command::ClaimDailyQuest(Serde::deserialize(ref serialized)?)),
+            73 => Some(Command::ChooseOath(Serde::deserialize(ref serialized)?)),
             _ => None,
         }
     }

@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "090a6aadc4b8a745ec01e24006269b39f5bdfdc10a92d258a76b270d9de3b312",
+  "schemaIdentity": "f94bad83322a425ef9c3ed2541b8457e881e17fe956ee992cc0190369ae01a41",
   "commandAbi": [
     {
       "type": "interface",
@@ -23,6 +23,11 @@
       "type": "enum",
       "name": "world_native::commands::Command",
       "variants": [
+        {
+          "name": "ChooseOath",
+          "type": "world_native::oaths::ChooseOath",
+          "wireId": 73
+        },
         {
           "name": "ClaimDailyQuest",
           "type": "world_native::quests::ClaimDailyQuest",
@@ -287,6 +292,42 @@
     },
     {
       "type": "struct",
+      "name": "world_native::oaths::ChooseOath",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "expected_pick",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "oath",
+          "type": "core::option::Option::<core::integer::u8>"
+        },
+        {
+          "name": "replace",
+          "type": "core::option::Option::<core::integer::u8>"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "core::option::Option::<core::integer::u8>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "struct",
       "name": "world_native::quests::ClaimDailyQuest",
       "members": [
         {
@@ -476,20 +517,6 @@
         {
           "name": "Some",
           "type": "core::integer::u32"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    {
-      "type": "enum",
-      "name": "core::option::Option::<core::integer::u8>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "core::integer::u8"
         },
         {
           "name": "None",

@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "090a6aadc4b8a745ec01e24006269b39f5bdfdc10a92d258a76b270d9de3b312";
+export const nativeFactSchemaIdentity = "f94bad83322a425ef9c3ed2541b8457e881e17fe956ee992cc0190369ae01a41";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -85,6 +85,27 @@ export const nativeRaceConstants = {
 } as const;
 export const nativeArrivalConstants = {
   "SLOTS_PER_DAY": 48
+} as const;
+export const nativeOathConstants = {
+  "GIANTS": 1,
+  "PERFECTION": 2,
+  "RAGE": 3,
+  "FOX": 4,
+  "TWINS": 5,
+  "FURY": 6,
+  "REFLECTION": 7,
+  "DETECTION": 8,
+  "SKILL": 9,
+  "BRILLIANCE": 10,
+  "PROTECTION": 11,
+  "POWER": 12,
+  "TITANS": 13,
+  "VITRIOL": 14,
+  "ANGER": 15,
+  "ENLIGHTENMENT": 16,
+  "RED": 11537,
+  "BLUE": 53288,
+  "GOLD": 710
 } as const;
 export const nativeResearchConstants = {
   "ROW_FARM": 0,
@@ -279,7 +300,7 @@ export interface NativeRows {
   ArmyRelicEffect: { readonly game_id: number; readonly explorer_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye"; readonly rank: number; readonly expires_at: bigint };
   RuinRelic: { readonly game_id: number; readonly entity_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye"; readonly rank: number };
   ArmyCombat: { readonly game_id: number; readonly explorer_id: bigint; readonly last_target: bigint };
-  ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint; readonly logistics: number; readonly oath_slots: number };
+  ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint; readonly logistics: number; readonly oath_slots: number; readonly oaths: number; readonly oath_pick: number };
   ArmyDay: { readonly game_id: number; readonly explorer_id: bigint; readonly day: bigint };
   DeepTick: { readonly game_id: number; readonly paid_tick: bigint };
   DeepSite: { readonly game_id: number; readonly entity_id: bigint; readonly kind: number; readonly day: bigint };
@@ -1772,7 +1793,9 @@ export const nativeFactModels = {
       "game_id": "u32",
       "explorer_id": "u64",
       "logistics": "u8",
-      "oath_slots": "u8"
+      "oath_slots": "u8",
+      "oaths": "u16",
+      "oath_pick": "u16"
     }
   },
   "ArmyDay": {
