@@ -11,6 +11,8 @@
 // fall: --write-catalog-baseline lowers a count, and writes nothing while any file gains a copy. lint-guards.mjs runs
 // it in CI, and src/catalog-guards.test.mjs holds its controls.
 
+import { LAYER_NAMES } from "@bibliothecadao/types";
+
 /** The game's catalogs: the enums of @bibliothecadao/types whose members are game content. */
 const CATALOGS = new Set([
   "ResourcesIds",
@@ -70,7 +72,8 @@ const declaredType = (object) => {
 };
 
 const IMAGE_PATH = /^\/(images|icons|tokens)\//;
-const LAYER_SPELLING = /\b(Surface|Veil|Hollow|Ethereal I{1,3})\b|\bDeep\b(?! (Ocean|Crystal)\b)/;
+const LAYER_SPELLING = new RegExp(`\\b(?:${LAYER_NAMES.join("|")}|Ethereal I{1,3})\\b`);
+const namesLayer = (text) => LAYER_SPELLING.test(text.replace(/\bDeep (?:Ocean|Crystal)\b/g, ""));
 
 const COPY = "copy";
 const IMAGE = "image";
@@ -112,16 +115,16 @@ const oneSource = {
       if (typeof node.value !== "string") return;
       if (IMAGE_PATH.test(node.value)) context.report({ node, messageId: IMAGE });
       const isDeveloperMessage = node.parent.type === "NewExpression" && node.parent.callee.name === "Error";
-      if (!isDeveloperMessage && LAYER_SPELLING.test(node.value)) context.report({ node, messageId: LAYER });
+      if (!isDeveloperMessage && namesLayer(node.value)) context.report({ node, messageId: LAYER });
     },
     JSXText(node) {
-      if (LAYER_SPELLING.test(node.value)) context.report({ node, messageId: LAYER });
+      if (namesLayer(node.value)) context.report({ node, messageId: LAYER });
     },
     TemplateElement(node) {
       const text = node.value.cooked ?? "";
       if (node.parent.quasis[0] === node && IMAGE_PATH.test(text))
         context.report({ node: node.parent, messageId: IMAGE });
-      if (LAYER_SPELLING.test(text)) context.report({ node: node.parent, messageId: LAYER });
+      if (namesLayer(text)) context.report({ node: node.parent, messageId: LAYER });
     },
   }),
 };

@@ -2,6 +2,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { LAYER_NAMES } from "@bibliothecadao/types";
 import { ESLint } from "eslint";
 import tseslint from "typescript-eslint";
 import { describe, expect, it } from "vitest";
@@ -51,8 +52,10 @@ describe("one source per fact: no copy of a catalog outside its modules", () => 
       "export const M: Record<StructureType, number> = { [StructureType.Realm]: 1, [StructureType.Village]: 2 } as Record<StructureType, number>;",
     ],
     ["an image path", "export const art = '/images/biomes/ocean.png';"],
-    ["a layer's name", "export const word = 'Veil';"],
-    ["a layer's name before a qualification", "export const word = 'Deep (locked)';"],
+    ...LAYER_NAMES.map((name) => [
+      `the layer ${name} before a qualification`,
+      `export const word = '${name} (locked)';`,
+    ]),
     ["a layer's old name", "export const word = 'Ethereal II';"],
     ["a layer's name in a template", "export const line = (n: string) => `${n} · Hollow`;"],
     ["an image path built in a template", "export const art = (name: string) => `/icons/facets/64/${name}.webp`;"],

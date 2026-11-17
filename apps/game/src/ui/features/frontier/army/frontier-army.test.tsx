@@ -168,8 +168,9 @@ it("opens the earned pick without a selection and keeps it through Escape and ou
   );
   game.staminaKnown = false;
   act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
-  expect(host.querySelector("[data-oath-pass-result]")).toBeNull();
-  await act(async () => button(/^Pass:/)!.click());
+  const pass = button(/^Pass:/)!;
+  expect(pass.textContent).toBe(`Pass: +${oaths.PASS_STAMINA} stamina`);
+  await act(async () => pass.click());
   expect(game.chooseOath).toHaveBeenCalledWith({
     signer: game.signer,
     explorerId: army.explorerId,
