@@ -44,7 +44,13 @@ describe("Oath picks", () => {
 it("matches the native Deep loss vectors for each held set and tick boundary", async () => {
   const { readFileSync } = await import("node:fs");
   const { oathDeepLossPerTick } = await import("./oaths");
-  const fields = readFileSync(new URL("../../../../contracts/l3/world-native/tests/fixtures/oath-deep-loss.txt", import.meta.url), "utf8").trim().split(/\s+/).map(BigInt);
+  const fields = readFileSync(
+    new URL("../../../../contracts/l3/world-native/tests/fixtures/oath-deep-loss.txt", import.meta.url),
+    "utf8",
+  )
+    .trim()
+    .split(/\s+/)
+    .map(BigInt);
   expect(fields.length).toBe(48);
   while (fields.length) {
     const [held, base, , , expectedLoss] = fields.splice(0, 6) as [bigint, bigint, bigint, bigint, bigint, bigint];

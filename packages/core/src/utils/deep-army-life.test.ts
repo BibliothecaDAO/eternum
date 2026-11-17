@@ -50,7 +50,9 @@ const armies = (held: { field?: number[]; guard?: number[]; count: bigint; lastT
     DeepGuard: Object.fromEntries((held.guard ?? []).map((id) => [id, { site_id: 800n, slot: 0 }])),
     ArmyProgress: Object.fromEntries([1, 2, 3].map((id) => [id, { oaths: 0 }])),
     ArmyDay: Object.fromEntries([1, 2, 3].map((id) => [id, { day: 0n }])),
-    ExplorerTroops: Object.fromEntries([1, 2, 3].map((id) => [id, { game_id: 1, explorer_id: BigInt(id), troops: { count: held.count } }])),
+    ExplorerTroops: Object.fromEntries(
+      [1, 2, 3].map((id) => [id, { game_id: 1, explorer_id: BigInt(id), troops: { count: held.count } }]),
+    ),
   };
   return {
     get: (model: string, key: { explorer_id?: bigint }) =>

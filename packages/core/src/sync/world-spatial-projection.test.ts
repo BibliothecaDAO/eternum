@@ -255,7 +255,13 @@ const createHarness = () => {
     },
     writeDeepArmy: (explorer: number) =>
       atomic(() => {
-        write("ArmyProgress", `progress-${explorer}`, [13, explorer], { game_id: 13, explorer_id: explorer, logistics: 0, oath_slots: 1, oaths: 0, oath_pick: 0 }, false);
+        write(
+          "ArmyProgress",
+          `progress-${explorer}`,
+          [13, explorer],
+          { game_id: 13, explorer_id: explorer, logistics: 0, oath_slots: 1, oaths: 0, oath_pick: 0 },
+          false,
+        );
         write("ArmyDay", `day-${explorer}`, [13, explorer], { game_id: 13, explorer_id: explorer, day: 0n }, false);
         write(
           "DeepArmy",

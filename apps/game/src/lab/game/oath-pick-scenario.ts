@@ -34,7 +34,11 @@ function prepareOathArmy(store: NativeFactStore, full: boolean, fightOath: numbe
     {
       model: "ArmySlot",
       key: store.wireKeyOf("ArmySlot", slot) ?? `${slot.game_id}:${slot.structure_id}:${slot.epoch}:${slot.slot}`,
-      value: wire({ ...slot, explorer_id: army.explorer_id, stamina: "Inline" in army.troops.stamina ? army.troops.stamina.Inline : store.require("ArmySlot", slot).stamina }),
+      value: wire({
+        ...slot,
+        explorer_id: army.explorer_id,
+        stamina: "Inline" in army.troops.stamina ? army.troops.stamina.Inline : store.require("ArmySlot", slot).stamina,
+      }),
     },
     {
       model: "SliceRules",

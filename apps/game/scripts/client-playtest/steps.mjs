@@ -6338,25 +6338,39 @@ export const STEP_SETS = {
   "lab-race-finished": { game: labSpireGame("race-finished"), steps: raceBoardSteps("won") },
 
   "lab-discovered-spire": { game: labSpireGame("discovered-spire"), steps: DISCOVERED_SPIRE_STEPS },
-  "lab-oath-decline": { game: labSpireGame("oath-replace"), steps: [
-    ...oathPickSteps(true).slice(0, 2),
-    {
-      name: "decline-oath",
-      play: async ({ browser }) => {
-        const before = browser.read("window.__labChain.sent.length");
-        browser.click("Keep my Oaths");
-        const declined = await readUntil(() => browser.read(`(() => {
+  "lab-oath-decline": {
+    game: labSpireGame("oath-replace"),
+    steps: [
+      ...oathPickSteps(true).slice(0, 2),
+      {
+        name: "decline-oath",
+        play: async ({ browser }) => {
+          const before = browser.read("window.__labChain.sent.length");
+          browser.click("Keep my Oaths");
+          const declined = await readUntil(
+            () =>
+              browser.read(`(() => {
           const answer = window.__labChain.sent.at(-1);
           const progress = answer?.answered.find(({model}) => model === "ArmyProgress")?.value;
           return window.__labChain.sent.length === ${before + 1} && answer.command.kind === "ChooseOath" &&
             Number(progress?.oaths) === 1 && Number(progress?.oath_pick) === 0 && !document.querySelector('[data-oath-pick]');
-        })()`), Boolean, ORDER_OUTCOME_WAIT_MS);
-        return { declined, answer: browser.read("JSON.stringify(window.__labChain.sent.at(-1))") };
+        })()`),
+            Boolean,
+            ORDER_OUTCOME_WAIT_MS,
+          );
+          return { declined, answer: browser.read("JSON.stringify(window.__labChain.sent.at(-1))") };
+        },
+        verify: ({ played }) =>
+          played.declined
+            ? completed(played)
+            : failed("Decline must preserve the held Oath and clear only the offer", played),
       },
-      verify: ({ played }) => played.declined ? completed(played) : failed("Decline must preserve the held Oath and clear only the offer", played),
-    },
-  ] },
-  "lab-oath-vitriol": { game: labSpireGame("oath-vitriol"), steps: [...oathPickSteps(false).slice(0, -1), ...deepJoinSteps(150).slice(2)] },
+    ],
+  },
+  "lab-oath-vitriol": {
+    game: labSpireGame("oath-vitriol"),
+    steps: [...oathPickSteps(false).slice(0, -1), ...deepJoinSteps(150).slice(2)],
+  },
   "lab-deep-join": { game: labSpireGame("deep"), steps: deepJoinSteps() },
   "lab-no-lords": {
     game: labSpireGame("upkeep"),

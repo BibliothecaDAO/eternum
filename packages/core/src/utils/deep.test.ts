@@ -147,10 +147,23 @@ describe("the shared Deep", () => {
 it("projects Vitriol's exact native troop vectors and refuses a missing progress record", async () => {
   const { readFileSync } = await import("node:fs");
   const { deepArmyLife } = await import("./deep-army-life");
-  const fields = readFileSync(new URL("../../../../contracts/l3/world-native/tests/fixtures/oath-deep-loss.txt", import.meta.url), "utf8").trim().split(/\s+/).map(BigInt);
+  const fields = readFileSync(
+    new URL("../../../../contracts/l3/world-native/tests/fixtures/oath-deep-loss.txt", import.meta.url),
+    "utf8",
+  )
+    .trim()
+    .split(/\s+/)
+    .map(BigInt);
   expect(fields.length).toBe(48);
   while (fields.length) {
-    const [held, base, troops, ticks, expectedLoss, expectedTroops] = fields.splice(0, 6) as [bigint, bigint, bigint, bigint, bigint, bigint];
+    const [held, base, troops, ticks, expectedLoss, expectedTroops] = fields.splice(0, 6) as [
+      bigint,
+      bigint,
+      bigint,
+      bigint,
+      bigint,
+      bigint,
+    ];
     const { rows, store } = fixture();
     rows.ArmyProgress![0]!.oaths = Number(held);
     rows.DeepRules![0]!.loss_per_tick = base;

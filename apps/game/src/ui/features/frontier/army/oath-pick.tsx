@@ -53,7 +53,11 @@ export function ArmyOathPick({ explorerId, progress }: { explorerId: number; pro
                 size="sm"
                 title={oathName(id)}
                 picture={<Icon name={orderMeaning(id)} size={40} />}
-                detail={<span className={colourClass[oathColours[index]!.colour]}>{oathEffectDescription(id) ?? oathColours[index]!.name}</span>}
+                detail={
+                  <span className={colourClass[oathColours[index]!.colour]}>
+                    {oathEffectDescription(id) ?? oathColours[index]!.name}
+                  </span>
+                }
                 disabled={!allowed || sending}
                 onClick={() => (full ? setPicked(id) : choose(id))}
               />

@@ -313,21 +313,28 @@ fn a_refused_guard_move_keeps_the_tick_paid_and_cannot_pay_it_twice() {
 
 fn vitriol_setup(seed: felt252) -> (Deployment, u32) {
     let mut preset = without_passive_labor(super::deep_sites::preset());
-    preset.economy.deep = Some(crate::deep::DeepRules {
-        loss_per_tick: 200 * RESOURCE_PRECISION, ..preset.economy.deep.unwrap()
-    });
+    preset
+        .economy
+        .deep =
+            Some(crate::deep::DeepRules { loss_per_tick: 200 * RESOURCE_PRECISION, ..preset.economy.deep.unwrap() });
     super::aspects::setup_aspect_preset(seed, preset)
 }
 
 fn waiting_vitriol(d: Deployment, key: ExplorerKey) -> crate::oaths::ChooseOath {
-    let pick = Into::<u8, u16>::into(crate::oaths::VITRIOL) - 1
+    let pick = Into::<u8, u16>::into(crate::oaths::VITRIOL)
+        - 1
         + (Into::<u8, u16>::into(crate::oaths::FOX) - 1) * 16
         + (Into::<u8, u16>::into(crate::oaths::RAGE) - 1) * 256;
-    interact_with_state(d.games, || {
-        let progress = crate::logic::progression::require(key);
-        crate::logic::progression::write(key, crate::progression::ArmyProgress { oath_pick: pick, ..progress });
-    });
-    crate::oaths::ChooseOath { explorer_id: key.explorer_id, expected_pick: pick, oath: Some(crate::oaths::VITRIOL), replace: None }
+    interact_with_state(
+        d.games,
+        || {
+            let progress = crate::logic::progression::require(key);
+            crate::logic::progression::write(key, crate::progression::ArmyProgress { oath_pick: pick, ..progress });
+        },
+    );
+    crate::oaths::ChooseOath {
+        explorer_id: key.explorer_id, expected_pick: pick, oath: Some(crate::oaths::VITRIOL), replace: None,
+    }
 }
 
 #[test]
@@ -344,9 +351,16 @@ fn choosing_and_replacing_vitriol_settles_field_ticks_under_the_previous_oath() 
     advance(d, key, 3, boundary + interval);
     assert_eq!(army(d, key).troops.count, 1150 * RESOURCE_PRECISION);
     let replacement = waiting_vitriol(d, key);
-    applied(d, game_id, Command::ChooseOath(crate::oaths::ChooseOath {
-        oath: Some(crate::oaths::FOX), replace: Some(crate::oaths::VITRIOL), ..replacement
-    }), boundary + 2 * interval);
+    applied(
+        d,
+        game_id,
+        Command::ChooseOath(
+            crate::oaths::ChooseOath {
+                oath: Some(crate::oaths::FOX), replace: Some(crate::oaths::VITRIOL), ..replacement,
+            },
+        ),
+        boundary + 2 * interval,
+    );
     assert_eq!(army(d, key).troops.count, 1000 * RESOURCE_PRECISION);
     advance(d, key, 0, boundary + 3 * interval);
     assert_eq!(army(d, key).troops.count, 800 * RESOURCE_PRECISION);
@@ -372,7 +386,15 @@ fn vitriol_guards_lose_exactly_150_per_tick_while_the_beast_is_unchanged() {
     applied(d, game_id, touch, boundary);
     assert_eq!(army(d, key).troops.count, before - 300 * RESOURCE_PRECISION);
     let beast = site(d, game_id, crate::rules::DEEP_ALTAR);
-    interact_with_state(d.games, || {
-        assert_eq!(crate::logic::guards::guard(crate::guards::GuardKey { game_id, structure_id: beast.entity_id, slot: 0 }).troops.count, RESOURCE_PRECISION);
-    });
+    interact_with_state(
+        d.games,
+        || {
+            assert_eq!(
+                crate::logic::guards::guard(crate::guards::GuardKey { game_id, structure_id: beast.entity_id, slot: 0 })
+                    .troops
+                    .count,
+                RESOURCE_PRECISION,
+            );
+        },
+    );
 }
