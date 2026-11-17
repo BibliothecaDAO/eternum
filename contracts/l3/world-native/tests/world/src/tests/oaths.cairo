@@ -53,16 +53,10 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
     let take = ChooseOath {
         explorer_id: key.explorer_id, expected_pick: first.oath_pick, oath: Some(taken), replace: None,
     };
-    assert!(
-        !world_test_support::tests::play_fixture::play(
-            d.games,
-            world_test_support::tests::play_fixture::TestAction {
-                game_id, actor: 999.try_into().unwrap(), command: crate::commands::Command::ChooseOath(take),
-            },
-            123,
-            362,
-        ),
-    );
+    let other = super::bind_authority(d);
+    let mut refused = snforge_std::spy_events();
+    assert!(!super::resource_commands::execute_in_game(other, game_id, crate::commands::Command::ChooseOath(take), 362));
+    assert_eq!(super::play_fixture::rejection(ref refused, d.games).reason, "actor does not own structure");
     assert_eq!(read_progress(d, key), first);
     assert!(super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(take), 362));
     let chosen = read_progress(d, key);
