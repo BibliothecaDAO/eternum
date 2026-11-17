@@ -76,7 +76,7 @@ export function ArmyOathPick({ explorerId, progress }: { explorerId: number; pro
             </HudButton>
           ))}
           <HudButton kind="secondary" disabled={sending} onClick={() => setPicked(null)}>
-            Back
+            Choose another
           </HudButton>
         </div>
       )}
