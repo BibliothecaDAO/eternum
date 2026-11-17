@@ -10,33 +10,42 @@ import { wire, type LabCommand, type LabFact, type LabScenario } from "./lab-cha
 
 export function oathPickScenario(full = false): LabScenario {
   const game = spireScenario();
+  prepareOathArmy(game.store, full);
+  return {
+    ...game,
+    answer: (command, chain, now) =>
+      answerDeletion(command, chain) ?? answerChoice(command, chain) ?? game.answer(command, chain, now),
+  };
+}
+
+function prepareOathArmy(store: NativeFactStore, full: boolean) {
   const key = { game_id: 1, explorer_id: SPIRE_ARMY };
-  const progress = game.store.require("ArmyProgress", key);
-  const army = game.store.require("ExplorerTroops", key);
-  const day = game.store.require("ArmyDay", key);
-  const rules = game.store.require("SliceRules", { game_id: key.game_id });
+  const progress = store.require("ArmyProgress", key);
+  const army = store.require("ExplorerTroops", key);
+  const day = store.require("ArmyDay", key);
+  const rules = store.require("SliceRules", { game_id: key.game_id });
   if (!("Inline" in army.troops.stamina)) throw new Error("Spire fixture no longer has inline stamina");
   const slot = { game_id: key.game_id, structure_id: army.owner, epoch: BigInt(day.day), slot: 0 };
-  game.store.applyFacts([
-    ...seasonOneResearchPrices(game.store),
+  store.applyFacts([
+    ...seasonOneResearchPrices(store),
     {
       model: "ExplorerTroops",
-      key: game.store.wireKeyOf("ExplorerTroops", key)!,
+      key: store.wireKeyOf("ExplorerTroops", key)!,
       value: wire({ ...army, troops: { ...army.troops, stamina: { Slot: slot.slot } } }),
     },
     {
       model: "ArmySlot",
-      key: game.store.wireKeyOf("ArmySlot", slot) ?? `${slot.game_id}:${slot.structure_id}:${slot.epoch}:${slot.slot}`,
+      key: store.wireKeyOf("ArmySlot", slot) ?? `${slot.game_id}:${slot.structure_id}:${slot.epoch}:${slot.slot}`,
       value: wire({ ...slot, explorer_id: army.explorer_id, stamina: army.troops.stamina.Inline }),
     },
     {
       model: "SliceRules",
-      key: game.store.wireKeyOf("SliceRules", rules)!,
+      key: store.wireKeyOf("SliceRules", rules)!,
       value: wire({ ...rules, troop_stamina_config: { ...rules.troop_stamina_config, stamina_gain_per_tick: 0 } }),
     },
     {
       model: "ArmyProgress",
-      key: game.store.wireKeyOf("ArmyProgress", key)!,
+      key: store.wireKeyOf("ArmyProgress", key)!,
       value: wire({
         ...progress,
         oath_slots: 1,
@@ -45,28 +54,24 @@ export function oathPickScenario(full = false): LabScenario {
       }),
     },
   ]);
-  return {
-    ...game,
-    answer(command, chain, now) {
-      const deleted = answerDeletion(command, chain);
-      if (deleted) return deleted;
-      if (command.kind !== "ChooseOath") return game.answer(command, chain, now);
-      const fields = command.calldata.slice(5).map(Number);
-      const explorer_id = fields.shift()!;
-      const expected = fields.shift()!;
-      const oath = fields.shift() === 0 ? fields.shift()! : null;
-      const replace = fields.shift() === 0 ? fields.shift()! : null;
-      if (fields.length) throw new Error("Extra Oath command fields");
-      const current = chain.require("ArmyProgress", { game_id: 1, explorer_id });
-      return [
-        {
-          model: "ArmyProgress",
-          key: chain.wireKeyOf("ArmyProgress", current)!,
-          value: wire(chooseOath(current, expected, oath, replace)),
-        },
-      ];
+}
+
+function answerChoice(command: LabCommand, chain: NativeFactStore): LabFact[] | null {
+  if (command.kind !== "ChooseOath") return null;
+  const fields = command.calldata.slice(5).map(Number);
+  const explorer_id = fields.shift()!;
+  const expected = fields.shift()!;
+  const oath = fields.shift() === 0 ? fields.shift()! : null;
+  const replace = fields.shift() === 0 ? fields.shift()! : null;
+  if (fields.length) throw new Error("Extra Oath command fields");
+  const current = chain.require("ArmyProgress", { game_id: 1, explorer_id });
+  return [
+    {
+      model: "ArmyProgress",
+      key: chain.wireKeyOf("ArmyProgress", current)!,
+      value: wire(chooseOath(current, expected, oath, replace)),
     },
-  };
+  ];
 }
 
 function answerDeletion(command: LabCommand, chain: NativeFactStore): LabFact[] | null {
