@@ -90,6 +90,11 @@ const createHerald = () => {
     /** Snapshot reads answered, and whether this Herald is failing them. */
     snapshotReads: 0,
     snapshotFails: false,
+    /** Reads of /games, and how many manifest reads after the first game directory read fail with a 503. */
+    /** Manifest and owner-scoped snapshot reads in the order they were answered. */
+    reads: [] as string[],
+    gamesReads: 0,
+    manifestFailures: 0,
     mistEndedAt: undefined as number | undefined,
     requestedModels: [] as string[],
     seasonStart: SEASON_START,
@@ -102,6 +107,14 @@ const createHerald = () => {
     ownerReads: [] as string[],
   };
   const answer = (url: URL): unknown => {
+    if (url.pathname === "/games") state.gamesReads++;
+    if (url.pathname === "/manifest") {
+      state.reads.push("manifest");
+      if (state.gamesReads > 0 && state.manifestFailures > 0) {
+        state.manifestFailures--;
+        return new Response("unavailable", { status: 503 });
+      }
+    }
     if (url.pathname === "/manifest")
       return {
         version: 1,
@@ -131,7 +144,10 @@ const createHerald = () => {
     if (url.pathname === `/games/${GAME_ID}/snapshot`) {
       state.snapshotReads++;
       state.requestedModels.push(url.searchParams.get("models") ?? "");
-      if (url.searchParams.get("owner")) state.ownerReads.push(url.searchParams.get("owner")!);
+      if (url.searchParams.get("owner")) {
+        state.ownerReads.push(url.searchParams.get("owner")!);
+        state.reads.push("snapshot");
+      }
     }
     if (url.pathname === `/games/${GAME_ID}/snapshot` && state.snapshotFails)
       return Response.json({ error: "snapshot unavailable" }, { status: 500 });
@@ -427,6 +443,47 @@ describe.concurrent("shard notifications", () => {
       expect(await push.words()).toEqual([
         "Quarry can be taken / Your largest army outside the Deep can clear its remaining guards.",
       ]);
+    } finally {
+      clearInterval(heartbeat);
+      await worker.dispose();
+    }
+  }, 60000);
+
+  it("arms a quiet game's watches after one failed release check, with no fact change in between", async () => {
+    const { herald, push, worker } = await createHarness("important");
+    herald.state.site = { troops: 1000, aspect: 2, lore: true, lastTick: armiesTick() };
+    herald.state.manifestFailures = 1;
+    const heartbeat = setInterval(herald.heartbeat, 2000);
+    try {
+      await worker.runCron();
+      await waitUntil(() => push.received.length === 1, 20000);
+      expect(herald.state.manifestFailures).toBe(0);
+    } finally {
+      clearInterval(heartbeat);
+      await worker.dispose();
+    }
+  }, 60000);
+
+  it("reads the release catalogue once for a planning pass over every enrolled actor", async () => {
+    const { herald, worker } = await createHarness("important");
+    const others = ["0x7a1", "0x7a2"];
+    await worker.db.batch(
+      others.map((address) =>
+        worker.db.prepare(`INSERT INTO "realms_accounts" ("address", "realmsId") VALUES (?, ?)`).bind(address, OWNER),
+      ),
+    );
+    herald.state.members = [PLAYER_ACCOUNT, ...others];
+    herald.state.site = { troops: 1000, aspect: 2, lore: true, lastTick: armiesTick() };
+    const heartbeat = setInterval(herald.heartbeat, 2000);
+    try {
+      await worker.runCron();
+      await waitUntil(() => herald.state.ownerReads.length >= 3, 20000);
+      await pause(polls(1));
+      expect(new Set(herald.state.ownerReads.slice(0, 3)).size).toBe(3);
+      const first = herald.state.reads.indexOf("snapshot");
+      const third = herald.state.reads.indexOf("snapshot", first + 2);
+      expect(herald.state.reads.slice(first, third + 1)).toEqual(["snapshot", "snapshot", "snapshot"]);
+      expect(herald.state.reads.slice(0, first)).toContain("manifest");
     } finally {
       clearInterval(heartbeat);
       await worker.dispose();

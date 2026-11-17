@@ -6,7 +6,7 @@ import {
 } from "@bibliothecadao/eternum/game-client";
 import { HeraldGameSyncTransport, type HeraldSocket } from "@bibliothecadao/eternum/game-sync";
 import type { NativeWorldBindings } from "@bibliothecadao/types";
-import { requireReadableRelease } from "./game-facts";
+import { assertPinReadable, readReleaseCatalogue } from "./game-facts";
 import { STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 
@@ -19,7 +19,7 @@ const WATCH_INPUTS = new Set([
   "PlayerEntry",
 ]);
 
-/** Confirmed public or player-scoped facts re-arm watches; a reconnect re-reads the cohort. */
+/** Confirmed public or player-scoped facts re-arm watches; a reconnect re-reads the cohort. A release check that could not be made leaves the re-read to the notifier, whose readers check again and whose dirty game is retried at its next alarm. */
 export function followDeepSites(
   shardUrl: string,
   gameId: number,
@@ -40,11 +40,15 @@ export function followDeepSites(
     stopped = true;
     transport.dispose();
   };
-  const revalidate = () =>
-    requireReadableRelease(shardUrl, pin).then(changed, (error: unknown) => {
-      if (error instanceof ShardReleaseMismatchError) stop();
-      console.error("deep_site_release_refused", shardUrl, gameId, error);
-    });
+  const revalidate = async () => {
+    try {
+      assertPinReadable(shardUrl, pin, await readReleaseCatalogue(shardUrl));
+    } catch (error) {
+      if (error instanceof ShardReleaseMismatchError) return stop();
+      console.error("deep_site_release_unchecked", shardUrl, gameId, error);
+    }
+    changed();
+  };
   void transport
     .subscribe({
       onSnapshotStart() {

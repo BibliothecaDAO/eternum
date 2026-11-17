@@ -159,7 +159,7 @@ it("tells a refused game's boot plainly and offers no retry, where any other fai
       </MemoryRouter>,
     );
   const refused = text(doorway(true));
-  expect(refused).toContain("This game ran on an earlier version of the game and cannot be opened here.");
+  expect(refused).toContain("This game ran on a different version of the game and cannot be opened here.");
   expect(refused).not.toContain("did not answer");
   expect(refused).not.toContain("Try again");
   const failed = text(doorway(false));

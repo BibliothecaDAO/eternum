@@ -87,6 +87,7 @@ it("plans a Deep site opportunity from Herald's actor snapshot with public rival
       owner: "player",
     },
     now * 1000,
+    { "1": schema.identity },
   );
   expect(watches).toEqual([
     expect.objectContaining({

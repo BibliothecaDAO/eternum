@@ -2,7 +2,7 @@ import { normalizeStarknetAddress as canonicalFelt } from "@realms-world/identit
 import { safeInteger } from "../../../packages/core/src/utils/safe-integer";
 import { readBaneEffects } from "@bibliothecadao/eternum";
 import { fetchHeraldGameDirectory, NativeFactStore, nativeBaneConstants } from "@bibliothecadao/eternum/game-client";
-import { readGameFacts } from "./game-facts";
+import { readGameFacts, type ReleaseCatalogue } from "./game-facts";
 import type { HeraldStoryHistoryPage } from "@bibliothecadao/eternum/game-sync";
 import { expeditionDepth, isCurrentExpeditionArmy, readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
 import {
@@ -98,6 +98,7 @@ export const readActorArmies = async (
   gameId: number,
   actor: string,
   now: number,
+  catalogue: ReleaseCatalogue,
 ): Promise<ActorArmy[]> => {
   const store = await readGameFacts(
     shardUrl,
@@ -105,6 +106,7 @@ export const readActorArmies = async (
     [...STAMINA_MODELS, "PlayerEntry", "DeepArmy", "DeepGuard", "DeepRules"],
     now,
     { actor, owner: actor },
+    catalogue,
   );
   const rules = store.require("SliceRules", { game_id: gameId });
   const tickSeconds = Number(rules.tick_config.armies_tick_in_seconds);

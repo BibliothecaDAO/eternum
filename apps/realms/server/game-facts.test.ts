@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { readActorArmies } from "./army-rest";
 import { followDeepSites } from "./deep-site-stream";
+import { readReleaseCatalogue } from "./game-facts";
 import { readDeepSiteWatches } from "./deep-site-watch";
 import { ARMY, GAME_ID, mistFacts, PLAYER_ACCOUNT, siteSnapshot, snapshot, TODAY } from "./fixtures/shard-world";
 
@@ -20,6 +21,7 @@ const pin = (created: number, release: number) => ({
   created_release_id: created,
 });
 
+const caught = () => readReleaseCatalogue(SHARD);
 const SITE = { troops: 1000, aspect: 2, lore: true, lastTick: 0 };
 const world = (owner: string | null = null) => {
   const bar = { amount: 120, settledAt: Math.floor(Date.now() / 1000), day: TODAY };
@@ -27,17 +29,26 @@ const world = (owner: string | null = null) => {
   return siteSnapshot({ ...read, models: [...read.models, ...mistFacts(undefined)] }, SITE, owner);
 };
 
-const heraldServing = (releases: Record<string, string>, current: ReturnType<typeof pin>) =>
-  vi.stubGlobal(
+const heraldServing = (
+  releases: Record<string, string>,
+  current: ReturnType<typeof pin> | null,
+  manifestFailures = 0,
+) => {
+  let failures = manifestFailures;
+  return vi.stubGlobal(
     "fetch",
     vi.fn(async (input: string | URL | Request) => {
       const url = new URL(String(input));
-      if (url.pathname === "/manifest") return Response.json({ version: 1, releaseSchemas: releases });
+      if (url.pathname === "/manifest")
+        return failures-- > 0
+          ? new Response("unavailable", { status: 503 })
+          : Response.json({ version: 1, releaseSchemas: releases });
       const read = world(url.searchParams.get("owner"));
-      read.models.find(({ model }) => model === "GameRelease")!.rows = [{ key: "0x1", value: current }];
+      read.models.find(({ model }) => model === "GameRelease")!.rows = current ? [{ key: "0x1", value: current }] : [];
       return Response.json(read);
     }),
   );
+};
 
 const REFUSED = [
   ["an incompatible origin", { "1": OTHER, "2": READABLE }, pin(1, 2)],
@@ -49,27 +60,40 @@ const REFUSED = [
 describe("the notification snapshot readers", () => {
   it.each(REFUSED)("refuse %s before any fact is interpreted", async (_case, releases, current) => {
     heraldServing(releases, current);
-    await expect(readActorArmies(SHARD, GAME_ID, PLAYER_ACCOUNT, Date.now())).rejects.toBeInstanceOf(
-      ShardReleaseMismatchError,
-    );
     await expect(
-      readDeepSiteWatches(SHARD, { gameId: GAME_ID, actor: PLAYER_ACCOUNT, owner: PLAYER_ACCOUNT }, Date.now()),
+      readActorArmies(SHARD, GAME_ID, PLAYER_ACCOUNT, Date.now(), await caught()),
+    ).rejects.toBeInstanceOf(ShardReleaseMismatchError);
+    await expect(
+      readDeepSiteWatches(
+        SHARD,
+        { gameId: GAME_ID, actor: PLAYER_ACCOUNT, owner: PLAYER_ACCOUNT },
+        Date.now(),
+        await caught(),
+      ),
     ).rejects.toBeInstanceOf(ShardReleaseMismatchError);
   });
 
   it("read a game whose pin moved on through releases they all read", async () => {
     heraldServing({ "1": READABLE, "2": READABLE }, pin(1, 2));
-    expect((await readActorArmies(SHARD, GAME_ID, PLAYER_ACCOUNT, Date.now())).map(({ armyId }) => armyId)).toContain(
-      ARMY,
-    );
+    const armies = await readActorArmies(SHARD, GAME_ID, PLAYER_ACCOUNT, Date.now(), await caught());
+    expect(armies.map(({ armyId }) => armyId)).toContain(ARMY);
     await expect(
-      readDeepSiteWatches(SHARD, { gameId: GAME_ID, actor: PLAYER_ACCOUNT, owner: PLAYER_ACCOUNT }, Date.now()),
+      readDeepSiteWatches(
+        SHARD,
+        { gameId: GAME_ID, actor: PLAYER_ACCOUNT, owner: PLAYER_ACCOUNT },
+        Date.now(),
+        await caught(),
+      ),
     ).resolves.toBeInstanceOf(Array);
   });
 });
 
-const watching = (releases: Record<string, string>) => {
-  heraldServing(releases, pin(1, 1));
+const watching = (
+  releases: Record<string, string>,
+  current: ReturnType<typeof pin> | null = pin(1, 1),
+  failures = 0,
+) => {
+  heraldServing(releases, current, failures);
   const sockets: { closed: boolean; receive: (message: unknown) => void }[] = [];
   const open = (): HeraldSocket => {
     const socket = {
@@ -92,7 +116,9 @@ const watching = (releases: Record<string, string>) => {
   const socket = sockets[0]!;
   socket.receive({ type: "hello", epoch: "e", seq: 0, confirmed_block: 10, preconfirmed_block: null });
   let seq = 0;
-  const models = world().models.filter(({ model }) => model === "GameRelease" || model === "DeepRules");
+  const models = world()
+    .models.filter(({ model }) => model === "GameRelease" || model === "DeepRules")
+    .map((model) => (model.model === "GameRelease" && !current ? { ...model, rows: [] } : model));
   for (const model of models) socket.receive({ type: "snapshot", epoch: "e", seq: 0, ...model });
   socket.receive({ type: "snapshot_end", epoch: "e", seq: 0 });
   const release = (current: ReturnType<typeof pin>) =>
@@ -117,6 +143,18 @@ describe("a deep site stream", () => {
     const unreadable = watching({ "1": OTHER });
     await vi.waitFor(() => expect(unreadable.socket.closed).toBe(true));
     expect(unreadable.changed).not.toHaveBeenCalled();
+  });
+
+  it("leaves a release check it could not make to the notifier's re-read, which checks again", async () => {
+    const stream = watching({ "1": READABLE }, pin(1, 1), 1);
+    await vi.waitFor(() => expect(stream.changed).toHaveBeenCalledTimes(1));
+    expect(stream.socket.closed).toBe(false);
+  });
+
+  it("stops on a game that shows no release pin, as on one it cannot read", async () => {
+    const stream = watching({ "1": READABLE }, null);
+    await vi.waitFor(() => expect(stream.socket.closed).toBe(true));
+    expect(stream.changed).not.toHaveBeenCalled();
   });
 
   it("revalidates when the game's release changes: a readable one re-reads the watches, an unreadable one stops", async () => {

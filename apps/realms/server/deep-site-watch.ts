@@ -1,6 +1,6 @@
 import { BiomeType } from "@bibliothecadao/types";
 import { readDeepSites, NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { readGameFacts } from "./game-facts";
+import { readGameFacts, type ReleaseCatalogue } from "./game-facts";
 import { dayOf, expeditionDepth, readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
 import { resolveExplorerCombatTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { forecastFight, mapCenter, researchedDepth, type CombatRules } from "@bibliothecadao/eternum";
@@ -148,6 +148,7 @@ export async function readDeepSiteWatches(
   shardUrl: string,
   player: Pick<DeepSiteWatch, "gameId" | "actor" | "owner">,
   now: number,
+  catalogue: ReleaseCatalogue,
 ): Promise<DeepSiteWatch[]> {
   const store = await readGameFacts(
     shardUrl,
@@ -155,6 +156,7 @@ export async function readDeepSiteWatches(
     [...STAMINA_MODELS, "PlayerEntry", "RealmKnowledge", "ArmyRelicEffect", "ChestRules", "DeepSite", "Guard"],
     now,
     { actor: player.actor },
+    catalogue,
   );
   return planDeepSiteWatches(store, player, now);
 }

@@ -37,6 +37,7 @@ import {
   type RestWatch,
 } from "./army-rest";
 import { followDeepSites } from "./deep-site-stream";
+import { readReleaseCatalogue, type ReleaseCatalogue } from "./game-facts";
 import { readDeepSiteWatches, type DeepSiteWatch } from "./deep-site-watch";
 import { decodeIdentityEnv, type IdentityEnv } from "./env";
 import { planDayOpenings, readEnrolledAccounts, readHomeClaim, type DayOpening } from "./day-open";
@@ -331,7 +332,7 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
   }
 
   private async wakeSite(env: IdentityEnv, shard: Required<WatchedShard>, watch: DeepSiteWatch, now: number) {
-    const fresh = (await readDeepSiteWatches(shard.url, watch, now))
+    const fresh = (await readDeepSiteWatches(shard.url, watch, now, await readReleaseCatalogue(shard.url)))
       .filter((candidate) => siteWatchKey(candidate) === siteWatchKey(watch))
       .sort((left, right) => left.dueAt - right.dueAt)[0];
     const ready = fresh && fresh.dueAt <= now;
@@ -380,7 +381,7 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
 
   private async wakeActor(env: IdentityEnv, shard: Required<WatchedShard>, watches: RestWatch[], now: number) {
     const { gameId, actor } = watches[0]!;
-    const armies = await readActorArmies(shard.url, gameId, actor, now);
+    const armies = await readActorArmies(shard.url, gameId, actor, now, await readReleaseCatalogue(shard.url));
     const rested = watches.flatMap((watch) => {
       const army = armies.find((army) => army.armyId === watch.armyId);
       return army?.full && army.fullAt !== null ? [{ ...watch, fullAt: army.fullAt }] : [];
@@ -770,6 +771,7 @@ const watchRestingArmies = (env: IdentityEnv, shard: Required<WatchedShard>, pag
         const owner = realmsIds.get(actor);
         return owner && wanted.has(owner) ? [{ gameId, actor, owner }] : [];
       });
+      let catalogue: Promise<ReleaseCatalogue> | undefined;
       // A player whose armies cannot be read keeps the watches they had; the rest of the page goes on.
       const watched = yield* Effect.forEach(resting, (actor) =>
         Effect.promise(async () => {
@@ -777,7 +779,16 @@ const watchRestingArmies = (env: IdentityEnv, shard: Required<WatchedShard>, pag
             return [
               {
                 actor,
-                watches: restWatchesOf(actor, await readActorArmies(shard.url, actor.gameId, actor.actor, now)),
+                watches: restWatchesOf(
+                  actor,
+                  await readActorArmies(
+                    shard.url,
+                    actor.gameId,
+                    actor.actor,
+                    now,
+                    await (catalogue ??= readReleaseCatalogue(shard.url)),
+                  ),
+                ),
               },
             ];
           } catch (error) {
@@ -875,6 +886,7 @@ async function siteWatchesForGame(
   gameId: number,
 ): Promise<{ watches: DeepSiteWatch[]; actors: Set<string> }> {
   const accounts = await readEnrolledAccounts(shard.url, gameId);
+  let catalogue: ReleaseCatalogue | undefined;
   const planned = new Map<string, DeepSiteWatch>();
   const actors = new Set<string>();
   for (let offset = 0; offset < accounts.length; offset += 100) {
@@ -899,7 +911,8 @@ async function siteWatchesForGame(
     for (const [actor, owner] of owners) {
       if (!wanted.has(owner)) continue;
       actors.add(actor);
-      for (const watch of await readDeepSiteWatches(shard.url, { gameId, actor, owner }, Date.now())) {
+      catalogue ??= await readReleaseCatalogue(shard.url);
+      for (const watch of await readDeepSiteWatches(shard.url, { gameId, actor, owner }, Date.now(), catalogue)) {
         const previous = planned.get(siteWatchKey(watch));
         if (!previous || previous.dueAt > watch.dueAt) planned.set(siteWatchKey(watch), watch);
       }
@@ -931,7 +944,7 @@ async function siteAlerts(
 }
 
 async function siteStillReady(shard: WatchedShard, watch: DeepSiteWatch, now: number): Promise<boolean> {
-  return (await readDeepSiteWatches(shard.url, watch, now)).some(
+  return (await readDeepSiteWatches(shard.url, watch, now, await readReleaseCatalogue(shard.url))).some(
     (fresh) => siteWatchKey(fresh) === siteWatchKey(watch) && fresh.dueAt <= now,
   );
 }
