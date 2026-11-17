@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { BiomeType, BiomeTypeToId } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { nativeTilePackingConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import {
+  nativeTilePackingConstants,
+  type NativeModelName,
+} from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRowDefinitions } from "../client/native-row";
 import { currentArmy, currentResourceWeight, deepTerrain, deepTiles } from "./deep";
 import { armyCombatRefusal } from "./army-opponents";
 import { readDeepSites } from "../client/views/deep-sites";
@@ -33,18 +37,21 @@ const fixture = () => {
       { game_id: 7, home: 2n, aspect: 1 },
     ],
   };
-  const get = (model: string, key: Record<string, unknown>) =>
-    rows[model]?.find((row) => Object.entries(key).every(([name, value]) => String(row[name]) === String(value)));
+  const get = (model: NativeModelName, key: Record<string, unknown>) =>
+    rows[model]?.find((row) =>
+      nativeRowDefinitions[model].keys.every((name) => String(row[name]) === String(key[name])),
+    );
   const store = {
     get,
-    require: (model: string, key: Record<string, unknown>) => {
+    require: (model: NativeModelName, key: Record<string, unknown>) => {
       const row = get(model, key);
       if (!row) throw new Error(`missing ${model}`);
       return row;
     },
     entries: (model: string) => (rows[model] ?? []).map((row, index) => [String(index), row]),
     inGame: (model: string, gameId: number) => (rows[model] ?? []).filter((row) => row.game_id === gameId),
-    entityOccupancy: (game_id: number, entity_id: bigint) => get("TileOccupancy", { game_id, entity_id }),
+    entityOccupancy: (game_id: number, entity_id: bigint) =>
+      rows.TileOccupancy?.find((row) => row.game_id === game_id && String(row.entity_id) === String(entity_id)),
   } as unknown as NativeFactStore;
   return { rows, store, army: store.require("ExplorerTroops", { game_id: 7, explorer_id: 11n }) };
 };
