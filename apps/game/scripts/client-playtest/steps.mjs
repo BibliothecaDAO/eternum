@@ -1125,15 +1125,15 @@ function oathPassSteps(capped) {
         );
         const answer = browser.read("JSON.stringify(window.__labChain.sent.at(-1))");
         const slot = answer.answered.find(({ model }) => model === "ArmySlot")?.value;
-        const shown = browser.read(
-          "document.querySelector('[data-oath-slots]')?.closest('[role=dialog]')?.textContent ?? ''",
-        );
+        await openTheArmyPanel(browser);
+        const shown = browser.read(`Number(document.querySelector('[data-kit-sheet] [data-stamina-line] [role="meter"]')?.getAttribute('aria-valuenow'))`);
         return { declined, answer, slot, preview, shown };
       },
       verify: ({ played }) => {
         const amount = Number(played.slot?.stamina.amount);
         const expected = capped ? oathRules.PASS_STAMINA / 2 : oathRules.PASS_STAMINA;
         return played.declined &&
+          played.shown === amount &&
           amount === played.preview.result &&
           amount === Math.min(played.preview.current + oathRules.PASS_STAMINA, played.preview.maximum) &&
           amount - played.preview.current === expected
