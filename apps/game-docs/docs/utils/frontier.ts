@@ -11,6 +11,7 @@ import {
 } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { BEAST_NAMES, LAYER_NAMES, TIER_WORDS, ROAMING_BEASTS, SITE_GUARDS, resourceName } from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "./config";
+import { playableDepths } from "./playable-depths.mjs";
 import { CONTRACT } from "./contract-constants";
 
 /**
@@ -108,7 +109,7 @@ export const FRONTIER = {
     well: pct(frontierPreset.discovery.wellBps),
     emptyRevealLimit: n(frontierPreset.discovery.emptyRevealLimit),
   },
-  depths: frontierPreset.depths.map((depth, index) => ({
+  depths: playableDepths(frontierPreset).map((depth, index) => ({
     name: LAYER_NAMES[index],
     revealPercent: `${depth.revealPercent}%`,
     campGuard: range(depth.siteGuardLower, depth.siteGuardUpper),

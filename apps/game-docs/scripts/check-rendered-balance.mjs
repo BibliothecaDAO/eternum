@@ -14,6 +14,7 @@ import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { LAYER_NAMES, resourceName, BuildingType } from "@bibliothecadao/types";
+import { playableDepths } from "../docs/utils/playable-depths.mjs";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
 const configOf = (mode) =>
@@ -124,7 +125,7 @@ export const frontierGuardPhrases = (preset, riftGuardBound) => {
   const range = (lower, upper) => `${n(lower)}–${n(upper)}`;
   return [
     "Ground Camps Rifts Weaker beasts Stronger beasts",
-    ...preset.depths.map((depth, index) =>
+    ...playableDepths(preset).map((depth, index) =>
       [
         LAYER_NAMES[index],
         range(depth.siteGuardLower, depth.siteGuardUpper),
@@ -163,7 +164,7 @@ export const frontierPhrases = (config, preset, riftGuardBound, nativeRules) => 
       page: "frontier/expedition",
       phrases: [
         ...frontierGuardPhrases(preset, riftGuardBound),
-        ...preset.depths.map((depth, index) => `${LAYER_NAMES[index]} ${depth.revealPercent}%`),
+        ...playableDepths(preset).map((depth, index) => `${LAYER_NAMES[index]} ${depth.revealPercent}%`),
       ],
     },
     {

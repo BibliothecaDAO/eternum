@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { TIER_WORDS } from "@bibliothecadao/types";
+import { LAYER_NAMES, TIER_WORDS } from "@bibliothecadao/types";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import fg from "fast-glob";
@@ -111,6 +111,7 @@ test("the expedition page gives camps and rifts their own correct guard column a
     const docs = fileURLToPath(new URL("../docs", import.meta.url));
     const llm = await renderLlmTxt([join(docs, "pages/frontier/expedition.mdx")], docs);
     assert.deepEqual(exportProblems(llm, pages), []);
+    assert.ok(!new RegExp(`^\\|\\s*${LAYER_NAMES.at(-1)}\\s*\\|`, "m").test(llm), "the export has no Deep row");
     const combined = llm
       .split("\n")
       .map((line) => {
@@ -122,7 +123,9 @@ test("the expedition page gives camps and rifts their own correct guard column a
         return cells.join(" | ");
       })
       .join("\n");
-    assert.equal(exportProblems(combined, pages).length, 5);
+    const guardRows = pages[0].phrases.slice(1).map((row) => row.split(" ")[0]);
+    assert.deepEqual(guardRows, LAYER_NAMES.slice(0, -1));
+    assert.equal(exportProblems(combined, pages).length, 1 + guardRows.length);
   } finally {
     await server.close();
   }
