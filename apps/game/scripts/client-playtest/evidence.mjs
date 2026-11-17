@@ -722,8 +722,6 @@ const CLICK_TO_RESULT_TOTAL = "verdict.clickToResult.totalMs";
 /** A result shows only at a frame: a run landing one 60 Hz frame later than the baseline's slowest is not a regression. */
 const ONE_FRAME_MS = 1000 / 60;
 
-export const isUntimedOnlyByExclusion = (failure) => /: no timed run \(verdicts \{"completed":\d+\}\)$/.test(failure);
-
 /**
  * Every action the baseline timed, judged in the current summary: it fails when its renderer mode or its timed runs are
  * missing (blocked, failed or left out every time: a lost measurement is never a pass), or when its median is past the

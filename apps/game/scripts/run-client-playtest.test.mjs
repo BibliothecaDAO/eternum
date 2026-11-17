@@ -3,14 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { LOAD_REFUSAL_NOTE } from "./client-playtest/evidence.mjs";
 import { STEP_SETS } from "./client-playtest/steps.mjs";
-import {
-  allocateRunDirectory,
-  buildRunUrl,
-  finish,
-  playtestExitCode,
-  readPlaytestOptions,
-} from "./run-client-playtest.mjs";
+import { allocateRunDirectory, buildRunUrl, finish, readPlaytestOptions } from "./run-client-playtest.mjs";
 
 describe("allocateRunDirectory", () => {
   it("gives every invocation a new directory and never writes into an existing one", () => {
@@ -206,46 +201,31 @@ describe("the page a run opens", () => {
   });
 });
 
-describe("playtestExitCode", () => {
-  const loaded = "webgpu-force-webgl #1: load average reached 12.5: its timings are not evidence";
-  const real = "webgpu-auto #1: 2 browser errors";
-  const untimed = 'webgpu-auto move: no timed run (verdicts {"completed":2})';
-  const blocked = 'webgpu-auto move: no timed run (verdicts {"blocked":2})';
-  const slower =
-    "webgpu-auto move: click to result median 900ms (n=2) is past the baseline's slowest 500ms and a frame";
-
-  it("ends a run refused only for load with 128, a status the build service does not remember", () => {
-    expect(playtestExitCode(false, [loaded, loaded.replace("#1", "#2")], [])).toBe(128);
-  });
-
-  it("keeps 1 for a real failure, alone or beside a load refusal, and 0 for a pass", () => {
-    expect(playtestExitCode(false, [real], [])).toBe(1);
-    expect(playtestExitCode(false, [loaded, real], [])).toBe(1);
-    expect(playtestExitCode(false, [], [])).toBe(1);
-    expect(playtestExitCode(true, [], [])).toBe(0);
-  });
-
-  it("reads a baseline action every run completed but none timed as the load's doing, and any other baseline failure as real", () => {
-    expect(playtestExitCode(false, [loaded], [untimed])).toBe(128);
-    expect(playtestExitCode(false, [loaded], [blocked])).toBe(1);
-    expect(playtestExitCode(false, [loaded], [untimed, slower])).toBe(1);
-  });
-});
-
 describe("the runner's exit status", () => {
-  const owner = { releaseFailures: [], held: () => [] };
   const bootedRun = {
     ok: true,
-    expectedSteps: ["map-idle"],
-    steps: [{ name: "map-idle", verdict: { status: "completed" } }],
+    expectedSteps: ["move"],
+    steps: [{ name: "move", verdict: { status: "completed" } }],
     diagnostics: { activeMode: "webgpu", requestedMode: "webgpu-auto" },
     metrics: { entryReadyMs: 2500, worldInteractiveMs: 3500 },
     rendererMode: "webgpu-auto",
     iteration: 1,
   };
-  const finishWith = (run) => {
+  const atLoad = (load, iteration = 1) => ({
+    ...bootedRun,
+    iteration,
+    machine: { cpus: 16, loadAverageMax: load, loadSamples: [load] },
+  });
+  const owner = (releaseFailures = []) => ({ releaseFailures, held: () => [] });
+  const finishWith = (results, { argv = [], releaseFailures } = {}) => {
     vi.spyOn(console, "log").mockImplementation(() => {});
-    finish({ options: readPlaytestOptions([]), output: { stage: "done" }, owner, results: [run], runDir: undefined });
+    finish({
+      options: readPlaytestOptions(argv),
+      output: { stage: "done" },
+      owner: owner(releaseFailures),
+      results,
+      runDir: undefined,
+    });
     return process.exitCode;
   };
 
@@ -255,10 +235,32 @@ describe("the runner's exit status", () => {
   });
 
   it("is 128 when the machine's load alone refused the run, 1 for a real failure, 0 for a pass", () => {
-    expect(finishWith({ ...bootedRun, machine: { cpus: 16, loadAverageMax: 31.4, loadSamples: [31.4] } })).toBe(128);
-    expect(
-      finishWith({ ...bootedRun, errors: ["boom"], machine: { cpus: 16, loadAverageMax: 3, loadSamples: [3] } }),
-    ).toBe(1);
-    expect(finishWith({ ...bootedRun, machine: { cpus: 16, loadAverageMax: 3, loadSamples: [3] } })).toBe(0);
+    expect(finishWith([atLoad(31.4)])).toBe(128);
+    expect(finishWith([atLoad(13, 1), atLoad(13, 2)])).toBe(128);
+    expect(finishWith([{ ...atLoad(3), errors: ["boom"] }])).toBe(1);
+    expect(finishWith([{ ...atLoad(13), errors: ["boom"] }])).toBe(1);
+    expect(finishWith([atLoad(13, 1), { ...atLoad(3, 2), errors: ["boom"] }])).toBe(1);
+    expect(finishWith([atLoad(3)])).toBe(0);
+  });
+
+  it("is 1 when a teardown failed, at a quiet machine and at a loaded one", () => {
+    expect(finishWith([atLoad(3)], { releaseFailures: ["preview: would not stop"] })).toBe(1);
+    expect(finishWith([atLoad(13)], { releaseFailures: ["preview: would not stop"] })).toBe(1);
+    expect(finishWith([atLoad(3)], { releaseFailures: [`preview: shutdown failed; ${LOAD_REFUSAL_NOTE}`] })).toBe(1);
+  });
+
+  it("is 1 for a run compared with a baseline, even when its other failure is load: a lost timing is real", () => {
+    const dir = mkdtempSync(join(tmpdir(), "playtest-baseline-"));
+    try {
+      const baseline = join(dir, "baseline.json");
+      const timed = { median: 400, max: 500, n: 1 };
+      writeFileSync(
+        baseline,
+        JSON.stringify({ byMode: { "webgpu-auto": { steps: { move: { "verdict.clickToResult.totalMs": timed } } } } }),
+      );
+      expect(finishWith([atLoad(3, 1), atLoad(13, 2)], { argv: ["--compare", baseline] })).toBe(1);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
   });
 });
