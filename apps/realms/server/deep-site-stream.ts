@@ -1,6 +1,12 @@
-import { buildHeraldGameStreamUrl, nativeModelDefinition } from "@bibliothecadao/eternum/game-client";
+import {
+  buildHeraldGameStreamUrl,
+  nativeModelDefinition,
+  ShardReleaseMismatchError,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 import { HeraldGameSyncTransport, type HeraldSocket } from "@bibliothecadao/eternum/game-sync";
 import type { NativeWorldBindings } from "@bibliothecadao/types";
+import { requireReadableRelease } from "./game-facts";
 import { STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 
@@ -14,37 +20,59 @@ const WATCH_INPUTS = new Set([
 ]);
 
 /** Confirmed public or player-scoped facts re-arm watches; a reconnect re-reads the cohort. */
-export function followDeepSites(shardUrl: string, gameId: number, changed: () => void, actor?: string): () => void {
+export function followDeepSites(
+  shardUrl: string,
+  gameId: number,
+  changed: () => void,
+  actor?: string,
+  openSocket: (address: string) => HeraldSocket = workerSocket,
+): () => void {
   const transport = new HeraldGameSyncTransport({
     url: buildHeraldGameStreamUrl(shardUrl, gameId, actor),
     gameId,
     modelDefinition: nativeModelDefinition(bindings as unknown as NativeWorldBindings),
-    socketFactory: workerSocket,
+    socketFactory: openSocket,
   });
   let enabled = false;
   let stopped = false;
+  let pin: NativeRows["GameRelease"] | undefined;
+  const stop = () => {
+    stopped = true;
+    transport.dispose();
+  };
+  const revalidate = () =>
+    requireReadableRelease(shardUrl, pin).then(changed, (error: unknown) => {
+      if (error instanceof ShardReleaseMismatchError) stop();
+      console.error("deep_site_release_refused", shardUrl, gameId, error);
+    });
   void transport
     .subscribe({
       onSnapshotStart() {
         enabled = false;
+        pin = undefined;
       },
       onSnapshotModel(model, facts) {
         if (model === "DeepRules") enabled = facts.length > 0;
+        if (model === "GameRelease") pin = facts[0]?.value as NativeRows["GameRelease"] | undefined;
       },
       onSnapshotEnd() {
         if (!enabled) {
-          stopped = true;
-          transport.dispose();
+          stop();
           return false;
         }
-        changed();
+        void revalidate();
         return true;
       },
       onScope() {
         return true;
       },
       onFacts(batch) {
-        if (!batch.preconfirmed && batch.facts.some(({ model }) => WATCH_INPUTS.has(model))) changed();
+        if (batch.preconfirmed) return;
+        const release = batch.facts.find(({ model }) => model === "GameRelease");
+        if (release) {
+          pin = (release.value ?? undefined) as NativeRows["GameRelease"] | undefined;
+          void revalidate();
+        } else if (batch.facts.some(({ model }) => WATCH_INPUTS.has(model))) changed();
       },
       onEvent() {},
       onHead() {},
@@ -54,10 +82,7 @@ export function followDeepSites(shardUrl: string, gameId: number, changed: () =>
     .catch((error: unknown) => {
       if (!stopped) console.error("deep_site_stream_failed", shardUrl, gameId, error);
     });
-  return () => {
-    stopped = true;
-    transport.dispose();
-  };
+  return stop;
 }
 
 /** The shared Herald transport owns reconnects; Workers opens an outbound socket through an HTTP upgrade. */

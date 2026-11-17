@@ -1,10 +1,6 @@
 import { BiomeType } from "@bibliothecadao/types";
-import {
-  fetchHeraldGameSnapshot,
-  readDeepSites,
-  NativeFactStore,
-  type NativeRows,
-} from "@bibliothecadao/eternum/game-client";
+import { readDeepSites, NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import { readGameFacts } from "./game-facts";
 import { dayOf, expeditionDepth, readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
 import { resolveExplorerCombatTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { forecastFight, mapCenter, researchedDepth, type CombatRules } from "@bibliothecadao/eternum";
@@ -153,17 +149,12 @@ export async function readDeepSiteWatches(
   player: Pick<DeepSiteWatch, "gameId" | "actor" | "owner">,
   now: number,
 ): Promise<DeepSiteWatch[]> {
-  const snapshot = await fetchHeraldGameSnapshot(
-    { url: shardUrl },
+  const store = await readGameFacts(
+    shardUrl,
     player.gameId,
     [...STAMINA_MODELS, "PlayerEntry", "RealmKnowledge", "ArmyRelicEffect", "ChestRules", "DeepSite", "Guard"],
-    player.actor,
+    now,
+    { actor: player.actor },
   );
-  if (BigInt(snapshot.game_id) !== BigInt(player.gameId)) throw new Error("Site watch read another game");
-  const store = new NativeFactStore();
-  store.applyFacts(
-    snapshot.models.flatMap(({ model, rows }) => rows.map((row) => ({ model, key: row.key, value: row.value }))),
-  );
-  store.setSnapshot({ gameId: player.gameId, actor: player.actor, complete: true, timestamp: Math.floor(now / 1000) });
   return planDeepSiteWatches(store, player, now);
 }

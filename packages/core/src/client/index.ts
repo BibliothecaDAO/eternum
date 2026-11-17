@@ -17,6 +17,7 @@ export {
 } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 export type { GameClientSetup } from "./game-client";
+export { assertReleaseReadable } from "./game-release";
 
 export { hasSingleTilePosition } from "./native-occupancy";
 

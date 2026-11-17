@@ -86,6 +86,12 @@ export const snapshot = (
   game_id: String(GAME_ID),
   models: [
     {
+      model: "GameRelease",
+      rows: [
+        { key: "0x1", value: { game_id: GAME_ID, release_id: 1, preset_commitment: "0x1", created_release_id: 1 } },
+      ],
+    },
+    {
       model: "Structure",
       rows: [HOME, NEIGHBOUR_HOME]
         .filter((home) => owner === null || BigInt(STRUCTURE_OWNERS.get(home)!) === BigInt(owner))

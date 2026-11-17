@@ -1,12 +1,8 @@
 import { normalizeStarknetAddress as canonicalFelt } from "@realms-world/identity";
 import { safeInteger } from "../../../packages/core/src/utils/safe-integer";
 import { readBaneEffects } from "@bibliothecadao/eternum";
-import {
-  fetchHeraldGameDirectory,
-  fetchHeraldGameSnapshot,
-  NativeFactStore,
-  nativeBaneConstants,
-} from "@bibliothecadao/eternum/game-client";
+import { fetchHeraldGameDirectory, NativeFactStore, nativeBaneConstants } from "@bibliothecadao/eternum/game-client";
+import { readGameFacts } from "./game-facts";
 import type { HeraldStoryHistoryPage } from "@bibliothecadao/eternum/game-sync";
 import { expeditionDepth, isCurrentExpeditionArmy, readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
 import {
@@ -103,18 +99,13 @@ export const readActorArmies = async (
   actor: string,
   now: number,
 ): Promise<ActorArmy[]> => {
-  const snapshot = await fetchHeraldGameSnapshot(
-    { url: shardUrl },
+  const store = await readGameFacts(
+    shardUrl,
     gameId,
     [...STAMINA_MODELS, "PlayerEntry", "DeepArmy", "DeepGuard", "DeepRules"],
-    actor,
-    actor,
+    now,
+    { actor, owner: actor },
   );
-  const store = new NativeFactStore();
-  store.applyFacts(
-    snapshot.models.flatMap(({ model, rows }) => rows.map((row) => ({ model, key: row.key, value: row.value }))),
-  );
-  store.setSnapshot({ gameId, actor, complete: true, timestamp: Math.floor(now / 1000) });
   const rules = store.require("SliceRules", { game_id: gameId });
   const tickSeconds = Number(rules.tick_config.armies_tick_in_seconds);
   const timestamp = Math.floor(now / 1000);

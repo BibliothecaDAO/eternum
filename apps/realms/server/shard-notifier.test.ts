@@ -18,6 +18,7 @@ import type { PushEnvelope } from "@bibliothecadao/notifications";
 import { Response as SocketResponse, WebSocketPair } from "miniflare";
 import { beforeAll, describe, expect, it } from "vitest";
 
+import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import recordedPages from "./fixtures/staging-story-pages.json";
 import { realmsIdOf } from "./realms-id";
 import {
@@ -101,7 +102,13 @@ const createHerald = () => {
     ownerReads: [] as string[],
   };
   const answer = (url: URL): unknown => {
-    if (url.pathname === "/manifest") return { version: 1, chainId: state.chain, contracts: { games: "0x5e45" } };
+    if (url.pathname === "/manifest")
+      return {
+        version: 1,
+        chainId: state.chain,
+        contracts: { games: "0x5e45" },
+        releaseSchemas: { "1": bindings.schemaIdentity },
+      };
     if (url.pathname === "/games")
       return {
         chain: state.chain,

@@ -87,6 +87,19 @@ function waitToRetry(signal: AbortSignal): Promise<void> {
 const sameReleaseSpan = (left: NativeRows["GameRelease"] | undefined, right: NativeRows["GameRelease"]): boolean =>
   left?.release_id === right.release_id && left?.created_release_id === right.created_release_id;
 
+export function assertReleaseReadable(
+  pin: NativeRows["GameRelease"],
+  catalogue: Readonly<Record<string, string>>,
+  schema: string,
+  shardUrl: string,
+): void {
+  const span = `${pin.created_release_id}..${pin.release_id}`;
+  if (!Number.isSafeInteger(pin.created_release_id) || !Number.isSafeInteger(pin.release_id))
+    throw new ShardReleaseMismatchError(shardUrl, span);
+  const unread = firstUnreadRelease(pin, catalogue, schema, shardUrl);
+  if (unread !== undefined) throw new ShardReleaseMismatchError(shardUrl, String(unread));
+}
+
 function firstUnreadRelease(
   pin: NativeRows["GameRelease"],
   catalogue: Readonly<Record<string, string>>,
