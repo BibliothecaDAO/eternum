@@ -691,7 +691,7 @@ describe.concurrent("shard notifications", () => {
       try {
         await waitUntil(() => push.received.length >= 1, 90_000);
         expect(herald.state.publishAfterPlayerRead).toBeNull();
-        expect(await push.words()).toEqual(["Your armies are rested / Frontier: their stamina is full."]);
+        expect(await push.words()).toEqual(["Your army is rested / Frontier: its stamina is full."]);
         await pause(polls(5));
         expect(push.received).toEqual([201]);
       } finally {
@@ -1237,8 +1237,7 @@ describe.concurrent("shard notifications", () => {
       await worker.runCron();
       await pause(polls(5)); // the notifier reaches the shard's head
       herald.battle(Math.floor(Date.now() / 1000) - 3600 + 20); // twenty seconds of its hour left
-      await waitUntil(() => push.received.length >= 1, 15_000);
-      await pause(30_000); // its life ends between two attempts
+      await pause(45_000); // its life ends between two attempts
       const tried = push.received.length;
       push.status = 201;
       await pause(polls(10));

@@ -297,7 +297,7 @@ const publish = (socket: { send(data: string): void }, room: string, content: st
 
 /** Waits a while for frames of a type that should not come. */
 const noneArrive = async (frames: Frame[], type: string) => {
-  await waitUntil(() => ofType(frames, type).length > 0, 2_000);
+  await pause(2_000);
   expect(ofType(frames, type)).toEqual([]);
 };
 
@@ -329,7 +329,7 @@ it("review: a deleted account cannot publish through an already-open room socket
         payload: { zoneId: GLOBAL, content: "published after account deletion" },
       }),
     );
-    await waitUntil(() => room.frames.some((frame) => frame.type === "world:message"), 2000);
+    await pause(2_000);
     expect(room.frames.filter((frame) => frame.type === "world:message")).toEqual([]);
   } finally {
     socket?.close();
