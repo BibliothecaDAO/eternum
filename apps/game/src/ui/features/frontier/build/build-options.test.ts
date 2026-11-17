@@ -80,7 +80,7 @@ describe("Frontier's build options", () => {
     // research.cairo names each board building by its category (FARM, WORKSHOP, …): a building it adds is offered,
     // or this fails (the catalog rule, audit 10-27 F7), never a hand-written list missing it.
     const named = Object.entries(nativeResearchConstants)
-      .filter(([name]) => !name.startsWith("ROW_") && !name.startsWith("CHOICE_") && !name.endsWith("_LEVEL"))
+      .filter(([name]) => !name.startsWith("ROW_") && !name.startsWith("CHOICE_") && !name.startsWith("OATH_SLOTS_") && !name.endsWith("_LEVEL"))
       .map(([, category]) => category)
       .sort((a, b) => a - b);
     const offered = readBuildOptions(store, realm, true, 350)!.map(({ category }) => category);

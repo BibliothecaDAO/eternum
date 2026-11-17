@@ -18,7 +18,7 @@ import { DestroyBuildingButton } from "@/ui/features/world/components/bottom-rig
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import { researchRowOf } from "@bibliothecadao/eternum";
+import { isOathResearch, researchRowOf } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { formatRate } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
@@ -66,7 +66,7 @@ export const BuildingCard = ({
   const actions = useResearchActions(realm, onResearchPage);
   const demolish = useDemolish(realm, building);
   const row = researchRowOf(building.category);
-  const node = tree?.nodes.find((each) => each.row === row && each.maxTier === 5);
+  const node = tree?.nodes.find((each) => each.row === row);
   const orders: BuildingOrders = {
     sending: node !== undefined && actions.sending(node),
     fix: (need) => (node && tree ? actions.fixFor(need, node, tree.nodes) : undefined),
@@ -159,7 +159,7 @@ export const BuildingCardView = ({
               icon would work better"). */}
           <span data-badged className="relative shrink-0">
             <Icon name={icon} size={56} />
-            {node && (
+            {node && !isOathResearch(node.row) && (
               <span className="absolute -bottom-1 -right-1">
                 <HudTier tier={tierOf(node.tier)} />
               </span>
@@ -176,8 +176,8 @@ export const BuildingCardView = ({
         </div>
         {node && (
           <CompareRows
-            now={<HudTier tier={tierOf(chosen!.tier)} />}
-            next={next?.nextTier ? <HudTier tier={next.nextTier} /> : undefined}
+            now={isOathResearch(node.row) ? <HudRanked words={node.gives.now} /> : <HudTier tier={tierOf(chosen!.tier)} />}
+            next={next?.nextTier ? (isOathResearch(node.row) ? <HudRanked words={next.gives.next!} /> : <HudTier tier={next.nextTier} />) : undefined}
             rows={node.figures.map((figure, index) => ({
               icon: figure.icon,
               word: figure.name,
@@ -192,7 +192,7 @@ export const BuildingCardView = ({
         {next && orders && (
           <ResearchFoot
             node={next}
-            verb={next.sides?.[side] ? RESEARCH_TREE.research(next.sides[side].name) : RESEARCH}
+            verb={isOathResearch(next.row) ? RESEARCH_TREE.research(RESEARCH_TREE.oaths) : next.sides?.[side] ? RESEARCH_TREE.research(next.sides[side].name) : RESEARCH}
             sending={orders.sending}
             fix={orders.fix}
             onResearch={() => choice !== undefined && orders.onResearch(choice)}

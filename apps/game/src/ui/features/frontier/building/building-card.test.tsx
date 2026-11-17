@@ -23,7 +23,7 @@ afterEach(() => {
 });
 
 const nodeOf = (realm: RealmResearchFacts, row: number) =>
-  readResearchTree(realm).find((node) => node.row === row && node.maxTier === 5)!;
+  readResearchTree(realm).find((node) => node.row === row)!;
 
 /** The card as a building's tap opens it, on the lab's realm some days in (a City; Farm rare, Barracks rare). */
 const draw = (
@@ -206,7 +206,7 @@ it("lets the owner choose the other research side after the first reaches V", ()
 });
 
 it("says under every research figure, on every building's card, what the figure does", () => {
-  const buildings = readResearchTree(MID_REALM).filter((node) => node.maxTier === 5);
+  const buildings = readResearchTree(MID_REALM).filter((node) => researchRowCategory[node.row] !== undefined);
   expect(buildings.map(({ row }) => row).sort((a, b) => a - b)).toEqual(
     Object.keys(researchRowCategory)
       .map(Number)
@@ -219,3 +219,14 @@ it("says under every research figure, on every building's card, what the figure 
     for (const [, line] of shown) expect(line).toMatch(/\w{3,}/);
   }
 });
+
+for (const row of [research.ROW_KNIGHT_OATHS, research.ROW_SCOUT_OATHS, research.ROW_CROSSBOW_OATHS]) {
+  it(`shows the free Oath slot and lets its building research another on row ${row}`, () => {
+    const { onResearch } = draw(row, { realm: RICH });
+    expect(card().textContent).toContain("1 Oath slot");
+    expect(card().textContent).toContain("2 Oath slots");
+    expect(card().textContent).not.toContain("Untrained");
+    act(() => button(/^Research Oath slots$/)!.click());
+    expect(onResearch).toHaveBeenCalledWith(0);
+  });
+}

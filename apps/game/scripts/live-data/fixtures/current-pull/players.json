@@ -35,7 +35,8 @@
           "value": {
             "game_id": "0x1",
             "explorer_id": "0x11",
-            "logistics": "0x2"
+            "logistics": "0x2",
+            "oath_slots": "0x1"
           }
         }
       ],

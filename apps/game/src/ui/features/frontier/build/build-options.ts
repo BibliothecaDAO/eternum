@@ -1,5 +1,6 @@
 import {
   buildingCostRise,
+  isOathResearch,
   getBuildingCosts,
   getBuildingQuantity,
   realmLearned,
@@ -30,12 +31,7 @@ import { type SidePick, sidePicks } from "../research/sides-taken";
  * research is.
  */
 /** A Frontier board's buildings: one per building row of the castle's tree, as research.cairo's row_category names them. */
-const FRONTIER_BUILDINGS = [
-  ...Object.values(researchRowCategory),
-  nativeResearchConstants.BARRACKS,
-  nativeResearchConstants.RANGE,
-  nativeResearchConstants.SCOUTS_LODGE,
-] as BuildingType[];
+const FRONTIER_BUILDINGS = Object.values(researchRowCategory) as BuildingType[];
 
 /** Each training building and the attribute it trains every new army in. */
 const TRAINS: Partial<Record<BuildingType, "Logistics">> = {
@@ -93,7 +89,7 @@ export const readBuildOptions = (
       category,
       tier: (row === undefined
         ? 1
-        : Math.max(isTraining(category) ? 1 : 0, researchTier(learned, row))) as BuildOption["tier"],
+        : Math.max(isTraining(category) || isOathResearch(row) ? 1 : 0, researchTier(learned, row))) as BuildOption["tier"],
       sides: row === undefined ? undefined : sidePicks(learned, row),
       cost,
       rise: buildingCostRise(safeInteger(realm.entity_id), category, store),

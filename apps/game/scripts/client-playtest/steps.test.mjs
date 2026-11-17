@@ -1262,3 +1262,11 @@ it.each([
   ])
     expect(verify({ played: bad }).status).toBe("failed");
 });
+
+it("reports the failed Oath capacity assertion without trying to time a missing result", async () => {
+  const step = STEP_SETS["lab-oath-slots"].steps.find(({ name }) => name === "deploy-with-oath-slots");
+  await expect(step.verify({
+    played: {}, probe: {}, window: { from: 0 },
+    actionLatency: { chainAnswers: [{ kind: "CreateExplorer", answered: [{ model: "ArmyProgress", value: { oath_slots: 1 } }] }] },
+  })).resolves.toMatchObject({ status: "failed", reason: "The new army did not inherit two Oath slots" });
+});

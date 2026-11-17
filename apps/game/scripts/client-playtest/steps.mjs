@@ -211,6 +211,7 @@ const clickToResultStep = (name, sends, press, resultOf, { settleMs = RESULT_SET
   verify: async ({ played, probe, actionLatency, window }) => {
     const result = resultOf({ played, actionLatency, since: window.from });
     if (!result) return judgeClickToResult(played, { missing: ["result"] });
+    if (result.status === "failed" || result.status === "blocked") return result;
     const measured = measureClickToResult({
       probe,
       actionLatency,
@@ -1015,7 +1016,9 @@ const OATH_SLOTS_STEPS = [
     "Research",
     async ({ browser }) => {
       browser.click("Research");
-      const node = await readUntil(() => browser.read(elementAt('[data-node="row-6"]')), Boolean, SHEET_WAIT_MS);
+      await readUntil(() => browser.read(elementAt('[data-node="row-6"]')), Boolean, SHEET_WAIT_MS);
+    browser.read(`(() => { document.querySelector('[data-node="row-6"]')?.scrollIntoView({ block: "nearest" }); return true; })()`);
+    const node = browser.read(elementAt('[data-node="row-6"]'));
       if (!node || node.state !== "ready") return { node };
       browser.tap(node.offset);
       const action = await readUntil(() => browser.read(buttonNamed("Research Oath slots")), Boolean, SHEET_WAIT_MS);

@@ -88,6 +88,7 @@ beforeEach(() => {
   root = createRoot(host);
   vi.clearAllMocks();
   game.learned = 0n;
+  game.progress.oath_slots = 1;
   army.troopsFact = { category: "Knight" };
 });
 
@@ -127,3 +128,16 @@ it("keeps Delete as a trash right after the army's name, asking before it delete
 });
 
 vi.mock("../relics/army-relic-slots", () => ({ ArmyRelicSlots: () => null }));
+
+it("shows the army's captured Oath capacity rather than later home research", () => {
+  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
+  game.learned = 3n << 30n;
+  game.progress.oath_slots = 2;
+  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} onClose={vi.fn()} />));
+  expect(host.querySelector("[data-oath-slots]")?.getAttribute("data-oath-slots")).toBe("2");
+  expect(host.querySelector("[data-oath-slots]")?.textContent).toContain("2 Oath slots");
+  game.progress.oath_slots = 4;
+  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} onClose={vi.fn()} />));
+  expect(host.querySelector("[data-oath-slots]")?.getAttribute("data-oath-slots")).toBe("4");
+  expect(host.querySelector("[data-oath-slots]")?.textContent).not.toContain("Locked");
+});
