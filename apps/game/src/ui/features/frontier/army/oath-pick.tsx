@@ -55,7 +55,7 @@ export function ArmyOathPick({ explorerId, progress }: { explorerId: number; pro
                 picture={<Icon name={orderMeaning(id)} size={40} />}
                 detail={<span className={colourClass[oathColours[index]!.colour]}>{oathColours[index]!.name}</span>}
                 disabled={!allowed || sending}
-                onClick={() => (full ? setPicked(id) : void choose(id))}
+                onClick={() => (full ? setPicked(id) : choose(id))}
               />
             </div>
           ))}
@@ -67,7 +67,7 @@ export function ArmyOathPick({ explorerId, progress }: { explorerId: number; pro
               key={id}
               kind="secondary"
               disabled={!allowed || sending}
-              onClick={() => void choose(picked, id)}
+              onClick={() => choose(picked, id)}
               data-replace-oath={id}
               aria-label={`Replace ${oathName(id)}`}
             >
@@ -80,7 +80,7 @@ export function ArmyOathPick({ explorerId, progress }: { explorerId: number; pro
           </HudButton>
         </div>
       )}
-      <HudButton kind="secondary" disabled={!allowed || sending} onClick={() => void choose(null)}>
+      <HudButton kind="secondary" disabled={!allowed || sending} onClick={() => choose(null)}>
         Keep my Oaths
       </HudButton>
     </section>
