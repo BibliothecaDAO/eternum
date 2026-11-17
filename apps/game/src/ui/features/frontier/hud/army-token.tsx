@@ -1,9 +1,9 @@
-import { formatAmount, formatDuration, formatExact, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { formatAmount, formatDuration, formatExact, layerName, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { HudMeter, HudStamina, type StaminaBar } from "@/ui/design-system/kit/hud-elements";
-import { DEEP_WORDS, DEPTH_NUMERALS, depthName, TROOPS } from "@/ui/design-system/kit/words";
+import { DEEP_WORDS, TROOPS } from "@/ui/design-system/kit/words";
 import type { EtherealLayer } from "@bibliothecadao/eternum";
 import type { DeepArmyLife } from "@bibliothecadao/eternum/game-client";
 
@@ -54,15 +54,15 @@ export const EtherealMark = ({ layer, at = "corner" }: { layer: EtherealLayer | 
   layer === undefined ? null : (
     <span
       role="img"
-      aria-label={depthName(layer)}
-      data-tip={depthName(layer)}
+      aria-label={layerName(layer)}
+      data-tip={layerName(layer)}
       className={cn(
         "absolute flex h-5 items-center gap-0.5 rounded-full border border-hud-line-strong bg-hud-dark pl-0.5 pr-1 text-hud-strong leading-none text-hud-ink",
         at === "corner" ? "-bottom-1.5 -left-2.5" : "-left-2.5 top-3.5",
       )}
     >
       <SemanticIcon name={reachMark(layer)} size={14} />
-      {DEPTH_NUMERALS[layer - 1]}
+      {layerName(layer)}
     </span>
   );
 

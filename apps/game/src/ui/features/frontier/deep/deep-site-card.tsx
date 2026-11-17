@@ -9,6 +9,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { costLine } from "@/ui/design-system/kit/price-faces";
+import { DEEP_WORDS } from "@/ui/design-system/kit/words";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { toast } from "@/ui/features/event-feed/notify";
 import { configManager, getStructureName, journeyDistance } from "@bibliothecadao/eternum";
@@ -81,7 +82,7 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
             }),
       );
     } catch (error) {
-      toast.failed(error, "The Deep order could not be sent.");
+      toast.failed(error, DEEP_WORDS.orderFailed);
     }
   };
   const order: DeepOrder | DeepBlock =

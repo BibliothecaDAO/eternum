@@ -1,5 +1,4 @@
 import { TRIUMPH_MODELS } from "@bibliothecadao/eternum/game-client";
-import { DEEP_WORDS } from "@/ui/design-system/kit/words";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -11,7 +10,7 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudCost, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { costLine } from "@/ui/design-system/kit/price-faces";
-import { ARMY, dayLeft, MOVE, RESEARCH, depthName, SPIRE_WORDS, STAMINA, WORLD } from "@/ui/design-system/kit/words";
+import { ARMY, dayLeft, MOVE, RESEARCH, SPIRE_WORDS, STAMINA } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import {
   armyAtItsSpire,
@@ -25,7 +24,7 @@ import {
   isViewerOwner,
   readExpeditionRules,
 } from "@bibliothecadao/eternum";
-import { formatHeldAgainst } from "@bibliothecadao/types";
+import { formatHeldAgainst, layerName } from "@bibliothecadao/types";
 import type { Account } from "starknet";
 
 import { reachMark } from "./depth-art";
@@ -158,8 +157,6 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
   const approach = useOrderAt(useApproachTile(spire, actor !== undefined && depthNow === sourceDepth && !beside));
 
   const sharedDeep = store.get("DeepRules", { game_id: gameId }) !== undefined;
-  const depthLabel = (depth: 0 | 1 | 2 | 3) =>
-    depth === 0 ? WORLD : depth === 3 && sharedDeep ? DEEP_WORDS.title : depthName(depth);
   const offered = spire.targetDepth === undefined ? ([1, 2, 3] as const) : [spire.targetDepth];
   const depths = offered.filter((depth) => depth <= spire.deepest);
   const next = offered.find((depth) => depth > spire.deepest);
@@ -198,7 +195,7 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
         <p className="text-hud-body text-hud-ink">{SPIRE_WORDS.pickArmy}</p>
       )}
       {actor && depthNow !== sourceDepth && (
-        <p className="text-hud-body text-hud-ink">{SPIRE_WORDS.inDepth(actor.label, depthLabel(depthNow))}</p>
+        <p className="text-hud-body text-hud-ink">{SPIRE_WORDS.inDepth(actor.label, layerName(depthNow))}</p>
       )}
       {actor && depthNow === sourceDepth && !beside && (
         <>
@@ -226,7 +223,7 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
               <HudRow
                 key={depth}
                 lead={<Icon name={reachMark(depth)} size={22} />}
-                title={depthLabel(depth)}
+                title={layerName(depth)}
                 detail={why ?? undefined}
                 disabled={!open}
                 controls={
@@ -234,7 +231,7 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
                     kind="secondary"
                     size="sm"
                     disabled={!open}
-                    aria-label={`${SPIRE_WORDS.enter} ${depthLabel(depth)}`}
+                    aria-label={`${SPIRE_WORDS.enter} ${layerName(depth)}`}
                     onClick={() => actor && enter(actor, depth)}
                   >
                     {SPIRE_WORDS.enter}
@@ -246,7 +243,7 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
           {next && (
             <HudRow
               lead={<Icon name={reachMark(next)} size={22} />}
-              title={depthLabel(next)}
+              title={layerName(next)}
               detail={SPIRE_WORDS.locked}
               controls={
                 <HudButton kind="secondary" size="sm" onClick={onResearch}>

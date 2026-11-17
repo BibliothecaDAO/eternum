@@ -149,6 +149,13 @@ export const buildingName = (category: BuildingType | number, frontier: boolean)
 /** A guard slot by its wall, never its internal name: "Castle Wall", not "Gamma". */
 export const guardSlotName = (slot: GuardSlot): string => GUARD_SLOT_NAMES[slot] ?? UNKNOWN;
 
+export const LAYER_NAMES = ["Surface", "Veil", "Hollow", "Deep"] as const;
+export const layerName = (depth: number): string => {
+  const name = LAYER_NAMES[depth];
+  if (name === undefined) throw new Error(`No layer at depth ${depth}`);
+  return name;
+};
+
 export const BEAST_NAMES = {
   troll: "Troll",
   wyvern: "Wyvern",

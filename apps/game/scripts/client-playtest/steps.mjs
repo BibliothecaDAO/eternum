@@ -1,5 +1,12 @@
 import { ECONOMY_STEPS } from "./economy-steps.mjs";
-import { FRONTIER_TROOP_NAMES, TroopType, ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import {
+  FRONTIER_TROOP_NAMES,
+  LAYER_NAMES,
+  layerName,
+  TroopType,
+  ResourcesIds,
+  RESOURCE_PRECISION,
+} from "@bibliothecadao/types";
 import depthLooks from "../../src/three/terrain/ethereal-depths.json" with { type: "json" };
 import homeIcons from "../../src/ui/design-system/home-icons.json" with { type: "json" };
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -334,7 +341,7 @@ const SPIRE_ACTION_STEPS = [
 
 async function enterEtherealIIFromItsCard({ browser }) {
   const armyId = browser.observe().selection?.army?.id ?? null;
-  browser.click("Enter Ethereal II");
+  browser.click("Enter Hollow");
   // The view switches to the arrival, so the army's place on screen is read once it stands there.
   const locate = () => {
     const armyAt = armyOnScreen(browser, armyId);
@@ -1862,17 +1869,16 @@ function inScene(scene, place = scene === "map" ? "Map" : "Realm") {
 const isIn = (seen, place, scene) =>
   seen.scene === scene &&
   seen.rendered === scene &&
-  [place, PLACE_TABS[place], place === "Map" && ETHEREAL].some((name) => Boolean(name && seen.place?.startsWith(name)));
-
-/** A desktop's World tab names the Ethereal layer the map shows, once the realm has one: the map still. */
-const ETHEREAL = "Ethereal";
+  [place, ...(PLACE_TABS[place] ?? []), ...(place === "Map" ? LAYER_NAMES : [])].some((name) =>
+    Boolean(name && seen.place?.startsWith(name)),
+  );
 
 /**
  * A place as the top bar's Realm / World names it: a desktop's HUD, every mode's, moves between the map and the realm
  * there; a phone's Frontier HUD has its place bar's switch, which names where it goes: Realm on the map, World on the
  * realm (the page reads where the player is from it).
  */
-const PLACE_TABS = { Map: "World", Realm: "Realm" };
+const PLACE_TABS = { Map: ["World", layerName(0)], Realm: ["Realm"] };
 
 /**
  * Presses the place bar's switch where there is one (a phone, as it names the place), else the top bar's tab (a
@@ -1882,19 +1888,18 @@ const PLACE_TABS = { Map: "World", Realm: "Realm" };
 function pressPlace(browser, place) {
   const presses = [
     () => browser.click(place),
-    () => browser.click(PLACE_TABS[place]),
-    () => browser.clickTab(PLACE_TABS[place]),
+    ...PLACE_TABS[place].flatMap((name) => [() => browser.click(name), () => browser.clickTab(name)]),
   ];
   for (const press of presses) {
     try {
       press();
-      if (browser.viewChoices().length > 0) browser.chooseView(PLACE_TABS[place]);
+      if (browser.viewChoices().length > 0) browser.chooseView(PLACE_TABS[place].at(-1));
       return;
     } catch {
       // Not this button: the next way there.
     }
   }
-  browser.chooseView(PLACE_TABS[place]);
+  browser.chooseView(PLACE_TABS[place].at(-1));
 }
 
 /** Where the HUD's standing parts sit on the map at rest. */
@@ -3017,7 +3022,7 @@ const LAB_SPIRE_STEPS = [
 ];
 
 const DISCOVERED_SPIRE_STEPS = [
-  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", "Ethereal I") },
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", "Veil") },
   LAB_SPIRE_STEPS[1],
   LAB_SPIRE_STEPS[2],
   {
@@ -3029,10 +3034,10 @@ const DISCOVERED_SPIRE_STEPS = [
       return state.sheet === "Spire" &&
         state.army &&
         state.depths.length === 1 &&
-        state.depths[0].depth === "Ethereal II" &&
+        state.depths[0].depth === "Hollow" &&
         state.depths[0].enabled
         ? completed(state)
-        : failed("Discovered Spire must offer only Ethereal II", state);
+        : failed("Discovered Spire must offer only Hollow", state);
     },
   },
   {
@@ -3187,7 +3192,7 @@ async function openASiteCard(browser) {
 
 /** Each proof starts on the surface and uses the same Spire entry as a Frontier player. */
 function etherealDepthSteps(depth) {
-  const label = `Ethereal ${"I".repeat(depth)}`;
+  const label = layerName(depth);
   return [
     ...LAB_SPIRE_STEPS.slice(0, 3),
     {
@@ -3336,11 +3341,7 @@ function spireCardOffersDepths({ played, seen }) {
   if (shown.sheet !== "Spire") return failed(`Spire opened ${shown.sheet ?? "no card"}, not the spire's`, shown);
   if (!shown.army) return failed("Spire dropped the army", shown);
   const offered = shown.depths.map(({ depth, line, button, enabled }) => `${depth}|${line}|${button}|${enabled}`);
-  const expected = [
-    "Ethereal I|null|Enter|true",
-    "Ethereal II|null|Enter|true",
-    "Ethereal III|Research it to open it|Research|true",
-  ];
+  const expected = ["Veil|null|Enter|true", "Hollow|null|Enter|true", "Deep|Research it to open it|Research|true"];
   if (JSON.stringify(offered) !== JSON.stringify(expected))
     return failed(`the card offers ${offered.join(", ")}`, shown);
   if (!/^.+ stays until the day ends \(.+\)$/.test(shown.commitment ?? ""))
@@ -3351,7 +3352,7 @@ function spireCardOffersDepths({ played, seen }) {
 /** Presses Enter on Ethereal II, then reads the card and the army once the command's answer has moved the army. */
 async function enterEtherealII({ browser }) {
   const before = browser.read(SPIRE_STATE);
-  browser.click("Enter Ethereal II");
+  browser.click("Enter Hollow");
   const moved = (shown) => shown.sent.length > before.sent.length && shown.army?.hex.row !== before.army?.hex.row;
   const after = await readUntil(() => browser.read(SPIRE_STATE), moved, ORDER_OUTCOME_WAIT_MS);
   const framed = (camera) => camera !== null && hexesApart(camera, after.army.hex) <= FRAMED_WITHIN_HEXES;
@@ -3376,11 +3377,10 @@ function armyEnteredEtherealII({ played }) {
     return failed(`EnterDepth was sent for ${JSON.stringify(command.fields)}`, { before, after });
   // Two regions of Frontier's hundred rows straight below where it stood.
   if (after.army?.hex.col !== before.army.hex.col || after.army.hex.row - before.army.hex.row !== 200)
-    return failed("the army did not land in Ethereal II", { before, after });
+    return failed("the army did not land in Hollow", { before, after });
   if (played.camera === null || hexesApart(played.camera, after.army.hex) > FRAMED_WITHIN_HEXES)
-    return failed("the view did not switch to the army in Ethereal II", { before, after, camera: played.camera });
-  if (after.army?.id !== before.army.id)
-    return failed("the army is no longer selected in Ethereal II", { before, after });
+    return failed("the view did not switch to the army in Hollow", { before, after, camera: played.camera });
+  if (after.army?.id !== before.army.id) return failed("the army is no longer selected in Hollow", { before, after });
   return completed({ command, before: before.army, after: after.army, camera: played.camera });
 }
 
@@ -3433,7 +3433,7 @@ function viewWentIntoTheEtherealBelow({ played, seen }) {
   // The spire stands beside the army; Ethereal I is one region of Frontier's hundred rows below it.
   const below = { col: played.army.col, row: played.army.row + 100 };
   if (played.after === null || hexesApart(played.after, below) > FRAMED_WITHIN_HEXES)
-    return failed(`the camera looks at ${JSON.stringify(played.after)}, not Ethereal I below the spire`, played);
+    return failed(`the camera looks at ${JSON.stringify(played.after)}, not Veil below the spire`, played);
   return completed(played);
 }
 
@@ -3445,9 +3445,9 @@ function viewWentIntoTheEtherealBelow({ played, seen }) {
  */
 const LAB_LAYERS_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  { name: "into-ethereal-ii", play: chooseLayer("Ethereal II"), settleMs: 0, verify: cameraInLayer(2) },
-  { name: "back-to-world", play: chooseLayer("World"), settleMs: 0, verify: cameraInLayer(0) },
-  { name: "ethereal-ii-again", play: chooseLayer("Ethereal II"), settleMs: 0, verify: cameraInLayer(2) },
+  { name: "into-ethereal-ii", play: chooseLayer("Hollow"), settleMs: 0, verify: cameraInLayer(2) },
+  { name: "back-to-world", play: chooseLayer(LAYER_NAMES[0]), settleMs: 0, verify: cameraInLayer(0) },
+  { name: "ethereal-ii-again", play: chooseLayer("Hollow"), settleMs: 0, verify: cameraInLayer(2) },
   { name: "open-realm", play: goTo("Realm", "hex"), settleMs: 3_000, verify: inScene("hex") },
   { name: "open-map", play: goTo("Map", "map"), settleMs: 3_000, verify: inScene("map") },
 ];
@@ -3484,7 +3484,7 @@ async function cameraAtRest(browser) {
 const VIEW_SWITCH_WORD = `JSON.stringify(document.querySelector('nav[aria-label="Places"] [data-switch], [aria-label="Map view"] [role="tab"][aria-selected="true"]')?.textContent.trim() ?? null)`;
 
 /** The views a lab realm with Ethereal I and II lists, and the region's rows (Frontier's spacing). */
-const LAB_LAYERS = ["World", "Ethereal I", "Ethereal II"];
+const LAB_LAYERS = LAYER_NAMES.slice(0, 3);
 const REGION_ROWS = 100;
 
 /**

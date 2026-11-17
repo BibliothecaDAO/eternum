@@ -70,9 +70,11 @@ const declaredType = (object) => {
 };
 
 const IMAGE_PATH = /^\/(images|icons|tokens)\//;
+const LAYER_SPELLING = /\b(Veil|Hollow)\b|\bEthereal I{1,3}\b|\b(Surface|Deep)\b(?! (Ocean|[Cc]rystal|miss|\())/;
 
 const COPY = "copy";
 const IMAGE = "image";
+const LAYER = "layer";
 
 const oneSource = {
   meta: {
@@ -84,6 +86,8 @@ const oneSource = {
         "its module), or key a whole Record<{{catalog}}, …> the compiler holds to every member: annotated or with " +
         "`satisfies`, never an `as` cast.",
       [IMAGE]: "One source per fact: artwork is named through the icon modules (IconMeaning), never a path.",
+      [LAYER]:
+        "One source per fact: a layer's name is layerName(depth) from @bibliothecadao/types, never spelled again.",
     },
   },
   create: (context) => ({
@@ -105,12 +109,19 @@ const oneSource = {
       if (catalog) context.report({ node, messageId: COPY, data: { catalog } });
     },
     Literal(node) {
-      if (typeof node.value === "string" && IMAGE_PATH.test(node.value)) context.report({ node, messageId: IMAGE });
+      if (typeof node.value !== "string") return;
+      if (IMAGE_PATH.test(node.value)) context.report({ node, messageId: IMAGE });
+      const isDeveloperMessage = node.parent.type === "NewExpression" && node.parent.callee.name === "Error";
+      if (!isDeveloperMessage && LAYER_SPELLING.test(node.value)) context.report({ node, messageId: LAYER });
+    },
+    JSXText(node) {
+      if (LAYER_SPELLING.test(node.value)) context.report({ node, messageId: LAYER });
     },
     TemplateElement(node) {
-      if (node.parent.quasis[0] === node && IMAGE_PATH.test(node.value.cooked ?? "")) {
+      const text = node.value.cooked ?? "";
+      if (node.parent.quasis[0] === node && IMAGE_PATH.test(text))
         context.report({ node: node.parent, messageId: IMAGE });
-      }
+      if (LAYER_SPELLING.test(text)) context.report({ node: node.parent, messageId: LAYER });
     },
   }),
 };
@@ -139,6 +150,8 @@ const SCENARIOS = [
   "apps/game/src/three/**/verification/**",
 ];
 
+const RECORDS = ["apps/game/src/shell/generated/patch-notes.ts"];
+
 export const CATALOG_RULE = "catalog/one-source";
 
 /**
@@ -164,7 +177,7 @@ export const planCatalogBaseline = (counts, baseline, { lowering = false } = {})
 export const catalogGuardConfigs = [
   {
     files: ["apps/game/src/**/*.{ts,tsx}", "packages/*/src/**/*.{ts,tsx}"],
-    ignores: [...CATALOG_MODULES, ...SCENARIOS],
+    ignores: [...CATALOG_MODULES, ...SCENARIOS, ...RECORDS],
     plugins: { catalog: { rules: { "one-source": oneSource } } },
     rules: { [CATALOG_RULE]: "error" },
   },

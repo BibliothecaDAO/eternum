@@ -71,8 +71,8 @@ it.each(["research", "feed", "chat", "menu"] as const)(
     act(() => root.render(<PhoneHud open={open} />));
     press("Open page");
     expect(page()).toBe(open);
-    press("Ethereal II");
-    choose("World");
+    press("Hollow");
+    choose("Surface");
     expect(go).toHaveBeenCalledWith(0);
     expect(document.querySelector('[role="menu"]')).toBeNull();
     expect(page()).toBe("map");
@@ -83,8 +83,8 @@ it("choosing the layer already shown puts the page away without moving the map",
   go.mockClear();
   act(() => root.render(<PhoneHud open="research" />));
   press("Open page");
-  press("Ethereal II");
-  choose("Ethereal II");
+  press("Hollow");
+  choose("Hollow");
   expect(go).not.toHaveBeenCalled();
   expect(document.querySelector('[role="menu"]')).toBeNull();
   expect(page()).toBe("map");

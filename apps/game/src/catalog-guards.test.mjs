@@ -51,6 +51,9 @@ describe("one source per fact: no copy of a catalog outside its modules", () => 
       "export const M: Record<StructureType, number> = { [StructureType.Realm]: 1, [StructureType.Village]: 2 } as Record<StructureType, number>;",
     ],
     ["an image path", "export const art = '/images/biomes/ocean.png';"],
+    ["a layer's name", "export const word = 'Veil';"],
+    ["a layer's old name", "export const word = 'Ethereal II';"],
+    ["a layer's name in a template", "export const line = (n: string) => `${n} · Hollow`;"],
     ["an image path built in a template", "export const art = (name: string) => `/icons/facets/64/${name}.webp`;"],
   ])("refuses %s", async (_, source) => {
     expect(await hits(SCREEN, source)).toEqual([expect.stringMatching(/^One source per fact/)]);

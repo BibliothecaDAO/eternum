@@ -472,9 +472,7 @@ describe.concurrent("shard notifications", () => {
         expect(push.received).toEqual([]);
         await waitUntil(() => push.received.length === 1, ticks(2) + polls(3));
         expect(Date.now()).toBeGreaterThanOrEqual(earliest);
-        expect(await push.words()).toEqual([
-          "Quarry can be taken / Your largest army outside the Deep can clear its remaining guards.",
-        ]);
+        expect(await push.words()).toEqual(["Quarry can be taken / An army of yours can clear its remaining guards."]);
         await pause(polls(3));
         expect(push.received).toEqual([201]);
       } finally {
@@ -538,9 +536,7 @@ describe.concurrent("shard notifications", () => {
     herald.state.site.lastTick = armiesTick();
     herald.siteChanged();
     await waitUntil(() => push.received.length === 1, 20000);
-    expect(await push.words()).toEqual([
-      "Quarry can be taken / Your largest army outside the Deep can clear its remaining guards.",
-    ]);
+    expect(await push.words()).toEqual(["Quarry can be taken / An army of yours can clear its remaining guards."]);
     herald.siteChanged();
     await pause(polls(2));
     expect(push.received).toEqual([201]);
@@ -563,9 +559,7 @@ describe.concurrent("shard notifications", () => {
       await pause(polls(2));
       expect(push.received).toEqual([]);
       await waitUntil(() => push.received.length === 1, 60000);
-      expect(await push.words()).toEqual([
-        "Quarry can be taken / Your largest army outside the Deep can clear its remaining guards.",
-      ]);
+      expect(await push.words()).toEqual(["Quarry can be taken / An army of yours can clear its remaining guards."]);
     } finally {
       await worker.dispose();
     }
@@ -643,7 +637,7 @@ describe.concurrent("shard notifications", () => {
     expect(push.received).toEqual([]);
 
     // Acting at the start of a tick puts the first wake exactly REST_TICKS on, and the second a whole tick after it.
-    await waitUntil(() => Date.now() % ticks(1) < 200, 15_000);
+    await pause(ticks(1) - (Date.now() % ticks(1)));
     herald.act(0);
     const firstWake = (armiesTick() + REST_TICKS) * ticks(1);
     await pause(ticks(1));

@@ -29,7 +29,7 @@ describe("the castle's tree as the contract rules it", () => {
     expect(why(EARLY_REALM, "row-0")).toBe("Essence 300 / 500");
     expect(why(EARLY_REALM, "row-1")).toBe("Build a Workshop");
     expect(why(EARLY_REALM, "row-5")).toBe("Build a Supply yard");
-    expect(why(EARLY_REALM, "reach-2")).toBe("Ethereal I first");
+    expect(why(EARLY_REALM, "reach-2")).toBe("Veil first");
     expect(canResearchNow(readResearchTree(EARLY_REALM))).toBe(true);
   });
 

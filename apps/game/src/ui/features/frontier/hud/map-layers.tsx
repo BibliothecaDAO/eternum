@@ -8,7 +8,7 @@ import { openPlace } from "@/play/navigation/open-place";
 import { requestLayerView } from "@/three/scenes/worldmap-layer-request";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import type { MenuItem } from "@/ui/design-system/kit/hud-elements";
-import { DEEP_WORDS, depthName, layerChestLine, REALM, WORLD } from "@/ui/design-system/kit/words";
+import { layerChestLine, REALM } from "@/ui/design-system/kit/words";
 import type { WorldTab } from "@/ui/features/world/containers/top-header/map-view-controls";
 import {
   type EtherealLayer,
@@ -25,6 +25,8 @@ import {
 } from "@bibliothecadao/eternum";
 import { deepCenter, isDeepTile, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { SCOPE_INPUT_MODELS } from "@bibliothecadao/eternum/game-sync";
+
+import { layerName } from "@bibliothecadao/types";
 
 import { reachMark } from "../depth-art";
 import { usePlayerDay } from "../log/player-day";
@@ -105,9 +107,7 @@ const realmSite = (store: Parameters<typeof structureMapPosition>[0], realm: Nat
   return site && { col: site.x, row: site.y };
 };
 
-/** A layer's word: World, or Ethereal I to III. */
-const layerName = (layer: MapLayer): string =>
-  layer === "deep" ? DEEP_WORDS.title : layer === 0 ? WORLD : depthName(layer);
+const layerWord = (layer: MapLayer): string => layerName(layer === "deep" ? 3 : layer);
 
 /** A layer's painting: the world map's, or the depth's own mark. */
 const layerMark = (layer: MapLayer): IconMeaning => (layer === 0 ? "map" : reachMark(layer === "deep" ? 3 : layer));
@@ -126,7 +126,7 @@ const viewChoice = (label: string, icon: IconMeaning, checked: boolean, onSelect
  */
 const layerChoices = ({ layers, shown, go, chests }: MapLayers, chosen: () => void = () => {}): MenuItem[] =>
   layers.map((layer) => ({
-    ...viewChoice(layerName(layer), layerMark(layer), layer === shown, () => {
+    ...viewChoice(layerWord(layer), layerMark(layer), layer === shown, () => {
       if (layer !== shown) go(layer);
       chosen();
     }),
@@ -144,7 +144,7 @@ export const layerViews = (layers: MapLayers, realm: { icon: IconMeaning; go: ()
   if (layers.layers.length === 1) return { marks };
   return {
     icon: layerMark(layers.shown ?? 0),
-    word: layerName(layers.shown ?? 0),
+    word: layerWord(layers.shown ?? 0),
     items: [
       viewChoice(REALM, realm.icon, layers.shown === null, () => (layers.shown === null ? chosen() : realm.go())),
       ...layerChoices(layers, chosen),
@@ -155,7 +155,7 @@ export const layerViews = (layers: MapLayers, realm: { icon: IconMeaning; go: ()
 
 /** The desktop's World tab over the layers: the layer shown, its list, and the four layers' chests before it opens. */
 export const layerTab = (layers: MapLayers): WorldTab => ({
-  label: layerName(layers.shown ?? 0),
+  label: layerWord(layers.shown ?? 0),
   menu: layers.layers.length > 1 ? layerChoices(layers) : undefined,
   badge: layers.chests && <LayerChests chests={layers.chests} layers={layers.layers} />,
 });
@@ -226,7 +226,7 @@ const LayerChests = ({
         key={layer}
         data-chest={chests[layer]}
         role="img"
-        aria-label={layerChestLine(layerName(layer), chests[layer])}
+        aria-label={layerChestLine(layerWord(layer), chests[layer])}
         className="ui-layer-chests__layer"
       >
         <Icon name={layerMark(layer)} size={compact ? 12 : 18} />

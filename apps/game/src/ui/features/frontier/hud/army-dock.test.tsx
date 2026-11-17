@@ -18,6 +18,11 @@ import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 
 import { frontierDay } from "../deploy/deploy-fixture";
 import { ArmyDock } from "./army-dock";
+import { LAYER_NAMES } from "@bibliothecadao/types";
+
+const BELOW_SURFACE = LAYER_NAMES.slice(1)
+  .map((name) => `[aria-label="${name}"]`)
+  .join(",");
 
 afterEach(() => {
   setBlockTimestampSource(null);
@@ -113,10 +118,10 @@ it.each(["phone", "desktop"] as const)(
     try {
       // Each army's own button: the layer's name, and the numeral it shows beside the layer's painting.
       const marks = ARMIES_OUT.map(({ label }) => {
-        const mark = host.querySelector(`button[aria-label="${label}"]`)!.querySelector('[aria-label^="Ethereal"]');
+        const mark = host.querySelector(`button[aria-label="${label}"]`)!.querySelector(BELOW_SURFACE);
         return mark && [mark.getAttribute("aria-label"), mark.textContent, mark.querySelector("img")?.dataset.icon];
       });
-      expect(marks).toEqual([["Ethereal II", "II", "depth-2"], null]);
+      expect(marks).toEqual([["Hollow", "Hollow", "depth-2"], null]);
     } finally {
       act(() => root.unmount());
       host.remove();

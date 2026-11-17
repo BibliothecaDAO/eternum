@@ -1,3 +1,4 @@
+import { layerName } from "@bibliothecadao/types";
 import { type ComponentType, lazy, type LazyExoticComponent } from "react";
 
 /** The games a page can draw; the lab's Game switch writes one into the address as `mode`. */
@@ -333,7 +334,7 @@ export const ROOMS: LabRoom[] = [
         modes: FRONTIER,
         views: [
           view(
-            "Deep site",
+            `${layerName(3)} site`,
             "/lab/season-one/deep-site",
             "season-one/deep-site",
             load(() => import("./season-one/deep-site-lab"), "DeepSiteLab"),

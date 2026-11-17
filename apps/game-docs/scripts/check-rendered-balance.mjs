@@ -13,7 +13,7 @@ import remarkMdx from "remark-mdx";
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { resourceName, BuildingType } from "@bibliothecadao/types";
+import { LAYER_NAMES, resourceName, BuildingType } from "@bibliothecadao/types";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
 const configOf = (mode) =>
@@ -75,7 +75,6 @@ export const relicRuns = (relics, rules, firstRelicId) => [
 /** Thousands with commas, as the pages write them. */
 const n = (value) => value.toLocaleString("en-US");
 const pct = (bps) => `${n(bps / 100)}%`;
-const DEPTH_NAMES = ["Surface", "Ethereal I", "Ethereal II", "Ethereal III"];
 const TIERS = ["common", "uncommon", "rare", "epic", "legendary"];
 const POINTS_PRECISION = 1_000_000;
 
@@ -127,7 +126,7 @@ export const frontierGuardPhrases = (preset, riftGuardBound) => {
     "Ground Camps Rifts Weaker beasts Stronger beasts",
     ...preset.depths.map((depth, index) =>
       [
-        DEPTH_NAMES[index],
+        LAYER_NAMES[index],
         range(depth.siteGuardLower, depth.siteGuardUpper),
         range(
           riftGuardBound(depth.siteGuardLower, depth.guardStep),
@@ -164,7 +163,7 @@ export const frontierPhrases = (config, preset, riftGuardBound, nativeRules) => 
       page: "frontier/expedition",
       phrases: [
         ...frontierGuardPhrases(preset, riftGuardBound),
-        ...preset.depths.map((depth, index) => `${DEPTH_NAMES[index]} ${depth.revealPercent}%`),
+        ...preset.depths.map((depth, index) => `${LAYER_NAMES[index]} ${depth.revealPercent}%`),
       ],
     },
     {
@@ -188,7 +187,7 @@ const historicalChestPhrases = (preset) => [
     page: "frontier/chests",
     phrases: [
       ...preset.depths.map(
-        (depth, index) => `${DEPTH_NAMES[index]} ${TIERS.map((tier) => pct(depth.chest[tier])).join(" ")}`,
+        (depth, index) => `${LAYER_NAMES[index]} ${TIERS.map((tier) => pct(depth.chest[tier])).join(" ")}`,
       ),
       `Shares ${TIERS.map((tier) => n(preset.chests.shares[tier])).join(" ")}`,
       `never exceeds ${n(preset.chests.priceCeiling)} LORDS`,

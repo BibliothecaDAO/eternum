@@ -181,7 +181,7 @@ describe("liveHomeArmies", () => {
       expect(spireEtherealView(store as never, spire)).toEqual({ col: 25, row: 25 });
     });
 
-    it("goes to Ethereal I straight below the spire while none of the realm's armies is there", () => {
+    it("goes to Veil straight below the spire while none of the realm's armies is there", () => {
       const store = armiesStore(expeditionRules, [army(1, 6), army(2, 25, 1_000n, 99)]);
       atFloor(rules.startMainAt + 60);
       expect(spireEtherealView(store as never, spire)).toEqual({ col: 24, row: 15 });
@@ -254,7 +254,7 @@ describe("expedition spire", () => {
 });
 
 describe("isEtherealTile", () => {
-  it("draws Ethereal I to III with the ethereal surface, and each day's surface without it", () => {
+  it("draws Veil to III with the ethereal surface, and each day's surface without it", () => {
     // Spacing 10: day 1's surface is rows 40..49, its Ethereal I to III rows 50..79, day 2's surface rows 80..89.
     expect([45, 49, 50, 65, 79, 80].map((row) => isEtherealTile(rules, { row, alt: false }))).toEqual([
       false,

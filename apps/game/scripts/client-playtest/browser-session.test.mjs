@@ -101,7 +101,7 @@ it("refuses a launch option on one command, which would relaunch the browser wit
   }
 });
 
-it.each(["Deep", "Ethereal II"])(
+it.each(["Deep", "Hollow"])(
   "observes the phone's visible %s layer rather than inferring Map from its switch",
   (layer) => {
     const dom = new JSDOM(

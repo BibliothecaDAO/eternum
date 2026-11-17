@@ -502,7 +502,7 @@ it.each([
         fight={undefined}
         pay={null}
         chest={{ tier: 4, lords: 500 }}
-        ruinChoice={{ depth: "Ethereal II", perDepth }}
+        ruinChoice={{ depth: "Hollow", perDepth }}
         verb={{ kind: "blocked", reason: "Today's LORDS budget cannot fund this ruin." }}
         onClose={() => {}}
       />,
@@ -510,7 +510,7 @@ it.each([
   );
   // The ruin's rule is in sight on the card, never only on a hover (owner, 30 October: "the text here could be more
   // explicit !").
-  expect(host.querySelector("[data-ruin-rule]")!.textContent).toBe(`Ethereal II · ${rule}`);
+  expect(host.querySelector("[data-ruin-rule]")!.textContent).toBe(`Hollow · ${rule}`);
   expect(host.querySelector("[data-ruin-rule] [data-tip]")).toBeNull();
   expect(host.textContent).toContain("Today's LORDS budget cannot fund this ruin.");
   const attack = [...host.querySelectorAll<HTMLButtonElement>("button")].find(

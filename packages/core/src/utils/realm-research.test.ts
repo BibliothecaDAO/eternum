@@ -16,7 +16,7 @@ const learned =
   (1n << 3n) + // Farm Granary uncommon
   (1n << 7n) + // Workshop uncommon, Tools
   (1n << 46n) + // Shrine
-  (2n << 48n); // Ethereal II
+  (2n << 48n);
 
 const store = (value: bigint | undefined) =>
   ({ get: () => (value === undefined ? undefined : { game_id: 7, structure_id: 9, learned: value }) }) as never;

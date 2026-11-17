@@ -337,6 +337,7 @@ import {
   formatCharge,
   resourceName,
   formatHeldAgainst,
+  layerName,
   structureName,
   StructureType,
   tierNumeral as rankNumeral,
@@ -451,7 +452,6 @@ export const STAMINA = "stamina";
 export const EMPIRE = "Empire";
 /** The places: the nav's words. */
 export const REALM = "Realm";
-/** The world map, as the Realm / World switch names it. */
 export const WORLD = "World";
 /** The realm's way home from its card's header: the map centred on it. */
 export const SHOW_MY_REALM = "Show my realm";
@@ -705,11 +705,7 @@ export const UPGRADE = "Upgrade";
 export const CASTLE = "Castle";
 const HUT = buildingName(BuildingType.WorkersHut, true);
 /** The castle rows that unlock the three depths beyond the spire. */
-/** The layer a realm's spire is the portal to (owner, 4 November 2026: "its a portal to the ethereal layer bro"). */
-export const ETHEREAL = "Ethereal";
-export const DEPTH_NUMERALS = ["I", "II", "III"] as const;
-/** A depth by its name: "Ethereal II". */
-export const depthName = (depth: 1 | 2 | 3): string => `${ETHEREAL} ${DEPTH_NUMERALS[depth - 1]}`;
+export const LAYER = "Layer";
 /** A layer's ruin chest today, as the layer switch's marks say it to assistive technology: "Ethereal II: chest taken". */
 export const layerChestLine = (layer: string, chest: RuinChest): string => `${layer}: ${LAYER_CHEST[chest]}`;
 const LAYER_CHEST = {
@@ -718,14 +714,6 @@ const LAYER_CHEST = {
   unknown: "chest not known without an army there",
   locked: "not researched",
 } as const satisfies Record<RuinChest, string>;
-/** The day's own layer, as a site's card names its depth (the layer switch calls it World). */
-const SURFACE = "Surface";
-/** A site's depth by its name, 0 the Surface, then Ethereal I to III; loud for a depth the map does not have. */
-export const siteDepthName = (depth: number): string => {
-  if (depth === 0) return SURFACE;
-  if (depth === 1 || depth === 2 || depth === 3) return depthName(depth);
-  throw new Error(`No expedition depth ${depth}`);
-};
 
 /**
  * A realm's spire, its card's words: whose it is, the army it acts for, each depth's entry or why not, and what entering
@@ -746,9 +734,12 @@ export const SPIRE_WORDS = {
   commits: (army: string, left: string) => `${army} stays until the day ends (${left})`,
 } as const;
 
+const DEEP = layerName(3);
+
 /** The Deep's three sites (docs/plans/frontier-season-1.md, the Deep): who they serve, who guards them, what a tick pays. */
 export const DEEP_WORDS = {
-  title: "Deep",
+  title: DEEP,
+  orderFailed: `The ${DEEP} order could not be sent.`,
   purpose: {
     foundation: "One site every Aspect fights for: holding it raises your Aspect's hyperstructure",
     quarry: "For you",
@@ -777,12 +768,12 @@ export const DEEP_WORDS = {
   /** How long a guard's troops last: its army ticks, and the time until the last of them. */
   lasts: (ticks: number, time: string) => `${formatExact(ticks)} ticks left (${time})`,
   /** What the army panel's chip of those ticks counts. */
-  inTheDeep: "In the Deep",
+  inTheDeep: `In the ${DEEP}`,
   share: (percent: number) => `${percent}% of each tick`,
   attack: "Attack",
   take: "Take",
   join: "Join",
-  pickArmy: "Select an army in the Deep",
+  pickArmy: `Select an army in the ${DEEP}`,
   guarding: "Already guarding",
   full: "All 4 slots are taken",
   rival: "Another Aspect holds it",
@@ -851,7 +842,7 @@ export const OPENING_WORDS = {
   },
   gotIt: "Got it",
   /** The offer that comes with the first Deep line: the site alert, off until the player turns it on. */
-  alertOffer: "Alert me when a Deep site can be taken",
+  alertOffer: `Alert me when a ${DEEP} site can be taken`,
   alertOn: "Turn on",
   alertRetry: "Try again",
   alertDecline: "Not now",
@@ -892,15 +883,15 @@ export const ASPECT_PAGE_WORDS = {
   /** What an Aspect's height is worth in LORDS at the game's rate: displayed only, nothing is paid in the game. */
   lords: (amount: number) => `${formatExact(amount)} LORDS`,
   worth: "Worth at season end",
-  fights: "Fights in the Deep",
-  noFights: "No fight in the Deep yet",
+  fights: `Fights in the ${DEEP}`,
+  noFights: `No fight in the ${DEEP} yet`,
   fight: (winner: string, loser: string) => `${winner} beat ${loser}`,
   fightLosses: (first: string, firstLost: number, second: string, secondLost: number) =>
     `${first} lost ${formatExact(firstLost)}, ${second} lost ${formatExact(secondLost)} troops`,
   standoff: (first: string, second: string) => `${first} and ${second} fought to a stand`,
   mutual: (first: string, second: string) => `${first} and ${second} wiped each other out`,
-  readingFights: "Reading the Deep's fights…",
-  fightsFailed: "The Deep's fights could not be read.",
+  readingFights: `Reading the ${DEEP}'s fights…`,
+  fightsFailed: `The ${DEEP}'s fights could not be read.`,
   wiped: (aspect: string) => `${aspect} wiped out`,
   reading: "Reading the race…",
 } as const;
@@ -1904,7 +1895,7 @@ export const LEVEL_WORDS = { off: "Off", important: "Important", all: "All" } as
 export const NOTIFICATION_KIND_WORDS = {
   "day-open": "each day's opening",
   "army-rested": "rested armies",
-  "site-vulnerable": "Deep sites you can take",
+  "site-vulnerable": `${DEEP} sites you can take`,
   fights: "fights",
   results: "results",
   messages: "messages",

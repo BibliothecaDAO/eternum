@@ -23,7 +23,7 @@ export function buildSiteVulnerableNotification(input: {
       id: `site:v1:${input.chainId}:${input.gameId}:${input.owner}:${input.siteId}:${input.day}`,
       owner: input.owner,
       title: `${input.siteName} can be taken`,
-      body: "Your largest army outside the Deep can clear its remaining guards.",
+      body: "An army of yours can clear its remaining guards.",
       tag: kindTag("site-vulnerable", target),
       target,
       createdAt: input.now,

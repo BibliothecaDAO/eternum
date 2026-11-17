@@ -1,9 +1,9 @@
 import type { SiteKind } from "@bibliothecadao/eternum";
-import { LORDS, formatShort } from "@bibliothecadao/types";
+import { LORDS, formatShort, layerName } from "@bibliothecadao/types";
 import { HudButton, HudChip, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { TARGET_MARKS } from "../sites/site-marks";
 import { OrderMark } from "./realm-marks";
-import { CHESTS, CLEARED, ESSENCE, DEPTH_NUMERALS, ETHEREAL, LABOR, SEASON, VISIT } from "@/ui/design-system/kit/words";
+import { CHESTS, CLEARED, ESSENCE, LABOR, LAYER, SEASON, VISIT } from "@/ui/design-system/kit/words";
 
 /** A realm's season, as Herald totals it. */
 export type SeasonDetail = {
@@ -75,8 +75,8 @@ export const SeasonDetailSheet = ({
           {formatShort(detail.lords)}
         </HudChip>
         {detail.depth > 0 && (
-          <HudChip icons={["portal"]} label={ETHEREAL}>
-            {DEPTH_NUMERALS[detail.depth - 1]}
+          <HudChip icons={["portal"]} label={LAYER}>
+            {layerName(detail.depth)}
           </HudChip>
         )}
       </div>

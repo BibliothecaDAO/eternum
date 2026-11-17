@@ -47,7 +47,7 @@ describe("a lord and a realm's Order on the HUD", () => {
 
   it("shows a realm's rank by its castle, with its depth's painting as a badge, no numeral, and none before the first", () => {
     const deep = render(<RealmBadge level={1} depth={2} />);
-    expect(deep.querySelector('[role="img"]')?.getAttribute("aria-label")).toBe("City · Ethereal II");
+    expect(deep.querySelector('[role="img"]')?.getAttribute("aria-label")).toBe("City · Hollow");
     expect(deep.querySelector('[data-icon="depth-2"]')).not.toBeNull();
     expect(deep.textContent).toBe("");
     const home = render(<RealmBadge level={0} depth={0} />);

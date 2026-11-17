@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { layerName } from "@bibliothecadao/types";
 import { SeasonOver } from "@/shell/season-tab/season-over";
 import approvedExtension from "../../../../../../config/source/frontier/extension.json";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -309,10 +310,10 @@ it.each([false, true])(
       .map((badge) => badge.getAttribute("aria-label"))
       .filter((label) => /Settlement|City|Kingdom|Empire/.test(label ?? ""));
     expect(badges).toEqual([
-      `${campaigns ? "Devcon · " : ""}Empire · Ethereal III`,
-      `${campaigns ? "Golden Devcon · " : ""}City · Ethereal II`,
+      `${campaigns ? "Devcon · " : ""}Empire · Deep`,
+      `${campaigns ? "Golden Devcon · " : ""}City · Hollow`,
       "Settlement",
-      "Wonder · Kingdom · Ethereal I",
+      "Wonder · Kingdom · Veil",
     ]);
     const paintings = [...host.querySelectorAll('section[aria-label="Season"] [role="img"]')]
       .filter((badge) => /Settlement|City|Kingdom|Empire/.test(badge.getAttribute("aria-label") ?? ""))
@@ -444,7 +445,7 @@ it("gives a phone a Realm / World switch: it names where it goes, the board then
   expect(toggle().textContent).toBe("Realm");
   await act(async () => toggle().click());
   expect(window.location.pathname).toMatch(/\/hex$/);
-  expect(toggle().textContent).toBe("World");
+  expect(toggle().textContent).toBe(layerName(0));
   expect(toggle().getAttribute("aria-current")).toBeNull();
   // A page open over the board: World still goes to the map, and the page goes with it.
   const feed = () => slots().find((button) => button.textContent?.endsWith("Feed"))!;

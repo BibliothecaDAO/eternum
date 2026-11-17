@@ -1,16 +1,8 @@
 import { logisticsStamina, researchHasIndependentSides, isOathResearch } from "@bibliothecadao/eternum";
 import type { IconMeaning, IconMark } from "@/ui/design-system/icon";
-import {
-  depthName,
-  RESEARCH_TREE,
-  SHRINE,
-  STAMINA,
-  type RankedWords,
-  type Tier,
-  WELL,
-} from "@/ui/design-system/kit/words";
+import { RESEARCH_TREE, SHRINE, STAMINA, type RankedWords, type Tier, WELL } from "@/ui/design-system/kit/words";
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
-import { BuildingType, formatExact, formatFigure, formatPercent, rankName } from "@bibliothecadao/types";
+import { BuildingType, formatExact, formatFigure, formatPercent, layerName, rankName } from "@bibliothecadao/types";
 
 import { buildingIcon, buildingName } from "../build/building-names";
 import { sideMarks } from "./sides-taken";
@@ -369,7 +361,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       }),
     ],
     ROW_DEPTH: ([1, 2, 3] as const).map((depth) => {
-      const name = depthName(depth);
+      const name = layerName(depth);
       const before: Need[] =
         depth === 1
           ? []
@@ -377,7 +369,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
               {
                 kind: "tier",
                 met: learned(ROWS.depth).tier >= depth - 1,
-                node: depthName((depth - 1) as 1 | 2),
+                node: layerName(depth - 1),
                 icon: DEPTH_MARKS[depth - 2]!,
               },
             ];

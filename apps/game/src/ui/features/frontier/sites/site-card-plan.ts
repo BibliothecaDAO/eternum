@@ -27,6 +27,7 @@ import {
   type BiomeType,
   getLayeredAttackDistance,
   getTroopAttackRange,
+  layerName,
   RESOURCE_PRECISION,
   ResourcesIds,
   StructureType,
@@ -34,8 +35,6 @@ import {
   type TroopTier,
   type TroopType,
 } from "@bibliothecadao/types";
-
-import { siteDepthName } from "@/ui/design-system/kit/words";
 
 import { attackTargetName, type AttackTargetKind } from "./site-marks";
 
@@ -104,7 +103,7 @@ export const readSiteCard = (
     kind,
     ruinDepth:
       kind === "Ruin"
-        ? siteDepthName(Math.floor(site.row / store.require("SettlementRules", { game_id: site.game_id }).spacing) % 4)
+        ? layerName(Math.floor(site.row / store.require("SettlementRules", { game_id: site.game_id }).spacing) % 4)
         : undefined,
     chest: chest && {
       tier: chest.tier,

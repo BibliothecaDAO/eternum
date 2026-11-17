@@ -9,7 +9,7 @@ import {
   nativeResearchConstants as research,
   nativeRuleConstants as rule,
 } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { BEAST_NAMES, TIER_WORDS, ROAMING_BEASTS, SITE_GUARDS, resourceName } from "@bibliothecadao/types";
+import { BEAST_NAMES, LAYER_NAMES, TIER_WORDS, ROAMING_BEASTS, SITE_GUARDS, resourceName } from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "./config";
 import { CONTRACT } from "./contract-constants";
 
@@ -29,7 +29,6 @@ const n = (value: number) => value.toLocaleString("en-US");
 const pct = (bps: number) => `${n(bps / 100)}%`;
 const range = (lower: number, upper: number) => `${n(lower)}–${n(upper)}`;
 
-const DEPTH_NAMES = ["Surface", "Ethereal I", "Ethereal II", "Ethereal III"] as const;
 const TIERS = ["common", "uncommon", "rare", "epic", "legendary"] as const;
 const hoursOf = (units: number) => (units * seasonDayUnitSeconds(frontierPreset)) / 3600;
 
@@ -110,7 +109,7 @@ export const FRONTIER = {
     emptyRevealLimit: n(frontierPreset.discovery.emptyRevealLimit),
   },
   depths: frontierPreset.depths.map((depth, index) => ({
-    name: DEPTH_NAMES[index],
+    name: LAYER_NAMES[index],
     revealPercent: `${depth.revealPercent}%`,
     campGuard: range(depth.siteGuardLower, depth.siteGuardUpper),
     riftGuard: range(
@@ -170,7 +169,7 @@ export const FRONTIER = {
 /** Retired paying seasons; only the historical chest page reads these values. */
 export const HISTORICAL_FRONTIER_CHESTS = {
   depths: historicalFrontierPreset.depths.map((depth, index) => ({
-    name: DEPTH_NAMES[index],
+    name: LAYER_NAMES[index],
     chest: TIERS.map((tier) => pct(depth.chest[tier])),
   })),
   shares: TIERS.map((tier) => n(historicalFrontierPreset.chests.shares[tier])),

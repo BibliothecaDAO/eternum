@@ -1,3 +1,4 @@
+import { layerName } from "@bibliothecadao/types";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -304,7 +305,7 @@ describe("the place bar", () => {
     expect(onMap.querySelector("img")?.getAttribute("src")).toContain("realm");
     act(() => root.render(<PlaceNav place={null} onRealm onGo={onGo} researchDot events={0} unread={0} />));
     const onBoard = host.querySelector("button")!;
-    expect(onBoard.textContent).toBe("World");
+    expect(onBoard.textContent).toBe(layerName(0));
     expect(onBoard.getAttribute("aria-current")).toBeNull();
     act(() => onBoard.click());
     expect(onGo).toHaveBeenCalledWith("realm");
@@ -318,7 +319,7 @@ describe("the place bar", () => {
   it("leaves Research out for a spectator, who has no realm to research", () => {
     act(() => root.render(<PlaceNav place={null} onRealm onGo={vi.fn()} events={0} unread={0} />));
     const slots = [...host.querySelectorAll("button")].map((slot) => slot.textContent);
-    expect(slots).toEqual(["World", "Feed", "Chat", "Menu"]);
+    expect(slots).toEqual([layerName(0), "Feed", "Chat", "Menu"]);
   });
 
   it("dots Research only while a node can be researched now", () => {

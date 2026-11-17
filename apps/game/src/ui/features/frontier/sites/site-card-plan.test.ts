@@ -67,7 +67,7 @@ describe("Frontier's tile card", () => {
     expect(plan.name).toBe("Basilisk");
     expect(plan.payout).toEqual({ resourceId: ResourcesIds.Lords, amount: 500, fits: 500 });
     expect(plan.chest).toMatchObject({ tier: 3, amount: 500, funded: true });
-    expect(plan.ruinDepth).toBe("Ethereal I");
+    expect(plan.ruinDepth).toBe("Veil");
     const rift = campBeside("Rift");
     expect(readSiteCard(rift.store, rift.site, rift.structure, SITE_TILE, null).payout).toEqual({
       resourceId: ResourcesIds.Essence,

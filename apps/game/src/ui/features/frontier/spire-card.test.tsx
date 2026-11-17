@@ -120,17 +120,17 @@ describe("a realm's spire, from the player's path", () => {
       expect(hud.sheet()?.getAttribute("aria-label")).toBe("Spire");
       expect(hud.sheet()!.textContent).toContain("Army");
       expect(hud.depths()).toEqual([
-        { depth: "Ethereal I", line: undefined, button: "Enter", enabled: true },
-        { depth: "Ethereal II", line: undefined, button: "Enter", enabled: true },
+        { depth: "Veil", line: undefined, button: "Enter", enabled: true },
+        { depth: "Hollow", line: undefined, button: "Enter", enabled: true },
         // The next depth is its research's, through Research.
-        { depth: "Ethereal III", line: "Research it to open it", button: "Research", enabled: true },
+        { depth: "Deep", line: "Research it to open it", button: "Research", enabled: true },
       ]);
       // What entering commits the army to, before it goes: the rest of the day, with no way back up.
       expect(hud.host.querySelector("[data-spire-commitment]")?.textContent).toMatch(
         /^Army( \d+)? stays until the day ends \(.+\)$/,
       );
 
-      await hud.press("Enter Ethereal II");
+      await hud.press("Enter Hollow");
       expect(hud.enter).toHaveBeenCalledTimes(1);
       expect(hud.enter).toHaveBeenCalledWith(expect.objectContaining({ explorerId: ARMY, depth: 2 }));
 
@@ -148,7 +148,7 @@ describe("a realm's spire, from the player's path", () => {
       );
       const at = store.entityOccupancy(1, ARMY)!;
       expect(expeditionDepth(rules, { y: at.row })).toBe(2);
-      expect(hud.sheet()!.textContent).toMatch(/Army( \d+)? is in Ethereal II today/);
+      expect(hud.sheet()!.textContent).toMatch(/Army( \d+)? is in Hollow today/);
       expect(hud.depths()).toEqual([]);
     } finally {
       hud.unmount();
@@ -222,8 +222,8 @@ describe("a realm's spire, from the player's path", () => {
     try {
       tapSpireWithArmy(spire);
       const [first, second] = hud.depths();
-      expect(first).toEqual({ depth: "Ethereal I", line: "Its landing is taken", button: "Enter", enabled: false });
-      expect(second.depth).toBe("Ethereal II");
+      expect(first).toEqual({ depth: "Veil", line: "Its landing is taken", button: "Enter", enabled: false });
+      expect(second.depth).toBe("Hollow");
       expect(second.line).toBeUndefined();
       expect(second.enabled).toBe(true);
     } finally {
@@ -590,7 +590,7 @@ describe("discovered expedition Spires", () => {
     const hud = renderHud(store);
     try {
       tapSpireWithArmy(spire);
-      const title = depth === 0 ? "Ethereal I" : "Ethereal II";
+      const title = depth === 0 ? "Veil" : "Hollow";
       expect(hud.depths()).toEqual([{ depth: title, line: undefined, button: "Enter", enabled: true }]);
       expect(armyRealmSpire(store, 1, ARMY, NOW)).toMatchObject({ ...spire, targetDepth: depth + 1 });
       await hud.press(`Enter ${title}`);

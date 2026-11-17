@@ -8,6 +8,9 @@ import { SeasonDetailSheet } from "./season-detail";
 import { SeasonList, type SeasonListRow } from "./season-list";
 import { seasonPodium } from "./season-pool";
 import { TARGET_MARKS } from "../sites/site-marks";
+import { LAYER_NAMES } from "@bibliothecadao/types";
+
+const namesALayerBelow = (host: HTMLElement) => LAYER_NAMES.slice(1).some((name) => host.textContent?.includes(name));
 
 const render = (node: ReactNode) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -168,12 +171,12 @@ describe("the season list", () => {
     const other = render(<SeasonDetailSheet detail={detail} label="Aldric" onVisit={onVisit} onClose={vi.fn()} />);
     expect(other.host.querySelector("[aria-label='Ruin 9']")).not.toBeNull();
     // No Ethereal layer is drawn until the realm has gone through its spire.
-    expect(other.host.querySelector("[aria-label^='Ethereal']")).toBeNull();
+    expect(namesALayerBelow(other.host)).toBe(false);
     act(() => button(other.host, "Visit").click());
     expect(onVisit).toHaveBeenCalled();
     other.unmount();
     const own = render(<SeasonDetailSheet detail={{ ...detail, depth: 2 }} label="You" onClose={vi.fn()} />);
-    expect(own.host.querySelector("[aria-label='Ethereal II']")).not.toBeNull();
+    expect(own.host.textContent).toContain(LAYER_NAMES[2]);
     expect(button(own.host, "Visit")).toBeUndefined();
     own.unmount();
   });

@@ -1,5 +1,5 @@
 import { nativeOathConstants as oaths } from "@bibliothecadao/eternum/game-client";
-import { orders } from "@bibliothecadao/types";
+import { layerName, orders } from "@bibliothecadao/types";
 
 export function oathName(id: number): string {
   const order = orders.find(({ orderId }) => orderId === id);
@@ -8,6 +8,6 @@ export function oathName(id: number): string {
 }
 
 export function oathEffectDescription(id: number): string | undefined {
-  if (id === oaths.VITRIOL) return `Loses ${oaths.VITRIOL_LOSS_PER_TICK} troops a tick in the Deep.`;
+  if (id === oaths.VITRIOL) return `Loses ${oaths.VITRIOL_LOSS_PER_TICK} troops a tick in the ${layerName(3)}.`;
   return undefined;
 }

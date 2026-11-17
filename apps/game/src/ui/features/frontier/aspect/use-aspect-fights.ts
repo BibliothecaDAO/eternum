@@ -1,3 +1,4 @@
+import { layerName } from "@bibliothecadao/types";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { getActiveGame } from "@/runtime/world";
@@ -52,7 +53,7 @@ export function useAspectFights(owners: readonly bigint[]): AspectFeedReading {
   const { fights, unnamed } = aspectFights(setup.store, game, battles.data);
   if (unnamed > 0) {
     // A fight with a side whose Aspect is not read yet is not an empty feed: the feed keeps loading until HomeAspect arrives.
-    console.error(`[aspect feed] ${unnamed} Deep fights have a home with no Aspect row`);
+    console.error(`[aspect feed] ${unnamed} ${layerName(3)} fights have a home with no Aspect row`);
     return { status: "loading" };
   }
   return { status: "ready", fights: fights.slice(0, FEED_LENGTH) };
