@@ -33,7 +33,7 @@ const useFocusHeld = (layer: RefObject<HTMLElement | null>) => {
       dialog.focus({ preventScroll: true });
     }
     const onKey = (event: globalThis.KeyboardEvent) => {
-      if (event.key !== "Tab") return;
+      if (event.key !== "Tab" || element.closest("[inert]")) return;
       const controls = [...element.querySelectorAll<HTMLElement>(FOCUSABLE)];
       const active = document.activeElement;
       const first = controls[0];
@@ -54,17 +54,39 @@ const useFocusHeld = (layer: RefObject<HTMLElement | null>) => {
   }, [layer]);
 };
 
-/** Makes everything outside the layer inert while it is mounted: its siblings, and its ancestors' up to the body. */
+const layers = new Set<HTMLElement>();
+let restoreOutside = () => {};
+
+const refreshInertOutside = () => {
+  restoreOutside();
+  const active = [...layers].sort((a, b) =>
+    a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1,
+  ).at(-1);
+  const made: Element[] = [];
+  for (let node = active; node?.parentElement && node !== document.body; node = node.parentElement) {
+    for (const sibling of node.parentElement.children) {
+      if (sibling === node || sibling.hasAttribute("inert")) continue;
+      sibling.setAttribute("inert", "");
+      made.push(sibling);
+    }
+  }
+  restoreOutside = () => made.forEach((element) => element.removeAttribute("inert"));
+  if (active && !active.contains(document.activeElement)) {
+    const dialog = active.querySelector<HTMLElement>('[role="dialog"]') ?? active;
+    if (!dialog.hasAttribute("tabindex")) dialog.setAttribute("tabindex", "-1");
+    dialog.focus({ preventScroll: true });
+  }
+};
+
 const useInertOutside = (layer: RefObject<HTMLElement | null>) => {
   useEffect(() => {
-    const made: Element[] = [];
-    for (let node = layer.current; node?.parentElement && node !== document.body; node = node.parentElement) {
-      for (const sibling of node.parentElement.children) {
-        if (sibling === node || sibling.hasAttribute("inert")) continue;
-        sibling.setAttribute("inert", "");
-        made.push(sibling);
-      }
-    }
-    return () => made.forEach((element) => element.removeAttribute("inert"));
+    const element = layer.current;
+    if (!element) return;
+    layers.add(element);
+    refreshInertOutside();
+    return () => {
+      layers.delete(element);
+      refreshInertOutside();
+    };
   }, [layer]);
 };
