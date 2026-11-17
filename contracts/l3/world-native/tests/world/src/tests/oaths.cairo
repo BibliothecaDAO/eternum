@@ -100,9 +100,7 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
 fn the_offer_entry_grants_on_the_surface_and_preserves_progress_in_the_deep() {
     let (d, _, key) = super::registrar::setup_frontier_relics();
     let offers = crate::oaths::IOathsLibraryDispatcher { class_hash: super::declare_logic("RelicsLogic") };
-    snforge_std::interact_with_state(
-        d.games, || crate::oaths::IOathsDispatcherTrait::offer_oaths(offers, key, 1),
-    );
+    snforge_std::interact_with_state(d.games, || crate::oaths::IOathsDispatcherTrait::offer_oaths(offers, key, 1));
     let surface = read_progress(d, key);
     assert_eq!(surface.oath_pick, draw(0, 1));
     assert!(surface.oath_pick != 0);
@@ -112,9 +110,7 @@ fn the_offer_entry_grants_on_the_surface_and_preserves_progress_in_the_deep() {
     assert!(super::resource_commands::execute_in_game(d, key.game_id, decline, 360));
     let before = read_progress(d, key);
     super::progression::place_army_at_depth(d, key, 3);
-    snforge_std::interact_with_state(
-        d.games, || crate::oaths::IOathsDispatcherTrait::offer_oaths(offers, key, 2),
-    );
+    snforge_std::interact_with_state(d.games, || crate::oaths::IOathsDispatcherTrait::offer_oaths(offers, key, 2));
     assert_eq!(read_progress(d, key), before);
     assert_eq!(before.oath_pick, 0);
 }
