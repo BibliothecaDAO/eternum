@@ -1017,8 +1017,10 @@ const OATH_SLOTS_STEPS = [
     async ({ browser }) => {
       browser.click("Research");
       await readUntil(() => browser.read(elementAt('[data-node="row-6"]')), Boolean, SHEET_WAIT_MS);
-    browser.read(`(() => { document.querySelector('[data-node="row-6"]')?.scrollIntoView({ block: "nearest" }); return true; })()`);
-    const node = browser.read(elementAt('[data-node="row-6"]'));
+      browser.read(
+        `(() => { document.querySelector('[data-node="row-6"]')?.scrollIntoView({ block: "nearest" }); return true; })()`,
+      );
+      const node = browser.read(elementAt('[data-node="row-6"]'));
       if (!node || node.state !== "ready") return { node };
       browser.tap(node.offset);
       const action = await readUntil(() => browser.read(buttonNamed("Research Oath slots")), Boolean, SHEET_WAIT_MS);

@@ -176,8 +176,18 @@ export const BuildingCardView = ({
         </div>
         {node && (
           <CompareRows
-            now={isOathResearch(node.row) ? <HudRanked words={node.gives.now} /> : <HudTier tier={tierOf(chosen!.tier)} />}
-            next={next?.nextTier ? (isOathResearch(node.row) ? <HudRanked words={next.gives.next!} /> : <HudTier tier={next.nextTier} />) : undefined}
+            now={
+              isOathResearch(node.row) ? <HudRanked words={node.gives.now} /> : <HudTier tier={tierOf(chosen!.tier)} />
+            }
+            next={
+              next?.nextTier ? (
+                isOathResearch(node.row) ? (
+                  <HudRanked words={next.gives.next!} />
+                ) : (
+                  <HudTier tier={next.nextTier} />
+                )
+              ) : undefined
+            }
             rows={node.figures.map((figure, index) => ({
               icon: figure.icon,
               word: figure.name,
@@ -192,7 +202,13 @@ export const BuildingCardView = ({
         {next && orders && (
           <ResearchFoot
             node={next}
-            verb={isOathResearch(next.row) ? RESEARCH_TREE.research(RESEARCH_TREE.oaths) : next.sides?.[side] ? RESEARCH_TREE.research(next.sides[side].name) : RESEARCH}
+            verb={
+              isOathResearch(next.row)
+                ? RESEARCH_TREE.research(RESEARCH_TREE.oaths)
+                : next.sides?.[side]
+                  ? RESEARCH_TREE.research(next.sides[side].name)
+                  : RESEARCH
+            }
             sending={orders.sending}
             fix={orders.fix}
             onResearch={() => choice !== undefined && orders.onResearch(choice)}
