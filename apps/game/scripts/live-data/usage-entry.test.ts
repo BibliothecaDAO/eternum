@@ -1,5 +1,5 @@
 import { schemaIdentity } from "../../../herald/src/native/schema";
-import { rowEvent } from "../../../herald/src/native/fixtures";
+import { encodeMembers } from "../../../herald/src/native/serde";
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -38,6 +38,16 @@ beforeEach(() => {
 const segment = (name: string, events: unknown[]) =>
   writeFileSync(join(segments, name), gzipSync(events.map((event) => JSON.stringify(event)).join("\n")));
 
+function knowledgeEvent(learned: bigint) {
+  const model = SCHEMA.models.find((model: { name: string }) => model.name === "RealmKnowledge");
+  const layout = SCHEMA.games.events.find((event: { name: string }) => event.name === "RowSet");
+  const values = encodeMembers(SCHEMA, model.members, { learned });
+  return {
+    keys: [...layout.prefix, "1", model.identity],
+    data: ["2", "1", "1", String(values.length), ...values],
+  };
+}
+
 it("refuses to replace the report when an event does not decode", async () => {
   segment("0-100.jsonl.gz", [
     { block_number: 7, transaction_hash: "0x1", transaction_index: 0, event_index: 0, keys: ["0x123"], data: [] },
@@ -70,7 +80,7 @@ it("rejects a valid but unsupported schema before replacing the report", async (
   );
   segment("0-100.jsonl.gz", [
     {
-      ...rowEvent("RealmKnowledge", ["1", "1"], { learned: 9n }),
+      ...knowledgeEvent(9n),
       block_number: 7,
       transaction_hash: "0x1",
       event_index: 0,
@@ -84,7 +94,7 @@ it("publishes current troop and Depot research from raw events", async () => {
   segment(
     "0-100.jsonl.gz",
     [0n, 0x1000000n, 0x41000000n, 0x141000000n, 0x541000000n].map((learned, index) => ({
-      ...rowEvent("RealmKnowledge", ["1", "1"], { learned }),
+      ...knowledgeEvent(learned),
       block_number: index + 1,
       transaction_hash: `0x${index + 1}`,
       event_index: 0,
