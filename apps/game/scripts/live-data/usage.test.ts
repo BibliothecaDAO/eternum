@@ -1,4 +1,7 @@
-import { nativeFactSchemaIdentity, nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
+import {
+  nativeFactSchemaIdentity,
+  nativeResearchConstants as research,
+} from "../../../../contracts/l3/world-native/schema/client.gen";
 import { describe, expect, it } from "vitest";
 import { type DecodedEvent, nameCommands, researchRows, shareOf } from "./commands";
 import { Counts, usageReport } from "./findings";
@@ -92,7 +95,9 @@ describe("naming a transaction by what it wrote", () => {
 
   it("refuses a historical interpretation even when its rows have the current wire shape", () => {
     const events = [...tx(1, structure("0x1", PLAYER), learn(0n)), ...tx(1, learn(9n))];
-    expect(() => nameCommands(events, { "1": "frontier" }, "retired-research-schema")).toThrow("Unsupported command schema");
+    expect(() => nameCommands(events, { "1": "frontier" }, "retired-research-schema")).toThrow(
+      "Unsupported command schema",
+    );
   });
 
   it("counts every current research row and side in the published findings", () => {
@@ -103,12 +108,19 @@ describe("naming a transaction by what it wrote", () => {
       ...tx(1, learn(0x141000000n)),
       ...tx(1, learn(0x541000000n)),
     ]);
-    const finding = usageReport(new Counts(rows, [], []), "", 100).findings.find(({ title }) => title === "Research purchases by row and side")!;
+    const finding = usageReport(new Counts(rows, [], []), "", 100).findings.find(
+      ({ title }) => title === "Research purchases by row and side",
+    )!;
     expect(finding.evidence).toContain("Rations: 1");
     expect(finding.evidence).toContain("Knight Oaths: 1");
     expect(finding.evidence).toContain("Scout Oaths: 1");
     expect(finding.evidence).toContain("Crossbow Oaths: 1");
-    expect(researchRows.map(({ row }) => row).sort((a,b) => a-b)).toEqual(Object.entries(research).filter(([name]) => name.startsWith("ROW_")).map(([, row]) => row).sort((a,b) => a-b));
+    expect(researchRows.map(({ row }) => row).sort((a, b) => a - b)).toEqual(
+      Object.entries(research)
+        .filter(([name]) => name.startsWith("ROW_"))
+        .map(([, row]) => row)
+        .sort((a, b) => a - b),
+    );
     for (const row of researchRows) expect(finding.evidence).toContain(`${row.name}: `);
     expect(finding.evidence).not.toMatch(/War Hall|Scouts' Lodge|Hearth|Drill|Beasts/);
   });

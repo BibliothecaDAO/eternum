@@ -93,6 +93,17 @@ export class Counts {
 
 const research = (c: Counts, row: string, side: string | null = null) =>
   c.count("frontier", "Research", (o) => o.row === row && (side === null || o.side === side));
+function researchEvidence(counts: Counts): string {
+  const rows = researchRows.map(({ name, sides }) => {
+    const purchases = sides.map((side) => {
+      const label = side.name === null ? "" : `${side.name} `;
+      return `${label}${research(counts, name, side.name)}`;
+    });
+    return `${name}: ${purchases.join(", ")}`;
+  });
+  return `${n(counts.count("frontier", "Research"))} researches. ${rows.join(". ")}.`;
+}
+
 const deploys = (c: Counts, tier: string) => c.count("blitz", "Deploy army", (o) => o.tier === tier);
 
 type Finding = Omit<UsageReport["findings"][number], "evidence"> & { evidence: (c: Counts) => string };
@@ -239,8 +250,7 @@ const FINDINGS: Finding[] = [
     modes: ["frontier"],
     kind: "rules",
     where: "Research → a row → its side.",
-    evidence: (c) =>
-      `${n(c.count("frontier", "Research"))} researches. ${researchRows.map(({ name, sides }) => `${name}: ${sides.map((side) => `${side.name === null ? "" : `${side.name} `}${research(c, name, side.name)}`).join(", ")}`).join(". ")}.`,
+    evidence: researchEvidence,
     replace: "A question for the rules lane and the research balance study (Data → Balance & data).",
     risk: "Changes the game; owner and rules lane.",
     shot: "research.png",

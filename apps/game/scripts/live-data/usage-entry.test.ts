@@ -64,18 +64,37 @@ it("rejects a valid but unsupported schema before replacing the report", async (
   historical.cairoVersion = "historical-research-semantics";
   historical.identity = schemaIdentity(historical);
   writeFileSync(join(pull, "schema.json"), JSON.stringify(historical));
-  writeFileSync(join(pull, "manifest.json"), JSON.stringify({ contracts: { games: GAMES }, releaseSchemas: { "1": historical.identity } }));
-  segment("0-100.jsonl.gz", [{ ...rowEvent("RealmKnowledge", ["1", "1"], { learned: 9n }), block_number: 7, transaction_hash: "0x1", event_index: 0 }]);
+  writeFileSync(
+    join(pull, "manifest.json"),
+    JSON.stringify({ contracts: { games: GAMES }, releaseSchemas: { "1": historical.identity } }),
+  );
+  segment("0-100.jsonl.gz", [
+    {
+      ...rowEvent("RealmKnowledge", ["1", "1"], { learned: 9n }),
+      block_number: 7,
+      transaction_hash: "0x1",
+      event_index: 0,
+    },
+  ]);
   await expect(writeUsage(pull, raw)).rejects.toThrow(`Unsupported command schema ${historical.identity}`);
   expect(readFileSync(join(pull, "usage.json"), "utf8")).toBe(PREVIOUS);
 });
 
 it("publishes current troop and Depot research from raw events", async () => {
-  segment("0-100.jsonl.gz", [0n, 0x1000000n, 0x41000000n, 0x141000000n, 0x541000000n].map((learned, index) => ({
-    ...rowEvent("RealmKnowledge", ["1", "1"], { learned }), block_number: index + 1, transaction_hash: `0x${index + 1}`, event_index: 0,
-  })));
+  segment(
+    "0-100.jsonl.gz",
+    [0n, 0x1000000n, 0x41000000n, 0x141000000n, 0x541000000n].map((learned, index) => ({
+      ...rowEvent("RealmKnowledge", ["1", "1"], { learned }),
+      block_number: index + 1,
+      transaction_hash: `0x${index + 1}`,
+      event_index: 0,
+    })),
+  );
   await expect(writeUsage(pull, raw)).resolves.toBe(5);
   const report = JSON.parse(readFileSync(join(pull, "usage.json"), "utf8"));
-  const finding = report.findings.find((finding: { title: string }) => finding.title === "Research purchases by row and side");
-  for (const name of ["Rations", "Knight Oaths", "Scout Oaths", "Crossbow Oaths"]) expect(finding.evidence).toContain(`${name}: 1`);
+  const finding = report.findings.find(
+    (finding: { title: string }) => finding.title === "Research purchases by row and side",
+  );
+  for (const name of ["Rations", "Knight Oaths", "Scout Oaths", "Crossbow Oaths"])
+    expect(finding.evidence).toContain(`${name}: 1`);
 });

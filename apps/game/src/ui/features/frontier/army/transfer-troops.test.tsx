@@ -587,13 +587,19 @@ it("labels the amount's two ends, none and all the picked army holds, each takin
   expect(swap).toHaveBeenCalledWith(expect.objectContaining({ count: 600 * Number(PRECISION) }));
 });
 
-it.each([{ oaths: 1, oath_pick: 0 }, { oaths: 0, oath_pick: 571 }])("confirms loss of the source Oath record %j even with equal capacity", async (record) => {
+it.each([
+  { oaths: 1, oath_pick: 0 },
+  { oaths: 0, oath_pick: 571 },
+])("confirms loss of the source Oath record %j even with equal capacity", async (record) => {
   const store = transferArmies(1, 1);
-  for (const id of [201, 202]) store.applyFacts([{
-    model: "ArmyProgress",
-    key: `0xf${id}2`,
-    value: { ...store.require("ArmyProgress", { game_id: 1, explorer_id: id }), ...record },
-  }]);
+  for (const id of [201, 202])
+    store.applyFacts([
+      {
+        model: "ArmyProgress",
+        key: `0xf${id}2`,
+        value: { ...store.require("ArmyProgress", { game_id: 1, explorer_id: id }), ...record },
+      },
+    ]);
   const { swap } = render(store);
   slide(50);
   expect(host.textContent).not.toMatch(LOSS_NOTICE);
@@ -604,5 +610,7 @@ it.each([{ oaths: 1, oath_pick: 0 }, { oaths: 0, oath_pick: 571 }])("confirms lo
   expect(swap).not.toHaveBeenCalled();
   await act(async () => button("Confirm merge into Army 2")!.click());
   expect(swap).toHaveBeenCalledOnce();
-  expect(swap).toHaveBeenCalledWith(expect.objectContaining({ from_explorer_id: 201, to_explorer_id: 202, count: 600 * Number(PRECISION) }));
+  expect(swap).toHaveBeenCalledWith(
+    expect.objectContaining({ from_explorer_id: 201, to_explorer_id: 202, count: 600 * Number(PRECISION) }),
+  );
 });

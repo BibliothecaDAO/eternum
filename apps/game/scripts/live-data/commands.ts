@@ -1,4 +1,7 @@
-import { nativeFactSchemaIdentity, nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
+import {
+  nativeFactSchemaIdentity,
+  nativeResearchConstants as research,
+} from "../../../../contracts/l3/world-native/schema/client.gen";
 import { researchHasIndependentSides, researchPicks } from "../../../../packages/core/src/utils/realm-research";
 
 /**
@@ -43,7 +46,9 @@ export const researchRows = Object.entries(research)
     row,
     name: researchLabel(name),
     sides: researchHasIndependentSides(row)
-      ? Object.entries(research).filter(([name]) => name.startsWith("CHOICE_")).map(([name, choice]) => ({ name: researchLabel(name), choice }))
+      ? Object.entries(research)
+          .filter(([name]) => name.startsWith("CHOICE_"))
+          .map(([name, choice]) => ({ name: researchLabel(name), choice }))
       : [{ name: null, choice: 0 }],
   }));
 const BUILDING_CHANGE: Record<string, string> = {
@@ -114,9 +119,15 @@ class Transaction {
 }
 
 /** Names every transaction, in chain order. */
-export function nameCommands(events: DecodedEvent[], modes: Record<string, Mode>, schemaIdentity: string): CommandRow[] {
+export function nameCommands(
+  events: DecodedEvent[],
+  modes: Record<string, Mode>,
+  schemaIdentity: string,
+): CommandRow[] {
   if (schemaIdentity !== nativeFactSchemaIdentity) {
-    throw new Error(`Unsupported command schema ${schemaIdentity}; expected ${nativeFactSchemaIdentity}; usage.json left as it was`);
+    throw new Error(
+      `Unsupported command schema ${schemaIdentity}; expected ${nativeFactSchemaIdentity}; usage.json left as it was`,
+    );
   }
   const owners = new Map<string, Owners>();
   const knowledge = new Map<string, Map<string, bigint>>();
@@ -368,10 +379,7 @@ function nameStoryless(t: Transaction, owners: Owners, knowledge: Map<string, bi
 }
 
 /** The row, tier and side one research command learned, from the bitfield before and after. */
-function researchStep(
-  before: bigint,
-  after: bigint,
-): { row: string | null; tier: number | null; side: string | null } {
+function researchStep(before: bigint, after: bigint): { row: string | null; tier: number | null; side: string | null } {
   for (const { name, row, sides } of researchRows) {
     for (const side of sides) {
       const reached = researchPicks(after, row, side.choice);
@@ -383,7 +391,10 @@ function researchStep(
 }
 
 function researchLabel(name: string): string {
-  return name.replace(/^(ROW|CHOICE)_/, "").toLowerCase().replace(/(^|_)([a-z])/g, (_, gap, letter) => `${gap ? " " : ""}${letter.toUpperCase()}`);
+  return name
+    .replace(/^(ROW|CHOICE)_/, "")
+    .toLowerCase()
+    .replace(/(^|_)([a-z])/g, (_, gap, letter) => `${gap ? " " : ""}${letter.toUpperCase()}`);
 }
 
 /** Distance between two offset hexes as the map stores them; enough to tell a step from a jump to another depth. */
