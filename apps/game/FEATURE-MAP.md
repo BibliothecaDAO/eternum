@@ -14,10 +14,10 @@ Frontier armies live for their recorded allocation day, including after entering
 its stamina; the next day starts a fresh slot.
 
 Frontier army management: select an army from the dock or map; on a phone tap its selected token for details. **Delete**
-asks for confirmation before removing its troops, carried resources and held Oaths; its slot keeps its stamina. For **Reinforce**,
-select the realm and right-click its adjacent army (hold on a phone). Choose the troop count, check the wheat price,
-then send. `--steps army-management` deploys ten troops, cancels Delete once, confirms it and checks the army
-disappears. `--steps lab-reinforce` records the reinforcement command and resulting balances.
+asks for confirmation before removing its troops, carried resources and held Oaths; its slot keeps its stamina. For
+**Reinforce**, select the realm and right-click its adjacent army (hold on a phone). Choose the troop count, check the
+wheat price, then send. `--steps army-management` deploys ten troops, cancels Delete once, confirms it and checks the
+army disappears. `--steps lab-reinforce` records the reinforcement command and resulting balances.
 
 The optional `--steps army-stock` preparation builds a Barracks through the realm board when the saved home needs
 reserve troops.
