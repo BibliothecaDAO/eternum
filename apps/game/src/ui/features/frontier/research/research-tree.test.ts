@@ -128,17 +128,22 @@ it("offers independent Camp and Depot upgrades with their exact next output and 
 
 it("shows only Knight slots at Settlement and each troop's three exact purchases at City", () => {
   const rows = [research.ROW_KNIGHT_OATHS, research.ROW_SCOUT_OATHS, research.ROW_CROSSBOW_OATHS];
-  expect(readResearchTree(EARLY_REALM).filter(({ row }) => rows.some((value) => value === row)).map(({ row }) => row))
-    .toEqual([research.ROW_KNIGHT_OATHS]);
+  expect(
+    readResearchTree(EARLY_REALM)
+      .filter(({ row }) => rows.some((value) => value === row))
+      .map(({ row }) => row),
+  ).toEqual([research.ROW_KNIGHT_OATHS]);
   for (const row of rows) {
     const realm = { ...MID_REALM, essence: 200000, labor: 40000, laborStore: () => 80000, standing: { [row]: 1 } };
     for (let tier = 0; tier <= 3; tier++) {
       const result = node({ ...realm, learned: { [row]: { tier, sides: [] } } }, `row-${row}`);
       expect(result.maxTier).toBe(3);
       expect(result.gives.now).toBe(`${tier + 1} Oath ${tier === 0 ? "slot" : "slots"}`);
-      expect(result.price).toEqual([
-        { essence: 5000, labor: 1000 }, { essence: 35000, labor: 7500 }, { essence: 150000, labor: 35000 }, undefined,
-      ][tier]);
+      expect(result.price).toEqual(
+        [{ essence: 5000, labor: 1000 }, { essence: 35000, labor: 7500 }, { essence: 150000, labor: 35000 }, undefined][
+          tier
+        ],
+      );
       expect(result.state).toBe(tier === 3 ? "done" : "ready");
     }
   }

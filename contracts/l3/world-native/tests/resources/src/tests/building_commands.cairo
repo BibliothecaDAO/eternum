@@ -899,7 +899,9 @@ fn each_troop_buys_three_oath_slots_at_its_building_for_the_exact_price() {
     ] {
         let (d, home, _) = research_world();
         let resources = IResourceOperationsDispatcher { contract_address: d.games };
-        let essence = ResourceSlot { game_id: home.game_id, entity_id: home.entity_id, resource_type: crate::resources::ESSENCE };
+        let essence = ResourceSlot {
+            game_id: home.game_id, entity_id: home.entity_id, resource_type: crate::resources::ESSENCE,
+        };
         let labor = ResourceSlot { resource_type: crate::resources::LABOR, ..essence };
         assert_eq!(crate::research::oath_slots(learned(d, home), troop), 1);
         assert_terminal_rejection(d, research(home, row, 0), 40);
@@ -914,8 +916,13 @@ fn each_troop_buys_three_oath_slots_at_its_building_for_the_exact_price() {
             assert_eq!(before_e - resources.resource_balance(essence), cost_e * crate::rules::RESOURCE_PRECISION);
             assert_eq!(before_l - resources.resource_balance(labor), cost_l * crate::rules::RESOURCE_PRECISION);
             assert_eq!(crate::research::oath_slots(learned(d, home), troop), at.try_into().unwrap() + 2_u8);
-            for other in array![crate::troops::TroopType::Knight, crate::troops::TroopType::Paladin, crate::troops::TroopType::Crossbowman] {
-                if other != troop { assert_eq!(crate::research::oath_slots(learned(d, home), other), 1); }
+            for other in array![
+                crate::troops::TroopType::Knight, crate::troops::TroopType::Paladin,
+                crate::troops::TroopType::Crossbowman,
+            ] {
+                if other != troop {
+                    assert_eq!(crate::research::oath_slots(learned(d, home), other), 1);
+                }
             }
         }
         assert_terminal_rejection(d, research(home, row, 0), 40);

@@ -128,29 +128,30 @@ export const NodeTile = ({
   onPick: () => void;
 }) => {
   const look = STATE_LOOK[node.state];
-  const reading =
-    isOathResearch(node.row) ? <span className="text-hud-label">{node.gives.now}</span> : node.maxTier === 5 ? (
-      researchHasIndependentSides(node.row) && node.sides ? (
-        <span className="flex gap-2">
-          {node.sides.map((side) => (
-            <span
-              key={side.name}
-              className="flex items-center gap-0.5"
-              aria-label={`${side.name} ${tierNumeral(side.tier as Rank)}`}
-            >
-              <IconGroup name={side.icon} size={14} />
-              <HudTier tier={side.tier as Rank} />
-            </span>
-          ))}
-        </span>
-      ) : (
-        <HudTier tier={tierOf(node)} />
-      )
-    ) : (
-      <span className="text-hud-label tabular-nums text-hud-muted">
-        {node.state === "done" ? RESEARCH_TREE.states.done : RESEARCH_TREE.price(formatAmount(node.price?.essence))}
+  const reading = isOathResearch(node.row) ? (
+    <span className="text-hud-label">{node.gives.now}</span>
+  ) : node.maxTier === 5 ? (
+    researchHasIndependentSides(node.row) && node.sides ? (
+      <span className="flex gap-2">
+        {node.sides.map((side) => (
+          <span
+            key={side.name}
+            className="flex items-center gap-0.5"
+            aria-label={`${side.name} ${tierNumeral(side.tier as Rank)}`}
+          >
+            <IconGroup name={side.icon} size={14} />
+            <HudTier tier={side.tier as Rank} />
+          </span>
+        ))}
       </span>
-    );
+    ) : (
+      <HudTier tier={tierOf(node)} />
+    )
+  ) : (
+    <span className="text-hud-label tabular-nums text-hud-muted">
+      {node.state === "done" ? RESEARCH_TREE.states.done : RESEARCH_TREE.price(formatAmount(node.price?.essence))}
+    </span>
+  );
   return (
     <button
       type="button"
@@ -204,7 +205,12 @@ const NodeChoice = ({
   const missing = firstMissing(node);
   const fixing = missing && fix(missing);
   const verb: RankedWords | string =
-    node.sides?.[side]?.name ?? (isOathResearch(node.row) ? RESEARCH_TREE.oaths : node.nextTier ? [`${node.name} `, { rank: node.nextTier }] : node.name);
+    node.sides?.[side]?.name ??
+    (isOathResearch(node.row)
+      ? RESEARCH_TREE.oaths
+      : node.nextTier
+        ? [`${node.name} `, { rank: node.nextTier }]
+        : node.name);
   const price = node.needs.filter(isPrice);
   return (
     <div

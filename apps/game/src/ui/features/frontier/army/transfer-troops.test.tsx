@@ -144,7 +144,7 @@ it("confirms the loss of stronger Logistics in a 500 into 1,500 merge", async ()
   expect(amount()).toBe("500");
   expect(host.textContent).toContain("5/165");
   expect(host.textContent).toContain("15/140→5");
-  expect(host.textContent).toContain("Army 1 loses its Logistics training.");
+  expect(host.textContent).toContain("Army 1 loses its Logistics and Oath slots.");
   expect(host.querySelector("s")).toBeNull();
   await act(async () => button("Merge into Army 3")!.click());
   expect(swap).not.toHaveBeenCalled();
@@ -423,7 +423,7 @@ it("asks before dissolving an army with a whole upgrade more progression, then s
   await act(async () => button("Merge into Army 2")!.click());
   expect(swap).not.toHaveBeenCalled();
   expect(close).not.toHaveBeenCalled();
-  expect(host.querySelector(".ui-notice")?.textContent).toContain("Army 1 loses its Logistics training.");
+  expect(host.querySelector(".ui-notice")?.textContent).toContain("Army 1 loses its Logistics and Oath slots.");
   await act(async () => button("Confirm merge into Army 2")!.click());
   expect(swap).toHaveBeenCalledOnce();
   expect(swap).toHaveBeenCalledWith(

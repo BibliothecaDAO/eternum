@@ -65,7 +65,12 @@ export function learnResearch(learned: bigint, row: number, side: number): bigin
   if (offset === undefined) throw new Error(`Unknown research row ${row}`);
   const picks = researchPicks(learned, row, side);
   const next = (researchHasIndependentSides(row) ? picks : researchTier(learned, row)) + 1;
-  const maximum = row === research.ROW_SHRINE || row === research.ROW_WELL ? 1 : row === research.ROW_DEPTH || isOathResearch(row) ? 3 : 5;
+  const maximum =
+    row === research.ROW_SHRINE || row === research.ROW_WELL
+      ? 1
+      : row === research.ROW_DEPTH || isOathResearch(row)
+        ? 3
+        : 5;
   if (next > maximum) throw new Error("Research side is complete");
   if (researchHasIndependentSides(row)) return learned + (1n << (offset + BigInt(side) * 3n));
   return learned + (1n << offset);

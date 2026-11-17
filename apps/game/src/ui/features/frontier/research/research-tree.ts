@@ -333,10 +333,14 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       ),
     ],
     ROW_KNIGHT_OATHS: oathNode(research.ROW_KNIGHT_OATHS, BuildingType.ResourceKnightT1),
-    ROW_SCOUT_OATHS: realm.castleLevel >= research.SCOUTS_LODGE_LEVEL
-      ? oathNode(research.ROW_SCOUT_OATHS, BuildingType.ScoutsLodge) : [],
-    ROW_CROSSBOW_OATHS: realm.castleLevel >= research.RANGE_LEVEL
-      ? oathNode(research.ROW_CROSSBOW_OATHS, BuildingType.ResourceCrossbowmanT1) : [],
+    ROW_SCOUT_OATHS:
+      realm.castleLevel >= research.SCOUTS_LODGE_LEVEL
+        ? oathNode(research.ROW_SCOUT_OATHS, BuildingType.ScoutsLodge)
+        : [],
+    ROW_CROSSBOW_OATHS:
+      realm.castleLevel >= research.RANGE_LEVEL
+        ? oathNode(research.ROW_CROSSBOW_OATHS, BuildingType.ResourceCrossbowmanT1)
+        : [],
     ROW_SUPPLY_YARD: [
       buildingNode(
         research.ROW_SUPPLY_YARD,
@@ -394,13 +398,24 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
   function oathNode(row: number, category: BuildingType): TreeNode[] {
     const step = (tier: number) => ({
       now: RESEARCH_TREE.oathSlots(tier + research.OATH_SLOTS_BASE),
-      next: tier + research.OATH_SLOTS_BASE < research.OATH_SLOTS_MAX
-        ? RESEARCH_TREE.oathSlots(tier + research.OATH_SLOTS_BASE + 1) : undefined,
+      next:
+        tier + research.OATH_SLOTS_BASE < research.OATH_SLOTS_MAX
+          ? RESEARCH_TREE.oathSlots(tier + research.OATH_SLOTS_BASE + 1)
+          : undefined,
     });
-    return [buildingNode(row, category, "army",
-      (tier) => ({ line: RESEARCH_TREE.newArmiesStart(RESEARCH_TREE.oaths), ...step(tier) }),
-      { figures: (tier) => [{ icon: "troops", name: RESEARCH_TREE.oaths, line: RESEARCH_TREE.everyNewArmy, ...step(tier) }] },
-    )];
+    return [
+      buildingNode(
+        row,
+        category,
+        "army",
+        (tier) => ({ line: RESEARCH_TREE.newArmiesStart(RESEARCH_TREE.oaths), ...step(tier) }),
+        {
+          figures: (tier) => [
+            { icon: "troops", name: RESEARCH_TREE.oaths, line: RESEARCH_TREE.everyNewArmy, ...step(tier) },
+          ],
+        },
+      ),
+    ];
   }
 
   function castleNode(

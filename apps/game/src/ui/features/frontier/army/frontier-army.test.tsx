@@ -60,7 +60,7 @@ vi.mock("@/hooks/context/game-context", () => ({
 vi.mock("@/sync/action-outcome", () => ({ untilApplied: async (sent: Promise<unknown>) => (await sent, "0x7") }));
 vi.mock("@/hooks/helpers/use-native-facts", () => ({
   useNativeRevision: () => 0,
-  useNativeFacts: () => ({ store: { get: (model: string) => model === "ArmyProgress" ? game.progress : undefined } }),
+  useNativeFacts: () => ({ store: { get: (model: string) => (model === "ArmyProgress" ? game.progress : undefined) } }),
 }));
 vi.mock("@/hooks/helpers/use-navigate", () => ({ useSelectArmyOnMap: () => game.select }));
 vi.mock("@/hooks/store/use-account-store", () => ({

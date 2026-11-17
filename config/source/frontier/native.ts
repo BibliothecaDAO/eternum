@@ -105,7 +105,11 @@ export const frontierPreset = {
       })),
     ),
     ...[research.ROW_KNIGHT_OATHS, research.ROW_SCOUT_OATHS, research.ROW_CROSSBOW_OATHS].flatMap((row) =>
-      [[5000, 1000], [35000, 7500], [150000, 35000]].map(([essenceCost, laborCost], index) => ({
+      [
+        [5000, 1000],
+        [35000, 7500],
+        [150000, 35000],
+      ].map(([essenceCost, laborCost], index) => ({
         row,
         tier: index + 1,
         essenceCost: essenceCost!,

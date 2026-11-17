@@ -81,6 +81,11 @@
     "ROW_HUT": 3,
     "ROW_RATIONS": 4,
     "ROW_SUPPLY_YARD": 5,
+    "ROW_KNIGHT_OATHS": 6,
+    "ROW_SCOUT_OATHS": 7,
+    "ROW_CROSSBOW_OATHS": 11,
+    "OATH_SLOTS_BASE": 1,
+    "OATH_SLOTS_MAX": 4,
     "ROW_SHRINE": 8,
     "ROW_WELL": 9,
     "ROW_DEPTH": 10,
@@ -5437,10 +5442,16 @@
           "type": "core::integer::u8",
           "id": "0x6c6f67697374696373",
           "feltLength": 1
+        },
+        {
+          "name": "oath_slots",
+          "type": "core::integer::u8",
+          "id": "0x6f6174685f736c6f7473",
+          "feltLength": 1
         }
       ],
       "keyLength": 2,
-      "valueLength": 1
+      "valueLength": 2
     },
     {
       "name": "ArmyDay",
@@ -11582,6 +11593,10 @@
         {
           "name": "logistics",
           "type": "core::integer::u8"
+        },
+        {
+          "name": "oath_slots",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -14078,5 +14093,5 @@
       ]
     }
   },
-  "identity": "590a5e2bd10bab685e1d609494029bec0f9589d26e76b5c32e25dd509e01fc6a"
+  "identity": "090a6aadc4b8a745ec01e24006269b39f5bdfdc10a92d258a76b270d9de3b312"
 }

@@ -238,7 +238,12 @@ const deployArmy: Answer = (command, chain, now) => {
 };
 
 /** A new army starts with its realm's training and no earned XP or unspent points. */
-const deploymentProgress = (chain: NativeFactStore, home: bigint, explorerId: bigint, category: (typeof TROOP_TYPES)[number]) => {
+const deploymentProgress = (
+  chain: NativeFactStore,
+  home: bigint,
+  explorerId: bigint,
+  category: (typeof TROOP_TYPES)[number],
+) => {
   const { learned } = chain.require("RealmKnowledge", { game_id: 1, structure_id: home });
   return {
     game_id: 1,

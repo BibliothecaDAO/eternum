@@ -1010,37 +1010,63 @@ const RESEARCH_ACTION_STEPS = [
 
 const OATH_SLOTS_STEPS = [
   { name: "enter-on-map", settleMs: 3000, verify: inScene("map") },
-  clickToResultStep("research-oath-slot", "Research", async ({ browser }) => {
-    browser.click("Research");
-    const node = await readUntil(() => browser.read(elementAt('[data-node="row-6"]')), Boolean, SHEET_WAIT_MS);
-    if (!node || node.state !== "ready") return { node };
-    browser.tap(node.offset);
-    const action = await readUntil(() => browser.read(buttonNamed("Research Oath slots")), Boolean, SHEET_WAIT_MS);
-    if (!action) return { action };
-    watchFor(browser, "oath-researched", `(() => {
+  clickToResultStep(
+    "research-oath-slot",
+    "Research",
+    async ({ browser }) => {
+      browser.click("Research");
+      const node = await readUntil(() => browser.read(elementAt('[data-node="row-6"]')), Boolean, SHEET_WAIT_MS);
+      if (!node || node.state !== "ready") return { node };
+      browser.tap(node.offset);
+      const action = await readUntil(() => browser.read(buttonNamed("Research Oath slots")), Boolean, SHEET_WAIT_MS);
+      if (!action) return { action };
+      watchFor(
+        browser,
+        "oath-researched",
+        `(() => {
       const sent = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "Research").at(-1);
       return sent?.answered.some(({ model, value }) => model === "RealmKnowledge" && ((BigInt(value.learned) >> 30n) & 3n) === 1n) &&
         document.querySelector('[data-node="row-6"]')?.textContent.includes("2 Oath slots");
-    })()`);
-    browser.tap(action.offset);
-    return { watching: true, region: node.region };
-  }, ({ played, actionLatency }) => {
-    const answer = (actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "Research").at(-1);
-    if (!answer) return undefined;
-    const balances = answer.answered.filter(({ model }) => model === "ResourceBalance").map(({ value }) => value);
-    const balance = (id) => BigInt(balances.find(({ resource_type }) => Number(resource_type) === id)?.balance ?? -1);
-    if (balance(ResourcesIds.Essence) !== 15000n * BigInt(RESOURCE_PRECISION) || balance(ResourcesIds.Labor) !== 4000n * BigInt(RESOURCE_PRECISION))
-      return failed("Oath research charged the wrong price", { balances });
-    return played.watching && { watch: "oath-researched" };
-  }),
-  { name: "back-to-map", play: async ({ browser }) => { browser.run(["press", "Escape"]); browser.run(["press", "Escape"]); return {}; }, verify: inScene("map") },
-  clickToResultStep("deploy-with-oath-slots", "CreateExplorer", (context) => deployFromTheDock(context, 100), (context) => {
-    const answer = (context.actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "CreateExplorer").at(-1);
-    if (!answer) return undefined;
-    const progress = answer.answered.find(({ model }) => model === "ArmyProgress")?.value;
-    if (Number(progress?.oath_slots) !== 2) return failed("The new army did not inherit two Oath slots", { progress });
-    return armyDeployed(context);
-  }),
+    })()`,
+      );
+      browser.tap(action.offset);
+      return { watching: true, region: node.region };
+    },
+    ({ played, actionLatency }) => {
+      const answer = (actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "Research").at(-1);
+      if (!answer) return undefined;
+      const balances = answer.answered.filter(({ model }) => model === "ResourceBalance").map(({ value }) => value);
+      const balance = (id) => BigInt(balances.find(({ resource_type }) => Number(resource_type) === id)?.balance ?? -1);
+      if (
+        balance(ResourcesIds.Essence) !== 15000n * BigInt(RESOURCE_PRECISION) ||
+        balance(ResourcesIds.Labor) !== 4000n * BigInt(RESOURCE_PRECISION)
+      )
+        return failed("Oath research charged the wrong price", { balances });
+      return played.watching && { watch: "oath-researched" };
+    },
+  ),
+  {
+    name: "back-to-map",
+    play: async ({ browser }) => {
+      browser.run(["press", "Escape"]);
+      browser.run(["press", "Escape"]);
+      return {};
+    },
+    verify: inScene("map"),
+  },
+  clickToResultStep(
+    "deploy-with-oath-slots",
+    "CreateExplorer",
+    (context) => deployFromTheDock(context, 100),
+    (context) => {
+      const answer = (context.actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "CreateExplorer").at(-1);
+      if (!answer) return undefined;
+      const progress = answer.answered.find(({ model }) => model === "ArmyProgress")?.value;
+      if (Number(progress?.oath_slots) !== 2)
+        return failed("The new army did not inherit two Oath slots", { progress });
+      return armyDeployed(context);
+    },
+  ),
 ];
 
 const SHRINE_NODE = '[data-node="shrine"]';

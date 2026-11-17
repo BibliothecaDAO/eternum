@@ -1,4 +1,3 @@
-import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { frontierSeasonOnePreset } from "../../../../../config/source/frontier/season-one";
 import { researchScenario } from "./research-scenario";
@@ -11,7 +10,6 @@ export function oathSlotsScenario(): LabScenario {
   const knowledge = store.require("RealmKnowledge", { game_id: 1, structure_id: 7 });
   const facts = [
     { model: "RealmKnowledge", key: store.wireKeyOf("RealmKnowledge", { game_id: 1, structure_id: 7 })!, value: wire({ ...knowledge, learned: 0n }) },
-    { model: "Building", key: "0x7500", value: wire({ game_id: 1, structure_id: 7, inner_col: 11, inner_row: 10, category: research.BARRACKS, paused: false, labor_paid: 0 }) },
     ...frontierSeasonOnePreset.research.map(({ row, tier, essenceCost, laborCost }) => ({
       model: "ResearchPrice",
       key: store.wireKeyOf("ResearchPrice", { game_id: 1, row, tier }) ?? `0x751${row.toString(16)}${tier}`,
