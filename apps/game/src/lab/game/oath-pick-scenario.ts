@@ -90,7 +90,7 @@ function answerDeletion(command: LabCommand, chain: NativeFactStore): LabFact[] 
   );
   if (!slot || !tile) throw new Error("Deleted army has no slot or tile");
   return [
-    ...(["ExplorerTroops", "ArmyProgress", "ArmyDay"] as const).map((model) => ({
+    ...(["ExplorerTroops", "ArmyProgress", "ArmyDay", "ArmyCombat"] as const).map((model) => ({
       model,
       key: chain.wireKeyOf(model, key)!,
       value: null,
