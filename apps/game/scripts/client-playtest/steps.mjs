@@ -1030,8 +1030,11 @@ function deleteOathArmyStep() {
         .split(":")
         .map((felt) => BigInt(felt).toString())
         .join(":");
-      const stamina = browser.armies().find(({ label }) => label === "Army 1")?.stamina;
-      if (!armyId || !Number(before.progress?.value?.oaths) || !before.held || stamina === undefined)
+      const stamina = browser.read(`(() => {
+        const meter = document.querySelector('[data-kit-sheet] [data-stamina-line] [role="meter"]');
+        return meter?.hasAttribute('aria-valuenow') ? Number(meter.getAttribute('aria-valuenow')) : null;
+      })()`);
+      if (!armyId || !Number(before.progress?.value?.oaths) || !before.held || !Number.isFinite(stamina))
         return { before, stamina };
       await press(browser, "Delete");
       const confirmation = browser.read(`JSON.stringify((() => {
