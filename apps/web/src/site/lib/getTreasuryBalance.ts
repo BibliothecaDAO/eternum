@@ -79,6 +79,15 @@ const STARKNET_TOKENS: Record<string, { address: string; decimals: number }> = {
 // sn_keccak("balance_of")
 const BALANCE_OF_SELECTOR = "0x2e4263afad30923c891518314c3c95dbe830a16874e8abc5777a9a20b54c76e";
 
+const U128_MAX = (1n << 128n) - 1n;
+
+function balanceWord(word: unknown, tokenAddress: string): bigint {
+  if (typeof word !== "string" || !/^0x[0-9a-fA-F]+$/.test(word) || BigInt(word) > U128_MAX) {
+    throw new Error(`Starknet balance read of ${tokenAddress} returned a word that is not a u128`);
+  }
+  return BigInt(word);
+}
+
 async function fetchStarknetBalance(tokenAddress: string, walletAddress: string): Promise<bigint> {
   const res = await fetch(STARKNET_RPC, {
     method: "POST",
@@ -102,8 +111,8 @@ async function fetchStarknetBalance(tokenAddress: string, walletAddress: string)
   if (data.error || !Array.isArray(data.result) || data.result.length !== 2) {
     throw new Error(`Starknet balance read of ${tokenAddress} returned no two-word balance`);
   }
-  const [low, high] = data.result.map((word: string) => BigInt(word));
-  return low! + (high! << 128n);
+  const [low, high] = data.result.map((word: unknown) => balanceWord(word, tokenAddress));
+  return low + (high << 128n);
 }
 
 async function getStarknetPrices(): Promise<Record<string, number>> {

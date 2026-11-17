@@ -60,6 +60,13 @@ it.each([
   ["a one-word result", Response.json({ result: ["0x1"] })],
   ["an empty result", Response.json({ result: [] })],
   ["an unsuccessful status", new Response("down", { status: 503 })],
+  ["two empty words", Response.json({ result: ["", ""] })],
+  ["two booleans", Response.json({ result: [false, false] })],
+  ["an empty high word", Response.json({ result: ["0x1", ""] })],
+  ["a negative word", Response.json({ result: ["-0x1", "0x0"] })],
+  ["a word with no hex digits", Response.json({ result: ["0x", "0x0"] })],
+  ["a decimal word", Response.json({ result: ["10", "0x0"] })],
+  ["a word above u128", Response.json({ result: [`0x${(1n << 128n).toString(16)}`, "0x0"] })],
 ])(
   "rejects instead of counting %s as a zero balance, and the section then shows its estimate",
   async (_case, answer) => {

@@ -36,7 +36,7 @@ import {
   troopPlural,
 } from "./nouns";
 import { TROOP_TIERS, TROOP_TYPES, TroopType, troopTierIndex } from "../types/common";
-import { BuildingType } from "../constants/structures";
+import { BuildingType, BuildingTypeToString } from "../constants/structures";
 import { formatAgo, formatClockTime, formatDuration, formatGameClock, formatMoment, formatShortDuration } from "./time";
 import { VOICE_RULES } from "./voice";
 
@@ -84,6 +84,10 @@ describe("numbers", () => {
     expect(formatPercent(undefined)).toBe("—");
   });
 
+  it("keeps the town's three crossbow rates apart: 100, 120 and 140 an hour", () => {
+    expect([100, 120, 140].map((perHour) => formatRate(perHour / 3600))).toEqual(["+1.7/min", "+2/min", "+2.3/min"]);
+  });
+
   it("writes every rate a minute's, never a second's or an hour's", () => {
     // The owner's two screenshots read +1.1/s and +54/min side by side (3 November).
     expect(formatRate(1.1)).toBe("+66/min");
@@ -91,9 +95,9 @@ describe("numbers", () => {
     expect(formatRate(2.5)).toBe("+150/min");
     expect(formatRate(1_000)).toBe("+60,000/min");
     expect(formatRate(0.5)).toBe("+30/min");
-    // A minute's rate from one up is whole: a game, not a math demo (owner, 26 October).
-    expect(formatRate(6.3 / 60)).toBe("+6/min");
-    expect(formatRate(8.6 / 60)).toBe("+9/min");
+    expect(formatRate(6.3 / 60)).toBe("+6.3/min");
+    expect(formatRate(8.6 / 60)).toBe("+8.6/min");
+    expect(formatRate(12.4 / 60)).toBe("+12/min");
     expect(formatRate(0.01)).toBe("+0.6/min");
     expect(formatRate(-0.25)).toBe("-15/min");
     expect(formatRate(0)).toBe("0/min");
@@ -240,6 +244,9 @@ describe("nouns", () => {
   it("names a building as its game does, one name for each", () => {
     expect(buildingName(BuildingType.ResourceKnightT1, true)).toBe("Barracks");
     expect(buildingName(BuildingType.ResourceKnightT1, false)).toBe("Knight T1");
+    for (const type of [BuildingType.RationsDepot, BuildingType.ConscriptionCamp])
+      expect(buildingName(type, true)).toBe(BuildingTypeToString[type]);
+    expect(buildingName(BuildingType.ResourceCrossbowmanT1, true)).toBe("Range");
     expect(buildingName(BuildingType.WorkersHut, true)).toBe("Hut");
     expect(buildingName(BuildingType.WorkersHut, false)).toBe("Workers Hut");
     expect([true, false].map((frontier) => buildingName(BuildingType.ResourceLabor, frontier))).toEqual([
