@@ -39,7 +39,7 @@ export function FrontierOathPick({ realm }: { realm: NativeRows["Structure"] | n
     if (explorerId === undefined) return;
     useUIStore.getState().selectOnMap({ kind: "army", entityId: explorerId, tile: "own" });
   }, [explorerId]);
-  if (!waiting || !waiting.army.stamina) return null;
+  if (!waiting) return null;
   return (
     <HudModalLayer>
       <HudWindow title={waiting.army.label} size="task">
@@ -61,7 +61,7 @@ function ArmyOathPick({
 }: {
   explorerId: number;
   progress: NativeRows["ArmyProgress"];
-  stamina: { current: number; max: number };
+  stamina: { current: number; max: number } | undefined;
 }) {
   const { setup, account } = useGame();
   const allowed = useUIStore(canIssueOrders);
@@ -69,6 +69,7 @@ function ArmyOathPick({
   const [picked, setPicked] = useState<number | null>(null);
   const held = heldOaths(progress.oaths);
   const full = held.length === progress.oath_slots;
+  const passResult = stamina && oathPassStamina(stamina.current, stamina.max);
   const choose = (oath: number | null, replace: number | null = null) =>
     sendOnce("army", explorerId, { order: "use" }, () =>
       setup.systemCalls.choose_oath({
@@ -132,14 +133,16 @@ function ArmyOathPick({
         kind="secondary"
         disabled={!allowed || sending}
         onClick={() => choose(null)}
-        data-oath-pass-current={stamina.current}
-        data-oath-pass-maximum={stamina.max}
-        data-oath-pass-result={oathPassStamina(stamina.current, stamina.max)}
+        data-oath-pass-current={stamina?.current}
+        data-oath-pass-maximum={stamina?.max}
+        data-oath-pass-result={passResult}
       >
         Pass: +{nativeOathConstants.PASS_STAMINA} stamina
-        <span className="text-hud-muted">
-          {stamina.current} → {oathPassStamina(stamina.current, stamina.max)} / {stamina.max}
-        </span>
+        {stamina && (
+          <span className="text-hud-muted">
+            {stamina.current} → {passResult} / {stamina.max}
+          </span>
+        )}
       </HudButton>
     </section>
   );

@@ -9,6 +9,8 @@ import type { DockArmy } from "../hud/dock-armies";
 
 const game = vi.hoisted(() => ({
   spendPoint: vi.fn(() => Promise.resolve({ transaction_hash: "0x7" })),
+  chooseOath: vi.fn(() => Promise.resolve({ transaction_hash: "0x8" })),
+  staminaKnown: true,
   select: vi.fn(),
   learned: 0n,
   signer: { address: "0x111" },
@@ -54,7 +56,7 @@ vi.mock("@/hooks/context/game-context", () => ({
               ? { learned: game.learned }
               : game.rules,
       },
-      systemCalls: { spend_skill_point: game.spendPoint },
+      systemCalls: { spend_skill_point: game.spendPoint, choose_oath: game.chooseOath },
     },
     account: { account: game.signer },
   }),
@@ -72,7 +74,9 @@ vi.mock("@/shell/frame/layout", () => ({ useLayout: () => "desktop" }));
 vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => true }));
 vi.mock("../deploy/use-deploy-plan", () => ({ useDeployPlan: () => ({ open: [] }) }));
 vi.mock("../sites/well-refill", () => ({ useWellRefill: (_id: number, ratio: number) => ({ shown: ratio }) }));
-vi.mock("../hud/dock-armies", () => ({ useDockArmies: () => [army] }));
+vi.mock("../hud/dock-armies", () => ({
+  useDockArmies: () => [game.staminaKnown ? army : { ...army, stamina: undefined }],
+}));
 vi.mock("../frontier-reveal-yield", () => ({ useArmyRevealYield: () => 75 }));
 // The army stands away from its spire: its panel has no Spire (spire-card.test.tsx plays the spire).
 vi.mock("../spire-card", () => ({ useArmySpireStatus: () => null }));
@@ -90,6 +94,7 @@ beforeEach(() => {
   root = createRoot(host);
   vi.clearAllMocks();
   game.learned = 0n;
+  game.staminaKnown = true;
   game.progress.oath_slots = 1;
   army.troopsFact = { category: "Knight" };
 });
@@ -161,6 +166,17 @@ it("opens the earned pick without a selection and keeps it through Escape and ou
   expect(host.querySelector<HTMLElement>("[data-oath-pass-result]")!.dataset.oathPassResult).toBe(
     String(army.stamina.current + oaths.PASS_STAMINA),
   );
+  game.staminaKnown = false;
+  act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
+  expect(host.querySelector("[data-oath-pass-result]")).toBeNull();
+  await act(async () => button(/^Pass:/)!.click());
+  expect(game.chooseOath).toHaveBeenCalledWith({
+    signer: game.signer,
+    explorerId: army.explorerId,
+    expectedPick: game.progress.oath_pick,
+    oath: null,
+    replace: null,
+  });
   act(() => {
     game.progress.oath_pick = 0;
     root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />);
