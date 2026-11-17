@@ -1086,11 +1086,16 @@ const OATH_SLOTS_STEPS = [
         const rect = slots?.getBoundingClientRect();
         return { text: slots?.textContent, open: slots?.querySelectorAll('[aria-label$="· Open"]').length,
           locked: slots?.querySelectorAll('[aria-label$="· Locked"]').length,
+          priced: slots?.querySelectorAll('[aria-label$="· Locked"] .ui-cost').length,
           visible: Boolean(rect && rect.width && rect.height && rect.top >= 0 && rect.bottom <= innerHeight) };
       })()`);
     },
     verify: ({ played }) =>
-      played.visible && played.open === 2 && played.locked === 2 && played.text.includes("2 Oath slots")
+      played.visible &&
+      played.open === 2 &&
+      played.locked === 2 &&
+      played.priced === 2 &&
+      played.text.includes("2 Oath slots")
         ? completed(played)
         : failed("The army's two open and two priced locked slots were not visible", played),
   },
