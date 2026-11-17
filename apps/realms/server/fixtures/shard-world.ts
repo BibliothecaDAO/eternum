@@ -443,6 +443,7 @@ const armyProgressRow = (explorerId: number, home: number) => ({
     game_id: GAME_ID,
     explorer_id: explorerId,
     logistics: 0,
+    oath_slots: 1,
   },
 });
 

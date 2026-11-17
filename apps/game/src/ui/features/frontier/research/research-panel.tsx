@@ -129,7 +129,7 @@ export const NodeTile = ({
 }) => {
   const look = STATE_LOOK[node.state];
   const reading = isOathResearch(node.row) ? (
-    <span className="text-hud-label">{node.gives.now}</span>
+    <span className="text-hud-label"><HudRanked words={node.gives.now} /></span>
   ) : node.maxTier === 5 ? (
     researchHasIndependentSides(node.row) && node.sides ? (
       <span className="flex gap-2">
@@ -320,7 +320,7 @@ const needIcon = (need: Need): IconMeaning =>
 
 /** The node's tier and its next as gems, complete at Legendary, or a one-off node's price. */
 const LevelLine = ({ node }: { node: TreeNode }) => {
-  if (isOathResearch(node.row)) return <span className="text-hud-label">{node.gives.now}</span>;
+  if (isOathResearch(node.row)) return <span className="text-hud-label"><HudRanked words={node.gives.now} /></span>;
   if (node.maxTier === 5 && node.nextTier) return <HudTierStep from={tierOf(node)} to={node.nextTier} />;
   if (node.maxTier === 5)
     return (

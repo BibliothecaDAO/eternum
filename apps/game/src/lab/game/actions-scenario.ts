@@ -237,7 +237,6 @@ const deployArmy: Answer = (command, chain, now) => {
   ];
 };
 
-/** A new army starts with its realm's training and no earned XP or unspent points. */
 const deploymentProgress = (
   chain: NativeFactStore,
   home: bigint,

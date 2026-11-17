@@ -1001,7 +1001,7 @@ describe("the Frontier playground preset", () => {
       (sum, { price }) => sum + whole(price.essence),
       0,
     );
-    expect(essenceForEveryTier).toBe(1_788_250);
+    expect(essenceForEveryTier).toBe(2_358_250);
     expect(start.get(ResourcesIds.Essence)).toBeGreaterThan(essenceForEveryTier);
     // A castle stores two full deploys of its level; a Settlement's stores hold what the realm starts with, no more.
     const config = load(FRONTIER_PLAYGROUND_PRESET_ID);
