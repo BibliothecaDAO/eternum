@@ -144,3 +144,25 @@ it("leads a finalized game's boot to its Results, in place of the world not answ
     await act(async () => root.unmount());
   }
 });
+
+it("tells a refused game's boot plainly and offers no retry, where any other failure offers one", () => {
+  const doorway = (refused: boolean) =>
+    renderToStaticMarkup(
+      <MemoryRouter>
+        <DoorwayScreen
+          view={doorwayView({ source: "boot", phase: "error", audience: "player", refused })}
+          realm={null}
+          onRetry={() => {}}
+          onSignIn={() => {}}
+          results="/results/0xa-5"
+        />
+      </MemoryRouter>,
+    );
+  const refused = text(doorway(true));
+  expect(refused).toContain("This game ran on an earlier version of the game and cannot be opened here.");
+  expect(refused).not.toContain("did not answer");
+  expect(refused).not.toContain("Try again");
+  const failed = text(doorway(false));
+  expect(failed).toContain("The world did not answer.");
+  expect(failed).toContain("Try again");
+});

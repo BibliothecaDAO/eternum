@@ -29,6 +29,7 @@ export const PlayRouteDoorway = ({
   setup,
   accountError,
   ended,
+  refused,
   retry,
   currentTaskLabel,
 }: {
@@ -38,6 +39,8 @@ export const PlayRouteDoorway = ({
   accountError: string | null;
   /** The game is finalized: the doorway leads to its results. */
   ended: boolean;
+  /** The game ran on a release this client cannot read: the doorway says so and offers no retry. */
+  refused: boolean;
   retry: () => void;
   currentTaskLabel: string;
 }) => {
@@ -56,6 +59,7 @@ export const PlayRouteDoorway = ({
     failedScene,
     realmCanOpen: realm !== null,
     ended,
+    refused,
     modelShare,
   });
   return (

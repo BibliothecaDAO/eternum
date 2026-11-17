@@ -277,8 +277,8 @@ const NodeChoice = ({
         </span>
       )}
       {node.state !== "done" && (
-        <div className="flex items-center gap-2">
-          <span className="flex gap-1">
+        <div data-research-footer className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
+          <span className="flex shrink-0 gap-1">
             {price.map((need) => (
               <span
                 key={need.kind}
@@ -293,20 +293,20 @@ const NodeChoice = ({
               </span>
             ))}
           </span>
-          <span className="flex-1" />
-          {fixing && (
-            <HudButton kind="secondary" icon={fixing.icon} onClick={fixing.onFix}>
+          {fixing ? (
+            <HudButton kind="primary" icon={fixing.icon} onClick={fixing.onFix}>
               {fixing.word}
             </HudButton>
+          ) : (
+            <HudButton
+              kind="primary"
+              disabled={node.state !== "ready" || choice === undefined}
+              busy={sending ? RESEARCHING : undefined}
+              onClick={() => choice !== undefined && onResearch(choice)}
+            >
+              <HudRanked words={RESEARCH_TREE.research(verb)} />
+            </HudButton>
           )}
-          <HudButton
-            kind="primary"
-            disabled={node.state !== "ready" || choice === undefined}
-            busy={sending ? RESEARCHING : undefined}
-            onClick={() => choice !== undefined && onResearch(choice)}
-          >
-            <HudRanked words={RESEARCH_TREE.research(verb)} />
-          </HudButton>
         </div>
       )}
     </div>

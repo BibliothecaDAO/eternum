@@ -10,6 +10,7 @@ import { useEffect, useLayoutEffect } from "react";
 import { PlaySceneHandoff } from "./game-entry/play-scene-handoff";
 import { markGameEntryMilestone } from "./ui/layouts/game-entry-timeline";
 import { Navigate } from "react-router-dom";
+import { ShardReleaseMismatchError } from "@bibliothecadao/eternum/game-client";
 import { GameFinalizedError } from "@bibliothecadao/eternum/game-sync";
 import type { Account, AccountInterface } from "starknet";
 import { usePlayRouteBootController } from "./game-entry/play-route-boot";
@@ -114,6 +115,7 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
           setup={hasGameContext ? setupResult : null}
           accountError={reconnectError}
           ended={state.error instanceof GameFinalizedError}
+          refused={state.error instanceof ShardReleaseMismatchError}
           retry={retry}
           currentTaskLabel={currentTaskLabel}
         />

@@ -135,6 +135,24 @@ const sides = () =>
     name.parentElement!.querySelector(".text-hud-title")!.textContent,
   ]);
 
+const LOSS_NOTICE = /loses its Logistics and Oath slots\./;
+const CONFIRM_MERGE = /^Confirm merge /;
+
+const withOaths = (store: ReturnType<typeof transferArmies>, source: number, target: number) => {
+  for (const [id, oath_slots] of [
+    [201, source],
+    [202, target],
+  ] as const)
+    store.applyFacts([
+      {
+        model: "ArmyProgress",
+        key: `0xf${id}2`,
+        value: { ...store.require("ArmyProgress", { game_id: 1, explorer_id: id }), oath_slots },
+      },
+    ]);
+  return store;
+};
+
 it("confirms the loss of stronger Logistics in a 500 into 1,500 merge", async () => {
   const { swap, close } = render(transferTrainedArmies());
   expect(sides()).toEqual([
@@ -163,15 +181,18 @@ it.each([0, 499])("keeps both armies when the partial transfer sends %s troops",
   const { swap } = render(transferTrainedArmies());
   slide(sent);
   expect(amount()).toBe(String(sent));
-  expect(host.textContent).not.toContain("loses its Logistics training");
+  expect(host.textContent).not.toMatch(LOSS_NOTICE);
+  expect(button(CONFIRM_MERGE)).toBeUndefined();
+  expect(button(/^Merge into /)).toBeUndefined();
   expect(host.querySelector("s")).toBeNull();
   expect(swap).not.toHaveBeenCalled();
 });
 
 it("merges into the more trained army in one click when the map reverses the pair", async () => {
   const { swap } = render(transferTrainedArmies(), { picked: 202 });
-  expect(host.textContent).not.toContain("loses its Logistics training");
+  expect(host.textContent).not.toMatch(LOSS_NOTICE);
   await act(async () => button("Merge into Army 1")!.click());
+  expect(button(CONFIRM_MERGE)).toBeUndefined();
   expect(swap).toHaveBeenCalledWith(
     expect.objectContaining({
       from_explorer_id: 202,
@@ -329,11 +350,29 @@ it.each([2, 3, 4])(
   },
 );
 
+it("confirms a full merge that loses only Oath slots, with equal Logistics, in two clicks", async () => {
+  const { swap } = render(withOaths(transferArmies(1, 1), 3, 1));
+  expect(host.textContent).toMatch(LOSS_NOTICE);
+  await act(async () => button("Merge into Army 2")!.click());
+  expect(swap).not.toHaveBeenCalled();
+  await act(async () => button("Confirm merge into Army 2")!.click());
+  expect(swap).toHaveBeenCalledOnce();
+});
+
+it("merges in one click, with no notice, when the source holds no more Oath slots or Logistics", async () => {
+  const { swap } = render(withOaths(transferArmies(1, 1), 1, 3));
+  expect(host.textContent).not.toMatch(LOSS_NOTICE);
+  await act(async () => button("Merge into Army 2")!.click());
+  expect(button(CONFIRM_MERGE)).toBeUndefined();
+  expect(swap).toHaveBeenCalledOnce();
+});
+
 it("keeps partial transfers free of a merge's losses", async () => {
   const { swap } = render(transferArmies());
   slide(50);
   expect(amount()).toBe("50");
-  expect(host.textContent).not.toContain("loses its Logistics training");
+  expect(host.textContent).not.toMatch(LOSS_NOTICE);
+  expect(button(CONFIRM_MERGE)).toBeUndefined();
   expect(host.textContent).not.toContain("→7");
   expect(sides()).toEqual([
     ["Army 1", "550"],

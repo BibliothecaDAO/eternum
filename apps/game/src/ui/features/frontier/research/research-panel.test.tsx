@@ -105,7 +105,10 @@ it("holds a locked node's verb, says why, and offers the step that opens it", ()
     ),
   );
   expect(host.textContent).toContain("Labor storage 18,000 / 60,000 · Empire");
-  expect(button(/^Research /)!.disabled).toBe(true);
+  expect(button(/^Research /)).toBeUndefined();
+  expect(
+    [...host.querySelectorAll<HTMLButtonElement>("[data-research-footer] button")].map((each) => each.textContent),
+  ).toEqual(["Level up the castle"]);
   act(() => button(/Level up the castle/)!.click());
   expect(onFix).toHaveBeenCalledOnce();
 });

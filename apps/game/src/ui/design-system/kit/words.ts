@@ -1600,6 +1600,7 @@ export const DOORWAY_WORDS = {
   signInToPlay: "Sign in to play.",
   notOnThisGame: "Not on this game.",
   ended: "This game has ended.",
+  gameRefused: "This game ran on an earlier version of the game and cannot be opened here.",
   deviceLimit: "Signed in on 8 devices already.",
   removeDevice: "Remove a device",
   /** A scene that could not be set up, named for what the player does not see; the cause is in the console. */

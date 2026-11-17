@@ -86,6 +86,7 @@ const GameRouteShell = ({ backgroundImage }: { backgroundImage: string }) => {
           setup={null}
           accountError={null}
           ended={false}
+          refused={false}
           retry={() => pageNavigation.reload()}
           currentTaskLabel=""
         />

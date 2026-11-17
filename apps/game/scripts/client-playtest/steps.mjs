@@ -1051,6 +1051,54 @@ const OATH_SLOTS_STEPS = [
     },
   ),
   {
+    name: "read-oath-refusal",
+    play: async ({ browser }) => {
+      await readUntil(() => browser.read(elementAt("[data-research-footer]")), Boolean, SHEET_WAIT_MS);
+      return browser.read(`(() => {
+        const footer = document.querySelector("[data-research-footer]");
+        if (!footer) return { footer: false };
+        const box = (element) => {
+          const { left, top, right, bottom, width, height } = element.getBoundingClientRect();
+          return { left, top, right, bottom, width, height };
+        };
+        const parts = [...footer.querySelectorAll("button, :scope > span > span[aria-label]")].map((element) => ({
+          text: element.textContent.trim(),
+          button: element.tagName === "BUTTON",
+          clipped: element.scrollWidth > element.clientWidth + 1,
+          ...box(element),
+        }));
+        const overlaps = [];
+        parts.forEach((a, i) => parts.slice(i + 1).forEach((b) => {
+          if (a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) overlaps.push([a.text, b.text]);
+        }));
+        return {
+          footer: true,
+          viewport: { width: innerWidth, height: innerHeight },
+          prices: parts.filter((part) => !part.button).map((part) => part.text),
+          actions: parts.filter((part) => part.button).map((part) => part.text),
+          overlaps,
+          clipped: parts.filter((part) => part.clipped).map((part) => part.text),
+          outside: parts.filter((part) => part.left < 0 || part.right > innerWidth || part.top < 0 || part.bottom > innerHeight).map((part) => part.text),
+          smallTargets: parts.filter((part) => part.button && (part.height < 32 || part.width < 32)).map((part) => part.text),
+        };
+      })()`);
+    },
+    verify: ({ played }) =>
+      played.footer &&
+      played.prices.length === 2 &&
+      played.actions.length === 1 &&
+      /^Level up the castle$/.test(played.actions[0]) &&
+      played.overlaps.length === 0 &&
+      played.clipped.length === 0 &&
+      played.outside.length === 0 &&
+      played.smallTargets.length === 0
+        ? completed(played)
+        : failed(
+            "The refused next Oath purchase's footer collides, is clipped, leaves the screen or has a small target",
+            played,
+          ),
+  },
+  {
     name: "back-to-map",
     play: async ({ browser }) => {
       browser.run(["press", "Escape"]);
