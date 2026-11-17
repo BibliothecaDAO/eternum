@@ -46,7 +46,11 @@ const ruinScenario = (
     {
       model: "GameRelease",
       key: "0x1ab0",
-      value: wire({ ...release, release_id: nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE, created_release_id: nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE }),
+      value: wire({
+        ...release,
+        release_id: nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE,
+        created_release_id: nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE,
+      }),
     },
     {
       model: "ExplorerTroops",
