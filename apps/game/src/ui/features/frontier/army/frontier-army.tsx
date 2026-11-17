@@ -45,7 +45,9 @@ const ArmyPanel = ({ army, onClose }: { army: DockArmy; onClose: () => void }) =
           <ArmyRelicSlots explorerId={army.explorerId} />
         </>
       )}
-      {!waiting && deleting && <ArmyDeleteConfirm army={army} onCancel={() => setDeleting(false)} onDeleted={onClose} />}
+      {!waiting && deleting && (
+        <ArmyDeleteConfirm army={army} onCancel={() => setDeleting(false)} onDeleted={onClose} />
+      )}
       {!waiting && spire && <HudWindowFoot>{spire}</HudWindowFoot>}
     </HudSheet>
   );
