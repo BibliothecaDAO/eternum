@@ -69,7 +69,7 @@ export function AspectPicker({
               name={name}
               invited={invite?.aspect === id}
               members={members?.[id] ?? null}
-              chosen={fixed === id || chosen === id}
+              chosen={(fixed ?? chosen) === id}
               joining={foundingAspect === id}
               disabled={waiting || fixed !== null || joining !== null}
               onJoin={() => onChoose(id)}
