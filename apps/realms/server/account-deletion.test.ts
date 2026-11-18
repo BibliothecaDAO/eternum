@@ -73,6 +73,9 @@ const seedAccount = (worker: Worker, realmsId: string) =>
       .bind(realmsId),
     worker.db.prepare(`INSERT INTO "order_intents" ("owner", "order", "chosen_at") VALUES (?, 4, 1)`).bind(realmsId),
     worker.db
+      .prepare(`INSERT INTO "seal_codes" ("code_hash", "label", "owner", "redeemed_at") VALUES (?, 'playtest', ?, 1)`)
+      .bind(`held-by-${realmsId}`, realmsId),
+    worker.db
       .prepare(
         `INSERT INTO "seal" ("owner", "paid_cents", "source", "receipt", "granted_at") VALUES (?, 999, 'store', 'tx-leaving', 1)`,
       )
@@ -171,6 +174,7 @@ it("deletes an account only with its emailed code: its old session opens nothing
 
   // The ledger's and the campaign's rows stay, with an anonymous tombstone their Realms id still names.
   expect(await countOf(worker, "campaign_tickets", "owner", leaving.realmsId)).toBe(1);
+  expect(await countOf(worker, "seal_codes", "owner", leaving.realmsId)).toBe(1);
   expect(
     await worker.db
       .prepare(`SELECT "replaced_at" IS NOT NULL AS closed FROM "wallet_link_history" WHERE "account" = ?`)

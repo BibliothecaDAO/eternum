@@ -238,6 +238,7 @@ export const LAB_SCREENS = {
   preseason: { signedIn: false, games: [] },
   "preseason-member": { signedIn: true, games: [] },
   "preseason-chosen": { signedIn: true, games: [] },
+  "preseason-sealed": { signedIn: true, games: [] },
   home: { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   // Play for a player with the longest name an account takes (packages/identity account-rules), with the install
   // notice: the desktop bar must hold both at its narrowest width.
@@ -430,6 +431,7 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, string
   "wallet-ready": LAB_WALLET,
   "preseason-member": LAB_WALLET,
   "preseason-chosen": LAB_WALLET,
+  "preseason-sealed": LAB_WALLET,
   "entry-choose": LAB_WALLET,
   "entry-short": LAB_WALLET,
   "entry-registered": LAB_WALLET,
@@ -547,7 +549,12 @@ export type LabScreen = keyof typeof LAB_SCREENS;
  * The season calendar as the launch service answers it: on `blitz-next`, the next ranked game starting in 1h 52m with
  * its entry opening in 17m; on `no-blitz`, none left in the season. Elsewhere a game is open, so the column shows it.
  */
-const PRESEASON_SCREENS: readonly LabScreen[] = ["preseason", "preseason-member", "preseason-chosen"];
+const PRESEASON_SCREENS: readonly LabScreen[] = [
+  "preseason",
+  "preseason-member",
+  "preseason-chosen",
+  "preseason-sealed",
+];
 const LAB_ORDER_MEMBERS: Readonly<Record<number, number>> = {
   1: 12,
   9: 9,
@@ -567,9 +574,11 @@ const LAB_ORDER_MEMBERS: Readonly<Record<number, number>> = {
   8: 4,
 };
 export const labOrderIntent = (screen: LabScreen) => ({
-  order: screen === "preseason-chosen" ? 1 : null,
+  order: screen === "preseason-chosen" || screen === "preseason-sealed" ? 1 : null,
   members: LAB_ORDER_MEMBERS,
 });
+export const LAB_SEAL_CODE = "SEAL2345";
+export const labSealCode = (screen: LabScreen) => ({ held: screen === "preseason-sealed" });
 
 const SEASON_ONE_PHASE = (at: (minutes: number) => string) => ({
   phase: "frontier" as const,
@@ -595,6 +604,7 @@ const QUIET_BLITZ_SCREENS: readonly LabScreen[] = [
   "preseason",
   "preseason-member",
   "preseason-chosen",
+  "preseason-sealed",
 ];
 
 /** The screens whose player has no finished game to open. */
@@ -607,6 +617,7 @@ export const LAB_NO_HISTORY_SCREENS: readonly LabScreen[] = [
   "preseason",
   "preseason-member",
   "preseason-chosen",
+  "preseason-sealed",
 ];
 
 /** The slot closing at 16:30, two hours away, on the lab's shard; on the after-close screens, closed and split. */

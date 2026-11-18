@@ -7,7 +7,7 @@ import { createCampaignReferralStore, mailboxOf } from "./campaign-referral-stor
 import { drawFriendTier } from "./campaign-referrals";
 import { CAMPAIGNS, isCampaignKey, type CampaignKey } from "@realms-world/identity";
 
-import { campaignCodeHash, readCampaignCode } from "./campaigns";
+import { codeHashInScope, readCampaignCode } from "./campaigns";
 import { json, readBody } from "./http";
 
 const REDEEM_BYTES = 1024;
@@ -148,7 +148,7 @@ function openFlyerTicket(
 ) {
   return Effect.gen(function* () {
     const store = yield* CampaignTicketStore;
-    const codeHash = yield* Effect.promise(() => campaignCodeHash(campaign, code));
+    const codeHash = yield* Effect.promise(() => codeHashInScope(campaign, code));
     const source = yield* store.source(campaign, codeHash);
     if (!source) return json({ error: "ticket_taken" }, 410);
     const refusal = yield* sourceRefusal(realmsId, campaign, hasSource);

@@ -149,6 +149,12 @@ const orderIntentSchema = Schema.Struct({
   members: Schema.Record(Schema.String, Schema.Number),
 });
 export type OrderIntent = typeof orderIntentSchema.Type;
+const sealCodeSchema = Schema.Struct({ held: Schema.Boolean });
+export const SEAL_CODE_REFUSALS = ["invalid_code", "code_unavailable", "seal_owned"] as const;
+export type SealCodeRefusal = (typeof SEAL_CODE_REFUSALS)[number];
+export const isSealCodeRefusal = (code: string | undefined): code is SealCodeRefusal =>
+  (SEAL_CODE_REFUSALS as readonly (string | undefined)[]).includes(code);
+type SealCode = typeof sealCodeSchema.Type;
 /** An account's ticket to a campaign, told to that account only. */
 const campaignTicketSchema = Schema.Struct({
   campaign: Schema.String,
@@ -545,6 +551,10 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
       await request("/order-intent", { method: "POST", body: JSON.stringify({ order }) }),
       decode(orderIntentSchema),
     );
+  const getSealCode = async (): Promise<SealCode> =>
+    readJson(await request("/seal-code", { method: "GET", cache: "no-store" }), decode(sealCodeSchema));
+  const redeemSealCode = async (code: string): Promise<SealCode> =>
+    readJson(await request("/seal-code", { method: "POST", body: JSON.stringify({ code }) }), decode(sealCodeSchema));
 
   /**
    * Takes the account's one ticket to a campaign, from its flyer's code or a friend's referral link; without either, the
@@ -671,6 +681,8 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     addOpeningProgress,
     getOrderIntent,
     chooseOrder,
+    getSealCode,
+    redeemSealCode,
     redeemCampaignTicket,
     campaignReferral,
     campaignReferrer,

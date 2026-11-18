@@ -443,9 +443,13 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   Signed in, Play asks the account's side for the season instead, on one screen: **Choose your Aspect** (each card its
   members and about how many LORDS a player gets on average of the Aspect's total), then that Aspect's Orders below it,
   and **Play as <Order's name>**; kept on the account (`/api/order-intent`); a save that fails says so with **Try
-  again**. With an Order kept, **You're in <Aspect>**, the Order, the day it opens and **Starts in …**. Lab:
-  `/lab/app/preseason` (signed out), `/lab/app/preseason-member` (the pick) and `/lab/app/preseason-chosen` (kept);
-  proof: `build.sh prove-season-one` (all three, desktop and phone).
+  again**. With an Order kept, **You're in <Aspect>**, the Order, the day it opens and **Starts in …**, then **Free
+  Ancient Seal?**: a code field and **Redeem** (`/api/seal-code`) hold one operator's code on the account (a taken,
+  expired or unknown code is refused in the field); once held, **Your Ancient Seal is held**. Operator codes:
+  `pnpm --dir apps/realms seal-codes <label> <count> <out> [last day]` (clear codes in `codes.txt`, hashes in
+  `codes.sql`). Lab: `/lab/app/preseason` (signed out), `/lab/app/preseason-member` (the pick),
+  `/lab/app/preseason-chosen` (kept; code SEAL2345 redeems) and `/lab/app/preseason-sealed` (code held); proof:
+  `build.sh prove-season-one` (all four, desktop and phone).
 - Creating a Frontier home (the game's entry): with nothing to choose (a ticket or a free home, no Realm held) the realm
   is created without a press, the doorway's bar saying **Preparing your realm**; a failure asks with the picker below. A
   Realm holder gets **Choose your home**, **You play as <name>** (changed on You), then **Create your realm**, pinned in

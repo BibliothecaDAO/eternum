@@ -11,6 +11,9 @@
  * What is public about a campaign lives here, read alike by the Worker, the code generator that prints its flyers, the
  * landing that opens its tickets, and the docs page, patch notes and admin lab that state its season's dates.
  */
+export const PRINTED_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+export const PRINTED_CODE_LENGTH = 8;
+
 export const CAMPAIGNS = {
   "devcon-2026": {
     /** The landing its flyers' QR codes open, each with its own code after it. */

@@ -14,7 +14,8 @@ const VIEWS = [
 const PRESEASON_SCREENS = [
   ["preseason", "[data-season-countdown]"],
   ["preseason-member", "[data-preseason-step=pick]"],
-  ["preseason-chosen", "[data-preseason-step=waiting]"],
+  ["preseason-chosen", "[data-seal-code=open]"],
+  ["preseason-sealed", "[data-seal-code=held]"],
 ];
 const PAGES = [
   ...VIEWS.flatMap(({ name, path, cases, shown }) =>

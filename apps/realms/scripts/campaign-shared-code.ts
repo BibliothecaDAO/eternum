@@ -11,14 +11,14 @@ import { writeFileSync } from "node:fs";
 
 import { isCampaignKey } from "@realms-world/identity";
 
-import { campaignCodeHash, readCampaignCode } from "../server/campaigns";
+import { codeHashInScope, readCampaignCode } from "../server/campaigns";
 
 const [campaign, out] = process.argv.slice(2);
 if (!isCampaignKey(campaign)) throw new Error("Name the campaign the code belongs to.");
 if (!out) throw new Error("Name the SQL file to write.");
 const code = readCampaignCode(process.env.CAMPAIGN_SHARED_CODE);
 if (!code) throw new Error("CAMPAIGN_SHARED_CODE must hold a code as flyers print it.");
-const hash = await campaignCodeHash(campaign, code);
+const hash = await codeHashInScope(campaign, code);
 writeFileSync(
   out,
   `INSERT INTO "campaign_shared_codes" ("campaign", "code_hash") VALUES ('${campaign}', '${hash}') ON CONFLICT DO NOTHING;\n`,

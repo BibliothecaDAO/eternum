@@ -23,6 +23,7 @@ import { ASPECT_STEP_WORDS, PRESEASON_WORDS } from "@/ui/design-system/kit/words
 
 import { StageFrame } from "../frame/stage-frame";
 import { Loading } from "../loading";
+import { SealCodeCard } from "./seal-code-card";
 import type { SeasonOpening } from "../season";
 
 const orderIntentKey = (owner: string | null) => ["orderIntent", owner] as const;
@@ -42,7 +43,8 @@ export const PreseasonPlay = ({ opening, now }: { opening: SeasonOpening; now: n
         <Loading />
       </StageFrame>
     );
-  if (intent.data.order !== null) return <SeasonWaiting order={intent.data.order} opening={opening} now={now} />;
+  if (intent.data.order !== null)
+    return <SeasonWaiting owner={owner} order={intent.data.order} opening={opening} now={now} />;
   return <OrderPick owner={owner} members={intent.data.members} aspectLords={opening.aspectLords} />;
 };
 
@@ -200,12 +202,22 @@ const OrderRows = ({
   </section>
 );
 
-const SeasonWaiting = ({ order, opening, now }: { order: number; opening: SeasonOpening; now: number }) => {
+const SeasonWaiting = ({
+  owner,
+  order,
+  opening,
+  now,
+}: {
+  owner: string | null;
+  order: number;
+  opening: SeasonOpening;
+  now: number;
+}) => {
   const chosen = orders.find(({ orderId }) => orderId === order);
   if (!chosen?.aspect) throw new Error(`No Aspect's Order ${order}`);
   return (
     <StageFrame>
-      <div data-preseason-step="waiting" className="flex flex-col items-center gap-4">
+      <div data-preseason-step="waiting" className="flex w-full flex-col items-center gap-4">
         <span className="grid grid-cols-2 gap-2">
           {ordersOfAspect(chosen.aspect).map(({ orderId }) => (
             <OrderEmblem key={orderId} order={orderId} size={48} />
@@ -216,6 +228,7 @@ const SeasonWaiting = ({ order, opening, now }: { order: number; opening: Season
           {PRESEASON_WORDS.waiting(chosen.fullOrderName, formatDate(opening.startsAt, now))}
         </p>
         <AppCountdownChip prefix="starts" at={opening.startsAt} now={now} />
+        <SealCodeCard owner={owner} />
       </div>
     </StageFrame>
   );

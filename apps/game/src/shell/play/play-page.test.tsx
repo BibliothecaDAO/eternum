@@ -12,6 +12,7 @@ import { nativePresets } from "../../../../../config/source/native";
 
 import type { NextBlitzGame, PlaytestSlot, SeasonCalendar } from "../blitz-slot";
 import type { DirectoryGame } from "../herald";
+import type { SealCodeRefusal } from "@realms-world/identity";
 
 /** A query as the page reads it: answered with `data`, failed, or still on its way. */
 type Read<T> = { data: T | undefined; isSuccess: boolean; isError: boolean; error: unknown; refetch: () => void };
@@ -40,6 +41,8 @@ const reads = vi.hoisted(() => ({
   buildOrders: { orders: [], active: null } as unknown,
   intent: { order: null, members: {} } as { order: number | null; members: Record<number, number> },
   chosen: [] as number[],
+  sealHeld: false,
+  redeemed: [] as string[],
 }));
 
 vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
@@ -51,6 +54,15 @@ vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
       reads.chosen.push(order);
       reads.intent = { order, members: { ...reads.intent.members, [order]: (reads.intent.members[order] ?? 0) + 1 } };
       return reads.intent;
+    },
+    getSealCode: async () => ({ held: reads.sealHeld }),
+    redeemSealCode: async (code: string) => {
+      const { IdentityRequestError } = await import("@realms-world/identity");
+      reads.redeemed.push(code);
+      if (code.trim().toUpperCase() !== "SEAL2345")
+        throw new IdentityRequestError(410, "code_unavailable" satisfies SealCodeRefusal);
+      reads.sealHeld = true;
+      return { held: true };
     },
   },
   useIdentitySession: () =>
@@ -180,6 +192,8 @@ afterEach(async () => {
   reads.buildOrders = { orders: [], active: null };
   reads.intent = { order: null, members: {} };
   reads.chosen = [];
+  reads.sealHeld = false;
+  reads.redeemed = [];
   useBuildOrderStore.setState({ owner: null, status: "signed-out", book: null, revision: 0, notice: null });
 });
 
@@ -530,6 +544,41 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(page.container.querySelector("h1")?.textContent).toBe("You're in Might");
     expect(page.text()).toContain(`${giants!.fullOrderName} · opens ${formatDate(startsAt, now)}`);
     expect(page.container.querySelector(".app-chip")?.textContent).toBe("Starts in 14d 4h");
+  });
+
+  it("holds a free Ancient Seal code on the waiting screen: a refused code says so in its field, a good one is held", async () => {
+    reads.directory = answered({ games: [] });
+    reads.calendar = answered(seasonOne(startsAt));
+    reads.intent = { order: ordersOfAspect(1)[0]!.orderId, members: {} };
+    quietPlay();
+    const page = await mount();
+    await settle();
+    await settle();
+    const card = () => page.container.querySelector("[data-seal-code]");
+    const type = (text: string) =>
+      act(() => {
+        const input = card()!.querySelector("input")!;
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, text);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    expect(card()?.getAttribute("data-seal-code")).toBe("open");
+    expect(card()?.textContent).toContain("Free Ancient Seal?");
+    expect(card()?.textContent).toContain("Quest bonus and a Realm skin. One code, one account.");
+
+    await type("TAKEN234");
+    await press(page.container, "Redeem");
+    await settle();
+    expect(card()?.querySelector(".app-field__line")?.textContent).toBe(
+      "That code is taken, expired or not one of ours.",
+    );
+    await type("seal2345");
+    expect(card()?.querySelector(".app-field__line")).toBeNull();
+    await press(page.container, "Redeem");
+    await settle();
+    expect(reads.redeemed).toEqual(["TAKEN234", "seal2345"]);
+    expect(card()?.getAttribute("data-seal-code")).toBe("held");
+    expect(card()?.textContent).toBe("Your Ancient Seal is heldIt is yours when the season opens.");
+    expect(card()?.querySelector("input")).toBeNull();
   });
 
   it("says a choice that was not kept did not go through, and keeps it on Try again", async () => {

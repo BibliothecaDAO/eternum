@@ -320,10 +320,17 @@
  */
 import { APP_HOST } from "@/config/app-address";
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
-import { SHARED_MOMENT_WORDS, type CampaignKey, type SocialProvider } from "@realms-world/identity";
+import {
+  PRINTED_CODE_LENGTH,
+  SHARED_MOMENT_WORDS,
+  type CampaignKey,
+  type SealCodeRefusal,
+  type SocialProvider,
+} from "@realms-world/identity";
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
 import type { AttackRefusal, RuinChest } from "@bibliothecadao/eternum";
 import {
+  ANCIENT_SEAL,
   BuildingType,
   buildingName,
   formatAmount,
@@ -440,6 +447,21 @@ export const PRESEASON_WORDS = {
   playAs: (order: string) => `Play as ${order}`,
   youreIn: (aspect: string) => `You're in ${aspect}`,
   waiting: (order: string, date: string) => `${order} · opens ${date}`,
+} as const;
+export const SEAL_CODE_WORDS = {
+  title: `Free ${ANCIENT_SEAL}?`,
+  line: "Quest bonus and a Realm skin. One code, one account.",
+  label: "Your code",
+  placeholder: `${PRINTED_CODE_LENGTH} letters and digits`,
+  redeem: "Redeem",
+  redeeming: "Redeeming",
+  held: `Your ${ANCIENT_SEAL} is held`,
+  heldLine: "It is yours when the season opens.",
+  refused: {
+    invalid_code: `A code is ${PRINTED_CODE_LENGTH} letters and digits.`,
+    code_unavailable: "That code is taken, expired or not one of ours.",
+    seal_owned: `This account has the ${ANCIENT_SEAL} already.`,
+  } satisfies Record<SealCodeRefusal, string>,
 } as const;
 /** The day-done card: "Day 12 done · Realm kept · Day 13 is open", and its one verb. */
 export const DAY_DONE = "done";

@@ -28,7 +28,7 @@ import { defaultWalletDeployment, passkeySigner, passkeySignerGuid } from "@real
 import { generateKeyPairSync } from "node:crypto";
 import { realmsIdOf } from "./realms-id";
 import { routeIdentityRequest } from "./routes";
-import { campaignCodeHash } from "./campaigns";
+import { codeHashInScope } from "./campaigns";
 import { CAMPAIGNS } from "@realms-world/identity";
 import { campaignTicketFor } from "./campaign-ticket-store";
 import { createCampaignReferralStore } from "./campaign-referral-store";
@@ -36,6 +36,7 @@ import { accountKey } from "./campaign-entry";
 import { ORIGIN } from "./workerd-harness";
 import { createTestD1 } from "./test-d1";
 import { sendCampaign, stillFits, visitRecord } from "../scripts/comeback-campaign";
+import { sealCodeFiles } from "../scripts/seal-codes";
 
 /**
  * Holds this test's clock an hour short of the Devcon close (2026-11-06 18:00Z), so a campaign test keeps testing the
@@ -1433,6 +1434,59 @@ describe("identity Worker", () => {
     expect((await createBrowser().request("/api/order-intent")).status).toBe(401);
   });
 
+  it("holds one free Seal code on an account: case-blind, the same answer again, none from a taken, expired or unknown code, and no code spent on an account that has the Seal", async () => {
+    const { codes, sql } = await sealCodeFiles(
+      { label: "playtest", count: 3, expiresAt: null },
+      "a seed of at least thirty-two secret characters",
+    );
+    const [alpha, brave, charm] = codes as [string, string, string];
+    const runOperatorFile = async () => {
+      for (const statement of sql.split(";\n").filter((each) => each.trim() !== ""))
+        await env.DB.prepare(statement).run();
+    };
+    await runOperatorFile();
+    await runOperatorFile();
+    await env.DB.prepare('INSERT INTO "seal_codes" ("code_hash", "label", "expires_at") VALUES (?, ?, 1)')
+      .bind(await codeHashInScope("seal", "LATE2345"), "playtest")
+      .run();
+    const player = async (name: string) => {
+      const browser = createBrowser();
+      await signInWithCode(browser, `${name}@realms.test`);
+      const redeem = async (code: unknown) => {
+        const response = await browser.request("/api/seal-code", { body: { code } });
+        return [response.status, await response.json()];
+      };
+      const held = async () => (await browser.request("/api/seal-code")).json();
+      return { redeem, held, realmsId: (await browser.session())!.user.realmsId };
+    };
+    const first = await player("seal-one");
+    const second = await player("seal-two");
+    const third = await player("seal-three");
+
+    expect(await first.held()).toEqual({ held: false });
+    expect(await first.redeem(` ${alpha.toLowerCase()} `)).toEqual([200, { held: true }]);
+    expect(await first.redeem(alpha)).toEqual([200, { held: true }]);
+    expect(await first.redeem(brave)).toEqual([200, { held: true }]);
+    expect(await first.held()).toEqual({ held: true });
+    expect(await second.redeem(alpha)).toEqual([410, { error: "code_unavailable" }]);
+    expect(await second.held()).toEqual({ held: false });
+    expect(await second.redeem(brave)).toEqual([200, { held: true }]);
+    expect(await third.redeem("LATE2345")).toEqual([410, { error: "code_unavailable" }]);
+    expect(await third.redeem("UNKN2345")).toEqual([410, { error: "code_unavailable" }]);
+    expect(await third.redeem("NOPE")).toEqual([400, { error: "invalid_code" }]);
+    expect(await third.redeem(42)).toEqual([400, { error: "invalid_code" }]);
+    await env.DB.prepare(
+      `INSERT INTO "seal" ("owner", "paid_cents", "source", "receipt", "granted_at") VALUES (?, 999, 'store', 'tx-sealed', 1)`,
+    )
+      .bind(third.realmsId)
+      .run();
+    expect(await third.held()).toEqual({ held: true });
+    expect(await third.redeem(charm)).toEqual([409, { error: "seal_owned" }]);
+    const fourth = await player("seal-four");
+    expect(await fourth.redeem(charm)).toEqual([200, { held: true }]);
+    expect((await createBrowser().request("/api/seal-code")).status).toBe(401);
+  });
+
   /** A running Devcon season game in a shard's directory, as Herald answers it for one player. */
   const devconGame = (entered: boolean) => ({
     game_id: 41,
@@ -1498,7 +1552,7 @@ describe("identity Worker", () => {
     beforeEach(holdDevconOpen);
     const printed = async (code: string, tier: "regular" | "golden") =>
       env.DB.prepare('INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES (?, ?, ?)')
-        .bind("devcon-2026", await campaignCodeHash("devcon-2026", code), tier)
+        .bind("devcon-2026", await codeHashInScope("devcon-2026", code), tier)
         .run();
     const player = async (name: string) => {
       const browser = createBrowser();
@@ -1637,7 +1691,7 @@ describe("identity Worker", () => {
       .bind(shard, Date.now())
       .run();
     await env.DB.prepare('INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES (?, ?, ?)')
-      .bind("devcon-2026", await campaignCodeHash("devcon-2026", "H9MP3QWA"), "regular")
+      .bind("devcon-2026", await codeHashInScope("devcon-2026", "H9MP3QWA"), "regular")
       .run();
     const browser = createBrowser();
     await signInWithCode(browser, "recovered-home@realms.test");
@@ -1723,7 +1777,7 @@ describe("identity Worker", () => {
       .bind(shard, Date.now())
       .run();
     await env.DB.prepare('INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES (?, ?, ?)')
-      .bind("devcon-2026", await campaignCodeHash("devcon-2026", "F7QZ2KHM"), "golden")
+      .bind("devcon-2026", await codeHashInScope("devcon-2026", "F7QZ2KHM"), "golden")
       .run();
     const player = async (name: string, entered: boolean) => {
       const browser = createBrowser();
@@ -1742,7 +1796,7 @@ describe("identity Worker", () => {
     expect(await founded("F7QZ2KHM")).toEqual([409, { error: "realm_founded" }]);
     // A shared code draws nothing for it either.
     await env.DB.prepare('INSERT INTO "campaign_shared_codes" ("campaign", "code_hash") VALUES (?, ?)')
-      .bind("devcon-2026", await campaignCodeHash("devcon-2026", "SH4R3DW7"))
+      .bind("devcon-2026", await codeHashInScope("devcon-2026", "SH4R3DW7"))
       .run();
     expect(await founded("SH4R3DW7")).toEqual([409, { error: "realm_founded" }]);
     // The friend it is passed to, not yet in the game, opens it at its tier.
@@ -1760,7 +1814,7 @@ describe("identity Worker", () => {
     // A shard that cannot answer, answers for another chain, or stalls past the shard timeout leaves the flyer
     // unspent: the account is told to try again, and the same code opens once the shard answers for its own chain.
     await env.DB.prepare('INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES (?, ?, ?)')
-      .bind("devcon-2026", await campaignCodeHash("devcon-2026", "B4NW8RXC"), "regular")
+      .bind("devcon-2026", await codeHashInScope("devcon-2026", "B4NW8RXC"), "regular")
       .run();
     const unsure = createBrowser();
     await signInWithCode(unsure, "shard-unsure@realms.test");
@@ -2024,7 +2078,7 @@ describe("identity Worker", () => {
 
       const flyer = await player("ref-race-flyer");
       await env.DB.prepare(`INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES (?, ?, 'regular')`)
-        .bind(campaign, await campaignCodeHash(campaign, "R4CE7FLY"))
+        .bind(campaign, await codeHashInScope(campaign, "R4CE7FLY"))
         .run();
       const [byFlyer, byLink] = await Promise.all([flyer.redeem({ code: "R4CE7FLY" }), flyer.redeem({ referral: a })]);
       expect(byFlyer).toEqual(ticket("regular"));

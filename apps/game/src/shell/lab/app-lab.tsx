@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
-import { IdentityRequestError, SOCIAL_PROVIDERS } from "@realms-world/identity";
+import { IdentityRequestError, SOCIAL_PROVIDERS, type SealCodeRefusal } from "@realms-world/identity";
 import { answerLabBuildOrders } from "./lab-build-orders";
 
 import { BlitzLobbyPage } from "../blitz/blitz-pages";
@@ -63,6 +63,8 @@ import {
   labRatings,
   labCalendar,
   labOrderIntent,
+  labSealCode,
+  LAB_SEAL_CODE,
   labSlots,
   type LabScreen,
 } from "./app-lab-fixtures";
@@ -301,6 +303,14 @@ const answerIdentity = (screen: LabScreen) => {
   identityClient.chooseOrder = async (order) => {
     intent = { ...intent, order };
     return intent;
+  };
+  let sealCode = labSealCode(screen);
+  identityClient.getSealCode = async () => sealCode;
+  identityClient.redeemSealCode = async (code) => {
+    if (code.trim().toUpperCase() !== LAB_SEAL_CODE)
+      throw new IdentityRequestError(410, "code_unavailable" satisfies SealCodeRefusal);
+    sealCode = { held: true };
+    return sealCode;
   };
   // The lab's player has made no Realms wallet, so the payout window offers Create my wallet.
   identityClient.readDefaultWallet = async () => null;

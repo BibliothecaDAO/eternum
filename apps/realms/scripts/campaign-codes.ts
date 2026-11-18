@@ -22,7 +22,8 @@ import QRCode from "qrcode";
 
 import { CAMPAIGNS, isCampaignKey, type CampaignKey } from "@realms-world/identity";
 
-import { CODE_ALPHABET, CODE_LENGTH, campaignCodeHash } from "../server/campaigns";
+import { codeHashInScope } from "../server/campaigns";
+import { generateCodes, readCodeSeed } from "./printed-codes";
 
 /** The Chart ground of the Realms brand: umber ink on parchment, as flyer B's QR card prints it. */
 const QR_COLOURS = { dark: "#2a1f14", light: "#f1e7d4" };
@@ -57,23 +58,7 @@ function readArguments(args: string[], seed: string | undefined) {
     throw new Error(`Print at least ${CAMPAIGNS[campaign].printedGolden} flyers, at most 100000.`);
   if (!base || !/^https:\/\/[^/]+$/.test(base)) throw new Error("The site's base, as https://host with no path.");
   if (!out) throw new Error("Name the directory to write into.");
-  if (!seed || seed.length < 32) throw new Error("CAMPAIGN_CODE_SEED must hold at least 32 secret characters.");
-  return { campaign, count: flyers, base, out, seed };
-}
-
-/** Distinct codes drawn from the seed: 40 bits each, five per letter of the alphabet's 32. */
-function generateCodes(campaign: CampaignKey, count: number, seed: string): string[] {
-  const codes = new Set<string>();
-  for (let draw = 0; codes.size < count; draw++) {
-    const bytes = createHmac("sha256", seed).update(`${campaign}:code:${draw}`).digest();
-    let bits = 0n;
-    for (const byte of bytes.subarray(0, 5)) bits = (bits << 8n) | BigInt(byte);
-    let code = "";
-    for (let letter = 0; letter < CODE_LENGTH; letter++)
-      code += CODE_ALPHABET[Number((bits >> BigInt(5 * letter)) & 31n)];
-    codes.add(code);
-  }
-  return [...codes];
+  return { campaign, count: flyers, base, out, seed: readCodeSeed(seed) };
 }
 
 /** The order the flyers print in, from the seed: no page number tells a golden flyer from another. */
@@ -90,7 +75,7 @@ async function codesSql(campaign: CampaignKey, codes: string[], golden: Set<stri
   const rows = await Promise.all(
     codes.map(
       async (code) =>
-        `('${campaign}', '${await campaignCodeHash(campaign, code)}', '${golden.has(code) ? "golden" : "regular"}')`,
+        `('${campaign}', '${await codeHashInScope(campaign, code)}', '${golden.has(code) ? "golden" : "regular"}')`,
     ),
   );
   // Sorted by hash, so the file's order says nothing of the tier either; 100 rows a statement keeps each within D1's
