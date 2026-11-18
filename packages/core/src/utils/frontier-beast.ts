@@ -4,6 +4,7 @@ import {
   beastOf,
   siteBeastOf,
   type BeastFamily,
+  type BeastIdle,
   type BeastModel,
   type BeastRow,
 } from "@bibliothecadao/types";
@@ -17,6 +18,7 @@ export interface FrontierBeast {
   beast: FrontierSpecies;
   name: string;
   scale: number;
+  idle: BeastIdle;
 }
 
 const ROAMING_FAMILY: Record<BeastBand, BeastFamily> = { lowly: "herd", stronger: "band" };
@@ -36,6 +38,7 @@ const identityOf = (beast: BeastRow): FrontierBeast => ({
   beast: beastModel(beast),
   name: beast.name,
   scale: beast.scale,
+  idle: beast.idle,
 });
 
 export function frontierBeast(depth: number, category = StructureType.Ruin, band?: BeastBand): FrontierBeast {

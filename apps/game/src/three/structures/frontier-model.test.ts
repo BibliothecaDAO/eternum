@@ -4,6 +4,7 @@ import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { FRONTIER_BEASTS } from "./frontier-beast";
 import type { FrostedStandardNodeMaterial } from "../effects/game-map-material-library";
 import { FrontierModel, frontierModelKind } from "./frontier-model";
+import { BEASTS } from "@bibliothecadao/types";
 
 function source() {
   const geometry = new BoxGeometry(0.5, 0.5, 0.5);
@@ -34,6 +35,23 @@ describe("Frontier effects on real instance placements", () => {
     model.dispose();
     model.dispose();
     expect(dispose).toHaveBeenCalledTimes(1);
+  });
+  it("gives each instance on one model its own beast's idle, so a Kappa breathes where a Fairy hovers", () => {
+    const { gltf } = source();
+    const model = new FrontierModel(gltf, 4, "dark-fey");
+    model.setIdleAt(0, BEASTS.fairy.idle);
+    model.setIdleAt(1, BEASTS.kappa.idle);
+    const idle = model.instancedMeshes[0].geometry.getAttribute("beastIdle");
+    expect([idle.getX(0), idle.getX(1), idle.getY(1), idle.getZ(1)]).toEqual([
+      2,
+      0,
+      Math.fround(1.6),
+      Math.fround(0.012),
+    ]);
+    const wraith = new FrontierModel(source().gltf, 2, "wraith");
+    wraith.setIdleAt(1, BEASTS.lich.idle);
+    const lifted = wraith.instancedMeshes[0].geometry.getAttribute("beastIdle");
+    expect([lifted.getX(1), lifted.getY(1), lifted.getZ(1)]).toEqual([1, Math.fround(0.9), Math.fround(0.02)]);
   });
   it.each(Object.entries(FRONTIER_BEASTS))(
     "animates %s through the production catalog, retaining paint, placements and cached geometry",

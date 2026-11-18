@@ -1033,10 +1033,11 @@ a rift Fairy hovering above it and a ruin Wyvern in its masonry. Each layer belo
 and mark; a beast without its own model stands as its fallback's model at its own size. A game without a Deep (the base,
 Devcon and playground presets) has a fourth personal layer, whose beasts are the ones Season 0 showed there
 (`DEEPLESS_FOURTH_LAYER_BEASTS`); Season 1's fourth layer is the Deep. Their inclusive count bands and immutable
-initial-count classification are unchanged. All beasts have subtle GPU idle motion: planted breathing, a drifting Wraith
-shroud and the fey's hover/wings. Instance phases differ; clearing a site removes its guard and standing effects. All
-standing beasts and their landmarks share the settlements' south-facing orientation, toward the fixed map camera at
-every hex and zoom. The idle motion remains in model-local coordinates.
+initial-count classification are unchanged. Every beast has its own subtle GPU idle, one line of its row (`idle`):
+planted breathing, a lifting shroud (the Wraith and its band) or the fey's hover and wings; a beast standing on
+another's model keeps its own motion (the rift's deeper beasts breathe on the fey's). Instance phases differ; clearing a
+site removes its guard and standing effects. All standing beasts and their landmarks share the settlements' south-facing
+orientation, toward the fixed map camera at every hex and zoom. The idle motion remains in model-local coordinates.
 
 `/lab/models?family=beasts` shows the production models, every beast of the table by family and layer, the ruin beasts
 in their masonry, standing site compositions and both roaming beasts. Site, Layer and Beast strength control the real

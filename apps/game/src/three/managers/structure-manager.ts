@@ -1697,17 +1697,19 @@ export class StructureManager {
         this.bindSitePart(model, structure.entityId, dirtyModels, composition.baseScale, composition.baseZ),
       );
     const beastModel = models.get(frontierBeastModelIndex(structure.frontierBeast.beast));
-    if (beastModel)
-      bindings.push(
-        this.bindSitePart(
-          beastModel,
-          structure.entityId,
-          dirtyModels,
-          structure.frontierBeast.scale,
-          composition.beastZ,
-          composition.beastY,
-        ),
+    if (beastModel) {
+      const beast = this.bindSitePart(
+        beastModel,
+        structure.entityId,
+        dirtyModels,
+        structure.frontierBeast.scale,
+        composition.beastZ,
+        composition.beastY,
       );
+      if (beast && beastModel instanceof FrontierModel)
+        beastModel.setIdleAt(beast.instanceIndex, structure.frontierBeast.idle);
+      bindings.push(beast);
+    }
     return bindings.filter(isBoundStructureInstance);
   }
 

@@ -14,6 +14,7 @@ import {
   StructureType,
   beastModel,
   beastsOfFamily,
+  type BeastRow,
 } from "@bibliothecadao/types";
 import { getStructureModelPaths } from "../constants/scene-constants";
 import { getGameModeConfig } from "@/config/game-modes";
@@ -135,31 +136,58 @@ describe("Frontier guard identity", () => {
       beast: "troll",
       name: "Troll",
       scale: 0.85,
+      idle: BEASTS.troll.idle,
     });
     expect(readStandingFrontierBeast(fourth(StructureType.Rift), 1, 9)).toEqual({
       beast: "dark-fey",
       name: "Dark fey",
       scale: 0.75,
+      idle: { motion: "hover" },
     });
     expect(readStandingFrontierBeast(fourth(StructureType.Ruin), 1, 9)).toEqual({
       beast: "hydra",
       name: "Hydra",
       scale: 1.7,
+      idle: BEASTS.hydra.idle,
     });
     expect(readStandingFrontierBeast(fourth(StructureType.Beasts, 6_500), 1, 9)).toEqual({
       beast: "cyclops",
       name: "Cyclops",
       scale: 1,
+      idle: BEASTS.cyclops.idle,
     });
     expect(readStandingFrontierBeast(fourth(StructureType.Beasts, 10_000), 1, 9)).toEqual({
       beast: "wraith",
       name: "Wraith",
       scale: 1,
+      idle: BEASTS.wraith.idle,
     });
     expect(() => readStandingFrontierBeast(withDeep(fourth(StructureType.Ruin)), 1, 9)).toThrow(
       "No ruin beast on layer 3",
     );
     expect(readStandingFrontierBeast(withDeep(facts(StructureType.Ruin, 2)), 1, 9)?.name).toBe("Minotaur");
+  });
+  it("gives every beast its own idle line, the fey hovering and the beasts standing in for it breathing", () => {
+    const rows = Object.values<BeastRow>(BEASTS);
+    expect(rows.map(({ name, idle }) => `${name} ${idle.motion}`)).toEqual([
+      "Cyclops breath",
+      "Hydra breath",
+      "Tarrasque breath",
+      "Wraith lift",
+      "Banshee lift",
+      "Lich lift",
+      "Troll breath",
+      "Golem breath",
+      "Ettin breath",
+      "Fairy hover",
+      "Kappa breath",
+      "Kitsune breath",
+      "Wyvern breath",
+      "Ammit breath",
+      "Minotaur breath",
+    ]);
+    expect([BEASTS.kappa, BEASTS.kitsune].map(beastModel)).toEqual(["dark-fey", "dark-fey"]);
+    for (const { idle } of rows) if (idle.motion !== "hover") expect(idle.height).toBeLessThanOrEqual(0.028);
   });
   it("names each family's beast by layer, a stronger Loot Survivor tier deeper", () => {
     const named = (family: Parameters<typeof beastsOfFamily>[0]) => beastsOfFamily(family).map(({ name }) => name);
@@ -183,20 +211,22 @@ describe("Frontier guard identity", () => {
     },
   );
   it.each([
-    [0, "Troll", "Fairy"],
-    [1, "Golem", "Kappa"],
-    [2, "Ettin", "Kitsune"],
+    [0, BEASTS.troll, BEASTS.fairy],
+    [1, BEASTS.golem, BEASTS.kappa],
+    [2, BEASTS.ettin, BEASTS.kitsune],
   ])("keeps camps beast-only and rifts fey-guarded at layer %s", (depth, camp, rift) => {
     expect(readStandingFrontierBeast(facts(StructureType.Camp, depth), 1, 9)).toEqual({
       beast: "troll",
-      name: camp,
+      name: camp.name,
       scale: 0.85,
+      idle: camp.idle,
     });
     expect(frontierSiteComposition(StructureType.Camp).baseScale).toBe(0);
     expect(readStandingFrontierBeast(facts(StructureType.Rift, depth), 1, 9)).toEqual({
       beast: "dark-fey",
-      name: rift,
+      name: rift.name,
       scale: 0.75,
+      idle: rift.idle,
     });
     expect(frontierSiteComposition(StructureType.Rift)).toEqual({ baseScale: 1.09, baseZ: 0, beastZ: 0, beastY: 0.2 });
   });
@@ -205,7 +235,7 @@ describe("Frontier guard identity", () => {
     ({ depth, bounds }) => {
       const herd = beastsOfFamily("herd")[depth];
       const band = beastsOfFamily("band")[depth];
-      for (const [low, high, { name, scale }, species] of [
+      for (const [low, high, { name, scale, idle }, species] of [
         [bounds.beast_weak_lower, bounds.beast_weak_upper, herd, beastModel(herd)],
         [bounds.beast_strong_lower, bounds.beast_strong_upper, band, beastModel(band)],
       ] as const) {
@@ -213,7 +243,7 @@ describe("Frontier guard identity", () => {
           const read = (remaining: number, cleared = false) =>
             readStandingFrontierBeast(facts(StructureType.Beasts, depth, initial, remaining, cleared), 1, 9);
           const identity = read(initial)!;
-          expect(identity).toEqual({ beast: species, name, scale });
+          expect(identity).toEqual({ beast: species, name, scale, idle });
           expect(getStructureModelPaths()[StructureType.Beasts][frontierBeastModelIndex(identity.beast)]).toBe(
             FRONTIER_BEASTS[species].path,
           );

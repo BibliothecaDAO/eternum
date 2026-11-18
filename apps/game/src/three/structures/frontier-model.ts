@@ -1,6 +1,16 @@
-import { BufferGeometry, Color, DoubleSide, Float32BufferAttribute, InstancedMesh, MeshStandardMaterial } from "three";
+import {
+  BufferGeometry,
+  Color,
+  DoubleSide,
+  Float32BufferAttribute,
+  InstancedBufferAttribute,
+  InstancedMesh,
+  MeshStandardMaterial,
+} from "three";
+import type { BeastIdle } from "@bibliothecadao/types";
 import { MeshBasicNodeMaterial } from "three/webgpu";
 import {
+  attribute,
   color,
   float,
   instanceIndex,
@@ -9,6 +19,7 @@ import {
   positionGeometry,
   positionLocal,
   positionWorld,
+  select,
   smoothstep,
   uv,
   vec3,
@@ -31,10 +42,12 @@ export function frontierModelKind(path: string) {
 export class FrontierModel extends InstancedModel {
   private readonly mist?: InstancedMesh;
   private readonly animatedGeometry: BufferGeometry[] = [];
+  private readonly idle: InstancedBufferAttribute;
   private disposed = false;
 
   constructor(gltf: GLTF, capacity: number, kind: "ruin" | FrontierSpecies) {
     super(gltf, capacity, false, kind, "cache");
+    this.idle = new InstancedBufferAttribute(new Float32Array(this.instancedMeshes[0].instanceMatrix.count * 3), 3);
     if (kind === "ruin") {
       this.mist = createInstancedMeshWithSharedMatrices(mistGeometry(), mistMaterial(), this.instancedMeshes[0]);
       this.mist.name = "Ruin ground mist";
@@ -46,10 +59,11 @@ export class FrontierModel extends InstancedModel {
     } else {
       for (const mesh of this.instancedMeshes) {
         const previous = mesh.material as MeshStandardMaterial;
-        const material = beastMaterial(previous, kind);
+        const material = beastMaterial(previous);
         mesh.material = material;
         MaterialPool.getInstance().releaseMaterial(previous);
         mesh.geometry = mesh.geometry.clone();
+        mesh.geometry.setAttribute("beastIdle", this.idle);
         this.animatedGeometry.push(mesh.geometry);
         mesh.geometry.computeBoundingBox();
         mesh.geometry.boundingBox!.expandByScalar(kind === "dark-fey" ? 0.14 : 0.035);
@@ -57,6 +71,12 @@ export class FrontierModel extends InstancedModel {
         mesh.geometry.boundingSphere!.radius += kind === "dark-fey" ? 0.14 : 0.035;
       }
     }
+  }
+
+  setIdleAt(index: number, idle: BeastIdle): void {
+    if (idle.motion === "hover") this.idle.setXYZ(index, IDLE_MOTIONS.hover, 0, 0);
+    else this.idle.setXYZ(index, IDLE_MOTIONS[idle.motion], idle.speed, idle.height);
+    this.idle.needsUpdate = true;
   }
 
   override setCount(count: number): void {
@@ -78,7 +98,7 @@ export class FrontierModel extends InstancedModel {
   }
 }
 
-function beastMaterial(source: MeshStandardMaterial, species: FrontierSpecies) {
+function beastMaterial(source: MeshStandardMaterial) {
   const material = new FrostedStandardNodeMaterial();
   material.color.copy(source.color);
   material.map = source.map;
@@ -87,31 +107,19 @@ function beastMaterial(source: MeshStandardMaterial, species: FrontierSpecies) {
   material.roughness = source.roughness;
   material.metalness = source.metalness;
   material.side = source.side;
-  material.positionNode = positionLocal.add(vec3(0, species === "dark-fey" ? feyIdle() : beastIdle(species), 0));
+  material.positionNode = positionLocal.add(vec3(0, beastIdle(), 0));
   return material;
 }
 
+const IDLE_MOTIONS = { breath: 0, lift: 1, hover: 2 } as const satisfies Record<BeastIdle["motion"], number>;
+
 const phase = float(instanceIndex).mul(2.399963);
 
-/** Feet stay planted and the horizontal silhouette stays inside its checked ruin clearance. */
-function beastIdle(species: Exclude<FrontierSpecies, "dark-fey">) {
-  const rhythms = {
-    cyclops: [1.5, 0.016],
-    troll: [1.1, 0.014],
-    ammit: [1.4, 0.01],
-    wyvern: [1.0, 0.018],
-    hydra: [0.9, 0.018],
-    wraith: [1.2, 0.028],
-  } as const;
-  const [speed, lift] = rhythms[species];
-  const breath = time
-    .mul(speed)
-    .add(phase)
-    .add(positionGeometry.x.mul(0.8))
-    .sin()
-    .add(1)
-    .mul(lift / 2);
-  return species === "wraith" ? breath : breath.mul(smoothstep(0.08, 0.45, positionGeometry.y));
+function beastIdle() {
+  const idle = attribute<"vec3">("beastIdle", "vec3");
+  const breath = time.mul(idle.y).add(phase).add(positionGeometry.x.mul(0.8)).sin().add(1).mul(idle.z.div(2));
+  const planted = breath.mul(smoothstep(0.08, 0.45, positionGeometry.y));
+  return select(idle.x.greaterThan(1.5), feyIdle(), select(idle.x.greaterThan(0.5), breath, planted));
 }
 
 function feyIdle() {

@@ -6,7 +6,7 @@ import {
   LAYER_NAMES,
   StructureType,
   beastModel,
-  beastModelName,
+  beastOfModel,
   beastsOfFamily,
   frontierSiteName,
   guardedSiteKind,
@@ -37,8 +37,10 @@ import "@/three/map-plates/map-plates.css";
 
 const MODEL_BEASTS = Object.keys(FRONTIER_BEASTS).map((beast) => ({ beast: beast as keyof typeof FRONTIER_BEASTS }));
 const MODELS: readonly LineupAsset[] = MODEL_BEASTS.map(({ beast }) => ({
-  label: beastModelName(beast),
-  parts: [{ path: FRONTIER_BEASTS[beast].path, scale: FRONTIER_BEASTS[beast].maxScale }],
+  label: beastOfModel(beast).name,
+  parts: [
+    { path: FRONTIER_BEASTS[beast].path, scale: FRONTIER_BEASTS[beast].maxScale, idle: beastOfModel(beast).idle },
+  ],
 }));
 const SITES = [
   { kind: "Camp", category: StructureType.Camp, base: CAMP_MODEL_PATH },
@@ -54,7 +56,13 @@ const siteModels = (layer: number): readonly LineupAsset[] =>
       label: guardedSiteKind(category, beast),
       parts: [
         ...(composition.baseScale ? [{ path: base, scale: composition.baseScale, z: composition.baseZ }] : []),
-        { path: FRONTIER_BEASTS[beast.beast].path, scale: beast.scale, z: composition.beastZ, y: composition.beastY },
+        {
+          path: FRONTIER_BEASTS[beast.beast].path,
+          scale: beast.scale,
+          z: composition.beastZ,
+          y: composition.beastY,
+          idle: beast.idle,
+        },
       ],
     };
   });
@@ -63,7 +71,7 @@ const roamingModels = (layer: number): readonly LineupAsset[] =>
     const beast = frontierBeast(layer, StructureType.Beasts, band);
     return {
       label: `${beast.name} · ${band}`,
-      parts: [{ path: FRONTIER_BEASTS[beast.beast].path, scale: beast.scale }],
+      parts: [{ path: FRONTIER_BEASTS[beast.beast].path, scale: beast.scale, idle: beast.idle }],
     };
   });
 
@@ -71,13 +79,13 @@ const FIXED_LINEUPS: Readonly<Record<string, readonly LineupAsset[]>> = {
   models: MODELS,
   families: Object.values<BeastRow>(BEASTS).map((beast) => ({
     label: `${beast.name} · ${LAYER_NAMES[beast.layer]} ${beast.family}`,
-    parts: [{ path: FRONTIER_BEASTS[beastModel(beast)].path, scale: beast.scale }],
+    parts: [{ path: FRONTIER_BEASTS[beastModel(beast)].path, scale: beast.scale, idle: beast.idle }],
   })),
   ruins: beastsOfFamily("ruin").map((beast) => ({
     label: `${beast.name} · ${LAYER_NAMES[beast.layer]}`,
     parts: [
       { path: FALLEN_REALM_RUIN_PATH, scale: 1 },
-      { path: FRONTIER_BEASTS[beastModel(beast)].path, scale: beast.scale },
+      { path: FRONTIER_BEASTS[beastModel(beast)].path, scale: beast.scale, idle: beast.idle },
     ],
   })),
 };
@@ -254,7 +262,7 @@ export function FrontierBeastLab() {
           <div className="beast-icon-studies">
             <small>Species portraits · 20 px</small>
             {MODEL_BEASTS.map(({ beast: species }) => (
-              <span key={species} title={beastModelName(species)}>
+              <span key={species} title={beastOfModel(species).name}>
                 <Icon name={beastMeaning(species)} size={20} />
               </span>
             ))}
