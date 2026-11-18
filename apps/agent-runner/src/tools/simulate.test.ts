@@ -1,5 +1,13 @@
 import { readFileSync } from "node:fs";
-import { ContractAddress, deepSites, RESOURCE_PRECISION, TileOccupier } from "@bibliothecadao/types";
+import {
+  BiomeType,
+  BiomeTypeToId,
+  ContractAddress,
+  deepSites,
+  RESOURCE_PRECISION,
+  TileOccupier,
+} from "@bibliothecadao/types";
+import { nativeTilePackingConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { frontierSeasonOnePreset } from "../../../../config/source/frontier/season-one";
 import { deepCenter } from "@bibliothecadao/eternum/game-client";
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
@@ -14,18 +22,26 @@ import {
 } from "../test-support/fake-game";
 import { createSimulateTool } from "./simulate";
 
-it("reports a realm without a map site before attempting a combat preview", async () => {
+it("refuses a combat preview before the season starts, as the contract does", async () => {
   const game = createFakeGame();
   const start = Math.floor(Date.now() / 1000) + 86400;
   seedGameRegistry(game.store, { status: "Registration", startMainAt: start, endAt: start + 86400 });
+  const registry = game.store.require("GameRegistry", { game_id: 28 });
+  writeFact(game.store, "GameRegistry", [28], { ...registry, dev_mode_on: false });
   seedStructure(game.store, { entityId: 12, owner: PLAYER, x: 100, y: 100 });
   seedExplorer(game.store, { explorerId: 101, owner: 12, x: 101, y: 100 });
-  const structure = game.store.require("Structure", { game_id: 28, entity_id: 12 });
-  writeFact(game.store, "Structure", [28, 12], { ...structure, base: { ...structure.base, troop_max_guard_count: 0 } });
-  const rules = game.store.require("SliceRules", { game_id: 28 });
-  writeFact(game.store, "SliceRules", [28], { ...rules, day_unit_seconds: 14400 });
   const result = await createSimulateTool(game).execute("combat", { kind: "combat", attackerId: 101, defenderId: 12 });
-  expect(result.content).toEqual([{ type: "text", text: "12 is neither an explorer nor a structure with guards." }]);
+  expect(result.content).toEqual([{ type: "text", text: "Attack refused: game-not-started." }]);
+});
+
+it("answers a target that is no army, Deep site or structure in words", async () => {
+  const game = createFakeGame();
+  const now = Math.floor(Date.now() / 1000);
+  seedGameRegistry(game.store, { status: "Active", startMainAt: now - 1, endAt: now + 86400 });
+  seedStructure(game.store, { entityId: 13, owner: PLAYER, x: 90, y: 90 });
+  seedExplorer(game.store, { explorerId: 101, owner: 13, x: 101, y: 100, stamina: 100n });
+  const result = await createSimulateTool(game).execute("combat", { kind: "combat", attackerId: 101, defenderId: 999 });
+  expect(result.content).toEqual([{ type: "text", text: "999 is neither an explorer, a Deep site nor a structure." }]);
 });
 
 it("fights a structure's highest occupied guard slot first, as the contract does", async () => {
@@ -35,9 +51,17 @@ it("fights a structure's highest occupied guard slot first, as the contract does
   const rules = game.store.require("SliceRules", { game_id: 28 });
   writeFact(game.store, "SliceRules", [28], {
     ...rules,
+    battle_config: { ...rules.battle_config, regular_immunity_ticks: 0 },
     troop_stamina_config: { ...rules.troop_stamina_config, stamina_attack_req: 10, stamina_defense_req: 0 },
   });
   seedStructure(game.store, { entityId: 12, owner: ContractAddress(0x999n), x: 100, y: 100 });
+  writeFact(game.store, "TileOpt", [28, 0, 100, 100], {
+    game_id: 28,
+    alt: false,
+    col: 100,
+    row: 100,
+    data: BigInt(BiomeTypeToId[BiomeType.Grassland]) * BigInt(nativeTilePackingConstants.BIOME_SCALE),
+  });
   seedStructure(game.store, { entityId: 13, owner: PLAYER, x: 90, y: 90 });
   seedExplorer(game.store, { explorerId: 101, owner: 13, x: 101, y: 100, stamina: 100n });
   const knights = game.store.require("ExplorerTroops", { game_id: 28, explorer_id: 101 }).troops;
@@ -82,6 +106,7 @@ it.each([4, 5, 6, 7, 8, 9])("reports the field or garrison survivors from Knight
   writeFact(game.store, "SliceRules", [gameId], {
     ...rules,
     day_unit_seconds: 100,
+    battle_config: { ...rules.battle_config, regular_immunity_ticks: 0 },
     troop_damage_config: { ...rules.troop_damage_config, damage_biome_bonus_num: 0 },
     troop_stamina_config: { ...rules.troop_stamina_config, stamina_attack_req: 10, stamina_defense_req: 0 },
   });
@@ -125,9 +150,7 @@ it.each([4, 5, 6, 7, 8, 9])("reports the field or garrison survivors from Knight
     createSimulateTool(game).execute("combat", { kind: "combat", attackerId: 101, defenderId });
   if (attackerGuard) {
     writeFact(game.store, "DeepGuard", [gameId, 101], { game_id: gameId, explorer_id: 101, site_id: 1100, slot: 0 });
-    expect((await simulate(102)).content).toEqual([
-      { type: "text", text: "Attack refused: army is guarding a Deep site." },
-    ]);
+    expect((await simulate(102)).content).toEqual([{ type: "text", text: "Attack refused: guarding-deep-site." }]);
     return;
   }
   let defendingId = 102;
@@ -178,7 +201,7 @@ it.each([4, 5, 6, 7, 8, 9])("reports the field or garrison survivors from Knight
   if (defenderGuard) {
     seedCombatant(102, 0, defenderOaths!, 14);
     expect((await simulate(defendingId)).content).toEqual([
-      { type: "text", text: `Deep site ${defendingId} has no guard to fight.` },
+      { type: "text", text: `${defendingId} has no guard to fight: the attack claims it.` },
     ]);
   }
 });

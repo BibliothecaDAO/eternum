@@ -2,6 +2,7 @@ import { oathDamageMultiplier } from "./oaths";
 import { bonusActive } from "./relic";
 import { BiomeType, RESOURCE_PRECISION, type Troops } from "@bibliothecadao/types";
 import { nativeRuleConstants, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import type { NativeFactStore } from "../client/native-fact-store";
 import { staminaAt } from "../managers/troop-stamina";
 import {
   add,
@@ -37,6 +38,17 @@ export interface CombatRules {
   damage: TroopDamageConfig;
   stamina: TroopStaminaConfig;
 }
+
+export const readCombatRules = (store: Pick<NativeFactStore, "require">, gameId: number): CombatRules => {
+  const rules = store.require("SliceRules", { game_id: gameId });
+  return {
+    dayUnitSeconds: rules.day_unit_seconds,
+    cooldownSeconds: rules.battle_config.cooldown_seconds,
+    tickSeconds: Number(rules.tick_config.armies_tick_in_seconds),
+    damage: rules.troop_damage_config,
+    stamina: rules.troop_stamina_config,
+  };
+};
 
 /** Only player-held slots receive Frontier guard protection; Blitz includes unowned structure guards. */
 export const isCombatGuard = (owner: bigint | null, dayUnitSeconds: number): boolean => {

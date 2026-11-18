@@ -29,7 +29,7 @@ import { hasEnabledProductionPath } from "../utils/production-path";
 import { disposeActiveGameSyncRuntime } from "../sync/game-sync-runtime";
 import { getBlockTimestamp } from "../utils/timestamp";
 import type { BiomeClimateConfig } from "../utils/biome";
-import type { CombatRules } from "../utils/combat-exchange";
+import { readCombatRules, type CombatRules } from "../utils/combat-exchange";
 
 import { mapCenter } from "../utils/map-center";
 type ResourceAmount = { readonly resource_type: number; readonly amount: bigint };
@@ -377,14 +377,7 @@ export class ClientConfigManager {
   }
   /** The active game's combat rules, as its SliceRules carries them. */
   getCombatRules(): CombatRules {
-    const rules = this.rules();
-    return {
-      dayUnitSeconds: rules.day_unit_seconds,
-      cooldownSeconds: rules.battle_config.cooldown_seconds,
-      tickSeconds: this.getTick(TickIds.Armies),
-      damage: rules.troop_damage_config,
-      stamina: rules.troop_stamina_config,
-    };
+    return readCombatRules(this.facts(), this.gameId);
   }
   /** Army strength a structure of this level may deploy. */
   getDeploymentCap(level: number): number {
@@ -425,12 +418,6 @@ export class ClientConfigManager {
       stamina_defense_req: rules.troop_stamina_config.stamina_defense_req,
       tick_interval_seconds: this.getTick(TickIds.Armies),
     };
-  }
-  getBattleGraceTickCount() {
-    return this.rules().battle_config.regular_immunity_ticks;
-  }
-  getVillageSettlementImmunityTickCount() {
-    return this.rules().battle_config.village_immunity_ticks;
   }
   getMinTravelStaminaCost() {
     const config = this.rules().troop_stamina_config;

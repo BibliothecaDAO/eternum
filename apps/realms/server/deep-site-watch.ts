@@ -3,7 +3,14 @@ import { readDeepSites, NativeFactStore, type NativeRows } from "@bibliothecadao
 import { readGameFacts, type ReleaseCatalogue } from "./game-facts";
 import { dayOf, expeditionDepth, readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
 import { resolveExplorerCombatTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
-import { armyOaths, forecastFight, mapCenter, researchedDepth, type CombatRules } from "@bibliothecadao/eternum";
+import {
+  armyOaths,
+  forecastFight,
+  mapCenter,
+  readCombatRules,
+  researchedDepth,
+  type CombatRules,
+} from "@bibliothecadao/eternum";
 
 export interface DeepSiteWatch {
   gameId: number;
@@ -40,7 +47,7 @@ export function planDeepSiteWatches(
   if (depth === undefined) throw new Error("Deep alerts require the home's research");
   if (depth === 0) return [];
   const aspect = store.require("HomeAspect", { game_id: gameId, home }).aspect;
-  const rules = combatRules(store, gameId);
+  const rules = readCombatRules(store, gameId);
   const center = mapCenter(store.require("SliceRules", { game_id: gameId }).map_center_offset);
   return readDeepSites(store, timestamp, gameId).flatMap((site) => {
     if (depth < expeditionDepth(calendar, site.position)) return [];
@@ -132,17 +139,6 @@ function clearsEveryGuard(
     attacker = fight.attacker;
   }
   return true;
-}
-
-function combatRules(store: NativeFactStore, gameId: number): CombatRules {
-  const rules = store.require("SliceRules", { game_id: gameId });
-  return {
-    dayUnitSeconds: rules.day_unit_seconds,
-    cooldownSeconds: rules.battle_config.cooldown_seconds,
-    tickSeconds: Number(rules.tick_config.armies_tick_in_seconds),
-    damage: rules.troop_damage_config,
-    stamina: rules.troop_stamina_config,
-  };
 }
 
 /** One confirmed, scoped read holds the player's armies and every public Deep guard. */

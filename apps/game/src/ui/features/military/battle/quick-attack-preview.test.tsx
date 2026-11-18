@@ -16,7 +16,8 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { campBeside, otherArmyAt, SITE, SITE_TILE } from "@/ui/features/frontier/sites/site-fixture";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
-import { ActorType } from "@bibliothecadao/types";
+import { nativeTilePackingConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
+import { ActorType, BiomeType, BiomeTypeToId } from "@bibliothecadao/types";
 import { QuickAttackPreview } from "./quick-attack-preview";
 
 const ARMY = 201;
@@ -41,13 +42,26 @@ const preview = (armyStamina: bigint, aimAt: typeof target = target) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store } = campBeside("Camp", true, armyStamina);
   otherArmyAt(store, target.hex.x, target.hex.y);
+  const rules = store.require("SliceRules", { game_id: 1 });
+  const grassland = BigInt(BiomeTypeToId[BiomeType.Grassland]) * BigInt(nativeTilePackingConstants.BIOME_SCALE);
   // The camp's tile names it, as a Blitz structure's tile does.
   store.applyFacts([
+    {
+      model: "SliceRules",
+      key: "0x100",
+      value: { ...rules, day_unit_seconds: 0, battle_config: { ...rules.battle_config, regular_immunity_ticks: 0 } },
+    },
+    { model: "ExpeditionSite", key: "0x72", value: null },
     {
       model: "TileOccupancy",
       key: "0x7101",
       value: { game_id: 1, ...SITE_TILE, entity_id: SITE, category: 0, is_structure: true },
     },
+    ...[SITE_TILE, { col: target.hex.x, row: target.hex.y, alt: false }].map((tile, index) => ({
+      model: "TileOpt",
+      key: `0x7201${index}`,
+      value: { game_id: 1, ...tile, data: grassland },
+    })),
   ] as never);
   const attack = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
   useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: { col: 30, row: 5 } });

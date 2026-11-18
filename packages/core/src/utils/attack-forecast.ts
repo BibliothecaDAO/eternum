@@ -1,0 +1,365 @@
+import {
+  getLayeredAttackDistance,
+  getLayerNeighborHexes,
+  getNeighborHexes,
+  getTroopAttackRange,
+  RESOURCE_PRECISION,
+  StructureType,
+  TileOccupier,
+  type BiomeType,
+  type Troops,
+} from "@bibliothecadao/types";
+import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import type { NativeFactStore } from "../client/native-fact-store";
+import { readDeepSite, readDeepSiteDefender } from "../client/views/deep-sites";
+import { resolveExplorerCombatTroops, staminaAt } from "../managers/troop-stamina";
+import { STAMINA_MODELS } from "../client/views/stamina";
+import { getDefendingGuards, getGuardsByStructure, GUARD_MODELS } from "./army";
+import { armyOpponentsRefusal } from "./army-opponents";
+import {
+  forecastFight,
+  isCombatGuard,
+  readCombatRules,
+  resolveExchange,
+  type CombatRules,
+  type ExchangeRefusal,
+} from "./combat-exchange";
+import { isArmyCurrent, structureMapPosition } from "./expeditions";
+import { isModeRuleEnabled } from "./mode-rules";
+import { armyOaths } from "./oaths";
+import { entityMapOccupancy, entityMapPosition, getTileAt, storedBiomeAt } from "./tile";
+
+export const ATTACK_FORECAST_MODELS = [
+  ...STAMINA_MODELS,
+  ...GUARD_MODELS,
+  "ArmyRelicEffect",
+  "DeepGuard",
+  "DeepSite",
+  "DeepRules",
+  "TileOpt",
+] as const;
+
+export type AttackRefusal =
+  | "answer-oath-first"
+  | "game-not-started"
+  | "game-ended"
+  | "guarding-deep-site"
+  | "target-guards-deep-site"
+  | "expired-army"
+  | "deep-site-not-adjacent"
+  | "target-must-be-unowned"
+  | "own-target"
+  | "no-attack"
+  | "allied"
+  | "season-immunity"
+  | "village-immunity"
+  | "out-of-range"
+  | "claim-needs-adjacency"
+  | ExchangeRefusal;
+
+interface Tile {
+  col: number;
+  row: number;
+  alt: boolean;
+}
+
+interface Combatant {
+  troops: Troops;
+  oaths: number;
+  guarding: boolean;
+  tile: Tile;
+  home: bigint;
+  guardSlot?: number;
+}
+
+interface AttackSides {
+  attacker: Combatant;
+  defender?: Combatant;
+  queued: Troops[];
+}
+
+type FightSides = AttackSides & { defender: Combatant };
+
+type Exchange = Extract<ReturnType<typeof resolveExchange>, { ok: true }>;
+type Fight = Exclude<ReturnType<typeof forecastFight>, { outcome: "refused" }>;
+
+export type AttackForecast =
+  | { outcome: "refused"; refusal: AttackRefusal; sides?: AttackSides }
+  | { outcome: "claims"; sides: AttackSides }
+  | {
+      outcome: "fights";
+      sides: FightSides;
+      distance: number;
+      biome: BiomeType;
+      exchange: Exchange;
+      fight: Fight;
+      certainLoss: boolean;
+    };
+
+interface EntityKey {
+  game_id: number;
+  entity_id: number | bigint;
+}
+
+interface Scene {
+  store: NativeFactStore;
+  gameId: number;
+  chainSecond: number;
+  rules: CombatRules;
+  besideTarget: boolean;
+}
+
+type Defence =
+  | { refusal: AttackRefusal; sides?: AttackSides }
+  | { claims: Combatant; target: Tile }
+  | { sides: FightSides };
+
+const refused = (refusal: AttackRefusal, sides?: AttackSides): Defence => ({ refusal, sides });
+
+export function forecastAttack(
+  store: NativeFactStore,
+  attacker: EntityKey,
+  target: EntityKey,
+  chainSecond: number,
+  { besideTarget = false }: { besideTarget?: boolean } = {},
+): AttackForecast | undefined {
+  const rules = readCombatRules(store, attacker.game_id);
+  const scene = { store, gameId: attacker.game_id, chainSecond, rules, besideTarget };
+  const targetId = BigInt(target.entity_id);
+  const explorer = store.get("ExplorerTroops", { game_id: scene.gameId, explorer_id: BigInt(attacker.entity_id) });
+  const defence = explorer
+    ? armyAttack(scene, explorer, targetId)
+    : guardAttack(scene, BigInt(attacker.entity_id), targetId);
+  if (defence === undefined) return undefined;
+  if ("refusal" in defence) return { outcome: "refused", refusal: defence.refusal, sides: defence.sides };
+  if ("claims" in defence) return claimOf(scene, defence.claims, defence.target);
+  return fightOf(scene, defence.sides);
+}
+
+function claimOf(scene: Scene, attacker: Combatant, target: Tile): AttackForecast {
+  const sides = { attacker, queued: [] };
+  if (!isAdjacent(attacker.tile, target)) return { outcome: "refused", refusal: "claim-needs-adjacency", sides };
+  const stamina = staminaAt(attacker.troops, scene.chainSecond, scene.rules.stamina, scene.rules.tickSeconds);
+  if (stamina.amount < BigInt(scene.rules.stamina.stamina_attack_req))
+    return { outcome: "refused", refusal: "insufficient-stamina", sides };
+  return { outcome: "claims", sides };
+}
+
+function fightOf(scene: Scene, sides: FightSides): AttackForecast | undefined {
+  const { tile } = sides.defender;
+  const biome = storedBiomeAt(scene.store, tile.alt, tile.col, tile.row, scene.gameId);
+  if (biome === undefined) return undefined;
+  const distance = attackDistance(sides.attacker.tile, tile);
+  const context = {
+    timestamp: scene.chainSecond,
+    attackDistance: distance,
+    attackerBiome: biome,
+    defenderBiome: biome,
+    attackerIsStructureGuard: sides.attacker.guarding,
+    defenderIsStructureGuard: sides.defender.guarding,
+    attackerOaths: sides.attacker.oaths,
+    defenderOaths: sides.defender.oaths,
+  };
+  const exchange = resolveExchange(sides.attacker.troops, sides.defender.troops, context, scene.rules);
+  if (!exchange.ok) return { outcome: "refused", refusal: exchange.refusal, sides };
+  const fight = forecastFight(sides.attacker.troops, sides.defender.troops, context, scene.rules);
+  if (fight.outcome === "refused") return { outcome: "refused", refusal: fight.refusal, sides };
+  const certainLoss = exchange.attacker.count < BigInt(RESOURCE_PRECISION);
+  return { outcome: "fights", sides, distance, biome, exchange, fight, certainLoss };
+}
+
+function armyAttack(scene: Scene, explorer: NativeRows["ExplorerTroops"], targetId: bigint): Defence | undefined {
+  if (hasOpenOathPick(scene, explorer.explorer_id)) return refused("answer-oath-first");
+  const playing = playingRefusal(scene);
+  if (playing) return refused(playing);
+  if (isDeepGuard(scene, explorer.explorer_id)) return refused("guarding-deep-site");
+  if (!isArmyCurrent(scene.store, scene.gameId, explorer.explorer_id, scene.chainSecond))
+    return refused("expired-army");
+  const standing = armyCombatant(scene, explorer);
+  const targetTile = targetPosition(scene, targetId);
+  if (!standing || !targetTile) return undefined;
+  const attacker = scene.besideTarget ? { ...standing, tile: besideTile(targetTile) } : standing;
+  const { store, gameId } = scene;
+  if (store.get("DeepSite", { game_id: gameId, entity_id: targetId }))
+    return deepSiteDefence(scene, attacker, targetId);
+  const army = store.get("ExplorerTroops", { game_id: gameId, explorer_id: targetId });
+  if (army) return armyDefence(scene, attacker, army);
+  const structure = store.get("Structure", { game_id: gameId, entity_id: targetId });
+  return structure && structureDefence(scene, attacker, structure);
+}
+
+function targetPosition(scene: Scene, targetId: bigint): Tile | undefined {
+  const structure = scene.store.get("Structure", { game_id: scene.gameId, entity_id: targetId });
+  if (structure) {
+    const position = structureMapPosition(scene.store, structure);
+    return position ? { col: position.x, row: position.y, alt: position.alt } : undefined;
+  }
+  const occupancy = entityMapOccupancy(scene.store, scene.gameId, targetId);
+  return occupancy && { col: occupancy.col, row: occupancy.row, alt: occupancy.alt };
+}
+
+const besideTile = (target: Tile): Tile => {
+  const [first] = getLayerNeighborHexes(target.col, target.row, target.alt);
+  return { col: first!.col, row: first!.row, alt: target.alt };
+};
+
+function armyDefence(scene: Scene, attacker: Combatant, army: NativeRows["ExplorerTroops"]): Defence | undefined {
+  if (isDeepGuard(scene, army.explorer_id)) return refused("target-guards-deep-site");
+  if (!isArmyCurrent(scene.store, scene.gameId, army.explorer_id, scene.chainSecond)) return refused("expired-army");
+  const defender = armyCombatant(scene, army);
+  if (!defender) return undefined;
+  const sides = { attacker, defender, queued: [] };
+  const refusal =
+    armyOpponentsRefusal(scene.store, scene.gameId, attacker, defender) ??
+    ownTargetRefusal(scene, attacker.home, homeOwner(scene, defender.home)) ??
+    immunityRefusal(scene, attacker.home) ??
+    immunityRefusal(scene, defender.home) ??
+    (attacker.troops.count === 0n || defender.troops.count === 0n ? "no-troops" : undefined) ??
+    (isInBattleRange(scene, attacker, defender.tile) ? undefined : "out-of-range");
+  return refusal ? refused(refusal, sides) : { sides };
+}
+
+function deepSiteDefence(scene: Scene, attacker: Combatant, siteId: bigint): Defence | undefined {
+  const site = readDeepSite(scene.store, scene.chainSecond, siteId, scene.gameId);
+  if (!site) return undefined;
+  const tile = { col: site.position.x, row: site.position.y, alt: site.position.alt };
+  const alone = { attacker, queued: [] };
+  if (!isAdjacent(attacker.tile, tile)) return refused("deep-site-not-adjacent", alone);
+  const aggressor = aggressorRefusal(scene, attacker);
+  if (aggressor) return refused(aggressor, alone);
+  const guard = site.guards[0]?.army;
+  const defence = readDeepSiteDefender(scene.store, site, scene.chainSecond);
+  if (!guard && !defence) return { claims: attacker, target: tile };
+  if (!defence) return undefined;
+  const sides = { attacker, defender: { ...defence, tile, home: guard?.owner ?? 0n }, queued: [] };
+  if (!guard) return { sides };
+  if (!isArmyCurrent(scene.store, scene.gameId, guard.explorer_id, scene.chainSecond))
+    return refused("expired-army", sides);
+  const refusal =
+    armyOpponentsRefusal(scene.store, scene.gameId, attacker, sides.defender) ??
+    ownTargetRefusal(scene, attacker.home, homeOwner(scene, guard.owner)) ??
+    immunityRefusal(scene, guard.owner);
+  return refusal ? refused(refusal, sides) : { sides };
+}
+
+function structureDefence(scene: Scene, attacker: Combatant, structure: NativeRows["Structure"]): Defence | undefined {
+  const { store, gameId } = scene;
+  const unownedOnly = isModeRuleEnabled(store.require("SliceRules", { game_id: gameId }), "UNOWNED_TARGETS");
+  const alone = { attacker, queued: [] };
+  const before =
+    (unownedOnly && structure.owner !== 0n ? "target-must-be-unowned" : undefined) ??
+    ownTargetRefusal(scene, attacker.home, structure.owner) ??
+    immunityRefusal(scene, structure.entity_id) ??
+    aggressorRefusal(scene, attacker);
+  if (before) return refused(before, alone);
+  const position = structureMapPosition(store, structure);
+  const guards = getDefendingGuards(structure, store, scene.chainSecond);
+  if (!position || !guards) return undefined;
+  const tile = { col: position.x, row: position.y, alt: position.alt };
+  if (!isInStructureRange(attacker.tile, tile, attacker.troops)) return refused("out-of-range", alone);
+  const [first, ...queued] = guards;
+  if (!first) return { claims: attacker, target: tile };
+  const guarding = isCombatGuard(structure.owner, scene.rules.dayUnitSeconds);
+  const defender = { troops: first.troops, oaths: 0, guarding, tile, home: structure.entity_id };
+  return { sides: { attacker, defender, queued: queued.map((guard) => guard.troops) } };
+}
+
+function guardAttack(scene: Scene, structureId: bigint, targetId: bigint): Defence | undefined {
+  const { store, gameId } = scene;
+  const structure = store.get("Structure", { game_id: gameId, entity_id: structureId });
+  const army = store.get("ExplorerTroops", { game_id: gameId, explorer_id: targetId });
+  if (!structure || !army) return undefined;
+  const playing = playingRefusal(scene);
+  if (playing) return refused(playing);
+  if (isDeepGuard(scene, army.explorer_id)) return refused("target-guards-deep-site");
+  if (!isArmyCurrent(store, gameId, army.explorer_id, scene.chainSecond)) return refused("expired-army");
+  const defender = armyCombatant(scene, army);
+  const position = structureMapPosition(store, structure);
+  const guards = getGuardsByStructure(structure, store, scene.chainSecond);
+  if (!defender || !position || !guards) return undefined;
+  const tile = { col: position.x, row: position.y, alt: position.alt };
+  const living = guards.filter((guard) => guard.troops.count > 0n).toSorted((a, b) => a.slot - b.slot);
+  if (!living.length || defender.troops.count === 0n) return refused("no-troops");
+  const guard = living.find((candidate) => isInStructureRange(tile, defender.tile, candidate.troops));
+  if (!guard) return refused("out-of-range");
+  const attacker = { troops: guard.troops, oaths: 0, guarding: true, tile, home: structureId, guardSlot: guard.slot };
+  const sides = { attacker, defender, queued: [] };
+  const refusal =
+    immunityRefusal(scene, structureId) ??
+    immunityRefusal(scene, defender.home) ??
+    armyOpponentsRefusal(store, gameId, attacker, defender);
+  return refusal ? refused(refusal, sides) : { sides };
+}
+
+function armyCombatant(scene: Scene, army: NativeRows["ExplorerTroops"]): Combatant | undefined {
+  const troops = resolveExplorerCombatTroops(scene.store, army, scene.chainSecond);
+  if (!troops) return undefined;
+  const position = entityMapPosition(scene.store, scene.gameId, army.explorer_id);
+  return {
+    troops,
+    oaths: armyOaths(scene.store, army),
+    guarding: false,
+    tile: { col: position.x, row: position.y, alt: position.alt },
+    home: army.owner,
+  };
+}
+
+function hasOpenOathPick(scene: Scene, explorerId: bigint): boolean {
+  if (scene.rules.dayUnitSeconds === 0) return false;
+  return scene.store.require("ArmyProgress", { game_id: scene.gameId, explorer_id: explorerId }).oath_pick !== 0;
+}
+
+function playingRefusal(scene: Scene): AttackRefusal | undefined {
+  const game = scene.store.require("GameRegistry", { game_id: scene.gameId });
+  const now = BigInt(scene.chainSecond);
+  if (!game.ready || (!game.dev_mode_on && (now < game.start_main_at || now < game.start_settling_at)))
+    return "game-not-started";
+  return game.end_at !== 0n && now >= game.end_at ? "game-ended" : undefined;
+}
+
+const isDeepGuard = (scene: Scene, explorerId: bigint): boolean =>
+  scene.store.get("DeepGuard", { game_id: scene.gameId, explorer_id: explorerId }) !== undefined;
+
+const homeOwner = (scene: Scene, home: bigint): bigint =>
+  scene.store.require("Structure", { game_id: scene.gameId, entity_id: home }).owner;
+
+const ownTargetRefusal = (scene: Scene, attackerHome: bigint, defenderOwner: bigint): AttackRefusal | undefined =>
+  homeOwner(scene, attackerHome) === defenderOwner ? "own-target" : undefined;
+
+const aggressorRefusal = (scene: Scene, attacker: Combatant): AttackRefusal | undefined =>
+  attacker.troops.count === 0n ? "no-troops" : immunityRefusal(scene, attacker.home);
+
+function immunityRefusal(scene: Scene, home: bigint): AttackRefusal | undefined {
+  const { store, gameId, rules } = scene;
+  const battle = store.require("SliceRules", { game_id: gameId }).battle_config;
+  const tick = Math.floor(scene.chainSecond / rules.tickSeconds);
+  const start = Number(store.require("GameRegistry", { game_id: gameId }).start_main_at);
+  if (tick < Math.floor(start / rules.tickSeconds) + battle.regular_immunity_ticks) return "season-immunity";
+  const structure = store.require("Structure", { game_id: gameId, entity_id: home });
+  if (structure.base.category !== StructureType.Village) return undefined;
+  const founded = Math.floor(Number(structure.base.created_at) / rules.tickSeconds);
+  return tick < founded + battle.village_immunity_ticks ? "village-immunity" : undefined;
+}
+
+const attackDistance = (attacker: Tile, defender: Tile): number =>
+  Math.floor(getLayeredAttackDistance(attacker, defender));
+
+const isAdjacent = (attacker: Tile, defender: Tile): boolean =>
+  attacker.alt === defender.alt && getLayeredAttackDistance(attacker, defender) === 1;
+
+function isInStructureRange(attacker: Tile, defender: Tile, troops: Troops): boolean {
+  const distance = getLayeredAttackDistance(attacker, defender);
+  return attacker.alt === defender.alt && distance > 0 && distance <= getTroopAttackRange(troops.category);
+}
+
+function isInBattleRange(scene: Scene, attacker: Combatant, defender: Tile): boolean {
+  if (attacker.tile.alt === defender.alt) return isInStructureRange(attacker.tile, defender, attacker.troops);
+  const { col, row, alt } = attacker.tile;
+  return (
+    col === defender.col &&
+    row === defender.row &&
+    getNeighborHexes(col, row).some(
+      (hex) => getTileAt(scene.store, alt, hex.col, hex.row, scene.gameId)?.occupier_type === TileOccupier.Spire,
+    )
+  );
+}

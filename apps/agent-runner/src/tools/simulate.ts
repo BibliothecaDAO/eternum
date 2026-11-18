@@ -1,29 +1,14 @@
-import { readDeepSite, readDeepSiteDefender, type DeepSiteView } from "@bibliothecadao/eternum/game-client";
-import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 import {
-  resolveExchange,
+  forecastAttack,
   getBlockTimestamp,
-  armyOaths,
-  configManager,
   divideByPrecision,
   getBuildingCosts,
-  getDefendingGuards,
-  isCombatGuard,
-  storedBiomeAt,
-  entityMapPosition,
-  structureMapPosition,
   StaminaManager,
+  type AttackForecast,
   type ExchangeTroops,
   type GameClient,
 } from "@bibliothecadao/eternum";
-import {
-  BiomeType,
-  BuildingType,
-  BuildingTypeToString,
-  findResourceById,
-  type ID,
-  getLayeredAttackDistance,
-} from "@bibliothecadao/types";
+import { BuildingType, BuildingTypeToString, findResourceById, type ID } from "@bibliothecadao/types";
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { Type, type Static } from "typebox";
 
@@ -51,14 +36,6 @@ const SimulateParams = Type.Object({
 });
 
 type SimulateInput = Static<typeof SimulateParams>;
-
-/** A combatant as the simulator sees it, plus where it stands so the biome can be read. */
-interface Combatant {
-  troops: ExchangeTroops;
-  hex: { x: number; y: number; alt: boolean };
-  oaths: number;
-  guarding: boolean;
-}
 
 export const createSimulateTool = (game: RunnerGame): AgentTool<typeof SimulateParams> => ({
   name: "simulate",
@@ -95,38 +72,28 @@ const missingInputs = (input: SimulateInput): string[] =>
 
 const simulateCombat = (client: GameClient, attackerId: ID, defenderId: ID): string => {
   const timestamp = getBlockTimestamp().currentDefaultTick;
-  const store = client.setup.store;
-  const key = (id: ID) => ({ game_id: client.gameId, explorer_id: id });
-  if (store.get("DeepGuard", key(attackerId))) return "Attack refused: army is guarding a Deep site.";
-  const guard = store.get("DeepGuard", key(defenderId));
-  if (guard) return `Attack refused: target Deep site ${guard.site_id} to fight its guard.`;
-  const attacker = explorerCombatant(client, attackerId, timestamp);
-  if (!attacker) return describeMissingExplorer(store, key(attackerId));
-  const defender = explorerCombatant(client, defenderId, timestamp) ?? siteDefender(client, defenderId, timestamp);
-  if (!defender) return describeUndefendedTarget(client, defenderId, timestamp);
-  const biome = biomeAt(client, defender.hex);
-  const tile = (hex: Combatant["hex"]) => ({ col: hex.x, row: hex.y, alt: hex.alt });
-  const result = resolveExchange(
-    attacker.troops,
-    defender.troops,
-    {
-      timestamp,
-      attackDistance: Math.floor(getLayeredAttackDistance(tile(attacker.hex), tile(defender.hex))),
-      attackerBiome: biome,
-      defenderBiome: biome,
-      attackerOaths: attacker.oaths,
-      defenderOaths: defender.oaths,
-      attackerIsStructureGuard: false,
-      defenderIsStructureGuard: defender.guarding,
-    },
-    configManager.getCombatRules(),
-  );
-  if (!result.ok) return `Attack refused: ${result.refusal}.`;
-  return [
-    `Combat on ${biome}: ${describeArmy(attacker.troops, timestamp)} vs ${describeArmy(defender.troops, timestamp)}${defender.guarding ? " (structure guard)" : ""}`,
-    `Attacker deals ${divideByPrecision(Number(result.defenderLoss))} damage, defender deals ${divideByPrecision(Number(result.attackerLoss))}.`,
-    `Survivors: attacker ${divideByPrecision(Number(result.attacker.count))}, defender ${divideByPrecision(Number(result.defender.count))}.`,
-  ].join("\n");
+  const key = (id: ID) => ({ game_id: client.gameId, entity_id: id });
+  const forecast = forecastAttack(client.setup.store, key(attackerId), key(defenderId), timestamp);
+  if (!forecast) return describeUnknownForecast(client, attackerId, defenderId);
+  return describeForecast(forecast, defenderId, timestamp);
+};
+
+const describeForecast = (forecast: AttackForecast, defenderId: ID, timestamp: number): string => {
+  switch (forecast.outcome) {
+    case "refused":
+      return `Attack refused: ${forecast.refusal}.`;
+    case "claims":
+      return `${defenderId} has no guard to fight: the attack claims it.`;
+    case "fights": {
+      const { attacker, defender } = forecast.sides;
+      const { exchange } = forecast;
+      return [
+        `Combat on ${forecast.biome}: ${describeArmy(attacker.troops, timestamp)} vs ${describeArmy(defender.troops, timestamp)}${defender.guarding ? " (structure guard)" : ""}`,
+        `Attacker deals ${divideByPrecision(Number(exchange.defenderLoss))} damage, defender deals ${divideByPrecision(Number(exchange.attackerLoss))}.`,
+        `Survivors: attacker ${divideByPrecision(Number(exchange.attacker.count))}, defender ${divideByPrecision(Number(exchange.defender.count))}.`,
+      ].join("\n");
+    }
+  }
 };
 
 // Building cost
@@ -159,67 +126,19 @@ const simulateBuildingCost = (
 
 // Native facts
 
-const explorerCombatant = (client: GameClient, explorerId: ID, timestamp: number): Combatant | undefined => {
+const describeUnknownForecast = (client: GameClient, attackerId: ID, defenderId: ID): string => {
   const store = client.setup.store;
-  const army = store.get("ExplorerTroops", { game_id: client.gameId, explorer_id: explorerId });
-  if (!army) return undefined;
-  const troops = resolveExplorerCombatTroops(store, army, timestamp);
-  return (
-    troops && {
-      troops,
-      oaths: armyOaths(store, army),
-      hex: entityMapPosition(store, client.gameId, explorerId),
-      guarding: false,
-    }
-  );
+  const gameId = client.gameId;
+  const attacker = store.get("ExplorerTroops", { game_id: gameId, explorer_id: attackerId });
+  if (!attacker && !store.get("Structure", { game_id: gameId, entity_id: attackerId }))
+    return `Attacker ${attackerId} is neither an explorer nor a structure in the native store.`;
+  const target =
+    store.get("ExplorerTroops", { game_id: gameId, explorer_id: defenderId }) ??
+    store.get("DeepSite", { game_id: gameId, entity_id: defenderId }) ??
+    store.get("Structure", { game_id: gameId, entity_id: defenderId });
+  if (!target) return `${defenderId} is neither an explorer, a Deep site nor a structure.`;
+  return `The combat facts of ${attackerId} against ${defenderId} are not loaded yet.`;
 };
-
-const siteDefender = (client: GameClient, id: ID, timestamp: number): Combatant | undefined => {
-  const store = client.setup.store;
-  const key = { game_id: client.gameId, entity_id: id };
-  if (store.get("DeepSite", key)) {
-    const site = findDeepSite(client, id, timestamp);
-    const defender = site && readDeepSiteDefender(store, site, timestamp);
-    return site && defender && { ...defender, hex: site.position };
-  }
-  const structure = store.get("Structure", key);
-  if (!structure) return undefined;
-  const guard = getDefendingGuards(structure, store, timestamp)?.[0];
-  const hex = structureMapPosition(store, structure);
-  if (!guard || !hex) return undefined;
-  return {
-    troops: guard.troops,
-    hex,
-    oaths: 0,
-    guarding: isCombatGuard(structure.owner, configManager.getCombatRules().dayUnitSeconds),
-  };
-};
-
-const findDeepSite = (client: GameClient, id: ID, timestamp: number): DeepSiteView | undefined =>
-  readDeepSite(client.setup.store, timestamp, BigInt(id), client.gameId);
-
-const describeUndefendedTarget = (client: GameClient, id: ID, timestamp: number): string => {
-  const store = client.setup.store;
-  const explorerKey = { game_id: client.gameId, explorer_id: id };
-  if (store.get("ExplorerTroops", explorerKey)) return describeMissingExplorer(store, explorerKey);
-  const site = findDeepSite(client, id, timestamp);
-  if (!site) return `${id} is neither an explorer nor a structure with guards.`;
-  if (site.guards.length > 0 || site.beastTroops > 0n) return `Deep site ${id}'s guard is not loaded yet.`;
-  return `Deep site ${id} has no guard to fight.`;
-};
-
-const describeMissingExplorer = (
-  store: GameClient["setup"]["store"],
-  key: { game_id: number; explorer_id: ID },
-): string =>
-  store.get("ExplorerTroops", key)
-    ? `Explorer ${key.explorer_id}'s combat facts are not loaded yet.`
-    : `Explorer ${key.explorer_id} is not in the native store.`;
-
-const biomeAt = (client: GameClient, hex: Combatant["hex"]): BiomeType =>
-  hex.alt
-    ? BiomeType.Underground
-    : (storedBiomeAt(client.setup.store, hex.alt, hex.x, hex.y, client.gameId) ?? BiomeType.None);
 
 const describeArmy = (army: ExchangeTroops, timestamp: number): string =>
   `${divideByPrecision(Number(army.count))} ${army.category} ${army.tier} (stamina ${StaminaManager.getStamina(army, timestamp).amount})`;

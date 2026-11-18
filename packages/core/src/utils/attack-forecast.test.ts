@@ -1,0 +1,318 @@
+import { BiomeType, BiomeTypeToId, RESOURCE_PRECISION, StructureType, TileOccupier } from "@bibliothecadao/types";
+import { afterEach, describe, expect, it } from "vitest";
+import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import {
+  nativeRuleConstants,
+  nativeTilePackingConstants,
+  type NativeModelName,
+} from "../../../../contracts/l3/world-native/schema/client.gen";
+import { NativeFactStore } from "../client/native-fact-store";
+import { nativeRowDefinitions } from "../client/native-row";
+import { ClientConfigManager } from "../managers/config-manager";
+import { forecastAttack, type AttackForecast } from "./attack-forecast";
+import { deepCenter } from "./deep-geometry";
+import { dayAtIndex } from "./days";
+import { setBlockTimestampSource } from "./timestamp";
+
+const GAME_ID = 28;
+const DAY = 14_400;
+const START = 1_000_000;
+const NOW = START + 600;
+const SPACING = 1024;
+const DEEP = deepCenter(SPACING);
+const RIVAL = 0xdefn;
+const PLAYER = 0xabcn;
+const troops = (count: number) => BigInt(count) * BigInt(RESOURCE_PRECISION);
+const NO_BOOSTS = {
+  incr_damage_dealt_percent_num: 0,
+  incr_damage_dealt_end_at: 0,
+  decr_damage_gotten_percent_num: 0,
+  decr_damage_gotten_end_at: 0,
+  incr_stamina_regen_percent_num: 0,
+  incr_stamina_regen_seconds_left: 0,
+  incr_explore_reward_percent_num: 0,
+  incr_explore_reward_end_at: 0,
+};
+
+type Tile = { col: number; row: number; alt?: boolean };
+type Category = "Knight" | "Crossbowman" | "Paladin";
+
+function frontier() {
+  ClientConfigManager.instance().setActiveGame(GAME_ID, 0);
+  setBlockTimestampSource(() => NOW);
+  const store = new NativeFactStore();
+  store.setSnapshot({ gameId: GAME_ID, complete: true, actor: `0x${PLAYER.toString(16)}`, timestamp: NOW });
+  const ids = new Map<string, string>();
+  const write = (model: NativeModelName, value: Record<string, unknown>) => {
+    const identity = `${model}:${nativeRowDefinitions[model].keys.map((key) => String(value[key])).join(":")}`;
+    const id = ids.get(identity) ?? `0x${(ids.size + 1).toString(16)}`;
+    ids.set(identity, id);
+    store.applyFacts([{ model, key: id, value }]);
+  };
+  write("SliceRules", {
+    ...preset.rules,
+    game_id: GAME_ID,
+    day_unit_seconds: DAY,
+    battle_config: { ...preset.rules.battle_config, regular_immunity_ticks: 0 },
+    troop_stamina_config: { ...preset.rules.troop_stamina_config, stamina_attack_req: 10, stamina_defense_req: 0 },
+  });
+  ClientConfigManager.instance().setStore(store);
+  write("SettlementRules", {
+    game_id: GAME_ID,
+    registration_start: 0,
+    registration_limit: 100,
+    mode: "Triple",
+    spacing: SPACING,
+  });
+  write("GameRegistry", {
+    game_id: GAME_ID,
+    name: 0n,
+    preset_id: 7,
+    settled: false,
+    ready: true,
+    dev_mode_on: false,
+    start_settling_at: 0n,
+    start_main_at: BigInt(START),
+    scheduled_end_at: BigInt(START + DAY * 50),
+    end_at: BigInt(START + DAY * 50),
+    end_grace_seconds: 0,
+    seed: 0n,
+  });
+  write("DeepRules", {
+    game_id: GAME_ID,
+    foundation: { alt: false, x: 25, y: 35 },
+    quarry: { alt: false, x: 12, y: 20 },
+    altar: { alt: false, x: 38, y: 20 },
+    beast_count: troops(10_000),
+    loss_per_tick: troops(100),
+    quarry_per_tick: troops(500),
+    altar_per_tick: 5,
+    altar_threshold: 1500,
+  });
+
+  const seats = new Map<number, string>();
+  const occupy = (entity_id: number, tile: Tile, category: number, is_structure: boolean) => {
+    const previous = seats.get(entity_id);
+    if (previous) store.applyFacts([{ model: "TileOccupancy", key: previous, value: null }]);
+    const id = `0x${(0x10000 + ids.size + 1).toString(16)}`;
+    ids.set(`seat:${id}`, id);
+    seats.set(entity_id, id);
+    const { col, row } = tile;
+    store.applyFacts([
+      {
+        model: "TileOccupancy",
+        key: id,
+        value: { game_id: GAME_ID, alt: tile.alt ?? false, col, row, entity_id, category, is_structure },
+      },
+    ]);
+  };
+
+  const home = (entity_id: number, owner: bigint, aspect: number) => {
+    write("Structure", structureRow(entity_id, owner, StructureType.Realm));
+    write("HomeAspect", { game_id: GAME_ID, home: entity_id, aspect });
+  };
+
+  const army = (
+    explorer_id: number,
+    owner: number,
+    tile: Tile,
+    { count = 1_000, category = "Knight" as Category, oathPick = 0, day = 0, cooldownEnd = 0 } = {},
+  ) => {
+    write("ExplorerTroops", {
+      game_id: GAME_ID,
+      explorer_id,
+      owner,
+      troops: {
+        category,
+        tier: "T1",
+        count: troops(count),
+        stamina: { Inline: { amount: 100n, settled_at: NOW, remainder: 0 } },
+        boosts: NO_BOOSTS,
+        battle_cooldown_end: cooldownEnd,
+      },
+    });
+    occupy(explorer_id, tile, TileOccupier.ExplorerKnightT1, false);
+    write("ArmyProgress", {
+      game_id: GAME_ID,
+      explorer_id,
+      logistics: 0,
+      oath_slots: 1,
+      oaths: 0,
+      oath_pick: oathPick,
+    });
+    write("ArmyDay", { game_id: GAME_ID, explorer_id, day: BigInt(day) });
+    for (const kind of ["Blade", "Ward", "Plunder", "FarEye"])
+      write("ArmyRelicEffect", { game_id: GAME_ID, explorer_id, kind, rank: 0, expires_at: 0n });
+  };
+
+  const guardRow = (structure_id: number, slot: number, count: number, category: Category = "Knight") => ({
+    game_id: GAME_ID,
+    structure_id,
+    slot,
+    troops: {
+      category,
+      tier: "T1",
+      count: troops(count),
+      stamina: { Inline: { amount: 100n, settled_at: NOW, remainder: 0 } },
+      boosts: NO_BOOSTS,
+      battle_cooldown_end: 0,
+    },
+    destroyed_tick: 0,
+  });
+
+  const deepSite = (entity_id: number, tile: Tile, beast: number) => {
+    write("DeepSite", { game_id: GAME_ID, entity_id, kind: nativeRuleConstants.DEEP_QUARRY, day: 0n });
+    occupy(entity_id, tile, TileOccupier.DeepSite, false);
+    write("Guard", guardRow(entity_id, 0, beast));
+  };
+
+  const holdDeepSite = (explorer_id: number, site_id: number, slot = 0) =>
+    write("DeepGuard", { game_id: GAME_ID, explorer_id, site_id, slot });
+
+  const camp = (entity_id: number, tile: Tile, guards: [number, Category][]) => {
+    write("Structure", structureRow(entity_id, 0n, StructureType.Camp));
+    occupy(entity_id, tile, TileOccupier.Camp, true);
+    write("TileOpt", {
+      game_id: GAME_ID,
+      alt: false,
+      col: tile.col,
+      row: tile.row,
+      data: BigInt(BiomeTypeToId[BiomeType.Grassland]) * BigInt(nativeTilePackingConstants.BIOME_SCALE),
+    });
+    for (let slot = 0; slot < 4; slot += 1) {
+      const [count, category] = guards[slot] ?? [0, "Knight"];
+      write("Guard", guardRow(entity_id, slot, count, category));
+    }
+  };
+
+  const forecast = (attacker: number, target: number, at = NOW, options?: { besideTarget?: boolean }) =>
+    forecastAttack(
+      store,
+      { game_id: GAME_ID, entity_id: attacker },
+      { game_id: GAME_ID, entity_id: target },
+      at,
+      options,
+    );
+
+  return { home, army, deepSite, holdDeepSite, camp, forecast };
+}
+
+const structureRow = (entity_id: number, owner: bigint, category: number) => ({
+  game_id: GAME_ID,
+  entity_id,
+  owner,
+  base: {
+    category,
+    level: 1,
+    troop_max_guard_count: 4,
+    troop_max_explorer_count: 3,
+    created_at: 0,
+    starting_troops_granted: true,
+  },
+  metadata: { realm_id: entity_id, order: 1, has_wonder: false, village_realm: 0n, mine_kind: 0, deepest_depth: 0 },
+  resources_packed: 0n,
+});
+
+const refusalOf = (forecast: AttackForecast | undefined) =>
+  forecast?.outcome === "refused" ? forecast.refusal : forecast?.outcome;
+
+const beside = (tile: Tile, steps = 1): Tile => ({ col: tile.col + steps, row: tile.row });
+
+describe("one attack forecast for every combat surface", () => {
+  afterEach(() => setBlockTimestampSource(null));
+
+  it("refuses a bow two tiles from a Deep site, which only an adjacent army may attack (4978e3)", () => {
+    const game = frontier();
+    game.home(1, PLAYER, 1);
+    game.deepSite(50, DEEP, 300);
+    game.army(10, 1, beside(DEEP, 2), { category: "Crossbowman" });
+    expect(refusalOf(game.forecast(10, 50))).toBe("deep-site-not-adjacent");
+    game.army(10, 1, beside(DEEP), { category: "Crossbowman" });
+    expect(refusalOf(game.forecast(10, 50))).toBe("fights");
+  });
+
+  it("refuses to fight a Deep guard of the attacker's own Aspect, and fights a rival's (c3fd60)", () => {
+    const game = frontier();
+    game.home(1, PLAYER, 1);
+    game.home(2, RIVAL, 1);
+    game.deepSite(50, DEEP, 0);
+    game.army(10, 1, beside(DEEP));
+    game.army(20, 2, beside(DEEP, 6));
+    game.holdDeepSite(20, 50);
+    expect(refusalOf(game.forecast(10, 50))).toBe("allied");
+    game.home(2, RIVAL, 2);
+    const forecast = game.forecast(10, 50);
+    expect(forecast?.outcome).toBe("fights");
+    expect(forecast?.sides?.defender?.guarding).toBe(true);
+  });
+
+  it("faces a structure's highest occupied guard slot, with the slots below it queued (c00cf4)", () => {
+    const game = frontier();
+    game.home(1, PLAYER, 1);
+    const site = { col: 100, row: 100 };
+    game.camp(60, site, [
+      [1_000, "Knight"],
+      [100, "Crossbowman"],
+    ]);
+    game.army(10, 1, beside(site));
+    const forecast = game.forecast(10, 60);
+    expect(forecast?.outcome).toBe("fights");
+    expect(forecast?.sides?.defender?.troops).toMatchObject({ category: "Crossbowman", count: troops(100) });
+    expect(forecast?.sides?.queued.map((guard) => guard.count)).toEqual([troops(1_000)]);
+  });
+
+  it("refuses an army with an open Oath pick, then an army from an earlier day (966d43)", () => {
+    const game = frontier();
+    game.home(1, PLAYER, 1);
+    game.deepSite(50, DEEP, 300);
+    game.army(10, 1, beside(DEEP), { oathPick: 1 });
+    expect(refusalOf(game.forecast(10, 50))).toBe("answer-oath-first");
+    game.army(10, 1, beside(DEEP));
+    const calendar = { seed: 0n, startMainAt: START, endAt: START + DAY * 50, scheduledEndAt: START + DAY * 50 };
+    const tomorrow = dayAtIndex({ ...calendar, dayUnitSeconds: DAY }, 0).end;
+    expect(refusalOf(game.forecast(10, 50, tomorrow))).toBe("expired-army");
+  });
+
+  it("refuses field armies fighting outside the Deep, and armies inside it fight (984d6e)", () => {
+    const game = frontier();
+    game.home(1, PLAYER, 1);
+    game.home(2, RIVAL, 2);
+    const field = { col: 100, row: 100 };
+    game.army(10, 1, field);
+    game.army(20, 2, beside(field));
+    expect(refusalOf(game.forecast(10, 20))).toBe("no-attack");
+    game.army(10, 1, beside(DEEP, 3));
+    game.army(20, 2, beside(DEEP, 4));
+    expect(refusalOf(game.forecast(10, 20))).toBe("fights");
+  });
+
+  it("judges the attacker's cooldown at the chain second it is given (addd1a)", () => {
+    const game = frontier();
+    game.home(1, PLAYER, 1);
+    game.deepSite(50, DEEP, 300);
+    game.army(10, 1, beside(DEEP), { cooldownEnd: NOW + 30 });
+    expect(refusalOf(game.forecast(10, 50))).toBe("cooldown");
+    expect(refusalOf(game.forecast(10, 50, NOW + 30))).toBe("fights");
+  });
+
+  it("claims an empty structure only from beside it", () => {
+    const game = frontier();
+    game.home(1, PLAYER, 1);
+    const site = { col: 100, row: 100 };
+    game.camp(60, site, []);
+    game.army(10, 1, beside(site, 2), { category: "Crossbowman" });
+    expect(refusalOf(game.forecast(10, 60))).toBe("claim-needs-adjacency");
+    game.army(10, 1, beside(site), { category: "Crossbowman" });
+    expect(refusalOf(game.forecast(10, 60))).toBe("claims");
+  });
+
+  it("refuses an attack past the troops' range and forecasts one from beside the target when asked", () => {
+    const game = frontier();
+    game.home(1, PLAYER, 1);
+    const site = { col: 100, row: 100 };
+    game.camp(60, site, [[300, "Knight"]]);
+    game.army(10, 1, beside(site, 5));
+    expect(refusalOf(game.forecast(10, 60))).toBe("out-of-range");
+    expect(refusalOf(game.forecast(10, 60, NOW, { besideTarget: true }))).toBe("fights");
+  });
+});

@@ -8,23 +8,42 @@ export function armyCombatRefusal(
   attacker: { game_id: number; explorer_id: number | bigint },
   defender: { game_id: number; explorer_id: number | bigint },
 ): "no-attack" | "allied" | undefined {
-  const game_id = attacker.game_id;
-  if (game_id !== defender.game_id) return "no-attack";
-  if (store.require("SliceRules", { game_id }).day_unit_seconds === 0) return undefined;
+  if (attacker.game_id !== defender.game_id) return "no-attack";
+  if (!limitsArmyCombat(store, attacker.game_id)) return undefined;
+  const side = (army: typeof attacker) => {
+    const { x, y, alt } = entityMapPosition(store, army.game_id, army.explorer_id);
+    return { home: store.require("ExplorerTroops", army).owner, tile: { col: x, row: y, alt } };
+  };
+  return deepOpponentsRefusal(store, attacker.game_id, side(attacker), side(defender));
+}
+
+export function armyOpponentsRefusal(
+  store: Pick<NativeFactStore, "require">,
+  game_id: number,
+  attacker: ArmySide,
+  defender: ArmySide,
+): "no-attack" | "allied" | undefined {
+  return limitsArmyCombat(store, game_id) ? deepOpponentsRefusal(store, game_id, attacker, defender) : undefined;
+}
+
+const limitsArmyCombat = (store: Pick<NativeFactStore, "require">, game_id: number): boolean =>
+  store.require("SliceRules", { game_id }).day_unit_seconds !== 0;
+
+function deepOpponentsRefusal(
+  store: Pick<NativeFactStore, "require">,
+  game_id: number,
+  attacker: ArmySide,
+  defender: ArmySide,
+): "no-attack" | "allied" | undefined {
   const { spacing } = store.require("SettlementRules", { game_id });
-  for (const army of [attacker, defender]) {
-    const { x, y, alt } = entityMapPosition(store, game_id, army.explorer_id);
-    if (!isDeepTile(spacing, { col: x, row: y, alt })) return "no-attack";
-  }
-  const attackerAspect = store.require("HomeAspect", {
-    game_id,
-    home: store.require("ExplorerTroops", attacker).owner,
-  }).aspect;
-  const defenderAspect = store.require("HomeAspect", {
-    game_id,
-    home: store.require("ExplorerTroops", defender).owner,
-  }).aspect;
-  return attackerAspect === defenderAspect ? "allied" : undefined;
+  if (![attacker, defender].every((side) => isDeepTile(spacing, side.tile))) return "no-attack";
+  const aspect = (side: ArmySide) => store.require("HomeAspect", { game_id, home: side.home }).aspect;
+  return aspect(attacker) === aspect(defender) ? "allied" : undefined;
+}
+
+interface ArmySide {
+  home: bigint;
+  tile: { col: number; row: number; alt: boolean };
 }
 
 /** Whether a home stands in the Aspect of one of the viewer's own realms: an Aspect's armies are allies in the Deep. */

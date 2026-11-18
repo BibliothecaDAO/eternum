@@ -322,7 +322,7 @@ import { APP_HOST } from "@/config/app-address";
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import { SHARED_MOMENT_WORDS, type CampaignKey, type SocialProvider } from "@realms-world/identity";
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
-import type { RuinChest } from "@bibliothecadao/eternum";
+import type { AttackRefusal, RuinChest } from "@bibliothecadao/eternum";
 import {
   BuildingType,
   buildingName,
@@ -733,6 +733,26 @@ export const SPIRE_WORDS = {
 } as const;
 
 const DEEP = layerName(3);
+export const ATTACK_REFUSAL_WORDS = {
+  "answer-oath-first": "Answer the Oath pick first",
+  "game-not-started": "The season has not started",
+  "game-ended": "The season has ended",
+  "guarding-deep-site": `This army holds a ${DEEP} site`,
+  "target-guards-deep-site": `Attack the ${DEEP} site it holds`,
+  "expired-army": "An army from an earlier day",
+  "deep-site-not-adjacent": "Move beside the site to attack",
+  "target-must-be-unowned": "Only what nobody holds can be attacked",
+  "own-target": "You hold it",
+  "no-attack": `Armies fight only in the ${DEEP}`,
+  allied: "An allied army",
+  "season-immunity": "Under season immunity",
+  "village-immunity": "The village is under immunity",
+  "out-of-range": "Out of range",
+  "claim-needs-adjacency": "Move adjacent to claim",
+  "no-troops": "No troops",
+  cooldown: "On cooldown",
+  "insufficient-stamina": "Not enough stamina",
+} as const satisfies Record<AttackRefusal, string>;
 
 /** The Deep's three sites (docs/plans/frontier-season-1.md, the Deep): who they serve, who guards them, what a tick pays. */
 export const DEEP_WORDS = {
