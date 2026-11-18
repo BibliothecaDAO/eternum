@@ -25,7 +25,7 @@ export function buildRingOpenNotification(
   input: DeepPlace & { ring: number; sites: number; pay: number },
 ): LocalNotificationPayload | null {
   return deepAlert(input, `ring:v1:${input.chainId}:${input.gameId}:${input.owner}:${input.ring}:${input.day}`, {
-    title: `Ring ${input.ring + 1} of the Deep has opened`,
+    title: `Ring ${input.ring + 1} has opened`,
     body: `${input.sites} more sites can be taken today. A held building now pays ${input.pay} a tick.`,
   });
 }
