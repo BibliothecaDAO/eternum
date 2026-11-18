@@ -51,3 +51,12 @@ test("release thresholds are generated for clients without changing the historic
   assert.equal(JSON.stringify(await readRuleConstants(root)), JSON.stringify(schema.ruleConstants));
   assert.equal(Object.hasOwn(schema.ruleConstants, "RUIN_DEPTH_LIMIT_RELEASE"), false);
 });
+
+test("every release threshold is a release this commit ships or an earlier one", async () => {
+  const shipped = (await readFile(new URL("../../../deploy/release/native-release.ts", root), "utf8")).match(
+    /^export const NATIVE_RELEASE_ID = ([0-9]+);$/m,
+  );
+  assert.ok(shipped, "missing NATIVE_RELEASE_ID");
+  for (const [name, release] of Object.entries(await readReleaseConstants(root)))
+    assert.ok(release <= Number(shipped[1]), `${name} is release ${release}, after the release this commit ships`);
+});
