@@ -4,7 +4,8 @@ import type { IdentityAuth } from "./auth";
 import type { IdentityEnv } from "./env";
 import { json, readBody } from "./http";
 import { RealmHoldingsUnavailableError } from "./realm-holdings";
-import { holderLevelOf, readSeal, type HolderFacts } from "./seal";
+import { holderLevelOf, type HolderFacts } from "./seal";
+import { holdsSeal } from "./seal-codes";
 import { authorizeShop, namedGame, type NamedGame, type ShopAccess } from "./shop-game";
 
 const BODY_BYTES = 32 * 1024;
@@ -59,7 +60,7 @@ export async function handlePurchaseCheck(
   if (seat instanceof Response) return seat;
   const product = asked?.product === undefined ? undefined : productOf(asked.product);
   if (!product) return json({ error: "unknown_product" }, 422);
-  if (product.kind === "seal" && (await readSeal(world.db, seat.owner)))
+  if (product.kind === "seal" && (await holdsSeal(world.db, seat.owner)))
     return json({ error: "seal_already_held" }, 409);
   const covers = await sealPriceCovers(world, seat.owner, product);
   if (covers === "short") return json({ error: "seal_price_not_for_holder" }, 409);
@@ -169,7 +170,7 @@ const outcomeOf = async (
   game: NamedGame,
 ): Promise<Outcome> => {
   if (!product) return "unfulfilled_product";
-  if (product.kind === "seal" && (await readSeal(world.db, owner))) return "unfulfilled_seal_held";
+  if (product.kind === "seal" && (await holdsSeal(world.db, owner))) return "unfulfilled_seal_held";
   const plays = await playsInGame(world, owner, game);
   if (plays === null) return "pending_eligibility";
   if (!plays) return "unfulfilled_not_in_game";

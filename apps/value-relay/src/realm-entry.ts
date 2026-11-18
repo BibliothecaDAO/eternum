@@ -83,6 +83,7 @@ type Entitlement = { realm_id: bigint; metadata_1: bigint; metadata_2: bigint; m
 const HELD_REALM_KIND = 2;
 const CAMPAIGN_KIND = 3;
 const CAMPAIGN_TIERS: Record<TicketTier, number> = { regular: 1, golden: 2 };
+const SEAL_RELEASE = 10;
 
 /**
  * A Frontier home's source: the held Realm the
@@ -212,6 +213,7 @@ async function openEntry(target: RealmEntryTarget, claim: RealmEntryClaim) {
 type OpenEntry = Awaited<ReturnType<typeof openEntry>>;
 
 async function grantHeldSeal(target: RealmEntryTarget, claim: RealmEntryClaim, entry: OpenEntry) {
+  if (Number(singleRow(entry.snapshot, "GameRelease").release_id) < SEAL_RELEASE) return;
   const granted = entry.snapshot.models
     .find((model) => model.model === "Seal")!
     .rows.some(({ value }) => sameFelt(String(value.account), claim.account));

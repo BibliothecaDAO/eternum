@@ -4,7 +4,6 @@ import { afterEach, expect, it, vi } from "vitest";
 import { accountDeletion } from "./account-deletion";
 import type { IdentityAuth } from "./auth";
 import { RealmHoldingsUnavailableError } from "./realm-holdings";
-import { readSeal } from "./seal";
 import type { ShopAccess } from "./shop-game";
 import { handlePurchaseCheck, handleStoreReceipt, type ReceiptWorld, type StoreVerifier } from "./store-receipts";
 import { createTestD1 } from "./test-d1";
@@ -13,6 +12,12 @@ import { migrationStatements } from "./workerd-harness";
 /** Store receipts as the shop's server checks them, in D1 with the production migrations; no real store is asked. */
 const OWNER = "0xa1";
 const OTHER = "0xb2";
+
+const readSeal = (db: D1Database, owner: string) =>
+  db
+    .prepare('SELECT "paid_cents", "source", "granted_at" FROM "seal" WHERE "owner" = ?')
+    .bind(owner)
+    .first<{ paid_cents: number; source: "web" | "store"; granted_at: number }>();
 
 const databases: { close(): Promise<void> }[] = [];
 afterEach(async () => {
@@ -437,7 +442,7 @@ it("refuses a purchase check for an account that does not play in the named runn
   expect(await ledger(db)).toEqual([]);
 });
 
-it("approves a product the shop sells for a player of the game it names, once per seal", async () => {
+it("approves a product the shop sells for a player of the game it names, never a seal to an account that holds one", async () => {
   const db = await migrated();
   const asked: unknown[] = [];
   const access: ShopAccess = async (realmsId, game) => {
@@ -459,6 +464,13 @@ it("approves a product the shop sells for a player of the game it names, once pe
     .run();
   expect(await checkAs(db, OWNER, { product: "seal" })).toEqual([409, { error: "seal_already_held" }]);
   expect(await checkAs(db, OTHER, { product: "seal" })).toEqual([200, { status: "ok" }]);
+  await db
+    .prepare(
+      `INSERT INTO "campaign_tickets" ("campaign", "owner", "code_hash", "tier", "redeemed_at") VALUES ('devcon-2026', ?, NULL, 'regular', 1)`,
+    )
+    .bind(OTHER)
+    .run();
+  expect(await checkAs(db, OTHER, { product: "seal" })).toEqual([409, { error: "seal_already_held" }]);
 });
 
 it("approves the discounted seal only where settlement would honour it, and waits while holdings are unknown", async () => {

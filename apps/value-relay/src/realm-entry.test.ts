@@ -126,6 +126,7 @@ it("registers a live held Realm and answers an exact retry without another write
   expect(io.owner).toHaveBeenCalledTimes(1);
 });
 it("grants a held Ancient Seal once as the account enters, then registers its source", async () => {
+  release = 10;
   io.seal.mockResolvedValue(true);
   expect(await registerHomeSource(target, claim)).toEqual({ realmId: 711 });
   expect(io.admin.mock.calls).toEqual([
@@ -143,7 +144,15 @@ it("grants a held Ancient Seal once as the account enters, then registers its so
   expect(io.admin).toHaveBeenCalledTimes(2);
   expect(io.seal).toHaveBeenCalledOnce();
 });
+it("grants no Seal in a game whose release has none, and enters it as before", async () => {
+  release = 9;
+  io.seal.mockResolvedValue(true);
+  expect(await registerHomeSource(target, claim)).toEqual({ realmId: 711 });
+  expect(io.admin).toHaveBeenCalledExactlyOnceWith("register_entitlement", expect.anything());
+  expect(io.seal).not.toHaveBeenCalled();
+});
 it("grants a free home its held Seal and nothing to an account that holds none", async () => {
+  release = 10;
   const free = { ...claim, realmId: null };
   expect(await registerHomeSource(target, free)).toEqual({});
   expect(io.admin).not.toHaveBeenCalled();
@@ -152,6 +161,7 @@ it("grants a free home its held Seal and nothing to an account that holds none",
   expect(io.admin).toHaveBeenCalledExactlyOnceWith("grant_seal", { game_id: 7, account: "0x123" });
 });
 it("grants a Seal redeemed after entry without touching the home's source", async () => {
+  release = 10;
   registered = entitlement;
   entries = [{ player: "0x123" }];
   io.seal.mockResolvedValue(true);
@@ -162,6 +172,7 @@ it("grants a Seal redeemed after entry without touching the home's source", asyn
   expect(io.ticket).not.toHaveBeenCalled();
 });
 it("asks for a retry when identity cannot say or the chain refuses the Seal, and registers nothing", async () => {
+  release = 10;
   io.seal.mockRejectedValue(new Error("down"));
   await expect(registerHomeSource(target, claim)).rejects.toMatchObject({ code: "seal_check_unavailable" });
   io.seal.mockResolvedValue(true);

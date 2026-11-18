@@ -91,6 +91,13 @@ it("serves the signed-in account its level, whether it holds the seal, and the t
     .bind(OWNER)
     .run();
   expect(await (await ask(OWNER)).json()).toEqual({ owned: true, web: null, store: null });
+  await db
+    .prepare(
+      `INSERT INTO "campaign_tickets" ("campaign", "owner", "code_hash", "tier", "redeemed_at") VALUES ('devcon-2026', ?, NULL, 'regular', 1)`,
+    )
+    .bind(OTHER)
+    .run();
+  expect(await (await ask(OTHER)).json()).toEqual({ owned: true, web: null, store: null });
 });
 
 it("offers no price while holdings cannot be verified", async () => {

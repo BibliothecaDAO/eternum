@@ -6,6 +6,7 @@ import type { IdentityAuth } from "./auth";
 import { json } from "./http";
 import { RealmHoldingsUnavailableError } from "./realm-holdings";
 import { quoteLords, type LordsQuoteReader } from "./lords-price";
+import { holdsSeal } from "./seal-codes";
 import { authorizeShop, namedGame, type ShopAccess } from "./shop-game";
 
 /** What an account holds that the seal's price and free parts read: its Realms, and the tier of the campaign ticket it came by. */
@@ -34,13 +35,6 @@ export const sealOffer = (holder: Holder, channel: Channel) => ({
   free: SEAL_FREE[holder],
 });
 
-/** The account's seal, or null while it has none. */
-export const readSeal = (db: D1Database, owner: string) =>
-  db
-    .prepare('SELECT "paid_cents", "source", "granted_at" FROM "seal" WHERE "owner" = ?')
-    .bind(owner)
-    .first<{ paid_cents: number; source: "web" | "store"; granted_at: number }>();
-
 /** What the seal's route reads beyond D1: the account's holder facts, the shop's rule and the market. */
 export interface SealWorld {
   db: D1Database;
@@ -66,7 +60,7 @@ export async function handleSeal(request: Request, auth: IdentityAuth, world: Se
   );
   if (seat instanceof Response) return seat;
   const { owner } = seat;
-  if (await readSeal(world.db, owner)) return json({ owned: true, web: null, store: null });
+  if (await holdsSeal(world.db, owner)) return json({ owned: true, web: null, store: null });
   const facts = await readHolderFacts(world, owner);
   if (!facts) return json({ error: "holdings_unavailable" }, 503);
   const holder = holderLevelOf(facts);
