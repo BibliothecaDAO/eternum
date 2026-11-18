@@ -10,6 +10,7 @@ pub struct CommandRoute {
 }
 
 pub const SETTLE_BLITZ_ROSTER: u32 = 7;
+pub const CHOOSE_OATH: u32 = 73;
 
 pub const COMMAND_IDS: [u32; 53] = [
     73, 72, 0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 38, 39,

@@ -83,6 +83,7 @@ pub struct CommandRoute {
 }
 
 pub const SETTLE_BLITZ_ROSTER: u32 = ${routes.find(({ name }) => name === "SettleBlitzRoster").wireId};
+pub const CHOOSE_OATH: u32 = ${routes.find(({ name }) => name === "ChooseOath").wireId};
 
 pub const COMMAND_IDS: [u32; ${routes.length}] = [${routes.map(({ wireId }) => wireId).join(", ")}];
 pub const COMMAND_ROUTES: [Option<CommandRoute>; ${definitions.length}] = [

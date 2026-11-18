@@ -1,4 +1,5 @@
 use snforge_std::fs::{FileTrait, read_txt};
+use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
 use crate::oaths::{ChooseOath, card, count, draw, held};
 use crate::stamina::StaminaSourceTrait;
 use crate::troops::{ExplorerRecordTrait, StaminaSource};
@@ -27,6 +28,53 @@ fn every_draw_has_three_colours_and_excludes_every_held_oath_even_with_four_of_o
                 assert!(!held(oaths, oath));
             }
         }
+    }
+}
+
+#[test]
+fn a_game_that_disables_choose_oath_writes_no_pick_and_keeps_the_army_exploring() {
+    let discovery = crate::expeditions::FrontierDiscoveryRules {
+        camp_bps: 1, rift_bps: 0, ruin_bps: 0, beasts_bps: 0, shrine_bps: 5000, well_bps: 0, empty_reveal_limit: 7,
+    };
+    let (d, game_id, key) = super::registrar::setup_frontier_relics_with_rules(Some(discovery));
+    let root = super::registrar::discovery_root(game_id, discovery, 100, 0, None, crate::discovery::Discovery::Shrine);
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let home = crate::resources::ResourceKey { game_id, entity_id: 1 };
+            crate::logic::research::write(
+                home,
+                crate::research::RealmKnowledge { learned: crate::research::learn(0, crate::research::ROW_SHRINE, 0) },
+            );
+        },
+    );
+    explore(d, key, root, 360);
+    let offered = read_progress(d, key);
+    let decline = ChooseOath {
+        explorer_id: key.explorer_id, expected_pick: offered.oath_pick, oath: None, replace: None,
+    };
+    assert!(super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(decline), 361));
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let state = crate::state::write();
+            let preset = state.registrar.presets.read(state.games.games.entry(game_id).preset_id.read());
+            let rules = state.presets.entry(preset).rules;
+            let mask = rules.command_mask.read();
+            assert!(crate::rules::command_enabled(mask, crate::command_routes::CHOOSE_OATH.into()));
+            rules.command_mask.write(mask - core::num::traits::Pow::pow(2_u128, crate::command_routes::CHOOSE_OATH));
+        },
+    );
+    for timestamp in 362_u64..366 {
+        let command = crate::commands::Command::Explore(
+            crate::commands::Explore { explorer_id: key.explorer_id, direction: 0 },
+        );
+        assert!(
+            super::play_fixture::play(
+                d.games, super::play_fixture::TestAction { game_id, actor: d.actor, command }, root, timestamp,
+            ),
+        );
+        assert_eq!(read_progress(d, key).oath_pick, 0);
     }
 }
 
