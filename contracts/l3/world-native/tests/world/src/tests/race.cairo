@@ -1,5 +1,16 @@
+use snforge_std::fs::{FileTrait, read_txt};
 use crate::deep::DeepShare;
 use crate::race::split_payment;
+
+#[test]
+fn building_pay_matches_the_client_vectors_by_rings_open() {
+    let data = read_txt(@FileTrait::new("../fixtures/deep-building-pay.txt"));
+    let mut fields = data.span();
+    while !fields.is_empty() {
+        let (alone, pair, crowd, open, expected): (u32, u32, u32, u8, u32) = Serde::deserialize(ref fields).unwrap();
+        assert_eq!(crate::deep::building_pay(crate::deep::DeepPay { alone, pair, crowd }, open), expected);
+    }
+}
 
 #[test]
 fn glory_is_split_by_troops_and_preserves_every_fractional_unit() {

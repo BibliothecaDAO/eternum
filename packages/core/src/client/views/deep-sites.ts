@@ -92,7 +92,10 @@ function deepSiteView(
     position: entityMapPosition(store, gameId, site.entity_id),
     ring: site.ring,
     open: entered >= ring.realms,
-    buildingPay: deepBuildingPay(today.rules, entered),
+    buildingPay: deepBuildingPay(
+      today.rules.building_pay,
+      today.rules.rings.filter((candidate) => entered >= candidate.realms).length,
+    ),
     day: today.index,
     beastTroops: guard ? guard.troops.count : beast.count,
     guard,
@@ -100,10 +103,9 @@ function deepSiteView(
   };
 }
 
-function deepBuildingPay(rules: NativeRows["DeepRules"], entered: number): number {
-  const open = rules.rings.filter((ring) => entered >= ring.realms).length;
-  const pay = rules.building_pay;
-  return open <= 1 ? pay.alone : open === 2 ? pay.pair : pay.crowd;
+export function deepBuildingPay(pay: NativeRows["DeepRules"]["building_pay"], open: number): number {
+  if (open < 1) throw new Error("A closed Deep site pays nothing");
+  return open === 1 ? pay.alone : open === 2 ? pay.pair : pay.crowd;
 }
 
 function realmsEntered(store: NativeFactStore, gameId: number, day: bigint): number {

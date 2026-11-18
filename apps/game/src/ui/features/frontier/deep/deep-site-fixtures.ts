@@ -30,14 +30,14 @@ const withShares = (slots: DeepSlot[]): DeepSlot[] => {
 
 const noop = () => {};
 const base = { onClose: noop };
-const pay = { glory: 5, height: 0, essence: 0, labor: 0, bar: null };
+const pay = { glory: 6, height: 0, essence: 0, labor: 0, bar: null };
 
 /** The card's states on fixtures of its props: what the lab draws and the test asserts. */
 export const DEEP_SITE_CASES = {
   "Foundation, today's beast, army in reach": {
     ...base,
     site: "foundation",
-    pay: { ...pay, height: 5 },
+    pay: { ...pay, height: 6 },
     guard: { kind: "beast", category: "Knight", troops: 10_000 },
     order: { kind: "act", verb: "attack", onAct: noop },
   },
@@ -51,14 +51,14 @@ export const DEEP_SITE_CASES = {
   "Altar, open, army away": {
     ...base,
     site: "altar",
-    pay: { ...pay, bar: { perTick: 5, charge: 300, threshold: 1_500 } },
+    pay: { ...pay, bar: { perTick: 6, charge: 300, threshold: 1_500 } },
     guard: { kind: "open" },
     order: { kind: "move", cost: "30 stamina · 20 wheat", onMove: noop },
   },
   "Foundation held, two slots filled": {
     ...base,
     site: "foundation",
-    pay: { ...pay, height: 5 },
+    pay: { ...pay, height: 6 },
     guard: {
       kind: "held",
       aspect: "Might",

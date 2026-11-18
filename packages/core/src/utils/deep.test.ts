@@ -8,7 +8,7 @@ import {
 import { nativeRowDefinitions } from "../client/native-row";
 import { currentArmy, currentResourceWeight, deepTerrain, deepTiles } from "./deep";
 import { armyCombatRefusal } from "./army-opponents";
-import { readDeepSite, readDeepSites } from "../client/views/deep-sites";
+import { deepBuildingPay, readDeepSite, readDeepSites } from "../client/views/deep-sites";
 import { dayAtIndex } from "./days";
 
 const calendar = { startMainAt: 360, scheduledEndAt: 288360, endAt: 288360, dayUnitSeconds: 14400, seed: 1n };
@@ -214,5 +214,21 @@ it("projects Vitriol's exact native troop vectors and refuses a missing progress
     expect(source.troops.count).toBe(troops);
     rows.ArmyProgress = [];
     expect(() => currentArmy(store, source, now)).toThrow("army progress");
+  }
+});
+
+it("pays a Foundation or Altar by the native building-pay vectors for each count of open rings", async () => {
+  const { readFileSync } = await import("node:fs");
+  const fields = readFileSync(
+    new URL("../../../../contracts/l3/world-native/tests/fixtures/deep-building-pay.txt", import.meta.url),
+    "utf8",
+  )
+    .trim()
+    .split(/\s+/)
+    .map(Number);
+  expect(fields.length).toBe(30);
+  while (fields.length) {
+    const [alone, pair, crowd, open, expected] = fields.splice(0, 5) as [number, number, number, number, number];
+    expect(deepBuildingPay({ alone, pair, crowd }, open)).toBe(expected);
   }
 });
