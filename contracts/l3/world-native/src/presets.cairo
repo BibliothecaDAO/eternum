@@ -65,7 +65,7 @@ pub fn validate(preset: PresetDefinition) {
         );
         let deep = preset.economy.deep.expect('race requires the Deep');
         crate::race::validate(race);
-        assert!(deep.building_pay.alone <= race.stage_height, "a tick's height passes a whole stage");
+        assert!(deep.building_pay.alone <= race.stage_height, "Deep pay passes a stage");
     }
     if let Some(banes) = preset.economy.banes {
         assert!(preset.economy.quests.is_some(), "banes require daily quests");
