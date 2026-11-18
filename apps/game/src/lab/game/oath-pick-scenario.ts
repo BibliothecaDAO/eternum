@@ -1,10 +1,7 @@
 import { resolveExplorerTroops, staminaAt } from "@bibliothecadao/eternum/troop-stamina";
 import { seasonOneResearchPrices } from "./season-one-research";
 import { chooseOath, oathPassStamina } from "@bibliothecadao/eternum";
-import {
-  nativeOathConstants as oaths,
-  nativeResearchConstants as research,
-} from "@bibliothecadao/eternum/game-client";
+import { nativeOathConstants as oaths, nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { encodeNativeCommand } from "@bibliothecadao/provider";
 import { nativeBindings } from "@/runtime/world/native-bindings";
 import { currentArmy, currentResourceWeight, type NativeFactStore } from "@bibliothecadao/eternum/game-client";

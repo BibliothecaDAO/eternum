@@ -400,9 +400,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
   function oathNode(row: number, category: BuildingType): TreeNode[] {
     const step = (tier: number) => ({
       now: RESEARCH_TREE.oathSlots(tier + research.OATH_SLOTS_BASE),
-      next:
-        tier < research.OATH_SLOT_STEPS ? RESEARCH_TREE.oathSlots(tier + research.OATH_SLOTS_BASE + 1)
-          : undefined,
+      next: tier < research.OATH_SLOT_STEPS ? RESEARCH_TREE.oathSlots(tier + research.OATH_SLOTS_BASE + 1) : undefined,
     });
     return [
       buildingNode(

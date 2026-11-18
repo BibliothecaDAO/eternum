@@ -68,9 +68,7 @@ export function TroopOathSlots({
           );
         })}
       </div>
-      {count < OATH_SLOTS_MAX && (
-        <span className="text-hud-label text-hud-muted">{RESEARCH_TREE.oathResearch}</span>
-      )}
+      {count < OATH_SLOTS_MAX && <span className="text-hud-label text-hud-muted">{RESEARCH_TREE.oathResearch}</span>}
     </div>
   );
 }

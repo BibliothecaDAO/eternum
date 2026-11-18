@@ -1,5 +1,9 @@
 import { entityHomeNamespace, expeditionRealmSite, readExpeditionRules } from "@bibliothecadao/eternum";
-import { NativeFactStore, nativeResearchConstants as research, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  NativeFactStore,
+  nativeResearchConstants as research,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 import { BuildingType, getNeighborHexes, RESOURCE_PRECISION, ResourcesIds, TileOccupier } from "@bibliothecadao/types";
 import { frontierSeasonOnePreset } from "../../../../../config/source/frontier/season-one";
 import { type LabFact, wire } from "./lab-chain";

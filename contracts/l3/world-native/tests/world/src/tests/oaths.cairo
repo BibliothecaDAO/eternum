@@ -499,7 +499,9 @@ fn a_new_army_holds_two_oaths_before_any_research_and_refuses_a_third_without_a_
         let take = ChooseOath { explorer_id: key.explorer_id, expected_pick: offer, oath: Some(oath), replace: None };
         assert!(super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(take), 360));
     }
-    assert_eq!(read_progress(d, key).oaths, crate::oaths::bit(crate::oaths::POWER) | crate::oaths::bit(crate::oaths::FOX));
+    assert_eq!(
+        read_progress(d, key).oaths, crate::oaths::bit(crate::oaths::POWER) | crate::oaths::bit(crate::oaths::FOX),
+    );
     open_pick(d, key, offer);
     let third = ChooseOath {
         explorer_id: key.explorer_id, expected_pick: offer, oath: Some(crate::oaths::RAGE), replace: None,
@@ -507,7 +509,9 @@ fn a_new_army_holds_two_oaths_before_any_research_and_refuses_a_third_without_a_
     assert!(!super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(third), 361));
     let swap = ChooseOath { replace: Some(crate::oaths::POWER), ..third };
     assert!(super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(swap), 362));
-    assert_eq!(read_progress(d, key).oaths, crate::oaths::bit(crate::oaths::FOX) | crate::oaths::bit(crate::oaths::RAGE));
+    assert_eq!(
+        read_progress(d, key).oaths, crate::oaths::bit(crate::oaths::FOX) | crate::oaths::bit(crate::oaths::RAGE),
+    );
 }
 
 fn open_pick(d: super::Deployment, key: crate::troops::ExplorerKey, pick: u16) {
