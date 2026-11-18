@@ -3,7 +3,12 @@ import { expect, it } from "vitest";
 import { deepScenario } from "@/lab/game/deep-scenario";
 import { planDeepRingOpenings, planDeepSiteWatches } from "../../../../../../realms/server/deep-site-watch";
 import { RESOURCE_PRECISION, deepSites } from "@bibliothecadao/types";
-import { nativeRuleConstants, type NativeModelName, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  nativeRuleConstants,
+  readDeepSites,
+  type NativeModelName,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 
 function fixture(guardCounts = [siteGuardTroops(1)]) {
   const { store, startsAt, player } = deepScenario();
@@ -125,7 +130,7 @@ it("does not offer allied sites, beasts, a realm without lore, or an army alread
   expect(beasts.plan()).toEqual([]);
 });
 
-it("does not promise a site whose last rival guard expires before the army can clear it", () => {
+it("promises a site at the tick its last rival guard drains out when the army could not beat it sooner", () => {
   const tiny = fixture([400]);
   const army = tiny.store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
   tiny.change(
@@ -133,7 +138,13 @@ it("does not promise a site whose last rival guard expires before the army can c
     { game_id: 1, explorer_id: 201 },
     { troops: { ...army.troops, count: BigInt(RESOURCE_PRECISION) } },
   );
-  expect(tiny.plan()).toEqual([]);
+  const [watch] = tiny.plan();
+  const tickSeconds = Number(tiny.store.require("SliceRules", { game_id: 1 }).tick_config.armies_tick_in_seconds);
+  const guardsAt = (at: number) =>
+    readDeepSites(tiny.store, at, 1).find((site) => String(site.id) === watch!.siteId)!.guards.length;
+  expect(watch!.dueAt).toBeGreaterThan(tiny.startsAt * 1000);
+  expect(guardsAt(watch!.dueAt / 1000)).toBe(0);
+  expect(guardsAt(watch!.dueAt / 1000 - tickSeconds)).toBe(1);
 });
 
 it("clears four weak slots without resetting the attacker and closes the watch at day end", () => {
