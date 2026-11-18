@@ -16,14 +16,15 @@ const PRESEASON_SCREENS = [
   ["preseason-member", "[data-preseason-step=pick]"],
   ["preseason-chosen", "[data-seal-code=open]"],
   ["preseason-sealed", "[data-seal-code=held]"],
+  ["preseason-invited", "[data-shared-invite]", "/s/MRGHT234"],
 ];
 const PAGES = [
   ...VIEWS.flatMap(({ name, path, cases, shown }) =>
     cases.map((each) => ({ file: `${name}-${each}`, url: `${path}?case=${each}`, shown })),
   ),
-  ...PRESEASON_SCREENS.map(([screen, shown]) => ({
+  ...PRESEASON_SCREENS.map(([screen, shown, page = ""]) => ({
     file: `countdown-${screen}`,
-    url: `/lab/app/${screen}?capture=1`,
+    url: `/lab/app/${screen}${page}?capture=1`,
     shown,
   })),
 ];

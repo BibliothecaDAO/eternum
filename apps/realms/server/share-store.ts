@@ -7,6 +7,7 @@ import { newPublicCode } from "./campaigns";
 export interface SharedLink {
   sharer: string;
   kind: ShareKind;
+  chainId: string | null;
   moment: number;
   name: string | null;
 }
@@ -105,13 +106,29 @@ export function createShareStore(db: D1Database) {
   const sharedLink = (code: string) =>
     db
       .prepare(
-        `SELECT l."sharer", l."kind", l."moment", u."id", u."name", u."image" FROM "share_links" l
+        `SELECT l."sharer", l."kind", l."chain_id" AS "chainId", l."moment", u."id", u."name", u."image" FROM "share_links" l
          JOIN "user" u ON u."realmsId" = l."sharer" WHERE l."code" = ?`,
       )
       .bind(code)
-      .first<{ sharer: string; kind: ShareKind; moment: number; id: string; name: string; image: string | null }>()
+      .first<{
+        sharer: string;
+        kind: ShareKind;
+        chainId: string | null;
+        moment: number;
+        id: string;
+        name: string;
+        image: string | null;
+      }>()
       .then((row): SharedLink | null =>
-        row ? { sharer: row.sharer, kind: row.kind, moment: row.moment, name: profileOfIdentityUser(row).name } : null,
+        row
+          ? {
+              sharer: row.sharer,
+              kind: row.kind,
+              chainId: row.chainId,
+              moment: row.moment,
+              name: profileOfIdentityUser(row).name,
+            }
+          : null,
       );
 
   /** The link an account came by, with its sharer's public name; null for an account no link brought. */

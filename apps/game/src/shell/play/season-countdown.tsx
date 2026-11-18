@@ -38,7 +38,7 @@ const AspectCrests = () => (
   </ul>
 );
 
-const CreateAccount = () => {
+export const CreateAccount = () => {
   const requestSignIn = useRequestSignIn();
   return (
     <div className="flex flex-col items-center gap-2">

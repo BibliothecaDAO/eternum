@@ -4,7 +4,8 @@
  * The Worker, the game's share sheet and the landing the link opens read the kinds and the address from here. A link's
  * `moment` is the day a `frontier-day` link shares, or the Aspect (its id) an `aspect` link invites a friend to.
  */
-export const SHARE_KINDS = ["frontier-day", "aspect"] as const;
+export const DAY_SHARE_KINDS = ["frontier-day"] as const;
+export const SHARE_KINDS = [...DAY_SHARE_KINDS, "aspect"] as const;
 export type ShareKind = (typeof SHARE_KINDS)[number];
 
 export const isShareKind = (value: unknown): value is ShareKind =>

@@ -1,18 +1,26 @@
 import { useQuery } from "@tanstack/react-query";
-import { aspectName } from "@bibliothecadao/types";
-import { isShareChannel, sharedMomentOf } from "@realms-world/identity";
+import { aspectName, catalogAspectId, orders, ordersOfAspect } from "@bibliothecadao/types";
+import { isShareChannel, sharedMomentOf, type OpenedShare } from "@realms-world/identity";
 import { useParams, useSearchParams } from "react-router-dom";
 
-import { identityClient } from "@/hooks/context/identity-session";
+import { identityClient, useIdentitySession } from "@/hooks/context/identity-session";
 import { AGE_LOCKUP } from "@/ui/design-system/icon-meaning";
 import { AppButton, AppNotice } from "@/ui/design-system/kit/app-elements";
-import { SHARED_LINK_WORDS } from "@/ui/design-system/kit/words";
+import { AppCountdownChip } from "@/ui/design-system/kit/clock-chip";
+import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
+import { ASPECT_STEP_WORDS, SHARED_LINK_WORDS } from "@/ui/design-system/kit/words";
 
+import { useSeasonCalendar } from "../blitz-slot";
 import { StageFrame } from "../frame/stage-frame";
 import { ageOf } from "../play/ages";
+import { CreateAccount } from "../play/season-countdown";
+import { seasonOpening } from "../season";
+import { useNowSeconds } from "../use-now";
 
 /** A shared link's code as identity makes it; anything else in the address is no link. */
 const SHARE_CODE = /^[A-Za-z0-9]{8}$/;
+
+type Invite = Extract<OpenedShare, { kind: "aspect" }>;
 
 /**
  * A shared link's landing (`/s/<code>`), where a friend lands from a player's post: who shared which day, or invites
@@ -32,17 +40,62 @@ export const SharedLinkPage = () => {
     staleTime: Number.POSITIVE_INFINITY,
     retry: false,
   });
+  const signedIn = useIdentitySession().status === "signed-in";
+  const calendar = useSeasonCalendar();
+  const now = useNowSeconds();
+  const opening = calendar.data ? seasonOpening(calendar.data.phases, now) : null;
   const notice = !valid || opened.isError ? <AppNotice tone="warn" line={SHARED_LINK_WORDS.unknown} /> : undefined;
+  const shared = opened.data;
   return (
-    <StageFrame notice={notice} verb={<StartAdventure />}>
+    <StageFrame notice={notice} verb={opening && !signedIn ? <CreateAccount /> : <StartAdventure />}>
       <img src={AGE_LOCKUP.frontier} alt={ageOf("frontier").name} className="h-28 w-auto" />
-      {opened.data && (
-        <h1 className="text-app-title text-app-ink">
-          {SHARED_LINK_WORDS.title(opened.data.name, sharedMomentOf(opened.data, aspectName))}
-        </h1>
+      {shared?.kind === "aspect" ? (
+        <InviteCard invite={shared} />
+      ) : (
+        shared && (
+          <h1 className="text-app-title text-app-ink">
+            {SHARED_LINK_WORDS.title(shared.name, sharedMomentOf(shared, aspectName))}
+          </h1>
+        )
       )}
-      <p className="text-app-body text-app-muted">{SHARED_LINK_WORDS.pitch}</p>
+      {opening && <AppCountdownChip prefix="starts" at={opening.startsAt} now={now} />}
+      <p className="text-app-body text-app-muted">
+        {shared?.kind === "aspect" ? <InviteLine invite={shared} /> : SHARED_LINK_WORDS.pitch}
+      </p>
     </StageFrame>
+  );
+};
+
+const InviteCard = ({ invite }: { invite: Invite }) => {
+  const aspectOrders = ordersOfAspect(catalogAspectId(invite.moment));
+  return (
+    <section data-shared-invite className="app-well flex w-full items-center gap-3 p-4 text-left">
+      <span className="grid shrink-0 grid-cols-2 gap-1">
+        {aspectOrders.map(({ orderId }) => (
+          <OrderEmblem key={orderId} order={orderId} size={32} />
+        ))}
+      </span>
+      <span className="flex min-w-0 flex-col">
+        <span className="text-app-label text-app-muted">{SHARED_LINK_WORDS.invites(invite.name)}</span>
+        <h1 className="text-app-title text-app-ink">{ASPECT_STEP_WORDS.join(aspectName(invite.moment))}</h1>
+        <span className="text-app-label text-app-muted">
+          {[
+            ...(invite.members === null ? [] : [ASPECT_STEP_WORDS.members(invite.members)]),
+            SHARED_LINK_WORDS.orders(aspectOrders.map(({ orderName }) => orderName)),
+          ].join(" · ")}
+        </span>
+      </span>
+    </section>
+  );
+};
+
+const InviteLine = ({ invite }: { invite: Invite }) => {
+  const order = orders.find(({ orderId }) => orderId === invite.order);
+  return (
+    <>
+      {SHARED_LINK_WORDS.allies}
+      {order && <> {SHARED_LINK_WORDS.plays(invite.name, order.fullOrderName)}</>}
+    </>
   );
 };
 

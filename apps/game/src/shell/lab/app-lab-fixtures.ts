@@ -239,6 +239,7 @@ export const LAB_SCREENS = {
   "preseason-member": { signedIn: true, games: [] },
   "preseason-chosen": { signedIn: true, games: [] },
   "preseason-sealed": { signedIn: true, games: [] },
+  "preseason-invited": { signedIn: false, games: [] },
   home: { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   // Play for a player with the longest name an account takes (packages/identity account-rules), with the install
   // notice: the desktop bar must hold both at its narrowest width.
@@ -554,6 +555,7 @@ const PRESEASON_SCREENS: readonly LabScreen[] = [
   "preseason-member",
   "preseason-chosen",
   "preseason-sealed",
+  "preseason-invited",
 ];
 const LAB_ORDER_MEMBERS: Readonly<Record<number, number>> = {
   1: 12,
@@ -579,6 +581,7 @@ export const labOrderIntent = (screen: LabScreen) => ({
 });
 export const LAB_SEAL_CODE = "SEAL2345";
 export const LAB_SHARE_CODE = "MRGHT234";
+export const LAB_INVITE = { kind: "aspect", moment: 1, name: "Dana", order: 13, members: 39 } as const;
 export const labSealCode = (screen: LabScreen) => ({ held: screen === "preseason-sealed" });
 
 const SEASON_ONE_PHASE = (at: (minutes: number) => string) => ({
@@ -606,6 +609,7 @@ const QUIET_BLITZ_SCREENS: readonly LabScreen[] = [
   "preseason-member",
   "preseason-chosen",
   "preseason-sealed",
+  "preseason-invited",
 ];
 
 /** The screens whose player has no finished game to open. */
@@ -619,6 +623,7 @@ export const LAB_NO_HISTORY_SCREENS: readonly LabScreen[] = [
   "preseason-member",
   "preseason-chosen",
   "preseason-sealed",
+  "preseason-invited",
 ];
 
 /** The slot closing at 16:30, two hours away, on the lab's shard; on the after-close screens, closed and split. */

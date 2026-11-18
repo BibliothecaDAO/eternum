@@ -1166,6 +1166,9 @@ finisher. Canonical proof: `playtest --steps lab-race-expired`.
 - **Season, Aspects**: each Aspect's height with its worth in LORDS (shown only), the Aspect's fights in the Deep with
   wipe-outs, and **Invite a friend to your Aspect** (Post on X, Copy link). A friend who opens the link is offered that
   Aspect first when founding.
+- An invite's landing (`/s/<code>`): **<name> invites you**, **Join <Aspect>** with its four Orders' crests and members,
+  "Members of one Aspect never fight each other." and the Order the sharer kept; before the season **Starts in …** and,
+  signed out, **Create your account**. Lab: `/lab/app/preseason-invited/s/MRGHT234`; proof: `build.sh prove-season-one`.
 - A Deep guard shows its troop loss each tick and the ticks left on its army row, token and panel; an army of the
   player's Aspect is drawn as an ally on the map.
 - **Today** shows the week's seven quests with today marked.

@@ -1190,6 +1190,10 @@ export const SHARED_LINK_WORDS = {
   play: "Start your adventure",
   opening: "Opening…",
   unknown: "This link leads to no shared day.",
+  invites: (name: string | null) => `${name ?? "A player"} invites you`,
+  orders: (names: readonly string[]) => `Order of ${names.join(", ")}`,
+  allies: "Members of one Aspect never fight each other.",
+  plays: (name: string | null, order: string) => `${name ?? "A player"} plays ${order}.`,
 } as const;
 /** A season's end, told one of two ways (story): the mist lifted, or it grew too strong. */
 export const SEASON_ENDINGS = { lifted: "The mist lifted", strong: "The mist grew too strong" } as const;

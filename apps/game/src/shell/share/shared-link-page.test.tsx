@@ -12,8 +12,16 @@ vi.mock("@/hooks/context/identity-session", async (original) => ({
   useIdentitySession: () => ({ status: "signed-out", session: null }),
 }));
 
+const season = vi.hoisted(() => ({ calendar: { data: undefined as unknown } }));
+vi.mock("../blitz-slot", async (original) => ({
+  ...(await original<typeof import("../blitz-slot")>()),
+  useSeasonCalendar: () => season.calendar,
+}));
+
 import { IdentityRequestError } from "@realms-world/identity";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+
+import { FRONTIER_S1_PRESET_ID } from "../../../../../config/source/common/native-preset-modes";
 
 import { setViewportWidth } from "../frame/test-viewport";
 import { SharedLinkPage } from "./shared-link-page";
@@ -24,6 +32,7 @@ beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   setViewportWidth(390);
   service.openShare.mockReset();
+  season.calendar = { data: undefined };
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -67,16 +76,52 @@ it("records the visit and says who shared which day, with the way into Frontier"
   expect(host.textContent).toBe("Play page");
 });
 
-it("names who invites the friend and to which Aspect, by the catalog's name", async () => {
-  service.openShare.mockResolvedValue({ kind: "aspect", moment: 2, name: "Linden" });
+const invite = () => host.querySelector("[data-shared-invite]")?.textContent;
+const pageLine = () => host.querySelector("p")?.textContent;
+
+it("names who invites the friend to which Aspect, its members and its four Orders, by the catalog's names", async () => {
+  service.openShare.mockResolvedValue({ kind: "aspect", moment: 2, name: "Linden", order: null, members: 31 });
   await open("/s/ABCD2347");
-  expect(frontierNames()).toEqual(["Linden invites you to Harmony in Frontier", "Frontier"]);
+  expect(frontierNames()).toEqual(["Join Harmony", "Frontier"]);
+  expect(invite()).toBe(
+    "Linden invites youJoin Harmony31 members · Order of Perfection, Brilliance, Protection, Enlightenment",
+  );
+  expect(pageLine()).toBe("Members of one Aspect never fight each other.");
 });
 
-it("names an invite's sharer with no public name as a player", async () => {
-  service.openShare.mockResolvedValue({ kind: "aspect", moment: 1, name: null });
+it("names no members for an invite into a running game, whose members the game counts", async () => {
+  service.openShare.mockResolvedValue({ kind: "aspect", moment: 4, name: "Orrin", order: null, members: null });
+  await open("/s/ABCD2350");
+  expect(invite()).toBe("Orrin invites youJoin GuileOrder of Fox, Twins, Reflection, Detection");
+});
+
+it("says which Order the sharer kept, and names a sharer with no public name as a player", async () => {
+  service.openShare.mockResolvedValue({ kind: "aspect", moment: 1, name: null, order: 13, members: 1 });
   await open("/s/ABCD2348");
-  expect(frontierNames()[0]).toBe("A player invites you to Might in Frontier");
+  expect(invite()).toContain("A player invites youJoin Might1 member · ");
+  expect(pageLine()).toBe("Members of one Aspect never fight each other. A player plays Order of Titans.");
+});
+
+it("before the season, shows the time left and asks a signed-out friend to create an account", async () => {
+  const now = Math.floor(Date.now() / 1000);
+  season.calendar = {
+    data: {
+      phases: [
+        {
+          phase: "frontier",
+          startsAt: new Date((now + 14 * 86_400) * 1000).toISOString(),
+          endsAt: new Date((now + 64 * 86_400) * 1000).toISOString(),
+          presetId: FRONTIER_S1_PRESET_ID,
+        },
+      ],
+      nextBlitz: null,
+    },
+  };
+  service.openShare.mockResolvedValue({ kind: "aspect", moment: 1, name: "Dana", order: 13, members: 39 });
+  await open("/s/ABCD2349");
+  expect(host.textContent).toContain("Starts");
+  expect(pageLine()).toBe("Members of one Aspect never fight each other. Dana plays Order of Titans.");
+  expect([...host.querySelectorAll("button, a")].map((each) => each.textContent)).toEqual(["Create your account"]);
 });
 
 it("tells identity the channel the link was posted from, and nothing for one no player's link carries", async () => {

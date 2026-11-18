@@ -9,7 +9,7 @@ import {
 } from "@bibliothecadao/notifications";
 import { SOCIAL_PROVIDERS, type SocialProvider } from "./account-rules";
 import { TICKET_TIERS } from "./campaigns";
-import { SHARE_CARD, SHARE_KINDS, type ShareChannel, type ShareKind } from "./shares";
+import { DAY_SHARE_KINDS, SHARE_CARD, SHARE_KINDS, type ShareChannel, type ShareKind } from "./shares";
 import type { SiwsTypedData } from "./siws";
 import { buildSiwsMessage, payoutWalletStatement } from "./siws";
 import type { IdentityChainId, Session } from "./types";
@@ -198,11 +198,16 @@ export type ShareMoment =
   | { kind: ShareKind; chainId: string; gameId: number; moment: number }
   | { kind: "aspect"; chainId: null; gameId: null; moment: number };
 /** A shared link as a friend who opened it sees it: what it shares and who shared it (null: no public name). */
-const openedShareSchema = Schema.Struct({
-  kind: Schema.Literals(SHARE_KINDS),
-  moment: Schema.Number,
-  name: Schema.NullOr(Schema.String),
-});
+const sharedLinkFields = { moment: Schema.Number, name: Schema.NullOr(Schema.String) };
+const openedShareSchema = Schema.Union([
+  Schema.Struct({ kind: Schema.Literals(DAY_SHARE_KINDS), ...sharedLinkFields }),
+  Schema.Struct({
+    kind: Schema.Literal("aspect"),
+    ...sharedLinkFields,
+    order: Schema.NullOr(Schema.Number),
+    members: Schema.NullOr(Schema.Number),
+  }),
+]);
 export type OpenedShare = typeof openedShareSchema.Type;
 /** The link a new account came by, as that account reads it: its kind, its game and its moment; null for none. */
 const joinedShareSchema = Schema.NullOr(

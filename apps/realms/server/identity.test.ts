@@ -4352,7 +4352,11 @@ describe("shared links", () => {
     expect(made.status).toBe(200);
     const code = ((await made.json()) as { code: string }).code;
     expect(((await (await invite(sharer, 2)).json()) as { code: string }).code).toBe(code);
-    expect(await visit(createBrowser(), code)).toEqual([200, { kind: "aspect", moment: 2, name: "Linden" }]);
+    await sharer.browser.request("/api/order-intent", { body: { order: 13 } });
+    expect(await visit(createBrowser(), code)).toEqual([
+      200,
+      { kind: "aspect", moment: 2, name: "Linden", order: null, members: null },
+    ]);
 
     // Another Aspect, or one outside the catalog, is no invite of theirs.
     expect([(await invite(sharer, 3)).status, await (await invite(sharer, 3)).json()]).toEqual([
@@ -4390,7 +4394,15 @@ describe("shared links", () => {
     expect((await seasonInvite({ gameId, moment: titans.aspect })).status).toBe(400);
 
     const friendBrowser = createBrowser();
-    expect(await visit(friendBrowser, code)).toEqual([200, { kind: "aspect", moment: titans.aspect, name: "Dana" }]);
+    const [status, seen] = await visit(friendBrowser, code);
+    expect([status, seen]).toEqual([
+      200,
+      { kind: "aspect", moment: titans.aspect, name: "Dana", order: titans.orderId, members: expect.any(Number) },
+    ]);
+    const ally = await player("season-ally");
+    const giants = orders.find(({ fullOrderName }) => fullOrderName === "Order of Giants")!;
+    await ally.browser.request("/api/order-intent", { body: { order: giants.orderId } });
+    expect((await visit(createBrowser(), code))[1]).toEqual({ ...seen, members: seen.members + 1 });
     const friend = await player("season-invited", friendBrowser);
     expect(await (await friend.browser.request("/api/shares/joined")).json()).toEqual({
       kind: "aspect",
@@ -4399,7 +4411,7 @@ describe("shared links", () => {
       moment: titans.aspect,
       name: "Dana",
     });
-    expect(await sharer.tally()).toEqual({ links: 1, posted: 0, visits: 1, joined: 1, activated: 0 });
+    expect(await sharer.tally()).toEqual({ links: 1, posted: 0, visits: 2, joined: 1, activated: 0 });
   });
 
   it("tells a new account the invite it came by, and nothing to an account no link brought", async () => {

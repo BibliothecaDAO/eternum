@@ -17,6 +17,7 @@ import { WhatsNewPage } from "../news/news";
 import { JoinDevconPage } from "../join/join-devcon-page";
 import { NotFoundPage } from "../not-found";
 import { PlayPage } from "../play/play-page";
+import { SharedLinkPage } from "../share/shared-link-page";
 import { PlayerPage, ProfilePage, SettingsPage } from "../profile/profile-pages";
 import { ResultsPage } from "../season-tab/results-page";
 import { SeasonPage } from "../season-tab/season-page";
@@ -63,6 +64,7 @@ import {
   labRatings,
   labCalendar,
   labOrderIntent,
+  LAB_INVITE,
   labSealCode,
   LAB_SEAL_CODE,
   LAB_SHARE_CODE,
@@ -135,6 +137,7 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
         <Route path="connect/:step" element={<LabConnect />} />
         <Route path="doorway/:state" element={<LabDoorway />} />
         <Route path="season-end-devcon/:step/:who" element={<LabSeasonEndDevcon />} />
+        <Route path="s/:code" element={<SharedLinkPage />} />
         <Route path="join/devcon" element={<JoinDevconPage />} />
         <Route path="join/devcon/:code" element={<JoinDevconPage />} />
         <Route path="join/devcon/r/:referral" element={<JoinDevconPage />} />
@@ -306,6 +309,10 @@ const answerIdentity = (screen: LabScreen) => {
     return intent;
   };
   identityClient.createShare = async () => LAB_SHARE_CODE;
+  identityClient.openShare = async (code) => {
+    if (code !== LAB_SHARE_CODE) throw new IdentityRequestError(404, "share_unknown");
+    return LAB_INVITE;
+  };
   let sealCode = labSealCode(screen);
   identityClient.getSealCode = async () => sealCode;
   identityClient.redeemSealCode = async (code) => {

@@ -50,12 +50,8 @@ const readIntent = (db: D1Database, owner: string) =>
       const { results } = await db
         .prepare('SELECT "order", COUNT(*) AS "members" FROM "order_intents" GROUP BY "order"')
         .all<{ order: number; members: number }>();
-      const chosen = await db
-        .prepare('SELECT "order" FROM "order_intents" WHERE "owner" = ?')
-        .bind(owner)
-        .first<{ order: number }>();
       return {
-        order: chosen?.order ?? null,
+        order: await keptOrder(db, owner),
         members: Object.fromEntries(results.map(({ order, members }) => [order, members])),
       };
     },
@@ -80,12 +76,21 @@ const sameAspectOrders = (order: number) => {
   return ordersOfAspect(aspect).map(({ orderId }) => orderId);
 };
 
+const keptOrder = async (db: D1Database, owner: string): Promise<number | null> =>
+  (await db.prepare('SELECT "order" FROM "order_intents" WHERE "owner" = ?').bind(owner).first<{ order: number }>())
+    ?.order ?? null;
+
 export const intendedAspect = async (db: D1Database, owner: string): Promise<AspectId | null> => {
-  const chosen = await db
-    .prepare('SELECT "order" FROM "order_intents" WHERE "owner" = ?')
-    .bind(owner)
-    .first<{ order: number }>();
-  return orders.find(({ orderId }) => orderId === chosen?.order)?.aspect ?? null;
+  const kept = await keptOrder(db, owner);
+  return orders.find(({ orderId }) => orderId === kept)?.aspect ?? null;
+};
+
+export const inviteSide = async (db: D1Database, sharer: string, aspect: AspectId) => {
+  const counted = await db
+    .prepare('SELECT COUNT(*) AS "members" FROM "order_intents" WHERE "order" IN (SELECT value FROM json_each(?))')
+    .bind(JSON.stringify(ordersOfAspect(aspect).map(({ orderId }) => orderId)))
+    .first<{ members: number }>();
+  return { order: await keptOrder(db, sharer), members: counted?.members ?? 0 };
 };
 
 class OrderIntentError extends Data.TaggedError("OrderIntentError")<{

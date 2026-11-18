@@ -1,4 +1,4 @@
-import { aspects, type AspectId } from "@bibliothecadao/types";
+import { aspects, catalogAspectId, type AspectId } from "@bibliothecadao/types";
 import { isShareChannel, isShareKind } from "@realms-world/identity";
 import type { ShareChannel, ShareMoment } from "@realms-world/identity";
 
@@ -7,9 +7,9 @@ import { keepBrowser } from "./browsers";
 import { readCampaignCode } from "./campaigns";
 import { accountKey } from "./campaign-entry";
 import { json } from "./http";
-import { intendedAspect } from "./order-intent";
+import { intendedAspect, inviteSide } from "./order-intent";
 import { createShareStore } from "./share-store";
-import type { PendingJoin } from "./share-store";
+import type { PendingJoin, SharedLink } from "./share-store";
 
 /**
  * What shares read beyond D1: each game's season board, the Aspect an account plays for in a game (its Herald;
@@ -88,8 +88,15 @@ export async function handleShareVisit(request: Request, db: D1Database, code: s
   if (!link || !shared) return json({ error: "share_unknown" }, 404);
   const headers = new Headers({ "cache-control": "no-store" });
   await store.recordVisit(link, keepBrowser(request, headers), await visitChannel(request));
-  return Response.json({ kind: shared.kind, moment: shared.moment, name: shared.name }, { headers });
+  return Response.json(await visitAnswer(db, shared), { headers });
 }
+
+const visitAnswer = async (db: D1Database, shared: SharedLink) => {
+  const answer = { kind: shared.kind, moment: shared.moment, name: shared.name };
+  if (shared.kind !== "aspect") return answer;
+  if (shared.chainId !== null) return { ...answer, order: null, members: null };
+  return { ...answer, ...(await inviteSide(db, shared.sharer, catalogAspectId(shared.moment))) };
+};
 
 /** GET /api/shares: what the signed-in account's links brought, its own joins settled first. */
 export async function handleShareTally(request: Request, auth: IdentityAuth, world: ShareWorld) {
