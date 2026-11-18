@@ -7,6 +7,7 @@ mod banes;
 mod blitz_results;
 mod campaign;
 mod camps;
+mod deep_catch_up;
 mod deep_sites;
 mod deep_ticks;
 mod entry;
