@@ -19,7 +19,7 @@ export function isDeepTile(spacing: number, tile: { col: number; row: number; al
 }
 
 export function deepGate(spacing: number, gateDistance: number, aspect: number): { col: number; row: number } {
-  if (aspect < 1 || aspect > 4) throw new Error(`No Deep gate for Aspect ${aspect}`);
+  if (aspect < 1 || aspect > 4) throw new Error(`No gate for Aspect ${aspect}`);
   const center = deepCenter(spacing);
   const { x, y } = compassPoint({ x: center.col, y: center.row }, aspect - 1, gateDistance);
   return { col: x, row: y };

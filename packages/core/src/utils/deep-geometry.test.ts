@@ -13,6 +13,6 @@ describe("the Deep's gates", () => {
   });
 
   it("refuses an Aspect with no gate", () => {
-    expect(() => deepGate(1024, 4, 5)).toThrow("No Deep gate for Aspect 5");
+    expect(() => deepGate(1024, 4, 5)).toThrow("No gate for Aspect 5");
   });
 });

@@ -71,7 +71,7 @@ export function readDeepRingOpening(
   const today = site && readDeepDay(store, timestamp, gameId);
   if (!site || !today) return undefined;
   const ring = today.rules.rings[site.ring];
-  if (!ring) throw new Error(`Deep site ${site.entity_id} is outside its preset rules`);
+  if (!ring) throw new Error(`Site ${site.entity_id} is outside its preset rules`);
   return ringOpening(store, today, site, ring);
 }
 
@@ -103,7 +103,7 @@ function deepSiteView(
   const gameId = site.game_id;
   const { current, guard, troops } = todaysBeast(store, today, site);
   const ring = today.rules.rings[site.ring];
-  if (!ring) throw new Error(`Deep site ${site.entity_id} is outside its preset rules`);
+  if (!ring) throw new Error(`Site ${site.entity_id} is outside its preset rules`);
   const entered = requireEntered(realmsEntered(store, gameId, today));
   return {
     id: site.entity_id,
@@ -135,7 +135,7 @@ function todaysBeast(store: NativeFactStore, today: DeepDay, site: NativeRows["D
     ? store.require("Guard", { game_id: site.game_id, structure_id: site.entity_id, slot: 0 })
     : undefined;
   const beast = today.rules.beasts[site.kind];
-  if (!beast) throw new Error(`Deep site ${site.entity_id} is outside its preset rules`);
+  if (!beast) throw new Error(`Site ${site.entity_id} is outside its preset rules`);
   return { current, guard, troops: guard ? guard.troops.count : beast.count };
 }
 
