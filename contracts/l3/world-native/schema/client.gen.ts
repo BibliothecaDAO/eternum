@@ -6,7 +6,8 @@ export const NativeTroopType = {
 } as const;
 export const nativeFactSchemaIdentity = "5b9c77d62332ab34555840ad4099a84f3f4205048ed1bb57e72fb6952764d47a";
 export const nativeReleaseConstants = {
-  "RUIN_DEPTH_LIMIT_RELEASE": 9
+  "RUIN_DEPTH_LIMIT_RELEASE": 9,
+  "SEAL_RELEASE": 10
 } as const;
 export const nativeRuleConstants = {
   "RELIC_BLADE_BPS": 1000,
