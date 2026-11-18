@@ -124,7 +124,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
   const defenderSlots = useMemo(() => {
     if (!isStructureTarget || !defenderTroops) return [];
-    return [defenderTroops, ...queuedTargetGuards].map((snapshot, index) => {
+    return [defenderTroops, ...queuedTargetGuards.map((guard) => guard.troops)].map((snapshot, index) => {
       const isActive = index === 0;
       const remaining = isActive && defenderKept !== undefined ? defenderKept : wholeTroops(snapshot.count);
       const resourceId = getTroopResourceId(snapshot.category, snapshot.tier);

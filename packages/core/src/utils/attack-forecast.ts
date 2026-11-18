@@ -75,7 +75,7 @@ interface Combatant {
 interface AttackSides {
   attacker: Combatant;
   defender?: Combatant;
-  queued: Troops[];
+  queued: Combatant[];
 }
 
 type FightSides = AttackSides & { defender: Combatant };
@@ -151,22 +151,46 @@ function fightOf(scene: Scene, sides: FightSides): AttackForecast | undefined {
   const biome = storedBiomeAt(scene.store, tile.alt, tile.col, tile.row, scene.gameId);
   if (biome === undefined) return undefined;
   const distance = attackDistance(sides.attacker.tile, tile);
-  const context = {
-    timestamp: scene.chainSecond,
-    attackDistance: distance,
-    attackerBiome: biome,
-    defenderBiome: biome,
-    attackerIsStructureGuard: sides.attacker.guarding,
-    defenderIsStructureGuard: sides.defender.guarding,
-    attackerOaths: sides.attacker.oaths,
-    defenderOaths: sides.defender.oaths,
-  };
+  const context = exchangeContext(scene.chainSecond, sides.attacker, sides.defender, biome);
   const exchange = resolveExchange(sides.attacker.troops, sides.defender.troops, context, scene.rules);
   if (!exchange.ok) return { outcome: "refused", refusal: exchange.refusal, sides };
   const fight = forecastFight(sides.attacker.troops, sides.defender.troops, context, scene.rules);
   if (fight.outcome === "refused") return { outcome: "refused", refusal: fight.refusal, sides };
   const certainLoss = exchange.attacker.count < BigInt(RESOURCE_PRECISION);
   return { outcome: "fights", sides, distance, biome, exchange, fight, certainLoss };
+}
+
+const exchangeContext = (chainSecond: number, attacker: Combatant, defender: Combatant, biome: BiomeType) => ({
+  timestamp: chainSecond,
+  attackDistance: attackDistance(attacker.tile, defender.tile),
+  attackerBiome: biome,
+  defenderBiome: biome,
+  attackerIsStructureGuard: attacker.guarding,
+  defenderIsStructureGuard: defender.guarding,
+  attackerOaths: attacker.oaths,
+  defenderOaths: defender.oaths,
+});
+
+export function clearsEveryDefender(
+  store: NativeFactStore,
+  attacker: EntityKey,
+  target: EntityKey,
+  chainSecond: number,
+  options?: { besideTarget?: boolean },
+): boolean | undefined {
+  const forecast = forecastAttack(store, attacker, target, chainSecond, options);
+  if (forecast === undefined) return undefined;
+  if (forecast.outcome !== "fights") return forecast.outcome === "claims";
+  const rules = readCombatRules(store, attacker.game_id);
+  let fight = forecast.fight;
+  for (const defender of forecast.sides.queued) {
+    if (fight.outcome !== "wins") return false;
+    const standing = { ...forecast.sides.attacker, troops: fight.attacker };
+    const next = forecastFight(standing.troops, defender.troops, exchangeContext(chainSecond, standing, defender, forecast.biome), rules);
+    if (next.outcome === "refused") return false;
+    fight = next;
+  }
+  return fight.outcome === "wins";
 }
 
 function armyAttack(scene: Scene, explorer: NativeRows["ExplorerTroops"], targetId: bigint): Defence | undefined {
@@ -231,8 +255,10 @@ function deepSiteDefence(scene: Scene, attacker: Combatant, siteId: bigint): Def
   const guard = site.guards[0]?.army;
   const defence = readDeepSiteDefender(scene.store, site, scene.chainSecond);
   if (!guard && !defence) return { claims: attacker, target: tile };
-  if (!defence) return undefined;
-  const sides = { attacker, defender: { ...defence, tile, home: guard?.owner ?? 0n }, queued: [] };
+  const queued = site.guards.slice(1).map(({ army }) => deepGuardCombatant(scene, army, tile));
+  if (!defence || queued.some((next) => next === undefined)) return undefined;
+  const defender = { ...defence, tile, home: guard?.owner ?? 0n };
+  const sides = { attacker, defender, queued: queued.filter((next) => next !== undefined) };
   if (!guard) return { sides };
   if (!isArmyCurrent(scene.store, scene.gameId, guard.explorer_id, scene.chainSecond))
     return refused("expired-army", sides);
@@ -261,8 +287,8 @@ function structureDefence(scene: Scene, attacker: Combatant, structure: NativeRo
   const [first, ...queued] = guards;
   if (!first) return { claims: attacker, target: tile };
   const guarding = isCombatGuard(structure.owner, scene.rules.dayUnitSeconds);
-  const defender = { troops: first.troops, oaths: 0, guarding, tile, home: structure.entity_id };
-  return { sides: { attacker, defender, queued: queued.map((guard) => guard.troops) } };
+  const standing = (troops: Troops) => ({ troops, oaths: 0, guarding, tile, home: structure.entity_id });
+  return { sides: { attacker, defender: standing(first.troops), queued: queued.map((guard) => standing(guard.troops)) } };
 }
 
 function guardAttack(scene: Scene, structureId: bigint, targetId: bigint): Defence | undefined {
@@ -307,6 +333,11 @@ function armyCombatant(scene: Scene, army: NativeRows["ExplorerTroops"]): Combat
     tile: { col: position.x, row: position.y, alt: position.alt },
     home: army.owner,
   };
+}
+
+function deepGuardCombatant(scene: Scene, army: NativeRows["ExplorerTroops"], tile: Tile): Combatant | undefined {
+  const troops = resolveExplorerCombatTroops(scene.store, army, scene.chainSecond);
+  return troops && { troops, oaths: armyOaths(scene.store, army), guarding: true, tile, home: army.owner };
 }
 
 function hasOpenOathPick(scene: Scene, explorerId: bigint): boolean {

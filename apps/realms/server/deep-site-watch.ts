@@ -1,16 +1,8 @@
-import { BiomeType } from "@bibliothecadao/types";
 import { readDeepSites, NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { readGameFacts, type ReleaseCatalogue } from "./game-facts";
 import { dayOf, expeditionDepth, readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
-import { resolveExplorerCombatTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
-import {
-  armyOaths,
-  forecastFight,
-  mapCenter,
-  readCombatRules,
-  researchedDepth,
-  type CombatRules,
-} from "@bibliothecadao/eternum";
+import { STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
+import { clearsEveryDefender, mapCenter, readCombatRules, researchedDepth } from "@bibliothecadao/eternum";
 
 export interface DeepSiteWatch {
   gameId: number;
@@ -47,14 +39,14 @@ export function planDeepSiteWatches(
   if (depth === undefined) throw new Error("Deep alerts require the home's research");
   if (depth === 0) return [];
   const aspect = store.require("HomeAspect", { game_id: gameId, home }).aspect;
-  const rules = readCombatRules(store, gameId);
+  const tickSeconds = readCombatRules(store, gameId).tickSeconds;
   const center = mapCenter(store.require("SliceRules", { game_id: gameId }).map_center_offset);
   return readDeepSites(store, timestamp, gameId).flatMap((site) => {
     if (depth < expeditionDepth(calendar, site.position)) return [];
     const defender = site.guards[0];
     if (!defender || site.beastTroops > 0n) return [];
     if (store.require("HomeAspect", { game_id: gameId, home: defender.army.owner }).aspect === aspect) return [];
-    const due = firstClearableTick(store, army, site.id, timestamp, day.end, rules);
+    const due = firstClearableTick(store, army, site.id, timestamp, day.end, tickSeconds);
     return due === null
       ? []
       : [
@@ -98,47 +90,18 @@ function firstClearableTick(
   siteId: bigint,
   now: number,
   end: number,
-  rules: CombatRules,
+  tickSeconds: number,
 ): number | null {
-  for (let at = now; at < end; at = (Math.floor(at / rules.tickSeconds) + 1) * rules.tickSeconds) {
+  const attacker = { game_id: army.game_id, entity_id: army.explorer_id };
+  const target = { game_id: army.game_id, entity_id: siteId };
+  for (let at = now; at < end; at = (Math.floor(at / tickSeconds) + 1) * tickSeconds) {
     const site = readDeepSites(store, at, army.game_id).find((candidate) => candidate.id === siteId);
     if (!site?.guards.length) return null;
-    if (clearsEveryGuard(store, army, site.guards, at, rules)) return at;
+    const clears = clearsEveryDefender(store, attacker, target, at, { besideTarget: true });
+    if (clears === undefined) throw new Error("Deep alert is missing the fight's combat facts");
+    if (clears) return at;
   }
   return null;
-}
-
-function clearsEveryGuard(
-  store: NativeFactStore,
-  army: NativeRows["ExplorerTroops"],
-  guards: ReturnType<typeof readDeepSites>[number]["guards"],
-  timestamp: number,
-  rules: CombatRules,
-): boolean {
-  let attacker = resolveExplorerCombatTroops(store, army, timestamp);
-  if (!attacker) throw new Error("Deep alert is missing the attacker's combat facts");
-  for (const guard of guards) {
-    const defender = resolveExplorerCombatTroops(store, guard.army, timestamp);
-    if (!defender) throw new Error("Deep alert is missing a guard's combat facts");
-    const fight = forecastFight(
-      attacker,
-      defender,
-      {
-        timestamp,
-        attackerOaths: armyOaths(store, army),
-        defenderOaths: armyOaths(store, guard.army),
-        attackDistance: 1,
-        attackerBiome: BiomeType.Underground,
-        defenderBiome: BiomeType.Underground,
-        attackerIsStructureGuard: false,
-        defenderIsStructureGuard: true,
-      },
-      rules,
-    );
-    if (fight.outcome !== "wins") return false;
-    attacker = fight.attacker;
-  }
-  return true;
 }
 
 /** One confirmed, scoped read holds the player's armies and every public Deep guard. */

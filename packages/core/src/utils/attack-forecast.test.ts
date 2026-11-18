@@ -298,7 +298,7 @@ describe("one attack forecast for every combat surface", () => {
     const forecast = game.forecast(10, 60);
     expect(forecast?.outcome).toBe("fights");
     expect(forecast?.sides?.defender?.troops).toMatchObject({ category: "Crossbowman", count: troops(100) });
-    expect(forecast?.sides?.queued.map((guard) => guard.count)).toEqual([troops(1_000)]);
+    expect(forecast?.sides?.queued.map((guard) => guard.troops.count)).toEqual([troops(1_000)]);
   });
 
   it("refuses an army with an open Oath pick, then an army from an earlier day (966d43)", () => {
