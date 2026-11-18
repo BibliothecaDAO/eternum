@@ -39,6 +39,7 @@ pub const FURY_REFUND_PERCENT: u16 = 50;
 pub const PERFECTION_PAY_PERCENT: u16 = 150;
 pub const PERFECTION_LOSS_PERCENT: u16 = 15;
 
+#[inline(never)]
 pub fn damage_multiplier(attacker: u16, defender: u16, guarding: bool) -> Fixed {
     let mut multiplier = FixedTrait::ONE();
     if held(attacker, POWER) {
@@ -195,6 +196,7 @@ pub fn well_stamina(oaths: u16, maximum: u64) -> u64 {
     maximum * percent.into() / 100
 }
 
+#[inline(never)]
 pub fn held(oaths: u16, oath: u8) -> bool {
     oaths & bit(oath) != 0
 }
