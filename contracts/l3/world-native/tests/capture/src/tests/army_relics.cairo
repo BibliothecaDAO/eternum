@@ -71,7 +71,9 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
             _ => RelicKind::Plunder,
         };
         let reward = ArmyRelic { kind, rank: 1 };
-        let site = discover_relic(d, key, discovery, *preset.settlement.depths.at(0).chest, reward, timestamp);
+        let site = discover_relic(
+            d, key, discovery, *preset.settlement.depths.at(0).chest, reward, false, timestamp,
+        );
         assert_eq!(read_ruin(d, site), Some(reward));
         let count = snforge_std::interact_with_state(
             d.games,
@@ -141,7 +143,13 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
         Some(crate::army_relics::ArmyRelicEffect { rank: 1, expires_at: 2320 }),
     );
     let site = discover_relic(
-        d, key, discovery, *preset.settlement.depths.at(0).chest, ArmyRelic { kind: RelicKind::FarEye, rank: 1 }, 550,
+        d,
+        key,
+        discovery,
+        *preset.settlement.depths.at(0).chest,
+        ArmyRelic { kind: RelicKind::FarEye, rank: 1 },
+        false,
+        550,
     );
     assert!(
         execute_in_game(
@@ -189,6 +197,29 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
     }
     assert_eq!(revealed.len(), 6);
     assert_eq!(read_loadout(d, key).first, None);
+    assert!(
+        execute_in_game(
+            d, game_id, Command::Move(crate::commands::Move { explorer_id, directions: array![0].span() }), 553,
+        ),
+    );
+    let cache = ArmyRelic { kind: RelicKind::Blade, rank: 1 };
+    let site = discover_relic(d, key, discovery, *preset.settlement.depths.at(0).chest, cache, true, 560);
+    assert_eq!(read_cache(d, site), 10);
+    let loadout = read_loadout(d, key);
+    assert!(
+        execute_in_game(
+            d,
+            game_id,
+            Command::BattleGuard(
+                crate::commands::Battle { attacker_id: explorer_id, defender_id: site.entity_id, relic_slot: None },
+            ),
+            561,
+        ),
+    );
+    assert_eq!(read_loadout(d, key), loadout);
+    assert_eq!(read_ruin(d, site), None);
+    assert_eq!(read_cache(d, site), 0);
+    assert_eq!(snforge_std::interact_with_state(d.games, || crate::logic::fragments::balance(game_id, d.actor)), 10);
 }
 
 fn discover_relic(
@@ -197,11 +228,12 @@ fn discover_relic(
     rules: crate::expeditions::FrontierDiscoveryRules,
     odds: ChestTiers,
     expected: ArmyRelic,
+    cache: bool,
     timestamp: u64,
 ) -> ResourceKey {
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     let destination = crate::geometry::neighbor(army.coord, 0);
-    let root = relic_root(key.game_id, rules, odds, expected);
+    let root = relic_root(key.game_id, rules, odds, expected, cache);
     assert!(explore_with_root(d, key.game_id, key.explorer_id, root, timestamp));
     let site = IMapLogicDispatcher { contract_address: d.games }
         .occupancy(crate::geometry::tile_key(key.game_id, destination))
@@ -211,13 +243,14 @@ fn discover_relic(
 }
 
 fn relic_root(
-    game_id: u32, rules: crate::expeditions::FrontierDiscoveryRules, odds: ChestTiers, expected: ArmyRelic,
+    game_id: u32, rules: crate::expeditions::FrontierDiscoveryRules, odds: ChestTiers, expected: ArmyRelic, cache: bool,
 ) -> u256 {
     for candidate in 0_u32..10_000 {
         let mut root: u256 = candidate.into();
         let seed = crate::random::game_root(ref root, game_id);
         let reward = crate::army_relics::draw(odds, seed);
         if reward == expected
+            && crate::fragments::holds_cache(seed, 0) == cache
             && crate::discovery::frontier(
                 rules, 100, 0, Some(reward), seed,
             ) == crate::discovery::Discovery::Ruin(reward) {
@@ -232,4 +265,11 @@ fn read_loadout(d: super::Deployment, key: ExplorerKey) -> crate::army_relics::A
 }
 fn read_ruin(d: super::Deployment, key: ResourceKey) -> Option<ArmyRelic> {
     snforge_std::interact_with_state(d.games, || crate::logic::army_relics::ruin(key))
+}
+fn read_cache(d: super::Deployment, key: ResourceKey) -> u128 {
+    snforge_std::interact_with_state(
+        d.games, || starknet::storage::StorageMapReadAccess::read(
+            crate::state::read().relics.ruin_caches, (key.game_id, key.entity_id),
+        ),
+    )
 }
