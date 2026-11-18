@@ -167,7 +167,9 @@ fn grant_seal(d: Deployment, game_id: u32, account: starknet::ContractAddress) -
     granted
 }
 
-fn quest_labor(d: Deployment, game_id: u32, entitlement: Option<world_test_support::tests::entry::EntryEntitlement>, seal: bool) -> u128 {
+fn quest_labor(
+    d: Deployment, game_id: u32, entitlement: Option<world_test_support::tests::entry::EntryEntitlement>, seal: bool,
+) -> u128 {
     if let Some(entitlement) = entitlement {
         register(d, game_id, entitlement);
     }
@@ -244,10 +246,14 @@ fn only_the_ledger_operator_grants_one_seal_an_account_while_the_game_runs() {
         }
     }
     assert_eq!(rows.span(), array![array![2, game_id.into(), d.actor.into(), 1, 400].span()].span());
-    interact_with_state(d.games, || {
-        assert_eq!(crate::state::read().entry.seals.read((game_id, d.actor)), Some(400));
-    });
-    let game = crate::game::IGameDispatcherTrait::game(crate::game::IGameDispatcher { contract_address: d.games }, game_id);
+    interact_with_state(
+        d.games, || {
+            assert_eq!(crate::state::read().entry.seals.read((game_id, d.actor)), Some(400));
+        },
+    );
+    let game = crate::game::IGameDispatcherTrait::game(
+        crate::game::IGameDispatcher { contract_address: d.games }, game_id,
+    );
     snforge_std::start_cheat_block_timestamp(d.games, game.end_at);
     let (stranger, _) = world_test_support::tests::deploy_player(777, world_test_support::tests::GUARDIAN);
     assert!(!grant_seal(d, game_id, stranger));

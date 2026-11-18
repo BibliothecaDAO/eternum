@@ -46,7 +46,9 @@ const ownsSeal = (db: D1Database, owner: string) => sealStorage(async () => (awa
 
 export const holdsFreeSeal = async (db: D1Database, owner: string) =>
   (await db
-    .prepare('SELECT 1 FROM "seal_codes" WHERE "owner" = ?1 UNION ALL SELECT 1 FROM "campaign_tickets" WHERE "owner" = ?1')
+    .prepare(
+      'SELECT 1 FROM "seal_codes" WHERE "owner" = ?1 UNION ALL SELECT 1 FROM "campaign_tickets" WHERE "owner" = ?1',
+    )
     .bind(owner)
     .first()) !== null;
 
