@@ -412,9 +412,7 @@ pub fn frontier_guard(
     };
     let lower: u128 = lower.into();
     let upper: u128 = upper.into();
-    let shares: u128 = (crate::rules::BEAST_HERD_SHARE + crate::rules::BEAST_BAND_SHARE).into();
-    let band = category == crate::taxonomy::BEASTS_CATEGORY
-        && crate::random::range(seed, 2, shares) >= crate::rules::BEAST_HERD_SHARE.into();
+    let band = category == crate::taxonomy::BEASTS_CATEGORY && beast_draw_is_band(seed);
     let count = if category == crate::taxonomy::BEASTS_CATEGORY {
         let (lower, upper) = if !band {
             (depth.beast_weak_lower, depth.beast_weak_upper)
@@ -433,6 +431,11 @@ pub fn frontier_guard(
         TroopType::Knight
     };
     discovered_guard(troop, TroopTier::T1, count, rules, timestamp)
+}
+
+pub fn beast_draw_is_band(seed: u256) -> bool {
+    let shares: u128 = (crate::rules::BEAST_HERD_SHARE + crate::rules::BEAST_BAND_SHARE).into();
+    crate::random::range(seed, 2, shares) >= crate::rules::BEAST_HERD_SHARE.into()
 }
 
 pub fn ruin_guard(

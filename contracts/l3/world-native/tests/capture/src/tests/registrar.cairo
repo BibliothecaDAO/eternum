@@ -578,7 +578,7 @@ fn a_band_clear_pays_no_resources() {
 
 fn beast_clear_payout(full: bool, band: bool) {
     let mut seed = 0_u256;
-    while (crate::random::range(seed, 2, 2) != 0) != band {
+    while crate::troops::beast_draw_is_band(seed) != band {
         seed += 1;
     }
     let (_, frontier) = super::preset_projection::current_definition("frontier-check");
