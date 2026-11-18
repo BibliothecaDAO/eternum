@@ -1,7 +1,9 @@
 // From the site reward and rift guard formulas in Cairo. Run scripts/generate-site-previews.mjs.
-export function previewRuinGuardBounds(rank: number): [number, number] {
-  const strength = [1000, 2500, 5000, 10000, 25000][rank - 1];
-  if (strength === undefined) throw new Error("Invalid relic rank");
+export function previewRuinGuardBounds(rank: number, depth: number): [number, number] {
+  const place = rank - 1 - depth;
+  const base = [1000, 1500, 2500][place];
+  if (base === undefined || place < 0) throw new Error("Relic outside its layer");
+  const strength = base * 2 ** depth;
   const spread = (strength * 10) / 100;
   return [strength - spread, strength + spread];
 }
