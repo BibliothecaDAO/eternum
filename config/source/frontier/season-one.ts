@@ -6,6 +6,12 @@ import type { NativePreset } from "../common/native-preset";
 import { FRONTIER_S1_PRESET_ID } from "../common/native-preset-modes";
 import { frontierPreset } from "./native";
 
+const layerRuinOdds = [
+  { common: 6000, uncommon: 3000, rare: 1000, epic: 0, legendary: 0 },
+  { common: 0, uncommon: 6000, rare: 3000, epic: 1000, legendary: 0 },
+  { common: 0, uncommon: 0, rare: 6000, epic: 3000, legendary: 1000 },
+];
+
 const orderAspects: NativePreset["orderAspects"] = orders
   .filter(({ aspect }) => aspect !== null)
   .map(({ aspect }) => aspect!);
@@ -41,10 +47,14 @@ export const frontierSeasonOnePreset = {
   orderAspects,
   depths: frontierPreset.depths.map((depth, index) => ({
     ...depth,
-    beastWeakLower: 300 * 2 ** index,
-    beastWeakUpper: 395 * 2 ** index,
-    beastStrongLower: 400 * 2 ** index,
-    beastStrongUpper: 500 * 2 ** index,
+    siteGuardLower: 1170 * 2 ** index,
+    siteGuardUpper: 1430 * 2 ** index,
+    guardStep: 10,
+    beastWeakLower: 315 * 2 ** index,
+    beastWeakUpper: 385 * 2 ** index,
+    beastStrongLower: 405 * 2 ** index,
+    beastStrongUpper: 495 * 2 ** index,
+    chest: layerRuinOdds[index] ?? depth.chest,
   })),
   labor: null,
   dailyQuest: { baseCounts: [1, 1, 1, 1, 1, 2, 15], labor: 1000, essence: 1500, bonusPercent: 150 },

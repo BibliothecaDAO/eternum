@@ -34,7 +34,6 @@ const frontierFixturePreset: NativePreset = {
     buildings: frontierSeasonOnePreset.balance.buildings,
     startingResources: frontierSeasonOnePreset.balance.startingResources,
   },
-  depths: frontierPreset.depths,
   modeRules: frontierPreset.modeRules & ~nativeRuleConstants.DISCOVER_CHESTS,
   dailyQuest: frontierPreset.dailyQuest,
   banes: frontierPreset.banes,
@@ -53,10 +52,11 @@ const PLAYGROUND_ESSENCE = 5_000_000;
  * does there is played through the real game; only prices and the starting stock differ.
  */
 const frontierPlaygroundPreset: NativePreset = {
-  ...frontierPreset,
+  ...frontierSeasonOnePreset,
   id: FRONTIER_PLAYGROUND_PRESET_ID,
-  research: frontierPreset.research.map((tier) => ({ ...tier, laborCost: 0 })),
+  research: frontierSeasonOnePreset.research.map((tier) => ({ ...tier, laborCost: 0 })),
   balance: {
+    ...frontierSeasonOnePreset.balance,
     startingResources: [
       { resource: ResourcesIds.Essence, amount: PLAYGROUND_ESSENCE },
       { resource: ResourcesIds.Labor, amount: SETTLEMENT_STORE },

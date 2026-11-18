@@ -434,9 +434,9 @@ pub fn frontier_guard(
 }
 
 pub fn ruin_guard(
-    relic: crate::army_relics::ArmyRelic, seed: u256, rules: crate::rules::SliceRules, timestamp: u64,
+    relic: crate::army_relics::ArmyRelic, depth: u8, seed: u256, rules: crate::rules::SliceRules, timestamp: u64,
 ) -> Troops {
-    let base = crate::army_relics::ruin_strength(relic.rank);
+    let base = crate::army_relics::ruin_strength(relic.rank, depth);
     let spread = base * crate::army_relics::RUIN_GUARD_SPREAD_PERCENT / 100;
     let step = crate::army_relics::RUIN_GUARD_STEP;
     let count = base - spread + step * crate::random::range(seed, 1, 2 * spread / step + 1);

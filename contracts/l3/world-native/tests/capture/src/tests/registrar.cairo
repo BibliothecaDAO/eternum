@@ -1043,7 +1043,15 @@ fn frontier_sites_persist_the_seeded_guard_and_initial_count() {
         for (discovery, category, offset) in array![
             (crate::discovery::Discovery::Camp, crate::taxonomy::CAMP_CATEGORY, 0_u32),
             (crate::discovery::Discovery::Rift, crate::taxonomy::RIFT_CATEGORY, 1),
-            (crate::discovery::Discovery::Ruin(any_relic()), crate::taxonomy::RUIN_CATEGORY, 2),
+            (
+                crate::discovery::Discovery::Ruin(
+                    crate::army_relics::ArmyRelic {
+                        kind: crate::army_relics::RelicKind::Blade, rank: (depth_index + 1).try_into().unwrap(),
+                    },
+                ),
+                crate::taxonomy::RUIN_CATEGORY,
+                2,
+            ),
             (crate::discovery::Discovery::Beasts, crate::taxonomy::BEASTS_CATEGORY, 3),
         ] {
             let coord = crate::troops::Coord {
@@ -1055,7 +1063,7 @@ fn frontier_sites_persist_the_seeded_guard_and_initial_count() {
             let guard = IGuardsDispatcher { contract_address: d.games }
                 .guard(GuardKey { game_id, structure_id: id, slot: 0 });
             let expected = if let crate::discovery::Discovery::Ruin(relic) = discovery {
-                crate::troops::ruin_guard(relic, seed, context.rules.unbox(), 360)
+                crate::troops::ruin_guard(relic, depth_index.try_into().unwrap(), seed, context.rules.unbox(), 360)
             } else {
                 crate::troops::frontier_guard(category, depth, seed, context.rules.unbox(), 360)
             };
