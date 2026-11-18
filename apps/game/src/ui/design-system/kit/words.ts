@@ -528,6 +528,7 @@ export const SEASON = "Season";
 export const RANK = "Rank";
 export const SITES = "Sites";
 export const SITES_CLEARED = "Sites cleared";
+export const SITE_OATH = { label: "Oath", holds: "Holds an Oath", rule: "Clearing it opens an Oath pick" } as const;
 /**
  * How the Season board ranks, said where players look (owner, 4 November 2026: "ppl have asked how to increase sites in the
  * leaderboard"): Herald ranks by sites cleared, then deepest depth (frontier-leaderboard.ts compareStandings), and every

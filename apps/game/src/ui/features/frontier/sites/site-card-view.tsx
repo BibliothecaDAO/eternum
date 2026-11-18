@@ -26,6 +26,7 @@ import {
   ruinRule,
   SEASON_CLIMB,
   siteTitle,
+  SITE_OATH,
   SITES_CLEARED,
   STORAGE,
   tooFarFrom,
@@ -83,6 +84,7 @@ export const SiteCardView = ({
   pay,
   chest,
   relic,
+  holdsOath = false,
   replacement,
   ruinChoice,
   verb,
@@ -103,6 +105,7 @@ export const SiteCardView = ({
   chest?: { tier: Tier; lords: number };
   /** A Season 1 ruin's relic, rolled when it was found: the clearing army carries it. */
   relic?: ArmyRelic;
+  holdsOath?: boolean;
   /** Before a full army clears a ruin: the relic it replaces, chosen there. */
   replacement?: ReactNode;
   ruinChoice?: { depth: string; perDepth: boolean };
@@ -129,6 +132,11 @@ export const SiteCardView = ({
     relic || chest || pay || countsOnBoard ? (
       <Reward dimmed={facing !== undefined && !clears(facing)}>
         {relic ? <RelicPay relic={relic} /> : chest ? <ChestPay chest={chest} /> : pay ? <Pay pay={pay} /> : null}
+        {holdsOath && (
+          <HudChip icons={["shrine"]} label={SITE_OATH.label} tip={SITE_OATH.rule}>
+            {SITE_OATH.holds}
+          </HudChip>
+        )}
         {countsOnBoard && (
           <HudChip icons={["flag"]} label={SITES_CLEARED} tip={SEASON_CLIMB.rule}>
             {SEASON_CLIMB.plusOne}

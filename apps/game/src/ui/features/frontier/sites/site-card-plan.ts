@@ -12,6 +12,7 @@ import {
   oathAttackStamina,
   isCleanWin,
   oathSitePay,
+  siteHoldsOath,
   siteKindOf,
   type AttackForecast,
   type AttackRefusal,
@@ -66,6 +67,7 @@ export interface SiteCardPlan {
   inReach: boolean;
   fight: SiteFight | undefined;
   blocked: AttackRefusal | undefined;
+  holdsOath: boolean;
 }
 
 /**
@@ -112,6 +114,7 @@ export const readSiteCard = (
           chest.amount,
     },
     payout: reward && fittingPayout(store, site.game_id, reward, attack),
+    holdsOath: siteHoldsOath(store, site),
     attackStamina: attackStaminaOf(store, attack),
     ...planAttack(planned),
   };
@@ -150,6 +153,7 @@ export const readArmyCard = (
     kind: "Army",
     chest: null,
     payout: null,
+    holdsOath: false,
     attackStamina: attackStaminaOf(store, attack),
     ...planAttack(attack ? forecastFrom(store, attack, army.explorer_id) : undefined),
   };

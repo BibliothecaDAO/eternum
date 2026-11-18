@@ -627,3 +627,6 @@ The fight Oaths change the one forecast every attack surface reads (`forecastAtt
 attack that leaves the bar under 10, Fury gives back half of an attack's cost when it beats its target, and Perfection
 pays 50% more on the site card when the forecast clears the last guard with under 15% lost.
 `tests/fixtures/oath-fight.txt` and the combat formula tests hold the contract and the client to the same rules.
+
+A stronger beast band at a personal depth holds an Oath: its site card shows "Holds an Oath" (the Shrine's painting)
+beside its pay, read from the same band rule the contract uses to open a pick on its clear.

@@ -136,6 +136,16 @@ it("shows a ruin's fixed quote but refuses funding when the shared budget is spe
   });
 });
 
+it("says a stronger band holds an Oath, as the contract offers a pick on its clear, and a lowly herd none", () => {
+  const { store, site, structure, attack } = campBeside("Beasts");
+  const own = attack({ col: 41, row: 12, alt: false });
+  const { spacing } = store.require("SettlementRules", { game_id: 1 });
+  const bounds = store.require("DepthRules", { game_id: 1, depth: Math.floor(site.row / spacing) % 4 });
+  const withGuards = (count: number) => ({ ...site, initial_guard_count: BigInt(count) * 1_000_000_000n });
+  expect(readSiteCard(store, withGuards(bounds.beast_strong_lower), structure, own).holdsOath).toBe(true);
+  expect(readSiteCard(store, withGuards(bounds.beast_weak_upper), structure, own).holdsOath).toBe(false);
+});
+
 it("shows a herd's wheat from initial guards as its resource payout", () => {
   const { store, site, structure, attack } = campBeside("Beasts");
   const own = attack({ col: 41, row: 12, alt: false });

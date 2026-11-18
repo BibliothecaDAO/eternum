@@ -94,6 +94,11 @@ const siteIsWraith = (
   return beastBand(site.initial_guard_count, bounds) === "stronger";
 };
 
+export const siteHoldsOath = (
+  store: Pick<NativeFactStore, "require">,
+  site: Pick<NativeRows["ExpeditionSite"], "category" | "initial_guard_count" | "clear" | "game_id" | "row">,
+): boolean => site.clear === null && siteIsWraith(store, site) && siteDepth(store, site) < 3;
+
 const siteDepth = (
   store: Pick<NativeFactStore, "require">,
   site: Pick<NativeRows["ExpeditionSite"], "game_id" | "row">,

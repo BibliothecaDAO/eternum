@@ -190,6 +190,7 @@ export const TileCard = ({
       guard={plan.guard === undefined ? undefined : (plan.guard?.count ?? null)}
       fight={plan.fight}
       pay={sitePay(plan)}
+      holdsOath={plan.holdsOath}
       relic={(relics && relics.state.kind !== "none" && relics.state.relic) || undefined}
       replacement={
         relics?.state.kind === "full" && (

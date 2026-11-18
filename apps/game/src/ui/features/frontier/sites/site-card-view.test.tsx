@@ -302,6 +302,27 @@ describe("a guarded site's card", () => {
 });
 
 describe("a guarded site's card with no army chosen", () => {
+  it("shows a band's Oath beside its pay", () => {
+    for (const holdsOath of [true, false]) {
+      act(() =>
+        root.render(
+          <SiteCardView
+            site="Beasts"
+            beast={undefined}
+            army={null}
+            guard={1_200}
+            fight={undefined}
+            pay={{ icon: "wheat", amount: 3_600 }}
+            holdsOath={holdsOath}
+            verb={null}
+            onClose={() => {}}
+          />,
+        ),
+      );
+      expect(document.querySelector("section[role=dialog]")!.textContent?.includes("Holds an Oath")).toBe(holdsOath);
+    }
+  });
+
   it("names a rift by its name and kind, as the map's hover does, with an army chosen or not", () => {
     // The playtest's Brimdeep: its hover reads "Brimdeep Rift" over "Dark fey".
     const [hover] = plateRows({
