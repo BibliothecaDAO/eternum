@@ -1,4 +1,3 @@
-import { nativeRaceConstants } from "@bibliothecadao/eternum/game-client";
 import { raceRules } from "./race-scenario";
 import { installLabGame } from "@/ui/features/debug/kit-lab/fixture-game";
 import { SPIRE_ARMY, SPIRE_DAY_NOW, applySpireDiscovery, spireDay } from "@/ui/features/frontier/spire-fixture";
@@ -11,7 +10,12 @@ import {
   type ResourcesIds,
 } from "@bibliothecadao/types";
 
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  nativeRaceConstants,
+  nativeResearchConstants,
+  type NativeFactStore,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 
 import { nativeTilePackingConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { frontierSeasonOnePreset as frontierPreset } from "../../../../../config/source/frontier/season-one";
@@ -184,7 +188,7 @@ export const armyProgress = (store: NativeFactStore, explorerId: number, logisti
     game_id: 1,
     explorer_id: String(explorerId),
     logistics,
-    oath_slots: 1,
+    oath_slots: nativeResearchConstants.OATH_SLOTS_BASE,
     oaths: 0,
     oath_pick: 0,
   },

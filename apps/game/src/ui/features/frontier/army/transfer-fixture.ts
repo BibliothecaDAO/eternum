@@ -1,3 +1,4 @@
+import { nativeResearchConstants } from "@bibliothecadao/eternum/game-client";
 import { getNeighborHexes } from "@bibliothecadao/types";
 import { campBeside } from "../sites/site-fixture";
 
@@ -25,7 +26,7 @@ export const transferArmies = (pickedLogistics = 1, tappedLogistics = 0) => {
           game_id: 1,
           explorer_id: id,
           logistics: slot === 0 ? pickedLogistics : tappedLogistics,
-          oath_slots: 1,
+          oath_slots: nativeResearchConstants.OATH_SLOTS_BASE,
           oaths: 0,
           oath_pick: 0,
         },

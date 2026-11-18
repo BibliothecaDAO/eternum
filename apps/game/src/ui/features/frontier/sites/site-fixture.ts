@@ -1,6 +1,6 @@
 import { BiomeType, BiomeTypeToId, StructureType, TileOccupier } from "@bibliothecadao/types";
 import type { SiteKind } from "@bibliothecadao/eternum";
-import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { NativeFactStore, nativeResearchConstants } from "@bibliothecadao/eternum/game-client";
 import {
   nativeFactModels,
   nativeTilePackingConstants,
@@ -128,7 +128,7 @@ export const campBeside = (
       game_id: 1,
       explorer_id: 201,
       logistics: 0,
-      oath_slots: 1,
+      oath_slots: nativeResearchConstants.OATH_SLOTS_BASE,
       oaths: 0,
       oath_pick: 0,
     }),

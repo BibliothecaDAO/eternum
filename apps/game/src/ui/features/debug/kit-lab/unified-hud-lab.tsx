@@ -14,7 +14,7 @@ import { useGoalLine } from "@/ui/features/world/hud/points-goal";
 import { gameStartHeadline } from "@/ui/features/news-headlines/news-headline-bridge";
 import { NewsHeadlineBanner } from "@/ui/features/news-headlines/news-headline-banner";
 import { nativeGameModeOf, readExpeditionRules, structureMapPosition } from "@bibliothecadao/eternum";
-import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { nativeResearchConstants, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { ActorType, RESOURCE_PRECISION, ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
@@ -297,7 +297,7 @@ const AttackForecast = ({ store }: { store: NativeFactStore }) => {
 const LAB_PROGRESS = {
   game_id: 1,
   logistics: 1,
-  oath_slots: 1,
+  oath_slots: nativeResearchConstants.OATH_SLOTS_BASE,
   oaths: 0,
   oath_pick: 0,
 };
