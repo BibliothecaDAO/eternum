@@ -89,7 +89,7 @@ const FragmentsHeld = ({ fragments }: { fragments: number }) => (
   </HudChip>
 );
 
-const ShopCodeField = () => {
+export const ShopCodeField = () => {
   const owner = useIdentitySessionStore((state) => notificationOwnerOf(state.session));
   const { redeem, refusal } = useRedeemSealCode(owner);
   const [code, setCode] = useState("");

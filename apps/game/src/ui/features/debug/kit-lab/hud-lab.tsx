@@ -93,6 +93,7 @@ import {
   StaminaRefill,
 } from "@/ui/features/frontier/army/refill";
 import { LordsPurse, PurseRow, RealmsChip } from "@/ui/features/frontier/value/lords-purse";
+import { ShopCodeField, ShopView } from "@/ui/features/frontier/shop/shop-sheet";
 import type { DailyClaimWaiting } from "@/ui/features/frontier/value/realm-labor";
 import { DayPill } from "@/ui/features/frontier/hud/day-pill";
 import { RealmPanel } from "@/ui/features/frontier/hud/realm-panel";
@@ -977,6 +978,9 @@ const STATES = {
     selected: 0,
     army: { stamina: 20, fragments: 0 },
   },
+  shop: { clock: CLOCK, stores: STORES, armies: ARMIES, shop: { fragments: LAB_FRAGMENTS, held: false } },
+  "shop-ready": { clock: CLOCK, stores: STORES, armies: ARMIES, shop: { fragments: 1_250, held: false } },
+  "shop-held": { clock: CLOCK, stores: STORES, armies: ARMIES, shop: { fragments: LAB_FRAGMENTS, held: true } },
   "move-refill": {
     clock: CLOCK,
     stores: STORES,
@@ -1261,6 +1265,7 @@ type LabState = {
   /** The card a store's ring or plate opened. */
   storeCard?: StoreLine;
   army?: LabArmySheet;
+  shop?: { fragments: number; held: boolean };
   /**
    * A phone's picked army: the owner's Army 2 (27 October: 14/140, 100 of 126 LORDS, a level to buy), it rested, or its
    * realm holding 500 LORDS.
@@ -1469,6 +1474,16 @@ export const HudLab = () => {
         {lab.dayShare && <DayShareSheet shared={lab.dayShare} onClose={noop} />}
         {lab.alertsPopup && <AlertsPopupCard ask={{ kind: lab.alertsPopup, act: noop, notNow: noop }} />}
         {lab.army && <LabArmy army={lab.army} />}
+        {lab.shop && (
+          <ShopView
+            fragments={lab.shop.fragments}
+            pass={lab.shop.held ? { held: true } : { held: false, buying: false, onBuy: noop }}
+            questBonus={50}
+            bar={180}
+            code={<ShopCodeField />}
+            onClose={noop}
+          />
+        )}
         {(lab.realmView === "build" ||
           lab.realmView === "build-early" ||
           lab.realmView === "build-short" ||

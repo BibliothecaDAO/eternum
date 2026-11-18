@@ -245,6 +245,9 @@ export const SURFACES = [
     "building-conscription-camp",
     "building-rations-depot",
     "building-scouts-lodge",
+    "shop",
+    "shop-ready",
+    "shop-held",
   ].map((state) => ({
     name: `frontier-${state}`,
     path: `/lab/kit/hud/${state}`,
