@@ -268,7 +268,13 @@ describe("the tile card", () => {
       {
         model: "TileOpt",
         key: "0xa703",
-        value: { game_id: 1, col: 512, row: 3584, alt: false, data: BigInt(BiomeTypeToId[BiomeType.Grassland]) * BigInt(nativeTilePackingConstants.BIOME_SCALE) },
+        value: {
+          game_id: 1,
+          col: 512,
+          row: 3584,
+          alt: false,
+          data: BigInt(BiomeTypeToId[BiomeType.Grassland]) * BigInt(nativeTilePackingConstants.BIOME_SCALE),
+        },
       },
     ]);
     const other = otherArmyAt(store, 512, 3584);
