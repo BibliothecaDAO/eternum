@@ -413,9 +413,7 @@ fn held_quest_fragments(wonder: u32) -> u128 {
     assert_eq!(quest_labor(d, game_id, Some(held_realm()), false), 1500);
     let home = interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
     assert!(
-        execute_in_game(
-            d, game_id, Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home, day: 0 }), 360,
-        ),
+        execute_in_game(d, game_id, Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home, day: 0 }), 360),
     );
     interact_with_state(d.games, || crate::state::read().entry.fragments.read((game_id, d.actor)))
 }
