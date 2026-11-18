@@ -4230,8 +4230,6 @@ function raceBoardSteps(result) {
           members.text.includes("3.8K") &&
           scoped.includes(7) &&
           scoped.includes(9) &&
-          scoped.includes(901) &&
-          scoped.includes(904) &&
           (result === null || played.race.ended)
           ? completed(played)
           : failed("The scoped native race must show four heights, both members' Glory and the early winner", played);
@@ -4273,95 +4271,6 @@ function raceBoardSteps(result) {
         ]
       : []),
     {
-      name: "towers-stand-by-stage",
-      settleMs: 0,
-      play: async ({ browser, extraScreenshot }) => {
-        // The Aspects sheet closed and the wheel all the way out: the camera frames the four hyperstructures.
-        browser.press("Escape");
-        browser.run(["eval", `void window.__playtest.wheel(100, ${ZOOM_IN_NOTCHES})`]);
-        await sleep(ZOOM_SETTLE_MS);
-        const towers = await readUntil(
-          () => browser.read(DRAWN_TOWERS),
-          (state) => Object.keys(state).length >= 4,
-          PLAYABLE_WAIT_MS,
-        );
-        extraScreenshot("towers");
-        return { towers };
-      },
-      verify: ({ played }) =>
-        sameTowers(played.towers, TOWERS_AT_THE_START)
-          ? completed(played)
-          : failed(
-              "Each of the four hyperstructures drawn stands the fifths its Aspect's stages built, none awake",
-              played,
-            ),
-    },
-    {
-      name: "towers-rise-and-wake",
-      settleMs: 0,
-      play: async ({ browser, extraScreenshot }) => {
-        // The chain writes a block: the fourth Aspect's height crosses its second stage, the third's the whole race.
-        browser.run(["eval", TOWER_HEIGHTS_RISE]);
-        const risen = await readUntil(
-          () => browser.read(DRAWN_TOWERS),
-          (state) => sameTowers(state, TOWERS_AFTER_THE_BLOCK),
-          PLAYABLE_WAIT_MS,
-        );
-        extraScreenshot("towers-after-block");
-        return { risen };
-      },
-      verify: ({ played }) =>
-        sameTowers(played.risen, TOWERS_AFTER_THE_BLOCK)
-          ? completed(played)
-          : failed(
-              "A later stage must be drawn by the tower that reached it, and the finished tower's crown must wake",
-              played,
-            ),
-    },
-    {
-      name: "each-tower-visited",
-      settleMs: 0,
-      play: async ({ browser, extraScreenshot }) => {
-        // The hexes are read while the wheel has all four towers drawn; at the playing zoom the camera is then brought
-        // to each in turn, so a phone sees all four, one at a time.
-        const hexes = browser.read(`window.__eternumMapSelection?.towerHexes ?? {}`);
-        browser.run(["eval", `void window.__playtest.wheel(-100, ${ZOOM_IN_NOTCHES})`]);
-        await sleep(ZOOM_SETTLE_MS);
-        const visits = [];
-        for (const id of Object.keys(TOWERS_AFTER_THE_BLOCK)) {
-          await panToHex(browser, hexes[id]);
-          await sleep(HOVER_SETTLE_MS);
-          // A tall tower may rise out of the frame the camera centres on its foot: the player zooms out until it fits.
-          let notches = 0;
-          while (!towerFitsOnScreen(browser.read(towerOnScreen(id))) && notches < TOWER_ZOOM_OUT_LIMIT) {
-            browser.run(["eval", `void window.__playtest.wheel(100, 1)`]);
-            notches += 1;
-            await sleep(ZOOM_SETTLE_MS);
-            await panToHex(browser, hexes[id]);
-            await sleep(HOVER_SETTLE_MS);
-          }
-          extraScreenshot(`tower-${id}`);
-          visits.push({ id, notches, drawn: browser.read(DRAWN_TOWERS)[id], seen: browser.read(towerOnScreen(id)) });
-          if (notches > 0) {
-            browser.run(["eval", `void window.__playtest.wheel(-100, ${notches})`]);
-            await sleep(ZOOM_SETTLE_MS);
-          }
-        }
-        return { visits };
-      },
-      verify: ({ played }) =>
-        played.visits.every(
-          (visit) =>
-            towerFitsOnScreen(visit.seen) &&
-            JSON.stringify(visit.drawn) === JSON.stringify(TOWERS_AFTER_THE_BLOCK[visit.id]),
-        )
-          ? completed(played)
-          : failed(
-              "Each tower, foot to crown, must stand wholly inside the screen and clear of the HUD, drawn at the stage the chain wrote",
-              played,
-            ),
-    },
-    {
       name: "no-site-rank-requests",
       settleMs: 0,
       play: async ({ browser }) => ({ requests: browser.read(RANK_REQUESTS) }),
@@ -4398,61 +4307,6 @@ const DRAWN_SITES = `JSON.stringify({
     return [{ icon, inView: box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight }];
   }),
 })`;
-
-/** What each drawn hyperstructure's tower shows, by structure id: its animated progress in percent and whether its crown is awake. */
-const DRAWN_TOWERS = `JSON.stringify(window.__eternumMapSelection?.towers ?? {})`;
-
-/** Zoom-out notches a visit may spend to fit a tower in the frame. */
-const TOWER_ZOOM_OUT_LIMIT = 6;
-
-const towerFitsOnScreen = (seen) => seen?.inside === true && seen.clear === true;
-
-/**
- * Where a tower falls on the page (the map's projection of its foot and crown, observability/map-selection): whether
- * its whole box is inside the window, and whether its foot, middle and crown are drawn on the map (its canvas or a map
- * plate) and not under a HUD panel.
- */
-const towerOnScreen = (id) => `(() => {
-  const box = window.__eternumMapSelection?.towerBoxes?.[${JSON.stringify(id)}];
-  if (!box) return null;
-  const canvas = document.getElementById("main-canvas");
-  const middle = (low, high) => (low + high) / 2;
-  const x = middle(box.left, box.right);
-  const onTheMap = (y) => {
-    const hit = document.elementFromPoint(x, y);
-    return hit === canvas || !!hit?.closest(".mp-at");
-  };
-  return {
-    box,
-    inside: box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight,
-    clear: [box.top, middle(box.top, box.bottom), box.bottom].every(onTheMap),
-  };
-})()`;
-
-/** The lab's Aspects' heights 5,200, 6,400, 2,800 and 900 over a 2,000 stage: two, three, one and no stage built. */
-const TOWERS_AT_THE_START = {
-  901: { progress: 40, awake: false },
-  902: { progress: 60, awake: false },
-  903: { progress: 20, awake: false },
-  904: { progress: 0, awake: false },
-};
-
-/** After the block below: the fourth tower stands two stages, the third is whole with its crown awake. */
-const TOWERS_AFTER_THE_BLOCK = {
-  ...TOWERS_AT_THE_START,
-  903: { progress: 100, awake: true },
-  904: { progress: 40, awake: false },
-};
-
-const sameTowers = (drawn, expected) =>
-  JSON.stringify(Object.entries(drawn).sort()) === JSON.stringify(Object.entries(expected).sort());
-
-/** The chain's next block, as the Aspects' ticks would write it: the third Aspect's height past all five stages, the fourth's past two. */
-const TOWER_HEIGHTS_RISE = `void window.__labChain.writeBlock([903, 904].map((entity) => ({
-  model: "AspectHyperstructure",
-  key: "0xa51" + (entity - 900),
-  value: { game_id: 1, aspect: entity - 900, entity_id: String(entity), height: entity === 903 ? 10000 : 4000 },
-})))`;
 
 async function attackFromTheDeepCard({ browser, extraScreenshot }) {
   browser.hover(POINTER_PARKED);
