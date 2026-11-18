@@ -849,6 +849,9 @@ const chooseFirstOrder = async (browser) => {
 const ASPECT_SETTLES = `JSON.stringify((window.__labChain?.sent ?? [])
   .filter(({ command }) => command.kind === "SettleSeason")
   .map(({ command }) => command.calldata.slice(5).map((felt) => BigInt(felt).toString())))`;
+const FOUNDED_ASPECTS = `JSON.stringify((window.__labChain?.sent ?? [])
+  .filter(({ command }) => command.kind === "SettleSeason")
+  .map(({ answered }) => Number((answered ?? []).find(({ model }) => model === "HomeAspect")?.value?.aspect)))`;
 
 /**
  * A founding by an account a friend's Aspect invite brought: the Aspect step opens with Harmony first, tagged Invited and
@@ -876,7 +879,12 @@ const ASPECT_SETTLE_INVITED_STEPS = [
         (signed) => signed.length > 0,
         PLAYABLE_WAIT_MS,
       );
-      return { cards, line, orders, settles };
+      const aspects = await readUntil(
+        () => browser.read(FOUNDED_ASPECTS),
+        (founded) => founded.length > 0 && founded.every(Number.isFinite),
+        PLAYABLE_WAIT_MS,
+      );
+      return { cards, line, orders, settles, aspects };
     },
     verify: ({ played }) =>
       JSON.stringify(played.cards.map(({ label, invite }) => [label, invite])) ===
@@ -888,7 +896,8 @@ const ASPECT_SETTLE_INVITED_STEPS = [
         ]) &&
       played.line === "Linden invited you to Harmony" &&
       played.settles.length === 1 &&
-      JSON.stringify(played.settles[0]) === JSON.stringify(["1", "0", played.orders[0].order])
+      JSON.stringify(played.settles[0]) === JSON.stringify(["1", "0", played.orders[0].order]) &&
+      JSON.stringify(played.aspects) === JSON.stringify([2])
         ? completed(played)
         : failed(
             "The invited player must meet Harmony first, tagged and named, and found in the Order tapped inside it",
