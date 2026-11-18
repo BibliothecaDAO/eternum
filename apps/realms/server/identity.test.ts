@@ -1448,15 +1448,6 @@ describe("identity Worker", () => {
       "a seed of at least thirty-two secret characters",
     );
     const [alpha, brave, charm] = codes as [string, string, string];
-    const listed = await env.DB.prepare(
-      `SELECT "url", "chainId" FROM "shards" WHERE "status" IN ('active', 'draining')`,
-    ).all<{ url: string; chainId: string }>();
-    for (const { url, chainId } of listed.results) {
-      const games = `${url}/games`;
-      const before = heralds.get(games);
-      heralds.set(games, { chain: chainId, games: [] });
-      onTestFinished(() => void (before === undefined ? heralds.delete(games) : heralds.set(games, before)));
-    }
     const runOperatorFile = async () => {
       for (const statement of sql.split(";\n").filter((each) => each.trim() !== ""))
         await env.DB.prepare(statement).run();
