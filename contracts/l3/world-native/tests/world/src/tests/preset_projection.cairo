@@ -122,7 +122,7 @@ fn invalid_deep_rules_leave_no_preset_registered() {
         } else if invalid == 10 {
             deep.loss_per_tick = 0;
         } else if invalid == 11 {
-            deep.altar_threshold = 1501;
+            deep.altar_threshold = 0;
         } else {
             deep.core_per_tick = 0;
         }
