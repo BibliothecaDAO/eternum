@@ -157,7 +157,9 @@ fn factory_initializes_four_height_counters_without_map_structures() {
             }
         },
     );
-    let (ordinary, ordinary_game) = super::aspects::setup_aspects(5);
+    let (_, mut ordinary_preset) = world_test_support::tests::preset_projection::current_definition("frontier-check");
+    ordinary_preset.economy.race = None;
+    let (ordinary, ordinary_game) = super::aspects::setup_aspect_preset(5, ordinary_preset);
     interact_with_state(
         ordinary.games,
         || {

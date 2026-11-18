@@ -183,6 +183,9 @@ fn frontier_attacks_refuse_allies_and_personal_maps_but_allow_rivals_in_the_deep
         ),
     );
     refused(d, game_id, attack(attacker.explorer_id, enemy.explorer_id), "army combat requires Deep");
+    super::deep_sites::descend(d, attacker);
+    super::deep_sites::descend(ally, friend);
+    super::deep_sites::descend(rival, enemy);
     let center = crate::deep::center(preset.settlement.spacing);
     set_explorer_fixture(d.games, attacker, ExplorerTroops { coord: center, ..army(d, attacker) });
     set_explorer_fixture(
