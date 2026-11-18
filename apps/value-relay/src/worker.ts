@@ -71,6 +71,7 @@ interface RelayEnv extends RelaySettings {
       realmsId: string,
       presetId: number,
     ): Promise<{ campaign: string; tier: "regular" | "golden" } | null>;
+    holdsSeal(realmsId: string): Promise<boolean>;
     recordPayDecisions(decisions: import("@realms-world/identity").LedgerPayDecision[]): Promise<void>;
     ratingsChanged(): Promise<void>;
     linkedWallet(id: string): Promise<string | null>;

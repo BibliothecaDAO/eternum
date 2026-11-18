@@ -1,5 +1,5 @@
 use starknet::Event;
-use starknet::storage::{StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
 
 pub fn assert_ledger_operator() {
@@ -132,6 +132,10 @@ pub mod EntryAdministration {
                 )) => Some(LaborGrant { game_id: home.game_id, account, home: home.home, amount, essence }),
                 None => None,
             }
+        }
+        fn grant_seal(ref self: ComponentState<TContractState>, game_id: u32, account: ContractAddress) {
+            super::assert_ledger_operator();
+            super::grant_seal(game_id, account)
         }
     }
     #[embeddable_as(ResourceContextImpl)]
@@ -285,6 +289,27 @@ pub fn grant_home_amounts(
         0
     };
     (amount, essence)
+}
+
+pub fn grant_seal(game_id: u32, account: starknet::ContractAddress) {
+    assert!(account != 0.try_into().unwrap(), "invalid seal account");
+    let game = crate::logic::game::game(game_id);
+    let timestamp = starknet::get_block_timestamp();
+    assert!(game.end_at == 0 || timestamp < game.end_at, "game ended");
+    if crate::state::read().entry.seals.read((game_id, account)).is_some() {
+        return;
+    }
+    crate::state::write().entry.seals.write((game_id, account), Some(timestamp));
+    crate::logic::map::MapState::emit(
+        crate::logic::map::MapState::Event::RowSet(
+            crate::events::RowSet {
+                version: 1,
+                model: 'Seal',
+                keys: array![game_id.into(), account.into()].span(),
+                values: array![timestamp.into()].span(),
+            },
+        ),
+    );
 }
 
 pub fn record_labor_grant(day: u64, grant: crate::entry::LaborGrant) {

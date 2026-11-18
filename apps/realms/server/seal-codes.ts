@@ -24,7 +24,8 @@ function serveSealCode(request: Request, auth: IdentityAuth, db: D1Database) {
     });
     if (!session?.user.realmsId) return json({ error: "unauthorized" }, 401);
     const owner = session.user.realmsId;
-    if (request.method === "GET") return json({ held: (yield* ownsSeal(db, owner)) || (yield* holdsCode(db, owner)) });
+    if (request.method === "GET")
+      return json({ held: (yield* ownsSeal(db, owner)) || (yield* sealStorage(() => holdsFreeSeal(db, owner))) });
     if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
     if (request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json")
       return json({ error: "json_required" }, 415);
@@ -33,7 +34,7 @@ function serveSealCode(request: Request, auth: IdentityAuth, db: D1Database) {
       catch: () => new SealCodeError({ code: "invalid_code", status: 400 }),
     });
     if (code === null) return refuse("invalid_code", 400);
-    if (yield* ownsSeal(db, owner)) return refuse("seal_owned", 409);
+    if ((yield* ownsSeal(db, owner)) || (yield* holdsTicket(db, owner))) return refuse("seal_owned", 409);
     yield* holdCode(db, owner, code);
     return (yield* holdsCode(db, owner)) ? json({ held: true }) : refuse("code_unavailable", 410);
   });
@@ -42,6 +43,18 @@ function serveSealCode(request: Request, auth: IdentityAuth, db: D1Database) {
 const refuse = (refusal: SealCodeRefusal, status: 400 | 409 | 410) => json({ error: refusal }, status);
 
 const ownsSeal = (db: D1Database, owner: string) => sealStorage(async () => (await readSeal(db, owner)) !== null);
+
+export const holdsFreeSeal = async (db: D1Database, owner: string) =>
+  (await db
+    .prepare('SELECT 1 FROM "seal_codes" WHERE "owner" = ?1 UNION ALL SELECT 1 FROM "campaign_tickets" WHERE "owner" = ?1')
+    .bind(owner)
+    .first()) !== null;
+
+const holdsTicket = (db: D1Database, owner: string) =>
+  sealStorage(async () => {
+    const held = await db.prepare('SELECT 1 FROM "campaign_tickets" WHERE "owner" = ?').bind(owner).first();
+    return held !== null;
+  });
 
 const holdsCode = (db: D1Database, owner: string) =>
   sealStorage(async () => {

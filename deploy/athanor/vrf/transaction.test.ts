@@ -48,6 +48,7 @@ test("only the single data-listed Games entries admit administrative invokes", (
     "set_launcher",
     "set_ledger_operator",
     "grant_labor",
+    "grant_seal",
     "publish_frontier_pool",
     "configure_deposits",
     "deliver_deposit",

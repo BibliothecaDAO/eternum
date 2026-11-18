@@ -139,13 +139,13 @@ describe("daily quest facts", () => {
     });
   });
 
-  it.each(["held", "campaign"])("applies only the labor bonus to a %s home at the completed level", (source) => {
+  it.each(["held", "sealed"])("applies only the labor bonus to a %s home at the completed level", (source) => {
     const { store, read, progress } = fixture();
     progress(30, 2);
     store.applyFacts([
       source === "held"
         ? { model: "SettledRealm", key: "1:123", value: { game_id: 1, realm_id: 123, home: 7 } }
-        : { model: "CampaignHome", key: "1:7", value: { game_id: 1, home: 7, campaign_id: 9, tier: 1 } },
+        : { model: "Seal", key: "1:0x111", value: { game_id: 1, account: "0x111", granted_at: 100 } },
     ]);
     expect(read()?.reading.known).toMatchObject({
       target: 30n,
@@ -307,7 +307,7 @@ describe("recorded bane quest rewards", () => {
     const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
     store.applyFacts([
       { model: "Structure", key: "1:7", value: { ...realm, base: { ...realm.base, level: 3 } } },
-      { model: "CampaignHome", key: "0xd006", value: { game_id: 1, home: 7, campaign_id: 9, tier: 1 } },
+      { model: "Seal", key: "0xd006", value: { game_id: 1, account: "0x111", granted_at: 100 } },
     ]);
     win();
     expect(read()?.reading.known).toMatchObject({

@@ -1442,7 +1442,7 @@ describe("identity Worker", () => {
     expect((await createBrowser().request("/api/order-intent")).status).toBe(401);
   });
 
-  it("holds one free Seal code on an account: case-blind, the same answer again, none from a taken, expired or unknown code, and no code spent on an account that has the Seal", async () => {
+  it("holds one free Seal code on an account: case-blind, the same answer again, none from a taken, expired or unknown code, and no code spent on an account that has the Seal or a campaign ticket", async () => {
     const { codes, sql } = await sealCodeFiles(
       { label: "playtest", count: 3, expiresAt: null },
       "a seed of at least thirty-two secret characters",
@@ -1492,6 +1492,14 @@ describe("identity Worker", () => {
     expect(await third.redeem(charm)).toEqual([409, { error: "seal_owned" }]);
     const fourth = await player("seal-four");
     expect(await fourth.redeem(charm)).toEqual([200, { held: true }]);
+    const ticketed = await player("seal-ticket");
+    await env.DB.prepare(
+      `INSERT INTO "campaign_tickets" ("campaign", "owner", "code_hash", "tier", "redeemed_at") VALUES ('devcon-2026', ?, NULL, 'golden', 1)`,
+    )
+      .bind(ticketed.realmsId)
+      .run();
+    expect(await ticketed.held()).toEqual({ held: true });
+    expect(await ticketed.redeem("LATE2345")).toEqual([409, { error: "seal_owned" }]);
     expect((await createBrowser().request("/api/seal-code")).status).toBe(401);
   });
 

@@ -192,6 +192,13 @@ pub mod Games {
                 day,
             )
         }
+        fn grant_seal(ref self: ContractState, game_id: u32, account: ContractAddress) {
+            crate::entry::IHomeGrantsDispatcherTrait::grant_seal(
+                crate::entry::IHomeGrantsLibraryDispatcher { class_hash: self.release.classes(game_id).bridge.read() },
+                game_id,
+                account,
+            )
+        }
     }
     #[storage]
     #[allow(starknet::colliding_storage_paths)]

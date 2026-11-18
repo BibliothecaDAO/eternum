@@ -15,7 +15,7 @@ export const DAILY_QUEST_MODELS = [
   "QuestProgress",
   "LaborGrant",
   "BaneGrant",
-  "CampaignHome",
+  "Seal",
   "SettledRealm",
 ] as const;
 
@@ -112,7 +112,7 @@ function readQuestFacts(store: NativeFactStore, at: QuestAt, bane: BaneDay | nul
   const extra: NativeFactResult<{ row: NativeRows["BaneGrant"] | undefined }> =
     bane?.type === "world" ? readReceipt(store, "BaneGrant", key, at.structure.owner) : { known: { row: undefined } };
   if (!extra.known) return extra;
-  const bonus = readLaborBonus(store, game_id, home);
+  const bonus = readLaborBonus(store, game_id, home, at.structure.owner);
   if (!bonus.known) return bonus;
   return {
     known: {
@@ -135,19 +135,22 @@ function readReceipt(
   return absent.known ? { known: { row: undefined } } : { unknown: absent.unknown };
 }
 
-function readLaborBonus(store: NativeFactStore, gameId: number, home: number): NativeFactResult<{ present: boolean }> {
-  const campaign = presentOrKnownAbsent(store, "CampaignHome", store.get("CampaignHome", { game_id: gameId, home }), {
-    game_id: gameId,
-    home,
-  });
-  if (!campaign.known || campaign.known.present) return campaign;
+function readLaborBonus(
+  store: NativeFactStore,
+  gameId: number,
+  home: number,
+  owner: bigint,
+): NativeFactResult<{ present: boolean }> {
+  const sealKey = { game_id: gameId, account: owner };
+  const seal = presentOrKnownAbsent(store, "Seal", store.get("Seal", sealKey), sealKey);
+  if (!seal.known || seal.known.present) return seal;
   const held = heldRealmForHome(store, { gameId, entityId: home }) !== null;
   return presentOrKnownAbsent(store, "SettledRealm", held || undefined, { game_id: gameId, home });
 }
 
 function presentOrKnownAbsent(
   store: NativeFactStore,
-  model: "CampaignHome" | "SettledRealm",
+  model: "Seal" | "SettledRealm",
   present: unknown,
   row: Record<string, unknown>,
 ): NativeFactResult<{ present: boolean }> {
