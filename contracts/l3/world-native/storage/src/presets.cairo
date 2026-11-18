@@ -84,5 +84,7 @@ pub struct PresetStorage<
     pub bane_rules: Option<(u16, u16, u16, u16, u16)>,
     pub bane_quest_counts: Map<u8, u128>,
     pub deep_rules: Option<TDeepRules>,
+    pub deep_rings: Map<u8, (u32, u32)>,
+    pub deep_beasts: Map<u8, (u128, bool)>,
     pub race_rules: Option<TRaceRules>,
 }

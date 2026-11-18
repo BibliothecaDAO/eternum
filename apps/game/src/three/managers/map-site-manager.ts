@@ -25,16 +25,12 @@ import { HyperstructureModel } from "../structures/hyperstructure-model";
 /** How a Deep site stands on the map: the hyperstructure's own foundation, or a model's file. */
 type DeepSiteLook = { kind: "hyperstructure-foundation" } | { kind: "model"; path: () => string };
 
-/**
- * Each of the Deep's sites as the map draws it (the owner's pick eternum/s1-sites, 13 November 2026): the Foundation a
- * hyperstructure's foundation, the Quarry a fragment mine, the Altar a Shrine until its own model comes. Keyed by the
- * Deep's catalog, so a site the game adds does not compile until it has its look.
- */
 const DEEP_SITE_LOOKS = {
   foundation: { kind: "hyperstructure-foundation" },
-  quarry: { kind: "model", path: () => MineKinds[2].model },
+  core: { kind: "model", path: () => MineKinds[1].model },
+  mine: { kind: "model", path: () => MineKinds[2].model },
   altar: { kind: "model", path: () => frontierPaintedPath("shrine") },
-} as const satisfies Record<(typeof deepSites)[number]["position"], DeepSiteLook>;
+} as const satisfies Record<(typeof deepSites)[number]["key"], DeepSiteLook>;
 
 /** A site the manager draws: which tiles it stands on, and the model it loads once a tile of it is seen. */
 type DrawnSite = {
@@ -61,9 +57,9 @@ export class MapSiteManager {
   private destroyed = false;
   private readonly sites: DrawnSite[] = [
     ...deepSites.map((kind) => {
-      const look: DeepSiteLook = DEEP_SITE_LOOKS[kind.position];
+      const look: DeepSiteLook = DEEP_SITE_LOOKS[kind.key];
       return {
-        key: `deep:${kind.position}`,
+        key: `deep:${kind.key}`,
         name: kind.name,
         stands: (tile: TileSpatialRenderable) =>
           tile.occupierType === TileOccupier.DeepSite && this.deepKindOf(tile.occupierId) === kind.id,
@@ -198,7 +194,7 @@ export class MapSiteManager {
       col: tile.hexCoords.col - FELT_CENTER(),
       row: tile.hexCoords.row - FELT_CENTER(),
     });
-    placePositionOnTerrain(position, this.terrain, (this.heights.get(`deep:${kind.position}`) ?? 0) + PLATE_CLEARANCE);
+    placePositionOnTerrain(position, this.terrain, (this.heights.get(`deep:${kind.key}`) ?? 0) + PLATE_CLEARANCE);
     return {
       entityId: tile.occupierId,
       position,
@@ -208,7 +204,7 @@ export class MapSiteManager {
         name: kind.name,
         named: false,
         owner: "",
-        icon: DEEP_SITE_FACES[kind.position].icon,
+        icon: DEEP_SITE_FACES[kind.key].icon,
         guards: null,
         arrivals: [],
       },

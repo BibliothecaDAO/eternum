@@ -32,7 +32,7 @@ import { STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { useSelectedOwnArmy } from "../sites/selected-army";
 import { DeepSiteView, type DeepBlock, type DeepGuard, type DeepOrder, type DeepTickPay } from "./deep-site-view";
 
-const MODELS = [...STAMINA_MODELS, ...GUARD_MODELS, "DeepSite", "ArmyRelicEffect", "ChestRules", "AltarBar"] as const;
+const MODELS = [...STAMINA_MODELS, ...GUARD_MODELS, "DeepSite", "DeepEntries", "ArmyRelicEffect", "ChestRules", "AltarBar"] as const;
 
 export function useSelectedDeepSite(): Site | null {
   const { setup } = useGame();
@@ -104,7 +104,7 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
   const catalog = deepSites.find((kind) => kind.id === site.kind)!;
   return (
     <DeepSiteView
-      site={catalog.position}
+      site={catalog.key}
       pay={tickPay(setup.store, game_id, site, selected)}
       guard={guardView(setup.store, game_id, site, selected, now)}
       fight={
@@ -126,7 +126,7 @@ function tickPay(store: NativeFactStore, game_id: number, site: Site, selected: 
   if (!race && !store.absenceKnown("RaceRules", { game_id }).known) return null;
   const banes = store.get("BaneRules", { game_id });
   if (!banes && !store.absenceKnown("BaneRules", { game_id }).known) return null;
-  const quarry = site.kind === nativeRuleConstants.DEEP_QUARRY;
+  const paysResources = site.kind === nativeRuleConstants.DEEP_CORE || site.kind === nativeRuleConstants.DEEP_MINE;
   const altar = site.kind === nativeRuleConstants.DEEP_ALTAR;
   const home = site.guards[0]?.army.owner ?? selected?.army.owner;
   const holder = home === undefined ? undefined : homeAspect(store, game_id, home);
@@ -137,9 +137,10 @@ function tickPay(store: NativeFactStore, game_id: number, site: Site, selected: 
     bar = { perTick: deep.altar_per_tick, charge: reading.known.charge, threshold: deep.altar_threshold };
   }
   return {
-    glory: quarry ? 0 : Number(race?.glory_per_tick ?? 0),
+    glory: paysResources ? 0 : Number(race?.glory_per_tick ?? 0),
     height: site.kind === nativeRuleConstants.DEEP_FOUNDATION ? (race?.height_per_tick ?? 0) : 0,
-    resources: quarry ? Number(deep.quarry_per_tick) / RESOURCE_PRECISION : 0,
+    essence: site.kind === nativeRuleConstants.DEEP_CORE ? Number(deep.core_per_tick) / RESOURCE_PRECISION : 0,
+    labor: site.kind === nativeRuleConstants.DEEP_MINE ? Number(deep.mine_per_tick) / RESOURCE_PRECISION : 0,
     bar,
   };
 }
@@ -150,6 +151,7 @@ function selectionBlock(
   site: Site,
   selected: Selected,
 ): DeepBlock | undefined {
+  if (!site.open) return "closed";
   if (!selected) return "pickArmy";
   const key = { game_id, explorer_id: selected.army.explorer_id };
   if (store.get("DeepGuard", key)) return "guarding";

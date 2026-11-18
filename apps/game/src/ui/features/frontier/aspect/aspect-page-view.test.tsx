@@ -59,7 +59,7 @@ describe("the Aspect page", () => {
     expect(members.indexOf("Aldor")).toBeLessThan(members.indexOf("Brek"));
     expect(members).toContain("Guards the Foundation");
     expect(members).toContain("Guards the Altar");
-    expect(members).toContain("Guards the Quarry");
+    expect(members).toContain("Guards the Ethereal mine");
     expect(members).toContain("1.2K");
   });
 

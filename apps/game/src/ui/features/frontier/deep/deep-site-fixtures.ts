@@ -30,7 +30,7 @@ const withShares = (slots: DeepSlot[]): DeepSlot[] => {
 
 const noop = () => {};
 const base = { onClose: noop };
-const pay = { glory: 5, height: 0, resources: 0, bar: null };
+const pay = { glory: 5, height: 0, essence: 0, labor: 0, bar: null };
 
 /** The card's states on fixtures of its props: what the lab draws and the test asserts. */
 export const DEEP_SITE_CASES = {
@@ -41,10 +41,10 @@ export const DEEP_SITE_CASES = {
     guard: { kind: "beast", category: "Knight", troops: 10_000 },
     order: { kind: "act", verb: "attack", onAct: noop },
   },
-  "Quarry, army short of stamina": {
+  "Ethereal mine, army short of stamina": {
     ...base,
-    site: "quarry",
-    pay: { glory: 0, height: 0, resources: 500, bar: null },
+    site: "mine",
+    pay: { ...pay, glory: 0, labor: 300 },
     guard: { kind: "beast", category: "Knight", troops: 10_000 },
     order: { kind: "short", verb: "attack", line: "Needs 30 stamina, holds 12" },
   },
@@ -67,10 +67,10 @@ export const DEEP_SITE_CASES = {
     },
     order: "rival",
   },
-  "Quarry held by the player's Aspect, a free slot to join": {
+  "Ethereal mine held by the player's Aspect, a free slot to join": {
     ...base,
-    site: "quarry",
-    pay: { glory: 0, height: 0, resources: 500, bar: null },
+    site: "mine",
+    pay: { ...pay, glory: 0, labor: 300 },
     guard: {
       kind: "held",
       aspect: "Might",

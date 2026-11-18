@@ -85,31 +85,36 @@ fn the_fixture_preset_stores_the_exact_deep_sites_and_tick_rules() {
 fn invalid_deep_rules_leave_no_preset_registered() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
-    for invalid in 0_u8..9 {
+    for invalid in 0_u8..13 {
         let (preset_id, mut definition) = current_definition("frontier-check");
         let mut deep = definition.economy.deep.unwrap();
+        let ring = |radius: u32, realms: u32| crate::deep::DeepRing { radius, realms };
         if invalid == 0 {
             definition.settlement.order_aspects = array![].span();
         } else if invalid == 1 {
             definition.rules.day_unit_seconds = 0;
         } else if invalid == 2 {
-            deep.altar = deep.quarry;
+            deep.rings = array![].span();
         } else if invalid == 3 {
-            deep.foundation.x = crate::rules::DEEP_MAP_SIZE;
+            deep.rings = array![ring(5, 30)].span();
         } else if invalid == 4 {
-            deep
-                .foundation =
-                    crate::troops::Coord {
-                        alt: false, x: crate::rules::DEEP_MAP_SIZE / 2, y: crate::rules::DEEP_ARRIVAL_Y,
-                    };
+            deep.rings = array![ring(5, 0), ring(8, 30), ring(11, 30)].span();
         } else if invalid == 5 {
-            deep.beast_count = 1;
+            deep.rings = array![ring(5, 0), ring(8, 1), ring(11, 2), ring(8, 3), ring(11, 4), ring(14, 5)].span();
         } else if invalid == 6 {
-            deep.loss_per_tick = 0;
+            deep.rings = array![ring(5, 0), ring(6, 30)].span();
         } else if invalid == 7 {
+            deep.rings = array![ring(20, 0)].span();
+        } else if invalid == 8 {
+            deep.gate_distance = 5;
+        } else if invalid == 9 {
+            deep.beasts = deep.beasts.slice(0, 3);
+        } else if invalid == 10 {
+            deep.loss_per_tick = 0;
+        } else if invalid == 11 {
             deep.altar_threshold = 1501;
         } else {
-            deep.quarry_per_tick = 0;
+            deep.core_per_tick = 0;
         }
         definition.economy.deep = Some(deep);
         assert!(IRegistrarSafeDispatcher { contract_address: d.games }.register_preset(preset_id, definition).is_err());

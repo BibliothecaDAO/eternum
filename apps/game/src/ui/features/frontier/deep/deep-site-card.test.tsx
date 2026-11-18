@@ -13,7 +13,7 @@ import { baneScenario } from "@/lab/game/bane-scenario";
 import { configManager, type ResourceManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { readArmyMovementReadiness } from "@/ui/features/world/components/armies/army-movement-readiness";
-import { readDeepSites } from "@bibliothecadao/eternum/game-client";
+import { nativeRuleConstants, readDeepSites } from "@bibliothecadao/eternum/game-client";
 import { DeepSiteCard } from "./deep-site-card";
 import { resolveExplorerCombatTroops, resolveExplorerTroops, staminaAt } from "@bibliothecadao/eternum/troop-stamina";
 import { FrontierArmy } from "../army/frontier-army";
@@ -56,7 +56,7 @@ const draw = (now?: number, scenario = deepScenario()) => {
         >
           {content ?? (
             <DeepSiteCard
-              site={readDeepSites(store, startsAt, 1).find((site) => site.name === "Quarry")!}
+              site={readDeepSites(store, startsAt, 1).find((site) => site.kind === nativeRuleConstants.DEEP_MINE)!}
               onClose={() => {}}
             />
           )}
@@ -77,29 +77,31 @@ describe("the Deep site's live native binding", () => {
     ]);
     const hud = draw(undefined, scenario);
     try {
-      expect(hud.host.querySelector("[data-deep-pay]")?.textContent).toContain("500");
+      const rules = hud.store.require("DeepRules", { game_id: 1 });
+      const perTick = (amount: bigint) => Number(amount / BigInt(RESOURCE_PRECISION));
+      expect(hud.host.querySelector("[data-deep-pay]")?.textContent).toContain(`${perTick(rules.mine_per_tick)} labor`);
       const sites = readDeepSites(hud.store, scenario.startsAt, 1);
       for (const site of sites) {
         hud.render(<DeepSiteCard site={site} onClose={() => {}} />);
         const pay = hud.host.querySelector("[data-deep-pay]")!.textContent;
-        if (site.name === "Quarry") expect(pay).toContain("500");
+        if (site.kind === nativeRuleConstants.DEEP_MINE) expect(pay).toContain(`${perTick(rules.mine_per_tick)} labor`);
+        else if (site.kind === nativeRuleConstants.DEEP_CORE)
+          expect(pay).toContain(`${perTick(rules.core_per_tick)} Essence`);
         else expect(pay).toContain("5 Glory");
-        if (site.name === "Foundation") expect(pay).toContain("+5 height");
-        if (site.name === "Altar") expect(pay).toContain("300 of 1,500");
+        if (site.kind === nativeRuleConstants.DEEP_FOUNDATION) expect(pay).toContain("+5 height");
+        if (site.kind === nativeRuleConstants.DEEP_ALTAR) expect(pay).toContain("300 of 1,500");
       }
-      const rules = hud.store.require("DeepRules", { game_id: 1 });
       act(() =>
         hud.store.applyFacts([
           {
             model: "DeepRules",
             key: hud.store.wireKeyOf("DeepRules", rules)!,
-            value: { ...rules, quarry_per_tick: 600n * BigInt(RESOURCE_PRECISION) },
+            value: { ...rules, mine_per_tick: 600n * BigInt(RESOURCE_PRECISION) },
           },
         ]),
       );
       hud.render();
-      expect(hud.host.querySelector("[data-deep-pay]")?.textContent).toContain("600");
-      expect(hud.host.querySelector("[data-deep-pay]")?.textContent).not.toContain("500");
+      expect(hud.host.querySelector("[data-deep-pay]")?.textContent).toContain("600 labor");
     } finally {
       hud.unmount();
     }
@@ -111,7 +113,7 @@ describe("the Deep site's live native binding", () => {
       expect(hud.host.textContent).toContain("Held by Might");
       expect(hud.button("Join")?.disabled).toBe(false);
       await act(async () => hud.button("Join")!.click());
-      const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find((site) => site.name === "Quarry")!;
+      const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find((site) => site.kind === nativeRuleConstants.DEEP_MINE)!;
       expect(hud.join).toHaveBeenCalledTimes(1);
       expect(hud.join).toHaveBeenCalledWith(expect.objectContaining({ explorer_id: 201, coord: site.position }));
       expect(hud.attack).not.toHaveBeenCalled();
@@ -159,10 +161,10 @@ describe("the Deep site's live native binding", () => {
       expect(hud.button("Join")).toBeUndefined();
       expect(hud.button("Attack")?.disabled).toBe(false);
       await act(async () => hud.button("Attack")!.click());
-      const quarry = readDeepSites(hud.store, hud.scenario.startsAt, 1).find((site) => site.name === "Quarry")!;
+      const mine = readDeepSites(hud.store, hud.scenario.startsAt, 1).find((site) => site.kind === nativeRuleConstants.DEEP_MINE)!;
       expect(hud.attack).toHaveBeenCalledTimes(1);
       expect(hud.attack).toHaveBeenCalledWith(
-        expect.objectContaining({ explorer_id: 201, structure_id: Number(quarry.id) }),
+        expect.objectContaining({ explorer_id: 201, structure_id: Number(mine.id) }),
       );
       expect(hud.join).not.toHaveBeenCalled();
     } finally {
@@ -183,7 +185,7 @@ it("refreshes stamina from guard membership alone and keeps a missing position u
       ]),
     );
     expect(hud.host.textContent).toBe("unknown");
-    const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find((site) => site.name === "Quarry")!;
+    const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find((site) => site.kind === nativeRuleConstants.DEEP_MINE)!;
     const membership = { game_id: 1, explorer_id: 201n, site_id: site.id, slot: 1 };
     act(() => hud.store.applyFacts([{ model: "DeepGuard", key: "0xdeed", value: membership }]));
     expect(hud.host.textContent).toBe("60");
@@ -270,7 +272,7 @@ it("previews the Deep guard's opening and repeated exchange before sending each 
       expect(labels().some((label) => label?.includes(`→ ${enemyLeft},`))).toBe(true);
       expect(hud.button("Attack")?.disabled).toBe(false);
       await act(async () => hud.button("Attack")!.click());
-      const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find(({ name }) => name === "Quarry")!;
+      const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find(({ kind }) => kind === nativeRuleConstants.DEEP_MINE)!;
       const answer = hud.scenario.answer(
         {
           kind: "BattleGuard",
@@ -336,7 +338,7 @@ it("shows every held guard crest and refreshes it from the progress fact", () =>
     const crests = () => hud.host.querySelector("[data-guard-oaths]");
     expect([...crests()!.children].map((node) => node.textContent)).toEqual(["Giants", "Protection", "Power"]);
     expect(crests()!.querySelectorAll("img")).toHaveLength(3);
-    const guard = readDeepSites(hud.store, hud.scenario.startsAt, 1).find((site) => site.name === "Quarry")!.guards[0]!
+    const guard = readDeepSites(hud.store, hud.scenario.startsAt, 1).find((site) => site.kind === nativeRuleConstants.DEEP_MINE)!.guards[0]!
       .army;
     const progress = hud.store.require("ArmyProgress", guard);
     act(() =>

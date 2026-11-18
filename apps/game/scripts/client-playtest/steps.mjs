@@ -4011,12 +4011,13 @@ const POINTER_PARKED = [0, -300];
 /** An army's tile below its token at the map's default zoom (a player run never zooms): its label point's height. */
 const TOKEN_ABOVE_TILE_PX = 100;
 
-/** The Deep's three sites as the map draws them: the name on each plate and the key `drawnSites` counts it by. */
 const DEEP_SITE_NAMES = [
-  { name: "Foundation", key: "deep:foundation", icon: "hyperstructure" },
-  { name: "Quarry", key: "deep:quarry", icon: "pickaxe" },
-  { name: "Altar", key: "deep:altar", icon: "flame" },
+  { name: "Hyperstructure archive", key: "deep:foundation", icon: "hyperstructure" },
+  { name: "Essence core", key: "deep:core", icon: "essence" },
+  { name: "Ethereal mine", key: "deep:mine", icon: "pickaxe" },
+  { name: "Bane altar", key: "deep:altar", icon: "flame" },
 ];
+const JOINED_SITE = DEEP_SITE_NAMES.find(({ key }) => key === "deep:mine");
 
 /** One Deep site's plate, found by its name: where a press on its model lands (page px from the centre), whether its plate stands wholly in the frame, and the card open now. */
 const siteState = ({ name, icon }) => `JSON.stringify((() => {
@@ -4027,13 +4028,12 @@ const siteState = ({ name, icon }) => `JSON.stringify((() => {
   return {
     sheet,
     // The plate floats over the site's model: the press goes to the model under it, not to the hex behind the plate.
-    token: [Math.round(box.left + box.width / 2 - innerWidth / 2), Math.round(box.bottom + ${QUARRY_BELOW_PLATE} - innerHeight / 2)],
+    token: [Math.round(box.left + box.width / 2 - innerWidth / 2), Math.round(box.bottom + ${SITE_MODEL_BELOW_PLATE} - innerHeight / 2)],
     inView: box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight,
   };
 })())`;
 
-/** How far under its plate the Quarry's model stands on the lab camera, in page pixels. */
-const QUARRY_BELOW_PLATE = 65;
+const SITE_MODEL_BELOW_PLATE = 65;
 
 const DEEP_JOIN_STATE = `JSON.stringify({
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
@@ -4045,13 +4045,13 @@ const DEEP_JOIN_STATE = `JSON.stringify({
     return { text: node?.textContent ?? "", visible: Boolean(rect && rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.bottom <= innerHeight) };
   })(),
   joined: (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "InteractSite"),
-  quarry: (() => {
+  joinSite: (() => {
     const slot = [...document.querySelectorAll('.mp-at')].find((node) =>
-      node.querySelector('[data-icon="pickaxe"]') || node.querySelector('.mp-word')?.textContent === "Quarry");
+      node.querySelector('[data-icon="pickaxe"]') || node.querySelector('.mp-word')?.textContent === "${JOINED_SITE.name}");
     if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return null;
     const token = slot.firstElementChild.getBoundingClientRect();
     // The plate floats over the site's model: the press goes to the model under it, not to the hex behind the plate.
-    return [Math.round(token.left + token.width / 2 - innerWidth / 2), Math.round(token.bottom + ${QUARRY_BELOW_PLATE} - innerHeight / 2)];
+    return [Math.round(token.left + token.width / 2 - innerWidth / 2), Math.round(token.bottom + ${SITE_MODEL_BELOW_PLATE} - innerHeight / 2)];
   })(),
 })`;
 
@@ -4455,10 +4455,10 @@ async function attackFromTheDeepCard({ browser, extraScreenshot }) {
   browser.hover(POINTER_PARKED);
   await sleep(HOVER_SETTLE_MS);
   const before = browser.read(DEEP_JOIN_STATE);
-  if (!before.quarry) return { before };
-  if (before.sheet !== "Quarry") {
-    if (onADesktop()) browser.rightClick(before.quarry);
-    else browser.tap(before.quarry);
+  if (!before.joinSite) return { before };
+  if (before.sheet !== JOINED_SITE.name) {
+    if (onADesktop()) browser.rightClick(before.joinSite);
+    else browser.tap(before.joinSite);
   }
   const opened = await readUntil(
     () => browser.read(MERGE_STATE),
@@ -4518,11 +4518,11 @@ async function attackFromTheDeepCard({ browser, extraScreenshot }) {
     Boolean,
     MERGE_WAIT_MS,
   );
-  if (onADesktop()) browser.rightClick(before.quarry);
-  else browser.tap(before.quarry);
+  if (onADesktop()) browser.rightClick(before.joinSite);
+  else browser.tap(before.joinSite);
   await readUntil(
     () => browser.read(DEEP_JOIN_STATE),
-    (state) => state.sheet === "Quarry",
+    (state) => state.sheet === JOINED_SITE.name,
     SHEET_WAIT_MS,
   );
   return { forecast, guardOaths, watching: true };
@@ -4582,33 +4582,33 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
           ),
   },
   {
-    name: "join-the-quarry",
+    name: "join-the-mine",
     settleMs: 0,
     play: async ({ browser, extraScreenshot }) => {
       const before = browser.read(DEEP_JOIN_STATE);
-      if (!before.quarry) return { before, after: before };
-      if (onADesktop()) browser.rightClick(before.quarry);
-      else browser.tap(before.quarry);
+      if (!before.joinSite) return { before, after: before };
+      if (onADesktop()) browser.rightClick(before.joinSite);
+      else browser.tap(before.joinSite);
       const opened = await readUntil(
         () => browser.read(DEEP_JOIN_STATE),
-        (state) => state.sheet === "Quarry",
+        (state) => state.sheet === JOINED_SITE.name,
         MERGE_WAIT_MS,
       );
-      extraScreenshot("quarry-before-join");
+      extraScreenshot("mine-before-join");
       if (!opened.text.includes("Join")) return { before, after: opened };
       browser.click("Join");
       const confirmed = await readUntil(
         () => browser.read(DEEP_JOIN_STATE),
-        (state) => state.joined.length === 1 && state.quarry !== null,
+        (state) => state.joined.length === 1 && state.joinSite !== null,
         MERGE_WAIT_MS,
       );
-      if (confirmed.quarry) browser.tap(confirmed.quarry);
+      if (confirmed.joinSite) browser.tap(confirmed.joinSite);
       const after = await readUntil(
         () => browser.read(DEEP_JOIN_STATE),
-        (state) => state.sheet === "Quarry" && (state.slots.match(/Free slot/g) ?? []).length === 2,
+        (state) => state.sheet === JOINED_SITE.name && (state.slots.match(/Free slot/g) ?? []).length === 2,
         MERGE_WAIT_MS,
       );
-      extraScreenshot("quarry-joined");
+      extraScreenshot("mine-joined");
       return { before, opened, confirmed, after };
     },
     verify: ({ played }) => {
@@ -4620,8 +4620,8 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
         guard?.value.slot === 1 &&
         leftField &&
         played.opened.pay.visible &&
-        played.opened.pay.text.includes("500") &&
-        played.after.sheet === "Quarry" &&
+        /\d labor/.test(played.opened.pay.text) &&
+        played.after.sheet === JOINED_SITE.name &&
         (played.after.slots.match(/Free slot/g) ?? []).length === 2
         ? completed(played)
         : failed("Join must submit InteractSite once, leave the field and show the second allied guard slot", played);
@@ -4633,11 +4633,10 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
     play: async ({ browser, extraScreenshot }) => {
       // With the field army still picked, each site is visited and pressed as a player does: the camera brought to it,
       // its plate and model in the frame, then a click (desktop) or tap (phone) on the model selects its hex and opens its card.
-      // The Quarry comes last, so the camera ends where the steps after this one expect it.
       const visits = [];
       for (const site of [
-        ...DEEP_SITE_NAMES.filter((each) => each.key !== "deep:quarry"),
-        ...DEEP_SITE_NAMES.filter((each) => each.key === "deep:quarry"),
+        ...DEEP_SITE_NAMES.filter((each) => each !== JOINED_SITE),
+        JOINED_SITE,
       ]) {
         const { name, key } = site;
         await panToHex(browser, browser.read(`window.__eternumMapSelection?.siteHexes?.["${key}"] ?? null`));
@@ -4661,7 +4660,7 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
       played.visits.every((visit) => visit.inView === true && visit.sheet === visit.name)
         ? completed(played)
         : failed(
-            "Each of the Foundation, Quarry and Altar must be visited with its plate in the frame and open its own card",
+            "Each Deep site must be visited with its plate in the frame and open its own card",
             played,
           ),
   },
@@ -4729,7 +4728,7 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
       (!onADesktop() || played.framed.plates.length >= DEEP_SITE_NAMES.length) &&
       played.framed.plates.every((plate) => plate.inView)
         ? completed(played)
-        : failed("The Deep's Foundation, Quarry and Altar are each drawn, and a desktop frames their plates", played),
+        : failed("The Deep's four sites are each drawn, and a desktop frames their plates", played),
   },
 ];
 

@@ -247,12 +247,12 @@ export const snapshot = (
                 key: "0xdee3",
                 value: {
                   game_id: GAME_ID,
-                  foundation: { alt: false, x: 10, y: 25 },
-                  quarry: { alt: false, x: 25, y: 25 },
-                  altar: { alt: false, x: 40, y: 25 },
-                  beast_count: 100,
+                  gate_distance: 4,
+                  rings: [{ radius: 5, realms: 0 }],
+                  beasts: [{ count: 100, bow: false }, { count: 100, bow: true }, { count: 100, bow: false }, { count: 100, bow: true }],
                   loss_per_tick: 100,
-                  quarry_per_tick: 500,
+                  core_per_tick: 500,
+                  mine_per_tick: 500,
                   altar_per_tick: 5,
                   altar_threshold: 1500,
                 },
@@ -334,34 +334,37 @@ export function siteSnapshot(
   ]);
   put("RealmKnowledge", [row(HOME, { structure_id: HOME, learned: site.lore ? String(3n << 48n) : "0" })]);
   const offsets = {
-    foundation: { alt: false, x: 10, y: 25 },
-    quarry: { alt: false, x: 25, y: 25 },
-    altar: { alt: false, x: 40, y: 25 },
-  };
+    foundation: { x: 10, y: 25 },
+    core: { x: 25, y: 10 },
+    mine: { x: 25, y: 25 },
+    altar: { x: 40, y: 25 },
+  } satisfies Record<(typeof deepSites)[number]["key"], { x: number; y: number }>;
   put("DeepRules", [
     row(1, {
-      ...offsets,
-      beast_count: 10000 * RESOURCE_PRECISION,
+      gate_distance: 4,
+      rings: [{ radius: 5, realms: 0 }],
+      beasts: deepSites.map((_, kind) => ({ count: 10000 * RESOURCE_PRECISION, bow: kind % 2 === 1 })),
       loss_per_tick: frontierSeasonOnePreset.deep.lossPerTick * RESOURCE_PRECISION,
-      quarry_per_tick: 500 * RESOURCE_PRECISION,
+      core_per_tick: 500 * RESOURCE_PRECISION,
+      mine_per_tick: 500 * RESOURCE_PRECISION,
       altar_per_tick: 5,
       altar_threshold: 1500,
     }),
   ]);
   put(
     "DeepSite",
-    deepSites.map((kind) => row(800 + kind.id, { entity_id: 800 + kind.id, kind: kind.id, day: TODAY })),
+    deepSites.map((kind) => row(800 + kind.id, { entity_id: 800 + kind.id, kind: kind.id, ring: 0, day: TODAY })),
   );
-  const quarry = deepSites.find((kind) => kind.position === "quarry")!;
-  put("DeepGuard", [row(NEIGHBOUR_ARMY, { explorer_id: NEIGHBOUR_ARMY, site_id: 800 + quarry.id, slot: 0 })]);
+  const mine = deepSites.find((kind) => kind.key === "mine")!;
+  put("DeepGuard", [row(NEIGHBOUR_ARMY, { explorer_id: NEIGHBOUR_ARMY, site_id: 800 + mine.id, slot: 0 })]);
   put("DeepArmy", [row(NEIGHBOUR_ARMY, { explorer_id: NEIGHBOUR_ARMY, last_tick: site.lastTick })]);
   put("TileOccupancy", [
     armyPosition(ARMY, HOME, bar),
     ...deepSites.map((kind) =>
       row(800 + kind.id, {
         entity_id: 800 + kind.id,
-        col: offsets[kind.position].x + 25,
-        row: offsets[kind.position].y + 325,
+        col: offsets[kind.key].x + 25,
+        row: offsets[kind.key].y + 325,
         alt: false,
         category: TileOccupier.DeepSite,
         is_structure: false,

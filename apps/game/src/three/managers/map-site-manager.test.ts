@@ -66,7 +66,7 @@ const tile = (col: number, occupierType: number) => ({
 });
 
 describe("the Deep's sites on the map", () => {
-  it("draws each site by its kind: the Foundation a hyperstructure's bare foundation, the Quarry a fragment mine, the Altar a Shrine", async () => {
+  it("draws each site by its kind: the archive a hyperstructure's bare foundation, the core a rift, the mine a fragment mine, the altar a Shrine", async () => {
     mode.id = "frontier";
     models.length = 0;
     foundations.length = 0;
@@ -75,8 +75,7 @@ describe("the Deep's sites on the map", () => {
       path,
       scene: new Mesh(new BoxGeometry(1, 2, 1), new MeshBasicMaterial()),
     }));
-    // Entities 10, 11 and 12 are the Foundation, the Quarry and the Altar, by their DeepSite rows.
-    const tiles = [tile(10, TileOccupier.DeepSite), tile(11, TileOccupier.DeepSite), tile(12, TileOccupier.DeepSite)];
+    const tiles = deepSites.map((_, index) => tile(10 + index, TileOccupier.DeepSite));
     const projection = { getTiles: () => tiles, subscribeTiles: () => () => {} };
     const plates = { setLabel: vi.fn(), retainOnly: vi.fn(), dispose: vi.fn(), setHover: vi.fn(), clearHover: vi.fn() };
     const site = (key: { entity_id: number }) => ({ kind: deepSites[key.entity_id - 10]!.id });
@@ -86,7 +85,10 @@ describe("the Deep's sites on the map", () => {
       subscribe: () => () => {},
     };
     const manager = new MapSiteManager(new Scene(), projection as never, store as never, plates as never);
-    await vi.waitFor(() => expect(models.map(({ name }) => name).toSorted()).toEqual(["Altar", "Quarry"]));
+    await vi.waitFor(() =>
+      expect(models.map(({ name }) => name).toSorted()).toEqual(["Bane altar", "Essence core", "Ethereal mine"]),
+    );
+    expect(load).toHaveBeenCalledWith(MineKinds[1].model);
     expect(load).toHaveBeenCalledWith(MineKinds[2].model);
     expect(load).toHaveBeenCalledWith("/models/frontier/painted/shrine.glb");
     // Drawn again at each refresh, always the same bare foundation of entity 10.

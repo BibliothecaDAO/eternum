@@ -27,7 +27,7 @@ const army = (owner: string, explorer: string) => ({
 
 describe("GameSubscription", () => {
   it.each([
-    { model: "DeepSite", key: "site", value: { game_id: "1", entity_id: "800", kind: 0, day: "0" } },
+    { model: "DeepSite", key: "site", value: { game_id: "1", entity_id: "800", kind: 0, ring: 0, day: "0" } },
     { model: "DeepGuard", key: "guard", value: { game_id: "1", explorer_id: "301", site_id: "800", slot: 1 } },
     { model: "ArmyDay", key: "day", value: { game_id: "1", explorer_id: "70", day: "1" } },
   ])("sends newly visible armies when $model changes scope without an occupancy diff", (changed) => {

@@ -1,5 +1,14 @@
+import { nativeRuleConstants as rule } from "../../../contracts/l3/world-native/schema/client.gen";
 import type { ConfigPatch } from "./merge-config";
 import type { GameType } from "./types";
+
+export const deepKinds = {
+  foundation: rule.DEEP_FOUNDATION,
+  core: rule.DEEP_CORE,
+  mine: rule.DEEP_MINE,
+  altar: rule.DEEP_ALTAR,
+} as const;
+export type DeepKind = keyof typeof deepKinds;
 
 /** Five chest tiers, common to legendary: a depth's odds in basis points, or the shares each tier pays. */
 export interface ChestTiers {
@@ -72,12 +81,12 @@ export interface NativePreset {
     spoilsPercent: number;
   };
   deep: null | {
-    foundation: { x: number; y: number };
-    quarry: { x: number; y: number };
-    altar: { x: number; y: number };
-    beastCount: number;
+    gateDistance: number;
+    rings: readonly { radius: number; realms: number }[];
+    beasts: Record<DeepKind, { count: number; bow: boolean }>;
     lossPerTick: number;
-    quarryPerTick: number;
+    corePerTick: number;
+    minePerTick: number;
     altarPerTick: number;
     altarThreshold: number;
   };

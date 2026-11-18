@@ -262,7 +262,7 @@ pub mod MovementLogic {
                 explorer.coord
             };
             let destination = if command.depth == 3 && crate::logic::deep_sites::rules_entry(game_id).is_some() {
-                crate::logic::deep::arrival(game_id, context)
+                crate::logic::deep::arrival(game_id, crate::logic::aspects::home_aspect(home_key), context)
             } else if discovered {
                 crate::logic::spires::nearest_free_arrival(game_id, Coord { y: origin.y + spacing, ..origin }, spacing)
             } else {
@@ -281,6 +281,7 @@ pub mod MovementLogic {
             crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
             if command.depth == 3 {
                 crate::logic::deep_armies::enter(key, context);
+                crate::logic::deep_sites::count_entry(game_id, explorer.owner, context);
             }
         }
         fn move_explorer(

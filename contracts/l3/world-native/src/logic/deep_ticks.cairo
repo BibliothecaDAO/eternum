@@ -53,21 +53,24 @@ pub fn settle(game_id: u32, context: ExecutionContext) {
 fn settle_boundary(game_id: u32, boundary: u64, context: ExecutionContext) {
     let historical = ExecutionContext { timestamp: boundary - 1, ..context };
     crate::logic::deep_sites::rollover(game_id, historical);
-    for kind in 0..crate::rules::DEEP_SITE_COUNT {
-        drain_site(game_id, kind, boundary, historical);
+    for index in 0..crate::logic::deep_sites::site_count(game_id) {
+        drain_site(game_id, crate::logic::deep_sites::site_id(game_id, index), boundary, historical);
     }
-    for kind in 0..crate::rules::DEEP_SITE_COUNT {
-        let guards = guards(game_id, kind);
+    for index in 0..crate::logic::deep_sites::site_count(game_id) {
+        let site_id = crate::logic::deep_sites::site_id(game_id, index);
+        let guards = guards(game_id, site_id);
         if !guards.is_empty() {
-            pay_site(game_id, kind, shares(guards), boundary, historical);
+            let site = crate::logic::deep_sites::site(ResourceKey { game_id, entity_id: site_id })
+                .expect('missing Deep site');
+            pay_site(game_id, site.kind, shares(guards), boundary, historical);
         }
     }
 }
 
 fn has_guards(game_id: u32) -> bool {
     let state = crate::state::read();
-    for kind in 0..crate::rules::DEEP_SITE_COUNT {
-        let site = state.deep.site_ids.read((game_id, kind));
+    for index in 0..crate::logic::deep_sites::site_count(game_id) {
+        let site = state.deep.site_ids.read((game_id, index));
         for slot in 0..crate::rules::DEEP_GUARD_SLOTS {
             if state.deep.slots.read((game_id, site, slot)) != 0 {
                 return true;
@@ -77,8 +80,8 @@ fn has_guards(game_id: u32) -> bool {
     false
 }
 
-fn drain_site(game_id: u32, kind: u8, boundary: u64, context: ExecutionContext) {
-    let guards = guards(game_id, kind);
+fn drain_site(game_id: u32, site: u64, boundary: u64, context: ExecutionContext) {
+    let guards = guards(game_id, site);
     if guards.is_empty() {
         return;
     }
@@ -89,9 +92,8 @@ fn drain_site(game_id: u32, kind: u8, boundary: u64, context: ExecutionContext) 
     }
 }
 
-fn guards(game_id: u32, kind: u8) -> Span<(ExplorerKey, ExplorerTroops)> {
+fn guards(game_id: u32, site: u64) -> Span<(ExplorerKey, ExplorerTroops)> {
     let state = crate::state::read();
-    let site = state.deep.site_ids.read((game_id, kind));
     let mut result = array![];
     for slot in 0..crate::rules::DEEP_GUARD_SLOTS {
         let explorer_id = state.deep.slots.read((game_id, site, slot));
@@ -115,8 +117,8 @@ fn shares(guards: Span<(ExplorerKey, ExplorerTroops)>) -> Span<DeepShare> {
 }
 
 fn pay_site(game_id: u32, kind: u8, shares: Span<DeepShare>, boundary: u64, context: ExecutionContext) {
-    if kind == crate::rules::DEEP_QUARRY {
-        pay_quarry(game_id, shares, boundary, context);
+    if kind == crate::rules::DEEP_CORE || kind == crate::rules::DEEP_MINE {
+        pay_resource(game_id, kind, shares, boundary, context);
         return;
     }
     let aspect = crate::logic::aspects::home_aspect(ResourceKey { game_id, entity_id: *shares.at(0).home });
@@ -132,20 +134,20 @@ fn pay_site(game_id: u32, kind: u8, shares: Span<DeepShare>, boundary: u64, cont
     }
 }
 
-fn pay_quarry(game_id: u32, shares: Span<DeepShare>, boundary: u64, context: ExecutionContext) {
-    let amount = crate::logic::deep_sites::rules_entry(game_id).expect('missing Deep rules').quarry_per_tick.read();
+fn pay_resource(game_id: u32, kind: u8, shares: Span<DeepShare>, boundary: u64, context: ExecutionContext) {
+    let rules = crate::logic::deep_sites::rules_entry(game_id).expect('missing Deep rules');
+    let (resource, amount) = if kind == crate::rules::DEEP_CORE {
+        (crate::resources::ESSENCE, rules.core_per_tick.read())
+    } else {
+        (crate::resources::LABOR, rules.mine_per_tick.read())
+    };
     let payments = crate::race::split_payment(amount, shares);
     let state = crate::state::read();
     let release = state.releases.entry(state.game_releases.read(game_id)).classes;
     let resources = IResourceOperationsLibraryDispatcher { class_hash: release.resources.read() };
     for index in 0..shares.len() {
         let home = ResourceKey { game_id, entity_id: *shares.at(index).home };
-        for resource in array![crate::resources::LABOR, crate::resources::ESSENCE] {
-            resources
-                .grant_resource(
-                    home, resource, *payments.at(index), boundary, crate::commands::resource_context(context),
-                );
-        }
+        resources.grant_resource(home, resource, *payments.at(index), boundary, crate::commands::resource_context(context));
     }
 }
 

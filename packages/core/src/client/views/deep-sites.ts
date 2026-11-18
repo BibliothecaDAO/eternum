@@ -14,6 +14,8 @@ export interface DeepSiteView {
   kind: (typeof deepSites)[number]["id"];
   name: (typeof deepSites)[number]["name"];
   position: { x: number; y: number; alt: boolean };
+  ring: number;
+  open: boolean;
   day: number;
   beastTroops: bigint;
   guard: NativeRows["Guard"] | undefined;
@@ -29,12 +31,11 @@ export function readDeepSites(
   const today = readDeepDay(store, timestamp, gameId);
   if (!today) return [];
   const rows = [...store.inGame("DeepSite", gameId)];
-  if (rows.length !== nativeRuleConstants.DEEP_SITE_COUNT) throw new Error("Incomplete Deep site facts");
-  return deepSites.map((kind) => {
-    const sites = rows.filter((row) => row.kind === kind.id);
-    if (sites.length !== 1) throw new Error(`Expected one ${kind.name} site`);
-    return deepSiteView(store, today, sites[0]!, timestamp);
-  });
+  if (rows.length !== today.rules.rings.length * nativeRuleConstants.DEEP_KIND_COUNT)
+    throw new Error("Incomplete Deep site facts");
+  return rows
+    .sort((left, right) => left.ring - right.ring || left.kind - right.kind)
+    .map((site) => deepSiteView(store, today, site, timestamp));
 }
 
 export function readDeepSite(
@@ -79,16 +80,27 @@ function deepSiteView(
   const guard = current
     ? store.require("Guard", { game_id: gameId, structure_id: site.entity_id, slot: 0 })
     : undefined;
+  const beast = today.rules.beasts[site.kind];
+  const ring = today.rules.rings[site.ring];
+  if (!beast || !ring) throw new Error(`Deep site ${site.entity_id} is outside its preset rules`);
   return {
     id: site.entity_id,
     kind: kind.id,
     name: kind.name,
     position: entityMapPosition(store, gameId, site.entity_id),
+    ring: site.ring,
+    open: realmsEntered(store, gameId, site.day) >= ring.realms,
     day: today.index,
-    beastTroops: guard ? guard.troops.count : today.rules.beast_count,
+    beastTroops: guard ? guard.troops.count : beast.count,
     guard,
     guards: current ? readGuards(store, gameId, site.entity_id, timestamp) : [],
   };
+}
+
+function realmsEntered(store: NativeFactStore, gameId: number, day: bigint): number {
+  const entries = store.requireOrAbsent("DeepEntries", { game_id: gameId, day });
+  if (!entries.known) throw new Error(`Deep entries are unknown: ${entries.unknown}`);
+  return entries.known.count;
 }
 
 export function homeAspect(store: NativeFactStore, gameId: number, home: bigint): number {

@@ -290,6 +290,7 @@ export const factWireTypes = [
     name: "world_native::deep::DeepSite",
     members: [
       { name: "kind", type: "core::integer::u8" },
+      { name: "ring", type: "core::integer::u8" },
       { name: "day", type: "core::integer::u64" },
     ],
   },
@@ -995,6 +996,8 @@ export function defineFactModels({ struct, model: declare }) {
         value: "zero",
         meaning: "No member of this Aspect has completed the bane quest on this day.",
       };
+    if (row.name === "DeepEntries")
+      row.absence = { parent: "DeepRules", value: "zero", meaning: "No Realm has entered the Deep on this day." };
     if (row.name === "AltarBar")
       row.absence = {
         parent: "DeepRules",
@@ -1364,6 +1367,15 @@ export function defineFactModels({ struct, model: declare }) {
       [{ name: "paid_tick", type: "core::integer::u64" }],
     ),
     model("DeepSite", "game", struct("resources::ResourceKey"), struct("deep::DeepSite")),
+    model(
+      "DeepEntries",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "day", type: "core::integer::u64" },
+      ],
+      [{ name: "count", type: "core::integer::u32" }],
+    ),
     model("DeepGuard", "game", struct("troops::ExplorerKey"), struct("deep::DeepGuard")),
     model("DeepArmy", "game", struct("troops::ExplorerKey"), struct("deep::DeepArmy")),
     model(
@@ -1765,6 +1777,7 @@ export const syncScopes = {
   AspectActivity: shared,
   DeepTick: shared,
   DeepSite: shared,
+  DeepEntries: shared,
   DeepGuard: shared,
   DeepArmy: shared,
   ArmySlot: { entities: ["structure_id"], epoch: "epoch" },

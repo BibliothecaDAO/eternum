@@ -69,6 +69,7 @@ fn guard_target(
     if let Some(site) = crate::logic::deep_sites::site(key) {
         let day = crate::days::day_of(context.game.unbox(), rules.day_unit_seconds, context.timestamp);
         assert!(site.day == day.index, "Deep day not settled");
+        crate::logic::deep_sites::assert_open(key.game_id, site);
         let coord = crate::logic::map::entity_coord(key).expect('missing Deep site position');
         assert!(crate::geometry::adjacent(attacker.coord, coord), "Deep site requires adjacency");
         return GuardTarget { key, coord, structure: None };
@@ -209,7 +210,7 @@ fn complete_guard_capture(
         crate::commands::action_context(context),
     );
     if let GuardSource::Guard(_) = defender.source {
-        crate::logic::deep_sites::reward_beast_clear(key, attacker.owner, target.coord, context.timestamp);
+        crate::logic::deep_sites::reward_beast_clear(key, attacker.owner, target.key, context.timestamp);
     }
 }
 

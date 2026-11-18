@@ -27,6 +27,7 @@ fn assert_joinable(key: ExplorerKey, explorer: ExplorerTroops, site: ResourceKey
     assert!(entry(key).is_none(), "army already guarding");
     assert!(explorer.troops.count != 0, "dead Deep guard");
     assert!(crate::logic::army_days::require(key) == target.day, "Deep guard day mismatch");
+    crate::logic::deep_sites::assert_open(site.game_id, target);
     let destination = crate::logic::map::entity_coord(site).expect('missing Deep site position');
     assert!(crate::geometry::adjacent(explorer.coord, destination), "Deep site requires adjacency");
     assert!(

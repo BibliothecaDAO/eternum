@@ -410,12 +410,12 @@ describe("verified preset configuration facts", () => {
 
 it("projects optional Deep rules from verified registration and publishes no row for None", () => {
   const deep = {
-    foundation: { alt: false, x: 25, y: 35 },
-    quarry: { alt: false, x: 12, y: 20 },
-    altar: { alt: false, x: 38, y: 20 },
-    beast_count: 10_000_000_000_000n,
+    gate_distance: 4,
+    rings: [{ radius: 5, realms: 0 }],
+    beasts: [{ count: 10_000_000_000_000n, bow: false }, { count: 10_000_000_000_000n, bow: true }, { count: 10_000_000_000_000n, bow: false }, { count: 10_000_000_000_000n, bow: true }],
     loss_per_tick: BigInt(frontierSeasonOnePreset.deep.lossPerTick) * BigInt(RESOURCE_PRECISION),
-    quarry_per_tick: 500_000_000_000n,
+    core_per_tick: 500_000_000_000n,
+    mine_per_tick: 500_000_000_000n,
     altar_per_tick: 5,
     altar_threshold: 1_500,
   };
@@ -510,12 +510,12 @@ it("projects optional race rules from verified registration into the native fact
       if (enabled) {
         definition.economy.race = new CairoOption(CairoOptionVariant.Some, rules);
         definition.economy.deep = new CairoOption(CairoOptionVariant.Some, {
-          foundation: { alt: false, x: 25, y: 35 },
-          quarry: { alt: false, x: 12, y: 20 },
-          altar: { alt: false, x: 38, y: 20 },
-          beast_count: 10000_000000000n,
+          gate_distance: 4,
+          rings: [{ radius: 5, realms: 0 }],
+          beasts: [{ count: 10000_000000000n, bow: false }, { count: 10000_000000000n, bow: true }, { count: 10000_000000000n, bow: false }, { count: 10000_000000000n, bow: true }],
           loss_per_tick: BigInt(frontierSeasonOnePreset.deep.lossPerTick) * BigInt(RESOURCE_PRECISION),
-          quarry_per_tick: 500_000000000n,
+          core_per_tick: 500_000000000n,
+          mine_per_tick: 500_000000000n,
           altar_per_tick: 5,
           altar_threshold: 1500,
         });

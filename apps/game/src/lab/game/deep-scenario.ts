@@ -11,7 +11,6 @@ import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { type LabFact, type LabScenario, wire } from "./lab-chain";
 import { spireScenario } from "./spire-scenario";
 
-/** A shared Deep snapshot after an ally cleared the Quarry; the player's army can join its next slot. */
 export const deepScenario = (): LabScenario => {
   const scenario = spireScenario();
   const { store, startsAt } = scenario;
@@ -26,21 +25,13 @@ export const deepScenario = (): LabScenario => {
   const slot = store.require("ArmySlot", { game_id: 1, structure_id: army.owner, epoch: 0n, slot: 0 });
   const at = store.entityOccupancy(1, SPIRE_ARMY)!;
   const [allyHome, allyArmy, fieldAlly] = [9n, 301n, 399n];
-  // The Deep strip as the lab draws it: the three sites seven hexes apart, so the camera zoomed out frames all of them.
   const local = {
-    foundation: { x: 18, y: 25, alt: false },
-    quarry: { x: 25, y: 25, alt: false },
-    altar: { x: 32, y: 25, alt: false },
-  };
-  const rules: NativeRows["DeepRules"] = {
-    game_id: 1,
-    ...local,
-    beast_count: 10_000n * BigInt(RESOURCE_PRECISION),
-    loss_per_tick: BigInt(frontierSeasonOnePreset.deep.lossPerTick) * BigInt(RESOURCE_PRECISION),
-    quarry_per_tick: 500n * BigInt(RESOURCE_PRECISION),
-    altar_per_tick: 5,
-    altar_threshold: 1500,
-  };
+    foundation: { x: 18, y: 25 },
+    core: { x: 25, y: 18 },
+    mine: { x: 25, y: 25 },
+    altar: { x: 32, y: 25 },
+  } satisfies Record<(typeof deepSites)[number]["key"], { x: number; y: number }>;
+  const rules = seasonOneDeepRules();
   const facts: LabFact[] = [
     {
       model: "ExplorerTroops",
@@ -77,7 +68,7 @@ export const deepScenario = (): LabScenario => {
     {
       model: "DeepGuard",
       key: "0xdee8",
-      value: { game_id: 1, explorer_id: String(allyArmy), site_id: String(siteId("quarry")), slot: 0 },
+      value: { game_id: 1, explorer_id: String(allyArmy), site_id: String(siteId("mine")), slot: 0 },
     },
     { model: "TileOccupancy", key: store.wireKeyOf("TileOccupancy", at)!, value: null },
     { model: "TileOccupancy", key: "0xdee9", value: wire({ ...at, col: center.col - 1, row: center.row }) },
@@ -91,19 +82,20 @@ export const deepScenario = (): LabScenario => {
     },
   ];
   for (const site of deepSites) {
-    const offset = local[site.position];
+    const offset = local[site.key];
+    const beast = rules.beasts[site.id]!;
     facts.push(
       {
         model: "DeepSite",
         key: `0xdeea${site.id}`,
-        value: { game_id: 1, entity_id: String(siteId(site.position)), kind: site.id, day: "0" },
+        value: { game_id: 1, entity_id: String(siteId(site.key)), kind: site.id, ring: 0, day: "0" },
       },
       {
         model: "TileOccupancy",
         key: `0xdeeb${site.id}`,
         value: {
           game_id: 1,
-          entity_id: String(siteId(site.position)),
+          entity_id: String(siteId(site.key)),
           col: center.col + offset.x - half,
           row: center.row + offset.y - half,
           alt: false,
@@ -116,12 +108,12 @@ export const deepScenario = (): LabScenario => {
         key: `0xdeec${site.id}`,
         value: wire({
           game_id: 1,
-          structure_id: siteId(site.position),
+          structure_id: siteId(site.key),
           slot: 0,
           troops: {
             ...army.troops,
-            category: site.id === nativeRuleConstants.DEEP_ALTAR ? "Crossbowman" : "Knight",
-            count: site.position === "quarry" ? 0n : rules.beast_count,
+            category: beast.bow ? "Crossbowman" : "Knight",
+            count: site.key === "mine" ? 0n : beast.count,
           },
           destroyed_tick: 0,
         }),
@@ -151,12 +143,29 @@ export const deepScenario = (): LabScenario => {
         {
           model: "DeepGuard",
           key: "0xdeed",
-          value: { game_id: 1, explorer_id: String(explorer_id), site_id: String(siteId("quarry")), slot: 1 },
+          value: { game_id: 1, explorer_id: String(explorer_id), site_id: String(siteId("mine")), slot: 1 },
         },
       ];
     },
   };
 };
 
-const siteId = (position: (typeof deepSites)[number]["position"]): bigint =>
-  BigInt(800 + deepSites.find((site) => site.position === position)!.id);
+const siteId = (key: (typeof deepSites)[number]["key"]): bigint =>
+  BigInt(800 + deepSites.find((site) => site.key === key)!.id);
+
+const scaled = (amount: number): bigint => BigInt(amount) * BigInt(RESOURCE_PRECISION);
+
+export const seasonOneDeepRules = (): NativeRows["DeepRules"] => {
+  const deep = frontierSeasonOnePreset.deep;
+  return {
+    game_id: 1,
+    gate_distance: deep.gateDistance,
+    rings: deep.rings.slice(0, 1).map(({ radius, realms }) => ({ radius, realms })),
+    beasts: deepSites.map(({ key }) => ({ count: scaled(deep.beasts[key].count), bow: deep.beasts[key].bow })),
+    loss_per_tick: scaled(deep.lossPerTick),
+    core_per_tick: scaled(deep.corePerTick),
+    mine_per_tick: scaled(deep.minePerTick),
+    altar_per_tick: deep.altarPerTick,
+    altar_threshold: deep.altarThreshold,
+  };
+};

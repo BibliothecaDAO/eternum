@@ -6,6 +6,7 @@ import {
 import { DAYS_PER_BAG } from "@bibliothecadao/eternum/expeditions";
 import { buildingIds } from "../../../source/frontier/native";
 import { nativePresetForId } from "../../../source/native";
+import { deepKinds, type DeepKind } from "../../../source/common/native-preset";
 import { clockScaled, seasonDayUnitSeconds } from "../../../source/common/season-clock";
 import { RESOURCE_PRECISION, ResourcesIds, type Config } from "@bibliothecadao/types";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
@@ -500,37 +501,38 @@ function buildDeep(preset: ReturnType<typeof nativePresetForId>) {
   if (deep === null) return new CairoOption(CairoOptionVariant.None);
   if (!deep || preset.dayUnitSeconds === 0 || preset.orderAspects.length === 0)
     throw new Error("Deep requires explicit Aspect expedition rules");
-  validateDeep(deep, preset.spacing);
+  validateDeep(deep);
   return new CairoOption(CairoOptionVariant.Some, {
-    foundation: { alt: false, ...deep.foundation },
-    quarry: { alt: false, ...deep.quarry },
-    altar: { alt: false, ...deep.altar },
-    beast_count: scaled(deep.beastCount),
+    gate_distance: deep.gateDistance,
+    rings: deep.rings.map(({ radius, realms }) => ({ radius, realms })),
+    beasts: deepBeasts(deep).map(({ count, bow }) => ({ count: scaled(count), bow })),
     loss_per_tick: scaled(deep.lossPerTick),
-    quarry_per_tick: scaled(deep.quarryPerTick),
+    core_per_tick: scaled(deep.corePerTick),
+    mine_per_tick: scaled(deep.minePerTick),
     altar_per_tick: deep.altarPerTick,
     altar_threshold: deep.altarThreshold,
   });
 }
 
-function validateDeep(deep: NonNullable<ReturnType<typeof nativePresetForId>["deep"]>, spacing: number) {
-  const sites = [deep.foundation, deep.quarry, deep.altar];
-  if (
-    spacing < presetRule.DEEP_MAP_SIZE * 2 ||
-    sites.some(
-      ({ x, y }) =>
-        !Number.isSafeInteger(x) ||
-        !Number.isSafeInteger(y) ||
-        x < 0 ||
-        y < 0 ||
-        x >= presetRule.DEEP_MAP_SIZE ||
-        y >= presetRule.DEEP_MAP_SIZE ||
-        (x === presetRule.DEEP_MAP_SIZE / 2 && y === presetRule.DEEP_ARRIVAL_Y),
-    ) ||
-    new Set(sites.map(({ x, y }) => `${x}:${y}`)).size !== presetRule.DEEP_SITE_COUNT
-  )
-    throw new Error("Invalid Deep sites");
-  const amounts = [deep.beastCount, deep.lossPerTick, deep.quarryPerTick, deep.altarPerTick, deep.altarThreshold];
+type DeepPreset = NonNullable<ReturnType<typeof nativePresetForId>["deep"]>;
+
+function deepBeasts(deep: DeepPreset) {
+  return (Object.keys(deepKinds) as DeepKind[])
+    .sort((left, right) => deepKinds[left] - deepKinds[right])
+    .map((kind) => deep.beasts[kind]);
+}
+
+function validateDeep(deep: DeepPreset) {
+  const amounts = [
+    ...deepBeasts(deep).map(({ count }) => count),
+    deep.lossPerTick,
+    deep.corePerTick,
+    deep.minePerTick,
+    deep.altarPerTick,
+    deep.altarThreshold,
+    deep.gateDistance,
+    ...deep.rings.map(({ radius }) => radius),
+  ];
   if (
     amounts.some((value) => !Number.isSafeInteger(value) || value <= 0) ||
     deep.altarThreshold > 0xffff_ffff ||

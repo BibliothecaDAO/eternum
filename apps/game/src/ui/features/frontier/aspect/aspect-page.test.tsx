@@ -35,7 +35,7 @@ describe("the race board from native facts", () => {
         guards,
       })),
     ).toEqual([
-      { home: 9n, glory: 3750n * precision, contribution: 3900n * precision, mine: false, guards: ["Quarry"] },
+      { home: 9n, glory: 3750n * precision, contribution: 3900n * precision, mine: false, guards: ["Ethereal mine"] },
       { home: 7n, glory: 1250n * precision, contribution: 1300n * precision, mine: true, guards: [] },
     ]);
     const page = aspectPage(board, (home) => getStructureName(home, store).name);

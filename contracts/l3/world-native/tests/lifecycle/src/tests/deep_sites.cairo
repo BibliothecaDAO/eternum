@@ -1,5 +1,5 @@
 use snforge_std::{interact_with_state, spy_events};
-use starknet::storage::StorageMapReadAccess;
+use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use world_test_support::tests::Deployment;
 use world_test_support::tests::resource_commands::{execute_in_game, grant, set_explorer_fixture};
 use crate::commands::Command;
@@ -20,15 +20,29 @@ pub fn preset() -> crate::presets::PresetDefinition {
         .deep =
             Some(
                 crate::deep::DeepRules {
-                    beast_count: crate::rules::RESOURCE_PRECISION,
+                    beasts: beasts(crate::rules::RESOURCE_PRECISION),
                     loss_per_tick: crate::rules::RESOURCE_PRECISION,
-                    quarry_per_tick: crate::rules::RESOURCE_PRECISION,
+                    core_per_tick: crate::rules::RESOURCE_PRECISION,
+                    mine_per_tick: crate::rules::RESOURCE_PRECISION,
                     altar_per_tick: 1,
                     altar_threshold: 10,
                     ..preset.economy.deep.unwrap(),
                 },
             );
     preset
+}
+
+pub fn beasts(count: u128) -> Span<crate::deep::DeepBeast> {
+    let mut beasts = array![];
+    for kind in 0..crate::rules::DEEP_KIND_COUNT {
+        beasts
+            .append(
+                crate::deep::DeepBeast {
+                    count, bow: kind == crate::rules::DEEP_CORE || kind == crate::rules::DEEP_ALTAR,
+                },
+            );
+    }
+    beasts.span()
 }
 
 pub fn deployed(d: Deployment, game_id: u32, aspect: u8, count: u128) -> ExplorerKey {
@@ -108,9 +122,29 @@ fn refused(d: Deployment, game_id: u32, command: Command, now: u64, reason: Byte
 }
 
 pub fn site(d: Deployment, game_id: u32, kind: u8) -> ResourceKey {
-    ResourceKey {
-        game_id, entity_id: interact_with_state(d.games, || crate::state::read().deep.site_ids.read((game_id, kind))),
-    }
+    interact_with_state(
+        d.games,
+        || {
+            let mut found = None;
+            for index in 0..crate::rules::DEEP_KIND_COUNT {
+                let key = ResourceKey { game_id, entity_id: crate::logic::deep_sites::site_id(game_id, index) };
+                if crate::logic::deep_sites::site(key).unwrap().kind == kind {
+                    found = Some(key);
+                }
+            }
+            found.expect('no Deep site of that kind')
+        },
+    )
+}
+
+pub fn gate(d: Deployment, game_id: u32, aspect: u8) -> crate::troops::Coord {
+    interact_with_state(
+        d.games,
+        || {
+            let distance = crate::logic::deep_sites::rules_entry(game_id).unwrap().gate_distance.read();
+            crate::deep::gate(distance, aspect, crate::logic::settlement::rules(game_id).spacing)
+        },
+    )
 }
 
 pub fn beside(d: Deployment, key: ExplorerKey, target: ResourceKey, direction: u8) {
@@ -144,14 +178,16 @@ fn distinct_homes_enter_one_deep_and_move_on_its_fixed_terrain() {
     let (d, game_id) = setup(81);
     let first = deployed(d, game_id, 1, 10);
     let second = deployed(player(d, 8101), game_id, 2, 10);
+    let third = deployed(player(d, 8102), game_id, 1, 10);
     let a = army(d, first).coord;
     let b = army(d, second).coord;
-    assert_ne!(a, b);
-    assert!(crate::geometry::distance(a, b) <= 1);
-    let spacing = interact_with_state(d.games, || crate::logic::settlement::rules(game_id).spacing);
-    assert_eq!(a, crate::deep::arrival(spacing));
-    assert!(crate::deep::contains(b, spacing));
-    for kind in 0..crate::rules::DEEP_SITE_COUNT {
+    assert_eq!(a, gate(d, game_id, 1));
+    assert_eq!(b, gate(d, game_id, 2));
+    assert!(crate::geometry::adjacent(army(d, third).coord, a));
+    interact_with_state(
+        d.games, || assert_eq!(crate::state::read().deep.realms_entered.read((game_id, 0)), 3),
+    );
+    for kind in 0..crate::rules::DEEP_KIND_COUNT {
         let target = site(d, game_id, kind);
         assert!(target.entity_id != 0);
         assert_eq!(interact_with_state(d.games, || crate::logic::deep_sites::site(target).unwrap().day), 0);
@@ -163,7 +199,7 @@ fn distinct_homes_enter_one_deep_and_move_on_its_fixed_terrain() {
         );
         assert_eq!(
             guard.troops.category,
-            if kind == crate::rules::DEEP_ALTAR {
+            if kind == crate::rules::DEEP_ALTAR || kind == crate::rules::DEEP_CORE {
                 crate::troops::TroopType::Crossbowman
             } else {
                 crate::troops::TroopType::Knight
@@ -171,7 +207,7 @@ fn distinct_homes_enter_one_deep_and_move_on_its_fixed_terrain() {
         );
     }
     let mut direction = 0_u8;
-    while crate::geometry::neighbor(a, direction) == b {
+    while crate::geometry::neighbor(a, direction) == army(d, third).coord {
         direction += 1;
     }
     applied(
@@ -245,7 +281,7 @@ fn four_allies_guard_one_site_and_a_rival_fights_exactly_one_slot_per_attack() {
 #[test]
 fn exhausted_guards_release_slots_before_a_new_holder_joins() {
     let (d, game_id) = setup(83);
-    let target = site(d, game_id, crate::rules::DEEP_QUARRY);
+    let target = site(d, game_id, crate::rules::DEEP_MINE);
     let first = deployed(d, game_id, 1, 10);
     beside(d, first, target, 0);
     applied(d, game_id, fight(first, target), 360);
@@ -302,7 +338,7 @@ fn one_player_cannot_fill_two_slots_and_day_rollover_restores_every_beast() {
         Command::EnterDepth(crate::commands::EnterDepth { explorer_id: fresh.explorer_id, depth: 3 }),
         tomorrow,
     );
-    for kind in 0..crate::rules::DEEP_SITE_COUNT {
+    for kind in 0..crate::rules::DEEP_KIND_COUNT {
         let current = site(d, game_id, kind);
         assert_eq!(interact_with_state(d.games, || crate::logic::deep_sites::site(current).unwrap().day), 1);
         let count = interact_with_state(
@@ -322,7 +358,7 @@ fn one_player_cannot_fill_two_slots_and_day_rollover_restores_every_beast() {
     assert!(interact_with_state(d.games, || crate::logic::troops::explorer(first)).is_none());
     assert!(interact_with_state(d.games, || crate::logic::troops::explorer(second)).is_none());
     assert_eq!(held(d, fresh), Some(crate::deep::DeepGuard { site_id: target.entity_id, slot: 0 }));
-    for kind in 0..crate::rules::DEEP_SITE_COUNT {
+    for kind in 0..crate::rules::DEEP_KIND_COUNT {
         let current = site(d, game_id, kind);
         assert_eq!(interact_with_state(d.games, || crate::logic::deep_sites::site(current).unwrap().day), 1);
         let count = interact_with_state(
@@ -333,7 +369,7 @@ fn one_player_cannot_fill_two_slots_and_day_rollover_restores_every_beast() {
                 .troops
                 .count,
         );
-        assert_eq!(count, if kind == crate::rules::DEEP_FOUNDATION {
+        assert_eq!(count, if current == target {
             0
         } else {
             crate::rules::RESOURCE_PRECISION
@@ -343,10 +379,10 @@ fn one_player_cannot_fill_two_slots_and_day_rollover_restores_every_beast() {
 
 #[test]
 fn deep_beast_marks_control_public_attacks_without_knight_slot_protection() {
-    for kind in 0..crate::rules::DEEP_SITE_COUNT {
+    for kind in 0..crate::rules::DEEP_KIND_COUNT {
         let mut definition = preset();
         let mut deep = definition.economy.deep.unwrap();
-        deep.beast_count = 1000 * crate::rules::RESOURCE_PRECISION;
+        deep.beasts = beasts(1000 * crate::rules::RESOURCE_PRECISION);
         definition.economy.deep = Some(deep);
         definition.rules.troop_damage_config.damage_scaling_factor = 36893488147419103232;
         definition.rules.troop_damage_config.damage_biome_bonus_num = 0;
@@ -361,7 +397,7 @@ fn deep_beast_marks_control_public_attacks_without_knight_slot_protection() {
                 crate::guards::GuardKey { game_id, structure_id: target.entity_id, slot: 0 },
             ),
         );
-        let (left, enemy) = if kind == crate::rules::DEEP_ALTAR {
+        let (left, enemy) = if kind == crate::rules::DEEP_ALTAR || kind == crate::rules::DEEP_CORE {
             (1186_u128, 504_u128)
         } else {
             (1082, 373)
@@ -379,18 +415,18 @@ fn public_attacks_apply_held_oaths_to_the_army_and_the_rival_guard() {
     for guarding in array![false, true] {
         let mut definition = oath_vector_preset();
         let mut deep = definition.economy.deep.unwrap();
-        deep.beast_count = (if guarding {
+        deep.beasts = beasts((if guarding {
             1
         } else {
             1000
-        }) * crate::rules::RESOURCE_PRECISION;
+        }) * crate::rules::RESOURCE_PRECISION);
         definition.economy.deep = Some(deep);
         let (d, game_id) = super::aspects::setup_aspect_preset(if guarding {
             870
         } else {
             871
         }, definition);
-        let target = site(d, game_id, crate::rules::DEEP_QUARRY);
+        let target = site(d, game_id, crate::rules::DEEP_MINE);
         let defender = if guarding {
             let guard = deployed(d, game_id, 1, 1000);
             beside(d, guard, target, 0);

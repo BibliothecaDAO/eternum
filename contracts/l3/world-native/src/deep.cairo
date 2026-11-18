@@ -14,20 +14,37 @@ pub fn contains(coord: Coord, spacing: u32) -> bool {
     coord.x >= center.x - half && coord.x < center.x + half && coord.y >= center.y - half && coord.y < center.y + half
 }
 
-pub fn arrival(spacing: u32) -> Coord {
-    let center = center(spacing);
-    Coord { y: center.y - crate::rules::DEEP_MAP_SIZE / 2 + crate::rules::DEEP_ARRIVAL_Y, ..center }
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct DeepRing {
+    pub radius: u32,
+    pub realms: u32,
 }
 
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct DeepBeast {
+    pub count: u128,
+    pub bow: bool,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct DeepRules {
+    pub gate_distance: u32,
+    pub rings: Span<DeepRing>,
+    pub beasts: Span<DeepBeast>,
+    pub loss_per_tick: u128,
+    pub core_per_tick: u128,
+    pub mine_per_tick: u128,
+    pub altar_per_tick: u32,
+    pub altar_threshold: u32,
+}
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
-pub struct DeepRules {
-    pub foundation: Coord,
-    pub quarry: Coord,
-    pub altar: Coord,
-    pub beast_count: u128,
+pub struct DeepSettings {
+    pub gate_distance: u32,
+    pub ring_count: u8,
     pub loss_per_tick: u128,
-    pub quarry_per_tick: u128,
+    pub core_per_tick: u128,
+    pub mine_per_tick: u128,
     pub altar_per_tick: u32,
     pub altar_threshold: u32,
 }
@@ -35,35 +52,66 @@ pub struct DeepRules {
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct DeepSite {
     pub kind: u8,
+    pub ring: u8,
     pub day: u64,
 }
 
-pub fn site_coord(rules: DeepRules, kind: u8, spacing: u32) -> Coord {
-    let local = local_coord(rules, kind);
-    site_position(local.x, local.y, spacing)
-}
-
-pub fn site_position(local_x: u32, local_y: u32, spacing: u32) -> Coord {
-    let center = center(spacing);
-    let half = crate::rules::DEEP_MAP_SIZE / 2;
-    Coord { alt: false, x: center.x - half + local_x, y: center.y - half + local_y }
-}
-
-fn local_coord(rules: DeepRules, kind: u8) -> Coord {
-    if kind == crate::rules::DEEP_FOUNDATION {
-        rules.foundation
-    } else if kind == crate::rules::DEEP_QUARRY {
-        rules.quarry
-    } else if kind == crate::rules::DEEP_ALTAR {
-        rules.altar
-    } else {
-        panic!("invalid Deep site")
+pub fn settings(rules: DeepRules) -> DeepSettings {
+    DeepSettings {
+        gate_distance: rules.gate_distance,
+        ring_count: rules.rings.len().try_into().unwrap(),
+        loss_per_tick: rules.loss_per_tick,
+        core_per_tick: rules.core_per_tick,
+        mine_per_tick: rules.mine_per_tick,
+        altar_per_tick: rules.altar_per_tick,
+        altar_threshold: rules.altar_threshold,
     }
 }
 
+pub fn gate(gate_distance: u32, aspect: u8, spacing: u32) -> Coord {
+    assert!(aspect >= 1 && aspect <= 4, "invalid Deep gate");
+    compass(center(spacing), aspect - 1, gate_distance)
+}
+
+pub fn place(ring: u8, radius: u32, place: u8, spacing: u32) -> Coord {
+    if ring < crate::rules::DEEP_DIAGONAL_RINGS {
+        let direction = match place {
+            0 => 1,
+            1 => 5,
+            2 => 4,
+            _ => 2,
+        };
+        crate::geometry::neighbor_at_distance(center(spacing), direction, radius)
+    } else {
+        compass(center(spacing), place, radius)
+    }
+}
+
+fn compass(origin: Coord, point: u8, distance: u32) -> Coord {
+    match point {
+        0 => zigzag(origin, 1, 2, distance),
+        1 => crate::geometry::neighbor_at_distance(origin, 0, distance),
+        2 => zigzag(origin, 4, 5, distance),
+        _ => crate::geometry::neighbor_at_distance(origin, 3, distance),
+    }
+}
+
+fn zigzag(origin: Coord, first: u8, second: u8, distance: u32) -> Coord {
+    let halfway = crate::geometry::neighbor_at_distance(origin, first, (distance + 1) / 2);
+    crate::geometry::neighbor_at_distance(halfway, second, distance / 2)
+}
+
+pub fn kind_on(ring: u8, place: u8, day: u64) -> u8 {
+    let turn: u8 = ((day + ring.into()) % crate::rules::DEEP_KIND_COUNT.into()).try_into().unwrap();
+    (place + 2 * crate::rules::DEEP_KIND_COUNT - turn) % crate::rules::DEEP_KIND_COUNT
+}
+
 pub fn validate(rules: DeepRules, spacing: u32) {
-    assert!(rules.beast_count != 0, "empty Deep beast");
-    assert!(rules.quarry_per_tick != 0, "empty Quarry payment");
+    assert!(rules.beasts.len() == crate::rules::DEEP_KIND_COUNT.into(), "a Deep beast for every kind");
+    for beast in rules.beasts {
+        assert!(*beast.count != 0 && *beast.count % crate::rules::RESOURCE_PRECISION == 0, "invalid Deep beast");
+    }
+    assert!(rules.core_per_tick != 0 && rules.mine_per_tick != 0, "empty Deep payment");
     assert!(
         rules.altar_per_tick != 0 && rules.altar_threshold != 0 && rules.altar_threshold % rules.altar_per_tick == 0,
         "invalid Altar charge",
@@ -72,17 +120,47 @@ pub fn validate(rules: DeepRules, spacing: u32) {
         rules.loss_per_tick != 0 && rules.loss_per_tick % crate::rules::RESOURCE_PRECISION == 0,
         "invalid Deep troop loss",
     );
-    assert!(rules.beast_count % crate::rules::RESOURCE_PRECISION == 0, "fractional Deep beast");
-    for kind in 0..crate::rules::DEEP_SITE_COUNT {
-        let local = local_coord(rules, kind);
-        assert!(
-            !local.alt && local.x < crate::rules::DEEP_MAP_SIZE && local.y < crate::rules::DEEP_MAP_SIZE,
-            "Deep site outside map",
-        );
-        let coord = site_coord(rules, kind, spacing);
-        assert!(coord != arrival(spacing), "Deep site blocks arrival");
-        for other in 0..kind {
-            assert!(coord != site_coord(rules, other, spacing), "duplicate Deep site");
+    validate_rings(rules.rings);
+    validate_layout(rules, spacing);
+}
+
+fn validate_rings(rings: Span<DeepRing>) {
+    assert!(rings.len() != 0 && rings.len() <= crate::rules::DEEP_RING_LIMIT.into(), "invalid Deep ring count");
+    assert!(*rings.at(0).realms == 0, "the first Deep ring opens with the day");
+    for index in 0..rings.len() {
+        assert!(*rings.at(index).radius != 0, "empty Deep ring");
+        if index != 0 {
+            assert!(*rings.at(index).realms > *rings.at(index - 1).realms, "Deep rings open in order");
+        }
+    }
+}
+
+fn validate_layout(rules: DeepRules, spacing: u32) {
+    let mut gates = array![];
+    for aspect in 1_u8..5 {
+        let entrance = gate(rules.gate_distance, aspect, spacing);
+        assert!(contains(entrance, spacing) && entrance != center(spacing), "Deep gate outside map");
+        gates.append(entrance);
+    }
+    let mut sites: Array<Coord> = array![];
+    for ring in 0..rules.rings.len() {
+        let ring: u8 = ring.try_into().unwrap();
+        for index in 0..crate::rules::DEEP_KIND_COUNT {
+            let site = place(ring, *rules.rings.at(ring.into()).radius, index, spacing);
+            assert!(contains(site, spacing), "Deep site outside map");
+            for entrance in gates.span() {
+                assert!(site != *entrance, "Deep site blocks a gate");
+                assert!(
+                    crate::geometry::distance(site, *entrance) <= crate::rules::DEEP_GATE_REACH,
+                    "Deep site too far from a gate",
+                );
+            }
+            for other in sites.span() {
+                assert!(
+                    crate::geometry::distance(site, *other) >= crate::rules::DEEP_SITE_SPACING, "Deep sites too close",
+                );
+            }
+            sites.append(site);
         }
     }
 }

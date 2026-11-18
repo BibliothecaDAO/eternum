@@ -81,12 +81,12 @@ function frontier() {
   });
   write("DeepRules", {
     game_id: GAME_ID,
-    foundation: { alt: false, x: 25, y: 35 },
-    quarry: { alt: false, x: 12, y: 20 },
-    altar: { alt: false, x: 38, y: 20 },
-    beast_count: troops(10_000),
+    gate_distance: 4,
+    rings: [{ radius: 5, realms: 0 }],
+    beasts: [{ count: troops(10_000), bow: false }, { count: troops(10_000), bow: true }, { count: troops(10_000), bow: false }, { count: troops(10_000), bow: true }],
     loss_per_tick: troops(100),
-    quarry_per_tick: troops(500),
+    core_per_tick: troops(500),
+    mine_per_tick: troops(500),
     altar_per_tick: 5,
     altar_threshold: 1500,
   });
@@ -183,7 +183,7 @@ function frontier() {
   });
 
   const deepSite = (entity_id: number, tile: Tile, beast: number) => {
-    write("DeepSite", { game_id: GAME_ID, entity_id, kind: nativeRuleConstants.DEEP_QUARRY, day: 0n });
+    write("DeepSite", { game_id: GAME_ID, entity_id, kind: nativeRuleConstants.DEEP_MINE, ring: 0, day: 0n });
     occupy(entity_id, tile, TileOccupier.DeepSite, false);
     write("Guard", guardRow(entity_id, 0, beast));
   };

@@ -42,7 +42,7 @@ fn a_late_rejected_move_pays_all_sites_at_the_win_then_stops_before_later_ticks(
     let mut guards = array![];
     let mut homes = array![];
     let mut counts = array![];
-    for kind in 0..crate::rules::DEEP_SITE_COUNT {
+    for kind in 0..crate::rules::DEEP_KIND_COUNT {
         let member = player(d, 9800 + kind.into());
         let key = deployed(member, game_id, 1, 11);
         let target = site(d, game_id, kind);
@@ -53,9 +53,10 @@ fn a_late_rejected_move_pays_all_sites_at_the_win_then_stops_before_later_ticks(
         homes.append(ResourceKey { game_id, entity_id: army(d, key).owner });
     }
     let homes = homes.span();
-    let quarry = *homes.at(crate::rules::DEEP_QUARRY.into());
-    let before = balance(d, quarry, crate::resources::LABOR);
-    let essence_before = balance(d, quarry, crate::resources::ESSENCE);
+    let mine = *homes.at(crate::rules::DEEP_MINE.into());
+    let core = *homes.at(crate::rules::DEEP_CORE.into());
+    let before = balance(d, mine, crate::resources::LABOR);
+    let essence_before = balance(d, core, crate::resources::ESSENCE);
     let context = crate::tests::context(d.games, game_id);
     let interval = context.rules.unbox().tick_config.armies_tick_in_seconds;
     let finish = (360 / interval + 5) * interval;
@@ -64,8 +65,8 @@ fn a_late_rejected_move_pays_all_sites_at_the_win_then_stops_before_later_ticks(
         let mut events = spy_events();
         assert!(!execute_in_game(player(d, 9800), game_id, move_guard(key), now));
         assert_eq!(world_test_support::tests::play_fixture::rejection(ref events, d.games).reason, "game ended");
-        assert_eq!(balance(d, quarry, crate::resources::LABOR) - before, 5 * RESOURCE_PRECISION);
-        assert_eq!(balance(d, quarry, crate::resources::ESSENCE) - essence_before, 5 * RESOURCE_PRECISION);
+        assert_eq!(balance(d, mine, crate::resources::LABOR) - before, 5 * RESOURCE_PRECISION);
+        assert_eq!(balance(d, core, crate::resources::ESSENCE) - essence_before, 5 * RESOURCE_PRECISION);
         for index in 0..guards.len() {
             assert_eq!(army(d, *guards.at(index)).troops.count, *counts.at(index) - 5 * RESOURCE_PRECISION);
         }
@@ -167,9 +168,9 @@ fn advance(d: Deployment, key: ExplorerKey, direction: u8, now: u64) {
 }
 
 #[test]
-fn quarry_pays_four_post_loss_shares_and_repeated_commands_do_not_pay_again() {
+fn the_mine_pays_four_post_loss_shares_and_repeated_commands_do_not_pay_again() {
     let (d, game_id) = setup(95);
-    let target = site(d, game_id, crate::rules::DEEP_QUARRY);
+    let target = site(d, game_id, crate::rules::DEEP_MINE);
     let mut guards = array![];
     let mut homes = array![];
     let mut balances = array![];
@@ -184,7 +185,7 @@ fn quarry_pays_four_post_loss_shares_and_repeated_commands_do_not_pay_again() {
             join(d, key, target)
         }, 360);
         assert_eq!(army(d, key).troops.count, (Into::<u8, u128>::into(index) * 9 + 10) * RESOURCE_PRECISION);
-        balances.append((balance(d, home, crate::resources::LABOR), balance(d, home, crate::resources::ESSENCE)));
+        balances.append(balance(d, home, crate::resources::LABOR));
         guards.append(key);
         homes.append(home);
     }
@@ -195,18 +196,10 @@ fn quarry_pays_four_post_loss_shares_and_repeated_commands_do_not_pay_again() {
     advance(visitor, mover, 0, boundary);
     advance(visitor, mover, 3, boundary + 1);
     for index in 0_u32..4 {
-        for resource in array![crate::resources::LABOR, crate::resources::ESSENCE] {
-            let (labor, essence) = *balances.at(index);
-            let before = if resource == crate::resources::LABOR {
-                labor
-            } else {
-                essence
-            };
-            assert_eq!(
-                balance(d, *homes.at(index), resource) - before,
-                (Into::<u32, u128>::into(index) + 1) * RESOURCE_PRECISION / 10,
-            );
-        }
+        assert_eq!(
+            balance(d, *homes.at(index), crate::resources::LABOR) - *balances.at(index),
+            (Into::<u32, u128>::into(index) + 1) * RESOURCE_PRECISION / 10,
+        );
         assert_eq!(
             army(d, *guards.at(index)).troops.count, (Into::<u32, u128>::into(index) + 1) * 9 * RESOURCE_PRECISION,
         );
@@ -219,14 +212,13 @@ fn quarry_pays_four_post_loss_shares_and_repeated_commands_do_not_pay_again() {
 #[test]
 fn a_late_move_pays_every_tick_the_guard_survives_but_not_the_one_that_kills_it() {
     let (d, game_id) = setup(96);
-    let target = site(d, game_id, crate::rules::DEEP_QUARRY);
+    let target = site(d, game_id, crate::rules::DEEP_MINE);
     let guard = deployed(d, game_id, 1, 11);
     let home = ResourceKey { game_id, entity_id: army(d, guard).owner };
     beside(d, guard, target, 0);
     applied(d, game_id, fight(guard, target), 360);
     assert_eq!(army(d, guard).troops.count, 10 * RESOURCE_PRECISION);
     let labor_before = balance(d, home, crate::resources::LABOR);
-    let essence_before = balance(d, home, crate::resources::ESSENCE);
     let visitor = player(d, 9699);
     let mover = deployed(visitor, game_id, 2, 1000);
     let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
@@ -234,23 +226,9 @@ fn a_late_move_pays_every_tick_the_guard_survives_but_not_the_one_that_kills_it(
     advance(visitor, mover, 0, boundary);
     assert!(held(d, guard).is_none());
     assert!(interact_with_state(d.games, || crate::logic::troops::explorer(guard)).is_none());
-    for resource in array![crate::resources::LABOR, crate::resources::ESSENCE] {
-        let before = if resource == crate::resources::LABOR {
-            labor_before
-        } else {
-            essence_before
-        };
-        assert_eq!(balance(d, home, resource) - before, 9 * RESOURCE_PRECISION);
-    }
+    assert_eq!(balance(d, home, crate::resources::LABOR) - labor_before, 9 * RESOURCE_PRECISION);
     advance(visitor, mover, 3, boundary + interval);
-    for resource in array![crate::resources::LABOR, crate::resources::ESSENCE] {
-        let before = if resource == crate::resources::LABOR {
-            labor_before
-        } else {
-            essence_before
-        };
-        assert_eq!(balance(d, home, resource) - before, 9 * RESOURCE_PRECISION);
-    }
+    assert_eq!(balance(d, home, crate::resources::LABOR) - labor_before, 9 * RESOURCE_PRECISION);
     assert_eq!(
         interact_with_state(d.games, || crate::state::read().deep.paid_tick.read(game_id)),
         Some(boundary / interval + 1),
@@ -261,14 +239,13 @@ fn a_late_move_pays_every_tick_the_guard_survives_but_not_the_one_that_kills_it(
 #[test]
 fn a_refused_guard_move_keeps_the_tick_paid_and_cannot_pay_it_twice() {
     let (d, game_id) = setup(97);
-    let target = site(d, game_id, crate::rules::DEEP_QUARRY);
+    let target = site(d, game_id, crate::rules::DEEP_MINE);
     let guard = deployed(d, game_id, 1, 11);
     let home = ResourceKey { game_id, entity_id: army(d, guard).owner };
     beside(d, guard, target, 0);
     applied(d, game_id, fight(guard, target), 360);
     assert_eq!(army(d, guard).troops.count, 10 * RESOURCE_PRECISION);
     let labor_before = balance(d, home, crate::resources::LABOR);
-    let essence_before = balance(d, home, crate::resources::ESSENCE);
     let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
     let boundary = (360 / interval + 1) * interval;
     for now in array![boundary, boundary + 1] {
@@ -287,14 +264,7 @@ fn a_refused_guard_move_keeps_the_tick_paid_and_cannot_pay_it_twice() {
         );
         assert!(held(d, guard).is_some());
         assert_eq!(army(d, guard).troops.count, 9 * RESOURCE_PRECISION);
-        for resource in array![crate::resources::LABOR, crate::resources::ESSENCE] {
-            let before = if resource == crate::resources::LABOR {
-                labor_before
-            } else {
-                essence_before
-            };
-            assert_eq!(balance(d, home, resource) - before, RESOURCE_PRECISION);
-        }
+        assert_eq!(balance(d, home, crate::resources::LABOR) - labor_before, RESOURCE_PRECISION);
         assert_eq!(
             interact_with_state(d.games, || crate::state::read().deep.paid_tick.read(game_id)),
             Some(boundary / interval),
@@ -375,7 +345,7 @@ fn vitriol_guards_lose_the_rule_amount_per_tick_while_the_beast_is_unchanged() {
     let key = deployed(d, game_id, 1, 1000);
     let choice = waiting_oath(d, key, crate::oaths::VITRIOL);
     applied(d, game_id, Command::ChooseOath(choice), 360);
-    let target = site(d, game_id, crate::rules::DEEP_QUARRY);
+    let target = site(d, game_id, crate::rules::DEEP_MINE);
     beside(d, key, target, 0);
     applied(d, game_id, fight(key, target), 360);
     let before = army(d, key).troops.count;

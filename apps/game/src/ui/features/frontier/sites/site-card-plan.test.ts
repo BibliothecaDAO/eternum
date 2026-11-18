@@ -1,6 +1,6 @@
 import oathDamage from "../../../../../../../contracts/l3/world-native/tests/fixtures/oath-damage.txt?raw";
 import { deepBattleTargetScenario } from "@/lab/game/battle-target-scenario";
-import { readDeepSites } from "@bibliothecadao/eternum/game-client";
+import { nativeRuleConstants, readDeepSites } from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { afterEach, describe, expect, it } from "vitest";
 import { armyRelicReward, setBlockTimestampSource } from "@bibliothecadao/eternum";
@@ -301,9 +301,9 @@ it("keeps a replacement Knight guard protected and removes that protection from 
   const attack = { army, timestamp: startsAt };
   const combat = store.require("ArmyCombat", key);
   const combatKey = store.wireKeyOf("ArmyCombat", key)!;
-  const quarry = () => readDeepSites(store, startsAt, 1).find(({ name }) => name === "Quarry")!;
+  const mine = () => readDeepSites(store, startsAt, 1).find(({ kind }) => kind === nativeRuleConstants.DEEP_MINE)!;
   store.applyFacts([{ model: "ArmyCombat", key: combatKey, value: { ...combat, last_target: 301n } }]);
-  expect(readDeepSiteFight(store, quarry(), attack)?.result).toEqual({ troopsLost: 330, guardLeft: 754 });
+  expect(readDeepSiteFight(store, mine(), attack)?.result).toEqual({ troopsLost: 330, guardLeft: 754 });
   const oldGuard = { game_id: 1, explorer_id: 301n };
   for (const [index, model] of (
     ["ExplorerTroops", "DeepArmy", "ArmyDay", "ArmyCombat", "ArmyProgress", "DeepGuard"] as const
@@ -312,11 +312,11 @@ it("keeps a replacement Knight guard protected and removes that protection from 
     store.applyFacts([{ model, key: `0xeef${index}`, value: { ...row, explorer_id: 302n } }]);
   }
   store.applyFacts([{ model: "DeepGuard", key: store.wireKeyOf("DeepGuard", oldGuard)!, value: null }]);
-  expect(readDeepSiteFight(store, quarry(), attack)?.result).toEqual({ troopsLost: 330, guardLeft: 754 });
+  expect(readDeepSiteFight(store, mine(), attack)?.result).toEqual({ troopsLost: 330, guardLeft: 754 });
   store.applyFacts([
     { model: "DeepGuard", key: store.wireKeyOf("DeepGuard", { game_id: 1, explorer_id: 302n })!, value: null },
   ]);
-  const site = quarry();
+  const site = mine();
   store.applyFacts([
     {
       model: "Guard",
@@ -324,11 +324,11 @@ it("keeps a replacement Knight guard protected and removes that protection from 
       value: { ...site.guard!, troops: { ...army.troops, category: "Knight" } },
     },
   ]);
-  expect(readDeepSiteFight(store, quarry(), attack)?.result).toEqual({ troopsLost: 294, guardLeft: 672 });
+  expect(readDeepSiteFight(store, mine(), attack)?.result).toEqual({ troopsLost: 294, guardLeft: 672 });
   store.applyFacts([{ model: "ArmyCombat", key: combatKey, value: { ...combat, last_target: site.id } }]);
-  expect(readDeepSiteFight(store, quarry(), attack)?.result).toEqual({ troopsLost: 294, guardLeft: 672 });
+  expect(readDeepSiteFight(store, mine(), attack)?.result).toEqual({ troopsLost: 294, guardLeft: 672 });
   store.applyFacts([{ model: "ArmyCombat", key: combatKey, value: null }]);
-  expect(readDeepSiteFight(store, quarry(), attack)?.result).toEqual({ troopsLost: 294, guardLeft: 672 });
+  expect(readDeepSiteFight(store, mine(), attack)?.result).toEqual({ troopsLost: 294, guardLeft: 672 });
 });
 
 it("previews both armies' held damage Oaths from synchronized facts and refuses missing progress", () => {
@@ -336,7 +336,7 @@ it("previews both armies' held damage Oaths from synchronized facts and refuses 
   setBlockTimestampSource(() => startsAt);
   const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201n });
   const attack = { army, timestamp: startsAt };
-  const site = readDeepSites(store, startsAt, 1).find(({ name }) => name === "Quarry")!;
+  const site = readDeepSites(store, startsAt, 1).find(({ kind }) => kind === nativeRuleConstants.DEEP_MINE)!;
   const fields = oathDamage.trim().split(/\s+/).map(Number);
   const [before, , after, guardAfter] = fields.slice(26, 30);
   expect(readDeepSiteFight(store, site, attack)?.result).toEqual({

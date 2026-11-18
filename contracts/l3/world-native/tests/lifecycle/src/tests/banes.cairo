@@ -504,9 +504,10 @@ pub fn deep_definition() -> crate::presets::PresetDefinition {
         .deep =
             Some(
                 crate::deep::DeepRules {
-                    beast_count: RESOURCE_PRECISION,
+                    beasts: super::deep_sites::beasts(RESOURCE_PRECISION),
                     loss_per_tick: RESOURCE_PRECISION,
-                    quarry_per_tick: RESOURCE_PRECISION,
+                    core_per_tick: RESOURCE_PRECISION,
+                    mine_per_tick: RESOURCE_PRECISION,
                     altar_per_tick: 5,
                     altar_threshold: 10,
                     ..preset.economy.deep.unwrap(),

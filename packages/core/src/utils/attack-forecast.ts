@@ -35,6 +35,7 @@ export const ATTACK_FORECAST_MODELS = [
   "ArmyRelicEffect",
   "DeepGuard",
   "DeepSite",
+  "DeepEntries",
   "DeepRules",
   "TileOpt",
 ] as const;
@@ -46,6 +47,7 @@ export type AttackRefusal =
   | "guarding-deep-site"
   | "target-guards-deep-site"
   | "expired-army"
+  | "deep-ring-closed"
   | "deep-site-not-adjacent"
   | "target-must-be-unowned"
   | "own-target"
@@ -279,6 +281,7 @@ function deepSiteDefence(scene: Scene, attacker: Combatant, siteId: bigint): Def
   if (!site) return undefined;
   const tile = { col: site.position.x, row: site.position.y, alt: site.position.alt };
   const alone = { attacker, queued: [] };
+  if (!site.open) return refused("deep-ring-closed", alone);
   if (!isAdjacent(attacker.tile, tile)) return refused("deep-site-not-adjacent", alone);
   const aggressor = aggressorRefusal(scene, attacker);
   if (aggressor) return refused(aggressor, alone);

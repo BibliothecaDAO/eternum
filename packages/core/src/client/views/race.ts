@@ -17,6 +17,7 @@ export const RACE_MODELS = [
   "AltarBar",
   "DeepRules",
   "DeepSite",
+  "DeepEntries",
   "DeepGuard",
   "DeepArmy",
   "ArmyDay",

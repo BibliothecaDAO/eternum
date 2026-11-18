@@ -26,8 +26,8 @@ export interface DeepTickPay {
   glory: number;
   /** Height added to the holder Aspect's hyperstructure: the Foundation's. */
   height: number;
-  /** Labor, and the same of Essence, to the guards' realms: the Quarry's. */
-  resources: number;
+  essence: number;
+  labor: number;
   /** Charge added to the holder Aspect's bane bar, its charge now and the charge that issues a bane: the Altar's. */
   bar: { perTick: number; charge: number; threshold: number } | null;
 }
@@ -53,7 +53,7 @@ export type DeepGuard =
   | { kind: "open" };
 
 /** Why the selected army has no order at the site, in the words the card shows. */
-export type DeepBlock = "pickArmy" | "guarding" | "full" | "rival" | "otherDay" | "noTroops";
+export type DeepBlock = "pickArmy" | "closed" | "guarding" | "full" | "rival" | "otherDay" | "noTroops";
 
 /** The card's order: the site's own verb beside it, the same verb held for stamina, or the Move that brings the army. */
 export type DeepOrder =
@@ -62,7 +62,7 @@ export type DeepOrder =
   | { kind: "move"; cost: string; onMove: () => void };
 
 export interface DeepSiteProps {
-  site: (typeof deepSites)[number]["position"];
+  site: (typeof deepSites)[number]["key"];
   pay: DeepTickPay | null;
   guard: DeepGuard;
   fight?: DeepSiteFight;
@@ -77,7 +77,7 @@ const FIGHT_ORDER = Array.from(
   (_, index) => nativeRuleConstants.DEEP_GUARD_SLOTS - 1 - index,
 );
 
-const siteName = (position: DeepSiteProps["site"]) => deepSites.find((each) => each.position === position)!.name;
+const siteName = (key: DeepSiteProps["site"]) => deepSites.find((each) => each.key === key)!.name;
 
 /**
  * A Deep site's card: who it serves and what a tick held pays, who guards it (its beast, or its four slots with each
@@ -125,7 +125,8 @@ const TickPay = ({ pay }: { pay: DeepTickPay }) => (
     </span>
     {pay.glory > 0 && <HudChip icons={["crown"]}>{DEEP_WORDS.glory(pay.glory)}</HudChip>}
     {pay.height > 0 && <HudChip icons={["hyperstructure"]}>{DEEP_WORDS.height(pay.height)}</HudChip>}
-    {pay.resources > 0 && <HudChip icons={["labor", "essence"]}>{DEEP_WORDS.resources(pay.resources)}</HudChip>}
+    {pay.essence > 0 && <HudChip icons={["essence"]}>{DEEP_WORDS.essence(pay.essence)}</HudChip>}
+    {pay.labor > 0 && <HudChip icons={["labor"]}>{DEEP_WORDS.labor(pay.labor)}</HudChip>}
     {pay.bar && (
       <HudChip icons={["flame"]}>{DEEP_WORDS.bar(pay.bar.perTick, pay.bar.charge, pay.bar.threshold)}</HudChip>
     )}

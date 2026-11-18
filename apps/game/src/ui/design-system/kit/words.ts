@@ -780,6 +780,7 @@ export const ATTACK_REFUSAL_WORDS = {
   "guarding-deep-site": `This army holds a ${DEEP} site`,
   "target-guards-deep-site": `Attack the ${DEEP} site it holds`,
   "expired-army": "An army from an earlier day",
+  "deep-ring-closed": "This ring has not opened today",
   "deep-site-not-adjacent": "Move beside the site to attack",
   "target-must-be-unowned": "Only unclaimed structures can be attacked",
   "own-target": "You hold it",
@@ -794,25 +795,25 @@ export const ATTACK_REFUSAL_WORDS = {
   "insufficient-stamina": "Not enough stamina",
 } as const satisfies Record<AttackRefusal, string>;
 
-/** The Deep's three sites (docs/plans/frontier-season-1.md, the Deep): who they serve, who guards them, what a tick pays. */
 export const DEEP_WORDS = {
   title: DEEP,
   orderFailed: `The ${DEEP} order could not be sent.`,
   purpose: {
     foundation: "One site every Aspect fights for: holding it raises your Aspect's hyperstructure",
-    quarry: "For you",
+    core: "Essence for you",
+    mine: "Labor for you",
     altar: "Against a rival",
   },
   /** A Deep site's plate on the map: nobody holds it, and what a tick held pays. */
   shared: "Every Aspect fights for it",
   foundationPlate: (height: number) => `+${formatExact(height)} height a tick to the holder's hyperstructure`,
-  quarryPlate: "Labor and Essence a tick to its holders",
   altarPlate: "Fills the holder's bane bar",
   tickPays: "Each tick held pays",
   splitByTroops: "split by troops",
   glory: (amount: number) => `${formatExact(amount)} Glory`,
   height: (amount: number) => `+${formatExact(amount)} height to your Aspect's hyperstructure`,
-  resources: (amount: number) => `${formatExact(amount)} labor and ${formatExact(amount)} Essence`,
+  essence: (amount: number) => `${formatExact(amount)} Essence`,
+  labor: (amount: number) => `${formatExact(amount)} labor`,
   bar: (perTick: number, charge: number, threshold: number) =>
     `+${formatExact(perTick)} on the bane bar: ${formatExact(charge)} of ${formatExact(threshold)}`,
   beast: (troops: number) => `Today's beast: ${formatExact(troops)} troops`,
@@ -836,6 +837,7 @@ export const DEEP_WORDS = {
   full: "All 4 slots are taken",
   rival: "Another Aspect holds it",
   otherDay: "Only today's armies can fight here",
+  closed: "This ring opens when more Realms enter today",
   noTroops: "This army has no troops left",
   readingStamina: "Reading the army's stamina…",
   reading: "Reading the site…",

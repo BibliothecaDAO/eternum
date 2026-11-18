@@ -1,7 +1,12 @@
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { SITE } from "@/ui/features/frontier/sites/site-fixture";
 import { StructureType } from "@bibliothecadao/types";
-import { readDeepSites, nativeOathConstants as oaths, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import {
+  nativeRuleConstants,
+  readDeepSites,
+  nativeOathConstants as oaths,
+  type NativeFactStore,
+} from "@bibliothecadao/eternum/game-client";
 import { deepScenario } from "./deep-scenario";
 import { siteAt } from "./after-battle-scenario";
 import { type LabFact, type LabScenario, wire } from "./lab-chain";
@@ -37,13 +42,12 @@ export function battleTargetScenario(withOaths = false): LabScenario {
   };
 }
 
-/** The same native exchanges against the first rival army holding the Quarry. */
 export function deepBattleTargetScenario(withOaths = false): LabScenario {
   const game = deepScenario();
   const troops = prepareBattleArmy(game);
   if (withOaths) holdDamageOaths(game.store, BigInt(SPIRE_ARMY), false);
   const { store } = game;
-  const site = readDeepSites(store, game.startsAt, 1).find(({ name }) => name === "Quarry")!;
+  const site = readDeepSites(store, game.startsAt, 1).find(({ kind }) => kind === nativeRuleConstants.DEEP_MINE)!;
   const guard = site.guards[0]!.army;
   if (withOaths) holdDamageOaths(store, guard.explorer_id, true);
   const aspect = store.require("HomeAspect", { game_id: 1, home: guard.owner });

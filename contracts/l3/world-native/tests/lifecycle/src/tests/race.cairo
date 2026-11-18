@@ -220,7 +220,7 @@ fn rejected_payments_leave_height_and_both_member_totals_unchanged() {
             1
         };
         let kind = if invalid == 4 {
-            crate::rules::DEEP_QUARRY
+            crate::rules::DEEP_MINE
         } else {
             DEEP_FOUNDATION
         };

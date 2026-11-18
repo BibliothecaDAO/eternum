@@ -118,7 +118,7 @@ fn write_economy(
     preset.labor_rules.write(economy.labor);
     write_quests(preset, economy.quests);
     write_banes(preset, economy.banes);
-    preset.deep_rules.write(economy.deep);
+    write_deep(preset, economy.deep);
     preset.race_rules.write(economy.race);
     write_hyperstructures(preset, rules, economy.hyperstructures);
     let classes = crate::state::read().releases.read(crate::state::read().current_release.read()).classes;
@@ -138,6 +138,21 @@ fn write_economy(
             commitment,
             withdrawals,
         );
+    }
+}
+
+fn write_deep(preset: PresetWrite, rules: Option<crate::deep::DeepRules>) {
+    let Some(rules) = rules else {
+        return;
+    };
+    preset.deep_rules.write(Some(crate::deep::settings(rules)));
+    for index in 0..rules.rings.len() {
+        let ring = *rules.rings.at(index);
+        preset.deep_rings.write(index.try_into().unwrap(), (ring.radius, ring.realms));
+    }
+    for index in 0..rules.beasts.len() {
+        let beast = *rules.beasts.at(index);
+        preset.deep_beasts.write(index.try_into().unwrap(), (beast.count, beast.bow));
     }
 }
 

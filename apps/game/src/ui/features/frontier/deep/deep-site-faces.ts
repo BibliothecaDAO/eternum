@@ -8,6 +8,7 @@ import type { deepSites } from "@bibliothecadao/types";
  */
 export const DEEP_SITE_FACES = {
   foundation: { icon: "hyperstructure", purpose: DEEP_WORDS.purpose.foundation },
-  quarry: { icon: "pickaxe", purpose: DEEP_WORDS.purpose.quarry },
+  core: { icon: "essence", purpose: DEEP_WORDS.purpose.core },
+  mine: { icon: "pickaxe", purpose: DEEP_WORDS.purpose.mine },
   altar: { icon: "flame", purpose: DEEP_WORDS.purpose.altar },
-} as const satisfies Record<(typeof deepSites)[number]["position"], { icon: IconMeaning; purpose: string }>;
+} as const satisfies Record<(typeof deepSites)[number]["key"], { icon: IconMeaning; purpose: string }>;

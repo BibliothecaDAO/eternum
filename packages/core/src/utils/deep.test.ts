@@ -25,7 +25,7 @@ const fixture = () => {
     ],
     SettlementRules: [{ game_id: 7, spacing: 1024 }],
     GameRegistry: [{ game_id: 7, start_main_at: 360n, scheduled_end_at: 288360n, end_at: 288360n, seed: 1n }],
-    DeepRules: [{ game_id: 7, loss_per_tick: precision, beast_count: 10n * precision }],
+    DeepRules: [{ game_id: 7, loss_per_tick: precision }],
     DeepArmy: [{ game_id: 7, explorer_id: 11n, last_tick: 6n }],
     ArmyDay: [{ game_id: 7, explorer_id: 11n, day: 0n }],
     ArmyProgress: [{ game_id: 7, explorer_id: 11n, logistics: 0, oath_slots: 1, oaths: 0, oath_pick: 0 }],

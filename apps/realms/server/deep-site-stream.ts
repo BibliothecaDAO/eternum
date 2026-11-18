@@ -13,6 +13,7 @@ import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 const WATCH_INPUTS = new Set([
   ...STAMINA_MODELS,
   "DeepSite",
+  "DeepEntries",
   "Guard",
   "ArmyRelicEffect",
   "RealmKnowledge",

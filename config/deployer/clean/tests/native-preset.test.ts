@@ -1054,30 +1054,33 @@ test("Season 1 and its check preset share the canonical Aspect mapping", () => {
     expect(preset.orderAspects).toEqual([]);
 });
 
-const deepFixture = () => ({
-  foundation: { x: 25, y: 35 },
-  quarry: { x: 12, y: 20 },
-  altar: { x: 38, y: 20 },
-  beastCount: 10_000,
-  lossPerTick: frontierSeasonOnePreset.deep.lossPerTick,
-  quarryPerTick: 500,
-  altarPerTick: 5,
-  altarThreshold: 1_500,
-});
+const deepFixture = () => structuredClone(frontierSeasonOnePreset.deep);
 
-test("an optional Deep preset serializes exact coordinates, resource precision and Altar counts", () => {
+test("an optional Deep preset serializes its rings, its beasts in kind order and resource precision", () => {
   const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
   const previous = source.deep;
   try {
     source.deep = deepFixture();
     const built = buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id);
+    const precision = BigInt(RESOURCE_PRECISION);
     expect(built.economy.deep.unwrap()).toEqual({
-      foundation: { alt: false, x: 25, y: 35 },
-      quarry: { alt: false, x: 12, y: 20 },
-      altar: { alt: false, x: 38, y: 20 },
-      beast_count: 10_000n * BigInt(RESOURCE_PRECISION),
-      loss_per_tick: BigInt(frontierSeasonOnePreset.deep.lossPerTick) * BigInt(RESOURCE_PRECISION),
-      quarry_per_tick: 500n * BigInt(RESOURCE_PRECISION),
+      gate_distance: 4,
+      rings: [
+        { radius: 5, realms: 0 },
+        { radius: 8, realms: 30 },
+        { radius: 11, realms: 60 },
+        { radius: 8, realms: 120 },
+        { radius: 11, realms: 240 },
+      ],
+      beasts: [
+        { count: 15_000n * precision, bow: false },
+        { count: 12_000n * precision, bow: true },
+        { count: 10_000n * precision, bow: false },
+        { count: 15_000n * precision, bow: true },
+      ],
+      loss_per_tick: 200n * precision,
+      core_per_tick: 300n * precision,
+      mine_per_tick: 300n * precision,
       altar_per_tick: 5,
       altar_threshold: 1_500,
     });
@@ -1087,18 +1090,18 @@ test("an optional Deep preset serializes exact coordinates, resource precision a
   }
 });
 
-test("the Deep codec refuses invalid sites and tick amounts", () => {
+test("the Deep codec refuses fractional or empty amounts", () => {
   const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
   const previous = source.deep;
+  const fixture = deepFixture();
   const malformed = [
-    { ...deepFixture(), quarry: { x: 25, y: 35 } },
-    { ...deepFixture(), foundation: { x: 50, y: 0 } },
-    { ...deepFixture(), altar: { x: nativeRuleConstants.DEEP_MAP_SIZE / 2, y: nativeRuleConstants.DEEP_ARRIVAL_Y } },
-    { ...deepFixture(), beastCount: 0 },
-    { ...deepFixture(), lossPerTick: 0.5 },
-    { ...deepFixture(), quarryPerTick: 0 },
-    { ...deepFixture(), altarPerTick: 0 },
-    { ...deepFixture(), altarThreshold: 1_501 },
+    { ...fixture, beasts: { ...fixture.beasts, core: { count: 0, bow: true } } },
+    { ...fixture, rings: [{ radius: 0, realms: 0 }] },
+    { ...fixture, gateDistance: 0 },
+    { ...fixture, lossPerTick: 0.5 },
+    { ...fixture, corePerTick: 0 },
+    { ...fixture, altarPerTick: 0 },
+    { ...fixture, altarThreshold: 1_501 },
   ];
   try {
     for (const deep of malformed) {

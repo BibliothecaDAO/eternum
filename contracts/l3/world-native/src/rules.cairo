@@ -556,8 +556,12 @@ pub const SPIRE_REVEAL_LIMIT: u8 = 10;
 
 pub const DEEP_MAP_SIZE: u32 = 50;
 pub const DEEP_FOUNDATION: u8 = 0;
-pub const DEEP_QUARRY: u8 = 1;
-pub const DEEP_ALTAR: u8 = 2;
-pub const DEEP_SITE_COUNT: u8 = 3;
-pub const DEEP_ARRIVAL_Y: u32 = 5;
+pub const DEEP_CORE: u8 = 1;
+pub const DEEP_MINE: u8 = 2;
+pub const DEEP_ALTAR: u8 = 3;
+pub const DEEP_KIND_COUNT: u8 = 4;
+pub const DEEP_RING_LIMIT: u8 = 5;
+pub const DEEP_DIAGONAL_RINGS: u8 = 3;
+pub const DEEP_SITE_SPACING: u128 = 3;
+pub const DEEP_GATE_REACH: u128 = 15;
 pub const DEEP_GUARD_SLOTS: u8 = 4;

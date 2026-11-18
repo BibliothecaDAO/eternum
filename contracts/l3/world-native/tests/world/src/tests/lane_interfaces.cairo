@@ -71,11 +71,19 @@ fn race_result_keeps_the_scheduled_end_beside_the_actual_finish() {
 }
 
 #[test]
-fn shared_deep_coordinates_keep_the_arrival_and_site_positions_in_one_region() {
+fn shared_deep_coordinates_keep_the_gates_rings_and_daily_kinds_in_one_region() {
     use crate::troops::Coord;
     assert_eq!(crate::deep::center(1024), Coord { alt: false, x: 512, y: 3584 });
-    assert_eq!(crate::deep::arrival(1024), Coord { alt: false, x: 512, y: 3564 });
-    assert_eq!(crate::deep::site_position(25, 35, 1024), Coord { alt: false, x: 512, y: 3594 });
+    assert_eq!(crate::deep::gate(4, 1, 1024), Coord { alt: false, x: 512, y: 3588 });
+    assert_eq!(crate::deep::gate(4, 2, 1024), Coord { alt: false, x: 516, y: 3584 });
+    assert_eq!(crate::deep::gate(4, 3, 1024), Coord { alt: false, x: 512, y: 3580 });
+    assert_eq!(crate::deep::gate(4, 4, 1024), Coord { alt: false, x: 508, y: 3584 });
+    assert_eq!(crate::deep::place(0, 5, 0, 1024), Coord { alt: false, x: 515, y: 3589 });
+    assert_eq!(crate::deep::place(3, 8, 0, 1024), Coord { alt: false, x: 512, y: 3592 });
+    assert_eq!(crate::deep::kind_on(0, 2, 0), 2);
+    assert_eq!(crate::deep::kind_on(0, 0, 1), 3);
+    assert_eq!(crate::deep::kind_on(1, 0, 0), 3);
+    assert_eq!(crate::deep::kind_on(4, 1, 49), 0);
     assert!(crate::deep::contains(Coord { alt: false, x: 487, y: 3559 }, 1024));
     assert!(crate::deep::contains(Coord { alt: false, x: 536, y: 3608 }, 1024));
     assert!(!crate::deep::contains(Coord { alt: false, x: 537, y: 3608 }, 1024));

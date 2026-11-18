@@ -38,7 +38,7 @@ describe("a Deep site's card", () => {
   });
 
   it("holds Attack disabled and says why when the stamina is short", () => {
-    draw(DEEP_SITE_CASES["Quarry, army short of stamina"]);
+    draw(DEEP_SITE_CASES["Ethereal mine, army short of stamina"]);
     expect(labels(["Attack"])[0]!.disabled).toBe(true);
     expect(text()).toContain("Needs 30 stamina, holds 12");
   });
@@ -69,7 +69,7 @@ describe("a Deep site's card", () => {
   });
 
   it("offers Join on a free slot of the player's own Aspect", () => {
-    const fixture = DEEP_SITE_CASES["Quarry held by the player's Aspect, a free slot to join"];
+    const fixture = DEEP_SITE_CASES["Ethereal mine held by the player's Aspect, a free slot to join"];
     draw(fixture);
     expect(labels(["Join"])).toHaveLength(1);
     for (const slot of fixture.guard.slots) {

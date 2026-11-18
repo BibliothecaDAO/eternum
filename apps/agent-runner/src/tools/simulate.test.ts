@@ -117,12 +117,12 @@ it.each([4, 5, 6, 7, 8, 9])("reports the field or garrison survivors from Knight
   const scaled = (troops: number) => BigInt(troops) * BigInt(RESOURCE_PRECISION);
   writeFact(game.store, "DeepRules", [gameId], {
     game_id: gameId,
-    foundation: { ...deep.foundation, alt: false },
-    quarry: { ...deep.quarry, alt: false },
-    altar: { ...deep.altar, alt: false },
-    beast_count: scaled(deep.beastCount),
+    gate_distance: deep.gateDistance,
+    rings: deep.rings.slice(0, 1).map(({ radius, realms }) => ({ radius, realms })),
+    beasts: deepSites.map(({ key }) => ({ count: scaled(deep.beasts[key].count), bow: deep.beasts[key].bow })),
     loss_per_tick: scaled(deep.lossPerTick),
-    quarry_per_tick: scaled(deep.quarryPerTick),
+    core_per_tick: scaled(deep.corePerTick),
+    mine_per_tick: scaled(deep.minePerTick),
     altar_per_tick: deep.altarPerTick,
     altar_threshold: deep.altarThreshold,
   });
@@ -159,8 +159,8 @@ it.each([4, 5, 6, 7, 8, 9])("reports the field or garrison survivors from Knight
     for (const site of deepSites) {
       const id = 1100 + site.id;
       const tile =
-        site.position === "quarry" ? deepCentre : { col: deepCentre.col + 10 + site.id, row: deepCentre.row + 10 };
-      writeFact(game.store, "DeepSite", [gameId, id], { game_id: gameId, entity_id: id, kind: site.id, day: 0 });
+        site.key === "mine" ? deepCentre : { col: deepCentre.col + 10 + site.id, row: deepCentre.row + 10 };
+      writeFact(game.store, "DeepSite", [gameId, id], { game_id: gameId, entity_id: id, kind: site.id, ring: 0, day: 0 });
       writeFact(game.store, "TileOccupancy", [gameId, 0, tile.col, tile.row], {
         game_id: gameId,
         entity_id: id,
@@ -177,7 +177,7 @@ it.each([4, 5, 6, 7, 8, 9])("reports the field or garrison survivors from Knight
         troops: { ...army.troops, count: 0n },
         destroyed_tick: 0,
       });
-      if (site.position === "quarry") defendingId = id;
+      if (site.key === "mine") defendingId = id;
     }
     writeFact(game.store, "DeepGuard", [gameId, 102], {
       game_id: gameId,
