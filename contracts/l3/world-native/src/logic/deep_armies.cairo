@@ -2,13 +2,14 @@ use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePoin
 use crate::commands::ExecutionContext;
 use crate::troops::{ExplorerKey, ExplorerTroops, IBattleResolutionDispatcherTrait};
 
-pub fn enter(key: ExplorerKey, context: ExecutionContext) {
+pub fn enter(key: ExplorerKey, home: u64, context: ExecutionContext) {
     if crate::logic::deep_sites::rules_entry(key.game_id).is_none() {
         return;
     }
     let state = crate::state::read();
     assert!(state.deep.army_ticks.read((key.game_id, key.explorer_id)).is_none(), "army already entered Deep");
     write_tick(key, context.timestamp / context.rules.unbox().tick_config.armies_tick_in_seconds);
+    crate::logic::deep_sites::count_entry(key.game_id, home, context);
 }
 
 pub fn settle(key: ExplorerKey, mut army: ExplorerTroops, context: ExecutionContext) -> ExplorerTroops {

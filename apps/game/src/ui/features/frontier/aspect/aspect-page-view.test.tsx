@@ -2,7 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { formatShort } from "@bibliothecadao/types";
+import { deepSites, formatShort } from "@bibliothecadao/types";
 import { ASPECT_PAGE_CASES } from "./aspect-page-fixtures";
 import { AspectPageView, type AspectPageProps } from "./aspect-page-view";
 
@@ -57,9 +57,7 @@ describe("the Aspect page", () => {
     expect(part("data-aspect-bane")).toContain("300 of 1,500");
     const members = part("data-aspect-members");
     expect(members.indexOf("Aldor")).toBeLessThan(members.indexOf("Brek"));
-    expect(members).toContain("Guards the Foundation");
-    expect(members).toContain("Guards the Altar");
-    expect(members).toContain("Guards the Ethereal mine");
+    for (const { name } of deepSites) expect(members).toContain(`Guards the ${name}`);
     expect(members).toContain("1.2K");
   });
 

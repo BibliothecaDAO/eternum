@@ -280,8 +280,7 @@ pub mod MovementLogic {
             explorer.coord = destination;
             crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
             if command.depth == 3 {
-                crate::logic::deep_armies::enter(key, context);
-                crate::logic::deep_sites::count_entry(game_id, explorer.owner, context);
+                crate::logic::deep_armies::enter(key, explorer.owner, context);
             }
         }
         fn move_explorer(

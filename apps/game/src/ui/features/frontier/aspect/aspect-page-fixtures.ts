@@ -39,7 +39,7 @@ const member = (id: string, realm: string, glory: number, guards: string | null,
   glory,
   guards,
 });
-const [foundation, , mine, altar] = deepSites.map(({ name }) => name);
+const [foundation, core, mine, altar] = deepSites.map(({ name }) => name);
 
 const harmony = (height: number, charge: number): OwnAspect => ({
   aspect: "Harmony",
@@ -50,7 +50,7 @@ const harmony = (height: number, charge: number): OwnAspect => ({
     member("b", "Brek", 980, altar!, true),
     member("c", "Corva", 710, null),
     member("d", "Dunmere", 655, mine!),
-    member("e", "Elsen", 310, null),
+    member("e", "Elsen", 310, core!),
     member("f", "Farrow", 95, null),
   ],
 });
