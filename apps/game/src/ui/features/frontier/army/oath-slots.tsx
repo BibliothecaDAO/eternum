@@ -6,7 +6,13 @@ import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { HudCost } from "@/ui/design-system/kit/hud-elements";
 import { costLine } from "@/ui/design-system/kit/price-faces";
 import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
-import { configManager, OATH_SLOTS_MAX, oathResearchRow, troopOathSlots } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  OATH_SLOTS_MAX,
+  oathResearchRow,
+  oathSlotResearchTier,
+  troopOathSlots,
+} from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, type TroopType } from "@bibliothecadao/types";
 
 export function TroopOathSlots({
@@ -38,7 +44,11 @@ export function TroopOathSlots({
           const oath = held[index];
           const price = open
             ? undefined
-            : store.get("ResearchPrice", { game_id, row: oathResearchRow[category], tier: index });
+            : store.get("ResearchPrice", {
+                game_id,
+                row: oathResearchRow[category],
+                tier: oathSlotResearchTier(index),
+              });
           return (
             <div
               key={index}

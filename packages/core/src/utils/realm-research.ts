@@ -151,3 +151,7 @@ export function isOathResearch(row: number): boolean {
 export function troopOathSlots(learned: bigint, category: TroopType): number {
   return research.OATH_SLOTS_BASE + researchTier(learned, oathResearchRow[category]);
 }
+
+export function oathSlotResearchTier(slotIndex: number): number {
+  return slotIndex - research.OATH_SLOTS_BASE + 1;
+}
