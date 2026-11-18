@@ -25,7 +25,7 @@ pub const PASS_STAMINA: u16 = 20;
 pub const POWER_DAMAGE_PERCENT: u16 = 20;
 pub const GIANTS_REDUCTION_PERCENT: u16 = 15;
 pub const PROTECTION_REDUCTION_PERCENT: u16 = 25;
-pub const REFLECTION_WELL_PERCENT: u16 = 80;
+pub const REFLECTION_WELL_PERCENT: u8 = 80;
 
 pub fn damage_multiplier(attacker: u16, defender: u16, guarding: bool) -> Fixed {
     let mut multiplier = FixedTrait::ONE();

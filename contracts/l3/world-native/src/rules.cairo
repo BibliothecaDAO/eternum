@@ -546,7 +546,7 @@ pub struct SpeedConfig {
     pub donkey_sec_per_km_troops: u16,
 }
 
-pub const WELL_REFILL_PERCENT: u16 = 40;
+pub const WELL_REFILL_PERCENT: u8 = 40;
 
 pub const FRONTIER_REPORT_GRACE_SECONDS: u32 = crate::days::FRONTIER_REPORT_GRACE_SECONDS;
 
