@@ -1,14 +1,8 @@
-import { nativeRuleConstants as rule } from "../../../contracts/l3/world-native/schema/client.gen";
+import type { deepSites } from "../../../packages/types/src/constants/deep-sites";
 import type { ConfigPatch } from "./merge-config";
 import type { GameType } from "./types";
 
-export const deepKinds = {
-  foundation: rule.DEEP_FOUNDATION,
-  core: rule.DEEP_CORE,
-  mine: rule.DEEP_MINE,
-  altar: rule.DEEP_ALTAR,
-} as const;
-export type DeepKind = keyof typeof deepKinds;
+type DeepKind = (typeof deepSites)[number]["key"];
 
 /** Five chest tiers, common to legendary: a depth's odds in basis points, or the shares each tier pays. */
 export interface ChestTiers {

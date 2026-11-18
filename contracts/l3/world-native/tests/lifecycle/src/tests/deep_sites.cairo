@@ -137,6 +137,23 @@ pub fn site(d: Deployment, game_id: u32, kind: u8) -> ResourceKey {
     )
 }
 
+fn ring_site(d: Deployment, game_id: u32, ring: u8, kind: u8) -> ResourceKey {
+    interact_with_state(
+        d.games,
+        || {
+            let mut found = None;
+            for place in 0..crate::rules::DEEP_KIND_COUNT {
+                let index = ring * crate::rules::DEEP_KIND_COUNT + place;
+                let key = ResourceKey { game_id, entity_id: crate::logic::deep_sites::site_id(game_id, index) };
+                if crate::logic::deep_sites::site(key).unwrap().kind == kind {
+                    found = Some(key);
+                }
+            }
+            found.expect('no Deep site of that kind')
+        },
+    )
+}
+
 pub fn gate(d: Deployment, game_id: u32, aspect: u8) -> crate::troops::Coord {
     interact_with_state(
         d.games,
@@ -218,6 +235,26 @@ fn distinct_homes_enter_one_deep_and_move_on_its_fixed_terrain() {
     );
     assert_eq!(army(d, first).coord, crate::geometry::neighbor(a, direction));
     assert_eq!(army(d, first).troops.count, 10 * crate::rules::RESOURCE_PRECISION);
+}
+
+#[test]
+fn a_later_ring_refuses_joins_and_attacks_until_enough_realms_entered_today() {
+    let mut definition = preset();
+    let mut deep = definition.economy.deep.unwrap();
+    deep
+        .rings =
+            array![crate::deep::DeepRing { radius: 5, realms: 0 }, crate::deep::DeepRing { radius: 8, realms: 2 }]
+        .span();
+    definition.economy.deep = Some(deep);
+    let (d, game_id) = super::aspects::setup_aspect_preset(880, definition);
+    let first = deployed(d, game_id, 1, 10);
+    let target = ring_site(d, game_id, 1, crate::rules::DEEP_FOUNDATION);
+    beside(d, first, target, 0);
+    refused(d, game_id, join(d, first, target), 360, "Deep ring closed");
+    refused(d, game_id, fight(first, target), 360, "Deep ring closed");
+    deployed(player(d, 8801), game_id, 2, 10);
+    applied(d, game_id, fight(first, target), 360);
+    assert_eq!(held(d, first), Some(crate::deep::DeepGuard { site_id: target.entity_id, slot: 0 }));
 }
 
 #[test]

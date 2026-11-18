@@ -31,7 +31,7 @@ import {
 import { orderLengths, seasonSeconds } from "../../../../packages/core/src/utils/days";
 import { nativePresetIdFor } from "../../../source/native";
 import { clockScaled, seasonDayUnitSeconds } from "../../../source/common/season-clock";
-import { RESOURCE_PRECISION, ResourcesIds } from "../../../../packages/types/src/constants";
+import { RESOURCE_PRECISION, ResourcesIds, deepSites } from "../../../../packages/types/src/constants";
 import {
   buildNativePresetRegistration,
   registerNativePreset,
@@ -1060,29 +1060,19 @@ test("an optional Deep preset serializes its rings, its beasts in kind order and
   const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
   const previous = source.deep;
   try {
-    source.deep = deepFixture();
+    const deep = deepFixture();
+    source.deep = deep;
     const built = buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id);
-    const precision = BigInt(RESOURCE_PRECISION);
+    const scaled = (amount: number) => BigInt(amount) * BigInt(RESOURCE_PRECISION);
     expect(built.economy.deep.unwrap()).toEqual({
-      gate_distance: 4,
-      rings: [
-        { radius: 5, realms: 0 },
-        { radius: 8, realms: 30 },
-        { radius: 11, realms: 60 },
-        { radius: 8, realms: 120 },
-        { radius: 11, realms: 240 },
-      ],
-      beasts: [
-        { count: 15_000n * precision, bow: false },
-        { count: 12_000n * precision, bow: true },
-        { count: 10_000n * precision, bow: false },
-        { count: 15_000n * precision, bow: true },
-      ],
-      loss_per_tick: 200n * precision,
-      core_per_tick: 300n * precision,
-      mine_per_tick: 300n * precision,
-      altar_per_tick: 5,
-      altar_threshold: 1_500,
+      gate_distance: deep.gateDistance,
+      rings: deep.rings,
+      beasts: deepSites.map(({ key }) => ({ count: scaled(deep.beasts[key].count), bow: deep.beasts[key].bow })),
+      loss_per_tick: scaled(deep.lossPerTick),
+      core_per_tick: scaled(deep.corePerTick),
+      mine_per_tick: scaled(deep.minePerTick),
+      altar_per_tick: deep.altarPerTick,
+      altar_threshold: deep.altarThreshold,
     });
     codec.compile("register_preset", { preset_id: source.id, definition: built });
   } finally {

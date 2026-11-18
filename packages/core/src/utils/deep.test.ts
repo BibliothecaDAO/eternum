@@ -8,7 +8,7 @@ import {
 import { nativeRowDefinitions } from "../client/native-row";
 import { currentArmy, currentResourceWeight, deepTerrain, deepTiles } from "./deep";
 import { armyCombatRefusal } from "./army-opponents";
-import { readDeepSites } from "../client/views/deep-sites";
+import { readDeepSite, readDeepSites } from "../client/views/deep-sites";
 import { dayAtIndex } from "./days";
 
 const calendar = { startMainAt: 360, scheduledEndAt: 288360, endAt: 288360, dayUnitSeconds: 14400, seed: 1n };
@@ -116,6 +116,22 @@ describe("the shared Deep", () => {
     expect(armyCombatRefusal(store, army, enemy)).toBe("outside-deep");
     rows.SliceRules![0]!.day_unit_seconds = 0;
     expect(armyCombatRefusal(store, army, enemy)).toBeUndefined();
+  });
+
+  it("reads a later ring's site closed until today's entries reach its ring's count", () => {
+    const { rows, store } = fixture();
+    rows.DeepRules![0]!.rings = [
+      { radius: 5, realms: 0 },
+      { radius: 8, realms: 2 },
+    ];
+    rows.DeepSite = [{ game_id: 7, entity_id: 24n, kind: 0, ring: 1, day: 0n }];
+    rows.Guard = [{ game_id: 7, structure_id: 24n, slot: 0, troops: { count: 10n * precision } }];
+    rows.TileOccupancy!.push({ game_id: 7, entity_id: 24n, col: 505, row: 3584, alt: false });
+    expect(readDeepSite(store, 420, 24n, 7)?.open).toBe(false);
+    rows.DeepEntries = [{ game_id: 7, day: 0n, count: 1 }];
+    expect(readDeepSite(store, 420, 24n, 7)?.open).toBe(false);
+    rows.DeepEntries = [{ game_id: 7, day: 0n, count: 2 }];
+    expect(readDeepSite(store, 420, 24n, 7)?.open).toBe(true);
   });
 
   it("reads all sites in catalog order, highest live guard first, then restores next-day beasts", () => {

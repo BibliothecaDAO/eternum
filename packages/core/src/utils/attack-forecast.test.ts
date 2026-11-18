@@ -82,7 +82,10 @@ function frontier() {
   write("DeepRules", {
     game_id: GAME_ID,
     gate_distance: 4,
-    rings: [{ radius: 5, realms: 0 }],
+    rings: [
+      { radius: 5, realms: 0 },
+      { radius: 8, realms: 30 },
+    ],
     beasts: [{ count: troops(10_000), bow: false }, { count: troops(10_000), bow: true }, { count: troops(10_000), bow: false }, { count: troops(10_000), bow: true }],
     loss_per_tick: troops(100),
     core_per_tick: troops(500),
@@ -182,14 +185,16 @@ function frontier() {
     destroyed_tick: 0,
   });
 
-  const deepSite = (entity_id: number, tile: Tile, beast: number) => {
-    write("DeepSite", { game_id: GAME_ID, entity_id, kind: nativeRuleConstants.DEEP_MINE, ring: 0, day: 0n });
+  const deepSite = (entity_id: number, tile: Tile, beast: number, ring = 0) => {
+    write("DeepSite", { game_id: GAME_ID, entity_id, kind: nativeRuleConstants.DEEP_MINE, ring, day: 0n });
     occupy(entity_id, tile, TileOccupier.DeepSite, false);
     write("Guard", guardRow(entity_id, 0, beast));
   };
 
   const holdDeepSite = (explorer_id: number, site_id: number, slot = 0) =>
     write("DeepGuard", { game_id: GAME_ID, explorer_id, site_id, slot });
+
+  const enterDeep = (count: number) => write("DeepEntries", { game_id: GAME_ID, day: 0n, count });
 
   const camp = (entity_id: number, tile: Tile, guards: [number, Category][]) => {
     write("Structure", structureRow(entity_id, 0n, StructureType.Camp));
@@ -231,7 +236,7 @@ function frontier() {
       options,
     );
 
-  return { home, army, deepSite, holdDeepSite, camp, guardedPost, forecast };
+  return { home, army, deepSite, holdDeepSite, enterDeep, camp, guardedPost, forecast };
 }
 
 const structureRow = (entity_id: number, owner: bigint, category: number) => ({
@@ -268,6 +273,18 @@ describe("one attack forecast for every combat surface", () => {
     game.army(10, 1, beside(DEEP, 2), { category: "Crossbowman" });
     expect(refusalOf(game.forecast(10, 50))).toBe("deep-site-not-adjacent");
     game.army(10, 1, beside(DEEP), { category: "Crossbowman" });
+    expect(refusalOf(game.forecast(10, 50))).toBe("fights");
+  });
+
+  it("refuses a site of a ring not yet opened by today's Realms entered, then fights it once it opens", () => {
+    const game = frontier();
+    game.home(1, PLAYER, 1);
+    game.deepSite(50, DEEP, 300, 1);
+    game.army(10, 1, beside(DEEP));
+    expect(refusalOf(game.forecast(10, 50))).toBe("deep-ring-closed");
+    game.enterDeep(29);
+    expect(refusalOf(game.forecast(10, 50))).toBe("deep-ring-closed");
+    game.enterDeep(30);
     expect(refusalOf(game.forecast(10, 50))).toBe("fights");
   });
 

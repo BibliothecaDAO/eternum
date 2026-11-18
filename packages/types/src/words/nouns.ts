@@ -169,7 +169,7 @@ export type BeastRow = {
   scale: number;
   idle: BeastIdle;
 } & BeastLook;
-type DeepBeastRow = { name: string; scale: number; idle: BeastIdle } & BeastLook;
+type DeepBeastRow = { name: string } & BeastLook;
 
 const breath = (speed: number, height: number) => ({ motion: "breath", speed, height }) as const;
 const lift = (speed: number, height: number) => ({ motion: "lift", speed, height }) as const;
@@ -194,10 +194,10 @@ export const BEASTS = {
 } as const satisfies Record<string, BeastRow>;
 
 export const DEEP_BEASTS = {
-  foundation: { name: "Colossus", scale: 1.3, fallback: "troll", idle: breath(0.8, 0.012) },
-  core: { name: "Warlock", scale: 0.85, fallback: "dark-fey", idle: hover },
-  mine: { name: "Balrog", scale: 1.1, fallback: "troll", idle: breath(1, 0.016) },
-  altar: { name: "Basilisk", scale: 1.2, fallback: "wyvern", idle: breath(1.2, 0.014) },
+  foundation: { name: "Colossus", fallback: "troll" },
+  core: { name: "Warlock", fallback: "dark-fey" },
+  mine: { name: "Balrog", fallback: "troll" },
+  altar: { name: "Basilisk", fallback: "wyvern" },
 } as const satisfies Record<(typeof deepSites)[number]["key"], DeepBeastRow>;
 
 const DEEPLESS_FOURTH_LAYER = 3;

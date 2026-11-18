@@ -6,9 +6,8 @@ import {
 import { DAYS_PER_BAG } from "@bibliothecadao/eternum/expeditions";
 import { buildingIds } from "../../../source/frontier/native";
 import { nativePresetForId } from "../../../source/native";
-import { deepKinds, type DeepKind } from "../../../source/common/native-preset";
 import { clockScaled, seasonDayUnitSeconds } from "../../../source/common/season-clock";
-import { RESOURCE_PRECISION, ResourcesIds, type Config } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, ResourcesIds, deepSites, type Config } from "@bibliothecadao/types";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import {
   buildBiomeClimateConfig,
@@ -517,9 +516,7 @@ function buildDeep(preset: ReturnType<typeof nativePresetForId>) {
 type DeepPreset = NonNullable<ReturnType<typeof nativePresetForId>["deep"]>;
 
 function deepBeasts(deep: DeepPreset) {
-  return (Object.keys(deepKinds) as DeepKind[])
-    .sort((left, right) => deepKinds[left] - deepKinds[right])
-    .map((kind) => deep.beasts[kind]);
+  return [...deepSites].sort((left, right) => left.id - right.id).map(({ key }) => deep.beasts[key]);
 }
 
 function validateDeep(deep: DeepPreset) {
