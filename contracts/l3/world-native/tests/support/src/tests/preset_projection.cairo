@@ -323,7 +323,7 @@ fn observed_deep_rules(game_id: u32) -> Option<crate::deep::DeepRules> {
             loss_per_tick: settings.loss_per_tick,
             core_per_tick: settings.core_per_tick,
             mine_per_tick: settings.mine_per_tick,
-            altar_per_tick: settings.altar_per_tick,
+            building_pay: settings.building_pay,
             altar_threshold: settings.altar_threshold,
         },
     )
