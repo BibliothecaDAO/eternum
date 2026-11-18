@@ -1,12 +1,22 @@
 import { DEEP_SITE_FACES } from "@/ui/features/frontier/deep/deep-site-faces";
-import { configManager } from "@bibliothecadao/eternum";
-import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { deepSites, MineKinds, TileOccupier } from "@bibliothecadao/types";
+import { configManager, getBlockTimestamp } from "@bibliothecadao/eternum";
+import { readDeepBeastTroops, safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import {
+  DEEP_BEASTS,
+  beastModel,
+  deepSites,
+  MineKinds,
+  TileOccupier,
+  type BeastIdle,
+  type BeastModel,
+} from "@bibliothecadao/types";
 import type { MapPlateInput, MapPlateScope } from "../map-plates/map-plate-layer";
 import { PLATE_CLEARANCE } from "./structure-visible-presentation";
 import { presentResult } from "@/three/presented-results";
 import { activeMapLayer } from "@/three/map-layer";
 import { frontierPaintedPath } from "../structures/frontier-painted-buildings";
+import { FRONTIER_BEASTS } from "../structures/frontier-beast";
+import { FrontierModel } from "../structures/frontier-model";
 import InstancedModel from "@/three/managers/instanced-model";
 import { FELT_CENTER } from "@/ui/config";
 import {
@@ -38,6 +48,8 @@ type DrawnSite = {
   name: string;
   stands: (tile: TileSpatialRenderable) => boolean;
   model: () => Promise<{ model: InstancedModel; height: number }>;
+  scale: number;
+  idle?: BeastIdle;
 };
 type SiteHex = { col: number; row: number };
 type PlacedSite = SiteHex & { entityId: number };
@@ -62,8 +74,25 @@ export class MapSiteManager {
         key: `deep:${kind.key}`,
         name: kind.name,
         stands: (tile: TileSpatialRenderable) =>
-          tile.occupierType === TileOccupier.DeepSite && this.deepKindOf(tile.occupierId) === kind.id,
+          tile.occupierType === TileOccupier.DeepSite &&
+          this.deepKindOf(tile.occupierId) === kind.id &&
+          !this.beastGuards(tile.occupierId),
         model: () => (look.kind === "model" ? modelOf(look.path(), kind.name) : Promise.resolve(foundationModel())),
+        scale: 1,
+      };
+    }),
+    ...deepSites.map((kind) => {
+      const beast = DEEP_BEASTS[kind.key];
+      return {
+        key: `deep-beast:${kind.key}`,
+        name: beast.name,
+        stands: (tile: TileSpatialRenderable) =>
+          tile.occupierType === TileOccupier.DeepSite &&
+          this.deepKindOf(tile.occupierId) === kind.id &&
+          this.beastGuards(tile.occupierId),
+        model: () => beastModelOf(beastModel(beast)),
+        scale: beast.scale,
+        idle: beast.idle,
       };
     }),
   ];
@@ -89,7 +118,12 @@ export class MapSiteManager {
       }
     });
     this.unsubscribeRewards = store.subscribe((changes) => {
-      if (changes.some(({ model }) => model === "DeepSite")) this.refresh();
+      const touched = changes.some(
+        (change) =>
+          change.model === "DeepSite" ||
+          (change.model === "Guard" && this.guardsDeepSite(change.current ?? change.previous)),
+      );
+      if (touched) this.refresh();
     });
     this.refresh();
   }
@@ -145,7 +179,8 @@ export class MapSiteManager {
       }
       const previous = model.getCount();
       hexes.forEach((hex, index) => {
-        model.setMatrixAt(index, this.placement(hex));
+        model.setMatrixAt(index, this.placement(hex, site.scale));
+        if (site.idle && model instanceof FrontierModel) model.setIdleAt(index, site.idle);
         // The Foundation is a hyperstructure's foundation alone: no Aspect builds this one.
         if (model instanceof HyperstructureModel)
           model.setConstructionAt(index, { entityId: hex.entityId, progress: 0, completed: false });
@@ -154,15 +189,26 @@ export class MapSiteManager {
       model.setCount(hexes.length);
       model.needsUpdate();
     }
-    publishMapSelection({
-      drawnSites: Object.fromEntries([...this.models].map(([key, model]) => [key, model.getCount()])),
-      siteHexes: Object.fromEntries(
-        this.sites.flatMap((site) => {
-          const [hex] = this.siteHexes(site);
-          return hex ? [[site.key, { col: hex.col, row: hex.row }]] : [];
-        }),
-      ),
-    });
+    publishMapSelection({ drawnSites: this.drawnKinds(), siteHexes: this.kindHexes() });
+  }
+
+  private drawnKinds(): Record<string, number> {
+    const drawn = (key: string) => this.models.get(key)?.getCount() ?? 0;
+    return Object.fromEntries(
+      deepSites.map(({ key }) => [`deep:${key}`, drawn(`deep:${key}`) + drawn(`deep-beast:${key}`)]),
+    );
+  }
+
+  private kindHexes(): Record<string, { col: number; row: number }> {
+    const tiles = this.projection.getTiles(activeMapLayer());
+    return Object.fromEntries(
+      deepSites.flatMap((kind) => {
+        const tile = tiles.find(
+          (each) => each.occupierType === TileOccupier.DeepSite && this.deepKindOf(each.occupierId) === kind.id,
+        );
+        return tile ? [[`deep:${kind.key}`, { col: tile.hexCoords.col, row: tile.hexCoords.row }]] : [];
+      }),
+    );
   }
 
   private refreshPlates(): void {
@@ -194,7 +240,8 @@ export class MapSiteManager {
       col: tile.hexCoords.col - FELT_CENTER(),
       row: tile.hexCoords.row - FELT_CENTER(),
     });
-    placePositionOnTerrain(position, this.terrain, (this.heights.get(`deep:${kind.key}`) ?? 0) + PLATE_CLEARANCE);
+    const standing = this.beastGuards(tile.occupierId) ? `deep-beast:${kind.key}` : `deep:${kind.key}`;
+    placePositionOnTerrain(position, this.terrain, (this.heights.get(standing) ?? 0) + PLATE_CLEARANCE);
     return {
       entityId: tile.occupierId,
       position,
@@ -217,7 +264,7 @@ export class MapSiteManager {
       .model()
       .then(({ model, height }) => {
         if (this.destroyed) return model.dispose();
-        this.heights.set(site.key, height);
+        this.heights.set(site.key, height * site.scale);
         model.group.visible = this.modelVisible;
         this.scene.add(model.group);
         this.models.set(site.key, model);
@@ -241,9 +288,24 @@ export class MapSiteManager {
     return this.store.get("DeepSite", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.kind;
   }
 
-  private placement(hex: SiteHex) {
+  private beastGuards(entityId: number): boolean {
+    const troops = readDeepBeastTroops(
+      this.store,
+      getBlockTimestamp().currentDefaultTick,
+      BigInt(entityId),
+      configManager.getActiveGameId(),
+    );
+    return (troops ?? 0n) > 0n;
+  }
+
+  private guardsDeepSite(guard: { structure_id: bigint } | undefined): boolean {
+    return guard !== undefined && this.deepKindOf(safeInteger(guard.structure_id)) !== undefined;
+  }
+
+  private placement(hex: SiteHex, scale: number) {
     const position = getWorldPositionForHex({ col: hex.col - FELT_CENTER(), row: hex.row - FELT_CENTER() });
     this.dummy.position.copy(placePositionOnTerrain(position, this.terrain));
+    this.dummy.scale.setScalar(scale);
     this.dummy.updateMatrix();
     return this.dummy.matrix;
   }
@@ -259,6 +321,11 @@ const modelOf = async (path: string, name: string) => {
     model: new InstancedModel(gltf, SITE_CAPACITY, false, name),
     height: new Box3().setFromObject(gltf.scene).max.y,
   };
+};
+
+const beastModelOf = async (species: BeastModel) => {
+  const gltf = await gltfLoader.loadAsync(FRONTIER_BEASTS[species].path);
+  return { model: new FrontierModel(gltf, SITE_CAPACITY, species), height: new Box3().setFromObject(gltf.scene).max.y };
 };
 
 /** The Foundation's model: a hyperstructure's own, standing at its foundation, its plate just over that base. */

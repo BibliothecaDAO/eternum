@@ -11,6 +11,7 @@ ART = runpy.run_path(str(Path(__file__).with_name("sculpt-creatures.py")))
 Creature, mesh = ART["Creature"], ART["mesh"]
 ART["BASE"]["TONES"].update(
     {
+        "basilisk": (0.08, 0.23, 0.25),
         "ammit": (0.32, 0.22, 0.12),
         "dark-fey": (0.20, 0.12, 0.24),
     }
@@ -18,6 +19,150 @@ ART["BASE"]["TONES"].update(
 
 
 class SiteBeast(Creature):
+    def basilisk(self):
+        coil = []
+        for i in range(34):
+            t = i / 33
+            angle = -math.pi / 2 + t * math.tau * 1.15
+            radius = 0.32 - 0.14 * t
+            width = 0.008 + 0.105 * math.sin(t * math.pi / 2)
+            coil.append(
+                (
+                    (
+                        math.cos(angle) * radius,
+                        math.sin(angle) * radius + 0.05,
+                        0.08 + 0.14 * t,
+                    ),
+                    width,
+                    width,
+                )
+            )
+        self.surface("Compact winding serpent body", coil)
+        tip = coil[-1][0]
+        self.surface(
+            "Upright S-curved neck",
+            [
+                (tip, 0.12, 0.12),
+                ((0.08, 0.12, 0.33), 0.15, 0.14),
+                ((-0.05, 0.10, 0.52), 0.17, 0.13),
+                ((-0.08, 0.03, 0.76), 0.14, 0.12),
+                ((-0.04, -0.06, 0.98), 0.12, 0.11),
+                ((0.01, -0.16, 1.10), 0.14, 0.12),
+            ],
+        )
+        self.surface(
+            "Crowned reptilian skull",
+            [
+                ((0.01, -0.14, 1.06), 0.13, 0.10),
+                ((0.01, -0.22, 1.16), 0.17, 0.13),
+                ((0.01, -0.32, 1.13), 0.17, 0.11),
+                ((0.01, -0.40, 1.08), 0.11, 0.07),
+            ],
+        )
+        self.surface(
+            "Lower open jaw",
+            [
+                ((0.01, -0.16, 1.01), 0.10, 0.08),
+                ((0.01, -0.26, 0.94), 0.11, 0.045),
+                ((0.01, -0.40, 0.95), 0.08, 0.025),
+            ],
+            connected=True,
+        )
+        for row in range(3):
+            y = 0.24 - row * 0.21
+            for side in [-1, 1]:
+                self.surface(
+                    "Six tucked claw limbs",
+                    [
+                        ((side * 0.13, y, 0.23), 0.065, 0.06),
+                        ((side * 0.25, y - 0.02, 0.22), 0.06, 0.055),
+                        ((side * 0.31, y - 0.04, 0.12), 0.038, 0.035),
+                        ((side * 0.29, y - 0.10, 0.055), 0.05, 0.035),
+                    ],
+                )
+                for toe in range(3):
+                    x = side * (0.255 + toe * 0.027)
+                    self.ridge(
+                        "Short hooked talon",
+                        [
+                            (x, y - 0.08, 0.08),
+                            (x, y - 0.16, 0.035),
+                            (x, y - 0.18, 0.018),
+                        ],
+                        [0.018, 0.014, 0.001],
+                        "horn",
+                    )
+        self.unify_skin()
+        self.require_connected_skin()
+        self.relief("warty")
+        for side in [-1, 1]:
+            x, z = side * 0.112 + 0.01, 1.151
+            self.eye_patch(x, self.face_y(x, z) - 0.008, z, 0.032)
+            self.ridge(
+                "Angled crown brow",
+                [
+                    (side * 0.035 + 0.01, -0.37, 1.19),
+                    (side * 0.115 + 0.01, -0.32, 1.21),
+                    (side * 0.17 + 0.01, -0.24, 1.17),
+                ],
+                [0.018, 0.025, 0.009],
+                "horn",
+            )
+            for i in range(3):
+                x = side * (0.06 + i * 0.052)
+                self.ridge(
+                    "Swept crown spike",
+                    [
+                        (x, -0.20 + i * 0.035, 1.18 - i * 0.016),
+                        (x * 1.25, -0.14 + i * 0.045, 1.32 - i * 0.018),
+                        (x * 1.4, -0.08 + i * 0.045, 1.39 - i * 0.025),
+                    ],
+                    [0.031, 0.022, 0.001],
+                    "horn",
+                )
+            for i in range(3):
+                y = -0.28 - i * 0.045
+                self.ridge(
+                    "Venom fang",
+                    [
+                        (side * 0.09 + 0.01, y, 1.08),
+                        (side * 0.085 + 0.01, y - 0.01, 1.01),
+                        (side * 0.07 + 0.01, y - 0.015, 0.97),
+                    ],
+                    [0.016, 0.011, 0.001],
+                    "horn",
+                )
+        for i in range(4):
+            z = 1.10 + i * 0.026
+            self.ridge("Central crown shield", [(-0.045, -0.36 + i * 0.025, z), (0.01, -0.39 + i * 0.025, z + 0.02), (0.065, -0.36 + i * 0.025, z)], [0.009, 0.017, 0.009], "skin")
+        for i in range(9):
+            z = 0.40 + i * 0.073
+            y = self.face_y(0, z) - 0.009
+            width = 0.105 if i < 5 else 0.083
+            self.ridge(
+                "Overlapping pale throat plate",
+                [
+                    (-width, y + 0.016, z),
+                    (0, y - 0.009, z - 0.018),
+                    (width, y + 0.016, z),
+                ],
+                [0.014, 0.022, 0.014],
+                "horn",
+            )
+        for i in range(4, 30, 3):
+            center = Vector(coil[i][0])
+            radial = Vector((center.x, center.y - 0.05, 0)).normalized()
+            self.ridge(
+                "Dorsal coil scute",
+                [
+                    center + Vector((0, 0, 0.08)),
+                    center + radial * 0.035 + Vector((0, 0, 0.14)),
+                    center + radial * 0.06 + Vector((0, 0, 0.16)),
+                ],
+                [0.026, 0.018, 0.001],
+                "skin",
+            )
+
     def ammit(self):
         self.surface(
             "Barrel hindquarters and lion shoulders",
@@ -386,8 +531,8 @@ class SiteBeast(Creature):
 
 if __name__ == "__main__":
     species = sys.argv[sys.argv.index("--") + 1]
-    if species not in {"ammit", "dark-fey"}:
-        raise ValueError("Choose ammit or dark-fey")
+    if species not in {"basilisk", "ammit", "dark-fey"}:
+        raise ValueError("Choose basilisk, ammit or dark-fey")
     creature = SiteBeast(species)
     getattr(creature, species.replace("-", "_"))()
     creature.finish()

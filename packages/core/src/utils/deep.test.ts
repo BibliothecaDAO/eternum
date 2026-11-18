@@ -8,7 +8,7 @@ import {
 import { nativeRowDefinitions } from "../client/native-row";
 import { currentArmy, currentResourceWeight, deepTerrain, deepTiles } from "./deep";
 import { armyCombatRefusal } from "./army-opponents";
-import { deepBuildingPay, readDeepSite, readDeepSites } from "../client/views/deep-sites";
+import { deepBuildingPay, readDeepBeastTroops, readDeepSite, readDeepSites } from "../client/views/deep-sites";
 import { dayAtIndex } from "./days";
 
 const calendar = { startMainAt: 360, scheduledEndAt: 288360, endAt: 288360, dayUnitSeconds: 14400, seed: 1n };
@@ -211,6 +211,16 @@ describe("the shared Deep", () => {
     );
     rows.DeepSite.pop();
     expect(() => readDeepSites(store, 420, 7)).toThrow("Incomplete Deep site facts");
+  });
+
+  it("reads a site's beast from its guard and the day alone, before the day's entries are known", () => {
+    const { rows, store } = fixture();
+    rows.DeepRules = [{ game_id: 7, loss_per_tick: precision, beasts: [{ count: 10n * precision, bow: false }] }];
+    rows.DeepSite = [{ game_id: 7, entity_id: 20n, kind: 0, ring: 0, day: 0n }];
+    rows.Guard = [{ game_id: 7, structure_id: 20n, slot: 0, troops: { count: 4n * precision } }];
+    expect(readDeepBeastTroops(store, 420, 20n, 7)).toBe(4n * precision);
+    expect(readDeepBeastTroops(store, dayAtIndex(calendar, 0).end, 20n, 7)).toBe(10n * precision);
+    expect(readDeepBeastTroops(store, 420, 21n, 7)).toBeUndefined();
   });
 });
 

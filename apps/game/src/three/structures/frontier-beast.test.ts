@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 import { basename } from "node:path";
 import {
   BEASTS,
-  DEEPLESS_FOURTH_LAYER_BEASTS,
+  DEEP_BEASTS,
   RESOURCE_PRECISION,
   StructureType,
   beastModel,
@@ -91,8 +91,8 @@ describe("Frontier guard identity", () => {
     }
   });
 
-  it("ships exactly the models the beast table stands on", () => {
-    const species = [...new Set(Object.values(BEASTS).map(beastModel))].sort();
+  it("ships exactly the models the beast tables stand on, the Deep's beasts included", () => {
+    const species = [...new Set([...Object.values(BEASTS), ...Object.values(DEEP_BEASTS)].map(beastModel))].sort();
     expect(Object.keys(FRONTIER_BEASTS).sort()).toEqual(species);
     const deliveries = readdirSync(new URL("../../../public/models/frontier", import.meta.url), {
       recursive: true,
@@ -117,10 +117,8 @@ describe("Frontier guard identity", () => {
     );
   });
 
-  it("keeps one ruin beast a layer and refuses a layer the table has no beast for, within the scale its model clears", () => {
+  it("keeps one ruin beast a layer and refuses a layer the table has no beast for", () => {
     expect([0, 1, 2].map((depth) => frontierBeast(depth).name)).toEqual(["Wyvern", "Ammit", "Minotaur"]);
-    for (const beast of [...Object.values(BEASTS), ...Object.values(DEEPLESS_FOURTH_LAYER_BEASTS)])
-      expect(beast.scale).toBeLessThanOrEqual(FRONTIER_BEASTS[beastModel(beast)].maxScale);
     expect(() => frontierBeast(3)).toThrow("No ruin beast on layer 3");
     expect(() => frontierBeast(3, StructureType.Camp)).toThrow("No camp beast on layer 3");
     expect(() => frontierBeast(0, StructureType.Realm)).toThrow("No Frontier beast guards structure category");
@@ -275,7 +273,7 @@ describe("Frontier guard identity", () => {
       "without depth rules",
     );
   });
-  it("has exactly seven active species with distinct model and portrait deliveries", () => {
+  it("has exactly eight active species with distinct model and portrait deliveries", () => {
     expect(Object.keys(FRONTIER_BEASTS)).toEqual([
       "troll",
       "wyvern",
@@ -283,16 +281,17 @@ describe("Frontier guard identity", () => {
       "wraith",
       "cyclops",
       "ammit",
+      "basilisk",
       "dark-fey",
     ]);
-    expect(new Set(Object.values(FRONTIER_BEASTS).map((beast) => beast.path)).size).toBe(7);
+    expect(new Set(Object.values(FRONTIER_BEASTS).map((beast) => beast.path)).size).toBe(8);
     expect(
       new Set(
         (Object.keys(FRONTIER_BEASTS) as (keyof typeof FRONTIER_BEASTS)[]).map(
           (beast) => iconDefinition(beastMeaning(beast)).art,
         ),
       ).size,
-    ).toBe(7);
+    ).toBe(8);
   });
   it("does not turn ordinary neutral holdings into Frontier beasts", () => {
     expect(readStandingFrontierBeast(without(facts(StructureType.Camp), "ExpeditionSite"), 1, 9)).toBeUndefined();

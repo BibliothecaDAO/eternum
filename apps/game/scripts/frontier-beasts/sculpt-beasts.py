@@ -595,7 +595,7 @@ if __name__ == "__main__":
         creature_type = runpy.run_path(str(Path(__file__).with_name("sculpt-creatures.py")))["Creature"]
         sculpt = creature_type(species)
         getattr(sculpt, species)()
-    elif species in {"ammit", "dark-fey"}:
+    elif species in {"ammit", "basilisk", "dark-fey"}:
         creature_type = runpy.run_path(str(Path(__file__).with_name("sculpt-site-beasts.py")))["SiteBeast"]
         sculpt = creature_type(species)
         getattr(sculpt, species.replace("-", "_"))()

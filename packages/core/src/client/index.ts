@@ -32,6 +32,7 @@ export {
   isBesideDeepSite,
   isDeepSiteRival,
   readDeepSite,
+  readDeepBeastTroops,
   readDeepSiteDefender,
   readDeepSites,
   type DeepSiteView,

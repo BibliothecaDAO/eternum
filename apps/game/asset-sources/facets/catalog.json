@@ -3219,6 +3219,16 @@
       }
     },
     {
+      "id": "beast-basilisk",
+      "label": "Basilisk",
+      "family": "Beasts",
+      "prompt": "prompts/beast-basilisk.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "6f96faad2b3a0c494f2eb7e2454674f37c3021ef4925c8b20cc21941a5104538"
+      }
+    },
+    {
       "id": "beast-dark-fey",
       "label": "Dark fey",
       "family": "Beasts",

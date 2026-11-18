@@ -1,9 +1,9 @@
 import { resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runProof, waitFor } from "../prove-run.mjs";
-import { BEASTS, LAYER_NAMES, beastModel, beastOf, beastsOfFamily } from "@bibliothecadao/types";
+import { BEASTS, DEEP_BEASTS, LAYER_NAMES, beastModel, beastOf, beastsOfFamily } from "@bibliothecadao/types";
 
-const MODEL_COUNT = new Set(Object.values(BEASTS).map(beastModel)).size;
+const MODEL_COUNT = new Set([...Object.values(BEASTS), ...Object.values(DEEP_BEASTS)].map(beastModel)).size;
 const BEAST_COUNT = Object.keys(BEASTS).length;
 const RUINS = beastsOfFamily("ruin");
 const SELECTED_AT_START = beastOf("ruin", 0);

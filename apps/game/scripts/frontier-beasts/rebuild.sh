@@ -6,7 +6,7 @@ case "$output" in /*) ;; *) echo 'Use an absolute output directory'; exit 1;; es
 if [[ -e "$output" ]]; then echo 'Choose a fresh output directory'; exit 1; fi
 mkdir -p "$output/raw"
 cd "$root"
-names="troll wyvern hydra wraith cyclops ammit dark-fey"
+names="troll wyvern hydra wraith cyclops ammit basilisk dark-fey"
 source_directory="apps/game/asset-sources/frontier-beasts/refined"
 for name in $names; do
   blender --background --threads 2 --python-exit-code 1 --python apps/game/scripts/frontier-beasts/export-beast.py -- \

@@ -158,7 +158,7 @@ export const layerName = (depth: number): string => {
 export const ETERNUM_MAP_NAMES = [LAYER_NAMES[0], "Ethereal Layer"] as const;
 export const eternumMapName = (alt: boolean): string => ETERNUM_MAP_NAMES[alt ? 1 : 0];
 
-export type BeastModel = "troll" | "wyvern" | "hydra" | "wraith" | "cyclops" | "ammit" | "dark-fey";
+export type BeastModel = "troll" | "wyvern" | "hydra" | "wraith" | "cyclops" | "ammit" | "basilisk" | "dark-fey";
 export type BeastFamily = "herd" | "band" | "camp" | "rift" | "ruin";
 export type BeastIdle = { motion: "breath" | "lift"; speed: number; height: number } | { motion: "hover" };
 type BeastLook = { model: BeastModel; fallback?: never } | { model?: never; fallback: BeastModel };
@@ -169,7 +169,7 @@ export type BeastRow = {
   scale: number;
   idle: BeastIdle;
 } & BeastLook;
-type DeepBeastRow = { name: string } & BeastLook;
+export type DeepBeastRow = { name: string; scale: number; idle: BeastIdle } & BeastLook;
 
 const breath = (speed: number, height: number) => ({ motion: "breath", speed, height }) as const;
 const lift = (speed: number, height: number) => ({ motion: "lift", speed, height }) as const;
@@ -194,10 +194,10 @@ export const BEASTS = {
 } as const satisfies Record<string, BeastRow>;
 
 export const DEEP_BEASTS = {
-  foundation: { name: "Colossus", fallback: "troll" },
-  core: { name: "Warlock", fallback: "dark-fey" },
-  mine: { name: "Balrog", fallback: "troll" },
-  altar: { name: "Basilisk", fallback: "wyvern" },
+  foundation: { name: "Colossus", scale: 1.3, fallback: "troll", idle: breath(0.8, 0.012) },
+  core: { name: "Warlock", scale: 1.4, fallback: "dark-fey", idle: hover },
+  mine: { name: "Balrog", scale: 1.1, fallback: "troll", idle: breath(1, 0.016) },
+  altar: { name: "Basilisk", scale: 1.2, model: "basilisk", idle: breath(1.3, 0.014) },
 } as const satisfies Record<(typeof deepSites)[number]["key"], DeepBeastRow>;
 
 const DEEPLESS_FOURTH_LAYER = 3;
@@ -211,8 +211,10 @@ export const DEEPLESS_FOURTH_LAYER_BEASTS = {
 
 export const beastModel = (beast: BeastLook): BeastModel => beast.model ?? beast.fallback;
 
-export const beastOfModel = (model: BeastModel): BeastRow =>
-  Object.values<BeastRow>(BEASTS).find((beast) => beast.model === model)!;
+export const beastOfModel = (model: BeastModel): DeepBeastRow =>
+  [...Object.values<DeepBeastRow>(BEASTS), ...Object.values<DeepBeastRow>(DEEP_BEASTS)].find(
+    (beast) => beast.model === model,
+  )!;
 
 export const beastOf = (family: BeastFamily, layer: number): BeastRow => {
   const beast = Object.values<BeastRow>(BEASTS).find((each) => each.family === family && each.layer === layer);

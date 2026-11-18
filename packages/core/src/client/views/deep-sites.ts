@@ -50,6 +50,17 @@ export function readDeepSite(
   return site && today ? deepSiteView(store, today, site, timestamp) : undefined;
 }
 
+export function readDeepBeastTroops(
+  store: NativeFactStore,
+  timestamp: number,
+  siteId: bigint,
+  gameId = configManager.getActiveGameId(),
+): bigint | undefined {
+  const site = store.get("DeepSite", { game_id: gameId, entity_id: siteId });
+  const today = site && readDeepDay(store, timestamp, gameId);
+  return site && today ? todaysBeast(store, today, site).troops : undefined;
+}
+
 interface DeepDay {
   rules: NativeRows["DeepRules"];
   index: number;
@@ -75,15 +86,10 @@ function deepSiteView(
 ): DeepSiteView {
   const kind = deepSites.find((candidate) => candidate.id === site.kind);
   if (!kind) throw new Error(`Unknown site kind ${site.kind}`);
-  if (site.day > BigInt(today.index)) throw new Error("Deep site is ahead of the game clock");
   const gameId = site.game_id;
-  const current = site.day === BigInt(today.index);
-  const guard = current
-    ? store.require("Guard", { game_id: gameId, structure_id: site.entity_id, slot: 0 })
-    : undefined;
-  const beast = today.rules.beasts[site.kind];
+  const { current, guard, troops } = todaysBeast(store, today, site);
   const ring = today.rules.rings[site.ring];
-  if (!beast || !ring) throw new Error(`Site ${site.entity_id} is outside its preset rules`);
+  if (!ring) throw new Error(`Site ${site.entity_id} is outside its preset rules`);
   const entered = realmsEntered(store, gameId, BigInt(today.index));
   return {
     id: site.entity_id,
@@ -97,7 +103,7 @@ function deepSiteView(
       today.rules.rings.filter((candidate) => entered >= candidate.realms).length,
     ),
     day: today.index,
-    beastTroops: guard ? guard.troops.count : beast.count,
+    beastTroops: troops,
     guard,
     guards: current ? readGuards(store, gameId, site.entity_id, timestamp) : [],
   };
@@ -106,6 +112,17 @@ function deepSiteView(
 export function deepBuildingPay(pay: NativeRows["DeepRules"]["building_pay"], open: number): number {
   if (open < 1) throw new Error("A closed Deep site pays nothing");
   return open === 1 ? pay.alone : open === 2 ? pay.pair : pay.crowd;
+}
+
+function todaysBeast(store: NativeFactStore, today: DeepDay, site: NativeRows["DeepSite"]) {
+  if (site.day > BigInt(today.index)) throw new Error("Deep site is ahead of the game clock");
+  const current = site.day === BigInt(today.index);
+  const guard = current
+    ? store.require("Guard", { game_id: site.game_id, structure_id: site.entity_id, slot: 0 })
+    : undefined;
+  const beast = today.rules.beasts[site.kind];
+  if (!beast) throw new Error(`Deep site ${site.entity_id} is outside its preset rules`);
+  return { current, guard, troops: guard ? guard.troops.count : beast.count };
 }
 
 function realmsEntered(store: NativeFactStore, gameId: number, day: bigint): number {

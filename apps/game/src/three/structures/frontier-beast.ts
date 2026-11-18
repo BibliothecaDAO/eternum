@@ -1,19 +1,39 @@
 import { readFrontierBeast } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { StructureType } from "@bibliothecadao/types";
+import {
+  BEASTS,
+  DEEP_BEASTS,
+  DEEPLESS_FOURTH_LAYER_BEASTS,
+  StructureType,
+  beastModel,
+  type BeastModel,
+} from "@bibliothecadao/types";
 import type { FrontierSpecies, FrontierBeast } from "@bibliothecadao/eternum";
 export { beastBand, frontierBeast, type FrontierSpecies, type FrontierBeast } from "@bibliothecadao/eternum";
 
 export const FALLEN_REALM_RUIN_PATH = "/models/outposts/ruin.glb";
 
+const BEAST_ROWS = [
+  ...Object.values(BEASTS),
+  ...Object.values(DEEPLESS_FOURTH_LAYER_BEASTS),
+  ...Object.values(DEEP_BEASTS),
+];
+
+const deliveredBeast = (species: BeastModel) => {
+  const scales = BEAST_ROWS.filter((row) => beastModel(row) === species).map((row) => row.scale);
+  if (scales.length === 0) throw new Error(`No beast row stands on the ${species} model`);
+  return { path: `/models/frontier/beast-${species}.glb`, maxScale: Math.max(...scales) };
+};
+
 export const FRONTIER_BEASTS = {
-  troll: { path: "/models/frontier/beast-troll.glb", maxScale: 1.46 },
-  wyvern: { path: "/models/frontier/beast-wyvern.glb", maxScale: 1.38 },
-  hydra: { path: "/models/frontier/beast-hydra.glb", maxScale: 1.7 },
-  wraith: { path: "/models/frontier/beast-wraith.glb", maxScale: 1 },
-  cyclops: { path: "/models/frontier/beast-cyclops.glb", maxScale: 1 },
-  ammit: { path: "/models/frontier/beast-ammit.glb", maxScale: 1.2 },
-  "dark-fey": { path: "/models/frontier/beast-dark-fey.glb", maxScale: 0.75 },
+  troll: deliveredBeast("troll"),
+  wyvern: deliveredBeast("wyvern"),
+  hydra: deliveredBeast("hydra"),
+  wraith: deliveredBeast("wraith"),
+  cyclops: deliveredBeast("cyclops"),
+  ammit: deliveredBeast("ammit"),
+  basilisk: deliveredBeast("basilisk"),
+  "dark-fey": deliveredBeast("dark-fey"),
 } as const satisfies Record<FrontierSpecies, { path: string; maxScale: number }>;
 const BEAST_ORDER = Object.keys(FRONTIER_BEASTS) as FrontierSpecies[];
 export const FRONTIER_BEAST_PATHS = BEAST_ORDER.map((beast) => FRONTIER_BEASTS[beast].path);
