@@ -306,7 +306,10 @@ describe("one attack forecast for every combat surface", () => {
     game.home(1, PLAYER, 1);
     game.deepSite(50, DEEP, 300);
     game.army(10, 1, beside(DEEP), { oathPick: 1 });
-    expect(refusalOf(game.forecast(10, 50))).toBe("answer-oath-first");
+    const pending = game.forecast(10, 50);
+    expect(refusalOf(pending)).toBe("answer-oath-first");
+    expect(pending?.sides?.attacker.troops.count).toBe(troops(1_000));
+    expect(pending?.sides?.defender?.troops.count).toBe(troops(300));
     game.army(10, 1, beside(DEEP));
     const calendar = { seed: 0n, startMainAt: START, endAt: START + DAY * 50, scheduledEndAt: START + DAY * 50 };
     const tomorrow = dayAtIndex({ ...calendar, dayUnitSeconds: DAY }, 0).end;

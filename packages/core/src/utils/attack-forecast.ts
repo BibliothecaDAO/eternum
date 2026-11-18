@@ -201,12 +201,30 @@ export function clearsEveryDefender(
 }
 
 function armyAttack(scene: Scene, explorer: NativeRows["ExplorerTroops"], targetId: bigint): Defence | undefined {
-  if (hasOpenOathPick(scene, explorer.explorer_id)) return refused("answer-oath-first");
-  const playing = playingRefusal(scene);
-  if (playing) return refused(playing);
-  if (isDeepGuard(scene, explorer.explorer_id)) return refused("guarding-deep-site");
-  if (!isArmyCurrent(scene.store, scene.gameId, explorer.explorer_id, scene.chainSecond))
-    return refused("expired-army");
+  const early = commandingArmyRefusal(scene, explorer.explorer_id);
+  const defence = armyTargetDefence(scene, explorer, targetId);
+  if (!early) return defence;
+  return refused(early, defence && ("claims" in defence ? { attacker: defence.claims, queued: [] } : defence.sides));
+}
+
+function commandingArmyRefusal(scene: Scene, explorerId: bigint): AttackRefusal | undefined {
+  if (hasOpenOathPick(scene, explorerId)) return "answer-oath-first";
+  return (
+    playingRefusal(scene) ??
+    (isDeepGuard(scene, explorerId) ? "guarding-deep-site" : undefined) ??
+    (isArmyCurrent(scene.store, scene.gameId, explorerId, scene.chainSecond) ? undefined : "expired-army")
+  );
+}
+
+const defendingArmyRefusal = (scene: Scene, explorerId: bigint): AttackRefusal | undefined =>
+  (isDeepGuard(scene, explorerId) ? "target-guards-deep-site" : undefined) ??
+  (isArmyCurrent(scene.store, scene.gameId, explorerId, scene.chainSecond) ? undefined : "expired-army");
+
+function armyTargetDefence(
+  scene: Scene,
+  explorer: NativeRows["ExplorerTroops"],
+  targetId: bigint,
+): Defence | undefined {
   const standing = armyCombatant(scene, explorer);
   const targetTile = targetPosition(scene, targetId);
   if (!standing || !targetTile) return undefined;
@@ -242,12 +260,11 @@ const besideTile = (target: Tile): Tile => {
 };
 
 function armyDefence(scene: Scene, attacker: Combatant, army: NativeRows["ExplorerTroops"]): Defence | undefined {
-  if (isDeepGuard(scene, army.explorer_id)) return refused("target-guards-deep-site");
-  if (!isArmyCurrent(scene.store, scene.gameId, army.explorer_id, scene.chainSecond)) return refused("expired-army");
   const defender = armyCombatant(scene, army);
   if (!defender) return undefined;
   const sides = { attacker, defender, queued: [] };
   const refusal =
+    defendingArmyRefusal(scene, army.explorer_id) ??
     armyOpponentsRefusal(scene.store, scene.gameId, attacker, defender) ??
     ownTargetRefusal(scene, attacker.home, homeOwner(scene, defender.home)) ??
     immunityRefusal(scene, attacker.home) ??
@@ -311,10 +328,7 @@ function guardAttack(scene: Scene, structureId: bigint, targetId: bigint): Defen
   const structure = store.get("Structure", { game_id: gameId, entity_id: structureId });
   const army = store.get("ExplorerTroops", { game_id: gameId, explorer_id: targetId });
   if (!structure || !army) return undefined;
-  const playing = playingRefusal(scene);
-  if (playing) return refused(playing);
-  if (isDeepGuard(scene, army.explorer_id)) return refused("target-guards-deep-site");
-  if (!isArmyCurrent(store, gameId, army.explorer_id, scene.chainSecond)) return refused("expired-army");
+  const early = playingRefusal(scene) ?? defendingArmyRefusal(scene, army.explorer_id);
   const defender = armyCombatant(scene, army);
   const tile = structureTile(scene, structure);
   const guards = getGuardsByStructure(structure, store, scene.chainSecond);
@@ -325,7 +339,7 @@ function guardAttack(scene: Scene, structureId: bigint, targetId: bigint): Defen
     scene.guardSlot === undefined
       ? (living.find(reaches) ?? living[0])
       : living.find(({ slot }) => slot === scene.guardSlot);
-  if (!guard || defender.troops.count === 0n) return refused("no-troops");
+  if (!guard || defender.troops.count === 0n) return refused(early ?? "no-troops");
   const attacker = {
     troops: guard.troops,
     exact: true,
@@ -337,6 +351,7 @@ function guardAttack(scene: Scene, structureId: bigint, targetId: bigint): Defen
   };
   const sides = { attacker, defender, queued: [] };
   const refusal =
+    early ??
     (reaches(guard) ? undefined : "out-of-range") ??
     immunityRefusal(scene, structureId) ??
     immunityRefusal(scene, defender.home) ??
