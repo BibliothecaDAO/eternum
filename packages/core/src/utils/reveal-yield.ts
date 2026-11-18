@@ -1,5 +1,6 @@
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { oathRevealPay } from "./oaths";
 import { tierStrength } from "./tier-strength";
 
 type TroopLimitConfig = NativeRows["SliceRules"]["troop_limit_config"];
@@ -14,7 +15,9 @@ export const revealYield = (
   troops: Pick<NativeRows["ExplorerTroops"]["troops"], "tier" | "count">,
   limits: TroopLimitConfig,
   revealPercent: number,
-): bigint => (troops.count * BigInt(tierStrength(troops.tier, limits)) * BigInt(revealPercent)) / 100n;
+  oaths: number,
+): bigint =>
+  oathRevealPay(oaths, (troops.count * BigInt(tierStrength(troops.tier, limits)) * BigInt(revealPercent)) / 100n);
 
 /** The reveal percent of a depth, from the game's depth rules; undefined where the game has no such depth. */
 export const readRevealPercent = (

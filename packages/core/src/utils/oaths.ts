@@ -13,7 +13,7 @@ export const oathColours = [
 ] as const;
 
 export function heldOaths(mask: number): number[] {
-  return Array.from({ length: 16 }, (_, index) => index + 1).filter((id) => (mask & (1 << (id - 1))) !== 0);
+  return Array.from({ length: 16 }, (_, index) => index + 1).filter((id) => holds(mask, id));
 }
 
 export function oathCards(pick: number): number[] {
@@ -23,7 +23,7 @@ export function oathCards(pick: number): number[] {
 }
 
 export function oathColour(id: number): (typeof oathColours)[number] {
-  const colour = oathColours.find(({ mask }) => (mask & (1 << (id - 1))) !== 0);
+  const colour = oathColours.find(({ mask }) => holds(mask, id));
   if (!colour) throw new Error(`Unknown Oath ${id}`);
   return colour;
 }
@@ -54,9 +54,15 @@ export function oathPassStamina(current: number, maximum: number): number {
 }
 
 export function oathDeepLossPerTick(oaths: number, base: bigint): bigint {
-  return (oaths & (1 << (oathRules.VITRIOL - 1))) !== 0
-    ? BigInt(oathRules.VITRIOL_LOSS_PER_TICK) * BigInt(RESOURCE_PRECISION)
-    : base;
+  return holds(oaths, oathRules.VITRIOL) ? BigInt(oathRules.VITRIOL_LOSS_PER_TICK) * BigInt(RESOURCE_PRECISION) : base;
+}
+
+export function oathRevealPay(oaths: number, amount: bigint): bigint {
+  return holds(oaths, oathRules.BRILLIANCE) ? (amount * BigInt(oathRules.BRILLIANCE_PAY_PERCENT)) / 100n : amount;
+}
+
+export function oathSitePay(oaths: number, amount: bigint): bigint {
+  return holds(oaths, oathRules.RAGE) ? (amount * BigInt(oathRules.RAGE_PAY_PERCENT)) / 100n : amount;
 }
 
 export function armyOaths(store: NativeFactStore, key: { game_id: number; explorer_id: bigint | number }): number {
@@ -66,11 +72,15 @@ export function armyOaths(store: NativeFactStore, key: { game_id: number; explor
 
 export function oathDamageMultiplier(attacker: number, defender: number, guarding: boolean): Fixed {
   let multiplier = ONE;
-  if ((attacker & (1 << (oathRules.POWER - 1))) !== 0)
+  if (holds(attacker, oathRules.POWER))
     multiplier = mul(multiplier, div(unscaled(100 + oathRules.POWER_DAMAGE_PERCENT), unscaled(100)));
-  if ((defender & (1 << (oathRules.GIANTS - 1))) !== 0)
+  if (holds(defender, oathRules.GIANTS))
     multiplier = mul(multiplier, div(unscaled(100 - oathRules.GIANTS_REDUCTION_PERCENT), unscaled(100)));
-  if (guarding && (defender & (1 << (oathRules.PROTECTION - 1))) !== 0)
+  if (guarding && holds(defender, oathRules.PROTECTION))
     multiplier = mul(multiplier, div(unscaled(100 - oathRules.PROTECTION_REDUCTION_PERCENT), unscaled(100)));
   return multiplier;
+}
+
+function holds(oaths: number, oath: number): boolean {
+  return (oaths & (1 << (oath - 1))) !== 0;
 }

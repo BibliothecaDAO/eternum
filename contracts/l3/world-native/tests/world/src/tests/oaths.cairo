@@ -530,3 +530,102 @@ fn open_pick(d: super::Deployment, key: crate::troops::ExplorerKey, pick: u16) {
         },
     );
 }
+
+#[test]
+fn prizes_match_the_client_vectors_with_and_without_their_oaths() {
+    let data = read_txt(@FileTrait::new("../fixtures/oath-prizes.txt"));
+    assert_eq!(data.len(), 72);
+    let mut fields = data.span();
+    while !fields.is_empty() {
+        let (oaths, base, find, amount, reveal, site): (u16, u16, u16, u128, u128, u128) = Serde::deserialize(
+            ref fields,
+        )
+            .unwrap();
+        assert_eq!(crate::oaths::find_percent(oaths, base), find);
+        assert_eq!(crate::oaths::reveal_pay(oaths, amount), reveal);
+        assert_eq!(crate::oaths::site_pay(oaths, amount), site);
+    }
+}
+
+#[test]
+fn detection_finds_a_camp_brilliance_raises_its_reveal_pay_and_rage_its_clear_pay() {
+    let discovery = crate::expeditions::FrontierDiscoveryRules {
+        camp_bps: 5000, rift_bps: 0, ruin_bps: 0, beasts_bps: 0, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
+    };
+    let detection = crate::oaths::bit(crate::oaths::DETECTION);
+    let brilliance = crate::oaths::bit(crate::oaths::BRILLIANCE);
+    let rage = crate::oaths::bit(crate::oaths::RAGE);
+    let precision = crate::rules::RESOURCE_PRECISION;
+    for (oaths, found, reveal, clear) in array![
+        (detection, true, 20 * precision, 1500000000), (0, false, 20 * precision, 0),
+        (detection | brilliance | rage, true, 25 * precision, 1875000000),
+    ] {
+        let (d, game_id, key) = super::registrar::setup_frontier_relics_with_rules(Some(discovery));
+        let mut army = super::registrar::strong_frontier_army(d, game_id, key);
+        army.troops.count = 2000 * precision;
+        super::resource_commands::set_explorer_fixture(d.games, key, army);
+        snforge_std::interact_with_state(
+            d.games,
+            || {
+                let mut progress = crate::logic::progression::require(key);
+                progress.oaths = oaths;
+                crate::logic::progression::write(key, progress);
+            },
+        );
+        let root = only_detection_finds(game_id, discovery);
+        let mut spy = snforge_std::spy_events();
+        assert!(super::registrar::explore_with_root(d, game_id, key.explorer_id, root, 360));
+        assert_eq!(reveal_paid(ref spy, d.games), reveal);
+        let tile = crate::geometry::tile_key(game_id, crate::geometry::neighbor(army.coord, 0));
+        let occupied = snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile));
+        assert_eq!(occupied.map(|site| site.category) == Some(crate::taxonomy::CAMP_OCCUPIER), found);
+        if !found {
+            continue;
+        }
+        let site = crate::resources::ResourceKey { game_id, entity_id: occupied.unwrap().entity_id };
+        let command = crate::commands::Command::BattleGuard(
+            crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site.entity_id, relic_slot: None },
+        );
+        assert!(super::resource_commands::execute_in_game(d, game_id, command, 361));
+        let receipt = snforge_std::interact_with_state(
+            d.games, || crate::logic::expeditions::expedition_site(site).unwrap().clear.unwrap(),
+        );
+        assert_eq!(
+            receipt.reward,
+            Some(crate::resources::ResourceAmount { resource_type: crate::resources::LABOR, amount: clear }),
+        );
+    }
+}
+
+fn only_detection_finds(game_id: u32, rules: crate::expeditions::FrontierDiscoveryRules) -> u256 {
+    let with = crate::oaths::find_percent(crate::oaths::bit(crate::oaths::DETECTION), 100);
+    for sample in 0_u64..10000 {
+        let raw_root: u256 = sample.into();
+        let mut root = raw_root;
+        let seed = crate::random::game_root(ref root, game_id);
+        if crate::discovery::frontier(rules, with, 0, None, seed) == crate::discovery::Discovery::Camp
+            && crate::discovery::frontier(rules, 100, 0, None, seed) == crate::discovery::Discovery::None {
+            return raw_root;
+        }
+    }
+    panic!("no root that only Detection turns into a camp")
+}
+
+fn reveal_paid(ref spy: snforge_std::EventSpy, games: starknet::ContractAddress) -> u128 {
+    use snforge_std::{EventSpyTrait, EventsFilterTrait};
+    for (_, event) in spy.get_events().emitted_by(games).events {
+        let keys = event.keys.span();
+        for prefix in 0..keys.len() {
+            if *keys.at(prefix) != selector!("StoryEvent") {
+                continue;
+            }
+            let mut fields = keys.slice(prefix + 1, keys.len() - prefix - 1);
+            let mut data = event.data.span();
+            let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref fields, ref data).unwrap();
+            if let crate::ownership::Story::ExplorationReward(paid) = story.story {
+                return paid.amount;
+            }
+        }
+    }
+    panic!("no reveal payment")
+}

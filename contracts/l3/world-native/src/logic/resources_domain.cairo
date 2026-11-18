@@ -72,7 +72,10 @@ pub mod ResourcesLogic {
                 100
             };
             let reward = if let Some(reward) = reward {
-                let reward = crate::resources::ResourceAmount { amount: reward.amount * spoils / 100, ..reward };
+                let amount = crate::oaths::site_pay(
+                    crate::logic::progression::held_oaths(explorer, context), reward.amount * spoils / 100,
+                );
+                let reward = crate::resources::ResourceAmount { amount, ..reward };
                 let reward = crate::logic::army_relics::site_reward(explorer, reward, context.timestamp);
                 let amount = self
                     .grant_resource(

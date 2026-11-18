@@ -87,12 +87,16 @@ pub mod PrizesLogic {
                 return ();
             }
             let reward = if crate::rules::rule_enabled(rules, crate::rules::REVEAL_SUPPLIES) {
-                crate::exploration_rewards::reveal_reward(
+                let reward = crate::exploration_rewards::reveal_reward(
                     explorer.troops,
                     rules.troop_limit_config,
                     crate::logic::expeditions::depth_rules_at(game_id, coord).reveal_percent,
                     seed,
-                )
+                );
+                let oaths = crate::logic::progression::held_oaths(
+                    crate::troops::ExplorerKey { game_id, explorer_id }, context,
+                );
+                crate::resources::ResourceAmount { amount: crate::oaths::reveal_pay(oaths, reward.amount), ..reward }
             } else {
                 crate::exploration_rewards::pool_reward(
                     self.extraction_rewards(game_id),

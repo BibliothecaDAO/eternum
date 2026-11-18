@@ -135,9 +135,9 @@ fn fight_guard(key: ExplorerKey, ref attacker: ExplorerTroops, ref defender: Gua
     };
     record_target(key, target, context);
     let combat = CombatContext {
-        attacker_oaths: combat_oaths(key, context),
+        attacker_oaths: crate::logic::progression::held_oaths(key, context),
         defender_oaths: match defender.source {
-            GuardSource::Army(key) => combat_oaths(key, context),
+            GuardSource::Army(key) => crate::logic::progression::held_oaths(key, context),
             _ => 0,
         },
         defender_is_structure_guard: context.rules.unbox().day_unit_seconds == 0
@@ -273,8 +273,8 @@ pub fn battle(
     let defender_before = defender.troops.count;
     record_target(attacker_key, command.defender_id, context);
     let combat = CombatContext {
-        attacker_oaths: combat_oaths(attacker_key, context),
-        defender_oaths: combat_oaths(defender_key, context),
+        attacker_oaths: crate::logic::progression::held_oaths(attacker_key, context),
+        defender_oaths: crate::logic::progression::held_oaths(defender_key, context),
         ..combat_context(game_id, attacker, defender, context),
     };
     let (attacker_after, defender_after) = resolve_battle(game_id, attacker.troops, defender.troops, combat, context);
@@ -335,7 +335,7 @@ pub fn guard_attack(
     assert_army_opponents(game_id, attacker, defender, rules);
     let combat = CombatContext {
         attacker_is_structure_guard: true,
-        defender_oaths: combat_oaths(defender_key, context),
+        defender_oaths: crate::logic::progression::held_oaths(defender_key, context),
         ..combat_context(game_id, attacker, defender, context),
     };
     let (attacker_after, defender_after) = resolve_battle(game_id, guard.troops, defender.troops, combat, context);
@@ -573,14 +573,6 @@ pub fn assert_battle_range(game_id: u32, mut attacker: ExplorerTroops, defender:
         separation > 0 && separation <= attacker.troops.attack_range().into() * stride
     };
     assert!(within, "explorers out of range");
-}
-
-fn combat_oaths(key: ExplorerKey, context: ExecutionContext) -> u16 {
-    if context.rules.unbox().day_unit_seconds == 0 {
-        0
-    } else {
-        crate::logic::progression::require(key).oaths
-    }
 }
 
 pub fn combat_context(

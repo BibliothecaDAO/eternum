@@ -76,7 +76,10 @@ fn roll(
     };
     let depth = crate::logic::expeditions::depth_at(key.game_id, Coord { alt: key.alt, x: key.col, y: key.row });
     let find_percent = if depth < 3 {
-        crate::logic::triumphs::effects(home_key, context.timestamp).find_percent
+        crate::oaths::find_percent(
+            crate::logic::progression::require(crate::troops::ExplorerKey { game_id: key.game_id, explorer_id }).oaths,
+            crate::logic::triumphs::effects(home_key, context.timestamp).find_percent,
+        )
     } else {
         100
     };

@@ -1,6 +1,7 @@
 import { readStandingFrontierBeast, type FrontierBeast } from "@/three/structures/frontier-beast";
 import {
   availableRuinLords,
+  armyOaths,
   armyRelicReward,
   configManager,
   forecastAttack,
@@ -8,9 +9,11 @@ import {
   ResourceManager,
   hasCastleLimit,
   getDefendingGuards,
+  oathSitePay,
   siteKindOf,
   type AttackForecast,
   type AttackRefusal,
+  type SiteKind,
 } from "@bibliothecadao/eternum";
 import {
   readSiteReward,
@@ -85,7 +88,7 @@ export const readSiteCard = (
     kind === "Ruin"
       ? chest && { resourceType: ResourcesIds.Lords, amount: chest.amount * PRECISION }
       : payout.known?.reward;
-  const reward = baseReward && attack ? armyRelicReward(store, attack.army, baseReward, attack.timestamp) : baseReward;
+  const reward = baseReward && attack ? attackerReward(store, attack, kind, baseReward) : baseReward;
   const beast = readStandingFrontierBeast(store, site.game_id, safeInteger(site.entity_id));
   return {
     name: beast?.name ?? attackTargetName(kind),
@@ -108,6 +111,17 @@ export const readSiteCard = (
     attackStamina: configManager.getCombatRules().stamina.stamina_attack_req,
     ...planAttack(store, attack, structure.entity_id),
   };
+};
+
+const attackerReward = (
+  store: NativeFactStore,
+  attack: SiteAttack,
+  kind: SiteKind,
+  reward: { resourceType: ResourcesIds; amount: bigint },
+) => {
+  const paid =
+    kind === "Ruin" ? reward : { ...reward, amount: oathSitePay(armyOaths(store, attack.army), reward.amount) };
+  return armyRelicReward(store, attack.army, paid, attack.timestamp);
 };
 
 /**

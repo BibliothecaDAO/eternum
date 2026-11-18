@@ -36,6 +36,7 @@ for (const [name, id] of [
   }
 }
 write("../oath-deep-loss.txt", oathDeepLossVectors());
+write("../oath-prizes.txt", oathPrizeVectors());
 write(
   "../oath-pass-stamina.txt",
   [0, oaths.PASS_STAMINA / 2, oaths.PASS_STAMINA, oaths.PASS_STAMINA * 2].flatMap((deficit) =>
@@ -197,6 +198,32 @@ function feltLength(schema: NativeSchema, name: string): number | null {
 
 function sumLengths(lengths: (number | null)[]): number | null {
   return lengths.includes(null) ? null : lengths.reduce<number>((sum, length) => sum + length!, 0);
+}
+
+function oathPrizeVectors(): string[] {
+  const bit = (oath: number) => 1 << (oath - 1);
+  const amount = 1_003n * BigInt(RESOURCE_PRECISION) + 7n;
+  const sets = [
+    0,
+    bit(oaths.DETECTION),
+    bit(oaths.BRILLIANCE),
+    bit(oaths.RAGE),
+    bit(oaths.DETECTION) | bit(oaths.BRILLIANCE) | bit(oaths.RAGE),
+    bit(oaths.POWER),
+  ];
+  return sets.flatMap((held) => {
+    const percent = (oath: number, value: number) => ((held & bit(oath)) !== 0 ? value : 100);
+    return [100, 150].flatMap((base) =>
+      [
+        held,
+        base,
+        Math.floor((base * percent(oaths.DETECTION, oaths.DETECTION_FIND_PERCENT)) / 100),
+        amount,
+        (amount * BigInt(percent(oaths.BRILLIANCE, oaths.BRILLIANCE_PAY_PERCENT))) / 100n,
+        (amount * BigInt(percent(oaths.RAGE, oaths.RAGE_PAY_PERCENT))) / 100n,
+      ].map(String),
+    );
+  });
 }
 
 function oathDeepLossVectors(): string[] {

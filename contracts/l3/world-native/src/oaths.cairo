@@ -26,6 +26,9 @@ pub const POWER_DAMAGE_PERCENT: u16 = 20;
 pub const GIANTS_REDUCTION_PERCENT: u16 = 15;
 pub const PROTECTION_REDUCTION_PERCENT: u16 = 25;
 pub const REFLECTION_WELL_PERCENT: u8 = 80;
+pub const DETECTION_FIND_PERCENT: u16 = 120;
+pub const BRILLIANCE_PAY_PERCENT: u16 = 125;
+pub const RAGE_PAY_PERCENT: u16 = 125;
 
 pub fn damage_multiplier(attacker: u16, defender: u16, guarding: bool) -> Fixed {
     let mut multiplier = FixedTrait::ONE();
@@ -46,6 +49,30 @@ pub fn deep_loss_per_tick(oaths: u16, base: u128) -> u128 {
         VITRIOL_LOSS_PER_TICK.into() * crate::rules::RESOURCE_PRECISION
     } else {
         base
+    }
+}
+
+pub fn find_percent(oaths: u16, base: u16) -> u16 {
+    if held(oaths, DETECTION) {
+        base * DETECTION_FIND_PERCENT / 100
+    } else {
+        base
+    }
+}
+
+pub fn reveal_pay(oaths: u16, amount: u128) -> u128 {
+    if held(oaths, BRILLIANCE) {
+        amount * BRILLIANCE_PAY_PERCENT.into() / 100
+    } else {
+        amount
+    }
+}
+
+pub fn site_pay(oaths: u16, amount: u128) -> u128 {
+    if held(oaths, RAGE) {
+        amount * RAGE_PAY_PERCENT.into() / 100
+    } else {
+        amount
     }
 }
 

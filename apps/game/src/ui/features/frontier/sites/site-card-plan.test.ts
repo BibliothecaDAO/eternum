@@ -1,6 +1,6 @@
 import oathDamage from "../../../../../../../contracts/l3/world-native/tests/fixtures/oath-damage.txt?raw";
 import { deepBattleTargetScenario } from "@/lab/game/battle-target-scenario";
-import { nativeRuleConstants, readDeepSites } from "@bibliothecadao/eternum/game-client";
+import { nativeOathConstants as oaths, nativeRuleConstants, readDeepSites } from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { afterEach, describe, expect, it } from "vitest";
 import { armyRelicReward, setBlockTimestampSource } from "@bibliothecadao/eternum";
@@ -225,6 +225,34 @@ it("clips the Plunder reward after applying its bonus and leaves wheat unchanged
     amount: 5940,
     fits: 5940,
   });
+});
+
+it("pays Rage's share more on a camp the attacker clears, before Plunder, and leaves a ruin's chest", () => {
+  const holdRage = (store: ReturnType<typeof campBeside>["store"]) => {
+    const key = { game_id: 1, explorer_id: 201n };
+    const progress = store.require("ArmyProgress", key);
+    store.applyFacts([
+      {
+        model: "ArmyProgress",
+        key: store.wireKeyOf("ArmyProgress", key)!,
+        value: { ...progress, oaths: 1 << (oaths.RAGE - 1) },
+      },
+    ]);
+  };
+  const { store, site, structure, attack } = campBeside();
+  const action = attack({ col: 41, row: 12, alt: false });
+  holdRage(store);
+  expect(readSiteCard(store, site, structure, action).payout).toMatchObject({
+    resourceId: ResourcesIds.Labor,
+    amount: 1_031.25,
+  });
+  store.applyFacts([relicEffectFact("Plunder")]);
+  expect(readSiteCard(store, site, structure, action).payout).toMatchObject({ amount: 1_237.5 });
+  const ruin = campBeside("Ruin");
+  holdRage(ruin.store);
+  expect(
+    readSiteCard(ruin.store, ruin.site, ruin.structure, ruin.attack({ col: 41, row: 12, alt: false })).payout,
+  ).toMatchObject({ resourceId: ResourcesIds.Lords, amount: 500 });
 });
 
 it("keeps the forecast and eligible rewards unknown until missing effects are known absent", () => {

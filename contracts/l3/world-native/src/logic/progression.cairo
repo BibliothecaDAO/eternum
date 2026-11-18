@@ -13,6 +13,15 @@ pub fn require(key: ExplorerKey) -> ArmyProgress {
     read(key).expect('missing army progress')
 }
 
+#[inline(never)]
+pub fn held_oaths(key: ExplorerKey, context: crate::commands::ExecutionContext) -> u16 {
+    if context.rules.unbox().day_unit_seconds == 0 {
+        0
+    } else {
+        require(key).oaths
+    }
+}
+
 pub fn create(key: ExplorerKey, learned: u64, category: crate::troops::TroopType) -> ArmyProgress {
     assert!(read(key).is_none(), "army progress already exists");
     let progress = crate::progression::trained(learned, category);
