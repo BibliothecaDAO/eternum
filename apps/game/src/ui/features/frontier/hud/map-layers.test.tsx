@@ -592,6 +592,23 @@ const ruinPayout = (rules: ExpeditionRules, now: number, today: number, depth: n
   ];
 };
 
+const DEEP_RULES = {
+  game_id: 1,
+  gate_distance: 4,
+  rings: [{ radius: 5, realms: 0 }],
+  beasts: [
+    { count: 1000n, bow: false },
+    { count: 1000n, bow: true },
+    { count: 1000n, bow: false },
+    { count: 1000n, bow: true },
+  ],
+  loss_per_tick: 1n,
+  core_per_tick: 1n,
+  mine_per_tick: 1n,
+  building_pay: { alone: 1, pair: 1, crowd: 1 },
+  altar_threshold: 10,
+};
+
 describe("the shared Deep in the map layer menu", () => {
   it("shows Deep without a private chest and visits its shared center", () => {
     const { store, realm } = chestDay(3n);
@@ -601,26 +618,7 @@ describe("the shared Deep in the map layer menu", () => {
         key: "0x2",
         value: { ...store.require("SettlementRules", { game_id: 1 }), spacing: 1024 },
       },
-      {
-        model: "DeepRules",
-        key: "0xdeef",
-        value: {
-          game_id: 1,
-          gate_distance: 4,
-          rings: [{ radius: 5, realms: 0 }],
-          beasts: [
-            { count: 1000n, bow: false },
-            { count: 1000n, bow: true },
-            { count: 1000n, bow: false },
-            { count: 1000n, bow: true },
-          ],
-          loss_per_tick: 1n,
-          core_per_tick: 1n,
-          mine_per_tick: 1n,
-          building_pay: { alone: 1, pair: 1, crowd: 1 },
-          altar_threshold: 10,
-        },
-      },
+      { model: "DeepRules", key: "0xdeef", value: DEEP_RULES },
     ] as never);
     const rules = readExpeditionRules(store, 1)!;
     context.mapView = true;
@@ -648,26 +646,7 @@ describe("the shared Deep in the map layer menu", () => {
         key: "0x2",
         value: { ...store.require("SettlementRules", { game_id: 1 }), spacing: 1024 },
       },
-      {
-        model: "DeepRules",
-        key: "0xdeef",
-        value: {
-          game_id: 1,
-          gate_distance: 4,
-          rings: [{ radius: 5, realms: 0 }],
-          beasts: [
-            { count: 1000n, bow: false },
-            { count: 1000n, bow: true },
-            { count: 1000n, bow: false },
-            { count: 1000n, bow: true },
-          ],
-          loss_per_tick: 1n,
-          core_per_tick: 1n,
-          mine_per_tick: 1n,
-          altar_per_tick: 1,
-          altar_threshold: 10,
-        },
-      },
+      { model: "DeepRules", key: "0xdeef", value: DEEP_RULES },
       { model: "HomeAspect", key: "0xa59", value: { game_id: 1, home: realm.entity_id, aspect: 2 } },
     ] as never);
     const rules = readExpeditionRules(store, 1)!;
