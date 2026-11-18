@@ -775,7 +775,7 @@ Sources: `frontier/native.ts:133-190`, `src/expeditions.cairo:44-61`
 | Holding (new)           | the army that beats a site's guard stays as its guard with what it has left, until it has no troops left, a rival beats it, or the day ends. Any rival may attack it; allies can't                                                                                                                                                | guards keep their losses · `src/troops.cairo:431-442`                                                                                                                                                  |
 | Slots (new)             | **a site's guard has 4 slots, 1 per player.** Any member of the holder's Aspect may fill a free slot with one army. Every slot loses 200 troops each tick. **Each tick is split among the slots by their troops.** Mates also take a site together: a guard keeps its losses, so each army's attack counts                        | guard slots hold 4, of one Realm · `src/logic/troops.cairo:298-299`                                                                                                                                    |
 | Wait, then strike (new) | guards lose 200 troops each tick like every army in the Deep: a rival who waits attacks a weaker guard. Waiting costs nothing above the Deep, and the same 200 troops each tick inside it                                                                                                                                         | —                                                                                                                                                                                                      |
-| Glory (new)             | **the one score a member reads.** Earned only by holding the Foundation or the Altar: 5 each tick, split among the guards by their troops. Nothing for troops beaten. Foundation ticks also add 5 to the hyperstructure's height                                                                                                  | —                                                                                                                                                                                                      |
+| Glory (new)             | **the one score a member reads.** Earned only by holding the Foundation or the Altar: 6 a tick while it is the only open one of its kind, 3 with two open, 2 with three or more, split among the guards by their troops. Nothing for troops beaten. Foundation ticks also add as much to the hyperstructure's height              | —                                                                                                                                                                                                      |
 | The site alert (new)    | **a push when a site held by another Aspect can be taken:** its guard, all slots together, has dropped to the point where your largest army outside the Deep is 150% of it. Only for a Realm with Spire lore. At most 1 per site per game day; none while the game is open. On by default at the Important level; off in Settings | the push exists, with levels Off, Important and All, and a watch that wakes when an army is rested · `packages/notifications/src/notification-kinds.ts:13-22`, `apps/realms/server/army-rest.ts:23-45` |
 
 | Waiting for a guard to weaken: an Empire's guard of 21,500 | Ticks waited | The guard then | A Kingdom's 15,000 takes it and keeps |
@@ -834,8 +834,8 @@ Watch in the playtest:
 
 - **Numbers for the first playtest:** the beast at 10,000, 200 troops a tick, 4 slots. With ×2 the troops a day the
   Foundation is held about 80% of the day, not 58%.
-- **A season of 2,000 players wants more than one Foundation** to be played, not to be paced: a second set of three
-  sites is one preset value, with 5 a tick halved.
+- **A season of 2,000 players wants more than one Foundation** to be played, not to be paced: a second ring of sites is
+  one preset value, and a Foundation or Altar then pays 3 a tick, not 6.
 - **Watch the Quarry late:** once a Realm's research is bought it has little to offer; that is the intent.
 
 Sources: `src/expeditions.cairo:114-141`, `src/logic/movement.cairo:234-243`, `src/logic/troops.cairo:298-299`
@@ -1025,7 +1025,7 @@ one holds the Foundation more. On the playtest list.
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
 | How many, where     | **one an Aspect, at a fixed tile of the Deep**, seen by everyone, open from the start                                                                                                                                                                                          | found on the map or reserved at the start, off in Frontier · `src/rules.cairo:271,284`, `frontier/base.ts:152-165` |
 | What builds it      | **holding the Foundation only**: each tick it is held adds 6 to the height while it is the only open Foundation, 3 with two open, 2 with three or more, split among its guards by their troops, each for their own Aspect. Nothing from the Surface, nothing for troops beaten | resources given from a Realm, by its owner or guild · `src/logic/hyperstructures.cairo:149-188,342-354`            |
-| Its size            | **a height of 10,000, in 5 stages of 2,000**: 2,000 ticks of the Foundation, 400 per stage                                                                                                                                                                                     | three states · `apps/game/src/three/constants/scene-constants.ts:101-105`                                          |
+| Its size            | **a height of 10,000, in 5 stages of 2,000**: 1,667 ticks of the Foundation, 334 per stage, while it is the only one open; 5,000 and 1,000 with three or more open                                                                                                             | three states · `apps/game/src/three/constants/scene-constants.ts:101-105`                                          |
 | A stage built (new) | the hyperstructure visibly grows, every Aspect is told, and **the next game day is a Triumph for the whole Aspect**: Clear Mist, Second Wind, Pale Moon, then Spoils (see Banes and Triumphs)                                                                                  | —                                                                                                                  |
 | The end             | **the first finished wins and ends the age**: every hyperstructure is consumed and the Spires go dark. Day 50 closes the season if none is finished: the mist wins. The others are placed by what they built                                                                   | progress stored and published, each contribution credited · `src/logic/hyperstructures.cairo:149-188,370-411`      |
 
@@ -1040,7 +1040,7 @@ one holds the Foundation more. On the playtest list.
 **One Foundation makes the season's length hold whatever the crowd:** it pays 720 ticks a day at most, so ten times the
 players end the age two days sooner, not ten times sooner. At 100 players the mist wins 2% of the time; at 50, most
 seasons: that is the floor. With a bar of 1,500 the Aspect leading on day 25 wins 74% · 64% · 60% of seasons at 100 ·
-200 · 2,000 players. 5 a tick and the bar of 1,500 are first values.
+200 · 2,000 players. 6, 3 and 2 a tick and the bar of 1,500 are first values.
 
 **The stage's Triumph.** Each of the first 4 stages gives the whole Aspect a different day, above the Deep only: it
 reaches the members who never go down, and it adds no holding. Every Aspect gets its Triumphs as it builds, the leader
@@ -1069,7 +1069,7 @@ only sooner. The 5th stage ends the age.
 | The finish       | **100,000** to the Aspect whose hyperstructure is finished. If the mist wins, it isn't paid and goes back to the treasury                                                                                                                         |
 | The build        | **400,000** shared by the four Aspects by the height each has built. No places: every point of height is worth the same                                                                                                                           |
 | A member's share | of its Aspect's reward, by **its Glory**: each tick at the Foundation or the Altar, 6 while it is the only open one of its kind, 3 with two open, 2 with three or more, split by troops. Quarry ticks give no Glory: they paid the member already |
-| Who is paid      | **anyone with at least 100 Glory**: 20 ticks on a site, held alone. No other gate: no Realm, ticket or pass needed. No cap                                                                                                                        |
+| Who is paid      | **anyone with at least 100 Glory**: 17 ticks on a site, held alone while it is the only one open; 50 with three or more open. No other gate: no Realm, ticket or pass needed. No cap                                                              |
 | When, and how    | when the age ends, by the ledger, to each member's wallet. One ledger upgrade: amounts posted by the relay, and an end that can come early                                                                                                        |
 
 | 500,000 on the 50-day race, 2,000 seasons, 200 players         | First · second · third · fourth | First to fourth | 1,000 more height is worth, to the fourth |
@@ -1110,7 +1110,7 @@ Watch in the playtest:
 - **Accounts opened only to add holding** raise troops like any other, and a share is split by troops: watch it in the
   playtest, through that split.
 - **Members who never go down** build their Realms, and are paid nothing: a City goes down with a mate from day 2, and
-  20 ticks on a site are all a reward asks.
+  17 to 50 ticks on a site are all a reward asks.
 
 Sources: `src/hyperstructures.cairo:5-61`, `src/logic/hyperstructures.cairo:84-188,342-411`,
 `src/logic/settlement_domain.cairo:341-394`, `src/structures.cairo:57-91`,
@@ -1334,8 +1334,8 @@ Sources:
 
 ## First values, to check in the playtest
 
-- **The Deep:** the beast at 10,000; 200 troops a tick; 4 slots, 1 per player; 5 each tick from the Foundation and the
-  Altar, 1,000 from the Quarry; the site alert, at most 1 per site per day.
+- **The Deep:** the beast at 10,000; 200 troops a tick; 4 slots, 1 per player; 6, 3 or 2 each tick from the Foundation
+  and the Altar, by how many of their kind are open, 1,000 from the Quarry; the site alert, at most 1 per site per day.
 - **Army boons:** the first point at 60 XP; the nine boons' steps (Battle +10%, Charge +5%, Guard −5%, Vigour +10%,
   Plunder +10%, Lore +10%, Camps and Rifts +25%, Shrines +15%); 5 steps per boon; rest at 20 stamina per rank; which
   Order gives what.
