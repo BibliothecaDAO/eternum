@@ -42,10 +42,12 @@
     "SPIRE_REVEAL_LIMIT": 10,
     "DEEP_MAP_SIZE": 50,
     "DEEP_FOUNDATION": 0,
-    "DEEP_QUARRY": 1,
-    "DEEP_ALTAR": 2,
-    "DEEP_SITE_COUNT": 3,
-    "DEEP_ARRIVAL_Y": 5,
+    "DEEP_CORE": 1,
+    "DEEP_MINE": 2,
+    "DEEP_ALTAR": 3,
+    "DEEP_KIND_COUNT": 4,
+    "DEEP_RING_LIMIT": 5,
+    "DEEP_DIAGONAL_RINGS": 3,
     "DEEP_GUARD_SLOTS": 4
   },
   "questConstants": {
@@ -127,7 +129,7 @@
     "RED": 11537,
     "BLUE": 53288,
     "GOLD": 710,
-    "VITRIOL_LOSS_PER_TICK": 75,
+    "VITRIOL_LOSS_PER_TICK": 100,
     "PASS_STAMINA": 20,
     "POWER_DAMAGE_PERCENT": 20,
     "GIANTS_REDUCTION_PERCENT": 15,
@@ -3686,28 +3688,22 @@
       ],
       "members": [
         {
-          "name": "foundation",
-          "type": "world_native::troops::Coord",
-          "id": "0x666f756e646174696f6e",
-          "feltLength": 3
-        },
-        {
-          "name": "quarry",
-          "type": "world_native::troops::Coord",
-          "id": "0x717561727279",
-          "feltLength": 3
-        },
-        {
-          "name": "altar",
-          "type": "world_native::troops::Coord",
-          "id": "0x616c746172",
-          "feltLength": 3
-        },
-        {
-          "name": "beast_count",
-          "type": "core::integer::u128",
-          "id": "0x62656173745f636f756e74",
+          "name": "gate_distance",
+          "type": "core::integer::u32",
+          "id": "0x676174655f64697374616e6365",
           "feltLength": 1
+        },
+        {
+          "name": "rings",
+          "type": "core::array::Span::<world_native::deep::DeepRing>",
+          "id": "0x72696e6773",
+          "feltLength": null
+        },
+        {
+          "name": "beasts",
+          "type": "core::array::Span::<world_native::deep::DeepBeast>",
+          "id": "0x626561737473",
+          "feltLength": null
         },
         {
           "name": "loss_per_tick",
@@ -3716,9 +3712,15 @@
           "feltLength": 1
         },
         {
-          "name": "quarry_per_tick",
+          "name": "core_per_tick",
           "type": "core::integer::u128",
-          "id": "0x7175617272795f7065725f7469636b",
+          "id": "0x636f72655f7065725f7469636b",
+          "feltLength": 1
+        },
+        {
+          "name": "mine_per_tick",
+          "type": "core::integer::u128",
+          "id": "0x6d696e655f7065725f7469636b",
           "feltLength": 1
         },
         {
@@ -3735,7 +3737,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 14,
+      "valueLength": null,
       "derivedFrom": "preset"
     },
     {
@@ -5567,6 +5569,12 @@
           "feltLength": 1
         },
         {
+          "name": "ring",
+          "type": "core::integer::u8",
+          "id": "0x72696e67",
+          "feltLength": 1
+        },
+        {
           "name": "day",
           "type": "core::integer::u64",
           "id": "0x646179",
@@ -5574,7 +5582,42 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": 2
+      "valueLength": 3
+    },
+    {
+      "name": "DeepEntries",
+      "identity": "0x44656570456e7472696573",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "count",
+          "type": "core::integer::u32",
+          "id": "0x636f756e74",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1,
+      "absence": {
+        "parent": "DeepRules",
+        "value": "zero",
+        "meaning": "No Realm has entered the Deep on this day.",
+        "parentKeys": {
+          "game_id": "game_id"
+        }
+      }
     },
     {
       "name": "DeepGuard",
@@ -7607,6 +7650,26 @@
         {
           "name": "snapshot",
           "type": "@core::array::Array::<world_native::buildings::BuildingRuleConfig>"
+        }
+      ]
+    },
+    "core::array::Span::<world_native::deep::DeepBeast>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::deep::DeepBeast>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::deep::DeepBeast>"
+        }
+      ]
+    },
+    "core::array::Span::<world_native::deep::DeepRing>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::deep::DeepRing>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::deep::DeepRing>"
         }
       ]
     },
@@ -9805,6 +9868,20 @@
         }
       ]
     },
+    "world_native::deep::DeepBeast": {
+      "type": "struct",
+      "name": "world_native::deep::DeepBeast",
+      "members": [
+        {
+          "name": "count",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "bow",
+          "type": "core::bool"
+        }
+      ]
+    },
     "world_native::deep::DeepGuard": {
       "type": "struct",
       "name": "world_native::deep::DeepGuard",
@@ -9819,32 +9896,46 @@
         }
       ]
     },
+    "world_native::deep::DeepRing": {
+      "type": "struct",
+      "name": "world_native::deep::DeepRing",
+      "members": [
+        {
+          "name": "radius",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "realms",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
     "world_native::deep::DeepRules": {
       "type": "struct",
       "name": "world_native::deep::DeepRules",
       "members": [
         {
-          "name": "foundation",
-          "type": "world_native::troops::Coord"
+          "name": "gate_distance",
+          "type": "core::integer::u32"
         },
         {
-          "name": "quarry",
-          "type": "world_native::troops::Coord"
+          "name": "rings",
+          "type": "core::array::Span::<world_native::deep::DeepRing>"
         },
         {
-          "name": "altar",
-          "type": "world_native::troops::Coord"
-        },
-        {
-          "name": "beast_count",
-          "type": "core::integer::u128"
+          "name": "beasts",
+          "type": "core::array::Span::<world_native::deep::DeepBeast>"
         },
         {
           "name": "loss_per_tick",
           "type": "core::integer::u128"
         },
         {
-          "name": "quarry_per_tick",
+          "name": "core_per_tick",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "mine_per_tick",
           "type": "core::integer::u128"
         },
         {
@@ -9877,6 +9968,10 @@
       "members": [
         {
           "name": "kind",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "ring",
           "type": "core::integer::u8"
         },
         {
@@ -14169,5 +14264,5 @@
       ]
     }
   },
-  "identity": "0014e82111b5b37defa1363755ca9b60e85ec43986a063957c05f30c7455fa44"
+  "identity": "2ece457b79b714735daa281616de072b05219cdf6f011e7ea5fd8f703a145f8e"
 }
