@@ -404,3 +404,24 @@ fn late_campaign_recovery_attaches_no_bonus_and_bypasses_no_quest() {
         ),
     );
 }
+
+fn held_quest_fragments(wonder: u32) -> u128 {
+    let (d, game_id) = quest_game();
+    world_test_support::tests::resource_commands::set_fixture(
+        d.games, selector!("realms"), selector!("traits"), array![1].span(), wonder * 0x4000000 + 1,
+    );
+    assert_eq!(quest_labor(d, game_id, Some(held_realm()), false), 1500);
+    let home = interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
+    assert!(
+        execute_in_game(
+            d, game_id, Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home, day: 0 }), 360,
+        ),
+    );
+    interact_with_state(d.games, || crate::state::read().entry.fragments.read((game_id, d.actor)))
+}
+
+#[test]
+fn a_held_wonder_pays_ten_fragments_for_a_quest_once_and_a_realm_without_one_pays_none() {
+    assert_eq!(held_quest_fragments(2), 10);
+    assert_eq!(held_quest_fragments(1), 0);
+}
