@@ -14,7 +14,7 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
 import { GameProvider } from "@/hooks/context/game-context";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { campBeside, otherArmyAt, SITE, SITE_TILE } from "@/ui/features/frontier/sites/site-fixture";
+import { campBeside, otherArmyAt, placeSite, SITE, SITE_TILE } from "@/ui/features/frontier/sites/site-fixture";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { nativeTilePackingConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import { ActorType, BiomeType, BiomeTypeToId } from "@bibliothecadao/types";
@@ -41,6 +41,7 @@ afterEach(() => {
 const preview = (armyStamina: bigint, aimAt: typeof target = target) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store } = campBeside("Camp", true, armyStamina);
+  placeSite(store);
   otherArmyAt(store, target.hex.x, target.hex.y);
   const rules = store.require("SliceRules", { game_id: 1 });
   const grassland = BigInt(BiomeTypeToId[BiomeType.Grassland]) * BigInt(nativeTilePackingConstants.BIOME_SCALE);

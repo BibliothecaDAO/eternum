@@ -24,8 +24,9 @@ import { inFlight, sendOnce } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ActionPaths, ActionType, setBlockTimestampSource, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
+import { nativeTilePackingConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
-import { siteName } from "@bibliothecadao/types";
+import { BiomeType, BiomeTypeToId, siteName } from "@bibliothecadao/types";
 import type { ComponentProps } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { letGoOfClearedSite, letGoOfLostSelection } from "@/three/scenes/worldmap-lost-selection";
@@ -262,6 +263,11 @@ describe("the tile card", () => {
         model: "TileOccupancy",
         key: "0xa702",
         value: { game_id: 1, entity_id: 201n, col: 511, row: 3584, alt: false, category: 15, is_structure: false },
+      },
+      {
+        model: "TileOpt",
+        key: "0xa703",
+        value: { game_id: 1, col: 512, row: 3584, alt: false, data: BigInt(BiomeTypeToId[BiomeType.Grassland]) * BigInt(nativeTilePackingConstants.BIOME_SCALE) },
       },
     ]);
     const other = otherArmyAt(store, 512, 3584);

@@ -215,8 +215,8 @@ const forecastFrom = (store: NativeFactStore, attack: SiteAttack, targetId: bigi
   const forecastAt = (besideTarget: boolean) =>
     forecastAttack(store, key(attack.army.explorer_id), key(targetId), attack.timestamp, { besideTarget });
   const now = forecastAt(false);
-  const inReach = now !== undefined && !(now.outcome === "refused" && REACH_REFUSALS.has(now.refusal));
-  return { inReach, forecast: inReach || now === undefined ? now : forecastAt(true) };
+  const inReach = !(now?.outcome === "refused" && REACH_REFUSALS.has(now.refusal));
+  return { inReach, forecast: inReach ? now : forecastAt(true) };
 };
 
 const siteFight = (forecast: AttackForecast | undefined): SiteFight | undefined => {

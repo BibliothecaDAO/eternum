@@ -7,7 +7,20 @@ import { armyRelicReward, setBlockTimestampSource } from "@bibliothecadao/eternu
 import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { readDeepSiteFight, readArmyCard, readSiteCard } from "./site-card-plan";
-import { blightglowRift, campBeside, otherArmyAt, relicEffectFact, reloadSiteFacts } from "./site-fixture";
+import {
+  blightglowRift,
+  campBeside as campOffMap,
+  otherArmyAt,
+  placeSite,
+  relicEffectFact,
+  reloadSiteFacts,
+} from "./site-fixture";
+
+const campBeside = (...args: Parameters<typeof campOffMap>) => {
+  const fixture = campOffMap(...args);
+  placeSite(fixture.store);
+  return fixture;
+};
 
 afterEach(() => setBlockTimestampSource(null));
 

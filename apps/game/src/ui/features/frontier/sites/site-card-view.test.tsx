@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { type SiteVerb, SiteCardView } from "./site-card-view";
 import { readSiteCard, type SiteFight } from "./site-card-plan";
-import { campBeside } from "./site-fixture";
+import { campBeside, placeSite } from "./site-fixture";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { TARGET_MARKS, type AttackTargetKind } from "./site-marks";
 import { plateRows } from "@/three/map-plates/map-plate-rows";
@@ -31,6 +31,7 @@ const buttons = () => [...document.querySelectorAll<HTMLButtonElement>("section[
 describe("a guarded site's card", () => {
   it("renders the depth-I Beasts reward in This attack earns", () => {
     const { store, site, structure, attack } = campBeside("Beasts");
+    placeSite(store);
     const plan = readSiteCard(store, site, structure, attack({ col: 41, row: 12, alt: false }));
     expect(plan.payout).toEqual({ resourceId: ResourcesIds.Wheat, amount: 6000, fits: 5000 });
     const payout = plan.payout!;

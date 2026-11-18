@@ -101,18 +101,6 @@ export const campBeside = (
         starting_troops_granted: true,
       },
     }),
-    set("0x7101", "TileOccupancy", {
-      game_id: 1,
-      ...SITE_TILE,
-      entity_id: entityId,
-      category: TileOccupier.Camp,
-      is_structure: true,
-    }),
-    set("0x7201", "TileOpt", {
-      game_id: 1,
-      ...SITE_TILE,
-      data: String(BigInt(BiomeTypeToId[BiomeType.Grassland]) * BigInt(nativeTilePackingConstants.BIOME_SCALE)),
-    }),
     set("0x72", "ExpeditionSite", {
       game_id: 1,
       entity_id: entityId,
@@ -225,6 +213,7 @@ export const blightglowRift = ({
 }) => {
   const fixture = campBeside("Rift");
   const { store } = fixture;
+  placeSite(store);
   const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
   const wire = (value: unknown) =>
     JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
@@ -259,14 +248,29 @@ export const blightglowRift = ({
 
 type ArmyTile = { col: number; row: number; alt: boolean };
 
-const standArmyAt = (store: NativeFactStore, tile: ArmyTile) =>
+const standArmyAt = (store: NativeFactStore, tile: ArmyTile) => {
+  const standing = store.entityOccupancy(1, 201);
+  if (standing && standing.col === tile.col && standing.row === tile.row && standing.alt === tile.alt) return;
+  const seat = { game_id: 1, ...tile, entity_id: 201, category: TileOccupier.ExplorerKnightT1, is_structure: false };
   store.applyFacts([
-    set("0x75", "TileOccupancy", {
+    ...(standing ? [{ model: "TileOccupancy", key: store.wireKeyOf("TileOccupancy", standing)!, value: null }] : []),
+    set(`0x75${tile.col.toString(16)}${tile.row.toString(16)}`, "TileOccupancy", seat),
+  ] as never);
+};
+
+export const placeSite = (store: NativeFactStore, entityId: number | bigint = SITE) =>
+  store.applyFacts([
+    set("0x7101", "TileOccupancy", {
       game_id: 1,
-      ...tile,
-      entity_id: 201,
-      category: TileOccupier.ExplorerKnightT1,
-      is_structure: false,
+      ...SITE_TILE,
+      entity_id: entityId,
+      category: TileOccupier.Camp,
+      is_structure: true,
+    }),
+    set("0x7201", "TileOpt", {
+      game_id: 1,
+      ...SITE_TILE,
+      data: String(BigInt(BiomeTypeToId[BiomeType.Grassland]) * BigInt(nativeTilePackingConstants.BIOME_SCALE)),
     }),
   ] as never);
 
