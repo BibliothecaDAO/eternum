@@ -169,7 +169,7 @@ export type BeastRow = {
   scale: number;
   idle: BeastIdle;
 } & BeastLook;
-export type DeepBeastRow = { name: string; scale: number; idle: BeastIdle } & BeastLook;
+type DeepBeastRow = { name: string; scale: number; idle: BeastIdle } & BeastLook;
 
 const breath = (speed: number, height: number) => ({ motion: "breath", speed, height }) as const;
 const lift = (speed: number, height: number) => ({ motion: "lift", speed, height }) as const;

@@ -155,7 +155,7 @@ const siteId = (key: (typeof deepSites)[number]["key"]): bigint =>
 
 const scaled = (amount: number): bigint => BigInt(amount) * BigInt(RESOURCE_PRECISION);
 
-export const seasonOneDeepRules = (): NativeRows["DeepRules"] => {
+const seasonOneDeepRules = (): NativeRows["DeepRules"] => {
   const deep = frontierSeasonOnePreset.deep;
   return {
     game_id: 1,
