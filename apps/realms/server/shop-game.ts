@@ -30,21 +30,34 @@ export const namedGame = (chain: unknown, game: unknown): NamedGame | null => {
  */
 export type ShopAccess = (realmsId: string, game: NamedGame) => Promise<boolean>;
 
+export type EnteredGames = (realmsId: string) => Promise<NamedGame[]>;
+
+export const enteredGamesOf = (
+  env: Pick<IdentityEnv, "DB" | "GUARDIAN">,
+  fetchShard: typeof fetch,
+  now: () => number,
+): EnteredGames => {
+  const accountOf = playerAccounts(env);
+  return async (realmsId) => {
+    const account = BigInt(await accountOf(realmsId));
+    const entered: NamedGame[] = [];
+    for (const shard of await listedShards(env.DB))
+      for (const gameId of runningFrontierGameIds(await fetchShardGames(shard, gamesUrl(shard, null), fetchShard), now()))
+        if ((await readEnrolledAccounts(shard.url, gameId)).some((owner) => BigInt(owner) === account))
+          entered.push({ chainId: gameKey(shard.chainId), gameId });
+    return entered;
+  };
+};
+
 /** The shop's rule, read from the game's shard: its directory says the game runs, its enrollment says who plays. */
 export const shopAccessOf = (
   env: Pick<IdentityEnv, "DB" | "GUARDIAN">,
   fetchShard: typeof fetch,
   now: () => number,
 ): ShopAccess => {
-  const accountOf = playerAccounts(env);
-  return async (realmsId, { chainId, gameId }) => {
-    const shard = (await listedShards(env.DB)).find((listed) => gameKey(listed.chainId) === chainId);
-    if (!shard) return false;
-    const running = runningFrontierGameIds(await fetchShardGames(shard, gamesUrl(shard, null), fetchShard), now());
-    if (!running.includes(gameId)) return false;
-    const account = BigInt(await accountOf(realmsId));
-    return (await readEnrolledAccounts(shard.url, gameId)).some((owner) => BigInt(owner) === account);
-  };
+  const entered = enteredGamesOf(env, fetchShard, now);
+  return async (realmsId, named) =>
+    (await entered(realmsId)).some((game) => game.chainId === named.chainId && game.gameId === named.gameId);
 };
 
 /**

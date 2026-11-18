@@ -877,6 +877,8 @@ export default {
       return operatorCampaignEntry(request, env, "recover");
     if (new URL(request.url).pathname === "/api/value/operator/campaign-upgrade" && request.method === "POST")
       return operatorCampaignEntry(request, env, "upgrade");
+    if (new URL(request.url).pathname === "/api/value/operator/seal" && request.method === "POST")
+      return operatorCampaignEntry(request, env, "seal");
     if (new URL(request.url).pathname === "/api/value/operator/deposit-retirement" && request.method === "POST") {
       if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN))) return new Response(null, { status: 401 });
       const body = (await request.json().catch(() => null)) as { chainId?: unknown } | null;
@@ -1075,7 +1077,7 @@ const relayEffect = <A, E>(operation: string, make: () => Effect.Effect<A, E>) =
 async function operatorCampaignEntry(
   request: Request,
   env: RelayEnv,
-  action: "recover" | "upgrade",
+  action: "recover" | "upgrade" | "seal",
 ): Promise<Response> {
   if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN)))
     return Response.json({ error: "unauthorized" }, { status: 401 });
@@ -1106,7 +1108,7 @@ async function operatorCampaignEntry(
       realmsId: body.realmsId,
       account,
       realmId: null,
-      ...(action === "recover" ? { recoverFlyer: true as const } : { upgradeCampaign: true as const }),
+      ...{ recover: { recoverFlyer: true as const }, upgrade: { upgradeCampaign: true as const }, seal: { sealOnly: true as const } }[action],
     });
     if (result.error) return Response.json({ error: result.error.code }, { status: result.error.status });
     return Response.json(result.entry);

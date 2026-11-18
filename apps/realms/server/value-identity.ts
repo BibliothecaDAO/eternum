@@ -12,7 +12,7 @@ import { heldRealms, holdsRealm } from "./realm-holdings";
 import { realmsIdsOfAccounts } from "./realms-accounts";
 import { readLinkedWallet } from "./linked-wallet";
 import { campaignTicketFor } from "./campaign-ticket-store";
-import { holdsFreeSeal } from "./seal-codes";
+import { holdsSeal } from "./seal-codes";
 
 /** Only a service binding exposes these reads; they have no public HTTP route. */
 export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
@@ -76,7 +76,7 @@ export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
     return campaignTicketFor(this.env.DB, realmsId, presetId);
   }
   holdsSeal(realmsId: string) {
-    return holdsFreeSeal(this.env.DB, realmsId);
+    return holdsSeal(this.env.DB, realmsId);
   }
   async authenticate(cookie: string): Promise<{ realmsId: string } | null> {
     const session = await createIdentityAuth(this.env).api.getSession({ headers: new Headers({ cookie }) });

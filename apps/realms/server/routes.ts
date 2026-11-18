@@ -23,7 +23,7 @@ import { handleBuildOrders } from "./build-orders";
 import { avnuQuote } from "./lords-price";
 import { handleSeal } from "./seal";
 import { holderFactsOf } from "./seal-facts";
-import { shopAccessOf } from "./shop-game";
+import { enteredGamesOf, shopAccessOf } from "./shop-game";
 import { handlePurchaseCheck, handleStoreReceipt, storeVerifiersOf } from "./store-receipts";
 import { handleOpeningProgress } from "./opening-progress";
 import { handleOrderIntent } from "./order-intent";
@@ -154,7 +154,18 @@ export const routeIdentityRequest = async (
   if (pathname === "/api/build-orders") return handleBuildOrders(request, auth, env.DB);
   if (pathname === "/api/opening") return handleOpeningProgress(request, auth, env.DB);
   if (pathname === "/api/order-intent") return handleOrderIntent(request, auth, env.DB);
-  if (pathname === "/api/seal-code") return handleSealCode(request, auth, env.DB);
+  if (pathname === "/api/seal-code")
+    return handleSealCode(request, auth, {
+      db: env.DB,
+      enteredGames: enteredGamesOf(env, platform.fetchShard, nowSeconds),
+      grantSeal: (game, realmsId) =>
+        env.VALUE_RELAY.fetch("https://value-relay/api/value/operator/seal", {
+          method: "POST",
+          redirect: "manual",
+          headers: { authorization: `Bearer ${env.OPERATOR_TOKEN}`, "content-type": "application/json" },
+          body: JSON.stringify({ ...game, realmsId }),
+        }),
+    });
   if (pathname === "/api/shop/purchase-check")
     return handlePurchaseCheck(request, auth, {
       db: env.DB,

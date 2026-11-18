@@ -151,6 +151,16 @@ it("grants a free home its held Seal and nothing to an account that holds none",
   expect(await registerHomeSource(target, free)).toEqual({});
   expect(io.admin).toHaveBeenCalledExactlyOnceWith("grant_seal", { game_id: 7, account: "0x123" });
 });
+it("grants a Seal redeemed after entry without touching the home's source", async () => {
+  registered = entitlement;
+  entries = [{ player: "0x123" }];
+  io.seal.mockResolvedValue(true);
+  const redeemed = { ...claim, realmId: null, sealOnly: true as const };
+  expect(await registerHomeSource(target, redeemed)).toEqual({});
+  expect(await registerHomeSource(target, redeemed)).toEqual({});
+  expect(io.admin).toHaveBeenCalledExactlyOnceWith("grant_seal", { game_id: 7, account: "0x123" });
+  expect(io.ticket).not.toHaveBeenCalled();
+});
 it("asks for a retry when identity cannot say or the chain refuses the Seal, and registers nothing", async () => {
   io.seal.mockRejectedValue(new Error("down"));
   await expect(registerHomeSource(target, claim)).rejects.toMatchObject({ code: "seal_check_unavailable" });

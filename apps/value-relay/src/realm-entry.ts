@@ -22,6 +22,7 @@ export interface RealmEntryClaim {
   recoverFlyer?: true;
   /** Set only by the authenticated campaign-upgrade route after identity awards a golden ticket. */
   upgradeCampaign?: true;
+  sealOnly?: true;
 }
 /** The source a Frontier home claims from: a held Realm, a campaign's ticket, or none (a free home). */
 export type HomeSource = { realmId: number } | { campaign: string; tier: TicketTier } | Record<string, never>;
@@ -91,6 +92,7 @@ const CAMPAIGN_TIERS: Record<TicketTier, number> = { regular: 1, golden: 2 };
 export async function registerHomeSource(target: RealmEntryTarget, claim: RealmEntryClaim): Promise<HomeSource> {
   const entry = await openEntry(target, claim);
   await grantHeldSeal(target, claim, entry);
+  if (claim.sealOnly) return {};
   const previous = readEntitlement(entry.snapshot, claim.account);
   if (claim.upgradeCampaign) return upgradeCampaignHome(target, claim, entry, previous);
   const { realmId } = claim;
