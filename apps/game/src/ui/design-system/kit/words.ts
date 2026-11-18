@@ -331,7 +331,7 @@ import {
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
 import type { AttackRefusal, RuinChest } from "@bibliothecadao/eternum";
 import {
-  ANCIENT_SEAL,
+  SEASON_PASS,
   BuildingType,
   buildingName,
   formatAmount,
@@ -452,18 +452,18 @@ export const SEASON_INVITE_WORDS = {
   copy: "Copy invite link",
 } as const;
 export const SEAL_CODE_WORDS = {
-  title: `Free ${ANCIENT_SEAL}?`,
+  title: `Free ${SEASON_PASS}?`,
   line: "Quest bonus and a Realm skin. One code, one account.",
   label: "Your code",
   placeholder: `${PRINTED_CODE_LENGTH} letters and digits`,
   redeem: "Redeem",
   redeeming: "Redeeming",
-  held: `Your ${ANCIENT_SEAL} is held`,
+  held: `Your ${SEASON_PASS} is held`,
   heldLine: "It is yours when the season opens.",
   refused: {
     invalid_code: `A code is ${PRINTED_CODE_LENGTH} letters and digits.`,
     code_unavailable: "That code is taken, expired or not one of ours.",
-    seal_owned: `This account has the ${ANCIENT_SEAL} already.`,
+    seal_owned: `This account has the ${SEASON_PASS} already.`,
   } satisfies Record<SealCodeRefusal, string>,
 } as const;
 /** The day-done card: "Day 12 done · Realm kept · Day 13 is open", and its one verb. */

@@ -582,7 +582,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(again.container.querySelector('[aria-pressed="true"]')).toBeNull();
   });
 
-  it("holds a free Ancient Seal code on the waiting screen: a refused code says so in its field, a good one is held", async () => {
+  it("holds a free Season Pass code on the waiting screen: a refused code says so in its field, a good one is held", async () => {
     reads.directory = answered({ games: [] });
     reads.calendar = answered(seasonOne(startsAt));
     reads.intent = { order: ordersOfAspect(1)[0]!.orderId, members: {} };
@@ -598,7 +598,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
         input.dispatchEvent(new Event("input", { bubbles: true }));
       });
     expect(card()?.getAttribute("data-seal-code")).toBe("open");
-    expect(card()?.textContent).toContain("Free Ancient Seal?");
+    expect(card()?.textContent).toContain("Free Season Pass?");
     expect(card()?.textContent).toContain("Quest bonus and a Realm skin. One code, one account.");
 
     await type("TAKEN234");
@@ -613,7 +613,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     await settle();
     expect(reads.redeemed).toEqual(["TAKEN234", "seal2345"]);
     expect(card()?.getAttribute("data-seal-code")).toBe("held");
-    expect(card()?.textContent).toBe("Your Ancient Seal is heldIt is yours when the season opens.");
+    expect(card()?.textContent).toBe("Your Season Pass is heldIt is yours when the season opens.");
     expect(card()?.querySelector("input")).toBeNull();
   });
 
