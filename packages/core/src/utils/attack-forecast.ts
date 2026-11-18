@@ -12,7 +12,7 @@ import {
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { readDeepSite, readDeepSiteDefender } from "../client/views/deep-sites";
-import { resolveExplorerCombatTroops, staminaAt } from "../managers/troop-stamina";
+import { resolveExplorerCombatTroops, resolveExplorerTroops, staminaAt } from "../managers/troop-stamina";
 import { STAMINA_MODELS } from "../client/views/stamina";
 import { getDefendingGuards, getGuardsByStructure, GUARD_MODELS } from "./army";
 import { armyOpponentsRefusal } from "./army-opponents";
@@ -24,7 +24,7 @@ import {
   type CombatRules,
   type ExchangeRefusal,
 } from "./combat-exchange";
-import { isArmyCurrent, isRealmCategory, readExpeditionRules, structureMapPosition } from "./expeditions";
+import { isArmyCurrent, isExpeditionRealm, structureMapPosition } from "./expeditions";
 import { isModeRuleEnabled } from "./mode-rules";
 import { armyOaths } from "./oaths";
 import { entityMapOccupancy, getTileAt, storedBiomeAt } from "./tile";
@@ -65,6 +65,7 @@ interface Tile {
 
 interface Combatant {
   troops: Troops;
+  exact: boolean;
   oaths: number;
   guarding: boolean;
   tile: Tile;
@@ -147,6 +148,7 @@ function claimOf(scene: Scene, attacker: Combatant, target: Tile): AttackForecas
 }
 
 function fightOf(scene: Scene, sides: FightSides): AttackForecast | undefined {
+  if (!sides.attacker.exact || !sides.defender.exact) return undefined;
   const { tile } = sides.defender;
   const biome = storedBiomeAt(scene.store, tile.alt, tile.col, tile.row, scene.gameId);
   if (biome === undefined) return undefined;
@@ -226,7 +228,7 @@ function targetPosition(scene: Scene, targetId: bigint): Tile | undefined {
 }
 
 function structureTile(scene: Scene, structure: NativeRows["Structure"]): Tile | undefined {
-  if (isRealmCategory(structure.base.category) && readExpeditionRules(scene.store, scene.gameId)) {
+  if (isExpeditionRealm(scene.store, structure)) {
     const site = structureMapPosition(scene.store, structure);
     return site ? { col: site.x, row: site.y, alt: site.alt } : undefined;
   }
@@ -268,7 +270,7 @@ function deepSiteDefence(scene: Scene, attacker: Combatant, siteId: bigint): Def
   if (!guard && !defence) return { claims: attacker, target: tile };
   const queued = site.guards.slice(1).map(({ army }) => deepGuardCombatant(scene, army, tile));
   if (!defence || queued.some((next) => next === undefined)) return undefined;
-  const defender = { ...defence, tile, home: guard?.owner ?? 0n };
+  const defender = { ...defence, exact: true, tile, home: guard?.owner ?? 0n };
   const sides = { attacker, defender, queued: queued.filter((next) => next !== undefined) };
   if (!guard) return { sides };
   if (!isArmyCurrent(scene.store, scene.gameId, guard.explorer_id, scene.chainSecond))
@@ -291,13 +293,14 @@ function structureDefence(scene: Scene, attacker: Combatant, structure: NativeRo
     aggressorRefusal(scene, attacker);
   if (before) return refused(before, alone);
   const tile = structureTile(scene, structure);
-  const guards = getDefendingGuards(structure, store, scene.chainSecond);
-  if (!tile || !guards) return undefined;
+  if (!tile) return undefined;
   if (!isInStructureRange(attacker.tile, tile, attacker.troops)) return refused("out-of-range", alone);
+  const guards = getDefendingGuards(structure, store, scene.chainSecond);
+  if (!guards) return undefined;
   const [first, ...queued] = guards;
   if (!first) return { claims: attacker, target: tile };
   const guarding = isCombatGuard(structure.owner, scene.rules.dayUnitSeconds);
-  const standing = (troops: Troops) => ({ troops, oaths: 0, guarding, tile, home: structure.entity_id });
+  const standing = (troops: Troops) => ({ troops, exact: true, oaths: 0, guarding, tile, home: structure.entity_id });
   return {
     sides: { attacker, defender: standing(first.troops), queued: queued.map((guard) => standing(guard.troops)) },
   };
@@ -323,7 +326,15 @@ function guardAttack(scene: Scene, structureId: bigint, targetId: bigint): Defen
       ? (living.find(reaches) ?? living[0])
       : living.find(({ slot }) => slot === scene.guardSlot);
   if (!guard || defender.troops.count === 0n) return refused("no-troops");
-  const attacker = { troops: guard.troops, oaths: 0, guarding: true, tile, home: structureId, guardSlot: guard.slot };
+  const attacker = {
+    troops: guard.troops,
+    exact: true,
+    oaths: 0,
+    guarding: true,
+    tile,
+    home: structureId,
+    guardSlot: guard.slot,
+  };
   const sides = { attacker, defender, queued: [] };
   const refusal =
     (reaches(guard) ? undefined : "out-of-range") ??
@@ -334,11 +345,13 @@ function guardAttack(scene: Scene, structureId: bigint, targetId: bigint): Defen
 }
 
 function armyCombatant(scene: Scene, army: NativeRows["ExplorerTroops"]): Combatant | undefined {
-  const troops = resolveExplorerCombatTroops(scene.store, army, scene.chainSecond);
+  const combat = resolveExplorerCombatTroops(scene.store, army, scene.chainSecond);
+  const troops = combat ?? resolveExplorerTroops(scene.store, army, scene.chainSecond);
   const position = entityMapOccupancy(scene.store, scene.gameId, army.explorer_id);
   if (!troops || !position) return undefined;
   return {
     troops,
+    exact: combat !== undefined,
     oaths: armyOaths(scene.store, army),
     guarding: false,
     tile: { col: position.col, row: position.row, alt: position.alt },
@@ -348,7 +361,7 @@ function armyCombatant(scene: Scene, army: NativeRows["ExplorerTroops"]): Combat
 
 function deepGuardCombatant(scene: Scene, army: NativeRows["ExplorerTroops"], tile: Tile): Combatant | undefined {
   const troops = resolveExplorerCombatTroops(scene.store, army, scene.chainSecond);
-  return troops && { troops, oaths: armyOaths(scene.store, army), guarding: true, tile, home: army.owner };
+  return troops && { troops, exact: true, oaths: armyOaths(scene.store, army), guarding: true, tile, home: army.owner };
 }
 
 function hasOpenOathPick(scene: Scene, explorerId: bigint): boolean {

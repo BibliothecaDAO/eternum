@@ -258,10 +258,9 @@ export const structureMapPosition = (
   store: Pick<NativeFactStore, "get" | "require" | "entityOccupancy">,
   structure: NativeRows["Structure"],
 ): { x: number; y: number; alt: boolean } | null => {
-  const rules = readExpeditionRules(store, structure.game_id);
-  if (rules && isRealmCategory(structure.base.category)) {
+  if (isExpeditionRealm(store, structure)) {
     const site = expeditionRealmSite(
-      rules,
+      readExpeditionRules(store, structure.game_id)!,
       entityHomeNamespace(structure.entity_id),
       getBlockTimestamp().currentBlockTimestamp,
     );
