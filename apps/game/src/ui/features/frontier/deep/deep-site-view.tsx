@@ -12,7 +12,8 @@ import {
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
 import { ARMY, DEEP_WORDS, MOVE, TROOPS } from "@/ui/design-system/kit/words";
-import { type Troops, deepSites, formatExact } from "@bibliothecadao/types";
+import { DEEP_BEASTS, type Troops, beastModel, deepSites, formatExact } from "@bibliothecadao/types";
+import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { nativeRuleConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 
 import { FightSide } from "../sites/fight-side";
@@ -95,7 +96,7 @@ export const DeepSiteView = ({ site, pay, guard, fight, order, onClose }: DeepSi
         </div>
       </div>
       {fight && <FightPreview fight={fight} />}
-      <GuardRows guard={guard} />
+      <GuardRows site={site} guard={guard} />
       <OrderFoot order={order} />
       {typeof order === "object" && order.kind === "short" && <HudNotice tone="warn" line={order.line} />}
     </HudSheet>
@@ -133,12 +134,12 @@ const TickPay = ({ pay }: { pay: DeepTickPay }) => (
   </span>
 );
 
-const GuardRows = ({ guard }: { guard: DeepGuard }) => {
+const GuardRows = ({ site, guard }: { site: DeepSiteProps["site"]; guard: DeepGuard }) => {
   if (guard.kind === "beast")
     return (
       <HudRow
-        lead={<Icon name="beasts" size={32} />}
-        title={DEEP_WORDS.beast(guard.troops)}
+        lead={<Icon name={beastMeaning(beastModel(DEEP_BEASTS[site]))} size={32} />}
+        title={DEEP_WORDS.beast(DEEP_BEASTS[site].name, guard.troops)}
         trail={<CombatMark category={guard.category} />}
         state="beast"
       />

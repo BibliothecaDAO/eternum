@@ -2,6 +2,8 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { DEEP_BEASTS } from "@bibliothecadao/types";
+
 import { DEEP_SITE_CASES } from "./deep-site-fixtures";
 import { DeepSiteView, type DeepSiteProps } from "./deep-site-view";
 
@@ -28,10 +30,10 @@ describe("a Deep site's card", () => {
     const onAct = vi.fn();
     const props = DEEP_SITE_CASES["Foundation, today's beast, army in reach"];
     draw({ ...props, order: { kind: "act", verb: "attack", onAct } });
-    expect(text()).toContain("Foundation");
+    expect(text()).toContain("Hyperstructure archive");
     expect(text()).toContain("5 Glory");
     expect(text()).toContain("+5 height to your Aspect's hyperstructure");
-    expect(text()).toContain("Today's beast: 10,000 troops");
+    expect(text()).toContain(`Today's beast: ${DEEP_BEASTS.foundation.name}, 10,000 troops`);
     const [attack] = labels(["Attack"]);
     act(() => attack!.click());
     expect(onAct).toHaveBeenCalledTimes(1);

@@ -816,7 +816,7 @@ export const DEEP_WORDS = {
   labor: (amount: number) => `${formatExact(amount)} labor`,
   bar: (perTick: number, charge: number, threshold: number) =>
     `+${formatExact(perTick)} on the bane bar: ${formatExact(charge)} of ${formatExact(threshold)}`,
-  beast: (troops: number) => `Today's beast: ${formatExact(troops)} troops`,
+  beast: (name: string, troops: number) => `Today's beast: ${name}, ${formatExact(troops)} troops`,
   open: "No guard: the next army takes it",
   heldBy: (aspect: string) => `Held by ${aspect}`,
   freeSlot: "Free slot",
