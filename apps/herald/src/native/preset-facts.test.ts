@@ -422,7 +422,12 @@ it("projects optional Deep rules from verified registration and publishes no row
   for (const enabled of [false, true]) {
     const world = setup();
     const preset = registration(FRONTIER_FIXTURE_PRESET_ID, (definition) => {
-      if (enabled) definition.economy.deep = new CairoOption(CairoOptionVariant.Some, deep);
+      if (enabled) {
+        definition.economy.deep = new CairoOption(CairoOptionVariant.Some, deep);
+      } else {
+        definition.economy.deep = new CairoOption(CairoOptionVariant.None);
+        definition.economy.race = new CairoOption(CairoOptionVariant.None);
+      }
     });
     applyRegistration(world, preset);
     world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
@@ -514,6 +519,8 @@ it("projects optional race rules from verified registration into the native fact
           altar_per_tick: 5,
           altar_threshold: 1500,
         });
+      } else {
+        definition.economy.race = new CairoOption(CairoOptionVariant.None);
       }
     });
     applyRegistration(world, preset);

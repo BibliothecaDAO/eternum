@@ -81,21 +81,6 @@ fn follow_surface_path(d: Deployment, key: ExplorerKey, path: Span<Coord>, now: 
 fn discovered_spires_take_a_real_army_through_each_layer_to_the_shared_deep() {
     let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("frontier-check");
     preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DISCOVER_SPIRES;
-    preset
-        .economy
-        .deep =
-            Some(
-                crate::deep::DeepRules {
-                    foundation: crate::troops::Coord { alt: false, x: 10, y: 25 },
-                    quarry: crate::troops::Coord { alt: false, x: 25, y: 25 },
-                    altar: crate::troops::Coord { alt: false, x: 40, y: 25 },
-                    beast_count: crate::rules::RESOURCE_PRECISION,
-                    loss_per_tick: crate::rules::RESOURCE_PRECISION,
-                    quarry_per_tick: crate::rules::RESOURCE_PRECISION,
-                    altar_per_tick: 1,
-                    altar_threshold: 10,
-                },
-            );
     let (d, game_id) = super::aspects::setup_aspect_preset(93, preset);
     let home = found(d, game_id, 1);
     let budget = interact_with_state(

@@ -291,20 +291,6 @@ pub fn observe_rewards(ref rows: Array<ObservedRow>, address: ContractAddress, g
     row(ref rows, 'SeasonWinThreshold', key, season_lifecycle.season_win_threshold(game_id));
 }
 
-pub fn optional_race_rules() -> crate::race::RaceRules {
-    crate::race::RaceRules {
-        season_days: 50,
-        glory_per_tick: 5,
-        height_per_tick: 5,
-        stage_height: 2000,
-        clear_mist_percent: 200,
-        second_wind_percent: 200,
-        pale_moon_percent: 50,
-        spoils_percent: 200,
-    }
-}
-
-
 fn observed_quest_rules(game_id: u32) -> Option<crate::quests::QuestRules> {
     let preset = crate::logic::preset_record::for_game(game_id);
     let Some((labor, essence, bonus_percent)) = preset.quest_rewards.read() else {

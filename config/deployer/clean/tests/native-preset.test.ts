@@ -1272,6 +1272,7 @@ test("Clear Mist must fit one categorical discovery draw", () => {
   const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
   const previous = { race: source.race, deep: source.deep, discovery: source.discovery };
   try {
+    source.race = null;
     source.deep = deepFixture();
     source.discovery = { ...source.discovery!, beastsBps: 4000 };
     const configuration = loadNativePresetConfiguration("madara.frontier", source.id);

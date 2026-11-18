@@ -492,14 +492,12 @@ pub fn deep_definition() -> crate::presets::PresetDefinition {
         .deep =
             Some(
                 crate::deep::DeepRules {
-                    foundation: crate::troops::Coord { alt: false, x: 10, y: 25 },
-                    quarry: crate::troops::Coord { alt: false, x: 25, y: 25 },
-                    altar: crate::troops::Coord { alt: false, x: 40, y: 25 },
                     beast_count: RESOURCE_PRECISION,
                     loss_per_tick: RESOURCE_PRECISION,
                     quarry_per_tick: RESOURCE_PRECISION,
                     altar_per_tick: 5,
                     altar_threshold: 10,
+                    ..preset.economy.deep.unwrap()
                 },
             );
     preset

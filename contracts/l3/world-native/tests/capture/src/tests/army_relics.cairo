@@ -25,6 +25,7 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
         beasts_bps: 1, camp_bps: 0, rift_bps: 0, ruin_bps: 5000, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
     };
     preset.economy.discovery = Some(discovery);
+    preset.economy.race = None;
     preset.rules.tick_config.armies_tick_in_seconds = 1;
     preset.rules.troop_stamina_config.stamina_gain_per_tick = 120;
     preset.rules.battle_config.cooldown_seconds = 0;

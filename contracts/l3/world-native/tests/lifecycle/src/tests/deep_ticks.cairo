@@ -12,15 +12,7 @@ use super::deep_sites::{applied, beside, deployed, fight, held, join, site};
 fn race_preset(stage_height: u32) -> crate::presets::PresetDefinition {
     let mut preset = super::banes::deep_definition();
     preset.rules.command_mask = preset.rules.command_mask | 4;
-    preset
-        .economy
-        .race =
-            Some(
-                crate::race::RaceRules {
-                    stage_height, ..world_test_support::tests::preset_projection::optional_race_rules(),
-                },
-            );
-    preset.season_win_points = 0;
+    preset.economy.race = Some(crate::race::RaceRules { stage_height, ..preset.economy.race.unwrap() });
     without_passive_labor(preset)
 }
 

@@ -63,29 +63,12 @@ fn current_frontier_requires_discovery_rejects_cash_rules_and_refuses_sequential
     }
 }
 
-fn optional_deep_rules() -> crate::deep::DeepRules {
-    let precision = crate::rules::RESOURCE_PRECISION;
-    let (_, current) = current_definition("frontier");
-    crate::deep::DeepRules {
-        foundation: crate::troops::Coord { alt: false, x: 25, y: 35 },
-        quarry: crate::troops::Coord { alt: false, x: 12, y: 20 },
-        altar: crate::troops::Coord { alt: false, x: 38, y: 20 },
-        beast_count: 10000 * precision,
-        loss_per_tick: current.economy.deep.unwrap().loss_per_tick,
-        quarry_per_tick: 500 * precision,
-        altar_per_tick: 5,
-        altar_threshold: 1500,
-    }
-}
-
 #[test]
-fn an_optional_deep_preset_stores_the_exact_sites_and_tick_rules() {
+fn the_fixture_preset_stores_the_exact_deep_sites_and_tick_rules() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
-    let (preset_id, mut definition) = current_definition("frontier-check");
-    assert!(definition.economy.deep.is_none());
-    let deep = optional_deep_rules();
-    definition.economy.deep = Some(deep);
+    let (preset_id, definition) = current_definition("frontier-check");
+    let deep = definition.economy.deep.unwrap();
     let registrar = IRegistrarDispatcher { contract_address: d.games };
     registrar.register_preset(preset_id, definition);
     let commitment = registrar.preset_commitment(preset_id);
@@ -104,7 +87,7 @@ fn invalid_deep_rules_leave_no_preset_registered() {
     start_cheat_caller_address(d.games, super::authority());
     for invalid in 0_u8..9 {
         let (preset_id, mut definition) = current_definition("frontier-check");
-        let mut deep = optional_deep_rules();
+        let mut deep = definition.economy.deep.unwrap();
         if invalid == 0 {
             definition.settlement.order_aspects = array![].span();
         } else if invalid == 1 {
@@ -282,15 +265,11 @@ fn malformed_banes_and_banes_without_quests_refuse_registration() {
 
 
 #[test]
-fn an_optional_race_preset_stores_exact_payments_stages_and_triumphs() {
+fn the_fixture_preset_stores_exact_race_payments_stages_and_triumphs() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
-    let (preset_id, mut definition) = current_definition("frontier-check");
-    assert!(definition.economy.race.is_none());
-    let race = optional_race_rules();
-    definition.economy.race = Some(race);
-    definition.economy.deep = Some(optional_deep_rules());
-    definition.season_win_points = 0;
+    let (preset_id, definition) = current_definition("frontier-check");
+    let race = definition.economy.race.unwrap();
     let registrar = IRegistrarDispatcher { contract_address: d.games };
     registrar.register_preset(preset_id, definition);
     let commitment = registrar.preset_commitment(preset_id);
@@ -309,9 +288,7 @@ fn malformed_race_rules_leave_no_preset_registered() {
     start_cheat_caller_address(d.games, super::authority());
     for invalid in 0_u8..14 {
         let (preset_id, mut definition) = current_definition("frontier-check");
-        let mut race = optional_race_rules();
-        definition.economy.deep = Some(optional_deep_rules());
-        definition.season_win_points = 0;
+        let mut race = definition.economy.race.unwrap();
         if invalid == 0 {
             definition.economy.deep = None;
         } else if invalid == 1 {

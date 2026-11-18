@@ -1,7 +1,6 @@
 use snforge_std::{EventSpyTrait, EventsFilterTrait, interact_with_state, spy_events};
 use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use world_test_support::tests::Deployment;
-use world_test_support::tests::preset_projection::optional_race_rules;
 use world_test_support::tests::registrar::{
     CreateGameParams, IRegistrarDispatcherTrait, IRegistrarSafeDispatcherTrait, params, registry, safe,
 };
@@ -18,8 +17,7 @@ use super::army_activity::{found, player};
 
 fn definition(stage_height: u32) -> crate::presets::PresetDefinition {
     let mut preset = super::banes::deep_definition();
-    preset.economy.race = Some(crate::race::RaceRules { stage_height, ..optional_race_rules() });
-    preset.season_win_points = 0;
+    preset.economy.race = Some(crate::race::RaceRules { stage_height, ..preset.economy.race.unwrap() });
     preset
 }
 
@@ -345,7 +343,7 @@ fn a_single_valid_payment_cannot_register_a_season_whose_total_would_overflow() 
     let max: u128 = core::num::traits::Bounded::MAX;
     preset
         .economy
-        .race = Some(crate::race::RaceRules { glory_per_tick: max / RESOURCE_PRECISION, ..optional_race_rules() });
+        .race = Some(crate::race::RaceRules { glory_per_tick: max / RESOURCE_PRECISION, ..preset.economy.race.unwrap() });
     registry(d).register_preset(1, preset);
     let created = safe(d, world_test_support::tests::authority())
         .create_game(
