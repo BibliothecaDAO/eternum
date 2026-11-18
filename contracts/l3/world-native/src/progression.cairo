@@ -64,7 +64,11 @@ pub fn stamina_max(
 pub impl ArmyProgressPacking of starknet::storage_access::StorePacking<ArmyProgress, u64> {
     fn pack(value: ArmyProgress) -> u64 {
         assert!(value.logistics <= 5, "invalid logistics");
-        assert!(value.oath_slots >= 1 && value.oath_slots <= 4, "invalid oath slots");
+        assert!(
+            value.oath_slots >= 1
+                && value.oath_slots <= crate::research::OATH_SLOTS_BASE + crate::research::OATH_SLOT_STEPS,
+            "invalid oath slots",
+        );
         assert!(value.oath_pick < 4096, "invalid oath pick");
         value.oaths.into()
             + Into::<u8, u64>::into(value.oath_slots) * 65536

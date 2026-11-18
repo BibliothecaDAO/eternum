@@ -164,7 +164,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     const constructionGrant =
       tier === 0 &&
       [research.ROW_SUPPLY_YARD, research.ROW_CONSCRIPTION, research.ROW_RATIONS].some((value) => value === row);
-    const maximum = isOathResearch(row) ? research.OATH_SLOTS_MAX - research.OATH_SLOTS_BASE : 5;
+    const maximum = isOathResearch(row) ? research.OATH_SLOT_STEPS : 5;
     const next = tier < maximum ? tier + 1 : undefined;
     const nextNeeds = (at: number) => {
       const needs = buildingNeeds(row, name, icon, at, options.extra ?? []);
@@ -401,8 +401,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     const step = (tier: number) => ({
       now: RESEARCH_TREE.oathSlots(tier + research.OATH_SLOTS_BASE),
       next:
-        tier + research.OATH_SLOTS_BASE < research.OATH_SLOTS_MAX
-          ? RESEARCH_TREE.oathSlots(tier + research.OATH_SLOTS_BASE + 1)
+        tier < research.OATH_SLOT_STEPS ? RESEARCH_TREE.oathSlots(tier + research.OATH_SLOTS_BASE + 1)
           : undefined,
     });
     return [

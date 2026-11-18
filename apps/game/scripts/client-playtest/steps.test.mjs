@@ -1288,5 +1288,5 @@ it("reports the failed Oath capacity assertion without trying to time a missing 
         chainAnswers: [{ kind: "CreateExplorer", answered: [{ model: "ArmyProgress", value: { oath_slots: 1 } }] }],
       },
     }),
-  ).resolves.toMatchObject({ status: "failed", reason: "The new army did not inherit two Oath slots" });
+  ).resolves.toMatchObject({ status: "failed", reason: "The new army did not inherit three Oath slots" });
 });

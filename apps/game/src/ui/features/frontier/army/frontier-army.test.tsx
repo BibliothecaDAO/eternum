@@ -143,9 +143,9 @@ it("shows the army's captured Oath capacity rather than later home research", ()
   act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} onClose={vi.fn()} />));
   expect(host.querySelector("[data-oath-slots]")?.getAttribute("data-oath-slots")).toBe("2");
   expect(host.querySelector("[data-oath-slots]")?.textContent).toContain("2 Oath slots");
-  game.progress.oath_slots = 4;
+  game.progress.oath_slots = 5;
   act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} onClose={vi.fn()} />));
-  expect(host.querySelector("[data-oath-slots]")?.getAttribute("data-oath-slots")).toBe("4");
+  expect(host.querySelector("[data-oath-slots]")?.getAttribute("data-oath-slots")).toBe("5");
   expect(host.querySelector("[data-oath-slots]")?.textContent).not.toContain("Locked");
 });
 

@@ -903,10 +903,10 @@ fn each_troop_buys_three_oath_slots_at_its_building_for_the_exact_price() {
             game_id: home.game_id, entity_id: home.entity_id, resource_type: crate::resources::ESSENCE,
         };
         let labor = ResourceSlot { resource_type: crate::resources::LABOR, ..essence };
-        assert_eq!(crate::research::oath_slots(learned(d, home), troop), 1);
+        assert_eq!(crate::research::oath_slots(learned(d, home), troop), 2);
         assert_terminal_rejection(d, research(home, row, 0), 40);
         assert!(execute(d, build_toward(home, category, 0), 40));
-        assert_eq!(crate::research::oath_slots(learned(d, home), troop), 1);
+        assert_eq!(crate::research::oath_slots(learned(d, home), troop), 2);
         let prices = array![(5000_u128, 1000_u128), (35000, 7500), (150000, 35000)];
         for at in 0_u32..3 {
             let before_e = resources.resource_balance(essence);
@@ -915,13 +915,13 @@ fn each_troop_buys_three_oath_slots_at_its_building_for_the_exact_price() {
             let (cost_e, cost_l) = *prices.at(at);
             assert_eq!(before_e - resources.resource_balance(essence), cost_e * crate::rules::RESOURCE_PRECISION);
             assert_eq!(before_l - resources.resource_balance(labor), cost_l * crate::rules::RESOURCE_PRECISION);
-            assert_eq!(crate::research::oath_slots(learned(d, home), troop), at.try_into().unwrap() + 2_u8);
+            assert_eq!(crate::research::oath_slots(learned(d, home), troop), at.try_into().unwrap() + 3_u8);
             for other in array![
                 crate::troops::TroopType::Knight, crate::troops::TroopType::Paladin,
                 crate::troops::TroopType::Crossbowman,
             ] {
                 if other != troop {
-                    assert_eq!(crate::research::oath_slots(learned(d, home), other), 1);
+                    assert_eq!(crate::research::oath_slots(learned(d, home), other), 2);
                 }
             }
         }
@@ -929,6 +929,6 @@ fn each_troop_buys_three_oath_slots_at_its_building_for_the_exact_price() {
         assert_terminal_rejection(d, research(home, row, 1), 40);
         assert!(execute(d, Command::DestroyBuilding(change(home)), 40));
         assert!(execute(d, build_toward(home, category, 0), 40));
-        assert_eq!(crate::research::oath_slots(learned(d, home), troop), 4);
+        assert_eq!(crate::research::oath_slots(learned(d, home), troop), 5);
     }
 }

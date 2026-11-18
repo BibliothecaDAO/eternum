@@ -1278,7 +1278,7 @@ const OATH_SLOTS_STEPS = [
         `(() => {
       const sent = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "Research").at(-1);
       return sent?.answered.some(({ model, value }) => model === "RealmKnowledge" && ((BigInt(value.learned) >> 30n) & 3n) === 1n) &&
-        document.querySelector('[data-node="row-6"]')?.textContent.includes("2 Oath slots");
+        document.querySelector('[data-node="row-6"]')?.textContent.includes("3 Oath slots");
     })()`,
       );
       browser.tap(action.offset);
@@ -1362,8 +1362,8 @@ const OATH_SLOTS_STEPS = [
       const answer = (context.actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "CreateExplorer").at(-1);
       if (!answer) return undefined;
       const progress = answer.answered.find(({ model }) => model === "ArmyProgress")?.value;
-      if (Number(progress?.oath_slots) !== 2)
-        return failed("The new army did not inherit two Oath slots", { progress });
+      if (Number(progress?.oath_slots) !== 3)
+        return failed("The new army did not inherit three Oath slots", { progress });
       return armyDeployed(context);
     },
   ),
@@ -1375,9 +1375,9 @@ const OATH_SLOTS_STEPS = [
       browser.tap(army.offset);
       const details = await readUntil(() => browser.read(buttonLabelled("^Army 2: details$")), Boolean, SHEET_WAIT_MS);
       if (details) browser.tap(details.offset);
-      await readUntil(() => browser.read(elementAt('[data-oath-slots="2"]')), Boolean, SHEET_WAIT_MS);
+      await readUntil(() => browser.read(elementAt('[data-oath-slots="3"]')), Boolean, SHEET_WAIT_MS);
       return browser.read(`(() => {
-        const slots = document.querySelector('[data-oath-slots="2"]');
+        const slots = document.querySelector('[data-oath-slots="3"]');
         const rect = slots?.getBoundingClientRect();
         return { text: slots?.textContent, open: slots?.querySelectorAll('[aria-label$="· Open"]').length,
           locked: slots?.querySelectorAll('[aria-label$="· Locked"]').length,
@@ -1387,12 +1387,12 @@ const OATH_SLOTS_STEPS = [
     },
     verify: ({ played }) =>
       played.visible &&
-      played.open === 2 &&
+      played.open === 3 &&
       played.locked === 2 &&
       played.priced === 2 &&
-      played.text.includes("2 Oath slots")
+      played.text.includes("3 Oath slots")
         ? completed(played)
-        : failed("The army's two open and two priced locked slots were not visible", played),
+        : failed("The army's three open and two priced locked slots were not visible", played),
   },
 ];
 

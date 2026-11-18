@@ -63,7 +63,7 @@ fn partial_transfers_keep_both_progress_bundles_and_slots() {
     assert_eq!(progress(d, source), Some(veteran));
     assert_eq!(progress(d, target), Some(Default::default()));
     assert_eq!(progress(d, source).unwrap().oath_slots, 4);
-    assert_eq!(progress(d, target).unwrap().oath_slots, 1);
+    assert_eq!(progress(d, target).unwrap().oath_slots, 2);
     assert_eq!(slot(d, source, 0).explorer_id, source.explorer_id);
     assert_eq!(slot(d, target, 1).explorer_id, target.explorer_id);
     assert_eq!(slot(d, source, 0).stamina.amount, 0);

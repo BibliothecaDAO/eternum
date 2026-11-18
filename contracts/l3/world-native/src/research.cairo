@@ -17,8 +17,8 @@ pub const ROW_SUPPLY_YARD: u8 = 5;
 pub const ROW_KNIGHT_OATHS: u8 = 6;
 pub const ROW_SCOUT_OATHS: u8 = 7;
 pub const ROW_CROSSBOW_OATHS: u8 = 11;
-pub const OATH_SLOTS_BASE: u8 = 1;
-pub const OATH_SLOTS_MAX: u8 = 4;
+pub const OATH_SLOTS_BASE: u8 = 2;
+pub const OATH_SLOT_STEPS: u8 = 3;
 pub const ROW_SHRINE: u8 = 8;
 pub const ROW_WELL: u8 = 9;
 pub const ROW_DEPTH: u8 = 10;
@@ -124,7 +124,7 @@ pub fn max_tier(row: u8) -> u8 {
     } else if row == ROW_SHRINE || row == ROW_WELL {
         1
     } else if is_oath_row(row) {
-        OATH_SLOTS_MAX - OATH_SLOTS_BASE
+        OATH_SLOT_STEPS
     } else if row == ROW_DEPTH {
         3
     } else {

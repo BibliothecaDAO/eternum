@@ -6,8 +6,7 @@ import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { HudCost } from "@/ui/design-system/kit/hud-elements";
 import { costLine } from "@/ui/design-system/kit/price-faces";
 import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
-import { configManager, oathResearchRow, troopOathSlots } from "@bibliothecadao/eternum";
-import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
+import { configManager, OATH_SLOTS_MAX, oathResearchRow, troopOathSlots } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, type TroopType } from "@bibliothecadao/types";
 
 export function TroopOathSlots({
@@ -34,7 +33,7 @@ export function TroopOathSlots({
     <div data-oath-slots={count} className="flex flex-col gap-1">
       <span className="text-hud-label text-hud-ink">{RESEARCH_TREE.oathSlots(count)}</span>
       <div className="grid grid-cols-4 gap-1">
-        {Array.from({ length: research.OATH_SLOTS_MAX }, (_, index) => {
+        {Array.from({ length: OATH_SLOTS_MAX }, (_, index) => {
           const open = index < count;
           const oath = held[index];
           const price = open
@@ -69,7 +68,7 @@ export function TroopOathSlots({
           );
         })}
       </div>
-      {count < research.OATH_SLOTS_MAX && (
+      {count < OATH_SLOTS_MAX && (
         <span className="text-hud-label text-hud-muted">{RESEARCH_TREE.oathResearch}</span>
       )}
     </div>

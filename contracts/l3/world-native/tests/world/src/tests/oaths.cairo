@@ -259,7 +259,7 @@ fn the_offer_entry_grants_on_the_surface_and_preserves_progress_in_the_deep() {
 
 #[test]
 fn packing_preserves_all_sixteen_held_bits_and_the_offer() {
-    let value = crate::progression::ArmyProgress { logistics: 5, oath_slots: 4, oaths: 65535, oath_pick: 4095 };
+    let value = crate::progression::ArmyProgress { logistics: 5, oath_slots: 5, oaths: 65535, oath_pick: 4095 };
     assert_eq!(
         crate::progression::ArmyProgressPacking::unpack(crate::progression::ArmyProgressPacking::pack(value)), value,
     );
@@ -483,4 +483,38 @@ fn passing_matches_client_vectors_and_cannot_be_replayed_with_empty_or_full_slot
             );
         }
     }
+}
+
+#[test]
+fn a_new_army_holds_two_oaths_before_any_research_and_refuses_a_third_without_a_swap() {
+    let (d, game_id, key) = super::registrar::setup_frontier_relics();
+    assert_eq!(read_progress(d, key).oath_slots, 2);
+    let offer: u16 = Into::<u8, u16>::into(crate::oaths::POWER - 1)
+        + Into::<u8, u16>::into(crate::oaths::FOX - 1) * 16
+        + Into::<u8, u16>::into(crate::oaths::RAGE - 1) * 256;
+    for oath in array![crate::oaths::POWER, crate::oaths::FOX] {
+        open_pick(d, key, offer);
+        let take = ChooseOath { explorer_id: key.explorer_id, expected_pick: offer, oath: Some(oath), replace: None };
+        assert!(super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(take), 360));
+    }
+    assert_eq!(read_progress(d, key).oaths, crate::oaths::bit(crate::oaths::POWER) | crate::oaths::bit(crate::oaths::FOX));
+    open_pick(d, key, offer);
+    let third = ChooseOath {
+        explorer_id: key.explorer_id, expected_pick: offer, oath: Some(crate::oaths::RAGE), replace: None,
+    };
+    assert!(!super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(third), 361));
+    let swap = ChooseOath { replace: Some(crate::oaths::POWER), ..third };
+    assert!(super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(swap), 362));
+    assert_eq!(read_progress(d, key).oaths, crate::oaths::bit(crate::oaths::FOX) | crate::oaths::bit(crate::oaths::RAGE));
+}
+
+fn open_pick(d: super::Deployment, key: crate::troops::ExplorerKey, pick: u16) {
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let mut progress = crate::logic::progression::require(key);
+            progress.oath_pick = pick;
+            crate::logic::progression::write(key, progress);
+        },
+    );
 }
