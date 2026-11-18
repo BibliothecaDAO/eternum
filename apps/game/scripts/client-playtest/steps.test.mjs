@@ -1091,6 +1091,7 @@ it("requires the selected Aspect in both the founding command and its membership
   const verify = STEP_SETS["lab-aspect-settle"].steps[0].verify;
   const choice = { sent: 0, cards: ["Join Might", "Join Harmony", "Join Chaos", "Join Guile"] };
   const seen = { scene: "hex", rendered: "hex", place: "Realm", playable: true };
+  const orders = [{ label: "Play as the Order shown first", order: "3" }];
   const armyButtons = [1, 2].map((number) => ({
     label: `Army ${number}`,
     text: "1.5k",
@@ -1126,12 +1127,12 @@ it("requires the selected Aspect in both the founding command and its membership
       ...startRows,
     ],
   };
-  expect(verify({ seen, played: { armyButtons, choice, founded: [founded] } }).status).toBe("completed");
-  expect(verify({ seen, played: { armyButtons, choice: { ...choice, sent: 1 }, founded: [founded] } }).status).toBe(
+  expect(verify({ seen, played: { armyButtons, orders, choice, founded: [founded] } }).status).toBe("completed");
+  expect(verify({ seen, played: { armyButtons, orders, choice: { ...choice, sent: 1 }, founded: [founded] } }).status).toBe(
     "failed",
   );
-  expect(verify({ seen, played: { armyButtons, choice, founded: [] } }).status).toBe("failed");
-  expect(verify({ seen, played: { armyButtons, choice, founded: [{ ...founded, answered: [] }] } }).status).toBe(
+  expect(verify({ seen, played: { armyButtons, orders, choice, founded: [] } }).status).toBe("failed");
+  expect(verify({ seen, played: { armyButtons, orders, choice, founded: [{ ...founded, answered: [] }] } }).status).toBe(
     "failed",
   );
   expect(
@@ -1139,6 +1140,7 @@ it("requires the selected Aspect in both the founding command and its membership
       seen,
       played: {
         armyButtons,
+        orders,
         choice,
         founded: [{ ...founded, command: { calldata: ["1", "0", "0", "0", "10", "1", "0", "2"] } }],
       },
@@ -1149,6 +1151,7 @@ it("requires the selected Aspect in both the founding command and its membership
       seen,
       played: {
         armyButtons,
+        orders,
         choice,
         founded: [
           { ...founded, answered: [{ model: "HomeAspect", value: { home: 7, aspect: 2 } }, founded.answered[1]] },
@@ -1156,19 +1159,19 @@ it("requires the selected Aspect in both the founding command and its membership
       },
     }).status,
   ).toBe("failed");
-  expect(verify({ seen, played: { choice, founded: [founded], armyButtons: armyButtons.slice(0, 1) } }).status).toBe(
+  expect(verify({ seen, played: { orders, choice, founded: [founded], armyButtons: armyButtons.slice(0, 1) } }).status).toBe(
     "failed",
   );
   expect(
     verify({
       seen,
-      played: { choice, founded: [founded], armyButtons: armyButtons.map((button) => ({ ...button, current: "100" })) },
+      played: { orders, choice, founded: [founded], armyButtons: armyButtons.map((button) => ({ ...button, current: "100" })) },
     }).status,
   ).toBe("failed");
   expect(
     verify({
       seen,
-      played: { choice, founded: [founded], armyButtons: armyButtons.map((button) => ({ ...button, visible: false })) },
+      played: { orders, choice, founded: [founded], armyButtons: armyButtons.map((button) => ({ ...button, visible: false })) },
     }).status,
   ).toBe("failed");
   for (const missing of ["ExplorerTroops", "ArmySlot", "ArmyDay", "ResourceBalance"]) {
