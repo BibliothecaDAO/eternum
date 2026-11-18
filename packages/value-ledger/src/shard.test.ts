@@ -1,7 +1,7 @@
 import { gamesAbi as abi, gamesEvent, response } from "../test-support/abi";
 import { beforeEach, expect, it, vi } from "vitest";
 import { shortString, ec, CallData, RpcError } from "starknet";
-import { ShardOperator, batchRemaining } from "./shard";
+import { ShardOperator } from "./shard";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { encodeNativeCommand } from "@bibliothecadao/provider";
 
@@ -114,16 +114,6 @@ it("uses the fixed ordinary v3 play frame and a native three-felt device signatu
   expect(signed).toHaveLength(3);
   expect(signed[0]).toBe(ec.starkCurve.getStarkKey(device));
 });
-it("requires the exact transaction-correlated BatchProgress; an absent record is not remaining zero", () => {
-  expect(() => batchRemaining([], "0x10", "0xabc", { gameId: 7, missing: "reject" })).toThrow();
-  const event = {
-    from_address: "0x10",
-    ...gamesEvent("BatchProgress", { game_id: 7, actor: "0x20", tx_hash: "0xabc", remaining: 0 }),
-  };
-  expect(batchRemaining([event], "0x10", "0xabc", { gameId: 7, missing: "reject" })).toBe(0n);
-  expect(() => batchRemaining([event], "0x10", "0xdef", { gameId: 7, missing: "reject" })).toThrow();
-});
-
 it.each(["MarkGameSettled", "RecordBlitzResults"] as const)(
   "encodes %s from the generated routes without a runtime Command enum",
   async (name) => {

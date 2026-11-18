@@ -1,6 +1,5 @@
 import { DeviceSigner } from "@bibliothecadao/eternum/device-signer";
 import { batchRemaining } from "@bibliothecadao/provider/batch-progress";
-export { batchRemaining };
 import { Account, CallData, ec, RpcError, type BlockIdentifier, type RpcProvider } from "starknet";
 import { encodeNativeCommand, gameplayRejection } from "@bibliothecadao/provider";
 import { resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum/shard-fees";

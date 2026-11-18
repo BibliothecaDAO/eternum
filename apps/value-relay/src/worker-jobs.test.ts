@@ -1,7 +1,8 @@
 const sweep = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock("./frontier-sweep", () => ({ sweepFrontierLords: sweep }));
 vi.mock("./frontier-prizes", () => ({ awardFrontierPrizes: vi.fn(async () => {}) }));
-vi.mock("./frontier-end", () => ({ settleEndedFrontierGames: vi.fn(async () => {}) }));
+const settleEnded = vi.hoisted(() => vi.fn(async () => {}));
+vi.mock("./frontier-end", () => ({ settleEndedFrontierGames: settleEnded }));
 const pools = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock("./frontier-pools", () => ({ publishFrontierPools: pools }));
 const address = vi.hoisted(() => vi.fn(() => "0x10"));
@@ -640,6 +641,11 @@ it("continues a full confirmed page through its alarm and stops when caught up",
     expect.any(Function),
   );
   expect(pools).toHaveBeenCalledWith(
+    expect.objectContaining({ chainId: "0x1", accountAddress: "0x5" }),
+    undefined,
+    expect.objectContaining({ address: "0x10" }),
+  );
+  expect(settleEnded).toHaveBeenCalledWith(
     expect.objectContaining({ chainId: "0x1", accountAddress: "0x5" }),
     undefined,
     expect.objectContaining({ address: "0x10" }),
