@@ -26,6 +26,7 @@ vi.mock("@bibliothecadao/eternum", async (original) => {
       setActiveGame: vi.fn(),
       setStore: vi.fn(),
     },
+    armyOaths: () => 0,
     entityMapPosition: () => ({ x: 0, y: 0 }),
     readRevealPercent: () => 25,
     revealYield: () => PAYOUT,
