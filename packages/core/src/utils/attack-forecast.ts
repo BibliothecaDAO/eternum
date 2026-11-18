@@ -24,10 +24,10 @@ import {
   type CombatRules,
   type ExchangeRefusal,
 } from "./combat-exchange";
-import { isArmyCurrent, structureMapPosition } from "./expeditions";
+import { isArmyCurrent, isRealmCategory, readExpeditionRules, structureMapPosition } from "./expeditions";
 import { isModeRuleEnabled } from "./mode-rules";
 import { armyOaths } from "./oaths";
-import { entityMapOccupancy, entityMapPosition, getTileAt, storedBiomeAt } from "./tile";
+import { entityMapOccupancy, getTileAt, storedBiomeAt } from "./tile";
 
 export const ATTACK_FORECAST_MODELS = [
   ...STAMINA_MODELS,
@@ -220,11 +220,17 @@ function armyAttack(scene: Scene, explorer: NativeRows["ExplorerTroops"], target
 
 function targetPosition(scene: Scene, targetId: bigint): Tile | undefined {
   const structure = scene.store.get("Structure", { game_id: scene.gameId, entity_id: targetId });
-  if (structure) {
-    const position = structureMapPosition(scene.store, structure);
-    return position ? { col: position.x, row: position.y, alt: position.alt } : undefined;
-  }
+  if (structure) return structureTile(scene, structure);
   const occupancy = entityMapOccupancy(scene.store, scene.gameId, targetId);
+  return occupancy && { col: occupancy.col, row: occupancy.row, alt: occupancy.alt };
+}
+
+function structureTile(scene: Scene, structure: NativeRows["Structure"]): Tile | undefined {
+  if (isRealmCategory(structure.base.category) && readExpeditionRules(scene.store, scene.gameId)) {
+    const site = structureMapPosition(scene.store, structure);
+    return site ? { col: site.x, row: site.y, alt: site.alt } : undefined;
+  }
+  const occupancy = entityMapOccupancy(scene.store, scene.gameId, structure.entity_id);
   return occupancy && { col: occupancy.col, row: occupancy.row, alt: occupancy.alt };
 }
 
@@ -284,10 +290,9 @@ function structureDefence(scene: Scene, attacker: Combatant, structure: NativeRo
     immunityRefusal(scene, structure.entity_id) ??
     aggressorRefusal(scene, attacker);
   if (before) return refused(before, alone);
-  const position = structureMapPosition(store, structure);
+  const tile = structureTile(scene, structure);
   const guards = getDefendingGuards(structure, store, scene.chainSecond);
-  if (!position || !guards) return undefined;
-  const tile = { col: position.x, row: position.y, alt: position.alt };
+  if (!tile || !guards) return undefined;
   if (!isInStructureRange(attacker.tile, tile, attacker.troops)) return refused("out-of-range", alone);
   const [first, ...queued] = guards;
   if (!first) return { claims: attacker, target: tile };
@@ -308,10 +313,9 @@ function guardAttack(scene: Scene, structureId: bigint, targetId: bigint): Defen
   if (isDeepGuard(scene, army.explorer_id)) return refused("target-guards-deep-site");
   if (!isArmyCurrent(store, gameId, army.explorer_id, scene.chainSecond)) return refused("expired-army");
   const defender = armyCombatant(scene, army);
-  const position = structureMapPosition(store, structure);
+  const tile = structureTile(scene, structure);
   const guards = getGuardsByStructure(structure, store, scene.chainSecond);
-  if (!defender || !position || !guards) return undefined;
-  const tile = { col: position.x, row: position.y, alt: position.alt };
+  if (!defender || !tile || !guards) return undefined;
   const living = guards.filter((guard) => guard.troops.count > 0n).toSorted((a, b) => a.slot - b.slot);
   const reaches = (guard: (typeof living)[number]) => isInStructureRange(tile, defender.tile, guard.troops);
   const guard =
@@ -331,13 +335,13 @@ function guardAttack(scene: Scene, structureId: bigint, targetId: bigint): Defen
 
 function armyCombatant(scene: Scene, army: NativeRows["ExplorerTroops"]): Combatant | undefined {
   const troops = resolveExplorerCombatTroops(scene.store, army, scene.chainSecond);
-  if (!troops) return undefined;
-  const position = entityMapPosition(scene.store, scene.gameId, army.explorer_id);
+  const position = entityMapOccupancy(scene.store, scene.gameId, army.explorer_id);
+  if (!troops || !position) return undefined;
   return {
     troops,
     oaths: armyOaths(scene.store, army),
     guarding: false,
-    tile: { col: position.x, row: position.y, alt: position.alt },
+    tile: { col: position.col, row: position.row, alt: position.alt },
     home: army.owner,
   };
 }

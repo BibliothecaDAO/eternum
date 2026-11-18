@@ -33,7 +33,7 @@ import { letGoOfClearedSite, letGoOfLostSelection } from "@/three/scenes/worldma
 import { ARMY_LOST_MS, ArmyLostSheet } from "../army/army-lost";
 import { useArmyPanelOpens } from "../army/army-opens";
 import { useOnePanel, useOrderSettledReturnsToTheArmy } from "../hud/one-panel";
-import { campBeside, otherArmyAt, relicEffectFact, SITE, SITE_TILE } from "./site-fixture";
+import { campBeside, otherArmyAt, placeSite, relicEffectFact, SITE, SITE_TILE } from "./site-fixture";
 import { TileCard } from "./tile-card";
 
 const APPLIED = { hash: "0x1", block: 9, status: "SUCCEEDED" };
@@ -118,6 +118,7 @@ const InTheHud = ({
 const renderCard = (army: "beside" | "far", hud?: "desktop" | "phone") => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store, site, structure } = campBeside();
+  placeSite(store);
   const standsAt = { game_id: 1, alt: false, col: 60, row: 12, entity_id: 201, category: 15, is_structure: false };
   if (army === "far")
     store.applyFacts([

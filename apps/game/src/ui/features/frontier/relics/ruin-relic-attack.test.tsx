@@ -24,7 +24,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 
-import { campBeside, SITE, SITE_TILE } from "../sites/site-fixture";
+import { campBeside, placeSite, SITE, SITE_TILE } from "../sites/site-fixture";
 import { TileCard } from "../sites/tile-card";
 import { ruinRelicState } from "./ruin-relic-choice";
 
@@ -44,6 +44,7 @@ const EPIC_BLADE = { model: "RuinRelic", key: "0xb1", value: { game_id: 1, entit
  */
 const ruinCard = (carried: [unknown, unknown, unknown], rewardDelivered = true) => {
   const { store, site, structure } = campBeside("Ruin");
+  placeSite(store);
   store.applyFacts([
     ...(rewardDelivered ? [EPIC_BLADE] : []),
     {
