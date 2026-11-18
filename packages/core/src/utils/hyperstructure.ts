@@ -12,6 +12,7 @@ import type { NativeRows } from "../../../../contracts/l3/world-native/schema/cl
 import { configManager } from "../managers/config-manager";
 import { structureMapPosition } from "./expeditions";
 import { getTileAt } from "./tile";
+import { surfaceNeighborAtDistance } from "./travel";
 
 type VictoryPointGrants = ReturnType<typeof configManager.getVictoryPointGrants>;
 
@@ -83,26 +84,16 @@ const realmsInMultiplierScan = (store: NativeFactStore, origin: { x: number; y: 
   const { spacing, mode } = configManager.getSettlementConfig();
   const distance = Number(spacing) + (mode === "Single" ? 2 : 0);
   return SCAN_TURNS.filter(([first, second]) => {
-    const tile = stepsFrom(stepsFrom(origin, first, distance), second, Math.floor(distance / 2));
+    const tile = surfaceNeighborAtDistance(
+      surfaceNeighborAtDistance(origin, first, distance),
+      second,
+      Math.floor(distance / 2),
+    );
     const occupant = getTileAt(store, false, tile.x, tile.y, game_id);
     if (!occupant?.occupier_is_structure) return false;
     const structure = store.get("Structure", { game_id, entity_id: occupant.occupier_id });
     return structure?.base.category === StructureType.Realm;
   }).length;
-};
-
-/** A surface tile `distance` steps away in one of six directions, as geometry.cairo `checked_neighbor_at_distance`. */
-const stepsFrom = ({ x, y }: { x: number; y: number }, direction: number, distance: number) => {
-  const column = x - (y + (y % 2)) / 2;
-  const [stepped, row] = [
-    [column + distance, y],
-    [column, y + distance],
-    [column - distance, y + distance],
-    [column - distance, y],
-    [column, y - distance],
-    [column + distance, y - distance],
-  ][direction];
-  return { x: stepped + (row + (row % 2)) / 2, y: row };
 };
 
 /** A Hyperstructure's rate in words, a minute's as every rate is: "points +120/min", or "points +120/min once taken". */

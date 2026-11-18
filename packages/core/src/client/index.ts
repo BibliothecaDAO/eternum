@@ -39,7 +39,7 @@ export {
 } from "./views/deep-sites";
 export { raceFinishHeight, readRaceBoard, RACE_MODELS, type RaceBoard } from "./views/race";
 export { currentArmy, currentResourceWeight } from "../utils/deep";
-export { deepCenter, isDeepTile } from "../utils/deep-geometry";
+export { deepCenter, deepGate, isDeepTile } from "../utils/deep-geometry";
 export { questWeek } from "../utils/daily-quest";
 export { readActiveTriumph, TRIUMPH_MODELS } from "./views/triumphs";
 

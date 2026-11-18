@@ -639,4 +639,43 @@ describe("the shared Deep in the map layer menu", () => {
     open();
     expect(listRows().at(-1)?.[1]).toBe("true");
   });
+
+  it("opens the Deep at the gate of the player's own Aspect", () => {
+    const { store, realm } = chestDay(3n);
+    store.applyFacts([
+      {
+        model: "SettlementRules",
+        key: "0x2",
+        value: { ...store.require("SettlementRules", { game_id: 1 }), spacing: 1024 },
+      },
+      {
+        model: "DeepRules",
+        key: "0xdeef",
+        value: {
+          game_id: 1,
+          gate_distance: 4,
+          rings: [{ radius: 5, realms: 0 }],
+          beasts: [
+            { count: 1000n, bow: false },
+            { count: 1000n, bow: true },
+            { count: 1000n, bow: false },
+            { count: 1000n, bow: true },
+          ],
+          loss_per_tick: 1n,
+          core_per_tick: 1n,
+          mine_per_tick: 1n,
+          altar_per_tick: 1,
+          altar_threshold: 10,
+        },
+      },
+      { model: "HomeAspect", key: "0xa59", value: { game_id: 1, home: realm.entity_id, aspect: 2 } },
+    ] as never);
+    const rules = readExpeditionRules(store, 1)!;
+    context.mapView = true;
+    useUIStore.setState({ cameraTargetHex: { col: 512, row: 512 } });
+    act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
+    act(() => [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')][1]!.click());
+    choose("Deep");
+    expect(requestLayerView).toHaveBeenLastCalledWith({ col: 516, row: 3584 });
+  });
 });

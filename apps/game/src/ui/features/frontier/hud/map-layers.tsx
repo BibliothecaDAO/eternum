@@ -23,7 +23,13 @@ import {
   structureMapPosition,
   viewInLayer,
 } from "@bibliothecadao/eternum";
-import { deepCenter, isDeepTile, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  deepCenter,
+  deepGate,
+  isDeepTile,
+  type NativeFactStore,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 import { SCOPE_INPUT_MODELS } from "@bibliothecadao/eternum/game-sync";
 
 import { layerName } from "@bibliothecadao/types";
@@ -48,7 +54,7 @@ export type MapLayers = {
   chests?: RuinChests | null;
 };
 
-const LAYER_MODELS = ["RealmKnowledge", "Structure", "DeepRules"] as const;
+const LAYER_MODELS = ["RealmKnowledge", "Structure", "DeepRules", "HomeAspect"] as const;
 
 /**
  * The map's layers once the realm has researched Ethereal I, its spire a portal into them (owner, 4 November 2026: "its
@@ -73,7 +79,8 @@ export const useMapLayers = (
   if (!realm) return null;
   const site = realmSite(facts.store, realm);
   const from = isMapView ? (camera ?? site) : site;
-  const sharedDeep = facts.store.get("DeepRules", { game_id: realm.game_id }) !== undefined;
+  const deepRules = facts.store.get("DeepRules", { game_id: realm.game_id });
+  const sharedDeep = deepRules !== undefined;
   return {
     layers: [
       0,
@@ -94,12 +101,24 @@ export const useMapLayers = (
       const fromDeep = sharedDeep && isDeepTile(rules.spacing, { ...from, alt: false });
       const origin = fromDeep ? site : from;
       if (!origin) return;
-      const to = layer === "deep" ? deepCenter(rules.spacing) : viewInLayer(rules, origin, layer);
+      const to =
+        layer === "deep" ? deepView(facts.store, rules.spacing, deepRules, player) : viewInLayer(rules, origin, layer);
       if (isMapView) requestLayerView(to);
       else openPlace("map", Position.fromContract({ x: to.col, y: to.row }));
     },
     chests,
   };
+};
+
+const deepView = (
+  store: Pick<NativeFactStore, "get">,
+  spacing: number,
+  deep: NativeRows["DeepRules"] | undefined,
+  player: NativeRows["Structure"] | null,
+) => {
+  if (!deep) throw new Error("The Deep is listed without its rules");
+  const aspect = player && store.get("HomeAspect", { game_id: player.game_id, home: player.entity_id })?.aspect;
+  return aspect ? deepGate(spacing, deep.gate_distance, aspect) : deepCenter(spacing);
 };
 
 const realmSite = (store: Parameters<typeof structureMapPosition>[0], realm: NativeRows["Structure"]) => {

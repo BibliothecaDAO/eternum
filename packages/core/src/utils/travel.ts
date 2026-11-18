@@ -47,3 +47,20 @@ export const bankPickupTravelSeconds = (
   const oneWay = shipmentTravelSeconds(bankId, structureId, store, carriesTroops);
   return oneWay === undefined ? undefined : oneWay * 2;
 };
+
+export const surfaceNeighborAtDistance = (
+  { x, y }: { x: number; y: number },
+  direction: number,
+  distance: number,
+): { x: number; y: number } => {
+  const column = x - (y + (y % 2)) / 2;
+  const [stepped, row] = [
+    [column + distance, y],
+    [column, y + distance],
+    [column - distance, y + distance],
+    [column - distance, y],
+    [column, y - distance],
+    [column + distance, y - distance],
+  ][direction];
+  return { x: stepped + (row + (row % 2)) / 2, y: row };
+};
