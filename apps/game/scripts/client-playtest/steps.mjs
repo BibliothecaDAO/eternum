@@ -1,5 +1,7 @@
 import { ECONOMY_STEPS } from "./economy-steps.mjs";
 import {
+  DEEP_BEASTS,
+  deepSites,
   FRONTIER_TROOP_NAMES,
   LAYER_NAMES,
   layerName,
@@ -4006,22 +4008,25 @@ const POINTER_PARKED = [0, -300];
 /** An army's tile below its token at the map's default zoom (a player run never zooms): its label point's height. */
 const TOKEN_ABOVE_TILE_PX = 100;
 
-const DEEP_SITE_NAMES = [
-  { name: "Hyperstructure archive", key: "deep:foundation", icon: "hyperstructure" },
-  { name: "Essence core", key: "deep:core", icon: "essence" },
-  { name: "Ethereal mine", key: "deep:mine", icon: "pickaxe" },
-  { name: "Bane altar", key: "deep:altar", icon: "flame" },
-];
+const DEEP_SITE_ICONS = { foundation: "hyperstructure", core: "essence", mine: "pickaxe", altar: "flame" };
+const DEEP_SITE_NAMES = deepSites.map(({ key, name }) => ({
+  name,
+  key: `deep:${key}`,
+  icon: DEEP_SITE_ICONS[key],
+  beast: DEEP_BEASTS[key].name,
+}));
 const JOINED_SITE = DEEP_SITE_NAMES.find(({ key }) => key === "deep:mine");
 
 /** One Deep site's plate, found by its name: where a press on its model lands (page px from the centre), whether its plate stands wholly in the frame, and the card open now. */
 const siteState = ({ name, icon }) => `JSON.stringify((() => {
   const sheet = document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null;
+  const beast = document.querySelector('[data-kit-sheet] [data-state="beast"]')?.textContent ?? null;
   const slot = document.querySelector('.mp-at:has([data-icon="${icon}"])');
-  if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return { sheet, token: null, inView: false };
+  if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return { sheet, beast, token: null, inView: false };
   const box = slot.firstElementChild.getBoundingClientRect();
   return {
     sheet,
+    beast,
     // The plate floats over the site's model: the press goes to the model under it, not to the hex behind the plate.
     token: [Math.round(box.left + box.width / 2 - innerWidth / 2), Math.round(box.bottom + ${SITE_MODEL_BELOW_PLATE} - innerHeight / 2)],
     inView: box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight,
@@ -4029,6 +4034,9 @@ const siteState = ({ name, icon }) => `JSON.stringify((() => {
 })())`;
 
 const SITE_MODEL_BELOW_PLATE = 65;
+
+const namesItsBeast = (line, beast) =>
+  beast === null ? line === null : typeof line === "string" && line.startsWith(`Today's beast: ${beast},`);
 
 const DEEP_JOIN_STATE = `JSON.stringify({
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
@@ -4637,21 +4645,33 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
         await panInto(browser, 1, ABOVE_THE_CARD_PX, ["KeyW", "KeyS"], () => browser.read(siteState(site)).token);
         await sleep(HOVER_SETTLE_MS);
         const before = browser.read(siteState(site));
-        extraScreenshot(`site-${name.toLowerCase()}`);
         if (before.token && before.inView) browser.tap(before.token);
         const opened = await readUntil(
           () => browser.read(siteState(site)),
           (state) => state.sheet === name,
           SHEET_WAIT_MS,
         );
-        visits.push({ name, inView: before.inView, sheet: opened.sheet });
+        extraScreenshot(`site-${name.toLowerCase()}`);
+        visits.push({
+          name,
+          inView: before.inView,
+          sheet: opened.sheet,
+          beast: opened.beast,
+          expectedBeast: site === JOINED_SITE ? null : site.beast,
+        });
       }
       return { visits };
     },
     verify: ({ played }) =>
-      played.visits.every((visit) => visit.inView === true && visit.sheet === visit.name)
+      played.visits.every(
+        (visit) =>
+          visit.inView === true && visit.sheet === visit.name && namesItsBeast(visit.beast, visit.expectedBeast),
+      )
         ? completed(played)
-        : failed("Each Deep site must be visited with its plate in the frame and open its own card", played),
+        : failed(
+            "Each Deep site must be visited with its plate in the frame and open its own card, naming its own kind's beast while one guards it",
+            played,
+          ),
   },
   {
     name: "reselect-guard-from-dock",
