@@ -15,8 +15,9 @@ Marks: (new) is a rule the code does not have today; (first value) is a number t
    Armies end with the day.
 2. Do the daily quest: its reward pays your Realm. Your armies earn skill points as they fight: at each one, take 1 of 3
    boons for the day, or rest for stamina now.
-3. The Deep has 3 sites: the Quarry pays you, the Foundation builds your Aspect's hyperstructure, the Altar stops a
-   rival's. Take one, alone or with mates, and hold it.
+3. The Deep has four gates, one an Aspect, and rings of four site kinds: the Essence core and the Ethereal mine pay
+   you, the Hyperstructure archive builds your Aspect's hyperstructure, the Bane altar stops a rival's. Take one, alone
+   or with mates, and hold it.
 4. A tick is 120 seconds. Each tick in the Deep, every army gains 1 stamina and loses 200 troops, and a held site pays
    its guards. You hold a site for as long as your troops last.
 5. The first hyperstructure to reach a height of 10,000 wins the age, in 50 days at most. A rival's Altar can stop yours
@@ -744,31 +745,32 @@ Watch in the playtest:
 
 Sources: `frontier/native.ts:133-190`, `src/expeditions.cairo:44-61`
 
-### 11. The Deep: three sites
+### 11. The Deep: four gates and rings of sites
 
 - **Need:** One map every Realm shares, where armies fight armies for things your Realm, your Aspect and your rivals
   feel.
-- **Gets you to:** Go down, take one of the Deep's three sites, alone or with mates, and hold it; come back to see who
+- **Gets you to:** Go down by your Aspect's gate, take one of the Deep's open sites, alone or with mates, and hold it; come back to see who
   attacked it, who joined it, and how many troops it has left.
-- **Payoff:** Every tick held pays: the Quarry pays you, the Foundation builds your Aspect's hyperstructure, the Altar
+- **Payoff:** Every tick held pays: the core and the mine pay you, the archive builds your Aspect's hyperstructure, the altar
   fills the bar that stops a rival's.
 - **Depth:** One clock: each tick an army gains a point of stamina and loses 200 troops. A hold lasts as long as its
   troops, so what you can hold in a day is what your town raised.
-- **Choices:** Which of the three: my growth, my team's, or a rival's loss. Strike now, or wait for the guard to lose
+- **Choices:** Which kind: my growth, my team's, or a rival's loss. Strike now, or wait for the guard to lose
   troops. Take a site, attack with a mate, or fill a slot in a mate's guard.
 - **Against today:** Today each Realm has its own region on every layer, no army fights, and every ruin pays a LORDS
-  chest to its own Realm. Season 1: one shared Deep, three held sites, and troops lost each tick.
+  chest to its own Realm. Season 1: one shared Deep, rings of held sites, and troops lost each tick.
 
-| The Deep's three sites (new) | For             | A tick held pays its guards                                                                           |
+| The Deep's site kinds (new)  | For             | A tick held pays its guards                                                                           |
 | ---------------------------- | --------------- | ----------------------------------------------------------------------------------------------------- |
 | **The Foundation**           | my team         | **5 Glory**, and +5 to the height of the Aspect's hyperstructure                                      |
-| **The Quarry**               | me              | **500 labor and 500 Essence**, to the guards' Realms                                                  |
+| **The Essence core**         | me              | **300 Essence**, to the guards' Realms                                                                |
+| **The Ethereal mine**        | me              | **300 labor**, to the guards' Realms                                                                  |
 | **The Altar**                | against a rival | **5 Glory**, and +5 on the Aspect's bane bar; at 1,500 a team bane is issued (see Banes and Triumphs) |
 
 | Rule                    | Season 1                                                                                                                                                                                                                                                                                                                          | In code today                                                                                                                                                                                          |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| The Deep (new)          | Ethereal III is one map of 50 × 50 shared by every Realm, with army fights. **Fixed and known**: the three sites and the four hyperstructures stand where everyone can see them, every day                                                                                                                                        | each Realm has its own region on every layer, drawn each day · `src/expeditions.cairo:114-141`                                                                                                         |
-| The sites (new)         | **three, always there, never used up.** Each day each one starts behind a beast of 10,000 (tune); when its guard is gone it stands open to the next army                                                                                                                                                                          | ruins are a 3% find on every layer                                                                                                                                                                     |
+| The Deep (new)          | Ethereal III is one map of 50 × 50 shared by every Realm, with army fights. **Fixed and known**: four gates 4 tiles from the centre (north Might, east Harmony, south Chaos, west Guile) and rings of sites at 5, 8 and 11 tiles                                                                                                                                        | each Realm has its own region on every layer, drawn each day · `src/expeditions.cairo:114-141`                                                                                                         |
+| The sites (new)         | **a ring is one of each kind, turning one place a day.** Ring 1 opens with the day, rings 2 to 5 at 30, 60, 120 and 240 Realms entered today. Each day each site starts behind its kind's beast (15,000, 12,000, 10,000, 15,000); when its guard is gone it stands open                                                                                                                                                                          | ruins are a 3% find on every layer                                                                                                                                                                     |
 | The tick (new)          | **one clock, the army tick: 120 seconds.** Each tick in the Deep an army gains 1 stamina and **loses 200 troops** (tune), and a held site pays its guards. Each army shows a draining bar and the ticks it has left                                                                                                               | the tick gives stamina · `frontier/clock.ts:1`                                                                                                                                                         |
 | Holding (new)           | the army that beats a site's guard stays as its guard with what it has left, until it has no troops left, a rival beats it, or the day ends. Any rival may attack it; allies can't                                                                                                                                                | guards keep their losses · `src/troops.cairo:431-442`                                                                                                                                                  |
 | Slots (new)             | **a site's guard has 4 slots, 1 per player.** Any member of the holder's Aspect may fill a free slot with one army. Every slot loses 200 troops each tick. **Each tick is split among the slots by their troops.** Mates also take a site together: a guard keeps its losses, so each army's attack counts                        | guard slots hold 4, of one Realm · `src/logic/troops.cairo:298-299`                                                                                                                                    |
