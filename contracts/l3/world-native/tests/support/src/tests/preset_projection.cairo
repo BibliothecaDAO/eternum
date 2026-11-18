@@ -237,8 +237,7 @@ pub fn observe_economy(ref rows: Array<ObservedRow>, address: ContractAddress, g
     let artificer = IArtificerDispatcher { contract_address: address };
     let bridge = IBridgeDispatcher { contract_address: address };
     let withdrawals = IWithdrawalsDispatcher { contract_address: address };
-    if let Some(deep) =
-        interact_with_state(address, || crate::logic::preset_record::for_game(game_id).deep_rules.read()) {
+    if let Some(deep) = interact_with_state(address, || observed_deep_rules(game_id)) {
         row(ref rows, 'DeepRules', key, deep);
     }
     if let Some(quests) = interact_with_state(address, || observed_quest_rules(game_id)) {
@@ -301,6 +300,33 @@ fn observed_quest_rules(game_id: u32) -> Option<crate::quests::QuestRules> {
         base_counts.append(preset.quest_counts.read(kind));
     }
     Some(crate::quests::QuestRules { base_counts: base_counts.span(), labor, essence, bonus_percent })
+}
+
+fn observed_deep_rules(game_id: u32) -> Option<crate::deep::DeepRules> {
+    let preset = crate::logic::preset_record::for_game(game_id);
+    let settings = preset.deep_rules.read()?;
+    let mut rings = array![];
+    for index in 0..settings.ring_count {
+        let (radius, realms) = preset.deep_rings.read(index);
+        rings.append(crate::deep::DeepRing { radius, realms });
+    }
+    let mut beasts = array![];
+    for kind in 0..crate::rules::DEEP_KIND_COUNT {
+        let (count, bow) = preset.deep_beasts.read(kind);
+        beasts.append(crate::deep::DeepBeast { count, bow });
+    }
+    Some(
+        crate::deep::DeepRules {
+            gate_distance: settings.gate_distance,
+            rings: rings.span(),
+            beasts: beasts.span(),
+            loss_per_tick: settings.loss_per_tick,
+            core_per_tick: settings.core_per_tick,
+            mine_per_tick: settings.mine_per_tick,
+            altar_per_tick: settings.altar_per_tick,
+            altar_threshold: settings.altar_threshold,
+        },
+    )
 }
 
 fn observed_bane_rules(game_id: u32) -> Option<crate::banes::BaneRules> {
