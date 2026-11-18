@@ -32,7 +32,7 @@ export function TroopOathSlots({
   return (
     <div data-oath-slots={count} className="flex flex-col gap-1">
       <span className="text-hud-label text-hud-ink">{RESEARCH_TREE.oathSlots(count)}</span>
-      <div className="grid grid-cols-4 gap-1">
+      <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${OATH_SLOTS_MAX}, minmax(0, 1fr))` }}>
         {Array.from({ length: OATH_SLOTS_MAX }, (_, index) => {
           const open = index < count;
           const oath = held[index];

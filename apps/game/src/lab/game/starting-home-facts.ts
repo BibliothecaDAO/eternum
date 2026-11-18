@@ -1,5 +1,5 @@
 import { entityHomeNamespace, expeditionRealmSite, readExpeditionRules } from "@bibliothecadao/eternum";
-import { NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import { NativeFactStore, nativeResearchConstants as research, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, getNeighborHexes, RESOURCE_PRECISION, ResourcesIds, TileOccupier } from "@bibliothecadao/types";
 import { frontierSeasonOnePreset } from "../../../../../config/source/frontier/season-one";
 import { type LabFact, wire } from "./lab-chain";
@@ -121,7 +121,7 @@ function startingArmyRows(
         game_id: 1,
         explorer_id: id,
         logistics: 0,
-        oath_slots: 1,
+        oath_slots: research.OATH_SLOTS_BASE,
         oaths: 0,
         oath_pick: 0,
       }),

@@ -82,7 +82,9 @@ function ArmyOathPick({
     ).catch((error: unknown) => toast.failed(error, "The Oath could not be chosen."));
 
   return (
-    <section aria-label="Choose an Oath" className="flex flex-col gap-2" data-oath-pick={progress.oath_pick}>
+    <section aria-label="Choose an Oath" className="flex flex-col gap-2" data-oath-pick={progress.oath_pick}
+      data-oath-held={progress.oaths}
+    >
       <span className="text-hud-label text-hud-ink">
         {picked === null ? "Choose an Oath" : "Choose an Oath to replace"}
       </span>

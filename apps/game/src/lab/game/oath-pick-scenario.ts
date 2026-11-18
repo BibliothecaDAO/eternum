@@ -1,7 +1,10 @@
 import { resolveExplorerTroops, staminaAt } from "@bibliothecadao/eternum/troop-stamina";
 import { seasonOneResearchPrices } from "./season-one-research";
 import { chooseOath, oathPassStamina } from "@bibliothecadao/eternum";
-import { nativeOathConstants as oaths } from "@bibliothecadao/eternum/game-client";
+import {
+  nativeOathConstants as oaths,
+  nativeResearchConstants as research,
+} from "@bibliothecadao/eternum/game-client";
 import { encodeNativeCommand } from "@bibliothecadao/provider";
 import { nativeBindings } from "@/runtime/world/native-bindings";
 import { currentArmy, currentResourceWeight, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -74,12 +77,18 @@ function prepareOathArmy(store: NativeFactStore, full: boolean, fightOath: numbe
       key: store.wireKeyOf("ArmyProgress", key)!,
       value: wire({
         ...progress,
-        oath_slots: 1,
-        oaths: full ? 1 << (oaths.GIANTS - 1) : 0,
+        oath_slots: research.OATH_SLOTS_BASE,
+        oaths: full ? heldSet(research.OATH_SLOTS_BASE) : 0,
         oath_pick: fightOath - 1 + ((oaths.FOX - 1) << 4) + ((oaths.RAGE - 1) << 8),
       }),
     },
   ]);
+}
+
+function heldSet(count: number): number {
+  return [oaths.GIANTS, oaths.SKILL, oaths.PERFECTION]
+    .slice(0, count)
+    .reduce((mask, oath) => mask | (1 << (oath - 1)), 0);
 }
 
 function answerChoice(command: LabCommand, chain: NativeFactStore, now: number): LabFact[] | null {

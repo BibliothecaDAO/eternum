@@ -594,13 +594,14 @@ and attacks twice through the card, recording each command, army, guard and last
 `build.sh playtest-deep-battle-target` checks the same path against a rival Deep guard. Native tests check both
 exchanges, rejection and removal. The die, Charge and Battle skill no longer modify either forecast or settlement.
 
-Oath capacity is researched at Barracks, Range and Scouts' Lodge, with one free slot and three purchases per troop.
+Oath capacity is researched at Barracks, Range and Scouts' Lodge, with two free slots and three purchases per troop.
 Deploy shows the current troop's capacity; an army's panel keeps its capacity from creation.
-`/lab/game?scenario=oath-slots` and `build.sh playtest-oath-slots` buy the second Knight slot through Research, check
-the exact price and deploy an army with two slots on desktop and phone. These are lab proofs; native tests cover
+`/lab/game?scenario=oath-slots` and `build.sh playtest-oath-slots` buy the third Knight slot through Research, check
+the exact price and deploy an army with three slots on desktop and phone. These are lab proofs; native tests cover
 immutable army capacity.
 
-An earned Oath opens three cards immediately and blocks that army's commands until answered. Choose a card; with full
+An earned Oath opens three cards at once, drawn at random from the Oaths the army does not hold, and blocks that
+army's commands until answered. Choose a card; with full
 slots, choose the held Oath it replaces, or Pass for the stamina shown on the button, capped at the army's maximum. The
 pick cannot be dismissed by Escape, Back or an outside press. `build.sh playtest-oath-pick` plays
 `/lab/game?scenario=oath-pick` and `oath-replace` on desktop and phone, recording the signed choice and resulting held

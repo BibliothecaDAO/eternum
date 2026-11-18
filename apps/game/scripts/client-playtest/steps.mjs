@@ -1144,6 +1144,7 @@ function oathPassSteps(capped) {
       name: "decline-oath",
       play: async ({ browser }) => {
         const before = browser.read("window.__labChain.sent.length");
+        const held = browser.read("Number(document.querySelector('[data-oath-pick]')?.dataset.oathHeld)");
         const preview = browser.read(`(() => {
           const button = document.querySelector('[data-oath-pass-result]');
           return { current: Number(button.dataset.oathPassCurrent), maximum: Number(button.dataset.oathPassMaximum), result: Number(button.dataset.oathPassResult) };
@@ -1156,7 +1157,7 @@ function oathPassSteps(capped) {
           const answer = window.__labChain.sent.at(-1);
           const progress = answer?.answered.find(({model}) => model === "ArmyProgress")?.value;
           return window.__labChain.sent.length === ${before + 1} && answer.command.kind === "ChooseOath" &&
-            Number(progress?.oaths) === 1 && Number(progress?.oath_pick) === 0 && !document.querySelector('[data-oath-pick]');
+            Number(progress?.oaths) === ${held} && Number(progress?.oath_pick) === 0 && !document.querySelector('[data-oath-pick]');
         })()`),
           Boolean,
           ORDER_OUTCOME_WAIT_MS,
@@ -1224,30 +1225,39 @@ function oathPickSteps(full, layer = "Map") {
       "ChooseOath",
       async ({ browser }) => {
         const chosen = browser.read("Number(document.querySelector('[data-oath-id]')?.dataset.oathId)");
+        const held = browser.read("Number(document.querySelector('[data-oath-pick]')?.dataset.oathHeld)");
         const card = browser.read(elementAt("[data-oath-id]"));
         if (!card) return { chosen, missing: true };
-        watchFor(
-          browser,
-          "oath-chosen",
-          `(() => {
+        const watchChoice = (expected) =>
+          watchFor(
+            browser,
+            "oath-chosen",
+            `(() => {
         const result = (window.__labChain?.sent ?? []).filter(({command}) => command.kind === "ChooseOath").at(-1);
         const row = result?.answered.find(({model}) => model === "ArmyProgress")?.value;
-        return row && Number(row.oaths) === (1 << (${chosen} - 1)) && Number(row.oath_pick) === 0 && !document.querySelector('[data-oath-pick]');
+        return row && Number(row.oaths) === ${expected} && Number(row.oath_pick) === 0 && !document.querySelector('[data-oath-pick]');
       })()`,
-        );
-        browser.tap(card.offset);
-        if (full) {
-          const replace = await readUntil(() => browser.read(elementAt("[data-replace-oath]")), Boolean, SHEET_WAIT_MS);
-          if (!replace) return { chosen, missing: true };
-          browser.tap(replace.offset);
+          );
+        if (!full) {
+          const expected = held | (1 << (chosen - 1));
+          watchChoice(expected);
+          browser.tap(card.offset);
+          return { chosen, expected, watching: true };
         }
-        return { chosen, watching: true };
+        browser.tap(card.offset);
+        const replace = await readUntil(() => browser.read(elementAt("[data-replace-oath]")), Boolean, SHEET_WAIT_MS);
+        if (!replace) return { chosen, missing: true };
+        const replaced = browser.read("Number(document.querySelector('[data-replace-oath]')?.dataset.replaceOath)");
+        const expected = (held & ~(1 << (replaced - 1))) | (1 << (chosen - 1));
+        watchChoice(expected);
+        browser.tap(replace.offset);
+        return { chosen, expected, watching: true };
       },
       ({ played, actionLatency }) => {
         const answer = (actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "ChooseOath").at(-1);
         if (!answer) return undefined;
         const row = answer.answered.find(({ model }) => model === "ArmyProgress")?.value;
-        if (Number(row?.oaths) !== 1 << (played.chosen - 1) || Number(row?.oath_pick) !== 0)
+        if (Number(row?.oaths) !== played.expected || Number(row?.oath_pick) !== 0)
           return failed("The choice did not write exactly the selected Oath", { row });
         return played.watching && { watch: "oath-chosen" };
       },
