@@ -116,7 +116,7 @@ it("matches the native prize vectors for Detection, Brilliance and Rage", async 
     ];
     expect(oathFindPercent(Number(held), Number(base))).toBe(Number(find));
     expect(oathRevealPay(Number(held), amount)).toBe(reveal);
-    expect(oathSitePay(Number(held), amount)).toBe(site);
+    expect(oathSitePay(Number(held), amount, false)).toBe(site);
   }
 });
 
@@ -150,5 +150,25 @@ it("matches the native stamina vectors for Anger, Titans, Enlightenment and the 
       staminaEffects: { until: Infinity, windows: [{ start: 1_000, end: 4_600, rateBps: oathRegenBps(held!) }] },
     } as never;
     expect(staminaAt(troops, 4_600, rules, 120).amount).toBe(BigInt(hour!));
+  }
+});
+
+it("matches the native fight vectors for Skill, Fury and Perfection", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { isCleanWin, oathFuryRefund, oathSitePay, oathSkillMultiplier } = await import("./oaths");
+  const fields = readFileSync(
+    new URL("../../../../contracts/l3/world-native/tests/fixtures/oath-fight.txt", import.meta.url),
+    "utf8",
+  )
+    .trim()
+    .split(/\s+/)
+    .map(BigInt);
+  expect(fields).toHaveLength(140);
+  while (fields.length) {
+    const [held, bar, skill, cost, refund, before, after, clean, amount, pay] = fields.splice(0, 10) as bigint[];
+    expect(oathSkillMultiplier(Number(held), bar!).mag).toBe(skill);
+    expect(oathFuryRefund(Number(held), Number(cost))).toBe(Number(refund));
+    expect(isCleanWin(before!, after!)).toBe(clean === 1n);
+    expect(oathSitePay(Number(held), amount!, clean === 1n)).toBe(pay);
   }
 });

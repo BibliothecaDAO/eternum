@@ -57,6 +57,16 @@ export function oathDeepLossPerTick(oaths: number, base: bigint): bigint {
   return holds(oaths, oathRules.VITRIOL) ? BigInt(oathRules.VITRIOL_LOSS_PER_TICK) * BigInt(RESOURCE_PRECISION) : base;
 }
 
+export function oathSkillMultiplier(oaths: number, barAfterCost: bigint): Fixed {
+  return holds(oaths, oathRules.SKILL) && barAfterCost < BigInt(oathRules.SKILL_BAR_BELOW)
+    ? div(unscaled(100 + oathRules.SKILL_DAMAGE_PERCENT), unscaled(100))
+    : ONE;
+}
+
+export function oathFuryRefund(oaths: number, cost: number): number {
+  return holds(oaths, oathRules.FURY) ? Math.floor((cost * oathRules.FURY_REFUND_PERCENT) / 100) : 0;
+}
+
 export function oathFindPercent(oaths: number, base: number): number {
   return holds(oaths, oathRules.DETECTION) ? Math.floor((base * oathRules.DETECTION_FIND_PERCENT) / 100) : base;
 }
@@ -81,8 +91,13 @@ export function oathRevealPay(oaths: number, amount: bigint): bigint {
   return holds(oaths, oathRules.BRILLIANCE) ? (amount * BigInt(oathRules.BRILLIANCE_PAY_PERCENT)) / 100n : amount;
 }
 
-export function oathSitePay(oaths: number, amount: bigint): bigint {
-  return holds(oaths, oathRules.RAGE) ? (amount * BigInt(oathRules.RAGE_PAY_PERCENT)) / 100n : amount;
+export function isCleanWin(before: bigint, after: bigint): boolean {
+  return (before - after) * 100n < before * BigInt(oathRules.PERFECTION_LOSS_PERCENT);
+}
+
+export function oathSitePay(oaths: number, amount: bigint, clean: boolean): bigint {
+  const raged = holds(oaths, oathRules.RAGE) ? (amount * BigInt(oathRules.RAGE_PAY_PERCENT)) / 100n : amount;
+  return clean && holds(oaths, oathRules.PERFECTION) ? (raged * BigInt(oathRules.PERFECTION_PAY_PERCENT)) / 100n : raged;
 }
 
 export function armyOaths(store: NativeFactStore, key: { game_id: number; explorer_id: bigint | number }): number {

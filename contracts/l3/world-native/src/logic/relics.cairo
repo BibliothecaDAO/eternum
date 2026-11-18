@@ -214,6 +214,7 @@ pub mod RelicState {
             site: ResourceKey,
             explorer_id: u64,
             relic_slot: Option<u8>,
+            clean: bool,
             context: crate::commands::ActionContext,
         ) -> () {
             let context = crate::commands::execution_context(site.game_id, context);
@@ -244,6 +245,7 @@ pub mod RelicState {
                     site,
                     explorer_key,
                     explorer.owner,
+                    clean,
                     crate::commands::action_context(context),
                 );
             }

@@ -396,6 +396,10 @@ pub impl TroopsImpl of TroopsTrait {
                 crate::oaths::damage_multiplier(
                     context.attacker_oaths, context.defender_oaths, context.defender_is_structure_guard,
                 );
+            ALPHA_DAMAGE_DEALT *=
+                crate::oaths::skill_multiplier(
+                    context.attacker_oaths, alpha.stamina.inline().amount - attack_stamina.into(),
+                );
             BRAVO_DAMAGE_DEALT *=
                 crate::oaths::damage_multiplier(
                     context.defender_oaths, context.attacker_oaths, context.attacker_is_structure_guard,
@@ -471,7 +475,7 @@ pub impl TroopsImpl of TroopsTrait {
         tick_seconds: u64,
         cooldown_seconds: u32,
     ) {
-        let (alpha_damage_dealt, bravo_damage_dealt, alpha_stamina_loss, bravo_stamina_loss) = self
+        let (alpha_damage_dealt, bravo_damage_dealt, mut alpha_stamina_loss, bravo_stamina_loss) = self
             .damage_with_context(
                 ref bravo, context, troop_stamina_config, troop_damage_config, tick_seconds, cooldown_seconds,
             );
@@ -481,6 +485,10 @@ pub impl TroopsImpl of TroopsTrait {
         // deduct dead troops from each side
         alpha.count -= core::cmp::min(alpha.count, bravo_damage_dealt);
         bravo.count -= core::cmp::min(bravo.count, alpha_damage_dealt);
+        if bravo.count == 0 && alpha.count != 0 {
+            let cost = crate::oaths::attack_stamina(context.attacker_oaths, troop_stamina_config.stamina_attack_req);
+            alpha_stamina_loss -= core::cmp::min(alpha_stamina_loss, crate::oaths::fury_refund(context.attacker_oaths, cost));
+        }
 
         // deduct stamina spent
         alpha

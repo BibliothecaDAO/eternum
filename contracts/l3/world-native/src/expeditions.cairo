@@ -225,6 +225,7 @@ pub trait ISiteRewards<T> {
         key: crate::resources::ResourceKey,
         explorer: crate::troops::ExplorerKey,
         home_id: u64,
+        clean: bool,
         context: crate::commands::ActionContext,
     );
 }

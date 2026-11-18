@@ -38,6 +38,7 @@ for (const [name, id] of [
 write("../oath-deep-loss.txt", oathDeepLossVectors());
 write("../oath-prizes.txt", oathPrizeVectors());
 write("../oath-stamina.txt", oathStaminaVectors());
+write("../oath-fight.txt", oathFightVectors());
 write(
   "../oath-pass-stamina.txt",
   [0, oaths.PASS_STAMINA / 2, oaths.PASS_STAMINA, oaths.PASS_STAMINA * 2].flatMap((deficit) =>
@@ -257,6 +258,43 @@ function oathStaminaVectors(): string[] {
         Math.floor((hourTicks * regen) / 10_000),
       ].map(String),
     );
+  });
+}
+
+function oathFightVectors(): string[] {
+  const bit = (oath: number) => 1 << (oath - 1);
+  const amount = 1_003n * BigInt(RESOURCE_PRECISION) + 7n;
+  const sets = [
+    0,
+    bit(oaths.SKILL),
+    bit(oaths.FURY),
+    bit(oaths.PERFECTION),
+    bit(oaths.RAGE) | bit(oaths.PERFECTION),
+    bit(oaths.SKILL) | bit(oaths.FURY) | bit(oaths.PERFECTION),
+    bit(oaths.POWER),
+  ];
+  return sets.flatMap((held) => {
+    const holds = (oath: number) => (held & bit(oath)) !== 0;
+    return [
+      [oaths.SKILL_BAR_BELOW - 1, 30, 1_000, 860],
+      [oaths.SKILL_BAR_BELOW, 20, 1_000, 850],
+    ].flatMap(([bar, cost, before, after]) => {
+      const skill = holds(oaths.SKILL) && bar! < oaths.SKILL_BAR_BELOW ? 100 + oaths.SKILL_DAMAGE_PERCENT : 100;
+      const clean = (before! - after!) * 100 < before! * oaths.PERFECTION_LOSS_PERCENT;
+      const raged = holds(oaths.RAGE) ? (amount * BigInt(oaths.RAGE_PAY_PERCENT)) / 100n : amount;
+      return [
+        held,
+        bar,
+        (BigInt(skill) << 64n) / 100n,
+        cost,
+        holds(oaths.FURY) ? Math.floor((cost! * oaths.FURY_REFUND_PERCENT) / 100) : 0,
+        before,
+        after,
+        clean ? 1 : 0,
+        amount,
+        clean && holds(oaths.PERFECTION) ? (raged * BigInt(oaths.PERFECTION_PAY_PERCENT)) / 100n : raged,
+      ].map(String);
+    });
   });
 }
 

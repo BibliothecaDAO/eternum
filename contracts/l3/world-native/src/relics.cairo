@@ -208,6 +208,7 @@ pub trait ICaptureRewards<T> {
         site: ResourceKey,
         explorer_id: u64,
         relic_slot: Option<u8>,
+        clean: bool,
         context: crate::commands::ActionContext,
     );
 }

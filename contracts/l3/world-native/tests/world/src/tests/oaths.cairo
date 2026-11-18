@@ -545,12 +545,28 @@ fn prizes_match_the_client_vectors_with_and_without_their_oaths() {
             .unwrap();
         assert_eq!(crate::oaths::find_percent(oaths, base), find);
         assert_eq!(crate::oaths::reveal_pay(oaths, amount), reveal);
-        assert_eq!(crate::oaths::site_pay(oaths, amount), site);
+        assert_eq!(crate::oaths::site_pay(oaths, amount, false), site);
     }
 }
 
 #[test]
-fn detection_finds_a_camp_brilliance_raises_its_reveal_pay_and_rage_its_clear_pay() {
+fn fight_rules_match_the_client_vectors_with_and_without_their_oaths() {
+    let data = read_txt(@FileTrait::new("../fixtures/oath-fight.txt"));
+    assert_eq!(data.len(), 140);
+    let mut fields = data.span();
+    while !fields.is_empty() {
+        let (oaths, bar, skill, cost, refund): (u16, u64, u128, u16, u64) = Serde::deserialize(ref fields).unwrap();
+        let (before, after, clean, amount, pay): (u128, u128, bool, u128, u128) = Serde::deserialize(ref fields)
+            .unwrap();
+        assert_eq!(crate::oaths::skill_multiplier(oaths, bar).mag, skill);
+        assert_eq!(crate::oaths::fury_refund(oaths, cost), refund);
+        assert_eq!(crate::oaths::clean_win(before, after), clean);
+        assert_eq!(crate::oaths::site_pay(oaths, amount, clean), pay);
+    }
+}
+
+#[test]
+fn detection_finds_a_camp_brilliance_raises_its_reveal_pay_and_rage_and_perfection_its_clear_pay() {
     let discovery = crate::expeditions::FrontierDiscoveryRules {
         camp_bps: 5000, rift_bps: 0, ruin_bps: 0, beasts_bps: 0, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
     };
@@ -561,6 +577,7 @@ fn detection_finds_a_camp_brilliance_raises_its_reveal_pay_and_rage_its_clear_pa
     for (oaths, found, reveal, clear) in array![
         (detection, true, 20 * precision, 1500000000), (0, false, 20 * precision, 0),
         (detection | brilliance | rage, true, 25 * precision, 1875000000),
+        (detection | crate::oaths::bit(crate::oaths::PERFECTION), true, 20 * precision, 2250000000),
     ] {
         let (d, game_id, key) = super::registrar::setup_frontier_relics_with_rules(Some(discovery));
         let mut army = super::registrar::strong_frontier_army(d, game_id, key);

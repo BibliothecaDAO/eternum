@@ -53,6 +53,7 @@ pub mod ResourcesLogic {
             key: ResourceKey,
             explorer: ExplorerKey,
             home_id: u64,
+            clean: bool,
             context: crate::commands::ActionContext,
         ) -> () {
             let context = crate::commands::execution_context(key.game_id, context);
@@ -73,7 +74,7 @@ pub mod ResourcesLogic {
             };
             let reward = if let Some(reward) = reward {
                 let amount = crate::oaths::site_pay(
-                    crate::logic::progression::held_oaths(explorer, context), reward.amount * spoils / 100,
+                    crate::logic::progression::held_oaths(explorer, context), reward.amount * spoils / 100, clean,
                 );
                 let reward = crate::resources::ResourceAmount { amount, ..reward };
                 let reward = crate::logic::army_relics::site_reward(explorer, reward, context.timestamp);

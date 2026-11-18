@@ -56,7 +56,8 @@ pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, conte
         attacker = combat_troops(game_id)
             .spend_claim(key, attacker, target.coord, crate::commands::action_context(context));
     }
-    complete_guard_capture(key, actor, attacker, target, defender, command.relic_slot, context);
+    let clean = crate::oaths::clean_win(attacker_before, attacker.troops.count);
+    complete_guard_capture(key, actor, attacker, target, defender, command.relic_slot, clean, context);
     if fought {
         emit_guard_battle(key, actor, attacker, attacker_before, target, defender, defender_before, context);
     }
@@ -191,10 +192,11 @@ fn complete_guard_capture(
     target: GuardTarget,
     defender: GuardDefender,
     relic_slot: Option<u8>,
+    clean: bool,
     context: ExecutionContext,
 ) {
     if let Some(structure) = target.structure {
-        try_capture(key, attacker, target.key, structure, context.rules.unbox(), relic_slot, context);
+        try_capture(key, attacker, target.key, structure, context.rules.unbox(), relic_slot, clean, context);
         return;
     }
     if attacker.troops.count == 0
@@ -355,6 +357,7 @@ pub fn guard_attack(
         home,
         rules,
         None,
+        false,
         context,
     );
     emit(
@@ -451,6 +454,7 @@ pub fn try_capture(
     target: Structure,
     rules: SliceRules,
     relic_slot: Option<u8>,
+    clean: bool,
     context: ExecutionContext,
 ) {
     if explorer.troops.count == 0
@@ -479,6 +483,7 @@ pub fn try_capture(
             key,
             explorer_key.explorer_id,
             relic_slot,
+            clean,
             crate::commands::action_context(context),
         );
     }

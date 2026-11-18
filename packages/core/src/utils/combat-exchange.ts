@@ -1,4 +1,4 @@
-import { oathAttackStamina, oathDamageMultiplier } from "./oaths";
+import { oathAttackStamina, oathDamageMultiplier, oathFuryRefund, oathSkillMultiplier } from "./oaths";
 import { bonusActive } from "./relic";
 import { BiomeType, RESOURCE_PRECISION, type Troops } from "@bibliothecadao/types";
 import { nativeRuleConstants, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
@@ -120,6 +120,7 @@ export const resolveExchange = (
   const damage = exchangeDamage(attacker, defender, context, rules, {
     defenderStaminaMultiplier: tired ? div(fixed(7n), fixed(10n)) : ONE,
     defenderCooldownMultiplier: defenderCooldownEnd > now ? percent(85) : ONE,
+    attackerSkillMultiplier: oathSkillMultiplier(context.attackerOaths, attackerStamina - attackStamina),
   });
 
   if (!ranged) {
@@ -135,6 +136,10 @@ export const resolveExchange = (
   const defenderDamage = ranged ? 0n : toWhole(round(damage.defender)) * PRECISION;
   const attackerLoss = defenderDamage < attacker.count ? defenderDamage : attacker.count;
   const defenderLoss = attackerDamage < defender.count ? attackerDamage : defender.count;
+  if (defenderLoss === defender.count && attackerLoss < attacker.count) {
+    const refund = BigInt(oathFuryRefund(context.attackerOaths, Number(attackStamina)));
+    attackerStaminaLoss -= refund < attackerStaminaLoss ? refund : attackerStaminaLoss;
+  }
   return {
     ok: true,
     attackerLoss,
@@ -180,7 +185,7 @@ const exchangeDamage = (
   defender: ExchangeTroops,
   context: ExchangeContext,
   rules: CombatRules,
-  penalties: { defenderStaminaMultiplier: Fixed; defenderCooldownMultiplier: Fixed },
+  multipliers: { defenderStaminaMultiplier: Fixed; defenderCooldownMultiplier: Fixed; attackerSkillMultiplier: Fixed },
 ) => {
   const base = fixed(rules.damage.damage_scaling_factor);
   const attackerTroops = unscaled(attacker.count / PRECISION);
@@ -198,8 +203,8 @@ const exchangeDamage = (
     defenderTroops,
     defenderTier,
     defenderBiome,
-    penalties.defenderStaminaMultiplier,
-    penalties.defenderCooldownMultiplier,
+    multipliers.defenderStaminaMultiplier,
+    multipliers.defenderCooldownMultiplier,
   ].reduce(mul, base);
   defenderDamage = div(div(defenderDamage, attackerTier), scale);
   let attackerDamage = [attackerTroops, attackerTier, ONE, attackerBiome, ONE].reduce(mul, base);
@@ -234,6 +239,7 @@ const exchangeDamage = (
       attackerDamage,
       oathDamageMultiplier(context.attackerOaths, context.defenderOaths, context.defenderIsStructureGuard),
     );
+    attackerDamage = mul(attackerDamage, multipliers.attackerSkillMultiplier);
     defenderDamage = mul(
       defenderDamage,
       oathDamageMultiplier(context.defenderOaths, context.attackerOaths, context.attackerIsStructureGuard),

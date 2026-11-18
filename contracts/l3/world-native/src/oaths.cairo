@@ -33,6 +33,11 @@ pub const ANGER_ATTACK_STAMINA: u16 = 20;
 pub const TITANS_STAMINA: u16 = 60;
 pub const ENLIGHTENMENT_REGEN_BPS: u16 = 13334;
 pub const FOX_REVEAL_DISCOUNT_PERCENT: u16 = 20;
+pub const SKILL_DAMAGE_PERCENT: u16 = 30;
+pub const SKILL_BAR_BELOW: u16 = 10;
+pub const FURY_REFUND_PERCENT: u16 = 50;
+pub const PERFECTION_PAY_PERCENT: u16 = 150;
+pub const PERFECTION_LOSS_PERCENT: u16 = 15;
 
 pub fn damage_multiplier(attacker: u16, defender: u16, guarding: bool) -> Fixed {
     let mut multiplier = FixedTrait::ONE();
@@ -46,6 +51,22 @@ pub fn damage_multiplier(attacker: u16, defender: u16, guarding: bool) -> Fixed 
         multiplier *= FixedTrait::new((100 - PROTECTION_REDUCTION_PERCENT).into(), false) / FixedTrait::new(100, false);
     }
     multiplier
+}
+
+pub fn skill_multiplier(oaths: u16, bar_after_cost: u64) -> Fixed {
+    if held(oaths, SKILL) && bar_after_cost < SKILL_BAR_BELOW.into() {
+        FixedTrait::new((100 + SKILL_DAMAGE_PERCENT).into(), false) / FixedTrait::new(100, false)
+    } else {
+        FixedTrait::ONE()
+    }
+}
+
+pub fn fury_refund(oaths: u16, cost: u16) -> u64 {
+    if held(oaths, FURY) {
+        (cost * FURY_REFUND_PERCENT / 100).into()
+    } else {
+        0
+    }
 }
 
 pub fn deep_loss_per_tick(oaths: u16, base: u128) -> u128 {
@@ -76,9 +97,18 @@ pub fn reveal_pay(oaths: u16, amount: u128) -> u128 {
     }
 }
 
-pub fn site_pay(oaths: u16, amount: u128) -> u128 {
-    if held(oaths, RAGE) {
+pub fn clean_win(before: u128, after: u128) -> bool {
+    (before - after) * 100 < before * PERFECTION_LOSS_PERCENT.into()
+}
+
+pub fn site_pay(oaths: u16, amount: u128, clean: bool) -> u128 {
+    let amount = if held(oaths, RAGE) {
         amount * RAGE_PAY_PERCENT.into() / 100
+    } else {
+        amount
+    };
+    if clean && held(oaths, PERFECTION) {
+        amount * PERFECTION_PAY_PERCENT.into() / 100
     } else {
         amount
     }

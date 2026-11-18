@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { BiomeType, BiomeTypeToId, TroopTier, TroopType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import { CombatSimulator } from "./combat-simulator";
+import { nativeOathConstants as oathConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 import {
   type CombatRules,
   type ExchangeTroops,
@@ -528,4 +529,63 @@ it("matches all Oath damage vectors on both sides, including bows and stacked sl
       defenderStamina: 100,
     });
   }
+});
+
+describe("the fight Oaths", () => {
+  const { rules, cases } = readFixture();
+  const base = cases[0]!;
+  const oathRules: CombatRules = {
+    ...rules,
+    dayUnitSeconds: 100,
+    damage: { ...rules.damage, damage_biome_bonus_num: 0, damage_scaling_factor: 36893488147419103232n },
+    stamina: {
+      ...rules.stamina,
+      damage_stamina_refund: false,
+      stamina_attack_req: 10,
+      stamina_defense_req: 0,
+      stamina_gain_per_tick: 0,
+    },
+  };
+  const bit = (oath: number) => 1 << (oath - 1);
+  const army = (count: bigint, stamina: bigint): ExchangeTroops => ({
+    ...base.attacker,
+    category: "Knight",
+    tier: "T1",
+    count: count * 1_000_000_000n,
+    stamina: { amount: stamina, settled_at: 1, remainder: 0 },
+    boosts: { ...base.attacker.boosts, incr_damage_dealt_percent_num: 0, decr_damage_gotten_percent_num: 0 },
+  });
+  const attack = (attackerOaths: number, bar: bigint, defenders: bigint) => {
+    const result = resolveExchange(
+      army(1_000n, bar),
+      army(defenders, 100n),
+      {
+        timestamp: 1,
+        attackDistance: 1,
+        attackerBiome: BiomeType.Underground,
+        defenderBiome: BiomeType.Underground,
+        attackerIsStructureGuard: false,
+        defenderIsStructureGuard: false,
+        attackerOaths,
+        defenderOaths: 0,
+      },
+      oathRules,
+    );
+    if (!result.ok) throw new Error(result.refusal);
+    return result;
+  };
+
+  it("deals Skill's extra damage only on the attack that leaves the bar under its line", () => {
+    const skill = bit(oathConstants.SKILL);
+    const plain = attack(0, 19n, 1_000n).defenderLoss;
+    expect(attack(skill, 20n, 1_000n).defenderLoss).toBe(plain);
+    expect(attack(skill, 19n, 1_000n).defenderLoss).toBeGreaterThan(plain);
+  });
+
+  it("gives back half of an attack's cost with Fury only when the attack beats its target", () => {
+    const fury = bit(oathConstants.FURY);
+    expect(attack(fury, 100n, 1n).attacker.stamina.amount).toBe(95n);
+    expect(attack(0, 100n, 1n).attacker.stamina.amount).toBe(90n);
+    expect(attack(fury, 100n, 1_000n).attacker.stamina.amount).toBe(90n);
+  });
 });

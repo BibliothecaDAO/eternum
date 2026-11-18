@@ -255,6 +255,36 @@ it("pays Rage's share more on a camp the attacker clears, before Plunder, and le
   ).toMatchObject({ resourceId: ResourcesIds.Lords, amount: 500 });
 });
 
+it("pays Perfection's share more only when the attack clears the camp with under its loss line lost", () => {
+  const { store, site, structure, attack } = campBeside();
+  const action = attack({ col: 41, row: 12, alt: false });
+  const armyKey = { game_id: 1, explorer_id: 201n };
+  store.applyFacts([
+    {
+      model: "ArmyProgress",
+      key: store.wireKeyOf("ArmyProgress", armyKey)!,
+      value: { ...store.require("ArmyProgress", armyKey), oaths: 1 << (oaths.PERFECTION - 1) },
+    },
+  ]);
+  expect(readSiteCard(store, site, structure, action)).toMatchObject({
+    fight: { troopsLost: 457, guardLeft: 478 },
+    payout: { amount: 825 },
+  });
+  const guardKey = { game_id: 1, structure_id: structure.entity_id, slot: 0 };
+  const guard = store.require("Guard", guardKey);
+  store.applyFacts([
+    {
+      model: "Guard",
+      key: store.wireKeyOf("Guard", guardKey)!,
+      value: { ...guard, troops: { ...guard.troops, count: 10n * 1_000_000_000n } },
+    },
+  ]);
+  expect(readSiteCard(store, site, structure, action)).toMatchObject({
+    fight: { guardLeft: 0 },
+    payout: { amount: 1_237.5 },
+  });
+});
+
 it("keeps the forecast and eligible rewards unknown until missing effects are known absent", () => {
   const { store, site, structure, attack } = campBeside();
   const action = attack({ col: 41, row: 12, alt: false });

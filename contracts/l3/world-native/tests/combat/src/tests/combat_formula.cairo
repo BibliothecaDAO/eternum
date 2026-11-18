@@ -568,3 +568,51 @@ fn oath_damage_matches_the_shared_vectors_for_both_sides_and_guard_roles() {
         assert_eq!(defender.stamina.inline().amount, 100);
     }
 }
+
+fn oath_fight_configs() -> (TroopStaminaConfig, TroopDamageConfig) {
+    (
+        TroopStaminaConfig {
+            damage_stamina_refund: false,
+            stamina_attack_req: 10,
+            stamina_defense_req: 0,
+            stamina_gain_per_tick: 0,
+            ..stamina_config(),
+        },
+        TroopDamageConfig { damage_biome_bonus_num: 0, damage_scaling_factor: 36893488147419103232, ..damage_config() },
+    )
+}
+
+fn oath_attack(attacker_oaths: u16, bar: u64, defenders: u128) -> (Troops, Troops) {
+    let (stamina, damage) = oath_fight_configs();
+    let mut attacker = test_troops(TroopType::Knight, TroopTier::T1, 1000, bar);
+    let mut defender = test_troops(TroopType::Knight, TroopTier::T1, defenders, 100);
+    attacker
+        .attack_with_context(
+            ref defender,
+            CombatContext { day_unit_seconds: 100, attacker_oaths, ..context(Biome::Underground) },
+            stamina,
+            damage,
+            120,
+            0,
+        );
+    (attacker, defender)
+}
+
+#[test]
+fn skill_deals_more_only_on_the_attack_that_leaves_the_bar_under_ten() {
+    let skill = crate::oaths::bit(crate::oaths::SKILL);
+    let (_, plain) = oath_attack(0, 19, 1000);
+    let (_, at_ten) = oath_attack(skill, 20, 1000);
+    let (_, at_nine) = oath_attack(skill, 19, 1000);
+    assert_eq!(at_ten.count, plain.count);
+    assert!(at_nine.count < plain.count);
+}
+
+#[test]
+fn fury_gives_back_half_the_cost_of_an_attack_that_beats_its_target() {
+    let fury = crate::oaths::bit(crate::oaths::FURY);
+    for (oaths, defenders, left) in array![(fury, 1_u128, 95_u64), (0, 1, 90), (fury, 1000, 90)] {
+        let (attacker, _) = oath_attack(oaths, 100, defenders);
+        assert_eq!(attacker.stamina.inline().amount, left);
+    }
+}

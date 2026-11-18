@@ -10,6 +10,7 @@ import {
   hasCastleLimit,
   getDefendingGuards,
   oathAttackStamina,
+  isCleanWin,
   oathSitePay,
   siteKindOf,
   type AttackForecast,
@@ -89,7 +90,9 @@ export const readSiteCard = (
     kind === "Ruin"
       ? chest && { resourceType: ResourcesIds.Lords, amount: chest.amount * PRECISION }
       : payout.known?.reward;
-  const reward = baseReward && attack ? attackerReward(store, attack, kind, baseReward) : baseReward;
+  const planned = attack ? forecastFrom(store, attack, structure.entity_id) : undefined;
+  const clean = clearsCleanly(planned?.forecast, guards?.length ?? 0);
+  const reward = baseReward && attack ? attackerReward(store, attack, kind, baseReward, clean) : baseReward;
   const beast = readStandingFrontierBeast(store, site.game_id, safeInteger(site.entity_id));
   return {
     name: beast?.name ?? attackTargetName(kind),
@@ -110,7 +113,7 @@ export const readSiteCard = (
     },
     payout: reward && fittingPayout(store, site.game_id, reward, attack),
     attackStamina: attackStaminaOf(store, attack),
-    ...planAttack(store, attack, structure.entity_id),
+    ...planAttack(planned),
   };
 };
 
@@ -124,9 +127,10 @@ const attackerReward = (
   attack: SiteAttack,
   kind: SiteKind,
   reward: { resourceType: ResourcesIds; amount: bigint },
+  clean: boolean,
 ) => {
   const paid =
-    kind === "Ruin" ? reward : { ...reward, amount: oathSitePay(armyOaths(store, attack.army), reward.amount) };
+    kind === "Ruin" ? reward : { ...reward, amount: oathSitePay(armyOaths(store, attack.army), reward.amount, clean) };
   return armyRelicReward(store, attack.army, paid, attack.timestamp);
 };
 
@@ -147,7 +151,7 @@ export const readArmyCard = (
     chest: null,
     payout: null,
     attackStamina: attackStaminaOf(store, attack),
-    ...planAttack(store, attack, army.explorer_id),
+    ...planAttack(attack ? forecastFrom(store, attack, army.explorer_id) : undefined),
   };
 };
 
@@ -216,12 +220,10 @@ const REACH_REFUSALS: ReadonlySet<AttackRefusal> = new Set([
 ]);
 
 const planAttack = (
-  store: NativeFactStore,
-  attack: SiteAttack | null,
-  targetId: bigint,
+  planned: ReturnType<typeof forecastFrom> | undefined,
 ): Pick<SiteCardPlan, "inReach" | "fight" | "blocked"> => {
-  if (!attack) return { inReach: false, fight: undefined, blocked: undefined };
-  const { inReach, forecast } = forecastFrom(store, attack, targetId);
+  if (!planned) return { inReach: false, fight: undefined, blocked: undefined };
+  const { inReach, forecast } = planned;
   const refusal = forecast?.outcome === "refused" ? forecast.refusal : undefined;
   return {
     inReach,
@@ -238,6 +240,12 @@ const forecastFrom = (store: NativeFactStore, attack: SiteAttack, targetId: bigi
   const inReach = !(now?.outcome === "refused" && REACH_REFUSALS.has(now.refusal));
   return { inReach, forecast: inReach ? now : forecastAt(true) };
 };
+
+const clearsCleanly = (forecast: AttackForecast | undefined, guardsLeft: number): boolean =>
+  forecast?.outcome === "fights" &&
+  guardsLeft <= 1 &&
+  forecast.exchange.defender.count === 0n &&
+  isCleanWin(forecast.exchange.attacker.count + forecast.exchange.attackerLoss, forecast.exchange.attacker.count);
 
 const siteFight = (forecast: AttackForecast | undefined): SiteFight | undefined => {
   if (forecast?.outcome === "fights")
