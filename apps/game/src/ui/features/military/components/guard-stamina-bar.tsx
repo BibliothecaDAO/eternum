@@ -26,7 +26,11 @@ export const GuardStaminaBar = ({ current, max, category }: GuardStaminaBarProps
   return (
     <span title={label} className="block w-full">
       <HudStamina
-        stamina={{ current: clampedCurrent, max: maxValue, perExplore: configManager.getExploreStaminaCost(category, 0) }}
+        stamina={{
+          current: clampedCurrent,
+          max: maxValue,
+          perExplore: configManager.getExploreStaminaCost(category, 0),
+        }}
         tone={staminaTone(clampedCurrent, share)}
         filling={isStaminaRecharging(clampedCurrent, maxValue)}
       />

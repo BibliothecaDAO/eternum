@@ -147,7 +147,10 @@ const ArmyBannerEntityDetailContent = memo(
           <TroopChip troops={explorer.troops} size="sm" className="w-full" />
           {derivedData.stamina && derivedData.maxStamina ? (
             <InlineStaminaBar
-              perExplore={configManager.getExploreStaminaCost(explorer.troops.category, armyOaths(setup.store, explorer))}
+              perExplore={configManager.getExploreStaminaCost(
+                explorer.troops.category,
+                armyOaths(setup.store, explorer),
+              )}
               currentStamina={currentStamina}
               maxStamina={maxStamina}
               isRecharging={derivedData.staminaDisplay?.isRecharging}

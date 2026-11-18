@@ -95,12 +95,7 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
         ? {
             current: stamina.committedCurrent,
             max: stamina.committedMax,
-            perExplore: exploreStaminaOf(
-              setup.store,
-              army.game_id,
-              army.troops.category,
-              armyOaths(setup.store, army),
-            ),
+            perExplore: exploreStaminaOf(setup.store, army.game_id, army.troops.category, armyOaths(setup.store, army)),
           }
         : undefined,
       secondsToFull: stamina?.secondsUntilFull,
