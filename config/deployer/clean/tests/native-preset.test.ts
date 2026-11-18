@@ -833,7 +833,7 @@ describe("scaled Frontier presets", () => {
       const ledger = buildLedgerEconomicPreset("frontier", { presetId });
       expect(world.rules.day_unit_seconds).toBe(dayUnit);
       expect(ledger.day_unit_seconds).toBe(dayUnit);
-      if (presetId === FRONTIER_FIXTURE_PRESET_ID) {
+      if (presetId === FRONTIER_FIXTURE_PRESET_ID || presetId === FRONTIER_PLAYGROUND_PRESET_ID) {
         expect(world.economy.chests.isNone()).toBe(true);
         expect(ledger.claim_window_seconds).toBe(0);
       } else {
@@ -974,13 +974,15 @@ describe("the Frontier playground preset", () => {
     );
   });
 
-  test("keeps Frontier's rules, clocks, depths and research prices in Essence; only its stock and labor prices differ", () => {
+  test("keeps Season 1's rules, clocks, depths, Deep and research prices in Essence; only its stock and labor prices differ", () => {
     const playground = definition(FRONTIER_PLAYGROUND_PRESET_ID);
+    const season = definition(FRONTIER_S1_PRESET_ID);
     const frontier = definition(FRONTIER_PRESET_ID);
-    expect(playground.rules).toEqual(frontier.rules);
-    expect(playground.settlement.depths).toEqual(frontier.settlement.depths);
+    expect(playground.rules).toEqual(season.rules);
+    expect(playground.settlement.depths).toEqual(season.settlement.depths);
+    expect(playground.economy.deep.unwrap()).toEqual(season.economy.deep.unwrap());
     expect(playground.structures.research.map(({ price }) => price.essence)).toEqual(
-      frontier.structures.research.map(({ price }) => price.essence),
+      season.structures.research.map(({ price }) => price.essence),
     );
     expect(playground.structures.research.every(({ price }) => price.labor === 0n)).toBe(true);
     expect(playground.structures.upgrades.map(({ costs }) => costs.map(({ amount }) => whole(amount)))).toEqual([
@@ -1045,8 +1047,9 @@ test("Season 1 and its check preset share the canonical Aspect mapping", () => {
   );
   expect(season.settlement.order_aspects).toEqual([1, 2, 3, 4, 4, 3, 4, 4, 1, 2, 2, 1, 1, 3, 3, 2]);
   expect(nativePresets[FRONTIER_FIXTURE_PRESET_ID]!.orderAspects).toEqual(season.settlement.order_aspects);
+  expect(nativePresets[FRONTIER_PLAYGROUND_PRESET_ID]!.orderAspects).toEqual(season.settlement.order_aspects);
   for (const preset of Object.values(nativePresets).filter(
-    ({ id }) => id !== FRONTIER_S1_PRESET_ID && id !== FRONTIER_FIXTURE_PRESET_ID,
+    ({ id }) => ![FRONTIER_S1_PRESET_ID, FRONTIER_FIXTURE_PRESET_ID, FRONTIER_PLAYGROUND_PRESET_ID].includes(id),
   ))
     expect(preset.orderAspects).toEqual([]);
 });
@@ -1306,9 +1309,10 @@ test("preset 7 activates the complete Slice 1 rules while fixtures and historica
     const environment = source.gameType === "blitz" ? "madara.blitz" : "madara.frontier";
     const built = buildNativePreset(loadNativePresetConfiguration(environment, source.id), source.id);
     const active = source.id === FRONTIER_S1_PRESET_ID;
-    const seasonShaped = active || source.id === FRONTIER_FIXTURE_PRESET_ID;
+    const followsSeason = active || source.id === FRONTIER_PLAYGROUND_PRESET_ID;
+    const seasonShaped = followsSeason || source.id === FRONTIER_FIXTURE_PRESET_ID;
     for (const name of ["deep", "race"] as const) expect(built.economy[name].isSome()).toBe(seasonShaped);
-    for (const name of ["quests", "banes"] as const) expect(built.economy[name].isSome()).toBe(active);
+    for (const name of ["quests", "banes"] as const) expect(built.economy[name].isSome()).toBe(followsSeason);
     if (!active) continue;
     expect(source.dailyQuest).toEqual(questFixture());
     expect(source.banes).toEqual(baneFixture());
@@ -1349,10 +1353,25 @@ test("preset 7 activates the complete Slice 1 rules while fixtures and historica
         row.beast_strong_upper,
       ]),
     ).toEqual([
-      [300, 395, 400, 500],
-      [600, 790, 800, 1000],
-      [1200, 1580, 1600, 2000],
-      [2400, 3160, 3200, 4000],
+      [315, 385, 405, 495],
+      [630, 770, 810, 990],
+      [1260, 1540, 1620, 1980],
+      [2520, 3080, 3240, 3960],
+    ]);
+    expect(built.settlement.depths.map((row) => [row.site_guard_lower, row.site_guard_upper, row.guard_step])).toEqual([
+      [1170, 1430, 10],
+      [2340, 2860, 10],
+      [4680, 5720, 10],
+      [9360, 11440, 10],
+    ]);
+    expect(
+      built.settlement.depths
+        .slice(0, 3)
+        .map(({ chest }) => [chest.common, chest.uncommon, chest.rare, chest.epic, chest.legendary]),
+    ).toEqual([
+      [6000, 3000, 1000, 0, 0],
+      [0, 6000, 3000, 1000, 0],
+      [0, 0, 6000, 3000, 1000],
     ]);
     codec.compile("register_preset", { preset_id: source.id, definition: built });
   }

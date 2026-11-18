@@ -273,7 +273,9 @@ pub mod MapLogic {
                 );
                 let guard = if category == crate::taxonomy::RUIN_CATEGORY {
                     let relic = crate::logic::army_relics::ruin(key).expect('missing ruin relic');
-                    let layer = crate::logic::expeditions::depth_at(key.game_id, crate::structures::structure_coord(key));
+                    let layer = crate::logic::expeditions::depth_at(
+                        key.game_id, crate::structures::structure_coord(key),
+                    );
                     crate::troops::ruin_guard(relic, layer, seed, rules, timestamp)
                 } else {
                     crate::troops::frontier_guard(category, depth, seed, rules, timestamp)
