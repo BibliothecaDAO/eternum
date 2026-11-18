@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { readBaneDay, readBaneEffects } from "./banes";
 import { describe, expect, it } from "vitest";
 import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
@@ -6,6 +7,21 @@ import { nativeBaneConstants, nativeQuestConstants } from "../../../../../contra
 import { dayOf } from "../../utils/days";
 import { NativeFactStore } from "../native-fact-store";
 import { readDailyQuest } from "./quests";
+
+const BONUS_SOURCES = {
+  seals: { model: "Seal", key: "1:0x111", value: { game_id: 1, account: "0x111", granted_at: 100 } },
+  campaign_homes: { model: "CampaignHome", key: "1:7", value: { game_id: 1, home: 7, campaign_id: 9, tier: 1 } },
+  holds_realm: { model: "SettledRealm", key: "1:123", value: { game_id: 1, realm_id: 123, home: 7 } },
+} satisfies Record<string, Parameters<NativeFactStore["applyFacts"]>[0][number]>;
+
+function chainBonusSources(): string[] {
+  const source = readFileSync(
+    new URL("../../../../../contracts/l3/world-native/src/logic/quests.cairo", import.meta.url),
+    "utf8",
+  );
+  const body = source.match(/pub fn labor_bonus\([^]*?\n}\n/)![0];
+  return [...body.matchAll(/\.(\w+)\.read\(|\b(holds_\w+)\(/g)].map((read) => read[1] ?? read[2]!).sort();
+}
 
 function fixture() {
   const store = new NativeFactStore();
@@ -139,14 +155,14 @@ describe("daily quest facts", () => {
     });
   });
 
-  it.each(["held", "sealed"])("applies only the labor bonus to a %s home at the completed level", (source) => {
+  it("reads every labor bonus source the chain's labor_bonus reads, and no other", () => {
+    expect(Object.keys(BONUS_SOURCES).sort()).toEqual(chainBonusSources());
+  });
+
+  it.each(Object.entries(BONUS_SOURCES))("applies only the labor bonus to a %s home at the completed level", (_, row) => {
     const { store, read, progress } = fixture();
     progress(30, 2);
-    store.applyFacts([
-      source === "held"
-        ? { model: "SettledRealm", key: "1:123", value: { game_id: 1, realm_id: 123, home: 7 } }
-        : { model: "Seal", key: "1:0x111", value: { game_id: 1, account: "0x111", granted_at: 100 } },
-    ]);
+    store.applyFacts([row]);
     expect(read()?.reading.known).toMatchObject({
       target: 30n,
       reward: { labor: 3000n * BigInt(RESOURCE_PRECISION), essence: 3000n * BigInt(RESOURCE_PRECISION) },

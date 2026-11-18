@@ -19,6 +19,7 @@ export function questScenario(): LabScenario {
     ...[...store.entries("LaborRules")].map(([key]) => ({ model: "LaborRules", key, value: null })),
     ...[...store.entries("SettledRealm")].map(([key]) => ({ model: "SettledRealm", key, value: null })),
     ...[...store.entries("Seal")].map(([key]) => ({ model: "Seal", key, value: null })),
+    ...[...store.entries("CampaignHome")].map(([key]) => ({ model: "CampaignHome", key, value: null })),
     {
       model: "QuestRules",
       key: "0xa70",

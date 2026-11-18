@@ -211,13 +211,13 @@ fn quest_labor(
 }
 
 #[test]
-fn a_seal_or_a_held_realm_pays_the_labor_bonus_and_a_ticket_alone_does_not() {
+fn a_seal_a_held_realm_or_a_ticket_home_pays_the_labor_bonus() {
     let (d, game_id) = quest_game();
     assert_eq!(quest_labor(d, game_id, None, true), 1500);
     let (d, game_id) = quest_game();
     assert_eq!(quest_labor(d, game_id, Some(held_realm()), false), 1500);
     let (d, game_id) = quest_game();
-    assert_eq!(quest_labor(d, game_id, Some(ticket()), false), 1000);
+    assert_eq!(quest_labor(d, game_id, Some(ticket()), false), 1500);
     let (d, game_id) = quest_game();
     assert_eq!(quest_labor(d, game_id, Some(ticket()), true), 1500);
     let (d, game_id) = quest_game();
@@ -360,7 +360,7 @@ fn a_full_labor_store_still_collects_essence_and_records_the_actual_grant_once()
 
 #[test]
 #[feature("safe_dispatcher")]
-fn late_campaign_recovery_attaches_no_bonus_and_bypasses_no_quest() {
+fn late_campaign_recovery_attaches_the_bonus_without_bypassing_any_quest() {
     let (d, game_id) = quest_game();
     let home = found(d, game_id);
     let tomorrow = interact_with_state(
@@ -390,7 +390,7 @@ fn late_campaign_recovery_attaches_no_bonus_and_bypasses_no_quest() {
     interact_with_state(
         d.games,
         || {
-            assert!(!crate::logic::quests::labor_bonus(home, d.actor));
+            assert!(crate::logic::quests::labor_bonus(home, d.actor));
             assert!(crate::state::read().entry.home_labor_grants.read((game_id, home.entity_id, 0)).is_none());
             assert!(crate::state::read().entry.home_labor_grants.read((game_id, home.entity_id, 1)).is_none());
         },
