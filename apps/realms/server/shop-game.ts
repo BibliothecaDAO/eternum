@@ -39,15 +39,11 @@ export const enteredGamesOf = (
 ): EnteredGames => {
   const accountOf = playerAccounts(env);
   return async (realmsId) => {
-    const account = BigInt(await accountOf(realmsId));
+    const account = await accountOf(realmsId);
     const entered: NamedGame[] = [];
     for (const shard of await listedShards(env.DB))
-      for (const gameId of runningFrontierGameIds(
-        await fetchShardGames(shard, gamesUrl(shard, null), fetchShard),
-        now(),
-      ))
-        if ((await readEnrolledAccounts(shard.url, gameId)).some((owner) => BigInt(owner) === account))
-          entered.push({ chainId: gameKey(shard.chainId), gameId });
+      for (const gameId of runningFrontierGameIds(await fetchShardGames(shard, gamesUrl(shard, null), fetchShard), now()))
+        if (await isEnrolled(shard.url, gameId, account)) entered.push({ chainId: gameKey(shard.chainId), gameId });
     return entered;
   };
 };
@@ -58,10 +54,18 @@ export const shopAccessOf = (
   fetchShard: typeof fetch,
   now: () => number,
 ): ShopAccess => {
-  const entered = enteredGamesOf(env, fetchShard, now);
-  return async (realmsId, named) =>
-    (await entered(realmsId)).some((game) => game.chainId === named.chainId && game.gameId === named.gameId);
+  const accountOf = playerAccounts(env);
+  return async (realmsId, { chainId, gameId }) => {
+    const shard = (await listedShards(env.DB)).find((listed) => gameKey(listed.chainId) === chainId);
+    if (!shard) return false;
+    const running = runningFrontierGameIds(await fetchShardGames(shard, gamesUrl(shard, null), fetchShard), now());
+    if (!running.includes(gameId)) return false;
+    return isEnrolled(shard.url, gameId, await accountOf(realmsId));
+  };
 };
+
+const isEnrolled = async (shardUrl: string, gameId: number, account: string) =>
+  (await readEnrolledAccounts(shardUrl, gameId)).some((owner) => BigInt(owner) === BigInt(account));
 
 /**
  * Every shop read goes through here: the signed-in account and its seat in the game the request names, or the response
