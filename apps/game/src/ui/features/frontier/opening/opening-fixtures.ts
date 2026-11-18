@@ -5,4 +5,7 @@ export const OPENING_RULES: OpeningRules = {
   deepTickSeconds: 120,
   staminaAnHour: 30,
   staminaPerFragment: 2,
+  relicMinutesPerTier: 30,
+  scoutExploreStamina: 10,
+  exploreStamina: 20,
 };

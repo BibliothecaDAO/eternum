@@ -14,11 +14,13 @@ import {
   isDeepTile,
   nativeFragmentConstants,
   nativeResearchConstants as research,
+  nativeRuleConstants,
   RACE_MODELS,
   readRaceBoard,
   safeInteger,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
+import { RealmLevels } from "@bibliothecadao/types";
 import { useEffect } from "react";
 
 import type { OpeningRules } from "@/ui/design-system/kit/words";
@@ -40,6 +42,7 @@ import { SITE_ALERT_OFFER } from "./use-site-alert-offer";
 import { flush, loadOpening, reachMoments, seeLine, useOpeningStore } from "./opening-store";
 
 const KNOWLEDGE_MODELS = ["RealmKnowledge"] as const;
+const RELIC_MODELS = ["ArmyRelics"] as const;
 
 /** How often a failed read or send is tried again while the HUD is up. */
 const RETRY_MS = 15_000;
@@ -114,6 +117,9 @@ function useOpeningRules(rules: ExpeditionRules, realm: NativeRows["Structure"] 
     deepTickSeconds: tickSeconds,
     staminaAnHour: (slice.troop_stamina_config.stamina_gain_per_tick * 3600) / tickSeconds,
     staminaPerFragment: nativeFragmentConstants.STAMINA_PER_FRAGMENT,
+    relicMinutesPerTier: nativeRuleConstants.RELIC_SECONDS_PER_RANK / 60,
+    scoutExploreStamina: nativeRuleConstants.SCOUT_EXPLORE_STAMINA,
+    exploreStamina: slice.troop_stamina_config.stamina_explore_stamina_cost,
   };
 }
 
@@ -124,6 +130,7 @@ function useOpeningHeld(rules: ExpeditionRules, realm: NativeRows["Structure"] |
   useNativeRevision(DAILY_QUEST_MODELS);
   useNativeRevision(RACE_MODELS);
   useNativeRevision(KNOWLEDGE_MODELS);
+  useNativeRevision(RELIC_MODELS);
   const armies = useDockArmies(realm);
   const essence = useRealmStores(realm, rules)?.essence.amount;
   const fragments = useFragmentsHeld();
@@ -134,6 +141,9 @@ function useOpeningHeld(rules: ExpeditionRules, realm: NativeRows["Structure"] |
   const travelCost = setup.store.require("SliceRules", { game_id: realm.game_id }).troop_stamina_config
     .stamina_travel_stamina_cost;
   const outOfStamina = armies.some((army) => army.stamina !== undefined && army.stamina.current < travelCost);
+  const relic = armies.some((army) =>
+    carriesRelic(setup.store.get("ArmyRelics", { game_id: realm.game_id, explorer_id: army.explorerId })),
+  );
   const deep = armies.some((army) => {
     const tile = setup.store.entityOccupancy(realm.game_id, army.explorerId);
     return tile !== undefined && isDeepTile(spacing, tile);
@@ -145,6 +155,8 @@ function useOpeningHeld(rules: ExpeditionRules, realm: NativeRows["Structure"] |
   return {
     barracks: getBuildingQuantity(home, FIRST_BUILD, setup.store) > 0,
     shop: outOfStamina || fragments > 0,
+    relic,
+    city: realm.base.level >= RealmLevels.City,
     essence: (essence ?? 0) > 0,
     "well-lore": researchTier(learned, research.ROW_LORE) >= research.LORE_WELLS,
     "shrine-lore": researchTier(learned, research.ROW_LORE) >= research.LORE_SHRINES,
@@ -153,3 +165,6 @@ function useOpeningHeld(rules: ExpeditionRules, realm: NativeRows["Structure"] |
     aspects: deep || bane || stageBuilt,
   };
 }
+
+const carriesRelic = (relics: Pick<NativeRows["ArmyRelics"], "first" | "second" | "third"> | undefined): boolean =>
+  relics !== undefined && [relics.first, relics.second, relics.third].some((slot) => slot !== null);

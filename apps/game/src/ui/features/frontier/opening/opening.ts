@@ -10,10 +10,12 @@ export const OPENING = {
   launch: { icon: "realm", parts: [] },
   barracks: { icon: "barracks", parts: ["troops-store", "building-list"] },
   guard: { icon: "camp", parts: [] },
-  shop: { icon: "fragment", parts: ["fragments-chip"] },
   essence: { icon: "essence", parts: ["essence-store", "research", "today"] },
+  shop: { icon: "fragment", parts: ["fragments-chip"] },
+  relic: { icon: "relics", parts: [] },
   "well-lore": { icon: "well", parts: [] },
   "shrine-lore": { icon: "shrine", parts: [] },
+  city: { icon: "scout-lodge", parts: [] },
   deep: { icon: "depth-3", parts: ["glory"] },
   bane: { icon: "flame", parts: ["bane-row"] },
   // The Aspect's page opens with whichever comes first: the Deep, a bane on the Aspect or its first stage built.

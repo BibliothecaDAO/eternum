@@ -5,6 +5,8 @@ import { accountProgress, nextLine, siteAlertOfferDue, openedMoments, reachedOnS
 const NOTHING_HELD = {
   barracks: false,
   shop: false,
+  relic: false,
+  city: false,
   essence: false,
   "well-lore": false,
   "shrine-lore": false,
@@ -13,8 +15,13 @@ const NOTHING_HELD = {
   aspects: false,
 };
 
-it("reaches the shop on its own state: an army out of stamina or Fragments held", () => {
-  expect(reachedOnState({ ...NOTHING_HELD, shop: true })).toEqual(["launch", "shop"]);
+it("reaches the shop, a relic and City on their own state, in the design's order", () => {
+  expect(reachedOnState({ ...NOTHING_HELD, city: true, relic: true, shop: true })).toEqual([
+    "launch",
+    "shop",
+    "relic",
+    "city",
+  ]);
 });
 
 it("reaches the launch always and each moment whose state is held, the lores among them", () => {
