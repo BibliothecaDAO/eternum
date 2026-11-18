@@ -19,6 +19,10 @@ const PRESEASON_SCREENS = [
   ["preseason-invited", "[data-shared-invite]", "/s/MRGHT234"],
   ["preseason-invited-pick", "[data-aspect-invited]"],
 ];
+const ENTRY_STEPS = [
+  ["aspect-kept", "[data-order]"],
+  ["realm-side", "[data-realm-side-warning]"],
+];
 const PAGES = [
   ...VIEWS.flatMap(({ name, path, cases, shown }) =>
     cases.map((each) => ({ file: `${name}-${each}`, url: `${path}?case=${each}`, shown })),
@@ -26,6 +30,11 @@ const PAGES = [
   ...PRESEASON_SCREENS.map(([screen, shown, page = ""]) => ({
     file: `countdown-${screen}`,
     url: `/lab/app/${screen}${page}?capture=1`,
+    shown,
+  })),
+  ...ENTRY_STEPS.map(([state, shown]) => ({
+    file: `entry-${state}`,
+    url: `/lab/app/wallet-ready/doorway/${state}?capture=1`,
     shown,
   })),
 ];

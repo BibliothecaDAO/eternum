@@ -323,6 +323,7 @@ import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import {
   PRINTED_CODE_LENGTH,
   SHARED_MOMENT_WORDS,
+  sharerName,
   type CampaignKey,
   type SealCodeRefusal,
   type SocialProvider,
@@ -1190,10 +1191,10 @@ export const SHARED_LINK_WORDS = {
   play: "Start your adventure",
   opening: "Opening…",
   unknown: "This link leads to no shared day.",
-  invites: (name: string | null) => `${name ?? "A player"} invites you`,
+  invites: (name: string | null) => `${sharerName(name)} invites you`,
   orders: (names: readonly string[]) => `Order of ${names.join(", ")}`,
   allies: "Members of one Aspect never fight each other.",
-  plays: (name: string | null, order: string) => `${name ?? "A player"} plays ${order}.`,
+  plays: (name: string | null, order: string) => `${sharerName(name)} plays ${order}.`,
 } as const;
 /** A season's end, told one of two ways (story): the mist lifted, or it grew too strong. */
 export const SEASON_ENDINGS = { lifted: "The mist lifted", strong: "The mist grew too strong" } as const;
@@ -2377,6 +2378,17 @@ export const RELIC_WORDS = {
   chooseFirst: "Choose the relic to replace first",
 } as const;
 
+export const REALM_SIDE_WORDS = {
+  invited: (sender: string | null, invited: string, realms: string) =>
+    `${sharerName(sender)} plays ${invited}. Your Realm plays ${realms}.`,
+  kept: (kept: string, realms: string) => `You chose ${kept} before the season. Your Realm plays ${realms}.`,
+  bonus: "Your Realm holds the quest bonus.",
+  playRealm: "Play my Realm",
+  keeps: "You keep the quest bonus.",
+  apart: (sender: string | null) => `${sharerName(sender)} is in another Aspect.`,
+  joinFree: (aspect: string) => `Join ${aspect} for free`,
+  loses: "You lose the quest bonus.",
+} as const;
 const INVITED = "Invited";
 export const ASPECT_STEP_WORDS = {
   title: "Choose your Aspect",
@@ -2389,6 +2401,8 @@ export const ASPECT_STEP_WORDS = {
   foundingAs: (order: string) => `Founding as ${order}…`,
   /** A held Realm's home: its Aspect is its Order's, so the step shows it and asks nothing. */
   realmsAspect: (order: string, aspect: string) => `Your Realm's ${order} plays for ${aspect}`,
+  keptAspect: (aspect: string) => `You chose ${aspect} before the season. Choose your Order in it.`,
+  keptUnread: "Your Aspect for the season could not be read. Try again.",
   /** The step's line for a friend's invite, and the invited card's tag; a sender with no name yet is not named. */
   invitedTo: (sender: string | null, aspect: string) =>
     sender === null ? `You were invited to ${aspect}` : `${sender} invited you to ${aspect}`,

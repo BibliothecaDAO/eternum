@@ -1112,13 +1112,17 @@ also cover Ward, Plunder, expiry and incomplete snapshots in the site-card regre
 
 A Season 1 free or campaign home chooses one of four Aspects on the game entry screen. Tap its card to found the home;
 its four Orders and current member count come from the shared catalog and Herald's directory. A held Realm inherits its
-Order's Aspect. A founded home can attach only a held Realm from that Aspect.
+Order's Aspect. A founded home can attach only a held Realm from that Aspect. An account that kept an Order before the
+season founds in that Order's Aspect (its Orders offered, the other Aspects shut). A held Realm in another Aspect than
+the kept Order or a friend's invite is warned once: **Play my Realm** (keeps the quest bonus) or **Join <Aspect> for
+free** (a free home in that Aspect, no Realm sent).
 
-Presentation: `/lab/app/wallet-ready/doorway/aspect` and `/lab/app/wallet-ready/doorway/aspect-realm` mount the
-production picker. The full founding flow is `/lab/game?scenario=aspect-settle`; the canonical playtest's
-`--steps lab-aspect-settle` opens Play, verifies no automatic founding, taps an Aspect and checks the command plus
-resulting membership facts, two 1,500-Knight armies with full independent stamina bars, and the starting stores (6,000
-wheat, 2,000 labor, no idle Knights or Essence). Both armies appear in the production HUD.
+Presentation: `/lab/app/wallet-ready/doorway/aspect`, `aspect-realm`, `aspect-kept` and `realm-side` (the warning) under
+`/lab/app/wallet-ready/doorway/` mount the production picker; `build.sh prove-season-one` stills the last two. The full
+founding flow is `/lab/game?scenario=aspect-settle`; the canonical playtest's `--steps lab-aspect-settle` opens Play,
+verifies no automatic founding, taps an Aspect and checks the command plus resulting membership facts, two 1,500-Knight
+armies with full independent stamina bars, and the starting stores (6,000 wheat, 2,000 labor, no idle Knights or
+Essence). Both armies appear in the production HUD.
 
 ## Daily quest collection
 

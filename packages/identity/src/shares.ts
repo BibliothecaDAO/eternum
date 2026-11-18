@@ -53,10 +53,12 @@ export const sharedMomentOf = (
  * What a shared link says before it is opened, on its landing and in its unfurl: who shared which day, or invites a
  * friend to which Aspect, and what Frontier is. A sharer with no public name is "A player".
  */
+export const sharerName = (name: string | null) => name ?? "A player";
+
 export const SHARED_MOMENT_WORDS = {
   title: (name: string | null, moment: SharedMoment) =>
     moment.kind === "frontier-day"
-      ? `${name ?? "A player"} shared Day ${moment.day} of Frontier`
-      : `${name ?? "A player"} invites you to ${moment.aspect} in Frontier`,
+      ? `${sharerName(name)} shared Day ${moment.day} of Frontier`
+      : `${sharerName(name)} invites you to ${moment.aspect} in Frontier`,
   pitch: "A new map every day. Send your armies into the fog and bring home what they find. Your realm is free.",
 } as const;

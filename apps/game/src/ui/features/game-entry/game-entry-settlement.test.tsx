@@ -158,6 +158,7 @@ it("asks a Season 1 free home for its Aspect, then its Order, and founds in the 
   state.settled = false;
   state.founded = [];
   const joined = vi.spyOn(identityClient, "joinedShare").mockResolvedValue(null);
+  const kept = vi.spyOn(identityClient, "getOrderIntent").mockResolvedValue({ order: null, members: {} });
   // Herald's directory row counts each Aspect's homes (AspectMembers), every Aspect named.
   state.entry = { ...state.entry, preset_id: FRONTIER_S1_PRESET_ID, aspect_members: { 1: 12, 2: 9, 3: 0, 4: 31 } };
   const { host, close } = await openEntry("settle");
@@ -196,6 +197,7 @@ it("asks a Season 1 free home for its Aspect, then its Order, and founds in the 
   } finally {
     await close();
     joined.mockRestore();
+    kept.mockRestore();
     state.entry = { ...state.entry, preset_id: 5, aspect_members: undefined };
   }
 });

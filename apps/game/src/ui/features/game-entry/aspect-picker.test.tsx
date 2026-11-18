@@ -25,6 +25,7 @@ const draw = (props: Partial<Parameters<typeof AspectPicker>[0]> = {}) => {
       <AspectPicker
         members={MEMBERS}
         realmOrder={null}
+        keptOrder={null}
         chosen={null}
         joining={null}
         offered={null}

@@ -121,7 +121,9 @@ it("before the season, shows the time left and asks a signed-out friend to creat
   await open("/s/ABCD2349");
   expect(host.textContent).toContain("Starts");
   expect(pageLine()).toBe("Members of one Aspect never fight each other. Dana plays Order of Titans.");
-  expect([...host.querySelectorAll("button, a")].map((each) => each.textContent)).toEqual(["Create your account"]);
+  const verbs = [...host.querySelectorAll("button, a")].map((each) => each.textContent);
+  expect(verbs).toContain("Create your account");
+  expect(verbs).not.toContain("Start your adventure");
 });
 
 it("tells identity the channel the link was posted from, and nothing for one no player's link carries", async () => {

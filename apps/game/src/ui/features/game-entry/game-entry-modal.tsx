@@ -1,4 +1,5 @@
 import { AspectPicker, aspectOfOrder, aspectOffer } from "./aspect-picker";
+import { isRealmElsewhere, RealmSideWarning, seasonSide, sideAspect } from "./realm-side-warning";
 import { canonicalRealm } from "@bibliothecadao/eternum";
 import { StructureType, type AspectId } from "@bibliothecadao/types";
 import { pageNavigation } from "@/utils/page-navigation";
@@ -21,6 +22,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { identityUsername, useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useRequestSignIn } from "@/shell/sign-in/connect";
 import { useJoinedShare } from "@/shell/share/own-shares";
+import { useOrderIntent } from "@/shell/play/order-intent";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
 import { useGameEntry } from "@/hooks/use-game-entry";
@@ -109,6 +111,7 @@ export const GameEntryModal = ({
   const [heldRealmNumber, setHeldRealmNumber] = useState("");
   const [aspect, setAspect] = useState<AspectId | null>(null);
   const [order, setOrder] = useState<number | null>(null);
+  const [sideAnswer, setSideAnswer] = useState<"realm" | "free" | null>(null);
   const [registeredRealmId, setRegisteredRealmId] = useState<number | null>(null);
   /** The Realm step's pick stands on what the account holds (its reads answered); founding waits for it. */
   const [homeSettled, setHomeSettled] = useState(false);
@@ -134,6 +137,7 @@ export const GameEntryModal = ({
   }, [account?.address]);
 
   const joinedShare = useJoinedShare();
+  const keptIntent = useOrderIntent();
   // The game's directory row is the one source for entry: it is polled while the modal waits on readiness.
   const gameEntry = useGameEntry(game, {
     enabled: isOpen,
@@ -654,6 +658,22 @@ export const GameEntryModal = ({
   const tapsAspect = choosesAspect && !choosingSource && realmOrder === null;
   // A friend's Aspect invite for this game is offered first; identity's answer is read for the signed-in account only.
   const offered = joinedShare.status === "ready" ? aspectOffer(joinedShare.joined, game) : null;
+  const keptOrder = keptIntent.intent.data?.order ?? null;
+  const side = seasonSide(keptOrder, offered);
+  const keptKnown = !choosesAspect || choosingSource || keptIntent.intent.isSuccess;
+  const inviteKnown = !choosesAspect || choosingSource || joinedShare.status === "ready";
+  const warnsOfSide =
+    choosesAspect &&
+    !choosingSource &&
+    registeredRealmId === null &&
+    sideAnswer === null &&
+    isRealmElsewhere(side, realmOrder);
+  const joinSideFree = (aspect: AspectId) => {
+    setSideAnswer("free");
+    setHeldRealmNumber("");
+    setHomeSettled(true);
+    setAspect(aspect);
+  };
   const foundInOrder = (chosen: number) => {
     setOrder(chosen);
     void handleSettle(chosen);
@@ -685,11 +705,14 @@ export const GameEntryModal = ({
       results={resultsHref(game)}
       asking={choosingHome}
       verb={
-        choosingHome && !tapsAspect ? (
+        choosingHome && !tapsAspect && !warnsOfSide ? (
           <FoundButton
             upgrading={choosingSource}
             founding={isSettling}
-            ready={(!isEternumDevMode || validDevRealmNumber) && (!isFrontierMode || (validHeldRealm && homeSettled))}
+            ready={
+              (!isEternumDevMode || validDevRealmNumber) &&
+              (!isFrontierMode || (validHeldRealm && homeSettled && keptKnown && inviteKnown))
+            }
             onFound={() => void handleSettle()}
           />
         ) : undefined
@@ -701,9 +724,17 @@ export const GameEntryModal = ({
           {`${BLITZ_WORDS.preparing} ${Math.min(worldMeta.player_count, worldMeta.roster_count)}/${worldMeta.roster_count}`}
         </Pill>
       )}
-      {choosingHome && (
+      {choosingHome && warnsOfSide && side && homeRealm !== null && (
+        <RealmSideWarning
+          side={side}
+          realmId={homeRealm}
+          onPlayRealm={() => setSideAnswer("realm")}
+          onJoinFree={() => joinSideFree(sideAspect(side))}
+        />
+      )}
+      {choosingHome && !warnsOfSide && (
         <>
-          {isFrontierMode && worldMeta && (
+          {isFrontierMode && worldMeta && sideAnswer !== "free" && (
             <HomeSourcePicker
               presetId={worldMeta.preset_id}
               title={choosingSource ? HOME_STEP_WORDS.attachTitle : undefined}
@@ -721,13 +752,17 @@ export const GameEntryModal = ({
           {choosesAspect && !choosingSource && joinedShare.status === "failed" && (
             <HudNotice tone="warn" line={ASPECT_STEP_WORDS.inviteUnread} retry={joinedShare.retry} />
           )}
+          {choosesAspect && !choosingSource && keptIntent.intent.isError && (
+            <HudNotice tone="warn" line={ASPECT_STEP_WORDS.keptUnread} retry={() => void keptIntent.intent.refetch()} />
+          )}
           {choosesAspect && !choosingSource && (
             <AspectPicker
               members={worldMeta?.aspect_members ?? null}
               realmOrder={realmOrder}
+              keptOrder={keptOrder}
               chosen={aspect}
               joining={isSettling ? order : null}
-              waiting={!homeSettled || joinedShare.status === "loading"}
+              waiting={!homeSettled || joinedShare.status === "loading" || !keptKnown}
               offered={offered}
               onChoose={setAspect}
               onFound={foundInOrder}

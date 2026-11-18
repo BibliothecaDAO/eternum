@@ -382,6 +382,7 @@ const signInLabPlayer = (wallet: string | undefined, joined: JoinedShare) => {
   identityClient.readDefaultWallet = async () => null;
   answerLabBuildOrders();
   identityClient.joinedShare = async () => joined;
+  identityClient.getOrderIntent = async () => ({ order: null, members: {} });
   answerLabOpening();
   useIdentitySessionStore.getState().applySession(session);
 };

@@ -3,7 +3,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { canonicalRealm, getBlockTimestamp, homeDailyClaim } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -96,7 +96,14 @@ const signedIn = (realmsId: string, address: string | null): Session => ({
   user: { id: realmsId, realmsId, address, name: realmsId, email: `${realmsId}@test` },
 });
 
+const ASPECT_INVITE_UNREAD = "Your friend's invite could not be read. You can choose an Aspect, or try again.";
+const keptOrder = { order: null as number | null };
+beforeEach(() => {
+  vi.spyOn(identityClient, "getOrderIntent").mockImplementation(async () => ({ order: keptOrder.order, members: {} }));
+});
+
 afterEach(() => {
+  keptOrder.order = null;
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   settlement.settled = false;
@@ -852,6 +859,161 @@ describe("a friend's Aspect invite at a Season 1 campaign home's founding", () =
     } finally {
       await entry.close();
     }
+  });
+
+  it("founds a home whose Order was kept before the season in that Order's Aspect, whatever a friend invited it to", async () => {
+    campaignHome(invite(GAME));
+    keptOrder.order = 13;
+    const entry = await openEntry();
+    try {
+      await vi.waitFor(() => expect(entry.host.querySelectorAll(".aspect-picker__order")).toHaveLength(4));
+      expect(entry.host.textContent).toContain("You chose Might before the season. Choose your Order in it.");
+      expect(cards(entry.host)).toEqual(plainOrder);
+      expect(
+        [...entry.host.querySelectorAll<HTMLButtonElement>(".aspect-picker__card")].every((card) => card.disabled),
+      ).toBe(true);
+      const titans = await vi.waitFor(() => {
+        const found = entry.host.querySelector<HTMLButtonElement>('.aspect-picker__order[data-order="13"]');
+        expect(found?.disabled).toBe(false);
+        return found!;
+      });
+      await act(async () => titans.click());
+      await vi.waitFor(() => expect(settlement.calls).toEqual([expect.objectContaining({ order: 13 })]));
+    } finally {
+      await entry.close();
+    }
+  });
+
+  it("holds every card shut while the Order kept before the season cannot be read, and opens them once it answers", async () => {
+    campaignHome(invite(GAME));
+    const read = vi
+      .spyOn(identityClient, "getOrderIntent")
+      .mockRejectedValueOnce(new IdentityRequestError(503, "order_intent_unavailable"));
+    const entry = await openEntry();
+    try {
+      await vi.waitFor(() =>
+        expect(entry.host.textContent).toContain("Your Aspect for the season could not be read. Try again."),
+      );
+      const shut = () =>
+        [...entry.host.querySelectorAll<HTMLButtonElement>(".aspect-picker__card")].map((card) => card.disabled);
+      expect(shut()).toEqual([true, true, true, true]);
+      read.mockResolvedValue({ order: null, members: {} });
+      await entry.press("Try again");
+      await vi.waitFor(() => expect(shut()).toEqual([false, false, false, false]));
+    } finally {
+      await entry.close();
+    }
+  });
+
+  describe("a held Realm of another Aspect", () => {
+    const realmHolder = (joined: ReturnType<typeof invite> | null) => {
+      (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+      settlement.presetId = FRONTIER_S1_PRESET_ID;
+      signIn("0x456");
+      noTicket();
+      vi.spyOn(identityClient, "joinedShare").mockResolvedValue(joined);
+      return relay(() => held(538));
+    };
+    const warning = (host: HTMLElement) => host.querySelector("[data-realm-side-warning]");
+
+    it("warns once that a friend plays another Aspect, and founds with the Realm on Play my Realm", async () => {
+      const registered = realmHolder(invite(GAME));
+      const entry = await openEntry();
+      try {
+        await vi.waitFor(() => expect(warning(entry.host)).not.toBeNull());
+        expect(warning(entry.host)?.querySelector("h2")?.textContent).toBe(
+          "Linden plays Harmony. Your Realm plays Chaos.",
+        );
+        expect(warning(entry.host)?.textContent).toContain(name(538));
+        expect(warning(entry.host)?.textContent).toContain("You keep the quest bonus. Linden is in another Aspect.");
+        expect(warning(entry.host)?.textContent).toContain("You lose the quest bonus.");
+        await entry.press("Play my Realm");
+        expect(warning(entry.host)).toBeNull();
+        await entry.press("Create your realm");
+        await vi.waitFor(() => expect(settlement.settled).toBe(true));
+        expect(registered).toEqual([{ gameId: 8, realmId: 538 }]);
+        expect(settlement.calls).toEqual([expect.objectContaining({ order: undefined })]);
+      } finally {
+        await entry.close();
+      }
+    });
+
+    it("founds a free home in the Order kept before the season on Join for free, with no Realm sent", async () => {
+      keptOrder.order = 13;
+      const registered = realmHolder(null);
+      const entry = await openEntry();
+      try {
+        await vi.waitFor(() => expect(warning(entry.host)).not.toBeNull());
+        expect(warning(entry.host)?.querySelector("h2")?.textContent).toBe(
+          "You chose Might before the season. Your Realm plays Chaos.",
+        );
+        await entry.press("Join Might for free");
+        expect(warning(entry.host)).toBeNull();
+        expect(entry.host.querySelector(".home-picker__featured")).toBeNull();
+        const titans = await vi.waitFor(() => {
+          const found = entry.host.querySelector<HTMLButtonElement>('.aspect-picker__order[data-order="13"]');
+          expect(found?.disabled).toBe(false);
+          return found!;
+        });
+        await act(async () => titans.click());
+        await vi.waitFor(() => expect(settlement.calls).toEqual([expect.objectContaining({ order: 13 })]));
+        expect(registered).toEqual([{ gameId: 8 }]);
+      } finally {
+        await entry.close();
+      }
+    });
+
+    it("keeps Create your realm off while the Order kept before the season cannot be read, so the warning is never skipped", async () => {
+      const read = vi
+        .spyOn(identityClient, "getOrderIntent")
+        .mockRejectedValueOnce(new IdentityRequestError(503, "order_intent_unavailable"));
+      realmHolder(null);
+      const entry = await openEntry();
+      try {
+        await vi.waitFor(() => expect(entry.featured()).toBe(name(538)));
+        await vi.waitFor(() =>
+          expect(entry.host.textContent).toContain("Your Aspect for the season could not be read. Try again."),
+        );
+        expect(entry.found().disabled).toBe(true);
+        read.mockResolvedValue({ order: 13, members: {} });
+        await entry.press("Try again");
+        await vi.waitFor(() => expect(warning(entry.host)).not.toBeNull());
+        expect(settlement.calls).toEqual([]);
+      } finally {
+        await entry.close();
+      }
+    });
+
+    it("keeps Create your realm off while a friend's invite cannot be read, and warns once it answers", async () => {
+      realmHolder(null);
+      const joined = vi
+        .spyOn(identityClient, "joinedShare")
+        .mockRejectedValueOnce(new Error("unavailable"))
+        .mockRejectedValueOnce(new Error("unavailable"));
+      const entry = await openEntry();
+      try {
+        await vi.waitFor(() => expect(entry.featured()).toBe(name(538)));
+        await vi.waitFor(() => expect(entry.host.textContent).toContain(ASPECT_INVITE_UNREAD), { timeout: 4_000 });
+        expect(entry.found().disabled).toBe(true);
+        joined.mockResolvedValue(invite(GAME));
+        await entry.press("Try again");
+        await vi.waitFor(() => expect(warning(entry.host)).not.toBeNull());
+        expect(settlement.calls).toEqual([]);
+      } finally {
+        await entry.close();
+      }
+    });
+
+    it("asks nothing of a Realm in the invited Aspect", async () => {
+      realmHolder({ ...invite(GAME), moment: 3 });
+      const entry = await openEntry();
+      try {
+        await vi.waitFor(() => expect(entry.featured()).toBe(name(538)));
+        expect(warning(entry.host)).toBeNull();
+      } finally {
+        await entry.close();
+      }
+    });
   });
 
   it("leaves every other Aspect open to an invited player", async () => {

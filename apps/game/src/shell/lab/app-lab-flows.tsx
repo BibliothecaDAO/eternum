@@ -11,6 +11,7 @@ import { Pill } from "@/ui/design-system/kit/pill";
 import { DoorwayScreen } from "@/ui/features/game-entry/doorway/doorway-screen";
 import { FoundButton, PlaysAs } from "@/ui/features/game-entry/game-entry-modal";
 import { HomeSourcePicker } from "@/ui/features/game-entry/home-source-picker";
+import { RealmSideWarning } from "@/ui/features/game-entry/realm-side-warning";
 
 import { ClockChip } from "@/ui/design-system/kit/clock-chip";
 
@@ -24,7 +25,14 @@ import { CodeStep } from "../sign-in/code-step";
 import { ProfileStep } from "../sign-in/profile-step";
 import { StartStep } from "../sign-in/start-step";
 import { useNowSeconds } from "../use-now";
-import { LAB_DOORWAYS, LAB_NEW_ACCOUNTS, LAB_SIGN_IN_EMAIL, LAB_SEASON_WAIT, labCodeExpiry } from "./app-lab-fixtures";
+import {
+  LAB_DOORWAYS,
+  LAB_INVITE,
+  LAB_NEW_ACCOUNTS,
+  LAB_SIGN_IN_EMAIL,
+  LAB_SEASON_WAIT,
+  labCodeExpiry,
+} from "./app-lab-fixtures";
 
 const noop = () => undefined;
 
@@ -141,7 +149,13 @@ export const LabDoorway = () => {
       onSignIn={noop}
       onSpectate={noop}
       results="/lab/app/reward-sealed/results/0x5245414c4d53-7"
-      asking={state === "home" || state === "aspect" || state === "aspect-realm"}
+      asking={
+        state === "home" ||
+        state === "aspect" ||
+        state === "aspect-realm" ||
+        state === "aspect-kept" ||
+        state === "realm-side"
+      }
       verb={state === "home" ? <FoundButton founding={false} ready onFound={noop} /> : undefined}
     >
       {/* The entry's own chips at the realm step, as game-entry-modal passes them. */}
@@ -153,11 +167,32 @@ export const LabDoorway = () => {
         <AspectPicker
           members={LAB_ASPECT_MEMBERS}
           realmOrder={4}
+          keptOrder={null}
           chosen={null}
           joining={null}
           offered={null}
           onChoose={noop}
           onFound={noop}
+        />
+      )}
+      {state === "aspect-kept" && (
+        <AspectPicker
+          members={LAB_ASPECT_MEMBERS}
+          realmOrder={null}
+          keptOrder={LAB_INVITE.order}
+          chosen={null}
+          joining={null}
+          offered={null}
+          onChoose={noop}
+          onFound={noop}
+        />
+      )}
+      {state === "realm-side" && (
+        <RealmSideWarning
+          side={{ kind: "invited", offer: { aspect: LAB_INVITE.moment, sender: LAB_INVITE.name } }}
+          realmId={LAB_HARMONY_REALM}
+          onPlayRealm={noop}
+          onJoinFree={noop}
         />
       )}
     </DoorwayScreen>
@@ -183,6 +218,7 @@ const LabHomeStep = () => {
 };
 
 const LAB_ASPECT_MEMBERS = { 1: 38, 2: 21, 3: 1, 4: 0 };
+const LAB_HARMONY_REALM = 2;
 const LabAspectStep = () => {
   const [chosen, setChosen] = useState<AspectId | null>(null);
   const [joining, setJoining] = useState<number | null>(null);
@@ -190,6 +226,7 @@ const LabAspectStep = () => {
     <AspectPicker
       members={LAB_ASPECT_MEMBERS}
       realmOrder={null}
+      keptOrder={null}
       chosen={chosen}
       joining={joining}
       offered={null}

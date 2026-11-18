@@ -1160,4 +1160,12 @@ export const LAB_DOORWAYS = {
     view: doorwayView({ source: "entry", phase: "settlement", audience: "player", signedIn: true }),
     realm: null,
   },
+  "aspect-kept": {
+    view: doorwayView({ source: "entry", phase: "settlement", audience: "player", signedIn: true }),
+    realm: null,
+  },
+  "realm-side": {
+    view: doorwayView({ source: "entry", phase: "settlement", audience: "player", signedIn: true }),
+    realm: null,
+  },
 } satisfies Record<string, { view: DoorwayView; realm: DoorwayRealm | null }>;

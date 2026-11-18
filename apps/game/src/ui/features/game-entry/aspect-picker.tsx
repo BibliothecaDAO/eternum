@@ -24,6 +24,7 @@ export const aspectOffer = (
 export function AspectPicker({
   members,
   realmOrder,
+  keptOrder,
   chosen,
   joining,
   waiting = false,
@@ -33,6 +34,7 @@ export function AspectPicker({
 }: {
   members: AspectMembers;
   realmOrder: number | null;
+  keptOrder: number | null;
   chosen: AspectId | null;
   joining: number | null;
   waiting?: boolean;
@@ -41,7 +43,10 @@ export function AspectPicker({
   onFound: (order: number) => void;
 }) {
   const realm = realmOrder === null ? null : orderOf(realmOrder);
-  const fixed = realm === null ? null : aspectOfOrder(realm.orderId);
+  const kept = realm === null && keptOrder !== null ? orderOf(keptOrder) : null;
+  const fixedOrder = realm ?? kept;
+  const fixed = fixedOrder === null ? null : aspectOfOrder(fixedOrder.orderId);
+  const ordersOf = kept === null ? (fixed === null ? chosen : null) : fixed;
   const invite = fixed === null ? offered : null;
   const title = fixed === null ? ASPECT_STEP_WORDS.title : ASPECT_STEP_WORDS.yours;
   const foundingAspect = joining === null ? null : aspectOfOrder(joining);
@@ -57,7 +62,9 @@ export function AspectPicker({
         <p>
           {realm && fixed !== null
             ? ASPECT_STEP_WORDS.realmsAspect(realm.fullOrderName, aspectName(fixed))
-            : ASPECT_STEP_WORDS.line}
+            : kept && fixed !== null
+              ? ASPECT_STEP_WORDS.keptAspect(aspectName(fixed))
+              : ASPECT_STEP_WORDS.line}
         </p>
       </header>
       <ul className="aspect-picker__cards">
@@ -76,8 +83,8 @@ export function AspectPicker({
           </li>
         ))}
       </ul>
-      {fixed === null && chosen !== null && (
-        <OrderChoices aspect={chosen} joining={joining} disabled={waiting || joining !== null} onFound={onFound} />
+      {ordersOf !== null && (
+        <OrderChoices aspect={ordersOf} joining={joining} disabled={waiting || joining !== null} onFound={onFound} />
       )}
     </section>
   );

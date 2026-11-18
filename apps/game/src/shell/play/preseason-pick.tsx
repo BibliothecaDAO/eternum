@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import {
   ASPECT_REWARD,
@@ -12,7 +12,7 @@ import {
 } from "@bibliothecadao/types";
 import { IdentityRequestError, type OrderIntent } from "@realms-world/identity";
 
-import { identityClient, useIdentitySession } from "@/hooks/context/identity-session";
+import { identityClient } from "@/hooks/context/identity-session";
 import { Icon } from "@/ui/design-system/icon";
 import { AppButton, AppNotice } from "@/ui/design-system/kit/app-elements";
 import { AppCountdownChip } from "@/ui/design-system/kit/clock-chip";
@@ -26,13 +26,11 @@ import { Loading } from "../loading";
 import { SealCodeCard } from "./seal-code-card";
 import { CopySeasonInvite, SeasonInviteCard, useSeasonInvite } from "./season-invite";
 import type { SeasonOpening } from "../season";
+import { orderIntentKey, useOrderIntent } from "./order-intent";
 import { useJoinedShare } from "../share/own-shares";
 
-const orderIntentKey = (owner: string | null) => ["orderIntent", owner] as const;
-
 export const PreseasonPlay = ({ opening, now }: { opening: SeasonOpening; now: number }) => {
-  const owner = useIdentitySession().session?.user.realmsId ?? null;
-  const intent = useQuery({ queryKey: orderIntentKey(owner), queryFn: () => identityClient.getOrderIntent() });
+  const { owner, intent } = useOrderIntent();
   const joined = useJoinedShare();
   if (intent.isError)
     return (
