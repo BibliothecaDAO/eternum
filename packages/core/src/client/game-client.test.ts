@@ -669,7 +669,7 @@ for (const archived of [false, true]) {
         expect(await harness.settle(reading)).toEqual({
           camp: 1,
           depot: 1,
-          slots: [2, 4, 2],
+          slots: [3, 5, 3],
           titles: ["Player built a Rations Depot", "Player built a Conscription Camp"],
         });
         (await creation).dispose();
