@@ -159,15 +159,18 @@ describe("daily quest facts", () => {
     expect(Object.keys(BONUS_SOURCES).sort()).toEqual(chainBonusSources());
   });
 
-  it.each(Object.entries(BONUS_SOURCES))("applies only the labor bonus to a %s home at the completed level", (_, row) => {
-    const { store, read, progress } = fixture();
-    progress(30, 2);
-    store.applyFacts([row]);
-    expect(read()?.reading.known).toMatchObject({
-      target: 30n,
-      reward: { labor: 3000n * BigInt(RESOURCE_PRECISION), essence: 3000n * BigInt(RESOURCE_PRECISION) },
-    });
-  });
+  it.each(Object.entries(BONUS_SOURCES))(
+    "applies only the labor bonus to a %s home at the completed level",
+    (_, row) => {
+      const { store, read, progress } = fixture();
+      progress(30, 2);
+      store.applyFacts([row]);
+      expect(read()?.reading.known).toMatchObject({
+        target: 30n,
+        reward: { labor: 3000n * BigInt(RESOURCE_PRECISION), essence: 3000n * BigInt(RESOURCE_PRECISION) },
+      });
+    },
+  );
 
   it("does not infer a missing receipt or bonus from an incomplete snapshot", () => {
     const { store, read, progress } = fixture();

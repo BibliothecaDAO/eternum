@@ -487,10 +487,9 @@ it("approves the discounted seal only where settlement would honour it, and wait
   expect(await seals(db)).toEqual([]);
   // A holder is approved, and the payment settles as the seal.
   expect(await checkAs(db, OTHER, product, seated, realmHolder)).toEqual([200, { status: "ok" }]);
-  expect(await sendAs(db, OTHER, { store: "apple", receipt: "tx-h|seal-holder" }, { holderFacts: realmHolder })).toEqual([
-    200,
-    { status: "seal", repeated: false },
-  ]);
+  expect(
+    await sendAs(db, OTHER, { store: "apple", receipt: "tx-h|seal-holder" }, { holderFacts: realmHolder }),
+  ).toEqual([200, { status: "seal", repeated: false }]);
   // While holdings are unknown nothing is approved at the discount, and the full price needs no holdings.
   const another = "0xc3";
   expect(await checkAs(db, another, product, seated, unknown)).toEqual([503, { error: "holdings_unavailable" }]);
