@@ -1,4 +1,4 @@
-use starknet::storage::StoragePathEntry;
+use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
 pub use world_test_support::tests::preset_projection::*;
 
 
@@ -64,7 +64,7 @@ fn current_frontier_requires_discovery_rejects_cash_rules_and_refuses_sequential
 }
 
 #[test]
-fn the_fixture_preset_stores_the_exact_deep_sites_and_tick_rules() {
+fn the_fixture_preset_stores_the_exact_deep_rings_beasts_and_tick_rules() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
     let (preset_id, definition) = current_definition("frontier-check");
@@ -74,8 +74,18 @@ fn the_fixture_preset_stores_the_exact_deep_sites_and_tick_rules() {
     let commitment = registrar.preset_commitment(preset_id);
     assert!(commitment != 0);
     interact_with_state(
-        d.games, || {
-            assert_eq!(crate::state::read().presets.entry(commitment).deep_rules.read(), Some(deep));
+        d.games,
+        || {
+            let preset = crate::state::read().presets.entry(commitment);
+            assert_eq!(preset.deep_rules.read(), Some(crate::deep::settings(deep)));
+            for index in 0..deep.rings.len() {
+                let ring = *deep.rings.at(index);
+                assert_eq!(preset.deep_rings.read(index.try_into().unwrap()), (ring.radius, ring.realms));
+            }
+            for index in 0..deep.beasts.len() {
+                let beast = *deep.beasts.at(index);
+                assert_eq!(preset.deep_beasts.read(index.try_into().unwrap()), (beast.count, beast.bow));
+            }
         },
     );
 }
