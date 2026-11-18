@@ -239,7 +239,8 @@ export const BattleLab = ({
       url: env.VITE_SOCIAL_LINK,
     });
   };
-  const share = mode === "live" && sides !== undefined && state.hasDefender && target ? () => shareLine(target) : undefined;
+  const share =
+    mode === "live" && sides !== undefined && state.hasDefender && target ? () => shareLine(target) : undefined;
 
   return (
     <HudWindow title="Combat" icon="military" size="workspace" onClose={closeSurface}>
@@ -315,7 +316,9 @@ export const BattleLab = ({
               <HudNotice
                 tone="good"
                 line={
-                  refusal === "claim-needs-adjacency" ? "No defenders: move adjacent to claim" : "No defenders: claim it"
+                  refusal === "claim-needs-adjacency"
+                    ? "No defenders: move adjacent to claim"
+                    : "No defenders: claim it"
                 }
               />
             ) : (
@@ -343,7 +346,12 @@ export const BattleLab = ({
 
 type Prediction = ReturnType<typeof predictionOf>;
 
-const predictionOf = (attacker: SideOutcome, defender: SideOutcome, attackerStamina: number, defenderStamina: number) => {
+const predictionOf = (
+  attacker: SideOutcome,
+  defender: SideOutcome,
+  attackerStamina: number,
+  defenderStamina: number,
+) => {
   const outcome: BattleOutcome = attacker.remaining === 0 ? "Defeat" : defender.remaining === 0 ? "Victory" : "Draw";
   return { attacker, defender, newAttackerStamina: attackerStamina, newDefenderStamina: defenderStamina, outcome };
 };

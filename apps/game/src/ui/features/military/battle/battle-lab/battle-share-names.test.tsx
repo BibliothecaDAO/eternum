@@ -42,6 +42,7 @@ vi.mock("@bibliothecadao/eternum", async (original) => ({
   },
 }));
 vi.mock("./use-battle-lab-live-data", () => ({ useBattleLabLiveData: () => held.live }));
+vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCurrentDefaultTick: () => 360 }));
 vi.mock("./army-column", () => ({ ArmyColumn: () => null }));
 vi.mock("./biome-environment-bar", () => ({ BiomeEnvironmentBar: () => null }));
 vi.mock("./combat-parameters-panel", () => ({ CombatParametersPanel: () => null }));

@@ -63,7 +63,10 @@ describe("battle lab exchange", () => {
   });
 
   it("spends from the army's own stamina maximum, above its troop's base bar (4587f1)", () => {
-    expect(simulate({ ...army, stamina: 200, maxStamina: 200 }, army)).toMatchObject({ ok: true, attackerStamina: 190 });
+    expect(simulate({ ...army, stamina: 200, maxStamina: 200 }, army)).toMatchObject({
+      ok: true,
+      attackerStamina: 190,
+    });
     expect(simulate({ ...army, stamina: 200 }, army)).toMatchObject({ ok: true, attackerStamina: 110 });
   });
 

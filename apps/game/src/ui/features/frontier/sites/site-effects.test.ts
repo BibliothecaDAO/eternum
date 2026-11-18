@@ -75,7 +75,7 @@ it.each([
 ] as const)("shares Blood Moon %s and Pale Moon %s strength between guards and the card", (blood, pale, count) => {
   const { store, site, structure } = effectSite(blood, pale);
   expect(getGuardsByStructure(structure, store)?.[0].troops.count).toBe(BigInt(count) * 1_000_000_000n);
-  expect(readSiteCard(store, site, structure, SITE_TILE, null).guard?.count).toBe(count);
+  expect(readSiteCard(store, site, structure, null).guard?.count).toBe(count);
   expect(store.require("Guard", { game_id: 1, structure_id: ENTITY, slot: 0 }).troops.count).toBe(1_100_000_000_000n);
 });
 
@@ -102,14 +102,14 @@ it("stops Blood Moon at the recorded quorum while preserving Pale Moon and base 
     { model: "Guard", key: "0x73", value: { ...guard, troops: { ...guard.troops, count: 800_000_000_000n } } },
     { model: "BaneProgress", key: "0xa008", value: { game_id: 1, aspect: 1, day: 1n, completed: 1, ended_at: 460n } },
   ]);
-  expect(readSiteCard(store, site, structure, SITE_TILE, null).guard?.count).toBe(600);
+  expect(readSiteCard(store, site, structure, null).guard?.count).toBe(600);
   setBlockTimestampSource(() => 460);
-  expect(readSiteCard(store, site, structure, SITE_TILE, null).guard?.count).toBe(400);
+  expect(readSiteCard(store, site, structure, null).guard?.count).toBe(400);
 });
 
 it("uses Spoils for the preview while receipts retain the exact credited reward", () => {
   const { store, site, structure } = effectSite(false, false, true);
-  expect(readSiteCard(store, site, structure, SITE_TILE, null)).toMatchObject({
+  expect(readSiteCard(store, site, structure, null)).toMatchObject({
     payout: { resourceId: ResourcesIds.Labor, amount: 1650, fits: 1650 },
   });
   expect(
@@ -157,10 +157,10 @@ it("composes Spoils with Plunder at the selected attack second", () => {
   const { store, site, structure, attack } = effectSite(false, false, true);
   const action = { ...attack({ col: 41, row: 12, alt: false }), timestamp: 450 };
   store.applyFacts([relicEffectFact("Plunder", 1, 500)]);
-  expect(readSiteCard(store, site, structure, SITE_TILE, action)).toMatchObject({
+  expect(readSiteCard(store, site, structure, action)).toMatchObject({
     payout: { amount: 1980, fits: 1980 },
   });
-  expect(readSiteCard(store, site, structure, SITE_TILE, { ...action, timestamp: 500 })).toMatchObject({
+  expect(readSiteCard(store, site, structure, { ...action, timestamp: 500 })).toMatchObject({
     payout: { amount: 1650, fits: 1650 },
   });
 });
