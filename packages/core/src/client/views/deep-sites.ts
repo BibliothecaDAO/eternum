@@ -82,7 +82,7 @@ function deepSiteView(
     : undefined;
   const beast = today.rules.beasts[site.kind];
   const ring = today.rules.rings[site.ring];
-  if (!beast || !ring) throw new Error(`Deep site ${site.entity_id} is outside its preset rules`);
+  if (!beast || !ring) throw new Error(`Site ${site.entity_id} is outside its preset rules`);
   return {
     id: site.entity_id,
     kind: kind.id,
@@ -99,7 +99,7 @@ function deepSiteView(
 
 function realmsEntered(store: NativeFactStore, gameId: number, day: bigint): number {
   const entries = store.requireOrAbsent("DeepEntries", { game_id: gameId, day });
-  if (!entries.known) throw new Error(`Deep entries are unknown: ${entries.unknown}`);
+  if (!entries.known) throw new Error(`Realms entered today are unknown: ${entries.unknown}`);
   return entries.known.count;
 }
 
