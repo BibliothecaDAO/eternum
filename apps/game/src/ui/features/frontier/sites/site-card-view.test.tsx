@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { type SiteVerb, SiteCardView } from "./site-card-view";
 import { readSiteCard, type SiteFight } from "./site-card-plan";
-import { campBeside, SITE_TILE } from "./site-fixture";
+import { campBeside } from "./site-fixture";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { TARGET_MARKS, type AttackTargetKind } from "./site-marks";
 import { plateRows } from "@/three/map-plates/map-plate-rows";

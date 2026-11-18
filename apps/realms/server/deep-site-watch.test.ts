@@ -89,4 +89,3 @@ it.each([false, true])("uses held damage Oaths when planning a Deep alert, defen
   const due = defending ? (Math.floor(timestamp / ARMIES_TICK_SECONDS) + 1) * ARMIES_TICK_SECONDS : timestamp;
   expect(planDeepSiteWatches(store, player, timestamp * 1000).map(({ dueAt }) => dueAt)).toEqual([due * 1000]);
 });
-
