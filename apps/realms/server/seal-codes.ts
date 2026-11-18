@@ -83,8 +83,7 @@ const refuse = (refusal: SealCodeRefusal, status: 400 | 409 | 410) => json({ err
 export const holdsSeal = async (db: D1Database, owner: string) =>
   (await db
     .prepare(
-      `SELECT 1 FROM "seal" WHERE "owner" = ?1 UNION ALL SELECT 1 FROM "seal_codes" WHERE "owner" = ?1
-       UNION ALL SELECT 1 FROM "campaign_tickets" WHERE "owner" = ?1`,
+      `SELECT 1 FROM "seal_codes" WHERE "owner" = ?1 UNION ALL SELECT 1 FROM "campaign_tickets" WHERE "owner" = ?1`,
     )
     .bind(owner)
     .first()) !== null;

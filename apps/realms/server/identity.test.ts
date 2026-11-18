@@ -1484,7 +1484,7 @@ describe("identity Worker", () => {
     expect(await third.redeem("NOPE")).toEqual([400, { error: "invalid_code" }]);
     expect(await third.redeem(42)).toEqual([400, { error: "invalid_code" }]);
     await env.DB.prepare(
-      `INSERT INTO "seal" ("owner", "paid_cents", "source", "receipt", "granted_at") VALUES (?, 999, 'store', 'tx-sealed', 1)`,
+      `INSERT INTO "campaign_tickets" ("campaign", "owner", "code_hash", "tier", "redeemed_at") VALUES ('devcon-2026', ?, NULL, 'regular', 1)`,
     )
       .bind(third.realmsId)
       .run();

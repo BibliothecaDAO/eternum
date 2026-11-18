@@ -91,22 +91,15 @@ it("holds a code redeemed before the season without a grant: entering the game g
   expect(await holdsSeal(db, "0xb2")).toBe(false);
 });
 
-it("counts a bought Seal and a campaign ticket as a held Seal, and spends no code on either", async () => {
+it("counts a campaign ticket as a held Seal, and spends no code on it", async () => {
   const { db, grantSeal, redeem } = await sealCodes([GAME]);
-  await db
-    .prepare(
-      `INSERT INTO "seal" ("owner", "paid_cents", "source", "receipt", "granted_at") VALUES (?, 999, 'store', 'tx-1', 1)`,
-    )
-    .bind("0xb2")
-    .run();
   await db
     .prepare(
       `INSERT INTO "campaign_tickets" ("campaign", "owner", "code_hash", "tier", "redeemed_at") VALUES ('devcon-2026', ?, NULL, 'regular', 1)`,
     )
     .bind("0xc3")
     .run();
-  expect([await holdsSeal(db, "0xb2"), await holdsSeal(db, "0xc3")]).toEqual([true, true]);
-  expect(await redeem("0xb2", "CHARM234")).toEqual([409, { error: "seal_owned" }]);
+  expect([await holdsSeal(db, "0xb2"), await holdsSeal(db, "0xc3")]).toEqual([false, true]);
   expect(await redeem("0xc3", "CHARM234")).toEqual([409, { error: "seal_owned" }]);
   expect(grantSeal).not.toHaveBeenCalled();
   expect(await redeem(PLAYER, "CHARM234")).toEqual([200, { held: true }]);

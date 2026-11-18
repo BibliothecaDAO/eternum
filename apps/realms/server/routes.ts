@@ -21,8 +21,7 @@ import { json } from "./http";
 import { keepBrowser, noteBrowser } from "./browsers";
 import { handleBuildOrders } from "./build-orders";
 import { avnuQuote } from "./lords-price";
-import { handleSeal } from "./seal";
-import { holderFactsOf } from "./seal-facts";
+import { handleFragmentPrice } from "./fragment-price";
 import { shopAccessOf } from "./shop-game";
 import { handlePurchaseCheck, handleStoreReceipt, storeVerifiersOf } from "./store-receipts";
 import { handleOpeningProgress } from "./opening-progress";
@@ -156,24 +155,17 @@ export const routeIdentityRequest = async (
   if (pathname === "/api/order-intent") return handleOrderIntent(request, auth, env.DB);
   if (pathname === "/api/seal-code") return handleSealCode(request, auth, sealCodeWorldOf(env, platform.fetchShard));
   if (pathname === "/api/shop/purchase-check")
-    return handlePurchaseCheck(request, auth, {
-      db: env.DB,
-      access: shopAccessOf(env, platform.fetchShard, nowSeconds),
-      holderFacts: holderFactsOf(env),
-    });
+    return handlePurchaseCheck(request, auth, { access: shopAccessOf(env, platform.fetchShard, nowSeconds) });
   if (pathname === "/api/shop/receipt")
     return handleStoreReceipt(request, auth, {
       db: env.DB,
       access: shopAccessOf(env, platform.fetchShard, nowSeconds),
-      holderFacts: holderFactsOf(env),
       verifiers: storeVerifiersOf(env),
       now: nowSeconds,
     });
-  if (pathname === "/api/shop/seal")
-    return handleSeal(request, auth, {
-      db: env.DB,
+  if (pathname === "/api/shop/fragments")
+    return handleFragmentPrice(request, auth, {
       access: shopAccessOf(env, platform.fetchShard, nowSeconds),
-      holderFacts: holderFactsOf(env),
       readLordsQuote: avnuQuote,
     });
   if (pathname === "/api/operator/campaign-draw" && request.method === "POST") {
