@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { LAYER_NAMES } from "@bibliothecadao/types";
+import { ETERNUM_MAP_NAMES, LAYER_NAMES } from "@bibliothecadao/types";
 import { ESLint } from "eslint";
 import tseslint from "typescript-eslint";
 import { describe, expect, it } from "vitest";
@@ -28,19 +28,32 @@ const SCREEN = "apps/game/src/ui/features/world/zz-guard-probe.tsx";
 const CORE = "packages/core/src/utils/zz-guard-probe.ts";
 
 describe("the layer names the guard refuses", () => {
+  const ETERNUM = "\nexport const ETERNUM_MAP_NAMES = [LAYER_NAMES[0], 'Ethereal Layer'] as const;";
   it("are read from the catalog's source, so the guard needs no build and never checks stale names", () => {
-    expect(readLayerNames()).toEqual([...LAYER_NAMES]);
-    expect(() => readLayerNames("export const LAYER_NAMES = layers;")).toThrow("No LAYER_NAMES tuple");
-    expect(() => readLayerNames("export const LAYER_NAMES = [SURFACE, 'Veil'] as const;")).toThrow(
+    expect(readLayerNames()).toEqual([...LAYER_NAMES, ETERNUM_MAP_NAMES[1]]);
+    expect(() => readLayerNames(`export const LAYER_NAMES = layers;${ETERNUM}`)).toThrow("No LAYER_NAMES tuple");
+    expect(() => readLayerNames(`export const LAYER_NAMES = [SURFACE, 'Veil'] as const;${ETERNUM}`)).toThrow(
       "No LAYER_NAMES tuple",
     );
     expect(
-      readLayerNames("export const LAYER_NAMES = ['Surface', `Veil`] as const satisfies readonly string[];"),
-    ).toEqual(["Surface", "Veil"]);
-    expect(readLayerNames("export const LAYER_NAMES =\n  [\n    'Surface',\n    \"Veil\",\n  ] as const;")).toEqual([
-      "Surface",
-      "Veil",
-    ]);
+      readLayerNames(
+        `export const LAYER_NAMES = ['Surface', \`Veil\`] as const satisfies readonly string[];${ETERNUM}`,
+      ),
+    ).toEqual(["Surface", "Veil", "Ethereal Layer"]);
+    expect(
+      readLayerNames(`export const LAYER_NAMES =\n  [\n    'Surface',\n    "Veil",\n  ] as const;${ETERNUM}`),
+    ).toEqual(["Surface", "Veil", "Ethereal Layer"]);
+  });
+
+  it("include Eternum's other map name, so its tuple cannot be renamed or emptied out of the guard's sight", () => {
+    const layers = "export const LAYER_NAMES = ['Surface'] as const;";
+    expect(() => readLayerNames(layers)).toThrow("No ETERNUM_MAP_NAMES tuple");
+    expect(() => readLayerNames(`${layers}\nexport const ETERNUM_MAP_NAMES = [LAYER_NAMES[0]] as const;`)).toThrow(
+      "No ETERNUM_MAP_NAMES tuple",
+    );
+    expect(() => readLayerNames(`${layers}\nexport const ETERNUM_MAP_NAMES = [LAYER_NAMES[0], ALT] as const;`)).toThrow(
+      "No ETERNUM_MAP_NAMES tuple",
+    );
   });
 });
 
@@ -74,6 +87,7 @@ describe("one source per fact: no copy of a catalog outside its modules", () => 
       `export const word = ${JSON.stringify(`${name} (locked)`)};`,
     ]),
     ["a layer's old name", "export const word = 'Ethereal II';"],
+    ["Eternum's other map name", `export const word = ${JSON.stringify(`Enter the ${ETERNUM_MAP_NAMES[1]}`)};`],
     ["a layer's name in a template", `export const line = (n: string) => \`\${n} · ${LAYER_NAMES[2]}\`;`],
     ["an image path built in a template", "export const art = (name: string) => `/icons/facets/64/${name}.webp`;"],
   ])("refuses %s", async (_, source) => {

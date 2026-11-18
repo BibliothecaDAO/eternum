@@ -155,7 +155,8 @@ export const layerName = (depth: number): string => {
   if (name === undefined) throw new Error(`No layer at depth ${depth}`);
   return name;
 };
-export const eternumMapName = (alt: boolean): string => (alt ? "Ethereal Layer" : layerName(0));
+export const ETERNUM_MAP_NAMES = [LAYER_NAMES[0], "Ethereal Layer"] as const;
+export const eternumMapName = (alt: boolean): string => ETERNUM_MAP_NAMES[alt ? 1 : 0];
 
 export const BEAST_NAMES = {
   troll: "Troll",

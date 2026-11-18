@@ -83,17 +83,27 @@ const withoutTypeAssertions = (node) =>
   node?.type === "TSAsExpression" || node?.type === "TSSatisfiesExpression"
     ? withoutTypeAssertions(node.expression)
     : node;
-export const readLayerNames = (source = readFileSync(LAYER_CATALOG, "utf8")) => {
-  const declarator = tseslint.parser
-    .parseForESLint(source)
-    .ast.body.flatMap((node) => node.declaration?.declarations ?? [])
-    .find((each) => each.id.name === "LAYER_NAMES");
-  const tuple = withoutTypeAssertions(declarator?.init);
-  const names = tuple?.type === "ArrayExpression" ? tuple.elements.map(writtenText) : [];
+const tupleElements = (declarations, name) => {
+  const tuple = withoutTypeAssertions(declarations.find((each) => each.id.name === name)?.init);
+  return tuple?.type === "ArrayExpression" ? tuple.elements : [];
+};
+const readsLayerName = (node) => node?.type === "MemberExpression" && node.object.name === "LAYER_NAMES";
+const writtenNames = (name, elements) => {
+  const names = elements.map(writtenText);
   if (names.length === 0 || names.includes(undefined)) {
-    throw new Error(`No LAYER_NAMES tuple of written names in ${LAYER_CATALOG.pathname}`);
+    throw new Error(`No ${name} tuple of written names in ${LAYER_CATALOG.pathname}`);
   }
   return names;
+};
+export const readLayerNames = (source = readFileSync(LAYER_CATALOG, "utf8")) => {
+  const declarations = tseslint.parser
+    .parseForESLint(source)
+    .ast.body.flatMap((node) => node.declaration?.declarations ?? []);
+  const eternumNames = tupleElements(declarations, "ETERNUM_MAP_NAMES").filter((node) => !readsLayerName(node));
+  return [
+    ...writtenNames("LAYER_NAMES", tupleElements(declarations, "LAYER_NAMES")),
+    ...writtenNames("ETERNUM_MAP_NAMES", eternumNames),
+  ];
 };
 const asPattern = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const LAYER_SPELLING = new RegExp(`\\b(?:${readLayerNames().map(asPattern).join("|")}|Ethereal I{1,3})\\b`);
