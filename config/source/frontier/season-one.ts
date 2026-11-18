@@ -72,7 +72,7 @@ export const frontierSeasonOnePreset = {
     quarry: { x: 12, y: 20 },
     altar: { x: 38, y: 20 },
     beastCount: 10000,
-    lossPerTick: 100,
+    lossPerTick: 200,
     quarryPerTick: 500,
     altarPerTick: 5,
     altarThreshold: 1500,
