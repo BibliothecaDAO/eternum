@@ -1108,7 +1108,11 @@ async function operatorCampaignEntry(
       realmsId: body.realmsId,
       account,
       realmId: null,
-      ...{ recover: { recoverFlyer: true as const }, upgrade: { upgradeCampaign: true as const }, seal: { sealOnly: true as const } }[action],
+      ...{
+        recover: { recoverFlyer: true as const },
+        upgrade: { upgradeCampaign: true as const },
+        seal: { sealOnly: true as const },
+      }[action],
     });
     if (result.error) return Response.json({ error: result.error.code }, { status: result.error.status });
     return Response.json(result.entry);

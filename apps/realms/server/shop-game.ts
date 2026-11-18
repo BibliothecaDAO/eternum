@@ -42,7 +42,10 @@ export const enteredGamesOf = (
     const account = BigInt(await accountOf(realmsId));
     const entered: NamedGame[] = [];
     for (const shard of await listedShards(env.DB))
-      for (const gameId of runningFrontierGameIds(await fetchShardGames(shard, gamesUrl(shard, null), fetchShard), now()))
+      for (const gameId of runningFrontierGameIds(
+        await fetchShardGames(shard, gamesUrl(shard, null), fetchShard),
+        now(),
+      ))
         if ((await readEnrolledAccounts(shard.url, gameId)).some((owner) => BigInt(owner) === account))
           entered.push({ chainId: gameKey(shard.chainId), gameId });
     return entered;
