@@ -896,7 +896,7 @@ const ASPECT_SETTLE_INVITED_STEPS = [
         ]) &&
       played.line === "Linden invited you to Harmony" &&
       played.settles.length === 1 &&
-      JSON.stringify(played.settles[0]) === JSON.stringify(["1", "0", played.orders[0].order]) &&
+      JSON.stringify(played.settles[0]) === JSON.stringify(["1", "0", played.orders?.[0]?.order]) &&
       JSON.stringify(played.aspects) === JSON.stringify([2])
         ? completed(played)
         : failed(
@@ -949,7 +949,7 @@ const ASPECT_SETTLE_STEPS = [
         played.choice.cards?.length === 4 &&
         played.choice.cards.includes("Join Chaos") &&
         played.founded?.length === 1 &&
-        founded.command.calldata.slice(5).map(Number).join(",") === `1,0,${played.orders[0].order}` &&
+        founded.command.calldata.slice(5).map(Number).join(",") === `1,0,${played.orders?.[0]?.order}` &&
         Number(home?.home) === 7 &&
         Number(home?.aspect) === 3 &&
         Number(members?.aspect) === 3 &&

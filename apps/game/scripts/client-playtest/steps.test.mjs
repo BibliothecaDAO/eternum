@@ -1179,6 +1179,7 @@ it("requires the selected Aspect in both the founding command and its membership
       verify({
         seen,
         played: {
+          orders,
           choice,
           armyButtons,
           founded: [{ ...founded, answered: founded.answered.filter(({ model }) => model !== missing) }],
