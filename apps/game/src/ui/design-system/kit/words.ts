@@ -2382,6 +2382,7 @@ export const ARMY_MANAGEMENT = {
 
 export const RELIC_WORDS = {
   title: "Relics",
+  cache: (fragments: number) => `Ancient cache: ${formatExact(fragments)} ${FRAGMENTS}`,
   kinds: { Blade: "Blade", Ward: "Ward", Plunder: "Plunder", FarEye: "Far-Eye" },
   blade: (amount: string) => `+${amount} damage dealt`,
   ward: (amount: string) => `−${amount} damage taken`,

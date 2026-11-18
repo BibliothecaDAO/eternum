@@ -191,7 +191,8 @@ export const TileCard = ({
       fight={plan.fight}
       pay={sitePay(plan)}
       holdsOath={plan.holdsOath}
-      relic={(relics && relics.state.kind !== "none" && relics.state.relic) || undefined}
+      relic={(relics && "relic" in relics.state && relics.state.relic) || undefined}
+      cache={relics?.state.kind === "cache" ? relics.state.fragments : undefined}
       replacement={
         relics?.state.kind === "full" && (
           <RelicReplacement carried={relics.state.carried} chosen={relics.state.chosen} onChoose={relics.replace} />
