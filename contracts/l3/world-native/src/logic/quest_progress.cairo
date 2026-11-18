@@ -28,6 +28,10 @@ pub fn discovered(home: ResourceKey, result: crate::discovery::Discovery, timest
     }
 }
 
+pub fn oath_taken(home: ResourceKey, timestamp: u64) {
+    record(home, crate::quests::VETERANS, 1, timestamp);
+}
+
 pub fn guarded_site_cleared(home: ResourceKey, guard_count: u128, timestamp: u64) {
     record(home, crate::quests::STAND, 1, timestamp);
     record(home, crate::quests::CULL, guard_count / crate::rules::RESOURCE_PRECISION, timestamp);

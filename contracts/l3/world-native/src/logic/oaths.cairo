@@ -33,6 +33,10 @@ pub fn choose(
     let progress = crate::oaths::choose(crate::logic::progression::require(key), command);
     if command.oath.is_none() {
         grant_pass_stamina(key, army, progress, execution.rules.unbox().troop_stamina_config);
+    } else {
+        crate::logic::quest_progress::oath_taken(
+            crate::resources::ResourceKey { game_id, entity_id: army.owner }, context.timestamp,
+        );
     }
     crate::logic::progression::write(key, progress);
 }

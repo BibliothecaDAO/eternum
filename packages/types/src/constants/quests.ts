@@ -8,7 +8,7 @@ export const dailyQuests = [
   { id: quest.CAMPS, unit: "camps", name: "Camp-breakers", objective: "Clear camps" },
   { id: quest.RIFTS, unit: "rifts", name: "Rift-closers", objective: "Clear rifts" },
   { id: quest.RELICS, unit: "ruins", name: "Relic-seekers", objective: "Find ruins" },
-  { id: quest.VETERANS, unit: "skill points", name: "Veterans", objective: "Earn skill points" },
+  { id: quest.VETERANS, unit: "Oaths", name: "Veterans", objective: "Take Oaths" },
   { id: quest.FINDS, unit: "sites", name: "Pathfinders", objective: "Find sites" },
   { id: quest.REVEALS, unit: "tiles", name: "Cartographers", objective: "Reveal tiles" },
 ] as const;

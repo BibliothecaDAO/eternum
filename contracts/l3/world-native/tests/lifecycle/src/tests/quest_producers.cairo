@@ -225,6 +225,45 @@ fn finds_counts_a_discovery_before_its_clear_and_never_counts_the_clear_twice() 
 }
 
 
+#[test]
+fn veterans_counts_each_oath_taken_and_neither_a_pass_nor_a_refused_repeat() {
+    let (d, key, rules) = setup(crate::quests::VETERANS);
+    let home = home(d, key);
+    interact_with_state(
+        d.games,
+        || crate::logic::research::write(
+            home,
+            crate::research::RealmKnowledge { learned: crate::research::learn(0, crate::research::ROW_SHRINE, 0) },
+        ),
+    );
+    let root = discovery_root(key.game_id, rules, 100, 0, Some(far_eye()), Discovery::Shrine);
+    let pass = crate::oaths::ChooseOath {
+        explorer_id: key.explorer_id, expected_pick: shrine_pick(d, key, root), oath: None, replace: None,
+    };
+    apply(d, key.game_id, Command::ChooseOath(pass));
+    assert_eq!(progress(d, home), 0);
+    let pick = shrine_pick(d, key, root);
+    let take = crate::oaths::ChooseOath { expected_pick: pick, oath: Some(crate::oaths::card(pick, 0)), ..pass };
+    apply(d, key.game_id, Command::ChooseOath(take));
+    assert_eq!(progress(d, home), 1);
+    assert!(!execute_in_game(d, key.game_id, Command::ChooseOath(take), 360));
+    assert_eq!(progress(d, home), 1);
+}
+
+fn shrine_pick(d: Deployment, key: ExplorerKey, root: u256) -> u16 {
+    for _ in 0_u8..2 {
+        let mut events = spy_events();
+        if !explore_with_root(d, key.game_id, key.explorer_id, root, 360) {
+            panic!("{}", world_test_support::tests::play_fixture::rejection(ref events, d.games).reason);
+        }
+        let pick = interact_with_state(d.games, || crate::logic::progression::require(key).oath_pick);
+        if pick != 0 {
+            return pick;
+        }
+    }
+    panic!("no shrine pick")
+}
+
 fn far_eye() -> crate::army_relics::ArmyRelic {
     crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::FarEye, rank: 1 }
 }
