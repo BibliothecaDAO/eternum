@@ -1068,6 +1068,12 @@ the season-end sweep. Above the Deep, stamina is bought with Fragments, 2 points
 panel (its price fills the bar), the phone's picked army's stamina, or the order bar when an order is short; the confirm
 buys up to the account's Fragments. Kit lab: `army-refill`, `army-refill-ready`, `army-refill-short`, `move-refill`.
 
+**Shop**: the Fragments chip (the phone's purse row; the desktop realm panel's ring) opens it once the "shop" moment is
+reached (an army out of stamina, or Fragments held). The Season Pass row: what it gives (the daily quest's bonus from
+`QuestRules`), **Get the Pass** for 1,000 Fragments, or while short how many more and their price in dollars, and the
+code field (the waiting screen's redeem, granted at once in a running game); once the account's Seal row exists it says
+the Pass is held. Then the Fragments row (a cent each) and the stamina refill rate.
+
 `pnpm --dir apps/game playtest --steps lab-no-lords --iterations 1 --out <evidence>` checks the army panel and HUD.
 
 The army panel shows troops, stamina, carried relics and per-tile rewards. Logistics training comes from the home’s

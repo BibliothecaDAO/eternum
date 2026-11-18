@@ -54,6 +54,7 @@ describe("the interface that opens as you play", () => {
     expect(line("launch")).toContain("This is your Realm. Build on the lit plot, then send an army into the mist.");
     expect(line("barracks")).toContain("A Barracks raises 100 Knights an hour. Knights fill your armies.");
     expect(line("guard")).toContain("Send 150% of the guard's troops to win.");
+    expect(line("shop")).toContain("Stamina refills 30 an hour. A Fragment refills 2 points now.");
     expect(line("essence")).toContain("Essence buys research and lores.");
     expect(line("well-lore")).toContain("Your armies can now find wells.");
     expect(line("shrine-lore")).toContain("Your armies can now find shrines.");

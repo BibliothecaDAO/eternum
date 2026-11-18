@@ -10,6 +10,7 @@ export const OPENING = {
   launch: { icon: "realm", parts: [] },
   barracks: { icon: "barracks", parts: ["troops-store", "building-list"] },
   guard: { icon: "camp", parts: [] },
+  shop: { icon: "fragment", parts: ["fragments-chip"] },
   essence: { icon: "essence", parts: ["essence-store", "research", "today"] },
   "well-lore": { icon: "well", parts: [] },
   "shrine-lore": { icon: "shrine", parts: [] },

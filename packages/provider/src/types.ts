@@ -70,6 +70,7 @@ export enum TransactionType {
   RESEARCH = "research",
   CHOOSE_OATH = "choose_oath",
   BUY_STAMINA = "buy_stamina",
+  BUY_SEAL = "buy_seal",
   EXPLORER_CREATE = "explorer_create",
   EXPLORER_ADD = "explorer_add",
   EXPLORER_DELETE = "explorer_delete",

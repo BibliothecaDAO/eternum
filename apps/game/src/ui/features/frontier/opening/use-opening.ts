@@ -12,6 +12,7 @@ import {
 } from "@bibliothecadao/eternum";
 import {
   isDeepTile,
+  nativeFragmentConstants,
   nativeResearchConstants as research,
   RACE_MODELS,
   readRaceBoard,
@@ -25,6 +26,7 @@ import { FIRST_BUILD } from "../build/first-build";
 import { useDockArmies } from "../hud/dock-armies";
 import { useRacesAspects } from "../aspect/races-aspects";
 import { useRealmStores } from "../realm-stores";
+import { useFragmentsHeld } from "../value/fragments";
 import { type Opened, type OpeningMoment } from "./opening";
 import {
   type OpeningHeld,
@@ -106,9 +108,12 @@ function useOpeningRules(rules: ExpeditionRules, realm: NativeRows["Structure"] 
   const barracks = getBuildingQuantity(safeInteger(realm.entity_id), FIRST_BUILD, setup.store);
   const slice = setup.store.get("SliceRules", { game_id: realm.game_id });
   if (!slice) return null;
+  const tickSeconds = Number(slice.tick_config.armies_tick_in_seconds);
   return {
     knightsAnHour: troops / Math.max(1, barracks),
-    deepTickSeconds: Number(slice.tick_config.armies_tick_in_seconds),
+    deepTickSeconds: tickSeconds,
+    staminaAnHour: (slice.troop_stamina_config.stamina_gain_per_tick * 3600) / tickSeconds,
+    staminaPerFragment: nativeFragmentConstants.STAMINA_PER_FRAGMENT,
   };
 }
 
@@ -121,10 +126,14 @@ function useOpeningHeld(rules: ExpeditionRules, realm: NativeRows["Structure"] |
   useNativeRevision(KNOWLEDGE_MODELS);
   const armies = useDockArmies(realm);
   const essence = useRealmStores(realm, rules)?.essence.amount;
+  const fragments = useFragmentsHeld();
   if (!realm) return null;
   const home = safeInteger(realm.entity_id);
   const learned = setup.store.get("RealmKnowledge", { game_id: realm.game_id, structure_id: home })?.learned ?? 0n;
   const { spacing } = setup.store.require("SettlementRules", { game_id: realm.game_id });
+  const travelCost = setup.store.require("SliceRules", { game_id: realm.game_id }).troop_stamina_config
+    .stamina_travel_stamina_cost;
+  const outOfStamina = armies.some((army) => army.stamina !== undefined && army.stamina.current < travelCost);
   const deep = armies.some((army) => {
     const tile = setup.store.entityOccupancy(realm.game_id, army.explorerId);
     return tile !== undefined && isDeepTile(spacing, tile);
@@ -135,6 +144,7 @@ function useOpeningHeld(rules: ExpeditionRules, realm: NativeRows["Structure"] |
   const stageBuilt = (race?.standings.find((row) => row.aspect === race.own?.aspect)?.stage ?? 1) > 1;
   return {
     barracks: getBuildingQuantity(home, FIRST_BUILD, setup.store) > 0,
+    shop: outOfStamina || fragments > 0,
     essence: (essence ?? 0) > 0,
     "well-lore": researchTier(learned, research.ROW_LORE) >= research.LORE_WELLS,
     "shrine-lore": researchTier(learned, research.ROW_LORE) >= research.LORE_SHRINES,

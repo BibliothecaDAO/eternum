@@ -9,7 +9,7 @@ import {
 import { homeIcon, HOME_KINDS, type HomeKind } from "@/ui/design-system/home-icons";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudPanel, HudRing } from "@/ui/design-system/kit/hud-elements";
-import { REALM, SHOW_MY_REALM } from "@/ui/design-system/kit/words";
+import { REALM, SHOP_WORDS, SHOW_MY_REALM } from "@/ui/design-system/kit/words";
 import { useLandedValue } from "@/ui/motion/landing-hold";
 import { TickNumber } from "@/ui/motion/tick-number";
 import type { ReactNode } from "react";
@@ -43,6 +43,8 @@ export const RealmPanel = ({
   storeCards,
   onWithdraw,
   onRealms,
+  fragments,
+  onShop,
   mark,
   kind = "realm",
 }: {
@@ -71,6 +73,8 @@ export const RealmPanel = ({
   };
   onWithdraw?: () => void;
   onRealms?: () => void;
+  fragments?: number;
+  onShop?: () => void;
   /** The campaign that founded the home, worn beside its rank by every viewer. */
   mark?: CampaignMark | null;
 }) => (
@@ -128,6 +132,17 @@ export const RealmPanel = ({
             corner={linkWalletLine ? <SemanticIcon name="warning" size={14} /> : undefined}
             foot={formatAmount(lords)}
             onClick={onWithdraw}
+          />
+        </li>
+      )}
+      {fragments !== undefined && (
+        <li data-store="fragments">
+          <HudRing
+            icon="fragment"
+            label={SHOP_WORDS.fragments(fragments)}
+            tip={SHOP_WORDS.title}
+            foot={formatAmount(fragments)}
+            onClick={onShop}
           />
         </li>
       )}

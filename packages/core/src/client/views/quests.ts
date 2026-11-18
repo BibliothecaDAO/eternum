@@ -142,8 +142,7 @@ function readLaborBonus(
   home: number,
   owner: bigint,
 ): NativeFactResult<{ present: boolean }> {
-  const sealKey = { game_id: gameId, account: owner };
-  const seal = presentOrKnownAbsent(store, "Seal", store.get("Seal", sealKey), sealKey);
+  const seal = readSeasonPass(store, gameId, owner);
   if (!seal.known || seal.known.present) return seal;
   const campaign = presentOrKnownAbsent(store, "CampaignHome", store.get("CampaignHome", { game_id: gameId, home }), {
     game_id: gameId,
@@ -152,6 +151,15 @@ function readLaborBonus(
   if (!campaign.known || campaign.known.present) return campaign;
   const held = heldRealmForHome(store, { gameId, entityId: home }) !== null;
   return presentOrKnownAbsent(store, "SettledRealm", held || undefined, { game_id: gameId, home });
+}
+
+export function readSeasonPass(
+  store: NativeFactStore,
+  gameId: number,
+  account: bigint,
+): NativeFactResult<{ present: boolean }> {
+  const key = { game_id: gameId, account };
+  return presentOrKnownAbsent(store, "Seal", store.get("Seal", key), key);
 }
 
 function presentOrKnownAbsent(

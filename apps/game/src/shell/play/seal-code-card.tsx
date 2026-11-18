@@ -32,14 +32,18 @@ const SealHeading = ({ held }: { held: boolean }) => (
   </span>
 );
 
-const RedeemForm = ({ owner }: { owner: string | null }) => {
-  const [code, setCode] = useState("");
+export const useRedeemSealCode = (owner: string | null) => {
   const client = useQueryClient();
   const redeem = useMutation({
     mutationFn: (typed: string) => identityClient.redeemSealCode(typed),
     onSuccess: (saved) => client.setQueryData(sealCodeKey(owner), saved),
   });
-  const refusal = refusalOf(redeem.error);
+  return { redeem, refusal: refusalOf(redeem.error) };
+};
+
+const RedeemForm = ({ owner }: { owner: string | null }) => {
+  const [code, setCode] = useState("");
+  const { redeem, refusal } = useRedeemSealCode(owner);
   const submit = (event: FormEvent) => {
     event.preventDefault();
     redeem.mutate(code);

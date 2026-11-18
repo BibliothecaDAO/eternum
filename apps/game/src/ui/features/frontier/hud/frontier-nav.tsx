@@ -23,7 +23,8 @@ export type HudSurface =
   | "season"
   | "army"
   | "army-lost"
-  | "realms";
+  | "realms"
+  | "shop";
 
 /**
  * The place bar over the game: the Realm / World switch takes the player to the realm's board from the map, and back to

@@ -11,6 +11,7 @@ const exact = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 // Nine places: the resource precision every balance and charge settles to, which a typed amount keeps.
 const typed = new Intl.NumberFormat("en-US", { maximumFractionDigits: 9 });
 const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
+const dollars = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 
 /**
  * A known amount, exact while a player still counts it against a price ("1,250 labor") and compact past ten
@@ -195,3 +196,5 @@ export const formatPopulation = (used: number, capacity: number): string =>
 /** The same in words, on a hover or in a line: "Population 5 of 6". */
 export const formatPopulationInWords = (used: number, capacity: number): string =>
   `Population ${wholeCount(used)} of ${wholeCount(capacity)}`;
+
+export const formatDollars = (cents: number): string => dollars.format(cents / 100);

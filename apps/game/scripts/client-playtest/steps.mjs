@@ -5983,7 +5983,8 @@ export const UNMEASURED_COMMANDS = {
   SetEntityName: "no control in the game sends it: only the provider's set_entity_name, which nothing calls",
   BuyStamina:
     "the army's refill sends it above the Deep (army-refill.test.tsx); desktop and phone timing baselines are not recorded",
-  BuySeal: "no control in the game sends it yet: the shop's Season Pass row brings it",
+  BuySeal:
+    "the shop's Get the Pass sends it (shop-sheet.test.tsx); desktop and phone timing baselines are not recorded",
 };
 
 /**

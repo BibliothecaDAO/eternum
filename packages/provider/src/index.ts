@@ -734,6 +734,10 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
+  public async buy_seal(props: SystemProps.SystemSigner) {
+    return this.submitCommand(props.signer, { kind: "BuySeal", value: undefined }, TransactionType.BUY_SEAL);
+  }
+
   public async claim_daily_quest(props: SystemProps.SystemSigner & { home: number; day: number }) {
     return this.submitCommand(
       props.signer,

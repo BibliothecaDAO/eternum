@@ -331,10 +331,12 @@ import {
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
 import type { AttackRefusal, RuinChest } from "@bibliothecadao/eternum";
 import {
+  FRAGMENTS,
   SEASON_PASS,
   BuildingType,
   buildingName,
   formatAmount,
+  formatDollars,
   formatExact,
   formatCount,
   formatClockTime,
@@ -893,6 +895,8 @@ export const DAY_BANNER_WORDS = {
 export interface OpeningRules {
   knightsAnHour: number;
   deepTickSeconds: number;
+  staminaAnHour: number;
+  staminaPerFragment: number;
 }
 
 export const OPENING_WORDS = {
@@ -901,6 +905,8 @@ export const OPENING_WORDS = {
     barracks: (rules: OpeningRules) =>
       `A Barracks raises ${formatAmount(rules.knightsAnHour)} Knights an hour. Knights fill your armies.`,
     guard: () => "Send 150% of the guard's troops to win.",
+    shop: (rules: OpeningRules) =>
+      `Stamina refills ${formatAmount(rules.staminaAnHour)} an hour. A Fragment refills ${formatAmount(rules.staminaPerFragment)} points now.`,
     essence: () => "Essence buys research and lores.",
     "well-lore": () => "Your armies can now find wells.",
     "shrine-lore": () => "Your armies can now find shrines.",
@@ -1228,6 +1234,25 @@ export const LEAVE = "Leave";
 export const REFILL = "Refill";
 export const REFILLING = "Refilling…";
 export const REFILL_FAILED = "The refill could not be bought.";
+
+export const SHOP_WORDS = {
+  title: "Shop",
+  fragments: (held: number) => `${FRAGMENTS} ${formatExact(held)}`,
+  pass: SEASON_PASS,
+  passFor: "For the whole season",
+  questBonus: (percent: number) => `Daily quest pays ${formatExact(percent)}% more`,
+  getPass: "Get the Pass",
+  getting: "Getting…",
+  passFailed: `The ${SEASON_PASS} could not be bought.`,
+  short: (held: number, more: number, cents: number) =>
+    `You have ${formatExact(held)}. Get ${formatExact(more)} more for ${formatDollars(cents)}.`,
+  held: `You have the ${SEASON_PASS}`,
+  haveCode: "Have a code?",
+  fragmentsLine: (cents: number) => `${formatCount(cents, "cent")} each. Stamina, rerolls, the Pass.`,
+  stamina: "Stamina refill",
+  staminaLine: (points: number, bar: number, fragments: number, cents: number) =>
+    `1 Fragment = ${formatExact(points)} points. A bar of ${formatExact(bar)} is ${formatExact(fragments)} ${FRAGMENTS}, ${formatDollars(cents)}.`,
+} as const;
 
 /** LORDS leaving the game for the wallet linked to the account. */
 export const WITHDRAW = "Withdraw";

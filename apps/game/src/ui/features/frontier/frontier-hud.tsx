@@ -53,7 +53,9 @@ import { HudBands } from "./hud/hud-bands";
 import { MenuPage } from "./hud/menu-page";
 import { useHowToPlay } from "@/ui/modules/how-to-play";
 import { FrontierRealms } from "./value/frontier-realms";
-import { PurseRow, RealmsChip } from "./value/lords-purse";
+import { FragmentsPurse, PurseRow, RealmsChip } from "./value/lords-purse";
+import { useFragmentsHeld } from "./value/fragments";
+import { ShopSheet } from "./shop/shop-sheet";
 import { useHomeKind } from "@/hooks/helpers/use-home-kind";
 import { useCampaignMark } from "./value/campaign-home";
 import { dailyClaimWaiting, type DailyClaimWaiting } from "./value/realm-labor";
@@ -182,6 +184,8 @@ const FrontierHudBody = ({
   });
   const seasonRank = useSeasonRank();
   const aspectsOpen = usePartShown("aspects");
+  const fragmentsShown = usePartShown("fragments-chip");
+  const fragments = useFragmentsHeld();
   const layers = useMapLayers(rules, shown, visit ? null : realm);
   // The store card a ring or a plate opened, under the realm card on a desktop and under the strip on a phone.
   const [openStore, setOpenStore] = useState<CardStore | null>(null);
@@ -210,11 +214,11 @@ const FrontierHudBody = ({
   const purse = spectating ? (
     <IdentityChip compact />
   ) : (
-    realm &&
-    !visit &&
-    claimWaiting && (
+    own &&
+    (claimWaiting || fragmentsShown) && (
       <PurseRow>
-        <RealmsChip waiting={claimWaiting} narrow onOpen={() => setSurface("realms")} />
+        {fragmentsShown && <FragmentsPurse fragments={fragments} onOpen={() => setSurface("shop")} />}
+        {claimWaiting && <RealmsChip waiting={claimWaiting} narrow onOpen={() => setSurface("realms")} />}
       </PurseRow>
     )
   );
@@ -255,6 +259,7 @@ const FrontierHudBody = ({
       {surface === "realms" && realm && !visit && <FrontierRealms labor={realmLabor} onClose={close} />}
       {surface === "army" && realm && !visit && <FrontierArmy realm={realm} onClose={close} />}
       {surface === "army-lost" && <ArmyLostSheet onClose={close} />}
+      {surface === "shop" && own && <ShopSheet onClose={close} />}
       {surface === "settings" && (
         <HudSheet label={SETTINGS} onClose={close}>
           <SettingsPanel />
@@ -562,6 +567,8 @@ const FrontierRealmPanel = ({
   const goToPlace = useGoToFrontierPlace(realm);
   const mark = useCampaignMark(realm);
   const kind = useHomeKind(realm);
+  const fragmentsShown = usePartShown("fragments-chip");
+  const fragments = useFragmentsHeld();
   return (
     <RealmPanel
       name={name}
@@ -576,6 +583,7 @@ const FrontierRealmPanel = ({
         waiting,
         storeCards,
         onRealms: () => onSurface("realms"),
+        ...(fragmentsShown && { fragments, onShop: () => onSurface("shop") }),
       })}
     />
   );
