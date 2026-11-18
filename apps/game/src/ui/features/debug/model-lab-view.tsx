@@ -1,5 +1,4 @@
 import { pageNavigation } from "@/utils/page-navigation";
-import { FrontierSiteLab } from "./frontier-site-lab";
 import { FrontierBeastLab } from "./frontier-beast-lab";
 import { FrontierPaintedLab } from "./frontier-painted-lab";
 import { WorkshopModelLab } from "./workshop-model-lab";
@@ -46,8 +45,7 @@ const CLASS_ICONS = { knight: 26, crossbowman: 29, paladin: 32 };
 
 export function ModelLabView() {
   const [params] = useSearchParams();
-  if (params.get("family") === "beasts")
-    return params.get("group") === "site-map" ? <FrontierSiteLab /> : <FrontierBeastLab />;
+  if (params.get("family") === "beasts") return <FrontierBeastLab />;
   if (params.get("family") === "frontier-painted") return <FrontierPaintedLab />;
   if (params.get("family") === "workshops") return <WorkshopModelLab />;
   if (params.get("family") === "cleared-sites") return <ClearedSiteLab />;

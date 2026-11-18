@@ -27,10 +27,6 @@ describe("Frontier effects on real instance placements", () => {
     mist.getMatrixAt(9, actual);
     expect(actual.elements).toEqual(placement.elements);
     expect(mist.geometry.index!.count / 3).toBe(6);
-    model.setMistVisible(false);
-    expect(mist.visible).toBe(false);
-    model.setMistVisible(true);
-    expect(mist.visible).toBe(true);
     model.setCount(0);
     expect(mist.count).toBe(0);
     const dispose = vi.fn();
@@ -54,14 +50,9 @@ describe("Frontier effects on real instance placements", () => {
       expect((mesh.material as MeshStandardMaterial).normalMap).not.toBeNull();
       expect(mesh.geometry.boundingBox!.max.x).toBeGreaterThan(0.25);
       const material = mesh.material as FrostedStandardNodeMaterial;
-      const motion = material.positionNode;
-      expect(motion).not.toBeNull();
+      expect(material.positionNode).not.toBeNull();
       const matrix = new Matrix4().makeTranslation(9, 2, 8);
       model.setMatrixAt(3, matrix);
-      model.setBeastMotionEnabled(false);
-      expect(material.positionNode).toBeNull();
-      model.setBeastMotionEnabled(true);
-      expect(material.positionNode).toBe(motion);
       const actual = new Matrix4();
       mesh.getMatrixAt(3, actual);
       expect(actual.elements).toEqual(matrix.elements);

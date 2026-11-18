@@ -641,9 +641,7 @@ export const startsNewArmies = (attribute: string, tier: number): RankedWords =>
   { rank: tier },
 ];
 
-/** The sites on the map, as their cards title them, and the verbs they take. */
-export const RIFT = structureName(StructureType.Rift, undefined, "frontier");
-export const RUIN = structureName(StructureType.Ruin, undefined, "frontier");
+const RUIN = structureName(StructureType.Ruin, undefined, "frontier");
 /** The daily clear closes only the ruin's own depth; cards and forecasts share this rule. */
 export const ruinRule = (perDepth: boolean): string =>
   perDepth

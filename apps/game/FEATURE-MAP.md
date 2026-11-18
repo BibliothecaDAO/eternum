@@ -1022,36 +1022,17 @@ hover/wings. Instance phases differ; clearing a site removes its guard and stand
 their landmarks share the settlements' south-facing orientation, toward the fixed map camera at every hex and zoom. The
 idle motion remains in model-local coordinates.
 
-`/lab/models?family=beasts&group=site-map` opens the final eight encounter contexts on their tiles. View focuses a tile;
-Turn and Light inspect it. The sidebar shows the selected concepts and a recorded screenshot of the previous production
-lineup, so retired deliveries need not remain in the app. Ground mist toggles the production effect for comparison. The
-original ruin masonry remains; low animated mist replaces the removed violet residue surfaces. Beast idle toggles
-between the real animated shader and an undeformed shader without changing placements or mist.
-
-Scene → Facing · before / after (`/lab/models?family=beasts&group=site-map&population=facing`) pairs all eight species
-against their former tile rotations on the same canvas. Map zoom selects the production default and far camera
-distances, pitch and field of view. `pnpm --dir apps/game prove:beasts <local-url> <fresh-evidence-directory> facing`
-drives both zooms, records the rendered headings and camera, and captures the comparisons with idle and mist enabled.
-
 `/lab/models?family=beasts` shows all eight production species, all four ruin depths, standing site compositions and
 both roaming beasts. Site, Depth and Beast strength control the real plate and selected card. Select site opens that
 card; species portraits are shown at their actual 20px HUD size. The plate has a species title and strength, with no
 combat-tier badge. The retired Minotaur, Ghoul, Kappa and Golem deliveries and their old choice routes are removed.
 
-Scene → 100 ruins (`/lab/models?family=beasts&group=site-map&population=100&rendererMode=webgpu-force-webgl`) batches
-one hundred complete ruin/guardian compositions through the production models. Measure mist cost takes six alternating
-on/off runs, 30 warm-up and 90 sampled frames each, synchronizing WebGL completion. Its result is synchronized frame
-cost, not an FPS claim. Scene → 128 beasts (`population=128`) shows sixteen of every species in its production site
-composition. Measure idle cost uses the same six-run protocol with mist on throughout. The proof refuses timing on
-machine load above 12 or a software renderer.
-
-`pnpm --dir apps/game prove:beasts <local-url> <fresh-evidence-directory>` drives the visible lab controls and records
-models, contexts, motion captures, eight HUD portraits, plates and panels. Append `mist` to run the hundred-ruin timing
-comparison separately, `idle` for the 128-beast idle comparison, or `site-map webgpu-auto` to repeat the final-map proof
-on native WebGPU. `verify:beasts` checks all eight deliveries, budgets and editable-source hashes; `verify:fallen-realm`
-checks decoded triangles for zero masonry contacts at each production scale. All authoring sources and paint live in
-`asset-sources/frontier-beasts/refined/`; `scripts/frontier-beasts/rebuild.sh <fresh-absolute-directory>` exports those
-exact eight packed sources. There is one production path per species and no separate study GLB.
+`pnpm --dir apps/game prove:beasts <local-url> <fresh-evidence-directory>` drives the beast lab's visible controls and
+records its models, eight HUD portraits, plates and panels. `verify:beasts` checks all eight deliveries, budgets and
+editable-source hashes; `verify:fallen-realm` checks decoded triangles for zero masonry contacts at each production
+scale. All authoring sources and paint live in `asset-sources/frontier-beasts/refined/`;
+`scripts/frontier-beasts/rebuild.sh <fresh-absolute-directory>` exports those exact eight packed sources. There is one
+production path per species and no separate study GLB.
 
 Training buildings grant their first rank when built: 12,000 Essence + 3,000 Labor, with the lodge's kind chosen on the
 build sheet. Research and building gems run from Common I to Legendary V; the model shows the highest side level.

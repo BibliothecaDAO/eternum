@@ -1,8 +1,6 @@
 import { resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runProof, waitFor } from "../prove-run.mjs";
-import { proveSiteStudies, proveEffectCost } from "./prove-site-studies.mjs";
-import { proveBeastFacing } from "./prove-facing.mjs";
 
 /** Drive the visible model and site controls, capture their drawn result, and release the WebGL page. */
 export async function proveBeasts(b, out, records, baseUrl, only, rendererMode = "webgpu-force-webgl") {
@@ -14,9 +12,6 @@ export async function proveBeasts(b, out, records, baseUrl, only, rendererMode =
     "--ignore-gpu-blocklist,--enable-gpu,--use-angle=vulkan,--enable-features=Vulkan,--enable-unsafe-webgpu",
   );
   await b.run("set", "viewport", "1600", "1000");
-  if (only === "facing") return proveBeastFacing(b, out, records, baseUrl, rendererMode);
-  if (only === "mist" || only === "idle") return proveEffectCost(b, out, records, baseUrl, only);
-  if (!only || only === "site-map") await proveSiteStudies(b, out, records, baseUrl, rendererMode);
   for (const scenario of [
     { name: "models-gameplay", group: "models", focus: "lineup", models: 8, species: "ammit" },
     { name: "ruins-gameplay", group: "ruins", focus: "lineup", models: 8, species: "ammit" },
@@ -98,6 +93,12 @@ export async function proveBeasts(b, out, records, baseUrl, only, rendererMode =
         });
         await waitFor(b, 'document.querySelector("[data-beasts-ready=true]")', 60000);
       }
+      record.renderer = await b.evaluate("window.__rendererDiagnostics");
+      record.checks.push({
+        check: "requested renderer backend is active",
+        ok: record.renderer?.activeMode === (rendererMode === "webgpu-auto" ? "webgpu" : "webgl2-fallback"),
+        actual: record.renderer,
+      });
       const focus = scenario.focus === "lineup" ? "lineup" : Number(scenario.focus);
       const rendered = await waitFor(
         b,
@@ -110,6 +111,12 @@ export async function proveBeasts(b, out, records, baseUrl, only, rendererMode =
       record.checks.push({ check: "controls reached the rendered model selection", ok: rendered, actual });
       if (focus === "lineup")
         record.checks.push({ check: "every model part was drawn", ok: actual?.drawnParts.length === scenario.models });
+      if (scenario.group !== "models" && focus !== "lineup")
+        record.checks.push({
+          check: "the focused site draws its beast's model",
+          ok: actual?.focusParts?.includes(`/models/frontier/beast-${scenario.species}.glb`) === true,
+          actual: actual?.focusParts,
+        });
       const labels = await b.evaluate(`(() => {
         const canvas = document.querySelector('.model-lineup canvas');
         return Array.from(document.querySelectorAll('.model-lineup-label')).filter(label => !label.hidden).map(label => ({
@@ -188,6 +195,10 @@ export async function proveBeasts(b, out, records, baseUrl, only, rendererMode =
         actual: icons,
       });
       await b.run("screenshot", join(out, `${scenario.name}.png`));
+      if (scenario.group === "models" && focus !== "lineup") {
+        await b.run("wait", "1100");
+        await b.run("screenshot", join(out, `${scenario.name}-later.png`));
+      }
     } finally {
       await b.run("open", "about:blank");
     }

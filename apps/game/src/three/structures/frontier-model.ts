@@ -31,10 +31,6 @@ export function frontierModelKind(path: string) {
 export class FrontierModel extends InstancedModel {
   private readonly mist?: InstancedMesh;
   private readonly animatedGeometry: BufferGeometry[] = [];
-  private readonly idleMaterials: {
-    material: FrostedStandardNodeMaterial;
-    motion: FrostedStandardNodeMaterial["positionNode"];
-  }[] = [];
   private disposed = false;
 
   constructor(gltf: GLTF, capacity: number, kind: "ruin" | FrontierSpecies) {
@@ -52,7 +48,6 @@ export class FrontierModel extends InstancedModel {
         const previous = mesh.material as MeshStandardMaterial;
         const material = beastMaterial(previous, kind);
         mesh.material = material;
-        this.idleMaterials.push({ material, motion: material.positionNode });
         MaterialPool.getInstance().releaseMaterial(previous);
         mesh.geometry = mesh.geometry.clone();
         this.animatedGeometry.push(mesh.geometry);
@@ -67,20 +62,6 @@ export class FrontierModel extends InstancedModel {
   override setCount(count: number): void {
     super.setCount(count);
     if (this.mist) this.mist.count = this.instancedMeshes[0].count;
-  }
-
-  setMistVisible(visible: boolean): void {
-    if (this.mist) this.mist.visible = visible;
-  }
-
-  /** The lab compares the real animated shader with a shader that has no idle displacement. */
-  setBeastMotionEnabled(enabled: boolean): void {
-    for (const { material, motion } of this.idleMaterials) {
-      const position = enabled ? motion : null;
-      if (material.positionNode === position) continue;
-      material.positionNode = position;
-      material.needsUpdate = true;
-    }
   }
 
   override dispose(): void {
