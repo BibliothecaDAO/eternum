@@ -11,7 +11,7 @@
 // fall: --write-catalog-baseline lowers a count, and writes nothing while any file gains a copy. lint-guards.mjs runs
 // it in CI, and src/catalog-guards.test.mjs holds its controls.
 
-import { LAYER_NAMES } from "@bibliothecadao/types";
+import { readFileSync } from "node:fs";
 
 /** The game's catalogs: the enums of @bibliothecadao/types whose members are game content. */
 const CATALOGS = new Set([
@@ -72,7 +72,13 @@ const declaredType = (object) => {
 };
 
 const IMAGE_PATH = /^\/(images|icons|tokens)\//;
-const LAYER_SPELLING = new RegExp(`\\b(?:${LAYER_NAMES.join("|")}|Ethereal I{1,3})\\b`);
+const LAYER_CATALOG = new URL("../../../packages/types/src/words/nouns.ts", import.meta.url);
+export const readLayerNames = (source = readFileSync(LAYER_CATALOG, "utf8")) => {
+  const declared = source.match(/^export const LAYER_NAMES = (\[[^\]]*\]) as const;$/m);
+  if (!declared) throw new Error(`No LAYER_NAMES declaration in ${LAYER_CATALOG.pathname}`);
+  return JSON.parse(declared[1]);
+};
+const LAYER_SPELLING = new RegExp(`\\b(?:${readLayerNames().join("|")}|Ethereal I{1,3})\\b`);
 const namesLayer = (text) => LAYER_SPELLING.test(text.replace(/\bDeep (?:Ocean|Crystal)\b/g, ""));
 
 const COPY = "copy";

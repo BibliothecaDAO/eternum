@@ -7,7 +7,7 @@ import { ESLint } from "eslint";
 import tseslint from "typescript-eslint";
 import { describe, expect, it } from "vitest";
 
-import { catalogGuardConfigs, planCatalogBaseline } from "../scripts/catalog-guards.mjs";
+import { catalogGuardConfigs, planCatalogBaseline, readLayerNames } from "../scripts/catalog-guards.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const BASE = {
@@ -26,6 +26,13 @@ const hits = async (path, source) => {
 
 const SCREEN = "apps/game/src/ui/features/world/zz-guard-probe.tsx";
 const CORE = "packages/core/src/utils/zz-guard-probe.ts";
+
+describe("the layer names the guard refuses", () => {
+  it("are read from the catalog's source, so the guard needs no build and never checks stale names", () => {
+    expect(readLayerNames()).toEqual([...LAYER_NAMES]);
+    expect(() => readLayerNames("export const LAYER_NAMES = layers;")).toThrow("No LAYER_NAMES declaration");
+  });
+});
 
 describe("one source per fact: no copy of a catalog outside its modules", () => {
   it.each([
