@@ -108,9 +108,7 @@ pub fn validate(preset: PresetDefinition) {
     if let Some(discovery) = preset.economy.discovery {
         crate::discovery::validate_frontier(
             discovery,
-            crate::oaths::detected_find_percent(
-                preset.economy.race.map(|race| race.clear_mist_percent).unwrap_or(100),
-            ),
+            crate::oaths::detected_find_percent(preset.economy.race.map(|race| race.clear_mist_percent).unwrap_or(100)),
         );
         assert!(
             rules.map_config.camp_win_probability == 0 && rules.map_config.shards_mines_win_probability == 0,

@@ -264,7 +264,9 @@ pub impl TroopsImpl of TroopsTrait {
             );
 
         // ensure alpha has enough stamina to launch attack
-        let attack_stamina = crate::oaths::attack_stamina(context.attacker_oaths, troop_stamina_config.stamina_attack_req);
+        let attack_stamina = crate::oaths::attack_stamina(
+            context.attacker_oaths, troop_stamina_config.stamina_attack_req,
+        );
         assert!(
             alpha.stamina.inline().amount >= attack_stamina.into(),
             "you have {} stamina, but need {} to launch attack",

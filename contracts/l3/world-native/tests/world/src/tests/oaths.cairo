@@ -641,9 +641,9 @@ fn stamina_oaths_match_the_client_vectors() {
     };
     let mut fields = data.span();
     while !fields.is_empty() {
-        let (oaths, attack_base, attack, explore_base, explore, bonus, regen, hour): (
-            u16, u16, u16, u16, u16, u64, u32, u64,
-        ) =
+        let (
+            oaths, attack_base, attack, explore_base, explore, bonus, regen, hour,
+        ): (u16, u16, u16, u16, u16, u64, u32, u64) =
             Serde::deserialize(
             ref fields,
         )
@@ -669,7 +669,9 @@ fn taking_titans_adds_sixty_stamina_now_on_a_bar_sixty_higher() {
     let pick = draw(0, seed.into());
     let maximum = set_stamina(d, key, 0, Some(pick), Option::None);
     let command = crate::commands::Command::ChooseOath(
-        ChooseOath { explorer_id: key.explorer_id, expected_pick: pick, oath: Some(crate::oaths::TITANS), replace: None },
+        ChooseOath {
+            explorer_id: key.explorer_id, expected_pick: pick, oath: Some(crate::oaths::TITANS), replace: None,
+        },
     );
     assert!(super::resource_commands::execute_in_game(d, game_id, command, 360));
     assert_eq!(stamina_of(d, key), maximum + 60);
@@ -731,7 +733,9 @@ fn enlightenment_regains_forty_stamina_an_hour_where_the_army_regains_thirty() {
                     },
                     armies_tick_in_seconds: 120,
                 };
-                crate::logic::army_slot_storage::resolve(key, crate::logic::troops::explorer(key).unwrap(), Some(refill))
+                crate::logic::army_slot_storage::resolve(
+                    key, crate::logic::troops::explorer(key).unwrap(), Some(refill),
+                )
                     .troops
                     .stamina
                     .inline()
