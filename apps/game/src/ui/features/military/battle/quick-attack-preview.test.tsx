@@ -44,7 +44,6 @@ const preview = (armyStamina: bigint, aimAt: typeof target = target) => {
   otherArmyAt(store, target.hex.x, target.hex.y);
   const rules = store.require("SliceRules", { game_id: 1 });
   const grassland = BigInt(BiomeTypeToId[BiomeType.Grassland]) * BigInt(nativeTilePackingConstants.BIOME_SCALE);
-  // The camp's tile names it, as a Blitz structure's tile does.
   store.applyFacts([
     {
       model: "SliceRules",
@@ -53,15 +52,10 @@ const preview = (armyStamina: bigint, aimAt: typeof target = target) => {
     },
     { model: "ExpeditionSite", key: "0x72", value: null },
     {
-      model: "TileOccupancy",
-      key: "0x7101",
-      value: { game_id: 1, ...SITE_TILE, entity_id: SITE, category: 0, is_structure: true },
-    },
-    ...[SITE_TILE, { col: target.hex.x, row: target.hex.y, alt: false }].map((tile, index) => ({
       model: "TileOpt",
-      key: `0x7201${index}`,
-      value: { game_id: 1, ...tile, data: grassland },
-    })),
+      key: "0x72011",
+      value: { game_id: 1, col: target.hex.x, row: target.hex.y, alt: false, data: grassland },
+    },
   ] as never);
   const attack = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
   useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: { col: 30, row: 5 } });

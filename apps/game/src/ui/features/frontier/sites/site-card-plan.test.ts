@@ -4,7 +4,7 @@ import { readDeepSites } from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { afterEach, describe, expect, it } from "vitest";
 import { armyRelicReward, setBlockTimestampSource } from "@bibliothecadao/eternum";
-import { BiomeType, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
+import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { readDeepSiteFight, readArmyCard, readSiteCard } from "./site-card-plan";
 import { blightglowRift, campBeside, otherArmyAt, relicEffectFact, reloadSiteFacts, SITE_TILE } from "./site-fixture";
@@ -14,7 +14,7 @@ afterEach(() => setBlockTimestampSource(null));
 describe("Frontier's tile card", () => {
   it("shows a camp's guard as troops and tier, its labor payout, and the exact fight from the army beside it", () => {
     const { store, site, structure, attack } = campBeside();
-    const plan = readSiteCard(store, site, structure, SITE_TILE, attack({ col: 41, row: 12, alt: false }));
+    const plan = readSiteCard(store, site, structure, attack({ col: 41, row: 12, alt: false }));
     expect(plan.name).toBe("Troll");
     expect(plan.beast?.beast).toBe("troll");
     expect(plan.guard).toEqual({ type: TroopType.Knight, tier: TroopTier.T1, count: 1_100 });
@@ -27,20 +27,20 @@ describe("Frontier's tile card", () => {
 
   it("refuses the attack of an army short of its stamina as the contract does, with no figures of a later fight", () => {
     const { store, site, structure, attack } = campBeside("Camp", true, 0n);
-    const plan = readSiteCard(store, site, structure, SITE_TILE, attack({ col: 41, row: 12, alt: false }));
+    const plan = readSiteCard(store, site, structure, attack({ col: 41, row: 12, alt: false }));
     expect(plan.fight).toEqual({ refused: true });
     expect(plan.attackStamina).toBe(preset.rules.troop_stamina_config.stamina_attack_req);
   });
 
   it("forecasts an army out of reach as it would attack from beside the site, and none with no army selected", () => {
     const { store, site, structure, attack } = campBeside();
-    const beside = readSiteCard(store, site, structure, SITE_TILE, attack({ col: 41, row: 12, alt: false }));
-    const far = readSiteCard(store, site, structure, SITE_TILE, attack({ col: 44, row: 12, alt: false }));
+    const beside = readSiteCard(store, site, structure, attack({ col: 41, row: 12, alt: false }));
+    const far = readSiteCard(store, site, structure, attack({ col: 44, row: 12, alt: false }));
     expect(beside.inReach).toBe(true);
     expect(far.inReach).toBe(false);
     // The same army, stamina and biome: the attack its Move leads to is the one beside the site.
     expect(far.fight).toEqual({ troopsLost: 457, guardLeft: 478 });
-    const armyless = readSiteCard(store, site, structure, SITE_TILE, null);
+    const armyless = readSiteCard(store, site, structure, null);
     expect(armyless.fight).toBeUndefined();
     expect(armyless.inReach).toBe(false);
   });
@@ -49,12 +49,12 @@ describe("Frontier's tile card", () => {
     const { store, site, structure, attack } = campBeside("Camp", false);
     const army = attack({ col: 41, row: 12, alt: false });
     store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 });
-    expect(readSiteCard(store, site, structure, SITE_TILE, army)).toMatchObject({
+    expect(readSiteCard(store, site, structure, army)).toMatchObject({
       guard: undefined,
       fight: undefined,
     });
     store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
-    expect(readSiteCard(store, site, structure, SITE_TILE, army)).toMatchObject({
+    expect(readSiteCard(store, site, structure, army)).toMatchObject({
       guard: null,
       fight: undefined,
     });
@@ -64,13 +64,13 @@ describe("Frontier's tile card", () => {
     setBlockTimestampSource(() => 350);
     const { store, site, structure } = campBeside("Ruin");
     // Row 12 of ten-row bands is the second band: Ethereal I, held by a basilisk.
-    const plan = readSiteCard(store, site, structure, SITE_TILE, null);
+    const plan = readSiteCard(store, site, structure, null);
     expect(plan.name).toBe("Basilisk");
     expect(plan.payout).toEqual({ resourceId: ResourcesIds.Lords, amount: 500, fits: 500 });
     expect(plan.chest).toMatchObject({ tier: 3, amount: 500, funded: true });
     expect(plan.ruinDepth).toBe("Veil");
     const rift = campBeside("Rift");
-    expect(readSiteCard(rift.store, rift.site, rift.structure, SITE_TILE, null).payout).toEqual({
+    expect(readSiteCard(rift.store, rift.site, rift.structure, null).payout).toEqual({
       resourceId: ResourcesIds.Essence,
       amount: 4_950,
       fits: 4_950,
@@ -94,22 +94,22 @@ it("shows only the camp reward that fits in the home labor store", () => {
       },
     },
   ] as never);
-  const plan = readSiteCard(store, site, structure, SITE_TILE, attack({ col: 41, row: 12, alt: false }));
+  const plan = readSiteCard(store, site, structure, attack({ col: 41, row: 12, alt: false }));
   expect(plan.payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 825, fits: 10 });
 });
 
-it("reads another player's army as a target: its troops, the same exact fight near or far, and nothing it pays", () => {
+it("refuses another player's army outside the Deep, near or far, as the contract does, and shows its troops", () => {
   const { store, attack } = campBeside();
   const other = otherArmyAt(store, 42, 12);
-  const plan = readArmyCard(store, other, { col: 42, row: 12, alt: false }, attack({ col: 41, row: 12, alt: false }));
+  const plan = readArmyCard(store, other, attack({ col: 41, row: 12, alt: false }));
   expect(plan.kind).toBe("Army");
   expect(plan.guard).toEqual({ type: TroopType.Knight, tier: TroopTier.T1, count: 300 });
   expect(plan.payout).toBeNull();
-  expect(plan.fight).toEqual({ troopsLost: 134, guardLeft: 0 });
-  expect(plan.inReach).toBe(true);
-  const far = readArmyCard(store, other, { col: 44, row: 12, alt: false }, attack({ col: 41, row: 12, alt: false }));
-  expect(far.inReach).toBe(false);
-  expect(far.fight).toEqual(plan.fight);
+  expect(plan).toMatchObject({ fight: { refused: true }, blocked: "no-attack", inReach: true });
+  expect(readArmyCard(store, other, attack({ col: 44, row: 12, alt: false }))).toMatchObject({
+    fight: { refused: true },
+    blocked: "no-attack",
+  });
 });
 
 it("shows a ruin's fixed quote but refuses funding when the shared budget is spent", () => {
@@ -117,7 +117,7 @@ it("shows a ruin's fixed quote but refuses funding when the shared budget is spe
   const { store, site, structure } = campBeside("Ruin");
   const budget = store.require("LordsBudget", { game_id: 1 });
   store.applyFacts([{ model: "LordsBudget", key: "0x101", value: { ...budget, pool_left: 0n } }]);
-  expect(readSiteCard(store, site, structure, SITE_TILE, null).chest).toEqual({
+  expect(readSiteCard(store, site, structure, null).chest).toEqual({
     tier: 3,
     amount: 500,
     funded: false,
@@ -144,14 +144,14 @@ it("shows Cyclops wheat from initial guards as its resource payout", () => {
       },
     },
   ]);
-  const plan = readSiteCard(store, site, structure, SITE_TILE, own);
+  const plan = readSiteCard(store, site, structure, own);
   expect(plan.payout).toEqual({ resourceId: ResourcesIds.Wheat, amount: 6000, fits: 10 });
 });
 
 describe("the recorded Blightglow Rift under Frontier's current combat rules", () => {
   const card = (troops: bigint, guardStamina: bigint, armyStamina = 100n) => {
     const { store, site, structure, attack } = blightglowRift({ troops, guardStamina, armyStamina });
-    return readSiteCard(store, site, structure, SITE_TILE, attack({ col: 41, row: 12, alt: false }));
+    return readSiteCard(store, site, structure, attack({ col: 41, row: 12, alt: false }));
   };
 
   it("forecasts the rested guard with the same formula as a field army", () => {
@@ -174,7 +174,7 @@ describe("the recorded Blightglow Rift under Frontier's current combat rules", (
 it("forecasts Blade, Ward and Plunder at the attack second and drops them exactly at expiry", () => {
   const { store, site, structure, attack } = campBeside();
   const action = attack({ col: 41, row: 12, alt: false });
-  const read = (timestamp: number) => readSiteCard(store, site, structure, SITE_TILE, { ...action, timestamp });
+  const read = (timestamp: number) => readSiteCard(store, site, structure, { ...action, timestamp });
   expect(read(350)).toMatchObject({ fight: { troopsLost: 457, guardLeft: 478 }, payout: { amount: 825 } });
   store.applyFacts([relicEffectFact("Blade"), relicEffectFact("Ward"), relicEffectFact("Plunder")]);
   expect(read(379)).toMatchObject({
@@ -195,7 +195,7 @@ it("clips the Plunder reward after applying its bonus and leaves wheat unchanged
     relicEffectFact("Plunder"),
     { model: "ResourceBalance", key: "0x79", value: { ...keys, balance: limit - 900n * 1_000_000_000n } },
   ]);
-  expect(readSiteCard(store, site, structure, SITE_TILE, action).payout).toEqual({
+  expect(readSiteCard(store, site, structure, action).payout).toEqual({
     resourceId: ResourcesIds.Labor,
     amount: 990,
     fits: 900,
@@ -206,7 +206,7 @@ it("clips the Plunder reward after applying its bonus and leaves wheat unchanged
   });
   const rift = campBeside("Rift");
   rift.store.applyFacts([relicEffectFact("Plunder")]);
-  expect(readSiteCard(rift.store, rift.site, rift.structure, SITE_TILE, rift.attack(action.armyTile)).payout).toEqual({
+  expect(readSiteCard(rift.store, rift.site, rift.structure, rift.attack({ col: 41, row: 12, alt: false })).payout).toEqual({
     resourceId: ResourcesIds.Essence,
     amount: 5940,
     fits: 5940,
@@ -217,12 +217,12 @@ it("keeps the forecast and eligible rewards unknown until missing effects are kn
   const { store, site, structure, attack } = campBeside();
   const action = attack({ col: 41, row: 12, alt: false });
   store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 });
-  expect(readSiteCard(store, site, structure, SITE_TILE, action)).toMatchObject({
+  expect(readSiteCard(store, site, structure, action)).toMatchObject({
     fight: undefined,
     payout: undefined,
   });
   store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
-  expect(readSiteCard(store, site, structure, SITE_TILE, action)).toMatchObject({
+  expect(readSiteCard(store, site, structure, action)).toMatchObject({
     fight: { troopsLost: 457, guardLeft: 478 },
     payout: { amount: 825 },
   });
@@ -271,12 +271,12 @@ it("keeps the exact forecast through a last-target update and a fresh snapshot",
   const wireKey = store.wireKeyOf("ArmyCombat", key)!;
   const army = attack({ col: 41, row: 12, alt: false });
   store.applyFacts([{ model: "ArmyCombat", key: wireKey, value: { ...combat, last_target: 0n } }]);
-  expect(readSiteCard(store, site, structure, SITE_TILE, army).fight).toEqual({ troopsLost: 457, guardLeft: 478 });
+  expect(readSiteCard(store, site, structure, army).fight).toEqual({ troopsLost: 457, guardLeft: 478 });
   store.applyFacts([{ model: "ArmyCombat", key: wireKey, value: { ...combat, last_target: site.entity_id } }]);
-  expect(readSiteCard(store, site, structure, SITE_TILE, army).fight).toEqual({ troopsLost: 457, guardLeft: 478 });
+  expect(readSiteCard(store, site, structure, army).fight).toEqual({ troopsLost: 457, guardLeft: 478 });
   const restored = reloadSiteFacts(store);
   restored.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
-  expect(readSiteCard(restored, site, structure, SITE_TILE, army).fight).toEqual({ troopsLost: 457, guardLeft: 478 });
+  expect(readSiteCard(restored, site, structure, army).fight).toEqual({ troopsLost: 457, guardLeft: 478 });
 });
 
 it("keeps a replacement Knight guard protected and removes that protection from the beast", () => {
@@ -284,13 +284,7 @@ it("keeps a replacement Knight guard protected and removes that protection from 
   setBlockTimestampSource(() => startsAt);
   const key = { game_id: 1, explorer_id: 201n };
   const army = store.require("ExplorerTroops", key);
-  const position = store.entityOccupancy(1, 201)!;
-  const attack = {
-    army,
-    armyTile: { col: position.col, row: position.row, alt: position.alt },
-    biome: BiomeType.Underground,
-    timestamp: startsAt,
-  };
+  const attack = { army, timestamp: startsAt };
   const combat = store.require("ArmyCombat", key);
   const combatKey = store.wireKeyOf("ArmyCombat", key)!;
   const quarry = () => readDeepSites(store, startsAt, 1).find(({ name }) => name === "Quarry")!;
@@ -327,13 +321,7 @@ it("previews both armies' held damage Oaths from synchronized facts and refuses 
   const { store, startsAt } = deepBattleTargetScenario(true);
   setBlockTimestampSource(() => startsAt);
   const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201n });
-  const position = store.entityOccupancy(1, 201)!;
-  const attack = {
-    army,
-    armyTile: { col: position.col, row: position.row, alt: position.alt },
-    biome: BiomeType.Underground,
-    timestamp: startsAt,
-  };
+  const attack = { army, timestamp: startsAt };
   const site = readDeepSites(store, startsAt, 1).find(({ name }) => name === "Quarry")!;
   const fields = oathDamage.trim().split(/\s+/).map(Number);
   const [before, , after, guardAfter] = fields.slice(26, 30);

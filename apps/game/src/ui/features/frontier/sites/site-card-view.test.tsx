@@ -31,7 +31,7 @@ const buttons = () => [...document.querySelectorAll<HTMLButtonElement>("section[
 describe("a guarded site's card", () => {
   it("renders the depth-I Beasts reward in This attack earns", () => {
     const { store, site, structure, attack } = campBeside("Beasts");
-    const plan = readSiteCard(store, site, structure, SITE_TILE, attack({ col: 41, row: 12, alt: false }));
+    const plan = readSiteCard(store, site, structure, attack({ col: 41, row: 12, alt: false }));
     expect(plan.payout).toEqual({ resourceId: ResourcesIds.Wheat, amount: 6000, fits: 5000 });
     const payout = plan.payout!;
     act(() =>

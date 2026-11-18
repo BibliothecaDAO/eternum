@@ -1,30 +1,26 @@
 import { readStandingFrontierBeast, type FrontierBeast } from "@/three/structures/frontier-beast";
 import {
   availableRuinLords,
-  armyOaths,
   armyRelicReward,
   configManager,
-  isCombatGuard,
+  forecastAttack,
   getBlockTimestamp,
   ResourceManager,
   hasCastleLimit,
-  resolveExchange,
   getDefendingGuards,
   siteKindOf,
+  type AttackForecast,
+  type AttackRefusal,
 } from "@bibliothecadao/eternum";
 import {
-  readDeepSiteDefender,
   readSiteReward,
   safeInteger,
   type DeepSiteView,
   type NativeFactStore,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import { resolveExplorerCombatTroops, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 import {
-  type BiomeType,
-  getLayeredAttackDistance,
-  getTroopAttackRange,
   layerName,
   RESOURCE_PRECISION,
   ResourcesIds,
@@ -41,9 +37,6 @@ const PRECISION = BigInt(RESOURCE_PRECISION);
 /** An army about to attack a site, and the moment it would: everything the exchange depends on beyond the facts. */
 export interface SiteAttack {
   army: NativeRows["ExplorerTroops"];
-  armyTile: { col: number; row: number; alt: boolean };
-  /** The site tile's biome, which both sides fight on. */
-  biome: BiomeType;
   timestamp: number;
 }
 
@@ -67,6 +60,7 @@ export interface SiteCardPlan {
   /** Whether the selected army's troops reach the target from where they stand: Attack now, or Move first. */
   inReach: boolean;
   fight: SiteFight | undefined;
+  blocked: AttackRefusal | undefined;
 }
 
 /**
@@ -80,7 +74,6 @@ export const readSiteCard = (
   store: NativeFactStore,
   site: NativeRows["ExpeditionSite"],
   structure: NativeRows["Structure"],
-  siteTile: { col: number; row: number; alt: boolean },
   attack: SiteAttack | null,
 ): SiteCardPlan => {
   const guards = getDefendingGuards(structure, store, attack?.timestamp);
@@ -113,18 +106,7 @@ export const readSiteCard = (
     },
     payout: reward && fittingPayout(store, site.game_id, reward, attack),
     attackStamina: configManager.getCombatRules().stamina.stamina_attack_req,
-    inReach: attack !== null && reachOf(store, attack, siteTile) !== undefined,
-    fight:
-      guard && attack
-        ? attackNow(
-            store,
-            guard.troops,
-            0,
-            siteTile,
-            attack,
-            isCombatGuard(structure.owner, configManager.getCombatRules().dayUnitSeconds),
-          )
-        : undefined,
+    ...planAttack(store, attack, structure.entity_id),
   };
 };
 
@@ -135,7 +117,6 @@ export const readSiteCard = (
 export const readArmyCard = (
   store: NativeFactStore,
   army: NativeRows["ExplorerTroops"],
-  armyTile: { col: number; row: number; alt: boolean },
   attack: SiteAttack | null,
 ): SiteCardPlan => {
   const troops = resolveExplorerCombatTroops(store, army, attack?.timestamp ?? getBlockTimestamp().currentDefaultTick);
@@ -146,11 +127,7 @@ export const readArmyCard = (
     chest: null,
     payout: null,
     attackStamina: configManager.getCombatRules().stamina.stamina_attack_req,
-    inReach: attack !== null && reachOf(store, attack, armyTile) !== undefined,
-    fight:
-      troops && troops.count > 0n && attack
-        ? attackNow(store, troops, armyOaths(store, army), armyTile, attack, false)
-        : undefined,
+    ...planAttack(store, attack, army.explorer_id),
   };
 };
 
@@ -166,13 +143,13 @@ export function readDeepSiteFight(
   site: DeepSiteView,
   attack: SiteAttack,
 ): DeepSiteFight | undefined {
-  const defender = readDeepSiteDefender(store, site, attack.timestamp);
-  if (!defender) return undefined;
-  const tile = { col: site.position.x, row: site.position.y, alt: site.position.alt };
+  const { forecast } = forecastFrom(store, attack, site.id);
+  const sides = forecast?.sides;
+  if (!sides?.defender) return undefined;
   return {
-    army: Number(attack.army.troops.count / PRECISION),
-    defender: Number(defender.troops.count / PRECISION),
-    result: attackNow(store, defender.troops, defender.oaths, tile, attack, defender.guarding),
+    army: Number(sides.attacker.troops.count / PRECISION),
+    defender: Number(sides.defender.troops.count / PRECISION),
+    result: siteFight(forecast),
   };
 }
 
@@ -212,49 +189,37 @@ const troopsOf = (troops: Pick<Troops, "category" | "tier" | "count">) => ({
   count: Number(troops.count / PRECISION),
 });
 
-/** The distance the army's troops strike the target from where they stand; undefined out of their reach. */
-const reachOf = (
+const REACH_REFUSALS: ReadonlySet<AttackRefusal> = new Set(["out-of-range", "claim-needs-adjacency", "deep-site-not-adjacent"]);
+
+const planAttack = (
   store: NativeFactStore,
-  attack: SiteAttack,
-  target: { col: number; row: number; alt: boolean },
-): number | undefined => {
-  const troops = resolveExplorerTroops(store, attack.army, attack.timestamp);
-  if (!troops) return undefined;
-  const distance = getLayeredAttackDistance(attack.armyTile, target);
-  return distance <= getTroopAttackRange(troops.category) ? distance : undefined;
+  attack: SiteAttack | null,
+  targetId: bigint,
+): Pick<SiteCardPlan, "inReach" | "fight" | "blocked"> => {
+  if (!attack) return { inReach: false, fight: undefined, blocked: undefined };
+  const { inReach, forecast } = forecastFrom(store, attack, targetId);
+  const refusal = forecast?.outcome === "refused" ? forecast.refusal : undefined;
+  return {
+    inReach,
+    fight: siteFight(forecast),
+    blocked: refusal === undefined || refusal === "insufficient-stamina" ? undefined : refusal,
+  };
 };
 
-/** Where an army out of reach attacks from: the tile beside the target, where its Move leads. */
-const BESIDE = 1;
+const forecastFrom = (store: NativeFactStore, attack: SiteAttack, targetId: bigint) => {
+  const key = (entity_id: bigint) => ({ game_id: attack.army.game_id, entity_id });
+  const forecastAt = (besideTarget: boolean) =>
+    forecastAttack(store, key(attack.army.explorer_id), key(targetId), attack.timestamp, { besideTarget });
+  const now = forecastAt(false);
+  const inReach = now !== undefined && !(now.outcome === "refused" && REACH_REFUSALS.has(now.refusal));
+  return { inReach, forecast: inReach || now === undefined ? now : forecastAt(true) };
+};
 
-const attackNow = (
-  store: NativeFactStore,
-  guard: Troops,
-  defenderOaths: number,
-  siteTile: { col: number; row: number; alt: boolean },
-  attack: SiteAttack,
-  defenderIsStructureGuard: boolean,
-): SiteFight | undefined => {
-  const troops = resolveExplorerCombatTroops(store, attack.army, attack.timestamp);
-  if (!troops) return undefined;
-  const exchange = resolveExchange(
-    troops,
-    guard,
-    {
-      timestamp: attack.timestamp,
-      attackerOaths: armyOaths(store, attack.army),
-      defenderOaths,
-      attackDistance: reachOf(store, attack, siteTile) ?? BESIDE,
-      attackerBiome: attack.biome,
-      defenderBiome: attack.biome,
-      attackerIsStructureGuard: false,
-      defenderIsStructureGuard,
-    },
-    configManager.getCombatRules(),
-  );
-  if (!exchange.ok) return { refused: true };
-  return {
-    troopsLost: Number(exchange.attackerLoss / PRECISION),
-    guardLeft: Number((guard.count - exchange.defenderLoss) / PRECISION),
-  };
+const siteFight = (forecast: AttackForecast | undefined): SiteFight | undefined => {
+  if (forecast?.outcome === "fights")
+    return {
+      troopsLost: Number(forecast.exchange.attackerLoss / PRECISION),
+      guardLeft: Number(forecast.exchange.defender.count / PRECISION),
+    };
+  return forecast?.outcome === "refused" && forecast.sides?.defender ? { refused: true } : undefined;
 };

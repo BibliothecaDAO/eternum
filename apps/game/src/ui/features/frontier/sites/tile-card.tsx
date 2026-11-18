@@ -1,9 +1,6 @@
-import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
-import { orderRefusalWords } from "../hud/order-tip";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useGame } from "@/hooks/context/game-context";
-import { STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeFacts, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
@@ -15,9 +12,15 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { toast } from "@/ui/features/event-feed/notify";
 
 import { extractReadableErrorMessage } from "@/utils/error-message";
-import { biomeTypeOf, configManager, getStructureName, isViewerOwner, ruinDisappeared } from "@bibliothecadao/eternum";
 import {
-  armyCombatRefusal,
+  ATTACK_FORECAST_MODELS,
+  configManager,
+  getStructureName,
+  isViewerOwner,
+  ruinDisappeared,
+} from "@bibliothecadao/eternum";
+import { ATTACK_REFUSAL_WORDS } from "@/ui/design-system/kit/words";
+import {
   safeInteger,
   type GameClientSetup,
   type NativeFactStore,
@@ -40,20 +43,12 @@ import { useRuinRelicChoice } from "../relics/ruin-relic-choice";
 import { RelicReplacement } from "../relics/relic-replacement";
 
 const SITE_MODELS = [
-  ...STAMINA_MODELS,
+  ...ATTACK_FORECAST_MODELS,
   "ExpeditionSite",
   "ExpeditionDiscovery",
   "GameRelease",
   "LordsBudget",
   "SiteChest",
-  "ExplorerTroops",
-  "ArmyProgress",
-  "ArmyRelicEffect",
-  "ArmySlot",
-  "DeepArmy",
-  "DeepGuard",
-  "HomeAspect",
-  ...GUARD_MODELS,
   "Structure",
   "TileOccupancy",
   "ResourceBalance",
@@ -110,8 +105,8 @@ const otherArmy = (store: NativeFactStore, tile: TileSpatialRenderable, viewer: 
 /** The card's reading of its target for an attack: a site's by its guard, an army's by its troops. */
 const readTarget = (store: NativeFactStore, target: AttackTarget, attack: SiteAttack | null): SiteCardPlan =>
   target.kind === "site"
-    ? readSiteCard(store, target.site, target.structure, target.tile.hexCoords, attack)
-    : readArmyCard(store, target.army, target.tile.hexCoords, attack);
+    ? readSiteCard(store, target.site, target.structure, attack)
+    : readArmyCard(store, target.army, attack);
 
 const targetId = (target: AttackTarget): number =>
   safeInteger(target.kind === "site" ? target.site.entity_id : target.army.explorer_id);
@@ -127,7 +122,7 @@ export const TileCard = ({
 }) => {
   const { setup, account } = useGame();
   const actor = useSelectedOwnArmy();
-  const attack = useSiteAttack(selected.tile, actor);
+  const attack = useSiteAttack(actor);
   const facts = useNativeFacts(SITE_MODELS);
   const siteTile = selected.tile.hexCoords;
   const plan = useMemo(() => readTarget(facts.store, selected, attack), [attack, facts, selected]);
@@ -173,10 +168,8 @@ export const TileCard = ({
     }
   };
 
-  const combatRefusal =
-    selected.kind === "army" && actor ? armyCombatRefusal(setup.store, actor.army, selected.army) : undefined;
-  const verb: SiteVerb | null = combatRefusal
-    ? { kind: "blocked", reason: orderRefusalWords[combatRefusal] }
+  const verb: SiteVerb | null = plan.blocked
+    ? { kind: "blocked", reason: ATTACK_REFUSAL_WORDS[plan.blocked] }
     : relics?.hold && actor !== null
       ? { kind: "blocked", reason: relics.hold }
       : siteVerb({
@@ -269,13 +262,10 @@ const siteVerb = ({
   return { kind: "attack", ...attack };
 };
 
-/** The selected army's attack on this site: where it stands, on the site's biome, at the current clocks. */
-const useSiteAttack = (
-  siteTile: TileSpatialRenderable,
-  actor: ReturnType<typeof useSelectedOwnArmy>,
-): SiteAttack | null => {
+/** The selected army's attack on this site, at the current clocks. */
+const useSiteAttack = (actor: ReturnType<typeof useSelectedOwnArmy>): SiteAttack | null => {
   const timestamp = useCurrentDefaultTick();
-  return actor && { ...actor, biome: biomeTypeOf(siteTile.biome), timestamp };
+  return actor && { army: actor.army, timestamp };
 };
 
 /** What a cleared site pays home and what fits; a ruin pays its chest. */

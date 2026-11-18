@@ -3,6 +3,7 @@ import { computeEffectiveStaminaCost } from "@/lib/army-stamina/path-cost";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import {
   ATTACK,
+  ATTACK_REFUSAL_WORDS,
   EXPLORE,
   MOVE,
   REINFORCE,
@@ -127,9 +128,9 @@ const refusalLine = ({ refusal, staminaWait, staminaHeld, explored }: TileOrder)
 
 export const orderRefusalWords: Record<Exclude<OrderRefusal["reason"], "stamina">, string> = {
   food: "Not enough food for the army",
-  "off-limits": "Only unclaimed structures can be attacked",
-  allied: "Allied armies cannot attack each other",
-  "no-attack": "This game allows no attack here",
+  "off-limits": ATTACK_REFUSAL_WORDS["target-must-be-unowned"],
+  allied: ATTACK_REFUSAL_WORDS.allied,
+  "no-attack": ATTACK_REFUSAL_WORDS["no-attack"],
   "no-transfer": "This game allows no transfer here",
   occupied: "No army can enter this tile",
   "too-far": "Too far: move closer",

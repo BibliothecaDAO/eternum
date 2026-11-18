@@ -24,7 +24,7 @@ import {
   type DeepSiteView as Site,
   type NativeFactStore,
 } from "@bibliothecadao/eternum/game-client";
-import { BiomeType, aspects, deepSites, formatDuration, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { aspects, deepSites, formatDuration, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { isCovered, useArmyStamina, useOrderAt } from "../hud/army-order";
 import { useApproachTile } from "../sites/approach";
 import { readDeepSiteFight } from "../sites/site-card-plan";
@@ -109,7 +109,7 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
       guard={guardView(setup.store, game_id, site, selected, now)}
       fight={
         verb === "attack" && selected
-          ? readDeepSiteFight(setup.store, site, { ...selected, biome: BiomeType.Underground, timestamp: now })
+          ? readDeepSiteFight(setup.store, site, { army: selected.army, timestamp: now })
           : undefined
       }
       order={order}

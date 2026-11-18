@@ -1,8 +1,9 @@
-import { BiomeType, StructureType, TileOccupier } from "@bibliothecadao/types";
+import { BiomeType, BiomeTypeToId, StructureType, TileOccupier } from "@bibliothecadao/types";
 import type { SiteKind } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import {
   nativeFactModels,
+  nativeTilePackingConstants,
   type NativeModelName,
   type NativeRows,
 } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
@@ -85,7 +86,7 @@ export const campBeside = (
       game_id: 1,
       day_unit_seconds: 100,
       mode_rules: preset.rules.mode_rules,
-      battle_config: { ...preset.rules.battle_config, cooldown_seconds: 0 },
+      battle_config: { ...preset.rules.battle_config, cooldown_seconds: 0, regular_immunity_ticks: 0 },
     }),
     set("0x71", "Structure", {
       ...store.require("Structure", { game_id: 1, entity_id: 7 }),
@@ -99,6 +100,18 @@ export const campBeside = (
         troop_max_explorer_count: 0,
         starting_troops_granted: true,
       },
+    }),
+    set("0x7101", "TileOccupancy", {
+      game_id: 1,
+      ...SITE_TILE,
+      entity_id: entityId,
+      category: TileOccupier.Camp,
+      is_structure: true,
+    }),
+    set("0x7201", "TileOpt", {
+      game_id: 1,
+      ...SITE_TILE,
+      data: String(BigInt(BiomeTypeToId[BiomeType.Grassland]) * BigInt(nativeTilePackingConstants.BIOME_SCALE)),
     }),
     set("0x72", "ExpeditionSite", {
       game_id: 1,
@@ -144,12 +157,10 @@ export const campBeside = (
     }),
   ] as never);
   const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
-  const attack = (armyTile: SiteAttack["armyTile"]): SiteAttack => ({
-    army,
-    armyTile,
-    biome: BiomeType.Grassland,
-    timestamp: 350,
-  });
+  const attack = (armyTile: ArmyTile): SiteAttack => {
+    standArmyAt(store, armyTile);
+    return { army, timestamp: 350 };
+  };
   return {
     store,
     site: store.require("ExpeditionSite", { game_id: 1, entity_id: entityId }),
@@ -239,14 +250,25 @@ export const blightglowRift = ({
       stamina: { amount: String(armyStamina), settled_at: "350", remainder: 0 },
     }),
   ] as never);
-  const attack = (armyTile: SiteAttack["armyTile"]): SiteAttack => ({
-    army: store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 }),
-    armyTile,
-    biome: BiomeType.Grassland,
-    timestamp: 350,
-  });
+  const attack = (armyTile: ArmyTile): SiteAttack => {
+    standArmyAt(store, armyTile);
+    return { army: store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 }), timestamp: 350 };
+  };
   return { ...fixture, attack };
 };
+
+type ArmyTile = { col: number; row: number; alt: boolean };
+
+const standArmyAt = (store: NativeFactStore, tile: ArmyTile) =>
+  store.applyFacts([
+    set("0x75", "TileOccupancy", {
+      game_id: 1,
+      ...tile,
+      entity_id: 201,
+      category: TileOccupier.ExplorerKnightT1,
+      is_structure: false,
+    }),
+  ] as never);
 
 /** Another player's 300-knight army (explorer 301) on a tile of the fixture's day. */
 export const otherArmyAt = (store: ReturnType<typeof campBeside>["store"], col: number, row: number) => {
