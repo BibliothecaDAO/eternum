@@ -53,3 +53,19 @@ fn grant_pass_stamina(
         crate::troops::Troops { stamina: crate::troops::StaminaSource::Inline(stamina), ..army.troops },
     );
 }
+
+pub fn refill_at_well(key: ExplorerKey, ref troops: crate::troops::Troops, rules: crate::rules::TroopStaminaConfig) {
+    let progress = crate::logic::progression::require(key);
+    let maximum = crate::progression::stamina_max(progress, troops.category, rules);
+    let mut stamina = troops.stamina.inline();
+    stamina.amount += crate::oaths::well_stamina(progress.oaths, maximum);
+    stamina.clamp(maximum);
+    troops.stamina = crate::troops::StaminaSource::Inline(stamina);
+}
+
+pub fn refill_stored_army_at_well(key: ExplorerKey, context: crate::commands::ActionContext) {
+    let execution = crate::commands::execution_context(key.game_id, context);
+    let mut army = crate::logic::troops::command_explorer(key, None, context.timestamp, execution);
+    refill_at_well(key, ref army.troops, execution.rules.unbox().troop_stamina_config);
+    crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(army));
+}

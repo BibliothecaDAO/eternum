@@ -1,7 +1,7 @@
 import { logisticsStamina, researchHasIndependentSides, isOathResearch } from "@bibliothecadao/eternum";
 import type { IconMeaning, IconMark } from "@/ui/design-system/icon";
 import { RESEARCH_TREE, SHRINE, STAMINA, type RankedWords, type Tier, WELL } from "@/ui/design-system/kit/words";
-import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
+import { nativeResearchConstants as research, nativeRuleConstants } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, formatExact, formatFigure, formatPercent, layerName, rankName } from "@bibliothecadao/types";
 
 import { buildingIcon, buildingName } from "../build/building-names";
@@ -41,7 +41,6 @@ export interface RealmResearchFacts {
   };
   /** The castle's labor store at a level, with the realm's Storeroom picks. */
   laborStore: (level: number) => number;
-  wellRefillPercent: number;
 }
 
 export type Branch = keyof typeof RESEARCH_TREE.branches;
@@ -368,7 +367,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       castleNode("well", ROWS.well, WELL, "well", {
         line: RESEARCH_TREE.armiesFind(WELL),
         now: "—",
-        next: RESEARCH_TREE.each(`${formatExact(realm.wellRefillPercent)}% max ${STAMINA}`),
+        next: RESEARCH_TREE.each(`${formatExact(nativeRuleConstants.WELL_REFILL_PERCENT)}% max ${STAMINA}`),
       }),
     ],
     ROW_DEPTH: ([1, 2, 3] as const).map((depth) => {

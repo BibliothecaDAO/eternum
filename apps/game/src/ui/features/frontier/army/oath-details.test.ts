@@ -9,5 +9,6 @@ it("explains the implemented Deep loss on both Oath surfaces", () => {
   expect(oathEffectDescription(oaths.PROTECTION)).toBe(
     `Guarding a site, takes ${oaths.PROTECTION_REDUCTION_PERCENT}% less damage.`,
   );
+  expect(oathEffectDescription(oaths.REFLECTION)).toBe("A well refills 80% of the stamina bar, not 40%.");
   expect(oathEffectDescription(oaths.SKILL)).toBeUndefined();
 });

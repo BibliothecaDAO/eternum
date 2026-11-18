@@ -3,6 +3,7 @@ import { div, mul, ONE, unscaled, type Fixed } from "./cubit-fixed";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import {
   nativeOathConstants as oathRules,
+  nativeRuleConstants,
   type NativeRows,
 } from "../../../../contracts/l3/world-native/schema/client.gen";
 
@@ -49,6 +50,14 @@ export function chooseOath(
 
 export function oathPassStamina(current: number, maximum: number): number {
   return Math.min(current + oathRules.PASS_STAMINA, maximum);
+}
+
+export function oathWellStamina(oaths: number, maximum: number): number {
+  const percent =
+    (oaths & (1 << (oathRules.REFLECTION - 1))) !== 0
+      ? oathRules.REFLECTION_WELL_PERCENT
+      : nativeRuleConstants.WELL_REFILL_PERCENT;
+  return Math.floor((maximum * percent) / 100);
 }
 
 export function oathDeepLossPerTick(oaths: number, base: bigint): bigint {

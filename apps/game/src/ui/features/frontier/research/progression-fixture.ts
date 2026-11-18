@@ -1,5 +1,4 @@
 import { frontierSeasonOnePreset as preset } from "../../../../../../../config/source/frontier/season-one";
-import { WELL_REFILL_PERCENT } from "@bibliothecadao/eternum/troop-stamina";
 
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 
@@ -40,7 +39,6 @@ const realmOn = (
     },
     laborStore: (level) =>
       (preset.board.resourceStoreCaps[level]! * (10_000 + storeroomPicks * preset.board.storageStepBps)) / 10_000,
-    wellRefillPercent: WELL_REFILL_PERCENT,
   };
 };
 

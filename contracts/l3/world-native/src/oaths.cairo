@@ -25,6 +25,7 @@ pub const PASS_STAMINA: u16 = 20;
 pub const POWER_DAMAGE_PERCENT: u16 = 20;
 pub const GIANTS_REDUCTION_PERCENT: u16 = 15;
 pub const PROTECTION_REDUCTION_PERCENT: u16 = 25;
+pub const REFLECTION_WELL_PERCENT: u16 = 80;
 
 pub fn damage_multiplier(attacker: u16, defender: u16, guarding: bool) -> Fixed {
     let mut multiplier = FixedTrait::ONE();
@@ -75,6 +76,15 @@ pub fn bit(oath: u8) -> u16 {
         value *= 2;
     }
     value
+}
+
+pub fn well_stamina(oaths: u16, maximum: u64) -> u64 {
+    let percent = if held(oaths, REFLECTION) {
+        REFLECTION_WELL_PERCENT
+    } else {
+        crate::rules::WELL_REFILL_PERCENT
+    };
+    maximum * percent.into() / 100
 }
 
 pub fn held(oaths: u16, oath: u8) -> bool {

@@ -97,7 +97,7 @@ export const FRONTIER = {
     step: n(stamina.staminaTravelStaminaCost),
     attack: n(stamina.staminaAttackReq),
     wheatPerTroop: n(stamina.staminaExploreWheatCost),
-    well: `${n(100 / rule.WELL_STAMINA_DIVISOR)}% of its maximum`,
+    well: `${n(rule.WELL_REFILL_PERCENT)}% of its maximum`,
     logisticsMax: n(rule.LOGISTICS_LEGENDARY_STAMINA),
   },
   discovery: {

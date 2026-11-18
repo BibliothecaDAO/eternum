@@ -83,3 +83,21 @@ it("matches the native pass vectors below, at and near the maximum", async () =>
     }
   }
 });
+
+it("refills 40% of the maximum at a well, 80% with Reflection, as the native vectors say", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { oathWellStamina } = await import("./oaths");
+  expect(oathWellStamina(0, 180)).toBe(72);
+  expect(oathWellStamina(1 << (oaths.REFLECTION - 1), 180)).toBe(144);
+  const fields = readFileSync(
+    new URL("../../../../contracts/l3/world-native/tests/fixtures/oath-well-stamina.txt", import.meta.url),
+    "utf8",
+  )
+    .trim()
+    .split(/\s+/)
+    .map(Number);
+  expect(fields).toHaveLength(24);
+  for (let i = 0; i < fields.length; i += 3) {
+    expect(oathWellStamina(fields[i]!, fields[i + 1]!)).toBe(fields[i + 2]!);
+  }
+});

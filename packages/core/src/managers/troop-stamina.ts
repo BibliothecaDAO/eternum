@@ -8,9 +8,7 @@ import { troopTierIndex, TroopTier, TroopType, type Troops, type StaminaEffects 
 import type { NativeFactStore } from "../client/native-fact-store";
 import { armyRelicBonus } from "../utils/army-relics";
 import { logisticsStamina } from "../utils/attribute-tiers";
-import { nativeRuleConstants, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-
-export const WELL_REFILL_PERCENT = 100 / nativeRuleConstants.WELL_STAMINA_DIVISOR;
+import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 /** One game's stamina rules, exactly as its SliceRules carries them. */
 export type TroopStaminaRules = NativeRows["SliceRules"]["troop_stamina_config"];

@@ -1,4 +1,3 @@
-import { WELL_REFILL_PERCENT } from "@bibliothecadao/eternum/troop-stamina";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { knownAmount } from "@/ui/utils/utils";
@@ -105,7 +104,6 @@ const readResearchFacts = (
       if (base === undefined) throw new Error(`No castle store at level ${level}`);
       return (whole(base) * (10_000 + storeroomPicks * board.storage_step_bps)) / 10_000;
     },
-    wellRefillPercent: WELL_REFILL_PERCENT,
   };
 };
 
