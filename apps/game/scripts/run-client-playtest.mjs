@@ -112,6 +112,12 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
   if (storageState && !player) throw new Error("--storage-state requires --player");
   const passkeys = option("--passkeys", null);
   if (passkeys && !player) throw new Error("--passkeys requires --player");
+  const ally = option("--ally", null);
+  if (ally !== null && !/^[^@\s]+@[^@\s]+$/.test(ally)) throw new Error(`--ally takes an email, not "${ally}"`);
+  if (ally && !player) throw new Error("--ally plays beside --player");
+  if (ally && ally === player) throw new Error("--ally is a second account, not the --player");
+  const allyStorageState = option("--ally-storage-state", null);
+  if (allyStorageState && !ally) throw new Error("--ally-storage-state requires --ally");
   const clientAtOrigin = argv.includes("--client-at-origin");
   if (clientAtOrigin && !option("--base-url", null)) throw new Error("--client-at-origin requires --base-url");
   if (clientAtOrigin && option("--model-override", null) !== null)
@@ -120,6 +126,10 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
   if (!STEP_SETS[stepSet]) {
     throw new Error(`--steps takes ${Object.keys(STEP_SETS).join(", ")}, not "${stepSet}"`);
   }
+  if (playsTwoPlayers(stepSet) !== Boolean(ally))
+    throw new Error(
+      `--steps ${stepSet} ${ally ? "plays one player: run it without --ally" : "plays two players: pass --ally"}`,
+    );
 
   const gpu = option("--gpu", "default");
   if (!GPUS.includes(gpu)) throw new Error(`--gpu takes ${GPUS.join(" or ")}, not "${gpu}"`);
@@ -153,6 +163,8 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
     network: link && { downMbps: Number(link[1]), roundTripMs: Number(link[2]) },
     outRoot: resolve(callerDir, option("--out", join(REPO_ROOT, ".context/playtest"))),
     player,
+    ally,
+    allyStorageState: allyStorageState ? resolve(callerDir, allyStorageState) : null,
     storageState: storageState ? resolve(callerDir, storageState) : null,
     passkeys: passkeys ? resolve(callerDir, passkeys) : null,
     port: integer("--port", DEFAULTS.port, 1),
@@ -165,6 +177,8 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
     viewport: { width: Number(viewport[1]), height: Number(viewport[2]) },
   };
 }
+
+const playsTwoPlayers = (stepSet) => STEP_SETS[stepSet].steps.some((step) => step.as === "ally");
 
 /**
  * The page a run opens, launched as its channel's app launches it: a player's home page, or the spectator's Watch link
@@ -352,40 +366,16 @@ async function playRun(context) {
   const releaseProfile = player
     ? () => {}
     : owner.adopt(`profile ${profile}`, () => rmSync(profile, { recursive: true, force: true }));
-  const browser = createBrowserSession(`playtest-${label}-${process.pid}-${Date.now().toString(36)}`, {
-    chromeArgs: MEMORY_ARGS,
-    executablePath: context.integratedGpu?.launcher,
-    headed: context.headed,
-    initScript: PROBE_PATH,
-    profile,
-  });
-  const releaseBrowser = owner.adopt(`browser ${label}`, () => browser.close());
-  let releaseDevTools = () => {};
+  const page = openBrowser(context, { label, profile });
+  const { browser } = page;
+  let ally = null;
   let passkeys = null;
-  let clientAtOrigin = null;
-  let releaseClientAtOrigin = () => {};
   try {
-    browser.run(["open", "about:blank"]);
-    if (context.storageState) browser.run(["state", "load", context.storageState]);
-    browser.run(["set", "viewport", String(VIEWPORT.width), String(VIEWPORT.height)]);
-    const devTools = await openPageDevTools(browser);
-    releaseDevTools = owner.adopt(`DevTools ${label}`, () => devTools.close());
+    const { devTools } = await preparePage(context, page, context.storageState);
     record.workerErrors = [];
     devTools.onEvent(({ method, params }) => {
       if (method === "ServiceWorker.workerErrorReported") record.workerErrors.push(params.errorMessage);
     });
-    await devTools.send("ServiceWorker.enable");
-    await presentAsChannel(devTools, context.channel);
-    if (context.clientAtOrigin) {
-      const { cdpUrl, targetId } = devTools;
-      clientAtOrigin = await serveClientAtOrigin({
-        cdpUrl,
-        targetId,
-        distDir: context.clientDistDir,
-        origin: context.baseUrl,
-      });
-      releaseClientAtOrigin = owner.adopt(`client at origin ${label}`, () => clientAtOrigin.stop());
-    }
     if (context.passkeys) {
       passkeys = await restorePasskeys(devTools, context.passkeys);
       record.passkeys = passkeys.count;
@@ -396,9 +386,8 @@ async function playRun(context) {
         owner.throwIfCancelled();
         const base = join(runDir, `${label}-${String(first + index + 1).padStart(2, "0")}-${step.name}`);
         const result = await playStep({
-          browser,
+          ...(step.as === "ally" ? ally : page),
           captureResults: context.captureResults,
-          devTools,
           owner,
           step,
           base,
@@ -408,7 +397,6 @@ async function playRun(context) {
         if (result.cancelled) throw result.cancelled;
       }
     };
-    await touchAtPhoneWidth(devTools, VIEWPORT.width);
     if (cpuThrottle > 1) await devTools.send("Emulation.setCPUThrottlingRate", { rate: cpuThrottle });
     if (context.network) await emulateNetwork(devTools, context.network);
     record.rpcSends = await recordRpcSends(devTools);
@@ -426,6 +414,18 @@ async function playRun(context) {
     if (context.trace) browser.run(["trace", "start"]);
     // A player is signed in first, through Connect on the home page, then opens the run's page.
     if (player) record.signIn = await signInAsPlayer({ ...context, browser, url: record.url });
+    if (context.ally) {
+      ally = openBrowser(context, { label: `${label}-ally`, profile: playerProfile(context.ally) });
+      await preparePage(context, ally, context.allyStorageState);
+      record.allySignIn = await signInAsPlayer({
+        ...context,
+        browser: ally.browser,
+        player: context.ally,
+        storageState: context.allyStorageState,
+        url: context.baseUrl,
+        codeFile: "ally-sign-in-code",
+      });
+    }
     const profileBoot = context.profileSteps.includes("boot");
     if (profileBoot) await startCpuProfile(devTools);
     if (!player) browser.run(["open", record.url]);
@@ -457,22 +457,71 @@ async function playRun(context) {
   } finally {
     clearInterval(sampler);
     record.loadSamples.push(loadavg()[0]);
-    if (clientAtOrigin) record.servedFromBuild = (await clientAtOrigin.served()).length;
+    if (page.clientAtOrigin) record.servedFromBuild = (await page.clientAtOrigin.served()).length;
   }
   try {
+    if (ally)
+      writeFileSync(
+        join(runDir, `${label}-ally-console.log`),
+        `${ally.browser.run(["console"], { allowFailure: true })}\n`,
+      );
     return writeRunEvidence({ browser, context, record });
   } finally {
     try {
       await passkeys?.save();
       if (context.storageState && record.signIn === "kept") browser.run(["state", "save", context.storageState]);
+      if (context.allyStorageState && record.allySignIn === "kept")
+        ally.browser.run(["state", "save", context.allyStorageState]);
     } finally {
-      await releaseClientAtOrigin();
-      await releaseDevTools();
       // A previous live game must not keep rendering during the next measurement.
-      await releaseBrowser();
+      await ally?.release();
+      await page.release();
       await releaseProfile();
     }
   }
+}
+
+function openBrowser(context, { label, profile }) {
+  const browser = createBrowserSession(`playtest-${label}-${process.pid}-${Date.now().toString(36)}`, {
+    chromeArgs: MEMORY_ARGS,
+    executablePath: context.integratedGpu?.launcher,
+    headed: context.headed,
+    initScript: PROBE_PATH,
+    profile,
+  });
+  const releases = [context.owner.adopt(`browser ${label}`, () => browser.close())];
+  return {
+    browser,
+    label,
+    releases,
+    clientAtOrigin: null,
+    release: async () => {
+      for (const next of [...releases].reverse()) await next();
+    },
+  };
+}
+
+async function preparePage(context, page, storageState) {
+  const { browser, label, releases } = page;
+  const { owner } = context;
+  browser.run(["open", "about:blank"]);
+  if (storageState) browser.run(["state", "load", storageState]);
+  browser.run(["set", "viewport", String(VIEWPORT.width), String(VIEWPORT.height)]);
+  page.devTools = await openPageDevTools(browser);
+  releases.push(owner.adopt(`DevTools ${label}`, () => page.devTools.close()));
+  await page.devTools.send("ServiceWorker.enable");
+  await presentAsChannel(page.devTools, context.channel);
+  if (context.clientAtOrigin) {
+    page.clientAtOrigin = await serveClientAtOrigin({
+      cdpUrl: page.devTools.cdpUrl,
+      targetId: page.devTools.targetId,
+      distDir: context.clientDistDir,
+      origin: context.baseUrl,
+    });
+    releases.push(owner.adopt(`client at origin ${label}`, () => page.clientAtOrigin.stop()));
+  }
+  await touchAtPhoneWidth(page.devTools, VIEWPORT.width);
+  return page;
 }
 
 /**
@@ -644,13 +693,22 @@ function assertAppStorePage(browser) {
   if (problem) throw new Error(`--channel app-store: ${problem}`);
 }
 
-async function signInAsPlayer({ baseUrl, browser, owner, player, runDir, url, storageState }) {
+async function signInAsPlayer({
+  baseUrl,
+  browser,
+  owner,
+  player,
+  runDir,
+  url,
+  storageState,
+  codeFile = "sign-in-code",
+}) {
   const signIn = await signInIfSignedOut({
     browser,
     owner,
     email: player,
     baseUrl,
-    codeFile: join(runDir, "sign-in-code"),
+    codeFile: join(runDir, codeFile),
     requireExisting: Boolean(storageState),
   });
   browser.run(["open", url]);

@@ -70,6 +70,30 @@ describe("readPlaytestOptions", () => {
     expect(readPlaytestOptions(["--player", "player+lane@mail.com"]).player).toBe("player+lane@mail.com");
   });
 
+  it("plays a second account beside the player only for a step list that has one", () => {
+    const two = ["--steps", "s1-rehearsal", "--player", "host@mail.com"];
+    expect(
+      readPlaytestOptions([...two, "--ally", "friend@mail.com", "--ally-storage-state", "f.json"], "/work"),
+    ).toMatchObject({
+      player: "host@mail.com",
+      ally: "friend@mail.com",
+      allyStorageState: "/work/f.json",
+    });
+    expect(() => readPlaytestOptions(two)).toThrow("--steps s1-rehearsal plays two players: pass --ally");
+    expect(() => readPlaytestOptions(["--player", "a@b.c", "--ally", "d@e.f"])).toThrow(
+      "--steps player plays one player: run it without --ally",
+    );
+    expect(() => readPlaytestOptions([...two, "--ally", "host@mail.com"])).toThrow(
+      "--ally is a second account, not the --player",
+    );
+    expect(() => readPlaytestOptions(["--steps", "s1-rehearsal", "--ally", "d@e.f"])).toThrow(
+      "--ally plays beside --player",
+    );
+    expect(() => readPlaytestOptions([...two, "--ally-storage-state", "f.json"])).toThrow(
+      "--ally-storage-state requires --ally",
+    );
+  });
+
   it("refuses options that cannot describe a run", () => {
     expect(() => readPlaytestOptions(["--iterations", "0"])).toThrow("--iterations must be an integer of at least 1");
     expect(() => readPlaytestOptions(["--iterations", "two"])).toThrow("--iterations must be an integer of at least 1");
