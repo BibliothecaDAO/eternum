@@ -20,8 +20,8 @@ export const OPENING = {
 } as const satisfies Record<string, { icon: IconMeaning; parts: readonly string[] }>;
 
 export type OpeningMoment = keyof typeof OPENING;
-export const EVENT_MOMENTS = ["guard"] as const satisfies readonly OpeningMoment[];
-export type StateMoment = Exclude<OpeningMoment, "launch" | (typeof EVENT_MOMENTS)[number]>;
+type EventMoment = Extract<OpeningMoment, "guard">;
+export type StateMoment = Exclude<OpeningMoment, "launch" | EventMoment>;
 export type OpeningPart = (typeof OPENING)[OpeningMoment]["parts"][number];
 
 /** The moments in the order a player meets them: the table's own. */

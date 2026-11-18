@@ -8,7 +8,7 @@ import { REALM_SIDE_WORDS } from "@/ui/design-system/kit/words";
 
 import { aspectOfOrder, type AspectOffer } from "./aspect-picker";
 
-export type SeasonSide = { kind: "kept"; order: number } | { kind: "invited"; offer: AspectOffer };
+type SeasonSide = { kind: "kept"; order: number } | { kind: "invited"; offer: AspectOffer };
 
 export const sideAspect = (side: SeasonSide): AspectId =>
   side.kind === "kept" ? aspectOfOrder(side.order) : side.offer.aspect;

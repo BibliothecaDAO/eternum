@@ -169,7 +169,7 @@ export type BeastRow = {
   scale: number;
   idle: BeastIdle;
 } & BeastLook;
-export type DeepBeastRow = { name: string; scale: number; idle: BeastIdle } & BeastLook;
+type DeepBeastRow = { name: string; scale: number; idle: BeastIdle } & BeastLook;
 
 const breath = (speed: number, height: number) => ({ motion: "breath", speed, height }) as const;
 const lift = (speed: number, height: number) => ({ motion: "lift", speed, height }) as const;
@@ -211,7 +211,7 @@ export const DEEPLESS_FOURTH_LAYER_BEASTS = {
 
 export const beastModel = (beast: BeastLook): BeastModel => beast.model ?? beast.fallback;
 
-export const beastOfModel = (model: BeastModel): DeepBeastRow =>
+export const beastOfModel = (model: BeastModel) =>
   [...Object.values<DeepBeastRow>(BEASTS), ...Object.values<DeepBeastRow>(DEEP_BEASTS)].find(
     (beast) => beast.model === model,
   )!;
