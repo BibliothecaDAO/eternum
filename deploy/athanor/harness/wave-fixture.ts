@@ -69,7 +69,7 @@ const fixture: WaveFixturePort = {
             kind: "SettleSeason",
             value: {
               selected_realm: { kind: "None", value: undefined },
-              aspect: { kind: "None", value: undefined },
+              order: { kind: "None", value: undefined },
             },
           }),
           verify: (store) => {

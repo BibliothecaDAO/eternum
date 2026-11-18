@@ -2374,6 +2374,7 @@ export const ASPECT_STEP_WORDS = {
   members: (count: number) => formatCount(count, "member"),
   join: (aspect: string) => `Join ${aspect}`,
   joining: (aspect: string) => `Joining ${aspect}…`,
+  foundingAs: (order: string) => `Founding as ${order}…`,
   /** A held Realm's home: its Aspect is its Order's, so the step shows it and asks nothing. */
   realmsAspect: (order: string, aspect: string) => `Your Realm's ${order} plays for ${aspect}`,
   /** The step's line for a friend's invite, and the invited card's tag; a sender with no name yet is not named. */

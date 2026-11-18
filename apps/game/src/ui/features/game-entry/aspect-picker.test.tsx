@@ -1,5 +1,6 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { ordersOfAspect } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AspectPicker, aspectOffer, type AspectMembers } from "./aspect-picker";
@@ -17,13 +18,28 @@ const draw = (props: Partial<Parameters<typeof AspectPicker>[0]> = {}) => {
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
-  const onJoin = props.onJoin ?? vi.fn();
+  const onChoose = props.onChoose ?? vi.fn();
+  const onFound = props.onFound ?? vi.fn();
   act(() =>
     root!.render(
-      <AspectPicker members={MEMBERS} realmOrder={null} joining={null} offered={null} onJoin={onJoin} {...props} />,
+      <AspectPicker
+        members={MEMBERS}
+        realmOrder={null}
+        chosen={null}
+        joining={null}
+        offered={null}
+        onChoose={onChoose}
+        onFound={onFound}
+        {...props}
+      />,
     ),
   );
-  return { onJoin, cards: [...host.querySelectorAll<HTMLButtonElement>(".aspect-picker__card")] };
+  return {
+    onChoose,
+    onFound,
+    cards: [...host.querySelectorAll<HTMLButtonElement>(".aspect-picker__card")],
+    orders: [...host.querySelectorAll<HTMLButtonElement>(".aspect-picker__order")],
+  };
 };
 
 afterEach(() => {
@@ -51,24 +67,42 @@ describe("AspectPicker", () => {
     expect(cards[0]!.querySelectorAll("img")).toHaveLength(4);
   });
 
-  it("joins the Aspect tapped, with one tap", () => {
-    const { onJoin, cards } = draw();
+  it("chooses the Aspect tapped and founds nothing until an Order is tapped", () => {
+    const { onChoose, onFound, cards, orders } = draw();
+    expect(orders).toHaveLength(0);
     act(() => cards[2]!.click());
-    expect(onJoin).toHaveBeenCalledTimes(1);
-    expect(onJoin).toHaveBeenCalledWith(3);
+    expect(onChoose).toHaveBeenCalledWith(3);
+    expect(onFound).not.toHaveBeenCalled();
   });
 
-  it("spins the Aspect being joined and lets no other card be tapped", () => {
-    const { onJoin, cards } = draw({ joining: 2 });
+  it("offers the chosen Aspect's four Orders and founds in the Order tapped", () => {
+    const chaos = ordersOfAspect(3);
+    const { onFound, cards, orders } = draw({ chosen: 3 });
+    expect(cards.map((card) => card.hasAttribute("data-chosen"))).toEqual([false, false, true, false]);
+    expect(orders.map((order) => order.getAttribute("aria-label"))).toEqual(
+      chaos.map(({ fullOrderName }) => `Play as ${fullOrderName}`),
+    );
+    act(() => orders[1]!.click());
+    expect(onFound).toHaveBeenCalledTimes(1);
+    expect(onFound).toHaveBeenCalledWith(chaos[1]!.orderId);
+  });
+
+  it("spins the Order being founded in and lets nothing else be tapped", () => {
+    const harmony = ordersOfAspect(2)[0]!;
+    const { onChoose, onFound, cards, orders } = draw({ chosen: 2, joining: harmony.orderId });
     expect(cards[1]!.getAttribute("aria-label")).toBe("Joining Harmony…");
     expect(cards[1]!.getAttribute("aria-busy")).toBe("true");
-    expect(cards.every((card) => card.disabled)).toBe(true);
+    expect(orders[0]!.getAttribute("aria-label")).toBe(`Founding as ${harmony.fullOrderName}…`);
+    expect([...cards, ...orders].every((button) => button.disabled)).toBe(true);
     act(() => cards[3]!.click());
-    expect(onJoin).not.toHaveBeenCalled();
+    act(() => orders[1]!.click());
+    expect(onChoose).not.toHaveBeenCalled();
+    expect(onFound).not.toHaveBeenCalled();
   });
 
   it("shows a held Realm's home the Aspect of its Order, chosen, and asks nothing", () => {
-    const { cards } = draw({ realmOrder: FOX });
+    const { cards, orders } = draw({ realmOrder: FOX, chosen: 1 });
+    expect(orders).toHaveLength(0);
     expect(host!.querySelector(".aspect-picker__head h2")?.textContent).toBe("Your Aspect");
     expect(host!.querySelector(".aspect-picker__head p")?.textContent).toBe(
       "Your Realm's Order of the Fox plays for Guile",
@@ -83,7 +117,7 @@ describe("AspectPicker", () => {
   });
 
   it("lists a friend's invited Aspect first, marked, names who invited, every card still open", () => {
-    const { onJoin, cards } = draw({ offered: { aspect: 3, sender: "Linden" } });
+    const { onChoose, cards } = draw({ offered: { aspect: 3, sender: "Linden" } });
     expect(cards.map((card) => card.getAttribute("aria-label"))).toEqual([
       "Join Chaos",
       "Join Might",
@@ -99,7 +133,7 @@ describe("AspectPicker", () => {
     expect(host!.querySelector(".aspect-picker__invited")?.textContent).toBe("Linden invited you to Chaos");
     expect(cards.every((card) => !card.disabled)).toBe(true);
     act(() => cards[3]!.click());
-    expect(onJoin).toHaveBeenCalledWith(4);
+    expect(onChoose).toHaveBeenCalledWith(4);
   });
 
   it("names no sender when the invite's sender has no name yet", () => {

@@ -1,5 +1,5 @@
 import { canonicalRealm } from "@bibliothecadao/eternum";
-import { aspects, orders, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { orders, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 
 import frontierConfig from "../../../../../config/generated/frontier.madara.json";
 import { frontierSeasonOnePreset } from "../../../../../config/source/frontier/season-one";
@@ -37,11 +37,12 @@ export const aspectSettleScenario = (): LabScenario => {
       if (command.kind !== "SettleSeason") return scenario.answer(command, chain, now);
       const payload = command.calldata.slice(5).map(Number);
       if (payload.length !== 3 || payload[0] !== 1 || payload[1] !== 0)
-        throw new Error("The free home needs an Aspect and no selected Realm");
-      const aspect = aspects.find(({ id }) => id === payload[2]);
-      if (!aspect) throw new Error("Choose an Aspect");
-      const realmId = realmForAspect(aspect.id);
-      const order = canonicalRealm(realmId).order;
+        throw new Error("The free home needs an Order and no selected Realm");
+      const chosen = orders.find(({ orderId }) => orderId === payload[2]);
+      if (!chosen?.aspect) throw new Error("Choose an Order of an Aspect");
+      const aspect = chosen.aspect;
+      const realmId = realmOfOrder(chosen.orderId);
+      const order = chosen.orderId;
       const founded = startingHomeFacts(scenario.answer(command, chain, now), chain, now).map((row) => {
         if (row.model !== "Structure") return row;
         const value = row.value as { entity_id: string; metadata: Record<string, unknown> };
@@ -52,21 +53,21 @@ export const aspectSettleScenario = (): LabScenario => {
         ...founded,
         {
           model: "AspectActivity",
-          key: `0xa7${aspect.id}`,
-          value: wire({ game_id: 1, aspect: aspect.id, day: 0, active: 1 }),
+          key: `0xa7${aspect}`,
+          value: wire({ game_id: 1, aspect, day: 0, active: 1 }),
         },
-        { model: "HomeAspect", key: "0xa51", value: wire({ game_id: 1, home: 7, aspect: aspect.id }) },
-        { model: "AspectMembers", key: `0xa6${aspect.id}`, value: wire({ game_id: 1, aspect: aspect.id, members: 1 }) },
+        { model: "HomeAspect", key: "0xa51", value: wire({ game_id: 1, home: 7, aspect }) },
+        { model: "AspectMembers", key: `0xa6${aspect}`, value: wire({ game_id: 1, aspect, members: 1 }) },
       ];
     },
   };
 };
 
-function realmForAspect(aspect: number): number {
+function realmOfOrder(order: number): number {
   for (let realm = 1; realm <= 8_000; realm++) {
-    if (orders.find(({ orderId }) => orderId === canonicalRealm(realm).order)?.aspect === aspect) return realm;
+    if (canonicalRealm(realm).order === order) return realm;
   }
-  throw new Error(`No canonical Realm for Aspect ${aspect}`);
+  throw new Error(`No canonical Realm of Order ${order}`);
 }
 
 /**

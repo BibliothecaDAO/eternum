@@ -28,7 +28,8 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
-.aspect-picker__card {
+.aspect-picker__card,
+.aspect-picker__order {
   position: relative;
   display: flex;
   width: 100%;
@@ -44,14 +45,18 @@
   transition: border-color var(--hud-fast) var(--hud-ease);
 }
 .aspect-picker__card:not(:disabled):hover,
-.aspect-picker__card[data-chosen] {
+.aspect-picker__card[data-chosen],
+.aspect-picker__order:not(:disabled):hover,
+.aspect-picker__order[data-chosen] {
   border-color: rgb(var(--hud-gold));
   background: var(--hud-chosen);
 }
-.aspect-picker__card:disabled:not([data-chosen]) {
+.aspect-picker__card:disabled:not([data-chosen]),
+.aspect-picker__order:disabled:not([data-chosen]) {
   opacity: 0.45;
 }
-.aspect-picker__card:focus-visible {
+.aspect-picker__card:focus-visible,
+.aspect-picker__order:focus-visible {
   box-shadow: var(--hud-focus);
 }
 .aspect-picker__crests {
@@ -89,4 +94,9 @@
 .aspect-picker__invited {
   color: rgb(var(--hud-gold));
   font-weight: 600;
+}
+.aspect-picker__orders {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }

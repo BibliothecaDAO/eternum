@@ -20,7 +20,7 @@ import {
   waitForWorldState,
 } from "@bibliothecadao/eternum";
 import { type Account } from "starknet";
-import { aspects, ResourcesIds, StructureType, TroopType, type ID } from "@bibliothecadao/types";
+import { aspects, ordersOfAspect, ResourcesIds, StructureType, TroopType, type ID } from "@bibliothecadao/types";
 
 export interface Coord {
   x: number;
@@ -226,7 +226,10 @@ function createClientGame(client: GameClient, heraldConfirmations?: HeraldConfir
       return { explored: Boolean(tile?.biome), occupierId: Number(tile?.occupier_id ?? 0) };
     },
     settle: (signer) =>
-      systemCalls.settle_season({ signer, aspect: store.get("AspectRules", { game_id }) ? aspects[0].id : undefined }),
+      systemCalls.settle_season({
+        signer,
+        order: store.get("AspectRules", { game_id }) ? ordersOfAspect(aspects[0].id)[0]!.orderId : undefined,
+      }),
     produceWood: (signer, structureId) => {
       return systemCalls.burn_resource_for_resource_production({
         signer,

@@ -108,6 +108,7 @@ export const GameEntryModal = ({
   const account = useAccountStore((state) => state.account);
   const [heldRealmNumber, setHeldRealmNumber] = useState("");
   const [aspect, setAspect] = useState<AspectId | null>(null);
+  const [order, setOrder] = useState<number | null>(null);
   const [registeredRealmId, setRegisteredRealmId] = useState<number | null>(null);
   /** The Realm step's pick stands on what the account holds (its reads answered); founding waits for it. */
   const [homeSettled, setHomeSettled] = useState(false);
@@ -512,7 +513,7 @@ export const GameEntryModal = ({
 
   // Settlement is an authenticated, recorded action.
   const handleSettle = useCallback(
-    async (chosenAspect: AspectId | null = null) => {
+    async (chosenOrder: number | null = null) => {
       if (!isSeasonMode) {
         return;
       }
@@ -553,7 +554,7 @@ export const GameEntryModal = ({
           client.setup.systemCalls.settle_season({
             signer,
             selectedRealm: isEternumDevMode ? Number(devRealmNumber) : undefined,
-            aspect: chosenAspect ?? undefined,
+            order: chosenOrder ?? undefined,
           }),
         );
         // Known before the indexer answers: its first read can already open the game, which then enters this realm.
@@ -653,8 +654,8 @@ export const GameEntryModal = ({
   const tapsAspect = choosesAspect && !choosingSource && realmOrder === null;
   // A friend's Aspect invite for this game is offered first; identity's answer is read for the signed-in account only.
   const offered = joinedShare.status === "ready" ? aspectOffer(joinedShare.joined, game) : null;
-  const joinAspect = (chosen: AspectId) => {
-    setAspect(chosen);
+  const foundInOrder = (chosen: number) => {
+    setOrder(chosen);
     void handleSettle(chosen);
   };
   const view = doorwayView({
@@ -676,7 +677,7 @@ export const GameEntryModal = ({
         accountError
           ? () => pageNavigation.reload()
           : settleStage === "error"
-            ? () => void handleSettle(aspect)
+            ? () => void handleSettle(order)
             : handleRetry
       }
       onSignIn={() => requestSignIn()}
@@ -724,10 +725,12 @@ export const GameEntryModal = ({
             <AspectPicker
               members={worldMeta?.aspect_members ?? null}
               realmOrder={realmOrder}
-              joining={isSettling ? aspect : null}
+              chosen={aspect}
+              joining={isSettling ? order : null}
               waiting={!homeSettled || joinedShare.status === "loading"}
               offered={offered}
-              onJoin={joinAspect}
+              onChoose={setAspect}
+              onFound={foundInOrder}
             />
           )}
           {choosingSource ? <p>{HOME_STEP_WORDS.attachLine}</p> : isFrontierMode && <PlaysAs />}

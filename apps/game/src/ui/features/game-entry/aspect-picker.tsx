@@ -4,7 +4,7 @@ import { aspectName, aspects, catalogAspectId, orders, ordersOfAspect, type Aspe
 import type { JoinedShare } from "@realms-world/identity";
 
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
-import { ASPECT_STEP_WORDS } from "@/ui/design-system/kit/words";
+import { ASPECT_STEP_WORDS, PRESEASON_WORDS } from "@/ui/design-system/kit/words";
 
 /** How many members each Aspect has, as the game counts them; null while the count is being read. */
 export type AspectMembers = Readonly<Record<AspectId, number>> | null;
@@ -22,34 +22,30 @@ export const aspectOffer = (joined: JoinedShare, game: { chainId: string; gameId
   return { aspect: catalogAspectId(joined.moment), sender: joined.name };
 };
 
-/**
- * Frontier's Aspect step (U12, docs/plans/frontier-season-1.md): four cards, each an Aspect with its four Orders' crests
- * and its members, and one tap joins it. A campaign home picks freely; a held Realm's home plays for its Order's Aspect,
- * so the step shows that one card chosen and asks nothing (`realmOrder`). `joining` is the Aspect being founded into:
- * its card spins and every card waits; `waiting` holds every card while the step reads what the account holds. `offered`
- * is the Aspect a friend's link invited the account to: the step names who invited to which Aspect, its card comes first
- * marked as invited, every other card stays open, and a held Realm's home ignores it (its Aspect is not a choice). Aspects and their Orders are the Order catalog's
- * (`aspects`, `orders`).
- */
 export function AspectPicker({
   members,
   realmOrder,
+  chosen,
   joining,
   waiting = false,
   offered,
-  onJoin,
+  onChoose,
+  onFound,
 }: {
   members: AspectMembers;
   realmOrder: number | null;
-  joining: AspectId | null;
+  chosen: AspectId | null;
+  joining: number | null;
   waiting?: boolean;
   offered: AspectOffer | null;
-  onJoin: (aspect: AspectId) => void;
+  onChoose: (aspect: AspectId) => void;
+  onFound: (order: number) => void;
 }) {
   const realm = realmOrder === null ? null : orderOf(realmOrder);
   const fixed = realm === null ? null : aspectOfOrder(realm.orderId);
   const invite = fixed === null ? offered : null;
   const title = fixed === null ? ASPECT_STEP_WORDS.title : ASPECT_STEP_WORDS.yours;
+  const foundingAspect = joining === null ? null : aspectOfOrder(joining);
   return (
     <section className="aspect-picker" aria-label={title}>
       <header className="aspect-picker__head">
@@ -73,17 +69,59 @@ export function AspectPicker({
               name={name}
               invited={invite?.aspect === id}
               members={members?.[id] ?? null}
-              chosen={fixed === id || joining === id}
-              joining={joining === id}
+              chosen={fixed === id || chosen === id}
+              joining={foundingAspect === id}
               disabled={waiting || fixed !== null || joining !== null}
-              onJoin={() => onJoin(id)}
+              onJoin={() => onChoose(id)}
             />
           </li>
         ))}
       </ul>
+      {fixed === null && chosen !== null && (
+        <OrderChoices aspect={chosen} joining={joining} disabled={waiting || joining !== null} onFound={onFound} />
+      )}
     </section>
   );
 }
+
+const OrderChoices = ({
+  aspect,
+  joining,
+  disabled,
+  onFound,
+}: {
+  aspect: AspectId;
+  joining: number | null;
+  disabled: boolean;
+  onFound: (order: number) => void;
+}) => (
+  <section className="aspect-picker__orders" aria-label={PRESEASON_WORDS.orderTitle}>
+    <header className="aspect-picker__head">
+      <h2>{PRESEASON_WORDS.orderTitle}</h2>
+      <p>{PRESEASON_WORDS.orderLine(aspectName(aspect))}</p>
+    </header>
+    <ul className="aspect-picker__cards">
+      {ordersOfAspect(aspect).map(({ orderId, fullOrderName }) => (
+        <li key={orderId}>
+          <button
+            type="button"
+            className="aspect-picker__order"
+            data-order={orderId}
+            data-chosen={joining === orderId || undefined}
+            aria-busy={joining === orderId || undefined}
+            aria-label={joining === orderId ? ASPECT_STEP_WORDS.foundingAs(fullOrderName) : PRESEASON_WORDS.playAs(fullOrderName)}
+            disabled={disabled}
+            onClick={() => onFound(orderId)}
+          >
+            <OrderEmblem order={orderId} size={48} />
+            <span className="aspect-picker__members">{fullOrderName}</span>
+            {joining === orderId && <span className="ui-spinner" aria-hidden="true" />}
+          </button>
+        </li>
+      ))}
+    </ul>
+  </section>
+);
 
 /** The catalog's Aspects, the invited one first; the catalog's order otherwise. */
 const invitedFirst = (invite: AspectOffer | null) =>

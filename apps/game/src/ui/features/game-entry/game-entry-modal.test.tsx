@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { canonicalRealm, getBlockTimestamp, homeDailyClaim } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { IdentityRequestError } from "@realms-world/identity";
-import { orders } from "@bibliothecadao/types";
+import { orders, ordersOfAspect, type AspectId } from "@bibliothecadao/types";
 import { FRONTIER_S1_PRESET_ID } from "../../../../../../config/source/common/native-preset-modes";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 
@@ -814,13 +814,18 @@ describe("a friend's Aspect invite at a Season 1 campaign home's founding", () =
     }));
   /** Taps an Aspect's card once a player could: drawn and open. */
   const join = async (host: HTMLElement, aspect: string) => {
-    const card = await vi.waitFor(() => {
-      const found = host.querySelector<HTMLButtonElement>(`.aspect-picker__card[aria-label="Join ${aspect}"]`);
-      expect(found?.disabled).toBe(false);
-      return found!;
-    });
+    const open = (selector: string) =>
+      vi.waitFor(() => {
+        const found = host.querySelector<HTMLButtonElement>(selector);
+        expect(found?.disabled).toBe(false);
+        return found!;
+      });
+    const card = await open(`.aspect-picker__card[aria-label="Join ${aspect}"]`);
     await act(async () => card.click());
+    const order = await open(".aspect-picker__order");
+    await act(async () => order.click());
   };
+  const firstOrderOf = (aspect: AspectId) => expect.objectContaining({ order: ordersOfAspect(aspect)[0]!.orderId });
   const plainOrder = [
     { label: "Join Might", invite: null },
     { label: "Join Harmony", invite: null },
@@ -842,7 +847,7 @@ describe("a friend's Aspect invite at a Season 1 campaign home's founding", () =
       );
       expect(entry.host.querySelector(".aspect-picker__invited")?.textContent).toBe("Linden invited you to Harmony");
       await join(entry.host, "Harmony");
-      await vi.waitFor(() => expect(settlement.calls).toEqual([expect.objectContaining({ aspect: 2 })]));
+      await vi.waitFor(() => expect(settlement.calls).toEqual([firstOrderOf(2)]));
       expect(joined).toHaveBeenCalledTimes(1);
     } finally {
       await entry.close();
@@ -855,7 +860,7 @@ describe("a friend's Aspect invite at a Season 1 campaign home's founding", () =
     try {
       await vi.waitFor(() => expect(cards(entry.host)[0]?.invite).toBe("Invited"));
       await join(entry.host, "Guile");
-      await vi.waitFor(() => expect(settlement.calls).toEqual([expect.objectContaining({ aspect: 4 })]));
+      await vi.waitFor(() => expect(settlement.calls).toEqual([firstOrderOf(4)]));
     } finally {
       await entry.close();
     }
@@ -878,7 +883,7 @@ describe("a friend's Aspect invite at a Season 1 campaign home's founding", () =
       await act(async () => answer(invite(GAME)));
       await vi.waitFor(() => expect(cards(entry.host)[0]).toEqual({ label: "Join Harmony", invite: "Invited" }));
       await join(entry.host, "Harmony");
-      await vi.waitFor(() => expect(settlement.calls).toEqual([expect.objectContaining({ aspect: 2 })]));
+      await vi.waitFor(() => expect(settlement.calls).toEqual([firstOrderOf(2)]));
     } finally {
       await entry.close();
     }
@@ -930,7 +935,7 @@ describe("a friend's Aspect invite at a Season 1 campaign home's founding", () =
       await vi.waitFor(() => expect(cards(entry.host)).toEqual(plainOrder));
       expect(entry.host.querySelector(".aspect-picker__invited")).toBeNull();
       await join(entry.host, "Chaos");
-      await vi.waitFor(() => expect(settlement.calls).toEqual([expect.objectContaining({ aspect: 3 })]));
+      await vi.waitFor(() => expect(settlement.calls).toEqual([firstOrderOf(3)]));
     } finally {
       await entry.close();
     }

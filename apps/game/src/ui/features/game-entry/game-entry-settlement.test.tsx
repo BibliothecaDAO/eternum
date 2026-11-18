@@ -2,13 +2,14 @@ import { act } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
+import { ordersOfAspect } from "@bibliothecadao/types";
 import { afterEach, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
   settled: false,
   entryLoading: false,
   /** What each founding asked the chain for: settle_season's props, the signer left out. */
-  founded: [] as { aspect?: number; selectedRealm?: number }[],
+  founded: [] as { order?: number; selectedRealm?: number }[],
   navigate: vi.fn(),
   milestone: vi.fn(),
   entry: {
@@ -58,8 +59,8 @@ vi.mock("@/services/settlement", () => ({
     await submit({
       setup: {
         systemCalls: {
-          settle_season: async ({ aspect, selectedRealm }: { aspect?: number; selectedRealm?: number }) => {
-            state.founded.push({ aspect, selectedRealm });
+          settle_season: async ({ order, selectedRealm }: { order?: number; selectedRealm?: number }) => {
+            state.founded.push({ order, selectedRealm });
           },
         },
       },
@@ -153,7 +154,7 @@ it("opens a returning player's session on the map: only the entry that created t
   }
 });
 
-it("asks a Season 1 free home for its Aspect, founds nothing without a tap, and founds into the one tapped", async () => {
+it("asks a Season 1 free home for its Aspect, then its Order, and founds in the Order tapped", async () => {
   state.settled = false;
   state.founded = [];
   const joined = vi.spyOn(identityClient, "joinedShare").mockResolvedValue(null);
@@ -184,7 +185,13 @@ it("asks a Season 1 free home for its Aspect, founds nothing without a tap, and 
 
     await act(async () => cards[2]!.click());
     await act(async () => vi.advanceTimersByTimeAsync(100));
-    expect(state.founded).toEqual([{ aspect: 3, selectedRealm: undefined }]);
+    expect(state.founded).toEqual([]);
+    const chaos = ordersOfAspect(3);
+    const orderButtons = [...host.querySelectorAll<HTMLButtonElement>(".aspect-picker__order")];
+    expect(orderButtons.map((button) => Number(button.dataset.order))).toEqual(chaos.map(({ orderId }) => orderId));
+    await act(async () => orderButtons[2]!.click());
+    await act(async () => vi.advanceTimersByTimeAsync(100));
+    expect(state.founded).toEqual([{ order: chaos[2]!.orderId, selectedRealm: undefined }]);
     expect(state.navigate).toHaveBeenCalledTimes(1);
   } finally {
     await close();

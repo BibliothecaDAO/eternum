@@ -833,6 +833,15 @@ const ASPECT_CARDS = `JSON.stringify([...document.querySelectorAll(".aspect-pick
   invite: card.querySelector(".aspect-picker__invite")?.textContent ?? null,
   open: !card.disabled,
 })))`;
+const ORDER_CHOICES = `JSON.stringify([...document.querySelectorAll(".aspect-picker__order")].map((order) => ({
+  label: order.getAttribute("aria-label"),
+  order: order.dataset.order,
+})))`;
+const chooseFirstOrder = async (browser) => {
+  const orders = await readUntil(() => browser.read(ORDER_CHOICES), (shown) => shown.length === 4, PLAYABLE_WAIT_MS);
+  browser.click(orders[0].label);
+  return orders;
+};
 const ASPECT_SETTLES = `JSON.stringify((window.__labChain?.sent ?? [])
   .filter(({ command }) => command.kind === "SettleSeason")
   .map(({ command }) => command.calldata.slice(5).map((felt) => BigInt(felt).toString())))`;
@@ -857,12 +866,13 @@ const ASPECT_SETTLE_INVITED_STEPS = [
       );
       extraScreenshot("invited-aspect-step");
       browser.click("Join Harmony");
+      const orders = await chooseFirstOrder(browser);
       const settles = await readUntil(
         () => browser.read(ASPECT_SETTLES),
         (signed) => signed.length > 0,
         PLAYABLE_WAIT_MS,
       );
-      return { cards, line, settles };
+      return { cards, line, orders, settles };
     },
     verify: ({ played }) =>
       JSON.stringify(played.cards.map(({ label, invite }) => [label, invite])) ===
@@ -874,10 +884,10 @@ const ASPECT_SETTLE_INVITED_STEPS = [
         ]) &&
       played.line === "Linden invited you to Harmony" &&
       played.settles.length === 1 &&
-      JSON.stringify(played.settles[0]) === JSON.stringify(["1", "0", "2"])
+      JSON.stringify(played.settles[0]) === JSON.stringify(["1", "0", played.orders[0].order])
         ? completed(played)
         : failed(
-            "The invited player must meet Harmony first, tagged and named, and found into the Aspect tapped",
+            "The invited player must meet Harmony first, tagged and named, and found in the Order tapped inside it",
             played,
           ),
   },
@@ -899,6 +909,7 @@ const ASPECT_SETTLE_STEPS = [
       const choosing = extraScreenshot("aspect-choice");
       if (choice.sent !== 0 || choice.cards.length !== 4) return { choice, choosing };
       browser.click("Join Chaos");
+      const orders = await chooseFirstOrder(browser);
       await waitFor(browser, (seen) => seen.playable && seen.scene === "hex", PLAYABLE_WAIT_MS);
       const founded = browser.read(`JSON.stringify(
         (window.__labChain?.sent ?? []).filter(({command}) => command.kind === "SettleSeason")
@@ -914,7 +925,7 @@ const ASPECT_SETTLE_STEPS = [
       });
       const armyButtons = browser.read(STARTING_ARMY_BUTTONS);
       extraScreenshot("starting-armies");
-      return { choice, choosing, founded, armyButtons };
+      return { choice, choosing, orders, founded, armyButtons };
     },
     settleMs: 0,
     verify: ({ played, seen }) => {
@@ -925,7 +936,7 @@ const ASPECT_SETTLE_STEPS = [
         played.choice.cards?.length === 4 &&
         played.choice.cards.includes("Join Chaos") &&
         played.founded?.length === 1 &&
-        founded.command.calldata.slice(5).map(Number).join(",") === "1,0,3" &&
+        founded.command.calldata.slice(5).map(Number).join(",") === `1,0,${played.orders[0].order}` &&
         Number(home?.home) === 7 &&
         Number(home?.aspect) === 3 &&
         Number(members?.aspect) === 3 &&
@@ -934,7 +945,7 @@ const ASPECT_SETTLE_STEPS = [
         seen.playable &&
         isIn(seen, "Realm", "hex")
         ? completed(played)
-        : failed("The chosen Aspect must be submitted and become the home's membership", played);
+        : failed("The Order chosen inside Chaos must be submitted and its Aspect become the home's membership", played);
     },
   },
 ];

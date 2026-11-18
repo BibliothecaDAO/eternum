@@ -735,15 +735,14 @@ export class EternumProvider extends EventEmitter {
   }
 
   public async settle_season(
-    props: SystemProps.SystemSigner & { selectedRealm?: number; aspect?: SystemProps.AspectId },
+    props: SystemProps.SystemSigner & { selectedRealm?: number; order?: number },
   ) {
     return this.submitCommand(
       props.signer,
       {
         kind: "SettleSeason",
         value: {
-          aspect:
-            props.aspect === undefined ? { kind: "None", value: undefined } : { kind: "Some", value: props.aspect },
+          order: props.order === undefined ? { kind: "None", value: undefined } : { kind: "Some", value: props.order },
           selected_realm:
             props.selectedRealm === undefined
               ? { kind: "None", value: undefined }

@@ -5,6 +5,7 @@ import type { Account } from "starknet";
 import { createHarnessGame } from "./harness-game";
 import type { HarnessGameClient } from "./game-client";
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { aspects, ordersOfAspect } from "@bibliothecadao/types";
 
 test("setup waits for the confirmed start and roster readiness in every game mode", async () => {
   let timestamp = 82;
@@ -102,7 +103,7 @@ test("a prepared Frontier player reaches confirmed play with no owner credential
     const game = createHarnessGame(client);
     const sent = await game.submit(signer, () => game.settle(signer));
     await sent.confirmed;
-    expect(calls).toEqual([{ signer, aspect: undefined }]);
+    expect(calls).toEqual([{ signer, order: undefined }]);
     expect(sent.transactionHash).toBe("0x123");
   } finally {
     if (saved.address === undefined) delete process.env.DEPLOYER_ACCOUNT_ADDRESS;
@@ -129,7 +130,7 @@ test("keeps listening for provider timing after the separate confirmation resolv
   expect(provider.listenerCount("transactionComplete")).toBe(0);
 });
 
-test("a free home in an Aspect game submits a canonical choice", async () => {
+test("a free home in an Aspect game founds in the first Aspect's first Order", async () => {
   const signer = { address: "0x42" } as Account;
   const calls: unknown[] = [];
   const game = createHarnessGame({
@@ -144,5 +145,5 @@ test("a free home in an Aspect game submits a canonical choice", async () => {
     },
   } as unknown as GameClient);
   await game.settle(signer);
-  expect(calls).toEqual([{ signer, aspect: 1 }]);
+  expect(calls).toEqual([{ signer, order: ordersOfAspect(aspects[0].id)[0]!.orderId }]);
 });

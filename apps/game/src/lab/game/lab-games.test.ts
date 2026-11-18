@@ -1,3 +1,4 @@
+import { ordersOfAspect } from "@bibliothecadao/types";
 import { expect, it } from "vitest";
 
 import { chainOf } from "./lab-chain";
@@ -15,7 +16,9 @@ it.each(Object.keys(LAB_SCENARIOS))("builds the %s lab game", (name) => {
         {
           kind: "SettleSeason",
           fields: {},
-          calldata: name.startsWith("aspect-settle") ? ["1", "0", "0", "0", "10", "1", "0", "3"] : [],
+          calldata: name.startsWith("aspect-settle")
+            ? ["1", "0", "0", "0", "10", "1", "0", String(ordersOfAspect(3)[0]!.orderId)]
+            : [],
         },
         chain,
         scenario.startsAt,
