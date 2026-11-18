@@ -1,17 +1,19 @@
 import { Scene, Group, Mesh, BoxGeometry, MeshBasicMaterial } from "three";
 import { describe, expect, it, vi } from "vitest";
 
-const { load, models, mode, foundations, beasts, beastTroops } = vi.hoisted(() => ({
+const { load, models, mode, foundations, beasts, beastTroops, openings } = vi.hoisted(() => ({
   mode: { id: "frontier" },
   load: vi.fn(),
   models: [] as Array<{ name: string; count: number; setCount: (count: number) => void }>,
   foundations: [] as Array<{ entityId: number; progress: number; completed: boolean }>,
   beasts: [] as Array<{ species: string; count: number; scales: number[]; idles: unknown[] }>,
   beastTroops: new Map<number, bigint>(),
+  openings: new Map<number, unknown>(),
 }));
 vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum/game-client")>()),
   readDeepBeastTroops: (_store: unknown, _now: number, id: bigint) => beastTroops.get(Number(id)) ?? 0n,
+  readDeepRingOpening: (_store: unknown, _now: number, id: bigint) => openings.get(Number(id)),
 }));
 vi.mock("../structures/frontier-model", async () => {
   const { Group } = await import("three");
@@ -89,6 +91,7 @@ vi.mock("../structures/hyperstructure-model", async () => {
 
 import { DEEP_BEASTS, deepSites, MineKinds, TileOccupier } from "@bibliothecadao/types";
 import { FRONTIER_BEASTS } from "../structures/frontier-beast";
+import { DEEP_SITE_FACES } from "@/ui/features/frontier/deep/deep-site-faces";
 import { MapSiteManager } from "./map-site-manager";
 import { PLATE_CLEARANCE } from "./structure-visible-presentation";
 
@@ -182,6 +185,38 @@ describe("the Deep's sites on the map", () => {
       listener([{ model: "Guard", key: "altar", current: { structure_id: BigInt(altar) } }]);
     expect(basilisk.count).toBe(0);
     await vi.waitFor(() => expect(models.map(({ name }) => name).toSorted()).toEqual(["Bane altar", "Essence core"]));
+    manager.destroy();
+  });
+
+  it("pins a closed ring's site with a lock and says on its plate when it opens; an open one, or one whose entries are still arriving, keeps its kind's look", () => {
+    mode.id = "frontier";
+    load.mockReset();
+    load.mockImplementation(async (path: string) => ({
+      path,
+      scene: new Mesh(new BoxGeometry(1, 2, 1), new MeshBasicMaterial()),
+    }));
+    beastTroops.clear();
+    openings.clear();
+    openings.set(10, { known: { open: false, realms: 30 } });
+    openings.set(11, { known: { open: true, realms: 0 } });
+    openings.set(12, { unknown: "INCOMPLETE_SNAPSHOT: DeepEntries" });
+    const tiles = [10, 11, 12].map((col) => tile(col, TileOccupier.DeepSite));
+    const projection = { getTiles: () => tiles, subscribeTiles: () => () => {} };
+    const plates = { setLabel: vi.fn(), retainOnly: vi.fn(), dispose: vi.fn(), setHover: vi.fn(), clearHover: vi.fn() };
+    const site = (key: { entity_id: number }) => ({ kind: deepSites[key.entity_id - 10]!.id });
+    const store = {
+      get: (model: string, key: { entity_id: number }) => (model === "DeepSite" ? site(key) : undefined),
+      require: (_model: string, key: { entity_id: number }) => site(key),
+      subscribe: () => () => {},
+    };
+    const manager = new MapSiteManager(new Scene(), projection as never, store as never, plates as never);
+    const look = (entityId: number) => {
+      const { icon, reward } = plates.setLabel.mock.calls.findLast(([plate]) => plate.entityId === entityId)![0].plate;
+      return { icon, reward };
+    };
+    expect(look(10)).toEqual({ icon: "lock", reward: "Opens at 30 Realms today" });
+    expect(look(11)).toEqual({ icon: DEEP_SITE_FACES.core.icon, reward: undefined });
+    expect(look(12)).toEqual({ icon: DEEP_SITE_FACES.mine.icon, reward: undefined });
     manager.destroy();
   });
 });

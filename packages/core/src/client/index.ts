@@ -33,6 +33,7 @@ export {
   isDeepSiteRival,
   readDeepSite,
   readDeepBeastTroops,
+  readDeepRingOpening,
   readDeepSiteDefender,
   readDeepSites,
   type DeepSiteView,

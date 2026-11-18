@@ -8,7 +8,13 @@ import {
 import { nativeRowDefinitions } from "../client/native-row";
 import { currentArmy, currentResourceWeight, deepTerrain, deepTiles } from "./deep";
 import { armyCombatRefusal } from "./army-opponents";
-import { deepBuildingPay, readDeepBeastTroops, readDeepSite, readDeepSites } from "../client/views/deep-sites";
+import {
+  deepBuildingPay,
+  readDeepBeastTroops,
+  readDeepRingOpening,
+  readDeepSite,
+  readDeepSites,
+} from "../client/views/deep-sites";
 import { dayAtIndex } from "./days";
 
 const calendar = { startMainAt: 360, scheduledEndAt: 288360, endAt: 288360, dayUnitSeconds: 14400, seed: 1n };
@@ -170,6 +176,23 @@ describe("the shared Deep", () => {
     expect(readDeepSite(store, tomorrow, 24n, 7)?.open).toBe(false);
     rows.DeepEntries = [...rows.DeepEntries, { game_id: 7, day: 1n, count: 2 }];
     expect(readDeepSite(store, tomorrow, 24n, 7)?.open).toBe(true);
+  });
+
+  it("tells the map a ring's opening, and that it is not known yet while today's entries are still arriving", () => {
+    const { rows, store } = fixture();
+    rows.DeepRules![0]!.rings = [
+      { radius: 5, realms: 0 },
+      { radius: 8, realms: 30 },
+    ];
+    rows.DeepSite = [{ game_id: 7, entity_id: 24n, kind: 0, ring: 1, day: 0n }];
+    rows.Guard = [{ game_id: 7, structure_id: 24n, slot: 0, troops: { count: 10n * precision } }];
+    rows.DeepEntries = [{ game_id: 7, day: 0n, count: 12 }];
+    expect(readDeepRingOpening(store, 420, 24n, 7)).toEqual({ known: { open: false, realms: 30 } });
+    const arriving = { ...store, requireOrAbsent: () => ({ unknown: "INCOMPLETE_SNAPSHOT: DeepEntries" }) };
+    expect(readDeepRingOpening(arriving as never, 420, 24n, 7)).toEqual({
+      unknown: "INCOMPLETE_SNAPSHOT: DeepEntries",
+    });
+    expect(() => readDeepSite(arriving as never, 420, 24n, 7)).toThrow("Realms entered today are unknown");
   });
 
   it("reads all sites in catalog order, highest live guard first, then restores next-day beasts", () => {

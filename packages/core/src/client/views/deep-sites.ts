@@ -61,6 +61,20 @@ export function readDeepBeastTroops(
   return site && today ? todaysBeast(store, today, site).troops : undefined;
 }
 
+export function readDeepRingOpening(
+  store: NativeFactStore,
+  timestamp: number,
+  siteId: bigint,
+  gameId = configManager.getActiveGameId(),
+): RingOpening | undefined {
+  const site = store.get("DeepSite", { game_id: gameId, entity_id: siteId });
+  const today = site && readDeepDay(store, timestamp, gameId);
+  if (!site || !today) return undefined;
+  const ring = today.rules.rings[site.ring];
+  if (!ring) throw new Error(`Deep site ${site.entity_id} is outside its preset rules`);
+  return ringOpening(store, today, site, ring);
+}
+
 interface DeepDay {
   rules: NativeRows["DeepRules"];
   index: number;
@@ -89,18 +103,18 @@ function deepSiteView(
   const gameId = site.game_id;
   const { current, guard, troops } = todaysBeast(store, today, site);
   const ring = today.rules.rings[site.ring];
-  if (!ring) throw new Error(`Site ${site.entity_id} is outside its preset rules`);
-  const entered = realmsEntered(store, gameId, BigInt(today.index));
+  if (!ring) throw new Error(`Deep site ${site.entity_id} is outside its preset rules`);
+  const entered = requireEntered(realmsEntered(store, gameId, today));
   return {
     id: site.entity_id,
     kind: kind.id,
     name: kind.name,
     position: entityMapPosition(store, gameId, site.entity_id),
     ring: site.ring,
-    open: entered >= ring.realms,
+    open: ringOpens(entered, ring),
     buildingPay: deepBuildingPay(
       today.rules.building_pay,
-      today.rules.rings.filter((candidate) => entered >= candidate.realms).length,
+      today.rules.rings.filter((candidate) => ringOpens(entered, candidate)).length,
     ),
     day: today.index,
     beastTroops: troops,
@@ -125,10 +139,34 @@ function todaysBeast(store: NativeFactStore, today: DeepDay, site: NativeRows["D
   return { current, guard, troops: guard ? guard.troops.count : beast.count };
 }
 
-function realmsEntered(store: NativeFactStore, gameId: number, day: bigint): number {
-  const entries = store.requireOrAbsent("DeepEntries", { game_id: gameId, day });
-  if (!entries.known) throw new Error(`Realms entered today are unknown: ${entries.unknown}`);
-  return entries.known.count;
+type RingOpening = { known: { open: boolean; realms: number } } | { unknown: string };
+type DeepRing = NativeRows["DeepRules"]["rings"][number];
+
+const ringOpens = (entered: number, ring: DeepRing): boolean => entered >= ring.realms;
+
+function ringOpening(
+  store: NativeFactStore,
+  today: DeepDay,
+  site: NativeRows["DeepSite"],
+  ring: DeepRing,
+): RingOpening {
+  const entered = realmsEntered(store, site.game_id, today);
+  if ("unknown" in entered) return entered;
+  return { known: { open: ringOpens(entered.known, ring), realms: ring.realms } };
+}
+
+function realmsEntered(
+  store: NativeFactStore,
+  gameId: number,
+  today: DeepDay,
+): { known: number } | { unknown: string } {
+  const entries = store.requireOrAbsent("DeepEntries", { game_id: gameId, day: BigInt(today.index) });
+  return entries.known ? { known: entries.known.count } : { unknown: entries.unknown };
+}
+
+function requireEntered(entered: { known: number } | { unknown: string }): number {
+  if ("unknown" in entered) throw new Error(`Realms entered today are unknown: ${entered.unknown}`);
+  return entered.known;
 }
 
 export function homeAspect(store: NativeFactStore, gameId: number, home: bigint): number {

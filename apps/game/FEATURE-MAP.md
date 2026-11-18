@@ -1184,11 +1184,13 @@ the nearest free tile around its Aspect's gate. Choosing Deep in the map's layer
 Aspect's gate (the centre for a spectator). Its sites stand in rings around the centre, each ring one Hyperstructure
 archive, one Essence core, one Ethereal mine and one Bane altar; each kind moves one place a day. Ring 1 opens with the
 day, each later ring when the Realms entered today reach the preset's count; a closed site's card says so and refuses
-Attack and Join. The map draws the archive as a hyperstructure's bare foundation, the core as a rift, the mine as a
-fragment mine and the altar as a Shrine (`DEEP_SITE_LOOKS`, `src/three/managers/map-site-manager.ts`). While a site's
-beast guards it, that beast stands alone on the tile at its row's size and idle, the building hidden as a camp's is
-(`DEEP_BEASTS`: the archive's Colossus, the core's Warlock, the mine's Balrog, the altar's Basilisk on its own model);
-the building returns once armies hold the site. Each site's plate stays over its model.
+Attack and Join; on the map it is pinned with a lock in place of its kind, its plate reading "Opens at N Realms today"
+(`/lab/game?scenario=deep-closed`, checked by `build.sh playtest-deep`). The map draws the archive as a hyperstructure's
+bare foundation, the core as a rift, the mine as a fragment mine and the altar as a Shrine (`DEEP_SITE_LOOKS`,
+`src/three/managers/map-site-manager.ts`). While a site's beast guards it, that beast stands alone on the tile at its
+row's size and idle, the building hidden as a camp's is (`DEEP_BEASTS`: the archive's Colossus, the core's Warlock, the
+mine's Balrog, the altar's Basilisk on its own model); the building returns once armies hold the site. Each site's plate
+stays over its model.
 
 Each Aspect’s tower height appears on **Season, Aspects**. The towers have no map entities.
 

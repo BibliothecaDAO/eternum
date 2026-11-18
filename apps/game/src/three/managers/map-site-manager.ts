@@ -1,6 +1,13 @@
 import { DEEP_SITE_FACES } from "@/ui/features/frontier/deep/deep-site-faces";
+import { DEEP_WORDS } from "@/ui/design-system/kit/words";
+import type { IconMeaning } from "@/ui/design-system/icon";
 import { configManager, getBlockTimestamp } from "@bibliothecadao/eternum";
-import { readDeepBeastTroops, safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import {
+  readDeepBeastTroops,
+  readDeepRingOpening,
+  safeInteger,
+  type NativeFactStore,
+} from "@bibliothecadao/eternum/game-client";
 import {
   DEEP_BEASTS,
   beastModel,
@@ -121,6 +128,7 @@ export class MapSiteManager {
       const touched = changes.some(
         (change) =>
           change.model === "DeepSite" ||
+          change.model === "DeepEntries" ||
           (change.model === "Guard" && this.guardsDeepSite(change.current ?? change.previous)),
       );
       if (touched) this.refresh();
@@ -251,9 +259,9 @@ export class MapSiteManager {
         name: kind.name,
         named: false,
         owner: "",
-        icon: DEEP_SITE_FACES[kind.key].icon,
         guards: null,
         arrivals: [],
+        ...this.closedOrOpenLook(tile.occupierId, DEEP_SITE_FACES[kind.key].icon),
       },
     };
   }
@@ -296,6 +304,17 @@ export class MapSiteManager {
       configManager.getActiveGameId(),
     );
     return (troops ?? 0n) > 0n;
+  }
+
+  private closedOrOpenLook(entityId: number, icon: IconMeaning): { icon: IconMeaning; reward?: string } {
+    const opening = readDeepRingOpening(
+      this.store,
+      getBlockTimestamp().currentDefaultTick,
+      BigInt(entityId),
+      configManager.getActiveGameId(),
+    );
+    if (opening === undefined || !("known" in opening) || opening.known.open) return { icon };
+    return { icon: "lock", reward: DEEP_WORDS.opensAt(opening.known.realms) };
   }
 
   private guardsDeepSite(guard: { structure_id: bigint } | undefined): boolean {

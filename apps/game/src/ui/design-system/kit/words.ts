@@ -846,6 +846,7 @@ export const DEEP_WORDS = {
   rival: "Another Aspect holds it",
   otherDay: "Only today's armies can fight here",
   closed: "This ring opens when more Realms enter today",
+  opensAt: (realms: number) => `Opens at ${formatExact(realms)} Realms today`,
   noTroops: "This army has no troops left",
   readingStamina: "Reading the army's stamina…",
   reading: "Reading the site…",

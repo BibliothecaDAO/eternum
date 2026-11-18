@@ -4741,6 +4741,37 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
   },
 ];
 
+const SITE_TOKENS = `JSON.stringify([...document.querySelectorAll(".mp-at")].flatMap((slot) => {
+  if (getComputedStyle(slot).display === "none") return [];
+  const icon = slot.querySelector("[data-icon]")?.getAttribute("data-icon");
+  return icon && ${JSON.stringify([...DEEP_SITE_NAMES.map((site) => site.icon), "lock"])}.includes(icon) ? [icon] : [];
+}))`;
+
+const deepClosedSteps = () => [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", "Deep") },
+  {
+    name: "closed-ring-locked",
+    settleMs: 0,
+    play: async ({ browser, extraScreenshot }) => {
+      browser.run(["eval", `void window.__playtest.wheel(100, ${ZOOM_IN_NOTCHES})`]);
+      await sleep(ZOOM_SETTLE_MS);
+      const tokens = await readUntil(
+        () => browser.read(SITE_TOKENS),
+        (read) => read.includes("lock"),
+        PLAYABLE_WAIT_MS,
+      );
+      extraScreenshot("closed-ring");
+      return { tokens };
+    },
+    verify: ({ played }) =>
+      played.tokens.length > 0 &&
+      played.tokens.every((icon) => icon === "lock") &&
+      (!onADesktop() || played.tokens.length === DEEP_SITE_NAMES.length)
+        ? completed(played)
+        : failed("Every site of a closed ring is pinned with a lock in place of its kind", played),
+  },
+];
+
 /**
  * Two of the realm's armies merged as a player merges them, then hovered (owner, 2026-10-25: "due to an army merge I dont
  * see the hover label"): the spire's army picked, the other right-clicked for the transfer card, its Merge pressed (and
@@ -6500,6 +6531,7 @@ export const STEP_SETS = {
     ],
   },
   "lab-deep-join": { game: labSpireGame("deep"), steps: deepJoinSteps() },
+  "lab-deep-closed": { game: labSpireGame("deep-closed"), steps: deepClosedSteps() },
   "lab-no-lords": {
     game: labSpireGame("upkeep"),
     steps: [

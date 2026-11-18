@@ -11,7 +11,7 @@ import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { type LabFact, type LabScenario, wire } from "./lab-chain";
 import { spireScenario } from "./spire-scenario";
 
-export const deepScenario = (): LabScenario => {
+export const deepScenario = (closedRing = false): LabScenario => {
   const scenario = spireScenario();
   const { store, startsAt } = scenario;
   const spacing = store.require("SettlementRules", { game_id: 1 }).spacing;
@@ -31,7 +31,7 @@ export const deepScenario = (): LabScenario => {
     mine: { x: 25, y: 25 },
     altar: { x: 32, y: 25 },
   } satisfies Record<(typeof deepSites)[number]["key"], { x: number; y: number }>;
-  const rules = seasonOneDeepRules();
+  const rules = seasonOneDeepRules(closedRing);
   const facts: LabFact[] = [
     {
       model: "ExplorerTroops",
@@ -166,12 +166,13 @@ const siteId = (key: (typeof deepSites)[number]["key"]): bigint =>
 
 const scaled = (amount: number): bigint => BigInt(amount) * BigInt(RESOURCE_PRECISION);
 
-const seasonOneDeepRules = (): NativeRows["DeepRules"] => {
+const seasonOneDeepRules = (closedRing: boolean): NativeRows["DeepRules"] => {
   const deep = frontierSeasonOnePreset.deep;
+  const [first, second] = deep.rings;
   return {
     game_id: 1,
     gate_distance: deep.gateDistance,
-    rings: deep.rings.slice(0, 1).map(({ radius, realms }) => ({ radius, realms })),
+    rings: [{ radius: first.radius, realms: closedRing ? second.realms : first.realms }],
     beasts: deepSites.map(({ key }) => ({ count: scaled(deep.beasts[key].count), bow: deep.beasts[key].bow })),
     loss_per_tick: scaled(deep.lossPerTick),
     core_per_tick: scaled(deep.corePerTick),
