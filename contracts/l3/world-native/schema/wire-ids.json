@@ -369,6 +369,16 @@
       "id": 73,
       "name": "ChooseOath",
       "retired": false
+    },
+    {
+      "id": 74,
+      "name": "BuySeal",
+      "retired": false
+    },
+    {
+      "id": 75,
+      "name": "BuyStamina",
+      "retired": false
     }
   ],
   "stories": [

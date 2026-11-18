@@ -1111,6 +1111,19 @@ export function defineFactModels({ struct, model: declare }) {
       struct("deposits::DepositSource"),
     ),
     model(
+      "FragmentCredit",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "id", type: "core::felt252" },
+      ],
+      [
+        { name: "account", type: "core::starknet::contract_address::ContractAddress" },
+        { name: "source", type: "core::integer::u8" },
+        { name: "amount", type: "core::integer::u128" },
+      ],
+    ),
+    model(
       "Fragments",
       "game",
       [
@@ -1773,6 +1786,7 @@ export const syncScopes = {
   PointsAwarded: byPlayer,
   LordsWithdrawal: { owners: ["account"] },
   LaborGrant: { owners: ["account"] },
+  FragmentCredit: { owners: ["account"] },
   Fragments: { owners: ["account"] },
   Seal: { owners: ["account"] },
   SpendLords: { owners: ["account"] },

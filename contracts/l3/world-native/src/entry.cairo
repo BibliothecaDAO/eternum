@@ -23,6 +23,7 @@ pub trait IHomeGrants<T> {
     fn grant_labor(ref self: T, home: LaborHome, day: u64, account: ContractAddress) -> LaborGrant;
     fn labor_grant(self: @T, home: LaborHome, day: u64) -> Option<LaborGrant>;
     fn grant_seal(ref self: T, game_id: u32, account: ContractAddress);
+    fn credit_fragments(ref self: T, game_id: u32, credit: crate::fragments::FragmentCredit);
 }
 
 #[starknet::interface]

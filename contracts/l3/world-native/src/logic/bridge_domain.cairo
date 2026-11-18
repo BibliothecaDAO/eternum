@@ -33,6 +33,17 @@ pub mod BridgeLogic {
     component!(path: GuildState, storage: guilds, event: GuildEvent);
     #[abi(embed_v0)]
     impl Guilds = GuildState::GuildsImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl SealShop of crate::fragments::ISealShop<ContractState> {
+        fn buy_seal(
+            ref self: ContractState,
+            game_id: u32,
+            actor: starknet::ContractAddress,
+            context: crate::commands::ActionContext,
+        ) {
+            crate::logic::fragments::buy_seal(game_id, actor, context);
+        }
+    }
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
