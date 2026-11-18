@@ -1128,13 +1128,13 @@ it("requires the selected Aspect in both the founding command and its membership
     ],
   };
   expect(verify({ seen, played: { armyButtons, orders, choice, founded: [founded] } }).status).toBe("completed");
-  expect(verify({ seen, played: { armyButtons, orders, choice: { ...choice, sent: 1 }, founded: [founded] } }).status).toBe(
-    "failed",
-  );
+  expect(
+    verify({ seen, played: { armyButtons, orders, choice: { ...choice, sent: 1 }, founded: [founded] } }).status,
+  ).toBe("failed");
   expect(verify({ seen, played: { armyButtons, orders, choice, founded: [] } }).status).toBe("failed");
-  expect(verify({ seen, played: { armyButtons, orders, choice, founded: [{ ...founded, answered: [] }] } }).status).toBe(
-    "failed",
-  );
+  expect(
+    verify({ seen, played: { armyButtons, orders, choice, founded: [{ ...founded, answered: [] }] } }).status,
+  ).toBe("failed");
   expect(
     verify({
       seen,
@@ -1159,19 +1159,29 @@ it("requires the selected Aspect in both the founding command and its membership
       },
     }).status,
   ).toBe("failed");
-  expect(verify({ seen, played: { orders, choice, founded: [founded], armyButtons: armyButtons.slice(0, 1) } }).status).toBe(
-    "failed",
-  );
+  expect(
+    verify({ seen, played: { orders, choice, founded: [founded], armyButtons: armyButtons.slice(0, 1) } }).status,
+  ).toBe("failed");
   expect(
     verify({
       seen,
-      played: { orders, choice, founded: [founded], armyButtons: armyButtons.map((button) => ({ ...button, current: "100" })) },
+      played: {
+        orders,
+        choice,
+        founded: [founded],
+        armyButtons: armyButtons.map((button) => ({ ...button, current: "100" })),
+      },
     }).status,
   ).toBe("failed");
   expect(
     verify({
       seen,
-      played: { orders, choice, founded: [founded], armyButtons: armyButtons.map((button) => ({ ...button, visible: false })) },
+      played: {
+        orders,
+        choice,
+        founded: [founded],
+        armyButtons: armyButtons.map((button) => ({ ...button, visible: false })),
+      },
     }).status,
   ).toBe("failed");
   for (const missing of ["ExplorerTroops", "ArmySlot", "ArmyDay", "ResourceBalance"]) {
