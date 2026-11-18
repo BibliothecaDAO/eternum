@@ -252,7 +252,7 @@ const createHarness = () => {
           loss_per_tick: 1n,
           core_per_tick: 100n,
           mine_per_tick: 100n,
-          altar_per_tick: 1,
+          building_pay: { alone: 1, pair: 1, crowd: 1 },
           altar_threshold: 10,
         },
         false,

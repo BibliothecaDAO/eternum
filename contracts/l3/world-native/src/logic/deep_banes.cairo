@@ -26,7 +26,7 @@ pub fn height_blocked(game_id: u32, aspect: u8, timestamp: u64) -> bool {
     ended == 0 || timestamp < ended
 }
 
-pub fn credit(game_id: u32, source: u8, boundary: u64) {
+pub fn credit(game_id: u32, source: u8, amount: u32, boundary: u64) {
     let preset = crate::logic::preset_record::for_game(game_id);
     if preset.bane_rules.read().is_none() {
         return;
@@ -35,11 +35,10 @@ pub fn credit(game_id: u32, source: u8, boundary: u64) {
     let game = crate::logic::game::game(game_id);
     assert!(boundary > game.start_main_at && boundary <= game.end_at, "Altar tick outside season");
     assert!(boundary % preset.rules.tick_config.armies_tick_in_seconds.read() == 0, "Altar credit outside tick");
-    let rules = preset.deep_rules.read().expect('missing Deep rules');
+    let threshold = preset.deep_rules.read().expect('missing Deep rules').altar_threshold;
     let state = crate::state::write();
     let previous = state.banes.altar_bars.read((game_id, source));
-    let threshold = rules.altar_threshold;
-    let mut charge = previous + core::cmp::min(threshold - previous, rules.altar_per_tick);
+    let mut charge = previous + core::cmp::min(threshold - previous, amount);
     if charge == threshold && issue_next_day(game_id, source, boundary) {
         charge = 0;
     }

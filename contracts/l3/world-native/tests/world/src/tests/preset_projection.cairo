@@ -313,11 +313,15 @@ fn malformed_race_rules_leave_no_preset_registered() {
         } else if invalid == 3 {
             race.season_days = 49;
         } else if invalid == 4 {
-            race.glory_per_tick = 0;
+            let deep = definition.economy.deep.unwrap();
+            let pay = crate::deep::DeepPay { crowd: 0, ..deep.building_pay };
+            definition.economy.deep = Some(crate::deep::DeepRules { building_pay: pay, ..deep });
         } else if invalid == 5 {
-            race.height_per_tick = 0;
+            let deep = definition.economy.deep.unwrap();
+            let pay = crate::deep::DeepPay { pair: deep.building_pay.alone + 1, ..deep.building_pay };
+            definition.economy.deep = Some(crate::deep::DeepRules { building_pay: pay, ..deep });
         } else if invalid == 6 {
-            race.stage_height = 2001;
+            race.stage_height = definition.economy.deep.unwrap().building_pay.alone - 1;
         } else if invalid == 7 {
             race.clear_mist_percent = 99;
         } else if invalid == 8 {

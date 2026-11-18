@@ -61,21 +61,15 @@ fn validate_game(game_id: u32, rules: RaceRules) {
     let unit: u64 = crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read().into();
     let duration = rules.season_days / crate::days::DAYS_PER_BAG * crate::days::UNITS_PER_BAG * unit;
     assert!(game.scheduled_end_at - game.start_main_at <= duration, "race exceeds season day limit");
-    let tick = crate::logic::preset_record::for_game(game_id).rules.tick_config.armies_tick_in_seconds.read();
-    let ticks = game.scheduled_end_at / tick - game.start_main_at / tick;
-    let maximum_glory = Into::<u128, u256>::into(rules.glory_per_tick * crate::rules::RESOURCE_PRECISION)
-        * Into::<u64, u256>::into(ticks)
-        * 2;
-    let _: u128 = maximum_glory.try_into().expect('race Glory exceeds limit');
 }
 
 
-fn pay_tick(game_id: u32, kind: u8, aspect: u8, shares: Span<crate::deep::DeepShare>, timestamp: u64) {
+fn pay_tick(game_id: u32, kind: u8, aspect: u8, shares: Span<crate::deep::DeepShare>, amount: u32, timestamp: u64) {
     let rules = rules(game_id).expect('race is disabled');
     validate_tick(game_id, kind, aspect, shares, timestamp);
-    let glory = crate::race::split_payment(rules.glory_per_tick * crate::rules::RESOURCE_PRECISION, shares);
+    let glory = crate::race::split_payment(Into::<u32, u128>::into(amount) * crate::rules::RESOURCE_PRECISION, shares);
     let height = if kind == crate::rules::DEEP_FOUNDATION {
-        build_height(AspectKey { game_id, aspect }, rules, timestamp)
+        build_height(AspectKey { game_id, aspect }, rules, amount, timestamp)
     } else {
         0
     };
@@ -113,14 +107,14 @@ fn validate_tick(game_id: u32, kind: u8, aspect: u8, shares: Span<crate::deep::D
     }
 }
 
-fn build_height(key: AspectKey, rules: RaceRules, timestamp: u64) -> u32 {
+fn build_height(key: AspectKey, rules: RaceRules, amount: u32, timestamp: u64) -> u32 {
     let before = hyperstructure(key);
     let blocked = height_blocked(key, timestamp - 1);
     let finish_height = rules.stage_height * Into::<u8, u32>::into(crate::race::STAGE_COUNT);
     let height = if blocked {
         before.height
     } else {
-        before.height + core::cmp::min(rules.height_per_tick, finish_height - before.height)
+        before.height + core::cmp::min(amount, finish_height - before.height)
     };
     if height == before.height {
         return 0;
@@ -259,9 +253,10 @@ pub mod RaceState {
             kind: u8,
             aspect: u8,
             shares: Span<crate::deep::DeepShare>,
+            amount: u32,
             timestamp: u64,
         ) {
-            super::pay_tick(game_id, kind, aspect, shares, timestamp);
+            super::pay_tick(game_id, kind, aspect, shares, amount, timestamp);
         }
     }
 }

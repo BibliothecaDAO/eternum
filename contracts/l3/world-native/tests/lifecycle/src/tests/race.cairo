@@ -1,9 +1,6 @@
 use snforge_std::{EventSpyTrait, EventsFilterTrait, interact_with_state, spy_events};
 use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use world_test_support::tests::Deployment;
-use world_test_support::tests::registrar::{
-    CreateGameParams, IRegistrarDispatcherTrait, IRegistrarSafeDispatcherTrait, params, registry, safe,
-};
 use world_test_support::tests::resource_commands::execute_in_game;
 use crate::commands::Command;
 use crate::deep::{
@@ -34,7 +31,7 @@ fn pay(d: Deployment, game_id: u32, kind: u8, aspect: u8, shares: Span<DeepShare
         d.games,
         || {
             IDeepRewardsLibraryDispatcher { class_hash: crate::logic::release::classes(game_id).economy.read() }
-                .pay_deep_tick(game_id, kind, aspect, shares, boundary);
+                .pay_deep_tick(game_id, kind, aspect, shares, 5, boundary);
         },
     );
 }
@@ -239,7 +236,7 @@ fn rejected_payments_leave_height_and_both_member_totals_unchanged() {
                 let dispatcher = IDeepRewardsSafeLibraryDispatcher {
                     class_hash: crate::logic::release::classes(game_id).economy.read(),
                 };
-                assert!(dispatcher.pay_deep_tick(game_id, kind, aspect, shares, boundary).is_err());
+                assert!(dispatcher.pay_deep_tick(game_id, kind, aspect, shares, 5, boundary).is_err());
             },
         );
         assert_eq!(member(d, home), RaceMember { glory: 0, contribution: 0 });
@@ -317,7 +314,7 @@ fn four_stages_schedule_triumphs_and_the_fifth_finishes_at_a_tick_inside_the_nex
             let dispatcher = IDeepRewardsSafeLibraryDispatcher {
                 class_hash: crate::logic::release::classes(game_id).economy.read(),
             };
-            assert!(dispatcher.pay_deep_tick(game_id, DEEP_ALTAR, 1, shares, finish + 120).is_err());
+            assert!(dispatcher.pay_deep_tick(game_id, DEEP_ALTAR, 1, shares, 5, finish + 120).is_err());
         },
     );
     assert_eq!(member(d, home).glory, 105 * RESOURCE_PRECISION);
@@ -334,28 +331,6 @@ fn a_stage_on_the_last_tick_does_not_schedule_a_triumph_outside_the_season() {
             assert_eq!(race(game_id).triumph_day(TriumphKey { game_id, aspect: 1, stage: 1 }), None);
         },
     );
-}
-
-
-#[test]
-#[feature("safe_dispatcher")]
-fn a_single_valid_payment_cannot_register_a_season_whose_total_would_overflow() {
-    let d = world_test_support::tests::registrar::setup();
-    let mut preset = definition(2000);
-    let max: u128 = core::num::traits::Bounded::MAX;
-    preset
-        .economy
-        .race =
-            Some(crate::race::RaceRules { glory_per_tick: max / RESOURCE_PRECISION, ..preset.economy.race.unwrap() });
-    registry(d).register_preset(1, preset);
-    let created = safe(d, world_test_support::tests::authority())
-        .create_game(
-            CreateGameParams {
-                start_main_at: 360, duration_seconds: 288000, end_grace_seconds: 0, seed: 5, ..params(false),
-            },
-        );
-    assert!(created.is_err());
-    interact_with_state(d.games, || assert!(!crate::logic::game::game_exists(1)));
 }
 
 #[test]

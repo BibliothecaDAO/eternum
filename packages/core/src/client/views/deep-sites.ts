@@ -16,6 +16,7 @@ export interface DeepSiteView {
   position: { x: number; y: number; alt: boolean };
   ring: number;
   open: boolean;
+  buildingPay: number;
   day: number;
   beastTroops: bigint;
   guard: NativeRows["Guard"] | undefined;
@@ -83,18 +84,26 @@ function deepSiteView(
   const beast = today.rules.beasts[site.kind];
   const ring = today.rules.rings[site.ring];
   if (!beast || !ring) throw new Error(`Site ${site.entity_id} is outside its preset rules`);
+  const entered = realmsEntered(store, gameId, site.day);
   return {
     id: site.entity_id,
     kind: kind.id,
     name: kind.name,
     position: entityMapPosition(store, gameId, site.entity_id),
     ring: site.ring,
-    open: realmsEntered(store, gameId, site.day) >= ring.realms,
+    open: entered >= ring.realms,
+    buildingPay: deepBuildingPay(today.rules, entered),
     day: today.index,
     beastTroops: guard ? guard.troops.count : beast.count,
     guard,
     guards: current ? readGuards(store, gameId, site.entity_id, timestamp) : [],
   };
+}
+
+function deepBuildingPay(rules: NativeRows["DeepRules"], entered: number): number {
+  const open = rules.rings.filter((ring) => entered >= ring.realms).length;
+  const pay = rules.building_pay;
+  return open <= 1 ? pay.alone : open === 2 ? pay.pair : pay.crowd;
 }
 
 function realmsEntered(store: NativeFactStore, gameId: number, day: bigint): number {

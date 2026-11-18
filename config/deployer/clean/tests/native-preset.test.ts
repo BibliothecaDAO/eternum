@@ -1071,7 +1071,7 @@ test("an optional Deep preset serializes its rings, its beasts in kind order and
       loss_per_tick: scaled(deep.lossPerTick),
       core_per_tick: scaled(deep.corePerTick),
       mine_per_tick: scaled(deep.minePerTick),
-      altar_per_tick: deep.altarPerTick,
+      building_pay: deep.buildingPay,
       altar_threshold: deep.altarThreshold,
     });
     codec.compile("register_preset", { preset_id: source.id, definition: built });
@@ -1090,8 +1090,10 @@ test("the Deep codec refuses fractional or empty amounts", () => {
     { ...fixture, gateDistance: 0 },
     { ...fixture, lossPerTick: 0.5 },
     { ...fixture, corePerTick: 0 },
-    { ...fixture, altarPerTick: 0 },
-    { ...fixture, altarThreshold: 1_501 },
+    { ...fixture, buildingPay: { alone: 6, pair: 3, crowd: 0 } },
+    { ...fixture, buildingPay: { alone: 6, pair: 7, crowd: 2 } },
+    { ...fixture, buildingPay: { alone: 6, pair: 3, crowd: 2.5 } },
+    { ...fixture, altarThreshold: 0 },
   ];
   try {
     for (const deep of malformed) {
@@ -1201,8 +1203,6 @@ test("the bane codec preserves whole quest units and refuses invalid effects", (
 
 const raceFixture = (): NonNullable<(typeof nativePresets)[number]["race"]> => ({
   seasonDays: 50,
-  gloryPerTick: 5,
-  heightPerTick: 5,
   stageHeight: 2_000,
   clearMistPercent: 200,
   secondWindPercent: 200,
@@ -1210,7 +1210,7 @@ const raceFixture = (): NonNullable<(typeof nativePresets)[number]["race"]> => (
   spoilsPercent: 200,
 });
 
-test("the race codec preserves whole Glory payments and height rules", () => {
+test("the race codec preserves its season length, stages and Triumph rates", () => {
   const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
   const previous = { race: source.race, deep: source.deep };
   try {
@@ -1219,8 +1219,6 @@ test("the race codec preserves whole Glory payments and height rules", () => {
     const built = buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id);
     expect(built.economy.race.unwrap()).toEqual({
       season_days: 50n,
-      glory_per_tick: 5n,
-      height_per_tick: 5,
       stage_height: 2_000,
       clear_mist_percent: 200,
       second_wind_percent: 200,
@@ -1239,9 +1237,7 @@ test("the race codec refuses missing Deep rules, malformed amounts and effects",
   const malformed = [
     { ...raceFixture(), seasonDays: 0 },
     { ...raceFixture(), seasonDays: 49 },
-    { ...raceFixture(), gloryPerTick: 0 },
-    { ...raceFixture(), heightPerTick: 0 },
-    { ...raceFixture(), stageHeight: 2001 },
+    { ...raceFixture(), stageHeight: 5 },
     { ...raceFixture(), stageHeight: 0xffff_ffff },
     { ...raceFixture(), clearMistPercent: 99 },
     { ...raceFixture(), secondWindPercent: 201 },

@@ -24,7 +24,7 @@ pub fn preset() -> crate::presets::PresetDefinition {
                     loss_per_tick: crate::rules::RESOURCE_PRECISION,
                     core_per_tick: crate::rules::RESOURCE_PRECISION,
                     mine_per_tick: crate::rules::RESOURCE_PRECISION,
-                    altar_per_tick: 1,
+                    building_pay: crate::deep::DeepPay { alone: 1, pair: 1, crowd: 1 },
                     altar_threshold: 10,
                     ..preset.economy.deep.unwrap(),
                 },

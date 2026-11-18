@@ -85,8 +85,6 @@ export function raceRules(): NativeRows["RaceRules"] {
   return {
     game_id: 1,
     season_days: 50n,
-    glory_per_tick: 5n,
-    height_per_tick: 5,
     stage_height: 2000,
     clear_mist_percent: 200,
     second_wind_percent: 200,

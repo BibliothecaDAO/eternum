@@ -508,7 +508,7 @@ pub fn deep_definition() -> crate::presets::PresetDefinition {
                     loss_per_tick: RESOURCE_PRECISION,
                     core_per_tick: RESOURCE_PRECISION,
                     mine_per_tick: RESOURCE_PRECISION,
-                    altar_per_tick: 5,
+                    building_pay: crate::deep::DeepPay { alone: 5, pair: 3, crowd: 2 },
                     altar_threshold: 10,
                     ..preset.economy.deep.unwrap(),
                 },
@@ -526,6 +526,7 @@ pub fn altar(d: Deployment, game_id: u32, source: u8, boundary: u64) {
                 },
                 game_id,
                 source,
+                5,
                 boundary,
             );
         },

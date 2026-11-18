@@ -89,6 +89,45 @@ fn a_late_rejected_move_pays_all_sites_at_the_win_then_stops_before_later_ticks(
 }
 
 #[test]
+fn a_held_foundation_pays_alone_pair_or_crowd_by_the_rings_open_that_day() {
+    for (realms, expected) in array![(array![0_u32, 3, 4], 5_u32), (array![0, 2, 3], 3), (array![0, 1, 2], 2)] {
+        let mut preset = race_preset(2000);
+        let deep = preset.economy.deep.unwrap();
+        let mut rings = array![];
+        for index in 0..realms.len() {
+            rings.append(crate::deep::DeepRing { realms: *realms.at(index), ..*deep.rings.at(index) });
+        }
+        preset.economy.deep = Some(crate::deep::DeepRules { rings: rings.span(), ..deep });
+        let (d, game_id) = super::aspects::setup_aspect_preset(99, preset);
+        let guard = deployed(d, game_id, 1, 11);
+        let target = site(d, game_id, crate::rules::DEEP_FOUNDATION);
+        beside(d, guard, target, 0);
+        applied(d, game_id, fight(guard, target), 360);
+        deployed(player(d, 9900), game_id, 2, 11);
+        let home = ResourceKey { game_id, entity_id: army(d, guard).owner };
+        let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
+        let boundary = (360 / interval + 1) * interval;
+        applied(
+            d,
+            game_id,
+            Command::SetEntityName(crate::names::SetEntityName { entity_id: home.entity_id, name: 'tick' }),
+            boundary,
+        );
+        interact_with_state(
+            d.games,
+            || {
+                assert_eq!(
+                    crate::logic::race::hyperstructure(crate::race::AspectKey { game_id, aspect: 1 }).height, expected,
+                );
+                assert_eq!(
+                    crate::logic::race::member(home).glory, Into::<u32, u128>::into(expected) * RESOURCE_PRECISION,
+                );
+            },
+        );
+    }
+}
+
+#[test]
 fn delayed_altar_ticks_preserve_the_prepared_world_day_and_issue_for_the_following_day() {
     let mut preset = race_preset(2000);
     preset.economy.deep = Some(crate::deep::DeepRules { altar_threshold: 5, ..preset.economy.deep.unwrap() });

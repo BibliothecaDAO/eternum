@@ -123,7 +123,7 @@ it.each([4, 5, 6, 7, 8, 9])("reports the field or garrison survivors from Knight
     loss_per_tick: scaled(deep.lossPerTick),
     core_per_tick: scaled(deep.corePerTick),
     mine_per_tick: scaled(deep.minePerTick),
-    altar_per_tick: deep.altarPerTick,
+    building_pay: deep.buildingPay,
     altar_threshold: deep.altarThreshold,
   });
   seedStructure(game.store, { entityId: 12, owner: PLAYER, x: 90, y: 90 });

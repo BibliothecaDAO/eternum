@@ -26,6 +26,13 @@ pub struct DeepBeast {
     pub bow: bool,
 }
 
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct DeepPay {
+    pub alone: u32,
+    pub pair: u32,
+    pub crowd: u32,
+}
+
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct DeepRules {
     pub gate_distance: u32,
@@ -34,7 +41,7 @@ pub struct DeepRules {
     pub loss_per_tick: u128,
     pub core_per_tick: u128,
     pub mine_per_tick: u128,
-    pub altar_per_tick: u32,
+    pub building_pay: DeepPay,
     pub altar_threshold: u32,
 }
 
@@ -45,7 +52,7 @@ pub struct DeepSettings {
     pub loss_per_tick: u128,
     pub core_per_tick: u128,
     pub mine_per_tick: u128,
-    pub altar_per_tick: u32,
+    pub building_pay: DeepPay,
     pub altar_threshold: u32,
 }
 
@@ -63,8 +70,19 @@ pub fn settings(rules: DeepRules) -> DeepSettings {
         loss_per_tick: rules.loss_per_tick,
         core_per_tick: rules.core_per_tick,
         mine_per_tick: rules.mine_per_tick,
-        altar_per_tick: rules.altar_per_tick,
+        building_pay: rules.building_pay,
         altar_threshold: rules.altar_threshold,
+    }
+}
+
+pub fn building_pay(pay: DeepPay, open: u8) -> u32 {
+    assert!(open != 0, "closed Deep site pays nothing");
+    if open == 1 {
+        pay.alone
+    } else if open == 2 {
+        pay.pair
+    } else {
+        pay.crowd
     }
 }
 
@@ -112,10 +130,9 @@ pub fn validate(rules: DeepRules, spacing: u32) {
         assert!(*beast.count != 0 && *beast.count % crate::rules::RESOURCE_PRECISION == 0, "invalid Deep beast");
     }
     assert!(rules.core_per_tick != 0 && rules.mine_per_tick != 0, "empty Deep payment");
-    assert!(
-        rules.altar_per_tick != 0 && rules.altar_threshold != 0 && rules.altar_threshold % rules.altar_per_tick == 0,
-        "invalid Altar charge",
-    );
+    let pay = rules.building_pay;
+    assert!(pay.crowd != 0 && pay.pair >= pay.crowd && pay.alone >= pay.pair, "invalid Deep building pay");
+    assert!(rules.altar_threshold != 0, "invalid Altar charge");
     assert!(
         rules.loss_per_tick != 0 && rules.loss_per_tick % crate::rules::RESOURCE_PRECISION == 0,
         "invalid Deep troop loss",
@@ -226,12 +243,14 @@ pub struct TeamBane {
 
 #[starknet::interface]
 pub trait IDeepRewards<T> {
-    fn pay_deep_tick(ref self: T, game_id: u32, kind: u8, aspect: u8, shares: Span<DeepShare>, timestamp: u64);
+    fn pay_deep_tick(
+        ref self: T, game_id: u32, kind: u8, aspect: u8, shares: Span<DeepShare>, amount: u32, timestamp: u64,
+    );
 }
 
 #[starknet::interface]
 pub trait IDeepBanes<T> {
     fn height_blocked(self: @T, game_id: u32, aspect: u8, timestamp: u64) -> bool;
-    fn credit_altar(ref self: T, game_id: u32, source: u8, boundary: u64);
+    fn credit_altar(ref self: T, game_id: u32, source: u8, amount: u32, boundary: u64);
     fn team_quest(self: @T, home: crate::resources::ResourceKey, day: u64) -> Option<u8>;
 }

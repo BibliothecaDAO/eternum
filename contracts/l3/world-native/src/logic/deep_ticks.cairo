@@ -1,6 +1,6 @@
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::commands::ExecutionContext;
-use crate::deep::{DeepShare, IDeepBanesDispatcherTrait, IDeepRewardsDispatcherTrait};
+use crate::deep::{DeepShare, DeepSite, IDeepBanesDispatcherTrait, IDeepRewardsDispatcherTrait};
 use crate::race::IRaceDispatcherTrait;
 use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
 use crate::troops::{ExplorerKey, ExplorerTroops};
@@ -62,7 +62,7 @@ fn settle_boundary(game_id: u32, boundary: u64, context: ExecutionContext) {
         if !guards.is_empty() {
             let site = crate::logic::deep_sites::site(ResourceKey { game_id, entity_id: site_id })
                 .expect('missing Deep site');
-            pay_site(game_id, site.kind, shares(guards), boundary, historical);
+            pay_site(game_id, site, shares(guards), boundary, historical);
         }
     }
 }
@@ -116,21 +116,26 @@ fn shares(guards: Span<(ExplorerKey, ExplorerTroops)>) -> Span<DeepShare> {
     shares.span()
 }
 
-fn pay_site(game_id: u32, kind: u8, shares: Span<DeepShare>, boundary: u64, context: ExecutionContext) {
+fn pay_site(game_id: u32, site: DeepSite, shares: Span<DeepShare>, boundary: u64, context: ExecutionContext) {
+    let kind = site.kind;
     if kind == crate::rules::DEEP_CORE || kind == crate::rules::DEEP_MINE {
         pay_resource(game_id, kind, shares, boundary, context);
         return;
     }
     let aspect = crate::logic::aspects::home_aspect(ResourceKey { game_id, entity_id: *shares.at(0).home });
+    let amount = crate::deep::building_pay(
+        crate::logic::deep_sites::rules_entry(game_id).expect('missing Deep rules').building_pay.read(),
+        crate::logic::deep_sites::open_rings(game_id, site.day),
+    );
     let state = crate::state::read();
     let release = state.releases.entry(state.game_releases.read(game_id)).classes;
     if race(game_id).race_rules(game_id).is_some() {
         crate::deep::IDeepRewardsLibraryDispatcher { class_hash: release.economy.read() }
-            .pay_deep_tick(game_id, kind, aspect, shares, boundary);
+            .pay_deep_tick(game_id, kind, aspect, shares, amount, boundary);
     }
     if kind == crate::rules::DEEP_ALTAR {
         crate::deep::IDeepBanesLibraryDispatcher { class_hash: release.bridge.read() }
-            .credit_altar(game_id, aspect, boundary);
+            .credit_altar(game_id, aspect, amount, boundary);
     }
 }
 

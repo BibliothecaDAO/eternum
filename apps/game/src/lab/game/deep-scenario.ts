@@ -165,7 +165,7 @@ const seasonOneDeepRules = (): NativeRows["DeepRules"] => {
     loss_per_tick: scaled(deep.lossPerTick),
     core_per_tick: scaled(deep.corePerTick),
     mine_per_tick: scaled(deep.minePerTick),
-    altar_per_tick: deep.altarPerTick,
+    building_pay: deep.buildingPay,
     altar_threshold: deep.altarThreshold,
   };
 };

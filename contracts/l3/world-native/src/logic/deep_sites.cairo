@@ -38,6 +38,16 @@ pub fn is_open(game_id: u32, site: DeepSite) -> bool {
     crate::state::read().deep.realms_entered.read((game_id, site.day)) >= ring(game_id, site.ring).realms
 }
 
+pub fn open_rings(game_id: u32, day: u64) -> u8 {
+    let entered = crate::state::read().deep.realms_entered.read((game_id, day));
+    let count = rules_entry(game_id).expect('missing Deep rules').ring_count.read();
+    let mut open = 0;
+    while open < count && entered >= ring(game_id, open).realms {
+        open += 1;
+    }
+    open
+}
+
 pub fn assert_open(game_id: u32, site: DeepSite) {
     assert!(is_open(game_id, site), "Deep ring closed");
 }

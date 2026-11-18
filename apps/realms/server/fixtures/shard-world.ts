@@ -258,7 +258,7 @@ export const snapshot = (
                   loss_per_tick: 100,
                   core_per_tick: 500,
                   mine_per_tick: 500,
-                  altar_per_tick: 5,
+                  building_pay: { alone: 6, pair: 3, crowd: 2 },
                   altar_threshold: 1500,
                 },
               },
@@ -352,7 +352,7 @@ export function siteSnapshot(
       loss_per_tick: frontierSeasonOnePreset.deep.lossPerTick * RESOURCE_PRECISION,
       core_per_tick: 500 * RESOURCE_PRECISION,
       mine_per_tick: 500 * RESOURCE_PRECISION,
-      altar_per_tick: 5,
+      building_pay: { alone: 6, pair: 3, crowd: 2 },
       altar_threshold: 1500,
     }),
   ]);

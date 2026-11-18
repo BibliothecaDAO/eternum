@@ -508,7 +508,7 @@ function buildDeep(preset: ReturnType<typeof nativePresetForId>) {
     loss_per_tick: scaled(deep.lossPerTick),
     core_per_tick: scaled(deep.corePerTick),
     mine_per_tick: scaled(deep.minePerTick),
-    altar_per_tick: deep.altarPerTick,
+    building_pay: deep.buildingPay,
     altar_threshold: deep.altarThreshold,
   });
 }
@@ -525,7 +525,9 @@ function validateDeep(deep: DeepPreset) {
     deep.lossPerTick,
     deep.corePerTick,
     deep.minePerTick,
-    deep.altarPerTick,
+    deep.buildingPay.alone,
+    deep.buildingPay.pair,
+    deep.buildingPay.crowd,
     deep.altarThreshold,
     deep.gateDistance,
     ...deep.rings.map(({ radius }) => radius),
@@ -533,7 +535,9 @@ function validateDeep(deep: DeepPreset) {
   if (
     amounts.some((value) => !Number.isSafeInteger(value) || value <= 0) ||
     deep.altarThreshold > 0xffff_ffff ||
-    deep.altarThreshold % deep.altarPerTick !== 0
+    deep.buildingPay.alone > 0xffff_ffff ||
+    deep.buildingPay.pair > deep.buildingPay.alone ||
+    deep.buildingPay.crowd > deep.buildingPay.pair
   )
     throw new Error("Invalid Deep tick amounts");
 }
@@ -541,14 +545,13 @@ function validateDeep(deep: DeepPreset) {
 function buildRace(preset: ReturnType<typeof nativePresetForId>) {
   const race = preset.race;
   if (race === null) return new CairoOption(CairoOptionVariant.None);
-  if (!race || preset.deep === null) throw new Error("Race requires the Deep");
+  if (!race || !preset.deep) throw new Error("Race requires the Deep");
   if (preset.modeRules & (presetRule.DISCOVER_HYPERSTRUCTURES | presetRule.RESERVED_HYPERSTRUCTURES))
     throw new Error("Race has no map hyperstructures");
   validateRace(race);
+  if (race.stageHeight < preset.deep.buildingPay.alone) throw new Error("A tick's height passes a whole stage");
   return new CairoOption(CairoOptionVariant.Some, {
     season_days: BigInt(race.seasonDays),
-    glory_per_tick: BigInt(race.gloryPerTick),
-    height_per_tick: race.heightPerTick,
     stage_height: race.stageHeight,
     clear_mist_percent: race.clearMistPercent,
     second_wind_percent: race.secondWindPercent,
@@ -558,13 +561,11 @@ function buildRace(preset: ReturnType<typeof nativePresetForId>) {
 }
 
 function validateRace(race: NonNullable<ReturnType<typeof nativePresetForId>["race"]>) {
-  const amounts = [race.seasonDays, race.gloryPerTick, race.heightPerTick, race.stageHeight];
+  const amounts = [race.seasonDays, race.stageHeight];
   if (
     amounts.some((value) => !Number.isSafeInteger(value) || value <= 0) ||
     race.seasonDays % DAYS_PER_BAG !== 0 ||
-    race.heightPerTick > 0xffff_ffff ||
-    race.stageHeight > Math.floor(0xffff_ffff / nativeRaceConstants.STAGE_COUNT) ||
-    race.stageHeight % race.heightPerTick !== 0
+    race.stageHeight > Math.floor(0xffff_ffff / nativeRaceConstants.STAGE_COUNT)
   )
     throw new Error("Invalid race amounts");
   const boosts = [race.clearMistPercent, race.secondWindPercent, race.spoilsPercent];

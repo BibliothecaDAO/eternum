@@ -142,11 +142,11 @@ function tickPay(store: NativeFactStore, game_id: number, site: Site, selected: 
   if (altar && banes && holder !== undefined) {
     const reading = store.requireOrAbsent("AltarBar", { game_id, aspect: holder });
     if (!reading.known) return null;
-    bar = { perTick: deep.altar_per_tick, charge: reading.known.charge, threshold: deep.altar_threshold };
+    bar = { perTick: site.buildingPay, charge: reading.known.charge, threshold: deep.altar_threshold };
   }
   return {
-    glory: paysResources ? 0 : Number(race?.glory_per_tick ?? 0),
-    height: site.kind === nativeRuleConstants.DEEP_FOUNDATION ? (race?.height_per_tick ?? 0) : 0,
+    glory: paysResources || !race ? 0 : site.buildingPay,
+    height: race && site.kind === nativeRuleConstants.DEEP_FOUNDATION ? site.buildingPay : 0,
     essence: site.kind === nativeRuleConstants.DEEP_CORE ? Number(deep.core_per_tick) / RESOURCE_PRECISION : 0,
     labor: site.kind === nativeRuleConstants.DEEP_MINE ? Number(deep.mine_per_tick) / RESOURCE_PRECISION : 0,
     bar,

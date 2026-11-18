@@ -174,7 +174,7 @@ describe("a realm's spire, from the player's path", () => {
           loss_per_tick: 1n,
           core_per_tick: 1n,
           mine_per_tick: 1n,
-          altar_per_tick: 1,
+          building_pay: { alone: 1, pair: 1, crowd: 1 },
           altar_threshold: 10,
         },
       },

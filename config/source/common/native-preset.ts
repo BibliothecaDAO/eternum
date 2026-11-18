@@ -66,8 +66,6 @@ export interface NativePreset {
   research: readonly { row: number; tier: number; essenceCost: number; laborCost: number }[];
   race: null | {
     seasonDays: number;
-    gloryPerTick: number;
-    heightPerTick: number;
     stageHeight: number;
     clearMistPercent: number;
     secondWindPercent: number;
@@ -81,7 +79,7 @@ export interface NativePreset {
     lossPerTick: number;
     corePerTick: number;
     minePerTick: number;
-    altarPerTick: number;
+    buildingPay: { alone: number; pair: number; crowd: number };
     altarThreshold: number;
   };
   banes: null | {

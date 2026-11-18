@@ -421,7 +421,7 @@ it("projects optional Deep rules from verified registration and publishes no row
     loss_per_tick: BigInt(frontierSeasonOnePreset.deep.lossPerTick) * BigInt(RESOURCE_PRECISION),
     core_per_tick: 500_000_000_000n,
     mine_per_tick: 500_000_000_000n,
-    altar_per_tick: 5,
+    building_pay: { alone: 6, pair: 3, crowd: 2 },
     altar_threshold: 1_500,
   };
   for (const enabled of [false, true]) {
@@ -501,8 +501,6 @@ it("projects optional bane rules from the verified preset with whole Cull counts
 it("projects optional race rules from verified registration into the native fact store", () => {
   const rules = {
     season_days: 50n,
-    glory_per_tick: 5n,
-    height_per_tick: 5,
     stage_height: 2_000,
     clear_mist_percent: 200,
     second_wind_percent: 200,
@@ -526,7 +524,7 @@ it("projects optional race rules from verified registration into the native fact
           loss_per_tick: BigInt(frontierSeasonOnePreset.deep.lossPerTick) * BigInt(RESOURCE_PRECISION),
           core_per_tick: 500_000000000n,
           mine_per_tick: 500_000000000n,
-          altar_per_tick: 5,
+          building_pay: { alone: 6, pair: 3, crowd: 2 },
           altar_threshold: 1500,
         });
       } else {

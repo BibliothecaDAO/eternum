@@ -87,8 +87,9 @@ describe("the Deep site's live native binding", () => {
         if (site.kind === nativeRuleConstants.DEEP_MINE) expect(pay).toContain(`${perTick(rules.mine_per_tick)} labor`);
         else if (site.kind === nativeRuleConstants.DEEP_CORE)
           expect(pay).toContain(`${perTick(rules.core_per_tick)} Essence`);
-        else expect(pay).toContain("5 Glory");
-        if (site.kind === nativeRuleConstants.DEEP_FOUNDATION) expect(pay).toContain("+5 height");
+        else expect(pay).toContain(`${rules.building_pay.alone} Glory`);
+        if (site.kind === nativeRuleConstants.DEEP_FOUNDATION)
+          expect(pay).toContain(`+${rules.building_pay.alone} height`);
         if (site.kind === nativeRuleConstants.DEEP_ALTAR) expect(pay).toContain("300 of 1,500");
       }
       act(() =>
@@ -102,6 +103,40 @@ describe("the Deep site's live native binding", () => {
       );
       hud.render();
       expect(hud.host.querySelector("[data-deep-pay]")?.textContent).toContain("600 labor");
+    } finally {
+      hud.unmount();
+    }
+  });
+
+  it("pays a held Foundation the pair, then the crowd, as more rings open that day", () => {
+    const scenario = raceScenario();
+    scenario.store.applyFacts([
+      { model: "BaneRules", key: "0xfee1", value: baneScenario("world").store.require("BaneRules", { game_id: 1 }) },
+    ]);
+    const hud = draw(undefined, scenario);
+    try {
+      const rules = hud.store.require("DeepRules", { game_id: 1 });
+      const foundationPay = () => {
+        const foundation = readDeepSites(hud.store, scenario.startsAt, 1).find(
+          (site) => site.kind === nativeRuleConstants.DEEP_FOUNDATION && site.ring === 0,
+        )!;
+        hud.render(<DeepSiteCard site={foundation} onClose={() => {}} />);
+        return hud.host.querySelector("[data-deep-pay]")!.textContent;
+      };
+      const enter = (count: number) => {
+        const row = { game_id: 1, day: 0n, count };
+        act(() =>
+          hud.store.applyFacts([
+            { model: "DeepEntries", key: hud.store.wireKeyOf("DeepEntries", row)!, value: wire(row) },
+          ] as never),
+        );
+      };
+      enter(rules.rings[1]!.realms);
+      expect(foundationPay()).toContain(`${rules.building_pay.pair} Glory`);
+      expect(foundationPay()).toContain(`+${rules.building_pay.pair} height`);
+      enter(rules.rings[2]!.realms);
+      expect(foundationPay()).toContain(`${rules.building_pay.crowd} Glory`);
+      expect(foundationPay()).toContain(`+${rules.building_pay.crowd} height`);
     } finally {
       hud.unmount();
     }

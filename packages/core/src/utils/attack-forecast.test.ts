@@ -95,7 +95,7 @@ function frontier() {
     loss_per_tick: troops(100),
     core_per_tick: troops(500),
     mine_per_tick: troops(500),
-    altar_per_tick: 5,
+    building_pay: { alone: 6, pair: 3, crowd: 2 },
     altar_threshold: 1500,
   });
 
