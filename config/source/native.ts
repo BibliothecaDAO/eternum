@@ -38,8 +38,6 @@ const frontierFixturePreset: NativePreset = {
   modeRules: frontierPreset.modeRules & ~nativeRuleConstants.DISCOVER_CHESTS,
   dailyQuest: frontierPreset.dailyQuest,
   banes: frontierPreset.banes,
-  deep: frontierPreset.deep,
-  race: frontierPreset.race,
   labor: frontierPreset.labor,
 };
 

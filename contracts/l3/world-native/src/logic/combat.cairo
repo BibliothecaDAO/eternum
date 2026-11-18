@@ -578,7 +578,7 @@ fn combat_oaths(key: ExplorerKey, context: ExecutionContext) -> u16 {
     if context.rules.unbox().day_unit_seconds == 0 {
         0
     } else {
-        crate::logic::progression::read(key).expect('missing army progress').oaths
+        crate::logic::progression::require(key).oaths
     }
 }
 
