@@ -242,6 +242,7 @@ export function openArmySlots(
         epoch,
         result.known.stamina.settled_at,
         0,
+        0,
       );
       if (!effects.known) return undefined;
       open.push({ slot, inherited: result.known.stamina, effects: effects.known });
