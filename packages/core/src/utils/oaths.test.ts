@@ -96,7 +96,7 @@ it("matches the native pass vectors below, at and near the maximum", async () =>
 
 it("matches the native prize vectors for Detection, Brilliance and Rage", async () => {
   const { readFileSync } = await import("node:fs");
-  const { oathRevealPay, oathSitePay } = await import("./oaths");
+  const { oathFindPercent, oathRevealPay, oathSitePay } = await import("./oaths");
   const fields = readFileSync(
     new URL("../../../../contracts/l3/world-native/tests/fixtures/oath-prizes.txt", import.meta.url),
     "utf8",
@@ -106,7 +106,8 @@ it("matches the native prize vectors for Detection, Brilliance and Rage", async 
     .map(BigInt);
   expect(fields).toHaveLength(72);
   while (fields.length) {
-    const [held, , , amount, reveal, site] = fields.splice(0, 6) as [bigint, bigint, bigint, bigint, bigint, bigint];
+    const [held, base, find, amount, reveal, site] = fields.splice(0, 6) as [bigint, bigint, bigint, bigint, bigint, bigint];
+    expect(oathFindPercent(Number(held), Number(base))).toBe(Number(find));
     expect(oathRevealPay(Number(held), amount)).toBe(reveal);
     expect(oathSitePay(Number(held), amount)).toBe(site);
   }

@@ -15,6 +15,7 @@ import { dayOf } from "./days";
 import { previewSiteReward } from "../../../../contracts/l3/world-native/schema/site-previews.gen";
 
 import { entityMapPosition } from "./tile";
+import { armyOaths, oathFindPercent } from "./oaths";
 
 export * from "./days";
 export * from "./home-claim";
@@ -429,7 +430,8 @@ export const armySpireChance = (
     const period = mist.known.period;
     if (period && nowSeconds >= period.start && nowSeconds < period.end) percent = race.known.row.clear_mist_percent;
   }
-  return Math.min(100, ((progress.known.reveals + 1) * percent) / nativeRuleConstants.SPIRE_REVEAL_LIMIT);
+  const found = oathFindPercent(armyOaths(store, { game_id: gameId, explorer_id: explorerId }), percent);
+  return Math.min(100, ((progress.known.reveals + 1) * found) / nativeRuleConstants.SPIRE_REVEAL_LIMIT);
 };
 
 /** The army's own spire while it stands on or beside it. */

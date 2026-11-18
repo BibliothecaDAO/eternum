@@ -57,6 +57,10 @@ export function oathDeepLossPerTick(oaths: number, base: bigint): bigint {
   return holds(oaths, oathRules.VITRIOL) ? BigInt(oathRules.VITRIOL_LOSS_PER_TICK) * BigInt(RESOURCE_PRECISION) : base;
 }
 
+export function oathFindPercent(oaths: number, base: number): number {
+  return holds(oaths, oathRules.DETECTION) ? Math.floor((base * oathRules.DETECTION_FIND_PERCENT) / 100) : base;
+}
+
 export function oathRevealPay(oaths: number, amount: bigint): bigint {
   return holds(oaths, oathRules.BRILLIANCE) ? (amount * BigInt(oathRules.BRILLIANCE_PAY_PERCENT)) / 100n : amount;
 }

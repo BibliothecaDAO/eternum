@@ -1,6 +1,6 @@
 import { act } from "react";
 import { raceRules } from "@/lab/game/race-scenario";
-import { nativeRaceConstants } from "@bibliothecadao/eternum/game-client";
+import { nativeOathConstants, nativeRaceConstants } from "@bibliothecadao/eternum/game-client";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -466,6 +466,23 @@ describe("a realm's spire, from the player's path", () => {
     ]);
     expect(armySpireChance(store, 1, ARMY, NOW)).toBeNull();
     expect(armySpireChance(store, 1, ARMY, NOW + 86400)).toBeNull();
+  });
+
+  it("raises the next reveal's chance by Detection, as the contract's find percent does", () => {
+    const { store } = discoveredSpireDay(1);
+    const spire = { game_id: 1, structure_id: 7, epoch: 0, depth: 1 };
+    store.applyFacts([{ model: "ExpeditionSpire", key: store.wireKeyOf("ExpeditionSpire", spire)!, value: null }]);
+    expect(armySpireChance(store, 1, ARMY, NOW)).toBe(10);
+    const army = { game_id: 1, explorer_id: ARMY };
+    const progress = store.require("ArmyProgress", army);
+    store.applyFacts([
+      {
+        model: "ArmyProgress",
+        key: store.wireKeyOf("ArmyProgress", army)!,
+        value: { ...progress, oaths: 1 << (nativeOathConstants.DETECTION - 1) },
+      },
+    ]);
+    expect(armySpireChance(store, 1, ARMY, NOW)).toBe(12);
   });
 
   /** The camp the army cleared, on the tile it stands on: the site's row with its receipt, as clear_site leaves it. */
