@@ -126,7 +126,7 @@ export function FrontierBeastLab() {
   const strength = [
     bounds.siteGuardLower,
     previewRiftGuardBound(bounds.siteGuardLower, bounds.guardStep),
-    previewRuinGuardBounds(1)[0],
+    previewRuinGuardBounds(depth + 1, depth)[0],
     band === "lowly" ? bounds.beastWeakLower : bounds.beastStrongLower,
   ][site]!;
   const plate = buildStructurePlate({

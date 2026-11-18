@@ -1093,8 +1093,10 @@ pub fn first_relic_odds(layer: u32) -> ChestTiers {
         odds.common = 10000;
     } else if layer == 1 {
         odds.uncommon = 10000;
-    } else {
+    } else if layer == 2 {
         odds.rare = 10000;
+    } else {
+        odds.epic = 10000;
     }
     odds
 }

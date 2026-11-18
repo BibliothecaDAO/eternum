@@ -402,9 +402,7 @@ fn write_depths(
             "guard bounds off grid",
         );
         validate_beast_guards(value);
-        if index + 1 < depths.len() {
-            validate_layer_relics(index.try_into().unwrap(), odds);
-        }
+        validate_layer_relics(index.try_into().unwrap(), odds);
         preset.depth_rules.write(index.try_into().unwrap(), Some(value));
     }
     preset.depth_count.write(depths.len());

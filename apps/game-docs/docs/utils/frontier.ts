@@ -2,6 +2,7 @@ import { frontierPreset as historicalFrontierPreset } from "../../../../config/s
 import { nativePresetForId, nativePresetIdFor } from "../../../../config/source/native";
 import { seasonDayUnitSeconds } from "../../../../config/source/common/season-clock";
 import {
+  RELICS_PER_LAYER,
   previewRiftGuardBound,
   previewRuinGuardBounds,
 } from "../../../../contracts/l3/world-native/schema/site-previews.gen";
@@ -123,7 +124,7 @@ export const FRONTIER = {
     ruinGuard: beastOf("ruin", index).name,
   })),
   ruinGuards: LAYER_NAMES.slice(0, 3).flatMap((layer, depth) =>
-    TIER_WORDS.slice(depth, depth + 3).map((name, place) => ({
+    TIER_WORDS.slice(depth, depth + RELICS_PER_LAYER).map((name, place) => ({
       layer,
       name,
       count: range(...previewRuinGuardBounds(depth + place + 1, depth)),

@@ -1,4 +1,6 @@
 // From the site reward and rift guard formulas in Cairo. Run scripts/generate-site-previews.mjs.
+export const RELICS_PER_LAYER = 3;
+
 export function previewRuinGuardBounds(rank: number, depth: number): [number, number] {
   const place = rank - 1 - depth;
   const base = [1000, 1500, 2500][place];
