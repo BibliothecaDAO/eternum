@@ -131,8 +131,10 @@ pub fn validate(rules: DeepRules, spacing: u32) {
     }
     assert!(rules.core_per_tick != 0 && rules.mine_per_tick != 0, "empty Deep payment");
     let pay = rules.building_pay;
-    assert!(pay.crowd != 0 && pay.pair >= pay.crowd && pay.alone >= pay.pair, "invalid Deep building pay");
-    assert!(rules.altar_threshold != 0, "invalid Altar charge");
+    assert!(
+        pay.crowd != 0 && pay.pair >= pay.crowd && pay.alone >= pay.pair && rules.altar_threshold != 0,
+        "invalid Deep building pay",
+    );
     assert!(
         rules.loss_per_tick != 0 && rules.loss_per_tick % crate::rules::RESOURCE_PRECISION == 0,
         "invalid Deep troop loss",
