@@ -45,15 +45,12 @@ const market =
 const marketDown: LordsQuoteReader = () => Promise.reject(new Error("AVNU: 429"));
 const seated: ShopAccess = async () => true;
 
-const facts = (overrides: Partial<HolderFacts>): HolderFacts => ({ heldRealmIds: [], ticket: null, ...overrides });
+const facts = (overrides: Partial<HolderFacts>): HolderFacts => ({ heldRealmIds: [], ...overrides });
 
 it("tells each holder level from what the account holds", () => {
   expect(holderLevelOf(facts({}))).toBe("none");
   expect(holderLevelOf(facts({ heldRealmIds: [PLAIN_REALM] }))).toBe("realm");
-  expect(holderLevelOf(facts({ ticket: "regular" }))).toBe("realm");
   expect(holderLevelOf(facts({ heldRealmIds: [PLAIN_REALM, WONDER_REALM] }))).toBe("wonder");
-  expect(holderLevelOf(facts({ ticket: "golden" }))).toBe("wonder");
-  expect(holderLevelOf(facts({ heldRealmIds: [PLAIN_REALM], ticket: "golden" }))).toBe("wonder");
 });
 
 it("prices the seal by holder and channel, and says what each holder has free", () => {
@@ -70,7 +67,7 @@ it("serves the signed-in account its level, whether it holds the seal, and the t
   const world = {
     db,
     access: seated,
-    holderFacts: async () => facts({ ticket: "regular" }),
+    holderFacts: async () => facts({ heldRealmIds: [PLAIN_REALM] }),
     readLordsQuote: marketDown,
   };
   const ask = (realmsId: string | null) =>

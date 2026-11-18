@@ -68,7 +68,7 @@ const sendAs = async (
     auth,
     {
       db,
-      holderFacts: async () => ({ heldRealmIds: [], ticket: null }),
+      holderFacts: async () => ({ heldRealmIds: [] }),
       access: seated,
       verifiers: { apple: store },
       now: () => 100,
@@ -128,8 +128,8 @@ it("refuses an unsigned or malformed request", async () => {
 
 it("grants the seal at the store price of the buyer's holder level, once", async () => {
   const db = await migrated();
-  const nothing = { heldRealmIds: [], ticket: null };
-  const holder = { heldRealmIds: [1], ticket: null };
+  const nothing = { heldRealmIds: [] };
+  const holder = { heldRealmIds: [1] };
   // A holder's price does not buy a buyer who holds nothing the seal.
   expect(
     await sendAs(db, OWNER, { store: "apple", receipt: "tx-5|seal-holder" }, { holderFacts: async () => nothing }),
@@ -151,7 +151,7 @@ it("grants the seal at the store price of the buyer's holder level, once", async
   ).toEqual([409, { error: "receipt_used" }]);
 });
 
-const HOLDER = { heldRealmIds: [1], ticket: null } as const;
+const HOLDER = { heldRealmIds: [1] } as const;
 const ledger = async (db: D1Database) =>
   (await db.prepare('SELECT "receipt", "owner", "outcome" FROM "store_receipts" ORDER BY "receipt"').all()).results;
 const seals = async (db: D1Database) =>
@@ -415,7 +415,7 @@ const checkAs = async (
   realmsId: string | null,
   body: unknown,
   access: ShopAccess = seated,
-  holderFacts: ReceiptWorld["holderFacts"] = async () => ({ heldRealmIds: [], ticket: null }),
+  holderFacts: ReceiptWorld["holderFacts"] = async () => ({ heldRealmIds: [] }),
 ) => {
   const auth = {
     api: { getSession: async () => (realmsId ? { user: { realmsId } } : null) },
@@ -475,8 +475,8 @@ it("approves a product the shop sells for a player of the game it names, never a
 
 it("approves the discounted seal only where settlement would honour it, and waits while holdings are unknown", async () => {
   const db = await migrated();
-  const nobody = async () => ({ heldRealmIds: [], ticket: null });
-  const regular = async () => ({ heldRealmIds: [], ticket: "regular" as const });
+  const nobody = async () => ({ heldRealmIds: [] });
+  const realmHolder = async () => ({ heldRealmIds: [1] });
   const unknown = () => Promise.reject(new RealmHoldingsUnavailableError());
   const product = { product: "seal-holder" };
   // A non-holder is refused at authorisation, and the same payment is refused at settlement: the two agree.
@@ -486,8 +486,8 @@ it("approves the discounted seal only where settlement would honour it, and wait
   );
   expect(await seals(db)).toEqual([]);
   // A holder is approved, and the payment settles as the seal.
-  expect(await checkAs(db, OTHER, product, seated, regular)).toEqual([200, { status: "ok" }]);
-  expect(await sendAs(db, OTHER, { store: "apple", receipt: "tx-h|seal-holder" }, { holderFacts: regular })).toEqual([
+  expect(await checkAs(db, OTHER, product, seated, realmHolder)).toEqual([200, { status: "ok" }]);
+  expect(await sendAs(db, OTHER, { store: "apple", receipt: "tx-h|seal-holder" }, { holderFacts: realmHolder })).toEqual([
     200,
     { status: "seal", repeated: false },
   ]);

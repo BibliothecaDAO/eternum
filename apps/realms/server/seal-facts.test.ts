@@ -40,7 +40,6 @@ it("gives no holder level for Realms the index lists that the wallet no longer h
   const env = await envWithWallet();
   expect(await holderFactsOf(env, readers([PLAIN_REALM, WONDER_REALM], []))(OWNER)).toEqual({
     heldRealmIds: [],
-    ticket: null,
   });
 });
 

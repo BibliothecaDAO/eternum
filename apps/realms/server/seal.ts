@@ -1,6 +1,5 @@
 import { canonicalRealm } from "@bibliothecadao/eternum";
 import { SEAL_CENTS, SEAL_FREE } from "@bibliothecadao/types";
-import { type TicketTier } from "@realms-world/identity";
 
 import type { IdentityAuth } from "./auth";
 import { json } from "./http";
@@ -9,20 +8,14 @@ import { quoteLords, type LordsQuoteReader } from "./lords-price";
 import { holdsSeal } from "./seal-codes";
 import { authorizeShop, namedGame, type ShopAccess } from "./shop-game";
 
-/** What an account holds that the seal's price and free parts read: its Realms, and the tier of the campaign ticket it came by. */
 export interface HolderFacts {
   heldRealmIds: readonly number[];
-  ticket: TicketTier | null;
 }
 
-/**
- * Who the buyer is for the Ancient Seal (the frozen design's holder table): a held Wonder, or a golden ticket home, is
- * the highest; a held Realm, or a regular ticket home, the next; anyone else holds nothing.
- */
-export const holderLevelOf = ({ heldRealmIds, ticket }: HolderFacts) =>
-  ticket === "golden" || heldRealmIds.some((realmId) => canonicalRealm(realmId).wonder !== null)
+export const holderLevelOf = ({ heldRealmIds }: HolderFacts) =>
+  heldRealmIds.some((realmId) => canonicalRealm(realmId).wonder !== null)
     ? ("wonder" as const)
-    : ticket === "regular" || heldRealmIds.length > 0
+    : heldRealmIds.length > 0
       ? ("realm" as const)
       : ("none" as const);
 
