@@ -9,6 +9,7 @@ import {
 } from "@bibliothecadao/types";
 import depthLooks from "../../src/three/terrain/ethereal-depths.json" with { type: "json" };
 import homeIcons from "../../src/ui/design-system/home-icons.json" with { type: "json" };
+import iconMeanings from "../../asset-sources/facets/semantic-map.json" with { type: "json" };
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import realmAssets from "../../src/three/structures/realm-assets.json" with { type: "json" };
 import realmSkins from "../../src/three/structures/realm-skins.json" with { type: "json" };
@@ -445,17 +446,18 @@ const RELIC_FORECAST_STEPS = [
 const BATTLE_TARGET_STEPS = battleTargetSteps(attackFromTheSiteCard, "Map");
 const DEEP_BATTLE_TARGET_STEPS = battleTargetSteps(attackFromTheDeepCard, "Deep");
 
-function battleTargetSteps(attack, place) {
-  const values = readFileSync(
+function battleTargetSteps(attack, place, withOaths = false) {
+  const fields = readFileSync(
     resolve(
       dirname(fileURLToPath(import.meta.url)),
-      "../../../../contracts/l3/world-native/tests/fixtures/frontier-marks.txt",
+      `../../../../contracts/l3/world-native/tests/fixtures/${withOaths ? "oath-damage" : "frontier-marks"}.txt`,
     ),
     "utf8",
   )
     .trim()
     .split(/\s+/)
     .map(Number);
+  const values = fields.filter((_, index) => !withOaths || index % 10 >= 6);
   const offset = place === "Deep" ? 8 : 0;
   return [
     { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", place) },
@@ -480,16 +482,25 @@ function battleTargetSteps(attack, place) {
           army &&
           guard &&
           openingRecorded &&
+          (!withOaths || place !== "Deep" || played.guardOaths?.includes(fields[23])) &&
           BigInt(army.troops.count) === BigInt(attacker) * 1_000_000_000n &&
           BigInt(guard.troops.count) === BigInt(defender) * 1_000_000_000n &&
-          played.forecast?.some((label) => label.includes(`→ ${attacker},`)) &&
-          played.forecast?.some((label) => label.includes(`→ ${defender},`))
+          played.forecast?.length === 2 &&
+          played.forecast[0].startsWith("Army ") &&
+          new RegExp(`→ ${attacker},(?!\\d)`).test(played.forecast[0]) &&
+          new RegExp(`→ ${defender},(?!\\d)`).test(played.forecast[1])
           ? { watch: "fought" }
           : undefined;
       }),
     ),
   ];
 }
+
+const ORDER_ART = Object.fromEntries(
+  Object.values(iconMeanings).flatMap((meaning) =>
+    meaning.orderId === undefined ? [] : [[meaning.orderId, meaning.art]],
+  ),
+);
 
 const FIGHT_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
@@ -4424,7 +4435,31 @@ async function attackFromTheDeepCard({ browser, extraScreenshot }) {
   const forecast = browser.read(
     `Array.from(document.querySelectorAll('[data-kit-sheet] [role="img"][aria-label*="→"]'), node => node.getAttribute('aria-label'))`,
   );
+  const guardOaths = browser.read(
+    `Array.from(document.querySelectorAll("[data-guard-oaths]"), node => {
+      const art = ${JSON.stringify(ORDER_ART)};
+      const visible = Array.from(node.querySelectorAll("[data-oath] img")).filter(image => {
+        const box = image.getBoundingClientRect();
+        const shown = image.checkVisibility({ opacityProperty: true, visibilityProperty: true });
+        return shown && box.width > 0 && box.height > 0;
+      });
+      const painted = visible.filter(image =>
+        (image.currentSrc || image.src).endsWith("/" + art[image.closest("[data-oath]").dataset.oath] + ".webp"),
+      );
+      const mask = Number(node.dataset.guardOaths);
+      const shownMask = painted.reduce((bits, image) => bits | (1 << (Number(image.closest("[data-oath]").dataset.oath) - 1)), 0);
+      const held = mask.toString(2).split("").filter(bit => bit === "1").length;
+      return visible.length === held && painted.length === held && shownMask === mask ? mask : 0;
+    })`,
+  );
   extraScreenshot("deep-forecast-before-attack");
+  if (guardOaths.some(Boolean)) {
+    browser.read(
+      `(() => { document.querySelector('[data-guard-oaths]')?.scrollIntoView({ block: "nearest" }); return true; })()`,
+    );
+    await sleep(HOVER_SETTLE_MS);
+    extraScreenshot("guard-oaths");
+  }
   const after = browser.read("window.__labChain?.sent.length ?? 0");
   const armyId = browser.observe().selection?.army?.id;
   watchFor(
@@ -4456,7 +4491,7 @@ async function attackFromTheDeepCard({ browser, extraScreenshot }) {
     (state) => state.sheet === "Quarry",
     SHEET_WAIT_MS,
   );
-  return { forecast, watching: true };
+  return { forecast, guardOaths, watching: true };
 }
 
 const deepLossVectors = readFileSync(
@@ -6382,6 +6417,14 @@ export const STEP_SETS = {
   "lab-actions-transfer": { game: labSpireGame("merge-loses-training"), steps: transferActionSteps() },
   "lab-battle-target": { game: labSpireGame("battle-target"), steps: BATTLE_TARGET_STEPS },
   "lab-deep-battle-target": { game: labSpireGame("deep-battle-target"), steps: DEEP_BATTLE_TARGET_STEPS },
+  "lab-oath-battle-target": {
+    game: labSpireGame("oath-battle-target"),
+    steps: battleTargetSteps(attackFromTheSiteCard, "Map", true),
+  },
+  "lab-oath-deep-battle-target": {
+    game: labSpireGame("oath-deep-battle-target"),
+    steps: battleTargetSteps(attackFromTheDeepCard, "Deep", true),
+  },
   "lab-actions-oath-pick": { game: labSpireGame("oath-pick"), steps: oathPickSteps(false) },
   "lab-actions-oath-replace": { game: labSpireGame("oath-replace"), steps: oathPickSteps(true) },
   "lab-oath-slots": { game: labSpireGame("oath-slots"), steps: OATH_SLOTS_STEPS },

@@ -1,3 +1,4 @@
+import { oathDamageMultiplier } from "./oaths";
 import { bonusActive } from "./relic";
 import { BiomeType, RESOURCE_PRECISION, type Troops } from "@bibliothecadao/types";
 import { nativeRuleConstants, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
@@ -51,6 +52,8 @@ interface ExchangeContext {
   defenderBiome: BiomeType;
   attackerIsStructureGuard: boolean;
   defenderIsStructureGuard: boolean;
+  attackerOaths: number;
+  defenderOaths: number;
 }
 
 export type ExchangeRefusal = "no-troops" | "cooldown" | "insufficient-stamina";
@@ -214,6 +217,14 @@ const exchangeDamage = (
   attackerDamage = sub(attackerDamage, div(mul(attackerDamage, unscaled(defenderBoosts.gotten)), BPS_100));
 
   if (rules.dayUnitSeconds !== 0) {
+    attackerDamage = mul(
+      attackerDamage,
+      oathDamageMultiplier(context.attackerOaths, context.defenderOaths, context.defenderIsStructureGuard),
+    );
+    defenderDamage = mul(
+      defenderDamage,
+      oathDamageMultiplier(context.defenderOaths, context.attackerOaths, context.attackerIsStructureGuard),
+    );
     const attackerBow = attacker.category === "Crossbowman";
     const defenderBow = defender.category === "Crossbowman";
     if (attackerBow && !defenderBow) {

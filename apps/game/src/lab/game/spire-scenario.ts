@@ -76,7 +76,7 @@ export const spireScenario = (ground: LabGround = GRASSLAND): LabScenario => {
     { model: "Structure", key: "0x71", value: null },
     { model: "ExpeditionSite", key: "0x72", value: null },
     { model: "Guard", key: "0x73", value: null },
-    armyProgress(PROGRESS_KEYS.spireArmy, SPIRE_ARMY),
+    armyProgress(store, SPIRE_ARMY),
     ...[site, ...getHexesWithinRadius(site.col, site.row, 4)]
       .filter((hex) => !store.get("TileOpt", { game_id: 1, alt: false, col: hex.col, row: hex.row }))
       .map((hex, index) => tile(`0x1ab7${index.toString(16)}`, hex.col, hex.row)),
@@ -177,13 +177,9 @@ export const besideOnOpenLand = (store: NativeFactStore, beside: { col: number; 
   return { col: open.col, row: open.row };
 };
 
-/** Where the spire's game keeps its progression rows: a lab game that writes its own replaces them in place. */
-export const PROGRESS_KEYS = { spireArmy: "0x1ab92" } as const;
-
-/** The lab army's XP and trained sides, with no unspent skill points. */
-export const armyProgress = (key: string, explorerId: number, logistics = 1): LabFact => ({
+export const armyProgress = (store: NativeFactStore, explorerId: number, logistics = 1): LabFact => ({
   model: "ArmyProgress",
-  key,
+  key: store.wireKeyOf("ArmyProgress", { game_id: 1, explorer_id: explorerId }) ?? `0xaf${explorerId}`,
   value: {
     game_id: 1,
     explorer_id: String(explorerId),

@@ -6,7 +6,6 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { HudCheck, HudNotice, HudWindow } from "@/ui/design-system/kit/hud-elements";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import {
-  type Army,
   CombatParameters,
   CombatSimulator,
   configManager,
@@ -26,7 +25,7 @@ import { TargetType } from "../types";
 import { ActionFooter } from "./action-footer";
 import { ArmyColumn } from "./army-column";
 import { BiomeEnvironmentBar } from "./biome-environment-bar";
-import type { BattleLabMode, WorkingArmy } from "./battle-lab.types";
+import type { BattleLabMode } from "./battle-lab.types";
 import { CombatParametersPanel } from "./combat-parameters-panel";
 import { OutcomeBanner, type BattleOutcome } from "./outcome-banner";
 import { OutcomeStrip } from "./outcome-strip";
@@ -50,14 +49,6 @@ interface BattleLabProps {
   /** sim mode: starting biome */
   initialBiome?: BiomeType;
 }
-
-const toArmy = (army: WorkingArmy): Army => ({
-  stamina: army.stamina,
-  troopCount: army.troopCount,
-  troopType: army.troopType,
-  tier: army.tier,
-  battle_cooldown_end: army.battle_cooldown_end,
-});
 
 /** Stable key for a CombatParameters object (bigint-safe, unlike raw JSON.stringify). */
 const serializeParams = (params: CombatParameters) =>
@@ -169,8 +160,8 @@ export const BattleLab = ({
     const now = Math.floor(Date.now() / 1000);
     const result = combatSimulator.simulateBattle(
       now,
-      toArmy(state.attacker),
-      toArmy(state.defender),
+      state.attacker,
+      state.defender,
       state.biome,
       state.attacker.relics,
       state.defender.relics,

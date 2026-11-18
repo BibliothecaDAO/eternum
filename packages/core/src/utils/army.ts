@@ -146,6 +146,11 @@ export const getGuardsByStructure = (
   );
 };
 
+export const getDefendingGuards = (structure: NativeRows["Structure"], store: NativeFactStore, timestamp?: number) =>
+  getGuardsByStructure(structure, store, timestamp)
+    ?.filter((guard) => guard.troops.count > 0n)
+    .toReversed();
+
 /** Seconds before a wiped guard slot accepts troops again; 0 when it is open. The contract only enforces the
  *  resurrection delay on an empty slot, so a slot that still holds troops never reads as cooling down. */
 export const getGuardSlotCooldownRemaining = (

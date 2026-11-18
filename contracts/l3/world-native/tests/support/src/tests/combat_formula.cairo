@@ -13,6 +13,8 @@ pub fn context(biome: Biome) -> CombatContext {
         attack_distance: 1,
         attacker_is_structure_guard: false,
         defender_is_structure_guard: false,
+        attacker_oaths: 0,
+        defender_oaths: 0,
     }
 }
 pub const KNIGHT_MAX_STAMINA: u16 = 120;

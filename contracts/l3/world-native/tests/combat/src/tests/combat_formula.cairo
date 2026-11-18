@@ -70,6 +70,8 @@ fn tests_crossbowman_ranged_field_attack_uses_reduced_damage() {
                 attack_distance: 1,
                 attacker_is_structure_guard: false,
                 defender_is_structure_guard: false,
+                attacker_oaths: 0,
+                defender_oaths: 0,
             },
             stamina_config(),
             damage_config(),
@@ -87,6 +89,8 @@ fn tests_crossbowman_ranged_field_attack_uses_reduced_damage() {
                 attack_distance: 2,
                 attacker_is_structure_guard: false,
                 defender_is_structure_guard: false,
+                attacker_oaths: 0,
+                defender_oaths: 0,
             },
             stamina_config(),
             damage_config(),
@@ -124,6 +128,8 @@ fn tests_crossbowman_ranged_structure_attack_uses_heavy_reduction() {
                 attack_distance: 2,
                 attacker_is_structure_guard: false,
                 defender_is_structure_guard: false,
+                attacker_oaths: 0,
+                defender_oaths: 0,
             },
             stamina_config(),
             damage_config(),
@@ -141,6 +147,8 @@ fn tests_crossbowman_ranged_structure_attack_uses_heavy_reduction() {
                 attack_distance: 2,
                 attacker_is_structure_guard: false,
                 defender_is_structure_guard: true,
+                attacker_oaths: 0,
+                defender_oaths: 0,
             },
             stamina_config(),
             damage_config(),
@@ -177,6 +185,8 @@ fn tests_knight_assault_increases_adjacent_structure_guard_damage() {
                 attack_distance: 1,
                 attacker_is_structure_guard: false,
                 defender_is_structure_guard: true,
+                attacker_oaths: 0,
+                defender_oaths: 0,
             },
             stamina_config(),
             damage_config(),
@@ -213,6 +223,8 @@ fn tests_knight_bulwark_reduces_guard_incoming_damage() {
                 attack_distance: 1,
                 attacker_is_structure_guard: false,
                 defender_is_structure_guard: true,
+                attacker_oaths: 0,
+                defender_oaths: 0,
             },
             stamina_config(),
             damage_config(),
@@ -506,4 +518,53 @@ fn frontier_bow_exchanges_match_the_browser_receipts_against_a_beast_and_a_knigh
         }
     }
     assert!(fields.is_empty());
+}
+
+#[test]
+fn oath_damage_matches_the_shared_vectors_for_both_sides_and_guard_roles() {
+    let values = read_txt(@FileTrait::new("../fixtures/oath-damage.txt"));
+    let mut fields = values.span();
+    assert_eq!(fields.len(), 280);
+    let damage = TroopDamageConfig {
+        damage_biome_bonus_num: 0, damage_scaling_factor: 36893488147419103232, ..damage_config(),
+    };
+    let stamina = TroopStaminaConfig {
+        damage_stamina_refund: false,
+        stamina_attack_req: 10,
+        stamina_defense_req: 0,
+        stamina_gain_per_tick: 0,
+        ..stamina_config(),
+    };
+    while !fields.is_empty() {
+        let (
+            a, b, attacker_oaths, defender_oaths, attacker_is_structure_guard, defender_is_structure_guard,
+        ): (TroopType, TroopType, u16, u16, bool, bool) =
+            Serde::deserialize(
+            ref fields,
+        )
+            .unwrap();
+        let (before_a, before_b, after_a, after_b): (u128, u128, u128, u128) = Serde::deserialize(ref fields).unwrap();
+        let mut attacker = test_troops(a, TroopTier::T1, before_a, 100);
+        let mut defender = test_troops(b, TroopTier::T1, before_b, 100);
+        attacker
+            .attack_with_context(
+                ref defender,
+                CombatContext {
+                    day_unit_seconds: 100,
+                    attacker_oaths,
+                    defender_oaths,
+                    attacker_is_structure_guard,
+                    defender_is_structure_guard,
+                    ..context(Biome::Underground),
+                },
+                stamina,
+                damage,
+                120,
+                0,
+            );
+        assert_eq!(attacker.count, after_a * RESOURCE_PRECISION);
+        assert_eq!(defender.count, after_b * RESOURCE_PRECISION);
+        assert_eq!(attacker.stamina.inline().amount, 90);
+        assert_eq!(defender.stamina.inline().amount, 100);
+    }
 }

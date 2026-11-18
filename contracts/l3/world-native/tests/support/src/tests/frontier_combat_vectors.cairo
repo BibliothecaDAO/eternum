@@ -103,6 +103,8 @@ pub fn resolve_exchange(
                 attack_distance: exchange.attack_distance.into(),
                 attacker_is_structure_guard: exchange.attacker_is_structure_guard,
                 defender_is_structure_guard: exchange.defender_is_structure_guard,
+                attacker_oaths: 0,
+                defender_oaths: 0,
             },
             stamina,
             damage,

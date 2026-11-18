@@ -134,6 +134,11 @@ fn fight_guard(key: ExplorerKey, ref attacker: ExplorerTroops, ref defender: Gua
     };
     record_target(key, target, context);
     let combat = CombatContext {
+        attacker_oaths: combat_oaths(key, context),
+        defender_oaths: match defender.source {
+            GuardSource::Army(key) => combat_oaths(key, context),
+            _ => 0,
+        },
         defender_is_structure_guard: context.rules.unbox().day_unit_seconds == 0
             || defender.actor != 0.try_into().unwrap(),
         ..combat_context(key.game_id, attacker, defender.army, context),
@@ -266,7 +271,11 @@ pub fn battle(
     let attacker_before = attacker.troops.count;
     let defender_before = defender.troops.count;
     record_target(attacker_key, command.defender_id, context);
-    let combat = combat_context(game_id, attacker, defender, context);
+    let combat = CombatContext {
+        attacker_oaths: combat_oaths(attacker_key, context),
+        defender_oaths: combat_oaths(defender_key, context),
+        ..combat_context(game_id, attacker, defender, context),
+    };
     let (attacker_after, defender_after) = resolve_battle(game_id, attacker.troops, defender.troops, combat, context);
     attacker.troops = attacker_after;
     defender.troops = defender_after;
@@ -324,7 +333,9 @@ pub fn guard_attack(
     let attacker = ExplorerTroops { owner: command.guard.structure_id, coord, troops: guard.troops };
     assert_army_opponents(game_id, attacker, defender, rules);
     let combat = CombatContext {
-        attacker_is_structure_guard: true, ..combat_context(game_id, attacker, defender, context),
+        attacker_is_structure_guard: true,
+        defender_oaths: combat_oaths(defender_key, context),
+        ..combat_context(game_id, attacker, defender, context),
     };
     let (attacker_after, defender_after) = resolve_battle(game_id, guard.troops, defender.troops, combat, context);
     let before = defender.troops.count;
@@ -563,6 +574,14 @@ pub fn assert_battle_range(game_id: u32, mut attacker: ExplorerTroops, defender:
     assert!(within, "explorers out of range");
 }
 
+fn combat_oaths(key: ExplorerKey, context: ExecutionContext) -> u16 {
+    if context.rules.unbox().day_unit_seconds == 0 {
+        0
+    } else {
+        crate::logic::progression::read(key).expect('missing army progress').oaths
+    }
+}
+
 pub fn combat_context(
     game_id: u32, attacker: ExplorerTroops, defender: ExplorerTroops, context: ExecutionContext,
 ) -> CombatContext {
@@ -587,6 +606,8 @@ pub fn combat_context(
         attack_distance,
         attacker_is_structure_guard: false,
         defender_is_structure_guard: false,
+        attacker_oaths: 0,
+        defender_oaths: 0,
     }
 }
 

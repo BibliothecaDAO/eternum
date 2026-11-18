@@ -1,3 +1,4 @@
+import oathDamage from "../../../../../../../contracts/l3/world-native/tests/fixtures/oath-damage.txt?raw";
 import { deepBattleTargetScenario } from "@/lab/game/battle-target-scenario";
 import { readDeepSites } from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
@@ -248,18 +249,6 @@ it("applies active relics to a slot army without modifying stored troop boosts",
         stamina: { amount: 100n, settled_at: 350n, remainder: 0 },
       },
     },
-    {
-      model: "ArmyProgress",
-      key: "0x9101",
-      value: {
-        game_id: 1,
-        explorer_id: army.explorer_id,
-        logistics: 0,
-        oath_slots: 1,
-        oaths: 0,
-        oath_pick: 0,
-      },
-    },
     relicEffectFact("Blade"),
     relicEffectFact("Ward"),
   ]);
@@ -332,4 +321,34 @@ it("keeps a replacement Knight guard protected and removes that protection from 
   expect(readDeepSiteFight(store, quarry(), attack)?.result).toEqual({ troopsLost: 294, guardLeft: 672 });
   store.applyFacts([{ model: "ArmyCombat", key: combatKey, value: null }]);
   expect(readDeepSiteFight(store, quarry(), attack)?.result).toEqual({ troopsLost: 294, guardLeft: 672 });
+});
+
+it("previews both armies' held damage Oaths from synchronized facts and refuses missing progress", () => {
+  const { store, startsAt } = deepBattleTargetScenario(true);
+  setBlockTimestampSource(() => startsAt);
+  const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201n });
+  const position = store.entityOccupancy(1, 201)!;
+  const attack = {
+    army,
+    armyTile: { col: position.col, row: position.row, alt: position.alt },
+    biome: BiomeType.Underground,
+    timestamp: startsAt,
+  };
+  const site = readDeepSites(store, startsAt, 1).find(({ name }) => name === "Quarry")!;
+  const fields = oathDamage.trim().split(/\s+/).map(Number);
+  const [before, , after, guardAfter] = fields.slice(26, 30);
+  expect(readDeepSiteFight(store, site, attack)?.result).toEqual({
+    troopsLost: before! - after!,
+    guardLeft: guardAfter,
+  });
+  const guard = site.guards[0]!.army;
+  const progress = store.require("ArmyProgress", guard);
+  const key = store.wireKeyOf("ArmyProgress", guard)!;
+  store.applyFacts([{ model: "ArmyProgress", key, value: { ...progress, oaths: 0 } }]);
+  expect(readDeepSiteFight(store, site, attack)?.result).toEqual({
+    troopsLost: 262,
+    guardLeft: 705,
+  });
+  store.applyFacts([{ model: "ArmyProgress", key, value: null }]);
+  expect(() => readDeepSiteFight(store, site, attack)).toThrow("Deep attrition requires its rules and army progress");
 });

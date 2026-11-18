@@ -39,6 +39,7 @@ const DEFAULT_ATTACKER: WorkingArmy = {
   troopType: TroopType.Knight,
   tier: TroopTier.T1,
   battle_cooldown_end: 0,
+  oaths: 0,
   relics: [],
 };
 
@@ -48,6 +49,7 @@ const DEFAULT_DEFENDER: WorkingArmy = {
   troopType: TroopType.Crossbowman,
   tier: TroopTier.T1,
   battle_cooldown_end: 0,
+  oaths: 0,
   relics: [],
 };
 

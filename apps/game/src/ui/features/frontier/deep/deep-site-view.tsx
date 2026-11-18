@@ -1,3 +1,6 @@
+import { heldOaths } from "@bibliothecadao/eternum";
+import { orderMeaning } from "@/ui/design-system/icon-meaning";
+import { oathEffectDescription, oathName } from "../army/oath-details";
 import { Icon } from "@/ui/design-system/icon";
 import {
   HudButton,
@@ -33,6 +36,7 @@ export interface DeepTickPay {
 export interface DeepSlot {
   slot: number;
   armyId: number;
+  oaths: number;
   category: Troops["category"];
   realm: string;
   troops: number;
@@ -160,7 +164,19 @@ const SlotRow = ({ slot, next }: { slot: DeepSlot; next: boolean }) => (
     lead={<CombatMark category={slot.category} />}
     title={next ? `${slot.realm} · ${DEEP_WORDS.facesNext}` : slot.realm}
     selected={slot.mine}
-    detail={`${DEEP_WORDS.lasts(slot.ticks.left, slot.ticks.time)} · ${DEEP_WORDS.share(slot.share)}`}
+    detail={
+      <>
+        <span>{`${DEEP_WORDS.lasts(slot.ticks.left, slot.ticks.time)} · ${DEEP_WORDS.share(slot.share)}`}</span>
+        <span data-guard-oaths={slot.oaths} className="flex flex-wrap gap-2">
+          {heldOaths(slot.oaths).map((id) => (
+            <span key={id} data-oath={id} title={oathEffectDescription(id)} className="inline-flex items-center gap-1">
+              <Icon name={orderMeaning(id)} size={20} />
+              {oathName(id)}
+            </span>
+          ))}
+        </span>
+      </>
+    }
     trail={formatExact(slot.troops)}
   />
 );

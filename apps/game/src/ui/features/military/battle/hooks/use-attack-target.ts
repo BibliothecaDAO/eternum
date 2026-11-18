@@ -7,6 +7,7 @@ import {
   configManager,
   getExplorerOwner,
   getArmyRelicEffects,
+  getDefendingGuards,
   getGuardsByStructure,
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
@@ -111,9 +112,8 @@ export const useAttackTargetData = (
 
     if (targetTile.occupier_is_structure) {
       if (!targetStructure) return null;
-      const knownGuards = getGuardsByStructure(targetStructure, guardsFacts.store);
-      if (!knownGuards) return null;
-      const guards = knownGuards.filter((guard) => guard.troops.count > 0n).toSorted((a, b) => a.slot - b.slot);
+      const guards = getDefendingGuards(targetStructure, guardsFacts.store);
+      if (!guards) return null;
 
       return {
         info: guards.map((guard) => guard.troops),

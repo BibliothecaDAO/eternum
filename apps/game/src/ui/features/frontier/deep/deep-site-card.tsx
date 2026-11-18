@@ -12,9 +12,12 @@ import { costLine } from "@/ui/design-system/kit/price-faces";
 import { DEEP_WORDS } from "@/ui/design-system/kit/words";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { toast } from "@/ui/features/event-feed/notify";
-import { configManager, getStructureName, journeyDistance } from "@bibliothecadao/eternum";
+import { armyOaths, configManager, getStructureName } from "@bibliothecadao/eternum";
 import {
   deepArmyLife,
+  homeAspect,
+  isBesideDeepSite,
+  isDeepSiteRival,
   readDeepSites,
   safeInteger,
   nativeRuleConstants,
@@ -54,13 +57,10 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
   const userId = selected ? safeInteger(selected.army.explorer_id) : null;
   const busy = useInFlight("army", userId)?.order;
   const tile = { col: site.position.x, row: site.position.y, alt: site.position.alt };
-  const adjacent =
-    selected !== null &&
-    selected.armyTile.alt === tile.alt &&
-    journeyDistance({ x: selected.armyTile.col, y: selected.armyTile.row }, site.position) === 1;
+  const adjacent = selected !== null && isBesideDeepSite(selected.armyTile, site);
   const block = selectionBlock(setup.store, game_id, site, selected);
   const verb =
-    site.beastTroops > 0n || isRival(setup.store, game_id, site, selected)
+    site.beastTroops > 0n || (selected !== null && isDeepSiteRival(setup.store, site, selected.army.owner))
       ? "attack"
       : site.guards.length
         ? "join"
@@ -129,7 +129,7 @@ function tickPay(store: NativeFactStore, game_id: number, site: Site, selected: 
   const quarry = site.kind === nativeRuleConstants.DEEP_QUARRY;
   const altar = site.kind === nativeRuleConstants.DEEP_ALTAR;
   const home = site.guards[0]?.army.owner ?? selected?.army.owner;
-  const holder = home === undefined ? undefined : aspect(store, game_id, home);
+  const holder = home === undefined ? undefined : homeAspect(store, game_id, home);
   let bar: DeepTickPay["bar"] = null;
   if (altar && banes && holder !== undefined) {
     const reading = store.requireOrAbsent("AltarBar", { game_id, aspect: holder });
@@ -144,19 +144,6 @@ function tickPay(store: NativeFactStore, game_id: number, site: Site, selected: 
   };
 }
 
-function aspect(store: NativeFactStore, game_id: number, home: bigint): number {
-  return store.require("HomeAspect", { game_id, home }).aspect;
-}
-
-function isRival(store: NativeFactStore, game_id: number, site: Site, selected: Selected): boolean {
-  const holder = site.guards[0];
-  return (
-    selected !== null &&
-    holder !== undefined &&
-    aspect(store, game_id, holder.army.owner) !== aspect(store, game_id, selected.army.owner)
-  );
-}
-
 function selectionBlock(
   store: NativeFactStore,
   game_id: number,
@@ -168,7 +155,7 @@ function selectionBlock(
   if (store.get("DeepGuard", key)) return "guarding";
   if (store.require("ArmyDay", key).day !== BigInt(site.day)) return "otherDay";
   if (selected.army.troops.count === 0n) return "noTroops";
-  if (isRival(store, game_id, site, selected) || site.beastTroops > 0n) return undefined;
+  if (isDeepSiteRival(store, site, selected.army.owner) || site.beastTroops > 0n) return undefined;
   const owner = store.require("Structure", { game_id, entity_id: selected.army.owner }).owner;
   if (site.guards.some(({ army }) => store.require("Structure", { game_id, entity_id: army.owner }).owner === owner))
     return "guarding";
@@ -186,7 +173,7 @@ function guardView(store: NativeFactStore, game_id: number, site: Site, selected
   const next = site.guards[0];
   if (!next) return { kind: "open" };
   const total = site.guards.reduce((sum, { army }) => sum + army.troops.count, 0n);
-  const holder = aspects.find((candidate) => candidate.id === aspect(store, game_id, next.army.owner));
+  const holder = aspects.find((candidate) => candidate.id === homeAspect(store, game_id, next.army.owner));
   if (!holder) throw new Error("Unknown Deep holder Aspect");
   return {
     kind: "held",
@@ -198,6 +185,7 @@ function guardView(store: NativeFactStore, game_id: number, site: Site, selected
       return {
         slot,
         armyId: safeInteger(army.explorer_id),
+        oaths: armyOaths(store, army),
         category: army.troops.category,
         realm: getStructureName(home, store).name,
         troops: Number(army.troops.count) / RESOURCE_PRECISION,

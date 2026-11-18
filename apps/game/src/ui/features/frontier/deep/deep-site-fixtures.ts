@@ -12,6 +12,7 @@ const slot = (slot: number, realm: string, troops: number, mine = false): DeepSl
   return {
     slot,
     armyId: 100 + slot,
+    oaths: 0,
     category: "Knight",
     realm,
     troops,

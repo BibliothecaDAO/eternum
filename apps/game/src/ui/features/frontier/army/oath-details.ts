@@ -9,5 +9,8 @@ export function oathName(id: number): string {
 
 export function oathEffectDescription(id: number): string | undefined {
   if (id === oaths.VITRIOL) return `Loses ${oaths.VITRIOL_LOSS_PER_TICK} troops a tick in the ${layerName(3)}.`;
+  if (id === oaths.POWER) return `Deals ${oaths.POWER_DAMAGE_PERCENT}% more damage.`;
+  if (id === oaths.GIANTS) return `Takes ${oaths.GIANTS_REDUCTION_PERCENT}% less damage.`;
+  if (id === oaths.PROTECTION) return `Guarding a site, takes ${oaths.PROTECTION_REDUCTION_PERCENT}% less damage.`;
   return undefined;
 }

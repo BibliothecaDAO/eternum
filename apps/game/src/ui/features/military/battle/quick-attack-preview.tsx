@@ -14,6 +14,7 @@ import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
 import {
   configManager,
+  armyOaths,
   isCombatGuard,
   StaminaManager,
   getGuardsByStructure,
@@ -192,6 +193,13 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       targetArmyData.troops,
       {
         timestamp: executionSecond,
+        attackerOaths:
+          attackerType === AttackerType.Structure
+            ? 0
+            : armyOaths(facts.store, { game_id: configManager.getActiveGameId(), explorer_id: attacker.id }),
+        defenderOaths: isStructureTarget
+          ? 0
+          : armyOaths(facts.store, { game_id: configManager.getActiveGameId(), explorer_id: targetData.id }),
         attackDistance: targetDistance,
         attackerBiome: biome,
         defenderBiome: biome,
@@ -202,6 +210,8 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       { rules: configManager.getCombatRules() },
     );
   }, [
+    facts,
+    attacker.id,
     attackerArmyData,
     targetArmyData,
     targetData,

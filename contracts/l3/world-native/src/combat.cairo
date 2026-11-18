@@ -21,6 +21,8 @@ pub struct CombatContext {
     // Frontier counts player-held slots; unowned beasts receive no Knight protection.
     pub attacker_is_structure_guard: bool,
     pub defender_is_structure_guard: bool,
+    pub attacker_oaths: u16,
+    pub defender_oaths: u16,
 }
 
 
@@ -387,6 +389,14 @@ pub impl TroopsImpl of TroopsTrait {
             / PercentageValueImpl::_100().into();
 
         if context.day_unit_seconds != 0 {
+            ALPHA_DAMAGE_DEALT *=
+                crate::oaths::damage_multiplier(
+                    context.attacker_oaths, context.defender_oaths, context.defender_is_structure_guard,
+                );
+            BRAVO_DAMAGE_DEALT *=
+                crate::oaths::damage_multiplier(
+                    context.defender_oaths, context.attacker_oaths, context.attacker_is_structure_guard,
+                );
             let alpha_bow = alpha.category == TroopType::Crossbowman;
             let bravo_bow = bravo.category == TroopType::Crossbowman;
             if alpha_bow && !bravo_bow {

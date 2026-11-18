@@ -123,6 +123,14 @@ export const campBeside = (
         ]
       : []),
     set("0xad201", "ArmyDay", { game_id: 1, explorer_id: 201, day: 0 }),
+    set("0xf2012", "ArmyProgress", {
+      game_id: 1,
+      explorer_id: 201,
+      logistics: 0,
+      oath_slots: 1,
+      oaths: 0,
+      oath_pick: 0,
+    }),
     set("0xf2013", "ArmyCombat", { game_id: 1, explorer_id: 201, last_target: 0 }),
     set("0x74", "ExplorerTroops", { game_id: 1, explorer_id: 201, owner: 7, troops: troops(1_498n, armyStamina) }),
     set("0x75", "TileOccupancy", {
@@ -222,14 +230,6 @@ export const blightglowRift = ({
       ...wire(army),
       troops: { ...wire(army.troops), count: String(armyTroops * PRECISION), stamina: { Slot: 0 } },
     }),
-    set("0xf2012", "ArmyProgress", {
-      game_id: 1,
-      explorer_id: 201,
-      logistics: 0,
-      oath_slots: 1,
-      oaths: 0,
-      oath_pick: 0,
-    }),
     set("0x9", "ArmySlot", {
       game_id: 1,
       structure_id: 7,
@@ -255,6 +255,7 @@ export const otherArmyAt = (store: ReturnType<typeof campBeside>["store"], col: 
     JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
   store.applyFacts([
     set("0xad301", "ArmyDay", { game_id: 1, explorer_id: 301, day: 0 }),
+    set("0xaf301", "ArmyProgress", { ...store.require("ArmyProgress", mine), explorer_id: 301n }),
     {
       model: "Structure",
       key: "0x92",

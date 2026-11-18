@@ -20,8 +20,9 @@ import {
   ArmyActionManager,
   biomeTypeOf,
   configManager,
+  armyOaths,
   isCombatGuard,
-  getGuardsByStructure,
+  getDefendingGuards,
   getBalance,
   getTileAt,
   getTroopResourceId,
@@ -30,7 +31,7 @@ import {
   structureMapPosition,
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { resolveExplorerTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
+import { resolveExplorerCombatTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { BiomeType, StructureType, TROOP_TIERS, TROOP_TYPES } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import {
@@ -229,19 +230,15 @@ const largestStack = (store: NativeFactStore, entityId: number, tick: number): T
  */
 const useCertainLoss = () => {
   const timestamp = useCurrentDefaultTick();
-  const facts = useNativeFacts([...STAMINA_MODELS, ...GUARD_MODELS]);
+  const facts = useNativeFacts([...STAMINA_MODELS, ...GUARD_MODELS, "ArmyRelicEffect"]);
   return useMemo(() => {
     const gameId = configManager.getActiveGameId();
     return (army: CoachArmy, target: CoachTarget): boolean => {
       const tile = getTileAt(facts.store, false, target.hex.col, target.hex.row);
       const structure = tile && facts.store.get("Structure", { game_id: gameId, entity_id: Number(tile.occupier_id) });
-      const guard = structure
-        ? (getGuardsByStructure(structure, facts.store) ?? [])
-            .filter((slot) => slot.troops.count > 0n)
-            .toSorted((left, right) => left.slot - right.slot)[0]
-        : undefined;
+      const guard = structure ? getDefendingGuards(structure, facts.store)?.[0] : undefined;
       const explorer = facts.store.get("ExplorerTroops", { game_id: gameId, explorer_id: army.entityId });
-      const troops = explorer ? resolveExplorerTroops(facts.store, explorer) : undefined;
+      const troops = explorer ? resolveExplorerCombatTroops(facts.store, explorer, timestamp) : undefined;
       if (!guard || !troops || !explorer || !structure) return false;
       const biome = tile && tile.biome !== 0 ? biomeTypeOf(tile.biome) : BiomeType.None;
       const circumstances = {
@@ -250,6 +247,8 @@ const useCertainLoss = () => {
         attackerBiome: biome,
         defenderBiome: biome,
         attackerIsStructureGuard: false,
+        attackerOaths: armyOaths(facts.store, explorer),
+        defenderOaths: 0,
         defenderIsStructureGuard: isCombatGuard(structure.owner, configManager.getCombatRules().dayUnitSeconds),
       };
       const rules = { rules: configManager.getCombatRules() };

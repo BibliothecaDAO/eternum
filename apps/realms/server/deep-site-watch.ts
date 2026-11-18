@@ -3,7 +3,7 @@ import { readDeepSites, NativeFactStore, type NativeRows } from "@bibliothecadao
 import { readGameFacts, type ReleaseCatalogue } from "./game-facts";
 import { dayOf, expeditionDepth, readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
 import { resolveExplorerCombatTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
-import { forecastFight, mapCenter, researchedDepth, type CombatRules } from "@bibliothecadao/eternum";
+import { armyOaths, forecastFight, mapCenter, researchedDepth, type CombatRules } from "@bibliothecadao/eternum";
 
 export interface DeepSiteWatch {
   gameId: number;
@@ -118,6 +118,8 @@ function clearsEveryGuard(
       defender,
       {
         timestamp,
+        attackerOaths: armyOaths(store, army),
+        defenderOaths: armyOaths(store, guard.army),
         attackDistance: 1,
         attackerBiome: BiomeType.Underground,
         defenderBiome: BiomeType.Underground,

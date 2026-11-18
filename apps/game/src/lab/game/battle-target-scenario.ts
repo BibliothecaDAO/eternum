@@ -1,7 +1,7 @@
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { SITE } from "@/ui/features/frontier/sites/site-fixture";
 import { StructureType } from "@bibliothecadao/types";
-import { readDeepSites, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { readDeepSites, nativeOathConstants as oaths, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { deepScenario } from "./deep-scenario";
 import { siteAt } from "./after-battle-scenario";
 import { type LabFact, type LabScenario, wire } from "./lab-chain";
@@ -10,10 +10,17 @@ import { besideOnOpenLand, spireScenario } from "./spire-scenario";
 const PRECISION = 1_000_000_000n;
 import marks from "../../../../../contracts/l3/world-native/tests/fixtures/frontier-marks.txt?raw";
 const EXCHANGES = marks.trim().split(/\s+/).map(BigInt);
+import oathDamage from "../../../../../contracts/l3/world-native/tests/fixtures/oath-damage.txt?raw";
+const OATH_EXCHANGES = oathDamage
+  .trim()
+  .split(/\s+/)
+  .map(BigInt)
+  .filter((_, index) => index % 10 >= 6);
 
-export function battleTargetScenario(): LabScenario {
+export function battleTargetScenario(withOaths = false): LabScenario {
   const game = spireScenario();
   const troops = prepareBattleArmy(game);
+  if (withOaths) holdDamageOaths(game.store, BigInt(SPIRE_ARMY), false);
   const tile = besideOnOpenLand(game.store, game.store.entityOccupancy(1, SPIRE_ARMY)!);
   game.store.applyFacts(
     siteAt(game.store, tile, { ...troops, category: "Knight" }, StructureType.Camp).map((fact) => ({
@@ -25,18 +32,20 @@ export function battleTargetScenario(): LabScenario {
     ...game,
     answer: (command, chain, now) =>
       command.kind === "BattleGuard" && Number(command.fields.defender_id) === SITE
-        ? exchange(chain, BigInt(command.fields.attacker_id), now, BigInt(SITE))
+        ? exchange(chain, BigInt(command.fields.attacker_id), now, BigInt(SITE), withOaths)
         : game.answer(command, chain, now),
   };
 }
 
 /** The same native exchanges against the first rival army holding the Quarry. */
-export function deepBattleTargetScenario(): LabScenario {
+export function deepBattleTargetScenario(withOaths = false): LabScenario {
   const game = deepScenario();
   const troops = prepareBattleArmy(game);
+  if (withOaths) holdDamageOaths(game.store, BigInt(SPIRE_ARMY), false);
   const { store } = game;
   const site = readDeepSites(store, game.startsAt, 1).find(({ name }) => name === "Quarry")!;
   const guard = site.guards[0]!.army;
+  if (withOaths) holdDamageOaths(store, guard.explorer_id, true);
   const aspect = store.require("HomeAspect", { game_id: 1, home: guard.owner });
   const rules = store.require("SliceRules", { game_id: 1 });
   const tickSeconds = 3600;
@@ -65,9 +74,25 @@ export function deepBattleTargetScenario(): LabScenario {
     ...game,
     answer: (command, chain, now) =>
       command.kind === "BattleGuard" && BigInt(command.fields.defender_id) === site.id
-        ? exchange(chain, BigInt(command.fields.attacker_id), now, site.id, guard.explorer_id)
+        ? exchange(chain, BigInt(command.fields.attacker_id), now, site.id, withOaths, guard.explorer_id)
         : game.answer(command, chain, now),
   };
+}
+
+function holdDamageOaths(store: NativeFactStore, explorer_id: bigint, guarding: boolean) {
+  const key = { game_id: 1, explorer_id };
+  const progress = store.require("ArmyProgress", key);
+  store.applyFacts([
+    {
+      model: "ArmyProgress",
+      key: store.wireKeyOf("ArmyProgress", key)!,
+      value: wire({
+        ...progress,
+        oath_slots: 4,
+        oaths: (1 << (oaths.POWER - 1)) | (1 << (oaths.GIANTS - 1)) | (guarding ? 1 << (oaths.PROTECTION - 1) : 0),
+      }),
+    },
+  ]);
 }
 
 function prepareBattleArmy(game: LabScenario) {
@@ -118,6 +143,7 @@ function exchange(
   explorerId: bigint,
   now: number,
   siteId: bigint,
+  withOaths: boolean,
   guardId?: bigint,
 ): LabFact[] {
   const key = { game_id: 1, explorer_id: explorerId };
@@ -130,7 +156,10 @@ function exchange(
   const guardModel = guardId === undefined ? "Guard" : "ExplorerTroops";
   const target = guardId ?? siteId;
   const offset = (guardId === undefined ? 0 : 8) + (combat.last_target === target ? 4 : 0);
-  const [before, guardBefore, attackerAfter, defenderAfter] = EXCHANGES.slice(offset, offset + 4);
+  const [before, guardBefore, attackerAfter, defenderAfter] = (withOaths ? OATH_EXCHANGES : EXCHANGES).slice(
+    offset,
+    offset + 4,
+  );
   if (
     army.troops.count !== before! * PRECISION ||
     guard.troops.count !== guardBefore! * PRECISION ||

@@ -298,3 +298,27 @@ it("previews the Deep guard's opening and repeated exchange before sending each 
     hud.unmount();
   }
 });
+
+it("shows every held guard crest and refreshes it from the progress fact", () => {
+  const hud = draw(undefined, deepBattleTargetScenario(true));
+  try {
+    const crests = () => hud.host.querySelector("[data-guard-oaths]");
+    expect([...crests()!.children].map((node) => node.textContent)).toEqual(["Giants", "Protection", "Power"]);
+    expect(crests()!.querySelectorAll("img")).toHaveLength(3);
+    const guard = readDeepSites(hud.store, hud.scenario.startsAt, 1).find((site) => site.name === "Quarry")!.guards[0]!
+      .army;
+    const progress = hud.store.require("ArmyProgress", guard);
+    act(() =>
+      hud.store.applyFacts([
+        {
+          model: "ArmyProgress",
+          key: hud.store.wireKeyOf("ArmyProgress", guard)!,
+          value: { ...progress, oaths: 0 },
+        },
+      ]),
+    );
+    expect(crests()!.children).toHaveLength(0);
+  } finally {
+    hud.unmount();
+  }
+});

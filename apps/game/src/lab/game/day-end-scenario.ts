@@ -15,7 +15,7 @@ import { madePicks } from "@/ui/features/frontier/production/store-makers";
 import type { MadeResource } from "@/ui/features/frontier/stores";
 
 import { type LabFact, type LabScenario, wire } from "./lab-chain";
-import { PROGRESS_KEYS, spireScenario } from "./spire-scenario";
+import { armyProgress, spireScenario } from "./spire-scenario";
 
 /** The rows changed here, under the keys their fixtures write them by (deploy, kit lab and site fixtures). */
 const FIXTURE_KEYS = {
@@ -191,18 +191,7 @@ const armyProgressed = (store: NativeFactStore, startsAt: number): LabFact[] => 
         troops: { ...wired.troops, stamina: { Inline: { amount: "70", settled_at: startsAt, remainder: 0 } } },
       },
     },
-    {
-      model: "ArmyProgress",
-      key: PROGRESS_KEYS.spireArmy,
-      value: {
-        game_id: 1,
-        explorer_id: "201",
-        logistics: 2,
-        oath_slots: 1,
-        oaths: 0,
-        oath_pick: 0,
-      },
-    },
+    armyProgress(store, Number(army.explorer_id), 2),
   ];
 };
 

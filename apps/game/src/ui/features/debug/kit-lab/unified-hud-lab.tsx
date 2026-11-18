@@ -239,6 +239,7 @@ const enemyArmyBeside = (store: NativeFactStore): unknown[] => {
   return [
     { model: "Structure", key: "0x9b0", value: { ...realm, entity_id: ENEMY_REALM_ID, owner: ENEMY } },
     { model: "ArmyDay", key: "0x9bd", value: { game_id: 1, explorer_id: ENEMY_ARMY_ID, day: "0" } },
+    { model: "ArmyProgress", key: "0x9b3", value: { ...LAB_PROGRESS, explorer_id: ENEMY_ARMY_ID } },
     {
       model: "ExplorerTroops",
       key: "0x9b1",

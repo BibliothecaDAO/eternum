@@ -1,3 +1,5 @@
+import type { NativeFactStore } from "../client/native-fact-store";
+import { div, mul, ONE, unscaled, type Fixed } from "./cubit-fixed";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import {
   nativeOathConstants as oathRules,
@@ -53,4 +55,20 @@ export function oathDeepLossPerTick(oaths: number, base: bigint): bigint {
   return (oaths & (1 << (oathRules.VITRIOL - 1))) !== 0
     ? BigInt(oathRules.VITRIOL_LOSS_PER_TICK) * BigInt(RESOURCE_PRECISION)
     : base;
+}
+
+export function armyOaths(store: NativeFactStore, key: { game_id: number; explorer_id: bigint | number }): number {
+  if (store.require("SliceRules", { game_id: key.game_id }).day_unit_seconds === 0) return 0;
+  return store.require("ArmyProgress", key).oaths;
+}
+
+export function oathDamageMultiplier(attacker: number, defender: number, guarding: boolean): Fixed {
+  let multiplier = ONE;
+  if ((attacker & (1 << (oathRules.POWER - 1))) !== 0)
+    multiplier = mul(multiplier, div(unscaled(100 + oathRules.POWER_DAMAGE_PERCENT), unscaled(100)));
+  if ((defender & (1 << (oathRules.GIANTS - 1))) !== 0)
+    multiplier = mul(multiplier, div(unscaled(100 - oathRules.GIANTS_REDUCTION_PERCENT), unscaled(100)));
+  if (guarding && (defender & (1 << (oathRules.PROTECTION - 1))) !== 0)
+    multiplier = mul(multiplier, div(unscaled(100 - oathRules.PROTECTION_REDUCTION_PERCENT), unscaled(100)));
+  return multiplier;
 }

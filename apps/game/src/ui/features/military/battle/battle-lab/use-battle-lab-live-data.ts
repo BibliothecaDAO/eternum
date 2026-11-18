@@ -3,6 +3,7 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 import {
   configManager,
+  armyOaths,
   divideByPrecision,
   getGuardsByStructure,
   StaminaManager,
@@ -22,7 +23,7 @@ import { useMemo } from "react";
 
 import { getGuardStaminaSnapshot } from "../../utils/guard-stamina";
 import { useAttackTargetData } from "../hooks/use-attack-target";
-import { AttackTarget } from "../types";
+import { AttackTarget, TargetType } from "../types";
 import type { GuardOption, LiveSnapshot, WorkingArmy } from "./battle-lab.types";
 
 const toResourceIds = (effects: RelicEffect[]): ResourcesIds[] =>
@@ -92,6 +93,7 @@ export const useBattleLabLiveData = (
         .map((guard) => {
           const staminaSnapshot = getGuardStaminaSnapshot(guard.troops, staminaTimestamp);
           const army: WorkingArmy = {
+            oaths: 0,
             stamina: Math.floor(staminaSnapshot?.current ?? Number(guard.troops.stamina.amount)),
             maxStamina: staminaSnapshot?.max,
             troopCount: divideByPrecision(Number(guard.troops.count)),
@@ -112,6 +114,7 @@ export const useBattleLabLiveData = (
       if (army && troops) {
         const stamina = StaminaManager.getStamina(troops, staminaTimestamp).amount;
         armyAttacker = {
+          oaths: armyOaths(facts.store, army),
           stamina: Number(stamina),
           maxStamina: StaminaManager.getMaxStamina(
             troops.category as TroopType,
@@ -121,7 +124,7 @@ export const useBattleLabLiveData = (
           troopCount: divideByPrecision(Number(army.troops.count)),
           troopType: army.troops.category as TroopType,
           tier: army.troops.tier as TroopTier,
-          battle_cooldown_end: Number(army.troops.battle_cooldown_end),
+          battle_cooldown_end: Number(troops.battle_cooldown_end),
           relics: attackerRelicIds,
         };
       }
@@ -131,6 +134,10 @@ export const useBattleLabLiveData = (
     const defenderTroop = target?.info?.[0] ?? null;
     const defender: WorkingArmy | null = defenderTroop
       ? {
+          oaths:
+            target?.targetType === TargetType.Army
+              ? armyOaths(facts.store, { game_id: configManager.getActiveGameId(), explorer_id: target.id })
+              : 0,
           stamina: Number(StaminaManager.getStamina(defenderTroop, staminaTimestamp).amount),
           maxStamina: StaminaManager.getMaxStamina(
             defenderTroop.category as TroopType,

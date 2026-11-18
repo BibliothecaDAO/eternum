@@ -2,6 +2,7 @@ import { BiomeType, RELICS, RESOURCE_PRECISION, ResourcesIds, TroopTier, TroopTy
 import { resolveExchange, type CombatRules, type ExchangeRefusal, type ExchangeTroops } from "./combat-exchange";
 
 export interface Army {
+  oaths: number;
   stamina: number;
   troopCount: number;
   troopType: TroopType;
@@ -80,6 +81,8 @@ export class CombatSimulator {
       combatTroops(defender, defenderRelics, now),
       {
         timestamp: now,
+        attackerOaths: attacker.oaths,
+        defenderOaths: defender.oaths,
         attackDistance: context.attackDistance ?? 1,
         attackerBiome: context.defenderAlt ? BiomeType.Underground : (context.attackerBiome ?? biome),
         defenderBiome: context.defenderAlt ? BiomeType.Underground : (context.defenderBiome ?? biome),

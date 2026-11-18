@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { NativeFactStore, nativeOathConstants as oaths } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { planDeepSiteWatches } from "./deep-site-watch";
 import {
@@ -15,11 +15,11 @@ import {
 
 const player = { gameId: GAME_ID, actor: PLAYER_ACCOUNT, owner: PLAYER_ACCOUNT };
 
-function equalArmies(lastTarget: number | undefined) {
+function equalArmies(lastTarget: number | undefined, guardTroops = siteGuardTroops(1)) {
   const timestamp = Math.floor(Date.now() / 1000);
   const bar = { amount: 120, settledAt: timestamp, day: TODAY };
   const facts = siteSnapshot(snapshot(bar, bar, null, [], "realm", null), {
-    troops: siteGuardTroops(1),
+    troops: guardTroops,
     aspect: 2,
     lore: true,
     lastTick: Math.floor(timestamp / ARMIES_TICK_SECONDS),
@@ -67,4 +67,25 @@ it.each([0, -1, undefined])("plans an exact Deep opportunity independently of la
   expect(planDeepSiteWatches(store, player, timestamp * 1000).map(({ dueAt }) => dueAt)).toEqual([
     (Math.floor(timestamp / ARMIES_TICK_SECONDS) + 1) * ARMIES_TICK_SECONDS * 1000,
   ]);
+});
+
+it.each([false, true])("uses held damage Oaths when planning a Deep alert, defending %s", (defending) => {
+  const { store, timestamp } = equalArmies(0, defending ? siteGuardTroops(1, 600) : siteGuardTroops(1));
+  const army = [...store.inGame("ExplorerTroops", GAME_ID)].find(({ explorer_id }) =>
+    defending ? explorer_id !== BigInt(ARMY) : explorer_id === BigInt(ARMY),
+  )!;
+  const progress = store.require("ArmyProgress", army);
+  store.applyFacts([
+    {
+      model: "ArmyProgress",
+      key: store.wireKeyOf("ArmyProgress", army)!,
+      value: {
+        ...progress,
+        oath_slots: 4,
+        oaths: (1 << (oaths.POWER - 1)) | (1 << (oaths.GIANTS - 1)) | (defending ? 1 << (oaths.PROTECTION - 1) : 0),
+      },
+    },
+  ]);
+  const due = defending ? (Math.floor(timestamp / ARMIES_TICK_SECONDS) + 1) * ARMIES_TICK_SECONDS : timestamp;
+  expect(planDeepSiteWatches(store, player, timestamp * 1000).map(({ dueAt }) => dueAt)).toEqual([due * 1000]);
 });

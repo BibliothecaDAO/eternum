@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
-import { BiomeType, BiomeTypeToId } from "@bibliothecadao/types";
+import { BiomeType, BiomeTypeToId, TroopTier, TroopType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
+import { CombatSimulator } from "./combat-simulator";
 import {
   type CombatRules,
   type ExchangeTroops,
@@ -123,6 +124,8 @@ const readCase = (next: () => bigint, tickSeconds: number) => {
     defenderBiome: biome,
     attackerIsStructureGuard,
     defenderIsStructureGuard,
+    attackerOaths: 0,
+    defenderOaths: 0,
   };
   return { id, alt, attacker, defender, context, expected };
 };
@@ -434,4 +437,95 @@ it("separates a Frontier beast from a player guard without changing Blitz guards
   expect(isCombatGuard(1n, 100)).toBe(true);
   expect(isCombatGuard(0n, 0)).toBe(true);
   expect(() => isCombatGuard(null, 100)).toThrow("Combat guard owner is missing");
+});
+
+it("matches all Oath damage vectors on both sides, including bows and stacked slot protection", () => {
+  const { rules, cases } = readFixture();
+  const base = cases[0]!;
+  const fields = readFileSync(
+    new URL("../../../../contracts/l3/world-native/tests/fixtures/oath-damage.txt", import.meta.url),
+    "utf8",
+  )
+    .trim()
+    .split(/\s+/)
+    .map(BigInt);
+  expect(fields).toHaveLength(280);
+  const oathRules: CombatRules = {
+    ...rules,
+    dayUnitSeconds: 100,
+    damage: { ...rules.damage, damage_biome_bonus_num: 0, damage_scaling_factor: 36893488147419103232n },
+    stamina: {
+      ...rules.stamina,
+      damage_stamina_refund: false,
+      stamina_attack_req: 10,
+      stamina_defense_req: 0,
+      stamina_gain_per_tick: 0,
+    },
+  };
+  const simulator = new CombatSimulator(
+    {
+      ...oathRules.damage,
+      day_unit_seconds: oathRules.dayUnitSeconds,
+      tick_interval_seconds: oathRules.tickSeconds,
+      stamina_attack_req: oathRules.stamina.stamina_attack_req,
+      stamina_defense_req: oathRules.stamina.stamina_defense_req,
+    },
+    oathRules,
+  );
+  while (fields.length) {
+    const [a, b, ao, bo, ag, bg, beforeA, beforeB, afterA, afterB] = fields.splice(0, 10) as bigint[];
+    const army = (category: bigint, count: bigint): ExchangeTroops => ({
+      ...base.attacker,
+      category: CATEGORIES[Number(category)]!,
+      tier: "T1",
+      count: count * 1_000_000_000n,
+      stamina: { amount: 100n, settled_at: 1, remainder: 0 },
+      boosts: { ...base.attacker.boosts, incr_damage_dealt_percent_num: 0, decr_damage_gotten_percent_num: 0 },
+    });
+    const result = resolveExchange(
+      army(a!, beforeA!),
+      army(b!, beforeB!),
+      {
+        timestamp: 1,
+        attackDistance: 1,
+        attackerBiome: BiomeType.Underground,
+        defenderBiome: BiomeType.Underground,
+        attackerIsStructureGuard: ag === 1n,
+        defenderIsStructureGuard: bg === 1n,
+        attackerOaths: Number(ao),
+        defenderOaths: Number(bo),
+      },
+      oathRules,
+    );
+    expect(result).toMatchObject({
+      ok: true,
+      attacker: { count: afterA! * 1_000_000_000n, stamina: { amount: 90n } },
+      defender: { count: afterB! * 1_000_000_000n, stamina: { amount: 100n } },
+    });
+    const simulatedArmy = (category: bigint, count: bigint, oaths: bigint) => ({
+      troopType: CATEGORIES[Number(category)]! as TroopType,
+      tier: TroopTier.T1,
+      troopCount: Number(count),
+      stamina: 100,
+      battle_cooldown_end: 0,
+      oaths: Number(oaths),
+    });
+    expect(
+      simulator.simulateBattle(
+        1,
+        simulatedArmy(a!, beforeA!, ao!),
+        simulatedArmy(b!, beforeB!, bo!),
+        BiomeType.Underground,
+        [],
+        [],
+        { attackerIsStructureGuard: ag === 1n, defenderIsStructureGuard: bg === 1n },
+      ),
+    ).toMatchObject({
+      ok: true,
+      attackerDamage: Number(beforeB! - afterB!),
+      defenderDamage: Number(beforeA! - afterA!),
+      attackerStamina: 90,
+      defenderStamina: 100,
+    });
+  }
 });

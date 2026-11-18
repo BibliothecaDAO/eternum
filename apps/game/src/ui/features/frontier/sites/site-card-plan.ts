@@ -1,6 +1,7 @@
 import { readStandingFrontierBeast, type FrontierBeast } from "@/three/structures/frontier-beast";
 import {
   availableRuinLords,
+  armyOaths,
   armyRelicReward,
   configManager,
   isCombatGuard,
@@ -8,21 +9,18 @@ import {
   ResourceManager,
   hasCastleLimit,
   resolveExchange,
-  getGuardsByStructure,
+  getDefendingGuards,
   siteKindOf,
 } from "@bibliothecadao/eternum";
 import {
+  readDeepSiteDefender,
   readSiteReward,
   safeInteger,
   type DeepSiteView,
   type NativeFactStore,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import {
-  inlineTroops,
-  resolveExplorerCombatTroops,
-  resolveExplorerTroops,
-} from "@bibliothecadao/eternum/troop-stamina";
+import { resolveExplorerCombatTroops, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import {
   type BiomeType,
   getLayeredAttackDistance,
@@ -85,8 +83,8 @@ export const readSiteCard = (
   siteTile: { col: number; row: number; alt: boolean },
   attack: SiteAttack | null,
 ): SiteCardPlan => {
-  const guards = getGuardsByStructure(structure, store, attack?.timestamp);
-  const guard = guards && guards.find((candidate) => candidate.troops.count > 0n);
+  const guards = getDefendingGuards(structure, store, attack?.timestamp);
+  const guard = guards?.[0];
   const kind = siteKindOf(structure.base.category);
   const chest = kind === "Ruin" ? store.get("SiteChest", { game_id: site.game_id, entity_id: site.entity_id }) : null;
   const payout = readSiteReward(store, site, attack?.timestamp);
@@ -121,6 +119,7 @@ export const readSiteCard = (
         ? attackNow(
             store,
             guard.troops,
+            0,
             siteTile,
             attack,
             isCombatGuard(structure.owner, configManager.getCombatRules().dayUnitSeconds),
@@ -148,7 +147,10 @@ export const readArmyCard = (
     payout: null,
     attackStamina: configManager.getCombatRules().stamina.stamina_attack_req,
     inReach: attack !== null && reachOf(store, attack, armyTile) !== undefined,
-    fight: troops && troops.count > 0n && attack ? attackNow(store, troops, armyTile, attack, false) : undefined,
+    fight:
+      troops && troops.count > 0n && attack
+        ? attackNow(store, troops, armyOaths(store, army), armyTile, attack, false)
+        : undefined,
   };
 };
 
@@ -164,18 +166,13 @@ export function readDeepSiteFight(
   site: DeepSiteView,
   attack: SiteAttack,
 ): DeepSiteFight | undefined {
-  const first = site.guards[0];
-  const troops = first
-    ? resolveExplorerCombatTroops(store, first.army, attack.timestamp)
-    : site.guard && site.beastTroops > 0n
-      ? inlineTroops(site.guard.troops, store.require("SliceRules", { game_id: attack.army.game_id }))
-      : undefined;
-  if (!troops || troops.count === 0n) return undefined;
+  const defender = readDeepSiteDefender(store, site, attack.timestamp);
+  if (!defender) return undefined;
   const tile = { col: site.position.x, row: site.position.y, alt: site.position.alt };
   return {
     army: Number(attack.army.troops.count / PRECISION),
-    defender: Number(troops.count / PRECISION),
-    result: attackNow(store, troops, tile, attack, first !== undefined),
+    defender: Number(defender.troops.count / PRECISION),
+    result: attackNow(store, defender.troops, defender.oaths, tile, attack, defender.guarding),
   };
 }
 
@@ -233,6 +230,7 @@ const BESIDE = 1;
 const attackNow = (
   store: NativeFactStore,
   guard: Troops,
+  defenderOaths: number,
   siteTile: { col: number; row: number; alt: boolean },
   attack: SiteAttack,
   defenderIsStructureGuard: boolean,
@@ -244,6 +242,8 @@ const attackNow = (
     guard,
     {
       timestamp: attack.timestamp,
+      attackerOaths: armyOaths(store, attack.army),
+      defenderOaths,
       attackDistance: reachOf(store, attack, siteTile) ?? BESIDE,
       attackerBiome: attack.biome,
       defenderBiome: attack.biome,

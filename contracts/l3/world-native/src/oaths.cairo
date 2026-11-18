@@ -1,3 +1,4 @@
+use eternum_cubit::f128::types::fixed::{Fixed, FixedTrait};
 use crate::progression::ArmyProgress;
 
 pub const GIANTS: u8 = 1;
@@ -21,6 +22,23 @@ pub const BLUE: u16 = 53288;
 pub const GOLD: u16 = 710;
 pub const VITRIOL_LOSS_PER_TICK: u16 = 75;
 pub const PASS_STAMINA: u16 = 20;
+pub const POWER_DAMAGE_PERCENT: u16 = 20;
+pub const GIANTS_REDUCTION_PERCENT: u16 = 15;
+pub const PROTECTION_REDUCTION_PERCENT: u16 = 25;
+
+pub fn damage_multiplier(attacker: u16, defender: u16, guarding: bool) -> Fixed {
+    let mut multiplier = FixedTrait::ONE();
+    if held(attacker, POWER) {
+        multiplier *= FixedTrait::new((100 + POWER_DAMAGE_PERCENT).into(), false) / FixedTrait::new(100, false);
+    }
+    if held(defender, GIANTS) {
+        multiplier *= FixedTrait::new((100 - GIANTS_REDUCTION_PERCENT).into(), false) / FixedTrait::new(100, false);
+    }
+    if guarding && held(defender, PROTECTION) {
+        multiplier *= FixedTrait::new((100 - PROTECTION_REDUCTION_PERCENT).into(), false) / FixedTrait::new(100, false);
+    }
+    multiplier
+}
 
 pub fn deep_loss_per_tick(oaths: u16, base: u128) -> u128 {
     if held(oaths, VITRIOL) {

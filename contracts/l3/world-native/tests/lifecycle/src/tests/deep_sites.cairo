@@ -373,3 +373,143 @@ fn deep_beast_marks_control_public_attacks_without_knight_slot_protection() {
         assert_eq!(held(d, attacker), None);
     }
 }
+
+#[test]
+fn public_attacks_apply_held_oaths_to_the_army_and_the_rival_guard() {
+    let values = snforge_std::fs::read_txt(@snforge_std::fs::FileTrait::new("../fixtures/oath-damage.txt"));
+    let mut fields = values.span();
+    for guarding in array![false, true] {
+        let mut definition = oath_vector_preset();
+        let mut deep = definition.economy.deep.unwrap();
+        deep.beast_count = (if guarding {
+            1
+        } else {
+            1000
+        }) * crate::rules::RESOURCE_PRECISION;
+        definition.economy.deep = Some(deep);
+        let (d, game_id) = super::aspects::setup_aspect_preset(if guarding {
+            870
+        } else {
+            871
+        }, definition);
+        let target = site(d, game_id, crate::rules::DEEP_QUARRY);
+        let defender = if guarding {
+            let guard = deployed(d, game_id, 1, 1000);
+            beside(d, guard, target, 0);
+            applied(d, game_id, fight(guard, target), 360);
+            Some(guard)
+        } else {
+            None
+        };
+        let rival = player(d, 8701);
+        let attacker = deployed(rival, game_id, 2, 1000);
+        beside(d, attacker, target, 1);
+        for exchange in 0_u8..2 {
+            let (a, b, ao, bo, ag, bg): (crate::troops::TroopType, crate::troops::TroopType, u16, u16, bool, bool) =
+                Serde::deserialize(
+                ref fields,
+            )
+                .unwrap();
+            let (before_a, before_b, after_a, after_b): (u128, u128, u128, u128) = Serde::deserialize(ref fields)
+                .unwrap();
+            assert!(!ag && bg == guarding);
+            if exchange == 0 {
+                prepare_oath_combatant(d, attacker, a, ao, before_a);
+                if let Some(key) = defender {
+                    prepare_oath_combatant(d, key, b, bo, before_b);
+                }
+            }
+            assert_eq!(army(d, attacker).troops.count, before_a * crate::rules::RESOURCE_PRECISION);
+            applied(rival, game_id, fight(attacker, target), 360);
+            assert_eq!(army(d, attacker).troops.count, after_a * crate::rules::RESOURCE_PRECISION);
+            let defender_count = match defender {
+                Some(key) => army(d, key).troops.count,
+                None => interact_with_state(
+                    d.games,
+                    || crate::logic::guards::guard(
+                        crate::guards::GuardKey { game_id, structure_id: target.entity_id, slot: 0 },
+                    )
+                        .troops
+                        .count,
+                ),
+            };
+            assert_eq!(defender_count, after_b * crate::rules::RESOURCE_PRECISION);
+            assert_eq!(held(d, attacker), None);
+        }
+    }
+}
+
+#[test]
+fn public_field_battles_apply_held_oaths_on_both_sides() {
+    let values = snforge_std::fs::read_txt(@snforge_std::fs::FileTrait::new("../fixtures/oath-damage.txt"));
+    let mut fields = values.span();
+    let mut battles = 0;
+    while !fields.is_empty() {
+        let (a, b, ao, bo, ag, bg): (crate::troops::TroopType, crate::troops::TroopType, u16, u16, bool, bool) =
+            Serde::deserialize(
+            ref fields,
+        )
+            .unwrap();
+        let (before_a, before_b, after_a, after_b): (u128, u128, u128, u128) = Serde::deserialize(ref fields).unwrap();
+        let knights = a == crate::troops::TroopType::Knight && b == crate::troops::TroopType::Knight;
+        if ag || bg || !knights {
+            continue;
+        }
+        let (d, game_id) = super::aspects::setup_aspect_preset(872 + battles, oath_vector_preset());
+        let defender = deployed(d, game_id, 1, 1000);
+        let rival = player(d, 8721);
+        let attacker = deployed(rival, game_id, 2, 1000);
+        let coord = crate::geometry::neighbor(army(d, defender).coord, 0);
+        set_explorer_fixture(d.games, attacker, ExplorerTroops { coord, ..army(d, attacker) });
+        prepare_oath_combatant(d, attacker, a, ao, before_a);
+        prepare_oath_combatant(d, defender, b, bo, before_b);
+        applied(
+            rival,
+            game_id,
+            Command::Battle(
+                crate::combat_actions::AttackExplorer {
+                    attacker_id: attacker.explorer_id,
+                    defender_id: defender.explorer_id,
+                    steal_resources: array![].span(),
+                },
+            ),
+            360,
+        );
+        assert_eq!(army(d, attacker).troops.count, after_a * crate::rules::RESOURCE_PRECISION);
+        assert_eq!(army(d, defender).troops.count, after_b * crate::rules::RESOURCE_PRECISION);
+        battles += 1;
+    }
+    assert_eq!(battles, 4);
+}
+
+fn oath_vector_preset() -> crate::presets::PresetDefinition {
+    let mut definition = preset();
+    definition.rules.troop_damage_config.damage_scaling_factor = 36893488147419103232;
+    definition.rules.troop_damage_config.damage_biome_bonus_num = 0;
+    definition.rules.battle_config.cooldown_seconds = 0;
+    definition.rules.troop_stamina_config.stamina_attack_req = 10;
+    definition.rules.troop_stamina_config.stamina_defense_req = 0;
+    definition.rules.troop_stamina_config.stamina_gain_per_tick = 0;
+    definition.rules.troop_stamina_config.damage_stamina_refund = false;
+    definition
+}
+
+fn prepare_oath_combatant(
+    d: Deployment, key: ExplorerKey, category: crate::troops::TroopType, oaths: u16, count: u128,
+) {
+    let mut row = army(d, key);
+    row.troops.count = count * crate::rules::RESOURCE_PRECISION;
+    row.troops.category = category;
+    row.troops.battle_cooldown_end = 0;
+    let record = crate::troops::ExplorerRecordTrait::into_record(row);
+    interact_with_state(
+        d.games,
+        || {
+            let progress = crate::logic::progression::read(key).unwrap();
+            crate::logic::progression::write(
+                key, crate::progression::ArmyProgress { oaths, oath_slots: 4, ..progress },
+            );
+            crate::logic::troops::TroopState::save(key, record);
+        },
+    );
+}

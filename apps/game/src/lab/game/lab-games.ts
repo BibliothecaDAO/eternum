@@ -58,6 +58,8 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "site-effects": siteEffectsScenario,
   deep: deepScenario,
   "deep-battle-target": deepBattleTargetScenario,
+  "oath-battle-target": () => battleTargetScenario(true),
+  "oath-deep-battle-target": () => deepBattleTargetScenario(true),
   race: raceScenario,
   "race-finished": () => raceScenario(true),
   "race-expired": expiredRaceScenario,

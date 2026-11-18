@@ -37,6 +37,7 @@ const army: Army = {
   troopType: TroopType.Knight,
   tier: TroopTier.T1,
   battle_cooldown_end: 0,
+  oaths: 0,
 };
 const simulator = new CombatSimulator(parameters, rules);
 const simulate = (attacker: Army, defender: Army) =>

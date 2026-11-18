@@ -15,7 +15,13 @@ const progress: NativeRows["ArmyProgress"] = {
 
 describe("Oath picks", () => {
   it("uses the existing Order ids for every named Oath", () => {
-    const names = Object.entries(oaths).filter(([, value]) => value >= 1 && value <= 16);
+    const names = orders
+      .filter(({ orderId }) => orderId !== 0)
+      .map(({ orderName }) => {
+        const entry = Object.entries(oaths).find(([name]) => name === orderName.toUpperCase());
+        if (!entry) throw new Error(`Missing native Oath ${orderName}`);
+        return entry;
+      });
     expect(names).toHaveLength(orders.length - 1);
     for (const [name, id] of names) {
       expect(orders.find(({ orderId }) => orderId === id)?.orderName.toUpperCase()).toBe(name);
