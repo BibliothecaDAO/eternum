@@ -108,8 +108,7 @@ pub fn validate(preset: PresetDefinition) {
     if let Some(discovery) = preset.economy.discovery {
         crate::discovery::validate_frontier(
             discovery,
-            crate::oaths::find_percent(
-                crate::oaths::bit(crate::oaths::DETECTION),
+            crate::oaths::detected_find_percent(
                 preset.economy.race.map(|race| race.clear_mist_percent).unwrap_or(100),
             ),
         );

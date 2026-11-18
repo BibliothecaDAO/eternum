@@ -58,10 +58,14 @@ pub fn deep_loss_per_tick(oaths: u16, base: u128) -> u128 {
 
 pub fn find_percent(oaths: u16, base: u16) -> u16 {
     if held(oaths, DETECTION) {
-        base * DETECTION_FIND_PERCENT / 100
+        detected_find_percent(base)
     } else {
         base
     }
+}
+
+pub fn detected_find_percent(base: u16) -> u16 {
+    base * DETECTION_FIND_PERCENT / 100
 }
 
 pub fn reveal_pay(oaths: u16, amount: u128) -> u128 {
