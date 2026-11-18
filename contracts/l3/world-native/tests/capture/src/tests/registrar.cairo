@@ -344,7 +344,7 @@ fn depth_entry_requires_research_and_keeps_stamina_at_every_depth() {
                     site_guard_lower: depth + 3,
                     site_guard_upper: depth + 3,
                     reveal_site_neighbors: false,
-                    chest: ChestTiers { common: 10000, uncommon: 0, rare: 0, epic: 0, legendary: 0 },
+                    chest: first_relic_odds(depth.into()),
                 },
             );
     }

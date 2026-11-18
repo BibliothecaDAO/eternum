@@ -473,7 +473,7 @@ pub fn assert_capture_at(
                     site_guard_lower: index + 3,
                     site_guard_upper: index + 3,
                     reveal_site_neighbors: false,
-                    chest: ChestTiers { common: 10000, uncommon: 0, rare: 0, epic: 0, legendary: 0 },
+                    chest: first_relic_odds(index.into()),
                 },
             );
     }
@@ -1080,6 +1080,18 @@ pub fn apply_ruin_depth_release(d: super::Deployment, game_id: u32) {
         releases.apply_release(game_id, release_id);
     }
     stop_cheat_caller_address(d.games);
+}
+
+pub fn first_relic_odds(layer: u32) -> ChestTiers {
+    let mut odds = ChestTiers { common: 0, uncommon: 0, rare: 0, epic: 0, legendary: 0 };
+    if layer == 0 {
+        odds.common = 10000;
+    } else if layer == 1 {
+        odds.uncommon = 10000;
+    } else {
+        odds.rare = 10000;
+    }
+    odds
 }
 
 pub fn first_order_choice(d: super::Deployment, game_id: u32) -> Option<u8> {
