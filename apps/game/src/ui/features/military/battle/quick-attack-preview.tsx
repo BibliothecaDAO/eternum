@@ -241,8 +241,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const attackerRemaining = attackerSide ? attackerSide.remaining : attackerTroopsTotal;
   const defenderRemaining = defenderSide ? defenderSide.remaining : defenderTroopsTotal;
 
-  // Per-slot defender view: the active guard (slot 0) shows its projected
-  // post-fight remainder, queued guards show their untouched troop counts.
   const defenderSlots = useMemo(() => {
     if (!isStructureTarget) return [];
     return targetTroopSnapshots.map((snapshot, index) => {
