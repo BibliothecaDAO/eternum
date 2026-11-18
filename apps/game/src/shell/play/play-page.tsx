@@ -12,6 +12,7 @@ import { ageOf } from "./ages";
 import { holdsNothing, idleCard, type PlayBoard, PLAY_MODES, type PlayMode } from "./play-board";
 import { type PlayFacts, type SourceGap, usePlayFacts } from "./play-facts";
 import { ItemRows, LeadCard } from "./play-item";
+import { PreseasonPlay } from "./preseason-pick";
 import { SeasonCountdown } from "./season-countdown";
 import { BuildOrdersRow } from "../build-orders/build-orders-row";
 
@@ -24,7 +25,11 @@ import { BuildOrdersRow } from "../build-orders/build-orders-row";
 export const PlayPage = () => {
   const facts = usePlayFacts();
   if (facts.opening && isPlayEmpty(facts))
-    return <SeasonCountdown opening={facts.opening} now={facts.now} signedIn={facts.signedIn} />;
+    return facts.signedIn ? (
+      <PreseasonPlay opening={facts.opening} now={facts.now} />
+    ) : (
+      <SeasonCountdown opening={facts.opening} now={facts.now} />
+    );
   const firstVisit = !facts.signedIn && facts.board?.lead?.verb === "play";
   const ages = facts.board ? agesShown(facts.board, facts.gaps) : [];
   return (

@@ -144,6 +144,11 @@ const openingProgressSchema = Schema.Struct({
   seen: Schema.Array(Schema.String),
 });
 export type OpeningProgress = typeof openingProgressSchema.Type;
+const orderIntentSchema = Schema.Struct({
+  order: Schema.NullOr(Schema.Number),
+  members: Schema.Record(Schema.String, Schema.Number),
+});
+export type OrderIntent = typeof orderIntentSchema.Type;
 /** An account's ticket to a campaign, told to that account only. */
 const campaignTicketSchema = Schema.Struct({
   campaign: Schema.String,
@@ -533,6 +538,14 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
       decode(openingProgressSchema),
     );
 
+  const getOrderIntent = async (): Promise<OrderIntent> =>
+    readJson(await request("/order-intent", { method: "GET", cache: "no-store" }), decode(orderIntentSchema));
+  const chooseOrder = async (order: number): Promise<OrderIntent> =>
+    readJson(
+      await request("/order-intent", { method: "POST", body: JSON.stringify({ order }) }),
+      decode(orderIntentSchema),
+    );
+
   /**
    * Takes the account's one ticket to a campaign, from its flyer's code or a friend's referral link; without either, the
    * ticket it holds. Again, the same ticket.
@@ -656,6 +669,8 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     saveBuildOrders,
     getOpeningProgress,
     addOpeningProgress,
+    getOrderIntent,
+    chooseOrder,
     redeemCampaignTicket,
     campaignReferral,
     campaignReferrer,

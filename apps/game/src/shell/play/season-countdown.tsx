@@ -11,16 +11,8 @@ import { ageOf } from "./ages";
 import type { SeasonOpening } from "../season";
 import { useRequestSignIn } from "../sign-in/connect";
 
-export const SeasonCountdown = ({
-  opening,
-  now,
-  signedIn,
-}: {
-  opening: SeasonOpening;
-  now: number;
-  signedIn: boolean;
-}) => (
-  <StageFrame verb={signedIn ? undefined : <CreateAccount />}>
+export const SeasonCountdown = ({ opening, now }: { opening: SeasonOpening; now: number }) => (
+  <StageFrame verb={<CreateAccount />}>
     <div data-season-countdown className="flex flex-col items-center gap-5">
       <img src={AGE_LOCKUP.frontier} alt={ageOf("frontier").name} className="h-28 w-auto" />
       <h1 className="text-app-title text-app-ink">{COUNTDOWN_WORDS.opens(formatDate(opening.startsAt, now))}</h1>

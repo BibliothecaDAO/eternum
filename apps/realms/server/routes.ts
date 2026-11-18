@@ -26,6 +26,7 @@ import { holderFactsOf } from "./seal-facts";
 import { shopAccessOf } from "./shop-game";
 import { handlePurchaseCheck, handleStoreReceipt, storeVerifiersOf } from "./store-receipts";
 import { handleOpeningProgress } from "./opening-progress";
+import { handleOrderIntent } from "./order-intent";
 import {
   campaignStandings,
   hasCampaignHomeSource,
@@ -151,6 +152,7 @@ export const routeIdentityRequest = async (
   if (pathname === "/api/notifications/preferences") return handleNotificationPreferences(request, auth, env.DB);
   if (pathname === "/api/build-orders") return handleBuildOrders(request, auth, env.DB);
   if (pathname === "/api/opening") return handleOpeningProgress(request, auth, env.DB);
+  if (pathname === "/api/order-intent") return handleOrderIntent(request, auth, env.DB);
   if (pathname === "/api/shop/purchase-check")
     return handlePurchaseCheck(request, auth, {
       db: env.DB,

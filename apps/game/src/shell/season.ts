@@ -1,7 +1,9 @@
 import { formatDate } from "@bibliothecadao/types";
+import { raceFinishHeight } from "@bibliothecadao/eternum/game-client";
 
 import { isGameOver } from "@/runtime/world/directory";
 import { PLAY_WORDS, SEASON } from "@/ui/design-system/kit/words";
+import { lordsWorth } from "@/ui/features/frontier/aspect/aspect-worth";
 import { type DayClock, dayTone } from "@/ui/features/frontier/hud/day-clock";
 import { isRealmCategory } from "@bibliothecadao/eternum/expeditions";
 
@@ -76,7 +78,7 @@ export const seasonTitle = (season: Pick<DirectoryGame, "season_number" | "chain
 export const seasonEnded = (season: DirectoryGame): string =>
   `${seasonTitle(season)} · ${PLAY_WORDS.ended} ${formatDate(season.clock.end_at)}`;
 
-export type SeasonOpening = { startsAt: number; seasonDays: number | null };
+export type SeasonOpening = { startsAt: number; seasonDays: number | null; aspectLords: number | null };
 
 export const seasonOpening = (phases: readonly SeasonPhase[], now: number): SeasonOpening | null => {
   const frontier = phases.find((phase) => phase.phase === "frontier");
@@ -85,5 +87,10 @@ export const seasonOpening = (phases: readonly SeasonPhase[], now: number): Seas
   if (!(startsAt > now)) return null;
   const preset = nativePresets[frontier.presetId];
   if (!preset) throw new Error(`The calendar's Frontier preset ${frontier.presetId} is not registered`);
-  return { startsAt, seasonDays: preset.race?.seasonDays ?? null };
+  const race = preset.race;
+  return {
+    startsAt,
+    seasonDays: race?.seasonDays ?? null,
+    aspectLords: race ? lordsWorth(raceFinishHeight(race.stageHeight), false) : null,
+  };
 };

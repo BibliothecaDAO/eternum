@@ -1415,6 +1415,24 @@ describe("identity Worker", () => {
     expect((await createBrowser().request("/api/opening")).status).toBe(401);
   });
 
+  it("keeps each account's Order for the coming season, changed by choosing again, and counts every Order's members", async () => {
+    const first = createBrowser();
+    await signInWithCode(first, "order-one@realms.test");
+    const second = createBrowser();
+    await signInWithCode(second, "order-two@realms.test");
+    const choose = (browser: typeof first, body: unknown) => browser.request("/api/order-intent", { body });
+
+    expect(await (await first.request("/api/order-intent")).json()).toEqual({ order: null, members: {} });
+    expect(await (await choose(first, { order: 4 })).json()).toEqual({ order: 4, members: { 4: 1 } });
+    expect(await (await choose(second, { order: 4 })).json()).toEqual({ order: 4, members: { 4: 2 } });
+    expect(await (await choose(first, { order: 16 })).json()).toEqual({ order: 16, members: { 4: 1, 16: 1 } });
+    expect(await (await second.request("/api/order-intent")).json()).toEqual({ order: 4, members: { 4: 1, 16: 1 } });
+    expect((await choose(first, { order: 17 })).status).toBe(400);
+    expect((await choose(first, { order: 0 })).status).toBe(400);
+    expect((await choose(first, { order: "4" })).status).toBe(400);
+    expect((await createBrowser().request("/api/order-intent")).status).toBe(401);
+  });
+
   /** A running Devcon season game in a shard's directory, as Herald answers it for one player. */
   const devconGame = (entered: boolean) => ({
     game_id: 41,

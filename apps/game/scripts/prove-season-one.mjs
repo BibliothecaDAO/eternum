@@ -11,15 +11,19 @@ const VIEWS = [
   { name: "opening", path: "/lab/season-one/opening", cases: [0, 1, 3, 7, 8], shown: "[data-opening-line]" },
   { name: "race", path: "/lab/season-one/race", cases: [0, 1, 2, 3], shown: "[data-aspect-page]" },
 ];
-const COUNTDOWN_SCREENS = ["preseason", "preseason-member"];
+const PRESEASON_SCREENS = [
+  ["preseason", "[data-season-countdown]"],
+  ["preseason-member", "[data-preseason-step=pick]"],
+  ["preseason-chosen", "[data-preseason-step=waiting]"],
+];
 const PAGES = [
   ...VIEWS.flatMap(({ name, path, cases, shown }) =>
     cases.map((each) => ({ file: `${name}-${each}`, url: `${path}?case=${each}`, shown })),
   ),
-  ...COUNTDOWN_SCREENS.map((screen) => ({
+  ...PRESEASON_SCREENS.map(([screen, shown]) => ({
     file: `countdown-${screen}`,
     url: `/lab/app/${screen}?capture=1`,
-    shown: "[data-season-countdown]",
+    shown,
   })),
 ];
 const SIZES = [

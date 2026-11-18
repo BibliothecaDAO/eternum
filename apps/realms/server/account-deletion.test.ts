@@ -71,6 +71,7 @@ const seedAccount = (worker: Worker, realmsId: string) =>
     worker.db
       .prepare(`INSERT INTO "opening_progress" ("owner", "moment", "kind") VALUES (?, 'barracks', 'reached')`)
       .bind(realmsId),
+    worker.db.prepare(`INSERT INTO "order_intents" ("owner", "order", "chosen_at") VALUES (?, 4, 1)`).bind(realmsId),
     worker.db
       .prepare(
         `INSERT INTO "seal" ("owner", "paid_cents", "source", "receipt", "granted_at") VALUES (?, 999, 'store', 'tx-leaving', 1)`,
@@ -149,6 +150,7 @@ it("deletes an account only with its emailed code: its old session opens nothing
   expect(await countOf(worker, "notification_preferences", "owner", leaving.realmsId)).toBe(0);
   expect(await countOf(worker, "build_order_books", "owner", leaving.realmsId)).toBe(0);
   expect(await countOf(worker, "opening_progress", "owner", leaving.realmsId)).toBe(0);
+  expect(await countOf(worker, "order_intents", "owner", leaving.realmsId)).toBe(0);
   expect(await countOf(worker, "seal", "owner", leaving.realmsId)).toBe(0);
   expect(await countOf(worker, "fragment_credits", "owner", leaving.realmsId)).toBe(0);
   // The payments stay in the ledger, owned by no one, so neither receipt can be used again.

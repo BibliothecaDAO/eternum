@@ -122,6 +122,7 @@ const DELETED_BY_REALMS_ID = [
   ["account_browsers", "realmsId"],
   ["build_order_books", "owner"],
   ["opening_progress", "owner"],
+  ["order_intents", "owner"],
   ["seal", "owner"],
   ["fragment_credits", "owner"],
   ["news_email_sends", "realmsId"],

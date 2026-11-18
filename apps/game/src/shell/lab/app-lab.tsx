@@ -62,6 +62,7 @@ import {
   LAB_WALLET,
   labRatings,
   labCalendar,
+  labOrderIntent,
   labSlots,
   type LabScreen,
 } from "./app-lab-fixtures";
@@ -295,6 +296,12 @@ const answerIdentity = (screen: LabScreen) => {
   identityClient.campaignReferral = async () => LAB_REFERRALS[screen] ?? LAB_FIRST_REFERRAL;
   identityClient.campaignReferrer = async () => LAB_REFERRER;
   identityClient.shareTally = async () => LAB_SHARE_TALLIES[screen] ?? LAB_NO_SHARES;
+  let intent = labOrderIntent(screen);
+  identityClient.getOrderIntent = async () => intent;
+  identityClient.chooseOrder = async (order) => {
+    intent = { ...intent, order };
+    return intent;
+  };
   // The lab's player has made no Realms wallet, so the payout window offers Create my wallet.
   identityClient.readDefaultWallet = async () => null;
   answerLabBuildOrders();

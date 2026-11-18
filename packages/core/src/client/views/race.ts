@@ -53,7 +53,7 @@ export function readRaceBoard(
   const rules = store.get("RaceRules", { game_id: gameId });
   if (!rules) return { known: { race: null } };
   const standings: RaceBoard["standings"] = [];
-  const finish = rules.stage_height * nativeRaceConstants.STAGE_COUNT;
+  const finish = raceFinishHeight(rules.stage_height);
   for (const aspect of aspects) {
     const row = store.get("AspectHyperstructure", { game_id: gameId, aspect: aspect.id });
     if (!row) return { unknown: "MISSING_ASPECT_HYPERSTRUCTURE" };
@@ -121,3 +121,5 @@ function readOwnAspect(
     known: { own: { aspect, members, triumphs, bar: { charge: bar.known.charge, threshold: deep.altar_threshold } } },
   };
 }
+
+export const raceFinishHeight = (stageHeight: number): number => stageHeight * nativeRaceConstants.STAGE_COUNT;

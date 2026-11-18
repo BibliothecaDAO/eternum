@@ -36,7 +36,7 @@ export {
   readDeepSites,
   type DeepSiteView,
 } from "./views/deep-sites";
-export { readRaceBoard, RACE_MODELS, type RaceBoard } from "./views/race";
+export { raceFinishHeight, readRaceBoard, RACE_MODELS, type RaceBoard } from "./views/race";
 export { currentArmy, currentResourceWeight } from "../utils/deep";
 export { deepCenter, isDeepTile } from "../utils/deep-geometry";
 export { questWeek } from "../utils/daily-quest";

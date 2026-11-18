@@ -237,6 +237,7 @@ export const LAB_SCREENS = {
   "first-visit": { signedIn: false, games: [frontier(false), liveBlitz(false), eternum] },
   preseason: { signedIn: false, games: [] },
   "preseason-member": { signedIn: true, games: [] },
+  "preseason-chosen": { signedIn: true, games: [] },
   home: { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   // Play for a player with the longest name an account takes (packages/identity account-rules), with the install
   // notice: the desktop bar must hold both at its narrowest width.
@@ -427,6 +428,8 @@ export const LAB_NAMES: Partial<Record<keyof typeof LAB_SCREENS, string>> = {
 /** The payout wallet linked on each screen's session; a screen not named here has none. */
 export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, string>> = {
   "wallet-ready": LAB_WALLET,
+  "preseason-member": LAB_WALLET,
+  "preseason-chosen": LAB_WALLET,
   "entry-choose": LAB_WALLET,
   "entry-short": LAB_WALLET,
   "entry-registered": LAB_WALLET,
@@ -544,6 +547,30 @@ export type LabScreen = keyof typeof LAB_SCREENS;
  * The season calendar as the launch service answers it: on `blitz-next`, the next ranked game starting in 1h 52m with
  * its entry opening in 17m; on `no-blitz`, none left in the season. Elsewhere a game is open, so the column shows it.
  */
+const PRESEASON_SCREENS: readonly LabScreen[] = ["preseason", "preseason-member", "preseason-chosen"];
+const LAB_ORDER_MEMBERS: Readonly<Record<number, number>> = {
+  1: 12,
+  9: 9,
+  12: 11,
+  13: 7,
+  2: 6,
+  10: 8,
+  11: 5,
+  16: 5,
+  3: 10,
+  6: 8,
+  14: 7,
+  15: 6,
+  4: 4,
+  5: 4,
+  7: 3,
+  8: 4,
+};
+export const labOrderIntent = (screen: LabScreen) => ({
+  order: screen === "preseason-chosen" ? 1 : null,
+  members: LAB_ORDER_MEMBERS,
+});
+
 const SEASON_ONE_PHASE = (at: (minutes: number) => string) => ({
   phase: "frontier" as const,
   startsAt: at(14 * 24 * 60 + 3 * 60 + 20),
@@ -553,8 +580,7 @@ const SEASON_ONE_PHASE = (at: (minutes: number) => string) => ({
 
 export const labCalendar = (screen: LabScreen) => {
   const at = (minutes: number) => new Date((NOW + minutes * 60) * 1000).toISOString();
-  if (screen === "preseason" || screen === "preseason-member")
-    return { phases: [SEASON_ONE_PHASE(at)], nextBlitz: null };
+  if (PRESEASON_SCREENS.includes(screen)) return { phases: [SEASON_ONE_PHASE(at)], nextBlitz: null };
   if (screen !== "blitz-next") return { phases: [], nextBlitz: null };
   return { phases: [], nextBlitz: { name: "blitz-next", startsAt: at(112), closesAt: at(107), opensAt: at(17) } };
 };
@@ -568,6 +594,7 @@ const QUIET_BLITZ_SCREENS: readonly LabScreen[] = [
   "eternum-open",
   "preseason",
   "preseason-member",
+  "preseason-chosen",
 ];
 
 /** The screens whose player has no finished game to open. */
@@ -579,6 +606,7 @@ export const LAB_NO_HISTORY_SCREENS: readonly LabScreen[] = [
   "eternum-open",
   "preseason",
   "preseason-member",
+  "preseason-chosen",
 ];
 
 /** The slot closing at 16:30, two hours away, on the lab's shard; on the after-close screens, closed and split. */

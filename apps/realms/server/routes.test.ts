@@ -72,6 +72,7 @@ it.each([
   ["/api/notifications/preferences", "POST"],
   ["/api/build-orders", "POST"],
   ["/api/opening", "POST"],
+  ["/api/order-intent", "POST"],
   ["/api/shop/receipt", "POST"],
   ["/api/shop/purchase-check", "POST"],
   ["/api/notifications/push/subscribe", "POST"],

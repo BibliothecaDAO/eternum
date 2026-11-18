@@ -440,8 +440,12 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
 - Before the season: while the season calendar's Frontier phase has not started and Play holds nothing else (no game, no
   Blitz to come, every read answered), Play is the season's countdown on Frontier's painting: the day it opens, **Starts
   in …**, the four Aspects with their Orders' crests, and signed out one verb **Create your account** (opens sign-in).
-  Lab: `/lab/app/preseason` (signed out) and `/lab/app/preseason-member`; proof: `build.sh prove-season-one` (both,
-  desktop and phone).
+  Signed in, Play asks the account's side for the season instead, on one screen: **Choose your Aspect** (each card its
+  members and about how many LORDS a player gets on average of the Aspect's total), then that Aspect's Orders below it,
+  and **Play as <Order's name>**; kept on the account (`/api/order-intent`); a save that fails says so with **Try
+  again**. With an Order kept, **You're in <Aspect>**, the Order, the day it opens and **Starts in …**. Lab:
+  `/lab/app/preseason` (signed out), `/lab/app/preseason-member` (the pick) and `/lab/app/preseason-chosen` (kept);
+  proof: `build.sh prove-season-one` (all three, desktop and phone).
 - Creating a Frontier home (the game's entry): with nothing to choose (a ticket or a free home, no Realm held) the realm
   is created without a press, the doorway's bar saying **Preparing your realm**; a failure asks with the picker below. A
   Realm holder gets **Choose your home**, **You play as <name>** (changed on You), then **Create your realm**, pinned in

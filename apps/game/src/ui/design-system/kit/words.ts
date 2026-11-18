@@ -429,6 +429,18 @@ export const COUNTDOWN_WORDS = {
   create: "Create your account",
   free: "Free to play",
 } as const;
+export const PRESEASON_WORDS = {
+  pick: "Choose your side",
+  average: (lords: string) => `about ${lords} LORDS`,
+  ofTotal: (total: string) => `a player on average, of ${total}`,
+  shared: (total: string, finishBonus: string) =>
+    `The Aspect's ${total} LORDS are shared by Glory: your share follows your Glory, not an equal split. The first to finish adds ${finishBonus} more.`,
+  orderTitle: "Choose your Order",
+  orderLine: (aspect: string) => `Inside ${aspect}. Your Order is your Realm's name and crest.`,
+  playAs: (order: string) => `Play as ${order}`,
+  youreIn: (aspect: string) => `You're in ${aspect}`,
+  waiting: (order: string, date: string) => `${order} · opens ${date}`,
+} as const;
 /** The day-done card: "Day 12 done · Realm kept · Day 13 is open", and its one verb. */
 export const DAY_DONE = "done";
 export const REALM_KEPT = "Realm kept";

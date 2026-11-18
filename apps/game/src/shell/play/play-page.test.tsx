@@ -1,10 +1,11 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { aspects, formatClockTime, formatDate } from "@bibliothecadao/types";
+import { aspects, formatClockTime, formatDate, ordersOfAspect } from "@bibliothecadao/types";
 
 import { FRONTIER_S1_PRESET_ID } from "../../../../../config/source/common/native-preset-modes";
 import { nativePresets } from "../../../../../config/source/native";
@@ -37,11 +38,21 @@ const reads = vi.hoisted(() => ({
   history: null as unknown as Read<{ games: DirectoryGame[]; next: null; failures: { url: string }[] }>,
   // The signed-in account's build orders, as its identity service answers them: none saved unless a case says.
   buildOrders: { orders: [], active: null } as unknown,
+  intent: { order: null, members: {} } as { order: number | null; members: Record<number, number> },
+  chosen: [] as number[],
 }));
 
 vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/hooks/context/identity-session")>()),
-  identityClient: { getBuildOrders: async () => ({ owner: "0x7", revision: 1, book: reads.buildOrders }) },
+  identityClient: {
+    getBuildOrders: async () => ({ owner: "0x7", revision: 1, book: reads.buildOrders }),
+    getOrderIntent: async () => reads.intent,
+    chooseOrder: async (order: number) => {
+      reads.chosen.push(order);
+      reads.intent = { order, members: { ...reads.intent.members, [order]: (reads.intent.members[order] ?? 0) + 1 } };
+      return reads.intent;
+    },
+  },
   useIdentitySession: () =>
     reads.signedIn
       ? { status: "signed-in", session: { user: { id: "u", realmsId: "0x7" } } }
@@ -64,6 +75,8 @@ vi.mock("../blitz/entry", async (importOriginal) => ({
   useRefundSlots: () => new Map(),
   useSlotRegistered: () => 12,
 }));
+
+import { identityClient } from "@/hooks/context/identity-session";
 
 import { PlayPage } from "./play-page";
 
@@ -165,6 +178,8 @@ afterEach(async () => {
   reads.signedIn = true;
   reads.calendar = answered({ phases: [], nextBlitz: null });
   reads.buildOrders = { orders: [], active: null };
+  reads.intent = { order: null, members: {} };
+  reads.chosen = [];
   useBuildOrderStore.setState({ owner: null, status: "signed-out", book: null, revision: 0, notice: null });
 });
 
@@ -174,17 +189,20 @@ const mount = async () => {
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
+  const queries = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const render = () =>
     act(async () =>
       root.render(
-        <MemoryRouter initialEntries={["/"]}>
-          <Where />
-          <Routes>
-            <Route path="/" element={<PlayPage />} />
-            <Route path="/blitz/build-orders" element={<p>build orders</p>} />
-            <Route path="/blitz/:id" element={<p>lobby</p>} />
-          </Routes>
-        </MemoryRouter>,
+        <QueryClientProvider client={queries}>
+          <MemoryRouter initialEntries={["/"]}>
+            <Where />
+            <Routes>
+              <Route path="/" element={<PlayPage />} />
+              <Route path="/blitz/build-orders" element={<p>build orders</p>} />
+              <Route path="/blitz/:id" element={<p>lobby</p>} />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>,
       ),
     );
   await render();
@@ -194,6 +212,8 @@ const mount = async () => {
   };
   return { render, text: () => container.textContent ?? "", container };
 };
+
+const settle = () => act(() => new Promise<void>((resolve) => setTimeout(resolve, 0)));
 
 const press = (container: HTMLElement, word: string) =>
   act(async () =>
@@ -465,13 +485,80 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(useConnectStore.getState().request).toEqual({ next: null });
   });
 
-  it("offers a signed-in account no account to create", async () => {
+  it("asks a signed-in account its Aspect, then its Order inside it, on one screen, keeps the choice, and then counts down", async () => {
+    reads.directory = answered({ games: [] });
+    reads.calendar = answered(seasonOne(startsAt));
+    const [giants, skill] = ordersOfAspect(1);
+    reads.intent = { order: null, members: { [giants!.orderId]: 30, [skill!.orderId]: 9 } };
+    quietPlay();
+    const page = await mount();
+    await settle();
+    const step = () => page.container.querySelector("[data-preseason-step]")?.getAttribute("data-preseason-step");
+    const card = (name: string) => page.container.querySelector<HTMLButtonElement>(`[data-aspect="${name}"]`)!;
+    const button = (word: string) =>
+      [...page.container.querySelectorAll("button")].find((each) => each.textContent?.includes(word));
+    expect(step()).toBe("pick");
+    expect(page.container.querySelector("[data-order]")).toBeNull();
+    expect(page.text()).not.toContain("Create your account");
+    expect(card("Might").textContent).toBe("Might39 membersabout 2.5K LORDSa player on average, of 100K");
+    expect(card("Guile").textContent).toContain("0 membersabout 100K LORDS");
+    expect(page.text()).toContain("The Aspect's 100,000 LORDS are shared by Glory");
+    expect(page.text()).toContain("The first to finish adds 100,000 more.");
+    expect(button("Choose your side")?.disabled).toBe(true);
+
+    await act(async () => card("Harmony").click());
+    await act(async () => card("Might").click());
+    expect(card("Might").getAttribute("aria-pressed")).toBe("true");
+    expect(card("Harmony").getAttribute("aria-pressed")).toBe("false");
+    expect([...page.container.querySelectorAll("[data-order]")].map((row) => row.getAttribute("data-order"))).toEqual(
+      ordersOfAspect(1).map(({ fullOrderName }) => fullOrderName),
+    );
+    await act(async () =>
+      page.container.querySelector<HTMLButtonElement>(`[data-order="${giants!.fullOrderName}"]`)!.click(),
+    );
+    expect(page.container.querySelector(`[data-order="${giants!.fullOrderName}"]`)?.textContent).toContain(
+      "30 members",
+    );
+    await press(page.container, `Play as ${giants!.orderName}`);
+    await settle();
+    expect(reads.chosen).toEqual([giants!.orderId]);
+    expect(step()).toBe("waiting");
+    expect(page.container.querySelector("h1")?.textContent).toBe("You're in Might");
+    expect(page.text()).toContain(`${giants!.fullOrderName} · opens ${formatDate(startsAt, now)}`);
+    expect(page.container.querySelector(".app-chip")?.textContent).toBe("Starts in 14d 4h");
+  });
+
+  it("says a choice that was not kept did not go through, and keeps it on Try again", async () => {
     reads.directory = answered({ games: [] });
     reads.calendar = answered(seasonOne(startsAt));
     quietPlay();
-    const page = await mount();
-    expect(page.container.querySelector("[data-season-countdown]")).not.toBeNull();
-    expect(page.text()).not.toContain("Create your account");
+    const keep = identityClient.chooseOrder;
+    identityClient.chooseOrder = vi.fn(async () => {
+      throw new Error("503");
+    });
+    try {
+      const page = await mount();
+      await settle();
+      const [giants] = ordersOfAspect(1);
+      await act(async () => page.container.querySelector<HTMLButtonElement>('[data-aspect="Might"]')!.click());
+      await act(async () =>
+        page.container.querySelector<HTMLButtonElement>(`[data-order="${giants!.fullOrderName}"]`)!.click(),
+      );
+      await press(page.container, `Play as ${giants!.orderName}`);
+      await settle();
+      expect(page.text()).toContain("Season did not answer.");
+      expect(page.container.querySelector("[data-preseason-step]")?.getAttribute("data-preseason-step")).toBe("pick");
+
+      identityClient.chooseOrder = keep;
+      await press(page.container, "Try again");
+      await settle();
+      expect(reads.chosen).toEqual([giants!.orderId]);
+      expect(page.container.querySelector("[data-preseason-step]")?.getAttribute("data-preseason-step")).toBe(
+        "waiting",
+      );
+    } finally {
+      identityClient.chooseOrder = keep;
+    }
   });
 
   it("keeps Play while it holds anything else: the calendar's next Blitz, or a read that has not answered", async () => {
