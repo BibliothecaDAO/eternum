@@ -153,3 +153,6 @@ const modeOf = (game: DirectoryGame): PlayMode | null => {
   if (game.mode === "frontier" || game.mode === "eternum" || game.mode === "blitz") return game.mode;
   return null;
 };
+
+export const holdsNothing = (board: PlayBoard): boolean =>
+  board.lead === null && PLAY_MODES.every((mode) => board.ages[mode].length === 0);

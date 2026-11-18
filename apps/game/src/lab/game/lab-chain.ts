@@ -353,7 +353,7 @@ const answerDirectory = (
     if (url.pathname === "/api/guardian") return json(LAB_GUARDIAN);
     // The lab's season has no Blitz: no slot open, none scheduled.
     if (url.pathname === "/api/slots") return json({ slots: [] });
-    if (url.pathname === "/api/factory/calendar") return json({ nextBlitz: null });
+    if (url.pathname === "/api/factory/calendar") return json({ phases: [], nextBlitz: null });
     if (url.pathname === "/api/directory")
       return json({
         shards: [{ url: LAB_GAME.url, chainId: LAB_GAME.chainId, status: "active", games: [game], manifest }],

@@ -1,6 +1,6 @@
 import { orderMeaning, type IconMeaning } from "@/ui/design-system/icon-meaning";
 import { ASPECT_PAGE_WORDS, DAY_BANNER_WORDS as WORDS } from "@/ui/design-system/kit/words";
-import { aspects, orders, worldBanes, type WorldBaneId } from "@bibliothecadao/types";
+import { aspects, ordersOfAspect, worldBanes, type WorldBaneId } from "@bibliothecadao/types";
 import { nativeBaneConstants as bane, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { BaneDay } from "@bibliothecadao/eternum";
 import type { DayHead, DayMembers } from "./day-banner-view";
@@ -28,7 +28,7 @@ export function teamBaneHead(source: number): DayHead {
     eyebrow: WORDS.baneFrom(aspect.name),
     name: WORDS.rivalBane(aspect.name),
     rule: WORDS.heightBlocked,
-    crests: orders.filter((order) => order.aspect === aspect.id).map(({ orderId }) => orderMeaning(orderId)),
+    crests: ordersOfAspect(aspect.id).map(({ orderId }) => orderMeaning(orderId)),
   };
 }
 

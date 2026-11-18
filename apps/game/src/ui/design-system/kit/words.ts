@@ -420,6 +420,15 @@ export const CLOCK_WORDS = {
   /** Before the time left to a beginning: "Starts 16:30 · in 2h 4m". */
   in: "in",
 } as const;
+export const COUNTDOWN_WORDS = {
+  opens: (date: string) => `The season opens ${date}`,
+  line: (aspectCount: number, days: number | null) =>
+    days === null
+      ? `Pick your side before it starts. ${aspectCount} Aspects, one hyperstructure to build.`
+      : `Pick your side before it starts. ${aspectCount} Aspects, ${days} days, one hyperstructure to build.`,
+  create: "Create your account",
+  free: "Free to play",
+} as const;
 /** The day-done card: "Day 12 done · Realm kept · Day 13 is open", and its one verb. */
 export const DAY_DONE = "done";
 export const REALM_KEPT = "Realm kept";

@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import type { ReactNode } from "react";
 import { aspectName } from "@bibliothecadao/types";
 import { isShareChannel, sharedMomentOf } from "@realms-world/identity";
 import { useParams, useSearchParams } from "react-router-dom";
@@ -9,8 +8,7 @@ import { AGE_LOCKUP } from "@/ui/design-system/icon-meaning";
 import { AppButton, AppNotice } from "@/ui/design-system/kit/app-elements";
 import { SHARED_LINK_WORDS } from "@/ui/design-system/kit/words";
 
-import { useLayout } from "../frame/layout";
-import { PageFrame } from "../frame/page-frame";
+import { StageFrame } from "../frame/stage-frame";
 import { ageOf } from "../play/ages";
 
 /** A shared link's code as identity makes it; anything else in the address is no link. */
@@ -36,7 +34,7 @@ export const SharedLinkPage = () => {
   });
   const notice = !valid || opened.isError ? <AppNotice tone="warn" line={SHARED_LINK_WORDS.unknown} /> : undefined;
   return (
-    <SharedFrame notice={notice}>
+    <StageFrame notice={notice} verb={<StartAdventure />}>
       <img src={AGE_LOCKUP.frontier} alt={ageOf("frontier").name} className="h-28 w-auto" />
       {opened.data && (
         <h1 className="text-app-title text-app-ink">
@@ -44,30 +42,14 @@ export const SharedLinkPage = () => {
         </h1>
       )}
       <p className="text-app-body text-app-muted">{SHARED_LINK_WORDS.pitch}</p>
-    </SharedFrame>
+    </StageFrame>
   );
 };
 
-/**
- * The landing on Frontier's painting, its one verb at a phone's foot or under its words on a desktop. It has no page
- * title: Frontier's crest above the words already names the game (owner, 9 November 2026: "double frontier feels
- * weird").
- */
-const SharedFrame = ({ notice, children }: { notice: ReactNode; children: ReactNode }) => {
-  const phone = useLayout() === "phone";
-  const verb = (
-    <div className="flex justify-center">
-      <AppButton kind="primary" size="lg" icon="play" step to="/">
-        {SHARED_LINK_WORDS.play}
-      </AppButton>
-    </div>
-  );
-  return (
-    <PageFrame painting="frontier-mist" stage notice={notice} foot={phone ? verb : undefined}>
-      <div className="mx-auto flex max-w-[28rem] flex-col items-center gap-5 pt-4 text-center">
-        {children}
-        {!phone && verb}
-      </div>
-    </PageFrame>
-  );
-};
+const StartAdventure = () => (
+  <div className="flex justify-center">
+    <AppButton kind="primary" size="lg" icon="play" step to="/">
+      {SHARED_LINK_WORDS.play}
+    </AppButton>
+  </div>
+);

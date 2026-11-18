@@ -2,10 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 
 import { fetchApi } from "@/runtime/app-api";
 
-import type { NextBlitzGame } from "../../../launch-service/src/calendar";
+import type { NextBlitzGame, SeasonPhase } from "../../../launch-service/src/calendar";
 import type { PlaytestSlot } from "../../../launch-service/src/slots";
 
-export type { NextBlitzGame, PlaytestSlot };
+export type { NextBlitzGame, PlaytestSlot, SeasonPhase };
 
 /** A Blitz game's roster. */
 export const BLITZ_SEATS = 24;
@@ -24,17 +24,16 @@ const fetchPlaytestSlots = async (): Promise<{ slots: PlaytestSlot[] }> => {
 export const usePlaytestSlots = () =>
   useQuery({ queryKey: ["playtestSlots"], queryFn: fetchPlaytestSlots, refetchInterval: 3_000 });
 
-/**
- * The next Blitz game the launch service's schedule opens, from its season calendar (`nextBlitz`): null when its Blitz
- * window has no game left. The client never derives the timetable; a calendar that names no next game is a failure.
- */
-const fetchNextBlitz = async (): Promise<NextBlitzGame | null> => {
+export type SeasonCalendar = { phases: SeasonPhase[]; nextBlitz: NextBlitzGame | null };
+
+const fetchSeasonCalendar = async (): Promise<SeasonCalendar> => {
   const response = await fetchApi("/api/factory/calendar");
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.error ?? `Calendar answered ${response.status}`);
+  if (!Array.isArray(payload.phases)) throw new Error("The calendar lists no phases");
   if (!("nextBlitz" in payload)) throw new Error("The calendar names no next Blitz");
-  return payload.nextBlitz;
+  return { phases: payload.phases, nextBlitz: payload.nextBlitz };
 };
 
-export const useNextBlitz = () =>
-  useQuery({ queryKey: ["nextBlitz"], queryFn: fetchNextBlitz, refetchInterval: 60_000 });
+export const useSeasonCalendar = () =>
+  useQuery({ queryKey: ["seasonCalendar"], queryFn: fetchSeasonCalendar, refetchInterval: 60_000 });

@@ -1,6 +1,6 @@
 import "./aspect-picker.css";
 
-import { aspectName, aspects, catalogAspectId, orders, type AspectId } from "@bibliothecadao/types";
+import { aspectName, aspects, catalogAspectId, orders, ordersOfAspect, type AspectId } from "@bibliothecadao/types";
 import type { JoinedShare } from "@realms-world/identity";
 
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
@@ -121,11 +121,9 @@ const AspectCard = ({
   >
     {invited && <span className="aspect-picker__invite">{ASPECT_STEP_WORDS.invited}</span>}
     <span className="aspect-picker__crests">
-      {orders
-        .filter((order) => order.aspect === aspect)
-        .map(({ orderId }) => (
-          <OrderEmblem key={orderId} order={orderId} size={40} />
-        ))}
+      {ordersOfAspect(aspect).map(({ orderId }) => (
+        <OrderEmblem key={orderId} order={orderId} size={40} />
+      ))}
     </span>
     <span className="aspect-picker__name">{name}</span>
     {members !== null && <span className="aspect-picker__members">{ASPECT_STEP_WORDS.members(members)}</span>}

@@ -9,9 +9,10 @@ import { PageFrame } from "../frame/page-frame";
 import { Loading } from "../loading";
 import type { NextBlitzGame } from "../blitz-slot";
 import { ageOf } from "./ages";
-import { idleCard, type PlayBoard, PLAY_MODES, type PlayMode } from "./play-board";
+import { holdsNothing, idleCard, type PlayBoard, PLAY_MODES, type PlayMode } from "./play-board";
 import { type PlayFacts, type SourceGap, usePlayFacts } from "./play-facts";
 import { ItemRows, LeadCard } from "./play-item";
+import { SeasonCountdown } from "./season-countdown";
 import { BuildOrdersRow } from "../build-orders/build-orders-row";
 
 /**
@@ -22,6 +23,8 @@ import { BuildOrdersRow } from "../build-orders/build-orders-row";
  */
 export const PlayPage = () => {
   const facts = usePlayFacts();
+  if (facts.opening && isPlayEmpty(facts))
+    return <SeasonCountdown opening={facts.opening} now={facts.now} signedIn={facts.signedIn} />;
   const firstVisit = !facts.signedIn && facts.board?.lead?.verb === "play";
   const ages = facts.board ? agesShown(facts.board, facts.gaps) : [];
   return (
@@ -49,6 +52,9 @@ export const PlayPage = () => {
     </PageFrame>
   );
 };
+
+const isPlayEmpty = (facts: PlayFacts) =>
+  facts.board !== undefined && holdsNothing(facts.board) && facts.nextBlitz === null && facts.gaps.length === 0;
 
 /**
  * The ages holding a game besides the lead, in Play's order; and Blitz's always once its slots and the season's calendar

@@ -2,11 +2,14 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { useEffect } from "react";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { formatClockTime } from "@bibliothecadao/types";
+import { aspects, formatClockTime, formatDate } from "@bibliothecadao/types";
 
-import type { NextBlitzGame, PlaytestSlot } from "../blitz-slot";
+import { FRONTIER_S1_PRESET_ID } from "../../../../../config/source/common/native-preset-modes";
+import { nativePresets } from "../../../../../config/source/native";
+
+import type { NextBlitzGame, PlaytestSlot, SeasonCalendar } from "../blitz-slot";
 import type { DirectoryGame } from "../herald";
 
 /** A query as the page reads it: answered with `data`, failed, or still on its way. */
@@ -24,14 +27,13 @@ const reads = vi.hoisted(() => ({
   signedIn: true,
   directory: null as unknown as Read<{ games: DirectoryGame[] }>,
   slots: null as unknown as Read<{ slots: PlaytestSlot[] }>,
-  // The season calendar's next Blitz game: none left in the season unless a case names one.
-  nextBlitz: {
-    data: null,
+  calendar: {
+    data: { phases: [], nextBlitz: null },
     isSuccess: true,
     isError: false,
     error: null,
     refetch: () => {},
-  } as Read<NextBlitzGame | null>,
+  } as Read<SeasonCalendar>,
   history: null as unknown as Read<{ games: DirectoryGame[]; next: null; failures: { url: string }[] }>,
   // The signed-in account's build orders, as its identity service answers them: none saved unless a case says.
   buildOrders: { orders: [], active: null } as unknown,
@@ -55,7 +57,7 @@ vi.mock("../herald", async (importOriginal) => ({
 vi.mock("../blitz-slot", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../blitz-slot")>()),
   usePlaytestSlots: () => reads.slots,
-  useNextBlitz: () => reads.nextBlitz,
+  useSeasonCalendar: () => reads.calendar,
 }));
 vi.mock("../blitz/entry", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../blitz/entry")>()),
@@ -66,6 +68,11 @@ vi.mock("../blitz/entry", async (importOriginal) => ({
 import { PlayPage } from "./play-page";
 
 import { useBuildOrderStore } from "@/hooks/use-build-orders";
+
+import { useConnectStore } from "../sign-in/connect";
+
+const HOUR = 3_600;
+const DAY = 24 * HOUR;
 
 const REALM = { entity_id: 1, category: 1, realm_id: 3098, level: 1, coord_x: 0, coord_y: 0, resources_packed: "0" };
 const game = (over: Partial<DirectoryGame>): DirectoryGame =>
@@ -156,7 +163,7 @@ afterEach(async () => {
   await cleanup?.();
   cleanup = null;
   reads.signedIn = true;
-  reads.nextBlitz = answered(null);
+  reads.calendar = answered({ phases: [], nextBlitz: null });
   reads.buildOrders = { orders: [], active: null };
   useBuildOrderStore.setState({ owner: null, status: "signed-out", book: null, revision: 0, notice: null });
 });
@@ -357,7 +364,7 @@ it("shows the calendar's next Blitz, its start and when its entry opens, until t
   reads.directory = answered({ games: [ownSeason] });
   reads.slots = answered({ slots: [] });
   reads.history = answered({ games: [], next: null, failures: [] });
-  reads.nextBlitz = answered(next);
+  reads.calendar = answered({ phases: [], nextBlitz: next });
   const page = await mount();
   const blitz = () => page.container.querySelector('section[aria-label="Blitz"]')?.textContent ?? null;
   const at = (iso: string) => formatClockTime(Date.parse(iso) / 1000);
@@ -369,7 +376,10 @@ it("shows the calendar's next Blitz, its start and when its entry opens, until t
   expect(page.container.querySelector('section[aria-label="Blitz"]')!.hasAttribute("data-idle")).toBe(false);
 
   // Its entry due: the schedule's next tick opens it.
-  reads.nextBlitz = answered({ ...next, opensAt: new Date((now - 1) * 1000).toISOString() });
+  reads.calendar = answered({
+    phases: [],
+    nextBlitz: { ...next, opensAt: new Date((now - 1) * 1000).toISOString() },
+  });
   await page.render();
   expect(blitz()).toBe(`Next ranked BlitzStarts ${at(next.startsAt)} · Entry opens in a moment${orders}`);
 
@@ -384,7 +394,7 @@ it("says the season calendar did not answer, never 'No Blitz', when it fails", a
   reads.directory = answered({ games: [ownSeason] });
   reads.slots = answered({ slots: [] });
   reads.history = answered({ games: [], next: null, failures: [] });
-  reads.nextBlitz = failed();
+  reads.calendar = failed();
   const page = await mount();
   expect(page.text()).toContain("Season did not answer.");
   expect(page.text()).not.toContain("No Blitz scheduled");
@@ -404,4 +414,94 @@ it("ends Blitz's column on the way to the player's build orders, naming the orde
   expect(rows.at(-1)?.textContent).toBe("Build ordersCoal rush");
   await act(async () => (rows.at(-1) as HTMLButtonElement).click());
   expect(page.text()).toBe("build orders");
+});
+
+describe("the season's countdown, while its first day is ahead and Play has no game to lead with", () => {
+  const now = Math.floor(Date.now() / 1000);
+  const startsAt = now + 14 * DAY + 3 * HOUR + 20 * 60;
+  const seasonOne = (from: number): SeasonCalendar => ({
+    phases: [
+      {
+        phase: "frontier",
+        startsAt: new Date(from * 1000).toISOString(),
+        endsAt: new Date((from + 50 * DAY) * 1000).toISOString(),
+        presetId: FRONTIER_S1_PRESET_ID,
+      },
+    ],
+    nextBlitz: null,
+  });
+  const NEXT_BLITZ: NextBlitzGame = {
+    name: "blitz-next",
+    startsAt: new Date((now + 2 * HOUR) * 1000).toISOString(),
+    closesAt: new Date((now + HOUR) * 1000).toISOString(),
+    opensAt: new Date((now + 30 * 60) * 1000).toISOString(),
+  };
+  const quietPlay = () => {
+    reads.slots = answered({ slots: [] });
+    reads.history = answered({ games: [], next: null, failures: [] });
+  };
+
+  it("names the day it opens, the time left, every Aspect with its Orders, and one way in for a visitor", async () => {
+    reads.signedIn = false;
+    reads.directory = answered({ games: [] });
+    reads.calendar = answered(seasonOne(startsAt));
+    quietPlay();
+    const page = await mount();
+    const countdown = page.container.querySelector("[data-season-countdown]")!;
+    expect(countdown.querySelector("h1")?.textContent).toBe(`The season opens ${formatDate(startsAt, now)}`);
+    expect(countdown.querySelector(".app-chip")?.textContent).toBe("Starts in 14d 4h");
+    expect(countdown.textContent).toContain(
+      `Pick your side before it starts. 4 Aspects, ${nativePresets[FRONTIER_S1_PRESET_ID]!.race!.seasonDays} days`,
+    );
+    expect(
+      [...countdown.querySelectorAll("[data-aspect]")].map((aspect) => [
+        aspect.textContent,
+        aspect.querySelectorAll("img").length,
+      ]),
+    ).toEqual(aspects.map(({ name }) => [name, 4]));
+    expect(page.container.querySelector("[data-play-item]")).toBeNull();
+    expect(page.text()).toContain("Free to play");
+    await press(page.container, "Create your account");
+    expect(useConnectStore.getState().request).toEqual({ next: null });
+  });
+
+  it("offers a signed-in account no account to create", async () => {
+    reads.directory = answered({ games: [] });
+    reads.calendar = answered(seasonOne(startsAt));
+    quietPlay();
+    const page = await mount();
+    expect(page.container.querySelector("[data-season-countdown]")).not.toBeNull();
+    expect(page.text()).not.toContain("Create your account");
+  });
+
+  it("keeps Play while it holds anything else: the calendar's next Blitz, or a read that has not answered", async () => {
+    reads.signedIn = false;
+    reads.directory = answered({ games: [] });
+    reads.calendar = answered({ ...seasonOne(startsAt), nextBlitz: NEXT_BLITZ });
+    quietPlay();
+    const page = await mount();
+    expect(page.container.querySelector("[data-season-countdown]")).toBeNull();
+    expect(page.container.querySelector('section[aria-label="Blitz"]')?.textContent).toContain("Next ranked Blitz");
+
+    reads.calendar = answered(seasonOne(startsAt));
+    reads.slots = failed();
+    await page.render();
+    expect(page.container.querySelector("[data-season-countdown]")).toBeNull();
+    expect(page.text()).toContain("Try again");
+  });
+
+  it("gives Play back once a game leads it, or once the first day has come", async () => {
+    reads.signedIn = false;
+    reads.directory = answered({ games: [ownSeason] });
+    reads.calendar = answered(seasonOne(startsAt));
+    quietPlay();
+    const page = await mount();
+    expect(page.container.querySelector("[data-season-countdown]")).toBeNull();
+
+    reads.directory = answered({ games: [] });
+    reads.calendar = answered(seasonOne(now - 60));
+    await page.render();
+    expect(page.container.querySelector("[data-season-countdown]")).toBeNull();
+    expect(page.text()).toContain("No season");
+  });
 });

@@ -437,6 +437,11 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   mode holding something of yours. Blitz: slots to **Join**, a refund to **Take refund**, a seat's **Lobby**,
   **Results**. Eternum: when it opens.
 - A read that fails (Blitz's slots, your results) says so with **Try again**; the games that answered stay usable.
+- Before the season: while the season calendar's Frontier phase has not started and Play holds nothing else (no game, no
+  Blitz to come, every read answered), Play is the season's countdown on Frontier's painting: the day it opens, **Starts
+  in …**, the four Aspects with their Orders' crests, and signed out one verb **Create your account** (opens sign-in).
+  Lab: `/lab/app/preseason` (signed out) and `/lab/app/preseason-member`; proof: `build.sh prove-season-one` (both,
+  desktop and phone).
 - Creating a Frontier home (the game's entry): with nothing to choose (a ticket or a free home, no Realm held) the realm
   is created without a press, the doorway's bar saying **Preparing your realm**; a failure asks with the picker below. A
   Realm holder gets **Choose your home**, **You play as <name>** (changed on You), then **Create your realm**, pinned in

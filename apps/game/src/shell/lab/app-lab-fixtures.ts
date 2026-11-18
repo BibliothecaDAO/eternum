@@ -4,6 +4,7 @@ import { uint256 } from "starknet";
 import { buildLedgerEconomicPreset, chestPresetFor } from "../../../../../config/deployer/clean/ledger/economics";
 import { blitzVictoryPointConfig } from "../../../../../config/source/blitz/balance";
 import { VICTORY_POINTS_MULTIPLIER } from "../../../../../config/source/common/arena/points";
+import { FRONTIER_S1_PRESET_ID } from "../../../../../config/source/common/native-preset-modes";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import type { CampaignReferral, CampaignTicket, Session, ShareTally } from "@realms-world/identity";
 
@@ -234,6 +235,8 @@ const openEternum = game({
 /** One state per screen the painted pass draws. */
 export const LAB_SCREENS = {
   "first-visit": { signedIn: false, games: [frontier(false), liveBlitz(false), eternum] },
+  preseason: { signedIn: false, games: [] },
+  "preseason-member": { signedIn: true, games: [] },
   home: { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   // Play for a player with the longest name an account takes (packages/identity account-rules), with the install
   // notice: the desktop bar must hold both at its narrowest width.
@@ -541,9 +544,18 @@ export type LabScreen = keyof typeof LAB_SCREENS;
  * The season calendar as the launch service answers it: on `blitz-next`, the next ranked game starting in 1h 52m with
  * its entry opening in 17m; on `no-blitz`, none left in the season. Elsewhere a game is open, so the column shows it.
  */
+const SEASON_ONE_PHASE = (at: (minutes: number) => string) => ({
+  phase: "frontier" as const,
+  startsAt: at(14 * 24 * 60 + 3 * 60 + 20),
+  endsAt: at(64 * 24 * 60),
+  presetId: FRONTIER_S1_PRESET_ID,
+});
+
 export const labCalendar = (screen: LabScreen) => {
-  if (screen !== "blitz-next") return { phases: [], nextBlitz: null };
   const at = (minutes: number) => new Date((NOW + minutes * 60) * 1000).toISOString();
+  if (screen === "preseason" || screen === "preseason-member")
+    return { phases: [SEASON_ONE_PHASE(at)], nextBlitz: null };
+  if (screen !== "blitz-next") return { phases: [], nextBlitz: null };
   return { phases: [], nextBlitz: { name: "blitz-next", startsAt: at(112), closesAt: at(107), opensAt: at(17) } };
 };
 
@@ -554,6 +566,8 @@ const QUIET_BLITZ_SCREENS: readonly LabScreen[] = [
   "blitz-results-lead",
   "eternum-lead",
   "eternum-open",
+  "preseason",
+  "preseason-member",
 ];
 
 /** The screens whose player has no finished game to open. */
@@ -563,6 +577,8 @@ export const LAB_NO_HISTORY_SCREENS: readonly LabScreen[] = [
   "blitz-next",
   "eternum-lead",
   "eternum-open",
+  "preseason",
+  "preseason-member",
 ];
 
 /** The slot closing at 16:30, two hours away, on the lab's shard; on the after-close screens, closed and split. */

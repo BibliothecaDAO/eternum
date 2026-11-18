@@ -8,7 +8,7 @@ import { HudButton, HudNotice, HudPanel } from "@/ui/design-system/kit/hud-eleme
 import { INVITE_WORDS } from "@/ui/design-system/kit/words";
 import { openXPost } from "@/utils/x-post";
 import { type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { aspectName, aspects, type AspectId, orders } from "@bibliothecadao/types";
+import { aspectName, aspects, type AspectId, ordersOfAspect } from "@bibliothecadao/types";
 import { useState } from "react";
 
 const INVITE_MODELS = ["HomeAspect"] as const;
@@ -46,11 +46,9 @@ const InviteToAspect = ({ aspect, chainId, gameId }: { aspect: AspectId; chainId
     <HudPanel label={INVITE_WORDS.title(name)} collapsible={false} bodyClassName="flex flex-col gap-2">
       <span className="flex items-center gap-2">
         <span className="flex shrink-0 items-center gap-0.5">
-          {orders
-            .filter((order) => order.aspect === aspect)
-            .map(({ orderId }) => (
-              <Icon key={orderId} name={orderMeaning(orderId)} size={24} />
-            ))}
+          {ordersOfAspect(aspect).map(({ orderId }) => (
+            <Icon key={orderId} name={orderMeaning(orderId)} size={24} />
+          ))}
         </span>
         <span className="text-hud-strong text-hud-ink">{INVITE_WORDS.title(name)}</span>
       </span>

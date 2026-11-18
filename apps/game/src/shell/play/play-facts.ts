@@ -3,8 +3,9 @@ import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 
 import { useRefundSlots } from "../blitz/entry";
 import { blitzRows } from "../blitz-rows";
-import { useNextBlitz, usePlaytestSlots } from "../blitz-slot";
+import { usePlaytestSlots, useSeasonCalendar } from "../blitz-slot";
 import { useDirectory, useRealmsPlayer, useRecentResults } from "../herald";
+import { seasonOpening } from "../season";
 import { useNowSeconds } from "../use-now";
 import { playBoard } from "./play-board";
 import { readSeenResults } from "./seen-results";
@@ -54,7 +55,7 @@ export const usePlayFacts = () => {
   const { status, session } = useIdentitySession();
   const directory = useDirectory();
   const slots = usePlaytestSlots();
-  const calendar = useNextBlitz();
+  const calendar = useSeasonCalendar();
   const now = useNowSeconds();
   const player = useRealmsPlayer();
   const signedIn = status === "signed-in";
@@ -70,8 +71,9 @@ export const usePlayFacts = () => {
     (gap): gap is SourceGap => gap !== null,
   );
   // The next Blitz game while none is open for entry: known once the calendar answered, null when the season has none.
-  const nextBlitz = calendar.data;
-  return { directory, slots, now, games, finished, blitz, refunds, signedIn, board, gaps, nextBlitz };
+  const nextBlitz = calendar.data?.nextBlitz;
+  const opening = calendar.data ? seasonOpening(calendar.data.phases, now) : null;
+  return { directory, slots, now, games, finished, blitz, refunds, signedIn, board, gaps, nextBlitz, opening };
 };
 
 export type PlayFacts = ReturnType<typeof usePlayFacts>;

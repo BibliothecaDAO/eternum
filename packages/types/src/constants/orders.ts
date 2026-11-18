@@ -132,6 +132,8 @@ export const aspects = [
 /** What an Aspect's hyperstructure height is worth, in whole LORDS: a rate per point, and a bonus for the first finish. */
 export const ASPECT_REWARD = { lordsPerHeight: 10, finishBonus: 100_000 } as const;
 
+export const ordersOfAspect = (aspect: AspectId): IOrder[] => orders.filter((order) => order.aspect === aspect);
+
 /** An Aspect of the catalog by its id; an id outside the catalog is a fault, never a blank. */
 const catalogAspect = (aspect: number) => {
   const named = aspects.find(({ id }) => id === aspect);

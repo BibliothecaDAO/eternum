@@ -41,6 +41,10 @@ export const ClockChip = (moment: ClockMoment) => (
   <Pill icon={clockIcon(moment)}>{clockLine(moment.prefix, moment.at, moment.now)}</Pill>
 );
 
+export const AppCountdownChip = ({ prefix, at, now }: { prefix: ClockPrefix; at: number; now: number }) => (
+  <AppChip icon="hourglass">{`${CLOCK_WORDS[prefix]} ${countdown(prefix, at - now)}`}</AppChip>
+);
+
 /** A moment as the app sheet's chip. */
 export const AppClockChip = (moment: ClockMoment) => (
   <AppChip icon={clockIcon(moment)}>{clockLine(moment.prefix, moment.at, moment.now)}</AppChip>

@@ -11,6 +11,17 @@ const VIEWS = [
   { name: "opening", path: "/lab/season-one/opening", cases: [0, 1, 3, 7, 8], shown: "[data-opening-line]" },
   { name: "race", path: "/lab/season-one/race", cases: [0, 1, 2, 3], shown: "[data-aspect-page]" },
 ];
+const COUNTDOWN_SCREENS = ["preseason", "preseason-member"];
+const PAGES = [
+  ...VIEWS.flatMap(({ name, path, cases, shown }) =>
+    cases.map((each) => ({ file: `${name}-${each}`, url: `${path}?case=${each}`, shown })),
+  ),
+  ...COUNTDOWN_SCREENS.map((screen) => ({
+    file: `countdown-${screen}`,
+    url: `/lab/app/${screen}?capture=1`,
+    shown: "[data-season-countdown]",
+  })),
+];
 const SIZES = [
   ["desktop", "1920", "1080"],
   ["phone", "390", "844"],
@@ -26,12 +37,17 @@ await withDevClient({ base: option("--base-url", null), port, out }, async (base
   try {
     for (const [device, width, height] of SIZES) {
       browser.run(["set", "viewport", width, height]);
-      for (const { name, path, cases, shown } of VIEWS)
-        for (const each of cases) {
-          browser.run(["open", `${baseUrl}${path}?case=${each}`]);
+      for (const { file, url, shown } of PAGES) {
+        browser.run(["open", `${baseUrl}${url}`]);
+        try {
           browser.run(["wait", "--fn", `!!document.querySelector('${shown}')`]);
-          browser.screenshot(join(out, `${name}-${each}-${device}.png`));
+        } catch (error) {
+          writeFileSync(join(out, `${file}-${device}-errors.txt`), browser.run(["errors"]));
+          throw error;
+        } finally {
+          browser.screenshot(join(out, `${file}-${device}.png`));
         }
+      }
     }
     const errors = browser.run(["errors"]);
     if (errors.trim()) throw new Error(errors);
