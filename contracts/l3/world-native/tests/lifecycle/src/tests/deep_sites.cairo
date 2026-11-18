@@ -25,7 +25,7 @@ pub fn preset() -> crate::presets::PresetDefinition {
                     quarry_per_tick: crate::rules::RESOURCE_PRECISION,
                     altar_per_tick: 1,
                     altar_threshold: 10,
-                    ..preset.economy.deep.unwrap()
+                    ..preset.economy.deep.unwrap(),
                 },
             );
     preset

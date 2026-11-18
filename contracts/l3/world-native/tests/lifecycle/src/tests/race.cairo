@@ -345,7 +345,8 @@ fn a_single_valid_payment_cannot_register_a_season_whose_total_would_overflow() 
     let max: u128 = core::num::traits::Bounded::MAX;
     preset
         .economy
-        .race = Some(crate::race::RaceRules { glory_per_tick: max / RESOURCE_PRECISION, ..preset.economy.race.unwrap() });
+        .race =
+            Some(crate::race::RaceRules { glory_per_tick: max / RESOURCE_PRECISION, ..preset.economy.race.unwrap() });
     registry(d).register_preset(1, preset);
     let created = safe(d, world_test_support::tests::authority())
         .create_game(

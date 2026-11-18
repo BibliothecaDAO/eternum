@@ -1306,7 +1306,9 @@ test("preset 7 activates the complete Slice 1 rules while fixtures and historica
     const environment = source.gameType === "blitz" ? "madara.blitz" : "madara.frontier";
     const built = buildNativePreset(loadNativePresetConfiguration(environment, source.id), source.id);
     const active = source.id === FRONTIER_S1_PRESET_ID;
-    for (const name of ["deep", "race", "quests", "banes"] as const) expect(built.economy[name].isSome()).toBe(active);
+    const seasonShaped = active || source.id === FRONTIER_FIXTURE_PRESET_ID;
+    for (const name of ["deep", "race"] as const) expect(built.economy[name].isSome()).toBe(seasonShaped);
+    for (const name of ["quests", "banes"] as const) expect(built.economy[name].isSome()).toBe(active);
     if (!active) continue;
     expect(source.dailyQuest).toEqual(questFixture());
     expect(source.banes).toEqual(baneFixture());
