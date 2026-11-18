@@ -402,9 +402,21 @@ fn write_depths(
             "guard bounds off grid",
         );
         validate_beast_guards(value);
+        if index + 1 < depths.len() {
+            validate_layer_relics(index.try_into().unwrap(), odds);
+        }
         preset.depth_rules.write(index.try_into().unwrap(), Some(value));
     }
     preset.depth_count.write(depths.len());
+}
+
+fn validate_layer_relics(layer: u8, odds: crate::relics::ChestTiers) {
+    let tiers = array![odds.common, odds.uncommon, odds.rare, odds.epic, odds.legendary];
+    for rank in 1_u8..6 {
+        if rank <= layer || rank > layer + crate::army_relics::RELICS_PER_LAYER {
+            assert!(*tiers.at((rank - 1).into()) == 0, "a layer's ruins hold only its three relics");
+        }
+    }
 }
 
 fn validate_beast_guards(depth: crate::expeditions::DepthRules) {

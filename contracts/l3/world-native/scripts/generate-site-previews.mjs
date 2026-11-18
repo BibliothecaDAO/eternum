@@ -41,10 +41,13 @@ function depthReward(amount: bigint, depth: number): bigint {
 function ruinStrengthRule(source) {
   const body = functionBody(source, "ruin_strength", "rank:u8,depth:u8", "u128");
   const match = body.match(
-    /^assert!\(rank>depth&&rank<=depth\+3,"relicoutsideitslayer"\);letbase:u128=matchrank-1-depth\{0=>([0-9_]+),1=>([0-9_]+),_=>([0-9_]+),?\};base\*core::num::traits::Pow::pow\(2_u128,depth.into\(\)\)$/,
+    /^assert!\(rank>depth&&rank<=depth\+RELICS_PER_LAYER,"relicoutsideitslayer"\);letbase:u128=matchrank-1-depth\{0=>([0-9_]+),1=>([0-9_]+),_=>([0-9_]+),?\};base\*core::num::traits::Pow::pow\(2_u128,depth.into\(\)\)$/,
   );
   if (!match) throw new Error("Unsupported ruin strength rule; update the preview compiler");
-  return { strengths: match.slice(1).map(positiveInteger), spread: constant(source, "RUIN_GUARD_SPREAD_PERCENT") };
+  const strengths = match.slice(1).map(positiveInteger);
+  if (Number(constant(source, "RELICS_PER_LAYER")) !== strengths.length)
+    throw new Error("Ruin strengths must name one size a relic of the layer");
+  return { strengths, spread: constant(source, "RUIN_GUARD_SPREAD_PERCENT") };
 }
 
 function resourceRewards(source) {

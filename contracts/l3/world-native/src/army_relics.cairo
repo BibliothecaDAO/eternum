@@ -125,8 +125,10 @@ pub fn draw(odds: crate::relics::ChestTiers, seed: u256) -> ArmyRelic {
 pub const RUIN_GUARD_SPREAD_PERCENT: u128 = 10;
 pub const RUIN_GUARD_STEP: u128 = 50;
 
+pub const RELICS_PER_LAYER: u8 = 3;
+
 pub fn ruin_strength(rank: u8, depth: u8) -> u128 {
-    assert!(rank > depth && rank <= depth + 3, "relic outside its layer");
+    assert!(rank > depth && rank <= depth + RELICS_PER_LAYER, "relic outside its layer");
     let base: u128 = match rank - 1 - depth {
         0 => 1000,
         1 => 1500,

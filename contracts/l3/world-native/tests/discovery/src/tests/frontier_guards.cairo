@@ -139,6 +139,31 @@ fn a_ruin_refuses_a_relic_above_its_layer() {
 
 #[test]
 #[feature("safe_dispatcher")]
+fn registration_refuses_ruin_odds_outside_a_layers_three_relics_but_not_on_the_deeps_row() {
+    let d = super::registrar::setup();
+    snforge_std::start_cheat_caller_address(d.games, super::authority());
+    for (layer, valid) in array![(0_u32, false), (1, false), (2, false), (3, true)] {
+        let (id, mut preset) = super::preset_projection::current_definition("frontier-check");
+        let mut depths = array![];
+        for index in 0..preset.settlement.depths.len() {
+            let mut depth = *preset.settlement.depths.at(index);
+            if index == layer {
+                depth.chest = crate::relics::ChestTiers { common: 0, uncommon: 0, rare: 0, epic: 0, legendary: 0 };
+                if layer == 2 {
+                    depth.chest.uncommon = 10000;
+                } else {
+                    depth.chest.legendary = 10000;
+                }
+            }
+            depths.append(depth);
+        }
+        preset.settlement.depths = depths.span();
+        assert_eq!(IRegistrarSafeDispatcher { contract_address: d.games }.register_preset(id, preset).is_ok(), valid);
+    }
+}
+
+#[test]
+#[feature("safe_dispatcher")]
 fn frontier_registration_refuses_invalid_site_and_beast_guard_ranges() {
     let d = super::registrar::setup();
     snforge_std::start_cheat_caller_address(d.games, super::authority());
