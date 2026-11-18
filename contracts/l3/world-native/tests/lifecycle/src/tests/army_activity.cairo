@@ -256,13 +256,13 @@ fn successful_attacks_record_their_target_and_refusals_preserve_it() {
     super::deep_sites::descend(rival, enemy);
     super::deep_sites::descend(rival, other);
     let center = crate::deep::center(preset.settlement.spacing);
-    let center = crate::troops::Coord { x: center.x + 3, ..center };
+    let center = crate::troops::Coord { y: center.y - 2, ..center };
     set_explorer_fixture(d.games, attacker, ExplorerTroops { coord: center, ..army(d, attacker) });
     set_explorer_fixture(
         d.games, enemy, ExplorerTroops { coord: crate::geometry::neighbor(center, 0), ..army(d, enemy) },
     );
     set_explorer_fixture(
-        d.games, other, ExplorerTroops { coord: crate::troops::Coord { x: center.x + 5, ..center }, ..army(d, other) },
+        d.games, other, ExplorerTroops { coord: crate::troops::Coord { x: center.x + 2, ..center }, ..army(d, other) },
     );
     super::deep_sites::applied(d, game_id, attack(attacker.explorer_id, enemy.explorer_id), 365);
     assert_eq!(combat_at(d, attacker), crate::combat::ArmyCombat { last_target: enemy.explorer_id });
