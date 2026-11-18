@@ -97,25 +97,38 @@ test("depth premiums come from the shared Cairo formula", () => {
   assert.match(compileSitePreviews(changed), /3n \+ BigInt\(depth\)/);
 });
 
-test("ruin bounds follow the Cairo relic rank and spread", async () => {
+test("ruin bounds follow the relic's place on its layer, doubled each layer down, and the Cairo spread", async () => {
   const load = async (rules) =>
     import(
       `data:text/javascript;base64,${Buffer.from(ts.transpileModule(compileSitePreviews({ ...source, army_relics: rules }), { compilerOptions: { module: ts.ModuleKind.ESNext } }).outputText).toString("base64")}`
     );
   const normal = await load(source.army_relics);
-  assert.deepEqual([1, 2, 3, 4, 5].map(normal.previewRuinGuardBounds), [
-    [900, 1100],
-    [2250, 2750],
-    [4500, 5500],
-    [9000, 11000],
-    [22500, 27500],
-  ]);
+  assert.deepEqual(
+    [
+      [1, 0],
+      [2, 0],
+      [3, 0],
+      [2, 1],
+      [4, 1],
+      [5, 2],
+    ].map(([rank, depth]) => normal.previewRuinGuardBounds(rank, depth)),
+    [
+      [900, 1100],
+      [1350, 1650],
+      [2250, 2750],
+      [1800, 2200],
+      [4500, 5500],
+      [9000, 11000],
+    ],
+  );
+  assert.throws(() => normal.previewRuinGuardBounds(4, 0), /Relic outside its layer/);
+  assert.throws(() => normal.previewRuinGuardBounds(1, 1), /Relic outside its layer/);
   const changed = await load(
     source.army_relics
-      .replace("2 => 2500", "2 => 3000")
+      .replace("1 => 1500", "1 => 2000")
       .replace("RUIN_GUARD_SPREAD_PERCENT: u128 = 10", "RUIN_GUARD_SPREAD_PERCENT: u128 = 20"),
   );
-  assert.deepEqual(changed.previewRuinGuardBounds(2), [2400, 3600]);
+  assert.deepEqual(changed.previewRuinGuardBounds(2, 0), [1600, 2400]);
 });
 
 test("Band and Herd rewards follow the executable Cairo rules", async () => {

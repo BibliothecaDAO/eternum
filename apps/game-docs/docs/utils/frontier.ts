@@ -121,7 +121,13 @@ export const FRONTIER = {
     beastStrong: `${beastOf("band", index).name} ${range(depth.beastStrongLower, depth.beastStrongUpper)}`,
     ruinGuard: beastOf("ruin", index).name,
   })),
-  ruinGuards: TIER_WORDS.map((name, index) => ({ name, count: range(...previewRuinGuardBounds(index + 1)) })),
+  ruinGuards: LAYER_NAMES.slice(0, 3).flatMap((layer, depth) =>
+    TIER_WORDS.slice(depth, depth + 3).map((name, place) => ({
+      layer,
+      name,
+      count: range(...previewRuinGuardBounds(depth + place + 1, depth)),
+    })),
+  ),
   buildings: [
     ["Farm", research.FARM, "Wheat"],
     ["Barracks", research.BARRACKS, "Troops"],

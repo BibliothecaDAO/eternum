@@ -131,7 +131,7 @@ test("the expedition page gives camps and rifts their own correct guard column a
   }
 });
 
-test("the expedition export states every relic rarity and its generated ruin guard range", async () => {
+test("the expedition export states each layer's three relic rarities and their generated ruin guard ranges", async () => {
   const server = await createServer({ configFile: false, logLevel: "silent", appType: "custom" });
   try {
     const { previewRuinGuardBounds } = await server.ssrLoadModule(
@@ -139,11 +139,13 @@ test("the expedition export states every relic rarity and its generated ruin gua
     );
     const docs = fileURLToPath(new URL("../docs", import.meta.url));
     const llm = await renderLlmTxt([join(docs, "pages/frontier/expedition.mdx")], docs);
-    for (const [index, name] of TIER_WORDS.entries()) {
-      const bounds = previewRuinGuardBounds(index + 1)
-        .map((value) => value.toLocaleString("en-US"))
-        .join("–");
-      assert.ok(llm.includes(`${name}: ${bounds}`), `missing ruin guards for ${name}`);
+    for (const [depth, layer] of LAYER_NAMES.slice(0, 3).entries()) {
+      for (const [place, name] of TIER_WORDS.slice(depth, depth + 3).entries()) {
+        const bounds = previewRuinGuardBounds(depth + place + 1, depth)
+          .map((value) => value.toLocaleString("en-US"))
+          .join("–");
+        assert.ok(llm.includes(`${layer} ${name}: ${bounds}`), `missing ruin guards for ${layer} ${name}`);
+      }
     }
   } finally {
     await server.close();

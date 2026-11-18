@@ -12,9 +12,11 @@ export function compileSitePreviews(source) {
   const rift = riftGuardRule(source.troops);
   const ruin = ruinStrengthRule(source.army_relics);
   return `// From the site reward and rift guard formulas in Cairo. Run scripts/generate-site-previews.mjs.
-export function previewRuinGuardBounds(rank: number): [number, number] {
-  const strength = [${ruin.strengths.join(", ")}][rank - 1];
-  if (strength === undefined) throw new Error("Invalid relic rank");
+export function previewRuinGuardBounds(rank: number, depth: number): [number, number] {
+  const place = rank - 1 - depth;
+  const base = [${ruin.strengths.join(", ")}][place];
+  if (base === undefined || place < 0) throw new Error("Relic outside its layer");
+  const strength = base * 2 ** depth;
   const spread = strength * ${ruin.spread} / 100;
   return [strength - spread, strength + spread];
 }
@@ -37,9 +39,9 @@ function depthReward(amount: bigint, depth: number): bigint {
 }
 
 function ruinStrengthRule(source) {
-  const body = functionBody(source, "ruin_strength", "rank:u8", "u128");
+  const body = functionBody(source, "ruin_strength", "rank:u8,depth:u8", "u128");
   const match = body.match(
-    /^matchrank\{1=>([0-9_]+),2=>([0-9_]+),3=>([0-9_]+),4=>([0-9_]+),5=>([0-9_]+),_=>panic!\("invalidrelicrank"\),?\}$/,
+    /^assert!\(rank>depth&&rank<=depth\+3,"relicoutsideitslayer"\);letbase:u128=matchrank-1-depth\{0=>([0-9_]+),1=>([0-9_]+),_=>([0-9_]+),?\};base\*core::num::traits::Pow::pow\(2_u128,depth.into\(\)\)$/,
   );
   if (!match) throw new Error("Unsupported ruin strength rule; update the preview compiler");
   return { strengths: match.slice(1).map(positiveInteger), spread: constant(source, "RUIN_GUARD_SPREAD_PERCENT") };
