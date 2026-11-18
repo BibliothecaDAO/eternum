@@ -166,21 +166,40 @@ it("opens the earned pick without a selection and keeps it through Escape and ou
   expect(host.querySelector<HTMLElement>("[data-oath-pass-result]")!.dataset.oathPassResult).toBe(
     String(army.stamina.current + oaths.PASS_STAMINA),
   );
-  game.staminaKnown = false;
-  act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
-  const pass = button(/^Pass:/)!;
-  expect(pass.textContent).toBe(`Pass: +${oaths.PASS_STAMINA} stamina`);
-  await act(async () => pass.click());
-  expect(game.chooseOath).toHaveBeenCalledWith({
-    signer: game.signer,
-    explorerId: army.explorerId,
-    expectedPick: game.progress.oath_pick,
-    oath: null,
-    replace: null,
-  });
   act(() => {
     game.progress.oath_pick = 0;
     root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />);
   });
   expect(host.querySelector("[data-oath-pick]")).toBeNull();
+});
+
+it("opens an earned pick before the army's stamina is known, its cards answerable and Pass held until its result is", async () => {
+  const { FrontierOathPick } = await import("./oath-pick");
+  const { nativeOathConstants: oaths } = await import("@bibliothecadao/eternum/game-client");
+  game.staminaKnown = false;
+  game.progress.oath_slots = 1;
+  game.progress.oaths = 0;
+  game.progress.oath_pick = oaths.POWER - 1 + ((oaths.FOX - 1) << 4) + ((oaths.RAGE - 1) << 8);
+  act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
+  expect(host.querySelectorAll("[data-oath-id]")).toHaveLength(3);
+  const pass = button(/^Pass:/)!;
+  expect(pass.textContent).toBe(`Pass: +${oaths.PASS_STAMINA} stamina`);
+  expect(pass.disabled).toBe(true);
+  expect(host.querySelector("[data-oath-pass-result]")).toBeNull();
+  game.staminaKnown = true;
+  act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
+  expect(button(/^Pass:/)!.disabled).toBe(false);
+  expect(button(/^Pass:/)!.textContent).toBe(
+    `Pass: +${oaths.PASS_STAMINA} stamina${army.stamina.current} → ${army.stamina.current + oaths.PASS_STAMINA} / ${army.stamina.max}`,
+  );
+  game.staminaKnown = false;
+  act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
+  await act(async () => host.querySelector<HTMLButtonElement>(`[data-oath-id="${oaths.FOX}"] button`)!.click());
+  expect(game.chooseOath).toHaveBeenCalledWith({
+    signer: game.signer,
+    explorerId: army.explorerId,
+    expectedPick: game.progress.oath_pick,
+    oath: oaths.FOX,
+    replace: null,
+  });
 });

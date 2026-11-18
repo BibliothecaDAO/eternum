@@ -30,7 +30,17 @@ const CORE = "packages/core/src/utils/zz-guard-probe.ts";
 describe("the layer names the guard refuses", () => {
   it("are read from the catalog's source, so the guard needs no build and never checks stale names", () => {
     expect(readLayerNames()).toEqual([...LAYER_NAMES]);
-    expect(() => readLayerNames("export const LAYER_NAMES = layers;")).toThrow("No LAYER_NAMES declaration");
+    expect(() => readLayerNames("export const LAYER_NAMES = layers;")).toThrow("No LAYER_NAMES tuple");
+    expect(() => readLayerNames("export const LAYER_NAMES = [SURFACE, 'Veil'] as const;")).toThrow(
+      "No LAYER_NAMES tuple",
+    );
+    expect(
+      readLayerNames("export const LAYER_NAMES = ['Surface', `Veil`] as const satisfies readonly string[];"),
+    ).toEqual(["Surface", "Veil"]);
+    expect(readLayerNames("export const LAYER_NAMES =\n  [\n    'Surface',\n    \"Veil\",\n  ] as const;")).toEqual([
+      "Surface",
+      "Veil",
+    ]);
   });
 });
 
@@ -61,10 +71,10 @@ describe("one source per fact: no copy of a catalog outside its modules", () => 
     ["an image path", "export const art = '/images/biomes/ocean.png';"],
     ...LAYER_NAMES.map((name) => [
       `the layer ${name} before a qualification`,
-      `export const word = '${name} (locked)';`,
+      `export const word = ${JSON.stringify(`${name} (locked)`)};`,
     ]),
     ["a layer's old name", "export const word = 'Ethereal II';"],
-    ["a layer's name in a template", "export const line = (n: string) => `${n} · Hollow`;"],
+    ["a layer's name in a template", `export const line = (n: string) => \`\${n} · ${LAYER_NAMES[2]}\`;`],
     ["an image path built in a template", "export const art = (name: string) => `/icons/facets/64/${name}.webp`;"],
   ])("refuses %s", async (_, source) => {
     expect(await hits(SCREEN, source)).toEqual([expect.stringMatching(/^One source per fact/)]);
@@ -86,6 +96,9 @@ describe("one source per fact: no copy of a catalog outside its modules", () => 
     ["one member", "export const ONLY = [StructureType.Realm];"],
     ["a comparison", "export const isRealm = (c: number) => c === StructureType.Realm || c === StructureType.Village;"],
     ["a route that is not artwork", "export const page = '/play/blitz';"],
+    ["a resource named Deep Crystal", "export const word = 'Deep Crystal';"],
+    ["a resource's description in sentence case", "export const tip = 'Deep crystal hums underground';"],
+    ["a resource in the plural", "export const tip = 'Collect two Deep Crystals';"],
   ])("allows %s", async (_, source) => {
     expect(await hits(SCREEN, source)).toEqual([]);
   });

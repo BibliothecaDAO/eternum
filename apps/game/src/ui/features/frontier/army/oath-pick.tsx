@@ -131,7 +131,7 @@ function ArmyOathPick({
       )}
       <HudButton
         kind="secondary"
-        disabled={!allowed || sending}
+        disabled={!allowed || sending || !stamina}
         onClick={() => choose(null)}
         data-oath-pass-current={stamina?.current}
         data-oath-pass-maximum={stamina?.max}

@@ -12,6 +12,7 @@
 // it in CI, and src/catalog-guards.test.mjs holds its controls.
 
 import { readFileSync } from "node:fs";
+import tseslint from "typescript-eslint";
 
 /** The game's catalogs: the enums of @bibliothecadao/types whose members are game content. */
 const CATALOGS = new Set([
@@ -73,13 +74,30 @@ const declaredType = (object) => {
 
 const IMAGE_PATH = /^\/(images|icons|tokens)\//;
 const LAYER_CATALOG = new URL("../../../packages/types/src/words/nouns.ts", import.meta.url);
-export const readLayerNames = (source = readFileSync(LAYER_CATALOG, "utf8")) => {
-  const declared = source.match(/^export const LAYER_NAMES = (\[[^\]]*\]) as const;$/m);
-  if (!declared) throw new Error(`No LAYER_NAMES declaration in ${LAYER_CATALOG.pathname}`);
-  return JSON.parse(declared[1]);
+const writtenText = (node) => {
+  if (node?.type === "Literal" && typeof node.value === "string") return node.value;
+  if (node?.type === "TemplateLiteral" && node.expressions.length === 0) return node.quasis[0].value.cooked;
+  return undefined;
 };
-const LAYER_SPELLING = new RegExp(`\\b(?:${readLayerNames().join("|")}|Ethereal I{1,3})\\b`);
-const namesLayer = (text) => LAYER_SPELLING.test(text.replace(/\bDeep (?:Ocean|Crystal)\b/g, ""));
+const withoutTypeAssertions = (node) =>
+  node?.type === "TSAsExpression" || node?.type === "TSSatisfiesExpression"
+    ? withoutTypeAssertions(node.expression)
+    : node;
+export const readLayerNames = (source = readFileSync(LAYER_CATALOG, "utf8")) => {
+  const declarator = tseslint.parser
+    .parseForESLint(source)
+    .ast.body.flatMap((node) => node.declaration?.declarations ?? [])
+    .find((each) => each.id.name === "LAYER_NAMES");
+  const tuple = withoutTypeAssertions(declarator?.init);
+  const names = tuple?.type === "ArrayExpression" ? tuple.elements.map(writtenText) : [];
+  if (names.length === 0 || names.includes(undefined)) {
+    throw new Error(`No LAYER_NAMES tuple of written names in ${LAYER_CATALOG.pathname}`);
+  }
+  return names;
+};
+const asPattern = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const LAYER_SPELLING = new RegExp(`\\b(?:${readLayerNames().map(asPattern).join("|")}|Ethereal I{1,3})\\b`);
+const namesLayer = (text) => LAYER_SPELLING.test(text.replace(/\bDeep (?:Ocean|[Cc]rystal)/g, ""));
 
 const COPY = "copy";
 const IMAGE = "image";
