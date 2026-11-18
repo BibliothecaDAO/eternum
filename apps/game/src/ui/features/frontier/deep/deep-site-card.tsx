@@ -172,16 +172,19 @@ function guardView(store: NativeFactStore, game_id: number, site: Site, selected
     };
   const next = site.guards[0];
   if (!next) return { kind: "open" };
-  const total = site.guards.reduce((sum, { army }) => sum + army.troops.count, 0n);
+  const guards = site.guards.map((guard) => ({ ...guard, life: deepArmyLife(store, guard.army, now) }));
+  const paid = ({ army, life }: (typeof guards)[number]) =>
+    army.troops.count > life.lossPerTick ? army.troops.count - life.lossPerTick : 0n;
+  const total = guards.reduce((sum, guard) => sum + paid(guard), 0n);
   const holder = aspects.find((candidate) => candidate.id === homeAspect(store, game_id, next.army.owner));
   if (!holder) throw new Error("Unknown Deep holder Aspect");
   return {
     kind: "held",
     aspect: holder.name,
     next: safeInteger(next.army.explorer_id),
-    slots: site.guards.map(({ slot, army }) => {
+    slots: guards.map((guard) => {
+      const { slot, army, life } = guard;
       const home = store.require("Structure", { game_id, entity_id: army.owner });
-      const life = deepArmyLife(store, army, now);
       return {
         slot,
         armyId: safeInteger(army.explorer_id),
@@ -190,7 +193,7 @@ function guardView(store: NativeFactStore, game_id: number, site: Site, selected
         realm: getStructureName(home, store).name,
         troops: Number(army.troops.count) / RESOURCE_PRECISION,
         ticks: { left: life.ticksLeft, time: formatDuration(life.secondsLeft) },
-        share: Number((army.troops.count * 100n) / total),
+        share: total === 0n ? 0 : Number((paid(guard) * 100n) / total),
         mine: selected !== null && army.owner === selected.army.owner,
       };
     }),

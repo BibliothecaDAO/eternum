@@ -54,13 +54,13 @@ fn settle_boundary(game_id: u32, boundary: u64, context: ExecutionContext) {
     let historical = ExecutionContext { timestamp: boundary - 1, ..context };
     crate::logic::deep_sites::rollover(game_id, historical);
     for kind in 0..crate::rules::DEEP_SITE_COUNT {
+        drain_site(game_id, kind, boundary, historical);
+    }
+    for kind in 0..crate::rules::DEEP_SITE_COUNT {
         let guards = guards(game_id, kind);
         if !guards.is_empty() {
             pay_site(game_id, kind, shares(guards), boundary, historical);
         }
-    }
-    for kind in 0..crate::rules::DEEP_SITE_COUNT {
-        drain_site(game_id, kind, boundary, historical);
     }
 }
 

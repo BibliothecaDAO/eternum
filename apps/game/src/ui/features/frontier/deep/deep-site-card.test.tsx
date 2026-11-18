@@ -299,6 +299,37 @@ it("previews the Deep guard's opening and repeated exchange before sending each 
   }
 });
 
+it("shows each guard's share of the next tick from the troops it keeps after the tick's loss", () => {
+  const scenario = deepScenario();
+  const { store } = scenario;
+  const loss = store.require("DeepRules", { game_id: 1 }).loss_per_tick;
+  const quarry = readDeepSites(store, scenario.startsAt, 1).find((site) => site.name === "Quarry")!;
+  const keep = (explorer_id: number, count: bigint) => {
+    const army = store.require("ExplorerTroops", { game_id: 1, explorer_id });
+    return {
+      model: "ExplorerTroops",
+      key: store.wireKeyOf("ExplorerTroops", army)!,
+      value: wire({ ...army, troops: { ...army.troops, count } }),
+    };
+  };
+  store.applyFacts([
+    keep(301, 4n * loss),
+    keep(201, 2n * loss),
+    {
+      model: "DeepGuard",
+      key: "0xdeed",
+      value: { game_id: 1, explorer_id: "201", site_id: String(quarry.id), slot: 1 },
+    },
+  ] as never);
+  const hud = draw(undefined, scenario);
+  try {
+    expect(hud.host.textContent).toContain("75% of each tick");
+    expect(hud.host.textContent).toContain("25% of each tick");
+  } finally {
+    hud.unmount();
+  }
+});
+
 it("shows every held guard crest and refreshes it from the progress fact", () => {
   const hud = draw(undefined, deepBattleTargetScenario(true));
   try {
