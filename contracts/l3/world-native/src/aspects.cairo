@@ -37,6 +37,6 @@ pub fn order_aspect(mut packed: u128, order: u8) -> u8 {
 
 #[starknet::interface]
 pub trait IAspects<T> {
-    fn draw_realm(self: @T, orders: u128, aspect: u8, seed: u256) -> u32;
-    fn join(ref self: T, key: crate::resources::ResourceKey, order: u8, selected: Option<u8>);
+    fn draw_realm(self: @T, orders: u128, order: u8, seed: u256) -> u32;
+    fn join(ref self: T, key: crate::resources::ResourceKey, order: u8);
 }

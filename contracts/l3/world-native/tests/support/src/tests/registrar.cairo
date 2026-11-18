@@ -264,7 +264,7 @@ pub fn expedition_home(d: super::Deployment) -> (u32, PresetDefinition, u8) {
         execute_in_game(
             d,
             game_id,
-            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), aspect: None }),
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), order: None }),
             350,
         ),
     );
@@ -502,7 +502,7 @@ pub fn assert_capture_at(
         execute_in_game(
             d,
             game_id,
-            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), aspect: None }),
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), order: None }),
             opening,
         ),
     );
@@ -906,7 +906,7 @@ pub fn setup_frontier_relics_with_preset(
         execute_in_game(
             d,
             game_id,
-            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), aspect: None }),
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), order: None }),
             350,
         ),
     );
@@ -1082,14 +1082,29 @@ pub fn apply_ruin_depth_release(d: super::Deployment, game_id: u32) {
     stop_cheat_caller_address(d.games);
 }
 
-pub fn first_aspect_choice(d: super::Deployment, game_id: u32) -> Option<u8> {
+pub fn first_order_choice(d: super::Deployment, game_id: u32) -> Option<u8> {
     snforge_std::interact_with_state(
         d.games, || {
-            if crate::logic::aspects::rules(game_id).is_some() {
-                Some(1)
+            if let Some(orders) = crate::logic::aspects::rules(game_id) {
+                Some(order_in_aspect(orders, 1))
             } else {
                 None
             }
         },
     )
+}
+
+pub fn order_of_aspect(d: super::Deployment, game_id: u32, aspect: u8) -> u8 {
+    snforge_std::interact_with_state(
+        d.games, || order_in_aspect(crate::logic::aspects::rules(game_id).expect('Aspects are disabled'), aspect),
+    )
+}
+
+pub fn order_in_aspect(orders: u128, aspect: u8) -> u8 {
+    for order in 1_u8..17 {
+        if crate::aspects::order_aspect(orders, order) == aspect {
+            return order;
+        }
+    }
+    panic!("Aspect has no Order")
 }

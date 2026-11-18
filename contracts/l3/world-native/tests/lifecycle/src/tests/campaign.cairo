@@ -31,7 +31,7 @@ fn found_at(d: Deployment, game_id: u32, timestamp: u64) -> LaborHome {
             game_id,
             crate::commands::Command::SettleSeason(
                 crate::realms::SettleSeason {
-                    selected_realm: None, aspect: super::registrar::first_aspect_choice(d, game_id),
+                    selected_realm: None, order: super::registrar::first_order_choice(d, game_id),
                 },
             ),
             timestamp,
@@ -204,7 +204,7 @@ fn refuses_a_second_source(held_first: bool) {
             d,
             game_id,
             crate::commands::Command::SettleSeason(
-                crate::realms::SettleSeason { selected_realm: Some(711), aspect: None },
+                crate::realms::SettleSeason { selected_realm: Some(711), order: None },
             ),
             360,
         ),

@@ -98,7 +98,7 @@ fn launcher_hotfix_migrates_a_populated_frontier_day_once_and_play_continues() {
             other,
             game_id,
             crate::commands::Command::SettleSeason(
-                crate::realms::SettleSeason { selected_realm: Some(2), aspect: None },
+                crate::realms::SettleSeason { selected_realm: Some(2), order: None },
             ),
             351,
         ),

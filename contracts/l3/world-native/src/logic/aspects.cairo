@@ -32,41 +32,23 @@ pub mod AspectState {
     pub impl Aspects<
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of crate::aspects::IAspects<ComponentState<TContractState>> {
-        fn draw_realm(self: @ComponentState<TContractState>, orders: u128, aspect: u8, seed: u256) -> u32 {
-            assert!(aspect >= 1 && aspect <= 4, "choose an Aspect");
+        fn draw_realm(self: @ComponentState<TContractState>, orders: u128, order: u8, seed: u256) -> u32 {
+            assert!(crate::aspects::order_aspect(orders, order) != 0, "Order has no Aspect");
             assert!(
                 self.data.realms.catalogue_count.read() == crate::realms::CANONICAL_REALM_COUNT,
                 "incomplete realm catalogue",
             );
-            let mut count = 0_u32;
-            for order in 1_u8..17 {
-                if crate::aspects::order_aspect(orders, order) == aspect {
-                    count += self.data.realms.order_count.read(order).into();
-                }
-            }
-            assert!(count != 0, "Aspect has no realms");
-            let mut index: u32 = crate::random::range(seed, 0x4153504543545f5245414c, count.into()).try_into().unwrap();
-            for order in 1_u8..17 {
-                if crate::aspects::order_aspect(orders, order) == aspect {
-                    let count: u32 = self.data.realms.order_count.read(order).into();
-                    if index < count {
-                        return self.data.realms.order_realms.read((order, index.try_into().unwrap()));
-                    }
-                    index -= count;
-                }
-            }
-            panic!("Aspect realm index out of bounds");
+            let count: u32 = self.data.realms.order_count.read(order).into();
+            assert!(count != 0, "Order has no realms");
+            let index: u32 = crate::random::range(seed, 0x4153504543545f5245414c, count.into()).try_into().unwrap();
+            self.data.realms.order_realms.read((order, index.try_into().unwrap()))
         }
 
-        fn join(ref self: ComponentState<TContractState>, key: ResourceKey, order: u8, selected: Option<u8>) {
+        fn join(ref self: ComponentState<TContractState>, key: ResourceKey, order: u8) {
             let Some(orders) = super::rules(key.game_id) else {
-                assert!(selected.is_none(), "Aspects are disabled");
                 return;
             };
             let aspect = crate::aspects::order_aspect(orders, order);
-            if let Some(selected) = selected {
-                assert!(selected == aspect, "Realm belongs to another Aspect");
-            }
             assert!(
                 self.data.settlements.home_aspects.read((key.game_id, key.entity_id)) == 0, "Aspect already chosen",
             );

@@ -180,7 +180,7 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
         execute_in_game(
             d,
             game_id,
-            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), aspect: None }),
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), order: None }),
             350,
         ),
     );
@@ -369,7 +369,7 @@ fn depth_entry_requires_research_and_keeps_stamina_at_every_depth() {
         execute_in_game(
             d,
             game_id,
-            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), aspect: None }),
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), order: None }),
             350,
         ),
     );
@@ -1186,7 +1186,7 @@ fn open_frontier_settlement_uses_only_each_players_home_and_entry() {
     let progress = views.settlement_progress(game_id);
     let other = super::bind_authority(d);
     let command = Command::SettleSeason(
-        crate::realms::SettleSeason { selected_realm: None, aspect: first_aspect_choice(d, game_id) },
+        crate::realms::SettleSeason { selected_realm: None, order: first_order_choice(d, game_id) },
     );
     assert!(execute_in_game(d, game_id, command, 360));
     assert!(execute_in_game(other, game_id, command, 360));

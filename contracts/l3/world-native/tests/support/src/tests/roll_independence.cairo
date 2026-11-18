@@ -32,7 +32,7 @@ pub fn typed_commands() -> Array<Command> {
         Command::ToggleAlternate(crate::commands::ToggleAlternate { explorer_id: 999999, spire_direction: 0 }),
         Command::LevelUp(999999), Command::SettleBlitzRoster, Command::ProvisionRealm(999999),
         Command::CreateReservedHyperstructure(crate::troops::Coord { alt: false, x: 2000000, y: 2000000 }),
-        Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, aspect: None }),
+        Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, order: None }),
         Command::SettleVillage(crate::village::SettleVillage { pass_id: 1, connected_realm_entity_id: 999999 }),
         Command::ReceiveVillageArmy(999999),
         Command::BurnStructureResources(
@@ -284,7 +284,7 @@ pub fn season_case() -> (Deployment, TestAction, u64) {
     super::resource_commands::set_fixture(
         d.games, selector!("realms"), selector!("traits"), array![1].span(), 0x4000001_u32,
     );
-    let command = Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), aspect: None });
+    let command = Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), order: None });
     (d, TestAction { game_id, actor: d.actor, command }, 350)
 }
 pub fn live_loot_case(insufficient: bool, full: bool) -> (Deployment, TestAction) {

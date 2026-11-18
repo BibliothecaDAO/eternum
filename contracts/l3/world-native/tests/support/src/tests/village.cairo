@@ -150,7 +150,7 @@ fn settle_season_realm(deployment: Deployment) -> u64 {
     assert!(
         run(
             deployment,
-            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Option::None, aspect: None }),
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Option::None, order: None }),
             100,
         ),
     );
@@ -186,7 +186,7 @@ pub fn assert_season_entitlement_mode(dev: bool, has_operator: bool, has_entitle
     );
     let mut spy = spy_events();
     assert_eq!(
-        run(d, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Option::None, aspect: None }), 100),
+        run(d, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Option::None, order: None }), 100),
         dev || has_entitlement,
     );
     let mut created = false;

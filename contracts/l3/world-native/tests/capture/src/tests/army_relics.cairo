@@ -51,7 +51,7 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
             d,
             game_id,
             Command::SettleSeason(
-                crate::realms::SettleSeason { selected_realm: None, aspect: first_aspect_choice(d, game_id) },
+                crate::realms::SettleSeason { selected_realm: None, order: first_order_choice(d, game_id) },
             ),
             360,
         ),

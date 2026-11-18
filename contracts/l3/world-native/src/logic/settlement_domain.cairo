@@ -151,7 +151,7 @@ pub mod SettlementLogic {
                 self.settle_open_frontier(game_id, actor, command, context);
                 return;
             }
-            assert!(command.aspect.is_none(), "Aspects are disabled");
+            assert!(command.order.is_none(), "Aspects are disabled");
             let key = EntryKey { game_id, owner: owner };
             if command.selected_realm.is_some() {
                 assert!(game.dev_mode_on, "development mode required");
@@ -314,10 +314,10 @@ pub mod SettlementLogic {
             } else {
                 None
             };
-            let realm_id = self.resolve_open_realm(home, selected_realm, command.aspect, context);
+            let realm_id = self.resolve_open_realm(home, selected_realm, command.order, context);
             let traits = self.realms.traits(realm_id);
             crate::logic::aspects::dispatcher(game_id)
-                .join(crate::resources::ResourceKey { game_id, entity_id: home }, traits.order, command.aspect);
+                .join(crate::resources::ResourceKey { game_id, entity_id: home }, traits.order);
             ISettlementCreationLibraryDispatcher { class_hash: self.release.classes(game_id).structures.read() }
                 .create_settlement(
                     game_id,
@@ -336,18 +336,19 @@ pub mod SettlementLogic {
         }
 
         fn resolve_open_realm(
-            self: @ContractState, home: u64, selected: Option<u32>, aspect: Option<u8>, context: DomainContext,
+            self: @ContractState, home: u64, selected: Option<u32>, order: Option<u8>, context: DomainContext,
         ) -> u32 {
             if let Some(realm) = selected {
+                assert!(order.is_none(), "a held Realm plays its own Order");
                 return realm;
             }
             if let Some(orders) = crate::logic::aspects::rules(context.game_id) {
                 let mut root = context.raw_root;
                 let seed = crate::random::game_root(ref root, context.game_id);
                 return crate::logic::aspects::dispatcher(context.game_id)
-                    .draw_realm(orders, aspect.expect('choose an Aspect'), seed);
+                    .draw_realm(orders, order.expect('choose an Order'), seed);
             }
-            assert!(aspect.is_none(), "Aspects are disabled");
+            assert!(order.is_none(), "Aspects are disabled");
             crate::entity_ids::namespace(home) % crate::realms::CANONICAL_REALM_COUNT + 1
         }
 

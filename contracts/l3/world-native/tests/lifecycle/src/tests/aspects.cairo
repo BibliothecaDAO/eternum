@@ -30,57 +30,63 @@ pub fn setup_aspect_preset(seed: felt252, preset: crate::presets::PresetDefiniti
     (d, game_id)
 }
 
-fn settle(d: Deployment, game_id: u32, aspect: Option<u8>) -> bool {
+fn settle(d: Deployment, game_id: u32, order: Option<u8>) -> bool {
     world_test_support::tests::resource_commands::execute_in_game(
-        d, game_id, Command::SettleSeason(SettleSeason { selected_realm: None, aspect }), 360,
+        d, game_id, Command::SettleSeason(SettleSeason { selected_realm: None, order }), 360,
     )
 }
 
+fn new_player(d: Deployment, index: u8) -> Deployment {
+    let (actor, account_class) = world_test_support::tests::deploy_player(
+        1000 + Into::<u8, felt252>::into(index), world_test_support::tests::GUARDIAN,
+    );
+    Deployment { actor, account_class, ..d }
+}
+
 #[test]
-fn all_four_free_choices_draw_their_orders_and_join_once() {
+fn every_free_home_founds_a_realm_of_the_order_it_chose_and_joins_that_orders_aspect_once() {
     let (d, game_id) = setup_aspects(42);
-    for aspect in 1_u8..5 {
-        let (actor, account_class) = world_test_support::tests::deploy_player(
-            1000 + Into::<u8, felt252>::into(aspect), world_test_support::tests::GUARDIAN,
-        );
-        let player = Deployment { actor, account_class, ..d };
-        assert!(settle(player, game_id, Some(aspect)));
+    let orders = interact_with_state(d.games, || crate::logic::aspects::rules(game_id).unwrap());
+    for order in 1_u8..17 {
+        let player = new_player(d, order);
+        assert!(settle(player, game_id, Some(order)));
         interact_with_state(
             d.games,
             || {
                 let home = crate::entity_ids::home_for_actor(game_id, player.actor);
                 let key = ResourceKey { game_id, entity_id: home };
                 let record = crate::logic::structures::record(key);
-                let orders = crate::logic::aspects::rules(game_id).unwrap();
-                assert_eq!(crate::aspects::order_aspect(orders, record.metadata.order), aspect);
-                assert_eq!(crate::logic::aspects::home_aspect(key), aspect);
-                assert_eq!(crate::state::read().settlements.aspect_members.read((game_id, aspect)), 1);
-                assert_eq!((record.metadata.realm_id - 1) % 16 + 1, record.metadata.order.into());
+                assert_eq!(record.metadata.order, order);
+                assert_eq!((record.metadata.realm_id - 1) % 16 + 1, order.into());
+                assert_eq!(crate::logic::aspects::home_aspect(key), crate::aspects::order_aspect(orders, order));
             },
         );
-        assert!(!settle(player, game_id, Some(aspect)));
-        assert!(!settle(player, game_id, Some(if aspect == 4 {
-            1
-        } else {
-            aspect + 1
-        })));
-        interact_with_state(
-            d.games, || {
-                assert_eq!(crate::state::read().settlements.aspect_members.read((game_id, aspect)), 1);
-            },
-        );
+        assert!(!settle(player, game_id, Some(order)));
+        assert!(!settle(player, game_id, Some(order % 16 + 1)));
     }
+    interact_with_state(
+        d.games,
+        || {
+            for aspect in 1_u8..5 {
+                assert_eq!(crate::state::read().settlements.aspect_members.read((game_id, aspect)), 4);
+            }
+        },
+    );
 }
 
 #[test]
-fn free_home_requires_a_valid_choice_and_a_failed_choice_reserves_nothing() {
+fn free_home_requires_a_valid_order_and_a_failed_choice_reserves_nothing() {
     let (d, game_id) = setup_aspects(42);
+    let order = world_test_support::tests::registrar::order_of_aspect(d, game_id, 2);
     assert!(!settle(d, game_id, None));
     assert!(!settle(d, game_id, Some(0)));
-    assert!(!settle(d, game_id, Some(5)));
-    assert!(settle(d, game_id, Some(2)));
+    assert!(!settle(d, game_id, Some(17)));
+    assert!(settle(d, game_id, Some(order)));
     interact_with_state(
-        d.games, || {
+        d.games,
+        || {
+            let home = crate::entity_ids::home_for_actor(game_id, d.actor);
+            assert_eq!(crate::logic::structures::record(ResourceKey { game_id, entity_id: home }).metadata.order, order);
             assert_eq!(crate::state::read().settlements.aspect_members.read((game_id, 2)), 1);
         },
     );
@@ -88,7 +94,7 @@ fn free_home_requires_a_valid_choice_and_a_failed_choice_reserves_nothing() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn held_realm_inherits_its_order_and_refuses_a_different_aspect() {
+fn held_realm_plays_its_own_order_and_refuses_a_chosen_one() {
     let (d, game_id) = setup_aspects(42);
     start_cheat_caller_address(d.games, authority());
     ledger(d)
@@ -100,7 +106,7 @@ fn held_realm_inherits_its_order_and_refuses_a_different_aspect() {
         )
         .unwrap();
     stop_cheat_caller_address(d.games);
-    assert!(!settle(d, game_id, Some(2)));
+    assert!(!settle(d, game_id, Some(1)));
     assert!(settle(d, game_id, None));
     interact_with_state(
         d.games,
@@ -133,7 +139,7 @@ fn orders_round_trip_without_loot_suffix_order() {
 #[feature("safe_dispatcher")]
 fn a_founded_home_attaches_only_a_realm_of_its_aspect() {
     let (d, game_id) = setup_aspects(43);
-    assert!(settle(d, game_id, Some(2)));
+    assert!(settle(d, game_id, Some(world_test_support::tests::registrar::order_of_aspect(d, game_id, 2))));
     start_cheat_caller_address(d.games, authority());
     let key = EntryKey { game_id, owner: d.actor };
     let entitlement = EntryEntitlement {

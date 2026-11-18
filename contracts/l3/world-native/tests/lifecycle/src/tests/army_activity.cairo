@@ -11,7 +11,7 @@ pub fn found(d: Deployment, game_id: u32, aspect: u8) -> u64 {
         execute_in_game(
             d,
             game_id,
-            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, aspect: Some(aspect) }),
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, order: Some(world_test_support::tests::registrar::order_of_aspect(d, game_id, aspect)) }),
             360,
         ),
     );
