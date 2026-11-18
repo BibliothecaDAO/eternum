@@ -140,7 +140,8 @@ it("shows only Knight slots at Settlement and each troop's three exact purchases
     for (let tier = 0; tier <= 3; tier++) {
       const result = node({ ...realm, learned: { [row]: { tier, sides: [] } } }, `row-${row}`);
       expect(result.maxTier).toBe(3);
-      expect(result.gives.now).toBe(`${tier + 1} Oath ${tier === 0 ? "slot" : "slots"}`);
+      expect(result.gives.now).toBe(`${tier + 2} Oath slots`);
+      expect(result.gives.next).toBe(tier === 3 ? undefined : `${tier + 3} Oath slots`);
       expect(result.price).toEqual(
         [{ essence: 5000, labor: 1000 }, { essence: 35000, labor: 7500 }, { essence: 150000, labor: 35000 }, undefined][
           tier

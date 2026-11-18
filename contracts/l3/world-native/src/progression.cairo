@@ -66,7 +66,7 @@ pub impl ArmyProgressPacking of starknet::storage_access::StorePacking<ArmyProgr
         assert!(value.logistics <= 5, "invalid logistics");
         assert!(
             value.oath_slots >= 1 && value.oath_slots <= crate::research::OATH_SLOTS_BASE
-                + crate::research::OATH_SLOT_STEPS,
+                + crate::research::OATH_SLOTS_STEPS,
             "invalid oath slots",
         );
         assert!(value.oath_pick < 4096, "invalid oath pick");

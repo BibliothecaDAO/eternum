@@ -317,8 +317,8 @@ fn vitriol_setup(seed: felt252) -> (Deployment, u32) {
     super::aspects::setup_aspect_preset(seed, preset)
 }
 
-fn waiting_oath(d: Deployment, key: ExplorerKey, red: u8) -> crate::oaths::ChooseOath {
-    let pick = Into::<u8, u16>::into(red)
+fn waiting_oath(d: Deployment, key: ExplorerKey, offered: u8) -> crate::oaths::ChooseOath {
+    let pick = Into::<u8, u16>::into(offered)
         - 1
         + (Into::<u8, u16>::into(crate::oaths::FOX) - 1) * 16
         + (Into::<u8, u16>::into(crate::oaths::RAGE) - 1) * 256;
@@ -329,7 +329,7 @@ fn waiting_oath(d: Deployment, key: ExplorerKey, red: u8) -> crate::oaths::Choos
             crate::logic::progression::write(key, crate::progression::ArmyProgress { oath_pick: pick, ..progress });
         },
     );
-    crate::oaths::ChooseOath { explorer_id: key.explorer_id, expected_pick: pick, oath: Some(red), replace: None }
+    crate::oaths::ChooseOath { explorer_id: key.explorer_id, expected_pick: pick, oath: Some(offered), replace: None }
 }
 
 #[test]
@@ -349,6 +349,8 @@ fn choosing_and_replacing_vitriol_settles_field_ticks_under_the_previous_oath() 
     advance(d, key, 0, boundary + interval);
     assert_eq!(army(d, key).troops.count, initial - base - loss);
     advance(d, key, 3, boundary + interval);
+    assert_eq!(army(d, key).troops.count, initial - base - loss);
+    applied(d, game_id, Command::ChooseOath(waiting_oath(d, key, crate::oaths::GIANTS)), boundary + interval);
     assert_eq!(army(d, key).troops.count, initial - base - loss);
     let replacement = waiting_oath(d, key, crate::oaths::POWER);
     applied(

@@ -171,6 +171,12 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
     assert_eq!(chosen.oath_pick, 0);
     assert!(!super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(take), 363));
     assert_eq!(read_progress(d, key), chosen);
+    explore(d, key, root, 363);
+    let filling = read_progress(d, key);
+    let filled = card(filling.oath_pick, 0);
+    let fill = ChooseOath { expected_pick: filling.oath_pick, oath: Some(filled), ..take };
+    assert!(super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(fill), 363));
+    assert_eq!(read_progress(d, key).oaths, crate::oaths::bit(taken) | crate::oaths::bit(filled));
     explore(d, key, root, 364);
     let second = read_progress(d, key);
     let replacement = card(second.oath_pick, 1);
@@ -182,7 +188,7 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
             d, game_id, crate::commands::Command::ChooseOath(ChooseOath { replace: Some(taken), ..replace }), 366,
         ),
     );
-    assert_eq!(read_progress(d, key).oaths, crate::oaths::bit(replacement));
+    assert_eq!(read_progress(d, key).oaths, crate::oaths::bit(filled) | crate::oaths::bit(replacement));
     explore(d, key, root, 367);
     let third = read_progress(d, key);
     assert!(
@@ -193,7 +199,7 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
             368,
         ),
     );
-    assert_eq!(read_progress(d, key).oaths, crate::oaths::bit(replacement));
+    assert_eq!(read_progress(d, key).oaths, crate::oaths::bit(filled) | crate::oaths::bit(replacement));
     assert_eq!(read_progress(d, key).oath_pick, 0);
     let troops = GameState { contract_address: d.games };
     let army = troops.explorer(key).unwrap();

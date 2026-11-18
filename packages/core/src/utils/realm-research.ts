@@ -56,7 +56,7 @@ export function researchPurchases(learned: bigint, row: number): number {
     : researchTier(learned, row);
 }
 
-export const OATH_SLOTS_MAX = research.OATH_SLOTS_BASE + research.OATH_SLOT_STEPS;
+export const OATH_SLOTS_MAX = research.OATH_SLOTS_BASE + research.OATH_SLOTS_STEPS;
 
 /**
  * The knowledge after a row's next tier is learned, with `side` the choice at that tier on a row that has one, as
@@ -71,7 +71,7 @@ export function learnResearch(learned: bigint, row: number, side: number): bigin
     row === research.ROW_SHRINE || row === research.ROW_WELL
       ? 1
       : isOathResearch(row)
-        ? research.OATH_SLOT_STEPS
+        ? research.OATH_SLOTS_STEPS
         : row === research.ROW_DEPTH
           ? 3
           : 5;
