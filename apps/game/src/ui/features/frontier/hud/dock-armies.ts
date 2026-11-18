@@ -9,6 +9,7 @@ import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import {
   armyEtherealLayer,
+  armyOaths,
   configManager,
   type EtherealLayer,
   getArmyName,
@@ -94,7 +95,12 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
         ? {
             current: stamina.committedCurrent,
             max: stamina.committedMax,
-            perExplore: exploreStaminaOf(setup.store, army.game_id, army.troops.category),
+            perExplore: exploreStaminaOf(
+              setup.store,
+              army.game_id,
+              army.troops.category,
+              armyOaths(setup.store, army),
+            ),
           }
         : undefined,
       secondsToFull: stamina?.secondsUntilFull,

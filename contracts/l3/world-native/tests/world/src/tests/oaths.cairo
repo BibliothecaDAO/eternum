@@ -309,7 +309,8 @@ fn a_revealed_well_refills_forty_percent_of_the_bar_eighty_with_reflection_and_n
                     progress, army.troops.category, rules.troop_stamina_config,
                 );
                 let mut bar = army.troops.stamina.inline();
-                bar.amount = crate::troops::explore_stamina_cost(army.troops.category, rules).into() + left;
+                bar.amount = crate::troops::explore_stamina_cost(army.troops.category, rules, progress.oaths).into()
+                    + left;
                 bar.settled_at = 360;
                 bar.remainder = 0;
                 army.troops.stamina = StaminaSource::Inline(bar);
@@ -628,4 +629,170 @@ fn reveal_paid(ref spy: snforge_std::EventSpy, games: starknet::ContractAddress)
         }
     }
     panic!("no reveal payment")
+}
+
+#[test]
+fn stamina_oaths_match_the_client_vectors() {
+    use crate::stamina::StaminaTrait;
+    let data = read_txt(@FileTrait::new("../fixtures/oath-stamina.txt"));
+    assert_eq!(data.len(), 112);
+    let config = crate::rules::TroopStaminaConfig {
+        stamina_gain_per_tick: 1, ..super::play_fixture::rules().troop_stamina_config,
+    };
+    let mut fields = data.span();
+    while !fields.is_empty() {
+        let (oaths, attack_base, attack, explore_base, explore, bonus, regen, hour): (
+            u16, u16, u16, u16, u16, u64, u32, u64,
+        ) =
+            Serde::deserialize(
+            ref fields,
+        )
+            .unwrap();
+        assert_eq!(crate::oaths::attack_stamina(oaths, attack_base), attack);
+        assert_eq!(crate::oaths::explore_stamina(oaths, explore_base), explore);
+        assert_eq!(crate::oaths::stamina_bonus(oaths), bonus);
+        assert_eq!(crate::oaths::regen_bps(oaths), regen);
+        let mut bar = crate::troops::Stamina { amount: 0, settled_at: 1000, remainder: 0 };
+        let mut boosts: crate::troops::TroopBoosts = Default::default();
+        bar.refill_to_max(ref boosts, 1000, config, 120, 4600, regen);
+        assert_eq!(bar.amount, hour);
+    }
+}
+
+#[test]
+fn taking_titans_adds_sixty_stamina_now_on_a_bar_sixty_higher() {
+    let (d, game_id, key) = super::registrar::setup_frontier_relics();
+    let mut seed = 0_u64;
+    while card(draw(0, seed.into()), 1) != crate::oaths::TITANS {
+        seed += 1;
+    }
+    let pick = draw(0, seed.into());
+    let maximum = set_stamina(d, key, 0, Some(pick), Option::None);
+    let command = crate::commands::Command::ChooseOath(
+        ChooseOath { explorer_id: key.explorer_id, expected_pick: pick, oath: Some(crate::oaths::TITANS), replace: None },
+    );
+    assert!(super::resource_commands::execute_in_game(d, game_id, command, 360));
+    assert_eq!(stamina_of(d, key), maximum + 60);
+    assert_eq!(read_progress(d, key).oaths, crate::oaths::bit(crate::oaths::TITANS));
+}
+
+#[test]
+fn anger_lets_an_army_with_twenty_stamina_attack_where_the_base_cost_refuses_it() {
+    for anger in array![false, true] {
+        let (d, game_id, key) = super::registrar::setup_frontier_relics();
+        let army = super::registrar::strong_frontier_army(d, game_id, key);
+        let oaths = if anger {
+            crate::oaths::bit(crate::oaths::ANGER)
+        } else {
+            0
+        };
+        set_stamina(d, key, oaths, Option::None, Some(20));
+        let camp = place_camp(d, game_id, crate::geometry::neighbor(army.coord, 0));
+        let command = crate::commands::Command::BattleGuard(
+            crate::commands::Battle { attacker_id: key.explorer_id, defender_id: camp, relic_slot: None },
+        );
+        assert_eq!(super::resource_commands::execute_in_game(d, game_id, command, 360), anger);
+    }
+}
+
+#[test]
+fn the_fox_lets_a_scout_reveal_for_eight_stamina_where_ten_is_the_cost() {
+    for fox in array![false, true] {
+        let (d, game_id, key) = super::registrar::setup_frontier_relics();
+        let mut army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
+        army.troops.category = crate::troops::TroopType::Paladin;
+        super::resource_commands::set_explorer_fixture(d.games, key, army);
+        let oaths = if fox {
+            crate::oaths::bit(crate::oaths::FOX)
+        } else {
+            0
+        };
+        set_stamina(d, key, oaths, Option::None, Some(8));
+        assert_eq!(super::registrar::explore_with_root(d, game_id, key.explorer_id, 0, 360), fox);
+        if fox {
+            assert_eq!(stamina_of(d, key), 0);
+        }
+    }
+}
+
+#[test]
+fn enlightenment_regains_forty_stamina_an_hour_where_the_army_regains_thirty() {
+    for (oaths, regained) in array![(0, 30_u64), (crate::oaths::bit(crate::oaths::ENLIGHTENMENT), 40)] {
+        let (d, game_id, key) = super::registrar::setup_frontier_relics();
+        set_stamina(d, key, oaths, Option::None, Some(0));
+        let amount = snforge_std::interact_with_state(
+            d.games,
+            || {
+                let rules = crate::commands::load_context(game_id, 0, 360).rules.unbox();
+                let refill = crate::troops::StaminaRefill {
+                    timestamp: 360 + 3600,
+                    stamina_config: crate::rules::TroopStaminaConfig {
+                        stamina_gain_per_tick: 1, ..rules.troop_stamina_config,
+                    },
+                    armies_tick_in_seconds: 120,
+                };
+                crate::logic::army_slot_storage::resolve(key, crate::logic::troops::explorer(key).unwrap(), Some(refill))
+                    .troops
+                    .stamina
+                    .inline()
+                    .amount
+            },
+        );
+        assert_eq!(amount, regained);
+    }
+}
+
+fn set_stamina(
+    d: super::Deployment, key: crate::troops::ExplorerKey, oaths: u16, pick: Option<u16>, amount: Option<u64>,
+) -> u64 {
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let mut progress = crate::logic::progression::require(key);
+            progress.oaths = oaths;
+            progress.oath_pick = pick.unwrap_or(0);
+            crate::logic::progression::write(key, progress);
+            let original = crate::logic::troops::explorer(key).unwrap();
+            let mut army = crate::logic::army_slot_storage::resolve(key, original, None);
+            let rules = crate::commands::load_context(key.game_id, 0, 360).rules.unbox();
+            let maximum = crate::progression::stamina_max(progress, army.troops.category, rules.troop_stamina_config);
+            let mut bar = army.troops.stamina.inline();
+            bar.amount = amount.unwrap_or(maximum);
+            bar.settled_at = 360;
+            bar.remainder = 0;
+            army.troops.stamina = StaminaSource::Inline(bar);
+            crate::logic::army_slot_storage::persist(key, original.into_record(), army.troops);
+            maximum
+        },
+    )
+}
+
+fn stamina_of(d: super::Deployment, key: crate::troops::ExplorerKey) -> u64 {
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            crate::logic::army_slot_storage::resolve(key, crate::logic::troops::explorer(key).unwrap(), None)
+                .troops
+                .stamina
+                .inline()
+                .amount
+        },
+    )
+}
+
+fn place_camp(d: super::Deployment, game_id: u32, coord: crate::troops::Coord) -> u64 {
+    let context = crate::commands::ExecutionContext { timestamp: 360, ..crate::tests::context(d.games, game_id) };
+    snforge_std::start_cheat_caller_address(d.games, d.games);
+    let site = crate::structures::IStructureOperationsDispatcherTrait::create_discovery(
+        crate::structures::IStructureOperationsDispatcher { contract_address: d.games },
+        game_id,
+        1,
+        coord,
+        crate::discovery::Discovery::Camp,
+        123,
+        360,
+        crate::commands::action_context(context),
+    );
+    snforge_std::stop_cheat_caller_address(d.games);
+    site
 }

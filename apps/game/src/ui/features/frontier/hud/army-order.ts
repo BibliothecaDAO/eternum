@@ -1,4 +1,4 @@
-import { RESOURCE_PRODUCTION_MODELS } from "@bibliothecadao/eternum";
+import { armyOaths, RESOURCE_PRODUCTION_MODELS } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -63,7 +63,7 @@ export const useOrderAt = (target: { col: number; row: number } | null): ArmyOrd
   const staminaCost = computeEffectiveStaminaCost(
     path.slice(1),
     actionType,
-    configManager.getExploreStaminaCost(troops.category),
+    configManager.getExploreStaminaCost(troops.category, armyOaths(setup.store, army)),
   );
   const staminaHeld = Number(StaminaManager.getStamina(troops, tick).amount);
   // Frontier's preset charges no fish; the wheat is the order's whole food.

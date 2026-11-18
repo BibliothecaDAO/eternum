@@ -1,4 +1,5 @@
 import { armyCombatRefusal } from "../utils/army-opponents";
+import { armyOaths, oathAttackStamina } from "../utils/oaths";
 import { currentArmy } from "../utils/deep";
 import { safeInteger } from "../utils/safe-integer";
 import { entityMapPosition } from "../utils/tile";
@@ -185,7 +186,11 @@ export class ArmyActionManager {
   }
 
   private exploreStaminaCost(): number {
-    return configManager.getExploreStaminaCost(this._getTroopType());
+    return configManager.getExploreStaminaCost(this._getTroopType(), this.oaths());
+  }
+
+  private oaths(): number {
+    return armyOaths(this.store, { game_id: configManager.getActiveGameId(), explorer_id: this.entityId });
   }
 
   /** Why the army cannot explore now: the explore's stamina, or else its owner's food for it (canExplore). */
@@ -206,7 +211,7 @@ export class ArmyActionManager {
   }
 
   private getAttackStaminaRequirement(): number {
-    return configManager.getCombatConfig().stamina_attack_req;
+    return oathAttackStamina(this.oaths(), configManager.getCombatConfig().stamina_attack_req);
   }
 
   private addAttackActionPaths(

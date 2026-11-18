@@ -26,7 +26,7 @@ import {
 } from "./combat-exchange";
 import { isArmyCurrent, isExpeditionRealm, structureMapPosition } from "./expeditions";
 import { isModeRuleEnabled } from "./mode-rules";
-import { armyOaths } from "./oaths";
+import { armyOaths, oathAttackStamina } from "./oaths";
 import { entityMapOccupancy, getTileAt, storedBiomeAt } from "./tile";
 
 export const ATTACK_FORECAST_MODELS = [
@@ -144,7 +144,7 @@ function claimOf(scene: Scene, attacker: Combatant, target: Tile): AttackForecas
   const sides = { attacker, queued: [] };
   if (!isAdjacent(attacker.tile, target)) return { outcome: "refused", refusal: "claim-needs-adjacency", sides };
   const stamina = staminaAt(attacker.troops, scene.chainSecond, scene.rules.stamina, scene.rules.tickSeconds);
-  if (stamina.amount < BigInt(scene.rules.stamina.stamina_attack_req))
+  if (stamina.amount < BigInt(oathAttackStamina(attacker.oaths, scene.rules.stamina.stamina_attack_req)))
     return { outcome: "refused", refusal: "insufficient-stamina", sides };
   return { outcome: "claims", sides };
 }

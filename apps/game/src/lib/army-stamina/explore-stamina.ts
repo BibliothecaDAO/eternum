@@ -7,4 +7,5 @@ export const exploreStaminaOf = (
   store: Pick<NativeFactStore, "require">,
   gameId: number,
   category: TroopType,
-): number => exploreStaminaCost(store.require("SliceRules", { game_id: gameId }), category);
+  oaths: number,
+): number => exploreStaminaCost(store.require("SliceRules", { game_id: gameId }), category, oaths);

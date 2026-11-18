@@ -9,6 +9,7 @@ import {
   ResourceManager,
   hasCastleLimit,
   getDefendingGuards,
+  oathAttackStamina,
   oathSitePay,
   siteKindOf,
   type AttackForecast,
@@ -108,9 +109,14 @@ export const readSiteCard = (
           chest.amount,
     },
     payout: reward && fittingPayout(store, site.game_id, reward, attack),
-    attackStamina: configManager.getCombatRules().stamina.stamina_attack_req,
+    attackStamina: attackStaminaOf(store, attack),
     ...planAttack(store, attack, structure.entity_id),
   };
+};
+
+const attackStaminaOf = (store: NativeFactStore, attack: SiteAttack | null): number => {
+  const base = configManager.getCombatRules().stamina.stamina_attack_req;
+  return attack ? oathAttackStamina(armyOaths(store, attack.army), base) : base;
 };
 
 const attackerReward = (
@@ -140,7 +146,7 @@ export const readArmyCard = (
     kind: "Army",
     chest: null,
     payout: null,
-    attackStamina: configManager.getCombatRules().stamina.stamina_attack_req,
+    attackStamina: attackStaminaOf(store, attack),
     ...planAttack(store, attack, army.explorer_id),
   };
 };

@@ -75,7 +75,8 @@ pub mod MovementLogic {
                 stored_biome
             }
                 .into();
-            self.pay_movement(game_id, ref explorer, rules, biome, exploring, context.timestamp, context);
+            let oaths = crate::logic::progression::held_oaths(key, context);
+            self.pay_movement(game_id, ref explorer, rules, biome, exploring, oaths, context.timestamp, context);
             let mut raw_root = context.raw_root;
             let seed = crate::random::game_root(ref raw_root, game_id);
             let mut discovery = crate::discovery::Discovery::None;
@@ -298,6 +299,7 @@ pub mod MovementLogic {
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let mut explorer = crate::logic::troops::field_explorer(key, actor, context.timestamp, context);
             assert!(explorer.troops.count != 0, "explorer is dead");
+            let oaths = crate::logic::progression::held_oaths(key, context);
             crate::logic::map::MapState::vacate(tile_key(game_id, explorer.coord), command.explorer_id);
             for direction in command.directions {
                 let destination = neighbor(explorer.coord, *direction);
@@ -315,7 +317,7 @@ pub mod MovementLogic {
                 let stored_biome: u8 = (data / BIOME_SCALE % BYTE_RANGE).try_into().unwrap();
                 assert!(stored_biome != 0, "undiscovered movement tile");
                 let biome = stored_biome.into();
-                self.pay_movement(game_id, ref explorer, rules, biome, false, context.timestamp, context);
+                self.pay_movement(game_id, ref explorer, rules, biome, false, oaths, context.timestamp, context);
                 explorer.coord = destination;
             }
             crate::logic::map::MapState::occupy(

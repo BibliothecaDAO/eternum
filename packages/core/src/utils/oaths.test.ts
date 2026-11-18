@@ -1,4 +1,4 @@
-import { orders } from "@bibliothecadao/types";
+import { orders, TroopTier, TroopType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import { nativeOathConstants as oaths, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { chooseOath, oathCards, oathColour, oathColours } from "./oaths";
@@ -110,5 +110,38 @@ it("matches the native prize vectors for Detection, Brilliance and Rage", async 
     expect(oathFindPercent(Number(held), Number(base))).toBe(Number(find));
     expect(oathRevealPay(Number(held), amount)).toBe(reveal);
     expect(oathSitePay(Number(held), amount)).toBe(site);
+  }
+});
+
+it("matches the native stamina vectors for Anger, Titans, Enlightenment and the Fox", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { oathAttackStamina, oathExploreStamina, oathRegenBps, oathStaminaBonus } = await import("./oaths");
+  const { staminaAt } = await import("../managers/troop-stamina");
+  const fields = readFileSync(
+    new URL("../../../../contracts/l3/world-native/tests/fixtures/oath-stamina.txt", import.meta.url),
+    "utf8",
+  )
+    .trim()
+    .split(/\s+/)
+    .map(Number);
+  expect(fields).toHaveLength(112);
+  const rules = { stamina_initial: 0, stamina_knight_max: 1_000, stamina_gain_per_tick: 1 } as never;
+  while (fields.length) {
+    const [held, attackBase, attack, exploreBase, explore, bonus, regen, hour] = fields.splice(0, 8) as number[];
+    expect(oathAttackStamina(held!, attackBase!)).toBe(attack);
+    expect(oathExploreStamina(held!, exploreBase!)).toBe(explore);
+    expect(oathStaminaBonus(held!)).toBe(bonus);
+    expect(oathRegenBps(held!)).toBe(regen);
+    const troops = {
+      category: TroopType.Knight,
+      tier: TroopTier.T1,
+      count: 1n,
+      stamina: { amount: 0n, settled_at: 1_000, remainder: 0 },
+      boosts: { incr_stamina_regen_percent_num: 0, incr_stamina_regen_seconds_left: 0 },
+      battle_cooldown_end: 0,
+      staminaMax: 1_000,
+      staminaEffects: { until: Infinity, windows: [{ start: 1_000, end: 4_600, rateBps: oathRegenBps(held!) }] },
+    } as never;
+    expect(staminaAt(troops, 4_600, rules, 120).amount).toBe(BigInt(hour!));
   }
 });

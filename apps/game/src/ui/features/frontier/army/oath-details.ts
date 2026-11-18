@@ -17,5 +17,11 @@ export function oathEffectDescription(id: number): string | undefined {
   if (id === oaths.DETECTION) return `Reveals find something ${oaths.DETECTION_FIND_PERCENT - 100}% more often.`;
   if (id === oaths.BRILLIANCE) return `Reveals pay ${oaths.BRILLIANCE_PAY_PERCENT - 100}% more.`;
   if (id === oaths.RAGE) return `Beaten guards pay ${oaths.RAGE_PAY_PERCENT - 100}% more.`;
+  if (id === oaths.ANGER) return `An attack costs ${oaths.ANGER_ATTACK_STAMINA} stamina.`;
+  if (id === oaths.TITANS)
+    return `+${oaths.TITANS_STAMINA} stamina now, and the stamina bar holds ${oaths.TITANS_STAMINA} more.`;
+  if (id === oaths.ENLIGHTENMENT)
+    return `Regains ${Math.round(oaths.ENLIGHTENMENT_REGEN_BPS / 100) - 100}% more stamina each hour.`;
+  if (id === oaths.FOX) return `A reveal costs ${oaths.FOX_REVEAL_DISCOUNT_PERCENT}% less stamina.`;
   return undefined;
 }

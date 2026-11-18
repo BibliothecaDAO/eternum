@@ -303,13 +303,14 @@ pub fn max_army_size(config: crate::rules::TroopLimitConfig, level: u8, tier: Tr
     cap * modifier.into() / (strength.into() * 100)
 }
 
-pub fn explore_stamina_cost(category: TroopType, rules: crate::rules::SliceRules) -> u16 {
+pub fn explore_stamina_cost(category: TroopType, rules: crate::rules::SliceRules, oaths: u16) -> u16 {
     let base = rules.troop_stamina_config.stamina_explore_stamina_cost;
-    if rules.day_unit_seconds != 0 && category == TroopType::Paladin {
+    let cost = if rules.day_unit_seconds != 0 && category == TroopType::Paladin {
         crate::rules::SCOUT_EXPLORE_STAMINA.into()
     } else {
         base
-    }
+    };
+    crate::oaths::explore_stamina(oaths, cost)
 }
 
 pub fn spend_stamina(
@@ -317,11 +318,12 @@ pub fn spend_stamina(
     rules: crate::rules::SliceRules,
     biome: crate::biome::Biome,
     exploring: bool,
+    oaths: u16,
     timestamp: u64,
 ) {
     let stamina = rules.troop_stamina_config;
     let cost: u64 = if exploring {
-        explore_stamina_cost(explorer.troops.category, rules).into()
+        explore_stamina_cost(explorer.troops.category, rules, oaths).into()
     } else {
         let (increase, bonus) = explorer.troops.stamina_travel_bonus(biome, stamina);
         let base: u64 = stamina.stamina_travel_stamina_cost.into();

@@ -360,8 +360,8 @@ export class ClientConfigManager {
     return 1 + modifier;
   }
 
-  getExploreStaminaCost(category: TroopType) {
-    return exploreStaminaCost(this.rules(), category);
+  getExploreStaminaCost(category: TroopType, oaths: number) {
+    return exploreStaminaCost(this.rules(), category, oaths);
   }
   getSeasonMainGameStartAt() {
     return Number(this.game().start_main_at);

@@ -18,6 +18,7 @@ pub fn refill(
     ref stamina: Stamina,
     ref boosts: TroopBoosts,
     maximum: u64,
+    rate_bps: u32,
     request: StaminaRefill,
 ) {
     let since: u64 = stamina.settled_at.into();
@@ -26,7 +27,7 @@ pub fn refill(
     }
     let unit = crate::logic::preset_record::for_game(home.game_id).rules.day_unit_seconds.read();
     if since == 0 || unit == 0 || crate::logic::expeditions::depth_at(home.game_id, coord) == 3 {
-        settle(ref stamina, ref boosts, maximum, request, request.timestamp, 10000);
+        settle(ref stamina, ref boosts, maximum, request, request.timestamp, rate_bps);
         return;
     }
     let effects = crate::logic::banes::effects(home, since, request.timestamp);
@@ -35,18 +36,18 @@ pub fn refill(
         if *window.kind != MIST_TIDE {
             continue;
         }
-        settle_with_wind(ref stamina, ref boosts, maximum, request, *window.start, 10000, wind);
+        settle_with_wind(ref stamina, ref boosts, maximum, request, *window.start, rate_bps, wind);
         settle_with_wind(
             ref stamina,
             ref boosts,
             maximum,
             request,
             *window.end,
-            Into::<u16, u32>::into(effects.stamina_percent) * 100,
+            rate_bps * Into::<u16, u32>::into(effects.stamina_percent) / 100,
             wind,
         );
     }
-    settle_with_wind(ref stamina, ref boosts, maximum, request, request.timestamp, 10000, wind);
+    settle_with_wind(ref stamina, ref boosts, maximum, request, request.timestamp, rate_bps, wind);
 }
 
 fn second_wind(home: ResourceKey) -> Option<Wind> {

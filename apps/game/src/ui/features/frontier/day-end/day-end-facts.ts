@@ -3,6 +3,7 @@ import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import {
+  armyOaths,
   configManager,
   getGuardsByStructure,
   isCurrentExpeditionRegion,
@@ -56,7 +57,8 @@ const anArmyCanExplore = (store: NativeFactStore, realm: NativeRows["Structure"]
     const troops = resolveExplorerTroops(store, army, tick);
     return (
       troops !== undefined &&
-      Number(StaminaManager.getStamina(troops, tick).amount) >= configManager.getExploreStaminaCost(troops.category)
+      Number(StaminaManager.getStamina(troops, tick).amount) >=
+        configManager.getExploreStaminaCost(troops.category, armyOaths(store, army))
     );
   });
 };

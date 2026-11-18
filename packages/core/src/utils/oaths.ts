@@ -61,6 +61,22 @@ export function oathFindPercent(oaths: number, base: number): number {
   return holds(oaths, oathRules.DETECTION) ? Math.floor((base * oathRules.DETECTION_FIND_PERCENT) / 100) : base;
 }
 
+export function oathAttackStamina(oaths: number, base: number): number {
+  return holds(oaths, oathRules.ANGER) ? Math.min(base, oathRules.ANGER_ATTACK_STAMINA) : base;
+}
+
+export function oathStaminaBonus(oaths: number): number {
+  return holds(oaths, oathRules.TITANS) ? oathRules.TITANS_STAMINA : 0;
+}
+
+export function oathRegenBps(oaths: number): number {
+  return holds(oaths, oathRules.ENLIGHTENMENT) ? oathRules.ENLIGHTENMENT_REGEN_BPS : 10_000;
+}
+
+export function oathExploreStamina(oaths: number, base: number): number {
+  return holds(oaths, oathRules.FOX) ? Math.floor((base * (100 - oathRules.FOX_REVEAL_DISCOUNT_PERCENT)) / 100) : base;
+}
+
 export function oathRevealPay(oaths: number, amount: bigint): bigint {
   return holds(oaths, oathRules.BRILLIANCE) ? (amount * BigInt(oathRules.BRILLIANCE_PAY_PERCENT)) / 100n : amount;
 }

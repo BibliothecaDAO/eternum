@@ -31,9 +31,9 @@ pub fn choose(
     let army = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, execution);
     assert!(army.troops.count != 0, "explorer is dead");
     let progress = crate::oaths::choose(crate::logic::progression::require(key), command);
-    if command.oath.is_none() {
-        grant_pass_stamina(key, army, progress, execution.rules.unbox().troop_stamina_config);
-    } else {
+    let gain = crate::oaths::choice_stamina(command.oath);
+    grant_choice_stamina(key, army, progress, execution.rules.unbox().troop_stamina_config, gain);
+    if command.oath.is_some() {
         crate::logic::quest_progress::oath_taken(
             crate::resources::ResourceKey { game_id, entity_id: army.owner }, context.timestamp,
         );
@@ -41,15 +41,16 @@ pub fn choose(
     crate::logic::progression::write(key, progress);
 }
 
-fn grant_pass_stamina(
+fn grant_choice_stamina(
     key: ExplorerKey,
     army: crate::troops::ExplorerTroops,
     progress: crate::progression::ArmyProgress,
     rules: crate::rules::TroopStaminaConfig,
+    gain: u64,
 ) {
     let maximum = crate::progression::stamina_max(progress, army.troops.category, rules);
     let mut stamina = army.troops.stamina.inline();
-    stamina.amount += crate::oaths::PASS_STAMINA.into();
+    stamina.amount += gain;
     stamina.clamp(maximum);
     crate::logic::army_slot_storage::persist(
         key,

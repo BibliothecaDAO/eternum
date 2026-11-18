@@ -1,13 +1,14 @@
 import {
-  getExplorerInfoFromTileOccupier,
+  armyOaths,
   entityHomeNamespace,
-  researchTier,
-  troopOathSlots,
-  seasonDay,
   expeditionRealmSite,
+  getExplorerInfoFromTileOccupier,
   getTroopResourceId,
   readExpeditionRules,
   readTroopRaiseCost,
+  researchTier,
+  seasonDay,
+  troopOathSlots,
 } from "@bibliothecadao/eternum";
 import {
   BiomeType,
@@ -103,6 +104,7 @@ const exploreTile: Answer = (command, chain, now) => {
       exploreStaminaCost(
         chain.require("SliceRules", { game_id: 1 }),
         chain.require("ExplorerTroops", { game_id: 1, explorer_id: explorerId }).troops.category,
+        armyOaths(chain, { game_id: 1, explorer_id: explorerId }),
       ),
       now,
     ),

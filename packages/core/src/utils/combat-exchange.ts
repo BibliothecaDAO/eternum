@@ -1,4 +1,4 @@
-import { oathDamageMultiplier } from "./oaths";
+import { oathAttackStamina, oathDamageMultiplier } from "./oaths";
 import { bonusActive } from "./relic";
 import { BiomeType, RESOURCE_PRECISION, type Troops } from "@bibliothecadao/types";
 import { nativeRuleConstants, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
@@ -105,7 +105,8 @@ export const resolveExchange = (
   const attackerStamina = attackerBar.amount;
   const defenderBar = staminaAt(defender, now, rules.stamina, rules.tickSeconds);
   const defenderStamina = defenderBar.amount;
-  if (attackerStamina < BigInt(rules.stamina.stamina_attack_req)) return { ok: false, refusal: "insufficient-stamina" };
+  const attackStamina = BigInt(oathAttackStamina(context.attackerOaths, rules.stamina.stamina_attack_req));
+  if (attackerStamina < attackStamina) return { ok: false, refusal: "insufficient-stamina" };
 
   const ranged = rules.dayUnitSeconds === 0 && context.attackDistance > 1;
   const defenderStaminaRequired = ranged
@@ -113,7 +114,7 @@ export const resolveExchange = (
     : rules.stamina.stamina_defense_req;
   let defenderStaminaLoss =
     defenderStamina < BigInt(defenderStaminaRequired) ? defenderStamina : BigInt(defenderStaminaRequired);
-  let attackerStaminaLoss = BigInt(rules.stamina.stamina_attack_req);
+  let attackerStaminaLoss = attackStamina;
   const tired = rules.dayUnitSeconds === 0 && !ranged && defenderStaminaLoss < BigInt(defenderStaminaRequired);
 
   const damage = exchangeDamage(attacker, defender, context, rules, {

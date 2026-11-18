@@ -125,6 +125,7 @@ fn recorded_second_wind_multiplies_mist_tide_and_changes_real_exploration_refill
                 ref bar,
                 ref boosts,
                 maximum,
+                10000,
                 crate::troops::StaminaRefill {
                     stamina_config: rules.troop_stamina_config, armies_tick_in_seconds: 60, timestamp: tomorrow + 60,
                 },

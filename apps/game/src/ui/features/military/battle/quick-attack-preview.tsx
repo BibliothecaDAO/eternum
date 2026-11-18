@@ -12,8 +12,9 @@ import {
   ATTACK_FORECAST_MODELS,
   configManager,
   forecastAttack,
-  StaminaManager,
   getTroopResourceId,
+  oathAttackStamina,
+  StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
@@ -166,10 +167,10 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const claimNeedsAdjacency = refusal === "claim-needs-adjacency";
   const refusalLine = (() => {
     if (refusal === undefined) return null;
-    if (refusal === "insufficient-stamina") {
-      const need = configManager.getCombatRules().stamina.stamina_attack_req;
-      const held = attackerTroops && Number(StaminaManager.getStamina(attackerTroops, executionSecond).amount);
-      const readyAt = attackerTroops && StaminaManager.getAffordableAt(attackerTroops, need, executionSecond);
+    if (refusal === "insufficient-stamina" && sides) {
+      const need = oathAttackStamina(sides.attacker.oaths, configManager.getCombatRules().stamina.stamina_attack_req);
+      const held = Number(StaminaManager.getStamina(sides.attacker.troops, executionSecond).amount);
+      const readyAt = StaminaManager.getAffordableAt(sides.attacker.troops, need, executionSecond);
       return staminaShortfall(held, need, readyAt == null ? undefined : Math.max(0, readyAt - executionSecond));
     }
     if (refusal === "cooldown" && attackerTroops)

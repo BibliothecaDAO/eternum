@@ -93,7 +93,7 @@ export const readDeployPlan = (
   if (raise === undefined) return undefined;
   // A new army's Logistics starts at its realm's Supply yard tier, which raises the bar a fresh slot starts full at.
   const trained = researchTier(learned, research.ROW_SUPPLY_YARD);
-  const perExplore = troops ? exploreStaminaOf(store, realm.game_id, troops.type) : 0;
+  const perExplore = troops ? exploreStaminaOf(store, realm.game_id, troops.type, 0) : 0;
   const starts = open.map((slot) => slotStart(slot, troops, trained, clock.defaultTick, perExplore));
   return { open: starts, troops, raise, choices };
 };

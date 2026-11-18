@@ -264,15 +264,16 @@ pub impl TroopsImpl of TroopsTrait {
             );
 
         // ensure alpha has enough stamina to launch attack
+        let attack_stamina = crate::oaths::attack_stamina(context.attacker_oaths, troop_stamina_config.stamina_attack_req);
         assert!(
-            alpha.stamina.inline().amount >= troop_stamina_config.stamina_attack_req.into(),
+            alpha.stamina.inline().amount >= attack_stamina.into(),
             "you have {} stamina, but need {} to launch attack",
             alpha.stamina.inline().amount,
-            troop_stamina_config.stamina_attack_req,
+            attack_stamina,
         );
 
         // calculate alpha's stamina lost
-        let mut ALPHA_STAMINA_LOSS = troop_stamina_config.stamina_attack_req;
+        let mut ALPHA_STAMINA_LOSS = attack_stamina;
         let ALPHA_STAMINA_BONUS_DAMAGE_MULTIPLIER: Fixed = 1_u8.into();
         let ALPHA_BATTLE_TIMER_DAMAGE_MULTIPLIER: Fixed = 1_u8.into();
 

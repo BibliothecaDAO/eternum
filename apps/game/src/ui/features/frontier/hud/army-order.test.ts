@@ -38,6 +38,7 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
     FELT_CENTER: () => 0,
     ActionPaths: { posKey: () => "tile", getActionType: () => actual.ActionType.Explore },
     configManager: { getActiveGameId: () => 1, getExploreStaminaCost: () => 21 },
+    armyOaths: () => 0,
     // The balance as the chain stores it, at the resource's precision.
     getBalance: () => ({ balance: Math.round(realm.wheat * 1_000_000_000) }),
     ResourceManager: class {

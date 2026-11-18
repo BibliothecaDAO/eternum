@@ -86,23 +86,24 @@ import { LAYER_VIEW_REQUEST_EVENT, type LayerViewRequest } from "@/three/scenes/
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { LeftView } from "@/types";
 import {
+  armyOaths,
   armyRealmSpire,
   configManager,
   dayOf,
-  expeditionDepth,
-  expeditionSpires,
   discoversSpires,
-  regionSpire,
+  expeditionDepth,
+  type ExpeditionRules,
+  expeditionSpires,
   isArmyCrossing,
-  NEUTRAL_BIOME_CLIMATE,
-  Position,
-  spireEtherealView,
+  isExpeditionRealm,
   isOpenSpawnHex,
   isViewerOwner,
-  isExpeditionRealm,
+  NEUTRAL_BIOME_CLIMATE,
+  Position,
   readExpeditionRules,
-  type ExpeditionRules,
+  regionSpire,
   spawnRing,
+  spireEtherealView,
   structureMapPosition,
 } from "@bibliothecadao/eternum";
 import {
@@ -2538,11 +2539,14 @@ export default class WorldmapScene extends WarpTravel {
   ): OrderTip | null {
     const key = ActionPaths.posKey(hexCoords, true);
     const path = getLiveWorldmapEntityActions().actionPaths.get(key);
-    const armyTroops = this.selectedArmyRow()?.troops;
+    const army = this.selectedArmyRow();
+    const armyTroops = army?.troops;
     const short = refusal?.reason === "stamina" ? this.selectedArmyShortOf(refusal.need) : undefined;
     return orderTip({
       path,
-      exploreStamina: armyTroops ? configManager.getExploreStaminaCost(armyTroops.category) : 0,
+      exploreStamina: army
+        ? configManager.getExploreStaminaCost(army.troops.category, armyOaths(this.game.store, army))
+        : 0,
       food: armyTroops ? orderFood(path, armyTroops) : { wheat: 0, fish: 0 },
       explored: this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) === true,
       refusal,

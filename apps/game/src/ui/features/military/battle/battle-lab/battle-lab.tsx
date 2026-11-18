@@ -7,12 +7,13 @@ import { HudCheck, HudNotice, HudWindow } from "@/ui/design-system/kit/hud-eleme
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import {
   attackDistance,
+  type AttackForecast,
   CombatParameters,
   CombatSimulator,
   configManager,
   getGuildFromPlayerAddress,
+  oathAttackStamina,
   StaminaManager,
-  type AttackForecast,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { ActorType, BiomeType, ContractAddress, ID } from "@bibliothecadao/types";
@@ -181,7 +182,7 @@ export const BattleLab = ({
 
   const warning = (() => {
     if (refusal !== "insufficient-stamina" || isEdited || !sides) return undefined;
-    const need = configManager.getCombatRules().stamina.stamina_attack_req;
+    const need = oathAttackStamina(sides.attacker.oaths, configManager.getCombatRules().stamina.stamina_attack_req);
     const held = Number(StaminaManager.getStamina(sides.attacker.troops, chainSecond).amount);
     const readyAt = StaminaManager.getAffordableAt(sides.attacker.troops, need, chainSecond);
     return staminaShortfall(held, need, readyAt === null ? undefined : Math.max(0, readyAt - chainSecond));

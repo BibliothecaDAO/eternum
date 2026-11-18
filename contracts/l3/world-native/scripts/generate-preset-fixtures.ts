@@ -37,6 +37,7 @@ for (const [name, id] of [
 }
 write("../oath-deep-loss.txt", oathDeepLossVectors());
 write("../oath-prizes.txt", oathPrizeVectors());
+write("../oath-stamina.txt", oathStaminaVectors());
 write(
   "../oath-pass-stamina.txt",
   [0, oaths.PASS_STAMINA / 2, oaths.PASS_STAMINA, oaths.PASS_STAMINA * 2].flatMap((deficit) =>
@@ -221,6 +222,39 @@ function oathPrizeVectors(): string[] {
         amount,
         (amount * BigInt(percent(oaths.BRILLIANCE, oaths.BRILLIANCE_PAY_PERCENT))) / 100n,
         (amount * BigInt(percent(oaths.RAGE, oaths.RAGE_PAY_PERCENT))) / 100n,
+      ].map(String),
+    );
+  });
+}
+
+function oathStaminaVectors(): string[] {
+  const bit = (oath: number) => 1 << (oath - 1);
+  const sets = [
+    0,
+    bit(oaths.ANGER),
+    bit(oaths.TITANS),
+    bit(oaths.ENLIGHTENMENT),
+    bit(oaths.FOX),
+    bit(oaths.ANGER) | bit(oaths.TITANS) | bit(oaths.ENLIGHTENMENT) | bit(oaths.FOX),
+    bit(oaths.POWER),
+  ];
+  const hourTicks = 30;
+  return sets.flatMap((held) => {
+    const holds = (oath: number) => (held & bit(oath)) !== 0;
+    const regen = holds(oaths.ENLIGHTENMENT) ? oaths.ENLIGHTENMENT_REGEN_BPS : 10_000;
+    return [
+      [30, 20],
+      [10, 10],
+    ].flatMap(([attack, explore]) =>
+      [
+        held,
+        attack,
+        holds(oaths.ANGER) ? Math.min(attack!, oaths.ANGER_ATTACK_STAMINA) : attack,
+        explore,
+        holds(oaths.FOX) ? Math.floor((explore! * (100 - oaths.FOX_REVEAL_DISCOUNT_PERCENT)) / 100) : explore,
+        holds(oaths.TITANS) ? oaths.TITANS_STAMINA : 0,
+        regen,
+        Math.floor((hourTicks * regen) / 10_000),
       ].map(String),
     );
   });

@@ -838,7 +838,11 @@ pub mod TroopsLogic {
                     attacker.troops.category,
                     attacker.troops.tier,
                     rules.troop_stamina_config,
-                    rules.troop_stamina_config.stamina_attack_req.into(),
+                    crate::oaths::attack_stamina(
+                        crate::logic::progression::held_oaths(key, context),
+                        rules.troop_stamina_config.stamina_attack_req,
+                    )
+                        .into(),
                     rules.tick_config.armies_tick_in_seconds,
                     context.timestamp,
                     true,
@@ -1074,10 +1078,11 @@ pub mod troop_helpers {
             rules: SliceRules,
             biome: crate::biome::Biome,
             exploring: bool,
+            oaths: u16,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
         ) {
-            crate::troops::spend_stamina(ref explorer, rules, biome, exploring, timestamp);
+            crate::troops::spend_stamina(ref explorer, rules, biome, exploring, oaths, timestamp);
             self.pay_food(game_id, explorer, rules, exploring, timestamp, game_context);
         }
         fn pay_food(

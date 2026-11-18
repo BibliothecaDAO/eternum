@@ -12,7 +12,7 @@ import { costLine } from "@/ui/design-system/kit/price-faces";
 import { DEEP_WORDS } from "@/ui/design-system/kit/words";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { toast } from "@/ui/features/event-feed/notify";
-import { armyOaths, configManager, getStructureName } from "@bibliothecadao/eternum";
+import { armyOaths, configManager, getStructureName, oathAttackStamina } from "@bibliothecadao/eternum";
 import {
   deepArmyLife,
   homeAspect,
@@ -73,7 +73,10 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
       : site.guards.length
         ? "join"
         : "take";
-  const need = verb === "join" ? 0 : configManager.getCombatConfig().stamina_attack_req;
+  const need =
+    verb === "join" || selected === null
+      ? 0
+      : oathAttackStamina(armyOaths(setup.store, selected.army), configManager.getCombatConfig().stamina_attack_req);
   const stamina = useArmyStamina(userId, need);
   const approach = useOrderAt(useApproachTile(tile, !block && !adjacent));
   const act = async () => {

@@ -29,6 +29,10 @@ pub const REFLECTION_WELL_PERCENT: u8 = 80;
 pub const DETECTION_FIND_PERCENT: u16 = 120;
 pub const BRILLIANCE_PAY_PERCENT: u16 = 125;
 pub const RAGE_PAY_PERCENT: u16 = 125;
+pub const ANGER_ATTACK_STAMINA: u16 = 20;
+pub const TITANS_STAMINA: u16 = 60;
+pub const ENLIGHTENMENT_REGEN_BPS: u16 = 13334;
+pub const FOX_REVEAL_DISCOUNT_PERCENT: u16 = 20;
 
 pub fn damage_multiplier(attacker: u16, defender: u16, guarding: bool) -> Fixed {
     let mut multiplier = FixedTrait::ONE();
@@ -73,6 +77,49 @@ pub fn site_pay(oaths: u16, amount: u128) -> u128 {
         amount * RAGE_PAY_PERCENT.into() / 100
     } else {
         amount
+    }
+}
+
+pub fn choice_stamina(oath: Option<u8>) -> u64 {
+    match oath {
+        Option::None => PASS_STAMINA.into(),
+        Option::Some(oath) => if oath == TITANS {
+            TITANS_STAMINA.into()
+        } else {
+            0
+        },
+    }
+}
+
+pub fn attack_stamina(oaths: u16, base: u16) -> u16 {
+    if held(oaths, ANGER) {
+        core::cmp::min(base, ANGER_ATTACK_STAMINA)
+    } else {
+        base
+    }
+}
+
+pub fn stamina_bonus(oaths: u16) -> u64 {
+    if held(oaths, TITANS) {
+        TITANS_STAMINA.into()
+    } else {
+        0
+    }
+}
+
+pub fn regen_bps(oaths: u16) -> u32 {
+    if held(oaths, ENLIGHTENMENT) {
+        ENLIGHTENMENT_REGEN_BPS.into()
+    } else {
+        10000
+    }
+}
+
+pub fn explore_stamina(oaths: u16, base: u16) -> u16 {
+    if held(oaths, FOX) {
+        base * (100 - FOX_REVEAL_DISCOUNT_PERCENT) / 100
+    } else {
+        base
     }
 }
 

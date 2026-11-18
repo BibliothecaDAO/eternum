@@ -8,14 +8,15 @@ import { useMemo } from "react";
 
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import {
+  armyOaths,
   computeExploreFoodCosts,
   computeTravelFoodCosts,
   configManager,
   divideByPrecision,
+  entityMapPosition,
   ResourceManager,
   StaminaManager,
   storedBiomeAt,
-  entityMapPosition,
 } from "@bibliothecadao/eternum";
 import { getNeighborHexes, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
@@ -113,7 +114,7 @@ export const readArmyMovementReadiness = ({
   return deriveArmyMovementReadiness({
     currentStamina: Number(StaminaManager.getStamina(troops, currentDefaultTick).amount),
     minTravelStamina: resolveCheapestNeighborTravelStamina(army, store),
-    minExploreStamina: configManager.getExploreStaminaCost(troops.category),
+    minExploreStamina: configManager.getExploreStaminaCost(troops.category, armyOaths(store, army)),
     travelFoodCosts: movementFoodCosts.travel,
     exploreFoodCosts: movementFoodCosts.explore,
     food: resolveStructureFoodBalance(structureResources, currentDefaultTick),

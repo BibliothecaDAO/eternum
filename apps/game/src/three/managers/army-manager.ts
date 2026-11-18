@@ -56,15 +56,16 @@ import {
   type GameClientSetup as SetupResult,
 } from "@bibliothecadao/eternum/game-client";
 import {
-  FELT_CENTER,
-  Position,
-  StaminaManager,
+  armyOaths,
   configManager,
   divideByPrecision,
+  FELT_CENTER,
   getBlockTimestamp,
   getExplorerOwner,
   isArmyCrossing,
+  Position,
   ResourceManager,
+  StaminaManager,
   storedBiomeAt,
 } from "@bibliothecadao/eternum";
 import type {
@@ -1307,7 +1308,10 @@ export class ArmyManager {
           watched: watchedSide(this.store, army.owner.address),
         },
         this.resolveHomeRealmName(army),
-        configManager.getExploreStaminaCost(army.category),
+        configManager.getExploreStaminaCost(
+          army.category,
+          armyOaths(this.store!, { game_id: configManager.getActiveGameId(), explorer_id: army.entityId }),
+        ),
       ),
     });
   }

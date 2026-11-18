@@ -6,6 +6,7 @@ import { readExpeditionRules } from "../../utils/expeditions";
 import { BANE_MODELS, readBaneEffects } from "./banes";
 import { readTriumphPeriod, TRIUMPH_MODELS } from "./triumphs";
 import { readOptionalSeasonRow } from "./season-rows";
+import { oathRegenBps } from "../../utils/oaths";
 
 export const STAMINA_MODELS = [
   ...BANE_MODELS,
@@ -32,20 +33,25 @@ export function readStaminaEffects(
   epoch: bigint,
   from: number,
   depth: number,
+  oaths: number,
 ): NativeFactResult<StaminaEffects> {
   const calendar = readExpeditionRules(store, gameId);
   if (!calendar) return { known: { until: Infinity, windows: [] } };
   const day = dayAtIndex(calendar, Number(epoch));
   const until = day.end;
-  if (depth === 3) return { known: { until, windows: [] } };
+  const regen = { start: from, end: until, rateBps: oathRegenBps(oaths) };
+  if (depth === 3) return { known: { until, windows: combinePeriods([regen], from, until) } };
   const bane = readBaneEffects(store, gameId, home, from, until);
   if (!bane.known) return bane;
   const race = readOptionalSeasonRow(store, "RaceRules", { game_id: gameId });
   if (!race.known) return race;
   const { windows, staminaPercent } = bane.known;
-  const periods: { start: number; end: number; rateBps: number }[] = windows
-    .filter((window) => window.kind === nativeBaneConstants.MIST_TIDE)
-    .map((window) => ({ start: window.start, end: window.end, rateBps: staminaPercent * 100 }));
+  const periods: { start: number; end: number; rateBps: number }[] = [
+    regen,
+    ...windows
+      .filter((window) => window.kind === nativeBaneConstants.MIST_TIDE)
+      .map((window) => ({ start: window.start, end: window.end, rateBps: staminaPercent * 100 })),
+  ];
   if (race.known.row) {
     const wind = readTriumphPeriod(store, gameId, home, nativeRaceConstants.SECOND_WIND_STAGE, calendar);
     if (!wind.known) return wind;
@@ -64,7 +70,7 @@ function combinePeriods(periods: StaminaEffects["windows"], from: number, until:
   return boundaries.slice(0, -1).flatMap((start, index) => {
     const rateBps = periods
       .filter((period) => period.start <= start && start < period.end)
-      .reduce((rate, period) => (rate * period.rateBps) / 10_000, 10_000);
+      .reduce((rate, period) => Math.floor((rate * period.rateBps) / 10_000), 10_000);
     return rateBps === 10_000 ? [] : [{ start, end: boundaries[index + 1]!, rateBps }];
   });
 }

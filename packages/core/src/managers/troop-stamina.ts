@@ -8,6 +8,7 @@ import { troopTierIndex, TroopTier, TroopType, type Troops, type StaminaEffects 
 import type { NativeFactStore } from "../client/native-fact-store";
 import { armyRelicBonus } from "../utils/army-relics";
 import { logisticsStamina } from "../utils/attribute-tiers";
+import { oathStaminaBonus } from "../utils/oaths";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 /** One game's stamina rules, exactly as its SliceRules carries them. */
@@ -184,13 +185,14 @@ export function resolveExplorerTroops(
     epoch,
     result.known.stamina.settled_at,
     calendar && position ? expeditionDepth(calendar, { y: position.row }) : 0,
+    progress.oaths,
   );
   if (!effects.known) return undefined;
   const base = troopStaminaLimits(rules.troop_stamina_config, explorer.troops.category, TroopTier.T1).staminaMax;
   return {
     ...explorer.troops,
     stamina: result.known.stamina,
-    staminaMax: base + logisticsStamina(progress.logistics),
+    staminaMax: base + logisticsStamina(progress.logistics) + oathStaminaBonus(progress.oaths),
     staminaEffects: effects.known,
   };
 }
