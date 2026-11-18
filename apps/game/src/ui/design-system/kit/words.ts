@@ -2377,6 +2377,7 @@ export const RELIC_WORDS = {
   chooseFirst: "Choose the relic to replace first",
 } as const;
 
+const INVITED = "Invited";
 export const ASPECT_STEP_WORDS = {
   title: "Choose your Aspect",
   /** The title where nothing is chosen: a held Realm's home already plays for its Order's Aspect. */
@@ -2391,7 +2392,8 @@ export const ASPECT_STEP_WORDS = {
   /** The step's line for a friend's invite, and the invited card's tag; a sender with no name yet is not named. */
   invitedTo: (sender: string | null, aspect: string) =>
     sender === null ? `You were invited to ${aspect}` : `${sender} invited you to ${aspect}`,
-  invited: "Invited",
+  invited: INVITED,
+  invitedBy: (sender: string | null) => (sender === null ? INVITED : `${sender} invited you`),
   /** The step when the link the account came by could not be read: the Aspects stay open, and it can ask again. */
   inviteUnread: "Your friend's invite could not be read. You can choose an Aspect, or try again.",
 } as const;

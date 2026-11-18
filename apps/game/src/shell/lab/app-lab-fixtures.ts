@@ -240,6 +240,7 @@ export const LAB_SCREENS = {
   "preseason-chosen": { signedIn: true, games: [] },
   "preseason-sealed": { signedIn: true, games: [] },
   "preseason-invited": { signedIn: false, games: [] },
+  "preseason-invited-pick": { signedIn: true, games: [] },
   home: { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   // Play for a player with the longest name an account takes (packages/identity account-rules), with the install
   // notice: the desktop bar must hold both at its narrowest width.
@@ -433,6 +434,7 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, string
   "preseason-member": LAB_WALLET,
   "preseason-chosen": LAB_WALLET,
   "preseason-sealed": LAB_WALLET,
+  "preseason-invited-pick": LAB_WALLET,
   "entry-choose": LAB_WALLET,
   "entry-short": LAB_WALLET,
   "entry-registered": LAB_WALLET,
@@ -556,6 +558,7 @@ const PRESEASON_SCREENS: readonly LabScreen[] = [
   "preseason-chosen",
   "preseason-sealed",
   "preseason-invited",
+  "preseason-invited-pick",
 ];
 const LAB_ORDER_MEMBERS: Readonly<Record<number, number>> = {
   1: 12,
@@ -582,6 +585,10 @@ export const labOrderIntent = (screen: LabScreen) => ({
 export const LAB_SEAL_CODE = "SEAL2345";
 export const LAB_SHARE_CODE = "MRGHT234";
 export const LAB_INVITE = { kind: "aspect", moment: 1, name: "Dana", order: 13, members: 39 } as const;
+export const labJoinedShare = (screen: LabScreen) =>
+  screen === "preseason-invited-pick"
+    ? ({ kind: "aspect", chainId: null, gameId: null, moment: LAB_INVITE.moment, name: LAB_INVITE.name } as const)
+    : null;
 export const labSealCode = (screen: LabScreen) => ({ held: screen === "preseason-sealed" });
 
 const SEASON_ONE_PHASE = (at: (minutes: number) => string) => ({
@@ -610,6 +617,7 @@ const QUIET_BLITZ_SCREENS: readonly LabScreen[] = [
   "preseason-chosen",
   "preseason-sealed",
   "preseason-invited",
+  "preseason-invited-pick",
 ];
 
 /** The screens whose player has no finished game to open. */
@@ -624,6 +632,7 @@ export const LAB_NO_HISTORY_SCREENS: readonly LabScreen[] = [
   "preseason-chosen",
   "preseason-sealed",
   "preseason-invited",
+  "preseason-invited-pick",
 ];
 
 /** The slot closing at 16:30, two hours away, on the lab's shard; on the after-close screens, closed and split. */

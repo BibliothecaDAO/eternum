@@ -44,6 +44,7 @@ const reads = vi.hoisted(() => ({
   sealHeld: false,
   redeemed: [] as string[],
   shared: [] as unknown[],
+  joined: null as unknown,
 }));
 
 vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
@@ -51,6 +52,7 @@ vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
   identityClient: {
     getBuildOrders: async () => ({ owner: "0x7", revision: 1, book: reads.buildOrders }),
     getOrderIntent: async () => reads.intent,
+    joinedShare: async () => reads.joined,
     chooseOrder: async (order: number) => {
       reads.chosen.push(order);
       reads.intent = { order, members: { ...reads.intent.members, [order]: (reads.intent.members[order] ?? 0) + 1 } };
@@ -200,6 +202,7 @@ afterEach(async () => {
   reads.sealHeld = false;
   reads.redeemed = [];
   reads.shared = [];
+  reads.joined = null;
   useBuildOrderStore.setState({ owner: null, status: "signed-out", book: null, revision: 0, notice: null });
 });
 
@@ -552,6 +555,33 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(page.container.querySelector(".app-chip")?.textContent).toBe("Starts in 14d 4h");
   });
 
+  it("puts the Aspect a friend invited the account to first, chosen, with who invited it; an invite to a game is not offered", async () => {
+    reads.directory = answered({ games: [] });
+    reads.calendar = answered(seasonOne(startsAt));
+    reads.joined = { kind: "aspect", chainId: null, gameId: null, moment: 3, name: "Dana" };
+    quietPlay();
+    const page = await mount();
+    await settle();
+    const cards = () => [...page.container.querySelectorAll("[data-aspect]")];
+    expect(cards().map((card) => card.getAttribute("data-aspect"))).toEqual(["Chaos", "Might", "Harmony", "Guile"]);
+    expect(cards()[0]!.getAttribute("aria-pressed")).toBe("true");
+    expect(page.container.querySelectorAll("[data-aspect-invited]")).toHaveLength(1);
+    expect(cards()[0]!.querySelector("[data-aspect-invited]")?.textContent).toBe("Dana invited you");
+    expect([...page.container.querySelectorAll("[data-order]")].map((row) => row.getAttribute("data-order"))).toEqual(
+      ordersOfAspect(3).map(({ fullOrderName }) => fullOrderName),
+    );
+
+    await cleanup?.();
+    reads.joined = { kind: "aspect", chainId: "0xa", gameId: 1, moment: 3, name: "Dana" };
+    const again = await mount();
+    await settle();
+    expect(
+      [...again.container.querySelectorAll("[data-aspect]")].map((card) => card.getAttribute("data-aspect")),
+    ).toEqual(aspects.map(({ name }) => name));
+    expect(again.container.querySelector("[data-aspect-invited]")).toBeNull();
+    expect(again.container.querySelector('[aria-pressed="true"]')).toBeNull();
+  });
+
   it("holds a free Ancient Seal code on the waiting screen: a refused code says so in its field, a good one is held", async () => {
     reads.directory = answered({ games: [] });
     reads.calendar = answered(seasonOne(startsAt));
@@ -638,6 +668,37 @@ describe("the season's countdown, while its first day is ahead and Play has no g
       expect(page.container.querySelector("[data-preseason-step]")?.getAttribute("data-preseason-step")).toBe(
         "waiting",
       );
+    } finally {
+      identityClient.chooseOrder = keep;
+    }
+  });
+
+  it("shows the Order kept elsewhere when the account already chose another Aspect, instead of asking again", async () => {
+    reads.directory = answered({ games: [] });
+    reads.calendar = answered(seasonOne(startsAt));
+    quietPlay();
+    const titans = ordersOfAspect(1).at(-1)!;
+    const keep = identityClient.chooseOrder;
+    identityClient.chooseOrder = vi.fn(async () => {
+      reads.intent = { order: titans.orderId, members: { [titans.orderId]: 1 } };
+      const { IdentityRequestError } = await import("@realms-world/identity");
+      throw new IdentityRequestError(409, "aspect_chosen");
+    });
+    try {
+      const page = await mount();
+      await settle();
+      const [perfection] = ordersOfAspect(2);
+      await act(async () => page.container.querySelector<HTMLButtonElement>('[data-aspect="Harmony"]')!.click());
+      await act(async () =>
+        page.container.querySelector<HTMLButtonElement>(`[data-order="${perfection!.fullOrderName}"]`)!.click(),
+      );
+      await press(page.container, `Play as ${perfection!.orderName}`);
+      await settle();
+      await settle();
+      expect(page.container.querySelector("[data-preseason-step]")?.getAttribute("data-preseason-step")).toBe(
+        "waiting",
+      );
+      expect(page.container.querySelector("h1")?.textContent).toBe("You're in Might");
     } finally {
       identityClient.chooseOrder = keep;
     }

@@ -17,6 +17,7 @@ const PRESEASON_SCREENS = [
   ["preseason-chosen", "[data-seal-code=open]"],
   ["preseason-sealed", "[data-seal-code=held]"],
   ["preseason-invited", "[data-shared-invite]", "/s/MRGHT234"],
+  ["preseason-invited-pick", "[data-aspect-invited]"],
 ];
 const PAGES = [
   ...VIEWS.flatMap(({ name, path, cases, shown }) =>

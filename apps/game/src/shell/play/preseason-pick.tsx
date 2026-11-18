@@ -3,7 +3,6 @@ import { useState } from "react";
 import {
   ASPECT_REWARD,
   aspectName,
-  aspects,
   formatDate,
   formatExact,
   formatShort,
@@ -11,34 +10,37 @@ import {
   ordersOfAspect,
   type AspectId,
 } from "@bibliothecadao/types";
-import type { OrderIntent } from "@realms-world/identity";
+import { IdentityRequestError, type OrderIntent } from "@realms-world/identity";
 
 import { identityClient, useIdentitySession } from "@/hooks/context/identity-session";
 import { Icon } from "@/ui/design-system/icon";
-import { AppButton } from "@/ui/design-system/kit/app-elements";
+import { AppButton, AppNotice } from "@/ui/design-system/kit/app-elements";
 import { AppCountdownChip } from "@/ui/design-system/kit/clock-chip";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
-import { ASPECT_STEP_WORDS, PRESEASON_WORDS } from "@/ui/design-system/kit/words";
+import { ASPECT_STEP_WORDS, PRESEASON_WORDS, TRY_AGAIN } from "@/ui/design-system/kit/words";
+import { aspectOffer, invitedFirst, type AspectOffer } from "@/ui/features/game-entry/aspect-picker";
 
 import { StageFrame } from "../frame/stage-frame";
 import { Loading } from "../loading";
 import { SealCodeCard } from "./seal-code-card";
 import { CopySeasonInvite, SeasonInviteCard, useSeasonInvite } from "./season-invite";
 import type { SeasonOpening } from "../season";
+import { useJoinedShare } from "../share/own-shares";
 
 const orderIntentKey = (owner: string | null) => ["orderIntent", owner] as const;
 
 export const PreseasonPlay = ({ opening, now }: { opening: SeasonOpening; now: number }) => {
   const owner = useIdentitySession().session?.user.realmsId ?? null;
   const intent = useQuery({ queryKey: orderIntentKey(owner), queryFn: () => identityClient.getOrderIntent() });
+  const joined = useJoinedShare();
   if (intent.isError)
     return (
       <StageFrame>
         <ServiceFailure service="season" error={intent.error} retry={() => void intent.refetch()} />
       </StageFrame>
     );
-  if (!intent.data)
+  if (!intent.data || joined.status === "loading")
     return (
       <StageFrame>
         <Loading />
@@ -46,24 +48,39 @@ export const PreseasonPlay = ({ opening, now }: { opening: SeasonOpening; now: n
     );
   if (intent.data.order !== null)
     return <SeasonWaiting owner={owner} order={intent.data.order} opening={opening} now={now} />;
-  return <OrderPick owner={owner} members={intent.data.members} aspectLords={opening.aspectLords} />;
+  return (
+    <OrderPick
+      owner={owner}
+      members={intent.data.members}
+      aspectLords={opening.aspectLords}
+      offered={joined.status === "ready" ? aspectOffer(joined.joined, null) : null}
+      retryInvite={joined.status === "failed" ? joined.retry : null}
+    />
+  );
 };
 
 const OrderPick = ({
   owner,
   members,
   aspectLords,
+  offered,
+  retryInvite,
 }: {
   owner: string | null;
   members: OrderIntent["members"];
   aspectLords: number | null;
+  offered: AspectOffer | null;
+  retryInvite: (() => void) | null;
 }) => {
-  const [aspect, setAspect] = useState<AspectId | null>(null);
+  const [aspect, setAspect] = useState<AspectId | null>(offered?.aspect ?? null);
   const [order, setOrder] = useState<number | null>(null);
   const client = useQueryClient();
   const choose = useMutation({
     mutationFn: (chosen: number) => identityClient.chooseOrder(chosen),
     onSuccess: (saved) => client.setQueryData(orderIntentKey(owner), saved),
+    onError: (error) => {
+      if (isAspectAlreadyChosen(error)) void client.invalidateQueries({ queryKey: orderIntentKey(owner) });
+    },
   });
   const chosen = orders.find((each) => each.orderId === order && each.aspect === aspect);
   const pickAspect = (picked: AspectId) => {
@@ -75,6 +92,16 @@ const OrderPick = ({
       notice={
         choose.isError && chosen ? (
           <ServiceFailure service="season" error={choose.error} retry={() => choose.mutate(chosen.orderId)} />
+        ) : retryInvite ? (
+          <AppNotice
+            tone="warn"
+            line={ASPECT_STEP_WORDS.inviteUnread}
+            actions={
+              <AppButton kind="secondary" onClick={retryInvite}>
+                {TRY_AGAIN}
+              </AppButton>
+            }
+          />
         ) : undefined
       }
       verb={
@@ -92,7 +119,13 @@ const OrderPick = ({
       <div data-preseason-step="pick" className="flex w-full flex-col gap-3">
         <h1 className="text-app-title text-app-ink">{ASPECT_STEP_WORDS.title}</h1>
         <p className="text-app-body text-app-muted">{ASPECT_STEP_WORDS.line}</p>
-        <AspectCards chosen={aspect} members={members} aspectLords={aspectLords} onPick={pickAspect} />
+        <AspectCards
+          chosen={aspect}
+          members={members}
+          aspectLords={aspectLords}
+          offered={offered}
+          onPick={pickAspect}
+        />
         {aspectLords !== null && (
           <p className="app-well p-3 text-left text-app-label text-app-muted">
             <span className="flex items-start gap-2">
@@ -109,6 +142,9 @@ const OrderPick = ({
   );
 };
 
+const isAspectAlreadyChosen = (error: unknown) =>
+  error instanceof IdentityRequestError && error.status === 409 && error.code === "aspect_chosen";
+
 const aspectMembers = (members: OrderIntent["members"], aspect: AspectId) =>
   ordersOfAspect(aspect).reduce((sum, { orderId }) => sum + (members[orderId] ?? 0), 0);
 
@@ -116,15 +152,17 @@ const AspectCards = ({
   chosen,
   members,
   aspectLords,
+  offered,
   onPick,
 }: {
   chosen: AspectId | null;
   members: OrderIntent["members"];
   aspectLords: number | null;
+  offered: AspectOffer | null;
   onPick: (aspect: AspectId) => void;
 }) => (
-  <ul className="grid grid-cols-2 gap-3">
-    {aspects.map(({ id, name }) => {
+  <ul className="grid grid-cols-2 gap-3 pt-2">
+    {invitedFirst(offered).map(({ id, name }) => {
       const count = aspectMembers(members, id);
       return (
         <li key={id}>
@@ -135,6 +173,11 @@ const AspectCards = ({
             onClick={() => onPick(id)}
             className="app-choice w-full"
           >
+            {offered?.aspect === id && (
+              <span data-aspect-invited className="app-choice__tag">
+                {ASPECT_STEP_WORDS.invitedBy(offered.sender)}
+              </span>
+            )}
             <span className="flex w-full items-center gap-2">
               <span className="grid shrink-0 grid-cols-2 gap-0.5">
                 {ordersOfAspect(id).map(({ orderId }) => (

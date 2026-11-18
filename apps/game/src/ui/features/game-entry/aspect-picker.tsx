@@ -12,9 +12,12 @@ export type AspectMembers = Readonly<Record<AspectId, number>> | null;
 /** The Aspect a friend's link invited the account to, and who sent it (null when the sender has no name yet). */
 export type AspectOffer = { aspect: AspectId; sender: string | null };
 
-export const aspectOffer = (joined: JoinedShare, game: { chainId: string; gameId: number }): AspectOffer | null => {
+export const aspectOffer = (
+  joined: JoinedShare,
+  game: { chainId: string; gameId: number } | null,
+): AspectOffer | null => {
   if (joined === null || joined.kind !== "aspect") return null;
-  if (joined.chainId !== null && (joined.chainId !== game.chainId || joined.gameId !== game.gameId)) return null;
+  if (joined.chainId !== null && (joined.chainId !== game?.chainId || joined.gameId !== game.gameId)) return null;
   return { aspect: catalogAspectId(joined.moment), sender: joined.name };
 };
 
@@ -122,7 +125,7 @@ const OrderChoices = ({
 );
 
 /** The catalog's Aspects, the invited one first; the catalog's order otherwise. */
-const invitedFirst = (invite: AspectOffer | null) =>
+export const invitedFirst = (invite: AspectOffer | null) =>
   invite === null
     ? aspects
     : [...aspects.filter(({ id }) => id === invite.aspect), ...aspects.filter(({ id }) => id !== invite.aspect)];

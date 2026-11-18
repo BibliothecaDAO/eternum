@@ -65,6 +65,7 @@ import {
   labCalendar,
   labOrderIntent,
   LAB_INVITE,
+  labJoinedShare,
   labSealCode,
   LAB_SEAL_CODE,
   LAB_SHARE_CODE,
@@ -309,6 +310,7 @@ const answerIdentity = (screen: LabScreen) => {
     return intent;
   };
   identityClient.createShare = async () => LAB_SHARE_CODE;
+  identityClient.joinedShare = async () => labJoinedShare(screen);
   identityClient.openShare = async (code) => {
     if (code !== LAB_SHARE_CODE) throw new IdentityRequestError(404, "share_unknown");
     return LAB_INVITE;

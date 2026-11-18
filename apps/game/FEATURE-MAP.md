@@ -443,15 +443,17 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   Signed in, Play asks the account's side for the season instead, on one screen: **Choose your Aspect** (each card its
   members and about how many LORDS a player gets on average of the Aspect's total), then that Aspect's Orders below it,
   and **Play as <Order's name>**; kept on the account (`/api/order-intent`); a save that fails says so with **Try
-  again**. With an Order kept, **You're in <Aspect>**, the Order, the day it opens and **Starts in …**, then **Free
-  Ancient Seal?**: a code field and **Redeem** (`/api/seal-code`) hold one operator's code on the account (a taken,
-  expired or unknown code is refused in the field); once held, **Your Ancient Seal is held**. Under it **Bring friends**
-  and, in the foot, **Copy invite link**: the account's link to its Aspect for the coming season (`/api/shares` with no
-  game), which a friend's first visit ties to the account they make. Operator codes:
+  again**, and an Order already kept in another Aspect (on another device) shows that one. An account a friend's
+  pre-season invite brought sees the invited Aspect first, chosen, tagged **<name> invited you**. With an Order kept,
+  **You're in <Aspect>**, the Order, the day it opens and **Starts in …**, then **Free Ancient Seal?**: a code field and
+  **Redeem** (`/api/seal-code`) hold one operator's code on the account (a taken, expired or unknown code is refused in
+  the field); once held, **Your Ancient Seal is held**. Under it **Bring friends** and, in the foot, **Copy invite
+  link**: the account's link to its Aspect for the coming season (`/api/shares` with no game), which a friend's first
+  visit ties to the account they make. Operator codes:
   `pnpm --dir apps/realms seal-codes <label> <count> <out> [last day]` (clear codes in `codes.txt`, hashes in
   `codes.sql`). Lab: `/lab/app/preseason` (signed out), `/lab/app/preseason-member` (the pick),
-  `/lab/app/preseason-chosen` (kept; code SEAL2345 redeems) and `/lab/app/preseason-sealed` (code held); proof:
-  `build.sh prove-season-one` (all four, desktop and phone).
+  `/lab/app/preseason-chosen` (kept; code SEAL2345 redeems), `/lab/app/preseason-sealed` (code held) and
+  `/lab/app/preseason-invited-pick` (invited to Might); proof: `build.sh prove-season-one` (each, desktop and phone).
 - Creating a Frontier home (the game's entry): with nothing to choose (a ticket or a free home, no Realm held) the realm
   is created without a press, the doorway's bar saying **Preparing your realm**; a failure asks with the picker below. A
   Realm holder gets **Choose your home**, **You play as <name>** (changed on You), then **Create your realm**, pinned in
