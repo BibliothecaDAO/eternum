@@ -117,6 +117,7 @@ export const expeditionDepth = (rules: ExpeditionRules, coord: { y: number }): n
 
 /** An Ethereal layer, I to III: a Frontier depth below the day's surface. */
 export type EtherealLayer = 1 | 2 | 3;
+export const DEEP_DEPTH = 3 satisfies EtherealLayer;
 
 /**
  * The Ethereal layer an army stands in, by the same depth the terrain and the spire read; none on the day's surface or
@@ -418,7 +419,7 @@ export const armySpireChance = (
   if (epoch === null || !allocation || !isCurrentExpeditionArmy(rules, allocation.day, nowSeconds)) return null;
   const depth = expeditionDepth(rules, { y: position.row });
   const researched = reachableDepth(store, gameId, army.owner);
-  if (position.alt || depth >= 3 || researched === undefined || researched === 0) return null;
+  if (position.alt || depth >= DEEP_DEPTH || researched === undefined || researched === 0) return null;
   const progress = store.requireOrAbsent("ExpeditionSpire", {
     game_id: gameId,
     structure_id: army.owner,

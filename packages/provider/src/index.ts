@@ -726,6 +726,14 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
+  public async buy_stamina(props: SystemProps.SystemSigner & { explorerId: number; fragments: number }) {
+    return this.submitCommand(
+      props.signer,
+      { kind: "BuyStamina", value: { explorer_id: props.explorerId, fragments: props.fragments } },
+      TransactionType.BUY_STAMINA,
+    );
+  }
+
   public async claim_daily_quest(props: SystemProps.SystemSigner & { home: number; day: number }) {
     return this.submitCommand(
       props.signer,

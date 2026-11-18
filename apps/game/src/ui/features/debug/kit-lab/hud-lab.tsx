@@ -85,7 +85,13 @@ import { type DayEnd, DayEndBlock, dayEndItems, DayEndNotice } from "@/ui/featur
 import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useEventFeedStore } from "@/ui/features/event-feed/event-feed-store";
-import { RefillButton, RefillConfirm, RefillPrice, StaminaRefill } from "@/ui/features/frontier/army/refill";
+import {
+  fragmentsToFill,
+  RefillButton,
+  RefillConfirm,
+  RefillPrice,
+  StaminaRefill,
+} from "@/ui/features/frontier/army/refill";
 import { LordsPurse, PurseRow, RealmsChip } from "@/ui/features/frontier/value/lords-purse";
 import type { DailyClaimWaiting } from "@/ui/features/frontier/value/realm-labor";
 import { DayPill } from "@/ui/features/frontier/hud/day-pill";
@@ -465,13 +471,12 @@ const CASTLE_SIDE = (level: number, limit: number) => ({
   maxArmySize: [3_000, 9_000, 25_000, 50_000][level],
 });
 
-/** The veteran army's panel; with `lords` its refill is offered, with `confirm` the refill's confirm is open. */
 /**
  * `owner`: the owner's Army 4 (4 November, the panel he found crowded); `ready` holds a III point. `ethereal`: the army
  * in an Ethereal depth.
  */
 type LabArmySheet = {
-  lords?: number;
+  fragments?: number;
   confirm?: boolean;
   stamina?: number;
   owner?: "crowded" | "ready";
@@ -935,50 +940,49 @@ const STATES = {
     stores: STORES,
     armies: ARMIES,
     selected: 0,
-    army: { stamina: 20, lords: 1_240, confirm: true },
+    army: { stamina: 20, fragments: LAB_FRAGMENTS, confirm: true },
   },
   "army-refill-ready": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
     selected: 0,
-    army: { stamina: 20, lords: 1_240 },
+    army: { stamina: 20, fragments: LAB_FRAGMENTS },
   },
   "army-full": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
     selected: 0,
-    army: { stamina: 170, lords: 1_240 },
+    army: { stamina: 170, fragments: LAB_FRAGMENTS },
   },
-  // The owner's Army 4 (4 November): 0 LORDS as he met it, or 1,240 LORDS and a point to spend.
   "army-crowded": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
     selected: 0,
-    army: { lords: 0, owner: "crowded" },
+    army: { fragments: 0, owner: "crowded" },
   },
   "army-crowded-ready": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
     selected: 0,
-    army: { lords: 1_240, owner: "ready" },
+    army: { fragments: LAB_FRAGMENTS, owner: "ready" },
   },
   "army-refill-short": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
     selected: 0,
-    army: { stamina: 20, lords: 40 },
+    army: { stamina: 20, fragments: 0 },
   },
   "move-refill": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
     selected: 0,
-    refill: 1_240,
+    refill: LAB_FRAGMENTS,
     order: { ...EXPLORE, stamina: { cost: 30, held: 10, wait: 40 * 60 } },
   },
   "move-refill-short": {
@@ -986,7 +990,7 @@ const STATES = {
     stores: STORES,
     armies: ARMIES,
     selected: 0,
-    refill: 40,
+    refill: 0,
     order: { ...EXPLORE, stamina: { cost: 30, held: 10, wait: 40 * 60 } },
   },
   // A store's card, opened from its ring (desktop) or its plate (phone): filling, full, and made by no building.
@@ -1594,18 +1598,17 @@ const LabDeploySheet = ({
 
 /** A phone's picked army on the fiction, as the action row draws it in the dock's place. */
 const LabPicked = ({ lab }: { lab: LabState }) => {
-  const { army, lords } = labPickedArmy(lab);
+  const { army, fragments } = labPickedArmy(lab);
   return (
     <PickedArmy
       army={army}
-      refill={<StaminaRefill stamina={army.stamina!} held={lords} onRefill={noop} />}
+      refill={<StaminaRefill stamina={army.stamina!} held={fragments} onRefill={noop} />}
       onDetails={noop}
     />
   );
 };
 
-/** The owner's Army 2, rested or its realm able to pay its refill (`picked`), else the state's selected army, with the realm's LORDS. */
-const labPickedArmy = (lab: LabState): { army: PickedArmyView; lords: number } => {
+const labPickedArmy = (lab: LabState): { army: PickedArmyView; fragments: number } => {
   const index = lab.selected ?? 0;
   const base = {
     explorerId: index + 1,
@@ -1622,7 +1625,7 @@ const labPickedArmy = (lab: LabState): { army: PickedArmyView; lords: number } =
       stamina: { current: rested ? 140 : 14, max: 140, perExplore: 20 },
       secondsToFull: rested ? 0 : 4 * HOUR + 11 * 60,
     };
-    return { army, lords: lab.picked === "pay" ? 500 : 100 };
+    return { army, fragments: lab.picked === "pay" ? LAB_FRAGMENTS : 0 };
   }
   const army = lab.armies[index];
   const current = army.stamina ?? 0;
@@ -1633,7 +1636,7 @@ const labPickedArmy = (lab: LabState): { army: PickedArmyView; lords: number } =
       stamina: { current, max: 150, perExplore: LAB_EXPLORE },
       secondsToFull: (150 - current) * 60,
     },
-    lords: lab.purse?.lords ?? LAB_LORDS,
+    fragments: LAB_FRAGMENTS,
   };
 };
 
@@ -1647,17 +1650,13 @@ const OWNER_ARMY: ArmyView = {
   revealYield: 704,
 };
 
-/**
- * An army's panel on the fiction (the veteran, or the owner's Army 4), with its refill where the realm's LORDS are
- * given and its Delete after its name (on its status only), or the refill's confirm.
- */
 const LabArmy = ({ army }: { army: LabArmySheet }) => {
   const base = army.owner ? OWNER_ARMY : VETERAN_ARMY;
   const stamina = { ...base.stamina, current: army.stamina ?? base.stamina.current };
   const full = stamina.current >= stamina.max;
   const view = { ...base, stamina, ethereal: army.ethereal, ...(full ? { secondsToFull: 0 } : {}) };
   if (army.confirm)
-    return <RefillConfirm stamina={stamina} held={army.lords} sending={false} onRefill={noop} onCancel={noop} />;
+    return <RefillConfirm stamina={stamina} held={army.fragments} sending={false} onRefill={noop} onCancel={noop} />;
   return (
     <HudSheet
       label={base.name}
@@ -1667,8 +1666,8 @@ const LabArmy = ({ army }: { army: LabArmySheet }) => {
       <ArmyDetail
         army={view}
         refill={
-          army.lords === undefined || full ? undefined : (
-            <RefillPrice price={stamina.max - stamina.current} held={army.lords} onRefill={noop} />
+          army.fragments === undefined || full ? undefined : (
+            <RefillPrice price={fragmentsToFill(stamina)} held={army.fragments} onRefill={noop} />
           )
         }
       />
@@ -1830,6 +1829,7 @@ const FRONTIER_PRESET = 5;
 /** The lab realm's name and its LORDS where a state names none, as the desktop's realm panel reads them. */
 const LAB_REALM_NAME = "Duskbite";
 const LAB_LORDS = 320;
+const LAB_FRAGMENTS = 340;
 /** The fixture realm's population: what its buildings take of what its castle and Huts give. */
 const LAB_POPULATION = { used: 9, total: 18 };
 

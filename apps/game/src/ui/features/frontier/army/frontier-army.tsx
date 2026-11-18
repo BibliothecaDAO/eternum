@@ -8,6 +8,7 @@ import { useArmyRevealYield } from "../frontier-reveal-yield";
 import { useArmySpireStatus } from "../spire-card";
 import { type DockArmy, useDockArmies } from "../hud/dock-armies";
 import { ArmyDetail } from "./army-panel";
+import { ArmyRefill, sellsStamina } from "./army-refill";
 import { ArmyDeleteButton, ArmyDeleteConfirm } from "./army-delete";
 
 export const FrontierArmy = ({ realm, onClose }: { realm: NativeRows["Structure"]; onClose: () => void }) => {
@@ -27,7 +28,10 @@ const ArmyPanel = ({ army, onClose }: { army: DockArmy; onClose: () => void }) =
       beside={<ArmyDeleteButton army={army} onPress={() => setDeleting(true)} />}
       onClose={onClose}
     >
-      <ArmyDetail army={{ ...army, name: army.label, stamina: army.stamina, revealYield }} />
+      <ArmyDetail
+        army={{ ...army, name: army.label, stamina: army.stamina, revealYield }}
+        refill={sellsStamina(army) ? <ArmyRefill army={army} look="price" /> : undefined}
+      />
       <TroopOathSlots category={army.troopsFact.category} explorerId={army.explorerId} />
       <ArmyRelicSlots explorerId={army.explorerId} />
       {deleting && <ArmyDeleteConfirm army={army} onCancel={() => setDeleting(false)} onDeleted={onClose} />}

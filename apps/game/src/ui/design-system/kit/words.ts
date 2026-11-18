@@ -1227,6 +1227,7 @@ export const LEAVE = "Leave";
 /** Buying stamina points for LORDS. */
 export const REFILL = "Refill";
 export const REFILLING = "Refilling…";
+export const REFILL_FAILED = "The refill could not be bought.";
 
 /** LORDS leaving the game for the wallet linked to the account. */
 export const WITHDRAW = "Withdraw";

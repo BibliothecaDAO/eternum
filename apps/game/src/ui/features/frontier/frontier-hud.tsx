@@ -62,6 +62,7 @@ import { OfflineNotice } from "./hud/offline-notice";
 import { SceneFailureNotice } from "./hud/scene-failure-notice";
 import { NextOrderBar, OrderBar } from "./hud/order-bar";
 import { PickedArmy } from "./hud/picked-army";
+import { ArmyRefill, sellsStamina } from "./army/army-refill";
 import { useArmySpireStatus } from "./spire-card";
 import { DailyQuest } from "./day/daily-quest";
 import { OpeningProvider, usePartShown } from "./opening/opening-context";
@@ -447,7 +448,13 @@ const ActingArmy = ({ army, onOpenArmy }: { army: DockArmy; onOpenArmy: (explore
   return (
     <PickedArmy
       army={army}
-      refill={army.stamina && <StaminaReading stamina={army.stamina} />}
+      refill={
+        sellsStamina(army) ? (
+          <ArmyRefill army={army} look="reading" />
+        ) : (
+          army.stamina && <StaminaReading stamina={army.stamina} />
+        )
+      }
       spire={spire}
       onDetails={() => onOpenArmy(army.explorerId)}
     />
@@ -491,6 +498,7 @@ const PendingOrder = ({
       laborFits={
         labor?.limit === undefined || labor.amount === undefined ? undefined : Math.max(0, labor.limit - labor.amount)
       }
+      refill={sellsStamina(army) ? <ArmyRefill army={army} look="button" /> : undefined}
       onCancel={() => useUIStore.getState().updateEntityActionHoveredHex(null)}
       onGo={() => requestOrderAt(order.target)}
     />
