@@ -252,3 +252,76 @@ it("sends an administrative call at a given nonce without waiting, then waits on
   rpc.receipt.mockResolvedValueOnce({ block_number: 12, finality_status: "ACCEPTED_ON_L2", isReverted: () => true });
   await expect(operator.awaitClosed("0xdef")).rejects.toThrow("shard_invoke_reverted");
 });
+
+it("settles an ended game one batch at a time until it reads settled, and sends nothing for a settled game", async () => {
+  const batches = [3, 0];
+  let settled = false;
+  const game = () =>
+    response(abi, "game", {
+      name: 0,
+      preset_id: 7,
+      settled,
+      ready: true,
+      dev_mode_on: false,
+      start_settling_at: 0,
+      start_main_at: 0,
+      scheduled_end_at: 0,
+      end_at: 0,
+      end_grace_seconds: 0,
+      seed: 0,
+    });
+  const views = rpc.call.getMockImplementation()!;
+  rpc.call.mockImplementation(async (query) => (query.entrypoint === "game" ? game() : views(query)));
+  rpc.receipt.mockImplementation(async () => {
+    const remaining = batches.shift()!;
+    settled = remaining === 0;
+    return {
+      block_number: 11,
+      finality_status: "ACCEPTED_ON_L2",
+      isReverted: () => false,
+      events: [
+        {
+          from_address: "0x10",
+          ...gamesEvent("BatchProgress", { game_id: 7, actor: "0x20", tx_hash: "0xabc", remaining }),
+        },
+      ],
+    };
+  });
+  const operator = new ShardOperator({
+    chainId: "0x1",
+    rpcUrl: "https://shard.test",
+    gamesAddress: "0x10",
+    accountAddress: "0x20",
+    privateKey: "0x1",
+  });
+  await operator.settleGame(7);
+  expect(rpc.execute).toHaveBeenCalledTimes(2);
+  for (const [call] of rpc.execute.mock.calls)
+    expect(call.calldata.slice(4)).toEqual(
+      encodeNativeCommand(bindings.commandAbi, { kind: "MarkGameSettled", value: undefined }),
+    );
+  await operator.settleGame(7);
+  expect(rpc.execute).toHaveBeenCalledTimes(2);
+});
+
+it("refuses a settlement batch that reports nothing left while the game still reads unsettled", async () => {
+  rpc.receipt.mockResolvedValue({
+    block_number: 11,
+    finality_status: "ACCEPTED_ON_L2",
+    isReverted: () => false,
+    events: [
+      {
+        from_address: "0x10",
+        ...gamesEvent("BatchProgress", { game_id: 7, actor: "0x20", tx_hash: "0xabc", remaining: 0 }),
+      },
+    ],
+  });
+  const operator = new ShardOperator({
+    chainId: "0x1",
+    rpcUrl: "https://shard.test",
+    gamesAddress: "0x10",
+    accountAddress: "0x20",
+    privateKey: "0x1",
+  });
+  await expect(operator.settleGame(7)).rejects.toThrow("point_settlement_not_complete");
+});

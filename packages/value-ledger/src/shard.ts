@@ -89,6 +89,17 @@ export class ShardOperator {
   async playCommand(gameId: number, name: "MarkGameSettled" | "RecordBlitzResults") {
     return this.play(await this.pins(gameId), name, closedBlockReceipt);
   }
+  async settleGame(gameId: number) {
+    while (!(await this.view<{ settled: boolean }>("game", [gameId])).settled) {
+      const result = await this.playCommand(gameId, "MarkGameSettled");
+      const remaining = batchRemaining(result.events, this.target.gamesAddress, result.transactionHash, {
+        gameId,
+        missing: "reject",
+      });
+      if (!remaining && !(await this.view<{ settled: boolean }>("game", [gameId])).settled)
+        throw new Error("point_settlement_not_complete");
+    }
+  }
   /** The first nonce the chain has not taken from this account, counting pre-confirmed transactions. */
   async pendingNonce() {
     return BigInt(await this.provider.getNonceForAddress(this.target.accountAddress, "pre_confirmed"));

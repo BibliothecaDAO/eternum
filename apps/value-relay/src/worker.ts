@@ -37,6 +37,7 @@ import { handleLaborRequest } from "./labor-route";
 import { ShardReader, shardConnection } from "./shard-rpc";
 import { publishFrontierPools } from "./frontier-pools";
 import { awardFrontierPrizes } from "./frontier-prizes";
+import { settleEndedFrontierGames } from "./frontier-end";
 import { sweepFrontierLords, type FrontierSettlement, type PrincipalSweep } from "./frontier-sweep";
 import { settleFrontier } from "./frontier-settlement";
 import { frontierReceiptBindings } from "./frontier-binding";
@@ -428,7 +429,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       proofs,
     };
     let unavailable: unknown;
-    for (const publish of [publishFrontierPools, awardFrontierPrizes]) {
+    for (const publish of [publishFrontierPools, settleEndedFrontierGames, awardFrontierPrizes]) {
       try {
         await publish(target, shard.url, ledger);
       } catch (error) {
