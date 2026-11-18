@@ -262,7 +262,6 @@ const siteVerb = ({
   return { kind: "attack", ...attack };
 };
 
-/** The selected army's attack on this site, at the current clocks. */
 const useSiteAttack = (actor: ReturnType<typeof useSelectedOwnArmy>): SiteAttack | null => {
   const timestamp = useCurrentDefaultTick();
   return actor && { army: actor.army, timestamp };
