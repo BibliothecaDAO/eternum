@@ -445,7 +445,9 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   and **Play as <Order's name>**; kept on the account (`/api/order-intent`); a save that fails says so with **Try
   again**. With an Order kept, **You're in <Aspect>**, the Order, the day it opens and **Starts in …**, then **Free
   Ancient Seal?**: a code field and **Redeem** (`/api/seal-code`) hold one operator's code on the account (a taken,
-  expired or unknown code is refused in the field); once held, **Your Ancient Seal is held**. Operator codes:
+  expired or unknown code is refused in the field); once held, **Your Ancient Seal is held**. Under it **Bring friends**
+  and, in the foot, **Copy invite link**: the account's link to its Aspect for the coming season (`/api/shares` with no
+  game), which a friend's first visit ties to the account they make. Operator codes:
   `pnpm --dir apps/realms seal-codes <label> <count> <out> [last day]` (clear codes in `codes.txt`, hashes in
   `codes.sql`). Lab: `/lab/app/preseason` (signed out), `/lab/app/preseason-member` (the pick),
   `/lab/app/preseason-chosen` (kept; code SEAL2345 redeems) and `/lab/app/preseason-sealed` (code held); proof:

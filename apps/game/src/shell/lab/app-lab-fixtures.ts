@@ -578,6 +578,7 @@ export const labOrderIntent = (screen: LabScreen) => ({
   members: LAB_ORDER_MEMBERS,
 });
 export const LAB_SEAL_CODE = "SEAL2345";
+export const LAB_SHARE_CODE = "MRGHT234";
 export const labSealCode = (screen: LabScreen) => ({ held: screen === "preseason-sealed" });
 
 const SEASON_ONE_PHASE = (at: (minutes: number) => string) => ({

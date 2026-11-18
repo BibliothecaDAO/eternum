@@ -12,13 +12,9 @@ export type AspectMembers = Readonly<Record<AspectId, number>> | null;
 /** The Aspect a friend's link invited the account to, and who sent it (null when the sender has no name yet). */
 export type AspectOffer = { aspect: AspectId; sender: string | null };
 
-/**
- * The offer the account's joined link makes at this game's founding: an Aspect invite made for this very chain and game,
- * else none. The link's Aspect is read through the catalog, so one outside it is a fault, not a blank card.
- */
 export const aspectOffer = (joined: JoinedShare, game: { chainId: string; gameId: number }): AspectOffer | null => {
   if (joined === null || joined.kind !== "aspect") return null;
-  if (joined.chainId !== game.chainId || joined.gameId !== game.gameId) return null;
+  if (joined.chainId !== null && (joined.chainId !== game.chainId || joined.gameId !== game.gameId)) return null;
   return { aspect: catalogAspectId(joined.moment), sender: joined.name };
 };
 

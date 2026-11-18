@@ -65,6 +65,7 @@ import {
   labOrderIntent,
   labSealCode,
   LAB_SEAL_CODE,
+  LAB_SHARE_CODE,
   labSlots,
   type LabScreen,
 } from "./app-lab-fixtures";
@@ -304,6 +305,7 @@ const answerIdentity = (screen: LabScreen) => {
     intent = { ...intent, order };
     return intent;
   };
+  identityClient.createShare = async () => LAB_SHARE_CODE;
   let sealCode = labSealCode(screen);
   identityClient.getSealCode = async () => sealCode;
   identityClient.redeemSealCode = async (code) => {

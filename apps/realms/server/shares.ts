@@ -7,6 +7,7 @@ import { keepBrowser } from "./browsers";
 import { readCampaignCode } from "./campaigns";
 import { accountKey } from "./campaign-entry";
 import { json } from "./http";
+import { intendedAspect } from "./order-intent";
 import { createShareStore } from "./share-store";
 import type { PendingJoin } from "./share-store";
 
@@ -46,7 +47,10 @@ export async function handleCreateShare(request: Request, auth: IdentityAuth, wo
 const inviteRefusal = async (world: ShareWorld, sharer: string, moment: ShareMoment): Promise<Response | null> => {
   let aspect: AspectId | null;
   try {
-    aspect = await world.aspectOf(moment, await world.accountOf(sharer));
+    aspect =
+      moment.chainId === null
+        ? await intendedAspect(world.db, sharer)
+        : await world.aspectOf(moment, await world.accountOf(sharer));
   } catch {
     return json({ error: "aspect_unavailable" }, 503);
   }
@@ -167,8 +171,9 @@ const joinsByGame = (joins: readonly PendingJoin[]) => {
 const readShareMoment = (body: unknown): ShareMoment | null => {
   if (!body || typeof body !== "object") return null;
   const { kind, chainId, gameId, moment } = body as Record<string, unknown>;
-  if (!isShareKind(kind) || !isWholeBetween(gameId, 0, Number.MAX_SAFE_INTEGER) || !isMomentOf(kind, moment))
-    return null;
+  if (!isShareKind(kind) || !isMomentOf(kind, moment)) return null;
+  if (kind === "aspect" && chainId === null && gameId === null) return { kind, chainId, gameId, moment };
+  if (!isWholeBetween(gameId, 0, Number.MAX_SAFE_INTEGER)) return null;
   const chain = chainSpelling(chainId);
   return chain ? { kind, chainId: chain, gameId, moment } : null;
 };

@@ -164,6 +164,13 @@ describe("aspectOffer", () => {
     expect(aspectOffer({ ...link, name: null }, GAME)).toEqual({ aspect: 2, sender: null });
   });
 
+  it("offers the Aspect of an invite made before the season, in whichever game founds the home", () => {
+    expect(aspectOffer({ kind: "aspect", chainId: null, gameId: null, moment: 3, name: "Dana" }, GAME)).toEqual({
+      aspect: 3,
+      sender: "Dana",
+    });
+  });
+
   it("offers nothing for another game, another chain, another kind of link or none", () => {
     expect(aspectOffer({ ...link, gameId: 9 }, GAME)).toBeNull();
     expect(aspectOffer({ ...link, chainId: "0x1" }, GAME)).toBeNull();

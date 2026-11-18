@@ -43,6 +43,7 @@ const reads = vi.hoisted(() => ({
   chosen: [] as number[],
   sealHeld: false,
   redeemed: [] as string[],
+  shared: [] as unknown[],
 }));
 
 vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
@@ -54,6 +55,10 @@ vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
       reads.chosen.push(order);
       reads.intent = { order, members: { ...reads.intent.members, [order]: (reads.intent.members[order] ?? 0) + 1 } };
       return reads.intent;
+    },
+    createShare: async (moment: unknown) => {
+      reads.shared.push(moment);
+      return "MRGHT234";
     },
     getSealCode: async () => ({ held: reads.sealHeld }),
     redeemSealCode: async (code: string) => {
@@ -194,6 +199,7 @@ afterEach(async () => {
   reads.chosen = [];
   reads.sealHeld = false;
   reads.redeemed = [];
+  reads.shared = [];
   useBuildOrderStore.setState({ owner: null, status: "signed-out", book: null, revision: 0, notice: null });
 });
 
@@ -579,6 +585,29 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(card()?.getAttribute("data-seal-code")).toBe("held");
     expect(card()?.textContent).toBe("Your Ancient Seal is heldIt is yours when the season opens.");
     expect(card()?.querySelector("input")).toBeNull();
+  });
+
+  it("hands an account that kept its Order a link inviting friends to its Aspect for the coming season", async () => {
+    reads.directory = answered({ games: [] });
+    reads.calendar = answered(seasonOne(startsAt));
+    reads.intent = { order: ordersOfAspect(1)[0]!.orderId, members: {} };
+    quietPlay();
+    const written: string[] = [];
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: async (text: string) => void written.push(text) },
+    });
+    const page = await mount();
+    await settle();
+    await settle();
+    expect(reads.shared).toEqual([{ kind: "aspect", chainId: null, gameId: null, moment: 1 }]);
+    expect(page.container.querySelector("[data-season-invite]")?.textContent).toBe(
+      "Bring friendsCopy your Might link. A friend who opens it starts in Might.",
+    );
+    await press(page.container, "Copy invite link");
+    await settle();
+    expect(written).toEqual([`${window.location.origin}/s/MRGHT234?via=system`]);
+    expect(page.text()).toContain("Link copied");
   });
 
   it("says a choice that was not kept did not go through, and keeps it on Try again", async () => {

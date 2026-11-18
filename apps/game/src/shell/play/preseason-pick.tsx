@@ -24,6 +24,7 @@ import { ASPECT_STEP_WORDS, PRESEASON_WORDS } from "@/ui/design-system/kit/words
 import { StageFrame } from "../frame/stage-frame";
 import { Loading } from "../loading";
 import { SealCodeCard } from "./seal-code-card";
+import { CopySeasonInvite, SeasonInviteCard, useSeasonInvite } from "./season-invite";
 import type { SeasonOpening } from "../season";
 
 const orderIntentKey = (owner: string | null) => ["orderIntent", owner] as const;
@@ -213,10 +214,10 @@ const SeasonWaiting = ({
   opening: SeasonOpening;
   now: number;
 }) => {
-  const chosen = orders.find(({ orderId }) => orderId === order);
-  if (!chosen?.aspect) throw new Error(`No Aspect's Order ${order}`);
+  const chosen = aspectOrder(order);
+  const invite = useSeasonInvite(chosen.aspect);
   return (
-    <StageFrame>
+    <StageFrame verb={<CopySeasonInvite invite={invite} />}>
       <div data-preseason-step="waiting" className="flex w-full flex-col items-center gap-4">
         <span className="grid grid-cols-2 gap-2">
           {ordersOfAspect(chosen.aspect).map(({ orderId }) => (
@@ -229,7 +230,14 @@ const SeasonWaiting = ({
         </p>
         <AppCountdownChip prefix="starts" at={opening.startsAt} now={now} />
         <SealCodeCard owner={owner} />
+        <SeasonInviteCard invite={invite} />
       </div>
     </StageFrame>
   );
+};
+
+const aspectOrder = (order: number) => {
+  const chosen = orders.find(({ orderId }) => orderId === order);
+  if (!chosen?.aspect) throw new Error(`No Aspect's Order ${order}`);
+  return { ...chosen, aspect: chosen.aspect };
 };

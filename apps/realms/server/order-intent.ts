@@ -1,4 +1,4 @@
-import { orders } from "@bibliothecadao/types";
+import { orders, ordersOfAspect, type AspectId } from "@bibliothecadao/types";
 import { Data, Effect } from "effect";
 
 import type { IdentityAuth } from "./auth";
@@ -34,7 +34,8 @@ function serveOrderIntent(request: Request, auth: IdentityAuth, db: D1Database) 
     });
     if (order === null) return json({ error: "invalid_order" }, 400);
     yield* chooseOrder(db, owner, order);
-    return json(yield* readIntent(db, owner));
+    const intent = yield* readIntent(db, owner);
+    return intent.order === order ? json(intent) : json({ error: "aspect_chosen" }, 409);
   });
 }
 
@@ -66,12 +67,26 @@ const chooseOrder = (db: D1Database, owner: string, order: number) =>
     try: () =>
       db
         .prepare(
-          'INSERT INTO "order_intents" ("owner", "order", "chosen_at") VALUES (?, ?, ?) ON CONFLICT ("owner") DO UPDATE SET "order" = excluded."order", "chosen_at" = excluded."chosen_at"',
+          `INSERT INTO "order_intents" ("owner", "order", "chosen_at") VALUES (?, ?, ?) ON CONFLICT ("owner") DO UPDATE SET "order" = excluded."order", "chosen_at" = excluded."chosen_at" WHERE "order_intents"."order" IN (SELECT value FROM json_each(?))`,
         )
-        .bind(owner, order, Date.now())
+        .bind(owner, order, Date.now(), JSON.stringify(sameAspectOrders(order)))
         .run(),
     catch: () => new OrderIntentError({ code: "order_intent_unavailable", status: 503 }),
   });
+
+const sameAspectOrders = (order: number) => {
+  const aspect = orders.find(({ orderId }) => orderId === order)?.aspect;
+  if (!aspect) throw new Error(`Order ${order} plays for no Aspect`);
+  return ordersOfAspect(aspect).map(({ orderId }) => orderId);
+};
+
+export const intendedAspect = async (db: D1Database, owner: string): Promise<AspectId | null> => {
+  const chosen = await db
+    .prepare('SELECT "order" FROM "order_intents" WHERE "owner" = ?')
+    .bind(owner)
+    .first<{ order: number }>();
+  return orders.find(({ orderId }) => orderId === chosen?.order)?.aspect ?? null;
+};
 
 class OrderIntentError extends Data.TaggedError("OrderIntentError")<{
   readonly code: string;

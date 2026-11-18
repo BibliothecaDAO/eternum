@@ -445,6 +445,11 @@ export const PRESEASON_WORDS = {
   youreIn: (aspect: string) => `You're in ${aspect}`,
   waiting: (order: string, date: string) => `${order} · opens ${date}`,
 } as const;
+export const SEASON_INVITE_WORDS = {
+  title: "Bring friends",
+  line: (aspect: string) => `Copy your ${aspect} link. A friend who opens it starts in ${aspect}.`,
+  copy: "Copy invite link",
+} as const;
 export const SEAL_CODE_WORDS = {
   title: `Free ${ANCIENT_SEAL}?`,
   line: "Quest bonus and a Realm skin. One code, one account.",

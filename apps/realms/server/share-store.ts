@@ -21,8 +21,8 @@ export interface PendingJoin {
 /** One moment's row of the operator's report: what its links did, from made to activated. */
 export interface MomentReport extends ShareTally {
   kind: ShareKind;
-  chainId: string;
-  gameId: number;
+  chainId: string | null;
+  gameId: number | null;
   moment: number;
 }
 
@@ -66,7 +66,7 @@ export function createShareStore(db: D1Database) {
     db
       .prepare(
         `SELECT "code" FROM "share_links"
-         WHERE "sharer" = ? AND "kind" = ? AND "chain_id" = ? AND "game_id" = ? AND "moment" = ?`,
+         WHERE "sharer" = ? AND "kind" = ? AND "chain_id" IS ? AND "game_id" IS ? AND "moment" = ?`,
       )
       .bind(sharer, kind, chainId, gameId, moment)
       .first<{ code: string }>();
@@ -123,15 +123,7 @@ export function createShareStore(db: D1Database) {
          JOIN "user" u ON u."realmsId" = l."sharer" WHERE j."friend" = ?`,
       )
       .bind(friend)
-      .first<{
-        kind: ShareKind;
-        chainId: string;
-        gameId: number;
-        moment: number;
-        id: string;
-        name: string;
-        image: string | null;
-      }>()
+      .first<ShareMoment & { id: string; name: string; image: string | null }>()
       .then((row) =>
         row
           ? {
@@ -181,7 +173,7 @@ export function createShareStore(db: D1Database) {
         .prepare(
           `SELECT j."friend", l."chain_id" AS "chainId", l."game_id" AS "gameId"
            FROM "share_joins" j JOIN "share_links" l ON l."code" = j."code"
-           WHERE j."activated_at" IS NULL AND (?1 IS NULL OR l."sharer" = ?1)`,
+           WHERE j."activated_at" IS NULL AND l."chain_id" IS NOT NULL AND (?1 IS NULL OR l."sharer" = ?1)`,
         )
         .bind(sharer ?? null)
         .all<PendingJoin>()

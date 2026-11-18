@@ -194,12 +194,9 @@ export type CampaignReferral = typeof campaignReferralSchema.Type;
  * A moment a player shares, as its link records it: its kind, the game it was played in, and which one (the day, or
  * the Aspect an invite names).
  */
-export interface ShareMoment {
-  kind: ShareKind;
-  chainId: string;
-  gameId: number;
-  moment: number;
-}
+export type ShareMoment =
+  | { kind: ShareKind; chainId: string; gameId: number; moment: number }
+  | { kind: "aspect"; chainId: null; gameId: null; moment: number };
 /** A shared link as a friend who opened it sees it: what it shares and who shared it (null: no public name). */
 const openedShareSchema = Schema.Struct({
   kind: Schema.Literals(SHARE_KINDS),
@@ -209,13 +206,22 @@ const openedShareSchema = Schema.Struct({
 export type OpenedShare = typeof openedShareSchema.Type;
 /** The link a new account came by, as that account reads it: its kind, its game and its moment; null for none. */
 const joinedShareSchema = Schema.NullOr(
-  Schema.Struct({
-    kind: Schema.Literals(SHARE_KINDS),
-    chainId: Schema.String,
-    gameId: Schema.Number,
-    moment: Schema.Number,
-    name: Schema.NullOr(Schema.String),
-  }),
+  Schema.Union([
+    Schema.Struct({
+      kind: Schema.Literals(SHARE_KINDS),
+      chainId: Schema.String,
+      gameId: Schema.Number,
+      moment: Schema.Number,
+      name: Schema.NullOr(Schema.String),
+    }),
+    Schema.Struct({
+      kind: Schema.Literal("aspect"),
+      chainId: Schema.Null,
+      gameId: Schema.Null,
+      moment: Schema.Number,
+      name: Schema.NullOr(Schema.String),
+    }),
+  ]),
 );
 export type JoinedShare = typeof joinedShareSchema.Type;
 /**

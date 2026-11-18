@@ -37,6 +37,7 @@ import { ORIGIN } from "./workerd-harness";
 import { createTestD1 } from "./test-d1";
 import { sendCampaign, stillFits, visitRecord } from "../scripts/comeback-campaign";
 import { sealCodeFiles } from "../scripts/seal-codes";
+import { aspects, orders } from "@bibliothecadao/types";
 
 /**
  * Holds this test's clock an hour short of the Devcon close (2026-11-06 18:00Z), so a campaign test keeps testing the
@@ -1086,7 +1087,12 @@ describe("identity Worker", () => {
         }),
         env,
         auth,
-        { cache: noCache, fetchPage, fetchShard, readLaunchDirectory: async () => launchDirectory },
+        {
+          cache: noCache,
+          fetchPage,
+          fetchShard,
+          readLaunchDirectory: async () => launchDirectory,
+        },
       );
       expect(posted.status).toBe(302);
       const followed = new URL(posted.headers.get("location")!);
@@ -1416,7 +1422,7 @@ describe("identity Worker", () => {
     expect((await createBrowser().request("/api/opening")).status).toBe(401);
   });
 
-  it("keeps each account's Order for the coming season, changed by choosing again, and counts every Order's members", async () => {
+  it("keeps each account's Order for the coming season, changed only to another Order of its Aspect, and counts every Order's members", async () => {
     const first = createBrowser();
     await signInWithCode(first, "order-one@realms.test");
     const second = createBrowser();
@@ -1426,8 +1432,10 @@ describe("identity Worker", () => {
     expect(await (await first.request("/api/order-intent")).json()).toEqual({ order: null, members: {} });
     expect(await (await choose(first, { order: 4 })).json()).toEqual({ order: 4, members: { 4: 1 } });
     expect(await (await choose(second, { order: 4 })).json()).toEqual({ order: 4, members: { 4: 2 } });
-    expect(await (await choose(first, { order: 16 })).json()).toEqual({ order: 16, members: { 4: 1, 16: 1 } });
-    expect(await (await second.request("/api/order-intent")).json()).toEqual({ order: 4, members: { 4: 1, 16: 1 } });
+    expect(await (await choose(first, { order: 5 })).json()).toEqual({ order: 5, members: { 4: 1, 5: 1 } });
+    const otherAspect = await choose(first, { order: 16 });
+    expect([otherAspect.status, await otherAspect.json()]).toEqual([409, { error: "aspect_chosen" }]);
+    expect(await (await second.request("/api/order-intent")).json()).toEqual({ order: 4, members: { 4: 1, 5: 1 } });
     expect((await choose(first, { order: 17 })).status).toBe(400);
     expect((await choose(first, { order: 0 })).status).toBe(400);
     expect((await choose(first, { order: "4" })).status).toBe(400);
@@ -3086,6 +3094,64 @@ describe("identity Worker", () => {
     }
   });
 
+  it("keeps every shared link, visit and join through 0052, and then lets an Aspect invite, and only one, name no game", async () => {
+    const fresh = createTestD1();
+    try {
+      await applyPendingMigrations(fresh.db, "0051_seal_codes.sql");
+      const user = (id: string, realmsId: string) =>
+        fresh.db
+          .prepare(
+            `INSERT INTO "user" ("id", "name", "email", "emailVerified", "createdAt", "updatedAt", "realmsId") VALUES (?1, ?1, ?1 || '@realms.test', 1, 1, 1, ?2)`,
+          )
+          .bind(id, realmsId);
+      await fresh.db.batch([
+        user("sharer", "0x1"),
+        user("friend", "0x2"),
+        fresh.db.prepare(
+          `INSERT INTO "share_links" ("code", "sharer", "kind", "chain_id", "game_id", "moment", "created_at", "posted_at") VALUES ('DAYL1NK2', '0x1', 'frontier-day', '0x5', 7, 3, 10, 11)`,
+        ),
+        fresh.db.prepare(
+          `INSERT INTO "share_visits" ("code", "browser", "at", "via") VALUES ('DAYL1NK2', 'browser-1', '2026-11-01T00:00:00.000Z', 'x')`,
+        ),
+        fresh.db.prepare(`INSERT INTO "share_joins" ("friend", "code", "joined_at") VALUES ('0x2', 'DAYL1NK2', 12)`),
+      ]);
+
+      expect(await applyPendingMigrations(fresh.db, "0052_season_invites.sql")).toEqual(["0052_season_invites.sql"]);
+      expect((await fresh.db.prepare(`SELECT * FROM "share_links"`).all()).results).toEqual([
+        {
+          code: "DAYL1NK2",
+          sharer: "0x1",
+          kind: "frontier-day",
+          chain_id: "0x5",
+          game_id: 7,
+          moment: 3,
+          created_at: 10,
+          posted_at: 11,
+        },
+      ]);
+      expect((await fresh.db.prepare(`SELECT * FROM "share_visits"`).all()).results).toEqual([
+        { code: "DAYL1NK2", browser: "browser-1", at: "2026-11-01T00:00:00.000Z", via: "x" },
+      ]);
+      expect((await fresh.db.prepare(`SELECT * FROM "share_joins"`).all()).results).toEqual([
+        { friend: "0x2", code: "DAYL1NK2", joined_at: 12, activated_at: null },
+      ]);
+
+      const link = (code: string, kind: string, chainId: string | null, gameId: number | null) =>
+        fresh.db
+          .prepare(
+            `INSERT INTO "share_links" ("code", "sharer", "kind", "chain_id", "game_id", "moment", "created_at") VALUES (?, '0x1', ?, ?, ?, 1, 20)`,
+          )
+          .bind(code, kind, chainId, gameId)
+          .run();
+      await link("SEASON22", "aspect", null, null);
+      await expect(link("SEASON33", "aspect", null, null)).rejects.toThrow(/UNIQUE/);
+      await expect(link("SEASON44", "frontier-day", null, null)).rejects.toThrow(/CHECK/);
+      await expect(link("SEASON55", "aspect", "0x5", null)).rejects.toThrow(/CHECK/);
+    } finally {
+      await fresh.close();
+    }
+  });
+
   it("leaves 0031 nothing to change where the corrected 0030 ran, on a database brought up fresh, and again on a repeat", async () => {
     const fresh = createTestD1();
     try {
@@ -4300,6 +4366,40 @@ describe("shared links", () => {
       503,
       { error: "aspect_unavailable" },
     ]);
+  });
+
+  it("invites to the coming season before any game, to the Aspect of the Order the sharer chose, and records the friend who came by it as joined", async () => {
+    const sharer = await player("season-inviter");
+    await env.DB.prepare(`UPDATE "user" SET "name" = 'Dana' WHERE "realmsId" = ?`).bind(sharer.realmsId).run();
+    const seasonInvite = (body: Record<string, unknown>) =>
+      sharer.browser.request("/api/shares", { body: { kind: "aspect", chainId: null, gameId: null, ...body } });
+    const titans = orders.find(({ fullOrderName }) => fullOrderName === "Order of Titans")!;
+
+    expect((await seasonInvite({ moment: titans.aspect })).status).toBe(403);
+    await sharer.browser.request("/api/order-intent", { body: { order: titans.orderId } });
+    const made = await seasonInvite({ moment: titans.aspect });
+    expect(made.status).toBe(200);
+    const code = ((await made.json()) as { code: string }).code;
+    expect(((await (await seasonInvite({ moment: titans.aspect })).json()) as { code: string }).code).toBe(code);
+    const another = aspects.find(({ id }) => id !== titans.aspect)!.id;
+    expect([
+      (await seasonInvite({ moment: another })).status,
+      await (await seasonInvite({ moment: another })).json(),
+    ]).toEqual([403, { error: "not_in_aspect" }]);
+    expect((await seasonInvite({ kind: "frontier-day", moment: 1 })).status).toBe(400);
+    expect((await seasonInvite({ gameId, moment: titans.aspect })).status).toBe(400);
+
+    const friendBrowser = createBrowser();
+    expect(await visit(friendBrowser, code)).toEqual([200, { kind: "aspect", moment: titans.aspect, name: "Dana" }]);
+    const friend = await player("season-invited", friendBrowser);
+    expect(await (await friend.browser.request("/api/shares/joined")).json()).toEqual({
+      kind: "aspect",
+      chainId: null,
+      gameId: null,
+      moment: titans.aspect,
+      name: "Dana",
+    });
+    expect(await sharer.tally()).toEqual({ links: 1, posted: 0, visits: 1, joined: 1, activated: 0 });
   });
 
   it("tells a new account the invite it came by, and nothing to an account no link brought", async () => {
