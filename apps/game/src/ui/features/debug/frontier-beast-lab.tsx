@@ -18,6 +18,7 @@ import {
   frontierBeast,
   frontierSiteComposition,
   FALLEN_REALM_RUIN_PATH,
+  largestBeastScale,
 } from "@/three/structures/frontier-beast";
 import { CAMP_MODEL_PATH } from "@/three/constants/scene-constants";
 import { Token } from "@/three/map-plates/map-plate-token";
@@ -38,9 +39,7 @@ import "@/three/map-plates/map-plates.css";
 const MODEL_BEASTS = Object.keys(FRONTIER_BEASTS).map((beast) => ({ beast: beast as keyof typeof FRONTIER_BEASTS }));
 const MODELS: readonly LineupAsset[] = MODEL_BEASTS.map(({ beast }) => ({
   label: beastOfModel(beast).name,
-  parts: [
-    { path: FRONTIER_BEASTS[beast].path, scale: FRONTIER_BEASTS[beast].maxScale, idle: beastOfModel(beast).idle },
-  ],
+  parts: [{ path: FRONTIER_BEASTS[beast].path, scale: largestBeastScale(beast), idle: beastOfModel(beast).idle }],
 }));
 const SITES = [
   { kind: "Camp", category: StructureType.Camp, base: CAMP_MODEL_PATH },

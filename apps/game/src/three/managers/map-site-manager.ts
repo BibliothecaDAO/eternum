@@ -1,7 +1,7 @@
 import { DEEP_SITE_FACES } from "@/ui/features/frontier/deep/deep-site-faces";
 import { DEEP_WORDS } from "@/ui/design-system/kit/words";
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { configManager, getBlockTimestamp } from "@bibliothecadao/eternum";
+import { configManager, readDefaultTick } from "@bibliothecadao/eternum";
 import {
   readDeepBeastTroops,
   readDeepRingOpening,
@@ -297,22 +297,18 @@ export class MapSiteManager {
   }
 
   private beastGuards(entityId: number): boolean {
-    const troops = readDeepBeastTroops(
-      this.store,
-      getBlockTimestamp().currentDefaultTick,
-      BigInt(entityId),
-      configManager.getActiveGameId(),
-    );
+    const now = readDefaultTick();
+    if (now === undefined) return false;
+    const troops = readDeepBeastTroops(this.store, now, BigInt(entityId), configManager.getActiveGameId());
     return (troops ?? 0n) > 0n;
   }
 
   private closedOrOpenLook(entityId: number, icon: IconMeaning): { icon: IconMeaning; reward?: string } {
-    const opening = readDeepRingOpening(
-      this.store,
-      getBlockTimestamp().currentDefaultTick,
-      BigInt(entityId),
-      configManager.getActiveGameId(),
-    );
+    const now = readDefaultTick();
+    const opening =
+      now === undefined
+        ? undefined
+        : readDeepRingOpening(this.store, now, BigInt(entityId), configManager.getActiveGameId());
     if (opening === undefined || !("known" in opening) || opening.known.open) return { icon };
     return { icon: "lock", reward: DEEP_WORDS.opensAt(opening.known.realms) };
   }

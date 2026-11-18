@@ -186,6 +186,7 @@ describe("the shared Deep", () => {
     ];
     rows.DeepSite = [{ game_id: 7, entity_id: 24n, kind: 0, ring: 1, day: 0n }];
     rows.Guard = [{ game_id: 7, structure_id: 24n, slot: 0, troops: { count: 10n * precision } }];
+    rows.TileOccupancy!.push({ game_id: 7, entity_id: 24n, col: 505, row: 3584, alt: false });
     rows.DeepEntries = [{ game_id: 7, day: 0n, count: 12 }];
     expect(readDeepRingOpening(store, 420, 24n, 7)).toEqual({ known: { open: false, realms: 30 } });
     const arriving = { ...store, requireOrAbsent: () => ({ unknown: "INCOMPLETE_SNAPSHOT: DeepEntries" }) };

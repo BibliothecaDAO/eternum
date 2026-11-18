@@ -1,7 +1,7 @@
 import { Scene, Group, Mesh, BoxGeometry, MeshBasicMaterial } from "three";
 import { describe, expect, it, vi } from "vitest";
 
-const { load, models, mode, foundations, beasts, beastTroops, openings } = vi.hoisted(() => ({
+const { load, models, mode, foundations, beasts, beastTroops, openings, clock, publish } = vi.hoisted(() => ({
   mode: { id: "frontier" },
   load: vi.fn(),
   models: [] as Array<{ name: string; count: number; setCount: (count: number) => void }>,
@@ -9,6 +9,13 @@ const { load, models, mode, foundations, beasts, beastTroops, openings } = vi.ho
   beasts: [] as Array<{ species: string; count: number; scales: number[]; idles: unknown[] }>,
   beastTroops: new Map<number, bigint>(),
   openings: new Map<number, unknown>(),
+  clock: { tick: 0 as number | undefined },
+  publish: vi.fn(),
+}));
+vi.mock("@/observability/map-selection", () => ({ publishMapSelection: publish }));
+vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
+  readDefaultTick: () => clock.tick,
 }));
 vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum/game-client")>()),
@@ -176,10 +183,9 @@ describe("the Deep's sites on the map", () => {
     expect(models.map(({ name }) => name)).toEqual(["Essence core"]);
     const altarPlate = plates.setLabel.mock.calls.findLast(([plate]) => plate.entityId === altar)![0];
     expect(altarPlate.position.y).toBeCloseTo(DEEP_BEASTS.altar.scale + PLATE_CLEARANCE);
-    const published = () =>
-      (window as unknown as { __eternumMapSelection: { drawnSites: object; siteHexes: object } }).__eternumMapSelection;
-    expect(published().drawnSites).toMatchObject({ "deep:altar": 1, "deep:core": 1 });
-    expect(published().siteHexes).toMatchObject({ "deep:altar": { col: altar, row: 0 } });
+    const published = publish.mock.lastCall![0];
+    expect(published.drawnSites).toMatchObject({ "deep:altar": 1, "deep:core": 1 });
+    expect(published.siteHexes).toMatchObject({ "deep:altar": { col: altar, row: 0 } });
     beastTroops.set(altar, 0n);
     for (const listener of listeners)
       listener([{ model: "Guard", key: "altar", current: { structure_id: BigInt(altar) } }]);
@@ -217,6 +223,41 @@ describe("the Deep's sites on the map", () => {
     expect(look(10)).toEqual({ icon: "lock", reward: "Opens at 30 Realms today" });
     expect(look(11)).toEqual({ icon: DEEP_SITE_FACES.core.icon, reward: undefined });
     expect(look(12)).toEqual({ icon: DEEP_SITE_FACES.mine.icon, reward: undefined });
+    manager.destroy();
+  });
+
+  it("draws every site's building with its kind's look, and no beast, while chain time is not known yet", async () => {
+    mode.id = "frontier";
+    models.length = 0;
+    beasts.length = 0;
+    load.mockReset();
+    load.mockImplementation(async (path: string) => ({
+      path,
+      scene: new Mesh(new BoxGeometry(1, 2, 1), new MeshBasicMaterial()),
+    }));
+    clock.tick = undefined;
+    beastTroops.clear();
+    openings.clear();
+    deepSites.forEach((_, index) => {
+      beastTroops.set(10 + index, 5_000n);
+      openings.set(10 + index, { known: { open: false, realms: 30 } });
+    });
+    const tiles = deepSites.map((_, index) => tile(10 + index, TileOccupier.DeepSite));
+    const projection = { getTiles: () => tiles, subscribeTiles: () => () => {} };
+    const plates = { setLabel: vi.fn(), retainOnly: vi.fn(), dispose: vi.fn(), setHover: vi.fn(), clearHover: vi.fn() };
+    const site = (key: { entity_id: number }) => ({ kind: deepSites[key.entity_id - 10]!.id });
+    const store = {
+      get: (model: string, key: { entity_id: number }) => (model === "DeepSite" ? site(key) : undefined),
+      require: (_model: string, key: { entity_id: number }) => site(key),
+      subscribe: () => () => {},
+    };
+    const manager = new MapSiteManager(new Scene(), projection as never, store as never, plates as never);
+    await vi.waitFor(() =>
+      expect(models.map(({ name }) => name).toSorted()).toEqual(["Bane altar", "Essence core", "Ethereal mine"]),
+    );
+    expect(beasts).toEqual([]);
+    expect(plates.setLabel.mock.calls.map(([plate]) => plate.plate.icon)).not.toContain("lock");
+    clock.tick = 0;
     manager.destroy();
   });
 });
