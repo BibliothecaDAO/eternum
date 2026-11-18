@@ -2,7 +2,7 @@ import { siteGuardTroops } from "../../../../../../realms/server/fixtures/shard-
 import { expect, it } from "vitest";
 import { deepScenario } from "@/lab/game/deep-scenario";
 import { planDeepRingOpenings, planDeepSiteWatches } from "../../../../../../realms/server/deep-site-watch";
-import { RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, deepSites } from "@bibliothecadao/types";
 import { nativeRuleConstants, type NativeModelName, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
 function fixture(guardCounts = [siteGuardTroops(1)]) {
@@ -235,5 +235,5 @@ it("ignores a closed ring, then keeps one watch per kind and announces the ring 
   expect(open[0]).toMatchObject({ kind: nativeRuleConstants.DEEP_MINE, dueAt: f.startsAt * 1000 });
   expect(open[0]!.siteId).not.toBe(guarded[0]!.siteId);
   const pay = f.store.require("DeepRules", { game_id: 1 }).building_pay.pair;
-  expect(f.rings()).toEqual([expect.objectContaining({ ring: 1, day: 0, pay })]);
+  expect(f.rings()).toEqual([expect.objectContaining({ ring: 1, day: 0, pay, sites: deepSites.length })]);
 });

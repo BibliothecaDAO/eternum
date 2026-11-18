@@ -44,6 +44,7 @@ it("says which ring opened, what a held building now pays, and opens that ring o
     chainId: "0xa",
     gameId: 1,
     ring: 1,
+    sites: 4,
     pay: 3,
     col: 8,
     row: -8,
@@ -54,7 +55,7 @@ it("says which ring opened, what a held building now pays, and opens that ring o
   };
   const alert = buildRingOpenNotification(input)!;
   expect(alert.title).toBe("Ring 2 of the Deep has opened");
-  expect(alert.body).toBe("Four more sites can be taken today. A held building now pays 3 a tick.");
+  expect(alert.body).toBe("4 more sites can be taken today. A held building now pays 3 a tick.");
   expect(alert.target).toBe("/g/0xa/1/map?col=8&row=-8");
   expect(alert.kind).toBe("site-vulnerable");
   expect(buildRingOpenNotification({ ...input, now: 2000 })!.id).toBe(alert.id);

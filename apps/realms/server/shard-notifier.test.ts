@@ -23,6 +23,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import recordedPages from "./fixtures/staging-story-pages.json";
 import { realmsIdOf } from "./realms-id";
+import { deepSites } from "@bibliothecadao/types";
 import {
   apnsKey,
   buildWorkerBundle,
@@ -558,7 +559,7 @@ describe.concurrent("shard notifications", () => {
     await worker.runCron();
     await waitUntil(() => push.received.length === 1, 20000);
     expect(await push.words()).toEqual([
-      "Ring 2 of the Deep has opened / Four more sites can be taken today. A held building now pays 3 a tick.",
+      `Ring 2 of the Deep has opened / ${deepSites.length} more sites can be taken today. A held building now pays 3 a tick.`,
     ]);
     herald.siteChanged();
     await pause(polls(2));

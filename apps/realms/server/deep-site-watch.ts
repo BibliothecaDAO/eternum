@@ -30,6 +30,7 @@ export interface DeepRingOpening {
   owner: string;
   ring: number;
   day: number;
+  sites: number;
   pay: number;
   col: number;
   row: number;
@@ -112,6 +113,7 @@ export function planDeepRingOpenings(store: NativeFactStore, player: Player, now
     owner: player.owner,
     ring: site.ring,
     day: reach.day.index,
+    sites: reach.sites.filter((candidate) => candidate.ring === site.ring).length,
     pay: site.buildingPay,
     col: site.position.x - reach.center,
     row: site.position.y - reach.center,
