@@ -130,7 +130,7 @@ const BUILDING_PAINTINGS: Partial<Record<BuildingType, IconMeaning>> = {
   [BuildingType.ResourceLabor]: "workshop",
   [BuildingType.WorkersHut]: "workers-hut",
   [BuildingType.Storehouse]: "storehouse",
-  [BuildingType.RationsDepot]: "storehouse",
+  [BuildingType.RationsDepot]: "rations",
   [BuildingType.SupplyYard]: "supply-yard",
   [BuildingType.ScoutsLodge]: "scout-lodge",
   [BuildingType.ConscriptionCamp]: "camp",

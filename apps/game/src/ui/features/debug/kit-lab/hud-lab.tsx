@@ -923,7 +923,8 @@ const STATES = {
     building: "workshop-short",
   },
   "building-barracks": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "barracks" },
-  "building-war-hall": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "war-hall" },
+  "building-conscription-camp": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "conscription-camp" },
+  "building-rations-depot": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "rations-depot" },
   "building-hut": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "hut" },
   "building-scouts-lodge": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "scouts-lodge" },
   "realm-full": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "full" },
@@ -1698,17 +1699,34 @@ const LAB_BUILDINGS = {
     makes: { icon: "labor", rate: "+15/min" },
     essence: SHORT_ESSENCE,
   },
-  "war-hall": { category: BuildingType.RationsDepot, standing: 1, makes: undefined },
+  "conscription-camp": {
+    category: BuildingType.ConscriptionCamp,
+    row: research.ROW_CONSCRIPTION,
+    standing: 1,
+    tier: 1,
+  },
+  "rations-depot": { category: BuildingType.RationsDepot, row: research.ROW_RATIONS, standing: 1, tier: 1 },
   hut: { category: BuildingType.WorkersHut, row: research.ROW_HUT, standing: 2, makes: undefined },
   "scouts-lodge": { category: BuildingType.ScoutsLodge, standing: 1, makes: undefined },
 } satisfies Record<string, LabBuilding>;
 
-type LabBuilding = { category: BuildingType; row?: number; standing: number; makes?: CardMakes; essence?: number };
+type LabBuilding = {
+  category: BuildingType;
+  row?: number;
+  standing: number;
+  makes?: CardMakes;
+  essence?: number;
+  tier?: number;
+};
 
 /** A building's card on the realm some days in, its Delete drawn as it rests. */
 const LabBuildingCard = ({ building }: { building: keyof typeof LAB_BUILDINGS }) => {
-  const { category, row, standing, makes, essence = MID_REALM.essence }: LabBuilding = LAB_BUILDINGS[building];
-  const node = readResearchTree({ ...MID_REALM, essence }).find((each) => each.row === row && each.maxTier === 5);
+  const { category, row, standing, makes, essence = MID_REALM.essence, tier }: LabBuilding = LAB_BUILDINGS[building];
+  const learned =
+    row === undefined || tier === undefined ? MID_REALM.learned : { ...MID_REALM.learned, [row]: { tier, sides: [] } };
+  const node = readResearchTree({ ...MID_REALM, essence, learned }).find(
+    (each) => each.row === row && each.maxTier === 5,
+  );
   return (
     <BuildingCardView
       name={buildingName(category)}

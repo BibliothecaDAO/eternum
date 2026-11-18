@@ -18,7 +18,8 @@ import {
   type NativeFactStore,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { buildingOutput } from "@/ui/shared/lib/building-output";
 import { useMemo } from "react";
 
 import { standingBuildings } from "../production/store-makers";
@@ -97,6 +98,7 @@ const readResearchFacts = (
       populationStepBps: board.population_step_bps,
       rationStep: Number(board.ration_step) / RESOURCE_PRECISION,
       wheatPerTroop: Number(wheat.amount) / Number(recipe.simple_output),
+      troopsPerHour: buildingOutput(store, realm, BuildingType.ResourceKnightT1, 0).base * 3600,
     },
     laborStore: (level) => {
       const base = ResourceManager.castleStoreLimit(store, realm.game_id, level);

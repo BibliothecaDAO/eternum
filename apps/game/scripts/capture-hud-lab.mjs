@@ -242,7 +242,8 @@ export const SURFACES = [
     "building-farm",
     "building-workshop-short",
     "building-barracks",
-    "building-war-hall",
+    "building-conscription-camp",
+    "building-rations-depot",
     "building-scouts-lodge",
   ].map((state) => ({
     name: `frontier-${state}`,

@@ -165,7 +165,11 @@ export const BuildingCardView = ({
               </span>
             )}
           </span>
-          <span className="min-w-0 flex-1 text-hud-strong text-hud-ink">{BUILDING_FIGURES.standing(standing)}</span>
+          {node?.job ? (
+            <span className="min-w-0 flex-1 text-hud-strong text-hud-gold">{node.job}</span>
+          ) : (
+            <span className="min-w-0 flex-1 text-hud-strong text-hud-ink">{BUILDING_FIGURES.standing(standing)}</span>
+          )}
           {makes && (
             <span className="flex items-center gap-1.5 text-hud-title tabular-nums text-hud-ink">
               <Icon name={makes.icon} size={28} />

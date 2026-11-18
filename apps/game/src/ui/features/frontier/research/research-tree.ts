@@ -37,6 +37,7 @@ export interface RealmResearchFacts {
     populationStepBps: number;
     rationStep: number;
     wheatPerTroop: number;
+    troopsPerHour: number;
   };
   /** The castle's labor store at a level, with the realm's Storeroom picks. */
   laborStore: (level: number) => number;
@@ -92,6 +93,7 @@ export interface TreeNode {
   needs: Need[];
   /** What the node does, one line, and its figure now and after the next tier. */
   gives: { line: string; now: RankedWords | string; next?: RankedWords | string };
+  job?: string;
   /** Side upgrades with their own price, availability and command choice code. */
   sides?: Side[];
   /** The marks of bought sides; only Scouts keeps purchase order. */
@@ -154,6 +156,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       /** The row's figures where it has no sides; a row with sides shows its sides. */
       figures?: (tier: number) => Figure[];
       leadsTo?: string[];
+      job?: string;
     } = {},
   ): TreeNode => {
     const tier = researchHasIndependentSides(row) ? Math.max(picks(row, 0), picks(row, 1)) : learned(row).tier;
@@ -217,6 +220,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
           }))
         : (options.figures?.(tier) ?? []),
       leadsTo: options.leadsTo ?? [],
+      job: options.job,
     };
   };
 
@@ -300,12 +304,13 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         "army",
         (tier) => ({ line: RESEARCH_TREE.conscriptionLine, ...conscriptionStep(tier, realm.board) }),
         {
+          job: RESEARCH_TREE.conscriptionLine,
           figures: (tier) => [
             {
               icon: "troops",
-              name: "Conscription",
-              line: RESEARCH_TREE.conscriptionFigure,
-              ...conscriptionStep(tier, realm.board),
+              name: RESEARCH_TREE.troopsAnHour,
+              line: RESEARCH_TREE.atEach(buildingName(BuildingType.ResourceKnightT1)),
+              ...conscriptionFigure(tier, realm.board),
             },
           ],
         },
@@ -318,8 +323,14 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         "army",
         (tier) => ({ line: RESEARCH_TREE.rationsLine, ...rationsStep(tier, realm.board) }),
         {
+          job: RESEARCH_TREE.rationsLine,
           figures: (tier) => [
-            { icon: "wheat", name: "Rations", line: RESEARCH_TREE.rationsFigure, ...rationsStep(tier, realm.board) },
+            {
+              icon: "wheat",
+              name: RESEARCH_TREE.wheatATroop,
+              line: RESEARCH_TREE.onEachDeploy,
+              ...rationsFigure(tier, realm.board),
+            },
           ],
         },
       ),
@@ -444,13 +455,24 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
   }
 };
 
+const troopsAnHourAt = (rank: number, board: RealmResearchFacts["board"]) =>
+  formatExact((board.troopsPerHour * (10_000 + rank * board.outputStepBps)) / 10_000);
+const wheatATroopAt = (rank: number, board: RealmResearchFacts["board"]) =>
+  formatFigure(Math.max(0, board.wheatPerTroop - rank * board.rationStep));
+const conscriptionFigure = (tier: number, board: RealmResearchFacts["board"]): Pick<Figure, "now" | "next"> => ({
+  now: troopsAnHourAt(tier, board),
+  next: tier < 5 ? troopsAnHourAt(tier + 1, board) : undefined,
+});
+const rationsFigure = (tier: number, board: RealmResearchFacts["board"]): Pick<Figure, "now" | "next"> => ({
+  now: wheatATroopAt(tier, board),
+  next: tier < 5 ? wheatATroopAt(tier + 1, board) : undefined,
+});
 const conscriptionStep = (tier: number, board: RealmResearchFacts["board"]): Pick<Figure, "now" | "next"> => {
-  const at = (rank: number) => formatPercent((rank * board.outputStepBps) / 10000, { signed: true });
+  const at = (rank: number) => RESEARCH_TREE.effects.troops(troopsAnHourAt(rank, board));
   return { now: at(tier), next: tier < 5 ? at(tier + 1) : undefined };
 };
 const rationsStep = (tier: number, board: RealmResearchFacts["board"]): Pick<Figure, "now" | "next"> => {
-  const at = (rank: number) =>
-    RESEARCH_TREE.effects.rations(formatFigure(Math.max(0, board.wheatPerTroop - rank * board.rationStep)));
+  const at = (rank: number) => RESEARCH_TREE.effects.rations(wheatATroopAt(rank, board));
   return { now: at(tier), next: tier < 5 ? at(tier + 1) : undefined };
 };
 const logisticsStep = (tier: number): Pick<Figure, "now" | "next"> => {

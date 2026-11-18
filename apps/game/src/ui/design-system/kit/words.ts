@@ -2224,8 +2224,10 @@ export const RESEARCH_TREE = {
   oathResearch: "Research for new armies",
   conscriptionLine: "More troops from every troop building.",
   rationsLine: "Armies leave for less wheat.",
-  conscriptionFigure: "Troop output",
-  rationsFigure: "Wheat per troop",
+  troopsAnHour: "Troops an hour",
+  atEach: (building: string) => `At each ${building}`,
+  wheatATroop: "Wheat a troop",
+  onEachDeploy: "On each deploy",
   population: "Population",
   newArmiesStart: (attribute: string) => `New armies start with ${attribute}`,
   /** A training building's figure, under the attribute's name on its card: what that level is given to. */
@@ -2235,6 +2237,7 @@ export const RESEARCH_TREE = {
   effects: {
     logistics: (value: string) => `${value} max stamina`,
     rations: (value: string) => `${value} wheat a troop`,
+    troops: (value: string) => `${value} troops an hour`,
   },
   nouns: { essence: ESSENCE, labor: LABOR },
   armiesFind: (site: string) => `Armies find ${site}s`,

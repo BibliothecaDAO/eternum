@@ -36,6 +36,7 @@ const realmOn = (
       populationStepBps: preset.board.populationStepBps,
       rationStep: preset.board.rationStep,
       wheatPerTroop: Number(frontierBaseConfig.resources!.productionBySimpleRecipe![ResourcesIds.Knight]![0]!.amount),
+      troopsPerHour: preset.balance.resources.productionByComplexRecipeOutputs[ResourcesIds.Knight] * 3600,
     },
     laborStore: (level) =>
       (preset.board.resourceStoreCaps[level]! * (10_000 + storeroomPicks * preset.board.storageStepBps)) / 10_000,
