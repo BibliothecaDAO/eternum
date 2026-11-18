@@ -107,6 +107,7 @@ interface Scene {
   chainSecond: number;
   rules: CombatRules;
   besideTarget: boolean;
+  guardSlot: number | undefined;
 }
 
 type Defence =
@@ -121,10 +122,10 @@ export function forecastAttack(
   attacker: EntityKey,
   target: EntityKey,
   chainSecond: number,
-  { besideTarget = false }: { besideTarget?: boolean } = {},
+  { besideTarget = false, guardSlot }: { besideTarget?: boolean; guardSlot?: number } = {},
 ): AttackForecast | undefined {
   const rules = readCombatRules(store, attacker.game_id);
-  const scene = { store, gameId: attacker.game_id, chainSecond, rules, besideTarget };
+  const scene = { store, gameId: attacker.game_id, chainSecond, rules, besideTarget, guardSlot };
   const targetId = BigInt(target.entity_id);
   const explorer = store.get("ExplorerTroops", { game_id: scene.gameId, explorer_id: BigInt(attacker.entity_id) });
   const defence = explorer
@@ -279,12 +280,16 @@ function guardAttack(scene: Scene, structureId: bigint, targetId: bigint): Defen
   if (!defender || !position || !guards) return undefined;
   const tile = { col: position.x, row: position.y, alt: position.alt };
   const living = guards.filter((guard) => guard.troops.count > 0n).toSorted((a, b) => a.slot - b.slot);
-  if (!living.length || defender.troops.count === 0n) return refused("no-troops");
-  const guard = living.find((candidate) => isInStructureRange(tile, defender.tile, candidate.troops));
-  if (!guard) return refused("out-of-range");
+  const reaches = (guard: (typeof living)[number]) => isInStructureRange(tile, defender.tile, guard.troops);
+  const guard =
+    scene.guardSlot === undefined
+      ? (living.find(reaches) ?? living[0])
+      : living.find(({ slot }) => slot === scene.guardSlot);
+  if (!guard || defender.troops.count === 0n) return refused("no-troops");
   const attacker = { troops: guard.troops, oaths: 0, guarding: true, tile, home: structureId, guardSlot: guard.slot };
   const sides = { attacker, defender, queued: [] };
   const refusal =
+    (reaches(guard) ? undefined : "out-of-range") ??
     immunityRefusal(scene, structureId) ??
     immunityRefusal(scene, defender.home) ??
     armyOpponentsRefusal(store, gameId, attacker, defender);
@@ -341,7 +346,7 @@ function immunityRefusal(scene: Scene, home: bigint): AttackRefusal | undefined 
   return tick < founded + battle.village_immunity_ticks ? "village-immunity" : undefined;
 }
 
-const attackDistance = (attacker: Tile, defender: Tile): number =>
+export const attackDistance = (attacker: Tile, defender: Tile): number =>
   Math.floor(getLayeredAttackDistance(attacker, defender));
 
 const isAdjacent = (attacker: Tile, defender: Tile): boolean =>

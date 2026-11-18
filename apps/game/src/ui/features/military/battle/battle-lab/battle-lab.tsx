@@ -6,21 +6,25 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { HudCheck, HudNotice, HudWindow } from "@/ui/design-system/kit/hud-elements";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import {
+  attackDistance,
   CombatParameters,
   CombatSimulator,
   configManager,
-  isCombatGuard,
   getGuildFromPlayerAddress,
+  StaminaManager,
+  type AttackForecast,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
-import { ActorType, BiomeType, ContractAddress, getLayeredAttackDistance, ID } from "@bibliothecadao/types";
+import { ActorType, BiomeType, ContractAddress, ID } from "@bibliothecadao/types";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 
 import { useEffect, useMemo, useState } from "react";
 import { useLatest } from "@/hooks/use-latest";
 
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
-import { resolveAttackStaminaState } from "../attack-stamina-state";
-import { attackerSide, defenderSide } from "../battle-outcome";
+import { ATTACK_REFUSAL_WORDS } from "@/ui/design-system/kit/words";
+import { attackerSide, defenderSide, type SideOutcome } from "../battle-outcome";
+import { wholeTroops } from "../fight-forecast";
 import { TargetType } from "../types";
 import { ActionFooter } from "./action-footer";
 import { ArmyColumn } from "./army-column";
@@ -75,9 +79,17 @@ export const BattleLab = ({
   const targetHex = targetRef?.hex ?? { x: 0, y: 0 };
 
   const { state, dispatch, isEdited } = useBattleLabState(mode, initialBiome);
-  const { snapshot, target, targetResources, isLoading } =
+  const { snapshot, forecast, target, targetResources, isLoading } =
     // Sim mode has no target: the live read is disabled, so its placeholder hex and layer are never read.
-    useBattleLabLiveData(mode === "live", attackerEntityId, targetHex, targetRef?.alt ?? false);
+    useBattleLabLiveData(
+      mode === "live",
+      attackerEntityId,
+      targetHex,
+      targetRef?.alt ?? false,
+      state.selectedGuardSlot,
+    );
+  const chainSecond = useCurrentDefaultTick();
+  const sides = forecast?.sides;
 
   const [parameters, setParameters] = useState<CombatParameters>(() => configManager.getCombatConfig());
   const [showParameters, setShowParameters] = useState(false);
@@ -106,33 +118,14 @@ export const BattleLab = ({
 
   const combatSimulator = useMemo(() => new CombatSimulator(parameters, configManager.getCombatRules()), [parameters]);
 
-  // Combat v3 context: range is derived from the live hex distance (crossbowmen poke at range 2),
-  // and structure-guard flags drive the ranged structure reduction / Knight modifiers. In sim mode
-  // there is no map distance, so it falls back to adjacent (range 1).
-  const liveAttackDistance = useMemo(() => {
-    if (mode !== "live" || !target || !selected || !targetRef) return 1;
-    return getLayeredAttackDistance(
-      { col: selected.hex.x, row: selected.hex.y, alt: selected.alt },
-      { col: target.hex.x, row: target.hex.y, alt: targetRef.alt },
-    );
-  }, [mode, selected, targetRef, target]);
-
   const combatContext = useMemo(
     () => ({
       defenderAlt: state.defenderAlt,
-      attackDistance: liveAttackDistance,
-      attackerIsStructureGuard: snapshot?.attackerType === "structure",
-      defenderIsStructureGuard:
-        target?.targetType === TargetType.Structure && isCombatGuard(target.addressOwner, parameters.day_unit_seconds),
+      attackDistance: sides?.defender ? attackDistance(sides.attacker.tile, sides.defender.tile) : 1,
+      attackerIsStructureGuard: sides?.attacker.guarding ?? false,
+      defenderIsStructureGuard: sides?.defender?.guarding ?? false,
     }),
-    [
-      state.defenderAlt,
-      liveAttackDistance,
-      snapshot?.attackerType,
-      target?.targetType,
-      target?.addressOwner,
-      parameters.day_unit_seconds,
-    ],
+    [state.defenderAlt, sides],
   );
   // CombatParameters holds bigint fields, so stringify with a bigint-safe replacer.
   const defaultParamsKey = useMemo(() => serializeParams(configManager.getCombatConfig()), []);
@@ -154,12 +147,12 @@ export const BattleLab = ({
     setSeed((s) => s + 1);
   };
 
-  // ----- Prediction (single path for live + sim) -----
+  const liveForecast = mode === "live" && !isEdited && !nonDefaultParams ? forecast : undefined;
   const prediction = useMemo(() => {
     if (!state.hasDefender) return null;
-    const now = Math.floor(Date.now() / 1000);
+    if (liveForecast) return liveForecast.outcome === "fights" ? forecastPrediction(liveForecast) : null;
     const result = combatSimulator.simulateBattle(
-      now,
+      chainSecond,
       state.attacker,
       state.defender,
       state.biome,
@@ -168,81 +161,43 @@ export const BattleLab = ({
       combatContext,
     );
     if (!result.ok) return null;
-    const attacker = attackerSide(state.attacker.troopCount, result);
-    const defender = defenderSide(state.defender.troopCount, result);
-    const outcome: BattleOutcome = attacker.remaining === 0 ? "Defeat" : defender.remaining === 0 ? "Victory" : "Draw";
-    return {
-      attacker,
-      defender,
-      newAttackerStamina: result.attackerStamina,
-      newDefenderStamina: result.defenderStamina,
-      outcome,
-    };
-  }, [combatSimulator, state.attacker, state.defender, state.biome, state.hasDefender, combatContext]);
+    return predictionOf(
+      attackerSide(state.attacker.troopCount, result),
+      defenderSide(state.defender.troopCount, result),
+      result.attackerStamina,
+      result.defenderStamina,
+    );
+  }, [combatSimulator, chainSecond, liveForecast, state, combatContext]);
 
-  // ----- Live action gating -----
-  const hasAttacker =
-    mode === "sim"
-      ? true
-      : snapshot
-        ? snapshot.attackerType === "structure"
-          ? snapshot.guards.length > 0
-          : snapshot.armyAttacker !== null
-        : false;
-
-  const combatConfig = useMemo(() => configManager.getCombatConfig(), []);
-  const attackStaminaState = useMemo(
-    () =>
-      resolveAttackStaminaState({
-        attackerStamina: state.attacker.stamina,
-        hasAttackerTroops: hasAttacker,
-        hasDefenders: state.hasDefender,
-        requiredStamina: Number(combatConfig.stamina_attack_req),
-      }),
-    [state.attacker.stamina, hasAttacker, state.hasDefender, combatConfig],
-  );
-
-  const isAttackerOnCooldown = state.attacker.battle_cooldown_end > Math.floor(Date.now() / 1000);
-
-  // A ranged poke can clear guards but never claims — the structure must be taken from an adjacent hex.
-  const rangedClaimBlocked =
-    mode === "live" && !state.hasDefender && combatContext.defenderIsStructureGuard && liveAttackDistance > 1;
-
+  const refusal = forecast?.outcome === "refused" ? forecast.refusal : undefined;
   const actionDisabled =
-    mode === "live" &&
-    (!hasAttacker ||
-      isEdited ||
-      nonDefaultParams ||
-      rangedClaimBlocked ||
-      isAttackerOnCooldown ||
-      attackStaminaState.isBlocked ||
-      loading);
+    mode === "live" && (forecast === undefined || refusal !== undefined || isEdited || nonDefaultParams || loading);
 
   const actionLabel = (() => {
-    if (rangedClaimBlocked) return "Move Adjacent to Claim";
-    if (isAttackerOnCooldown) return "On Battle Cooldown";
     if (isEdited || nonDefaultParams) return "Reset to act";
-    if (!hasAttacker) return "No Troops Present";
-    return attackStaminaState.actionLabel;
+    if (refusal) return ATTACK_REFUSAL_WORDS[refusal];
+    return forecast?.outcome === "claims" ? "Claim" : "Attack";
   })();
 
-  const warning =
-    attackStaminaState.isBlocked && !isEdited
-      ? staminaShortfall(attackStaminaState.currentStamina, attackStaminaState.requiredStamina)
-      : undefined;
+  const warning = (() => {
+    if (refusal !== "insufficient-stamina" || isEdited || !sides) return undefined;
+    const need = configManager.getCombatRules().stamina.stamina_attack_req;
+    const held = Number(StaminaManager.getStamina(sides.attacker.troops, chainSecond).amount);
+    const readyAt = StaminaManager.getAffordableAt(sides.attacker.troops, need, chainSecond);
+    return staminaShortfall(held, need, readyAt === null ? undefined : Math.max(0, readyAt - chainSecond));
+  })();
 
   const onAttack = async () => {
-    if (mode !== "live" || !selected || !targetRef || !target || actionDisabled || !snapshot) return;
+    if (mode !== "live" || !selected || !targetRef || !target || actionDisabled || !sides) return;
     try {
       setLoading(true);
       playUnitCommandSound("attack");
 
-      if (snapshot.attackerType === "structure") {
-        if (state.selectedGuardSlot === null) throw new Error("No structure guard is selected");
+      if (sides.attacker.guardSlot !== undefined) {
         await attack_guard_vs_explorer({
           signer: account,
           structure_id: attackerEntityId,
-          structure_guard_slot: state.selectedGuardSlot,
+          structure_guard_slot: sides.attacker.guardSlot,
           explorer_id: target.id,
         });
       } else if (target.targetType === TargetType.Army) {
@@ -284,7 +239,7 @@ export const BattleLab = ({
       url: env.VITE_SOCIAL_LINK,
     });
   };
-  const share = mode === "live" && hasAttacker && state.hasDefender && target ? () => shareLine(target) : undefined;
+  const share = mode === "live" && sides !== undefined && state.hasDefender && target ? () => shareLine(target) : undefined;
 
   return (
     <HudWindow title="Combat" icon="military" size="workspace" onClose={closeSurface}>
@@ -359,7 +314,9 @@ export const BattleLab = ({
             {!state.hasDefender ? (
               <HudNotice
                 tone="good"
-                line={rangedClaimBlocked ? "No defenders: move adjacent to claim" : "No defenders: claim it"}
+                line={
+                  refusal === "claim-needs-adjacency" ? "No defenders: move adjacent to claim" : "No defenders: claim it"
+                }
               />
             ) : (
               prediction && <OutcomeBanner outcome={prediction.outcome} />
@@ -383,3 +340,18 @@ export const BattleLab = ({
     </HudWindow>
   );
 };
+
+type Prediction = ReturnType<typeof predictionOf>;
+
+const predictionOf = (attacker: SideOutcome, defender: SideOutcome, attackerStamina: number, defenderStamina: number) => {
+  const outcome: BattleOutcome = attacker.remaining === 0 ? "Defeat" : defender.remaining === 0 ? "Victory" : "Draw";
+  return { attacker, defender, newAttackerStamina: attackerStamina, newDefenderStamina: defenderStamina, outcome };
+};
+
+const forecastPrediction = ({ exchange }: Extract<AttackForecast, { outcome: "fights" }>): Prediction =>
+  predictionOf(
+    { losses: wholeTroops(exchange.attackerLoss), remaining: wholeTroops(exchange.attacker.count) },
+    { losses: wholeTroops(exchange.defenderLoss), remaining: wholeTroops(exchange.defender.count) },
+    Number(exchange.attacker.stamina.amount),
+    Number(exchange.defender.stamina.amount),
+  );

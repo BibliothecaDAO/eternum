@@ -4,6 +4,7 @@ import { resolveExchange, type CombatRules, type ExchangeRefusal, type ExchangeT
 export interface Army {
   oaths: number;
   stamina: number;
+  maxStamina?: number;
   troopCount: number;
   troopType: TroopType;
   tier: TroopTier;
@@ -117,6 +118,7 @@ const combatTroops = (army: Army, relics: ResourcesIds[], now: number): Exchange
     count: BigInt(Math.round(army.troopCount * RESOURCE_PRECISION)),
     battle_cooldown_end: army.battle_cooldown_end,
     stamina: { amount: BigInt(Math.floor(army.stamina)), settled_at: now, remainder: 0 },
+    ...(army.maxStamina === undefined ? {} : { staminaMax: army.maxStamina }),
     boosts: {
       incr_damage_dealt_percent_num: Math.round((dealt - 1) * 10_000),
       incr_damage_dealt_end_at: 0,

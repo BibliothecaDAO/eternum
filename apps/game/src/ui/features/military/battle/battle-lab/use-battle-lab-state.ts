@@ -106,7 +106,7 @@ const reducer = (state: BattleLabState, action: BattleLabAction): BattleLabState
 
     case "INIT_LIVE": {
       const { snapshot } = action;
-      const { army: attacker, slot } = resolveLiveAttacker(snapshot, state.selectedGuardSlot);
+      const { army: attacker, slot } = resolveLiveAttacker(snapshot, snapshot.guardSlot);
       const defender = snapshot.defender ?? DEFAULT_DEFENDER;
       const hasDefender = snapshot.defender !== null;
       return {

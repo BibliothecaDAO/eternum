@@ -12,6 +12,7 @@ import { ClientConfigManager } from "../managers/config-manager";
 import { forecastAttack, type AttackForecast } from "./attack-forecast";
 import { deepCenter } from "./deep-geometry";
 import { dayAtIndex } from "./days";
+import { logisticsStamina } from "./attribute-tiers";
 import { setBlockTimestampSource } from "./timestamp";
 
 const GAME_ID = 28;
@@ -116,8 +117,18 @@ function frontier() {
     explorer_id: number,
     owner: number,
     tile: Tile,
-    { count = 1_000, category = "Knight" as Category, oathPick = 0, day = 0, cooldownEnd = 0 } = {},
+    {
+      count = 1_000,
+      category = "Knight" as Category,
+      oathPick = 0,
+      day = 0,
+      cooldownEnd = 0,
+      bladeRank = 0,
+      logistics = 0,
+      stamina = 100n,
+    } = {},
   ) => {
+    const slotted = logistics > 0;
     write("ExplorerTroops", {
       game_id: GAME_ID,
       explorer_id,
@@ -126,23 +137,34 @@ function frontier() {
         category,
         tier: "T1",
         count: troops(count),
-        stamina: { Inline: { amount: 100n, settled_at: NOW, remainder: 0 } },
+        stamina: slotted ? { Slot: 0 } : { Inline: { amount: stamina, settled_at: NOW, remainder: 0 } },
         boosts: NO_BOOSTS,
         battle_cooldown_end: cooldownEnd,
       },
     });
+    if (slotted)
+      write("ArmySlot", {
+        game_id: GAME_ID,
+        structure_id: owner,
+        epoch: BigInt(day),
+        slot: 0,
+        explorer_id,
+        stamina: { amount: stamina, settled_at: NOW, remainder: 0 },
+      });
     occupy(explorer_id, tile, TileOccupier.ExplorerKnightT1, false);
     write("ArmyProgress", {
       game_id: GAME_ID,
       explorer_id,
-      logistics: 0,
+      logistics,
       oath_slots: 1,
       oaths: 0,
       oath_pick: oathPick,
     });
     write("ArmyDay", { game_id: GAME_ID, explorer_id, day: BigInt(day) });
-    for (const kind of ["Blade", "Ward", "Plunder", "FarEye"])
-      write("ArmyRelicEffect", { game_id: GAME_ID, explorer_id, kind, rank: 0, expires_at: 0n });
+    for (const kind of ["Blade", "Ward", "Plunder", "FarEye"]) {
+      const rank = kind === "Blade" ? bladeRank : 0;
+      write("ArmyRelicEffect", { game_id: GAME_ID, explorer_id, kind, rank, expires_at: rank ? BigInt(NOW + 60) : 0n });
+    }
   };
 
   const guardRow = (structure_id: number, slot: number, count: number, category: Category = "Knight") => ({
@@ -185,7 +207,22 @@ function frontier() {
     }
   };
 
-  const forecast = (attacker: number, target: number, at = NOW, options?: { besideTarget?: boolean }) =>
+  const guardedPost = (entity_id: number, tile: Tile, owner: bigint, aspect: number, guards: [number, Category][]) => {
+    write("Structure", structureRow(entity_id, owner, StructureType.Camp));
+    write("HomeAspect", { game_id: GAME_ID, home: entity_id, aspect });
+    occupy(entity_id, tile, TileOccupier.Camp, true);
+    for (let slot = 0; slot < 4; slot += 1) {
+      const [count, category] = guards[slot] ?? [0, "Knight"];
+      write("Guard", guardRow(entity_id, slot, count, category));
+    }
+  };
+
+  const forecast = (
+    attacker: number,
+    target: number,
+    at = NOW,
+    options?: { besideTarget?: boolean; guardSlot?: number },
+  ) =>
     forecastAttack(
       store,
       { game_id: GAME_ID, entity_id: attacker },
@@ -194,7 +231,7 @@ function frontier() {
       options,
     );
 
-  return { home, army, deepSite, holdDeepSite, camp, forecast };
+  return { home, army, deepSite, holdDeepSite, camp, guardedPost, forecast };
 }
 
 const structureRow = (entity_id: number, owner: bigint, category: number) => ({
@@ -215,6 +252,9 @@ const structureRow = (entity_id: number, owner: bigint, category: number) => ({
 
 const refusalOf = (forecast: AttackForecast | undefined) =>
   forecast?.outcome === "refused" ? forecast.refusal : forecast?.outcome;
+
+const guardLoss = (forecast: AttackForecast | undefined) =>
+  forecast?.outcome === "fights" ? forecast.exchange.defenderLoss : undefined;
 
 const beside = (tile: Tile, steps = 1): Tile => ({ col: tile.col + steps, row: tile.row });
 
@@ -314,5 +354,45 @@ describe("one attack forecast for every combat surface", () => {
     game.army(10, 1, beside(site, 5));
     expect(refusalOf(game.forecast(10, 60))).toBe("out-of-range");
     expect(refusalOf(game.forecast(10, 60, NOW, { besideTarget: true }))).toBe("fights");
+  });
+
+  it("attacks from a structure with its lowest guard in range, or the slot it is given (8f626c)", () => {
+    const game = frontier();
+    game.home(2, RIVAL, 2);
+    game.guardedPost(70, DEEP, PLAYER, 1, [
+      [500, "Knight"],
+      [400, "Crossbowman"],
+    ]);
+    game.army(20, 2, beside(DEEP, 2));
+    const chosen = game.forecast(70, 20);
+    expect(chosen?.outcome).toBe("fights");
+    expect(chosen?.sides?.attacker.guardSlot).toBe(1);
+    const named = game.forecast(70, 20, NOW, { guardSlot: 0 });
+    expect(refusalOf(named)).toBe("out-of-range");
+    expect(named?.sides?.attacker.guardSlot).toBe(0);
+  });
+
+  it("counts the attacking army's active Blade in its damage (44985b)", () => {
+    const game = frontier();
+    game.home(1, PLAYER, 1);
+    game.deepSite(50, DEEP, 3_000);
+    game.army(10, 1, beside(DEEP));
+    const plain = guardLoss(game.forecast(10, 50));
+    game.army(10, 1, beside(DEEP), { bladeRank: 1 });
+    const bladed = guardLoss(game.forecast(10, 50));
+    expect(plain).toBeDefined();
+    expect(bladed!).toBeGreaterThan(plain!);
+  });
+
+  it("reads the attacking army's own stamina maximum, above its troop's base bar (4587f1)", () => {
+    const game = frontier();
+    game.home(1, PLAYER, 1);
+    game.deepSite(50, DEEP, 300);
+    const base = preset.rules.troop_stamina_config.stamina_knight_max;
+    const maximum = base + logisticsStamina(5);
+    game.army(10, 1, beside(DEEP), { logistics: 5, stamina: BigInt(maximum) });
+    const forecast = game.forecast(10, 50);
+    expect(forecast?.sides?.attacker.troops.staminaMax).toBe(maximum);
+    expect(forecast?.outcome === "fights" && forecast.exchange.attacker.stamina.amount).toBeGreaterThan(base);
   });
 });
