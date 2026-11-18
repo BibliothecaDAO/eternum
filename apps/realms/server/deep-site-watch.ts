@@ -1,4 +1,9 @@
-import { readDeepSites, NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  readDeepSites,
+  NativeFactStore,
+  type DeepSiteView,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 import { readGameFacts, type ReleaseCatalogue } from "./game-facts";
 import { dayOf, expeditionDepth, readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
 import { STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
@@ -9,6 +14,7 @@ export interface DeepSiteWatch {
   actor: string;
   owner: string;
   home: string;
+  kind: number;
   siteId: string;
   day: number;
   dueAt: number;
@@ -19,51 +25,98 @@ export interface DeepSiteWatch {
   row: number;
 }
 
-/** A confirmed snapshot plans one wake per rival site, without polling guard counts. */
-export function planDeepSiteWatches(
-  store: NativeFactStore,
-  player: Pick<DeepSiteWatch, "gameId" | "actor" | "owner">,
-  now: number,
-): DeepSiteWatch[] {
+export interface DeepRingOpening {
+  gameId: number;
+  owner: string;
+  ring: number;
+  day: number;
+  pay: number;
+  col: number;
+  row: number;
+  until: number;
+}
+
+type Player = Pick<DeepSiteWatch, "gameId" | "actor" | "owner">;
+
+interface DeepReach {
+  army: NativeRows["ExplorerTroops"];
+  sites: DeepSiteView[];
+  day: { index: number; end: number };
+  timestamp: number;
+  center: number;
+}
+
+function deepReach(store: NativeFactStore, player: Player, now: number): DeepReach | undefined {
   const gameId = player.gameId;
-  if (!store.get("DeepRules", { game_id: gameId })) return [];
+  if (!store.get("DeepRules", { game_id: gameId })) return undefined;
   const calendar = readExpeditionRules(store, gameId);
   if (!calendar) throw new Error("Deep alerts require expedition rules");
   const timestamp = Math.floor(now / 1000);
   const day = dayOf(calendar, timestamp);
-  if (!day) return [];
+  if (!day) return undefined;
   const army = largestOutsideArmy(store, gameId, BigInt(player.actor), day.index);
-  if (!army) return [];
-  const home = army.owner;
-  const depth = researchedDepth(store, gameId, home);
+  if (!army) return undefined;
+  const depth = researchedDepth(store, gameId, army.owner);
   if (depth === undefined) throw new Error("Deep alerts require the home's research");
-  if (depth === 0) return [];
-  const aspect = store.require("HomeAspect", { game_id: gameId, home }).aspect;
-  const tickSeconds = readCombatRules(store, gameId).tickSeconds;
+  const sites = readDeepSites(store, timestamp, gameId).filter(
+    (site) => site.open && depth > 0 && depth >= expeditionDepth(calendar, site.position),
+  );
   const center = mapCenter(store.require("SliceRules", { game_id: gameId }).map_center_offset);
-  return readDeepSites(store, timestamp, gameId).flatMap((site) => {
-    if (depth < expeditionDepth(calendar, site.position)) return [];
+  return { army, sites, day, timestamp, center };
+}
+
+export function planDeepSiteWatches(store: NativeFactStore, player: Player, now: number): DeepSiteWatch[] {
+  const reach = deepReach(store, player, now);
+  if (!reach) return [];
+  const { army, day, timestamp, center } = reach;
+  const gameId = player.gameId;
+  const aspect = store.require("HomeAspect", { game_id: gameId, home: army.owner }).aspect;
+  const tickSeconds = readCombatRules(store, gameId).tickSeconds;
+  const first = new Map<number, DeepSiteWatch>();
+  for (const site of reach.sites) {
+    if (site.beastTroops > 0n) continue;
     const defender = site.guards[0];
-    if (!defender || site.beastTroops > 0n) return [];
-    if (store.require("HomeAspect", { game_id: gameId, home: defender.army.owner }).aspect === aspect) return [];
-    const due = firstClearableTick(store, army, site.id, timestamp, day.end, tickSeconds);
-    return due === null
-      ? []
-      : [
-          {
-            ...player,
-            home: String(home),
-            siteId: String(site.id),
-            siteName: site.name,
-            col: site.position.x - center,
-            row: site.position.y - center,
-            day: day.index,
-            dueAt: due * 1000,
-            attempts: 0,
-            until: day.end * 1000,
-          },
-        ];
-  });
+    if (defender && store.require("HomeAspect", { game_id: gameId, home: defender.army.owner }).aspect === aspect)
+      continue;
+    const due = defender ? firstTakeableTick(store, army, site.id, timestamp, day.end, tickSeconds) : timestamp;
+    if (due === null) continue;
+    const previous = first.get(site.kind);
+    if (previous && previous.dueAt <= due * 1000) continue;
+    first.set(site.kind, {
+      ...player,
+      home: String(army.owner),
+      kind: site.kind,
+      siteId: String(site.id),
+      siteName: site.name,
+      col: site.position.x - center,
+      row: site.position.y - center,
+      day: day.index,
+      dueAt: due * 1000,
+      attempts: 0,
+      until: day.end * 1000,
+    });
+  }
+  return [...first.values()];
+}
+
+export function planDeepRingOpenings(store: NativeFactStore, player: Player, now: number): DeepRingOpening[] {
+  const reach = deepReach(store, player, now);
+  if (!reach) return [];
+  const opened = new Map<number, DeepSiteView>();
+  for (const site of reach.sites) {
+    const previous = opened.get(site.ring);
+    if (site.ring > 0 && (!previous || site.kind < previous.kind)) opened.set(site.ring, site);
+  }
+  return [...opened.values()].map((site) => ({
+    gameId: player.gameId,
+    owner: player.owner,
+    ring: site.ring,
+    day: reach.day.index,
+    pay: site.buildingPay,
+    col: site.position.x - reach.center,
+    row: site.position.y - reach.center,
+    until: reach.day.end * 1000,
+  }));
 }
 
 function largestOutsideArmy(store: NativeFactStore, gameId: number, actor: bigint, day: number) {
@@ -84,7 +137,7 @@ function largestOutsideArmy(store: NativeFactStore, gameId: number, actor: bigin
   return largest;
 }
 
-function firstClearableTick(
+function firstTakeableTick(
   store: NativeFactStore,
   army: NativeRows["ExplorerTroops"],
   siteId: bigint,
@@ -96,7 +149,8 @@ function firstClearableTick(
   const target = { game_id: army.game_id, entity_id: siteId };
   for (let at = now; at < end; at = (Math.floor(at / tickSeconds) + 1) * tickSeconds) {
     const site = readDeepSites(store, at, army.game_id).find((candidate) => candidate.id === siteId);
-    if (!site?.guards.length) return null;
+    if (!site) return null;
+    if (!site.guards.length) return site.beastTroops > 0n ? null : at;
     const clears = clearsEveryDefender(store, attacker, target, at, { besideTarget: true });
     if (clears === undefined) throw new Error("Deep alert is missing the fight's combat facts");
     if (clears) return at;
@@ -105,12 +159,12 @@ function firstClearableTick(
 }
 
 /** One confirmed, scoped read holds the player's armies and every public Deep guard. */
-export async function readDeepSiteWatches(
+export async function readDeepAlerts(
   shardUrl: string,
-  player: Pick<DeepSiteWatch, "gameId" | "actor" | "owner">,
+  player: Player,
   now: number,
   catalogue: ReleaseCatalogue,
-): Promise<DeepSiteWatch[]> {
+): Promise<{ sites: DeepSiteWatch[]; rings: DeepRingOpening[] }> {
   const store = await readGameFacts(
     shardUrl,
     player.gameId,
@@ -128,5 +182,5 @@ export async function readDeepSiteWatches(
     { actor: player.actor },
     catalogue,
   );
-  return planDeepSiteWatches(store, player, now);
+  return { sites: planDeepSiteWatches(store, player, now), rings: planDeepRingOpenings(store, player, now) };
 }

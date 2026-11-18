@@ -6,7 +6,7 @@ import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { readActorArmies } from "./army-rest";
 import { followDeepSites } from "./deep-site-stream";
 import { readReleaseCatalogue } from "./game-facts";
-import { readDeepSiteWatches } from "./deep-site-watch";
+import { readDeepAlerts } from "./deep-site-watch";
 import { ARMY, GAME_ID, mistFacts, PLAYER_ACCOUNT, siteSnapshot, snapshot, TODAY } from "./fixtures/shard-world";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -64,7 +64,7 @@ describe("the notification snapshot readers", () => {
       ShardReleaseMismatchError,
     );
     await expect(
-      readDeepSiteWatches(
+      readDeepAlerts(
         SHARD,
         { gameId: GAME_ID, actor: PLAYER_ACCOUNT, owner: PLAYER_ACCOUNT },
         Date.now(),
@@ -78,12 +78,12 @@ describe("the notification snapshot readers", () => {
     const armies = await readActorArmies(SHARD, GAME_ID, PLAYER_ACCOUNT, Date.now(), await caught());
     expect(armies.map(({ armyId }) => armyId)).toContain(ARMY);
     await expect(
-      readDeepSiteWatches(
+      readDeepAlerts(
         SHARD,
         { gameId: GAME_ID, actor: PLAYER_ACCOUNT, owner: PLAYER_ACCOUNT },
         Date.now(),
         await caught(),
-      ),
+      ).then(({ sites }) => sites),
     ).resolves.toBeInstanceOf(Array);
   });
 });

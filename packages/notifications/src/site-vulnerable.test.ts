@@ -1,14 +1,14 @@
 import { expect, it } from "vitest";
-import { buildSiteVulnerableNotification } from "./site-vulnerable";
+import { buildRingOpenNotification, buildSiteVulnerableNotification } from "./site-vulnerable";
 import { notificationMatchesGame, parseNotificationPayload } from "./delivery";
 import { includesKind } from "./notification-kinds";
 
-it("opens the site's coordinate and gives it one identity per owner, site and day", () => {
+it("opens the site's coordinate and gives it one identity per owner, site kind and day", () => {
   const input = {
     chainId: "0xa",
     gameId: 1,
-    siteId: "802",
-    siteName: "Quarry",
+    kind: 2,
+    siteName: "Ethereal mine",
     col: -50,
     row: 350,
     day: 2,
@@ -18,7 +18,9 @@ it("opens the site's coordinate and gives it one identity per owner, site and da
   };
   const alert = buildSiteVulnerableNotification(input)!;
   expect(alert.target).toBe("/g/0xa/1/map?col=-50&row=350");
-  expect(alert.title).toBe("Quarry can be taken");
+  expect(alert.title).toBe("Ethereal mine can be taken");
+  expect(buildSiteVulnerableNotification({ ...input, col: 10, row: 10 })!.id).toBe(alert.id);
+  expect(buildSiteVulnerableNotification({ ...input, kind: 1 })!.id).not.toBe(alert.id);
   expect(buildSiteVulnerableNotification({ ...input, now: 2000 })!.id).toBe(alert.id);
   expect(buildSiteVulnerableNotification({ ...input, day: 3 })!.id).not.toBe(alert.id);
   expect(buildSiteVulnerableNotification({ ...input, now: 10000 })).toBeNull();
@@ -35,4 +37,27 @@ it("opens the site's coordinate and gives it one identity per owner, site and da
     "/g/0xa/1/hex?col=0&row=0",
   ])
     expect(() => parseNotificationPayload({ ...alert, target }, input.now)).toThrow();
+});
+
+it("says which ring opened, what a held building now pays, and opens that ring once per owner and day", () => {
+  const input = {
+    chainId: "0xa",
+    gameId: 1,
+    ring: 1,
+    pay: 3,
+    col: 8,
+    row: -8,
+    day: 2,
+    owner: "0x1",
+    now: 1000,
+    until: 10000,
+  };
+  const alert = buildRingOpenNotification(input)!;
+  expect(alert.title).toBe("Ring 2 of the Deep has opened");
+  expect(alert.body).toBe("Four more sites can be taken today. A held building now pays 3 a tick.");
+  expect(alert.target).toBe("/g/0xa/1/map?col=8&row=-8");
+  expect(alert.kind).toBe("site-vulnerable");
+  expect(buildRingOpenNotification({ ...input, now: 2000 })!.id).toBe(alert.id);
+  expect(buildRingOpenNotification({ ...input, ring: 2 })!.id).not.toBe(alert.id);
+  expect(buildRingOpenNotification({ ...input, now: 10000 })).toBeNull();
 });

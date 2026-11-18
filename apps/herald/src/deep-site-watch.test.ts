@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { readDeepSiteWatches } from "../../realms/server/deep-site-watch";
+import { readDeepAlerts } from "../../realms/server/deep-site-watch";
 import {
   snapshot,
   siteSnapshot,
@@ -80,7 +80,7 @@ it("plans a Deep site opportunity from Herald's actor snapshot with public rival
       ),
     );
   });
-  const watches = await readDeepSiteWatches(
+  const { sites: watches } = await readDeepAlerts(
     "https://herald.test",
     {
       gameId: GAME_ID,

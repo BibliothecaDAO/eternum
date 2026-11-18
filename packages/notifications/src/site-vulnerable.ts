@@ -1,34 +1,54 @@
 import { gamePath, parseNotificationPayload, type LocalNotificationPayload } from "./delivery";
 import { kindTag } from "./notification-kinds";
 
-/** One site opportunity per player and game day; the link opens the site's map coordinate. */
-export function buildSiteVulnerableNotification(input: {
+interface DeepPlace {
   chainId: string;
   gameId: number;
-  siteId: string;
-  siteName: string;
   col: number;
   row: number;
   day: number;
   owner: string;
   now: number;
   until: number;
-}): LocalNotificationPayload | null {
-  if (input.until <= input.now) return null;
-  const target = `${gamePath(input, "map")}?col=${input.col}&row=${input.row}`;
+}
+
+export function buildSiteVulnerableNotification(
+  input: DeepPlace & { kind: number; siteName: string },
+): LocalNotificationPayload | null {
+  return deepAlert(input, `site:v1:${input.chainId}:${input.gameId}:${input.owner}:${input.kind}:${input.day}`, {
+    title: `${input.siteName} can be taken`,
+    body: "An army of yours can take it today.",
+  });
+}
+
+export function buildRingOpenNotification(
+  input: DeepPlace & { ring: number; pay: number },
+): LocalNotificationPayload | null {
+  return deepAlert(input, `ring:v1:${input.chainId}:${input.gameId}:${input.owner}:${input.ring}:${input.day}`, {
+    title: `Ring ${input.ring + 1} of the Deep has opened`,
+    body: `Four more sites can be taken today. A held building now pays ${input.pay} a tick.`,
+  });
+}
+
+function deepAlert(
+  place: DeepPlace,
+  id: string,
+  copy: { title: string; body: string },
+): LocalNotificationPayload | null {
+  if (place.until <= place.now) return null;
+  const target = `${gamePath(place, "map")}?col=${place.col}&row=${place.row}`;
   return parseNotificationPayload(
     {
       version: 1,
       kind: "site-vulnerable",
-      id: `site:v1:${input.chainId}:${input.gameId}:${input.owner}:${input.siteId}:${input.day}`,
-      owner: input.owner,
-      title: `${input.siteName} can be taken`,
-      body: "An army of yours can clear its remaining guards.",
+      id,
+      owner: place.owner,
+      ...copy,
       tag: kindTag("site-vulnerable", target),
       target,
-      createdAt: input.now,
-      expiresAt: input.until,
+      createdAt: place.now,
+      expiresAt: place.until,
     },
-    input.now,
+    place.now,
   );
 }

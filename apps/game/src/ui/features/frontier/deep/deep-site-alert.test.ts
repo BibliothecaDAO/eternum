@@ -1,9 +1,9 @@
 import { siteGuardTroops } from "../../../../../../realms/server/fixtures/shard-world";
 import { expect, it } from "vitest";
 import { deepScenario } from "@/lab/game/deep-scenario";
-import { planDeepSiteWatches } from "../../../../../../realms/server/deep-site-watch";
+import { planDeepRingOpenings, planDeepSiteWatches } from "../../../../../../realms/server/deep-site-watch";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
-import { type NativeModelName, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import { nativeRuleConstants, type NativeModelName, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
 function fixture(guardCounts = [siteGuardTroops(1)]) {
   const { store, startsAt, player } = deepScenario();
@@ -74,6 +74,7 @@ function fixture(guardCounts = [siteGuardTroops(1)]) {
     write,
     change,
     plan: (at = startsAt) => planDeepSiteWatches(store, owner, at * 1000),
+    rings: (at = startsAt) => planDeepRingOpenings(store, owner, at * 1000),
   };
 }
 
@@ -189,4 +190,50 @@ it("forecasts the same opportunity regardless of the last attacked guard", () =>
   expect(f.store.require("ArmyCombat", key).last_target).toBe(301n);
   f.change("ArmyCombat", key, { last_target: 302n });
   expect(f.plan().map(({ dueAt }) => dueAt)).toEqual(due);
+});
+
+const unguard = (f: ReturnType<typeof fixture>, explorer_id: number) =>
+  f.store.applyFacts([
+    { model: "DeepGuard", key: f.store.wireKeyOf("DeepGuard", { game_id: 1, explorer_id })!, value: null },
+  ]);
+
+function secondRing(f: ReturnType<typeof fixture>, realms: number) {
+  const rules = f.store.require("DeepRules", { game_id: 1 });
+  f.change("DeepRules", { game_id: 1 }, { rings: [...rules.rings, { radius: 8, realms }] });
+  for (const site of [...f.store.inGame("DeepSite", 1)]) {
+    const entity_id = site.entity_id + 100n;
+    const at = f.store.entityOccupancy(1, site.entity_id)!;
+    f.write("DeepSite", { ...site, entity_id, ring: 1 });
+    f.write("TileOccupancy", { ...at, entity_id, row: at.row + 3 });
+    const guard = f.store.require("Guard", { game_id: 1, structure_id: site.entity_id, slot: 0 });
+    f.write("Guard", { ...guard, structure_id: entity_id });
+  }
+}
+
+it("offers an open site with no guard at once, since taking it needs no fight", () => {
+  const f = fixture();
+  unguard(f, 301);
+  expect(f.plan()).toEqual([
+    expect.objectContaining({
+      kind: nativeRuleConstants.DEEP_MINE,
+      siteName: "Ethereal mine",
+      dueAt: f.startsAt * 1000,
+    }),
+  ]);
+});
+
+it("ignores a closed ring, then keeps one watch per kind and announces the ring when today's entries open it", () => {
+  const f = fixture();
+  secondRing(f, 30);
+  const guarded = f.plan();
+  expect(guarded).toHaveLength(1);
+  expect(guarded[0]!.dueAt).toBeGreaterThan(f.startsAt * 1000);
+  expect(f.rings()).toEqual([]);
+  f.write("DeepEntries", { game_id: 1, day: 0n, count: 30 });
+  const open = f.plan();
+  expect(open).toHaveLength(1);
+  expect(open[0]).toMatchObject({ kind: nativeRuleConstants.DEEP_MINE, dueAt: f.startsAt * 1000 });
+  expect(open[0]!.siteId).not.toBe(guarded[0]!.siteId);
+  const pay = f.store.require("DeepRules", { game_id: 1 }).building_pay.pair;
+  expect(f.rings()).toEqual([expect.objectContaining({ ring: 1, day: 0, pay })]);
 });
