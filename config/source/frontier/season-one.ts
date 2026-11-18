@@ -57,6 +57,7 @@ export const frontierSeasonOnePreset = {
     chest: layerRuinOdds[index] ?? depth.chest,
   })),
   labor: null,
+  discovery: { ...frontierPreset.discovery, beastsBps: 900 },
   dailyQuest: { baseCounts: [1, 1, 1, 1, 1, 2, 15], labor: 1000, essence: 1500, bonusPercent: 150 },
   banes: {
     chanceStep: 20,

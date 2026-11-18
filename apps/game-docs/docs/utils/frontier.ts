@@ -102,6 +102,7 @@ export const FRONTIER = {
   },
   discovery: {
     beasts: pct(frontierPreset.discovery.beastsBps),
+    bandsPerHerd: n(rule.BEAST_BAND_SHARE / rule.BEAST_HERD_SHARE),
     camp: pct(frontierPreset.discovery.campBps),
     rift: pct(frontierPreset.discovery.riftBps),
     ruin: pct(frontierPreset.discovery.ruinBps),

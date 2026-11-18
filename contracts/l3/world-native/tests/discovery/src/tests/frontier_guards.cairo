@@ -83,8 +83,8 @@ fn beasts_draw_two_depth_scaled_ranges_below_every_other_site_guard() {
                 strong_max = core::cmp::max(strong_max, count);
             }
         }
-        assert!(weak_draws >= 900 && weak_draws <= 1100, "weak beast odds drift");
-        assert!(strong_draws >= 900 && strong_draws <= 1100, "stronger beast odds drift");
+        assert!(weak_draws >= 600 && weak_draws <= 733, "weak beast odds drift");
+        assert!(strong_draws >= 1267 && strong_draws <= 1400, "stronger beast odds drift");
         assert!(weak_min < weak_max && strong_min < strong_max, "beast count did not vary");
         if depth_index < 2 {
             assert_eq!((weak_min, weak_max), (weak_lower, weak_upper));

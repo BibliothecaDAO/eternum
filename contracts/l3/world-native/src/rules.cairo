@@ -547,6 +547,8 @@ pub struct SpeedConfig {
 }
 
 pub const WELL_REFILL_PERCENT: u8 = 40;
+pub const BEAST_HERD_SHARE: u8 = 1;
+pub const BEAST_BAND_SHARE: u8 = 2;
 
 pub const FRONTIER_REPORT_GRACE_SECONDS: u32 = crate::days::FRONTIER_REPORT_GRACE_SECONDS;
 
