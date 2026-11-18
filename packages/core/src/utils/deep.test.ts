@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BiomeType, BiomeTypeToId } from "@bibliothecadao/types";
+import { BiomeType, BiomeTypeToId, deepSites } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import {
   nativeTilePackingConstants,
@@ -25,7 +25,14 @@ const fixture = () => {
     ],
     SettlementRules: [{ game_id: 7, spacing: 1024 }],
     GameRegistry: [{ game_id: 7, start_main_at: 360n, scheduled_end_at: 288360n, end_at: 288360n, seed: 1n }],
-    DeepRules: [{ game_id: 7, loss_per_tick: precision }],
+    DeepRules: [
+      {
+        game_id: 7,
+        loss_per_tick: precision,
+        rings: [{ radius: 5, realms: 0 }],
+        beasts: [0, 1, 2, 3].map((kind) => ({ count: 10n * precision, bow: kind % 2 === 1 })),
+      },
+    ],
     DeepArmy: [{ game_id: 7, explorer_id: 11n, last_tick: 6n }],
     ArmyDay: [{ game_id: 7, explorer_id: 11n, day: 0n }],
     ArmyProgress: [{ game_id: 7, explorer_id: 11n, logistics: 0, oath_slots: 1, oaths: 0, oath_pick: 0 }],
@@ -48,6 +55,7 @@ const fixture = () => {
       if (!row) throw new Error(`missing ${model}`);
       return row;
     },
+    requireOrAbsent: (model: NativeModelName, key: Record<string, unknown>) => ({ known: get(model, key) ?? { count: 0 } }),
     entries: (model: string) => (rows[model] ?? []).map((row, index) => [String(index), row]),
     inGame: (model: string, gameId: number) => (rows[model] ?? []).filter((row) => row.game_id === gameId),
     entityOccupancy: (game_id: number, entity_id: bigint) =>
@@ -112,7 +120,7 @@ describe("the shared Deep", () => {
 
   it("reads all sites in catalog order, highest live guard first, then restores next-day beasts", () => {
     const { rows, store } = fixture();
-    rows.DeepSite = [2, 0, 1].map((kind) => ({ game_id: 7, entity_id: BigInt(20 + kind), kind, day: 0n }));
+    rows.DeepSite = [2, 0, 3, 1].map((kind) => ({ game_id: 7, entity_id: BigInt(20 + kind), kind, ring: 0, day: 0n }));
     rows.Guard = rows.DeepSite.map((site) => ({
       game_id: 7,
       structure_id: site.entity_id,
@@ -137,14 +145,15 @@ describe("the shared Deep", () => {
       { game_id: 7, explorer_id: 12n, site_id: 20n, slot: 3 },
     ];
     const today = readDeepSites(store, 420, 7);
-    expect(today.map((site) => site.name)).toEqual(["Foundation", "Quarry", "Altar"]);
+    expect(today.map((site) => site.name)).toEqual(deepSites.map(({ name }) => name));
+    expect(today.every((site) => site.open && site.ring === 0)).toBe(true);
     expect(today[0]!.guards.map(({ slot, army }) => [slot, army.troops.count])).toEqual([
       [3, 19n * precision],
       [0, 9n * precision],
     ]);
     const tomorrow = readDeepSites(store, dayAtIndex(calendar, 0).end, 7);
     expect(tomorrow.map((site) => [site.id, site.beastTroops, site.guards])).toEqual(
-      [20n, 21n, 22n].map((id) => [id, 10n * precision, []]),
+      [20n, 21n, 22n, 23n].map((id) => [id, 10n * precision, []]),
     );
     rows.DeepSite.pop();
     expect(() => readDeepSites(store, 420, 7)).toThrow("Incomplete Deep site facts");

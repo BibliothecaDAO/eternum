@@ -14,7 +14,7 @@ import { setup, schema, receipt, rowEvent } from "./native/fixtures";
 import { nativeRowKey } from "./native/row-key";
 import type { MadaraRpc } from "./madara-rpc";
 
-async function heldQuarry(now: number) {
+async function heldMine(now: number) {
   const { decoder, fold, native } = setup();
   const facts = siteSnapshot(snapshot(null, null, null, [PLAYER_ACCOUNT], "realm", null), {
     troops: siteGuardTroops(1),
@@ -61,11 +61,11 @@ afterEach(() => vi.unstubAllGlobals());
 
 it("plans a Deep site opportunity from Herald's actor snapshot with public rival troops and private research", async () => {
   const now = Math.floor(Date.now() / 1000);
-  const { live, confirmedFold, native } = await heldQuarry(now);
+  const { live, confirmedFold, native } = await heldMine(now);
   const shared = live.snapshot(String(GAME_ID), ["Guard", "ExplorerTroops", "RealmKnowledge"], PLAYER_ACCOUNT);
   expect(
     shared.models.find(({ model }) => model === "Guard")!.rows.map(({ value }) => Number(value.structure_id)),
-  ).toEqual([800, 801, 802]);
+  ).toEqual([800, 801, 802, 803]);
   const ownerOnly = live.snapshot(String(GAME_ID), ["ExplorerTroops"], PLAYER_ACCOUNT, PLAYER_ACCOUNT);
   expect(ownerOnly.models[0]!.rows.map(({ value }) => Number(value.explorer_id))).toEqual([7]);
   vi.stubGlobal("fetch", async (address: string) => {
@@ -96,8 +96,8 @@ it("plans a Deep site opportunity from Herald's actor snapshot with public rival
       actor: PLAYER_ACCOUNT,
       owner: "player",
       home: "5",
-      siteId: "801",
-      siteName: "Quarry",
+      siteId: "802",
+      siteName: "Ethereal mine",
       dueAt: (Math.floor(now / ARMIES_TICK_SECONDS) + 1) * ARMIES_TICK_SECONDS * 1000,
       attempts: 0,
     }),

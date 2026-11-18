@@ -305,7 +305,7 @@ it("shows each guard's share of the next tick from the troops it keeps after the
   const scenario = deepScenario();
   const { store } = scenario;
   const loss = store.require("DeepRules", { game_id: 1 }).loss_per_tick;
-  const quarry = readDeepSites(store, scenario.startsAt, 1).find((site) => site.name === "Quarry")!;
+  const quarry = readDeepSites(store, scenario.startsAt, 1).find((site) => site.kind === nativeRuleConstants.DEEP_MINE)!;
   const keep = (explorer_id: number, count: bigint) => {
     const army = store.require("ExplorerTroops", { game_id: 1, explorer_id });
     return {
