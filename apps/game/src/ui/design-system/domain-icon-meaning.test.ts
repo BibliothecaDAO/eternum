@@ -26,7 +26,7 @@ describe("guard and site icon meanings", () => {
     expect(structureMeaning(StructureType.Beasts, "frontier")).toBe("beast-cyclops");
     expect(structureMeaning(StructureType.Beasts, "frontier", "wraith")).toBe("beast-wraith");
     expect(structureMeaning(StructureType.Rift, "frontier")).toBe("beast-dark-fey");
-    for (const species of ["ammit", "basilisk", "wyvern", "hydra"] as const)
+    for (const species of ["ammit", "wyvern", "hydra"] as const)
       expect(structureMeaning(StructureType.Ruin, "frontier", species)).toBe(beastMeaning(species));
   });
 

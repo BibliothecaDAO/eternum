@@ -8,13 +8,19 @@ import { Icon } from "@/ui/design-system/icon";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { HudPanel, HudSheet } from "@/ui/design-system/kit/hud-elements";
 
-import { configManager, siteDisplayName, isSupplyPost } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  siteDisplayName,
+  isSupplyPost,
+  readFrontierBeast,
+  type FrontierBeast,
+} from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
-import { formatCharge, resourceName, frontierSiteName, scaledToUnits } from "@bibliothecadao/types";
+import { formatCharge, resourceName, guardedSiteKind, scaledToUnits } from "@bibliothecadao/types";
 
 const RECEIPT_MODELS = ["ExpeditionSite"] as const;
 
-type ClearedSite = { site: NativeRows["ExpeditionSite"] };
+type ClearedSite = { site: NativeRows["ExpeditionSite"]; beast?: FrontierBeast };
 
 /** The site's receipt lives independently of whoever now occupies its tile. */
 export function readClearedSite(
@@ -25,7 +31,7 @@ export function readClearedSite(
   const site = [...store.inGame("ExpeditionSite", gameId)].find(
     (site) => site.clear !== null && site.col === hex.col && site.row === hex.row && site.alt === hex.alt,
   );
-  return site?.clear ? { site } : null;
+  return site?.clear ? { site, beast: readFrontierBeast(store, gameId, Number(site.entity_id)) } : null;
 }
 
 export function useSelectedClearedSite(): ClearedSite | null {
@@ -79,7 +85,7 @@ function ReceiptLines({ selected }: { selected: ClearedSite }) {
     <section aria-label="Clear reward" className="flex flex-col gap-2 text-hud-body">
       <div className="flex items-center gap-2">
         <Icon name="flag" size={24} />
-        <strong>Cleared · {frontierSiteName(selected.site.category)}</strong>
+        <strong>Cleared · {guardedSiteKind(selected.site.category, selected.beast)}</strong>
       </div>
       <div className="flex items-center gap-3" data-site-rewards>
         {reward && (

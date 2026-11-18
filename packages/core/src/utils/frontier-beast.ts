@@ -1,27 +1,45 @@
-import { StructureType, BEAST_NAMES, FALLEN_REALM_DEPTHS, ROAMING_BEASTS, SITE_GUARDS } from "@bibliothecadao/types";
+import {
+  StructureType,
+  beastModel,
+  beastOf,
+  siteBeastOf,
+  type BeastFamily,
+  type BeastModel,
+  type BeastRow,
+} from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { beastBand, type BeastBand } from "./frontier-beast-band";
 import { expeditionDepth, isGuardedSite, readExpeditionRules } from "./expeditions";
 
-export type FrontierSpecies = keyof typeof BEAST_NAMES;
+export type FrontierSpecies = BeastModel;
 export interface FrontierBeast {
   beast: FrontierSpecies;
   name: string;
   scale: number;
 }
-/** One identity for model, plate and panel. Neither casualties nor reward rank can change it. */
-export function frontierBeast(depth: number, category = StructureType.Ruin, band?: BeastBand): FrontierBeast {
-  const entry = FALLEN_REALM_DEPTHS[depth];
-  if (!entry) throw new Error(`No Frontier beast for depth ${depth}`);
+
+const ROAMING_FAMILY: Record<BeastBand, BeastFamily> = { lowly: "herd", stronger: "band" };
+
+function siteFamily(category: StructureType, band?: BeastBand): BeastFamily {
   if (category === StructureType.Beasts) {
     if (!band) throw new Error("Beast identity requires its initial strength band");
-    const roaming = ROAMING_BEASTS[band];
-    return { ...roaming, name: BEAST_NAMES[roaming.beast] };
+    return ROAMING_FAMILY[band];
   }
-  if (category === StructureType.Camp) return { ...SITE_GUARDS.camp, name: BEAST_NAMES[SITE_GUARDS.camp.beast] };
-  if (category === StructureType.Rift) return { ...SITE_GUARDS.rift, name: BEAST_NAMES[SITE_GUARDS.rift.beast] };
-  return { ...entry, name: BEAST_NAMES[entry.beast] };
+  if (category === StructureType.Camp) return "camp";
+  if (category === StructureType.Rift) return "rift";
+  if (category === StructureType.Ruin) return "ruin";
+  throw new Error(`No Frontier beast guards structure category ${category}`);
+}
+
+const identityOf = (beast: BeastRow): FrontierBeast => ({
+  beast: beastModel(beast),
+  name: beast.name,
+  scale: beast.scale,
+});
+
+export function frontierBeast(depth: number, category = StructureType.Ruin, band?: BeastBand): FrontierBeast {
+  return identityOf(beastOf(siteFamily(category, band), depth));
 }
 
 export function readFrontierBeast(
@@ -45,8 +63,10 @@ export function siteFrontierBeast(
   const rules = readExpeditionRules(store, gameId);
   if (!rules) throw new Error(`Frontier site ${entityId} stands without expedition rules`);
   const depth = expeditionDepth(rules, { y: site.row });
-  if (category !== StructureType.Beasts) return frontierBeast(depth, category);
+  const gameHasDeep = store.get("DeepRules", { game_id: gameId }) !== undefined;
+  if (category !== StructureType.Beasts) return identityOf(siteBeastOf(siteFamily(category), depth, gameHasDeep));
   const bounds = store.get("DepthRules", { game_id: gameId, depth });
   if (!bounds) throw new Error(`Frontier beast ${entityId} stands without depth rules`);
-  return frontierBeast(depth, category, beastBand(site.initial_guard_count, bounds));
+  const band = beastBand(site.initial_guard_count, bounds);
+  return identityOf(siteBeastOf(siteFamily(category, band), depth, gameHasDeep));
 }

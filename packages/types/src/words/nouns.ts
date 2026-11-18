@@ -107,19 +107,16 @@ export const resourceName = (id: ResourcesIds | number | undefined): string => {
 
 export type StructureNamingMode = "frontier" | "blitz" | "eternum";
 
-/** A structure in its game: Frontier replaces the camp category with a Troll; other modes keep their own names. */
-export const structureName = (type: StructureType, mineKind?: number, mode?: StructureNamingMode): string =>
-  mode === "frontier" && type === StructureType.Camp
-    ? BEAST_NAMES.troll
-    : type === StructureType.Mine && mineKind !== undefined
-      ? getMinePresentation(mineKind).name
-      : (StructureTypeToNameMapping[type] ?? UNKNOWN);
+export const structureName = (type: StructureType, mineKind?: number): string =>
+  type === StructureType.Mine && mineKind !== undefined
+    ? getMinePresentation(mineKind).name
+    : (StructureTypeToNameMapping[type] ?? UNKNOWN);
 
 /** The same category names for list headings and discovery choices. */
-export const structurePlural = (type: StructureType, mineKind?: number, mode?: StructureNamingMode): string => {
-  if (type === StructureType.Beasts) return structureName(type, mineKind, mode);
+export const structurePlural = (type: StructureType, mineKind?: number): string => {
+  if (type === StructureType.Beasts) return structureName(type, mineKind);
   if (type === StructureType.BitcoinMine) return "Bitcoin mines";
-  return `${structureName(type, mineKind, mode)}s`;
+  return `${structureName(type, mineKind)}s`;
 };
 
 /** The buildings Frontier raises, by Frontier's names: its barracks trains knights, its hut houses workers. */
@@ -151,6 +148,7 @@ export const buildingName = (category: BuildingType | number, frontier: boolean)
 export const guardSlotName = (slot: GuardSlot): string => GUARD_SLOT_NAMES[slot] ?? UNKNOWN;
 
 export const LAYER_NAMES = ["Surface", "Veil", "Hollow", "Deep"] as const;
+type LayerDepth = 0 | 1 | 2 | 3;
 export const layerName = (depth: number): string => {
   const name = LAYER_NAMES[depth];
   if (name === undefined) throw new Error(`No layer at depth ${depth}`);
@@ -159,39 +157,69 @@ export const layerName = (depth: number): string => {
 export const ETERNUM_MAP_NAMES = [LAYER_NAMES[0], "Ethereal Layer"] as const;
 export const eternumMapName = (alt: boolean): string => ETERNUM_MAP_NAMES[alt ? 1 : 0];
 
-export const BEAST_NAMES = {
-  troll: "Troll",
-  wyvern: "Wyvern",
-  hydra: "Hydra",
-  wraith: "Wraith",
-  cyclops: "Cyclops",
-  ammit: "Ammit",
-  basilisk: "Basilisk",
-  "dark-fey": "Dark fey",
-} as const;
-type FrontierGuard = { beast: keyof typeof BEAST_NAMES; scale: number };
-/** Who guards a ruin, by depth from the surface to Ethereal III, and at what size its model stands. */
-export const FALLEN_REALM_DEPTHS: readonly FrontierGuard[] = [
-  { beast: "ammit", scale: 1.2 },
-  { beast: "basilisk", scale: 1.2 },
-  { beast: "wyvern", scale: 1.35 },
-  { beast: "hydra", scale: 1.7 },
-];
-/** A roaming band of beasts: the weaker band or the stronger, at every depth. */
-export const ROAMING_BEASTS = {
-  lowly: { beast: "cyclops", scale: 1 },
-  stronger: { beast: "wraith", scale: 1 },
-} as const satisfies Record<string, FrontierGuard>;
-/** A camp's and a rift's guard, the same at every depth. */
-export const SITE_GUARDS = {
-  camp: { beast: "troll", scale: 0.85 },
-  rift: { beast: "dark-fey", scale: 0.75 },
-} as const satisfies Record<string, FrontierGuard>;
+export type BeastModel = "troll" | "wyvern" | "hydra" | "wraith" | "cyclops" | "ammit" | "dark-fey";
+export type BeastFamily = "herd" | "band" | "camp" | "rift" | "ruin";
+export type BeastRow = {
+  name: string;
+  family: BeastFamily;
+  layer: LayerDepth;
+  scale: number;
+} & ({ model: BeastModel; fallback?: never } | { model?: never; fallback: BeastModel });
+
+export const BEASTS = {
+  cyclops: { name: "Cyclops", family: "herd", layer: 0, scale: 1, model: "cyclops" },
+  hydra: { name: "Hydra", family: "herd", layer: 1, scale: 1.2, model: "hydra" },
+  tarrasque: { name: "Tarrasque", family: "herd", layer: 2, scale: 1, fallback: "cyclops" },
+  wraith: { name: "Wraith", family: "band", layer: 0, scale: 1, model: "wraith" },
+  banshee: { name: "Banshee", family: "band", layer: 1, scale: 1, fallback: "wraith" },
+  lich: { name: "Lich", family: "band", layer: 2, scale: 1, fallback: "wraith" },
+  troll: { name: "Troll", family: "camp", layer: 0, scale: 0.85, model: "troll" },
+  golem: { name: "Golem", family: "camp", layer: 1, scale: 0.85, fallback: "troll" },
+  ettin: { name: "Ettin", family: "camp", layer: 2, scale: 0.85, fallback: "troll" },
+  fairy: { name: "Fairy", family: "rift", layer: 0, scale: 0.75, model: "dark-fey" },
+  kappa: { name: "Kappa", family: "rift", layer: 1, scale: 0.75, fallback: "dark-fey" },
+  kitsune: { name: "Kitsune", family: "rift", layer: 2, scale: 0.75, fallback: "dark-fey" },
+  wyvern: { name: "Wyvern", family: "ruin", layer: 0, scale: 1.35, model: "wyvern" },
+  ammit: { name: "Ammit", family: "ruin", layer: 1, scale: 1.2, model: "ammit" },
+  minotaur: { name: "Minotaur", family: "ruin", layer: 2, scale: 1.2, fallback: "ammit" },
+} as const satisfies Record<string, BeastRow>;
+
+const DEEPLESS_FOURTH_LAYER = 3;
+export const DEEPLESS_FOURTH_LAYER_BEASTS = {
+  herd: { ...BEASTS.cyclops, layer: 3 },
+  band: { ...BEASTS.wraith, layer: 3 },
+  camp: { ...BEASTS.troll, layer: 3 },
+  rift: { name: "Dark fey", family: "rift", layer: 3, scale: 0.75, model: "dark-fey" },
+  ruin: { ...BEASTS.hydra, family: "ruin", layer: 3, scale: 1.7 },
+} as const satisfies Record<BeastFamily, BeastRow>;
+
+export const beastModel = (beast: BeastRow): BeastModel => beast.model ?? beast.fallback;
+
+export const beastModelName = (model: BeastModel): string =>
+  Object.values<BeastRow>(BEASTS).find((beast) => beast.model === model)!.name;
+
+export const beastOf = (family: BeastFamily, layer: number): BeastRow => {
+  const beast = Object.values<BeastRow>(BEASTS).find((each) => each.family === family && each.layer === layer);
+  if (!beast) throw new Error(`No ${family} beast on layer ${layer}`);
+  return beast;
+};
+
+export const siteBeastOf = (family: BeastFamily, depth: number, gameHasDeep: boolean): BeastRow =>
+  !gameHasDeep && depth === DEEPLESS_FOURTH_LAYER ? DEEPLESS_FOURTH_LAYER_BEASTS[family] : beastOf(family, depth);
+
+export const beastsOfFamily = (family: BeastFamily): BeastRow[] =>
+  Object.values<BeastRow>(BEASTS)
+    .filter((beast) => beast.family === family)
+    .sort((a, b) => a.layer - b.layer);
+
 /** Frontier creatures are the encounter itself; a rift or ruin retains its landmark name. */
 export const frontierSiteName = (type: StructureType, beast?: { name: string }): string =>
-  (type === StructureType.Camp || type === StructureType.Beasts) && beast
-    ? beast.name
-    : structureName(type, undefined, "frontier");
+  (type === StructureType.Camp || type === StructureType.Beasts) && beast ? beast.name : structureName(type);
+
+export const guardedSiteKind = (type: StructureType, beast?: { name: string }): string =>
+  beast && (type === StructureType.Rift || type === StructureType.Ruin)
+    ? `${beast.name} ${structureName(type)}`
+    : frontierSiteName(type, beast);
 
 /** What a player earns with a ruin's clear, as another player's line and their own say it. */
 export const CHEST_EARNED = "chest earned";

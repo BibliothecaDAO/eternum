@@ -68,7 +68,7 @@ describe("a fight's site, by one name on Events, Log and Today (live-qa-night P3
       cleared: `${site} cleared`,
     });
     // The species is the guard's kind: the fight's record still says what fought.
-    expect(present(battle(0), store).description).toContain("Defender forces: Troll [");
+    expect(present(battle(0), store).description).toContain("Defender forces: Golem [");
   });
 
   it("names a site this client never synced the same way, never as a beast guard", () => {

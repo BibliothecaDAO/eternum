@@ -6,7 +6,7 @@ import { campBeside, SITE, SITE_TILE } from "./site-fixture";
 vi.stubGlobal("localStorage", { getItem: () => null });
 afterEach(() => vi.restoreAllMocks());
 const KINDS = ["Camp", "Rift", "Ruin", "Beasts"] as const;
-const SPECIES = { Camp: "Troll", Rift: "Dark fey", Ruin: "Ammit", Beasts: "Cyclops" };
+const SPECIES = { Camp: "Troll", Rift: "Fairy", Ruin: "Wyvern", Beasts: "Cyclops" };
 
 function encounter(kind: SiteKind) {
   const { store } = campBeside(kind);

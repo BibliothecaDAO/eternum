@@ -10,7 +10,6 @@ import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import {
   configManager,
   getEntityName,
-  getGameMode,
   LeaderboardManager,
   Position,
   presentedMineKind,
@@ -134,7 +133,7 @@ const ownedStructures = (
   const counts = new Map<string, number>();
   for (const structure of structures) {
     if (structure.owner !== owner) continue;
-    const name = structureName(structure.base.category as StructureType, presentedMineKind(structure), getGameMode());
+    const name = structureName(structure.base.category as StructureType, presentedMineKind(structure));
     counts.set(name, (counts.get(name) ?? 0) + 1);
   }
   return [...counts]

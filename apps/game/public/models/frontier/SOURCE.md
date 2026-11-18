@@ -1,10 +1,10 @@
 # Frontier beast models
 
-The eight production beasts come from the packed Blender sources in `apps/game/asset-sources/frontier-beasts/refined/`.
-Each source retains its sculpt and painted textures. The matching `*-paint.png` files and prompts live beside the
-sources. `apps/game/scripts/frontier-beasts/sculpt-beasts.py` authors these production sculpts, dispatching the approved
-Troll, Cyclops, Wyvern and Hydra to `sculpt-creatures.py`, Wraith to `sculpt-weak-beasts.py`, and Ammit, Basilisk and
-Dark fey to `sculpt-site-beasts.py`; the packed `.blend` files are the inputs to delivery rebuilds.
+The production beasts come from the packed Blender sources in `apps/game/asset-sources/frontier-beasts/refined/`. Each
+source retains its sculpt and painted textures. The matching `*-paint.png` files and prompts live beside the sources.
+`apps/game/scripts/frontier-beasts/sculpt-beasts.py` authors these production sculpts, dispatching the approved Troll,
+Cyclops, Wyvern and Hydra to `sculpt-creatures.py`, Wraith to `sculpt-weak-beasts.py`, and Ammit and Dark fey to
+`sculpt-site-beasts.py`; the packed `.blend` files are the inputs to delivery rebuilds.
 
 | Species  | Editable source under `refined/` | Production delivery under `public/models/frontier/` |
 | -------- | -------------------------------- | --------------------------------------------------- |
@@ -14,7 +14,6 @@ Dark fey to `sculpt-site-beasts.py`; the packed `.blend` files are the inputs to
 | Wraith   | `wraith.blend`                   | `beast-wraith.glb`                                  |
 | Cyclops  | `cyclops.blend`                  | `beast-cyclops.glb`                                 |
 | Ammit    | `ammit.blend`                    | `beast-ammit.glb`                                   |
-| Basilisk | `basilisk.blend`                 | `beast-basilisk.glb`                                |
 | Dark fey | `dark-fey.blend`                 | `beast-dark-fey.glb`                                |
 
 ## Rebuild and validate
@@ -26,12 +25,12 @@ bash apps/game/scripts/frontier-beasts/rebuild.sh /absolute/path/to/a-new-beast-
 pnpm --dir apps/game verify:beasts
 ```
 
-The output directory must be absolute and must not already exist. The rebuild exports all eight packed sources through
+The output directory must be absolute and must not already exist. The rebuild exports every packed source through
 `export-beast.py`, then compresses the fresh exports through `scripts/outposts/optimize-outpost.mjs`. It writes
-`beast-{troll,wyvern,hydra,wraith,cyclops,ammit,basilisk,dark-fey}.glb` and per-model logs into that external directory.
-It does not overwrite production deliveries. Review the rebuilt files in the game's lab before copying an approved set
-to the production paths, then run `verify:beasts` again against those delivered bytes. Never recompress an already
-compressed delivery.
+`beast-{troll,wyvern,hydra,wraith,cyclops,ammit,dark-fey}.glb` and per-model logs into that external directory. It does
+not overwrite production deliveries. Review the rebuilt files in the game's lab before copying an approved set to the
+production paths, then run `verify:beasts` again against those delivered bytes. Never recompress an already compressed
+delivery.
 
 `verify:beasts` checks the committed GLBs' source hashes, grounded footprint at each species' maximum runtime scale,
 triangle and byte budgets, one primitive, unit transforms, UVs, color and normal textures, and KTX2 encoding. The lab is
@@ -42,14 +41,13 @@ triangle and byte budgets, one primitive, unit transforms, UVs, color and normal
 Models are static, authored Z-up facing -Y and delivered Y-up facing +Z with baked transforms. Each origin is the tile's
 ground center. Deliveries use Draco geometry, ETC1S color and UASTC normal textures. Terrain belongs to the scene.
 
-`packages/core/src/utils/frontier-beast.ts` owns encounter identity and scale. Cyclops is lowly, Wraith stronger; Troll
-replaces the camp category on the client at every depth; Dark fey hovers above every rift. Ruins use Ammit / Basilisk /
-Wyvern / Hydra from surface through III. No combat tier or count rule is derived from this art. The client beast catalog
-owns delivery paths and site offsets.
+`packages/core/src/utils/frontier-beast.ts` resolves each site's beast and scale from the one table by family and layer
+(`BEASTS`, `packages/types/src/words/nouns.ts`); a beast without its own model stands as its fallback's. No combat tier
+or count rule is derived from this art. The client beast catalog owns delivery paths and site offsets.
 
-All eight use the selected sculpts. Wraith, Ammit and Basilisk have the latest paint/sculpt polish; Wyvern and Hydra are
-the approved polished versions. Minotaur and the unselected Ghoul/Kappa/Golem outputs are retired. Selected concept
-paintings remain in the lab archive as the sculpts' references.
+All use the selected sculpts. Wraith and Ammit have the latest paint/sculpt polish; Wyvern and Hydra are the approved
+polished versions. Minotaur and the unselected Ghoul/Kappa/Golem outputs are retired. Selected concept paintings remain
+in the lab archive as the sculpts' references.
 
 All beast deliveries remain static primitives. `FrontierModel` adds small vertex-shader idle displacements using the
 shared animation clock and different phases per instance. Grounded beasts breathe above planted feet, the Wraith lifts

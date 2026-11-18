@@ -169,7 +169,7 @@ const fightSides = (host: HTMLElement) =>
     .map((side) => side.getAttribute("aria-label"))
     .filter((l) => l?.includes("→"));
 /** The fixture army's attack on the camp from beside it: what the card shows near or far. */
-const FORECAST = ["Army 1,498 → 1,041, −457 · 31% lost", "Troll 1,100 → 478, −622 · 57% lost"];
+const FORECAST = ["Army 1,498 → 1,041, −457 · 31% lost", "Golem 1,100 → 478, −622 · 57% lost"];
 
 describe("the tile card", () => {
   it("titles the site by its map name over its kind, names the guard, offers no Attack until an army is chosen, then attacks with the same tap", async () => {
@@ -177,12 +177,11 @@ describe("the tile card", () => {
     try {
       const card = host.querySelector(`section[aria-label="${siteName(SITE)}"]`);
       expect(card).not.toBeNull();
-      expect(card!.querySelector(".ui-frame__body header")?.textContent).toBe("1,100BladeTroll+825+1 site");
-      expect(host.querySelector('header [aria-label="Troll 1,100"]')).not.toBeNull();
+      expect(card!.querySelector(".ui-frame__body header")?.textContent).toBe("1,100BladeGolem+825+1 site");
+      expect(host.querySelector('header [aria-label="Golem 1,100"]')).not.toBeNull();
       expect(button("Attack")).toBeUndefined();
 
       act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
-      // With an army chosen, the headline is the attack's; the Troll is its token and the guard's side.
       expect(card!.querySelectorAll('[data-icon="beast-troll"]')).toHaveLength(2);
       expect(button("Attack")?.disabled).toBe(false);
       await act(async () => button("Attack")!.click());
@@ -199,8 +198,8 @@ describe("the tile card", () => {
       const card = host.querySelector('section[aria-label="North Watch"]')!;
       expect(card).not.toBeNull();
       expect(card.textContent?.match(/North Watch/g)).toHaveLength(1);
-      expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100BladeTroll+825+1 site");
-      expect(card.textContent?.match(/Troll/g)).toHaveLength(1);
+      expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100BladeGolem+825+1 site");
+      expect(card.textContent?.match(/Golem/g)).toHaveLength(1);
       expect(card.textContent).not.toMatch(/\bcamp\b/i);
     } finally {
       unmount();
@@ -225,7 +224,7 @@ describe("the tile card", () => {
     });
     expect(button("Move")?.disabled).toBe(false);
     expect(button("Attack")).toBeUndefined();
-    expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Troll");
+    expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Golem");
     expect(fightSides(host)).toEqual(FORECAST);
     unmount();
   });
@@ -244,7 +243,7 @@ describe("the tile card", () => {
     expect(host.querySelector(".ui-frame__body header")?.textContent).toBe("BladeThe guard holds+825+1 site");
     expect(button("Attack")?.disabled).toBe(true);
     expect(button("Move")).toBeUndefined();
-    expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Troll");
+    expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Golem");
     unmount();
   });
 
@@ -668,7 +667,7 @@ it("refreshes the open forecast when only an army relic effect arrives", () => {
     act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
     expect(fightSides(host)).toEqual(FORECAST);
     act(() => store.applyFacts([relicEffectFact("Blade"), relicEffectFact("Ward")]));
-    expect(fightSides(host)).toEqual(["Army 1,498 → 1,064, −434 · 29% lost", "Troll 1,100 → 416, −684 · 62% lost"]);
+    expect(fightSides(host)).toEqual(["Army 1,498 → 1,064, −434 · 29% lost", "Golem 1,100 → 416, −684 · 62% lost"]);
   } finally {
     unmount();
   }

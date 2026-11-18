@@ -362,9 +362,6 @@ export const tierNumeral = (tier: Rank): string => (tier === 0 ? "0" : rankNumer
 
 export { type RankedWords, rankedText, skillPointGain } from "@bibliothecadao/types";
 
-/** Species names shared by Frontier's models, plates and selected-site cards. */
-export { BEAST_NAMES } from "@bibliothecadao/types";
-
 export const LEFT = "left";
 export const DAY = "Day";
 /** A day of the season against its last: "Day 10 of 14". */
@@ -684,7 +681,7 @@ export const startsNewArmies = (attribute: string, tier: number): RankedWords =>
   { rank: tier },
 ];
 
-const RUIN = structureName(StructureType.Ruin, undefined, "frontier");
+const RUIN = structureName(StructureType.Ruin);
 /** The daily clear closes only the ruin's own depth; cards and forecasts share this rule. */
 export const ruinRule = (perDepth: boolean): string =>
   perDepth

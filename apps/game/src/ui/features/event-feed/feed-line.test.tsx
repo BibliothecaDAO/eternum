@@ -8,11 +8,12 @@ import {
   buildStoryEventPresentation,
   configManager,
   expeditionDepth,
+  frontierBeast,
   readExpeditionRules,
   siteDisplayName,
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { FALLEN_REALM_DEPTHS, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -245,11 +246,11 @@ const depthWithBounds = () => {
 /** Every kind of site the game guards, by its starting guard, and the beast the map paints for it at that depth. */
 const guardsAt = (depth: number) =>
   [
-    [StructureType.Camp, 1_400, "beast-troll"],
-    [StructureType.Rift, 1_400, "beast-dark-fey"],
-    [StructureType.Beasts, 320, "beast-cyclops"],
-    [StructureType.Beasts, 500, "beast-wraith"],
-    [StructureType.Ruin, 3_000, `beast-${FALLEN_REALM_DEPTHS[depth]!.beast}`],
+    [StructureType.Camp, 1_400, `beast-${frontierBeast(depth, StructureType.Camp).beast}`],
+    [StructureType.Rift, 1_400, `beast-${frontierBeast(depth, StructureType.Rift).beast}`],
+    [StructureType.Beasts, 320, `beast-${frontierBeast(depth, StructureType.Beasts, "lowly").beast}`],
+    [StructureType.Beasts, 500, `beast-${frontierBeast(depth, StructureType.Beasts, "stronger").beast}`],
+    [StructureType.Ruin, 3_000, `beast-${frontierBeast(depth).beast}`],
   ] as const;
 const hex = (value: number | bigint | string) => `0x${BigInt(value).toString(16)}`;
 

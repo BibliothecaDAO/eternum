@@ -117,7 +117,7 @@ test("the expedition page gives camps and rifts their own correct guard column a
       .map((line) => {
         if (!line.startsWith("|")) return line;
         const cells = line.split("|").map((cell) => cell.trim());
-        if (cells.length !== 7) return line;
+        if (cells.length !== 8) return line;
         if (cells[2] === "Camps") cells[2] = "Camps and rifts";
         cells.splice(3, 1);
         return cells.join(" | ");

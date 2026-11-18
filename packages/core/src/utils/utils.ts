@@ -1,7 +1,6 @@
 import { RESOURCE_PRECISION, ResourceMiningTypes, ResourcesIds } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "../managers/game-entity-keys";
 import { configManager } from "../managers/config-manager";
-import { nativeGameModeOf } from "../../../../config/source/common/native-preset-modes";
 
 export { getEntityIdFromKeys };
 
@@ -52,5 +51,3 @@ export function multiplyByPrecision(value: number): number {
 export function divideByPrecision(value: number, floor: boolean = true): number {
   return floor ? Math.floor(value / RESOURCE_PRECISION) : value / RESOURCE_PRECISION;
 }
-
-export const getGameMode = () => nativeGameModeOf(configManager.getPresetId());

@@ -198,7 +198,7 @@ export const buildStructurePlate = (
     name: named
       ? structure.structureName.trim()
       : structure.frontierBeast
-        ? frontierSiteName(structure.structureType)
+        ? frontierSiteName(structure.structureType, structure.frontierBeast)
         : structureName(structure.structureType, structure.mineKind ?? undefined),
     named,
     // A site's name as its holder and every list read it (siteDisplayName, through the manager): the plate never makes one.

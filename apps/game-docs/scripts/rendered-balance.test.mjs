@@ -39,7 +39,7 @@ test("the expedition guide gives reveal pay and guards for the personal depths o
   assert.deepEqual(playableDepths(current), current.depths.slice(0, -1));
   const page = pageLine(readFileSync(join(dist, "frontier/expedition", "index.html"), "utf8"));
   assert.ok(!new RegExp(`\\b${deepName} \\d+%`).test(page), "the Deep pays no reveal reward");
-  assert.ok(!new RegExp(`\\b${deepName} [\\d,]+–`).test(page), "the Deep has no camp or rift guard row");
+  assert.ok(!new RegExp(`\\b${deepName} (?:\\S+ )?[\\d,]+–`).test(page), "the Deep has no camp or rift guard row");
 });
 
 function rejectsStaleValue(page, currentText, historicalText) {

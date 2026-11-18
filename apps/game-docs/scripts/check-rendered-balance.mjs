@@ -13,7 +13,7 @@ import remarkMdx from "remark-mdx";
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { LAYER_NAMES, resourceName, BuildingType } from "@bibliothecadao/types";
+import { LAYER_NAMES, beastOf, resourceName, BuildingType } from "@bibliothecadao/types";
 import { playableDepths } from "../docs/utils/playable-depths.mjs";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
@@ -124,17 +124,22 @@ const buildingPrice = (config, id) =>
 export const frontierGuardPhrases = (preset, riftGuardBound) => {
   const range = (lower, upper) => `${n(lower)}–${n(upper)}`;
   return [
-    "Ground Camps Rifts Weaker beasts Stronger beasts",
+    "Ground Camps Rifts Weaker beasts Stronger beasts Ruins",
     ...playableDepths(preset).map((depth, index) =>
       [
         LAYER_NAMES[index],
+        beastOf("camp", index).name,
         range(depth.siteGuardLower, depth.siteGuardUpper),
+        beastOf("rift", index).name,
         range(
           riftGuardBound(depth.siteGuardLower, depth.guardStep),
           riftGuardBound(depth.siteGuardUpper, depth.guardStep),
         ),
+        beastOf("herd", index).name,
         range(depth.beastWeakLower, depth.beastWeakUpper),
+        beastOf("band", index).name,
         range(depth.beastStrongLower, depth.beastStrongUpper),
+        beastOf("ruin", index).name,
       ].join(" "),
     ),
   ];

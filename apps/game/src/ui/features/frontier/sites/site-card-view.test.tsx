@@ -127,7 +127,7 @@ describe("a guarded site's card", () => {
       root.render(
         <SiteCardView
           site="Ruin"
-          beast={{ name: "Basilisk", beast: "basilisk", combatClass: "Knight" }}
+          beast={{ name: "Ammit", beast: "ammit", combatClass: "Knight" }}
           army={{ ...army, troops: 1_200 }}
           guard={3_400}
           fight={{
@@ -142,8 +142,7 @@ describe("a guarded site's card", () => {
       ),
     );
     const card = document.querySelector("section[aria-label='Ruin']")!;
-    // The site's painting and the guard's side name the Basilisk.
-    expect(card.querySelectorAll('[data-icon="beast-basilisk"]')).toHaveLength(2);
+    expect(card.querySelectorAll('[data-icon="beast-ammit"]')).toHaveLength(2);
     // The headline says the loss, and the chest this attack does not win stands dimmed beside it.
     expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("BladeYour army is lost+128Rare+1 site");
     expect(card.querySelector(".ui-frame__body header .opacity-50")?.textContent).toBe("+128Rare+1 site");
@@ -309,7 +308,7 @@ describe("a guarded site's card with no army chosen", () => {
       kind: "structure",
       relation: "neutral",
       owner: "",
-      beast: "Dark fey",
+      beast: "Fairy",
       name: frontierSiteName(StructureType.Rift),
       named: false,
       place: "Brimdeep",
@@ -325,7 +324,7 @@ describe("a guarded site's card with no army chosen", () => {
           <SiteCardView
             site="Rift"
             name="Brimdeep"
-            beast={{ name: "Dark fey", beast: "dark-fey", combatClass: "Crossbowman" }}
+            beast={{ name: "Fairy", beast: "dark-fey", combatClass: "Crossbowman" }}
             army={chosen}
             guard={1_200}
             fight={undefined}
@@ -345,7 +344,7 @@ describe("a guarded site's card with no army chosen", () => {
         <SiteCardView
           site="Ruin"
           name="North Watch"
-          beast={{ name: "Basilisk", beast: "basilisk", combatClass: "Knight" }}
+          beast={{ name: "Ammit", beast: "ammit", combatClass: "Knight" }}
           army={null}
           guard={1_100}
           fight={undefined}
@@ -358,8 +357,8 @@ describe("a guarded site's card with no army chosen", () => {
     const card = document.querySelector("section[aria-label='North Watch Ruin']")!;
     expect(card.textContent?.match(/North Watch/g)).toHaveLength(1);
     // Its kind is in its title, as the hover says it; the guard's token, its strength under it, then its beast.
-    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100BladeBasilisk+1 site");
-    expect(card.querySelector("header [role='img']")?.getAttribute("aria-label")).toBe("Basilisk 1,100");
+    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100BladeAmmit+1 site");
+    expect(card.querySelector("header [role='img']")?.getAttribute("aria-label")).toBe("Ammit 1,100");
     expect(card.textContent?.match(/1,100|1\.1K/g)).toHaveLength(1);
   });
 
@@ -369,7 +368,7 @@ describe("a guarded site's card with no army chosen", () => {
       root.render(
         <SiteCardView
           site="Rift"
-          beast={{ name: "Dark fey", beast: "dark-fey", combatClass: "Crossbowman" }}
+          beast={{ name: "Fairy", beast: "dark-fey", combatClass: "Crossbowman" }}
           army={null}
           guard={1_100}
           fight={undefined}
@@ -380,7 +379,7 @@ describe("a guarded site's card with no army chosen", () => {
       ),
     );
     const card = document.querySelector("section[data-kit-sheet]")!;
-    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100BowDark fey+3,300+1 site");
+    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100BowFairy+3,300+1 site");
     expect(card.querySelectorAll(".ui-row")).toHaveLength(0);
     expect(card.querySelectorAll("button")).toHaveLength(1);
     expect(card.textContent).not.toContain("Pick an army");
@@ -426,7 +425,7 @@ describe("a guarded site's card for an army out of reach", () => {
       root.render(
         <SiteCardView
           site="Rift"
-          beast={{ name: "Dark fey", beast: "dark-fey", combatClass: "Crossbowman" }}
+          beast={{ name: "Fairy", beast: "dark-fey", combatClass: "Crossbowman" }}
           army={army}
           guard={1_100}
           fight={undefined}
@@ -446,7 +445,7 @@ describe("a guarded site's card for an army out of reach", () => {
       root.render(
         <SiteCardView
           site="Rift"
-          beast={{ name: "Dark fey", beast: "dark-fey", combatClass: "Crossbowman" }}
+          beast={{ name: "Fairy", beast: "dark-fey", combatClass: "Crossbowman" }}
           army={army}
           guard={1_100}
           fight={undefined}

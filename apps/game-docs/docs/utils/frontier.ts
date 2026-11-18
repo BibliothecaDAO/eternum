@@ -9,7 +9,7 @@ import {
   nativeResearchConstants as research,
   nativeRuleConstants as rule,
 } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { BEAST_NAMES, LAYER_NAMES, TIER_WORDS, ROAMING_BEASTS, SITE_GUARDS, resourceName } from "@bibliothecadao/types";
+import { LAYER_NAMES, beastOf, TIER_WORDS, resourceName } from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "./config";
 import { playableDepths } from "./playable-depths.mjs";
 import { CONTRACT } from "./contract-constants";
@@ -112,21 +112,16 @@ export const FRONTIER = {
   depths: playableDepths(frontierPreset).map((depth, index) => ({
     name: LAYER_NAMES[index],
     revealPercent: `${depth.revealPercent}%`,
-    campGuard: range(depth.siteGuardLower, depth.siteGuardUpper),
-    riftGuard: range(
+    campGuard: `${beastOf("camp", index).name} ${range(depth.siteGuardLower, depth.siteGuardUpper)}`,
+    riftGuard: `${beastOf("rift", index).name} ${range(
       previewRiftGuardBound(depth.siteGuardLower, depth.guardStep),
       previewRiftGuardBound(depth.siteGuardUpper, depth.guardStep),
-    ),
-    beastWeak: range(depth.beastWeakLower, depth.beastWeakUpper),
-    beastStrong: range(depth.beastStrongLower, depth.beastStrongUpper),
+    )}`,
+    beastWeak: `${beastOf("herd", index).name} ${range(depth.beastWeakLower, depth.beastWeakUpper)}`,
+    beastStrong: `${beastOf("band", index).name} ${range(depth.beastStrongLower, depth.beastStrongUpper)}`,
+    ruinGuard: beastOf("ruin", index).name,
   })),
   ruinGuards: TIER_WORDS.map((name, index) => ({ name, count: range(...previewRuinGuardBounds(index + 1)) })),
-  guards: {
-    camp: BEAST_NAMES[SITE_GUARDS.camp.beast],
-    rift: BEAST_NAMES[SITE_GUARDS.rift.beast],
-    weakBeast: BEAST_NAMES[ROAMING_BEASTS.lowly.beast],
-    strongBeast: BEAST_NAMES[ROAMING_BEASTS.stronger.beast],
-  },
   buildings: [
     ["Farm", research.FARM, "Wheat"],
     ["Barracks", research.BARRACKS, "Troops"],

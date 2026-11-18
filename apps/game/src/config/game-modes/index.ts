@@ -86,10 +86,10 @@ function resolveBuildingModelPaths(isBlitz: boolean) {
   return { ...paths, [BUILDINGS_GROUPS.BUILDINGS]: buildings };
 }
 
-const buildStructureHelpers = (mode: GameModeId) => ({
+const buildStructureHelpers = () => ({
   // A mode names the active game's structures, from the active game's facts.
   getName: getStructureName,
-  getTypeName: (type: StructureType, mineKind?: number) => structureName(type, mineKind, mode),
+  getTypeName: (type: StructureType, mineKind?: number) => structureName(type, mineKind),
   getEntityInfo: (entityId: ID, playerAccount: ContractAddress | null, store: NativeFactStore) =>
     getEntityInfo(entityId, playerAccount, store),
 });
@@ -126,7 +126,7 @@ const blitzConfig: GameModeConfig = {
   rules: {
     isBuildingTypeAllowed: buildBuildingRule(BLITZ_BUILDING_EXCLUSIONS),
   },
-  structure: buildStructureHelpers("blitz"),
+  structure: buildStructureHelpers(),
   assets: {
     structureModelPaths: getStructureModelPaths(),
     buildingModelPaths: resolveBuildingModelPaths(true),
@@ -158,7 +158,7 @@ const eternumConfig: GameModeConfig = {
   rules: {
     isBuildingTypeAllowed: buildBuildingRule(new Set()),
   },
-  structure: buildStructureHelpers("eternum"),
+  structure: buildStructureHelpers(),
   assets: {
     structureModelPaths: getStructureModelPaths(),
     buildingModelPaths: resolveBuildingModelPaths(false),
@@ -173,11 +173,11 @@ const frontierConfig: GameModeConfig = {
     buildingModelPaths: frontierBuildingModels(),
     structureModelPaths: frontierStructureModels(),
   },
-  structure: buildStructureHelpers("frontier"),
+  structure: buildStructureHelpers(),
   labels: {
     ...blitzConfig.labels,
-    village: structureName(StructureType.Camp, undefined, "frontier"),
-    villages: structurePlural(StructureType.Camp, undefined, "frontier"),
+    village: structureName(StructureType.Camp),
+    villages: structurePlural(StructureType.Camp),
   },
   ui: {
     ...blitzConfig.ui,

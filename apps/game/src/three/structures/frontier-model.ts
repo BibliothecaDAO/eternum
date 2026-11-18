@@ -99,7 +99,6 @@ function beastIdle(species: Exclude<FrontierSpecies, "dark-fey">) {
     cyclops: [1.5, 0.016],
     troll: [1.1, 0.014],
     ammit: [1.4, 0.01],
-    basilisk: [1.3, 0.014],
     wyvern: [1.0, 0.018],
     hydra: [0.9, 0.018],
     wraith: [1.2, 0.028],

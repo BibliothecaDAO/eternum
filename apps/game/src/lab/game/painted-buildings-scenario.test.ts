@@ -31,8 +31,8 @@ it("opens a Kingdom with every town building, tier III production and guarded ma
     );
   }
   expect(store.require("Structure", { game_id: 1, entity_id: 713 }).base.category).toBe(StructureType.Rift);
-  expect(readFrontierBeast(store, 1, 710)?.beast).toBe("ammit");
-  expect(readFrontierBeast(store, 1, 713)?.beast).toBe("dark-fey");
+  expect(readFrontierBeast(store, 1, 710)?.name).toBe("Wyvern");
+  expect(readFrontierBeast(store, 1, 713)?.name).toBe("Fairy");
   for (const entityId of [711, 712, 713]) {
     expect([...store.rows("TileOccupancy")].filter((tile) => tile.entity_id === BigInt(entityId))).toHaveLength(1);
   }

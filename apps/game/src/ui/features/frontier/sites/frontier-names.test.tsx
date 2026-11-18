@@ -5,7 +5,7 @@ import { getGameModeConfig } from "@/config/game-modes";
 import { Plate } from "@/three/map-plates/map-plates";
 import { buildStructurePlate } from "@/three/map-plates/map-plate-model";
 import { kindsHeld } from "@/ui/features/world/hud/holdings-model";
-import { buildStoryEventPresentation, frontierBeast, siteDisplayName } from "@bibliothecadao/eternum";
+import { buildStoryEventPresentation, readFrontierBeast, siteDisplayName } from "@bibliothecadao/eternum";
 import { StructureType } from "@bibliothecadao/types";
 import { dayEndItems } from "../day-end/day-end";
 import { attackTargetName } from "./site-marks";
@@ -35,10 +35,11 @@ const publicText = (view: ReactNode) => {
   return text;
 };
 
-it("names the Frontier encounter itself across the plate, cards, Events, lists and the day's end, never Camp", () => {
+it("names a known camp by its beast on the plate, cards, receipt and Events, and the kind alone by its family", () => {
   const { store, site, structure } = campBeside();
   const mode = getGameModeConfig(5);
-  const beast = frontierBeast(0, StructureType.Camp);
+  const beast = readFrontierBeast(store, 1, SITE)!;
+  expect(beast.name).toBe("Golem");
   const identity = { ...beast, art: "beast-troll" as const, combatClass: "Knight" as const };
   const plate = buildStructurePlate({
     entityId: SITE,
@@ -74,12 +75,14 @@ it("names the Frontier encounter itself across the plate, cards, Events, lists a
     ),
   ];
   const dayEnd = dayEndItems({ claimWaiting: false, camp: { x: 40, y: 12 }, armyCanExplore: false });
-  const words = {
-    kindLine: publicText(<Plate plate={plate} />),
+  const kindWords = {
     listHeading: kindsHeld([{ category: StructureType.Camp, structure }], mode.id)[0].plural,
-    selectionLabel: attackTargetName("Camp", identity),
     unknownGuard: attackTargetName("Camp"),
     dayEnd: dayEnd.map(({ line, verb }) => `${line} ${verb}`).join(" "),
+  };
+  const words = {
+    kindLine: publicText(<Plate plate={plate} />),
+    selectionLabel: attackTargetName("Camp", identity),
     events: events.map(({ title, description }) => `${title} ${description}`).join(" "),
     card: publicText(
       <SiteCardView
@@ -93,19 +96,23 @@ it("names the Frontier encounter itself across the plate, cards, Events, lists a
         onClose={() => {}}
       />,
     ),
-    receipt: publicText(<SiteReceipt selected={{ site: clear }} />),
+    receipt: publicText(<SiteReceipt selected={{ site: clear, beast }} />),
   };
   for (const [surface, text] of Object.entries(words)) {
-    expect(text, surface).toMatch(/Troll/);
+    expect(text, surface).toContain(beast.name);
     expect(text, surface).not.toMatch(/\bcamps?\b/i);
-    expect(text, surface).not.toContain("Troll Troll");
+    expect(text, surface).not.toContain(`${beast.name} ${beast.name}`);
+  }
+  for (const [surface, text] of Object.entries(kindWords)) {
+    expect(text, surface).toMatch(/\bCamps?\b/);
+    expect(text, surface).not.toContain(beast.name);
   }
   expect(mode.structure.getName(structure, {} as never).name).toBe(siteDisplayName(Number(structure.entity_id)));
-  expect(words.kindLine.match(/Troll/g)).toHaveLength(1);
+  expect(words.kindLine.split(beast.name)).toHaveLength(2);
   expect(events[0].title).toBe(`${siteDisplayName(SITE)} cleared`);
   // A discovery names the site as its clear does; what guards it is the kind beside it.
   expect(events[1].title).toContain(`${siteDisplayName(SITE)} found`);
-  expect(events[1].description).toMatch(/^Troll · /);
+  expect(events[1].description?.startsWith(`${beast.name} · `)).toBe(true);
 });
 
 it("retains site proper names and Camp for Blitz kind lines and lists", () => {

@@ -3,7 +3,7 @@ import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
-import { TileOccupier } from "@bibliothecadao/types";
+import { TileOccupier, layerName } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 import { reachMark } from "../depth-art";
@@ -31,7 +31,7 @@ export const SpireCard = ({ onClose }: { onClose: () => void }) => {
       <SemanticIcon name={reachMark(1)} size={96} />
       <HudButton
         kind="primary"
-        aria-label={mapLayer ? "Look at the surface" : "Look at the Ethereal layer"}
+        aria-label={mapLayer ? `Look at the ${layerName(0)}` : `Look below the ${layerName(0)}`}
         onClick={() => setMapLayer(!mapLayer)}
       >
         Look

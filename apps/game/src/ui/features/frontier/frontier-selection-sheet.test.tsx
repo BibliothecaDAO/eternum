@@ -192,7 +192,7 @@ describe("Frontier's selection sheet", () => {
         const sheet = host.querySelector("[data-kit-sheet]")!;
         expect(sheet.getAttribute("aria-label")).toBe(foreign ? "Army" : `Supply post · ${expectedName}`);
         expect(sheet.textContent!.split(expectedName).length - 1).toBe(1);
-        expect(host.textContent).toContain("Cleared · Troll");
+        expect(host.textContent).toContain("Cleared · Golem");
         expect(host.textContent).toContain("550 Labor");
         const close = host.querySelector<HTMLButtonElement>('button[aria-label="Close"]');
         expect(close).not.toBeNull();
@@ -252,7 +252,7 @@ describe("Frontier's selection sheet", () => {
       expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(
         `Supply post · ${siteName(SITE)}`,
       );
-      expect(host.textContent).toContain("Cleared · Troll");
+      expect(host.textContent).toContain("Cleared · Golem");
     } finally {
       act(() => root.unmount());
       giveBackPositions();

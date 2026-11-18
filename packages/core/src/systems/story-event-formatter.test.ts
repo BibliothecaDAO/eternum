@@ -331,7 +331,7 @@ it("names a cleared site by its map name, with its recorded kind and payout, wit
     }),
   );
   expect(result.title).toBe(`${siteName(9)} cleared`);
-  expect(result.description).toMatch(/^Troll · Lord 0123's army · .*500/);
+  expect(result.description).toMatch(/^Camp · Lord 0123's army · .*500/);
   expect(
     buildStoryEventPresentation(
       own("SitePayout", {

@@ -28,12 +28,12 @@ troops, larger the deeper it is.
 
 ## What a reveal can find
 
-| Find   | Chance                      | What it is                                                                                                            |
-| ------ | --------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Beasts | {FRONTIER.discovery.beasts} | A roaming band: {FRONTIER.guards.weakBeast} pays wheat; {FRONTIER.guards.strongBeast} has no resource reward.         |
-| Camp   | {FRONTIER.discovery.camp}   | A camp guarded by a {FRONTIER.guards.camp}. Clearing it pays labor and makes it your Realm's supply post for the day. |
-| Rift   | {FRONTIER.discovery.rift}   | A fissure guarded by a {FRONTIER.guards.rift}. Clearing it pays Essence: three times its guard's starting troops.     |
-| Ruin   | {FRONTIER.discovery.ruin}   | A fallen realm. Clearing it awards its recorded relic; its rarity sets the guard strength shown below.                |
+| Find   | Chance                      | What it is                                                                                             |
+| ------ | --------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Beasts | {FRONTIER.discovery.beasts} | Roaming beasts: a weaker herd pays wheat; a stronger band has no resource reward.                      |
+| Camp   | {FRONTIER.discovery.camp}   | A guarded camp. Clearing it pays labor and makes it your Realm's supply post for the day.              |
+| Rift   | {FRONTIER.discovery.rift}   | A guarded fissure. Clearing it pays Essence: three times its guard's starting troops.                  |
+| Ruin   | {FRONTIER.discovery.ruin}   | A fallen realm. Clearing it awards its recorded relic; its rarity sets the guard strength shown below. |
 
 After {FRONTIER.discovery.emptyRevealLimit} empty reveals in a row, the next reveal draws a discovery.
 
@@ -42,16 +42,15 @@ After {FRONTIER.discovery.emptyRevealLimit} empty reveals in a row, the next rev
 Every guard is shown before you attack. Guards grow with depth, so what counts as a safe fight moves as your realm
 grows.
 
-| Ground                    | Camps                          | Rifts                          | Weaker beasts                  | Stronger beasts                  |
-| ------------------------- | ------------------------------ | ------------------------------ | ------------------------------ | -------------------------------- |
-| {FRONTIER.depths[0].name} | {FRONTIER.depths[0].campGuard} | {FRONTIER.depths[0].riftGuard} | {FRONTIER.depths[0].beastWeak} | {FRONTIER.depths[0].beastStrong} |
-| {FRONTIER.depths[1].name} | {FRONTIER.depths[1].campGuard} | {FRONTIER.depths[1].riftGuard} | {FRONTIER.depths[1].beastWeak} | {FRONTIER.depths[1].beastStrong} |
-| {FRONTIER.depths[2].name} | {FRONTIER.depths[2].campGuard} | {FRONTIER.depths[2].riftGuard} | {FRONTIER.depths[2].beastWeak} | {FRONTIER.depths[2].beastStrong} |
+| Ground                    | Camps                          | Rifts                          | Weaker beasts                  | Stronger beasts                  | Ruins                          |
+| ------------------------- | ------------------------------ | ------------------------------ | ------------------------------ | -------------------------------- | ------------------------------ |
+| {FRONTIER.depths[0].name} | {FRONTIER.depths[0].campGuard} | {FRONTIER.depths[0].riftGuard} | {FRONTIER.depths[0].beastWeak} | {FRONTIER.depths[0].beastStrong} | {FRONTIER.depths[0].ruinGuard} |
+| {FRONTIER.depths[1].name} | {FRONTIER.depths[1].campGuard} | {FRONTIER.depths[1].riftGuard} | {FRONTIER.depths[1].beastWeak} | {FRONTIER.depths[1].beastStrong} | {FRONTIER.depths[1].ruinGuard} |
+| {FRONTIER.depths[2].name} | {FRONTIER.depths[2].campGuard} | {FRONTIER.depths[2].riftGuard} | {FRONTIER.depths[2].beastWeak} | {FRONTIER.depths[2].beastStrong} | {FRONTIER.depths[2].ruinGuard} |
 
-A band of beasts is a {FRONTIER.guards.weakBeast} or a stronger {FRONTIER.guards.strongBeast}, as likely as each other.
-A camp is always guarded by a {FRONTIER.guards.camp} and a rift by a {FRONTIER.guards.rift}. A ruin's guard follows its
-relic's rarity on every layer. Resource rewards have a depth premium; the site's card shows the full payout before
-combat.
+Roaming beasts are a weaker herd or a stronger band, as likely as each other. Each family's beast changes with the
+layer, as the table names it. A ruin's guard size follows its relic's rarity on every layer. Resource rewards have a
+depth premium; the site's card shows the full payout before combat.
 
 <Shot
   frame="panel"

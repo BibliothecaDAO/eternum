@@ -112,9 +112,9 @@ export const SiteCardView = ({
   onRealm?: () => void;
   onClose: () => void;
 }) => {
-  const { word: kind, icon } = TARGET_MARKS[site];
+  const { icon } = TARGET_MARKS[site];
   const word = attackTargetName(site, beast);
-  const title = name ? siteTitle(name, kind, beast?.name) : word;
+  const title = name ? siteTitle(name, word, beast?.name) : word;
   // With no army selected the card says what the site is and pays, and its guard (owner, 28 October 2026: "agree with
   // no picker"); selecting an army, then the site, gives the fight.
   const armyless = army === null;

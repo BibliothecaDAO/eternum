@@ -1026,25 +1026,29 @@ receipt over native fixture facts.
 
 ## Frontier beast guards
 
-Standing sites share one species identity between model, plate, selected card and a fight's forces in history. Roaming
-Beasts show Cyclops for the lowly encounter and Wraith for the stronger encounter. Their inclusive count bands, Knight
-T1 combat and immutable initial-count classification are unchanged. Camps show Troll alone at every depth. Rifts show
-Dark fey hovering and moving its wings above the rift. Ruins show Ammit / Basilisk / Wyvern / Hydra from surface through
-depth III. All beasts have subtle GPU idle motion: planted breathing, a drifting Wraith shroud and the fey's
-hover/wings. Instance phases differ; clearing a site removes its guard and standing effects. All standing beasts and
-their landmarks share the settlements' south-facing orientation, toward the fixed map camera at every hex and zoom. The
-idle motion remains in model-local coordinates.
+Standing sites share one species identity between model, plate, selected card and a fight's forces in history. Each
+site's beast is read from one table by family and layer (`BEASTS` in `packages/types/src/words/nouns.ts`): on the
+Surface, roaming Beasts show Cyclops for the lowly encounter and Wraith for the stronger encounter, a camp shows Troll,
+a rift Fairy hovering above it and a ruin Wyvern in its masonry. Each layer below has its own beast of the same family
+and mark; a beast without its own model stands as its fallback's model at its own size. A game without a Deep (the base,
+Devcon and playground presets) has a fourth personal layer, whose beasts are the ones Season 0 showed there
+(`DEEPLESS_FOURTH_LAYER_BEASTS`); Season 1's fourth layer is the Deep. Their inclusive count bands and immutable
+initial-count classification are unchanged. All beasts have subtle GPU idle motion: planted breathing, a drifting Wraith
+shroud and the fey's hover/wings. Instance phases differ; clearing a site removes its guard and standing effects. All
+standing beasts and their landmarks share the settlements' south-facing orientation, toward the fixed map camera at
+every hex and zoom. The idle motion remains in model-local coordinates.
 
-`/lab/models?family=beasts` shows all eight production species, all four ruin depths, standing site compositions and
-both roaming beasts. Site, Depth and Beast strength control the real plate and selected card. Select site opens that
-card; species portraits are shown at their actual 20px HUD size. The plate has a species title and strength, with no
-combat-tier badge. The retired Minotaur, Ghoul, Kappa and Golem deliveries and their old choice routes are removed.
+`/lab/models?family=beasts` shows the production models, every beast of the table by family and layer, the ruin beasts
+in their masonry, standing site compositions and both roaming beasts. Site, Layer and Beast strength control the real
+plate and selected card. Select site opens that card; species portraits are shown at their actual 20px HUD size. The
+plate has a species title and strength, with no combat-tier badge. Retired study deliveries and their old choice routes
+are removed.
 
 `pnpm --dir apps/game prove:beasts <local-url> <fresh-evidence-directory>` drives the beast lab's visible controls and
-records its models, eight HUD portraits, plates and panels. `verify:beasts` checks all eight deliveries, budgets and
+records its models, its HUD portraits, plates and panels. `verify:beasts` checks every delivery, budgets and
 editable-source hashes; `verify:fallen-realm` checks decoded triangles for zero masonry contacts at each production
 scale. All authoring sources and paint live in `asset-sources/frontier-beasts/refined/`;
-`scripts/frontier-beasts/rebuild.sh <fresh-absolute-directory>` exports those exact eight packed sources. There is one
+`scripts/frontier-beasts/rebuild.sh <fresh-absolute-directory>` exports those exact packed sources. There is one
 production path per species and no separate study GLB.
 
 Training buildings grant their first rank when built: 12,000 Essence + 3,000 Labor, with the lodge's kind chosen on the

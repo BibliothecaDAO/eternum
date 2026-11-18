@@ -28,7 +28,7 @@ describe("Frontier's tile card", () => {
   it("shows a camp's guard as troops and tier, its labor payout, and the exact fight from the army beside it", () => {
     const { store, site, structure, attack } = campBeside();
     const plan = readSiteCard(store, site, structure, attack({ col: 41, row: 12, alt: false }));
-    expect(plan.name).toBe("Troll");
+    expect(plan.name).toBe("Golem");
     expect(plan.beast?.beast).toBe("troll");
     expect(plan.guard).toEqual({ type: TroopType.Knight, tier: TroopTier.T1, count: 1_100 });
     expect(plan.payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 825, fits: 825 });
@@ -76,9 +76,8 @@ describe("Frontier's tile card", () => {
   it("names a ruin by the beast its depth calls for, and pays its chest", () => {
     setBlockTimestampSource(() => 350);
     const { store, site, structure } = campBeside("Ruin");
-    // Row 12 of ten-row bands is the second band: Ethereal I, held by a basilisk.
     const plan = readSiteCard(store, site, structure, null);
-    expect(plan.name).toBe("Basilisk");
+    expect(plan.name).toBe("Ammit");
     expect(plan.payout).toEqual({ resourceId: ResourcesIds.Lords, amount: 500, fits: 500 });
     expect(plan.chest).toMatchObject({ tier: 3, amount: 500, funded: true });
     expect(plan.ruinDepth).toBe("Veil");
@@ -137,7 +136,7 @@ it("shows a ruin's fixed quote but refuses funding when the shared budget is spe
   });
 });
 
-it("shows Cyclops wheat from initial guards as its resource payout", () => {
+it("shows a herd's wheat from initial guards as its resource payout", () => {
   const { store, site, structure, attack } = campBeside("Beasts");
   const own = attack({ col: 41, row: 12, alt: false });
   const limit = BigInt(store.require("BoardRules", { game_id: 1 }).settlement_resource_cap) * 1_000_000_000n;

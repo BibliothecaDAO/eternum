@@ -10,7 +10,7 @@ import {
   formatExact,
   formatGain,
   formatPoints,
-  frontierSiteName,
+  guardedSiteKind,
   GuardSlot,
   guardSlotName,
   LORDS,
@@ -266,7 +266,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
   SitePayout: (event, payload, components, resolvePlayerName) => {
     const category = toNumber(payload.category);
     if (category === null || payload.reward === undefined) throw new Error("Incomplete site payout story");
-    const label = frontierSiteName(category);
+    const label = guardedSiteKind(category, fightBeast(payload.site_id, components));
     const reward = payload.reward === null ? "No resource reward" : formatResourceList([payload.reward]);
     if (!reward) throw new Error("Incomplete site resource reward");
     const siteId = toNumber(payload.site_id);
@@ -1069,11 +1069,5 @@ function discoveredSite(
     (site) => site.col === toNumber(coord.x) && site.row === toNumber(coord.y) && site.alt === coord.alt,
   );
   if (!site) return undefined;
-  const beast = fightBeast(site.entity_id, store);
-  const label = frontierSiteName(site.category, beast);
-  const named =
-    beast && (site.category === StructureType.Rift || site.category === StructureType.Ruin)
-      ? `${beast.name} ${label}`
-      : label;
-  return { id: Number(site.entity_id), kind: named };
+  return { id: Number(site.entity_id), kind: guardedSiteKind(site.category, fightBeast(site.entity_id, store)) };
 }
