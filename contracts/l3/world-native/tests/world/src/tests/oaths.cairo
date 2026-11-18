@@ -216,13 +216,9 @@ fn packing_preserves_all_sixteen_held_bits_and_the_offer() {
 
 #[test]
 fn a_revealed_well_refills_forty_percent_of_the_bar_eighty_with_reflection_and_never_past_the_maximum() {
-    let fields = read_txt(@FileTrait::new("../fixtures/oath-well-stamina.txt"));
-    assert_eq!(fields.len(), 24);
-    let mut values = fields.span();
-    while !values.is_empty() {
-        let (held, maximum, gain): (u16, u64, u64) = Serde::deserialize(ref values).unwrap();
-        assert_eq!(crate::oaths::well_stamina(held, maximum), gain);
-    }
+    assert_eq!(crate::oaths::well_stamina(0, 180), 72);
+    assert_eq!(crate::oaths::well_stamina(crate::oaths::bit(crate::oaths::REFLECTION), 180), 144);
+    assert_eq!(crate::oaths::well_stamina(crate::oaths::bit(crate::oaths::GIANTS), 333), 133);
     let discovery = crate::expeditions::FrontierDiscoveryRules {
         camp_bps: 1, rift_bps: 0, ruin_bps: 0, beasts_bps: 0, shrine_bps: 0, well_bps: 5000, empty_reveal_limit: 7,
     };

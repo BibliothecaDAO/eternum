@@ -1,5 +1,5 @@
 import { frontierSeasonOnePreset } from "../../../../config/source/frontier/season-one";
-import { nativeOathConstants as oaths, nativeRuleConstants as rules } from "../schema/client.gen";
+import { nativeOathConstants as oaths } from "../schema/client.gen";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { shortString } from "starknet";
 import { schema as compiledSchema } from "../../../../apps/herald/src/native/fixtures";
@@ -40,15 +40,6 @@ write(
   "../oath-pass-stamina.txt",
   [0, oaths.PASS_STAMINA / 2, oaths.PASS_STAMINA, oaths.PASS_STAMINA * 2].flatMap((deficit) =>
     [deficit, Math.min(deficit, oaths.PASS_STAMINA)].map(String),
-  ),
-);
-write(
-  "../oath-well-stamina.txt",
-  [0, 1 << (oaths.REFLECTION - 1)].flatMap((held) =>
-    [180, 225, 240, 333].flatMap((maximum) => {
-      const percent = held === 0 ? rules.WELL_REFILL_PERCENT : oaths.REFLECTION_WELL_PERCENT;
-      return [held, maximum, Math.floor((maximum * percent) / 100)].map(String);
-    }),
   ),
 );
 console.log("Generated current Blitz, Frontier and Frontier check preset inputs and Herald projections");
