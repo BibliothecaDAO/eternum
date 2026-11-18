@@ -150,7 +150,15 @@ export const LabDoorway = () => {
       {state === "home" && <LabHomeStep />}
       {state === "aspect" && <LabAspectStep />}
       {state === "aspect-realm" && (
-        <AspectPicker members={LAB_ASPECT_MEMBERS} realmOrder={4} joining={null} offered={null} onJoin={noop} />
+        <AspectPicker
+          members={LAB_ASPECT_MEMBERS}
+          realmOrder={4}
+          chosen={null}
+          joining={null}
+          offered={null}
+          onChoose={noop}
+          onFound={noop}
+        />
       )}
     </DoorwayScreen>
   );
@@ -176,8 +184,17 @@ const LabHomeStep = () => {
 
 const LAB_ASPECT_MEMBERS = { 1: 38, 2: 21, 3: 1, 4: 0 };
 const LabAspectStep = () => {
-  const [joining, setJoining] = useState<AspectId | null>(null);
+  const [chosen, setChosen] = useState<AspectId | null>(null);
+  const [joining, setJoining] = useState<number | null>(null);
   return (
-    <AspectPicker members={LAB_ASPECT_MEMBERS} realmOrder={null} joining={joining} offered={null} onJoin={setJoining} />
+    <AspectPicker
+      members={LAB_ASPECT_MEMBERS}
+      realmOrder={null}
+      chosen={chosen}
+      joining={joining}
+      offered={null}
+      onChoose={setChosen}
+      onFound={setJoining}
+    />
   );
 };
