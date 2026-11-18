@@ -1043,7 +1043,12 @@ pub fn labor_home_definition(name: ByteArray) -> PresetDefinition {
     preset.economy.chests = None;
     let mut depths = array![];
     for index in 0..preset.settlement.depths.len() {
-        depths.append(crate::expeditions::DepthRules { chest: first_relic_odds(index), ..*preset.settlement.depths.at(index) });
+        depths
+            .append(
+                crate::expeditions::DepthRules {
+                    chest: first_relic_odds(index), ..*preset.settlement.depths.at(index),
+                },
+            );
     }
     preset.settlement.depths = depths.span();
     preset.rules.mode_rules = preset.rules.mode_rules & (0xffffffff - crate::rules::DISCOVER_CHESTS);
