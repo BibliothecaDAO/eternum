@@ -86,17 +86,21 @@ const OrderPick = ({
         </AppButton>
       }
     >
-      <div data-preseason-step="pick" className="flex w-full flex-col gap-4">
+      <div data-preseason-step="pick" className="flex w-full flex-col gap-3">
         <h1 className="text-app-title text-app-ink">{ASPECT_STEP_WORDS.title}</h1>
         <p className="text-app-body text-app-muted">{ASPECT_STEP_WORDS.line}</p>
         <AspectCards chosen={aspect} members={members} aspectLords={aspectLords} onPick={pickAspect} />
-        {aspect !== null && <OrderRows aspect={aspect} chosen={order} members={members} onPick={setOrder} />}
         {aspectLords !== null && (
-          <p className="app-well flex items-start gap-2 p-3 text-left text-app-label text-app-muted">
-            <Icon name="lords" size={24} />
-            {PRESEASON_WORDS.shared(formatExact(aspectLords), formatExact(ASPECT_REWARD.finishBonus))}
+          <p className="app-well p-3 text-left text-app-label text-app-muted">
+            <span className="flex items-start gap-2">
+              <Icon name="crown" size={24} />
+              <span data-aspect-shared>
+                {PRESEASON_WORDS.shared(formatExact(aspectLords), formatExact(ASPECT_REWARD.finishBonus))}
+              </span>
+            </span>
           </p>
         )}
+        {aspect !== null && <OrderRows aspect={aspect} chosen={order} members={members} onPick={setOrder} />}
       </div>
     </StageFrame>
   );
@@ -128,22 +132,26 @@ const AspectCards = ({
             onClick={() => onPick(id)}
             className="app-choice w-full"
           >
-            <span className="grid grid-cols-2 gap-1">
-              {ordersOfAspect(id).map(({ orderId }) => (
-                <OrderEmblem key={orderId} order={orderId} size={32} />
-              ))}
+            <span className="flex w-full items-center gap-2">
+              <span className="grid shrink-0 grid-cols-2 gap-0.5">
+                {ordersOfAspect(id).map(({ orderId }) => (
+                  <OrderEmblem key={orderId} order={orderId} size={24} />
+                ))}
+              </span>
+              <span className="flex min-w-0 flex-col text-left">
+                <span className="text-app-heading text-app-ink">{name}</span>
+                <span className="text-app-label text-app-muted">{ASPECT_STEP_WORDS.members(count)}</span>
+              </span>
             </span>
-            <span className="text-app-heading text-app-ink">{name}</span>
-            <span className="text-app-label text-app-muted">{ASPECT_STEP_WORDS.members(count)}</span>
             {aspectLords !== null && (
-              <>
+              <span className="flex flex-col">
                 <span className="text-app-strong text-app-gold">
                   {PRESEASON_WORDS.average(formatShort(aspectLords / (count + 1)))}
                 </span>
                 <span className="text-app-label text-app-muted">
                   {PRESEASON_WORDS.ofTotal(formatShort(aspectLords))}
                 </span>
-              </>
+              </span>
             )}
           </button>
         </li>

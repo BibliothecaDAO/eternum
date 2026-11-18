@@ -502,8 +502,12 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(page.text()).not.toContain("Create your account");
     expect(card("Might").textContent).toBe("Might39 membersabout 2.5K LORDSa player on average, of 100K");
     expect(card("Guile").textContent).toContain("0 membersabout 100K LORDS");
-    expect(page.text()).toContain("The Aspect's 100,000 LORDS are shared by Glory");
-    expect(page.text()).toContain("The first to finish adds 100,000 more.");
+    expect(page.container.querySelector("[data-aspect-shared]")?.textContent).toBe(
+      "The Aspect's 100,000 LORDS are shared by Glory: your share follows your Glory, not an equal split. The first to finish adds 100,000 more.",
+    );
+    expect(
+      page.container.querySelector("[data-aspect-shared]")?.closest("p")?.previousElementSibling?.matches("ul"),
+    ).toBe(true);
     expect(button("Choose your side")?.disabled).toBe(true);
 
     await act(async () => card("Harmony").click());
