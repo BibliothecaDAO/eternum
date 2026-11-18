@@ -126,7 +126,7 @@ const refusalLine = ({ refusal, staminaWait, staminaHeld, explored }: TileOrder)
   return explored ? null : UNEXPLORED;
 };
 
-export const orderRefusalWords: Record<Exclude<OrderRefusal["reason"], "stamina">, string> = {
+const orderRefusalWords: Record<Exclude<OrderRefusal["reason"], "stamina">, string> = {
   food: "Not enough food for the army",
   "off-limits": ATTACK_REFUSAL_WORDS["target-must-be-unowned"],
   allied: ATTACK_REFUSAL_WORDS.allied,

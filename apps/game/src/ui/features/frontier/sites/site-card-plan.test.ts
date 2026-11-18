@@ -206,7 +206,9 @@ it("clips the Plunder reward after applying its bonus and leaves wheat unchanged
   });
   const rift = campBeside("Rift");
   rift.store.applyFacts([relicEffectFact("Plunder")]);
-  expect(readSiteCard(rift.store, rift.site, rift.structure, rift.attack({ col: 41, row: 12, alt: false })).payout).toEqual({
+  expect(
+    readSiteCard(rift.store, rift.site, rift.structure, rift.attack({ col: 41, row: 12, alt: false })).payout,
+  ).toEqual({
     resourceId: ResourcesIds.Essence,
     amount: 5940,
     fits: 5940,

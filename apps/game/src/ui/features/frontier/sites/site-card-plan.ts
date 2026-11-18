@@ -189,7 +189,11 @@ const troopsOf = (troops: Pick<Troops, "category" | "tier" | "count">) => ({
   count: Number(troops.count / PRECISION),
 });
 
-const REACH_REFUSALS: ReadonlySet<AttackRefusal> = new Set(["out-of-range", "claim-needs-adjacency", "deep-site-not-adjacent"]);
+const REACH_REFUSALS: ReadonlySet<AttackRefusal> = new Set([
+  "out-of-range",
+  "claim-needs-adjacency",
+  "deep-site-not-adjacent",
+]);
 
 const planAttack = (
   store: NativeFactStore,

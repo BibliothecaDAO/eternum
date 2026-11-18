@@ -20,12 +20,10 @@ it.each([ruinFightScenario, ruinFarScenario])(
     const { store, startsAt } = makeScenario();
     const site = store.require("ExpeditionSite", { game_id: 1, entity_id: BigInt(SITE) });
     const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) });
-    const plan = readSiteCard(
-      store,
-      site,
-      store.require("Structure", { game_id: 1, entity_id: BigInt(SITE) }),
-      { army, timestamp: startsAt },
-    );
+    const plan = readSiteCard(store, site, store.require("Structure", { game_id: 1, entity_id: BigInt(SITE) }), {
+      army,
+      timestamp: startsAt,
+    });
     expect(plan.chest).toBeUndefined();
     expect(plan.ruinDepth).toBe("Surface");
     expect(plan.payout).toBeUndefined();
@@ -121,12 +119,10 @@ it("stands the far ruin's army out of an attack's reach, and the card forecasts 
   const { store, startsAt } = ruinFarScenario();
   const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) });
   const site = store.require("ExpeditionSite", { game_id: 1, entity_id: BigInt(SITE) });
-  const plan = readSiteCard(
-    store,
-    site,
-    store.require("Structure", { game_id: 1, entity_id: BigInt(SITE) }),
-    { army, timestamp: startsAt },
-  );
+  const plan = readSiteCard(store, site, store.require("Structure", { game_id: 1, entity_id: BigInt(SITE) }), {
+    army,
+    timestamp: startsAt,
+  });
   expect(army.troops.count).toBe(1_626n * 1_000_000_000n);
   expect(plan.guard?.count).toBe(3_000);
   expect(plan.inReach).toBe(false);

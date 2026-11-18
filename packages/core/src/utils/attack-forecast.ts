@@ -186,7 +186,12 @@ export function clearsEveryDefender(
   for (const defender of forecast.sides.queued) {
     if (fight.outcome !== "wins") return false;
     const standing = { ...forecast.sides.attacker, troops: fight.attacker };
-    const next = forecastFight(standing.troops, defender.troops, exchangeContext(chainSecond, standing, defender, forecast.biome), rules);
+    const next = forecastFight(
+      standing.troops,
+      defender.troops,
+      exchangeContext(chainSecond, standing, defender, forecast.biome),
+      rules,
+    );
     if (next.outcome === "refused") return false;
     fight = next;
   }
@@ -288,7 +293,9 @@ function structureDefence(scene: Scene, attacker: Combatant, structure: NativeRo
   if (!first) return { claims: attacker, target: tile };
   const guarding = isCombatGuard(structure.owner, scene.rules.dayUnitSeconds);
   const standing = (troops: Troops) => ({ troops, oaths: 0, guarding, tile, home: structure.entity_id });
-  return { sides: { attacker, defender: standing(first.troops), queued: queued.map((guard) => standing(guard.troops)) } };
+  return {
+    sides: { attacker, defender: standing(first.troops), queued: queued.map((guard) => standing(guard.troops)) },
+  };
 }
 
 function guardAttack(scene: Scene, structureId: bigint, targetId: bigint): Defence | undefined {
