@@ -24,7 +24,7 @@ it("uses the native home Aspects and shared Deep boundary for army orders", () =
   aspect = 2;
   expect(armyCombatRefusal(store, army, enemy)).toBeUndefined();
   row = 512;
-  expect(armyCombatRefusal(store, army, enemy)).toBe("no-attack");
+  expect(armyCombatRefusal(store, army, enemy)).toBe("outside-deep");
   dayUnit = 0;
   expect(armyCombatRefusal(store, army, enemy)).toBeUndefined();
   expect(armyCombatRefusal(store, army, { ...enemy, game_id: 8 })).toBe("no-attack");

@@ -764,7 +764,7 @@ export const ATTACK_REFUSAL_WORDS = {
   "deep-site-not-adjacent": "Move beside the site to attack",
   "target-must-be-unowned": "Only unclaimed structures can be attacked",
   "own-target": "You hold it",
-  "no-attack": `Armies fight only in the ${DEEP}`,
+  "outside-deep": `Armies fight only in the ${DEEP}`,
   allied: "Allied armies cannot attack each other",
   "season-immunity": "Under season immunity",
   "village-immunity": "The village is under immunity",

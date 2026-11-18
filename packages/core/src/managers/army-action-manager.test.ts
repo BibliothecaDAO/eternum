@@ -361,7 +361,7 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
 
     for (const hex of [adjacentArmy, rangedArmy]) {
       expect(actionPaths.get(ActionPaths.posKey(hex))).toBeUndefined();
-      expect(actionPaths.getRefusals().get(ActionPaths.posKey(hex))).toEqual({ reason: "no-attack" });
+      expect(actionPaths.getRefusals().get(ActionPaths.posKey(hex))).toEqual({ reason: "outside-deep" });
     }
     expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(site))!)).toBe(ActionType.Attack);
   });

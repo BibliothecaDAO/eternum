@@ -320,7 +320,7 @@ describe("one attack forecast for every combat surface", () => {
     const field = { col: 100, row: 100 };
     game.army(10, 1, field);
     game.army(20, 2, beside(field));
-    expect(refusalOf(game.forecast(10, 20))).toBe("no-attack");
+    expect(refusalOf(game.forecast(10, 20))).toBe("outside-deep");
     game.army(10, 1, beside(DEEP, 3));
     game.army(20, 2, beside(DEEP, 4));
     expect(refusalOf(game.forecast(10, 20))).toBe("fights");

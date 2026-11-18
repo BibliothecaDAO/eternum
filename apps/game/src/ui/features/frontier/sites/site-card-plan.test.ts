@@ -118,10 +118,10 @@ it("refuses another player's army outside the Deep, near or far, as the contract
   expect(plan.kind).toBe("Army");
   expect(plan.guard).toEqual({ type: TroopType.Knight, tier: TroopTier.T1, count: 300 });
   expect(plan.payout).toBeNull();
-  expect(plan).toMatchObject({ fight: { refused: true }, blocked: "no-attack", inReach: true });
+  expect(plan).toMatchObject({ fight: { refused: true }, blocked: "outside-deep", inReach: true });
   expect(readArmyCard(store, other, attack({ col: 44, row: 12, alt: false }))).toMatchObject({
     fight: { refused: true },
-    blocked: "no-attack",
+    blocked: "outside-deep",
   });
 });
 

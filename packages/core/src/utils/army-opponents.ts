@@ -7,7 +7,7 @@ export function armyCombatRefusal(
   store: Pick<NativeFactStore, "get" | "require" | "entityOccupancy">,
   attacker: { game_id: number; explorer_id: number | bigint },
   defender: { game_id: number; explorer_id: number | bigint },
-): "no-attack" | "allied" | undefined {
+): "no-attack" | "outside-deep" | "allied" | undefined {
   if (attacker.game_id !== defender.game_id) return "no-attack";
   if (!limitsArmyCombat(store, attacker.game_id)) return undefined;
   const side = (army: typeof attacker) => {
@@ -22,7 +22,7 @@ export function armyOpponentsRefusal(
   game_id: number,
   attacker: ArmySide,
   defender: ArmySide,
-): "no-attack" | "allied" | undefined {
+): "outside-deep" | "allied" | undefined {
   return limitsArmyCombat(store, game_id) ? deepOpponentsRefusal(store, game_id, attacker, defender) : undefined;
 }
 
@@ -34,9 +34,9 @@ function deepOpponentsRefusal(
   game_id: number,
   attacker: ArmySide,
   defender: ArmySide,
-): "no-attack" | "allied" | undefined {
+): "outside-deep" | "allied" | undefined {
   const { spacing } = store.require("SettlementRules", { game_id });
-  if (![attacker, defender].every((side) => isDeepTile(spacing, side.tile))) return "no-attack";
+  if (![attacker, defender].every((side) => isDeepTile(spacing, side.tile))) return "outside-deep";
   const aspect = (side: ArmySide) => store.require("HomeAspect", { game_id, home: side.home }).aspect;
   return aspect(attacker) === aspect(defender) ? "allied" : undefined;
 }

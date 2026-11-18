@@ -105,7 +105,7 @@ describe("the shared Deep", () => {
     rows.HomeAspect![1]!.aspect = 2;
     expect(armyCombatRefusal(store, army, enemy)).toBeUndefined();
     rows.TileOccupancy![1]!.row = 512;
-    expect(armyCombatRefusal(store, army, enemy)).toBe("no-attack");
+    expect(armyCombatRefusal(store, army, enemy)).toBe("outside-deep");
     rows.SliceRules![0]!.day_unit_seconds = 0;
     expect(armyCombatRefusal(store, army, enemy)).toBeUndefined();
   });

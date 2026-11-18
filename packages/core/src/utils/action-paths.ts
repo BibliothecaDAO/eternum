@@ -40,6 +40,7 @@ export type OrderRefusal =
   | { reason: "food" }
   | { reason: "off-limits" }
   | { reason: "no-attack" }
+  | { reason: "outside-deep" }
   | { reason: "allied" }
   | { reason: "no-transfer" }
   | { reason: "occupied" }

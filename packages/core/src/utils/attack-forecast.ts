@@ -49,7 +49,7 @@ export type AttackRefusal =
   | "deep-site-not-adjacent"
   | "target-must-be-unowned"
   | "own-target"
-  | "no-attack"
+  | "outside-deep"
   | "allied"
   | "season-immunity"
   | "village-immunity"
