@@ -2,8 +2,6 @@ import { expect, it } from "vitest";
 import { NativeFactStore, nativeOathConstants as oaths } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { planDeepSiteWatches } from "./deep-site-watch";
-import { forecastAttack } from "@bibliothecadao/eternum";
-import { deepSites } from "@bibliothecadao/types";
 import {
   ARMY,
   ARMIES_TICK_SECONDS,
@@ -92,9 +90,3 @@ it.each([false, true])("uses held damage Oaths when planning a Deep alert, defen
   expect(planDeepSiteWatches(store, player, timestamp * 1000).map(({ dueAt }) => dueAt)).toEqual([due * 1000]);
 });
 
-it("probe", () => {
-  const { store, timestamp } = equalArmies(0);
-  const quarry = 800 + deepSites.find((kind) => kind.position === "quarry")!.id;
-  const forecast = forecastAttack(store, { game_id: GAME_ID, entity_id: ARMY }, { game_id: GAME_ID, entity_id: quarry }, timestamp, { besideTarget: true });
-  expect(JSON.stringify(forecast, (_, value) => (typeof value === "bigint" ? value.toString() : value)).slice(0, 600)).toBe("probe");
-});

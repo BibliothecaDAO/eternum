@@ -18,7 +18,7 @@ const SECOND_ARMY = 10;
 export const ARMIES_TICK_SECONDS = 10;
 const STAMINA_GAIN_PER_TICK = 40;
 export const DAY_UNIT_SECONDS = 14_400;
-const REGION_SPACING = 40;
+const REGION_SPACING = 100;
 export const SEASON_START = Math.floor(Date.now() / 1000) - 13 * 3_600;
 export const TODAY = 1;
 
