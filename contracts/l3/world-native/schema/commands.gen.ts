@@ -1,6 +1,8 @@
 // Generated from command routes and production payload ABIs. Run the native schema generator to update.
 import type { BigNumberish } from "starknet";
 export const nativeCommandBits = {
+  "BuySeal": "18889465931478580854784",
+  "BuyStamina": "37778931862957161709568",
   "ChooseOath": "9444732965739290427392",
   "ClaimDailyQuest": "4722366482869645213696",
   "CreateExplorer": "1",
@@ -56,6 +58,8 @@ export const nativeCommandBits = {
   "InteractSite": "590295810358705651712"
 } as const;
 export interface NativeCommandPayloads {
+  BuySeal: undefined;
+  BuyStamina: { readonly explorer_id: BigNumberish; readonly fragments: BigNumberish };
   ChooseOath: { readonly explorer_id: BigNumberish; readonly expected_pick: BigNumberish; readonly oath: { readonly kind: "Some"; readonly value: BigNumberish } | { readonly kind: "None"; readonly value: undefined }; readonly replace: { readonly kind: "Some"; readonly value: BigNumberish } | { readonly kind: "None"; readonly value: undefined } };
   ClaimDailyQuest: { readonly home: BigNumberish; readonly day: BigNumberish };
   CreateExplorer: { readonly slot: BigNumberish; readonly structure_id: BigNumberish; readonly category: BigNumberish; readonly tier: BigNumberish; readonly amount: BigNumberish; readonly direction: BigNumberish };
