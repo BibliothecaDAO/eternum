@@ -228,13 +228,17 @@ fn a_revealed_well_refills_forty_percent_of_the_bar_eighty_with_reflection_and_n
     };
     for (reflection, left) in array![(false, 10_u64), (true, 10), (true, 100)] {
         let (d, game_id, key) = super::registrar::setup_frontier_relics_with_rules(Some(discovery));
-        let root = super::registrar::discovery_root(game_id, discovery, 100, 0, None, crate::discovery::Discovery::Well);
+        let root = super::registrar::discovery_root(
+            game_id, discovery, 100, 0, None, crate::discovery::Discovery::Well,
+        );
         let (maximum, oaths) = snforge_std::interact_with_state(
             d.games,
             || {
                 crate::logic::research::write(
                     crate::resources::ResourceKey { game_id, entity_id: 1 },
-                    crate::research::RealmKnowledge { learned: crate::research::learn(0, crate::research::ROW_WELL, 0) },
+                    crate::research::RealmKnowledge {
+                        learned: crate::research::learn(0, crate::research::ROW_WELL, 0),
+                    },
                 );
                 let mut progress = crate::logic::progression::require(key);
                 progress.oaths = if reflection {
@@ -246,7 +250,9 @@ fn a_revealed_well_refills_forty_percent_of_the_bar_eighty_with_reflection_and_n
                 let original = crate::logic::troops::explorer(key).unwrap();
                 let mut army = crate::logic::army_slot_storage::resolve(key, original, None);
                 let rules = crate::commands::load_context(game_id, 0, 360).rules.unbox();
-                let maximum = crate::progression::stamina_max(progress, army.troops.category, rules.troop_stamina_config);
+                let maximum = crate::progression::stamina_max(
+                    progress, army.troops.category, rules.troop_stamina_config,
+                );
                 let mut bar = army.troops.stamina.inline();
                 bar.amount = crate::troops::explore_stamina_cost(army.troops.category, rules).into() + left;
                 bar.settled_at = 360;
