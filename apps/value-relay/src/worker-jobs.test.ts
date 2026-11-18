@@ -1,6 +1,7 @@
 const sweep = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock("./frontier-sweep", () => ({ sweepFrontierLords: sweep }));
 vi.mock("./frontier-prizes", () => ({ awardFrontierPrizes: vi.fn(async () => {}) }));
+vi.mock("./frontier-end", () => ({ settleEndedFrontierGames: vi.fn(async () => {}) }));
 const pools = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock("./frontier-pools", () => ({ publishFrontierPools: pools }));
 const address = vi.hoisted(() => vi.fn(() => "0x10"));
