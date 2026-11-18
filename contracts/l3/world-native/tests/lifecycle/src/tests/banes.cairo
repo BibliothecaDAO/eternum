@@ -68,7 +68,12 @@ fn found(d: Deployment, game_id: u32, timestamp: u64) -> ResourceKey {
         execute_in_game(
             d,
             game_id,
-            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, order: Some(world_test_support::tests::registrar::order_of_aspect(d, game_id, 1)) }),
+            Command::SettleSeason(
+                crate::realms::SettleSeason {
+                    selected_realm: None,
+                    order: Some(world_test_support::tests::registrar::order_of_aspect(d, game_id, 1)),
+                },
+            ),
             timestamp,
         ),
     );
@@ -549,7 +554,12 @@ fn altar_reserves_distinct_rivals_and_a_completed_team_quest_restores_height_wit
             execute_in_game(
                 member,
                 game_id,
-                Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, order: Some(world_test_support::tests::registrar::order_of_aspect(d, game_id, aspect)) }),
+                Command::SettleSeason(
+                    crate::realms::SettleSeason {
+                        selected_realm: None,
+                        order: Some(world_test_support::tests::registrar::order_of_aspect(d, game_id, aspect)),
+                    },
+                ),
                 360,
             ),
         );

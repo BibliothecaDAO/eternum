@@ -13,11 +13,16 @@ fn settle(d: Deployment, game_id: u32, held: bool, timestamp: u64) -> bool {
     execute_in_game(
         d,
         game_id,
-        Command::SettleSeason(SettleSeason { selected_realm: None, order: if held {
-            None
-        } else {
-            Some(world_test_support::tests::registrar::order_of_aspect(d, game_id, 1))
-        } }),
+        Command::SettleSeason(
+            SettleSeason {
+                selected_realm: None,
+                order: if held {
+                    None
+                } else {
+                    Some(world_test_support::tests::registrar::order_of_aspect(d, game_id, 1))
+                },
+            },
+        ),
         timestamp,
     )
 }

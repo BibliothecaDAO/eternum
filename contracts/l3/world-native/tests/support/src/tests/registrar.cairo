@@ -1084,7 +1084,8 @@ pub fn apply_ruin_depth_release(d: super::Deployment, game_id: u32) {
 
 pub fn first_order_choice(d: super::Deployment, game_id: u32) -> Option<u8> {
     snforge_std::interact_with_state(
-        d.games, || {
+        d.games,
+        || {
             if let Some(orders) = crate::logic::aspects::rules(game_id) {
                 Some(order_in_aspect(orders, 1))
             } else {

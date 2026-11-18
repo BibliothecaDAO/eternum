@@ -838,7 +838,11 @@ const ORDER_CHOICES = `JSON.stringify([...document.querySelectorAll(".aspect-pic
   order: order.dataset.order,
 })))`;
 const chooseFirstOrder = async (browser) => {
-  const orders = await readUntil(() => browser.read(ORDER_CHOICES), (shown) => shown.length === 4, PLAYABLE_WAIT_MS);
+  const orders = await readUntil(
+    () => browser.read(ORDER_CHOICES),
+    (shown) => shown.length === 4,
+    PLAYABLE_WAIT_MS,
+  );
   browser.click(orders[0].label);
   return orders;
 };

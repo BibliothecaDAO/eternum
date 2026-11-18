@@ -47,7 +47,12 @@ fn progress_observations_freeze_completion_and_the_player_collects_only_once() {
         execute_in_game(
             d,
             game_id,
-            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, order: Some(world_test_support::tests::registrar::order_of_aspect(d, game_id, 1)) }),
+            Command::SettleSeason(
+                crate::realms::SettleSeason {
+                    selected_realm: None,
+                    order: Some(world_test_support::tests::registrar::order_of_aspect(d, game_id, 1)),
+                },
+            ),
             360,
         ),
     );
@@ -163,11 +168,14 @@ fn held_and_campaign_homes_collect_the_labor_bonus_without_extra_essence() {
                 d,
                 game_id,
                 Command::SettleSeason(
-                    crate::realms::SettleSeason { selected_realm: None, order: if held {
-                        None
-                    } else {
-                        Some(world_test_support::tests::registrar::order_of_aspect(d, game_id, 1))
-                    } },
+                    crate::realms::SettleSeason {
+                        selected_realm: None,
+                        order: if held {
+                            None
+                        } else {
+                            Some(world_test_support::tests::registrar::order_of_aspect(d, game_id, 1))
+                        },
+                    },
                 ),
                 360,
             ),
@@ -214,7 +222,12 @@ fn found(d: Deployment, game_id: u32) -> ResourceKey {
         execute_in_game(
             d,
             game_id,
-            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, order: Some(world_test_support::tests::registrar::order_of_aspect(d, game_id, 1)) }),
+            Command::SettleSeason(
+                crate::realms::SettleSeason {
+                    selected_realm: None,
+                    order: Some(world_test_support::tests::registrar::order_of_aspect(d, game_id, 1)),
+                },
+            ),
             360,
         ),
     );

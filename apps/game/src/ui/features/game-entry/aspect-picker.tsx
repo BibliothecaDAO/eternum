@@ -109,7 +109,9 @@ const OrderChoices = ({
             data-order={orderId}
             data-chosen={joining === orderId || undefined}
             aria-busy={joining === orderId || undefined}
-            aria-label={joining === orderId ? ASPECT_STEP_WORDS.foundingAs(fullOrderName) : PRESEASON_WORDS.playAs(fullOrderName)}
+            aria-label={
+              joining === orderId ? ASPECT_STEP_WORDS.foundingAs(fullOrderName) : PRESEASON_WORDS.playAs(fullOrderName)
+            }
             disabled={disabled}
             onClick={() => onFound(orderId)}
           >

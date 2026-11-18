@@ -86,7 +86,9 @@ fn free_home_requires_a_valid_order_and_a_failed_choice_reserves_nothing() {
         d.games,
         || {
             let home = crate::entity_ids::home_for_actor(game_id, d.actor);
-            assert_eq!(crate::logic::structures::record(ResourceKey { game_id, entity_id: home }).metadata.order, order);
+            assert_eq!(
+                crate::logic::structures::record(ResourceKey { game_id, entity_id: home }).metadata.order, order,
+            );
             assert_eq!(crate::state::read().settlements.aspect_members.read((game_id, 2)), 1);
         },
     );
