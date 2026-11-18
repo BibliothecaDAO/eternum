@@ -89,7 +89,11 @@ function ArmyOathPick({
       {picked === null ? (
         <div className="grid grid-cols-3 gap-1">
           {oathCards(progress.oath_pick).map((id) => (
-            <div key={id} data-oath-id={id} className={`min-w-0 rounded border-t-4 ${colourClass[oathColour(id).colour]}`}>
+            <div
+              key={id}
+              data-oath-id={id}
+              className={`min-w-0 rounded border-t-4 ${colourClass[oathColour(id).colour]}`}
+            >
               <HudCard
                 size="sm"
                 title={oathName(id)}

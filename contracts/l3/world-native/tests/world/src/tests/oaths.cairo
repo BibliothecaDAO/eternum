@@ -8,7 +8,9 @@ use super::state::{GameState, TroopObservationTrait};
 
 #[test]
 fn every_draw_offers_three_distinct_oaths_the_army_does_not_hold_and_fewer_only_when_fewer_remain() {
-    let thirteen = 65535 ^ crate::oaths::bit(crate::oaths::SKILL) ^ crate::oaths::bit(crate::oaths::FOX)
+    let thirteen = 65535
+        ^ crate::oaths::bit(crate::oaths::SKILL)
+        ^ crate::oaths::bit(crate::oaths::FOX)
         ^ crate::oaths::bit(crate::oaths::RAGE);
     for oaths in array![0_u16, crate::oaths::bit(crate::oaths::POWER), crate::oaths::RED, 0x0f0f, thirteen] {
         for seed in 0_u64..64 {

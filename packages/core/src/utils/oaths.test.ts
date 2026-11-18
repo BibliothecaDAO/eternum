@@ -35,7 +35,10 @@ describe("Oath picks", () => {
       oaths.POWER,
       oaths.GIANTS,
     ]);
-    expect(oathCards(oaths.SKILL - 1 + ((oaths.FOX - 1) << 4) + ((oaths.FOX - 1) << 8))).toEqual([oaths.SKILL, oaths.FOX]);
+    expect(oathCards(oaths.SKILL - 1 + ((oaths.FOX - 1) << 4) + ((oaths.FOX - 1) << 8))).toEqual([
+      oaths.SKILL,
+      oaths.FOX,
+    ]);
     expect(oathCards(0)).toEqual([]);
     expect(oathColour(oaths.POWER).colour).toBe("red");
     expect(oathColour(oaths.FOX).colour).toBe("blue");
