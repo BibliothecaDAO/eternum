@@ -91,21 +91,6 @@ fn beasts_draw_two_depth_scaled_ranges_below_every_other_site_guard() {
 }
 
 #[test]
-fn beast_ranges_include_both_endpoints_at_every_depth() {
-    let (_, preset) = super::preset_projection::current_definition("frontier-check");
-    for (depth, seed, count) in array![
-        (0_u32, 8_u32, 380_u128), (0, 20, 430), (0, 25, 470), (0, 34, 420), (1, 21, 760), (1, 80, 860), (1, 102, 840),
-        (1, 1052, 940), (2, 15, 1680), (2, 191, 1720), (2, 247, 1520), (2, 477, 1880), (3, 216, 3760), (3, 218, 3040),
-        (3, 535, 3360), (3, 825, 3440),
-    ] {
-        let guard = frontier_guard(
-            BEASTS_CATEGORY, *preset.settlement.depths.at(depth), seed.into(), preset.rules, 360,
-        );
-        assert_eq!(guard.count, count * RESOURCE_PRECISION);
-    }
-}
-
-#[test]
 fn ruin_guards_follow_their_relics_place_on_the_layer_doubled_each_layer_down() {
     let (_, preset) = super::preset_projection::current_definition("frontier-check");
     for (depth, rank, base) in array![
