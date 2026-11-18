@@ -381,7 +381,7 @@ export function siteSnapshot(
         troops: {
           ...explorerFixture.expected.value.troops,
           stamina: { Inline: { amount: 120, settled_at: bar.settledAt, remainder: 0 } },
-          count: kind.id === quarry.id ? 0 : 10000 * RESOURCE_PRECISION,
+          count: kind.id === mine.id ? 0 : 10000 * RESOURCE_PRECISION,
         },
       }),
     ),
