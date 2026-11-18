@@ -473,11 +473,18 @@ fn real_production_splits_at_the_bane_start_and_quorum_end_and_army_stores_still
             tomorrow,
         ),
     );
+    let mut reveals = spy_events();
     complete(d, home, 1, tomorrow + 600);
+    let mut revealed_labor = 0_u128;
+    for reward in world_test_support::tests::explore_rewards::reveal_stories(ref reveals, d) {
+        if reward.receiver == home.entity_id && reward.resource_type == crate::resources::LABOR {
+            revealed_labor += reward.amount;
+        }
+    }
     let now = tomorrow + 1000;
     build(d, home, crate::research::FARM, 2, now);
     let ordinary_seconds: u128 = (tomorrow - 360 + 400).into();
-    let expected = rate * ordinary_seconds + rate * 600 / 2 - 800 * RESOURCE_PRECISION;
+    let expected = rate * ordinary_seconds + rate * 600 / 2 + revealed_labor - 800 * RESOURCE_PRECISION;
     interact_with_state(
         d.games,
         || {
