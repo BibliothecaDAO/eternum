@@ -3,6 +3,7 @@ import {
   snapshot,
   siteSnapshot,
   siteGuardTroops,
+  type DeepSiteFixture,
   mistFacts,
   GAME_ID,
   PLAYER_ACCOUNT,
@@ -80,7 +81,7 @@ const createHerald = () => {
   const log: HeraldHistoryEvent[] = [];
   const state = {
     army: null as null | ArmyState,
-    site: null as null | { troops: number; aspect: number; lore: boolean; lastTick: number },
+    site: null as null | DeepSiteFixture,
     /** The neighbour's army, spent whenever the player acts, so it rests alongside the player's. */
     neighbourArmy: null as null | ArmyState,
     secondArmy: null as null | ArmyState,
@@ -472,9 +473,7 @@ describe.concurrent("shard notifications", () => {
         expect(push.received).toEqual([]);
         await waitUntil(() => push.received.length === 1, ticks(2) + polls(3));
         expect(Date.now()).toBeGreaterThanOrEqual(earliest);
-        expect(await push.words()).toEqual([
-          "Ethereal mine can be taken / An army of yours can clear its remaining guards.",
-        ]);
+        expect(await push.words()).toEqual(["Ethereal mine can be taken / An army of yours can take it today."]);
         await pause(polls(3));
         expect(push.received).toEqual([201]);
       } finally {
@@ -538,8 +537,28 @@ describe.concurrent("shard notifications", () => {
     herald.state.site.lastTick = armiesTick();
     herald.siteChanged();
     await waitUntil(() => push.received.length === 1, 20000);
+    expect(await push.words()).toEqual(["Ethereal mine can be taken / An army of yours can take it today."]);
+    herald.siteChanged();
+    await pause(polls(2));
+    expect(push.received).toEqual([201]);
+    await worker.dispose();
+    const restarted = await start();
+    try {
+      await restarted.runCron();
+      await pause(polls(3));
+      expect(push.received).toEqual([201]);
+    } finally {
+      await restarted.dispose();
+    }
+  }, 90000);
+
+  it("pushes a Deep site opportunity when a ring opens, once to a player who can reach it, across restart", async () => {
+    const { herald, push, worker, start } = await createHarness("important");
+    herald.state.site = { troops: siteGuardTroops(1), aspect: 1, lore: true, lastTick: armiesTick(), entered: 1 };
+    await worker.runCron();
+    await waitUntil(() => push.received.length === 1, 20000);
     expect(await push.words()).toEqual([
-      "Ethereal mine can be taken / An army of yours can clear its remaining guards.",
+      "Ring 2 of the Deep has opened / Four more sites can be taken today. A held building now pays 3 a tick.",
     ]);
     herald.siteChanged();
     await pause(polls(2));
@@ -563,9 +582,7 @@ describe.concurrent("shard notifications", () => {
       await pause(polls(2));
       expect(push.received).toEqual([]);
       await waitUntil(() => push.received.length === 1, 60000);
-      expect(await push.words()).toEqual([
-        "Ethereal mine can be taken / An army of yours can clear its remaining guards.",
-      ]);
+      expect(await push.words()).toEqual(["Ethereal mine can be taken / An army of yours can take it today."]);
     } finally {
       await worker.dispose();
     }

@@ -302,9 +302,17 @@ export const snapshot = (
 });
 
 /** A confirmed shared Quarry held by a rival; the enrolled player's army stays outside the Deep. */
+export interface DeepSiteFixture {
+  troops: number;
+  aspect: number;
+  lore: boolean;
+  lastTick: number;
+  entered?: number;
+}
+
 export function siteSnapshot(
   base: HeraldGameSnapshot,
-  site: { troops: number; aspect: number; lore: boolean; lastTick: number } | null,
+  site: DeepSiteFixture | null,
   owner?: string | null,
 ): HeraldGameSnapshot {
   if (!site) return base;
@@ -347,7 +355,13 @@ export function siteSnapshot(
   put("DeepRules", [
     row(1, {
       gate_distance: 4,
-      rings: [{ radius: 5, realms: 0 }],
+      rings:
+        site.entered === undefined
+          ? [{ radius: 5, realms: 0 }]
+          : [
+              { radius: 5, realms: 0 },
+              { radius: 8, realms: 1 },
+            ],
       beasts: deepSites.map((_, kind) => ({ count: 10000 * RESOURCE_PRECISION, bow: kind % 2 === 1 })),
       loss_per_tick: frontierSeasonOnePreset.deep.lossPerTick * RESOURCE_PRECISION,
       core_per_tick: 500 * RESOURCE_PRECISION,
@@ -356,20 +370,23 @@ export function siteSnapshot(
       altar_threshold: 1500,
     }),
   ]);
+  const rings = site.entered === undefined ? [0] : [0, 1];
+  const sites = rings.flatMap((ring) => deepSites.map((kind) => ({ ring, kind, id: 800 + 100 * ring + kind.id })));
   put(
     "DeepSite",
-    deepSites.map((kind) => row(800 + kind.id, { entity_id: 800 + kind.id, kind: kind.id, ring: 0, day: TODAY })),
+    sites.map(({ ring, kind, id }) => row(id, { entity_id: id, kind: kind.id, ring, day: TODAY })),
   );
+  put("DeepEntries", site.entered === undefined ? [] : [row(2, { day: TODAY, count: site.entered })]);
   const mine = deepSites.find((kind) => kind.key === "mine")!;
   put("DeepGuard", [row(NEIGHBOUR_ARMY, { explorer_id: NEIGHBOUR_ARMY, site_id: 800 + mine.id, slot: 0 })]);
   put("DeepArmy", [row(NEIGHBOUR_ARMY, { explorer_id: NEIGHBOUR_ARMY, last_tick: site.lastTick })]);
   put("TileOccupancy", [
     armyPosition(ARMY, HOME, bar),
-    ...deepSites.map((kind) =>
-      row(800 + kind.id, {
-        entity_id: 800 + kind.id,
+    ...sites.map(({ ring, kind, id }) =>
+      row(id, {
+        entity_id: id,
         col: offsets[kind.key].x + 25,
-        row: offsets[kind.key].y + 325,
+        row: offsets[kind.key].y + 325 + 3 * ring,
         alt: false,
         category: TileOccupier.DeepSite,
         is_structure: false,
@@ -378,15 +395,15 @@ export function siteSnapshot(
   ]);
   put(
     "Guard",
-    deepSites.map((kind) =>
-      row(800 + kind.id, {
-        structure_id: 800 + kind.id,
+    sites.map(({ ring, kind, id }) =>
+      row(id, {
+        structure_id: id,
         slot: 0,
         destroyed_tick: 0,
         troops: {
           ...explorerFixture.expected.value.troops,
           stamina: { Inline: { amount: 120, settled_at: bar.settledAt, remainder: 0 } },
-          count: kind.id === mine.id ? 0 : 10000 * RESOURCE_PRECISION,
+          count: ring === 0 && kind.id === mine.id ? 0 : 10000 * RESOURCE_PRECISION,
         },
       }),
     ),
