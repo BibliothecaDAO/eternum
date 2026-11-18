@@ -31,6 +31,7 @@ const fixture = () => {
         loss_per_tick: precision,
         rings: [{ radius: 5, realms: 0 }],
         beasts: [0, 1, 2, 3].map((kind) => ({ count: 10n * precision, bow: kind % 2 === 1 })),
+        building_pay: { alone: 6, pair: 3, crowd: 2 },
       },
     ],
     DeepArmy: [{ game_id: 7, explorer_id: 11n, last_tick: 6n }],
@@ -134,6 +135,24 @@ describe("the shared Deep", () => {
     expect(readDeepSite(store, 420, 24n, 7)?.open).toBe(false);
     rows.DeepEntries = [{ game_id: 7, day: 0n, count: 2 }];
     expect(readDeepSite(store, 420, 24n, 7)?.open).toBe(true);
+  });
+
+  it("reads a Foundation's pay a tick as the pair, then the crowd, as today's entries open more rings", () => {
+    const { rows, store } = fixture();
+    rows.DeepRules![0]!.rings = [
+      { radius: 5, realms: 0 },
+      { radius: 8, realms: 2 },
+      { radius: 11, realms: 3 },
+    ];
+    rows.DeepSite = [{ game_id: 7, entity_id: 24n, kind: 0, ring: 0, day: 0n }];
+    rows.Guard = [{ game_id: 7, structure_id: 24n, slot: 0, troops: { count: 10n * precision } }];
+    rows.TileOccupancy!.push({ game_id: 7, entity_id: 24n, col: 505, row: 3584, alt: false });
+    rows.DeepEntries = [{ game_id: 7, day: 0n, count: 1 }];
+    expect(readDeepSite(store, 420, 24n, 7)?.buildingPay).toBe(6);
+    rows.DeepEntries = [{ game_id: 7, day: 0n, count: 2 }];
+    expect(readDeepSite(store, 420, 24n, 7)?.buildingPay).toBe(3);
+    rows.DeepEntries = [{ game_id: 7, day: 0n, count: 3 }];
+    expect(readDeepSite(store, 420, 24n, 7)?.buildingPay).toBe(2);
   });
 
   it("reads all sites in catalog order, highest live guard first, then restores next-day beasts", () => {

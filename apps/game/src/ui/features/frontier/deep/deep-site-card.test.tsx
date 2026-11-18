@@ -108,40 +108,6 @@ describe("the Deep site's live native binding", () => {
     }
   });
 
-  it("pays a held Foundation the pair, then the crowd, as more rings open that day", () => {
-    const scenario = raceScenario();
-    scenario.store.applyFacts([
-      { model: "BaneRules", key: "0xfee1", value: baneScenario("world").store.require("BaneRules", { game_id: 1 }) },
-    ]);
-    const hud = draw(undefined, scenario);
-    try {
-      const rules = hud.store.require("DeepRules", { game_id: 1 });
-      const foundationPay = () => {
-        const foundation = readDeepSites(hud.store, scenario.startsAt, 1).find(
-          (site) => site.kind === nativeRuleConstants.DEEP_FOUNDATION && site.ring === 0,
-        )!;
-        hud.render(<DeepSiteCard site={foundation} onClose={() => {}} />);
-        return hud.host.querySelector("[data-deep-pay]")!.textContent;
-      };
-      const enter = (count: number) => {
-        const row = { game_id: 1, day: 0n, count };
-        act(() =>
-          hud.store.applyFacts([
-            { model: "DeepEntries", key: hud.store.wireKeyOf("DeepEntries", row)!, value: wire(row) },
-          ] as never),
-        );
-      };
-      enter(rules.rings[1]!.realms);
-      expect(foundationPay()).toContain(`${rules.building_pay.pair} Glory`);
-      expect(foundationPay()).toContain(`+${rules.building_pay.pair} height`);
-      enter(rules.rings[2]!.realms);
-      expect(foundationPay()).toContain(`${rules.building_pay.crowd} Glory`);
-      expect(foundationPay()).toContain(`+${rules.building_pay.crowd} height`);
-    } finally {
-      hud.unmount();
-    }
-  });
-
   it("keeps the joined slot army's refilled stamina and panel after vacating its tile", async () => {
     const hud = draw();
     try {
