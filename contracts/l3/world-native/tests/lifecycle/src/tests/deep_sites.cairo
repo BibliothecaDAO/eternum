@@ -201,9 +201,7 @@ fn distinct_homes_enter_one_deep_and_move_on_its_fixed_terrain() {
     assert_eq!(a, gate(d, game_id, 1));
     assert_eq!(b, gate(d, game_id, 2));
     assert!(crate::geometry::adjacent(army(d, third).coord, a));
-    interact_with_state(
-        d.games, || assert_eq!(crate::state::read().deep.realms_entered.read((game_id, 0)), 3),
-    );
+    interact_with_state(d.games, || assert_eq!(crate::state::read().deep.realms_entered.read((game_id, 0)), 3));
     for kind in 0..crate::rules::DEEP_KIND_COUNT {
         let target = site(d, game_id, kind);
         assert!(target.entity_id != 0);
@@ -242,8 +240,7 @@ fn a_later_ring_refuses_joins_and_attacks_until_enough_realms_entered_today() {
     let mut definition = preset();
     let mut deep = definition.economy.deep.unwrap();
     deep
-        .rings =
-            array![crate::deep::DeepRing { radius: 5, realms: 0 }, crate::deep::DeepRing { radius: 8, realms: 2 }]
+        .rings = array![crate::deep::DeepRing { radius: 5, realms: 0 }, crate::deep::DeepRing { radius: 8, realms: 2 }]
         .span();
     definition.economy.deep = Some(deep);
     let (d, game_id) = super::aspects::setup_aspect_preset(880, definition);

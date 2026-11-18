@@ -158,9 +158,14 @@ it.each([4, 5, 6, 7, 8, 9])("reports the field or garrison survivors from Knight
     const army = game.store.require("ExplorerTroops", { game_id: gameId, explorer_id: 102 });
     for (const site of deepSites) {
       const id = 1100 + site.id;
-      const tile =
-        site.key === "mine" ? deepCentre : { col: deepCentre.col + 10 + site.id, row: deepCentre.row + 10 };
-      writeFact(game.store, "DeepSite", [gameId, id], { game_id: gameId, entity_id: id, kind: site.id, ring: 0, day: 0 });
+      const tile = site.key === "mine" ? deepCentre : { col: deepCentre.col + 10 + site.id, row: deepCentre.row + 10 };
+      writeFact(game.store, "DeepSite", [gameId, id], {
+        game_id: gameId,
+        entity_id: id,
+        kind: site.id,
+        ring: 0,
+        day: 0,
+      });
       writeFact(game.store, "TileOccupancy", [gameId, 0, tile.col, tile.row], {
         game_id: gameId,
         entity_id: id,

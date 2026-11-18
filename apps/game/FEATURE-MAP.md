@@ -1173,8 +1173,8 @@ the nearest free tile around its Aspect's gate. Its sites stand in rings around 
 archive, one Essence core, one Ethereal mine and one Bane altar; each kind moves one place a day. Ring 1 opens with the
 day, each later ring when the Realms entered today reach the preset's count; a closed site's card says so and refuses
 Attack and Join. The map draws the archive as a hyperstructure's bare foundation, the core as a rift, the mine as a
-fragment mine and the altar as a Shrine (`DEEP_SITE_LOOKS`, `src/three/managers/map-site-manager.ts`). Each site's
-plate stays over its model.
+fragment mine and the altar as a Shrine (`DEEP_SITE_LOOKS`, `src/three/managers/map-site-manager.ts`). Each site's plate
+stays over its model.
 
 Each Aspect’s tower height appears on **Season, Aspects**. The towers have no map entities.
 

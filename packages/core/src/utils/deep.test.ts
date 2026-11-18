@@ -55,7 +55,9 @@ const fixture = () => {
       if (!row) throw new Error(`missing ${model}`);
       return row;
     },
-    requireOrAbsent: (model: NativeModelName, key: Record<string, unknown>) => ({ known: get(model, key) ?? { count: 0 } }),
+    requireOrAbsent: (model: NativeModelName, key: Record<string, unknown>) => ({
+      known: get(model, key) ?? { count: 0 },
+    }),
     entries: (model: string) => (rows[model] ?? []).map((row, index) => [String(index), row]),
     inGame: (model: string, gameId: number) => (rows[model] ?? []).filter((row) => row.game_id === gameId),
     entityOccupancy: (game_id: number, entity_id: bigint) =>

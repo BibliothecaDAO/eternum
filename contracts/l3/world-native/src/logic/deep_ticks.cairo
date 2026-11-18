@@ -147,7 +147,8 @@ fn pay_resource(game_id: u32, kind: u8, shares: Span<DeepShare>, boundary: u64, 
     let resources = IResourceOperationsLibraryDispatcher { class_hash: release.resources.read() };
     for index in 0..shares.len() {
         let home = ResourceKey { game_id, entity_id: *shares.at(index).home };
-        resources.grant_resource(home, resource, *payments.at(index), boundary, crate::commands::resource_context(context));
+        resources
+            .grant_resource(home, resource, *payments.at(index), boundary, crate::commands::resource_context(context));
     }
 }
 

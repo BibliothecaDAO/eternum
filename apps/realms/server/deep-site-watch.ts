@@ -114,7 +114,16 @@ export async function readDeepSiteWatches(
   const store = await readGameFacts(
     shardUrl,
     player.gameId,
-    [...STAMINA_MODELS, "PlayerEntry", "RealmKnowledge", "ArmyRelicEffect", "ChestRules", "DeepSite", "DeepEntries", "Guard"],
+    [
+      ...STAMINA_MODELS,
+      "PlayerEntry",
+      "RealmKnowledge",
+      "ArmyRelicEffect",
+      "ChestRules",
+      "DeepSite",
+      "DeepEntries",
+      "Guard",
+    ],
     now,
     { actor: player.actor },
     catalogue,

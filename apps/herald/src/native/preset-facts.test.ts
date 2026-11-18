@@ -412,7 +412,12 @@ it("projects optional Deep rules from verified registration and publishes no row
   const deep = {
     gate_distance: 4,
     rings: [{ radius: 5, realms: 0 }],
-    beasts: [{ count: 10_000_000_000_000n, bow: false }, { count: 10_000_000_000_000n, bow: true }, { count: 10_000_000_000_000n, bow: false }, { count: 10_000_000_000_000n, bow: true }],
+    beasts: [
+      { count: 10_000_000_000_000n, bow: false },
+      { count: 10_000_000_000_000n, bow: true },
+      { count: 10_000_000_000_000n, bow: false },
+      { count: 10_000_000_000_000n, bow: true },
+    ],
     loss_per_tick: BigInt(frontierSeasonOnePreset.deep.lossPerTick) * BigInt(RESOURCE_PRECISION),
     core_per_tick: 500_000_000_000n,
     mine_per_tick: 500_000_000_000n,
@@ -512,7 +517,12 @@ it("projects optional race rules from verified registration into the native fact
         definition.economy.deep = new CairoOption(CairoOptionVariant.Some, {
           gate_distance: 4,
           rings: [{ radius: 5, realms: 0 }],
-          beasts: [{ count: 10000_000000000n, bow: false }, { count: 10000_000000000n, bow: true }, { count: 10000_000000000n, bow: false }, { count: 10000_000000000n, bow: true }],
+          beasts: [
+            { count: 10000_000000000n, bow: false },
+            { count: 10000_000000000n, bow: true },
+            { count: 10000_000000000n, bow: false },
+            { count: 10000_000000000n, bow: true },
+          ],
           loss_per_tick: BigInt(frontierSeasonOnePreset.deep.lossPerTick) * BigInt(RESOURCE_PRECISION),
           core_per_tick: 500_000000000n,
           mine_per_tick: 500_000000000n,

@@ -113,7 +113,9 @@ describe("the Deep site's live native binding", () => {
       expect(hud.host.textContent).toContain("Held by Might");
       expect(hud.button("Join")?.disabled).toBe(false);
       await act(async () => hud.button("Join")!.click());
-      const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find((site) => site.kind === nativeRuleConstants.DEEP_MINE)!;
+      const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find(
+        (site) => site.kind === nativeRuleConstants.DEEP_MINE,
+      )!;
       expect(hud.join).toHaveBeenCalledTimes(1);
       expect(hud.join).toHaveBeenCalledWith(expect.objectContaining({ explorer_id: 201, coord: site.position }));
       expect(hud.attack).not.toHaveBeenCalled();
@@ -161,7 +163,9 @@ describe("the Deep site's live native binding", () => {
       expect(hud.button("Join")).toBeUndefined();
       expect(hud.button("Attack")?.disabled).toBe(false);
       await act(async () => hud.button("Attack")!.click());
-      const mine = readDeepSites(hud.store, hud.scenario.startsAt, 1).find((site) => site.kind === nativeRuleConstants.DEEP_MINE)!;
+      const mine = readDeepSites(hud.store, hud.scenario.startsAt, 1).find(
+        (site) => site.kind === nativeRuleConstants.DEEP_MINE,
+      )!;
       expect(hud.attack).toHaveBeenCalledTimes(1);
       expect(hud.attack).toHaveBeenCalledWith(
         expect.objectContaining({ explorer_id: 201, structure_id: Number(mine.id) }),
@@ -185,7 +189,9 @@ it("refreshes stamina from guard membership alone and keeps a missing position u
       ]),
     );
     expect(hud.host.textContent).toBe("unknown");
-    const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find((site) => site.kind === nativeRuleConstants.DEEP_MINE)!;
+    const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find(
+      (site) => site.kind === nativeRuleConstants.DEEP_MINE,
+    )!;
     const membership = { game_id: 1, explorer_id: 201n, site_id: site.id, slot: 1 };
     act(() => hud.store.applyFacts([{ model: "DeepGuard", key: "0xdeed", value: membership }]));
     expect(hud.host.textContent).toBe("60");
@@ -272,7 +278,9 @@ it("previews the Deep guard's opening and repeated exchange before sending each 
       expect(labels().some((label) => label?.includes(`→ ${enemyLeft},`))).toBe(true);
       expect(hud.button("Attack")?.disabled).toBe(false);
       await act(async () => hud.button("Attack")!.click());
-      const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find(({ kind }) => kind === nativeRuleConstants.DEEP_MINE)!;
+      const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find(
+        ({ kind }) => kind === nativeRuleConstants.DEEP_MINE,
+      )!;
       const answer = hud.scenario.answer(
         {
           kind: "BattleGuard",
@@ -305,7 +313,9 @@ it("shows each guard's share of the next tick from the troops it keeps after the
   const scenario = deepScenario();
   const { store } = scenario;
   const loss = store.require("DeepRules", { game_id: 1 }).loss_per_tick;
-  const quarry = readDeepSites(store, scenario.startsAt, 1).find((site) => site.kind === nativeRuleConstants.DEEP_MINE)!;
+  const quarry = readDeepSites(store, scenario.startsAt, 1).find(
+    (site) => site.kind === nativeRuleConstants.DEEP_MINE,
+  )!;
   const keep = (explorer_id: number, count: bigint) => {
     const army = store.require("ExplorerTroops", { game_id: 1, explorer_id });
     return {
@@ -338,8 +348,9 @@ it("shows every held guard crest and refreshes it from the progress fact", () =>
     const crests = () => hud.host.querySelector("[data-guard-oaths]");
     expect([...crests()!.children].map((node) => node.textContent)).toEqual(["Giants", "Protection", "Power"]);
     expect(crests()!.querySelectorAll("img")).toHaveLength(3);
-    const guard = readDeepSites(hud.store, hud.scenario.startsAt, 1).find((site) => site.kind === nativeRuleConstants.DEEP_MINE)!.guards[0]!
-      .army;
+    const guard = readDeepSites(hud.store, hud.scenario.startsAt, 1).find(
+      (site) => site.kind === nativeRuleConstants.DEEP_MINE,
+    )!.guards[0]!.army;
     const progress = hud.store.require("ArmyProgress", guard);
     act(() =>
       hud.store.applyFacts([

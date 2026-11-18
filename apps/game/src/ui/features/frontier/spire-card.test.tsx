@@ -165,7 +165,12 @@ describe("a realm's spire, from the player's path", () => {
           game_id: 1,
           gate_distance: 4,
           rings: [{ radius: 5, realms: 0 }],
-          beasts: [{ count: 1000n, bow: false }, { count: 1000n, bow: true }, { count: 1000n, bow: false }, { count: 1000n, bow: true }],
+          beasts: [
+            { count: 1000n, bow: false },
+            { count: 1000n, bow: true },
+            { count: 1000n, bow: false },
+            { count: 1000n, bow: true },
+          ],
           loss_per_tick: 1n,
           core_per_tick: 1n,
           mine_per_tick: 1n,

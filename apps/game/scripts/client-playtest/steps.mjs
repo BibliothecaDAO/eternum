@@ -4634,10 +4634,7 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
       // With the field army still picked, each site is visited and pressed as a player does: the camera brought to it,
       // its plate and model in the frame, then a click (desktop) or tap (phone) on the model selects its hex and opens its card.
       const visits = [];
-      for (const site of [
-        ...DEEP_SITE_NAMES.filter((each) => each !== JOINED_SITE),
-        JOINED_SITE,
-      ]) {
+      for (const site of [...DEEP_SITE_NAMES.filter((each) => each !== JOINED_SITE), JOINED_SITE]) {
         const { name, key } = site;
         await panToHex(browser, browser.read(`window.__eternumMapSelection?.siteHexes?.["${key}"] ?? null`));
         // The camera's hex stands at the frame's middle, which a phone's open card covers: a player drags the site up
@@ -4659,10 +4656,7 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
     verify: ({ played }) =>
       played.visits.every((visit) => visit.inView === true && visit.sheet === visit.name)
         ? completed(played)
-        : failed(
-            "Each Deep site must be visited with its plate in the frame and open its own card",
-            played,
-          ),
+        : failed("Each Deep site must be visited with its plate in the frame and open its own card", played),
   },
   {
     name: "reselect-guard-from-dock",

@@ -243,7 +243,12 @@ const createHarness = () => {
           game_id: 13,
           gate_distance: 4,
           rings: [{ radius: 5, realms: 0 }],
-          beasts: [{ count: 100n, bow: false }, { count: 100n, bow: true }, { count: 100n, bow: false }, { count: 100n, bow: true }],
+          beasts: [
+            { count: 100n, bow: false },
+            { count: 100n, bow: true },
+            { count: 100n, bow: false },
+            { count: 100n, bow: true },
+          ],
           loss_per_tick: 1n,
           core_per_tick: 100n,
           mine_per_tick: 100n,

@@ -23,7 +23,10 @@ pub fn assert_step(game_id: u32, origin: Coord, destination: Coord) {
 
 pub fn arrival(game_id: u32, aspect: u8, context: ExecutionContext) -> Coord {
     let spacing = crate::logic::preset_record::for_game(game_id).settlement_spacing.read();
-    let gate_distance = crate::logic::deep_sites::rules_entry(game_id).expect('missing Deep rules').gate_distance.read();
+    let gate_distance = crate::logic::deep_sites::rules_entry(game_id)
+        .expect('missing Deep rules')
+        .gate_distance
+        .read();
     let origin = crate::deep::gate(gate_distance, aspect, spacing);
     clear_expired_occupant(game_id, origin, context);
     if crate::logic::map::occupancy(tile_key(game_id, origin)).is_none() {

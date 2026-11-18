@@ -393,10 +393,10 @@ warnings, the reload with its cost.
 
 The shared Deep is reached through the spire's Deep entry or the map layer menu. Select a field army, then a Deep site:
 its card offers Attack against a beast or rival, Join for an allied free slot, or Take for an empty site. A held army
-appears in the site's slots, last filled fought first. `--steps lab-deep-join` opens the real map on an allied Ethereal mine,
-selects the player's army, submits Join, and records the signed InteractSite command and the confirmed guard slot with
-before/after screenshots. The lab snapshot is `/lab/game?scenario=deep`; its current facts also drive the site binding's
-component tests.
+appears in the site's slots, last filled fought first. `--steps lab-deep-join` opens the real map on an allied Ethereal
+mine, selects the player's army, submits Join, and records the signed InteractSite command and the confirmed guard slot
+with before/after screenshots. The lab snapshot is `/lab/game?scenario=deep`; its current facts also drive the site
+binding's component tests.
 
 The race board opens from Season, or by selecting a fixed Aspect hyperstructure in the Deep. It reads heights, Glory,
 Triumph days and the winner from native facts; after a finish the same board opens over the map. `--steps lab-race` and
@@ -611,6 +611,6 @@ offers. `build.sh playtest-oath-vitriol` also runs `lab-oath-decline` and `lab-o
 reward, including overflow at the maximum.
 
 Vitriol changes the Deep's field and guard loss to its generated rule value. `/lab/game?scenario=oath-vitriol` and
-`build.sh playtest-oath-vitriol` choose it through the Oath panel, read the reduced field drain, and join the Ethereal mine on
-desktop and phone. Native command tests prove the old rate settles before a choice or replacement and the new rate
-applies only to later ticks; shared vectors check exact troop counts in the contract and client.
+`build.sh playtest-oath-vitriol` choose it through the Oath panel, read the reduced field drain, and join the Ethereal
+mine on desktop and phone. Native command tests prove the old rate settles before a choice or replacement and the new
+rate applies only to later ticks; shared vectors check exact troop counts in the contract and client.

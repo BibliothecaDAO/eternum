@@ -249,7 +249,12 @@ export const snapshot = (
                   game_id: GAME_ID,
                   gate_distance: 4,
                   rings: [{ radius: 5, realms: 0 }],
-                  beasts: [{ count: 100, bow: false }, { count: 100, bow: true }, { count: 100, bow: false }, { count: 100, bow: true }],
+                  beasts: [
+                    { count: 100, bow: false },
+                    { count: 100, bow: true },
+                    { count: 100, bow: false },
+                    { count: 100, bow: true },
+                  ],
                   loss_per_tick: 100,
                   core_per_tick: 500,
                   mine_per_tick: 500,

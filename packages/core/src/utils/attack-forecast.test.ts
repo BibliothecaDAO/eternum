@@ -86,7 +86,12 @@ function frontier() {
       { radius: 5, realms: 0 },
       { radius: 8, realms: 30 },
     ],
-    beasts: [{ count: troops(10_000), bow: false }, { count: troops(10_000), bow: true }, { count: troops(10_000), bow: false }, { count: troops(10_000), bow: true }],
+    beasts: [
+      { count: troops(10_000), bow: false },
+      { count: troops(10_000), bow: true },
+      { count: troops(10_000), bow: false },
+      { count: troops(10_000), bow: true },
+    ],
     loss_per_tick: troops(100),
     core_per_tick: troops(500),
     mine_per_tick: troops(500),

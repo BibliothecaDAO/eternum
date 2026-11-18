@@ -67,10 +67,10 @@ fetches (the client's own modules, every script, the bytes), when its last scrip
 beside the card. `pnpm --dir apps/game prove:app <base-url> <out-dir> phone` includes this path. The retired long-format
 tribe fixture is removed.
 
-`/lab/game?scenario=deep` opens beside the allied Ethereal mine. Select Army 1, open the mine, Join, then close the site card
-and reopen Army 1 from the dock. Its panel keeps the slot's refilling stamina after the army leaves its personal tile.
-`build.sh playtest-deep` drives this path on desktop and phone and records the site's visible tick payment, the joined
-guard and its visible stamina bar. The site's payment reads DeepRules/RaceRules and the holder's AltarBar.
+`/lab/game?scenario=deep` opens beside the allied Ethereal mine. Select Army 1, open the mine, Join, then close the site
+card and reopen Army 1 from the dock. Its panel keeps the slot's refilling stamina after the army leaves its personal
+tile. `build.sh playtest-deep` drives this path on desktop and phone and records the site's visible tick payment, the
+joined guard and its visible stamina bar. The site's payment reads DeepRules/RaceRules and the holder's AltarBar.
 
 With Important notifications enabled, a rival-held Deep site can send one opportunity alert per site and game day.
 Opening it selects the site's map coordinate. `build.sh test-deep-alerts` drives the real notifier worker through a
