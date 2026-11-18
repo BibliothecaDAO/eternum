@@ -102,9 +102,7 @@ fn held_realm_settlement_uses_catalogue_traits_and_cannot_be_repeated() {
     let mut spy = spy_events();
     ledger(d).register_entitlement(key, held).unwrap();
     assert_eq!(spy.get_events().emitted_by(d.games).events.len(), 0);
-    let command = crate::commands::Command::SettleSeason(
-        crate::realms::SettleSeason { selected_realm: None, order: super::registrar::first_order_choice(d, game_id) },
-    );
+    let command = crate::commands::Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, order: None });
     assert!(super::resource_commands::execute_in_game(d, game_id, command, 360));
     let home = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
     assert_eq!(ledger(d).settled_realm(game_id, 711).unwrap(), home);
@@ -123,7 +121,11 @@ fn held_realm_settlement_uses_catalogue_traits_and_cannot_be_repeated() {
     let other_key = EntryKey { game_id, owner: other.actor };
     assert!(ledger(d).register_entitlement(other_key, held).is_err());
     assert!(ledger(d).entry_entitlement(other_key).unwrap().is_none());
-    assert!(super::resource_commands::execute_in_game(other, game_id, command, 360));
+    let free = crate::commands::Command::SettleSeason(
+        crate::realms::SettleSeason { selected_realm: None, order: super::registrar::first_order_choice(d, game_id) },
+    );
+    assert!(!super::resource_commands::execute_in_game(other, game_id, command, 360));
+    assert!(super::resource_commands::execute_in_game(other, game_id, free, 360));
     assert_eq!(ledger(d).settled_realm(game_id, 711).unwrap(), home);
 }
 
@@ -145,11 +147,18 @@ fn resume_reserved_realm_after_a_second_owner_attempts_entry(alternative: Option
     if let Some(realm_id) = alternative {
         ledger(d).register_entitlement(second, EntryEntitlement { realm_id: realm_id.into(), ..held }).unwrap();
     }
-    let command = crate::commands::Command::SettleSeason(
-        crate::realms::SettleSeason { selected_realm: None, order: super::registrar::first_order_choice(d, game_id) },
+    let held_command = crate::commands::Command::SettleSeason(
+        crate::realms::SettleSeason { selected_realm: None, order: None },
     );
-    assert!(super::resource_commands::execute_in_game(buyer, game_id, command, 360));
-    assert!(super::resource_commands::execute_in_game(d, game_id, command, 360));
+    let buyer_command = if alternative.is_some() {
+        held_command
+    } else {
+        crate::commands::Command::SettleSeason(
+            crate::realms::SettleSeason { selected_realm: None, order: super::registrar::first_order_choice(d, game_id) },
+        )
+    };
+    assert!(super::resource_commands::execute_in_game(buyer, game_id, buyer_command, 360));
+    assert!(super::resource_commands::execute_in_game(d, game_id, held_command, 360));
     let first_home = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
     let second_home = snforge_std::interact_with_state(
         d.games, || crate::entity_ids::home_for_actor(game_id, buyer.actor),
