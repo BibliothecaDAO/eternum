@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "2ece457b79b714735daa281616de072b05219cdf6f011e7ea5fd8f703a145f8e";
+export const nativeFactSchemaIdentity = "4f27c324d2f9a6952137df6808eb64551e093cd5c188d1ff90d7bb2eb000675d";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -252,7 +252,7 @@ export interface NativeRows {
   SpendLords: { readonly game_id: number; readonly account: bigint; readonly available: bigint; readonly consumed: bigint; readonly swept: bigint };
   PrincipalWithdrawal: { readonly game_id: number; readonly account: bigint; readonly amount: bigint };
   DepositReceipt: { readonly game_id: number; readonly id: bigint; readonly commitment: bigint; readonly account: bigint; readonly amount: bigint; readonly cancelled: boolean };
-  RaceRules: { readonly game_id: number; readonly season_days: bigint; readonly glory_per_tick: bigint; readonly height_per_tick: number; readonly stage_height: number; readonly clear_mist_percent: number; readonly second_wind_percent: number; readonly pale_moon_percent: number; readonly spoils_percent: number };
+  RaceRules: { readonly game_id: number; readonly season_days: bigint; readonly stage_height: number; readonly clear_mist_percent: number; readonly second_wind_percent: number; readonly pale_moon_percent: number; readonly spoils_percent: number };
   RaceMember: { readonly game_id: number; readonly entity_id: bigint; readonly glory: bigint; readonly contribution: bigint };
   AspectHyperstructure: { readonly game_id: number; readonly aspect: number; readonly height: number };
   TriumphDay: { readonly game_id: number; readonly aspect: number; readonly stage: number; readonly day: bigint };
@@ -267,7 +267,7 @@ export interface NativeRows {
   AltarBar: { readonly game_id: number; readonly aspect: number; readonly charge: number };
   BaneGrant: { readonly game_id: number; readonly home: bigint; readonly day: bigint; readonly account: bigint; readonly amount: bigint; readonly essence: bigint };
   LaborRules: { readonly game_id: number; readonly amount: bigint; readonly campaign_essence: bigint; readonly golden_amount: bigint; readonly golden_essence: bigint };
-  DeepRules: { readonly game_id: number; readonly gate_distance: number; readonly rings: readonly ({ readonly radius: number; readonly realms: number })[]; readonly beasts: readonly ({ readonly count: bigint; readonly bow: boolean })[]; readonly loss_per_tick: bigint; readonly core_per_tick: bigint; readonly mine_per_tick: bigint; readonly altar_per_tick: number; readonly altar_threshold: number };
+  DeepRules: { readonly game_id: number; readonly gate_distance: number; readonly rings: readonly ({ readonly radius: number; readonly realms: number })[]; readonly beasts: readonly ({ readonly count: bigint; readonly bow: boolean })[]; readonly loss_per_tick: bigint; readonly core_per_tick: bigint; readonly mine_per_tick: bigint; readonly building_pay: { readonly alone: number; readonly pair: number; readonly crowd: number }; readonly altar_threshold: number };
   LaborGrant: { readonly game_id: number; readonly home: bigint; readonly day: bigint; readonly account: bigint; readonly amount: bigint; readonly essence: bigint };
   ChestRules: { readonly game_id: number; readonly price_ceiling: bigint; readonly shares: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly epic: number; readonly legendary: number }; readonly claim_window_seconds: number; readonly pool_bps: number; readonly top_n: number };
   FrontierPrize: { readonly game_id: number; readonly pool: bigint; readonly issued: bigint; readonly count: (number) | null };
@@ -753,8 +753,6 @@ export const nativeFactModels = {
     "fields": {
       "game_id": "u32",
       "season_days": "u64",
-      "glory_per_tick": "u128",
-      "height_per_tick": "u32",
       "stage_height": "u32",
       "clear_mist_percent": "u16",
       "second_wind_percent": "u16",
@@ -1013,7 +1011,11 @@ export const nativeFactModels = {
       "loss_per_tick": "u128",
       "core_per_tick": "u128",
       "mine_per_tick": "u128",
-      "altar_per_tick": "u32",
+      "building_pay": {
+        "alone": "u32",
+        "pair": "u32",
+        "crowd": "u32"
+      },
       "altar_threshold": "u32"
     }
   },
