@@ -101,9 +101,9 @@ pub fn count(oaths: u16) -> u8 {
     total
 }
 
-pub fn card(pick: u16, colour: u8) -> u8 {
-    assert!(pick != 0 && colour < 3, "missing oath card");
-    let scale = match colour {
+pub fn card(pick: u16, index: u8) -> u8 {
+    assert!(pick != 0 && index < 3, "missing oath card");
+    let scale = match index {
         0 => 1,
         1 => 16,
         _ => 256,
@@ -112,29 +112,33 @@ pub fn card(pick: u16, colour: u8) -> u8 {
 }
 
 pub fn draw(oaths: u16, seed: u256) -> u16 {
+    let mut choices = 65535 ^ oaths;
     let mut pick = 0;
     let mut scale = 1;
-    for colour in 0_u8..3 {
-        let pool = match colour {
-            0 => RED,
-            1 => BLUE,
-            _ => GOLD,
-        };
-        let random: u256 = core::poseidon::poseidon_hash_span(
-            array!['oath', seed.low.into(), seed.high.into(), colour.into()].span(),
-        )
-            .into();
-        let choices = pool ^ (pool & oaths);
-        let mut index: u8 = (random % count(choices).into()).try_into().unwrap();
-        for oath in 1_u8..17 {
-            if held(choices, oath) {
-                if index == 0 {
-                    pick += Into::<u8, u16>::into(oath - 1) * scale;
-                    break;
+    let mut drawn: u16 = 0;
+    for index in 0_u8..3 {
+        let left = count(choices);
+        if left == 0 && index == 0 {
+            return 0;
+        }
+        if left != 0 {
+            let random: u256 = core::poseidon::poseidon_hash_span(
+                array!['oath', seed.low.into(), seed.high.into(), index.into()].span(),
+            )
+                .into();
+            let mut skip: u8 = (random % left.into()).try_into().unwrap();
+            for oath in 1_u8..17 {
+                if held(choices, oath) {
+                    if skip == 0 {
+                        drawn = (oath - 1).into();
+                        choices -= bit(oath);
+                        break;
+                    }
+                    skip -= 1;
                 }
-                index -= 1;
             }
         }
+        pick += drawn * scale;
         scale *= 16;
     }
     pick

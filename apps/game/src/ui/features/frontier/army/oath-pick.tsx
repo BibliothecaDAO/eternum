@@ -3,7 +3,7 @@ import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { configManager } from "@bibliothecadao/eternum";
 import { useDockArmies } from "../hud/dock-armies";
 import type { Account } from "starknet";
-import { heldOaths, oathCards, oathColours, oathPassStamina } from "@bibliothecadao/eternum";
+import { heldOaths, oathCards, oathColour, type oathColours, oathPassStamina } from "@bibliothecadao/eternum";
 import { nativeOathConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useGame } from "@/hooks/context/game-context";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
@@ -88,19 +88,15 @@ function ArmyOathPick({
       </span>
       {picked === null ? (
         <div className="grid grid-cols-3 gap-1">
-          {oathCards(progress.oath_pick).map((id, index) => (
-            <div
-              key={id}
-              data-oath-id={id}
-              className={`min-w-0 rounded border-t-4 ${colourClass[oathColours[index]!.colour]}`}
-            >
+          {oathCards(progress.oath_pick).map((id) => (
+            <div key={id} data-oath-id={id} className={`min-w-0 rounded border-t-4 ${colourClass[oathColour(id).colour]}`}>
               <HudCard
                 size="sm"
                 title={oathName(id)}
                 picture={<Icon name={orderMeaning(id)} size={40} />}
                 detail={
-                  <span className={colourClass[oathColours[index]!.colour]}>
-                    {oathEffectDescription(id) ?? oathColours[index]!.name}
+                  <span className={colourClass[oathColour(id).colour]}>
+                    {oathEffectDescription(id) ?? oathColour(id).name}
                   </span>
                 }
                 disabled={!allowed || sending}

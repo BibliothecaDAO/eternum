@@ -1,34 +1,85 @@
 use snforge_std::fs::{FileTrait, read_txt};
 use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
-use crate::oaths::{ChooseOath, card, count, draw, held};
+use crate::oaths::{ChooseOath, card, draw, held};
 use crate::stamina::StaminaSourceTrait;
 use crate::troops::{ExplorerRecordTrait, StaminaSource};
 use super::progression::read_progress;
 use super::state::{GameState, TroopObservationTrait};
 
 #[test]
-fn every_draw_has_three_colours_and_excludes_every_held_oath_even_with_four_of_one_colour() {
-    assert_eq!(crate::oaths::RED | crate::oaths::BLUE | crate::oaths::GOLD, 65535);
-    assert_eq!(crate::oaths::RED & crate::oaths::BLUE, 0);
-    assert_eq!(crate::oaths::BLUE & crate::oaths::GOLD, 0);
-    assert_eq!(crate::oaths::RED & crate::oaths::GOLD, 0);
-    for pool in array![crate::oaths::RED, crate::oaths::BLUE, crate::oaths::GOLD] {
-        let mut oaths = 0;
-        for oath in 1_u8..17 {
-            if held(pool, oath) && count(oaths) < 4 {
-                oaths += crate::oaths::bit(oath);
-            }
-        }
-        for seed in 0_u64..32 {
-            let pick = draw(oaths, seed.into());
-            assert!(pick != 0 && pick < 4096);
-            for (colour, pool) in array![(0_u8, crate::oaths::RED), (1, crate::oaths::BLUE), (2, crate::oaths::GOLD)] {
-                let oath = card(pick, colour);
-                assert!(held(pool, oath));
-                assert!(!held(oaths, oath));
+fn every_draw_offers_three_distinct_oaths_the_army_does_not_hold_and_fewer_only_when_fewer_remain() {
+    let thirteen = 65535 ^ crate::oaths::bit(crate::oaths::SKILL) ^ crate::oaths::bit(crate::oaths::FOX)
+        ^ crate::oaths::bit(crate::oaths::RAGE);
+    for oaths in array![0_u16, crate::oaths::bit(crate::oaths::POWER), crate::oaths::RED, 0x0f0f, thirteen] {
+        for seed in 0_u64..64 {
+            let offered = cards(draw(oaths, seed.into()));
+            assert_eq!(offered.len(), 3);
+            for oath in offered {
+                assert!(!held(oaths, *oath));
             }
         }
     }
+    let fourteen = thirteen | crate::oaths::bit(crate::oaths::RAGE);
+    for seed in 0_u64..16 {
+        let offered = cards(draw(fourteen, seed.into()));
+        assert_eq!(offered.len(), 2);
+        assert!(offered.at(0) != offered.at(1));
+        for oath in offered {
+            assert!(*oath == crate::oaths::SKILL || *oath == crate::oaths::FOX);
+        }
+    }
+    assert_eq!(draw(65535, 1), 0);
+}
+
+#[test]
+fn a_revealed_shrine_offers_a_new_army_three_oaths_and_an_army_holding_fourteen_the_two_it_lacks() {
+    let discovery = crate::expeditions::FrontierDiscoveryRules {
+        camp_bps: 1, rift_bps: 0, ruin_bps: 0, beasts_bps: 0, shrine_bps: 5000, well_bps: 0, empty_reveal_limit: 7,
+    };
+    let fourteen = 65535 ^ crate::oaths::bit(crate::oaths::SKILL) ^ crate::oaths::bit(crate::oaths::FOX);
+    for (oaths, offered) in array![(0_u16, 3_u32), (fourteen, 2)] {
+        let (d, game_id, key) = super::registrar::setup_frontier_relics_with_rules(Some(discovery));
+        let root = super::registrar::discovery_root(
+            game_id, discovery, 100, 0, None, crate::discovery::Discovery::Shrine,
+        );
+        snforge_std::interact_with_state(
+            d.games,
+            || {
+                crate::logic::research::write(
+                    crate::resources::ResourceKey { game_id, entity_id: 1 },
+                    crate::research::RealmKnowledge {
+                        learned: crate::research::learn(0, crate::research::ROW_SHRINE, 0),
+                    },
+                );
+                let mut progress = crate::logic::progression::require(key);
+                progress.oaths = oaths;
+                crate::logic::progression::write(key, progress);
+            },
+        );
+        explore(d, key, root, 360);
+        let shown = cards(read_progress(d, key).oath_pick);
+        assert_eq!(shown.len(), offered);
+        for oath in shown {
+            assert!(!held(oaths, *oath));
+        }
+    }
+}
+
+fn cards(pick: u16) -> Span<u8> {
+    let mut shown = array![];
+    for index in 0_u8..3 {
+        let oath = card(pick, index);
+        let mut repeated = false;
+        for earlier in shown.span() {
+            if *earlier == oath {
+                repeated = true;
+            }
+        }
+        if !repeated {
+            shown.append(oath);
+        }
+    }
+    shown.span()
 }
 
 #[test]

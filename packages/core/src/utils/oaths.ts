@@ -19,11 +19,13 @@ export function heldOaths(mask: number): number[] {
 export function oathCards(pick: number): number[] {
   if (pick === 0) return [];
   if (!Number.isInteger(pick) || pick < 0 || pick >= 4096) throw new Error("Invalid Oath pick");
-  return oathColours.map(({ mask }, index) => {
-    const id = ((pick >> (index * 4)) & 15) + 1;
-    if ((mask & (1 << (id - 1))) === 0) throw new Error("Oath pick has the wrong colour");
-    return id;
-  });
+  return [...new Set([0, 1, 2].map((index) => ((pick >> (index * 4)) & 15) + 1))];
+}
+
+export function oathColour(id: number): (typeof oathColours)[number] {
+  const colour = oathColours.find(({ mask }) => (mask & (1 << (id - 1))) !== 0);
+  if (!colour) throw new Error(`Unknown Oath ${id}`);
+  return colour;
 }
 
 export function chooseOath(

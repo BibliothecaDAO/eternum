@@ -1,7 +1,7 @@
 import { orders } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import { nativeOathConstants as oaths, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { chooseOath, heldOaths, oathCards, oathColours } from "./oaths";
+import { chooseOath, oathCards, oathColour, oathColours } from "./oaths";
 
 const pick = oaths.POWER - 1 + ((oaths.FOX - 1) << 4) + ((oaths.RAGE - 1) << 8);
 const progress: NativeRows["ArmyProgress"] = {
@@ -27,12 +27,19 @@ describe("Oath picks", () => {
       expect(orders.find(({ orderId }) => orderId === id)?.orderName.toUpperCase()).toBe(name);
     }
   });
-  it("partitions the sixteen Orders and reads the three actual cards", () => {
-    expect(oathColours.map(({ mask }) => heldOaths(mask).length)).toEqual([6, 5, 5]);
+  it("reads the cards of any colours, a repeated card as one fewer, and each Oath's colour as its look", () => {
     expect(oathColours.reduce((mask, colour) => mask | colour.mask, 0)).toBe(65535);
     expect(oathCards(pick)).toEqual([oaths.POWER, oaths.FOX, oaths.RAGE]);
+    expect(oathCards(oaths.SKILL - 1 + ((oaths.POWER - 1) << 4) + ((oaths.GIANTS - 1) << 8))).toEqual([
+      oaths.SKILL,
+      oaths.POWER,
+      oaths.GIANTS,
+    ]);
+    expect(oathCards(oaths.SKILL - 1 + ((oaths.FOX - 1) << 4) + ((oaths.FOX - 1) << 8))).toEqual([oaths.SKILL, oaths.FOX]);
     expect(oathCards(0)).toEqual([]);
-    expect(() => oathCards(1)).toThrow("wrong colour");
+    expect(oathColour(oaths.POWER).colour).toBe("red");
+    expect(oathColour(oaths.FOX).colour).toBe("blue");
+    expect(oathColour(oaths.RAGE).colour).toBe("gold");
   });
   it("takes, replaces and declines without changing capacity or logistics", () => {
     const chosen = chooseOath(progress, pick, oaths.POWER, null);
