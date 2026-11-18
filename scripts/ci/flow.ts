@@ -29,6 +29,16 @@ function definitions(jobs: ValidationJob[], paths: Record<string, string[]>): st
 export function parityProblems(source: string, jobs = validationJobs(), paths = validationPaths()): string[] {
   const flow = Bun.TOML.parse(source) as Flow;
   const listed = new Set(flow.land.kinds.split(/\s+/));
+  const unowned =
+    writeFlow(source, jobs, paths) === source
+      ? []
+      : [
+          `flow.toml differs from what bun scripts/ci/flow.ts --write writes; a kind below "${marker.trim()}" is dropped by it`,
+        ];
+  return unowned.concat(jobsProblems(flow, listed, jobs, paths));
+}
+
+function jobsProblems(flow: Flow, listed: Set<string>, jobs: ValidationJob[], paths: Record<string, string[]>) {
   return jobs.flatMap((job) => {
     const kind = kindName(job);
     const actual = flow.kind[kind];
@@ -43,8 +53,7 @@ export function parityProblems(source: string, jobs = validationJobs(), paths = 
   });
 }
 
-function writeFlow(source: string): string {
-  const jobs = validationJobs();
+function writeFlow(source: string, jobs: ValidationJob[], paths: Record<string, string[]>): string {
   const base = source.split(marker)[0]!.trimEnd();
   const rewritten = base.replace(
     /(\[land\]\nkinds = ")([^"]+)(")/,
@@ -53,13 +62,13 @@ function writeFlow(source: string): string {
       [...listed.split(/\s+/).filter((kind: string) => !kind.startsWith("ci-")), ...jobs.map(kindName)].join(" ") +
       end,
   );
-  return `${rewritten}\n\n${marker}${definitions(jobs, validationPaths())}`;
+  return `${rewritten}\n\n${marker}${definitions(jobs, paths)}`;
 }
 
 if (import.meta.main) {
   const path = resolve(root, "flow.toml");
   const source = readFileSync(path, "utf8");
-  if (process.argv[2] === "--write") writeFileSync(path, writeFlow(source));
+  if (process.argv[2] === "--write") writeFileSync(path, writeFlow(source, validationJobs(), validationPaths()));
   else {
     const problems = parityProblems(source);
     if (problems.length) throw new Error(problems.join("\n"));

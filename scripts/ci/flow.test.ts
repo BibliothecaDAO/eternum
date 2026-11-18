@@ -34,6 +34,11 @@ test("refuses the old partial harness command and a narrower dependency scope", 
   expect(parityProblems(missingRelease, jobs, paths).some((problem) => problem.includes("paths differ"))).toBe(true);
 });
 
+test("refuses a hand-written kind below the generated marker, which --write would drop", () => {
+  const appended = `${source}\n[kind.playtest-by-hand]\ncmd = "true"\n`;
+  expect(parityProblems(appended, jobs, paths).some((problem) => problem.includes("is dropped by it"))).toBe(true);
+});
+
 test("a new workflow job cannot inherit a passing result from an existing job", () => {
   const added = { ...jobs[0]!, id: "static/new-check" };
   expect(parityProblems(source, [...jobs, added], paths)).toContain(
