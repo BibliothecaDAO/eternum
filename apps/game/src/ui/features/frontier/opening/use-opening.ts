@@ -3,9 +3,16 @@ import { notificationOwnerOf, useIdentitySession } from "@/hooks/context/identit
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
-import { type ExpeditionRules, DAILY_QUEST_MODELS, getBuildingQuantity, readDailyQuest } from "@bibliothecadao/eternum";
+import {
+  type ExpeditionRules,
+  DAILY_QUEST_MODELS,
+  getBuildingQuantity,
+  readDailyQuest,
+  researchTier,
+} from "@bibliothecadao/eternum";
 import {
   isDeepTile,
+  nativeResearchConstants as research,
   RACE_MODELS,
   readRaceBoard,
   safeInteger,
@@ -29,6 +36,8 @@ import {
 } from "./opening-state";
 import { SITE_ALERT_OFFER } from "./use-site-alert-offer";
 import { flush, loadOpening, reachMoments, seeLine, useOpeningStore } from "./opening-store";
+
+const KNOWLEDGE_MODELS = ["RealmKnowledge"] as const;
 
 /** How often a failed read or send is tried again while the HUD is up. */
 const RETRY_MS = 15_000;
@@ -104,15 +113,17 @@ function useOpeningRules(rules: ExpeditionRules, realm: NativeRows["Structure"] 
 }
 
 /** What the realm holds or has done now, from the game's facts, for each moment its state can reach. */
-function useOpeningHeld(rules: ExpeditionRules, realm: NativeRows["Structure"] | null): OpeningHeld {
+function useOpeningHeld(rules: ExpeditionRules, realm: NativeRows["Structure"] | null): OpeningHeld | null {
   const { setup } = useGame();
   const now = useNowSeconds();
   useNativeRevision(DAILY_QUEST_MODELS);
   useNativeRevision(RACE_MODELS);
+  useNativeRevision(KNOWLEDGE_MODELS);
   const armies = useDockArmies(realm);
   const essence = useRealmStores(realm, rules)?.essence.amount;
-  if (!realm) return {};
+  if (!realm) return null;
   const home = safeInteger(realm.entity_id);
+  const learned = setup.store.get("RealmKnowledge", { game_id: realm.game_id, structure_id: home })?.learned ?? 0n;
   const { spacing } = setup.store.require("SettlementRules", { game_id: realm.game_id });
   const deep = armies.some((army) => {
     const tile = setup.store.entityOccupancy(realm.game_id, army.explorerId);
@@ -125,6 +136,8 @@ function useOpeningHeld(rules: ExpeditionRules, realm: NativeRows["Structure"] |
   return {
     barracks: getBuildingQuantity(home, FIRST_BUILD, setup.store) > 0,
     essence: (essence ?? 0) > 0,
+    "well-lore": researchTier(learned, research.ROW_WELL) > 0,
+    "shrine-lore": researchTier(learned, research.ROW_SHRINE) > 0,
     deep,
     bane,
     aspects: deep || bane || stageBuilt,

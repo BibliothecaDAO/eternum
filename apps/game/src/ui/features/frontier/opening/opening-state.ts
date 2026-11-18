@@ -1,11 +1,15 @@
-import { OPENING, OPENING_MOMENTS, type OpeningMoment } from "./opening";
+import { OPENING, OPENING_MOMENTS, type OpeningMoment, type StateMoment } from "./opening";
 
 /** What the Realm holds or has done, read from the game's state, that opens a moment on its own. */
-export type OpeningHeld = Partial<Record<OpeningMoment, boolean>>;
+export type OpeningHeld = Record<StateMoment, boolean>;
+
+const isStateMoment = (moment: OpeningMoment, held: OpeningHeld): moment is StateMoment => moment in held;
 
 /** The moments the Realm's state has reached: the launch always, and each moment whose state is held. */
-export const reachedOnState = (held: OpeningHeld): OpeningMoment[] =>
-  OPENING_MOMENTS.filter((moment) => moment === "launch" || held[moment] === true);
+export const reachedOnState = (held: OpeningHeld | null): OpeningMoment[] =>
+  OPENING_MOMENTS.filter(
+    (moment) => moment === "launch" || (held !== null && isStateMoment(moment, held) && held[moment]),
+  );
 
 /**
  * The moments the interface has opened to: those the account has reached before, in any session or on any device, and

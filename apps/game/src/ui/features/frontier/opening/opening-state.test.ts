@@ -2,9 +2,25 @@ import { expect, it } from "vitest";
 
 import { accountProgress, nextLine, siteAlertOfferDue, openedMoments, reachedOnState } from "./opening-state";
 
-it("reaches the launch always and each moment whose state is held", () => {
-  expect(reachedOnState({})).toEqual(["launch"]);
-  expect(reachedOnState({ barracks: true, essence: false, deep: true })).toEqual(["launch", "barracks", "deep"]);
+const NOTHING_HELD = {
+  barracks: false,
+  essence: false,
+  "well-lore": false,
+  "shrine-lore": false,
+  deep: false,
+  bane: false,
+  aspects: false,
+};
+
+it("reaches the launch always and each moment whose state is held, the lores among them", () => {
+  expect(reachedOnState(null)).toEqual(["launch"]);
+  expect(reachedOnState(NOTHING_HELD)).toEqual(["launch"]);
+  expect(reachedOnState({ ...NOTHING_HELD, barracks: true, deep: true })).toEqual(["launch", "barracks", "deep"]);
+  expect(reachedOnState({ ...NOTHING_HELD, "well-lore": true, "shrine-lore": true })).toEqual([
+    "launch",
+    "well-lore",
+    "shrine-lore",
+  ]);
 });
 
 it("keeps a moment the account reached before although its state has passed, and drops no moment", () => {
