@@ -1,4 +1,4 @@
-import { aspects, formatDate, ordersOfAspect } from "@bibliothecadao/types";
+import { aspects, formatLongDate, ordersOfAspect } from "@bibliothecadao/types";
 
 import { AGE_LOCKUP } from "@/ui/design-system/icon-meaning";
 import { AppButton } from "@/ui/design-system/kit/app-elements";
@@ -15,7 +15,7 @@ export const SeasonCountdown = ({ opening, now }: { opening: SeasonOpening; now:
   <StageFrame verb={<CreateAccount />}>
     <div data-season-countdown className="flex flex-col items-center gap-5">
       <img src={AGE_LOCKUP.frontier} alt={ageOf("frontier").name} className="h-28 w-auto" />
-      <h1 className="text-app-title text-app-ink">{COUNTDOWN_WORDS.opens(formatDate(opening.startsAt, now))}</h1>
+      <h1 className="text-app-title text-app-ink">{COUNTDOWN_WORDS.opens(formatLongDate(opening.startsAt, now))}</h1>
       <AppCountdownChip prefix="starts" at={opening.startsAt} now={now} />
       <p className="text-app-body text-app-muted">{COUNTDOWN_WORDS.line(aspects.length, opening.seasonDays)}</p>
       <AspectCrests />

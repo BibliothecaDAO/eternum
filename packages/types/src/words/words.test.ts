@@ -37,7 +37,16 @@ import {
 } from "./nouns";
 import { TROOP_TIERS, TROOP_TYPES, TroopType, troopTierIndex } from "../types/common";
 import { BuildingType, BuildingTypeToString } from "../constants/structures";
-import { formatAgo, formatClockTime, formatDuration, formatGameClock, formatMoment, formatShortDuration } from "./time";
+import {
+  formatAgo,
+  formatClockTime,
+  formatDate,
+  formatDuration,
+  formatGameClock,
+  formatLongDate,
+  formatMoment,
+  formatShortDuration,
+} from "./time";
 import { VOICE_RULES } from "./voice";
 
 describe("numbers", () => {
@@ -174,6 +183,15 @@ describe("times", () => {
   it("writes a moment as the device's 24-hour clock, two digits each", () => {
     expect(formatClockTime(new Date(2026, 8, 9, 14, 5).getTime() / 1000)).toBe("14:05");
     expect(formatClockTime(new Date(2026, 8, 9, 9, 7).getTime() / 1000)).toBe("09:07");
+  });
+
+  it("writes a day short in a line and spelled out in a title, with the year only when it is not this year's", () => {
+    const opening = new Date(2026, 11, 1, 18).getTime() / 1000;
+    const thisYear = new Date(2026, 10, 18).getTime() / 1000;
+    const lastYear = new Date(2025, 10, 18).getTime() / 1000;
+    expect(formatDate(opening, thisYear)).toBe("1 Dec");
+    expect(formatLongDate(opening, thisYear)).toBe("1 December");
+    expect(formatLongDate(opening, lastYear)).toBe("1 December 2026");
   });
 
   it("writes days from a day up, and Frontier's durations in hours", () => {

@@ -5,7 +5,7 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { aspects, formatClockTime, formatDate, ordersOfAspect } from "@bibliothecadao/types";
+import { aspects, formatClockTime, formatDate, formatLongDate, ordersOfAspect } from "@bibliothecadao/types";
 
 import { FRONTIER_S1_PRESET_ID } from "../../../../../config/source/common/native-preset-modes";
 import { nativePresets } from "../../../../../config/source/native";
@@ -491,7 +491,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     quietPlay();
     const page = await mount();
     const countdown = page.container.querySelector("[data-season-countdown]")!;
-    expect(countdown.querySelector("h1")?.textContent).toBe(`The season opens ${formatDate(startsAt, now)}`);
+    expect(countdown.querySelector("h1")?.textContent).toBe(`The season opens ${formatLongDate(startsAt, now)}`);
     expect(countdown.querySelector(".app-chip")?.textContent).toBe("Starts in 14d 4h");
     expect(countdown.textContent).toContain(
       `Pick your side before it starts. 4 Aspects, ${nativePresets[FRONTIER_S1_PRESET_ID]!.race!.seasonDays} days`,
