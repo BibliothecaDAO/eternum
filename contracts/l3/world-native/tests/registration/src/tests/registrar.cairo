@@ -1218,9 +1218,24 @@ fn a_materialized_home_ring_moves_and_explores_without_a_roll() {
 #[feature("safe_dispatcher")]
 fn paying_presets_cannot_register_on_the_new_release(name: ByteArray) {
     let d = setup();
-    let (id, preset) = super::preset_projection::current_definition(name);
+    let (id, mut preset) = super::preset_projection::current_definition(name);
     assert!(preset.economy.chests.is_some());
-    assert!(safe(d, super::authority()).register_preset(id, preset).is_err());
+    let mut depths = array![];
+    for index in 0..preset.settlement.depths.len() {
+        depths
+            .append(
+                crate::expeditions::DepthRules {
+                    chest: world_test_support::tests::registrar::first_relic_odds(index),
+                    ..*preset.settlement.depths.at(index),
+                },
+            );
+    }
+    preset.settlement.depths = depths.span();
+    let error = safe(d, super::authority()).register_preset(id, preset).unwrap_err();
+    let mut expected = array![core::byte_array::BYTE_ARRAY_MAGIC];
+    let message: ByteArray = "LORDS presets are retired";
+    message.serialize(ref expected);
+    assert_eq!(error.span().slice(0, expected.len()), expected.span());
     assert_eq!(registry(d).preset_commitment(id), 0);
     assert_eq!(registry(d).next_game_id(), 1);
 }
