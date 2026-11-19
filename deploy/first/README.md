@@ -195,6 +195,27 @@ every resource, so a site new to the deployment reaches an existing environment 
 command has a dry run or performs funding or calendar operations. Production, when commissioned, builds its images on
 its own box from the same source commit.
 
+## Tune rehearsal
+
+```sh
+pnpm run rehearse:tune <game_id> "$HOME/.realms-dev" [--expect Model,Model.member,...]
+```
+
+A balance tune is a plain release: a commit that changes only tunable Cairo numbers and bumps `NATIVE_RELEASE_ID`. A
+number is tunable when its name ends in a unit (`_BPS`, `_PERCENT`, `_STAMINA`, `_PER_TICK`, `_PER_RANK`, `_LIMIT`,
+`_CAP`, `_SHARE`, `_BASE`, `_STEPS`; `contracts/l3/world-native/scripts/rule-constants.mjs`). Tunable numbers ship in
+`contracts/l3/world-native/schema/balance.gen.ts`, outside the schema identity, so the tune keeps the schema and the box
+half registers it on the running chain. Every other constant is an identifier that stored facts are read with (mode
+flags, entry rules, kinds, ids); the identity covers it, so changing one is a schema change the box refuses on a running
+chain. Players' clients reload on their own: a client refuses a game pinned past the release it was built for. This
+command rehearses one on the dev chain with the deploy's own steps: it runs the box half (`pnpm run deploy dev`), waits
+for the game's next day start, snapshots the game's facts from Herald's checkpoint (`deploy/release/game-facts.ts`),
+runs the Cloudflare half without `--open-release`, so the running game takes the tune while new games keep the open
+release, then snapshots again once the checkpoint pins the game to the new release. It prints every fact that changed
+and exits 1 when a change is outside `GameRelease.release_id` and the `--expect` list; players' own moves between the
+two snapshots show up there too. It refuses (exit 2) a game already on the commit's release. A rollback is the same
+command on a commit that restores the previous numbers under the next release id.
+
 ## Season
 
 ```sh

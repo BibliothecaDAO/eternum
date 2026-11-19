@@ -106,6 +106,7 @@
     "retire": "bun --no-env-file deploy/first/retire.ts",
     "deploy": "bun --no-env-file deploy/first/deploy.ts",
     "deploy:cloudflare": "bun --no-env-file deploy/first/cloudflare.ts",
+    "rehearse:tune": "bun --no-env-file deploy/release/rehearse-tune.ts",
     "season": "bun --no-env-file deploy/first/owner-command.ts season",
     "teardown": "bun --no-env-file deploy/first/teardown.ts",
     "icons:build": "node scripts/icons/build.mjs",
