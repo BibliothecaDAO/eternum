@@ -9,6 +9,8 @@ export const useFragmentsHeld = (): number | null => {
   useNativeRevision(FRAGMENT_MODELS);
   const gameId = configManager.getActiveGameId();
   if (!fragmentsSold(setup.store, gameId)) return null;
-  const row = setup.store.get("Fragments", { game_id: gameId, account: BigInt(account.account.address) });
-  return Number(row?.balance ?? 0n);
+  const key = { game_id: gameId, account: BigInt(account.account.address) };
+  const row = setup.store.get("Fragments", key);
+  if (row) return Number(row.balance);
+  return setup.store.absenceKnown("Fragments", key).known ? 0 : null;
 };

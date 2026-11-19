@@ -2,7 +2,7 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import type { Account } from "starknet";
 import { configManager, readSeasonPass } from "@bibliothecadao/eternum";
 import { nativeFragmentConstants } from "@bibliothecadao/eternum/game-client";
-import { FRAGMENT_CENTS, formatCharge, formatShort } from "@bibliothecadao/types";
+import { FRAGMENT_CENTS, formatCharge, formatShort, MIN_FRAGMENTS } from "@bibliothecadao/types";
 import { useGame } from "@/hooks/context/game-context";
 import { notificationOwnerOf, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -76,7 +76,7 @@ const PassFoot = ({ pass, fragments }: { pass: PassState; fragments: number }) =
       </HudButton>
       {more > 0 && (
         <span data-shop-short className="text-hud-label text-hud-muted">
-          {SHOP_WORDS.short(fragments, more, more * FRAGMENT_CENTS)}
+          {SHOP_WORDS.short(fragments, purchasable(more), purchasable(more) * FRAGMENT_CENTS)}
         </span>
       )}
     </div>
@@ -156,3 +156,5 @@ function useShopReading(): Omit<ShopViewProps, "code" | "onClose"> | null {
 }
 
 const fragmentsForBar = (bar: number): number => Math.ceil(bar / POINTS);
+
+const purchasable = (fragments: number): number => Math.max(fragments, MIN_FRAGMENTS);

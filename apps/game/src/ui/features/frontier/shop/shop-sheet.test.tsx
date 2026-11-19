@@ -70,6 +70,11 @@ describe("the shop", () => {
     expect(text()).toContain("1 Fragment = 2 points. A bar of 180 is 90 Fragments, $0.90.");
   });
 
+  it("prices a gap below the smallest purchase at that purchase", () => {
+    view({ fragments: 990 });
+    expect(host.querySelector("[data-shop-short]")?.textContent).toBe("You have 990. Get 100 more for $1.00.");
+  });
+
   it("sends the purchase from Get the Pass once the Fragments cover it", () => {
     const { onBuy } = view({ fragments: 1_200 });
     expect(host.querySelector("[data-shop-short]")).toBeNull();
