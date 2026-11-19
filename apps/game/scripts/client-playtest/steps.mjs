@@ -5987,6 +5987,8 @@ export const UNMEASURED_COMMANDS = {
   MarkGameSettled:
     "sent by the value relay's operator once a season's game has ended (apps/value-relay), never by a player",
   SetEntityName: "no control in the game sends it: only the provider's set_entity_name, which nothing calls",
+  BuySeal: "no control sends it yet: the shop's Season Pass row that spends Fragments on it is still being built",
+  BuyStamina: "no control sends it yet: the army's Buy stamina button that spends Fragments on it is still being built",
 };
 
 /**
