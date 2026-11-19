@@ -63,13 +63,10 @@ test("every constant is either a hashed identifier or a tunable number, and a qu
   const hashed = Object.entries(identifiers).flatMap(([group, constants]) =>
     Object.keys(constants).map((name) => `${group}.${name}`),
   );
-  const { nativeReleaseConstants, ...numbers } = balance;
-  const gates = Object.keys(nativeReleaseConstants);
-  const tunable = Object.values(numbers).flatMap((constants) =>
+  const tunable = Object.values(balance).flatMap((constants) =>
     Object.keys(constants).filter((name) => !Object.values(identifiers).some((ids) => Object.hasOwn(ids, name))),
   );
-  assert.equal(hashed.length + tunable.length + gates.length, Object.values(balance).flatMap(Object.keys).length);
-  for (const name of gates) assert.match(name, /_RELEASE$/, `${name} gates a release`);
+  assert.equal(hashed.length + tunable.length, Object.values(balance).flatMap(Object.keys).length);
   for (const name of tunable) assert.match(name, QUANTITY, `${name} is tunable without a unit`);
   assert.deepEqual(
     hashed.filter((name) => QUANTITY.test(name.split(".")[1])),
@@ -78,15 +75,13 @@ test("every constant is either a hashed identifier or a tunable number, and a qu
   );
 });
 
-test("the balance identity moves with a tunable number only, not with a rename, an identifier or a release gate", () => {
+test("the balance identity moves with a tunable number only, not with a rename or an identifier", () => {
   const balance = {
-    nativeReleaseConstants: { RUIN_DEPTH_LIMIT_RELEASE: 3 },
     nativeOathConstants: { POWER: 12, SKILL_BELOW_STAMINA: 10, POWER_DAMAGE_PERCENT: 20 },
   };
   const identity = balanceIdentity(balance);
   const renamed = { ...balance, nativeOathConstants: { POWER: 12, SKILL_UNDER_STAMINA: 10, POWER_DAMAGE_PERCENT: 20 } };
   assert.equal(balanceIdentity(renamed), identity);
-  assert.equal(balanceIdentity({ ...balance, nativeReleaseConstants: { RUIN_DEPTH_LIMIT_RELEASE: 4 } }), identity);
   const identifier = { ...balance, nativeOathConstants: { ...balance.nativeOathConstants, POWER: 13 } };
   assert.equal(balanceIdentity(identifier), identity);
   const tuned = { ...balance, nativeOathConstants: { ...balance.nativeOathConstants, POWER_DAMAGE_PERCENT: 25 } };
@@ -145,12 +140,14 @@ test("the withdrawal reporting grace is shared with the ledger and exported to c
   );
 });
 
-test("release thresholds are generated for clients in the balance module", async () => {
+test("release thresholds are generated for every reader, decoders included, in the schema module and not the balance module", async () => {
   const constants = await readReleaseConstants(root);
-  assert.match(
-    await readBalanceModule(),
-    new RegExp(`"?RUIN_DEPTH_LIMIT_RELEASE"?: ${constants.RUIN_DEPTH_LIMIT_RELEASE}`),
-  );
+  const schemaModule = await readFile(new URL("schema/client.gen.ts", root), "utf8");
+  for (const [name, release] of Object.entries(constants)) {
+    assert.match(name, /_RELEASE$/, `${name} gates a release`);
+    assert.match(schemaModule, new RegExp(`"${name}": ${release}`));
+  }
+  assert.doesNotMatch(await readBalanceModule(), /_RELEASE"/);
 });
 
 test("every release threshold is a release this commit ships or an earlier one", async () => {

@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "c9e8135616511aff777283fc0f6d09606b1444d305dba88aa057abc17efd40cd";
+export const nativeFactSchemaIdentity = "6f2f996f5c9a1ea0d696ab12e0a82835693cb3dcff0147bd9dcec1b750f44499";
 export const nativeIdentifiers = {
   "rule": {
     "MAX_BLITZ_ROSTER_PLAYERS": 24,
@@ -119,13 +119,11 @@ export const nativeIdentifiers = {
     "SUPPLY_YARD": 42,
     "SCOUTS_LODGE": 43,
     "SCOUTS_LODGE_LEVEL": 1
-  },
-  "fragment": {
-    "WONDER_QUEST": 10,
-    "SEAL_PRICE": 1000,
-    "STAMINA_PER_FRAGMENT": 2,
-    "CACHE_TROOPS": 100
   }
+} as const;
+export const nativeReleaseConstants = {
+  "RUIN_DEPTH_LIMIT_RELEASE": 9,
+  "SEAL_RELEASE": 10
 } as const;
 /** Structure categories named in src/taxonomy.cairo. */
 export enum NativeStructureCategory {

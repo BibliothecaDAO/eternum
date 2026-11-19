@@ -1,4 +1,4 @@
-import { nativeReleaseConstants } from "../../../../../contracts/l3/world-native/schema/balance.gen";
+import { nativeReleaseConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { SITE } from "@/ui/features/frontier/sites/site-fixture";
 
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";

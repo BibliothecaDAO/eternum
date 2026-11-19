@@ -1,7 +1,7 @@
 import { tupleTypes } from "../../../../apps/herald/src/native/serde.ts";
 import { compileCommandRoutes } from "./command-routes.mjs";
 import { assignWireIds, renderWireSerde } from "./wire-ids.mjs";
-import { balanceIdentity, identifierConstants, readBalanceConstants } from "./rule-constants.mjs";
+import { balanceIdentity, identifierConstants, readBalanceConstants, readReleaseConstants } from "./rule-constants.mjs";
 import { wireRoots, wireTypeNames } from "./wire-types.mjs";
 import { generateSitePreviews } from "./generate-site-previews.mjs";
 import { execFileSync } from "node:child_process";
@@ -180,6 +180,7 @@ const gamesEvents = uniqueEventLayouts(Object.values(artifacts).flatMap(eventLay
 const productionAbi = Object.values(artifacts).flat();
 
 const balance = await readBalanceConstants(root);
+const releaseConstants = await readReleaseConstants(root);
 const schema = {
   identifierConstants: identifierConstants(balance),
   tilePackingConstants,
@@ -431,6 +432,7 @@ const declarations = [
   `export const NativeTroopType = ${JSON.stringify(troopTypes, null, 2)} as const;`,
   `export const nativeFactSchemaIdentity = ${JSON.stringify(schema.identity)};`,
   `export const nativeIdentifiers = ${JSON.stringify(schema.identifierConstants, null, 2)} as const;`,
+  `export const nativeReleaseConstants = ${JSON.stringify(releaseConstants, null, 2)} as const;`,
   typeScriptEnum(
     "NativeStructureCategory",
     "Structure categories named in src/taxonomy.cairo.",

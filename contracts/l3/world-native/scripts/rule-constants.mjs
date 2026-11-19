@@ -6,7 +6,6 @@ const TUNABLE = /_(BPS|PERCENT|STAMINA|PER_TICK|PER_RANK|LIMIT|CAP|SHARE|BASE|ST
 export function identifierConstants(balance) {
   return Object.fromEntries(
     Object.entries(balance)
-      .filter(([group]) => group !== "nativeReleaseConstants")
       .map(([group, constants]) => [
         group.replace(/^native(\w)(\w*)Constants$/, (_match, first, rest) => first.toLowerCase() + rest),
         Object.fromEntries(Object.entries(constants).filter(([name]) => !TUNABLE.test(name))),
@@ -17,7 +16,6 @@ export function identifierConstants(balance) {
 
 export function balanceIdentity(balance) {
   const numbers = Object.entries(balance)
-    .filter(([group]) => group !== "nativeReleaseConstants")
     .flatMap(([, constants]) => Object.entries(constants).filter(([name]) => TUNABLE.test(name)))
     .map(([, value]) => value);
   return createHash("sha256").update(JSON.stringify(numbers)).digest("hex");
@@ -25,7 +23,6 @@ export function balanceIdentity(balance) {
 
 export async function readBalanceConstants(root) {
   return {
-    nativeReleaseConstants: await readReleaseConstants(root),
     nativeRuleConstants: await readRuleConstants(root),
     nativeQuestConstants: await readQuestConstants(root),
     nativeBaneConstants: await readBaneConstants(root),
@@ -33,7 +30,6 @@ export async function readBalanceConstants(root) {
     nativeArrivalConstants: await readArrivalConstants(root),
     nativeOathConstants: await readOathConstants(root),
     nativeResearchConstants: await readResearchConstants(root),
-    nativeFragmentConstants: await readFragmentConstants(root),
   };
 }
 
@@ -68,10 +64,6 @@ async function readQuestConstants(root) {
 
 async function readResearchConstants(root) {
   return unsignedConstants(await readFile(new URL("src/research.cairo", root), "utf8"), "8");
-}
-
-async function readFragmentConstants(root) {
-  return unsignedConstants(await readFile(new URL("src/fragments.cairo", root), "utf8"), "8|16");
 }
 
 async function readOathConstants(root) {

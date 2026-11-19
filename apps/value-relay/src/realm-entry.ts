@@ -1,5 +1,4 @@
-import { nativeIdentifiers } from "../../../contracts/l3/world-native/schema/client.gen";
-import { nativeReleaseConstants } from "../../../contracts/l3/world-native/schema/balance.gen";
+import { nativeIdentifiers, nativeReleaseConstants } from "../../../contracts/l3/world-native/schema/client.gen";
 import { Schema } from "effect";
 import type { HeldRealm, HeldRealmsAnswer } from "@realms-world/identity";
 import { ShardOperator, type ShardTarget } from "@realms-world/value-ledger/shard";
