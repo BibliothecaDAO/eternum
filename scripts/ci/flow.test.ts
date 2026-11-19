@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { kindName, parityProblems, validationPaths } from "./flow";
+import { FLOW_DRIFT, kindName, parityProblems, validationPaths } from "./flow";
 import { interpolate, root, runtimeMatches, runtimePin, selectedStep, validationJobs } from "./jobs";
 
 const source = readFileSync(resolve(root, "flow.toml"), "utf8");
@@ -17,9 +17,7 @@ test("every concrete validation job runs through its workflow with the same sele
 test.each(jobs)("refuses an omitted job: $id", (job) => {
   const kind = kindName(job);
   const missing = source.replace(`[kind.${kind}]`, `[kind.retired-${kind}]`);
-  expect(parityProblems(missing, jobs, paths)).toContain(
-    `${job.id}: missing landing kind ${kind}; run bun scripts/ci/flow.ts --write`,
-  );
+  expect(parityProblems(missing, jobs, paths)).toEqual([FLOW_DRIFT]);
 });
 
 test("refuses the old partial harness command and a narrower dependency scope", () => {
@@ -27,23 +25,19 @@ test("refuses the old partial harness command and a narrower dependency scope", 
     "bun scripts/ci/run.ts runtime/offline-tests/harness",
     "bun test deploy/athanor/harness/confirmation.test.ts",
   );
-  expect(parityProblems(partial, jobs, paths)).toContain(
-    "ci-runtime-offline-tests-harness: run the workflow through scripts/ci/run.ts",
-  );
+  expect(parityProblems(partial, jobs, paths)).toEqual([FLOW_DRIFT]);
   const missingRelease = source.replaceAll("deploy/release/ ", "");
-  expect(parityProblems(missingRelease, jobs, paths).some((problem) => problem.includes("paths differ"))).toBe(true);
+  expect(parityProblems(missingRelease, jobs, paths)).toEqual([FLOW_DRIFT]);
 });
 
 test("refuses a hand-written kind below the generated marker, which --write would drop", () => {
   const appended = `${source}\n[kind.playtest-by-hand]\ncmd = "true"\n`;
-  expect(parityProblems(appended, jobs, paths).some((problem) => problem.includes("is dropped by it"))).toBe(true);
+  expect(parityProblems(appended, jobs, paths)).toEqual([FLOW_DRIFT]);
 });
 
 test("a new workflow job cannot inherit a passing result from an existing job", () => {
   const added = { ...jobs[0]!, id: "static/new-check" };
-  expect(parityProblems(source, [...jobs, added], paths)).toContain(
-    "static/new-check: missing landing kind ci-static-new-check; run bun scripts/ci/flow.ts --write",
-  );
+  expect(parityProblems(source, [...jobs, added], paths)).toEqual([FLOW_DRIFT]);
 });
 
 test("matrix conditions and expressions preserve the workflow's actual command", () => {
