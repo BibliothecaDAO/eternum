@@ -434,15 +434,16 @@ fn a_game_stuck_at_its_deep_boundary_plays_again_once_the_launcher_applies_a_che
     releases.apply_release(game_id, 2);
     let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
     let tick = (360 / interval + 1) * interval;
-    world_test_support::tests::play_fixture::assert_preflight_rejection(
-        d.games,
-        world_test_support::tests::play_fixture::TestAction { game_id, actor: d.actor, command: step(walker) },
-        tick,
+    let before = interact_with_state(d.games, || crate::logic::troops::explorer(walker).unwrap().coord);
+    let mut stuck_play = spy_events();
+    assert!(!world_test_support::tests::resource_commands::execute_in_game(d, game_id, step(walker), tick));
+    assert_eq!(
+        world_test_support::tests::play_fixture::rejection(ref stuck_play, d.games).reason, "deep boundary over budget",
     );
+    assert_eq!(interact_with_state(d.games, || crate::logic::troops::explorer(walker).unwrap().coord), before);
     let mut recovery = spy_events();
     releases.apply_release(game_id, 3);
     assert_only_pin_moved(ref recovery, d, game_id, 3);
-    let before = interact_with_state(d.games, || crate::logic::troops::explorer(walker).unwrap().coord);
     super::deep_sites::applied(d, game_id, step(walker), tick);
     assert!(interact_with_state(d.games, || crate::logic::troops::explorer(walker).unwrap().coord) != before);
 }
