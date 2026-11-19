@@ -152,6 +152,7 @@ export const FRONTIER = {
     workshop: researchRow(research.ROW_WORKSHOP),
     hut: researchRow(research.ROW_HUT),
     training: researchRow(research.ROW_SUPPLY_YARD),
+    lore: researchRow(research.ROW_LORE),
     outputStep: pct(frontierPreset.board.outputStepBps),
     storageStep: pct(frontierPreset.board.storageStepBps),
     troopWheat: n(wheatPerTroop),
