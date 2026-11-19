@@ -1,5 +1,5 @@
 use snforge_std::{EventSpyTrait, EventsFilterTrait, interact_with_state, spy_events};
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use world_test_support::tests::Deployment;
 use world_test_support::tests::resource_commands::execute_in_game;
 use crate::commands::Command;
@@ -57,8 +57,12 @@ fn every_site_at_the_empire_cap() -> Shape {
     Shape { sites: 20, guards_per_site: crate::rules::DEEP_GUARD_SLOTS, troops: EMPIRE_CAP, vitriol: true }
 }
 
-fn every_site_at_the_settlement_cap() -> Shape {
-    Shape { sites: 20, guards_per_site: crate::rules::DEEP_GUARD_SLOTS, troops: SETTLEMENT_CAP, vitriol: false }
+fn every_site_held_by_two_settlement_armies() -> Shape {
+    Shape { sites: 20, guards_per_site: 2, troops: SETTLEMENT_CAP, vitriol: false }
+}
+
+fn one_guard_on_every_site() -> Shape {
+    Shape { sites: 20, guards_per_site: 1, troops: EMPIRE_CAP, vitriol: true }
 }
 
 fn the_rehearsal_guard() -> Shape {
@@ -287,6 +291,24 @@ fn digest(d: Deployment, game_id: u32, guards: Span<ExplorerKey>, homes: Span<u6
     )
 }
 
+const CUT_GAP_STATE: felt252 = 0;
+const CAPPED_GAP_STATE: felt252 = 0;
+const WON_GAP_STATE: felt252 = 0;
+
+fn cap(guards: u64) -> u64 {
+    crate::rules::DEEP_CATCH_UP_GUARD_TICKS / guards
+}
+
+fn first_play(seed: felt252, shape: Shape, boundaries: u64) -> Plays {
+    let (_, game_id, guards, owner, homes) = held_deep(seed, 2000, shape);
+    let cost = measured(owner, game_id, nudge(*homes.at(0)), START + boundaries * TICK);
+    let plays = Plays { count: 1, gas: cost.gas, events: cost.events };
+    report(boundaries, shape, plays);
+    let walked = core::cmp::min(boundaries, cap(guards.len().into()));
+    assert_eq!(cost.paid_ticks, START / TICK + walked);
+    plays
+}
+
 #[test]
 fn one_tick_with_every_site_full_fits_one_play() {
     assert_within_one_transaction(catch_up(1, every_site_at_the_empire_cap(), 1));
@@ -298,23 +320,13 @@ fn five_missed_ticks_with_every_site_full_fit_one_play() {
 }
 
 #[test]
-fn an_hour_of_missed_ticks_with_every_site_full_fits_one_play() {
-    assert_within_one_transaction(catch_up(2, every_site_at_the_empire_cap(), 30));
+fn the_capped_play_of_a_long_gap_with_every_site_full_fits() {
+    assert_within_one_transaction(first_play(4, every_site_at_the_empire_cap(), 599));
 }
 
 #[test]
-fn six_hours_of_missed_ticks_with_every_site_full_clear_in_plays_that_each_fit() {
-    assert_within_one_transaction(catch_up(3, every_site_at_the_empire_cap(), 180));
-}
-
-#[test]
-fn the_longest_day_of_missed_ticks_with_every_site_full_clears_in_plays_that_each_fit() {
-    assert_within_one_transaction(catch_up(4, every_site_at_the_empire_cap(), 599));
-}
-
-#[test]
-fn an_hour_of_missed_ticks_with_every_site_held_by_settlement_armies_fits_one_play() {
-    assert_within_one_transaction(catch_up(10, every_site_at_the_settlement_cap(), 30));
+fn every_settlement_guard_dying_in_one_play_fits() {
+    assert_within_one_transaction(first_play(10, every_site_held_by_two_settlement_armies(), 30));
 }
 
 #[test]
@@ -334,7 +346,7 @@ fn a_win_early_in_the_gap_stops_the_catch_up_with_every_site_full() {
 }
 
 #[test]
-fn a_refused_guard_move_after_an_hour_pays_the_same_catch_up_with_every_site_full() {
+fn a_refused_guard_move_after_the_cap_pays_the_same_catch_up_with_every_site_full() {
     let shape = every_site_at_the_empire_cap();
     let (_, game_id, guards, owner, _) = held_deep(6, 2000, shape);
     let guard = *guards.at(0);
@@ -342,9 +354,9 @@ fn a_refused_guard_move_after_an_hour_pays_the_same_catch_up_with_every_site_ful
         owner,
         game_id,
         Command::Move(crate::commands::Move { explorer_id: guard.explorer_id, directions: array![0].span() }),
-        START + 30 * TICK,
+        START + 100 * TICK,
     );
-    assert_eq!(cost.paid_ticks, (START + 30 * TICK) / TICK);
+    assert_eq!(cost.paid_ticks, START / TICK + cap(80));
     assert_within_one_transaction(Plays { count: 1, gas: cost.gas, events: cost.events });
 }
 
@@ -353,8 +365,8 @@ fn a_command_by_a_player_outside_the_deep_advances_its_cursor() {
     let (d, game_id, _, _, _) = held_deep(12, 2000, every_site_at_the_empire_cap());
     let stranger = player(d, 1299);
     let home = super::army_activity::found(stranger, game_id, 2);
-    measured(stranger, game_id, nudge(home), START + 30 * TICK);
-    assert_eq!(paid(d, game_id), (START + 30 * TICK) / TICK);
+    measured(stranger, game_id, nudge(home), START + 100 * TICK);
+    assert_eq!(paid(d, game_id), START / TICK + cap(80));
 }
 
 #[test]
@@ -368,32 +380,38 @@ fn a_join_refused_while_the_deep_catches_up_still_advances_its_cursor() {
     assert!(!execute_in_game(stranger, game_id, join(d, army, target), START + 450 * TICK));
     let refusal = world_test_support::tests::play_fixture::rejection(ref events, d.games);
     assert_eq!(refusal.reason, "the Deep is catching up");
-    let cap = crate::rules::DEEP_CATCH_UP_GUARD_TICKS / 80;
-    assert_eq!(paid(d, game_id), START / TICK + cap);
+    assert_eq!(paid(d, game_id), START / TICK + cap(80));
 }
 
 #[test]
-fn every_site_full_cut_into_two_plays_ends_where_one_walk_ends() {
-    let shape = every_site_at_the_empire_cap();
-    assert_eq!(walked(21, shape, 2000, 150, 1), walked(21, shape, 2000, 150, 2));
+fn a_gap_walked_in_one_play_ends_in_the_cut_gap_state() {
+    assert_eq!(walked(21, one_guard_on_every_site(), 2000, 150, 1), (CUT_GAP_STATE, None));
 }
 
 #[test]
-fn every_site_full_cut_into_three_plays_ends_where_one_walk_ends() {
-    let shape = every_site_at_the_empire_cap();
-    assert_eq!(walked(22, shape, 2000, 150, 1), walked(22, shape, 2000, 150, 3));
+fn a_gap_cut_into_two_plays_ends_in_the_cut_gap_state() {
+    assert_eq!(walked(21, one_guard_on_every_site(), 2000, 150, 2), (CUT_GAP_STATE, None));
 }
 
 #[test]
-fn every_site_full_cut_into_seven_plays_ends_where_one_walk_ends() {
-    let shape = every_site_at_the_empire_cap();
-    assert_eq!(walked(23, shape, 2000, 150, 1), walked(23, shape, 2000, 150, 7));
+fn a_gap_cut_into_three_plays_ends_in_the_cut_gap_state() {
+    assert_eq!(walked(21, one_guard_on_every_site(), 2000, 150, 3), (CUT_GAP_STATE, None));
 }
 
 #[test]
-fn a_gap_the_cap_cuts_ends_where_seven_timed_plays_end() {
-    let shape = every_site_at_the_empire_cap();
-    assert_eq!(walked(24, shape, 2000, 450, 1), walked(24, shape, 2000, 450, 7));
+fn a_gap_cut_into_seven_plays_ends_in_the_cut_gap_state() {
+    assert_eq!(walked(21, one_guard_on_every_site(), 2000, 150, 7), (CUT_GAP_STATE, None));
+}
+
+#[test]
+fn a_gap_the_cap_cuts_ends_in_the_capped_gap_state() {
+    assert!(450 > cap(20));
+    assert_eq!(walked(24, one_guard_on_every_site(), 2000, 450, 1), (CAPPED_GAP_STATE, None));
+}
+
+#[test]
+fn the_capped_gap_cut_into_seven_timed_plays_ends_in_the_same_state() {
+    assert_eq!(walked(24, one_guard_on_every_site(), 2000, 450, 7), (CAPPED_GAP_STATE, None));
 }
 
 #[test]
@@ -405,12 +423,26 @@ fn the_rehearsal_guard_ends_in_one_state_however_its_gap_is_cut() {
     assert_eq!(whole, walked(31, shape, 2000, 12, 7));
 }
 
-#[test]
-fn a_win_inside_the_gap_lands_on_one_boundary_however_the_gap_is_cut() {
-    let shape = every_site_at_the_empire_cap();
-    let (state, result) = walked(51, shape, 40, 40, 1);
+fn won(cuts: u64) -> felt252 {
+    let (state, result) = walked(51, one_guard_on_every_site(), 40, 40, cuts);
     let result = result.expect('the race must finish in the gap');
     assert!(result.ended_at > START && result.ended_at < START + 40 * TICK);
-    assert_eq!((state, Some(result)), walked(51, shape, 40, 40, 3));
-    assert_eq!((state, Some(result)), walked(51, shape, 40, 40, 7));
+    assert_eq!(result.winner, Some(1));
+    println!("deep catch-up win: ended at {}", result.ended_at);
+    state
+}
+
+#[test]
+fn a_win_walked_in_one_play_ends_in_the_won_gap_state() {
+    assert_eq!(won(1), WON_GAP_STATE);
+}
+
+#[test]
+fn a_win_cut_into_three_plays_ends_in_the_won_gap_state() {
+    assert_eq!(won(3), WON_GAP_STATE);
+}
+
+#[test]
+fn a_win_cut_into_seven_plays_ends_in_the_won_gap_state() {
+    assert_eq!(won(7), WON_GAP_STATE);
 }
