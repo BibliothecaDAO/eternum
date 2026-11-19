@@ -233,7 +233,9 @@ fn veterans_counts_each_oath_taken_and_neither_a_pass_nor_a_refused_repeat() {
         d.games,
         || crate::logic::research::write(
             home,
-            crate::research::RealmKnowledge { learned: world_test_support::tests::registrar::lore(crate::research::LORE_SHRINES) },
+            crate::research::RealmKnowledge {
+                learned: world_test_support::tests::registrar::lore(crate::research::LORE_SHRINES),
+            },
         ),
     );
     let root = discovery_root(key.game_id, rules, 100, 0, Some(far_eye()), Discovery::Shrine);

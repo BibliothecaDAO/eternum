@@ -97,7 +97,9 @@ fn discovered_spires_take_a_real_army_through_each_layer_to_the_shared_deep() {
     assert_eq!(lore_price, 17_500 * crate::rules::RESOURCE_PRECISION);
     let essence = interact_with_state(d.games, || crate::logic::resources::balance(realm, crate::resources::ESSENCE));
     world_test_support::tests::registrar::learn_spire_lore(d, realm, 360);
-    assert_eq!(interact_with_state(d.games, || crate::logic::resources::balance(realm, crate::resources::ESSENCE)), essence);
+    assert_eq!(
+        interact_with_state(d.games, || crate::logic::resources::balance(realm, crate::resources::ESSENCE)), essence,
+    );
     let key = ExplorerKey {
         game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: home, epoch: 0, slot: 0 }),
     };

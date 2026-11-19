@@ -440,7 +440,9 @@ fn depth_entry_requires_spire_lore_and_keeps_stamina_at_every_depth() {
     let first = *armies.at(0);
     let unmoved = troops.resolved_explorer(first).unwrap();
     let enter_first = Command::EnterDepth(crate::commands::EnterDepth { explorer_id: first.explorer_id, depth: 1 });
-    let buy = Command::Research(crate::research::Research { structure_id: 1, row: crate::research::ROW_LORE, choice: 0 });
+    let buy = Command::Research(
+        crate::research::Research { structure_id: 1, row: crate::research::ROW_LORE, choice: 0 },
+    );
     for lore in 1_u8..crate::research::LORE_SPIRES + 1 {
         assert!(!execute_in_game(d, game_id, enter_first, 351));
         assert_eq!(troops.resolved_explorer(first).unwrap(), unmoved);
@@ -531,7 +533,9 @@ fn an_army_enters_a_depth_only_from_its_realms_spire_which_turns_each_day() {
         || {
             crate::logic::research::write(
                 home,
-                crate::research::RealmKnowledge { learned: world_test_support::tests::registrar::lore(crate::research::LORE_SPIRES) },
+                crate::research::RealmKnowledge {
+                    learned: world_test_support::tests::registrar::lore(crate::research::LORE_SPIRES),
+                },
             );
         },
     );

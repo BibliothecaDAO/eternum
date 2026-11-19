@@ -109,7 +109,9 @@ fn a_game_that_disables_choose_oath_writes_no_pick_and_keeps_the_army_exploring(
             let home = crate::resources::ResourceKey { game_id, entity_id: 1 };
             crate::logic::research::write(
                 home,
-                crate::research::RealmKnowledge { learned: world_test_support::tests::registrar::lore(crate::research::LORE_SHRINES) },
+                crate::research::RealmKnowledge {
+                    learned: world_test_support::tests::registrar::lore(crate::research::LORE_SHRINES),
+                },
             );
         },
     );
@@ -156,7 +158,9 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
             let home = crate::resources::ResourceKey { game_id, entity_id: 1 };
             crate::logic::research::write(
                 home,
-                crate::research::RealmKnowledge { learned: world_test_support::tests::registrar::lore(crate::research::LORE_SHRINES) },
+                crate::research::RealmKnowledge {
+                    learned: world_test_support::tests::registrar::lore(crate::research::LORE_SHRINES),
+                },
             );
         },
     );

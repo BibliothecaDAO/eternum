@@ -3572,7 +3572,7 @@ function chooseLayer(word) {
 /** The camera's tile once two reads a dive's frame apart agree, within SPIRE_WAIT_MS. */
 async function cameraAtRest(browser) {
   let last = browser.read(MAP_CAMERA);
-  for (const until = Date.now() + SPIRE_WAIT_MS; Date.now() < until;) {
+  for (const until = Date.now() + SPIRE_WAIT_MS; Date.now() < until; ) {
     await sleep(LIST_SETTLE_MS);
     const now = browser.read(MAP_CAMERA);
     if (now && last && hexesApart(now, last) === 0) return now;
