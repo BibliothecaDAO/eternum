@@ -251,16 +251,18 @@ describe("the Deep's sites on the map", () => {
     manager.destroy();
   });
 
-  it("draws every site's building with its kind's look, and no beast, while chain time is not known yet, then each guarding beast and closed ring's lock once a head binds it", async () => {
-    const { manager, plates } = guardedSites(undefined);
+  it("draws every site's building with its kind's look, and no beast, while chain time is not known yet, then each open site's guarding beast and a closed ring's site dormant, its building under a lock, once a head binds it", async () => {
+    const core = 10 + deepSites.findIndex(({ key }) => key === "core");
+    const { manager, plates } = guardedSites(undefined, [], ["core"]);
     await vi.waitFor(() =>
       expect(models.map(({ name }) => name).toSorted()).toEqual(["Bane altar", "Essence core", "Ethereal mine"]),
     );
     expect(beasts).toEqual([]);
     expect(plates.setLabel.mock.calls.map(([plate]) => plate.plate.icon)).not.toContain("lock");
     headAt(100);
-    await vi.waitFor(() => expect(standingBeasts()).toEqual(["basilisk", "dark-fey", "troll", "troll"]));
-    expect(plates.setLabel.mock.lastCall![0].plate.icon).toBe("lock");
+    await vi.waitFor(() => expect(standingBeasts()).toEqual(["basilisk", "troll", "troll"]));
+    expect(models.find(({ name }) => name === "Essence core")!.count).toBe(1);
+    expect(plates.setLabel.mock.calls.findLast(([plate]) => plate.entityId === core)![0].plate.icon).toBe("lock");
     manager.destroy();
   });
 
@@ -314,7 +316,7 @@ describe("the Deep's sites on the map", () => {
   });
 });
 
-function guardedSites(tick: number | undefined, beaten: string[] = []) {
+function guardedSites(tick: number | undefined, beaten: string[] = [], closed: string[] = []) {
   mode.id = "frontier";
   models.length = 0;
   beasts.length = 0;
@@ -328,7 +330,7 @@ function guardedSites(tick: number | undefined, beaten: string[] = []) {
   openings.clear();
   deepSites.forEach(({ key }, index) => {
     beastTroops.set(10 + index, beaten.includes(key) ? 0n : 5_000n);
-    openings.set(10 + index, { known: { open: false, realms: 30 } });
+    openings.set(10 + index, { known: { open: !closed.includes(key), realms: 30 } });
   });
   const tiles = deepSites.map((_, index) => tile(10 + index, TileOccupier.DeepSite));
   const projection = { getTiles: () => tiles, subscribeTiles: () => () => {} };

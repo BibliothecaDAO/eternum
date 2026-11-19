@@ -94,7 +94,7 @@ export class MapSiteManager {
         stands: (tile: TileSpatialRenderable) =>
           tile.occupierType === TileOccupier.DeepSite &&
           this.deepKindOf(tile.occupierId) === kind.id &&
-          !this.beastGuards(tile.occupierId),
+          !this.beastStands(tile.occupierId),
         model: () => (look.kind === "model" ? modelOf(look.path(), kind.name) : Promise.resolve(foundationModel())),
         scale: 1,
       };
@@ -107,7 +107,7 @@ export class MapSiteManager {
         stands: (tile: TileSpatialRenderable) =>
           tile.occupierType === TileOccupier.DeepSite &&
           this.deepKindOf(tile.occupierId) === kind.id &&
-          this.beastGuards(tile.occupierId),
+          this.beastStands(tile.occupierId),
         model: () => beastModelOf(beastModel(beast)),
         scale: beast.scale,
         idle: beast.idle,
@@ -283,7 +283,7 @@ export class MapSiteManager {
       col: tile.hexCoords.col - FELT_CENTER(),
       row: tile.hexCoords.row - FELT_CENTER(),
     });
-    const standing = this.beastGuards(tile.occupierId) ? `deep-beast:${kind.key}` : `deep:${kind.key}`;
+    const standing = this.beastStands(tile.occupierId) ? `deep-beast:${kind.key}` : `deep:${kind.key}`;
     placePositionOnTerrain(position, this.terrain, (this.heights.get(standing) ?? 0) + PLATE_CLEARANCE);
     return {
       entityId: tile.occupierId,
@@ -344,14 +344,22 @@ export class MapSiteManager {
     return (troops ?? 0n) > 0n;
   }
 
+  private beastStands(entityId: number): boolean {
+    return this.beastGuards(entityId) && this.closedRing(entityId) === undefined;
+  }
+
   private closedOrOpenLook(entityId: number, icon: IconMeaning): { icon: IconMeaning; reward?: string } {
+    const closed = this.closedRing(entityId);
+    return closed ? { icon: "lock", reward: DEEP_WORDS.opensAt(closed.realms) } : { icon };
+  }
+
+  private closedRing(entityId: number): { realms: number } | undefined {
     const now = readDefaultTick();
     const opening =
       now === undefined
         ? undefined
         : readDeepRingOpening(this.store, now, BigInt(entityId), configManager.getActiveGameId());
-    if (opening === undefined || !("known" in opening) || opening.known.open) return { icon };
-    return { icon: "lock", reward: DEEP_WORDS.opensAt(opening.known.realms) };
+    return opening && "known" in opening && !opening.known.open ? opening.known : undefined;
   }
 
   private guardsDeepSite(guard: { structure_id: bigint } | undefined): boolean {
