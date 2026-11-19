@@ -79,21 +79,21 @@ pub fn validate(rules: RaceRules) {
 // Largest remainders allocate the indivisible units; home identity breaks an exact tie.
 pub fn split_payment(amount: u128, shares: Span<crate::deep::DeepShare>) -> Span<u128> {
     assert!(!shares.is_empty() && shares.len() <= crate::rules::DEEP_GUARD_SLOTS.into(), "invalid reward guard count");
-    let mut total = 0_u256;
+    let mut total = 0_u128;
     for index in 0..shares.len() {
         let share = *shares.at(index);
         assert!(share.home != 0 && share.troops != 0, "empty reward guard");
         for previous in 0..index {
             assert!(*shares.at(previous).home != share.home, "duplicate reward home");
         }
-        total += share.troops.into();
+        total += share.troops;
     }
     let mut allocated = 0_u128;
     let mut bases = array![];
     let mut remainders = array![];
     for share in shares {
-        let weighted = Into::<u128, u256>::into(amount) * Into::<u128, u256>::into(*share.troops);
-        let base: u128 = (weighted / total).try_into().unwrap();
+        let weighted = amount * *share.troops;
+        let base = weighted / total;
         allocated += base;
         bases.append(base);
         remainders.append(weighted % total);

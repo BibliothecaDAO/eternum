@@ -13,40 +13,51 @@ pub fn bane(key: TeamBaneKey) -> Option<TeamBane> {
 }
 
 pub fn height_blocked(game_id: u32, aspect: u8, timestamp: u64) -> bool {
+    timestamp < height_block_end(game_id, aspect, timestamp)
+}
+
+pub fn height_block_end(game_id: u32, aspect: u8, timestamp: u64) -> u64 {
     let Some(day) = day(game_id, timestamp) else {
-        return false;
+        return 0;
     };
     if bane(TeamBaneKey { game_id, aspect, day: day.index }).is_none() {
-        return false;
+        return 0;
     }
     if crate::logic::banes::required(game_id, aspect, day.index) == 0 {
-        return false;
+        return 0;
     }
     let ended = crate::logic::banes::progress(game_id, aspect, day.index).ended_at;
-    ended == 0 || timestamp < ended
+    if ended == 0 {
+        day.end
+    } else {
+        ended
+    }
 }
 
-pub fn credit(game_id: u32, source: u8, amount: u32, boundary: u64) {
-    let preset = crate::logic::preset_record::for_game(game_id);
-    if preset.bane_rules.read().is_none() {
-        return;
-    }
+pub fn settle_altar(game_id: u32, source: u8, charge: u32, boundary: u64, heights: Span<u32>) -> u32 {
     assert!(source >= 1 && source <= 4, "invalid Altar Aspect");
-    let game = crate::logic::game::game(game_id);
-    assert!(boundary > game.start_main_at && boundary <= game.end_at, "Altar tick outside season");
-    assert!(boundary % preset.rules.tick_config.armies_tick_in_seconds.read() == 0, "Altar credit outside tick");
-    let threshold = preset.deep_rules.read().expect('missing Deep rules').altar_threshold;
+    let threshold = crate::logic::preset_record::for_game(game_id)
+        .deep_rules
+        .read()
+        .expect('missing Deep rules')
+        .altar_threshold;
+    assert!(charge <= threshold, "Altar charge over its threshold");
+    let settled = if charge == threshold && issue_next_day(game_id, source, boundary, heights) {
+        0
+    } else {
+        charge
+    };
     let state = crate::state::write();
-    let previous = state.banes.altar_bars.read((game_id, source));
-    let mut charge = previous + core::cmp::min(threshold - previous, amount);
-    if charge == threshold && issue_next_day(game_id, source, boundary) {
-        charge = 0;
+    if state.banes.altar_bars.read((game_id, source)) != settled {
+        state.banes.altar_bars.write((game_id, source), settled);
+        crate::logic::banes::emit(
+            'AltarBar', array![game_id.into(), source.into()].span(), array![settled.into()].span(),
+        );
     }
-    state.banes.altar_bars.write((game_id, source), charge);
-    crate::logic::banes::emit('AltarBar', array![game_id.into(), source.into()].span(), array![charge.into()].span());
+    settled
 }
 
-fn issue_next_day(game_id: u32, source: u8, boundary: u64) -> bool {
+fn issue_next_day(game_id: u32, source: u8, boundary: u64, heights: Span<u32>) -> bool {
     let end = crate::state::read().games.games.entry(game_id).end_at.read();
     if boundary >= end {
         return false;
@@ -57,14 +68,14 @@ fn issue_next_day(game_id: u32, source: u8, boundary: u64) -> bool {
     if day.end >= end {
         return false;
     }
-    let Some(target) = target(game_id, source, day.index, issued_at) else {
+    let Some(target) = target(game_id, source, day.index, issued_at, heights) else {
         return false;
     };
     issue(TeamBaneKey { game_id, aspect: target, day: day.index + 1 }, source, day.index);
     true
 }
 
-fn target(game_id: u32, source: u8, day: u64, timestamp: u64) -> Option<u8> {
+fn target(game_id: u32, source: u8, day: u64, timestamp: u64, heights: Span<u32>) -> Option<u8> {
     let mut selected = None;
     let mut height = 0;
     for aspect in 1_u8..5 {
@@ -73,7 +84,7 @@ fn target(game_id: u32, source: u8, day: u64, timestamp: u64) -> Option<u8> {
             || bane(TeamBaneKey { game_id, aspect, day: day + 1 }).is_some() {
             continue;
         }
-        let rival_height = crate::state::read().season.aspect_heights.read((game_id, aspect));
+        let rival_height = *heights.at((aspect - 1).into());
         if selected.is_none() || rival_height > height {
             selected = Some(aspect);
             height = rival_height;

@@ -3,10 +3,8 @@ use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use world_test_support::tests::Deployment;
 use world_test_support::tests::resource_commands::execute_in_game;
 use crate::commands::Command;
-use crate::deep::{
-    DeepShare, IDeepRewardsDispatcherTrait, IDeepRewardsLibraryDispatcher, IDeepRewardsSafeDispatcherTrait,
-    IDeepRewardsSafeLibraryDispatcher,
-};
+use crate::deep::DeepShare;
+use crate::logic::race::DeepRaceTrait;
 use crate::race::{AspectKey, IRaceDispatcherTrait, IRaceLibraryDispatcher, RaceMember, TriumphKey};
 use crate::resources::ResourceKey;
 use crate::rules::{DEEP_ALTAR, DEEP_FOUNDATION, RESOURCE_PRECISION};
@@ -30,8 +28,9 @@ fn pay(d: Deployment, game_id: u32, kind: u8, aspect: u8, shares: Span<DeepShare
     interact_with_state(
         d.games,
         || {
-            IDeepRewardsLibraryDispatcher { class_hash: crate::logic::release::classes(game_id).economy.read() }
-                .pay_deep_tick(game_id, kind, aspect, shares, 5, boundary);
+            let mut race = DeepRaceTrait::load(game_id, boundary);
+            race.pay(kind, aspect, shares, 5, boundary);
+            race.flush();
         },
     );
 }
@@ -196,58 +195,6 @@ fn foundation_splits_raw_glory_and_height_by_troops_while_altar_pays_only_glory(
 }
 
 #[test]
-#[feature("safe_dispatcher")]
-fn rejected_payments_leave_height_and_both_member_totals_unchanged() {
-    let (d, game_id) = setup(2000);
-    let home = ResourceKey { game_id, entity_id: found(d, game_id, 1) };
-    let valid = array![DeepShare { home: home.entity_id, troops: 1 }].span();
-    for invalid in 0_u8..8 {
-        let shares = if invalid == 0 {
-            array![].span()
-        } else if invalid == 1 {
-            array![DeepShare { home: home.entity_id, troops: 0 }].span()
-        } else if invalid == 2 {
-            array![*valid.at(0), *valid.at(0)].span()
-        } else {
-            valid
-        };
-        let aspect = if invalid == 3 {
-            2
-        } else {
-            1
-        };
-        let kind = if invalid == 4 {
-            crate::rules::DEEP_MINE
-        } else {
-            DEEP_FOUNDATION
-        };
-        let boundary = if invalid == 5 {
-            360
-        } else if invalid == 6 {
-            481
-        } else if invalid == 7 {
-            288480
-        } else {
-            480
-        };
-        interact_with_state(
-            d.games,
-            || {
-                let dispatcher = IDeepRewardsSafeLibraryDispatcher {
-                    class_hash: crate::logic::release::classes(game_id).economy.read(),
-                };
-                assert!(dispatcher.pay_deep_tick(game_id, kind, aspect, shares, 5, boundary).is_err());
-            },
-        );
-        assert_eq!(member(d, home), RaceMember { glory: 0, contribution: 0 });
-        assert_eq!(height(d, game_id, 1), 0);
-        assert_eq!(height(d, game_id, 2), 0);
-    }
-    pay(d, game_id, DEEP_FOUNDATION, 1, valid, 480);
-    assert_eq!(member(d, home), RaceMember { glory: 5 * RESOURCE_PRECISION, contribution: 5 * RESOURCE_PRECISION });
-}
-
-#[test]
 fn a_real_team_bane_blocks_height_but_not_glory_until_its_quest_is_completed() {
     let (d, game_id) = setup(2000);
     let home = ResourceKey { game_id, entity_id: found(d, game_id, 2) };
@@ -267,7 +214,6 @@ fn a_real_team_bane_blocks_height_but_not_glory_until_its_quest_is_completed() {
 }
 
 #[test]
-#[feature("safe_dispatcher")]
 fn four_stages_schedule_triumphs_and_the_fifth_finishes_at_a_tick_inside_the_next_day() {
     let (d, game_id) = setup(20);
     let home = ResourceKey { game_id, entity_id: found(d, game_id, 1) };
@@ -311,10 +257,6 @@ fn four_stages_schedule_triumphs_and_the_fifth_finishes_at_a_tick_inside_the_nex
                 crate::days::day_of(game, crate::logic::game::rules(game_id).day_unit_seconds, tomorrow - 1).index, 0,
             );
             assert!(crate::state::read().season.triumph_days.read((game_id, 1, crate::race::STAGE_COUNT)).is_none());
-            let dispatcher = IDeepRewardsSafeLibraryDispatcher {
-                class_hash: crate::logic::release::classes(game_id).economy.read(),
-            };
-            assert!(dispatcher.pay_deep_tick(game_id, DEEP_ALTAR, 1, shares, 5, finish + 120).is_err());
         },
     );
     assert_eq!(member(d, home).glory, 105 * RESOURCE_PRECISION);

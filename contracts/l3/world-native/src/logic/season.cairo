@@ -288,8 +288,10 @@ pub mod SeasonLogic {
                 );
             }
             if crate::logic::preset_record::for_game(game_id).deep_rules.read().is_some() {
-                crate::deep::IDeepSitesDispatcherTrait::settle_deep(
-                    crate::deep::IDeepSitesLibraryDispatcher { class_hash: self.release.classes(game_id).map.read() },
+                crate::deep::IDeepTicksDispatcherTrait::settle_deep(
+                    crate::deep::IDeepTicksLibraryDispatcher {
+                        class_hash: self.release.classes(game_id).economy.read(),
+                    },
                     game_id,
                     crate::commands::action_context(context),
                 );

@@ -1,3 +1,4 @@
+use core::dict::Felt252Dict;
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::race::{AspectHyperstructure, AspectKey, RaceMember, RaceResult, RaceRules, TriumphKey};
 use crate::resources::ResourceKey;
@@ -64,79 +65,143 @@ fn validate_game(game_id: u32, rules: RaceRules) {
 }
 
 
-fn pay_tick(game_id: u32, kind: u8, aspect: u8, shares: Span<crate::deep::DeepShare>, amount: u32, timestamp: u64) {
-    let rules = rules(game_id).expect('race is disabled');
-    validate_tick(game_id, kind, aspect, shares, timestamp);
-    let glory = crate::race::split_payment(Into::<u32, u128>::into(amount) * crate::rules::RESOURCE_PRECISION, shares);
-    let height = if kind == crate::rules::DEEP_FOUNDATION {
-        build_height(AspectKey { game_id, aspect }, rules, amount, timestamp)
-    } else {
-        0
-    };
-    let contributions = crate::race::split_payment(
-        Into::<u32, u128>::into(height) * crate::rules::RESOURCE_PRECISION, shares,
-    );
-    credit_members(game_id, shares, glory, contributions);
+#[derive(Destruct)]
+pub struct DeepRace {
+    game_id: u32,
+    rules: Option<RaceRules>,
+    finish_height: u32,
+    heights: Felt252Dict<u32>,
+    block_ends: Felt252Dict<u64>,
+    raised: Array<u8>,
+    glory: Felt252Dict<u128>,
+    contribution: Felt252Dict<u128>,
+    homes: Array<u64>,
+    finished: bool,
 }
 
-fn credit_members(game_id: u32, shares: Span<crate::deep::DeepShare>, glory: Span<u128>, contributions: Span<u128>) {
-    for index in 0..shares.len() {
-        let key = ResourceKey { game_id, entity_id: *shares.at(index).home };
-        let mut value = member(key);
-        value.glory += *glory.at(index);
-        value.contribution += *contributions.at(index);
-        crate::state::write().season.race_members.write((game_id, key.entity_id), (value.glory, value.contribution));
-        emit('RaceMember', key, value);
+#[generate_trait]
+pub impl DeepRaceImpl of DeepRaceTrait {
+    fn load(game_id: u32, boundary: u64) -> DeepRace {
+        let rules = rules(game_id);
+        let state = crate::state::read();
+        let bridge = crate::deep::IDeepBanesLibraryDispatcher {
+            class_hash: state.releases.entry(state.game_releases.read(game_id)).classes.bridge.read(),
+        };
+        let mut heights: Felt252Dict<u32> = Default::default();
+        let mut block_ends: Felt252Dict<u64> = Default::default();
+        for aspect in 1_u8..5 {
+            heights.insert(aspect.into(), hyperstructure(AspectKey { game_id, aspect }).height);
+            if rules.is_some() {
+                block_ends
+                    .insert(
+                        aspect.into(),
+                        crate::deep::IDeepBanesDispatcherTrait::height_block_end(bridge, game_id, aspect, boundary - 1),
+                    );
+            }
+        }
+        DeepRace {
+            game_id,
+            rules,
+            finish_height: rules
+                .map(|value| value.stage_height * Into::<u8, u32>::into(crate::race::STAGE_COUNT))
+                .unwrap_or(0),
+            heights,
+            block_ends,
+            raised: array![],
+            glory: Default::default(),
+            contribution: Default::default(),
+            homes: array![],
+            finished: false,
+        }
     }
-}
 
-fn validate_tick(game_id: u32, kind: u8, aspect: u8, shares: Span<crate::deep::DeepShare>, timestamp: u64) {
-    assert!(kind == crate::rules::DEEP_FOUNDATION || kind == crate::rules::DEEP_ALTAR, "site does not pay Glory");
-    assert!(aspect >= 1 && aspect <= 4, "invalid Aspect");
-    let game = crate::logic::game::game(game_id);
-    assert!(timestamp > game.start_main_at && timestamp <= game.end_at, "reward outside season");
-    assert!(
-        timestamp % crate::logic::preset_record::for_game(game_id).rules.tick_config.armies_tick_in_seconds.read() == 0,
-        "reward outside army tick",
-    );
-    for share in shares {
-        assert!(
-            crate::logic::aspects::home_aspect(ResourceKey { game_id, entity_id: *share.home }) == aspect,
-            "reward guard belongs to another Aspect",
+    fn pay(ref self: DeepRace, kind: u8, aspect: u8, shares: Span<crate::deep::DeepShare>, amount: u32, boundary: u64) {
+        let Some(rules) = self.rules else {
+            return;
+        };
+        let glories = crate::race::split_payment(
+            Into::<u32, u128>::into(amount) * crate::rules::RESOURCE_PRECISION, shares,
         );
+        let height = if kind == crate::rules::DEEP_FOUNDATION {
+            self.build(rules, aspect, amount, boundary)
+        } else {
+            0
+        };
+        let contributions = crate::race::split_payment(
+            Into::<u32, u128>::into(height) * crate::rules::RESOURCE_PRECISION, shares,
+        );
+        for index in 0..shares.len() {
+            let (glory, contribution) = (*glories.at(index), *contributions.at(index));
+            if glory == 0 && contribution == 0 {
+                continue;
+            }
+            let home: felt252 = (*shares.at(index).home).into();
+            let (earned, built) = (self.glory.get(home), self.contribution.get(home));
+            if earned == 0 && built == 0 {
+                self.homes.append(*shares.at(index).home);
+            }
+            self.glory.insert(home, earned + glory);
+            self.contribution.insert(home, built + contribution);
+        }
     }
-}
 
-fn build_height(key: AspectKey, rules: RaceRules, amount: u32, timestamp: u64) -> u32 {
-    let before = hyperstructure(key);
-    let blocked = height_blocked(key, timestamp - 1);
-    let finish_height = rules.stage_height * Into::<u8, u32>::into(crate::race::STAGE_COUNT);
-    let height = if blocked {
-        before.height
-    } else {
-        before.height + core::cmp::min(amount, finish_height - before.height)
-    };
-    if height == before.height {
-        return 0;
+    fn heights(ref self: DeepRace) -> Span<u32> {
+        let mut heights = array![];
+        for aspect in 1_u8..5 {
+            heights.append(self.heights.get(aspect.into()));
+        }
+        heights.span()
     }
-    crate::state::write().season.aspect_heights.write((key.game_id, key.aspect), height);
-    emit('AspectHyperstructure', key, AspectHyperstructure { height });
-    schedule_triumph(key, rules, before.height, height, timestamp);
-    if height == finish_height {
-        finish(key.game_id, Some(key.aspect), timestamp);
-    }
-    height - before.height
-}
 
-fn height_blocked(key: AspectKey, timestamp: u64) -> bool {
-    let state = crate::state::read();
-    let release = state.game_releases.read(key.game_id);
-    return crate::deep::IDeepBanesDispatcherTrait::height_blocked(
-        crate::deep::IDeepBanesLibraryDispatcher { class_hash: state.releases.entry(release).classes.bridge.read() },
-        key.game_id,
-        key.aspect,
-        timestamp,
-    );
+    fn finished(self: @DeepRace) -> bool {
+        *self.finished
+    }
+
+    fn flush(ref self: DeepRace) {
+        let game_id = self.game_id;
+        for aspect in self.raised.span() {
+            let key = AspectKey { game_id, aspect: *aspect };
+            let height = self.heights.get((*aspect).into());
+            crate::state::write().season.aspect_heights.write((game_id, *aspect), height);
+            emit('AspectHyperstructure', key, AspectHyperstructure { height });
+        }
+        for home in self.homes.span() {
+            let key = ResourceKey { game_id, entity_id: *home };
+            let mut value = member(key);
+            value.glory += self.glory.get((*home).into());
+            value.contribution += self.contribution.get((*home).into());
+            crate::state::write().season.race_members.write((game_id, *home), (value.glory, value.contribution));
+            emit('RaceMember', key, value);
+        }
+    }
+
+    fn build(ref self: DeepRace, rules: RaceRules, aspect: u8, amount: u32, boundary: u64) -> u32 {
+        let before = self.heights.get(aspect.into());
+        if boundary - 1 < self.block_ends.get(aspect.into()) {
+            return 0;
+        }
+        let height = before + core::cmp::min(amount, self.finish_height - before);
+        if height == before {
+            return 0;
+        }
+        let mut raised = true;
+        for value in self.raised.span() {
+            if *value == aspect {
+                raised = false;
+            }
+        }
+        if raised {
+            self.raised.append(aspect);
+        }
+        self.heights.insert(aspect.into(), height);
+        let key = AspectKey { game_id: self.game_id, aspect };
+        schedule_triumph(key, rules, before, height, boundary);
+        if height == self.finish_height {
+            finish(self.game_id, Some(aspect), boundary);
+            self.finished = true;
+        }
+        height - before
+    }
 }
 
 fn schedule_triumph(key: AspectKey, rules: RaceRules, before: u32, height: u32, timestamp: u64) {
@@ -157,7 +222,7 @@ fn schedule_triumph(key: AspectKey, rules: RaceRules, before: u32, height: u32, 
     emit('TriumphDay', key, day.index + 1);
 }
 
-fn finish_expired(game_id: u32, timestamp: u64) {
+pub fn finish_expired(game_id: u32, timestamp: u64) {
     if rules(game_id).is_none() || result(game_id).is_some() {
         return;
     }
@@ -243,20 +308,14 @@ pub mod RaceState {
             super::result(game_id)
         }
     }
-    #[embeddable_as(DeepRewardsImpl)]
-    pub impl DeepRewards<
+    #[embeddable_as(DeepTicksImpl)]
+    pub impl DeepTicks<
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
-    > of crate::deep::IDeepRewards<ComponentState<TContractState>> {
-        fn pay_deep_tick(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            kind: u8,
-            aspect: u8,
-            shares: Span<crate::deep::DeepShare>,
-            amount: u32,
-            timestamp: u64,
+    > of crate::deep::IDeepTicks<ComponentState<TContractState>> {
+        fn settle_deep(
+            ref self: ComponentState<TContractState>, game_id: u32, context: crate::commands::ActionContext,
         ) {
-            super::pay_tick(game_id, kind, aspect, shares, amount, timestamp);
+            crate::logic::deep_ticks::settle(game_id, crate::commands::execution_context(game_id, context));
         }
     }
 }

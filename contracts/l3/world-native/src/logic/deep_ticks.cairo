@@ -1,9 +1,47 @@
+use core::dict::Felt252Dict;
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::commands::ExecutionContext;
-use crate::deep::{DeepShare, DeepSite, IDeepBanesDispatcherTrait, IDeepRewardsDispatcherTrait};
-use crate::race::IRaceDispatcherTrait;
+use crate::deep::{DeepShare, IDeepBanesDispatcherTrait};
+use crate::logic::race::DeepRaceTrait;
 use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
-use crate::troops::{ExplorerKey, ExplorerTroops};
+use crate::troops::ExplorerKey;
+
+#[derive(Copy, Drop)]
+struct Guard {
+    key: ExplorerKey,
+    home: u64,
+    loss: u128,
+    end: u64,
+}
+
+#[derive(Copy, Drop)]
+struct Site {
+    kind: u8,
+    aspect: u8,
+    pay: u32,
+    amount: u128,
+    first: u32,
+    last: u32,
+}
+
+#[derive(Copy, Drop)]
+struct Held {
+    sites: Span<Site>,
+    guards: Span<Guard>,
+    counts: Span<u128>,
+    ticks: Span<u64>,
+    day_end: u64,
+}
+
+#[derive(Destruct)]
+struct Payouts {
+    race: crate::logic::race::DeepRace,
+    altars: Felt252Dict<u32>,
+    altar_threshold: Option<u32>,
+    resources: Felt252Dict<u128>,
+    grants: Array<(u64, u8)>,
+    deaths: Array<u32>,
+}
 
 pub fn initialize(game_id: u32) {
     let state = crate::state::write();
@@ -20,140 +58,282 @@ pub fn settle(game_id: u32, context: ExecutionContext) {
         return;
     }
     let game = context.game.unbox();
-    let race = race(game_id);
-    let result = race.race_result(game_id);
     if context.timestamp < game.start_main_at {
         return;
     }
     let interval = context.rules.unbox().tick_config.armies_tick_in_seconds;
-    let end = result.map(|value| value.ended_at).unwrap_or(game.end_at);
+    let end = crate::logic::race::result(game_id).map(|value| value.ended_at).unwrap_or(game.end_at);
     let last = core::cmp::min(context.timestamp, end) / interval;
-    let mut cursor = crate::state::read().deep.paid_tick.read(game_id).expect('missing Deep cursor');
-    while cursor < last {
-        if !has_guards(game_id) {
-            cursor = last;
-            break;
-        }
-        let boundary = (cursor + 1) * interval;
-        settle_boundary(game_id, boundary, context);
-        cursor += 1;
-        if race.race_result(game_id).map(|value| boundary >= value.ended_at).unwrap_or(false) {
-            break;
-        }
+    let cursor = crate::state::read().deep.paid_tick.read(game_id).expect('missing Deep cursor');
+    if cursor < last {
+        save_cursor(game_id, catch_up(game_id, cursor, last, context));
     }
-    if crate::state::read().deep.paid_tick.read(game_id) != Some(cursor) {
-        save_cursor(game_id, cursor);
-    }
-    race.finish_expired_race(game_id, context.timestamp);
-    if race.race_result(game_id).is_none() && context.timestamp < game.end_at {
+    crate::logic::race::finish_expired(game_id, context.timestamp);
+    if crate::logic::race::result(game_id).is_none() && context.timestamp < game.end_at {
         crate::logic::deep_sites::rollover(game_id, context);
     }
 }
 
-fn settle_boundary(game_id: u32, boundary: u64, context: ExecutionContext) {
-    let historical = ExecutionContext { timestamp: boundary - 1, ..context };
-    crate::logic::deep_sites::rollover(game_id, historical);
-    for index in 0..crate::logic::deep_sites::site_count(game_id) {
-        drain_site(game_id, crate::logic::deep_sites::site_id(game_id, index), boundary, historical);
+fn catch_up(game_id: u32, cursor: u64, last: u64, context: ExecutionContext) -> u64 {
+    let interval = context.rules.unbox().tick_config.armies_tick_in_seconds;
+    let mut held = held(game_id, context);
+    if held.guards.is_empty() {
+        return last;
     }
+    let mut payouts = payouts(game_id, (cursor + 1) * interval);
+    let mut reached = cursor;
+    while reached < last {
+        let boundary = (reached + 1) * interval;
+        if boundary - 1 >= held.day_end {
+            write_payouts(game_id, ref payouts, held, reached * interval, context);
+            crate::logic::deep_sites::rollover(game_id, ExecutionContext { timestamp: boundary - 1, ..context });
+            return last;
+        }
+        held = drain(held, boundary, interval, ref payouts);
+        reached += 1;
+        if !alive(held.counts) {
+            write_payouts(game_id, ref payouts, held, boundary, context);
+            return last;
+        }
+        pay_sites(game_id, @held, boundary, ref payouts);
+        if payouts.race.finished() {
+            break;
+        }
+    }
+    write_payouts(game_id, ref payouts, held, reached * interval, context);
+    reached
+}
+
+fn held(game_id: u32, context: ExecutionContext) -> Held {
+    let state = crate::state::read();
+    let rules = crate::logic::deep_sites::rules_entry(game_id).expect('missing Deep rules');
+    let unit = context.rules.unbox().day_unit_seconds;
+    let mut sites = array![];
+    let mut guards = array![];
+    let mut counts = array![];
+    let mut ticks = array![];
+    let mut day_end = 0;
     for index in 0..crate::logic::deep_sites::site_count(game_id) {
         let site_id = crate::logic::deep_sites::site_id(game_id, index);
-        let guards = guards(game_id, site_id);
-        if !guards.is_empty() {
-            let site = crate::logic::deep_sites::site(ResourceKey { game_id, entity_id: site_id })
-                .expect('missing Deep site');
-            pay_site(game_id, site, shares(guards), boundary, historical);
+        let site = crate::logic::deep_sites::site(ResourceKey { game_id, entity_id: site_id })
+            .expect('missing Deep site');
+        day_end = crate::days::day_at_index(context.game.unbox(), unit, site.day).end;
+        let first = guards.len();
+        for slot in 0..crate::rules::DEEP_GUARD_SLOTS {
+            let explorer_id = state.deep.slots.read((game_id, site_id, slot));
+            if explorer_id == 0 {
+                continue;
+            }
+            let key = ExplorerKey { game_id, explorer_id };
+            let army = crate::logic::troops::explorer(key).expect('missing Deep guard');
+            assert!(army.troops.count != 0, "dead guard occupies Deep slot");
+            let day = crate::days::day_at_index(context.game.unbox(), unit, crate::logic::army_days::require(key));
+            let oaths = crate::logic::progression::require(key).oaths;
+            guards
+                .append(
+                    Guard {
+                        key,
+                        home: army.owner,
+                        loss: crate::oaths::deep_loss_per_tick(oaths, rules.loss_per_tick.read()),
+                        end: day.end,
+                    },
+                );
+            counts.append(army.troops.count);
+            ticks.append(state.deep.army_ticks.read((game_id, explorer_id)).expect('Deep army has no tick'));
         }
+        if guards.len() == first {
+            continue;
+        }
+        let holder: Guard = *guards.at(first);
+        let aspect = crate::logic::aspects::home_aspect(ResourceKey { game_id, entity_id: holder.home });
+        let (pay, amount) = if site.kind == crate::rules::DEEP_CORE {
+            (0, rules.core_per_tick.read())
+        } else if site.kind == crate::rules::DEEP_MINE {
+            (0, rules.mine_per_tick.read())
+        } else {
+            (
+                crate::deep::building_pay(
+                    rules.building_pay.read(), crate::logic::deep_sites::open_rings(game_id, site.day),
+                ),
+                0,
+            )
+        };
+        sites.append(Site { kind: site.kind, aspect, pay, amount, first, last: guards.len() });
+    }
+    Held { sites: sites.span(), guards: guards.span(), counts: counts.span(), ticks: ticks.span(), day_end }
+}
+
+fn payouts(game_id: u32, boundary: u64) -> Payouts {
+    let preset = crate::logic::preset_record::for_game(game_id);
+    let altar_threshold = if preset.bane_rules.read().is_some() {
+        Some(preset.deep_rules.read().expect('missing Deep rules').altar_threshold)
+    } else {
+        None
+    };
+    let mut altars: Felt252Dict<u32> = Default::default();
+    for aspect in 1_u8..5 {
+        altars.insert(aspect.into(), crate::state::read().banes.altar_bars.read((game_id, aspect)));
+    }
+    Payouts {
+        race: crate::logic::race::DeepRaceTrait::load(game_id, boundary),
+        altars,
+        altar_threshold,
+        resources: Default::default(),
+        grants: array![],
+        deaths: array![],
     }
 }
 
-fn has_guards(game_id: u32) -> bool {
-    let state = crate::state::read();
-    for index in 0..crate::logic::deep_sites::site_count(game_id) {
-        let site = state.deep.site_ids.read((game_id, index));
-        for slot in 0..crate::rules::DEEP_GUARD_SLOTS {
-            if state.deep.slots.read((game_id, site, slot)) != 0 {
-                return true;
-            }
+fn drain(held: Held, boundary: u64, interval: u64, ref payouts: Payouts) -> Held {
+    let mut counts = array![];
+    let mut ticks = array![];
+    for index in 0..held.guards.len() {
+        let guard = *held.guards.at(index);
+        let before = *held.counts.at(index);
+        let last_tick = *held.ticks.at(index);
+        let tick = core::cmp::min(boundary, guard.end) / interval;
+        if before == 0 || tick <= last_tick {
+            counts.append(before);
+            ticks.append(last_tick);
+            continue;
+        }
+        let after = crate::deep::troops_after_ticks(before, last_tick, tick, guard.loss);
+        if after == 0 {
+            payouts.deaths.append(index);
+        }
+        counts.append(after);
+        ticks.append(tick);
+    }
+    Held { counts: counts.span(), ticks: ticks.span(), ..held }
+}
+
+fn alive(counts: Span<u128>) -> bool {
+    for count in counts {
+        if *count != 0 {
+            return true;
         }
     }
     false
 }
 
-fn drain_site(game_id: u32, site: u64, boundary: u64, context: ExecutionContext) {
-    let guards = guards(game_id, site);
-    if guards.is_empty() {
-        return;
-    }
-    let context = ExecutionContext { timestamp: boundary, ..context };
-    for (key, army) in guards {
-        let army = crate::logic::army_slots::resolve(*key, *army, None);
-        crate::logic::deep_armies::settle(*key, army, context);
-    }
-}
-
-fn guards(game_id: u32, site: u64) -> Span<(ExplorerKey, ExplorerTroops)> {
-    let state = crate::state::read();
-    let mut result = array![];
-    for slot in 0..crate::rules::DEEP_GUARD_SLOTS {
-        let explorer_id = state.deep.slots.read((game_id, site, slot));
-        if explorer_id == 0 {
+fn pay_sites(game_id: u32, held: @Held, boundary: u64, ref payouts: Payouts) {
+    for site in *held.sites {
+        let shares = shares(held, *site);
+        if shares.is_empty() {
             continue;
         }
-        let key = ExplorerKey { game_id, explorer_id };
-        let army = crate::logic::troops::explorer(key).expect('missing Deep guard');
-        assert!(army.troops.count != 0, "dead guard occupies Deep slot");
-        result.append((key, army));
+        if *site.kind == crate::rules::DEEP_CORE || *site.kind == crate::rules::DEEP_MINE {
+            pay_resource(*site, shares, ref payouts);
+            continue;
+        }
+        payouts.race.pay(*site.kind, *site.aspect, shares, *site.pay, boundary);
+        if *site.kind == crate::rules::DEEP_ALTAR {
+            charge_altar(game_id, *site.aspect, *site.pay, boundary, ref payouts);
+        }
     }
-    result.span()
 }
 
-fn shares(guards: Span<(ExplorerKey, ExplorerTroops)>) -> Span<DeepShare> {
+fn shares(held: @Held, site: Site) -> Span<DeepShare> {
     let mut shares = array![];
-    for (_, army) in guards {
-        shares.append(DeepShare { home: *army.owner, troops: *army.troops.count });
+    for index in site.first..site.last {
+        let troops = *held.counts.at(index);
+        if troops != 0 {
+            shares.append(DeepShare { home: *held.guards.at(index).home, troops });
+        }
     }
     shares.span()
 }
 
-fn pay_site(game_id: u32, site: DeepSite, shares: Span<DeepShare>, boundary: u64, context: ExecutionContext) {
-    let kind = site.kind;
-    if kind == crate::rules::DEEP_CORE || kind == crate::rules::DEEP_MINE {
-        pay_resource(game_id, kind, shares, boundary, context);
-        return;
-    }
-    let aspect = crate::logic::aspects::home_aspect(ResourceKey { game_id, entity_id: *shares.at(0).home });
-    let amount = crate::deep::building_pay(
-        crate::logic::deep_sites::rules_entry(game_id).expect('missing Deep rules').building_pay.read(),
-        crate::logic::deep_sites::open_rings(game_id, site.day),
-    );
-    let state = crate::state::read();
-    let release = state.releases.entry(state.game_releases.read(game_id)).classes;
-    if race(game_id).race_rules(game_id).is_some() {
-        crate::deep::IDeepRewardsLibraryDispatcher { class_hash: release.economy.read() }
-            .pay_deep_tick(game_id, kind, aspect, shares, amount, boundary);
-    }
-    if kind == crate::rules::DEEP_ALTAR {
-        crate::deep::IDeepBanesLibraryDispatcher { class_hash: release.bridge.read() }
-            .credit_altar(game_id, aspect, amount, boundary);
+fn pay_resource(site: Site, shares: Span<DeepShare>, ref payouts: Payouts) {
+    let resource = if site.kind == crate::rules::DEEP_CORE {
+        crate::resources::ESSENCE
+    } else {
+        crate::resources::LABOR
+    };
+    let payments = crate::race::split_payment(site.amount, shares);
+    for index in 0..shares.len() {
+        let payment = *payments.at(index);
+        if payment == 0 {
+            continue;
+        }
+        let home = *shares.at(index).home;
+        let key: felt252 = home.into() * 256 + resource.into();
+        let owed = payouts.resources.get(key);
+        if owed == 0 {
+            payouts.grants.append((home, resource));
+        }
+        payouts.resources.insert(key, owed + payment);
     }
 }
 
-fn pay_resource(game_id: u32, kind: u8, shares: Span<DeepShare>, boundary: u64, context: ExecutionContext) {
-    let rules = crate::logic::deep_sites::rules_entry(game_id).expect('missing Deep rules');
-    let (resource, amount) = if kind == crate::rules::DEEP_CORE {
-        (crate::resources::ESSENCE, rules.core_per_tick.read())
-    } else {
-        (crate::resources::LABOR, rules.mine_per_tick.read())
+fn charge_altar(game_id: u32, source: u8, amount: u32, boundary: u64, ref payouts: Payouts) {
+    let Some(threshold) = payouts.altar_threshold else {
+        return;
     };
-    let payments = crate::race::split_payment(amount, shares);
+    let charge = crate::deep::altar_charge(payouts.altars.get(source.into()), amount, threshold);
+    let settled = if charge == threshold {
+        bridge(game_id).settle_altar(game_id, source, charge, boundary, payouts.race.heights())
+    } else {
+        charge
+    };
+    payouts.altars.insert(source.into(), settled);
+}
+
+fn write_payouts(game_id: u32, ref payouts: Payouts, held: Held, boundary: u64, context: ExecutionContext) {
+    payouts.race.flush();
+    if payouts.altar_threshold.is_some() {
+        let heights = payouts.race.heights();
+        for aspect in 1_u8..5 {
+            let charge = payouts.altars.get(aspect.into());
+            if charge != crate::state::read().banes.altar_bars.read((game_id, aspect)) {
+                bridge(game_id).settle_altar(game_id, aspect, charge, boundary, heights);
+            }
+        }
+    }
+    grant_resources(game_id, ref payouts, boundary, context);
+    settle_guards(@payouts, held, boundary, context);
+}
+
+fn grant_resources(game_id: u32, ref payouts: Payouts, boundary: u64, context: ExecutionContext) {
     let state = crate::state::read();
     let release = state.releases.entry(state.game_releases.read(game_id)).classes;
     let resources = IResourceOperationsLibraryDispatcher { class_hash: release.resources.read() };
-    for index in 0..shares.len() {
-        let home = ResourceKey { game_id, entity_id: *shares.at(index).home };
+    let historical = ExecutionContext { timestamp: boundary - 1, ..context };
+    for (home, resource) in payouts.grants.span() {
+        let amount = payouts.resources.get((*home).into() * 256 + (*resource).into());
         resources
-            .grant_resource(home, resource, *payments.at(index), boundary, crate::commands::resource_context(context));
+            .grant_resource(
+                ResourceKey { game_id, entity_id: *home },
+                *resource,
+                amount,
+                boundary,
+                crate::commands::resource_context(historical),
+            );
+    }
+}
+
+fn settle_guards(payouts: @Payouts, held: Held, boundary: u64, context: ExecutionContext) {
+    let context = ExecutionContext { timestamp: boundary, ..context };
+    for index in payouts.deaths.span() {
+        settle_guard(*held.guards.at(*index), context);
+    }
+    for index in 0..held.guards.len() {
+        if *held.counts.at(index) != 0 {
+            settle_guard(*held.guards.at(index), context);
+        }
+    }
+}
+
+fn settle_guard(guard: Guard, context: ExecutionContext) {
+    let army = crate::logic::troops::explorer(guard.key).expect('missing Deep guard');
+    let army = crate::logic::army_slots::resolve(guard.key, army, None);
+    crate::logic::deep_armies::settle(guard.key, army, context);
+}
+
+fn bridge(game_id: u32) -> crate::deep::IDeepBanesLibraryDispatcher {
+    let state = crate::state::read();
+    crate::deep::IDeepBanesLibraryDispatcher {
+        class_hash: state.releases.entry(state.game_releases.read(game_id)).classes.bridge.read(),
     }
 }
 
@@ -166,11 +346,4 @@ fn save_cursor(game_id: u32, tick: u64) {
             },
         ),
     );
-}
-
-fn race(game_id: u32) -> crate::race::IRaceLibraryDispatcher {
-    let state = crate::state::read();
-    let release = state.game_releases.read(game_id);
-    assert!(release != 0, "game has no release");
-    crate::race::IRaceLibraryDispatcher { class_hash: state.releases.entry(release).classes.economy.read() }
 }

@@ -520,33 +520,29 @@ pub fn altar(d: Deployment, game_id: u32, source: u8, boundary: u64) {
     interact_with_state(
         d.games,
         || {
-            crate::deep::IDeepBanesDispatcherTrait::credit_altar(
+            let state = crate::state::read();
+            let threshold = crate::logic::preset_record::for_game(game_id).deep_rules.read().unwrap().altar_threshold;
+            let charge = crate::deep::altar_charge(state.banes.altar_bars.read((game_id, source)), 5, threshold);
+            let mut heights = array![];
+            for aspect in 1_u8..5 {
+                heights.append(state.season.aspect_heights.read((game_id, aspect)));
+            }
+            crate::deep::IDeepBanesDispatcherTrait::settle_altar(
                 crate::deep::IDeepBanesLibraryDispatcher {
                     class_hash: crate::logic::release::classes(game_id).bridge.read(),
                 },
                 game_id,
                 source,
-                5,
+                charge,
                 boundary,
+                heights.span(),
             );
         },
     );
 }
 
 fn blocked(d: Deployment, game_id: u32, aspect: u8, timestamp: u64) -> bool {
-    interact_with_state(
-        d.games,
-        || {
-            crate::deep::IDeepBanesDispatcherTrait::height_blocked(
-                crate::deep::IDeepBanesLibraryDispatcher {
-                    class_hash: crate::logic::release::classes(game_id).bridge.read(),
-                },
-                game_id,
-                aspect,
-                timestamp,
-            )
-        },
-    )
+    interact_with_state(d.games, || crate::logic::deep_banes::height_blocked(game_id, aspect, timestamp))
 }
 
 #[test]

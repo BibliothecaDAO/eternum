@@ -86,6 +86,10 @@ pub fn building_pay(pay: DeepPay, open: u8) -> u32 {
     }
 }
 
+pub fn altar_charge(previous: u32, amount: u32, threshold: u32) -> u32 {
+    previous + core::cmp::min(threshold - previous, amount)
+}
+
 pub fn gate(gate_distance: u32, aspect: u8, spacing: u32) -> Coord {
     assert!(aspect >= 1 && aspect <= 4, "invalid Deep gate");
     compass(center(spacing), aspect - 1, gate_distance)
@@ -200,7 +204,6 @@ pub trait IDeepSites<T> {
         context: crate::commands::ActionContext,
     );
     fn initialize_deep(ref self: T, game_id: u32);
-    fn settle_deep(ref self: T, game_id: u32, context: crate::commands::ActionContext);
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -244,15 +247,13 @@ pub struct TeamBane {
 }
 
 #[starknet::interface]
-pub trait IDeepRewards<T> {
-    fn pay_deep_tick(
-        ref self: T, game_id: u32, kind: u8, aspect: u8, shares: Span<DeepShare>, amount: u32, timestamp: u64,
-    );
+pub trait IDeepTicks<T> {
+    fn settle_deep(ref self: T, game_id: u32, context: crate::commands::ActionContext);
 }
 
 #[starknet::interface]
 pub trait IDeepBanes<T> {
-    fn height_blocked(self: @T, game_id: u32, aspect: u8, timestamp: u64) -> bool;
-    fn credit_altar(ref self: T, game_id: u32, source: u8, amount: u32, boundary: u64);
+    fn height_block_end(self: @T, game_id: u32, aspect: u8, timestamp: u64) -> u64;
+    fn settle_altar(ref self: T, game_id: u32, source: u8, charge: u32, boundary: u64, heights: Span<u32>) -> u32;
     fn team_quest(self: @T, home: crate::resources::ResourceKey, day: u64) -> Option<u8>;
 }

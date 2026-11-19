@@ -196,10 +196,5 @@ pub mod DeepSites {
         fn initialize_deep(ref self: ComponentState<TContractState>, game_id: u32) {
             super::initialize(game_id);
         }
-        fn settle_deep(
-            ref self: ComponentState<TContractState>, game_id: u32, context: crate::commands::ActionContext,
-        ) {
-            crate::logic::deep_ticks::settle(game_id, crate::commands::execution_context(game_id, context));
-        }
     }
 }

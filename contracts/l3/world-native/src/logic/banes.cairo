@@ -183,13 +183,18 @@ pub mod BaneState {
     pub impl Team<
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of crate::deep::IDeepBanes<ComponentState<TContractState>> {
-        fn height_blocked(self: @ComponentState<TContractState>, game_id: u32, aspect: u8, timestamp: u64) -> bool {
-            crate::logic::deep_banes::height_blocked(game_id, aspect, timestamp)
+        fn height_block_end(self: @ComponentState<TContractState>, game_id: u32, aspect: u8, timestamp: u64) -> u64 {
+            crate::logic::deep_banes::height_block_end(game_id, aspect, timestamp)
         }
-        fn credit_altar(
-            ref self: ComponentState<TContractState>, game_id: u32, source: u8, amount: u32, boundary: u64,
-        ) {
-            crate::logic::deep_banes::credit(game_id, source, amount, boundary);
+        fn settle_altar(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            source: u8,
+            charge: u32,
+            boundary: u64,
+            heights: Span<u32>,
+        ) -> u32 {
+            crate::logic::deep_banes::settle_altar(game_id, source, charge, boundary, heights)
         }
         fn team_quest(
             self: @ComponentState<TContractState>, home: crate::resources::ResourceKey, day: u64,
