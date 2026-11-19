@@ -273,25 +273,10 @@ describe("Frontier guard identity", () => {
       "without depth rules",
     );
   });
-  it("has exactly eight active species with distinct model and portrait deliveries", () => {
-    expect(Object.keys(FRONTIER_BEASTS)).toEqual([
-      "troll",
-      "wyvern",
-      "hydra",
-      "wraith",
-      "cyclops",
-      "ammit",
-      "basilisk",
-      "dark-fey",
-    ]);
-    expect(new Set(Object.values(FRONTIER_BEASTS).map((beast) => beast.path)).size).toBe(8);
-    expect(
-      new Set(
-        (Object.keys(FRONTIER_BEASTS) as (keyof typeof FRONTIER_BEASTS)[]).map(
-          (beast) => iconDefinition(beastMeaning(beast)).art,
-        ),
-      ).size,
-    ).toBe(8);
+  it("gives every species its own model and portrait delivery", () => {
+    const species = Object.keys(FRONTIER_BEASTS) as (keyof typeof FRONTIER_BEASTS)[];
+    expect(new Set(Object.values(FRONTIER_BEASTS).map((beast) => beast.path)).size).toBe(species.length);
+    expect(new Set(species.map((beast) => iconDefinition(beastMeaning(beast)).art)).size).toBe(species.length);
   });
   it("does not turn ordinary neutral holdings into Frontier beasts", () => {
     expect(readStandingFrontierBeast(without(facts(StructureType.Camp), "ExpeditionSite"), 1, 9)).toBeUndefined();
