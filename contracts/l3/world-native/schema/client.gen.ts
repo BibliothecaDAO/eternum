@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "5e4d0ed1c7634749730fe8404ca8552d9a411dddde0d0be0aae5ea0ae342d64d";
+export const nativeFactSchemaIdentity = "5b9c77d62332ab34555840ad4099a84f3f4205048ed1bb57e72fb6952764d47a";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -142,9 +142,10 @@ export const nativeResearchConstants = {
   "ROW_CROSSBOW_OATHS": 11,
   "OATH_SLOTS_BASE": 2,
   "OATH_SLOTS_STEPS": 3,
-  "ROW_SHRINE": 8,
-  "ROW_WELL": 9,
-  "ROW_DEPTH": 10,
+  "ROW_LORE": 10,
+  "LORE_WELLS": 1,
+  "LORE_SHRINES": 2,
+  "LORE_SPIRES": 3,
   "CHOICE_MAKE": 0,
   "CHOICE_STORE": 1,
   "HUT": 1,
