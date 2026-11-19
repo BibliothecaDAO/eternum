@@ -11,8 +11,7 @@ pub const ROOTS: u64 = 32;
 // refusals.
 pub fn typed_commands() -> Array<Command> {
     array![
-        Command::BuySeal(()),
-        Command::BuyStamina(crate::fragments::BuyStamina { explorer_id: 999999, fragments: 1 }),
+        Command::BuySeal(()), Command::BuyStamina(crate::fragments::BuyStamina { explorer_id: 999999, fragments: 1 }),
         Command::ChooseOath(
             crate::oaths::ChooseOath { explorer_id: 999999, expected_pick: 571, oath: None, replace: None },
         ),

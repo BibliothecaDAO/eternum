@@ -1,7 +1,9 @@
 use crate::army_relics::{ArmyRelic, RelicKind};
 use super::registrar::*;
 
-fn relic_game() -> (super::Deployment, u32, u64, u64, ExplorerKey, crate::expeditions::FrontierDiscoveryRules, ChestTiers) {
+fn relic_game() -> (
+    super::Deployment, u32, u64, u64, ExplorerKey, crate::expeditions::FrontierDiscoveryRules, ChestTiers,
+) {
     let (_, mut preset) = super::preset_projection::current_definition("frontier-check");
     preset.rules.troop_limit_config.settlement_deployment_cap = 6000;
     let mut stock = array![];
@@ -145,15 +147,7 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
         ),
         Some(crate::army_relics::ArmyRelicEffect { rank: 1, expires_at: 2320 }),
     );
-    let site = discover_relic(
-        d,
-        key,
-        discovery,
-        chest,
-        ArmyRelic { kind: RelicKind::FarEye, rank: 1 },
-        false,
-        550,
-    );
+    let site = discover_relic(d, key, discovery, chest, ArmyRelic { kind: RelicKind::FarEye, rank: 1 }, false, 550);
     assert!(
         execute_in_game(
             d,
