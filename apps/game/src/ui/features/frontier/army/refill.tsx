@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { nativeFragmentConstants } from "@bibliothecadao/eternum/game-client";
-import { formatExact, formatHeldAgainst, formatShortChange, FRAGMENTS } from "@bibliothecadao/types";
+import {
+  formatCount,
+  formatExact,
+  formatHeldAgainst,
+  formatShortChange,
+  FRAGMENT,
+  FRAGMENTS,
+} from "@bibliothecadao/types";
 import { HudButton, HudChip, HudSheet, HudSlider } from "@/ui/design-system/kit/hud-elements";
 import { CANCEL, needsHave, REFILL, REFILLING, STAMINA } from "@/ui/design-system/kit/words";
 
@@ -53,14 +60,12 @@ export const RefillPrice = ({
       disabled={short}
       busy={refilling ? REFILLING : undefined}
       title={short ? holds : undefined}
-      aria-label={`${REFILL} ${STAMINA} · ${pair.need} ${FRAGMENTS}${short ? ` · ${holds}` : ""}`}
+      aria-label={`${REFILL} ${STAMINA} · ${formatCount(price, FRAGMENT, FRAGMENTS)}${short ? ` · ${holds}` : ""}`}
       onClick={onRefill}
     >
       <span className="flex flex-col items-start text-hud-label leading-tight">
         <span>{REFILL}</span>
-        <span className="tabular-nums">
-          {pair.need} {FRAGMENTS}
-        </span>
+        <span className="tabular-nums">{formatCount(price, FRAGMENT, FRAGMENTS)}</span>
       </span>
     </HudButton>
   );
@@ -143,7 +148,7 @@ export const RefillConfirm = ({
             busy={sending ? REFILLING : undefined}
             onClick={() => onRefill(fragments)}
           >
-            {REFILL} · {formatExact(fragments)} {FRAGMENTS}
+            {REFILL} · {formatCount(fragments, FRAGMENT, FRAGMENTS)}
           </HudButton>
         </span>
       </div>
