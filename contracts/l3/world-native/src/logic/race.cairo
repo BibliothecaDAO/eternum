@@ -115,11 +115,13 @@ pub impl DeepRaceImpl of DeepRaceTrait {
         }
     }
 
-    fn pay(ref self: DeepRace, kind: u8, aspect: u8, shares: Span<crate::deep::DeepShare>, amount: u32, boundary: u64) {
+    fn pay(
+        ref self: DeepRace, kind: u8, aspect: u8, shares: Span<crate::deep::DeepShare>, amount: u32, boundary: u64,
+    ) -> (Span<u128>, Span<u128>) {
         let Some(rules) = self.rules else {
-            return;
+            return (array![].span(), array![].span());
         };
-        let glories = crate::race::split_payment(
+        let glory = crate::race::split_payment(
             Into::<u32, u128>::into(amount) * crate::rules::RESOURCE_PRECISION, shares,
         );
         let height = if kind == crate::rules::DEEP_FOUNDATION {
@@ -127,22 +129,23 @@ pub impl DeepRaceImpl of DeepRaceTrait {
         } else {
             0
         };
-        let contributions = crate::race::split_payment(
+        let contribution = crate::race::split_payment(
             Into::<u32, u128>::into(height) * crate::rules::RESOURCE_PRECISION, shares,
         );
-        for index in 0..shares.len() {
-            let (glory, contribution) = (*glories.at(index), *contributions.at(index));
-            if glory == 0 && contribution == 0 {
-                continue;
-            }
-            let home: felt252 = (*shares.at(index).home).into();
-            let (earned, built) = (self.glory.get(home), self.contribution.get(home));
-            if earned == 0 && built == 0 {
-                self.homes.append(*shares.at(index).home);
-            }
-            self.glory.insert(home, earned + glory);
-            self.contribution.insert(home, built + contribution);
+        (glory, contribution)
+    }
+
+    fn credit(ref self: DeepRace, home: u64, glory: u128, contribution: u128) {
+        if glory == 0 && contribution == 0 {
+            return;
         }
+        let key: felt252 = home.into();
+        let (earned, built) = (self.glory.get(key), self.contribution.get(key));
+        if earned == 0 && built == 0 {
+            self.homes.append(home);
+        }
+        self.glory.insert(key, earned + glory);
+        self.contribution.insert(key, built + contribution);
     }
 
     fn heights(ref self: DeepRace) -> Span<u32> {

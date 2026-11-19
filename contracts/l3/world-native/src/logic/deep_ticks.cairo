@@ -30,6 +30,9 @@ struct Held {
     guards: Span<Guard>,
     counts: Span<u128>,
     ticks: Span<u64>,
+    glory: Span<u128>,
+    contribution: Span<u128>,
+    owed: Span<u128>,
     day_end: u64,
 }
 
@@ -38,8 +41,6 @@ struct Payouts {
     race: crate::logic::race::DeepRace,
     altars: Felt252Dict<u32>,
     altar_threshold: Option<u32>,
-    resources: Felt252Dict<u128>,
-    grants: Array<(u64, u8)>,
     deaths: Array<u32>,
 }
 
@@ -65,8 +66,8 @@ pub fn settle(game_id: u32, context: ExecutionContext) {
     let end = crate::logic::race::result(game_id).map(|value| value.ended_at).unwrap_or(game.end_at);
     let last = core::cmp::min(context.timestamp, end) / interval;
     let cursor = crate::state::read().deep.paid_tick.read(game_id).expect('missing Deep cursor');
-    if cursor < last {
-        save_cursor(game_id, catch_up(game_id, cursor, last, context));
+    if cursor < last && catch_up(game_id, cursor, last, context) < last {
+        return;
     }
     crate::logic::race::finish_expired(game_id, context.timestamp);
     if crate::logic::race::result(game_id).is_none() && context.timestamp < game.end_at {
@@ -74,15 +75,33 @@ pub fn settle(game_id: u32, context: ExecutionContext) {
     }
 }
 
+pub fn assert_caught_up(game_id: u32, context: ExecutionContext) {
+    if crate::logic::deep_sites::rules_entry(game_id).is_none() {
+        return;
+    }
+    let interval = context.rules.unbox().tick_config.armies_tick_in_seconds;
+    let last = core::cmp::min(context.timestamp, context.game.unbox().end_at) / interval;
+    let cursor = crate::state::read().deep.paid_tick.read(game_id).expect('missing Deep cursor');
+    assert!(cursor >= last, "the Deep is catching up");
+}
+
 fn catch_up(game_id: u32, cursor: u64, last: u64, context: ExecutionContext) -> u64 {
+    let reached = walk(game_id, cursor, last, context);
+    save_cursor(game_id, reached);
+    reached
+}
+
+fn walk(game_id: u32, cursor: u64, last: u64, context: ExecutionContext) -> u64 {
     let interval = context.rules.unbox().tick_config.armies_tick_in_seconds;
     let mut held = held(game_id, context);
     if held.guards.is_empty() {
         return last;
     }
+    let budget = crate::rules::DEEP_CATCH_UP_GUARD_TICKS / held.guards.len().into();
+    let target = core::cmp::min(last, cursor + core::cmp::max(budget, 1));
     let mut payouts = payouts(game_id, (cursor + 1) * interval);
     let mut reached = cursor;
-    while reached < last {
+    while reached < target {
         let boundary = (reached + 1) * interval;
         if boundary - 1 >= held.day_end {
             write_payouts(game_id, ref payouts, held, reached * interval, context);
@@ -95,7 +114,7 @@ fn catch_up(game_id: u32, cursor: u64, last: u64, context: ExecutionContext) -> 
             write_payouts(game_id, ref payouts, held, boundary, context);
             return last;
         }
-        pay_sites(game_id, @held, boundary, ref payouts);
+        held = pay_sites(game_id, held, boundary, ref payouts);
         if payouts.race.finished() {
             break;
         }
@@ -112,6 +131,7 @@ fn held(game_id: u32, context: ExecutionContext) -> Held {
     let mut guards = array![];
     let mut counts = array![];
     let mut ticks = array![];
+    let mut zeros = array![];
     let mut day_end = 0;
     for index in 0..crate::logic::deep_sites::site_count(game_id) {
         let site_id = crate::logic::deep_sites::site_id(game_id, index);
@@ -140,6 +160,7 @@ fn held(game_id: u32, context: ExecutionContext) -> Held {
                 );
             counts.append(army.troops.count);
             ticks.append(state.deep.army_ticks.read((game_id, explorer_id)).expect('Deep army has no tick'));
+            zeros.append(0);
         }
         if guards.len() == first {
             continue;
@@ -160,7 +181,17 @@ fn held(game_id: u32, context: ExecutionContext) -> Held {
         };
         sites.append(Site { kind: site.kind, aspect, pay, amount, first, last: guards.len() });
     }
-    Held { sites: sites.span(), guards: guards.span(), counts: counts.span(), ticks: ticks.span(), day_end }
+    let zeros = zeros.span();
+    Held {
+        sites: sites.span(),
+        guards: guards.span(),
+        counts: counts.span(),
+        ticks: ticks.span(),
+        glory: zeros,
+        contribution: zeros,
+        owed: zeros,
+        day_end,
+    }
 }
 
 fn payouts(game_id: u32, boundary: u64) -> Payouts {
@@ -175,12 +206,7 @@ fn payouts(game_id: u32, boundary: u64) -> Payouts {
         altars.insert(aspect.into(), crate::state::read().banes.altar_bars.read((game_id, aspect)));
     }
     Payouts {
-        race: crate::logic::race::DeepRaceTrait::load(game_id, boundary),
-        altars,
-        altar_threshold,
-        resources: Default::default(),
-        grants: array![],
-        deaths: array![],
+        race: crate::logic::race::DeepRaceTrait::load(game_id, boundary), altars, altar_threshold, deaths: array![],
     }
 }
 
@@ -197,7 +223,15 @@ fn drain(held: Held, boundary: u64, interval: u64, ref payouts: Payouts) -> Held
             ticks.append(last_tick);
             continue;
         }
-        let after = crate::deep::troops_after_ticks(before, last_tick, tick, guard.loss);
+        let after = if tick == last_tick + 1 {
+            if before > guard.loss {
+                before - guard.loss
+            } else {
+                0
+            }
+        } else {
+            crate::deep::troops_after_ticks(before, last_tick, tick, guard.loss)
+        };
         if after == 0 {
             payouts.deaths.append(index);
         }
@@ -216,20 +250,42 @@ fn alive(counts: Span<u128>) -> bool {
     false
 }
 
-fn pay_sites(game_id: u32, held: @Held, boundary: u64, ref payouts: Payouts) {
-    for site in *held.sites {
-        let shares = shares(held, *site);
-        if shares.is_empty() {
-            continue;
+fn pay_sites(game_id: u32, held: Held, boundary: u64, ref payouts: Payouts) -> Held {
+    let mut glory = array![];
+    let mut contribution = array![];
+    let mut owed = array![];
+    for site in held.sites {
+        let shares = shares(@held, *site);
+        let (glories, contributions, payments) = if shares.is_empty() {
+            (array![].span(), array![].span(), array![].span())
+        } else if *site.kind == crate::rules::DEEP_CORE || *site.kind == crate::rules::DEEP_MINE {
+            (array![].span(), array![].span(), crate::race::split_payment(*site.amount, shares))
+        } else {
+            let (glories, contributions) = payouts.race.pay(*site.kind, *site.aspect, shares, *site.pay, boundary);
+            if *site.kind == crate::rules::DEEP_ALTAR {
+                charge_altar(game_id, *site.aspect, *site.pay, boundary, ref payouts);
+            }
+            (glories, contributions, array![].span())
+        };
+        let mut share = 0;
+        for index in *site.first..*site.last {
+            let paid = *held.counts.at(index) != 0;
+            glory.append(*held.glory.at(index) + share_of(glories, share, paid));
+            contribution.append(*held.contribution.at(index) + share_of(contributions, share, paid));
+            owed.append(*held.owed.at(index) + share_of(payments, share, paid));
+            if paid {
+                share += 1;
+            }
         }
-        if *site.kind == crate::rules::DEEP_CORE || *site.kind == crate::rules::DEEP_MINE {
-            pay_resource(*site, shares, ref payouts);
-            continue;
-        }
-        payouts.race.pay(*site.kind, *site.aspect, shares, *site.pay, boundary);
-        if *site.kind == crate::rules::DEEP_ALTAR {
-            charge_altar(game_id, *site.aspect, *site.pay, boundary, ref payouts);
-        }
+    }
+    Held { glory: glory.span(), contribution: contribution.span(), owed: owed.span(), ..held }
+}
+
+fn share_of(amounts: Span<u128>, share: u32, paid: bool) -> u128 {
+    if paid && share < amounts.len() {
+        *amounts.at(share)
+    } else {
+        0
     }
 }
 
@@ -242,28 +298,6 @@ fn shares(held: @Held, site: Site) -> Span<DeepShare> {
         }
     }
     shares.span()
-}
-
-fn pay_resource(site: Site, shares: Span<DeepShare>, ref payouts: Payouts) {
-    let resource = if site.kind == crate::rules::DEEP_CORE {
-        crate::resources::ESSENCE
-    } else {
-        crate::resources::LABOR
-    };
-    let payments = crate::race::split_payment(site.amount, shares);
-    for index in 0..shares.len() {
-        let payment = *payments.at(index);
-        if payment == 0 {
-            continue;
-        }
-        let home = *shares.at(index).home;
-        let key: felt252 = home.into() * 256 + resource.into();
-        let owed = payouts.resources.get(key);
-        if owed == 0 {
-            payouts.grants.append((home, resource));
-        }
-        payouts.resources.insert(key, owed + payment);
-    }
 }
 
 fn charge_altar(game_id: u32, source: u8, amount: u32, boundary: u64, ref payouts: Payouts) {
@@ -280,6 +314,9 @@ fn charge_altar(game_id: u32, source: u8, amount: u32, boundary: u64, ref payout
 }
 
 fn write_payouts(game_id: u32, ref payouts: Payouts, held: Held, boundary: u64, context: ExecutionContext) {
+    for index in 0..held.guards.len() {
+        payouts.race.credit((*held.guards.at(index)).home, *held.glory.at(index), *held.contribution.at(index));
+    }
     payouts.race.flush();
     if payouts.altar_threshold.is_some() {
         let heights = payouts.race.heights();
@@ -290,17 +327,41 @@ fn write_payouts(game_id: u32, ref payouts: Payouts, held: Held, boundary: u64, 
             }
         }
     }
-    grant_resources(game_id, ref payouts, boundary, context);
+    grant_resources(game_id, held, boundary, context);
     settle_guards(@payouts, held, boundary, context);
 }
 
-fn grant_resources(game_id: u32, ref payouts: Payouts, boundary: u64, context: ExecutionContext) {
+fn grant_resources(game_id: u32, held: Held, boundary: u64, context: ExecutionContext) {
+    let mut owed: Felt252Dict<u128> = Default::default();
+    let mut grants = array![];
+    for site in held.sites {
+        if *site.kind != crate::rules::DEEP_CORE && *site.kind != crate::rules::DEEP_MINE {
+            continue;
+        }
+        let resource = if *site.kind == crate::rules::DEEP_CORE {
+            crate::resources::ESSENCE
+        } else {
+            crate::resources::LABOR
+        };
+        for index in *site.first..*site.last {
+            let amount = *held.owed.at(index);
+            if amount == 0 {
+                continue;
+            }
+            let home = (*held.guards.at(index)).home;
+            let key: felt252 = home.into() * 256 + resource.into();
+            if owed.get(key) == 0 {
+                grants.append((home, resource));
+            }
+            owed.insert(key, owed.get(key) + amount);
+        }
+    }
     let state = crate::state::read();
     let release = state.releases.entry(state.game_releases.read(game_id)).classes;
     let resources = IResourceOperationsLibraryDispatcher { class_hash: release.resources.read() };
     let historical = ExecutionContext { timestamp: boundary - 1, ..context };
-    for (home, resource) in payouts.grants.span() {
-        let amount = payouts.resources.get((*home).into() * 256 + (*resource).into());
+    for (home, resource) in grants.span() {
+        let amount = owed.get((*home).into() * 256 + (*resource).into());
         resources
             .grant_resource(
                 ResourceKey { game_id, entity_id: *home },

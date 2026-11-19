@@ -185,6 +185,7 @@ pub mod DeepSites {
         ) {
             let context = crate::commands::execution_context(game_id, context);
             crate::logic::combat::authorize(game_id, context);
+            crate::logic::deep_ticks::assert_caught_up(game_id, context);
             let key = crate::troops::ExplorerKey { game_id, explorer_id: command.explorer_id };
             let explorer = crate::logic::troops::field_explorer(key, actor, context.timestamp, context);
             let occupied = crate::logic::map::occupancy(crate::geometry::tile_key(game_id, command.coord))

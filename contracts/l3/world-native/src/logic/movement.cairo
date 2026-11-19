@@ -262,6 +262,7 @@ pub mod MovementLogic {
                 explorer.coord
             };
             let destination = if command.depth == 3 && crate::logic::deep_sites::rules_entry(game_id).is_some() {
+                crate::logic::deep_ticks::assert_caught_up(game_id, context);
                 crate::logic::deep::arrival(game_id, crate::logic::aspects::home_aspect(home_key), context)
             } else if discovered {
                 crate::logic::spires::nearest_free_arrival(game_id, Coord { y: origin.y + spacing, ..origin }, spacing)

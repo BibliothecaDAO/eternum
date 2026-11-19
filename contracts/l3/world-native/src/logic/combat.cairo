@@ -89,6 +89,9 @@ fn guard_defender(
 ) -> GuardDefender {
     let game_id = target.key.game_id;
     if target.structure.is_none() {
+        if crate::logic::deep_sites::site(target.key).is_some() {
+            crate::logic::deep_ticks::assert_caught_up(game_id, context);
+        }
         if let Some(key) = crate::logic::deep_guards::next(target.key) {
             let army = combat_troops(game_id).command_explorer(key, None, crate::commands::action_context(context));
             assert_army_opponents(game_id, attacker, army, context.rules.unbox());

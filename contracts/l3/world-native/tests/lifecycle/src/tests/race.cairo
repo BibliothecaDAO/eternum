@@ -29,7 +29,10 @@ fn pay(d: Deployment, game_id: u32, kind: u8, aspect: u8, shares: Span<DeepShare
         d.games,
         || {
             let mut race = DeepRaceTrait::load(game_id, boundary);
-            race.pay(kind, aspect, shares, 5, boundary);
+            let (glory, contribution) = race.pay(kind, aspect, shares, 5, boundary);
+            for index in 0..shares.len() {
+                race.credit(*shares.at(index).home, *glory.at(index), *contribution.at(index));
+            }
             race.flush();
         },
     );
