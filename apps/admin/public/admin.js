@@ -108,10 +108,7 @@ function renderDeploys(view) {
     row("Shards", view.shards, (shards) =>
       shards.length
         ? shards
-            .map(
-              (shard) =>
-                `<code>${esc(shard.chainId)}</code> <span class="note">${esc(shard.status)} · ${esc(shard.url)}</span>`,
-            )
+            .map((shard) => `<code>${esc(shard.chainId)}</code> <span class="note">${esc(shard.url)}</span>`)
             .join("<br>")
         : "none listed",
     ),

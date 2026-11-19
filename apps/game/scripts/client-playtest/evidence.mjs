@@ -67,16 +67,12 @@ export function buildPlayerHomeUrl({ baseUrl, rendererMode, devOverlays = false 
   return url.toString();
 }
 
-/** The newest live game of `mode` on the first active shard that has one, in the directory the client itself reads. */
 export function selectPlaytestGame(directory, mode) {
-  for (const shard of directory?.shards ?? []) {
-    if (shard.status !== "active") continue;
-    const [newest] = (shard.games ?? [])
-      .filter((game) => game.status === "Live" && game.mode === mode)
-      .toSorted((left, right) => Number(right.game_id) - Number(left.game_id));
-    if (newest) return { chainId: shard.chainId, gameId: Number(newest.game_id), mode: newest.mode };
-  }
-  return null;
+  const shard = directory?.shard;
+  const [newest] = (shard?.games ?? [])
+    .filter((game) => game.status === "Live" && game.mode === mode)
+    .toSorted((left, right) => Number(right.game_id) - Number(left.game_id));
+  return newest ? { chainId: shard.chainId, gameId: Number(newest.game_id), mode: newest.mode } : null;
 }
 
 export function deriveBootMetrics({ diagnostics, durations, elapsedMs, entered, milestones, navigationTiming }) {

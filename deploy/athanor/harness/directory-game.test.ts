@@ -13,8 +13,7 @@ test("plays only a live game listed for the shard, and refuses absent or ambiguo
   let games: unknown[] = [];
   const server = Bun.serve({
     port: 0,
-    fetch: () =>
-      Response.json({ shards: [{ chainId: "0x1", url: "https://herald.example", status: "active", games }] }),
+    fetch: () => Response.json({ shard: { chainId: "0x1", url: "https://herald.example", games } }),
   });
   const read = (id?: number) =>
     listedFrontierGame(server.url.origin, { chainId: "0x01" }, "https://herald.example/", 5, id);

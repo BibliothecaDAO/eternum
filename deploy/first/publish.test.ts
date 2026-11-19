@@ -11,13 +11,14 @@ import {
   buildPackages,
   deployDocs,
   deployWorkers,
+  listOfficialShard,
   publishClient,
   publishCloudflare,
 } from "./publish";
 import { NATIVE_RELEASE_ID } from "../release/native-release";
-import { Platform, workers, workerSecrets, type Secrets } from "./platform";
+import { Platform, databaseWorkers, workers, workerSecrets, type Secrets } from "./platform";
 import { PrivateStore } from "./private-store";
-import { environments, type Inputs } from "./settings";
+import { environments, shardInputs, type Inputs } from "./settings";
 
 const revision = "a".repeat(40);
 const input = {
@@ -201,6 +202,7 @@ test("dry publish refuses every write before commands or transports", async () =
   await expect(buildPackages(value)).rejects.toThrow("Dry run");
   await expect(deployWorkers(value, revision, workers)).rejects.toThrow("Dry run");
   await expect(advanceFrontierRelease(value, revision)).rejects.toThrow("Dry run");
+  await expect(listOfficialShard(value, revision)).rejects.toThrow("Dry run");
   expect(calls).toEqual([]);
 });
 
@@ -211,42 +213,74 @@ const IDENTITY = {
   logic: { season: "0x55e0", troops: "0x77a2" },
   migration: "0x0",
 };
+const CHAIN = "0x5245414c4d535f444556";
 const recordIdentity = (value: Platform, commit = revision) =>
-  value.store.write("release-identity.json", { commit, release: IDENTITY });
+  value.store.write("release-identity.json", { commit, release: IDENTITY, chainId: CHAIN });
+const HERALD = { version: 1, chainId: CHAIN, releaseSchemas: { [String(NATIVE_RELEASE_ID)]: IDENTITY.schema } };
+const PREVIOUS = { url: "https://old-herald.test", chainId: "0x1" };
 
-/** The launch Worker's release route as the deploy reaches it: `answer` for the release call, Worker versions else. */
-function releaseRoute(value: Platform, answer: () => Response) {
+interface DirectoryRow {
+  url: string;
+  chainId: string;
+}
+
+function releaseRoute(
+  value: Platform,
+  answer: () => Response,
+  { herald = HERALD, rows = [] }: { herald?: unknown; rows?: DirectoryRow[] } = {},
+) {
   value.store.write("secrets.json", { operator: "operator-test" } as Secrets);
   recordIdentity(value);
   const requests: { url: string; init?: RequestInit }[] = [];
+  const directory = { rows, puts: [] as { url: string; init: RequestInit }[] };
+  const order: string[] = [];
   globalThis.fetch = mock(async (url: string | URL, init?: RequestInit) => {
-    if (String(url).endsWith("/api/factory/release")) {
-      requests.push({ url: String(url), init });
+    const path = String(url);
+    if (path.endsWith("/api/factory/release")) {
+      requests.push({ url: path, init });
+      order.push("release");
       return answer();
+    }
+    if (path === `${shardInputs(value.target).public_herald_url}/manifest`) return Response.json(herald);
+    if (path.endsWith("/api/directory/shard") && init?.method === "PUT") {
+      directory.puts.push({ url: path, init });
+      order.push("directory");
+      const row = { url: JSON.parse(String(init.body)).url, chainId: HERALD.chainId };
+      directory.rows.splice(0, directory.rows.length, row);
+      return Response.json({ shard: row });
     }
     return Response.json({
       environment: value.target.worker,
-      version: String(url).endsWith("/api/health") ? "identity" : "launch",
+      version: path.endsWith("/api/health") ? "identity" : "launch",
     });
   }) as unknown as typeof fetch;
-  return requests;
+  return { requests, directory, order };
+}
+
+function workerDeploys(value: Platform, order: string[], refuse = (_worker: string, _args: string[]) => false) {
+  const deployed = new Set<string>();
+  value.deployedVersion = async (worker) => (deployed.has(worker.id) ? { id: worker.id, revision } : undefined);
+  value.wrangler = async (worker, args) => {
+    if (refuse(worker.id, args)) throw new Error("wrangler connection reset");
+    order.push(`${worker.id}:${args.join(" ")}`);
+    if (args[0] === "deploy") deployed.add(worker.id);
+    return "";
+  };
 }
 const REPORT = {
-  shards: [
-    {
-      chainId: "0x1",
-      releaseId: NATIVE_RELEASE_ID,
-      games: [{ gameId: 1, from: 1, to: NATIVE_RELEASE_ID, transactions: ["0xa"] }],
-      opened: [],
-    },
-  ],
+  shard: {
+    chainId: "0x1",
+    releaseId: NATIVE_RELEASE_ID,
+    games: [{ gameId: 1, from: 1, to: NATIVE_RELEASE_ID, transactions: ["0xa"] }],
+    opened: [],
+  },
 };
 
 test.each(["dev", "production"] as const)(
   "%s asks the launch Worker, as the operator, to advance its Frontier games to the box's build of this release",
   async (environment) => {
     const value = platform(environment);
-    const requests = releaseRoute(value, () => Response.json(REPORT));
+    const { requests } = releaseRoute(value, () => Response.json(REPORT));
     spyOn(console, "log").mockImplementation(() => {});
     await advanceFrontierRelease(value, revision);
     expect(requests).toHaveLength(1);
@@ -260,7 +294,7 @@ test.each(["dev", "production"] as const)(
 
 test("the launch Worker's report of the release opened for new games is printed", async () => {
   const value = platform();
-  releaseRoute(value, () => Response.json({ shards: [{ ...REPORT.shards[0]!, opened: ["0xb"] }] }));
+  releaseRoute(value, () => Response.json({ shard: { ...REPORT.shard, opened: ["0xb"] } }));
   const log = spyOn(console, "log").mockImplementation(() => {});
   await advanceFrontierRelease(value, revision);
   expect(log).toHaveBeenCalledWith(`New games on 0x1 start on release ${NATIVE_RELEASE_ID}.`);
@@ -323,12 +357,98 @@ function deployOrder(value: Platform) {
 
 test("a release read for another commit, or none, asks nothing of the launch Worker", async () => {
   const value = platform();
-  const requests = releaseRoute(value, () => Response.json(REPORT));
+  const { requests } = releaseRoute(value, () => Response.json(REPORT));
   recordIdentity(value, "d".repeat(40));
-  await expect(advanceFrontierRelease(value, revision)).rejects.toThrow(
-    "No release identity was read for this commit",
-  );
+  await expect(advanceFrontierRelease(value, revision)).rejects.toThrow("No release identity was read for this commit");
   expect(requests).toEqual([]);
+});
+
+test("the directory lists the box's shard after every migration and Worker, and before the release step", async () => {
+  const value = platform();
+  commands();
+  value.chatObjects = async () => [];
+  const { order } = releaseRoute(value, () => Response.json(REPORT));
+  workerDeploys(value, order);
+  spyOn(console, "log").mockImplementation(() => {});
+  await publishCloudflare(value, revision);
+  expect(order).toEqual([
+    ...workers.flatMap((worker) => [
+      ...(databaseWorkers.some((id) => id === worker.id) ? [`${worker.id}:d1 migrations apply DB --remote`] : []),
+      `${worker.id}:deploy --tag ${revision}`,
+    ]),
+    "directory",
+    "release",
+  ]);
+});
+
+test("listing the shard twice sends the same PUT as the operator and ends with the box's one row", async () => {
+  const value = platform();
+  const { directory } = releaseRoute(value, () => Response.json(REPORT), { rows: [PREVIOUS] });
+  spyOn(console, "log").mockImplementation(() => {});
+  for (let run = 0; run < 2; run += 1) await listOfficialShard(value, revision);
+  const herald = shardInputs(value.target).public_herald_url;
+  expect(
+    directory.puts.map(({ url, init }) => [
+      url,
+      init.method,
+      new Headers(init.headers).get("authorization"),
+      init.body,
+    ]),
+  ).toEqual(
+    Array.from({ length: 2 }, () => [
+      `${value.target.origin}/api/directory/shard`,
+      "PUT",
+      "Bearer operator-test",
+      JSON.stringify({ url: herald }),
+    ]),
+  );
+  expect(directory.rows).toEqual([{ url: herald, chainId: CHAIN }]);
+});
+
+test("a deploy stopped after a migration keeps the previous row, and its rerun ends with the box's one row", async () => {
+  const value = platform();
+  commands();
+  value.chatObjects = async () => [];
+  const { directory, order } = releaseRoute(value, () => Response.json(REPORT), { rows: [PREVIOUS] });
+  let stopped = true;
+  workerDeploys(value, order, (worker, args) => stopped && worker === "identity" && args[0] === "deploy");
+  spyOn(console, "log").mockImplementation(() => {});
+  await expect(publishCloudflare(value, revision)).rejects.toThrow("wrangler connection reset");
+  expect(order.at(-1)).toBe("identity:d1 migrations apply DB --remote");
+  expect(directory.rows).toEqual([PREVIOUS]);
+  expect(directory.puts).toEqual([]);
+  stopped = false;
+  await publishCloudflare(value, revision);
+  expect(directory.puts).toHaveLength(1);
+  expect(directory.rows).toEqual([{ url: shardInputs(value.target).public_herald_url, chainId: CHAIN }]);
+});
+
+test.each([
+  ["Herald serves another chain", { ...HERALD, chainId: "0x999" }, CHAIN, "Herald serves another chain than the box's"],
+  [
+    "Herald does not publish the release",
+    { ...HERALD, releaseSchemas: {} },
+    CHAIN,
+    `Herald does not publish release ${NATIVE_RELEASE_ID} with the box's schema`,
+  ],
+  ["the box has not prepared its shard", HERALD, null, "The box half has not prepared its shard"],
+])("%s: the listing is refused before any PUT, and the previous row stays", async (_, herald, chainId, message) => {
+  const value = platform();
+  const { directory } = releaseRoute(value, () => Response.json(REPORT), { herald, rows: [PREVIOUS] });
+  value.store.write("release-identity.json", { commit: revision, release: IDENTITY, chainId });
+  await expect(listOfficialShard(value, revision)).rejects.toThrow(message);
+  expect(directory.puts).toEqual([]);
+  expect(directory.rows).toEqual([PREVIOUS]);
+});
+
+test("a box that never built lists nothing and leaves the previous row", async () => {
+  const value = platform();
+  const { directory } = releaseRoute(value, () => Response.json(REPORT), { rows: [PREVIOUS] });
+  value.store.write("release-identity.json", { commit: revision, release: null, chainId: null });
+  spyOn(console, "log").mockImplementation(() => {});
+  await listOfficialShard(value, revision);
+  expect(directory.puts).toEqual([]);
+  expect(directory.rows).toEqual([PREVIOUS]);
 });
 
 test("a deploy without setup's service credentials asks nothing of the launch Worker", async () => {

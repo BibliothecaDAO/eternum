@@ -116,7 +116,8 @@ export const useMmrForecast = (pointsByAccount: ReadonlyMap<string, { points: nu
  * says unavailable and a later opening asks again.
  */
 const findSlot = async (chainId: string, gameId: number): Promise<SlotKey | null> => {
-  const shard = (await fetchDirectory()).find((listed) => BigInt(listed.chainId) === BigInt(chainId));
+  const listed = await fetchDirectory();
+  const shard = listed && BigInt(listed.chainId) === BigInt(chainId) ? listed : null;
   const entry = shard?.games?.find((game) => game.game_id === gameId);
   if (!shard || !entry || entry.error || entry.slotId === undefined) throw new Error("game_slot_unavailable");
   return entry.slotId === null ? null : { shard: shard.chainId, slotId: entry.slotId };

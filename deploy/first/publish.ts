@@ -3,10 +3,10 @@ import { join, relative } from "node:path";
 import { setTimeout } from "node:timers/promises";
 import { command } from "./process";
 import { Platform, databaseWorkers, workers, type Secrets, type Worker } from "./platform";
-import { clientSite, type PagesSite } from "./settings";
+import { clientSite, shardInputs, type PagesSite } from "./settings";
 import { NATIVE_RELEASE_ID } from "../release/native-release";
 import { readReleaseIdentity } from "./release-identity";
-import type { ApplyReleaseRequest, ReleaseReport } from "../../apps/launch-service/src/operator-api";
+import type { ApplyReleaseRequest, ReleaseIdentity, ReleaseReport } from "../../apps/launch-service/src/operator-api";
 import { CHAT_RETENTION_BATCH } from "../../apps/realms/server/chat/chat-objects";
 
 async function workerReady(platform: Platform, worker: Worker, revision: string) {
@@ -55,6 +55,7 @@ export async function publishCloudflare(platform: Platform, revision: string) {
   await buildClient(platform, revision);
   await advanceFrontierRelease(platform, revision);
   await deployWorkers(platform, revision, gameReaderWorkers);
+  await listOfficialShard(platform, revision);
   await keepChatRetention(platform);
   await publishClient(platform, revision);
   await deployDocs(platform, revision);
@@ -92,6 +93,70 @@ async function callChatRetention(platform: Platform, operator: string, call: { c
   if (!response.ok) throw new PublicError(`Chat retention refused ${call.className}: ${response.status}`);
 }
 
+export async function listOfficialShard(platform: Platform, revision: string) {
+  if (!platform.apply) throw new PublicError("Dry run cannot list the shard");
+  deploymentStage("list the official shard");
+  const secrets = platform.store.read<Secrets>("secrets.json");
+  if (!secrets) throw new PublicError("Service credentials are missing; run setup with --apply before publishing");
+  const { release, chainId } = readReleaseIdentity(platform.store, revision);
+  if (!release) {
+    console.log("The box half has never built: no shard to list.");
+    return;
+  }
+  if (!chainId) throw new PublicError("The box half has not prepared its shard; run it (pnpm run deploy) first");
+  const herald = shardInputs(platform.target).public_herald_url;
+  await requireHeraldServes(herald, chainId, release);
+  await putDirectoryShard(platform, secrets.operator, herald, chainId);
+  console.log(`The directory lists ${chainId} at ${herald}.`);
+}
+
+async function requireHeraldServes(herald: string, chainId: string, release: ReleaseIdentity) {
+  const response = await fetch(`${herald}/manifest`, {
+    redirect: "error",
+    headers: { "User-Agent": "realms-deployment/1" },
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!response.ok)
+    throw new PublicError(`Herald manifest: HTTP ${response.status}.`, response.status, "manifest_unavailable");
+  const manifest = (await response.json().catch(() => null)) as {
+    chainId?: unknown;
+    releaseSchemas?: Record<string, unknown>;
+  } | null;
+  if (!isSameChain(manifest?.chainId, chainId))
+    throw new PublicError("Herald serves another chain than the box's; rerun the box half (pnpm run deploy)");
+  if (manifest?.releaseSchemas?.[String(release.releaseId)] !== release.schema)
+    throw new PublicError(
+      `Herald does not publish release ${release.releaseId} with the box's schema; rerun the box half (pnpm run deploy)`,
+    );
+}
+
+async function putDirectoryShard(platform: Platform, operator: string, herald: string, chainId: string) {
+  const response = await fetch(`${platform.target.origin}/api/directory/shard`, {
+    method: "PUT",
+    redirect: "error",
+    headers: {
+      "User-Agent": "realms-deployment/1",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${operator}`,
+    },
+    body: JSON.stringify({ url: herald }),
+    signal: AbortSignal.timeout(60_000),
+  });
+  const body = (await response.json().catch(() => null)) as { shard?: { chainId?: unknown }; error?: unknown } | null;
+  if (!response.ok || !isSameChain(body?.shard?.chainId, chainId)) {
+    const code = typeof body?.error === "string" ? body.error : "directory_listing_failed";
+    throw new PublicError(`The directory refused the shard: ${code}.`, response.status, code);
+  }
+}
+
+function isSameChain(value: unknown, chainId: string) {
+  try {
+    return typeof value === "string" && BigInt(value) === BigInt(chainId);
+  } catch {
+    return false;
+  }
+}
+
 /** What the release route's refusals mean for the person running the deploy. */
 const RELEASE_REFUSALS: Record<string, string> = {
   release_unverified: "the box half has never built this release; run it (pnpm run deploy) first",
@@ -113,7 +178,7 @@ export async function advanceFrontierRelease(platform: Platform, revision: strin
   deploymentStage("advance Frontier release");
   const secrets = platform.store.read<Secrets>("secrets.json");
   if (!secrets) throw new PublicError("Service credentials are missing; run setup with --apply before publishing");
-  const request: ApplyReleaseRequest = { release: readReleaseIdentity(platform.store, revision) };
+  const request: ApplyReleaseRequest = { release: readReleaseIdentity(platform.store, revision).release };
   const response = await fetch(`${platform.target.origin}/api/factory/release`, {
     method: "POST",
     redirect: "error",
@@ -126,12 +191,13 @@ export async function advanceFrontierRelease(platform: Platform, revision: strin
     signal: AbortSignal.timeout(300_000),
   });
   const body = (await response.json().catch(() => null)) as (ReleaseReport & { error?: string }) | null;
-  if (!response.ok || !body?.shards) {
+  if (!response.ok || body?.shard === undefined) {
     const code = typeof body?.error === "string" ? body.error : "release_apply_failed";
     throw new PublicError(`Release ${NATIVE_RELEASE_ID}: ${RELEASE_REFUSALS[code] ?? code}.`, response.status, code);
   }
   platform.store.write("release-advance.json", body);
-  for (const { chainId, games, opened } of body.shards) {
+  if (body.shard) {
+    const { chainId, games, opened } = body.shard;
     for (const { gameId, from, to } of games)
       console.log(`Frontier game ${gameId} on ${chainId}: release ${from} → ${to}.`);
     if (opened.length) console.log(`New games on ${chainId} start on release ${NATIVE_RELEASE_ID}.`);

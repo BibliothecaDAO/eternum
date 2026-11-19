@@ -91,6 +91,12 @@ export interface Inputs extends SeasonDates, SignInClients, ApnsKeyInputs {
   admin?: string;
   treasury?: string;
 }
+interface ShardInputs {
+  public_rpc_url: string;
+  public_herald_url: string;
+}
+export const shardInputs = (target: Target): ShardInputs =>
+  JSON.parse(readFileSync(resolve(root, "deploy/release", `${target.environment}.json`), "utf8"));
 export function addressBook(target: Target): Record<string, string> {
   return JSON.parse(readFileSync(resolve(root, "contracts/common/addresses", target.book), "utf8"));
 }

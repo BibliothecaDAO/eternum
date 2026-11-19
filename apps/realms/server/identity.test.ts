@@ -114,6 +114,20 @@ const relay = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
   Response.json({ campaign: "devcon-2026", tier: "golden" }),
 );
 let env: IdentityEnv;
+const notifierCalls: [string, string][] = [];
+const notifiers = {
+  idFromName: (url: string) => url,
+  get: (url: string) => ({
+    watch: async () => void notifierCalls.push(["watch", url]),
+    stop: async () => void notifierCalls.push(["stop", url]),
+  }),
+};
+const listShard = (url: string, chainId: string) =>
+  env.DB.prepare(
+    "INSERT INTO shards (slot, url, chainId) VALUES (1, ?, ?) ON CONFLICT (slot) DO UPDATE SET url = excluded.url, chainId = excluded.chainId",
+  )
+    .bind(url, chainId)
+    .run();
 let auth: ReturnType<typeof createIdentityAuth>;
 
 /** The default wallets' paymaster, as AVNU answers: it builds what it is asked and submits what it is given; our key lets it sponsor. */
@@ -235,7 +249,7 @@ beforeAll(async () => {
     RESEND_API_KEY: "unused",
     WEB_PUSH_VAPID_PUBLIC_KEY: "unused",
     WEB_PUSH_VAPID_PRIVATE_KEY: "unused",
-    SHARD_NOTIFIER: {} as IdentityEnv["SHARD_NOTIFIER"],
+    SHARD_NOTIFIER: notifiers as unknown as IdentityEnv["SHARD_NOTIFIER"],
     CHAT_ROOM: {} as IdentityEnv["CHAT_ROOM"],
     CHAT_INBOX: {} as IdentityEnv["CHAT_INBOX"],
     DB: database.db,
@@ -1133,7 +1147,7 @@ describe("identity Worker", () => {
     expect(await refused.json()).toEqual({ error: "account_not_secured" });
   });
 
-  it("signs player and bot changes only for listed pending, active or draining chains", async () => {
+  it("signs player and bot changes only for the listed chain", async () => {
     const browser = createBrowser();
     await signInWithCode(browser, "chain-allow-list@realms.test");
     const player = deviceChangeFor((await browser.session())!.user.realmsId);
@@ -1142,32 +1156,28 @@ describe("identity Worker", () => {
       label: "0xb07",
       account: realmsAccountAddress(botRealmsId("0xb07"), ACCOUNT_CLASS_HASH, await env.GUARDIAN.publicKey()),
     };
-    await env.DB.prepare(`INSERT INTO shards (url, chainId, status, addedAt) VALUES (?, ?, 'active', ?)`)
-      .bind("https://devices.realms.test", CHAIN_ID, Date.now())
-      .run();
+    const changes = [
+      ["/api/devices", player],
+      ["/api/devices/bots", bot],
+    ] as const;
     const signing = vi.spyOn(env.GUARDIAN, "signDeviceChange");
     try {
-      for (const status of ["pending", "active", "draining", "retired"]) {
-        await env.DB.prepare("UPDATE shards SET status = ? WHERE chainId = ?").bind(status, CHAIN_ID).run();
-        for (const [path, change] of [
-          ["/api/devices", player],
-          ["/api/devices/bots", bot],
-        ] as const) {
+      for (const listed of [true, false]) {
+        if (listed) await listShard("https://devices.realms.test", CHAIN_ID);
+        else await env.DB.prepare("DELETE FROM shards").run();
+        for (const [path, change] of changes) {
           signing.mockClear();
           const response = await browser.request(path, {
             body: { ...change, chainId: `0x0${CHAIN_ID.slice(2)}` },
             token: OPERATOR_TOKEN,
           });
-          const approved = status !== "retired" && (status !== "pending" || path === "/api/devices/bots");
-          expect(response.status).toBe(approved ? 200 : 403);
-          expect(signing).toHaveBeenCalledTimes(approved ? 1 : 0);
+          expect(response.status).toBe(listed ? 200 : 403);
+          expect(signing).toHaveBeenCalledTimes(listed ? 1 : 0);
         }
       }
+      await listShard("https://devices.realms.test", CHAIN_ID);
       for (const chainId of ["0x123", "0x534e5f4d41494e", "0x534e5f5345504f4c4941"]) {
-        for (const [path, change] of [
-          ["/api/devices", player],
-          ["/api/devices/bots", bot],
-        ] as const) {
+        for (const [path, change] of changes) {
           signing.mockClear();
           const response = await browser.request(path, { body: { ...change, chainId }, token: OPERATOR_TOKEN });
           expect(response.status).toBe(403);
@@ -1177,50 +1187,42 @@ describe("identity Worker", () => {
       }
     } finally {
       signing.mockRestore();
-      await env.DB.prepare("UPDATE shards SET status = 'active' WHERE chainId = ?").bind(CHAIN_ID).run();
+      await listShard("https://devices.realms.test", CHAIN_ID);
     }
   });
 
-  it("enrolls pending shards without exposing them until the deployment activates them", async () => {
+  it("registers one shard in place of any other and removes it, each to the same end when run twice", async () => {
     const operator = createBrowser();
-    const url = "https://pending-shard.test";
-    const chainId = "0x123abc";
-    heralds.set(`${url}/manifest`, shardManifest(chainId));
-    heralds.set(`${url}/games`, { chain: chainId, games: [] });
-    const admit = (path: string) => operator.request(path, { body: { url }, token: OPERATOR_TOKEN });
-    expect((await admit("/api/directory/shards")).status).toBe(409);
-    expect((await operator.request("/api/directory/shards/pending", { body: { url } })).status).toBe(401);
-    expect((await admit("/api/directory/shards/pending")).status).toBe(201);
-    const visible = async (path: string) => JSON.stringify(await (await operator.request(path)).json());
-    expect(await visible("/api/directory")).not.toContain(url);
-    expect(await visible("/api/directory/history")).not.toContain(url);
-    expect((await operator.request("/api/directory/shards")).status).toBe(401);
-    const recorded = await operator.request("/api/directory/shards", { token: OPERATOR_TOKEN });
-    expect(recorded.status).toBe(200);
-    expect(((await recorded.json()) as { shards: unknown[] }).shards).toContainEqual(
-      expect.objectContaining({ url, chainId, status: "pending" }),
-    );
-    const bot = {
-      label: "0xbeef",
-      chainId,
-      account: realmsAccountAddress(botRealmsId("0xbeef"), ACCOUNT_CLASS_HASH, await env.GUARDIAN.publicKey()),
-      action: "ADD",
-      deviceKey: "0x123",
-      counter: 1,
-    };
-    expect((await operator.request("/api/devices/bots", { body: bot, token: OPERATOR_TOKEN })).status).toBe(200);
-    expect(
-      (
-        await operator.request("/api/directory/shards/status", {
-          body: { url, status: "active" },
-          token: OPERATOR_TOKEN,
-        })
-      ).status,
-    ).not.toBe(200);
-    expect((await admit("/api/directory/shards")).status).toBe(201);
-    expect(await visible("/api/directory")).toContain(url);
-    expect((await admit("/api/directory/shards")).status).toBe(200);
-    await env.DB.prepare("DELETE FROM shards WHERE url = ?").bind(url).run();
+    const first = "https://first-shard.test";
+    const second = "https://second-shard.test";
+    heralds.set(`${first}/manifest`, shardManifest("0x123abc"));
+    heralds.set(`${second}/manifest`, shardManifest("0x456def"));
+    const register = (url: string, token?: string) =>
+      operator.request("/api/directory/shard", { method: "PUT", body: { url }, ...(token ? { token } : {}) });
+    const remove = () => operator.request("/api/directory/shard", { method: "DELETE", token: OPERATOR_TOKEN });
+    const listed = async () =>
+      (await (await operator.request("/api/directory/shard", { token: OPERATOR_TOKEN })).json()) as unknown;
+    const rows = async () =>
+      (await env.DB.prepare("SELECT url, chainId FROM shards").all<{ url: string; chainId: string }>()).results;
+    expect((await register(first)).status).toBe(401);
+    expect((await operator.request("/api/directory/shard")).status).toBe(401);
+    expect((await operator.request("/api/directory/shard", { method: "DELETE" })).status).toBe(401);
+    onTestFinished(() => listShard("https://devices.realms.test", CHAIN_ID).then(() => undefined));
+    await env.DB.prepare("DELETE FROM shards").run();
+    notifierCalls.length = 0;
+    for (const url of [first, second, second]) expect((await register(url, OPERATOR_TOKEN)).status).toBe(200);
+    expect(await listed()).toEqual({ shard: { url: second, chainId: "0x456def" } });
+    expect(await rows()).toEqual([{ url: second, chainId: "0x456def" }]);
+    for (let run = 0; run < 2; run += 1) expect(await (await remove()).json()).toEqual({ shard: null });
+    expect(await listed()).toEqual({ shard: null });
+    expect(await rows()).toEqual([]);
+    expect(notifierCalls).toEqual([
+      ["watch", first],
+      ["stop", first],
+      ["watch", second],
+      ["watch", second],
+      ["stop", second],
+    ]);
   });
 
   it("approves only a verified account's own exact change, and never re-adds a revoked key", async () => {
@@ -1518,9 +1520,7 @@ describe("identity Worker", () => {
    */
   const heraldsAnswerFor = async (realmsId: string, devcon: Record<string, boolean> = {}) => {
     const account = realmsAccountAddress(realmsId, ACCOUNT_CLASS_HASH, await env.GUARDIAN.publicKey());
-    const { results } = await env.DB.prepare(
-      `SELECT url, chainId FROM shards WHERE status IN ('active', 'draining')`,
-    ).all<{ url: string; chainId: string }>();
+    const { results } = await env.DB.prepare("SELECT url, chainId FROM shards").all<{ url: string; chainId: string }>();
     for (const { url, chainId } of results) {
       const games = url in devcon ? [devconGame(devcon[url]!)] : [];
       heralds.set(`${url}/games?player=${account}`, { chain: chainId, games });
@@ -1695,9 +1695,7 @@ describe("identity Worker", () => {
     onTestFinished(async () => {
       await env.DB.prepare("DELETE FROM shards WHERE url = ?").bind(shard).run();
     });
-    await env.DB.prepare(`INSERT INTO shards (url, chainId, status, addedAt) VALUES (?, '0xdd', 'active', ?)`)
-      .bind(shard, Date.now())
-      .run();
+    await listShard(shard, "0xdd");
     await env.DB.prepare('INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES (?, ?, ?)')
       .bind("devcon-2026", await codeHashInScope("devcon-2026", "H9MP3QWA"), "regular")
       .run();
@@ -1781,9 +1779,7 @@ describe("identity Worker", () => {
   it("keeps a flyer unspent for a home with a source, or while a shard cannot say", async () => {
     holdDevconOpen();
     const shard = "https://devcon-season.test";
-    await env.DB.prepare(`INSERT INTO shards (url, chainId, status, addedAt) VALUES (?, '0xdc', 'active', ?)`)
-      .bind(shard, Date.now())
-      .run();
+    await listShard(shard, "0xdc");
     await env.DB.prepare('INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES (?, ?, ?)')
       .bind("devcon-2026", await codeHashInScope("devcon-2026", "F7QZ2KHM"), "golden")
       .run();
@@ -1846,7 +1842,7 @@ describe("identity Worker", () => {
     expect(Date.now() - stalledAt).toBeLessThan(15_000);
     await heraldsAnswerFor(unsureId, { [shard]: false });
     expect(await redeem()).toEqual([200, { campaign: "devcon-2026", tier: "regular" }]);
-    await env.DB.prepare("UPDATE shards SET status = 'retired' WHERE url = ?").bind(shard).run();
+    await env.DB.prepare("DELETE FROM shards WHERE url = ?").bind(shard).run();
   }, 30_000);
 
   describe("referrals", () => {
@@ -1861,9 +1857,7 @@ describe("identity Worker", () => {
     const getRandomValues = crypto.getRandomValues.bind(crypto);
 
     beforeAll(async () => {
-      await env.DB.prepare(`INSERT INTO shards (url, chainId, status, addedAt) VALUES (?, '0xd5', 'active', ?)`)
-        .bind(shard, Date.now())
-        .run();
+      await listShard(shard, "0xd5");
       // A link's draw reads one 32-bit value; everything else keeps its own randomness.
       vi.spyOn(crypto, "getRandomValues").mockImplementation(<T extends ArrayBufferView | null>(array: T): T => {
         if (array instanceof Uint32Array && array.length === 1) {
@@ -1875,14 +1869,15 @@ describe("identity Worker", () => {
     });
     afterAll(async () => {
       vi.mocked(crypto.getRandomValues).mockRestore();
-      await env.DB.prepare("UPDATE shards SET status = 'retired' WHERE url = ?").bind(shard).run();
+      await env.DB.prepare("DELETE FROM shards WHERE url = ?").bind(shard).run();
     });
 
     /** What the shards' Heralds answer now: the Devcon game's home facts and season board, from `founded`. */
     const publishHeralds = async () => {
-      const { results } = await env.DB.prepare(
-        `SELECT url, chainId FROM shards WHERE status IN ('active', 'draining')`,
-      ).all<{ url: string; chainId: string }>();
+      const { results } = await env.DB.prepare("SELECT url, chainId FROM shards").all<{
+        url: string;
+        chainId: string;
+      }>();
       for (const { url, chainId } of results)
         heralds.set(`${url}/games`, { chain: chainId, games: url === shard ? [devconGame(true)] : [] });
       const entitled = [...founded].filter(([, home]) => home.source !== "free");
@@ -2481,93 +2476,61 @@ describe("identity Worker", () => {
     expect(await status()).toBe(false);
   });
 
-  it("lists each shard's live games under that shard, settled ones in a paged history, with a player's standing when asked, names a shard it cannot read, and refuses a listed chain id or another guardian's shard", async () => {
-    await env.DB.prepare("DELETE FROM shards WHERE url = ?").bind("https://devices.realms.test").run();
+  it("lists the shard's live games, its settled ones in a paged history, a player's standing when asked, names the shard while it cannot be read, refuses another guardian's shard, and lists a replacing shard", async () => {
     const operator = createBrowser();
+    const register = (url: string) =>
+      operator.request("/api/directory/shard", { method: "PUT", body: { url }, token: OPERATOR_TOKEN });
     const game = (gameId: number, name: string) => ({
       game_id: gameId,
       name,
       status: "Running",
       slotId: null,
     });
+    const settled = (gameId: number, name: string, endAt: number) => ({
+      ...game(gameId, name),
+      status: "Settled",
+      slotId: null,
+      clock: { end_at: endAt },
+    });
+    const live = { ...game(1, "calendar-season"), clock: { end_at: 900 } };
     launchDirectory = {
-      chains: [{ chainId: "0xa", games: [1, 3].map((gameId) => ({ gameId, slotId: null })) }],
+      chains: [{ chainId: "0xa", games: [1, 3, 4, 5].map((gameId) => ({ gameId, slotId: null })) }],
     };
     heralds.set("https://shard-a.test/manifest", shardManifest("0xa"));
-    heralds.set("https://shard-a.test/games", {
-      chain: "0xa",
-      games: [game(1, "calendar-season"), game(2, "harness-game"), game(3, "blitz-slot")],
+    expect(await (await register("https://shard-a.test")).json()).toEqual({
+      shard: { url: "https://shard-a.test", chainId: "0xa" },
     });
-    heralds.set("https://shard-b.test/manifest", shardManifest("0xb"));
-    heralds.set("https://shard-c.test/manifest", shardManifest("0x0a"));
-
-    expect((await operator.request("/api/directory/shards", { body: { url: "https://shard-a.test" } })).status).toBe(
-      401,
-    );
-    for (const url of ["https://shard-a.test", "https://shard-b.test"]) {
-      expect(
-        (await operator.request("/api/directory/shards/pending", { body: { url }, token: OPERATOR_TOKEN })).status,
-      ).toBe(201);
-      const admitted = await operator.request("/api/directory/shards", { body: { url }, token: OPERATOR_TOKEN });
-      expect(admitted.status).toBe(201);
-    }
-    const duplicate = await operator.request("/api/directory/shards", {
-      body: { url: "https://shard-c.test" },
-      token: OPERATOR_TOKEN,
-    });
-    expect(await duplicate.json()).toEqual({ error: "chain_id_listed", url: "https://shard-a.test" });
-    // A shard whose accounts sit under another guardian would place the same player at another address.
     heralds.set("https://shard-f.test/manifest", { ...shardManifest("0xf"), guardianPublicKey: "0x5eed" });
-    const foreign = await operator.request("/api/directory/shards", {
-      body: { url: "https://shard-f.test" },
-      token: OPERATOR_TOKEN,
-    });
-    expect(await foreign.json()).toEqual({ error: "account_identity_differs" });
+    expect(await (await register("https://shard-f.test")).json()).toEqual({ error: "account_identity_differs" });
 
     const list = async (query = "") =>
-      ((await (await createBrowser().request(`/api/directory${query}`)).json()) as { shards: unknown[] }).shards;
-    expect(await list()).toEqual([
-      {
-        url: "https://shard-a.test",
-        chainId: "0xa",
-        status: "active",
-        manifest: { ...shardManifest("0xa"), chainId: normalizeStarknetAddress("0xa") },
-        games: [game(1, "calendar-season"), game(3, "blitz-slot")],
-      },
-      {
-        url: "https://shard-b.test",
-        chainId: "0xb",
-        status: "active",
-        games: null,
-        manifest: null,
-        error: "unavailable",
-      },
-    ]);
-
-    heralds.set("https://shard-b.test/games", { chain: "0xb", games: [game(1, "blitz-b")] });
-    launchDirectory.chains.push({
-      chainId: "0xb",
-      games: [1].map((gameId) => ({ gameId, slotId: null })),
+      ((await (await createBrowser().request(`/api/directory${query}`)).json()) as { shard: unknown }).shard;
+    expect(await list()).toEqual({
+      url: "https://shard-a.test",
+      chainId: "0xa",
+      games: null,
+      manifest: null,
+      error: "unavailable",
     });
-    const listed = [
-      {
-        url: "https://shard-a.test",
-        chainId: "0xa",
-        status: "active",
-        manifest: { ...shardManifest("0xa"), chainId: normalizeStarknetAddress("0xa") },
-        games: [game(1, "calendar-season"), game(3, "blitz-slot")],
-      },
-      {
-        url: "https://shard-b.test",
-        chainId: "0xb",
-        status: "active",
-        manifest: { ...shardManifest("0xb"), chainId: normalizeStarknetAddress("0xb") },
-        games: [game(1, "blitz-b")],
-      },
-    ];
+
+    heralds.set("https://shard-a.test/games", {
+      chain: "0xa",
+      games: [
+        live,
+        game(2, "harness-game"),
+        game(3, "blitz-slot"),
+        settled(4, "a-first", 100),
+        settled(5, "a-last", 300),
+      ],
+    });
+    const listed = {
+      url: "https://shard-a.test",
+      chainId: "0xa",
+      manifest: { ...shardManifest("0xa"), chainId: normalizeStarknetAddress("0xa") },
+      games: [live, game(3, "blitz-slot")],
+    };
     expect(await list()).toEqual(listed);
 
-    // A player's standing comes from each shard as it answers that player; shard B cannot answer, and says so.
     const standing = {
       registered: true,
       settled: false,
@@ -2580,138 +2543,57 @@ describe("identity Worker", () => {
     heralds.set("https://shard-a.test/games?player=0xabc", {
       chain: "0xa",
       games: [
-        { ...game(1, "calendar-season"), player_state: standing },
+        { ...live, player_state: standing },
         { ...game(2, "harness-game"), player_state: standing },
+        { ...game(3, "blitz-slot"), player_state: standing },
+        { ...settled(4, "a-first", 100), player_state: { ...standing, registered: false } },
+        { ...settled(5, "a-last", 300), player_state: standing },
+      ],
+    });
+    expect(await list("?player=0xabc")).toEqual({
+      ...listed,
+      games: [
+        { ...live, player_state: standing },
         { ...game(3, "blitz-slot"), player_state: standing },
       ],
     });
-    expect(await list("?player=0xabc")).toEqual([
-      {
-        ...listed[0],
-        games: [
-          { ...game(1, "calendar-season"), player_state: standing },
-          { ...game(3, "blitz-slot"), player_state: standing },
-        ],
-      },
-      {
-        url: "https://shard-b.test",
-        chainId: "0xb",
-        status: "active",
-        games: null,
-        manifest: null,
-        error: "unavailable",
-      },
-    ]);
     expect(await list()).toEqual(listed);
     expect((await createBrowser().request("/api/directory?player=nobody")).status).toBe(400);
 
-    // A settled game leaves the live list; the history serves it, newest end first across shards, a page at a time.
-    const settled = (gameId: number, name: string, endAt: number) => ({
-      ...game(gameId, name),
-      status: "Settled",
-      slotId: null,
-      clock: { end_at: endAt },
-    });
-    const live = { ...game(1, "blitz-d"), clock: { end_at: 900 } };
-    heralds.set("https://shard-d.test/manifest", shardManifest("0xd"));
-    heralds.set("https://shard-d.test/games", { chain: "0xd", games: [live, settled(2, "blitz-d-old", 200)] });
-    heralds.set("https://shard-e.test/manifest", shardManifest("0xe"));
-    heralds.set("https://shard-e.test/games", {
-      chain: "0xe",
-      games: [settled(1, "e-first", 100), settled(2, "e-last", 300)],
-    });
-    for (const url of ["https://shard-d.test", "https://shard-e.test"]) {
-      expect(
-        (await operator.request("/api/directory/shards/pending", { body: { url }, token: OPERATOR_TOKEN })).status,
-      ).toBe(201);
-      expect((await operator.request("/api/directory/shards", { body: { url }, token: OPERATOR_TOKEN })).status).toBe(
-        201,
-      );
-    }
-    launchDirectory.chains.push(
-      { chainId: "0xd", games: [1, 2].map((gameId) => ({ gameId, slotId: null })) },
-      { chainId: "0xe", games: [1, 2].map((gameId) => ({ gameId, slotId: null })) },
-    );
-    expect(await list()).toEqual([
-      ...listed,
-      {
-        url: "https://shard-d.test",
-        chainId: "0xd",
-        status: "active",
-        manifest: { ...shardManifest("0xd"), chainId: normalizeStarknetAddress("0xd") },
-        games: [live],
-      },
-      {
-        url: "https://shard-e.test",
-        chainId: "0xe",
-        status: "active",
-        manifest: { ...shardManifest("0xe"), chainId: normalizeStarknetAddress("0xe") },
-        games: [],
-      },
-    ]);
     const history = async (query: string) =>
       (await (await createBrowser().request(`/api/directory/history${query}`)).json()) as {
         games: { name: string; chainId: string; shardUrl: string }[];
         next: string | null;
         failures: { url: string }[];
       };
-    const first = await history("?limit=2");
+    const first = await history("?limit=1");
     expect(first.games.map(({ name, chainId, shardUrl }) => [name, chainId, shardUrl])).toEqual([
-      ["e-last", "0xe", "https://shard-e.test"],
-      ["blitz-d-old", "0xd", "https://shard-d.test"],
+      ["a-last", "0xa", "https://shard-a.test"],
     ]);
-    expect(first.next).toBe("200:0xd:2");
-    const second = await history(`?limit=2&cursor=${first.next}`);
-    expect(second.games.map(({ name }) => name)).toEqual(["e-first"]);
+    expect(first.next).toBe("300:0xa:5");
+    const second = await history(`?limit=1&cursor=${first.next}`);
+    expect(second.games.map(({ name }) => name)).toEqual(["a-first"]);
     expect(second.next).toBeNull();
     expect(second.failures).toEqual([]);
-
-    // With a player, only the games they entered; a shard that cannot answer that player is named.
-    heralds.set("https://shard-e.test/games?player=0xabc", {
-      chain: "0xe",
-      games: [
-        { ...settled(1, "e-first", 100), player_state: { ...standing, registered: false } },
-        { ...settled(2, "e-last", 300), player_state: standing },
-      ],
+    expect((await history("?player=0xabc")).games.map(({ name }) => name)).toEqual(["a-last"]);
+    heralds.delete("https://shard-a.test/games?player=0xabc");
+    expect(await history("?player=0xabc")).toEqual({
+      games: [],
+      next: null,
+      failures: [{ url: "https://shard-a.test", error: "unavailable" }],
     });
-    const mine = await history("?player=0xabc");
-    expect(mine.games.map(({ name }) => name)).toEqual(["e-last"]);
-    expect(mine.failures.map(({ url }) => url)).toEqual(["https://shard-b.test", "https://shard-d.test"]);
     for (const query of ["?limit=0", "?limit=101", "?cursor=bogus", "?player=nobody"]) {
       expect((await createBrowser().request(`/api/directory/history${query}`)).status).toBe(400);
     }
 
-    // A live shard's URL cannot take a new chain; once retired, it is listed again under the chain its manifest names.
-    heralds.set("https://shard-e.test/manifest", shardManifest("0xee"));
-    heralds.set("https://shard-e.test/games", { chain: "0xee", games: [live] });
-    const admitE = () =>
-      operator.request("/api/directory/shards", { body: { url: "https://shard-e.test" }, token: OPERATOR_TOKEN });
-    expect(await (await admitE()).json()).toEqual({ error: "shard_not_pending" });
-    const retired = await operator.request("/api/directory/shards/status", {
-      body: { url: "https://shard-e.test", status: "retired" },
-      token: OPERATOR_TOKEN,
-    });
-    expect(retired.status).toBe(200);
-    expect(
-      (
-        await operator.request("/api/directory/shards/pending", {
-          body: { url: "https://shard-e.test" },
-          token: OPERATOR_TOKEN,
-        })
-      ).status,
-    ).toBe(201);
-    const relisted = await admitE();
-    expect(relisted.status).toBe(201);
-    expect(await relisted.json()).toEqual({ url: "https://shard-e.test", chainId: "0xee", status: "active" });
-    launchDirectory.chains.push({
-      chainId: "0xee",
-      games: [1].map((gameId) => ({ gameId, slotId: null })),
-    });
-    expect((await list()).at(-1)).toEqual({
+    heralds.set("https://shard-e.test/manifest", shardManifest("0xe"));
+    heralds.set("https://shard-e.test/games", { chain: "0xe", games: [live] });
+    launchDirectory.chains.push({ chainId: "0xe", games: [{ gameId: 1, slotId: null }] });
+    expect((await register("https://shard-e.test")).status).toBe(200);
+    expect(await list()).toEqual({
       url: "https://shard-e.test",
-      chainId: "0xee",
-      status: "active",
-      manifest: { ...shardManifest("0xee"), chainId: normalizeStarknetAddress("0xee") },
+      chainId: "0xe",
+      manifest: { ...shardManifest("0xe"), chainId: normalizeStarknetAddress("0xe") },
       games: [live],
     });
   });
@@ -3150,6 +3032,38 @@ describe("identity Worker", () => {
     } finally {
       await fresh.close();
     }
+  });
+
+  it("folds the directory to its one serving row at 0053, and to none when two chains serve", async () => {
+    const directoryAfter0053 = async (rows: [url: string, chainId: string, status: string][]) => {
+      const fresh = createTestD1();
+      try {
+        await applyPendingMigrations(fresh.db, "0052_season_invites.sql");
+        await fresh.db.batch(
+          rows.map(([url, chainId, status]) =>
+            fresh.db
+              .prepare(`INSERT INTO "shards" ("url", "chainId", "status", "addedAt") VALUES (?1, ?2, ?3, 1)`)
+              .bind(url, chainId, status),
+          ),
+        );
+        expect(await applyPendingMigrations(fresh.db, "0053_one_shard.sql")).toEqual(["0053_one_shard.sql"]);
+        return (await fresh.db.prepare(`SELECT "slot", "chainId", "url" FROM "shards"`).all()).results;
+      } finally {
+        await fresh.close();
+      }
+    };
+    expect(
+      await directoryAfter0053([
+        ["https://herald.dev.test", "0xd0", "active"],
+        ["https://herald-s1.dev.test", "0x51", "active"],
+      ]),
+    ).toEqual([]);
+    expect(
+      await directoryAfter0053([
+        ["https://herald.dev.test", "0xd0", "retired"],
+        ["https://herald-s1.dev.test", "0x51", "draining"],
+      ]),
+    ).toEqual([{ slot: 1, chainId: "0x51", url: "https://herald-s1.dev.test" }]);
   });
 
   it("leaves 0031 nothing to change where the corrected 0030 ran, on a database brought up fresh, and again on a repeat", async () => {
@@ -4163,13 +4077,11 @@ describe("shared links", () => {
     });
 
   beforeAll(async () => {
-    await env.DB.prepare(`INSERT INTO shards (url, chainId, status, addedAt) VALUES (?, ?, 'active', ?)`)
-      .bind(shard, chainId, Date.now())
-      .run();
+    await listShard(shard, chainId);
     publishBoard();
   });
   afterAll(async () => {
-    await env.DB.prepare("UPDATE shards SET status = 'retired' WHERE url = ?").bind(shard).run();
+    await env.DB.prepare("DELETE FROM shards WHERE url = ?").bind(shard).run();
   });
 
   /** A player signed in on their own browser, which the app opened (so the browser is known for the account). */

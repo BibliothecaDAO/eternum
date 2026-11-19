@@ -120,7 +120,7 @@ const statusState = (chainId: string) =>
       ],
       incidents: [],
     },
-    targets: [{ url: "https://herald.test", chainId, status: "active" }],
+    targets: [{ url: "https://herald.test", chainId }],
     counters: {},
   });
 
@@ -321,7 +321,7 @@ describe("screens", () => {
       environment: "production",
       workers: { ok: true, value: { version: "v-id", revision: "7ba76ed03a0" } },
       client: { ok: true, value: "7ba76ed03a0" },
-      shards: { ok: true, value: [{ url: "https://herald.test", chainId: "0xmainnet", status: "active" }] },
+      shards: { ok: true, value: [{ url: "https://herald.test", chainId: "0xmainnet" }] },
       commands: {
         box: "pnpm run deploy production",
         cloudflare: 'pnpm run deploy:cloudflare production "$HOME/.realms-production"',

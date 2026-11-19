@@ -1,7 +1,7 @@
 import type { HeraldGameSnapshot } from "@bibliothecadao/eternum/game-sync";
 import { aspects, type AspectId } from "@bibliothecadao/types";
 
-import { listedShards } from "./directory";
+import { directoryShardOf } from "./directory";
 import type { IdentityEnv } from "./env";
 
 /**
@@ -16,7 +16,7 @@ export async function aspectOn(
   game: { chainId: string; gameId: number },
   account: string,
 ): Promise<AspectId | null> {
-  const shard = (await listedShards(env.DB)).find((listed) => BigInt(listed.chainId) === BigInt(game.chainId));
+  const shard = await directoryShardOf(env.DB, game.chainId);
   if (!shard) throw new Error("aspect_shard_unlisted");
   const url = new URL(`/games/${game.gameId}/snapshot`, shard.url);
   url.searchParams.set("models", "Structure,HomeAspect");

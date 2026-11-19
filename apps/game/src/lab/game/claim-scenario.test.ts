@@ -6,7 +6,7 @@ import { installLabChain } from "./lab-chain";
 it("answers the settled home's claim with its season-day facts and the same relay transaction", async () => {
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () => Response.json({ shards: [] })),
+    vi.fn(async () => Response.json({ shard: null })),
   );
   const scenario = await installLabChain(claimScenario, Date.now());
   const response = await window.fetch("/api/value/labor", {

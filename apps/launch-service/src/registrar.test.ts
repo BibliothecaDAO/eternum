@@ -88,7 +88,7 @@ beforeEach(() => {
   mock.nextFreeze.mockResolvedValue(null);
 });
 afterEach(() => vi.restoreAllMocks());
-const setup = (shards = [{ chainId: "0x1", url: "https://shard.test", status: "active" }]) => {
+const setup = (shard: { chainId: string; url: string } | null = { chainId: "0x1", url: "https://shard.test" }) => {
   const setAlarm = vi.fn(async (_at: number) => {});
   const values = new Map<string, unknown>();
   const context = {
@@ -103,7 +103,7 @@ const setup = (shards = [{ chainId: "0x1", url: "https://shard.test", status: "a
   };
   const registrar = new Registrar(context as unknown as DurableObjectState, {
     DB: {},
-    IDENTITY: { shards: async () => shards },
+    IDENTITY: { shard: async () => shard },
   });
   return { registrar, setAlarm };
 };
@@ -209,14 +209,12 @@ it("advances each running Frontier game as the joined launcher, then opens the r
   mock.launched.mockResolvedValue(["frontier-1"]);
   mock.pins.set(1, 1);
   expect(await f.registrar.applyRelease(RELEASE)).toEqual({
-    shards: [
-      {
-        chainId: "0x1",
-        releaseId: 2,
-        games: [{ gameId: 1, from: 1, to: 2, transactions: ["0x12"] }],
-        opened: ["0x02"],
-      },
-    ],
+    shard: {
+      chainId: "0x1",
+      releaseId: 2,
+      games: [{ gameId: 1, from: 1, to: 2, transactions: ["0x12"] }],
+      opened: ["0x02"],
+    },
   });
   expect(mock.open).toBe(2);
   expect(mock.pins.get(1)).toBe(2);
@@ -269,18 +267,7 @@ it("refuses a release step without the commit's release while a shard is active,
 });
 
 it("answers no shard to a first deployment's release step, before any shard is active", async () => {
-  const f = setup([]);
-  expect(await f.registrar.applyRelease(null)).toEqual({ shards: [] });
+  const f = setup(null);
+  expect(await f.registrar.applyRelease(null)).toEqual({ shard: null });
   expect(mock.account).not.toHaveBeenCalled();
-});
-
-it("refuses to launch or release while the directory serves two chains", async () => {
-  const f = setup([
-    { chainId: "0x1", url: "https://shard.test", status: "active" },
-    { chainId: "0x2", url: "https://other.test", status: "draining" },
-  ]);
-  await expect(f.registrar.alarm()).rejects.toThrow("more_than_one_official_chain");
-  await expect(f.registrar.applyRelease(RELEASE)).rejects.toThrow("more_than_one_official_chain");
-  expect(mock.account).not.toHaveBeenCalled();
-  expect(mock.process).not.toHaveBeenCalled();
 });

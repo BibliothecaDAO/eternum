@@ -12,12 +12,14 @@ export async function listedFrontierGame(
   const response = await fetch(url, { redirect: "error", signal: AbortSignal.timeout(10_000) });
   if (!response.ok) throw new Error(`Gameplay directory read: HTTP ${response.status}`);
   const directory = (await response.json()) as {
-    shards: { chainId: string; url: string; status: string; games: HeraldGameDirectoryEntry[] | null }[];
+    shard: { chainId: string; url: string; games: HeraldGameDirectoryEntry[] | null } | null;
   };
-  const listed = directory.shards.find(
-    (row) => BigInt(row.chainId) === BigInt(shard.chainId) && new URL(row.url).origin === new URL(heraldUrl).origin,
-  );
-  const games = listed?.status === "active" ? listed.games : null;
+  const row = directory.shard;
+  const listed =
+    row !== null &&
+    BigInt(row.chainId) === BigInt(shard.chainId) &&
+    new URL(row.url).origin === new URL(heraldUrl).origin;
+  const games = listed ? row.games : null;
   const candidates = (games ?? []).filter(
     (game) =>
       game.mode === "frontier" &&
@@ -30,7 +32,7 @@ export async function listedFrontierGame(
       event: "gameplay_directory",
       url,
       chainId: shard.chainId,
-      status: listed?.status ?? "unlisted",
+      listed,
       games: candidates.map(({ game_id, name, status }) => ({ game_id, name, status })),
     }),
   );

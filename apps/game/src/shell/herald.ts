@@ -6,13 +6,7 @@ import { useCallback } from "react";
 import { useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { appQueryClient } from "@/runtime/query-client";
 
-import {
-  canEnterGame,
-  fetchDirectory,
-  fetchDirectoryHistory,
-  listedShards,
-  type DirectoryEntry,
-} from "@/runtime/world/directory";
+import { canEnterGame, fetchDirectory, fetchDirectoryHistory, type DirectoryEntry } from "@/runtime/world/directory";
 import { requireOpenShard } from "@/runtime/world/shards";
 import { fetchApi } from "@/runtime/app-api";
 
@@ -37,11 +31,12 @@ const DIRECTORY_QUERY_KEY = ["shell", "directory"] as const;
  * Our directory from the Worker, the one list of shards and their games. No shard's Herald is contacted here: a game's
  * shard opens only when the game is entered.
  */
-export const fetchDirectories = async (player: string | null): Promise<ShardDirectory> => ({
-  games: listedShards(await fetchDirectory(player)).flatMap((shard) =>
-    (shard.games ?? []).map((game) => ({ ...game, chainId: shard.chainId })),
-  ),
-});
+export const fetchDirectories = async (player: string | null): Promise<ShardDirectory> => {
+  const shard = await fetchDirectory(player);
+  if (!shard?.games) return { games: [] };
+  const { chainId } = shard;
+  return { games: shard.games.map((game) => ({ ...game, chainId })) };
+};
 
 interface GuardianIdentity {
   publicKey: string;

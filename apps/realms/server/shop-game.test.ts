@@ -48,9 +48,7 @@ const shopOn = async (games: unknown[], enrolled: string[] | Error) => {
   databases.push(database);
   await database.db.batch(migrationStatements().map((sql) => database.db.prepare(sql)));
   await database.db
-    .prepare(
-      `INSERT INTO "shards" ("url", "chainId", "status", "addedAt") VALUES ('https://shard.test', '${CHAIN}', 'active', 1)`,
-    )
+    .prepare(`INSERT INTO "shards" ("slot", "url", "chainId") VALUES (1, 'https://shard.test', '${CHAIN}')`)
     .run();
   vi.mocked(readEnrolledAccounts).mockImplementation(async () => {
     if (enrolled instanceof Error) throw enrolled;

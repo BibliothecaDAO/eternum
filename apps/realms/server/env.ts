@@ -22,7 +22,6 @@ const IdentityVars = Schema.Struct({
   L2_RPC_URL: Schema.NonEmptyString,
   /** The marketplace API (its base, before `/v1`): the Realm holdings index, and at `/rpc` the relay for point reads. */
   MARKETPLACE_API_URL: Schema.String.pipe(Schema.check(Schema.isPattern(/^https:\/\/[^/]+/))),
-  /** The environment's one operator token for all automation: listing shards and changing their status here. */
   OPERATOR_TOKEN: Schema.NonEmptyString,
   /**
    * The OAuth clients players sign in with, each optional and offered only as a pair; each one's redirect is

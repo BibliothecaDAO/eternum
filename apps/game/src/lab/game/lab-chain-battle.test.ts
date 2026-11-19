@@ -12,7 +12,7 @@ import { ruinFightScenario } from "./ruin-fight-scenario";
 it("sends a ruin fight through the lab account with its payout events separate from persistent facts", async () => {
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () => Response.json({ shards: [] })),
+    vi.fn(async () => Response.json({ shard: null })),
   );
   const startedAt = Date.now();
   const scenario = await installLabChain(ruinFightScenario, startedAt);

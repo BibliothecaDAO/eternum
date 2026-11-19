@@ -323,7 +323,7 @@ beforeAll(async () => {
           }
           export class ValueIdentity extends WorkerEntrypoint {
             accountsAtRegistration(rows){return rows.map((_,i)=>"0x"+(i+257).toString(16));}
-            shards(){return [{chainId:${JSON.stringify(SHARD_CHAIN)},url:${JSON.stringify(SHARD_URL)},status:"active"}];}
+            shard(){return {chainId:${JSON.stringify(SHARD_CHAIN)},url:${JSON.stringify(SHARD_URL)}};}
           }
           export default {async fetch(request){count=Number(await request.text()); slots.clear(); return new Response(null,{status:204});}};`,
       },

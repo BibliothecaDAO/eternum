@@ -35,7 +35,6 @@ export interface LaunchServiceStore extends LaunchRunStore {
   /** Creates a run once; an existing run is untouched, and a different Frontier preset or window is refused. */
   schedule(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun>;
   list(environment: GameEnvironmentId, kind?: LaunchKind): Promise<LaunchRun[]>;
-  /** Declared entry terms for created games, including registration before start and draining shards. */
   playerDirectoryGames(): Promise<{ chainId: string; games: { gameId: number; slotId: number | null }[] }[]>;
   /** Unfinished work belonging to the shards the registrar still serves. */
   pending(): Promise<LaunchRun[]>;

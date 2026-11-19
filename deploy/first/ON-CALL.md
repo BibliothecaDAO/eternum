@@ -95,6 +95,9 @@ any listed world is down.
 2. `pnpm --dir apps/realms exec wrangler tail realms-identity-staging`: identity serves accounts, directory, chat and
    the guardian.
 3. Cloudflare's status page, if several components fail together.
+4. `directory` lists the one shard the last `deploy:cloudflare` listed, and only that command lists one. After the box
+   moves to a new chain, rerun `pnpm run deploy:cloudflare`; to unlist a decommissioned shard without a redeploy, send
+   `DELETE /api/directory/shard` with the operator token.
 
 ## Payout alerts — the owner's Discord channel
 

@@ -34,7 +34,7 @@ const fixture = (chain = TEST_CHAIN) => {
   const armFor = vi.fn();
   const wakeAt = vi.fn(async (): Promise<number | null> => 0);
   const joinFailure = vi.fn(async (): Promise<import("./registrar").JoinFailure | null> => null);
-  const applyRelease = vi.fn(async (_release: ReleaseIdentity | null): Promise<ReleaseReport> => ({ shards: [] }));
+  const applyRelease = vi.fn(async (_release: ReleaseIdentity | null): Promise<ReleaseReport> => ({ shard: null }));
   const app = createLaunchApp({
     config: { operatorToken: "operator-test-token" },
     deployment: { environment: "staging", version: "test", revision: "abc1234" },
@@ -350,14 +350,12 @@ const RELEASE = {
 test("the release route hands the commit's release to the registrar and answers its report", async () => {
   const { app, applyRelease: registrar } = fixture();
   const report = {
-    shards: [
-      {
-        chainId: DEV_CHAIN,
-        releaseId: 2,
-        games: [{ gameId: 1, from: 1, to: 2, transactions: ["0xa"] }],
-        opened: ["0xb"],
-      },
-    ],
+    shard: {
+      chainId: DEV_CHAIN,
+      releaseId: 2,
+      games: [{ gameId: 1, from: 1, to: 2, transactions: ["0xa"] }],
+      opened: ["0xb"],
+    },
   };
   registrar.mockResolvedValueOnce(report);
   const response = await applyRelease(app, { release: RELEASE });

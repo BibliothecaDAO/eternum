@@ -56,20 +56,17 @@ class DepositRetirementTest(unittest.TestCase):
             settings = root / "deploy/first"
             settings.mkdir(parents=True)
             (settings / "environments.json").write_text(json.dumps({"dev": {"runDirectory": str(directory), "environment": "dev"}}))
-            with patch.object(teardown.shard, "ROOT", root), patch.object(teardown.shard, "isolated_stack_lock", return_value=nullcontext()), patch.object(teardown.deploy, "load_inputs", return_value=config), patch.object(deposit_retirement, "service_json", side_effect=RuntimeError("principal return pending")), patch.object(teardown.subprocess, "run") as command, patch.object(teardown.shutil, "rmtree") as remove, patch.object(teardown, "directory_status") as retire:
+            with patch.object(teardown.shard, "ROOT", root), patch.object(teardown.shard, "isolated_stack_lock", return_value=nullcontext()), patch.object(teardown.deploy, "load_inputs", return_value=config), patch.object(deposit_retirement, "service_json", side_effect=RuntimeError("principal return pending")), patch.object(teardown.subprocess, "run") as command, patch.object(teardown.shutil, "rmtree") as remove:
                 with self.assertRaisesRegex(RuntimeError, "principal return pending"):
                     teardown.teardown(["dev"], lambda _: None)
                 command.assert_not_called()
                 remove.assert_not_called()
-                retire.assert_not_called()
 
-    def test_pending_reinitialization_cannot_remove_unpaid_principal(self):
+    def test_unfinished_reinitialization_cannot_remove_unpaid_principal(self):
         with tempfile.TemporaryDirectory() as temporary:
             directory=Path(temporary)
-            config,result=self.fixture(directory)
-            config["public_herald_url"]="https://candidate-herald.test"
-            row={"chainId":result["chainId"],"url":config["public_herald_url"],"status":"pending"}
-            with patch.object(deploy,"service_json",return_value={"shards":[row]}), patch.object(deploy,"unfinished_differences",return_value=["initialization incomplete"]), patch.object(deposit_retirement,"service_json",side_effect=RuntimeError("principal return pending")), patch.object(deploy.subprocess,"run") as command, patch.object(deploy.shutil,"rmtree") as remove:
+            config,_=self.fixture(directory)
+            with patch.object(deploy,"unfinished_differences",return_value=[deploy.INCOMPLETE]), patch.object(deposit_retirement,"service_json",side_effect=RuntimeError("principal return pending")), patch.object(deploy.subprocess,"run") as command, patch.object(deploy.shutil,"rmtree") as remove:
                 with self.assertRaisesRegex(RuntimeError,"principal return pending"):
                     deploy.restart_unfinished(directory,config,{},lambda _:None)
                 command.assert_not_called()

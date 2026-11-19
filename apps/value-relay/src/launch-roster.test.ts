@@ -31,7 +31,7 @@ const relay = () =>
       ENVIRONMENT: "staging",
       IDENTITY: {
         l2ChainId: async () => "0x2",
-        shards: async () => [{ chainId: "0x1", url: "https://shard.test", status: "active" }],
+        shard: async () => ({ chainId: "0x1", url: "https://shard.test" }),
       },
     } as never,
   );

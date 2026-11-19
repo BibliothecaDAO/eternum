@@ -242,8 +242,8 @@ it("lets two players chat in their Blitz room, keeps its history, survives evict
   });
   await worker.db.batch(migrationStatements().map((statement) => worker.db.prepare(statement)));
   await worker.db
-    .prepare(`INSERT INTO "shards" ("url", "chainId", "status", "addedAt") VALUES (?, ?, 'active', ?)`)
-    .bind(SHARD, CHAIN_ID, Date.now())
+    .prepare(`INSERT INTO "shards" ("slot", "url", "chainId") VALUES (1, ?, ?)`)
+    .bind(SHARD, CHAIN_ID)
     .run();
 
   const [first, second, stranger] = [await signIn(worker), await signIn(worker), await signIn(worker)];

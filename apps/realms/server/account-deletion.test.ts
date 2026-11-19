@@ -483,8 +483,8 @@ it("closes a deleted account's open sockets in Global, its game's room and a lob
   try {
     await worker.db.batch(migrationStatements().map((statement) => worker.db.prepare(statement)));
     await worker.db
-      .prepare(`INSERT INTO "shards" ("url", "chainId", "status", "addedAt") VALUES (?, ?, 'active', ?)`)
-      .bind(SHARD, CHAIN_ID, Date.now())
+      .prepare(`INSERT INTO "shards" ("slot", "url", "chainId") VALUES (1, ?, ?)`)
+      .bind(SHARD, CHAIN_ID)
       .run();
     const leaving = await worker.signInWithEmailCode(LEAVING);
     const watcher = await worker.signInWithEmailCode("watcher@realms.test");

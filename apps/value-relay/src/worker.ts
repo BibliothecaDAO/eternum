@@ -672,8 +672,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   }
   async openSlot(key: LedgerSlotKey, window: { start: number; end: number }) {
     await this.requireLaunchSlot(key);
-    const shard = (await this.env.IDENTITY.shards()).find((row) => BigInt(row.chainId) === BigInt(key.chainId));
-    if (shard?.status !== "active") throw new Error("new_slot_requires_active_shard");
+    await requireActiveChain(this.env.IDENTITY, key.chainId);
     return Effect.runPromise(
       this.ledgerPermit(
         relayEffect("write ledger slot", () => openSlotOnLedger(ledgerCredentialsOf(this.env), key, window)),
@@ -820,15 +819,17 @@ const ledgerOf = (env: RelayEnv) =>
       ),
     ),
   );
-const heldOf = async (env: RelayEnv) =>
-  (await Promise.all((await env.IDENTITY.shards()).map((shard) => relayOf(env, shard.chainId).shardHeld()))).flat();
+const heldOf = async (env: RelayEnv) => {
+  const official = await officialChain(env.IDENTITY);
+  return official ? relayOf(env, official.chainId).shardHeld() : [];
+};
 const healthOf = async (env: RelayEnv) => {
   const ledger = await ledgerOf(env).ledgerHealth();
   const official = await officialChain(env.IDENTITY);
-  const shards = official
-    ? [{ chainId: official.chainId, ...(await relayOf(env, official.chainId).shardHealth()) }]
-    : [];
-  return { ...ledger, success: ledger.success && shards.every((row) => row.success), shards, held: await heldOf(env) };
+  const shard = official
+    ? { chainId: official.chainId, ...(await relayOf(env, official.chainId).shardHealth()) }
+    : null;
+  return { ...ledger, success: ledger.success && (shard?.success ?? true), shard, held: await heldOf(env) };
 };
 /** Diagnostics expose reasons only; the monitor independently verifies contract evidence. */
 export class RelayDiagnostics extends WorkerEntrypoint<RelayEnv> {

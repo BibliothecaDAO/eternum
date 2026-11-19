@@ -6,7 +6,7 @@ import type {
 } from "@bibliothecadao/eternum/game-sync";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 
-import { fetchShardGames, gamesUrl, listedShards } from "./directory";
+import { directoryShard, directoryShardOf, fetchShardGames, gamesUrl, type DirectoryShard } from "./directory";
 import { ACCOUNT_CLASS_HASH, type IdentityEnv } from "./env";
 
 /** What a player's home in a running campaign game was founded with: nothing yet, a held Realm, or a campaign ticket. */
@@ -16,7 +16,6 @@ export type HomeSource = "none" | "realm" | "campaign";
 const CAMPAIGN_PASS_KIND = 3;
 
 type IdentityShards = Pick<IdentityEnv, "DB" | "GUARDIAN">;
-type ListedShard = Awaited<ReturnType<typeof listedShards>>[number];
 
 /** The account a Realms id plays with on every shard we list. */
 const playerAccount = async (env: Pick<IdentityEnv, "GUARDIAN">, realmsId: string) =>
@@ -100,7 +99,7 @@ export async function sitesClearedOn(
   fetchShard: typeof fetch,
   game: { chainId: string; gameId: number },
 ): Promise<Map<string, number> | null> {
-  const shard = (await listedShards(env.DB)).find((listed) => BigInt(listed.chainId) === BigInt(game.chainId));
+  const shard = await directoryShardOf(env.DB, game.chainId);
   if (!shard) return null;
   try {
     const board = await seasonBoard(shard.url, game.gameId, fetchShard);
@@ -119,20 +118,17 @@ async function eachCampaignGame<T>(
   fetchShard: typeof fetch,
   presets: readonly number[],
   player: string | null,
-  read: (shard: ListedShard, game: HeraldGameDirectoryEntry) => Promise<T>,
+  read: (shard: DirectoryShard, game: HeraldGameDirectoryEntry) => Promise<T>,
 ): Promise<T[] | null> {
-  const answers = await Promise.all(
-    (await listedShards(env.DB)).map(async (shard) => {
-      try {
-        const games = await fetchShardGames(shard, gamesUrl(shard, player), fetchShard);
-        const running = games.filter((game) => isRunningCampaignGame(game, presets));
-        return await Promise.all(running.map((game) => read(shard, game)));
-      } catch {
-        return null;
-      }
-    }),
-  );
-  return answers.some((answer) => answer === null) ? null : answers.flatMap((answer) => answer ?? []);
+  const shard = await directoryShard(env.DB);
+  if (!shard) return [];
+  try {
+    const games = await fetchShardGames(shard, gamesUrl(shard, player), fetchShard);
+    const running = games.filter((game) => isRunningCampaignGame(game, presets));
+    return await Promise.all(running.map((game) => read(shard, game)));
+  } catch {
+    return null;
+  }
 }
 
 const isRunningCampaignGame = (game: HeraldGameDirectoryEntry, presets: readonly number[]) =>

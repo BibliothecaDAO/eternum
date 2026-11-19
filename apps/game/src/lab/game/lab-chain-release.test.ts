@@ -17,5 +17,5 @@ it("serves the scenario's pinned release through the real shard decoder validati
   expect(shard.releaseSchemas[String(pin.release_id)]).toBe(nativeFactSchemaIdentity);
   expect(shard.releaseSchemas[String(pin.created_release_id)]).toBe(nativeFactSchemaIdentity);
   const directory = await (await window.fetch("/api/directory")).json();
-  expect(directory.shards[0].manifest.releaseSchemas).toEqual(shard.releaseSchemas);
+  expect(directory.shard.manifest.releaseSchemas).toEqual(shard.releaseSchemas);
 });

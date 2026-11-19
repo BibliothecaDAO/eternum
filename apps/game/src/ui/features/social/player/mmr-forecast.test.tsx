@@ -50,7 +50,7 @@ describe("the roster ranked as if the game ended now", () => {
 describe("the MMR forecast's reads", () => {
   const ACCOUNT_1 = `0x${"1".padStart(64, "0")}`;
   const ACCOUNT_2 = `0x${"2".padStart(64, "0")}`;
-  const PAID = [{ chainId: "0x1", games: [{ game_id: 3, slotId: 7 }] }];
+  const PAID = { chainId: "0x1", games: [{ game_id: 3, slotId: 7 }] };
   let latest: MmrForecast;
   let points: Map<string, { points: number }>;
   let client: QueryClient;
@@ -101,7 +101,7 @@ describe("the MMR forecast's reads", () => {
   });
 
   it("keeps a game the directory lists outside any slot off, and asks the ledger nothing", async () => {
-    ledger.directory.mockResolvedValue([{ chainId: "0x1", games: [{ game_id: 3, slotId: null }] }]);
+    ledger.directory.mockResolvedValue({ chainId: "0x1", games: [{ game_id: 3, slotId: null }] });
     await open();
     expect(latest.status).toBe("off");
     expect(ledger.rated).not.toHaveBeenCalled();
@@ -109,7 +109,7 @@ describe("the MMR forecast's reads", () => {
   });
 
   it("says unavailable when the directory could not read the game, and reads it again on the next opening", async () => {
-    ledger.directory.mockResolvedValue([{ chainId: "0x1", games: null, error: "unavailable" }]);
+    ledger.directory.mockResolvedValue({ chainId: "0x1", games: null, error: "unavailable" });
     await open();
     // The slot read retries once, a second later, before it gives up.
     await act(async () => new Promise((done) => setTimeout(done, 1_200)));

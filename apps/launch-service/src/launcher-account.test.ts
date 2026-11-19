@@ -22,7 +22,7 @@ const chainId = "0x1",
   heraldUrl = "https://shard.test";
 const own = realmsAccountAddress(botRealmsId(shortString.encodeShortString("ETERNUM_LAUNCHER")), "0x2", "0x9");
 const env = {
-  IDENTITY: { shards: async () => [{ chainId, url: heraldUrl, status: "active" as const }] },
+  IDENTITY: { shard: async () => ({ chainId, url: heraldUrl }) },
   BASE_URL: "https://app.test",
   LAUNCH_DEPLOYER_PRIVATE_KEY: "0x1",
   OPERATOR_TOKEN: "test",
@@ -34,7 +34,6 @@ beforeEach(() => {
   mock.manifest.mockResolvedValue({
     shard: {
       url: heraldUrl,
-      status: "active",
       chainId,
       accountClassHash: "0x2",
       guardianPublicKey: "0x9",

@@ -1,5 +1,5 @@
 import { registrationRealmsIds } from "./registration-identity";
-import { registeredShards } from "./directory";
+import { directoryShard } from "./directory";
 import { recordPayDecision, matchesPayDecision } from "./pay-decisions";
 import { createIdentityAuth } from "./auth";
 import { WorkerEntrypoint } from "cloudflare:workers";
@@ -15,8 +15,8 @@ import { campaignTicketFor } from "./campaign-ticket-store";
 
 /** Only a service binding exposes these reads; they have no public HTTP route. */
 export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
-  shards() {
-    return registeredShards(this.env.DB);
+  shard() {
+    return directoryShard(this.env.DB);
   }
   l2ChainId() {
     return encodeChainName(identityL2Configuration(this.env).chainId);

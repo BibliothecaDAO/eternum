@@ -26,7 +26,6 @@ export interface JoinFailure {
 }
 const joinErrors = [
   "launcher_approval_refused",
-  "launcher_shard_inactive",
   "unlisted_shard",
   "directory_shard_manifest_fetch_failed",
   "directory_shard_manifest_unavailable",
@@ -100,7 +99,7 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
     return this.signingAlone(async () => {
       const env = decodeLaunchEnv(this.env);
       const official = await officialChain(env.IDENTITY);
-      if (!official) return { shards: [] };
+      if (!official) return { shard: null };
       if (!release) throw new Error("release_unverified");
       const chainId = official.chainId;
       const store = new D1LaunchStore(env.DB, async () => chainId);
@@ -114,7 +113,7 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
       });
       const games = await advanceGames(launcher, herald, release, await store.gameNames("madara.frontier"));
       const opened = await openForNewGames(launcher, release);
-      return { shards: [{ chainId, releaseId: release.releaseId, games, opened }] };
+      return { shard: { chainId, releaseId: release.releaseId, games, opened } };
     });
   }
 

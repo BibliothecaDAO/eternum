@@ -12,7 +12,7 @@ import { farEyeScenario } from "./far-eye-scenario";
 it("applies the Far-Eye command through the real fact decoder, including an initially empty Essence balance", async () => {
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () => Response.json({ shards: [] })),
+    vi.fn(async () => Response.json({ shard: null })),
   );
   await installLabChain(farEyeScenario, Date.now());
   const span = encodeNativeCommand(nativeBindings.commandAbi, {

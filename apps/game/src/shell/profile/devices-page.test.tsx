@@ -4,13 +4,13 @@ import { expect, it, vi } from "vitest";
 
 const THIS_DEVICE = "0xd0e5";
 // The shards' device events, as read right after signing in: this device's registration has not reached them yet.
-const read = vi.hoisted(() => ({ devices: new Map<string, unknown[]>() }));
+const read = vi.hoisted(() => ({ devices: [] as string[] }));
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
   getOrCreateDeviceKey: () => ({ publicKey: "0xd0e5" }),
-  readAccountDevices: async () => ({ devices: read.devices, failures: [] }),
+  readAccountDevices: async () => read.devices,
 }));
-vi.mock("@/runtime/world/shards", () => ({ openKnownShards: async () => [], listOpenShards: () => [] }));
+vi.mock("@/runtime/world/shards", () => ({ openDirectoryShard: async () => ({ rpcUrl: "https://rpc.test" }) }));
 vi.mock("../herald", () => ({ useRealmsPlayer: () => ({ data: "0x7", isError: false }) }));
 
 import { DevicesCard } from "./devices-page";
@@ -29,25 +29,19 @@ const rows = async () => {
 };
 
 it("lists this device among the account's devices right after signing in, before the shards record it (qa-app-1 P3-5)", async () => {
-  read.devices = new Map();
+  read.devices = [];
   expect((await rows()).text).toContain("This device");
 });
 
 it("lists this device once, and the others with Remove, once the shards record it", async () => {
-  read.devices = new Map([
-    [THIS_DEVICE, []],
-    ["0xbeef", []],
-  ]);
+  read.devices = [THIS_DEVICE, "0xbeef"];
   const { text } = await rows();
   expect(text?.match(/This device/g)).toHaveLength(1);
   expect(text).toContain("Remove");
 });
 
 it("closes the question before removing a device on the system back, staying on Settings", async () => {
-  read.devices = new Map([
-    [THIS_DEVICE, []],
-    ["0xbeef", []],
-  ]);
+  read.devices = [THIS_DEVICE, "0xbeef"];
   const previous = window.location.href;
   window.history.replaceState({}, "", "/profile");
   window.history.pushState({}, "", "/profile/settings");
