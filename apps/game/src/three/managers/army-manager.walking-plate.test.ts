@@ -28,7 +28,10 @@ const managerWithVisibleArmy = (stamina: number) => {
   const drawn: ArmyPlate[] = [];
   const manager = Object.assign(Object.create(ArmyManager.prototype), {
     isDestroyed: false,
-    store: { require: (model: string) => (model === "SliceRules" ? { day_unit_seconds: 60 } : { oaths: 0 }) },
+    store: {
+      get: () => undefined,
+      require: (model: string) => (model === "SliceRules" ? { day_unit_seconds: 60 } : { oaths: 0 }),
+    },
     armyPresentations: new Map([[ARMY, armyRecord(stamina)]]),
     visibleArmyOrder: [ARMY],
     visibleArmyIndices: new Map([[ARMY, 0]]),
