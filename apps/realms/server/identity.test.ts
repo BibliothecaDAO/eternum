@@ -1198,7 +1198,7 @@ describe("identity Worker", () => {
     heralds.set(`${first}/manifest`, shardManifest("0x123abc"));
     heralds.set(`${second}/manifest`, shardManifest("0x456def"));
     const register = (url: string, token?: string) =>
-      operator.request("/api/directory/shard", { method: "PUT", body: { url }, token });
+      operator.request("/api/directory/shard", { method: "PUT", body: { url }, ...(token ? { token } : {}) });
     const remove = () => operator.request("/api/directory/shard", { method: "DELETE", token: OPERATOR_TOKEN });
     const listed = async () =>
       (await (await operator.request("/api/directory/shard", { token: OPERATOR_TOKEN })).json()) as unknown;
@@ -3032,6 +3032,38 @@ describe("identity Worker", () => {
     } finally {
       await fresh.close();
     }
+  });
+
+  it("folds the directory to its one serving row at 0053, and to none when two chains serve", async () => {
+    const directoryAfter0053 = async (rows: [url: string, chainId: string, status: string][]) => {
+      const fresh = createTestD1();
+      try {
+        await applyPendingMigrations(fresh.db, "0052_season_invites.sql");
+        await fresh.db.batch(
+          rows.map(([url, chainId, status]) =>
+            fresh.db
+              .prepare(`INSERT INTO "shards" ("url", "chainId", "status", "addedAt") VALUES (?1, ?2, ?3, 1)`)
+              .bind(url, chainId, status),
+          ),
+        );
+        expect(await applyPendingMigrations(fresh.db, "0053_one_shard.sql")).toEqual(["0053_one_shard.sql"]);
+        return (await fresh.db.prepare(`SELECT "slot", "chainId", "url" FROM "shards"`).all()).results;
+      } finally {
+        await fresh.close();
+      }
+    };
+    expect(
+      await directoryAfter0053([
+        ["https://herald.dev.test", "0xd0", "active"],
+        ["https://herald-s1.dev.test", "0x51", "active"],
+      ]),
+    ).toEqual([]);
+    expect(
+      await directoryAfter0053([
+        ["https://herald.dev.test", "0xd0", "retired"],
+        ["https://herald-s1.dev.test", "0x51", "draining"],
+      ]),
+    ).toEqual([{ slot: 1, chainId: "0x51", url: "https://herald-s1.dev.test" }]);
   });
 
   it("leaves 0031 nothing to change where the corrected 0030 ran, on a database brought up fresh, and again on a repeat", async () => {
