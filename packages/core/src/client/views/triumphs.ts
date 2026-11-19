@@ -1,4 +1,4 @@
-import { nativeRaceConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRaceConstants } from "../../../../../contracts/l3/world-native/schema/balance.gen";
 import type { NativeFactResult, NativeFactStore } from "../native-fact-store";
 import type { ExpeditionRules } from "../../utils/expeditions";
 import { dayAtIndex } from "../../utils/days";

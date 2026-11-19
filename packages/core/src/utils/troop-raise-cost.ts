@@ -2,7 +2,7 @@ import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { ResourceManager } from "../managers/resource-manager";
 import { realmLearned, researchTier } from "./realm-research";
-import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/balance.gen";
 
 /** The contract's refusal when a structure cannot pay what deploying troops costs it. */
 export const TROOP_RAISE_SHORT_REASON = "Realm cannot pay to raise troops.";

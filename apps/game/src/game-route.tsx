@@ -10,7 +10,6 @@ import { useEffect, useLayoutEffect } from "react";
 import { PlaySceneHandoff } from "./game-entry/play-scene-handoff";
 import { markGameEntryMilestone } from "./ui/layouts/game-entry-timeline";
 import { Navigate } from "react-router-dom";
-import { ShardReleaseMismatchError } from "@bibliothecadao/eternum/game-client";
 import { GameFinalizedError } from "@bibliothecadao/eternum/game-sync";
 import type { Account, AccountInterface } from "starknet";
 import { usePlayRouteBootController } from "./game-entry/play-route-boot";
@@ -24,7 +23,7 @@ import { PlayRouteDoorway } from "./ui/features/game-entry/doorway/play-route-do
 import { presentUncovered } from "./three/presented-results";
 import { useBootDocumentState } from "./ui/modules/boot-loader";
 import { World } from "./ui/layouts/world";
-import { resolveGameRouteView } from "./game-route.utils";
+import { refusalOf, resolveGameRouteView } from "./game-route.utils";
 import type { BootstrapTask } from "./game-entry/bootstrap-controller";
 
 if (import.meta.env.DEV) void import("./hooks/store/transaction-debug");
@@ -115,7 +114,7 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
           setup={hasGameContext ? setupResult : null}
           accountError={reconnectError}
           ended={state.error instanceof GameFinalizedError}
-          refused={state.error instanceof ShardReleaseMismatchError}
+          refused={refusalOf(state.error)}
           retry={retry}
           currentTaskLabel={currentTaskLabel}
         />

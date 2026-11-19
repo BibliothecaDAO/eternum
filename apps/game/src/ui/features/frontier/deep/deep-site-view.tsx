@@ -14,7 +14,7 @@ import {
 import { ARMY, DEEP_WORDS, MOVE, TROOPS } from "@/ui/design-system/kit/words";
 import { DEEP_BEASTS, type Troops, beastModel, deepSites, formatExact } from "@bibliothecadao/types";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
-import { nativeRuleConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants } from "../../../../../../../contracts/l3/world-native/schema/balance.gen";
 
 import { FightSide } from "../sites/fight-side";
 import { CombatMark } from "../sites/combat-mark";

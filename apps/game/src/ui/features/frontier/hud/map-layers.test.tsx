@@ -19,7 +19,7 @@ import {
 import { deepCenter, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { StructureType } from "@bibliothecadao/types";
 import { frontierPreset } from "../../../../../../../config/source/frontier/native";
-import { nativeReleaseConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeReleaseConstants } from "../../../../../../../contracts/l3/world-native/schema/balance.gen";
 
 import { campBeside } from "../sites/site-fixture";
 

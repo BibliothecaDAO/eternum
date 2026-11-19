@@ -1,4 +1,4 @@
-import { assertHotfixSchema } from "./artifacts";
+import { assertBalanceSince, assertHotfixSchema } from "./artifacts";
 import { CallData, type RpcProvider } from "starknet";
 import { deployedClass, isClassDeclared } from "../../shared/declare";
 import { canonicalRealmTraits, realmCatalogueDigest } from "./realm-catalogue";
@@ -6,6 +6,7 @@ import type { NativePlan, NativeWorld } from "./types";
 
 export async function inspectNativeWorld(local: NativeWorld, provider: RpcProvider): Promise<NativePlan> {
   assertHotfixSchema(local.release, local.previous);
+  assertBalanceSince(local.release, local.previous);
   const blockNumber = await provider.getBlockNumber();
   const blockers: string[] = [];
   const classes = await Promise.all(

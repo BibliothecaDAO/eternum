@@ -1,6 +1,6 @@
 import { normalizeStarknetAddress } from "@realms-world/identity";
 import { BLITZ_SLOT_PREPARATION_SECONDS, isDevShardChain } from "@realms-world/value-ledger";
-import { nativeRuleConstants } from "../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants } from "../../../contracts/l3/world-native/schema/balance.gen";
 import type { LaunchRun } from "./model";
 import type { CreateGameRequest } from "./schemas";
 

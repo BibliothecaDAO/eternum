@@ -77,5 +77,8 @@ jobs:
       - name: Check the Realms X account is written in one place
         run: pnpm check:realms-x
 
+      - name: Check Herald and the value relay decode with identifiers, never balance numbers
+        run: pnpm check:decoders-balance
+
       - name: Check formatting
         run: pnpm run format:check

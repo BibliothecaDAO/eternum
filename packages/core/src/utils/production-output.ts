@@ -1,4 +1,4 @@
-import { nativeBaneConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeBaneConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 
 type Window = { kind: number; start: number; end: number };
 

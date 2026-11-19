@@ -1,7 +1,7 @@
 import { buildNativePreset } from "../../../../config/deployer/clean/config/native-preset";
 import { loadNativePresetConfiguration } from "../../../../config/deployer/clean/registrar/native-preset";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeIdentifiers } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { createHeraldRequestHandler } from "../http";
 import { WorldFold } from "../world-fold";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -501,7 +501,7 @@ describe("native directory and leaderboard", () => {
       receipt(
         seedDerivedRows(fold, decoder, [
           gameEvent("1", "0", "0", "101"),
-          rulesEvent("1", "120", BigInt(nativeRuleConstants.SEASON_CLOSE)),
+          rulesEvent("1", "120", BigInt(nativeIdentifiers.rule.SEASON_CLOSE)),
         ]),
       ),
       11,

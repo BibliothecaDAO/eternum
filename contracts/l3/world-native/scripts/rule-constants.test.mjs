@@ -4,14 +4,116 @@ import { tmpdir } from "node:os";
 import { join, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import test from "node:test";
-import { readRuleConstants, readReleaseConstants } from "./rule-constants.mjs";
+import {
+  balanceIdentity,
+  identifierConstants,
+  readBalanceConstants,
+  readRuleConstants,
+  readReleaseConstants,
+} from "./rule-constants.mjs";
+import { createHash } from "node:crypto";
 
 const root = new URL("../", import.meta.url);
 
-test("native roster constants preserve the published rule values and their schema identity order", async () => {
-  const schema = JSON.parse(await readFile(new URL("schema/schema.json", root), "utf8"));
+const readSchema = async () => JSON.parse(await readFile(new URL("schema/schema.json", root), "utf8"));
+const readBalanceModule = () => readFile(new URL("schema/balance.gen.ts", root), "utf8");
+const sha256 = (value) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
+
+test("the schema identity hashes every identifier and no tunable number", async () => {
+  const { identity, ...wire } = await readSchema();
+  assert.equal(sha256(wire), identity);
+  const balance = await readBalanceConstants(root);
+  const identifiers = identifierConstants(balance);
+  assert.deepEqual(wire.identifierConstants, identifiers);
+  const identifierNames = new Set(Object.values(identifiers).flatMap(Object.keys));
+  assert.ok(
+    ["SEASON_CLOSE", "ENTRY_OPEN", "ENTRY_ROSTER", "DISCOVER_CHESTS", "ASH_FALL", "POWER"].every((name) =>
+      identifierNames.has(name),
+    ),
+  );
+  const hashed = JSON.stringify(wire);
+  const tunables = Object.values(balance)
+    .flatMap(Object.keys)
+    .filter((name) => !identifierNames.has(name));
+  assert.ok(tunables.includes("RELIC_BLADE_BPS") && tunables.includes("POWER_DAMAGE_PERCENT"));
+  for (const name of tunables) assert.equal(hashed.includes(`"${name}"`), false, name);
+});
+
+const QUANTITY =
+  /_(BPS|PERCENT|STAMINA|PER_[A-Z]+|LIMIT|CAP|SHARE|COUNT|SIZE|SECONDS|PLAYERS|LEVEL|STEPS|BASE|SLOTS|RINGS|COST|AMOUNT|RATE|MAX|MIN|BELOW|ABOVE|UNDER|OVER|THRESHOLD)$/;
+const HASHED_QUANTITIES = [
+  "rule.MAX_BLITZ_ROSTER_PLAYERS",
+  "rule.FRONTIER_REPORT_GRACE_SECONDS",
+  "rule.DEEP_MAP_SIZE",
+  "rule.DEEP_KIND_COUNT",
+  "rule.DEEP_DIAGONAL_RINGS",
+  "rule.DEEP_GUARD_SLOTS",
+  "quest.QUEST_COUNT",
+  "race.STAGE_COUNT",
+  "arrival.SLOTS_PER_DAY",
+  "research.RANGE_LEVEL",
+  "research.CONSCRIPTION_CAMP_LEVEL",
+  "research.RATIONS_DEPOT_LEVEL",
+  "research.SCOUTS_LODGE_LEVEL",
+];
+
+test("every constant is either a hashed identifier or a tunable number, and a quantity-named identifier is named here", async () => {
+  const balance = await readBalanceConstants(root);
+  const identifiers = identifierConstants(balance);
+  const hashed = Object.entries(identifiers).flatMap(([group, constants]) =>
+    Object.keys(constants).map((name) => `${group}.${name}`),
+  );
+  const { nativeReleaseConstants, ...numbers } = balance;
+  const gates = Object.keys(nativeReleaseConstants);
+  const tunable = Object.values(numbers).flatMap((constants) =>
+    Object.keys(constants).filter((name) => !Object.values(identifiers).some((ids) => Object.hasOwn(ids, name))),
+  );
+  assert.equal(hashed.length + tunable.length + gates.length, Object.values(balance).flatMap(Object.keys).length);
+  for (const name of gates) assert.match(name, /_RELEASE$/, `${name} gates a release`);
+  for (const name of tunable) assert.match(name, QUANTITY, `${name} is tunable without a unit`);
+  assert.deepEqual(
+    hashed.filter((name) => QUANTITY.test(name.split(".")[1])),
+    HASHED_QUANTITIES,
+    "a constant named like a quantity is hashed: rename it with a unit to make it tunable, or list it as an identifier",
+  );
+});
+
+test("the balance identity moves with a tunable number only, not with a rename, an identifier or a release gate", () => {
+  const balance = {
+    nativeReleaseConstants: { RUIN_DEPTH_LIMIT_RELEASE: 3 },
+    nativeOathConstants: { POWER: 12, SKILL_BELOW_STAMINA: 10, POWER_DAMAGE_PERCENT: 20 },
+  };
+  const identity = balanceIdentity(balance);
+  const renamed = { ...balance, nativeOathConstants: { POWER: 12, SKILL_UNDER_STAMINA: 10, POWER_DAMAGE_PERCENT: 20 } };
+  assert.equal(balanceIdentity(renamed), identity);
+  assert.equal(balanceIdentity({ ...balance, nativeReleaseConstants: { RUIN_DEPTH_LIMIT_RELEASE: 4 } }), identity);
+  const identifier = { ...balance, nativeOathConstants: { ...balance.nativeOathConstants, POWER: 13 } };
+  assert.equal(balanceIdentity(identifier), identity);
+  const tuned = { ...balance, nativeOathConstants: { ...balance.nativeOathConstants, POWER_DAMAGE_PERCENT: 25 } };
+  assert.notEqual(balanceIdentity(tuned), identity);
+  const swapped = { ...balance, nativeOathConstants: { POWER: 12, SKILL_BELOW_STAMINA: 20, POWER_DAMAGE_PERCENT: 10 } };
+  assert.notEqual(balanceIdentity(swapped), identity);
+});
+
+test("the balance module publishes the identity of the numbers it carries", async () => {
+  assert.match(
+    await readBalanceModule(),
+    new RegExp(`^export const nativeBalanceIdentity = "${balanceIdentity(await readBalanceConstants(root))}";$`, "m"),
+  );
+});
+
+test("a wire change changes the schema identity", async () => {
+  const { identity, ...wire } = await readSchema();
+  const changed = structuredClone(wire);
+  changed.models[0].members[0].type = "core::integer::u8";
+  assert.notEqual(sha256(changed), identity);
+});
+
+test("native roster constants publish their rule values in the generated balance module", async () => {
   const rules = await readRuleConstants(root);
-  assert.equal(JSON.stringify(rules), JSON.stringify(schema.ruleConstants));
+  const balance = await readBalanceModule();
+  for (const [name, value] of Object.entries(rules))
+    assert.match(balance, new RegExp(`^  "?${name}"?: ${value},?$`, "m"));
   const shared = await readFile(new URL("src/roster_limits.cairo", root), "utf8");
   const value = shared.match(/^pub const MAX_BLITZ_ROSTER_PLAYERS: u32 = ([0-9]+);$/m);
   assert.ok(value, "missing shared MAX_BLITZ_ROSTER_PLAYERS");
@@ -43,11 +145,10 @@ test("the withdrawal reporting grace is shared with the ledger and exported to c
   );
 });
 
-test("release thresholds are generated for clients without changing the historical wire schema", async () => {
+test("release thresholds are generated for clients in the balance module", async () => {
   const constants = await readReleaseConstants(root);
-  const client = await readFile(new URL("schema/client.gen.ts", root), "utf8");
-  assert.match(client, new RegExp(`"?RUIN_DEPTH_LIMIT_RELEASE"?: ${constants.RUIN_DEPTH_LIMIT_RELEASE}`));
-  const schema = JSON.parse(await readFile(new URL("schema/schema.json", root), "utf8"));
-  assert.equal(JSON.stringify(await readRuleConstants(root)), JSON.stringify(schema.ruleConstants));
-  assert.equal(Object.hasOwn(schema.ruleConstants, "RUIN_DEPTH_LIMIT_RELEASE"), false);
+  assert.match(
+    await readBalanceModule(),
+    new RegExp(`"?RUIN_DEPTH_LIMIT_RELEASE"?: ${constants.RUIN_DEPTH_LIMIT_RELEASE}`),
+  );
 });

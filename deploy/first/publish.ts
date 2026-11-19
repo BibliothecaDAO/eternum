@@ -23,11 +23,14 @@ async function workerReady(platform: Platform, worker: Worker, revision: string)
   const body = (await response.json()) as { environment: string; version: string };
   return body.environment === platform.target.worker && body.version === version.id;
 }
-export async function deployWorkers(platform: Platform, revision: string) {
+export async function buildPackages(platform: Platform) {
   if (!platform.apply) throw new PublicError("Dry run cannot deploy Workers");
   deploymentStage("build packages");
   await command({ argv: ["pnpm", "run", "build:packages"] });
-  for (const worker of workers) {
+}
+export async function deployWorkers(platform: Platform, revision: string, selected: readonly Worker[]) {
+  if (!platform.apply) throw new PublicError("Dry run cannot deploy Workers");
+  for (const worker of selected) {
     deploymentStage(`publish ${worker.id}`);
     if ((await platform.deployedRevision(worker)) !== revision) {
       if (databaseWorkers.some((id) => id === worker.id))
@@ -43,15 +46,17 @@ export async function deployWorkers(platform: Platform, revision: string) {
     if (!ready) throw new PublicError("Worker version did not reach its public route");
   }
 }
-/**
- * The Cloudflare half once setup has created every resource: the Workers, then the running Frontier games' release,
- * then the client and the docs, which go live only once the games run the release they expect.
- */
+const releaseWorkers = workers.filter((worker) => worker.id === "launch");
+const gameReaderWorkers = workers.filter((worker) => worker.id !== "launch");
+
 export async function publishCloudflare(platform: Platform, revision: string) {
-  await deployWorkers(platform, revision);
-  await keepChatRetention(platform);
+  await buildPackages(platform);
+  await deployWorkers(platform, revision, releaseWorkers);
+  await buildClient(platform, revision);
   await advanceFrontierRelease(platform, revision);
-  await deployClient(platform, revision);
+  await deployWorkers(platform, revision, gameReaderWorkers);
+  await keepChatRetention(platform);
+  await publishClient(platform, revision);
   await deployDocs(platform, revision);
 }
 
@@ -152,9 +157,9 @@ async function verifyPublishedClient(platform: Platform) {
     ],
   });
 }
-export async function deployClient(platform: Platform, revision: string) {
+export async function buildClient(platform: Platform, revision: string) {
   if (!platform.apply) throw new PublicError("Dry run cannot deploy the client");
-  deploymentStage("publish client");
+  deploymentStage("build client");
   const env = clientEnvironment(platform, revision);
   await command({ argv: ["pnpm", "--dir", "apps/game", "test", "src/utils/chunk-load-recovery.test.ts", "src/pwa"] });
   await command({ argv: ["pnpm", "--dir", "apps/game", "verify:assets"] });
@@ -175,6 +180,10 @@ for (const file of await readdir('apps/game/dist', {recursive:true}))
   if (file.endsWith('.js.map')) await unlink('apps/game/dist/' + file);
 `,
   });
+}
+export async function publishClient(platform: Platform, revision: string) {
+  if (!platform.apply) throw new PublicError("Dry run cannot deploy the client");
+  deploymentStage("publish client");
   const cloudflare = await platform.cloudflareEnvironment();
   await command({
     argv: ["node", "apps/game/scripts/ensure-pwa-cache-rule.mjs", platform.target.origin, platform.target.zone],

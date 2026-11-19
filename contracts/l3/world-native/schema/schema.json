@@ -1,158 +1,120 @@
 {
-  "ruleConstants": {
-    "RELIC_BLADE_BPS": 1000,
-    "RELIC_WARD_BPS": 500,
-    "RELIC_PLUNDER_BPS": 2000,
-    "RELIC_SECONDS_PER_RANK": 1800,
-    "RELIC_TILES_PER_RANK": 6,
-    "ATTRIBUTE_CAP": 5,
-    "SCOUT_EXPLORE_STAMINA": 10,
-    "FRONTIER_LIGHT_DAMAGE_PERCENT": 75,
-    "FRONTIER_KNIGHT_GUARD_DAMAGE_PERCENT": 75,
-    "LOGISTICS_COMMON_STAMINA": 20,
-    "LOGISTICS_UNCOMMON_STAMINA": 45,
-    "LOGISTICS_RARE_STAMINA": 75,
-    "LOGISTICS_EPIC_STAMINA": 110,
-    "LOGISTICS_LEGENDARY_STAMINA": 150,
-    "MAX_BLITZ_ROSTER_PLAYERS": 24,
-    "ENTRY_ENTITLEMENT": 0,
-    "ENTRY_OPEN": 1,
-    "ENTRY_ROSTER": 2,
-    "HOME_REWARDS": 1,
-    "DISCOVER_CAMPS": 2,
-    "DISCOVER_CHESTS": 4,
-    "DISCOVER_HYPERSTRUCTURES": 8,
-    "SPIRES": 16,
-    "UNOWNED_TARGETS": 32,
-    "CAPTURE_VILLAGES": 64,
-    "DEPTH_CONTENTS": 128,
-    "REVEAL_SUPPLIES": 262144,
-    "DISCOVER_SPIRES": 2097152,
-    "SAME_OWNER_TRANSFER": 256,
-    "SEASON_CLOSE": 1024,
-    "RESERVED_HYPERSTRUCTURES": 2048,
-    "DEV_VILLAGE_ENTRY": 8192,
-    "OWNER_ONLY_SHARES": 16384,
-    "HYPERSTRUCTURE_MULTIPLIERS": 32768,
-    "PRODUCTION_START": 131072,
-    "WELL_REFILL_PERCENT": 40,
-    "BEAST_HERD_SHARE": 1,
-    "BEAST_BAND_SHARE": 2,
-    "FRONTIER_REPORT_GRACE_SECONDS": 3600,
-    "SPIRE_REVEAL_LIMIT": 10,
-    "DEEP_MAP_SIZE": 50,
-    "DEEP_FOUNDATION": 0,
-    "DEEP_CORE": 1,
-    "DEEP_MINE": 2,
-    "DEEP_ALTAR": 3,
-    "DEEP_KIND_COUNT": 4,
-    "DEEP_RING_LIMIT": 5,
-    "DEEP_DIAGONAL_RINGS": 3,
-    "DEEP_GUARD_SLOTS": 4
-  },
-  "questConstants": {
-    "HUNT": 0,
-    "CAMPS": 1,
-    "RIFTS": 2,
-    "RELICS": 3,
-    "VETERANS": 4,
-    "FINDS": 5,
-    "REVEALS": 6,
-    "QUEST_COUNT": 7,
-    "STAND": 7,
-    "LIGHTS": 8,
-    "CULL": 9
-  },
-  "baneConstants": {
-    "BLOOD_MOON": 1,
-    "MIST_TIDE": 2,
-    "ASH_FALL": 3,
-    "BLOOD_MOON_QUEST": 7,
-    "MIST_TIDE_QUEST": 8,
-    "ASH_FALL_QUEST": 9
-  },
-  "raceConstants": {
-    "STAGE_COUNT": 5,
-    "CLEAR_MIST_STAGE": 1,
-    "SECOND_WIND_STAGE": 2,
-    "PALE_MOON_STAGE": 3,
-    "SPOILS_STAGE": 4
-  },
-  "researchConstants": {
-    "ROW_FARM": 0,
-    "ROW_WORKSHOP": 1,
-    "ROW_CONSCRIPTION": 2,
-    "ROW_HUT": 3,
-    "ROW_RATIONS": 4,
-    "ROW_SUPPLY_YARD": 5,
-    "ROW_KNIGHT_OATHS": 6,
-    "ROW_SCOUT_OATHS": 7,
-    "ROW_CROSSBOW_OATHS": 11,
-    "OATH_SLOTS_BASE": 2,
-    "OATH_SLOTS_STEPS": 3,
-    "ROW_LORE": 10,
-    "LORE_WELLS": 1,
-    "LORE_SHRINES": 2,
-    "LORE_SPIRES": 3,
-    "CHOICE_MAKE": 0,
-    "CHOICE_STORE": 1,
-    "HUT": 1,
-    "WORKSHOP": 25,
-    "BARRACKS": 28,
-    "RANGE": 31,
-    "RATIONS_DEPOT": 41,
-    "CONSCRIPTION_CAMP": 44,
-    "RANGE_LEVEL": 1,
-    "CONSCRIPTION_CAMP_LEVEL": 1,
-    "RATIONS_DEPOT_LEVEL": 2,
-    "FARM": 37,
-    "SUPPLY_YARD": 42,
-    "SCOUTS_LODGE": 43,
-    "SCOUTS_LODGE_LEVEL": 1
-  },
-  "oathConstants": {
-    "GIANTS": 1,
-    "PERFECTION": 2,
-    "RAGE": 3,
-    "FOX": 4,
-    "TWINS": 5,
-    "FURY": 6,
-    "REFLECTION": 7,
-    "DETECTION": 8,
-    "SKILL": 9,
-    "BRILLIANCE": 10,
-    "PROTECTION": 11,
-    "POWER": 12,
-    "TITANS": 13,
-    "VITRIOL": 14,
-    "ANGER": 15,
-    "ENLIGHTENMENT": 16,
-    "RED": 11537,
-    "BLUE": 53288,
-    "GOLD": 710,
-    "VITRIOL_LOSS_PER_TICK": 100,
-    "PASS_STAMINA": 20,
-    "POWER_DAMAGE_PERCENT": 20,
-    "GIANTS_REDUCTION_PERCENT": 15,
-    "PROTECTION_REDUCTION_PERCENT": 25,
-    "REFLECTION_WELL_PERCENT": 80,
-    "DETECTION_FIND_PERCENT": 120,
-    "BRILLIANCE_PAY_PERCENT": 125,
-    "RAGE_PAY_PERCENT": 125,
-    "ANGER_ATTACK_STAMINA": 20,
-    "TITANS_STAMINA": 60,
-    "ENLIGHTENMENT_REGEN_BPS": 13334,
-    "FOX_REVEAL_DISCOUNT_PERCENT": 20,
-    "SKILL_DAMAGE_PERCENT": 30,
-    "SKILL_BAR_BELOW": 10,
-    "FURY_REFUND_PERCENT": 50,
-    "PERFECTION_PAY_PERCENT": 150,
-    "PERFECTION_LOSS_PERCENT": 15,
-    "DORMANT": 16
-  },
-  "tileOccupierConstants": {
-    "CHEST_OCCUPIER": 34,
-    "SPIRE_OCCUPIER": 35
+  "identifierConstants": {
+    "rule": {
+      "MAX_BLITZ_ROSTER_PLAYERS": 24,
+      "ENTRY_ENTITLEMENT": 0,
+      "ENTRY_OPEN": 1,
+      "ENTRY_ROSTER": 2,
+      "HOME_REWARDS": 1,
+      "DISCOVER_CAMPS": 2,
+      "DISCOVER_CHESTS": 4,
+      "DISCOVER_HYPERSTRUCTURES": 8,
+      "SPIRES": 16,
+      "UNOWNED_TARGETS": 32,
+      "CAPTURE_VILLAGES": 64,
+      "DEPTH_CONTENTS": 128,
+      "REVEAL_SUPPLIES": 262144,
+      "DISCOVER_SPIRES": 2097152,
+      "SAME_OWNER_TRANSFER": 256,
+      "SEASON_CLOSE": 1024,
+      "RESERVED_HYPERSTRUCTURES": 2048,
+      "DEV_VILLAGE_ENTRY": 8192,
+      "OWNER_ONLY_SHARES": 16384,
+      "HYPERSTRUCTURE_MULTIPLIERS": 32768,
+      "PRODUCTION_START": 131072,
+      "FRONTIER_REPORT_GRACE_SECONDS": 3600,
+      "DEEP_MAP_SIZE": 50,
+      "DEEP_FOUNDATION": 0,
+      "DEEP_CORE": 1,
+      "DEEP_MINE": 2,
+      "DEEP_ALTAR": 3,
+      "DEEP_KIND_COUNT": 4,
+      "DEEP_DIAGONAL_RINGS": 3,
+      "DEEP_GUARD_SLOTS": 4
+    },
+    "quest": {
+      "HUNT": 0,
+      "CAMPS": 1,
+      "RIFTS": 2,
+      "RELICS": 3,
+      "VETERANS": 4,
+      "FINDS": 5,
+      "REVEALS": 6,
+      "QUEST_COUNT": 7,
+      "STAND": 7,
+      "LIGHTS": 8,
+      "CULL": 9
+    },
+    "bane": {
+      "BLOOD_MOON": 1,
+      "MIST_TIDE": 2,
+      "ASH_FALL": 3,
+      "BLOOD_MOON_QUEST": 7,
+      "MIST_TIDE_QUEST": 8,
+      "ASH_FALL_QUEST": 9
+    },
+    "race": {
+      "STAGE_COUNT": 5,
+      "CLEAR_MIST_STAGE": 1,
+      "SECOND_WIND_STAGE": 2,
+      "PALE_MOON_STAGE": 3,
+      "SPOILS_STAGE": 4
+    },
+    "arrival": {
+      "SLOTS_PER_DAY": 48
+    },
+    "oath": {
+      "GIANTS": 1,
+      "PERFECTION": 2,
+      "RAGE": 3,
+      "FOX": 4,
+      "TWINS": 5,
+      "FURY": 6,
+      "REFLECTION": 7,
+      "DETECTION": 8,
+      "SKILL": 9,
+      "BRILLIANCE": 10,
+      "PROTECTION": 11,
+      "POWER": 12,
+      "TITANS": 13,
+      "VITRIOL": 14,
+      "ANGER": 15,
+      "ENLIGHTENMENT": 16,
+      "RED": 11537,
+      "BLUE": 53288,
+      "GOLD": 710,
+      "DORMANT": 16
+    },
+    "research": {
+      "ROW_FARM": 0,
+      "ROW_WORKSHOP": 1,
+      "ROW_CONSCRIPTION": 2,
+      "ROW_HUT": 3,
+      "ROW_RATIONS": 4,
+      "ROW_SUPPLY_YARD": 5,
+      "ROW_KNIGHT_OATHS": 6,
+      "ROW_SCOUT_OATHS": 7,
+      "ROW_CROSSBOW_OATHS": 11,
+      "ROW_LORE": 10,
+      "LORE_WELLS": 1,
+      "LORE_SHRINES": 2,
+      "LORE_SPIRES": 3,
+      "CHOICE_MAKE": 0,
+      "CHOICE_STORE": 1,
+      "HUT": 1,
+      "WORKSHOP": 25,
+      "BARRACKS": 28,
+      "RANGE": 31,
+      "RATIONS_DEPOT": 41,
+      "CONSCRIPTION_CAMP": 44,
+      "RANGE_LEVEL": 1,
+      "CONSCRIPTION_CAMP_LEVEL": 1,
+      "RATIONS_DEPOT_LEVEL": 2,
+      "FARM": 37,
+      "SUPPLY_YARD": 42,
+      "SCOUTS_LODGE": 43,
+      "SCOUTS_LODGE_LEVEL": 1
+    }
   },
   "tilePackingConstants": {
     "BIOME_SCALE": "0x20000000000",
@@ -7625,16 +7587,6 @@
         }
       ]
     },
-    "core::array::Span::<world_native::banes::BaneWindow>": {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::banes::BaneWindow>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::banes::BaneWindow>"
-        }
-      ]
-    },
     "core::array::Span::<world_native::blitz_results::RankedPlayer>": {
       "type": "struct",
       "name": "core::array::Span::<world_native::blitz_results::RankedPlayer>",
@@ -7995,20 +7947,6 @@
         }
       ]
     },
-    "core::option::Option::<world_native::army_relics::ArmyRelicEffect>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::army_relics::ArmyRelicEffect>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::army_relics::ArmyRelicEffect"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
     "core::option::Option::<world_native::banes::BaneRules>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::banes::BaneRules>",
@@ -8121,34 +8059,6 @@
         }
       ]
     },
-    "core::option::Option::<world_native::expeditions::ExpeditionDiscovery>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::expeditions::ExpeditionDiscovery>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::expeditions::ExpeditionDiscovery"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::expeditions::ExpeditionSite>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::expeditions::ExpeditionSite>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::expeditions::ExpeditionSite"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
     "core::option::Option::<world_native::expeditions::FrontierDiscoveryRules>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::expeditions::FrontierDiscoveryRules>",
@@ -8177,48 +8087,6 @@
         }
       ]
     },
-    "core::option::Option::<world_native::guilds::Guild>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::guilds::Guild>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::guilds::Guild"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::hyperstructures::Hyperstructure>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::hyperstructures::Hyperstructure>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::hyperstructures::Hyperstructure"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::map::TileOpt>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::map::TileOpt>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::map::TileOpt"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
     "core::option::Option::<world_native::presets::WithdrawalPreset>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::presets::WithdrawalPreset>",
@@ -8233,20 +8101,6 @@
         }
       ]
     },
-    "core::option::Option::<world_native::progression::ArmyProgress>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::progression::ArmyProgress>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::progression::ArmyProgress"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
     "core::option::Option::<world_native::quests::QuestRules>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::quests::QuestRules>",
@@ -8254,20 +8108,6 @@
         {
           "name": "Some",
           "type": "world_native::quests::QuestRules"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::race::RaceResult>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::race::RaceResult>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::race::RaceResult"
         },
         {
           "name": "None",
@@ -8296,48 +8136,6 @@
         {
           "name": "Some",
           "type": "world_native::relics::ChestRules"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::relics::LordsBudget>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::relics::LordsBudget>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::relics::LordsBudget"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::relics::SiteChest>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::relics::SiteChest>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::relics::SiteChest"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::research::RealmKnowledge>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::research::RealmKnowledge>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::research::RealmKnowledge"
         },
         {
           "name": "None",
@@ -8412,34 +8210,6 @@
         {
           "name": "None",
           "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::troops::StaminaRefill>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::troops::StaminaRefill>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::troops::StaminaRefill"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::result::Result::<core::array::Span::<core::felt252>, world_native::commands::Rejection>": {
-      "type": "enum",
-      "name": "core::result::Result::<core::array::Span::<core::felt252>, world_native::commands::Rejection>",
-      "variants": [
-        {
-          "name": "Ok",
-          "type": "core::array::Span::<core::felt252>"
-        },
-        {
-          "name": "Err",
-          "type": "world_native::commands::Rejection"
         }
       ]
     },
@@ -8685,28 +8455,6 @@
         }
       ]
     },
-    "world_native::banes::BaneEffects": {
-      "type": "struct",
-      "name": "world_native::banes::BaneEffects",
-      "members": [
-        {
-          "name": "windows",
-          "type": "core::array::Span::<world_native::banes::BaneWindow>"
-        },
-        {
-          "name": "beast_percent",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "stamina_percent",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "production_percent",
-          "type": "core::integer::u16"
-        }
-      ]
-    },
     "world_native::banes::BaneProgress": {
       "type": "struct",
       "name": "world_native::banes::BaneProgress",
@@ -8748,24 +8496,6 @@
         {
           "name": "quest_counts",
           "type": "core::array::Span::<core::integer::u128>"
-        }
-      ]
-    },
-    "world_native::banes::BaneWindow": {
-      "type": "struct",
-      "name": "world_native::banes::BaneWindow",
-      "members": [
-        {
-          "name": "kind",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "start",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "end",
-          "type": "core::integer::u64"
         }
       ]
     },
@@ -9385,32 +9115,6 @@
         }
       ]
     },
-    "world_native::commands::ActionContext": {
-      "type": "struct",
-      "name": "world_native::commands::ActionContext",
-      "members": [
-        {
-          "name": "raw_root",
-          "type": "core::integer::u256"
-        },
-        {
-          "name": "timestamp",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "game_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "game",
-          "type": "world_native::game::GameRegistry"
-        },
-        {
-          "name": "rules",
-          "type": "world_native::rules::SliceRules"
-        }
-      ]
-    },
     "world_native::commands::Battle": {
       "type": "struct",
       "name": "world_native::commands::Battle",
@@ -9426,24 +9130,6 @@
         {
           "name": "relic_slot",
           "type": "core::option::Option::<core::integer::u8>"
-        }
-      ]
-    },
-    "world_native::commands::BiomeContext": {
-      "type": "struct",
-      "name": "world_native::commands::BiomeContext",
-      "members": [
-        {
-          "name": "climate",
-          "type": "world_native::rules::BiomeClimateConfig"
-        },
-        {
-          "name": "day_unit_seconds",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "start_main_at",
-          "type": "core::integer::u64"
         }
       ]
     },
@@ -9790,42 +9476,6 @@
         }
       ]
     },
-    "world_native::commands::Rejection": {
-      "type": "struct",
-      "name": "world_native::commands::Rejection",
-      "members": [
-        {
-          "name": "status_class",
-          "type": "core::felt252"
-        },
-        {
-          "name": "reason",
-          "type": "core::byte_array::ByteArray"
-        }
-      ]
-    },
-    "world_native::commands::ResourceContext": {
-      "type": "struct",
-      "name": "world_native::commands::ResourceContext",
-      "members": [
-        {
-          "name": "production_start",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "troop_capacity",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "spire_fee",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "delivery_tick",
-          "type": "core::integer::u64"
-        }
-      ]
-    },
     "world_native::commands::ToggleAlternate": {
       "type": "struct",
       "name": "world_native::commands::ToggleAlternate",
@@ -10097,60 +9747,6 @@
         {
           "name": "swept",
           "type": "core::integer::u128"
-        }
-      ]
-    },
-    "world_native::discovery::Discovery": {
-      "type": "enum",
-      "name": "world_native::discovery::Discovery",
-      "variants": [
-        {
-          "name": "None",
-          "type": "()"
-        },
-        {
-          "name": "Mine",
-          "type": "()"
-        },
-        {
-          "name": "Hyperstructure",
-          "type": "()"
-        },
-        {
-          "name": "BitcoinMine",
-          "type": "()"
-        },
-        {
-          "name": "Camp",
-          "type": "()"
-        },
-        {
-          "name": "Rift",
-          "type": "()"
-        },
-        {
-          "name": "Ruin",
-          "type": "world_native::army_relics::ArmyRelic"
-        },
-        {
-          "name": "Beasts",
-          "type": "()"
-        },
-        {
-          "name": "Shrine",
-          "type": "()"
-        },
-        {
-          "name": "Well",
-          "type": "()"
-        },
-        {
-          "name": "Spire",
-          "type": "()"
-        },
-        {
-          "name": "Chest",
-          "type": "()"
         }
       ]
     },
@@ -11915,24 +11511,6 @@
         }
       ]
     },
-    "world_native::race::ExpeditionEffects": {
-      "type": "struct",
-      "name": "world_native::race::ExpeditionEffects",
-      "members": [
-        {
-          "name": "find_percent",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "beast_bps",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "spoils_percent",
-          "type": "core::integer::u16"
-        }
-      ]
-    },
     "world_native::race::RaceMember": {
       "type": "struct",
       "name": "world_native::race::RaceMember",
@@ -13287,28 +12865,6 @@
         }
       ]
     },
-    "world_native::settlement::RealmCreation": {
-      "type": "struct",
-      "name": "world_native::settlement::RealmCreation",
-      "members": [
-        {
-          "name": "realm_id",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "traits",
-          "type": "world_native::realms::RealmTraits"
-        },
-        {
-          "name": "troops",
-          "type": "world_native::settlement::StartingTroops"
-        },
-        {
-          "name": "activate_economy",
-          "type": "core::bool"
-        }
-      ]
-    },
     "world_native::settlement::RealmGrants": {
       "type": "struct",
       "name": "world_native::settlement::RealmGrants",
@@ -13324,20 +12880,6 @@
         {
           "name": "realm_resources",
           "type": "core::array::Span::<core::integer::u8>"
-        }
-      ]
-    },
-    "world_native::settlement::SettlementCreation": {
-      "type": "enum",
-      "name": "world_native::settlement::SettlementCreation",
-      "variants": [
-        {
-          "name": "Realm",
-          "type": "world_native::settlement::RealmCreation"
-        },
-        {
-          "name": "Village",
-          "type": "world_native::settlement::VillageCreation"
         }
       ]
     },
@@ -13412,38 +12954,6 @@
         {
           "name": "spacing",
           "type": "core::integer::u32"
-        }
-      ]
-    },
-    "world_native::settlement::StartingTroops": {
-      "type": "enum",
-      "name": "world_native::settlement::StartingTroops",
-      "variants": [
-        {
-          "name": "None",
-          "type": "()"
-        },
-        {
-          "name": "Biome",
-          "type": "()"
-        },
-        {
-          "name": "Dealt",
-          "type": "world_native::troops::TroopType"
-        }
-      ]
-    },
-    "world_native::settlement::VillageCreation": {
-      "type": "struct",
-      "name": "world_native::settlement::VillageCreation",
-      "members": [
-        {
-          "name": "connected_realm",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "resource",
-          "type": "core::integer::u8"
         }
       ]
     },
@@ -13767,62 +13277,6 @@
         }
       ]
     },
-    "world_native::troops::ArmySlotAction": {
-      "type": "enum",
-      "name": "world_native::troops::ArmySlotAction",
-      "variants": [
-        {
-          "name": "Resolve",
-          "type": "core::option::Option::<world_native::troops::StaminaRefill>"
-        },
-        {
-          "name": "Allocate",
-          "type": "world_native::troops::ArmySlotAllocation"
-        },
-        {
-          "name": "Persist",
-          "type": "world_native::troops::StaminaSource"
-        },
-        {
-          "name": "Release",
-          "type": "world_native::troops::StaminaSource"
-        }
-      ]
-    },
-    "world_native::troops::ArmySlotAllocation": {
-      "type": "struct",
-      "name": "world_native::troops::ArmySlotAllocation",
-      "members": [
-        {
-          "name": "slot",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "home",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "epoch",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "allowance",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "initial",
-          "type": "world_native::troops::Stamina"
-        },
-        {
-          "name": "category",
-          "type": "world_native::troops::TroopType"
-        },
-        {
-          "name": "stamina_config",
-          "type": "world_native::rules::TroopStaminaConfig"
-        }
-      ]
-    },
     "world_native::troops::ArmySlotKey": {
       "type": "struct",
       "name": "world_native::troops::ArmySlotKey",
@@ -13891,34 +13345,6 @@
         }
       ]
     },
-    "world_native::troops::ExplorerTroops": {
-      "type": "struct",
-      "name": "world_native::troops::ExplorerTroops",
-      "members": [
-        {
-          "name": "owner",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "troops",
-          "type": "world_native::troops::Troops"
-        },
-        {
-          "name": "coord",
-          "type": "world_native::troops::Coord"
-        }
-      ]
-    },
-    "world_native::troops::ResolvedArmySlot": {
-      "type": "struct",
-      "name": "world_native::troops::ResolvedArmySlot",
-      "members": [
-        {
-          "name": "stamina",
-          "type": "world_native::troops::StaminaSource"
-        }
-      ]
-    },
     "world_native::troops::Stamina": {
       "type": "struct",
       "name": "world_native::troops::Stamina",
@@ -13934,24 +13360,6 @@
         {
           "name": "remainder",
           "type": "core::integer::u32"
-        }
-      ]
-    },
-    "world_native::troops::StaminaRefill": {
-      "type": "struct",
-      "name": "world_native::troops::StaminaRefill",
-      "members": [
-        {
-          "name": "timestamp",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "stamina_config",
-          "type": "world_native::rules::TroopStaminaConfig"
-        },
-        {
-          "name": "armies_tick_in_seconds",
-          "type": "core::integer::u64"
         }
       ]
     },
@@ -14252,5 +13660,5 @@
       ]
     }
   },
-  "identity": "5b9c77d62332ab34555840ad4099a84f3f4205048ed1bb57e72fb6952764d47a"
+  "identity": "a743e39f25b749be141fa413beb6e6420dff0b3c83c437e1219a77120191b310"
 }

@@ -9,7 +9,7 @@ import {
 import {
   nativeResearchConstants as research,
   nativeRuleConstants as rule,
-} from "../../../../contracts/l3/world-native/schema/client.gen";
+} from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { LAYER_NAMES, beastOf, TIER_WORDS, resourceName } from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "./config";
 import { playableDepths } from "./playable-depths.mjs";

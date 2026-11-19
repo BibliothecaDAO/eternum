@@ -7,9 +7,11 @@ import {
   advanceFrontierRelease,
   keepChatRetention,
   clientEnvironment,
-  deployClient,
+  buildClient,
+  buildPackages,
   deployDocs,
   deployWorkers,
+  publishClient,
   publishCloudflare,
 } from "./publish";
 import { NATIVE_RELEASE_ID } from "../release/native-release";
@@ -58,7 +60,8 @@ test.each(["dev", "production"] as const)(
   async (environment) => {
     const value = platform(environment);
     const calls = commands();
-    await deployClient(value, revision);
+    await buildClient(value, revision);
+    await publishClient(value, revision);
     const build = calls.find((call) => call.argv.join(" ") === "pnpm --dir apps/game build")!;
     expect(build.env).toEqual(clientEnvironment(value, revision));
     const publishIndex = calls.findIndex((call) => call.argv.includes("wrangler"));
@@ -97,7 +100,8 @@ test.each(["dev", "production"] as const)(
 test("a rerun at a commit whose client is live uploads its own build again, then checks that one", async () => {
   const value = platform();
   const calls = commands();
-  await deployClient(value, revision);
+  await buildClient(value, revision);
+  await publishClient(value, revision);
   const upload = calls.findIndex((call) => call.argv.includes("wrangler"));
   expect(upload).toBeGreaterThan(0);
   expect(calls.slice(upload + 1).map((call) => call.argv[1])).toEqual([
@@ -118,14 +122,14 @@ test("every Worker deploys locally, migrations precede code, and public versions
   globalThis.fetch = mock(async (url) =>
     Response.json({ environment: "staging", version: String(url).endsWith("/api/health") ? "identity" : "launch" }),
   ) as unknown as typeof fetch;
-  await deployWorkers(value, revision);
+  await deployWorkers(value, revision, workers);
   expect([...deployed]).toEqual(workers.map((worker) => worker.id));
   for (const name of ["identity", "launch", "admin"])
     expect(actions.indexOf(`${name}:d1 migrations apply DB --remote`)).toBeLessThan(
       actions.indexOf(`${name}:deploy --tag ${revision}`),
     );
   const count = actions.length;
-  await deployWorkers(value, revision);
+  await deployWorkers(value, revision, workers);
   expect(actions).toHaveLength(count);
   expect(calls.some((call) => call.argv[0] === "gh")).toBe(false);
 });
@@ -191,9 +195,11 @@ test("a rerun at a commit whose docs are live uploads its own build again, then 
 test("dry publish refuses every write before commands or transports", async () => {
   const value = platform("dev", false);
   const calls = commands();
-  await expect(deployClient(value, revision)).rejects.toThrow("Dry run");
+  await expect(buildClient(value, revision)).rejects.toThrow("Dry run");
+  await expect(publishClient(value, revision)).rejects.toThrow("Dry run");
   await expect(deployDocs(value, revision)).rejects.toThrow("Dry run");
-  await expect(deployWorkers(value, revision)).rejects.toThrow("Dry run");
+  await expect(buildPackages(value)).rejects.toThrow("Dry run");
+  await expect(deployWorkers(value, revision, workers)).rejects.toThrow("Dry run");
   await expect(advanceFrontierRelease(value, revision)).rejects.toThrow("Dry run");
   expect(calls).toEqual([]);
 });
@@ -259,36 +265,52 @@ test.each([
   ],
   ["release_unpublished", "Herald does not publish it with this commit's schema; rerun the box half"],
   ["release_unverified", "the box half has never built this release; run it (pnpm run deploy) first"],
-])("a release the launch Worker refuses (%s) stops the deploy before the client is built", async (code, reason) => {
+])("a release the launch Worker refuses (%s) stops the deploy before any game reader changes", async (code, reason) => {
   const value = platform();
   const calls = commands();
-  value.deployedVersion = async (worker) => ({ id: worker.id, revision });
-  value.chatObjects = async () => [];
+  const order = deployOrder(value);
   releaseRoute(value, () => Response.json({ error: code }, { status: 409 }));
   await expect(publishCloudflare(value, revision)).rejects.toThrow(`Release ${NATIVE_RELEASE_ID}: ${reason}.`);
-  expect(calls.map((call) => call.argv.join(" "))).toEqual(["pnpm run build:packages"]);
+  expect(order).toEqual(["launch"]);
+  expect(calls.map((call) => call.argv.join(" "))).toContain("pnpm --dir apps/game build");
+  expect(calls.some((call) => call.argv.includes("wrangler"))).toBe(false);
 });
 
-test("the client and the docs go live only after the release step answered", async () => {
+test("the launch Worker and the client's build come before the release step; every game reader goes live after it", async () => {
   const value = platform();
-  const calls = commands();
-  value.deployedVersion = async (worker) => ({ id: worker.id, revision });
-  value.chatObjects = async () => [];
-  const order: string[] = [];
+  const order = deployOrder(value);
   releaseRoute(value, () => {
     order.push("release");
     return Response.json(REPORT);
   });
   spyOn(console, "log").mockImplementation(() => {});
   spyOn(processTools, "command").mockImplementation(async (spec) => {
-    calls.push(spec);
     order.push(spec.argv.join(" "));
     return "";
   });
   await publishCloudflare(value, revision);
-  expect(order.indexOf("release")).toBeLessThan(order.indexOf("pnpm --dir apps/game build"));
-  expect(order.indexOf("release")).toBeGreaterThan(order.indexOf("pnpm run build:packages"));
+  const release = order.indexOf("release");
+  expect(order.indexOf("launch")).toBeLessThan(release);
+  expect(order.indexOf("pnpm --dir apps/game build")).toBeLessThan(release);
+  const readers = workers.filter((worker) => worker.id !== "launch").map((worker) => order.indexOf(worker.id));
+  expect(Math.min(...readers)).toBeGreaterThan(release);
+  expect(order.findIndex((step) => step.includes("wrangler pages deploy dist"))).toBeGreaterThan(Math.max(...readers));
 });
+
+function deployOrder(value: Platform) {
+  const order: string[] = [];
+  const deployed = new Set<string>();
+  value.deployedVersion = async (worker) => (deployed.has(worker.id) ? { id: worker.id, revision } : undefined);
+  value.wrangler = async (worker, args) => {
+    if (args[0] === "deploy") {
+      deployed.add(worker.id);
+      order.push(worker.id);
+    }
+    return "";
+  };
+  value.chatObjects = async () => [];
+  return order;
+}
 
 test("a release read for another commit, or none, asks nothing of the launch Worker", async () => {
   const value = platform();

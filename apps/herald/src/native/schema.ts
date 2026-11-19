@@ -59,6 +59,7 @@ export interface NativeRelease {
   migrationClassHash: string;
   releaseId: number;
   releaseSchemas: Record<string, string>;
+  releaseBalances?: Record<string, string>;
   logic: Record<string, string>;
 }
 export interface NativeManifest {

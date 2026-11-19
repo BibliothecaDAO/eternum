@@ -1,5 +1,5 @@
 import type { NativePreset } from "../common/native-preset";
-import { nativeRuleConstants as rule } from "../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants as rule } from "../../../contracts/l3/world-native/schema/balance.gen";
 import { realmResourcePool, relicRules } from "../common/native-data";
 import { arenaModeRules, arenaCommandMask } from "../common/native-commands";
 import { blitzBalance } from "./balance";

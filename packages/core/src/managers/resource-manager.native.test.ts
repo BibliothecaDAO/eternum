@@ -1,4 +1,4 @@
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { describe, expect, it } from "vitest";
 import { NativeFactStore } from "../client/native-fact-store";

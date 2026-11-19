@@ -1,6 +1,7 @@
 import { safeInteger } from "./safe-integer";
 import { ID, ResourceArrivalInfo, ResourcesIds, TickIds, TroopTier, TroopType } from "@bibliothecadao/types";
-import { nativeArrivalConstants, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeArrivalConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { configManager } from "../managers/config-manager";
 import { isMilitaryResource } from "./resources";
 import { divideByPrecision } from "./utils";

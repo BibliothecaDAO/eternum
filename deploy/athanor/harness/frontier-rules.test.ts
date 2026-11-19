@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { nativeBaneConstants } from "../../../contracts/l3/world-native/schema/client.gen";
+import { nativeBaneConstants } from "../../../contracts/l3/world-native/schema/balance.gen";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
 import { loadNativePresetConfiguration } from "../../../config/deployer/clean/registrar/native-preset";

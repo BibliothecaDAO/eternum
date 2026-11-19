@@ -1,4 +1,4 @@
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeIdentifiers } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { CairoCustomEnum, CairoOption } from "starknet";
 import type { DecodedRecord, DecodedWorldEvent } from "../types";
 import type { NativeDecoder } from "./decoder";
@@ -72,7 +72,7 @@ function deriveGameRules(
     registration_start: overrides.registration_start,
     registration_limit: registrationLimit,
     mode:
-      BigInt(rules.entry_rule as bigint) === BigInt(nativeRuleConstants.ENTRY_ROSTER)
+      BigInt(rules.entry_rule as bigint) === BigInt(nativeIdentifiers.rule.ENTRY_ROSTER)
         ? settlement.mode
         : new CairoCustomEnum({ Single: {} }),
     spacing: settlement.spacing,

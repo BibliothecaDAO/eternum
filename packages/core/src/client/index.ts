@@ -15,7 +15,7 @@ export {
   nativeQuestConstants,
   nativeBaneConstants,
   nativeRaceConstants,
-} from "../../../../contracts/l3/world-native/schema/client.gen";
+} from "../../../../contracts/l3/world-native/schema/balance.gen";
 
 export type { GameClientSetup } from "./game-client";
 export { assertReleaseReadable } from "./game-release";

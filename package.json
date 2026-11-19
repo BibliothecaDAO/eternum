@@ -80,6 +80,7 @@
     "typecheck": "pnpm --dir ./apps/game typecheck",
     "test": "pnpm --recursive run test",
     "check:forbidden-hosts": "node --test scripts/check-forbidden-hosts.test.mjs && node scripts/check-forbidden-hosts.mjs",
+    "check:decoders-balance": "node --test scripts/check-decoders-read-no-balance.test.mjs && node scripts/check-decoders-read-no-balance.mjs",
     "check:realms-x": "node --test scripts/check-realms-x-account.test.mjs && node scripts/check-realms-x-account.mjs",
     "check:test-scripts": "node --test scripts/check-test-scripts-run-once.test.mjs && node scripts/check-test-scripts-run-once.mjs",
     "check:worker-fetch": "node --test scripts/check-worker-fetch-options.test.mjs && node scripts/check-worker-fetch-options.mjs",

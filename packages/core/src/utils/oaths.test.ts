@@ -1,6 +1,7 @@
 import { orders, TroopTier, TroopType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
-import { nativeOathConstants as oaths, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeOathConstants as oaths } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { chooseOath, oathCards, oathColour, oathColours } from "./oaths";
 
 const pick = oaths.POWER - 1 + ((oaths.FOX - 1) << 4) + ((oaths.RAGE - 1) << 8);

@@ -24,7 +24,7 @@ export function oathEffectDescription(id: number): string | undefined {
     return `Regains ${Math.round(oaths.ENLIGHTENMENT_REGEN_BPS / 100) - 100}% more stamina each hour.`;
   if (id === oaths.FOX) return `A reveal costs ${oaths.FOX_REVEAL_DISCOUNT_PERCENT}% less stamina.`;
   if (id === oaths.SKILL)
-    return `Deals ${oaths.SKILL_DAMAGE_PERCENT}% more on the attack that leaves its stamina under ${oaths.SKILL_BAR_BELOW}.`;
+    return `Deals ${oaths.SKILL_DAMAGE_PERCENT}% more on the attack that leaves its stamina under ${oaths.SKILL_BELOW_STAMINA}.`;
   if (id === oaths.FURY)
     return `An attack that beats its target gives back ${oaths.FURY_REFUND_PERCENT}% of the stamina it cost.`;
   if (id === oaths.PERFECTION)

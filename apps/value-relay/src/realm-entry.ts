@@ -1,4 +1,4 @@
-import { nativeRuleConstants } from "../../../contracts/l3/world-native/schema/client.gen";
+import { nativeIdentifiers } from "../../../contracts/l3/world-native/schema/client.gen";
 import { Schema } from "effect";
 import type { HeldRealm, HeldRealmsAnswer } from "@realms-world/identity";
 import { ShardOperator, type ShardTarget } from "@realms-world/value-ledger/shard";
@@ -277,7 +277,7 @@ async function requireOpenFrontier(connection: ShardConnection, snapshot: Confir
   const rules = singleRow(snapshot, "SliceRules");
   const head = await new ShardReader(connection).header("latest");
   if (
-    Number(rules.entry_rule) !== nativeRuleConstants.ENTRY_OPEN ||
+    Number(rules.entry_rule) !== nativeIdentifiers.rule.ENTRY_OPEN ||
     Number(rules.day_unit_seconds) === 0 ||
     Number(singleRow(snapshot, "GameRelease").release_id) < 3
   )

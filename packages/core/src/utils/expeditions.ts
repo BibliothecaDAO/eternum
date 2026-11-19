@@ -7,7 +7,7 @@ import { MAX_U32, ResourcesIds } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { readOptionalSeasonRow } from "../client/views/season-rows";
 import { readTriumphPeriod } from "../client/views/triumphs";
-import { nativeRuleConstants, nativeRaceConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants, nativeRaceConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { getNeighborHexes, StructureType } from "@bibliothecadao/types";
 import { getBlockTimestamp } from "./timestamp";

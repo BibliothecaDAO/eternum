@@ -2,7 +2,7 @@ import { type CombatRules, type ExchangeTroops, resolveExchange } from "@bibliot
 import { BiomeType, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { buildTroopDamageConfig, buildTroopStaminaConfig } from "../../../../config/deployer/clean/registrar/preset";
 import { blitzPreset } from "../../../../config/source/blitz/native";
-import { nativeRuleConstants as rule } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants as rule } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { buildablePlotCount } from "../../../../packages/core/src/utils/castle-reach";
 
 import {

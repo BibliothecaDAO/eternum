@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { BiomeType, BiomeTypeToId, TroopTier, TroopType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import { CombatSimulator } from "./combat-simulator";
-import { nativeOathConstants as oathConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeOathConstants as oathConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import {
   type CombatRules,
   type ExchangeTroops,

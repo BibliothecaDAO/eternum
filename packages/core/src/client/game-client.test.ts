@@ -16,7 +16,7 @@ import * as shardMetadata from "./shard";
 import retiredTown from "./fixtures/retired-town.json";
 import { researchTier, troopOathSlots } from "../utils/realm-research";
 import { buildStoryEventPresentation } from "../systems/story-event-formatter";
-import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { TroopType } from "@bibliothecadao/types";
 
 class FakeSocket implements HeraldSocket {

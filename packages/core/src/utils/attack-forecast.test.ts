@@ -2,10 +2,10 @@ import { BiomeType, BiomeTypeToId, RESOURCE_PRECISION, StructureType, TileOccupi
 import { afterEach, describe, expect, it } from "vitest";
 import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import {
-  nativeRuleConstants,
   nativeTilePackingConstants,
   type NativeModelName,
 } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { NativeFactStore } from "../client/native-fact-store";
 import { nativeRowDefinitions } from "../client/native-row";
 import { ClientConfigManager } from "../managers/config-manager";

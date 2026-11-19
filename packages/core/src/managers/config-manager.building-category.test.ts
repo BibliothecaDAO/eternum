@@ -5,7 +5,7 @@ import { NativeFactStore } from "../client/native-fact-store";
 import { nativePresetForId, nativePresetIdFor } from "../../../../config/source/native";
 import { ClientConfigManager } from "./config-manager";
 import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 
 function fixture(gameId = 54) {
   const store = new NativeFactStore();

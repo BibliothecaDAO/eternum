@@ -8,6 +8,7 @@ import { deployNativeWorld } from "./deploy";
 import { registerNativeRelease } from "./releases";
 import { buildNativeManifest } from "./manifest";
 import type { NativeWorld } from "./types";
+import { nativeBalanceIdentity } from "../../../../../contracts/l3/world-native/schema/balance.gen";
 
 const authentication = { account_class: "0x77", guardian_public_key: "0x88" };
 const catalogueDigest = realmCatalogueDigest(canonicalRealmTraits.length);
@@ -281,6 +282,7 @@ describe("native deployment planning", () => {
       "1": local.previous.native.activeSchema,
       "2": local.release.schema,
     });
+    expect(published.native.releaseBalances).toEqual({ "1": nativeBalanceIdentity, "2": nativeBalanceIdentity });
     transactions.length = 0;
     await deployNativeWorld(local, rpc as unknown as Account, submitted);
     expect(transactions).toEqual([]);
@@ -309,6 +311,29 @@ describe("native deployment planning", () => {
         throw new Error("unexpected transaction");
       }),
     ).rejects.toThrow("NATIVE_HOTFIX_SCHEMA_CHANGE");
+  });
+
+  test("a release whose earlier releases ran other balance numbers is refused until it says its numbers start with it", async () => {
+    const { local, rpc } = fixture();
+    const shard = {
+      chainId: "0x1",
+      accountClassHash: "0x77",
+      contracts: {},
+      guardianPublicKey: "0x99",
+      l2GasBound: "0x47868c00",
+      vrfPublicKey: { x: "0x1", y: "0x2" },
+    };
+    local.previous = buildNativeManifest(local, await inspectNativeWorld(local, rpc as unknown as RpcProvider), shard);
+    local.release.releaseId = 2;
+    await inspectNativeWorld(local, rpc as unknown as RpcProvider);
+    local.previous.native.releaseBalances = { "1": "0".repeat(64) };
+    await expect(
+      deployNativeWorld(local, rpc as unknown as Account, () => {
+        throw new Error("unexpected transaction");
+      }),
+    ).rejects.toThrow("NATIVE_BALANCE_SINCE: release 1 runs other balance numbers; set NATIVE_BALANCE_SINCE_RELEASE to 2");
+    delete local.previous.native.releaseBalances;
+    await inspectNativeWorld(local, rpc as unknown as RpcProvider);
   });
 
   test("each release keeps its own classes and changed contents under the same id are refused", async () => {

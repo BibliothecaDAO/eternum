@@ -1,6 +1,6 @@
 import { FRONTIER_ARMIES_TICK_SECONDS } from "./clock";
 import { buildingIds, frontierPreset } from "./native";
-import { nativeResearchConstants as research } from "../../../contracts/l3/world-native/schema/client.gen";
+import { nativeResearchConstants as research } from "../../../contracts/l3/world-native/schema/balance.gen";
 import { RESOURCE_PRECISION } from "../../../packages/types/src/constants";
 import type { ConfigPatch } from "../common/merge-config";
 import { mergeConfigPatches } from "../common/merge-config";

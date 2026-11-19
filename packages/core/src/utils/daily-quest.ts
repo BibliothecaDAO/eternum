@@ -1,5 +1,5 @@
 import { hash, shortString } from "starknet";
-import { nativeQuestConstants as quest } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeQuestConstants as quest } from "../../../../contracts/l3/world-native/schema/balance.gen";
 
 /** The contract's seven-quest bag, including its boundary swap. Day indices start at zero. */
 export function dailyQuest(seed: bigint, day: number): number {

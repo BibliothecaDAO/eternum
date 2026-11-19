@@ -1,6 +1,6 @@
 import { StructureType } from "@bibliothecadao/types";
 import { getBlockTimestamp } from "../../utils/timestamp";
-import { nativeBaneConstants, nativeRaceConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeBaneConstants, nativeRaceConstants } from "../../../../../contracts/l3/world-native/schema/balance.gen";
 import type { NativeFactResult, NativeFactStore } from "../native-fact-store";
 import type { NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { entityHomeNamespace } from "../../utils/entity-home";

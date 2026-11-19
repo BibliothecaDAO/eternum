@@ -1,10 +1,8 @@
 import type { NativeFactStore } from "../client/native-fact-store";
 import { div, mul, ONE, unscaled, type Fixed } from "./cubit-fixed";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
-import {
-  nativeOathConstants as oathRules,
-  type NativeRows,
-} from "../../../../contracts/l3/world-native/schema/client.gen";
+import { type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeOathConstants as oathRules } from "../../../../contracts/l3/world-native/schema/balance.gen";
 
 export const oathColours = [
   { name: "Fight", mask: oathRules.RED, colour: "red" },
@@ -58,7 +56,7 @@ export function oathDeepLossPerTick(oaths: number, base: bigint): bigint {
 }
 
 export function oathSkillMultiplier(oaths: number, barAfterCost: bigint): Fixed {
-  return holds(oaths, oathRules.SKILL) && barAfterCost < BigInt(oathRules.SKILL_BAR_BELOW)
+  return holds(oaths, oathRules.SKILL) && barAfterCost < BigInt(oathRules.SKILL_BELOW_STAMINA)
     ? div(unscaled(100 + oathRules.SKILL_DAMAGE_PERCENT), unscaled(100))
     : ONE;
 }

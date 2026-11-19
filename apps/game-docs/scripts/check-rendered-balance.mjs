@@ -315,7 +315,7 @@ export const loadBalanceSources = async () => {
     );
     const frontierConfig = loadNativePresetConfiguration("madara.frontier", frontierPreset.id);
     const { nativeRuleConstants: nativeRules } = await server.ssrLoadModule(
-      join(here, "../../../contracts/l3/world-native/schema/client.gen.ts"),
+      join(here, "../../../contracts/l3/world-native/schema/balance.gen.ts"),
     );
     const { previewRiftGuardBound } = await server.ssrLoadModule(
       join(here, "../../../contracts/l3/world-native/schema/site-previews.gen.ts"),

@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { nativeQuestConstants as quest } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeQuestConstants as quest } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { dailyQuests, baneQuests, questCatalog } from "./quests";
 
 it("presents each contract quest once, in bag order", () => {
