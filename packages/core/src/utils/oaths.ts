@@ -16,8 +16,27 @@ export function heldOaths(mask: number): number[] {
 
 export function oathCards(pick: number): number[] {
   if (pick === 0) return [];
-  if (!Number.isInteger(pick) || pick < 0 || pick >= 4096) throw new Error("Invalid Oath pick");
-  return [...new Set([0, 1, 2].map((index) => ((pick >> (index * 4)) & 15) + 1))];
+  if (!Number.isInteger(pick) || pick < 0 || pick >= oathRules.REROLLED * 2) throw new Error("Invalid Oath pick");
+  return [...new Set([0, 1, 2].map((index) => oathCard(pick, index)))];
+}
+
+const oathCard = (pick: number, index: number) => ((pick >> (index * 4)) & 15) + 1;
+
+export function oathRerollIndex(pick: number, oaths: number, oath: number): number | null {
+  const index = [0, 1, 2].find((at) => oathCard(pick, at) === oath);
+  if (index === undefined) throw new Error("Oath not offered");
+  const left = 16 - heldOaths(oaths).length - oathCards(pick).length;
+  return left > 0 && pick < oathRules.REROLLED ? index : null;
+}
+
+export function rerollOath(progress: NativeRows["ArmyProgress"], expected: number, index: number, oath: number) {
+  if (expected === 0 || progress.oath_pick !== expected) throw new Error("Oath pick changed");
+  if (oathRerollIndex(expected, progress.oaths, oathCard(expected, index)) !== index)
+    throw new Error("Card not rerollable");
+  if (holdsOath(progress.oaths, oath) || oathCards(expected).includes(oath)) throw new Error("Oath not drawable");
+  const scale = 1 << (index * 4);
+  const pick = expected - (oathCard(expected, index) - 1) * scale + (oath - 1) * scale + oathRules.REROLLED;
+  return { ...progress, oath_pick: pick };
 }
 
 export function oathColour(id: number): (typeof oathColours)[number] {

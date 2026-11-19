@@ -14,17 +14,8 @@ export const shopScenario = (): LabScenario => {
   const spire = spireScenario();
   const { store } = spire;
   const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) });
-  const release = store.require("GameRelease", { game_id: 1 });
+  holdFragments(store, spire.player, FRAGMENTS_HELD);
   store.applyFacts([
-    {
-      model: "GameRelease",
-      key: store.wireKeyOf("GameRelease", release)!,
-      value: wire({
-        ...release,
-        release_id: nativeReleaseConstants.SEAL_RELEASE,
-        created_release_id: nativeReleaseConstants.SEAL_RELEASE,
-      }),
-    },
     {
       model: "ExplorerTroops",
       key: store.wireKeyOf("ExplorerTroops", army)!,
@@ -36,7 +27,6 @@ export const shopScenario = (): LabScenario => {
         },
       }),
     },
-    fragmentsHeld(spire.player, FRAGMENTS_HELD),
   ] as never);
   return {
     ...spire,
@@ -51,22 +41,38 @@ export const shopScenario = (): LabScenario => {
 const staminaBought = (command: LabCommand, chain: NativeFactStore, player: string, now: number): LabFact[] => {
   const fragments = BigInt(command.fields.fragments);
   const points = fragments * BigInt(nativeFragmentConstants.STAMINA_PER_FRAGMENT);
-  return [
-    armySpent(chain, BigInt(command.fields.explorer_id), -points, now),
-    fragmentsHeld(player, heldBy(chain, player) - fragments),
-  ];
+  return [armySpent(chain, BigInt(command.fields.explorer_id), -points, now), fragmentsSpent(chain, player, fragments)];
 };
 
 const sealBought = (chain: NativeFactStore, player: string, now: number): LabFact[] => {
   const seal = { game_id: 1, account: BigInt(player), granted_at: BigInt(now) };
   return [
     { model: "Seal", key: SEAL_KEY, value: wire(seal) },
-    fragmentsHeld(player, heldBy(chain, player) - BigInt(nativeFragmentConstants.SEAL_FRAGMENTS)),
+    fragmentsSpent(chain, player, BigInt(nativeFragmentConstants.SEAL_FRAGMENTS)),
   ];
 };
 
-const heldBy = (chain: NativeFactStore, player: string): bigint =>
-  chain.require("Fragments", { game_id: 1, account: BigInt(player) }).balance;
+export const holdFragments = (store: NativeFactStore, player: string, balance: bigint) => {
+  const release = store.require("GameRelease", { game_id: 1 });
+  store.applyFacts([
+    {
+      model: "GameRelease",
+      key: store.wireKeyOf("GameRelease", release)!,
+      value: wire({
+        ...release,
+        release_id: nativeReleaseConstants.SEAL_RELEASE,
+        created_release_id: nativeReleaseConstants.SEAL_RELEASE,
+      }),
+    },
+    fragmentsHeld(player, balance),
+  ] as never);
+};
+
+export const fragmentsSpent = (chain: NativeFactStore, player: string, fragments: bigint): LabFact => {
+  const held = chain.require("Fragments", { game_id: 1, account: BigInt(player) }).balance;
+  if (held < fragments) throw new Error("not enough fragments");
+  return fragmentsHeld(player, held - fragments);
+};
 
 const fragmentsHeld = (player: string, balance: bigint): LabFact => {
   const row = { game_id: 1, account: BigInt(player), balance };

@@ -12,11 +12,11 @@ pub struct CommandRoute {
 pub const SETTLE_BLITZ_ROSTER: u32 = 7;
 pub const CHOOSE_OATH: u32 = 73;
 
-pub const COMMAND_IDS: [u32; 55] = [
-    74, 75, 73, 72, 0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
-    38, 39, 40, 41, 42, 43, 44, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 62, 63, 64, 65, 66, 67, 69,
+pub const COMMAND_IDS: [u32; 56] = [
+    74, 75, 73, 76, 72, 0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 20, 21, 22, 23, 24, 25, 26, 27, 28,
+    29, 38, 39, 40, 41, 42, 43, 44, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 62, 63, 64, 65, 66, 67, 69,
 ];
-pub const COMMAND_ROUTES: [Option<CommandRoute>; 76] = [
+pub const COMMAND_ROUTES: [Option<CommandRoute>; 77] = [
     Some(CommandRoute { logic: 6, selector: selector!("create_explorer"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 16, selector: selector!("explore"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 12, selector: selector!("battle"), items_offset: Some(2), batch: false }),
@@ -108,6 +108,7 @@ pub const COMMAND_ROUTES: [Option<CommandRoute>; 76] = [
     Some(CommandRoute { logic: 15, selector: selector!("choose_oath"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 14, selector: selector!("buy_seal"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 15, selector: selector!("buy_stamina"), items_offset: None, batch: false }),
+    Some(CommandRoute { logic: 15, selector: selector!("reroll_oath"), items_offset: None, batch: false }),
 ];
 
 pub fn logic_class(
@@ -141,6 +142,7 @@ pub enum Command {
     BuySeal,
     BuyStamina: crate::fragments::BuyStamina,
     ChooseOath: crate::oaths::ChooseOath,
+    RerollOath: crate::oaths::RerollOath,
     ClaimDailyQuest: crate::quests::ClaimDailyQuest,
     CreateExplorer: crate::commands::CreateExplorer,
     Explore: crate::commands::Explore,
@@ -205,6 +207,10 @@ pub impl CommandSerde of Serde<Command> {
             },
             Command::ChooseOath(value) => {
                 output.append(73);
+                Serde::serialize(value, ref output);
+            },
+            Command::RerollOath(value) => {
+                output.append(76);
                 Serde::serialize(value, ref output);
             },
             Command::ClaimDailyQuest(value) => {
@@ -482,6 +488,7 @@ pub impl CommandSerde of Serde<Command> {
             73 => Some(Command::ChooseOath(Serde::deserialize(ref serialized)?)),
             74 => Some(Command::BuySeal(())),
             75 => Some(Command::BuyStamina(Serde::deserialize(ref serialized)?)),
+            76 => Some(Command::RerollOath(Serde::deserialize(ref serialized)?)),
             _ => None,
         }
     }

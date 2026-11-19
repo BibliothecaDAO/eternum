@@ -738,6 +738,19 @@ export class EternumProvider extends EventEmitter {
     return this.submitCommand(props.signer, { kind: "BuySeal", value: undefined }, TransactionType.BUY_SEAL);
   }
 
+  public async reroll_oath(
+    props: SystemProps.SystemSigner & { explorerId: number; expectedPick: number; index: number },
+  ) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "RerollOath",
+        value: { explorer_id: props.explorerId, expected_pick: props.expectedPick, index: props.index },
+      },
+      TransactionType.REROLL_OATH,
+    );
+  }
+
   public async claim_daily_quest(props: SystemProps.SystemSigner & { home: number; day: number }) {
     return this.submitCommand(
       props.signer,

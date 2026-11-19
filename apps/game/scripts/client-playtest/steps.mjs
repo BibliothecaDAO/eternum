@@ -1237,6 +1237,42 @@ function oathPassSteps(capped) {
   ];
 }
 
+function rerollOathStep() {
+  return clickToResultStep(
+    "reroll-oath",
+    "RerollOath",
+    async ({ browser }) => {
+      const before = browser.read("Number(document.querySelector('[data-oath-pick]')?.dataset.oathPick)");
+      const redraw = browser.read(elementAt('[data-reroll-oath="0"]'));
+      if (!redraw) return { before, missing: true };
+      watchFor(
+        browser,
+        "oath-rerolled",
+        `(() => {
+        const result = (window.__labChain?.sent ?? []).filter(({command}) => command.kind === "RerollOath").at(-1);
+        const row = result?.answered.find(({model}) => model === "ArmyProgress")?.value;
+        const shown = Number(document.querySelector('[data-oath-pick]')?.dataset.oathPick);
+        return row && Number(row.oath_pick) === shown && shown !== ${before} && !document.querySelector('[data-reroll-oath="0"]');
+      })()`,
+      );
+      browser.tap(redraw.offset);
+      return { before, watching: true };
+    },
+    ({ played, actionLatency }) => {
+      const answer = (actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "RerollOath").at(-1);
+      if (!answer) return undefined;
+      const pick = Number(answer.answered.find(({ model }) => model === "ArmyProgress")?.value?.oath_pick);
+      const others = oathRules.REROLLED - 16;
+      const redrawn =
+        (pick & oathRules.REROLLED) !== 0 &&
+        (pick & 15) !== (played.before & 15) &&
+        (pick & others) === (played.before & others);
+      if (!redrawn) return failed("The redraw did not replace exactly the first card", { pick, before: played.before });
+      return played.watching && { watch: "oath-rerolled" };
+    },
+  );
+}
+
 function oathPickSteps(full, layer = "Map") {
   return [
     { name: "enter-on-map", settleMs: 3000, verify: inScene("map", layer) },
@@ -1272,6 +1308,7 @@ function oathPickSteps(full, layer = "Map") {
           ? completed(played)
           : failed("Three Oath cards did not appear", played),
     },
+    ...(layer === "Deep" ? [] : [rerollOathStep()]),
     clickToResultStep(
       "choose-oath",
       "ChooseOath",

@@ -2,6 +2,7 @@ use starknet::ContractAddress;
 
 pub const WONDER_QUEST_FRAGMENTS: u16 = 10;
 pub const SEAL_FRAGMENTS: u16 = 1000;
+pub const OATH_REROLL_FRAGMENTS: u16 = 25;
 pub const STAMINA_PER_FRAGMENT: u16 = 2;
 pub const CACHE_TROOPS_PER_FRAGMENT: u16 = 100;
 pub const SURFACE_CACHE_PERCENT: u8 = 19;

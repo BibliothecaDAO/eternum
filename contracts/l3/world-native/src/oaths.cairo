@@ -39,6 +39,7 @@ pub const FURY_REFUND_PERCENT: u16 = 50;
 pub const PERFECTION_PAY_PERCENT: u16 = 150;
 pub const PERFECTION_LOSS_PERCENT: u16 = 15;
 pub const TWINS_DAMAGE_PERCENT: u16 = 30;
+pub const REROLLED: u16 = 4096;
 
 #[inline(never)]
 pub fn damage_multiplier(attacker: u16, defender: u16, guarding: bool) -> Fixed {
@@ -194,6 +195,13 @@ pub struct ChooseOath {
     pub replace: Option<u8>,
 }
 
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct RerollOath {
+    pub explorer_id: u64,
+    pub expected_pick: u16,
+    pub index: u8,
+}
+
 #[starknet::interface]
 pub trait IOaths<T> {
     fn choose_oath(
@@ -201,6 +209,13 @@ pub trait IOaths<T> {
         game_id: u32,
         actor: starknet::ContractAddress,
         command: ChooseOath,
+        context: crate::commands::ActionContext,
+    );
+    fn reroll_oath(
+        ref self: T,
+        game_id: u32,
+        actor: starknet::ContractAddress,
+        command: RerollOath,
         context: crate::commands::ActionContext,
     );
     fn offer_oaths(ref self: T, key: crate::troops::ExplorerKey, coord: crate::troops::Coord, seed: u256);
@@ -239,47 +254,68 @@ pub fn count(oaths: u16) -> u8 {
     total
 }
 
-pub fn card(pick: u16, index: u8) -> u8 {
-    assert!(pick != 0 && index < 3, "missing oath card");
-    let scale = match index {
+fn card_scale(index: u8) -> u16 {
+    match index {
         0 => 1,
         1 => 16,
-        _ => 256,
-    };
-    (pick / scale % 16 + 1).try_into().unwrap()
+        2 => 256,
+        _ => panic!("missing oath card"),
+    }
+}
+
+pub fn card(pick: u16, index: u8) -> u8 {
+    assert!(pick != 0, "missing oath card");
+    (pick / card_scale(index) % 16 + 1).try_into().unwrap()
+}
+
+fn draw_one(choices: u16, seed: u256, index: u8) -> u8 {
+    let random: u256 = core::poseidon::poseidon_hash_span(
+        array!['oath', seed.low.into(), seed.high.into(), index.into()].span(),
+    )
+        .into();
+    let mut skip: u8 = (random % count(choices).into()).try_into().unwrap();
+    let mut drawn = 0;
+    for oath in 1_u8..17 {
+        if held(choices, oath) {
+            if skip == 0 {
+                drawn = oath;
+                break;
+            }
+            skip -= 1;
+        }
+    }
+    drawn
 }
 
 pub fn draw(oaths: u16, seed: u256) -> u16 {
     let mut choices = 65535 ^ oaths;
     let mut pick = 0;
-    let mut scale = 1;
     let mut drawn: u16 = 0;
     for index in 0_u8..3 {
-        let left = count(choices);
-        if left == 0 && index == 0 {
+        if choices == 0 && index == 0 {
             return 0;
         }
-        if left != 0 {
-            let random: u256 = core::poseidon::poseidon_hash_span(
-                array!['oath', seed.low.into(), seed.high.into(), index.into()].span(),
-            )
-                .into();
-            let mut skip: u8 = (random % left.into()).try_into().unwrap();
-            for oath in 1_u8..17 {
-                if held(choices, oath) {
-                    if skip == 0 {
-                        drawn = (oath - 1).into();
-                        choices -= bit(oath);
-                        break;
-                    }
-                    skip -= 1;
-                }
-            }
+        if choices != 0 {
+            let oath = draw_one(choices, seed, index);
+            drawn = (oath - 1).into();
+            choices -= bit(oath);
         }
-        pick += drawn * scale;
-        scale *= 16;
+        pick += drawn * card_scale(index);
     }
     pick
+}
+
+pub fn reroll(progress: ArmyProgress, command: RerollOath, seed: u256) -> ArmyProgress {
+    let pick = progress.oath_pick;
+    assert!(pick != 0 && pick == command.expected_pick, "oath pick changed");
+    let scale = card_scale(command.index);
+    assert!(pick < REROLLED, "oath pick already rerolled");
+    let shown = bit(card(pick, 0)) | bit(card(pick, 1)) | bit(card(pick, 2));
+    let choices = 65535 ^ (progress.oaths | shown);
+    assert!(choices != 0, "no oath left to reroll");
+    let old: u16 = (card(pick, command.index) - 1).into();
+    let new: u16 = (draw_one(choices, seed, command.index) - 1).into();
+    ArmyProgress { oath_pick: pick - old * scale + new * scale + REROLLED, ..progress }
 }
 
 pub fn choose(progress: ArmyProgress, command: ChooseOath) -> ArmyProgress {

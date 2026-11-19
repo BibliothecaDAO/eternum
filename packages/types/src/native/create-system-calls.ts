@@ -63,6 +63,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
   const choose_oath = (props: Parameters<typeof provider.choose_oath>[0]) => provider.choose_oath(props);
   const buy_stamina = (props: Parameters<typeof provider.buy_stamina>[0]) => provider.buy_stamina(props);
   const buy_seal = (props: Parameters<typeof provider.buy_seal>[0]) => provider.buy_seal(props);
+  const reroll_oath = (props: Parameters<typeof provider.reroll_oath>[0]) => provider.reroll_oath(props);
   const research = (props: Parameters<typeof provider.research>[0]) => provider.research(props);
 
   const bitcoin_mine_contribute_labor = async (
@@ -333,6 +334,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     choose_oath: withAuth(choose_oath),
     buy_stamina: withAuth(buy_stamina),
     buy_seal: withAuth(buy_seal),
+    reroll_oath: withAuth(reroll_oath),
     bridge_deposit_into_realm: withAuth(bridge_deposit_into_realm),
     bridge_withdraw_from_realm: withAuth(bridge_withdraw_from_realm),
 

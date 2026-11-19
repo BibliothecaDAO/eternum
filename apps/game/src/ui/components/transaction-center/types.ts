@@ -17,6 +17,7 @@ const TX_MESSAGES: Record<TransactionType, string> = {
   [TransactionType.ENTER_DEPTH]: "Army went deeper",
   [TransactionType.RESEARCH]: "Research started",
   [TransactionType.CHOOSE_OATH]: "Oath choice recorded",
+  [TransactionType.REROLL_OATH]: "Oath card redrawn",
   [TransactionType.EXPLORER_CREATE]: "Army raised",
   [TransactionType.EXPLORER_ADD]: "Army reinforced",
   [TransactionType.EXPLORER_DELETE]: "Army disbanded",

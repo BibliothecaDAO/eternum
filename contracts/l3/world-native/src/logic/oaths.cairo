@@ -41,6 +41,27 @@ pub fn choose(
     crate::logic::progression::write(key, progress);
 }
 
+pub fn reroll(
+    game_id: u32,
+    actor: starknet::ContractAddress,
+    command: crate::oaths::RerollOath,
+    context: crate::commands::ActionContext,
+) {
+    let execution = crate::commands::execution_context(game_id, context);
+    crate::game::assert_playing(execution.game.unbox(), context.timestamp);
+    assert!(execution.rules.unbox().day_unit_seconds != 0, "oaths require a day game");
+    let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
+    let army = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, execution);
+    assert!(army.troops.count != 0, "explorer is dead");
+    assert!(crate::logic::expeditions::depth_at(game_id, army.coord) < 3, "no oath is rerolled in the Deep");
+    let mut root = context.raw_root;
+    let progress = crate::oaths::reroll(
+        crate::logic::progression::require(key), command, crate::random::game_root(ref root, game_id),
+    );
+    crate::logic::fragments::spend(game_id, actor, crate::fragments::OATH_REROLL_FRAGMENTS.into());
+    crate::logic::progression::write(key, progress);
+}
+
 fn grant_choice_stamina(
     key: ExplorerKey,
     army: crate::troops::ExplorerTroops,

@@ -2,7 +2,7 @@ import { orders, TroopTier, TroopType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import { type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { nativeOathConstants as oaths } from "../../../../contracts/l3/world-native/schema/balance.gen";
-import { chooseOath, oathCards, oathColour, oathColours } from "./oaths";
+import { chooseOath, oathCards, oathColour, oathColours, oathRerollIndex, rerollOath } from "./oaths";
 
 const pick = oaths.POWER - 1 + ((oaths.FOX - 1) << 4) + ((oaths.RAGE - 1) << 8);
 const progress: NativeRows["ArmyProgress"] = {
@@ -55,6 +55,25 @@ describe("Oath picks", () => {
     expect(() => chooseOath(chosen, pick, oaths.FOX, null)).toThrow("changed");
     expect(() => chooseOath(progress, pick, oaths.GIANTS, null)).toThrow("not offered");
     expect(() => chooseOath(progress, pick, oaths.FOX, oaths.POWER)).toThrow("Empty");
+  });
+  it("redraws one card of a pick once, to an Oath neither held nor shown, and the redrawn card can be taken", () => {
+    const bit = (oath: number) => 1 << (oath - 1);
+    const rerolled = rerollOath(progress, pick, 1, oaths.SKILL);
+    expect(rerolled.oath_pick).toBe(
+      oaths.POWER - 1 + ((oaths.SKILL - 1) << 4) + ((oaths.RAGE - 1) << 8) + oaths.REROLLED,
+    );
+    expect(oathCards(rerolled.oath_pick)).toEqual([oaths.POWER, oaths.SKILL, oaths.RAGE]);
+    expect(oathRerollIndex(pick, 0, oaths.RAGE)).toBe(2);
+    expect(oathRerollIndex(rerolled.oath_pick, 0, oaths.SKILL)).toBeNull();
+    expect(oathRerollIndex(rerolled.oath_pick, 0, oaths.RAGE)).toBeNull();
+    expect(() => rerollOath(rerolled, rerolled.oath_pick, 2, oaths.GIANTS)).toThrow("not rerollable");
+    expect(() => rerollOath(progress, pick, 0, oaths.FOX)).toThrow("not drawable");
+    expect(() => rerollOath({ ...progress, oaths: bit(oaths.SKILL) }, pick, 0, oaths.SKILL)).toThrow("not drawable");
+    expect(() => rerollOath(progress, rerolled.oath_pick, 0, oaths.GIANTS)).toThrow("changed");
+    const allButShown = 65535 ^ bit(oaths.POWER) ^ bit(oaths.FOX) ^ bit(oaths.RAGE);
+    expect(oathRerollIndex(pick, allButShown, oaths.POWER)).toBeNull();
+    expect(chooseOath(rerolled, rerolled.oath_pick, oaths.SKILL, null).oaths).toBe(bit(oaths.SKILL));
+    expect(() => oathCards(oaths.REROLLED * 2)).toThrow("Invalid");
   });
 });
 

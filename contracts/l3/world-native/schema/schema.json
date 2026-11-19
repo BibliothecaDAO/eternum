@@ -82,7 +82,8 @@
       "ENLIGHTENMENT": 16,
       "RED": 11537,
       "BLUE": 53288,
-      "GOLD": 710
+      "GOLD": 710,
+      "REROLLED": 4096
     },
     "research": {
       "ROW_FARM": 0,
@@ -9277,6 +9278,11 @@
           "wireId": 73
         },
         {
+          "name": "RerollOath",
+          "type": "world_native::oaths::RerollOath",
+          "wireId": 76
+        },
+        {
           "name": "ClaimDailyQuest",
           "type": "world_native::quests::ClaimDailyQuest",
           "wireId": 72
@@ -10839,6 +10845,24 @@
         {
           "name": "replace",
           "type": "core::option::Option::<core::integer::u8>"
+        }
+      ]
+    },
+    "world_native::oaths::RerollOath": {
+      "type": "struct",
+      "name": "world_native::oaths::RerollOath",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "expected_pick",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "index",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -13808,5 +13832,5 @@
       ]
     }
   },
-  "identity": "6f2f996f5c9a1ea0d696ab12e0a82835693cb3dcff0147bd9dcec1b750f44499"
+  "identity": "59a5721cbcefafe9e73c02454db50e837288a58eef4f055ae1c46d495edb7a2a"
 }

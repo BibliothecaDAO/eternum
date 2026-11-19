@@ -3,6 +3,7 @@ export const commandRoutes = [
   { name: "BuySeal", logic: "bridge", entrypoint: "buy_seal" },
   { name: "BuyStamina", logic: "relics", entrypoint: "buy_stamina" },
   { name: "ChooseOath", logic: "relics", entrypoint: "choose_oath" },
+  { name: "RerollOath", logic: "relics", entrypoint: "reroll_oath" },
   { name: "ClaimDailyQuest", logic: "bridge", entrypoint: "claim_daily_quest" },
   {
     name: "CreateExplorer",

@@ -50,7 +50,7 @@ pub fn buy_stamina(
     );
 }
 
-fn spend(game_id: u32, account: ContractAddress, amount: u128) {
+pub fn spend(game_id: u32, account: ContractAddress, amount: u128) {
     let available = balance(game_id, account);
     assert!(available >= amount, "not enough fragments");
     write(game_id, account, available - amount);
