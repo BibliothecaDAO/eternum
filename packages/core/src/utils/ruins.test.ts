@@ -248,13 +248,13 @@ describe("each depth's ruin chest today", () => {
     key: "0x71",
     value: { game_id: 1, structure_id: 7n, epoch: 0n, empty_reveals: 0, ruin_cleared },
   });
-  const chests = (releaseId: number, facts: object[]) => {
+  const chests = (releaseId: number, facts: object[], learned = 3n << 48n) => {
     const store = new NativeFactStore();
     store.setSnapshot({ gameId: 1, complete: true, timestamp: 1 });
     store.applyFacts([
       ...historicalRules,
       release(releaseId),
-      { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 3n << 48n } },
+      { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned } },
       // Another realm cleared today's Ethereal I: its receipt is not realm 7's.
       {
         model: "ExpeditionSite",
@@ -271,11 +271,17 @@ describe("each depth's ruin chest today", () => {
     value: { ...site(home + 1n, 40), clear: { explorer_id: 1n, home_id: 7n, reward: null } },
   };
 
-  it("opens every researched depth while today's discovery says nothing was cleared, and locks the rest", () => {
+  it("opens every depth with Spire lore while today's discovery says nothing was cleared, and locks them without it", () => {
     expect(dayOf(rules, 1)?.index).toBe(0);
     expect(chests(nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE, [discovery(false)])).toEqual([
       "open",
       "open",
+      "open",
+      "open",
+    ]);
+    expect(chests(nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE, [discovery(false)], 2n << 48n)).toEqual([
+      "open",
+      "locked",
       "locked",
       "locked",
     ]);
@@ -286,8 +292,8 @@ describe("each depth's ruin chest today", () => {
     expect(chests(nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE, [discovery(true), surfaceClear])).toEqual([
       "claimed",
       "unknown",
-      "locked",
-      "locked",
+      "unknown",
+      "unknown",
     ]);
   });
 
