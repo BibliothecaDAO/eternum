@@ -14,7 +14,7 @@ class DepositRetirementTest(unittest.TestCase):
         data = directory / "data"
         data.mkdir(exist_ok=True)
         config = {"chain_id": "S1_DEPOSIT_TEST", "guardian_url": "https://candidate.test/api/identity/guardian",
-                  "shard_name": "s1-deposit-test"}
+                  "shard_name": "s1-deposit-test", "public_herald_url": "https://herald.candidate.test"}
         chain = "0x" + config["chain_id"].encode().hex()
         (data / "native-world.json").write_text(json.dumps({"shard": {"chainId": chain}, "world": {"address": "0x20"}}))
         (directory / "configuration.json").write_text(json.dumps(config))
@@ -27,7 +27,8 @@ class DepositRetirementTest(unittest.TestCase):
             with patch.object(deposit_retirement, "service_json", return_value=result) as request:
                 deposit_retirement.require_deposit_retirement(config, directory)
             request.assert_called_once_with("https://candidate.test/api/value/operator/deposit-retirement",
-                                            {"chainId": result["chainId"]}, timeout=120)
+                                            {"chainId": result["chainId"], "url": "https://herald.candidate.test"},
+                                            timeout=120)
             self.assertEqual(json.loads((directory / "deposit-retirement.json").read_text()), result)
             for wrong in ({**result, "retirementReady": False}, {**result, "gamesAddress": "0x99"}, {**result, "chainId": "0x99"}):
                 with patch.object(deposit_retirement, "chain_volume_exists", return_value=True), patch.object(deposit_retirement, "service_json", return_value=wrong):

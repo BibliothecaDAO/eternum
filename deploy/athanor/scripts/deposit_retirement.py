@@ -26,7 +26,7 @@ def require_deposit_retirement(config, directory):
         return
     source = urlsplit(identity_service_base(config["guardian_url"]))
     endpoint = f"{source.scheme}://{source.netloc}/api/value/operator/deposit-retirement"
-    result = service_json(endpoint, {"chainId": chain}, timeout=120)
+    result = service_json(endpoint, {"chainId": chain, "url": config["public_herald_url"]}, timeout=120)
     require_matching_result(result, chain, games)
     temporary = record.with_suffix(".tmp")
     temporary.write_text(json.dumps(result, indent=2) + "\n")

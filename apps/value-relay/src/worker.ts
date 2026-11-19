@@ -382,8 +382,8 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   async deposits(chainId: string, realmsId: string, before?: string) {
     return depositHistory(await this.depositPorts(chainId, false), realmsId, before);
   }
-  async depositRetirement(chainId: string) {
-    const shard = await readRegisteredShard(this.env.IDENTITY, chainId);
+  async depositRetirement(chainId: string, url: string) {
+    const shard = await readRegisteredShard({ shard: async () => ({ chainId, url }) }, chainId);
     return checkDepositRetirement({
       shard: { ...shardConnection(shard), heraldUrl: shard.url },
       ledger: {
@@ -882,17 +882,18 @@ export default {
       return operatorCampaignEntry(request, env, "seal");
     if (new URL(request.url).pathname === "/api/value/operator/deposit-retirement" && request.method === "POST") {
       if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN))) return new Response(null, { status: 401 });
-      const body = (await request.json().catch(() => null)) as { chainId?: unknown } | null;
+      const body = (await request.json().catch(() => null)) as { chainId?: unknown; url?: unknown } | null;
       if (
         !body ||
         typeof body !== "object" ||
-        Object.keys(body).join() !== "chainId" ||
+        Object.keys(body).sort().join() !== "chainId,url" ||
         typeof body.chainId !== "string" ||
-        !/^0x[0-9a-f]+$/i.test(body.chainId)
+        !/^0x[0-9a-f]+$/i.test(body.chainId) ||
+        typeof body.url !== "string"
       )
         return Response.json({ error: "invalid_chain" }, { status: 400 });
       try {
-        return Response.json(await relayOf(env, body.chainId).depositRetirement(body.chainId), {
+        return Response.json(await relayOf(env, body.chainId).depositRetirement(body.chainId, body.url), {
           headers: { "cache-control": "no-store" },
         });
       } catch {

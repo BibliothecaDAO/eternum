@@ -226,12 +226,13 @@ remains payable after reward closure or its claim deadline. A missing wallet kee
 reward settlement continues. Spent principal remains reserved custody; reward payment and treasury settlement cannot
 consume it.
 
-Official teardown and pending-shard reinitialization call the authenticated existing relay route
-`POST /api/value/operator/deposit-retirement` before stopping or deleting state. The relay derives connections from the
-registered chain, rejects live enabled seasons, and requires terminal L2 receipts, matching confirmed native balances,
-and payment of every principal withdrawal. Outage or lag refuses retirement. The gate records `deposit-retirement.json`;
-teardown preserves that evidence outside the removed directory. Keep the source and its co-signer routing available
-until the gate passes.
+Official teardown and unfinished-shard reinitialization call the authenticated relay route
+`POST /api/value/operator/deposit-retirement` with the chain id and its Herald URL before stopping or deleting state, so
+a chain the directory does not list can still be retired. The relay reads that chain's connections from its Herald
+manifest, refused unless the manifest names that chain, rejects live enabled seasons, and requires terminal L2 receipts,
+matching confirmed native balances, and payment of every principal withdrawal. Outage or lag refuses retirement. The
+gate records `deposit-retirement.json`; teardown preserves that evidence outside the removed directory. Keep the source
+and its co-signer routing available until the gate passes.
 
 The dev deposit rehearsal procedure was removed with the shard runner; it is rewritten for the deployed dev shard when
 that rehearsal runs again.
