@@ -1,6 +1,6 @@
 import { formatExact, formatPercent } from "@bibliothecadao/types";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
+import { orderMeaning } from "@/ui/design-system/icon-meaning";
 import { HudStamina, HudTierChip, type StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import { UNDEFENDED } from "@/ui/design-system/kit/words";
 
@@ -98,7 +98,7 @@ const TokenView = ({ reading }: { reading: TokenReading }) => (
       )}
       {reading.crest !== null && (
         <span className="mp-token__crest" aria-hidden>
-          <OrderEmblem order={reading.crest} size={CREST_SIZE} />
+          <Icon name={orderMeaning(reading.crest)} size={CREST_SIZE} />
         </span>
       )}
     </span>
