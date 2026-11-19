@@ -16,6 +16,9 @@ pub fn settle(key: ExplorerKey, mut army: ExplorerTroops, context: ExecutionCont
     let Some(rules) = crate::logic::deep_sites::rules_entry(key.game_id) else {
         return army;
     };
+    if crate::logic::deep_guards::entry(key).is_some() {
+        crate::logic::deep_ticks::assert_caught_up(key.game_id, context);
+    }
     let Some(last_tick) = crate::state::read().deep.army_ticks.read((key.game_id, key.explorer_id)) else {
         assert!(!crate::logic::deep::contains(key.game_id, army.coord), "Deep army has no tick");
         return army;

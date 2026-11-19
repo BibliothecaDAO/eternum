@@ -24,11 +24,12 @@ struct Shape {
     vitriol: bool,
 }
 
-#[derive(Copy, Drop)]
+#[derive(Drop)]
 struct Cost {
     gas: u128,
     events: u32,
     paid_ticks: u64,
+    refusal: ByteArray,
 }
 
 fn season_one_catch_up_preset(stage_height: u32) -> crate::presets::PresetDefinition {
@@ -180,12 +181,13 @@ fn measured(d: Deployment, game_id: u32, command: Command, now: u64) -> Cost {
     let before = core::testing::get_available_gas();
     let accepted = execute_in_game(d, game_id, command, now);
     let gas = before - core::testing::get_available_gas();
-    if !accepted {
-        let refusal = world_test_support::tests::play_fixture::rejection(ref events, d.games);
-        println!("deep catch-up refused: {}", refusal.reason);
-    }
+    let refusal = if accepted {
+        ""
+    } else {
+        world_test_support::tests::play_fixture::rejection(ref events, d.games).reason
+    };
     let paid_ticks = interact_with_state(d.games, || crate::state::read().deep.paid_tick.read(game_id).unwrap());
-    Cost { gas, events: events.get_events().emitted_by(d.games).events.len(), paid_ticks }
+    Cost { gas, events: events.get_events().emitted_by(d.games).events.len(), paid_ticks, refusal }
 }
 
 fn nudge(home: u64) -> Command {
@@ -346,7 +348,7 @@ fn a_win_early_in_the_gap_stops_the_catch_up_with_every_site_full() {
 }
 
 #[test]
-fn a_refused_guard_move_after_the_cap_pays_the_same_catch_up_with_every_site_full() {
+fn a_guard_moved_while_the_deep_catches_up_is_refused_and_still_advances_the_cursor() {
     let shape = every_site_at_the_empire_cap();
     let (_, game_id, guards, owner, _) = held_deep(6, 2000, shape);
     let guard = *guards.at(0);
@@ -358,6 +360,7 @@ fn a_refused_guard_move_after_the_cap_pays_the_same_catch_up_with_every_site_ful
     );
     assert_eq!(cost.paid_ticks, START / TICK + cap(80));
     assert_within_one_transaction(Plays { count: 1, gas: cost.gas, events: cost.events });
+    assert_eq!(cost.refusal, "the Deep is catching up");
 }
 
 #[test]

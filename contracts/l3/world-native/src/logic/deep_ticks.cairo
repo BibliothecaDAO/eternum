@@ -66,7 +66,7 @@ pub fn settle(game_id: u32, context: ExecutionContext) {
     let end = crate::logic::race::result(game_id).map(|value| value.ended_at).unwrap_or(game.end_at);
     let last = core::cmp::min(context.timestamp, end) / interval;
     let cursor = crate::state::read().deep.paid_tick.read(game_id).expect('missing Deep cursor');
-    if cursor < last && catch_up(game_id, cursor, last, context) < last {
+    if cursor < last && walk(game_id, cursor, last, context) < last {
         return;
     }
     crate::logic::race::finish_expired(game_id, context.timestamp);
@@ -85,16 +85,11 @@ pub fn assert_caught_up(game_id: u32, context: ExecutionContext) {
     assert!(cursor >= last, "the Deep is catching up");
 }
 
-fn catch_up(game_id: u32, cursor: u64, last: u64, context: ExecutionContext) -> u64 {
-    let reached = walk(game_id, cursor, last, context);
-    save_cursor(game_id, reached);
-    reached
-}
-
 fn walk(game_id: u32, cursor: u64, last: u64, context: ExecutionContext) -> u64 {
     let interval = context.rules.unbox().tick_config.armies_tick_in_seconds;
     let mut held = held(game_id, context);
     if held.guards.is_empty() {
+        save_cursor(game_id, last);
         return last;
     }
     let budget = crate::rules::DEEP_CATCH_UP_GUARD_TICKS / held.guards.len().into();
@@ -104,6 +99,7 @@ fn walk(game_id: u32, cursor: u64, last: u64, context: ExecutionContext) -> u64 
     while reached < target {
         let boundary = (reached + 1) * interval;
         if boundary - 1 >= held.day_end {
+            save_cursor(game_id, last);
             write_payouts(game_id, ref payouts, held, reached * interval, context);
             roll_over(game_id, ExecutionContext { timestamp: boundary - 1, ..context });
             return last;
@@ -111,6 +107,7 @@ fn walk(game_id: u32, cursor: u64, last: u64, context: ExecutionContext) -> u64 
         held = drain(held, boundary, interval, ref payouts);
         reached += 1;
         if !alive(held.counts) {
+            save_cursor(game_id, last);
             write_payouts(game_id, ref payouts, held, boundary, context);
             return last;
         }
@@ -119,6 +116,7 @@ fn walk(game_id: u32, cursor: u64, last: u64, context: ExecutionContext) -> u64 
             break;
         }
     }
+    save_cursor(game_id, reached);
     write_payouts(game_id, ref payouts, held, reached * interval, context);
     reached
 }
