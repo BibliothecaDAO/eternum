@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
-const TUNABLE = /_(BPS|PERCENT|STAMINA|PER_TICK|PER_RANK|LIMIT|CAP|SHARE|BASE|STEPS)$/;
+const TUNABLE = /_(BPS|PERCENT|STAMINA|PER_TICK|PER_RANK|PER_FRAGMENT|FRAGMENTS|LIMIT|CAP|SHARE|BASE|STEPS)$/;
 
 export function identifierConstants(balance) {
   return Object.fromEntries(
@@ -30,6 +30,7 @@ export async function readBalanceConstants(root) {
     nativeArrivalConstants: await readArrivalConstants(root),
     nativeOathConstants: await readOathConstants(root),
     nativeResearchConstants: await readResearchConstants(root),
+    nativeFragmentConstants: await readFragmentConstants(root),
   };
 }
 
@@ -68,6 +69,10 @@ async function readResearchConstants(root) {
 
 async function readOathConstants(root) {
   return unsignedConstants(await readFile(new URL("src/oaths.cairo", root), "utf8"), "8|16");
+}
+
+async function readFragmentConstants(root) {
+  return unsignedConstants(await readFile(new URL("src/fragments.cairo", root), "utf8"), "8|16");
 }
 
 async function readArrivalConstants(root) {

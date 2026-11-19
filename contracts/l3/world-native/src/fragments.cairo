@@ -1,9 +1,9 @@
 use starknet::ContractAddress;
 
-pub const WONDER_QUEST: u16 = 10;
-pub const SEAL_PRICE: u16 = 1000;
+pub const WONDER_QUEST_FRAGMENTS: u16 = 10;
+pub const SEAL_FRAGMENTS: u16 = 1000;
 pub const STAMINA_PER_FRAGMENT: u16 = 2;
-pub const CACHE_TROOPS: u16 = 100;
+pub const CACHE_TROOPS_PER_FRAGMENT: u16 = 100;
 pub const SURFACE_CACHE_PERCENT: u8 = 19;
 pub const VEIL_CACHE_PERCENT: u8 = 10;
 pub const HOLLOW_CACHE_PERCENT: u8 = 5;
@@ -44,5 +44,5 @@ pub fn holds_cache(seed: u256, depth: u8) -> bool {
 }
 
 pub fn cache_fragments(relic: crate::army_relics::ArmyRelic, depth: u8) -> u128 {
-    crate::army_relics::ruin_strength(relic.rank, depth) / CACHE_TROOPS.into()
+    crate::army_relics::ruin_strength(relic.rank, depth) / CACHE_TROOPS_PER_FRAGMENT.into()
 }

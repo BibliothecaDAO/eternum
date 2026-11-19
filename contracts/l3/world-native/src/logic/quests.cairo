@@ -123,7 +123,7 @@ pub mod QuestState {
                 let grant = self.grant_reward(home, actor, progress.completed_level, context);
                 crate::logic::entry::record_labor_grant(day, grant);
                 if super::holds_wonder(home, actor) {
-                    crate::logic::fragments::add(game_id, actor, crate::fragments::WONDER_QUEST.into());
+                    crate::logic::fragments::add(game_id, actor, crate::fragments::WONDER_QUEST_FRAGMENTS.into());
                 }
             }
             if crate::logic::banes::won(home, day) && self.data.banes.bonus_grants.read(key).is_none() {
