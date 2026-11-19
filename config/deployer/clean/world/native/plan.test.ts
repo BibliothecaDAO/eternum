@@ -329,7 +329,9 @@ describe("native deployment planning", () => {
       deployNativeWorld(local, rpc as unknown as Account, () => {
         throw new Error("unexpected transaction");
       }),
-    ).rejects.toThrow("NATIVE_BALANCE_SINCE: release 1 runs other balance numbers; set NATIVE_BALANCE_SINCE_RELEASE to 2");
+    ).rejects.toThrow(
+      "NATIVE_BALANCE_SINCE: release 1 runs other balance numbers; set NATIVE_BALANCE_SINCE_RELEASE to 2",
+    );
     delete local.previous.native.releaseBalances;
     await inspectNativeWorld(local, rpc as unknown as RpcProvider);
   });
