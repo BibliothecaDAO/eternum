@@ -3,7 +3,6 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DEEP_BEASTS } from "@bibliothecadao/types";
-import { DEEP_WORDS } from "@/ui/design-system/kit/words";
 
 import { DEEP_SITE_CASES } from "./deep-site-fixtures";
 import { DeepSiteView, type DeepSiteProps } from "./deep-site-view";
@@ -46,9 +45,9 @@ describe("a Deep site's card", () => {
     expect(text()).toContain("Needs 30 stamina, holds 12");
   });
 
-  it("says a closed ring's site opens when more Realms enter and offers no order", () => {
-    draw({ ...DEEP_SITE_CASES["Foundation, today's beast, army in reach"], order: "closed" });
-    expect(text()).toContain(DEEP_WORDS.closed);
+  it("says how many Realms must enter today before a closed ring opens, and offers no order", () => {
+    draw({ ...DEEP_SITE_CASES["Foundation, today's beast, army in reach"], order: { kind: "closed", realms: 50 } });
+    expect(text()).toContain("Opens at 50 Realms today");
     expect(labels(["Attack"])).toHaveLength(0);
   });
 
