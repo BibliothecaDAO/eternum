@@ -35,7 +35,15 @@ pub fn settle(key: ExplorerKey, mut army: ExplorerTroops, context: ExecutionCont
         crate::logic::progression::require(key).oaths, rules.loss_per_tick.read(),
     );
     army.troops.count = crate::deep::troops_after_ticks(before, last_tick, tick, loss);
-    write_tick(key, tick);
+    drained(key, army, before, tick, context)
+}
+
+pub fn drained(
+    key: ExplorerKey, army: ExplorerTroops, before: u128, tick: u64, context: ExecutionContext,
+) -> ExplorerTroops {
+    if army.troops.count != 0 {
+        write_tick(key, tick);
+    }
     crate::logic::combat::combat_troops(key.game_id)
         .finish_battle(key, army, before, crate::commands::action_context(context));
     army

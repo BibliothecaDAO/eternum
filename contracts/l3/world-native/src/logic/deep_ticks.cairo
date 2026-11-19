@@ -151,7 +151,6 @@ fn held(game_id: u32, context: ExecutionContext) -> Held {
             let key = ExplorerKey { game_id, explorer_id };
             let army = crate::logic::troops::explorer(key).expect('missing Deep guard');
             assert!(army.troops.count != 0, "dead guard occupies Deep slot");
-            let day = crate::days::day_at_index(context.game.unbox(), unit, crate::logic::army_days::require(key));
             let oaths = crate::logic::progression::require(key).oaths;
             guards
                 .append(
@@ -159,7 +158,7 @@ fn held(game_id: u32, context: ExecutionContext) -> Held {
                         key,
                         home: army.owner,
                         loss: crate::oaths::deep_loss_per_tick(oaths, rules.loss_per_tick.read()),
-                        end: day.end,
+                        end: day_end,
                     },
                 );
             counts.append(army.troops.count);
@@ -391,19 +390,26 @@ fn grant_resources(game_id: u32, held: Held, boundary: u64, context: ExecutionCo
 fn settle_guards(payouts: @Payouts, held: Held, boundary: u64, context: ExecutionContext) {
     let context = ExecutionContext { timestamp: boundary, ..context };
     for index in payouts.deaths.span() {
-        settle_guard(*held.guards.at(*index), context);
+        settle_guard(held, *index, context);
     }
     for index in 0..held.guards.len() {
         if *held.counts.at(index) != 0 {
-            settle_guard(*held.guards.at(index), context);
+            settle_guard(held, index, context);
         }
     }
 }
 
-fn settle_guard(guard: Guard, context: ExecutionContext) {
-    let army = crate::logic::troops::explorer(guard.key).expect('missing Deep guard');
-    let army = crate::logic::army_slots::resolve(guard.key, army, None);
-    crate::logic::deep_armies::settle(guard.key, army, context);
+fn settle_guard(held: Held, index: u32, context: ExecutionContext) {
+    let key = (*held.guards.at(index)).key;
+    let army = crate::logic::troops::explorer(key).expect('missing Deep guard');
+    let army = crate::logic::army_slots::resolve(key, army, None);
+    let before = army.troops.count;
+    let count = *held.counts.at(index);
+    if count == before {
+        return;
+    }
+    let army = crate::troops::ExplorerTroops { troops: crate::troops::Troops { count, ..army.troops }, ..army };
+    crate::logic::deep_armies::drained(key, army, before, *held.ticks.at(index), context);
 }
 
 fn roll_over(game_id: u32, context: ExecutionContext) {
