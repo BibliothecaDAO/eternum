@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "7c3b854bef05f47d72448f54ffd67461554bdcab8e819f48cfbd054d1708e96f",
+  "schemaIdentity": "d482e79e08fa79e8cd2f199a18da77c360a54911a0c08c66e93bce0293139be2",
   "commandAbi": [
     {
       "type": "interface",
@@ -1308,10 +1308,6 @@
     },
     {
       "name": "DepositSource",
-      "scope": "game"
-    },
-    {
-      "name": "FragmentCredit",
       "scope": "game"
     },
     {
