@@ -974,6 +974,6 @@ async function deepAlerts(
 
 async function siteStillReady(shard: WatchedShard, watch: DeepSiteWatch, now: number): Promise<boolean> {
   return (await readDeepAlerts(shard.url, watch, now, await readReleaseCatalogue(shard.url))).sites.some(
-    (fresh) => siteWatchKey(fresh) === siteWatchKey(watch) && fresh.dueAt <= now,
+    (fresh) => siteWatchKey(fresh) === siteWatchKey(watch) && fresh.siteId === watch.siteId && fresh.dueAt <= now,
   );
 }
