@@ -16,7 +16,6 @@
       "origin": "https://docs.dev-realms.party"
     },
     "box": "realms-dev",
-    "blitzPreset": 1,
     "chests": "mystery",
     "chestName": "devChest",
     "cosmeticsName": "devCosmetics",

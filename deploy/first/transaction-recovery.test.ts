@@ -114,15 +114,11 @@ test.each(["wait", "receipt"])("an unrelated %s failure never authorizes a resen
   await expect(send(rpc as unknown as Account, desired, files, "pay", () => {}, 5)).rejects.toEqual({ code: 429 });
   expect(rpc.execute).not.toHaveBeenCalled();
 });
-test("changing unsent Blitz dates sends the newly computed setup with the current nonce", async () => {
+test("a changed unsent setup sends the newly computed calls with the current nonce", async () => {
   const files = store();
   const rpc = account();
   files.write("transaction-setup.json", { nonce: "7", calls: tampered });
-  const input = {
-    blitzStart: "2027-01-01T00:00:00Z",
-    blitzEnd: "2027-02-01T00:00:00Z",
-    frontierPresetId: "6",
-  } as Inputs;
+  const input = { frontierPresetId: "6" } as Inputs;
   const provider = {
     ...rpc,
     getBlockWithTxHashes: async () => ({ block_number: 5, timestamp: 1 }),
@@ -133,7 +129,7 @@ test("changing unsent Blitz dates sends the newly computed setup with the curren
       throw {
         code: 40,
         message: "Contract error",
-        data: { revert_error: entrypoint === "get_preset" ? "Ledger: unknown preset" : "Ledger: unknown Blitz season" },
+        data: { revert_error: "Ledger: unknown preset" },
       };
     },
   } as unknown as Account;
@@ -142,12 +138,9 @@ test("changing unsent Blitz dates sends the newly computed setup with the curren
   const [calls, options] = rpc.execute.mock.calls[0]!;
   expect(options).toEqual({ nonce: "12" });
   expect(rpc.getNonce.mock.calls).toEqual([[5]]);
-  expect(calls.find((call) => call.entrypoint === "open_season")!.calldata).toEqual([
-    "1",
-    "1",
-    String(Date.parse(input.blitzStart!) / 1000),
-    String(Date.parse(input.blitzEnd!) / 1000),
-  ]);
+  expect(
+    calls.filter((call) => call.entrypoint === "register_preset").map((call) => (call.calldata as string[])[0]),
+  ).toEqual(["6"]);
   expect(calls.some((call) => call.contractAddress === "0xbad")).toBe(false);
 });
 

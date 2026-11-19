@@ -14,13 +14,13 @@ than guessing their values. A fresh dry run cannot inspect Alchemy or Cloudflare
 entered; it reports those steps as unavailable. Later dry runs use the saved credentials and inspect remote results.
 
 The first apply asks for the Cloudflare token, one Alchemy mainnet URL, the Resend key, the Discord application's client
-ID and secret (every environment offers Discord sign-in), the whole-token Frontier deposit, and four UTC dates: Frontier
-start/end and Blitz start/end. Dates use `YYYY-MM-DDTHH:MM:SSZ`; none has a default. The Frontier start must be on its
-army tick, with a positive duration. Invalid dates are rejected without changing it. All four dates and the deposit are
-shown before transactions. Production additionally asks for its **public** treasury address, never its key: the treasury
-is fixed in the ledger's constructor. The deployer is the ledger's admin and funding payer on dev and production; an
-environment marked `coldAdmin` in `environments.json` instead asks for its public cold-admin address, and setup refuses
-a saved `admin` anywhere else.
+ID and secret (every environment offers Discord sign-in), the whole-token Frontier deposit, and two UTC dates: Frontier
+start and end. Dates use `YYYY-MM-DDTHH:MM:SSZ`; none has a default. The Frontier start must be on its army tick, with a
+positive duration. Invalid dates are rejected without changing it. Both dates and the deposit are shown before
+transactions. Production additionally asks for its **public** treasury address, never its key: the treasury is fixed in
+the ledger's constructor. The deployer is the ledger's admin and funding payer on dev and production; an environment
+marked `coldAdmin` in `environments.json` instead asks for its public cold-admin address, and setup refuses a saved
+`admin` anywhere else.
 
 Setup does not ask for AVNU's paymaster key. To let the identity Worker sponsor default wallets' recovery steps, add it
 to the environment's `inputs.json` as `avnuPaymasterApiKey`, then run setup's apply
@@ -108,12 +108,10 @@ lockfiles and compiler versions key Docker's Cairo layers; changes to Herald or 
    production pays LORDS only (`contracts/l2/ledger/scripts/chest-preset.js`), so its cosmetics collection exists for
    the ledger's constructor but gets no metadata and mints nothing. Publish only public contract addresses to the
    environment book, retaining the Realms collection and unrelated fields.
-6. Read roles, metadata events, presets and season state, and prepare only missing setup calls. Metadata scans begin at
-   each collection’s deployment block, found from historical class reads once per collection per run. Presence reads run
-   in parallel during both inspection and apply. Opening a new Blitz ledger season requires its start to be in the
-   future; an existing matching season is preserved after its start. An environment with a cold admin writes public
-   unsigned calls to `cold-setup.json` and waits for the cold wallet to execute them; its cold key never enters the
-   command.
+6. Read roles, metadata events and presets, and prepare only missing setup calls. Metadata scans begin at each
+   collection’s deployment block, found from historical class reads once per collection per run. Presence reads run in
+   parallel during both inspection and apply. An environment with a cold admin writes public unsigned calls to
+   `cold-setup.json` and waits for the cold wallet to execute them; its cold key never enters the command.
 7. Reuse the saved service credentials, or generate them once for a new environment. An existing box token requires the
    original private directory; comparison runs on the box and returns only a match result. If the guardian Worker
    already holds `GUARDIAN_PRIVATE_KEY`, keep it even if this directory has no copy. Never rotate it.
@@ -239,11 +237,11 @@ pnpm run season dev "$HOME/.realms-dev"
 
 This reads the existing private directory without migration: `inputs.json`, `keys.json` and `secrets.json`. It sets the
 missing calendar phases from the saved dates, preserves and displays existing published phases, waits for the launch
-cron's Frontier game, deposits the saved whole-LORDS amount, then watches pool publication and the automatic Blitz slot.
-Dev mints missing test LORDS. Production refuses a missing or noncanonical LORDS address; its payer must hold real LORDS
-before funding. Clear the retired production ledger address and deployment block before fresh setup, and fund only a new
-shard/game identity never funded on the retired ledger. It uses the public address book written by setup. An existing
-deposit is verified rather than repeated. Mainnet funding remains an owner operation, including dev funding.
+cron's Frontier game, deposits the saved whole-LORDS amount, then watches pool publication. Dev mints missing test
+LORDS. Production refuses a missing or noncanonical LORDS address; its payer must hold real LORDS before funding. Clear
+the retired production ledger address and deployment block before fresh setup, and fund only a new shard/game identity
+never funded on the retired ledger. It uses the public address book written by setup. An existing deposit is verified
+rather than repeated. Mainnet funding remains an owner operation, including dev funding.
 
 The dev box can open the free Frontier phase at the current armies tick, for one complete bag of days:
 
@@ -303,18 +301,16 @@ nonce. A changed artifact or constructor is refused after an address has been pi
 retry: that would generate different accounts. Restore its backup. The process lock prevents two simultaneous runs from
 sharing an account nonce.
 
-If a calendar phase's start has passed but its end is still in the future, rerun with the same dates. An already-open
-Blitz ledger season keeps its dates; only a new ledger season requires a future start. For future seasons, edit the four
-dates and the Frontier deposit in `inputs.json`, run setup to open the next ledger season, then run season. After the
-previous seasons end, the ledger opens the next Blitz season number and the calendar replaces its ended phases. Running
-or future seasons are never replaced. Existing deposits are never changed. If a production collection or rating token
-needs an upgrade, its cold owner must complete the reviewed upgrade first; this command grants no new upgrade power and
-never obtains the upgrade key.
+If a calendar phase's start has passed but its end is still in the future, rerun with the same dates. For future
+seasons, edit the two dates and the Frontier deposit in `inputs.json`, then run season; the calendar replaces its ended
+phases. Running or future seasons are never replaced. Existing deposits are never changed. If a production collection or
+rating token needs an upgrade, its cold owner must complete the reviewed upgrade first; this command grants no new
+upgrade power and never obtains the upgrade key.
 
 Declarations, contract deployments, transfers, successful setup and funding cannot be undone. Check the public book,
-roles and four displayed dates before applying. A wrong published contract or immutable preset causes a refusal;
-changing private state does not repair it. If the funding game, token, start, end or pool differs, the command refuses
-rather than sending another deposit. A proven pool mismatch remains an error. D1 migrations and DNS also affect running
+roles and two displayed dates before applying. A wrong published contract or immutable preset causes a refusal; changing
+private state does not repair it. If the funding game, token, start, end or pool differs, the command refuses rather
+than sending another deposit. A proven pool mismatch remains an error. D1 migrations and DNS also affect running
 services: keep the former active shard’s retained data for recovery.
 
 Dev chest metadata uses the public test CID already committed in

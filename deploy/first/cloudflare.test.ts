@@ -411,8 +411,6 @@ const inputs: Inputs = {
   frontierPresetId: "5",
   frontierStart: "2027-01-01T00:00:00Z",
   frontierEnd: "2027-01-21T00:00:00Z",
-  blitzStart: "2027-01-01T00:00:00Z",
-  blitzEnd: "2027-02-01T00:00:00Z",
 };
 
 test("publishing refuses a directory set up before the admin had Access, before anything deploys", () => {

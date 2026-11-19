@@ -1,5 +1,4 @@
 import { PHASE_END_ERROR, type FrontierSeasonPhase, type SeasonPhase } from "../../apps/launch-service/src/calendar";
-import { resolveBlitzSeason } from "./blitz-season";
 import { CallData, RpcProvider, uint256 } from "starknet";
 import { decodeLedgerPreset } from "../../packages/value-ledger/src/codecs";
 import { readConfirmedSnapshot, optionalRow } from "../../apps/value-relay/src/shard-snapshot";
@@ -12,7 +11,7 @@ import { send, balance } from "./chain";
 import { nativeDocument } from "./box";
 import { seconds } from "./dates";
 import { PublicError } from "./errors";
-import { blitzPresetOf, ledgerAdmin, shardInputs, WEI } from "./settings";
+import { ledgerAdmin, shardInputs, WEI } from "./settings";
 import { signer, type Deployment } from "./main";
 import type { Step } from "./run";
 
@@ -138,19 +137,6 @@ async function funding(context: Season) {
     throw error;
   }
 }
-/** A Blitz phase needs its ledger season open; a Frontier-only environment has neither. */
-async function requireBlitzSeason(context: Season) {
-  if (blitzPresetOf(context.target) === null) return;
-  const season = await resolveBlitzSeason(
-    context.provider!,
-    context.assets!.ledger,
-    seconds(context.inputs!.blitzStart!),
-    seconds(context.inputs!.blitzEnd!),
-  );
-  if (!season.present) throw new PublicError("Blitz ledger season is not open; complete Ledger setup first");
-}
-/** The calendar phases this environment runs: Frontier, and Blitz where it has a Blitz preset. */
-const seasonPhases = (context: Season) => ["frontier", ...(blitzPresetOf(context.target) === null ? [] : ["blitz"])];
 async function currentCalendar(context: Season) {
   const calendar = await service<{ phases: SeasonPhase[] }>(context, "/api/factory/calendar");
   const now = Date.now();
@@ -167,9 +153,8 @@ export function seasonSteps(context: Season): Step[] {
       inspect: async () => {
         if (!context.assets) return wait("Deployed services needed");
         const phases = await currentCalendar(context);
-        await requireBlitzSeason(context);
         return {
-          done: seasonPhases(context).every((name) => phases.some((phase) => phase.phase === name)),
+          done: phases.some((phase) => phase.phase === "frontier"),
           detail: phases.length
             ? phases
                 .map(
@@ -182,21 +167,18 @@ export function seasonSteps(context: Season): Step[] {
       },
       apply: async () => {
         const phases = await currentCalendar(context);
-        await requireBlitzSeason(context);
-        for (const phase of seasonPhases(context)) {
-          if (phases.some((existing) => existing.phase === phase)) continue;
-          const begins = seconds(phase === "frontier" ? context.inputs!.frontierStart : context.inputs!.blitzStart!);
-          const ends = seconds(phase === "frontier" ? context.inputs!.frontierEnd : context.inputs!.blitzEnd!);
-          if (!(ends > Date.now() / 1000)) throw new PublicError(PHASE_END_ERROR);
-          context.output(
-            `Setting ${phase}${phase === "frontier" ? ` preset ${context.inputs!.frontierPresetId}` : ""} calendar: ${new Date(begins * 1000).toISOString()} to ${new Date(ends * 1000).toISOString()}.`,
-          );
-          await service(context, `/api/factory/calendar/${phase}`, "PUT", {
-            ...(phase === "frontier" ? { presetId: Number(context.inputs!.frontierPresetId) } : {}),
-            startsAt: new Date(begins * 1000).toISOString(),
-            endsAt: new Date(ends * 1000).toISOString(),
-          });
-        }
+        if (phases.some((existing) => existing.phase === "frontier")) return;
+        const begins = seconds(context.inputs!.frontierStart);
+        const ends = seconds(context.inputs!.frontierEnd);
+        if (!(ends > Date.now() / 1000)) throw new PublicError(PHASE_END_ERROR);
+        context.output(
+          `Setting frontier preset ${context.inputs!.frontierPresetId} calendar: ${new Date(begins * 1000).toISOString()} to ${new Date(ends * 1000).toISOString()}.`,
+        );
+        await service(context, "/api/factory/calendar/frontier", "PUT", {
+          presetId: Number(context.inputs!.frontierPresetId),
+          startsAt: new Date(begins * 1000).toISOString(),
+          endsAt: new Date(ends * 1000).toISOString(),
+        });
       },
     },
     {
@@ -278,7 +260,7 @@ export function seasonSteps(context: Season): Step[] {
         if (!state?.funded) return wait("Fund the confirmed game first");
         return {
           done: await poolPublished(context),
-          detail: `wait for confirmed published pool${blitzPresetOf(context.target) === null ? "" : ", automatic Blitz slot"} and healthy relay/monitor`,
+          detail: "wait for confirmed published pool and healthy relay/monitor",
         };
       },
       apply: async () => {
@@ -322,10 +304,6 @@ async function poolPublished(context: Season) {
     BigInt(String(prize.pool)) !== BigInt(state.pool!.prizePool) / WEI
   )
     throw new PublicError("Published pool differs from the deposit");
-  if (blitzPresetOf(context.target) !== null) {
-    const slots = await service<{ slots: unknown[] }>(context, "/api/slots");
-    if (!slots.slots.length) return false;
-  }
   await service(context, "/api/value/health");
   await service(context, "/api/operator/monitor/health");
   return true;

@@ -25,6 +25,7 @@ import {
   loadArtifact,
   publishAssets,
   setupCalls,
+  setupHead,
   setupPresenceReader,
   verifyLedgerAccounts,
   type Assets,
@@ -42,7 +43,6 @@ import { command } from "./process";
 import { runSteps, type Step } from "./run";
 import { addressBookStep } from "./address-book";
 import { payoutAlertSteps } from "./payout-alerts";
-import { setupSeason } from "./blitz-season";
 import { PublicError, reportFailure } from "./errors";
 
 export interface Deployment {
@@ -121,8 +121,7 @@ async function collectInputs(context: Deployment) {
 const waiting = (detail: string) => ({ done: false, waiting: detail, detail });
 /** The seasons setup was given, as it reads them back to the operator. */
 const seasonSummary = (inputs: Inputs) =>
-  `Frontier preset ${inputs.frontierPresetId} ${inputs.frontierStart} to ${inputs.frontierEnd}, pool ${inputs.amount}; ` +
-  (inputs.blitzStart ? `Blitz ${inputs.blitzStart} to ${inputs.blitzEnd}.` : "no Blitz.");
+  `Frontier preset ${inputs.frontierPresetId} ${inputs.frontierStart} to ${inputs.frontierEnd}, pool ${inputs.amount}.`;
 export function preparationSteps(context: Deployment): Step[] {
   let readSetup: ReturnType<typeof setupPresenceReader> | undefined;
   return [
@@ -291,20 +290,19 @@ export function preparationSteps(context: Deployment): Step[] {
       inspect: async () => {
         if (!context.assets || !context.provider || !context.keys || !context.inputs)
           return waiting("Contracts have not been deployed yet");
-        const season = await setupSeason(context.provider, context.target, context.assets.ledger, context.inputs);
+        const head = await setupHead(context.provider);
         const calls = setupCalls(
           context.target,
           context.assets,
           accountIdentity(context.keys.monitor).address,
           Number(context.inputs.frontierPresetId),
-          season.blitz,
         );
         context.output("Reading collectible metadata on mainnet.");
         readSetup ??= setupPresenceReader(context.provider);
-        const present = await Promise.all(calls.map((call) => readSetup!(call, season.head)));
+        const present = await Promise.all(calls.map((call) => readSetup!(call, head)));
         return {
           done: present.every(Boolean),
-          detail: `${present.filter(Boolean).length}/${calls.length} setup results present; only missing calls will be prepared${season.blitz ? "; Blitz dates exactly as entered" : "; Frontier only, no Blitz"}`,
+          detail: `${present.filter(Boolean).length}/${calls.length} setup results present; only missing calls will be prepared`,
         };
       },
       apply: async () => {
