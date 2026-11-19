@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "4f27c324d2f9a6952137df6808eb64551e093cd5c188d1ff90d7bb2eb000675d";
+export const nativeFactSchemaIdentity = "7b291fcbf3f1a4248a79a59bb439922e0dac57570d4a2714b77e0dd737ef2088";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
