@@ -1,4 +1,3 @@
-import { nativeReleaseConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { SITE } from "@/ui/features/frontier/sites/site-fixture";
 
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
@@ -38,20 +37,10 @@ const ruinScenario = (
   const { store } = spire;
   const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) });
   const ruinTile = place(store, store.entityOccupancy(1, SPIRE_ARMY)!);
-  const release = store.require("GameRelease", { game_id: 1 });
   const epoch = BigInt(Math.floor(ruinTile.row / store.require("SettlementRules", { game_id: 1 }).spacing / 4));
   const discoveryKey = { game_id: 1, structure_id: BigInt(HOME), epoch };
   const discovery = store.get("ExpeditionDiscovery", discoveryKey);
   store.applyFacts([
-    {
-      model: "GameRelease",
-      key: "0x1ab0",
-      value: wire({
-        ...release,
-        release_id: nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE,
-        created_release_id: nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE,
-      }),
-    },
     {
       model: "ExplorerTroops",
       key: "0x74",
