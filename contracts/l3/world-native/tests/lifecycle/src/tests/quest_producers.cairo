@@ -28,11 +28,11 @@ fn setup_target(kind: u8, target: u32) -> (Deployment, ExplorerKey, crate::exped
                 },
             );
     let discovery = crate::expeditions::FrontierDiscoveryRules {
-        beasts_bps: 1000,
-        camp_bps: 1000,
-        rift_bps: 1000,
-        ruin_bps: 1000,
-        shrine_bps: 1000,
+        beasts_bps: 800,
+        camp_bps: 800,
+        rift_bps: 800,
+        ruin_bps: 800,
+        shrine_bps: 800,
         well_bps: 0,
         empty_reveal_limit: 7,
     };
