@@ -1,7 +1,8 @@
 use snforge_std::fs::{FileTrait, read_txt};
+use snforge_std::{EventSpyTrait, EventsFilterTrait};
 use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
 use crate::oaths::{ChooseOath, card, draw, held};
-use crate::stamina::StaminaSourceTrait;
+use crate::stamina::{StaminaSourceTrait, StaminaTrait};
 use crate::troops::{ExplorerRecordTrait, StaminaSource};
 use super::progression::read_progress;
 use super::state::{GameState, TroopObservationTrait};
@@ -613,7 +614,6 @@ fn only_detection_finds(game_id: u32, rules: crate::expeditions::FrontierDiscove
 }
 
 fn reveal_paid(ref spy: snforge_std::EventSpy, games: starknet::ContractAddress) -> u128 {
-    use snforge_std::{EventSpyTrait, EventsFilterTrait};
     for (_, event) in spy.get_events().emitted_by(games).events {
         let keys = event.keys.span();
         for prefix in 0..keys.len() {
@@ -633,7 +633,6 @@ fn reveal_paid(ref spy: snforge_std::EventSpy, games: starknet::ContractAddress)
 
 #[test]
 fn stamina_oaths_match_the_client_vectors() {
-    use crate::stamina::StaminaTrait;
     let data = read_txt(@FileTrait::new("../fixtures/oath-stamina.txt"));
     assert_eq!(data.len(), 112);
     let config = crate::rules::TroopStaminaConfig {
