@@ -6,6 +6,7 @@ pub mod PrizesLogic {
     use crate::geometry::tile_key;
     use crate::logic::blitz_results::BlitzResultState;
     use crate::logic::lords::LordsState;
+    use crate::logic::race::RaceState;
     use crate::logic::release::ReleaseState;
     use crate::map::{BIOME_SCALE, BYTE_RANGE};
     use crate::troops::Coord;
@@ -19,6 +20,9 @@ pub mod PrizesLogic {
     #[abi(embed_v0)]
     impl Lords = LordsState::LordsImpl<ContractState>;
     impl LordsInternal = LordsState::InternalImpl<ContractState>;
+    component!(path: RaceState, storage: race, event: RaceEvent);
+    #[abi(embed_v0)]
+    impl DeepTicks = RaceState::DeepTicksImpl<ContractState>;
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
@@ -28,6 +32,8 @@ pub mod PrizesLogic {
         release: ReleaseState::Storage,
         #[substorage(v0)]
         blitz: BlitzResultState::Storage,
+        #[substorage(v0)]
+        race: RaceState::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -35,6 +41,7 @@ pub mod PrizesLogic {
         RelicEvent: LordsState::Event,
         ReleaseEvent: ReleaseState::Event,
         BlitzEvent: BlitzResultState::Event,
+        RaceEvent: RaceState::Event,
         MapEvent: crate::logic::map::MapState::Event,
         StoryEvent: crate::ownership::StoryEvent,
         RowSet: RowSet,

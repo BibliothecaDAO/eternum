@@ -6,8 +6,6 @@ pub mod EconomyLogic {
     component!(path: RaceState, storage: race, event: RaceEvent);
     #[abi(embed_v0)]
     impl Race = RaceState::RaceImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl DeepTicks = RaceState::DeepTicksImpl<ContractState>;
     component!(path: HyperstructureState, storage: hyperstructures, event: HyperstructureEvent);
     #[abi(embed_v0)]
     impl Hyperstructures = HyperstructureState::HyperstructuresImpl<ContractState>;
