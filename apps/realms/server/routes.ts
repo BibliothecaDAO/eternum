@@ -9,12 +9,11 @@ import { routeChat } from "./chat/routes";
 import { handleBotDeviceApproval, handleDeviceChange } from "./devices";
 import { claimSocialHandoff, returnFromProvider, startSocialSignIn } from "./social-handoff";
 import {
-  handleAdmitShard,
+  directoryShard,
   handleDirectory,
   handleDirectoryHistory,
-  handleRegisterPendingShard,
-  handleShardStatus,
-  registeredShards,
+  handleRegisterShard,
+  handleRemoveShard,
 } from "./directory";
 import { ACCOUNT_CLASS_HASH, socialProvidersOf, type IdentityEnv } from "./env";
 import { json } from "./http";
@@ -212,27 +211,28 @@ export const routeIdentityRequest = async (
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
     return handleWalletCounts(env.DB);
   }
-  if (pathname === "/api/directory/shards" && request.method === "GET") {
-    if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
-    return json({ shards: await registeredShards(env.DB) });
-  }
-  if (pathname.startsWith("/api/directory/shards") && request.method === "POST") {
-    if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
-    if (pathname === "/api/directory/shards" || pathname === "/api/directory/shards/pending") {
-      const admit = pathname.endsWith("/pending") ? handleRegisterPendingShard : handleAdmitShard;
-      return admit(request, env.DB, platform.fetchShard, {
-        accountClassHash: ACCOUNT_CLASS_HASH,
-        guardianPublicKey: await env.GUARDIAN.publicKey(),
-      });
-    }
-    if (pathname === "/api/directory/shards/status") return handleShardStatus(request, env.DB);
-  }
+  if (pathname === "/api/directory/shard") return routeDirectoryShard(request, env, platform);
   if (pathname === "/api/guardian" && request.method === "GET") {
     return json({ publicKey: await env.GUARDIAN.publicKey(), accountClassHash: ACCOUNT_CLASS_HASH });
   }
   if (pathname === "/api/health" && request.method === "GET") {
     return json({ service: "realms-identity", environment: env.ENVIRONMENT, version: env.VERSION.id });
   }
+  return json({ error: "not_found" }, 404);
+};
+
+const routeDirectoryShard = async (request: Request, env: IdentityEnv, platform: WorkerPlatform) => {
+  if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
+  if (request.method === "GET") return json({ shard: await directoryShard(env.DB) });
+  if (request.method === "PUT")
+    return handleRegisterShard(
+      request,
+      env.DB,
+      platform.fetchShard,
+      { accountClassHash: ACCOUNT_CLASS_HASH, guardianPublicKey: await env.GUARDIAN.publicKey() },
+      env.SHARD_NOTIFIER,
+    );
+  if (request.method === "DELETE") return handleRemoveShard(env.DB, env.SHARD_NOTIFIER);
   return json({ error: "not_found" }, 404);
 };
 
@@ -322,13 +322,7 @@ const referralWorld = (env: IdentityEnv, platform: WorkerPlatform): ReferralWorl
  */
 const requiresSameOrigin = (request: Request, pathname: string): boolean => {
   const operatorRoute =
-    pathname.startsWith("/api/operator/") ||
-    [
-      "/api/devices/bots",
-      "/api/directory/shards",
-      "/api/directory/shards/status",
-      "/api/directory/shards/pending",
-    ].includes(pathname);
+    pathname.startsWith("/api/operator/") || ["/api/devices/bots", "/api/directory/shard"].includes(pathname);
   if (operatorRoute) return false;
   return (
     !["GET", "HEAD", "OPTIONS"].includes(request.method) ||

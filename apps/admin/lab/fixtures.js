@@ -52,7 +52,7 @@ const ENVIRONMENTS = {
     ],
     workers: { version: "5c1d…", revision: "7ba76ed03a0" },
     client: "7ba76ed03a0",
-    shards: [{ url: "https://herald.dev-realms.party", chainId: "0x4445565f…6230", status: "active" }],
+    shards: [{ url: "https://herald.dev-realms.party", chainId: "0x4445565f…6230" }],
   },
   production: {
     origin: "https://play.realms.party",
@@ -67,7 +67,7 @@ const ENVIRONMENTS = {
     runs: [run("frontier-1761933600", "madara.frontier", "queued", undefined)],
     workers: { version: "a90e…", revision: "b015a52b6c9" },
     client: "b015a52b6c9",
-    shards: [{ url: "https://herald.realms.party", chainId: "0x…mainnet", status: "active" }],
+    shards: [{ url: "https://herald.realms.party", chainId: "0x…mainnet" }],
   },
 };
 

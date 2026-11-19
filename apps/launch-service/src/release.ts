@@ -53,9 +53,8 @@ export interface ApplyReleaseRequest {
   release: ReleaseIdentity | null;
 }
 
-/** What the route answers: every active shard, and each of its running Frontier games before and after. */
 export interface ReleaseReport {
-  shards: ShardRelease[];
+  shard: ShardRelease | null;
 }
 
 /** The refusals the route reports by name; anything else is an unexpected failure. */

@@ -37,12 +37,12 @@ it.each([true, false])("serves health under the existing value route (healthy: %
   const health = { service: "value-relay", success, checked_at: Math.floor(Date.now() / 1000) };
   const env = {
     ...settings,
-    IDENTITY: { shards: async () => [] },
+    IDENTITY: { shard: async () => null },
     RELAY: { idFromName: (name: string) => name, get: () => ({ ledgerHealth: async () => health }) },
   } as never;
   const reply = await worker.fetch(new Request(settings.BASE_URL + "/api/value/health"), env);
   expect(reply.status).toBe(success ? 200 : 503);
-  expect(await reply.json()).toEqual({ ...health, shards: [], held: [] });
+  expect(await reply.json()).toEqual({ ...health, shard: null, held: [] });
   expect(reply.headers.get("cache-control")).toBe("no-store");
   expect((await worker.fetch(new Request(settings.BASE_URL + "/health"), env)).status).toBe(404);
 });

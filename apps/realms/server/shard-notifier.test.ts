@@ -445,9 +445,7 @@ const seed = async (db: D1Database, level: string, device: { p256dh: string; aut
         `INSERT INTO "notification_push_subscriptions" ("id", "owner", "endpoint", "p256dh", "auth", "revocationHash", "gameAlertsEnabledAt", "createdAt") VALUES (?, ?, ?, ?, ?, 'x', ?, ?)`,
       )
       .bind(DEVICE_ID, OWNER, PUSH_ENDPOINT, device.p256dh, device.auth, now - 60_000, now - 60_000),
-    db
-      .prepare(`INSERT INTO "shards" ("url", "chainId", "status", "addedAt") VALUES (?, ?, 'active', ?)`)
-      .bind(SHARD, CHAIN_ID, now),
+    db.prepare(`INSERT INTO "shards" ("slot", "url", "chainId") VALUES (1, ?, ?)`).bind(SHARD, CHAIN_ID),
   ]);
 };
 

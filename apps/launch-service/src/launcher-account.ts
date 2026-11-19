@@ -14,7 +14,6 @@ export async function joinBotAccount(
   label: string,
 ): Promise<string> {
   const { shard } = await readLaunchShard(env.IDENTITY, chainId);
-  if (shard.status !== "active") throw new Error("launcher_shard_inactive");
   const account = await joinRealmsAccount({
     provider: rpcAt(shard.rpcUrl) as unknown as Parameters<typeof joinRealmsAccount>[0]["provider"],
     shard,

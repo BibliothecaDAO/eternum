@@ -9,17 +9,14 @@ const requests: string[] = [];
 vi.stubGlobal("fetch", async (input: string) => {
   requests.push(input);
   return Response.json({
-    shards: [
-      {
-        url: "https://shard-a.test",
-        chainId: "0xa",
-        status: "active",
-        games: [{ game_id: 1, mode: "blitz", status: "Live", player_state: { roster_wallet: "0x4a1" } }],
-        held_realm_id: null,
-        has_home_source: false,
-        taken_realm_ids: [],
-      },
-    ],
+    shard: {
+      url: "https://shard-a.test",
+      chainId: "0xa",
+      games: [{ game_id: 1, mode: "blitz", status: "Live", player_state: { roster_wallet: "0x4a1" } }],
+      held_realm_id: null,
+      has_home_source: false,
+      taken_realm_ids: [],
+    },
   });
 });
 

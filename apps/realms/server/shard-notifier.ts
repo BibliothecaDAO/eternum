@@ -106,7 +106,6 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
     if ((await this.ctx.storage.getAlarm()) === null) await this.ctx.storage.setAlarm(Date.now());
   }
 
-  /** A retired shard sends nothing more. */
   async stop(): Promise<void> {
     this.closeSiteStreams();
     await this.ctx.storage.deleteAlarm();

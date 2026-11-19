@@ -659,7 +659,7 @@ class LocalEnrollmentTest(unittest.TestCase):
             (data / "native-world.json").write_text(json.dumps({"shard": {"chainId": "0x1"}, "world": {"address": "0x2"}}))
             with (
                 patch.object(package, "DATA", data),
-                patch("deploy.directory_status") as listing,
+                patch("deploy.register_shard") as listing,
                 patch.object(shard, "wait_for_endpoint"),
                 patch.object(shard, "save_harness_environment"),
                 patch.object(shard, "deploy_world"),

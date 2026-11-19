@@ -105,7 +105,7 @@ const storageOf = (name: string) => {
 let instances = new Map<string, ValueMonitor>();
 const env = {
   ...settings,
-  IDENTITY: { l2ChainId: async () => "0x1", shards: async () => [] },
+  IDENTITY: { l2ChainId: async () => "0x1", shard: async () => null },
   RELAY_REPORT: { held: async () => [] },
   MONITOR: {
     idFromName: (name: string) => name,

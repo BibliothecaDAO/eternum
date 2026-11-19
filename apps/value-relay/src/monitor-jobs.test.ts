@@ -49,7 +49,7 @@ const fixture = () => {
     {
       L2_RPC_URL: "https://ledger.test",
       LAUNCH: { rosterCohorts: async () => [] },
-      IDENTITY: { l2ChainId: async () => "0x1", shards: async () => [] },
+      IDENTITY: { l2ChainId: async () => "0x1", shard: async () => null },
     } as never,
   );
   return { monitor, data };

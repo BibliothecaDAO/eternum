@@ -23,7 +23,6 @@ vi.mock("@realms-world/value-ledger", async (original) => ({
     contracts: { games: "0x77" },
     releaseSchemas: { "1": "0xs" },
     url: "https://shard.test",
-    status: "active",
   }),
   rpcAt: () => ({ getChainId: async () => "0x1" }),
 }));
@@ -51,7 +50,7 @@ it("lets the shard signer grant labor while the ledger signer awaits confirmatio
     {
       IDENTITY: {
         l2ChainId: async () => "0x1",
-        shards: async () => [{ chainId: "0x1", url: "https://shard.test", status: "active" }],
+        shard: async () => ({ chainId: "0x1", url: "https://shard.test" }),
       },
     } as never,
   );

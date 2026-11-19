@@ -2,7 +2,7 @@ import { KEEP, PROFILE_WORDS } from "@/ui/design-system/kit/words";
 import { useCallback, useEffect, useState } from "react";
 
 import { identityClient } from "@/hooks/context/identity-session";
-import { listOpenShards, openKnownShards } from "@/runtime/world/shards";
+import { openDirectoryShard } from "@/runtime/world/shards";
 import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
 import { Icon } from "@/ui/design-system/icon";
 import { AppButton, AppDialog, AppSetting } from "@/ui/design-system/kit/app-elements";
@@ -28,12 +28,12 @@ interface Device {
  * one address. A shard that could not be read makes the list partial, and the page says Devices did not answer.
  */
 const readDevices = async (address: string) => {
-  const unopened = await openKnownShards();
-  const shards = listOpenShards().map((shard) => ({ ...shard, provider: getShardRpcProvider(shard.rpcUrl) }));
+  const shard = await openDirectoryShard();
+  const shards = shard ? [{ ...shard, provider: getShardRpcProvider(shard.rpcUrl) }] : [];
   const { devices, failures } = await readAccountDevices(address, shards);
   return {
     devices: [...devices].map(([key, shards]): Device => ({ key, shards })),
-    partial: unopened.length + failures.length > 0,
+    partial: failures.length > 0,
   };
 };
 

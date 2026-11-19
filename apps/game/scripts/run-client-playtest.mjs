@@ -324,10 +324,11 @@ async function resolvePlaytestGame({ baseUrl, chainId, gameId, mode }) {
     if (!newest) throw new Error(`No live ${mode} game in the directory: pass --chain-id and --game-id.`);
     return newest;
   }
-  const listed = (directory?.shards ?? [])
-    .filter((shard) => BigInt(shard.chainId) === BigInt(chainId))
-    .flatMap((shard) => shard.games ?? [])
-    .find((game) => Number(game.game_id) === gameId);
+  const shard = directory?.shard;
+  const listed =
+    shard && BigInt(shard.chainId) === BigInt(chainId)
+      ? (shard.games ?? []).find((game) => Number(game.game_id) === gameId)
+      : undefined;
   if (!listed) throw new Error(`game ${gameId} on ${chainId} is not in the directory`);
   if (listed.mode !== mode) {
     throw new Error(`game ${gameId} is ${listed.mode}; the playtest's steps are written for ${mode}`);

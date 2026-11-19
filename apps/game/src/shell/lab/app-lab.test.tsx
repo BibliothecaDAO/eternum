@@ -76,7 +76,7 @@ it("answers fixture reads while mounted and restores the real runtime when leavi
   );
   expect(container.textContent).toContain("Fixture home");
   const directory = await (await window.fetch("/api/directory")).json();
-  expect(directory.shards[0].url).toBe("https://lab.invalid");
+  expect(directory.shard.url).toBe("https://lab.invalid");
   await vi.waitFor(() => expect(identity.state.session).not.toBe(identity.originalSession));
   expect(identity.client.sendSignInCode).not.toBe(sendCode);
   // The lab's player has no Realms wallet: the payout window offers to make one, not a failed read.

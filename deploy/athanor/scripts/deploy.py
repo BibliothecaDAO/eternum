@@ -16,11 +16,10 @@ from pathlib import Path
 import subprocess
 import sys
 import shutil
-from urllib.parse import urlsplit
 
 import shard
 from revision import deployment_revision
-from directory import directory_status, wait_for_identity, HeraldIdentityRefused
+from directory import register_shard, registered_shard, wait_for_identity, HeraldIdentityRefused
 from service_requests import identity_service_base, service_json
 
 ENVIRONMENTS = shard.ROOT / "deploy/release"
@@ -47,12 +46,10 @@ def main(environment, directory, report_stage=ignore_stage):
         report_stage("prepare")
         (directory / ".env").write_text(render_environment(inputs, (directory / "images.env").read_text()))
         check_operator_approval()
-        status = start(directory, inputs, report_stage)
+        start(directory, inputs, report_stage)
         publish_releases(directory, inputs, report_stage)
         report_stage("verify facts")
         differences = release_differences(release, *deployed_facts(directory / "data"), inputs["presets"])
-        if not differences and status["status"] == "pending":
-            activate(inputs, directory / "data", report_stage)
         if not differences:
             remove_unused_checkouts()
     if differences:
@@ -114,34 +111,6 @@ def deployment_target(environment, directory):
     return target
 
 
-def directory_row_is_valid(row):
-    if not isinstance(row, dict):
-        return False
-    if row.get("status") not in ("pending", "active", "draining", "retired"):
-        return False
-    if not isinstance(row.get("url"), str):
-        return False
-    try:
-        url = urlsplit(row["url"])
-        if url.scheme != "https" or not url.hostname or url.username or url.password:
-            return False
-    except ValueError:
-        return False
-    return isinstance(row.get("chainId"), str) and re.fullmatch(r"0x[0-9a-fA-F]+", row["chainId"])
-
-
-def row_matches_identity(row, chain, url):
-    return same(row["chainId"], chain) or row["url"] == url
-
-
-def is_own_pending_row(row, chain, url):
-    return row["status"] == "pending" and same(row["chainId"], chain) and row["url"] == url
-
-
-def is_listed_row(row):
-    return row is not None and row["status"] != "pending"
-
-
 def recorded_chain(directory):
     try:
         manifest = json.loads((directory / "data/native-world.json").read_text())
@@ -157,44 +126,27 @@ def is_deployment_log(path):
     return path.name.startswith("deploy-") and path.suffix == ".log"
 
 
+INCOMPLETE = "initialization is incomplete"
+
+
 def restart_unfinished(directory, inputs, release, report_stage):
     chain = "0x" + inputs["chain_id"].encode("ascii").hex()
-    url = inputs["public_herald_url"]
-    has_files = directory.exists() and any(not is_deployment_log(path) for path in directory.iterdir())
-    if has_files:
-        recorded = recorded_chain(directory)
-        if not same(recorded, chain):
-            raise DeploymentRefused(f"Run directory records chain {recorded}, configured chain is {chain}; data was not overwritten")
-    base = identity_service_base(inputs["guardian_url"])
-    listing = service_json(base + "/directory/shards", authenticated=True)
-    if not isinstance(listing, dict) or not isinstance(listing.get("shards"), list):
-        raise DeploymentRefused("Directory status read is malformed; data was not overwritten")
-    if not all(directory_row_is_valid(row) for row in listing["shards"]):
-        raise DeploymentRefused("Directory status row is malformed; data was not overwritten")
-    rows = [row for row in listing["shards"] if row["status"] != "retired" and row_matches_identity(row, chain, url)]
-    if len(rows) > 1:
-        raise DeploymentRefused("Several directory rows match this chain or Herald URL; data was not overwritten")
-    row = rows[0] if rows else None
-    if row is not None:
-        if not same(row["chainId"], chain):
-            raise DeploymentRefused(f"Herald URL {url} lists another chain {row['chainId']}; data was not overwritten")
-        if row["url"] != url:
-            raise DeploymentRefused(f"Chain {chain} is listed at another Herald URL {row['url']}; data was not overwritten")
-    if not has_files:
-        if is_listed_row(row):
-            raise DeploymentRefused("Listed shard has no local initialization; data was not overwritten")
+    if not (directory.exists() and any(not is_deployment_log(path) for path in directory.iterdir())):
         return
+    recorded = recorded_chain(directory)
+    if not same(recorded, chain):
+        raise DeploymentRefused(f"Run directory records chain {recorded}, configured chain is {chain}; data was not overwritten")
+    registered = registered_shard(inputs)
+    if registered is not None and not same(registered.get("chainId"), recorded):
+        raise DeploymentRefused("Run directory exists with another chain; data was not overwritten")
     differences = unfinished_differences(directory / "data", inputs, release)
     if not differences:
         return
-    if row is None:
-        raise DeploymentRefused("Unlisted shard cannot continue: " + "; ".join(differences) +
-                                "; remove the run directory yourself before retrying")
-    if not is_own_pending_row(row, chain, url):
+    if differences != [INCOMPLETE]:
         raise DeploymentRefused("Listed shard cannot be reinitialized: " + "; ".join(differences))
     from deposit_retirement import require_deposit_retirement
     require_deposit_retirement(inputs, directory)
-    report_stage("restart pending shard")
+    report_stage("restart unfinished shard")
     subprocess.run([*compose(directory), "down", "--volumes"], check=True, stdout=sys.stdout, stderr=sys.stderr)
     for path in directory.iterdir():
         if is_deployment_log(path):
@@ -209,10 +161,10 @@ def unfinished_differences(data, inputs, release):
     required = ("native-world.json", "initialized.json", "init-configuration.json", "host-keys.json",
                 "host-accounts.json", "vrf-key.json", "gameplay-contracts.json", "chain-config.yaml", "harness.env")
     if not all((data / name).exists() for name in required):
-        return ["initialization is incomplete"]
+        return [INCOMPLETE]
     manifest, initialized = deployed_facts(data)
     if "native" not in manifest:
-        return ["initialization is incomplete"]
+        return [INCOMPLETE]
     config = json.loads((data / "init-configuration.json").read_text())
     expected = {"shard": inputs["chain_id"].lower().replace("_", "-"), "chain_id": inputs["chain_id"],
                 "guardian_url": inputs["guardian_url"], "l2_gas_bound": inputs["l2_gas_bound"]}
@@ -267,8 +219,8 @@ def start(directory, config, report_stage=ignore_stage):
     subprocess.run([*compose(directory), "up", "-d", "herald", "metrics"], check=True, stdout=sys.stdout, stderr=sys.stderr)
     report_stage("wait for Herald identity")
     wait_for_identity(config)
-    report_stage("register pending")
-    status = directory_status(config, "pending")
+    report_stage("register")
+    register_shard(config)
     report_stage("start services")
     subprocess.run([*compose(directory), "up", "-d"], check=True, stdout=sys.stdout, stderr=sys.stderr)
     report_stage("initialise")
@@ -277,7 +229,6 @@ def start(directory, config, report_stage=ignore_stage):
                                    text=True, stderr=subprocess.PIPE).strip()
     if code != "0":
         raise RuntimeError(f"initialization exited {code}; read {directory / 'data'}/*.log")
-    return status
 
 
 
@@ -300,12 +251,6 @@ def publish_releases(directory, config, report_stage=ignore_stage):
 
 def served_releases(config):
     return service_json(config["public_herald_url"].rstrip("/") + "/manifest", timeout=10).get("releaseSchemas", {})
-
-
-def activate(config, directory, report_stage=ignore_stage):
-    report_stage("activate")
-    directory_status(config, "active")
-    print(json.dumps({"event": "shard_activated", "status": "active"}))
 
 
 def deployed_facts(data):
@@ -362,8 +307,8 @@ def fixed_differences(release, manifest, initialized, presets):
 
 
 STAGES = (
-    "build images", "restart pending shard", "prepare", "start Herald", "wait for Herald identity",
-    "register pending", "start services", "initialise", "publish releases", "verify facts", "activate",
+    "build images", "restart unfinished shard", "prepare", "start Herald", "wait for Herald identity",
+    "register", "start services", "initialise", "publish releases", "verify facts",
 )
 
 
@@ -403,7 +348,7 @@ def run(environment, directory):
         if name not in STAGES:
             raise ValueError("Unknown deployment stage")
         stage = name
-        restarted = restarted or name == "restart pending shard"
+        restarted = restarted or name == "restart unfinished shard"
         print(json.dumps({"stage": stage}), flush=True)
 
     outcome = {"kind": "shard-deployment-complete", "log": str(log_path)}

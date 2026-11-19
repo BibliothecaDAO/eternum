@@ -355,9 +355,7 @@ const answerDirectory = (
     if (url.pathname === "/api/slots") return json({ slots: [] });
     if (url.pathname === "/api/factory/calendar") return json({ phases: [], nextBlitz: null });
     if (url.pathname === "/api/directory")
-      return json({
-        shards: [{ url: LAB_GAME.url, chainId: LAB_GAME.chainId, status: "active", games: [game], manifest }],
-      });
+      return json({ shard: { url: LAB_GAME.url, chainId: LAB_GAME.chainId, games: [game], manifest } });
     if (url.host !== shard.host) return network(input, init);
     if (url.pathname === "/manifest") return json(manifest);
     if (url.pathname === "/games")

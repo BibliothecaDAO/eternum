@@ -10,7 +10,7 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   getOrCreateDeviceKey: () => ({ publicKey: "0xd0e5" }),
   readAccountDevices: async () => ({ devices: read.devices, failures: [] }),
 }));
-vi.mock("@/runtime/world/shards", () => ({ openKnownShards: async () => [], listOpenShards: () => [] }));
+vi.mock("@/runtime/world/shards", () => ({ openDirectoryShard: async () => null }));
 vi.mock("../herald", () => ({ useRealmsPlayer: () => ({ data: "0x7", isError: false }) }));
 
 import { DevicesCard } from "./devices-page";

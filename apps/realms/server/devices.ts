@@ -4,6 +4,7 @@ import { botRealmsId, realmsAccountAddress, type DeviceChange } from "@realms-wo
 import type { Guardian } from "@realms-world/guardian";
 
 import { hasVerifiedSignIn, type IdentityAuth } from "./auth";
+import { directoryShardOf } from "./directory";
 import { json } from "./http";
 import { recordApprovedAccount } from "./realms-accounts";
 
@@ -66,7 +67,7 @@ const approveDeviceChange = (request: Request, { auth, db, guardian, accountClas
     if (change.action === "ADD" && (yield* isRevokedDevice(db, realmsId, change.deviceKey))) {
       return yield* new DeviceRequestError({ code: "device_revoked", status: 403 });
     }
-    const signature = yield* signListedDeviceChange(db, guardian, change, "player");
+    const signature = yield* signListedDeviceChange(db, guardian, change);
     if (change.action === "ADD") {
       yield* Effect.promise(() => recordApprovedAccount(db, ownAccount, realmsId));
       yield* recordDeviceSession(db, realmsId, change.deviceKey, session.session.id);
@@ -114,37 +115,20 @@ export const handleBotDeviceApproval = (
         return yield* new DeviceRequestError({ code: "not_a_bot_account", status: 403 });
       }
       const change: DeviceChange = requested;
-      const signature = yield* signListedDeviceChange(db, guardian, change, "bot_enrolment");
+      const signature = yield* signListedDeviceChange(db, guardian, change);
       return json({ ...change, signature: [signature.r, signature.s] });
     }).pipe(
       Effect.catchTag("DeviceRequestError", (error) => Effect.succeed(json({ error: error.code }, error.status))),
     ),
   );
 
-/** Pending admission permits operator and Worker bot enrolment; player devices require a visible current shard. */
-const signListedDeviceChange = (
-  db: D1Database,
-  guardian: Guardian,
-  change: DeviceChange,
-  purpose: "player" | "bot_enrolment",
-) =>
+const signListedDeviceChange = (db: D1Database, guardian: Guardian, change: DeviceChange) =>
   Effect.gen(function* () {
-    const { results } = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .prepare(`SELECT "chainId", "status" FROM "shards" WHERE "status" IN ('pending', 'active', 'draining')`)
-          .all<{ chainId: string; status: string }>(),
+    const shard = yield* Effect.tryPromise({
+      try: () => directoryShardOf(db, change.chainId),
       catch: () => new DeviceRequestError({ code: "shard_list_unavailable", status: 503 }),
     });
-    if (
-      !results.some(
-        (shard) =>
-          BigInt(shard.chainId) === BigInt(change.chainId) &&
-          (shard.status !== "pending" || purpose === "bot_enrolment"),
-      )
-    ) {
-      return yield* new DeviceRequestError({ code: "chain_not_approved", status: 403 });
-    }
+    if (!shard) return yield* new DeviceRequestError({ code: "chain_not_approved", status: 403 });
     return yield* Effect.promise(() => guardian.signDeviceChange(change));
   });
 

@@ -40,14 +40,13 @@ Preparation generates a host signing key and a separate VRF key on the shard. Bo
 `native-world.json` and passed to Games' constructor. Restart verifies the file against that point and refuses an
 identity or bound change. There is no VRF key setter: a leaked key retires the shard.
 
-Preparation records immutable identity before network work. An active, draining or retired shard is never removed or
-reinitialized; a class or identity difference refuses the update by name. The deployer reads recorded status through the
-operator-authenticated directory route before touching state. An incompatible unfinished shard is removed only when the
-authenticated directory lists exactly its recorded and configured chain at its configured Herald URL as pending and the
-run directory is the environment's own directory. Unlisted incompatible state refuses and requires manual removal; an
-unreadable local identity or directory read failure refuses cleanup. Matching initialized state continues through the
-existing initialization and role verification. The initializer runs as HOST_UID, and private credentials remain
-owner-only with mode `0600`.
+Preparation records immutable identity before network work. An initialized shard is never removed or reinitialized; a
+class or identity difference refuses the update by name. The deployer reads the directory's one row through the
+operator-authenticated directory route before touching state, and refuses when it names another chain than the run
+directory records. An unfinished initialization is removed only when the run directory is the environment's own
+directory and its deposits are retired; an unreadable local identity or directory read failure refuses cleanup. Matching
+initialized state continues through the existing initialization and role verification. The initializer runs as HOST_UID,
+and private credentials remain owner-only with mode `0600`.
 
 ## Endpoints and readiness
 
@@ -60,31 +59,29 @@ estimates are never stamped. The node's write RPC is internal, not exposed throu
 Behind a tunnel, set TRUSTED_PROXY to its actual socket peer. With loopback bindings initialization derives that peer
 from the Compose network route; exposed bindings trust no proxy unless explicitly configured.
 
-The identity service must carry the pending route before a shard from this code starts. Deploy the identity Worker
-containing `/api/directory/shards/pending` before running official deployment; a missing route fails with this
-prerequisite. The initializer never lists.
+The identity service must carry `/api/directory/shard` before a shard from this code starts. The directory holds one
+row: registering replaces it, removing deletes it. The initializer never lists.
 
 Herald's existing listener first serves the real prepared identity at `/manifest`, with other routes unavailable.
-Official deployment registers the Herald URL as pending after starting Herald and before starting initialization or
-enrolling the operator. Pending shards are hidden from players. Init then deploys Games, sets owner/launcher/ledger
-roles and registers the selected presets. Games is created with the bootstrap owner and the launcher and relay addresses
-derived from the guardian identity. The two service Workers join those accounts on their own alarm or cron. Last, on
-every start, init has Madara compile each of the world's classes to native code (`warm-native-classes.ts`): Madara
-compiles a class only when it first runs it, and runs that first execution on the VM, 2–4× slower. Madara compiles four
-at once and refuses more, so init asks again each round for every class still missing, until all are compiled or 15
-minutes pass (then the start fails, naming them). Classes already in Madara's cache cost one directory read.
+Official deployment registers the Herald URL after starting Herald and before starting initialization or enrolling the
+operator. Init then deploys Games, sets owner/launcher/ledger roles and registers the selected presets. Games is created
+with the bootstrap owner and the launcher and relay addresses derived from the guardian identity. The two service
+Workers join those accounts on their own alarm or cron. Last, on every start, init has Madara compile each of the
+world's classes to native code (`warm-native-classes.ts`): Madara compiles a class only when it first runs it, and runs
+that first execution on the VM, 2–4× slower. Madara compiles four at once and refuses more, so init asks again each
+round for every class still missing, until all are compiled or 15 minutes pass (then the start fails, naming them).
+Classes already in Madara's cache cost one directory read.
 
 After initialization, deployment compares the deployed classes, schema and selected preset commitments with the build's
-facts. It confirms the distinct on-chain roles, then activates the directory entry through Herald's real manifest. A
-failed role check or active write leaves the shard pending; rerunning repeats these idempotent operations. Deployment
-creates no game and proves no gameplay action end to end; the first real game and playtest provide that evidence.
+facts and confirms the distinct on-chain roles; rerunning repeats these idempotent operations. Deployment creates no
+game and proves no gameplay action end to end; the first real game and playtest provide that evidence.
 
 Metrics collect OTLP and sample container CPU from a read-only cgroup mount, without a Docker socket or write access.
 The compose services restart on failure. Initializer logs and `harness.env` are private and must never be published.
 
-| Path                | Registration and visibility                                              | Operator command                                           |
-| ------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------- |
-| Official deployment | PENDING before enrolment; initialized facts and Worker roles then ACTIVE | `operator-command.py deploy ENVIRONMENT PACKAGE_DIRECTORY` |
+| Path                | Registration and visibility                       | Operator command                                           |
+| ------------------- | ------------------------------------------------- | ---------------------------------------------------------- |
+| Official deployment | Replaces the directory's one row before enrolment | `operator-command.py deploy ENVIRONMENT PACKAGE_DIRECTORY` |
 
 Run each command above as `python3 deploy/athanor/scripts/operator-command.py ...`. The wrapper reads the box's
 protected token file; ops provisions it.

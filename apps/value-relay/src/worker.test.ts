@@ -93,7 +93,7 @@ it.each([302, 200])(
           modules: true,
           compatibilityDate: "2026-07-30",
           script: `import {WorkerEntrypoint} from 'cloudflare:workers';
-export class ValueIdentity extends WorkerEntrypoint { shards(){return [{chainId:'${chain}',url:'https://shard.test',status:'active'}]} l2ChainId(){return '0x534e5f4d41494e'} }
+export class ValueIdentity extends WorkerEntrypoint { shard(){return {chainId:'${chain}',url:'https://shard.test'}} l2ChainId(){return '0x534e5f4d41494e'} }
 export class RosterMonitor extends WorkerEntrypoint { verifyRoster(){return 0} }
 export default {fetch(){return new Response(null,{status:404})}};`,
         },
@@ -101,21 +101,20 @@ export default {fetch(){return new Response(null,{status:404})}};`,
     });
     try {
       await (await mf.getWorker("relay")).scheduled({ cron: "* * * * *", scheduledTime: new Date(0) });
-      let health: { shards?: { chainId: string; value?: { reason?: string } }[] } = {};
+      let health: { shard?: { chainId: string; value?: { reason?: string } } | null } = {};
       const deadline = Date.now() + 10_000;
       while (Date.now() < deadline) {
         health = (await (
           await mf.dispatchFetch("https://play.dev-realms.party/api/value/health")
         ).json()) as typeof health;
-        if (status === 200 ? joinRpc.receipts > 0 : health.shards?.[0]?.value?.reason === "operator_redirect_refused")
-          break;
+        if (status === 200 ? joinRpc.receipts > 0 : health.shard?.value?.reason === "operator_redirect_refused") break;
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
       expect(approvals).toBeGreaterThan(0);
       expect(redirects).toBe(0);
       expect(joinRpc.deployed).toBe(status === 200);
       if (status === 200) expect(joinRpc.receipts).toBeGreaterThan(0);
-      else expect(health.shards).toMatchObject([{ chainId: chain, value: { reason: "operator_redirect_refused" } }]);
+      else expect(health.shard).toMatchObject({ chainId: chain, value: { reason: "operator_redirect_refused" } });
     } finally {
       await disposeWorker(mf);
     }
@@ -165,7 +164,7 @@ it("finishes a chest only for a signed-in player's page on our origin, and answe
         modules: true,
         compatibilityDate: "2026-07-30",
         script: `import {WorkerEntrypoint} from 'cloudflare:workers';
-export class ValueIdentity extends WorkerEntrypoint { shards(){return []} authenticate(cookie){return cookie === 'session=player' ? {realmsId:'0x7'} : null} }
+export class ValueIdentity extends WorkerEntrypoint { shard(){return null} authenticate(cookie){return cookie === 'session=player' ? {realmsId:'0x7'} : null} }
 export class RosterMonitor extends WorkerEntrypoint { verifyRoster(){return 0} }
 export default {fetch(){return new Response(null,{status:404})}};`,
       },

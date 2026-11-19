@@ -1,6 +1,10 @@
 // @vitest-environment node
 import { afterEach, expect, it, vi } from "vitest";
-import { openShard, refreshShardRelease, requireShard, ShardReleaseMismatchError } from "./shard";
+
+const freshPage = async () => {
+  vi.resetModules();
+  return import("./shard");
+};
 
 const schemaHash = "compiled-schema";
 const manifest = (chainId: string) => ({
@@ -21,19 +25,33 @@ const serve = (body: unknown) =>
 afterEach(() => vi.unstubAllGlobals());
 
 it("refuses a shard with no release this client can read", async () => {
+  const { openShard, ShardReleaseMismatchError } = await freshPage();
   serve(manifest("0x1"));
   await expect(openShard("https://one.shard.test", "schema-b")).rejects.toBeInstanceOf(ShardReleaseMismatchError);
 });
 it("reads one manifest, without downloading a schema, and keys the shard by its chain", async () => {
+  const { openShard, requireShard } = await freshPage();
   serve(manifest("0x0a"));
   const shard = await openShard("https://two.shard.test", schemaHash);
   expect(requireShard("0xa")).toBe(shard);
   expect(shard).toMatchObject({ chainId: "0xa", worldAddress: "0x77" });
   expect(fetch).toHaveBeenCalledOnce();
   expect(fetch).toHaveBeenCalledWith("https://two.shard.test/manifest", expect.any(Object));
-  await expect(openShard("https://three.shard.test", schemaHash)).rejects.toThrow("both claim chain 0xa");
+});
+it("keeps one shard open: it opens again, and another chain or another URL for its chain is refused", async () => {
+  const { openShard, getShard } = await freshPage();
+  serve(manifest("0x0a"));
+  await openShard("https://two.shard.test", schemaHash);
+  const again = await openShard("https://two.shard.test", schemaHash);
+  expect(getShard("0xa")).toBe(again);
+  await expect(openShard("https://three.shard.test", schemaHash)).rejects.toThrow("cannot open beside it");
+  serve(manifest("0x0b"));
+  await expect(openShard("https://two.shard.test", schemaHash)).rejects.toThrow("cannot open beside it");
+  expect(getShard("0xb")).toBeNull();
+  expect(getShard("0xa")).toBe(again);
 });
 it("opens a shard from the manifest its listing carries, without asking the shard again", async () => {
+  const { openShard, requireShard } = await freshPage();
   serve(manifest("0x0b"));
   const shard = await openShard("https://four.shard.test", schemaHash, undefined, manifest("0x1d"));
   expect(fetch).not.toHaveBeenCalled();
@@ -41,6 +59,7 @@ it("opens a shard from the manifest its listing carries, without asking the shar
   expect(requireShard("0x1d")).toBe(shard);
 });
 it("resolves the game's release and leaves the shared shard registry unchanged on refresh", async () => {
+  const { openShard, refreshShardRelease, requireShard } = await freshPage();
   serve(manifest("0x0b"));
   const opened = await openShard("https://hotfix.shard.test", schemaHash);
   serve({ ...manifest("0x0b"), releaseSchemas: { "7": schemaHash, "8": schemaHash, "9": "new-schema" } });
@@ -54,6 +73,7 @@ it("resolves the game's release and leaves the shared shard registry unchanged o
 });
 
 it("refuses a manifest without the play gas bound every invoke must carry", async () => {
+  const { openShard } = await freshPage();
   const { l2GasBound: _bound, ...unbounded } = manifest("0xd");
   serve(unbounded);
   await expect(openShard("https://unbounded.shard.test", schemaHash)).rejects.toThrow("no valid l2GasBound");
@@ -64,6 +84,7 @@ it("refuses a manifest without the play gas bound every invoke must carry", asyn
 });
 
 it("validates shard authority before inserting a manifest into the registry", async () => {
+  const { openShard, requireShard } = await freshPage();
   serve(manifest("0xc"));
   await expect(
     openShard("https://untrusted.test", schemaHash, () => {

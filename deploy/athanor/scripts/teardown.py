@@ -22,7 +22,7 @@ import time
 
 import deploy
 import shard
-from directory import directory_status
+from directory import remove_shard
 from deposit_retirement import require_deposit_retirement
 
 
@@ -147,8 +147,8 @@ def teardown(arguments, report_stage):
                 (LOGS / log.name).chmod(0o600)
             report_stage("remove run directory")
             shutil.rmtree(directory)
-        report_stage("retire directory row")
-        directory_status(config, "retired")
+        report_stage("remove directory row")
+        remove_shard(config)
         if backup is not None:
             complete_verification_record(environment)
 

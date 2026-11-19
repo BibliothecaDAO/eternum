@@ -226,13 +226,11 @@ function releaseRoute(value: Platform, answer: () => Response) {
   return requests;
 }
 const REPORT = {
-  shards: [
-    {
-      chainId: "0x1",
-      releaseId: NATIVE_RELEASE_ID,
-      games: [{ gameId: 1, from: 1, to: NATIVE_RELEASE_ID, transactions: ["0xa"] }],
-    },
-  ],
+  shard: {
+    chainId: "0x1",
+    releaseId: NATIVE_RELEASE_ID,
+    games: [{ gameId: 1, from: 1, to: NATIVE_RELEASE_ID, transactions: ["0xa"] }],
+  },
 };
 
 test.each(["dev", "production"] as const)(

@@ -62,7 +62,8 @@ export async function proveFrontierChestRoute(browser, { baseUrl, backend, out }
         const response=await originalFetch(input,init);
         if(requestUrl.pathname!=='/api/directory')return response;
         const directory=await response.json();
-        for(const shard of directory.shards ?? [])if(shard.manifest)
+        const shard=directory.shard;
+        if(shard?.manifest)
           for(const id of Object.keys(shard.manifest.releaseSchemas))shard.manifest.releaseSchemas[id]=${JSON.stringify(schemaIdentity)};
         return new Response(JSON.stringify(directory),{status:response.status,headers:{'content-type':'application/json'}});
       };
@@ -75,7 +76,7 @@ export async function proveFrontierChestRoute(browser, { baseUrl, backend, out }
       "Fixture preload did not run",
     );
     const game = await read(
-      `(async()=>{const directory=await(await fetch('/api/directory')).json();for(const shard of directory.shards ?? []){const game=shard.games?.find(g=>g.mode==='frontier'&&g.status==='Live');if(game)return {chainId:shard.chainId,gameId:game.game_id};}throw Error('No live Frontier route available');})()`,
+      `(async()=>{const {shard}=await(await fetch('/api/directory')).json();const game=shard?.games?.find(g=>g.mode==='frontier'&&g.status==='Live');if(game)return {chainId:shard.chainId,gameId:game.game_id};throw Error('No live Frontier route available');})()`,
     );
     await devtools.send("Page.navigate", {
       url: `${baseUrl}/lab/relic-chest?mode=frontier&rendererMode=${backend}`,

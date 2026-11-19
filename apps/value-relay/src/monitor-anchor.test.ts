@@ -70,7 +70,7 @@ const monitorWithStorage = () => {
       { storage } as unknown as DurableObjectState,
       {
         L2_RPC_URL: "https://ledger.test",
-        IDENTITY: { l2ChainId: async () => "0x1", shards: async () => [] },
+        IDENTITY: { l2ChainId: async () => "0x1", shard: async () => null },
       } as never,
     ),
     { data },

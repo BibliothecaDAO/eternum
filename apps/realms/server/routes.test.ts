@@ -6,9 +6,9 @@ const handlers = vi.hoisted(() => ({ directory: vi.fn(), devices: vi.fn(), chat:
 vi.mock("./directory", () => ({
   handleDirectory: handlers.directory,
   handleDirectoryHistory: handlers.directory,
-  handleAdmitShard: vi.fn(),
-  handleRegisterPendingShard: vi.fn(),
-  handleShardStatus: vi.fn(),
+  handleRegisterShard: vi.fn(),
+  handleRemoveShard: vi.fn(),
+  directoryShard: vi.fn(),
 }));
 vi.mock("./devices", () => ({ handleDeviceChange: handlers.devices, handleBotDeviceApproval: vi.fn() }));
 vi.mock("./chat/routes", () => ({ routeChat: handlers.chat }));
@@ -36,7 +36,7 @@ beforeEach(() => {
     PUBLIC_RATE_LIMIT: limiter(30),
     DIRECTORY_RATE_LIMIT: limiter(600),
   } as unknown as IdentityEnv;
-  handlers.directory.mockImplementation(async () => Response.json({ shards: [] }));
+  handlers.directory.mockImplementation(async () => Response.json({ shard: null }));
   handlers.devices.mockImplementation(async () => Response.json({ signature: [] }));
   handlers.chat.mockImplementation(async () => Response.json({ blocked: [] }));
 });

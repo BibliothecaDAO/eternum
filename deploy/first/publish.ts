@@ -121,14 +121,14 @@ export async function advanceFrontierRelease(platform: Platform, revision: strin
     signal: AbortSignal.timeout(300_000),
   });
   const body = (await response.json().catch(() => null)) as (ReleaseReport & { error?: string }) | null;
-  if (!response.ok || !body?.shards) {
+  if (!response.ok || body?.shard === undefined) {
     const code = typeof body?.error === "string" ? body.error : "release_apply_failed";
     throw new PublicError(`Release ${NATIVE_RELEASE_ID}: ${RELEASE_REFUSALS[code] ?? code}.`, response.status, code);
   }
   platform.store.write("release-advance.json", body);
-  for (const { chainId, games } of body.shards)
-    for (const { gameId, from, to } of games)
-      console.log(`Frontier game ${gameId} on ${chainId}: release ${from} → ${to}.`);
+  if (body.shard)
+    for (const { gameId, from, to } of body.shard.games)
+      console.log(`Frontier game ${gameId} on ${body.shard.chainId}: release ${from} → ${to}.`);
 }
 
 export function clientEnvironment(platform: Platform, revision: string) {

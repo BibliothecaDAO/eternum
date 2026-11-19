@@ -250,9 +250,9 @@ const json = (body: unknown) =>
 const answerAppReads = (screen: LabScreen, field: number | null) => {
   const network = window.fetch.bind(window);
   let boardReads = 0;
-  const shard = { url: "https://lab.invalid", chainId: LAB_CHAIN, status: "active", games: LAB_SCREENS[screen].games };
+  const shard = { url: "https://lab.invalid", chainId: LAB_CHAIN, games: LAB_SCREENS[screen].games };
   const answers: Record<string, (url: URL) => Response> = {
-    "/api/directory": () => json({ shards: [field === null ? shard : { ...shard, manifest: LAB_SHARD_MANIFEST }] }),
+    "/api/directory": () => json({ shard: field === null ? shard : { ...shard, manifest: LAB_SHARD_MANIFEST } }),
     // The player's own finished Blitz.
     "/api/directory/history": () =>
       json({

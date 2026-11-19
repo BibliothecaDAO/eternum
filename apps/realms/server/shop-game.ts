@@ -1,6 +1,6 @@
 import type { IdentityAuth } from "./auth";
 import { readEnrolledAccounts, runningFrontierGameIds } from "./day-open";
-import { fetchShardGames, gamesUrl, listedShards } from "./directory";
+import { directoryShardOf, fetchShardGames, gamesUrl } from "./directory";
 import type { IdentityEnv } from "./env";
 import { json } from "./http";
 import { playerAccounts } from "./campaign-entry";
@@ -38,7 +38,7 @@ export const shopAccessOf = (
 ): ShopAccess => {
   const accountOf = playerAccounts(env);
   return async (realmsId, { chainId, gameId }) => {
-    const shard = (await listedShards(env.DB)).find((listed) => gameKey(listed.chainId) === chainId);
+    const shard = await directoryShardOf(env.DB, chainId);
     if (!shard) return false;
     const running = runningFrontierGameIds(await fetchShardGames(shard, gamesUrl(shard, null), fetchShard), now());
     if (!running.includes(gameId)) return false;

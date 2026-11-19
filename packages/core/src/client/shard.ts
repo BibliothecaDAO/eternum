@@ -42,7 +42,7 @@ export class ShardReleaseMismatchError extends Error {
 
 const ENTRYPOINT_CONTRACT = "games";
 
-const shards = new Map<string, Shard>();
+let opened: Shard | null = null;
 
 /** Chain ids arrive as felts in any hex spelling; one spelling keys URLs, storage and lookups. */
 const normalizeChainId = (chainId: string | bigint): string => `0x${BigInt(chainId).toString(16)}`;
@@ -81,10 +81,8 @@ async function readShard(url: string): Promise<Shard> {
   return buildShard(shardUrl, (await response.json()) as ShardManifest);
 }
 
-export const getShards = (): Shard[] => [...shards.values()];
-
 export const getShard = (chainId: string | null | undefined): Shard | null =>
-  chainId ? (shards.get(normalizeChainId(chainId)) ?? null) : null;
+  chainId && opened?.chainId === normalizeChainId(chainId) ? opened : null;
 
 /** A game is always played on its own shard; never redirect it to another. */
 export const requireShard = (chainId: string | null | undefined): Shard => {
@@ -118,9 +116,8 @@ const playGasBound = (url: string, bound: string | undefined): bigint => {
 };
 
 const registerShard = (shard: Shard): Shard => {
-  const existing = shards.get(shard.chainId);
-  if (existing && existing.url !== shard.url)
-    throw new Error(`Shards ${existing.url} and ${shard.url} both claim chain ${shard.chainId}`);
-  shards.set(shard.chainId, shard);
+  if (opened && (opened.chainId !== shard.chainId || opened.url !== shard.url))
+    throw new Error(`Shard ${opened.url} on chain ${opened.chainId} is open; ${shard.url} cannot open beside it`);
+  opened = shard;
   return shard;
 };
