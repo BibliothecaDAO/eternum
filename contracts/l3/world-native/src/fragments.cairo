@@ -1,7 +1,5 @@
 use starknet::ContractAddress;
 
-pub const PURCHASE: u8 = 1;
-pub const FRIEND: u8 = 2;
 pub const WONDER_QUEST: u16 = 10;
 pub const SEAL_PRICE: u16 = 1000;
 pub const STAMINA_PER_FRAGMENT: u16 = 2;
@@ -9,14 +7,6 @@ pub const CACHE_TROOPS: u16 = 100;
 pub const SURFACE_CACHE_PERCENT: u8 = 19;
 pub const VEIL_CACHE_PERCENT: u8 = 10;
 pub const HOLLOW_CACHE_PERCENT: u8 = 5;
-
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct FragmentCredit {
-    pub id: felt252,
-    pub account: ContractAddress,
-    pub source: u8,
-    pub amount: u128,
-}
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct BuyStamina {

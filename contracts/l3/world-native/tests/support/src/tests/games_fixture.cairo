@@ -2025,15 +2025,6 @@ pub mod GamesFixture {
                 account,
             )
         }
-        fn credit_fragments(ref self: TContractState, game_id: u32, credit: crate::fragments::FragmentCredit) {
-            crate::entry::IHomeGrantsDispatcherTrait::credit_fragments(
-                crate::entry::IHomeGrantsLibraryDispatcher {
-                    class_hash: crate::logic::release::classes(game_id).bridge.read(),
-                },
-                game_id,
-                credit,
-            )
-        }
     }
     #[starknet::embeddable]
     pub impl BlitzResultsFixture<

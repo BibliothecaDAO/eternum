@@ -137,12 +137,6 @@ pub mod EntryAdministration {
             super::assert_ledger_operator();
             super::grant_seal(game_id, account)
         }
-        fn credit_fragments(
-            ref self: ComponentState<TContractState>, game_id: u32, credit: crate::fragments::FragmentCredit,
-        ) {
-            super::assert_ledger_operator();
-            crate::logic::fragments::credit(game_id, credit)
-        }
     }
     #[embeddable_as(ResourceContextImpl)]
     pub impl ResourceContextView<
