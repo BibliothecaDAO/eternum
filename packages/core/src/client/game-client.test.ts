@@ -19,6 +19,11 @@ import { buildStoryEventPresentation } from "../systems/story-event-formatter";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { TroopType } from "@bibliothecadao/types";
 
+vi.mock("../../../../deploy/release/native-release", async (original) => ({
+  ...(await original<typeof import("../../../../deploy/release/native-release")>()),
+  NATIVE_BALANCE_SINCE_RELEASE: 1,
+}));
+
 class FakeSocket implements HeraldSocket {
   public onclose: (() => void) | null = null;
   public onerror: (() => void) | null = null;

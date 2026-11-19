@@ -1,4 +1,5 @@
 import { frontierSeasonOnePreset } from "../../../../config/source/frontier/season-one";
+import { NATIVE_RELEASE_ID } from "../../../../deploy/release/native-release";
 import type { HeraldGameSnapshot } from "@bibliothecadao/eternum/game-sync";
 import { nativeBaneConstants } from "@bibliothecadao/eternum/game-client";
 import { deepSites, RESOURCE_PRECISION, TileOccupier } from "@bibliothecadao/types";
@@ -9,6 +10,7 @@ export const siteGuardTroops = (ticksUntilClear: number, clearableTroops = 800) 
   clearableTroops + ticksUntilClear * frontierSeasonOnePreset.deep.lossPerTick;
 
 export const GAME_ID = 1;
+export const RELEASE = NATIVE_RELEASE_ID;
 export const PLAYER_ACCOUNT = "0x4b1d";
 export const HOME = 5;
 export const ARMY = 7;
@@ -92,7 +94,10 @@ export const snapshot = (
     {
       model: "GameRelease",
       rows: [
-        { key: "0x1", value: { game_id: GAME_ID, release_id: 1, preset_commitment: "0x1", created_release_id: 1 } },
+        {
+          key: "0x1",
+          value: { game_id: GAME_ID, release_id: RELEASE, preset_commitment: "0x1", created_release_id: RELEASE },
+        },
       ],
     },
     {

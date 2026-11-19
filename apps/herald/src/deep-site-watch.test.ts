@@ -7,6 +7,7 @@ import {
   GAME_ID,
   PLAYER_ACCOUNT,
   ARMIES_TICK_SECONDS,
+  RELEASE,
 } from "../../realms/server/fixtures/shard-world";
 import { LiveWorld } from "./live-world";
 import { WorldFold } from "./world-fold";
@@ -70,7 +71,7 @@ it("plans a Deep site opportunity from Herald's actor snapshot with public rival
   expect(ownerOnly.models[0]!.rows.map(({ value }) => Number(value.explorer_id))).toEqual([7]);
   vi.stubGlobal("fetch", async (address: string) => {
     const url = new URL(address);
-    if (url.pathname === "/manifest") return Response.json({ version: 1, releaseSchemas: { "1": schema.identity } });
+    if (url.pathname === "/manifest") return Response.json({ version: 1, releaseSchemas: { [RELEASE]: schema.identity } });
     return Response.json(
       live.snapshot(
         String(GAME_ID),
@@ -88,7 +89,7 @@ it("plans a Deep site opportunity from Herald's actor snapshot with public rival
       owner: "player",
     },
     now * 1000,
-    { "1": schema.identity },
+    { [RELEASE]: schema.identity },
   );
   expect(watches).toEqual([
     expect.objectContaining({

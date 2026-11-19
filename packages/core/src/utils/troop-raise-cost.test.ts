@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { NativeFactStore } from "../client/native-fact-store";
 import type { GameSyncFact } from "../sync/game-sync-types";
 import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
@@ -6,6 +6,11 @@ import { canPayTroopRaise, readTroopRaiseCost } from "./troop-raise-cost";
 import { followGameRelease } from "../client/game-release";
 import { nativeFactSchemaIdentity } from "../../../../contracts/l3/world-native/schema/client.gen";
 import retiredTown from "../client/fixtures/retired-town.json";
+
+vi.mock("../../../../deploy/release/native-release", async (original) => ({
+  ...(await original<typeof import("../../../../deploy/release/native-release")>()),
+  NATIVE_BALANCE_SINCE_RELEASE: 1,
+}));
 
 const PRECISION = 1_000_000_000n;
 const upsert = (key: string, model: string, value: Record<string, unknown>): GameSyncFact => ({ model, key, value });
