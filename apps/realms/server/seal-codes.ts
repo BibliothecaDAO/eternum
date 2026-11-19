@@ -4,7 +4,8 @@ import type { SealCodeRefusal } from "@realms-world/identity";
 import type { IdentityAuth } from "./auth";
 import { codeHashInScope, readCampaignCode } from "./campaigns";
 import { json, readBody } from "./http";
-import type { EnteredGames, NamedGame } from "./shop-game";
+import type { IdentityEnv } from "./env";
+import { enteredGamesOf, type EnteredGames, type NamedGame } from "./shop-game";
 
 const BODY_BYTES = 256;
 
@@ -12,6 +13,26 @@ export interface SealCodeWorld {
   db: D1Database;
   enteredGames: EnteredGames;
   grantSeal: (game: NamedGame, realmsId: string) => Promise<Response>;
+}
+
+export const sealCodeWorldOf = (
+  env: Pick<IdentityEnv, "DB" | "GUARDIAN" | "VALUE_RELAY" | "OPERATOR_TOKEN">,
+  fetchShard: typeof fetch,
+): SealCodeWorld => ({
+  db: env.DB,
+  enteredGames: enteredGamesOf(env, fetchShard, () => Math.floor(Date.now() / 1000)),
+  grantSeal: (game, realmsId) =>
+    env.VALUE_RELAY.fetch("https://value-relay/api/value/operator/seal", {
+      method: "POST",
+      redirect: "manual",
+      headers: { authorization: `Bearer ${env.OPERATOR_TOKEN}`, "content-type": "application/json" },
+      body: JSON.stringify({ ...game, realmsId }),
+    }),
+});
+
+export async function deliverQueuedSealGrants(world: SealCodeWorld): Promise<void> {
+  const queued = await world.db.prepare('SELECT "owner" FROM "seal_grants" ORDER BY "queued_at"').all<{ owner: string }>();
+  for (const { owner } of queued.results) await deliverSealGrant(world, owner);
 }
 
 export function handleSealCode(request: Request, auth: IdentityAuth, world: SealCodeWorld): Promise<Response> {
@@ -44,7 +65,13 @@ function serveSealCode(request: Request, auth: IdentityAuth, world: SealCodeWorl
     if (holdsOtherSeal) return refuse("seal_owned", 409);
     yield* holdCode(db, owner, code);
     if (!(yield* holdsCode(db, owner))) return refuse("code_unavailable", 410);
-    yield* grantInEnteredGames(world, owner);
+    yield* sealStorage(() =>
+      db
+        .prepare('INSERT OR IGNORE INTO "seal_grants" ("owner", "queued_at") VALUES (?, ?)')
+        .bind(owner, Math.floor(Date.now() / 1000))
+        .run(),
+    );
+    yield* Effect.promise(() => deliverSealGrant(world, owner));
     return json({ held: true });
   });
 }
@@ -60,14 +87,15 @@ export const holdsSeal = async (db: D1Database, owner: string) =>
     .bind(owner)
     .first()) !== null;
 
-const grantInEnteredGames = (world: SealCodeWorld, owner: string) =>
-  Effect.tryPromise({
-    try: async () => {
-      for (const game of await world.enteredGames(owner))
-        if (!(await world.grantSeal(game, owner)).ok) throw new Error("seal_grant_refused");
-    },
-    catch: () => new SealCodeError({ code: "seal_grant_unavailable", status: 503 }),
-  });
+const deliverSealGrant = async (world: SealCodeWorld, owner: string) => {
+  try {
+    for (const game of await world.enteredGames(owner))
+      if (!(await world.grantSeal(game, owner)).ok) throw new Error(`the relay refused the Seal in game ${game.gameId}`);
+    await world.db.prepare('DELETE FROM "seal_grants" WHERE "owner" = ?').bind(owner).run();
+  } catch (error) {
+    console.warn("[seal-code] a held code's Seal waits for the next cron", owner, error);
+  }
+};
 
 const holdsCode = (db: D1Database, owner: string) =>
   sealStorage(async () => {

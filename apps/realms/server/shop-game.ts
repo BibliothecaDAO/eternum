@@ -38,22 +38,15 @@ export const enteredGamesOf = (
   now: () => number,
 ): EnteredGames => {
   const accountOf = playerAccounts(env);
-  const enteredOn = async (shard: Awaited<ReturnType<typeof listedShards>>[number], account: string) => {
-    const entered: NamedGame[] = [];
-    for (const gameId of runningFrontierGameIds(await fetchShardGames(shard, gamesUrl(shard, null), fetchShard), now()))
-      if (await isEnrolled(shard.url, gameId, account)) entered.push({ chainId: gameKey(shard.chainId), gameId });
-    return entered;
-  };
   return async (realmsId) => {
     const account = await accountOf(realmsId);
     const entered: NamedGame[] = [];
     for (const shard of await listedShards(env.DB))
-      entered.push(
-        ...(await enteredOn(shard, account).catch((error: unknown) => {
-          console.warn("[shop] a shard could not say which of its games the account entered", shard.url, error);
-          return [];
-        })),
-      );
+      for (const gameId of runningFrontierGameIds(
+        await fetchShardGames(shard, gamesUrl(shard, null), fetchShard),
+        now(),
+      ))
+        if (await isEnrolled(shard.url, gameId, account)) entered.push({ chainId: gameKey(shard.chainId), gameId });
     return entered;
   };
 };

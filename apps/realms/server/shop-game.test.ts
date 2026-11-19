@@ -79,18 +79,6 @@ it("lists every running Frontier game the account is enrolled in, and none it is
   expect(await entered("0xb2")).toEqual([]);
 });
 
-it("lists the games of the shards that answer while another shard is down", async () => {
-  const { env, fetchShard } = await envOn([gameOf(1)], [accountOf("0xa1")]);
-  await env.DB.prepare(
-    `INSERT INTO "shards" ("url", "chainId", "status", "addedAt") VALUES ('https://down.test', '0x2', 'active', 2)`,
-  ).run();
-  const downOrUp = (async (input, init) =>
-    String(input).startsWith("https://down.test")
-      ? new Response(null, { status: 503 })
-      : fetchShard(input, init)) as typeof fetch;
-  expect(await enteredGamesOf(env, downOrUp, () => NOW)("0xa1")).toEqual([{ chainId: CHAIN, gameId: 1 }]);
-});
-
 it("seats an enrolled player of a running Frontier game", async () => {
   const access = await shopOn([gameOf(1)], [accountOf("0xa1")]);
   expect(await access("0xa1", { chainId: CHAIN, gameId: 1 })).toBe(true);

@@ -2,8 +2,8 @@ import { afterEach, expect, it, vi } from "vitest";
 
 import type { IdentityAuth } from "./auth";
 import { codeHashInScope } from "./campaigns";
-import { handleSealCode, holdsSeal } from "./seal-codes";
-import type { NamedGame } from "./shop-game";
+import { deliverQueuedSealGrants, handleSealCode, holdsSeal, type SealCodeWorld } from "./seal-codes";
+import type { EnteredGames, NamedGame } from "./shop-game";
 import { createTestD1 } from "./test-d1";
 import { migrationStatements } from "./workerd-harness";
 
@@ -15,7 +15,7 @@ afterEach(async () => {
 const PLAYER = "0xa1";
 const GAME: NamedGame = { chainId: "0x1", gameId: 7 };
 
-const sealCodes = async (entered: NamedGame[]) => {
+const sealCodes = async (entered: NamedGame[] | EnteredGames) => {
   const database = createTestD1();
   databases.push(database);
   const { db } = database;
@@ -34,6 +34,11 @@ const sealCodes = async (entered: NamedGame[]) => {
       .bind(await codeHashInScope("seal", code), "playtest")
       .run();
   const grantSeal = vi.fn(async (_game: NamedGame, _realmsId: string) => Response.json({}));
+  const world: SealCodeWorld = {
+    db,
+    enteredGames: typeof entered === "function" ? entered : async () => entered,
+    grantSeal,
+  };
   const redeem = async (realmsId: string, code: string) => {
     const auth = { api: { getSession: async () => ({ user: { realmsId } }) } } as unknown as IdentityAuth;
     const request = new Request("https://realms.test/api/seal-code", {
@@ -41,21 +46,41 @@ const sealCodes = async (entered: NamedGame[]) => {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ code }),
     });
-    const response = await handleSealCode(request, auth, { db, enteredGames: async () => entered, grantSeal });
+    const response = await handleSealCode(request, auth, world);
     return [response.status, await response.json()];
   };
-  return { db, grantSeal, redeem };
+  const queued = async () => (await db.prepare('SELECT "owner" FROM "seal_grants"').all()).results;
+  return { db, grantSeal, redeem, world, queued };
 };
 
-it("grants a code redeemed in a running game at once, and again on a retry after the relay refused", async () => {
-  const { grantSeal, redeem } = await sealCodes([GAME]);
+it("grants a code redeemed in a running game at once, and a grant the relay refused on the next cron, once", async () => {
+  const { grantSeal, redeem, world, queued } = await sealCodes([GAME]);
   grantSeal.mockResolvedValueOnce(Response.json({ error: "seal_grant_unavailable" }, { status: 503 }));
-  expect(await redeem(PLAYER, "CHARM234")).toEqual([503, { error: "seal_grant_unavailable" }]);
   expect(await redeem(PLAYER, "CHARM234")).toEqual([200, { held: true }]);
+  expect(await queued()).toEqual([{ owner: PLAYER }]);
+  await deliverQueuedSealGrants(world);
+  await deliverQueuedSealGrants(world);
   expect(grantSeal.mock.calls).toEqual([
     [GAME, PLAYER],
     [GAME, PLAYER],
   ]);
+  expect(await queued()).toEqual([]);
+});
+
+it("keeps a held code's grant queued while a shard cannot say which games the account entered", async () => {
+  const entered = vi
+    .fn<EnteredGames>()
+    .mockRejectedValueOnce(new Error("games directory answered 503"))
+    .mockRejectedValueOnce(new Error("games directory answered 503"))
+    .mockResolvedValue([GAME]);
+  const { grantSeal, redeem, world, queued } = await sealCodes(entered);
+  expect(await redeem(PLAYER, "CHARM234")).toEqual([200, { held: true }]);
+  await deliverQueuedSealGrants(world);
+  expect(grantSeal).not.toHaveBeenCalled();
+  expect(await queued()).toEqual([{ owner: PLAYER }]);
+  await deliverQueuedSealGrants(world);
+  expect(grantSeal.mock.calls).toEqual([[GAME, PLAYER]]);
+  expect(await queued()).toEqual([]);
 });
 
 it("holds a code redeemed before the season without a grant: entering the game grants it", async () => {
