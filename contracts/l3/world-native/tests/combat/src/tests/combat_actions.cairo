@@ -52,6 +52,26 @@ fn a_surviving_explorer_loots_the_defeated_army_before_its_resources_are_deleted
 }
 
 #[test]
+fn a_won_battle_moves_exactly_the_requested_loot_of_each_resource_onto_the_attackers_balance() {
+    let (d, _, _, attacker, defender) = setup(false);
+    grant(d, ResourceKey { game_id: 3, entity_id: attacker }, 2, 5);
+    grant(d, ResourceKey { game_id: 3, entity_id: defender }, 2, 90);
+    grant(d, ResourceKey { game_id: 3, entity_id: defender }, 3, 40);
+    let loot = array![ResourceAmount { resource_type: 2, amount: 70 }, ResourceAmount { resource_type: 3, amount: 40 }]
+        .span();
+    assert!(
+        execute(d, Command::Battle(AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: loot }), 80),
+    );
+    assert!(troop(d, defender).is_none());
+    assert_eq!(balance(d, attacker, 2), 75);
+    assert_eq!(balance(d, attacker, 3), 40);
+    assert!(
+        !IResourceOperationsDispatcher { contract_address: d.games }
+            .has_resource(ResourceKey { game_id: 3, entity_id: defender }),
+    );
+}
+
+#[test]
 fn failed_loot_and_duplicate_resources_roll_back_combat() {
     let (d, _, _, attacker, defender) = setup(false);
     grant(d, ResourceKey { game_id: 3, entity_id: defender }, 2, 90);
