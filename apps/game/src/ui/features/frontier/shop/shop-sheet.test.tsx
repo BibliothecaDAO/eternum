@@ -85,11 +85,10 @@ describe("the shop", () => {
 
   it("reads a held Pass from the account's Seal row: no purchase, no code, the Pass named as held", () => {
     const store = transferArmies();
-    const seal = { game_id: 1, account: BigInt(PLAYER), granted_at: 1n };
     store.applyFacts([
       {
         model: "Seal",
-        key: store.wireKeyOf("Seal", seal)!,
+        key: "0x5ea1",
         value: { game_id: 1, account: PLAYER, granted_at: "1" },
       },
       {

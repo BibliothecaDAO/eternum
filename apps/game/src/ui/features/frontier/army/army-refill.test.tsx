@@ -44,11 +44,10 @@ const render = (
   release: number = nativeReleaseConstants.SEAL_RELEASE,
 ) => {
   const store = transferArmies();
-  const row = { game_id: 1, account: BigInt(PLAYER), balance: BigInt(held) };
   store.applyFacts([
     {
       model: "Fragments",
-      key: store.wireKeyOf("Fragments", row)!,
+      key: "0xf7a1",
       value: { game_id: 1, account: PLAYER, balance: String(held) },
     },
     {
