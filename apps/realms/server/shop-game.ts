@@ -1,7 +1,7 @@
 import { officialChain } from "@realms-world/value-ledger";
 
 import type { IdentityAuth } from "./auth";
-import { readEnrolledAccounts, runningFrontierGameIds } from "./day-open";
+import { openFrontierGameIds, readEnrolledAccounts, runningFrontierGameIds } from "./day-open";
 import { fetchShardGames, gamesUrl, listedShards, registeredShards } from "./directory";
 import type { IdentityEnv } from "./env";
 import { json } from "./http";
@@ -45,7 +45,7 @@ export const enteredGamesOf = (
     if (!chain) return [];
     const account = await accountOf(realmsId);
     const entered: NamedGame[] = [];
-    for (const gameId of runningFrontierGameIds(await fetchShardGames(chain, gamesUrl(chain, null), fetchShard), now()))
+    for (const gameId of openFrontierGameIds(await fetchShardGames(chain, gamesUrl(chain, null), fetchShard), now()))
       if (await isEnrolled(chain.url, gameId, account)) entered.push({ chainId: gameKey(chain.chainId), gameId });
     return entered;
   };

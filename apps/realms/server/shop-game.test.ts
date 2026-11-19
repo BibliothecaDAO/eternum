@@ -79,6 +79,13 @@ it("lists every running Frontier game the account is enrolled in, and none it is
   expect(await entered("0xb2")).toEqual([]);
 });
 
+it("lists a Frontier game the account entered before its first day, and none that has ended", async () => {
+  const settling = { ...gameOf(5), clock: { ...gameOf(5).clock, start_main_at: NOW + UNIT } };
+  const ended = { ...gameOf(6), clock: { ...gameOf(6).clock, end_at: NOW - 1 } };
+  const { env, fetchShard } = await envOn([settling, ended], [accountOf("0xa1")]);
+  expect(await enteredGamesOf(env, fetchShard, () => NOW)("0xa1")).toEqual([{ chainId: CHAIN, gameId: 5 }]);
+});
+
 it("seats an enrolled player of a running Frontier game", async () => {
   const access = await shopOn([gameOf(1)], [accountOf("0xa1")]);
   expect(await access("0xa1", { chainId: CHAIN, gameId: 1 })).toBe(true);

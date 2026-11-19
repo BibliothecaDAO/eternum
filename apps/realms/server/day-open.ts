@@ -62,6 +62,13 @@ export function runningFrontierGameIds(games: readonly DayOpenGame[], now: numbe
     .map((game) => game.game_id);
 }
 
+export function openFrontierGameIds(games: readonly DayOpenGame[], now: number): number[] {
+  return games
+    .filter((game) => game.mode === "frontier" && game.status !== "Ended" && game.status !== "Settled")
+    .filter((game) => game.clock.end_at === 0 || now < game.clock.end_at)
+    .map((game) => game.game_id);
+}
+
 function nextOpening(game: DayOpenGame, now: number): DayOpening | null {
   const calendar = calendarOf(game);
   const seasonEnd = game.clock.end_at;
