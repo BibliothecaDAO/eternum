@@ -78,14 +78,14 @@ it("answers a research with the row's next tier learned and its price paid", () 
   const game = researchScenario();
   const essence = held(game, ResourcesIds.Essence);
   const facts = game.answer(
-    command("Research", { structure_id: "7", row: String(research.ROW_SHRINE), choice: "0" }),
+    command("Research", { structure_id: "7", row: String(research.ROW_LORE), choice: "0" }),
     chainOf(game),
     game.startsAt,
   );
 
   const knowledge = facts.find(({ model }) => model === "RealmKnowledge")!.value as { learned: string };
-  expect(researchTier(BigInt(knowledge.learned), research.ROW_SHRINE)).toBe(1);
-  expect(BigInt(balance(facts, ResourcesIds.Essence)!.balance)).toBe(essence - BigInt(whole(2_000)));
+  expect(researchTier(BigInt(knowledge.learned), research.ROW_LORE)).toBe(research.LORE_WELLS);
+  expect(BigInt(balance(facts, ResourcesIds.Essence)!.balance)).toBe(essence - BigInt(whole(2_500)));
 });
 
 it("answers native Paladin index 1 with Scouts and debits only their stock and wheat", () => {

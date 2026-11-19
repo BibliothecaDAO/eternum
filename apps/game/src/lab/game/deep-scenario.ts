@@ -1,5 +1,5 @@
 import { frontierSeasonOnePreset } from "../../../../../config/source/frontier/season-one";
-import { learnResearch } from "@bibliothecadao/eternum";
+import { learnResearch, researchTier } from "@bibliothecadao/eternum";
 import {
   deepCenter,
   nativeRuleConstants,
@@ -129,10 +129,13 @@ export const deepScenario = (): LabScenario => {
     );
   }
   const knowledge = store.require("RealmKnowledge", { game_id: 1, structure_id: army.owner });
+  let learned = knowledge.learned;
+  while (researchTier(learned, nativeResearchConstants.ROW_LORE) < nativeResearchConstants.LORE_SPIRES)
+    learned = learnResearch(learned, nativeResearchConstants.ROW_LORE, 0);
   facts.push({
     model: "RealmKnowledge",
     key: store.wireKeyOf("RealmKnowledge", knowledge)!,
-    value: wire({ ...knowledge, learned: learnResearch(knowledge.learned, nativeResearchConstants.ROW_DEPTH, 0) }),
+    value: wire({ ...knowledge, learned }),
   });
   store.applyFacts(facts as never);
   return {

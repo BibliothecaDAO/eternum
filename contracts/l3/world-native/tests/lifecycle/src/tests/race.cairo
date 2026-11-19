@@ -304,22 +304,7 @@ fn recorded_clear_mist_changes_real_reveals_only_on_its_day() {
         let home = ResourceKey { game_id, entity_id: found(d, game_id, 1) };
         super::banes::train(d, home, 360);
         if spires {
-            let price = interact_with_state(
-                d.games, || crate::logic::research::price(game_id, crate::research::ROW_DEPTH, 1),
-            );
-            world_test_support::tests::resource_commands::grant(d, home, crate::resources::ESSENCE, price.essence);
-            assert!(
-                execute_in_game(
-                    d,
-                    game_id,
-                    Command::Research(
-                        crate::research::Research {
-                            structure_id: home.entity_id, row: crate::research::ROW_DEPTH, choice: 0,
-                        },
-                    ),
-                    360,
-                ),
-            );
+            world_test_support::tests::registrar::learn_spire_lore(d, home, 360);
         }
         pay(d, game_id, DEEP_FOUNDATION, 1, array![DeepShare { home: home.entity_id, troops: 1 }].span(), 480);
         let root = clear_mist_root(game_id, spires);

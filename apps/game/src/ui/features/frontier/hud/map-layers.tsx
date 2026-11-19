@@ -15,7 +15,7 @@ import {
   type ExpeditionRules,
   expeditionDepth,
   Position,
-  researchedDepth,
+  reachableDepth,
   type RuinChest,
   type RuinChests,
   dayOf,
@@ -69,7 +69,7 @@ export const useMapLayers = (
   const chests = useRuinChests(rules, player);
   const camera = useUIStore((state) => state.cameraTargetHex);
   const { isMapView } = useQuery();
-  const deepest = realm ? (researchedDepth(facts.store, realm.game_id, realm.entity_id) ?? 0) : 0;
+  const deepest = realm ? (reachableDepth(facts.store, realm.game_id, realm.entity_id) ?? 0) : 0;
   if (!realm) return null;
   const site = realmSite(facts.store, realm);
   const from = isMapView ? (camera ?? site) : site;

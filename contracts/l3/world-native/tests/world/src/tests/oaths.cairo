@@ -62,7 +62,7 @@ fn a_revealed_shrine_offers_a_new_army_three_oaths_and_an_army_holding_fourteen_
                 crate::logic::research::write(
                     crate::resources::ResourceKey { game_id, entity_id: 1 },
                     crate::research::RealmKnowledge {
-                        learned: crate::research::learn(0, crate::research::ROW_SHRINE, 0),
+                        learned: world_test_support::tests::registrar::lore(crate::research::LORE_SHRINES),
                     },
                 );
                 let mut progress = crate::logic::progression::require(key);
@@ -109,7 +109,7 @@ fn a_game_that_disables_choose_oath_writes_no_pick_and_keeps_the_army_exploring(
             let home = crate::resources::ResourceKey { game_id, entity_id: 1 };
             crate::logic::research::write(
                 home,
-                crate::research::RealmKnowledge { learned: crate::research::learn(0, crate::research::ROW_SHRINE, 0) },
+                crate::research::RealmKnowledge { learned: world_test_support::tests::registrar::lore(crate::research::LORE_SHRINES) },
             );
         },
     );
@@ -156,7 +156,7 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
             let home = crate::resources::ResourceKey { game_id, entity_id: 1 };
             crate::logic::research::write(
                 home,
-                crate::research::RealmKnowledge { learned: crate::research::learn(0, crate::research::ROW_SHRINE, 0) },
+                crate::research::RealmKnowledge { learned: world_test_support::tests::registrar::lore(crate::research::LORE_SHRINES) },
             );
         },
     );
@@ -304,7 +304,7 @@ fn a_revealed_well_refills_forty_percent_of_the_bar_eighty_with_reflection_and_n
                 crate::logic::research::write(
                     crate::resources::ResourceKey { game_id, entity_id: 1 },
                     crate::research::RealmKnowledge {
-                        learned: crate::research::learn(0, crate::research::ROW_WELL, 0),
+                        learned: world_test_support::tests::registrar::lore(crate::research::LORE_WELLS),
                     },
                 );
                 let mut progress = crate::logic::progression::require(key);

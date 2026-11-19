@@ -1,7 +1,7 @@
 use snforge_std::{interact_with_state, spy_events};
 use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use world_test_support::tests::Deployment;
-use world_test_support::tests::resource_commands::{execute_in_game, grant, set_explorer_fixture};
+use world_test_support::tests::resource_commands::{execute_in_game, set_explorer_fixture};
 use crate::commands::Command;
 use crate::resources::ResourceKey;
 use crate::troops::{ArmySlotKey, ExplorerKey, ExplorerTroops};
@@ -76,33 +76,7 @@ pub fn deployed(d: Deployment, game_id: u32, aspect: u8, count: u128) -> Explore
 pub fn descend(d: Deployment, key: ExplorerKey) {
     let game_id = key.game_id;
     let home = army(d, key).owner;
-    let learned = interact_with_state(
-        d.games,
-        || crate::research::tier(
-            crate::logic::research::learned(ResourceKey { game_id, entity_id: home }), crate::research::ROW_DEPTH,
-        ),
-    );
-    let depth_budget = interact_with_state(
-        d.games,
-        || {
-            let mut budget = 0;
-            for tier in learned + 1..4 {
-                budget += crate::logic::research::price(game_id, crate::research::ROW_DEPTH, tier).essence;
-            }
-            budget
-        },
-    );
-    grant(d, ResourceKey { game_id, entity_id: home }, crate::resources::ESSENCE, depth_budget);
-    for _ in learned..3 {
-        applied(
-            d,
-            game_id,
-            Command::Research(
-                crate::research::Research { structure_id: home, row: crate::research::ROW_DEPTH, choice: 0 },
-            ),
-            360,
-        );
-    }
+    world_test_support::tests::registrar::learn_spire_lore(d, ResourceKey { game_id, entity_id: home }, 360);
     applied(
         d, game_id, Command::EnterDepth(crate::commands::EnterDepth { explorer_id: key.explorer_id, depth: 3 }), 360,
     );

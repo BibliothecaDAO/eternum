@@ -38,7 +38,6 @@ const Probe = ({ realm }: { realm: Parameters<typeof useResearchTree>[0] }) => {
 };
 
 const PRECISION = BigInt(RESOURCE_PRECISION);
-/** Every row's price at every tier, the Shrine's at 2,000 Essence and 0 labor; each building tier 4,000 and 3,000. */
 const price = (row: number, tier: number) => ({
   model: "ResearchPrice",
   key: `0x${row}${tier}`,
@@ -46,8 +45,8 @@ const price = (row: number, tier: number) => ({
     game_id: 1,
     row,
     tier,
-    essence: String((row === research.ROW_SHRINE ? 2_000n : 4_000n) * PRECISION),
-    labor: String((row === research.ROW_SHRINE ? 0n : 3_000n) * PRECISION),
+    essence: String((row === research.ROW_LORE ? 2_000n : 4_000n) * PRECISION),
+    labor: String((row === research.ROW_LORE ? 0n : 3_000n) * PRECISION),
   },
 });
 const ALL_PRICES = RESEARCH_ROWS.map((row) => [1, 2, 3, 4].map((tier) => price(row, tier))).flat();
@@ -62,22 +61,20 @@ it("keeps the tree unknown while a price it reads is missing, then reads each no
     ),
   );
 
-  // Every price but the Shrine's: no tree, never one priced at nothing.
-  act(() => store.applyFacts(ALL_PRICES.filter(({ value }) => value.row !== research.ROW_SHRINE) as never));
+  act(() => store.applyFacts(ALL_PRICES.filter(({ value }) => value.row !== research.ROW_LORE) as never));
   expect(tree).toBeUndefined();
 
-  act(() => store.applyFacts([price(research.ROW_SHRINE, 1)] as never));
-  const shrine = tree!.nodes.find(({ key }) => key === "shrine")!;
-  expect(shrine.price).toEqual({ essence: 2_000, labor: 0 });
-  // The realm holds no Essence: the Shrine waits on it, with what it holds against what it needs.
+  act(() => store.applyFacts(ALL_PRICES.filter(({ value }) => value.row === research.ROW_LORE) as never));
+  const well = tree!.nodes.find(({ key }) => key === "well")!;
+  expect(well.price).toEqual({ essence: 2_000, labor: 0 });
   expect(tree!.essence).toBe(0);
-  expect(shrine.state).toBe("short");
-  expect(shrine.needs).toContainEqual(expect.objectContaining({ kind: "essence", met: false, have: 0, need: 2_000 }));
+  expect(well.state).toBe("short");
+  expect(well.needs).toContainEqual(expect.objectContaining({ kind: "essence", met: false, have: 0, need: 2_000 }));
 });
 
 it("says the tree is on its way while a fact it reads is missing, and draws the tree once it arrives", () => {
   const { store, realm } = realmBoard();
-  store.applyFacts([...ALL_PRICES.filter(({ value }) => value.row !== research.ROW_SHRINE)] as never);
+  store.applyFacts([...ALL_PRICES.filter(({ value }) => value.row !== research.ROW_LORE)] as never);
   act(() =>
     root.render(
       <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
@@ -89,7 +86,7 @@ it("says the tree is on its way while a fact it reads is missing, and draws the 
   const page = host.querySelector('section[data-kit-frame][aria-label="Research"]');
   expect(page?.querySelector('[role="status"]')?.textContent).toBe("The research tree is on its way");
 
-  act(() => store.applyFacts(ALL_PRICES.filter(({ value }) => value.row === research.ROW_SHRINE) as never));
+  act(() => store.applyFacts(ALL_PRICES.filter(({ value }) => value.row === research.ROW_LORE) as never));
   expect(host.textContent).not.toContain("on its way");
   expect(host.textContent).toContain("Shrine");
 });

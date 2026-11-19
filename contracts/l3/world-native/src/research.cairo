@@ -6,8 +6,6 @@ pub struct RealmKnowledge {
     pub learned: u64,
 }
 
-// The rows of the castle's tree. A building row climbs from 0 to Legendary V for every building of its type; the
-// castle rows unlock shrines, wells and the three depths.
 pub const ROW_FARM: u8 = 0;
 pub const ROW_WORKSHOP: u8 = 1;
 pub const ROW_CONSCRIPTION: u8 = 2;
@@ -19,9 +17,10 @@ pub const ROW_SCOUT_OATHS: u8 = 7;
 pub const ROW_CROSSBOW_OATHS: u8 = 11;
 pub const OATH_SLOTS_BASE: u8 = 2;
 pub const OATH_SLOTS_STEPS: u8 = 3;
-pub const ROW_SHRINE: u8 = 8;
-pub const ROW_WELL: u8 = 9;
-pub const ROW_DEPTH: u8 = 10;
+pub const ROW_LORE: u8 = 10;
+pub const LORE_WELLS: u8 = 1;
+pub const LORE_SHRINES: u8 = 2;
+pub const LORE_SPIRES: u8 = 3;
 
 // Farm and Workshop tiers make more (Fields, Tools) or store more (Granary, Storeroom).
 pub const CHOICE_MAKE: u8 = 0;
@@ -84,7 +83,7 @@ pub fn row_category(row: u8) -> u8 {
         SCOUTS_LODGE
     } else if row == ROW_CROSSBOW_OATHS {
         RANGE
-    } else if row == ROW_SHRINE || row == ROW_WELL || row == ROW_DEPTH {
+    } else if row == ROW_LORE {
         0
     } else {
         panic!("invalid research row")
@@ -95,9 +94,9 @@ pub fn is_training(category: u8) -> bool {
     category == SUPPLY_YARD || category == CONSCRIPTION_CAMP || category == RATIONS_DEPOT
 }
 
-pub const ROWS: [u8; 12] = [
+pub const ROWS: [u8; 10] = [
     ROW_FARM, ROW_WORKSHOP, ROW_CONSCRIPTION, ROW_HUT, ROW_RATIONS, ROW_SUPPLY_YARD, ROW_KNIGHT_OATHS, ROW_SCOUT_OATHS,
-    ROW_CROSSBOW_OATHS, ROW_SHRINE, ROW_WELL, ROW_DEPTH,
+    ROW_CROSSBOW_OATHS, ROW_LORE,
 ];
 
 pub fn is_oath_row(row: u8) -> bool {
@@ -121,12 +120,10 @@ pub fn max_tier(row: u8) -> u8 {
         || row == ROW_CONSCRIPTION
         || row == ROW_RATIONS {
         5
-    } else if row == ROW_SHRINE || row == ROW_WELL {
-        1
     } else if is_oath_row(row) {
         OATH_SLOTS_STEPS
-    } else if row == ROW_DEPTH {
-        3
+    } else if row == ROW_LORE {
+        LORE_SPIRES
     } else {
         panic!("invalid research row")
     }
@@ -152,8 +149,6 @@ fn tier_slot(row: u8) -> (u64, u64) {
         6 => (0x40000000, 4),
         7 => (0x100000000, 4),
         11 => (0x400000000, 4),
-        8 => (0x400000000000, 2),
-        9 => (0x800000000000, 2),
         10 => (0x1000000000000, 4),
         _ => panic!("invalid research row"),
     }

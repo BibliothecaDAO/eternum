@@ -60,10 +60,11 @@ fn roll(
     assert!(home != 0, "missing exploring army");
     let home_key = crate::resources::ResourceKey { game_id: key.game_id, entity_id: home };
     let learned = crate::logic::research::require(home_key).learned;
-    if crate::research::tier(learned, crate::research::ROW_SHRINE) == 0 {
+    let lore = crate::research::tier(learned, crate::research::ROW_LORE);
+    if lore < crate::research::LORE_SHRINES {
         rules.shrine_bps = 0;
     }
-    if crate::research::tier(learned, crate::research::ROW_WELL) == 0 {
+    if lore < crate::research::LORE_WELLS {
         rules.well_bps = 0;
     }
     let counter = crate::expeditions::ExpeditionDiscoveryKey {

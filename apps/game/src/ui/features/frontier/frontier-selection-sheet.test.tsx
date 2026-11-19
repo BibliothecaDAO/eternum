@@ -318,8 +318,7 @@ const armyAtSpire = () => {
   )!;
   const beside = getNeighborHexes(spire.col, spire.row)[0];
   store.applyFacts([
-    // research.cairo: the depth row's tier sits at bit 46; Ethereal I is researched.
-    { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 1n << 48n } },
+    { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 3n << 48n } },
     {
       model: "DepthRules",
       key: "0x901",

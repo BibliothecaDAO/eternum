@@ -1,7 +1,6 @@
 import { campaignHomeClaim } from "@bibliothecadao/eternum";
 import { seasonDayUnitSeconds } from "../../../../config/source/common/season-clock";
 import { frontierDevconPreset } from "../../../../config/source/frontier/devcon";
-import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { CAMPAIGNS, seasonMoment } from "../../../../packages/identity/src/campaigns";
 import { laborRulesOf } from "../../../game/src/services/home-claim-rules";
 import { prizeShares } from "../../../../packages/core/src/sync/frontier-prize";
@@ -36,11 +35,6 @@ const claimOf = (golden: boolean) => {
   const { labor, essence } = campaignHomeClaim(rules, golden);
   return { labor: n(labor), essence: n(essence) };
 };
-const depthEssence = (preset: typeof frontierDevconPreset) =>
-  preset.research
-    .filter((step) => step.row === research.ROW_DEPTH)
-    .sort((a, b) => a.tier - b.tier)
-    .map((step) => n(step.essenceCost));
 
 export const DEVCON = {
   starts: moment(campaign.startsAt),
@@ -58,5 +52,4 @@ export const DEVCON = {
   claim: { ticket: claimOf(false), golden: claimOf(true), realm: n(Number(rules.amount)) },
   day: { shortestHours: hoursOf(SHORT_DAY_UNITS), longestHours: hoursOf(LONG_DAY_UNITS) },
   speed: n(frontierDevconPreset.clockScale.activity),
-  depths: depthEssence(frontierDevconPreset),
 };

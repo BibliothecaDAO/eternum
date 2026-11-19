@@ -307,7 +307,7 @@ fn a_clear_records_only_the_labor_that_fits_and_clears_even_when_full() {
 }
 
 #[test]
-fn depth_entry_requires_research_and_keeps_stamina_at_every_depth() {
+fn depth_entry_requires_spire_lore_and_keeps_stamina_at_every_depth() {
     let d = setup();
     let mut preset = definition(true);
     open_entry(ref preset);
@@ -376,10 +376,10 @@ fn depth_entry_requires_research_and_keeps_stamina_at_every_depth() {
     let home = ResourceKey { game_id, entity_id: 1 };
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     let essence = ResourceSlot { game_id, entity_id: 1, resource_type: 38 };
-    let mut depth_budget = 0;
+    let mut lore_budget = 0;
     for price in frontier.structures.research {
-        if *price.row == crate::research::ROW_DEPTH {
-            depth_budget += (*price.price).essence;
+        if *price.row == crate::research::ROW_LORE {
+            lore_budget += (*price.price).essence;
         }
     }
     start_cheat_caller_address(d.games, d.games);
@@ -397,7 +397,7 @@ fn depth_entry_requires_research_and_keeps_stamina_at_every_depth() {
         .grant_resource(
             home,
             38,
-            depth_budget,
+            lore_budget,
             350,
             crate::commands::resource_context(
                 crate::commands::ExecutionContext { timestamp: 350, ..crate::tests::context(d.games, (home).game_id) },
@@ -411,6 +411,7 @@ fn depth_entry_requires_research_and_keeps_stamina_at_every_depth() {
     // beside it.
     let spire_direction: u8 = 0;
     let beside_spire = array![spire_direction, (spire_direction + 1) % 6, (spire_direction + 5) % 6];
+    let mut armies = array![];
     for depth in 1_u8..4 {
         assert!(
             execute_in_game(
@@ -434,29 +435,37 @@ fn depth_entry_requires_research_and_keeps_stamina_at_every_depth() {
         let mut empty = troops.resolved_explorer(key).unwrap();
         empty.troops.stamina.set_amount(0);
         super::resource_commands::set_explorer_fixture(d.games, key, empty);
-        let before = troops.resolved_explorer(key).unwrap();
-        assert_eq!(before.troops.stamina.inline().amount, 0);
-        let enter = Command::EnterDepth(crate::commands::EnterDepth { explorer_id, depth });
-        assert!(!execute_in_game(d, game_id, enter, 351));
-        assert_eq!(troops.resolved_explorer(key).unwrap(), before);
-        let buy = Command::Research(
-            crate::research::Research { structure_id: 1, row: crate::research::ROW_DEPTH, choice: 0 },
-        );
+        armies.append(key);
+    }
+    let first = *armies.at(0);
+    let unmoved = troops.resolved_explorer(first).unwrap();
+    let enter_first = Command::EnterDepth(crate::commands::EnterDepth { explorer_id: first.explorer_id, depth: 1 });
+    let buy = Command::Research(crate::research::Research { structure_id: 1, row: crate::research::ROW_LORE, choice: 0 });
+    for lore in 1_u8..crate::research::LORE_SPIRES + 1 {
+        assert!(!execute_in_game(d, game_id, enter_first, 351));
+        assert_eq!(troops.resolved_explorer(first).unwrap(), unmoved);
         let balance = resources.resource_balance(essence);
         assert!(execute_in_game(d, game_id, buy, 351));
         assert_eq!(
             crate::research::tier(
                 snforge_std::interact_with_state(d.games, || crate::logic::research::require(home)).learned,
-                crate::research::ROW_DEPTH,
+                crate::research::ROW_LORE,
             ),
-            depth,
+            lore,
         );
-        let after_purchase = resources.resource_balance(essence);
         assert_eq!(
-            balance - after_purchase,
-            super::building_commands::research_price(frontier.structures.research, crate::research::ROW_DEPTH, depth)
+            balance - resources.resource_balance(essence),
+            super::building_commands::research_price(frontier.structures.research, crate::research::ROW_LORE, lore)
                 .essence,
         );
+    }
+    for depth in 1_u8..4 {
+        let key = *armies.at((depth - 1).into());
+        let explorer_id = key.explorer_id;
+        let before = troops.resolved_explorer(key).unwrap();
+        assert_eq!(before.troops.stamina.inline().amount, 0);
+        let enter = Command::EnterDepth(crate::commands::EnterDepth { explorer_id, depth });
+        let after_purchase = resources.resource_balance(essence);
         assert!(execute_in_game(d, game_id, enter, 351));
         assert_eq!(structures.structure(home).unwrap().metadata.deepest_depth, depth);
         let inside = troops.resolved_explorer(key).unwrap();
@@ -493,18 +502,8 @@ fn depth_entry_requires_research_and_keeps_stamina_at_every_depth() {
             assert_eq!(structures.structure(home).unwrap().metadata.deepest_depth, 2);
         }
     }
-    // Ethereal III is the depth row's last tier.
     let balance = resources.resource_balance(essence);
-    assert!(
-        !execute_in_game(
-            d,
-            game_id,
-            Command::Research(
-                crate::research::Research { structure_id: 1, row: crate::research::ROW_DEPTH, choice: 0 },
-            ),
-            351,
-        ),
-    );
+    assert!(!execute_in_game(d, game_id, buy, 351));
     assert_eq!(resources.resource_balance(essence), balance);
 }
 
@@ -532,7 +531,7 @@ fn an_army_enters_a_depth_only_from_its_realms_spire_which_turns_each_day() {
         || {
             crate::logic::research::write(
                 home,
-                crate::research::RealmKnowledge { learned: crate::research::learn(0, crate::research::ROW_DEPTH, 0) },
+                crate::research::RealmKnowledge { learned: world_test_support::tests::registrar::lore(crate::research::LORE_SPIRES) },
             );
         },
     );
@@ -1112,17 +1111,17 @@ fn frontier_discovery_reads_home_knowledge_without_placing_shrines_or_wells() {
     let discovery = crate::discovery::IExpeditionRevealLibraryDispatcher {
         class_hash: super::declare_logic("ConstructionLogic"),
     };
-    for (expected, row) in array![
-        (crate::discovery::Discovery::Shrine, crate::research::ROW_SHRINE),
-        (crate::discovery::Discovery::Well, crate::research::ROW_WELL),
+    for (expected, lore) in array![
+        (crate::discovery::Discovery::Shrine, crate::research::LORE_SHRINES),
+        (crate::discovery::Discovery::Well, crate::research::LORE_WELLS),
     ] {
         let enabled = crate::expeditions::FrontierDiscoveryRules {
-            shrine_bps: if row == crate::research::ROW_SHRINE {
+            shrine_bps: if lore == crate::research::LORE_SHRINES {
                 rules.shrine_bps
             } else {
                 0
             },
-            well_bps: if row == crate::research::ROW_WELL {
+            well_bps: if lore == crate::research::LORE_WELLS {
                 rules.well_bps
             } else {
                 0
@@ -1138,7 +1137,7 @@ fn frontier_discovery_reads_home_knowledge_without_placing_shrines_or_wells() {
             }
         }
         let seed = chosen.expect('MISSING_SITE_ROOT');
-        let direction = if row == crate::research::ROW_SHRINE {
+        let direction = if lore == crate::research::LORE_SHRINES {
             0
         } else {
             1
@@ -1162,7 +1161,7 @@ fn frontier_discovery_reads_home_knowledge_without_placing_shrines_or_wells() {
             d.games,
             || {
                 crate::logic::research::write(
-                    home, crate::research::RealmKnowledge { learned: crate::research::learn(0, row, 0) },
+                    home, crate::research::RealmKnowledge { learned: world_test_support::tests::registrar::lore(lore) },
                 );
                 crate::logic::expeditions::record_discovery(
                     crate::expeditions::ExpeditionDiscoveryKey { game_id, structure_id: army.owner, epoch: 0 },

@@ -7,7 +7,7 @@ pub fn discover_on_reveal(
 ) -> bool {
     if key.depth >= 3
         || mode_rules & crate::rules::DISCOVER_SPIRES == 0
-        || crate::research::tier(learned, crate::research::ROW_DEPTH) == 0 {
+        || crate::research::tier(learned, crate::research::ROW_LORE) < crate::research::LORE_SPIRES {
         return false;
     }
     discover(key, coord, find_percent, seed)

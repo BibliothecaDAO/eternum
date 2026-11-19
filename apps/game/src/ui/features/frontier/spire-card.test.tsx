@@ -122,8 +122,7 @@ describe("a realm's spire, from the player's path", () => {
       expect(hud.depths()).toEqual([
         { depth: "Veil", line: undefined, button: "Enter", enabled: true },
         { depth: "Hollow", line: undefined, button: "Enter", enabled: true },
-        // The next depth is its research's, through Research.
-        { depth: "Deep", line: "Research it to open it", button: "Research", enabled: true },
+        { depth: "Deep", line: undefined, button: "Enter", enabled: true },
       ]);
       // What entering commits the army to, before it goes: the rest of the day, with no way back up.
       expect(hud.host.querySelector("[data-spire-commitment]")?.textContent).toMatch(
@@ -150,6 +149,27 @@ describe("a realm's spire, from the player's path", () => {
       expect(expeditionDepth(rules, { y: at.row })).toBe(2);
       expect(hud.sheet()!.textContent).toMatch(/Army( \d+)? is in Hollow today/);
       expect(hud.depths()).toEqual([]);
+    } finally {
+      hud.unmount();
+    }
+  });
+
+  it("asks for Spire lore at the first depth while the realm knows only wells and shrines", () => {
+    const { store, spire } = spireDay();
+    const knowledge = store.require("RealmKnowledge", { game_id: 1, structure_id: 7 });
+    store.applyFacts([
+      {
+        model: "RealmKnowledge",
+        key: store.wireKeyOf("RealmKnowledge", knowledge)!,
+        value: { ...knowledge, learned: 2n << 48n },
+      },
+    ]);
+    const hud = renderHud(store);
+    try {
+      tapSpireWithArmy(spire);
+      expect(hud.depths()).toEqual([
+        { depth: "Veil", line: "Learn Spire lore at the castle to open it", button: "Research", enabled: true },
+      ]);
     } finally {
       hud.unmount();
     }
@@ -262,7 +282,7 @@ describe("a realm's spire, from the player's path", () => {
       expect(hud.depths().map(({ line, enabled }) => ({ line, enabled }))).toEqual([
         { line: undefined, enabled: false },
         { line: undefined, enabled: false },
-        { line: "Research it to open it", enabled: true },
+        { line: undefined, enabled: false },
       ]);
       // The army selected away from the spire: it must stand beside it, and nothing commits it yet.
       tapSpireWithArmy(away.spire);
@@ -461,7 +481,7 @@ describe("a realm's spire, from the player's path", () => {
       {
         model: "RealmKnowledge",
         key: store.wireKeyOf("RealmKnowledge", knowledge)!,
-        value: { ...knowledge, learned: 0n },
+        value: { ...knowledge, learned: 2n << 48n },
       },
     ]);
     expect(armySpireChance(store, 1, ARMY, NOW)).toBeNull();

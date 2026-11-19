@@ -13,7 +13,7 @@ const HOME = 7n;
  * writes both. The switch reads World open (the home's own region, held), Ethereal I taken, Ethereal II not known (no
  * army holds it in view) and Ethereal III locked.
  */
-export const ruinChestsScenario = (): LabScenario => chestsScenario({ researched: 2n, claimed: [1] });
+export const ruinChestsScenario = (): LabScenario => chestsScenario({ researched: 3n, claimed: [1] });
 
 /**
  * The same realm before any depth research (/lab/game?scenario=ruin-chests-surface), nothing cleared today: the switch

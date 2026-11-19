@@ -20,13 +20,10 @@ const tierFields: Record<number, readonly [offset: bigint, width: bigint]> = {
   [research.ROW_KNIGHT_OATHS]: [30n, 2n],
   [research.ROW_SCOUT_OATHS]: [32n, 2n],
   [research.ROW_CROSSBOW_OATHS]: [34n, 2n],
-  [research.ROW_SHRINE]: [46n, 1n],
-  [research.ROW_WELL]: [47n, 1n],
-  [research.ROW_DEPTH]: [48n, 2n],
+  [research.ROW_LORE]: [48n, 2n],
 };
 const field = (learned: bigint, offset: bigint, width: bigint) => Number((learned >> offset) & ((1n << width) - 1n));
 
-/** A row's tier: 0 is unresearched, 5 legendary; castle rows count shrines, wells and depths unlocked. */
 export function researchTier(learned: bigint, row: number): number {
   const slot = tierFields[row];
   if (!slot) throw new Error(`Unknown research row ${row}`);
@@ -67,14 +64,11 @@ export function learnResearch(learned: bigint, row: number, side: number): bigin
   if (offset === undefined) throw new Error(`Unknown research row ${row}`);
   const picks = researchPicks(learned, row, side);
   const next = (researchHasIndependentSides(row) ? picks : researchTier(learned, row)) + 1;
-  const maximum =
-    row === research.ROW_SHRINE || row === research.ROW_WELL
-      ? 1
-      : isOathResearch(row)
-        ? research.OATH_SLOTS_STEPS
-        : row === research.ROW_DEPTH
-          ? 3
-          : 5;
+  const maximum = isOathResearch(row)
+    ? research.OATH_SLOTS_STEPS
+    : row === research.ROW_LORE
+      ? research.LORE_SPIRES
+      : 5;
   if (next > maximum) throw new Error("Research side is complete");
   if (researchHasIndependentSides(row)) return learned + (1n << (offset + BigInt(side) * 3n));
   return learned + (1n << offset);
@@ -89,14 +83,14 @@ export function realmLearned(
   return store.get("RealmKnowledge", { game_id: gameId, structure_id: structureId })?.learned;
 }
 
-/** The deepest Ethereal layer a realm has researched, 0 for none. */
-export function researchedDepth(
+export function reachableDepth(
   store: Pick<NativeFactStore, "get">,
   gameId: number,
   structureId: number | bigint,
-): number | undefined {
+): 0 | 3 | undefined {
   const learned = realmLearned(store, gameId, structureId);
-  return learned === undefined ? undefined : researchTier(learned, research.ROW_DEPTH);
+  if (learned === undefined) return undefined;
+  return researchTier(learned, research.ROW_LORE) >= research.LORE_SPIRES ? 3 : 0;
 }
 
 /** The building type a building row's tiers apply to, as research.cairo's row_category; castle rows have none. */

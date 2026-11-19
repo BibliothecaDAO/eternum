@@ -1,6 +1,6 @@
 use snforge_std::{interact_with_state, spy_events};
 use world_test_support::tests::Deployment;
-use world_test_support::tests::resource_commands::{execute_in_game, grant};
+use world_test_support::tests::resource_commands::execute_in_game;
 use crate::commands::Command;
 use crate::resources::ResourceKey;
 use crate::spires::ExpeditionSpireKey;
@@ -83,27 +83,21 @@ fn discovered_spires_take_a_real_army_through_each_layer_to_the_shared_deep() {
     preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DISCOVER_SPIRES;
     let (d, game_id) = super::aspects::setup_aspect_preset(93, preset);
     let home = found(d, game_id, 1);
-    let budget = interact_with_state(
+    let realm = ResourceKey { game_id, entity_id: home };
+    let lore_price = interact_with_state(
         d.games,
         || {
             let mut cost = 0;
-            for tier in 1_u8..4 {
-                cost += crate::logic::research::price(game_id, crate::research::ROW_DEPTH, tier).essence;
+            for tier in 1..crate::research::LORE_SPIRES + 1 {
+                cost += crate::logic::research::price(game_id, crate::research::ROW_LORE, tier).essence;
             }
             cost
         },
     );
-    grant(d, ResourceKey { game_id, entity_id: home }, crate::resources::ESSENCE, budget);
-    for _ in 0_u8..3 {
-        applied(
-            d,
-            game_id,
-            Command::Research(
-                crate::research::Research { structure_id: home, row: crate::research::ROW_DEPTH, choice: 0 },
-            ),
-            360,
-        );
-    }
+    assert_eq!(lore_price, 17_500 * crate::rules::RESOURCE_PRECISION);
+    let essence = interact_with_state(d.games, || crate::logic::resources::balance(realm, crate::resources::ESSENCE));
+    world_test_support::tests::registrar::learn_spire_lore(d, realm, 360);
+    assert_eq!(interact_with_state(d.games, || crate::logic::resources::balance(realm, crate::resources::ESSENCE)), essence);
     let key = ExplorerKey {
         game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: home, epoch: 0, slot: 0 }),
     };

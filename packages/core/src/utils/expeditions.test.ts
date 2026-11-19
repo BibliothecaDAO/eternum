@@ -238,17 +238,17 @@ describe("expedition spire", () => {
     expect(isAtExpeditionSpire(spire, { x: 27, y: 46 })).toBe(false);
   });
 
-  it("lights a spire only for a realm with depth research", () => {
+  it("lights a spire only for a realm with Spire lore", () => {
     const store = {
       ...storeWith(expeditionRules),
       get: (model: string, key: { structure_id: number }) =>
         model === "RealmKnowledge"
-          ? { learned: key.structure_id === 3 ? 1n << 48n : 0n }
+          ? { learned: key.structure_id === 3 ? 3n << 48n : 2n << 48n }
           : storeWith(expeditionRules).get(model),
       inGame: (model: string) => (model === "Structure" ? [realm(1), realm(3)] : [])[Symbol.iterator](),
     };
     expect(expeditionSpires(store as never, 7, dayStart(1) + 10)).toEqual([
-      { col: 25, row: 46, deepest: 1, realm: realm(3) },
+      { col: 25, row: 46, deepest: 3, realm: realm(3) },
     ]);
   });
 });

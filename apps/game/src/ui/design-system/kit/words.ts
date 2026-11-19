@@ -702,6 +702,8 @@ export const CLEARED = "Cleared";
 export const CHESTS = "Chests";
 export const SHRINE = "Shrine";
 export const WELL = "Well";
+export const SPIRE = "Spire";
+const loreOf = (site: string) => `${site} lore`;
 export const ATTACK = "Attack";
 export const ATTACKING = "Attacking…";
 /** On an army's step while the order it was given before is still in flight. */
@@ -751,7 +753,7 @@ const LAYER_CHEST = {
   open: "chest to take today",
   claimed: "chest taken today",
   unknown: "chest not known without an army there",
-  locked: "not researched",
+  locked: `needs ${loreOf(SPIRE)}`,
 } as const satisfies Record<RuinChest, string>;
 
 /**
@@ -760,7 +762,7 @@ const LAYER_CHEST = {
  */
 export const SPIRE_WORDS = {
   nextReveal: (percent: number) => `Spire · next reveal ${percent}%`,
-  title: "Spire",
+  title: SPIRE,
   enter: "Enter",
   /** The order on the spire's tile; its card then picks the Ethereal layer to enter. */
   order: "Enter the Spire",
@@ -769,7 +771,7 @@ export const SPIRE_WORDS = {
   away: (army: string) => `${army} must be beside the spire`,
   inDepth: (army: string, depth: string) => `${army} is in ${depth} today`,
   landingTaken: "Its landing is taken",
-  locked: "Research it to open it",
+  locked: `Learn ${loreOf(SPIRE)} at the castle to open it`,
   commits: (army: string, left: string) => `${army} stays until the day ends (${left})`,
 } as const;
 
@@ -2305,7 +2307,7 @@ export const RESEARCH_TREE = {
   nouns: { essence: ESSENCE, labor: LABOR },
   armiesFind: (site: string) => `Armies find ${site}s`,
   each: (gain: string) => `${gain} each`,
-  enters: (depth: string) => `Armies enter ${depth} at the spire`,
+  lore: loreOf,
   opens: "Open",
   build: (building: string) => `Build a ${building}`,
   stands: (building: string) => `${building} stands`,

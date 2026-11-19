@@ -236,11 +236,9 @@ pub mod MovementLogic {
             let home_key = crate::resources::ResourceKey { game_id, entity_id: explorer.owner };
             assert!(command.depth > 0 && command.depth < 4, "invalid expedition depth");
             assert!(
-                crate::research::tier(
-                    crate::logic::research::require(home_key).learned, crate::research::ROW_DEPTH,
-                ) >= command
-                    .depth,
-                "depth is not unlocked",
+                crate::research::tier(crate::logic::research::require(home_key).learned, crate::research::ROW_LORE)
+                    >= crate::research::LORE_SPIRES,
+                "Spire lore is not learned",
             );
             let spacing = self.expedition_spacing(game_id);
             let today = crate::days::day_of(context.game.unbox(), rules.day_unit_seconds, context.timestamp).index;

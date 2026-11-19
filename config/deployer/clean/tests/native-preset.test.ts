@@ -344,7 +344,7 @@ describe("native presets", () => {
         [BigInt(price.essence) / precision, BigInt(price.labor) / precision],
       ]),
     );
-    expect(preset.structures.research).toHaveLength(44);
+    expect(preset.structures.research).toHaveLength(42);
     expect(prices).toMatchObject({
       [`${research.ROW_FARM}:1`]: [500n, 500n],
       [`${research.ROW_FARM}:5`]: [30000n, 20000n],
@@ -353,11 +353,9 @@ describe("native presets", () => {
       [`${research.ROW_SUPPLY_YARD}:1`]: [6000n, 1500n],
       [`${research.ROW_SUPPLY_YARD}:2`]: [16000n, 3000n],
       [`${research.ROW_SUPPLY_YARD}:5`]: [360000n, 60000n],
-      [`${research.ROW_SHRINE}:1`]: [2000n, 0n],
-      [`${research.ROW_WELL}:1`]: [6000n, 0n],
-      [`${research.ROW_DEPTH}:1`]: [100000n, 0n],
-      [`${research.ROW_DEPTH}:2`]: [250000n, 0n],
-      [`${research.ROW_DEPTH}:3`]: [500000n, 0n],
+      [`${research.ROW_LORE}:1`]: [2500n, 0n],
+      [`${research.ROW_LORE}:2`]: [5000n, 0n],
+      [`${research.ROW_LORE}:3`]: [10000n, 0n],
     });
     for (const row of [research.ROW_KNIGHT_OATHS, research.ROW_SCOUT_OATHS, research.ROW_CROSSBOW_OATHS]) {
       expect([1, 2, 3].map((tier) => prices[`${row}:${tier}`])).toEqual([
@@ -886,14 +884,7 @@ describe("Devcon's fast Frontier preset", () => {
       golden_amount: 2_000n,
       golden_essence: 2_000n,
     });
-    expect(fast.structures.research.filter(({ row }) => row === research.ROW_DEPTH).map(({ price }) => price)).toEqual([
-      { essence: 20_000_000_000_000n, labor: 0n },
-      { essence: 50_000_000_000_000n, labor: 0n },
-      { essence: 100_000_000_000_000n, labor: 0n },
-    ]);
-    expect(fast.structures.research.filter(({ row }) => row !== research.ROW_DEPTH)).toEqual(
-      normal.structures.research.filter(({ row }) => row !== research.ROW_DEPTH),
-    );
+    expect(fast.structures.research).toEqual(normal.structures.research);
   });
 
   test("registers Devcon's 70-percent chest split and top three without changing normal Frontier", () => {

@@ -3442,7 +3442,7 @@ function spireCardOffersDepths({ played, seen }) {
   if (shown.sheet !== "Spire") return failed(`Spire opened ${shown.sheet ?? "no card"}, not the spire's`, shown);
   if (!shown.army) return failed("Spire dropped the army", shown);
   const offered = shown.depths.map(({ depth, line, button, enabled }) => `${depth}|${line}|${button}|${enabled}`);
-  const expected = ["Veil|null|Enter|true", "Hollow|null|Enter|true", "Deep|Research it to open it|Research|true"];
+  const expected = ["Veil|null|Enter|true", "Hollow|null|Enter|true", "Deep|null|Enter|true"];
   if (JSON.stringify(offered) !== JSON.stringify(expected))
     return failed(`the card offers ${offered.join(", ")}`, shown);
   if (!/^.+ stays until the day ends \(.+\)$/.test(shown.commitment ?? ""))
@@ -3572,7 +3572,7 @@ function chooseLayer(word) {
 /** The camera's tile once two reads a dive's frame apart agree, within SPIRE_WAIT_MS. */
 async function cameraAtRest(browser) {
   let last = browser.read(MAP_CAMERA);
-  for (const until = Date.now() + SPIRE_WAIT_MS; Date.now() < until; ) {
+  for (const until = Date.now() + SPIRE_WAIT_MS; Date.now() < until;) {
     await sleep(LIST_SETTLE_MS);
     const now = browser.read(MAP_CAMERA);
     if (now && last && hexesApart(now, last) === 0) return now;

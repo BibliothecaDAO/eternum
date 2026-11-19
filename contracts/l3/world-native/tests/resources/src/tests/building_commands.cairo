@@ -393,10 +393,9 @@ fn realm_knowledge_packs_each_row_tier_and_choice_where_the_client_reads_them() 
     learned = crate::research::learn(learned, crate::research::ROW_FARM, crate::research::CHOICE_MAKE);
     learned = crate::research::learn(learned, crate::research::ROW_FARM, crate::research::CHOICE_STORE);
     learned = crate::research::learn(learned, crate::research::ROW_WORKSHOP, crate::research::CHOICE_MAKE);
-    learned = crate::research::learn(learned, crate::research::ROW_SHRINE, 0);
-    learned = crate::research::learn(learned, crate::research::ROW_DEPTH, 0);
-    learned = crate::research::learn(learned, crate::research::ROW_DEPTH, 0);
-    assert_eq!(learned, 633318697599113);
+    learned = crate::research::learn(learned, crate::research::ROW_LORE, 0);
+    learned = crate::research::learn(learned, crate::research::ROW_LORE, 0);
+    assert_eq!(learned, 562949953421449);
     assert_eq!(crate::research::picks(learned, crate::research::ROW_FARM, crate::research::CHOICE_STORE), 1);
     // Both independent sides and all other rows fit without changing neighboring fields.
     let mut full = 0;
@@ -450,9 +449,11 @@ fn a_row_opens_with_its_first_building_and_sells_each_tier_once_in_order_at_its_
     assert_eq!(crate::research::purchases(learned(d, home), crate::research::ROW_FARM), 10);
     // The castle rows need no building and charge Essence alone.
     let before = resources.resource_balance(labor);
-    assert!(execute(d, research(home, crate::research::ROW_SHRINE, 0), 40));
+    for _ in 0..crate::research::LORE_SPIRES {
+        assert!(execute(d, research(home, crate::research::ROW_LORE, 0), 40));
+    }
     assert_eq!(resources.resource_balance(labor), before);
-    assert_terminal_rejection(d, research(home, crate::research::ROW_SHRINE, 0), 40);
+    assert_terminal_rejection(d, research(home, crate::research::ROW_LORE, 0), 40);
     // A hut row has no choice.
     assert!(execute(d, build_toward(home, crate::research::HUT, 1), 40));
     assert_terminal_rejection(d, research(home, crate::research::ROW_HUT, 1), 40);

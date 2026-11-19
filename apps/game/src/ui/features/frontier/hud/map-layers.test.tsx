@@ -156,7 +156,7 @@ describe("the map's layers", () => {
  * Realm 7's day with per-depth ruins and `researched` layers (Ethereal I and II by default, Ethereal III locked), and its
  * army 201, the season's second day on the clock, so the first has clears of its own.
  */
-const chestDay = (researched = 2n) => {
+const chestDay = (researched = 3n) => {
   const { store } = campBeside();
   store.applyFacts([
     {
@@ -480,9 +480,9 @@ describe("each layer's ruin chest today, on the layer switch", () => {
       act(() => root.render(<LayerSwitch rules={rules} realm={realm} phone={phone} />));
       expect(switchMarks()).toEqual([
         "Surface: chest to take today",
-        "Veil: not researched",
-        "Hollow: not researched",
-        "Deep: not researched",
+        "Veil: needs Spire lore",
+        "Hollow: needs Spire lore",
+        "Deep: needs Spire lore",
       ]);
       expect(host.querySelector("[aria-haspopup]")).toBeNull();
 

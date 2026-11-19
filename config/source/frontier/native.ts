@@ -117,10 +117,8 @@ export const frontierPreset = {
         laborCost: laborCost!,
       })),
     ),
-    { row: research.ROW_SHRINE, tier: 1, essenceCost: 2000, laborCost: 0 },
-    { row: research.ROW_WELL, tier: 1, essenceCost: 6000, laborCost: 0 },
-    ...[100000, 250000, 500000].map((essenceCost, index) => ({
-      row: research.ROW_DEPTH,
+    ...[2500, 5000, 10000].map((essenceCost, index) => ({
+      row: research.ROW_LORE,
       tier: index + 1,
       essenceCost,
       laborCost: 0,

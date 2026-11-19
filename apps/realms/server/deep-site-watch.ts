@@ -7,7 +7,7 @@ import {
 import { readGameFacts, type ReleaseCatalogue } from "./game-facts";
 import { dayOf, expeditionDepth, readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
 import { STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
-import { clearsEveryDefender, mapCenter, readCombatRules, researchedDepth } from "@bibliothecadao/eternum";
+import { clearsEveryDefender, mapCenter, readCombatRules, reachableDepth } from "@bibliothecadao/eternum";
 
 export interface DeepSiteWatch {
   gameId: number;
@@ -57,7 +57,7 @@ function deepReach(store: NativeFactStore, player: Player, now: number): DeepRea
   if (!day) return undefined;
   const army = largestOutsideArmy(store, gameId, BigInt(player.actor), day.index);
   if (!army) return undefined;
-  const depth = researchedDepth(store, gameId, army.owner);
+  const depth = reachableDepth(store, gameId, army.owner);
   if (depth === undefined) throw new Error("Deep alerts require the home's research");
   const sites = readDeepSites(store, timestamp, gameId).filter(
     (site) => site.open && depth > 0 && depth >= expeditionDepth(calendar, site.position),

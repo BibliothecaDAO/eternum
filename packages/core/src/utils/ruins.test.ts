@@ -254,7 +254,7 @@ describe("each depth's ruin chest today", () => {
     store.applyFacts([
       ...historicalRules,
       release(releaseId),
-      { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 1n << 48n } },
+      { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 3n << 48n } },
       // Another realm cleared today's Ethereal I: its receipt is not realm 7's.
       {
         model: "ExpeditionSite",

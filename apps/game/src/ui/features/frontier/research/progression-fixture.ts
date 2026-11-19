@@ -60,7 +60,7 @@ export const MID_REALM = realmOn(
     [research.ROW_WORKSHOP]: { tier: 1, sides: [0] },
     [research.ROW_HUT]: { tier: 1, sides: [] },
     [research.ROW_SUPPLY_YARD]: { tier: 1, sides: [] },
-    [research.ROW_SHRINE]: { tier: 1, sides: [] },
+    [research.ROW_LORE]: { tier: research.LORE_SHRINES, sides: [] },
   },
 );
 

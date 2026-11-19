@@ -233,7 +233,7 @@ fn veterans_counts_each_oath_taken_and_neither_a_pass_nor_a_refused_repeat() {
         d.games,
         || crate::logic::research::write(
             home,
-            crate::research::RealmKnowledge { learned: crate::research::learn(0, crate::research::ROW_SHRINE, 0) },
+            crate::research::RealmKnowledge { learned: world_test_support::tests::registrar::lore(crate::research::LORE_SHRINES) },
         ),
     );
     let root = discovery_root(key.game_id, rules, 100, 0, Some(far_eye()), Discovery::Shrine);
@@ -321,19 +321,7 @@ fn far_eye_discovers_and_pays_for_each_new_tile_only_once() {
         );
         let spires = kind == crate::quests::REVEALS;
         if spires {
-            let price = interact_with_state(
-                d.games, || crate::logic::research::price(key.game_id, crate::research::ROW_DEPTH, 1),
-            );
-            grant(d, home, crate::resources::ESSENCE, price.essence);
-            apply(
-                d,
-                key.game_id,
-                Command::Research(
-                    crate::research::Research {
-                        structure_id: home.entity_id, row: crate::research::ROW_DEPTH, choice: 0,
-                    },
-                ),
-            );
+            world_test_support::tests::registrar::learn_spire_lore(d, home, 360);
         }
         let before = far_eye_totals(d, home);
         let troops = army(d, key).troops.count;

@@ -203,6 +203,37 @@ pub const DAY_UNIT: u32 = 60;
 pub const BAG_SECONDS: u64 = 1200;
 pub const FRONTIER_DAY_UNIT: u32 = 14400;
 pub const FRONTIER_BAG_SECONDS: u64 = 288000;
+pub fn lore(tier: u8) -> u64 {
+    let mut learned = 0;
+    for _ in 0..tier {
+        learned = crate::research::learn(learned, crate::research::ROW_LORE, 0);
+    }
+    learned
+}
+
+pub fn learn_spire_lore(d: super::Deployment, home: crate::resources::ResourceKey, timestamp: u64) {
+    let learned = snforge_std::interact_with_state(
+        d.games, || crate::research::tier(crate::logic::research::learned(home), crate::research::ROW_LORE),
+    );
+    let budget = snforge_std::interact_with_state(
+        d.games,
+        || {
+            let mut cost = 0;
+            for tier in learned + 1..crate::research::LORE_SPIRES + 1 {
+                cost += crate::logic::research::price(home.game_id, crate::research::ROW_LORE, tier).essence;
+            }
+            cost
+        },
+    );
+    super::resource_commands::grant(d, home, crate::resources::ESSENCE, budget);
+    for _ in learned..crate::research::LORE_SPIRES {
+        let buy = Command::Research(
+            crate::research::Research { structure_id: home.entity_id, row: crate::research::ROW_LORE, choice: 0 },
+        );
+        assert!(execute_in_game(d, home.game_id, buy, timestamp), "Spire lore purchase refused");
+    }
+}
+
 pub fn day_start(d: super::Deployment, game_id: u32, index: u64) -> u64 {
     let game = IGameDispatcher { contract_address: d.games }.game(game_id);
     let unit = IGameDispatcher { contract_address: d.games }.rules(game_id).day_unit_seconds;

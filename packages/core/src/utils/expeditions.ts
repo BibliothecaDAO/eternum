@@ -2,7 +2,7 @@ import { beastBand } from "./frontier-beast-band";
 import { currentArmy } from "./deep";
 import { deepCenter } from "./deep-geometry";
 import { entityHomeNamespace } from "./entity-home";
-import { researchedDepth } from "./realm-research";
+import { reachableDepth } from "./realm-research";
 import { MAX_U32, ResourcesIds } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { readOptionalSeasonRow } from "../client/views/season-rows";
@@ -364,7 +364,7 @@ function realmSpires(
 ): ExpeditionSpireView[] {
   const rules = isRealmCategory(realm.base.category) ? readExpeditionRules(store, realm.game_id) : null;
   if (!rules) return [];
-  const deepest = researchedDepth(store, realm.game_id, realm.entity_id) ?? 0;
+  const deepest = reachableDepth(store, realm.game_id, realm.entity_id) ?? 0;
   if (!discoversSpires(store, realm.game_id)) {
     const spire = deepest > 0 ? expeditionSpireTile(rules, realm, nowSeconds) : null;
     return spire ? [{ ...spire, deepest, realm }] : [];
@@ -417,7 +417,7 @@ export const armySpireChance = (
   const allocation = store.get("ArmyDay", { game_id: gameId, explorer_id: explorerId });
   if (epoch === null || !allocation || !isCurrentExpeditionArmy(rules, allocation.day, nowSeconds)) return null;
   const depth = expeditionDepth(rules, { y: position.row });
-  const researched = researchedDepth(store, gameId, army.owner);
+  const researched = reachableDepth(store, gameId, army.owner);
   if (position.alt || depth >= 3 || researched === undefined || researched === 0) return null;
   const progress = store.requireOrAbsent("ExpeditionSpire", {
     game_id: gameId,

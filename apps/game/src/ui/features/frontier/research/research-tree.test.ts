@@ -20,16 +20,16 @@ describe("the castle's tree as the contract rules it", () => {
       ["row-4", "locked"],
       ["row-6", "locked"],
       ["row-5", "locked"],
-      ["shrine", "short"],
       ["well", "short"],
-      ["reach-1", "short"],
-      ["reach-2", "locked"],
-      ["reach-3", "locked"],
+      ["shrine", "locked"],
+      ["spire", "locked"],
     ]);
     expect(why(EARLY_REALM, "row-0")).toBe("Essence 300 / 500");
     expect(why(EARLY_REALM, "row-1")).toBe("Build a Workshop");
     expect(why(EARLY_REALM, "row-5")).toBe("Build a Supply yard");
-    expect(why(EARLY_REALM, "reach-2")).toBe("Veil first");
+    expect(why(EARLY_REALM, "well")).toBe("Essence 300 / 2,500");
+    expect(why(EARLY_REALM, "shrine")).toBe("Well lore first");
+    expect(why(EARLY_REALM, "spire")).toBe("Shrine lore first");
     expect(canResearchNow(readResearchTree(EARLY_REALM))).toBe(true);
   });
 
@@ -40,7 +40,11 @@ describe("the castle's tree as the contract rules it", () => {
       "ready",
       { essence: 1_000, labor: 1_000 },
     ]);
-    expect(node(MID_REALM, "shrine").state).toBe("done");
+    expect([node(MID_REALM, "well").state, node(MID_REALM, "shrine").state]).toEqual(["done", "done"]);
+    expect([node(MID_REALM, "spire").name, node(MID_REALM, "spire").price]).toEqual([
+      "Spire lore",
+      { essence: 10_000, labor: 0 },
+    ]);
     expect(canResearchNow(readResearchTree(MID_REALM))).toBe(true);
   });
 

@@ -1,8 +1,8 @@
 import { logisticsStamina, researchHasIndependentSides, isOathResearch } from "@bibliothecadao/eternum";
 import type { IconMeaning, IconMark } from "@/ui/design-system/icon";
-import { RESEARCH_TREE, SHRINE, STAMINA, type RankedWords, type Tier, WELL } from "@/ui/design-system/kit/words";
+import { RESEARCH_TREE, SHRINE, SPIRE, STAMINA, type RankedWords, type Tier, WELL } from "@/ui/design-system/kit/words";
 import { nativeResearchConstants as research, nativeRuleConstants } from "@bibliothecadao/eternum/game-client";
-import { BuildingType, formatExact, formatFigure, formatPercent, layerName, rankName } from "@bibliothecadao/types";
+import { BuildingType, formatExact, formatFigure, formatPercent, rankName } from "@bibliothecadao/types";
 
 import { buildingIcon, buildingName } from "../build/building-names";
 import { sideMarks } from "./sides-taken";
@@ -110,13 +110,10 @@ const ROWS = {
   farm: research.ROW_FARM,
   workshop: research.ROW_WORKSHOP,
   hut: research.ROW_HUT,
-  shrine: research.ROW_SHRINE,
-  well: research.ROW_WELL,
-  depth: research.ROW_DEPTH,
+  lore: research.ROW_LORE,
 } as const;
 
 type ResearchRow = Extract<keyof typeof research, `ROW_${string}`>;
-const DEPTH_MARKS: IconMeaning[] = ["depth-1", "depth-2", "depth-3"];
 
 const percent = (bps: number) => formatPercent(bps / 10_000, { signed: true });
 /** The realm's tree: Economy (Farm, Workshop, Hut), Army (Barracks, then the four training rows), Castle. */
@@ -356,46 +353,46 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         },
       ),
     ],
-    ROW_SHRINE: [
-      castleNode("shrine", ROWS.shrine, SHRINE, "shrine", {
-        line: RESEARCH_TREE.armiesFind(SHRINE),
-        now: "—",
-        next: RESEARCH_TREE.opens,
-      }),
-    ],
-    ROW_WELL: [
-      castleNode("well", ROWS.well, WELL, "well", {
-        line: RESEARCH_TREE.armiesFind(WELL),
-        now: "—",
-        next: RESEARCH_TREE.each(`${formatExact(nativeRuleConstants.WELL_REFILL_PERCENT)}% max ${STAMINA}`),
-      }),
-    ],
-    ROW_DEPTH: ([1, 2, 3] as const).map((depth) => {
-      const name = layerName(depth);
-      const before: Need[] =
-        depth === 1
-          ? []
-          : [
-              {
-                kind: "tier",
-                met: learned(ROWS.depth).tier >= depth - 1,
-                node: layerName(depth - 1),
-                icon: DEPTH_MARKS[depth - 2]!,
-              },
-            ];
-      return castleNode(
-        `reach-${depth}`,
-        ROWS.depth,
-        name,
-        DEPTH_MARKS[depth - 1]!,
-        { line: RESEARCH_TREE.enters(name), now: "—", next: RESEARCH_TREE.opens },
-        depth,
-        before,
-        depth < 3 ? [`reach-${depth + 1}`] : [],
-      );
-    }),
+    ROW_LORE: loreLadder(),
   } satisfies Record<ResearchRow, TreeNode[]>;
   return Object.values(rows).flat();
+
+  function loreLadder(): TreeNode[] {
+    const ladder: { key: string; site: string; icon: IconMeaning; tier: number; next: string }[] = [
+      {
+        key: "well",
+        site: WELL,
+        icon: "well",
+        tier: research.LORE_WELLS,
+        next: RESEARCH_TREE.each(`${formatExact(nativeRuleConstants.WELL_REFILL_PERCENT)}% max ${STAMINA}`),
+      },
+      { key: "shrine", site: SHRINE, icon: "shrine", tier: research.LORE_SHRINES, next: RESEARCH_TREE.opens },
+      { key: "spire", site: SPIRE, icon: "spire", tier: research.LORE_SPIRES, next: RESEARCH_TREE.opens },
+    ];
+    return ladder.map((step, index) => {
+      const previous = ladder[index - 1];
+      const before: Need[] = previous
+        ? [
+            {
+              kind: "tier",
+              met: learned(ROWS.lore).tier >= previous.tier,
+              node: RESEARCH_TREE.lore(previous.site),
+              icon: previous.icon,
+            },
+          ]
+        : [];
+      return castleNode(
+        step.key,
+        ROWS.lore,
+        RESEARCH_TREE.lore(step.site),
+        step.icon,
+        { line: RESEARCH_TREE.armiesFind(step.site), now: "—", next: step.next },
+        step.tier,
+        before,
+        ladder[index + 1] ? [ladder[index + 1]!.key] : [],
+      );
+    });
+  }
 
   function oathNode(row: number, category: BuildingType): TreeNode[] {
     const step = (tier: number) => ({
