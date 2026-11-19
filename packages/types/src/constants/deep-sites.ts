@@ -1,4 +1,4 @@
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 
 export const deepSites = [
   { id: nativeRuleConstants.DEEP_FOUNDATION, name: "Hyperstructure archive", key: "foundation" },

@@ -4,7 +4,7 @@ import { NativeFactStore } from "../client/native-fact-store";
 import { WorldSpatialProjection } from "../sync/world-spatial-projection";
 import { getTileAt } from "./tile";
 import { availableRuinLords, ruinChestsToday, ruinDisappeared } from "./ruins";
-import { nativeReleaseConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeReleaseConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import conformance from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { frontierPreset } from "../../../../config/source/frontier/native";
 import { dayOf } from "./days";

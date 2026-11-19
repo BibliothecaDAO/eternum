@@ -40,6 +40,14 @@ export class ShardReleaseMismatchError extends Error {
   }
 }
 
+export class GameOnOlderNumbersError extends ShardReleaseMismatchError {
+  constructor(shardUrl: string, releaseId: string) {
+    super(shardUrl, releaseId);
+    this.message = `GAME_ON_OLDER_NUMBERS: shard ${shardUrl} release ${releaseId} runs older balance numbers than this client`;
+    this.name = "GameOnOlderNumbersError";
+  }
+}
+
 const ENTRYPOINT_CONTRACT = "games";
 
 const shards = new Map<string, Shard>();

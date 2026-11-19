@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { nativeRuleConstants } from "../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants } from "../../contracts/l3/world-native/schema/balance.gen";
 import { NativeDecoder } from "../../apps/herald/src/native/decoder";
 import { manifest } from "../../apps/herald/src/native/fixtures";
 import type { FoldCheckpoint, FoldCheckpointRow } from "../../apps/herald/src/types";

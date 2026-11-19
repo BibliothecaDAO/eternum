@@ -4,7 +4,7 @@ import {
   nativeBaneConstants,
   nativeOathConstants,
   nativeRaceConstants,
-} from "../../../../../contracts/l3/world-native/schema/client.gen";
+} from "../../../../../contracts/l3/world-native/schema/balance.gen";
 import { NativeFactStore } from "../native-fact-store";
 import { dayAtIndex } from "../../utils/days";
 import { readStaminaEffects } from "./stamina";

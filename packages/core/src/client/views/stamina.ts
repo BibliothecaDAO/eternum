@@ -1,5 +1,5 @@
 import type { StaminaEffects } from "@bibliothecadao/types";
-import { nativeBaneConstants, nativeRaceConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeBaneConstants, nativeRaceConstants } from "../../../../../contracts/l3/world-native/schema/balance.gen";
 import type { NativeFactResult, NativeFactStore } from "../native-fact-store";
 import { dayAtIndex } from "../../utils/days";
 import { readExpeditionRules } from "../../utils/expeditions";

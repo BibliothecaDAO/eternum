@@ -1,4 +1,4 @@
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { surfaceNeighborAtDistance } from "./travel";
 
 export function deepCenter(spacing: number): { col: number; row: number } {

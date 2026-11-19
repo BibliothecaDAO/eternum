@@ -16,7 +16,7 @@ import {
   rowInGameSyncScope,
   type GameSyncScope,
 } from "@bibliothecadao/eternum/game-sync-models";
-import { nativeRuleConstants } from "../../../contracts/l3/world-native/schema/client.gen";
+import { nativeIdentifiers } from "../../../contracts/l3/world-native/schema/client.gen";
 import { toJsonValue, type ModelRegistry } from "./model-registry";
 import { directoryFact, FINALIZED_GAME_MODELS } from "./native/read-models";
 import { nativeRowKey } from "./native/row-key";
@@ -90,7 +90,7 @@ export function finalizedGames(rows: (model: string) => readonly DecodedRecord[]
       const gameId = BigInt(value.game_id as string).toString();
       const config = rules.get(gameId);
       if (!config) throw new Error(`Finalized game ${gameId} has no rules`);
-      return (Number(config.mode_rules) & nativeRuleConstants.SEASON_CLOSE) !== 0 || results.has(gameId);
+      return (Number(config.mode_rules) & nativeIdentifiers.rule.SEASON_CLOSE) !== 0 || results.has(gameId);
     })
     .map((value) => BigInt(value.game_id as string).toString());
 }

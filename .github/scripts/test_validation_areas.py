@@ -42,6 +42,7 @@ class CiFileOwnership(unittest.TestCase):
             "contracts/l3/world-native/schema/schema.json",
             "contracts/l3/world-native/schema/bindings.json",
             "contracts/l3/world-native/schema/client.gen.ts",
+            "contracts/l3/world-native/schema/balance.gen.ts",
             "contracts/l3/world-native/schema/fixtures/row-set.json",
         ):
             with self.subTest(path=path):

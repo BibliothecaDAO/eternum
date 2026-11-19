@@ -34,6 +34,7 @@ import {
   judgeAfterDoorway,
 } from "./evidence.mjs";
 import { watchReleaseMove } from "./stale-release.mjs";
+import { nativeOathConstants as oathRules } from "../../../../contracts/l3/world-native/schema/balance.gen.ts";
 import { openOrderSendGate, touchAt, VIEWPORT } from "./browser-session.mjs";
 import { ENTRY_BUTTON, findHomeCardEntry } from "./player-entry.mjs";
 import { judgeClickToResult, measureClickToResult } from "./click-latency.mjs";
@@ -1127,13 +1128,6 @@ function deleteOathArmyStep() {
         : failed("Oath army deletion or cancellation did not settle", played),
   };
 }
-
-const oathRules = JSON.parse(
-  readFileSync(
-    resolve(dirname(fileURLToPath(import.meta.url)), "../../../../contracts/l3/world-native/schema/schema.json"),
-    "utf8",
-  ),
-).oathConstants;
 
 function oathPassSteps(capped) {
   return [

@@ -2,7 +2,7 @@ import {
   nativeRaceConstants,
   nativeQuestConstants as quest,
   nativeRuleConstants as presetRule,
-} from "../../../../contracts/l3/world-native/schema/client.gen";
+} from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { DAYS_PER_BAG } from "@bibliothecadao/eternum/expeditions";
 import { buildingIds } from "../../../source/frontier/native";
 import { nativePresetForId } from "../../../source/native";

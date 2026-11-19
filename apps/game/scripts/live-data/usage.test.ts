@@ -1,7 +1,5 @@
-import {
-  nativeFactSchemaIdentity,
-  nativeResearchConstants as research,
-} from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeFactSchemaIdentity } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { describe, expect, it } from "vitest";
 import { type DecodedEvent, nameCommands, researchRows, shareOf } from "./commands";
 import { Counts, usageReport } from "./findings";

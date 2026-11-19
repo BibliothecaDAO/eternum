@@ -1,4 +1,4 @@
-import { nativeRuleConstants as rule } from "../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants as rule } from "../../../contracts/l3/world-native/schema/balance.gen";
 import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
 
 export const arenaModeRules =

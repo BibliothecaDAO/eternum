@@ -1,7 +1,5 @@
-import {
-  nativeFactSchemaIdentity,
-  nativeResearchConstants as research,
-} from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeFactSchemaIdentity } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { researchHasIndependentSides, researchPicks } from "../../../../packages/core/src/utils/realm-research";
 
 /**

@@ -25,6 +25,12 @@ type DoorwayBlocker =
   | { kind: "refused"; line: string }
   | { kind: "devices" };
 
+export type GameRefusal = "release" | "older-numbers";
+const REFUSAL_LINES: Record<GameRefusal, string> = {
+  release: DOORWAY_WORDS.gameRefused,
+  "older-numbers": DOORWAY_WORDS.gameOnOlderNumbers,
+};
+
 export interface DoorwayView {
   steps: { step: DoorwayStep; state: StepState }[];
   /** How far through the track the entry is, 0 to 100, for the doorway's one bar. */
@@ -60,7 +66,7 @@ interface BootSide {
   /** The game is over and finalized, so it leads to its results instead of booting. */
   ended?: boolean;
   /** The game ran on a release this client cannot read, which no retry changes. */
-  refused?: boolean;
+  refused?: GameRefusal;
   /** The share of the opening view's model loads and compiles done (model-preparation), while the map waits on them. */
   modelShare?: number;
 }
@@ -161,10 +167,10 @@ const bootPlace = ({
   failedScene,
   realmCanOpen = false,
   ended = false,
-  refused = false,
+  refused,
 }: BootSide): Place => {
   if (ended) return place("account", { done: true, spectating: "results" });
-  if (refused) return place("map", { blocker: { kind: "refused", line: DOORWAY_WORDS.gameRefused } });
+  if (refused) return place("map", { blocker: { kind: "refused", line: REFUSAL_LINES[refused] } });
   switch (phase) {
     case "normalize_route":
     case "await_account":

@@ -16,7 +16,7 @@ import { BootDebugPanel } from "@/ui/debug/boot-debug-panel";
 
 import { doorwayRealmOf } from "./doorway-realm";
 import { DoorwayScreen } from "./doorway-screen";
-import { type DoorwayAudience, doorwayView } from "./doorway-view";
+import { type DoorwayAudience, doorwayView, type GameRefusal } from "./doorway-view";
 
 /**
  * The doorway over the game's route while it boots (design o5): the map booting, then the hand-off to play, the
@@ -40,7 +40,7 @@ export const PlayRouteDoorway = ({
   /** The game is finalized: the doorway leads to its results. */
   ended: boolean;
   /** The game ran on a release this client cannot read: the doorway says so and offers no retry. */
-  refused: boolean;
+  refused: GameRefusal | undefined;
   retry: () => void;
   currentTaskLabel: string;
 }) => {

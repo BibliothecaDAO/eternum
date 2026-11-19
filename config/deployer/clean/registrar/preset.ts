@@ -1,5 +1,5 @@
 import { nativePresetForId } from "../../../source/native";
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { CapacityConfig, type Config } from "@bibliothecadao/types";
 import { hash, shortString } from "starknet";
 import { BLITZ_REGISTRATION_COUNT_CAP } from "../constants";

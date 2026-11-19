@@ -1,6 +1,6 @@
 import { SCOPE_INPUT_MODELS } from "../../sync/model-manifest";
 import { questCatalog, RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
-import { nativeQuestConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeQuestConstants } from "../../../../../contracts/l3/world-native/schema/balance.gen";
 import type { NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import type { NativeFactResult, NativeFactStore } from "../native-fact-store";
 import { dayOf } from "../../utils/days";

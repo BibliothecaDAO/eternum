@@ -15,7 +15,7 @@ import schema from "../../../../contracts/l3/world-native/schema/schema.json";
 import {
   nativeResearchConstants as research,
   nativeRuleConstants,
-} from "../../../../contracts/l3/world-native/schema/client.gen";
+} from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
 import { applyDeploymentConfigOverrides } from "../config/config-loader";
 import { buildNativePreset } from "../config/native-preset";

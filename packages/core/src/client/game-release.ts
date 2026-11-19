@@ -1,6 +1,7 @@
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { NATIVE_BALANCE_SINCE_RELEASE, NATIVE_RELEASE_ID } from "../../../../deploy/release/native-release";
 import type { NativeFactStore } from "./native-fact-store";
-import { refreshShardRelease, ShardReleaseMismatchError, type Shard } from "./shard";
+import { GameOnOlderNumbersError, refreshShardRelease, ShardReleaseMismatchError, type Shard } from "./shard";
 
 /** Validate each game pin once, shared by every concurrent sender: an action waits until its pin is readable. */
 export function followGameRelease(
@@ -108,6 +109,8 @@ function firstUnreadRelease(
 ): number | undefined {
   if (pin.created_release_id < 1 || pin.created_release_id > pin.release_id)
     throw new ShardReleaseMismatchError(shardUrl, `${pin.created_release_id}..${pin.release_id}`);
+  if (pin.release_id < NATIVE_BALANCE_SINCE_RELEASE) throw new GameOnOlderNumbersError(shardUrl, String(pin.release_id));
+  if (pin.release_id > NATIVE_RELEASE_ID) throw new ShardReleaseMismatchError(shardUrl, String(pin.release_id));
   for (let release = pin.created_release_id; release <= pin.release_id; release++) {
     const known = catalogue[String(release)];
     if (known === undefined) return release;

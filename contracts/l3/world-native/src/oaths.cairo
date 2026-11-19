@@ -34,7 +34,7 @@ pub const TITANS_STAMINA: u16 = 60;
 pub const ENLIGHTENMENT_REGEN_BPS: u16 = 13334;
 pub const FOX_REVEAL_DISCOUNT_PERCENT: u16 = 20;
 pub const SKILL_DAMAGE_PERCENT: u16 = 30;
-pub const SKILL_BAR_BELOW: u16 = 10;
+pub const SKILL_BELOW_STAMINA: u16 = 10;
 pub const FURY_REFUND_PERCENT: u16 = 50;
 pub const PERFECTION_PAY_PERCENT: u16 = 150;
 pub const PERFECTION_LOSS_PERCENT: u16 = 15;
@@ -56,7 +56,7 @@ pub fn damage_multiplier(attacker: u16, defender: u16, guarding: bool) -> Fixed 
 }
 
 pub fn skill_multiplier(oaths: u16, bar_after_cost: u64) -> Fixed {
-    if held(oaths, SKILL) && bar_after_cost < SKILL_BAR_BELOW.into() {
+    if held(oaths, SKILL) && bar_after_cost < SKILL_BELOW_STAMINA.into() {
         FixedTrait::new((100 + SKILL_DAMAGE_PERCENT).into(), false) / FixedTrait::new(100, false)
     } else {
         FixedTrait::ONE()

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { OccupiedSpaceError, TileManager } from "../index";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { BUILDINGS_CENTER, BuildingType, type GameplayAccount, type SystemCalls } from "@bibliothecadao/types";
 
 const setup = (occupied = false) => {

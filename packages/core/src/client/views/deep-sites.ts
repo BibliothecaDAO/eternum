@@ -2,7 +2,8 @@ import { inlineTroops, resolveExplorerCombatTroops } from "../../managers/troop-
 import { armyOaths } from "../../utils/oaths";
 import { currentArmy } from "../../utils/deep";
 import { deepSites } from "@bibliothecadao/types";
-import { nativeRuleConstants, type NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import { type NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants } from "../../../../../contracts/l3/world-native/schema/balance.gen";
 import type { NativeFactStore } from "../native-fact-store";
 import { configManager } from "../../managers/config-manager";
 import { dayOf, readExpeditionRules } from "../../utils/expeditions";

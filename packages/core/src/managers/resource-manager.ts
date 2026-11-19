@@ -1,9 +1,9 @@
 import { currentResourceWeight } from "../utils/deep";
 import { researchPicks } from "../utils/realm-research";
-import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { BANE_MODELS, readBaneEffects } from "../client/views/banes";
 import { SCOPE_INPUT_MODELS } from "../sync/model-manifest";
-import { nativeBaneConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeBaneConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { productionOutput } from "../utils/production-output";
 import { isModeRuleEnabled } from "../utils/mode-rules";
 import {

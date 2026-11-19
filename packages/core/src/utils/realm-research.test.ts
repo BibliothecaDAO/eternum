@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import {
   buildingTypeTier,
   learnResearch,

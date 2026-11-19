@@ -203,7 +203,8 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   app.post("/api/factory/release", async (context) => {
     const body = (await context.req.json().catch(() => null)) as { release?: unknown } | null;
     const release = body?.release;
-    if (release !== null && !isReleaseIdentity(release)) return context.json({ error: "invalid_release" }, 400);
+    if (release !== null && !isReleaseIdentity(release))
+      return context.json({ error: "invalid_release" }, 400);
     try {
       return context.json(await dependencies.registrar.applyRelease(release));
     } catch (error) {

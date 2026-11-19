@@ -4,7 +4,7 @@ import { StructureType } from "@bibliothecadao/types";
 import { NativeFactStore } from "../client/native-fact-store";
 import { configManager } from "../managers/config-manager";
 import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { getHyperstructureRates, hyperstructureRate, hyperstructureRateWords } from "./hyperstructure";
 
 vi.stubGlobal("localStorage", { getItem: () => null });

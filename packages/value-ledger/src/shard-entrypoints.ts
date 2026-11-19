@@ -6,6 +6,7 @@ export const GAME_ENTRYPOINTS = [
   { name: "play", stamp: true },
   { name: "create_game", stamp: false },
   { name: "apply_release", stamp: false },
+  { name: "open_release", stamp: false },
   { name: "register_release", stamp: false },
   { name: "register_preset", stamp: false },
   { name: "set_launcher", stamp: false },

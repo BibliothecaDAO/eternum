@@ -11,6 +11,7 @@ import type { ShardManifest } from "@bibliothecadao/eternum/game-sync";
 /** What advancing reads and writes on the shard, as the launcher. */
 export interface ReleaseChain {
   currentRelease(): Promise<number>;
+  releaseRegistered(releaseId: number): Promise<boolean>;
   /** The logic and migration classes registered under `releaseId`, as hex strings. */
   registeredRelease(releaseId: number): Promise<{ logic: Record<string, string>; migration: string }>;
   /** The game the launcher created under `name`, or 0 when none exists. */
@@ -19,6 +20,7 @@ export interface ReleaseChain {
   game(gameId: number): Promise<{ settled: boolean; preset_id: bigint }>;
   /** Applies `releaseId` to the game, waits for its receipt, and returns the transaction hash. */
   applyRelease(gameId: number, releaseId: number): Promise<string>;
+  openRelease(releaseId: number): Promise<string>;
 }
 
 /** Herald's public manifest for the shard: the schema each release it can decode maps to. */
@@ -43,6 +45,7 @@ export interface ShardRelease {
   chainId: string;
   releaseId: number;
   games: AdvancedGame[];
+  opened: string[];
 }
 
 /**
@@ -106,11 +109,17 @@ export async function advanceGames(
   return advanced;
 }
 
+export async function openForNewGames(chain: ReleaseChain, release: ReleaseIdentity): Promise<string[]> {
+  const transactions: string[] = [];
+  for (let next = (await chain.currentRelease()) + 1; next <= release.releaseId; next++)
+    transactions.push(await chain.openRelease(next));
+  return transactions;
+}
+
 /** The shard's registered release is the commit's, number and contents: the box half registers it first. */
 async function requireRegistered(chain: ReleaseChain, release: ReleaseIdentity) {
-  const current = await chain.currentRelease();
-  if (current < release.releaseId) throw new Error("release_not_registered");
-  if (current > release.releaseId) throw new Error("release_older_than_shard");
+  if (!(await chain.releaseRegistered(release.releaseId))) throw new Error("release_not_registered");
+  if (await chain.releaseRegistered(release.releaseId + 1)) throw new Error("release_older_than_shard");
   if (!sameContents(await chain.registeredRelease(release.releaseId), release))
     throw new Error("release_contents_differ");
 }

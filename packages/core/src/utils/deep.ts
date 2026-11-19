@@ -3,11 +3,8 @@ import { deepCenter, isDeepTile } from "./deep-geometry";
 import { dayAtIndex } from "./days";
 import { readExpeditionRules } from "./expeditions";
 import { getBlockTimestamp } from "./timestamp";
-import {
-  nativeRuleConstants,
-  nativeTilePackingConstants,
-  type NativeRows,
-} from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeTilePackingConstants, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { BiomeTypeToId, BiomeType } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 

@@ -350,7 +350,14 @@ const RELEASE = {
 test("the release route hands the commit's release to the registrar and answers its report", async () => {
   const { app, applyRelease: registrar } = fixture();
   const report = {
-    shards: [{ chainId: DEV_CHAIN, releaseId: 2, games: [{ gameId: 1, from: 1, to: 2, transactions: ["0xa"] }] }],
+    shards: [
+      {
+        chainId: DEV_CHAIN,
+        releaseId: 2,
+        games: [{ gameId: 1, from: 1, to: 2, transactions: ["0xa"] }],
+        opened: ["0xb"],
+      },
+    ],
   };
   registrar.mockResolvedValueOnce(report);
   const response = await applyRelease(app, { release: RELEASE });

@@ -3,6 +3,7 @@ import type { NativeWorld, NativeWorldManifest, RegistrarWorld } from "./types";
 import type { NativePlan } from "./types";
 import type { ShardRecord } from "../../../../../apps/herald/src/shard-manifest";
 import type { NativeSchema } from "../../../../../apps/herald/src/native/schema";
+import { nativeBalanceIdentity } from "../../../../../contracts/l3/world-native/schema/balance.gen";
 
 /** The shard's active schema: what its deployed Games contract exposes and how its rows are encoded. */
 export function nativeWorldSchema(manifest: RegistrarWorld): NativeSchema {
@@ -69,6 +70,7 @@ export function buildNativeManifest(local: NativeWorld, before: NativePlan, shar
       migrationClassHash: local.release.migrationClassHash,
       releaseId: local.release.releaseId,
       releaseSchemas: { ...local.previous?.native.releaseSchemas, [local.release.releaseId]: local.release.schema },
+      releaseBalances: { ...local.previous?.native.releaseBalances, [local.release.releaseId]: nativeBalanceIdentity },
       logic: Object.fromEntries(local.logic.map(({ name, classHash }) => [name, classHash])),
     },
   };

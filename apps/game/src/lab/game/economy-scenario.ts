@@ -2,7 +2,7 @@ import { shipmentTravelSeconds } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, ResourcesIds, TileOccupier } from "@bibliothecadao/types";
 
-import { nativeArrivalConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeArrivalConstants } from "../../../../../contracts/l3/world-native/schema/balance.gen";
 import { blitzPreset } from "../../../../../config/source/blitz/native";
 import { type LabCommand, type LabFact, type LabScenario, wire } from "./lab-chain";
 import { realmScenario } from "./realm-scenario";

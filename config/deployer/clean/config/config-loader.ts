@@ -1,5 +1,5 @@
 import { nativePresetForId } from "../../../source/native";
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import type {
   Config as EternumConfig,
   FactoryBiomeClimateOverrides,

@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
-import { nativeBaneConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeBaneConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { NativeFactStore } from "../client/native-fact-store";
 import { dayOf } from "../utils/days";
 import { ResourceManager } from "./resource-manager";

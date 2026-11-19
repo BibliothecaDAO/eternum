@@ -1,5 +1,5 @@
 import { frontierSeasonOnePreset } from "../../../../config/source/frontier/season-one";
-import { nativeOathConstants as oaths } from "../schema/client.gen";
+import { nativeOathConstants as oaths } from "../schema/balance.gen";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { shortString } from "starknet";
 import { schema as compiledSchema } from "../../../../apps/herald/src/native/fixtures";
@@ -276,10 +276,10 @@ function oathFightVectors(): string[] {
   return sets.flatMap((held) => {
     const holds = (oath: number) => (held & bit(oath)) !== 0;
     return [
-      [oaths.SKILL_BAR_BELOW - 1, 30, 1_000, 860],
-      [oaths.SKILL_BAR_BELOW, 20, 1_000, 850],
+      [oaths.SKILL_BELOW_STAMINA - 1, 30, 1_000, 860],
+      [oaths.SKILL_BELOW_STAMINA, 20, 1_000, 850],
     ].flatMap(([bar, cost, before, after]) => {
-      const skill = holds(oaths.SKILL) && bar! < oaths.SKILL_BAR_BELOW ? 100 + oaths.SKILL_DAMAGE_PERCENT : 100;
+      const skill = holds(oaths.SKILL) && bar! < oaths.SKILL_BELOW_STAMINA ? 100 + oaths.SKILL_DAMAGE_PERCENT : 100;
       const clean = (before! - after!) * 100 < before! * oaths.PERFECTION_LOSS_PERCENT;
       const raged = holds(oaths.RAGE) ? (amount * BigInt(oaths.RAGE_PAY_PERCENT)) / 100n : amount;
       return [

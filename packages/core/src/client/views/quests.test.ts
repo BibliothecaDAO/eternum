@@ -2,7 +2,7 @@ import { readBaneDay, readBaneEffects } from "./banes";
 import { describe, expect, it } from "vitest";
 import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
-import { nativeBaneConstants, nativeQuestConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeBaneConstants, nativeQuestConstants } from "../../../../../contracts/l3/world-native/schema/balance.gen";
 import { dayOf } from "../../utils/days";
 import { NativeFactStore } from "../native-fact-store";
 import { readDailyQuest } from "./quests";

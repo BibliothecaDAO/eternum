@@ -1,6 +1,6 @@
 import { TroopType } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/balance.gen";
 
 /**
  * Where each research row keeps its tier in RealmKnowledge.learned, exactly as research.cairo packs it: the field's

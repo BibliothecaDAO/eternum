@@ -33,7 +33,7 @@ fn fresh_shard_uses_the_published_release_without_running_its_upgrade_migration(
 
 #[test]
 #[feature("safe_dispatcher")]
-fn release_registration_is_authorized_immutable_and_pins_only_new_games() {
+fn a_registered_release_reaches_new_games_only_once_the_launcher_opens_it() {
     let d = super::registrar::setup();
     let releases = IReleasesDispatcher { contract_address: d.games };
     let safe = IReleasesSafeDispatcher { contract_address: d.games };
@@ -56,16 +56,29 @@ fn release_registration_is_authorized_immutable_and_pins_only_new_games() {
         ..original,
     };
     assert!(safe.register_release(2, missing_movement).is_err());
+    assert!(!releases.release_registered(2));
     releases.register_release(2, next);
+    assert!(releases.release_registered(2));
+    assert_eq!(releases.current_release(), 1);
+    let staged = registrar.create_game(CreateGameParams { name: 'staged-release', ..params });
+    assert_eq!(releases.game_release(staged), 1);
+    assert!(safe.open_release(3).is_err());
+    start_cheat_caller_address(d.games, d.actor);
+    assert!(safe.open_release(2).is_err());
+    start_cheat_caller_address(d.games, authority());
+    releases.open_release(2);
     assert_eq!(releases.current_release(), 2);
     assert_eq!(releases.game_release(first), 1);
+    assert_eq!(releases.game_release(staged), 1);
     assert_eq!(registrar.create_game(params), first);
     let second = registrar.create_game(CreateGameParams { name: 'new-release', ..params });
     assert_eq!(releases.game_release(second), 2);
     let mut events = spy_events();
     releases.register_release(2, next);
     releases.register_release(1, original);
+    releases.open_release(2);
     assert_eq!(releases.current_release(), 2);
+    assert!(safe.open_release(1).is_err());
     assert!(events.get_events().emitted_by(d.games).events.is_empty());
     let error = safe.register_release(2, original).unwrap_err();
     let mut expected = array![core::byte_array::BYTE_ARRAY_MAGIC];
@@ -272,11 +285,13 @@ fn creation_release_survives_hotfixes_and_retried_launches() {
     registrar.register_preset(1, preset);
     let logic = releases.release(1);
     releases.register_release(2, logic);
+    releases.open_release(2);
     let existing = registrar.create_game(params);
     let legacy = registrar.create_game(CreateGameParams { name: 'before-origin', ..params });
     // Simulate a game created before this storage field existed.
     interact_with_state(d.games, || crate::state::write().game_creation_releases.write(legacy, 0));
     releases.register_release(3, logic);
+    releases.open_release(3);
     let next = registrar.create_game(CreateGameParams { name: 'next-season', ..params });
     releases.apply_release(existing, 3);
     releases.apply_release(legacy, 3);
@@ -332,6 +347,8 @@ fn village_pass_registration_keeps_its_owner_in_the_games_pinned_release() {
                 ..original,
             },
         );
+    releases.open_release(2);
+    releases.open_release(3);
     let key = crate::village::VillagePassKey { game_id, pass_id: 1 };
     crate::village::IVillagePassesDispatcherTrait::register_village_pass(
         crate::village::IVillagePassesDispatcher { contract_address: d.games }, key, d.actor,
@@ -340,4 +357,130 @@ fn village_pass_registration_keeps_its_owner_in_the_games_pinned_release() {
     assert_eq!(stored, Some(crate::village::VillagePass { owner: d.actor, village_id: 0 }));
     assert_eq!(releases.game_release(game_id), 2);
     assert_eq!(releases.current_release(), 3);
+}
+
+#[test]
+fn a_migration_free_release_reaches_a_populated_season_one_game_rewriting_no_fact_and_rolls_back_forward() {
+    let (d, game_id) = super::aspects::setup_aspect_preset(97, super::deep_sites::preset());
+    let mine = super::deep_sites::site(d, game_id, crate::rules::DEEP_MINE);
+    let guard = super::deep_sites::deployed(d, game_id, 1, 11);
+    super::deep_sites::beside(d, guard, mine, 0);
+    super::deep_sites::applied(d, game_id, super::deep_sites::fight(guard, mine), 360);
+    assert!(super::deep_sites::held(d, guard).is_some());
+    let visitor = super::army_activity::player(d, 9701);
+    let walker = super::deep_sites::deployed(visitor, game_id, 2, 1000);
+    interact_with_state(
+        d.games,
+        || {
+            let progress = crate::logic::progression::require(walker);
+            crate::logic::progression::write(
+                walker, crate::progression::ArmyProgress { oaths: crate::oaths::bit(crate::oaths::POWER), ..progress },
+            );
+        },
+    );
+    let armies = array![guard, walker].span();
+    super::set_launcher(d, d.actor);
+    let releases = IReleasesDispatcher { contract_address: d.games };
+    let candidate = releases.release(1);
+    let before = season_facts(d, game_id, armies);
+    start_cheat_caller_address(d.games, authority());
+    releases.register_release(2, candidate);
+    start_cheat_caller_address(d.games, d.actor);
+    let mut tune = spy_events();
+    releases.apply_release(game_id, 2);
+    assert_only_pin_moved(ref tune, d, game_id, 2);
+    assert_eq!(season_facts(d, game_id, armies), before);
+    assert_eq!(releases.current_release(), 1);
+    let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
+    let tick = (360 / interval + 1) * interval;
+    super::deep_sites::applied(
+        visitor,
+        game_id,
+        crate::commands::Command::Move(
+            crate::commands::Move { explorer_id: walker.explorer_id, directions: array![0].span() },
+        ),
+        tick,
+    );
+    assert!(season_facts(d, game_id, armies) != before);
+    let played = season_facts(d, game_id, armies);
+    start_cheat_caller_address(d.games, authority());
+    releases.register_release(3, candidate);
+    start_cheat_caller_address(d.games, d.actor);
+    let mut rollback = spy_events();
+    releases.apply_release(game_id, 3);
+    assert_only_pin_moved(ref rollback, d, game_id, 3);
+    assert_eq!(season_facts(d, game_id, armies), played);
+    assert_eq!(releases.release(3), candidate);
+    assert_eq!(releases.game_release(game_id), 3);
+}
+
+#[test]
+fn a_game_stuck_at_its_deep_boundary_plays_again_once_the_launcher_applies_a_cheaper_release() {
+    let (d, game_id) = super::aspects::setup_aspect_preset(98, super::deep_sites::preset());
+    let walker = super::deep_sites::deployed(d, game_id, 2, 1000);
+    super::set_launcher(d, d.actor);
+    let releases = IReleasesDispatcher { contract_address: d.games };
+    let cheaper = releases.release(1);
+    let stuck = Release {
+        classes: games_storage::release::LogicClasses {
+            prizes: declare_logic("OverBudgetDeepFixture"), ..cheaper.classes,
+        },
+        ..cheaper,
+    };
+    start_cheat_caller_address(d.games, authority());
+    releases.register_release(2, stuck);
+    releases.register_release(3, cheaper);
+    start_cheat_caller_address(d.games, d.actor);
+    releases.apply_release(game_id, 2);
+    let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
+    let tick = (360 / interval + 1) * interval;
+    world_test_support::tests::play_fixture::assert_preflight_rejection(
+        d.games,
+        world_test_support::tests::play_fixture::TestAction { game_id, actor: d.actor, command: step(walker) },
+        tick,
+    );
+    let mut recovery = spy_events();
+    releases.apply_release(game_id, 3);
+    assert_only_pin_moved(ref recovery, d, game_id, 3);
+    let before = interact_with_state(d.games, || crate::logic::troops::explorer(walker).unwrap().coord);
+    super::deep_sites::applied(d, game_id, step(walker), tick);
+    assert!(interact_with_state(d.games, || crate::logic::troops::explorer(walker).unwrap().coord) != before);
+}
+
+fn step(walker: ExplorerKey) -> crate::commands::Command {
+    crate::commands::Command::Move(crate::commands::Move { explorer_id: walker.explorer_id, directions: array![0].span() })
+}
+
+fn assert_only_pin_moved(ref spy: snforge_std::EventSpy, d: super::Deployment, game_id: u32, release_id: u32) {
+    let emitted = spy.get_events().emitted_by(d.games);
+    assert_eq!(emitted.events.len(), 1);
+    let (_, pin) = emitted.events.at(0);
+    assert_eq!(pin.keys.span(), array![selector!("GameEvent"), selector!("RowSet"), 1, 'GameRelease'].span());
+    assert_eq!(*pin.data.at(1), game_id.into());
+    assert_eq!(*pin.data.at(3), release_id.into());
+}
+
+fn season_facts(d: super::Deployment, game_id: u32, armies: Span<ExplorerKey>) -> Array<felt252> {
+    interact_with_state(
+        d.games,
+        || {
+            let state = crate::state::read();
+            let mut facts = array![];
+            crate::logic::game::game(game_id).serialize(ref facts);
+            crate::logic::game::rules(game_id).serialize(ref facts);
+            state.games.next_entity.read(game_id).serialize(ref facts);
+            state.deep.paid_tick.read(game_id).serialize(ref facts);
+            for army in armies {
+                let explorer = crate::logic::troops::explorer(*army).unwrap();
+                explorer.serialize(ref facts);
+                crate::logic::progression::require(*army).serialize(ref facts);
+                state.deep.guards.read((game_id, *army.explorer_id)).serialize(ref facts);
+                let home = ResourceKey { game_id, entity_id: explorer.owner };
+                for resource_type in 1_u8..59 {
+                    crate::logic::resources::balance(home, resource_type).serialize(ref facts);
+                }
+            }
+            facts
+        },
+    )
 }

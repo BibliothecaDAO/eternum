@@ -7,7 +7,7 @@ import { expect, it, vi } from "vitest";
 vi.mock("@/hooks/context/identity-session", () => ({ useIdentitySession: () => ({ status: "anonymous" }) }));
 
 import { DoorwayScreen } from "./doorway-screen";
-import { doorwayView } from "./doorway-view";
+import { doorwayView, type GameRefusal } from "./doorway-view";
 
 const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
 
@@ -146,7 +146,7 @@ it("leads a finalized game's boot to its Results, in place of the world not answ
 });
 
 it("tells a refused game's boot plainly and offers no retry, where any other failure offers one", () => {
-  const doorway = (refused: boolean) =>
+  const doorway = (refused: GameRefusal | undefined) =>
     renderToStaticMarkup(
       <MemoryRouter>
         <DoorwayScreen
@@ -158,11 +158,14 @@ it("tells a refused game's boot plainly and offers no retry, where any other fai
         />
       </MemoryRouter>,
     );
-  const refused = text(doorway(true));
+  const refused = text(doorway("release"));
   expect(refused).toContain("This game ran on a different version of the game and cannot be opened here.");
+  const older = text(doorway("older-numbers"));
+  expect(older).toContain("This game still runs on older balance numbers than this version of the game");
+  expect(older).not.toContain("Try again");
   expect(refused).not.toContain("did not answer");
   expect(refused).not.toContain("Try again");
-  const failed = text(doorway(false));
+  const failed = text(doorway(undefined));
   expect(failed).toContain("The world did not answer.");
   expect(failed).toContain("Try again");
 });

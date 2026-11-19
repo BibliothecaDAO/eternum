@@ -323,12 +323,14 @@ const releaseClasses = async (
 ): Promise<string[]> => {
   const call = (entrypoint: string, calldata: string[]) =>
     provider.callContract({ contractAddress: address, entrypoint, calldata }, number);
+  const registered = async (release: bigint) =>
+    BigInt((await call("release_registered", [release.toString()]))[0] ?? "0") === 1n;
   const [current] = await call("current_release", []);
-  const latest = BigInt(current ?? "0");
-  if (latest > 0n && latest < BigInt(firstRelease)) throw new Error("shard_release_before_manifest");
+  const open = BigInt(current ?? "0");
+  if (open > 0n && open < BigInt(firstRelease)) throw new Error("shard_release_before_manifest");
   const classes = new Set<string>();
-  const layout = latest > 0n ? releaseLayout(games) : null;
-  for (let release = BigInt(firstRelease); layout && release <= latest; release++) {
+  const layout = open > 0n ? releaseLayout(games) : null;
+  for (let release = BigInt(firstRelease); layout && (await registered(release)); release++) {
     const answer = await call("release", [release.toString()]);
     if (answer.length !== layout.size) throw new Error("invalid_release_classes");
     // A zero migration class is a release that migrates nothing.

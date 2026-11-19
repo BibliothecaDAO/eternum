@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { nativeOathConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeOathConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { expeditionDepth } from "./expeditions";
 import { readRevealPercent, revealYield } from "./reveal-yield";
 

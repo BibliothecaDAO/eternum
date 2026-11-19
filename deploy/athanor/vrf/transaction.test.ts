@@ -43,6 +43,7 @@ test("only the single data-listed Games entries admit administrative invokes", (
     "play",
     "create_game",
     "apply_release",
+    "open_release",
     "register_release",
     "register_preset",
     "set_launcher",

@@ -1,5 +1,6 @@
 import { aspects } from "@bibliothecadao/types";
-import { nativeRaceConstants, type NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import { type NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRaceConstants } from "../../../../../contracts/l3/world-native/schema/balance.gen";
 import type { NativeFactResult, NativeFactStore } from "../native-fact-store";
 import { readDeepSites } from "./deep-sites";
 

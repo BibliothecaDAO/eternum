@@ -4,11 +4,8 @@ import { readExpeditionRules, isCurrentExpeditionArmy } from "./expeditions";
 import { armyRelicsEnabled } from "./army-relics";
 import { dayOf } from "./days";
 import type { NativeFactStore } from "../client/native-fact-store";
-import {
-  nativeReleaseConstants,
-  type NativeKeys,
-  type NativeRows,
-} from "../../../../contracts/l3/world-native/schema/client.gen";
+import { type NativeKeys, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeReleaseConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { StructureType, TileOccupier } from "@bibliothecadao/types";
 import { entityHomeNamespace } from "./entity-home";
 import { type ExpeditionRules, expeditionRealmSite, seasonDay } from "./expeditions";

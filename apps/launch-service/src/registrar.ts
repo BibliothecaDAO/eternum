@@ -15,7 +15,7 @@ import { joinBotAccount } from "./launcher-account";
 import { slotResolver } from "./paid-blitz";
 import { D1SlotStore, FREEZE_RETRY_MS } from "./slot-store";
 import { launchFailure } from "./errors";
-import { advanceGames, type ReleaseIdentity, type ReleaseReport } from "./release";
+import { advanceGames, openForNewGames, type ReleaseIdentity, type ReleaseReport } from "./release";
 import { LaunchShard } from "./shard-client";
 import { D1LaunchStore, databaseLayer } from "./store";
 
@@ -113,7 +113,8 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
         privateKey: env.LAUNCH_DEPLOYER_PRIVATE_KEY,
       });
       const games = await advanceGames(launcher, herald, release, await store.gameNames("madara.frontier"));
-      return { shards: [{ chainId, releaseId: release.releaseId, games }] };
+      const opened = await openForNewGames(launcher, release);
+      return { shards: [{ chainId, releaseId: release.releaseId, games, opened }] };
     });
   }
 

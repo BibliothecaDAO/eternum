@@ -1,6 +1,6 @@
 import { expeditionSpireTile, readExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { nativeRuleConstants } from "../../../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants } from "../../../../../../contracts/l3/world-native/schema/balance.gen";
 import { getNeighborHexes, TileOccupier } from "@bibliothecadao/types";
 
 import { campBeside } from "./sites/site-fixture";

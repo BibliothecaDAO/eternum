@@ -14,6 +14,7 @@ const mock = vi.hoisted(() => ({
   manifest: vi.fn(),
   shard: vi.fn(),
   pins: new Map<number, number>(),
+  open: 1,
 }));
 vi.mock("cloudflare:workers", () => ({
   DurableObject: class {
@@ -45,7 +46,12 @@ vi.mock("./shard-client", () => ({
     constructor(target: unknown) {
       mock.shard(target);
     }
-    currentRelease = async () => 2;
+    currentRelease = async () => mock.open;
+    releaseRegistered = async (releaseId: number) => releaseId <= 2;
+    openRelease = async (releaseId: number) => {
+      mock.open = releaseId;
+      return `0x0${releaseId}`;
+    };
     registeredRelease = async () => ({ logic: { season: "0x55e0", troops: "0x77a2" }, migration: "0x0" });
     gameId = async (name: string) => (name === "frontier-1" ? 1 : 0);
     gameRelease = async (gameId: number) => mock.pins.get(gameId)!;
@@ -72,6 +78,7 @@ vi.mock("./executor", () => ({
 vi.mock("./process-launch", () => ({ processNextLaunch: mock.process }));
 beforeEach(() => {
   vi.clearAllMocks();
+  mock.open = 1;
   vi.spyOn(Date, "now").mockReturnValue(1000);
   mock.account.mockRejectedValue(new Error("launcher_approval_refused"));
   mock.process.mockReturnValue(Effect.void);
@@ -195,15 +202,24 @@ const RELEASE_MANIFEST = {
   releaseSchemas: { "1": RELEASE.schema, "2": RELEASE.schema },
 };
 
-it("advances each running Frontier game as the joined launcher and reports it", async () => {
+it("advances each running Frontier game as the joined launcher, then opens the release for new games", async () => {
   const f = setup();
   mock.account.mockResolvedValue("0x2");
   mock.manifest.mockResolvedValue(RELEASE_MANIFEST);
   mock.launched.mockResolvedValue(["frontier-1"]);
   mock.pins.set(1, 1);
   expect(await f.registrar.applyRelease(RELEASE)).toEqual({
-    shards: [{ chainId: "0x1", releaseId: 2, games: [{ gameId: 1, from: 1, to: 2, transactions: ["0x12"] }] }],
+    shards: [
+      {
+        chainId: "0x1",
+        releaseId: 2,
+        games: [{ gameId: 1, from: 1, to: 2, transactions: ["0x12"] }],
+        opened: ["0x02"],
+      },
+    ],
   });
+  expect(mock.open).toBe(2);
+  expect(mock.pins.get(1)).toBe(2);
   expect(mock.launched).toHaveBeenCalledWith("madara.frontier");
   expect(mock.shard).toHaveBeenCalledWith(
     expect.objectContaining({ accountAddress: "0x2", gamesAddress: "0x9", rpcUrl: "https://rpc.shard.test" }),
@@ -242,6 +258,7 @@ it("refuses by name and sends nothing when the box half has not registered the r
   mock.pins.set(1, 1);
   await expect(f.registrar.applyRelease({ ...RELEASE, releaseId: 3 })).rejects.toThrow("release_not_registered");
   expect(mock.pins.get(1)).toBe(1);
+  expect(mock.open).toBe(1);
 });
 
 it("refuses a release step without the commit's release while a shard is active, before joining the launcher", async () => {

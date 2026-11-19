@@ -4,3 +4,4 @@
  * client that expects it goes live.
  */
 export const NATIVE_RELEASE_ID = 9;
+export const NATIVE_BALANCE_SINCE_RELEASE = 1;
