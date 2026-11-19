@@ -676,6 +676,8 @@ const FIGHT_STATES: Record<string, LabState> = Object.fromEntries(
   ]),
 );
 
+const LAB_FRAGMENTS = 340;
+
 const STATES = {
   ...FIGHT_STATES,
   "today-sites": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today-sites" },
@@ -1844,7 +1846,6 @@ const FRONTIER_PRESET = 5;
 /** The lab realm's name and its LORDS where a state names none, as the desktop's realm panel reads them. */
 const LAB_REALM_NAME = "Duskbite";
 const LAB_LORDS = 320;
-const LAB_FRAGMENTS = 340;
 /** The fixture realm's population: what its buildings take of what its castle and Huts give. */
 const LAB_POPULATION = { used: 9, total: 18 };
 

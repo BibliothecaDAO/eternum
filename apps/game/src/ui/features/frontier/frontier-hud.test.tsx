@@ -10,6 +10,7 @@ import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-stor
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { shortString } from "starknet";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { nativeReleaseConstants } from "../../../../../../contracts/l3/world-native/schema/client.gen";
 import type { HudSurface } from "./hud/frontier-nav";
 
 // The real Frontier HUD on the lab's game. Only the network, the identity and the chat pane's own drawing stand in: the
@@ -120,7 +121,7 @@ const renderHud = () =>
     root.render(
       <MemoryRouter>
         <QueryClientProvider client={new QueryClient()}>
-          <LabGame preset={5} facts={() => [LABOR_RULES]}>
+          <LabGame preset={5} facts={(store) => [LABOR_RULES, sealRelease(store)]}>
             {(store) => {
               shownStore = store;
               return <FrontierHud seasonOver={SeasonOver} rules={readExpeditionRules(store, 1)!} />;
@@ -130,6 +131,20 @@ const renderHud = () =>
       </MemoryRouter>,
     ),
   );
+
+const sealRelease = (store: NativeFactStore) => {
+  const release = store.require("GameRelease", { game_id: 1 });
+  return {
+    model: "GameRelease",
+    key: store.wireKeyOf("GameRelease", release),
+    value: {
+      ...release,
+      release_id: nativeReleaseConstants.SEAL_RELEASE,
+      created_release_id: nativeReleaseConstants.SEAL_RELEASE,
+      preset_commitment: String(release.preset_commitment),
+    },
+  };
+};
 
 const LABOR_RULES = {
   model: "LaborRules",
@@ -534,6 +549,10 @@ const PHONE_SURFACES = {
   season: { label: "Season", open: () => fromMenu("Season") },
   realms: { label: "Realm Labor", open: () => fromMenu("Realm Labor") },
   settings: { label: "Settings", open: () => fromMenu("Settings") },
+  shop: {
+    label: "Shop",
+    open: () => act(async () => host.querySelector<HTMLButtonElement>('button[aria-label^="Fragments"]')!.click()),
+  },
 } satisfies Record<
   // An army's sheet and a lost army's open from an army, which this lab game has none of: frontier-army.test and
   // tile-card.test stand those two in the frame.
