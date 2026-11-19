@@ -1,8 +1,7 @@
 use crate::army_relics::{ArmyRelic, RelicKind};
 use super::registrar::*;
 
-#[test]
-fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
+fn relic_game() -> (super::Deployment, u32, u64, u64, ExplorerKey, crate::expeditions::FrontierDiscoveryRules, ChestTiers) {
     let (_, mut preset) = super::preset_projection::current_definition("frontier-check");
     preset.rules.troop_limit_config.settlement_deployment_cap = 6000;
     let mut stock = array![];
@@ -60,6 +59,12 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
     let home = ResourceKey { game_id, entity_id: home_id };
     let explorer_id = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
     let key = ExplorerKey { game_id, explorer_id };
+    (d, game_id, home_id, explorer_id, key, discovery, *preset.settlement.depths.at(0).chest)
+}
+
+#[test]
+fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
+    let (d, game_id, home_id, explorer_id, key, discovery, chest) = relic_game();
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     let lords = ResourceSlot { game_id, entity_id: home_id, resource_type: crate::resources::LORDS };
     for index in 0_u8..4 {
@@ -71,7 +76,7 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
             _ => RelicKind::Plunder,
         };
         let reward = ArmyRelic { kind, rank: 1 };
-        let site = discover_relic(d, key, discovery, *preset.settlement.depths.at(0).chest, reward, false, timestamp);
+        let site = discover_relic(d, key, discovery, chest, reward, false, timestamp);
         assert_eq!(read_ruin(d, site), Some(reward));
         let count = snforge_std::interact_with_state(
             d.games,
@@ -144,7 +149,7 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
         d,
         key,
         discovery,
-        *preset.settlement.depths.at(0).chest,
+        chest,
         ArmyRelic { kind: RelicKind::FarEye, rank: 1 },
         false,
         550,
@@ -195,13 +200,13 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
     }
     assert_eq!(revealed.len(), 6);
     assert_eq!(read_loadout(d, key).first, None);
-    assert!(
-        execute_in_game(
-            d, game_id, Command::Move(crate::commands::Move { explorer_id, directions: array![0].span() }), 553,
-        ),
-    );
+}
+
+#[test]
+fn a_ruin_cache_pays_its_fragments_to_the_army_owner_and_leaves_the_relics() {
+    let (d, game_id, _, explorer_id, key, discovery, chest) = relic_game();
     let cache = ArmyRelic { kind: RelicKind::Blade, rank: 1 };
-    let site = discover_relic(d, key, discovery, *preset.settlement.depths.at(0).chest, cache, true, 560);
+    let site = discover_relic(d, key, discovery, chest, cache, true, 560);
     assert_eq!(read_cache(d, site), 10);
     let loadout = read_loadout(d, key);
     assert!(

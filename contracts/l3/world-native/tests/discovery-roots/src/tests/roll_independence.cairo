@@ -214,6 +214,14 @@ pub use world_test_support::tests::roll_independence::*;
 #[test_case(name: "route_52_roots_8_15", 52, 8)]
 #[test_case(name: "route_52_roots_16_23", 52, 16)]
 #[test_case(name: "route_52_roots_24_31", 52, 24)]
+#[test_case(name: "route_53_roots_00_07", 53, 0)]
+#[test_case(name: "route_53_roots_08_15", 53, 8)]
+#[test_case(name: "route_53_roots_16_23", 53, 16)]
+#[test_case(name: "route_53_roots_24_31", 53, 24)]
+#[test_case(name: "route_54_roots_00_07", 54, 0)]
+#[test_case(name: "route_54_roots_08_15", 54, 8)]
+#[test_case(name: "route_54_roots_16_23", 54, 16)]
+#[test_case(name: "route_54_roots_24_31", 54, 24)]
 #[feature("safe_dispatcher")]
 fn all_typed_entry_refusals_are_root_independent(index: u32, start: u64) {
     let commands = typed_commands();
@@ -458,6 +466,14 @@ fn all_typed_entry_refusals_are_root_independent(index: u32, start: u64) {
 #[test_case(name: "route_52_roots_8_15", 52, 8)]
 #[test_case(name: "route_52_roots_16_23", 52, 16)]
 #[test_case(name: "route_52_roots_24_31", 52, 24)]
+#[test_case(name: "route_53_roots_00_07", 53, 0)]
+#[test_case(name: "route_53_roots_08_15", 53, 8)]
+#[test_case(name: "route_53_roots_16_23", 53, 16)]
+#[test_case(name: "route_53_roots_24_31", 53, 24)]
+#[test_case(name: "route_54_roots_00_07", 54, 0)]
+#[test_case(name: "route_54_roots_08_15", 54, 8)]
+#[test_case(name: "route_54_roots_16_23", 54, 16)]
+#[test_case(name: "route_54_roots_24_31", 54, 24)]
 fn all_real_domain_verdicts_are_root_independent(index: u32, start: u64) {
     let commands = typed_commands();
     assert_eq!(commands.len(), routes());
