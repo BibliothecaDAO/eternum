@@ -487,7 +487,8 @@ pub impl TroopsImpl of TroopsTrait {
         bravo.count -= core::cmp::min(bravo.count, alpha_damage_dealt);
         if bravo.count == 0 && alpha.count != 0 {
             let cost = crate::oaths::attack_stamina(context.attacker_oaths, troop_stamina_config.stamina_attack_req);
-            alpha_stamina_loss -= core::cmp::min(alpha_stamina_loss, crate::oaths::fury_refund(context.attacker_oaths, cost));
+            alpha_stamina_loss -=
+                core::cmp::min(alpha_stamina_loss, crate::oaths::fury_refund(context.attacker_oaths, cost));
         }
 
         // deduct stamina spent
