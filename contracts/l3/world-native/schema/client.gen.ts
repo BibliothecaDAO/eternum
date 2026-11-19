@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "6f2f996f5c9a1ea0d696ab12e0a82835693cb3dcff0147bd9dcec1b750f44499";
+export const nativeFactSchemaIdentity = "c24f4cc021cd492271e1d9feec28b1e463d6e28cc17e3a74ff8d5b6aa43428b7";
 export const nativeIdentifiers = {
   "rule": {
     "MAX_BLITZ_ROSTER_PLAYERS": 24,
@@ -35,7 +35,8 @@ export const nativeIdentifiers = {
     "DEEP_MINE": 2,
     "DEEP_ALTAR": 3,
     "DEEP_KIND_COUNT": 4,
-    "DEEP_DIAGONAL_RINGS": 3,
+    "DEEP_RING_SITES": 6,
+    "DEEP_PLAZA_RADIUS": 4,
     "DEEP_GUARD_SLOTS": 4
   },
   "quest": {

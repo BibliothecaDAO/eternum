@@ -89,21 +89,27 @@ export const deepScenario = (closedRing = false): LabScenario => {
       value: wire({ ...at, entity_id: fieldAlly, col: center.col - 3, row: center.row - 1 }),
     },
   ];
-  for (const site of deepSites) {
-    const offset = local[site.key];
+  const ring = [
+    ...deepSites.map((site) => ({ site, offset: local[site.key] })),
+    ...deepSites
+      .slice(0, nativeRuleConstants.DEEP_RING_SITES - deepSites.length)
+      .map((site, extra) => ({ site, offset: { x: 11 + 28 * extra, y: 25 } })),
+  ];
+  for (const [place, { site, offset }] of ring.entries()) {
     const beast = rules.beasts[site.id]!;
+    const entityId = BigInt(800 + place);
     facts.push(
       {
         model: "DeepSite",
-        key: `0xdeea${site.id}`,
-        value: { game_id: 1, entity_id: String(siteId(site.key)), kind: site.id, ring: 0, day: "0" },
+        key: `0xdeea${place}`,
+        value: { game_id: 1, entity_id: String(entityId), kind: site.id, ring: 0, day: "0" },
       },
       {
         model: "TileOccupancy",
-        key: `0xdeeb${site.id}`,
+        key: `0xdeeb${place}`,
         value: {
           game_id: 1,
-          entity_id: String(siteId(site.key)),
+          entity_id: String(entityId),
           col: center.col + offset.x - half,
           row: center.row + offset.y - half,
           alt: false,
@@ -113,10 +119,10 @@ export const deepScenario = (closedRing = false): LabScenario => {
       },
       {
         model: "Guard",
-        key: `0xdeec${site.id}`,
+        key: `0xdeec${place}`,
         value: wire({
           game_id: 1,
-          structure_id: siteId(site.key),
+          structure_id: entityId,
           slot: 0,
           troops: {
             ...army.troops,

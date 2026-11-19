@@ -533,130 +533,140 @@ fn recorded_site_battle(ref events: snforge_std::EventSpy, d: Deployment, site: 
     panic!("missing site battle")
 }
 
-#[test]
-fn spoils_doubles_numeric_clears_and_keeps_ruin_relics() {
-    for category in array![
-        crate::taxonomy::BEASTS_CATEGORY, crate::taxonomy::CAMP_CATEGORY, crate::taxonomy::RIFT_CATEGORY,
-        crate::taxonomy::RUIN_CATEGORY,
-    ] {
-        let mut preset = definition(5);
-        let mut depths = array![];
-        for depth in preset.settlement.depths {
-            depths
-                .append(
-                    crate::expeditions::DepthRules {
-                        site_guard_lower: 3,
-                        site_guard_upper: 3,
-                        beast_weak_lower: 1,
-                        beast_weak_upper: 1,
-                        beast_strong_lower: 2,
-                        beast_strong_upper: 2,
-                        guard_step: 1,
-                        ..*depth,
-                    },
-                );
-        }
-        preset.settlement.depths = depths.span();
-        let (d, game_id) = super::aspects::setup_aspect_preset(5, preset);
-        let home = ResourceKey { game_id, entity_id: found(d, game_id, 1) };
-        super::banes::train(d, home, 360);
-        for tick in 1_u64..5 {
-            pay(
-                d,
-                game_id,
-                DEEP_FOUNDATION,
-                1,
-                array![DeepShare { home: home.entity_id, troops: 1 }].span(),
-                360 + tick * 120,
-            );
-        }
-        let now = world_test_support::tests::registrar::day_start(d, game_id, 1);
-        world_test_support::tests::resource_commands::grant(
-            d, home, crate::resources::WHEAT, 10000 * RESOURCE_PRECISION,
-        );
-        world_test_support::tests::resource_commands::grant(
-            d, home, crate::troops::troop_resource(crate::troops::TroopType::Knight, 0), 3000 * RESOURCE_PRECISION,
-        );
-        assert!(
-            world_test_support::tests::play_fixture::play(
-                d.games,
-                world_test_support::tests::play_fixture::TestAction {
-                    game_id, actor: d.actor, command: super::army_activity::muster(home.entity_id, 0, 0, 3000),
+fn spoils_clear(category: u8) {
+    let mut preset = definition(5);
+    let mut depths = array![];
+    for depth in preset.settlement.depths {
+        depths
+            .append(
+                crate::expeditions::DepthRules {
+                    site_guard_lower: 3,
+                    site_guard_upper: 3,
+                    beast_weak_lower: 1,
+                    beast_weak_upper: 1,
+                    beast_strong_lower: 2,
+                    beast_strong_upper: 2,
+                    guard_step: 1,
+                    ..*depth,
                 },
-                super::banes::root_for(game_id, 1, 20, 0),
-                now,
-            ),
-        );
-        let key = crate::troops::ExplorerKey {
+            );
+    }
+    preset.settlement.depths = depths.span();
+    let (d, game_id) = super::aspects::setup_aspect_preset(5, preset);
+    let home = ResourceKey { game_id, entity_id: found(d, game_id, 1) };
+    super::banes::train(d, home, 360);
+    for tick in 1_u64..5 {
+        pay(
+            d,
             game_id,
-            explorer_id: super::army_activity::slot_army(
-                d, crate::troops::ArmySlotKey { game_id, structure_id: home.entity_id, epoch: 1, slot: 0 },
-            ),
-        };
-        let units = super::army_activity::army(d, key).troops.count / RESOURCE_PRECISION;
-        let stamina = preset.rules.troop_stamina_config;
-        assert_eq!(stamina.stamina_explore_fish_cost, 0);
-        world_test_support::tests::resource_commands::grant(
-            d, home, crate::resources::WHEAT, units * stamina.stamina_explore_wheat_cost.into(),
-        );
-        let relic = crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::FarEye, rank: 1 };
-        let expected = if category == crate::taxonomy::BEASTS_CATEGORY {
-            crate::discovery::Discovery::Beasts
-        } else if category == crate::taxonomy::CAMP_CATEGORY {
-            crate::discovery::Discovery::Camp
-        } else if category == crate::taxonomy::RIFT_CATEGORY {
-            crate::discovery::Discovery::Rift
-        } else {
-            crate::discovery::Discovery::Ruin(relic)
-        };
-        let destination = crate::geometry::neighbor(super::army_activity::army(d, key).coord, 0);
-        let root = world_test_support::tests::registrar::discovery_root(
-            game_id, preset.economy.discovery.unwrap(), 200, 0, Some(relic), expected,
-        );
-        assert!(world_test_support::tests::registrar::explore_with_root(d, game_id, key.explorer_id, root, now));
-        let site_key = interact_with_state(
-            d.games,
-            || ResourceKey {
-                game_id,
-                entity_id: crate::logic::map::occupancy(crate::geometry::tile_key(game_id, destination))
-                    .unwrap()
-                    .entity_id,
-            },
-        );
-        let site = interact_with_state(d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap());
-        let discovered_relic = interact_with_state(d.games, || crate::logic::army_relics::ruin(site_key));
-        assert!(
-            execute_in_game(
-                d,
-                game_id,
-                Command::BattleGuard(
-                    crate::commands::Battle {
-                        attacker_id: key.explorer_id, defender_id: site_key.entity_id, relic_slot: None,
-                    },
-                ),
-                now + 60,
-            ),
-        );
-        interact_with_state(
-            d.games,
-            || {
-                let receipt = crate::logic::expeditions::expedition_site(site_key).unwrap().clear.unwrap();
-                let band = crate::expeditions::is_band(site, crate::logic::expeditions::depth_rules(game_id, 0));
-                assert_eq!(crate::logic::progression::require(key).oath_pick != 0, band);
-                if category == crate::taxonomy::RUIN_CATEGORY {
-                    assert_eq!(receipt.reward, None);
-                    assert!(discovered_relic.is_some());
-                    assert_eq!(crate::logic::army_relics::read(key).first, discovered_relic);
-                } else {
-                    let base = crate::expeditions::site_reward(category, site, 0, band);
-                    assert_eq!(
-                        receipt.reward,
-                        base.map(|reward| crate::resources::ResourceAmount { amount: reward.amount * 2, ..reward }),
-                    );
-                }
-                assert_eq!(crate::logic::triumphs::effects(home, now - 1).spoils_percent, 100);
-                assert_eq!(crate::logic::triumphs::effects(home, now).spoils_percent, 200);
-            },
+            DEEP_FOUNDATION,
+            1,
+            array![DeepShare { home: home.entity_id, troops: 1 }].span(),
+            360 + tick * 120,
         );
     }
+    let now = world_test_support::tests::registrar::day_start(d, game_id, 1);
+    world_test_support::tests::resource_commands::grant(d, home, crate::resources::WHEAT, 10000 * RESOURCE_PRECISION);
+    world_test_support::tests::resource_commands::grant(
+        d, home, crate::troops::troop_resource(crate::troops::TroopType::Knight, 0), 3000 * RESOURCE_PRECISION,
+    );
+    assert!(
+        world_test_support::tests::play_fixture::play(
+            d.games,
+            world_test_support::tests::play_fixture::TestAction {
+                game_id, actor: d.actor, command: super::army_activity::muster(home.entity_id, 0, 0, 3000),
+            },
+            super::banes::root_for(game_id, 1, 20, 0),
+            now,
+        ),
+    );
+    let key = crate::troops::ExplorerKey {
+        game_id,
+        explorer_id: super::army_activity::slot_army(
+            d, crate::troops::ArmySlotKey { game_id, structure_id: home.entity_id, epoch: 1, slot: 0 },
+        ),
+    };
+    let units = super::army_activity::army(d, key).troops.count / RESOURCE_PRECISION;
+    let stamina = preset.rules.troop_stamina_config;
+    assert_eq!(stamina.stamina_explore_fish_cost, 0);
+    world_test_support::tests::resource_commands::grant(
+        d, home, crate::resources::WHEAT, units * stamina.stamina_explore_wheat_cost.into(),
+    );
+    let relic = crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::FarEye, rank: 1 };
+    let expected = if category == crate::taxonomy::BEASTS_CATEGORY {
+        crate::discovery::Discovery::Beasts
+    } else if category == crate::taxonomy::CAMP_CATEGORY {
+        crate::discovery::Discovery::Camp
+    } else if category == crate::taxonomy::RIFT_CATEGORY {
+        crate::discovery::Discovery::Rift
+    } else {
+        crate::discovery::Discovery::Ruin(relic)
+    };
+    let destination = crate::geometry::neighbor(super::army_activity::army(d, key).coord, 0);
+    let root = world_test_support::tests::registrar::discovery_root(
+        game_id, preset.economy.discovery.unwrap(), 200, 0, Some(relic), expected,
+    );
+    assert!(world_test_support::tests::registrar::explore_with_root(d, game_id, key.explorer_id, root, now));
+    let site_key = interact_with_state(
+        d.games,
+        || ResourceKey {
+            game_id,
+            entity_id: crate::logic::map::occupancy(crate::geometry::tile_key(game_id, destination)).unwrap().entity_id,
+        },
+    );
+    let site = interact_with_state(d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap());
+    let discovered_relic = interact_with_state(d.games, || crate::logic::army_relics::ruin(site_key));
+    assert!(
+        execute_in_game(
+            d,
+            game_id,
+            Command::BattleGuard(
+                crate::commands::Battle {
+                    attacker_id: key.explorer_id, defender_id: site_key.entity_id, relic_slot: None,
+                },
+            ),
+            now + 60,
+        ),
+    );
+    interact_with_state(
+        d.games,
+        || {
+            let receipt = crate::logic::expeditions::expedition_site(site_key).unwrap().clear.unwrap();
+            let band = crate::expeditions::is_band(site, crate::logic::expeditions::depth_rules(game_id, 0));
+            assert_eq!(crate::logic::progression::require(key).oath_pick != 0, band);
+            if category == crate::taxonomy::RUIN_CATEGORY {
+                assert_eq!(receipt.reward, None);
+                assert!(discovered_relic.is_some());
+                assert_eq!(crate::logic::army_relics::read(key).first, discovered_relic);
+            } else {
+                let base = crate::expeditions::site_reward(category, site, 0, band);
+                assert_eq!(
+                    receipt.reward,
+                    base.map(|reward| crate::resources::ResourceAmount { amount: reward.amount * 2, ..reward }),
+                );
+            }
+            assert_eq!(crate::logic::triumphs::effects(home, now - 1).spoils_percent, 100);
+            assert_eq!(crate::logic::triumphs::effects(home, now).spoils_percent, 200);
+        },
+    );
+}
+
+#[test]
+fn spoils_doubles_a_beasts_clear() {
+    spoils_clear(crate::taxonomy::BEASTS_CATEGORY);
+}
+
+#[test]
+fn spoils_doubles_a_camp_clear() {
+    spoils_clear(crate::taxonomy::CAMP_CATEGORY);
+}
+
+#[test]
+fn spoils_doubles_a_rift_clear() {
+    spoils_clear(crate::taxonomy::RIFT_CATEGORY);
+}
+
+#[test]
+fn spoils_keeps_a_ruin_relic() {
+    spoils_clear(crate::taxonomy::RUIN_CATEGORY);
 }

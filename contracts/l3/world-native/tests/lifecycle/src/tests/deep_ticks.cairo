@@ -1,5 +1,5 @@
 use snforge_std::{interact_with_state, spy_events};
-use starknet::storage::StorageMapReadAccess;
+use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use world_test_support::tests::Deployment;
 use world_test_support::tests::resource_commands::execute_in_game;
 use crate::commands::Command;
@@ -77,20 +77,49 @@ fn a_late_rejected_move_pays_all_sites_at_the_win_then_stops_before_later_ticks(
                 assert_eq!(crate::logic::game::game(game_id).scheduled_end_at, context.game.unbox().scheduled_end_at);
                 assert_eq!(crate::state::read().deep.paid_tick.read(game_id), Some(finish / interval));
                 assert_eq!(
-                    crate::logic::race::hyperstructure(crate::race::AspectKey { game_id, aspect: 1 }).height, 25,
+                    crate::logic::race::hyperstructure(crate::race::AspectKey { game_id, aspect: 1 }).height,
+                    5 * held_pay(game_id, crate::rules::DEEP_FOUNDATION, 1),
                 );
                 for kind in array![crate::rules::DEEP_FOUNDATION, crate::rules::DEEP_ALTAR] {
-                    assert_eq!(crate::logic::race::member(*homes.at(kind.into())).glory, 25 * RESOURCE_PRECISION);
+                    let paid: u128 = (5 * held_pay(game_id, kind, 1)).into();
+                    assert_eq!(crate::logic::race::member(*homes.at(kind.into())).glory, paid * RESOURCE_PRECISION);
                 }
-                assert_eq!(crate::state::read().banes.altar_bars.read((game_id, 1)), 5);
+                let threshold = crate::logic::deep_sites::rules_entry(game_id).unwrap().altar_threshold.read();
+                let mut bar = 0_u32;
+                for _ in 0..5_u8 {
+                    bar = core::cmp::min(bar + held_pay(game_id, crate::rules::DEEP_ALTAR, 1), threshold);
+                    if bar == threshold {
+                        bar = 0;
+                    }
+                }
+                assert_eq!(crate::state::read().banes.altar_bars.read((game_id, 1)), bar);
             },
         );
     }
 }
 
+fn held_pay(game_id: u32, kind: u8, rings_open: u8) -> u32 {
+    let mut open = 0_u8;
+    for index in 0..crate::logic::deep_sites::site_count(game_id) {
+        let key = ResourceKey { game_id, entity_id: crate::logic::deep_sites::site_id(game_id, index) };
+        let row = crate::logic::deep_sites::site(key).unwrap();
+        if row.kind == kind && row.ring < rings_open {
+            open += 1;
+        }
+    }
+    let pay = crate::logic::deep_sites::rules_entry(game_id).unwrap().building_pay.read();
+    if open == 1 {
+        pay.alone
+    } else if open == 2 {
+        pay.pair
+    } else {
+        pay.crowd
+    }
+}
+
 #[test]
-fn a_held_foundation_pays_alone_pair_or_crowd_by_the_rings_open_that_day() {
-    for (realms, expected) in array![(array![0_u32, 3, 4], 5_u32), (array![0, 2, 3], 3), (array![0, 1, 2], 2)] {
+fn a_held_foundation_pays_alone_pair_or_crowd_by_the_foundations_open_that_day() {
+    for (realms, rings_open) in array![(array![0_u32, 3, 4], 1_u8), (array![0, 2, 3], 2), (array![0, 1, 2], 3)] {
         let mut preset = race_preset(2000);
         let deep = preset.economy.deep.unwrap();
         let mut rings = array![];
@@ -116,6 +145,7 @@ fn a_held_foundation_pays_alone_pair_or_crowd_by_the_rings_open_that_day() {
         interact_with_state(
             d.games,
             || {
+                let expected = held_pay(game_id, crate::rules::DEEP_FOUNDATION, rings_open);
                 assert_eq!(
                     crate::logic::race::hyperstructure(crate::race::AspectKey { game_id, aspect: 1 }).height, expected,
                 );
@@ -232,8 +262,8 @@ fn the_mine_pays_four_post_loss_shares_and_repeated_commands_do_not_pay_again() 
     let mover = deployed(visitor, game_id, 2, 1000);
     let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
     let boundary = (360 / interval + 1) * interval;
-    advance(visitor, mover, 0, boundary);
-    advance(visitor, mover, 3, boundary + 1);
+    advance(visitor, mover, 3, boundary);
+    advance(visitor, mover, 0, boundary + 1);
     for index in 0_u32..4 {
         assert_eq!(
             balance(d, *homes.at(index), crate::resources::LABOR) - *balances.at(index),
@@ -262,11 +292,11 @@ fn a_late_move_pays_every_tick_the_guard_survives_but_not_the_one_that_kills_it(
     let mover = deployed(visitor, game_id, 2, 1000);
     let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
     let boundary = (360 / interval + 12) * interval;
-    advance(visitor, mover, 0, boundary);
+    advance(visitor, mover, 3, boundary);
     assert!(held(d, guard).is_none());
     assert!(interact_with_state(d.games, || crate::logic::troops::explorer(guard)).is_none());
     assert_eq!(balance(d, home, crate::resources::LABOR) - labor_before, 9 * RESOURCE_PRECISION);
-    advance(visitor, mover, 3, boundary + interval);
+    advance(visitor, mover, 0, boundary + interval);
     assert_eq!(balance(d, home, crate::resources::LABOR) - labor_before, 9 * RESOURCE_PRECISION);
     assert_eq!(
         interact_with_state(d.games, || crate::state::read().deep.paid_tick.read(game_id)),

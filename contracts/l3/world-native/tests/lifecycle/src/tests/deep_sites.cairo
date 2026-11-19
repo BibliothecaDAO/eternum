@@ -100,7 +100,7 @@ pub fn site(d: Deployment, game_id: u32, kind: u8) -> ResourceKey {
         d.games,
         || {
             let mut found = None;
-            for index in 0..crate::rules::DEEP_KIND_COUNT {
+            for index in 0..crate::rules::DEEP_RING_SITES {
                 let key = ResourceKey { game_id, entity_id: crate::logic::deep_sites::site_id(game_id, index) };
                 if crate::logic::deep_sites::site(key).unwrap().kind == kind {
                     found = Some(key);
@@ -116,8 +116,8 @@ fn ring_site(d: Deployment, game_id: u32, ring: u8, kind: u8) -> ResourceKey {
         d.games,
         || {
             let mut found = None;
-            for place in 0..crate::rules::DEEP_KIND_COUNT {
-                let index = ring * crate::rules::DEEP_KIND_COUNT + place;
+            for place in 0..crate::rules::DEEP_RING_SITES {
+                let index = ring * crate::rules::DEEP_RING_SITES + place;
                 let key = ResourceKey { game_id, entity_id: crate::logic::deep_sites::site_id(game_id, index) };
                 if crate::logic::deep_sites::site(key).unwrap().kind == kind {
                     found = Some(key);
@@ -126,6 +126,10 @@ fn ring_site(d: Deployment, game_id: u32, ring: u8, kind: u8) -> ResourceKey {
             found.expect('no Deep site of that kind')
         },
     )
+}
+
+fn walk(key: ExplorerKey, directions: Span<u8>) -> Command {
+    Command::Move(crate::commands::Move { explorer_id: key.explorer_id, directions })
 }
 
 pub fn gate(d: Deployment, game_id: u32, aspect: u8) -> crate::troops::Coord {
@@ -195,7 +199,7 @@ fn distinct_homes_enter_one_deep_and_move_on_its_fixed_terrain() {
             },
         );
     }
-    let mut direction = 0_u8;
+    let mut direction = 3_u8;
     while crate::geometry::neighbor(a, direction) == army(d, third).coord {
         direction += 1;
     }
@@ -210,7 +214,7 @@ fn distinct_homes_enter_one_deep_and_move_on_its_fixed_terrain() {
 }
 
 #[test]
-fn a_later_ring_refuses_joins_and_attacks_until_enough_realms_entered_today() {
+fn a_later_ring_refuses_moves_joins_and_attacks_until_enough_realms_entered_today() {
     let mut definition = preset();
     let mut deep = definition.economy.deep.unwrap();
     deep
@@ -220,6 +224,14 @@ fn a_later_ring_refuses_joins_and_attacks_until_enough_realms_entered_today() {
     let (d, game_id) = super::aspects::setup_aspect_preset(880, definition);
     let first = deployed(d, game_id, 1, 10);
     let target = ring_site(d, game_id, 1, crate::rules::DEEP_FOUNDATION);
+    beside(d, first, target, 0);
+    refused(d, game_id, walk(first, array![3].span()), 360, "movement tile occupied");
+    refused(d, game_id, walk(first, array![3, 3].span()), 360, "movement tile occupied");
+    let across = interact_with_state(
+        d.games, || crate::geometry::neighbor(crate::logic::map::entity_coord(target).unwrap(), 3),
+    );
+    applied(d, game_id, walk(first, array![4, 3, 2].span()), 360);
+    assert_eq!(army(d, first).coord, across);
     beside(d, first, target, 0);
     refused(d, game_id, join(d, first, target), 360, "Deep ring closed");
     refused(d, game_id, fight(first, target), 360, "Deep ring closed");

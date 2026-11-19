@@ -63,10 +63,15 @@ afterEach(() => vi.unstubAllGlobals());
 it("plans a Deep site opportunity from Herald's actor snapshot with public rival troops and private research", async () => {
   const now = Math.floor(Date.now() / 1000);
   const { live, confirmedFold, native } = await heldMine(now);
-  const shared = live.snapshot(String(GAME_ID), ["Guard", "ExplorerTroops", "RealmKnowledge"], PLAYER_ACCOUNT);
-  expect(
-    shared.models.find(({ model }) => model === "Guard")!.rows.map(({ value }) => Number(value.structure_id)),
-  ).toEqual([800, 801, 802, 803]);
+  const shared = live.snapshot(
+    String(GAME_ID),
+    ["Guard", "ExplorerTroops", "RealmKnowledge", "DeepSite"],
+    PLAYER_ACCOUNT,
+  );
+  const rows = (model: string) => shared.models.find((candidate) => candidate.model === model)!.rows;
+  expect(rows("Guard").map(({ value }) => Number(value.structure_id))).toEqual(
+    rows("DeepSite").map(({ value }) => Number(value.entity_id)),
+  );
   const ownerOnly = live.snapshot(String(GAME_ID), ["ExplorerTroops"], PLAYER_ACCOUNT, PLAYER_ACCOUNT);
   expect(ownerOnly.models[0]!.rows.map(({ value }) => Number(value.explorer_id))).toEqual([7]);
   vi.stubGlobal("fetch", async (address: string) => {

@@ -46,8 +46,9 @@ export const nativeRuleConstants = {
   "DEEP_MINE": 2,
   "DEEP_ALTAR": 3,
   "DEEP_KIND_COUNT": 4,
-  "DEEP_RING_LIMIT": 5,
-  "DEEP_DIAGONAL_RINGS": 3,
+  "DEEP_RING_LIMIT": 4,
+  "DEEP_RING_SITES": 6,
+  "DEEP_PLAZA_RADIUS": 4,
   "DEEP_GUARD_SLOTS": 4
 } as const;
 export const nativeQuestConstants = {
@@ -153,4 +154,4 @@ export const nativeResearchConstants = {
   "SCOUTS_LODGE": 43,
   "SCOUTS_LODGE_LEVEL": 1
 } as const;
-export const nativeBalanceIdentity = "43c4c429f97b80e608f2f7f29c66d2a02652c8dc2b708d91026f4a0755578daf";
+export const nativeBalanceIdentity = "4ffb097ece3853f9ea0ea5c018b78ba616d64994a494f4220a9f0529b03d1e17";

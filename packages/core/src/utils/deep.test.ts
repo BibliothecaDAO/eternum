@@ -127,7 +127,7 @@ describe("the shared Deep", () => {
     expect(armyCombatRefusal(store, army, enemy)).toBeUndefined();
   });
 
-  it("reads a later ring's site closed until today's entries reach its ring's count", () => {
+  it("reads a later ring's site closed, with the count that opens it, until today's entries reach that count", () => {
     const { rows, store } = fixture();
     rows.DeepRules![0]!.rings = [
       { radius: 5, realms: 0 },
@@ -136,29 +136,77 @@ describe("the shared Deep", () => {
     rows.DeepSite = [{ game_id: 7, entity_id: 24n, kind: 0, ring: 1, day: 0n }];
     rows.Guard = [{ game_id: 7, structure_id: 24n, slot: 0, troops: { count: 10n * precision } }];
     rows.TileOccupancy!.push({ game_id: 7, entity_id: 24n, col: 505, row: 3584, alt: false });
-    expect(readDeepSite(store, 420, 24n, 7)?.open).toBe(false);
+    expect(readDeepSite(store, 420, 24n, 7)).toMatchObject({ open: false, opensAt: 2 });
     rows.DeepEntries = [{ game_id: 7, day: 0n, count: 1 }];
     expect(readDeepSite(store, 420, 24n, 7)?.open).toBe(false);
     rows.DeepEntries = [{ game_id: 7, day: 0n, count: 2 }];
     expect(readDeepSite(store, 420, 24n, 7)?.open).toBe(true);
   });
 
-  it("reads a Foundation's pay a tick as the pair, then the crowd, as today's entries open more rings", () => {
+  it("reads a Foundation's pay a tick as the pair, then the crowd, as today's entries open more Foundations", () => {
     const { rows, store } = fixture();
     rows.DeepRules![0]!.rings = [
       { radius: 5, realms: 0 },
       { radius: 8, realms: 2 },
       { radius: 11, realms: 3 },
     ];
-    rows.DeepSite = [{ game_id: 7, entity_id: 24n, kind: 0, ring: 0, day: 0n }];
-    rows.Guard = [{ game_id: 7, structure_id: 24n, slot: 0, troops: { count: 10n * precision } }];
-    rows.TileOccupancy!.push({ game_id: 7, entity_id: 24n, col: 505, row: 3584, alt: false });
+    rows.DeepSite = [0, 1, 2].map((ring) => ({ game_id: 7, entity_id: BigInt(24 + ring), kind: 0, ring, day: 0n }));
+    rows.DeepSite.push({ game_id: 7, entity_id: 27n, kind: 3, ring: 1, day: 0n });
+    rows.Guard = rows.DeepSite.map((site) => ({
+      game_id: 7,
+      structure_id: site.entity_id,
+      slot: 0,
+      troops: { count: 10n * precision },
+    }));
+    rows.TileOccupancy!.push(
+      ...rows.DeepSite.map((site) => ({
+        game_id: 7,
+        entity_id: site.entity_id,
+        col: 481 + Number(site.entity_id),
+        row: 3584,
+        alt: false,
+      })),
+    );
     rows.DeepEntries = [{ game_id: 7, day: 0n, count: 1 }];
     expect(readDeepSite(store, 420, 24n, 7)?.buildingPay).toBe(6);
     rows.DeepEntries = [{ game_id: 7, day: 0n, count: 2 }];
     expect(readDeepSite(store, 420, 24n, 7)?.buildingPay).toBe(3);
     rows.DeepEntries = [{ game_id: 7, day: 0n, count: 3 }];
     expect(readDeepSite(store, 420, 24n, 7)?.buildingPay).toBe(2);
+  });
+
+  it("reads a closed site's pay as it will be once its ring opens, with every site of its kind that opening adds", () => {
+    const { rows, store } = fixture();
+    rows.DeepRules![0]!.rings = [
+      { radius: 5, realms: 0 },
+      { radius: 8, realms: 50 },
+    ];
+    rows.DeepSite = [0, 1, 1, 1].map((ring, index) => ({
+      game_id: 7,
+      entity_id: BigInt(24 + index),
+      kind: 0,
+      ring,
+      day: 0n,
+    }));
+    rows.Guard = rows.DeepSite.map((site) => ({
+      game_id: 7,
+      structure_id: site.entity_id,
+      slot: 0,
+      troops: { count: 10n * precision },
+    }));
+    rows.TileOccupancy!.push(
+      ...rows.DeepSite.map((site) => ({
+        game_id: 7,
+        entity_id: site.entity_id,
+        col: 481 + Number(site.entity_id),
+        row: 3584,
+        alt: false,
+      })),
+    );
+    rows.DeepEntries = [{ game_id: 7, day: 0n, count: 1 }];
+    const pay = rows.DeepRules![0]!.building_pay;
+    expect(readDeepSite(store, 420, 24n, 7)).toMatchObject({ open: true, buildingPay: pay.alone });
+    expect(readDeepSite(store, 420, 25n, 7)).toMatchObject({ open: false, buildingPay: pay.crowd });
   });
 
   it("reads a ring opened yesterday closed today until today's entries reach it, before the sites roll over", () => {
@@ -196,9 +244,12 @@ describe("the shared Deep", () => {
     expect(() => readDeepSite(arriving as never, 420, 24n, 7)).toThrow("Realms entered today are unknown");
   });
 
-  it("reads all sites in catalog order, highest live guard first, then restores next-day beasts", () => {
+  it("reads a ring's six sites in place order, highest live guard first, then restores next-day beasts", () => {
     const { rows, store } = fixture();
-    rows.DeepSite = [2, 0, 3, 1].map((kind) => ({ game_id: 7, entity_id: BigInt(20 + kind), kind, ring: 0, day: 0n }));
+    const kinds = [0, 1, 2, 3, 0, 2];
+    rows.DeepSite = kinds
+      .map((kind, place) => ({ game_id: 7, entity_id: BigInt(20 + place), kind, ring: 0, day: 0n }))
+      .reverse();
     rows.Guard = rows.DeepSite.map((site) => ({
       game_id: 7,
       structure_id: site.entity_id,
@@ -209,7 +260,7 @@ describe("the shared Deep", () => {
       ...rows.DeepSite.map((site) => ({
         game_id: 7,
         entity_id: site.entity_id,
-        col: 500 + Number(site.kind),
+        col: 480 + Number(site.entity_id),
         row: 3584,
         alt: false,
       })),
@@ -223,7 +274,7 @@ describe("the shared Deep", () => {
       { game_id: 7, explorer_id: 12n, site_id: 20n, slot: 3 },
     ];
     const today = readDeepSites(store, 420, 7);
-    expect(today.map((site) => site.name)).toEqual(deepSites.map(({ name }) => name));
+    expect(today.map((site) => site.name)).toEqual(kinds.map((kind) => deepSites[kind]!.name));
     expect(today.every((site) => site.open && site.ring === 0)).toBe(true);
     expect(today[0]!.guards.map(({ slot, army }) => [slot, army.troops.count])).toEqual([
       [3, 19n * precision],
@@ -231,7 +282,7 @@ describe("the shared Deep", () => {
     ]);
     const tomorrow = readDeepSites(store, dayAtIndex(calendar, 0).end, 7);
     expect(tomorrow.map((site) => [site.id, site.beastTroops, site.guards])).toEqual(
-      [20n, 21n, 22n, 23n].map((id) => [id, 10n * precision, []]),
+      kinds.map((_, place) => [BigInt(20 + place), 10n * precision, []]),
     );
     rows.DeepSite.pop();
     expect(() => readDeepSites(store, 420, 7)).toThrow("Incomplete Deep site facts");
@@ -287,7 +338,7 @@ it("projects Vitriol's exact native troop vectors and refuses a missing progress
   }
 });
 
-it("pays a Foundation or Altar by the native building-pay vectors for each count of open rings", async () => {
+it("pays a Foundation or Altar by the native building-pay vectors for each count of open sites of its kind", async () => {
   const { readFileSync } = await import("node:fs");
   const fields = readFileSync(
     new URL("../../../../contracts/l3/world-native/tests/fixtures/deep-building-pay.txt", import.meta.url),

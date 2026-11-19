@@ -71,19 +71,21 @@ fn race_result_keeps_the_scheduled_end_beside_the_actual_finish() {
 }
 
 #[test]
-fn shared_deep_coordinates_keep_the_gates_rings_and_daily_kinds_in_one_region() {
+fn shared_deep_coordinates_keep_the_gates_and_six_ring_corners_in_one_region() {
     use crate::troops::Coord;
     assert_eq!(crate::deep::center(1024), Coord { alt: false, x: 512, y: 3584 });
     assert_eq!(crate::deep::gate(4, 1, 1024), Coord { alt: false, x: 512, y: 3588 });
     assert_eq!(crate::deep::gate(4, 2, 1024), Coord { alt: false, x: 516, y: 3584 });
     assert_eq!(crate::deep::gate(4, 3, 1024), Coord { alt: false, x: 512, y: 3580 });
     assert_eq!(crate::deep::gate(4, 4, 1024), Coord { alt: false, x: 508, y: 3584 });
-    assert_eq!(crate::deep::place(0, 5, 0, 1024), Coord { alt: false, x: 515, y: 3589 });
-    assert_eq!(crate::deep::place(3, 8, 0, 1024), Coord { alt: false, x: 512, y: 3592 });
-    assert_eq!(crate::deep::kind_on(0, 2, 0), 2);
-    assert_eq!(crate::deep::kind_on(0, 0, 1), 3);
-    assert_eq!(crate::deep::kind_on(1, 0, 0), 3);
-    assert_eq!(crate::deep::kind_on(4, 1, 49), 0);
+    let first = array![(519, 3584), (516, 3591), (509, 3591), (505, 3584), (509, 3577), (516, 3577)];
+    let last = array![(531, 3584), (522, 3603), (503, 3603), (493, 3584), (503, 3565), (522, 3565)];
+    for place in 0..crate::rules::DEEP_RING_SITES {
+        let (x, y) = *first.at(place.into());
+        assert_eq!(crate::deep::place(7, place, 1024), Coord { alt: false, x, y });
+        let (x, y) = *last.at(place.into());
+        assert_eq!(crate::deep::place(19, place, 1024), Coord { alt: false, x, y });
+    }
     assert!(crate::deep::contains(Coord { alt: false, x: 487, y: 3559 }, 1024));
     assert!(crate::deep::contains(Coord { alt: false, x: 536, y: 3608 }, 1024));
     assert!(!crate::deep::contains(Coord { alt: false, x: 537, y: 3608 }, 1024));
@@ -127,4 +129,28 @@ fn every_week_has_every_quest_and_no_boundary_repeats() {
             assert_eq!(seen, 127);
         }
     }
+}
+
+#[test]
+fn every_ring_holds_one_of_each_kind_and_two_more_drawn_each_day() {
+    let mut drawn_twice = false;
+    for day in 0_u64..30 {
+        for ring in 0_u8..crate::rules::DEEP_RING_LIMIT {
+            let draw = crate::deep::ring_draw(77, 5, ring, day);
+            let mut extra = 0_u8;
+            for kind in 0..crate::rules::DEEP_KIND_COUNT {
+                let mut held = 0_u8;
+                for place in 0..crate::rules::DEEP_RING_SITES {
+                    if crate::deep::kind_at(draw, place) == kind {
+                        held += 1;
+                    }
+                }
+                assert!(held >= 1);
+                extra += held - 1;
+                drawn_twice = drawn_twice || held == 3;
+            }
+            assert_eq!(extra, crate::rules::DEEP_RING_SITES - crate::rules::DEEP_KIND_COUNT);
+        }
+    }
+    assert!(drawn_twice);
 }

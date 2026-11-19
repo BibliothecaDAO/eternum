@@ -68,13 +68,12 @@ export const frontierSeasonOnePreset = {
     questCounts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10000, 15000],
   },
   deep: {
-    gateDistance: 4,
+    gateDistance: 24,
     rings: [
-      { radius: 5, realms: 0 },
-      { radius: 8, realms: 30 },
-      { radius: 11, realms: 60 },
-      { radius: 8, realms: 120 },
-      { radius: 11, realms: 240 },
+      { radius: 7, realms: 0 },
+      { radius: 11, realms: 50 },
+      { radius: 15, realms: 100 },
+      { radius: 19, realms: 150 },
     ],
     beasts: {
       foundation: { count: 15000, bow: false },

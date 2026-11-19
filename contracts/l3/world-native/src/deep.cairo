@@ -95,18 +95,8 @@ pub fn gate(gate_distance: u32, aspect: u8, spacing: u32) -> Coord {
     compass(center(spacing), aspect - 1, gate_distance)
 }
 
-pub fn place(ring: u8, radius: u32, place: u8, spacing: u32) -> Coord {
-    if ring < crate::rules::DEEP_DIAGONAL_RINGS {
-        let direction = match place {
-            0 => 1,
-            1 => 5,
-            2 => 4,
-            _ => 2,
-        };
-        crate::geometry::neighbor_at_distance(center(spacing), direction, radius)
-    } else {
-        compass(center(spacing), place, radius)
-    }
+pub fn place(radius: u32, place: u8, spacing: u32) -> Coord {
+    crate::geometry::neighbor_at_distance(center(spacing), place, radius)
 }
 
 fn compass(origin: Coord, point: u8, distance: u32) -> Coord {
@@ -123,9 +113,25 @@ fn zigzag(origin: Coord, first: u8, second: u8, distance: u32) -> Coord {
     crate::geometry::neighbor_at_distance(halfway, second, distance / 2)
 }
 
-pub fn kind_on(ring: u8, place: u8, day: u64) -> u8 {
-    let turn: u8 = ((day + ring.into()) % crate::rules::DEEP_KIND_COUNT.into()).try_into().unwrap();
-    (place + 2 * crate::rules::DEEP_KIND_COUNT - turn) % crate::rules::DEEP_KIND_COUNT
+pub fn ring_draw(raw_root: u256, game_id: u32, ring: u8, day: u64) -> u256 {
+    core::poseidon::poseidon_hash_span(
+        array![raw_root.low.into(), raw_root.high.into(), game_id.into(), ring.into(), day.into()].span(),
+    )
+        .into()
+}
+
+pub fn kind_at(draw: u256, place: u8) -> u8 {
+    let kinds: u256 = crate::rules::DEEP_KIND_COUNT.into();
+    let sites: u256 = crate::rules::DEEP_RING_SITES.into();
+    let slot: u256 = (place.into() + draw / (kinds * kinds)) % sites;
+    let kind = if slot < kinds {
+        slot
+    } else if slot == kinds {
+        draw % kinds
+    } else {
+        draw / kinds % kinds
+    };
+    kind.try_into().unwrap()
 }
 
 pub fn validate(rules: DeepRules, spacing: u32) {
@@ -159,24 +165,20 @@ fn validate_rings(rings: Span<DeepRing>) {
 }
 
 fn validate_layout(rules: DeepRules, spacing: u32) {
+    let middle = center(spacing);
     let mut gates = array![];
     for aspect in 1_u8..5 {
         let entrance = gate(rules.gate_distance, aspect, spacing);
-        assert!(contains(entrance, spacing) && entrance != center(spacing), "Deep gate outside map");
+        assert!(contains(entrance, spacing) && outside_plaza(entrance, middle), "Deep gate outside map");
         gates.append(entrance);
     }
     let mut sites: Array<Coord> = array![];
-    for ring in 0..rules.rings.len() {
-        let ring: u8 = ring.try_into().unwrap();
-        for index in 0..crate::rules::DEEP_KIND_COUNT {
-            let site = place(ring, *rules.rings.at(ring.into()).radius, index, spacing);
-            assert!(contains(site, spacing), "Deep site outside map");
+    for ring in rules.rings {
+        for index in 0..crate::rules::DEEP_RING_SITES {
+            let site = place(*ring.radius, index, spacing);
+            assert!(contains(site, spacing) && outside_plaza(site, middle), "Deep site outside map");
             for entrance in gates.span() {
                 assert!(site != *entrance, "Deep site blocks a gate");
-                assert!(
-                    crate::geometry::distance(site, *entrance) <= crate::rules::DEEP_GATE_REACH,
-                    "Deep site too far from a gate",
-                );
             }
             for other in sites.span() {
                 assert!(
@@ -186,6 +188,10 @@ fn validate_layout(rules: DeepRules, spacing: u32) {
             sites.append(site);
         }
     }
+}
+
+fn outside_plaza(coord: Coord, middle: Coord) -> bool {
+    crate::geometry::distance(coord, middle) > crate::rules::DEEP_PLAZA_RADIUS.into()
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -204,7 +210,7 @@ pub trait IDeepSites<T> {
         context: crate::commands::ActionContext,
     );
     fn initialize_deep(ref self: T, game_id: u32);
-    fn rollover_deep(ref self: T, game_id: u32, context: crate::commands::ActionContext);
+    fn rollover_deep(ref self: T, game_id: u32, context: crate::commands::ActionContext) -> bool;
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
