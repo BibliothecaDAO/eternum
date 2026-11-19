@@ -154,8 +154,7 @@ export const routeIdentityRequest = async (
   if (pathname === "/api/build-orders") return handleBuildOrders(request, auth, env.DB);
   if (pathname === "/api/opening") return handleOpeningProgress(request, auth, env.DB);
   if (pathname === "/api/order-intent") return handleOrderIntent(request, auth, env.DB);
-  if (pathname === "/api/seal-code")
-    return handleSealCode(request, auth, sealCodeWorldOf(env, platform.fetchShard));
+  if (pathname === "/api/seal-code") return handleSealCode(request, auth, sealCodeWorldOf(env, platform.fetchShard));
   if (pathname === "/api/shop/purchase-check")
     return handlePurchaseCheck(request, auth, {
       db: env.DB,

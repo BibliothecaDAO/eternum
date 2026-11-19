@@ -31,7 +31,9 @@ export const sealCodeWorldOf = (
 });
 
 export async function deliverQueuedSealGrants(world: SealCodeWorld): Promise<void> {
-  const queued = await world.db.prepare('SELECT "owner" FROM "seal_grants" ORDER BY "queued_at"').all<{ owner: string }>();
+  const queued = await world.db
+    .prepare('SELECT "owner" FROM "seal_grants" ORDER BY "queued_at"')
+    .all<{ owner: string }>();
   for (const { owner } of queued.results) await deliverSealGrant(world, owner);
 }
 
@@ -90,7 +92,8 @@ export const holdsSeal = async (db: D1Database, owner: string) =>
 const deliverSealGrant = async (world: SealCodeWorld, owner: string) => {
   try {
     for (const game of await world.enteredGames(owner))
-      if (!(await world.grantSeal(game, owner)).ok) throw new Error(`the relay refused the Seal in game ${game.gameId}`);
+      if (!(await world.grantSeal(game, owner)).ok)
+        throw new Error(`the relay refused the Seal in game ${game.gameId}`);
     await world.db.prepare('DELETE FROM "seal_grants" WHERE "owner" = ?').bind(owner).run();
   } catch (error) {
     console.warn("[seal-code] a held code's Seal waits for the next cron", owner, error);
