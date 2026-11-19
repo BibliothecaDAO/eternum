@@ -76,6 +76,14 @@ export const deepScenario = (): LabScenario => {
     { model: "ExplorerTroops", key: "0xdef1", value: wire({ ...army, explorer_id: fieldAlly, owner: allyHome }) },
     { model: "ArmyDay", key: "0xdef2", value: { game_id: 1, explorer_id: String(fieldAlly), day: "0" } },
     {
+      model: "ArmyProgress",
+      key: "0xdef4",
+      value: wire({
+        ...store.require("ArmyProgress", { game_id: 1, explorer_id: SPIRE_ARMY }),
+        explorer_id: fieldAlly,
+      }),
+    },
+    {
       model: "TileOccupancy",
       key: "0xdef3",
       value: wire({ ...at, entity_id: fieldAlly, col: center.col - 3, row: center.row - 1 }),

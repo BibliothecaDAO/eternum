@@ -3,6 +3,7 @@ import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { setTimeout as sleep } from "node:timers/promises";
 import { actorKey, type HarnessGameClient, type HeraldConfirmations } from "./game-client";
 import {
+  armyOaths,
   buildArmyPathIndexes,
   configManager,
   createGameActions,
@@ -206,7 +207,7 @@ function createClientGame(client: GameClient, heraldConfirmations?: HeraldConfir
     minimumStaminaFor: (explorerId, kind) => {
       const army = store.require("ExplorerTroops", { game_id, explorer_id: explorerId });
       return kind === "explore"
-        ? configManager.getExploreStaminaCost(army.troops.category)
+        ? configManager.getExploreStaminaCost(army.troops.category, armyOaths(store, army))
         : configManager.getMinTravelStaminaCost();
     },
     production: (structureId) => {
