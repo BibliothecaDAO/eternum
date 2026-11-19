@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "5b9c77d62332ab34555840ad4099a84f3f4205048ed1bb57e72fb6952764d47a";
+export const nativeFactSchemaIdentity = "899000f5aa9a738206a3c8ca615650253cf86d9593fe85d73e36cfb800e586f1";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9,
   "SEAL_RELEASE": 10
@@ -264,6 +264,8 @@ export interface NativeRows {
   ExpeditionSpire: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly depth: number; readonly reveals: number; readonly location: ({ readonly alt: boolean; readonly x: number; readonly y: number }) | null };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly empty_reveals: number; readonly ruin_cleared: boolean };
   DepositSource: { readonly game_id: number; readonly chain: bigint; readonly ledger: bigint; readonly signer: bigint; readonly epoch: bigint };
+  Fragments: { readonly game_id: number; readonly account: bigint; readonly balance: bigint };
+  Seal: { readonly game_id: number; readonly account: bigint; readonly granted_at: bigint };
   SpendLords: { readonly game_id: number; readonly account: bigint; readonly available: bigint; readonly consumed: bigint; readonly swept: bigint };
   PrincipalWithdrawal: { readonly game_id: number; readonly account: bigint; readonly amount: bigint };
   DepositReceipt: { readonly game_id: number; readonly id: bigint; readonly commitment: bigint; readonly account: bigint; readonly amount: bigint; readonly cancelled: boolean };
@@ -381,6 +383,8 @@ export interface NativeKeys {
   ExpeditionSpire: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly depth: number };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint };
   DepositSource: { readonly game_id: number };
+  Fragments: { readonly game_id: number; readonly account: bigint };
+  Seal: { readonly game_id: number; readonly account: bigint };
   SpendLords: { readonly game_id: number; readonly account: bigint };
   PrincipalWithdrawal: { readonly game_id: number; readonly account: bigint };
   DepositReceipt: { readonly game_id: number; readonly id: bigint };
@@ -717,6 +721,30 @@ export const nativeFactModels = {
       "ledger": "felt",
       "signer": "felt",
       "epoch": "u64"
+    }
+  },
+  "Fragments": {
+    "keys": [
+      "game_id",
+      "account"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "account": "felt",
+      "balance": "u128"
+    }
+  },
+  "Seal": {
+    "keys": [
+      "game_id",
+      "account"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "account": "felt",
+      "granted_at": "u64"
     }
   },
   "SpendLords": {
@@ -2848,6 +2876,16 @@ export const nativeSyncScopes = {
     ]
   },
   "LaborGrant": {
+    "owners": [
+      "account"
+    ]
+  },
+  "Fragments": {
+    "owners": [
+      "account"
+    ]
+  },
+  "Seal": {
     "owners": [
       "account"
     ]

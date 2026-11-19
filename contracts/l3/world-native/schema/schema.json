@@ -2014,6 +2014,22 @@
       },
       {
         "type": "function",
+        "name": "grant_seal",
+        "inputs": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "account",
+            "type": "core::starknet::contract_address::ContractAddress"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
         "name": "register_entitlement",
         "inputs": [
           {
@@ -2977,6 +2993,60 @@
       ],
       "keyLength": 1,
       "valueLength": 4
+    },
+    {
+      "name": "Fragments",
+      "identity": "0x467261676d656e7473",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "account",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "balance",
+          "type": "core::integer::u128",
+          "id": "0x62616c616e6365",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1
+    },
+    {
+      "name": "Seal",
+      "identity": "0x5365616c",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "account",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "granted_at",
+          "type": "core::integer::u64",
+          "id": "0x6772616e7465645f6174",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1
     },
     {
       "name": "SpendLords",
@@ -14252,5 +14322,5 @@
       ]
     }
   },
-  "identity": "5b9c77d62332ab34555840ad4099a84f3f4205048ed1bb57e72fb6952764d47a"
+  "identity": "899000f5aa9a738206a3c8ca615650253cf86d9593fe85d73e36cfb800e586f1"
 }
