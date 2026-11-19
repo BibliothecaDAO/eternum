@@ -348,14 +348,16 @@ fn a_win_early_in_the_gap_stops_the_catch_up_with_every_site_full() {
 }
 
 #[test]
-fn a_guard_moved_while_the_deep_catches_up_is_refused_and_still_advances_the_cursor() {
+fn an_oath_answered_by_a_guard_while_the_deep_catches_up_is_refused_and_still_advances_the_cursor() {
     let shape = every_site_at_the_empire_cap();
     let (_, game_id, guards, owner, _) = held_deep(6, 2000, shape);
     let guard = *guards.at(0);
     let cost = measured(
         owner,
         game_id,
-        Command::Move(crate::commands::Move { explorer_id: guard.explorer_id, directions: array![0].span() }),
+        Command::ChooseOath(
+            crate::oaths::ChooseOath { explorer_id: guard.explorer_id, expected_pick: 0, oath: None, replace: None },
+        ),
         START + 100 * TICK,
     );
     assert_eq!(cost.paid_ticks, START / TICK + cap(80));
