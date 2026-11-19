@@ -1,8 +1,7 @@
 import { identity as playIdentity } from "../vrf/fixtures";
 import { expect, test } from "bun:test";
 import { startReadRpc } from "./read-rpc";
-import { WRITES_CLOSED_MESSAGE } from "./public-rpc";
-import { assertPublicRpcBoundary } from "./public-rpc-check";
+import { WRITE_METHODS, WRITES_CLOSED_MESSAGE } from "./public-rpc";
 import { hash } from "starknet";
 import { rpcClientAddress } from "./rpc-client-limit";
 
@@ -26,8 +25,25 @@ test("public RPC forwards reads but never forwards writes, mixed batches, escape
   const proxy = startReadRpc(node.url.origin, 0, playIdentity, noStamp, undefined, "127.0.0.1");
   const url = new URL("/rpc/v0_10_2", proxy.url).href;
   try {
-    const result = await assertPublicRpcBoundary(url);
-    expect(result.chainId).toBe("0x123");
+    const call = (method: string) => ({ jsonrpc: "2.0", id: 1, method, params: [] });
+    const post = async (payload: unknown) =>
+      (await fetch(url, { method: "POST", body: JSON.stringify(payload) })).json();
+    expect((await post(call("starknet_chainId"))).result).toBe("0x123");
+    for (const method of WRITE_METHODS) {
+      expect((await post(call(method))).error.code).toBe(-32601);
+      expect((await post([call("starknet_chainId"), call(method)])).error).toEqual(
+        expect.objectContaining({ code: -32600, message: "Mixed read and write batch refused" }),
+      );
+    }
+    const upgrade = await fetch(url, {
+      headers: {
+        Connection: "Upgrade",
+        Upgrade: "websocket",
+        "Sec-WebSocket-Version": "13",
+        "Sec-WebSocket-Key": "dGhlIHNhbXBsZSBub25jZQ==",
+      },
+    });
+    expect(upgrade.status).toBe(403);
     expect(received).toHaveLength(1);
     for (const body of [
       '{"jsonrpc":"2.0","id":1,"method":"starknet_\\u0061ddInvokeTransaction","params":[]}',
@@ -65,26 +81,6 @@ test("a browser may keep the RPC's CORS preflight for two hours", async () => {
     expect(preflight.headers.get("access-control-max-age")).toBe("7200");
   } finally {
     proxy.stop(true);
-  }
-});
-
-test("the public audit rejects a directly exposed node even when malformed writes fail", async () => {
-  const node = Bun.serve({
-    hostname: "127.0.0.1",
-    port: 0,
-    async fetch(request) {
-      const payload = await request.json();
-      return Response.json(
-        payload.method === "starknet_chainId"
-          ? { result: "0x123" }
-          : { error: { code: -32602, message: "Invalid params" } },
-      );
-    },
-  });
-  try {
-    await expect(assertPublicRpcBoundary(node.url.href)).rejects.toThrow("not blocked before parameter validation");
-  } finally {
-    node.stop(true);
   }
 });
 
@@ -339,27 +335,6 @@ test("the public relay can page Games events with the address filter intact", as
     expect(received).toEqual([query]);
   } finally {
     proxy.stop(true);
-    node.stop(true);
-  }
-});
-
-test("the public audit requires the fixed mixed-batch gate, not any invalid-request error", async () => {
-  const node = Bun.serve({
-    hostname: "127.0.0.1",
-    port: 0,
-    async fetch(request) {
-      const payload = await request.json();
-      if (payload.method === "starknet_chainId") return Response.json({ result: "0x123" });
-      return Response.json({
-        error: Array.isArray(payload)
-          ? { code: -32600, message: "Some node parameter error" }
-          : { code: -32601, message: "RPC method is not public" },
-      });
-    },
-  });
-  try {
-    await expect(assertPublicRpcBoundary(node.url.href)).rejects.toThrow("not blocked before parameter validation");
-  } finally {
     node.stop(true);
   }
 });

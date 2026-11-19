@@ -13,7 +13,7 @@ import { configureGameplayAccountSubmits, openShard, type Shard } from "@bibliot
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { Account, logger } from "starknet";
 import { assertChainId } from "../../../packages/chain/chain-guard.js";
-import { createHarnessAdminProvider, launchHarnessGame } from "./game-setup";
+import { createHarnessAdminProvider } from "./game-setup";
 import { createHarnessAccounts, type HarnessAccount } from "./account-factory";
 import { connectActorClients, connectHarnessGameClient } from "./game-client";
 import { createHarnessGame } from "./harness-game";
@@ -33,10 +33,7 @@ interface HarnessCliOptions {
   workload: "burst" | "cadence" | "frontier";
   functional: boolean;
   gameType: HarnessGameType;
-  /** The preset to play; a Frontier game is the directory's unless the harness creates it. */
   presetId: number;
-  /** Create the game as this shard's launcher instead of playing the directory's: measurement shards only. */
-  createGame: boolean;
   /** A campaign burst on the Frontier shape instead of its day-long play. */
   frontierBurst?: FrontierBurst;
   /** Worker threads that share one Frontier season, each playing its own slice of the accounts. */
@@ -44,7 +41,6 @@ interface HarnessCliOptions {
   bots: number;
   gameId?: number;
   preparedGamePath?: string;
-  gameName?: string;
   intervalSeconds: number;
   minutes: number;
   rpcUrl: string;
@@ -81,15 +77,11 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   if (workload === "frontier" && values["interval-seconds"] !== undefined)
     throw new Error("--interval-seconds paces a cadence; Frontier paces with --frontier-burst and its window");
   const functional = values.functional === "true";
-  const createGame = values["create-game"] === "true";
   const presetId =
     values.preset === undefined ? defaultPresetFor(gameType, functional) : positiveInteger(values.preset, "preset");
   nativePresetForId(presetId);
   if (gameType === "frontier" && functional && bots < 2)
     throw new Error("Frontier design run requires both player profiles");
-  if (gameId !== undefined && !values["game-name"]) {
-    values["game-name"] = `game-${gameId}`;
-  }
   const frontierBurst = resolveFrontierBurst(values, gameType);
   const workers = positiveInteger(values.workers ?? "1", "workers");
   if (workers > 1 && gameType !== "frontier")
@@ -102,13 +94,11 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
     workload,
     functional,
     presetId,
-    createGame,
     frontierBurst,
     workers,
     bots,
     gameId,
     preparedGamePath: values["prepared-game"],
-    gameName: values["game-name"],
     intervalSeconds,
     minutes,
     rpcUrl: requiredEndpoint(values["rpc-url"], "rpc-url", "RPC_URL"),
@@ -289,7 +279,6 @@ function parseFlags(args: string[]): Record<string, string> {
         "interval-seconds",
         "setup-concurrency",
         "game-id",
-        "game-name",
         "prepared-game",
         "workload",
         "game-type",
@@ -299,12 +288,11 @@ function parseFlags(args: string[]): Record<string, string> {
         "frontier-burst",
         "burst-window-seconds",
         "workers",
-        "create-game",
       ].includes(name)
     ) {
       throw new Error(`Unsupported harness option --${name}`);
     }
-    if (name === "help" || name === "functional" || name === "create-game") {
+    if (name === "help" || name === "functional") {
       values[name] = "true";
       continue;
     }
@@ -345,16 +333,13 @@ async function prepareGames(
   provider: HarnessProvider,
   run: AbortSignal,
 ): Promise<PreparedGame | PreparedGame[]> {
-  const listed =
-    options.gameType === "frontier" && !options.createGame
-      ? await listedFrontierGame(
-          requiredEnvironmentValue("IDENTITY_URL", "game discovery"),
-          shard,
-          options.heraldUrl,
-          options.presetId,
-          options.gameId,
-        )
-      : undefined;
+  const game = await listedFrontierGame(
+    requiredEnvironmentValue("IDENTITY_URL", "game discovery"),
+    shard,
+    options.heraldUrl,
+    options.presetId,
+    options.gameId,
+  );
   const setupProvider = createHarnessAdminProvider();
   const accounts = await createHarnessAccounts({
     concurrency: options.setupConcurrency,
@@ -369,14 +354,6 @@ async function prepareGames(
     shard,
     stopped: run,
   }).finally(() => setupProvider.dispose());
-  const game =
-    listed ??
-    (await launchHarnessGame({
-      gameId: options.gameId,
-      gameName: options.gameName ?? `lab-${Date.now().toString(36)}`,
-      minutes: options.minutes,
-      presetId: options.presetId,
-    }));
   return { game, accounts: accounts.map(({ account: _account, ...entry }) => ({ ...entry, gameId: game.gameId })) };
 }
 
@@ -686,9 +663,6 @@ Usage: bun deploy/athanor/harness/run.ts [options]
                                  or with --preset 5 the real-speed pass on the preset's own rates and charges
   --prepared-game <path>         resume a prepared roster using its private account file
   --game-id <id>                 select a listed Frontier game
-  --create-game                  create the Frontier game as the shard's launcher instead of playing the directory's;
-                                 only a measurement shard, whose runner makes the harness its launcher, accepts it
-  --game-name <name>             name for a new game or report label for --game-id
   --rpc-url <url>                required, or RPC_URL; the published RPC named by the Herald manifest
   --herald-url <url>             required, or HERALD_URL
 

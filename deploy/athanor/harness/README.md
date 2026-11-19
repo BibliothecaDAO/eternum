@@ -10,11 +10,10 @@ until the receipt and that bot's Herald transaction barrier both finish. Library
 reported with the game's reason. A lost submission response is observed by its precomputed hash; the harness never
 advances that account to another nonce while its outcome is unknown.
 
-Account creation retains the identity service's bot-device approval route. Bots join and new games are created through
-`HARNESS_ADMIN_RPC_URL`; player traffic uses `--rpc-url` and the matching Herald manifest. Administration belongs on the
-private node, while gameplay goes through the public proxy. `--create-game` creates the Frontier game as the shard's
-launcher instead of playing the directory's; only a measurement shard, whose runner made the harness its launcher,
-accepts it. `NATIVE_WORLD_MANIFEST` must include `shard.chainId`, `shard.vrfPublicKey` and `shard.l2GasBound`.
+Account creation retains the identity service's bot-device approval route. Bots join through `HARNESS_ADMIN_RPC_URL`;
+player traffic uses `--rpc-url` and the matching Herald manifest. Administration belongs on the private node, while
+gameplay goes through the public proxy. The harness creates no game; it plays the directory's Frontier game.
+`NATIVE_WORLD_MANIFEST` must include `shard.chainId`, `shard.vrfPublicKey` and `shard.l2GasBound`.
 
 `pnpm lab:harness:test` resolves workspace sources through this directory's tsconfig, so tests and workers use the
 checkout's command bindings rather than another checkout's built packages. Run commands under
@@ -22,16 +21,15 @@ checkout's command bindings rather than another checkout's built packages. Run c
 
 ## Ops timing commands
 
-`pnpm lab:harness:split --dry-run --out <launches.json>` splits the roster and compiles each game's `create_game`
-calldata through the launch service's payload builder. It needs no credentials and sends no requests. The output keeps
-the preset ID, player count and calldata for each game; omit `--dry-run` only on a measurement shard prepared for a live
-run. This checks launch encoding, not execution or seating.
+`pnpm lab:harness:split --out <launches.json>` splits the roster and compiles each game's `create_game` calldata through
+the launch service's payload builder. It needs no credentials and sends no requests. The output keeps the preset ID,
+player count and calldata for each game. This checks launch encoding, not execution or seating.
 
 `pnpm lab:harness:burst --out <public-result.json> --receipt-checkpoint <checkpoint.json>` releases 2,000 ordinary
-signed invokes with the spike's warmed worker barrier. The built-in `wave-fixture.ts` creates an independent real game,
-approved accounts, each player's Herald client, generated command and domain assertions. `heraldConfirmations` comes
-from `connectHarnessGameClient`. No spike contracts, probe counters, simulations or synthetic forwarded IPs are used.
-Setup requires the normal harness identity/launcher environment. `--fixture <module.ts>` supplies another typed
+signed invokes with the spike's warmed worker barrier. The built-in `wave-fixture.ts` plays the directory's Frontier
+game with approved accounts, each player's Herald client, generated command and domain assertions. `heraldConfirmations`
+comes from `connectHarnessGameClient`. No spike contracts, probe counters, simulations or synthetic forwarded IPs are
+used. Setup requires the normal harness identity environment. `--fixture <module.ts>` supplies another typed
 `WaveFixturePort` for a different registered preset or action route.
 
 ## 96 bots

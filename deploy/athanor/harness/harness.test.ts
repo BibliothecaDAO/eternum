@@ -218,14 +218,6 @@ describe("Madara harness workload", () => {
     expect(bots[0].explorers.map(({ explorerId }) => explorerId)).toEqual(resumed ? [11, 21] : [11]);
   });
 
-  it("plays the directory's game unless told to create it as a measurement shard's launcher", () => {
-    expect(parseHarnessArgs(["--game-type", "frontier"]).createGame).toBe(false);
-    expect(parseHarnessArgs(["--game-type", "frontier", "--create-game", "--bots", "4"])).toMatchObject({
-      createGame: true,
-      bots: 4,
-    });
-  });
-
   it("rejects retired presets and deferred ledger options", () => {
     expect(() => parseHarnessArgs(["--game-type", "frontier", "--interval-seconds", "30"])).toThrow(
       "--interval-seconds paces a cadence",
@@ -1041,7 +1033,7 @@ describe("Madara harness CLI and concurrency", () => {
   it("parses an explicit smoke-run configuration", () => {
     expect(
       parseHarnessArgs(["--game-type", "frontier", "--bots", "4", "--minutes", "0.5", "--game-id", "9"]),
-    ).toMatchObject({ bots: 4, minutes: 0.5, intervalSeconds: 15, gameId: 9, gameName: "game-9" });
+    ).toMatchObject({ bots: 4, minutes: 0.5, intervalSeconds: 15, gameId: 9 });
   });
 
   it("runs Frontier bursts inside the campaign's windows unless a run names another", () => {

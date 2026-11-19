@@ -6,11 +6,10 @@ facts). There is no downloaded package or release tag. The upstream node remains
 
 ## Initialize a fresh shard
 
-Use reviewed environment inputs with `deploy/athanor/scripts/operator-command.py deploy ENVIRONMENT DIRECTORY`, or the
-existing local runner `deploy/athanor/scripts/shard.py CONFIGURATION DIRECTORY`. Neither reuses another shard's chain
-state. Ops provisions `/opt/athanor/operator-token` as an owner-only regular `0600` file. The wrapper reads it in
-memory; Compose binds it read-only into initialization and the harness. Its value never appears in arguments, rendered
-environments or Docker container configuration. There is no alternate credential path.
+Use reviewed environment inputs with `deploy/athanor/scripts/operator-command.py deploy ENVIRONMENT DIRECTORY`. It never
+reuses another shard's chain state. Ops provisions `/opt/athanor/operator-token` as an owner-only regular `0600` file.
+The wrapper reads it in memory; Compose binds it read-only into initialization and the harness. Its value never appears
+in arguments, rendered environments or Docker container configuration. There is no alternate credential path.
 
 Required package inputs:
 
@@ -27,12 +26,11 @@ HOST_UID=1000
 HOST_GID=1000
 ```
 
-Use image digests from the same release. The pinned node image and chain template are shared by package and runner. The
-host must have enough memory for node, Herald, database, metrics and the stamping runtime. Compose sets no memory limit:
-the node runs alone in its own systemd slice (`node-<shard>.slice`), outside every resource limit, so the metrics
-collector can read its memory, and the other services run unconfined on a package shard. A measurement runner places
-every service but the node and the harness in `athanor.slice` with the run's cpuset, and caps preparation and
-initialization at 8 GiB. The RPC is one process that stamps each play inline with the native prover.
+Use image digests from the same release. The pinned node image and chain template come with the package. The host must
+have enough memory for node, Herald, database, metrics and the stamping runtime. Compose sets no memory limit: the node
+runs alone in its own systemd slice (`node-<shard>.slice`), outside every resource limit, so the metrics collector can
+read its memory, and the other services run unconfined. The RPC is one process that stamps each play inline with the
+native prover.
 
 Deployment runs `docker compose run --rm --no-deps prepare` before creating the stack, so the RPC file bind exists and
 Docker cannot replace a missing key with a directory. Manual starts must use that order too.
@@ -53,20 +51,18 @@ owner-only with mode `0600`.
 
 ## Endpoints and readiness
 
-Both official and runner bootstrap require the Herald HTTPS hostname to be reachable by the identity Worker before
-enrolment, including measurement shards. Forward HTTPS hostnames to loopback 8080 (RPC) and 8081 (Herald). `RPC_PORT`,
-`HERALD_PORT` and `BIND_ADDRESS` change bindings. The public RPC admits one signed Games.play call, the data-listed
-role-guarded administrative entries and existing Realms account-management calls. Play receives a VRF proof inside the
-proxy; proof bodies are never served. Simulations and fee estimates are never stamped. The node's write RPC is internal,
-not exposed through another port.
+Bootstrap requires the Herald HTTPS hostname to be reachable by the identity Worker before enrolment. Forward HTTPS
+hostnames to loopback 8080 (RPC) and 8081 (Herald). `RPC_PORT`, `HERALD_PORT` and `BIND_ADDRESS` change bindings. The
+public RPC admits one signed Games.play call, the data-listed role-guarded administrative entries and existing Realms
+account-management calls. Play receives a VRF proof inside the proxy; proof bodies are never served. Simulations and fee
+estimates are never stamped. The node's write RPC is internal, not exposed through another port.
 
 Behind a tunnel, set TRUSTED_PROXY to its actual socket peer. With loopback bindings initialization derives that peer
 from the Compose network route; exposed bindings trust no proxy unless explicitly configured.
 
 The identity service must carry the pending route before a shard from this code starts. Deploy the identity Worker
 containing `/api/directory/shards/pending` before running official deployment; a missing route fails with this
-prerequisite. The initializer never lists. The runner registers PENDING before enrolment and retires that registration
-on stop; it never activates.
+prerequisite. The initializer never lists.
 
 Herald's existing listener first serves the real prepared identity at `/manifest`, with other routes unavailable.
 Official deployment registers the Herald URL as pending after starting Herald and before starting initialization or
@@ -86,14 +82,12 @@ creates no game and proves no gameplay action end to end; the first real game an
 Metrics collect OTLP and sample container CPU from a read-only cgroup mount, without a Docker socket or write access.
 The compose services restart on failure. Initializer logs and `harness.env` are private and must never be published.
 
-| Path                | Registration and visibility                                              | Operator command                                                          |
-| ------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
-| Official deployment | PENDING before enrolment; initialized facts and Worker roles then ACTIVE | `operator-command.py deploy ENVIRONMENT PACKAGE_DIRECTORY`                |
-| Measurement runner  | PENDING before enrolment; retires on stop; never activates               | `operator-command.py runner CONFIGURATION RUNNER_DATA_DIRECTORY --matrix` |
+| Path                | Registration and visibility                                              | Operator command                                           |
+| ------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------- |
+| Official deployment | PENDING before enrolment; initialized facts and Worker roles then ACTIVE | `operator-command.py deploy ENVIRONMENT PACKAGE_DIRECTORY` |
 
 Run each command above as `python3 deploy/athanor/scripts/operator-command.py ...`. The wrapper reads the box's
-protected token file; ops provisions it. Use `stop.py` for a manually started runner: it keeps the runner's logs,
-removes its containers and volumes, and retires its directory entry.
+protected token file; ops provisions it.
 
 ## Operations: back up and restore
 
@@ -129,8 +123,7 @@ release/migration procedure; do not edit a published release's contents or reuse
 Blocks close every second on dev and production: `block_time: "1s"` in `deploy/release/dev.json` and
 `deploy/release/production.json`. The shared initializer renders `BLOCK_TIME` into the chain configuration; an input
 without the key gets 2 seconds. Existing chain configuration is never rewritten, so a chain keeps the block time it was
-initialized with. Measurement runner inputs use the same `block_time` value. This is an environment value, not a
-gameplay mode.
+initialized with. This is an environment value, not a gameplay mode.
 
 Block capacity limits stay unchanged: they bound work per block, not a duration or a throughput target. There is no
 pending-update interval in the shipped configuration; pre-confirmation keeps the pinned node’s default. Measure its

@@ -206,15 +206,7 @@ python3 deploy/athanor/scripts/operator-command.py season dev
 ```
 
 This uses the deployed preset and the protected operator credential. It preserves an already running phase and makes no
-mainnet transaction. Run the existing harness after deployment and report its result separately from deployment:
-
-```sh
-python3 deploy/athanor/scripts/operator-command.py measure /opt/athanor/runs/dev check -- \
-  --game-type frontier --bots 2 --minutes 2 --setup-concurrency 2
-```
-
-When the launch Worker has created the game, add its `--game-id` to play that game. Funding, paid Blitz registration and
-payouts require the owner. The gameplay report never controls shard admission.
+mainnet transaction. Funding, paid Blitz registration and payouts require the owner.
 
 ## Alerts
 

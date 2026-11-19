@@ -18,10 +18,6 @@ import {
   type WorkloadResult,
 } from "./driver";
 
-/**
- * The code the run ran. The host's state, the node's memory and its blocks are measured from the host
- * (deploy/athanor/scripts/measures.py), which sees what a harness inside the shard's network cannot.
- */
 export interface HarnessEvidence {
   gitDirty: boolean;
   gitRevision: string;

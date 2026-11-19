@@ -7,7 +7,7 @@ import { slotLaunches } from "./blitz-split";
 
 test("the offline command compiles every player's game without shard credentials", () => {
   const out = join(mkdtempSync(join(tmpdir(), "blitz-dry-run-")), "launches.json");
-  const result = Bun.spawnSync([process.execPath, "blitz-split.ts", "--players", "25", "--dry-run", "--out", out], {
+  const result = Bun.spawnSync([process.execPath, "blitz-split.ts", "--players", "25", "--out", out], {
     cwd: import.meta.dir,
     env: { PATH: process.env.PATH },
     stdout: "pipe",
