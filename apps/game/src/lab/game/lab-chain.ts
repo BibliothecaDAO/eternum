@@ -1,3 +1,4 @@
+import { useConnectStore } from "@/shell/sign-in/connect";
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import type { JoinedShare } from "@realms-world/identity";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -384,6 +385,7 @@ const signInLabPlayer = (wallet: string | undefined, joined: JoinedShare) => {
   identityClient.joinedShare = async () => joined;
   identityClient.getOrderIntent = async () => ({ order: null, members: {} });
   answerLabOpening();
+  useConnectStore.getState().dismissWallet();
   useIdentitySessionStore.getState().applySession(session);
 };
 
