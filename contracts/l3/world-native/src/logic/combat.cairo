@@ -56,7 +56,7 @@ pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, conte
         attacker = combat_troops(game_id)
             .spend_claim(key, attacker, target.coord, crate::commands::action_context(context));
     }
-    let clean = crate::oaths::clean_win(attacker_before, attacker.troops.count);
+    let clean = fought && crate::oaths::clean_win(attacker_before, attacker.troops.count);
     complete_guard_capture(key, actor, attacker, target, defender, command.relic_slot, clean, context);
     if fought {
         emit_guard_battle(key, actor, attacker, attacker_before, target, defender, defender_before, context);

@@ -577,7 +577,7 @@ fn fight_rules_match_the_client_vectors_with_and_without_their_oaths() {
 }
 
 #[test]
-fn detection_finds_a_camp_brilliance_raises_its_reveal_pay_and_rage_and_perfection_its_clear_pay() {
+fn detection_finds_a_camp_brilliance_raises_its_reveal_pay_and_rage_and_perfection_its_clear_pay_but_not_a_claim() {
     let discovery = crate::expeditions::FrontierDiscoveryRules {
         camp_bps: 5000, rift_bps: 0, ruin_bps: 0, beasts_bps: 0, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
     };
@@ -585,10 +585,11 @@ fn detection_finds_a_camp_brilliance_raises_its_reveal_pay_and_rage_and_perfecti
     let brilliance = crate::oaths::bit(crate::oaths::BRILLIANCE);
     let rage = crate::oaths::bit(crate::oaths::RAGE);
     let precision = crate::rules::RESOURCE_PRECISION;
-    for (oaths, found, reveal, clear) in array![
-        (detection, true, 20 * precision, 1500000000), (0, false, 20 * precision, 0),
-        (detection | brilliance | rage, true, 25 * precision, 1875000000),
-        (detection | crate::oaths::bit(crate::oaths::PERFECTION), true, 20 * precision, 2250000000),
+    let perfection = detection | crate::oaths::bit(crate::oaths::PERFECTION);
+    for (oaths, found, reveal, clear, emptied) in array![
+        (detection, true, 20 * precision, 1500000000, false), (0, false, 20 * precision, 0, false),
+        (detection | brilliance | rage, true, 25 * precision, 1875000000, false),
+        (perfection, true, 20 * precision, 2250000000, false), (perfection, true, 20 * precision, 1500000000, true),
     ] {
         let (d, game_id, key) = super::registrar::setup_frontier_relics_with_rules(Some(discovery));
         let mut army = super::registrar::strong_frontier_army(d, game_id, key);
@@ -613,6 +614,9 @@ fn detection_finds_a_camp_brilliance_raises_its_reveal_pay_and_rage_and_perfecti
             continue;
         }
         let site = crate::resources::ResourceKey { game_id, entity_id: occupied.unwrap().entity_id };
+        if emptied {
+            snforge_std::interact_with_state(d.games, || crate::logic::guards::GuardState::reset(site));
+        }
         let command = crate::commands::Command::BattleGuard(
             crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site.entity_id, relic_slot: None },
         );
