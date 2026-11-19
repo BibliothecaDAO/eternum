@@ -197,5 +197,10 @@ pub mod DeepSites {
         fn initialize_deep(ref self: ComponentState<TContractState>, game_id: u32) {
             super::initialize(game_id);
         }
+        fn rollover_deep(
+            ref self: ComponentState<TContractState>, game_id: u32, context: crate::commands::ActionContext,
+        ) {
+            super::rollover(game_id, crate::commands::execution_context(game_id, context));
+        }
     }
 }

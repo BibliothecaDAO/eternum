@@ -204,6 +204,7 @@ pub trait IDeepSites<T> {
         context: crate::commands::ActionContext,
     );
     fn initialize_deep(ref self: T, game_id: u32);
+    fn rollover_deep(ref self: T, game_id: u32, context: crate::commands::ActionContext);
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

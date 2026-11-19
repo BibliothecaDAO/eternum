@@ -71,7 +71,7 @@ pub fn settle(game_id: u32, context: ExecutionContext) {
     }
     crate::logic::race::finish_expired(game_id, context.timestamp);
     if crate::logic::race::result(game_id).is_none() && context.timestamp < game.end_at {
-        crate::logic::deep_sites::rollover(game_id, context);
+        roll_over(game_id, context);
     }
 }
 
@@ -105,7 +105,7 @@ fn walk(game_id: u32, cursor: u64, last: u64, context: ExecutionContext) -> u64 
         let boundary = (reached + 1) * interval;
         if boundary - 1 >= held.day_end {
             write_payouts(game_id, ref payouts, held, reached * interval, context);
-            crate::logic::deep_sites::rollover(game_id, ExecutionContext { timestamp: boundary - 1, ..context });
+            roll_over(game_id, ExecutionContext { timestamp: boundary - 1, ..context });
             return last;
         }
         held = drain(held, boundary, interval, ref payouts);
@@ -389,6 +389,12 @@ fn settle_guard(guard: Guard, context: ExecutionContext) {
     let army = crate::logic::troops::explorer(guard.key).expect('missing Deep guard');
     let army = crate::logic::army_slots::resolve(guard.key, army, None);
     crate::logic::deep_armies::settle(guard.key, army, context);
+}
+
+fn roll_over(game_id: u32, context: ExecutionContext) {
+    crate::deep::IDeepSitesDispatcherTrait::rollover_deep(
+        crate::logic::deep_sites::dispatcher(game_id), game_id, crate::commands::action_context(context),
+    );
 }
 
 fn bridge(game_id: u32) -> crate::deep::IDeepBanesLibraryDispatcher {
