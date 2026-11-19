@@ -336,8 +336,18 @@ fn a_dying_army_leaves_its_home_producing_and_its_other_armies_in_order() {
     let survivors = interact_with_state(d.games, || crate::logic::troops::home_armies(structure));
     assert_eq!(survivors, array![*armies.at(0), *armies.at(2)].span());
     assert_eq!(productions(d, structure), producing);
-    let army = crate::resources::ResourceKey { game_id, entity_id: dying.explorer_id };
-    for production in productions(d, army) {
+    let left = interact_with_state(
+        d.games,
+        || {
+            let state = crate::state::read();
+            let mut left = array![];
+            for resource_type in 1_u8..59 {
+                left.append(state.resources.productions.read((game_id, dying.explorer_id, resource_type)));
+            }
+            left
+        },
+    );
+    for production in left.span() {
         assert_eq!(*production, Default::default());
     }
 }
