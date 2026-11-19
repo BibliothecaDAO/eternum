@@ -96,6 +96,7 @@ fn held_deep(
         homes.append(super::army_activity::army(d, key).owner);
     }
     let holders = holders.span();
+    let homes = homes.span();
     let mut guards = array![];
     for index in 0..shape.sites {
         let site = site_at(d, game_id, index);
@@ -106,12 +107,12 @@ fn held_deep(
             } else {
                 ExplorerKey { game_id, explorer_id: 9000000 + index.into() * 10 + slot.into() }
             };
-            seat_guard(d, source, key, site, slot, shape);
+            seat_guard(d, source, key, site, slot, shape, *homes.at(slot.into()));
             guards.append(key);
         }
     }
     interact_with_state(d.games, || crate::state::write().deep.realms_entered.write((game_id, 0), RINGS_OPEN));
-    (d, game_id, guards.span(), *members.at(0), homes.span())
+    (d, game_id, guards.span(), *members.at(0), homes)
 }
 
 fn site_count(d: Deployment, game_id: u32) -> u8 {
@@ -123,7 +124,9 @@ fn site_at(d: Deployment, game_id: u32, index: u8) -> ResourceKey {
     ResourceKey { game_id, entity_id }
 }
 
-fn seat_guard(d: Deployment, source: ExplorerKey, key: ExplorerKey, site: ResourceKey, slot: u8, shape: Shape) {
+fn seat_guard(
+    d: Deployment, source: ExplorerKey, key: ExplorerKey, site: ResourceKey, slot: u8, shape: Shape, owner: u64,
+) {
     interact_with_state(
         d.games,
         || {
@@ -154,7 +157,7 @@ fn seat_guard(d: Deployment, source: ExplorerKey, key: ExplorerKey, site: Resour
                     to,
                     crate::troops::ExplorerRecordTrait::into_record(
                         crate::troops::ExplorerTroops {
-                            troops: crate::troops::Troops { count, ..army.troops }, ..army,
+                            owner, troops: crate::troops::Troops { count, ..army.troops }, ..army,
                         },
                     ),
                 );
@@ -167,9 +170,9 @@ fn seat_guard(d: Deployment, source: ExplorerKey, key: ExplorerKey, site: Resour
             write.deep.guards.write(to, Some(crate::deep::DeepGuard { site_id: site.entity_id, slot }));
             write.deep.slots.write((game_id, site.entity_id, slot), key.explorer_id);
             if key != source {
-                let armies = read.troops.home_counts.read((game_id, army.owner));
-                write.troops.home_armies.write((game_id, army.owner, armies), key.explorer_id);
-                write.troops.home_counts.write((game_id, army.owner), armies + 1);
+                let armies = read.troops.home_counts.read((game_id, owner));
+                write.troops.home_armies.write((game_id, owner, armies), key.explorer_id);
+                write.troops.home_counts.write((game_id, owner), armies + 1);
             }
         },
     );
@@ -450,4 +453,52 @@ fn a_win_cut_into_three_plays_ends_in_the_won_gap_state() {
 #[test]
 fn a_win_cut_into_seven_plays_ends_in_the_won_gap_state() {
     assert_eq!(won(7), WON_GAP_STATE);
+}
+
+fn realistic_homes(d: Deployment, game_id: u32, real: u64) -> Span<u64> {
+    let mut homes = array![real];
+    for index in 1_u64..20 {
+        let home = 8000000 + index;
+        interact_with_state(
+            d.games,
+            || {
+                let state = crate::state::write();
+                state.settlements.home_aspects.write((game_id, home), 1);
+                state.resources.resource_exists.write((game_id, home), true);
+                state.resources.weights.write((game_id, home), state.resources.weights.read((game_id, real)));
+            },
+        );
+        homes.append(home);
+    }
+    homes.span()
+}
+
+#[test]
+fn eighty_guards_of_four_army_homes_dying_on_one_tick_fit_one_play() {
+    let shape = Shape { sites: 1, guards_per_site: 1, troops: SETTLEMENT_CAP, vitriol: false };
+    let (d, game_id, guards, owner, holder_homes) = held_deep(14, 2000, shape);
+    let homes = realistic_homes(d, game_id, *holder_homes.at(0));
+    let source = *guards.at(0);
+    let mut seated = array![];
+    for index in 0..20_u8 {
+        let site = site_at(d, game_id, index);
+        for slot in 0..crate::rules::DEEP_GUARD_SLOTS {
+            let key = if index == 0 && slot == 0 {
+                source
+            } else {
+                ExplorerKey { game_id, explorer_id: 9500000 + index.into() * 10 + slot.into() }
+            };
+            let home: u32 = (index.into() + 20 - 5 * Into::<u8, u32>::into(slot)) % 20;
+            seat_guard(d, source, key, site, slot, shape, *homes.at(home));
+            seated.append(key);
+        }
+    }
+    let cost = measured(owner, game_id, nudge(*holder_homes.at(0)), START + 30 * TICK);
+    let full = Shape { sites: 20, guards_per_site: crate::rules::DEEP_GUARD_SLOTS, ..shape };
+    report(30, full, Plays { count: 1, gas: cost.gas, events: cost.events });
+    assert_eq!(cost.paid_ticks, (START + 30 * TICK) / TICK);
+    for key in seated.span() {
+        assert!(interact_with_state(d.games, || crate::logic::troops::explorer(*key)).is_none());
+    }
+    assert_within_one_transaction(Plays { count: 1, gas: cost.gas, events: cost.events });
 }
