@@ -263,11 +263,7 @@ it("asks the game the receipt names, and refuses a receipt that names none", asy
 });
 
 /** The purchase check as a payment flow would ask it before taking a payment. */
-const checkAs = async (
-  realmsId: string | null,
-  body: unknown,
-  access: ShopAccess = seated,
-) => {
+const checkAs = async (realmsId: string | null, body: unknown, access: ShopAccess = seated) => {
   const auth = {
     api: { getSession: async () => (realmsId ? { user: { realmsId } } : null) },
   } as unknown as IdentityAuth;

@@ -182,9 +182,11 @@ const researchConstants = Object.fromEntries(
 
 const smallConstantsOf = async (file) =>
   Object.fromEntries(
-    [...(await readFile(new URL(file, root), "utf8")).matchAll(/^pub const ([A-Z][A-Z0-9_]*): u(?:8|16) = ([0-9]+);$/gm)].map(
-      ([, name, value]) => [name, Number(value)],
-    ),
+    [
+      ...(await readFile(new URL(file, root), "utf8")).matchAll(
+        /^pub const ([A-Z][A-Z0-9_]*): u(?:8|16) = ([0-9]+);$/gm,
+      ),
+    ].map(([, name, value]) => [name, Number(value)]),
   );
 const oathConstants = await smallConstantsOf("src/oaths.cairo");
 const fragmentConstants = await smallConstantsOf("src/fragments.cairo");

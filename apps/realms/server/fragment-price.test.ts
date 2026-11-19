@@ -15,7 +15,10 @@ const seated: ShopAccess = async () => true;
 const signedIn = (realmsId: string | null) =>
   ({ api: { getSession: async () => (realmsId ? { user: { realmsId } } : null) } }) as unknown as IdentityAuth;
 
-const ask = async (query: string, options: { realmsId?: string | null; access?: ShopAccess; market?: LordsQuoteReader }) => {
+const ask = async (
+  query: string,
+  options: { realmsId?: string | null; access?: ShopAccess; market?: LordsQuoteReader },
+) => {
   const response = await handleFragmentPrice(
     new Request(`https://realms.test/api/shop/fragments?${query}`),
     signedIn(options.realmsId === undefined ? "0xa1" : options.realmsId),

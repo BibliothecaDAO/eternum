@@ -71,9 +71,7 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
             _ => RelicKind::Plunder,
         };
         let reward = ArmyRelic { kind, rank: 1 };
-        let site = discover_relic(
-            d, key, discovery, *preset.settlement.depths.at(0).chest, reward, false, timestamp,
-        );
+        let site = discover_relic(d, key, discovery, *preset.settlement.depths.at(0).chest, reward, false, timestamp);
         assert_eq!(read_ruin(d, site), Some(reward));
         let count = snforge_std::interact_with_state(
             d.games,
@@ -268,7 +266,8 @@ fn read_ruin(d: super::Deployment, key: ResourceKey) -> Option<ArmyRelic> {
 }
 fn read_cache(d: super::Deployment, key: ResourceKey) -> u128 {
     snforge_std::interact_with_state(
-        d.games, || starknet::storage::StorageMapReadAccess::read(
+        d.games,
+        || starknet::storage::StorageMapReadAccess::read(
             crate::state::read().relics.ruin_caches, (key.game_id, key.entity_id),
         ),
     )

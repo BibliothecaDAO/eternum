@@ -14,7 +14,10 @@ pub fn add(game_id: u32, account: ContractAddress, amount: u128) {
 pub fn credit(game_id: u32, credit: FragmentCredit) {
     assert!(credit.id != 0 && credit.amount != 0, "empty fragment credit");
     assert!(credit.account != 0.try_into().unwrap(), "invalid fragment account");
-    assert!(credit.source == crate::fragments::PURCHASE || credit.source == crate::fragments::FRIEND, "invalid fragment source");
+    assert!(
+        credit.source == crate::fragments::PURCHASE || credit.source == crate::fragments::FRIEND,
+        "invalid fragment source",
+    );
     let receipt = (credit.account, credit.source, credit.amount);
     if let Some(previous) = crate::state::read().entry.fragment_credits.read((game_id, credit.id)) {
         assert!(previous == receipt, "fragment credit differs");
@@ -23,7 +26,11 @@ pub fn credit(game_id: u32, credit: FragmentCredit) {
     let game = crate::logic::game::game(game_id);
     assert!(game.end_at == 0 || starknet::get_block_timestamp() < game.end_at, "game ended");
     crate::state::write().entry.fragment_credits.write((game_id, credit.id), Some(receipt));
-    emit('FragmentCredit', array![game_id.into(), credit.id], array![credit.account.into(), credit.source.into(), credit.amount.into()]);
+    emit(
+        'FragmentCredit',
+        array![game_id.into(), credit.id],
+        array![credit.account.into(), credit.source.into(), credit.amount.into()],
+    );
     add(game_id, credit.account, credit.amount);
 }
 
@@ -36,7 +43,10 @@ pub fn buy_seal(game_id: u32, actor: ContractAddress, context: crate::commands::
 }
 
 pub fn buy_stamina(
-    game_id: u32, actor: ContractAddress, command: crate::fragments::BuyStamina, context: crate::commands::ActionContext,
+    game_id: u32,
+    actor: ContractAddress,
+    command: crate::fragments::BuyStamina,
+    context: crate::commands::ActionContext,
 ) {
     let execution = crate::commands::execution_context(game_id, context);
     crate::game::assert_playing(execution.game.unbox(), context.timestamp);
