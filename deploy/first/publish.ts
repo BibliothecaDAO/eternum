@@ -47,15 +47,16 @@ export async function deployWorkers(platform: Platform, revision: string, select
   }
 }
 const releaseWorkers = workers.filter((worker) => worker.id === "launch");
+const directoryWorkers = workers.filter((worker) => worker.id === "identity");
 const gameReaderWorkers = workers.filter((worker) => worker.id !== "launch");
 
 export async function publishCloudflare(platform: Platform, revision: string) {
   await buildPackages(platform);
+  await listOfficialShard(platform, revision);
   await deployWorkers(platform, revision, releaseWorkers);
   await buildClient(platform, revision);
   await advanceFrontierRelease(platform, revision);
   await deployWorkers(platform, revision, gameReaderWorkers);
-  await listOfficialShard(platform, revision);
   await keepChatRetention(platform);
   await publishClient(platform, revision);
   await deployDocs(platform, revision);
@@ -98,17 +99,45 @@ export async function listOfficialShard(platform: Platform, revision: string) {
   deploymentStage("list the official shard");
   const secrets = platform.store.read<Secrets>("secrets.json");
   if (!secrets) throw new PublicError("Service credentials are missing; run setup with --apply before publishing");
-  const { release, chainId } = readReleaseIdentity(platform.store, revision);
-  if (!release) {
+  const { shard } = await servedShard(platform, revision);
+  if (!shard) {
     console.log("The box half has never built: no shard to list.");
     return;
   }
-  if (!chainId) throw new PublicError("The box half has not prepared its shard; run it (pnpm run deploy) first");
-  const herald = shardInputs(platform.target).public_herald_url;
-  await requireHeraldServes(herald, chainId, release);
-  await putDirectoryShard(platform, secrets.operator, herald, chainId);
-  console.log(`The directory lists ${chainId} at ${herald}.`);
+  if (isSameShard(await listedShard(platform, secrets.operator), shard)) {
+    console.log(`The directory already lists ${shard.chainId} at ${shard.url}.`);
+    return;
+  }
+  await deployWorkers(platform, revision, directoryWorkers);
+  await putDirectoryShard(platform, secrets.operator, shard.url, shard.chainId);
+  console.log(`The directory lists ${shard.chainId} at ${shard.url}.`);
 }
+
+type ShardRow = NonNullable<ApplyReleaseRequest["shard"]>;
+
+async function servedShard(platform: Platform, revision: string): Promise<ApplyReleaseRequest> {
+  const { release, chainId } = readReleaseIdentity(platform.store, revision);
+  if (!release) return { release, shard: null };
+  if (!chainId) throw new PublicError("The box half has not prepared its shard; run it (pnpm run deploy) first");
+  const url = shardInputs(platform.target).public_herald_url;
+  await requireHeraldServes(url, chainId, release);
+  return { release, shard: { chainId, url } };
+}
+
+async function listedShard(platform: Platform, operator: string): Promise<ShardRow | null> {
+  const response = await fetch(`${platform.target.origin}/api/directory/shard`, {
+    redirect: "error",
+    headers: { "User-Agent": "realms-deployment/1", Authorization: `Bearer ${operator}` },
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (response.status === 404) return null;
+  if (!response.ok)
+    throw new PublicError(`The directory: HTTP ${response.status}.`, response.status, "directory_unavailable");
+  return ((await response.json()) as { shard: ShardRow | null }).shard;
+}
+
+const isSameShard = (listed: ShardRow | null, shard: ShardRow) =>
+  listed !== null && isSameChain(listed.chainId, shard.chainId) && listed.url === shard.url;
 
 async function requireHeraldServes(herald: string, chainId: string, release: ReleaseIdentity) {
   const response = await fetch(`${herald}/manifest`, {
@@ -178,7 +207,7 @@ export async function advanceFrontierRelease(platform: Platform, revision: strin
   deploymentStage("advance Frontier release");
   const secrets = platform.store.read<Secrets>("secrets.json");
   if (!secrets) throw new PublicError("Service credentials are missing; run setup with --apply before publishing");
-  const request: ApplyReleaseRequest = { release: readReleaseIdentity(platform.store, revision).release };
+  const request = await servedShard(platform, revision);
   const response = await fetch(`${platform.target.origin}/api/factory/release`, {
     method: "POST",
     redirect: "error",

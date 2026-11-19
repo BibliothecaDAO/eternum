@@ -5,6 +5,7 @@ import {
   readRegisteredShard,
   seaterLabels,
   serviceFailure,
+  type RegisteredShard,
 } from "@realms-world/value-ledger";
 import { DurableObject } from "cloudflare:workers";
 import { Effect, Layer, Semaphore } from "effect";
@@ -95,20 +96,20 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
     });
   }
 
-  applyRelease(release: ReleaseIdentity | null): Promise<ReleaseReport> {
+  applyRelease(release: ReleaseIdentity | null, shard: RegisteredShard | null): Promise<ReleaseReport> {
     return this.signingAlone(async () => {
       const env = decodeLaunchEnv(this.env);
-      const official = await officialChain(env.IDENTITY);
-      if (!official) return { shard: null };
+      if (!shard) return { shard: null };
       if (!release) throw new Error("release_unverified");
-      const chainId = official.chainId;
+      const chainId = shard.chainId;
+      const deployed = { shard: async () => shard };
       const store = new D1LaunchStore(env.DB, async () => chainId);
-      const herald = await readRegisteredShard(env.IDENTITY, chainId);
+      const herald = await readRegisteredShard(deployed, chainId);
       const launcher = new LaunchShard({
         rpcUrl: herald.rpcUrl,
         chainId: herald.chainId,
         gamesAddress: herald.contracts.games!,
-        accountAddress: await joinBotAccount(env, chainId, LAUNCHER_LABEL),
+        accountAddress: await joinBotAccount(env, deployed, chainId, LAUNCHER_LABEL),
         privateKey: env.LAUNCH_DEPLOYER_PRIVATE_KEY,
       });
       const games = await advanceGames(launcher, herald, release, await store.gameNames("madara.frontier"));
@@ -148,11 +149,11 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
     const freeze = await this.freezeClosedSlots(slots);
     let accountAddress: string;
     try {
-      accountAddress = await joinBotAccount(env, chainId, LAUNCHER_LABEL);
+      accountAddress = await joinBotAccount(env, env.IDENTITY, chainId, LAUNCHER_LABEL);
     } catch (error) {
       return { next: earliest(freeze, Date.now() + 30000), joinFailure: launcherJoinFailure(env, chainId, error) };
     }
-    const seaters = () => Promise.all(seaterLabels.map((label) => joinBotAccount(env, chainId, label)));
+    const seaters = () => Promise.all(seaterLabels.map((label) => joinBotAccount(env, env.IDENTITY, chainId, label)));
     const target = launchTargetOf(env, accountAddress, seaters);
     const services = Layer.mergeAll(databaseLayer(store), launchExecutorLayer(target, resolveSlot));
     await Effect.runPromise(processNextLaunch(Date.now()).pipe(Effect.provide(services)));

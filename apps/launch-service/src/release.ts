@@ -7,6 +7,7 @@
 
 import { nativeReleasePresets } from "../../../config/source/native";
 import type { ShardManifest } from "@bibliothecadao/eternum/game-sync";
+import type { RegisteredShard } from "@realms-world/value-ledger";
 
 /** What advancing reads and writes on the shard, as the launcher. */
 export interface ReleaseChain {
@@ -54,6 +55,7 @@ export interface ShardRelease {
  */
 export interface ApplyReleaseRequest {
   release: ReleaseIdentity | null;
+  shard: RegisteredShard | null;
 }
 
 export interface ReleaseReport {
@@ -71,6 +73,12 @@ export const RELEASE_REFUSALS = [
 ] as const;
 
 const isFelt = (value: unknown): value is string => typeof value === "string" && /^0x[0-9a-f]{1,64}$/i.test(value);
+
+export const isRegisteredShard = (value: unknown): value is RegisteredShard =>
+  typeof value === "object" &&
+  value !== null &&
+  typeof (value as RegisteredShard).chainId === "string" &&
+  typeof (value as RegisteredShard).url === "string";
 
 export const isReleaseIdentity = (value: unknown): value is ReleaseIdentity => {
   const release = value as Partial<ReleaseIdentity> | null;

@@ -1,6 +1,7 @@
 import { Effect, Layer } from "effect";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { Registrar } from "./registrar";
+import { LAUNCHER_LABEL } from "@realms-world/value-ledger";
 const mock = vi.hoisted(() => ({
   account: vi.fn(),
   process: vi.fn(),
@@ -201,6 +202,7 @@ const RELEASE_MANIFEST = {
   contracts: { games: "0x9" },
   releaseSchemas: { "1": RELEASE.schema, "2": RELEASE.schema },
 };
+const SHARD = { chainId: "0x1", url: "https://shard.test" };
 
 it("advances each running Frontier game as the joined launcher, then opens the release for new games", async () => {
   const f = setup();
@@ -208,7 +210,7 @@ it("advances each running Frontier game as the joined launcher, then opens the r
   mock.manifest.mockResolvedValue(RELEASE_MANIFEST);
   mock.launched.mockResolvedValue(["frontier-1"]);
   mock.pins.set(1, 1);
-  expect(await f.registrar.applyRelease(RELEASE)).toEqual({
+  expect(await f.registrar.applyRelease(RELEASE, SHARD)).toEqual({
     shard: {
       chainId: "0x1",
       releaseId: 2,
@@ -218,6 +220,10 @@ it("advances each running Frontier game as the joined launcher, then opens the r
   });
   expect(mock.open).toBe(2);
   expect(mock.pins.get(1)).toBe(2);
+  const [deployed, chain] = mock.manifest.mock.calls[0]!;
+  expect(chain).toBe("0x1");
+  expect(await deployed.shard()).toEqual(SHARD);
+  expect(mock.account).toHaveBeenCalledWith(expect.anything(), deployed, "0x1", LAUNCHER_LABEL);
   expect(mock.launched).toHaveBeenCalledWith("madara.frontier");
   expect(mock.shard).toHaveBeenCalledWith(
     expect.objectContaining({ accountAddress: "0x2", gamesAddress: "0x9", rpcUrl: "https://rpc.shard.test" }),
@@ -239,7 +245,7 @@ it("waits for a running launch before the launcher applies a release", async () 
   mock.pins.set(1, 1);
   const launching = f.registrar.alarm();
   await vi.waitFor(() => expect(mock.account).toHaveBeenCalledOnce());
-  const releasing = f.registrar.applyRelease(RELEASE);
+  const releasing = f.registrar.applyRelease(RELEASE, SHARD);
   await new Promise((resolve) => setTimeout(resolve, 10));
   expect(mock.shard).not.toHaveBeenCalled();
   finish("0x2");
@@ -254,20 +260,32 @@ it("refuses by name and sends nothing when the box half has not registered the r
   mock.manifest.mockResolvedValue(RELEASE_MANIFEST);
   mock.launched.mockResolvedValue(["frontier-1"]);
   mock.pins.set(1, 1);
-  await expect(f.registrar.applyRelease({ ...RELEASE, releaseId: 3 })).rejects.toThrow("release_not_registered");
+  await expect(f.registrar.applyRelease({ ...RELEASE, releaseId: 3 }, SHARD)).rejects.toThrow("release_not_registered");
   expect(mock.pins.get(1)).toBe(1);
   expect(mock.open).toBe(1);
 });
 
 it("refuses a release step without the commit's release while a shard is active, before joining the launcher", async () => {
   const f = setup();
-  await expect(f.registrar.applyRelease(null)).rejects.toThrow("release_unverified");
+  await expect(f.registrar.applyRelease(null, SHARD)).rejects.toThrow("release_unverified");
   expect(mock.account).not.toHaveBeenCalled();
   expect(mock.shard).not.toHaveBeenCalled();
 });
 
 it("answers no shard to a first deployment's release step, before any shard is active", async () => {
   const f = setup(null);
-  expect(await f.registrar.applyRelease(null)).toEqual({ shard: null });
+  expect(await f.registrar.applyRelease(null, null)).toEqual({ shard: null });
   expect(mock.account).not.toHaveBeenCalled();
+});
+
+it("refuses a release step whose shard is not the chain its Herald serves, before the launcher joins", async () => {
+  const f = setup();
+  const ledger = await vi.importActual<typeof import("@realms-world/value-ledger")>("@realms-world/value-ledger");
+  mock.manifest.mockImplementation(ledger.readRegisteredShard);
+  vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json({ ...RELEASE_MANIFEST, version: 1, chainId: "0x2" }));
+  mock.pins.set(1, 1);
+  await expect(f.registrar.applyRelease(RELEASE, SHARD)).rejects.toThrow("directory_manifest_chain_differs");
+  expect(mock.account).not.toHaveBeenCalled();
+  expect(mock.shard).not.toHaveBeenCalled();
+  expect(mock.pins.get(1)).toBe(1);
 });

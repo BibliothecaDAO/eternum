@@ -15,6 +15,7 @@ import {
   PRODUCTION_CHAIN,
 } from "./test-database";
 import type { ReleaseIdentity, ReleaseReport } from "./release";
+import type { RegisteredShard } from "@realms-world/value-ledger";
 
 const token = { authorization: "Bearer operator-test-token", "content-type": "application/json" };
 const session = { cookie: "session=valid", origin: "https://play.realms.party", "content-type": "application/json" };
@@ -34,7 +35,11 @@ const fixture = (chain = TEST_CHAIN) => {
   const armFor = vi.fn();
   const wakeAt = vi.fn(async (): Promise<number | null> => 0);
   const joinFailure = vi.fn(async (): Promise<import("./registrar").JoinFailure | null> => null);
-  const applyRelease = vi.fn(async (_release: ReleaseIdentity | null): Promise<ReleaseReport> => ({ shard: null }));
+  const applyRelease = vi.fn(
+    async (_release: ReleaseIdentity | null, _shard: RegisteredShard | null): Promise<ReleaseReport> => ({
+      shard: null,
+    }),
+  );
   const app = createLaunchApp({
     config: { operatorToken: "operator-test-token" },
     deployment: { environment: "staging", version: "test", revision: "abc1234" },
@@ -346,6 +351,7 @@ const RELEASE = {
   logic: { season: "0x55e0", troops: "0x77a2" },
   migration: "0x0",
 };
+const SHARD = { chainId: DEV_CHAIN, url: "https://herald.dev.test" };
 
 test("the release route hands the commit's release to the registrar and answers its report", async () => {
   const { app, applyRelease: registrar } = fixture();
@@ -358,16 +364,16 @@ test("the release route hands the commit's release to the registrar and answers 
     },
   };
   registrar.mockResolvedValueOnce(report);
-  const response = await applyRelease(app, { release: RELEASE });
+  const response = await applyRelease(app, { release: RELEASE, shard: SHARD });
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual(report);
-  expect(registrar).toHaveBeenCalledWith(RELEASE);
+  expect(registrar).toHaveBeenCalledWith(RELEASE, SHARD);
 });
 
-test("a deployment whose box never built sends no release, which only a shardless directory accepts", async () => {
+test("a deployment whose box never built sends no release and no shard", async () => {
   const { app, applyRelease: registrar } = fixture();
-  expect((await applyRelease(app, { release: null })).status).toBe(200);
-  expect(registrar).toHaveBeenCalledWith(null);
+  expect((await applyRelease(app, { release: null, shard: null })).status).toBe(200);
+  expect(registrar).toHaveBeenCalledWith(null, null);
 });
 
 test.each([
@@ -378,7 +384,9 @@ test.each([
   [{ release: { ...RELEASE, schema: "0x2fbd" } }],
   [{ release: { ...RELEASE, logic: {} } }],
   [{ release: { ...RELEASE, logic: { season: "season" } } }],
-  [{ release: { ...RELEASE, migration: undefined } }],
+  [{ release: { ...RELEASE, migration: undefined }, shard: SHARD }],
+  [{ release: RELEASE }],
+  [{ release: RELEASE, shard: { chainId: DEV_CHAIN } }],
 ])("the release route refuses %j before the registrar signs anything", async (body) => {
   const { app, applyRelease: registrar } = fixture();
   const response = await applyRelease(app, body);
@@ -397,7 +405,7 @@ test.each([
 ])("the release route names the refusal %s", async (code) => {
   const { app, applyRelease: registrar } = fixture();
   registrar.mockRejectedValueOnce(new Error(code));
-  const response = await applyRelease(app, { release: RELEASE });
+  const response = await applyRelease(app, { release: RELEASE, shard: SHARD });
   expect(response.status).toBe(409);
   expect(await response.json()).toEqual({ error: code });
 });
@@ -406,7 +414,7 @@ test("an unexpected release failure is reported without its detail", async () =>
   const { app, applyRelease: registrar } = fixture();
   vi.spyOn(console, "error").mockImplementation(() => {});
   registrar.mockRejectedValueOnce(new Error("rpc https://secret.test failed"));
-  const response = await applyRelease(app, { release: RELEASE });
+  const response = await applyRelease(app, { release: RELEASE, shard: SHARD });
   expect(response.status).toBe(503);
   expect(await response.json()).toEqual({ error: "release_apply_failed" });
 });

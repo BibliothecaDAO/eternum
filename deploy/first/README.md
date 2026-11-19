@@ -171,29 +171,43 @@ The Cloudflare command belongs to the credential holder. It first reads, over th
 its last build (`release.json` in the run directory): the release facts the init image baked. It takes them as this
 commit's release only when the record is the same release and `git diff` finds no change between the two commits in
 `RELEASE_SOURCES` (`deploy/first/release-identity.ts`: the world's contracts and Scarb path dependencies, the release
-id, and the image that compiles them); otherwise it asks for the box half at this commit first. It then exports HEAD to
-a temporary directory, installs locked dependencies, builds workspace packages, migrates D1 and publishes the launch
-Worker, then builds the client. It hands that release to the launch Worker, which advances the running Frontier games to
-it, signed by the launcher. The Worker resolves each Frontier launch's game by its name on the chain, whatever the
-launch's state, so a launch interrupted after creating its game is included. It refuses, by name and before sending
-anything, until the shard's registered release has those contents and Herald maps every release a game moves through to
-that schema, and it sends nothing for games already there. Registering a release in the box half does not change the
-release new games start on: this step then opens it, and every release staged before it, for new games (the launcher's
-`open_release`), so new games start on it in the same deploy that publishes the client reading its numbers. Only then
-does it publish the other Workers and the client: each reads only games that run the balance numbers it carries, so a
-refused release stops the deploy before any of them changes, and open clients built for the previous numbers stop and
-reload onto the new one. A game left on older numbers (a settled Frontier game, any Blitz game) is not readable by them
-after a tune. Each build reads games from `NATIVE_BALANCE_SINCE_RELEASE` (`deploy/release/native-release.ts`) to its own
-release; a commit that changes a balance number sets it to that commit's release. The box half records each release's
-balance identity when it registers it, and refuses a release whose earlier releases from that one on ran other numbers.
-Between the Workers and the client it names every chat room and inbox the identity Worker holds to that Worker, which
-has each delete its messages past thirty days and set its alarm for the rest, so chat stored before that rule existed
-keeps the same thirty days. It then builds the docs (`pnpm run build:docs`, the build validation runs) and publishes
-them to `docs.realms.party` (dev: `docs.dev-realms.party`). Each run uploads both sites' builds and checks each at its
-own address, byte for byte, before the command ends, so a rerun at the same commit proves what it published. It refuses
-to start until setup has created every resource, so a site new to the deployment reaches an existing environment through
-`setup --apply`. Neither deploy command has a dry run or performs funding or calendar operations. Production, when
-commissioned, builds its images on its own box from the same source commit.
+id, and the image that compiles them); otherwise it asks for the box half at this commit first. It also reads the chain
+the box prepared (`data/native-world.json`). It then exports HEAD to a temporary directory, installs locked dependencies
+and builds workspace packages. It then makes sure the directory lists the box's shard: it reads the box's public Herald
+`/manifest` (`public_herald_url` in `deploy/release/ENVIRONMENT.json`) and refuses before sending anything unless it
+serves the box's chain and maps this release to its schema, so a half-deployed box is never listed. It then asks the
+identity Worker, as the operator, which shard the directory lists (`GET /api/directory/shard`). When that is the box's
+chain at that Herald, nothing changes: a tune or a redeploy of the listed chain publishes identity with the other
+Workers, after the release step. Otherwise (a fresh chain, or an identity Worker from before the one-row directory,
+which answers 404) it migrates the identity D1, publishes the identity Worker and sends `PUT /api/directory/shard` with
+that URL, so the launcher's account can join on a listed chain. The identity Worker checks the manifest and account
+identity again and replaces the row; a rerun finds the row listed and sends nothing, and a run stopped earlier leaves
+the previous row. A box that has never built lists nothing. It then migrates D1 for and publishes the launch Worker,
+then builds the client. It hands that release and the box's shard to the launch Worker, which reads the shard's manifest
+from its Herald itself, refuses a shard whose Herald serves another chain, and advances the running Frontier games to
+it, signed by the launcher; this step asks the identity Worker for nothing. On the first deploy of the one-row
+directory, the previous launch Worker's cron, between the identity Worker's publish and its own, asks for the directory
+in the form that Worker no longer serves and fails: one tick, on a chain that has no game yet. The Worker resolves each
+Frontier launch's game by its name on the chain, whatever the launch's state, so a launch interrupted after creating its
+game is included. It refuses, by name and before sending anything, until the shard's registered release has those
+contents and Herald maps every release a game moves through to that schema, and it sends nothing for games already
+there. Registering a release in the box half does not change the release new games start on: this step then opens it,
+and every release staged before it, for new games (the launcher's `open_release`), so new games start on it in the same
+deploy that publishes the client reading its numbers. Only then does it publish the other Workers and the client: each
+reads only games that run the balance numbers it carries, so a refused release stops the deploy before any of them
+changes, and open clients built for the previous numbers stop and reload onto the new one. A game left on older numbers
+(a settled Frontier game, any Blitz game) is not readable by them after a tune. Each build reads games from
+`NATIVE_BALANCE_SINCE_RELEASE` (`deploy/release/native-release.ts`) to its own release; a commit that changes a balance
+number sets it to that commit's release. The box half records each release's balance identity when it registers it, and
+refuses a release whose earlier releases from that one on ran other numbers. Between the Workers and the client it names
+every chat room and inbox the identity Worker holds to that Worker, which has each delete its messages past thirty days
+and set its alarm for the rest, so chat stored before that rule existed keeps the same thirty days. It then builds the
+docs (`pnpm run build:docs`, the build validation runs) and publishes them to `docs.realms.party` (dev:
+`docs.dev-realms.party`). Each run uploads both sites' builds and checks each at its own address, byte for byte, before
+the command ends, so a rerun at the same commit proves what it published. It refuses to start until setup has created
+every resource, so a site new to the deployment reaches an existing environment through `setup --apply`. Neither deploy
+command has a dry run or performs funding or calendar operations. Production, when commissioned, builds its images on
+its own box from the same source commit.
 
 ## Tune rehearsal
 
