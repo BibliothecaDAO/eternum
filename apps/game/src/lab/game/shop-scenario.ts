@@ -7,6 +7,8 @@ import { armySpent, spireScenario } from "./spire-scenario";
 
 const FRAGMENTS_HELD = 1_500n;
 const STAMINA_LEFT = 20n;
+const FRAGMENTS_KEY = "0xf7a1";
+const SEAL_KEY = "0x5ea1";
 
 export const shopScenario = (): LabScenario => {
   const spire = spireScenario();
@@ -34,7 +36,7 @@ export const shopScenario = (): LabScenario => {
         },
       }),
     },
-    fragmentsHeld(store, spire.player, FRAGMENTS_HELD),
+    fragmentsHeld(spire.player, FRAGMENTS_HELD),
   ] as never);
   return {
     ...spire,
@@ -51,22 +53,22 @@ const staminaBought = (command: LabCommand, chain: NativeFactStore, player: stri
   const points = fragments * BigInt(nativeFragmentConstants.STAMINA_PER_FRAGMENT);
   return [
     armySpent(chain, BigInt(command.fields.explorer_id), -points, now),
-    fragmentsHeld(chain, player, heldBy(chain, player) - fragments),
+    fragmentsHeld(player, heldBy(chain, player) - fragments),
   ];
 };
 
 const sealBought = (chain: NativeFactStore, player: string, now: number): LabFact[] => {
   const seal = { game_id: 1, account: BigInt(player), granted_at: BigInt(now) };
   return [
-    { model: "Seal", key: chain.wireKeyOf("Seal", seal)!, value: wire(seal) },
-    fragmentsHeld(chain, player, heldBy(chain, player) - BigInt(nativeFragmentConstants.SEAL_FRAGMENTS)),
+    { model: "Seal", key: SEAL_KEY, value: wire(seal) },
+    fragmentsHeld(player, heldBy(chain, player) - BigInt(nativeFragmentConstants.SEAL_FRAGMENTS)),
   ];
 };
 
 const heldBy = (chain: NativeFactStore, player: string): bigint =>
   chain.require("Fragments", { game_id: 1, account: BigInt(player) }).balance;
 
-const fragmentsHeld = (store: NativeFactStore, player: string, balance: bigint): LabFact => {
+const fragmentsHeld = (player: string, balance: bigint): LabFact => {
   const row = { game_id: 1, account: BigInt(player), balance };
-  return { model: "Fragments", key: store.wireKeyOf("Fragments", row)!, value: wire(row) };
+  return { model: "Fragments", key: FRAGMENTS_KEY, value: wire(row) };
 };
