@@ -621,3 +621,8 @@ site's pay on its card, Anger lowers the attack's stamina on the site card and t
 at once and to its maximum, Enlightenment shortens the bar's Full in timer, and the Fox lowers a reveal's stamina on the
 dock. Native tests and the shared vectors `tests/fixtures/oath-prizes.txt` and `oath-stamina.txt` hold the contract and
 the client to the same numbers.
+
+The fight Oaths change the one forecast every attack surface reads (`forecastAttack`): Skill deals 30% more on the
+attack that leaves the bar under 10, Fury gives back half of an attack's cost when it beats its target, and Perfection
+pays 50% more on the site card when the forecast clears the last guard with under 15% lost.
+`tests/fixtures/oath-fight.txt` and the combat formula tests hold the contract and the client to the same rules.
