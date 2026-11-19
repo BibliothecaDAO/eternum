@@ -242,6 +242,50 @@ pub mod ResourcesLogic {
         ) {
             self.resources.settle_production(key, timestamp.try_into().unwrap(), game_context.production_start);
         }
+        fn assert_loot_available(
+            ref self: ContractState,
+            from: ResourceKey,
+            resources: Span<crate::resources::ResourceAmount>,
+            timestamp: u64,
+            game_context: crate::commands::ResourceContext,
+        ) {
+            if resources.is_empty() {
+                return;
+            }
+            self.resources.settle_production(from, timestamp.try_into().unwrap(), game_context.production_start);
+            for resource in resources {
+                assert!(
+                    crate::logic::resources::balance(from, *resource.resource_type) >= *resource.amount,
+                    "insufficient requested loot",
+                );
+            }
+        }
+        fn take_loot(
+            ref self: ContractState,
+            from: ResourceKey,
+            to: ResourceKey,
+            resources: Span<crate::resources::ResourceAmount>,
+            timestamp: u64,
+            game_context: crate::commands::ResourceContext,
+        ) {
+            for resource in resources {
+                let amount = *resource.amount;
+                if amount != 0 {
+                    let rule = crate::logic::resources::rule(from.game_id, *resource.resource_type);
+                    self.resources.spend(from, *resource.resource_type, amount, timestamp, game_context);
+                    self
+                        .resources
+                        .grant_resource(
+                            to,
+                            *resource.resource_type,
+                            amount,
+                            rule.unit_weight,
+                            timestamp.try_into().unwrap(),
+                            game_context.production_start,
+                        );
+                }
+            }
+        }
         fn change_structure_capacity(
             ref self: ContractState,
             key: ResourceKey,

@@ -270,7 +270,13 @@ pub fn battle(
     assert_battle_immunity(game_id, defender.owner, rules, context.timestamp, context);
     assert!(attacker.troops.count > 0 && defender.troops.count > 0, "dead combatant");
     assert_battle_range(game_id, attacker, defender);
-    assert_loot_available(game_id, command.defender_id, command.steal_resources, context);
+    resources_dispatcher(game_id)
+        .assert_loot_available(
+            ResourceKey { game_id, entity_id: command.defender_id },
+            command.steal_resources,
+            context.timestamp,
+            crate::commands::resource_context(context),
+        );
     let attacker_before = attacker.troops.count;
     let defender_before = defender.troops.count;
     record_target(attacker_key, command.defender_id, context);
@@ -285,15 +291,14 @@ pub fn battle(
     combat_troops(game_id)
         .finish_battle(attacker_key, attacker, attacker_before, crate::commands::action_context(context));
     if defender.troops.count == 0 && attacker.troops.count != 0 {
-        take_loot(
-            game_id,
-            command.defender_id,
-            command.attacker_id,
-            command.steal_resources,
-            false,
-            context.timestamp,
-            context,
-        );
+        resources_dispatcher(game_id)
+            .take_loot(
+                ResourceKey { game_id, entity_id: command.defender_id },
+                ResourceKey { game_id, entity_id: command.attacker_id },
+                command.steal_resources,
+                context.timestamp,
+                crate::commands::resource_context(context),
+            );
     }
     combat_troops(game_id)
         .finish_battle(defender_key, defender, defender_before, crate::commands::action_context(context));
@@ -396,56 +401,6 @@ fn assert_army_opponents(game_id: u32, attacker: ExplorerTroops, defender: Explo
     assert!(attacker_aspect != defender_aspect, "cannot attack an allied army");
 }
 
-fn assert_loot_available(
-    game_id: u32, from: u64, resources: Span<crate::resources::ResourceAmount>, context: ExecutionContext,
-) {
-    if resources.is_empty() {
-        return;
-    }
-    let key = ResourceKey { game_id, entity_id: from };
-    resources_dispatcher(game_id).settle_production(key, context.timestamp, crate::commands::resource_context(context));
-    for resource in resources {
-        assert!(
-            crate::logic::resources::balance(key, *resource.resource_type) >= *resource.amount,
-            "insufficient requested loot",
-        );
-    }
-}
-
-pub fn take_loot(
-    game_id: u32,
-    from: u64,
-    to: u64,
-    resources: Span<crate::resources::ResourceAmount>,
-    storable_only: bool,
-    timestamp: u64,
-    game_context: crate::commands::ExecutionContext,
-) {
-    let dispatcher = resources_dispatcher(game_id);
-    let from = ResourceKey { game_id, entity_id: from };
-    let to = ResourceKey { game_id, entity_id: to };
-    for resource in resources {
-        let mut amount = *resource.amount;
-        if storable_only {
-            let weight = crate::logic::resources::weight(to);
-            let unit = crate::logic::resources::rule(game_id, *resource.resource_type).unit_weight;
-            if unit != 0 && weight.capacity != 0xffffffffffffffffffffffffffffffff {
-                amount =
-                    core::cmp::min(amount, (weight.capacity - core::cmp::min(weight.capacity, weight.weight)) / unit);
-            }
-        }
-        if amount != 0 {
-            dispatcher
-                .spend_resource(
-                    from, *resource.resource_type, amount, timestamp, crate::commands::resource_context(game_context),
-                );
-            dispatcher
-                .grant_resource(
-                    to, *resource.resource_type, amount, timestamp, crate::commands::resource_context(game_context),
-                );
-        }
-    }
-}
 
 pub fn try_capture(
     explorer_key: ExplorerKey,

@@ -60,7 +60,11 @@ fn a_won_battle_moves_exactly_the_requested_loot_of_each_resource_onto_the_attac
     let loot = array![ResourceAmount { resource_type: 2, amount: 70 }, ResourceAmount { resource_type: 3, amount: 40 }]
         .span();
     assert!(
-        execute(d, Command::Battle(AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: loot }), 80),
+        execute(
+            d,
+            Command::Battle(AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: loot }),
+            80,
+        ),
     );
     assert!(troop(d, defender).is_none());
     assert_eq!(balance(d, attacker, 2), 75);

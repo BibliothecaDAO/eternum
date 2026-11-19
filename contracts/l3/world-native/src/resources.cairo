@@ -293,6 +293,21 @@ pub trait IResourceOperations<T> {
     );
     // Settles every producing store, as a change to its limits must first.
     fn settle_production(ref self: T, key: ResourceKey, timestamp: u64, game_context: crate::commands::ResourceContext);
+    fn assert_loot_available(
+        ref self: T,
+        from: ResourceKey,
+        resources: Span<ResourceAmount>,
+        timestamp: u64,
+        game_context: crate::commands::ResourceContext,
+    );
+    fn take_loot(
+        ref self: T,
+        from: ResourceKey,
+        to: ResourceKey,
+        resources: Span<ResourceAmount>,
+        timestamp: u64,
+        game_context: crate::commands::ResourceContext,
+    );
     fn change_structure_capacity(
         ref self: T,
         key: ResourceKey,
