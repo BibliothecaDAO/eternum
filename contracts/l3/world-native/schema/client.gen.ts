@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "c42be9bb1832cfbe6fe3dc59fb4b72c789f1fc4699fcc05192226963cee622e7";
+export const nativeFactSchemaIdentity = "5e4d0ed1c7634749730fe8404ca8552d9a411dddde0d0be0aae5ea0ae342d64d";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -122,7 +122,13 @@ export const nativeOathConstants = {
   "ANGER_ATTACK_STAMINA": 20,
   "TITANS_STAMINA": 60,
   "ENLIGHTENMENT_REGEN_BPS": 13334,
-  "FOX_REVEAL_DISCOUNT_PERCENT": 20
+  "FOX_REVEAL_DISCOUNT_PERCENT": 20,
+  "SKILL_DAMAGE_PERCENT": 30,
+  "SKILL_BAR_BELOW": 10,
+  "FURY_REFUND_PERCENT": 50,
+  "PERFECTION_PAY_PERCENT": 150,
+  "PERFECTION_LOSS_PERCENT": 15,
+  "DORMANT": 16
 } as const;
 export const nativeResearchConstants = {
   "ROW_FARM": 0,
