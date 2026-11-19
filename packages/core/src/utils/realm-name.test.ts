@@ -81,7 +81,9 @@ describe("Realm identity", () => {
       });
       const result = await advanceGames(
         {
-          currentRelease: async () => 4,
+          currentRelease: async () => 2,
+          releaseRegistered: async (releaseId) => releaseId <= 4,
+          openRelease: async () => "0x0",
           registeredRelease: async () => ({ logic, migration: "0x0" }),
           gameId: async (name) => (name === "running" ? 1 : 2),
           gameRelease: async (game_id) => store.require("GameRelease", { game_id }).release_id,

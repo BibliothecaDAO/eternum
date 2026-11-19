@@ -34,7 +34,9 @@ const fixture = (chain = TEST_CHAIN) => {
   const armFor = vi.fn();
   const wakeAt = vi.fn(async (): Promise<number | null> => 0);
   const joinFailure = vi.fn(async (): Promise<import("./registrar").JoinFailure | null> => null);
-  const applyRelease = vi.fn(async (_release: ReleaseIdentity | null): Promise<ReleaseReport> => ({ shards: [] }));
+  const applyRelease = vi.fn(
+    async (_release: ReleaseIdentity | null, _open: boolean): Promise<ReleaseReport> => ({ shards: [] }),
+  );
   const app = createLaunchApp({
     config: { operatorToken: "operator-test-token" },
     deployment: { environment: "staging", version: "test", revision: "abc1234" },
@@ -350,19 +352,26 @@ const RELEASE = {
 test("the release route hands the commit's release to the registrar and answers its report", async () => {
   const { app, applyRelease: registrar } = fixture();
   const report = {
-    shards: [{ chainId: DEV_CHAIN, releaseId: 2, games: [{ gameId: 1, from: 1, to: 2, transactions: ["0xa"] }] }],
+    shards: [
+      {
+        chainId: DEV_CHAIN,
+        releaseId: 2,
+        games: [{ gameId: 1, from: 1, to: 2, transactions: ["0xa"] }],
+        opened: ["0xb"],
+      },
+    ],
   };
   registrar.mockResolvedValueOnce(report);
-  const response = await applyRelease(app, { release: RELEASE });
+  const response = await applyRelease(app, { release: RELEASE, open: true });
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual(report);
-  expect(registrar).toHaveBeenCalledWith(RELEASE);
+  expect(registrar).toHaveBeenCalledWith(RELEASE, true);
 });
 
 test("a deployment whose box never built sends no release, which only a shardless directory accepts", async () => {
   const { app, applyRelease: registrar } = fixture();
-  expect((await applyRelease(app, { release: null })).status).toBe(200);
-  expect(registrar).toHaveBeenCalledWith(null);
+  expect((await applyRelease(app, { release: null, open: false })).status).toBe(200);
+  expect(registrar).toHaveBeenCalledWith(null, false);
 });
 
 test.each([
@@ -373,7 +382,9 @@ test.each([
   [{ release: { ...RELEASE, schema: "0x2fbd" } }],
   [{ release: { ...RELEASE, logic: {} } }],
   [{ release: { ...RELEASE, logic: { season: "season" } } }],
-  [{ release: { ...RELEASE, migration: undefined } }],
+  [{ release: { ...RELEASE, migration: undefined }, open: false }],
+  [{ release: RELEASE }],
+  [{ release: RELEASE, open: "yes" }],
 ])("the release route refuses %j before the registrar signs anything", async (body) => {
   const { app, applyRelease: registrar } = fixture();
   const response = await applyRelease(app, body);
@@ -392,7 +403,7 @@ test.each([
 ])("the release route names the refusal %s", async (code) => {
   const { app, applyRelease: registrar } = fixture();
   registrar.mockRejectedValueOnce(new Error(code));
-  const response = await applyRelease(app, { release: RELEASE });
+  const response = await applyRelease(app, { release: RELEASE, open: false });
   expect(response.status).toBe(409);
   expect(await response.json()).toEqual({ error: code });
 });
@@ -401,7 +412,7 @@ test("an unexpected release failure is reported without its detail", async () =>
   const { app, applyRelease: registrar } = fixture();
   vi.spyOn(console, "error").mockImplementation(() => {});
   registrar.mockRejectedValueOnce(new Error("rpc https://secret.test failed"));
-  const response = await applyRelease(app, { release: RELEASE });
+  const response = await applyRelease(app, { release: RELEASE, open: false });
   expect(response.status).toBe(503);
   expect(await response.json()).toEqual({ error: "release_apply_failed" });
 });

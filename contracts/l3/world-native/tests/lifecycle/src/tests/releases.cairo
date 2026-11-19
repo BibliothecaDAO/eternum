@@ -33,7 +33,7 @@ fn fresh_shard_uses_the_published_release_without_running_its_upgrade_migration(
 
 #[test]
 #[feature("safe_dispatcher")]
-fn release_registration_is_authorized_immutable_and_pins_only_new_games() {
+fn a_registered_release_reaches_new_games_only_once_the_launcher_opens_it() {
     let d = super::registrar::setup();
     let releases = IReleasesDispatcher { contract_address: d.games };
     let safe = IReleasesSafeDispatcher { contract_address: d.games };
@@ -56,16 +56,29 @@ fn release_registration_is_authorized_immutable_and_pins_only_new_games() {
         ..original,
     };
     assert!(safe.register_release(2, missing_movement).is_err());
+    assert!(!releases.release_registered(2));
     releases.register_release(2, next);
+    assert!(releases.release_registered(2));
+    assert_eq!(releases.current_release(), 1);
+    let staged = registrar.create_game(CreateGameParams { name: 'staged-release', ..params });
+    assert_eq!(releases.game_release(staged), 1);
+    assert!(safe.open_release(3).is_err());
+    start_cheat_caller_address(d.games, d.actor);
+    assert!(safe.open_release(2).is_err());
+    start_cheat_caller_address(d.games, authority());
+    releases.open_release(2);
     assert_eq!(releases.current_release(), 2);
     assert_eq!(releases.game_release(first), 1);
+    assert_eq!(releases.game_release(staged), 1);
     assert_eq!(registrar.create_game(params), first);
     let second = registrar.create_game(CreateGameParams { name: 'new-release', ..params });
     assert_eq!(releases.game_release(second), 2);
     let mut events = spy_events();
     releases.register_release(2, next);
     releases.register_release(1, original);
+    releases.open_release(2);
     assert_eq!(releases.current_release(), 2);
+    assert!(safe.open_release(1).is_err());
     assert!(events.get_events().emitted_by(d.games).events.is_empty());
     let error = safe.register_release(2, original).unwrap_err();
     let mut expected = array![core::byte_array::BYTE_ARRAY_MAGIC];
@@ -272,11 +285,13 @@ fn creation_release_survives_hotfixes_and_retried_launches() {
     registrar.register_preset(1, preset);
     let logic = releases.release(1);
     releases.register_release(2, logic);
+    releases.open_release(2);
     let existing = registrar.create_game(params);
     let legacy = registrar.create_game(CreateGameParams { name: 'before-origin', ..params });
     // Simulate a game created before this storage field existed.
     interact_with_state(d.games, || crate::state::write().game_creation_releases.write(legacy, 0));
     releases.register_release(3, logic);
+    releases.open_release(3);
     let next = registrar.create_game(CreateGameParams { name: 'next-season', ..params });
     releases.apply_release(existing, 3);
     releases.apply_release(legacy, 3);
@@ -332,6 +347,8 @@ fn village_pass_registration_keeps_its_owner_in_the_games_pinned_release() {
                 ..original,
             },
         );
+    releases.open_release(2);
+    releases.open_release(3);
     let key = crate::village::VillagePassKey { game_id, pass_id: 1 };
     crate::village::IVillagePassesDispatcherTrait::register_village_pass(
         crate::village::IVillagePassesDispatcher { contract_address: d.games }, key, d.actor,

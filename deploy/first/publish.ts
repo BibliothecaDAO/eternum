@@ -49,11 +49,11 @@ export async function deployWorkers(platform: Platform, revision: string, select
 const releaseWorkers = workers.filter((worker) => worker.id === "launch");
 const gameReaderWorkers = workers.filter((worker) => worker.id !== "launch");
 
-export async function publishCloudflare(platform: Platform, revision: string) {
+export async function publishCloudflare(platform: Platform, revision: string, openRelease: boolean) {
   await buildPackages(platform);
   await deployWorkers(platform, revision, releaseWorkers);
   await buildClient(platform, revision);
-  await advanceFrontierRelease(platform, revision);
+  await advanceFrontierRelease(platform, revision, openRelease);
   await deployWorkers(platform, revision, gameReaderWorkers);
   await keepChatRetention(platform);
   await publishClient(platform, revision);
@@ -108,12 +108,12 @@ const RELEASE_REFUSALS: Record<string, string> = {
  * live: the launch Worker applies it as the launcher. It refuses until the shard has registered exactly that release
  * and Herald publishes it with the commit's schema; a rerun sends nothing.
  */
-export async function advanceFrontierRelease(platform: Platform, revision: string) {
+export async function advanceFrontierRelease(platform: Platform, revision: string, open: boolean) {
   if (!platform.apply) throw new PublicError("Dry run cannot advance a release");
   deploymentStage("advance Frontier release");
   const secrets = platform.store.read<Secrets>("secrets.json");
   if (!secrets) throw new PublicError("Service credentials are missing; run setup with --apply before publishing");
-  const request: ApplyReleaseRequest = { release: readReleaseIdentity(platform.store, revision) };
+  const request: ApplyReleaseRequest = { release: readReleaseIdentity(platform.store, revision), open };
   const response = await fetch(`${platform.target.origin}/api/factory/release`, {
     method: "POST",
     redirect: "error",
@@ -131,9 +131,11 @@ export async function advanceFrontierRelease(platform: Platform, revision: strin
     throw new PublicError(`Release ${NATIVE_RELEASE_ID}: ${RELEASE_REFUSALS[code] ?? code}.`, response.status, code);
   }
   platform.store.write("release-advance.json", body);
-  for (const { chainId, games } of body.shards)
+  for (const { chainId, games, opened } of body.shards) {
     for (const { gameId, from, to } of games)
       console.log(`Frontier game ${gameId} on ${chainId}: release ${from} → ${to}.`);
+    if (opened.length) console.log(`New games on ${chainId} start on release ${NATIVE_RELEASE_ID}.`);
+  }
 }
 
 export function clientEnvironment(platform: Platform, revision: string) {

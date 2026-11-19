@@ -323,9 +323,11 @@ const shardWithGameTen = (gamesClass: unknown[], release: string[]) => {
   rpc.contract.mockImplementation(async (classHash: string) => ({
     abi: BigInt(classHash) === BigInt(PRIZES_LOGIC) ? prizesLogicAbi() : gamesClass,
   }));
-  rpc.call.mockImplementation(async ({ entrypoint }: { entrypoint: string }) =>
-    entrypoint === "current_release" ? ["0x1"] : release,
-  );
+  rpc.call.mockImplementation(async ({ entrypoint, calldata }: { entrypoint: string; calldata: string[] }) => {
+    if (entrypoint === "current_release") return ["0x1"];
+    if (entrypoint === "release_registered") return [calldata[0] === "1" ? "0x1" : "0x0"];
+    return release;
+  });
   rpc.events.mockImplementation(async ({ keys }: { keys: string[][] }) => ({
     events: keys.every(
       (allowed, index) =>
@@ -390,12 +392,13 @@ it("reads a fresh chain from the release it began at, never asking for releases 
   const asked: string[] = [];
   rpc.call.mockImplementation(async ({ entrypoint, calldata }: { entrypoint: string; calldata: string[] }) => {
     if (entrypoint === "current_release") return ["0x5"];
+    if (entrypoint === "release_registered") return [calldata[0] === "5" || calldata[0] === "6" ? "0x1" : "0x0"];
     asked.push(calldata[0]!);
     if (BigInt(calldata[0]!) < 5n) throw new Error("unknown release");
     return [...Array(17).fill(PRIZES_LOGIC), "0x0"];
   });
   expect(await resultsAtBlockTen(5)).toEqual(GAME_TEN);
-  expect(new Set(asked)).toEqual(new Set(["5"]));
+  expect(new Set(asked)).toEqual(new Set(["5", "6"]));
 });
 
 it("refuses a chain whose current release is older than the first its manifest names", async () => {
@@ -468,9 +471,11 @@ it("pays a withdrawal the relics logic emits under its own event enum, read from
           ]
         : [...abi, ...gamesAbi],
   }));
-  rpc.call.mockImplementation(async ({ entrypoint }: { entrypoint: string }) =>
-    entrypoint === "current_release" ? ["0x1"] : [...Array(17).fill(RELICS_LOGIC), "0x0"],
-  );
+  rpc.call.mockImplementation(async ({ entrypoint, calldata }: { entrypoint: string; calldata: string[] }) => {
+    if (entrypoint === "current_release") return ["0x1"];
+    if (entrypoint === "release_registered") return [calldata[0] === "1" ? "0x1" : "0x0"];
+    return [...Array(17).fill(RELICS_LOGIC), "0x0"];
+  });
   const withdrawal = await Effect.runPromise(fixture().ports.withdrawal("0x1", "0xabc"));
   expect(withdrawal).toEqual({
     prizeRank: 0,

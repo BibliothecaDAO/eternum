@@ -28,7 +28,7 @@ interface LaunchAppDependencies {
     armFor(dueAt: number): Promise<void>;
     joinFailure(): Promise<JoinFailure | null>;
     wakeAt(): Promise<number | null>;
-    applyRelease(release: ReleaseIdentity | null): Promise<ReleaseReport>;
+    applyRelease(release: ReleaseIdentity | null, open: boolean): Promise<ReleaseReport>;
   };
 }
 
@@ -201,11 +201,13 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   // build baked it, before its client goes live. A refusal names its reason; a rerun on games already there sends
   // nothing.
   app.post("/api/factory/release", async (context) => {
-    const body = (await context.req.json().catch(() => null)) as { release?: unknown } | null;
+    const body = (await context.req.json().catch(() => null)) as { release?: unknown; open?: unknown } | null;
     const release = body?.release;
-    if (release !== null && !isReleaseIdentity(release)) return context.json({ error: "invalid_release" }, 400);
+    const open = body?.open;
+    if ((release !== null && !isReleaseIdentity(release)) || typeof open !== "boolean")
+      return context.json({ error: "invalid_release" }, 400);
     try {
-      return context.json(await dependencies.registrar.applyRelease(release));
+      return context.json(await dependencies.registrar.applyRelease(release, open));
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
       if ((RELEASE_REFUSALS as readonly string[]).includes(message)) return context.json({ error: message }, 409);

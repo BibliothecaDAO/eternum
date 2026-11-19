@@ -52,7 +52,6 @@ function fixture() {
     bound: local.l2GasBound,
     releases: new Map([[1, { classes: structuredClone(local.release.classes.logic), migration: "0x0" }]]),
     gamesClassHash: "0x123",
-    releaseId: 1,
     gamePins: new Map([
       [7, 1],
       [8, 1],
@@ -78,7 +77,7 @@ function fixture() {
       if (entrypoint === "ledger_operator") return [state.ledger];
       if (entrypoint === "vrf_public_key") return [state.key.x, state.key.y];
       if (entrypoint === "l2_gas_bound") return [state.bound];
-      if (entrypoint === "current_release") return [String(state.releaseId)];
+      if (entrypoint === "release_registered") return [state.releases.has(Number(calldata[0])) ? "0x1" : "0x0"];
       if (entrypoint === "release") {
         const release = state.releases.get(Number(calldata[0]));
         if (!release) throw new Error("unknown release");
@@ -104,7 +103,6 @@ function fixture() {
           ),
           migration: calldata[Object.keys(schemaJson.logicClasses).length + 1],
         });
-        state.releaseId = id;
       } else if (entrypoint === "set_launcher") {
         state.launcher = calldata[0]!;
       } else if (entrypoint === "set_ledger_operator") {
@@ -358,7 +356,19 @@ describe("native deployment planning", () => {
       "NATIVE_MIGRATION_NOT_DECLARED",
     );
     expect(state.operations).toEqual([]);
-    expect(state.releaseId).toBe(1);
+    expect(state.releases.has(2)).toBe(false);
+  });
+
+  test("a release older than one the shard registered, opened or not, and a skipped release are blocked", async () => {
+    const { local, rpc, state } = fixture();
+    state.releases.set(2, structuredClone(state.releases.get(1)!));
+    expect((await inspectNativeWorld(local, rpc as unknown as RpcProvider)).blockers).toContain(
+      "Cannot redeploy an older release over a newer registered release",
+    );
+    local.release.releaseId = 4;
+    expect((await inspectNativeWorld(local, rpc as unknown as RpcProvider)).blockers).toContain(
+      "Release must follow the latest registered release",
+    );
   });
 
   test("the migration artifact is declared before its release is registered", async () => {

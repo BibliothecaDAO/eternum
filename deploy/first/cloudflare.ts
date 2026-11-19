@@ -37,7 +37,14 @@ export async function requireCloudflareResources(platform: Platform) {
     throw new PublicError("Cloudflare resources are missing; run setup with --apply before publishing Cloudflare");
 }
 
-async function publish(environment: string | undefined, directory: string | undefined, revision: string | undefined) {
+const USAGE = "Usage: pnpm run deploy:cloudflare <dev|production> /absolute/private-directory [--open-release]";
+
+async function publish(
+  environment: string | undefined,
+  directory: string | undefined,
+  revision: string | undefined,
+  openRelease: boolean,
+) {
   const target = deploymentEnvironment(environment);
   deploymentStage("publish Cloudflare");
   if (!directory || !revision || !/^[0-9a-f]{40}$/.test(revision))
@@ -51,7 +58,7 @@ async function publish(environment: string | undefined, directory: string | unde
   try {
     console.log(`Cloudflare deployment commit ${revision}.`);
     await requireCloudflareResources(platform);
-    await publishCloudflare(platform, revision);
+    await publishCloudflare(platform, revision, openRelease);
   } finally {
     unlock();
   }
@@ -59,15 +66,14 @@ async function publish(environment: string | undefined, directory: string | unde
 
 async function main() {
   const [environment, directory, ...extra] = process.argv.slice(2);
-  if (extra.length)
-    throw new PublicError("Usage: pnpm run deploy:cloudflare <dev|production> /absolute/private-directory");
+  const openRelease = extra.length === 1 && extra[0] === "--open-release";
+  if (extra.length && !openRelease) throw new PublicError(USAGE);
   const target = deploymentEnvironment(environment);
   deploymentStage("publish Cloudflare");
-  if (!directory)
-    throw new PublicError("Usage: pnpm run deploy:cloudflare <dev|production> /absolute/private-directory");
+  if (!directory) throw new PublicError(USAGE);
   const { store } = setUpDirectory(directory);
   const commit = await deploymentRevision(target);
-  if (archivedRevision()) return publish(target, directory, commit);
+  if (archivedRevision()) return publish(target, directory, commit, openRelease);
   deploymentStage("read the box's release");
   const { recordReleaseIdentity } = await import("./release-identity");
   await recordReleaseIdentity(store, environments[target], commit);
@@ -77,7 +83,7 @@ async function main() {
     await command({ argv: ["git", "archive", "--format=tar", "--output", join(exported, "source.tar"), commit] });
     await command({ argv: ["tar", "-xf", "source.tar"], cwd: exported });
     await command({ argv: ["pnpm", "install", "--frozen-lockfile", "--ignore-scripts"], cwd: exported });
-    const child = Bun.spawn(["bun", "--no-env-file", "deploy/first/cloudflare.ts", target, directory], {
+    const child = Bun.spawn(["bun", "--no-env-file", "deploy/first/cloudflare.ts", target, directory, ...extra], {
       cwd: exported,
       stdin: "ignore",
       stdout: "inherit",

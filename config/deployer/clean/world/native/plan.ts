@@ -87,14 +87,20 @@ async function inspectRelease(
   block: number,
   blockers: string[],
 ): Promise<boolean> {
-  const current = await provider.callContract(
-    { contractAddress: local.games.address, entrypoint: "current_release", calldata: [] },
-    block,
-  );
-  const currentId = Number(BigInt(current[0]));
-  if (local.release.releaseId < currentId) blockers.push("Cannot redeploy an older release over the current release");
-  if (local.release.releaseId > currentId) {
-    if (local.release.releaseId !== currentId + 1) blockers.push("Release must follow the current registered release");
+  const isRegistered = async (releaseId: number) =>
+    BigInt(
+      (
+        await provider.callContract(
+          { contractAddress: local.games.address, entrypoint: "release_registered", calldata: [String(releaseId)] },
+          block,
+        )
+      )[0]!,
+    ) === 1n;
+  const releaseId = local.release.releaseId;
+  if (await isRegistered(releaseId + 1))
+    blockers.push("Cannot redeploy an older release over a newer registered release");
+  if (!(await isRegistered(releaseId))) {
+    if (!(await isRegistered(releaseId - 1))) blockers.push("Release must follow the latest registered release");
     return false;
   }
   const raw = await provider.callContract(

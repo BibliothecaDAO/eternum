@@ -1282,6 +1282,7 @@ fn retirement_preserves_an_existing_games_pin_and_idempotent_launch() {
     let original = releases.release(1);
     start_cheat_caller_address(d.games, super::authority());
     releases.register_release(2, original);
+    releases.open_release(2);
     stop_cheat_caller_address(d.games);
     assert_eq!(releases.current_release(), 2);
     assert_eq!(releases.game_release(game_id), 1);

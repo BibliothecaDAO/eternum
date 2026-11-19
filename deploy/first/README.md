@@ -176,7 +176,10 @@ Worker, then builds the client. It hands that release to the launch Worker, whic
 it, signed by the launcher. The Worker resolves each Frontier launch's game by its name on the chain, whatever the
 launch's state, so a launch interrupted after creating its game is included. It refuses, by name and before sending
 anything, until the shard's registered release has those contents and Herald maps every release a game moves through to
-that schema, and it sends nothing for games already there. Only then does it publish the other Workers and the client:
+that schema, and it sends nothing for games already there. Registering a release does not change the release new games
+start on: with `--open-release` the Worker then opens it, and every release staged before it, for new games (the
+launcher's `open_release`); without it, new games keep the release already open, so a tune can reach the running games
+first. Only then does it publish the other Workers and the client:
 each reads only games that run the balance numbers it carries, so a refused release stops the deploy before any of them
 changes, and open clients built for the previous numbers stop and reload onto the new one. A game left on older numbers
 (a settled Frontier game, any Blitz game) is not readable by them after a tune. Each build reads games from

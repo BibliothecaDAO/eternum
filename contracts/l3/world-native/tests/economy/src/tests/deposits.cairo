@@ -215,6 +215,7 @@ fn mixed_sweep_keeps_both_balances_game_pinned_until_applied() {
                 ..original,
             },
         );
+    releases.open_release(2);
     assert_eq!(releases.current_release(), 2);
     assert_eq!(releases.game_release(game_id), 1);
     assert_eq!(releases.release(2).classes.bridge, original.classes.bridge);
@@ -344,6 +345,7 @@ fn automatic_returns_keep_the_games_bridge_until_its_release_is_applied() {
                 ..original,
             },
         );
+    releases.open_release(2);
     assert_eq!(releases.current_release(), 2);
     assert_eq!(releases.game_release(game_id), 1);
     let entry = ILedgerOperatorSafeDispatcher { contract_address: d.games };

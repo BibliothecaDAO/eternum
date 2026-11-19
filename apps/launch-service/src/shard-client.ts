@@ -71,6 +71,9 @@ export class LaunchShard extends ShardOperator implements ReleaseChain {
   async currentRelease() {
     return Number(await this.view<bigint>("current_release", []));
   }
+  releaseRegistered(releaseId: number) {
+    return this.view<boolean>("release_registered", [releaseId]);
+  }
   async registeredRelease(releaseId: number) {
     const release = await this.view<{ classes: Record<string, bigint>; migration: bigint }>("release", [releaseId]);
     const hex = (value: bigint) => `0x${value.toString(16)}`;
@@ -84,6 +87,9 @@ export class LaunchShard extends ShardOperator implements ReleaseChain {
   }
   async applyRelease(gameId: number, releaseId: number) {
     return (await this.admin("apply_release", { game_id: gameId, release_id: releaseId })).transactionHash;
+  }
+  async openRelease(releaseId: number) {
+    return (await this.admin("open_release", { release_id: releaseId })).transactionHash;
   }
   /** Creates one open-entry game; a fixed roster launches with its whole slot through `launchBlitz`. */
   async create(request: CreateGameRequest, createdAt: number): Promise<LaunchGameSummary> {
