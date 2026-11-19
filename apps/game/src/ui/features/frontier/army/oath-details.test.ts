@@ -18,9 +18,9 @@ it("explains the implemented Deep loss on both Oath surfaces", () => {
   expect(oathEffectDescription(oaths.ENLIGHTENMENT)).toBe("Regains 33% more stamina each hour.");
   expect(oathEffectDescription(oaths.FOX)).toBe("A reveal costs 20% less stamina.");
   expect(oathEffectDescription(oaths.SKILL)).toBe("Deals 30% more on the attack that leaves its stamina under 10.");
-  expect(oathEffectDescription(oaths.FURY)).toBe("An attack that beats its target gives back 50% of the stamina it cost.");
-  expect(oathEffectDescription(oaths.PERFECTION)).toBe(
-    "A guard beaten with under 15% of the army lost pays 50% more.",
+  expect(oathEffectDescription(oaths.FURY)).toBe(
+    "An attack that beats its target gives back 50% of the stamina it cost.",
   );
+  expect(oathEffectDescription(oaths.PERFECTION)).toBe("A guard beaten with under 15% of the army lost pays 50% more.");
   expect(oathEffectDescription(oaths.TWINS)).toBeUndefined();
 });

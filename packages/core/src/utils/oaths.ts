@@ -97,7 +97,9 @@ export function isCleanWin(before: bigint, after: bigint): boolean {
 
 export function oathSitePay(oaths: number, amount: bigint, clean: boolean): bigint {
   const raged = holds(oaths, oathRules.RAGE) ? (amount * BigInt(oathRules.RAGE_PAY_PERCENT)) / 100n : amount;
-  return clean && holds(oaths, oathRules.PERFECTION) ? (raged * BigInt(oathRules.PERFECTION_PAY_PERCENT)) / 100n : raged;
+  return clean && holds(oaths, oathRules.PERFECTION)
+    ? (raged * BigInt(oathRules.PERFECTION_PAY_PERCENT)) / 100n
+    : raged;
 }
 
 export function armyOaths(store: NativeFactStore, key: { game_id: number; explorer_id: bigint | number }): number {

@@ -25,7 +25,8 @@ export function oathEffectDescription(id: number): string | undefined {
   if (id === oaths.FOX) return `A reveal costs ${oaths.FOX_REVEAL_DISCOUNT_PERCENT}% less stamina.`;
   if (id === oaths.SKILL)
     return `Deals ${oaths.SKILL_DAMAGE_PERCENT}% more on the attack that leaves its stamina under ${oaths.SKILL_BAR_BELOW}.`;
-  if (id === oaths.FURY) return `An attack that beats its target gives back ${oaths.FURY_REFUND_PERCENT}% of the stamina it cost.`;
+  if (id === oaths.FURY)
+    return `An attack that beats its target gives back ${oaths.FURY_REFUND_PERCENT}% of the stamina it cost.`;
   if (id === oaths.PERFECTION)
     return `A guard beaten with under ${oaths.PERFECTION_LOSS_PERCENT}% of the army lost pays ${oaths.PERFECTION_PAY_PERCENT - 100}% more.`;
   return undefined;
