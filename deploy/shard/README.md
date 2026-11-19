@@ -49,12 +49,12 @@ credentials remain owner-only with mode `0600`.
 
 ## Endpoints and readiness
 
-Official bootstrap requires the Herald HTTPS hostname to be publicly reachable: deployment waits for its
-`/manifest`, and the identity Worker reads it again when the shard is listed. Forward HTTPS hostnames to loopback 8080
-(RPC) and 8081 (Herald). `RPC_PORT`, `HERALD_PORT` and `BIND_ADDRESS` change bindings. The public RPC admits one signed
-Games.play call, the data-listed role-guarded administrative entries and existing Realms account-management calls. Play
-receives a VRF proof inside the proxy; proof bodies are never served. Simulations and fee estimates are never stamped.
-The node's write RPC is internal, not exposed through another port.
+Official bootstrap requires the Herald HTTPS hostname to be publicly reachable: deployment waits for its `/manifest`,
+and the identity Worker reads it again when the shard is listed. Forward HTTPS hostnames to loopback 8080 (RPC) and 8081
+(Herald). `RPC_PORT`, `HERALD_PORT` and `BIND_ADDRESS` change bindings. The public RPC admits one signed Games.play
+call, the data-listed role-guarded administrative entries and existing Realms account-management calls. Play receives a
+VRF proof inside the proxy; proof bodies are never served. Simulations and fee estimates are never stamped. The node's
+write RPC is internal, not exposed through another port.
 
 Behind a tunnel, set TRUSTED_PROXY to its actual socket peer. With loopback bindings initialization derives that peer
 from the Compose network route; exposed bindings trust no proxy unless explicitly configured.
