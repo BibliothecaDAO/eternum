@@ -1,6 +1,7 @@
 use snforge_std::fs::{FileTrait, read_txt};
 use snforge_std::{EventSpyTrait, EventsFilterTrait};
 use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
+use crate::guards::IGuardsDispatcherTrait;
 use crate::oaths::{ChooseOath, card, draw, held};
 use crate::stamina::{StaminaSourceTrait, StaminaTrait};
 use crate::troops::{ExplorerRecordTrait, StaminaSource};
@@ -19,7 +20,6 @@ fn every_draw_offers_three_distinct_oaths_the_army_does_not_hold_and_fewer_only_
             assert_eq!(offered.len(), 3);
             for oath in offered {
                 assert!(!held(oaths, *oath));
-                assert!(!held(crate::oaths::DORMANT, *oath));
             }
         }
     }
@@ -32,17 +32,15 @@ fn every_draw_offers_three_distinct_oaths_the_army_does_not_hold_and_fewer_only_
             assert!(*oath == crate::oaths::SKILL || *oath == crate::oaths::FOX);
         }
     }
-    assert_eq!(draw(65535, 1), 0);
 }
 
 #[test]
-fn a_dormant_oath_is_never_offered_so_the_last_drawable_one_comes_alone() {
-    assert_eq!(crate::oaths::DORMANT, crate::oaths::bit(crate::oaths::TWINS));
-    let all_but_skill = 65535 ^ crate::oaths::DORMANT ^ crate::oaths::bit(crate::oaths::SKILL);
+fn the_last_drawable_oath_comes_alone_and_none_left_opens_no_pick() {
+    let all_but_skill = 65535 ^ crate::oaths::bit(crate::oaths::SKILL);
     for seed in 0_u64..16 {
         assert_eq!(cards(draw(all_but_skill, seed.into())), array![crate::oaths::SKILL].span());
     }
-    assert_eq!(draw(65535 ^ crate::oaths::DORMANT, 1), 0);
+    assert_eq!(draw(65535, 1), 0);
 }
 
 #[test]
@@ -633,6 +631,73 @@ fn detection_finds_a_camp_brilliance_raises_its_reveal_pay_and_rage_and_perfecti
             Some(crate::resources::ResourceAmount { resource_type: crate::resources::LABOR, amount: clear }),
         );
     }
+}
+
+#[test]
+fn the_twins_add_a_share_of_the_adjacent_own_army_damage_and_a_one_troop_twin_adds_nothing() {
+    let discovery = crate::expeditions::FrontierDiscoveryRules {
+        camp_bps: 5000, rift_bps: 0, ruin_bps: 0, beasts_bps: 0, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
+    };
+    let detection = crate::oaths::bit(crate::oaths::DETECTION);
+    let twins = detection | crate::oaths::bit(crate::oaths::TWINS);
+    let precision = crate::rules::RESOURCE_PRECISION;
+    let mut left: Array<u128> = array![];
+    for (oaths, twin_troops) in array![(detection, 300_u128), (twins, 300), (twins, 1)] {
+        let (d, game_id, key) = super::registrar::setup_frontier_relics_with_rules(Some(discovery));
+        let mut army = super::registrar::strong_frontier_army(d, game_id, key);
+        army.troops.count = 300 * precision;
+        army.troops.stamina = crate::troops::Stamina { amount: 100, settled_at: 360, remainder: 0 }.into();
+        super::resource_commands::set_explorer_fixture(d.games, key, army);
+        snforge_std::interact_with_state(
+            d.games,
+            || {
+                let mut progress = crate::logic::progression::require(key);
+                progress.oaths = oaths;
+                crate::logic::progression::write(key, progress);
+            },
+        );
+        assert!(
+            super::registrar::explore_with_root(
+                d, game_id, key.explorer_id, only_detection_finds(game_id, discovery), 360,
+            ),
+        );
+        let camp_tile = crate::geometry::tile_key(game_id, crate::geometry::neighbor(army.coord, 0));
+        let camp = snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(camp_tile))
+            .unwrap()
+            .entity_id;
+        let guard = crate::guards::Guard {
+            troops: crate::troops::Troops { count: 1000 * precision, ..army.troops }, destroyed_tick: 0,
+        };
+        snforge_std::interact_with_state(
+            d.games,
+            || crate::logic::guards::GuardState::save(
+                crate::guards::GuardKey { game_id, structure_id: camp, slot: 0 }, guard,
+            ),
+        );
+        let twin_key = crate::troops::ExplorerKey { game_id, explorer_id: 9999 };
+        let twin = crate::troops::ExplorerTroops {
+            coord: crate::geometry::neighbor(army.coord, 3),
+            troops: crate::troops::Troops { count: twin_troops * precision, ..army.troops },
+            ..army,
+        };
+        super::resource_commands::set_explorer_fixture(d.games, twin_key, twin);
+        snforge_std::interact_with_state(
+            d.games, || crate::logic::army_days::create(twin_key, crate::logic::army_days::require(key)),
+        );
+        let battle = crate::commands::Battle { attacker_id: key.explorer_id, defender_id: camp, relic_slot: None };
+        assert!(
+            super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::BattleGuard(battle), 361),
+        );
+        let guards = crate::guards::IGuardsDispatcher { contract_address: d.games };
+        let mut standing = 0;
+        for slot in 0_u8..4 {
+            standing += guards.guard(crate::guards::GuardKey { game_id, structure_id: camp, slot }).troops.count;
+        }
+        left.append(standing);
+    }
+    assert!(*left[0] != 0);
+    assert!(*left[1] < *left[0]);
+    assert_eq!(*left[2], *left[0]);
 }
 
 fn only_detection_finds(game_id: u32, rules: crate::expeditions::FrontierDiscoveryRules) -> u256 {

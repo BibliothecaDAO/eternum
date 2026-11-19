@@ -48,3 +48,7 @@ pub const BEASTS_CATEGORY: u8 = 11;
 pub const RIFT_OCCUPIER: u8 = 42;
 pub const RUIN_OCCUPIER: u8 = 43;
 pub const BEASTS_OCCUPIER: u8 = 44;
+
+pub fn is_explorer(category: u8) -> bool {
+    category >= EXPLORER_KNIGHT_T1_OCCUPIER && category <= EXPLORER_CROSSBOWMAN_T3_OCCUPIER
+}

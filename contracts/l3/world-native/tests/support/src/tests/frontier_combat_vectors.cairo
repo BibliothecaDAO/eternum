@@ -105,6 +105,7 @@ pub fn resolve_exchange(
                 defender_is_structure_guard: exchange.defender_is_structure_guard,
                 attacker_oaths: 0,
                 defender_oaths: 0,
+                attacker_twin_damage: 0,
             },
             stamina,
             damage,

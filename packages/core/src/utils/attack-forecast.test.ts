@@ -1,11 +1,18 @@
-import { BiomeType, BiomeTypeToId, RESOURCE_PRECISION, StructureType, TileOccupier } from "@bibliothecadao/types";
+import {
+  BiomeType,
+  BiomeTypeToId,
+  getNeighborHexes,
+  RESOURCE_PRECISION,
+  StructureType,
+  TileOccupier,
+} from "@bibliothecadao/types";
 import { afterEach, describe, expect, it } from "vitest";
 import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import {
   nativeTilePackingConstants,
   type NativeModelName,
 } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
+import { nativeOathConstants, nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { NativeFactStore } from "../client/native-fact-store";
 import { nativeRowDefinitions } from "../client/native-row";
 import { ClientConfigManager } from "../managers/config-manager";
@@ -134,6 +141,7 @@ function frontier() {
       bladeRank = 0,
       logistics = 0,
       stamina = 100n,
+      oaths = 0,
     } = {},
   ) => {
     const slotted = logistics > 0;
@@ -165,7 +173,7 @@ function frontier() {
       explorer_id,
       logistics,
       oath_slots: 1,
-      oaths: 0,
+      oaths,
       oath_pick: oathPick,
     });
     write("ArmyDay", { game_id: GAME_ID, explorer_id, day: BigInt(day) });
@@ -407,6 +415,34 @@ describe("one attack forecast for every combat surface", () => {
     const bladed = guardLoss(game.forecast(10, 50));
     expect(plain).toBeDefined();
     expect(bladed!).toBeGreaterThan(plain!);
+  });
+
+  it("adds the Twins' share of the largest own army beside the attacker that is current today (3dc2f8)", () => {
+    const game = frontier();
+    game.home(1, PLAYER, 1);
+    game.home(2, RIVAL, 2);
+    game.deepSite(50, DEEP, 100_000);
+    const at = beside(DEEP);
+    const [first, second, third, fourth] = getNeighborHexes(at.col, at.row).filter(
+      ({ col, row }) => col !== DEEP.col || row !== DEEP.row,
+    );
+    game.army(30, 1, at, { count: 2_000 });
+    const companion = guardLoss(game.forecast(30, 50))!;
+    game.army(30, 1, beside(DEEP, 4), { count: 2_000 });
+    const twins = 1 << (nativeOathConstants.TWINS - 1);
+    game.army(10, 1, at, { oaths: twins });
+    const alone = guardLoss(game.forecast(10, 50))!;
+    const precision = BigInt(RESOURCE_PRECISION);
+    const share = ((companion * BigInt(nativeOathConstants.TWINS_DAMAGE_PERCENT)) / 100n / precision) * precision;
+    expect(share).toBeGreaterThan(0n);
+    game.army(30, 1, first!, { count: 2_000 });
+    expect(guardLoss(game.forecast(10, 50))).toBe(alone + share);
+    game.army(31, 1, second!, { count: 1_000 });
+    game.army(20, 2, third!, { count: 5_000 });
+    game.army(32, 1, fourth!, { count: 5_000, day: 1 });
+    expect(guardLoss(game.forecast(10, 50))).toBe(alone + share);
+    game.army(10, 1, at);
+    expect(guardLoss(game.forecast(10, 50))).toBe(alone);
   });
 
   it("reads the attacking army's own stamina maximum, above its troop's base bar (4587f1)", () => {

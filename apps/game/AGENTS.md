@@ -600,8 +600,7 @@ Deploy shows the current troop's capacity; an army's panel keeps its capacity fr
 exact price and deploy an army with three slots on desktop and phone. These are lab proofs; native tests cover immutable
 army capacity.
 
-An earned Oath opens three cards at once, drawn at random from the Oaths the army does not hold (never one the contract
-marks dormant, `nativeOathConstants.DORMANT`: an Oath with no effect yet, the Twins for now), and blocks that army's
+An earned Oath opens three cards at once, drawn at random from the Oaths the army does not hold, and blocks that army's
 commands until answered. Choose a card; with full slots, choose the held Oath it replaces, or Pass for the stamina shown
 on the button, capped at the army's maximum. The pick cannot be dismissed by Escape, Back or an outside press.
 `build.sh playtest-oath-pick` plays `/lab/game?scenario=oath-pick` and `oath-replace` on desktop and phone, recording
@@ -627,6 +626,11 @@ The fight Oaths change the one forecast every attack surface reads (`forecastAtt
 attack that leaves the bar under 10, Fury gives back half of an attack's cost when it beats its target, and Perfection
 pays 50% more on the site card when the forecast clears the last guard with under 15% lost.
 `tests/fixtures/oath-fight.txt` and the combat formula tests hold the contract and the client to the same rules.
+
+The Twins add 30% of the damage of the attacker's largest own army beside it, current today, to each attack, in whole
+troops. `tests/fixtures/oath-twins.txt` holds the contract and the client to the same share; the Twins' command test (in
+`tests/world/src/tests/oaths.cairo`) finds the companion through a real attack, and `attack-forecast.test.ts` finds the
+same one in the forecast.
 
 A stronger beast band at a personal depth holds an Oath: its site card shows "Holds an Oath" (the Shrine's painting)
 beside its pay, read from the same band rule the contract uses to open a pick on its clear.

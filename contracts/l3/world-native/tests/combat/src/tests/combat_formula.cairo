@@ -72,6 +72,7 @@ fn tests_crossbowman_ranged_field_attack_uses_reduced_damage() {
                 defender_is_structure_guard: false,
                 attacker_oaths: 0,
                 defender_oaths: 0,
+                attacker_twin_damage: 0,
             },
             stamina_config(),
             damage_config(),
@@ -91,6 +92,7 @@ fn tests_crossbowman_ranged_field_attack_uses_reduced_damage() {
                 defender_is_structure_guard: false,
                 attacker_oaths: 0,
                 defender_oaths: 0,
+                attacker_twin_damage: 0,
             },
             stamina_config(),
             damage_config(),
@@ -130,6 +132,7 @@ fn tests_crossbowman_ranged_structure_attack_uses_heavy_reduction() {
                 defender_is_structure_guard: false,
                 attacker_oaths: 0,
                 defender_oaths: 0,
+                attacker_twin_damage: 0,
             },
             stamina_config(),
             damage_config(),
@@ -149,6 +152,7 @@ fn tests_crossbowman_ranged_structure_attack_uses_heavy_reduction() {
                 defender_is_structure_guard: true,
                 attacker_oaths: 0,
                 defender_oaths: 0,
+                attacker_twin_damage: 0,
             },
             stamina_config(),
             damage_config(),
@@ -187,6 +191,7 @@ fn tests_knight_assault_increases_adjacent_structure_guard_damage() {
                 defender_is_structure_guard: true,
                 attacker_oaths: 0,
                 defender_oaths: 0,
+                attacker_twin_damage: 0,
             },
             stamina_config(),
             damage_config(),
@@ -225,6 +230,7 @@ fn tests_knight_bulwark_reduces_guard_incoming_damage() {
                 defender_is_structure_guard: true,
                 attacker_oaths: 0,
                 defender_oaths: 0,
+                attacker_twin_damage: 0,
             },
             stamina_config(),
             damage_config(),
@@ -566,6 +572,33 @@ fn oath_damage_matches_the_shared_vectors_for_both_sides_and_guard_roles() {
         assert_eq!(defender.count, after_b * RESOURCE_PRECISION);
         assert_eq!(attacker.stamina.inline().amount, 90);
         assert_eq!(defender.stamina.inline().amount, 100);
+    }
+}
+
+#[test]
+fn the_twins_add_the_shared_vectors_share_of_the_companion_damage_in_whole_troops() {
+    let values = read_txt(@FileTrait::new("../fixtures/oath-twins.txt"));
+    let mut fields = values.span();
+    assert_eq!(fields.len(), 54);
+    let (stamina, damage) = oath_fight_configs();
+    while !fields.is_empty() {
+        let (attacker_oaths, a, b, c): (u16, TroopType, TroopType, TroopType) = Serde::deserialize(ref fields).unwrap();
+        let (before_a, before_b, companion, after_a, after_b): (u128, u128, u128, u128, u128) = Serde::deserialize(
+            ref fields,
+        )
+            .unwrap();
+        let mut attacker = test_troops(a, TroopTier::T1, before_a, 100);
+        let mut defender = test_troops(b, TroopTier::T1, before_b, 100);
+        let combat = CombatContext { day_unit_seconds: 100, attacker_oaths, ..context(Biome::Underground) };
+        let twin = crate::oaths::twin_damage(
+            attacker_oaths, test_troops(c, TroopTier::T1, companion, 100), defender, combat, stamina, damage, 120, 0,
+        );
+        attacker
+            .attack_with_context(
+                ref defender, CombatContext { attacker_twin_damage: twin, ..combat }, stamina, damage, 120, 0,
+            );
+        assert_eq!(attacker.count, after_a * RESOURCE_PRECISION);
+        assert_eq!(defender.count, after_b * RESOURCE_PRECISION);
     }
 }
 

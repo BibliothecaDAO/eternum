@@ -874,6 +874,16 @@ pub mod TroopsLogic {
                 None => crate::logic::troops::active_explorer(key, game_context.timestamp, game_context),
             }
         }
+        fn twins_companion(
+            self: @ContractState,
+            key: ExplorerKey,
+            attacker: ExplorerTroops,
+            game_context: crate::commands::ActionContext,
+        ) -> Option<crate::troops::Troops> {
+            crate::logic::troops::twins_companion(
+                key, attacker, crate::commands::execution_context(key.game_id, game_context),
+            )
+        }
         fn finish_battle(
             ref self: ContractState,
             key: ExplorerKey,
@@ -1159,4 +1169,40 @@ fn destroy_explorer(key: ExplorerKey, explorer: ExplorerTroops) {
         crate::logic::map::MapState::vacate(crate::geometry::tile_key(key.game_id, explorer.coord), key.explorer_id);
     }
     crate::logic::troops::TroopState::destroy(key);
+}
+
+pub fn twins_companion(
+    key: ExplorerKey, attacker: ExplorerTroops, context: crate::commands::ExecutionContext,
+) -> Option<crate::troops::Troops> {
+    let owner = crate::logic::combat::explorer_owner(key, attacker);
+    let today = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp)
+        .index;
+    let mut largest: Option<crate::troops::Troops> = None;
+    for direction in 0_u8..6 {
+        let Some(coord) = crate::geometry::checked_neighbor_at_distance(attacker.coord, direction, 1) else {
+            continue;
+        };
+        let Some(occupant) = crate::logic::map::occupancy(crate::geometry::tile_key(key.game_id, coord)) else {
+            continue;
+        };
+        if occupant.is_structure || !crate::taxonomy::is_explorer(occupant.category) {
+            continue;
+        }
+        let twin_key = ExplorerKey { game_id: key.game_id, explorer_id: occupant.entity_id };
+        if crate::logic::army_days::require(twin_key) != today {
+            continue;
+        }
+        let twin = active_explorer(twin_key, context.timestamp, context);
+        if twin.troops.count == 0 || crate::logic::combat::explorer_owner(twin_key, twin) != owner {
+            continue;
+        }
+        let larger = match largest {
+            Some(troops) => troops.count < twin.troops.count,
+            None => true,
+        };
+        if larger {
+            largest = Some(twin.troops);
+        }
+    }
+    largest
 }

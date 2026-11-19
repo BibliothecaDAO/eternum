@@ -126,6 +126,7 @@ const fightOnGrassland = (attacker: ExchangeTroops, defender: ExchangeTroops, at
       defenderBiome: BiomeType.Grassland,
       attackerOaths: 0,
       defenderOaths: 0,
+      attackerTwin: null,
       attackerIsStructureGuard: false,
       defenderIsStructureGuard: false,
     },

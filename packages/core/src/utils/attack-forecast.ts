@@ -9,7 +9,8 @@ import {
   type BiomeType,
   type Troops,
 } from "@bibliothecadao/types";
-import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeOathConstants as oathRules } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { readDeepSite, readDeepSiteDefender } from "../client/views/deep-sites";
 import { resolveExplorerCombatTroops, resolveExplorerTroops, staminaAt } from "../managers/troop-stamina";
@@ -26,7 +27,8 @@ import {
 } from "./combat-exchange";
 import { isArmyCurrent, isExpeditionRealm, structureMapPosition } from "./expeditions";
 import { isModeRuleEnabled } from "./mode-rules";
-import { armyOaths, oathAttackStamina } from "./oaths";
+import { armyOaths, holdsOath, oathAttackStamina } from "./oaths";
+import { isTileOccupierArmy } from "./map/hex";
 import { entityMapOccupancy, getTileAt, storedBiomeAt } from "./tile";
 
 export const ATTACK_FORECAST_MODELS = [
@@ -155,7 +157,8 @@ function fightOf(scene: Scene, sides: FightSides): AttackForecast | undefined {
   const biome = storedBiomeAt(scene.store, tile.alt, tile.col, tile.row, scene.gameId);
   if (biome === undefined) return undefined;
   const distance = attackDistance(sides.attacker.tile, tile);
-  const context = exchangeContext(scene.chainSecond, sides.attacker, sides.defender, biome);
+  const twin = twinsCompanion(scene.store, scene.gameId, scene.chainSecond, sides.attacker);
+  const context = exchangeContext(scene.chainSecond, sides.attacker, sides.defender, biome, twin);
   const exchange = resolveExchange(sides.attacker.troops, sides.defender.troops, context, scene.rules);
   if (!exchange.ok) return { outcome: "refused", refusal: exchange.refusal, sides };
   const fight = forecastFight(sides.attacker.troops, sides.defender.troops, context, scene.rules);
@@ -164,7 +167,13 @@ function fightOf(scene: Scene, sides: FightSides): AttackForecast | undefined {
   return { outcome: "fights", sides, distance, biome, exchange, fight, certainLoss };
 }
 
-const exchangeContext = (chainSecond: number, attacker: Combatant, defender: Combatant, biome: BiomeType) => ({
+const exchangeContext = (
+  chainSecond: number,
+  attacker: Combatant,
+  defender: Combatant,
+  biome: BiomeType,
+  attackerTwin: Troops | null,
+) => ({
   timestamp: chainSecond,
   attackDistance: attackDistance(attacker.tile, defender.tile),
   attackerBiome: biome,
@@ -173,7 +182,29 @@ const exchangeContext = (chainSecond: number, attacker: Combatant, defender: Com
   defenderIsStructureGuard: defender.guarding,
   attackerOaths: attacker.oaths,
   defenderOaths: defender.oaths,
+  attackerTwin,
 });
+
+function twinsCompanion(
+  store: NativeFactStore,
+  gameId: number,
+  chainSecond: number,
+  attacker: Combatant,
+): Troops | null {
+  if (attacker.guarding || !holdsOath(attacker.oaths, oathRules.TWINS)) return null;
+  const owner = store.require("Structure", { game_id: gameId, entity_id: attacker.home }).owner;
+  let largest: Troops | null = null;
+  for (const { col, row } of getLayerNeighborHexes(attacker.tile.col, attacker.tile.row, attacker.tile.alt)) {
+    const occupant = store.get("TileOccupancy", { game_id: gameId, alt: attacker.tile.alt, col, row });
+    if (!occupant || occupant.is_structure || !isTileOccupierArmy(occupant.category)) continue;
+    const army = store.get("ExplorerTroops", { game_id: gameId, explorer_id: occupant.entity_id });
+    if (!army || !isArmyCurrent(store, gameId, army.explorer_id, chainSecond)) continue;
+    if (store.require("Structure", { game_id: gameId, entity_id: army.owner }).owner !== owner) continue;
+    const troops = resolveExplorerCombatTroops(store, army, chainSecond);
+    if (troops && troops.count > 0n && (!largest || largest.count < troops.count)) largest = troops;
+  }
+  return largest;
+}
 
 export function clearsEveryDefender(
   store: NativeFactStore,
@@ -193,7 +224,13 @@ export function clearsEveryDefender(
     const next = forecastFight(
       standing.troops,
       defender.troops,
-      exchangeContext(chainSecond, standing, defender, forecast.biome),
+      exchangeContext(
+        chainSecond,
+        standing,
+        defender,
+        forecast.biome,
+        twinsCompanion(store, attacker.game_id, chainSecond, standing),
+      ),
       rules,
     );
     if (next.outcome === "refused") return false;

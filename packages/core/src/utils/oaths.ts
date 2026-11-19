@@ -5,13 +5,13 @@ import { type NativeRows } from "../../../../contracts/l3/world-native/schema/cl
 import { nativeOathConstants as oathRules } from "../../../../contracts/l3/world-native/schema/balance.gen";
 
 export const oathColours = [
-  { name: "Fight", mask: oathRules.RED, colour: "red" },
-  { name: "Stamina", mask: oathRules.BLUE, colour: "blue" },
-  { name: "Prize", mask: oathRules.GOLD, colour: "gold" },
+  { mask: oathRules.RED, colour: "red" },
+  { mask: oathRules.BLUE, colour: "blue" },
+  { mask: oathRules.GOLD, colour: "gold" },
 ] as const;
 
 export function heldOaths(mask: number): number[] {
-  return Array.from({ length: 16 }, (_, index) => index + 1).filter((id) => holds(mask, id));
+  return Array.from({ length: 16 }, (_, index) => index + 1).filter((id) => holdsOath(mask, id));
 }
 
 export function oathCards(pick: number): number[] {
@@ -21,7 +21,7 @@ export function oathCards(pick: number): number[] {
 }
 
 export function oathColour(id: number): (typeof oathColours)[number] {
-  const colour = oathColours.find(({ mask }) => holds(mask, id));
+  const colour = oathColours.find(({ mask }) => holdsOath(mask, id));
   if (!colour) throw new Error(`Unknown Oath ${id}`);
   return colour;
 }
@@ -52,41 +52,51 @@ export function oathPassStamina(current: number, maximum: number): number {
 }
 
 export function oathDeepLossPerTick(oaths: number, base: bigint): bigint {
-  return holds(oaths, oathRules.VITRIOL) ? BigInt(oathRules.VITRIOL_LOSS_PER_TICK) * BigInt(RESOURCE_PRECISION) : base;
+  return holdsOath(oaths, oathRules.VITRIOL)
+    ? BigInt(oathRules.VITRIOL_LOSS_PER_TICK) * BigInt(RESOURCE_PRECISION)
+    : base;
 }
 
 export function oathSkillMultiplier(oaths: number, barAfterCost: bigint): Fixed {
-  return holds(oaths, oathRules.SKILL) && barAfterCost < BigInt(oathRules.SKILL_BELOW_STAMINA)
+  return holdsOath(oaths, oathRules.SKILL) && barAfterCost < BigInt(oathRules.SKILL_BELOW_STAMINA)
     ? div(unscaled(100 + oathRules.SKILL_DAMAGE_PERCENT), unscaled(100))
     : ONE;
 }
 
+export function oathTwinDamage(oaths: number, companionDamage: bigint): bigint {
+  if (!holdsOath(oaths, oathRules.TWINS)) return 0n;
+  const precision = BigInt(RESOURCE_PRECISION);
+  return ((companionDamage * BigInt(oathRules.TWINS_DAMAGE_PERCENT)) / 100n / precision) * precision;
+}
+
 export function oathFuryRefund(oaths: number, cost: number): number {
-  return holds(oaths, oathRules.FURY) ? Math.floor((cost * oathRules.FURY_REFUND_PERCENT) / 100) : 0;
+  return holdsOath(oaths, oathRules.FURY) ? Math.floor((cost * oathRules.FURY_REFUND_PERCENT) / 100) : 0;
 }
 
 export function oathFindPercent(oaths: number, base: number): number {
-  return holds(oaths, oathRules.DETECTION) ? Math.floor((base * oathRules.DETECTION_FIND_PERCENT) / 100) : base;
+  return holdsOath(oaths, oathRules.DETECTION) ? Math.floor((base * oathRules.DETECTION_FIND_PERCENT) / 100) : base;
 }
 
 export function oathAttackStamina(oaths: number, base: number): number {
-  return holds(oaths, oathRules.ANGER) ? Math.min(base, oathRules.ANGER_ATTACK_STAMINA) : base;
+  return holdsOath(oaths, oathRules.ANGER) ? Math.min(base, oathRules.ANGER_ATTACK_STAMINA) : base;
 }
 
 export function oathStaminaBonus(oaths: number): number {
-  return holds(oaths, oathRules.TITANS) ? oathRules.TITANS_STAMINA : 0;
+  return holdsOath(oaths, oathRules.TITANS) ? oathRules.TITANS_STAMINA : 0;
 }
 
 export function oathRegenBps(oaths: number): number {
-  return holds(oaths, oathRules.ENLIGHTENMENT) ? oathRules.ENLIGHTENMENT_REGEN_BPS : 10_000;
+  return holdsOath(oaths, oathRules.ENLIGHTENMENT) ? oathRules.ENLIGHTENMENT_REGEN_BPS : 10_000;
 }
 
 export function oathExploreStamina(oaths: number, base: number): number {
-  return holds(oaths, oathRules.FOX) ? Math.floor((base * (100 - oathRules.FOX_REVEAL_DISCOUNT_PERCENT)) / 100) : base;
+  return holdsOath(oaths, oathRules.FOX)
+    ? Math.floor((base * (100 - oathRules.FOX_REVEAL_DISCOUNT_PERCENT)) / 100)
+    : base;
 }
 
 export function oathRevealPay(oaths: number, amount: bigint): bigint {
-  return holds(oaths, oathRules.BRILLIANCE) ? (amount * BigInt(oathRules.BRILLIANCE_PAY_PERCENT)) / 100n : amount;
+  return holdsOath(oaths, oathRules.BRILLIANCE) ? (amount * BigInt(oathRules.BRILLIANCE_PAY_PERCENT)) / 100n : amount;
 }
 
 export function isCleanWin(before: bigint, after: bigint): boolean {
@@ -94,8 +104,8 @@ export function isCleanWin(before: bigint, after: bigint): boolean {
 }
 
 export function oathSitePay(oaths: number, amount: bigint, clean: boolean): bigint {
-  const raged = holds(oaths, oathRules.RAGE) ? (amount * BigInt(oathRules.RAGE_PAY_PERCENT)) / 100n : amount;
-  return clean && holds(oaths, oathRules.PERFECTION)
+  const raged = holdsOath(oaths, oathRules.RAGE) ? (amount * BigInt(oathRules.RAGE_PAY_PERCENT)) / 100n : amount;
+  return clean && holdsOath(oaths, oathRules.PERFECTION)
     ? (raged * BigInt(oathRules.PERFECTION_PAY_PERCENT)) / 100n
     : raged;
 }
@@ -107,15 +117,15 @@ export function armyOaths(store: NativeFactStore, key: { game_id: number; explor
 
 export function oathDamageMultiplier(attacker: number, defender: number, guarding: boolean): Fixed {
   let multiplier = ONE;
-  if (holds(attacker, oathRules.POWER))
+  if (holdsOath(attacker, oathRules.POWER))
     multiplier = mul(multiplier, div(unscaled(100 + oathRules.POWER_DAMAGE_PERCENT), unscaled(100)));
-  if (holds(defender, oathRules.GIANTS))
+  if (holdsOath(defender, oathRules.GIANTS))
     multiplier = mul(multiplier, div(unscaled(100 - oathRules.GIANTS_REDUCTION_PERCENT), unscaled(100)));
-  if (guarding && holds(defender, oathRules.PROTECTION))
+  if (guarding && holdsOath(defender, oathRules.PROTECTION))
     multiplier = mul(multiplier, div(unscaled(100 - oathRules.PROTECTION_REDUCTION_PERCENT), unscaled(100)));
   return multiplier;
 }
 
-function holds(oaths: number, oath: number): boolean {
+export function holdsOath(oaths: number, oath: number): boolean {
   return (oaths & (1 << (oath - 1))) !== 0;
 }

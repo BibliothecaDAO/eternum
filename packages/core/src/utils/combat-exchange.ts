@@ -1,4 +1,4 @@
-import { oathAttackStamina, oathDamageMultiplier, oathFuryRefund, oathSkillMultiplier } from "./oaths";
+import { oathAttackStamina, oathDamageMultiplier, oathFuryRefund, oathSkillMultiplier, oathTwinDamage } from "./oaths";
 import { bonusActive } from "./relic";
 import { BiomeType, RESOURCE_PRECISION, type Troops } from "@bibliothecadao/types";
 import { type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
@@ -67,6 +67,7 @@ interface ExchangeContext {
   defenderIsStructureGuard: boolean;
   attackerOaths: number;
   defenderOaths: number;
+  attackerTwin: ExchangeTroops | null;
 }
 
 export type ExchangeRefusal = "no-troops" | "cooldown" | "insufficient-stamina";
@@ -118,11 +119,20 @@ export const resolveExchange = (
   let attackerStaminaLoss = attackStamina;
   const tired = rules.dayUnitSeconds === 0 && !ranged && defenderStaminaLoss < BigInt(defenderStaminaRequired);
 
-  const damage = exchangeDamage(attacker, defender, context, rules, {
+  const multipliers = {
     defenderStaminaMultiplier: tired ? div(fixed(7n), fixed(10n)) : ONE,
     defenderCooldownMultiplier: defenderCooldownEnd > now ? percent(85) : ONE,
+  };
+  const damage = exchangeDamage(attacker, defender, context, rules, {
+    ...multipliers,
     attackerSkillMultiplier: oathSkillMultiplier(context.attackerOaths, attackerStamina - attackStamina),
   });
+  const twin = context.attackerTwin
+    ? exchangeDamage(context.attackerTwin, defender, { ...context, attackerOaths: 0 }, rules, {
+        ...multipliers,
+        attackerSkillMultiplier: ONE,
+      }).attacker
+    : ZERO;
 
   if (!ranged) {
     const attackerRefund = ceil(mul(unscaled(attackerStaminaLoss), refundMultiplier(damage.attacker, damage.defender)));
@@ -133,7 +143,9 @@ export const resolveExchange = (
     }
   }
 
-  const attackerDamage = toWhole(round(damage.attacker)) * PRECISION;
+  const attackerDamage =
+    toWhole(round(damage.attacker)) * PRECISION +
+    oathTwinDamage(context.attackerOaths, toWhole(round(twin)) * PRECISION);
   const defenderDamage = ranged ? 0n : toWhole(round(damage.defender)) * PRECISION;
   const attackerLoss = defenderDamage < attacker.count ? defenderDamage : attacker.count;
   const defenderLoss = attackerDamage < defender.count ? attackerDamage : defender.count;

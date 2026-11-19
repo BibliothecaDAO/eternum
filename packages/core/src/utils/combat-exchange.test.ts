@@ -127,6 +127,7 @@ const readCase = (next: () => bigint, tickSeconds: number) => {
     defenderIsStructureGuard,
     attackerOaths: 0,
     defenderOaths: 0,
+    attackerTwin: null,
   };
   return { id, alt, attacker, defender, context, expected };
 };
@@ -495,6 +496,7 @@ it("matches all Oath damage vectors on both sides, including bows and stacked sl
         defenderIsStructureGuard: bg === 1n,
         attackerOaths: Number(ao),
         defenderOaths: Number(bo),
+        attackerTwin: null,
       },
       oathRules,
     );
@@ -555,22 +557,19 @@ describe("the fight Oaths", () => {
     stamina: { amount: stamina, settled_at: 1, remainder: 0 },
     boosts: { ...base.attacker.boosts, incr_damage_dealt_percent_num: 0, decr_damage_gotten_percent_num: 0 },
   });
+  const context = {
+    timestamp: 1,
+    attackDistance: 1,
+    attackerBiome: BiomeType.Underground,
+    defenderBiome: BiomeType.Underground,
+    attackerIsStructureGuard: false,
+    defenderIsStructureGuard: false,
+    attackerOaths: 0,
+    defenderOaths: 0,
+    attackerTwin: null,
+  };
   const attack = (attackerOaths: number, bar: bigint, defenders: bigint) => {
-    const result = resolveExchange(
-      army(1_000n, bar),
-      army(defenders, 100n),
-      {
-        timestamp: 1,
-        attackDistance: 1,
-        attackerBiome: BiomeType.Underground,
-        defenderBiome: BiomeType.Underground,
-        attackerIsStructureGuard: false,
-        defenderIsStructureGuard: false,
-        attackerOaths,
-        defenderOaths: 0,
-      },
-      oathRules,
-    );
+    const result = resolveExchange(army(1_000n, bar), army(defenders, 100n), { ...context, attackerOaths }, oathRules);
     if (!result.ok) throw new Error(result.refusal);
     return result;
   };
@@ -587,5 +586,34 @@ describe("the fight Oaths", () => {
     expect(attack(fury, 100n, 1n).attacker.stamina.amount).toBe(95n);
     expect(attack(0, 100n, 1n).attacker.stamina.amount).toBe(90n);
     expect(attack(fury, 100n, 1_000n).attacker.stamina.amount).toBe(90n);
+  });
+
+  it("adds the Twins' share of the companion's own damage as the contract's shared vectors do", () => {
+    const fields = readFileSync(
+      new URL("../../../../contracts/l3/world-native/tests/fixtures/oath-twins.txt", import.meta.url),
+      "utf8",
+    )
+      .trim()
+      .split(/\s+/)
+      .map(BigInt);
+    expect(fields).toHaveLength(54);
+    const side = (category: bigint, count: bigint) => ({
+      ...army(count, 100n),
+      category: CATEGORIES[Number(category)]!,
+    });
+    while (fields.length) {
+      const [held, a, b, c, beforeA, beforeB, companion, afterA, afterB] = fields.splice(0, 9) as bigint[];
+      const result = resolveExchange(
+        side(a!, beforeA!),
+        side(b!, beforeB!),
+        { ...context, attackerOaths: Number(held), attackerTwin: side(c!, companion!) },
+        oathRules,
+      );
+      expect(result).toMatchObject({
+        ok: true,
+        attacker: { count: afterA! * 1_000_000_000n },
+        defender: { count: afterB! * 1_000_000_000n },
+      });
+    }
   });
 });

@@ -497,6 +497,9 @@ pub trait IBattleResolution<T> {
         before: u128,
         game_context: crate::commands::ActionContext,
     );
+    fn twins_companion(
+        self: @T, key: ExplorerKey, attacker: ExplorerTroops, game_context: crate::commands::ActionContext,
+    ) -> Option<Troops>;
 }
 
 #[derive(Copy, Drop, Serde)]

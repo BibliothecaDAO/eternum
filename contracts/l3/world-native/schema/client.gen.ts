@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "a743e39f25b749be141fa413beb6e6420dff0b3c83c437e1219a77120191b310";
+export const nativeFactSchemaIdentity = "754fdad0fc5a96fb6202be89b55b7e46b98f00960b9d690b0838a9dfea14a791";
 export const nativeIdentifiers = {
   "rule": {
     "MAX_BLITZ_ROSTER_PLAYERS": 24,
@@ -88,8 +88,7 @@ export const nativeIdentifiers = {
     "ENLIGHTENMENT": 16,
     "RED": 11537,
     "BLUE": 53288,
-    "GOLD": 710,
-    "DORMANT": 16
+    "GOLD": 710
   },
   "research": {
     "ROW_FARM": 0,
