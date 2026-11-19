@@ -345,6 +345,7 @@ import {
   relicEffect,
   ResourcesIds,
   formatCharge,
+  formatRate,
   resourceName,
   formatHeldAgainst,
   layerName,
@@ -895,7 +896,7 @@ export const DAY_BANNER_WORDS = {
 export interface OpeningRules {
   knightsAnHour: number;
   deepTickSeconds: number;
-  staminaAnHour: number;
+  staminaPerSecond: number;
   staminaPerFragment: number;
   relicMinutesPerTier: number;
   scoutExploreStamina: number;
@@ -909,7 +910,7 @@ export const OPENING_WORDS = {
       `A Barracks raises ${formatAmount(rules.knightsAnHour)} Knights an hour. Knights fill your armies.`,
     guard: () => "Send 150% of the guard's troops to win.",
     shop: (rules: OpeningRules) =>
-      `Stamina refills ${formatAmount(rules.staminaAnHour)} an hour. A Fragment refills ${formatAmount(rules.staminaPerFragment)} points now.`,
+      `Stamina refills ${formatRate(rules.staminaPerSecond)}. A Fragment refills ${formatAmount(rules.staminaPerFragment)} points now.`,
     essence: () => "Essence buys research and lores.",
     relic: (rules: OpeningRules) =>
       `A relic works for ${formatAmount(rules.relicMinutesPerTier)} minutes per tier. An army carries ${ARMY_RELIC_SLOTS}.`,
@@ -2387,7 +2388,7 @@ export const ARMY_MANAGEMENT = {
   deleteFailed: "The army could not be deleted.",
 } as const;
 
-export const ARMY_RELIC_SLOTS = 3;
+const ARMY_RELIC_SLOTS = 3;
 export const RELIC_WORDS = {
   title: "Relics",
   cache: (fragments: number) => `Ancient cache: ${formatExact(fragments)} ${FRAGMENTS}`,

@@ -115,7 +115,7 @@ function useOpeningRules(rules: ExpeditionRules, realm: NativeRows["Structure"] 
   return {
     knightsAnHour: troops / Math.max(1, barracks),
     deepTickSeconds: tickSeconds,
-    staminaAnHour: (slice.troop_stamina_config.stamina_gain_per_tick * 3600) / tickSeconds,
+    staminaPerSecond: slice.troop_stamina_config.stamina_gain_per_tick / tickSeconds,
     staminaPerFragment: nativeFragmentConstants.STAMINA_PER_FRAGMENT,
     relicMinutesPerTier: nativeRuleConstants.RELIC_SECONDS_PER_RANK / 60,
     scoutExploreStamina: nativeRuleConstants.SCOUT_EXPLORE_STAMINA,

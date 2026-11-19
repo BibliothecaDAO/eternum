@@ -2,7 +2,7 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import type { Account } from "starknet";
 import { configManager, readSeasonPass } from "@bibliothecadao/eternum";
 import { nativeFragmentConstants } from "@bibliothecadao/eternum/game-client";
-import { FRAGMENT_CENTS, formatExact } from "@bibliothecadao/types";
+import { FRAGMENT_CENTS, formatCharge, formatExact } from "@bibliothecadao/types";
 import { useGame } from "@/hooks/context/game-context";
 import { notificationOwnerOf, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -72,7 +72,7 @@ const PassFoot = ({ pass, fragments }: { pass: PassState; fragments: number }) =
         busy={pass.buying ? SHOP_WORDS.getting : undefined}
         onClick={pass.onBuy}
       >
-        {formatExact(PASS_PRICE)} · {SHOP_WORDS.getPass}
+        {formatCharge(PASS_PRICE)} · {SHOP_WORDS.getPass}
       </HudButton>
       {more > 0 && (
         <span data-shop-short className="text-hud-label text-hud-muted">
