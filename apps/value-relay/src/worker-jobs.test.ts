@@ -841,16 +841,17 @@ it("authenticates source retirement and refuses source overrides or unresolved o
       }),
       env as never,
     );
-  expect((await send({ chainId: "0x1" }, "wrong")).status).toBe(401);
-  for (const body of [null, { chainId: "0x1", gamesAddress: "0x9" }, { chainId: "bad" }])
+  const source = { chainId: "0x1", url: "https://herald.old.test" };
+  expect((await send(source, "wrong")).status).toBe(401);
+  for (const body of [null, { chainId: "0x1" }, { ...source, gamesAddress: "0x9" }, { ...source, chainId: "bad" }])
     expect((await send(body)).status).toBe(400);
   expect(retire).not.toHaveBeenCalled();
-  expect(await (await send({ chainId: "0x1" })).json()).toEqual({
+  expect(await (await send(source)).json()).toEqual({
     chainId: "0x1",
     gamesAddress: "0x2",
     retirementReady: true,
   });
-  expect(retire).toHaveBeenCalledWith("0x1");
+  expect(retire).toHaveBeenCalledWith("0x1", "https://herald.old.test");
   retire.mockRejectedValue(new Error("principal_return_pending"));
-  expect((await send({ chainId: "0x1" })).status).toBe(409);
+  expect((await send(source)).status).toBe(409);
 });
