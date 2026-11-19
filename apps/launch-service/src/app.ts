@@ -26,7 +26,7 @@ interface LaunchAppDependencies {
   /** The registrar that executes runs: every run queued here arms it for the run's due time. */
   registrar: {
     armFor(dueAt: number): Promise<void>;
-    joinFailures(): Promise<JoinFailure[]>;
+    joinFailure(): Promise<JoinFailure | null>;
     wakeAt(): Promise<number | null>;
     applyRelease(release: ReleaseIdentity | null): Promise<ReleaseReport>;
   };
@@ -129,10 +129,10 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   // The schedule never requeues a failed season; its operator must continue it. Health names every failed run.
   app.get("/api/factory/health", async (context) => {
     try {
-      const [failed, pending, joins, wakeAt, freezes] = await Promise.all([
+      const [failed, pending, joinFailure, wakeAt, freezes] = await Promise.all([
         dependencies.store.failed(),
         dependencies.store.pending(),
-        dependencies.registrar.joinFailures(),
+        dependencies.registrar.joinFailure(),
         dependencies.registrar.wakeAt(),
         dependencies.slots.freezeFailures(),
       ]);
@@ -145,11 +145,11 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
           service: "launch",
           ...dependencies.deployment,
           failedRuns: failed.map(failedRunReport),
-          joinFailures: joins,
+          joinFailure,
           freezeFailures: freezes,
           strandedRuns: stranded.map(strandedRunReport),
         },
-        failed.length || stranded.length || joins.length || freezes.length ? 503 : 200,
+        failed.length || stranded.length || joinFailure || freezes.length ? 503 : 200,
       );
     } catch {
       return context.json({ status: "unavailable" }, 503);

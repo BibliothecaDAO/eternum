@@ -105,16 +105,18 @@ it("retries a failed launcher join beyond platform retries without consuming due
   for (let tick = 0; tick < 8; tick++) await f.registrar.alarm();
   expect(f.setAlarm).toHaveBeenCalledTimes(8);
   expect(f.setAlarm).toHaveBeenLastCalledWith(31_000);
-  expect(await f.registrar.joinFailures()).toEqual([
-    { chainId: "0x1", code: "launcher_approval_refused", checkedAt: 1000 },
-  ]);
+  expect(await f.registrar.joinFailure()).toEqual({
+    chainId: "0x1",
+    code: "launcher_approval_refused",
+    checkedAt: 1000,
+  });
   expect(mock.process).not.toHaveBeenCalled();
   expect(mock.nextDue).not.toHaveBeenCalled();
   // A closed slot still freezes while the launcher cannot join.
   expect(mock.freeze).toHaveBeenCalledTimes(8);
   mock.account.mockResolvedValue("0x2");
   await f.registrar.alarm();
-  expect(await f.registrar.joinFailures()).toEqual([]);
+  expect(await f.registrar.joinFailure()).toBeNull();
   expect(mock.process).toHaveBeenCalledOnce();
   expect(mock.target).toHaveBeenCalledWith(expect.anything(), "0x2", expect.any(Function));
   expect(f.setAlarm).toHaveBeenLastCalledWith(2000);
@@ -253,4 +255,15 @@ it("answers no shard to a first deployment's release step, before any shard is a
   const f = setup([]);
   expect(await f.registrar.applyRelease(null)).toEqual({ shards: [] });
   expect(mock.account).not.toHaveBeenCalled();
+});
+
+it("refuses to launch or release while the directory serves two chains", async () => {
+  const f = setup([
+    { chainId: "0x1", url: "https://shard.test", status: "active" },
+    { chainId: "0x2", url: "https://other.test", status: "draining" },
+  ]);
+  await expect(f.registrar.alarm()).rejects.toThrow("more_than_one_official_chain");
+  await expect(f.registrar.applyRelease(RELEASE)).rejects.toThrow("more_than_one_official_chain");
+  expect(mock.account).not.toHaveBeenCalled();
+  expect(mock.process).not.toHaveBeenCalled();
 });

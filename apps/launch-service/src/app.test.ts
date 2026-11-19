@@ -33,7 +33,7 @@ const fixture = (chain = TEST_CHAIN) => {
   const calendar = new D1CalendarStore(database.db);
   const armFor = vi.fn();
   const wakeAt = vi.fn(async (): Promise<number | null> => 0);
-  const joinFailures = vi.fn(async (): Promise<import("./registrar").JoinFailure[]> => []);
+  const joinFailure = vi.fn(async (): Promise<import("./registrar").JoinFailure | null> => null);
   const applyRelease = vi.fn(async (_release: ReleaseIdentity | null): Promise<ReleaseReport> => ({ shards: [] }));
   const app = createLaunchApp({
     config: { operatorToken: "operator-test-token" },
@@ -41,9 +41,9 @@ const fixture = (chain = TEST_CHAIN) => {
     store,
     slots,
     calendar,
-    registrar: { armFor, joinFailures, wakeAt, applyRelease },
+    registrar: { armFor, joinFailure, wakeAt, applyRelease },
   });
-  return { app, store, slots, calendar, value, armFor, joinFailures, wakeAt, applyRelease };
+  return { app, store, slots, calendar, value, armFor, joinFailure, wakeAt, applyRelease };
 };
 const close = () => new Date(Math.floor(Date.now() / 1000) * 1000 + 60000).toISOString();
 test("the create-run and launcher-discovery routes are gone even for the operator", async () => {
@@ -177,12 +177,28 @@ test("health and version remain public and identify the deployment", async () =>
 });
 
 test("public health names a failed join before any run has failed", async () => {
-  const { app, joinFailures } = fixture();
+  const { app, joinFailure } = fixture();
   const failure = { chainId: TEST_CHAIN, code: "account_join_read_failed", checkedAt: 1000 };
-  joinFailures.mockResolvedValue([failure]);
+  joinFailure.mockResolvedValue(failure);
   const response = await app.request("/api/factory/health");
   expect(response.status).toBe(503);
-  expect(await response.json()).toMatchObject({ joinFailures: [failure], failedRuns: [] });
+  expect(await response.json()).toMatchObject({ joinFailure: failure, failedRuns: [] });
+});
+
+test("health answers healthy and empty before the directory lists any chain", async () => {
+  const store = new D1LaunchStore(database.db, async () => null);
+  const value = slotValueFixture(1);
+  const app = createLaunchApp({
+    config: { operatorToken: "operator-test-token" },
+    deployment: { environment: "staging", version: "test", revision: "abc1234" },
+    store,
+    slots: new D1SlotStore(database.db, store, value, slotResolver(value, registrationIdentityFixture)),
+    calendar: new D1CalendarStore(database.db),
+    registrar: { armFor: vi.fn(), joinFailure: async () => null, wakeAt: async () => 0, applyRelease: vi.fn() },
+  });
+  const response = await app.request("/api/factory/health");
+  expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({ failedRuns: [], strandedRuns: [], joinFailure: null });
 });
 
 test("health forgets retired work but names an unarmed due run on the live chain", async () => {

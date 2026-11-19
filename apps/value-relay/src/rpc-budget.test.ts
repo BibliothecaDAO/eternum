@@ -284,7 +284,7 @@ vi.mock("@realms-world/value-ledger", async (original) => {
     }),
     requireActiveChain: async () => {},
     relayAccountAddress: () => "0x5",
-    activeShards: async () => [{ chainId: "0x2" }],
+    officialChain: async () => ({ chainId: "0x2" }),
   };
 });
 

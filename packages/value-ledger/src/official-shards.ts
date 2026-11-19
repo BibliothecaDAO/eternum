@@ -7,11 +7,14 @@ export interface RegisteredShard {
 export interface ShardDirectory {
   shards(): Promise<RegisteredShard[]>;
 }
-export const activeShards = async (directory: ShardDirectory) =>
-  (await directory.shards()).filter((row) => row.status === "active" || row.status === "draining");
+export const officialChain = async (directory: ShardDirectory): Promise<RegisteredShard | null> => {
+  const serving = (await directory.shards()).filter((row) => row.status === "active" || row.status === "draining");
+  if (serving.length > 1) throw new Error("more_than_one_official_chain");
+  return serving[0] ?? null;
+};
 export const requireActiveChain = async (directory: ShardDirectory, chainId: string) => {
-  const row = (await activeShards(directory)).find((row) => BigInt(row.chainId) === BigInt(chainId));
-  if (!row) throw new Error("unlisted_or_inactive_shard");
+  const row = await officialChain(directory);
+  if (!row || BigInt(row.chainId) !== BigInt(chainId)) throw new Error("unlisted_or_inactive_shard");
   return row;
 };
 /** Identity owns membership and URL; only Herald supplies the current RPC and contracts. */

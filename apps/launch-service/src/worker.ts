@@ -1,5 +1,5 @@
 import { WorkerEntrypoint } from "cloudflare:workers";
-import { activeShards } from "@realms-world/value-ledger";
+import { officialChain } from "@realms-world/value-ledger";
 import { Effect } from "effect";
 import { createLaunchApp } from "./app";
 import { D1CalendarStore } from "./calendar-store";
@@ -22,8 +22,9 @@ export default {
   async scheduled(_controller: ScheduledController, rawEnv: Record<string, unknown>): Promise<void> {
     const env = decodeLaunchEnv(rawEnv);
     try {
-      for (const shard of await activeShards(env.IDENTITY)) {
-        const { launches, slots, calendar } = launchStoresOf(env, shard.chainId);
+      const chain = await officialChain(env.IDENTITY);
+      if (chain) {
+        const { launches, slots, calendar } = launchStoresOf(env, chain.chainId);
         await Effect.runPromise(runLaunchSchedule(launches, slots, calendar));
       }
     } finally {
@@ -34,9 +35,7 @@ export default {
 
 /** The launch service's stores on one D1, keyed to the chain the shard's /manifest names. */
 const launchStoresOf = (env: LaunchEnv, chainId?: string | null) => {
-  const launches = new D1LaunchStore(env.DB, shardChainOf(env, chainId), () =>
-    activeShards(env.IDENTITY).then((rows) => rows.map((row) => row.chainId)),
-  );
+  const launches = new D1LaunchStore(env.DB, shardChainOf(env, chainId));
   return {
     launches,
     slots: new D1SlotStore(env.DB, launches, env.VALUE_RELAY, slotResolver(env.VALUE_RELAY, env.IDENTITY)),
@@ -60,7 +59,7 @@ const launchAppOf = (env: LaunchEnv, chainId?: string | null) => {
     calendar,
     registrar: {
       armFor: (dueAt) => registrarOf(env).armFor(dueAt),
-      joinFailures: () => registrarOf(env).joinFailures(),
+      joinFailure: () => registrarOf(env).joinFailure(),
       wakeAt: () => registrarOf(env).wakeAt(),
       applyRelease: (release) => registrarOf(env).applyRelease(release),
     },

@@ -180,17 +180,13 @@ test("retirement preserves history while unfinished live work remains observable
   await new D1CalendarStore(database.db).set(season(seasonStart), Date.parse(seasonStart) - 1);
   const oldSeason = await scheduleFrontierSeason(oldChain, season(seasonStart));
 
-  // Another official chain shares the D1; its work remains isolated.
-  const live = ["0x1", "0x2"];
-  const newChain = new D1LaunchStore(database.db, testChain("0x2"), async () => live);
+  const newChain = new D1LaunchStore(database.db, testChain("0x2"));
   expect(await newChain.playerDirectoryGames()).toEqual([
     { chainId: "0x1", games: [7].map((gameId) => ({ gameId, slotId: null })) },
   ]);
   expect(await newChain.startNext(Date.now())).toBeNull();
-  expect((await newChain.pending()).map(({ chainId }) => chainId)).toEqual(["0x1", "0x1"]);
-  live.shift();
   expect(await newChain.pending()).toEqual([]);
-  live.unshift("0x1");
+  expect((await oldChain.pending()).map(({ chainId }) => chainId)).toEqual(["0x1", "0x1"]);
   const result = (await oldChain.startNext(Date.now()))!;
   await completeFreeFixture(oldChain, result.id, {
     environment: "madara.blitz",

@@ -1,5 +1,10 @@
 import { Context, Effect, Layer } from "effect";
-import { activeShards, requireActiveChain, readRegisteredShard, type ShardDirectory } from "@realms-world/value-ledger";
+import {
+  officialChain,
+  requireActiveChain,
+  readRegisteredShard,
+  type ShardDirectory,
+} from "@realms-world/value-ledger";
 import type { LaunchEnv } from "./env";
 import { LaunchExecutionFailure } from "./errors";
 import type { LaunchRun, LaunchSummary } from "./model";
@@ -39,9 +44,7 @@ export const readLaunchShard = async (directory: ShardDirectory, chainId: string
 };
 export const shardChainOf = (env: LaunchEnv, requested?: string | null) => async () => {
   if (requested) return (await requireActiveChain(env.IDENTITY, requested)).chainId;
-  const shards = await activeShards(env.IDENTITY);
-  if (shards.length !== 1) throw new Error("select_official_shard_chain");
-  return shards[0]!.chainId;
+  return (await officialChain(env.IDENTITY))?.chainId ?? null;
 };
 
 export const launchExecutorLayer = (target: LaunchTarget, resolveSlot: SlotResolver) =>

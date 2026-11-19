@@ -1,15 +1,29 @@
 import { expect, it, vi } from "vitest";
-import { activeShards, readRegisteredShard } from "./official-shards";
+import { officialChain, readRegisteredShard, requireActiveChain } from "./official-shards";
 const directory = {
   shards: vi.fn(async () => [
     { chainId: "0x1", url: "https://one.test", status: "active" as const },
     { chainId: "0x2", url: "https://two.test", status: "retired" as const },
   ]),
 };
-it("reads official membership anew and never serves a retired shard as playable", async () => {
-  expect(await activeShards(directory)).toEqual([{ chainId: "0x1", url: "https://one.test", status: "active" }]);
+it("names the one chain the directory serves, read anew, and never a retired one", async () => {
+  expect(await officialChain(directory)).toEqual({ chainId: "0x1", url: "https://one.test", status: "active" });
   directory.shards.mockResolvedValueOnce([{ chainId: "0x1", url: "https://one.test", status: "retired" } as never]);
-  expect(await activeShards(directory)).toEqual([]);
+  expect(await officialChain(directory)).toBeNull();
+});
+it("refuses a directory that serves two chains", async () => {
+  const two = {
+    shards: async () => [
+      { chainId: "0x1", url: "https://one.test", status: "active" as const },
+      { chainId: "0x2", url: "https://two.test", status: "draining" as const },
+    ],
+  };
+  await expect(officialChain(two)).rejects.toThrow("more_than_one_official_chain");
+  await expect(requireActiveChain(two, "0x1")).rejects.toThrow("more_than_one_official_chain");
+});
+it("accepts only the official chain when a route names one", async () => {
+  expect(await requireActiveChain(directory, "0x01")).toMatchObject({ chainId: "0x1" });
+  await expect(requireActiveChain(directory, "0x2")).rejects.toThrow("unlisted_or_inactive_shard");
 });
 it("uses the directory URL and refuses a mismatched manifest rather than any configured shard", async () => {
   const network = vi.fn<typeof fetch>(async () =>

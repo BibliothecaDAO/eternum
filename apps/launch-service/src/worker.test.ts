@@ -538,13 +538,13 @@ it.each([
     try {
       await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
       const deadline = Date.now() + 10000;
-      let health: { joinFailures?: { chainId: string; code: string }[] } = {};
+      let health: { joinFailure?: { chainId: string; code: string } | null } = {};
       while (Date.now() < deadline) {
         health = (await (await mf.dispatchFetch(`${ORIGIN}/api/factory/health`)).json()) as typeof health;
-        if (approvalRequests > 0 && health.joinFailures?.[0]?.code === code) break;
+        if (approvalRequests > 0 && health.joinFailure?.code === code) break;
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
-      expect(health.joinFailures).toMatchObject([{ chainId: SHARD_CHAIN, code }]);
+      expect(health.joinFailure).toMatchObject({ chainId: SHARD_CHAIN, code });
       expect(approvalRequests).toBeGreaterThan(0);
       expect(redirectRequests).toBe(0);
       expect(joinRpc.deployed).toBe(false);
@@ -561,14 +561,14 @@ it("joins a fresh account through identity approval and account deployment in wo
   try {
     await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
     const deadline = Date.now() + 10000;
-    let health: { joinFailures?: unknown[] } = {};
+    let health: { joinFailure?: unknown } = {};
     while (Date.now() < deadline) {
       health = (await (await mf.dispatchFetch(`${ORIGIN}/api/factory/health`)).json()) as typeof health;
-      if (joinRpc.deployed && health.joinFailures?.length === 0) break;
+      if (joinRpc.deployed && health.joinFailure === null) break;
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
     expect(joinRpc.deployed).toBe(true);
-    expect(health.joinFailures).toEqual([]);
+    expect(health.joinFailure).toBeNull();
   } finally {
     freshAccount = false;
   }

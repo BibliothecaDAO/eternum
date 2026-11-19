@@ -15,7 +15,7 @@ import { decodeRelaySettings, ledgerAddress, ledgerContractOf, type RelaySetting
 import { bindLedgerState, ledgerOrNull, ledgerStateName } from "./ledger-state";
 import {
   relayAccountAddress,
-  activeShards,
+  officialChain,
   requireActiveChain,
   readRegisteredShard,
   type ShardDirectory,
@@ -824,12 +824,10 @@ const heldOf = async (env: RelayEnv) =>
   (await Promise.all((await env.IDENTITY.shards()).map((shard) => relayOf(env, shard.chainId).shardHeld()))).flat();
 const healthOf = async (env: RelayEnv) => {
   const ledger = await ledgerOf(env).ledgerHealth();
-  const shards = await Promise.all(
-    (await activeShards(env.IDENTITY)).map(async (shard) => ({
-      chainId: shard.chainId,
-      ...(await relayOf(env, shard.chainId).shardHealth()),
-    })),
-  );
+  const official = await officialChain(env.IDENTITY);
+  const shards = official
+    ? [{ chainId: official.chainId, ...(await relayOf(env, official.chainId).shardHealth()) }]
+    : [];
   return { ...ledger, success: ledger.success && shards.every((row) => row.success), shards, held: await heldOf(env) };
 };
 /** Diagnostics expose reasons only; the monitor independently verifies contract evidence. */
@@ -842,8 +840,8 @@ export class RelayDiagnostics extends WorkerEntrypoint<RelayEnv> {
   }
   /** The monitor's operator reset follows an admin's void of a report: the held honest claims are asked about now. */
   async recoverHeld() {
-    for (const shard of await activeShards(this.env.IDENTITY))
-      await relayOf(this.env, shard.chainId).requestReconcile();
+    const official = await officialChain(this.env.IDENTITY);
+    if (official) await relayOf(this.env, official.chainId).requestReconcile();
   }
 }
 export class ValueLaunch extends WorkerEntrypoint<RelayEnv> {
@@ -1025,13 +1023,8 @@ export default {
     } catch {
       console.error("ledger_tick_unavailable");
     }
-    for (const shard of await activeShards(env.IDENTITY)) {
-      try {
-        await relayOf(env, shard.chainId).tick(shard.chainId, hourly);
-      } catch {
-        /* One unavailable shard must not suppress another shard. */
-      }
-    }
+    const official = await officialChain(env.IDENTITY);
+    if (official) await relayOf(env, official.chainId).tick(official.chainId, hourly);
   },
 };
 

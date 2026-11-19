@@ -31,7 +31,7 @@ vi.mock("@realms-world/value-ledger", async (importOriginal) => ({
   rpcAt: () => ({ getChainId: async () => "0x1" }),
   requireActiveChain: async () => {},
   relayAccountAddress: () => "0x5",
-  activeShards: async () => [{ chainId: "0x1" }],
+  officialChain: async () => ({ chainId: "0x1" }),
   readRegisteredShard: async () => ({
     chainId: "0x1",
     rpcUrl: "https://shard.test",

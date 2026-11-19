@@ -49,8 +49,8 @@ so it grows until the host runs out.
 The launch Worker reports a failed or stranded run, or a launcher or slot that could not join or freeze. A game is not
 being created or its players are not being seated. A failed run is not retried by itself.
 
-1. `curl -s https://play.dev-realms.party/api/factory/health`: `failedRuns`, `strandedRuns`, `joinFailures`,
-   `freezeFailures`, each with its game or slot and code.
+1. `curl -s https://play.dev-realms.party/api/factory/health`: every failure it reports, each with its game or slot and
+   code.
 2. `pnpm --dir apps/launch-service exec wrangler tail realms-launch-staging`: the failing step, live.
 3. `sudo docker logs --since 30m realms-dev-rpc-1 2>&1 | grep rpc_refused | tail`: the RPC's refusals of the launcher's
    or a seater's writes, each with its reason.
