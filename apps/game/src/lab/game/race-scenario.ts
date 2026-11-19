@@ -2,7 +2,7 @@ import { DAYS_PER_BAG, seasonSeconds } from "@bibliothecadao/eternum";
 import { deepCenter, nativeRuleConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { aspects, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { deepScenario } from "./deep-scenario";
-import { wire, type LabScenario } from "./lab-chain";
+import { LAB_LINKED_WALLET, wire, type LabScenario } from "./lab-chain";
 import type { GameSyncFact } from "@bibliothecadao/eternum/game-sync";
 
 /** Confirmed race facts on the shared Deep; the production Season surface reads the same snapshot after reconnect. */
@@ -77,6 +77,7 @@ export function raceScenario(finished = false): LabScenario {
     startsAt: now,
     opensOn: { col: center.col, row: center.row },
     scoped: true,
+    wallet: LAB_LINKED_WALLET,
     history: battleHistory(now, center, half),
   };
 }

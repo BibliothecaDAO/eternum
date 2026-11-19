@@ -2,15 +2,13 @@ import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
-import { wire, type LabFact, type LabScenario } from "./lab-chain";
+import { LAB_LINKED_WALLET, wire, type LabFact, type LabScenario } from "./lab-chain";
 import { spireScenario } from "./spire-scenario";
 
 /** A Realm's labor a day, as Frontier grants it. */
 const LABOR_PER_REALM = 1_000;
 /** Realm 7's labor before its claim: room in its store for the claim's. */
 const LABOR_HELD = 500n * BigInt(RESOURCE_PRECISION);
-/** The wallet the lab player's account has linked, which holds the Realms they claim with. */
-const LINKED_WALLET = "0x456";
 
 /**
  * The spire's game with Realm labor on (/lab/game?scenario=claim): a Realm's day of labor, realm 7 with room for it,
@@ -29,7 +27,7 @@ export const claimScenario = (): LabScenario => {
       value: wire({ game_id: 1, realm_id: home.metadata.realm_id, home: 7n }),
     },
   ] as never);
-  return { ...spire, wallet: LINKED_WALLET };
+  return { ...spire, wallet: LAB_LINKED_WALLET };
 };
 
 const laborRules = (): LabFact => ({

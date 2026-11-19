@@ -2,7 +2,7 @@ import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 import { actionsScenario } from "./actions-scenario";
-import { chainOf, wire, type LabCommand, type LabFact, type LabScenario } from "./lab-chain";
+import { chainOf, LAB_LINKED_WALLET, wire, type LabCommand, type LabFact, type LabScenario } from "./lab-chain";
 /** The army's stamina after a day of exploring. */
 const STAMINA_LEFT = 40n;
 
@@ -17,7 +17,7 @@ export const upkeepScenario = (): LabScenario => {
   return {
     ...actions,
     store,
-    wallet: "0x456",
+    wallet: LAB_LINKED_WALLET,
     answer: (command, chain, now) => (answers[command.kind] ?? actions.answer)(command, chain, now),
   };
 };

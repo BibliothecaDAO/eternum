@@ -1,4 +1,3 @@
-import { useConnectStore } from "@/shell/sign-in/connect";
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import type { JoinedShare } from "@realms-world/identity";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -44,6 +43,7 @@ export const LAB_GAME = {
 } as const;
 /** The lab game's end: a month of chain seconds, so a session never sees it close. */
 export const LAB_GAME_ENDS_AT = 30 * 86_400;
+export const LAB_LINKED_WALLET = "0x456";
 /** The lab shard's node and its account class, as its manifest names them. */
 const LAB_SHARD_RPC = "https://rpc.lab.invalid";
 const LAB_ACCOUNT_CLASS = "0x2";
@@ -385,7 +385,6 @@ const signInLabPlayer = (wallet: string | undefined, joined: JoinedShare) => {
   identityClient.joinedShare = async () => joined;
   identityClient.getOrderIntent = async () => ({ order: null, members: {} });
   answerLabOpening();
-  useConnectStore.getState().dismissWallet();
   useIdentitySessionStore.getState().applySession(session);
 };
 

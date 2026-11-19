@@ -6,7 +6,7 @@ import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-c
 import { getNeighborHexes, StructureType } from "@bibliothecadao/types";
 
 import { siteAt } from "./after-battle-scenario";
-import { type LabFact, type LabScenario, wire } from "./lab-chain";
+import { LAB_LINKED_WALLET, type LabFact, type LabScenario, wire } from "./lab-chain";
 import { besideOnOpenLand, spireScenario } from "./spire-scenario";
 
 const PRECISION = 1_000_000_000n;
@@ -82,7 +82,7 @@ const ruinScenario = (
   ] as never);
   return {
     ...spire,
-    wallet: "0x456",
+    wallet: LAB_LINKED_WALLET,
     answer: (command, chain, now) =>
       command.kind === "BattleGuard" && Number(command.fields.defender_id) === SITE
         ? clearTheRuin(chain, BigInt(command.fields.attacker_id), spire.player, now)
