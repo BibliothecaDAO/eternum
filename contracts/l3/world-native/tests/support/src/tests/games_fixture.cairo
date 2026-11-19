@@ -992,6 +992,40 @@ pub mod GamesFixture {
                 game_context,
             )
         }
+        fn assert_loot_available(
+            ref self: TContractState,
+            from: crate::resources::ResourceKey,
+            resources: Span<crate::resources::ResourceAmount>,
+            timestamp: u64,
+            game_context: crate::commands::ResourceContext,
+        ) {
+            let classes = fixture_classes(from.game_id);
+            crate::resources::IResourceOperationsDispatcherTrait::assert_loot_available(
+                crate::resources::IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() },
+                from,
+                resources,
+                timestamp,
+                game_context,
+            )
+        }
+        fn take_loot(
+            ref self: TContractState,
+            from: crate::resources::ResourceKey,
+            to: crate::resources::ResourceKey,
+            resources: Span<crate::resources::ResourceAmount>,
+            timestamp: u64,
+            game_context: crate::commands::ResourceContext,
+        ) {
+            let classes = fixture_classes(from.game_id);
+            crate::resources::IResourceOperationsDispatcherTrait::take_loot(
+                crate::resources::IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() },
+                from,
+                to,
+                resources,
+                timestamp,
+                game_context,
+            )
+        }
         fn settle_production(
             ref self: TContractState,
             key: crate::resources::ResourceKey,
