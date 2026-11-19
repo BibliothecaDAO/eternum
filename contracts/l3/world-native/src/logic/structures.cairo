@@ -745,8 +745,9 @@ pub mod StructuresLogic {
                 Discovery::Ruin(reward) => {
                     assert!(rules.day_unit_seconds != 0, "site requires expeditions");
                     crate::logic::army_relics::store_ruin(key, reward);
-                    if crate::fragments::holds_cache(seed, crate::logic::expeditions::depth_at(game_id, coord)) {
-                        crate::logic::army_relics::store_cache(key, reward);
+                    let depth = crate::logic::expeditions::depth_at(game_id, coord);
+                    if crate::fragments::holds_cache(seed, depth) {
+                        crate::logic::army_relics::store_cache(key, reward, depth);
                     }
                 },
                 Discovery::None | Discovery::Shrine | Discovery::Well | Discovery::Spire |

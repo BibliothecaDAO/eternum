@@ -89,8 +89,8 @@ pub fn award(key: ExplorerKey, site: ResourceKey, replace: Option<u8>) {
     delete_row('RuinRelic', site);
 }
 
-pub fn store_cache(key: ResourceKey, relic: ArmyRelic) {
-    let amount = crate::fragments::cache_fragments(relic);
+pub fn store_cache(key: ResourceKey, relic: ArmyRelic, depth: u8) {
+    let amount = crate::fragments::cache_fragments(relic, depth);
     crate::state::write().relics.ruin_caches.write((key.game_id, key.entity_id), amount);
     emit_row('RuinCache', key, amount);
 }

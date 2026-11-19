@@ -53,6 +53,6 @@ pub fn holds_cache(seed: u256, depth: u8) -> bool {
     roll % 100 < percent.into()
 }
 
-pub fn cache_fragments(relic: crate::army_relics::ArmyRelic) -> u128 {
-    crate::army_relics::ruin_strength(relic.rank) / CACHE_TROOPS.into()
+pub fn cache_fragments(relic: crate::army_relics::ArmyRelic, depth: u8) -> u128 {
+    crate::army_relics::ruin_strength(relic.rank, depth) / CACHE_TROOPS.into()
 }
