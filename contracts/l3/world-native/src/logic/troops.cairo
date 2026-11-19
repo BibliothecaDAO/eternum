@@ -170,7 +170,9 @@ pub mod TroopState {
             for slot in 0..count {
                 let id = state.troops.home_armies.read((key.game_id, previous, slot));
                 if id != key.explorer_id {
-                    state.troops.home_armies.write((key.game_id, previous, next), id);
+                    if next != slot {
+                        state.troops.home_armies.write((key.game_id, previous, next), id);
+                    }
                     next += 1;
                 }
             }
@@ -879,8 +881,11 @@ pub mod TroopsLogic {
             before: u128,
             game_context: crate::commands::ActionContext,
         ) {
+            if explorer.troops.count == 0 {
+                self.destroy_explorer(key, explorer);
+                return;
+            }
             let game_context = crate::commands::execution_context(key.game_id, game_context);
-
             self
                 .resources_dispatcher(key.game_id)
                 .change_explorer_capacity(
@@ -889,11 +894,7 @@ pub mod TroopsLogic {
                     false,
                     crate::commands::resource_context(game_context),
                 );
-            if explorer.troops.count == 0 {
-                self.destroy_explorer(key, explorer);
-            } else {
-                crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
-            }
+            crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
         }
     }
 }

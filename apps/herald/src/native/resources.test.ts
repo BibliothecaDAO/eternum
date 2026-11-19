@@ -69,6 +69,28 @@ describe("native resource facts", () => {
     expect(() => native.applyReceipt(fold, receipt([balance, invalid]), 10, 0)).toThrow();
     expect(fold.retainedRowCount()).toBe(0);
   });
+
+  it("folds a dying army's weight to the same rows whether or not a set precedes its deletion", () => {
+    const folded = (death: ReturnType<typeof resourceEvent>[]) => {
+      const { native, fold } = setup();
+      native.applyReceipt(
+        fold,
+        receipt([
+          resourceEvent("ResourceWeight", ["1", "41"], { capacity: 900n, weight: 30n }),
+          resourceEvent("ResourceWeight", ["1", "42"], { capacity: 500n, weight: 0n }),
+        ]),
+        10,
+        0,
+      );
+      native.applyReceipt(fold, receipt(death), 11, 0);
+      return fold.modelRows("ResourceWeight").map((row) => row.value);
+    };
+    const deleted = resourceEvent("ResourceWeight", ["1", "41"]);
+    const shrunk = resourceEvent("ResourceWeight", ["1", "41"], { capacity: 0n, weight: 30n });
+
+    expect(folded([deleted])).toEqual([{ game_id: "0x1", entity_id: "0x2a", capacity: "0x1f4", weight: "0x0" }]);
+    expect(folded([shrunk, deleted])).toEqual(folded([deleted]));
+  });
 });
 
 describe("native production facts", () => {

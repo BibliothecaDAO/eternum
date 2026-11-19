@@ -34,26 +34,24 @@ fn sparse_resources_emit_typed_rows_and_skip_unchanged_values() {
 }
 
 #[test]
-fn resource_deletion_clears_production_without_affecting_another_game() {
+fn resource_deletion_clears_balances_and_weight_without_affecting_another_game() {
     let resources = fixture();
     let key = ResourceKey { game_id: 1, entity_id: 7 };
     let other = ResourceKey { game_id: 2, ..key };
     resources.initialize(key, 100);
     resources.initialize(other, 200);
-    resources.start(key);
     resources.grant(key, 10);
     resources.grant(other, 20);
     let mut spy = spy_events();
     resources.destroy(key);
     let events = spy.get_events().emitted_by(resources.contract_address);
-    assert_eq!(events.events.len(), 3);
-    for index in 0_u32..3 {
+    assert_eq!(events.events.len(), 2);
+    for index in 0_u32..2 {
         let (_, event) = events.events.at(index);
         assert_eq!(*event.keys.at(0), selector!("RowDeleted"));
     }
     resources.initialize(key, 50);
     assert_eq!(resources.balance(key), 0);
-    assert_eq!(resources.production(key), Default::default());
     assert_eq!(resources.weight(key), Weight { capacity: 50, weight: 0 });
     assert_eq!(resources.balance(other), 20);
     assert_eq!(resources.weight(other), Weight { capacity: 200, weight: 20 });
