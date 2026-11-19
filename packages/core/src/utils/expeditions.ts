@@ -1,6 +1,6 @@
 import { beastBand } from "./frontier-beast-band";
 import { currentArmy } from "./deep";
-import { deepCenter } from "./deep-geometry";
+import { deepViewFor } from "./deep-geometry";
 import { entityHomeNamespace } from "./entity-home";
 import { reachableDepth } from "./realm-research";
 import { MAX_U32, ResourcesIds } from "@bibliothecadao/types";
@@ -226,7 +226,8 @@ export const spireEtherealView = (
   const gameId = spire.realm.game_id;
   const rules = readExpeditionRules(store, gameId);
   if (!rules) throw new Error("A spire lights only in an expedition game");
-  if (spire.targetDepth === 3 && store.get("DeepRules", { game_id: gameId })) return deepCenter(rules.spacing);
+  if (spire.targetDepth === 3 && store.get("DeepRules", { game_id: gameId }))
+    return deepViewFor(store, gameId, spire.realm.entity_id, rules.spacing);
   const inEthereal = liveHomeArmies(store, Number(spire.realm.entity_id), gameId)
     .map((army) => entityMapPosition(store, gameId, army.explorer_id))
     .find((at) =>

@@ -1,4 +1,5 @@
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
+import type { NativeFactStore } from "../client/native-fact-store";
 import { surfaceNeighborAtDistance } from "./travel";
 
 export function deepCenter(spacing: number): { col: number; row: number } {
@@ -18,7 +19,7 @@ export function isDeepTile(spacing: number, tile: { col: number; row: number; al
   );
 }
 
-export function deepGate(spacing: number, gateDistance: number, aspect: number): { col: number; row: number } {
+function deepGate(spacing: number, gateDistance: number, aspect: number): { col: number; row: number } {
   if (aspect < 1 || aspect > 4) throw new Error(`No gate for Aspect ${aspect}`);
   const center = deepCenter(spacing);
   const { x, y } = compassPoint({ x: center.col, y: center.row }, aspect - 1, gateDistance);
@@ -38,3 +39,15 @@ const zigzag = (origin: { x: number; y: number }, first: number, second: number,
     second,
     Math.floor(distance / 2),
   );
+
+export function deepViewFor(
+  store: Pick<NativeFactStore, "get">,
+  gameId: number,
+  home: bigint | null,
+  spacing: number,
+): { col: number; row: number } {
+  const rules = store.get("DeepRules", { game_id: gameId });
+  if (!rules) throw new Error("A gate view needs the game's DeepRules row");
+  const aspect = home === null ? undefined : store.get("HomeAspect", { game_id: gameId, home })?.aspect;
+  return aspect ? deepGate(spacing, rules.gate_distance, aspect) : deepCenter(spacing);
+}
