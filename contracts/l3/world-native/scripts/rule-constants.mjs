@@ -33,6 +33,7 @@ export async function readBalanceConstants(root) {
     nativeArrivalConstants: await readArrivalConstants(root),
     nativeOathConstants: await readOathConstants(root),
     nativeResearchConstants: await readResearchConstants(root),
+    nativeFragmentConstants: await readFragmentConstants(root),
   };
 }
 
@@ -67,6 +68,10 @@ async function readQuestConstants(root) {
 
 async function readResearchConstants(root) {
   return unsignedConstants(await readFile(new URL("src/research.cairo", root), "utf8"), "8");
+}
+
+async function readFragmentConstants(root) {
+  return unsignedConstants(await readFile(new URL("src/fragments.cairo", root), "utf8"), "8|16");
 }
 
 async function readOathConstants(root) {

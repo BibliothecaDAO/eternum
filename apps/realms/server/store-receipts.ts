@@ -1,10 +1,8 @@
-import { SEAL_CENTS, STORE_PRODUCTS } from "@bibliothecadao/types";
+import { STORE_PRODUCTS } from "@bibliothecadao/types";
 
 import type { IdentityAuth } from "./auth";
 import type { IdentityEnv } from "./env";
 import { json, readBody } from "./http";
-import { RealmHoldingsUnavailableError } from "./realm-holdings";
-import { holderLevelOf, readSeal, type HolderFacts } from "./seal";
 import { authorizeShop, namedGame, type NamedGame, type ShopAccess } from "./shop-game";
 
 const BODY_BYTES = 32 * 1024;
@@ -21,7 +19,6 @@ export type StoreVerifier = (evidence: string) => Promise<VerifiedPurchase | nul
 
 export interface ReceiptWorld {
   db: D1Database;
-  holderFacts: (realmsId: string) => Promise<HolderFacts>;
   access: ShopAccess;
   /** Only the stores that are set up: a store without a verifier is refused, never believed. */
   verifiers: Partial<Record<(typeof STORES)[number], StoreVerifier>>;
@@ -30,10 +27,7 @@ export interface ReceiptWorld {
 
 /** What came of a verified payment, as the ledger records it. */
 type Outcome =
-  | "seal"
-  | "unfulfilled_seal_held"
   | "fragments"
-  | "unfulfilled_price"
   | "unfulfilled_product"
   | "unfulfilled_deleted"
   | "unfulfilled_not_in_game"
@@ -41,29 +35,17 @@ type Outcome =
 
 type Product = (typeof STORE_PRODUCTS)[keyof typeof STORE_PRODUCTS];
 
-/**
- * POST /api/shop/purchase-check {chain, game, product}: whether this account may buy this product now, by the same
- * rules settlement applies to a verified payment. Refuses a caller who is not a signed-in player of that running Frontier
- * game (the shop's one rule), a product the shop does not sell, a second seal, and a discounted seal for an account that
- * is not its holder (503 while its holdings cannot be read); otherwise 200. Nothing calls it yet: no shop screen or
- * payment flow exists, so today no payment is stopped by it and settlement's recorded refund is the only refusal.
- */
 export async function handlePurchaseCheck(
   request: Request,
   auth: IdentityAuth,
-  world: Pick<ReceiptWorld, "db" | "access" | "holderFacts">,
+  world: Pick<ReceiptWorld, "access">,
 ): Promise<Response> {
   if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
   const asked = await readPurchase(request);
   const seat = await authorizeShop(request, auth, world.access, asked?.game ?? null);
   if (seat instanceof Response) return seat;
   const product = asked?.product === undefined ? undefined : productOf(asked.product);
-  if (!product) return json({ error: "unknown_product" }, 422);
-  if (product.kind === "seal" && (await readSeal(world.db, seat.owner)))
-    return json({ error: "seal_already_held" }, 409);
-  const covers = await sealPriceCovers(world, seat.owner, product);
-  if (covers === "short") return json({ error: "seal_price_not_for_holder" }, 409);
-  return covers === "unknown" ? json({ error: "holdings_unavailable" }, 503) : json({ status: "ok" });
+  return product ? json({ status: "ok" }) : json({ error: "unknown_product" }, 422);
 }
 
 const readPurchase = async (request: Request): Promise<{ game: NamedGame | null; product: string } | null> => {
@@ -76,18 +58,6 @@ const readPurchase = async (request: Request): Promise<{ game: NamedGame | null;
   }
 };
 
-/**
- * POST /api/shop/receipt {store, receipt, chain, game}: a store purchase of the signed-in account in the named game,
- * checked with its store. Every verified payment is
- * written once to the receipt ledger with its outcome, in one transaction with what it buys: the seal, when the
- * product's price covers the seal's store price for this account's holder level, or a pending Fragment credit for the
- * co-signed hand-off. A payment that cannot be honoured (an unknown product, a price below the buyer's, a seal the
- * account already holds, an account already deleted) is recorded as unfulfilled for the owner to refund; one whose
- * holder level or game seat cannot be read is recorded as pending, grants nothing, and is resolved when the same receipt
- * is sent again. The same receipt sent again answers as it did the first time; one another account used is refused.
- * A payment of someone who is not a player of the named running Frontier game is recorded as unfulfilled for refund,
- * never granted; `/api/shop/purchase-check` would refuse it earlier once a payment flow asks it.
- */
 export async function handleStoreReceipt(request: Request, auth: IdentityAuth, world: ReceiptWorld): Promise<Response> {
   if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
   const session = await auth.api.getSession({ headers: request.headers });
@@ -109,14 +79,6 @@ export async function handleStoreReceipt(request: Request, auth: IdentityAuth, w
 
 const SETTLE_ATTEMPTS = 3;
 
-/**
- * Settles a verified payment through the ledger. The receipt is recorded first, whatever else can fail: an earlier row
- * answers it; a payment whose eligibility cannot be read is recorded as pending and resolved by its retry; every other
- * outcome is written with what it buys in one batch. What a batch buys is written only where the ledger row of that
- * batch stands for this owner, so an account deleted before the batch runs (its row owner cleared) buys nothing. A batch
- * that loses a race (the same receipt, or a seal this account just bought with another receipt) writes nothing, and the
- * next pass reads the winner.
- */
 const settleReceipt = async (
   world: ReceiptWorld,
   owner: string,
@@ -158,10 +120,6 @@ const readLedger = (db: D1Database, receipt: string) =>
     .bind(receipt)
     .first<{ owner: string | null; product: string; outcome: Outcome }>();
 
-/**
- * What this payment can buy this account now: a seal already held settles it first, then the shop's rule (the account
- * plays in the named running Frontier game), then the price against the account's live holder level.
- */
 const outcomeOf = async (
   world: ReceiptWorld,
   owner: string,
@@ -169,33 +127,9 @@ const outcomeOf = async (
   game: NamedGame,
 ): Promise<Outcome> => {
   if (!product) return "unfulfilled_product";
-  if (product.kind === "seal" && (await readSeal(world.db, owner))) return "unfulfilled_seal_held";
   const plays = await playsInGame(world, owner, game);
   if (plays === null) return "pending_eligibility";
-  if (!plays) return "unfulfilled_not_in_game";
-  if (product.kind === "fragments") return "fragments";
-  const covers = await sealPriceCovers(world, owner, product);
-  return covers === "unknown" ? "pending_eligibility" : covers === "short" ? "unfulfilled_price" : "seal";
-};
-
-/**
- * Whether a seal product's price covers the seal's store price for this account's holder level: the one rule authorisation
- * and settlement both ask. The holder level is read only for a discounted product; `unknown` while holdings cannot be read.
- * Fragment bundles are not priced against a holder, so they always cover.
- */
-const sealPriceCovers = async (
-  world: Pick<ReceiptWorld, "holderFacts">,
-  owner: string,
-  product: Product,
-): Promise<"covers" | "short" | "unknown"> => {
-  if (product.kind !== "seal") return "covers";
-  try {
-    const holder = product.cents < SEAL_CENTS.store.none ? holderLevelOf(await world.holderFacts(owner)) : "none";
-    return product.cents < SEAL_CENTS.store[holder] ? "short" : "covers";
-  } catch (error) {
-    if (error instanceof RealmHoldingsUnavailableError) return "unknown";
-    throw error;
-  }
+  return plays ? "fragments" : "unfulfilled_not_in_game";
 };
 
 /** Whether the account plays in the named running Frontier game; null while its shard cannot say. */
@@ -240,15 +174,7 @@ const fulfilment = (
   const { receipt, owner, product, outcome, now } = buy;
   const stands =
     'WHERE EXISTS (SELECT 1 FROM "store_receipts" WHERE "receipt" = ?1 AND "owner" = ?2 AND "outcome" = ?3)';
-  if (outcome === "seal" && product?.kind === "seal")
-    return [
-      db
-        .prepare(
-          `INSERT INTO "seal" ("owner", "paid_cents", "source", "receipt", "granted_at") SELECT ?2, ?4, 'store', ?1, ?5 ${stands}`,
-        )
-        .bind(receipt, owner, outcome, product.cents, now),
-    ];
-  if (outcome === "fragments" && product?.kind === "fragments")
+  if (outcome === "fragments" && product)
     return [
       db
         .prepare(
@@ -261,15 +187,9 @@ const fulfilment = (
 
 const answerFor = (outcome: Outcome, product: Product | undefined, repeated: boolean) => {
   switch (outcome) {
-    case "seal":
-      return json({ status: "seal", repeated });
-    case "unfulfilled_seal_held":
-      return json({ error: "seal_already_held" }, 409);
     case "fragments":
-      if (product?.kind !== "fragments") throw new Error("ledger_fragments_for_unknown_product");
+      if (!product) throw new Error("ledger_fragments_for_unknown_product");
       return json({ status: "fragments", fragments: product.fragments, repeated });
-    case "unfulfilled_price":
-      return json({ error: "seal_price_not_for_holder" }, 409);
     case "unfulfilled_product":
       return json({ error: "unknown_product" }, 422);
     case "unfulfilled_deleted":
@@ -277,7 +197,7 @@ const answerFor = (outcome: Outcome, product: Product | undefined, repeated: boo
     case "unfulfilled_not_in_game":
       return json({ error: "no_shop_outside_a_frontier_game" }, 404);
     case "pending_eligibility":
-      return json({ error: "holdings_unavailable" }, 503);
+      return json({ error: "shop_unavailable" }, 503);
   }
 };
 

@@ -25,6 +25,7 @@ pub mod events;
 pub mod expeditions;
 pub mod exploration_rewards;
 pub mod fixed_constants;
+pub mod fragments;
 pub mod frontier_extension;
 
 pub mod game;

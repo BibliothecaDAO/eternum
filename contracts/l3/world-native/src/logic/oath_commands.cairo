@@ -3,6 +3,8 @@ use crate::troop_management::{Army, ManageTroops};
 
 pub fn requires_answer(game_id: u32, command: Command) -> bool {
     match command {
+        Command::BuySeal(_) => false,
+        Command::BuyStamina(value) => waiting(game_id, value.explorer_id),
         Command::ChooseOath(_) => false,
         Command::ClaimDailyQuest(_) => false,
         Command::CreateExplorer(_) => false,

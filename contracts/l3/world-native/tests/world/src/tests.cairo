@@ -544,6 +544,7 @@ mod army_relics;
 mod bridge;
 mod days;
 mod entity_ids;
+mod fragments;
 mod guilds;
 
 mod lane_interfaces;

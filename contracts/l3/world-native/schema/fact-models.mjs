@@ -1111,6 +1111,24 @@ export function defineFactModels({ struct, model: declare }) {
       struct("deposits::DepositSource"),
     ),
     model(
+      "Fragments",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "account", type: "core::starknet::contract_address::ContractAddress" },
+      ],
+      [{ name: "balance", type: "core::integer::u128" }],
+    ),
+    model(
+      "Seal",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "account", type: "core::starknet::contract_address::ContractAddress" },
+      ],
+      [{ name: "granted_at", type: "core::integer::u64" }],
+    ),
+    model(
       "SpendLords",
       "game",
       [
@@ -1357,6 +1375,7 @@ export function defineFactModels({ struct, model: declare }) {
     model("ArmyRelics", "game", struct("troops::ExplorerKey"), struct("army_relics::ArmyRelics")),
     model("ArmyRelicEffect", "game", struct("army_relics::ArmyRelicEffectKey"), struct("army_relics::ArmyRelicEffect")),
     model("RuinRelic", "game", struct("resources::ResourceKey"), struct("army_relics::ArmyRelic")),
+    model("RuinCache", "game", struct("resources::ResourceKey"), [{ name: "fragments", type: "core::integer::u128" }]),
     model("ArmyCombat", "game", struct("troops::ExplorerKey"), struct("combat::ArmyCombat")),
     model("ArmyProgress", "game", struct("troops::ExplorerKey"), struct("progression::ArmyProgress")),
     model("ArmyDay", "game", struct("troops::ExplorerKey"), [{ name: "day", type: "core::integer::u64" }]),
@@ -1755,6 +1774,8 @@ export const syncScopes = {
   PointsAwarded: byPlayer,
   LordsWithdrawal: { owners: ["account"] },
   LaborGrant: { owners: ["account"] },
+  Fragments: { owners: ["account"] },
+  Seal: { owners: ["account"] },
   SpendLords: { owners: ["account"] },
   PrincipalWithdrawal: { owners: ["account"] },
   DepositReceipt: { owners: ["account"] },
@@ -1771,6 +1792,7 @@ export const syncScopes = {
   ArmyRelics: { entities: ["explorer_id"] },
   ArmyRelicEffect: { entities: ["explorer_id"] },
   RuinRelic: { entities: ["entity_id"] },
+  RuinCache: { entities: ["entity_id"] },
   ExpeditionDiscovery: { realms: ["structure_id"], epoch: "epoch" },
   ExpeditionSpire: { realms: ["structure_id"], epoch: "epoch" },
   ArmyDay: { entities: ["explorer_id"] },

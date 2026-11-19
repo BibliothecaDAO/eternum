@@ -1,7 +1,9 @@
 use snforge_std::interact_with_state;
 use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use world_test_support::tests::Deployment;
-use world_test_support::tests::entry::ISettlementEntrySafeDispatcherTrait;
+use world_test_support::tests::entry::{
+    EventSpyTrait, EventsFilterTrait, IHomeGrantsSafeDispatcherTrait, ISettlementEntrySafeDispatcherTrait,
+};
 use world_test_support::tests::resource_commands::execute_in_game;
 use crate::commands::Command;
 use crate::entry::{IResourceContextDispatcherTrait, IResourceContextLibraryDispatcher};
@@ -130,78 +132,131 @@ fn producers_are_no_ops_for_games_without_quest_rules() {
     );
 }
 
+fn ticket() -> world_test_support::tests::entry::EntryEntitlement {
+    world_test_support::tests::entry::EntryEntitlement {
+        realm_id: 0,
+        metadata_1: 'devcon-2026',
+        metadata_2: crate::settlement::CAMPAIGN_NORMAL.into(),
+        metadata_3: 0,
+        pass_kind: crate::settlement::CAMPAIGN_KIND,
+    }
+}
+
+fn held_realm() -> world_test_support::tests::entry::EntryEntitlement {
+    world_test_support::tests::entry::EntryEntitlement {
+        realm_id: 1, metadata_1: 0, metadata_2: 0, metadata_3: 0, pass_kind: crate::settlement::HELD_REALM_KIND,
+    }
+}
+
+#[feature("safe_dispatcher")]
+fn register(d: Deployment, game_id: u32, entitlement: world_test_support::tests::entry::EntryEntitlement) {
+    snforge_std::start_cheat_caller_address(d.games, world_test_support::tests::authority());
+    world_test_support::tests::entry::ledger(d)
+        .register_entitlement(world_test_support::tests::entry::EntryKey { game_id, owner: d.actor }, entitlement)
+        .unwrap();
+    snforge_std::stop_cheat_caller_address(d.games);
+}
+
+#[feature("safe_dispatcher")]
+fn grant_seal(d: Deployment, game_id: u32, account: starknet::ContractAddress) -> bool {
+    snforge_std::start_cheat_caller_address(d.games, world_test_support::tests::authority());
+    let granted = world_test_support::tests::entry::IHomeGrantsSafeDispatcher { contract_address: d.games }
+        .grant_seal(game_id, account)
+        .is_ok();
+    snforge_std::stop_cheat_caller_address(d.games);
+    granted
+}
+
+fn quest_labor(
+    d: Deployment, game_id: u32, entitlement: Option<world_test_support::tests::entry::EntryEntitlement>, seal: bool,
+) -> u128 {
+    if let Some(entitlement) = entitlement {
+        register(d, game_id, entitlement);
+    }
+    if seal {
+        assert!(grant_seal(d, game_id, d.actor));
+    }
+    let held = entitlement.map(|source| source.pass_kind == crate::settlement::HELD_REALM_KIND) == Some(true);
+    assert!(
+        execute_in_game(
+            d,
+            game_id,
+            Command::SettleSeason(
+                crate::realms::SettleSeason {
+                    selected_realm: None,
+                    order: if held {
+                        None
+                    } else {
+                        Some(world_test_support::tests::registrar::order_of_aspect(d, game_id, 1))
+                    },
+                },
+            ),
+            360,
+        ),
+    );
+    let home = ResourceKey {
+        game_id, entity_id: interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor)),
+    };
+    observe(d, home, crate::quests::REVEALS, 15);
+    assert!(
+        execute_in_game(
+            d, game_id, Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: home.entity_id, day: 0 }), 360,
+        ),
+    );
+    let (_, labor, essence) = interact_with_state(
+        d.games, || crate::state::read().entry.home_labor_grants.read((game_id, home.entity_id, 0)).unwrap(),
+    );
+    assert_eq!(essence, 1500 * crate::rules::RESOURCE_PRECISION);
+    labor / crate::rules::RESOURCE_PRECISION
+}
+
+#[test]
+fn a_seal_a_held_realm_or_a_ticket_home_pays_the_labor_bonus() {
+    let (d, game_id) = quest_game();
+    assert_eq!(quest_labor(d, game_id, None, true), 1500);
+    let (d, game_id) = quest_game();
+    assert_eq!(quest_labor(d, game_id, Some(held_realm()), false), 1500);
+    let (d, game_id) = quest_game();
+    assert_eq!(quest_labor(d, game_id, Some(ticket()), false), 1500);
+    let (d, game_id) = quest_game();
+    assert_eq!(quest_labor(d, game_id, Some(ticket()), true), 1500);
+    let (d, game_id) = quest_game();
+    assert_eq!(quest_labor(d, game_id, None, false), 1000);
+}
+
 #[test]
 #[feature("safe_dispatcher")]
-fn held_and_campaign_homes_collect_the_labor_bonus_without_extra_essence() {
-    for held in array![true, false] {
-        let (d, game_id) = quest_game();
-        let entitlement = world_test_support::tests::entry::EntryEntitlement {
-            realm_id: if held {
-                1
-            } else {
-                0
-            },
-            metadata_1: if held {
-                0
-            } else {
-                'devcon-2026'
-            },
-            metadata_2: if held {
-                0
-            } else {
-                crate::settlement::CAMPAIGN_NORMAL.into()
-            },
-            metadata_3: 0,
-            pass_kind: if held {
-                crate::settlement::HELD_REALM_KIND
-            } else {
-                crate::settlement::CAMPAIGN_KIND
-            },
-        };
-        snforge_std::start_cheat_caller_address(d.games, world_test_support::tests::authority());
-        world_test_support::tests::entry::ledger(d)
-            .register_entitlement(world_test_support::tests::entry::EntryKey { game_id, owner: d.actor }, entitlement)
-            .unwrap();
-        snforge_std::stop_cheat_caller_address(d.games);
-        assert!(
-            execute_in_game(
-                d,
-                game_id,
-                Command::SettleSeason(
-                    crate::realms::SettleSeason {
-                        selected_realm: None,
-                        order: if held {
-                            None
-                        } else {
-                            Some(world_test_support::tests::registrar::order_of_aspect(d, game_id, 1))
-                        },
-                    },
-                ),
-                360,
-            ),
-        );
-        let home = ResourceKey {
-            game_id, entity_id: interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor)),
-        };
-        observe(d, home, crate::quests::REVEALS, 15);
-        assert!(
-            execute_in_game(
-                d,
-                game_id,
-                Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: home.entity_id, day: 0 }),
-                360,
-            ),
-        );
-        interact_with_state(
-            d.games,
-            || {
-                assert_eq!(
-                    crate::state::read().entry.home_labor_grants.read((game_id, home.entity_id, 0)),
-                    Some((d.actor, 1500 * crate::rules::RESOURCE_PRECISION, 1500 * crate::rules::RESOURCE_PRECISION)),
-                );
-            },
-        );
+fn only_the_ledger_operator_grants_one_seal_an_account_while_the_game_runs() {
+    let (d, game_id) = quest_game();
+    let grants = world_test_support::tests::entry::IHomeGrantsSafeDispatcher { contract_address: d.games };
+    snforge_std::start_cheat_caller_address(d.games, d.actor);
+    assert!(grants.grant_seal(game_id, d.actor).is_err());
+    snforge_std::stop_cheat_caller_address(d.games);
+    assert!(!grant_seal(d, game_id, 0.try_into().unwrap()));
+    assert!(!grant_seal(d, game_id + 1, d.actor));
+    snforge_std::start_cheat_block_timestamp(d.games, 400);
+    let mut spy = snforge_std::spy_events();
+    assert!(grant_seal(d, game_id, d.actor));
+    snforge_std::start_cheat_block_timestamp(d.games, 500);
+    assert!(grant_seal(d, game_id, d.actor));
+    let mut rows = array![];
+    for (_, event) in spy.get_events().emitted_by(d.games).events {
+        if *event.keys.at(event.keys.len() - 1) == 'Seal' {
+            rows.append(event.data.span());
+        }
     }
+    assert_eq!(rows.span(), array![array![2, game_id.into(), d.actor.into(), 1, 400].span()].span());
+    interact_with_state(
+        d.games, || {
+            assert_eq!(crate::state::read().entry.seals.read((game_id, d.actor)), Some(400));
+        },
+    );
+    let game = crate::game::IGameDispatcherTrait::game(
+        crate::game::IGameDispatcher { contract_address: d.games }, game_id,
+    );
+    snforge_std::start_cheat_block_timestamp(d.games, game.end_at);
+    let (stranger, _) = world_test_support::tests::deploy_player(777, world_test_support::tests::GUARDIAN);
+    assert!(!grant_seal(d, game_id, stranger));
 }
 
 fn fund(d: Deployment, home: ResourceKey, resource_type: u8, amount: u128) {
@@ -348,4 +403,23 @@ fn late_campaign_recovery_attaches_the_bonus_without_bypassing_any_quest() {
             tomorrow,
         ),
     );
+}
+
+fn held_quest_fragments(wonder: u32) -> u128 {
+    let (d, game_id) = quest_game();
+    world_test_support::tests::resource_commands::set_fixture(
+        d.games, selector!("realms"), selector!("traits"), array![1].span(), wonder * 0x4000000 + 1,
+    );
+    assert_eq!(quest_labor(d, game_id, Some(held_realm()), false), 1500);
+    let home = interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
+    assert!(
+        execute_in_game(d, game_id, Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home, day: 0 }), 360),
+    );
+    interact_with_state(d.games, || crate::state::read().entry.fragments.read((game_id, d.actor)))
+}
+
+#[test]
+fn a_held_wonder_pays_ten_fragments_for_a_quest_once_and_a_realm_without_one_pays_none() {
+    assert_eq!(held_quest_fragments(2), 10);
+    assert_eq!(held_quest_fragments(1), 0);
 }

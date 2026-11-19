@@ -13,9 +13,17 @@ pub fn read(home: ResourceKey, day: u64) -> QuestProgress {
 
 pub fn labor_bonus(home: ResourceKey, owner: starknet::ContractAddress) -> bool {
     let state = crate::state::read();
-    if state.settlements.campaign_homes.read((home.game_id, home.entity_id)).is_some() {
-        return true;
-    }
+    state.entry.seals.read((home.game_id, owner)).is_some()
+        || state.settlements.campaign_homes.read((home.game_id, home.entity_id)).is_some()
+        || holds_realm(home, owner)
+}
+
+pub fn holds_wonder(home: ResourceKey, owner: starknet::ContractAddress) -> bool {
+    holds_realm(home, owner) && crate::logic::structures::record(home).metadata.has_wonder
+}
+
+fn holds_realm(home: ResourceKey, owner: starknet::ContractAddress) -> bool {
+    let state = crate::state::read();
     let Some(source) = state.settlements.entitlements.read((home.game_id, owner)) else {
         return false;
     };
@@ -114,6 +122,9 @@ pub mod QuestState {
             if self.data.entry.home_labor_grants.read(key).is_none() {
                 let grant = self.grant_reward(home, actor, progress.completed_level, context);
                 crate::logic::entry::record_labor_grant(day, grant);
+                if super::holds_wonder(home, actor) {
+                    crate::logic::fragments::add(game_id, actor, crate::fragments::WONDER_QUEST.into());
+                }
             }
             if crate::logic::banes::won(home, day) && self.data.banes.bonus_grants.read(key).is_none() {
                 let grant = self.grant_reward(home, actor, progress.completed_level, context);

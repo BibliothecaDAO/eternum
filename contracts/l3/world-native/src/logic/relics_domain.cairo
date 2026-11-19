@@ -33,6 +33,19 @@ pub mod RelicsLogic {
     }
 
     #[abi(embed_v0)]
+    impl StaminaShop of crate::fragments::IStaminaShop<ContractState> {
+        fn buy_stamina(
+            ref self: ContractState,
+            game_id: u32,
+            actor: starknet::ContractAddress,
+            command: crate::fragments::BuyStamina,
+            context: crate::commands::ActionContext,
+        ) {
+            crate::logic::fragments::buy_stamina(game_id, actor, command, context);
+        }
+    }
+
+    #[abi(embed_v0)]
     impl Oaths of crate::oaths::IOaths<ContractState> {
         fn choose_oath(
             ref self: ContractState,

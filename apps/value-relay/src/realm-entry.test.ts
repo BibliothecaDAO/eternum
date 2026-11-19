@@ -1,6 +1,7 @@
 import { beforeEach, expect, it, onTestFinished, vi } from "vitest";
 import { CairoOption, CairoOptionVariant, CallData, RpcProvider, shortString } from "starknet";
 import { Effect } from "effect";
+import { nativeReleaseConstants } from "../../../contracts/l3/world-native/schema/client.gen";
 import { gamesAbi } from "../../../packages/value-ledger/test-support/abi";
 import { holdsRealm as identityHoldsRealm } from "../../realms/server/realm-holdings";
 import { handleLaborRequest } from "./labor-route";
@@ -20,6 +21,7 @@ const io = vi.hoisted(() => ({
   wallet: vi.fn(),
   ticket: vi.fn(),
   held: vi.fn(),
+  seal: vi.fn(),
 }));
 vi.mock("./shard-snapshot", async (original) => ({
   ...(await original<typeof import("./shard-snapshot")>()),
@@ -52,6 +54,7 @@ const target = {
     holdsRealm: async (wallet: string, realmId: number) => BigInt(await io.owner(String(realmId))) === BigInt(wallet),
     heldRealmsWithMaps: io.held,
     campaignTicket: io.ticket,
+    holdsSeal: io.seal,
   },
 };
 const entitlement = { realm_id: 711n, metadata_1: 0n, metadata_2: 0n, metadata_3: 0n, pass_kind: 2n };
@@ -62,6 +65,7 @@ let settledHome: bigint;
 let release: number;
 let campaignHomes: Record<string, unknown>[];
 let structures: Record<string, unknown>[];
+let seals: Record<string, unknown>[];
 beforeEach(() => {
   vi.resetAllMocks();
   registered = undefined;
@@ -71,6 +75,8 @@ beforeEach(() => {
   release = 8;
   campaignHomes = [];
   structures = [];
+  seals = [];
+  io.seal.mockResolvedValue(false);
   io.account.mockResolvedValue("0x123");
   io.wallet.mockResolvedValue("0x456");
   io.owner.mockResolvedValue("0x456");
@@ -87,6 +93,7 @@ beforeEach(() => {
       { model: "Structure", rows: structures.map((value) => ({ value })) },
       { model: "EntryEntitlement", rows: registered ? [{ value: { owner: claim.account, ...registered } }] : [] },
       { model: "SettledRealm", rows: settledHome ? [{ value: { realm_id: 711, home: settledHome } }] : [] },
+      { model: "Seal", rows: seals.map((value) => ({ value })) },
     ],
   }));
   io.view.mockImplementation(async (method: string) =>
@@ -96,8 +103,12 @@ beforeEach(() => {
   );
   io.ticket.mockResolvedValue(null);
   io.admin.mockImplementation(
-    async (method: string, args: { entitlement: Record<keyof typeof entitlement, number | string> }) => {
+    async (
+      method: string,
+      args: { entitlement: Record<keyof typeof entitlement, number | string>; account?: string },
+    ) => {
       new CallData(gamesAbi).compile(method, args as never);
+      if (method === "grant_seal") return void seals.push({ game_id: 7, account: args.account, granted_at: 500 });
       registered = Object.fromEntries(
         Object.entries(args.entitlement).map(([field, value]) => [field, BigInt(value)]),
       ) as typeof entitlement;
@@ -114,6 +125,61 @@ it("registers a live held Realm and answers an exact retry without another write
   expect(await registerHomeSource(target, claim)).toEqual({ realmId: 711 });
   expect(io.admin).toHaveBeenCalledTimes(1);
   expect(io.owner).toHaveBeenCalledTimes(1);
+});
+it("grants a held Ancient Seal once as the account enters, then registers its source", async () => {
+  release = nativeReleaseConstants.SEAL_RELEASE;
+  io.seal.mockResolvedValue(true);
+  expect(await registerHomeSource(target, claim)).toEqual({ realmId: 711 });
+  expect(io.admin.mock.calls).toEqual([
+    ["grant_seal", { game_id: 7, account: "0x123" }],
+    [
+      "register_entitlement",
+      {
+        key: { game_id: 7, owner: "0x123" },
+        entitlement: { realm_id: 711, metadata_1: 0, metadata_2: 0, metadata_3: 0, pass_kind: 2 },
+      },
+    ],
+  ]);
+  expect(io.seal).toHaveBeenCalledExactlyOnceWith("0x2");
+  expect(await registerHomeSource(target, claim)).toEqual({ realmId: 711 });
+  expect(io.admin).toHaveBeenCalledTimes(2);
+  expect(io.seal).toHaveBeenCalledOnce();
+});
+it("grants no Seal in a game whose release has none, and enters it as before", async () => {
+  release = nativeReleaseConstants.SEAL_RELEASE - 1;
+  io.seal.mockResolvedValue(true);
+  expect(await registerHomeSource(target, claim)).toEqual({ realmId: 711 });
+  expect(io.admin).toHaveBeenCalledExactlyOnceWith("register_entitlement", expect.anything());
+  expect(io.seal).not.toHaveBeenCalled();
+});
+it("grants a free home its held Seal and nothing to an account that holds none", async () => {
+  release = nativeReleaseConstants.SEAL_RELEASE;
+  const free = { ...claim, realmId: null };
+  expect(await registerHomeSource(target, free)).toEqual({});
+  expect(io.admin).not.toHaveBeenCalled();
+  io.seal.mockResolvedValue(true);
+  expect(await registerHomeSource(target, free)).toEqual({});
+  expect(io.admin).toHaveBeenCalledExactlyOnceWith("grant_seal", { game_id: 7, account: "0x123" });
+});
+it("grants a Seal redeemed after entry without touching the home's source", async () => {
+  release = nativeReleaseConstants.SEAL_RELEASE;
+  registered = entitlement;
+  entries = [{ player: "0x123" }];
+  io.seal.mockResolvedValue(true);
+  const redeemed = { ...claim, realmId: null, sealOnly: true as const };
+  expect(await registerHomeSource(target, redeemed)).toEqual({});
+  expect(await registerHomeSource(target, redeemed)).toEqual({});
+  expect(io.admin).toHaveBeenCalledExactlyOnceWith("grant_seal", { game_id: 7, account: "0x123" });
+  expect(io.ticket).not.toHaveBeenCalled();
+});
+it("asks for a retry when identity cannot say or the chain refuses the Seal, and registers nothing", async () => {
+  release = nativeReleaseConstants.SEAL_RELEASE;
+  io.seal.mockRejectedValue(new Error("down"));
+  await expect(registerHomeSource(target, claim)).rejects.toMatchObject({ code: "seal_check_unavailable" });
+  io.seal.mockResolvedValue(true);
+  io.admin.mockRejectedValue(new Error("refused"));
+  await expect(registerHomeSource(target, claim)).rejects.toMatchObject({ code: "seal_grant_unavailable" });
+  expect(io.admin).toHaveBeenCalledExactlyOnceWith("grant_seal", { game_id: 7, account: "0x123" });
 });
 it("refuses a Realm not currently held and a missing linked wallet", async () => {
   io.owner.mockResolvedValue("0x999");

@@ -4,7 +4,7 @@ import { realmsAccountAddress } from "@realms-world/identity/account";
 
 import { readEnrolledAccounts } from "./day-open";
 import { ACCOUNT_CLASS_HASH, type IdentityEnv } from "./env";
-import { namedGame, shopAccessOf } from "./shop-game";
+import { enteredGamesOf, namedGame, shopAccessOf } from "./shop-game";
 import { createTestD1 } from "./test-d1";
 import { migrationStatements } from "./workerd-harness";
 
@@ -43,7 +43,7 @@ afterEach(async () => {
   for (const database of databases.splice(0)) await database.close();
 });
 
-const shopOn = async (games: unknown[], enrolled: string[] | Error) => {
+const envOn = async (games: unknown[], enrolled: string[] | Error) => {
   const database = createTestD1();
   databases.push(database);
   await database.db.batch(migrationStatements().map((sql) => database.db.prepare(sql)));
@@ -56,8 +56,33 @@ const shopOn = async (games: unknown[], enrolled: string[] | Error) => {
   });
   const fetchShard = (async () => Response.json({ chain: CHAIN, games })) as typeof fetch;
   const env = { DB: database.db, GUARDIAN: { publicKey: async () => GUARDIAN_KEY } } as unknown as IdentityEnv;
+  return { env, fetchShard };
+};
+
+const shopOn = async (games: unknown[], enrolled: string[] | Error) => {
+  const { env, fetchShard } = await envOn(games, enrolled);
   return shopAccessOf(env, fetchShard, () => NOW);
 };
+
+it("lists every running Frontier game the account is enrolled in, and none it is not", async () => {
+  const { env, fetchShard } = await envOn(
+    [gameOf(1), gameOf(2), gameOf(3, "Ended"), gameOf(4, "Live", "blitz")],
+    [accountOf("0xa1")],
+  );
+  const entered = enteredGamesOf(env, fetchShard, () => NOW);
+  expect(await entered("0xa1")).toEqual([
+    { chainId: CHAIN, gameId: 1 },
+    { chainId: CHAIN, gameId: 2 },
+  ]);
+  expect(await entered("0xb2")).toEqual([]);
+});
+
+it("lists a Frontier game the account entered before its first day, and none that has ended", async () => {
+  const settling = { ...gameOf(5), clock: { ...gameOf(5).clock, start_main_at: NOW + UNIT } };
+  const ended = { ...gameOf(6), clock: { ...gameOf(6).clock, end_at: NOW - 1 } };
+  const { env, fetchShard } = await envOn([settling, ended], [accountOf("0xa1")]);
+  expect(await enteredGamesOf(env, fetchShard, () => NOW)("0xa1")).toEqual([{ chainId: CHAIN, gameId: 5 }]);
+});
 
 it("seats an enrolled player of a running Frontier game", async () => {
   const access = await shopOn([gameOf(1)], [accountOf("0xa1")]);

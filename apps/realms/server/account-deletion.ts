@@ -123,7 +123,7 @@ const DELETED_BY_REALMS_ID = [
   ["build_order_books", "owner"],
   ["opening_progress", "owner"],
   ["order_intents", "owner"],
-  ["seal", "owner"],
+  ["seal_grants", "owner"],
   ["fragment_credits", "owner"],
   ["news_email_sends", "realmsId"],
   ["campaign_referrers", "referrer"],

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FRAGMENT, roundUpLords, SEAL_CENTS, SEAL_FREE, SEAL_HOLDERS, STORE_PRODUCTS } from "./shop";
+import { FRAGMENT_CENTS, roundUpLords, STORE_PRODUCTS } from "./shop";
 
 describe("the shop's prices in LORDS", () => {
   const lords = (amount: number) => BigInt(Math.round(amount * 1e6)) * 10n ** 12n;
@@ -27,27 +27,11 @@ describe("the shop's prices in LORDS", () => {
   });
 });
 
-describe("the Ancient Seal's holder levels", () => {
-  it("charges a holder half and gives a Wonder or golden holder the Fragments free as well", () => {
-    expect(SEAL_HOLDERS.map((holder) => SEAL_CENTS.web[holder])).toEqual([1_000, 499, 499]);
-    expect(SEAL_HOLDERS.map((holder) => SEAL_CENTS.store[holder])).toEqual([999, 499, 499]);
-    expect(SEAL_HOLDERS.map((holder) => SEAL_FREE[holder])).toEqual([
-      { labor: false, fragments: false },
-      { labor: true, fragments: false },
-      { labor: true, fragments: true },
-    ]);
-  });
-});
-
 describe("what the stores sell", () => {
-  it("sells Fragments a cent each or a little under, and the seal at the seal's own store prices", () => {
-    for (const product of Object.values(STORE_PRODUCTS))
-      if (product.kind === "fragments") {
-        expect(product.fragments * FRAGMENT.cents).toBeGreaterThanOrEqual(product.cents);
-        expect(product.fragments * FRAGMENT.cents - product.cents).toBeLessThanOrEqual(1);
-      }
-    expect(STORE_PRODUCTS.seal.cents).toBe(SEAL_CENTS.store.none);
-    expect(STORE_PRODUCTS["seal-holder"].cents).toBe(SEAL_CENTS.store.realm);
-    expect(SEAL_CENTS.store.realm).toBe(SEAL_CENTS.store.wonder);
+  it("sells Fragments a cent each or a little under", () => {
+    for (const product of Object.values(STORE_PRODUCTS)) {
+      expect(product.fragments * FRAGMENT_CENTS).toBeGreaterThanOrEqual(product.cents);
+      expect(product.fragments * FRAGMENT_CENTS - product.cents).toBeLessThanOrEqual(1);
+    }
   });
 });

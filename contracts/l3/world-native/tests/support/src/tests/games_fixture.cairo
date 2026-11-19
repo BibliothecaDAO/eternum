@@ -2016,6 +2016,15 @@ pub mod GamesFixture {
                 day,
             )
         }
+        fn grant_seal(ref self: TContractState, game_id: u32, account: starknet::ContractAddress) {
+            crate::entry::IHomeGrantsDispatcherTrait::grant_seal(
+                crate::entry::IHomeGrantsLibraryDispatcher {
+                    class_hash: crate::logic::release::classes(game_id).bridge.read(),
+                },
+                game_id,
+                account,
+            )
+        }
     }
     #[starknet::embeddable]
     pub impl BlitzResultsFixture<

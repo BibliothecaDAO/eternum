@@ -77,11 +77,6 @@ const seedAccount = (worker: Worker, realmsId: string) =>
       .bind(`held-by-${realmsId}`, realmsId),
     worker.db
       .prepare(
-        `INSERT INTO "seal" ("owner", "paid_cents", "source", "receipt", "granted_at") VALUES (?, 999, 'store', 'tx-leaving', 1)`,
-      )
-      .bind(realmsId),
-    worker.db
-      .prepare(
         `INSERT INTO "store_receipts" ("receipt", "product", "received_at", "owner", "outcome") VALUES ('apple:tx-leaving', 'seal', 1, ?, 'seal')`,
       )
       .bind(realmsId),
@@ -154,7 +149,6 @@ it("deletes an account only with its emailed code: its old session opens nothing
   expect(await countOf(worker, "build_order_books", "owner", leaving.realmsId)).toBe(0);
   expect(await countOf(worker, "opening_progress", "owner", leaving.realmsId)).toBe(0);
   expect(await countOf(worker, "order_intents", "owner", leaving.realmsId)).toBe(0);
-  expect(await countOf(worker, "seal", "owner", leaving.realmsId)).toBe(0);
   expect(await countOf(worker, "fragment_credits", "owner", leaving.realmsId)).toBe(0);
   // The payments stay in the ledger, owned by no one, so neither receipt can be used again.
   expect(

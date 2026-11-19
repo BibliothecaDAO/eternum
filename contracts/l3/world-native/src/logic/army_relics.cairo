@@ -73,11 +73,26 @@ pub fn store_ruin(key: ResourceKey, relic: ArmyRelic) {
 
 pub fn award(key: ExplorerKey, site: ResourceKey, replace: Option<u8>) {
     let relic = ruin(site).expect('missing ruin relic');
-    let mut loadout = read(key);
-    crate::army_relics::receive(ref loadout, relic, replace);
-    write(key, loadout);
+    let cache = crate::state::read().relics.ruin_caches.read((site.game_id, site.entity_id));
+    if cache == 0 {
+        let mut loadout = read(key);
+        crate::army_relics::receive(ref loadout, relic, replace);
+        write(key, loadout);
+    } else {
+        crate::state::write().relics.ruin_caches.write((site.game_id, site.entity_id), 0);
+        delete_row('RuinCache', site);
+        let army = crate::logic::troops::explorer(key).expect('missing explorer');
+        let owner = crate::logic::structures::record(ResourceKey { game_id: key.game_id, entity_id: army.owner }).owner;
+        crate::logic::fragments::add(key.game_id, owner, cache);
+    }
     crate::state::write().relics.ruin_relics.write((site.game_id, site.entity_id), 0);
     delete_row('RuinRelic', site);
+}
+
+pub fn store_cache(key: ResourceKey, relic: ArmyRelic, depth: u8) {
+    let amount = crate::fragments::cache_fragments(relic, depth);
+    crate::state::write().relics.ruin_caches.write((key.game_id, key.entity_id), amount);
+    emit_row('RuinCache', key, amount);
 }
 
 pub fn activate(key: ExplorerKey, index: u8, expected: u8, timestamp: u64) -> ArmyRelic {

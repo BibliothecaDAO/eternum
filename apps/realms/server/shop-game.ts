@@ -1,6 +1,6 @@
 import type { IdentityAuth } from "./auth";
-import { readEnrolledAccounts, runningFrontierGameIds } from "./day-open";
-import { directoryShardOf, fetchShardGames, gamesUrl } from "./directory";
+import { openFrontierGameIds, readEnrolledAccounts, runningFrontierGameIds } from "./day-open";
+import { directoryShard, directoryShardOf, fetchShardGames, gamesUrl } from "./directory";
 import type { IdentityEnv } from "./env";
 import { json } from "./http";
 import { playerAccounts } from "./campaign-entry";
@@ -30,6 +30,25 @@ export const namedGame = (chain: unknown, game: unknown): NamedGame | null => {
  */
 export type ShopAccess = (realmsId: string, game: NamedGame) => Promise<boolean>;
 
+export type EnteredGames = (realmsId: string) => Promise<NamedGame[]>;
+
+export const enteredGamesOf = (
+  env: Pick<IdentityEnv, "DB" | "GUARDIAN">,
+  fetchShard: typeof fetch,
+  now: () => number,
+): EnteredGames => {
+  const accountOf = playerAccounts(env);
+  return async (realmsId) => {
+    const chain = await directoryShard(env.DB);
+    if (!chain) return [];
+    const account = await accountOf(realmsId);
+    const entered: NamedGame[] = [];
+    for (const gameId of openFrontierGameIds(await fetchShardGames(chain, gamesUrl(chain, null), fetchShard), now()))
+      if (await isEnrolled(chain.url, gameId, account)) entered.push({ chainId: gameKey(chain.chainId), gameId });
+    return entered;
+  };
+};
+
 /** The shop's rule, read from the game's shard: its directory says the game runs, its enrollment says who plays. */
 export const shopAccessOf = (
   env: Pick<IdentityEnv, "DB" | "GUARDIAN">,
@@ -42,10 +61,12 @@ export const shopAccessOf = (
     if (!shard) return false;
     const running = runningFrontierGameIds(await fetchShardGames(shard, gamesUrl(shard, null), fetchShard), now());
     if (!running.includes(gameId)) return false;
-    const account = BigInt(await accountOf(realmsId));
-    return (await readEnrolledAccounts(shard.url, gameId)).some((owner) => BigInt(owner) === account);
+    return isEnrolled(shard.url, gameId, await accountOf(realmsId));
   };
 };
+
+const isEnrolled = async (shardUrl: string, gameId: number, account: string) =>
+  (await readEnrolledAccounts(shardUrl, gameId)).some((owner) => BigInt(owner) === BigInt(account));
 
 /**
  * Every shop read goes through here: the signed-in account and its seat in the game the request names, or the response

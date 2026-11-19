@@ -27,6 +27,7 @@ pub mod discovery;
 pub mod economy;
 pub mod entry;
 pub mod expeditions;
+pub mod fragments;
 pub mod game;
 pub mod guards;
 pub mod guilds;

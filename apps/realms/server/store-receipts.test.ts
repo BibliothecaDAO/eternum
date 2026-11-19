@@ -3,8 +3,6 @@ import { afterEach, expect, it, vi } from "vitest";
 
 import { accountDeletion } from "./account-deletion";
 import type { IdentityAuth } from "./auth";
-import { RealmHoldingsUnavailableError } from "./realm-holdings";
-import { readSeal } from "./seal";
 import type { ShopAccess } from "./shop-game";
 import { handlePurchaseCheck, handleStoreReceipt, type ReceiptWorld, type StoreVerifier } from "./store-receipts";
 import { createTestD1 } from "./test-d1";
@@ -63,7 +61,6 @@ const sendAs = async (
     auth,
     {
       db,
-      holderFacts: async () => ({ heldRealmIds: [], ticket: null }),
       access: seated,
       verifiers: { apple: store },
       now: () => 100,
@@ -111,7 +108,6 @@ it("grants nothing for a receipt the store refuses, a product it does not sell, 
     await sendAs(db, OWNER, { store: "apple", receipt: "tx-4|fragments-100" }, { verifiers: { apple: down } }),
   ).toEqual([503, { error: "store_unavailable" }]);
   expect(await credits(db)).toEqual([]);
-  expect(await readSeal(db, OWNER)).toBeNull();
 });
 
 it("refuses an unsigned or malformed request", async () => {
@@ -121,36 +117,8 @@ it("refuses an unsigned or malformed request", async () => {
   expect((await sendAs(db, OWNER, { store: "steam", receipt: "tx|fragments-100" }))[0]).toBe(400);
 });
 
-it("grants the seal at the store price of the buyer's holder level, once", async () => {
-  const db = await migrated();
-  const nothing = { heldRealmIds: [], ticket: null };
-  const holder = { heldRealmIds: [1], ticket: null };
-  // A holder's price does not buy a buyer who holds nothing the seal.
-  expect(
-    await sendAs(db, OWNER, { store: "apple", receipt: "tx-5|seal-holder" }, { holderFacts: async () => nothing }),
-  ).toEqual([409, { error: "seal_price_not_for_holder" }]);
-  expect(await readSeal(db, OWNER)).toBeNull();
-  expect(
-    await sendAs(db, OWNER, { store: "apple", receipt: "tx-6|seal-holder" }, { holderFacts: async () => holder }),
-  ).toEqual([200, { status: "seal", repeated: false }]);
-  expect(await readSeal(db, OWNER)).toEqual({ paid_cents: 499, source: "store", granted_at: 100 });
-  // The same receipt again is the same answer; the full price also buys a holder's seal; another account's receipt is its own.
-  expect(
-    await sendAs(db, OWNER, { store: "apple", receipt: "tx-6|seal-holder" }, { holderFacts: async () => holder }),
-  ).toEqual([200, { status: "seal", repeated: true }]);
-  expect(
-    await sendAs(db, OTHER, { store: "apple", receipt: "tx-7|seal" }, { holderFacts: async () => holder }),
-  ).toEqual([200, { status: "seal", repeated: false }]);
-  expect(
-    await sendAs(db, OTHER, { store: "apple", receipt: "tx-6|seal-holder" }, { holderFacts: async () => holder }),
-  ).toEqual([409, { error: "receipt_used" }]);
-});
-
-const HOLDER = { heldRealmIds: [1], ticket: null } as const;
 const ledger = async (db: D1Database) =>
   (await db.prepare('SELECT "receipt", "owner", "outcome" FROM "store_receipts" ORDER BY "receipt"').all()).results;
-const seals = async (db: D1Database) =>
-  (await db.prepare('SELECT "owner", "receipt" FROM "seal" ORDER BY "owner"').all()).results;
 
 /** An account's deletion as the deletion endpoint runs it: the real statements, so the ledger and its owner rows change as in production. */
 const deleteAccountRows = (db: D1Database, owner: string) =>
@@ -181,45 +149,6 @@ const meetingOf = (parties: number) => {
   };
 };
 
-it("keeps a seal receipt spent after the account that used it is deleted", async () => {
-  const db = await migrated();
-  await sendAs(db, OWNER, { store: "apple", receipt: "tx-1|seal" });
-  await deleteAccountRows(db, OWNER);
-  expect(await sendAs(db, OTHER, { store: "apple", receipt: "tx-1|seal" })).toEqual([409, { error: "receipt_used" }]);
-  expect(await seals(db)).toEqual([]);
-});
-
-it("records a second paid seal receipt of an account that already holds the seal for refund, answers its retry the same, and lets no one else use it", async () => {
-  const db = await migrated();
-  await sendAs(db, OWNER, { store: "apple", receipt: "tx-1|seal" });
-  const second = { store: "apple", receipt: "tx-2|seal" };
-  expect(await sendAs(db, OWNER, second)).toEqual([409, { error: "seal_already_held" }]);
-  expect(await sendAs(db, OWNER, second)).toEqual([409, { error: "seal_already_held" }]);
-  expect(await ledger(db)).toEqual([
-    { receipt: "apple:tx-1", owner: OWNER, outcome: "seal" },
-    { receipt: "apple:tx-2", owner: OWNER, outcome: "unfulfilled_seal_held" },
-  ]);
-  expect(await sendAs(db, OTHER, { store: "apple", receipt: "tx-2|seal" })).toEqual([409, { error: "receipt_used" }]);
-  expect(await seals(db)).toEqual([{ owner: OWNER, receipt: "apple:tx-1" }]);
-});
-
-it("records a second discounted seal payment for refund even while holdings cannot be read, and settles a pending one the same way", async () => {
-  const db = await migrated();
-  const unavailable = async () => Promise.reject(new RealmHoldingsUnavailableError());
-  const pending = { store: "apple", receipt: "tx-1|seal-holder" };
-  await sendAs(db, OWNER, pending, { holderFacts: unavailable });
-  await sendAs(db, OWNER, { store: "apple", receipt: "tx-2|seal" });
-  expect(await sendAs(db, OWNER, pending, { holderFacts: unavailable })).toEqual([409, { error: "seal_already_held" }]);
-  const second = { store: "apple", receipt: "tx-3|seal-holder" };
-  expect(await sendAs(db, OWNER, second, { holderFacts: unavailable })).toEqual([409, { error: "seal_already_held" }]);
-  expect(await ledger(db)).toEqual([
-    { receipt: "apple:tx-1", owner: OWNER, outcome: "unfulfilled_seal_held" },
-    { receipt: "apple:tx-2", owner: OWNER, outcome: "seal" },
-    { receipt: "apple:tx-3", owner: OWNER, outcome: "unfulfilled_seal_held" },
-  ]);
-  expect(await seals(db)).toEqual([{ owner: OWNER, receipt: "apple:tx-2" }]);
-});
-
 it("keeps a Fragment receipt spent after the account's credits are deleted", async () => {
   const db = await migrated();
   await sendAs(db, OWNER, { store: "apple", receipt: "tx-1|fragments-500" });
@@ -232,140 +161,70 @@ it("keeps a Fragment receipt spent after the account's credits are deleted", asy
   expect(await credits(db)).toEqual([]);
 });
 
-it("records a verified payment it cannot honour, grants nothing, and answers its retry the same", async () => {
+it("records a verified payment of a product the shop does not sell, grants nothing, and answers its retry the same", async () => {
   const db = await migrated();
-  const underpriced = { store: "apple", receipt: "tx-1|seal-holder" };
   const unknown = { store: "apple", receipt: "tx-2|gold-pack" };
-  expect(await sendAs(db, OWNER, underpriced)).toEqual([409, { error: "seal_price_not_for_holder" }]);
   expect(await sendAs(db, OWNER, unknown)).toEqual([422, { error: "unknown_product" }]);
-  expect(await sendAs(db, OWNER, underpriced, { holderFacts: async () => HOLDER })).toEqual([
-    409,
-    { error: "seal_price_not_for_holder" },
-  ]);
-  expect(await ledger(db)).toEqual([
-    { receipt: "apple:tx-1", owner: OWNER, outcome: "unfulfilled_price" },
-    { receipt: "apple:tx-2", owner: OWNER, outcome: "unfulfilled_product" },
-  ]);
-  expect(await seals(db)).toEqual([]);
-  expect(await sendAs(db, OTHER, underpriced, { holderFacts: async () => HOLDER })).toEqual([
-    409,
-    { error: "receipt_used" },
-  ]);
+  expect(await sendAs(db, OWNER, unknown)).toEqual([422, { error: "unknown_product" }]);
+  expect(await ledger(db)).toEqual([{ receipt: "apple:tx-2", owner: OWNER, outcome: "unfulfilled_product" }]);
+  expect(await sendAs(db, OTHER, unknown)).toEqual([409, { error: "receipt_used" }]);
+  expect(await credits(db)).toEqual([]);
 });
 
-it("answers a retry from the recorded outcome even after the buyer stops being a holder", async () => {
+it("credits one bundle and one answer when the same receipt arrives twice, both past their reads before either writes", async () => {
   const db = await migrated();
-  const receipt = { store: "apple", receipt: "tx-1|seal-holder" };
-  await sendAs(db, OWNER, receipt, { holderFacts: async () => HOLDER });
-  expect(await sendAs(db, OWNER, receipt)).toEqual([200, { status: "seal", repeated: true }]);
-});
-
-it("buys one seal and one answer when the same receipt arrives twice, both past their reads before either writes", async () => {
-  const db = await migrated();
-  const receipt = { store: "apple", receipt: "tx-1|seal" };
+  const receipt = { store: "apple", receipt: "tx-1|fragments-500" };
   const meeting = meetingOf(2);
   const racing = pausedBeforeBatch(db, meeting.arrive);
   const answers = await Promise.all([sendAs(racing, OWNER, receipt), sendAs(racing, OWNER, receipt)]);
   expect(meeting.arrivals()).toBeGreaterThanOrEqual(2);
   expect(answers.map(([status]) => status)).toEqual([200, 200]);
   expect(answers.map(([, body]) => (body as { repeated: boolean }).repeated).sort()).toEqual([false, true]);
-  expect(await seals(db)).toEqual([{ owner: OWNER, receipt: "apple:tx-1" }]);
+  expect((await credits(db)).map(({ receipt }) => receipt)).toEqual(["apple:tx-1"]);
 });
 
-it("keeps one seal and records both receipts when two paid receipts of one account are both past their reads before either writes", async () => {
+it("credits the first of two accounts that send the same receipt together, and refuses the other", async () => {
   const db = await migrated();
   const meeting = meetingOf(2);
   const racing = pausedBeforeBatch(db, meeting.arrive);
-  const answers = await Promise.all([
-    sendAs(racing, OWNER, { store: "apple", receipt: "tx-1|seal" }),
-    sendAs(racing, OWNER, { store: "apple", receipt: "tx-2|seal" }),
-  ]);
-  expect(meeting.arrivals()).toBeGreaterThanOrEqual(2);
-  expect(answers.map(([status]) => status).sort()).toEqual([200, 409]);
-  expect((await seals(db)).length).toBe(1);
-  expect((await ledger(db)).map(({ outcome }) => outcome).sort()).toEqual(["seal", "unfulfilled_seal_held"]);
-});
-
-it("gives one seal to the first of two accounts that send the same receipt together, and refuses the other", async () => {
-  const db = await migrated();
-  const meeting = meetingOf(2);
-  const racing = pausedBeforeBatch(db, meeting.arrive);
-  const receipt = { store: "apple", receipt: "tx-1|seal" };
+  const receipt = { store: "apple", receipt: "tx-1|fragments-500" };
   const answers = await Promise.all([sendAs(racing, OWNER, receipt), sendAs(racing, OTHER, receipt)]);
   expect(answers.map(([status]) => status).sort()).toEqual([200, 409]);
-  expect(await seals(db)).toHaveLength(1);
+  expect(await credits(db)).toHaveLength(1);
   expect(await ledger(db)).toHaveLength(1);
 });
 
-it("writes neither the ledger row nor the seal when fulfilment fails inside the batch", async () => {
+it("writes neither the ledger row nor the credit when fulfilment fails inside the batch", async () => {
   const db = await migrated();
   const failing = {
     prepare: db.prepare.bind(db),
     batch: (statements: D1PreparedStatement[]) =>
       db.batch([...statements, db.prepare('INSERT INTO "no_such_table" VALUES (1)')]),
   } as unknown as D1Database;
-  await expect(sendAs(failing, OWNER, { store: "apple", receipt: "tx-1|seal" })).rejects.toThrow();
+  await expect(sendAs(failing, OWNER, { store: "apple", receipt: "tx-1|fragments-500" })).rejects.toThrow();
   expect(await ledger(db)).toEqual([]);
-  expect(await seals(db)).toEqual([]);
+  expect(await credits(db)).toEqual([]);
 });
 
 it("buys nothing for a payment that finishes after its account was deleted, and keeps the receipt spent", async () => {
   const db = await migrated();
   const deletedMeanwhile = pausedBeforeBatch(db, () => deleteAccountRows(db, OWNER));
-  expect(await sendAs(deletedMeanwhile, OWNER, { store: "apple", receipt: "tx-1|seal" })).toEqual([
+  expect(await sendAs(deletedMeanwhile, OWNER, { store: "apple", receipt: "tx-1|fragments-500" })).toEqual([
     410,
     { error: "account_deleted" },
   ]);
-  expect(await sendAs(db, OTHER, { store: "apple", receipt: "tx-1|seal" })).toEqual([409, { error: "receipt_used" }]);
-  expect(await ledger(db)).toEqual([{ receipt: "apple:tx-1", owner: null, outcome: "unfulfilled_deleted" }]);
-  expect(await seals(db)).toEqual([]);
-  expect(await sendAs(db, OWNER, { store: "apple", receipt: "tx-2|fragments-500" })).toEqual([
-    410,
-    { error: "account_deleted" },
-  ]);
-  expect(await credits(db)).toEqual([]);
-});
-
-it("records a verified payment while holdings cannot be read, grants nothing, and settles the retry once they can", async () => {
-  const db = await migrated();
-  const receipt = { store: "apple", receipt: "tx-1|seal-holder" };
-  const unavailable = async () => Promise.reject(new RealmHoldingsUnavailableError());
-  expect(await sendAs(db, OWNER, receipt, { holderFacts: unavailable })).toEqual([
-    503,
-    { error: "holdings_unavailable" },
-  ]);
-  expect(await ledger(db)).toEqual([{ receipt: "apple:tx-1", owner: OWNER, outcome: "pending_eligibility" }]);
-  expect(await seals(db)).toEqual([]);
-  expect(await sendAs(db, OTHER, receipt, { holderFacts: async () => HOLDER })).toEqual([
+  expect(await sendAs(db, OTHER, { store: "apple", receipt: "tx-1|fragments-500" })).toEqual([
     409,
     { error: "receipt_used" },
   ]);
-  expect(await sendAs(db, OWNER, receipt, { holderFacts: unavailable })).toEqual([
-    503,
-    { error: "holdings_unavailable" },
-  ]);
-  expect(await sendAs(db, OWNER, receipt, { holderFacts: async () => HOLDER })).toEqual([
-    200,
-    { status: "seal", repeated: false },
-  ]);
-  expect(await ledger(db)).toEqual([{ receipt: "apple:tx-1", owner: OWNER, outcome: "seal" }]);
-  expect(await seals(db)).toEqual([{ owner: OWNER, receipt: "apple:tx-1" }]);
-  expect(await sendAs(db, OWNER, receipt)).toEqual([200, { status: "seal", repeated: true }]);
-});
-
-it("resolves a pending payment to unfulfilled when the buyer turns out not to hold, never granting the holder price", async () => {
-  const db = await migrated();
-  const receipt = { store: "apple", receipt: "tx-1|seal-holder" };
-  await sendAs(db, OWNER, receipt, { holderFacts: () => Promise.reject(new RealmHoldingsUnavailableError()) });
-  expect(await sendAs(db, OWNER, receipt)).toEqual([409, { error: "seal_price_not_for_holder" }]);
-  expect(await ledger(db)).toEqual([{ receipt: "apple:tx-1", owner: OWNER, outcome: "unfulfilled_price" }]);
-  expect(await seals(db)).toEqual([]);
+  expect(await ledger(db)).toEqual([{ receipt: "apple:tx-1", owner: null, outcome: "unfulfilled_deleted" }]);
+  expect(await credits(db)).toEqual([]);
 });
 
 it("records a verified payment of an account outside the named game for refund, grants nothing, and answers its retry the same", async () => {
   const db = await migrated();
   const outside: ShopAccess = async () => false;
-  for (const receipt of ["tx-1|fragments-500", "tx-2|seal"]) {
+  for (const receipt of ["tx-1|fragments-500", "tx-2|fragments-100"]) {
     const request = { store: "apple", receipt };
     const refused = [404, { error: "no_shop_outside_a_frontier_game" }];
     expect(await sendAs(db, OWNER, request, { access: outside })).toEqual(refused);
@@ -376,7 +235,6 @@ it("records a verified payment of an account outside the named game for refund, 
     { receipt: "apple:tx-2", owner: OWNER, outcome: "unfulfilled_not_in_game" },
   ]);
   expect(await credits(db)).toEqual([]);
-  expect(await readSeal(db, OWNER)).toBeNull();
 });
 
 it("records a payment while the game's shard cannot say who plays, and settles the retry once it can", async () => {
@@ -384,7 +242,7 @@ it("records a payment while the game's shard cannot say who plays, and settles t
   const db = await migrated();
   const request = { store: "apple", receipt: "tx-1|fragments-500" };
   const unreadable: ShopAccess = () => Promise.reject(new Error("shard down"));
-  expect(await sendAs(db, OWNER, request, { access: unreadable })).toEqual([503, { error: "holdings_unavailable" }]);
+  expect(await sendAs(db, OWNER, request, { access: unreadable })).toEqual([503, { error: "shop_unavailable" }]);
   expect(await ledger(db)).toEqual([{ receipt: "apple:tx-1", owner: OWNER, outcome: "pending_eligibility" }]);
   expect(await credits(db)).toEqual([]);
   expect(await sendAs(db, OWNER, request)).toEqual([200, { status: "fragments", fragments: 500, repeated: false }]);
@@ -405,13 +263,7 @@ it("asks the game the receipt names, and refuses a receipt that names none", asy
 });
 
 /** The purchase check as a payment flow would ask it before taking a payment. */
-const checkAs = async (
-  db: D1Database,
-  realmsId: string | null,
-  body: unknown,
-  access: ShopAccess = seated,
-  holderFacts: ReceiptWorld["holderFacts"] = async () => ({ heldRealmIds: [], ticket: null }),
-) => {
+const checkAs = async (realmsId: string | null, body: unknown, access: ShopAccess = seated) => {
   const auth = {
     api: { getSession: async () => (realmsId ? { user: { realmsId } } : null) },
   } as unknown as IdentityAuth;
@@ -422,7 +274,7 @@ const checkAs = async (
       body: JSON.stringify({ ...GAME, ...(body as object) }),
     }),
     auth,
-    { db, access, holderFacts },
+    { access },
   );
   return [response.status, await response.json()] as const;
 };
@@ -430,58 +282,24 @@ const checkAs = async (
 it("refuses a purchase check for an account that does not play in the named running Frontier game", async () => {
   const db = await migrated();
   const outside: ShopAccess = async () => false;
-  for (const product of ["fragments-500", "seal"])
-    expect(await checkAs(db, OWNER, { product }, outside)).toEqual([404, { error: "no_shop_outside_a_frontier_game" }]);
-  expect(await checkAs(db, null, { product: "seal" })).toEqual([401, { error: "unauthorized" }]);
-  expect((await checkAs(db, OWNER, { product: "seal", game: undefined }))[0]).toBe(400);
+  for (const product of ["fragments-500", "fragments-100"])
+    expect(await checkAs(OWNER, { product }, outside)).toEqual([404, { error: "no_shop_outside_a_frontier_game" }]);
+  expect(await checkAs(null, { product: "fragments-100" })).toEqual([401, { error: "unauthorized" }]);
+  expect((await checkAs(OWNER, { product: "fragments-100", game: undefined }))[0]).toBe(400);
   expect(await ledger(db)).toEqual([]);
 });
 
-it("approves a product the shop sells for a player of the game it names, once per seal", async () => {
-  const db = await migrated();
+it("approves a product the shop sells for a player of the game it names", async () => {
   const asked: unknown[] = [];
   const access: ShopAccess = async (realmsId, game) => {
     asked.push([realmsId, game]);
     return true;
   };
-  expect(await checkAs(db, OWNER, { product: "fragments-500", chain: "0x2a", game: 7 }, access)).toEqual([
+  expect(await checkAs(OWNER, { product: "fragments-500", chain: "0x2a", game: 7 }, access)).toEqual([
     200,
     { status: "ok" },
   ]);
   expect(asked).toEqual([[OWNER, { chainId: "0x2a", gameId: 7 }]]);
-  expect(await checkAs(db, OWNER, { product: "gold-pack" })).toEqual([422, { error: "unknown_product" }]);
-  expect(await checkAs(db, OWNER, { product: "seal" })).toEqual([200, { status: "ok" }]);
-  await db
-    .prepare(
-      'INSERT INTO "seal" ("owner", "paid_cents", "source", "receipt", "granted_at") VALUES (?, 999, \'store\', \'tx-1\', 1)',
-    )
-    .bind(OWNER)
-    .run();
-  expect(await checkAs(db, OWNER, { product: "seal" })).toEqual([409, { error: "seal_already_held" }]);
-  expect(await checkAs(db, OTHER, { product: "seal" })).toEqual([200, { status: "ok" }]);
-});
-
-it("approves the discounted seal only where settlement would honour it, and waits while holdings are unknown", async () => {
-  const db = await migrated();
-  const nobody = async () => ({ heldRealmIds: [], ticket: null });
-  const regular = async () => ({ heldRealmIds: [], ticket: "regular" as const });
-  const unknown = () => Promise.reject(new RealmHoldingsUnavailableError());
-  const product = { product: "seal-holder" };
-  // A non-holder is refused at authorisation, and the same payment is refused at settlement: the two agree.
-  expect(await checkAs(db, OWNER, product, seated, nobody)).toEqual([409, { error: "seal_price_not_for_holder" }]);
-  expect((await sendAs(db, OWNER, { store: "apple", receipt: "tx-n|seal-holder" }, { holderFacts: nobody }))[0]).toBe(
-    409,
-  );
-  expect(await seals(db)).toEqual([]);
-  // A holder is approved, and the payment settles as the seal.
-  expect(await checkAs(db, OTHER, product, seated, regular)).toEqual([200, { status: "ok" }]);
-  expect(await sendAs(db, OTHER, { store: "apple", receipt: "tx-h|seal-holder" }, { holderFacts: regular })).toEqual([
-    200,
-    { status: "seal", repeated: false },
-  ]);
-  // While holdings are unknown nothing is approved at the discount, and the full price needs no holdings.
-  const another = "0xc3";
-  expect(await checkAs(db, another, product, seated, unknown)).toEqual([503, { error: "holdings_unavailable" }]);
-  expect(await checkAs(db, another, { product: "seal" }, seated, unknown)).toEqual([200, { status: "ok" }]);
-  expect(await checkAs(db, another, { product: "fragments-500" }, seated, unknown)).toEqual([200, { status: "ok" }]);
+  expect(await checkAs(OWNER, { product: "gold-pack" })).toEqual([422, { error: "unknown_product" }]);
+  expect(await checkAs(OWNER, { product: "seal" })).toEqual([422, { error: "unknown_product" }]);
 });

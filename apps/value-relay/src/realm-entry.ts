@@ -1,4 +1,5 @@
 import { nativeIdentifiers } from "../../../contracts/l3/world-native/schema/client.gen";
+import { nativeReleaseConstants } from "../../../contracts/l3/world-native/schema/balance.gen";
 import { Schema } from "effect";
 import type { HeldRealm, HeldRealmsAnswer } from "@realms-world/identity";
 import { ShardOperator, type ShardTarget } from "@realms-world/value-ledger/shard";
@@ -22,6 +23,7 @@ export interface RealmEntryClaim {
   recoverFlyer?: true;
   /** Set only by the authenticated campaign-upgrade route after identity awards a golden ticket. */
   upgradeCampaign?: true;
+  sealOnly?: true;
 }
 /** The source a Frontier home claims from: a held Realm, a campaign's ticket, or none (a free home). */
 export type HomeSource = { realmId: number } | { campaign: string; tier: TicketTier } | Record<string, never>;
@@ -73,6 +75,7 @@ interface RealmEntryTarget {
     linkedWallet(id: string): Promise<string | null>;
     holdsRealm(wallet: string, realmId: number): Promise<boolean>;
     campaignTicket(realmsId: string, presetId: number): Promise<{ campaign: string; tier: TicketTier } | null>;
+    holdsSeal(realmsId: string): Promise<boolean>;
   };
 }
 type Entitlement = { realm_id: bigint; metadata_1: bigint; metadata_2: bigint; metadata_3: bigint; pass_kind: bigint };
@@ -89,6 +92,8 @@ const CAMPAIGN_TIERS: Record<TicketTier, number> = { regular: 1, golden: 2 };
  */
 export async function registerHomeSource(target: RealmEntryTarget, claim: RealmEntryClaim): Promise<HomeSource> {
   const entry = await openEntry(target, claim);
+  await grantHeldSeal(target, claim, entry);
+  if (claim.sealOnly) return {};
   const previous = readEntitlement(entry.snapshot, claim.account);
   if (claim.upgradeCampaign) return upgradeCampaignHome(target, claim, entry, previous);
   const { realmId } = claim;
@@ -194,6 +199,7 @@ async function openEntry(target: RealmEntryTarget, claim: RealmEntryClaim) {
     "PlayerEntry",
     "EntryEntitlement",
     "SettledRealm",
+    "Seal",
     ...(claim.upgradeCampaign ? ["CampaignHome", "Structure"] : []),
   ]);
   await requireOpenFrontier(target.connection, snapshot);
@@ -205,6 +211,23 @@ async function openEntry(target: RealmEntryTarget, claim: RealmEntryClaim) {
   return { snapshot, operator };
 }
 type OpenEntry = Awaited<ReturnType<typeof openEntry>>;
+
+async function grantHeldSeal(target: RealmEntryTarget, claim: RealmEntryClaim, entry: OpenEntry) {
+  if (Number(singleRow(entry.snapshot, "GameRelease").release_id) < nativeReleaseConstants.SEAL_RELEASE) return;
+  const granted = entry.snapshot.models
+    .find((model) => model.model === "Seal")!
+    .rows.some(({ value }) => sameFelt(String(value.account), claim.account));
+  if (granted) return;
+  const held = await target.identity.holdsSeal(claim.realmsId).catch(() => {
+    throw new PlayerRequestError(503, "seal_check_unavailable");
+  });
+  if (!held) return;
+  try {
+    await entry.operator.admin("grant_seal", { game_id: claim.gameId, account: claim.account });
+  } catch {
+    throw new PlayerRequestError(503, "seal_grant_unavailable");
+  }
+}
 
 async function registerHeldRealm(
   target: RealmEntryTarget,
