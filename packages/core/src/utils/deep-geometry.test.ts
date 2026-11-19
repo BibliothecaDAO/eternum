@@ -2,12 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import { deepViewFor } from "./deep-geometry";
 
-const store = (
-  aspects: Record<string, number>,
-  rules: { gate_distance: number } | undefined = { gate_distance: 4 },
-) => ({
+const store = (aspects: Record<string, number>, rules: { gate_distance: number } | null = { gate_distance: 4 }) => ({
   get: (model: string, key: { home?: bigint }) => {
-    if (model === "DeepRules") return rules;
+    if (model === "DeepRules") return rules ?? undefined;
     if (model === "HomeAspect") {
       const aspect = aspects[String(key.home)];
       return aspect === undefined ? undefined : { aspect };
@@ -35,6 +32,6 @@ describe("the Deep's gates", () => {
 
   it("refuses an Aspect with no gate, and a game without the rules that place the gates", () => {
     expect(() => deepViewFor(store({ "5": 5 }) as never, 7, 5n, 1024)).toThrow("No gate for Aspect 5");
-    expect(() => deepViewFor(store({}, undefined) as never, 7, 1n, 1024)).toThrow("needs the game's DeepRules row");
+    expect(() => deepViewFor(store({}, null) as never, 7, 1n, 1024)).toThrow("needs the game's DeepRules row");
   });
 });
