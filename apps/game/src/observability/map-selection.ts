@@ -24,12 +24,6 @@ interface MapSelectionSnapshot {
   drawnSites: Record<string, number>;
   /** The contract hex each drawn Deep site model stands on, by the same keys (the proof walks the camera to each). */
   siteHexes: Record<string, { col: number; row: number }>;
-  /** The contract hex each drawn hyperstructure stands on, by structure id. */
-  towerHexes: Record<string, { col: number; row: number }>;
-  /** The page box (px) each drawn hyperstructure's tower fills, foot to crown, by structure id; follows the camera. */
-  towerBoxes: Record<string, { left: number; top: number; right: number; bottom: number }>;
-  /** What each drawn hyperstructure's tower shows now, by structure id: its animated progress in percent, and whether its crown is awake (the stages proof). */
-  towers: Record<string, { progress: number; awake: boolean }>;
   /** The layer the map shows: the depth below (true) or the surface. */
   layer: boolean;
   /** Where the screen draws the selected hex (page px): a tapped chest, once a phone's camera has framed it. */

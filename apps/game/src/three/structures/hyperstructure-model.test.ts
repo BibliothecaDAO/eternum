@@ -46,54 +46,6 @@ describe("procedural hyperstructures", () => {
     model.dispose();
   });
 
-  it("reports what it draws: a stage change rises over time, and the crown wakes only once the tower stands whole", async () => {
-    const { HyperstructureModel } = await import("./hyperstructure-model");
-    const heard: Record<string, { progress: number; awake: boolean }>[] = [];
-    const model = new HyperstructureModel(1, (drawn) => heard.push(drawn));
-    model.setMatrixAt(0, new Matrix4());
-    model.setCount(1);
-    model.setConstructionAt(0, { entityId: 7, progress: 20, completed: false });
-    expect(heard.at(-1)).toEqual({ 7: { progress: 20, awake: false } });
-    // The request moves to 40; the tower still draws 20 until time passes.
-    model.setConstructionAt(0, { entityId: 7, progress: 40, completed: false });
-    expect(heard.at(-1)).toEqual({ 7: { progress: 20, awake: false } });
-    model.updateAnimations(0.2);
-    const rising = heard.at(-1)![7]!.progress;
-    expect(rising).toBeGreaterThan(20);
-    expect(rising).toBeLessThan(40);
-    model.updateAnimations(5);
-    expect(heard.at(-1)).toEqual({ 7: { progress: 40, awake: false } });
-    model.setConstructionAt(0, { entityId: 7, progress: 100, completed: true });
-    expect(heard.at(-1)![7]!.awake).toBe(false);
-    model.updateAnimations(5);
-    expect(heard.at(-1)).toEqual({ 7: { progress: 100, awake: true } });
-    model.setMatrixAt(0, new Matrix4().makeScale(0, 0, 0));
-    model.updateAnimations(0.1);
-    expect(heard.at(-1)).toEqual({});
-    model.dispose();
-  });
-
-  it("reports the corners of what it draws where it is placed: a taller tower as it rises, none once removed", async () => {
-    const { HyperstructureModel } = await import("./hyperstructure-model");
-    const model = new HyperstructureModel(1);
-    expect(model.drawnCornersAt(0)).toEqual([]);
-    model.setMatrixAt(0, new Matrix4().makeTranslation(4, 1, -2));
-    model.setCount(1);
-    const topOf = () => Math.max(...model.drawnCornersAt(0).map((corner) => corner.y));
-    model.setConstructionAt(0, { entityId: 7, progress: 20, completed: false });
-    const bottom = Math.min(...model.drawnCornersAt(0).map((corner) => corner.y));
-    expect(bottom).toBeCloseTo(1, 1);
-    const early = topOf();
-    model.setConstructionAt(0, { entityId: 7, progress: 100, completed: true });
-    model.updateAnimations(5);
-    model.updateAnimations(5);
-    expect(topOf()).toBeGreaterThan(early);
-    expect(topOf() - bottom).toBeLessThanOrEqual(HYPERSTRUCTURE_HEIGHT + 0.1);
-    model.setMatrixAt(0, new Matrix4().makeScale(0, 0, 0));
-    expect(model.drawnCornersAt(0)).toEqual([]);
-    model.dispose();
-  });
-
   it("builds additively inside the hex and preserves the completed landmark height", async () => {
     const { HyperstructureModel } = await import("./hyperstructure-model");
     const model = new HyperstructureModel(1);

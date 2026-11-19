@@ -1,4 +1,3 @@
-import { publishMapSelection } from "@/observability/map-selection";
 import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
 import {
   readRealmSkin,
@@ -1000,8 +999,7 @@ export class StructureManager {
   }
 
   private async loadStructureModel(structureType: StructureType, modelPath: string): Promise<StructureModel> {
-    if (structureType === StructureType.Hyperstructure)
-      return new HyperstructureModel(STRUCTURE_INSTANCE_CAPACITY, (towers) => publishMapSelection({ towers }));
+    if (structureType === StructureType.Hyperstructure) return new HyperstructureModel(STRUCTURE_INSTANCE_CAPACITY);
     const startedAt = performance.now();
     const gltf = await gltfLoader.loadAsync(modelPath);
     recordWorldmapRenderDuration("structureModelLoadMs", performance.now() - startedAt);
@@ -1624,20 +1622,6 @@ export class StructureManager {
     this.metrics.fullRefreshMaxSliceMs = Math.max(this.metrics.fullRefreshMaxSliceMs, sliceMs);
   }
 
-  /** The contract hex each hyperstructure drawn stands on: published for the towers' proof, and let go with the instance. */
-  private readonly towerHexes = new Map<number, { col: number; row: number }>();
-
-  /** The world corners of what each hyperstructure drawn shows now, by structure id, for the camera's report of where they fall on screen. */
-  towerCornersDrawn(): [number, Vector3[]][] {
-    return [...this.structureInstanceBindings].flatMap(([entityId, bindings]) =>
-      bindings.flatMap(({ model, instanceIndex }) =>
-        model instanceof HyperstructureModel
-          ? [[entityId, model.drawnCornersAt(instanceIndex)] as [number, Vector3[]]]
-          : [],
-      ),
-    );
-  }
-
   private addVisibleStructureInstance(
     structure: StructureInfo,
     attachmentRetain: Set<number>,
@@ -1652,11 +1636,6 @@ export class StructureManager {
     for (const binding of bindings) {
       if (binding.model instanceof HyperstructureModel && this.store) {
         const construction = readHyperstructureConstruction(this.store, safeInteger(structure.entityId));
-        this.towerHexes.set(structure.entityId, {
-          col: structure.hexCoords.col + FELT_CENTER(),
-          row: structure.hexCoords.row + FELT_CENTER(),
-        });
-        publishMapSelection({ towerHexes: Object.fromEntries(this.towerHexes) });
         binding.model.setConstructionAt(
           binding.instanceIndex,
           construction,
@@ -1817,7 +1796,6 @@ export class StructureManager {
       dirtyModels.add(model);
     });
     this.structureInstanceBindings.delete(entityId);
-    if (this.towerHexes.delete(entityId)) publishMapSelection({ towerHexes: Object.fromEntries(this.towerHexes) });
   }
 
   private updateVisibleStructureModelCounts(dirtyModels: Set<StructureModel>): void {

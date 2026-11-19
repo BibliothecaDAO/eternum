@@ -1,16 +1,4 @@
-import {
-  Box3,
-  type BufferAttribute,
-  type BufferGeometry,
-  Color,
-  Euler,
-  Matrix4,
-  Mesh,
-  MeshStandardMaterial,
-  Quaternion,
-  type Texture,
-  Vector3,
-} from "three";
+import { Color, Euler, Matrix4, Mesh, MeshStandardMaterial, Quaternion, type Texture, Vector3 } from "three";
 import InstancedModel from "../managers/instanced-model";
 import { queueInstanceUpdate } from "../utils/instance-update-ranges";
 import {
@@ -59,7 +47,6 @@ export class HyperstructureModel extends InstancedModel {
   private readonly stoneTexture: Texture;
   private readonly parts: { name: string; family?: string; course?: number; masonry: boolean }[];
   private readonly masonryTint = new Color();
-  private readonly partBoxes = new WeakMap<BufferGeometry, Box3>();
   private readonly local = new Matrix4();
   private readonly composed = new Matrix4();
   private readonly scale = new Vector3();
@@ -72,14 +59,7 @@ export class HyperstructureModel extends InstancedModel {
   private readonly power: ReturnType<typeof createHyperstructurePower>;
   private seconds = 0;
 
-  /** What each tower draws now, by structure id: the animated progress in whole percent, and whether its crown is awake. */
-  private drawn = "";
-
-  /** `observeDrawn` hears what the towers draw whenever it changes, for the proof that reads the screen's truth, not the request. */
-  constructor(
-    capacity: number,
-    private readonly observeDrawn?: (drawn: Record<string, { progress: number; awake: boolean }>) => void,
-  ) {
+  constructor(capacity: number) {
     const kit = createHyperstructureKit();
     super(kit, capacity, false, "Hyperstructure");
     this.stoneTexture = ((kit.scene.children[0] as Mesh).material as MeshStandardMaterial).map!;
@@ -130,32 +110,6 @@ export class HyperstructureModel extends InstancedModel {
     this.writeTower(index, placement);
   }
 
-  /** A part's own extent from its vertices: its geometry's bounds are stretched over every instance the model places. */
-  private partBox(geometry: BufferGeometry): Box3 {
-    let box = this.partBoxes.get(geometry);
-    if (!box) {
-      box = new Box3().setFromBufferAttribute(geometry.getAttribute("position") as BufferAttribute);
-      this.partBoxes.set(geometry, box);
-    }
-    return box;
-  }
-
-  /** Every corner of every part of the tower at `index` that is drawn now, in the world: what the player can see of it. */
-  drawnCornersAt(index: number): Vector3[] {
-    const matrix = new Matrix4();
-    return this.instancedMeshes.flatMap((mesh, meshIndex) => {
-      if (!this.visibleSlots.get(meshIndex)?.has(index)) return [];
-      const box = this.partBox(mesh.geometry);
-      mesh.getMatrixAt(index, matrix);
-      matrix.premultiply(mesh.matrixWorld);
-      return [box.min.x, box.max.x].flatMap((x) =>
-        [box.min.y, box.max.y].flatMap((y) =>
-          [box.min.z, box.max.z].map((z) => new Vector3(x, y, z).applyMatrix4(matrix)),
-        ),
-      );
-    });
-  }
-
   setConstructionAt(index: number, construction: HyperstructureConstruction, animateFromFoundation = false): void {
     const placement = this.placements.get(index);
     if (!placement) return;
@@ -179,7 +133,6 @@ export class HyperstructureModel extends InstancedModel {
     this.tintMasonry(index, placement);
     this.writeTower(index, placement);
     this.needsUpdate();
-    this.reportDrawn();
   }
 
   override setCount(count: number): void {
@@ -192,7 +145,6 @@ export class HyperstructureModel extends InstancedModel {
     const activeIds = new Set([...this.placements.values()].map((placement) => placement.construction.entityId));
     for (const id of this.presentations.keys()) if (!activeIds.has(id)) this.presentations.delete(id);
     super.setCount(count);
-    this.reportDrawn();
   }
 
   override updateAnimations(delta: number): void {
@@ -210,23 +162,6 @@ export class HyperstructureModel extends InstancedModel {
       }
     }
     if (boundsChanged) this.needsUpdate();
-    this.reportDrawn();
-  }
-
-  private reportDrawn(): void {
-    if (!this.observeDrawn) return;
-    const drawn = Object.fromEntries(
-      [...this.placements.values()]
-        .filter((placement) => placement.construction.entityId !== 0)
-        .map((placement) => [
-          placement.construction.entityId,
-          { progress: Math.round(placement.visualProgress), awake: isAwake(placement) },
-        ]),
-    );
-    const key = JSON.stringify(drawn);
-    if (key === this.drawn) return;
-    this.drawn = key;
-    this.observeDrawn(drawn);
   }
 
   override dispose(): void {

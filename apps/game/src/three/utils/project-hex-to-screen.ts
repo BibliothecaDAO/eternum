@@ -1,4 +1,4 @@
-import { Vector3, type Camera } from "three";
+import type { Camera, Vector3 } from "three";
 import type { HexPosition } from "@bibliothecadao/types";
 import { getWorldPositionForHex } from "./utils";
 
@@ -16,20 +16,4 @@ const toPagePoint = (world: Vector3, camera: Camera, rect: DOMRect): { x: number
 /** Project either scene's normalized hex onto the shared map canvas. */
 export function projectHexToScreen(hex: HexPosition, camera: Camera): { x: number; y: number } {
   return toPagePoint(getWorldPositionForHex(hex), camera, mapCanvasRect());
-}
-
-export interface ScreenBox {
-  left: number;
-  top: number;
-  right: number;
-  bottom: number;
-}
-
-/** The page box (px) that holds every one of these world points. */
-export function projectPointsToScreen(points: Vector3[], camera: Camera): ScreenBox {
-  const rect = mapCanvasRect();
-  const onPage = points.map((point) => toPagePoint(point.clone(), camera, rect));
-  const xs = onPage.map((point) => point.x);
-  const ys = onPage.map((point) => point.y);
-  return { left: Math.min(...xs), top: Math.min(...ys), right: Math.max(...xs), bottom: Math.max(...ys) };
 }
