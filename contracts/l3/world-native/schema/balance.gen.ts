@@ -1,6 +1,7 @@
 // @generated from the Cairo balance constants, which a release may tune. Run the native schema generator to update.
 export const nativeReleaseConstants = {
-  "RUIN_DEPTH_LIMIT_RELEASE": 9
+  "RUIN_DEPTH_LIMIT_RELEASE": 9,
+  "SEAL_RELEASE": 10
 } as const;
 export const nativeRuleConstants = {
   "RELIC_BLADE_BPS": 1000,
@@ -156,4 +157,13 @@ export const nativeResearchConstants = {
   "SCOUTS_LODGE": 43,
   "SCOUTS_LODGE_LEVEL": 1
 } as const;
-export const nativeBalanceIdentity = "43c4c429f97b80e608f2f7f29c66d2a02652c8dc2b708d91026f4a0755578daf";
+export const nativeFragmentConstants = {
+  "WONDER_QUEST": 10,
+  "SEAL_PRICE": 1000,
+  "STAMINA_PER_FRAGMENT": 2,
+  "CACHE_TROOPS": 100,
+  "SURFACE_CACHE_PERCENT": 19,
+  "VEIL_CACHE_PERCENT": 10,
+  "HOLLOW_CACHE_PERCENT": 5
+} as const;
+export const nativeBalanceIdentity = "9350e8fc068e75fc36be4602f32cf1a425e6179fde03c67b74e3ac3a7a44ada8";

@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "754fdad0fc5a96fb6202be89b55b7e46b98f00960b9d690b0838a9dfea14a791",
+  "schemaIdentity": "c9e8135616511aff777283fc0f6d09606b1444d305dba88aa057abc17efd40cd",
   "commandAbi": [
     {
       "type": "interface",
@@ -23,6 +23,16 @@
       "type": "enum",
       "name": "world_native::commands::Command",
       "variants": [
+        {
+          "name": "BuySeal",
+          "type": "()",
+          "wireId": 74
+        },
+        {
+          "name": "BuyStamina",
+          "type": "world_native::fragments::BuyStamina",
+          "wireId": 75
+        },
         {
           "name": "ChooseOath",
           "type": "world_native::oaths::ChooseOath",
@@ -287,6 +297,20 @@
           "name": "InteractSite",
           "type": "world_native::relics::InteractSite",
           "wireId": 69
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::fragments::BuyStamina",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "fragments",
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -1287,6 +1311,14 @@
       "scope": "game"
     },
     {
+      "name": "Fragments",
+      "scope": "game"
+    },
+    {
+      "name": "Seal",
+      "scope": "game"
+    },
+    {
       "name": "SpendLords",
       "scope": "game"
     },
@@ -1524,6 +1556,10 @@
     },
     {
       "name": "RuinRelic",
+      "scope": "game"
+    },
+    {
+      "name": "RuinCache",
       "scope": "game"
     },
     {
