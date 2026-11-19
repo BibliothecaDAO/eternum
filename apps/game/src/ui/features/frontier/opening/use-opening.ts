@@ -136,8 +136,8 @@ function useOpeningHeld(rules: ExpeditionRules, realm: NativeRows["Structure"] |
   return {
     barracks: getBuildingQuantity(home, FIRST_BUILD, setup.store) > 0,
     essence: (essence ?? 0) > 0,
-    "well-lore": researchTier(learned, research.ROW_WELL) > 0,
-    "shrine-lore": researchTier(learned, research.ROW_SHRINE) > 0,
+    "well-lore": researchTier(learned, research.ROW_LORE) >= research.LORE_WELLS,
+    "shrine-lore": researchTier(learned, research.ROW_LORE) >= research.LORE_SHRINES,
     deep,
     bane,
     aspects: deep || bane || stageBuilt,
