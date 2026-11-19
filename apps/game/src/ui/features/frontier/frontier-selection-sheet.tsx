@@ -91,8 +91,7 @@ export const useSelectionCard = ({
         />
       </HudSheet>,
     );
-  if (spire && !armyWhereItStands)
-    return card("realm-spire", <RealmSpireSheet spire={spire} onClose={close} />);
+  if (spire && !armyWhereItStands) return card("realm-spire", <RealmSpireSheet spire={spire} onClose={close} />);
   if (tileObject?.kind === "spire") return card("spire", <SpireCard onClose={close} />);
   if (realm && keep) return card("keep", <CastleUpgrade realm={realm} onResearchPage={onResearch} onClose={close} />);
   if (realm && building)

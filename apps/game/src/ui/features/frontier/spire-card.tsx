@@ -110,11 +110,7 @@ export const RealmSpireSheet = ({ spire, onClose }: { spire: Spire; onClose: () 
   const own = isViewerOwner(spire.realm.owner, useAccountAddress());
   return (
     <HudSheet label={SPIRE_WORDS.title} onClose={onClose}>
-      {own ? (
-        <OwnSpire spire={spire} />
-      ) : (
-        <p className="text-hud-body text-hud-ink">{SPIRE_WORDS.foreign}</p>
-      )}
+      {own ? <OwnSpire spire={spire} /> : <p className="text-hud-body text-hud-ink">{SPIRE_WORDS.foreign}</p>}
     </HudSheet>
   );
 };
