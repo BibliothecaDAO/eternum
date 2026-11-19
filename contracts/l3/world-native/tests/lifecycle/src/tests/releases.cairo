@@ -414,6 +414,43 @@ fn a_migration_free_release_reaches_a_populated_season_one_game_rewriting_no_fac
     assert_eq!(releases.game_release(game_id), 3);
 }
 
+#[test]
+fn a_game_stuck_at_its_deep_boundary_plays_again_once_the_launcher_applies_a_cheaper_release() {
+    let (d, game_id) = super::aspects::setup_aspect_preset(98, super::deep_sites::preset());
+    let walker = super::deep_sites::deployed(d, game_id, 2, 1000);
+    super::set_launcher(d, d.actor);
+    let releases = IReleasesDispatcher { contract_address: d.games };
+    let cheaper = releases.release(1);
+    let stuck = Release {
+        classes: games_storage::release::LogicClasses {
+            prizes: declare_logic("OverBudgetDeepFixture"), ..cheaper.classes,
+        },
+        ..cheaper,
+    };
+    start_cheat_caller_address(d.games, authority());
+    releases.register_release(2, stuck);
+    releases.register_release(3, cheaper);
+    start_cheat_caller_address(d.games, d.actor);
+    releases.apply_release(game_id, 2);
+    let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
+    let tick = (360 / interval + 1) * interval;
+    world_test_support::tests::play_fixture::assert_preflight_rejection(
+        d.games,
+        world_test_support::tests::play_fixture::TestAction { game_id, actor: d.actor, command: step(walker) },
+        tick,
+    );
+    let mut recovery = spy_events();
+    releases.apply_release(game_id, 3);
+    assert_only_pin_moved(ref recovery, d, game_id, 3);
+    let before = interact_with_state(d.games, || crate::logic::troops::explorer(walker).unwrap().coord);
+    super::deep_sites::applied(d, game_id, step(walker), tick);
+    assert!(interact_with_state(d.games, || crate::logic::troops::explorer(walker).unwrap().coord) != before);
+}
+
+fn step(walker: ExplorerKey) -> crate::commands::Command {
+    crate::commands::Command::Move(crate::commands::Move { explorer_id: walker.explorer_id, directions: array![0].span() })
+}
+
 fn assert_only_pin_moved(ref spy: snforge_std::EventSpy, d: super::Deployment, game_id: u32, release_id: u32) {
     let emitted = spy.get_events().emitted_by(d.games);
     assert_eq!(emitted.events.len(), 1);
