@@ -20,8 +20,9 @@ is no gateway image or service.
 
 For first deployment and updates use `python3 deploy/athanor/scripts/operator-command.py deploy ENVIRONMENT DIRECTORY`.
 `deploy/release/ENVIRONMENT.json` is the reviewed input source. The deployer builds its images under the shared Cairo
-lock, with compilation pinned to cores 8–11. Official deployment replaces the directory's one row before
-enrolment.
+lock, with compilation pinned to cores 8–11. Neither official deployment nor teardown touches the shard directory:
+`deploy:cloudflare` alone lists the official shard, once its Herald serves the box's chain and release
+([deploy/first](../first/README.md#deploy)).
 
 The dev node belongs to the operator running its trials. The deploy, teardown, season and backup commands take
 `/opt/athanor/isolated-stack.lock` themselves; do not hold it around them. No command should target the production chain
@@ -30,10 +31,10 @@ or reuse the state or chain ID of another shard. Backups stay private and local 
 ## Native deployment
 
 The shard package initializes host signing keys and a separate VRF key, then deploys Games with immutable VRF public
-point and play gas bound. Use the package deployment flow in [deploy/shard](../shard/README.md); it registers the shard
-before operator enrollment, then compares initialized facts and confirms service roles. There is no sequencing account,
-per-game order, epoch service or second submission endpoint. Private credentials stay in `data/` with mode `0600`; the
-public manifest contains only their public identity.
+point and play gas bound. Use the package deployment flow in [deploy/shard](../shard/README.md); it initializes the
+shard, then compares initialized facts and confirms service roles. There is no sequencing account, per-game order, epoch
+service or second submission endpoint. Private credentials stay in `data/` with mode `0600`; the public manifest
+contains only their public identity.
 
 ## Herald and client
 

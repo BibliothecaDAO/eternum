@@ -38,12 +38,13 @@ const IDENTITY = {
   logic: { season: "0x55e0", troops: "0x77a2" },
   migration: "0x0",
 };
-/** The box answers `record` over SSH; git compares the two commits' release sources as `sourcesDiffer` says. */
-function box(record: unknown, sourcesDiffer = false) {
+const CHAIN = "0x5245414c4d535f444556";
+function box(record: unknown, sourcesDiffer = false, native: unknown = record && { shard: { chainId: CHAIN } }) {
   const calls: processTools.Command[] = [];
   spyOn(processTools, "command").mockImplementation(async (spec) => {
     calls.push(spec);
-    if (spec.argv[0] === "ssh") return JSON.stringify(record);
+    if (spec.argv[0] === "ssh")
+      return JSON.stringify(String(spec.input).includes("native-world.json") ? native : record);
     if (spec.argv.slice(0, 2).join(" ") === "git diff" && sourcesDiffer) throw new processTools.CommandFailure("");
     return "";
   });
@@ -54,18 +55,19 @@ test("the box's build of this very commit is the release the deploy carries", as
   const value = store();
   const calls = box(boxBuild(commit));
   await recordReleaseIdentity(value, target, commit);
-  expect(readReleaseIdentity(value, commit)).toEqual(IDENTITY);
-  expect(calls).toHaveLength(1);
-  expect(calls[0]!.argv).toContain(target.box);
+  expect(readReleaseIdentity(value, commit)).toEqual({ release: IDENTITY, chainId: CHAIN });
+  expect(calls).toHaveLength(2);
+  expect(calls.every((call) => call.argv.includes(target.box))).toBe(true);
   expect(String(calls[0]!.input)).toContain(`${target.runDirectory}/release.json`);
+  expect(String(calls[1]!.input)).toContain(`${target.runDirectory}/data/native-world.json`);
 });
 
 test("another commit's box build stands for this one when their release sources are identical", async () => {
   const value = store();
   const calls = box(boxBuild(built));
   await recordReleaseIdentity(value, target, commit);
-  expect(readReleaseIdentity(value, commit)).toEqual(IDENTITY);
-  expect(calls.slice(1).map((call) => call.argv)).toEqual([
+  expect(readReleaseIdentity(value, commit)).toEqual({ release: IDENTITY, chainId: CHAIN });
+  expect(calls.slice(1, 3).map((call) => call.argv)).toEqual([
     ["git", "fetch", "--quiet", "origin", built],
     ["git", "diff", "--quiet", built, commit, "--", ...RELEASE_SOURCES],
   ]);
@@ -91,7 +93,14 @@ test("a box that never built records no release, which the launch Worker accepts
   const value = store();
   box(null);
   await recordReleaseIdentity(value, target, commit);
-  expect(readReleaseIdentity(value, commit)).toBeNull();
+  expect(readReleaseIdentity(value, commit)).toEqual({ release: null, chainId: null });
+});
+
+test("a box that built but never prepared its shard records its release without a chain", async () => {
+  const value = store();
+  box(boxBuild(commit), false, null);
+  await recordReleaseIdentity(value, target, commit);
+  expect(readReleaseIdentity(value, commit)).toEqual({ release: IDENTITY, chainId: null });
 });
 
 test("an identity read for another commit never stands in for this one", async () => {

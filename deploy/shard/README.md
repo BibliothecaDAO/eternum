@@ -41,36 +41,37 @@ Preparation generates a host signing key and a separate VRF key on the shard. Bo
 identity or bound change. There is no VRF key setter: a leaked key retires the shard.
 
 Preparation records immutable identity before network work. An initialized shard is never removed or reinitialized; a
-class or identity difference refuses the update by name. The deployer reads the directory's one row through the
-operator-authenticated directory route before touching state, and refuses when it names another chain than the run
-directory records. An unfinished initialization is removed only when the run directory is the environment's own
-directory and its deposits are retired; an unreadable local identity or directory read failure refuses cleanup. Matching
-initialized state continues through the existing initialization and role verification. The initializer runs as HOST_UID,
-and private credentials remain owner-only with mode `0600`.
+class or identity difference refuses the update by name. The deployer refuses a run directory that records another chain
+than the configured one. An unfinished initialization is removed only when the run directory is the environment's own
+directory and its deposits are retired; an unreadable local identity refuses cleanup. Matching initialized state
+continues through the existing initialization and role verification. The initializer runs as HOST_UID, and private
+credentials remain owner-only with mode `0600`.
 
 ## Endpoints and readiness
 
-Bootstrap requires the Herald HTTPS hostname to be reachable by the identity Worker before enrolment. Forward HTTPS
-hostnames to loopback 8080 (RPC) and 8081 (Herald). `RPC_PORT`, `HERALD_PORT` and `BIND_ADDRESS` change bindings. The
-public RPC admits one signed Games.play call, the data-listed role-guarded administrative entries and existing Realms
-account-management calls. Play receives a VRF proof inside the proxy; proof bodies are never served. Simulations and fee
-estimates are never stamped. The node's write RPC is internal, not exposed through another port.
+Official bootstrap requires the Herald HTTPS hostname to be publicly reachable: deployment waits for its
+`/manifest`, and the identity Worker reads it again when the shard is listed. Forward HTTPS hostnames to loopback 8080
+(RPC) and 8081 (Herald). `RPC_PORT`, `HERALD_PORT` and `BIND_ADDRESS` change bindings. The public RPC admits one signed
+Games.play call, the data-listed role-guarded administrative entries and existing Realms account-management calls. Play
+receives a VRF proof inside the proxy; proof bodies are never served. Simulations and fee estimates are never stamped.
+The node's write RPC is internal, not exposed through another port.
 
 Behind a tunnel, set TRUSTED_PROXY to its actual socket peer. With loopback bindings initialization derives that peer
 from the Compose network route; exposed bindings trust no proxy unless explicitly configured.
 
-The identity service must carry `/api/directory/shard` before a shard from this code starts. The directory holds one
-row: registering replaces it, removing deletes it. The initializer never lists.
+The directory holds one row. `deploy:cloudflare` replaces it once the box's Herald serves the box's chain and release
+([deploy/first](../first/README.md#deploy)), and the operator route `DELETE /api/directory/shard` removes it. Neither
+deployment, the initializer nor teardown reads or writes it.
 
 Herald's existing listener first serves the real prepared identity at `/manifest`, with other routes unavailable.
-Official deployment registers the Herald URL after starting Herald and before starting initialization or enrolling the
-operator. Init then deploys Games, sets owner/launcher/ledger roles and registers the selected presets. Games is created
-with the bootstrap owner and the launcher and relay addresses derived from the guardian identity. The two service
-Workers join those accounts on their own alarm or cron. Last, on every start, init has Madara compile each of the
-world's classes to native code (`warm-native-classes.ts`): Madara compiles a class only when it first runs it, and runs
-that first execution on the VM, 2–4× slower. Madara compiles four at once and refuses more, so init asks again each
-round for every class still missing, until all are compiled or 15 minutes pass (then the start fails, naming them).
-Classes already in Madara's cache cost one directory read.
+Official deployment waits for that identity after starting Herald, then starts initialization. Init deploys Games, sets
+owner/launcher/ledger roles and registers the selected presets. Games is created with the bootstrap owner and the
+launcher and relay addresses derived from the guardian identity. The two service Workers join those accounts on their
+own alarm or cron. Last, on every start, init has Madara compile each of the world's classes to native code
+(`warm-native-classes.ts`): Madara compiles a class only when it first runs it, and runs that first execution on the VM,
+2–4× slower. Madara compiles four at once and refuses more, so init asks again each round for every class still missing,
+until all are compiled or 15 minutes pass (then the start fails, naming them). Classes already in Madara's cache cost
+one directory read.
 
 After initialization, deployment compares the deployed classes, schema and selected preset commitments with the build's
 facts and confirms the distinct on-chain roles; rerunning repeats these idempotent operations. Deployment creates no
@@ -79,9 +80,9 @@ game and proves no gameplay action end to end; the first real game and playtest 
 Metrics collect OTLP and sample container CPU from a read-only cgroup mount, without a Docker socket or write access.
 The compose services restart on failure. Initializer logs and `harness.env` are private and must never be published.
 
-| Path                | Registration and visibility                       | Operator command                                           |
-| ------------------- | ------------------------------------------------- | ---------------------------------------------------------- |
-| Official deployment | Replaces the directory's one row before enrolment | `operator-command.py deploy ENVIRONMENT PACKAGE_DIRECTORY` |
+| Path                | Directory listing                        | Operator command                                           |
+| ------------------- | ---------------------------------------- | ---------------------------------------------------------- |
+| Official deployment | Listed afterwards by `deploy:cloudflare` | `operator-command.py deploy ENVIRONMENT PACKAGE_DIRECTORY` |
 
 Run each command above as `python3 deploy/athanor/scripts/operator-command.py ...`. The wrapper reads the box's
 protected token file; ops provisions it.
@@ -103,7 +104,8 @@ before submitting another action.
 
 To restore, use the recorded image digests, chain archive, database backup and private data archive on fresh volumes.
 Start preparation first: it verifies identity and republishes runtime files. Then start the stack and verify the pinned
-roles before directory activation. Never initialize fresh host keys over an incomplete or restored data directory.
+roles before `deploy:cloudflare` lists the shard. Never initialize fresh host keys over an incomplete or restored data
+directory.
 
 ## Contract releases
 

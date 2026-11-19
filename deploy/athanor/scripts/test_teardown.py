@@ -12,9 +12,7 @@ from contextlib import ExitStack, nullcontext
 from unittest.mock import patch
 import urllib.error
 
-import directory
 import teardown
-from test_directory import FakeIdentity
 
 BACKUP = "/opt/athanor/backups/s0-20261102"
 
@@ -56,18 +54,16 @@ class TeardownBoundaryTest(unittest.TestCase):
         (root / "logs").mkdir()
         return run
 
-    def boundaries(self, root, commands, removed, copy=None):
-        """Teardown's outside world: its settings, lock, directory row, logs and commands, each observed."""
+    def boundaries(self, root, commands, copy=None):
         return [patch.object(teardown, "require_deposit_retirement"), patch.object(teardown.shard, "ROOT", root), patch.object(teardown, "LOGS", root / "logs"),
                 patch.object(teardown.deploy, "load_inputs", return_value={}),
                 patch.object(teardown.shard, "isolated_stack_lock", return_value=nullcontext()),
-                patch.object(teardown, "remove_shard", side_effect=lambda *args: removed.append("removed")),
                 patch.object(teardown.subprocess, "run", side_effect=commands),
                 patch.object(teardown.shutil, "copyfile", side_effect=copy or shutil.copyfile)]
 
-    def run_teardown(self, root, commands, removed, copy=None):
+    def run_teardown(self, root, commands, copy=None):
         with ExitStack() as stack:
-            for boundary in self.boundaries(root, commands, removed, copy):
+            for boundary in self.boundaries(root, commands, copy):
                 stack.enter_context(boundary)
             teardown.teardown(["production", BACKUP], lambda stage: None)
 
@@ -106,12 +102,10 @@ class TeardownBoundaryTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             run = self.production(root)
-            removed = []
             state, commands = self.stack(verifies=False)
             with self.assertRaisesRegex(ValueError, "does not verify; nothing was removed: .*still accepts writes"):
-                self.run_teardown(root, commands, removed)
+                self.run_teardown(root, commands)
             self.assertTrue((run / ".env").exists())
-            self.assertEqual(removed, [])
             self.assertEqual(list((root / "logs").iterdir()), [])
             state["verifies"] = True
             original = commands
@@ -122,9 +116,8 @@ class TeardownBoundaryTest(unittest.TestCase):
                                      {"project": "realms-production", "chain_id": "PRODUCTION_1", "backup": BACKUP})
                 return original(command, **kwargs)
             state["calls"].clear()
-            self.run_teardown(root, verified, removed)
+            self.run_teardown(root, verified)
             self.assertFalse(run.exists())
-            self.assertEqual(removed, ["removed"])
             self.assertEqual(state["calls"], ["verify", "down"])
             self.assertFalse((root / "logs/teardown-production.json").exists())
             self.assertEqual(json.loads((root / "logs/teardown-PRODUCTION_1.json").read_text())["backup"], BACKUP)
@@ -133,116 +126,104 @@ class TeardownBoundaryTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             run = self.production(root)
-            removed = []
             state, commands = self.stack()
             # compose's own containers carry its config hash; the stand-in backup.py ran does not.
             state["containers"].append("c3")
-            self.run_teardown(root, commands, removed)
+            self.run_teardown(root, commands)
             self.assertEqual(state["calls"], ["verify", "rm c3", "down"])
             self.assertFalse(run.exists())
-            self.assertEqual(removed, ["removed"])
 
     def test_a_teardown_stopped_right_after_its_volumes_are_removed_finishes_on_a_rerun(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             run = self.production(root)
-            removed = []
             state, commands = self.stack()
             def disk_full(*args):
                 raise OSError("no space left on device")
             # Verified, volumes removed, then the run stops copying its logs.
             with self.assertRaisesRegex(OSError, "no space left"):
-                self.run_teardown(root, commands, removed, copy=disk_full)
+                self.run_teardown(root, commands, copy=disk_full)
             self.assertEqual(state["calls"], ["verify", "down"])
             self.assertFalse(state["volume"])
             self.assertTrue(run.exists())
-            self.assertEqual(removed, [])
             # The node is gone now: verification would refuse, and the rerun finishes from the record without it.
             state["verifies"] = False
             state["calls"].clear()
-            self.run_teardown(root, commands, removed)
+            self.run_teardown(root, commands)
             self.assertEqual(state["calls"], ["down"])
             self.assertFalse(run.exists())
-            self.assertEqual(removed, ["removed"])
             self.assertTrue((root / "logs/teardown-PRODUCTION_1.json").exists())
 
     def test_a_verified_shard_that_reopens_its_writes_is_never_removed_on_the_old_record(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             run = self.production(root)
-            removed = []
             # Verified and recorded, then compose down fails: nothing was removed, the chain is intact.
             state, commands = self.stack(down_fails=True)
             with self.assertRaises(subprocess.CalledProcessError):
-                self.run_teardown(root, commands, removed)
+                self.run_teardown(root, commands)
             self.assertTrue(state["volume"])
             self.assertTrue((root / "logs/teardown-production.json").exists())
             # The operator reopens writes (backup.py reopen) and S0 takes them; the backup no longer verifies.
             state.update(verifies=False, down_fails=False)
             state["calls"].clear()
             with self.assertRaisesRegex(ValueError, "does not verify; nothing was removed"):
-                self.run_teardown(root, commands, removed)
+                self.run_teardown(root, commands)
             self.assertEqual(state["calls"], ["verify"])
             self.assertTrue(state["volume"])
             self.assertTrue((run / ".env").exists())
-            self.assertEqual(removed, [])
 
     def test_a_failed_volume_listing_never_counts_as_the_chain_being_gone(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             run = self.production(root)
-            removed = []
             # An earlier run verified and recorded, then stopped before removing anything.
             state, commands = self.stack(down_fails=True)
             with self.assertRaises(subprocess.CalledProcessError):
-                self.run_teardown(root, commands, removed)
+                self.run_teardown(root, commands)
             self.assertTrue((root / "logs/teardown-production.json").exists())
             # Writes reopened; now Docker can't be asked whether the chain still exists.
             state.update(verifies=False, down_fails=False, daemon=False)
             state["calls"].clear()
             with self.assertRaisesRegex(RuntimeError, "could not list volumes.*nothing was removed"):
-                self.run_teardown(root, commands, removed)
+                self.run_teardown(root, commands)
             self.assertEqual(state["calls"], [])
             self.assertTrue(state["volume"])
             self.assertTrue((run / ".env").exists())
-            self.assertEqual(removed, [])
 
     def test_a_record_never_stands_for_another_chain_or_another_backup(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             run = self.production(root)
             record = root / "logs/teardown-production.json"
-            removed = []
             state, commands = self.stack(verifies=False)
             state["volume"] = False
             # The chain is gone, and the record is an older world's: nothing stands for this chain.
             record.write_text(json.dumps({"project": "realms-production", "chain_id": "PRODUCTION_0", "backup": BACKUP}))
             with self.assertRaisesRegex(ValueError, "chain is gone and no teardown of it verified this backup"):
-                self.run_teardown(root, commands, removed)
+                self.run_teardown(root, commands)
             self.assertEqual(state["calls"], [])
             # A removal stopped part way, its .env gone: only a record of this very backup lets it finish.
             (run / ".env").unlink()
             record.write_text(json.dumps({"project": "realms-production", "chain_id": "PRODUCTION_1",
                                           "backup": "/opt/athanor/backups/other"}))
             with self.assertRaisesRegex(ValueError, "can no longer be identified"):
-                self.run_teardown(root, commands, removed)
+                self.run_teardown(root, commands)
             self.assertTrue(run.exists())
             record.write_text(json.dumps({"project": "realms-production", "chain_id": "PRODUCTION_1", "backup": BACKUP}))
-            self.run_teardown(root, commands, removed)
+            self.run_teardown(root, commands)
             self.assertFalse(run.exists())
-            self.assertEqual(removed, ["removed"])
 
-    def test_a_rerun_after_the_directory_is_gone_only_removes_the_row(self):
+    def test_a_rerun_after_the_run_directory_is_gone_runs_nothing(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             run = self.production(root)
             shutil.rmtree(run)
-            removed, calls = [], []
-            self.run_teardown(root, lambda command, **kwargs: calls.append(command), removed)
+            calls = []
+            self.run_teardown(root, lambda command, **kwargs: calls.append(command))
             self.assertEqual(calls, [])
-            self.assertEqual(removed, ["removed"])
 
-    def test_directory_outage_does_not_keep_local_state(self):
+    def test_dev_teardown_run_twice_ends_with_no_run_directory_and_no_error(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             run = root / "run"
@@ -251,40 +232,13 @@ class TeardownBoundaryTest(unittest.TestCase):
             settings = root / "deploy/first"
             settings.mkdir(parents=True)
             (settings / "environments.json").write_text(json.dumps({"dev": {"runDirectory": str(run), "environment": "dev"}}))
-            stages = []
-            def unavailable(*args):
-                self.assertFalse(run.exists())
-                raise RuntimeError("identity unavailable")
             with patch.object(teardown.shard, "ROOT", root), patch.object(teardown.deploy, "load_inputs", return_value={}), \
                     patch.object(teardown.shard, "isolated_stack_lock", return_value=nullcontext()), \
-                    patch.object(teardown, "remove_shard", side_effect=unavailable), \
-                    patch.object(teardown, "require_deposit_retirement"), \
-                    patch.object(teardown.Path, "mkdir"):
-                with self.assertRaisesRegex(RuntimeError, "identity unavailable"):
-                    teardown.teardown(["dev"], stages.append)
-            self.assertEqual(stages[-2:], ["remove run directory", "remove directory row"])
-
-    def test_dev_teardown_run_twice_ends_with_no_directory_row_and_no_error(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            run = root / "run"
-            run.mkdir()
-            (run / "state").write_text("disposable")
-            settings = root / "deploy/first"
-            settings.mkdir(parents=True)
-            (settings / "environments.json").write_text(json.dumps({"dev": {"runDirectory": str(run), "environment": "dev"}}))
-            identity = FakeIdentity({"url": "https://herald.test", "chainId": "0x1"})
-            config = {"guardian_url": "https://identity.test/api/guardian"}
-            with patch.object(teardown.shard, "ROOT", root), patch.object(teardown.deploy, "load_inputs", return_value=config), \
-                    patch.object(teardown.shard, "isolated_stack_lock", return_value=nullcontext()), \
-                    patch.object(directory, "service_json", side_effect=identity), \
                     patch.object(teardown, "require_deposit_retirement"), \
                     patch.object(teardown, "LOGS", root / "logs"):
                 for _ in range(2):
                     teardown.teardown(["dev"], lambda stage: None)
             self.assertFalse(run.exists())
-            self.assertIsNone(identity.row)
-            self.assertEqual(identity.methods, ["DELETE", "DELETE"])
 
 
 class BackupVerifyTest(unittest.TestCase):

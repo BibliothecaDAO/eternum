@@ -1,7 +1,5 @@
 import { PHASE_END_ERROR, type FrontierSeasonPhase, type SeasonPhase } from "../../apps/launch-service/src/calendar";
 import { resolveBlitzSeason } from "./blitz-season";
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 import { CallData, RpcProvider, uint256 } from "starknet";
 import { decodeLedgerPreset } from "../../packages/value-ledger/src/codecs";
 import { readConfirmedSnapshot, optionalRow } from "../../apps/value-relay/src/shard-snapshot";
@@ -14,20 +12,12 @@ import { send, balance } from "./chain";
 import { nativeDocument } from "./box";
 import { seconds } from "./dates";
 import { PublicError } from "./errors";
-import { blitzPresetOf, ledgerAdmin, root, WEI } from "./settings";
+import { blitzPresetOf, ledgerAdmin, shardInputs, WEI } from "./settings";
 import { signer, type Deployment } from "./main";
 import type { Step } from "./run";
 
 export type Season = Omit<Deployment, "revision">;
 
-interface ReleaseInputs {
-  public_rpc_url: string;
-  public_herald_url: string;
-}
-function releaseInputs(context: Season): ReleaseInputs | undefined {
-  const path = join(root, "deploy/release", `${context.target.environment}.json`);
-  return existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : undefined;
-}
 async function service<T>(context: Season, path: string, method = "GET", body?: unknown): Promise<T> {
   if (!context.apply && method !== "GET") throw new PublicError("Dry run cannot write a service");
   const response = await fetch(`${context.target.origin}${path}`, {
@@ -57,7 +47,7 @@ async function jsonGet<T>(url: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 async function games(context: Season) {
-  const release = releaseInputs(context)!;
+  const release = shardInputs(context.target);
   return jsonGet<{ games: { game_id: number; mode: string; clock: { start_main_at: number } }[] }>(
     `${release.public_herald_url}/games`,
   );
@@ -74,7 +64,7 @@ async function frontierGame(context: Season) {
   return candidates[0] ? { gameId: candidates[0].game_id, phase } : undefined;
 }
 async function shardConnection(context: Season) {
-  const release = releaseInputs(context)!;
+  const release = shardInputs(context.target);
   const manifest = await nativeDocument(context.target);
   if (!manifest?.shard?.chainId || !manifest.world?.address)
     throw new PublicError("Box native-world.json is unavailable");
@@ -106,7 +96,7 @@ async function funding(context: Season) {
   const native = await readFrontierGame(
     new RpcProvider({ nodeUrl: shard.rpcUrl }),
     shard,
-    releaseInputs(context)!.public_herald_url,
+    shardInputs(context.target).public_herald_url,
     gameId,
   );
   assertCalendarGame(phase, native);
@@ -317,10 +307,12 @@ async function shortfallMint(provider: RpcProvider, lords: string, payer: string
 async function poolPublished(context: Season) {
   const state = await funding(context);
   if (!state?.funded) return false;
-  const snapshot = await readConfirmedSnapshot(state.shard, releaseInputs(context)!.public_herald_url, state.gameId, [
-    "LordsBudget",
-    "FrontierPrize",
-  ]);
+  const snapshot = await readConfirmedSnapshot(
+    state.shard,
+    shardInputs(context.target).public_herald_url,
+    state.gameId,
+    ["LordsBudget", "FrontierPrize"],
+  );
   const budget = optionalRow(snapshot, "LordsBudget");
   if (!budget || BigInt(String(budget.pool)) === 0n) return false;
   const prize = optionalRow(snapshot, "FrontierPrize");

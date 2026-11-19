@@ -651,23 +651,6 @@ class PackageStartTest(unittest.TestCase):
         self.assertFalse(any("prepare-authority" in str(call.args[0]) for call in run_calls))
 
 
-class LocalEnrollmentTest(unittest.TestCase):
-    def test_local_initialization_never_lists_a_measurement_shard(self):
-        package = load_package_script("init")
-        with tempfile.TemporaryDirectory() as temporary:
-            data = Path(temporary)
-            (data / "native-world.json").write_text(json.dumps({"shard": {"chainId": "0x1"}, "world": {"address": "0x2"}}))
-            with (
-                patch.object(package, "DATA", data),
-                patch("deploy.register_shard") as listing,
-                patch.object(shard, "wait_for_endpoint"),
-                patch.object(shard, "save_harness_environment"),
-                patch.object(shard, "deploy_world"),
-                patch.object(shard, "run"),
-            ):
-                package.deploy_world_once(configuration(), {"RPC_URL": "http://node", "HERALD_URL": "http://herald"})
-            listing.assert_not_called()
-
 if __name__ == "__main__":
     unittest.main()
 

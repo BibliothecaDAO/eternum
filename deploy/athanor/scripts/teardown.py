@@ -1,4 +1,4 @@
-"""Remove a shard and retire its directory row; mainnet setup and Cloudflare services survive.
+"""Remove a shard; mainnet setup and Cloudflare services survive.
 
     teardown.py dev [/opt/athanor/backups/NAME]
     teardown.py production /opt/athanor/backups/NAME
@@ -8,7 +8,7 @@ Dev's shard is disposable. Production's is removed only after `backup.py verify`
 since (backup.py quiesce, then capture). Dev takes the same backup when given one, so production's path is rehearsed
 on dev. Once a backup verifies, /opt/athanor/logs/teardown-ENVIRONMENT.json records it with the shard's chain before
 anything is removed. While the chain's volume exists every run verifies again; only a run stopped after the volumes
-are gone resumes from that record, and never from another backup or another chain's. A rerun after the run directory is gone only retires the row; a finished teardown keeps its record as
+are gone resumes from that record, and never from another backup or another chain's. A finished teardown keeps its record as
 teardown-CHAIN.json.
 """
 from contextlib import redirect_stdout, redirect_stderr
@@ -22,7 +22,6 @@ import time
 
 import deploy
 import shard
-from directory import remove_shard
 from deposit_retirement import require_deposit_retirement
 
 
@@ -147,8 +146,6 @@ def teardown(arguments, report_stage):
                 (LOGS / log.name).chmod(0o600)
             report_stage("remove run directory")
             shutil.rmtree(directory)
-        report_stage("remove directory row")
-        remove_shard(config)
         if backup is not None:
             complete_verification_record(environment)
 

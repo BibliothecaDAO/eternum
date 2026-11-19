@@ -148,8 +148,9 @@ lockfiles and compiler versions key Docker's Cairo layers; changes to Herald or 
 ## Deploy
 
 After setup, the box and Cloudflare halves run from the same pushed commit, independently except for a new world release
-(`deploy/release/native-release.ts`): then the box half goes first, and the Cloudflare half refuses until the shard has
-the release.
+(`deploy/release/native-release.ts`) or a new shard: then the box half goes first, and the Cloudflare half refuses until
+the box's Herald serves its chain and release. The box half never touches the shard directory; the Cloudflare half alone
+lists the shard there.
 
 ```sh
 pnpm run deploy dev
@@ -157,33 +158,40 @@ pnpm run deploy:cloudflare dev "$HOME/.realms-dev"
 ```
 
 The box command needs Bun and SSH, with no dependency install or package build. A Git archive carries its source commit
-in `deploy/first/commit.txt`. The box command builds images on the target box, initializes the shard and registers it.
-Full output, including builds and failures, stays in a mode-0600 `deploy-*.log` in the run directory; the command prints
-its path, failing stage, HTTP status and fixed service error. Deployment holds the box's stack lock. The world names the
-launcher and relay accounts at creation; each Worker joins using its own device from its alarm or cron. Deployment does
-not enrol those devices or transfer their roles. Dev uses `realms-dev` in `/opt/athanor/runs/dev`. On a running shard, a
-commit whose release follows the shard's, with the same schema and Games class, continues it: init registers the
-release, and Herald restarts from the published manifest until its `/manifest` maps every release. Any other release
-change is refused, and a rerun registers nothing.
+in `deploy/first/commit.txt`. The box command builds images on the target box and initializes the shard. Full output,
+including builds and failures, stays in a mode-0600 `deploy-*.log` in the run directory; the command prints its path,
+failing stage, HTTP status and fixed service error. Deployment holds the box's stack lock. The world names the launcher
+and relay accounts at creation; each Worker joins using its own device from its alarm or cron. Deployment does not enrol
+those devices or transfer their roles. Dev uses `realms-dev` in `/opt/athanor/runs/dev`. On a running shard, a commit
+whose release follows the shard's, with the same schema and Games class, continues it: init registers the release, and
+Herald restarts from the published manifest until its `/manifest` maps every release. Any other release change is
+refused, and a rerun registers nothing.
 
 The Cloudflare command belongs to the credential holder. It first reads, over the box's SSH alias, the box's record of
 its last build (`release.json` in the run directory): the release facts the init image baked. It takes them as this
 commit's release only when the record is the same release and `git diff` finds no change between the two commits in
 `RELEASE_SOURCES` (`deploy/first/release-identity.ts`: the world's contracts and Scarb path dependencies, the release
-id, and the image that compiles them); otherwise it asks for the box half at this commit first. It then exports HEAD to
-a temporary directory, installs locked dependencies, builds workspace packages, migrates D1 and publishes Workers. It
-names every chat room and inbox the identity Worker holds to that Worker, which has each delete its messages past thirty
-days and set its alarm for the rest, so chat stored before that rule existed keeps the same thirty days. It hands that
-release to the launch Worker, which advances the running Frontier games to it, signed by the launcher. The Worker
-resolves each Frontier launch's game by its name on the chain, whatever the launch's state, so a launch interrupted
-after creating its game is included. It refuses, by name and before sending anything, until the shard's registered
-release has those contents and Herald maps every release a game moves through to that schema, and it sends nothing for
-games already there. Only then does it build and publish the client, then builds the docs (`pnpm run build:docs`, the
-build validation runs) and publishes them to `docs.realms.party` (dev: `docs.dev-realms.party`). Each run uploads both
-sites' builds and checks each at its own address, byte for byte, before the command ends, so a rerun at the same commit
-proves what it published. It refuses to start until setup has created every resource, so a site new to the deployment
-reaches an existing environment through `setup --apply`. Neither deploy command has a dry run or performs funding or
-calendar operations. Production, when commissioned, builds its images on its own box from the same source commit.
+id, and the image that compiles them); otherwise it asks for the box half at this commit first. It also reads the chain
+the box prepared (`data/native-world.json`). It then exports HEAD to a temporary directory, installs locked
+dependencies, builds workspace packages, migrates D1 and publishes Workers. It names every chat room and inbox the
+identity Worker holds to that Worker, which has each delete its messages past thirty days and set its alarm for the
+rest, so chat stored before that rule existed keeps the same thirty days. It then lists the box's shard as the
+directory's one row: it reads the box's public Herald `/manifest` (`public_herald_url` in
+`deploy/release/ENVIRONMENT.json`), refuses before sending anything unless it serves the box's chain and maps this
+release to its schema, so a half-deployed box is never listed, and sends `PUT /api/directory/shard` with that URL as the
+operator. The identity Worker checks the manifest and account identity again and replaces the row; a rerun sends the
+same request and ends with the same row, and a run stopped earlier leaves the previous row. A box that has never built
+lists nothing. It hands that release to the launch Worker, which advances the running Frontier games to it, signed by
+the launcher. The Worker resolves each Frontier launch's game by its name on the chain, whatever the launch's state, so
+a launch interrupted after creating its game is included. It refuses, by name and before sending anything, until the
+shard's registered release has those contents and Herald maps every release a game moves through to that schema, and it
+sends nothing for games already there. Only then does it build and publish the client, then builds the docs
+(`pnpm run build:docs`, the build validation runs) and publishes them to `docs.realms.party` (dev:
+`docs.dev-realms.party`). Each run uploads both sites' builds and checks each at its own address, byte for byte, before
+the command ends, so a rerun at the same commit proves what it published. It refuses to start until setup has created
+every resource, so a site new to the deployment reaches an existing environment through `setup --apply`. Neither deploy
+command has a dry run or performs funding or calendar operations. Production, when commissioned, builds its images on
+its own box from the same source commit.
 
 ## Season
 
@@ -228,11 +236,13 @@ pnpm run teardown dev
 pnpm run teardown production /opt/athanor/backups/NAME
 ```
 
-Production always names the backup the box verifies first; dev may name one to rehearse that path. The box retires its
-directory row, stops its Compose project, removes its volumes and run directory, and preserves deployment logs in
-`/opt/athanor/logs`. It leaves Cloudflare and the mainnet ledger alone. Teardown output has its own mode-0600 log there.
-The next deployment creates a fresh shard with a new chain identity so service cursors cannot follow the former chain. A
-restart reads the existing chain identity from the run directory.
+Production always names the backup the box verifies first; dev may name one to rehearse that path. The box stops its
+Compose project, removes its volumes and run directory, and preserves deployment logs in `/opt/athanor/logs`. It leaves
+Cloudflare, the directory row and the mainnet ledger alone: the next `deploy:cloudflare` replaces the row, and a shard
+decommissioned without a redeploy is unlisted with `DELETE /api/directory/shard` as the operator, which a rerun repeats
+harmlessly. Teardown output has its own mode-0600 log there. The next deployment creates a fresh shard with a new chain
+identity so service cursors cannot follow the former chain. A restart reads the existing chain identity from the run
+directory.
 
 ## Private state and recovery
 

@@ -19,7 +19,7 @@ import shutil
 
 import shard
 from revision import deployment_revision
-from directory import register_shard, registered_shard, wait_for_identity, HeraldIdentityRefused
+from directory import wait_for_identity, HeraldIdentityRefused
 from service_requests import identity_service_base, service_json
 
 ENVIRONMENTS = shard.ROOT / "deploy/release"
@@ -136,14 +136,11 @@ def restart_unfinished(directory, inputs, release, report_stage):
     recorded = recorded_chain(directory)
     if not same(recorded, chain):
         raise DeploymentRefused(f"Run directory records chain {recorded}, configured chain is {chain}; data was not overwritten")
-    registered = registered_shard(inputs)
-    if registered is not None and not same(registered.get("chainId"), recorded):
-        raise DeploymentRefused("Run directory exists with another chain; data was not overwritten")
     differences = unfinished_differences(directory / "data", inputs, release)
     if not differences:
         return
     if differences != [INCOMPLETE]:
-        raise DeploymentRefused("Listed shard cannot be reinitialized: " + "; ".join(differences))
+        raise DeploymentRefused("Shard cannot be reinitialized: " + "; ".join(differences))
     from deposit_retirement import require_deposit_retirement
     require_deposit_retirement(inputs, directory)
     report_stage("restart unfinished shard")
@@ -219,8 +216,6 @@ def start(directory, config, report_stage=ignore_stage):
     subprocess.run([*compose(directory), "up", "-d", "herald", "metrics"], check=True, stdout=sys.stdout, stderr=sys.stderr)
     report_stage("wait for Herald identity")
     wait_for_identity(config)
-    report_stage("register")
-    register_shard(config)
     report_stage("start services")
     subprocess.run([*compose(directory), "up", "-d"], check=True, stdout=sys.stdout, stderr=sys.stderr)
     report_stage("initialise")
@@ -308,7 +303,7 @@ def fixed_differences(release, manifest, initialized, presets):
 
 STAGES = (
     "build images", "restart unfinished shard", "prepare", "start Herald", "wait for Herald identity",
-    "register", "start services", "initialise", "publish releases", "verify facts",
+    "start services", "initialise", "publish releases", "verify facts",
 )
 
 

@@ -1,6 +1,6 @@
 import time
 from urllib.error import HTTPError, URLError
-from service_requests import identity_service_base, service_json
+from service_requests import service_json
 
 
 class HeraldIdentityRefused(RuntimeError):
@@ -28,27 +28,3 @@ def wait_for_identity(config):
             pass
         time.sleep(1)
     raise RuntimeError("Herald did not serve the prepared shard identity")
-
-
-def register_shard(config):
-    listing = service_json(directory_route(config), {"url": config["public_herald_url"]}, method="PUT")
-    shard = listing.get("shard") if isinstance(listing, dict) else None
-    expected = "0x" + config["chain_id"].encode("ascii").hex()
-    if not isinstance(shard, dict) or int(shard.get("chainId", "0x0"), 16) != int(expected, 16):
-        raise RuntimeError("Directory registered a different shard identity")
-    return shard
-
-
-def registered_shard(config):
-    listing = service_json(directory_route(config), authenticated=True)
-    if not isinstance(listing, dict) or "shard" not in listing:
-        raise RuntimeError("Directory read is malformed")
-    return listing["shard"]
-
-
-def remove_shard(config):
-    service_json(directory_route(config), authenticated=True, method="DELETE")
-
-
-def directory_route(config):
-    return identity_service_base(config["guardian_url"]) + "/directory/shard"

@@ -7,51 +7,6 @@ from unittest.mock import patch
 import directory
 
 
-class FakeIdentity:
-    def __init__(self, row=None, chain="0x" + b"TEST".hex()):
-        self.row = row
-        self.chain = chain
-        self.methods = []
-
-    def __call__(self, url, payload=None, timeout=30, *, authenticated=False, method=None):
-        if url != "https://identity.test/api/directory/shard" or (payload is None and not authenticated):
-            raise AssertionError(f"unexpected directory request {method} {url}")
-        self.methods.append(method or "GET")
-        if method == "PUT":
-            self.row = {"url": payload["url"], "chainId": self.chain}
-        if method == "DELETE":
-            self.row = None
-        return {"shard": self.row}
-
-
-class DirectoryRowTest(unittest.TestCase):
-    CONFIG = {"guardian_url": "https://identity.test/api/guardian", "chain_id": "TEST"}
-
-    def test_registering_twice_leaves_one_row_with_the_latest_url(self):
-        identity = FakeIdentity()
-        with patch.object(directory, "service_json", side_effect=identity):
-            directory.register_shard({**self.CONFIG, "public_herald_url": "https://old.test"})
-            for _ in range(2):
-                registered = directory.register_shard({**self.CONFIG, "public_herald_url": "https://herald.test"})
-            self.assertEqual(directory.registered_shard(self.CONFIG), {"url": "https://herald.test", "chainId": identity.chain})
-        self.assertEqual(registered, identity.row)
-        self.assertEqual(identity.methods, ["PUT", "PUT", "PUT", "GET"])
-
-    def test_a_registration_naming_another_chain_is_refused(self):
-        identity = FakeIdentity(chain="0x1")
-        with patch.object(directory, "service_json", side_effect=identity), \
-                self.assertRaisesRegex(RuntimeError, "different shard identity"):
-            directory.register_shard({**self.CONFIG, "public_herald_url": "https://herald.test"})
-
-    def test_removing_twice_ends_with_no_row_and_no_error(self):
-        identity = FakeIdentity({"url": "https://herald.test", "chainId": "0x1"})
-        with patch.object(directory, "service_json", side_effect=identity):
-            for _ in range(2):
-                directory.remove_shard(self.CONFIG)
-            self.assertIsNone(directory.registered_shard(self.CONFIG))
-        self.assertEqual(identity.methods, ["DELETE", "DELETE", "GET"])
-
-
 class HeraldIdentityTest(unittest.TestCase):
     CONFIG = {"public_herald_url": "https://herald.test/", "chain_id": "TEST"}
     IDENTITY = {"version": 1, "chainId": hex(int.from_bytes(b"TEST", "big"))}
