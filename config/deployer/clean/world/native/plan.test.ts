@@ -2,13 +2,14 @@ import { describe, expect, test } from "bun:test";
 import { type Account, type RpcProvider } from "starknet";
 import schemaJson from "../../../../../contracts/l3/world-native/schema/schema.json";
 import { canonicalRealmTraits, realmCatalogueDigest } from "./realm-catalogue";
-import { loadNativeWorld } from "./artifacts";
+import { assertBalanceSince, loadNativeWorld } from "./artifacts";
 import { inspectNativeWorld } from "./plan";
 import { deployNativeWorld } from "./deploy";
 import { registerNativeRelease } from "./releases";
 import { buildNativeManifest } from "./manifest";
 import type { NativeWorld } from "./types";
 import { nativeBalanceIdentity } from "../../../../../contracts/l3/world-native/schema/balance.gen";
+import { NATIVE_BALANCE_SINCE_RELEASE } from "../../../../../deploy/release/native-release";
 
 const authentication = { account_class: "0x77", guardian_public_key: "0x88" };
 const catalogueDigest = realmCatalogueDigest(canonicalRealmTraits.length);
@@ -321,19 +322,29 @@ describe("native deployment planning", () => {
       l2GasBound: "0x47868c00",
       vrfPublicKey: { x: "0x1", y: "0x2" },
     };
+    const since = NATIVE_BALANCE_SINCE_RELEASE;
+    const other = "0".repeat(64);
     local.previous = buildNativeManifest(local, await inspectNativeWorld(local, rpc as unknown as RpcProvider), shard);
-    local.release.releaseId = 2;
-    await inspectNativeWorld(local, rpc as unknown as RpcProvider);
-    local.previous.native.releaseBalances = { "1": "0".repeat(64) };
+    local.release.releaseId = since + 1;
+    local.previous.native.releaseBalances = { [since]: other };
     await expect(
       deployNativeWorld(local, rpc as unknown as Account, () => {
         throw new Error("unexpected transaction");
       }),
     ).rejects.toThrow(
-      "NATIVE_BALANCE_SINCE: release 1 runs other balance numbers; set NATIVE_BALANCE_SINCE_RELEASE to 2",
+      `NATIVE_BALANCE_SINCE: release ${since} runs other balance numbers; set NATIVE_BALANCE_SINCE_RELEASE to ${since + 1}`,
     );
-    delete local.previous.native.releaseBalances;
-    await inspectNativeWorld(local, rpc as unknown as RpcProvider);
+    const accepted = (releaseBalances: Record<string, string> | undefined, releaseId = since + 1) =>
+      expect(() =>
+        assertBalanceSince(
+          { ...local.release, releaseId },
+          { ...local.previous!, native: { ...local.previous!.native, releaseBalances } },
+        ),
+      ).not.toThrow();
+    accepted({ [since]: nativeBalanceIdentity });
+    accepted({ [since - 1]: other });
+    accepted({ [since]: other }, since);
+    accepted(undefined);
   });
 
   test("each release keeps its own classes and changed contents under the same id are refused", async () => {

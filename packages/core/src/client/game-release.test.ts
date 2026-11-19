@@ -4,6 +4,11 @@ import { hash } from "starknet";
 import { followGameRelease } from "./game-release";
 import { NativeFactStore } from "./native-fact-store";
 
+vi.mock("../../../../deploy/release/native-release", async (original) => ({
+  ...(await original<typeof import("../../../../deploy/release/native-release")>()),
+  NATIVE_BALANCE_SINCE_RELEASE: 1,
+}));
+
 const setup = () => {
   const store = new NativeFactStore();
   const write = (releaseId: number, createdReleaseId = 1) =>

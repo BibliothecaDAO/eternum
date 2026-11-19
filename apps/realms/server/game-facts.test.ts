@@ -7,7 +7,7 @@ import { readActorArmies } from "./army-rest";
 import { followDeepSites } from "./deep-site-stream";
 import { readReleaseCatalogue } from "./game-facts";
 import { readDeepAlerts } from "./deep-site-watch";
-import { ARMY, GAME_ID, mistFacts, PLAYER_ACCOUNT, siteSnapshot, snapshot, TODAY } from "./fixtures/shard-world";
+import { ARMY, GAME_ID, mistFacts, PLAYER_ACCOUNT, RELEASE, siteSnapshot, snapshot, TODAY } from "./fixtures/shard-world";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -51,10 +51,10 @@ const heraldServing = (
 };
 
 const REFUSED = [
-  ["an incompatible origin", { "1": OTHER, "2": READABLE }, pin(1, 2)],
-  ["an incompatible current release", { "1": READABLE, "2": OTHER }, pin(1, 2)],
-  ["an unknown intermediate release", { "1": READABLE, "3": READABLE }, pin(1, 3)],
-  ["a pin that runs backwards", { "1": READABLE, "2": READABLE }, pin(2, 1)],
+  ["an incompatible origin", { [RELEASE - 1]: OTHER, [RELEASE]: READABLE }, pin(RELEASE - 1, RELEASE)],
+  ["an incompatible current release", { [RELEASE - 1]: READABLE, [RELEASE]: OTHER }, pin(RELEASE - 1, RELEASE)],
+  ["an unknown intermediate release", { [RELEASE - 2]: READABLE, [RELEASE]: READABLE }, pin(RELEASE - 2, RELEASE)],
+  ["a pin that runs backwards", { [RELEASE - 1]: READABLE, [RELEASE]: READABLE }, pin(RELEASE, RELEASE - 1)],
 ] as const;
 
 describe("the notification snapshot readers", () => {
@@ -74,7 +74,7 @@ describe("the notification snapshot readers", () => {
   });
 
   it("read a game whose pin moved on through releases they all read", async () => {
-    heraldServing({ "1": READABLE, "2": READABLE }, pin(1, 2));
+    heraldServing({ [RELEASE - 1]: READABLE, [RELEASE]: READABLE }, pin(RELEASE - 1, RELEASE));
     const armies = await readActorArmies(SHARD, GAME_ID, PLAYER_ACCOUNT, Date.now(), await caught());
     expect(armies.map(({ armyId }) => armyId)).toContain(ARMY);
     await expect(
@@ -90,7 +90,7 @@ describe("the notification snapshot readers", () => {
 
 const watching = (
   releases: Record<string, string>,
-  current: ReturnType<typeof pin> | null = pin(1, 1),
+  current: ReturnType<typeof pin> | null = pin(RELEASE, RELEASE),
   failures = 0,
 ) => {
   heraldServing(releases, current, failures);
@@ -136,34 +136,34 @@ const watching = (
 
 describe("a deep site stream", () => {
   it("arms its watches from a readable game, and stops at once on a game it cannot read", async () => {
-    const readable = watching({ "1": READABLE });
+    const readable = watching({ [RELEASE]: READABLE });
     await vi.waitFor(() => expect(readable.changed).toHaveBeenCalledTimes(1));
     expect(readable.socket.closed).toBe(false);
 
-    const unreadable = watching({ "1": OTHER });
+    const unreadable = watching({ [RELEASE]: OTHER });
     await vi.waitFor(() => expect(unreadable.socket.closed).toBe(true));
     expect(unreadable.changed).not.toHaveBeenCalled();
   });
 
   it("leaves a release check it could not make to the notifier's re-read, which checks again", async () => {
-    const stream = watching({ "1": READABLE }, pin(1, 1), 1);
+    const stream = watching({ [RELEASE]: READABLE }, pin(RELEASE, RELEASE), 1);
     await vi.waitFor(() => expect(stream.changed).toHaveBeenCalledTimes(1));
     expect(stream.socket.closed).toBe(false);
   });
 
   it("stops on a game that shows no release pin, as on one it cannot read", async () => {
-    const stream = watching({ "1": READABLE }, null);
+    const stream = watching({ [RELEASE]: READABLE }, null);
     await vi.waitFor(() => expect(stream.socket.closed).toBe(true));
     expect(stream.changed).not.toHaveBeenCalled();
   });
 
   it("revalidates when the game's release changes: a readable one re-reads the watches, an unreadable one stops", async () => {
-    const stream = watching({ "1": READABLE, "2": READABLE, "3": OTHER });
+    const stream = watching({ [RELEASE - 2]: OTHER, [RELEASE - 1]: READABLE, [RELEASE]: READABLE });
     await vi.waitFor(() => expect(stream.changed).toHaveBeenCalledTimes(1));
-    stream.release(pin(1, 2));
+    stream.release(pin(RELEASE - 1, RELEASE));
     await vi.waitFor(() => expect(stream.changed).toHaveBeenCalledTimes(2));
     expect(stream.socket.closed).toBe(false);
-    stream.release(pin(1, 3));
+    stream.release(pin(RELEASE - 2, RELEASE));
     await vi.waitFor(() => expect(stream.socket.closed).toBe(true));
     expect(stream.changed).toHaveBeenCalledTimes(2);
   });

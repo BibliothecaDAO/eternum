@@ -6,6 +6,7 @@ import {
   type DeepSiteFixture,
   mistFacts,
   GAME_ID,
+  RELEASE,
   PLAYER_ACCOUNT,
   HOME,
   ARMY,
@@ -113,8 +114,7 @@ const createHerald = () => {
     /** The players whose scoped stream has been sent its whole snapshot. */
     streamedSnapshots: [] as string[],
     /** The releases the manifest lists. */
-    catalogue: { "1": bindings.schemaIdentity } as Record<string, string>,
-    /** The pin a player's scoped snapshot shows, where it is not release 1. */
+    catalogue: { [RELEASE]: bindings.schemaIdentity } as Record<string, string>,
     pins: new Map<string, { release_id: number; created_release_id: number }>(),
     /** Releases published into the catalogue once the player's own armies have been read. */
     publishAfterPlayerRead: null as null | Record<string, string>,
@@ -696,7 +696,7 @@ describe.concurrent("shard notifications", () => {
       await pause(polls(5));
       herald.state.army = null;
       herald.state.neighbourArmy = { amount: 0, settledAt: Math.floor(Date.now() / 1000), day: TODAY };
-      herald.state.pins.set(NEIGHBOUR, { release_id: 2, created_release_id: 1 });
+      herald.state.pins.set(NEIGHBOUR, { release_id: RELEASE, created_release_id: RELEASE - 1 });
       herald.state.publishAfterPlayerRead = published;
       herald.story("ExplorationReward", {});
       herald.story("ExplorationReward", {}, NEIGHBOUR);
@@ -704,7 +704,7 @@ describe.concurrent("shard notifications", () => {
     };
 
     it("alerts the second actor once the catalogue is read again, with no further action", async () => {
-      const { herald, push, worker } = await play({ "2": bindings.schemaIdentity });
+      const { herald, push, worker } = await play({ [RELEASE - 1]: bindings.schemaIdentity });
       try {
         await waitUntil(() => push.received.length >= 1, 90_000);
         expect(herald.state.publishAfterPlayerRead).toBeNull();
@@ -717,7 +717,7 @@ describe.concurrent("shard notifications", () => {
     }, 150_000);
 
     it("sends nothing when the release it names cannot be read", async () => {
-      const { herald, push, worker } = await play({ "2": "0x1" });
+      const { herald, push, worker } = await play({ [RELEASE - 1]: "0x1" });
       try {
         await waitUntil(() => herald.state.publishAfterPlayerRead === null, 30_000);
         await pause(ticks(REST_TICKS + 3) + polls(5));

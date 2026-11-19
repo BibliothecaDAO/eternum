@@ -34,16 +34,16 @@ export class ShardReleaseMismatchError extends Error {
   constructor(
     readonly shardUrl: string,
     readonly releaseId: string,
+    reason = "has no decoder in this client",
   ) {
-    super(`UNKNOWN_RELEASE_SCHEMA: shard ${shardUrl} release ${releaseId} has no decoder in this client`);
+    super(`UNKNOWN_RELEASE_SCHEMA: shard ${shardUrl} release ${releaseId} ${reason}`);
     this.name = "ShardReleaseMismatchError";
   }
 }
 
 export class GameOnOlderNumbersError extends ShardReleaseMismatchError {
   constructor(shardUrl: string, releaseId: string) {
-    super(shardUrl, releaseId);
-    this.message = `GAME_ON_OLDER_NUMBERS: shard ${shardUrl} release ${releaseId} runs older balance numbers than this client`;
+    super(shardUrl, releaseId, "runs older balance numbers than this client");
     this.name = "GameOnOlderNumbersError";
   }
 }
