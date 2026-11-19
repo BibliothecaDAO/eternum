@@ -7,10 +7,10 @@ import { useGame } from "@/hooks/context/game-context";
 import { notificationOwnerOf, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
-import { useRedeemSealCode } from "@/shell/play/seal-code-card";
+import { useRedeemSealCode } from "@/shell/play/seal-code";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudField, HudNotice, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
+import { failureLine } from "@/ui/design-system/kit/failure-lines";
 import { SEAL_CODE_WORDS, SHOP_WORDS } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 
@@ -126,7 +126,7 @@ export const ShopCodeField = () => {
       </span>
       {refusal && <HudNotice tone="warn" line={SEAL_CODE_WORDS.refused[refusal]} />}
       {redeem.isError && !refusal && (
-        <ServiceFailure service="season" error={redeem.error} retry={() => redeem.mutate(code)} />
+        <HudNotice tone="bad" line={failureLine("season")} retry={() => redeem.mutate(code)} />
       )}
     </form>
   );

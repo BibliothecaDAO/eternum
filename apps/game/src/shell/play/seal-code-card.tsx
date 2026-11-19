@@ -1,14 +1,12 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import { IdentityRequestError, isSealCodeRefusal, type SealCodeRefusal } from "@realms-world/identity";
 
 import { identityClient } from "@/hooks/context/identity-session";
+import { sealCodeKey, useRedeemSealCode } from "./seal-code";
 import { Icon } from "@/ui/design-system/icon";
 import { AppButton, AppField } from "@/ui/design-system/kit/app-elements";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { SEAL_CODE_WORDS } from "@/ui/design-system/kit/words";
-
-const sealCodeKey = (owner: string | null) => ["sealCode", owner] as const;
 
 export const SealCodeCard = ({ owner }: { owner: string | null }) => {
   const held = useQuery({ queryKey: sealCodeKey(owner), queryFn: () => identityClient.getSealCode() });
@@ -31,15 +29,6 @@ const SealHeading = ({ held }: { held: boolean }) => (
     </span>
   </span>
 );
-
-export const useRedeemSealCode = (owner: string | null) => {
-  const client = useQueryClient();
-  const redeem = useMutation({
-    mutationFn: (typed: string) => identityClient.redeemSealCode(typed),
-    onSuccess: (saved) => client.setQueryData(sealCodeKey(owner), saved),
-  });
-  return { redeem, refusal: refusalOf(redeem.error) };
-};
 
 const RedeemForm = ({ owner }: { owner: string | null }) => {
   const [code, setCode] = useState("");
@@ -81,6 +70,3 @@ const RedeemForm = ({ owner }: { owner: string | null }) => {
     </form>
   );
 };
-
-const refusalOf = (error: unknown): SealCodeRefusal | undefined =>
-  error instanceof IdentityRequestError && isSealCodeRefusal(error.code) ? error.code : undefined;
