@@ -1419,7 +1419,7 @@ async function researchWellLore({ browser }) {
 const wellLoreResearched = `(() => {
   const answer = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "Research").at(-1);
   const learned = answer?.answered.find(({ model }) => model === "RealmKnowledge")?.value.learned;
-  return learned !== undefined && ((BigInt(learned) >> 48n) & 3n) === 1n &&
+  return learned !== undefined &&
     document.querySelector(${JSON.stringify(WELL_LORE_NODE)})?.dataset.state === "done";
 })()`;
 

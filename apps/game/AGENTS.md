@@ -327,7 +327,7 @@ same card to the other army, `--steps lab-actions-spire`, Enter on Ethereal II f
 `--steps lab-actions-fight`, the ruin beside the army attacked from its card; `--steps lab-actions-fight-lost`, the same
 attack costing the army its life (`scenario=fight-lost`): the panel must show "Your army is lost", then close by itself
 with no army left selected; `--steps lab-actions-deploy`, a new army from the dock's Deploy (Max, then Deploy);
-`--steps lab-actions-research`, the Shrine researched from Research (`scenario=research`); and
+`--steps lab-actions-research`, Well lore researched from Research (`scenario=research`); and
 `--steps lab-actions-claim`, a Realm's labor claimed from Realms (a desktop's purse, a phone's Menu: Claim;
 `scenario=claim`, whose value relay the tab answers as the relay does: the grant's facts first, then the reply naming
 their transaction); on `scenario=upkeep` (LORDS held, the army short of stamina, with a chest beside it),
@@ -344,7 +344,7 @@ reason. Each names its exact result: the renderer's mark once the frame drawing 
 deployed army drawn, the merged army leaving the map, that building on that plot or leaving it, that Shrine or Well
 leaving its tile, that chest's opening started; or, for a scene drawn under a cover, once the paint without the cover:
 the game uncovered as its doorway leaves), or a page condition: the Castle sheet naming exactly the next level, each
-army a fight or transfer changed showing exactly the count the chain answered, the Shrine's node researched, the Realms
+army a fight or transfer changed showing exactly the count the chain answered, the Well lore node researched, the Realms
 sheet listing the home claimed today, the army's panel reading the stamina refilled to or naming the tier bought, the
 purse reading the LORDS left; another target's result is not the action's. Each is cut where the client records its way:
 handled (the press to the command), sent (signed and answered by the RPC), confirmed (the chain and Herald, to the

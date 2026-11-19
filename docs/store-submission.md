@@ -442,7 +442,7 @@ Frontier is free to play, and no other player can attack you.
 
 GROW YOUR REALM
 - Build farms, barracks, workshops and workers' huts, and raise your castle tier by tier.
-- Research every building up to Legendary, then shrines, wells and the three Ethereal depths.
+- Research every building up to Legendary, and the castle's lore: wells, then shrines, then spires.
 - Field more armies as your castle rises. Level them up and spend skill points on Battle, Logistics, Scouting, Homecoming or Stamina.
 - Visit other players' realms from the Season board and see how they built.
 

@@ -2307,6 +2307,7 @@ export const RESEARCH_TREE = {
   armiesFind: (site: string) => `Armies find ${site}s`,
   each: (gain: string) => `${gain} each`,
   lore: loreOf,
+  opensLayers: `Opens every layer under the ${layerName(0)}`,
   opens: "Open",
   build: (building: string) => `Build a ${building}`,
   stands: (building: string) => `${building} stands`,

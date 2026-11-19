@@ -6,19 +6,8 @@ import { ruinFightScenario } from "./ruin-fight-scenario";
 
 const HOME = 7n;
 
-/**
- * The layer switch's ruin chests (/lab/game?scenario=ruin-chests): the owner's army beside today's Surface ruin, Ethereal
- * I and II researched, and today's Ethereal I chest already taken by realm 7: a cleared ruin site in that depth's band
- * of today's map with its receipt naming the home, and today's discovery row saying a ruin was cleared, as the contract
- * writes both. The switch reads World open (the home's own region, held), Ethereal I taken, Ethereal II not known (no
- * army holds it in view) and Ethereal III locked.
- */
 export const ruinChestsScenario = (): LabScenario => chestsScenario({ researched: 3n, claimed: [1] });
 
-/**
- * The same realm before any depth research (/lab/game?scenario=ruin-chests-surface), nothing cleared today: the switch
- * stays Realm / World and carries World open and Ethereal I to III locked.
- */
 export const ruinChestsSurfaceScenario = (): LabScenario => chestsScenario({ researched: 0n, claimed: [] });
 
 /** Realm 7's day with `researched` depths and today's chests already taken at the `claimed` depths. */

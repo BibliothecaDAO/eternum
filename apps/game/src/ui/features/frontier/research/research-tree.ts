@@ -358,16 +358,31 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
   return Object.values(rows).flat();
 
   function loreLadder(): TreeNode[] {
-    const ladder: { key: string; site: string; icon: IconMeaning; tier: number; next: string }[] = [
+    const ladder: { key: string; site: string; icon: IconMeaning; tier: number; line: string; next: string }[] = [
       {
         key: "well",
         site: WELL,
         icon: "well",
         tier: research.LORE_WELLS,
+        line: RESEARCH_TREE.armiesFind(WELL),
         next: RESEARCH_TREE.each(`${formatExact(nativeRuleConstants.WELL_REFILL_PERCENT)}% max ${STAMINA}`),
       },
-      { key: "shrine", site: SHRINE, icon: "shrine", tier: research.LORE_SHRINES, next: RESEARCH_TREE.opens },
-      { key: "spire", site: SPIRE, icon: "spire", tier: research.LORE_SPIRES, next: RESEARCH_TREE.opens },
+      {
+        key: "shrine",
+        site: SHRINE,
+        icon: "shrine",
+        tier: research.LORE_SHRINES,
+        line: RESEARCH_TREE.armiesFind(SHRINE),
+        next: RESEARCH_TREE.opens,
+      },
+      {
+        key: "spire",
+        site: SPIRE,
+        icon: "spire",
+        tier: research.LORE_SPIRES,
+        line: RESEARCH_TREE.opensLayers,
+        next: RESEARCH_TREE.opens,
+      },
     ];
     return ladder.map((step, index) => {
       const previous = ladder[index - 1];
@@ -386,7 +401,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         ROWS.lore,
         RESEARCH_TREE.lore(step.site),
         step.icon,
-        { line: RESEARCH_TREE.armiesFind(step.site), now: "—", next: step.next },
+        { line: step.line, now: "—", next: step.next },
         step.tier,
         before,
         ladder[index + 1] ? [ladder[index + 1]!.key] : [],
