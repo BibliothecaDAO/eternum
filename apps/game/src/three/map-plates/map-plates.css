@@ -176,8 +176,8 @@
 }
 .mp-token__crest {
   position: absolute;
-  top: -6px;
-  right: -6px;
+  top: -8px;
+  right: -8px;
   display: flex;
 }
 .mp-token__strip {

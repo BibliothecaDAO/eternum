@@ -63,6 +63,7 @@ export const tokenReading = (plate: MapPlate): TokenReading => {
 /** The token's sizes (map-plates.css .mp-token__*): its disk, the strip's row and its overlap of the disk, the
  * stamina bar, the gap between readings, the strip's padding and frame. */
 const TOKEN = { disk: 30, row: 18, overlap: 2, stamina: 4, gap: 3, frame: 2 * 4 + 2 };
+const CREST_SIZE = 18;
 
 /** A token's box, as map-plates.css draws it. */
 export const tokenSize = (plate: MapPlate): { width: number; height: number } => {
@@ -97,7 +98,7 @@ const TokenView = ({ reading }: { reading: TokenReading }) => (
       )}
       {reading.crest !== null && (
         <span className="mp-token__crest" aria-hidden>
-          <OrderEmblem order={reading.crest} size={14} />
+          <OrderEmblem order={reading.crest} size={CREST_SIZE} />
         </span>
       )}
     </span>
