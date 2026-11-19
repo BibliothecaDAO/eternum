@@ -12,6 +12,7 @@ const TICK: u64 = 120;
 const START: u64 = 360;
 const EMPIRE_CAP: u128 = 60000;
 const SETTLEMENT_CAP: u128 = 3000;
+const ONE_TICK_OF_POISON: u128 = 200;
 const RINGS_OPEN: u32 = 240;
 const MAX_EVENTS: u32 = 1000;
 const EXECUTE_MAX_SIERRA_GAS: u128 = 1100000000;
@@ -298,6 +299,7 @@ fn digest(d: Deployment, game_id: u32, guards: Span<ExplorerKey>, homes: Span<u6
 
 const CUT_GAP_STATE: felt252 = 2201666708671788439942562037886358868599889262474332853498685711847389098056;
 const CAPPED_GAP_STATE: felt252 = 2393950206496095975162452152983202277702917956294588994799307791720544233047;
+const DEATH_GAP_STATE: felt252 = 0;
 const WON_GAP_STATE: felt252 = 3113419462940742519254292401532952590995027095539763891224908379179215505061;
 
 fn cap(guards: u64) -> u64 {
@@ -474,8 +476,8 @@ fn realistic_homes(d: Deployment, game_id: u32, real: u64) -> Span<u64> {
 }
 
 #[test]
-fn eighty_guards_of_four_army_homes_dying_on_one_tick_fit_one_play() {
-    let shape = Shape { sites: 1, guards_per_site: 1, troops: SETTLEMENT_CAP, vitriol: false };
+fn eighty_guards_of_four_army_homes_dying_on_the_first_tick_fit_one_play() {
+    let shape = Shape { sites: 1, guards_per_site: 1, troops: ONE_TICK_OF_POISON, vitriol: false };
     let (d, game_id, guards, owner, holder_homes) = held_deep(14, 2000, shape);
     let homes = realistic_homes(d, game_id, *holder_homes.at(0));
     let source = *guards.at(0);
@@ -501,4 +503,27 @@ fn eighty_guards_of_four_army_homes_dying_on_one_tick_fit_one_play() {
         assert!(interact_with_state(d.games, || crate::logic::troops::explorer(*key)).is_none());
     }
     assert_within_one_transaction(Plays { count: 1, gas: cost.gas, events: cost.events });
+}
+
+#[test]
+fn a_death_the_budget_cannot_fit_waits_for_the_next_play() {
+    let shape = one_guard_on_every_site();
+    let (d, game_id, _, owner, homes) = held_deep(61, 2000, shape);
+    let unit = crate::tests::context(d.games, game_id).rules.unbox().day_unit_seconds;
+    let day = interact_with_state(d.games, || crate::days::day_at_index(crate::logic::game::game(game_id), unit, 0));
+    assert!(day.end > START + 610 * TICK);
+    let plays = play_until_caught_up(owner, game_id, *homes.at(0), START + 610 * TICK);
+    report(610, shape, plays);
+    assert_eq!(plays.count, 5);
+    assert_within_one_transaction(plays);
+}
+
+#[test]
+fn a_gap_with_deaths_the_budget_cuts_ends_in_the_death_gap_state() {
+    assert_eq!(walked(61, one_guard_on_every_site(), 2000, 610, 1), (DEATH_GAP_STATE, None));
+}
+
+#[test]
+fn a_gap_with_deaths_cut_into_seven_timed_plays_ends_in_the_same_state() {
+    assert_eq!(walked(61, one_guard_on_every_site(), 2000, 610, 7), (DEATH_GAP_STATE, None));
 }

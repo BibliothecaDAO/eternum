@@ -92,11 +92,10 @@ fn walk(game_id: u32, cursor: u64, last: u64, context: ExecutionContext) -> u64 
         save_cursor(game_id, last);
         return last;
     }
-    let budget = crate::rules::DEEP_CATCH_UP_GUARD_TICKS / held.guards.len().into();
-    let target = core::cmp::min(last, cursor + core::cmp::max(budget, 1));
     let mut payouts = payouts(game_id, (cursor + 1) * interval);
     let mut reached = cursor;
-    while reached < target {
+    let mut spent = 0;
+    while reached < last {
         let boundary = (reached + 1) * interval;
         if boundary - 1 >= held.day_end {
             save_cursor(game_id, last);
@@ -104,7 +103,14 @@ fn walk(game_id: u32, cursor: u64, last: u64, context: ExecutionContext) -> u64 
             roll_over(game_id, ExecutionContext { timestamp: boundary - 1, ..context });
             return last;
         }
-        held = drain(held, boundary, interval, ref payouts);
+        let (drained, deaths) = drain(held, boundary, interval);
+        let cost = alive_count(held.counts) + deaths.len().into() * crate::rules::DEEP_CATCH_UP_DEATH_TICKS;
+        if reached > cursor && spent + cost > crate::rules::DEEP_CATCH_UP_GUARD_TICKS {
+            break;
+        }
+        spent += cost;
+        payouts.deaths.append_span(deaths);
+        held = drained;
         reached += 1;
         if !alive(held.counts) {
             save_cursor(game_id, last);
@@ -208,9 +214,10 @@ fn payouts(game_id: u32, boundary: u64) -> Payouts {
     }
 }
 
-fn drain(held: Held, boundary: u64, interval: u64, ref payouts: Payouts) -> Held {
+fn drain(held: Held, boundary: u64, interval: u64) -> (Held, Span<u32>) {
     let mut counts = array![];
     let mut ticks = array![];
+    let mut deaths = array![];
     for index in 0..held.guards.len() {
         let guard = *held.guards.at(index);
         let before = *held.counts.at(index);
@@ -231,12 +238,22 @@ fn drain(held: Held, boundary: u64, interval: u64, ref payouts: Payouts) -> Held
             crate::deep::troops_after_ticks(before, last_tick, tick, guard.loss)
         };
         if after == 0 {
-            payouts.deaths.append(index);
+            deaths.append(index);
         }
         counts.append(after);
         ticks.append(tick);
     }
-    Held { counts: counts.span(), ticks: ticks.span(), ..held }
+    (Held { counts: counts.span(), ticks: ticks.span(), ..held }, deaths.span())
+}
+
+fn alive_count(counts: Span<u128>) -> u64 {
+    let mut alive = 0;
+    for count in counts {
+        if *count != 0 {
+            alive += 1;
+        }
+    }
+    alive
 }
 
 fn alive(counts: Span<u128>) -> bool {

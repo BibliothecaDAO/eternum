@@ -566,3 +566,4 @@ pub const DEEP_SITE_SPACING: u128 = 3;
 pub const DEEP_GATE_REACH: u128 = 15;
 pub const DEEP_GUARD_SLOTS: u8 = 4;
 pub const DEEP_CATCH_UP_GUARD_TICKS: u64 = 3200;
+pub const DEEP_CATCH_UP_DEATH_TICKS: u64 = 60;
