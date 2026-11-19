@@ -14,6 +14,7 @@ import { failureLine } from "@/ui/design-system/kit/failure-lines";
 import { SEAL_CODE_WORDS, SHOP_WORDS } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 
+import { fragmentsToFill } from "../army/refill";
 import { useFragmentsHeld } from "../value/fragments";
 
 const SHOP_MODELS = ["Seal", "QuestRules", "SliceRules"] as const;
@@ -155,6 +156,6 @@ function useShopReading(): Omit<ShopViewProps, "code" | "onClose"> | null {
   };
 }
 
-const fragmentsForBar = (bar: number): number => Math.ceil(bar / POINTS);
+const fragmentsForBar = (bar: number): number => fragmentsToFill({ current: 0, max: bar });
 
 const purchasable = (fragments: number): number => Math.max(fragments, MIN_FRAGMENTS);
