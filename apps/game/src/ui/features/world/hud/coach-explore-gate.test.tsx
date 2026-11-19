@@ -58,6 +58,11 @@ const realmWithExplorer = (food: { wheat: string; fish: string }) => {
   store.applyFacts([
     { model: "ArmyDay", key: "0xad70", value: { game_id: 1, explorer_id: 70, day: 0 } },
     {
+      model: "ArmyProgress",
+      key: "0xaf70",
+      value: { game_id: 1, explorer_id: 70, logistics: 0, oath_slots: 2, oaths: 0, oath_pick: 0 },
+    },
+    {
       model: "ExplorerTroops",
       key: "0x70",
       value: {
