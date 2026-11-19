@@ -9,13 +9,15 @@ const { load, models, mode, foundations, beasts, beastTroops, openings, clock, p
   beasts: [] as Array<{ species: string; count: number; scales: number[]; idles: unknown[] }>,
   beastTroops: new Map<number, bigint>(),
   openings: new Map<number, unknown>(),
-  clock: { tick: 0 as number | undefined },
+  clock: { tick: 0 as number | undefined, day: 86_400 },
   publish: vi.fn(),
 }));
 vi.mock("@/observability/map-selection", () => ({ publishMapSelection: publish }));
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
   readDefaultTick: () => clock.tick,
+  readExpeditionRules: () => ({ dayUnitSeconds: clock.day }),
+  dayOf: (_calendar: unknown, timestamp: number) => ({ index: Math.floor(timestamp / clock.day) }),
 }));
 vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum/game-client")>()),
@@ -97,6 +99,7 @@ vi.mock("../structures/hyperstructure-model", async () => {
 });
 
 import { DEEP_BEASTS, deepSites, MineKinds, TileOccupier } from "@bibliothecadao/types";
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { FRONTIER_BEASTS } from "../structures/frontier-beast";
 import { DEEP_SITE_FACES } from "@/ui/features/frontier/deep/deep-site-faces";
 import { MapSiteManager } from "./map-site-manager";
@@ -226,38 +229,66 @@ describe("the Deep's sites on the map", () => {
     manager.destroy();
   });
 
-  it("draws every site's building with its kind's look, and no beast, while chain time is not known yet", async () => {
-    mode.id = "frontier";
-    models.length = 0;
-    beasts.length = 0;
-    load.mockReset();
-    load.mockImplementation(async (path: string) => ({
-      path,
-      scene: new Mesh(new BoxGeometry(1, 2, 1), new MeshBasicMaterial()),
-    }));
-    clock.tick = undefined;
-    beastTroops.clear();
-    openings.clear();
-    deepSites.forEach((_, index) => {
-      beastTroops.set(10 + index, 5_000n);
-      openings.set(10 + index, { known: { open: false, realms: 30 } });
-    });
-    const tiles = deepSites.map((_, index) => tile(10 + index, TileOccupier.DeepSite));
-    const projection = { getTiles: () => tiles, subscribeTiles: () => () => {} };
-    const plates = { setLabel: vi.fn(), retainOnly: vi.fn(), dispose: vi.fn(), setHover: vi.fn(), clearHover: vi.fn() };
-    const site = (key: { entity_id: number }) => ({ kind: deepSites[key.entity_id - 10]!.id });
-    const store = {
-      get: (model: string, key: { entity_id: number }) => (model === "DeepSite" ? site(key) : undefined),
-      require: (_model: string, key: { entity_id: number }) => site(key),
-      subscribe: () => () => {},
-    };
-    const manager = new MapSiteManager(new Scene(), projection as never, store as never, plates as never);
+  it("draws every site's building with its kind's look, and no beast, while chain time is not known yet, then each guarding beast and closed ring's lock once a head binds it", async () => {
+    const { manager, plates } = guardedSites(undefined);
     await vi.waitFor(() =>
       expect(models.map(({ name }) => name).toSorted()).toEqual(["Bane altar", "Essence core", "Ethereal mine"]),
     );
     expect(beasts).toEqual([]);
     expect(plates.setLabel.mock.calls.map(([plate]) => plate.plate.icon)).not.toContain("lock");
-    clock.tick = 0;
+    headAt(100);
+    await vi.waitFor(() => expect(standingBeasts()).toEqual(["basilisk", "dark-fey", "troll", "troll"]));
+    expect(plates.setLabel.mock.lastCall![0].plate.icon).toBe("lock");
     manager.destroy();
   });
+
+  it("stands a beast beaten yesterday back on its site when the day turns, with no site fact arriving", async () => {
+    const altar = 10 + deepSites.findIndex(({ key }) => key === "altar");
+    const { manager } = guardedSites(100, ["altar"]);
+    await vi.waitFor(() => expect(standingBeasts()).toEqual(["dark-fey", "troll", "troll"]));
+    beastTroops.set(altar, 5_000n);
+    headAt(clock.day + 100);
+    await vi.waitFor(() => expect(standingBeasts()).toEqual(["basilisk", "dark-fey", "troll", "troll"]));
+    manager.destroy();
+    clock.tick = 0;
+  });
 });
+
+function guardedSites(tick: number | undefined, beaten: string[] = []) {
+  mode.id = "frontier";
+  models.length = 0;
+  beasts.length = 0;
+  load.mockReset();
+  load.mockImplementation(async (path: string) => ({
+    path,
+    scene: new Mesh(new BoxGeometry(1, 2, 1), new MeshBasicMaterial()),
+  }));
+  clock.tick = tick;
+  beastTroops.clear();
+  openings.clear();
+  deepSites.forEach(({ key }, index) => {
+    beastTroops.set(10 + index, beaten.includes(key) ? 0n : 5_000n);
+    openings.set(10 + index, { known: { open: false, realms: 30 } });
+  });
+  const tiles = deepSites.map((_, index) => tile(10 + index, TileOccupier.DeepSite));
+  const projection = { getTiles: () => tiles, subscribeTiles: () => () => {} };
+  const plates = { setLabel: vi.fn(), retainOnly: vi.fn(), dispose: vi.fn(), setHover: vi.fn(), clearHover: vi.fn() };
+  const site = (key: { entity_id: number }) => ({ kind: deepSites[key.entity_id - 10]!.id });
+  const store = {
+    get: (model: string, key: { entity_id: number }) => (model === "DeepSite" ? site(key) : undefined),
+    require: (_model: string, key: { entity_id: number }) => site(key),
+    subscribe: () => () => {},
+  };
+  return { manager: new MapSiteManager(new Scene(), projection as never, store as never, plates as never), plates };
+}
+
+function headAt(tick: number) {
+  clock.tick = tick;
+  useChainTimeStore.setState({ executionFloorMs: tick * 1000 });
+}
+
+const standingBeasts = () =>
+  beasts
+    .filter(({ count }) => count > 0)
+    .map(({ species }) => species)
+    .toSorted();

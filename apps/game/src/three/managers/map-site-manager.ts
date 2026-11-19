@@ -1,7 +1,7 @@
 import { DEEP_SITE_FACES } from "@/ui/features/frontier/deep/deep-site-faces";
 import { DEEP_WORDS } from "@/ui/design-system/kit/words";
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { configManager, readDefaultTick } from "@bibliothecadao/eternum";
+import { configManager, dayOf, readDefaultTick, readExpeditionRules } from "@bibliothecadao/eternum";
 import {
   readDeepBeastTroops,
   readDeepRingOpening,
@@ -19,6 +19,7 @@ import {
 } from "@bibliothecadao/types";
 import type { MapPlateInput, MapPlateScope } from "../map-plates/map-plate-layer";
 import { PLATE_CLEARANCE } from "./structure-visible-presentation";
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { presentResult } from "@/three/presented-results";
 import { activeMapLayer } from "@/three/map-layer";
 import { frontierPaintedPath } from "../structures/frontier-painted-buildings";
@@ -71,6 +72,8 @@ export class MapSiteManager {
   private readonly loading = new Map<DrawnSite["key"], Promise<void>>();
   private readonly unsubscribe: () => void;
   private readonly unsubscribeRewards: () => void;
+  private readonly unsubscribeChainTime: () => void;
+  private drawnDay: number | undefined;
   private readonly heights = new Map<DrawnSite["key"], number>();
   private modelVisible = true;
   private destroyed = false;
@@ -133,6 +136,9 @@ export class MapSiteManager {
       );
       if (touched) this.refresh();
     });
+    this.unsubscribeChainTime = useChainTimeStore.subscribe(() => {
+      if (this.deepDay() !== this.drawnDay) this.refresh();
+    });
     this.refresh();
   }
 
@@ -170,6 +176,7 @@ export class MapSiteManager {
     this.destroyed = true;
     this.unsubscribe();
     this.unsubscribeRewards();
+    this.unsubscribeChainTime();
     this.plates.dispose();
     this.models.forEach((model) => model.dispose());
     this.models.clear();
@@ -177,6 +184,7 @@ export class MapSiteManager {
 
   private refresh(): void {
     if (this.destroyed) return;
+    this.drawnDay = this.deepDay();
     this.refreshPlates();
     for (const site of this.sites) {
       const hexes = this.siteHexes(site);
@@ -294,6 +302,12 @@ export class MapSiteManager {
   /** A Deep site's kind, from its DeepSite row; none while that row is on its way. */
   private deepKindOf(entityId: number): number | undefined {
     return this.store.get("DeepSite", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.kind;
+  }
+
+  private deepDay(): number | undefined {
+    const now = readDefaultTick();
+    const calendar = now === undefined ? null : readExpeditionRules(this.store, configManager.getActiveGameId());
+    return calendar && now !== undefined ? dayOf(calendar, now)?.index : undefined;
   }
 
   private beastGuards(entityId: number): boolean {
