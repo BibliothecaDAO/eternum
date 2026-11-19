@@ -84,6 +84,7 @@ export class CombatSimulator {
         timestamp: now,
         attackerOaths: attacker.oaths,
         defenderOaths: defender.oaths,
+        attackerTwin: null,
         attackDistance: context.attackDistance ?? 1,
         attackerBiome: context.defenderAlt ? BiomeType.Underground : (context.attackerBiome ?? biome),
         defenderBiome: context.defenderAlt ? BiomeType.Underground : (context.defenderBiome ?? biome),

@@ -145,6 +145,9 @@ fn fight_guard(key: ExplorerKey, ref attacker: ExplorerTroops, ref defender: Gua
             || defender.actor != 0.try_into().unwrap(),
         ..combat_context(key.game_id, attacker, defender.army, context),
     };
+    let combat = CombatContext {
+        attacker_twin_damage: twin_damage(key, attacker, defender.army.troops, combat, context), ..combat,
+    };
     let attacker_before = attacker.troops.count;
     let defender_before = defender.army.troops.count;
     let (attacker_after, defender_after) = resolve_battle(
@@ -284,6 +287,9 @@ pub fn battle(
         attacker_oaths: crate::logic::progression::held_oaths(attacker_key, context),
         defender_oaths: crate::logic::progression::held_oaths(defender_key, context),
         ..combat_context(game_id, attacker, defender, context),
+    };
+    let combat = CombatContext {
+        attacker_twin_damage: twin_damage(attacker_key, attacker, defender.troops, combat, context), ..combat,
     };
     let (attacker_after, defender_after) = resolve_battle(game_id, attacker.troops, defender.troops, combat, context);
     attacker.troops = attacker_after;
@@ -561,7 +567,31 @@ pub fn combat_context(
         defender_is_structure_guard: false,
         attacker_oaths: 0,
         defender_oaths: 0,
+        attacker_twin_damage: 0,
     }
+}
+
+fn twin_damage(
+    key: ExplorerKey, attacker: ExplorerTroops, defender: Troops, combat: CombatContext, context: ExecutionContext,
+) -> u128 {
+    if !crate::oaths::held(combat.attacker_oaths, crate::oaths::TWINS) {
+        return 0;
+    }
+    let Some(twin) = combat_troops(key.game_id)
+        .twins_companion(key, attacker, crate::commands::action_context(context)) else {
+        return 0;
+    };
+    let rules = context.rules.unbox();
+    crate::oaths::twin_damage(
+        combat.attacker_oaths,
+        twin,
+        defender,
+        combat,
+        rules.troop_stamina_config,
+        rules.troop_damage_config,
+        rules.tick_config.armies_tick_in_seconds,
+        rules.battle_config.cooldown_seconds,
+    )
 }
 
 pub fn resolve_battle(

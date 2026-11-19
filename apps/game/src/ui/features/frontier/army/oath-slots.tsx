@@ -59,7 +59,7 @@ export function TroopOathSlots({
                 <>
                   <Icon name={orderMeaning(oath)} />
                   <span>{oathName(oath)}</span>
-                  {oathEffectDescription(oath) && <span>{oathEffectDescription(oath)}</span>}
+                  <span>{oathEffectDescription(oath)}</span>
                 </>
               ) : open ? (
                 RESEARCH_TREE.oathOpen

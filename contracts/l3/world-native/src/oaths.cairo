@@ -38,7 +38,7 @@ pub const SKILL_BELOW_STAMINA: u16 = 10;
 pub const FURY_REFUND_PERCENT: u16 = 50;
 pub const PERFECTION_PAY_PERCENT: u16 = 150;
 pub const PERFECTION_LOSS_PERCENT: u16 = 15;
-pub const DORMANT: u16 = 16;
+pub const TWINS_DAMAGE_PERCENT: u16 = 30;
 
 #[inline(never)]
 pub fn damage_multiplier(attacker: u16, defender: u16, guarding: bool) -> Fixed {
@@ -61,6 +61,33 @@ pub fn skill_multiplier(oaths: u16, bar_after_cost: u64) -> Fixed {
     } else {
         FixedTrait::ONE()
     }
+}
+
+pub fn twin_damage(
+    oaths: u16,
+    companion: crate::troops::Troops,
+    defender: crate::troops::Troops,
+    context: crate::combat::CombatContext,
+    stamina: crate::rules::TroopStaminaConfig,
+    damage: crate::rules::TroopDamageConfig,
+    tick_seconds: u64,
+    cooldown_seconds: u32,
+) -> u128 {
+    if !held(oaths, TWINS) {
+        return 0;
+    }
+    let mut twin = companion;
+    let mut target = defender;
+    let (dealt, _, _, _) = crate::combat::TroopsTrait::damage_with_context(
+        ref twin,
+        ref target,
+        crate::combat::CombatContext { attacker_oaths: 0, ..context },
+        crate::rules::TroopStaminaConfig { stamina_attack_req: 0, ..stamina },
+        damage,
+        tick_seconds,
+        cooldown_seconds,
+    );
+    dealt * TWINS_DAMAGE_PERCENT.into() / 100 / crate::rules::RESOURCE_PRECISION * crate::rules::RESOURCE_PRECISION
 }
 
 pub fn fury_refund(oaths: u16, cost: u16) -> u64 {
@@ -223,7 +250,7 @@ pub fn card(pick: u16, index: u8) -> u8 {
 }
 
 pub fn draw(oaths: u16, seed: u256) -> u16 {
-    let mut choices = 65535 ^ (oaths | DORMANT);
+    let mut choices = 65535 ^ oaths;
     let mut pick = 0;
     let mut scale = 1;
     let mut drawn: u16 = 0;

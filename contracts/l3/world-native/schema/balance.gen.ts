@@ -122,7 +122,7 @@ export const nativeOathConstants = {
   "FURY_REFUND_PERCENT": 50,
   "PERFECTION_PAY_PERCENT": 150,
   "PERFECTION_LOSS_PERCENT": 15,
-  "DORMANT": 16
+  "TWINS_DAMAGE_PERCENT": 30
 } as const;
 export const nativeResearchConstants = {
   "ROW_FARM": 0,
@@ -156,4 +156,4 @@ export const nativeResearchConstants = {
   "SCOUTS_LODGE": 43,
   "SCOUTS_LODGE_LEVEL": 1
 } as const;
-export const nativeBalanceIdentity = "7bcf66a7a7271bfd97b79ef4cd5c7504e1748882ba24f5e694a070a6f0867132";
+export const nativeBalanceIdentity = "43c4c429f97b80e608f2f7f29c66d2a02652c8dc2b708d91026f4a0755578daf";

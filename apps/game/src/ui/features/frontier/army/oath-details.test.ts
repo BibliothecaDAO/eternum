@@ -22,12 +22,12 @@ it("explains the implemented Deep loss on both Oath surfaces", () => {
     "An attack that beats its target gives back 50% of the stamina it cost.",
   );
   expect(oathEffectDescription(oaths.PERFECTION)).toBe("A guard beaten with under 15% of the army lost pays 50% more.");
-  expect(oathEffectDescription(oaths.TWINS)).toBeUndefined();
+  expect(oathEffectDescription(oaths.TWINS)).toBe(
+    "Your largest army beside it adds 30% of its own damage to each attack.",
+  );
 });
 
-it("words every Oath the draw can offer, and offers none it cannot word", () => {
-  for (let id = 1; id <= 16; id++) {
-    const dormant = (oaths.DORMANT & (1 << (id - 1))) !== 0;
-    expect(oathEffectDescription(id) === undefined).toBe(dormant);
-  }
+it("words every Oath the draw can offer and refuses an id that is no Oath", () => {
+  for (let id = 1; id <= 16; id++) expect(oathEffectDescription(id)).toMatch(/\S/);
+  expect(() => oathEffectDescription(17)).toThrow();
 });

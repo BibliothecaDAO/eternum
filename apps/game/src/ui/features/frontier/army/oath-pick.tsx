@@ -103,11 +103,7 @@ function ArmyOathPick({
                 size="sm"
                 title={oathName(id)}
                 picture={<Icon name={orderMeaning(id)} size={40} />}
-                detail={
-                  <span className={colourClass[oathColour(id).colour]}>
-                    {oathEffectDescription(id) ?? oathColour(id).name}
-                  </span>
-                }
+                detail={<span className={colourClass[oathColour(id).colour]}>{oathEffectDescription(id)}</span>}
                 disabled={!allowed || sending}
                 onClick={() => (full ? setPicked(id) : choose(id))}
               />

@@ -23,6 +23,7 @@ pub struct CombatContext {
     pub defender_is_structure_guard: bool,
     pub attacker_oaths: u16,
     pub defender_oaths: u16,
+    pub attacker_twin_damage: u128,
 }
 
 
@@ -224,6 +225,7 @@ pub impl TroopsImpl of TroopsTrait {
         1_u8.into()
     }
 
+    #[inline(never)]
     fn damage_with_context(
         ref self: Troops,
         ref bravo: Troops,
@@ -484,7 +486,7 @@ pub impl TroopsImpl of TroopsTrait {
 
         // deduct dead troops from each side
         alpha.count -= core::cmp::min(alpha.count, bravo_damage_dealt);
-        bravo.count -= core::cmp::min(bravo.count, alpha_damage_dealt);
+        bravo.count -= core::cmp::min(bravo.count, alpha_damage_dealt + context.attacker_twin_damage);
         if bravo.count == 0 && alpha.count != 0 {
             let cost = crate::oaths::attack_stamina(context.attacker_oaths, troop_stamina_config.stamina_attack_req);
             alpha_stamina_loss -=

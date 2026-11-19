@@ -7,7 +7,7 @@ export function oathName(id: number): string {
   return order.orderName;
 }
 
-export function oathEffectDescription(id: number): string | undefined {
+export function oathEffectDescription(id: number): string {
   if (id === oaths.VITRIOL) return `Loses ${oaths.VITRIOL_LOSS_PER_TICK} troops a tick in the ${layerName(3)}.`;
   if (id === oaths.POWER) return `Deals ${oaths.POWER_DAMAGE_PERCENT}% more damage.`;
   if (id === oaths.GIANTS) return `Takes ${oaths.GIANTS_REDUCTION_PERCENT}% less damage.`;
@@ -27,7 +27,9 @@ export function oathEffectDescription(id: number): string | undefined {
     return `Deals ${oaths.SKILL_DAMAGE_PERCENT}% more on the attack that leaves its stamina under ${oaths.SKILL_BELOW_STAMINA}.`;
   if (id === oaths.FURY)
     return `An attack that beats its target gives back ${oaths.FURY_REFUND_PERCENT}% of the stamina it cost.`;
+  if (id === oaths.TWINS)
+    return `Your largest army beside it adds ${oaths.TWINS_DAMAGE_PERCENT}% of its own damage to each attack.`;
   if (id === oaths.PERFECTION)
     return `A guard beaten with under ${oaths.PERFECTION_LOSS_PERCENT}% of the army lost pays ${oaths.PERFECTION_PAY_PERCENT - 100}% more.`;
-  return undefined;
+  throw new Error(`Unknown Oath ${id}`);
 }
