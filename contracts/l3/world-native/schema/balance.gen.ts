@@ -153,4 +153,13 @@ export const nativeResearchConstants = {
   "SCOUTS_LODGE": 43,
   "SCOUTS_LODGE_LEVEL": 1
 } as const;
-export const nativeBalanceIdentity = "43c4c429f97b80e608f2f7f29c66d2a02652c8dc2b708d91026f4a0755578daf";
+export const nativeFragmentConstants = {
+  "WONDER_QUEST_FRAGMENTS": 10,
+  "SEAL_FRAGMENTS": 1000,
+  "STAMINA_PER_FRAGMENT": 2,
+  "CACHE_TROOPS_PER_FRAGMENT": 100,
+  "SURFACE_CACHE_PERCENT": 19,
+  "VEIL_CACHE_PERCENT": 10,
+  "HOLLOW_CACHE_PERCENT": 5
+} as const;
+export const nativeBalanceIdentity = "86c7ec48665a9a77321206b1f27c1bbfa9c4846d0fa5f1f0f0375753e9aca368";
