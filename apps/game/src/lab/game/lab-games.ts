@@ -41,6 +41,7 @@ import { realmScenario } from "./realm-scenario";
 import { supplyPostScenario } from "./supply-post-scenario";
 import { reinforceScenario } from "./reinforce-scenario";
 import { researchScenario } from "./research-scenario";
+import { shopScenario } from "./shop-scenario";
 import { ruinChestsScenario, ruinChestsSurfaceScenario } from "./ruin-chests-scenario";
 import { ruinFarScenario, ruinFightScenario } from "./ruin-fight-scenario";
 import { seasonOpensScenario } from "./season-opens-scenario";
@@ -98,6 +99,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   fight: fightScenario,
   "fight-lost": fightLostScenario,
   research: researchScenario,
+  shop: shopScenario,
   claim: claimScenario,
   quest: questScenario,
   "bane-world": () => baneScenario("world"),

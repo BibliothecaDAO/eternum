@@ -1050,6 +1050,66 @@ const RESEARCH_ACTION_STEPS = [
   ),
 ];
 
+const SHOP_ACTION_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  clickToResultStep("refill", "BuyStamina", refillTheArmy, ({ played }) => played.watching && { watch: "refilled" }),
+  clickToResultStep("get-pass", "BuySeal", getThePass, ({ played }) => played.watching && { watch: "pass-held" }),
+];
+
+async function refillTheArmy({ browser }) {
+  const panel = await openTheArmyPanel(browser);
+  if (!panel.region) return { panel };
+  const price = await readUntil(() => browser.read(buttonLabelled("^Refill stamina · ")), Boolean, SHEET_WAIT_MS);
+  if (!price) return { panel, price };
+  browser.tap(price.offset);
+  const refill = await readUntil(
+    () => browser.read(buttonLabelled("^Refill · [0-9,]+ Fragments$")),
+    Boolean,
+    SHEET_WAIT_MS,
+  );
+  if (!refill) return { panel, refill };
+  watchFor(browser, "refilled", staminaRefilled);
+  browser.tap(refill.offset);
+  return { bought: refill.name, watching: true, region: panel.region };
+}
+
+const staminaRefilled = `(() => {
+  const answer = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "BuyStamina").at(-1);
+  const bought = answer?.answered.find(({ model }) => model === "ExplorerTroops")?.value.troops.stamina.Inline?.amount;
+  const meter = document.querySelector('[data-kit-sheet] [data-stamina-line] [role="meter"]');
+  if (bought === undefined || !meter?.hasAttribute("aria-valuenow")) return false;
+  return Number(meter.getAttribute("aria-valuenow")) >= Math.min(Number(bought), Number(meter.getAttribute("aria-valuemax")));
+})()`;
+
+async function getThePass({ browser }) {
+  while (browser.read(SHEET_NAME) !== null) {
+    browser.press("Escape");
+    await readUntil(
+      () => browser.read(SHEET_NAME),
+      (name) => name === null,
+      SHEET_WAIT_MS,
+    );
+  }
+  const shop = await readUntil(() => browser.read(buttonLabelled("^Fragments [0-9,]+$")), Boolean, SHEET_WAIT_MS);
+  if (!shop) return { shop };
+  browser.tap(shop.offset);
+  const pass = await readUntil(() => browser.read(sheetButton("Get the Pass$")), Boolean, SHEET_WAIT_MS);
+  if (!pass) return { shop: shop.name, pass };
+  watchFor(browser, "pass-held", passHeld);
+  browser.tap(pass.offset);
+  return {
+    shop: shop.name,
+    watching: true,
+    region: browser.read(sheetRegion('[data-kit-sheet] [data-shop="pass"]')),
+  };
+}
+
+const passHeld = `(() => {
+  const answer = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "BuySeal").at(-1);
+  return answer?.answered.some(({ model }) => model === "Seal") === true &&
+    document.querySelector('[data-kit-sheet] [data-shop="pass"]')?.textContent.includes("You have the Season Pass") === true;
+})()`;
+
 function deleteOathArmyStep() {
   const press = async (browser, verb, confirming = false) => {
     const within = confirming ? '[data-kit-sheet] [role="alertdialog"]' : "[data-kit-sheet]";
@@ -5981,10 +6041,6 @@ export const UNMEASURED_COMMANDS = {
   MarkGameSettled:
     "sent by the value relay's operator once a season's game has ended (apps/value-relay), never by a player",
   SetEntityName: "no control in the game sends it: only the provider's set_entity_name, which nothing calls",
-  BuyStamina:
-    "the army's refill sends it above the Deep (army-refill.test.tsx); desktop and phone timing baselines are not recorded",
-  BuySeal:
-    "the shop's Get the Pass sends it (shop-sheet.test.tsx); desktop and phone timing baselines are not recorded",
 };
 
 /**
@@ -6357,6 +6413,7 @@ export const STEP_SETS = {
   "lab-scouts": { game: labSpireGame("scouts"), steps: SCOUT_DEPLOY_STEPS },
   "lab-actions-deploy": { game: labSpireGame("actions"), steps: DEPLOY_ACTION_STEPS },
   "lab-actions-research": { game: labSpireGame("research"), steps: RESEARCH_ACTION_STEPS },
+  "lab-actions-shop": { game: labSpireGame("shop"), steps: SHOP_ACTION_STEPS },
   "lab-daily-quest": { game: labSpireGame("quest"), steps: DAILY_QUEST_STEPS },
   ...Object.fromEntries(
     Object.entries(BANE_COLLECTIONS).map(([stage, expected]) => [
