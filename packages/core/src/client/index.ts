@@ -25,7 +25,7 @@ export { hasSingleTilePosition } from "./native-occupancy";
 export { entityMapPosition } from "../utils/tile";
 export { safeInteger } from "../utils/safe-integer";
 
-export { armyCombatRefusal, isAspectAlly } from "../utils/army-opponents";
+export { armyCombatRefusal, isAspectAlly, viewerAspect } from "../utils/army-opponents";
 export { armyDrain, deepArmyLife, type DeepArmyLife } from "../utils/deep-army-life";
 export {
   homeAspect,
@@ -40,7 +40,7 @@ export {
 } from "./views/deep-sites";
 export { raceFinishHeight, readRaceBoard, RACE_MODELS, type RaceBoard } from "./views/race";
 export { currentArmy, currentResourceWeight } from "../utils/deep";
-export { deepCenter, deepViewFor, isDeepTile } from "../utils/deep-geometry";
+export { deepCenter, deepGateTiles, deepViewFor, isDeepTile } from "../utils/deep-geometry";
 export { questWeek } from "../utils/daily-quest";
 export { readActiveTriumph, TRIUMPH_MODELS } from "./views/triumphs";
 

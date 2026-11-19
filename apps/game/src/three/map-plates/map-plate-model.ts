@@ -90,6 +90,7 @@ export interface StructurePlate {
   inBattle?: boolean;
   /** Its kind's painting, drawn only as the pin of a plate with no room. */
   icon: IconMeaning;
+  crest?: number;
   /** Whose it is to a watching viewer; absent while the viewer plays. */
   watched?: PlateWatched;
 }

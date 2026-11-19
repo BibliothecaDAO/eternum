@@ -1,4 +1,5 @@
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
+import { aspects, type AspectId } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { surfaceNeighborAtDistance } from "./travel";
 
@@ -50,4 +51,8 @@ export function deepViewFor(
   if (!rules) throw new Error("A gate view needs the game's DeepRules row");
   const aspect = home === null ? undefined : store.get("HomeAspect", { game_id: gameId, home })?.aspect;
   return aspect ? deepGate(spacing, rules.gate_distance, aspect) : deepCenter(spacing);
+}
+
+export function deepGateTiles(gateDistance: number, spacing: number): { aspect: AspectId; col: number; row: number }[] {
+  return aspects.map(({ id }) => ({ aspect: id, ...deepGate(spacing, gateDistance, id) }));
 }

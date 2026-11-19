@@ -61,3 +61,16 @@ export function isAspectAlly(
   }
   return false;
 }
+
+export function viewerAspect(
+  store: Pick<NativeFactStore, "get" | "structuresOwnedBy">,
+  game_id: number,
+  viewer: bigint | null,
+): number | undefined {
+  if (viewer === null) return undefined;
+  for (const realm of store.structuresOwnedBy(game_id, viewer)) {
+    const aspect = store.get("HomeAspect", { game_id, home: realm.entity_id })?.aspect;
+    if (aspect !== undefined) return aspect;
+  }
+  return undefined;
+}
