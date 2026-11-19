@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "899000f5aa9a738206a3c8ca615650253cf86d9593fe85d73e36cfb800e586f1";
+export const nativeFactSchemaIdentity = "7c3b854bef05f47d72448f54ffd67461554bdcab8e819f48cfbd054d1708e96f";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9,
   "SEAL_RELEASE": 10
@@ -130,6 +130,17 @@ export const nativeOathConstants = {
   "PERFECTION_PAY_PERCENT": 150,
   "PERFECTION_LOSS_PERCENT": 15,
   "DORMANT": 16
+} as const;
+export const nativeFragmentConstants = {
+  "PURCHASE": 1,
+  "FRIEND": 2,
+  "WONDER_QUEST": 10,
+  "SEAL_PRICE": 1000,
+  "STAMINA_PER_FRAGMENT": 2,
+  "CACHE_TROOPS": 100,
+  "SURFACE_CACHE_PERCENT": 19,
+  "VEIL_CACHE_PERCENT": 10,
+  "HOLLOW_CACHE_PERCENT": 5
 } as const;
 export const nativeResearchConstants = {
   "ROW_FARM": 0,
@@ -264,6 +275,7 @@ export interface NativeRows {
   ExpeditionSpire: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly depth: number; readonly reveals: number; readonly location: ({ readonly alt: boolean; readonly x: number; readonly y: number }) | null };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly empty_reveals: number; readonly ruin_cleared: boolean };
   DepositSource: { readonly game_id: number; readonly chain: bigint; readonly ledger: bigint; readonly signer: bigint; readonly epoch: bigint };
+  FragmentCredit: { readonly game_id: number; readonly id: bigint; readonly account: bigint; readonly source: number; readonly amount: bigint };
   Fragments: { readonly game_id: number; readonly account: bigint; readonly balance: bigint };
   Seal: { readonly game_id: number; readonly account: bigint; readonly granted_at: bigint };
   SpendLords: { readonly game_id: number; readonly account: bigint; readonly available: bigint; readonly consumed: bigint; readonly swept: bigint };
@@ -326,6 +338,7 @@ export interface NativeRows {
   ArmyRelics: { readonly game_id: number; readonly explorer_id: bigint; readonly first: ({ readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye"; readonly rank: number }) | null; readonly second: ({ readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye"; readonly rank: number }) | null; readonly third: ({ readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye"; readonly rank: number }) | null };
   ArmyRelicEffect: { readonly game_id: number; readonly explorer_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye"; readonly rank: number; readonly expires_at: bigint };
   RuinRelic: { readonly game_id: number; readonly entity_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye"; readonly rank: number };
+  RuinCache: { readonly game_id: number; readonly entity_id: bigint; readonly fragments: bigint };
   ArmyCombat: { readonly game_id: number; readonly explorer_id: bigint; readonly last_target: bigint };
   ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint; readonly logistics: number; readonly oath_slots: number; readonly oaths: number; readonly oath_pick: number };
   ArmyDay: { readonly game_id: number; readonly explorer_id: bigint; readonly day: bigint };
@@ -383,6 +396,7 @@ export interface NativeKeys {
   ExpeditionSpire: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly depth: number };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint };
   DepositSource: { readonly game_id: number };
+  FragmentCredit: { readonly game_id: number; readonly id: bigint };
   Fragments: { readonly game_id: number; readonly account: bigint };
   Seal: { readonly game_id: number; readonly account: bigint };
   SpendLords: { readonly game_id: number; readonly account: bigint };
@@ -445,6 +459,7 @@ export interface NativeKeys {
   ArmyRelics: { readonly game_id: number; readonly explorer_id: bigint };
   ArmyRelicEffect: { readonly game_id: number; readonly explorer_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye" };
   RuinRelic: { readonly game_id: number; readonly entity_id: bigint };
+  RuinCache: { readonly game_id: number; readonly entity_id: bigint };
   ArmyCombat: { readonly game_id: number; readonly explorer_id: bigint };
   ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint };
   ArmyDay: { readonly game_id: number; readonly explorer_id: bigint };
@@ -721,6 +736,20 @@ export const nativeFactModels = {
       "ledger": "felt",
       "signer": "felt",
       "epoch": "u64"
+    }
+  },
+  "FragmentCredit": {
+    "keys": [
+      "game_id",
+      "id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "id": "felt",
+      "account": "felt",
+      "source": "u8",
+      "amount": "u128"
     }
   },
   "Fragments": {
@@ -1826,6 +1855,18 @@ export const nativeFactModels = {
       "rank": "u8"
     }
   },
+  "RuinCache": {
+    "keys": [
+      "game_id",
+      "entity_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "entity_id": "u64",
+      "fragments": "u128"
+    }
+  },
   "ArmyCombat": {
     "keys": [
       "game_id",
@@ -2880,6 +2921,11 @@ export const nativeSyncScopes = {
       "account"
     ]
   },
+  "FragmentCredit": {
+    "owners": [
+      "account"
+    ]
+  },
   "Fragments": {
     "owners": [
       "account"
@@ -2975,6 +3021,11 @@ export const nativeSyncScopes = {
     ]
   },
   "RuinRelic": {
+    "entities": [
+      "entity_id"
+    ]
+  },
+  "RuinCache": {
     "entities": [
       "entity_id"
     ]

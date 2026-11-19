@@ -150,6 +150,17 @@
     "PERFECTION_LOSS_PERCENT": 15,
     "DORMANT": 16
   },
+  "fragmentConstants": {
+    "PURCHASE": 1,
+    "FRIEND": 2,
+    "WONDER_QUEST": 10,
+    "SEAL_PRICE": 1000,
+    "STAMINA_PER_FRAGMENT": 2,
+    "CACHE_TROOPS": 100,
+    "SURFACE_CACHE_PERCENT": 19,
+    "VEIL_CACHE_PERCENT": 10,
+    "HOLLOW_CACHE_PERCENT": 5
+  },
   "tileOccupierConstants": {
     "CHEST_OCCUPIER": 34,
     "SPIRE_OCCUPIER": 35
@@ -2030,6 +2041,22 @@
       },
       {
         "type": "function",
+        "name": "credit_fragments",
+        "inputs": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "credit",
+            "type": "world_native::fragments::FragmentCredit"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
         "name": "register_entitlement",
         "inputs": [
           {
@@ -2993,6 +3020,45 @@
       ],
       "keyLength": 1,
       "valueLength": 4
+    },
+    {
+      "name": "FragmentCredit",
+      "identity": "0x467261676d656e74437265646974",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "id",
+          "type": "core::felt252",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "account",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x6163636f756e74",
+          "feltLength": 1
+        },
+        {
+          "name": "source",
+          "type": "core::integer::u8",
+          "id": "0x736f75726365",
+          "feltLength": 1
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128",
+          "id": "0x616d6f756e74",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 3
     },
     {
       "name": "Fragments",
@@ -5495,6 +5561,33 @@
       ],
       "keyLength": 2,
       "valueLength": 2
+    },
+    {
+      "name": "RuinCache",
+      "identity": "0x5275696e4361636865",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "fragments",
+          "type": "core::integer::u128",
+          "id": "0x667261676d656e7473",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1
     },
     {
       "name": "ArmyCombat",
@@ -9522,6 +9615,16 @@
       "name": "world_native::commands::Command",
       "variants": [
         {
+          "name": "BuySeal",
+          "type": "()",
+          "wireId": 74
+        },
+        {
+          "name": "BuyStamina",
+          "type": "world_native::fragments::BuyStamina",
+          "wireId": 75
+        },
+        {
           "name": "ChooseOath",
           "type": "world_native::oaths::ChooseOath",
           "wireId": 73
@@ -10534,6 +10637,42 @@
         },
         {
           "name": "resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::fragments::BuyStamina": {
+      "type": "struct",
+      "name": "world_native::fragments::BuyStamina",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "fragments",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::fragments::FragmentCredit": {
+      "type": "struct",
+      "name": "world_native::fragments::FragmentCredit",
+      "members": [
+        {
+          "name": "id",
+          "type": "core::felt252"
+        },
+        {
+          "name": "account",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "source",
           "type": "core::integer::u8"
         },
         {
@@ -14322,5 +14461,5 @@
       ]
     }
   },
-  "identity": "899000f5aa9a738206a3c8ca615650253cf86d9593fe85d73e36cfb800e586f1"
+  "identity": "7c3b854bef05f47d72448f54ffd67461554bdcab8e819f48cfbd054d1708e96f"
 }
