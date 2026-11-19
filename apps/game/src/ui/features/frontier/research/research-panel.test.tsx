@@ -77,7 +77,7 @@ it("names each of the castle card's compact tiles on the tile itself, which a ph
   act(() => root.render(<CastleResearch nodes={castle} onOpen={vi.fn()} />));
   const tiles = [...host.querySelectorAll<HTMLButtonElement>("[data-node]")];
   expect(tiles.map((tile) => tile.textContent)).toEqual(castle.map((node) => node.name));
-  expect(castle.length).toBeGreaterThanOrEqual(5);
+  expect(castle.map(({ key }) => key)).toEqual(["well", "shrine", "spire"]);
 });
 
 it("researches the Farm's next tier with the side picked", () => {

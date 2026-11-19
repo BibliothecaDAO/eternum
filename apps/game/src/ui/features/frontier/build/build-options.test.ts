@@ -85,6 +85,7 @@ describe("Frontier's build options", () => {
           !name.startsWith("ROW_") &&
           !name.startsWith("CHOICE_") &&
           !name.startsWith("OATH_SLOTS_") &&
+          !name.startsWith("LORE_") &&
           !name.endsWith("_LEVEL"),
       )
       .map(([, category]) => category)

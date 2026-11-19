@@ -87,7 +87,7 @@ describe("naming a transaction by what it wrote", () => {
     [0x800000000n, 0xc00000000n, "Crossbow Oaths", 3, null],
     [5n, 13n, "Farm", 1, "Store"],
     [13n, 21n, "Farm", 2, "Store"],
-    [0n, 0x1000000000000n, "Depth", 1, null],
+    [0n, 0x1000000000000n, "Lore", 1, null],
   ])("names current knowledge %s → %s as %s purchase %s", (before, after, row, tier, side) => {
     const rows = named([...tx(1, structure("0x1", PLAYER), learn(before)), ...tx(1, learn(after))]);
     expect(rows.at(-1)).toMatchObject({ command: "Research", player: PLAYER, options: { row, tier, side } });

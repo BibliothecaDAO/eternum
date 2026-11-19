@@ -154,21 +154,30 @@ describe("a realm's spire, from the player's path", () => {
     }
   });
 
-  it("asks for Spire lore at the first depth while the realm knows only wells and shrines", () => {
+  it("lights no spire for a realm that knows only wells and shrines, and opens every depth once it learns Spire lore", () => {
     const { store, spire } = spireDay();
     const knowledge = store.require("RealmKnowledge", { game_id: 1, structure_id: 7 });
-    store.applyFacts([
-      {
-        model: "RealmKnowledge",
-        key: store.wireKeyOf("RealmKnowledge", knowledge)!,
-        value: { ...knowledge, learned: 2n << 48n },
-      },
-    ]);
+    const learn = (learned: bigint) =>
+      store.applyFacts([
+        {
+          model: "RealmKnowledge",
+          key: store.wireKeyOf("RealmKnowledge", knowledge)!,
+          value: { ...knowledge, learned },
+        },
+      ]);
+    learn(2n << 48n);
     const hud = renderHud(store);
     try {
       tapSpireWithArmy(spire);
-      expect(hud.depths()).toEqual([
-        { depth: "Veil", line: "Learn Spire lore at the castle to open it", button: "Research", enabled: true },
+      expect(hud.sheet()?.getAttribute("aria-label")).not.toBe("Spire");
+      expect(hud.depths()).toEqual([]);
+      act(() => learn(3n << 48n));
+      tapSpireWithArmy(spire);
+      expect(hud.sheet()?.getAttribute("aria-label")).toBe("Spire");
+      expect(hud.depths().map(({ button, enabled }) => [button, enabled])).toEqual([
+        ["Enter", true],
+        ["Enter", true],
+        ["Enter", true],
       ]);
     } finally {
       hud.unmount();
@@ -561,7 +570,7 @@ describe("a realm's spire, from the player's path", () => {
             act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: "own" }));
             hud.press("Spire");
             expect(hud.sheets()).toEqual(["Spire"]);
-            expect(hud.enterButtons()).toEqual([true, true]);
+            expect(hud.enterButtons()).toEqual([true, true, true]);
             // Closed, the card hands back the army, still selected.
             hud.press("Close");
             expect(hud.sheets()).not.toContain("Spire");

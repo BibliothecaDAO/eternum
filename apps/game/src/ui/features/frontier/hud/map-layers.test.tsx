@@ -314,7 +314,7 @@ const listRows = () =>
   ]);
 
 describe("each layer's ruin chest today, on the layer switch", () => {
-  it("opens every researched layer while nothing was cleared today, marks today's clears, and opens again tomorrow", () => {
+  it("opens every layer while nothing was cleared today, marks today's clears, and opens again tomorrow", () => {
     const { store, realm, rules, now, today } = chestDay();
     expect(today).toBe(1);
     discovered(store, today, false);
@@ -327,7 +327,7 @@ describe("each layer's ruin chest today, on the layer switch", () => {
       "Surface: chest to take today",
       "Veil: chest to take today",
       "Hollow: chest to take today",
-      "Deep: not researched",
+      "Deep: chest to take today",
     ]);
 
     // Realm 7 clears today's Surface ruin: its region is the home's own, always held.
@@ -338,6 +338,7 @@ describe("each layer's ruin chest today, on the layer switch", () => {
       ["Surface", "true", "claimed"],
       ["Veil", "false", "unknown"],
       ["Hollow", "false", "unknown"],
+      ["Deep", "false", "unknown"],
     ]);
     choose("Hollow");
     expect(requestLayerView).toHaveBeenCalledTimes(1);
@@ -348,7 +349,7 @@ describe("each layer's ruin chest today, on the layer switch", () => {
       "Surface: chest to take today",
       "Veil: chest to take today",
       "Hollow: chest to take today",
-      "Deep: not researched",
+      "Deep: chest to take today",
     ]);
   });
 
@@ -368,7 +369,7 @@ describe("each layer's ruin chest today, on the layer switch", () => {
       "Surface: chest to take today",
       "Veil: chest not known without an army there",
       "Hollow: chest to take today",
-      "Deep: not researched",
+      "Deep: chest not known without an army there",
     ]);
 
     // A fresh snapshot of that scope never had the receipt: the same marks.
@@ -392,7 +393,7 @@ describe("each layer's ruin chest today, on the layer switch", () => {
       "Surface: chest to take today",
       "Veil: chest taken today",
       "Hollow: chest to take today",
-      "Deep: not researched",
+      "Deep: chest to take today",
     ]);
   });
 
@@ -464,7 +465,7 @@ describe("each layer's ruin chest today, on the layer switch", () => {
       "Surface: chest to take today",
       "Veil: chest taken today",
       "Hollow: chest to take today",
-      "Deep: not researched",
+      "Deep: chest to take today",
     ]);
   });
 
@@ -511,6 +512,7 @@ describe("each layer's ruin chest today, on the layer switch", () => {
       ["Surface", "false", "open"],
       ["Veil", "false", "claimed"],
       ["Hollow", "false", "unknown"],
+      ["Deep", "false", "unknown"],
     ]);
     choose("Hollow");
     expect(requestLayerView).not.toHaveBeenCalled();
@@ -541,6 +543,7 @@ describe("each layer's ruin chest today, on the layer switch", () => {
       ["Surface", "false", "open"],
       ["Veil", "false", "open"],
       ["Hollow", "false", "open"],
+      ["Deep", "false", "open"],
     ]);
     choose("Realm");
     expect([toRealm.mock.calls.length, chosen.mock.calls.length]).toEqual([0, 1]);
