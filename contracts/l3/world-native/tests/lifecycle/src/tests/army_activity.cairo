@@ -310,3 +310,67 @@ fn successful_attacks_record_their_target_and_refusals_preserve_it() {
     assert!(interact_with_state(d.games, || crate::logic::army_combat::read(attacker)).is_none());
     assert!(interact_with_state(d.games, || crate::logic::troops::explorer(attacker)).is_none());
 }
+
+#[test]
+fn a_dying_army_leaves_its_home_producing_and_its_other_armies_in_order() {
+    let (d, game_id) = super::aspects::setup_aspects(76);
+    let home = found(d, game_id, 1);
+    let structure = crate::resources::ResourceKey { game_id, entity_id: home };
+    let barracks = world_test_support::tests::building_commands::create(structure, crate::research::BARRACKS);
+    assert!(execute_in_game(d, game_id, barracks, 360));
+    let farm = crate::buildings::CreateBuilding {
+        structure_id: home, directions: array![1_u8].span(), category: crate::research::FARM, use_simple: true,
+    };
+    assert!(execute_in_game(d, game_id, Command::CreateBuilding(farm), 360));
+    assert!(execute_in_game(d, game_id, muster(home, 2, 2, 1), 480));
+    let armies = interact_with_state(d.games, || crate::logic::troops::home_armies(structure));
+    assert_eq!(armies.len(), 3);
+    let producing = productions(d, structure);
+    let mut buildings: u8 = 0;
+    for production in producing {
+        buildings += *production.building_count;
+    }
+    assert!(buildings != 0, "the farm produces");
+    let dying = ExplorerKey { game_id, explorer_id: *armies.at(1) };
+    kill(d, game_id, dying);
+    let survivors = interact_with_state(d.games, || crate::logic::troops::home_armies(structure));
+    assert_eq!(survivors, array![*armies.at(0), *armies.at(2)].span());
+    assert_eq!(productions(d, structure), producing);
+    let army = crate::resources::ResourceKey { game_id, entity_id: dying.explorer_id };
+    for production in productions(d, army) {
+        assert_eq!(*production, Default::default());
+    }
+}
+
+fn kill(d: Deployment, game_id: u32, key: ExplorerKey) {
+    let context = world_test_support::tests::context(d.games, game_id);
+    interact_with_state(
+        d.games,
+        || {
+            let army = crate::logic::army_slots::resolve(key, crate::logic::troops::explorer(key).unwrap(), None);
+            let dead = ExplorerTroops { troops: crate::troops::Troops { count: 0, ..army.troops }, ..army };
+            crate::troops::IBattleResolutionDispatcherTrait::finish_battle(
+                crate::logic::combat::combat_troops(game_id),
+                key,
+                dead,
+                army.troops.count,
+                crate::commands::action_context(context),
+            );
+        },
+    );
+}
+
+fn productions(d: Deployment, key: crate::resources::ResourceKey) -> Span<crate::resources::Production> {
+    interact_with_state(
+        d.games,
+        || {
+            let mut rows = array![];
+            for resource_type in 1_u8..59 {
+                if crate::resources::has_production(resource_type) {
+                    rows.append(crate::logic::resources::production(key, resource_type));
+                }
+            }
+            rows.span()
+        },
+    )
+}

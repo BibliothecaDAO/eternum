@@ -137,12 +137,6 @@ pub mod ResourceState {
             for resource_type in 1_u8..59 {
                 let storage_key = (key.game_id, key.entity_id, resource_type);
                 self.write_balance(key, resource_type, self.data.resources.balances.read(storage_key), 0);
-                if has_production(resource_type) {
-                    self
-                        .write_production(
-                            key, resource_type, self.data.resources.productions.read(storage_key), Default::default(),
-                        );
-                }
             }
             self.data.resources.weights.write((key.game_id, key.entity_id), Default::default());
             self.data.resources.resource_exists.write((key.game_id, key.entity_id), false);
