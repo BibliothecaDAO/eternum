@@ -134,7 +134,13 @@ describe("the Deep's sites on the map", () => {
       require: (_model: string, key: { entity_id: number }) => site(key),
       subscribe: () => () => {},
     };
-    const manager = new MapSiteManager(new Scene(), projection as never, store as never, plates as never, noGates());
+    const manager = new MapSiteManager(
+      new Scene(),
+      projection as never,
+      store as never,
+      plates as never,
+      noGates() as never,
+    );
     await vi.waitFor(() =>
       expect(models.map(({ name }) => name).toSorted()).toEqual(["Bane altar", "Essence core", "Ethereal mine"]),
     );
@@ -177,7 +183,13 @@ describe("the Deep's sites on the map", () => {
         return () => {};
       },
     };
-    const manager = new MapSiteManager(new Scene(), projection as never, store as never, plates as never, noGates());
+    const manager = new MapSiteManager(
+      new Scene(),
+      projection as never,
+      store as never,
+      plates as never,
+      noGates() as never,
+    );
     await vi.waitFor(() =>
       expect(beasts.map(({ species }) => species).toSorted()).toEqual(["basilisk", "troll", "troll"]),
     );
@@ -222,7 +234,13 @@ describe("the Deep's sites on the map", () => {
       require: (_model: string, key: { entity_id: number }) => site(key),
       subscribe: () => () => {},
     };
-    const manager = new MapSiteManager(new Scene(), projection as never, store as never, plates as never, noGates());
+    const manager = new MapSiteManager(
+      new Scene(),
+      projection as never,
+      store as never,
+      plates as never,
+      noGates() as never,
+    );
     const look = (entityId: number) => {
       const { icon, reward } = plates.setLabel.mock.calls.findLast(([plate]) => plate.entityId === entityId)![0].plate;
       return { icon, reward };
@@ -322,7 +340,7 @@ function guardedSites(tick: number | undefined, beaten: string[] = []) {
     subscribe: () => () => {},
   };
   return {
-    manager: new MapSiteManager(new Scene(), projection as never, store as never, plates as never, noGates()),
+    manager: new MapSiteManager(new Scene(), projection as never, store as never, plates as never, noGates() as never),
     plates,
   };
 }
