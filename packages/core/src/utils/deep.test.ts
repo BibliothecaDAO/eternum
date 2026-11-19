@@ -155,6 +155,23 @@ describe("the shared Deep", () => {
     expect(readDeepSite(store, 420, 24n, 7)?.buildingPay).toBe(2);
   });
 
+  it("reads a ring opened yesterday closed today until today's entries reach it, before the sites roll over", () => {
+    const { rows, store } = fixture();
+    rows.DeepRules![0]!.rings = [
+      { radius: 5, realms: 0 },
+      { radius: 8, realms: 2 },
+    ];
+    rows.DeepSite = [{ game_id: 7, entity_id: 24n, kind: 0, ring: 1, day: 0n }];
+    rows.Guard = [{ game_id: 7, structure_id: 24n, slot: 0, troops: { count: 10n * precision } }];
+    rows.TileOccupancy!.push({ game_id: 7, entity_id: 24n, col: 505, row: 3584, alt: false });
+    rows.DeepEntries = [{ game_id: 7, day: 0n, count: 2 }];
+    const tomorrow = dayAtIndex(calendar, 0).end;
+    expect(readDeepSite(store, 420, 24n, 7)?.open).toBe(true);
+    expect(readDeepSite(store, tomorrow, 24n, 7)?.open).toBe(false);
+    rows.DeepEntries = [...rows.DeepEntries, { game_id: 7, day: 1n, count: 2 }];
+    expect(readDeepSite(store, tomorrow, 24n, 7)?.open).toBe(true);
+  });
+
   it("reads all sites in catalog order, highest live guard first, then restores next-day beasts", () => {
     const { rows, store } = fixture();
     rows.DeepSite = [2, 0, 3, 1].map((kind) => ({ game_id: 7, entity_id: BigInt(20 + kind), kind, ring: 0, day: 0n }));

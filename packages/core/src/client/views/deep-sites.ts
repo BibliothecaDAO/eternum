@@ -84,7 +84,7 @@ function deepSiteView(
   const beast = today.rules.beasts[site.kind];
   const ring = today.rules.rings[site.ring];
   if (!beast || !ring) throw new Error(`Site ${site.entity_id} is outside its preset rules`);
-  const entered = realmsEntered(store, gameId, site.day);
+  const entered = realmsEntered(store, gameId, BigInt(today.index));
   return {
     id: site.entity_id,
     kind: kind.id,
