@@ -986,7 +986,7 @@ describe("the Frontier playground preset", () => {
     expect(frontier.settlement.realms.resources.map(({ amount }) => whole(amount))).toEqual([1_500, 4_500, 2_000]);
   });
 
-  test("starts a realm with Essence for every research tier, Ethereal III included, and its castle's stores full", () => {
+  test("starts a realm with Essence for every research tier, Spire lore included, and its castle's stores full", () => {
     const playground = definition(FRONTIER_PLAYGROUND_PRESET_ID);
     const start = new Map(
       playground.settlement.realms.resources.map(({ resource_type, amount }) => [resource_type, whole(amount)]),
@@ -995,7 +995,7 @@ describe("the Frontier playground preset", () => {
       (sum, { price }) => sum + whole(price.essence),
       0,
     );
-    expect(essenceForEveryTier).toBe(2_358_250);
+    expect(essenceForEveryTier).toBe(1_517_750);
     expect(start.get(ResourcesIds.Essence)).toBeGreaterThan(essenceForEveryTier);
     // A castle stores two full deploys of its level; a Settlement's stores hold what the realm starts with, no more.
     const config = load(FRONTIER_PLAYGROUND_PRESET_ID);
