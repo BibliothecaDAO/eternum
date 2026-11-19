@@ -11,6 +11,7 @@ vi.mock("@/sync/action-outcome", async (original) => ({
 }));
 
 import { configManager } from "@bibliothecadao/eternum";
+import { nativeReleaseConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import { GameProvider } from "@/hooks/context/game-context";
 import type { DockArmy } from "../hud/dock-armies";
 import { ArmyRefill, sellsStamina } from "./army-refill";
@@ -36,7 +37,12 @@ afterEach(() => {
 const army = (over: Partial<DockArmy> = {}): DockArmy =>
   ({ explorerId: 201, stamina: { current: 20, max: 150, perExplore: 20 }, ethereal: undefined, ...over }) as DockArmy;
 
-const render = (held: number, shown: DockArmy, look: "price" | "reading" | "button" = "price") => {
+const render = (
+  held: number,
+  shown: DockArmy,
+  look: "price" | "reading" | "button" = "price",
+  release: number = nativeReleaseConstants.SEAL_RELEASE,
+) => {
   const store = transferArmies();
   const row = { game_id: 1, account: BigInt(PLAYER), balance: BigInt(held) };
   store.applyFacts([
@@ -44,6 +50,11 @@ const render = (held: number, shown: DockArmy, look: "price" | "reading" | "butt
       model: "Fragments",
       key: store.wireKeyOf("Fragments", row)!,
       value: { game_id: 1, account: PLAYER, balance: String(held) },
+    },
+    {
+      model: "GameRelease",
+      key: "0x1ab0",
+      value: { game_id: 1, release_id: release, created_release_id: release, preset_commitment: "0x1ab" },
     },
   ]);
   const buy = vi.fn().mockResolvedValue({ transaction_hash: "0x2" });
@@ -82,10 +93,15 @@ it("takes no press without a Fragment, and says what it needs", () => {
 });
 
 it("sells no stamina in the Deep or to a full bar", () => {
-  expect(sellsStamina(army())).toBe(true);
-  expect(sellsStamina(army({ ethereal: 3 }))).toBe(false);
-  expect(sellsStamina(army({ stamina: { current: 150, max: 150, perExplore: 20 } }))).toBe(false);
-  expect(sellsStamina(army({ stamina: { current: 149, max: 150, perExplore: 20 } }))).toBe(true);
+  expect(sellsStamina(army(), 40)).toBe(true);
+  expect(sellsStamina(army({ ethereal: 3 }), 40)).toBe(false);
+  expect(sellsStamina(army({ stamina: { current: 150, max: 150, perExplore: 20 } }), 40)).toBe(false);
+  expect(sellsStamina(army({ stamina: { current: 149, max: 150, perExplore: 20 } }), 40)).toBe(true);
   render(40, army({ ethereal: 3 }));
+  expect(host.querySelectorAll("button")).toHaveLength(0);
+});
+
+it("sells no stamina in a game on a release before the Seal's", () => {
+  render(40, army(), "price", nativeReleaseConstants.SEAL_RELEASE - 1);
   expect(host.querySelectorAll("button")).toHaveLength(0);
 });

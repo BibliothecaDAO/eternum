@@ -12,6 +12,7 @@ vi.mock("@/sync/action-outcome", async (original) => ({
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { configManager } from "@bibliothecadao/eternum";
+import { nativeReleaseConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import { GameProvider } from "@/hooks/context/game-context";
 import { transferArmies } from "../army/transfer-fixture";
 import { ShopSheet, ShopView, type ShopViewProps } from "./shop-sheet";
@@ -90,6 +91,16 @@ describe("the shop", () => {
         model: "Seal",
         key: store.wireKeyOf("Seal", seal)!,
         value: { game_id: 1, account: PLAYER, granted_at: "1" },
+      },
+      {
+        model: "GameRelease",
+        key: "0x1ab0",
+        value: {
+          game_id: 1,
+          release_id: nativeReleaseConstants.SEAL_RELEASE,
+          created_release_id: nativeReleaseConstants.SEAL_RELEASE,
+          preset_commitment: "0x1ab",
+        },
       },
     ]);
     act(() =>

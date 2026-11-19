@@ -1,7 +1,7 @@
 import { SCOPE_INPUT_MODELS } from "../../sync/model-manifest";
 import { questCatalog, RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import { nativeQuestConstants } from "../../../../../contracts/l3/world-native/schema/balance.gen";
-import type { NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeReleaseConstants, type NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import type { NativeFactResult, NativeFactStore } from "../native-fact-store";
 import { dayOf } from "../../utils/days";
 import { dailyQuest } from "../../utils/daily-quest";
@@ -151,6 +151,11 @@ function readLaborBonus(
   if (!campaign.known || campaign.known.present) return campaign;
   const held = heldRealmForHome(store, { gameId, entityId: home }) !== null;
   return presentOrKnownAbsent(store, "SettledRealm", held || undefined, { game_id: gameId, home });
+}
+
+export function fragmentsSold(store: NativeFactStore, gameId: number): boolean {
+  const release = store.get("GameRelease", { game_id: gameId });
+  return release !== undefined && release.release_id >= nativeReleaseConstants.SEAL_RELEASE;
 }
 
 export function readSeasonPass(

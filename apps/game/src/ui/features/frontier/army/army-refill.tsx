@@ -10,15 +10,15 @@ import type { DockArmy } from "../hud/dock-armies";
 import { useFragmentsHeld } from "../value/fragments";
 import { fragmentsToFill, RefillButton, RefillConfirm, RefillPrice, StaminaRefill } from "./refill";
 
-export const sellsStamina = (army: Pick<DockArmy, "stamina" | "ethereal">): boolean =>
-  army.stamina !== undefined && army.ethereal !== DEEP_DEPTH && fragmentsToFill(army.stamina) > 0;
+export const sellsStamina = (army: Pick<DockArmy, "stamina" | "ethereal">, held: number | null): boolean =>
+  held !== null && army.stamina !== undefined && army.ethereal !== DEEP_DEPTH && fragmentsToFill(army.stamina) > 0;
 
 export const ArmyRefill = ({ army, look }: { army: DockArmy; look: "price" | "reading" | "button" }) => {
   const { setup, account } = useGame();
   const held = useFragmentsHeld();
   const sending = useInFlight("army", army.explorerId) !== undefined;
   const [confirming, setConfirming] = useState(false);
-  if (!army.stamina || !sellsStamina(army)) return null;
+  if (!army.stamina || held === null || !sellsStamina(army, held)) return null;
   const stamina = army.stamina;
   const open = () => setConfirming(true);
   const buy = (fragments: number) =>

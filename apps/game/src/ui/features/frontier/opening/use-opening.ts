@@ -154,7 +154,7 @@ function useOpeningHeld(rules: ExpeditionRules, realm: NativeRows["Structure"] |
   const stageBuilt = (race?.standings.find((row) => row.aspect === race.own?.aspect)?.stage ?? 1) > 1;
   return {
     barracks: getBuildingQuantity(home, FIRST_BUILD, setup.store) > 0,
-    shop: outOfStamina || fragments > 0,
+    shop: fragments !== null && (outOfStamina || fragments > 0),
     relic,
     city: realm.base.level >= RealmLevels.City,
     essence: (essence ?? 0) > 0,

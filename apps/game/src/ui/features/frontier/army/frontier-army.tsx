@@ -10,6 +10,7 @@ import { type DockArmy, useDockArmies } from "../hud/dock-armies";
 import { ArmyDetail } from "./army-panel";
 import { ArmyRefill, sellsStamina } from "./army-refill";
 import { ArmyDeleteButton, ArmyDeleteConfirm } from "./army-delete";
+import { useFragmentsHeld } from "../value/fragments";
 
 export const FrontierArmy = ({ realm, onClose }: { realm: NativeRows["Structure"]; onClose: () => void }) => {
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
@@ -21,6 +22,7 @@ const ArmyPanel = ({ army, onClose }: { army: DockArmy; onClose: () => void }) =
   const revealYield = useArmyRevealYield(army);
   const spire = useArmySpireStatus(army.explorerId);
   const [deleting, setDeleting] = useState(false);
+  const held = useFragmentsHeld();
   if (!army.stamina) return null;
   return (
     <HudSheet
@@ -30,7 +32,7 @@ const ArmyPanel = ({ army, onClose }: { army: DockArmy; onClose: () => void }) =
     >
       <ArmyDetail
         army={{ ...army, name: army.label, stamina: army.stamina, revealYield }}
-        refill={sellsStamina(army) ? <ArmyRefill army={army} look="price" /> : undefined}
+        refill={sellsStamina(army, held) ? <ArmyRefill army={army} look="price" /> : undefined}
       />
       <TroopOathSlots category={army.troopsFact.category} explorerId={army.explorerId} />
       <ArmyRelicSlots explorerId={army.explorerId} />

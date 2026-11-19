@@ -184,8 +184,7 @@ const FrontierHudBody = ({
   });
   const seasonRank = useSeasonRank();
   const aspectsOpen = usePartShown("aspects");
-  const fragmentsShown = usePartShown("fragments-chip");
-  const fragments = useFragmentsHeld();
+  const fragments = useFragmentsChip();
   const layers = useMapLayers(rules, shown, visit ? null : realm);
   // The store card a ring or a plate opened, under the realm card on a desktop and under the strip on a phone.
   const [openStore, setOpenStore] = useState<CardStore | null>(null);
@@ -215,9 +214,9 @@ const FrontierHudBody = ({
     <IdentityChip compact />
   ) : (
     own &&
-    (claimWaiting || fragmentsShown) && (
+    (claimWaiting || fragments !== null) && (
       <PurseRow>
-        {fragmentsShown && <FragmentsPurse fragments={fragments} onOpen={() => setSurface("shop")} />}
+        {fragments !== null && <FragmentsPurse fragments={fragments} onOpen={() => setSurface("shop")} />}
         {claimWaiting && <RealmsChip waiting={claimWaiting} narrow onOpen={() => setSurface("realms")} />}
       </PurseRow>
     )
@@ -450,11 +449,12 @@ const ArmyAction = ({
 /** The picked army in a phone's action row, with Spire while it stands at its spire. */
 const ActingArmy = ({ army, onOpenArmy }: { army: DockArmy; onOpenArmy: (explorerId: number) => void }) => {
   const spire = useArmySpireStatus(army.explorerId);
+  const held = useFragmentsHeld();
   return (
     <PickedArmy
       army={army}
       refill={
-        sellsStamina(army) ? (
+        sellsStamina(army, held) ? (
           <ArmyRefill army={army} look="reading" />
         ) : (
           army.stamina && <StaminaReading stamina={army.stamina} />
@@ -493,6 +493,7 @@ const PendingOrder = ({
   army: DockArmy;
 }) => {
   const labor = useRealmStores(realm, rules)?.labor;
+  const held = useFragmentsHeld();
   return (
     <OrderBar
       kind={order.kind}
@@ -503,7 +504,7 @@ const PendingOrder = ({
       laborFits={
         labor?.limit === undefined || labor.amount === undefined ? undefined : Math.max(0, labor.limit - labor.amount)
       }
-      refill={sellsStamina(army) ? <ArmyRefill army={army} look="button" /> : undefined}
+      refill={sellsStamina(army, held) ? <ArmyRefill army={army} look="button" /> : undefined}
       onCancel={() => useUIStore.getState().updateEntityActionHoveredHex(null)}
       onGo={() => requestOrderAt(order.target)}
     />
@@ -567,8 +568,7 @@ const FrontierRealmPanel = ({
   const goToPlace = useGoToFrontierPlace(realm);
   const mark = useCampaignMark(realm);
   const kind = useHomeKind(realm);
-  const fragmentsShown = usePartShown("fragments-chip");
-  const fragments = useFragmentsHeld();
+  const fragments = useFragmentsChip();
   return (
     <RealmPanel
       name={name}
@@ -583,8 +583,14 @@ const FrontierRealmPanel = ({
         waiting,
         storeCards,
         onRealms: () => onSurface("realms"),
-        ...(fragmentsShown && { fragments, onShop: () => onSurface("shop") }),
+        ...(fragments !== null && { fragments, onShop: () => onSurface("shop") }),
       })}
     />
   );
+};
+
+const useFragmentsChip = (): number | null => {
+  const shown = usePartShown("fragments-chip");
+  const fragments = useFragmentsHeld();
+  return shown ? fragments : null;
 };

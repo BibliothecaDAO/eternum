@@ -34,7 +34,7 @@ export interface ShopViewProps {
 
 export const ShopSheet = ({ onClose }: { onClose: () => void }) => {
   const reading = useShopReading();
-  return <ShopView {...reading} code={<ShopCodeField />} onClose={onClose} />;
+  return reading && <ShopView {...reading} code={<ShopCodeField />} onClose={onClose} />;
 };
 
 export const ShopView = ({ fragments, pass, questBonus, bar, code, onClose }: ShopViewProps) => (
@@ -132,7 +132,7 @@ export const ShopCodeField = () => {
   );
 };
 
-function useShopReading(): Omit<ShopViewProps, "code" | "onClose"> {
+function useShopReading(): Omit<ShopViewProps, "code" | "onClose"> | null {
   const { setup, account } = useGame();
   useNativeRevision(SHOP_MODELS);
   const fragments = useFragmentsHeld();
@@ -146,6 +146,7 @@ function useShopReading(): Omit<ShopViewProps, "code" | "onClose"> {
     sendOnce("seal", PASS_KEY, true, () =>
       setup.systemCalls.buy_seal({ signer: account.account as unknown as Account }),
     ).catch((error: unknown) => toast.failed(error, SHOP_WORDS.passFailed));
+  if (fragments === null) return null;
   return {
     fragments,
     pass: seal.known ? (seal.known.present ? { held: true } : { held: false, buying: sending, onBuy: buy }) : null,
