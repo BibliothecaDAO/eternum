@@ -19,6 +19,7 @@ fn every_draw_offers_three_distinct_oaths_the_army_does_not_hold_and_fewer_only_
             assert_eq!(offered.len(), 3);
             for oath in offered {
                 assert!(!held(oaths, *oath));
+                assert!(!held(crate::oaths::DORMANT, *oath));
             }
         }
     }
@@ -32,6 +33,16 @@ fn every_draw_offers_three_distinct_oaths_the_army_does_not_hold_and_fewer_only_
         }
     }
     assert_eq!(draw(65535, 1), 0);
+}
+
+#[test]
+fn a_dormant_oath_is_never_offered_so_the_last_drawable_one_comes_alone() {
+    assert_eq!(crate::oaths::DORMANT, crate::oaths::bit(crate::oaths::TWINS));
+    let all_but_skill = 65535 ^ crate::oaths::DORMANT ^ crate::oaths::bit(crate::oaths::SKILL);
+    for seed in 0_u64..16 {
+        assert_eq!(cards(draw(all_but_skill, seed.into())), array![crate::oaths::SKILL].span());
+    }
+    assert_eq!(draw(65535 ^ crate::oaths::DORMANT, 1), 0);
 }
 
 #[test]

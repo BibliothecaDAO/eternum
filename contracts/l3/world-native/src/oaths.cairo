@@ -38,6 +38,7 @@ pub const SKILL_BAR_BELOW: u16 = 10;
 pub const FURY_REFUND_PERCENT: u16 = 50;
 pub const PERFECTION_PAY_PERCENT: u16 = 150;
 pub const PERFECTION_LOSS_PERCENT: u16 = 15;
+pub const DORMANT: u16 = 16;
 
 #[inline(never)]
 pub fn damage_multiplier(attacker: u16, defender: u16, guarding: bool) -> Fixed {
@@ -222,7 +223,7 @@ pub fn card(pick: u16, index: u8) -> u8 {
 }
 
 pub fn draw(oaths: u16, seed: u256) -> u16 {
-    let mut choices = 65535 ^ oaths;
+    let mut choices = 65535 ^ (oaths | DORMANT);
     let mut pick = 0;
     let mut scale = 1;
     let mut drawn: u16 = 0;

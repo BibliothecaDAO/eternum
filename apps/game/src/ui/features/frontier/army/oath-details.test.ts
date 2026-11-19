@@ -24,3 +24,10 @@ it("explains the implemented Deep loss on both Oath surfaces", () => {
   expect(oathEffectDescription(oaths.PERFECTION)).toBe("A guard beaten with under 15% of the army lost pays 50% more.");
   expect(oathEffectDescription(oaths.TWINS)).toBeUndefined();
 });
+
+it("words every Oath the draw can offer, and offers none it cannot word", () => {
+  for (let id = 1; id <= 16; id++) {
+    const dormant = (oaths.DORMANT & (1 << (id - 1))) !== 0;
+    expect(oathEffectDescription(id) === undefined).toBe(dormant);
+  }
+});

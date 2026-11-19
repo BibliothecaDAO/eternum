@@ -600,7 +600,8 @@ Deploy shows the current troop's capacity; an army's panel keeps its capacity fr
 exact price and deploy an army with three slots on desktop and phone. These are lab proofs; native tests cover immutable
 army capacity.
 
-An earned Oath opens three cards at once, drawn at random from the Oaths the army does not hold, and blocks that army's
+An earned Oath opens three cards at once, drawn at random from the Oaths the army does not hold (never one the contract
+marks dormant, `nativeOathConstants.DORMANT`: an Oath with no effect yet, the Twins for now), and blocks that army's
 commands until answered. Choose a card; with full slots, choose the held Oath it replaces, or Pass for the stamina shown
 on the button, capped at the army's maximum. The pick cannot be dismissed by Escape, Back or an outside press.
 `build.sh playtest-oath-pick` plays `/lab/game?scenario=oath-pick` and `oath-replace` on desktop and phone, recording
