@@ -71,7 +71,8 @@ it("plans a Deep site opportunity from Herald's actor snapshot with public rival
   expect(ownerOnly.models[0]!.rows.map(({ value }) => Number(value.explorer_id))).toEqual([7]);
   vi.stubGlobal("fetch", async (address: string) => {
     const url = new URL(address);
-    if (url.pathname === "/manifest") return Response.json({ version: 1, releaseSchemas: { [RELEASE]: schema.identity } });
+    if (url.pathname === "/manifest")
+      return Response.json({ version: 1, releaseSchemas: { [RELEASE]: schema.identity } });
     return Response.json(
       live.snapshot(
         String(GAME_ID),

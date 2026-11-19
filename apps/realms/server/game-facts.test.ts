@@ -7,7 +7,16 @@ import { readActorArmies } from "./army-rest";
 import { followDeepSites } from "./deep-site-stream";
 import { readReleaseCatalogue } from "./game-facts";
 import { readDeepAlerts } from "./deep-site-watch";
-import { ARMY, GAME_ID, mistFacts, PLAYER_ACCOUNT, RELEASE, siteSnapshot, snapshot, TODAY } from "./fixtures/shard-world";
+import {
+  ARMY,
+  GAME_ID,
+  mistFacts,
+  PLAYER_ACCOUNT,
+  RELEASE,
+  siteSnapshot,
+  snapshot,
+  TODAY,
+} from "./fixtures/shard-world";
 
 afterEach(() => vi.unstubAllGlobals());
 
