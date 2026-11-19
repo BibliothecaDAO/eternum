@@ -233,7 +233,7 @@ it("offers an open site with no guard at once, since taking it needs no fight", 
   ]);
 });
 
-it("ignores a closed ring, then keeps one watch per kind and announces the ring when today's entries open it", () => {
+it("ignores a closed ring, then plans each open site at its own time and announces the ring when entries open it", () => {
   const f = fixture();
   secondRing(f, 30);
   const guarded = f.plan();
@@ -242,9 +242,9 @@ it("ignores a closed ring, then keeps one watch per kind and announces the ring 
   expect(f.rings()).toEqual([]);
   f.write("DeepEntries", { game_id: 1, day: 0n, count: 30 });
   const open = f.plan();
-  expect(open).toHaveLength(1);
-  expect(open[0]).toMatchObject({ kind: nativeRuleConstants.DEEP_MINE, dueAt: f.startsAt * 1000 });
-  expect(open[0]!.siteId).not.toBe(guarded[0]!.siteId);
+  expect(open.map(({ kind }) => kind)).toEqual([nativeRuleConstants.DEEP_MINE, nativeRuleConstants.DEEP_MINE]);
+  expect(open.find(({ siteId }) => siteId === guarded[0]!.siteId)?.dueAt).toBe(guarded[0]!.dueAt);
+  expect(open.find(({ siteId }) => siteId !== guarded[0]!.siteId)?.dueAt).toBe(f.startsAt * 1000);
   const pay = f.store.require("DeepRules", { game_id: 1 }).building_pay.pair;
   expect(f.rings()).toEqual([expect.objectContaining({ ring: 1, day: 0, pay, sites: deepSites.length })]);
 });

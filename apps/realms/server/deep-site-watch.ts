@@ -73,7 +73,7 @@ export function planDeepSiteWatches(store: NativeFactStore, player: Player, now:
   const gameId = player.gameId;
   const aspect = store.require("HomeAspect", { game_id: gameId, home: army.owner }).aspect;
   const tickSeconds = readCombatRules(store, gameId).tickSeconds;
-  const first = new Map<number, DeepSiteWatch>();
+  const watches: DeepSiteWatch[] = [];
   for (const site of reach.sites) {
     if (site.beastTroops > 0n) continue;
     const defender = site.guards[0];
@@ -81,9 +81,7 @@ export function planDeepSiteWatches(store: NativeFactStore, player: Player, now:
       continue;
     const due = defender ? firstTakeableTick(store, army, site.id, timestamp, day.end, tickSeconds) : timestamp;
     if (due === null) continue;
-    const previous = first.get(site.kind);
-    if (previous && previous.dueAt <= due * 1000) continue;
-    first.set(site.kind, {
+    watches.push({
       ...player,
       home: String(army.owner),
       kind: site.kind,
@@ -97,7 +95,7 @@ export function planDeepSiteWatches(store: NativeFactStore, player: Player, now:
       until: day.end * 1000,
     });
   }
-  return [...first.values()];
+  return watches;
 }
 
 export function planDeepRingOpenings(store: NativeFactStore, player: Player, now: number): DeepRingOpening[] {
