@@ -200,7 +200,7 @@ test("dry publish refuses every write before commands or transports", async () =
   await expect(deployDocs(value, revision)).rejects.toThrow("Dry run");
   await expect(buildPackages(value)).rejects.toThrow("Dry run");
   await expect(deployWorkers(value, revision, workers)).rejects.toThrow("Dry run");
-  await expect(advanceFrontierRelease(value, revision, false)).rejects.toThrow("Dry run");
+  await expect(advanceFrontierRelease(value, revision)).rejects.toThrow("Dry run");
   expect(calls).toEqual([]);
 });
 
@@ -248,22 +248,21 @@ test.each(["dev", "production"] as const)(
     const value = platform(environment);
     const requests = releaseRoute(value, () => Response.json(REPORT));
     spyOn(console, "log").mockImplementation(() => {});
-    await advanceFrontierRelease(value, revision, false);
+    await advanceFrontierRelease(value, revision);
     expect(requests).toHaveLength(1);
     expect(requests[0]!.url).toBe(`${value.target.origin}/api/factory/release`);
     expect(requests[0]!.init!.method).toBe("POST");
     expect(new Headers(requests[0]!.init!.headers).get("authorization")).toBe("Bearer operator-test");
-    expect(JSON.parse(String(requests[0]!.init!.body))).toEqual({ release: IDENTITY, open: false });
+    expect(JSON.parse(String(requests[0]!.init!.body))).toEqual({ release: IDENTITY });
     expect(value.store.read<typeof REPORT>("release-advance.json")).toEqual(REPORT);
   },
 );
 
-test("asked to open the release, the deploy has the launch Worker open it for new games", async () => {
+test("the launch Worker's report of the release opened for new games is printed", async () => {
   const value = platform();
-  const requests = releaseRoute(value, () => Response.json({ shards: [{ ...REPORT.shards[0]!, opened: ["0xb"] }] }));
+  releaseRoute(value, () => Response.json({ shards: [{ ...REPORT.shards[0]!, opened: ["0xb"] }] }));
   const log = spyOn(console, "log").mockImplementation(() => {});
-  await advanceFrontierRelease(value, revision, true);
-  expect(JSON.parse(String(requests[0]!.init!.body))).toEqual({ release: IDENTITY, open: true });
+  await advanceFrontierRelease(value, revision);
   expect(log).toHaveBeenCalledWith(`New games on 0x1 start on release ${NATIVE_RELEASE_ID}.`);
 });
 
@@ -280,7 +279,7 @@ test.each([
   const calls = commands();
   const order = deployOrder(value);
   releaseRoute(value, () => Response.json({ error: code }, { status: 409 }));
-  await expect(publishCloudflare(value, revision, false)).rejects.toThrow(`Release ${NATIVE_RELEASE_ID}: ${reason}.`);
+  await expect(publishCloudflare(value, revision)).rejects.toThrow(`Release ${NATIVE_RELEASE_ID}: ${reason}.`);
   expect(order).toEqual(["launch"]);
   expect(calls.map((call) => call.argv.join(" "))).toContain("pnpm --dir apps/game build");
   expect(calls.some((call) => call.argv.includes("wrangler"))).toBe(false);
@@ -298,7 +297,7 @@ test("the launch Worker and the client's build come before the release step; eve
     order.push(spec.argv.join(" "));
     return "";
   });
-  await publishCloudflare(value, revision, false);
+  await publishCloudflare(value, revision);
   const release = order.indexOf("release");
   expect(order.indexOf("launch")).toBeLessThan(release);
   expect(order.indexOf("pnpm --dir apps/game build")).toBeLessThan(release);
@@ -326,7 +325,7 @@ test("a release read for another commit, or none, asks nothing of the launch Wor
   const value = platform();
   const requests = releaseRoute(value, () => Response.json(REPORT));
   recordIdentity(value, "d".repeat(40));
-  await expect(advanceFrontierRelease(value, revision, false)).rejects.toThrow(
+  await expect(advanceFrontierRelease(value, revision)).rejects.toThrow(
     "No release identity was read for this commit",
   );
   expect(requests).toEqual([]);
@@ -339,7 +338,7 @@ test("a deploy without setup's service credentials asks nothing of the launch Wo
   globalThis.fetch = mock(
     async (url: unknown) => (requests.push(url), Response.json(REPORT)),
   ) as unknown as typeof fetch;
-  await expect(advanceFrontierRelease(value, revision, false)).rejects.toThrow("Service credentials are missing");
+  await expect(advanceFrontierRelease(value, revision)).rejects.toThrow("Service credentials are missing");
   expect(requests).toEqual([]);
 });
 

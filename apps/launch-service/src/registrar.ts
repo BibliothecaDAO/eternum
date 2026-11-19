@@ -96,7 +96,7 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
     });
   }
 
-  applyRelease(release: ReleaseIdentity | null, open: boolean): Promise<ReleaseReport> {
+  applyRelease(release: ReleaseIdentity | null): Promise<ReleaseReport> {
     return this.signingAlone(async () => {
       const env = decodeLaunchEnv(this.env);
       const official = await officialChain(env.IDENTITY);
@@ -113,7 +113,7 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
         privateKey: env.LAUNCH_DEPLOYER_PRIVATE_KEY,
       });
       const games = await advanceGames(launcher, herald, release, await store.gameNames("madara.frontier"));
-      const opened = open ? await openForNewGames(launcher, release) : [];
+      const opened = await openForNewGames(launcher, release);
       return { shards: [{ chainId, releaseId: release.releaseId, games, opened }] };
     });
   }

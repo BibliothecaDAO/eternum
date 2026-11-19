@@ -49,11 +49,11 @@ export async function deployWorkers(platform: Platform, revision: string, select
 const releaseWorkers = workers.filter((worker) => worker.id === "launch");
 const gameReaderWorkers = workers.filter((worker) => worker.id !== "launch");
 
-export async function publishCloudflare(platform: Platform, revision: string, openRelease: boolean) {
+export async function publishCloudflare(platform: Platform, revision: string) {
   await buildPackages(platform);
   await deployWorkers(platform, revision, releaseWorkers);
   await buildClient(platform, revision);
-  await advanceFrontierRelease(platform, revision, openRelease);
+  await advanceFrontierRelease(platform, revision);
   await deployWorkers(platform, revision, gameReaderWorkers);
   await keepChatRetention(platform);
   await publishClient(platform, revision);
@@ -108,12 +108,12 @@ const RELEASE_REFUSALS: Record<string, string> = {
  * live: the launch Worker applies it as the launcher. It refuses until the shard has registered exactly that release
  * and Herald publishes it with the commit's schema; a rerun sends nothing.
  */
-export async function advanceFrontierRelease(platform: Platform, revision: string, open: boolean) {
+export async function advanceFrontierRelease(platform: Platform, revision: string) {
   if (!platform.apply) throw new PublicError("Dry run cannot advance a release");
   deploymentStage("advance Frontier release");
   const secrets = platform.store.read<Secrets>("secrets.json");
   if (!secrets) throw new PublicError("Service credentials are missing; run setup with --apply before publishing");
-  const request: ApplyReleaseRequest = { release: readReleaseIdentity(platform.store, revision), open };
+  const request: ApplyReleaseRequest = { release: readReleaseIdentity(platform.store, revision) };
   const response = await fetch(`${platform.target.origin}/api/factory/release`, {
     method: "POST",
     redirect: "error",

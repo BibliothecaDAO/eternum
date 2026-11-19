@@ -202,34 +202,28 @@ const RELEASE_MANIFEST = {
   releaseSchemas: { "1": RELEASE.schema, "2": RELEASE.schema },
 };
 
-it("advances each running Frontier game as the joined launcher and reports it", async () => {
+it("advances each running Frontier game as the joined launcher, then opens the release for new games", async () => {
   const f = setup();
   mock.account.mockResolvedValue("0x2");
   mock.manifest.mockResolvedValue(RELEASE_MANIFEST);
   mock.launched.mockResolvedValue(["frontier-1"]);
   mock.pins.set(1, 1);
-  expect(await f.registrar.applyRelease(RELEASE, false)).toEqual({
+  expect(await f.registrar.applyRelease(RELEASE)).toEqual({
     shards: [
-      { chainId: "0x1", releaseId: 2, games: [{ gameId: 1, from: 1, to: 2, transactions: ["0x12"] }], opened: [] },
+      {
+        chainId: "0x1",
+        releaseId: 2,
+        games: [{ gameId: 1, from: 1, to: 2, transactions: ["0x12"] }],
+        opened: ["0x02"],
+      },
     ],
   });
-  expect(mock.open).toBe(1);
+  expect(mock.open).toBe(2);
+  expect(mock.pins.get(1)).toBe(2);
   expect(mock.launched).toHaveBeenCalledWith("madara.frontier");
   expect(mock.shard).toHaveBeenCalledWith(
     expect.objectContaining({ accountAddress: "0x2", gamesAddress: "0x9", rpcUrl: "https://rpc.shard.test" }),
   );
-});
-
-it("opens the release for new games after advancing the running ones when the deploy asks", async () => {
-  const f = setup();
-  mock.account.mockResolvedValue("0x2");
-  mock.manifest.mockResolvedValue(RELEASE_MANIFEST);
-  mock.launched.mockResolvedValue(["frontier-1"]);
-  mock.pins.set(1, 1);
-  const [shard] = (await f.registrar.applyRelease(RELEASE, true)).shards;
-  expect(shard?.opened).toEqual(["0x02"]);
-  expect(mock.open).toBe(2);
-  expect(mock.pins.get(1)).toBe(2);
 });
 
 it("waits for a running launch before the launcher applies a release", async () => {
@@ -247,7 +241,7 @@ it("waits for a running launch before the launcher applies a release", async () 
   mock.pins.set(1, 1);
   const launching = f.registrar.alarm();
   await vi.waitFor(() => expect(mock.account).toHaveBeenCalledOnce());
-  const releasing = f.registrar.applyRelease(RELEASE, false);
+  const releasing = f.registrar.applyRelease(RELEASE);
   await new Promise((resolve) => setTimeout(resolve, 10));
   expect(mock.shard).not.toHaveBeenCalled();
   finish("0x2");
@@ -262,21 +256,21 @@ it("refuses by name and sends nothing when the box half has not registered the r
   mock.manifest.mockResolvedValue(RELEASE_MANIFEST);
   mock.launched.mockResolvedValue(["frontier-1"]);
   mock.pins.set(1, 1);
-  await expect(f.registrar.applyRelease({ ...RELEASE, releaseId: 3 }, true)).rejects.toThrow("release_not_registered");
+  await expect(f.registrar.applyRelease({ ...RELEASE, releaseId: 3 })).rejects.toThrow("release_not_registered");
   expect(mock.pins.get(1)).toBe(1);
   expect(mock.open).toBe(1);
 });
 
 it("refuses a release step without the commit's release while a shard is active, before joining the launcher", async () => {
   const f = setup();
-  await expect(f.registrar.applyRelease(null, false)).rejects.toThrow("release_unverified");
+  await expect(f.registrar.applyRelease(null)).rejects.toThrow("release_unverified");
   expect(mock.account).not.toHaveBeenCalled();
   expect(mock.shard).not.toHaveBeenCalled();
 });
 
 it("answers no shard to a first deployment's release step, before any shard is active", async () => {
   const f = setup([]);
-  expect(await f.registrar.applyRelease(null, false)).toEqual({ shards: [] });
+  expect(await f.registrar.applyRelease(null)).toEqual({ shards: [] });
   expect(mock.account).not.toHaveBeenCalled();
 });
 

@@ -54,7 +54,6 @@ export interface ShardRelease {
  */
 export interface ApplyReleaseRequest {
   release: ReleaseIdentity | null;
-  open: boolean;
 }
 
 /** What the route answers: every active shard, and each of its running Frontier games before and after. */
