@@ -176,23 +176,23 @@ Worker, then builds the client. It hands that release to the launch Worker, whic
 it, signed by the launcher. The Worker resolves each Frontier launch's game by its name on the chain, whatever the
 launch's state, so a launch interrupted after creating its game is included. It refuses, by name and before sending
 anything, until the shard's registered release has those contents and Herald maps every release a game moves through to
-that schema, and it sends nothing for games already there. Registering a release in the box half does not change the release
-new games start on: this step then opens it, and every release staged before it, for new games (the launcher's
-`open_release`), so new games start on it in the same deploy that publishes the client reading its numbers. Only then does it publish the other Workers and the client:
-each reads only games that run the balance numbers it carries, so a refused release stops the deploy before any of them
-changes, and open clients built for the previous numbers stop and reload onto the new one. A game left on older numbers
-(a settled Frontier game, any Blitz game) is not readable by them after a tune. Each build reads games from
-`NATIVE_BALANCE_SINCE_RELEASE` (`deploy/release/native-release.ts`) to its own release; a commit that changes a
-balance number sets it to that commit's release. The box half records each release's balance identity when it registers
-it, and refuses a release whose earlier releases from that one on ran other numbers. Between the Workers and the client it
-names every chat room and inbox the identity Worker holds to that Worker, which has each delete its messages past thirty
-days and set its alarm for the rest, so chat stored before that rule existed keeps the same thirty days. It then builds
-the docs (`pnpm run build:docs`, the build validation runs) and publishes them to `docs.realms.party` (dev:
-`docs.dev-realms.party`). Each run uploads both sites' builds and checks each at its own address, byte for byte, before
-the command ends, so a rerun at the same commit proves what it published. It refuses to start until setup has created
-every resource, so a site new to the deployment reaches an existing environment through `setup --apply`. Neither deploy
-command has a dry run or performs funding or calendar operations. Production, when commissioned, builds its images on
-its own box from the same source commit.
+that schema, and it sends nothing for games already there. Registering a release in the box half does not change the
+release new games start on: this step then opens it, and every release staged before it, for new games (the launcher's
+`open_release`), so new games start on it in the same deploy that publishes the client reading its numbers. Only then
+does it publish the other Workers and the client: each reads only games that run the balance numbers it carries, so a
+refused release stops the deploy before any of them changes, and open clients built for the previous numbers stop and
+reload onto the new one. A game left on older numbers (a settled Frontier game, any Blitz game) is not readable by them
+after a tune. Each build reads games from `NATIVE_BALANCE_SINCE_RELEASE` (`deploy/release/native-release.ts`) to its own
+release; a commit that changes a balance number sets it to that commit's release. The box half records each release's
+balance identity when it registers it, and refuses a release whose earlier releases from that one on ran other numbers.
+Between the Workers and the client it names every chat room and inbox the identity Worker holds to that Worker, which
+has each delete its messages past thirty days and set its alarm for the rest, so chat stored before that rule existed
+keeps the same thirty days. It then builds the docs (`pnpm run build:docs`, the build validation runs) and publishes
+them to `docs.realms.party` (dev: `docs.dev-realms.party`). Each run uploads both sites' builds and checks each at its
+own address, byte for byte, before the command ends, so a rerun at the same commit proves what it published. It refuses
+to start until setup has created every resource, so a site new to the deployment reaches an existing environment through
+`setup --apply`. Neither deploy command has a dry run or performs funding or calendar operations. Production, when
+commissioned, builds its images on its own box from the same source commit.
 
 ## Tune rehearsal
 
@@ -210,11 +210,11 @@ chain. A tune sets `NATIVE_BALANCE_SINCE_RELEASE` to its release, so the new cli
 players' clients reload on their own, since a client refuses a game pinned past the release it was built for. This
 command rehearses one on the dev chain with the deploy's own steps: it runs the box half (`pnpm run deploy dev`), waits
 for the game's next day start, snapshots the game's facts from Herald's checkpoint (`deploy/release/game-facts.ts`),
-runs the Cloudflare half, which advances the running game and opens the release for new games, then snapshots again
-once the checkpoint pins the game to the new release. It prints every fact that changed
-and exits 1 when a change is outside `GameRelease.release_id` and the `--expect` list; players' own moves between the
-two snapshots show up there too. It refuses (exit 2) a game already on the commit's release. A rollback is the same
-command on a commit that restores the previous numbers under the next release id.
+runs the Cloudflare half, which advances the running game and opens the release for new games, then snapshots again once
+the checkpoint pins the game to the new release. It prints every fact that changed and exits 1 when a change is outside
+`GameRelease.release_id` and the `--expect` list; players' own moves between the two snapshots show up there too. It
+refuses (exit 2) a game already on the commit's release. A rollback is the same command on a commit that restores the
+previous numbers under the next release id.
 
 ## Season
 

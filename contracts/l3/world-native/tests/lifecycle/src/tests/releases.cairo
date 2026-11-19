@@ -448,7 +448,9 @@ fn a_game_stuck_at_its_deep_boundary_plays_again_once_the_launcher_applies_a_che
 }
 
 fn step(walker: ExplorerKey) -> crate::commands::Command {
-    crate::commands::Command::Move(crate::commands::Move { explorer_id: walker.explorer_id, directions: array![0].span() })
+    crate::commands::Command::Move(
+        crate::commands::Move { explorer_id: walker.explorer_id, directions: array![0].span() },
+    )
 }
 
 fn assert_only_pin_moved(ref spy: snforge_std::EventSpy, d: super::Deployment, game_id: u32, release_id: u32) {

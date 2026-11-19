@@ -325,9 +325,7 @@ test("a release read for another commit, or none, asks nothing of the launch Wor
   const value = platform();
   const requests = releaseRoute(value, () => Response.json(REPORT));
   recordIdentity(value, "d".repeat(40));
-  await expect(advanceFrontierRelease(value, revision)).rejects.toThrow(
-    "No release identity was read for this commit",
-  );
+  await expect(advanceFrontierRelease(value, revision)).rejects.toThrow("No release identity was read for this commit");
   expect(requests).toEqual([]);
 });
 
