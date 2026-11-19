@@ -771,7 +771,6 @@ export const SPIRE_WORDS = {
   away: (army: string) => `${army} must be beside the spire`,
   inDepth: (army: string, depth: string) => `${army} is in ${depth} today`,
   landingTaken: "Its landing is taken",
-  locked: `Learn ${loreOf(SPIRE)} at the castle to open it`,
   commits: (army: string, left: string) => `${army} stays until the day ends (${left})`,
 } as const;
 

@@ -10,7 +10,7 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudCost, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { costLine } from "@/ui/design-system/kit/price-faces";
-import { ARMY, dayLeft, MOVE, RESEARCH, SPIRE_WORDS, STAMINA } from "@/ui/design-system/kit/words";
+import { ARMY, dayLeft, MOVE, SPIRE_WORDS, STAMINA } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import {
   armyAtItsSpire,
@@ -106,28 +106,12 @@ const SpireButton = ({ explorerId, spire }: { explorerId: number; spire: Spire }
   </HudButton>
 );
 
-/**
- * A spire's card, whatever the player brought to it. Another realm's says so. The player's own names the army it acts
- * for (the selected one, else one standing beside it) and offers the destination its Spire opens: the
- * landing's availability, then Enter, the one step to go. It says
- * that entering keeps the army there for the rest of the day, since no command brings it back up; the next depth
- * points at its research; an army away from the spire gets the move beside it.
- */
-export const RealmSpireSheet = ({
-  spire,
-  onResearch,
-  onClose,
-}: {
-  spire: Spire;
-  /** Opens Research, where the next depth is bought. */
-  onResearch: () => void;
-  onClose: () => void;
-}) => {
+export const RealmSpireSheet = ({ spire, onClose }: { spire: Spire; onClose: () => void }) => {
   const own = isViewerOwner(spire.realm.owner, useAccountAddress());
   return (
     <HudSheet label={SPIRE_WORDS.title} onClose={onClose}>
       {own ? (
-        <OwnSpire spire={spire} onResearch={onResearch} />
+        <OwnSpire spire={spire} />
       ) : (
         <p className="text-hud-body text-hud-ink">{SPIRE_WORDS.foreign}</p>
       )}
@@ -135,7 +119,7 @@ export const RealmSpireSheet = ({
   );
 };
 
-const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void }) => {
+const OwnSpire = ({ spire }: { spire: Spire }) => {
   const { setup, account } = useGame();
   const { store, systemCalls } = setup;
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
@@ -159,7 +143,6 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
   const sharedDeep = store.get("DeepRules", { game_id: gameId }) !== undefined;
   const offered = spire.targetDepth === undefined ? ([1, 2, 3] as const) : [spire.targetDepth];
   const depths = offered.filter((depth) => depth <= spire.deepest);
-  const next = offered.find((depth) => depth > spire.deepest);
   const choice = (depth: 1 | 2 | 3) => {
     if (!actor || !position || !beside) return { why: null, open: false };
     if (spire.targetDepth !== undefined || (depth === 3 && sharedDeep)) return { why: null, open: true };
@@ -240,18 +223,6 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
               />
             );
           })}
-          {next && (
-            <HudRow
-              lead={<Icon name={reachMark(next)} size={22} />}
-              title={layerName(next)}
-              detail={SPIRE_WORDS.locked}
-              controls={
-                <HudButton kind="secondary" size="sm" onClick={onResearch}>
-                  {RESEARCH}
-                </HudButton>
-              }
-            />
-          )}
         </div>
       )}
       {actor && beside && (

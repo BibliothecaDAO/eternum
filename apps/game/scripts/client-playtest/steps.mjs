@@ -1037,16 +1037,12 @@ async function playFromTheHomeCard({ browser, owner }) {
   return { entry: entry.entry };
 }
 
-/**
- * A research bought (the lab's research game): Research opened, the Shrine's node picked, then its Research; the result
- * is that node showing the Shrine researched once the chain has answered it learned.
- */
 const RESEARCH_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   clickToResultStep(
     "research",
     "Research",
-    researchTheShrine,
+    researchWellLore,
     ({ played }) => played.watching && { watch: "researched" },
   ),
 ];
@@ -1406,26 +1402,25 @@ const OATH_SLOTS_STEPS = [
   },
 ];
 
-const SHRINE_NODE = '[data-node="shrine"]';
+const WELL_LORE_NODE = '[data-node="well"]';
 
-async function researchTheShrine({ browser }) {
+async function researchWellLore({ browser }) {
   browser.click("Research");
-  const node = await readUntil(() => browser.read(elementAt(SHRINE_NODE)), Boolean, SHEET_WAIT_MS);
+  const node = await readUntil(() => browser.read(elementAt(WELL_LORE_NODE)), Boolean, SHEET_WAIT_MS);
   if (!node || node.state !== "ready") return { node };
   browser.tap(node.offset);
-  const research = await readUntil(() => browser.read(buttonNamed("Research Shrine")), Boolean, SHEET_WAIT_MS);
+  const research = await readUntil(() => browser.read(buttonNamed("Research Well lore")), Boolean, SHEET_WAIT_MS);
   if (!research) return { node, research };
-  watchFor(browser, "researched", shrineResearched);
+  watchFor(browser, "researched", wellLoreResearched);
   browser.tap(research.offset);
   return { node: node.state, watching: true, region: node.region };
 }
 
-/** The Shrine's node reads Researched, and the lab's chain has answered its Research with the Shrine learned. */
-const shrineResearched = `(() => {
+const wellLoreResearched = `(() => {
   const answer = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "Research").at(-1);
   const learned = answer?.answered.find(({ model }) => model === "RealmKnowledge")?.value.learned;
-  return learned !== undefined && ((BigInt(learned) >> 44n) & 1n) === 1n &&
-    document.querySelector(${JSON.stringify(SHRINE_NODE)})?.dataset.state === "done";
+  return learned !== undefined && ((BigInt(learned) >> 48n) & 3n) === 1n &&
+    document.querySelector(${JSON.stringify(WELL_LORE_NODE)})?.dataset.state === "done";
 })()`;
 
 /** An element's box, where it is from the screen's centre, and its state; null while it is not drawn. */

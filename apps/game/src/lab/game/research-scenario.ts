@@ -18,7 +18,16 @@ const ESSENCE_HELD = 20_000n * BigInt(RESOURCE_PRECISION);
  */
 export const researchScenario = (): LabScenario => {
   const actions = actionsScenario();
-  actions.store.applyFacts([...researchPriced(), essenceHeld(actions.store)] as never);
+  const knowledge = actions.store.require("RealmKnowledge", { game_id: 1, structure_id: 7 });
+  actions.store.applyFacts([
+    ...researchPriced(),
+    essenceHeld(actions.store),
+    {
+      model: "RealmKnowledge",
+      key: actions.store.wireKeyOf("RealmKnowledge", knowledge)!,
+      value: wire({ ...knowledge, learned: 0n }),
+    },
+  ] as never);
   return {
     ...actions,
     answer: (command, chain, now) =>
