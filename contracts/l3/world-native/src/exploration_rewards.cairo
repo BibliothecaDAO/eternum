@@ -65,14 +65,6 @@ pub fn reveal_reward(
         amount: reward_strength(troops, limits) * percent.into() / 100,
     }
 }
-
-fn boosted_amount(amount: u128, boosts: crate::troops::TroopBoosts, timestamp: u64) -> u128 {
-    if crate::relics::bonus_active(boosts.incr_explore_reward_end_at, timestamp) {
-        amount + amount * boosts.incr_explore_reward_percent_num.into() / 10000
-    } else {
-        amount
-    }
-}
 pub fn receiver(home_rewards: bool, explorer_id: u64, home: u64, resource_type: u8) -> u64 {
     if !home_rewards || (resource_type >= 39 && resource_type <= 56) {
         explorer_id
