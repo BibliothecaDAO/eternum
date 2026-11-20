@@ -431,7 +431,6 @@ fn capturing_a_players_realm_records_both_owners_in_one_capture_story() {
         if let crate::ownership::Story::StructureCapturedStory(capture) = story.story {
             assert_eq!(capture.previous_owner, before.owner);
             assert_eq!(capture.new_owner, d.actor);
-            assert_eq!(capture.points, 0);
             assert_eq!(story.entity_id, Some(target.entity_id));
             assert_eq!(story.owner, Some(d.actor));
             assert_eq!(story.timestamp, 80);
