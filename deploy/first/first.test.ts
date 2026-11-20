@@ -394,7 +394,11 @@ test("setup refuses a registered preset whose fields differ instead of pretendin
   await expect(setupPresenceReader(provider)(operation!, 10)).rejects.toThrow("Registered preset differs");
   expect(callContract).toHaveBeenCalledTimes(1);
   expect(callContract).toHaveBeenCalledWith(
-    { contractAddress: assets.ledger, entrypoint: "get_preset", calldata: ["5"] },
+    {
+      contractAddress: assets.ledger,
+      entrypoint: "get_preset",
+      calldata: [String(presetIdForEnvironment("madara.frontier"))],
+    },
     10,
   );
 });

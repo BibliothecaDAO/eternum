@@ -7,7 +7,8 @@ export { splitPlaytestRoster } from "@realms-world/value-ledger";
 /** The paid slot covers preparation and the release's complete game duration, starting at registration close. */
 export const blitzSlotWindow = (closesAt: string): { start: number; end: number } => {
   const start = Date.parse(closesAt) / 1000;
-  const duration = loadNativePresetConfiguration("madara.blitz", presetIdForEnvironment("madara.blitz")).season.durationSeconds;
+  const duration = loadNativePresetConfiguration("madara.blitz", presetIdForEnvironment("madara.blitz")).season
+    .durationSeconds;
   return { start, end: start + BLITZ_SLOT_PREPARATION_SECONDS + duration };
 };
 

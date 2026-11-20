@@ -152,12 +152,7 @@ export function seasonSteps(context: Season): Step[] {
         return {
           done: phases.some((phase) => phase.phase === "frontier"),
           detail: phases.length
-            ? phases
-                .map(
-                  (phase) =>
-                    `${phase.phase} ${phase.startsAt} to ${phase.endsAt}`,
-                )
-                .join("; ")
+            ? phases.map((phase) => `${phase.phase} ${phase.startsAt} to ${phase.endsAt}`).join("; ")
             : "set missing phases from saved dates",
         };
       },

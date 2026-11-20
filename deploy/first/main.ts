@@ -291,11 +291,7 @@ export function preparationSteps(context: Deployment): Step[] {
         if (!context.assets || !context.provider || !context.keys || !context.inputs)
           return waiting("Contracts have not been deployed yet");
         const head = await setupHead(context.provider);
-        const calls = setupCalls(
-          context.target,
-          context.assets,
-          accountIdentity(context.keys.monitor).address,
-        );
+        const calls = setupCalls(context.target, context.assets, accountIdentity(context.keys.monitor).address);
         context.output("Reading collectible metadata on mainnet.");
         readSetup ??= setupPresenceReader(context.provider);
         const present = await Promise.all(calls.map((call) => readSetup!(call, head)));

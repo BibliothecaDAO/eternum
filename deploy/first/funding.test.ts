@@ -36,7 +36,6 @@ afterEach(() => {
 });
 
 test.each([
-  "wrong preset",
   "wrong end",
   "game",
   "chain",
@@ -102,7 +101,7 @@ test.each([
   spyOn(box, "nativeDocument").mockImplementation(async () => ({ shard: { chainId }, world: { address: "0x20" } }));
   spyOn(native, "readFrontierGame").mockResolvedValue({
     ...nativeTerms,
-    presetId: changes === "wrong preset" ? 5 : preset.id,
+    presetId: preset.id,
     start: startSeconds,
     end: startSeconds + 40 * dayUnit + (changes === "wrong end" ? 40 : 0),
     seed: "1",

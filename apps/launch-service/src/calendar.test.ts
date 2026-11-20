@@ -30,33 +30,30 @@ const stores = () => {
   return { launches, slots, calendar, tick, value };
 };
 
-test.each([1, 2, 10])(
-  "the calendar creates a %i-bag Frontier game once with the operator’s dates",
-  async (bags) => {
-    const { launches, calendar, tick } = stores();
-    const season = {
-      phase: "frontier" as const,
-        startsAt: day(0).toISOString(),
-      endsAt: frontierSeasonEnd(day(0), bags),
-    };
-    await calendar.set(season, Date.now());
+test.each([1, 2, 10])("the calendar creates a %i-bag Frontier game once with the operator’s dates", async (bags) => {
+  const { launches, calendar, tick } = stores();
+  const season = {
+    phase: "frontier" as const,
+    startsAt: day(0).toISOString(),
+    endsAt: frontierSeasonEnd(day(0), bags),
+  };
+  await calendar.set(season, Date.now());
 
-    await tick(day(-1, 23, 59));
-    expect(await launches.list("madara.frontier")).toEqual([]);
-    await tick(day(0));
-    await tick(day(0, 0, 1));
-    await tick(day(70, 0, 1));
-    const runs = await launches.list("madara.frontier");
-    expect(runs).toHaveLength(1);
-    expect(runs[0]).toMatchObject({
-      name: `frontier-${day(0).getTime() / 1_000}`,
-      request: {
-        gameStartTime: season.startsAt,
-        durationSeconds: (Date.parse(season.endsAt) - Date.parse(season.startsAt)) / 1000,
-      },
-    });
-  },
-);
+  await tick(day(-1, 23, 59));
+  expect(await launches.list("madara.frontier")).toEqual([]);
+  await tick(day(0));
+  await tick(day(0, 0, 1));
+  await tick(day(70, 0, 1));
+  const runs = await launches.list("madara.frontier");
+  expect(runs).toHaveLength(1);
+  expect(runs[0]).toMatchObject({
+    name: `frontier-${day(0).getTime() / 1_000}`,
+    request: {
+      gameStartTime: season.startsAt,
+      durationSeconds: (Date.parse(season.endsAt) - Date.parse(season.startsAt)) / 1000,
+    },
+  });
+});
 
 test("Blitz slots are scheduled only inside the Blitz window, and none outside it", async () => {
   const { slots, calendar, tick } = stores();
@@ -200,9 +197,9 @@ test.each([0.5, 1.5, 9.3])("accepts %s bags without rounding the operator's end"
 test("refuses a zero-length season without writing", async () => {
   const { calendar } = stores();
   const startsAt = day(0).toISOString();
-  await expect(
-    calendar.set({ phase: "frontier", startsAt, endsAt: startsAt }, Date.now()),
-  ).rejects.toThrow("end after");
+  await expect(calendar.set({ phase: "frontier", startsAt, endsAt: startsAt }, Date.now())).rejects.toThrow(
+    "end after",
+  );
   expect(await calendar.list()).toEqual([]);
 });
 
@@ -222,9 +219,7 @@ test("a malformed stored Frontier season cannot stop Blitz slot creation", async
   const { slots, calendar, tick } = stores();
   // Stored before the calendar checked seasons: set refuses one now.
   await database.db
-    .prepare(
-      "INSERT INTO season_phases (phase, starts_at, ends_at, updated_at) VALUES ('frontier', ?, ?, ?)",
-    )
+    .prepare("INSERT INTO season_phases (phase, starts_at, ends_at, updated_at) VALUES ('frontier', ?, ?, ?)")
     .bind(day(0).getTime() + 500, day(31).getTime(), Date.now())
     .run();
   await calendar.set({ phase: "blitz", startsAt: day(0).toISOString(), endsAt: day(31).toISOString() }, Date.now());

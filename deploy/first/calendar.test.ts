@@ -117,7 +117,7 @@ test("an unset phase accepts the unchanged entered dates after its start", async
   spyOn(Date, "now").mockReturnValue(Date.parse("2026-10-12T18:00:00Z"));
   expect((await step.inspect()).done).toBe(false);
   await step.apply();
-  expect(output).toEqual(["Setting frontier preset 5 calendar: 2026-10-12T07:00:00.000Z to 2026-10-18T23:00:00.000Z."]);
+  expect(output).toEqual(["Setting frontier calendar: 2026-10-12T07:00:00.000Z to 2026-10-18T23:00:00.000Z."]);
   expect(writes.map(({ body }) => body)).toEqual([
     { startsAt: "2026-10-12T07:00:00.000Z", endsAt: "2026-10-18T23:00:00.000Z" },
   ]);

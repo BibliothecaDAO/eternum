@@ -3,6 +3,7 @@ import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Account, Call } from "starknet";
+import { presetIdForEnvironment } from "../../config/deployer/clean/constants";
 import { send, transactionIntentName } from "./chain";
 import { configureLedger } from "./ledger";
 import { PrivateStore } from "./private-store";
@@ -140,7 +141,7 @@ test("a changed unsent setup sends the newly computed calls with the current non
   expect(rpc.getNonce.mock.calls).toEqual([[5]]);
   expect(
     calls.filter((call) => call.entrypoint === "register_preset").map((call) => (call.calldata as string[])[0]),
-  ).toEqual(["6"]);
+  ).toEqual([String(presetIdForEnvironment("madara.frontier"))]);
   expect(calls.some((call) => call.contractAddress === "0xbad")).toBe(false);
 });
 
