@@ -71,7 +71,7 @@ pub mod RelicState {
             );
             assert!(explorer.troops.count != 0, "explorer is dead");
             assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to chest");
-            let chest_id = IRelicMapLibraryDispatcher { class_hash: classes.raid.read() }
+            let chest_id = IRelicMapLibraryDispatcher { class_hash: classes.economy.read() }
                 .consume_relic_chest(game_id, command.coord);
             assert!(context.rules.unbox().day_unit_seconds == 0, "day games have no resource chests");
             self.pay_chest(game_id, actor, command, chest_id, explorer.owner, context);
@@ -325,7 +325,7 @@ pub mod RelicState {
             let explorer = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
             let relic = crate::logic::army_relics::activate(key, index, command.relic_id, context.timestamp);
             if relic.kind == crate::army_relics::RelicKind::FarEye {
-                IRelicMapLibraryDispatcher { class_hash: self.logic_classes(game_id).raid.read() }
+                IRelicMapLibraryDispatcher { class_hash: self.logic_classes(game_id).economy.read() }
                     .reveal_relic_tiles(
                         key,
                         explorer.coord,

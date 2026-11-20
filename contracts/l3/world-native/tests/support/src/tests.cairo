@@ -153,7 +153,6 @@ pub fn setup_with_host(
         prizes: declare_logic("PrizesLogic"),
         registry: declare_logic("RegistryLogic"),
         combat: declare_logic("CombatLogic"),
-        raid: declare_logic("RaidLogic"),
         bridge: declare_logic("BridgeLogic"),
         relics: declare_logic("RelicsLogic"),
         movement,

@@ -1038,7 +1038,7 @@ pub mod troop_helpers {
             if command.relic_id == 45 || command.relic_id == 46 {
                 crate::relics::IRelicMapDispatcherTrait::reveal_relic_ring(
                     crate::relics::IRelicMapLibraryDispatcher {
-                        class_hash: Release::get_component(@self).classes(game_id).raid.read(),
+                        class_hash: Release::get_component(@self).classes(game_id).economy.read(),
                     },
                     game_id,
                     explorer.coord,

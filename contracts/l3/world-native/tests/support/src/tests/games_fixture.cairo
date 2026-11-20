@@ -237,7 +237,7 @@ pub mod GamesFixture {
         fn relic_discovery_time(self: @TContractState, game_id: u32) -> u64 {
             let classes = fixture_classes(game_id);
             crate::relics::IRelicMapDispatcherTrait::relic_discovery_time(
-                crate::relics::IRelicMapLibraryDispatcher { class_hash: classes.raid.read() }, game_id,
+                crate::relics::IRelicMapLibraryDispatcher { class_hash: classes.economy.read() }, game_id,
             )
         }
         fn reveal_relic_tiles(
@@ -249,7 +249,7 @@ pub mod GamesFixture {
         ) {
             let classes = fixture_classes(key.game_id);
             crate::relics::IRelicMapDispatcherTrait::reveal_relic_tiles(
-                crate::relics::IRelicMapLibraryDispatcher { class_hash: classes.raid.read() },
+                crate::relics::IRelicMapLibraryDispatcher { class_hash: classes.economy.read() },
                 key,
                 coord,
                 count,
@@ -268,7 +268,7 @@ pub mod GamesFixture {
         ) {
             let classes = fixture_classes(game_id);
             crate::relics::IRelicMapDispatcherTrait::discover_relic_chest(
-                crate::relics::IRelicMapLibraryDispatcher { class_hash: classes.raid.read() },
+                crate::relics::IRelicMapLibraryDispatcher { class_hash: classes.economy.read() },
                 game_id,
                 home_id,
                 coord,
@@ -281,7 +281,7 @@ pub mod GamesFixture {
         fn consume_relic_chest(ref self: TContractState, game_id: u32, coord: crate::troops::Coord) -> u64 {
             let classes = fixture_classes(game_id);
             crate::relics::IRelicMapDispatcherTrait::consume_relic_chest(
-                crate::relics::IRelicMapLibraryDispatcher { class_hash: classes.raid.read() }, game_id, coord,
+                crate::relics::IRelicMapLibraryDispatcher { class_hash: classes.economy.read() }, game_id, coord,
             )
         }
         fn reveal_relic_ring(
@@ -293,7 +293,7 @@ pub mod GamesFixture {
         ) {
             let classes = fixture_classes(game_id);
             crate::relics::IRelicMapDispatcherTrait::reveal_relic_ring(
-                crate::relics::IRelicMapLibraryDispatcher { class_hash: classes.raid.read() },
+                crate::relics::IRelicMapLibraryDispatcher { class_hash: classes.economy.read() },
                 game_id,
                 coord,
                 radius,

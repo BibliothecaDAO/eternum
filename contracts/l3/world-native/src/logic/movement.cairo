@@ -99,7 +99,7 @@ pub mod MovementLogic {
                         if !destination.alt {
                             crate::relics::IRelicMapDispatcherTrait::discover_relic_chest(
                                 crate::relics::IRelicMapLibraryDispatcher {
-                                    class_hash: self.release.classes(game_id).raid.read(),
+                                    class_hash: self.release.classes(game_id).economy.read(),
                                 },
                                 game_id,
                                 explorer.owner,
