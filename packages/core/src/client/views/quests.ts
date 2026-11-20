@@ -16,7 +16,6 @@ export const DAILY_QUEST_MODELS = [
   "LaborGrant",
   "BaneGrant",
   "Seal",
-  "CampaignHome",
   "SettledRealm",
 ] as const;
 
@@ -144,11 +143,6 @@ function readLaborBonus(
 ): NativeFactResult<{ present: boolean }> {
   const seal = readSeasonPass(store, gameId, owner);
   if (!seal.known || seal.known.present) return seal;
-  const campaign = presentOrKnownAbsent(store, "CampaignHome", store.get("CampaignHome", { game_id: gameId, home }), {
-    game_id: gameId,
-    home,
-  });
-  if (!campaign.known || campaign.known.present) return campaign;
   const held = heldRealmForHome(store, { gameId, entityId: home }) !== null;
   return presentOrKnownAbsent(store, "SettledRealm", held || undefined, { game_id: gameId, home });
 }
@@ -169,7 +163,7 @@ export function readSeasonPass(
 
 function presentOrKnownAbsent(
   store: NativeFactStore,
-  model: "Seal" | "CampaignHome" | "SettledRealm",
+  model: "Seal" | "SettledRealm",
   present: unknown,
   row: Record<string, unknown>,
 ): NativeFactResult<{ present: boolean }> {

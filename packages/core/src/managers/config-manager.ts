@@ -395,22 +395,6 @@ export class ClientConfigManager {
     const config = this.rules().troop_stamina_config;
     return Math.max(config.stamina_travel_stamina_cost - config.stamina_bonus_value, 10);
   }
-  getResourceBridgeFeeSplitConfig() {
-    const deposit = this.facts().require("DepositRules", { game_id: this.gameId });
-    const withdrawal = this.facts().require("WithdrawalRules", { game_id: this.gameId });
-    return {
-      velords_fee_on_dpt_percent: deposit.velords_fee_bps,
-      velords_fee_on_wtdr_percent: withdrawal.velords_fee_bps,
-      season_pool_fee_on_dpt_percent: deposit.season_fee_bps,
-      season_pool_fee_on_wtdr_percent: withdrawal.season_fee_bps,
-      client_fee_on_dpt_percent: deposit.client_fee_bps,
-      client_fee_on_wtdr_percent: withdrawal.client_fee_bps,
-      velords_fee_recipient: withdrawal.velords_recipient,
-      season_pool_fee_recipient: withdrawal.season_recipient,
-      realm_fee_dpt_percent: deposit.realm_fee_bps,
-      realm_fee_wtdr_percent: withdrawal.bank_fee_bps,
-    };
-  }
   getTick(tickId: TickIds): number {
     if (tickId === TickIds.Default) return 1;
     const config = this.rules().tick_config;
@@ -443,9 +427,6 @@ export class ClientConfigManager {
   }
   getBuildingConfig() {
     return this.rules().building_config;
-  }
-  getPresetId(): number {
-    return this.game().preset_id;
   }
   isCommandEnabled(command: keyof typeof nativeCommandBits): boolean {
     return (this.rules().command_mask & BigInt(nativeCommandBits[command])) !== 0n;
@@ -500,7 +481,6 @@ export class ClientConfigManager {
       startSettlingAt: Number(game.start_settling_at),
       startMainAt: Number(game.start_main_at),
       endAt: Number(game.end_at),
-      bridgeCloseAfterEndSeconds: game.end_grace_seconds,
     };
   }
   getSpireTravelEssenceCost() {
