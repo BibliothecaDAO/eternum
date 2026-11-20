@@ -1,5 +1,4 @@
 use starknet::ContractAddress;
-use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::combat::{CombatContext, TroopsTrait};
 use crate::combat_actions::battle_side;
 use crate::commands::{Battle, ExecutionContext};
@@ -120,7 +119,7 @@ fn guard_defender(
 fn beast_bps(target: GuardTarget, home: u64, timestamp: u64) -> u32 {
     crate::race::IRaceDispatcherTrait::site_beast_bps(
         crate::race::IRaceLibraryDispatcher {
-            class_hash: crate::logic::release::classes(target.key.game_id).economy.read(),
+            class_hash: crate::logic::release::class_of(target.key.game_id, crate::slots::ECONOMY),
         },
         target.key,
         home,
@@ -431,7 +430,9 @@ pub fn try_capture(
     if rules.day_unit_seconds == 0 {
         crate::logic::guards::GuardState::reset(key);
         crate::guards::IStructureCaptureDispatcherTrait::capture_structure(
-            crate::guards::IStructureCaptureLibraryDispatcher { class_hash: classes(key.game_id).structures.read() },
+            crate::guards::IStructureCaptureLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(key.game_id, crate::slots::STRUCTURES),
+            },
             key,
             explorer.owner,
             context.timestamp,
@@ -440,7 +441,9 @@ pub fn try_capture(
     }
     if target.owner == 0.try_into().unwrap() {
         crate::relics::ICaptureRewardsDispatcherTrait::grant_capture_rewards(
-            crate::relics::ICaptureRewardsLibraryDispatcher { class_hash: classes(key.game_id).relics.read() },
+            crate::relics::ICaptureRewardsLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(key.game_id, crate::slots::RELICS),
+            },
             key,
             explorer_key.explorer_id,
             relic_slot,
@@ -479,11 +482,13 @@ pub fn authorize(game_id: u32, context: ExecutionContext) -> SliceRules {
 }
 
 pub fn resources_dispatcher(game_id: u32) -> IResourceOperationsLibraryDispatcher {
-    IResourceOperationsLibraryDispatcher { class_hash: classes(game_id).resources.read() }
+    IResourceOperationsLibraryDispatcher {
+        class_hash: crate::logic::release::class_of(game_id, crate::slots::RESOURCES),
+    }
 }
 
 pub fn map_dispatcher(game_id: u32) -> IMapLogicLibraryDispatcher {
-    IMapLogicLibraryDispatcher { class_hash: classes(game_id).map.read() }
+    IMapLogicLibraryDispatcher { class_hash: crate::logic::release::class_of(game_id, crate::slots::MAP) }
 }
 
 pub fn owned_structure(game_id: u32, entity_id: u64, actor: ContractAddress) -> Structure {
@@ -652,13 +657,7 @@ fn active_explorer(key: ExplorerKey, context: ExecutionContext) -> ExplorerTroop
 }
 
 pub fn combat_troops(game_id: u32) -> IBattleResolutionLibraryDispatcher {
-    IBattleResolutionLibraryDispatcher { class_hash: classes(game_id).troops.read() }
-}
-fn classes(game_id: u32) -> starknet::storage::StoragePointer<games_storage::release::LogicClasses> {
-    let state = crate::state::read();
-    let release_id = state.game_releases.read(game_id);
-    assert!(release_id != 0, "game has no release");
-    state.releases.entry(release_id).classes
+    IBattleResolutionLibraryDispatcher { class_hash: crate::logic::release::class_of(game_id, crate::slots::TROOPS) }
 }
 fn emit<T, +starknet::event::Event<T>, +Into<T, crate::logic::combat_domain::CombatLogic::Event>>(event: T) {
     let event: crate::logic::combat_domain::CombatLogic::Event = event.into();

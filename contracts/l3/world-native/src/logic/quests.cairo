@@ -167,7 +167,7 @@ pub mod QuestState {
                 }, level,
             );
             let resources = IResourceOperationsLibraryDispatcher {
-                class_hash: crate::logic::release::classes(home.game_id).resources.read(),
+                class_hash: crate::logic::release::class_of(home.game_id, crate::slots::RESOURCES),
             };
             let resource_context = crate::commands::resource_context(context);
             let amount = resources

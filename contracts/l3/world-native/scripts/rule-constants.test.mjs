@@ -8,6 +8,7 @@ import {
   balanceIdentity,
   identifierConstants,
   readBalanceConstants,
+  readLogicSlots,
   readRuleConstants,
   readReleaseConstants,
 } from "./rule-constants.mjs";
@@ -72,6 +73,12 @@ test("every constant is either a hashed identifier or a tunable number, and a qu
     HASHED_QUANTITIES,
     "a constant named like a quantity is hashed: rename it with a unit to make it tunable, or list it as an identifier",
   );
+});
+
+test("the published logic slots are the slots src/slots.cairo numbers, in their order", async () => {
+  const slots = await readLogicSlots(root);
+  assert.deepEqual(slots[0], { slot: 0, name: "season", contract: "SeasonLogic" });
+  assert.deepEqual((await readSchema()).logicClasses, slots);
 });
 
 test("the game families the contract names are the families every reader is generated with", async () => {

@@ -375,9 +375,9 @@ fn grant_resources(game_id: u32, held: Held, boundary: u64, context: ExecutionCo
             owed.insert(key, owed.get(key) + amount);
         }
     }
-    let state = crate::state::read();
-    let release = state.releases.entry(state.game_releases.read(game_id)).classes;
-    let resources = IResourceOperationsLibraryDispatcher { class_hash: release.resources.read() };
+    let resources = IResourceOperationsLibraryDispatcher {
+        class_hash: crate::logic::release::class_of(game_id, crate::slots::RESOURCES),
+    };
     let historical = ExecutionContext { timestamp: boundary - 1, ..context };
     for (home, resource) in grants.span() {
         let amount = owed.get((*home).into() * 256 + (*resource).into());
@@ -426,7 +426,7 @@ fn roll_over(game_id: u32, context: ExecutionContext) -> bool {
 fn bridge(game_id: u32) -> crate::deep::IDeepBanesLibraryDispatcher {
     let state = crate::state::read();
     crate::deep::IDeepBanesLibraryDispatcher {
-        class_hash: state.releases.entry(state.game_releases.read(game_id)).classes.bridge.read(),
+        class_hash: crate::logic::release::release_class(state.game_releases.read(game_id), crate::slots::BRIDGE),
     }
 }
 

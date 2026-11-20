@@ -16,7 +16,6 @@ pub fn completed_hyperstructure_count(game_id: u32) -> u32 {
 }
 #[starknet::component]
 pub mod HyperstructureState {
-    use games_storage::release::LogicClasses;
     use starknet::ContractAddress;
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use crate::events::{RowMemberSet, RowSet};
@@ -27,7 +26,6 @@ pub mod HyperstructureState {
         SetConstructionAccess, Share, ShareAllocation, Stage,
     };
     use crate::logic::release::ReleaseState;
-    use crate::logic::release::ReleaseState::InternalTrait as LifecycleInternalTrait;
     use crate::resources::{
         IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey, ResourceSlot,
     };
@@ -138,7 +136,9 @@ pub mod HyperstructureState {
             let mut state = self.state(key);
             assert!(state.stage == Stage::Foundation, "hyperstructure already initialized");
             let rules = self.rules(game_id);
-            IResourceOperationsLibraryDispatcher { class_hash: self.logic_classes(game_id).resources.read() }
+            IResourceOperationsLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(game_id, crate::slots::RESOURCES),
+            }
                 .spend_resource(
                     key, 24, rules.initialize_shards, context.timestamp, crate::commands::resource_context(context),
                 );
@@ -169,7 +169,7 @@ pub mod HyperstructureState {
                 points += self
                     .contribute_resource(from, slot, *resource.amount, state.seed, context.timestamp, context);
             }
-            IPointsLibraryDispatcher { class_hash: self.logic_classes(game_id).season.read() }
+            IPointsLibraryDispatcher { class_hash: crate::logic::release::class_of(game_id, crate::slots::SEASON) }
                 .register_hyperstructure_points(game_id, actor, points);
             if self.is_complete(key, state.seed) {
                 state.stage = Stage::Complete;
@@ -295,11 +295,6 @@ pub mod HyperstructureState {
             }
             end
         }
-        fn logic_classes(
-            self: @ComponentState<TContractState>, game_id: u32,
-        ) -> starknet::storage::StoragePointer<LogicClasses> {
-            get_dep_component!(self, Life).classes(game_id)
-        }
         fn rules(self: @ComponentState<TContractState>, game_id: u32) -> HyperstructureRules {
             let preset = crate::logic::preset_record::for_game(game_id);
             let count = preset.hyper_cost_count.read();
@@ -386,7 +381,9 @@ pub mod HyperstructureState {
             assert!(current < needed, "resource contribution complete");
             let amount = core::cmp::min(amount, needed - current);
             assert!(amount % crate::rules::RESOURCE_PRECISION == 0, "fractional contribution");
-            IResourceOperationsLibraryDispatcher { class_hash: self.logic_classes(slot.game_id).resources.read() }
+            IResourceOperationsLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(slot.game_id, crate::slots::RESOURCES),
+            }
                 .spend_resource(
                     from, slot.resource_type, amount, timestamp, crate::commands::resource_context(game_context),
                 );
@@ -523,7 +520,7 @@ pub mod HyperstructureState {
             if points == 0 {
                 return;
             }
-            IPointsLibraryDispatcher { class_hash: self.logic_classes(key.game_id).season.read() }
+            IPointsLibraryDispatcher { class_hash: crate::logic::release::class_of(key.game_id, crate::slots::SEASON) }
                 .register_hyperstructure_points(key.game_id, player, points);
             self
                 .emit(

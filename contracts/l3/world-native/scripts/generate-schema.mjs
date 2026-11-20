@@ -1,7 +1,13 @@
 import { tupleTypes } from "../../../../apps/herald/src/native/serde.ts";
 import { compileCommandRoutes } from "./command-routes.mjs";
 import { assignWireIds, renderWireSerde } from "./wire-ids.mjs";
-import { balanceIdentity, identifierConstants, readBalanceConstants, readReleaseConstants } from "./rule-constants.mjs";
+import {
+  balanceIdentity,
+  identifierConstants,
+  readBalanceConstants,
+  readLogicSlots,
+  readReleaseConstants,
+} from "./rule-constants.mjs";
 import { wireRoots, wireTypeNames } from "./wire-types.mjs";
 import { generateSitePreviews } from "./generate-site-previews.mjs";
 import { execFileSync } from "node:child_process";
@@ -22,15 +28,11 @@ const { CallData } = await import(
   Bun.resolveSync("starknet", fileURLToPath(new URL("../../../../apps/herald/src/", import.meta.url)))
 );
 const gamesAbi = await readContractAbi("Games");
-const logicClasses = Object.fromEntries(
-  gamesAbi
-    .find((item) => item.name === "games_storage::release::LogicClasses")
-    .members.map(({ name }) => [name, `${name[0].toUpperCase()}${name.slice(1)}Logic`]),
-);
+const logicClasses = await readLogicSlots(root);
 const artifacts = {
   games: gamesAbi,
   ...Object.fromEntries(
-    await Promise.all(Object.entries(logicClasses).map(async ([logic, name]) => [logic, await readContractAbi(name)])),
+    await Promise.all(logicClasses.map(async ({ name, contract }) => [name, await readContractAbi(contract)])),
   ),
 };
 
@@ -51,7 +53,7 @@ for (const abi of [...Object.values(artifacts), factWireTypes]) {
   }
 }
 
-const routes = compileCommandRoutes(artifacts, types, feltLength);
+const routes = compileCommandRoutes(artifacts, types, feltLength, logicClasses);
 types.set(routes.command.name, routes.command);
 await writeCairo("src/command_routes.cairo", routes.cairo);
 const story = types.get("world_native::ownership::Story");

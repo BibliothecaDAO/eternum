@@ -8,7 +8,6 @@ pub mod GamesEntry {
     use starknet::{ContractAddress, get_caller_address, get_tx_info};
     use crate::games::Authentication;
     use crate::logic::release::ReleaseState;
-    use crate::logic::release::ReleaseState::InternalTrait as ReleaseInternal;
     use crate::presets::PresetDefinition;
     use crate::registrar::{CreateGameParams, IRegistrarDispatcherTrait, IRegistrarLibraryDispatcher, RosterPlayer};
 
@@ -101,6 +100,7 @@ pub mod GamesEntry {
             authentication: Authentication,
             release_id: u32,
             release: crate::logic::release::Release,
+            classes: Span<starknet::ClassHash>,
             vrf_public_key: Point,
             l2_gas_bound: u64,
         ) {
@@ -108,7 +108,6 @@ pub mod GamesEntry {
             assert!(launcher.is_non_zero(), "zero launcher");
             assert!(authentication.account_class.is_non_zero(), "zero account class");
             assert!(authentication.guardian_public_key.is_non_zero(), "zero guardian");
-            games_storage::release::validate(release.classes);
             assert!(release_id != 0, "zero release id");
             assert!(release.family != 0 && release.previous == 0, "first release of a family");
             assert!(core::ec::EcPointImpl::new(vrf_public_key.x, vrf_public_key.y).is_some(), "invalid VRF key");
@@ -118,9 +117,8 @@ pub mod GamesEntry {
             self.vrf_gas_bound.write(l2_gas_bound);
             self.data.authority.write(owner);
             self.data.launcher.write(launcher);
+            crate::logic::release::write_release(release_id, release, classes);
             self.data.open_releases.write(release.family, release_id);
-            self.data.family_latest.write(release.family, release_id);
-            self.data.releases.write(release_id, release);
             self.data.registrar.next_game.write(1);
             self.authentication_state.authentication.write(authentication);
         }
@@ -140,7 +138,7 @@ pub mod GamesEntry {
         fn admit(self: @ComponentState<TContractState>, game_id: u32, actor: ContractAddress, command: Span<felt252>) {
             crate::commands::ICommandIngressDispatcherTrait::admit(
                 crate::commands::ICommandIngressLibraryDispatcher {
-                    class_hash: get_dep_component!(self, Release).classes(game_id).placement.read(),
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::INGRESS),
                 },
                 game_id,
                 actor,
@@ -182,7 +180,7 @@ pub mod GamesEntry {
             timestamp.serialize(ref calldata);
             let outcome =
                 match starknet::syscalls::library_call_syscall(
-                    get_dep_component!(@self, Release).classes(game_id).season.read(),
+                    crate::logic::release::class_of(game_id, crate::slots::GAMEPLAY),
                     selector!("execute_gameplay"),
                     calldata.span(),
                 ) {
@@ -217,7 +215,9 @@ pub mod GamesEntry {
         }
 
         fn registrar(self: @ComponentState<TContractState>, family: u8) -> IRegistrarLibraryDispatcher {
-            IRegistrarLibraryDispatcher { class_hash: crate::logic::release::family_classes(family).registry }
+            IRegistrarLibraryDispatcher {
+                class_hash: crate::logic::release::family_class(family, crate::slots::REGISTRY),
+            }
         }
     }
 

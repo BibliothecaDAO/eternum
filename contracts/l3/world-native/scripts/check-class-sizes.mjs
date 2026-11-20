@@ -4,7 +4,10 @@ import { fileURLToPath } from "node:url";
 import { classSizeReport as measureClasses } from "../../../utils/check-class-sizes.mjs";
 
 export const classSizeReport = (directory, schema) =>
-  measureClasses(directory, "world_native", [schema.games.contract, ...Object.values(schema.logicClasses)]);
+  measureClasses(directory, "world_native", [
+    schema.games.contract,
+    ...schema.logicClasses.map(({ contract }) => contract),
+  ]);
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const root = new URL("../", import.meta.url);

@@ -448,12 +448,16 @@ fn real_production_splits_at_the_bane_start_and_quorum_end_and_army_stores_still
         || {
             let armies = crate::logic::troops::home_armies(home);
             let army = ResourceKey { game_id, entity_id: *armies.at(0) };
-            let classes = crate::logic::release::classes(game_id);
             let context = crate::entry::IResourceContextDispatcherTrait::resource_context(
-                crate::entry::IResourceContextLibraryDispatcher { class_hash: classes.bridge.read() }, game_id,
+                crate::entry::IResourceContextLibraryDispatcher {
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::BRIDGE),
+                },
+                game_id,
             );
             let credited = crate::resources::IResourceOperationsDispatcherTrait::grant_resource(
-                crate::resources::IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() },
+                crate::resources::IResourceOperationsLibraryDispatcher {
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::RESOURCES),
+                },
                 army,
                 crate::resources::ESSENCE,
                 RESOURCE_PRECISION,
@@ -529,7 +533,7 @@ pub fn altar(d: Deployment, game_id: u32, source: u8, boundary: u64) {
             }
             crate::deep::IDeepBanesDispatcherTrait::settle_altar(
                 crate::deep::IDeepBanesLibraryDispatcher {
-                    class_hash: crate::logic::release::classes(game_id).bridge.read(),
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::BRIDGE),
                 },
                 game_id,
                 source,

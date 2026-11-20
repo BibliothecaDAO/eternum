@@ -13,7 +13,9 @@ pub fn period(home: ResourceKey, stage: u8) -> Option<Period> {
     if unit == 0 {
         return None;
     }
-    let race = IRaceLibraryDispatcher { class_hash: crate::logic::release::classes(home.game_id).economy.read() };
+    let race = IRaceLibraryDispatcher {
+        class_hash: crate::logic::release::class_of(home.game_id, crate::slots::ECONOMY),
+    };
     let aspect = crate::logic::aspects::home_aspect(home);
     let index = race.triumph_day(TriumphKey { game_id: home.game_id, aspect, stage })?;
     let game = crate::logic::game::game(home.game_id);
@@ -27,7 +29,7 @@ pub fn period(home: ResourceKey, stage: u8) -> Option<Period> {
 }
 
 pub fn effects(home: ResourceKey, timestamp: u64) -> crate::race::ExpeditionEffects {
-    IRaceLibraryDispatcher { class_hash: crate::logic::release::classes(home.game_id).economy.read() }
+    IRaceLibraryDispatcher { class_hash: crate::logic::release::class_of(home.game_id, crate::slots::ECONOMY) }
         .expedition_effects(home, timestamp)
 }
 

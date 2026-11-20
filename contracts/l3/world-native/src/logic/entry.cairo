@@ -12,7 +12,7 @@ pub fn recover_flyer_days(
 ) {
     crate::entry::ICampaignRecoveryDispatcherTrait::recover_flyer_days(
         crate::entry::ICampaignRecoveryLibraryDispatcher {
-            class_hash: crate::logic::release::classes(key.game_id).bridge.read(),
+            class_hash: crate::logic::release::class_of(key.game_id, crate::slots::BRIDGE),
         },
         key,
         home,
@@ -105,7 +105,7 @@ pub mod EntryAdministration {
             super::assert_ledger_operator();
             crate::relics::ILordsDispatcherTrait::sweep_lords(
                 crate::relics::ILordsLibraryDispatcher {
-                    class_hash: get_dep_component!(@self, Life).classes(game_id).prizes.read(),
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::PRIZES),
                 },
                 game_id,
                 structure_id,
@@ -168,7 +168,7 @@ pub mod EntryAdministration {
             let rules = preset.labor_rules.read().expect('labor is disabled');
             let resource_context = crate::entry::IResourceContext::resource_context(@self, key.game_id);
             let release_id = self.data.game_releases.read(key.game_id);
-            let resources = self.data.releases.read(release_id).classes.resources;
+            let resources = crate::logic::release::release_class(release_id, crate::slots::RESOURCES);
             for day in first..today {
                 if self.data.entry.home_labor_grants.read((key.game_id, home, day)).is_some() {
                     continue;
@@ -219,7 +219,7 @@ pub mod EntryAdministration {
                 campaign_tier,
                 rules,
                 crate::entry::IResourceContext::resource_context(@self, target.game_id),
-                get_dep_component!(@self, Life).classes(target.game_id).resources.read(),
+                crate::logic::release::class_of(target.game_id, crate::slots::RESOURCES),
             );
             let grant = LaborGrant { game_id: target.game_id, account, home: target.home, amount, essence };
             super::record_labor_grant(day, grant);

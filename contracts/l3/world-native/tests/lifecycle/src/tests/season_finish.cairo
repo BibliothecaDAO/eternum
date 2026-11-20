@@ -40,7 +40,9 @@ fn fifty_day_limit_finishes_once_before_a_rejected_order_and_keeps_settlement_in
     interact_with_state(
         d.games,
         || {
-            let race = IRaceLibraryDispatcher { class_hash: crate::logic::release::classes(game_id).economy.read() };
+            let race = IRaceLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(game_id, crate::slots::ECONOMY),
+            };
             assert_eq!(race.race_result(game_id), None);
         },
     );
@@ -52,7 +54,9 @@ fn fifty_day_limit_finishes_once_before_a_rejected_order_and_keeps_settlement_in
     interact_with_state(
         d.games,
         || {
-            let race = IRaceLibraryDispatcher { class_hash: crate::logic::release::classes(game_id).economy.read() };
+            let race = IRaceLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(game_id, crate::slots::ECONOMY),
+            };
             assert_eq!(
                 race.race_result(game_id),
                 Some(crate::race::RaceResult { winner: None, ended_at: end, scheduled_end_at: end }),
@@ -97,7 +101,9 @@ fn published_season_one_starts_all_systems_and_settles_its_fiftieth_day() {
             assert_eq!(
                 crate::logic::aspects::home_aspect(crate::resources::ResourceKey { game_id, entity_id: home }), 1,
             );
-            let race = IRaceLibraryDispatcher { class_hash: crate::logic::release::classes(game_id).economy.read() };
+            let race = IRaceLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(game_id, crate::slots::ECONOMY),
+            };
             for aspect in 1_u8..5 {
                 let monument = race.aspect_hyperstructure(crate::race::AspectKey { game_id, aspect });
                 assert_eq!(monument.height, 0);
@@ -110,7 +116,9 @@ fn published_season_one_starts_all_systems_and_settles_its_fiftieth_day() {
     interact_with_state(
         d.games,
         || {
-            let race = IRaceLibraryDispatcher { class_hash: crate::logic::release::classes(game_id).economy.read() };
+            let race = IRaceLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(game_id, crate::slots::ECONOMY),
+            };
             assert_eq!(race.race_result(game_id).unwrap().winner, None);
             assert!(crate::logic::game::game(game_id).settled);
         },

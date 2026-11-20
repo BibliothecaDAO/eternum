@@ -137,6 +137,7 @@ fn initializer_refuses_zero_owner_launcher_class_and_guardian() {
             .serialize(ref args);
         args.append(1);
         release.serialize(ref args);
+        IReleasesDispatcher { contract_address: d.games }.release_classes(1).serialize(ref args);
         append_vrf_configuration(ref args);
         assert!(declare("Games").unwrap().contract_class().deploy(@args).is_err());
     }
@@ -373,6 +374,7 @@ fn games_reinitialization_is_rejected_without_changing_authentication_or_state()
     authentication.serialize(ref calldata);
     calldata.append(1);
     release.serialize(ref calldata);
+    IReleasesDispatcher { contract_address: d.games }.release_classes(1).serialize(ref calldata);
     append_vrf_configuration(ref calldata);
     start_cheat_caller_address(d.games, authority());
     for selector in array![selector!("constructor"), selector!("initializer")] {
@@ -455,13 +457,17 @@ fn owner_registration_and_launcher_game_creation_have_separate_roles() {
     );
     assert!(
         crate::logic::release::IReleasesSafeDispatcherTrait::register_release(
-            crate::logic::release::IReleasesSafeDispatcher { contract_address: d.games }, 2, release,
+            crate::logic::release::IReleasesSafeDispatcher { contract_address: d.games },
+            2,
+            release,
+            releases.release_classes(1),
         )
             .is_err(),
     );
     start_cheat_caller_address(d.games, authority());
     crate::registrar::IRegistrarDispatcherTrait::register_preset(registry, 1, registrar::definition(true));
-    releases.register_release(2, crate::logic::release::Release { previous: 1, ..release });
+    releases
+        .register_release(2, crate::logic::release::Release { previous: 1, ..release }, releases.release_classes(1));
     assert!(crate::registrar::IRegistrarSafeDispatcherTrait::create_game(safe, registrar::params(true)).is_err());
     assert!(
         crate::logic::release::IReleasesSafeDispatcherTrait::open_release(
@@ -487,8 +493,8 @@ fn game_registry_wire_contains_only_game_configuration() {
         encoded.span(),
         array![
             game.name, game.family.into(), game.preset_id.into(), 0, 1, 1, game.start_settling_at.into(),
-            game.start_main_at.into(),
-            game.end_at.into(), game.end_grace_seconds.into(), game.seed, game.scheduled_end_at.into(),
+            game.start_main_at.into(), game.end_at.into(), game.end_grace_seconds.into(), game.seed,
+            game.scheduled_end_at.into(),
         ]
             .span(),
     );
@@ -522,6 +528,7 @@ fn constructor_vrf_configuration_is_immutable_and_refuses_invalid_inputs() {
         authentication.serialize(ref args);
         args.append(1);
         release.serialize(ref args);
+        IReleasesDispatcher { contract_address: d.games }.release_classes(1).serialize(ref args);
         let key = if invalid_key {
             realms_vrf_verifier::vendor::ecvrf::Point { x: 0, y: 0 }
         } else {

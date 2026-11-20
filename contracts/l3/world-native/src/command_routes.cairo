@@ -1,5 +1,4 @@
 // Generated from schema/command-routes.mjs and production logic ABIs.
-use starknet::storage::StoragePointerReadAccess;
 
 #[derive(Copy, Drop)]
 pub struct CommandRoute {
@@ -110,30 +109,6 @@ pub const COMMAND_ROUTES: [Option<CommandRoute>; 77] = [
     Some(CommandRoute { logic: 14, selector: selector!("buy_stamina"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 14, selector: selector!("reroll_oath"), items_offset: None, batch: false }),
 ];
-
-pub fn logic_class(
-    classes: starknet::storage::StoragePointer<games_storage::release::LogicClasses>, index: u8,
-) -> starknet::ClassHash {
-    match index {
-        0 => classes.season.read(),
-        1 => classes.map.read(),
-        2 => classes.placement.read(),
-        3 => classes.construction.read(),
-        4 => classes.production.read(),
-        5 => classes.structures.read(),
-        6 => classes.troops.read(),
-        7 => classes.settlement.read(),
-        8 => classes.resources.read(),
-        9 => classes.economy.read(),
-        10 => classes.prizes.read(),
-        11 => classes.registry.read(),
-        12 => classes.combat.read(),
-        13 => classes.bridge.read(),
-        14 => classes.relics.read(),
-        15 => classes.movement.read(),
-        _ => panic!("unknown command logic"),
-    }
-}
 
 // Decode the complete command before reading a roll; routes retain the same wire discriminants.
 #[derive(Copy, Drop, Debug, PartialEq)]

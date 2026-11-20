@@ -911,12 +911,10 @@ pub mod TroopsLogic {
 
 pub mod troop_helpers {
     use starknet::ContractAddress;
-    use starknet::storage::StoragePointerReadAccess;
     use crate::commands::ExecutionContext;
     use crate::game::assert_playing;
     use crate::geometry::tile_key;
     use crate::logic::release::ReleaseState;
-    use crate::logic::release::ReleaseState::InternalTrait;
     use crate::map::{IMapLogicDispatcherTrait, IMapLogicLibraryDispatcher};
     use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
     use crate::rules::{RESOURCE_PRECISION, SliceRules};
@@ -996,16 +994,16 @@ pub mod troop_helpers {
         }
         fn resources_dispatcher(self: @TContractState, game_id: u32) -> IResourceOperationsLibraryDispatcher {
             IResourceOperationsLibraryDispatcher {
-                class_hash: Release::get_component(self).classes(game_id).resources.read(),
+                class_hash: crate::logic::release::class_of(game_id, crate::slots::RESOURCES),
             }
         }
         fn structures_dispatcher(self: @TContractState, game_id: u32) -> IStructureOperationsLibraryDispatcher {
             IStructureOperationsLibraryDispatcher {
-                class_hash: Release::get_component(self).classes(game_id).structures.read(),
+                class_hash: crate::logic::release::class_of(game_id, crate::slots::STRUCTURES),
             }
         }
         fn map_dispatcher(self: @TContractState, game_id: u32) -> IMapLogicLibraryDispatcher {
-            IMapLogicLibraryDispatcher { class_hash: Release::get_component(self).classes(game_id).map.read() }
+            IMapLogicLibraryDispatcher { class_hash: crate::logic::release::class_of(game_id, crate::slots::MAP) }
         }
 
         fn boost_explorer(
@@ -1038,7 +1036,7 @@ pub mod troop_helpers {
             if command.relic_id == 45 || command.relic_id == 46 {
                 crate::relics::IRelicMapDispatcherTrait::reveal_relic_ring(
                     crate::relics::IRelicMapLibraryDispatcher {
-                        class_hash: Release::get_component(@self).classes(game_id).economy.read(),
+                        class_hash: crate::logic::release::class_of(game_id, crate::slots::ECONOMY),
                     },
                     game_id,
                     explorer.coord,
@@ -1138,7 +1136,7 @@ pub fn command_explorer(
     assert!(release_id != 0, "game has no release");
     crate::troops::IBattleResolutionDispatcherTrait::command_explorer(
         crate::troops::IBattleResolutionLibraryDispatcher {
-            class_hash: state.releases.entry(release_id).classes.troops.read(),
+            class_hash: crate::logic::release::release_class(release_id, crate::slots::TROOPS),
         },
         key,
         actor,
@@ -1161,9 +1159,9 @@ fn expire_explorer(key: ExplorerKey, mut explorer: ExplorerTroops, context: crat
 
 fn destroy_explorer(key: ExplorerKey, explorer: ExplorerTroops) {
     crate::logic::army_slots::release(key, explorer);
-    let state = crate::state::read();
-    let release = state.releases.entry(state.game_releases.read(key.game_id)).classes;
-    IResourceOperationsLibraryDispatcher { class_hash: release.resources.read() }
+    IResourceOperationsLibraryDispatcher {
+        class_hash: crate::logic::release::class_of(key.game_id, crate::slots::RESOURCES),
+    }
         .destroy_resources(ResourceKey { game_id: key.game_id, entity_id: key.explorer_id });
     if crate::logic::deep_guards::entry(key).is_none() {
         crate::logic::map::MapState::vacate(crate::geometry::tile_key(key.game_id, explorer.coord), key.explorer_id);

@@ -78,5 +78,7 @@ pub mod AspectState {
 }
 
 pub fn dispatcher(game_id: u32) -> crate::aspects::IAspectsLibraryDispatcher {
-    crate::aspects::IAspectsLibraryDispatcher { class_hash: crate::logic::release::classes(game_id).registry.read() }
+    crate::aspects::IAspectsLibraryDispatcher {
+        class_hash: crate::logic::release::class_of(game_id, crate::slots::REGISTRY),
+    }
 }

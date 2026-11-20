@@ -208,20 +208,18 @@ fn mixed_sweep_keeps_both_balances_game_pinned_until_applied() {
     releases
         .register_release(
             2,
-            crate::logic::release::Release {
-                previous: 1,
-                ..crate::logic::release::Release {
-                    classes: games_storage::release::LogicClasses {
-                        prizes: super::declare_logic("ChangedSweepFixture"), ..original.classes,
-                    },
-                    ..original,
-                },
-            },
+            crate::logic::release::Release { previous: 1, ..original },
+            world_test_support::tests::releases::with_class(
+                releases.release_classes(1), crate::slots::PRIZES, super::declare_logic("ChangedSweepFixture"),
+            ),
         );
     releases.open_release(2);
     assert_eq!(releases.open_release_of(crate::game::FRONTIER), 2);
     assert_eq!(releases.game_release(game_id), 1);
-    assert_eq!(releases.release(2).classes.bridge, original.classes.bridge);
+    assert_eq!(
+        *releases.release_classes(2)[crate::slots::BRIDGE.into()],
+        *releases.release_classes(1)[crate::slots::BRIDGE.into()],
+    );
     assert_eq!(
         resources.resource_balance(ResourceSlot { game_id, entity_id: home, resource_type: crate::resources::LORDS }),
         30 * crate::rules::RESOURCE_PRECISION,
@@ -339,15 +337,10 @@ fn automatic_returns_keep_the_games_bridge_until_its_release_is_applied() {
     releases
         .register_release(
             2,
-            crate::logic::release::Release {
-                previous: 1,
-                ..crate::logic::release::Release {
-                    classes: games_storage::release::LogicClasses {
-                        bridge: super::declare_logic("ChangedSweepFixture"), ..original.classes,
-                    },
-                    ..original,
-                },
-            },
+            crate::logic::release::Release { previous: 1, ..original },
+            world_test_support::tests::releases::with_class(
+                releases.release_classes(1), crate::slots::BRIDGE, super::declare_logic("ChangedSweepFixture"),
+            ),
         );
     releases.open_release(2);
     assert_eq!(releases.open_release_of(crate::game::FRONTIER), 2);
