@@ -59,7 +59,13 @@ fn setup() -> super::Deployment {
         releases.apply_release(id, 2);
         releases.apply_release(id, 3);
     }
-    releases.register_release(4, crate::logic::release::Release { previous: 3, ..Release { migration: declare_logic("ReleaseMigration"), ..release } });
+    releases
+        .register_release(
+            4,
+            crate::logic::release::Release {
+                previous: 3, ..Release { migration: declare_logic("ReleaseMigration"), ..release },
+            },
+        );
     start_cheat_chain_id(d.games, approved::CHAIN_ID);
     start_cheat_block_timestamp(d.games, approved::OLD_END - 3600);
     d

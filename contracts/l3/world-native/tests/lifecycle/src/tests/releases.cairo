@@ -185,7 +185,12 @@ fn launcher_hotfix_migrates_a_populated_frontier_day_once_and_play_continues() {
     let seed = games.game(game_id).seed;
     start_cheat_caller_address(d.games, authority());
     releases
-        .register_release(2, crate::logic::release::Release { previous: 1, ..Release { migration: declare_logic("ReleaseMigrationFixture"), ..releases.release(1) } });
+        .register_release(
+            2,
+            crate::logic::release::Release {
+                previous: 1, ..Release { migration: declare_logic("ReleaseMigrationFixture"), ..releases.release(1) },
+            },
+        );
     assert!(safe.apply_release(game_id, 2).is_err());
     assert_eq!(releases.game_release(game_id), 1);
     start_cheat_caller_address(d.games, d.actor);
@@ -218,7 +223,11 @@ fn failing_migration_rolls_back_pin_and_data() {
     start_cheat_caller_address(d.games, authority());
     releases
         .register_release(
-            2, crate::logic::release::Release { previous: 1, ..Release { migration: declare_logic("FailingReleaseMigrationFixture"), ..releases.release(1) } },
+            2,
+            crate::logic::release::Release {
+                previous: 1,
+                ..Release { migration: declare_logic("FailingReleaseMigrationFixture"), ..releases.release(1) },
+            },
         );
     let game = games.game(1);
     let release_fact = stored_release_fact(d.games, 1);
@@ -356,20 +365,30 @@ fn village_pass_registration_keeps_its_owner_in_the_games_pinned_release() {
     let without_village_passes = declare_logic("TroopFixture");
     releases
         .register_release(
-            2, crate::logic::release::Release { previous: 1, ..Release {
-                classes: games_storage::release::LogicClasses { season: without_village_passes, ..original.classes },
-                ..original,
-            } },
+            2,
+            crate::logic::release::Release {
+                previous: 1,
+                ..Release {
+                    classes: games_storage::release::LogicClasses {
+                        season: without_village_passes, ..original.classes,
+                    },
+                    ..original,
+                },
+            },
         );
     releases.apply_release(game_id, 2);
     releases
         .register_release(
-            3, crate::logic::release::Release { previous: 2, ..Release {
-                classes: games_storage::release::LogicClasses {
-                    settlement: without_village_passes, ..original.classes,
+            3,
+            crate::logic::release::Release {
+                previous: 2,
+                ..Release {
+                    classes: games_storage::release::LogicClasses {
+                        settlement: without_village_passes, ..original.classes,
+                    },
+                    ..original,
                 },
-                ..original,
-            } },
+            },
         );
     releases.open_release(2);
     releases.open_release(3);

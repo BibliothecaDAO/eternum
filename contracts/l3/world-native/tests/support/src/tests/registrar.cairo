@@ -1118,7 +1118,10 @@ pub fn apply_ruin_depth_release(d: super::Deployment, game_id: u32) {
     let releases = IReleasesDispatcher { contract_address: d.games };
     start_cheat_caller_address(d.games, super::authority());
     for release_id in 2..crate::logic::release::RUIN_DEPTH_LIMIT_RELEASE + 1 {
-        releases.register_release(release_id, crate::logic::release::Release { previous: release_id - 1, ..releases.release(1) });
+        releases
+            .register_release(
+                release_id, crate::logic::release::Release { previous: release_id - 1, ..releases.release(1) },
+            );
         releases.apply_release(game_id, release_id);
     }
     stop_cheat_caller_address(d.games);

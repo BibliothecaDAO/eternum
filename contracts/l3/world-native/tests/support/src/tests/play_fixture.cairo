@@ -47,7 +47,7 @@ pub fn create_games(registry: ContractAddress) {
             registry,
             game_id,
             GameRegistry {
-        family: crate::game::FRONTIER,
+                family: crate::game::FRONTIER,
                 name: 'fixture',
                 preset_id: 3,
                 settled: false,

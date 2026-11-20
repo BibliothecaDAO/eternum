@@ -48,8 +48,8 @@ pub trait IGamesRandomness<T> {
 
 #[starknet::contract]
 pub mod Games {
-    use starknet::{ContractAddress, SyscallResultTrait};
     use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
+    use starknet::{ContractAddress, SyscallResultTrait};
     use crate::games::Authentication;
     use crate::games_entry::GamesEntry;
     use crate::logic::release::ReleaseState;

@@ -486,7 +486,8 @@ fn game_registry_wire_contains_only_game_configuration() {
     assert_eq!(
         encoded.span(),
         array![
-            game.name, game.preset_id.into(), 0, 1, 1, game.start_settling_at.into(), game.start_main_at.into(),
+            game.name, game.family.into(), game.preset_id.into(), 0, 1, 1, game.start_settling_at.into(),
+            game.start_main_at.into(),
             game.end_at.into(), game.end_grace_seconds.into(), game.seed, game.scheduled_end_at.into(),
         ]
             .span(),

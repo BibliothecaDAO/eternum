@@ -31,10 +31,7 @@ export function currentPresetFixture(presetId: number, fixtureSchema: NativeSche
 function fixtureLaunchParams(presetId: number, definition: ReturnType<typeof buildNativePreset>) {
   return {
     name: shortString.encodeShortString(`projection_${presetId}`),
-    family:
-      nativePresetForId(presetId).gameType === "frontier"
-        ? nativeIdentifiers.family.FRONTIER
-        : nativeIdentifiers.family.BLITZ,
+    family: nativeIdentifiers.family.FRONTIER,
     preset_id: presetId,
     start_settling_at: 1800,
     start_main_at: 1800,
