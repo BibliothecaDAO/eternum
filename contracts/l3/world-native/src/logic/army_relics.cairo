@@ -178,7 +178,7 @@ pub fn reveal_tiles(
     if crate::logic::deep::contains(game_id, origin) {
         return;
     }
-    let spacing = crate::logic::settlement::rules(game_id).spacing;
+    let spacing = crate::logic::settlement::spacing();
     let mut revealed = 0;
     let mut raw_root = context.raw_root;
     for radius in 1..spacing {

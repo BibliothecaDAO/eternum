@@ -1,5 +1,4 @@
 use crate::geometry::checked_neighbor_at_distance;
-use crate::settlement::SettlementMode;
 use crate::troops::Coord;
 
 /// The tile settlement, reservation and discovery layouts are measured from.
@@ -41,7 +40,7 @@ pub fn target_pool_size(registered: u16, limit: u16) -> u16 {
 }
 
 // A candidate's ordinal replaces the mutable side/ring/point cursor and stored coordinates.
-pub fn settlement_location(center: Coord, mode: SettlementMode, spacing: u32, candidate: u32) -> Span<Coord> {
+pub fn settlement_location(center: Coord, spacing: u32, candidate: u32) -> Coord {
     let distances = distances(spacing);
     let side = candidate % 6;
     let mut point = candidate / 6;
@@ -56,27 +55,13 @@ pub fn settlement_location(center: Coord, mode: SettlementMode, spacing: u32, ca
     let first = neighbor_at_distance(first, start, distances.step * (ring - 1));
     if point <= ring {
         let a = neighbor_at_distance(first, triangle, distances.step * (point - 1));
-        let b = neighbor_at_distance(a, start, 3);
-        let c = neighbor_at_distance(b, triangle, 3);
-        let middle = neighbor_at_distance(neighbor_at_distance(a, start, 2), triangle, 1);
-        select_location(mode, a, b, c, middle)
+        neighbor_at_distance(neighbor_at_distance(a, start, 2), triangle, 1)
     } else {
         let anchor = neighbor_at_distance(first, triangle, distances.step * (2 * ring - point));
         let a = neighbor_at_distance(
             neighbor_at_distance(anchor, start, distances.mirror_first), triangle, distances.mirror_second,
         );
-        let b = neighbor_at_distance(a, triangle, 3);
-        let c = neighbor_at_distance(b, start, 3);
-        let middle = neighbor_at_distance(neighbor_at_distance(a, triangle, 2), start, 1);
-        select_location(mode, a, b, c, middle)
-    }
-}
-
-fn select_location(mode: SettlementMode, a: Coord, b: Coord, c: Coord, middle: Coord) -> Span<Coord> {
-    if mode == SettlementMode::Single {
-        array![middle].span()
-    } else {
-        array![a, b, c].span()
+        neighbor_at_distance(neighbor_at_distance(a, triangle, 2), start, 1)
     }
 }
 

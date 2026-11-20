@@ -76,36 +76,6 @@ fn identical_content_under_a_second_id_reuses_the_record_without_rewriting_withd
 
 #[test]
 #[feature("safe_dispatcher")]
-fn eternum_launch_initializes_spires_and_never_uses_entry_capacity() {
-    let d = setup();
-    let preset = definition(false);
-    registry(d).register_preset(1, preset);
-    assert!(safe(d, d.actor).create_game(params(false)).is_err());
-    assert_eq!(registry(d).next_game_id(), 1);
-    assert_eq!(registry(d).create_game(params(false)), 1);
-    let rules = IGameDispatcher { contract_address: d.games }.rules(1);
-    let center = 2147483646 - rules.map_center_offset;
-    for alt in array![false, true] {
-        let _tile = IMapLogicDispatcher { contract_address: d.games }
-            .tile(TileKey { game_id: 1, alt, col: center, row: center })
-            .unwrap();
-        assert_eq!(
-            IMapLogicDispatcher { contract_address: d.games }
-                .occupancy(TileKey { game_id: 1, alt, col: center, row: center })
-                .unwrap()
-                .category,
-            35,
-        );
-    }
-    let spires = crate::spires::ISpiresDispatcher { contract_address: d.games };
-    assert_eq!(crate::spires::ISpiresDispatcherTrait::spire_layout(spires, 1), preset.settlement.spires);
-    let settlement = ISettlementViewsDispatcher { contract_address: d.games };
-    assert_eq!(settlement.settlement_rules(1).registration_limit, 0);
-    assert_eq!(settlement.settlement_rules(1).mode, SettlementMode::Single);
-}
-
-#[test]
-#[feature("safe_dispatcher")]
 fn invalid_schedules_modes_and_registration_limits_never_allocate() {
     let d = setup();
     let preset = definition(true);
@@ -271,53 +241,6 @@ fn launch_retries_return_the_same_game_and_conflicting_rosters_reject() {
 }
 
 #[test]
-fn fixed_blitz_rosters_have_exact_spots_and_deterministic_unique_permutations() {
-    for count in array![1_u32, 13, 17, 24] {
-        let players = crate::settlement::shuffle_roster(count, 123456789);
-        assert!(players == crate::settlement::shuffle_roster(count, 123456789));
-        assert!(players.len() == count);
-        let mut seen: core::dict::Felt252Dict<bool> = Default::default();
-        let mut tiles: core::dict::Felt252Dict<bool> = Default::default();
-        for index in 0..count {
-            let player = *players.at(index);
-            assert!(player.into() < count && !seen.get(player.into()));
-            seen.insert(player.into(), true);
-            let coords = crate::settlement_grid::settlement_location(
-                crate::troops::Coord { alt: false, x: 1000, y: 1000 }, SettlementMode::Triple, 6, index,
-            );
-            assert!(coords.len() == 3);
-            for coord in coords {
-                let key = Into::<u32, felt252>::into(*coord.x) * 0x100000000 + Into::<u32, felt252>::into(*coord.y);
-                assert!(!tiles.get(key), "settlement spots overlap");
-                tiles.insert(key, true);
-            }
-        }
-    }
-}
-
-#[test]
-fn each_player_is_dealt_every_troop_type_in_a_recorded_order() {
-    let mut orders: core::dict::Felt252Dict<bool> = Default::default();
-    let mut distinct = 0_u32;
-    for seed in 0_u32..64 {
-        let root: u256 = seed.into();
-        let three = crate::settlement::deal_troop_types(root, 3);
-        assert!(three == crate::settlement::deal_troop_types(root, 3), "the deal is not replayable");
-        let (a, b, c): (u8, u8, u8) = ((*three.at(0)).into(), (*three.at(1)).into(), (*three.at(2)).into());
-        assert!(a != b && b != c && a != c, "three realms repeat a troop type");
-        let order: felt252 = a.into() * 9 + b.into() * 3 + c.into();
-        if !orders.get(order) {
-            orders.insert(order, true);
-            distinct += 1;
-        }
-        assert!(crate::settlement::deal_troop_types(root, 2) == three.slice(0, 2));
-        let four = crate::settlement::deal_troop_types(root, 4);
-        assert!(four.slice(0, 3) == three && *four.at(3) == *three.at(0));
-    }
-    assert_eq!(distinct, 6, "some orders are never dealt");
-}
-
-#[test]
 fn only_the_games_seater_seats_it_and_the_global_launcher_no_longer_can() {
     let d = setup();
     registry(d).register_preset(1, definition(true));
@@ -360,102 +283,6 @@ fn a_fixed_roster_names_its_seater_and_an_open_game_names_none() {
     );
     assert_eq!(registry(other).create_game(season), 1);
     assert_eq!(IRegistrarDispatcher { contract_address: other.games }.game_seater(1), 0.try_into().unwrap());
-}
-
-#[test]
-fn launcher_roster_batches_block_early_play_and_report_transaction_progress() {
-    let d = setup();
-    let preset = definition(true);
-    registry(d).register_preset(1, preset);
-    let game_id = registry(d).create_game(CreateGameParams { roster: roster(2), ..params(true) });
-    assert!(d.actor != super::authority());
-    let command = crate::commands::Command::SettleBlitzRoster;
-    super::play_fixture::assert_preflight_rejection(
-        d.games,
-        super::play_fixture::TestAction { game_id, actor: d.actor, command: crate::commands::Command::LeaveGuild },
-        205,
-    );
-    let launcher = super::bind_authority(d);
-    super::season_lifecycle::execute_batch_in_game(launcher, game_id, command, 205, 1);
-    assert!(!IGameDispatcher { contract_address: d.games }.game(game_id).ready);
-    super::play_fixture::assert_preflight_rejection(
-        d.games,
-        super::play_fixture::TestAction { game_id, actor: d.actor, command: crate::commands::Command::LeaveGuild },
-        206,
-    );
-    super::season_lifecycle::execute_batch_in_game(launcher, game_id, command, 207, 0);
-    assert!(IGameDispatcher { contract_address: d.games }.game(game_id).ready);
-    super::season_lifecycle::execute_batch_in_game(launcher, game_id, command, 208, 0);
-    let games = IGameDispatcher { contract_address: d.games };
-    let end_at = games.game(game_id).end_at;
-    let finalize = crate::commands::Command::MarkGameSettled;
-    assert!(!super::resource_commands::execute_in_game(d, game_id, finalize, end_at - 1));
-    assert!(!games.game(game_id).settled);
-    super::season_lifecycle::execute_batch_in_game(d, game_id, finalize, end_at, 0);
-    assert!(games.game(game_id).settled);
-    assert_eq!(status_at(games.game(game_id), end_at), GameStatus::Settled);
-}
-
-#[test]
-fn roster_settlement_displaces_an_army_without_a_stale_position_or_home_entry() {
-    let d = setup();
-    let preset = definition(true);
-    registry(d).register_preset(1, preset);
-    let game_id = registry(d).create_game(CreateGameParams { roster: roster(1), ..params(true) });
-    let rules = IGameDispatcher { contract_address: d.games }.rules(game_id);
-    let center = 2147483646 - rules.map_center_offset;
-    let origin = *crate::settlement_grid::settlement_location(
-        crate::troops::Coord { alt: false, x: center, y: center }, preset.settlement.mode, preset.settlement.spacing, 0,
-    )
-        .at(0);
-    let home = ResourceKey { game_id, entity_id: 10000 };
-    let army = crate::troops::ExplorerKey { game_id, explorer_id: 10001 };
-    snforge_std::interact_with_state(
-        d.games,
-        || {
-            crate::logic::structures::StructureState::create(
-                home,
-                crate::structures::StructureRecord {
-                    owner: d.actor,
-                    base: crate::structures::StructureBase {
-                        category: 1, troop_max_explorer_count: 1, ..Default::default(),
-                    },
-                    resources_packed: 0,
-                    metadata: Default::default(),
-                },
-            );
-        },
-    );
-    super::resource_commands::set_explorer_fixture(
-        d.games,
-        army,
-        crate::troops::ExplorerTroops {
-            owner: home.entity_id,
-            coord: origin,
-            troops: crate::troops::Troops {
-                category: crate::troops::TroopType::Knight,
-                tier: crate::troops::TroopTier::T1,
-                count: RESOURCE_PRECISION,
-                stamina: crate::troops::Stamina { amount: 120, settled_at: 0, remainder: 0 }.into(),
-                boosts: Default::default(),
-                battle_cooldown_end: 0,
-            },
-        },
-    );
-    crate::tests::state::assert_spatial_indexes(d.games, game_id, array![10000, 10001].span(), array![origin].span());
-    super::season_lifecycle::execute_batch_in_game(
-        super::bind_authority(d), game_id, Command::SettleBlitzRoster, 205, 0,
-    );
-    let moved = GameState { contract_address: d.games }.resolved_explorer(army).unwrap();
-    assert!(moved.coord != origin);
-    assert_eq!(moved.owner, home.entity_id);
-    crate::tests::state::assert_spatial_indexes(
-        d.games, game_id, array![1, 10000, 10001].span(), array![origin, moved.coord].span(),
-    );
-    assert_eq!(
-        IStructureOperationsDispatcher { contract_address: d.games }.position(ResourceKey { game_id, entity_id: 1 }),
-        Some(origin),
-    );
 }
 
 #[test]

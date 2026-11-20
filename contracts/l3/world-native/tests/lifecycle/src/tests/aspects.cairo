@@ -124,7 +124,7 @@ fn held_realm_plays_its_own_order_and_refuses_a_chosen_one() {
 #[test]
 fn orders_round_trip_without_loot_suffix_order() {
     let (_, preset) = world_test_support::tests::preset_projection::current_definition("frontier-check");
-    let packed = crate::aspects::pack(preset.settlement.order_aspects).unwrap();
+    let packed = crate::aspects::pack(preset.settlement.order_aspects);
     for index in 0_u32..16 {
         assert_eq!(
             crate::aspects::order_aspect(packed, (index + 1).try_into().unwrap()),

@@ -3,31 +3,6 @@ pub use world_test_support::tests::settlement::*;
 
 #[test]
 #[feature("safe_dispatcher")]
-fn settlement_configuration_is_immutable_and_game_scoped() {
-    let deployment = setup(true);
-    let registry = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
-    let preset = play_fixture::fixture_preset(play_fixture::rules());
-    start_cheat_caller_address(deployment.games, deployment.actor);
-    assert!(registry.register_preset(20000, preset).is_err());
-    seed_settlement(deployment, 1, rules());
-    seed_settlement(deployment, 2, SettlementRules { mode: SettlementMode::Triple, ..rules() });
-    let views = ISettlementViewsDispatcher { contract_address: deployment.games };
-    assert!(views.settlement_rules(1).mode == SettlementMode::Single);
-    assert_eq!(views.realm_grants(1), grants());
-    assert_eq!(views.realm_grants(2), grants_for(crate::rules::ENTRY_ROSTER));
-    assert!(views.settlement_rules(2).mode == SettlementMode::Triple);
-    start_cheat_caller_address(deployment.games, authority());
-    let game = IGameDispatcher { contract_address: deployment.games }.game(1);
-    assert!(registry.register_preset(game.preset_id, preset).is_err());
-    assert!(
-        crate::settlement::ISettlementViewsSafeDispatcher { contract_address: deployment.games }
-            .settlement_rules(999)
-            .is_err(),
-    );
-}
-
-#[test]
-#[feature("safe_dispatcher")]
 fn settlement_pool_claims_are_distinct_and_game_scoped() {
     let deployment = setup(true);
     seed_settlement(deployment, 1, rules());
@@ -60,50 +35,6 @@ fn settlement_pool_claims_are_distinct_and_game_scoped() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn starting_troop_table_must_be_complete_before_configuration_commits() {
-    let deployment = setup(true);
-    let registry = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
-    let mut preset = play_fixture::fixture_preset(play_fixture::rules());
-    let mut incomplete = grants();
-    incomplete.starting_troops = incomplete.starting_troops.slice(0, 16);
-    start_cheat_caller_address(deployment.games, authority());
-    preset.settlement.realms = incomplete;
-    assert!(registry.register_preset(20000, preset).is_err());
-    preset.settlement.realms = grants();
-    registry.register_preset(20000, preset).unwrap();
-    seed_settlement(deployment, 1, rules());
-    let views = ISettlementViewsDispatcher { contract_address: deployment.games };
-    assert_eq!(views.realm_grants(1), grants());
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn realm_resource_table_rejects_invalid_ids_and_packing_overflow() {
-    let deployment = setup(true);
-    let registry = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
-    let mut preset = play_fixture::fixture_preset(play_fixture::rules());
-    start_cheat_caller_address(deployment.games, authority());
-    for resource in array![0_u8, 59, 255].span() {
-        let invalid = crate::settlement::RealmGrants { realm_resources: array![*resource].span(), ..grants() };
-        preset.settlement.realms = invalid;
-        assert!(registry.register_preset(20000, preset).is_err());
-    }
-    let mut too_many = array![];
-    for _ in 0_u32..17 {
-        too_many.append(3_u8);
-    }
-    let invalid = crate::settlement::RealmGrants { realm_resources: too_many.span(), ..grants() };
-    preset.settlement.realms = invalid;
-    assert!(registry.register_preset(20000, preset).is_err());
-    preset.settlement.realms = grants();
-    registry.register_preset(20000, preset).unwrap();
-    seed_settlement(deployment, 1, rules());
-    let views = ISettlementViewsDispatcher { contract_address: deployment.games };
-    assert_eq!(views.realm_grants(1), grants());
-}
-
-#[test]
-#[feature("safe_dispatcher")]
 fn entry_entitlements_require_operator_and_compare_every_registration_field() {
     let deployment = setup(true);
     let operator = 0x444.try_into().unwrap();
@@ -125,79 +56,6 @@ fn entry_entitlements_require_operator_and_compare_every_registration_field() {
     assert!(ledger.register_entitlement(key, crate::settlement::EntryEntitlement { pass_kind: 1, ..entry }).is_err());
     assert!(ledger.entry_entitlement(key).unwrap() == Some(entry));
     assert!(ledger.entry_entitlement(crate::settlement::EntryKey { game_id: 2, ..key }).unwrap().is_none());
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn village_placement_shares_reservations_with_eternum_entries() {
-    let deployment = setup(true);
-    let games = IGameDispatcher { contract_address: deployment.games };
-    super::play_fixture::seed_game(
-        deployment.games,
-        3,
-        games.game(1),
-        crate::rules::SliceRules {
-            mode_rules: super::play_fixture::BLITZ_RULES,
-            entry_rule: crate::rules::ENTRY_ROSTER,
-            command_mask: super::play_fixture::BLITZ_COMMAND_MASK,
-            ..play_fixture::rules(),
-        },
-    );
-    seed_settlement(deployment, 1, SettlementRules { registration_limit: 2, ..rules() });
-    seed_settlement(deployment, 3, SettlementRules { mode: SettlementMode::Triple, registration_limit: 2, ..rules() });
-    let map = deployment.games;
-    let pool = ISettlementPoolDispatcher { contract_address: map };
-    let _ = ISettlementPoolSafeDispatcher { contract_address: map };
-    start_cheat_caller_address(map, deployment.actor);
-    start_cheat_caller_address(map, deployment.games);
-    for game_id in array![1_u32, 3] {
-        let mut seen = array![];
-        for village in 0..8_u32 {
-            remember_distinct(
-                ref seen,
-                array![
-                    pool
-                        .claim_village(
-                            game_id, 0, village.into() + 100, crate::tests::map_center(deployment.games, game_id),
-                        ),
-                ]
-                    .span(),
-            );
-        }
-        if game_id == 1 {
-            let placement = ISeasonPlacementDispatcher { contract_address: map };
-            for registered in 0..2_u16 {
-                remember_distinct(
-                    ref seen,
-                    array![
-                        placement
-                            .claim_season_settlement(
-                                game_id,
-                                registered,
-                                registered.into() + 17,
-                                crate::tests::map_center(deployment.games, game_id),
-                            ),
-                    ]
-                        .span(),
-                );
-            }
-        }
-        for village in 0..8_u32 {
-            remember_distinct(
-                ref seen,
-                array![
-                    pool
-                        .claim_village(
-                            game_id, 2, village.into() + 300, crate::tests::map_center(deployment.games, game_id),
-                        ),
-                ]
-                    .span(),
-            );
-        }
-        assert!(pool.village_pool(game_id, crate::tests::map_center(deployment.games, game_id)).available.len() == 5);
-        let progress = ISettlementViewsDispatcher { contract_address: deployment.games }.settlement_progress(game_id);
-        assert!(progress.registered == 0 && progress.realm_count == 0, "planner changed entry counters");
-    }
 }
 
 #[test]

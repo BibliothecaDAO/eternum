@@ -6,4 +6,5 @@ pub mod quests;
 pub mod race;
 pub mod resources;
 pub mod rules;
+pub mod settlement;
 pub mod structures;

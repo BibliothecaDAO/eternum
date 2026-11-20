@@ -2,7 +2,11 @@ use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use crate::resources::ResourceKey;
 
 pub fn rules(game_id: u32) -> Option<u128> {
-    crate::logic::preset_record::for_game(game_id).order_aspects.read()
+    if crate::logic::preset_record::for_game(game_id).aspects.read() {
+        Some(crate::aspects::pack(crate::balance::settlement::ORDER_ASPECTS.span()))
+    } else {
+        None
+    }
 }
 
 pub fn enabled(game_id: u32) -> bool {

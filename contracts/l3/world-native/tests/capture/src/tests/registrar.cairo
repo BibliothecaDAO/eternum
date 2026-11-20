@@ -120,7 +120,6 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
     preset.rules.map_config.camp_win_probability = 0;
     preset.rules.map_config.shards_mines_win_probability = 0;
     preset.rules.mode_rules = HOME_REWARDS | crate::rules::UNOWNED_TARGETS | crate::rules::DEPTH_CONTENTS;
-    preset.settlement.spacing = 1024;
     let mut grants = array![];
     for grant in preset.settlement.realms.resources {
         grants
@@ -289,7 +288,6 @@ fn depth_entry_requires_spire_lore_and_keeps_stamina_at_every_depth() {
     preset.rules.map_config.shards_mines_win_probability = 0;
     preset.rules.mode_rules = HOME_REWARDS | crate::rules::DEPTH_CONTENTS;
     preset.rules.command_mask = 0xffffffffffffffffffffffffffffffff;
-    preset.settlement.spacing = 1024;
     preset.structures.board = frontier.structures.board;
     preset.structures.research = frontier.structures.research;
     registry(d).register_preset(1, preset);
@@ -650,55 +648,6 @@ fn creation_emits_release_and_overrides_without_per_game_configuration_rows() {
 }
 
 #[test]
-fn launcher_rotation_preserves_roster_batch_settlements() {
-    let first_run = setup();
-    let (helper_account, _) = super::deploy_player(3, super::GUARDIAN);
-    let helper_run = super::Deployment { actor: helper_account, ..setup() };
-    let preset = definition(true);
-    let request = CreateGameParams { roster: roster(1), ..params(true) };
-    registry(first_run).register_preset(1, preset);
-    registry(helper_run).register_preset(1, preset);
-    let game_id = registry(first_run).create_game(request);
-    assert_eq!(registry(helper_run).create_game(request), game_id);
-    let first_games = IGameDispatcher { contract_address: first_run.games };
-    let helper_games = IGameDispatcher { contract_address: helper_run.games };
-    let game = first_games.game(game_id);
-    for d in array![first_run, helper_run] {
-        super::resource_commands::set_fixture(
-            d.games, selector!("games"), selector!("games"), array![game_id.into()].span(), game,
-        );
-        // Each run seats as its own actor: name it the game's seater.
-        super::resource_commands::set_fixture(
-            d.games, selector!("registrar"), selector!("seaters"), array![game_id.into()].span(), d.actor,
-        );
-    }
-    assert!(helper_run.actor != first_run.actor);
-    let first_views = ISettlementViewsDispatcher { contract_address: first_run.games };
-    let helper_views = ISettlementViewsDispatcher { contract_address: helper_run.games };
-    super::play_fixture::assert_preflight_rejection(
-        first_run.games,
-        super::play_fixture::TestAction { game_id, actor: super::authority(), command: Command::SettleBlitzRoster },
-        205,
-    );
-    for batch in 0_u64..2 {
-        assert!(execute_in_game(first_run, game_id, Command::SettleBlitzRoster, 205 + batch));
-        assert!(execute_in_game(helper_run, game_id, Command::SettleBlitzRoster, 205 + batch));
-        assert_eq!(first_views.blitz_settlement_order(game_id), helper_views.blitz_settlement_order(game_id));
-        assert_eq!(first_views.settlement_progress(game_id), helper_views.settlement_progress(game_id));
-        assert_eq!(first_games.game(game_id), helper_games.game(game_id));
-    }
-    let next = next_setup_entity(first_run, game_id);
-    assert_eq!(next, next_setup_entity(helper_run, game_id));
-    for setup_id in 1..next {
-        let entity_id: u64 = setup_id.into();
-        let key = ResourceKey { game_id, entity_id };
-        let first = IStructureOperationsDispatcher { contract_address: first_run.games }.structure(key);
-        let helper = IStructureOperationsDispatcher { contract_address: helper_run.games }.structure(key);
-        assert_eq!(first, helper);
-    }
-}
-
-#[test]
 fn frontier_refuses_off_map_economy_commands_before_reading_positions() {
     let d = setup();
     let mut preset = definition(false);
@@ -708,7 +657,6 @@ fn frontier_refuses_off_map_economy_commands_before_reading_positions() {
     preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DEPTH_CONTENTS;
     preset.rules.map_config.camp_win_probability = 0;
     preset.rules.map_config.shards_mines_win_probability = 0;
-    preset.settlement.spacing = 1024;
     preset
         .rules
         .command_mask = (*read_txt(@FileTrait::new("../fixtures/frontier-command-mask.txt")).at(0))

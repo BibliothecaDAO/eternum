@@ -27,7 +27,6 @@ pub fn store(commitment: felt252, definition: crate::presets::PresetDefinition) 
         crate::presets::IPresetSettlementLibraryDispatcher { class_hash: classes.placement },
         commitment,
         definition.settlement,
-        definition.rules.entry_rule,
     );
     write_economy(preset, commitment, definition.economy);
 }
@@ -74,23 +73,26 @@ fn write_structures(preset: PresetWrite, structures: crate::presets::StructurePr
     write_upgrades(preset, structures.upgrade_limits, structures.upgrades);
 }
 
-pub fn store_settlement(commitment: felt252, settlement: crate::presets::SettlementPreset, entry_rule: u8) {
+pub fn store_settlement(commitment: felt252, settlement: crate::presets::SettlementPreset) {
     crate::logic::release::assert_authority();
-    let preset = crate::state::write().presets.entry(commitment);
-    preset
-        .settlement_mode
-        .write(
-            if entry_rule == crate::rules::ENTRY_ROSTER {
-                settlement.mode
-            } else {
-                crate::settlement::SettlementMode::Single
-            },
-        );
-    preset.settlement_spacing.write(settlement.spacing);
-    preset.order_aspects.write(crate::aspects::pack(settlement.order_aspects));
-    write_realm_grants(preset, settlement.realms, entry_rule);
-    write_villages(preset, settlement.villages);
-    preset.spires.write(settlement.spires);
+    assert_release_settlement(settlement);
+    crate::state::write().presets.entry(commitment).aspects.write(!settlement.order_aspects.is_empty());
+}
+
+fn assert_release_settlement(settlement: crate::presets::SettlementPreset) {
+    assert!(
+        settlement.mode == crate::settlement::SettlementMode::Single
+            && settlement.spacing == crate::logic::settlement::spacing(),
+        "settlement is not the release's",
+    );
+    assert!(
+        settlement.order_aspects.is_empty()
+            || settlement.order_aspects == crate::balance::settlement::ORDER_ASPECTS.span(),
+        "Aspects are not the release's",
+    );
+    assert!(settlement.realms == crate::logic::settlement::grants(), "realm grants are not the release's");
+    assert!(settlement.villages == crate::logic::village::rules(), "villages are not the release's");
+    assert!(settlement.spires.is_none(), "the release places no spires");
 }
 
 fn write_economy(preset: PresetWrite, commitment: felt252, economy: crate::presets::EconomyPreset) {
@@ -258,55 +260,6 @@ fn write_upgrades(
             preset.upgrade_costs.write((level, index), cost);
         }
         level += 1;
-    }
-}
-
-fn write_realm_grants(preset: PresetWrite, grants: crate::settlement::RealmGrants, entry_rule: u8) {
-    if entry_rule == crate::rules::ENTRY_ROSTER {
-        assert!(grants.starting_troops.is_empty(), "a fixed roster deals its troop types");
-    } else {
-        assert!(grants.starting_troops.len() == 17, "incomplete biome starting troops");
-    }
-    for index in 0..grants.starting_troops.len() {
-        preset.starting_troops.write((index + 1).try_into().unwrap(), *grants.starting_troops.at(index));
-    }
-    assert!(grants.realm_resources.len() <= 16, "realm resources exceed packed capacity");
-    preset.realm_resource_count.write(grants.realm_resources.len().try_into().unwrap());
-    for index in 0..grants.realm_resources.len() {
-        let resource = *grants.realm_resources.at(index);
-        assert!(resource >= 1 && resource <= 58, "invalid realm resource");
-        preset.realm_resources.write(index.try_into().unwrap(), resource);
-    }
-    preset.realm_grant_count.write(grants.resources.len());
-    for index in 0..grants.resources.len() {
-        preset.realm_grants.write(index, *grants.resources.at(index));
-    }
-}
-
-fn write_villages(preset: PresetWrite, rules: crate::village::VillageRules) {
-    assert!(rules.resource_pool.len() == 22, "incomplete village resource pool");
-    let mut total = 0_u128;
-    let mut seen = 0_u32;
-    for index in 0..22_u8 {
-        let choice = *rules.resource_pool.at(index.into());
-        assert!(
-            choice.weight > 0 && choice.resource_type > 0 && choice.resource_type <= 22,
-            "invalid village resource outcome",
-        );
-        let mut bit = 1_u32;
-        for _ in 0..choice.resource_type {
-            bit *= 2;
-        }
-        assert!((seen & bit) == 0, "duplicate village resource outcome");
-        seen = seen | bit;
-        total += choice.weight;
-        preset.village_pool.write(index, choice);
-    }
-    assert!(total > 0, "empty village resource pool");
-    preset.village_delay.write(rules.troop_delay_ticks);
-    preset.village_grant_count.write(rules.resources.len());
-    for index in 0..rules.resources.len() {
-        preset.village_grants.write(index, *rules.resources.at(index));
     }
 }
 

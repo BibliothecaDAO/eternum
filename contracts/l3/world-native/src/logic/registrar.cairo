@@ -46,12 +46,6 @@ pub mod RegistrarState {
             assert!(preset_id != 0, "preset id zero is reserved");
             assert!(self.data.registrar.presets.read(preset_id) == 0, "preset id already registered");
             crate::presets::validate(definition);
-            crate::settlement_grid::validate_spacing(definition.settlement.spacing);
-            if crate::rules::rule_enabled(definition.rules, crate::rules::SPIRES) {
-                crate::spires::validate(definition.settlement.spires.expect('missing season spires'));
-            } else {
-                assert!(definition.settlement.spires.is_none(), "spires are disabled");
-            }
             let commitment = crate::presets::commitment(definition);
             assert!(commitment != 0, "empty preset commitment");
             crate::logic::preset_record::store(commitment, definition);
@@ -91,7 +85,7 @@ pub mod RegistrarState {
                 day_unit_seconds: preset.rules.day_unit_seconds.read(),
                 armies_tick_seconds: crate::balance::rules::TICK_CONFIG.armies_tick_in_seconds,
                 entry_rule: preset.rules.entry_rule.read(),
-                spacing: preset.settlement_spacing.read(),
+                spacing: crate::logic::settlement::spacing(),
             };
             crate::registrar::validate_params(params, rules);
             let mut encoded = array![];

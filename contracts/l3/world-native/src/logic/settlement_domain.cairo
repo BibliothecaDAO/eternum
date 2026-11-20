@@ -1,7 +1,7 @@
 #[starknet::contract]
 pub mod SettlementLogic {
     use core::num::traits::Zero;
-    use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
+    use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
     use starknet::{ContractAddress, get_caller_address};
     use crate::aspects::IAspectsDispatcherTrait;
     use crate::commands::ExecutionContext as DomainContext;
@@ -187,12 +187,8 @@ pub mod SettlementLogic {
     #[abi(embed_v0)]
     impl SettlementViews of crate::settlement::ISettlementViews<ContractState> {
         #[cfg(feature: "test_support")]
-        fn blitz_settlement_order(self: @ContractState, game_id: u32) -> Span<u8> {
-            crate::logic::settlement::blitz_order(game_id)
-        }
-        #[cfg(feature: "test_support")]
         fn realm_grants(self: @ContractState, game_id: u32) -> RealmGrants {
-            crate::logic::settlement::grants(game_id)
+            crate::logic::settlement::grants()
         }
         #[cfg(feature: "test_support")]
         fn settlement_rules(self: @ContractState, game_id: u32) -> SettlementRules {
@@ -238,41 +234,7 @@ pub mod SettlementLogic {
         fn settle_blitz_roster(
             ref self: ContractState, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
         ) -> u64 {
-            let context = crate::commands::execution_context(game_id, context);
-            let game = context.game.unbox();
-            assert!(context.rules.unbox().entry_rule == crate::rules::ENTRY_ROSTER, "not a Blitz game");
-            assert!(context.timestamp >= game.start_settling_at, "settling not started");
-            let roster_size = self.data.registrar.roster_sizes.read(game_id);
-            assert!(roster_size != 0, "game has no Blitz roster");
-            let progress = self.settlements.data.settlements.progress.read(game_id);
-            if progress.registered.into() == roster_size {
-                return (0);
-            }
-            let mut root = context.raw_root;
-            let seed = crate::random::game_root(ref root, game_id);
-            if progress.registered == 0 {
-                self.settlements.initialize_blitz_order(game_id, roster_size, seed);
-            }
-            let seat = progress.registered.into();
-            assert!(seat < self.data.settlements.blitz_order_size.read(game_id), "seat outside settlement order");
-            let player_index = self.data.settlements.blitz_order.read((game_id, seat));
-            assert!(Into::<u8, u32>::into(player_index) < roster_size, "seat outside Blitz roster");
-            let player = self.data.registrar.roster_players.entry((game_id, player_index.into())).account.read();
-            self.settlements.record_entry(EntryKey { game_id, owner: player }, player);
-            let rules = crate::logic::settlement::rules(game_id);
-            let coords = crate::settlement_grid::settlement_location(
-                crate::settlement_grid::map_center(context.rules.unbox().map_center_offset),
-                rules.mode,
-                rules.spacing,
-                progress.registered.into(),
-            );
-            let troops = crate::settlement::deal_troop_types(seed, coords.len());
-            self.create_settlement_realms(game_id, player, coords, troops, context);
-            let remaining: u64 = (roster_size - Into::<u16, u32>::into(progress.registered) - 1).into();
-            if remaining == 0 {
-                crate::logic::game::mark_roster_ready(game_id);
-            }
-            (remaining)
+            panic!("Blitz rosters are not settled in this release")
         }
     }
     #[generate_trait]
@@ -379,47 +341,6 @@ pub mod SettlementLogic {
             assert!(entitlement.pass_kind == 1, "season pass required");
             let realm_id = entitlement.realm_id.try_into().expect('realm id exceeds u32');
             (realm_id, crate::realms::decode_entitlement(entitlement.metadata_1))
-        }
-        fn create_settlement_realms(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            coords: Span<crate::troops::Coord>,
-            troops: Span<crate::troops::TroopType>,
-            context: DomainContext,
-        ) -> u64 {
-            let structures = ISettlementCreationLibraryDispatcher {
-                class_hash: self.release.classes(game_id).structures.read(),
-            };
-            let mut progress = self.settlements.data.settlements.progress.read(game_id);
-            let grants = crate::logic::settlement::grants(game_id);
-            let mut first_realm = 0;
-            for (coord, category) in coords.into_iter().zip(troops) {
-                progress.realm_count += 1;
-                let realm = structures
-                    .create_settlement(
-                        game_id,
-                        actor,
-                        *coord,
-                        SettlementCreation::Realm(
-                            RealmCreation {
-                                realm_id: progress.realm_count,
-                                traits: crate::realms::RealmTraits {
-                                    wonder: 1, order: 0, resources: grants.realm_resources,
-                                },
-                                troops: crate::settlement::StartingTroops::Dealt(*category),
-                                activate_economy: true,
-                            },
-                        ),
-                        crate::commands::action_context(context),
-                    );
-                if first_realm == 0 {
-                    first_realm = realm;
-                }
-            }
-            progress.registered += 1;
-            self.settlements.write_progress(game_id, progress);
-            first_realm
         }
     }
 }

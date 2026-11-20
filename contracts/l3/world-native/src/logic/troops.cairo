@@ -931,7 +931,7 @@ pub mod troop_helpers {
         }
 
         fn expedition_spacing(self: @TContractState, game_id: u32) -> u32 {
-            crate::logic::settlement::rules(game_id).spacing
+            crate::logic::settlement::spacing()
         }
 
         fn expire_home_armies(

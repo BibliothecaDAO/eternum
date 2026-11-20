@@ -122,7 +122,7 @@ fn recorded_second_wind_multiplies_mist_tide_and_changes_real_exploration_refill
             let rules = crate::logic::game::rules(game_id);
             crate::logic::stamina_effects::refill(
                 home,
-                crate::deep::center(crate::logic::preset_record::for_game(game_id).settlement_spacing.read()),
+                crate::deep::center(crate::logic::settlement::spacing()),
                 ref bar,
                 ref boosts,
                 maximum,
