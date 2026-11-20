@@ -1,4 +1,4 @@
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 
 pub fn prepare(game_id: u32, context: crate::commands::ActionContext) {
     let context = crate::commands::execution_context(game_id, context);

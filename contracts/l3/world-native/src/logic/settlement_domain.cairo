@@ -1,7 +1,7 @@
 #[starknet::contract]
 pub mod SettlementLogic {
     use core::num::traits::Zero;
-    use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
+    use starknet::storage::StorageMapReadAccess;
     use starknet::{ContractAddress, get_caller_address};
     use crate::aspects::IAspectsDispatcherTrait;
     use crate::commands::ExecutionContext as DomainContext;

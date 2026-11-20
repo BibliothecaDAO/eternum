@@ -1,4 +1,3 @@
-use starknet::storage::StoragePointerReadAccess;
 use crate::stamina::{StaminaSourceTrait, StaminaTrait};
 use crate::troops::ExplorerKey;
 

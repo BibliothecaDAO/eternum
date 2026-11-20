@@ -1,7 +1,6 @@
 #[starknet::contract]
 pub mod PrizesLogic {
     use starknet::ContractAddress;
-    use starknet::storage::StoragePointerReadAccess;
     use crate::events::RowSet;
     use crate::geometry::tile_key;
     use crate::logic::lords::LordsState;

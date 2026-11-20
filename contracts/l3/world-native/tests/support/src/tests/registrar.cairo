@@ -47,7 +47,7 @@ pub fn safe(d: super::Deployment, caller: starknet::ContractAddress) -> IRegistr
     IRegistrarSafeDispatcher { contract_address: d.games }
 }
 pub fn bag_seconds() -> u64 {
-    crate::day_schedule::UNITS_PER_BAG * crate::balance::rules::SWITCHES.day_unit_seconds.into()
+    crate::days::UNITS_PER_BAG * crate::balance::rules::SWITCHES.day_unit_seconds.into()
 }
 pub fn lore(tier: u8) -> u64 {
     let mut learned = 0;

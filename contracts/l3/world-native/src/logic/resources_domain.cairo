@@ -1,6 +1,5 @@
 #[starknet::contract]
 pub mod ResourcesLogic {
-    use starknet::storage::StoragePointerReadAccess;
     use crate::events::RowSet;
     use crate::logic::arrivals::ArrivalState;
     use crate::logic::production::ProductionState;

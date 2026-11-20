@@ -182,7 +182,7 @@ pub mod StructureState {
 pub mod StructuresLogic {
     #[cfg(feature: "test_support")]
     use starknet::get_block_timestamp;
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_caller_address};
     use crate::buildings::{Building, BuildingKey};
     use crate::discovery::Discovery;

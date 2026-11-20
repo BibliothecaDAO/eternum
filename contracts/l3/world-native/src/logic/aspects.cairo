@@ -1,4 +1,4 @@
-use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
+use starknet::storage::StorageMapReadAccess;
 use crate::resources::ResourceKey;
 
 pub fn rules() -> u128 {

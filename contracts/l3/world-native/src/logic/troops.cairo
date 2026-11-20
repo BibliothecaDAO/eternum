@@ -884,7 +884,6 @@ pub mod TroopsLogic {
 }
 
 pub mod troop_helpers {
-    use starknet::storage::StoragePointerReadAccess;
     use crate::commands::ExecutionContext;
     use crate::game::assert_playing;
     use crate::geometry::tile_key;

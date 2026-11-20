@@ -1,7 +1,6 @@
 #[starknet::component]
 pub mod RelicState {
     use starknet::ContractAddress;
-    use starknet::storage::StoragePointerReadAccess;
     use crate::commands::ExecutionContext;
     use crate::game::assert_playing;
     use crate::logic::release::ReleaseState;

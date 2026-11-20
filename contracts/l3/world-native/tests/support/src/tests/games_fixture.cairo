@@ -376,7 +376,6 @@ pub mod GamesFixture {
             coord: crate::troops::Coord,
             grants: Span<(u8, u128)>,
         ) -> u64 {
-            crate::tests::play_fixture::prepare_fixture_home(game_id, actor);
             crate::structures::IStructureOperationsDispatcherTrait::provision_realm(
                 crate::structures::IStructureOperationsLibraryDispatcher {
                     class_hash: fixture_class(game_id, crate::slots::STRUCTURES),
@@ -400,7 +399,6 @@ pub mod GamesFixture {
             creation: crate::settlement::SettlementCreation,
             context: crate::commands::ActionContext,
         ) -> u64 {
-            crate::tests::play_fixture::prepare_fixture_home(game_id, actor);
             crate::settlement::ISettlementCreationDispatcherTrait::create_settlement(
                 crate::settlement::ISettlementCreationLibraryDispatcher {
                     class_hash: fixture_class(game_id, crate::slots::STRUCTURES),
@@ -1325,6 +1323,12 @@ pub mod GamesFixture {
             )
         }
     }
+    fn ledger_operator_dispatcher(game_id: u32) -> crate::entry::ILedgerOperatorLibraryDispatcher {
+        crate::entry::ILedgerOperatorLibraryDispatcher {
+            class_hash: crate::logic::release::class_of(game_id, crate::slots::BRIDGE),
+        }
+    }
+
     #[starknet::embeddable]
     pub impl LedgerOperatorFixture<
         TContractState, +Drop<TContractState>,

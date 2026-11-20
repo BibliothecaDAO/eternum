@@ -3,7 +3,7 @@ pub use starknet::ContractAddress;
 pub use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
 pub use crate::commands::Command;
 pub use crate::registrar::{IRegistrarDispatcher, IRegistrarDispatcherTrait};
-pub use crate::settlement::ISettlementViewsDispatcherTrait;
+pub use crate::settlement::ISettlementEntryDispatcherTrait;
 
 #[derive(Copy, Drop)]
 pub struct TestAction {
@@ -144,6 +144,6 @@ pub fn settled_home(
     );
     let settle = Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(realm_id), order: None });
     assert!(play(d.games, TestAction { game_id, actor, command: settle }, 987654321, timestamp), "the home settles");
-    let views = crate::settlement::ISettlementViewsDispatcher { contract_address: d.games };
-    crate::resources::ResourceKey { game_id, entity_id: views.settled_realm(game_id, realm_id) }
+    let entry = crate::settlement::ISettlementEntryDispatcher { contract_address: d.games };
+    crate::resources::ResourceKey { game_id, entity_id: entry.settled_realm(game_id, realm_id) }
 }
