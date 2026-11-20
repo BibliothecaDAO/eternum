@@ -1,12 +1,10 @@
 #[starknet::component]
 pub mod RelicState {
-    use games_storage::release::LogicClasses;
     use starknet::ContractAddress;
     use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
     use crate::commands::ExecutionContext;
     use crate::game::{IPointsDispatcherTrait, IPointsLibraryDispatcher, assert_playing};
     use crate::logic::release::ReleaseState;
-    use crate::logic::release::ReleaseState::InternalTrait as LifeInternalTrait;
     use crate::relics::{
         ApplyRelic, IRelicMapDispatcherTrait, IRelicMapLibraryDispatcher, IRelicProductionDispatcherTrait,
         IRelicProductionLibraryDispatcher, IRelicTroopsDispatcherTrait, IRelicTroopsLibraryDispatcher, OpenChest,
@@ -65,13 +63,14 @@ pub mod RelicState {
             let context = crate::commands::execution_context(game_id, context);
 
             self.assert_command(game_id, context.timestamp, context);
-            let classes = self.logic_classes(game_id);
             let explorer = crate::logic::troops::command_explorer(
                 ExplorerKey { game_id, explorer_id: command.explorer_id }, Some(actor), context.timestamp, context,
             );
             assert!(explorer.troops.count != 0, "explorer is dead");
             assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to chest");
-            let chest_id = IRelicMapLibraryDispatcher { class_hash: classes.raid.read() }
+            let chest_id = IRelicMapLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(game_id, crate::slots::ECONOMY),
+            }
                 .consume_relic_chest(game_id, command.coord);
             assert!(context.rules.unbox().day_unit_seconds == 0, "day games have no resource chests");
             self.pay_chest(game_id, actor, command, chest_id, explorer.owner, context);
@@ -240,7 +239,7 @@ pub mod RelicState {
             if context.rules.unbox().day_unit_seconds != 0 {
                 crate::expeditions::ISiteRewardsDispatcherTrait::pay_expedition_site(
                     crate::expeditions::ISiteRewardsLibraryDispatcher {
-                        class_hash: self.logic_classes(site.game_id).resources.read(),
+                        class_hash: crate::logic::release::class_of(site.game_id, crate::slots::RESOURCES),
                     },
                     site,
                     explorer_key,
@@ -325,7 +324,9 @@ pub mod RelicState {
             let explorer = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
             let relic = crate::logic::army_relics::activate(key, index, command.relic_id, context.timestamp);
             if relic.kind == crate::army_relics::RelicKind::FarEye {
-                IRelicMapLibraryDispatcher { class_hash: self.logic_classes(game_id).raid.read() }
+                IRelicMapLibraryDispatcher {
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::ECONOMY),
+                }
                     .reveal_relic_tiles(
                         key,
                         explorer.coord,
@@ -391,7 +392,7 @@ pub mod RelicState {
                     );
             }
             let points = config.victory_points_grant_config.relic_open_points.into();
-            IPointsLibraryDispatcher { class_hash: get_dep_component!(@self, Life).classes(game_id).season.read() }
+            IPointsLibraryDispatcher { class_hash: crate::logic::release::class_of(game_id, crate::slots::SEASON) }
                 .register_relic_points(game_id, actor, crate::commands::action_context(context));
             self.record_chest_opened(game_id, actor, command, chest, relics, points, context.timestamp);
         }
@@ -476,13 +477,10 @@ pub mod RelicState {
                     },
                 );
         }
-        fn logic_classes(
-            self: @ComponentState<TContractState>, game_id: u32,
-        ) -> starknet::storage::StoragePointer<LogicClasses> {
-            get_dep_component!(self, Life).classes(game_id)
-        }
         fn resources(self: @ComponentState<TContractState>, game_id: u32) -> IResourceOperationsLibraryDispatcher {
-            IResourceOperationsLibraryDispatcher { class_hash: self.logic_classes(game_id).resources.read() }
+            IResourceOperationsLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(game_id, crate::slots::RESOURCES),
+            }
         }
         fn assert_command(
             self: @ComponentState<TContractState>,
@@ -501,12 +499,13 @@ pub mod RelicState {
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
         ) -> u64 {
-            let classes = self.logic_classes(game_id);
             if command.recipient == Recipient::Explorer {
                 let explorer = crate::logic::troops::command_explorer(
                     ExplorerKey { game_id, explorer_id: command.entity_id }, Some(actor), timestamp, game_context,
                 );
-                IRelicTroopsLibraryDispatcher { class_hash: classes.troops.read() }
+                IRelicTroopsLibraryDispatcher {
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::TROOPS),
+                }
                     .apply_troop_relic(
                         game_id, actor, command, rule, timestamp, crate::commands::action_context(game_context),
                     );
@@ -515,12 +514,16 @@ pub mod RelicState {
                 let key = ResourceKey { game_id, entity_id: command.entity_id };
                 assert!(crate::logic::structures::owner(key) == actor, "actor does not own structure");
                 if command.recipient == Recipient::StructureProduction {
-                    IRelicProductionLibraryDispatcher { class_hash: classes.production.read() }
+                    IRelicProductionLibraryDispatcher {
+                        class_hash: crate::logic::release::class_of(game_id, crate::slots::PRODUCTION),
+                    }
                         .apply_production_relic(
                             key, command.relic_id, rule, timestamp, crate::commands::action_context(game_context),
                         );
                 } else {
-                    IRelicTroopsLibraryDispatcher { class_hash: classes.troops.read() }
+                    IRelicTroopsLibraryDispatcher {
+                        class_hash: crate::logic::release::class_of(game_id, crate::slots::TROOPS),
+                    }
                         .apply_troop_relic(
                             game_id, actor, command, rule, timestamp, crate::commands::action_context(game_context),
                         );

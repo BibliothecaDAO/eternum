@@ -86,6 +86,17 @@ async function readArrivalConstants(root) {
   return { SLOTS_PER_DAY };
 }
 
+export async function readLogicSlots(root) {
+  const { FRONTIER_SLOTS, ...slots } = unsignedConstants(await readFile(new URL("src/slots.cairo", root), "utf8"), "8");
+  const ordered = Object.entries(slots).sort(([, left], [, right]) => left - right);
+  if (ordered.length !== FRONTIER_SLOTS || ordered.some(([, slot], index) => slot !== index))
+    throw new Error("Cairo logic slots must number 0 to FRONTIER_SLOTS - 1");
+  return ordered.map(([constant, slot]) => {
+    const name = constant.toLowerCase();
+    return { slot, name, contract: `${name[0].toUpperCase()}${name.slice(1)}Logic` };
+  });
+}
+
 /** Release behavior is not part of the immutable fact wire schema. */
 export async function readReleaseConstants(root) {
   return unsignedConstants(await readFile(new URL("src/logic/release.cairo", root), "utf8"));

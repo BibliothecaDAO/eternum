@@ -163,7 +163,7 @@ pub mod ResourcesLogic {
             if category == crate::taxonomy::BITCOIN_MINE_CATEGORY {
                 crate::bitcoin::IBitcoinFundingDispatcherTrait::register_bitcoin_structure(
                     crate::bitcoin::IBitcoinFundingLibraryDispatcher {
-                        class_hash: self.release.classes(key.game_id).season.read(),
+                        class_hash: crate::logic::release::class_of(key.game_id, crate::slots::SEASON),
                     },
                     key,
                     category,

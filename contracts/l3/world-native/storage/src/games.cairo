@@ -1,5 +1,5 @@
-use starknet::ContractAddress;
 use starknet::storage::Map;
+use starknet::{ClassHash, ContractAddress};
 use crate::release::Release;
 
 #[starknet::storage_node]
@@ -43,6 +43,7 @@ pub struct GamesStorage<
     pub launcher: ContractAddress,
     pub presets: Map<felt252, TPreset>,
     pub releases: Map<u32, Release>,
+    pub release_classes: Map<(u32, u8), ClassHash>,
     pub game_releases: Map<u32, u32>,
     pub game_creation_releases: Map<u32, u32>,
     pub open_releases: Map<u8, u32>,

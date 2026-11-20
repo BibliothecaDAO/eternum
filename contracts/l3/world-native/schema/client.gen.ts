@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "6efb2e919dd1a172159bba7a9c90c0f8ae7b53992bb1835acd13acf19a1e1f1f";
+export const nativeFactSchemaIdentity = "dbe561af36a04f7cf39c5cf6c6bccf862398ee39ec3bb853a1283f8e20627a3e";
 export const nativeIdentifiers = {
   "rule": {
     "MAX_BLITZ_ROSTER_PLAYERS": 24,

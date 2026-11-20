@@ -45,16 +45,19 @@ pub mod GamesTest {
         authentication: Authentication,
         release_id: u32,
         release: crate::logic::release::Release,
+        classes: Span<starknet::ClassHash>,
         vrf_public_key: realms_vrf_verifier::vendor::ecvrf::Point,
         l2_gas_bound: u64,
     ) {
-        self.entry.initializer(owner, launcher, authentication, release_id, release, vrf_public_key, l2_gas_bound);
+        self
+            .entry
+            .initializer(owner, launcher, authentication, release_id, release, classes, vrf_public_key, l2_gas_bound);
     }
     #[abi(embed_v0)]
     impl RootFixture of crate::tests::play_fixture::IPlayFixture<ContractState> {
         fn play_with_root(ref self: ContractState, game_id: u32, release_id: u32, command: Span<felt252>, root: u256) {
-            let actor = self.entry.validate_play(game_id, release_id, command);
-            self.entry.assign_settlement_home_before_roll(game_id, actor, command);
+            let actor = self.entry.validate_play(game_id, release_id);
+            self.entry.admit(game_id, actor, command);
             let applied = self.entry.apply_gameplay(game_id, actor, command, root, starknet::get_block_timestamp());
             self.last_applied.write(applied);
         }

@@ -1,5 +1,4 @@
 // Generated from schema/command-routes.mjs and production logic ABIs.
-use starknet::storage::StoragePointerReadAccess;
 
 #[derive(Copy, Drop)]
 pub struct CommandRoute {
@@ -18,10 +17,10 @@ pub const COMMAND_IDS: [u32; 56] = [
 ];
 pub const COMMAND_ROUTES: [Option<CommandRoute>; 77] = [
     Some(CommandRoute { logic: 6, selector: selector!("create_explorer"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 16, selector: selector!("explore"), items_offset: None, batch: false }),
+    Some(CommandRoute { logic: 15, selector: selector!("explore"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 12, selector: selector!("battle"), items_offset: Some(2), batch: false }),
-    Some(CommandRoute { logic: 16, selector: selector!("move_explorer"), items_offset: Some(1), batch: false }),
-    Some(CommandRoute { logic: 16, selector: selector!("toggle_alternate"), items_offset: None, batch: false }), None,
+    Some(CommandRoute { logic: 15, selector: selector!("move_explorer"), items_offset: Some(1), batch: false }),
+    Some(CommandRoute { logic: 15, selector: selector!("toggle_alternate"), items_offset: None, batch: false }), None,
     Some(CommandRoute { logic: 3, selector: selector!("level_up"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 7, selector: selector!("settle_blitz_roster"), items_offset: None, batch: true }),
     Some(CommandRoute { logic: 5, selector: selector!("activate_realm_economy"), items_offset: None, batch: false }),
@@ -81,17 +80,17 @@ pub const COMMAND_ROUTES: [Option<CommandRoute>; 77] = [
         },
     ),
     Some(CommandRoute { logic: 9, selector: selector!("set_construction_access"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 15, selector: selector!("open_relic_chest"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 15, selector: selector!("apply_relic"), items_offset: None, batch: false }),
+    Some(CommandRoute { logic: 14, selector: selector!("open_relic_chest"), items_offset: None, batch: false }),
+    Some(CommandRoute { logic: 14, selector: selector!("apply_relic"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 0, selector: selector!("close_season"), items_offset: None, batch: true }), None, None,
     None, None, None, None,
     Some(CommandRoute { logic: 10, selector: selector!("record_blitz_results"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 5, selector: selector!("craft_relic"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 14, selector: selector!("create_guild"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 14, selector: selector!("join_guild"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 14, selector: selector!("leave_guild"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 14, selector: selector!("set_guild_whitelist"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 14, selector: selector!("remove_guild_member"), items_offset: None, batch: false }),
+    Some(CommandRoute { logic: 13, selector: selector!("create_guild"), items_offset: None, batch: false }),
+    Some(CommandRoute { logic: 13, selector: selector!("join_guild"), items_offset: None, batch: false }),
+    Some(CommandRoute { logic: 13, selector: selector!("leave_guild"), items_offset: None, batch: false }),
+    Some(CommandRoute { logic: 13, selector: selector!("set_guild_whitelist"), items_offset: None, batch: false }),
+    Some(CommandRoute { logic: 13, selector: selector!("remove_guild_member"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 0, selector: selector!("mark_game_settled"), items_offset: None, batch: true }),
     Some(CommandRoute { logic: 6, selector: selector!("manage_troops"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 12, selector: selector!("guard_attack"), items_offset: None, batch: false }), None,
@@ -101,40 +100,15 @@ pub const COMMAND_ROUTES: [Option<CommandRoute>; 77] = [
         CommandRoute { logic: 5, selector: selector!("provision_and_upgrade_realm"), items_offset: None, batch: false },
     ),
     Some(CommandRoute { logic: 5, selector: selector!("set_entity_name"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 16, selector: selector!("enter_depth"), items_offset: None, batch: false }),
+    Some(CommandRoute { logic: 15, selector: selector!("enter_depth"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 3, selector: selector!("research"), items_offset: None, batch: false }), None,
-    Some(CommandRoute { logic: 16, selector: selector!("interact_site"), items_offset: None, batch: false }), None,
-    None, Some(CommandRoute { logic: 14, selector: selector!("claim_daily_quest"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 15, selector: selector!("choose_oath"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 14, selector: selector!("buy_seal"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 15, selector: selector!("buy_stamina"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 15, selector: selector!("reroll_oath"), items_offset: None, batch: false }),
+    Some(CommandRoute { logic: 15, selector: selector!("interact_site"), items_offset: None, batch: false }), None,
+    None, Some(CommandRoute { logic: 13, selector: selector!("claim_daily_quest"), items_offset: None, batch: false }),
+    Some(CommandRoute { logic: 14, selector: selector!("choose_oath"), items_offset: None, batch: false }),
+    Some(CommandRoute { logic: 13, selector: selector!("buy_seal"), items_offset: None, batch: false }),
+    Some(CommandRoute { logic: 14, selector: selector!("buy_stamina"), items_offset: None, batch: false }),
+    Some(CommandRoute { logic: 14, selector: selector!("reroll_oath"), items_offset: None, batch: false }),
 ];
-
-pub fn logic_class(
-    classes: starknet::storage::StoragePointer<games_storage::release::LogicClasses>, index: u8,
-) -> starknet::ClassHash {
-    match index {
-        0 => classes.season.read(),
-        1 => classes.map.read(),
-        2 => classes.placement.read(),
-        3 => classes.construction.read(),
-        4 => classes.production.read(),
-        5 => classes.structures.read(),
-        6 => classes.troops.read(),
-        7 => classes.settlement.read(),
-        8 => classes.resources.read(),
-        9 => classes.economy.read(),
-        10 => classes.prizes.read(),
-        11 => classes.registry.read(),
-        12 => classes.combat.read(),
-        13 => classes.raid.read(),
-        14 => classes.bridge.read(),
-        15 => classes.relics.read(),
-        16 => classes.movement.read(),
-        _ => panic!("unknown command logic"),
-    }
-}
 
 // Decode the complete command before reading a roll; routes retain the same wire discriminants.
 #[derive(Copy, Drop, Debug, PartialEq)]

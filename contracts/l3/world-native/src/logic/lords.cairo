@@ -1,11 +1,9 @@
 #[starknet::component]
 pub mod LordsState {
-    use games_storage::release::LogicClasses;
     use starknet::ContractAddress;
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
     use crate::commands::ResourceContext;
     use crate::logic::release::ReleaseState;
-    use crate::logic::release::ReleaseState::InternalTrait as LifeInternalTrait;
     use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
 
     #[storage]
@@ -122,13 +120,10 @@ pub mod LordsState {
                 );
         }
 
-        fn logic_classes(
-            self: @ComponentState<TContractState>, game_id: u32,
-        ) -> starknet::storage::StoragePointer<LogicClasses> {
-            get_dep_component!(self, Life).classes(game_id)
-        }
         fn resources(self: @ComponentState<TContractState>, game_id: u32) -> IResourceOperationsLibraryDispatcher {
-            IResourceOperationsLibraryDispatcher { class_hash: self.logic_classes(game_id).resources.read() }
+            IResourceOperationsLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(game_id, crate::slots::RESOURCES),
+            }
         }
     }
 }

@@ -12,21 +12,26 @@ pub fn store(commitment: felt252, definition: crate::presets::PresetDefinition) 
         return;
     }
     preset.rules.write(definition.rules);
-    let classes = crate::logic::release::family_classes(crate::game::FRONTIER);
     crate::presets::IPresetResourcesDispatcherTrait::store_resource_preset(
-        crate::presets::IPresetResourcesLibraryDispatcher { class_hash: classes.production },
+        crate::presets::IPresetResourcesLibraryDispatcher {
+            class_hash: crate::logic::release::family_class(crate::game::FRONTIER, crate::slots::PRODUCTION),
+        },
         commitment,
         definition.resources,
         definition.exploration,
         definition.rules.mode_rules,
     );
     crate::presets::IPresetStructuresDispatcherTrait::store_structure_preset(
-        crate::presets::IPresetStructuresLibraryDispatcher { class_hash: classes.construction },
+        crate::presets::IPresetStructuresLibraryDispatcher {
+            class_hash: crate::logic::release::family_class(crate::game::FRONTIER, crate::slots::CONSTRUCTION),
+        },
         commitment,
         definition.structures,
     );
     crate::presets::IPresetSettlementDispatcherTrait::store_settlement_preset(
-        crate::presets::IPresetSettlementLibraryDispatcher { class_hash: classes.placement },
+        crate::presets::IPresetSettlementLibraryDispatcher {
+            class_hash: crate::logic::release::family_class(crate::game::FRONTIER, crate::slots::PLACEMENT),
+        },
         commitment,
         definition.settlement,
         definition.rules.entry_rule,
@@ -121,9 +126,10 @@ fn write_economy(
     write_deep(preset, economy.deep);
     preset.race_rules.write(economy.race);
     write_hyperstructures(preset, rules, economy.hyperstructures);
-    let classes = crate::logic::release::family_classes(crate::game::FRONTIER);
     crate::presets::IPresetRelicsDispatcherTrait::store_relic_preset(
-        crate::presets::IPresetRelicsLibraryDispatcher { class_hash: classes.relics },
+        crate::presets::IPresetRelicsLibraryDispatcher {
+            class_hash: crate::logic::release::family_class(crate::game::FRONTIER, crate::slots::RELICS),
+        },
         commitment,
         economy.relics,
         economy.chests,
@@ -134,7 +140,9 @@ fn write_economy(
     preset.artificer_cost.write(economy.research_cost);
     if let Some(withdrawals) = economy.withdrawals {
         crate::presets::IPresetWithdrawalsDispatcherTrait::store_withdrawal_preset(
-            crate::presets::IPresetWithdrawalsLibraryDispatcher { class_hash: classes.production },
+            crate::presets::IPresetWithdrawalsLibraryDispatcher {
+                class_hash: crate::logic::release::family_class(crate::game::FRONTIER, crate::slots::PRODUCTION),
+            },
             commitment,
             withdrawals,
         );

@@ -139,33 +139,25 @@ pub fn setup_with_host(
     } else {
         declare_logic("MovementLogic")
     };
-    let classes = games_storage::release::LogicClasses {
-        season: declare_logic("SeasonLogic"),
-        map: declare_logic("MapLogic"),
-        placement: declare_logic("PlacementLogic"),
-        construction: declare_logic("ConstructionLogic"),
-        production: declare_logic("ProductionLogic"),
-        structures: declare_logic(structures_class),
-        troops: declare_logic(troops_class),
-        settlement: declare_logic("SettlementLogic"),
-        resources: declare_logic("ResourcesLogic"),
-        economy: declare_logic("EconomyLogic"),
-        prizes: declare_logic("PrizesLogic"),
-        registry: declare_logic("RegistryLogic"),
-        combat: declare_logic("CombatLogic"),
-        raid: declare_logic("RaidLogic"),
-        bridge: declare_logic("BridgeLogic"),
-        relics: declare_logic("RelicsLogic"),
-        movement,
-    };
+    let classes = array![
+        declare_logic("SeasonLogic"), declare_logic("MapLogic"), declare_logic("PlacementLogic"),
+        declare_logic("ConstructionLogic"), declare_logic("ProductionLogic"), declare_logic(structures_class),
+        declare_logic(troops_class), declare_logic("SettlementLogic"), declare_logic("ResourcesLogic"),
+        declare_logic("EconomyLogic"), declare_logic("PrizesLogic"), declare_logic("RegistryLogic"),
+        declare_logic("CombatLogic"), declare_logic("BridgeLogic"), declare_logic("RelicsLogic"), movement,
+    ];
     let authentication = crate::games::Authentication { account_class, guardian_public_key: GUARDIAN };
     let mut calldata = array![authority().into(), authority().into()];
     authentication.serialize(ref calldata);
     calldata.append(1);
-    calldata.append(crate::game::FRONTIER.into());
-    calldata.append(0);
-    classes.serialize(ref calldata);
-    calldata.append(0);
+    crate::logic::release::Release {
+        family: crate::game::FRONTIER,
+        previous: 0,
+        slot_count: crate::slots::FRONTIER_SLOTS,
+        migration: 0.try_into().unwrap(),
+    }
+        .serialize(ref calldata);
+    classes.span().serialize(ref calldata);
     append_vrf_configuration(ref calldata);
     let (games, _) = deploy(host, @calldata);
     if seed_games {
@@ -213,19 +205,25 @@ pub fn set_launcher(deployment: Deployment, launcher: ContractAddress) {
     IGamesRolesDispatcher { contract_address: deployment.games }.set_launcher(launcher);
 }
 
+pub fn assert_refused(error: Array<felt252>, message: ByteArray) {
+    let mut expected = array![core::byte_array::BYTE_ARRAY_MAGIC];
+    message.serialize(ref expected);
+    assert!(error.len() > expected.len(), "refusal without a message");
+    assert_eq!(error.span().slice(0, expected.len()), expected.span());
+}
+
 #[feature("safe_dispatcher")]
 pub fn assert_entry_refusal(
     deployment: Deployment, game_id: u32, release: u32, command: Span<felt252>, message: ByteArray,
 ) {
     let before = play_fixture::pins(deployment.games, 1);
     let mut spy = spy_events();
-    let error = IPlayFixtureSafeDispatcher { contract_address: deployment.games }
-        .play_with_root(game_id, release, command, 987654321)
-        .unwrap_err();
-    let mut expected = array![core::byte_array::BYTE_ARRAY_MAGIC];
-    message.serialize(ref expected);
-    expected.append('ENTRYPOINT_FAILED');
-    assert_eq!(error, expected);
+    assert_refused(
+        IPlayFixtureSafeDispatcher { contract_address: deployment.games }
+            .play_with_root(game_id, release, command, 987654321)
+            .unwrap_err(),
+        message,
+    );
     assert_eq!(play_fixture::pins(deployment.games, 1), before);
     assert!(
         GameState { contract_address: deployment.games }.explorer(ExplorerKey { game_id: 1, explorer_id: 7 }).is_none(),

@@ -18,7 +18,6 @@ pub mod RegistrarState {
     };
     use crate::events::RowSet;
     use crate::logic::release::ReleaseState;
-    use crate::logic::release::ReleaseState::InternalTrait as LifeInternal;
     use crate::registrar::{CreateGameParams, RosterPlayer, build_game, game_overrides};
 
     #[storage]
@@ -82,7 +81,8 @@ pub mod RegistrarState {
 
         fn create_game(ref self: ComponentState<TContractState>, params: CreateGameParams) -> u32 {
             crate::logic::release::assert_launcher();
-            let classes = crate::logic::release::family_classes(params.family);
+            let release_id = self.data.open_releases.read(params.family);
+            assert!(release_id != 0, "family has no open release");
             let preset_commitment = self.data.registrar.presets.read(params.preset_id);
             assert!(preset_commitment != 0, "preset is not registered");
             let preset = self.data.presets.entry(preset_commitment);
@@ -107,7 +107,6 @@ pub mod RegistrarState {
             assert!(preset.rollover_chest_rules.read().is_none(), "LORDS presets are retired");
             let game_id = self.data.registrar.next_game.read();
             assert!(game_id != 0 && game_id < 0xffffffff, "game identity space exhausted");
-            let release_id = self.data.open_releases.read(params.family);
             self.data.game_releases.write(game_id, release_id);
             self.data.game_creation_releases.write(game_id, release_id);
             self.register_roster(game_id, params.roster);
@@ -119,7 +118,7 @@ pub mod RegistrarState {
             for player in params.roster {
                 crate::entity_ids::reserve_homes(game_id, (*player).account);
             }
-            crate::logic::presets::initialize_gameplay(classes, game_id, rules.mode_rules);
+            crate::logic::presets::initialize_gameplay(game_id, rules.mode_rules);
             self.data.registrar.launch_ids.write(params.name, game_id);
             self.data.registrar.launch_commitments.write(params.name, commitment);
             self.write_next_game(game_id + 1);

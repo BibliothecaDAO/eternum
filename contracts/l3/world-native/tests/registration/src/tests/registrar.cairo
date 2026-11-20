@@ -1281,7 +1281,8 @@ fn retirement_preserves_an_existing_games_pin_and_idempotent_launch() {
     let releases = IReleasesDispatcher { contract_address: d.games };
     let original = releases.release(1);
     start_cheat_caller_address(d.games, super::authority());
-    releases.register_release(2, crate::logic::release::Release { previous: 1, ..original });
+    releases
+        .register_release(2, crate::logic::release::Release { previous: 1, ..original }, releases.release_classes(1));
     releases.open_release(2);
     stop_cheat_caller_address(d.games);
     assert_eq!(releases.open_release_of(crate::game::FRONTIER), 2);

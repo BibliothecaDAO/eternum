@@ -11,7 +11,47 @@ pub use crate::tests::state::{
     GameState, MapObservationTrait, ResourceObservationTrait, StructureObservationTrait, TroopObservationTrait,
 };
 pub use crate::troops::ExplorerKey;
-pub use super::{authority, declare_logic};
+pub use super::{assert_refused, authority, declare_logic};
+
+pub fn with_class(
+    classes: Span<starknet::ClassHash>, slot: u8, class_hash: starknet::ClassHash,
+) -> Span<starknet::ClassHash> {
+    let mut replaced = array![];
+    let mut index: u8 = 0;
+    for class in classes {
+        replaced.append(if index == slot {
+            class_hash
+        } else {
+            *class
+        });
+        index += 1;
+    }
+    replaced.span()
+}
+
+#[starknet::contract]
+pub mod NewSlotFixture {
+    #[storage]
+    struct Storage {}
+
+    #[abi(embed_v0)]
+    impl Views of crate::logic::release::ISlotViews<ContractState> {
+        fn slot_view(self: @ContractState, game_id: u32, calldata: Span<felt252>) -> Span<felt252> {
+            let mut answer = array![game_id.into()];
+            answer.append_span(calldata);
+            answer.span()
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl Authority of crate::logic::release::ISlotAuthority<ContractState> {
+        fn slot_authority(ref self: ContractState, family: u8, calldata: Span<felt252>) -> Span<felt252> {
+            let mut answer = array![family.into()];
+            answer.append_span(calldata);
+            answer.span()
+        }
+    }
+}
 
 #[starknet::contract]
 pub mod ReleaseMigrationFixture {

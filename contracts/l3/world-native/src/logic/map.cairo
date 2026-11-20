@@ -21,10 +21,10 @@ fn terrain(game_id: u32) -> crate::settlement::ITerrainDerivationLibraryDispatch
     let release = state.game_releases.read(game_id);
     assert!(release != 0, "game has no release");
     crate::settlement::ITerrainDerivationLibraryDispatcher {
-        class_hash: state.releases.entry(release).classes.settlement.read(),
+        class_hash: crate::logic::release::release_class(release, crate::slots::SETTLEMENT),
     }
 }
-use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use crate::map::{TileKey, TileOpt};
 
 pub fn occupancy(key: TileKey) -> Option<crate::map::TileOccupancy> {
