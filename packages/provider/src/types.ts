@@ -104,8 +104,6 @@ export enum TransactionType {
   SELL = "sell",
   REMOVE = "remove",
   ADD_LIQUIDITY = "add_liquidity",
-  BRIDGE_DEPOSIT = "bridge_deposit",
-  BRIDGE_WITHDRAW = "bridge_withdraw",
 
   // Orders & Marketplace
   CREATE_ORDER = "create_order",

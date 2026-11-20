@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "42d0fec2a11eebe4baaafa767dedf1c726c18b572c057254384bbea445ddc591",
+  "schemaIdentity": "7086271615cfcc76864ab63afe61478be3f03bd6e9493504585c4ab20d0b6091",
   "commandAbi": [
     {
       "type": "interface",
@@ -77,11 +77,6 @@
           "name": "LevelUp",
           "type": "core::integer::u64",
           "wireId": 6
-        },
-        {
-          "name": "SettleBlitzRoster",
-          "type": "()",
-          "wireId": 7
         },
         {
           "name": "ProvisionRealm",
@@ -202,16 +197,6 @@
           "name": "GuardAttack",
           "type": "world_native::combat_actions::GuardAttack",
           "wireId": 60
-        },
-        {
-          "name": "DepositResource",
-          "type": "world_native::bridge::Deposit",
-          "wireId": 62
-        },
-        {
-          "name": "WithdrawResource",
-          "type": "world_native::bridge::Withdraw",
-          "wireId": 63
         },
         {
           "name": "ProvisionAndUpgradeRealm",
@@ -924,68 +909,6 @@
     },
     {
       "type": "struct",
-      "name": "world_native::bridge::Deposit",
-      "members": [
-        {
-          "name": "structure_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "resource_type",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "amount",
-          "type": "core::integer::u256"
-        },
-        {
-          "name": "client_fee_recipient",
-          "type": "core::starknet::contract_address::ContractAddress"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "core::integer::u256",
-      "members": [
-        {
-          "name": "low",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "high",
-          "type": "core::integer::u128"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::bridge::Withdraw",
-      "members": [
-        {
-          "name": "structure_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "recipient",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "resource_type",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "amount",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "client_fee_recipient",
-          "type": "core::starknet::contract_address::ContractAddress"
-        }
-      ]
-    },
-    {
-      "type": "struct",
       "name": "world_native::names::SetEntityName",
       "members": [
         {
@@ -1064,18 +987,6 @@
     }
   ],
   "models": [
-    {
-      "name": "Preset",
-      "scope": "deployment"
-    },
-    {
-      "name": "SpireLayout",
-      "scope": "game"
-    },
-    {
-      "name": "CampRules",
-      "scope": "game"
-    },
     {
       "name": "Guild",
       "scope": "game"
@@ -1181,10 +1092,6 @@
       "scope": "game"
     },
     {
-      "name": "LaborRules",
-      "scope": "game"
-    },
-    {
       "name": "DeepRules",
       "scope": "game"
     },
@@ -1209,18 +1116,6 @@
       "scope": "game"
     },
     {
-      "name": "DepositRules",
-      "scope": "game"
-    },
-    {
-      "name": "WithdrawalRules",
-      "scope": "game"
-    },
-    {
-      "name": "ResourceToken",
-      "scope": "game"
-    },
-    {
       "name": "Guard",
       "scope": "game"
     },
@@ -1235,14 +1130,6 @@
     {
       "name": "RealmTraits",
       "scope": "deployment"
-    },
-    {
-      "name": "BlitzSettlementOrder",
-      "scope": "game"
-    },
-    {
-      "name": "BlitzRoster",
-      "scope": "game"
     },
     {
       "name": "RealmGrants",
@@ -1274,10 +1161,6 @@
     },
     {
       "name": "SettledRealm",
-      "scope": "game"
-    },
-    {
-      "name": "CampaignHome",
       "scope": "game"
     },
     {

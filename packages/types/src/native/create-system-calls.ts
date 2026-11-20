@@ -64,18 +64,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
   const reroll_oath = (props: Parameters<typeof provider.reroll_oath>[0]) => provider.reroll_oath(props);
   const research = (props: Parameters<typeof provider.research>[0]) => provider.research(props);
 
-  const bridge_deposit_into_realm = async (
-    props: SystemProps.BridgeDepositIntoRealmProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.bridge_deposit_into_realm(props);
-  };
-
-  const bridge_withdraw_from_realm = async (
-    props: SystemProps.BridgeWithdrawFromRealmProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.bridge_withdraw_from_realm(props);
-  };
-
   const provision_realm = async (
     props: SystemProps.UpgradeRealmProps & { upgrade?: boolean },
   ): Promise<GetTransactionReceiptResponse> => provider.provision_realm(props);
@@ -276,8 +264,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     buy_stamina: withAuth(buy_stamina),
     buy_seal: withAuth(buy_seal),
     reroll_oath: withAuth(reroll_oath),
-    bridge_deposit_into_realm: withAuth(bridge_deposit_into_realm),
-    bridge_withdraw_from_realm: withAuth(bridge_withdraw_from_realm),
 
     burn_resource_for_resource_production: withAuth(burn_resource_for_resource_production),
 

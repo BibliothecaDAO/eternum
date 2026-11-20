@@ -1,18 +1,15 @@
 {
   "identifierConstants": {
     "rule": {
-      "MAX_BLITZ_ROSTER_PLAYERS": 24,
       "ENTRY_ENTITLEMENT": 0,
       "ENTRY_OPEN": 1,
       "ENTRY_ROSTER": 2,
       "HOME_REWARDS": 1,
       "DISCOVER_CAMPS": 2,
-      "SPIRES": 16,
       "UNOWNED_TARGETS": 32,
       "CAPTURE_VILLAGES": 64,
       "DEPTH_CONTENTS": 128,
       "REVEAL_SUPPLIES": 262144,
-      "DISCOVER_SPIRES": 2097152,
       "SAME_OWNER_TRANSFER": 256,
       "DEV_VILLAGE_ENTRY": 8192,
       "PRODUCTION_START": 131072,
@@ -623,108 +620,6 @@
           {
             "name": "keys",
             "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          }
-        ]
-      },
-      {
-        "name": "RowSet",
-        "prefix": [
-          "0x3e0fff9a6a438c00f3149e5b4346c8677fcf93ff5a01eedb48b5d0d95eecd75",
-          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-        ],
-        "members": [
-          {
-            "name": "version",
-            "type": "core::integer::u8",
-            "kind": "key"
-          },
-          {
-            "name": "model",
-            "type": "core::felt252",
-            "kind": "key"
-          },
-          {
-            "name": "keys",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          },
-          {
-            "name": "values",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          }
-        ]
-      },
-      {
-        "name": "RowSet",
-        "prefix": [
-          "0x3e50265c9f967c83de816cef243b045f3dd470037ce9fcd20fbd6884b8c572d",
-          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-        ],
-        "members": [
-          {
-            "name": "version",
-            "type": "core::integer::u8",
-            "kind": "key"
-          },
-          {
-            "name": "model",
-            "type": "core::felt252",
-            "kind": "key"
-          },
-          {
-            "name": "keys",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          },
-          {
-            "name": "values",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          }
-        ]
-      },
-      {
-        "name": "StoryEvent",
-        "prefix": [
-          "0x3e50265c9f967c83de816cef243b045f3dd470037ce9fcd20fbd6884b8c572d",
-          "0x33b7d96bc1ff34b0a89214516b6ef5d2b8bdd9c301222eda2a1e96f78b84b96"
-        ],
-        "members": [
-          {
-            "name": "version",
-            "type": "core::integer::u8",
-            "kind": "key"
-          },
-          {
-            "name": "game_id",
-            "type": "core::integer::u32",
-            "kind": "key"
-          },
-          {
-            "name": "owner",
-            "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
-            "kind": "key"
-          },
-          {
-            "name": "entity_id",
-            "type": "core::option::Option::<core::integer::u64>",
-            "kind": "key"
-          },
-          {
-            "name": "tx_hash",
-            "type": "core::felt252",
-            "kind": "key"
-          },
-          {
-            "name": "story",
-            "type": "world_native::ownership::Story",
-            "kind": "data"
-          },
-          {
-            "name": "timestamp",
-            "type": "core::integer::u64",
             "kind": "data"
           }
         ]
@@ -2073,38 +1968,6 @@
       },
       {
         "type": "function",
-        "name": "register_preset",
-        "inputs": [
-          {
-            "name": "preset_id",
-            "type": "core::integer::u32"
-          },
-          {
-            "name": "definition",
-            "type": "world_native::presets::PresetDefinition"
-          }
-        ],
-        "outputs": [],
-        "state_mutability": "external"
-      },
-      {
-        "type": "function",
-        "name": "preset_commitment",
-        "inputs": [
-          {
-            "name": "preset_id",
-            "type": "core::integer::u32"
-          }
-        ],
-        "outputs": [
-          {
-            "type": "core::felt252"
-          }
-        ],
-        "state_mutability": "view"
-      },
-      {
-        "type": "function",
         "name": "next_game_id",
         "inputs": [],
         "outputs": [
@@ -2126,38 +1989,6 @@
         "outputs": [
           {
             "type": "core::integer::u32"
-          }
-        ],
-        "state_mutability": "view"
-      },
-      {
-        "type": "function",
-        "name": "blitz_roster",
-        "inputs": [
-          {
-            "name": "game_id",
-            "type": "core::integer::u32"
-          }
-        ],
-        "outputs": [
-          {
-            "type": "core::array::Span::<world_native::registrar::RosterPlayer>"
-          }
-        ],
-        "state_mutability": "view"
-      },
-      {
-        "type": "function",
-        "name": "game_seater",
-        "inputs": [
-          {
-            "name": "game_id",
-            "type": "core::integer::u32"
-          }
-        ],
-        "outputs": [
-          {
-            "type": "core::starknet::contract_address::ContractAddress"
           }
         ],
         "state_mutability": "view"
@@ -2275,98 +2106,6 @@
     ]
   },
   "models": [
-    {
-      "name": "Preset",
-      "identity": "0x507265736574",
-      "scope": "deployment",
-      "keys": [
-        {
-          "name": "preset_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "commitment",
-          "type": "core::felt252",
-          "id": "0x636f6d6d69746d656e74",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 1
-    },
-    {
-      "name": "SpireLayout",
-      "identity": "0x53706972654c61796f7574",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "count",
-          "type": "core::integer::u16",
-          "id": "0x636f756e74",
-          "feltLength": 1
-        },
-        {
-          "name": "base_distance",
-          "type": "core::integer::u8",
-          "id": "0x626173655f64697374616e6365",
-          "feltLength": 1
-        },
-        {
-          "name": "layer_distance",
-          "type": "core::integer::u8",
-          "id": "0x6c617965725f64697374616e6365",
-          "feltLength": 1
-        },
-        {
-          "name": "max_layer",
-          "type": "core::integer::u8",
-          "id": "0x6d61785f6c61796572",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 4,
-      "derivedFrom": "preset"
-    },
-    {
-      "name": "CampRules",
-      "identity": "0x43616d7052756c6573",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "resources",
-          "type": "core::array::Span::<world_native::resources::ResourceAmount>",
-          "id": "0x7265736f7572636573",
-          "feltLength": null
-        },
-        {
-          "name": "labor_rate",
-          "type": "core::integer::u64",
-          "id": "0x6c61626f725f72617465",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": null,
-      "derivedFrom": "preset"
-    },
     {
       "name": "Guild",
       "identity": "0x4775696c64",
@@ -3370,47 +3109,6 @@
       "valueLength": 3
     },
     {
-      "name": "LaborRules",
-      "identity": "0x4c61626f7252756c6573",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "amount",
-          "type": "core::integer::u128",
-          "id": "0x616d6f756e74",
-          "feltLength": 1
-        },
-        {
-          "name": "campaign_essence",
-          "type": "core::integer::u128",
-          "id": "0x63616d706169676e5f657373656e6365",
-          "feltLength": 1
-        },
-        {
-          "name": "golden_amount",
-          "type": "core::integer::u128",
-          "id": "0x676f6c64656e5f616d6f756e74",
-          "feltLength": 1
-        },
-        {
-          "name": "golden_essence",
-          "type": "core::integer::u128",
-          "id": "0x676f6c64656e5f657373656e6365",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 4,
-      "derivedFrom": "preset"
-    },
-    {
       "name": "DeepRules",
       "identity": "0x4465657052756c6573",
       "scope": "game",
@@ -3710,146 +3408,6 @@
       "valueLength": 4
     },
     {
-      "name": "DepositRules",
-      "identity": "0x4465706f73697452756c6573",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "paused",
-          "type": "core::bool",
-          "id": "0x706175736564",
-          "feltLength": 1
-        },
-        {
-          "name": "realm_fee_bps",
-          "type": "core::integer::u16",
-          "id": "0x7265616c6d5f6665655f627073",
-          "feltLength": 1
-        },
-        {
-          "name": "velords_fee_bps",
-          "type": "core::integer::u16",
-          "id": "0x76656c6f7264735f6665655f627073",
-          "feltLength": 1
-        },
-        {
-          "name": "season_fee_bps",
-          "type": "core::integer::u16",
-          "id": "0x736561736f6e5f6665655f627073",
-          "feltLength": 1
-        },
-        {
-          "name": "client_fee_bps",
-          "type": "core::integer::u16",
-          "id": "0x636c69656e745f6665655f627073",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 5,
-      "derivedFrom": "preset"
-    },
-    {
-      "name": "WithdrawalRules",
-      "identity": "0x5769746864726177616c52756c6573",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "paused",
-          "type": "core::bool",
-          "id": "0x706175736564",
-          "feltLength": 1
-        },
-        {
-          "name": "bank_fee_bps",
-          "type": "core::integer::u16",
-          "id": "0x62616e6b5f6665655f627073",
-          "feltLength": 1
-        },
-        {
-          "name": "velords_fee_bps",
-          "type": "core::integer::u16",
-          "id": "0x76656c6f7264735f6665655f627073",
-          "feltLength": 1
-        },
-        {
-          "name": "season_fee_bps",
-          "type": "core::integer::u16",
-          "id": "0x736561736f6e5f6665655f627073",
-          "feltLength": 1
-        },
-        {
-          "name": "client_fee_bps",
-          "type": "core::integer::u16",
-          "id": "0x636c69656e745f6665655f627073",
-          "feltLength": 1
-        },
-        {
-          "name": "velords_recipient",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "id": "0x76656c6f7264735f726563697069656e74",
-          "feltLength": 1
-        },
-        {
-          "name": "season_recipient",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "id": "0x736561736f6e5f726563697069656e74",
-          "feltLength": 1
-        },
-        {
-          "name": "retention",
-          "type": "core::array::Span::<world_native::withdrawals::Retention>",
-          "id": "0x726574656e74696f6e",
-          "feltLength": null
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": null,
-      "derivedFrom": "preset"
-    },
-    {
-      "name": "ResourceToken",
-      "identity": "0x5265736f75726365546f6b656e",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "resource_type",
-          "type": "core::integer::u8",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "token",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "id": "0x746f6b656e",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 2,
-      "valueLength": 1,
-      "derivedFrom": "preset"
-    },
-    {
       "name": "Guard",
       "identity": "0x4775617264",
       "scope": "game",
@@ -4033,62 +3591,6 @@
           "wonder": "wonder",
           "order": "order",
           "resources": "resources"
-        }
-      }
-    },
-    {
-      "name": "BlitzSettlementOrder",
-      "identity": "0x426c69747a536574746c656d656e744f72646572",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "players",
-          "type": "core::array::Span::<core::integer::u8>",
-          "id": "0x706c6179657273",
-          "feltLength": null
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": null,
-      "observation": {
-        "domain": "realm/blitz",
-        "fields": {
-          "players": "players"
-        }
-      }
-    },
-    {
-      "name": "BlitzRoster",
-      "identity": "0x426c69747a526f73746572",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "players",
-          "type": "core::array::Span::<world_native::registrar::RosterPlayer>",
-          "id": "0x706c6179657273",
-          "feltLength": null
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": null,
-      "observation": {
-        "domain": "realm/blitz",
-        "fields": {
-          "players": "players"
         }
       }
     },
@@ -4405,39 +3907,6 @@
       ],
       "keyLength": 2,
       "valueLength": 1
-    },
-    {
-      "name": "CampaignHome",
-      "identity": "0x43616d706169676e486f6d65",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "home",
-          "type": "core::integer::u64",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "campaign_id",
-          "type": "core::felt252",
-          "id": "0x63616d706169676e5f6964",
-          "feltLength": 1
-        },
-        {
-          "name": "tier",
-          "type": "core::integer::u8",
-          "id": "0x74696572",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 2,
-      "valueLength": 2
     },
     {
       "name": "EntryEntitlement",
@@ -6234,21 +5703,9 @@
           "feltLength": 1
         },
         {
-          "name": "preset_id",
-          "type": "core::integer::u32",
-          "id": "0x7072657365745f6964",
-          "feltLength": 1
-        },
-        {
           "name": "settled",
           "type": "core::bool",
           "id": "0x736574746c6564",
-          "feltLength": 1
-        },
-        {
-          "name": "ready",
-          "type": "core::bool",
-          "id": "0x7265616479",
           "feltLength": 1
         },
         {
@@ -6276,12 +5733,6 @@
           "feltLength": 1
         },
         {
-          "name": "end_grace_seconds",
-          "type": "core::integer::u32",
-          "id": "0x656e645f67726163655f7365636f6e6473",
-          "feltLength": 1
-        },
-        {
           "name": "seed",
           "type": "core::felt252",
           "id": "0x73656564",
@@ -6295,7 +5746,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 12
+      "valueLength": 9
     },
     {
       "name": "GameOverrides",
@@ -6713,96 +6164,6 @@
         }
       ]
     },
-    "core::array::Span::<world_native::buildings::BuildingRuleConfig>": {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::buildings::BuildingRuleConfig>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::buildings::BuildingRuleConfig>"
-        }
-      ]
-    },
-    "core::array::Span::<world_native::deep::DeepBeast>": {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::deep::DeepBeast>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::deep::DeepBeast>"
-        }
-      ]
-    },
-    "core::array::Span::<world_native::deep::DeepRing>": {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::deep::DeepRing>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::deep::DeepRing>"
-        }
-      ]
-    },
-    "core::array::Span::<world_native::expeditions::DepthRules>": {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::expeditions::DepthRules>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::expeditions::DepthRules>"
-        }
-      ]
-    },
-    "core::array::Span::<world_native::mines::MineKindEntry>": {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::mines::MineKindEntry>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::mines::MineKindEntry>"
-        }
-      ]
-    },
-    "core::array::Span::<world_native::mines::MineWeight>": {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::mines::MineWeight>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::mines::MineWeight>"
-        }
-      ]
-    },
-    "core::array::Span::<world_native::production::RecipeConfig>": {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::production::RecipeConfig>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::production::RecipeConfig>"
-        }
-      ]
-    },
-    "core::array::Span::<world_native::registrar::RosterPlayer>": {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::registrar::RosterPlayer>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::registrar::RosterPlayer>"
-        }
-      ]
-    },
-    "core::array::Span::<world_native::research::ResearchPriceConfig>": {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::research::ResearchPriceConfig>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::research::ResearchPriceConfig>"
-        }
-      ]
-    },
     "core::array::Span::<world_native::resources::ResourceAmount>": {
       "type": "struct",
       "name": "core::array::Span::<world_native::resources::ResourceAmount>",
@@ -6810,16 +6171,6 @@
         {
           "name": "snapshot",
           "type": "@core::array::Array::<world_native::resources::ResourceAmount>"
-        }
-      ]
-    },
-    "core::array::Span::<world_native::resources::ResourceRule>": {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::resources::ResourceRule>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::resources::ResourceRule>"
         }
       ]
     },
@@ -6840,56 +6191,6 @@
         {
           "name": "snapshot",
           "type": "@core::array::Array::<world_native::troops::Coord>"
-        }
-      ]
-    },
-    "core::array::Span::<world_native::troops::TroopType>": {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::troops::TroopType>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::troops::TroopType>"
-        }
-      ]
-    },
-    "core::array::Span::<world_native::upgrades::UpgradeRecipe>": {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::upgrades::UpgradeRecipe>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::upgrades::UpgradeRecipe>"
-        }
-      ]
-    },
-    "core::array::Span::<world_native::village::VillageResource>": {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::village::VillageResource>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::village::VillageResource>"
-        }
-      ]
-    },
-    "core::array::Span::<world_native::withdrawals::ResourceToken>": {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::withdrawals::ResourceToken>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::withdrawals::ResourceToken>"
-        }
-      ]
-    },
-    "core::array::Span::<world_native::withdrawals::Retention>": {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::withdrawals::Retention>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::withdrawals::Retention>"
         }
       ]
     },
@@ -7023,48 +6324,6 @@
         }
       ]
     },
-    "core::option::Option::<world_native::banes::BaneRules>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::banes::BaneRules>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::banes::BaneRules"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::buildings::BoardRules>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::buildings::BoardRules>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::buildings::BoardRules"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::deep::DeepRules>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::deep::DeepRules>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::deep::DeepRules"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
     "core::option::Option::<world_native::deposits::DepositReceipt>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::deposits::DepositReceipt>",
@@ -7107,34 +6366,6 @@
         }
       ]
     },
-    "core::option::Option::<world_native::entry::LaborRules>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::entry::LaborRules>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::entry::LaborRules"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::expeditions::FrontierDiscoveryRules>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::expeditions::FrontierDiscoveryRules>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::expeditions::FrontierDiscoveryRules"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
     "core::option::Option::<world_native::expeditions::SiteClear>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::expeditions::SiteClear>",
@@ -7142,48 +6373,6 @@
         {
           "name": "Some",
           "type": "world_native::expeditions::SiteClear"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::presets::WithdrawalPreset>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::presets::WithdrawalPreset>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::presets::WithdrawalPreset"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::quests::QuestRules>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::quests::QuestRules>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::quests::QuestRules"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::race::RaceRules>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::race::RaceRules>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::race::RaceRules"
         },
         {
           "name": "None",
@@ -7226,20 +6415,6 @@
         {
           "name": "Some",
           "type": "world_native::settlement::EntryEntitlement"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::spires::SpireLayout>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::spires::SpireLayout>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::spires::SpireLayout"
         },
         {
           "name": "None",
@@ -7501,80 +6676,6 @@
         }
       ]
     },
-    "world_native::bridge::Deposit": {
-      "type": "struct",
-      "name": "world_native::bridge::Deposit",
-      "members": [
-        {
-          "name": "structure_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "resource_type",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "amount",
-          "type": "core::integer::u256"
-        },
-        {
-          "name": "client_fee_recipient",
-          "type": "core::starknet::contract_address::ContractAddress"
-        }
-      ]
-    },
-    "world_native::bridge::DepositRules": {
-      "type": "struct",
-      "name": "world_native::bridge::DepositRules",
-      "members": [
-        {
-          "name": "paused",
-          "type": "core::bool"
-        },
-        {
-          "name": "realm_fee_bps",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "velords_fee_bps",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "season_fee_bps",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "client_fee_bps",
-          "type": "core::integer::u16"
-        }
-      ]
-    },
-    "world_native::bridge::Withdraw": {
-      "type": "struct",
-      "name": "world_native::bridge::Withdraw",
-      "members": [
-        {
-          "name": "structure_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "recipient",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "resource_type",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "amount",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "client_fee_recipient",
-          "type": "core::starknet::contract_address::ContractAddress"
-        }
-      ]
-    },
     "world_native::buildings::BoardRules": {
       "type": "struct",
       "name": "world_native::buildings::BoardRules",
@@ -7687,20 +6788,6 @@
         }
       ]
     },
-    "world_native::buildings::BuildingRuleConfig": {
-      "type": "struct",
-      "name": "world_native::buildings::BuildingRuleConfig",
-      "members": [
-        {
-          "name": "category",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "rule",
-          "type": "world_native::buildings::BuildingRule"
-        }
-      ]
-    },
     "world_native::buildings::BuildingRuleKey": {
       "type": "struct",
       "name": "world_native::buildings::BuildingRuleKey",
@@ -7784,20 +6871,6 @@
         {
           "name": "population",
           "type": "world_native::buildings::Population"
-        }
-      ]
-    },
-    "world_native::camps::CampRules": {
-      "type": "struct",
-      "name": "world_native::camps::CampRules",
-      "members": [
-        {
-          "name": "resources",
-          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
-        },
-        {
-          "name": "labor_rate",
-          "type": "core::integer::u64"
         }
       ]
     },
@@ -7951,11 +7024,6 @@
           "wireId": 6
         },
         {
-          "name": "SettleBlitzRoster",
-          "type": "()",
-          "wireId": 7
-        },
-        {
           "name": "ProvisionRealm",
           "type": "core::integer::u64",
           "wireId": 8
@@ -8074,16 +7142,6 @@
           "name": "GuardAttack",
           "type": "world_native::combat_actions::GuardAttack",
           "wireId": 60
-        },
-        {
-          "name": "DepositResource",
-          "type": "world_native::bridge::Deposit",
-          "wireId": 62
-        },
-        {
-          "name": "WithdrawResource",
-          "type": "world_native::bridge::Withdraw",
-          "wireId": 63
         },
         {
           "name": "ProvisionAndUpgradeRealm",
@@ -8502,28 +7560,6 @@
         }
       ]
     },
-    "world_native::entry::LaborRules": {
-      "type": "struct",
-      "name": "world_native::entry::LaborRules",
-      "members": [
-        {
-          "name": "amount",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "campaign_essence",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "golden_amount",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "golden_essence",
-          "type": "core::integer::u128"
-        }
-      ]
-    },
     "world_native::expeditions::DepthRules": {
       "type": "struct",
       "name": "world_native::expeditions::DepthRules",
@@ -8789,15 +7825,7 @@
           "type": "core::integer::u8"
         },
         {
-          "name": "preset_id",
-          "type": "core::integer::u32"
-        },
-        {
           "name": "settled",
-          "type": "core::bool"
-        },
-        {
-          "name": "ready",
           "type": "core::bool"
         },
         {
@@ -8815,10 +7843,6 @@
         {
           "name": "end_at",
           "type": "core::integer::u64"
-        },
-        {
-          "name": "end_grace_seconds",
-          "type": "core::integer::u32"
         },
         {
           "name": "seed",
@@ -9075,20 +8099,6 @@
         {
           "name": "cap_steps",
           "type": "core::integer::u32"
-        }
-      ]
-    },
-    "world_native::mines::MineKindEntry": {
-      "type": "struct",
-      "name": "world_native::mines::MineKindEntry",
-      "members": [
-        {
-          "name": "kind",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "config",
-          "type": "world_native::mines::MineKindConfig"
         }
       ]
     },
@@ -9516,170 +8526,6 @@
         }
       ]
     },
-    "world_native::presets::EconomyPreset": {
-      "type": "struct",
-      "name": "world_native::presets::EconomyPreset",
-      "members": [
-        {
-          "name": "race",
-          "type": "core::option::Option::<world_native::race::RaceRules>"
-        },
-        {
-          "name": "banes",
-          "type": "core::option::Option::<world_native::banes::BaneRules>"
-        },
-        {
-          "name": "quests",
-          "type": "core::option::Option::<world_native::quests::QuestRules>"
-        },
-        {
-          "name": "deep",
-          "type": "core::option::Option::<world_native::deep::DeepRules>"
-        },
-        {
-          "name": "labor",
-          "type": "core::option::Option::<world_native::entry::LaborRules>"
-        },
-        {
-          "name": "discovery",
-          "type": "core::option::Option::<world_native::expeditions::FrontierDiscoveryRules>"
-        },
-        {
-          "name": "withdrawals",
-          "type": "core::option::Option::<world_native::presets::WithdrawalPreset>"
-        }
-      ]
-    },
-    "world_native::presets::PresetDefinition": {
-      "type": "struct",
-      "name": "world_native::presets::PresetDefinition",
-      "members": [
-        {
-          "name": "rules",
-          "type": "world_native::rules::SliceRules"
-        },
-        {
-          "name": "resources",
-          "type": "world_native::presets::ResourcePreset"
-        },
-        {
-          "name": "structures",
-          "type": "world_native::presets::StructurePreset"
-        },
-        {
-          "name": "settlement",
-          "type": "world_native::presets::SettlementPreset"
-        },
-        {
-          "name": "economy",
-          "type": "world_native::presets::EconomyPreset"
-        }
-      ]
-    },
-    "world_native::presets::ResourcePreset": {
-      "type": "struct",
-      "name": "world_native::presets::ResourcePreset",
-      "members": [
-        {
-          "name": "resources",
-          "type": "core::array::Span::<world_native::resources::ResourceRule>"
-        },
-        {
-          "name": "production",
-          "type": "core::array::Span::<world_native::production::RecipeConfig>"
-        },
-        {
-          "name": "mine_kinds",
-          "type": "core::array::Span::<world_native::mines::MineKindEntry>"
-        },
-        {
-          "name": "surface_mines",
-          "type": "core::array::Span::<world_native::mines::MineWeight>"
-        }
-      ]
-    },
-    "world_native::presets::SettlementPreset": {
-      "type": "struct",
-      "name": "world_native::presets::SettlementPreset",
-      "members": [
-        {
-          "name": "order_aspects",
-          "type": "core::array::Span::<core::integer::u8>"
-        },
-        {
-          "name": "mode",
-          "type": "world_native::settlement::SettlementMode"
-        },
-        {
-          "name": "spacing",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "depths",
-          "type": "core::array::Span::<world_native::expeditions::DepthRules>"
-        },
-        {
-          "name": "realms",
-          "type": "world_native::settlement::RealmGrants"
-        },
-        {
-          "name": "villages",
-          "type": "world_native::village::VillageRules"
-        },
-        {
-          "name": "spires",
-          "type": "core::option::Option::<world_native::spires::SpireLayout>"
-        }
-      ]
-    },
-    "world_native::presets::StructurePreset": {
-      "type": "struct",
-      "name": "world_native::presets::StructurePreset",
-      "members": [
-        {
-          "name": "board",
-          "type": "core::option::Option::<world_native::buildings::BoardRules>"
-        },
-        {
-          "name": "research",
-          "type": "core::array::Span::<world_native::research::ResearchPriceConfig>"
-        },
-        {
-          "name": "buildings",
-          "type": "core::array::Span::<world_native::buildings::BuildingRuleConfig>"
-        },
-        {
-          "name": "camps",
-          "type": "world_native::camps::CampRules"
-        },
-        {
-          "name": "upgrade_limits",
-          "type": "world_native::upgrades::UpgradeLimits"
-        },
-        {
-          "name": "upgrades",
-          "type": "core::array::Span::<world_native::upgrades::UpgradeRecipe>"
-        }
-      ]
-    },
-    "world_native::presets::WithdrawalPreset": {
-      "type": "struct",
-      "name": "world_native::presets::WithdrawalPreset",
-      "members": [
-        {
-          "name": "deposits",
-          "type": "world_native::bridge::DepositRules"
-        },
-        {
-          "name": "rules",
-          "type": "world_native::withdrawals::WithdrawalRules"
-        },
-        {
-          "name": "tokens",
-          "type": "core::array::Span::<world_native::withdrawals::ResourceToken>"
-        }
-      ]
-    },
     "world_native::production::ProductionRecipe": {
       "type": "struct",
       "name": "world_native::production::ProductionRecipe",
@@ -9699,20 +8545,6 @@
         {
           "name": "complex_inputs",
           "type": "core::array::Span::<world_native::resources::ResourceAmount>"
-        }
-      ]
-    },
-    "world_native::production::RecipeConfig": {
-      "type": "struct",
-      "name": "world_native::production::RecipeConfig",
-      "members": [
-        {
-          "name": "resource_type",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "recipe",
-          "type": "world_native::production::ProductionRecipe"
         }
       ]
     },
@@ -10057,10 +8889,6 @@
           "type": "core::integer::u8"
         },
         {
-          "name": "preset_id",
-          "type": "core::integer::u32"
-        },
-        {
           "name": "start_settling_at",
           "type": "core::integer::u64"
         },
@@ -10073,20 +8901,8 @@
           "type": "core::integer::u64"
         },
         {
-          "name": "end_grace_seconds",
-          "type": "core::integer::u32"
-        },
-        {
           "name": "dev_mode_on",
           "type": "core::bool"
-        },
-        {
-          "name": "roster",
-          "type": "core::array::Span::<world_native::registrar::RosterPlayer>"
-        },
-        {
-          "name": "seater",
-          "type": "core::starknet::contract_address::ContractAddress"
         },
         {
           "name": "registration_start",
@@ -10103,20 +8919,6 @@
         {
           "name": "seed",
           "type": "core::felt252"
-        }
-      ]
-    },
-    "world_native::registrar::RosterPlayer": {
-      "type": "struct",
-      "name": "world_native::registrar::RosterPlayer",
-      "members": [
-        {
-          "name": "account",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "wallet",
-          "type": "core::starknet::contract_address::ContractAddress"
         }
       ]
     },
@@ -10361,24 +9163,6 @@
         {
           "name": "labor",
           "type": "core::integer::u128"
-        }
-      ]
-    },
-    "world_native::research::ResearchPriceConfig": {
-      "type": "struct",
-      "name": "world_native::research::ResearchPriceConfig",
-      "members": [
-        {
-          "name": "row",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "tier",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "price",
-          "type": "world_native::research::ResearchPrice"
         }
       ]
     },
@@ -11164,28 +9948,6 @@
         }
       ]
     },
-    "world_native::spires::SpireLayout": {
-      "type": "struct",
-      "name": "world_native::spires::SpireLayout",
-      "members": [
-        {
-          "name": "count",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "base_distance",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "layer_distance",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "max_layer",
-          "type": "core::integer::u8"
-        }
-      ]
-    },
     "world_native::structures::Structure": {
       "type": "struct",
       "name": "world_native::structures::Structure",
@@ -11749,87 +10511,7 @@
           "type": "core::array::Span::<world_native::village::VillageResource>"
         }
       ]
-    },
-    "world_native::withdrawals::ResourceToken": {
-      "type": "struct",
-      "name": "world_native::withdrawals::ResourceToken",
-      "members": [
-        {
-          "name": "resource_type",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "token",
-          "type": "core::starknet::contract_address::ContractAddress"
-        }
-      ]
-    },
-    "world_native::withdrawals::ResourceTokenKey": {
-      "type": "struct",
-      "name": "world_native::withdrawals::ResourceTokenKey",
-      "members": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "resource_type",
-          "type": "core::integer::u8"
-        }
-      ]
-    },
-    "world_native::withdrawals::Retention": {
-      "type": "struct",
-      "name": "world_native::withdrawals::Retention",
-      "members": [
-        {
-          "name": "troop_percent",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "resource_percent",
-          "type": "core::integer::u8"
-        }
-      ]
-    },
-    "world_native::withdrawals::WithdrawalRules": {
-      "type": "struct",
-      "name": "world_native::withdrawals::WithdrawalRules",
-      "members": [
-        {
-          "name": "paused",
-          "type": "core::bool"
-        },
-        {
-          "name": "bank_fee_bps",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "velords_fee_bps",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "season_fee_bps",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "client_fee_bps",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "velords_recipient",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "season_recipient",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "retention",
-          "type": "core::array::Span::<world_native::withdrawals::Retention>"
-        }
-      ]
     }
   },
-  "identity": "42d0fec2a11eebe4baaafa767dedf1c726c18b572c057254384bbea445ddc591"
+  "identity": "7086271615cfcc76864ab63afe61478be3f03bd6e9493504585c4ab20d0b6091"
 }

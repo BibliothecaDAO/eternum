@@ -203,11 +203,9 @@ import {
   AllowArray,
   BigNumberish,
   Call,
-  CallData,
   GetTransactionReceiptResponse,
   RpcProvider,
   shortString,
-  uint256,
 } from "starknet";
 import { classifyTransactionError, extractErrorMessage, TransactionFailure } from "./classify-transaction-error";
 import { encodeNativeCommand, type NativeCommand } from "./native-command";
@@ -407,10 +405,6 @@ export class EternumProvider extends EventEmitter {
   private ownedStructure(actor: string): number {
     if (!this.resolveOwnedStructure) throw new Error("Native player facts are not configured");
     return this.resolveOwnedStructure(actor);
-  }
-  private bridgeAddress(): string {
-    if (!this.contracts.bridge) throw new Error("Native bridge is not configured");
-    return this.contracts.bridge;
   }
 
   public setTransactionStreamWaiter(
@@ -1219,54 +1213,6 @@ export class EternumProvider extends EventEmitter {
       to_guard_slot: props.to_guard_slot,
       count: props.count,
     });
-  }
-
-  public async bridge_deposit_into_realm(props: SystemProps.BridgeDepositIntoRealmProps) {
-    let receipt: GetTransactionReceiptResponse | undefined;
-    for (const resource of props.resources) {
-      const approval = await props.signer.execute({
-        contractAddress: String(resource.tokenAddress),
-        entrypoint: "approve",
-        calldata: CallData.compile({ spender: this.bridgeAddress(), amount: uint256.bnToUint256(resource.amount) }),
-      });
-      await this.provider.waitForTransaction(approval.transaction_hash);
-      receipt = await this.submitCommand(
-        props.signer,
-        {
-          kind: "DepositResource",
-          value: {
-            structure_id: props.recipient_structure_id,
-            resource_type: resource.resource_type,
-            amount: resource.amount,
-            client_fee_recipient: props.client_fee_recipient,
-          },
-        },
-        TransactionType.BRIDGE_DEPOSIT,
-      );
-    }
-    if (!receipt) throw new Error("Bridge deposit requires resources");
-    return receipt;
-  }
-
-  public async bridge_withdraw_from_realm(props: SystemProps.BridgeWithdrawFromRealmProps) {
-    let receipt: GetTransactionReceiptResponse | undefined;
-    for (const resource of props.resources)
-      receipt = await this.submitCommand(
-        props.signer,
-        {
-          kind: "WithdrawResource",
-          value: {
-            structure_id: props.from_structure_id,
-            resource_type: resource.resource_type,
-            amount: resource.amount,
-            recipient: props.recipient_address,
-            client_fee_recipient: props.client_fee_recipient,
-          },
-        },
-        TransactionType.BRIDGE_WITHDRAW,
-      );
-    if (!receipt) throw new Error("Bridge withdrawal requires resources");
-    return receipt;
   }
 }
 

@@ -10,9 +10,9 @@ pub struct CommandRoute {
 
 pub const CHOOSE_OATH: u32 = 73;
 
-pub const COMMAND_IDS: [u32; 43] = [
-    74, 75, 73, 76, 72, 0, 1, 2, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 16, 17, 18, 20, 21, 22, 23, 24, 29, 43, 53, 54, 55,
-    56, 57, 58, 59, 60, 62, 63, 64, 65, 66, 67, 69,
+pub const COMMAND_IDS: [u32; 40] = [
+    74, 75, 73, 76, 72, 0, 1, 2, 3, 4, 6, 8, 10, 11, 12, 13, 14, 16, 17, 18, 20, 21, 22, 23, 24, 29, 43, 53, 54, 55, 56,
+    57, 58, 59, 60, 64, 65, 66, 67, 69,
 ];
 pub const COMMAND_ROUTES: [Option<CommandRoute>; 77] = [
     Some(CommandRoute { logic: 6, selector: selector!("create_explorer"), items_offset: None, batch: false }),
@@ -20,8 +20,7 @@ pub const COMMAND_ROUTES: [Option<CommandRoute>; 77] = [
     Some(CommandRoute { logic: 12, selector: selector!("battle"), items_offset: Some(2), batch: false }),
     Some(CommandRoute { logic: 15, selector: selector!("move_explorer"), items_offset: Some(1), batch: false }),
     Some(CommandRoute { logic: 15, selector: selector!("toggle_alternate"), items_offset: None, batch: false }), None,
-    Some(CommandRoute { logic: 3, selector: selector!("level_up"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 7, selector: selector!("settle_blitz_roster"), items_offset: None, batch: true }),
+    Some(CommandRoute { logic: 3, selector: selector!("level_up"), items_offset: None, batch: false }), None,
     Some(CommandRoute { logic: 5, selector: selector!("activate_realm_economy"), items_offset: None, batch: false }),
     None, Some(CommandRoute { logic: 7, selector: selector!("settle_season"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 0, selector: selector!("settle_village"), items_offset: None, batch: false }),
@@ -68,9 +67,8 @@ pub const COMMAND_ROUTES: [Option<CommandRoute>; 77] = [
     Some(CommandRoute { logic: 13, selector: selector!("remove_guild_member"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 0, selector: selector!("mark_game_settled"), items_offset: None, batch: true }),
     Some(CommandRoute { logic: 6, selector: selector!("manage_troops"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 12, selector: selector!("guard_attack"), items_offset: None, batch: false }), None,
-    Some(CommandRoute { logic: 4, selector: selector!("deposit_resource"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 4, selector: selector!("withdraw_resource"), items_offset: None, batch: false }),
+    Some(CommandRoute { logic: 12, selector: selector!("guard_attack"), items_offset: None, batch: false }), None, None,
+    None,
     Some(
         CommandRoute { logic: 5, selector: selector!("provision_and_upgrade_realm"), items_offset: None, batch: false },
     ),
@@ -297,6 +295,7 @@ pub impl CommandSerde of Serde<Command> {
             4 => Some(Command::ToggleAlternate(Serde::deserialize(ref serialized)?)),
             5 => None,
             6 => Some(Command::LevelUp(Serde::deserialize(ref serialized)?)),
+            7 => None,
             8 => Some(Command::ProvisionRealm(Serde::deserialize(ref serialized)?)),
             9 => None,
             10 => Some(Command::SettleSeason(Serde::deserialize(ref serialized)?)),
@@ -351,6 +350,8 @@ pub impl CommandSerde of Serde<Command> {
             59 => Some(Command::ManageTroops(Serde::deserialize(ref serialized)?)),
             60 => Some(Command::GuardAttack(Serde::deserialize(ref serialized)?)),
             61 => None,
+            62 => None,
+            63 => None,
             64 => Some(Command::ProvisionAndUpgradeRealm(Serde::deserialize(ref serialized)?)),
             65 => Some(Command::SetEntityName(Serde::deserialize(ref serialized)?)),
             66 => Some(Command::EnterDepth(Serde::deserialize(ref serialized)?)),

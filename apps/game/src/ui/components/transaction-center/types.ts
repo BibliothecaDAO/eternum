@@ -42,8 +42,6 @@ const TX_MESSAGES: Record<TransactionType, string> = {
   [TransactionType.SELL]: "Sold at the market",
   [TransactionType.REMOVE]: "Liquidity withdrawn",
   [TransactionType.ADD_LIQUIDITY]: "Liquidity added",
-  [TransactionType.BRIDGE_DEPOSIT]: "Resources bridged in",
-  [TransactionType.BRIDGE_WITHDRAW]: "Resources bridged out",
   [TransactionType.CREATE_ORDER]: "Trade posted",
   [TransactionType.ACCEPT_ORDER]: "Trade accepted",
   [TransactionType.CANCEL_ORDER]: "Trade cancelled",

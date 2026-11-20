@@ -105,39 +105,4 @@ describe("player command callers", () => {
     expect(decoded()).toEqual({ structure_id: 12n, category: 0n, tier: 0n, amount: 100n, direction: 4n, slot: 2n });
   });
 
-  it("approves the native bridge before submitting a deposit", async () => {
-    const { calls, signer, submit, wait, decoded } = setup();
-    const amount = (1n << 180n) + 3n;
-    await calls.bridge_deposit_into_realm({
-      signer,
-      recipient_structure_id: 9,
-      client_fee_recipient: 0,
-      resources: [{ resource_type: 2, tokenAddress: "0xaa", amount }],
-    });
-    expect(signer.execute).toHaveBeenCalledWith({
-      contractAddress: "0xaa",
-      entrypoint: "approve",
-      calldata: CallData.compile({ spender: "0xb1", amount: { low: 3n, high: 1n << 52n } }),
-    });
-    expect(wait.mock.invocationCallOrder[0]).toBeLessThan(submit.mock.invocationCallOrder[0]);
-    expect(decoded()).toEqual({ structure_id: 9n, resource_type: 2n, amount, client_fee_recipient: 0n });
-  });
-  it("submits a withdrawal without a token approval", async () => {
-    const { calls, signer, decoded } = setup();
-    await calls.bridge_withdraw_from_realm({
-      signer,
-      from_structure_id: 9,
-      recipient_address: "0x456",
-      client_fee_recipient: 0,
-      resources: [{ resource_type: 2, tokenAddress: "0xaa", amount: 100n }],
-    });
-    expect(signer.execute).not.toHaveBeenCalled();
-    expect(decoded()).toEqual({
-      structure_id: 9n,
-      resource_type: 2n,
-      amount: 100n,
-      recipient: 0x456n,
-      client_fee_recipient: 0n,
-    });
-  });
 });

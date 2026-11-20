@@ -10,27 +10,6 @@ export interface ReceiveArmyGrantProps extends SystemSigner {
   village_id: BigNumberish;
 }
 
-export interface BridgeDepositIntoRealmProps extends SystemSigner {
-  resources: {
-    tokenAddress: BigNumberish;
-    resource_type: BigNumberish;
-    amount: BigNumberish;
-  }[];
-  recipient_structure_id: BigNumberish;
-  client_fee_recipient: BigNumberish;
-}
-
-export interface BridgeWithdrawFromRealmProps extends SystemSigner {
-  resources: {
-    tokenAddress: BigNumberish;
-    resource_type: BigNumberish;
-    amount: BigNumberish;
-  }[];
-  from_structure_id: BigNumberish;
-  recipient_address: BigNumberish;
-  client_fee_recipient: BigNumberish;
-}
-
 export interface SetEntityNameProps extends SystemSigner {
   entity_id: BigNumberish;
   name: string;

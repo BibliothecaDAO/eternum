@@ -3,11 +3,6 @@
       "message": "This file was generated from the composed config source and should not be edited manually",
       "configuration": {
   "spireTravelEssenceCost": 0,
-  "bitcoin": {
-    "prizePerPhase": 1,
-    "minimumLabor": 100,
-    "ownerCutBps": 2000
-  },
   "mines": {
     "kinds": {
       "1": {
@@ -42,8 +37,7 @@
   "tick": {
     "defaultTickIntervalInSeconds": 1,
     "armiesTickIntervalInSeconds": 60,
-    "deliveryTickIntervalInSeconds": 180,
-    "bitcoinPhaseInSeconds": 600
+    "deliveryTickIntervalInSeconds": 180
   },
   "carryCapacityGram": {
     "0": 0,
@@ -126,8 +120,6 @@
     "shardsMinesWinProbability": 1000,
     "campFindProbability": 1500,
     "campFindFailProbability": 48500,
-    "bitcoinMineWinProbability": 0,
-    "bitcoinMineFailProbability": 1,
     "hyperstructureWinProbAtCenter": 0,
     "hyperstructureFailProbAtCenter": 1,
     "hyperstructureFailProbIncreasePerHexDistance": 9820,

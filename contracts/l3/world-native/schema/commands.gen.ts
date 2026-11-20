@@ -12,7 +12,6 @@ export const nativeCommandBits = {
   "Move": "8",
   "ToggleAlternate": "16",
   "LevelUp": "64",
-  "SettleBlitzRoster": "128",
   "ProvisionRealm": "256",
   "SettleSeason": "1024",
   "SettleVillage": "2048",
@@ -37,8 +36,6 @@ export const nativeCommandBits = {
   "MarkGameSettled": "288230376151711744",
   "ManageTroops": "576460752303423488",
   "GuardAttack": "1152921504606846976",
-  "DepositResource": "4611686018427387904",
-  "WithdrawResource": "9223372036854775808",
   "ProvisionAndUpgradeRealm": "18446744073709551616",
   "SetEntityName": "36893488147419103232",
   "EnterDepth": "73786976294838206464",
@@ -57,7 +54,6 @@ export interface NativeCommandPayloads {
   Move: { readonly explorer_id: BigNumberish; readonly directions: readonly (BigNumberish)[] };
   ToggleAlternate: { readonly explorer_id: BigNumberish; readonly spire_direction: BigNumberish };
   LevelUp: BigNumberish;
-  SettleBlitzRoster: undefined;
   ProvisionRealm: BigNumberish;
   SettleSeason: { readonly selected_realm: { readonly kind: "Some"; readonly value: BigNumberish } | { readonly kind: "None"; readonly value: undefined }; readonly order: { readonly kind: "Some"; readonly value: BigNumberish } | { readonly kind: "None"; readonly value: undefined } };
   SettleVillage: { readonly pass_id: BigNumberish; readonly connected_realm_entity_id: BigNumberish };
@@ -82,8 +78,6 @@ export interface NativeCommandPayloads {
   MarkGameSettled: undefined;
   ManageTroops: { readonly kind: "RecruitGuard"; readonly value: { readonly guard: { readonly structure_id: BigNumberish; readonly slot: BigNumberish }; readonly category: { readonly kind: "Knight"; readonly value: undefined } | { readonly kind: "Paladin"; readonly value: undefined } | { readonly kind: "Crossbowman"; readonly value: undefined }; readonly tier: { readonly kind: "T1"; readonly value: undefined } | { readonly kind: "T2"; readonly value: undefined } | { readonly kind: "T3"; readonly value: undefined }; readonly amount: BigNumberish } } | { readonly kind: "RemoveGuard"; readonly value: { readonly structure_id: BigNumberish; readonly slot: BigNumberish } } | { readonly kind: "RecruitExplorer"; readonly value: { readonly explorer_id: BigNumberish; readonly amount: BigNumberish; readonly supply_post: { readonly kind: "Some"; readonly value: BigNumberish } | { readonly kind: "None"; readonly value: undefined } } } | { readonly kind: "RemoveExplorer"; readonly value: BigNumberish } | { readonly kind: "Transfer"; readonly value: { readonly source: { readonly kind: "Explorer"; readonly value: BigNumberish } | { readonly kind: "Guard"; readonly value: { readonly structure_id: BigNumberish; readonly slot: BigNumberish } }; readonly target: { readonly kind: "Explorer"; readonly value: BigNumberish } | { readonly kind: "Guard"; readonly value: { readonly structure_id: BigNumberish; readonly slot: BigNumberish } }; readonly amount: BigNumberish } };
   GuardAttack: { readonly guard: { readonly structure_id: BigNumberish; readonly slot: BigNumberish }; readonly explorer_id: BigNumberish };
-  DepositResource: { readonly structure_id: BigNumberish; readonly resource_type: BigNumberish; readonly amount: BigNumberish; readonly client_fee_recipient: BigNumberish };
-  WithdrawResource: { readonly structure_id: BigNumberish; readonly recipient: BigNumberish; readonly resource_type: BigNumberish; readonly amount: BigNumberish; readonly client_fee_recipient: BigNumberish };
   ProvisionAndUpgradeRealm: BigNumberish;
   SetEntityName: { readonly entity_id: BigNumberish; readonly name: BigNumberish };
   EnterDepth: { readonly explorer_id: BigNumberish; readonly depth: BigNumberish };
