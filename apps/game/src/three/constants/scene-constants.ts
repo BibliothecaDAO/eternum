@@ -46,7 +46,6 @@ enum BuildingFilenames {
 }
 
 export const RiftModelPath = "/models/reward-tiles/rift.glb";
-const BITCOIN_MINE_MODEL_PATH = "/models/ethereal/bitcoin-mine.glb";
 const RIFT_MODEL_PATH = "/models/reward-tiles/rift.glb";
 
 export const VILLAGE_MODEL_PATH = "/models/outposts/village.glb";
@@ -70,7 +69,6 @@ export function isSettlementModelPath(path: string): boolean {
 export const SHARED_BUILDING_MODEL_PATHS = buildUniqueAssetPaths([
   ...Object.values(BuildingFilenames).map((fileName) => `${BUILDINGS_MODELS_PATH}${fileName}`),
   RiftModelPath,
-  BITCOIN_MINE_MODEL_PATH,
   ...REALM_PATHS,
   VILLAGE_MODEL_PATH,
   CAMP_MODEL_PATH,
@@ -84,7 +82,6 @@ export const structureTypeToBuildingType: Record<StructureType, BuildingType> = 
   [StructureType.Hyperstructure]: BuildingType.ResourceLabor,
   [StructureType.Village]: BuildingType.ResourceLabor,
   [StructureType.Camp]: BuildingType.ResourceLabor,
-  [StructureType.BitcoinMine]: BuildingType.ResourceLabor,
   [StructureType.Rift]: BuildingType.ResourceEssence,
   [StructureType.Ruin]: BuildingType.ResourceLabor,
   [StructureType.Beasts]: BuildingType.ResourceLabor,
@@ -175,7 +172,6 @@ export function getStructureModelPaths(): Record<StructureType, string[]> {
     [StructureType.Mine]: Object.values(MineKinds).map((kind) => kind.model),
     [StructureType.Village]: [VILLAGE_MODEL_PATH],
     [StructureType.Camp]: [CAMP_MODEL_PATH, ...FRONTIER_BEAST_PATHS, CLEARED_SITE_MODEL_PATH],
-    [StructureType.BitcoinMine]: [BITCOIN_MINE_MODEL_PATH],
     [StructureType.Rift]: [RIFT_MODEL_PATH, ...FRONTIER_BEAST_PATHS, CLEARED_SITE_MODEL_PATH],
     [StructureType.Ruin]: [...FALLEN_REALM_MODEL_PATHS, CLEARED_SITE_MODEL_PATH],
     [StructureType.Beasts]: [FRONTIER_BEASTS.cyclops.path, ...FRONTIER_BEAST_PATHS, CLEARED_SITE_MODEL_PATH],

@@ -118,28 +118,6 @@ export const commandRoutes = [
     entrypoint: "resume_building_production",
   },
   {
-    name: "ContributeBitcoinLabor",
-    logic: "season",
-    entrypoint: "contribute_bitcoin_labor",
-  },
-  {
-    name: "CloseBitcoinPhase",
-    logic: "season",
-    entrypoint: "close_bitcoin_phase",
-  },
-  {
-    name: "BindBitcoinPhase",
-    logic: "season",
-    entrypoint: "bind_bitcoin_phase",
-  },
-  {
-    name: "ClaimBitcoinPhase",
-    logic: "season",
-    entrypoint: "claim_bitcoin_phase",
-    items: "mine_ids",
-    batch: true,
-  },
-  {
     name: "BattleGuard",
     logic: "combat",
     entrypoint: "battle_guard",
@@ -148,11 +126,6 @@ export const commandRoutes = [
     name: "ApplyRelic",
     logic: "relics",
     entrypoint: "apply_relic",
-  },
-  {
-    name: "RecordBlitzResults",
-    logic: "prizes",
-    entrypoint: "record_blitz_results",
   },
   {
     name: "CreateGuild",

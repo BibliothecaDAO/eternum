@@ -35,7 +35,6 @@ export const frontierPreset = {
   orderAspects: [],
   deep: null,
   race: null,
-  bitcoinEnabled: false,
   dailyQuest: null,
   banes: null,
   startingTroops: Array.from({ length: 17 }, () => "Knight" as const),

@@ -133,9 +133,9 @@ const SURFACES = [
     path: "/lab/kit/standings?mode=blitz&capture=1",
     ready: "document.querySelector('[data-player-address]') !== null",
     steps: [
-      { press: "Lord 0333: their points", shows: "player", still: "player" },
+      { press: "Lord 0333", shows: "player", still: "player" },
       { press: "Players", shows: "players", still: "players-again" },
-      { press: "Lord 0444: their points", shows: "player", still: "player-again" },
+      { press: "Lord 0444", shows: "player", still: "player-again" },
     ],
   },
   // Last: the doorway boots the map behind it, which keeps the tab busy for whatever opens next.

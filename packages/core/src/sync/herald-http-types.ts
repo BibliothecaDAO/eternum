@@ -1,5 +1,4 @@
 import type { AspectId } from "@bibliothecadao/types";
-import type { PlayerLeaderboardActivityEntry } from "./leaderboard-activity";
 
 export type HeraldGameStatus = "Created" | "Registration" | "Live" | "Ended" | "Settled";
 
@@ -142,15 +141,6 @@ export interface HeraldHistoryPage {
   total: number;
 }
 
-/** A ranked player by address; their name is their identity profile, which the client resolves. */
-export type HeraldLeaderboardEntry = PlayerLeaderboardActivityEntry;
-
-export interface HeraldLeaderboard {
-  mode: "points";
-  game_id: string;
-  entries: HeraldLeaderboardEntry[];
-}
-
 export interface HeraldFrontierLeaderboardEntry {
   /** Native founding trait; absent only in historical boards recorded before home identity was included. */
   has_wonder?: boolean;
@@ -199,8 +189,6 @@ export interface HeraldFrontierDayRanks {
   confirmed_block: number;
   entries: { address: string; structure_id: string; rank: number }[];
 }
-
-export type HeraldGameLeaderboard = HeraldLeaderboard | HeraldFrontierLeaderboard;
 
 /** Herald closes a game stream with this code when the game is finalized; the stream will never serve it again. */
 export const HERALD_GAME_FINALIZED_CLOSE = 4409;

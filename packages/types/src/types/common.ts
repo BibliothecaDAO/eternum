@@ -551,10 +551,8 @@ export interface RealmInfo {
 
 export interface PlayerInfo {
   entity: string;
-  rank: number;
   address: bigint;
   name: string;
-  points: number | null;
   realms: number;
   mines: number;
   hyperstructures: number;

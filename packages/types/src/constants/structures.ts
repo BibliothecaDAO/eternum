@@ -10,7 +10,6 @@ export const StructureTypeToNameMapping: Record<StructureType, string> = {
   [StructureType.Mine]: "Mine",
   [StructureType.Village]: "Village",
   [StructureType.Camp]: "Camp",
-  [StructureType.BitcoinMine]: "Bitcoin Mine",
   [StructureType.Rift]: "Rift",
   [StructureType.Ruin]: "Ruin",
   [StructureType.Beasts]: "Beasts",
@@ -301,7 +300,6 @@ export enum CapacityConfig {
   BankStructure = 7,
   FragmentMineStructure = 8,
   CampStructure = 10,
-  BitcoinMineStructure = 11,
 }
 
 export const isEconomyBuilding = (buildingType: BuildingType) => {

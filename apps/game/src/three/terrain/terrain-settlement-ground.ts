@@ -16,7 +16,6 @@ const RECLAIMS_LAND_FROM_WATER: Record<StructureType, boolean> = {
   [StructureType.Hyperstructure]: false,
   [StructureType.Bank]: false,
   [StructureType.Mine]: false,
-  [StructureType.BitcoinMine]: false,
   [StructureType.Rift]: false,
 };
 

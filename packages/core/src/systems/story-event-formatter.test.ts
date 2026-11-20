@@ -14,10 +14,6 @@ vi.stubGlobal("localStorage", { getItem: () => null });
 beforeEach(() => {
   vi.spyOn(configManager, "getMapCenter").mockReturnValue(2147483647);
   vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
-  vi.spyOn(configManager, "getVictoryPointGrants").mockReturnValue({
-    exploreTile: 5,
-    claimCampFromBandits: 250,
-  });
 });
 
 type Event = Parameters<typeof buildStoryEventPresentation>[0];
@@ -391,17 +387,7 @@ describe("every story the chain can tell", () => {
     ProductionStory: { resource_type: 35, amount },
     BuildingPlacementStory: { coord: { alt: false, x: 11, y: 10 }, category: 37, change: "Created" },
     BuildingPaymentStory: { category: 37, cost: [{ resource_type: 23, amount }] },
-    BitcoinAwardStory: {
-      phase: 1,
-      mine_id: 9,
-      winner: "0x123",
-      owner: "0x456",
-      winner_destination: 5,
-      owner_destination: 6,
-      winner_paid: amount,
-      owner_paid: amount,
-    },
-    StructureCapturedStory: { previous_owner: "0x0", new_owner: "0x123", points: 10 },
+    StructureCapturedStory: { previous_owner: "0x0", new_owner: "0x123" },
     TradeCreated: {
       trade_id: 1,
       order: {
@@ -548,13 +534,13 @@ describe("every story the chain can tell", () => {
 
 describe("a capture", () => {
   const names = (address: string) => ({ "0xc1": "clientlane", "0xa1": "uxplay" })[address] ?? null;
-  const captured = (previousOwner: string, viewerAddress: string | null, points = 0n) => {
+  const captured = (previousOwner: string, viewerAddress: string | null) => {
     const { store, setHeldRealm } = buildStore();
     setHeldRealm(5, 1, 1);
     const realm = buildStoryEventPresentation(story("RealmCreatedStory", { coord: { x: 1, y: 1 } }, 5), store).title;
     const presentation = buildStoryEventPresentation(
       {
-        ...story("StructureCapturedStory", { previous_owner: previousOwner, new_owner: "0xc1", points }, 5),
+        ...story("StructureCapturedStory", { previous_owner: previousOwner, new_owner: "0xc1" }, 5),
         viewerAddress,
       },
       store,
@@ -577,9 +563,9 @@ describe("a capture", () => {
     expect(captured("0xa1", "0xc1").title).toBe(`clientlane took ${realm} from uxplay. ${aftermath}`);
   });
 
-  it("has nothing that went with it when no player held it, and the points taking it from The Vanguard paid", () => {
-    const { title, realm } = captured("0x0", "0xc1", 250_000_000n);
-    expect(title).toBe(`clientlane took ${realm} from The Vanguard · +250 points`);
+  it("has nothing that went with it when no player held it", () => {
+    const { title, realm } = captured("0x0", "0xc1");
+    expect(title).toBe(`clientlane took ${realm} from The Vanguard`);
   });
 });
 

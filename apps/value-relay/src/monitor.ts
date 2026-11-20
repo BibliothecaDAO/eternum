@@ -4,9 +4,8 @@ import type {
   LedgerPage,
   PaidClaim,
   ReportedClaim,
-  BlitzCommitment,
+  PostedResult,
   Withdrawal,
-  BlitzResult,
   RelayEffect,
   LedgerAnchor,
 } from "./ports";
@@ -187,16 +186,7 @@ const checkPostedResults = (ports: MonitorPorts, store: MonitorStore) =>
     ports.ledger.postedResults,
     (row) => `postedResults:${row.chainId}:${row.gameId}`,
     postedResultFact,
-    (posted) =>
-      ports.shard
-        .result(posted.chainId, posted.gameId)
-        .pipe(
-          Effect.map((result) =>
-            matchesPostedResult(result, posted)
-              ? null
-              : { reason: `blitz_result_mismatch:${posted.gameId}`, evidence: resultEvidence(result) },
-          ),
-        ),
+    (posted) => Effect.succeed({ reason: `blitz_result_posted:${posted.gameId}`, evidence: "no_result_family" }),
     store,
   );
 
@@ -327,19 +317,14 @@ const matchesPaidClaim = (
   receipt.prizeRank === paid.prizeRank &&
   receipt.prizeCount === paid.prizeCount &&
   BigInt(receipt.amount) === BigInt(paid.amount);
-const matchesPostedResult = (result: BlitzResult | null, posted: BlitzCommitment) =>
-  result !== null &&
-  BigInt(result.chainId) === BigInt(posted.chainId) &&
-  result.gameId === posted.gameId &&
-  BigInt(result.commitment) === BigInt(posted.commitment);
 
 const hex = (value: string) => `0x${BigInt(value).toString(16)}`;
 
 /** The paid claim's ledger fields, and nothing block-dependent, so a replay at a new anchor is the same fact. */
 const paidClaimFact = (paid: PaidClaim) =>
   `paidClaims:${hex(paid.chainId)}:${hex(paid.transactionHash)}:${paid.seasonId}:${BigInt(paid.amount)}:${hex(paid.wallet)}:${hex(paid.paymentTransactionHash)}:${paid.prizeRank}:${paid.prizeCount}`;
-/** The posted result's ledger fields. */
-const postedResultFact = (posted: BlitzCommitment) =>
+
+const postedResultFact = (posted: PostedResult) =>
   `postedResults:${hex(posted.chainId)}:${posted.gameId}:${hex(posted.commitment)}`;
 
 /** What a failed check saw: why the ledger row disagrees, and the independent evidence it was compared with. */
@@ -354,8 +339,6 @@ const receiptEvidence = (receipt: Withdrawal | null) =>
   receipt === null
     ? "receipt:none"
     : `receipt:${hex(receipt.chainId)}:${hex(receipt.transactionHash)}:${receipt.seasonId}:${BigInt(receipt.amount)}:${hex(receipt.realmsId)}:${receipt.prizeRank}:${receipt.prizeCount}`;
-const resultEvidence = (result: BlitzResult | null) =>
-  result === null ? "result:none" : `result:${hex(result.chainId)}:${result.gameId}:${hex(result.commitment)}`;
 
 const isReportStream = (stream: FaultRow["stream"]): stream is ReportStream => stream === "reportedClaims";
 

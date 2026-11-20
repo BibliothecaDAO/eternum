@@ -22,7 +22,6 @@ export * from "./troop-raise-cost";
 export * from "./expeditions";
 export * from "./guild";
 export * from "./hyperstructure";
-export * from "./leaderboard";
 export * from "./packed-data";
 export * from "./players";
 export * from "./viewer";

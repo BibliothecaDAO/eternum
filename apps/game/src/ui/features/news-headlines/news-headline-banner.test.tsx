@@ -61,20 +61,6 @@ const show = async (headline: Headline, check: (line: string) => void) => {
   }
 };
 
-it("names an ended game's winner once identity answers, never by the stand-in name meanwhile (review P2-1)", async () => {
-  await show(
-    {
-      id: "game-end:2",
-      type: "game-end",
-      icon: "game-end",
-      title: "The game has ended",
-      description: [{ player: 0x5eed0154n }, " wins!"],
-      timestamp: 0,
-    },
-    (line) => expect(line).toBe("jeanchristophemehrcl wins!"),
-  );
-});
-
 it("names both sides of a capture once identity answers, and the neutral side at once", async () => {
   await show(
     buildCaptureHeadline({
@@ -92,39 +78,23 @@ it("names both sides of a capture once identity answers, and the neutral side at
   );
 });
 
-const ended = (player: bigint): Headline => ({
-  id: `game-end:${player}`,
-  type: "game-end",
-  icon: "game-end",
-  title: "The game has ended",
-  description: [{ player }, " wins!"],
+const fell = (player: bigint): Headline => ({
+  id: `realm-fall:${player}`,
+  type: "realm-fall",
+  icon: "realm-fall",
+  title: "Xeswet has fallen",
+  description: [{ player }, " took it."],
   timestamp: 0,
 });
 
-it("says a winner's name is unavailable when identity's ask fails, never the stand-in (review P2)", async () => {
+it("says a player's name is unavailable when identity's ask fails, never the stand-in (review P2)", async () => {
   vi.spyOn(console, "error").mockImplementation(() => {});
-  await show(ended(0x5eed0789n), (line) => {
-    expect(line).toBe("— wins!");
+  await show(fell(0x5eed0789n), (line) => {
+    expect(line).toBe("— took it.");
     expect(line).not.toMatch(/Lord/);
   });
 });
 
-it("still names a winner identity answered for with no claimed name by the unclaimed rule", async () => {
-  await show(ended(0x5eed0abcn), (line) => expect(line).toMatch(/^Lord 0abc wins!$/));
-});
-
-it("heads a game's end 'Game result' in every mode, Blitz included, which has no ages (live-qa-night-2 B-6)", async () => {
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  const container = document.createElement("div");
-  document.body.append(container);
-  const root = createRoot(container);
-  try {
-    await act(async () => root.render(<NewsHeadlineBanner headline={ended(0x5eed0154n)} />));
-    expect(container.querySelector(".ui-banner__eyebrow")?.textContent).toBe("Game result");
-    expect(container.textContent).not.toContain("Age");
-  } finally {
-    await act(async () => root.unmount());
-    container.remove();
-    answer();
-  }
+it("still names a player identity answered for with no claimed name by the unclaimed rule", async () => {
+  await show(fell(0x5eed0abcn), (line) => expect(line).toMatch(/^Lord 0abc took it\.$/));
 });

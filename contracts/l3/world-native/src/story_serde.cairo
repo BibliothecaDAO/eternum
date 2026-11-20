@@ -40,10 +40,6 @@ pub impl StorySerde of Serde<Story> {
                 output.append(9);
                 Serde::serialize(value, ref output);
             },
-            Story::BitcoinAwardStory(value) => {
-                output.append(10);
-                Serde::serialize(value, ref output);
-            },
             Story::StructureCapturedStory(value) => {
                 output.append(11);
                 Serde::serialize(value, ref output);
@@ -112,7 +108,7 @@ pub impl StorySerde of Serde<Story> {
             7 => Some(Story::ProductionStory(Serde::deserialize(ref serialized)?)),
             8 => Some(Story::BuildingPlacementStory(Serde::deserialize(ref serialized)?)),
             9 => Some(Story::BuildingPaymentStory(Serde::deserialize(ref serialized)?)),
-            10 => Some(Story::BitcoinAwardStory(Serde::deserialize(ref serialized)?)),
+            10 => None,
             11 => Some(Story::StructureCapturedStory(Serde::deserialize(ref serialized)?)),
             12 => None,
             13 => None,

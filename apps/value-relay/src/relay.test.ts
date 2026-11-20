@@ -1,18 +1,10 @@
 const testSignature = { r: "0x123", s: "0x456" };
 import { Effect } from "effect";
 import { describe, expect, it, vi } from "vitest";
-import { blitzCommitment } from "@realms-world/value-ledger/commitment";
 import { runRelay } from "./relay";
 import { runMonitor, type MonitorProgress } from "./monitor";
 import { frontierPayment } from "./adapters";
-import {
-  RelayFailure,
-  type RelayPorts,
-  type MonitorPorts,
-  type ConfirmedBlock,
-  type Withdrawal,
-  type BlitzResult,
-} from "./ports";
+import { RelayFailure, type RelayPorts, type MonitorPorts, type ConfirmedBlock, type Withdrawal } from "./ports";
 import type { RelayStore, RelayProgress } from "./state";
 
 const withdrawal: Withdrawal = {
@@ -25,12 +17,6 @@ const withdrawal: Withdrawal = {
   amount: "17",
   confirmedAt: 1000,
 };
-const result: BlitzResult = {
-  chainId: "0x1",
-  gameId: 6,
-  rows: [],
-  commitment: blitzCommitment({ chainId: "0x1", gameId: 6, rows: [] }),
-};
 const block: ConfirmedBlock = {
   chainId: "0x1",
   number: 0,
@@ -38,7 +24,6 @@ const block: ConfirmedBlock = {
   parentHash: "0x0",
   status: "ACCEPTED_ON_L2",
   withdrawals: [withdrawal],
-  results: [result],
 };
 const fixture = () => {
   const single: {
@@ -49,13 +34,11 @@ const fixture = () => {
   const held: import("./ports").HeldObligation[] = [];
   const withdrawals = new Map<string, Withdrawal>();
   const proofs = new Map<string, Withdrawal>();
-  const results = new Map<number, BlitzResult>();
   const store: RelayStore = {
     progress: async () => progress,
     observe: async (block) => {
       held.push(...(block.held ?? []));
       block.withdrawals.forEach((w) => withdrawals.set(w.transactionHash, w));
-      block.results.forEach((r) => results.set(r.gameId, r));
       if (block.next)
         progress = {
           ...progress,
@@ -68,7 +51,6 @@ const fixture = () => {
       }
     },
     withdrawals: async () => [...withdrawals.values()],
-    results: async () => [...results.values()],
     completeWithdrawal: async (hash) => {
       const row = withdrawals.get(hash);
       if (row) proofs.set(hash, row);
@@ -86,9 +68,6 @@ const fixture = () => {
     markReported: async (hash) => {
       const row = withdrawals.get(hash);
       if (row) withdrawals.set(hash, { ...row, reported: true });
-    },
-    completeResult: async (id) => {
-      results.delete(id);
     },
     held: async () => held,
     heldRecovery: async () => held.slice(0, 100),
@@ -116,7 +95,7 @@ const fixture = () => {
         MonitorPorts["ledger"],
         "reportedClaims" | "paidClaims" | "postedResults" | "frontierPool" | "finalFrontierPool"
       >;
-    shard: RelayPorts["shard"] & Pick<MonitorPorts["shard"], "withdrawalReceipt" | "conservation" | "result">;
+    shard: RelayPorts["shard"] & Pick<MonitorPorts["shard"], "withdrawalReceipt" | "conservation">;
   } = {
     shard: {
       withdrawalReceipt: () => Effect.succeed({ ...withdrawal, account: "0x3" }),
@@ -125,7 +104,6 @@ const fixture = () => {
       blockHash: () => Effect.succeed(block.hash),
       eventsPage: () => Effect.succeed(block),
       withdrawal: () => Effect.succeed(withdrawal),
-      result: () => Effect.succeed(result),
     },
     identity: {
       matchesPayDecision: (decision) => Effect.succeed(BigInt(decision.wallet) === 0x123n),
@@ -158,7 +136,6 @@ const fixture = () => {
           ),
         ),
       ),
-      postResult: vi.fn(() => Effect.void),
       reportedClaims: () =>
         Effect.succeed({
           rows: [],
@@ -168,18 +145,18 @@ const fixture = () => {
           rewind: false,
           fromBlock: 0,
         }),
-      paidClaims: () =>
+      postedResults: () =>
         Effect.succeed({
-          rows: [{ ...withdrawal, paymentTransactionHash: "0xdef", paidAt: 1000, wallet: "0x123" }],
+          rows: [],
           next: null,
           head: 1000,
           anchor: { number: 1000, hash: "0xa" },
           rewind: false,
           fromBlock: 1,
         }),
-      postedResults: () =>
+      paidClaims: () =>
         Effect.succeed({
-          rows: [result],
+          rows: [{ ...withdrawal, paymentTransactionHash: "0xdef", paidAt: 1000, wallet: "0x123" }],
           next: null,
           head: 1000,
           anchor: { number: 1000, hash: "0xa" },
@@ -204,7 +181,6 @@ describe("confirmed value relay", () => {
     expect(await f.store.progress()).toEqual({ nextBlock: 1, lastHash: "0xa", halted: null });
     expect(f.single.pay).toHaveBeenCalledTimes(1);
     expect(f.single.pay).toHaveBeenCalledWith(withdrawal, "0x123");
-    expect(f.ports.ledger.postResult).toHaveBeenCalledTimes(1);
   });
   it("pays as soon as a wallet is linked, reading the current link each time", async () => {
     const f = fixture();
@@ -300,38 +276,33 @@ describe("confirmed value relay", () => {
 });
 
 describe("independent payout monitor", () => {
-  it.each(["missing_receipt", "wrong_amount", "wrong_season", "missing_result", "wrong_commitment", "wrong_wallet"])(
-    "pauses on %s",
-    async (fault) => {
-      const f = fixture();
-      if (fault === "wrong_wallet")
-        f.ports.ledger.paidClaims = () =>
-          Effect.succeed({
-            rows: [{ ...withdrawal, paymentTransactionHash: "0xdef", paidAt: 1000, wallet: "0xbad" }],
-            next: null,
-            head: 1000,
-            anchor: { number: 1000, hash: "0xa" },
-            rewind: false,
-            fromBlock: 1,
-          });
-      if (fault === "missing_receipt") f.ports.shard.withdrawal = () => Effect.succeed(null);
-      if (fault === "wrong_amount") f.ports.shard.withdrawal = () => Effect.succeed({ ...withdrawal, amount: "18" });
-      if (fault === "wrong_season") f.ports.shard.withdrawal = () => Effect.succeed({ ...withdrawal, seasonId: 5 });
-      if (fault === "missing_result") f.ports.shard.result = () => Effect.succeed(null);
-      if (fault === "wrong_commitment") f.ports.shard.result = () => Effect.succeed({ ...result, commitment: "0xbad" });
-      let progress: MonitorProgress = { halted: null };
-      const pause = vi.fn(() => Effect.void);
-      const store = {
-        load: async () => progress,
-        save: async (p: MonitorProgress) => {
-          progress = p;
-        },
-      };
-      await Effect.runPromise(runMonitor({ ...f.ports, ledger: { ...f.ports.ledger, pause } }, store));
-      expect(progress.halted).toBeTruthy();
-      expect(pause).toHaveBeenCalledTimes(1);
-    },
-  );
+  it.each(["missing_receipt", "wrong_amount", "wrong_season", "wrong_wallet"])("pauses on %s", async (fault) => {
+    const f = fixture();
+    if (fault === "wrong_wallet")
+      f.ports.ledger.paidClaims = () =>
+        Effect.succeed({
+          rows: [{ ...withdrawal, paymentTransactionHash: "0xdef", paidAt: 1000, wallet: "0xbad" }],
+          next: null,
+          head: 1000,
+          anchor: { number: 1000, hash: "0xa" },
+          rewind: false,
+          fromBlock: 1,
+        });
+    if (fault === "missing_receipt") f.ports.shard.withdrawal = () => Effect.succeed(null);
+    if (fault === "wrong_amount") f.ports.shard.withdrawal = () => Effect.succeed({ ...withdrawal, amount: "18" });
+    if (fault === "wrong_season") f.ports.shard.withdrawal = () => Effect.succeed({ ...withdrawal, seasonId: 5 });
+    let progress: MonitorProgress = { halted: null };
+    const pause = vi.fn(() => Effect.void);
+    const store = {
+      load: async () => progress,
+      save: async (p: MonitorProgress) => {
+        progress = p;
+      },
+    };
+    await Effect.runPromise(runMonitor({ ...f.ports, ledger: { ...f.ports.ledger, pause } }, store));
+    expect(progress.halted).toBeTruthy();
+    expect(pause).toHaveBeenCalledTimes(1);
+  });
   it("retries a failed pause from the persisted stop condition", async () => {
     const f = fixture();
     f.ports.shard.withdrawal = () => Effect.succeed(null);
@@ -371,9 +342,7 @@ it("detects a parent mismatch before recording or paying the new block", async (
   await f.run();
   f.ports.shard.confirmedHead = () => Effect.succeed(1);
   f.ports.shard.eventsPage = (number) =>
-    Effect.succeed(
-      number === 0 ? block : { ...block, number: 1, hash: "0xb", parentHash: "0xc", withdrawals: [], results: [] },
-    );
+    Effect.succeed(number === 0 ? block : { ...block, number: 1, hash: "0xb", parentHash: "0xc", withdrawals: [] });
   await expect(f.run()).rejects.toThrow();
   expect(await f.store.progress()).toMatchObject({ nextBlock: 1, halted: "parent_hash_changed:1" });
 });
@@ -387,48 +356,6 @@ it("stops on a regressed confirmed head before paying pending withdrawals", asyn
   await expect(f.run()).rejects.toThrow();
   expect(f.single.pay).not.toHaveBeenCalled();
 });
-it("checks later pages on a later tick without scanning the ledger history again", async () => {
-  const f = fixture();
-  const pause = vi.fn(() => Effect.void);
-  let progress: MonitorProgress = { halted: null };
-  const store = {
-    load: async () => progress,
-    save: async (p: MonitorProgress) => {
-      progress = p;
-    },
-  };
-  f.ports.ledger.postedResults = (cursor) =>
-    Effect.succeed(
-      cursor === null
-        ? { rows: [], next: "page2", head: 1000, anchor: { number: 1000, hash: "0xa" }, rewind: false, fromBlock: 1 }
-        : {
-            rows: [result],
-            next: null,
-            head: 1000,
-            anchor: { number: 1000, hash: "0xa" },
-            rewind: false,
-            fromBlock: 1,
-          },
-    );
-  const monitor = () => Effect.runPromise(runMonitor({ ...f.ports, ledger: { ...f.ports.ledger, pause } }, store));
-  await monitor();
-  expect(pause).not.toHaveBeenCalled();
-  f.ports.shard.result = () => Effect.succeed({ ...result, commitment: "0xbad" });
-  await monitor();
-  expect(pause).toHaveBeenCalledTimes(1);
-});
-
-it("matches the ledger and shard golden commitment vector", () => {
-  const rows = ["1000", "1001"].map((wallet) => ({
-    wallet,
-
-    rank: 1,
-  }));
-  expect(blitzCommitment({ chainId: "0x7368617264", gameId: 7, rows })).toBe(
-    "0x5d912378a36e87b3b4331c33a3cb97ad23ddfbcab670825f2fa18743f34c6d6",
-  );
-});
-
 it("compares chain and block identities as felts rather than hex spellings", async () => {
   const f = fixture();
   await f.run();
@@ -436,12 +363,11 @@ it("compares chain and block identities as felts rather than hex spellings", asy
   expect(await f.run()).toMatchObject({ status: "ready" });
 });
 
-it("does not acknowledge a clock-lagged payment and still delivers other result work", async () => {
+it("does not acknowledge a clock-lagged payment", async () => {
   const f = fixture();
   f.single.pay = vi.fn(() => Effect.fail(new RelayFailure({ operation: "ledger_clock_behind" })));
   await f.run();
   expect(await f.store.withdrawals()).toHaveLength(1);
-  expect(f.ports.ledger.postResult).toHaveBeenCalledOnce();
   f.single.pay = vi.fn(() => Effect.void);
   await f.run();
   expect(await f.store.withdrawals()).toEqual([]);
@@ -471,7 +397,6 @@ it("sets aside a permanently refused claim and pays the next claim without retry
   await f.run();
   expect(await f.store.progress()).toMatchObject({ nextBlock: 1 });
   expect(f.single.pay).toHaveBeenCalledWith(later, "0x123");
-  expect(f.ports.ledger.postResult).toHaveBeenCalledOnce();
   await f.run();
   expect(f.single.pay).toHaveBeenCalledTimes(2);
 });
@@ -548,17 +473,6 @@ it("accepts a historically authorized payout even when the player has since chan
   await Effect.runPromise(runMonitor({ ...f.ports, ledger: { ...f.ports.ledger, pause } }, store));
   expect(progress.halted).toBeNull();
   expect(pause).not.toHaveBeenCalled();
-});
-
-it("holds only a corrupt result while recording and paying the rest of its page", async () => {
-  const f = fixture();
-  f.ports.shard.eventsPage = () => Effect.succeed({ ...block, results: [{ ...result, commitment: "0xbad" }] });
-  expect((await f.run()).status).toBe("ready");
-  expect(f.single.pay).toHaveBeenCalledOnce();
-  expect(f.ports.ledger.postResult).not.toHaveBeenCalled();
-  expect(await f.store.held()).toContainEqual(
-    expect.objectContaining({ kind: "result", reason: "invalid_result_commitment" }),
-  );
 });
 
 it("audits the signed pay decision even when replacement and block clocks disagree", async () => {

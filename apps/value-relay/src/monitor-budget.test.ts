@@ -11,8 +11,6 @@ const calls = vi.hoisted(() => ({
   pause: vi.fn(),
   balance: vi.fn(),
   season: vi.fn(),
-  cohorts: vi.fn(),
-  directory: vi.fn(),
   custody: vi.fn<typeof import("./deposit-conservation").auditDepositCustody>(),
 }));
 vi.mock("cloudflare:workers", () => ({
@@ -90,12 +88,10 @@ const monitorOver = (data: Map<string, unknown>) =>
       L2_RPC_URL: "https://ledger.test",
       PAUSER_ACCOUNT_ADDRESS: "0x9",
       ENVIRONMENT: "staging",
-      LAUNCH: { rosterCohorts: calls.cohorts, directoryGames: calls.directory },
       IDENTITY: { l2ChainId: async () => "0x1", shard: async () => null },
       RELAY_REPORT: { held: async () => [] },
     } as never,
   );
-/** Every chain read an audit makes: the three ledger streams, the season audit, the deposit custody and the balance. */
 const chainReads = () =>
   [ports.reportedClaims, ports.paidClaims, ports.postedResults, calls.season, calls.custody, calls.balance].reduce(
     (total, read) => total + read.mock.calls.length,

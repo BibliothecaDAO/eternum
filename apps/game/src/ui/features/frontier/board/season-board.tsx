@@ -39,12 +39,7 @@ export const useFrontierBoard = <T,>(select: (board: HeraldFrontierLeaderboard) 
   return useQuery({
     enabled: enabled && races === false,
     queryKey: ["frontierSeasonBoard", shard.url, gameId],
-    queryFn: async () => {
-      const board = await fetchHeraldLeaderboard(shard, gameId);
-      // The Frontier HUD only mounts in a Frontier game, whose board is always the season's.
-      if (board.mode !== "frontier") throw new Error(`Game ${gameId} ranks points, not a Frontier season`);
-      return board;
-    },
+    queryFn: () => fetchHeraldLeaderboard(shard, gameId),
     select,
     refetchInterval: REFRESH_MS,
   });

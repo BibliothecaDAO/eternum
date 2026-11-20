@@ -108,25 +108,25 @@ test("precreation, interrupted launch and cron keep one immutable request, inclu
   await put(devcon);
   const launches = new D1LaunchStore(database.db, testChain());
   const request = frontierSeasonRequest(devcon);
-  const first = await launches.enqueue("game", request);
+  const first = await launches.enqueue(request);
   expect((await put({ ...devcon, presetId: 5 })).status).toBe(409);
   expect((await put({ ...devcon, startsAt: normal.startsAt, endsAt: normal.endsAt })).status).toBe(409);
   expect((await put(devcon)).status).toBe(200);
   expect(await scheduleFrontierSeason(launches, devcon)).toMatchObject({ id: first.id, status: "queued" });
-  expect(await launches.delete("game", request.environment, request.gameName)).toBe(false);
+  expect(await launches.delete(request.environment, request.gameName)).toBe(false);
   expect(toFactoryRunRecord(first).recovery.canDelete).toBe(false);
   const running = (await launches.startNext(Date.now()))!;
   const restarted = new D1LaunchStore(database.db, testChain());
   expect(await restarted.startNext(Date.now())).toMatchObject({ id: running.id, attempts: 2 });
   await restarted.fail(running.id, "interrupted after create_game");
-  await expect(restarted.enqueue("game", { ...request, version: "5" })).rejects.toThrow("another preset");
-  await expect(restarted.enqueue("game", { ...request, durationSeconds: 576000 })).rejects.toThrow("another preset");
-  expect(await restarted.find("game", request.environment, request.gameName)).toMatchObject({
+  await expect(restarted.enqueue({ ...request, version: "5" })).rejects.toThrow("another preset");
+  await expect(restarted.enqueue({ ...request, durationSeconds: 576000 })).rejects.toThrow("another preset");
+  expect(await restarted.find(request.environment, request.gameName)).toMatchObject({
     id: running.id,
     status: "failed",
     request,
   });
-  const continued = await restarted.enqueue("game", request);
+  const continued = await restarted.enqueue(request);
   expect(continued).toMatchObject({ status: "queued", request });
   expect(await scheduleFrontierSeason(restarted, devcon)).toMatchObject({ id: continued.id, request });
   expect(await restarted.list("madara.frontier")).toHaveLength(1);
@@ -215,7 +215,7 @@ test("the confirmed legacy extension keeps its existing launch and original retr
   const extended = { ...original, endsAt: new Date(approved.end * 1000).toISOString() };
   await calendar.set(extended, (approved.oldEnd - 1) * 1000);
   expect(await scheduleFrontierSeason(launches, extended)).toMatchObject({ id: run.id, request: run.request });
-  expect(await launches.enqueue("game", run.request)).toMatchObject({ request: run.request });
+  expect(await launches.enqueue(run.request)).toMatchObject({ request: run.request });
   expect(await launches.list("madara.frontier")).toHaveLength(1);
 });
 
@@ -224,12 +224,10 @@ test("canonical launch requests never fill missing fields from normal-speed defa
   const launches = new D1LaunchStore(database.db, testChain());
   const request = frontierSeasonRequest({ ...devcon, presetId: 5 });
   for (const field of ["version", "gameStartTime", "durationSeconds"] as const)
-    await expect(launches.enqueue("game", { ...request, [field]: undefined })).rejects.toThrow(
+    await expect(launches.enqueue({ ...request, [field]: undefined })).rejects.toThrow(
       "explicit preset, start and duration",
     );
-  await expect(launches.enqueue("game", { ...request, gameStartTime: "2026-11-03T06:30:00.500Z" })).rejects.toThrow(
-    "tick",
-  );
+  await expect(launches.enqueue({ ...request, gameStartTime: "2026-11-03T06:30:00.500Z" })).rejects.toThrow("tick");
   expect(await launches.list("madara.frontier")).toEqual([]);
 });
 

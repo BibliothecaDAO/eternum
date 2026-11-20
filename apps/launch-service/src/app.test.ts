@@ -75,7 +75,6 @@ test.each([
   ["PUT", "/api/factory/calendar/frontier"],
   ["POST", "/api/factory/runs/madara.frontier/frontier-7/actions/continue"],
   ["POST", "/api/factory/runs/madara.frontier/old/actions/delete"],
-  ["POST", "/api/factory/results/madara.blitz/old/actions/continue"],
   ["POST", "/api/factory/release"],
 ])("requires an operator token for %s %s", async (method, url) => {
   const { app } = fixture();
@@ -131,32 +130,31 @@ test("the operator sets calendar phases while reads stay public", async () => {
   ).toBe(200);
   expect((await app.request("/api/factory/calendar")).status).toBe(200);
 });
-test("only operator recovery continues a failed run in every format and results", async () => {
+test("only operator recovery continues a failed run in every format", async () => {
   const { app, store, armFor } = fixture();
-  for (const [kind, request] of [
-    ["game", { environment: "madara.blitz", gameName: "paid", slotId: 12, groupIndex: 0 }],
-    ["game", { environment: "madara.frontier", gameName: "frontier-fixture" }],
-    ["game", { environment: "madara.frontier", gameName: "old-factory" }],
-    ["result", { environment: "madara.blitz", gameName: "paid", gameId: 1 }],
+  for (const request of [
+    { environment: "madara.blitz", gameName: "paid", slotId: 12, groupIndex: 0 },
+    { environment: "madara.frontier", gameName: "frontier-fixture" },
+    { environment: "madara.frontier", gameName: "old-factory" },
   ] as const) {
-    const run = await store.enqueue(kind, request);
+    const run = await store.enqueue(request);
     await database.db.prepare("UPDATE launch_runs SET status='running' WHERE id=?").bind(run.id).run();
     await store.fail(run.id, "unavailable");
-    const url = `/api/factory/${kind === "game" ? "runs" : "results"}/${request.environment}/${request.gameName}/actions/continue`;
+    const url = `/api/factory/runs/${request.environment}/${request.gameName}/actions/continue`;
     expect((await app.request(url, { method: "POST", headers: session })).status).toBe(403);
-    expect((await store.find(kind, request.environment, request.gameName))!.status).toBe("failed");
+    expect((await store.find(request.environment, request.gameName))!.status).toBe("failed");
     expect((await app.request(url, { method: "POST", headers: token })).status).toBe(202);
   }
-  expect(armFor).toHaveBeenCalledTimes(4);
+  expect(armFor).toHaveBeenCalledTimes(3);
 });
 test("operator deletion refuses paid slots and allows an ordinary failed run", async () => {
   const { app, store } = fixture();
-  await store.enqueue("game", { environment: "madara.blitz", gameName: "paid", slotId: 12, groupIndex: 0 });
+  await store.enqueue({ environment: "madara.blitz", gameName: "paid", slotId: 12, groupIndex: 0 });
   expect(
     (await app.request("/api/factory/runs/madara.blitz/paid/actions/delete", { method: "POST", headers: token }))
       .status,
   ).toBe(409);
-  await store.enqueue("game", { environment: "madara.frontier", gameName: "frontier-fixture" });
+  await store.enqueue({ environment: "madara.frontier", gameName: "frontier-fixture" });
   const url = "/api/factory/runs/madara.frontier/frontier-fixture/actions/delete";
   expect((await app.request(url, { method: "POST", headers: session })).status).toBe(403);
   expect((await app.request(url, { method: "POST", headers: token })).status).toBe(200);
@@ -207,10 +205,10 @@ test("health answers healthy and empty before the directory lists any chain", as
 test("health forgets retired work but names an unarmed due run on the live chain", async () => {
   const { app, store, wakeAt } = fixture();
   const retired = new D1LaunchStore(database.db, testChain("0xdead"));
-  await retired.enqueue("game", { environment: "madara.frontier", gameName: "old" });
+  await retired.enqueue({ environment: "madara.frontier", gameName: "old" });
   wakeAt.mockResolvedValue(null);
   expect((await app.request("/api/factory/health")).status).toBe(200);
-  await store.enqueue("game", { environment: "madara.frontier", gameName: "live" });
+  await store.enqueue({ environment: "madara.frontier", gameName: "live" });
   const stranded = await app.request("/api/factory/health");
   expect(stranded.status).toBe(503);
   expect(await stranded.json()).toMatchObject({ strandedRuns: [{ name: "live" }] });

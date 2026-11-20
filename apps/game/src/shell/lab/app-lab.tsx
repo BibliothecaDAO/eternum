@@ -22,7 +22,6 @@ import { PlayerPage, ProfilePage, SettingsPage } from "../profile/profile-pages"
 import { ResultsPage } from "../season-tab/results-page";
 import { SeasonPage } from "../season-tab/season-page";
 import {
-  LAB_BLITZ_BOARD,
   LAB_CHAIN,
   LAB_FINISHED_BLITZ,
   LAB_FRONTIER_BOARD,
@@ -186,7 +185,6 @@ const createLabClient = (screen: LabScreen, field: number | null) => {
       screen === "season-unpublished" ? LAB_FRONTIER_UNPUBLISHED_BOARD : LAB_FRONTIER_BOARD,
     );
   client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 3], LAB_FINAL_BOARDS[screen] ?? LAB_FRONTIER_FINAL_BOARD);
-  client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 7], LAB_BLITZ_BOARD);
   const wallet = LAB_PAYOUT_WALLETS[screen];
   const terms = LAB_ENTRY_TERMS[screen];
   if (terms && wallet) client.setQueryData(entryTermsKey(LAB_SLOT_KEY, wallet), terms);

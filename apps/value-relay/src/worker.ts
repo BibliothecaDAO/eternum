@@ -47,7 +47,6 @@ import { chestLedgerReads, finishChestOnLedger } from "./chest-ledger";
 import { DurableChestStore, finishChestNow, finishRequestedChests } from "./chests";
 import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
 import { Effect, Result, Semaphore } from "effect";
-import { ledgerResultAdapter, postVerifiedResult } from "./ledger";
 import { ledgerPaymentRead, ledgerPaymentProof, ledgerWithdrawalVoided, ledgerResetPayments } from "./chain";
 import { presentsOperatorToken } from "@realms-world/identity";
 import { identityAdapter } from "./adapters";
@@ -58,7 +57,6 @@ import { RelayFailure, relayOperation, type RelayPorts } from "./ports";
 interface RelayEnv extends RelaySettings {
   IDENTITY_HTTP: Fetcher;
   ROSTER_MONITOR: {
-    verifyRoster(chainId: string, gameId: number): Promise<number | null>;
     ledgerWritten(): Promise<void>;
   };
   IDENTITY: ShardDirectory & {
@@ -71,7 +69,6 @@ interface RelayEnv extends RelaySettings {
     ): Promise<{ campaign: string; tier: "regular" | "golden" } | null>;
     holdsSeal(realmsId: string): Promise<boolean>;
     recordPayDecisions(decisions: import("@realms-world/identity").LedgerPayDecision[]): Promise<void>;
-    ratingsChanged(): Promise<void>;
     linkedWallet(id: string): Promise<string | null>;
     authenticate(cookie: string): Promise<{ realmsId: string } | null>;
     accountForRealmsId(id: string): Promise<string | null>;
@@ -536,26 +533,6 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     if (outcomes.some((outcome) => outcome.error === null)) await this.ledgerWritten();
     return outcomes;
   }
-  async postResult(result: import("./ports").BlitzResult) {
-    await Effect.runPromise(
-      this.ledgerPermit(
-        relayOperation("verify and post paid game results", () =>
-          postVerifiedResult(
-            result,
-            (chainId, gameId) => this.env.ROSTER_MONITOR.verifyRoster(chainId, gameId),
-            (slotId) => ledgerResultAdapter(ledgerCredentialsOf(this.env), slotId),
-          ),
-        ),
-        [result.chainId],
-      ),
-    );
-    await this.ledgerWritten();
-    try {
-      await this.env.IDENTITY.ratingsChanged();
-    } catch {
-      /* The identity service's own hour still refreshes the ratings if this notice is lost. */
-    }
-  }
   async shardHealth() {
     const progress = await this.store.progress();
     const observation = await this.ctx.storage.get<{
@@ -720,7 +697,6 @@ export class ValueRelay extends DurableObject<RelayEnv> {
             : row.kind === "row"
               ? row.row.transactionHash
               : null,
-      ...(row.kind === "result" ? { gameId: row.result.gameId } : {}),
     }));
   }
   async status() {
@@ -748,7 +724,6 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
         ),
       reportMany: (rows) => relayOperation("report withdrawal page", () => ledgerOf(env).reportMany(rows)),
       payMany: (rows) => relayOperation("pay withdrawal page", () => ledgerOf(env).payMany(rows)),
-      postResult: (row) => relayOperation("post shard result", () => ledgerOf(env).postResult(row)),
     },
     shard: {
       ...shardWithdrawalPorts(

@@ -184,10 +184,6 @@ const readHistory = async (player: string | null) => {
   return games;
 };
 
-/**
- * A game's standings in its mode's shape: Frontier's season board, or live points while a game runs and the recorded
- * final standings once its result is complete. An archived season's board is its archive's, with no shard to ask.
- */
 export const useLeaderboard = (game: GameRef | null) => {
   const archived = game ? archivedSeason(game)?.board : undefined;
   return useQuery({

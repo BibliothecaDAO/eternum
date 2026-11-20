@@ -503,7 +503,6 @@ describe("native presets", () => {
 
   test("native balances and mine ladders come only from the selected sheet", () => {
     const config = configuration(2);
-    config.bitcoin = { prizePerPhase: 7, minimumLabor: 123, ownerCutBps: 1500 };
     config.mines!.kinds[1] = {
       resourceType: 38,
       buildingCategory: 39,
@@ -513,12 +512,6 @@ describe("native presets", () => {
     };
     config.mines!.surfacePool = [{ kind: 1, weight: 4 }];
     const definition = buildNativePreset(config, 2);
-    expect(definition.rules.bitcoin_mine_config).toEqual({
-      enabled: false,
-      prize_per_phase: 0n,
-      min_labor_per_contribution: 123_000000000n,
-      owner_cut_bps: 1500,
-    });
     expect(definition.resources.mine_kinds[0].config).toEqual({
       resource_type: 38,
       building_category: 39,
@@ -531,9 +524,6 @@ describe("native presets", () => {
 
   test("missing balances and malformed mine pools fail before registration", () => {
     const config = configuration(2);
-    delete config.bitcoin;
-    expect(() => buildNativePreset(config, 2)).toThrow("Bitcoin balance config");
-    config.bitcoin = configuration(2).bitcoin;
     delete config.mines;
     expect(() => buildNativePreset(config, 2)).toThrow("Mine balance config");
     config.mines = configuration(2).mines;

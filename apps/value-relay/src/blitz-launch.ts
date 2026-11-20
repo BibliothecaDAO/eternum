@@ -1,15 +1,7 @@
-import { Account, hash, type RpcProvider } from "starknet";
-import {
-  rpcAt,
-  readLedgerSlot,
-  ledgerInteger,
-  decodeBlitzSeason,
-  blitzSlotFitsSeason,
-  readConfirmedLedgerHead,
-  type LedgerSlotKey,
-} from "@realms-world/value-ledger";
+import { Account } from "starknet";
+import { rpcAt, readLedgerSlot, readConfirmedLedgerHead, type LedgerSlotKey } from "@realms-world/value-ledger";
 import { relayOperation } from "./ports";
-import { ledgerHistoryFrom, type LedgerContract } from "./ledger";
+import type { LedgerContract } from "./ledger";
 
 interface Credentials extends LedgerContract {
   rpcUrl: string;
@@ -21,36 +13,14 @@ interface Window {
   end: number;
 }
 
-/** Only this Worker's operator stream signs economic mutations; the launcher supplies the scheduled slot key. */
 export const openSlotOnLedger = (credentials: Credentials, key: LedgerSlotKey, window: Window) =>
   relayOperation("open ledger Blitz registration", async () => {
     const provider = rpcAt(credentials.rpcUrl);
     const head = await readConfirmedLedgerHead(provider);
     const slot = await readLedgerSlot(provider, credentials.contractAddress, key, head.number);
-    if (slot.exists) {
-      if (slot.close !== window.start || slot.end !== window.end || slot.cancelled)
-        throw new Error("ledger_slot_window_differs");
-      return;
-    }
-    if (window.start <= head.time || window.end <= window.start)
-      throw new Error("paid_registration_must_open_before_start");
-    const season = await containingSeason(provider, credentials, window, head.number);
-    await submit(credentials, "open_slot", [
-      key.chainId,
-      String(key.slotId),
-      String(season.id),
-      String(season.presetId),
-      String(window.start),
-      String(window.end),
-    ]);
-    const recorded = await readLedgerSlot(provider, credentials.contractAddress, key, await provider.getBlockNumber());
-    if (
-      !recorded.exists ||
-      recorded.close !== window.start ||
-      recorded.end !== window.end ||
-      recorded.seasonId !== season.id
-    )
-      throw new Error("ledger_slot_not_recorded");
+    if (!slot.exists) throw new Error("paid_blitz_slots_closed");
+    if (slot.close !== window.start || slot.end !== window.end || slot.cancelled)
+      throw new Error("ledger_slot_window_differs");
   });
 
 /** Recovery may cancel before close or abort after end; return the remaining wait between those boundaries. */
@@ -78,42 +48,6 @@ export const markSlotRefundable = (credentials: Credentials, key: LedgerSlotKey,
       ]);
   });
 
-const containingSeason = async (provider: RpcProvider, ledger: LedgerContract, window: Window, head: number) => {
-  const address = ledger.contractAddress;
-  const from = await ledgerHistoryFrom(provider, ledger);
-  const matches: { id: number; presetId: number }[] = [];
-  let token: string | undefined;
-  const seen = new Set<string>();
-  do {
-    const page = await provider.getEvents({
-      address,
-      from_block: { block_number: from },
-      to_block: { block_number: head },
-      keys: [[hash.getSelectorFromName("SeasonOpened")]],
-      chunk_size: 100,
-      ...(token ? { continuation_token: token } : {}),
-    });
-    for (const row of page.events) {
-      if (row.keys.length !== 2 || row.data.length !== 3 || BigInt(row.from_address) !== BigInt(address))
-        throw new Error("invalid_season_event");
-      const id = ledgerInteger(row.keys[1]!);
-      const season = await seasonAt(provider, address, id, head);
-      if (blitzSlotFitsSeason(window.start, window.end, season)) matches.push({ id, presetId: season.presetId });
-    }
-    token = page.continuation_token;
-    if (token && seen.has(token)) throw new Error("season_page_cycle");
-    if (token) seen.add(token);
-  } while (token);
-  if (matches.length !== 1) throw new Error("ledger_season_missing_or_ambiguous");
-  return matches[0]!;
-};
-const seasonAt = async (provider: RpcProvider, address: string, id: number, head: number) => {
-  const fields = await provider.callContract(
-    { contractAddress: address, entrypoint: "get_season", calldata: [String(id)] },
-    head,
-  );
-  return decodeBlitzSeason(fields);
-};
 const submit = async (credentials: Credentials, entrypoint: string, calldata: string[]) => {
   const provider = rpcAt(credentials.rpcUrl);
   const account = new Account({ provider, address: credentials.accountAddress, signer: credentials.privateKey });

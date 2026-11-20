@@ -278,7 +278,6 @@ export const WindowsLab = () => {
   const [store] = useState(() => {
     const fixture = installFixtureGame();
     fixture.applyFacts([
-      { model: "PlayerPoints", key: "0xc", value: { game_id: 1, address: BigInt(PLAYER), points: 35_000_000n } },
       ...automatedRecipes(),
       ...preset.buildings.map(({ category, rule }) => ({
         model: "BuildingRule",

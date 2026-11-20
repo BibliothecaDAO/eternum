@@ -27,7 +27,7 @@ const NEWCOMER_STEPS: NextStep[] = [
   {
     key: "coach:explore",
     kind: "order",
-    line: "Your army can explore: +5 points a tile.",
+    line: "Your army can explore.",
     verb: "Select the army",
     busy: false,
     run,

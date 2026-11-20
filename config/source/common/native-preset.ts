@@ -26,7 +26,6 @@ export interface NativePreset {
   balance?: ConfigPatch;
   gameType: GameType;
   environmentGameType: GameType;
-  bitcoinEnabled: boolean;
   ledger: {
     protocolCutBps: number;
     mmrEnabled: boolean;

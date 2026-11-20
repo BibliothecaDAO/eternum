@@ -1,4 +1,3 @@
-import { Effect } from "effect";
 import {
   decodeFrontierSeason,
   isDeploymentBlock,
@@ -9,19 +8,16 @@ import {
   readFinalLedgerHead,
   isContractRevert,
 } from "@realms-world/value-ledger";
-import { Account, hash, RpcProvider, type EmittedEvent } from "starknet";
-import { blitzCommitment } from "@realms-world/value-ledger/commitment";
+import { hash, RpcProvider, type EmittedEvent } from "starknet";
 import {
   relayOperation,
-  type BlitzCommitment,
   type ChestChange,
   type ChestPage,
-  type BlitzResult,
   type LedgerPage,
   type LedgerAnchor,
   type PaidClaim,
+  type PostedResult,
   type ReportedClaim,
-  type RelayPorts,
   type MonitorPorts,
 } from "./ports";
 
@@ -29,12 +25,6 @@ import {
 export interface LedgerContract {
   contractAddress: string;
   deploymentBlock: number;
-}
-interface LedgerCredentials {
-  rpcUrl: string;
-  contractAddress: string;
-  accountAddress: string;
-  privateKey: string;
 }
 /**
  * The block a scan of the ledger's history runs from: a saved block as it is, else the ledger's deployment block, which
@@ -47,68 +37,6 @@ export const ledgerHistoryFrom = async (provider: RpcProvider, ledger: LedgerCon
     throw new Error("ledger_deployment_block_wrong");
   return ledger.deploymentBlock;
 };
-/** Replay-safe result delivery: an already finalized matching result is complete, a different one is refused. */
-export const ledgerResultAdapter =
-  (credentials: LedgerCredentials, slotId: number): RelayPorts["ledger"]["postResult"] =>
-  (result) =>
-    relayOperation("post Blitz result", async () => {
-      if (BigInt(blitzCommitment(result)) !== BigInt(result.commitment)) throw new Error("invalid_result_commitment");
-      const provider = rpcAt(credentials.rpcUrl);
-      const head = (await readConfirmedLedgerHead(provider)).number;
-      const existing = await resultCommitment(provider, credentials.contractAddress, result, head);
-      if (BigInt(existing) !== 0n) {
-        if (BigInt(existing) !== BigInt(result.commitment)) throw new Error("ledger_result_differs");
-        return;
-      }
-      const account = new Account({ provider, address: credentials.accountAddress, signer: credentials.privateKey });
-      const transaction = await account.execute({
-        contractAddress: credentials.contractAddress,
-        entrypoint: "apply_results",
-        calldata: resultCalldata(result, slotId),
-      });
-      const receipt = await provider.waitForTransaction(transaction.transaction_hash);
-      if (receipt.isReverted()) throw new Error("ledger_result_reverted");
-      const posted = await resultCommitment(
-        provider,
-        credentials.contractAddress,
-        result,
-        (await readConfirmedLedgerHead(provider)).number,
-      );
-      if (BigInt(posted) !== BigInt(result.commitment)) throw new Error("ledger_result_not_recorded");
-    });
-
-/**
- * A result is posted for the slot that paid for its game, once that slot's roster is verified. A game the launch
- * directory declares outside any slot took no entry, so its result has nothing to post and is complete as it stands.
- */
-export const postVerifiedResult = async (
-  result: BlitzResult,
-  verifyRoster: (chainId: string, gameId: number) => Promise<number | null>,
-  postFor: (slotId: number) => RelayPorts["ledger"]["postResult"],
-): Promise<void> => {
-  const slotId = await verifyRoster(result.chainId, result.gameId);
-  if (slotId !== null) await Effect.runPromise(postFor(slotId)(result));
-};
-
-const resultCalldata = (result: BlitzResult, slotId: number): string[] => {
-  const calldata = [result.chainId, String(slotId), String(result.gameId), String(result.rows.length)];
-  for (const row of result.rows) calldata.push(row.wallet, String(row.rank));
-  return calldata;
-};
-
-const resultCommitment = async (provider: RpcProvider, address: string, result: BlitzCommitment, head: number) => {
-  const fields = await provider.callContract(
-    {
-      contractAddress: address,
-      entrypoint: "get_result_commitment",
-      calldata: [result.chainId, String(result.gameId)],
-    },
-    head,
-  );
-  if (fields.length !== 1) throw new Error("invalid_result_commitment");
-  return fields[0]!;
-};
-
 /** Confirmed ledger events are the monitor's enumeration; each cursor pins the head across all pages. */
 export const ledgerMonitorReads = (
   rpcUrl: string,
@@ -155,6 +83,10 @@ export const ledgerMonitorReads = (
       relayOperation("read ledger reported claims", () =>
         ledgerEventPage(rpcAt(rpcUrl), ledger, ["WithdrawalReported"], cursor, fromBlock, decodeReport, anchor),
       ),
+    postedResults: (cursor, fromBlock, anchor) =>
+      relayOperation("read ledger posted results", () =>
+        ledgerEventPage(rpcAt(rpcUrl), ledger, ["ResultsApplied"], cursor, fromBlock, decodeResult, anchor),
+      ),
     paidClaims: (cursor, fromBlock, anchor) =>
       relayOperation("read ledger paid claims", async () => {
         const provider = rpcAt(rpcUrl);
@@ -180,10 +112,6 @@ export const ledgerMonitorReads = (
           anchor,
         );
       }),
-    postedResults: (cursor, fromBlock, anchor) =>
-      relayOperation("read ledger posted results", () =>
-        ledgerEventPage(rpcAt(rpcUrl), ledger, ["ResultsApplied"], cursor, fromBlock, decodeResult, anchor),
-      ),
   };
 };
 
@@ -264,6 +192,10 @@ const readCursor = (value: string): { head: number; token: string; hash?: string
     ...(typeof cursor.hash === "string" ? { hash: cursor.hash } : {}),
   };
 };
+const decodeResult = (event: EmittedEvent): PostedResult => {
+  if (event.keys.length !== 3 || event.data.length !== 5) throw new Error("invalid_result_event");
+  return { chainId: event.keys[1]!, gameId: ledgerInteger(event.keys[2]!), commitment: event.data[2]! };
+};
 const decodeReport = (event: EmittedEvent): ReportedClaim => {
   const { paymentTransactionHash, ...report } = decodePayment(event);
   return { ...report, reportTransactionHash: paymentTransactionHash };
@@ -287,10 +219,6 @@ const decodePayment = (event: EmittedEvent): Omit<PaidClaim, "paidAt"> => {
     prizeRank: ledgerInteger(event.data[4]!),
     prizeCount: ledgerInteger(event.data[5]!),
   };
-};
-const decodeResult = (event: EmittedEvent): BlitzCommitment => {
-  if (event.keys.length !== 3 || event.data.length !== 5) throw new Error("invalid_result_event");
-  return { chainId: event.keys[1]!, gameId: ledgerInteger(event.keys[2]!), commitment: event.data[2]! };
 };
 /** Requested and opened events share one ordered cursor, so historical completed chests leave no polling debt. */
 export const ledgerChestChanges = (

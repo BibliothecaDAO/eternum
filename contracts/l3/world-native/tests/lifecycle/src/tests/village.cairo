@@ -50,9 +50,6 @@ fn production_pass_is_atomic_and_single_use() {
         assert!(map.occupancy(crate::geometry::tile_key(3, crate::geometry::neighbor(coord, direction))).is_none());
         assert!(tile.data / 0x20000000000 % 256 != 0, "neighbour biome missing");
     }
-    assert!(
-        crate::game::IPointsDispatcher { contract_address: deployment.games }.player_points(3, deployment.actor) == 0,
-    );
     assert!(!run(deployment, settle(realm, 7), 100));
 }
 

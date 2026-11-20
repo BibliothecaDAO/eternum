@@ -5,10 +5,6 @@ use crate::release::Release;
 #[starknet::storage_node]
 pub struct GamesStorage<
     TResourceAmount,
-    TPhase,
-    TContribution,
-    TMineFunding,
-    TPlayerResult,
     TBuilding,
     TStructureBuildings,
     TGameRegistry,
@@ -41,8 +37,6 @@ pub struct GamesStorage<
     pub open_releases: Map<u8, u32>,
     pub family_latest: Map<u8, u32>,
     pub arrivals: crate::arrivals::ArrivalStateStorage<TResourceAmount>,
-    pub bitcoin: crate::bitcoin::BitcoinStateStorage<TPhase, TContribution, TMineFunding>,
-    pub blitz_results: crate::blitz_results::BlitzResultStateStorage<TPlayerResult>,
     pub buildings: crate::buildings::BuildingStateStorage<TBuilding, TStructureBuildings>,
     pub combat_domain: crate::combat_domain::CombatDomainStorage,
     pub deep: crate::deep::DeepStorage<TDeepSite, TDeepGuard>,

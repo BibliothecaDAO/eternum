@@ -1,5 +1,5 @@
 pub use crate::commands::Command;
-pub use crate::discovery::{Discovery, ethereal, surface};
+pub use crate::discovery::{Discovery, surface};
 pub use crate::map::IMapLogicDispatcher;
 pub use crate::resources::{ResourceAmount, ResourceKey};
 pub use crate::structures::{IStructureOperationsDispatcher, StructureRecord};

@@ -102,7 +102,6 @@ const TILE_OCCUPANT_KINDS: Record<TileOccupier, TileOccupantKind> = {
   [TileOccupier.Chest]: "chest",
   [TileOccupier.Spire]: "spire",
   [TileOccupier.Camp]: "structure",
-  [TileOccupier.BitcoinMine]: "structure",
   [TileOccupier.ReservedHyperstructure]: "reserved-hyperstructure",
   [TileOccupier.Rift]: "structure",
   [TileOccupier.Ruin]: "structure",

@@ -308,11 +308,11 @@ it("shows the client's toasts above the stories, apart from their three: a notic
   useHeadlineFeedStore.setState({
     headlines: [
       {
-        id: "end",
-        type: "game-end",
-        title: "Game over",
-        description: ["The game has ended"],
-        icon: "game-end",
+        id: "start",
+        type: "game-start",
+        title: "The game has begun",
+        description: ["The game has begun"],
+        icon: "game-start",
         timestamp: 100_000,
       },
       {
@@ -326,7 +326,7 @@ it("shows the client's toasts above the stories, apart from their three: a notic
     ],
   });
   draw();
-  expect(toasts()).toEqual(["The game has ended", "Not enough stamina"]);
+  expect(toasts()).toEqual(["The game has begun", "Not enough stamina"]);
   expect(rows()).toEqual(["r0", "r1", "r2"]);
 });
 

@@ -86,10 +86,6 @@ beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   vi.spyOn(configManager, "getMapCenter").mockReturnValue(CENTER);
   vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
-  vi.spyOn(configManager, "getVictoryPointGrants").mockReturnValue({
-    exploreTile: 5,
-    claimCampFromBandits: 250,
-  });
   worldMap.taken = [];
   window.addEventListener(ARMY_SELECT_REQUEST_EVENT, takeIfShown);
 });

@@ -40,28 +40,18 @@ export type TransactionSubmitGuard = (context: TransactionSubmitGuardContext) =>
 interface TransactionStreamStatus {
   block: number | null;
   hash: string;
-  batchRemaining?: string;
   revertReason?: string;
   status: string;
 }
 
-/**
- * Waits for a transaction's outcome, settled once Herald has applied it; `inBlock`, when the submission reconciles
- * its sends, is a fallback while Herald is silent. Command identity identifies batch receipt requirements.
- */
 export type TransactionStreamWaiter = (
   transactionHash: string,
   inBlock?: Promise<void>,
-  transactionType?: TransactionType,
   startedAt?: number,
 ) => Promise<TransactionStreamStatus>;
 
 export enum TransactionType {
   PROVISION_REALM = "provision_realm",
-  BITCOIN_MINE_CONTRIBUTE_LABOR = "bitcoin_mine_contribute_labor",
-  BITCOIN_MINE_CLAIM_PHASE_REWARD = "bitcoin_mine_claim_phase_reward",
-  BITCOIN_MINE_CLOSE_PHASE = "bitcoin_mine_close_phase",
-  BITCOIN_MINE_BIND_PHASE = "bitcoin_mine_bind_phase",
   // Exploration & Movement
   EXPLORE = "explore",
   TRAVEL_HEX = "travel_hex",

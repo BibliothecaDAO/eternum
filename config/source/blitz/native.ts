@@ -11,7 +11,6 @@ export const blitzPreset: NativePreset = {
   orderAspects: [],
   deep: null,
   race: null,
-  bitcoinEnabled: false,
   dailyQuest: null,
   banes: null,
   startingTroops: [],

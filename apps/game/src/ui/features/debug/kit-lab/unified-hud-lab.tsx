@@ -10,7 +10,6 @@ import { SurfaceHost } from "@/ui/design-system/molecules/popover";
 import { FrontierHud } from "@/ui/features/frontier/frontier-hud";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
 import { ArenaHud } from "@/ui/features/world/hud/arena-hud";
-import { useGoalLine } from "@/ui/features/world/hud/points-goal";
 import { gameStartHeadline } from "@/ui/features/news-headlines/news-headline-bridge";
 import { NewsHeadlineBanner } from "@/ui/features/news-headlines/news-headline-banner";
 import { nativeGameModeOf, readExpeditionRules, structureMapPosition } from "@bibliothecadao/eternum";
@@ -129,10 +128,7 @@ const ViewLab = ({ view }: { view: View }) => {
 };
 
 /** The news that the game has begun, as the game shows it over the HUD. */
-const GameStartNews = () => {
-  const goal = useGoalLine();
-  return <NewsHeadlineBanner headline={gameStartHeadline(0, goal)} />;
-};
+const GameStartNews = () => <NewsHeadlineBanner headline={gameStartHeadline(0)} />;
 
 /**
  * The lab realm stocked with the building inputs it lacks, 50,000 of each (it holds wheat already), so the build order's

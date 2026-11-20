@@ -133,7 +133,7 @@ export class LaunchShard extends ShardOperator implements ReleaseChain {
       launched.map(async ({ name, gameId, seats }) => {
         const game = await this.game(gameId);
         const summary = this.summaryOf(byName.get(name)!.request, gameId, game);
-        return { ...summary, finalizeAt: Number(game.end_at), settlementTransactions: seats };
+        return { ...summary, settlementTransactions: seats };
       }),
     );
   }

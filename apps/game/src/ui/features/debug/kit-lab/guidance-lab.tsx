@@ -14,7 +14,7 @@ import { playerReadings } from "@/ui/features/world/containers/top-header/identi
 import { NextUpView } from "@/ui/features/world/hud/next-up";
 import type { NextStep } from "@/ui/features/world/hud/next-step";
 import { type CoachArmy, type CoachStep, type CoachTarget, coachSteps } from "@/ui/features/world/hud/coach";
-import { buildStoryEventPresentation, configManager } from "@bibliothecadao/eternum";
+import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { useState } from "react";
@@ -155,7 +155,6 @@ const coached = (state: Partial<Parameters<typeof coachSteps>[0]>): NextStep[] =
     targets: [],
     troopsOnHand: TROOPS,
     certainLoss: () => false,
-    grants: configManager.getVictoryPointGrants(),
     ...state,
   }).map(labStep);
 
@@ -194,7 +193,7 @@ const nextUpStates = (): { label: string; steps: NextStep[]; refusal?: string }[
 ];
 
 /** The top bar's player chip as a player reads it: name, rank, points and the game's goal. */
-const LabPlayerPill = () => <HudPill>{playerReadings("clientlane", { rank: 1, points: 310 })}</HudPill>;
+const LabPlayerPill = () => <HudPill>{playerReadings("clientlane")}</HudPill>;
 
 /**
  * Dev only: the points-first guidance a newcomer sees, the real components on the deploy fixture in the War room skin,

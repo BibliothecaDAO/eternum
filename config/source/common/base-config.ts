@@ -71,7 +71,6 @@ export function buildCommonBaseConfig(): ConfigPatch {
       [CapacityConfig.BankStructure]: 18446744073709551615n,
       [CapacityConfig.FragmentMineStructure]: 18446744073709551615n,
       [CapacityConfig.CampStructure]: 18446744073709551615n,
-      [CapacityConfig.BitcoinMineStructure]: 18446744073709551615n,
       [CapacityConfig.Donkey]: 50 * 1000,
       [CapacityConfig.Army]: 10 * 1000,
       [CapacityConfig.Storehouse]: 0,

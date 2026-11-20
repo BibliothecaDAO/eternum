@@ -750,23 +750,13 @@ pub mod GamesFixture {
     pub impl ResourcesFixture<
         TContractState, +Drop<TContractState>,
     > of crate::resources::IResourceOperations<TContractState> {
-        fn initialize_resources(
-            ref self: TContractState,
-            key: crate::resources::ResourceKey,
-            capacity: u128,
-            category: u8,
-            timestamp: u64,
-            game_context: crate::commands::ActionContext,
-        ) {
+        fn initialize_resources(ref self: TContractState, key: crate::resources::ResourceKey, capacity: u128) {
             crate::resources::IResourceOperationsDispatcherTrait::initialize_resources(
                 crate::resources::IResourceOperationsLibraryDispatcher {
                     class_hash: fixture_class(key.game_id, crate::slots::RESOURCES),
                 },
                 key,
                 capacity,
-                category,
-                timestamp,
-                game_context,
             )
         }
         fn initialize_explorer_resources(
@@ -1211,166 +1201,6 @@ pub mod GamesFixture {
 
 
     #[starknet::embeddable]
-    pub impl BitcoinViewsFixture<
-        TContractState, +Drop<TContractState>,
-    > of crate::bitcoin::IBitcoinViews<TContractState> {
-        fn bitcoin_mine(self: @TContractState, key: crate::resources::ResourceKey) -> crate::bitcoin::MineFunding {
-            crate::bitcoin::IBitcoinViewsDispatcherTrait::bitcoin_mine(
-                crate::bitcoin::IBitcoinViewsLibraryDispatcher {
-                    class_hash: fixture_class(key.game_id, crate::slots::SEASON),
-                },
-                key,
-            )
-        }
-        fn bitcoin_claimed(self: @TContractState, key: crate::bitcoin::ClaimKey) -> bool {
-            crate::bitcoin::IBitcoinViewsDispatcherTrait::bitcoin_claimed(
-                crate::bitcoin::IBitcoinViewsLibraryDispatcher {
-                    class_hash: fixture_class(key.game_id, crate::slots::SEASON),
-                },
-                key,
-            )
-        }
-        fn bitcoin_phase(self: @TContractState, key: crate::bitcoin::PhaseKey) -> crate::bitcoin::Phase {
-            crate::bitcoin::IBitcoinViewsDispatcherTrait::bitcoin_phase(
-                crate::bitcoin::IBitcoinViewsLibraryDispatcher {
-                    class_hash: fixture_class(key.game_id, crate::slots::SEASON),
-                },
-                key,
-            )
-        }
-        fn bitcoin_contribution(
-            self: @TContractState, key: crate::bitcoin::ContributionKey,
-        ) -> crate::bitcoin::Contribution {
-            crate::bitcoin::IBitcoinViewsDispatcherTrait::bitcoin_contribution(
-                crate::bitcoin::IBitcoinViewsLibraryDispatcher {
-                    class_hash: fixture_class(key.game_id, crate::slots::SEASON),
-                },
-                key,
-            )
-        }
-        fn bitcoin_contributor(
-            self: @TContractState, key: crate::bitcoin::PhaseKey, index: u32,
-        ) -> starknet::ContractAddress {
-            crate::bitcoin::IBitcoinViewsDispatcherTrait::bitcoin_contributor(
-                crate::bitcoin::IBitcoinViewsLibraryDispatcher {
-                    class_hash: fixture_class(key.game_id, crate::slots::SEASON),
-                },
-                key,
-                index,
-            )
-        }
-    }
-    #[starknet::embeddable]
-    pub impl BitcoinFundingFixture<
-        TContractState, +Drop<TContractState>,
-    > of crate::bitcoin::IBitcoinFunding<TContractState> {
-        fn register_bitcoin_structure(
-            ref self: TContractState,
-            key: crate::resources::ResourceKey,
-            category: u8,
-            timestamp: u64,
-            game_context: crate::commands::ActionContext,
-        ) {
-            crate::bitcoin::IBitcoinFundingDispatcherTrait::register_bitcoin_structure(
-                crate::bitcoin::IBitcoinFundingLibraryDispatcher {
-                    class_hash: fixture_class(key.game_id, crate::slots::SEASON),
-                },
-                key,
-                category,
-                timestamp,
-                game_context,
-            )
-        }
-        fn bitcoin_mine_captured(
-            ref self: TContractState,
-            key: crate::resources::ResourceKey,
-            timestamp: u64,
-            game_context: crate::commands::ActionContext,
-        ) {
-            crate::bitcoin::IBitcoinFundingDispatcherTrait::bitcoin_mine_captured(
-                crate::bitcoin::IBitcoinFundingLibraryDispatcher {
-                    class_hash: fixture_class(key.game_id, crate::slots::SEASON),
-                },
-                key,
-                timestamp,
-                game_context,
-            )
-        }
-    }
-    #[starknet::embeddable]
-    pub impl BitcoinCommandsFixture<
-        TContractState, +Drop<TContractState>,
-    > of crate::bitcoin::IBitcoinCommands<TContractState> {
-        fn claim_bitcoin_phase(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            command: crate::bitcoin::ClaimPhase,
-            context: crate::commands::ActionContext,
-        ) -> u64 {
-            crate::bitcoin::IBitcoinCommandsDispatcherTrait::claim_bitcoin_phase(
-                crate::bitcoin::IBitcoinCommandsLibraryDispatcher {
-                    class_hash: fixture_class(game_id, crate::slots::SEASON),
-                },
-                game_id,
-                actor,
-                command,
-                context,
-            )
-        }
-        fn contribute_bitcoin_labor(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            command: crate::bitcoin::ContributeLabor,
-            context: crate::commands::ActionContext,
-        ) {
-            crate::bitcoin::IBitcoinCommandsDispatcherTrait::contribute_bitcoin_labor(
-                crate::bitcoin::IBitcoinCommandsLibraryDispatcher {
-                    class_hash: fixture_class(game_id, crate::slots::SEASON),
-                },
-                game_id,
-                actor,
-                command,
-                context,
-            )
-        }
-        fn close_bitcoin_phase(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            phase: u64,
-            context: crate::commands::ActionContext,
-        ) {
-            crate::bitcoin::IBitcoinCommandsDispatcherTrait::close_bitcoin_phase(
-                crate::bitcoin::IBitcoinCommandsLibraryDispatcher {
-                    class_hash: fixture_class(game_id, crate::slots::SEASON),
-                },
-                game_id,
-                actor,
-                phase,
-                context,
-            )
-        }
-        fn bind_bitcoin_phase(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            phase: u64,
-            context: crate::commands::ActionContext,
-        ) {
-            crate::bitcoin::IBitcoinCommandsDispatcherTrait::bind_bitcoin_phase(
-                crate::bitcoin::IBitcoinCommandsLibraryDispatcher {
-                    class_hash: fixture_class(game_id, crate::slots::SEASON),
-                },
-                game_id,
-                actor,
-                phase,
-                context,
-            )
-        }
-    }
-    #[starknet::embeddable]
     pub impl GameFixture<TContractState, +Drop<TContractState>> of crate::game::IGame<TContractState> {
         fn game(self: @TContractState, game_id: u32) -> crate::game::GameRegistry {
             crate::game::IGameDispatcherTrait::game(
@@ -1433,48 +1263,6 @@ pub mod GamesFixture {
                 game_id,
                 actor,
                 context,
-            )
-        }
-    }
-    #[starknet::embeddable]
-    pub impl PointsFixture<TContractState, +Drop<TContractState>> of crate::game::IPoints<TContractState> {
-        fn register_exploration(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            game_context: crate::commands::ActionContext,
-        ) {
-            crate::game::IPointsDispatcherTrait::register_exploration(
-                crate::game::IPointsLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::SEASON) },
-                game_id,
-                actor,
-                game_context,
-            )
-        }
-        fn register_capture(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            game_context: crate::commands::ActionContext,
-        ) -> u128 {
-            crate::game::IPointsDispatcherTrait::register_capture(
-                crate::game::IPointsLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::SEASON) },
-                game_id,
-                actor,
-                game_context,
-            )
-        }
-        fn player_points(self: @TContractState, game_id: u32, actor: starknet::ContractAddress) -> u128 {
-            crate::game::IPointsDispatcherTrait::player_points(
-                crate::game::IPointsLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::SEASON) },
-                game_id,
-                actor,
-            )
-        }
-        fn season_points(self: @TContractState, game_id: u32) -> u128 {
-            crate::game::IPointsDispatcherTrait::season_points(
-                crate::game::IPointsLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::SEASON) },
-                game_id,
             )
         }
     }
@@ -1700,29 +1488,6 @@ pub mod GamesFixture {
     }
     #[starknet::embeddable]
     pub impl HomeGrantsFixture<TContractState, +Drop<TContractState>> of crate::entry::IHomeGrants<TContractState> {
-        fn grant_labor(
-            ref self: TContractState, home: crate::entry::LaborHome, day: u64, account: starknet::ContractAddress,
-        ) -> crate::entry::LaborGrant {
-            crate::entry::IHomeGrantsDispatcherTrait::grant_labor(
-                crate::entry::IHomeGrantsLibraryDispatcher {
-                    class_hash: crate::logic::release::class_of(home.game_id, crate::slots::BRIDGE),
-                },
-                home,
-                day,
-                account,
-            )
-        }
-        fn labor_grant(
-            self: @TContractState, home: crate::entry::LaborHome, day: u64,
-        ) -> Option<crate::entry::LaborGrant> {
-            crate::entry::IHomeGrantsDispatcherTrait::labor_grant(
-                crate::entry::IHomeGrantsLibraryDispatcher {
-                    class_hash: crate::logic::release::class_of(home.game_id, crate::slots::BRIDGE),
-                },
-                home,
-                day,
-            )
-        }
         fn grant_seal(ref self: TContractState, game_id: u32, account: starknet::ContractAddress) {
             crate::entry::IHomeGrantsDispatcherTrait::grant_seal(
                 crate::entry::IHomeGrantsLibraryDispatcher {
@@ -1730,34 +1495,6 @@ pub mod GamesFixture {
                 },
                 game_id,
                 account,
-            )
-        }
-    }
-    #[starknet::embeddable]
-    pub impl BlitzResultsFixture<
-        TContractState, +Drop<TContractState>,
-    > of crate::blitz_results::IBlitzResults<TContractState> {
-        fn game_result(self: @TContractState, game_id: u32) -> crate::blitz_results::BlitzResult {
-            crate::blitz_results::IBlitzResultsDispatcherTrait::game_result(
-                crate::blitz_results::IBlitzResultsLibraryDispatcher {
-                    class_hash: fixture_class(game_id, crate::slots::PRIZES),
-                },
-                game_id,
-            )
-        }
-        fn record_blitz_results(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            context: crate::commands::ActionContext,
-        ) {
-            crate::blitz_results::IBlitzResultsDispatcherTrait::record_blitz_results(
-                crate::blitz_results::IBlitzResultsLibraryDispatcher {
-                    class_hash: fixture_class(game_id, crate::slots::PRIZES),
-                },
-                game_id,
-                actor,
-                context,
             )
         }
     }

@@ -2,7 +2,6 @@ import { expect, it } from "vitest";
 import { TroopTier, TroopType } from "@bibliothecadao/types";
 import { type CoachArmy, type CoachTarget, coachSteps } from "./coach";
 
-const grants = { exploreTile: 5, claimCampFromBandits: 250 };
 const army = (entityId: number, col: number, overrides: Partial<CoachArmy> = {}): CoachArmy => ({
   entityId,
   hex: { col, row: 0 },
@@ -25,7 +24,7 @@ const steps = (
   armies: CoachArmy[],
   targets: CoachTarget[] = [],
   state: Partial<Parameters<typeof coachSteps>[0]> = {},
-) => coachSteps({ holds: true, armies, targets, troopsOnHand: troops, certainLoss: () => false, grants, ...state });
+) => coachSteps({ holds: true, armies, targets, troopsOnHand: troops, certainLoss: () => false, ...state });
 
 it("raises the first army at the realm with troops on hand, or asks for a barracks when none has any", () => {
   expect(steps([], [target("Camp", 3)])).toEqual([
@@ -49,10 +48,7 @@ it("raises the first army at the realm with troops on hand, or asks for a barrac
 
 it("explores first, then goes for The Vanguard's nearest camp or rift", () => {
   const route = steps([army(1, 0)], [target("Rift", 9), target("Camp", 6)]);
-  expect(route.map(({ line }) => line)).toEqual([
-    "Your army can explore: +5 points a tile",
-    "Take Camp from The Vanguard: +250 points",
-  ]);
+  expect(route.map(({ line }) => line)).toEqual(["Your army can explore", "Take Camp from The Vanguard"]);
   expect(route[0].act).toEqual({ kind: "go", armyId: 1, target: null });
   expect(route[1].act).toEqual({ kind: "go", armyId: 1, target: { col: 6, row: 0 } });
 });
@@ -89,7 +85,7 @@ it("asks for the home realm's level-up before a target the army would surely los
   expect(steps([army(1, 0, { canExplore: false })], [camp], { certainLoss: (_army, at) => at === rift })).toEqual([
     {
       key: "coach:site:6:0",
-      line: "Take Camp from The Vanguard: +250 points",
+      line: "Take Camp from The Vanguard",
       verb: "Show Camp",
       act: { kind: "go", armyId: 1, target: { col: 6, row: 0 } },
     },
@@ -103,7 +99,7 @@ it("passes over a target the army would surely lose to once its home is at the t
   expect(steps([maxed], [rift, camp], { certainLoss: (_army, at) => at === rift })).toEqual([
     {
       key: "coach:site:6:0",
-      line: "Take Camp from The Vanguard: +250 points",
+      line: "Take Camp from The Vanguard",
       verb: "Show Camp",
       act: { kind: "go", armyId: 1, target: { col: 6, row: 0 } },
     },

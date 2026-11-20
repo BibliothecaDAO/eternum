@@ -12,7 +12,7 @@ it("covers every native story and tests every cumulative level", () => {
   const variants = schema.types[storyType].variants.map((variant: { name: string }) => variant.name);
   const nativeLevels = {
     important: ["BattleEvent", "RaidEvent", "StructureCapturedStory", "BlitzFinalized"],
-    all: ["ResourceReceiveArrivalStory", "ResourceTransferStory", "BitcoinAwardStory"],
+    all: ["ResourceReceiveArrivalStory", "ResourceTransferStory"],
     // The player's own taps: the Feed and the Log tell them.
     excluded: [
       "ProductionStory",

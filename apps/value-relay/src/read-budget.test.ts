@@ -211,14 +211,13 @@ function auditPoolReads(games: number, audits: number, finalAt: { block: number;
           })),
         ),
       withdrawal: () => Effect.succeed(null),
-      result: () => Effect.succeed(null),
     },
     ledger: {
       frontierPool: poolReads,
       finalFrontierPool: finalReads,
       reportedClaims: () => Effect.succeed(page),
-      paidClaims: () => Effect.succeed(page),
       postedResults: () => Effect.succeed(page),
+      paidClaims: () => Effect.succeed(page),
       pause: () => Effect.void,
     },
   };

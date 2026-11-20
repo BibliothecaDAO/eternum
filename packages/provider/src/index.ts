@@ -1,10 +1,7 @@
-export type { BatchTransactionReceipt } from "@bibliothecadao/types";
-export { completeNativeBatches } from "./native-batch";
 export { encodeNativeCommand } from "./native-command";
 export type { NativeCommand, NativeCommandPayloads } from "./native-command";
 export { batchRemaining, gameplayRejection } from "./native-receipt";
 export type { GameplayRejection } from "./native-receipt";
-import { requireBatchReceipt } from "./native-batch";
 /**
  * Provider class for interacting with the Eternum game contracts
  *
@@ -595,12 +592,7 @@ export class EternumProvider extends EventEmitter {
         transaction_hash: tx.transaction_hash,
       } as unknown as GetTransactionReceiptResponse;
     }
-    const streamReceipt = this.waitForTransactionWithCheckInternal(
-      tx.transaction_hash,
-      tx.inBlock,
-      txType,
-      submitStartedAt,
-    );
+    const streamReceipt = this.waitForTransactionWithCheckInternal(tx.transaction_hash, tx.inBlock, submitStartedAt);
     // The checking timer labels uncertainty only; it cannot establish inclusion or free the next command.
     const checking = setTimeout(
       () => {
@@ -637,7 +629,6 @@ export class EternumProvider extends EventEmitter {
   private async waitForTransactionWithCheckInternal(
     transactionHash: string,
     inBlock?: Promise<void>,
-    transactionType?: TransactionType,
     startedAt?: number,
   ): Promise<GetTransactionReceiptResponse> {
     if (!this.transactionStreamWaiter) {
@@ -647,11 +638,9 @@ export class EternumProvider extends EventEmitter {
       } as unknown as GetTransactionReceiptResponse;
     }
 
-    const transaction = await this.transactionStreamWaiter(transactionHash, inBlock, transactionType, startedAt).catch(
-      (error) => {
-        throw attachTransactionFailureStage(error, "confirmation");
-      },
-    );
+    const transaction = await this.transactionStreamWaiter(transactionHash, inBlock, startedAt).catch((error) => {
+      throw attachTransactionFailureStage(error, "confirmation");
+    });
 
     // Reverted before the roll (the shard's checks) or refused by the game (rolled back, reason recorded): either way
     // nothing applied, and the player reads the reason.
@@ -670,7 +659,6 @@ export class EternumProvider extends EventEmitter {
       block_number: transaction.block,
       finality_status: transaction.status,
       statusReceipt: transaction.status,
-      ...(transaction.batchRemaining !== undefined ? { batch_remaining: transaction.batchRemaining } : {}),
       transaction_hash: transaction.hash,
     } as GetTransactionReceiptResponse;
   }
@@ -893,40 +881,6 @@ export class EternumProvider extends EventEmitter {
       props.signer,
       { kind: "ManageTroops", value: { kind: "RemoveExplorer", value: props.explorer_id } },
       TransactionType.EXPLORER_DELETE,
-    );
-  }
-
-  public async bitcoin_mine_contribute_labor(props: SystemProps.BitcoinMineContributeLaborProps) {
-    return this.submitCommand(
-      props.signer,
-      { kind: "ContributeBitcoinLabor", value: { structure_id: props.structure_id, amount: props.labor_amount } },
-      TransactionType.BITCOIN_MINE_CONTRIBUTE_LABOR,
-    );
-  }
-
-  public async bitcoin_mine_claim_phase_reward(props: SystemProps.BitcoinMineClaimPhaseRewardProps) {
-    return requireBatchReceipt(
-      await this.submitCommand(
-        props.signer,
-        { kind: "ClaimBitcoinPhase", value: { phase: props.phase_id, mine_ids: props.mine_ids } },
-        TransactionType.BITCOIN_MINE_CLAIM_PHASE_REWARD,
-      ),
-    );
-  }
-
-  public async bitcoin_mine_close_phase(props: SystemProps.BitcoinMinePhaseProps) {
-    return this.submitCommand(
-      props.signer,
-      { kind: "CloseBitcoinPhase", value: props.phase_id },
-      TransactionType.BITCOIN_MINE_CLOSE_PHASE,
-    );
-  }
-
-  public async bitcoin_mine_bind_phase(props: SystemProps.BitcoinMinePhaseProps) {
-    return this.submitCommand(
-      props.signer,
-      { kind: "BindBitcoinPhase", value: props.phase_id },
-      TransactionType.BITCOIN_MINE_BIND_PHASE,
     );
   }
 

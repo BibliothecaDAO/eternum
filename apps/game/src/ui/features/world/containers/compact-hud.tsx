@@ -32,8 +32,6 @@ import { ActionTile } from "./left-facets/structure-actions-panel";
 import { StructureListColumn } from "./left-facets/structure-list-column";
 import { useStructureActions } from "./left-facets/use-structure-actions";
 import { resolveLeftViewSurface } from "./left-view-policy";
-import { HudPanel } from "@/ui/design-system/kit/hud-elements";
-import { SpectatorStandingsBody } from "./spectator-standings";
 import { OutOfGameLine } from "@/ui/features/world/hud/out-of-game";
 
 type CompactTab = "empire" | "map" | "log" | "chat" | "details";
@@ -43,7 +41,6 @@ const SHEET_TABS: ReadonlySet<CompactTab> = new Set(["empire", "map", "details"]
 
 const COMPACT_TAB_IMAGES = {
   empire: "home",
-  standings: "victory",
   map: "map",
   log: "news",
   chat: "chat",
@@ -112,7 +109,7 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
   const { open: requested, navigation, toggle, close, closeAndFocusTab, setChatOpen } = useCompactPanels();
   // The minimap is the world map's: the realm view has no Map tab, and a Map sheet left open there closes.
   const { isMapView } = useQuery();
-  const open = requested === "map" && !isMapView ? null : requested;
+  const open = (requested === "map" && !isMapView) || (requested === "empire" && !ordersAllowed) ? null : requested;
   const unread = useUnreadImportantCount(open === "log");
   const unreadChat = useRealtimeChatSelector(chatUnread);
   const logTab = useRef<HTMLButtonElement>(null);
@@ -120,11 +117,7 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
   if (showBlankOverlay) return null;
 
   const tabs: TabSpec[] = [
-    {
-      id: "empire",
-      label: ordersAllowed ? EMPIRE : "Standings",
-      image: ordersAllowed ? COMPACT_TAB_IMAGES.empire : COMPACT_TAB_IMAGES.standings,
-    },
+    ...(ordersAllowed ? [{ id: "empire" as const, label: EMPIRE, image: COMPACT_TAB_IMAGES.empire }] : []),
     ...(isMapView ? [{ id: "map" as const, label: "Map", image: COMPACT_TAB_IMAGES.map }] : []),
     { id: "log", label: "Log", image: COMPACT_TAB_IMAGES.log, badge: unread, ref: logTab },
     { id: "chat", label: "Chat", image: COMPACT_TAB_IMAGES.chat, badge: unreadChat },
@@ -168,7 +161,7 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
                 </button>
               </header>
               <div className="min-h-0 overflow-y-auto overscroll-contain p-2 touch-pan-y">
-                <SheetContent tab={open} ordersAllowed={ordersAllowed} tileDetails={tileDetails} />
+                <SheetContent tab={open} tileDetails={tileDetails} />
               </div>
             </section>
           )}
@@ -276,15 +269,7 @@ const TabButton = ({
   );
 };
 
-const SheetContent = ({
-  tab,
-  ordersAllowed,
-  tileDetails,
-}: {
-  tab: CompactTab;
-  ordersAllowed: boolean;
-  tileDetails: ReactNode;
-}) => {
+const SheetContent = ({ tab, tileDetails }: { tab: CompactTab; tileDetails: ReactNode }) => {
   if (tab === "map") return <MinimapPanel />;
   if (tab === "details" && tileDetails === null)
     return (
@@ -298,14 +283,7 @@ const SheetContent = ({
     return (
       <>
         <OutOfGameLine />
-        {ordersAllowed ? (
-          <EmpireColumn />
-        ) : (
-          // The sheet's head names it; the panel under it is its frame and table alone.
-          <HudPanel kind="section" label="Standings" collapsible={false}>
-            <SpectatorStandingsBody />
-          </HudPanel>
-        )}
+        <EmpireColumn />
       </>
     );
   return null;

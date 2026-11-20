@@ -118,7 +118,6 @@ export const structureName = (type: StructureType, mineKind?: number): string =>
 /** The same category names for list headings and discovery choices. */
 export const structurePlural = (type: StructureType, mineKind?: number): string => {
   if (type === StructureType.Beasts) return structureName(type, mineKind);
-  if (type === StructureType.BitcoinMine) return "Bitcoin mines";
   return `${structureName(type, mineKind)}s`;
 };
 

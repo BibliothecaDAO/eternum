@@ -2,7 +2,7 @@ import { safeInteger } from "../utils/safe-integer";
 import { nativeModelDefinition } from "./native-models";
 import { nativePlay } from "./native-submission";
 import { invalidateGameplayNonce } from "./submit";
-import { EternumProvider, type TransactionType } from "@bibliothecadao/provider";
+import { EternumProvider } from "@bibliothecadao/provider";
 import { NativeFactStore } from "./native-fact-store";
 import {
   ContractAddress,
@@ -214,12 +214,7 @@ const routeActionOutcomes = (
   stopped: AbortSignal,
 ): GameClient["waitForAction"] => {
   const { provider } = setupResult.network;
-  const wait = (
-    transactionHash: string,
-    inBlock?: Promise<void>,
-    transactionType?: TransactionType,
-    startedAt?: number,
-  ) =>
+  const wait = (transactionHash: string, inBlock?: Promise<void>, startedAt?: number) =>
     waitForActionOutcome(
       runtime,
       provider.provider,
@@ -227,7 +222,6 @@ const routeActionOutcomes = (
       transactionHash,
       stopped,
       inBlock,
-      transactionType,
       startedAt,
     );
   provider.setTransactionStreamWaiter(wait, (transactionHash) => runtime.recordSubmittedTransaction(transactionHash));

@@ -233,8 +233,6 @@ describe("native fact store", () => {
       shards_mines_fail_probability: 1,
       camp_win_probability: 1,
       camp_fail_probability: 0,
-      bitcoin_mine_win_probability: 0,
-      bitcoin_mine_fail_probability: 1,
       hyps_win_prob: 0,
       hyps_fail_prob: 1,
       hyps_fail_prob_increase_p_hex: 0,
@@ -425,21 +423,14 @@ describe("native fact store", () => {
 });
 
 describe("declared fact absence", () => {
-  it("requires the current snapshot for points zeroes and never stores synthetic or retired nonce rows", () => {
+  it("synthesizes a declared zero without storing it and refuses an undeclared absence", () => {
     const store = new NativeFactStore();
     store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, day_unit_seconds: 0 })]);
-    const points = { game_id: 1, address: 0x111n };
-    store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 });
-    expect(store.requireOrAbsent("PlayerPoints", points).unknown).toContain("INCOMPLETE_SNAPSHOT");
-    store.setSnapshot({ gameId: 1, complete: true, timestamp: 350 });
-    expect(store.requireOrAbsent("PlayerPoints", points).unknown).toContain("INCOMPLETE_ACTOR_SNAPSHOT");
+    const guardKey = { game_id: 1, structure_id: 7, slot: 1 };
     store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
-    expect(store.requireOrAbsent("PlayerPoints", points).known?.points).toBe(0n);
-    expect([...store.rows("PlayerPoints")]).toEqual([]);
-    expect(store.requireOrAbsent("PlayerPoints", { ...points, address: 0x222n }).known?.points).toBe(0n);
-    expect(store.requireOrAbsent("PlayerPoints", { ...points, game_id: 2 }).unknown).toContain("INCOMPLETE_SNAPSHOT");
-    store.applyFacts([set("0x1", "PlayerPoints", { ...points, points: 9n })]);
-    expect(store.requireOrAbsent("PlayerPoints", points).known?.points).toBe(9n);
+    store.applyFacts([set("0x7", "Structure", structure("0x111"))]);
+    expect(store.requireOrAbsent("Guard", guardKey).known?.troops.count).toBe(0n);
+    expect([...store.rows("Guard")]).toEqual([]);
     expect(store.requireOrAbsent("GameRegistry", { game_id: 1 }).unknown).toContain("UNDECLARED_ABSENCE");
   });
 
@@ -693,7 +684,7 @@ describe("declared fact absence", () => {
   it("keeps incomplete scope invariants out of synchronous listeners", () => {
     const store = new NativeFactStore();
     const seen: (string | undefined)[] = [];
-    store.subscribe(() => seen.push(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0x111n }).unknown));
+    store.subscribe(() => seen.push(store.requireOrAbsent("Guard", { game_id: 1, structure_id: 7, slot: 1 }).unknown));
     store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 });
     store.applyFacts([
       set("0x100", "SliceRules", { ...preset.rules, game_id: 1, day_unit_seconds: 100 }),
@@ -731,12 +722,12 @@ describe("declared fact absence", () => {
     expect(store.subscriptionScope().known).toEqual({ actor: "0x111" });
   });
 
-  it("notifies sparse readers when gates open without inventing Frontier points before its clock is known", () => {
+  it("notifies sparse readers when gates open without inventing a zero before its clock is known", () => {
     const store = new NativeFactStore();
     store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, day_unit_seconds: 100 })]);
     const state = { gameId: 1, complete: false, actor: "0x111", timestamp: undefined };
     const values: unknown[] = [];
-    store.subscribe(() => values.push(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0x111n })));
+    store.subscribe(() => values.push(store.requireOrAbsent("Guard", { game_id: 1, structure_id: 7, slot: 1 })));
     store.setSnapshot(state);
     const revision = store.getRevision();
     store.setSnapshot({ ...state, complete: true });
@@ -744,7 +735,7 @@ describe("declared fact absence", () => {
     expect(values.at(-1)).toMatchObject({ unknown: expect.stringContaining("INCOMPLETE_SCOPE") });
     expect(store.subscriptionScope()).toBe(store.subscriptionScope());
     store.setSnapshot({ ...state, complete: true, actor: "0x222" });
-    expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0x222n }).unknown).toContain(
+    expect(store.requireOrAbsent("Guard", { game_id: 1, structure_id: 8, slot: 1 }).unknown).toContain(
       "INCOMPLETE_SCOPE",
     );
   });

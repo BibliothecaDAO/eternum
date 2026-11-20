@@ -1,5 +1,5 @@
 import { hash } from "starknet";
-import { manifest, pointsAward, receipt } from "./fixtures";
+import { manifest, receipt, rowEvent } from "./fixtures";
 import type { RpcBlockWithReceipts } from "../types";
 
 const PLAY = hash.getSelectorFromName("play");
@@ -19,7 +19,7 @@ export function syntheticInvocation(index: number) {
 export function syntheticTransaction(index: number, eventCount = 6) {
   const transaction = syntheticInvocation(index);
   const events = Array.from({ length: eventCount }, (_, event) => {
-    const raw = pointsAward("1", hex(index + 1000), "1", String(event + 1), String(index * eventCount + event + 1));
+    const raw = rowEvent("Fragments", ["1", hex(index + 1000)], { balance: BigInt(event + 1) });
     return { ...raw, keys: raw.keys.map(fullWidth), data: raw.data.map(fullWidth) };
   });
   return { transaction, receipt: { ...receipt(events, transaction.transaction_hash), block_number: 10 } };

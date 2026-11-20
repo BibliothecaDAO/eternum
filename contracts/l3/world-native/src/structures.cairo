@@ -139,12 +139,6 @@ pub fn discovered_structure(
         Discovery::Mine => (
             crate::taxonomy::MINE_CATEGORY, crate::taxonomy::MINE_OCCUPIER, 0_u8, capacities.fragment_mine_capacity,
         ),
-        Discovery::BitcoinMine => (
-            crate::taxonomy::BITCOIN_MINE_CATEGORY,
-            crate::taxonomy::BITCOIN_MINE_OCCUPIER,
-            3,
-            capacities.bitcoin_mine_capacity,
-        ),
         Discovery::Camp => (
             crate::taxonomy::CAMP_CATEGORY, crate::taxonomy::CAMP_OCCUPIER, 0, capacities.camp_capacity,
         ),
@@ -161,16 +155,9 @@ pub fn discovered_structure(
         Discovery::None | Discovery::Shrine | Discovery::Well |
         Discovery::Spire => panic!("discovery is not a structure"),
     };
-    assert!(
-        discovery == Discovery::Mine || coord.alt == (discovery == Discovery::BitcoinMine), "invalid discovery layer",
-    );
-    let max_guards = if discovery == Discovery::BitcoinMine {
-        4
-    } else {
-        1
-    };
+    assert!(discovery == Discovery::Mine || !coord.alt, "invalid discovery layer");
     let base = StructureBase {
-        troop_max_guard_count: max_guards,
+        troop_max_guard_count: 1,
         troop_max_explorer_count: if discovery == Discovery::Camp {
             camp_armies
         } else {

@@ -31,7 +31,6 @@ export function eventLayouts(abi) {
         "RowDeleted",
         "BattleEvent",
         "StoryEvent",
-        "PointsAwarded",
         "GameplayRejected",
         "BatchProgress",
       ].includes(name)

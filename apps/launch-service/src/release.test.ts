@@ -262,11 +262,11 @@ describe("interrupted Frontier launches", () => {
     ["after its summary was written, before the run completed", true],
   ])("a Frontier game created by a launch interrupted %s is advanced", async (_case, summaryWritten) => {
     const store = new D1LaunchStore(database.db, testChain());
-    const run = await store.enqueue("game", { environment: "madara.frontier", gameName: "frontier-interrupted" });
+    const run = await store.enqueue({ environment: "madara.frontier", gameName: "frontier-interrupted" });
     await store.startNext(Date.now());
     if (summaryWritten) await store.saveGame(created(run.name, 7));
     const restarted = new D1LaunchStore(database.db, testChain());
-    expect((await restarted.find("game", "madara.frontier", run.name))?.status).toBe("running");
+    expect((await restarted.find("madara.frontier", run.name))?.status).toBe("running");
     const { chain, applied } = chainOf({ [run.name]: 7 });
     const advanced = await advanceGames(
       chain,
@@ -280,8 +280,8 @@ describe("interrupted Frontier launches", () => {
 
   test("a queued Frontier launch that created nothing, and every Blitz game, stay out", async () => {
     const store = new D1LaunchStore(database.db, testChain());
-    const blitz = await store.enqueue("game", { environment: "madara.blitz", gameName: "bltz-3" });
-    const queued = await store.enqueue("game", { environment: "madara.frontier", gameName: "frontier-next" });
+    const blitz = await store.enqueue({ environment: "madara.blitz", gameName: "bltz-3" });
+    const queued = await store.enqueue({ environment: "madara.frontier", gameName: "frontier-next" });
     const names = await store.gameNames("madara.frontier");
     expect(names).toEqual([queued.name]);
     const { chain, applied } = chainOf({ [blitz.name]: 3 });

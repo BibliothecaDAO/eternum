@@ -40,7 +40,7 @@ const HISTORY = 8;
 const useSeasonStanding = (account: string) => {
   const season = chooseSeason(useDirectory().data?.games ?? [], true);
   const board = useLeaderboard(season ? gameRefOf(season) : null);
-  const entries = board.data?.mode === "frontier" ? board.data.entries : undefined;
+  const entries = board.data?.entries;
   return { own: entries && findOwnEntry(entries, account), field: entries?.length };
 };
 

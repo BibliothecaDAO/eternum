@@ -61,7 +61,7 @@ const fitsInside = (season: SeasonPhase, closesAt: string) => {
  * launch failed is continued only by the operator.
  */
 export const scheduleFrontierSeason = (store: LaunchServiceStore, season: FrontierSeasonPhase) =>
-  store.schedule("game", frontierSeasonRequest(season));
+  store.schedule(frontierSeasonRequest(season));
 
 const BLITZ_SLOT_INTERVAL_MS = BLITZ_SLOT_INTERVAL_SECONDS * 1000;
 const PREPARATION_MS = BLITZ_SLOT_PREPARATION_SECONDS * 1000;

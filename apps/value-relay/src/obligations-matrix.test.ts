@@ -408,7 +408,6 @@ const seedBlock: ConfirmedBlock = {
   parentHash: "0x0",
   status: "ACCEPTED_ON_L2",
   withdrawals: [withdrawal],
-  results: [],
 };
 const ERRORS: string[] = [];
 
@@ -463,7 +462,6 @@ function worker(data: Map<string, unknown>, kill: Kill) {
           ? ((world.state.lost = false), failure("lost reply"))
           : Effect.succeed(rows.map((row) => ({ claimId: row.withdrawal.transactionHash, error: null })));
       },
-      postResult: () => Effect.void,
     } as never,
   };
   const depositPorts = (proofs: boolean): DepositRelayPorts => ({

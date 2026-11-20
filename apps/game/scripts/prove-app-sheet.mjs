@@ -1025,18 +1025,6 @@ const recapRecords = async (b, baseUrl, out) => {
   return records;
 };
 
-/** A Blitz's Results board, by its panel's title: on a phone it stands below the outcome and the chest. */
-const RESULT_BOARD = "The game";
-
-/** Marks the panel titled `title` for its own still; says whether it found one. */
-const markPanel = (title) => `(() => {
-  const panel = [...document.querySelectorAll(".app-panel")].find(
-    (each) => each.querySelector("h2")?.innerText.trim() === ${JSON.stringify(title)},
-  );
-  panel?.setAttribute("data-proof-still", ${JSON.stringify(title)});
-  return panel !== undefined;
-})()`;
-
 /**
  * The boards (AppBoard), each measured row by row: every column (the lead, the name and each figure) must stand at one x
  * on every row, each figure's value end on one line, and no name run into the figures beside it (the owner, 2 November
@@ -1058,12 +1046,6 @@ const BOARD_PAGES = [
     phoneOnly: true,
     act: (b, record) => press(b, record, "Blitz"),
     stills: [{ name: "blitz", selector: '[data-age="blitz"]' }],
-  },
-  {
-    name: "results",
-    path: "reward-sealed/results/0x5245414c4d53-7",
-    act: (b) => b.evaluate(markPanel(RESULT_BOARD)),
-    stills: [{ name: "the-game", selector: `[data-proof-still="${RESULT_BOARD}"]` }],
   },
 ];
 

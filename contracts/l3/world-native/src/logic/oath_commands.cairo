@@ -30,17 +30,12 @@ pub fn requires_answer(game_id: u32, command: Command) -> bool {
         Command::DestroyBuilding(_) => false,
         Command::PauseBuildingProduction(_) => false,
         Command::ResumeBuildingProduction(_) => false,
-        Command::ContributeBitcoinLabor(_) => false,
-        Command::CloseBitcoinPhase(_) => false,
-        Command::BindBitcoinPhase(_) => false,
-        Command::ClaimBitcoinPhase(_) => false,
         Command::BattleGuard(value) => waiting(game_id, value.attacker_id),
         Command::ApplyRelic(value) => match value.recipient {
             crate::relics::Recipient::Explorer |
             crate::relics::Recipient::ArmySlot(_) => waiting(game_id, value.entity_id),
             crate::relics::Recipient::StructureProduction | crate::relics::Recipient::StructureGuard => false,
         },
-        Command::RecordBlitzResults(_) => false,
         Command::CreateGuild(_) => false,
         Command::JoinGuild(_) => false,
         Command::LeaveGuild(_) => false,

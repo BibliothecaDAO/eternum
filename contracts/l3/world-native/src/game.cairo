@@ -1,4 +1,3 @@
-use starknet::ContractAddress;
 use crate::rules::SliceRules;
 pub const FRONTIER: u8 = 1;
 pub const BLITZ: u8 = 2;
@@ -34,43 +33,11 @@ pub struct GameOverrides {
     pub map_center_offset: u32,
 }
 
-#[derive(Copy, Drop, Serde)]
-pub enum PointActivity {
-    Exploration,
-    StructureCapture,
-}
-
-#[derive(Drop, starknet::Event)]
-pub struct PointsAwarded {
-    #[key]
-    pub version: u8,
-    #[key]
-    pub game_id: u32,
-    #[key]
-    pub player: ContractAddress,
-    pub activity: PointActivity,
-    pub points: u128,
-    pub player_points: u128,
-    pub season_points: u128,
-}
-
 #[starknet::interface]
 pub trait IGame<T> {
     fn game(self: @T, game_id: u32) -> GameRegistry;
     fn rules(self: @T, game_id: u32) -> SliceRules;
     fn write_game(ref self: T, game_id: u32, game: GameRegistry);
-}
-
-#[starknet::interface]
-pub trait IPoints<T> {
-    fn register_exploration(
-        ref self: T, game_id: u32, actor: ContractAddress, game_context: crate::commands::ActionContext,
-    );
-    fn register_capture(
-        ref self: T, game_id: u32, actor: ContractAddress, game_context: crate::commands::ActionContext,
-    ) -> u128;
-    fn player_points(self: @T, game_id: u32, actor: ContractAddress) -> u128;
-    fn season_points(self: @T, game_id: u32) -> u128;
 }
 
 pub fn status_at(game: GameRegistry, timestamp: u64) -> GameStatus {

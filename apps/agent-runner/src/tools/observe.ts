@@ -1,10 +1,4 @@
-import {
-  divideByPrecision,
-  getBlockTimestamp,
-  LeaderboardManager,
-  liveHomeArmies,
-  type GameClient,
-} from "@bibliothecadao/eternum";
+import { divideByPrecision, getBlockTimestamp, liveHomeArmies, type GameClient } from "@bibliothecadao/eternum";
 import {
   type ArmyInfo,
   type BuildingType,
@@ -25,7 +19,7 @@ import { readGameRegistry, resolveGamePhase, type GameRegistryClock } from "../g
 import { clipList, clipText, textResult } from "./result";
 import { StringEnum } from "./schema";
 
-export const OBSERVE_FOCUSES = ["empire", "armies", "nearby", "leaderboard", "events"] as const;
+export const OBSERVE_FOCUSES = ["empire", "armies", "nearby", "events"] as const;
 type ObserveFocus = (typeof OBSERVE_FOCUSES)[number];
 
 /** Summaries stay under this many characters so a turn's context is spent on judgement, not on a dump. */
@@ -36,9 +30,7 @@ export const NEARBY_REACH = 3;
 const STAPLE_RESOURCES = [ResourcesIds.Wheat, ResourcesIds.Fish, ResourcesIds.Labor, ResourcesIds.Essence];
 
 const ObserveParams = Type.Object({
-  focus: Type.Optional(
-    StringEnum(OBSERVE_FOCUSES, "empire (default): my structures. armies, nearby, leaderboard, events."),
-  ),
+  focus: Type.Optional(StringEnum(OBSERVE_FOCUSES, "empire (default): my structures. armies, nearby, events.")),
 });
 
 export const createObserveTool = (game: RunnerGame): AgentTool<typeof ObserveParams> => ({
@@ -62,8 +54,6 @@ export const renderFocus = (game: RunnerGame, focus: ObserveFocus): string => {
       return renderArmies(game);
     case "nearby":
       return renderNearby(game);
-    case "leaderboard":
-      return renderLeaderboard(game);
     case "events":
       return renderEvents(game);
   }
@@ -203,25 +193,6 @@ const describeOwner = (game: RunnerGame, structureId: ID): string => {
   if (owner === undefined) return "(unknown owner)";
   if (owner === game.viewer()) return "(mine)";
   return `(${playerName(owner)})`;
-};
-
-// Leaderboard
-
-const renderLeaderboard = (game: RunnerGame): string => {
-  const { store } = game.client.setup;
-  const leaderboard = LeaderboardManager.instance(store);
-  const viewer = game.viewer();
-  const ranked = leaderboard.playersByRank;
-  if (ranked.length === 0) return "No points registered yet.";
-  const mine = ranked.findIndex(({ address }) => address === viewer);
-  const rows = ranked
-    .slice(0, 10)
-    .map(
-      ({ address, points }, index) =>
-        `${index + 1}. ${playerName(address)} ${points} pts${address === viewer ? " (me)" : ""}`,
-    );
-  const myLine = mine >= 0 ? `My rank: ${mine + 1} of ${ranked.length}` : "I am not ranked yet.";
-  return [myLine, ...rows].join("\n");
 };
 
 // The runner reads no Realms profiles, so another player is their address.

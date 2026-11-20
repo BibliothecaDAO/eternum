@@ -18,7 +18,6 @@ export const NOTIFICATION_KIND_RULES = {
   results: { level: "important", lifetimeMs: 24 * HOUR },
   messages: { level: "important", lifetimeMs: HOUR },
   deliveries: { level: "all", lifetimeMs: HOUR },
-  bitcoin: { level: "all", lifetimeMs: HOUR },
 } as const satisfies Record<string, { level: Exclude<NotificationLevel, "off">; lifetimeMs: number }>;
 
 export type NotificationKind = keyof typeof NOTIFICATION_KIND_RULES;

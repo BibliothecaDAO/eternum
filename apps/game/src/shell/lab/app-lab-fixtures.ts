@@ -1,9 +1,7 @@
-import type { HeraldFrontierLeaderboard, HeraldLeaderboard } from "@bibliothecadao/eternum/game-sync";
+import type { HeraldFrontierLeaderboard } from "@bibliothecadao/eternum/game-sync";
 import { StructureType } from "@bibliothecadao/types";
 import { uint256 } from "starknet";
 import { buildLedgerEconomicPreset, chestPresetFor } from "../../../../../config/deployer/clean/ledger/economics";
-import { blitzVictoryPointConfig } from "../../../../../config/source/blitz/balance";
-import { VICTORY_POINTS_MULTIPLIER } from "../../../../../config/source/common/arena/points";
 import { FRONTIER_S1_PRESET_ID } from "../../../../../config/source/common/native-preset-modes";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import type { CampaignReferral, CampaignTicket, Session, ShareTally } from "@realms-world/identity";
@@ -817,36 +815,6 @@ export const LAB_DEVCON_SEASON_0 = {
 
 /** The board before any prize pool is published (the Season tab's podium says so). */
 export const LAB_FRONTIER_UNPUBLISHED_BOARD: HeraldFrontierLeaderboard = { ...LAB_FRONTIER_BOARD, prize: null };
-
-/** Blitz's points for one of each scoring action, as its balance grants them (stored in millionths). */
-const BLITZ_POINTS = {
-  tile: Number(blitzVictoryPointConfig.pointsForTileExploration / BigInt(VICTORY_POINTS_MULTIPLIER)),
-  claim: Number(
-    blitzVictoryPointConfig.pointsForNonHyperstructureClaimAgainstBandits / BigInt(VICTORY_POINTS_MULTIPLIER),
-  ),
-};
-
-/** One row of a finished Blitz: what each action scored at Blitz's points, and their sum. */
-const blitzBoardRow = (address: string, index: number) => {
-  const tiles = 48 - index * 6;
-  const claims = 4 - Math.floor(index / 2);
-  const activityBreakdown = {
-    exploration: { count: tiles, points: tiles * BLITZ_POINTS.tile },
-    otherStructureBanditsDefeat: { count: claims, points: claims * BLITZ_POINTS.claim },
-  };
-  const totalPoints = Object.values(activityBreakdown).reduce((sum, { points }) => sum + points, 0);
-  return { address, rank: index + 1, totalPoints, activityBreakdown };
-};
-
-/**
- * A finished Blitz: the player third of five, each row with the activity its points came from, as Herald's points
- * board answers it (the score card draws the player's).
- */
-export const LAB_BLITZ_BOARD: HeraldLeaderboard = {
-  game_id: "7",
-  mode: "points",
-  entries: [rival(1), rival(0), LAB_PLAYER, rival(2), rival(3)].map(blitzBoardRow),
-};
 
 /** Names for the rivals the identity Worker would serve; the unnamed one reads "Lord" and its last four. */
 export const LAB_PROFILES = Object.fromEntries([

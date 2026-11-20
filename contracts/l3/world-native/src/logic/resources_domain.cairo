@@ -149,28 +149,8 @@ pub mod ResourcesLogic {
             }
         }
 
-        fn initialize_resources(
-            ref self: ContractState,
-            key: ResourceKey,
-            capacity: u128,
-            category: u8,
-            timestamp: u64,
-            game_context: crate::commands::ActionContext,
-        ) {
-            let game_context = crate::commands::execution_context(key.game_id, game_context);
-
+        fn initialize_resources(ref self: ContractState, key: ResourceKey, capacity: u128) {
             self.resources.initialize(key, capacity);
-            if category == crate::taxonomy::BITCOIN_MINE_CATEGORY {
-                crate::bitcoin::IBitcoinFundingDispatcherTrait::register_bitcoin_structure(
-                    crate::bitcoin::IBitcoinFundingLibraryDispatcher {
-                        class_hash: crate::logic::release::class_of(key.game_id, crate::slots::SEASON),
-                    },
-                    key,
-                    category,
-                    timestamp,
-                    crate::commands::action_context(game_context),
-                );
-            }
         }
         fn destroy_resources(ref self: ContractState, key: ResourceKey) {
             self.resources.destroy(key);

@@ -7,10 +7,6 @@ import { SEASON_PASS } from "@bibliothecadao/types";
  */
 const TX_MESSAGES: Record<TransactionType, string> = {
   [TransactionType.PROVISION_REALM]: "Realm provisioned",
-  [TransactionType.BITCOIN_MINE_CONTRIBUTE_LABOR]: "Labor sent to the mine",
-  [TransactionType.BITCOIN_MINE_CLAIM_PHASE_REWARD]: "Mine reward claimed",
-  [TransactionType.BITCOIN_MINE_CLOSE_PHASE]: "Mining phase closed",
-  [TransactionType.BITCOIN_MINE_BIND_PHASE]: "Mine joined the mining phase",
   [TransactionType.EXPLORE]: "Scouts sent to explore new lands",
   [TransactionType.TRAVEL_HEX]: "Army on the move",
   [TransactionType.TOGGLE_ALTERNATE]: "Army passed through a spire",

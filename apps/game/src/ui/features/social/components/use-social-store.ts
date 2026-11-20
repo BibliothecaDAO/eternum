@@ -10,7 +10,6 @@ interface SocialState {
   isUpdatePointsLoading: boolean;
   selectedGuild: ContractAddress;
   selectedPlayer: ContractAddress;
-  playersByRank: [ContractAddress, number][];
   playerInfo: PlayerInfo[];
   // Guilds specific state
   guildsViewGuildInvites: boolean;
@@ -24,7 +23,6 @@ interface SocialState {
   setIsUpdatePointsLoading: (loading: boolean) => void;
   setSelectedGuild: (guild: ContractAddress) => void;
   setSelectedPlayer: (player: ContractAddress) => void;
-  setPlayersByRank: (players: [ContractAddress, number][]) => void;
   setPlayerInfo: (info: PlayerInfo[]) => void;
   // Guilds specific setters
   setGuildsViewGuildInvites: (view: boolean) => void;
@@ -33,7 +31,7 @@ interface SocialState {
 }
 
 const initialGuildsActiveSort: SortInterface = {
-  sortKey: "rank",
+  sortKey: "name",
   sort: "asc",
 };
 
@@ -45,7 +43,6 @@ export const useSocialStore = create<SocialState>((set) => ({
   isUpdatePointsLoading: false,
   selectedGuild: 0n as ContractAddress,
   selectedPlayer: 0n as ContractAddress,
-  playersByRank: [],
   playerInfo: [],
   // Guilds specific state initial values
   guildsViewGuildInvites: false,
@@ -59,7 +56,6 @@ export const useSocialStore = create<SocialState>((set) => ({
   setIsUpdatePointsLoading: (loading) => set({ isUpdatePointsLoading: loading }),
   setSelectedGuild: (guild) => set({ selectedGuild: guild }),
   setSelectedPlayer: (player) => set({ selectedPlayer: player }),
-  setPlayersByRank: (players) => set({ playersByRank: players }),
   setPlayerInfo: (info) => set({ playerInfo: info }),
   // Guilds specific setters implementation
   setGuildsViewGuildInvites: (view) => set({ guildsViewGuildInvites: view }),

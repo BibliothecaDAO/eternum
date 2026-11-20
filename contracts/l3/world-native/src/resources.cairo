@@ -234,14 +234,7 @@ pub struct ResourceRule {
 
 #[starknet::interface]
 pub trait IResourceOperations<T> {
-    fn initialize_resources(
-        ref self: T,
-        key: ResourceKey,
-        capacity: u128,
-        category: u8,
-        timestamp: u64,
-        game_context: crate::commands::ActionContext,
-    );
+    fn initialize_resources(ref self: T, key: ResourceKey, capacity: u128);
     fn initialize_explorer_resources(
         ref self: T, key: ResourceKey, amount: u128, game_context: crate::commands::ResourceContext,
     );

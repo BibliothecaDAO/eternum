@@ -21,7 +21,6 @@ pub use crate::tests::state::{GameState, TroopObservationTrait};
 pub use crate::troops::ExplorerKey;
 pub use crate::upgrades::{UpgradeLimits, UpgradeRecipe};
 pub mod army_merge;
-pub mod blitz_results;
 pub mod bridge;
 pub mod building_commands;
 pub mod camps;

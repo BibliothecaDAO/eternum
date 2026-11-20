@@ -3,13 +3,11 @@ import { ledgerAbi, ledgerCall, ledgerEvent } from "../../../packages/value-ledg
 import { Effect } from "effect";
 import { hash } from "starknet";
 import { beforeEach, expect, it, vi } from "vitest";
-import { blitzCommitment } from "@realms-world/value-ledger/commitment";
-import { ledgerChestChanges, ledgerMonitorReads, ledgerResultAdapter, postVerifiedResult } from "./ledger";
+import { ledgerChestChanges, ledgerMonitorReads } from "./ledger";
+import { runMonitor, type MonitorProgress } from "./monitor";
 
 const rpc = vi.hoisted(() => ({
   call: vi.fn(),
-  execute: vi.fn(),
-  wait: vi.fn(),
   events: vi.fn(),
   head: vi.fn(),
   block: vi.fn(),
@@ -20,16 +18,11 @@ vi.mock("starknet", async (importOriginal) => ({
   RpcProvider: vi.fn(function () {
     return {
       callContract: rpc.call,
-      execute: rpc.execute,
-      waitForTransaction: rpc.wait,
       getEvents: rpc.events,
       getBlockNumber: rpc.head,
       getBlock: rpc.block,
       getClassHashAt: rpc.classAt,
     };
-  }),
-  Account: vi.fn(function () {
-    return { execute: rpc.execute };
   }),
 }));
 /** The ledger under test first exists at block 500, as its address book says. */
@@ -45,14 +38,6 @@ const credentials = {
   accountAddress: "0x20",
   privateKey: "unused-test-key",
 };
-const result = {
-  chainId: "0x1",
-  gameId: 7,
-  rows: [{ wallet: "0x123", rank: 1 }],
-  commitment: "",
-};
-result.commitment = blitzCommitment(result);
-const game = (finalized: boolean, commitment = "0x0") => [finalized ? commitment : "0x0"];
 beforeEach(() => {
   vi.clearAllMocks();
   rpc.head.mockResolvedValue(1000);
@@ -62,36 +47,9 @@ beforeEach(() => {
     block_hash: "0xa",
     timestamp: 1000,
   }));
-  rpc.wait.mockResolvedValue({ isReverted: () => false });
-  rpc.execute.mockResolvedValue({ transaction_hash: "0xabc" });
   existsFrom(500);
 });
 
-it("submits the published ranked result and completes an identical retry without a second write", async () => {
-  const post = ledgerResultAdapter(credentials, 12);
-  rpc.call.mockResolvedValueOnce(game(false)).mockResolvedValue(game(true, result.commitment));
-  await Effect.runPromise(post(result));
-  expect(rpc.execute).toHaveBeenCalledWith({
-    contractAddress: "0x10",
-    entrypoint: "apply_results",
-    calldata: ["0x1", "12", "7", "1", "0x123", "1"],
-  });
-  expect(rpc.execute.mock.calls[0]![0].calldata.map(BigInt)).toEqual(
-    ledgerCall("apply_results", {
-      key: { shard: result.chainId, slot_id: 12 },
-      game_id: result.gameId,
-      ranked: result.rows,
-    }).map(BigInt),
-  );
-  rpc.call.mockResolvedValue(game(true, result.commitment));
-  await Effect.runPromise(post(result));
-  expect(rpc.execute).toHaveBeenCalledTimes(1);
-});
-it("refuses a previously finalized different commitment", async () => {
-  rpc.call.mockResolvedValue(game(true, "0xbad"));
-  await expect(Effect.runPromise(ledgerResultAdapter(credentials, 12)(result))).rejects.toThrow();
-  expect(rpc.execute).not.toHaveBeenCalled();
-});
 it("decodes confirmed payments and pins the event head across pagination", async () => {
   rpc.events
     .mockResolvedValueOnce({
@@ -134,27 +92,8 @@ it("decodes confirmed payments and pins the event head across pagination", async
   await Effect.runPromise(reads.paidClaims(page.next));
   expect(rpc.events.mock.calls[1]![0]).toMatchObject({ to_block: { block_number: 1000 }, continuation_token: "next" });
 });
-it("decodes result commitments and refuses malformed payment events", async () => {
+it("refuses malformed payment events", async () => {
   const reads = ledgerMonitorReads("https://ledger.test", ledger);
-  expect(rpc.call).not.toHaveBeenCalled();
-  rpc.events.mockResolvedValueOnce({
-    events: [
-      {
-        from_address: "0x10",
-        transaction_hash: "0xdef",
-        ...ledgerEvent("ResultsApplied", {
-          key: { shard: 1, game_id: 7 },
-          slot_id: 12,
-          season_id: 1,
-          result_commitment: result.commitment,
-          pool: { low: 0, high: 0 },
-        }),
-      },
-    ],
-  });
-  expect((await Effect.runPromise(reads.postedResults(null))).rows).toEqual([
-    { chainId: "0x1", gameId: 7, commitment: result.commitment },
-  ]);
   expect(rpc.call).not.toHaveBeenCalled();
   rpc.events.mockResolvedValueOnce({
     events: [
@@ -167,12 +106,6 @@ it("decodes result commitments and refuses malformed payment events", async () =
     ],
   });
   await expect(Effect.runPromise(reads.paidClaims(null))).rejects.toThrow();
-});
-
-it("keeps a result queued unless the confirmed ledger state records the same commitment", async () => {
-  rpc.call.mockResolvedValueOnce(game(false)).mockResolvedValue(game(true, "0xbad"));
-  await expect(Effect.runPromise(ledgerResultAdapter(credentials, 12)(result))).rejects.toThrow();
-  expect(rpc.execute).toHaveBeenCalledOnce();
 });
 
 it("reads the funded deposit through the committed ledger ABI at a confirmed head", async () => {
@@ -202,33 +135,6 @@ it("reads the funded deposit through the committed ledger ABI at a confirmed hea
   await expect(
     Effect.runPromise(ledgerMonitorReads(credentials.rpcUrl, ledger).frontierPool("0x1", 7)),
   ).rejects.toMatchObject({ operation: "read ledger Frontier pool" });
-});
-
-const unpostedResult = { chainId: "0x1", gameId: 9, rows: [{ wallet: "0x456", rank: 1 }], commitment: "0x1" };
-it("posts a verified paid result for the slot that paid for it", async () => {
-  const post = vi.fn(() => Effect.void);
-  const postFor = vi.fn(() => post);
-  await postVerifiedResult(unpostedResult, async () => 4, postFor);
-  expect(postFor).toHaveBeenCalledWith(4);
-  expect(post).toHaveBeenCalledWith(unpostedResult);
-});
-it("completes a result outside any slot without posting it to the ledger", async () => {
-  const postFor = vi.fn();
-  await expect(postVerifiedResult(unpostedResult, async () => null, postFor)).resolves.toBeUndefined();
-  expect(postFor).not.toHaveBeenCalled();
-});
-it("leaves a result whose slot cannot be verified unposted and failing, so the relay retries it", async () => {
-  const postFor = vi.fn();
-  await expect(
-    postVerifiedResult(
-      unpostedResult,
-      async () => {
-        throw new Error("paid_game_slot_missing");
-      },
-      postFor,
-    ),
-  ).rejects.toThrow("paid_game_slot_missing");
-  expect(postFor).not.toHaveBeenCalled();
 });
 
 it("rediscovers a chest request inserted behind the cursor by an L2 rewrite", async () => {
@@ -273,21 +179,21 @@ it("refuses a ledger event page whose head changes while it is read", async () =
 it("restarts pagination on a replaced checkpoint and anchors an old cursor by replaying it once", async () => {
   const reads = ledgerMonitorReads("https://ledger.test", ledger);
   rpc.events.mockResolvedValue({ events: [], continuation_token: "next" });
-  const first = await Effect.runPromise(reads.postedResults(null));
+  const first = await Effect.runPromise(reads.paidClaims(null));
   rpc.block.mockImplementation(async (number) => ({
     status: "ACCEPTED_ON_L2",
     block_number: number === "latest" ? 1001 : number,
     block_hash: "0xb",
     timestamp: 1001,
   }));
-  const replay = await Effect.runPromise(reads.postedResults(first.next, first.fromBlock, first.anchor));
+  const replay = await Effect.runPromise(reads.paidClaims(first.next, first.fromBlock, first.anchor));
   expect(replay).toMatchObject({ rewind: true, head: 1001, anchor: { number: 1001, hash: "0xb" } });
   expect(rpc.events.mock.calls[1]![0]).not.toHaveProperty("continuation_token");
   expect(rpc.events.mock.calls[1]![0].from_block).toEqual({ block_number: 500 });
-  const legacy = await Effect.runPromise(reads.postedResults(JSON.stringify({ head: 999, token: "old" }), 900));
+  const legacy = await Effect.runPromise(reads.paidClaims(JSON.stringify({ head: 999, token: "old" }), 900));
   expect(legacy.rewind).toBe(true);
   rpc.events.mockResolvedValue({ events: [] });
-  const resumed = await Effect.runPromise(reads.postedResults(legacy.next, legacy.fromBlock, legacy.anchor));
+  const resumed = await Effect.runPromise(reads.paidClaims(legacy.next, legacy.fromBlock, legacy.anchor));
   expect(resumed.rewind).toBe(false);
   expect(rpc.events.mock.calls.at(-1)![0].continuation_token).toBe("next");
 });
@@ -296,14 +202,12 @@ it("starts a fresh scan of the ledger's history at its deployment block, never b
   rpc.events.mockResolvedValue({ events: [] });
   const reads = ledgerMonitorReads("https://ledger.test", ledger);
   const claims = await Effect.runPromise(reads.paidClaims(null));
-  const results = await Effect.runPromise(reads.postedResults(null));
   const chests = await Effect.runPromise(ledgerChestChanges("https://ledger.test", ledger, undefined, null));
   expect(rpc.events.mock.calls.map(([query]) => query.from_block)).toEqual([
     { block_number: 500 },
     { block_number: 500 },
-    { block_number: 500 },
   ]);
-  expect([claims.fromBlock, results.fromBlock, chests.fromBlock]).toEqual([500, 500, 500]);
+  expect([claims.fromBlock, chests.fromBlock]).toEqual([500, 500]);
 });
 
 it.each([
@@ -321,7 +225,7 @@ it.each([
 it("continues an anchored scan from its saved block, even one saved below the deployment block", async () => {
   rpc.events.mockResolvedValue({ events: [] });
   const page = await Effect.runPromise(
-    ledgerMonitorReads("https://ledger.test", ledger).postedResults(null, 100, { number: 1000, hash: "0xa" }),
+    ledgerMonitorReads("https://ledger.test", ledger).paidClaims(null, 100, { number: 1000, hash: "0xa" }),
   );
   expect(page).toMatchObject({ rewind: false, fromBlock: 100 });
   expect(rpc.events.mock.calls[0]![0].from_block).toEqual({ block_number: 100 });
@@ -362,4 +266,45 @@ it("enumerates confirmed withdrawal reports before payments using the compiled r
       to_block: { block_number: 1000 },
     }),
   );
+});
+it("pauses payouts on any result the ledger records, since no game family posts one", async () => {
+  const event = ledgerEvent("ResultsApplied", {
+    key: { shard: 1, game_id: 7 },
+    slot_id: 12,
+    season_id: 1,
+    result_commitment: "0x5",
+    pool: { low: 0, high: 0 },
+  });
+  rpc.events.mockImplementation(async ({ keys }: { keys: string[][] }) => ({
+    events:
+      keys[0]![0] === hash.getSelectorFromName("ResultsApplied")
+        ? [{ ...event, from_address: "0x10", transaction_hash: "0xdef", block_number: 900, block_hash: "0xa" }]
+        : [],
+    continuation_token: "",
+  }));
+  const pause = vi.fn(() => Effect.void);
+  const reads = ledgerMonitorReads(credentials.rpcUrl, ledger);
+  let saved: MonitorProgress = { halted: null };
+  const progress = await Effect.runPromise(
+    runMonitor(
+      {
+        identity: { matchesPayDecision: () => Effect.succeed(true) },
+        shard: {
+          withdrawalReceipt: () => Effect.succeed(null),
+          withdrawal: () => Effect.succeed(null),
+          conservation: () => Effect.succeed([]),
+        },
+        ledger: { ...reads, pause },
+      },
+      {
+        load: async () => saved,
+        save: async (next) => {
+          saved = next;
+        },
+      },
+    ),
+  );
+  expect(progress.halted).toBe("blitz_result_posted:7");
+  expect(progress.fault?.row).toBe("postedResults:0x1:7");
+  expect(pause).toHaveBeenCalledTimes(1);
 });

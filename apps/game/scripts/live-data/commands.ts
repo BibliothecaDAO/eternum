@@ -227,11 +227,7 @@ function nameArmy(t: Transaction, owners: Owners): Named | null {
       owner,
     ];
   }
-  if (
-    t.has("ExplorationReward") ||
-    t.has("SpireDiscovered") ||
-    (t.stories.every((s) => s.name === "PointsAwarded") && t.has("PointsAwarded") && t.wrote("set", "TileOpt"))
-  ) {
+  if (t.has("ExplorationReward") || t.has("SpireDiscovered")) {
     const explorer = t.write("ExplorerTroops")?.key.explorer_id;
     return ["Explore", { spire: t.has("SpireDiscovered") }, owner ?? owners.ofArmy(explorer)];
   }

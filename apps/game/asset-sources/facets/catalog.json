@@ -2592,12 +2592,6 @@
       }
     },
     {
-      "id": "bitcoin-mine",
-      "label": "Bitcoin Mine",
-      "family": "Structures",
-      "prompt": "prompts/bitcoin-mine.txt"
-    },
-    {
       "id": "realm-0",
       "label": "Settlement",
       "family": "Structures",

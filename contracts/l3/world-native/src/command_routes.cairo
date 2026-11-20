@@ -11,9 +11,9 @@ pub struct CommandRoute {
 pub const SETTLE_BLITZ_ROSTER: u32 = 7;
 pub const CHOOSE_OATH: u32 = 73;
 
-pub const COMMAND_IDS: [u32; 48] = [
-    74, 75, 73, 76, 72, 0, 1, 2, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 16, 17, 18, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
-    43, 51, 53, 54, 55, 56, 57, 58, 59, 60, 62, 63, 64, 65, 66, 67, 69,
+pub const COMMAND_IDS: [u32; 43] = [
+    74, 75, 73, 76, 72, 0, 1, 2, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 16, 17, 18, 20, 21, 22, 23, 24, 29, 43, 53, 54, 55,
+    56, 57, 58, 59, 60, 62, 63, 64, 65, 66, 67, 69,
 ];
 pub const COMMAND_ROUTES: [Option<CommandRoute>; 77] = [
     Some(CommandRoute { logic: 6, selector: selector!("create_explorer"), items_offset: None, batch: false }),
@@ -57,16 +57,12 @@ pub const COMMAND_ROUTES: [Option<CommandRoute>; 77] = [
     Some(
         CommandRoute { logic: 3, selector: selector!("resume_building_production"), items_offset: None, batch: false },
     ),
-    Some(CommandRoute { logic: 0, selector: selector!("contribute_bitcoin_labor"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 0, selector: selector!("close_bitcoin_phase"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 0, selector: selector!("bind_bitcoin_phase"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 0, selector: selector!("claim_bitcoin_phase"), items_offset: Some(1), batch: true }),
+    None, None, None, None,
     Some(CommandRoute { logic: 12, selector: selector!("battle_guard"), items_offset: None, batch: false }), None, None,
     None, None, None, None, None, None, None, None, None, None, None,
     Some(CommandRoute { logic: 14, selector: selector!("apply_relic"), items_offset: None, batch: false }), None, None,
-    None, None, None, None, None,
-    Some(CommandRoute { logic: 10, selector: selector!("record_blitz_results"), items_offset: None, batch: false }),
-    None, Some(CommandRoute { logic: 13, selector: selector!("create_guild"), items_offset: None, batch: false }),
+    None, None, None, None, None, None, None,
+    Some(CommandRoute { logic: 13, selector: selector!("create_guild"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 13, selector: selector!("join_guild"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 13, selector: selector!("leave_guild"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 13, selector: selector!("set_guild_whitelist"), items_offset: None, batch: false }),
@@ -119,13 +115,8 @@ pub enum Command {
     DestroyBuilding: crate::buildings::ChangeBuilding,
     PauseBuildingProduction: crate::buildings::ChangeBuilding,
     ResumeBuildingProduction: crate::buildings::ChangeBuilding,
-    ContributeBitcoinLabor: crate::bitcoin::ContributeLabor,
-    CloseBitcoinPhase: core::integer::u64,
-    BindBitcoinPhase: core::integer::u64,
-    ClaimBitcoinPhase: crate::bitcoin::ClaimPhase,
     BattleGuard: crate::commands::Battle,
     ApplyRelic: crate::relics::ApplyRelic,
-    RecordBlitzResults,
     CreateGuild: crate::guilds::CreateGuild,
     JoinGuild: crate::guilds::JoinGuild,
     LeaveGuild,
@@ -242,22 +233,6 @@ pub impl CommandSerde of Serde<Command> {
                 output.append(24);
                 Serde::serialize(value, ref output);
             },
-            Command::ContributeBitcoinLabor(value) => {
-                output.append(25);
-                Serde::serialize(value, ref output);
-            },
-            Command::CloseBitcoinPhase(value) => {
-                output.append(26);
-                Serde::serialize(value, ref output);
-            },
-            Command::BindBitcoinPhase(value) => {
-                output.append(27);
-                Serde::serialize(value, ref output);
-            },
-            Command::ClaimBitcoinPhase(value) => {
-                output.append(28);
-                Serde::serialize(value, ref output);
-            },
             Command::BattleGuard(value) => {
                 output.append(29);
                 Serde::serialize(value, ref output);
@@ -266,7 +241,6 @@ pub impl CommandSerde of Serde<Command> {
                 output.append(43);
                 Serde::serialize(value, ref output);
             },
-            Command::RecordBlitzResults(_) => { output.append(51); },
             Command::CreateGuild(value) => {
                 output.append(53);
                 Serde::serialize(value, ref output);
@@ -344,10 +318,10 @@ pub impl CommandSerde of Serde<Command> {
             22 => Some(Command::DestroyBuilding(Serde::deserialize(ref serialized)?)),
             23 => Some(Command::PauseBuildingProduction(Serde::deserialize(ref serialized)?)),
             24 => Some(Command::ResumeBuildingProduction(Serde::deserialize(ref serialized)?)),
-            25 => Some(Command::ContributeBitcoinLabor(Serde::deserialize(ref serialized)?)),
-            26 => Some(Command::CloseBitcoinPhase(Serde::deserialize(ref serialized)?)),
-            27 => Some(Command::BindBitcoinPhase(Serde::deserialize(ref serialized)?)),
-            28 => Some(Command::ClaimBitcoinPhase(Serde::deserialize(ref serialized)?)),
+            25 => None,
+            26 => None,
+            27 => None,
+            28 => None,
             29 => Some(Command::BattleGuard(Serde::deserialize(ref serialized)?)),
             30 => None,
             31 => None,
@@ -370,7 +344,7 @@ pub impl CommandSerde of Serde<Command> {
             48 => None,
             49 => None,
             50 => None,
-            51 => Some(Command::RecordBlitzResults(())),
+            51 => None,
             52 => None,
             53 => Some(Command::CreateGuild(Serde::deserialize(ref serialized)?)),
             54 => Some(Command::JoinGuild(Serde::deserialize(ref serialized)?)),

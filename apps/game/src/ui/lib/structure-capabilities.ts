@@ -62,7 +62,6 @@ const CATEGORY_CAPABILITIES: Record<StructureType, CategoryCapabilities> = {
   [StructureType.Mine]: { ...NONE, holdsInventory: true },
   [StructureType.Hyperstructure]: { ...NONE, holdsInventory: true },
   [StructureType.Bank]: NONE,
-  [StructureType.BitcoinMine]: NONE,
   [StructureType.Rift]: NONE,
   [StructureType.Ruin]: NONE,
   [StructureType.Beasts]: NONE,

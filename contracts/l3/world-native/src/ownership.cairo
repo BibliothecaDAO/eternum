@@ -18,7 +18,6 @@ pub enum Story {
     ProductionStory: ProductionStory,
     BuildingPlacementStory: BuildingPlacementStory,
     BuildingPaymentStory: BuildingPaymentStory,
-    BitcoinAwardStory: crate::bitcoin::BitcoinAwardStory,
     StructureCapturedStory: StructureCapturedStory,
     ExplorationReward: crate::exploration_rewards::ExtractedReward,
     BlitzFinalized: felt252,
@@ -119,5 +118,4 @@ pub struct BuildingPaymentStory {
 pub struct StructureCapturedStory {
     pub previous_owner: ContractAddress,
     pub new_owner: ContractAddress,
-    pub points: u128,
 }

@@ -441,7 +441,7 @@ it.each([0, 1, 2, 25])(
   60_000,
 );
 
-it("launches a game that is ready now while a result waits an hour for its game's end", async () => {
+it("launches a game that is ready now while another waits an hour for its start", async () => {
   const tick = async () => (await mf.getWorker()).scheduled({ cron: "* * * * *" });
   const runOf = (name: string) =>
     db.prepare("SELECT attempts, error_message FROM launch_runs WHERE name = ?").bind(name).first<{
@@ -454,17 +454,17 @@ it("launches a game that is ready now while a result waits an hour for its game'
     .prepare(
       `INSERT INTO launch_runs
          (id, chain_id, kind, environment, name, request, status, available_at, created_at, updated_at)
-       VALUES ('waiting-result', ?, 'result', 'madara.blitz', 'bltz-later', ?, 'queued', ?, ?, ?)`,
+       VALUES ('waiting-game', ?, 'game', 'madara.blitz', 'bltz-later', ?, 'queued', ?, ?, ?)`,
     )
     .bind(
       SHARD_CHAIN,
-      JSON.stringify({ environment: "madara.blitz", gameName: "bltz-later", gameId: 4 }),
+      JSON.stringify({ environment: "madara.blitz", gameName: "bltz-later" }),
       now + 3_600_000,
       now,
       now,
     )
     .run();
-  await tick(); // a pass finds nothing due and sleeps until the result's hour
+  await tick();
   await new Promise((resolve) => setTimeout(resolve, 1_000));
 
   await db
@@ -484,29 +484,28 @@ it("launches a game that is ready now while a result waits an hour for its game'
   expect(await runOf("bltz-later")).toMatchObject({ attempts: 0 });
 }, 60_000);
 
-it("runs a continued launch at once, even while the registrar sleeps until a result's hour", async () => {
+it("runs a continued launch at once, even while the registrar sleeps until a later run's hour", async () => {
   await db.prepare("DELETE FROM launch_runs").run();
   const now = Date.now();
-  const insert = (id: string, kind: string, name: string, status: string, availableAt: number, request: object) =>
+  const insert = (id: string, name: string, status: string, availableAt: number, request: object) =>
     db
       .prepare(
         `INSERT INTO launch_runs
            (id, chain_id, kind, environment, name, request, status, available_at, created_at, updated_at)
-         VALUES (?, ?, ?, 'madara.blitz', ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, 'game', 'madara.blitz', ?, ?, ?, ?, ?, ?)`,
       )
-      .bind(id, SHARD_CHAIN, kind, name, JSON.stringify(request), status, availableAt, now, now)
+      .bind(id, SHARD_CHAIN, name, JSON.stringify(request), status, availableAt, now, now)
       .run();
-  await insert("waiting", "result", "bltz-later", "queued", now + 3_600_000, {
+  await insert("waiting", "bltz-later", "queued", now + 3_600_000, {
     environment: "madara.blitz",
     gameName: "bltz-later",
-    gameId: 4,
   });
-  await insert("stopped", "game", "bltz-failed", "failed", now, {
+  await insert("stopped", "bltz-failed", "failed", now, {
     environment: "madara.blitz",
     gameName: "bltz-failed",
     gameStartTime: new Date(now + 600_000).toISOString(),
   });
-  await (await mf.getWorker()).scheduled({ cron: "* * * * *" }); // the registrar now sleeps until the result's hour
+  await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
   await new Promise((resolve) => setTimeout(resolve, 1_000));
 
   const continued = await mf.dispatchFetch(`${ORIGIN}/api/factory/runs/madara.blitz/bltz-failed/actions/continue`, {

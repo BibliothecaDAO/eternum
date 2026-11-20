@@ -266,16 +266,12 @@ fn mixed_sweep_keeps_both_balances_game_pinned_until_applied() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn season_one_refuses_bitcoin_and_bridge_commands() {
+fn season_one_refuses_bridge_commands() {
     let (d, game_id) = super::registrar::setup_open_frontier_preset("frontier", 1);
     let release = super::play_fixture::pins(d.games, game_id);
     super::play_fixture::caller(d.games, d.actor, 360);
     let home = ResourceKey { game_id, entity_id: 1 };
-    for command in array![
-        Command::ContributeBitcoinLabor(crate::bitcoin::ContributeLabor { structure_id: 1, amount: 1 }),
-        Command::ClaimBitcoinPhase(crate::bitcoin::ClaimPhase { phase: 0, mine_ids: array![1_u64].span() }),
-        super::bridge::deposit(home), super::bridge::withdraw(home, d.actor),
-    ] {
+    for command in array![super::bridge::deposit(home), super::bridge::withdraw(home, d.actor)] {
         super::assert_entry_refusal(d, game_id, release, super::play_fixture::encode(command), "command disabled");
     }
 }

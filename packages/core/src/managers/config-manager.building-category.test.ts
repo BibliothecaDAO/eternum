@@ -35,11 +35,6 @@ describe("native immutable configuration", () => {
     });
   });
 
-  it("reads victory points in the units the game awards them", () => {
-    const { manager } = fixture();
-    expect(manager.getVictoryPointGrants()).toEqual({ exploreTile: 10, claimCampFromBandits: 500 });
-  });
-
   it("throws for absent building rules instead of granting zero-cost population", () => {
     const { manager } = fixture();
     expect(() => manager.getBuildingCategoryConfig(BuildingType.WorkersHut)).toThrow("not synchronized");

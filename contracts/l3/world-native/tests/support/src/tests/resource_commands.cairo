@@ -184,18 +184,7 @@ pub fn explorer_fixture(deployment: Deployment, id: u64, owner: u64, coord: Coor
     );
     let key = ResourceKey { game_id: 3, entity_id: id };
     start_cheat_caller_address(deployment.games, deployment.games);
-    IResourceOperationsDispatcher { contract_address: deployment.games }
-        .initialize_resources(
-            key,
-            capacity,
-            0,
-            30,
-            crate::commands::action_context(
-                crate::commands::ExecutionContext {
-                    timestamp: 30, ..crate::tests::context(deployment.games, (key).game_id),
-                },
-            ),
-        );
+    IResourceOperationsDispatcher { contract_address: deployment.games }.initialize_resources(key, capacity);
     stop_cheat_caller_address(deployment.games);
     key
 }
@@ -316,11 +305,7 @@ pub fn troop_deposit_ownership(blitz_mode_on: bool, category: u8) {
     let explorer = explorer_fixture(deployment, 70, home.entity_id, Coord { alt: false, x: 2000009, y: 2000000 }, 1000);
     grant(deployment, explorer, 26, 100);
     grant(deployment, explorer, 1, 100);
-    let coord = if category == crate::taxonomy::BITCOIN_MINE_CATEGORY {
-        Coord { alt: true, x: 1999995, y: 2000000 }
-    } else {
-        Coord { alt: false, x: 2000009, y: 2000000 }
-    };
+    let coord = Coord { alt: false, x: 2000009, y: 2000000 };
     crate::tests::resource_commands::set_explorer_fixture(
         deployment.games,
         crate::troops::ExplorerKey { game_id: 3, explorer_id: 70 },

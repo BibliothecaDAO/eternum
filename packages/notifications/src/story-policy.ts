@@ -1,14 +1,6 @@
 import type { NotificationLevel } from "./preferences";
 import { includesKind, type NotificationKind } from "./notification-kinds";
-import {
-  bitcoinAwardCopy,
-  battleCopy,
-  captureStoryCopy,
-  raidStoryCopy,
-  says,
-  type StoryCopy,
-  transferStoryCopy,
-} from "./story-copy";
+import { battleCopy, captureStoryCopy, raidStoryCopy, says, type StoryCopy, transferStoryCopy } from "./story-copy";
 import type { NativeStoryVariant } from "../../../contracts/l3/world-native/schema/client.gen";
 
 type RecipientSource = "capture" | "owner" | "transferReceiver" | "nativeBattle" | "raid";
@@ -48,7 +40,6 @@ const STORY_RULES = {
     copy: says("Your caravan arrived", "the resources are in your stores."),
   },
   ResourceTransferStory: { kind: "deliveries", recipients: "transferReceiver", copy: transferStoryCopy },
-  BitcoinAwardStory: { kind: "bitcoin", recipients: "owner", copy: bitcoinAwardCopy },
 
   // The player's own taps: the Feed and the Log tell them, a push would only echo them.
   SitePayout: { excluded: OWN_ACTION },

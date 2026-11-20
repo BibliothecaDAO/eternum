@@ -120,8 +120,6 @@ pub struct MapConfig {
     pub shards_mines_fail_probability: u16,
     pub camp_win_probability: u16,
     pub camp_fail_probability: u16,
-    pub bitcoin_mine_win_probability: u16, // 1/50 = 2% = 200 (out of 10000)
-    pub bitcoin_mine_fail_probability: u16, // 9800
     pub hyps_win_prob: u32,
     pub hyps_fail_prob: u32,
     // fail probability increase per hex distance from center
@@ -137,7 +135,6 @@ pub struct MapConfig {
 pub struct TickConfig {
     pub armies_tick_in_seconds: u64,
     pub delivery_tick_in_seconds: u64,
-    pub bitcoin_phase_in_seconds: u64 // 600 = 10 minutes
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -154,33 +151,13 @@ pub struct StructureCapacityConfig {
     pub hyperstructure_capacity: u64, // grams
     pub fragment_mine_capacity: u64, // grams
     pub bank_structure_capacity: u64,
-    pub camp_capacity: u64, // grams
-    pub bitcoin_mine_capacity: u64 // grams
-}
-
-#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
-pub struct BitcoinMineConfig {
-    pub enabled: bool,
-    pub prize_per_phase: u128, // Amount of SATOSHI awarded per phase
-    pub min_labor_per_contribution: u128, // Minimum labor required per contribution
-    pub owner_cut_bps: u16,
+    pub camp_capacity: u64 // grams
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct BuildingConfig {
     pub base_population: u32,
     pub base_cost_percent_increase: u16,
-}
-
-#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
-pub struct VictoryPointsGrantConfig {
-    pub hyp_points_per_second: u32,
-    // Only granted when claim hyperstructure from bandits
-    pub claim_hyperstructure_points: u32,
-    // Only granted when claim non hyperstructure from bandits
-    pub claim_otherstructure_points: u32,
-    pub explore_tiles_points: u32,
-    pub relic_open_points: u32,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -203,8 +180,6 @@ pub struct SliceRules {
     pub capacity_config: CapacityConfig,
     pub structure_capacity_config: StructureCapacityConfig,
     pub building_config: BuildingConfig,
-    pub bitcoin_mine_config: BitcoinMineConfig,
-    pub victory_points_grant_config: VictoryPointsGrantConfig,
     pub map_center_offset: u32,
     pub spire_travel_essence_cost: u128,
     pub command_mask: u128,
@@ -510,9 +485,7 @@ pub impl MapConfigPacking of starknet::storage_access::StorePacking<MapConfig, P
                 + value.camp_fail_probability.into() * 0x1000000000000,
             // Bits 64-79 of the first word and 0-15 of the second held a dead site lottery; they stay empty so stored
             // map configs keep their layout.
-            second: value.bitcoin_mine_win_probability.into() * 0x10000
-                + value.bitcoin_mine_fail_probability.into() * 0x100000000
-                + value.hyps_win_prob.into() * 0x1000000000000
+            second: value.hyps_win_prob.into() * 0x1000000000000
                 + value.hyps_fail_prob.into() * 0x100000000000000000000
                 + value.hyps_fail_prob_increase_p_hex.into() * 0x10000000000000000000000000000,
             // Bits 40-47 of the third word held a chest's relic count before chests held packs; they stay empty.
@@ -527,8 +500,6 @@ pub impl MapConfigPacking of starknet::storage_access::StorePacking<MapConfig, P
             shards_mines_fail_probability: (value.first / 0x10000 % 0x10000).try_into().unwrap(),
             camp_win_probability: (value.first / 0x100000000 % 0x10000).try_into().unwrap(),
             camp_fail_probability: (value.first / 0x1000000000000 % 0x10000).try_into().unwrap(),
-            bitcoin_mine_win_probability: (value.second / 0x10000 % 0x10000).try_into().unwrap(),
-            bitcoin_mine_fail_probability: (value.second / 0x100000000 % 0x10000).try_into().unwrap(),
             hyps_win_prob: (value.second / 0x1000000000000 % 0x100000000).try_into().unwrap(),
             hyps_fail_prob: (value.second / 0x100000000000000000000 % 0x100000000).try_into().unwrap(),
             hyps_fail_prob_increase_p_hex: (value.second / 0x10000000000000000000000000000).try_into().unwrap(),

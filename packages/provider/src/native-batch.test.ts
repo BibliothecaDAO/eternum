@@ -1,15 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import type { GetTransactionReceiptResponse } from "starknet";
-import { completeNativeBatches, requireBatchReceipt } from "./native-batch";
+import { completeNativeBatches } from "./native-batch";
 
 describe("native batch completion", () => {
-  it("never treats a transaction hash as batch completion", () => {
-    expect(() => requireBatchReceipt({ transaction_hash: "0x44" } as GetTransactionReceiptResponse)).toThrow(
-      "missing from the receipt",
-    );
-    const receipt = { transaction_hash: "0x44", batch_remaining: "1" } as unknown as GetTransactionReceiptResponse;
-    expect(requireBatchReceipt(receipt).remaining).toBe(1n);
-  });
   it("continues partial work and stops only at zero", async () => {
     const submit = vi
       .fn()

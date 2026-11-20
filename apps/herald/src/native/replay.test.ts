@@ -12,7 +12,7 @@ import { WorldFold } from "../world-fold";
 import { createHeraldRequestHandler } from "../http";
 import type { MadaraRpc } from "../madara-rpc";
 import type { RpcEvent, RpcBlockWithReceipts } from "../types";
-import { battleEvent, pointsAward, receipt, schema, setup, rowEvent, shardManifest } from "./fixtures";
+import { battleEvent, receipt, schema, setup, rowEvent, shardManifest } from "./fixtures";
 
 function block(number: number, events: RpcEvent[]): RpcBlockWithReceipts {
   return {
@@ -24,7 +24,7 @@ function block(number: number, events: RpcEvent[]): RpcBlockWithReceipts {
 const BLITZ = presetRelease(2);
 
 function wireHistory() {
-  const events = [setFixture.raw, pointsAward("1", "0x111", "100", "100", "100")];
+  const events = [setFixture.raw, rowEvent("Fragments", ["1", "0x111"], { balance: 100n })];
   const launched = block(10, [...presetLaunch(BLITZ, 1, 1800), ...events]);
   return [launched, block(11, [setFixture.raw]), block(12, [deleted.raw]), block(13, [setFixture.raw])];
 }
@@ -61,15 +61,13 @@ describe("native confirmed replay and transaction delivery", () => {
         undecodableEventCount: () => 0,
         nodeHealth: () => null,
       });
-    for (const path of ["/games", "/games/1/leaderboard"]) {
-      const rebuilt = await handler(restored)(new Request(`http://localhost${path}`));
-      const live = await handler(uninterrupted)(new Request(`http://localhost${path}`));
-      expect(rebuilt.status, await rebuilt.clone().text()).toBe(200);
-      const body = await rebuilt.json();
-      expect(body).toEqual(await live.json());
-      expect(path.endsWith("leaderboard") ? body.entries.length : body.games.length).toBeGreaterThan(0);
-    }
-    expect(restored.modelRows("PlayerPoints").length).toBeGreaterThan(0);
+    const rebuilt = await handler(restored)(new Request("http://localhost/games"));
+    const live = await handler(uninterrupted)(new Request("http://localhost/games"));
+    expect(rebuilt.status, await rebuilt.clone().text()).toBe(200);
+    const body = await rebuilt.json();
+    expect(body).toEqual(await live.json());
+    expect(body.games.length).toBeGreaterThan(0);
+    expect(restored.modelRows("Fragments").length).toBeGreaterThan(0);
     expect(restored.modelRows("GameRegistry")).toHaveLength(1);
   });
   it("does not keep partial replay state if a later block fetch fails", async () => {
@@ -150,13 +148,16 @@ it("confirms a receipt from its pre-confirmed decode at the confirmed position, 
   const { native, decoder, fold } = setup(BLITZ.definitions);
   const [genesis] = wireHistory();
   await native.replay({ fold, rpc: { readBlock: async () => genesis! }, fromBlock: 10, toBlock: 10 });
-  const pending = receipt([setFixture.raw, pointsAward("1", "0x111", "200", "200", "200")], "0xb1");
+  const pending = receipt([setFixture.raw, rowEvent("Fragments", ["1", "0x111"], { balance: 200n })], "0xb1");
   const earlier = { events: pending.events, decoded: native.applyReceipt(fold.overlay(), pending, null, 0).events };
   const confirmed: RpcBlockWithReceipts = {
     block_number: 11,
     timestamp: 2161,
     transactions: [
-      { receipt: receipt([pointsAward("1", "0x222", "5", "5", "5")], "0xa1"), transaction: { type: "INVOKE" } },
+      {
+        receipt: receipt([rowEvent("Fragments", ["1", "0x222"], { balance: 5n })], "0xa1"),
+        transaction: { type: "INVOKE" },
+      },
       { receipt: pending, transaction: { type: "INVOKE" } },
     ],
   };
@@ -341,10 +342,10 @@ it("keeps two story identities from overlay through confirmation, each its trans
     keys: [...layout.prefix, "2", "1", "0", "0x111", "0", "3", "0x55"],
     data: [storyTag("StructureLevelUpStory"), String(index + 1), "2160"],
   });
-  const points = pointsAward("1", "0x111", "100", "100", "100");
-  const pending = receipt([story(0), points, story(1)]);
+  const fragments = rowEvent("Fragments", ["1", "0x111"], { balance: 100n });
+  const pending = receipt([story(0), fragments, story(1)]);
   const overlay = native.applyReceipt(fold.overlay(), pending, null, 0);
-  const confirmed = block(10, [story(0), points, story(1)]);
+  const confirmed = block(10, [story(0), fragments, story(1)]);
   confirmed.transactions[0]!.receipt.transaction_hash = pending.transaction_hash;
   const replay = await native.replay({
     fold,
@@ -361,7 +362,7 @@ it("keeps two story identities from overlay through confirmation, each its trans
   expect(after.map((event) => event.entityId)).toEqual(before.map((event) => event.entityId));
   expect(after.map((event) => event.position.eventIndex)).toEqual([0, 2]);
   expect(after.map((event) => event.position.blockNumber)).toEqual([10, 10]);
-  expect(fold.modelRows("PlayerPoints")).toHaveLength(1);
+  expect(fold.modelRows("Fragments")).toHaveLength(1);
 });
 
 it("retains only one 64-block cold-replay window and no receipts, checkpointing before fetching the next", async () => {

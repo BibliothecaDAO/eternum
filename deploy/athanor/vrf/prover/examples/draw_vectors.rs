@@ -21,8 +21,6 @@ fn main() {
     let mut mine = None;
     let mut camp = None;
     let mut edge = None;
-    let mut btc_win = None;
-    let mut btc_edge = None;
     for seed in 0..5_000_000u128 {
         let m = lottery(seed, 2, 50000);
         if mine.is_none() && m == 299 {
@@ -34,29 +32,16 @@ fn main() {
         if edge.is_none() && m == 1000 && lottery(seed, 7, 50000) < 1500 {
             edge = Some((seed, lottery(seed, 7, 50000)));
         }
-        if btc_win.is_none() && lottery(seed, 10, 10000) == 199 {
-            btc_win = Some(seed);
-        }
-        if btc_edge.is_none() && lottery(seed, 10, 10000) == 200 {
-            btc_edge = Some(seed);
-        }
-        if mine.is_some()
-            && camp.is_some()
-            && edge.is_some()
-            && btc_win.is_some()
-            && btc_edge.is_some()
-        {
+        if mine.is_some() && camp.is_some() && edge.is_some() {
             break;
         }
     }
     println!(
-        "{{\"mine299\":{},\"camp299\":{},\"mineBoundary\":{},\"campAtBoundary\":{},\"bitcoin199\":{},\"bitcoin200\":{}}}",
+        "{{\"mine299\":{},\"camp299\":{},\"mineBoundary\":{},\"campAtBoundary\":{}}}",
         mine.unwrap(),
         camp.unwrap(),
         edge.unwrap().0,
-        edge.unwrap().1,
-        btc_win.unwrap(),
-        btc_edge.unwrap()
+        edge.unwrap().1
     );
     let mut discovery = [0u32; 7];
     let mut doubled = 0u32;

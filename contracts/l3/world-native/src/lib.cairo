@@ -4,8 +4,6 @@ pub mod aspects;
 pub mod balance;
 pub mod banes;
 pub mod biome;
-pub mod bitcoin;
-pub mod blitz_results;
 pub mod buildings;
 pub mod combat;
 pub mod combat_actions;

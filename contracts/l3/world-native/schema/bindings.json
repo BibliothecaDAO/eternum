@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "fd199ce02d68e2a7708003d64e0e56f0d51169dd1e8bd20b54359833b8c6204c",
+  "schemaIdentity": "42d0fec2a11eebe4baaafa767dedf1c726c18b572c057254384bbea445ddc591",
   "commandAbi": [
     {
       "type": "interface",
@@ -154,26 +154,6 @@
           "wireId": 24
         },
         {
-          "name": "ContributeBitcoinLabor",
-          "type": "world_native::bitcoin::ContributeLabor",
-          "wireId": 25
-        },
-        {
-          "name": "CloseBitcoinPhase",
-          "type": "core::integer::u64",
-          "wireId": 26
-        },
-        {
-          "name": "BindBitcoinPhase",
-          "type": "core::integer::u64",
-          "wireId": 27
-        },
-        {
-          "name": "ClaimBitcoinPhase",
-          "type": "world_native::bitcoin::ClaimPhase",
-          "wireId": 28
-        },
-        {
           "name": "BattleGuard",
           "type": "world_native::commands::Battle",
           "wireId": 29
@@ -182,11 +162,6 @@
           "name": "ApplyRelic",
           "type": "world_native::relics::ApplyRelic",
           "wireId": 43
-        },
-        {
-          "name": "RecordBlitzResults",
-          "type": "()",
-          "wireId": 51
         },
         {
           "name": "CreateGuild",
@@ -665,44 +640,6 @@
     },
     {
       "type": "struct",
-      "name": "world_native::bitcoin::ContributeLabor",
-      "members": [
-        {
-          "name": "structure_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "amount",
-          "type": "core::integer::u128"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::bitcoin::ClaimPhase",
-      "members": [
-        {
-          "name": "phase",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "mine_ids",
-          "type": "core::array::Span::<core::integer::u64>"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "core::array::Span::<core::integer::u64>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<core::integer::u64>"
-        }
-      ]
-    },
-    {
-      "type": "struct",
       "name": "world_native::commands::Battle",
       "members": [
         {
@@ -1118,10 +1055,6 @@
       "scope": "deployment"
     },
     {
-      "name": "PointsAwarded",
-      "scope": "game"
-    },
-    {
       "name": "StoryEvent",
       "scope": "game"
     },
@@ -1153,10 +1086,6 @@
     },
     {
       "name": "GuildWhitelist",
-      "scope": "game"
-    },
-    {
-      "name": "BlitzResult",
       "scope": "game"
     },
     {
@@ -1296,22 +1225,6 @@
       "scope": "game"
     },
     {
-      "name": "BitcoinMine",
-      "scope": "game"
-    },
-    {
-      "name": "BitcoinClaim",
-      "scope": "game"
-    },
-    {
-      "name": "BitcoinPhase",
-      "scope": "game"
-    },
-    {
-      "name": "BitcoinContribution",
-      "scope": "game"
-    },
-    {
       "name": "MineKindConfig",
       "scope": "game"
     },
@@ -1322,6 +1235,10 @@
     {
       "name": "RealmTraits",
       "scope": "deployment"
+    },
+    {
+      "name": "BlitzSettlementOrder",
+      "scope": "game"
     },
     {
       "name": "BlitzRoster",
@@ -1537,14 +1454,6 @@
     },
     {
       "name": "SliceRules",
-      "scope": "game"
-    },
-    {
-      "name": "PlayerPoints",
-      "scope": "game"
-    },
-    {
-      "name": "PointsTotal",
       "scope": "game"
     }
   ]

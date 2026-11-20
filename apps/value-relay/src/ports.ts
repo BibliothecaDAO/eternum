@@ -22,15 +22,6 @@ export interface Withdrawal {
 export interface WithdrawalReceipt extends Omit<Withdrawal, "realmsId"> {
   account: string;
 }
-export interface BlitzCommitment {
-  chainId: string;
-  gameId: number;
-  commitment: string;
-}
-interface BlitzResultRow {
-  wallet: string;
-  rank: number;
-}
 export interface ChestRequest {
   tokenId: string;
   requester: string;
@@ -46,10 +37,6 @@ export interface ChestPorts {
   ): RelayEffect<{ requested: boolean; finished: boolean; requester: string; requestBlock: number }>;
   finish(tokenId: string): RelayEffect<void>;
 }
-export interface BlitzResult extends BlitzCommitment {
-  blockNumber?: number;
-  rows: readonly BlitzResultRow[];
-}
 export interface ConfirmedBlock {
   anchors?: readonly { number: number; hash: string }[];
   chainId: string;
@@ -58,13 +45,11 @@ export interface ConfirmedBlock {
   parentHash: string;
   status: "ACCEPTED_ON_L2" | "ACCEPTED_ON_L1";
   withdrawals: readonly Withdrawal[];
-  results: readonly BlitzResult[];
   held?: readonly HeldObligation[];
   fromBlock?: number;
   next?: string | null;
 }
 export type HeldObligation =
-  | { kind: "result"; reason: string; result: BlitzResult }
   | {
       kind: "row";
       reason: string;
@@ -98,6 +83,11 @@ export interface PaidClaim extends Omit<Withdrawal, "realmsId" | "confirmedAt"> 
   wallet: string;
   paidAt: number;
   paymentTransactionHash: string;
+}
+export interface PostedResult {
+  chainId: string;
+  gameId: number;
+  commitment: string;
 }
 export interface LedgerPage<A> {
   rows: readonly A[];
@@ -150,7 +140,6 @@ export interface RelayPorts {
     ): RelayEffect<{ atHead: boolean; final: { block: number; hash: string } | null }>;
     reportMany(withdrawals: readonly Withdrawal[]): RelayEffect<ClaimOutcome[]>;
     payMany(rows: readonly PayableClaim[]): RelayEffect<ClaimOutcome[]>;
-    postResult(result: BlitzResult): RelayEffect<void>;
   };
 }
 export interface MonitorPorts {
@@ -159,7 +148,6 @@ export interface MonitorPorts {
   };
   shard: Pick<RelayPorts["shard"], "withdrawal"> & {
     withdrawalReceipt(chainId: string, transactionHash: string): RelayEffect<WithdrawalReceipt | null>;
-    result(chainId: string, gameId: number): RelayEffect<BlitzResult | null>;
     conservation(): RelayEffect<readonly ConservationBalance[]>;
   };
   ledger: {
@@ -179,7 +167,7 @@ export interface MonitorPorts {
       after: string | null,
       fromBlock?: number,
       anchor?: LedgerAnchor,
-    ): RelayEffect<LedgerPage<BlitzCommitment>>;
+    ): RelayEffect<LedgerPage<PostedResult>>;
     pause(): RelayEffect<void>;
   };
 }
@@ -203,6 +191,7 @@ export const relayOperation = <A>(operation: string, run: () => Promise<A>): Rel
   });
 
 export const relayServiceErrors = [
+  "paid_blitz_slots_closed",
   "ledger_head_behind_anchor",
   "ledger_deployment_block_wrong",
   "ledger_state_belongs_to_another_ledger",

@@ -44,7 +44,6 @@ function buildRules(config: Config, preset: ReturnType<typeof nativePresetForId>
   const cooldownSeconds = config.battle.cooldownSeconds;
   if (!Number.isSafeInteger(cooldownSeconds) || cooldownSeconds < 0 || cooldownSeconds > 0xffff_ffff)
     throw new Error("Native battle cooldownSeconds must be an explicit u32");
-  const bitcoinEnabled = preset.bitcoinEnabled;
   return {
     battle_config: {
       regular_immunity_ticks: config.battle.regularImmunityTicks,
@@ -56,7 +55,6 @@ function buildRules(config: Config, preset: ReturnType<typeof nativePresetForId>
     tick_config: {
       armies_tick_in_seconds: config.tick.armiesTickIntervalInSeconds,
       delivery_tick_in_seconds: config.tick.deliveryTickIntervalInSeconds,
-      bitcoin_phase_in_seconds: config.tick.bitcoinPhaseInSeconds,
     },
     troop_damage_config: buildTroopDamageConfig(config),
     troop_stamina_config: buildTroopStaminaConfig(config),
@@ -66,19 +64,6 @@ function buildRules(config: Config, preset: ReturnType<typeof nativePresetForId>
     building_config: {
       base_population: config.populationCapacity.basePopulation,
       base_cost_percent_increase: config.buildings.buildingFixedCostScalePercent,
-    },
-    bitcoin_mine_config: {
-      enabled: bitcoinEnabled,
-      prize_per_phase: bitcoinEnabled ? scaled(config.bitcoin!.prizePerPhase) : 0n,
-      min_labor_per_contribution: scaled(config.bitcoin!.minimumLabor),
-      owner_cut_bps: config.bitcoin!.ownerCutBps,
-    },
-    victory_points_grant_config: {
-      hyp_points_per_second: config.victoryPoints.hyperstructurePointsPerCycle,
-      claim_hyperstructure_points: config.victoryPoints.pointsForHyperstructureClaimAgainstBandits,
-      claim_otherstructure_points: config.victoryPoints.pointsForNonHyperstructureClaimAgainstBandits,
-      explore_tiles_points: config.victoryPoints.pointsForTileExploration,
-      relic_open_points: config.victoryPoints.pointsForRelicDiscovery,
     },
     map_center_offset: config.settlement.center,
     spire_travel_essence_cost: scaled(config.spireTravelEssenceCost),
@@ -392,12 +377,6 @@ function validateMineConfig(config: Config): void {
 
 function validateRequiredNativeConfig(config: Config): void {
   validateMineConfig(config);
-  if (!config.bitcoin) throw new Error("Bitcoin balance config is required");
-  for (const field of ["prizePerPhase", "minimumLabor", "ownerCutBps"] as const) {
-    if (!Number.isSafeInteger(config.bitcoin[field]) || config.bitcoin[field] < 0)
-      throw new Error(`Invalid Bitcoin ${field}`);
-  }
-  if (config.bitcoin.ownerCutBps > 10000) throw new Error("Invalid Bitcoin owner cut");
 }
 
 function resolveBridgeTokens(config: Config, resources: readonly number[]) {
