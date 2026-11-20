@@ -94,7 +94,7 @@ describe("native resource facts", () => {
 });
 
 describe("native production facts", () => {
-  it("folds recipe arrays and full-width bonus end ticks without evaluating them at delivery time", () => {
+  it("folds recipe arrays without evaluating them at delivery time", () => {
     const { native, fold, decoder } = setup();
     native.applyReceipt(
       fold,
@@ -108,14 +108,6 @@ describe("native production facts", () => {
               { resource_type: 35n, amount: 20n },
               { resource_type: 36n, amount: 30n },
             ],
-          }),
-          resourceEvent("ProductionBonus", ["1", "7"], {
-            incr_resource_rate_percent_num: 65535n,
-            incr_labor_rate_percent_num: 2500n,
-            incr_troop_rate_percent_num: 5000n,
-            incr_resource_rate_end_at: 4294967295n,
-            incr_labor_rate_end_at: 31n,
-            incr_troop_rate_end_at: 32n,
           }),
         ]),
       ),
@@ -133,12 +125,6 @@ describe("native production facts", () => {
         { resource_type: "0x24", amount: "0x1e" },
       ],
     });
-    expect(fold.modelRows("ProductionBonus")[0].value).toMatchObject({
-      incr_resource_rate_percent_num: "0xffff",
-      incr_troop_rate_percent_num: "0x1388",
-      incr_resource_rate_end_at: "0xffffffff",
-      incr_troop_rate_end_at: "0x20",
-    });
   });
 
   it("rejects a truncated production recipe atomically with its accompanying balance", () => {
@@ -149,29 +135,16 @@ describe("native production facts", () => {
       simple_inputs: [{ resource_type: 23, amount: 10 }],
       complex_inputs: [{ resource_type: 35, amount: 20 }],
     });
-    const bonus = rowEvent("ProductionBonus", ["1", "7"], {
-      incr_resource_rate_percent_num: 0,
-      incr_labor_rate_percent_num: 0,
-      incr_troop_rate_percent_num: 1,
-      incr_resource_rate_end_at: 0,
-      incr_labor_rate_end_at: 0,
-      incr_troop_rate_end_at: 31,
-    });
-    const invalidBonus = bonus.data.map((felt, index) => (index === bonus.data.length - 4 ? "65536" : felt));
-    for (const invalid of [
-      { ...recipe, data: recipe.data.slice(0, -1) },
-      { ...bonus, data: invalidBonus },
-    ]) {
-      expect(() =>
-        native.applyReceipt(
-          fold,
-          receipt([resourceEvent("ResourceBalance", ["1", "7", "23"], { balance: 90n }), invalid]),
-          10,
-          0,
-        ),
-      ).toThrow();
-      expect(fold.retainedRowCount()).toBe(0);
-    }
+    const truncated = { ...recipe, data: recipe.data.slice(0, -1) };
+    expect(() =>
+      native.applyReceipt(
+        fold,
+        receipt([resourceEvent("ResourceBalance", ["1", "7", "23"], { balance: 90n }), truncated]),
+        10,
+        0,
+      ),
+    ).toThrow();
+    expect(fold.retainedRowCount()).toBe(0);
   });
 
   it("decodes the refill story as history without retaining a second copy of production state", () => {

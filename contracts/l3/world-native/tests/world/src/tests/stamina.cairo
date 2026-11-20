@@ -53,13 +53,14 @@ fn a_boost_starting_and_ending_inside_the_span_pays_the_same_stamina() {
     let mut once_boost: TroopBoosts = Default::default();
     let mut repeated_boost = once_boost;
     once.refill_to_max(ref once_boost, 120, rules(7), 60, 106, 10000);
-    let rule = crate::relics::RelicRule { rate_bps: 3333, uses: 1, duration: 0, essence_cost: 0, draw_weight: 0 };
-    crate::relics::boost_explorer(ref once_boost, 39, rule, 1, 60);
+    once_boost.incr_stamina_regen_percent_num = 3333;
+    once_boost.incr_stamina_regen_seconds_left = 60;
     once.refill_to_max(ref once_boost, 120, rules(7), 60, 180, 10000);
     for now in 102_u64..181 {
         repeated.refill_to_max(ref repeated_boost, 120, rules(7), 60, now, 10000);
         if now == 106 {
-            crate::relics::boost_explorer(ref repeated_boost, 39, rule, 1, 60);
+            repeated_boost.incr_stamina_regen_percent_num = 3333;
+            repeated_boost.incr_stamina_regen_seconds_left = 60;
         }
     }
     assert_eq!(once.amount, repeated.amount);
@@ -167,15 +168,6 @@ fn effect_boundaries_keep_fractional_stamina_and_boost_expiry_independent_of_rea
     assert_eq!(repeated.amount, once.amount);
     assert_eq!(repeated.remainder, once.remainder);
     assert_eq!(repeated_boost.incr_stamina_regen_seconds_left, 0);
-}
-
-#[test]
-#[should_panic(expected: "stamina boost duration overflow")]
-fn a_preset_cannot_overflow_boosted_seconds() {
-    let (_, definition) = super::preset_projection::current_definition("blitz");
-    let mut preset = definition;
-    preset.rules.tick_config.armies_tick_in_seconds = 30000;
-    crate::presets::validate(preset);
 }
 
 #[test]

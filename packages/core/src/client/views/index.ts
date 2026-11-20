@@ -18,11 +18,9 @@ import { readGuildMembers, readGuildWhitelist } from "./guilds";
 import { readResourceArrivals, readResourceManager } from "./resources";
 import {
   type BuildingTiles,
-  type HyperstructureRow,
   type StructureRow,
   readBuildings,
   readBuildingTiles,
-  readHyperstructureUpdates,
   readRealmInfos,
   readStructureIds,
   readStructureRows,
@@ -44,7 +42,6 @@ export interface GameViews {
   villages(owner: ContractAddress): RealmInfo[];
   allRealms(): StructureRow[];
   hyperstructureIds(owner: ContractAddress): ID[];
-  hyperstructureUpdates(hyperstructureEntityId: ID): (HyperstructureRow | undefined)[];
   buildings(structureId: number): Building[];
   /** Occupancy, level, and the buildings standing on a structure's own slots, as the construction surfaces read them. */
   buildingTiles(structureEntityId: ID): BuildingTiles;
@@ -69,7 +66,6 @@ export const createGameViews = (
     villages: (owner) => readRealmInfos(store, owner, StructureType.Village, playerName),
     allRealms: () => readStructureRows(store, StructureType.Realm),
     hyperstructureIds: (owner) => readStructureIds(store, owner, StructureType.Hyperstructure),
-    hyperstructureUpdates: (id) => readHyperstructureUpdates(store, id),
     buildings: (structureId) => readBuildings(store, structureId),
     buildingTiles: (id) => readBuildingTiles(store, systemCalls, id),
     resources: (id) => readResourceManager(store, id),

@@ -14,7 +14,6 @@ import { RealmLivingAura } from "../structures/realm-living-aura";
 import { HexceptionModels, disposeBuildingModel, prepareBuildingModel } from "./hexception-models";
 import { SettlementAnimation } from "../structures/settlement-animation";
 import { HyperstructureModel } from "../structures/hyperstructure-model";
-import { readHyperstructureConstruction } from "../structures/hyperstructure-state";
 import {
   SettlementAppearance,
   resolveSettlementRelationship,
@@ -119,7 +118,6 @@ import {
   ResourceManager,
   configManager,
   getRealmInfo,
-  getStructureStage,
   DEFAULT_COORD_ALT,
   storedBiomeAt,
 } from "@bibliothecadao/eternum";
@@ -1155,7 +1153,7 @@ export default class HexceptionScene extends HexagonScene {
     const structureType = this.tileManager.structureType();
     this.structureStage =
       structureType === StructureType.Hyperstructure
-        ? getStructureStage(structureType, this.shownRealmId, this.game.store)
+        ? StructureProgress.STAGE_3
         : this.tileManager.getRealmLevel(this.shownRealmId);
     this.fitCameraReach();
   }
@@ -1504,7 +1502,7 @@ export default class HexceptionScene extends HexagonScene {
       const model = (this.hyperstructureModel ??= new HyperstructureModel(1));
       model.setMatrixAt(0, building.matrix);
       model.setCount(1);
-      this.syncHyperstructureConstruction();
+      model.setConstructionAt(0, { entityId: this.shownRealmId, progress: 100, completed: true });
       model.group.userData[BUILDING_RENDER_SIGNATURE] = signature;
       this.scene.add(model.group);
       this.buildingInstances.set(key, model.group);
@@ -1626,14 +1624,6 @@ export default class HexceptionScene extends HexagonScene {
       return;
     }
     gsap.to(instance.scale, { x: 1, y: 1, z: 1, duration: 0.5, ease: "power2.out", onComplete: standing });
-  }
-
-  private syncHyperstructureConstruction(): void {
-    if (!this.hyperstructureModel || this.tileManager.structureType() !== StructureType.Hyperstructure) return;
-    this.hyperstructureModel.setConstructionAt(
-      0,
-      readHyperstructureConstruction(this.game.store, safeInteger(this.shownRealmId)),
-    );
   }
 
   private applyMiningBuildingMaterial(
@@ -1840,7 +1830,6 @@ export default class HexceptionScene extends HexagonScene {
    * redraws now while the view is open, and on the next entry otherwise.
    */
   private answerFactChanges(changes: readonly NativeFactChange[]): void {
-    if (changes.some((change) => this.changesShownHyperstructure(change))) this.syncHyperstructureConstruction();
     const level = changes.map((change) => this.changedCastleLevel(change)).find((value) => value !== undefined);
     const skinChanged = changes.some(
       (change) =>
@@ -1854,12 +1843,6 @@ export default class HexceptionScene extends HexagonScene {
     }
     if (level !== undefined || skinChanged || changes.some((change) => this.changesShownGround(change)))
       this.redrawStaleGrid();
-  }
-
-  private changesShownHyperstructure(change: NativeFactChange): boolean {
-    if (change.model !== "Hyperstructure" && change.model !== "HyperstructureProgress") return false;
-    const row = change.current ?? change.previous;
-    return row?.entity_id === BigInt(this.shownRealmId) && row?.game_id === configManager.getActiveGameId();
   }
 
   /** The shown structure's new level, when the change is one to its level. */

@@ -48,28 +48,12 @@ pub impl StorySerde of Serde<Story> {
                 output.append(11);
                 Serde::serialize(value, ref output);
             },
-            Story::HyperstructurePoints(value) => {
-                output.append(17);
-                Serde::serialize(value, ref output);
-            },
-            Story::RelicChestOpened(value) => {
-                output.append(18);
-                Serde::serialize(value, ref output);
-            },
             Story::ExplorationReward(value) => {
                 output.append(19);
                 Serde::serialize(value, ref output);
             },
-            Story::SeasonEnded(value) => {
-                output.append(20);
-                Serde::serialize(value, ref output);
-            },
             Story::BlitzFinalized(value) => {
                 output.append(23);
-                Serde::serialize(value, ref output);
-            },
-            Story::RelicCrafted(value) => {
-                output.append(24);
                 Serde::serialize(value, ref output);
             },
             Story::ExplorerCreateStory(value) => {
@@ -108,14 +92,6 @@ pub impl StorySerde of Serde<Story> {
                 output.append(33);
                 Serde::serialize(value, ref output);
             },
-            Story::RewardChestOpened(value) => {
-                output.append(34);
-                Serde::serialize(value, ref output);
-            },
-            Story::RelicActivated(value) => {
-                output.append(35);
-                Serde::serialize(value, ref output);
-            },
             Story::SiteUsed(value) => {
                 output.append(36);
                 Serde::serialize(value, ref output);
@@ -143,14 +119,14 @@ pub impl StorySerde of Serde<Story> {
             14 => None,
             15 => None,
             16 => None,
-            17 => Some(Story::HyperstructurePoints(Serde::deserialize(ref serialized)?)),
-            18 => Some(Story::RelicChestOpened(Serde::deserialize(ref serialized)?)),
+            17 => None,
+            18 => None,
             19 => Some(Story::ExplorationReward(Serde::deserialize(ref serialized)?)),
-            20 => Some(Story::SeasonEnded(Serde::deserialize(ref serialized)?)),
+            20 => None,
             21 => None,
             22 => None,
             23 => Some(Story::BlitzFinalized(Serde::deserialize(ref serialized)?)),
-            24 => Some(Story::RelicCrafted(Serde::deserialize(ref serialized)?)),
+            24 => None,
             25 => Some(Story::ExplorerCreateStory(Serde::deserialize(ref serialized)?)),
             26 => Some(Story::ExplorerAddStory(Serde::deserialize(ref serialized)?)),
             27 => Some(Story::ExplorerDeleteStory(Serde::deserialize(ref serialized)?)),
@@ -160,8 +136,8 @@ pub impl StorySerde of Serde<Story> {
             31 => Some(Story::SkillPointSpent(Serde::deserialize(ref serialized)?)),
             32 => Some(Story::SitePayout(Serde::deserialize(ref serialized)?)),
             33 => Some(Story::SpireDiscovered(Serde::deserialize(ref serialized)?)),
-            34 => Some(Story::RewardChestOpened(Serde::deserialize(ref serialized)?)),
-            35 => Some(Story::RelicActivated(Serde::deserialize(ref serialized)?)),
+            34 => None,
+            35 => None,
             36 => Some(Story::SiteUsed(Serde::deserialize(ref serialized)?)),
             _ => None,
         }

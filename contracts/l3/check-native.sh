@@ -8,7 +8,6 @@ account=contracts/l3/player-account
 
 prelude() {
   python3 "$world/toolchain/snforge.py" resolve > /dev/null
-  node "$world/scripts/generate-extension.mjs" --check
   node --test contracts/l3/check-native-plan.test.mjs
   python3 -m unittest discover -s "$world/toolchain" -p test_snforge.py
   bash contracts/l2/ledger/check.sh

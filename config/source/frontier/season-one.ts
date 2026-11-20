@@ -104,12 +104,11 @@ export const frontierSeasonOnePreset = {
     paleMoonPercent: 50,
     spoilsPercent: 200,
   },
-  modeRules: (frontierPreset.modeRules | rules.DISCOVER_SPIRES) & ~rules.DISCOVER_CHESTS,
+  modeRules: frontierPreset.modeRules | rules.DISCOVER_SPIRES,
   chests: null,
   commandMask:
-    (frontierPreset.commandMask |
-      BigInt(nativeCommandBits.ApplyRelic) |
-      BigInt(nativeCommandBits.Battle) |
-      BigInt(nativeCommandBits.ClaimDailyQuest)) &
-    ~BigInt(nativeCommandBits.OpenRelicChest),
+    frontierPreset.commandMask |
+    BigInt(nativeCommandBits.ApplyRelic) |
+    BigInt(nativeCommandBits.Battle) |
+    BigInt(nativeCommandBits.ClaimDailyQuest),
 } satisfies NativePreset;

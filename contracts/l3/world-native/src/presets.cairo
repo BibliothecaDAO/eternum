@@ -37,11 +37,7 @@ pub struct EconomyPreset {
     pub quests: Option<crate::quests::QuestRules>,
     pub deep: Option<crate::deep::DeepRules>,
     pub labor: Option<crate::entry::LaborRules>,
-    pub hyperstructures: crate::hyperstructures::HyperstructureRules,
-    pub relics: Span<crate::relics::RelicRule>,
-    pub chests: Option<crate::relics::ChestRules>,
     pub discovery: Option<crate::expeditions::FrontierDiscoveryRules>,
-    pub research_cost: u128,
     pub withdrawals: Option<WithdrawalPreset>,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -52,17 +48,11 @@ pub struct PresetDefinition {
     pub settlement: SettlementPreset,
     pub economy: EconomyPreset,
     pub exploration: Span<crate::exploration_rewards::ExplorationReward>,
-    pub season_win_points: u128,
 }
 
 pub fn validate(preset: PresetDefinition) {
     let rules = preset.rules;
     if let Some(race) = preset.economy.race {
-        assert!(preset.season_win_points == 0, "race cannot use victory points");
-        assert!(
-            rules.mode_rules & (crate::rules::DISCOVER_HYPERSTRUCTURES | crate::rules::RESERVED_HYPERSTRUCTURES) == 0,
-            "race has no map hyperstructures",
-        );
         let deep = preset.economy.deep.expect('race requires the Deep');
         crate::race::validate(race);
         assert!(deep.building_pay.alone <= race.stage_height, "Deep pay passes a stage");
@@ -103,7 +93,6 @@ pub fn validate(preset: PresetDefinition) {
         let _ = labor.golden_amount * crate::rules::RESOURCE_PRECISION;
         let _ = labor.golden_essence * crate::rules::RESOURCE_PRECISION;
     }
-    assert!(preset.economy.chests.is_none(), "LORDS presets are retired");
     assert!(preset.economy.discovery.is_some() == (rules.day_unit_seconds != 0), "discovery requires expedition");
     if let Some(discovery) = preset.economy.discovery {
         crate::discovery::validate_frontier(
@@ -123,11 +112,6 @@ pub fn validate(preset: PresetDefinition) {
     assert!(rules.tick_config.armies_tick_in_seconds != 0, "zero army tick");
     let tick_seconds = rules.tick_config.armies_tick_in_seconds;
     assert!(tick_seconds <= 0x100000000 / crate::math::PercentageValueImpl::_100(), "stamina remainder overflow");
-    // Relic rules are ordered from FIRST_RELIC (39): only indices 0 and 1 (IDs 39/40) regenerate stamina.
-    for index in 0..core::cmp::min(preset.economy.relics.len(), 2) {
-        let seconds = Into::<u8, u64>::into(*preset.economy.relics.at(index).uses) * tick_seconds;
-        assert!(seconds <= 0xffff, "stamina boost duration overflow");
-    }
     assert!(
         Into::<u32, u64>::into(rules.day_unit_seconds) % rules.tick_config.armies_tick_in_seconds == 0,
         "day unit is not whole ticks",
@@ -180,18 +164,6 @@ pub trait IPresetResources<T> {
 #[starknet::interface]
 pub trait IPresetStructures<T> {
     fn store_structure_preset(ref self: T, commitment: felt252, structures: StructurePreset);
-}
-
-#[starknet::interface]
-pub trait IPresetRelics<T> {
-    fn store_relic_preset(
-        ref self: T,
-        commitment: felt252,
-        rules: Span<crate::relics::RelicRule>,
-        chests: Option<crate::relics::ChestRules>,
-        mode_rules: u32,
-        day_unit_seconds: u32,
-    );
 }
 
 #[starknet::interface]

@@ -48,11 +48,7 @@ const balance = (key: string, resource_type: number, amount: number) => ({
   value: { game_id: 1, entity_id: 7, resource_type, balance: units(amount) },
 });
 
-/**
- * QA's Egonal: Blitz Crossbowman T1 makes ten a cycle from 2 wheat and 0.8 copper; a troop bonus, where a case runs one,
- * adds a fifth (2,000 of 10,000) to the total output, rounded down as the chain rounds it.
- */
-const egonal = ({ copper, troopBonus = 0 }: { copper: number; troopBonus?: number }) => {
+const egonal = ({ copper }: { copper: number }) => {
   const { store } = frontierDay();
   store.applyFacts([
     {
@@ -75,20 +71,6 @@ const egonal = ({ copper, troopBonus = 0 }: { copper: number; troopBonus?: numbe
     },
     balance("0xc", ResourcesIds.Wheat, 40_000),
     balance("0xc04", ResourcesIds.Copper, copper),
-    {
-      model: "ProductionBonus",
-      key: "0xb07",
-      value: {
-        game_id: 1,
-        entity_id: 7,
-        incr_resource_rate_percent_num: 0,
-        incr_resource_rate_end_at: 0,
-        incr_labor_rate_percent_num: 0,
-        incr_labor_rate_end_at: 0,
-        incr_troop_rate_percent_num: troopBonus,
-        incr_troop_rate_end_at: troopBonus > 0 ? 1_000_000 : 0,
-      },
-    },
   ] as never);
   return store;
 };
@@ -226,25 +208,6 @@ it("names the least budget of an input a cycle burns under one unit of as it is 
     expect(view.start().textContent).toBe("Spend at least 0.8 Copper");
     expect(view.start().disabled).toBe(true);
     expect(view.burnResources).not.toHaveBeenCalled();
-  } finally {
-    view.unmount();
-  }
-});
-
-it("adds the troop bonus to the resource recipe's output, and runs Max on the whole cycles the copper covers", async () => {
-  const view = mount({ copper: 2.4, troopBonus: 2_000 });
-  try {
-    view.type("Amount of Crossbowman T1", "10");
-    // One cycle makes 10 + 2 = 12, which covers 10.
-    expect(view.host.textContent).toContain("12 Crossbowman T1");
-    expect(view.host.textContent).toContain("+20% bonus");
-    await view.press(view.button("Max"));
-    // 2.4 copper covers exactly three of 0.8: three cycles make 36.
-    expect(view.host.textContent).toContain("36 Crossbowman T1");
-    await view.press(view.start());
-    expect(view.burnResources).toHaveBeenCalledWith(
-      expect.objectContaining({ produced_resource_types: [ResourcesIds.Crossbowman], production_cycles: [3] }),
-    );
   } finally {
     view.unmount();
   }

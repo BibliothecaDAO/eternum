@@ -2,21 +2,6 @@ pub use world_test_support::tests::production::*;
 
 #[test]
 #[fuzzer(runs: 64)]
-fn production_bonus_packing_retains_full_width_percentages_and_seconds(a: u16, b: u16, c: u16, d: u32, e: u32, f: u32) {
-    let bonus = ProductionBonus {
-        incr_resource_rate_percent_num: a,
-        incr_labor_rate_percent_num: b,
-        incr_troop_rate_percent_num: c,
-        incr_resource_rate_end_at: d,
-        incr_labor_rate_end_at: e,
-        incr_troop_rate_end_at: f,
-    };
-    let packed = crate::production::BonusPacking::pack(bonus);
-    assert_eq!(crate::production::BonusPacking::unpack(packed), bonus);
-}
-
-#[test]
-#[fuzzer(runs: 64)]
 fn building_packing_preserves_structure_pause_and_full_width_population(
     category: u8, paused: bool, current: u32, maximum: u32, labor_paid: u128,
 ) {

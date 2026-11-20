@@ -170,17 +170,6 @@ pub mod SettlementPoolState {
             self.data.settlement_pool.opened.write(key, opened);
             true
         }
-        fn reserve_blitz_locations(
-            ref self: ComponentState<TContractState>, game_id: u32, center: Coord, rules: SettlementRules,
-        ) {
-            assert!(rules.mode == SettlementMode::Triple, "Regular Blitz required");
-            for index in 0_u32..rules.registration_limit.into() {
-                assert!(
-                    self.reserve_location(game_id, settlement_location(center, rules.mode, rules.spacing, index)),
-                    "overlapping Blitz settlement",
-                );
-            }
-        }
         fn reserve_location(ref self: ComponentState<TContractState>, game_id: u32, coords: Span<Coord>) -> bool {
             for coord in coords {
                 if self.data.settlement_pool.reserved.read((game_id, *coord.x, *coord.y)) {

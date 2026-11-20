@@ -9,12 +9,15 @@ const award = (activity: string) => ({ player: PLAYER, activity, points: "0x4c4b
 
 it("folds every native points activity into the player's columns", () => {
   const board = new PointsLeaderboard();
-  for (const activity of ["Exploration", "RelicChest", "HyperstructureCapture", "StructureCapture", "Hyperstructure"]) {
+  for (const activity of ["Exploration", "StructureCapture"]) {
     board.accept("28", readPoints(award(activity))!);
   }
   const [[address, breakdown]] = [...board.activity("28")];
   expect(address).toBe(PLAYER);
-  expect(Object.values(breakdown)).toEqual(Array.from({ length: 5 }, () => ({ count: 1, points: 5 })));
+  expect([breakdown.exploration, breakdown.otherStructureBanditsDefeat]).toEqual([
+    { count: 1, points: 5 },
+    { count: 1, points: 5 },
+  ]);
   expect(board.activity("29").size).toBe(0);
   breakdown.exploration.points = 999;
   expect(board.activity("28").get(address)?.exploration.points).toBe(5);

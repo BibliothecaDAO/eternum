@@ -9,7 +9,6 @@ import {
   type ContractAddress,
   type Direction,
   getLayerNeighborHexes,
-  type ID,
   ResourcesIds,
   TickIds,
   TroopTier,
@@ -65,16 +64,6 @@ export const formatArmies = (
       },
     ];
   });
-
-export const getArmy = (
-  armyEntityId: ID,
-  playerAddress: ContractAddress,
-  store: NativeFactStore,
-  playerName: PlayerNameResolver,
-): ArmyInfo | undefined => {
-  const explorer = store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: armyEntityId });
-  return explorer ? formatArmies([explorer], playerAddress, store, playerName)[0] : undefined;
-};
 
 export const getTroopResourceId = (troopType: TroopType, troopTier: TroopTier): ResourcesIds => {
   switch (troopType) {

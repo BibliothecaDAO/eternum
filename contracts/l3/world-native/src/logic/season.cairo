@@ -58,52 +58,6 @@ pub mod SeasonLogic {
     }
 
     #[abi(embed_v0)]
-    impl SeasonLifecycle of crate::game::ISeasonLifecycle<ContractState> {
-        fn season_win_threshold(self: @ContractState, game_id: u32) -> u128 {
-            crate::logic::preset_record::for_game(game_id).season_win_points.read()
-        }
-        fn close_season(
-            ref self: ContractState, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
-        ) -> u64 {
-            let context = crate::commands::execution_context(game_id, context);
-
-            let classes = self.release.classes(game_id);
-
-            let mut game = context.game.unbox();
-            crate::game::assert_playing(game, context.timestamp);
-            assert!(
-                crate::rules::rule_enabled(context.rules.unbox(), crate::rules::SEASON_CLOSE),
-                "season closure is disabled",
-            );
-            let threshold = self.season_win_threshold(game_id);
-            assert!(threshold != 0, "season win threshold is zero");
-            let initiator = match self.data.season.close_initiators.read(game_id) {
-                Some(initiator) => initiator,
-                None => {
-                    self.data.season.close_initiators.write(game_id, Some(actor));
-                    actor
-                },
-            };
-            let remaining = crate::hyperstructures::IHyperstructuresDispatcherTrait::settle_completed_hyperstructures(
-                crate::hyperstructures::IHyperstructuresLibraryDispatcher { class_hash: classes.economy.read() },
-                game_id,
-                context.timestamp,
-                crate::commands::action_context(context),
-            );
-            if remaining != 0 {
-                return (remaining.into());
-            }
-            self.data.season.close_initiators.write(game_id, None);
-            if self.data.season.player_points.read((game_id, initiator)) < threshold {
-                return (0);
-            }
-            game.end_at = context.timestamp;
-            crate::logic::game::write_game(game_id, game);
-            self.record_season_end(game_id, initiator, context.timestamp);
-            (0)
-        }
-    }
-    #[abi(embed_v0)]
     impl GameSettlement of crate::registrar::IGameSettlement<ContractState> {
         fn mark_game_settled(
             ref self: ContractState, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
@@ -120,10 +74,6 @@ pub mod SeasonLogic {
                 game.end_grace_seconds == 0 || context.timestamp > game.end_at + game.end_grace_seconds.into(),
                 "game settlement grace period is active",
             );
-            let remaining = self.settle_final_points(game_id, context.timestamp, context);
-            if remaining != 0 {
-                return (remaining.into());
-            }
             game.settled = true;
             crate::logic::game::write_game(game_id, game);
             (0)
@@ -131,17 +81,6 @@ pub mod SeasonLogic {
     }
     #[abi(embed_v0)]
     impl Points of crate::game::IPoints<ContractState> {
-        fn register_relic_points(
-            ref self: ContractState, game_id: u32, actor: ContractAddress, game_context: crate::commands::ActionContext,
-        ) {
-            let game_context = crate::commands::execution_context(game_id, game_context);
-
-            let points = game_context.rules.unbox().victory_points_grant_config.relic_open_points;
-            self.register_points(game_id, actor, points.into(), crate::game::PointActivity::RelicChest);
-        }
-        fn register_hyperstructure_points(ref self: ContractState, game_id: u32, actor: ContractAddress, amount: u128) {
-            self.register_points(game_id, actor, amount, crate::game::PointActivity::Hyperstructure);
-        }
         fn player_points(self: @ContractState, game_id: u32, actor: ContractAddress) -> u128 {
             self.data.season.player_points.read((game_id, actor))
         }
@@ -149,31 +88,12 @@ pub mod SeasonLogic {
             self.data.season.season_points.read(game_id)
         }
         fn register_capture(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            category: u8,
-            game_context: crate::commands::ActionContext,
+            ref self: ContractState, game_id: u32, actor: ContractAddress, game_context: crate::commands::ActionContext,
         ) -> u128 {
             let game_context = crate::commands::execution_context(game_id, game_context);
 
-            let rules = game_context.rules.unbox().victory_points_grant_config;
-            let amount = if category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY {
-                rules.claim_hyperstructure_points
-            } else {
-                rules.claim_otherstructure_points
-            };
-            self
-                .register_points(
-                    game_id,
-                    actor,
-                    amount.into(),
-                    if category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY {
-                        crate::game::PointActivity::HyperstructureCapture
-                    } else {
-                        crate::game::PointActivity::StructureCapture
-                    },
-                );
+            let amount = game_context.rules.unbox().victory_points_grant_config.claim_otherstructure_points;
+            self.register_points(game_id, actor, amount.into(), crate::game::PointActivity::StructureCapture);
             amount.into()
         }
         fn register_exploration(
@@ -187,32 +107,6 @@ pub mod SeasonLogic {
     }
     #[generate_trait]
     impl Internal of InternalTrait {
-        fn settle_final_points(
-            ref self: ContractState, game_id: u32, timestamp: u64, game_context: crate::commands::ExecutionContext,
-        ) -> u32 {
-            crate::hyperstructures::IHyperstructuresDispatcherTrait::settle_final_hyperstructures(
-                crate::hyperstructures::IHyperstructuresLibraryDispatcher {
-                    class_hash: self.release.classes(game_id).economy.read(),
-                },
-                game_id,
-                timestamp,
-                crate::commands::action_context(game_context),
-            )
-        }
-        fn record_season_end(ref self: ContractState, game_id: u32, winner: ContractAddress, timestamp: u64) {
-            self
-                .emit(
-                    crate::ownership::StoryEvent {
-                        version: 2,
-                        game_id,
-                        entity_id: None,
-                        owner: Some(winner),
-                        timestamp,
-                        tx_hash: get_tx_info().unbox().transaction_hash,
-                        story: crate::ownership::Story::SeasonEnded(winner),
-                    },
-                );
-        }
         fn register_points(
             ref self: ContractState,
             game_id: u32,

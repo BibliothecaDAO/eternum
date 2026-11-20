@@ -3,15 +3,9 @@ import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
-import { buildStoryEventPresentation, configManager } from "@bibliothecadao/eternum";
+import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import {
-  type BuildingType,
-  getProducedResource,
-  relicChestRelics,
-  RESOURCE_PRECISION,
-  ResourcesIds,
-} from "@bibliothecadao/types";
+import { type BuildingType, getProducedResource, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 
@@ -96,10 +90,7 @@ const story = (store: NativeFactStore, id: string, kind: string, payload: Record
     ),
   }) as unknown as ProcessedStoryEvent;
 
-/** What a newcomer's first minutes tell in Events: a find of Essence, a crate opened, a fight lost. */
 export const eventStories = (store: NativeFactStore): ProcessedStoryEvent[] => {
-  const chest = { pack: "War", lucky: false } as const;
-  const scaledPoints = (points: number) => BigInt(points) * 1_000_000n;
   return [
     story(store, "found", "ExplorationReward", {
       explorer_id: 70,
@@ -107,13 +98,6 @@ export const eventStories = (store: NativeFactStore): ProcessedStoryEvent[] => {
       coord: { x: 2147483650, y: 2147483652 },
       resource_type: ResourcesIds.Essence,
       amount: "200000000000",
-    }),
-    story(store, "crate", "RelicChestOpened", {
-      explorer_id: 70,
-      coord: { x: 2147483651, y: 2147483652 },
-      chest,
-      relics: relicChestRelics(chest),
-      points: scaledPoints(configManager.getVictoryPointGrants().openRelicCrate),
     }),
     story(store, "fight", "BattleEvent", {
       attacker_id: 70,

@@ -1,6 +1,5 @@
 import { REALM_ASSETS } from "../structures/realm-design";
 import {
-  ChestModelPath,
   SHARED_BUILDING_MODEL_PATHS,
   SPIRE_MODEL_PATH,
   getStructureModelPaths,
@@ -30,7 +29,6 @@ const BUILDING_LABELS: Record<string, string> = {
   archerrange: "Archery range",
   castle1: "Hall / Holy site",
   fishery: "Fishery",
-  chest_model: "Chest",
   ruin: "Ruin · Fallen realm",
   spire: "Spire · Levitating portal",
 };
@@ -42,7 +40,6 @@ export const TERRAIN_LAB_BUILDINGS = [
     FALLEN_REALM_RUIN_PATH,
     "/models/outposts/shrine.glb",
     "/models/outposts/well.glb",
-    ChestModelPath,
     SPIRE_MODEL_PATH,
   ]),
 ].map((path) => {

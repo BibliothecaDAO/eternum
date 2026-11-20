@@ -123,7 +123,7 @@ export function pointsAward(
   return {
     from_address: manifest.world.address,
     keys: [...layout.prefix, "1", game, player],
-    data: ["4", amount, playerPoints, seasonPoints],
+    data: ["1", amount, playerPoints, seasonPoints],
   };
 }
 
@@ -153,16 +153,7 @@ export function rulesEvent(gameId = "1", dayUnitSeconds = "0", modeRules = 0n) {
     if (type === "()") return [];
     return ["0"];
   };
-  const values = model.members.flatMap((member) => {
-    if (member.name === "victory_points_grant_config") {
-      const definition = schema.types[member.type];
-      if (definition.type !== "struct") throw new Error("Expected point rules");
-      return definition.members.flatMap((field) =>
-        field.name === "hyp_points_per_second" ? ["1000000"] : defaults(field.type),
-      );
-    }
-    return defaults(member.type);
-  });
+  const values = model.members.flatMap((member) => defaults(member.type));
   const decoded = decodeMembers(schema, model.members, values);
   decoded.day_unit_seconds = BigInt(dayUnitSeconds);
   decoded.mode_rules = modeRules;

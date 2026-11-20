@@ -133,11 +133,6 @@ export enum TransactionType {
   // Structures & Ownership
   SET_ENTITY_NAME = "set_entity_name",
   TRANSFER_STRUCTURE_OWNERSHIP = "transfer_structure_ownership",
-
-  // Hyperstructures
-  CREATE_HYPERSTRUCTURE = "create_hyperstructure",
-  INITIALIZE_HYPERSTRUCTURE = "initialize_hyperstructure",
-  CONTRIBUTE = "contribute",
   CLAIM_WONDER_POINTS = "claim_wonder_points",
   CLAIM_PLAYER_FAITH_POINTS = "claim_player_faith_points",
   PLEDGE_FAITH = "pledge_faith",
@@ -149,18 +144,10 @@ export enum TransactionType {
   SETTLE = "settle",
   CLAIM_DAILY_QUEST = "claim_daily_quest",
 
-  // Lords & Approvals
-  SET_ACCESS = "set_access",
-
-  // Season & Leaderboard
-  END_GAME = "end_game",
-
   // Blitz
 
   // Chests & Relics
-  OPEN_CHEST = "open_chest",
   INTERACT_SITE = "interact_site",
-  BURN_RESEARCH_FOR_RELIC = "burn_research_for_relic",
   APPLY_RELIC = "apply_relic",
 
   // Legacy (kept for compatibility)

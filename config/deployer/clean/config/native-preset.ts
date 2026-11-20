@@ -271,36 +271,6 @@ function buildEconomy(
   preset: ReturnType<typeof nativePresetForId>,
   tokens: Array<{ resource_type: number; token: string }>,
 ) {
-  const chests = preset.chests;
-  if (chests === undefined || (chests !== null && preset.dayUnitSeconds === 0))
-    throw new Error("Chest rules must be explicit and require expedition days");
-  if (chests !== null) {
-    if (
-      !Number.isInteger(chests.poolBps) ||
-      chests.poolBps <= 0 ||
-      chests.poolBps >= 10_000 ||
-      !Number.isInteger(chests.topN) ||
-      chests.topN < 1 ||
-      chests.topN > 100
-    )
-      throw new Error("Invalid Frontier prize split");
-    const shares = [
-      chests.shares.common,
-      chests.shares.uncommon,
-      chests.shares.rare,
-      chests.shares.epic,
-      chests.shares.legendary,
-    ];
-    if (
-      ![chests.priceCeiling, chests.claimWindowSeconds, ...shares].every(
-        (value) => Number.isSafeInteger(value) && value > 0,
-      ) ||
-      shares.some((value) => value > 0xffff) ||
-      chests.claimWindowSeconds > 0xffffffff ||
-      shares.some((value, index) => value > (shares[index + 1] ?? value))
-    )
-      throw new Error("Invalid ruin chest rules");
-  }
   const labor = preset.labor;
   if (
     (labor !== null || preset.dailyQuest !== null) !== (preset.dayUnitSeconds !== 0) ||
@@ -327,27 +297,6 @@ function buildEconomy(
     quests: buildQuests(preset),
     banes: buildBanes(preset),
     race: buildRace(preset),
-    chests:
-      chests === null
-        ? new CairoOption(CairoOptionVariant.None)
-        : new CairoOption(CairoOptionVariant.Some, {
-            price_ceiling: BigInt(chests.priceCeiling),
-            shares: chests.shares,
-            claim_window_seconds: chests.claimWindowSeconds,
-            pool_bps: chests.poolBps,
-            top_n: chests.topN,
-          }),
-    hyperstructures: {
-      initialize_shards: scaled(config.hyperstructures.hyperstructureInitializationShardsCost.amount),
-      resources: config.hyperstructures.hyperstructureConstructionCost.map((resource) => ({
-        resource_type: resource.resource_type,
-        minimum: resource.min_amount,
-        maximum: resource.max_amount,
-        points: resource.resource_completion_points,
-      })),
-    },
-    relics: preset.relics.map((rule) => ({ ...rule })),
-    research_cost: config.artificer!.research_cost_for_relic,
     withdrawals: new CairoOption<ReturnType<typeof buildWithdrawals>>(
       tokens.length === 0 ? CairoOptionVariant.None : CairoOptionVariant.Some,
       tokens.length === 0 ? undefined : buildWithdrawals(config, tokens),
@@ -389,9 +338,7 @@ export function buildNativePreset(config: Config, presetId: number) {
     structures: buildStructures(config, preset),
     settlement: buildSettlement(config, preset),
     economy: buildEconomy(config, preset, bridgeTokens),
-
     exploration: preset.supplies.map((reward) => ({ ...reward })),
-    season_win_points: config.victoryPoints.pointsForWin,
   };
   if (preset.clockScale !== undefined) scaleActivityClocks(definition, preset.clockScale.activity);
   return definition;
@@ -460,8 +407,6 @@ function validateRequiredNativeConfig(config: Config): void {
       throw new Error(`Invalid Bitcoin ${field}`);
   }
   if (config.bitcoin.ownerCutBps > 10000) throw new Error("Invalid Bitcoin owner cut");
-  if (!Number.isSafeInteger(config.artificer?.research_cost_for_relic) || config.artificer!.research_cost_for_relic < 0)
-    throw new Error("Native research cost is required and must be nonnegative");
 }
 
 function resolveBridgeTokens(config: Config, resources: readonly number[]) {
@@ -546,8 +491,6 @@ function buildRace(preset: ReturnType<typeof nativePresetForId>) {
   const race = preset.race;
   if (race === null) return new CairoOption(CairoOptionVariant.None);
   if (!race || !preset.deep) throw new Error("Race requires the Deep");
-  if (preset.modeRules & (presetRule.DISCOVER_HYPERSTRUCTURES | presetRule.RESERVED_HYPERSTRUCTURES))
-    throw new Error("Race has no map hyperstructures");
   validateRace(race);
   if (race.stageHeight < preset.deep.buildingPay.alone) throw new Error("A tick's height passes a whole stage");
   return new CairoOption(CairoOptionVariant.Some, {

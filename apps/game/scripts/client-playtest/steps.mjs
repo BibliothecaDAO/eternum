@@ -1887,11 +1887,6 @@ function buildingDemolished({ actionLatency }) {
   return col && { presented: `building-gone:${col},${row}` };
 }
 
-/**
- * A chest opened (the lab's upkeep game): the army selected, the tile beside it that holds a chest opened as a player
- * does (a desktop's right-click on the tile whose hover offers Open crate; a phone's tap, then its card's Open); the
- * result is that chest consumed off its tile.
- */
 const HEX_ON_SCREEN = `JSON.stringify(window.__eternumMapSelection?.hexOnScreen ?? null)`;
 
 /** The selected hex's place once the camera has stopped framing it: two readings a frame apart that agree. */
@@ -1907,9 +1902,6 @@ async function settledHexOnScreen(browser) {
 }
 
 const screenPoint = ([dx, dy]) => ({ x: VIEWPORT.width / 2 + dx, y: VIEWPORT.height / 2 + dy });
-
-/** A chest's body on its tile (page px): what its lid lifting changes, not the tile round it. */
-const chestBody = ({ x, y }) => ({ left: Math.round(x - 25), top: Math.round(y - 35), width: 50, height: 40 });
 
 /** A button on the page whose label (or text) matches `pattern`: its name and where it is from the screen's centre. */
 const buttonLabelled = (pattern) => `JSON.stringify((() => {
@@ -4999,7 +4991,6 @@ const FIGHT_STATE = `JSON.stringify({
   army: window.__eternumMapSelection?.army ?? null,
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
   buttons: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].map((button) => button.textContent.trim()),
-  ruinRule: document.querySelector("[data-ruin-rule] .text-hud-ink")?.textContent ?? null,
   attackHeld: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].every((button) => !button.textContent.trim().startsWith("Attack") || button.disabled),
   sides: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll('[role="img"][aria-label*="→"]') ?? [])].map((side) => side.getAttribute("aria-label")),
   sent: (window.__labChain?.sent ?? []).map(({ command }) => command.kind),
@@ -5013,8 +5004,6 @@ const FIGHT_STATE = `JSON.stringify({
       Math.round(token.top + token.height / 2 + ${TOKEN_ABOVE_TILE_PX} - innerHeight / 2),
     ];
   })(),
-  // Cash-chest presentation must remain absent after a ruin clear.
-  chest: Boolean(document.querySelector('[data-chest-moment] [aria-label$=" LORDS"]')),
 })`;
 
 /** Picks the army from the HUD, as the Armies list or the dock does, reading where the camera looked before and after. */
@@ -5148,7 +5137,6 @@ function farCardForecasts({ played }) {
 
 function fightCardOpenedCameraStill({ played }) {
   const { before, after } = played;
-  if (after.ruinRule !== null) return failed("a relic ruin must not show a daily entitlement", played);
   if (!before.ruinToken) return failed("the map draws no token for the ruin", played);
   if (!onADesktop() && !underTheCard(before.ruinToken))
     return failed("the ruin could not be panned under where its card opens", played);
@@ -5214,7 +5202,6 @@ function ruinClearedCameraStill({ played }) {
   if (!played.attack) return failed("no Attack to press", played);
   if (!after.sent.includes("BattleGuard")) return failed("Attack sent no BattleGuard", played);
   if (after.ruinToken !== null) return failed("the ruin still stands on the map", played);
-  if (after.chest || settled.chest) return failed("a retired cash chest showed", played);
   if (!settled.armyToken?.includes("4,011")) return failed(`the army's token reads ${settled.armyToken}`, played);
   if (!before.camera) return failed("the page reports no camera", played);
   if (!sameHex(before.camera, settled.camera))

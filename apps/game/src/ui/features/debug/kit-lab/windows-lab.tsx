@@ -5,12 +5,9 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useDocumentClass } from "@/hooks/use-document-class";
 import { SurfaceHost } from "@/ui/design-system/molecules/popover";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
-import { CraftRelicPopup } from "@/ui/features/economy/resources/craft-relic-popup";
-import { RelicActivationPopup } from "@/ui/features/economy/resources/relic-activation-popup";
 import { TransferAutomationAdvancedModal } from "@/ui/features/economy/transfers/transfer-automation-modal";
 import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
 import { RealmNumberPicker } from "@/ui/features/game-entry/realm-number-picker";
-import { RelicActivationSelector } from "@/ui/features/relics/components/relic-activation-selector";
 import { ProductionModal } from "@/ui/features/settlement/production/production-modal-content";
 import { ProductionPopupShell } from "@/ui/features/settlement/production/production-popup-shell";
 import { RealmAutomationPanel } from "@/ui/features/settlement/production/realm-automation-panel";
@@ -22,15 +19,7 @@ import { HelpModal } from "@/ui/features/military/components/help-modal";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
 import { createGameViews, type GameClient, structureMapPosition } from "@bibliothecadao/eternum";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import {
-  ActorType,
-  BuildingType,
-  EntityType,
-  RelicRecipientType,
-  ResourcesIds,
-  StructureType,
-  TileOccupier,
-} from "@bibliothecadao/types";
+import { ActorType, BuildingType, ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { type ReactNode, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
@@ -104,7 +93,6 @@ const automatedRecipes = () =>
 
 /** Opens a window on the popover host, as the game's buttons open it. */
 const openWindow = (id: string, content: ReactNode) => usePopoverStore.getState().openSurface({ id, content });
-const close = () => usePopoverStore.getState().close();
 
 /** Opens a window that lives on the popover host, the way its button opens it in the game. */
 /** Two realm relics the lab army carries, its load and their weight rules, so its relic tab has something to send home. */
@@ -264,56 +252,6 @@ const SURFACES: Record<string, { name: string; draw: () => ReactNode }> = {
     ),
   },
   "transfer-automation": { name: "Transfer automation", draw: () => <TransferAutomationAdvancedModal /> },
-  "craft-relic": {
-    name: "Craft relic",
-    draw: () => (
-      <Opened open={() => openWindow("craft-relic", <CraftRelicPopup structureId={REALM} onClose={close} />)} />
-    ),
-  },
-  "activate-relic": {
-    name: "Activate relic",
-    draw: () => (
-      <Opened
-        open={() =>
-          openWindow(
-            "activate-relic",
-            <RelicActivationPopup
-              entityId={REALM}
-              entityOwnerId={REALM}
-              recipientType={RelicRecipientType.Structure}
-              relicId={ResourcesIds.ProductionRelic1}
-              relicBalance={2}
-              onClose={close}
-            />,
-          )
-        }
-      />
-    ),
-  },
-  "relic-target": {
-    name: "Relic target",
-    draw: () => (
-      <Opened
-        open={() =>
-          openWindow(
-            "relic-target",
-            <RelicActivationSelector
-              resourceId={ResourcesIds.ProductionRelic1}
-              holders={[
-                {
-                  entityId: REALM,
-                  held: 2,
-                  recipientType: RelicRecipientType.Structure,
-                  entityType: EntityType.STRUCTURE,
-                },
-              ]}
-              onClose={close}
-            />,
-          )
-        }
-      />
-    ),
-  },
   // The header's Settings, at the width and in the look of the popover it opens in.
   settings: {
     name: "Settings",
@@ -339,10 +277,7 @@ export const WindowsLab = () => {
   const { surface = "build" } = useParams();
   const [store] = useState(() => {
     const fixture = installFixtureGame();
-    // What the windows read that the fixture leaves out: the research a relic costs, each building's rule, and the
-    // player's points, which Settings' card ranks.
     fixture.applyFacts([
-      { model: "ArtificerCost", key: "0xa", value: { game_id: 1, research: 500n } },
       { model: "PlayerPoints", key: "0xc", value: { game_id: 1, address: BigInt(PLAYER), points: 35_000_000n } },
       ...automatedRecipes(),
       ...preset.buildings.map(({ category, rule }) => ({

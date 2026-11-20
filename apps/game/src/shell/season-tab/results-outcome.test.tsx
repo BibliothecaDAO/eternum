@@ -6,11 +6,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.hoisted(() => vi.stubGlobal("fetch", () => new Promise<Response>(() => {})));
 const breakdown = (points: number) => ({
-  exploration: { count: 36, points: points - 280 },
-  openRelicChest: { count: 3, points: 30 },
-  hyperStructureBanditsDefeat: { count: 1, points: 100 },
+  exploration: { count: 36, points: points - 40 },
   otherStructureBanditsDefeat: { count: 2, points: 40 },
-  hyperstructureShare: { count: 1, points: 110 },
 });
 // A finished Blitz as Herald's points board answers it: the reader third of three (a test may set another board).
 const THIRD_OF_THREE = [
@@ -123,11 +120,8 @@ it("says how the player's points were made, a row per kind with its count and po
   const panels = [...page.querySelectorAll(".app-panel")];
   const points = panels.find((panel) => panel.querySelector("h2")?.textContent === "Your points")!;
   expect([...points.querySelectorAll(".app-row")].map((row) => row.textContent)).toEqual([
-    "Tiles explored× 3672 points",
-    "Crates opened× 330 points",
+    "Tiles explored× 36312 points",
     "Rifts and camps× 240 points",
-    "Hyperstructures taken× 1100 points",
-    "Hyperstructures held110 points",
   ]);
 });
 
@@ -172,10 +166,7 @@ it("copies the same line and address where the device has no share sheet, and sa
 it("says the player scored no points, rather than an empty panel, in a game tied on none (qa-app-1 P3-11)", async () => {
   const nothing = {
     exploration: { count: 0, points: 0 },
-    openRelicChest: { count: 0, points: 0 },
-    hyperStructureBanditsDefeat: { count: 0, points: 0 },
     otherStructureBanditsDefeat: { count: 0, points: 0 },
-    hyperstructureShare: { count: 0, points: 0 },
   };
   board.entries = [
     { address: "0xa1", rank: 1, totalPoints: 0, activityBreakdown: nothing },

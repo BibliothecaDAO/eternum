@@ -116,9 +116,7 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
     preset.rules.day_unit_seconds = FRONTIER_DAY_UNIT;
     preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
     let (_, frontier) = super::preset_projection::current_definition("frontier-check");
-    preset.economy.chests = frontier.economy.chests;
     preset.economy.labor = frontier.economy.labor;
-    preset.economy.relics = array![].span();
     preset.settlement.depths = frontier.settlement.depths;
     preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DEPTH_CONTENTS;
     preset.rules.map_config.camp_win_probability = 0;
@@ -311,9 +309,7 @@ fn depth_entry_requires_spire_lore_and_keeps_stamina_at_every_depth() {
     preset.rules.tick_config.armies_tick_in_seconds = 60;
     preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
     let (_, frontier) = super::preset_projection::current_definition("frontier-check");
-    preset.economy.chests = frontier.economy.chests;
     preset.economy.labor = frontier.economy.labor;
-    preset.economy.relics = array![].span();
     preset.settlement.depths = frontier.settlement.depths;
     preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DEPTH_CONTENTS;
     preset.rules.map_config.camp_win_probability = 0;
@@ -760,9 +756,7 @@ fn frontier_refuses_off_map_economy_commands_before_reading_positions() {
     preset.rules.day_unit_seconds = FRONTIER_DAY_UNIT;
     preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
     let (_, frontier) = super::preset_projection::current_definition("frontier-check");
-    preset.economy.chests = frontier.economy.chests;
     preset.economy.labor = frontier.economy.labor;
-    preset.economy.relics = array![].span();
     preset.settlement.depths = frontier.settlement.depths;
     preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DEPTH_CONTENTS;
     preset.rules.map_config.camp_win_probability = 0;
@@ -1229,8 +1223,6 @@ fn frontier_ruin_clear_awards_its_stored_relic_without_lords() {
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
     assert_eq!(structures.structure(site_key).unwrap().base.category, crate::taxonomy::RUIN_CATEGORY);
     // The card and the clear read the one row stored at discovery.
-    let relics = IRelicsDispatcher { contract_address: d.games };
-    assert!(relics.site_chest(site_key).is_none());
     let initial = snforge_std::interact_with_state(
         d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap(),
     );
@@ -1255,11 +1247,9 @@ fn frontier_ruin_clear_awards_its_stored_relic_without_lords() {
     assert!(captured, "relic capture failed");
     assert_eq!(resources.resource_balance(lords), before);
     assert_eq!(snforge_std::interact_with_state(d.games, || crate::logic::army_relics::read(key)).first, Some(RELIC));
-    assert!(relics.lords_budget(game_id).is_none());
     let tile = crate::geometry::tile_key(game_id, coord);
     assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile)).is_none());
     assert_site_removed(d, site_key);
-    assert!(relics.site_chest(site_key).is_none());
     let receipt = snforge_std::interact_with_state(
         d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap().clear.unwrap(),
     );

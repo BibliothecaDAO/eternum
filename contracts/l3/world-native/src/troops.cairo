@@ -359,8 +359,7 @@ pub fn discovery_guards(category: u8, seed: u256, rules: crate::rules::SliceRule
     };
     let lower: u128 = lower.into();
     let upper: u128 = upper.into();
-    let three_guards = category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY
-        || category == crate::taxonomy::BANK_CATEGORY;
+    let three_guards = category == crate::taxonomy::BANK_CATEGORY;
     let count = if light_guard {
         1_u8
     } else if three_guards {

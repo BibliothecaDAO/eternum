@@ -29,7 +29,6 @@ export interface ArmyPathsInput {
   structureHexes: HexIndex<HexEntityInfo>;
   armyHexes: HexIndex<HexEntityInfo>;
   exploredHexes: HexIndex<BiomeType>;
-  chestHexes: HexIndex<HexEntityInfo>;
   currentDefaultTick: number;
   /** Whose armies count as friendly; a spectator plans with no player. */
   playerAddress: ContractAddress;
@@ -92,7 +91,6 @@ export const findArmyPaths = (client: ActionClient, input: ArmyPathsInput): Acti
     input.structureHexes,
     input.armyHexes,
     input.exploredHexes,
-    input.chestHexes,
     input.currentDefaultTick,
     input.playerAddress,
   );

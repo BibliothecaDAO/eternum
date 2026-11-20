@@ -29,7 +29,6 @@ export const RESOURCE_PRODUCTION_MODELS = [
   "ResourceRule",
   "RealmKnowledge",
   "StructureBuildings",
-  "ProductionBonus",
   "BoardRules",
   "SliceRules",
   "GameRegistry",

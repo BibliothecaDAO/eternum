@@ -41,13 +41,6 @@ export interface TileSpatialRenderable {
   readonly rewardExtracted: boolean;
 }
 
-export interface ChestSpatialRenderable {
-  readonly kind: "chest";
-  readonly entityId: ID;
-  /** Contract-space coordinates, matching TileOpt. */
-  readonly hexCoords: WorldSpatialHex;
-}
-
 export interface ArmySpatialRenderable {
   readonly kind: "army";
   readonly entityId: ID;
@@ -93,13 +86,6 @@ export const isStandingStructure = (
   structure: StructureSpatialRenderable,
 ): structure is StandingStructureSpatialRenderable => !structure.reserved && !structure.clearedSite;
 
-export interface ChestSpatialProjectionChange {
-  readonly kind: "chest";
-  readonly entityId: ID;
-  readonly previous?: ChestSpatialRenderable;
-  readonly current?: ChestSpatialRenderable;
-}
-
 export interface StructureSpatialProjectionChange {
   readonly kind: "structure";
   readonly spatialId: StructureSpatialRenderable["spatialId"];
@@ -140,7 +126,6 @@ export const projectionChangesForLayer = <
 
 export type WorldSpatialProjectionChange =
   | TileSpatialProjectionChange
-  | ChestSpatialProjectionChange
   | StructureSpatialProjectionChange
   | ArmySpatialProjectionChange;
 
@@ -152,7 +137,6 @@ export interface WorldSpatialProjectionOptions {
   bucketSize?: number;
 }
 
-type ChestProjectionListener = (changes: readonly ChestSpatialProjectionChange[]) => void;
 type StructureProjectionListener = (changes: readonly StructureSpatialProjectionChange[]) => void;
 type ArmyProjectionListener = (changes: readonly ArmySpatialProjectionChange[]) => void;
 type TileProjectionListener = (changes: readonly TileSpatialProjectionChange[]) => void;
@@ -194,9 +178,6 @@ const spatialBucketKeyOf = ({ alt, col, row }: WorldSpatialHex, bucketSize: numb
 const isSameHex = (left: WorldSpatialHex, right: WorldSpatialHex): boolean =>
   left.alt === right.alt && left.col === right.col && left.row === right.row;
 
-const isSameChest = (left: ChestSpatialRenderable, right: ChestSpatialRenderable): boolean =>
-  isSameHex(left.hexCoords, right.hexCoords);
-
 const isSameStructure = (left: StructureSpatialRenderable, right: StructureSpatialRenderable): boolean =>
   left.entityId === right.entityId &&
   left.clearedSite === right.clearedSite &&
@@ -229,17 +210,6 @@ const resolveTileRenderable = (tile: Tile | undefined): TileSpatialRenderable | 
     occupierType: tile.occupier_type,
     occupierIsStructure: tile.occupier_is_structure,
     rewardExtracted: tile.reward_extracted,
-  });
-};
-
-const resolveChestRenderable = (tile: Tile | undefined): ChestSpatialRenderable | undefined => {
-  if (!tile) return undefined;
-  if (tile.occupier_type !== TileOccupier.Chest) return undefined;
-
-  return Object.freeze({
-    kind: "chest" as const,
-    entityId: tile.occupier_id,
-    hexCoords: Object.freeze({ alt: tile.alt, col: tile.col, row: tile.row }),
   });
 };
 
@@ -505,17 +475,6 @@ const toTileChange = ({
   current,
 });
 
-const toChestChange = ({
-  key: entityId,
-  previous,
-  current,
-}: SpatialIndexChange<ID, ChestSpatialRenderable>): ChestSpatialProjectionChange => ({
-  kind: "chest",
-  entityId,
-  previous,
-  current,
-});
-
 const toStructureChange = ({
   key: spatialId,
   previous,
@@ -553,15 +512,12 @@ const toArmyChange = ({
  */
 export class WorldSpatialProjection {
   private readonly store: WorldSpatialProjectionOptions["store"];
-  private readonly chestIndex: SpatialIndex<ID, ChestSpatialRenderable>;
   private readonly structureIndex: SpatialIndex<StructureSpatialRenderable["spatialId"], StructureSpatialRenderable>;
   private readonly armyIndex: SpatialIndex<ID, ArmySpatialRenderable>;
   private readonly tileIndex: SpatialIndex<TileSpatialRenderable["spatialId"], TileSpatialRenderable>;
   private readonly tilesByTileEntity = new Map<unknown, TileSpatialRenderable>();
-  private readonly chestsByTileEntity = new Map<unknown, ChestSpatialRenderable>();
   private readonly structuresByTileEntity = new Map<unknown, StructureSpatialRenderable>();
   private readonly listeners = new Set<WorldSpatialProjectionListener>();
-  private readonly chestListeners = new Set<ChestProjectionListener>();
   private readonly structureListeners = new Set<StructureProjectionListener>();
   private readonly armyListeners = new Set<ArmyProjectionListener>();
   private readonly tileListeners = new Set<TileProjectionListener>();
@@ -575,7 +531,6 @@ export class WorldSpatialProjection {
 
     this.store = store;
     const normalizedBucketSize = Math.floor(bucketSize);
-    this.chestIndex = new SpatialIndex(normalizedBucketSize, isSameChest);
     this.structureIndex = new SpatialIndex(normalizedBucketSize, isSameStructure);
     this.armyIndex = new SpatialIndex(normalizedBucketSize, isSameArmy);
     this.tileIndex = new SpatialIndex(normalizedBucketSize, isSameTile);
@@ -695,12 +650,10 @@ export class WorldSpatialProjection {
    * out, so a rebuild always ends whole.
    */
   public rebuild(): void {
-    const nextChests = new Map<ID, ChestSpatialRenderable>();
     const nextStructures = new Map<StructureSpatialRenderable["spatialId"], StructureSpatialRenderable>();
     const nextArmies = new Map<ID, ArmySpatialRenderable>();
     const nextTiles = new Map<TileSpatialRenderable["spatialId"], TileSpatialRenderable>();
     this.tilesByTileEntity.clear();
-    this.chestsByTileEntity.clear();
     this.structuresByTileEntity.clear();
 
     const tiles = new Map<string, NativeKeys["TileOccupancy"]>();
@@ -712,20 +665,14 @@ export class WorldSpatialProjection {
         const source = this.tileAt(key);
         return {
           tile: resolveTileRenderable(source),
-          chest: resolveChestRenderable(source),
           structure: resolveStructureRenderable(source),
         };
       });
       if (!projected) continue;
-      const { tile, chest, structure } = projected;
+      const { tile, structure } = projected;
       if (tile) {
         this.tilesByTileEntity.set(entity, tile);
         nextTiles.set(tile.spatialId, tile);
-      }
-
-      if (chest) {
-        this.chestsByTileEntity.set(entity, chest);
-        nextChests.set(chest.entityId, chest);
       }
 
       if (structure) {
@@ -752,7 +699,6 @@ export class WorldSpatialProjection {
     }
 
     this.nextTimeRefresh = this.nextTimedChangeAt();
-    this.chestIndex.replace(nextChests);
     this.structureIndex.replace(nextStructures);
     this.armyIndex.replace(nextArmies);
     this.tileIndex.replace(nextTiles);
@@ -781,18 +727,6 @@ export class WorldSpatialProjection {
       currentTile?.spatialId,
       currentTile,
       (tile) => tile.spatialId,
-    );
-
-    const previousChest = this.chestsByTileEntity.get(tileEntity);
-    const currentChest = resolveChestRenderable(source);
-    this.replaceTileSource(this.chestsByTileEntity, tileEntity, currentChest);
-    this.reconcileSourceKeys(
-      this.chestIndex,
-      this.chestsByTileEntity,
-      previousChest?.entityId,
-      currentChest?.entityId,
-      currentChest,
-      (chest) => chest.entityId,
     );
 
     const previousStructure = this.structuresByTileEntity.get(tileEntity);
@@ -866,25 +800,14 @@ export class WorldSpatialProjection {
 
   private publishChanges(
     tileChanges: readonly TileSpatialProjectionChange[],
-    chestChanges: readonly ChestSpatialProjectionChange[],
     structureChanges: readonly StructureSpatialProjectionChange[],
     armyChanges: readonly ArmySpatialProjectionChange[],
   ): void {
     if (tileChanges.length > 0) notifyEach(PROJECTION, this.tileListeners, tileChanges);
-    if (chestChanges.length > 0) notifyEach(PROJECTION, this.chestListeners, chestChanges);
     if (structureChanges.length > 0) notifyEach(PROJECTION, this.structureListeners, structureChanges);
     if (armyChanges.length > 0) notifyEach(PROJECTION, this.armyListeners, armyChanges);
-    const changes: WorldSpatialProjectionChange[] = [
-      ...tileChanges,
-      ...chestChanges,
-      ...structureChanges,
-      ...armyChanges,
-    ];
+    const changes: WorldSpatialProjectionChange[] = [...tileChanges, ...structureChanges, ...armyChanges];
     if (changes.length > 0) notifyEach(PROJECTION, this.listeners, changes);
-  }
-
-  public getChest(entityId: ID): ChestSpatialRenderable | undefined {
-    return this.chestIndex.get(entityId);
   }
 
   public getTiles(alt: boolean): readonly TileSpatialRenderable[] {
@@ -897,18 +820,6 @@ export class WorldSpatialProjection {
 
   public getTilesInBounds(bounds: WorldSpatialBounds): readonly TileSpatialRenderable[] {
     return this.tileIndex.getInBounds(bounds);
-  }
-
-  public getChests(alt: boolean): readonly ChestSpatialRenderable[] {
-    return this.chestIndex.getAll(alt);
-  }
-
-  public getChestsAtHex(hexCoords: WorldSpatialHex): readonly ChestSpatialRenderable[] {
-    return this.chestIndex.getAtHex(hexCoords);
-  }
-
-  public getChestsInBounds(bounds: WorldSpatialBounds): readonly ChestSpatialRenderable[] {
-    return this.chestIndex.getInBounds(bounds);
   }
 
   public getStructure(entityId: ID): EntityStructureSpatialRenderable | undefined {
@@ -956,7 +867,6 @@ export class WorldSpatialProjection {
   public flush(): void {
     this.publishChanges(
       this.tileIndex.drainChanges().map(toTileChange),
-      this.chestIndex.drainChanges().map(toChestChange),
       this.structureIndex.drainChanges().map(toStructureChange),
       this.armyIndex.drainChanges().map(toArmyChange),
     );
@@ -970,11 +880,6 @@ export class WorldSpatialProjection {
   public subscribeTiles(listener: TileProjectionListener): () => void {
     this.tileListeners.add(listener);
     return () => this.tileListeners.delete(listener);
-  }
-
-  public subscribeChests(listener: ChestProjectionListener): () => void {
-    this.chestListeners.add(listener);
-    return () => this.chestListeners.delete(listener);
   }
 
   public subscribeStructures(listener: StructureProjectionListener): () => void {
@@ -991,16 +896,13 @@ export class WorldSpatialProjection {
     this.unsubscribe?.();
     this.unsubscribe = null;
     this.listeners.clear();
-    this.chestListeners.clear();
     this.structureListeners.clear();
     this.armyListeners.clear();
     this.tileListeners.clear();
-    this.chestIndex.clear();
     this.structureIndex.clear();
     this.armyIndex.clear();
     this.tileIndex.clear();
     this.tilesByTileEntity.clear();
-    this.chestsByTileEntity.clear();
     this.structuresByTileEntity.clear();
   }
 }

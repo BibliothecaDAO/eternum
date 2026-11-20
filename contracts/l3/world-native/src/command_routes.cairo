@@ -12,9 +12,9 @@ pub struct CommandRoute {
 pub const SETTLE_BLITZ_ROSTER: u32 = 7;
 pub const CHOOSE_OATH: u32 = 73;
 
-pub const COMMAND_IDS: [u32; 56] = [
-    74, 75, 73, 76, 72, 0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 20, 21, 22, 23, 24, 25, 26, 27, 28,
-    29, 38, 39, 40, 41, 42, 43, 44, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 62, 63, 64, 65, 66, 67, 69,
+pub const COMMAND_IDS: [u32; 48] = [
+    74, 75, 73, 76, 72, 0, 1, 2, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 16, 17, 18, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+    43, 51, 53, 54, 55, 56, 57, 58, 59, 60, 62, 63, 64, 65, 66, 67, 69,
 ];
 pub const COMMAND_ROUTES: [Option<CommandRoute>; 77] = [
     Some(CommandRoute { logic: 6, selector: selector!("create_explorer"), items_offset: None, batch: false }),
@@ -25,12 +25,7 @@ pub const COMMAND_ROUTES: [Option<CommandRoute>; 77] = [
     Some(CommandRoute { logic: 3, selector: selector!("level_up"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 7, selector: selector!("settle_blitz_roster"), items_offset: None, batch: true }),
     Some(CommandRoute { logic: 5, selector: selector!("activate_realm_economy"), items_offset: None, batch: false }),
-    Some(
-        CommandRoute {
-            logic: 5, selector: selector!("create_reserved_hyperstructure"), items_offset: None, batch: false,
-        },
-    ),
-    Some(CommandRoute { logic: 7, selector: selector!("settle_season"), items_offset: None, batch: false }),
+    None, Some(CommandRoute { logic: 7, selector: selector!("settle_season"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 0, selector: selector!("settle_village"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 5, selector: selector!("receive_village_army"), items_offset: None, batch: false }),
     Some(
@@ -68,26 +63,11 @@ pub const COMMAND_ROUTES: [Option<CommandRoute>; 77] = [
     Some(CommandRoute { logic: 0, selector: selector!("bind_bitcoin_phase"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 0, selector: selector!("claim_bitcoin_phase"), items_offset: Some(1), batch: true }),
     Some(CommandRoute { logic: 12, selector: selector!("battle_guard"), items_offset: None, batch: false }), None, None,
-    None, None, None, None, None, None,
-    Some(CommandRoute { logic: 9, selector: selector!("initialize_hyperstructure"), items_offset: None, batch: false }),
-    Some(
-        CommandRoute {
-            logic: 9, selector: selector!("contribute_hyperstructure"), items_offset: Some(2), batch: false,
-        },
-    ),
-    Some(
-        CommandRoute {
-            logic: 9, selector: selector!("allocate_hyperstructure_shares"), items_offset: Some(1), batch: false,
-        },
-    ),
-    Some(CommandRoute { logic: 9, selector: selector!("set_construction_access"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 15, selector: selector!("open_relic_chest"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 15, selector: selector!("apply_relic"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 0, selector: selector!("close_season"), items_offset: None, batch: true }), None, None,
-    None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None,
+    Some(CommandRoute { logic: 15, selector: selector!("apply_relic"), items_offset: None, batch: false }), None, None,
+    None, None, None, None, None,
     Some(CommandRoute { logic: 10, selector: selector!("record_blitz_results"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 5, selector: selector!("craft_relic"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 14, selector: selector!("create_guild"), items_offset: None, batch: false }),
+    None, Some(CommandRoute { logic: 14, selector: selector!("create_guild"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 14, selector: selector!("join_guild"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 14, selector: selector!("leave_guild"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 14, selector: selector!("set_guild_whitelist"), items_offset: None, batch: false }),
@@ -152,7 +132,6 @@ pub enum Command {
     LevelUp: core::integer::u64,
     SettleBlitzRoster,
     ProvisionRealm: core::integer::u64,
-    CreateReservedHyperstructure: crate::troops::Coord,
     SettleSeason: crate::realms::SettleSeason,
     SettleVillage: crate::village::SettleVillage,
     ReceiveVillageArmy: core::integer::u64,
@@ -171,15 +150,8 @@ pub enum Command {
     BindBitcoinPhase: core::integer::u64,
     ClaimBitcoinPhase: crate::bitcoin::ClaimPhase,
     BattleGuard: crate::commands::Battle,
-    InitializeHyperstructure: core::integer::u64,
-    ContributeHyperstructure: crate::hyperstructures::Contribution,
-    AllocateHyperstructureShares: crate::hyperstructures::AllocateShares,
-    SetConstructionAccess: crate::hyperstructures::SetConstructionAccess,
-    OpenRelicChest: crate::relics::OpenChest,
     ApplyRelic: crate::relics::ApplyRelic,
-    CloseSeason,
     RecordBlitzResults,
-    CraftRelic: core::integer::u64,
     CreateGuild: crate::guilds::CreateGuild,
     JoinGuild: crate::guilds::JoinGuild,
     LeaveGuild,
@@ -244,10 +216,6 @@ pub impl CommandSerde of Serde<Command> {
             Command::SettleBlitzRoster(_) => { output.append(7); },
             Command::ProvisionRealm(value) => {
                 output.append(8);
-                Serde::serialize(value, ref output);
-            },
-            Command::CreateReservedHyperstructure(value) => {
-                output.append(9);
                 Serde::serialize(value, ref output);
             },
             Command::SettleSeason(value) => {
@@ -322,36 +290,11 @@ pub impl CommandSerde of Serde<Command> {
                 output.append(29);
                 Serde::serialize(value, ref output);
             },
-            Command::InitializeHyperstructure(value) => {
-                output.append(38);
-                Serde::serialize(value, ref output);
-            },
-            Command::ContributeHyperstructure(value) => {
-                output.append(39);
-                Serde::serialize(value, ref output);
-            },
-            Command::AllocateHyperstructureShares(value) => {
-                output.append(40);
-                Serde::serialize(value, ref output);
-            },
-            Command::SetConstructionAccess(value) => {
-                output.append(41);
-                Serde::serialize(value, ref output);
-            },
-            Command::OpenRelicChest(value) => {
-                output.append(42);
-                Serde::serialize(value, ref output);
-            },
             Command::ApplyRelic(value) => {
                 output.append(43);
                 Serde::serialize(value, ref output);
             },
-            Command::CloseSeason(_) => { output.append(44); },
             Command::RecordBlitzResults(_) => { output.append(51); },
-            Command::CraftRelic(value) => {
-                output.append(52);
-                Serde::serialize(value, ref output);
-            },
             Command::CreateGuild(value) => {
                 output.append(53);
                 Serde::serialize(value, ref output);
@@ -421,7 +364,7 @@ pub impl CommandSerde of Serde<Command> {
             6 => Some(Command::LevelUp(Serde::deserialize(ref serialized)?)),
             7 => Some(Command::SettleBlitzRoster(())),
             8 => Some(Command::ProvisionRealm(Serde::deserialize(ref serialized)?)),
-            9 => Some(Command::CreateReservedHyperstructure(Serde::deserialize(ref serialized)?)),
+            9 => None,
             10 => Some(Command::SettleSeason(Serde::deserialize(ref serialized)?)),
             11 => Some(Command::SettleVillage(Serde::deserialize(ref serialized)?)),
             12 => Some(Command::ReceiveVillageArmy(Serde::deserialize(ref serialized)?)),
@@ -450,13 +393,13 @@ pub impl CommandSerde of Serde<Command> {
             35 => None,
             36 => None,
             37 => None,
-            38 => Some(Command::InitializeHyperstructure(Serde::deserialize(ref serialized)?)),
-            39 => Some(Command::ContributeHyperstructure(Serde::deserialize(ref serialized)?)),
-            40 => Some(Command::AllocateHyperstructureShares(Serde::deserialize(ref serialized)?)),
-            41 => Some(Command::SetConstructionAccess(Serde::deserialize(ref serialized)?)),
-            42 => Some(Command::OpenRelicChest(Serde::deserialize(ref serialized)?)),
+            38 => None,
+            39 => None,
+            40 => None,
+            41 => None,
+            42 => None,
             43 => Some(Command::ApplyRelic(Serde::deserialize(ref serialized)?)),
-            44 => Some(Command::CloseSeason(())),
+            44 => None,
             45 => None,
             46 => None,
             47 => None,
@@ -464,7 +407,7 @@ pub impl CommandSerde of Serde<Command> {
             49 => None,
             50 => None,
             51 => Some(Command::RecordBlitzResults(())),
-            52 => Some(Command::CraftRelic(Serde::deserialize(ref serialized)?)),
+            52 => None,
             53 => Some(Command::CreateGuild(Serde::deserialize(ref serialized)?)),
             54 => Some(Command::JoinGuild(Serde::deserialize(ref serialized)?)),
             55 => Some(Command::LeaveGuild(())),

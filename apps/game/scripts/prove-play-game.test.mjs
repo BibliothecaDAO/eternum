@@ -1,106 +1,8 @@
 import { JSDOM } from "jsdom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import {
-  gameAddresses,
-  HISTORY,
-  judgeStep,
-  linesBetween,
-  LOG_BUTTON,
-  proveGame,
-  spiralPoints,
-} from "./prove-play-game.mjs";
+import { gameAddresses, proveGame, spiralPoints } from "./prove-play-game.mjs";
 import { parseArgs } from "./prove-play.mjs";
-
-const WAR_RELICS = ["Damage Relic I", "Damage Reduction Relic I", "Stamina Relic I"];
-const LUCKY_FORTRESS_RELICS = ["Structure Defense Relic II", "Damage Reduction Relic II", "Troop Production Relic II"];
-
-/**
- * The pages a War crate shows: the closed panel, the opened panel, and the history **Log** opens after a reload, as
- * `EventLogPanel` heads it.
- */
-const WAR_CRATE_PAGES = {
-  panel: ["Crate #12", "Contents", "War pack", ...WAR_RELICS, "Victory points", "250", "Open", "Biome", "Bare"],
-  opened: ["Crate opened", "Contents", ...WAR_RELICS, "Biome", "Bare"],
-  log: [
-    "Log",
-    "War pack opened",
-    `Stolsli T1 army · ${WAR_RELICS.join(", ")}`,
-    "+120 Essence",
-    "Stolsli T1 army · Reveal",
-  ],
-};
-
-/** The right column's events as `EventsCard` renders them with the log closed. */
-const EVENTS_CARD = `<section aria-label="Events"><button type="button" aria-label="Log" aria-expanded="false">All</button></section>`;
-
-/** A War crate as the proof reads it: the closed panel's pack, the opened panel and the log after a reload. */
-const WAR_CRATE = {
-  step: "crate",
-  panel: { contents: linesBetween(WAR_CRATE_PAGES.panel.join("\n"), "Contents", "Open") },
-  opened: WAR_RELICS,
-  log: WAR_CRATE_PAGES.log.slice(1, 3),
-  pageErrors: { errors: [], console: [] },
-};
-
-const crateWith = (change) => judgeStep({ ...WAR_CRATE, ...change });
-const luckyFortress = (relics) => ({
-  panel: { contents: ["Fortress pack · lucky", ...relics, "Victory points", "250"] },
-  opened: relics,
-  log: ["Fortress pack · lucky opened", `Stolsli T1 army · ${relics.join(", ")}`],
-});
-
-/**
- * A browser on a running game with a War crate in the middle of the map, whose page is a DOM every check of the proof
- * runs against: hovering names the crate, a click opens its panel, **Open** opens it, a reload shows the map with its
- * Events card, and only a click on its **All** button (labelled Log) shows history when `logOpensHistory` is true.
- */
-const crateBrowser = ({ pages = WAR_CRATE_PAGES, feed = EVENTS_CARD, logOpensHistory = true } = {}) => {
-  const { window } = new JSDOM("<!doctype html><body></body>");
-  const { document } = window;
-  // jsdom lays nothing out: a block's text is its children's, one per line, and every element has a size.
-  Object.defineProperty(window.HTMLElement.prototype, "innerText", {
-    get() {
-      return this.children.length ? [...this.children].map((child) => child.innerText).join("\n") : this.textContent;
-    },
-  });
-  window.HTMLElement.prototype.getBoundingClientRect = () => ({ width: 1, height: 1 });
-  document.documentElement.dataset.bootState = "app-ready";
-  const show = (lines, withFeed = false) => {
-    const items = lines.map((line) => (line === "Open" ? `<button type="button">Open</button>` : `<p>${line}</p>`));
-    document.body.innerHTML = `<canvas></canvas>${withFeed ? feed : ""}<main>${items.join("")}</main>`;
-  };
-  const showHistory = () => {
-    const history = document.createElement("section");
-    history.setAttribute("aria-label", "Log");
-    history.innerHTML = pages.log.map((line) => `<p>${line}</p>`).join("");
-    document.body.append(history);
-  };
-  show(["Relic Crate"]);
-  const answer = (data) => JSON.stringify({ success: true, data, error: null });
-  return {
-    run: (command, ...args) => {
-      if (command === "mouse" && args[0] === "down") show(pages.panel);
-      if (command === "click") {
-        const target = document.querySelector(args[0]);
-        if (target?.innerText === "Open") show(pages.opened);
-        if (target?.matches(LOG_BUTTON) && logOpensHistory) showHistory();
-      }
-      if (command === "reload") show(["Stolsli T1 army"], true);
-      if (command === "errors") return answer({ errors: [] });
-      if (command === "console") return answer({ messages: [] });
-      return "";
-    },
-    evaluate: (js) => Function("document", `return (${js})`)(document),
-  };
-};
-
-const proveCrate = async (browser) => {
-  vi.useFakeTimers();
-  const proof = proveGame(browser, { baseUrl: "https://proof.test", game: "0xa:7", crate: [3, 11] }, "/proof");
-  await vi.runAllTimersAsync();
-  return (await proof).records[0];
-};
 
 /**
  * A browser on an ended game: every entrance shows the ended plate and its Results leads to the game's Results. Each
@@ -169,23 +71,10 @@ describe("a game's proof", () => {
   it("needs a signed-in profile for a game", () => {
     expect(() => parseArgs(["--game", "0xa:7"])).toThrow("--game needs --profile");
     expect(
-      parseArgs([
-        "--game",
-        "0xa:7",
-        "--profile",
-        "/p",
-        "--at-rest",
-        "--watch",
-        "--crate",
-        "3,11",
-        "--until-end",
-        "40",
-        "--ended",
-      ]),
+      parseArgs(["--game", "0xa:7", "--profile", "/p", "--at-rest", "--watch", "--until-end", "40", "--ended"]),
     ).toMatchObject({
       game: "0xa:7",
       profile: "/p",
-      crate: [3, 11],
       untilEndMinutes: 40,
       ended: true,
       atRest: true,
@@ -201,81 +90,6 @@ describe("a game's proof", () => {
     expect(() => parseArgs(["--game", "0xa:7", "--profile", "/p", "--tasks", "production,fly"])).toThrow(
       "Unknown task fly",
     );
-  });
-
-  it("reads a closed crate's pack and an opened crate's relics off its panel", () => {
-    expect(WAR_CRATE.panel.contents).toEqual(["War pack", ...WAR_RELICS, "Victory points", "250"]);
-    expect(linesBetween(WAR_CRATE_PAGES.opened.join("\n"), "Contents", "Biome")).toEqual(WAR_RELICS);
-    expect(linesBetween("Crate opened\nBiome\nBare", "Contents", "Biome")).toEqual([]);
-  });
-
-  it("passes a crate whose opened panel and log name exactly the pack its panel advertised", () => {
-    expect(judgeStep(WAR_CRATE).problem).toBeUndefined();
-    expect(crateWith(luckyFortress(LUCKY_FORTRESS_RELICS)).problem).toBeUndefined();
-  });
-
-  it("fails a crate whose closed panel names no pack or not three relics", () => {
-    expect(crateWith({ panel: { contents: ["Relics", "3", "Victory points", "250"] } }).problem).toBe(
-      "the closed crate's panel named no pack",
-    );
-    expect(crateWith({ panel: { contents: [] } }).problem).toBe("the closed crate's panel named no pack");
-    expect(crateWith({ panel: { contents: ["War pack", ...WAR_RELICS.slice(1), "Victory points"] } }).problem).toBe(
-      "the panel advertised 2 relics in the War pack, not 3",
-    );
-  });
-
-  it("fails a pack whose relics are not all of its level", () => {
-    const mixed = ["Structure Defense Relic II", "Damage Reduction Relic I", "Troop Production Relic II"];
-    expect(crateWith(luckyFortress(mixed)).problem).toBe("the Fortress pack · lucky lists relics of the wrong level");
-    const lucky = ["Damage Relic II", "Damage Reduction Relic II", "Stamina Relic II"];
-    expect(crateWith({ panel: { contents: ["War pack", ...lucky] }, opened: lucky }).problem).toBe(
-      "the War pack lists relics of the wrong level",
-    );
-  });
-
-  it("fails a crate that opens missing, duplicated or other relics than advertised", () => {
-    const problem = "the opened crate lists other relics than the War pack advertised";
-    expect(crateWith({ opened: [] }).problem).toBe(problem);
-    expect(crateWith({ opened: WAR_RELICS.slice(1) }).problem).toBe(problem);
-    expect(crateWith({ opened: ["Damage Relic I", "Stamina Relic I", "Stamina Relic I"] }).problem).toBe(problem);
-    expect(crateWith({ opened: ["Damage Relic II", "Damage Reduction Relic I", "Stamina Relic I"] }).problem).toBe(
-      problem,
-    );
-  });
-
-  it("fails a crate the log does not hold, or names otherwise, after the reload", () => {
-    expect(crateWith({ log: [] }).problem).toBe('the log holds no "War pack opened" after the reload');
-    expect(crateWith({ log: ["Relic crate opened", WAR_CRATE.log[1]] }).problem).toBe(
-      'the log holds no "War pack opened" after the reload',
-    );
-    expect(crateWith({ log: ["War pack opened", "Stolsli T1 army · Damage Relic I, Stamina Relic I"] }).problem).toBe(
-      "the log names other relics than the panel",
-    );
-  });
-
-  it("drives a crate from the pointer to its history after a reload, opened by Log", async () => {
-    const record = await proveCrate(crateBrowser());
-    expect(record.problem).toBeUndefined();
-    expect(record.found).toEqual([720, 450]);
-    expect(record.panel.contents).toEqual(WAR_CRATE.panel.contents);
-    expect(record.opened).toEqual(WAR_RELICS);
-    expect(record.log).toEqual(WAR_CRATE.log);
-  });
-
-  it("fails a driven crate when the page has no Log, or Log opens no history", async () => {
-    const withoutLog = await proveCrate(
-      crateBrowser({ feed: "<section><h2>Events</h2><button>All</button></section>" }),
-    );
-    expect(withoutLog.problem).toBe("no Log button to open the history");
-    expect(withoutLog.log).toBeUndefined();
-    const closed = await proveCrate(crateBrowser({ logOpensHistory: false }));
-    expect(closed.problem).toBe("Log opened no history");
-  });
-
-  it("fails a driven crate whose history still titles the opening the old way", async () => {
-    const log = ["Log", "Relic crate opened", `Stolsli T1 army · ${WAR_RELICS.join(", ")}`];
-    const record = await proveCrate(crateBrowser({ pages: { ...WAR_CRATE_PAGES, log } }));
-    expect(record.problem).toBe('the log holds no "War pack opened" after the reload');
   });
 
   it("completes an ended game whose entrances reach its Results without errors", async () => {

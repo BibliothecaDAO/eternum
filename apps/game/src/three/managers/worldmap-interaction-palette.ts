@@ -48,8 +48,6 @@ const HIGHLIGHT_LAYER_PALETTES: Record<string, HighlightLayerPalette> = {
     routeColor: 0xd3a746,
     endpointColor: 0xf0d08a,
   },
-  // An order the army takes beside it, staying where it stands: a crate's open, a site's use.
-  chest: TAKE_BESIDE,
   use_site: TAKE_BESIDE,
   create_army: {
     routeColor: 0x66d6ff,

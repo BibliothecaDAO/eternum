@@ -7,8 +7,6 @@
       "ENTRY_ROSTER": 2,
       "HOME_REWARDS": 1,
       "DISCOVER_CAMPS": 2,
-      "DISCOVER_CHESTS": 4,
-      "DISCOVER_HYPERSTRUCTURES": 8,
       "SPIRES": 16,
       "UNOWNED_TARGETS": 32,
       "CAPTURE_VILLAGES": 64,
@@ -16,11 +14,7 @@
       "REVEAL_SUPPLIES": 262144,
       "DISCOVER_SPIRES": 2097152,
       "SAME_OWNER_TRANSFER": 256,
-      "SEASON_CLOSE": 1024,
-      "RESERVED_HYPERSTRUCTURES": 2048,
       "DEV_VILLAGE_ENTRY": 8192,
-      "OWNER_ONLY_SHARES": 16384,
-      "HYPERSTRUCTURE_MULTIPLIERS": 32768,
       "PRODUCTION_START": 131072,
       "FRONTIER_REPORT_GRACE_SECONDS": 3600,
       "DEEP_MAP_SIZE": 50,
@@ -907,79 +901,6 @@
       {
         "name": "RowSet",
         "prefix": [
-          "0x290a08c6ab68498a377b8f273bd5f696816ceb60f3cf345badb48f949797e6c",
-          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-        ],
-        "members": [
-          {
-            "name": "version",
-            "type": "core::integer::u8",
-            "kind": "key"
-          },
-          {
-            "name": "model",
-            "type": "core::felt252",
-            "kind": "key"
-          },
-          {
-            "name": "keys",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          },
-          {
-            "name": "values",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          }
-        ]
-      },
-      {
-        "name": "StoryEvent",
-        "prefix": [
-          "0x290a08c6ab68498a377b8f273bd5f696816ceb60f3cf345badb48f949797e6c",
-          "0x33b7d96bc1ff34b0a89214516b6ef5d2b8bdd9c301222eda2a1e96f78b84b96"
-        ],
-        "members": [
-          {
-            "name": "version",
-            "type": "core::integer::u8",
-            "kind": "key"
-          },
-          {
-            "name": "game_id",
-            "type": "core::integer::u32",
-            "kind": "key"
-          },
-          {
-            "name": "owner",
-            "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
-            "kind": "key"
-          },
-          {
-            "name": "entity_id",
-            "type": "core::option::Option::<core::integer::u64>",
-            "kind": "key"
-          },
-          {
-            "name": "tx_hash",
-            "type": "core::felt252",
-            "kind": "key"
-          },
-          {
-            "name": "story",
-            "type": "world_native::ownership::Story",
-            "kind": "data"
-          },
-          {
-            "name": "timestamp",
-            "type": "core::integer::u64",
-            "kind": "data"
-          }
-        ]
-      },
-      {
-        "name": "RowSet",
-        "prefix": [
           "0x163b4478d0641109836b30e2492fd0f88b32266a7d4ed885beabfc86988fb10",
           "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
         ],
@@ -1258,7 +1179,7 @@
       {
         "name": "RowSet",
         "prefix": [
-          "0x61d4b9617fb1ccccaeb638efd7a0e8ff6e8828044372a3067db727c753c2da",
+          "0x290a08c6ab68498a377b8f273bd5f696816ceb60f3cf345badb48f949797e6c",
           "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
         ],
         "members": [
@@ -1285,43 +1206,9 @@
         ]
       },
       {
-        "name": "RowMemberSet",
-        "prefix": [
-          "0x61d4b9617fb1ccccaeb638efd7a0e8ff6e8828044372a3067db727c753c2da",
-          "0x2016d01ac221539fcc960c46b5ba2df505fc9c7032934961e1eeaec5f23b587"
-        ],
-        "members": [
-          {
-            "name": "version",
-            "type": "core::integer::u8",
-            "kind": "key"
-          },
-          {
-            "name": "model",
-            "type": "core::felt252",
-            "kind": "key"
-          },
-          {
-            "name": "member",
-            "type": "core::felt252",
-            "kind": "key"
-          },
-          {
-            "name": "keys",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          },
-          {
-            "name": "values",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          }
-        ]
-      },
-      {
         "name": "StoryEvent",
         "prefix": [
-          "0x61d4b9617fb1ccccaeb638efd7a0e8ff6e8828044372a3067db727c753c2da",
+          "0x290a08c6ab68498a377b8f273bd5f696816ceb60f3cf345badb48f949797e6c",
           "0x33b7d96bc1ff34b0a89214516b6ef5d2b8bdd9c301222eda2a1e96f78b84b96"
         ],
         "members": [
@@ -1756,22 +1643,6 @@
       }
     ],
     "entrypoints": [
-      {
-        "type": "function",
-        "name": "configure_deposits",
-        "inputs": [
-          {
-            "name": "game_id",
-            "type": "core::integer::u32"
-          },
-          {
-            "name": "source",
-            "type": "world_native::deposits::DepositSource"
-          }
-        ],
-        "outputs": [],
-        "state_mutability": "external"
-      },
       {
         "type": "function",
         "name": "deposit_source",
@@ -2662,29 +2533,6 @@
       "valueLength": 1
     },
     {
-      "name": "ArtificerCost",
-      "identity": "0x417274696669636572436f7374",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "research",
-          "type": "core::integer::u128",
-          "id": "0x7265736561726368",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 1,
-      "derivedFrom": "preset"
-    },
-    {
       "name": "BlitzResult",
       "identity": "0x426c69747a526573756c74",
       "scope": "game",
@@ -2719,29 +2567,6 @@
       "valueLength": null
     },
     {
-      "name": "SeasonWinThreshold",
-      "identity": "0x536561736f6e57696e5468726573686f6c64",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "points",
-          "type": "core::integer::u128",
-          "id": "0x706f696e7473",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 1,
-      "derivedFrom": "preset"
-    },
-    {
       "name": "ExtractionRewards",
       "identity": "0x45787472616374696f6e52657761726473",
       "scope": "game",
@@ -2765,8 +2590,8 @@
       "derivedFrom": "preset"
     },
     {
-      "name": "RelicRules",
-      "identity": "0x52656c696352756c6573",
+      "name": "DepositSource",
+      "identity": "0x4465706f736974536f75726365",
       "scope": "game",
       "keys": [
         {
@@ -2777,15 +2602,32 @@
       ],
       "members": [
         {
-          "name": "rules",
-          "type": "core::array::Span::<world_native::relics::RelicRule>",
-          "id": "0x72756c6573",
-          "feltLength": null
+          "name": "chain",
+          "type": "core::felt252",
+          "id": "0x636861696e",
+          "feltLength": 1
+        },
+        {
+          "name": "ledger",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x6c6564676572",
+          "feltLength": 1
+        },
+        {
+          "name": "signer",
+          "type": "core::felt252",
+          "id": "0x7369676e6572",
+          "feltLength": 1
+        },
+        {
+          "name": "epoch",
+          "type": "core::integer::u64",
+          "id": "0x65706f6368",
+          "feltLength": 1
         }
       ],
       "keyLength": 1,
-      "valueLength": null,
-      "derivedFrom": "preset"
+      "valueLength": 4
     },
     {
       "name": "FrontierDiscoveryRules",
@@ -2944,46 +2786,6 @@
         "value": "zero",
         "meaning": "No empty player reveals in this expedition yet."
       }
-    },
-    {
-      "name": "DepositSource",
-      "identity": "0x4465706f736974536f75726365",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "chain",
-          "type": "core::felt252",
-          "id": "0x636861696e",
-          "feltLength": 1
-        },
-        {
-          "name": "ledger",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "id": "0x6c6564676572",
-          "feltLength": 1
-        },
-        {
-          "name": "signer",
-          "type": "core::felt252",
-          "id": "0x7369676e6572",
-          "feltLength": 1
-        },
-        {
-          "name": "epoch",
-          "type": "core::integer::u64",
-          "id": "0x65706f6368",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 4
     },
     {
       "name": "Fragments",
@@ -3848,6 +3650,40 @@
       "valueLength": 3
     },
     {
+      "name": "FrontierPrize",
+      "identity": "0x46726f6e746965725072697a65",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "pool",
+          "type": "core::integer::u128",
+          "id": "0x706f6f6c",
+          "feltLength": 1
+        },
+        {
+          "name": "issued",
+          "type": "core::integer::u128",
+          "id": "0x697373756564",
+          "feltLength": 1
+        },
+        {
+          "name": "count",
+          "type": "core::option::Option::<core::integer::u16>",
+          "id": "0x636f756e74",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null
+    },
+    {
       "name": "ChestRules",
       "identity": "0x436865737452756c6573",
       "scope": "game",
@@ -3893,40 +3729,6 @@
       "keyLength": 1,
       "valueLength": 9,
       "derivedFrom": "preset"
-    },
-    {
-      "name": "FrontierPrize",
-      "identity": "0x46726f6e746965725072697a65",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "pool",
-          "type": "core::integer::u128",
-          "id": "0x706f6f6c",
-          "feltLength": 1
-        },
-        {
-          "name": "issued",
-          "type": "core::integer::u128",
-          "id": "0x697373756564",
-          "feltLength": 1
-        },
-        {
-          "name": "count",
-          "type": "core::option::Option::<core::integer::u16>",
-          "id": "0x636f756e74",
-          "feltLength": null
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": null
     },
     {
       "name": "LordsBudget",
@@ -3993,78 +3795,6 @@
       "valueLength": 8
     },
     {
-      "name": "SiteChest",
-      "identity": "0x536974654368657374",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "entity_id",
-          "type": "core::integer::u64",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "tier",
-          "type": "core::integer::u8",
-          "id": "0x74696572",
-          "feltLength": 1
-        },
-        {
-          "name": "amount",
-          "type": "core::integer::u128",
-          "id": "0x616d6f756e74",
-          "feltLength": 1
-        },
-        {
-          "name": "reservation_day",
-          "type": "core::integer::u64",
-          "id": "0x7265736572766174696f6e5f646179",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 2,
-      "valueLength": 3
-    },
-    {
-      "name": "RelicChest",
-      "identity": "0x52656c69634368657374",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "entity_id",
-          "type": "core::integer::u64",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "pack",
-          "type": "world_native::relics::RelicPack",
-          "id": "0x7061636b",
-          "feltLength": 1
-        },
-        {
-          "name": "lucky",
-          "type": "core::bool",
-          "id": "0x6c75636b79",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 2,
-      "valueLength": 2
-    },
-    {
       "name": "LordsWithdrawal",
       "identity": "0x4c6f7264735769746864726177616c",
       "scope": "game",
@@ -4108,28 +3838,6 @@
       ],
       "keyLength": 2,
       "valueLength": 4
-    },
-    {
-      "name": "RelicDiscovery",
-      "identity": "0x52656c6963446973636f76657279",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "last_at",
-          "type": "core::integer::u64",
-          "id": "0x6c6173745f6174",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 1
     },
     {
       "name": "DepositRules",
@@ -4747,34 +4455,6 @@
         }
       },
       "derivedFrom": "preset"
-    },
-    {
-      "name": "HyperstructureReservations",
-      "identity": "0x48797065727374727563747572655265736572766174696f6e73",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "placed",
-          "type": "core::integer::u32",
-          "id": "0x706c61636564",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 1,
-      "observation": {
-        "domain": "blitz-settlement",
-        "fields": {
-          "placed": "placed"
-        }
-      }
     },
     {
       "name": "SettlementRules",
@@ -6145,83 +5825,6 @@
       }
     },
     {
-      "name": "ProductionBonus",
-      "identity": "0x50726f64756374696f6e426f6e7573",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "entity_id",
-          "type": "core::integer::u64",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "incr_resource_rate_percent_num",
-          "type": "core::integer::u16",
-          "id": "0x696e63725f7265736f757263655f726174655f70657263656e745f6e756d",
-          "feltLength": 1
-        },
-        {
-          "name": "incr_labor_rate_percent_num",
-          "type": "core::integer::u16",
-          "id": "0x696e63725f6c61626f725f726174655f70657263656e745f6e756d",
-          "feltLength": 1
-        },
-        {
-          "name": "incr_troop_rate_percent_num",
-          "type": "core::integer::u16",
-          "id": "0x696e63725f74726f6f705f726174655f70657263656e745f6e756d",
-          "feltLength": 1
-        },
-        {
-          "name": "incr_resource_rate_end_at",
-          "type": "core::integer::u32",
-          "id": "0x696e63725f7265736f757263655f726174655f656e645f6174",
-          "feltLength": 1
-        },
-        {
-          "name": "incr_labor_rate_end_at",
-          "type": "core::integer::u32",
-          "id": "0x696e63725f6c61626f725f726174655f656e645f6174",
-          "feltLength": 1
-        },
-        {
-          "name": "incr_troop_rate_end_at",
-          "type": "core::integer::u32",
-          "id": "0x696e63725f74726f6f705f726174655f656e645f6174",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 2,
-      "valueLength": 6,
-      "absence": {
-        "parent": "Structure",
-        "value": "zero",
-        "meaning": "No production bonus has been granted to this structure.",
-        "parentKeys": {
-          "game_id": "game_id",
-          "entity_id": "entity_id"
-        }
-      },
-      "observation": {
-        "domain": "production",
-        "fields": {
-          "resourcePercent": "incr_resource_rate_percent_num",
-          "laborPercent": "incr_labor_rate_percent_num",
-          "troopPercent": "incr_troop_rate_percent_num",
-          "resourceEndAt": "incr_resource_rate_end_at",
-          "laborEndAt": "incr_labor_rate_end_at",
-          "troopEndAt": "incr_troop_rate_end_at"
-        }
-      }
-    },
-    {
       "name": "ProductionRecipe",
       "identity": "0x50726f64756374696f6e526563697065",
       "scope": "game",
@@ -6664,162 +6267,6 @@
           "counts3": "packed_counts_3"
         }
       }
-    },
-    {
-      "name": "Hyperstructure",
-      "identity": "0x4879706572737472756374757265",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "entity_id",
-          "type": "core::integer::u64",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "stage",
-          "type": "world_native::hyperstructures::Stage",
-          "id": "0x7374616765",
-          "feltLength": 1
-        },
-        {
-          "name": "access",
-          "type": "world_native::hyperstructures::ConstructionAccess",
-          "id": "0x616363657373",
-          "feltLength": 1
-        },
-        {
-          "name": "seed",
-          "type": "core::felt252",
-          "id": "0x73656564",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 2,
-      "valueLength": 3,
-      "observation": {
-        "domain": "hyperstructures",
-        "fields": {
-          "stage": "stage",
-          "access": "access",
-          "constructionSeed": "seed"
-        }
-      }
-    },
-    {
-      "name": "HyperstructureProgress",
-      "identity": "0x487970657273747275637475726550726f6772657373",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "entity_id",
-          "type": "core::integer::u64",
-          "feltLength": 1
-        },
-        {
-          "name": "resource_type",
-          "type": "core::integer::u8",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "contributed",
-          "type": "core::integer::u128",
-          "id": "0x636f6e7472696275746564",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 3,
-      "valueLength": 1,
-      "absence": {
-        "parent": "Hyperstructure",
-        "value": "zero",
-        "meaning": "No resource contribution to this hyperstructure.",
-        "parentKeys": {
-          "game_id": "game_id",
-          "entity_id": "entity_id"
-        }
-      }
-    },
-    {
-      "name": "HyperstructureShares",
-      "identity": "0x4879706572737472756374757265536861726573",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "entity_id",
-          "type": "core::integer::u64",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "start_at",
-          "type": "core::integer::u64",
-          "id": "0x73746172745f6174",
-          "feltLength": 1
-        },
-        {
-          "name": "multiplier",
-          "type": "core::integer::u8",
-          "id": "0x6d756c7469706c696572",
-          "feltLength": 1
-        },
-        {
-          "name": "shareholders",
-          "type": "core::array::Span::<world_native::hyperstructures::Share>",
-          "id": "0x7368617265686f6c64657273",
-          "feltLength": null
-        }
-      ],
-      "keyLength": 2,
-      "valueLength": null
-    },
-    {
-      "name": "HyperstructureRules",
-      "identity": "0x487970657273747275637475726552756c6573",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "initialize_shards",
-          "type": "core::integer::u128",
-          "id": "0x696e697469616c697a655f736861726473",
-          "feltLength": 1
-        },
-        {
-          "name": "resources",
-          "type": "core::array::Span::<world_native::hyperstructures::ConstructionResource>",
-          "id": "0x7265736f7572636573",
-          "feltLength": null
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": null,
-      "derivedFrom": "preset"
     },
     {
       "name": "EntityName",
@@ -7773,26 +7220,6 @@
         }
       ]
     },
-    "core::array::Span::<world_native::hyperstructures::ConstructionResource>": {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::hyperstructures::ConstructionResource>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::hyperstructures::ConstructionResource>"
-        }
-      ]
-    },
-    "core::array::Span::<world_native::hyperstructures::Share>": {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::hyperstructures::Share>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::hyperstructures::Share>"
-        }
-      ]
-    },
     "core::array::Span::<world_native::mines::MineKindEntry>": {
       "type": "struct",
       "name": "core::array::Span::<world_native::mines::MineKindEntry>",
@@ -7830,16 +7257,6 @@
         {
           "name": "snapshot",
           "type": "@core::array::Array::<world_native::registrar::RosterPlayer>"
-        }
-      ]
-    },
-    "core::array::Span::<world_native::relics::RelicRule>": {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::relics::RelicRule>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::relics::RelicRule>"
         }
       ]
     },
@@ -8248,20 +7665,6 @@
         {
           "name": "Some",
           "type": "world_native::race::RaceRules"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::relics::ChestRules>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::relics::ChestRules>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::relics::ChestRules"
         },
         {
           "name": "None",
@@ -9329,11 +8732,6 @@
           "wireId": 8
         },
         {
-          "name": "CreateReservedHyperstructure",
-          "type": "world_native::troops::Coord",
-          "wireId": 9
-        },
-        {
           "name": "SettleSeason",
           "type": "world_native::realms::SettleSeason",
           "wireId": 10
@@ -9424,49 +8822,14 @@
           "wireId": 29
         },
         {
-          "name": "InitializeHyperstructure",
-          "type": "core::integer::u64",
-          "wireId": 38
-        },
-        {
-          "name": "ContributeHyperstructure",
-          "type": "world_native::hyperstructures::Contribution",
-          "wireId": 39
-        },
-        {
-          "name": "AllocateHyperstructureShares",
-          "type": "world_native::hyperstructures::AllocateShares",
-          "wireId": 40
-        },
-        {
-          "name": "SetConstructionAccess",
-          "type": "world_native::hyperstructures::SetConstructionAccess",
-          "wireId": 41
-        },
-        {
-          "name": "OpenRelicChest",
-          "type": "world_native::relics::OpenChest",
-          "wireId": 42
-        },
-        {
           "name": "ApplyRelic",
           "type": "world_native::relics::ApplyRelic",
           "wireId": 43
         },
         {
-          "name": "CloseSeason",
-          "type": "()",
-          "wireId": 44
-        },
-        {
           "name": "RecordBlitzResults",
           "type": "()",
           "wireId": 51
-        },
-        {
-          "name": "CraftRelic",
-          "type": "core::integer::u64",
-          "wireId": 52
         },
         {
           "name": "CreateGuild",
@@ -10304,19 +9667,7 @@
           "type": "()"
         },
         {
-          "name": "RelicChest",
-          "type": "()"
-        },
-        {
-          "name": "HyperstructureCapture",
-          "type": "()"
-        },
-        {
           "name": "StructureCapture",
-          "type": "()"
-        },
-        {
-          "name": "Hyperstructure",
           "type": "()"
         }
       ]
@@ -10490,188 +9841,6 @@
         {
           "name": "player",
           "type": "core::starknet::contract_address::ContractAddress"
-        }
-      ]
-    },
-    "world_native::hyperstructures::AllocateShares": {
-      "type": "struct",
-      "name": "world_native::hyperstructures::AllocateShares",
-      "members": [
-        {
-          "name": "hyperstructure_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "shareholders",
-          "type": "core::array::Span::<world_native::hyperstructures::Share>"
-        }
-      ]
-    },
-    "world_native::hyperstructures::ConstructionAccess": {
-      "type": "enum",
-      "name": "world_native::hyperstructures::ConstructionAccess",
-      "variants": [
-        {
-          "name": "Public",
-          "type": "()"
-        },
-        {
-          "name": "Private",
-          "type": "()"
-        },
-        {
-          "name": "GuildOnly",
-          "type": "()"
-        }
-      ]
-    },
-    "world_native::hyperstructures::ConstructionResource": {
-      "type": "struct",
-      "name": "world_native::hyperstructures::ConstructionResource",
-      "members": [
-        {
-          "name": "resource_type",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "minimum",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "maximum",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "points",
-          "type": "core::integer::u64"
-        }
-      ]
-    },
-    "world_native::hyperstructures::Contribution": {
-      "type": "struct",
-      "name": "world_native::hyperstructures::Contribution",
-      "members": [
-        {
-          "name": "hyperstructure_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "from_structure_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "resources",
-          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
-        }
-      ]
-    },
-    "world_native::hyperstructures::Hyperstructure": {
-      "type": "struct",
-      "name": "world_native::hyperstructures::Hyperstructure",
-      "members": [
-        {
-          "name": "stage",
-          "type": "world_native::hyperstructures::Stage"
-        },
-        {
-          "name": "access",
-          "type": "world_native::hyperstructures::ConstructionAccess"
-        },
-        {
-          "name": "seed",
-          "type": "core::felt252"
-        }
-      ]
-    },
-    "world_native::hyperstructures::HyperstructureRules": {
-      "type": "struct",
-      "name": "world_native::hyperstructures::HyperstructureRules",
-      "members": [
-        {
-          "name": "initialize_shards",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "resources",
-          "type": "core::array::Span::<world_native::hyperstructures::ConstructionResource>"
-        }
-      ]
-    },
-    "world_native::hyperstructures::SetConstructionAccess": {
-      "type": "struct",
-      "name": "world_native::hyperstructures::SetConstructionAccess",
-      "members": [
-        {
-          "name": "hyperstructure_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "access",
-          "type": "world_native::hyperstructures::ConstructionAccess"
-        }
-      ]
-    },
-    "world_native::hyperstructures::Share": {
-      "type": "struct",
-      "name": "world_native::hyperstructures::Share",
-      "members": [
-        {
-          "name": "player",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "bps",
-          "type": "core::integer::u16"
-        }
-      ]
-    },
-    "world_native::hyperstructures::ShareAllocation": {
-      "type": "struct",
-      "name": "world_native::hyperstructures::ShareAllocation",
-      "members": [
-        {
-          "name": "start_at",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "multiplier",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "shareholders",
-          "type": "core::array::Span::<world_native::hyperstructures::Share>"
-        }
-      ]
-    },
-    "world_native::hyperstructures::SharePoints": {
-      "type": "struct",
-      "name": "world_native::hyperstructures::SharePoints",
-      "members": [
-        {
-          "name": "player",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "points",
-          "type": "core::integer::u128"
-        }
-      ]
-    },
-    "world_native::hyperstructures::Stage": {
-      "type": "enum",
-      "name": "world_native::hyperstructures::Stage",
-      "variants": [
-        {
-          "name": "Foundation",
-          "type": "()"
-        },
-        {
-          "name": "Construction",
-          "type": "()"
-        },
-        {
-          "name": "Complete",
-          "type": "()"
         }
       ]
     },
@@ -11087,34 +10256,14 @@
           "wireId": 11
         },
         {
-          "name": "HyperstructurePoints",
-          "type": "world_native::hyperstructures::SharePoints",
-          "wireId": 17
-        },
-        {
-          "name": "RelicChestOpened",
-          "type": "world_native::relics::ChestOpened",
-          "wireId": 18
-        },
-        {
           "name": "ExplorationReward",
           "type": "world_native::exploration_rewards::ExtractedReward",
           "wireId": 19
         },
         {
-          "name": "SeasonEnded",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "wireId": 20
-        },
-        {
           "name": "BlitzFinalized",
           "type": "core::felt252",
           "wireId": 23
-        },
-        {
-          "name": "RelicCrafted",
-          "type": "core::integer::u8",
-          "wireId": 24
         },
         {
           "name": "ExplorerCreateStory",
@@ -11160,16 +10309,6 @@
           "name": "SpireDiscovered",
           "type": "world_native::exploration_rewards::ExtractedReward",
           "wireId": 33
-        },
-        {
-          "name": "RewardChestOpened",
-          "type": "world_native::relics::RewardChestOpened",
-          "wireId": 34
-        },
-        {
-          "name": "RelicActivated",
-          "type": "world_native::relics::RelicActivated",
-          "wireId": 35
         },
         {
           "name": "SiteUsed",
@@ -11253,24 +10392,8 @@
           "type": "core::option::Option::<world_native::entry::LaborRules>"
         },
         {
-          "name": "hyperstructures",
-          "type": "world_native::hyperstructures::HyperstructureRules"
-        },
-        {
-          "name": "relics",
-          "type": "core::array::Span::<world_native::relics::RelicRule>"
-        },
-        {
-          "name": "chests",
-          "type": "core::option::Option::<world_native::relics::ChestRules>"
-        },
-        {
           "name": "discovery",
           "type": "core::option::Option::<world_native::expeditions::FrontierDiscoveryRules>"
-        },
-        {
-          "name": "research_cost",
-          "type": "core::integer::u128"
         },
         {
           "name": "withdrawals",
@@ -11305,10 +10428,6 @@
         {
           "name": "exploration",
           "type": "core::array::Span::<world_native::exploration_rewards::ExplorationReward>"
-        },
-        {
-          "name": "season_win_points",
-          "type": "core::integer::u128"
         }
       ]
     },
@@ -11413,36 +10532,6 @@
         {
           "name": "tokens",
           "type": "core::array::Span::<world_native::withdrawals::ResourceToken>"
-        }
-      ]
-    },
-    "world_native::production::ProductionBonus": {
-      "type": "struct",
-      "name": "world_native::production::ProductionBonus",
-      "members": [
-        {
-          "name": "incr_resource_rate_percent_num",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "incr_labor_rate_percent_num",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "incr_troop_rate_percent_num",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "incr_resource_rate_end_at",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "incr_labor_rate_end_at",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "incr_troop_rate_end_at",
-          "type": "core::integer::u32"
         }
       ]
     },
@@ -11900,32 +10989,6 @@
         }
       ]
     },
-    "world_native::relics::ChestOpened": {
-      "type": "struct",
-      "name": "world_native::relics::ChestOpened",
-      "members": [
-        {
-          "name": "explorer_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "coord",
-          "type": "world_native::troops::Coord"
-        },
-        {
-          "name": "chest",
-          "type": "world_native::relics::RelicChest"
-        },
-        {
-          "name": "relics",
-          "type": "core::array::Span::<core::integer::u8>"
-        },
-        {
-          "name": "points",
-          "type": "core::integer::u128"
-        }
-      ]
-    },
     "world_native::relics::ChestRules": {
       "type": "struct",
       "name": "world_native::relics::ChestRules",
@@ -12052,20 +11115,6 @@
         }
       ]
     },
-    "world_native::relics::OpenChest": {
-      "type": "struct",
-      "name": "world_native::relics::OpenChest",
-      "members": [
-        {
-          "name": "explorer_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "coord",
-          "type": "world_native::troops::Coord"
-        }
-      ]
-    },
     "world_native::relics::Recipient": {
       "type": "enum",
       "name": "world_native::relics::Recipient",
@@ -12088,116 +11137,6 @@
         }
       ]
     },
-    "world_native::relics::RelicActivated": {
-      "type": "struct",
-      "name": "world_native::relics::RelicActivated",
-      "members": [
-        {
-          "name": "relic_id",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "recipient",
-          "type": "world_native::relics::Recipient"
-        },
-        {
-          "name": "rate_bps",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "duration_seconds",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "radius",
-          "type": "core::integer::u8"
-        }
-      ]
-    },
-    "world_native::relics::RelicChest": {
-      "type": "struct",
-      "name": "world_native::relics::RelicChest",
-      "members": [
-        {
-          "name": "pack",
-          "type": "world_native::relics::RelicPack"
-        },
-        {
-          "name": "lucky",
-          "type": "core::bool"
-        }
-      ]
-    },
-    "world_native::relics::RelicPack": {
-      "type": "enum",
-      "name": "world_native::relics::RelicPack",
-      "variants": [
-        {
-          "name": "War",
-          "type": "()"
-        },
-        {
-          "name": "Explore",
-          "type": "()"
-        },
-        {
-          "name": "Produce",
-          "type": "()"
-        },
-        {
-          "name": "Fortress",
-          "type": "()"
-        }
-      ]
-    },
-    "world_native::relics::RelicRule": {
-      "type": "struct",
-      "name": "world_native::relics::RelicRule",
-      "members": [
-        {
-          "name": "rate_bps",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "duration",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "uses",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "essence_cost",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "draw_weight",
-          "type": "core::integer::u128"
-        }
-      ]
-    },
-    "world_native::relics::RewardChestOpened": {
-      "type": "struct",
-      "name": "world_native::relics::RewardChestOpened",
-      "members": [
-        {
-          "name": "explorer_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "structure_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "coord",
-          "type": "world_native::troops::Coord"
-        },
-        {
-          "name": "amount",
-          "type": "core::integer::u128"
-        }
-      ]
-    },
     "world_native::relics::SiteBenefit": {
       "type": "enum",
       "name": "world_native::relics::SiteBenefit",
@@ -12213,24 +11152,6 @@
         {
           "name": "ShrinePoint",
           "type": "core::integer::u8"
-        }
-      ]
-    },
-    "world_native::relics::SiteChest": {
-      "type": "struct",
-      "name": "world_native::relics::SiteChest",
-      "members": [
-        {
-          "name": "tier",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "amount",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "reservation_day",
-          "type": "core::integer::u64"
         }
       ]
     },
@@ -13833,5 +12754,5 @@
       ]
     }
   },
-  "identity": "baaa3531fad3af4496b31a00c4e2cdc1cda23626225ff1697556b5f37b82350f"
+  "identity": "3dadae7084c953b8684f573522e7661b0eac88b0d7ebe5879c55d473fa7e186e"
 }

@@ -14,12 +14,11 @@ import { memo } from "react";
 export const EmpireCockpit = memo(() => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
-  const { structure, resources, isMine, isLoadingStructure, typeLabel, relicEffects } = useStructureEntityDetail({
+  const { structure, resources, isMine, isLoadingStructure, typeLabel } = useStructureEntityDetail({
     structureEntityId,
   });
   const productionSummary = useStructureProductionSummary(structure, resources);
   const showAutomation = useGameModeConfig().ui.showAutomation;
-  const activeRelicIds = relicEffects.map((effect) => Number(effect.id));
 
   // Hide cockpit when there's nothing meaningful to show — keeps the rail
   // clean during loads and on non-owned selections.
@@ -47,8 +46,6 @@ export const EmpireCockpit = memo(() => {
         resources={resources}
         productionSummary={productionSummary}
         canBuild={false}
-        isMine={isMine}
-        activeRelicIds={activeRelicIds}
       />
     </HudPanel>
   );

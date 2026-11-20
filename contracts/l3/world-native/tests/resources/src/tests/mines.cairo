@@ -216,7 +216,6 @@ fn ethereal_discovery_never_draws_from_the_ordinary_mine_pool() {
                 .discovery(
                     crate::map::TileKey { game_id: 3, alt: true, col: 2000100, row: 2000100 },
                     root.into(),
-                    0,
                     30,
                     crate::commands::action_context(
                         crate::commands::ExecutionContext { timestamp: 30, ..crate::tests::context(d.games, 3) },

@@ -372,18 +372,6 @@ export const ROOMS: LabRoom[] = [
         ],
       },
       {
-        title: "Chest opening",
-        modes: BOTH,
-        views: [
-          view(
-            "Chest opening",
-            "/lab/relic-chest",
-            "relic-chest",
-            load(() => import("./relic-chest/view"), "RelicChestLab"),
-          ),
-        ],
-      },
-      {
         title: "Map labels & sites",
         modes: BOTH,
         views: [
@@ -443,17 +431,6 @@ export const ROOMS: LabRoom[] = [
             "/lab/characters",
             "characters",
             load(() => import("../ui/features/debug/procedural-character-gym-view"), "ProceduralCharacterGymView"),
-          ),
-        ],
-      },
-      {
-        title: "Chests",
-        views: [
-          view(
-            "Chests",
-            "/lab/rewards",
-            "rewards",
-            load(() => import("../ui/features/debug/reward-lab-view"), "RewardLabView"),
           ),
         ],
       },

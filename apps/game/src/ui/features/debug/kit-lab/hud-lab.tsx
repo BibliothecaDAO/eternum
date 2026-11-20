@@ -5,7 +5,7 @@ import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import { FeedLine } from "@/ui/features/event-feed/feed-line";
 
 import { canonicalRealm, homeSourceClaim } from "@bibliothecadao/eternum";
-import { BuildingType, layerName } from "@bibliothecadao/types";
+import { BuildingType } from "@bibliothecadao/types";
 import type { AlertsAsk, AlertsPopupAsk } from "@/shell/profile/alerts-ask";
 import { DEVCON_LABOR_RULES } from "@/shell/join/devcon";
 import { homeIcon } from "@/ui/design-system/home-icons";
@@ -249,8 +249,6 @@ const RUIN_CARD: LabSite = {
   guard: 3_400,
   fight: FIGHT(1_250, 1_520),
   pay: null,
-  chest: { tier: 3, lords: 128 },
-  ruinChoice: { depth: layerName(0), perDepth: true },
   verb: ATTACK_30,
 };
 
@@ -316,8 +314,8 @@ const DAY_SHARE: SharedDay = {
   day: DAY_DONE.endedDay,
   totals: DAY_DONE.totals,
   rank: DAY_DONE.rank,
-  trail: ["Ruin", "Rift", "Rift", "army-lost", "guard-holds", "Beasts", "Camp", "chest"],
-  best: { kind: "chest", lords: 128 },
+  trail: ["Ruin", "Rift", "Rift", "army-lost", "guard-holds", "Beasts", "Camp"],
+  best: { kind: "clear", site: "Ruin", guard: 3_400, paid: null },
   realm: { name: "Temtinos", order: 5 },
 };
 /**
@@ -567,12 +565,6 @@ const SEASON_ROWS: SeasonListRow[] = SEASON_NAMES.map((name, index) => ({
   own: false,
 }));
 /**
- * A million LORDS deposited for a 100-unit season: Day 12 spans five units and releases a twentieth of it. Today's
- * share is 12 LORDS and a common chest holds two shares.
- */
-const SEASON_POOL_FIGURES = { lords: 700_000, today: 35_000 };
-
-/**
  * The lab season's podium, read by the game's own rule (seasonPodium) from a board of the lab's rows: 300 LORDS among
  * the top 3. `final`, the season over and its three winners fixed, the first two paid and the third being awarded;
  * `open`, only the first player has cleared a site, so the other two places stand open.
@@ -603,7 +595,6 @@ const labPodium = (season: NonNullable<LabState["season"]>): SeasonPodiumPlace[]
     holder: typeof holder === "string" ? holder : { name: holder.address },
   }));
 };
-const SEASON_COMMON_CHEST = { lords: 24 };
 /** The player's row, twelfth, then the rest of an 87-realm season: the board holds every place. */
 const OWN_ROW: SeasonListRow = {
   key: "you",
@@ -792,7 +783,6 @@ const STATES = {
       army: null,
       guard: 2_300,
       fight: undefined,
-      chest: { tier: 2, lords: 100 },
       verb: null,
     },
   },
@@ -1066,7 +1056,6 @@ const STATES = {
       army: { ...ARMY_CHIP, troops: 4_291 },
       guard: 3_500,
       fight: FIGHT(816, 1_650),
-      chest: { tier: 2, lords: 100 },
       verb: { kind: "short", stamina: { cost: 30, held: 26, wait: 7 * 60 + 38 } },
     },
   },
@@ -1419,8 +1408,6 @@ export const HudLab = () => {
             ) : (
               <SeasonList
                 rank={lab.seasonFirst ? 1 : 12}
-                chest={lab.season === "unpublished" ? undefined : SEASON_COMMON_CHEST}
-                pool={lab.season === "unpublished" ? null : SEASON_POOL_FIGURES}
                 podium={labPodium(lab.season)}
                 rows={lab.seasonFirst ? SEASON_BOARD_YOU_FIRST : SEASON_BOARD}
                 state={lab.season === "loading" || lab.season === "failed" ? lab.season : "ready"}

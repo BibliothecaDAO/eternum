@@ -23,11 +23,11 @@ describe("native landing leaderboard", () => {
   it("uses Herald’s complete breakdown instead of a page of stories", () => {
     const activityBreakdown = createEmptyActivityBreakdown();
     activityBreakdown.exploration = { count: 166, points: 830 };
-    activityBreakdown.openRelicChest = { count: 3, points: 750 };
+    activityBreakdown.otherStructureBanditsDefeat = { count: 3, points: 750 };
     const [entry] = buildLandingLeaderboard([{ address: "0xa", rank: 1, totalPoints: 1580, activityBreakdown }]);
     expect(entry.exploredTiles).toBe(166);
     expect(entry.exploredTilePoints).toBe(830);
-    expect(entry.relicCratesOpened).toBe(3);
-    expect(entry.relicCratePoints).toBe(750);
+    expect(entry.campsTaken).toBe(3);
+    expect(entry.campPoints).toBe(750);
   });
 });

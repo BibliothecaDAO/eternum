@@ -6,10 +6,9 @@ pub use crate::map::IMapLogicDispatcher;
 pub use crate::realms::{ISeasonPlacementDispatcher, ISeasonPlacementDispatcherTrait, ISeasonPlacementSafeDispatcher};
 pub use crate::registrar::IRegistrarSafeDispatcherTrait;
 pub use crate::settlement::{
-    IBlitzReservationsSafeDispatcher, IBlitzReservationsSafeDispatcherTrait, ISettlementEntrySafeDispatcherTrait,
-    ISettlementPoolDispatcher, ISettlementPoolDispatcherTrait, ISettlementPoolSafeDispatcher,
-    ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait, ISettlementViewsSafeDispatcherTrait, SettlementMode,
-    SettlementRules,
+    ISettlementEntrySafeDispatcherTrait, ISettlementPoolDispatcher, ISettlementPoolDispatcherTrait,
+    ISettlementPoolSafeDispatcher, ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait,
+    ISettlementViewsSafeDispatcherTrait, SettlementMode, SettlementRules,
 };
 pub use crate::tests::state::MapObservationTrait;
 pub use super::{Deployment, authority, context, play_fixture, setup};

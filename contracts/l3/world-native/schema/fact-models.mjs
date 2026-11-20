@@ -695,31 +695,83 @@ export const factWireTypes = [
   },
   {
     type: "struct",
-    name: "world_native::production::ProductionBonus",
+    name: "world_native::relics::ChestRules",
     members: [
       {
-        name: "incr_resource_rate_percent_num",
-        type: "core::integer::u16",
+        name: "price_ceiling",
+        type: "core::integer::u128",
       },
       {
-        name: "incr_labor_rate_percent_num",
-        type: "core::integer::u16",
+        name: "shares",
+        type: "world_native::relics::ChestTiers",
       },
       {
-        name: "incr_troop_rate_percent_num",
-        type: "core::integer::u16",
-      },
-      {
-        name: "incr_resource_rate_end_at",
+        name: "claim_window_seconds",
         type: "core::integer::u32",
       },
       {
-        name: "incr_labor_rate_end_at",
+        name: "pool_bps",
+        type: "core::integer::u16",
+      },
+      {
+        name: "top_n",
+        type: "core::integer::u16",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::relics::LordsBudget",
+    members: [
+      {
+        name: "pool",
+        type: "core::integer::u128",
+      },
+      {
+        name: "pool_left",
+        type: "core::integer::u128",
+      },
+      {
+        name: "open",
+        type: "core::integer::u128",
+      },
+      {
+        name: "day",
+        type: "core::integer::u64",
+      },
+      {
+        name: "price",
+        type: "core::integer::u128",
+      },
+      {
+        name: "rolled_shares",
+        type: "core::integer::u128",
+      },
+      {
+        name: "yesterday_shares",
+        type: "core::integer::u128",
+      },
+      {
+        name: "yesterday_ticks",
+        type: "core::integer::u64",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::resources::ResourceSlot",
+    members: [
+      {
+        name: "game_id",
         type: "core::integer::u32",
       },
       {
-        name: "incr_troop_rate_end_at",
-        type: "core::integer::u32",
+        name: "entity_id",
+        type: "core::integer::u64",
+      },
+      {
+        name: "resource_type",
+        type: "core::integer::u8",
       },
     ],
   },
@@ -918,18 +970,14 @@ const presetDerivedModels = new Set([
   "VillageRules",
   "DepthRules",
   "SpireLayout",
-  "HyperstructureRules",
-  "RelicRules",
   "ChestRules",
   "LaborRules",
   "DeepRules",
   "FrontierDiscoveryRules",
-  "ArtificerCost",
   "DepositRules",
   "WithdrawalRules",
   "ResourceToken",
   "ExtractionRewards",
-  "SeasonWinThreshold",
 ]);
 
 export function defineFactModels({ struct, model: declare }) {
@@ -941,12 +989,6 @@ export function defineFactModels({ struct, model: declare }) {
         value: "zero",
         meaning:
           "Zero balance or inactive production while the resource owner exists; no resource owner after its weight row is deleted.",
-      };
-    if (row.name === "HyperstructureProgress")
-      row.absence = {
-        parent: "Hyperstructure",
-        value: "zero",
-        meaning: "No resource contribution to this hyperstructure.",
       };
     if (row.name === "RaceMember")
       row.absence = {
@@ -1024,12 +1066,6 @@ export function defineFactModels({ struct, model: declare }) {
         value: "zero",
         meaning: "The chain writes a player's points on their first award; no row means the player has scored nothing.",
       };
-    if (row.name === "ProductionBonus")
-      row.absence = {
-        parent: "Structure",
-        value: "zero",
-        meaning: "No production bonus has been granted to this structure.",
-      };
     const observation = behaviouralFacts[row.name];
     return observation ? { ...row, observation } : row;
   };
@@ -1062,22 +1098,10 @@ export function defineFactModels({ struct, model: declare }) {
     ),
     model("GuildWhitelist", "game", struct("guilds::WhitelistKey"), [{ name: "allowed", type: "core::bool" }]),
     model(
-      "ArtificerCost",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      [{ name: "research", type: "core::integer::u128" }],
-    ),
-    model(
       "BlitzResult",
       "game",
       [{ name: "game_id", type: "core::integer::u32" }],
       struct("blitz_results::BlitzResult"),
-    ),
-    model(
-      "SeasonWinThreshold",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      [{ name: "points", type: "core::integer::u128" }],
     ),
     model(
       "ExtractionRewards",
@@ -1086,10 +1110,10 @@ export function defineFactModels({ struct, model: declare }) {
       [{ name: "rewards", type: "core::array::Span::<world_native::exploration_rewards::ExplorationReward>" }],
     ),
     model(
-      "RelicRules",
+      "DepositSource",
       "game",
       [{ name: "game_id", type: "core::integer::u32" }],
-      [{ name: "rules", type: "core::array::Span::<world_native::relics::RelicRule>" }],
+      struct("deposits::DepositSource"),
     ),
     model(
       "FrontierDiscoveryRules",
@@ -1103,12 +1127,6 @@ export function defineFactModels({ struct, model: declare }) {
       "game",
       struct("expeditions::ExpeditionDiscoveryKey"),
       struct("expeditions::ExpeditionDiscovery"),
-    ),
-    model(
-      "DepositSource",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      struct("deposits::DepositSource"),
     ),
     model(
       "Fragments",
@@ -1233,11 +1251,9 @@ export function defineFactModels({ struct, model: declare }) {
       ],
       struct("entry::LaborGrant").filter(({ name }) => name !== "game_id" && name !== "home"),
     ),
-    model("ChestRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("relics::ChestRules")),
     model("FrontierPrize", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("entry::FrontierPrize")),
+    model("ChestRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("relics::ChestRules")),
     model("LordsBudget", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("relics::LordsBudget")),
-    model("SiteChest", "game", struct("resources::ResourceKey"), struct("relics::SiteChest")),
-    model("RelicChest", "game", struct("resources::ResourceKey"), struct("relics::RelicChest")),
     model(
       "LordsWithdrawal",
       "game",
@@ -1246,12 +1262,6 @@ export function defineFactModels({ struct, model: declare }) {
         { name: "claim_id", type: "core::felt252" },
       ],
       struct("relics::LordsWithdrawal"),
-    ),
-    model(
-      "RelicDiscovery",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      [{ name: "last_at", type: "core::integer::u64" }],
     ),
     model("DepositRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("bridge::DepositRules")),
     model(
@@ -1291,12 +1301,6 @@ export function defineFactModels({ struct, model: declare }) {
       [{ name: "players", type: "core::array::Span::<world_native::registrar::RosterPlayer>" }],
     ),
     model("RealmGrants", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("settlement::RealmGrants")),
-    model(
-      "HyperstructureReservations",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      [{ name: "placed", type: "core::integer::u32" }],
-    ),
     model(
       "SettlementRules",
       "game",
@@ -1415,7 +1419,6 @@ export function defineFactModels({ struct, model: declare }) {
       { name: "balance", type: "core::integer::u128" },
     ]),
     model("ResourceProduction", "game", struct("resources::ResourceSlot"), struct("resources::Production")),
-    model("ProductionBonus", "game", struct("resources::ResourceKey"), struct("production::ProductionBonus")),
     model("ProductionRecipe", "game", struct("production::RecipeKey"), struct("production::ProductionRecipe")),
     model("ResourceWeight", "game", struct("resources::ResourceKey"), struct("resources::Weight")),
     model("ResourceArrival", "game", struct("arrivals::ArrivalKey"), struct("arrivals::Arrival")),
@@ -1439,17 +1442,6 @@ export function defineFactModels({ struct, model: declare }) {
     model("BuildingRule", "game", struct("buildings::BuildingRuleKey"), struct("buildings::BuildingRule")),
     model("Building", "game", struct("buildings::BuildingKey"), struct("buildings::Building")),
     model("StructureBuildings", "game", struct("resources::ResourceKey"), struct("buildings::StructureBuildings")),
-    model("Hyperstructure", "game", struct("resources::ResourceKey"), struct("hyperstructures::Hyperstructure")),
-    model("HyperstructureProgress", "game", struct("resources::ResourceSlot"), [
-      { name: "contributed", type: "core::integer::u128" },
-    ]),
-    model("HyperstructureShares", "game", struct("resources::ResourceKey"), struct("hyperstructures::ShareAllocation")),
-    model(
-      "HyperstructureRules",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      struct("hyperstructures::HyperstructureRules"),
-    ),
     model("EntityName", "game", struct("resources::ResourceKey"), struct("names::EntityName")),
 
     model(
@@ -1554,17 +1546,6 @@ const behaviouralFacts = {
       settledAt: "last_settled_at",
     },
   },
-  ProductionBonus: {
-    domain: "production",
-    fields: {
-      resourcePercent: "incr_resource_rate_percent_num",
-      laborPercent: "incr_labor_rate_percent_num",
-      troopPercent: "incr_troop_rate_percent_num",
-      resourceEndAt: "incr_resource_rate_end_at",
-      laborEndAt: "incr_labor_rate_end_at",
-      troopEndAt: "incr_troop_rate_end_at",
-    },
-  },
   ProductionRecipe: {
     domain: "production",
     fields: {
@@ -1590,7 +1571,6 @@ const behaviouralFacts = {
     domain: "blitz-settlement",
     fields: { resources: "resources", startingTroops: "starting_troops", realmResources: "realm_resources" },
   },
-  HyperstructureReservations: { domain: "blitz-settlement", fields: { placed: "placed" } },
   SettlementRules: {
     domain: "realm/blitz",
     fields: {
@@ -1647,7 +1627,6 @@ const behaviouralFacts = {
       counts3: "packed_counts_3",
     },
   },
-  Hyperstructure: { domain: "hyperstructures", fields: { stage: "stage", access: "access", constructionSeed: "seed" } },
   PointsTotal: { domain: "points", fields: { registered: "total" } },
   PlayerPoints: { domain: "points", fields: { registered: "points" } },
   MineKindConfig: {
@@ -1699,18 +1678,14 @@ export const syncScopes = {
       "Preset",
       "SpireLayout",
       "CampRules",
-      "ArtificerCost",
       "BlitzResult",
-      "SeasonWinThreshold",
       "ExtractionRewards",
-      "RelicRules",
       "ChestRules",
       "LaborRules",
       "DeepRules",
       "LordsBudget",
       "FrontierPrize",
       "FrontierDiscoveryRules",
-      "RelicDiscovery",
       "DepositRules",
       "DepositSource",
       "WithdrawalRules",
@@ -1721,7 +1696,6 @@ export const syncScopes = {
       "BlitzSettlementOrder",
       "BlitzRoster",
       "RealmGrants",
-      "HyperstructureReservations",
       "SettlementRules",
       "SettlementProgress",
       "SettlementPool",
@@ -1731,7 +1705,6 @@ export const syncScopes = {
       "BoardRules",
       "ResearchPrice",
       "BuildingRule",
-      "HyperstructureRules",
       "ResourceRule",
       "UpgradeLimits",
       "UpgradeRecipe",
@@ -1784,9 +1757,6 @@ export const syncScopes = {
   Building: { realms: ["structure_id"] },
   RealmKnowledge: { realms: ["structure_id"] },
   ExpeditionSite: { regions: [{ alt: "alt", x: "col", y: "row" }], entities: ["entity_id"] },
-  SiteChest: { entities: ["entity_id"] },
-  // A relic chest's pack is public: anyone may open the chest, so every player sees what it holds.
-  RelicChest: shared,
   ArmyCombat: { entities: ["explorer_id"] },
   ArmyProgress: { entities: ["explorer_id"] },
   ArmyRelics: { entities: ["explorer_id"] },
@@ -1811,12 +1781,8 @@ export const syncScopes = {
   Structure: byEntity,
   BitcoinMine: byEntity,
   ResourceBalance: byEntity,
-  ProductionBonus: byEntity,
   ResourceWeight: byEntity,
   ResourceArrival: byEntity,
   StructureBuildings: byEntity,
-  Hyperstructure: byEntity,
-  HyperstructureProgress: byEntity,
-  HyperstructureShares: byEntity,
   EntityName: byEntity,
 };

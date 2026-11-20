@@ -239,13 +239,6 @@ describe("Frontier confirmed season history", () => {
           },
         }),
       );
-      for (const amount of [50, 0]) {
-        stories.push(
-          new CairoCustomEnum({
-            RewardChestOpened: { explorer_id: 7, structure_id: 1, coord: { alt: false, x: 40, y: 12 }, amount },
-          }),
-        );
-      }
       const events = stories.map((story, index) => {
         const values = {
           version: 2,
@@ -279,25 +272,7 @@ describe("Frontier confirmed season history", () => {
       await expect(store.frontierHistory("1", 11)).rejects.toThrow("incomplete");
       expect(await store.frontierHistory("1", 9)).toEqual([]);
       const history = await store.frontierHistory("1", 10);
-      expect(history).toHaveLength(7);
-      expect(history.slice(5).map((event) => event.value.story)).toEqual([
-        {
-          RewardChestOpened: {
-            explorer_id: "0x7",
-            structure_id: "0x1",
-            coord: { alt: false, x: "0x28", y: "0xc" },
-            amount: "0x32",
-          },
-        },
-        {
-          RewardChestOpened: {
-            explorer_id: "0x7",
-            structure_id: "0x1",
-            coord: { alt: false, x: "0x28", y: "0xc" },
-            amount: "0x0",
-          },
-        },
-      ]);
+      expect(history).toHaveLength(5);
       const values: Record<string, Record<string, unknown>> = {
         GameRegistry: {},
         Structure: {
@@ -311,9 +286,9 @@ describe("Frontier confirmed season history", () => {
       const board = buildFrontierLeaderboard(read, "1", history);
       expect(board.entries[0]).toMatchObject({
         campaign: null,
-        chests_earned: 6,
+        chests_earned: 4,
         sites_cleared: { total: 5, camps: 1, ruins: 4 },
-        rewards: { lords: "8050", labor: "500000000000", essence: "0" },
+        rewards: { lords: "8000", labor: "500000000000", essence: "0" },
       });
       await store.close();
       store = open();

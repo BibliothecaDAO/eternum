@@ -2,7 +2,6 @@ use starknet::ContractAddress;
 
 #[starknet::interface]
 pub trait ILedgerOperator<T> {
-    fn configure_deposits(ref self: T, game_id: u32, source: crate::deposits::DepositSource);
     fn deposit_source(self: @T, game_id: u32) -> Option<crate::deposits::DepositSource>;
     fn deliver_deposit(
         ref self: T, game_id: u32, deposit: crate::deposits::LordsDeposit, r: felt252, s: felt252, cancel: bool,

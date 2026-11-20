@@ -1,5 +1,4 @@
 import { safeInteger, getScopedGameId } from "@bibliothecadao/eternum/game-client";
-import { useSeasonWinner } from "@/hooks/store/use-story-events-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { seasonClockView } from "@/sync/fact-views";
 import { resolveGameEndHeadline } from "./game-end-headline";
@@ -26,7 +25,6 @@ import { usePlayerNames } from "@/hooks/use-player-profile";
 
 export function NewsHeadlineBridge() {
   const { setup } = useGame();
-  const winner = useSeasonWinner();
   const endRevision = useNativeRevision(["BlitzResult", "BlitzRoster", "PlayerPoints"]);
   const names = usePlayerNames();
   const entityReader = useMemo(() => {
@@ -144,9 +142,9 @@ export function NewsHeadlineBridge() {
 
   // --- Game end detection ---
   useEffect(() => {
-    const headline = resolveGameEndHeadline(setup.store, getScopedGameId(), winner);
+    const headline = resolveGameEndHeadline(setup.store, getScopedGameId());
     if (headline) enqueue(headline);
-  }, [setup.store, winner, endRevision, enqueue]);
+  }, [setup.store, endRevision, enqueue]);
 
   // --- Prune old IDs ---
   useEffect(() => {

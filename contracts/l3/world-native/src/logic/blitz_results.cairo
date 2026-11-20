@@ -69,10 +69,6 @@ pub mod BlitzResultState {
         }
         fn assert_finalizable(self: @ComponentState<TContractState>, game_context: crate::commands::ExecutionContext) {
             let timestamp = game_context.timestamp;
-            assert!(
-                !crate::rules::rule_enabled(game_context.rules.unbox(), crate::rules::SEASON_CLOSE),
-                "result finalisation is disabled",
-            );
             let game = game_context.game.unbox();
             assert!(game.ready && game.end_at != 0 && timestamp >= game.end_at, "game has not ended");
             assert!(game.settled, "final point settlement incomplete");

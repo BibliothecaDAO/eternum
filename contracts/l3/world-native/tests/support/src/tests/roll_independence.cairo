@@ -33,7 +33,6 @@ pub fn typed_commands() -> Array<Command> {
         Command::Move(crate::commands::Move { explorer_id: 999999, directions: array![0_u8].span() }),
         Command::ToggleAlternate(crate::commands::ToggleAlternate { explorer_id: 999999, spire_direction: 0 }),
         Command::LevelUp(999999), Command::SettleBlitzRoster, Command::ProvisionRealm(999999),
-        Command::CreateReservedHyperstructure(crate::troops::Coord { alt: false, x: 2000000, y: 2000000 }),
         Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, order: None }),
         Command::SettleVillage(crate::village::SettleVillage { pass_id: 1, connected_realm_entity_id: 999999 }),
         Command::ReceiveVillageArmy(999999),
@@ -96,37 +95,12 @@ pub fn typed_commands() -> Array<Command> {
         Command::CloseBitcoinPhase(999999), Command::BindBitcoinPhase(999999),
         Command::ClaimBitcoinPhase(crate::bitcoin::ClaimPhase { phase: 0, mine_ids: array![999999_u64].span() }),
         Command::BattleGuard(crate::commands::Battle { attacker_id: 999999, defender_id: 999999, relic_slot: None }),
-        Command::InitializeHyperstructure(999999),
-        Command::ContributeHyperstructure(
-            crate::hyperstructures::Contribution {
-                hyperstructure_id: 999999,
-                from_structure_id: 999999,
-                resources: array![crate::resources::ResourceAmount { resource_type: 1, amount: 1 }].span(),
-            },
-        ),
-        Command::AllocateHyperstructureShares(
-            crate::hyperstructures::AllocateShares {
-                hyperstructure_id: 999999,
-                shareholders: array![crate::hyperstructures::Share { player: 999.try_into().unwrap(), bps: 10000 }]
-                    .span(),
-            },
-        ),
-        Command::SetConstructionAccess(
-            crate::hyperstructures::SetConstructionAccess {
-                hyperstructure_id: 999999, access: crate::hyperstructures::ConstructionAccess::Public,
-            },
-        ),
-        Command::OpenRelicChest(
-            crate::relics::OpenChest {
-                explorer_id: 999999, coord: crate::troops::Coord { alt: false, x: 2000000, y: 2000000 },
-            },
-        ),
         Command::ApplyRelic(
             crate::relics::ApplyRelic {
                 entity_id: 999999, relic_id: 39, recipient: crate::relics::Recipient::Explorer,
             },
         ),
-        Command::CloseSeason, Command::RecordBlitzResults, Command::CraftRelic(999999),
+        Command::RecordBlitzResults,
         Command::CreateGuild(crate::guilds::CreateGuild { owned_structure_id: 999999, public: false, name: 'route' }),
         Command::JoinGuild(crate::guilds::JoinGuild { owned_structure_id: 999999, guild_id: 999.try_into().unwrap() }),
         Command::LeaveGuild,
@@ -218,12 +192,8 @@ pub fn draw_case(case: u8) -> (Deployment, TestAction, u64) {
         0 => explorer_case(false),
         1 => explorer_case(true),
         2 => battle_case(),
-        3 => {
-            let (d, home) = super::artificer::setup(false);
-            (d, TestAction { game_id: 3, actor: d.actor, command: Command::CraftRelic(home.entity_id) }, 30)
-        },
-        5 => season_case(),
-        6 => {
+        3 => season_case(),
+        4 => {
             let (d, home) = super::village::setup(false);
             super::village::register_pass(d, 7);
             let command = Command::SettleVillage(

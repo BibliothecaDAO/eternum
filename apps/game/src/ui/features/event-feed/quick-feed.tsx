@@ -1,14 +1,12 @@
 import { HudButton, HudChip, HudEventRow } from "@/ui/design-system/kit/hud-elements";
 import { EVENTS_WORDS } from "@/ui/design-system/kit/words";
 import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
-import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
 import { type ProcessedStoryEvent, useStoryReads } from "@/hooks/store/use-story-events-store";
 import { triggerConnectionForceReconnect } from "@/ui/features/world/components/network-status-retry";
 import { configManager } from "@bibliothecadao/eternum";
-import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { TickIds } from "@bibliothecadao/types";
 
 import { useEffect, useMemo, useState } from "react";
@@ -68,28 +66,12 @@ export function useEventsFeed(lens?: EventsFilter) {
   const address = useAccountStore((state) => state.account?.address ?? null);
   const [chosen] = useEventsFilter();
   const filter = lens ?? chosen;
-  const hyperstructures = useHyperstructureIds();
-  const { data, queries } = useStoryReads(eventsReads(filter, address, hyperstructures));
-  const stories = useMemo(
-    () => selectEventStories(data, filter, address, (structureId) => hyperstructures.includes(structureId)),
-    [data, filter, address, hyperstructures],
-  );
+  const { data, queries } = useStoryReads(eventsReads(filter, address));
+  const stories = useMemo(() => selectEventStories(data, filter, address), [data, filter, address]);
   const failed = queries.filter((query) => query.isError);
   const retry = () => failed.forEach((query) => void query.refetch());
   return { stories, filter, address, isError: failed.length > 0, retry };
 }
-
-/** The game's Hyperstructures, read from its facts as they change: a capture of one is everyone's news. */
-const useHyperstructureIds = (): number[] => {
-  const facts = useNativeFacts(["Hyperstructure"]);
-  return useMemo(
-    () =>
-      [...facts.store.inGame("Hyperstructure", configManager.getActiveGameId())].map((row) =>
-        safeInteger(row.entity_id),
-      ),
-    [facts],
-  );
-};
 
 /** Stories that arrived since the log was last open; zero while it is open. */
 export function useUnreadFeedCount(stories: ProcessedStoryEvent[], logOpen: boolean): number {

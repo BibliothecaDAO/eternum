@@ -1,4 +1,4 @@
-import { RELICS, relicChestRelics, siteName, StructureType } from "@bibliothecadao/types";
+import { siteName, StructureType } from "@bibliothecadao/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
@@ -16,11 +16,7 @@ beforeEach(() => {
   vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
   vi.spyOn(configManager, "getVictoryPointGrants").mockReturnValue({
     exploreTile: 5,
-    openRelicCrate: 250,
     claimCampFromBandits: 250,
-    claimHyperstructureFromBandits: 1000,
-    hyperstructurePerSecond: 1,
-    hyperstructureScale: "flat",
   });
 });
 
@@ -131,13 +127,6 @@ describe("owner naming", () => {
       named("djizus"),
     );
     expect(withdrawn).toMatchObject({ title: "djizus withdrew LORDS", owner: "djizus", ownerAt: 0 });
-    const chest = { pack: "Produce", lucky: false } as const;
-    const opened = buildStoryEventPresentation(
-      story("RelicChestOpened", { explorer_id: 7, chest, relics: relicChestRelics(chest) }),
-      undefined,
-      named("realm"),
-    );
-    expect(opened).toMatchObject({ title: "Crate opened: 3 relics to its realm", owner: "realm", ownerAt: null });
   });
 });
 
@@ -364,7 +353,7 @@ it("names a cleared site by its map name, with its recorded kind and payout, wit
   }
 });
 
-it("names another player's clear by the player, and a ruin's clear as the chest it earns", () => {
+it("names another player's clear by the player", () => {
   const cleared = (category: number, view: (type: string, payload: Record<string, unknown>) => Event) =>
     buildStoryEventPresentation(
       view("SitePayout", {
@@ -376,15 +365,7 @@ it("names another player's clear by the player, and a ruin's clear as the chest 
       }),
     ).title;
   expect(cleared(StructureType.Camp, story)).toBe(`Lord 0123 cleared ${siteName(9)}`);
-  expect(cleared(StructureType.Ruin, story)).toBe(`Lord 0123 cleared ${siteName(9)}: chest earned`);
-  expect(cleared(StructureType.Ruin, own)).toBe(`${siteName(9)} cleared: chest earned`);
-});
-
-it("names another player's opened chest by the player, the LORDS it paid or its expiry", () => {
-  const opened = (amount: string) =>
-    buildStoryEventPresentation(story("RewardChestOpened", { explorer_id: 7, structure_id: 3, coord: {}, amount }));
-  expect(opened("50")).toMatchObject({ title: "Lord 0123 opened a chest: 50 LORDS", description: "Lord 0123's army" });
-  expect(opened("0").title).toBe("Lord 0123's chest expired: no LORDS paid");
+  expect(cleared(StructureType.Ruin, own)).toBe(`${siteName(9)} cleared`);
 });
 
 describe("every story the chain can tell", () => {
@@ -456,22 +437,11 @@ describe("every story the chain can tell", () => {
       buy: true,
     },
     BankLiquidity: { resource_type: 23, add: true },
-    HyperstructurePoints: { player: "0x123", points: 5 },
-    RelicChestOpened: {
-      explorer_id: 7,
-      coord,
-      chest: { pack: "War", lucky: false },
-      relics: [41, 43, 39],
-      points: 1000,
-    },
     ExplorationReward: { explorer_id: 7, receiver: 5, coord, resource_type: 38, amount: "150000000000" },
     SpireDiscovered: { explorer_id: 7, receiver: 5, coord, resource_type: 38, amount: "3000000000000" },
-    SeasonEnded: { value: "0x123" },
     FaithPledged: { structure_id: 5, wonder_id: 6, owner_rate: 1, pledger_rate: 1 },
     FaithRemoved: { structure_id: 5, wonder_id: 6 },
     BlitzFinalized: { value: "0x1" },
-    RelicCrafted: { value: 39 },
-    RelicActivated: { relic_id: 41, recipient: "Explorer", rate_bps: 2000, duration_seconds: 1800, radius: 0 },
     ExplorerCreateStory: {
       structure_id: 5,
       explorer_id: 7,
@@ -487,7 +457,6 @@ describe("every story the chain can tell", () => {
     LordsWithdrawn: { account: "0x111", amount },
     SiteUsed: { explorer_id: 7, coord, benefit: { Shrine: 200 } },
     SkillPointSpent: { explorer_id: 7, choice: "Battle", tier: 2, point_rank: 2, stamina: 30 },
-    RewardChestOpened: { explorer_id: 7, structure_id: 5, coord, amount: 17 },
     SitePayout: {
       structure_id: 5,
       explorer_id: 7,
@@ -534,11 +503,9 @@ describe("every story the chain can tell", () => {
     "TradeCancelled",
     "BankSwap",
     "BankLiquidity",
-    "RelicChestOpened",
     "FaithPledged",
     "FaithRemoved",
     "BlitzFinalized",
-    "RelicCrafted",
     "RaidEvent",
   ]);
 
@@ -576,106 +543,6 @@ describe("every story the chain can tell", () => {
 
   it("refuses a story it has no line for, rather than printing its fields", () => {
     expect(() => buildStoryEventPresentation(story("NotAStory", {}))).toThrow("No presentation for story NotAStory");
-  });
-});
-
-it("says where an opened chest's relics went, and lists them as their panel does", () => {
-  expect(new Set(RELICS.map((relic) => relic.name)).size).toBe(RELICS.length);
-  vi.spyOn(configManager, "getPresetId").mockReturnValue(2);
-  const { store, setHeldRealm, setExplorer } = buildStore();
-  setHeldRealm(5, 1, 1);
-  setExplorer(7, 5, "T1");
-  const opened = (chest: { pack: "War" | "Explore" | "Produce" | "Fortress"; lucky: boolean }) =>
-    buildStoryEventPresentation(
-      story("RelicChestOpened", { explorer_id: 7, chest, relics: relicChestRelics(chest) }),
-      store,
-    );
-  expect(opened({ pack: "Explore", lucky: true })).toMatchObject({
-    title: "Crate opened: 3 relics to the army Stolsli T1",
-    description: "Exploration Relic II, Exploration Reward Relic II, Stamina Relic II",
-  });
-  expect(opened({ pack: "Produce", lucky: false }).title).toBe("Crate opened: 3 relics to Stolsli");
-  expect(opened({ pack: "Fortress", lucky: false }).title).toBe(
-    "Crate opened: 1 relic to the army Stolsli T1, 2 to Stolsli",
-  );
-});
-
-it("names a gone army's chest delivery without its names", () => {
-  const chest = { pack: "Produce", lucky: false } as const;
-  const { title } = buildStoryEventPresentation(
-    story("RelicChestOpened", { explorer_id: 7, chest, relics: relicChestRelics(chest) }),
-  );
-  expect(title).toBe("Crate opened: 3 relics to its realm");
-});
-
-describe("a relic activation", () => {
-  const effects = [
-    "Increases stamina regeneration by 50%",
-    "Increases stamina regeneration by 100%",
-    "Increases damage by 20%",
-    "Increases damage by 40%",
-    "Reduces damage taken by 20%",
-    "Reduces damage taken by 40%",
-    "Instantly explores a 1-tile radius",
-    "Instantly explores a 2-tile radius",
-    "Increases exploration rewards by 100%",
-    "Increases exploration rewards by 200%",
-    "Reduces attacker damage to the structure by 15%",
-    "Reduces attacker damage to the structure by 30%",
-    "Increases resource production rate by 20%",
-    "Increases resource production rate by 40%",
-    "Increases labor production rate by 20%",
-    "Increases labor production rate by 40%",
-    "Increases troop production rate by 15%",
-    "Increases troop production rate by 30%",
-  ];
-
-  it.each(RELICS)("names $name, its actor, recipient and effect in the Events line", (relic) => {
-    vi.spyOn(configManager, "getPresetId").mockReturnValue(2);
-    const { store, setHeldRealm, setExplorer } = buildStore();
-    setHeldRealm(5, 1, 1);
-    setExplorer(7, 5, "T1");
-    const reveal = relic.id === 45 || relic.id === 46;
-    const recipient = relic.id < 49 ? "Explorer" : relic.id < 51 ? "StructureGuard" : "StructureProduction";
-    const target = relic.id < 49 ? "Stolsli T1 army" : relic.id < 51 ? "Stolsli's guards" : "Stolsli";
-    const presentation = buildStoryEventPresentation(
-      story(
-        "RelicActivated",
-        {
-          relic_id: relic.id,
-          recipient,
-          rate_bps: relic.rateBps,
-          duration_seconds: reveal ? 0 : 1800,
-          radius: reveal ? relic.id - 44 : 0,
-        },
-        relic.id < 49 ? 7 : 5,
-      ),
-      store,
-      () => "Ada",
-    );
-    expect(presentation.title).toBe(
-      `Ada activated ${relic.name} on ${target} · ${effects[relic.id - 39]}${reveal ? "" : relic.id < 41 ? " for 30m of regeneration" : " for 30m"}`,
-    );
-  });
-
-  it("retains the applied effect after the target is gone and without looking up an active boost", () => {
-    expect(
-      buildStoryEventPresentation(
-        story(
-          "RelicActivated",
-          {
-            relic_id: 41,
-            recipient: "Explorer",
-            rate_bps: 1250,
-            duration_seconds: 1800,
-            radius: 0,
-          },
-          7,
-        ),
-        undefined,
-        () => "Ada",
-      ).title,
-    ).toBe("Ada activated Damage Relic I on Army · Increases damage by 12.5% for 30m");
   });
 });
 
@@ -904,34 +771,6 @@ it("writes a small army's find rounded, and one under a unit with no amount, as 
   expect(findGain(0.4)).toBeNull();
   expect(findGain(1)).toBe("+1");
   expect(findGain(undefined)).toBe("—");
-});
-
-it("adds the points an opened crate scored", () => {
-  const chest = { pack: "War", lucky: false } as const;
-  const { title } = buildStoryEventPresentation(
-    story("RelicChestOpened", { explorer_id: 7, chest, relics: relicChestRelics(chest), points: 250_000_000n }),
-  );
-  expect(title).toBe("Crate opened: 3 relics to the army · +250 points");
-});
-
-it("tells the recorded whole LORDS payment and names its home even after the opening army is gone", () => {
-  vi.spyOn(configManager, "getPresetId").mockReturnValue(5);
-  const { store, setHeldRealm } = buildStore();
-  setHeldRealm(5, 1, 1);
-  expect(
-    buildStoryEventPresentation(story("RewardChestOpened", { explorer_id: 7, structure_id: 5, amount: 17 }), store)
-      .title,
-  ).toBe("Chest opened: 17 LORDS to Stolsli");
-  expect(
-    buildStoryEventPresentation(story("RewardChestOpened", { explorer_id: 7, structure_id: 5, amount: 0 }), store)
-      .title,
-  ).toBe("Chest expired: no LORDS paid");
-});
-
-it("writes a hyperstructure share's points whole, from the contract's millionths", () => {
-  expect(
-    buildStoryEventPresentation(story("HyperstructurePoints", { player: "0x0", points: "5000000000" })).description,
-  ).toMatch(/ \+5,000 points$/);
 });
 
 it.each([

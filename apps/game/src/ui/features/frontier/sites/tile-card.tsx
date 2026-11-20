@@ -12,13 +12,7 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { toast } from "@/ui/features/event-feed/notify";
 
 import { extractReadableErrorMessage } from "@/utils/error-message";
-import {
-  ATTACK_FORECAST_MODELS,
-  configManager,
-  getStructureName,
-  isViewerOwner,
-  ruinDisappeared,
-} from "@bibliothecadao/eternum";
+import { ATTACK_FORECAST_MODELS, configManager, getStructureName, isViewerOwner } from "@bibliothecadao/eternum";
 import { ATTACK_REFUSAL_WORDS } from "@/ui/design-system/kit/words";
 import {
   safeInteger,
@@ -47,8 +41,6 @@ const SITE_MODELS = [
   "ExpeditionSite",
   "ExpeditionDiscovery",
   "GameRelease",
-  "LordsBudget",
-  "SiteChest",
   "Structure",
   "TileOccupancy",
   "ResourceBalance",
@@ -89,7 +81,7 @@ export const useSelectedTarget = (): AttackTarget | null => {
 const standingSite = (store: NativeFactStore, tile: TileSpatialRenderable): AttackTarget | null => {
   const key = { game_id: configManager.getActiveGameId(), entity_id: tile.occupierId };
   const site = store.get("ExpeditionSite", key);
-  if (!site || site.clear || ruinDisappeared(store, site)) return null;
+  if (!site || site.clear) return null;
   return { kind: "site", site, structure: store.require("Structure", key), tile };
 };
 
@@ -145,8 +137,6 @@ export const TileCard = ({
     const signer = account.account;
     let sent = false;
     try {
-      if (selected.kind === "site" && ruinDisappeared(setup.store, selected.site))
-        throw new Error("This ruin has disappeared.");
       // The relic slot read from the facts as Attack goes: a choice the slot no longer bears, or relics not yet known,
       // keep the order home with the card's own reason.
       const relicSlot = relics?.dispatchSlot();
@@ -269,7 +259,6 @@ const useSiteAttack = (actor: ReturnType<typeof useSelectedOwnArmy>): SiteAttack
   return actor && { army: actor.army, timestamp };
 };
 
-/** What a cleared site pays home and what fits; a ruin pays its chest. */
 const sitePay = (plan: SiteCardPlan) => {
   return plan.payout
     ? { icon: resourceMeaning(plan.payout.resourceId), amount: plan.payout.amount, fits: plan.payout.fits }

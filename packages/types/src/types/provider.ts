@@ -120,22 +120,6 @@ export interface DisbandGuild extends SystemSigner {
   calls: { address: BigNumberish }[];
 }
 
-export interface InitializeHyperstructureProps extends SystemSigner {
-  hyperstructure_id: BigNumberish;
-}
-
-export interface ContributeToConstructionProps extends SystemSigner {
-  hyperstructure_entity_id: BigNumberish;
-  contributor_entity_id: BigNumberish;
-  contributions: { resource: number; amount: BigNumberish }[];
-}
-
-export interface SetAccessProps extends SystemSigner {
-  hyperstructure_entity_id: BigNumberish;
-  access: BigNumberish;
-}
-export interface EndGameProps extends SystemSigner {}
-
 /**
  * Props for burning resources to produce labor
  */
@@ -387,23 +371,11 @@ export interface InteractSiteProps extends SystemSigner {
   coord: { alt: boolean; x: BigNumberish; y: BigNumberish };
 }
 
-export interface OpenChestProps extends SystemSigner {
-  explorer_id: BigNumberish;
-  chest_coord: {
-    alt: boolean;
-    x: BigNumberish;
-    y: BigNumberish;
-  };
-}
-
-export interface BurnResearchForRelicProps extends SystemSigner {
-  structure_id: BigNumberish;
-}
-
-export type ApplyRelicProps = SystemSigner & {
+export interface ApplyRelicProps extends SystemSigner {
   entity_id: BigNumberish;
   relic_resource_id: BigNumberish;
-} & ({ recipient_type: BigNumberish; relic_slot?: never } | { recipient_type?: never; relic_slot: 0 | 1 | 2 });
+  relic_slot: 0 | 1 | 2;
+}
 
 export interface BitcoinMineContributeLaborProps extends SystemSigner {
   structure_id: BigNumberish;

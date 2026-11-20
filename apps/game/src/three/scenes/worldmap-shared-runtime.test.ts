@@ -26,10 +26,8 @@ describe("worldmap shared runtime baseline", () => {
     expect(fixture.snapshotDetachLifecycle()).toEqual([
       "scene:remove:ArmyLabelsGroup",
       "scene:remove:StructureLabelsGroup",
-      "scene:remove:ChestLabelsGroup",
       "army:removeLabelsFromScene",
       "structure:removeLabelsFromScene",
-      "chest:removeLabelsFromScene",
     ]);
   });
 
@@ -61,7 +59,6 @@ describe("worldmap shared runtime baseline", () => {
     expect(fixture.getManagerUpdateCalls()).toEqual([
       { manager: "army", chunkKey: "24,24", options: { force: false, transitionToken: 1 } },
       { manager: "structure", chunkKey: "24,24", options: { force: false, transitionToken: 1 } },
-      { manager: "chest", chunkKey: "24,24", options: { force: false, transitionToken: 1 } },
     ]);
   });
 
@@ -77,7 +74,6 @@ describe("worldmap shared runtime baseline", () => {
     expect(fixture.getManagerUpdateCalls()).toEqual([
       { manager: "army", chunkKey: "24,24", options: { force: true, transitionToken: 1 } },
       { manager: "structure", chunkKey: "24,24", options: { force: true, transitionToken: 1 } },
-      { manager: "chest", chunkKey: "24,24", options: { force: true, transitionToken: 1 } },
     ]);
   });
 });

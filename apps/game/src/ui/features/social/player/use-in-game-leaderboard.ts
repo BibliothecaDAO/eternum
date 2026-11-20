@@ -1,7 +1,5 @@
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
-import { useCoarseCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
 import { configManager, LeaderboardManager, type PlayerStanding } from "@bibliothecadao/eternum";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, wholePoints } from "@bibliothecadao/types";
@@ -41,8 +39,6 @@ const buildFinalizedBlitzLeaderboard = (store: NativeFactStore): InGameLeaderboa
         {
           address: ContractAddress(account),
           rank,
-          registeredPoints: wholePoints(points),
-          accruingHoldPoints: 0,
           points: wholePoints(points),
         },
       ]),
@@ -50,29 +46,18 @@ const buildFinalizedBlitzLeaderboard = (store: NativeFactStore): InGameLeaderboa
   };
 };
 
-const LEADERBOARD_FACTS = [
-  "Hyperstructure",
-  "HyperstructureShares",
-  "BlitzResult",
-  "BlitzRoster",
-  "PlayerPoints",
-  "GameRegistry",
-] as const;
+const LEADERBOARD_FACTS = ["BlitzResult", "BlitzRoster", "PlayerPoints", "GameRegistry"] as const;
 
 export const useInGameLeaderboard = (): InGameLeaderboard => {
   const isBlitz = useResolvedWorldGameMode() === "blitz";
-  const leaderboardTick = useCoarseCurrentDefaultTick(LEADERBOARD_UPDATE_INTERVAL / 1_000);
   const facts = useNativeFacts(LEADERBOARD_FACTS);
 
   return useMemo(() => {
-    // The tick is a recompute signal, not an input: shareholder points accrue over time.
-    void leaderboardTick;
-
     if (isBlitz) {
       const finalizedLeaderboard = buildFinalizedBlitzLeaderboard(facts.store);
       if (finalizedLeaderboard) return finalizedLeaderboard;
     }
 
     return buildLiveLeaderboard(facts.store);
-  }, [facts, isBlitz, leaderboardTick]);
+  }, [facts, isBlitz]);
 };

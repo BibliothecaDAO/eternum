@@ -49,11 +49,6 @@ export const commandRoutes = [
     entrypoint: "activate_realm_economy",
   },
   {
-    name: "CreateReservedHyperstructure",
-    logic: "structures",
-    entrypoint: "create_reserved_hyperstructure",
-  },
-  {
     name: "SettleSeason",
     logic: "settlement",
     entrypoint: "settle_season",
@@ -150,52 +145,14 @@ export const commandRoutes = [
     entrypoint: "battle_guard",
   },
   {
-    name: "InitializeHyperstructure",
-    logic: "economy",
-    entrypoint: "initialize_hyperstructure",
-  },
-  {
-    name: "ContributeHyperstructure",
-    logic: "economy",
-    entrypoint: "contribute_hyperstructure",
-    items: "resources",
-  },
-  {
-    name: "AllocateHyperstructureShares",
-    logic: "economy",
-    entrypoint: "allocate_hyperstructure_shares",
-    items: "shareholders",
-  },
-  {
-    name: "SetConstructionAccess",
-    logic: "economy",
-    entrypoint: "set_construction_access",
-  },
-  {
-    name: "OpenRelicChest",
-    logic: "relics",
-    entrypoint: "open_relic_chest",
-  },
-  {
     name: "ApplyRelic",
     logic: "relics",
     entrypoint: "apply_relic",
   },
   {
-    name: "CloseSeason",
-    logic: "season",
-    entrypoint: "close_season",
-    batch: true,
-  },
-  {
     name: "RecordBlitzResults",
     logic: "prizes",
     entrypoint: "record_blitz_results",
-  },
-  {
-    name: "CraftRelic",
-    logic: "structures",
-    entrypoint: "craft_relic",
   },
   {
     name: "CreateGuild",

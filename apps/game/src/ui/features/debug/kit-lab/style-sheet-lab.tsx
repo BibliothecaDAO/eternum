@@ -820,7 +820,6 @@ const orderStep = (actionType: ActionType, staminaCost?: number) => ({
 const ORDER_LINES = [
   { path: [orderStep(ActionType.Move), orderStep(ActionType.Explore)], food: { wheat: 100, fish: 0 } },
   { path: [orderStep(ActionType.Move), orderStep(ActionType.Move, 10), orderStep(ActionType.Move, 10)] },
-  { path: [orderStep(ActionType.Move), orderStep(ActionType.Chest)] },
   { path: undefined, refusal: { reason: "stamina", need: 30 } as const, staminaWait: 24, staminaHeld: 12 },
 ].flatMap((order) => {
   const tip = orderTip({
@@ -839,7 +838,7 @@ const ORDER_LINES = [
 const TooltipSection = () => (
   <Element
     name="Tooltip and the map's order line"
-    rule="One tooltip; its words are its own. A line, what it costs on one compact line under it, why not (and when, to the second), and how, as a cue. The order lines are the game's own (orderTip): the action, then its exact cost; a crate is its action alone."
+    rule="One tooltip; its words are its own. A line, what it costs on one compact line under it, why not (and when, to the second), and how, as a cue. The order lines are the game's own (orderTip): the action, then its exact cost."
     sheet={
       <div className="flex flex-wrap items-start gap-4">
         <LabTip line="Wheat, 1,200 held" />
@@ -1037,11 +1036,7 @@ const RelicSection = () => (
         </span>
       </div>
     }
-    today={
-      <span className="ui-row__detail">
-        The game draws its own relic chips (active-relic-effects, compact inventory).
-      </span>
-    }
+    today={<span className="ui-row__detail">The game draws no relic chips.</span>}
   />
 );
 

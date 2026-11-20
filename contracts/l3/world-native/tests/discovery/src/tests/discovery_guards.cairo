@@ -10,9 +10,7 @@ fn blitz_light_and_heavy_guards_reach_both_inclusive_endpoints_in_every_slot() {
     for category in array![CAMP_CATEGORY, MINE_CATEGORY] {
         assert_endpoints(preset.rules, category, 1, TroopTier::T1, 999, 1499, 370, 623);
     }
-    for category in array![HYPERSTRUCTURE_CATEGORY, BANK_CATEGORY] {
-        assert_endpoints(preset.rules, category, 3, TroopTier::T2, 1499, 1999, 370, 623);
-    }
+    assert_endpoints(preset.rules, BANK_CATEGORY, 3, TroopTier::T2, 1499, 1999, 370, 623);
     assert_endpoints(preset.rules, BITCOIN_MINE_CATEGORY, 4, TroopTier::T2, 1499, 1999, 370, 623);
 }
 
@@ -24,7 +22,7 @@ fn single_value_guard_ranges_include_the_largest_u16() {
     preset.rules.troop_limit_config.heavy_guard_lower_bound = 65535;
     preset.rules.troop_limit_config.heavy_guard_upper_bound = 65535;
     assert_endpoints(preset.rules, CAMP_CATEGORY, 1, TroopTier::T1, 10, 10, 5, 5);
-    assert_endpoints(preset.rules, HYPERSTRUCTURE_CATEGORY, 3, TroopTier::T2, 65535, 65535, 5, 5);
+    assert_endpoints(preset.rules, BANK_CATEGORY, 3, TroopTier::T2, 65535, 65535, 5, 5);
 }
 
 #[test]

@@ -61,9 +61,7 @@ pub fn validate_params(params: CreateGameParams, rules: LaunchRules) {
         Into::<u32, u64>::into(params.registration_start) < params.start_settling_at,
         "registration must open before settling",
     );
-    if rules.mode_rules & crate::rules::SEASON_CLOSE == 0 {
-        assert!(params.end_grace_seconds == 0, "result finalisation has no grace period");
-    }
+    assert!(params.end_grace_seconds == 0, "result finalisation has no grace period");
     if rules.entry_rule == crate::rules::ENTRY_ROSTER {
         validate_roster_size(params.roster.len());
         assert!(!params.dev_mode_on, "Blitz does not use development mode");

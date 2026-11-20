@@ -40,7 +40,6 @@ pub struct FactWire {
     pub explorer_record: crate::troops::ExplorerRecord,
     pub mine_kind_key: crate::mines::MineKindKey,
     pub entity_name: crate::names::EntityName,
-    pub production_bonus: crate::production::ProductionBonus,
     pub recipe_key: crate::production::RecipeKey,
     pub realm_catalogue: crate::realms::RealmCatalogue,
     pub production: crate::resources::Production,

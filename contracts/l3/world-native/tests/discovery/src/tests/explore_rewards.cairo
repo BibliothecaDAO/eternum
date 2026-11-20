@@ -1,4 +1,5 @@
 pub use world_test_support::tests::explore_rewards::*;
+use crate::registrar::IRegistrarSafeDispatcherTrait;
 
 #[test]
 fn a_pool_reveal_pays_its_row_percent_of_army_strength() {
@@ -41,9 +42,9 @@ fn a_spire_root_finds_a_spire_only_under_the_spire_rule() {
     let config = super::camps::rules(true).map_config;
     let hit = explore_seed(SPIRE_ROOT);
     let miss = explore_seed(NO_SPIRE_ROOT);
-    assert_eq!(surface(config, hit, 1, 0, DISCOVER_SPIRES + DISCOVER_CAMPS), Discovery::Spire);
-    assert_eq!(surface(config, miss, 1, 0, DISCOVER_SPIRES + DISCOVER_CAMPS), Discovery::Camp);
-    assert_eq!(surface(config, hit, 1, 0, DISCOVER_CAMPS), Discovery::Camp);
+    assert_eq!(surface(config, hit, DISCOVER_SPIRES + DISCOVER_CAMPS), Discovery::Spire);
+    assert_eq!(surface(config, miss, DISCOVER_SPIRES + DISCOVER_CAMPS), Discovery::Camp);
+    assert_eq!(surface(config, hit, DISCOVER_CAMPS), Discovery::Camp);
 }
 
 #[test]
@@ -53,7 +54,7 @@ fn about_one_reveal_in_two_hundred_finds_a_spire() {
     config.camp_fail_probability = 1;
     let mut spires: u128 = 0;
     for sample in 0_u64..10000 {
-        if surface(config, 0x5350495245 + sample.into(), 1, 0, DISCOVER_SPIRES) == Discovery::Spire {
+        if surface(config, 0x5350495245 + sample.into(), DISCOVER_SPIRES) == Discovery::Spire {
             spires += 1;
         }
     }
@@ -137,41 +138,4 @@ fn each_blitz_row_pays_its_percent_of_strength_up_to_three_thousand() {
             assert_eq!(reward.amount, *paid.at(army).at(index) * RESOURCE_PRECISION);
         }
     }
-}
-
-#[test]
-fn an_applied_exploration_relic_boosts_the_flat_spire_jackpot() {
-    let (d, home, explorer) = blitz_army_of(1, 0);
-    super::resource_commands::grant(d, home, ESSENCE, 1000 * RESOURCE_PRECISION);
-    super::resource_commands::grant(
-        d, ResourceKey { game_id: 3, entity_id: explorer.explorer_id }, 47, RESOURCE_PRECISION,
-    );
-    assert!(
-        super::resource_commands::execute(
-            d,
-            Command::ApplyRelic(
-                crate::relics::ApplyRelic {
-                    entity_id: explorer.explorer_id, relic_id: 47, recipient: crate::relics::Recipient::Explorer,
-                },
-            ),
-            130,
-        ),
-    );
-    let army = GameState { contract_address: d.games }.explorer(explorer).unwrap();
-    assert_eq!(army.troops.boosts.incr_explore_reward_percent_num, 10000);
-    assert!(army.troops.boosts.incr_explore_reward_end_at > 140);
-    let mut spy = snforge_std::spy_events();
-    assert!(explore(d, explorer, SPIRE_ROOT));
-    assert_eq!(
-        spire_stories(ref spy, d),
-        array![
-            ExtractedReward {
-                explorer_id: explorer.explorer_id,
-                receiver: home.entity_id,
-                coord: neighbor(army.coord, 0),
-                resource_type: ESSENCE,
-                amount: 2000 * RESOURCE_PRECISION,
-            },
-        ],
-    );
 }

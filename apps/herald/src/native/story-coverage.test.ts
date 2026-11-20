@@ -48,15 +48,6 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
     },
   },
   StructureCapturedStory: { fields: [17, 34, 50], expected: { previous_owner: 17n, new_owner: 34n, points: 50n } },
-  HyperstructurePoints: { fields: [17, 50], expected: { player: 17n, points: 50n } },
-  RewardChestOpened: {
-    fields: [7, 3, 1, 12, 34, 17],
-    expected: { explorer_id: 7n, structure_id: 3n, coord, amount: 17n },
-  },
-  RelicChestOpened: {
-    fields: [7, 1, 12, 34, 3, 1, 2, 50, 44, 50],
-    expected: { explorer_id: 7n, coord, chest: { pack: "Fortress", lucky: true }, relics: [50n, 44n], points: 50n },
-  },
   ExplorationReward: {
     fields: [7, 3, 1, 12, 34, 1, 100],
     expected: { explorer_id: 7n, receiver: 3n, coord, resource_type: 1n, amount: 100n },
@@ -65,13 +56,7 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
     fields: [7, 3, 1, 12, 34, 38, 3000],
     expected: { explorer_id: 7n, receiver: 3n, coord, resource_type: 38n, amount: 3000n },
   },
-  SeasonEnded: { fields: [17], expected: 17n },
   BlitzFinalized: { fields: [11], expected: 11n },
-  RelicCrafted: { fields: [4], expected: 4n },
-  RelicActivated: {
-    fields: [41, 0, 2000, 1800, 0],
-    expected: { relic_id: 41n, recipient: "Explorer", rate_bps: 2000n, duration_seconds: 1800n, radius: 0n },
-  },
   SitePayout: {
     fields: [85, 3, 7, 9, 7, 0, 23, 500],
     expected: {
@@ -135,9 +120,9 @@ const standalone = {
   },
   PointsAwarded: {
     keys: ["1", "1", "17"],
-    data: ["4", "50", "100", "200"],
+    data: ["1", "50", "100", "200"],
     key: { game_id: 1n, player: 17n },
-    value: { activity: "Hyperstructure", points: 50n, player_points: 100n, season_points: 200n },
+    value: { activity: "StructureCapture", points: 50n, player_points: 100n, season_points: 200n },
   },
 };
 

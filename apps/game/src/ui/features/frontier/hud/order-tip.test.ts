@@ -34,7 +34,6 @@ describe("what a right-click on a tile does, said before the click", () => {
   it("names the order alone: no gesture, no description, no payoff", () => {
     expect(line([step(ActionType.Move), step(ActionType.Explore)])).toBe("Explore");
     expect(line([step(ActionType.Move), step(ActionType.Move, 1), step(ActionType.Move, 1)])).toBe("Move");
-    expect(line([step(ActionType.Move), step(ActionType.Chest)])).toBe("Open crate");
     expect(line([step(ActionType.Move), step(ActionType.Attack, 30)])).toBe("Attack");
     expect(line([step(ActionType.Move), step(ActionType.Help)])).toBe("Transfer troops");
     expect(line([step(ActionType.Move), step(ActionType.SpireTravel)])).toBe("Travel through the spire");
@@ -61,11 +60,7 @@ describe("what a right-click on a tile does, said before the click", () => {
     expect(cost([step(ActionType.Move), step(ActionType.Attack, 30)])).toBe("30 stamina");
   });
 
-  it("says a crate as its action alone, and an order that costs nothing with no cost line", () => {
-    expect(tip([step(ActionType.Move), step(ActionType.Chest, 5)], { food: { wheat: 10, fish: 0 } })).toEqual({
-      line: "Open crate",
-      cost: null,
-    });
+  it("says an order that costs nothing with no cost line", () => {
     expect(cost([step(ActionType.Move), step(ActionType.Help)])).toBeNull();
   });
 

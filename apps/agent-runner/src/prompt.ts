@@ -38,7 +38,7 @@ export const renderGameSummary = (input: GameSummaryInput): string =>
   [
     `Game ${input.gameId} "${input.gameName}" (${input.mode ?? "unknown mode"}) on the ${input.chain} chain.`,
     input.mode === "blitz"
-      ? "Blitz is a short timed match: a fixed number of hours, a small map, and victory points from exploration, fights, chests, and hyperstructures. Every tick counts."
+      ? "Blitz is a short timed match: a fixed number of hours, a small map, and victory points from exploration and fights. Every tick counts."
       : input.mode === "frontier"
         ? "Frontier keeps a season-long realm and rolls the expedition map and field armies over daily."
         : "Eternum is the long format: days of play, a large map, and an economy that rewards patient building and trade.",
@@ -129,7 +129,6 @@ const renderDelta = (delta: WorldDelta): string =>
     delta.hostilesAppeared.length > 0 && `Hostile armies now within reach: ${renderIds(delta.hostilesAppeared)}.`,
     delta.hostilesMoved.length > 0 && `Hostile armies moved: ${renderIds(delta.hostilesMoved)}.`,
     delta.hostilesLeft.length > 0 && `Hostile armies left reach: ${renderIds(delta.hostilesLeft)}.`,
-    delta.chestsAppeared.length > 0 && `Chests within reach: ${renderIds(delta.chestsAppeared)}.`,
     delta.ticksAdvanced > 0 && `${delta.ticksAdvanced} tick(s) passed.`,
   ]
     .filter((line): line is string => typeof line === "string")

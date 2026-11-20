@@ -6,7 +6,6 @@ export * from "./herald-game-sync-transport";
 export * from "./herald-http-types";
 export * from "./frontier-prize";
 export * from "./model-manifest";
-export * from "./shareholder-points";
 export * from "./scheduler";
 export * from "./world-spatial-projection";
 export * from "./leaderboard-activity";

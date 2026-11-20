@@ -199,7 +199,7 @@ const EffectRenderer = ({ effect, rect, showTribeDetails }: EffectRendererProps)
   // Calculate column positions based on grid layout
   // The row width is divided into columns; we estimate center positions
   const rowWidth = rect.width;
-  const numColumns = showTribeDetails ? 9 : 8;
+  const numColumns = showTribeDetails ? 6 : 5;
 
   // Approximate column widths (these match the grid template ratios)
   const getColumnCenter = (colIndex: number): number => {
@@ -217,11 +217,8 @@ const EffectRenderer = ({ effect, rect, showTribeDetails }: EffectRendererProps)
   const positions: Record<keyof PointDeltas | "rank", EffectPosition> = {
     rank: { x: getColumnCenter(0) + 20, y: rankY },
     tilesExploredPoints: { x: getColumnCenter(3 + offset), y: baseY },
-    cratesOpenedPoints: { x: getColumnCenter(4 + offset), y: baseY },
-    riftsTakenPoints: { x: getColumnCenter(5 + offset), y: baseY },
-    hyperstructuresTakenPoints: { x: getColumnCenter(6 + offset), y: baseY },
-    hyperstructuresHeldPoints: { x: getColumnCenter(7 + offset), y: baseY },
-    totalPoints: { x: getColumnCenter(8 + offset), y: baseY },
+    riftsTakenPoints: { x: getColumnCenter(4 + offset), y: baseY },
+    totalPoints: { x: getColumnCenter(5 + offset), y: baseY },
   };
   const pointEffects = (Object.keys(pointDeltas) as Array<keyof PointDeltas>).filter((key) => pointDeltas[key] > 0);
 

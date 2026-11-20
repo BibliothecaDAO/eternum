@@ -4,17 +4,6 @@ A lab proof that starts its own client does it through `scripts/lib/dev-client.m
 stopped whatever happens, or the server `--base-url` names. Proofs of pages that need no dev server take a base URL and
 use `scripts/prove-run.mjs`.
 
-`/lab/relic-chest`: the picked opening-only presentation, using `RewardTileModel`, `ChestTransitions` and
-`ChestTileDetails`. Focus the chest or its held-open hover plate, Open, inspect the reveal/receipt, then Reset. The
-local fixture still supplies the public pack row; its opening is delivered through the native story listener. Pack and
-Lucky are fixture inputs, with no appearance/preview selector. `prove:relic-chest` starts the app, drives the visible
-controls for Blitz and Frontier on WebGPU and WebGL2, saves evidence in a fresh directory and releases its
-browser/server.
-
-`/lab/relic-chest?mode=frontier` uses a 17-LORDS common-share reservation, the real Frontier calendar and the same chest
-panel/model/caller. Advance to day rollover shows the expired zero reward; Open produces the recorded paid amount,
-including zero. This is a local native-fact fixture, not a transaction.
-
 App painting comparison: `/lab/kit/app-art` shows Season and Blitz Results beside their existing reference art. Follow
 each page link to see the painting on its real component with local app fixtures. Run
 `pnpm --dir apps/game prove:app-art --port 4199 --out <fresh-dir>` for comparison and page screenshots, loaded-image
@@ -48,12 +37,10 @@ restore their network and identity overrides when you leave them.
 | Game   | Spire, Realm upgrade, Painted buildings | `/lab/game?scenario=spire`, `realm`, `painted-buildings`: the game itself on a lab chain                          | Owner; `playtest --steps lab-spire`                       |
 | Game   | Day end                                 | `/lab/day-end`                                                                                                    | Owner; `prove:day-end`                                    |
 | Game   | Game end                                | `/lab/endgame`                                                                                                    | `prove:endgame`                                           |
-| Game   | Chest opening                           | `/lab/relic-chest`                                                                                                | `prove:relic-chest`                                       |
 | Game   | Map labels & sites                      | `/lab/map-labels`                                                                                                 | Owner; lanes                                              |
 | Art    | Terrain                                 | Terrain & buildings `/lab/terrain`, Props `/lab/terrain-props`                                                    | Art; `verify:terrain:gallery`                             |
 | Art    | Models                                  | `/lab/models` and its families (`family=`)                                                                        | Art; owner                                                |
 | Art    | Characters                              | `/lab/characters`                                                                                                 | Art; `capture:character-animation`, `smoke:character-gym` |
-| Art    | Chests                                  | `/lab/rewards`                                                                                                    | Art                                                       |
 | Art    | Effects                                 | `/lab/world-fx`                                                                                                   | Art                                                       |
 | Art    | Bench                                   | Characters `/lab/character-benchmark`, World `/lab/world`, Chunks `/lab/chunks`, Terrain `/lab/terrain-benchmark` | The runners below                                         |
 | Data   | Balance & data                          | `/lab/data` (`view` live or balance, `mode`): see Balance & data below                                            | Owner; perf, rules                                        |

@@ -32,7 +32,6 @@ export function derivePresetFacts(
   deriveSettlement(emit, record(definition.settlement));
   deriveEconomy(emit, record(definition.economy));
   emit("ExtractionRewards", { rewards: definition.exploration });
-  emit("SeasonWinThreshold", { points: definition.season_win_points });
   return rows;
 }
 
@@ -125,8 +124,6 @@ function deriveSettlement(emit: EmitRule, settlement: PresetRecord) {
 function deriveEconomy(emit: EmitRule, economy: PresetRecord) {
   if ("trade" in economy) emit("TradeRules", record(economy.trade));
   if ("banks" in economy) emit("BankRules", record(economy.banks));
-  emit("HyperstructureRules", record(economy.hyperstructures));
-  emit("RelicRules", { rules: economy.relics });
   if ("deep" in economy) {
     const deep = some(economy.deep);
     if (deep) emit("DeepRules", deep);
@@ -147,13 +144,10 @@ function deriveEconomy(emit: EmitRule, economy: PresetRecord) {
     const labor = some(economy.labor);
     if (labor) emit("LaborRules", labor);
   }
-  const chests = some(economy.chests);
-  if (chests) emit("ChestRules", chests);
   if ("discovery" in economy) {
     const discovery = some(economy.discovery);
     if (discovery) emit("FrontierDiscoveryRules", discovery);
   }
-  emit("ArtificerCost", { research: economy.research_cost });
   const withdrawals = some(economy.withdrawals);
   if (withdrawals) {
     emit("DepositRules", record(withdrawals.deposits));

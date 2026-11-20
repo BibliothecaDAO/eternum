@@ -71,7 +71,7 @@ it.each([
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     getPlayerDisplayName(held.account.address);
     await vi.waitFor(() => expect(getPlayerDisplayName(held.account.address)).toBe("Attacker"));
-    const army = { stamina: 100, troopCount: 100, troopType: 1, tier: 1, battle_cooldown_end: 0, oaths: 0, relics: [] };
+    const army = { stamina: 100, troopCount: 100, troopType: 1, tier: 1, battle_cooldown_end: 0, oaths: 0 };
     held.live = {
       snapshot: {
         biome: "Grassland",
@@ -94,8 +94,6 @@ it.each([
       },
       target: { id: 8, addressOwner: BigInt(owner), hex: { x: 1, y: 0 }, targetType: "Army" },
       targetResources: [],
-      attackerRelicEffects: [],
-      targetRelicEffects: [],
       isLoading: false,
     };
     const host = document.createElement("div"),

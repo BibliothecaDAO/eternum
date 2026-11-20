@@ -43,20 +43,19 @@ pub mod WithdrawalState {
             token
         }
         fn retained_amount(
-            self: @ComponentState<TContractState>, game_id: u32, resource_type: u8, amount: u128, completed: u32,
+            self: @ComponentState<TContractState>, game_id: u32, resource_type: u8, amount: u128,
         ) -> u128 {
-            self.retained_tokens(game_id, resource_type, amount.into(), completed).try_into().unwrap()
+            self.retained_tokens(game_id, resource_type, amount.into()).try_into().unwrap()
         }
         fn retained_tokens(
-            self: @ComponentState<TContractState>, game_id: u32, resource_type: u8, amount: u256, completed: u32,
+            self: @ComponentState<TContractState>, game_id: u32, resource_type: u8, amount: u256,
         ) -> u256 {
             if resource_type == crate::resources::LORDS {
                 return amount;
             }
             let preset = crate::logic::preset_record::for_game(game_id);
-            let count = preset.withdrawal_terms.read().retention_count;
-            assert!(count != 0, "missing withdrawal rules");
-            let rate = preset.withdrawal_retention.read(core::cmp::min(completed, count - 1));
+            assert!(preset.withdrawal_terms.read().retention_count != 0, "missing withdrawal rules");
+            let rate = preset.withdrawal_retention.read(0);
             let percent: u256 = if crate::resources::is_troop_resource(resource_type) {
                 rate.troop_percent.into()
             } else {

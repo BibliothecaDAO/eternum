@@ -3,16 +3,12 @@ import type { SceneName } from "./types";
 interface BootstrapRendererStartupRuntimeInput {
   animate: () => void;
   attachInteractionRuntime: () => void;
-  cleanupExpiredTransitions: (maxAgeMs: number) => number;
-  debug?: (message: string) => void;
   document: Document;
   initializeHudScene: () => void;
   initialSceneName: SceneName;
   isDestroyed: boolean;
   prepareScenes: (initialSceneName: SceneName) => void;
-  registerCleanupInterval: (intervalId: ReturnType<typeof setInterval>) => void;
   rendererDomElement: HTMLElement;
-  setIntervalFn?: typeof setInterval;
   syncRouteFromLocation: () => void;
   warn?: (message: string) => void;
 }
@@ -26,12 +22,6 @@ export function bootstrapRendererStartupRuntime(input: BootstrapRendererStartupR
     document: input.document,
     rendererDomElement: input.rendererDomElement,
     warn: input.warn,
-  });
-  registerRendererTransitionCleanupInterval({
-    cleanupExpiredTransitions: input.cleanupExpiredTransitions,
-    debug: input.debug,
-    registerCleanupInterval: input.registerCleanupInterval,
-    setIntervalFn: input.setIntervalFn,
   });
   input.attachInteractionRuntime();
   input.initializeHudScene();
@@ -56,21 +46,4 @@ function mountRendererSurface(input: {
   // The map shakes with the HUD in a moment's screen shake.
   input.rendererDomElement.dataset.screenShake = "";
   input.document.body.appendChild(input.rendererDomElement);
-}
-
-function registerRendererTransitionCleanupInterval(input: {
-  cleanupExpiredTransitions: (maxAgeMs: number) => number;
-  debug?: (message: string) => void;
-  registerCleanupInterval: (intervalId: ReturnType<typeof setInterval>) => void;
-  setIntervalFn?: typeof setInterval;
-}): void {
-  const setIntervalFn = input.setIntervalFn ?? setInterval;
-  const intervalId = setIntervalFn(() => {
-    const cleanedCount = input.cleanupExpiredTransitions(10000);
-    if (cleanedCount > 0) {
-      input.debug?.(`Cleaned up ${cleanedCount} expired transition records`);
-    }
-  }, 30 * 1000);
-
-  input.registerCleanupInterval(intervalId);
 }

@@ -15,7 +15,6 @@ type Destroyable = {
 
 interface DestroyRendererRuntimeInput {
   backend?: RendererBackend & { renderer: RendererSurfaceLike };
-  cleanupIntervals: NodeJS.Timeout[];
   controls?: { dispose(): void };
   effectsBridgeRuntime?: Pick<RendererEffectsBridgeRuntime, "dispose">;
   guiFolders: TrackableGuiFolder[];
@@ -35,7 +34,6 @@ interface DestroyRendererRuntimeInput {
 }
 
 export function destroyRendererRuntime(input: DestroyRendererRuntimeInput): void {
-  clearRendererCleanupIntervals(input.cleanupIntervals);
   detachRendererSurface(input.renderer);
   disposeRendererResources(input.backend);
   destroyRendererScenes(input.scenes);
@@ -46,11 +44,6 @@ export function destroyRendererRuntime(input: DestroyRendererRuntimeInput): void
   input.removeWindowListener("resize", input.handleWindowResize);
   disposeSupportRuntimes(input.effectsBridgeRuntime, input.labelRuntime, input.monitoringRuntime, input.routeRuntime);
   disposeContactShadowResources();
-}
-
-function clearRendererCleanupIntervals(cleanupIntervals: NodeJS.Timeout[]): void {
-  cleanupIntervals.forEach((interval) => clearInterval(interval));
-  cleanupIntervals.length = 0;
 }
 
 function detachRendererSurface(renderer?: RendererSurfaceLike): void {

@@ -13,7 +13,6 @@ interface WorldObservation {
   ownStructures: Map<ID, string>;
   ownArmies: Map<ID, string>;
   hostiles: Map<ID, string>;
-  chests: Set<ID>;
 }
 
 export interface WorldDelta {
@@ -26,7 +25,6 @@ export interface WorldDelta {
   hostilesAppeared: ID[];
   hostilesMoved: ID[];
   hostilesLeft: ID[];
-  chestsAppeared: ID[];
 }
 
 interface HexBounds {
@@ -51,7 +49,6 @@ export const observeWorld = (game: RunnerGame): WorldObservation => {
     ),
     ownArmies: new Map(armies.map((army) => [army.entityId, fingerprintArmy(army)])),
     hostiles: hostileArmiesWithin(game, reach, new Set(armies.map((army) => army.entityId))),
-    chests: chestsWithin(client, reach),
   };
 };
 
@@ -63,13 +60,8 @@ export const summariseDelta = (previous: WorldObservation, current: WorldObserva
   hostilesAppeared: addedKeys(previous.hostiles, current.hostiles),
   hostilesMoved: movedKeys(previous.hostiles, current.hostiles),
   hostilesLeft: addedKeys(current.hostiles, previous.hostiles),
-  chestsAppeared: [...current.chests].filter((chest) => !previous.chests.has(chest)),
 });
 
-/**
- * The cost gate. Heartbeats, directions, phase changes, and startup always reach the model; a world delta does only
- * when something of mine changed, a hostile army is within reach, a chest appeared, or the phase flipped.
- */
 export const isActionable = (delta: WorldDelta, reason: WakeReason): boolean =>
   reason !== "world-delta" || hasMaterialChange(delta);
 
@@ -78,8 +70,7 @@ const hasMaterialChange = (delta: WorldDelta): boolean =>
   delta.ownStructures.length > 0 ||
   delta.ownArmies.length > 0 ||
   delta.hostilesAppeared.length > 0 ||
-  delta.hostilesMoved.length > 0 ||
-  delta.chestsAppeared.length > 0;
+  delta.hostilesMoved.length > 0;
 
 // Fingerprints
 
@@ -143,9 +134,6 @@ const isOwnedByViewer = (game: RunnerGame, armyId: ID): boolean => {
   const home = store.get("Structure", { game_id: game.client.gameId, entity_id: explorer.owner });
   return home !== undefined && home.owner === game.viewer();
 };
-
-const chestsWithin = (client: GameClient, reach: HexBounds[]): Set<ID> =>
-  new Set(reach.flatMap((bounds) => client.projection.getChestsInBounds(bounds).map((chest) => chest.entityId)));
 
 // Map diffs
 

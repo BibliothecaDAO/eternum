@@ -237,32 +237,3 @@ it("withholds the attack while what the ruin pays is still arriving, then asks a
   expect(attack).toHaveBeenCalledTimes(1);
   expect(attack).toHaveBeenCalledWith(expect.objectContaining({ explorer_id: 201, structure_id: SITE, relic_slot: 1 }));
 });
-
-it("attacks a ruin of a game whose ruins pay LORDS chests with no relic and no slot, even mid-snapshot", async () => {
-  const { host, attack, button, store } = ruinCard(FULL, false);
-  act(() => store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 }));
-  // The game's chest rules are a fact of their own: they say its ruins pay no relic, whatever else is still arriving.
-  act(() =>
-    store.applyFacts([
-      {
-        model: "ChestRules",
-        key: "0xb4",
-        value: {
-          game_id: 1,
-          price_ceiling: 50n,
-          shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
-          claim_window_seconds: 604_800,
-          pool_bps: 7_000,
-          top_n: 10,
-        },
-      },
-    ] as never),
-  );
-  expect(host.querySelector("[data-ruin-relic]")).toBeNull();
-  expect(host.querySelector("[data-relic-replacement]")).toBeNull();
-  expect(host.textContent).not.toContain("Reading");
-  await act(async () => button("Attack")!.click());
-  expect(attack).toHaveBeenCalledWith(
-    expect.objectContaining({ explorer_id: 201, structure_id: SITE, relic_slot: undefined }),
-  );
-});

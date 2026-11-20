@@ -820,10 +820,6 @@ export const LAB_FRONTIER_UNPUBLISHED_BOARD: HeraldFrontierLeaderboard = { ...LA
 /** Blitz's points for one of each scoring action, as its balance grants them (stored in millionths). */
 const BLITZ_POINTS = {
   tile: Number(blitzVictoryPointConfig.pointsForTileExploration / BigInt(VICTORY_POINTS_MULTIPLIER)),
-  crate: Number(blitzVictoryPointConfig.pointsForRelicDiscovery / BigInt(VICTORY_POINTS_MULTIPLIER)),
-  hyperstructure: Number(
-    blitzVictoryPointConfig.pointsForHyperstructureClaimAgainstBandits / BigInt(VICTORY_POINTS_MULTIPLIER),
-  ),
   claim: Number(
     blitzVictoryPointConfig.pointsForNonHyperstructureClaimAgainstBandits / BigInt(VICTORY_POINTS_MULTIPLIER),
   ),
@@ -835,10 +831,7 @@ const blitzBoardRow = (address: string, index: number) => {
   const claims = 4 - Math.floor(index / 2);
   const activityBreakdown = {
     exploration: { count: tiles, points: tiles * BLITZ_POINTS.tile },
-    openRelicChest: { count: 3, points: 3 * BLITZ_POINTS.crate },
-    hyperStructureBanditsDefeat: { count: 1, points: BLITZ_POINTS.hyperstructure },
     otherStructureBanditsDefeat: { count: claims, points: claims * BLITZ_POINTS.claim },
-    hyperstructureShare: { count: 1, points: 1_060 - index * 180 },
   };
   const totalPoints = Object.values(activityBreakdown).reduce((sum, { points }) => sum + points, 0);
   return { address, rank: index + 1, totalPoints, activityBreakdown };

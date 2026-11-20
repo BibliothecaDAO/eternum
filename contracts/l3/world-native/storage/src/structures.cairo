@@ -1,10 +1,9 @@
 use starknet::storage::Map;
 
 #[starknet::storage_node]
-pub struct StructureStateStorage<TStructureRecord, TExpeditionSite, TSiteChest> {
+pub struct StructureStateStorage<TStructureRecord, TExpeditionSite> {
     pub structures: Map<(u32, u64), TStructureRecord>,
     pub expedition_sites: Map<(u32, u64), Option<TExpeditionSite>>,
-    pub site_chests: Map<(u32, u64), Option<TSiteChest>>,
 }
 
 #[starknet::storage_node]

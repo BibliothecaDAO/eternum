@@ -125,7 +125,7 @@ const READY = `document.documentElement.dataset.bootState === "app-ready" && doc
 
 const USAGE =
   "expected --base-url <url> --out <dir>, and for a game --game <chain>:<game> --profile <dir> " +
-  "[--at-rest] [--watch] [--tasks <task,task>] [--crate <col>,<row>] [--until-end <minutes>] [--ended]";
+  "[--at-rest] [--watch] [--tasks <task,task>] [--until-end <minutes>] [--ended]";
 
 export const parseArgs = (argv) => {
   const args = { baseUrl: "https://127.0.0.1:4176", out: join(process.cwd(), "play-proof") };
@@ -135,7 +135,6 @@ export const parseArgs = (argv) => {
     else if (argv[index] === "--out") args.out = value();
     else if (argv[index] === "--game") args.game = value();
     else if (argv[index] === "--profile") args.profile = value();
-    else if (argv[index] === "--crate") args.crate = value().split(",").map(Number);
     else if (argv[index] === "--until-end") args.untilEndMinutes = Number(value());
     else if (argv[index] === "--ended") args.ended = true;
     else if (argv[index] === "--at-rest") args.atRest = true;

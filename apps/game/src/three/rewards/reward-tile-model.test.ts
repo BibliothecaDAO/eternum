@@ -85,45 +85,6 @@ describe("instanced reward hierarchies", () => {
   });
 });
 
-describe("chest camera facing", () => {
-  it("faces each chest toward the camera without rotating its altar or losing its tile placement", () => {
-    const asset = createAsset();
-    asset.scene.clear();
-    asset.animations = [];
-    const body = new Group();
-    body.name = "ChestBody";
-    const chest = new Mesh(new PlaneGeometry(), new MeshStandardMaterial());
-    chest.name = "chest";
-    body.add(chest);
-    const altar = new Mesh(new PlaneGeometry(), new MeshStandardMaterial());
-    altar.name = "altar";
-    asset.scene.add(body, altar);
-    const model = new RewardTileModel(asset, 2);
-    model.setMatrixAt(0, new Matrix4());
-    model.setMatrixAt(1, new Matrix4().makeTranslation(20, 0, 0));
-    model.setCount(2);
-    model.updatePresentation(0, new Vector3(10, 8, 10));
-    model.updateAnimations(0);
-    const matrix = new Matrix4();
-    const chestMesh = model.instancedMeshes.find((mesh) => mesh.name === "chest")!;
-    const altarMesh = model.instancedMeshes.find((mesh) => mesh.name === "altar")!;
-    for (const index of [0, 1]) {
-      chestMesh.getMatrixAt(index, matrix);
-      const forward = new Vector3(0, 0, 1).transformDirection(matrix);
-      expect(forward.x).toBeCloseTo(index === 0 ? Math.SQRT1_2 : -Math.SQRT1_2);
-      expect(forward.z).toBeCloseTo(Math.SQRT1_2);
-      expect(new Vector3().setFromMatrixPosition(matrix).x).toBe(index * 20);
-      altarMesh.getMatrixAt(index, matrix);
-      expect(new Vector3(0, 0, 1).transformDirection(matrix).toArray()).toEqual([0, 0, 1]);
-    }
-    model.updatePresentation(1, new Vector3(-10, 8, -10));
-    model.updateAnimations(0);
-    chestMesh.getMatrixAt(0, matrix);
-    expect(new Vector3(0, 0, 1).transformDirection(matrix).z).toBeCloseTo(-Math.SQRT1_2);
-    model.dispose();
-  });
-});
-
 describe("reward animation uploads", () => {
   it("uploads only changed slots and leaves stationary parts clean at GPU precision", () => {
     const asset = createAsset();
@@ -241,33 +202,4 @@ describe("reward part batching", () => {
     expect(model.instancedMeshes).toHaveLength(3);
     model.dispose();
   });
-});
-
-it("draws the settled chest and altar without instancing or batching decorative orbit gems", () => {
-  const asset = createAsset();
-  asset.scene.clear();
-  asset.animations = [];
-  const body = new Group();
-  body.name = "ChestBody";
-  const surface = new Mesh(new PlaneGeometry(), new MeshStandardMaterial());
-  surface.name = "body";
-  body.add(surface);
-  const altar = new Mesh(new PlaneGeometry(), new MeshStandardMaterial());
-  altar.name = "altar";
-  const orbit = new Group();
-  orbit.name = "OrbitGems";
-  const gem = new Mesh(new PlaneGeometry(), new MeshStandardMaterial());
-  gem.name = "gem";
-  orbit.add(gem);
-  asset.scene.add(body, altar, orbit);
-  const model = new RewardTileModel(asset, 4);
-  try {
-    model.setMatrixAt(0, new Matrix4());
-    model.setCount(1);
-    model.updateAnimations(0.5);
-    expect(model.renderMeshes.map((mesh) => mesh.name).sort()).toEqual(["altar", "body"]);
-    expect(model.renderMeshes.every((mesh) => mesh.visible)).toBe(true);
-  } finally {
-    model.dispose();
-  }
 });

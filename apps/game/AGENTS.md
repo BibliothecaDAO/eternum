@@ -32,10 +32,9 @@ it from here.
    `resolveStructureRotationY` (`src/three/managers/structure-manager.ts:1495`), which gives zero yaw to any set holding
    a settlement (realm, village, camp, cleared site), a Frontier beast or a skin of one of them, and keeps the turn it
    was given otherwise (`src/three/structures/structure-orientation.ts:12`). A ruin or a rift drawn with its beast
-   therefore faces the camera (`src/three/structures/structure-orientation.test.ts:49`). Chests take their own zero yaw
-   (`src/three/managers/chest-manager.ts:589`). Not yet: a bank is turned 120° before the resolver is asked
-   (`src/three/managers/structure-manager.ts:1483`), and every other set keeps the one-of-six turn drawn from its tile
-   (`:1488`): hyperstructures, mines, and ruin and rift landmarks standing alone
+   therefore faces the camera (`src/three/structures/structure-orientation.test.ts:49`). Not yet: a bank is turned 120°
+   before the resolver is asked (`src/three/managers/structure-manager.ts:1483`), and every other set keeps the
+   one-of-six turn drawn from its tile (`:1488`): hyperstructures, mines, and ruin and rift landmarks standing alone
    (`src/three/structures/structure-orientation.test.ts:60`). A zero yaw faces the camera only when the asset's front is
    on +Z: check it on a capture of the model.
 3. **The player owns the camera and the input.** The camera moves only for a reason `CameraNavigation` names
@@ -63,11 +62,10 @@ it from here.
    `scripts/icons/AGENTS.md`.
 5. **Validate in the lab, then wire into the game.** A new screen, model, icon or flow is built and judged in the lab
    (`/lab`, `src/lab/README.md`) before the game uses it. A lab page mounts the production components on real assets,
-   with real or recorded game data or representative native-fact fixtures, never a lab-only copy, as the chest opening
-   does (`src/lab/README.md:7`). A choice between options is made on a lab page that shows each option as stills,
-   desktop and phone, beside what ships; only the option picked is wired into the game. Stills compare options; motion
-   and interaction are proven by their temporal captures (`docs/architecture/animation-evaluation.md:103`, from the
-   repository root) and by the playtest.
+   with real or recorded game data or representative native-fact fixtures, never a lab-only copy. A choice between
+   options is made on a lab page that shows each option as stills, desktop and phone, beside what ships; only the option
+   picked is wired into the game. Stills compare options; motion and interaction are proven by their temporal captures
+   (`docs/architecture/animation-evaluation.md:103`, from the repository root) and by the playtest.
 
 ## CRITICAL Git Rules for Parallel Agents CRITICAL
 
@@ -114,7 +112,7 @@ Resolve conflicts in YOUR files only If conflict is in a file you didn't modify,
 | Rule                                                                                                                                           | Enforcement                                                                                                                 |
 | ---------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | An already-playing lab scenario supplies its linked wallet when onboarding is outside its proof; missing-wallet scenarios retain wallet setup. | `src/lab/game/lab-chain-wallet.test.tsx` renders the real connection window, including its portal, for both fixture states. |
-| Playing lab scenarios seed discovery facts before an action and preserve native payout units.                                                  | `src/lab/game/ruin-fight-scenario.test.ts` checks the funded card before attack and exact chest/pool/balance afterward.     |
+| Playing lab scenarios seed discovery facts before an action and preserve native payout units.                                                  | `src/lab/game/ruin-fight-scenario.test.ts` checks the card before attack and the exact balance afterward.                   |
 
 `pnpm --dir apps/game playtest --port <your port>` builds the client as players get it (`vite build` into its own
 `.context/playtest-builds/<run>` directory), serves it with `vite preview` on that port, plays the newest live game of
@@ -268,46 +266,45 @@ keyboard; run it at each device's size with `--viewport`), `--steps lab-ruin-fig
 the owner's army beside the ruin before its fight: the army picked from the HUD must bring the camera onto it; then, on
 a phone with the ruin first panned under where its card opens, the ruin's card opened from the map (a right-click, a
 tap) and **Attack** pressed must leave the camera where it was, the chain's BattleGuard answered, the ruin gone, the
-army at 4,011 and the ruin's chest shown; then the Feed, opened from its place, must tell the attack and the clear it
-won as one row, the clear's; play it at `--viewport 390x844` too), `--steps lab-hover-zoom` (the army after its fight,
-with nothing selected and the dev overlays on, at each wheel step from the closest zoom to the farthest: each army's
-token must stand over its own model, and the pointer on its model at its feet, middle and top must open its plate;
-`--steps lab-hover-zoom-pair` the same with the realm's two armies side by side, the merge game's),
-`--steps lab-high-ground` (`/lab/game?scenario=high-ground`, the spire's game on snow, bare rock and tundra, with the
-dev overlays on: the army picked, every tile it is lit on must lie above the highest ground under it),
-`--steps lab-day-turn`, `--steps lab-day-later`, `--steps lab-day-turn-slow` and `--steps lab-day-later-short` (the same
-game on Frontier's day 2 ending, `/lab/game?scenario=day-turn` in the session or `scenario=day-later` before it opened,
-over prod's recorded history of that day, the map opened where the realm stood on day 2: the summary's totals must be
-the recorded player's own day 2 (slow: history answers only after the moment went on, and the summary opens then; short:
-a page of stories late in day 2 leaves its start unread, and the card shows dashes and says why), and Continue must
-bring the camera onto the realm's day-3 site), `--steps lab-day-later-quiet` and `--steps lab-day-later-played-on` (day
-2 not played, or the player already played on in day 3 on another device: no summary, and the day's end still brings the
-camera onto the day-3 site), `--steps lab-season-opens` (a player in the season 30 s before its first day, their realm
-founded but on no site yet: the map must draw with no error, then day 1's turn must play, with no summary, and leave the
-camera on the realm's first site), `--steps lab-day-turn-asleep` (the owner's phone, at `--viewport 390x844`: a minute
-before day 2 ends the tab's window is minimized and the page frozen, its WebGL context lost and Herald's stream silent
-with its socket open, then brought back past the end; on WebGL the page must boot again and the map draw, its middle
-band no more than half black past what it was, the loss's two error lines its outcome; on WebGPU, whose device this
-machine keeps, the silent stream must be dropped and resumed; then the summary and Continue as above),
-`--steps realm-load` (a spectator's realm view as first met: the map held still, the first press of Realm, the realm
-held still, back to the map, Realm again, and the realm's address loaded again; each step reports its downloads by kind
-with their bytes on the wire, the GPU work its frames asked for (pipelines and shaders compiled, bytes uploaded), long
-frames, the frames where the drawn scene changed and the scene marks `scene:<name>:requested` and
-`scene:<name>:presentable`; the boot reports the same as `bootWindow`), `--steps lab-realm-load` (the same on the lab's
-built Kingdom, `/lab/game?scenario=painted-buildings`, reopened on its realm with `&scene=hex`),
-`--steps lab-devcon-art` (all regular and golden Devcon model tiers on the map, HUD and local keep;
-`/lab/game?scenario=devcon-0` through `devcon-3`, and `devcon-golden-0` through `devcon-golden-3`),
-`--steps lab-devcon-season` (regular, golden and ordinary Season homes outside the streamed scope;
-`/lab/game?scenario=devcon-season`), `--steps blitz-realm-load` (the same on the newest live Blitz game),
-`--steps entry` (the game entered from a fresh profile, then the same address loaded again from the HTTP cache, each
-followed by 10 s still on the map read for what keeps running: frame callbacks, repeating timers and timers of 100 ms or
-more by the code that scheduled them, elements restyled by script, running CSS animations, canvases, full-screen layers
-a player cannot see, the boot shell and the GPU memory held, and the first seconds of play from one continuous frame
-record from the drop of the doorway (frames over 33 ms and the worst frame in the 5 s after it, the time to the first
-second of frames at or under 20 ms, each counting the frame that crosses its end; a record whose frames do not reach
-from the drop through the window is refused as incomplete, and the record is kept in the transcript beside its judgment,
-`doorwayFrames`); the reload's entry milestones are kept), `--steps lab-entry` (the same on the lab's built Kingdom,
-needing no live game), `--steps map-frames` (the spectator's map only: entered, idle, pan, zoom),
+army at 4,011; then the Feed, opened from its place, must tell the attack and the clear it won as one row, the clear's;
+play it at `--viewport 390x844` too), `--steps lab-hover-zoom` (the army after its fight, with nothing selected and the
+dev overlays on, at each wheel step from the closest zoom to the farthest: each army's token must stand over its own
+model, and the pointer on its model at its feet, middle and top must open its plate; `--steps lab-hover-zoom-pair` the
+same with the realm's two armies side by side, the merge game's), `--steps lab-high-ground`
+(`/lab/game?scenario=high-ground`, the spire's game on snow, bare rock and tundra, with the dev overlays on: the army
+picked, every tile it is lit on must lie above the highest ground under it), `--steps lab-day-turn`,
+`--steps lab-day-later`, `--steps lab-day-turn-slow` and `--steps lab-day-later-short` (the same game on Frontier's day
+2 ending, `/lab/game?scenario=day-turn` in the session or `scenario=day-later` before it opened, over prod's recorded
+history of that day, the map opened where the realm stood on day 2: the summary's totals must be the recorded player's
+own day 2 (slow: history answers only after the moment went on, and the summary opens then; short: a page of stories
+late in day 2 leaves its start unread, and the card shows dashes and says why), and Continue must bring the camera onto
+the realm's day-3 site), `--steps lab-day-later-quiet` and `--steps lab-day-later-played-on` (day 2 not played, or the
+player already played on in day 3 on another device: no summary, and the day's end still brings the camera onto the
+day-3 site), `--steps lab-season-opens` (a player in the season 30 s before its first day, their realm founded but on no
+site yet: the map must draw with no error, then day 1's turn must play, with no summary, and leave the camera on the
+realm's first site), `--steps lab-day-turn-asleep` (the owner's phone, at `--viewport 390x844`: a minute before day 2
+ends the tab's window is minimized and the page frozen, its WebGL context lost and Herald's stream silent with its
+socket open, then brought back past the end; on WebGL the page must boot again and the map draw, its middle band no more
+than half black past what it was, the loss's two error lines its outcome; on WebGPU, whose device this machine keeps,
+the silent stream must be dropped and resumed; then the summary and Continue as above), `--steps realm-load` (a
+spectator's realm view as first met: the map held still, the first press of Realm, the realm held still, back to the
+map, Realm again, and the realm's address loaded again; each step reports its downloads by kind with their bytes on the
+wire, the GPU work its frames asked for (pipelines and shaders compiled, bytes uploaded), long frames, the frames where
+the drawn scene changed and the scene marks `scene:<name>:requested` and `scene:<name>:presentable`; the boot reports
+the same as `bootWindow`), `--steps lab-realm-load` (the same on the lab's built Kingdom,
+`/lab/game?scenario=painted-buildings`, reopened on its realm with `&scene=hex`), `--steps lab-devcon-art` (all regular
+and golden Devcon model tiers on the map, HUD and local keep; `/lab/game?scenario=devcon-0` through `devcon-3`, and
+`devcon-golden-0` through `devcon-golden-3`), `--steps lab-devcon-season` (regular, golden and ordinary Season homes
+outside the streamed scope; `/lab/game?scenario=devcon-season`), `--steps blitz-realm-load` (the same on the newest live
+Blitz game), `--steps entry` (the game entered from a fresh profile, then the same address loaded again from the HTTP
+cache, each followed by 10 s still on the map read for what keeps running: frame callbacks, repeating timers and timers
+of 100 ms or more by the code that scheduled them, elements restyled by script, running CSS animations, canvases,
+full-screen layers a player cannot see, the boot shell and the GPU memory held, and the first seconds of play from one
+continuous frame record from the drop of the doorway (frames over 33 ms and the worst frame in the 5 s after it, the
+time to the first second of frames at or under 20 ms, each counting the frame that crosses its end; a record whose
+frames do not reach from the drop through the window is refused as incomplete, and the record is kept in the transcript
+beside its judgment, `doorwayFrames`); the reload's entry milestones are kept), `--steps lab-entry` (the same on the
+lab's built Kingdom, needing no live game), `--steps map-frames` (the spectator's map only: entered, idle, pan, zoom),
 `--model-override <dir>` (the models under `<dir>`, at their path below `public/models`, served in place of the deployed
 ones whatever their content hash, a spectator's or a lab game's only;
 `node scripts/client-playtest/heavier-models.mjs --triangles 4|16 --textures 2 --out <dir> <model>…` writes such copies
@@ -330,41 +327,37 @@ with no army left selected; `--steps lab-actions-deploy`, a new army from the do
 `--steps lab-actions-research`, Well lore researched from Research (`scenario=research`); and
 `--steps lab-actions-claim`, a Realm's labor claimed from Realms (a desktop's purse, a phone's Menu: Claim;
 `scenario=claim`, whose value relay the tab answers as the relay does: the grant's facts first, then the reply naming
-their transaction); on `scenario=upkeep` (LORDS held, the army short of stamina, with a chest beside it),
-`--steps lab-actions-demolish`, a first-ring building's Delete then Confirm delete, `--steps lab-actions-chest`, the
-chest beside the army opened (a desktop's right-click on the tile offering Open crate; a phone's tap, then Open), and
-`--steps lab-actions-withdraw`, the purse's LORDS withdrawn (Maximum, then Withdraw; the tab answers the L2 ledger's
-pause and payment reads); and `--steps lab-actions-settle`, a season entered by a player not yet settled
-(`scenario=settle`, which opens on the home page: the run's first step is the Frontier card's Play, timed through the
-doorway's SettleSeason to the game on the founded realm, and the boot is waited for after it). Each step declares the
-game command it sends (`sends`) and fails in the lab when its press sent another; `src/lab/game/action-coverage.test.ts`
-fails a command of the catalog Frontier enables that no step sends and `UNMEASURED_COMMANDS` does not name with its
-reason. Each names its exact result: the renderer's mark once the frame drawing it was rendered (`presented:<result>`,
-`src/three/presented-results.ts`: the explored tile's ground, once half its fog has swept away, the army's walk, the
-deployed army drawn, the merged army leaving the map, that building on that plot or leaving it, that Shrine or Well
-leaving its tile, that chest's opening started; or, for a scene drawn under a cover, once the paint without the cover:
-the game uncovered as its doorway leaves), or a page condition: the Castle sheet naming exactly the next level, each
-army a fight or transfer changed showing exactly the count the chain answered, the Well lore node researched, the Realms
-sheet listing the home claimed today, the army's panel reading the stamina refilled to or naming the tier bought, the
-purse reading the LORDS left; another target's result is not the action's. Each is cut where the client records its way:
-handled (the press to the command), sent (signed and answered by the RPC), confirmed (the chain and Herald, to the
-pre-confirmed diff), applied (the diff's facts in the store) and drawn (to the result); a claim, which the relay signs,
-has no sent segment, and its confirmed runs from the request. A step completes only with every mark reached and every
-frame from the press to the result observed. `--capture-results` also records the page's frames and fails a step unless,
-in its result's region of the screen, the pixels that show it appear at its mark (not a frame before, not absent three
-frames after, counting the page's own frames, so a slow frame is one frame; the screen at a moment is the last frame
-sent by then); an explore names its tile's ground as its target instead, which must read explored (its mean grey past
-half the way from its fog to its last look) within that window, whatever changed round it; a chest names its body where
-the map drew it (a phone's from the selected hex the page reports, `window.__eternumMapSelection.hexOnScreen`), which
-must start to change (its grey 16 levels from before) in the window, as the chest sinks away seconds later; a season's
-entry names the screen's lower third, below the doorway's steps, which turns from the doorway's painting to the map; a
-demolished building's proof is open (the Build sheet's ghost fills its plot next, and the proof reads the plot's last
-look), so a capture run fails it. A result's place past the screen's edge fails the step. The frames around it are kept.
-Each run writes `click-to-result.md`, each action's segments and total as median (min–max) over its quiet runs),
-`--compare <summary.json>` (fails when boot regresses, when an action the baseline timed has no timed run or a renderer
-mode it timed is missing, or when an action's press-to-result median is past the slowest run of that baseline by more
-than a frame; actions the baseline never timed are listed as new; `scripts/client-playtest/baselines/` keeps the lab's,
-one per step list and device, measured on the lanes' machine), `--headed`.
+their transaction); on `scenario=upkeep` (LORDS held, the army short of stamina), `--steps lab-actions-demolish`, a
+first-ring building's Delete then Confirm delete, and `--steps lab-actions-withdraw`, the purse's LORDS withdrawn
+(Maximum, then Withdraw; the tab answers the L2 ledger's pause and payment reads); and `--steps lab-actions-settle`, a
+season entered by a player not yet settled (`scenario=settle`, which opens on the home page: the run's first step is the
+Frontier card's Play, timed through the doorway's SettleSeason to the game on the founded realm, and the boot is waited
+for after it). Each step declares the game command it sends (`sends`) and fails in the lab when its press sent another;
+`src/lab/game/action-coverage.test.ts` fails a command of the catalog Frontier enables that no step sends and
+`UNMEASURED_COMMANDS` does not name with its reason. Each names its exact result: the renderer's mark once the frame
+drawing it was rendered (`presented:<result>`, `src/three/presented-results.ts`: the explored tile's ground, once half
+its fog has swept away, the army's walk, the deployed army drawn, the merged army leaving the map, that building on that
+plot or leaving it, that Shrine or Well leaving its tile; or, for a scene drawn under a cover, once the paint without
+the cover: the game uncovered as its doorway leaves), or a page condition: the Castle sheet naming exactly the next
+level, each army a fight or transfer changed showing exactly the count the chain answered, the Well lore node
+researched, the Realms sheet listing the home claimed today, the army's panel reading the stamina refilled to or naming
+the tier bought, the purse reading the LORDS left; another target's result is not the action's. Each is cut where the
+client records its way: handled (the press to the command), sent (signed and answered by the RPC), confirmed (the chain
+and Herald, to the pre-confirmed diff), applied (the diff's facts in the store) and drawn (to the result); a claim,
+which the relay signs, has no sent segment, and its confirmed runs from the request. A step completes only with every
+mark reached and every frame from the press to the result observed. `--capture-results` also records the page's frames
+and fails a step unless, in its result's region of the screen, the pixels that show it appear at its mark (not a frame
+before, not absent three frames after, counting the page's own frames, so a slow frame is one frame; the screen at a
+moment is the last frame sent by then); an explore names its tile's ground as its target instead, which must read
+explored (its mean grey past half the way from its fog to its last look) within that window, whatever changed round it;
+a season's entry names the screen's lower third, below the doorway's steps, which turns from the doorway's painting to
+the map; a demolished building's proof is open (the Build sheet's ghost fills its plot next, and the proof reads the
+plot's last look), so a capture run fails it. A result's place past the screen's edge fails the step. The frames around
+it are kept. Each run writes `click-to-result.md`, each action's segments and total as median (min–max) over its quiet
+runs), `--compare <summary.json>` (fails when boot regresses, when an action the baseline timed has no timed run or a
+renderer mode it timed is missing, or when an action's press-to-result median is past the slowest run of that baseline
+by more than a frame; actions the baseline never timed are listed as new; `scripts/client-playtest/baselines/` keeps the
+lab's, one per step list and device, measured on the lanes' machine), `--headed`.
 
 Each invocation writes to a new directory, `<root>/<time>-<role>`, and never into an existing one:
 

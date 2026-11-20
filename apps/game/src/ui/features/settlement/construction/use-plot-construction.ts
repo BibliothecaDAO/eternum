@@ -48,7 +48,6 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
     "ResourceBalance",
     "ResourceProduction",
     "ResourceWeight",
-    "ProductionBonus",
     "Building",
   ]);
   const names = usePlayerNames();

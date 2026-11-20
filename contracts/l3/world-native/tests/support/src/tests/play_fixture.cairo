@@ -23,18 +23,11 @@ pub trait IPlayFixture<T> {
 pub use crate::command_masks::BLITZ_COMMAND_MASK;
 pub const BLITZ_RULES: u32 = crate::rules::HOME_REWARDS
     + crate::rules::DISCOVER_CAMPS
-    + crate::rules::DISCOVER_CHESTS
     + crate::rules::CAPTURE_VILLAGES
     + crate::rules::SAME_OWNER_TRANSFER
-    + crate::rules::RESERVED_HYPERSTRUCTURES
-    + crate::rules::OWNER_ONLY_SHARES
-    + crate::rules::HYPERSTRUCTURE_MULTIPLIERS
     + crate::rules::PRODUCTION_START
     + crate::rules::DISCOVER_SPIRES;
-pub const TEST_RULES: u32 = crate::rules::DISCOVER_HYPERSTRUCTURES
-    + crate::rules::SPIRES
-    + crate::rules::SEASON_CLOSE
-    + crate::rules::DEV_VILLAGE_ENTRY;
+pub const TEST_RULES: u32 = crate::rules::SPIRES + crate::rules::DEV_VILLAGE_ENTRY;
 pub fn rules() -> crate::rules::SliceRules {
     let data = read_txt(@FileTrait::new("../fixtures/current-presets/conformance.txt"));
     let mut fields = data.span();
@@ -78,7 +71,6 @@ pub fn fixture_preset(rules: crate::rules::SliceRules) -> crate::presets::Preset
                     },
                 );
     }
-    preset.season_win_points = 0;
     preset.economy.withdrawals = None;
     preset
         .settlement

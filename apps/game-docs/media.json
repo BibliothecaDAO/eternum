@@ -386,31 +386,6 @@
     "seconds": 7
   },
   {
-    "name": "blitz/hyperstructure",
-    "frame": "desktop",
-    "setup": [
-      {
-        "open": "/lab/studio?gameMode=blitz&clean=1&capture=1"
-      },
-      {
-        "until": "document.querySelector('[data-studio-lab][data-ready=true]')",
-        "ms": 180000
-      },
-      {
-        "wait": 3000
-      }
-    ],
-    "record": [
-      {
-        "eval": "window.__studio.take('hyperstructure-rise')"
-      },
-      {
-        "wait": 500
-      }
-    ],
-    "seconds": 9
-  },
-  {
     "name": "blitz/an-hour",
     "frame": "desktop",
     "setup": [
@@ -434,46 +409,6 @@
       }
     ],
     "seconds": 9
-  },
-  {
-    "name": "blitz/open-crate",
-    "frame": "game",
-    "setup": [
-      {
-        "open": "/lab/relic-chest?capture=1"
-      },
-      {
-        "until": "document.querySelector('[data-relic-chest-lab]')?.dataset.ready === 'true'",
-        "ms": 180000
-      },
-      {
-        "wait": 2000
-      },
-      {
-        "click": "[aria-label=\"Focus relic chest\"]"
-      },
-      {
-        "wait": 2500
-      }
-    ],
-    "record": [
-      {
-        "wait": 800
-      },
-      {
-        "clickText": "Open"
-      },
-      {
-        "wait": 5500
-      }
-    ],
-    "seconds": 8,
-    "cropRect": [
-      0,
-      66,
-      1920,
-      664
-    ]
   },
   {
     "name": "frontier/build",

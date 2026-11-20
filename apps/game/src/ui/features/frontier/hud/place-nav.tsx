@@ -43,11 +43,7 @@ export const PlaceNav = ({
   onGo: (place: Place) => void;
   realmDot?: Dot;
   realmIcon?: IconMeaning;
-  /**
-   * The view shown and the list of views the switch opens in its place, and the marks it carries; without a view or a
-   * list it keeps the Realm / World switch.
-   */
-  views?: { icon?: IconMeaning; word?: string; items?: readonly MenuItem[]; marks?: ReactNode } | null;
+  views?: { icon?: IconMeaning; word?: string; items?: readonly MenuItem[] } | null;
   /** Whether Research has a node to buy; none leaves the slot out, for a player with no realm to research. */
   researchDot?: boolean;
   /** Events arrived since the Feed was last read. */
@@ -76,7 +72,6 @@ export const PlaceNav = ({
           icon={views?.icon ?? (onRealm ? "map" : realmIcon)}
           word={views?.word ?? (onRealm ? layerName(0) : REALM)}
           badge={realmDot && <i className={cn("size-2 rounded-full", DOTS[realmDot])} />}
-          marks={views?.marks}
           menu={views?.items}
           onClick={() => onGo("realm")}
         />
@@ -96,7 +91,6 @@ const Slot = ({
   icon,
   word,
   badge,
-  marks,
   menu,
   onClick,
 }: {
@@ -106,8 +100,6 @@ const Slot = ({
   icon: IconMeaning;
   word: string;
   badge: ReactNode;
-  /** What the slot carries under its word (the layers' ruin chests). */
-  marks?: ReactNode;
   /** The choices a press opens (useHudList), in place of the slot's own press. */
   menu?: readonly MenuItem[];
   onClick: () => void;
@@ -131,7 +123,6 @@ const Slot = ({
           {badge}
         </span>
         <span>{word}</span>
-        {marks}
       </button>
       {menu && list(menu)}
     </>

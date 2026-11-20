@@ -6,7 +6,6 @@ import { configManager, findGain, siteDisplayName } from "@bibliothecadao/eternu
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import {
   buildingName,
-  CHEST_EARNED,
   fightVerdict,
   formatCharge,
   formatGain,
@@ -14,7 +13,6 @@ import {
   resourceName,
   type ResourcesIds,
   scaledToUnits,
-  StructureType,
   VERDICT_WORDS,
 } from "@bibliothecadao/types";
 
@@ -81,7 +79,6 @@ export const readFeedStory = (story: ProcessedStoryEvent, store: NativeFactStore
         actor,
         verb: "cleared",
         object: siteObject(payload.site_id),
-        outcome: Number(payload.category) === StructureType.Ruin ? { word: CHEST_EARNED, tone: "good" } : undefined,
         reward: reward ? paid(reward.resource_type, reward.amount, formatGain) : undefined,
       };
     }

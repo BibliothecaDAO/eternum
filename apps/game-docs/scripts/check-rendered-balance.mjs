@@ -58,26 +58,10 @@ export const expectedRuns = (blitz) => {
   ];
 };
 
-/**
- * The relic page's runs: each relic's effect, who activates it, and the Essence it costs as the Blitz preset's relic
- * rules (listed from the first relic) set it.
- */
-export const relicRuns = (relics, rules, firstRelicId) => [
-  {
-    page: "blitz/map",
-    runs: relics.map((relic) => [
-      relic.effect,
-      relic.recipientType === "Explorer" ? "Army" : "Realm",
-      String(rules[relic.id - firstRelicId].essence_cost),
-    ]),
-  },
-];
-
 /** Thousands with commas, as the pages write them. */
 const n = (value) => value.toLocaleString("en-US");
 const pct = (bps) => `${n(bps / 100)}%`;
 const TIERS = ["common", "uncommon", "rare", "epic", "legendary"];
-const POINTS_PRECISION = 1_000_000;
 
 /** A tier's damage multiplier over T1's, from its 64.64 fixed-point config value. */
 const tierWeight = (multiplier) => n(Number(BigInt(multiplier) / 2n ** 64n));
@@ -281,12 +265,6 @@ export const payoutWalletPhrases = (changeHoldSeconds) => [
 /** The phrases every rules page that states a stamina, guard, chest or points number must show. */
 export const expectedPhrases = (blitz, frontier, frontierPreset, ledger, chests, riftGuardBound, nativeRules) => [
   ...blitzStaminaPhrases(blitz),
-  {
-    page: "blitz/map",
-    phrases: [
-      `Opening a crate scores ${n(Number(blitz.victoryPoints.pointsForRelicDiscovery) / POINTS_PRECISION)} points`,
-    ],
-  },
   ...frontierPhrases(frontier, frontierPreset, riftGuardBound, nativeRules),
   ...blitzLedgerPhrases(blitz, ledger, chests),
 ];
@@ -299,10 +277,6 @@ export const loadBalanceSources = async () => {
   const { createServer } = await import("vite");
   const server = await createServer({ configFile: false, logLevel: "silent", appType: "custom" });
   try {
-    const { RELICS, ResourcesIds } = await server.ssrLoadModule(
-      join(here, "../../../packages/types/src/constants/index.ts"),
-    );
-    const { blitzPreset } = await server.ssrLoadModule(join(here, "../../../config/source/blitz/native.ts"));
     const { nativePresetForId, nativePresetIdFor } = await server.ssrLoadModule(
       join(here, "../../../config/source/native.ts"),
     );
@@ -330,9 +304,6 @@ export const loadBalanceSources = async () => {
     const chests = chestPresetFor("production");
     const ledger = buildLedgerEconomicPreset("blitz", { environment: "production", chests });
     return {
-      relics: RELICS,
-      rules: blitzPreset.relics,
-      firstRelicId: ResourcesIds.StaminaRelic1,
       frontierPreset,
       frontierConfig,
       historicalFrontierPreset,
@@ -473,9 +444,6 @@ export const missingRuns = (dist, pages) =>
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const dist = resolve(process.argv[2] ?? join(here, "../dist"));
   const {
-    relics,
-    rules,
-    firstRelicId,
     frontierPreset,
     frontierConfig,
     historicalFrontierPreset,
@@ -500,7 +468,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     ...payoutWalletPhrases(payoutWalletChangeSeconds),
   ];
   const missing = [
-    ...missingRuns(dist, [...expectedRuns(configOf("blitz")), ...relicRuns(relics, rules, firstRelicId)]),
+    ...missingRuns(dist, expectedRuns(configOf("blitz"))),
     ...missingPhrases(dist, phrases),
     ...exportProblems(llm, phrases),
     ...forbiddenValues(dist, llm),

@@ -2,11 +2,9 @@ import { type RankedWords, rankedText, skillPointGain } from "@bibliothecadao/ty
 import {
   siteUsedLine,
   buildingName,
-  CHEST_EARNED,
   fightVerdict,
   formatCharge,
   formatClockTime,
-  formatDuration,
   formatExact,
   formatGain,
   formatPoints,
@@ -16,14 +14,9 @@ import {
   LORDS,
   rankName,
   RealmLevels,
-  relicChestDelivery,
-  relicEffect,
-  relicName,
   resourceName,
   scaledToUnits,
-  StructureType,
   troopPlural,
-  type ResourcesIds,
   VERDICT_WORDS,
   wholePoints,
 } from "@bibliothecadao/types";
@@ -188,44 +181,6 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
     ]),
     icon: "prize",
   }),
-  RelicChestOpened: (_event, payload, components) => ({
-    title: withPoints(describeRelicChestOpening(payload, components), payload.points),
-    description: chestRelics(payload)
-      .map((relic) => resourceName(relic))
-      .join(", "),
-    icon: "prize",
-  }),
-  RewardChestOpened: (event, payload, components, resolvePlayerName) => {
-    const player = playerOf(event, components, resolvePlayerName);
-    return {
-      title: describeRewardChestOpening(payload, components, player),
-      description: describeExplorer(payload.explorer_id, components, player),
-      icon: "prize",
-    };
-  },
-  RelicCrafted: (_event, payload) => ({
-    title: "Relic crafted",
-    description: resourceName(Number(payload.value)),
-    icon: "prize",
-  }),
-  RelicActivated: (event, payload, components, resolvePlayerName) => {
-    const relicId = Number(payload.relic_id) as ResourcesIds;
-    const recipient = formatEnum(payload.recipient);
-    const target =
-      recipient === "Explorer"
-        ? describeExplorer(event.entityId, components)
-        : `${subjectOf(event.entityId, components)}${recipient === "StructureGuard" ? "'s guards" : ""}`;
-    const effect = relicEffect(relicId, { rateBps: Number(payload.rate_bps), radius: Number(payload.radius) });
-    const duration = Number(payload.duration_seconds);
-    const stamina = relicId === 39 || relicId === 40;
-    const applied =
-      duration > 0 ? `${effect} for ${formatDuration(duration)}${stamina ? " of regeneration" : ""}` : effect;
-    const actor = nameOwner(event.ownerAddress, components, resolvePlayerName) ?? "Someone";
-    return {
-      title: `${actor} activated ${relicName(relicId)} on ${target} · ${applied}`,
-      icon: "prize",
-    };
-  },
   // Who took what from whom; from a player, what went with it; from a guard, the points it paid.
   StructureCapturedStory: (event, payload, components, resolvePlayerName) => ({
     title: withPoints(
@@ -243,12 +198,6 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
     ),
     icon: "battle",
   }),
-  HyperstructurePoints: (_event, payload, components, resolvePlayerName) => ({
-    title: "Hyperstructure points",
-    // Story points are at the contract's precision (a millionth of a point); a player reads whole points.
-    description: `${nameOwner(payload.player, components, resolvePlayerName) ?? "—"} +${formatPoints(Math.floor(wholePoints(BigInt(String(payload.points)))))}`,
-    icon: "prize",
-  }),
   BitcoinAwardStory: (_event, payload, components, resolvePlayerName) => ({
     title: "Bitcoin mine paid",
     description: joinPieces([
@@ -256,11 +205,6 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
       `${nameOwner(payload.owner, components, resolvePlayerName) ?? "—"} +${formatResourceAmount(payload.owner_paid) ?? "—"}`,
     ]),
     icon: "prize",
-  }),
-  SeasonEnded: (_event, payload, components, resolvePlayerName) => ({
-    title: "Season ended",
-    description: nameOwner(payload.value, components, resolvePlayerName),
-    icon: "scroll",
   }),
   BlitzFinalized: () => ({ title: "Blitz finalized", icon: "scroll" }),
   SitePayout: (event, payload, components, resolvePlayerName) => {
@@ -272,13 +216,11 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
     const siteId = toNumber(payload.site_id);
     if (siteId === null) throw new Error("Site payout story names no site");
     const player = playerOf(event, components, resolvePlayerName);
-    // The site's Structure goes with its clear; its id names it, as the receipt and the map do. Another player's clear
-    // names them; a ruin's clear earns its chest.
     const cleared = isViewer(event.ownerAddress, event.viewerAddress ?? null)
       ? `${siteDisplayName(siteId)} cleared`
       : `${player} cleared ${siteDisplayName(siteId)}`;
     return {
-      title: category === StructureType.Ruin ? `${cleared}: ${CHEST_EARNED}` : cleared,
+      title: cleared,
       description: joinPieces([label, describeExplorer(payload.explorer_id, components, player), reward]),
       icon: "prize",
     };
@@ -708,44 +650,6 @@ function describeArmyName(explorerId: unknown, components?: NativeFactStore, hom
   const home = describeStructureName(explorer?.owner ?? homeStructureId, components);
   const tier = formatEnum(explorer?.troops?.tier);
   return home && tier ? `${home} ${tier}` : null;
-}
-
-const chestRelics = (payload: Record<string, unknown>): ResourcesIds[] => {
-  if (!Array.isArray(payload.relics)) throw new Error("Incomplete relic chest story");
-  return payload.relics.map((relic) => Number(relic) as ResourcesIds);
-};
-
-/**
- * An opened chest as a player reads it: where its relics went ("Crate opened: 3 relics to Stolsli"). The home is the
- * opening army's; once that army is gone its row no longer names it.
- */
-export function describeRelicChestOpening(payload: Record<string, unknown>, components?: NativeFactStore): string {
-  const explorer = readExplorer(payload.explorer_id, components);
-  const home = describeStructureName(explorer?.owner, components);
-  const delivery = relicChestDelivery(chestRelics(payload), {
-    army: explorer && home ? describeArmyName(payload.explorer_id, components) : null,
-    home: home ?? "its realm",
-  });
-  return `Crate opened: ${delivery}`;
-}
-
-/**
- * An opened chest: the LORDS it paid and the realm they went to; another player's realm, which this client never
- * synced, is told by its player ("djizus opened a chest: 50 LORDS").
- */
-export function describeRewardChestOpening(
-  payload: Record<string, unknown>,
-  components?: NativeFactStore,
-  player?: string,
-): string {
-  const amount = BigInt(payload.amount as string | number | bigint);
-  const home = describeStructureName(payload.structure_id, components);
-  if (!home && player)
-    return amount === 0n
-      ? `${player}'s chest expired: no LORDS paid`
-      : `${player} opened a chest: ${formatExact(amount)} LORDS`;
-  if (amount === 0n) return "Chest expired: no LORDS paid";
-  return `Chest opened: ${formatExact(amount)} LORDS to ${home ?? "its realm"}`;
 }
 
 /** A structure by name, else an explorer by home and tier, else nothing. */

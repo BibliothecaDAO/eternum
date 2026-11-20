@@ -1,4 +1,4 @@
-import { BiomeType, RELICS, RESOURCE_PRECISION, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BiomeType, RESOURCE_PRECISION, TroopTier, TroopType } from "@bibliothecadao/types";
 import { resolveExchange, type CombatRules, type ExchangeRefusal, type ExchangeTroops } from "./combat-exchange";
 
 export interface Army {
@@ -73,13 +73,11 @@ export class CombatSimulator {
     attacker: Army,
     defender: Army,
     biome: BiomeType,
-    attackerRelics: ResourcesIds[],
-    defenderRelics: ResourcesIds[],
     context: CombatSimulationContext,
   ): BattleSimulation {
     const result = resolveExchange(
-      combatTroops(attacker, attackerRelics, now),
-      combatTroops(defender, defenderRelics, now),
+      combatTroops(attacker, now),
+      combatTroops(defender, now),
       {
         timestamp: now,
         attackerOaths: attacker.oaths,
@@ -106,29 +104,21 @@ export class CombatSimulator {
   }
 }
 
-const combatTroops = (army: Army, relics: ResourcesIds[], now: number): ExchangeTroops => {
-  const effects = RELICS.filter((relic) => relics.includes(relic.id));
-  const dealt = Math.max(1, ...effects.filter((relic) => relic.type === "Damage").map((relic) => relic.bonus));
-  const taken = Math.min(
-    1,
-    ...effects.filter((relic) => relic.type === "Damage Reduction").map((relic) => relic.bonus),
-  );
-  return {
-    category: army.troopType,
-    tier: army.tier,
-    count: BigInt(Math.round(army.troopCount * RESOURCE_PRECISION)),
-    battle_cooldown_end: army.battle_cooldown_end,
-    stamina: { amount: BigInt(Math.floor(army.stamina)), settled_at: now, remainder: 0 },
-    ...(army.maxStamina === undefined ? {} : { staminaMax: army.maxStamina }),
-    boosts: {
-      incr_damage_dealt_percent_num: Math.round((dealt - 1) * 10_000),
-      incr_damage_dealt_end_at: 0,
-      decr_damage_gotten_percent_num: Math.round((1 - taken) * 10_000),
-      decr_damage_gotten_end_at: 0,
-      incr_stamina_regen_percent_num: 0,
-      incr_stamina_regen_seconds_left: 0,
-      incr_explore_reward_percent_num: 0,
-      incr_explore_reward_end_at: 0,
-    },
-  };
-};
+const combatTroops = (army: Army, now: number): ExchangeTroops => ({
+  category: army.troopType,
+  tier: army.tier,
+  count: BigInt(Math.round(army.troopCount * RESOURCE_PRECISION)),
+  battle_cooldown_end: army.battle_cooldown_end,
+  stamina: { amount: BigInt(Math.floor(army.stamina)), settled_at: now, remainder: 0 },
+  ...(army.maxStamina === undefined ? {} : { staminaMax: army.maxStamina }),
+  boosts: {
+    incr_damage_dealt_percent_num: 0,
+    incr_damage_dealt_end_at: 0,
+    decr_damage_gotten_percent_num: 0,
+    decr_damage_gotten_end_at: 0,
+    incr_stamina_regen_percent_num: 0,
+    incr_stamina_regen_seconds_left: 0,
+    incr_explore_reward_percent_num: 0,
+    incr_explore_reward_end_at: 0,
+  },
+});

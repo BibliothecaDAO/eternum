@@ -1,5 +1,5 @@
 import { normalizeLeaderboardAddress } from "@/services/leaderboard/landing-leaderboard-service";
-import { RESOURCE_PRECISION, ResourcesIds, scaledToUnits, StructureType } from "@bibliothecadao/types";
+import { ResourcesIds, scaledToUnits, StructureType } from "@bibliothecadao/types";
 
 /** A story as the day's totals read it: whose it is and when. */
 interface OwnStory {
@@ -17,8 +17,6 @@ interface StoryTotals {
   labor: number;
   lords: number;
 }
-
-const PRECISION = BigInt(RESOURCE_PRECISION);
 
 type DayBounds = { startMs: number; endMs: number };
 
@@ -56,10 +54,6 @@ export const totalToday = (stories: readonly OwnStory[], player: string, day: Da
       if (Number(storyPayload.category) === StructureType.Ruin) counts.chests += 1;
       const reward = someReward(storyPayload.reward);
       if (reward) addReward(paid, reward.resource_type, reward.amount);
-    } else if (story === "RewardChestOpened") {
-      counts.chests += 1;
-      // A ruin chest's LORDS are whole.
-      paid.lords += BigInt(String(storyPayload.amount)) * PRECISION;
     }
   }
   return {

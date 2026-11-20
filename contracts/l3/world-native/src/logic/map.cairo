@@ -97,28 +97,6 @@ pub mod MapState {
         write_occupancy(key, Some(TileOccupancy { entity_id, category, is_structure }));
     }
 
-    pub fn reserve_hyperstructure(key: TileKey) {
-        crate::logic::map::tile(key).expect('unrevealed reservation');
-        assert!(crate::logic::map::occupancy(key).is_none(), "occupied reservation tile");
-        // Category distinguishes this reservation from an empty tile despite its zero entity id.
-        write_occupancy(
-            key,
-            Some(
-                TileOccupancy {
-                    entity_id: 0, category: crate::taxonomy::RESERVED_HYPERSTRUCTURE_OCCUPIER, is_structure: true,
-                },
-            ),
-        );
-    }
-
-    pub fn release_hyperstructure(key: TileKey) {
-        let previous = crate::logic::map::occupancy(key).expect('missing reservation');
-        assert!(
-            previous.category == crate::taxonomy::RESERVED_HYPERSTRUCTURE_OCCUPIER, "hyperstructure already created",
-        );
-        write_occupancy(key, None);
-    }
-
     pub fn upgrade_realm(key: TileKey, entity_id: u64, wonder: bool, level: u8) {
         let previous = crate::logic::map::occupancy(key).expect('missing realm tile');
         assert!(!key.alt && previous.is_structure, "not a surface structure");
@@ -259,8 +237,7 @@ pub mod MapLogic {
             let guarded = if site {
                 crate::expeditions::is_site_category(category)
             } else {
-                category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY
-                    || category == crate::taxonomy::BANK_CATEGORY
+                category == crate::taxonomy::BANK_CATEGORY
                     || category == crate::taxonomy::MINE_CATEGORY
                     || category == crate::taxonomy::CAMP_CATEGORY
                     || category == crate::taxonomy::BITCOIN_MINE_CATEGORY
@@ -300,7 +277,7 @@ pub mod MapLogic {
     }
     #[abi(embed_v0)]
     impl Sites = DeepSites::DeepSitesImpl<ContractState>;
-    use crate::geometry::{distance, spire_neighbor, tile_key};
+    use crate::geometry::{spire_neighbor, tile_key};
     use crate::logic::map::MapState;
     use crate::logic::release::ReleaseState;
     use crate::map::{BIOME_SCALE, BYTE_RANGE, TileKey, TileOpt};
@@ -337,7 +314,6 @@ pub mod MapLogic {
             self: @ContractState,
             key: TileKey,
             seed: u256,
-            hyperstructures: u32,
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) -> crate::discovery::Discovery {
@@ -355,10 +331,7 @@ pub mod MapLogic {
                 }
                 crate::discovery::ethereal(rules.map_config, rules.bitcoin_mine_config.enabled, adjacent, seed)
             } else {
-                let center = crate::settlement_grid::map_center(rules.map_center_offset);
-                crate::discovery::surface(
-                    rules.map_config, seed, distance(coord, center), hyperstructures, rules.mode_rules,
-                )
+                crate::discovery::surface(rules.map_config, seed, rules.mode_rules)
             }
         }
 

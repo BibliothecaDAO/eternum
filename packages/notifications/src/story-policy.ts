@@ -4,7 +4,6 @@ import {
   bitcoinAwardCopy,
   battleCopy,
   captureStoryCopy,
-  hyperstructurePointsCopy,
   raidStoryCopy,
   says,
   type StoryCopy,
@@ -38,11 +37,6 @@ const STORY_RULES = {
   BattleEvent: { kind: "fights", recipients: "nativeBattle", copy: battleCopy, modes: PLAYER_FIGHTS },
   StructureCapturedStory: { kind: "fights", recipients: "capture", copy: captureStoryCopy, modes: PLAYER_FIGHTS },
   RaidEvent: { kind: "fights", recipients: "raid", copy: raidStoryCopy, modes: PLAYER_FIGHTS },
-  SeasonEnded: {
-    kind: "results",
-    recipients: "owner",
-    copy: says("The season is over", "see where you finished."),
-  },
   BlitzFinalized: {
     kind: "results",
     recipients: "owner",
@@ -55,14 +49,11 @@ const STORY_RULES = {
   },
   ResourceTransferStory: { kind: "deliveries", recipients: "transferReceiver", copy: transferStoryCopy },
   BitcoinAwardStory: { kind: "bitcoin", recipients: "owner", copy: bitcoinAwardCopy },
-  HyperstructurePoints: { kind: "points", recipients: "owner", copy: hyperstructurePointsCopy },
 
   // The player's own taps: the Feed and the Log tell them, a push would only echo them.
   SitePayout: { excluded: OWN_ACTION },
   SkillPointSpent: { excluded: OWN_ACTION },
   ExplorationReward: { excluded: OWN_ACTION },
-  RelicCrafted: { excluded: OWN_ACTION },
-  RelicActivated: { excluded: OWN_ACTION },
   ProductionStory: { excluded: OWN_ACTION },
   BuildingPaymentStory: { excluded: OWN_ACTION },
   ResourceBurnStory: { excluded: OWN_ACTION },
@@ -76,8 +67,6 @@ const STORY_RULES = {
   SpireDiscovered: { excluded: OWN_ACTION },
   BuildingPlacementStory: { excluded: OWN_ACTION },
   StructureLevelUpStory: { excluded: OWN_ACTION },
-  RelicChestOpened: { excluded: OWN_ACTION },
-  RewardChestOpened: { excluded: OWN_ACTION },
 
   LordsWithdrawn: { excluded: "The player's own withdrawal needs no notification" },
   SiteUsed: { excluded: "Site use is recorded in Today and the Log" },

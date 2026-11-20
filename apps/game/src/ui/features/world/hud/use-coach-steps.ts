@@ -3,14 +3,12 @@ import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick, useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { useSelectArmyOnMap } from "@/hooks/helpers/use-navigate";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
-import { useQuery } from "@/hooks/helpers/use-query";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { useSpatialProjection } from "@/hooks/use-spatial-projection";
 import { gameStructuresView, playerStructuresView, selectableArmiesView } from "@/sync/fact-views";
-import { requestChestOpening } from "@/three/scenes/worldmap-chest-open-request";
 import { LeftView } from "@/types";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { knownAmount } from "@/ui/utils/utils";
@@ -105,20 +103,13 @@ const toNextStep = (step: CoachStep, act: (action: ButtonAct) => void): NextStep
   };
 };
 
-/** The coach follows armies and crates as they move on the map. */
-const COACH_LAYERS = ["armies", "chests"] as const;
+const COACH_LAYERS = ["armies"] as const;
 
 /** A coach hex is the projection's, in contract coordinates: the place the map is asked to show. */
 const coachPlace = (hex: { col: number; row: number }): Position => Position.fromContract({ x: hex.col, y: hex.row });
 
-/**
- * What a coach step's button does: open Military on the realm it names, on the troop stack it named, open Build, open a crate beside an army (on
- * the map; from another view the army is shown there first), or select the army on the map with its target's card
- * open.
- */
 const useCoachAct = () => {
   const selectArmy = useSelectArmyOnMap();
-  const { isMapView } = useQuery();
   return (action: ButtonAct) => {
     switch (action.kind) {
       case "raise":
@@ -126,10 +117,6 @@ const useCoachAct = () => {
         return;
       case "build":
         useUIStore.getState().setLeftNavigationView(LeftView.ConstructionView);
-        return;
-      case "open-crate":
-        if (isMapView) requestChestOpening({ explorerId: action.armyId, hex: action.hex });
-        else selectArmy(action.armyId, coachPlace(action.hex));
         return;
       case "go":
         selectArmy(action.armyId, action.target && coachPlace(action.target));
@@ -243,39 +230,24 @@ const useCertainLoss = () => {
   }, [timestamp, facts]);
 };
 
-/** Sites a camp or rift's capture pays for: what The Vanguard holds that is not a realm, village or Hyperstructure. */
 const SITE_CATEGORIES = new Set<number>([StructureType.Camp, StructureType.Mine, StructureType.Rift]);
 
-/** What scores on the map that the player can see: crates, The Vanguard's camps and rifts, and Hyperstructures. */
 const useCoachTargets = (): CoachTarget[] => {
   const { setup } = useGame();
   const mode = useGameModeConfig();
   const structures = useFactView(gameStructuresView);
-  const spatial = useSpatialProjection(COACH_LAYERS);
-  const mapLayer = useUIStore((state) => state.mapLayer);
-  return useMemo(() => {
-    const crates: CoachTarget[] = (spatial.projection?.getChests(mapLayer) ?? []).map((chest) => ({
-      kind: "crate",
-      name: "the relic crate",
-      hex: chest.hexCoords,
-    }));
-    const held: CoachTarget[] = structures.flatMap((structure) => {
-      const kind = targetKind(structure.base.category, structure.owner);
-      const site = kind && structureMapPosition(setup.store, structure);
-      return kind && site
-        ? [{ kind, name: mode.structure.getName(structure).name, hex: { col: site.x, row: site.y } }]
-        : [];
-    });
-    return [...crates, ...held];
-  }, [spatial, mapLayer, structures, setup.store, mode]);
+  return useMemo(
+    () =>
+      structures.flatMap((structure) => {
+        const site = isVanguardSite(structure.base.category, structure.owner)
+          ? structureMapPosition(setup.store, structure)
+          : null;
+        return site
+          ? [{ kind: "site" as const, name: mode.structure.getName(structure).name, hex: { col: site.x, row: site.y } }]
+          : [];
+      }),
+    [structures, setup.store, mode],
+  );
 };
 
-/**
- * A structure's place on the coach's route: what The Vanguard holds pays its capture (a Hyperstructure +1,000, a camp
- * or rift +250, as the contract's register_capture grants); a player's holding pays no capture bonus, so is none.
- */
-const targetKind = (category: number, owner: bigint): CoachTarget["kind"] | null => {
-  if (owner !== 0n) return null;
-  if (category === StructureType.Hyperstructure) return "hyperstructure";
-  return SITE_CATEGORIES.has(category) ? "site" : null;
-};
+const isVanguardSite = (category: number, owner: bigint): boolean => owner === 0n && SITE_CATEGORIES.has(category);

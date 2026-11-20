@@ -16,7 +16,6 @@ import {
   rowInGameSyncScope,
   type GameSyncScope,
 } from "@bibliothecadao/eternum/game-sync-models";
-import { nativeIdentifiers } from "../../../contracts/l3/world-native/schema/client.gen";
 import { toJsonValue, type ModelRegistry } from "./model-registry";
 import { directoryFact, FINALIZED_GAME_MODELS } from "./native/read-models";
 import { nativeRowKey } from "./native/row-key";
@@ -73,10 +72,6 @@ const checkpointRow = ([entityId, row]: [string, StoredModelRow]): FoldCheckpoin
   value: asJsonRecord(row.value),
 });
 
-/**
- * The games whose results are final: settled, and closed by their season rule or by a complete Blitz result. The fold
- * evicts their gameplay rows once their review snapshot is frozen. `rows` reads one model's rows, keys and values merged.
- */
 export function finalizedGames(rows: (model: string) => readonly DecodedRecord[]): string[] {
   const rules = new Map(rows("SliceRules").map((value) => [BigInt(value.game_id as string).toString(), value]));
   const results = new Set(
@@ -90,10 +85,12 @@ export function finalizedGames(rows: (model: string) => readonly DecodedRecord[]
       const gameId = BigInt(value.game_id as string).toString();
       const config = rules.get(gameId);
       if (!config) throw new Error(`Finalized game ${gameId} has no rules`);
-      return (Number(config.mode_rules) & nativeIdentifiers.rule.SEASON_CLOSE) !== 0 || results.has(gameId);
+      return isFrontierSeason(config) || results.has(gameId);
     })
     .map((value) => BigInt(value.game_id as string).toString());
 }
+
+const isFrontierSeason = (rules: DecodedRecord) => BigInt(rules.day_unit_seconds as string) > 0n;
 
 /**
  * A checkpoint is only restorable when it was folded from exactly the registry's persistent model set: a model added

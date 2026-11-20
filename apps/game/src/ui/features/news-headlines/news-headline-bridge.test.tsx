@@ -3,12 +3,6 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
 
-// The season's winner is read from the shard's stories, which this game has none of before it ends.
-vi.mock("@/hooks/store/use-story-events-store", async (original) => ({
-  ...(await original<typeof import("@/hooks/store/use-story-events-store")>()),
-  useSeasonWinner: () => null,
-}));
-
 import { GameProvider } from "@/hooks/context/game-context";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { disposeGameSyncSession } from "@/sync/active-game-client";

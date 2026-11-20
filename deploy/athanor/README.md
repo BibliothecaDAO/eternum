@@ -201,8 +201,8 @@ Preserve the baseline image and chain data until final acceptance and the approv
 
 Deposits require a new Games root and matching native schema. An existing root is immutable. Upgrade the L2 ledger with
 its additive deposit storage and keep the reward season's funding separate. Wallet ingress is `deposit_lords` on that
-ledger. The existing public Games RPC admits `configure_deposits`, `deliver_deposit` and `sweep_lords`; contract roles
-and the independent signature remain required.
+ledger. The existing public Games RPC admits `deliver_deposit` and `sweep_lords`; contract roles and the independent
+signature remain required.
 
 Prepare the owner's exact calls without signing or submitting:
 
@@ -211,12 +211,10 @@ pnpm deposits:operations prepare /absolute/path/deposit-deployment.json /absolut
 ```
 
 The input contains `shard` (`chainId`, `rpcUrl`, `gamesAddress`, `firstRelease`, `heraldUrl`), `ledger` (`rpcUrl`,
-`chainId`, `address`), `gameId` and the reviewed `ledgerClassHash`. The output binds the ledger upgrade, immutable
-destination and native signer/epoch configuration. Resolve these values from the new manifests and reviewed build; never
-reuse the existing dev root or invent an address. S1's funded calendar starts no earlier than 15 November. For signer
-rotation, update the native source's signer/epoch from the ledger's `cosigner` view for every enabled game, including
-ended games with unpaid obligations. Chain and ledger binding stay immutable. Preserve co-signer wallet history and
-canonical block anchors across restart and rotation.
+`chainId`, `address`), `gameId` and the reviewed `ledgerClassHash`. The output binds the ledger upgrade and immutable
+destination. Resolve these values from the new manifests and reviewed build; never reuse the existing dev root or invent
+an address. S1's funded calendar starts no earlier than 15 November. Chain and ledger binding stay immutable. Preserve
+co-signer wallet history and canonical block anchors across restart and rotation.
 
 The relay discovers receipts independently of delivery progress. A failed receipt stays pending while later receipts
 continue. Known invalid destinations require an irreversible native cancellation before refund to the original payer. At

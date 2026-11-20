@@ -1,5 +1,4 @@
 pub use world_test_support::tests::registrar::*;
-use crate::logic::release::{IReleasesDispatcher, IReleasesDispatcherTrait};
 use crate::tests::army_merge::{progress, slot, timers, write_progress};
 
 #[test]
@@ -77,22 +76,6 @@ fn identical_content_under_a_second_id_reuses_the_record_without_rewriting_withd
 
 #[test]
 #[feature("safe_dispatcher")]
-fn blitz_launch_accepts_empty_construction_requirements_without_allowing_reconfiguration() {
-    let d = setup();
-    let preset = definition(true);
-    registry(d).register_preset(1, preset);
-    let game_id = registry(d).create_game(params(true));
-    let economy = crate::hyperstructures::IHyperstructuresDispatcher { contract_address: d.games };
-    assert_eq!(
-        crate::hyperstructures::IHyperstructuresDispatcherTrait::hyperstructure_rules(economy, game_id),
-        preset.economy.hyperstructures,
-    );
-    start_cheat_caller_address(d.games, super::authority());
-    assert!(IRegistrarSafeDispatcher { contract_address: d.games }.register_preset(1, preset).is_err());
-}
-
-#[test]
-#[feature("safe_dispatcher")]
 fn eternum_launch_initializes_spires_and_never_uses_entry_capacity() {
     let d = setup();
     let preset = definition(false);
@@ -166,42 +149,6 @@ fn a_late_preset_validation_failure_rolls_back_the_record_and_allows_retry() {
     assert!(
         crate::game::IGameSafeDispatcherTrait::game(crate::game::IGameSafeDispatcher { contract_address: d.games }, 1)
             .is_err(),
-    );
-    registry(d).register_preset(1, definition(true));
-    assert_eq!(registry(d).create_game(params(true)), 1);
-}
-
-#[test]
-fn relic_preset_failure_rolls_back_domain_writes_and_allows_retry() {
-    let d = setup();
-    let mut preset = definition(true);
-    let mut relics = array![];
-    for rule in preset.economy.relics {
-        relics.append(crate::relics::RelicRule { draw_weight: 0, ..*rule });
-    }
-    preset.economy.relics = relics.span();
-    let commitment = crate::presets::commitment(preset);
-    start_cheat_caller_address(d.games, super::authority());
-    let (caller, _) = super::deploy("RollbackFixture", @array![]);
-    assert!(
-        !super::fixtures::IRollbackFixtureDispatcherTrait::attempt_preset(
-            super::fixtures::IRollbackFixtureDispatcher { contract_address: caller }, d.games, 1, preset,
-        ),
-    );
-    assert_eq!(registry(d).preset_commitment(1), 0);
-    let (army_tick, first_relic) = snforge_std::interact_with_state(
-        d.games,
-        || {
-            let record = crate::state::read().presets.entry(commitment);
-            (
-                record.rules.tick_config.armies_tick_in_seconds.read(),
-                record.relic_rules.read(crate::relics::FIRST_RELIC),
-            )
-        },
-    );
-    assert_eq!(army_tick, 0);
-    assert_eq!(
-        first_relic, crate::relics::RelicRule { rate_bps: 0, duration: 0, uses: 0, essence_cost: 0, draw_weight: 0 },
     );
     registry(d).register_preset(1, definition(true));
     assert_eq!(registry(d).create_game(params(true)), 1);
@@ -425,7 +372,7 @@ fn launcher_roster_batches_block_early_play_and_report_transaction_progress() {
     let command = crate::commands::Command::SettleBlitzRoster;
     super::play_fixture::assert_preflight_rejection(
         d.games,
-        super::play_fixture::TestAction { game_id, actor: d.actor, command: crate::commands::Command::CloseSeason },
+        super::play_fixture::TestAction { game_id, actor: d.actor, command: crate::commands::Command::LeaveGuild },
         205,
     );
     let launcher = super::bind_authority(d);
@@ -433,7 +380,7 @@ fn launcher_roster_batches_block_early_play_and_report_transaction_progress() {
     assert!(!IGameDispatcher { contract_address: d.games }.game(game_id).ready);
     super::play_fixture::assert_preflight_rejection(
         d.games,
-        super::play_fixture::TestAction { game_id, actor: d.actor, command: crate::commands::Command::CloseSeason },
+        super::play_fixture::TestAction { game_id, actor: d.actor, command: crate::commands::Command::LeaveGuild },
         206,
     );
     super::season_lifecycle::execute_batch_in_game(launcher, game_id, command, 207, 0);
@@ -845,94 +792,6 @@ fn a_materialized_home_ring_moves_and_explores_without_a_roll() {
     // The home ring, the moved-to and the explored tiles keep the biome the terrain derives for them.
     assert!(
         super::terrain::assert_biomes_match_terrain(d, game_id, array![site, spawn, ring_tile, target].span()) != 0,
-    );
-}
-
-#[test_case("frontier-retired")]
-#[test_case("devcon")]
-#[test_case("accelerated")]
-#[feature("safe_dispatcher")]
-fn paying_presets_cannot_register_on_the_new_release(name: ByteArray) {
-    let d = setup();
-    let (id, mut preset) = super::preset_projection::current_definition(name);
-    assert!(preset.economy.chests.is_some());
-    let mut depths = array![];
-    for index in 0..preset.settlement.depths.len() {
-        depths
-            .append(
-                crate::expeditions::DepthRules {
-                    chest: world_test_support::tests::registrar::first_relic_odds(index),
-                    ..*preset.settlement.depths.at(index),
-                },
-            );
-    }
-    preset.settlement.depths = depths.span();
-    let error = safe(d, super::authority()).register_preset(id, preset).unwrap_err();
-    let mut expected = array![core::byte_array::BYTE_ARRAY_MAGIC];
-    let message: ByteArray = "LORDS presets are retired";
-    message.serialize(ref expected);
-    assert_eq!(error.span().slice(0, expected.len()), expected.span());
-    assert_eq!(registry(d).preset_commitment(id), 0);
-    assert_eq!(registry(d).next_game_id(), 1);
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn an_already_registered_paying_preset_cannot_create_a_new_game() {
-    let d = setup();
-    let (id, preset) = super::preset_projection::current_definition("frontier-check");
-    registry(d).register_preset(id, preset);
-    let commitment = registry(d).preset_commitment(id);
-    let (_, historical) = super::preset_projection::current_definition("frontier-retired");
-    snforge_std::interact_with_state(
-        d.games,
-        || {
-            crate::state::write().presets.entry(commitment).rollover_chest_rules.write(historical.economy.chests);
-        },
-    );
-    let next = registry(d).next_game_id();
-    let params = CreateGameParams { preset_id: id, ..params(false) };
-    assert!(safe(d, super::authority()).create_game(params).is_err());
-    assert_eq!(registry(d).next_game_id(), next);
-    assert_eq!(registry(d).game_id_by_name(params.name), 0);
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn retirement_preserves_an_existing_games_pin_and_idempotent_launch() {
-    let d = setup();
-    let (id, preset) = super::preset_projection::current_definition("frontier-check");
-    registry(d).register_preset(id, preset);
-    let launch = CreateGameParams { preset_id: id, start_main_at: 360, duration_seconds: 3600, ..params(false) };
-    let game_id = registry(d).create_game(launch);
-    let before = snforge_std::interact_with_state(d.games, || crate::logic::game::game(game_id));
-    let (_, historical) = super::preset_projection::current_definition("frontier-retired");
-    let commitment = registry(d).preset_commitment(id);
-    snforge_std::interact_with_state(
-        d.games,
-        || {
-            crate::state::write().presets.entry(commitment).rollover_chest_rules.write(historical.economy.chests);
-        },
-    );
-    let releases = IReleasesDispatcher { contract_address: d.games };
-    let original = releases.release(1);
-    start_cheat_caller_address(d.games, super::authority());
-    releases.register_release(2, original);
-    releases.open_release(2);
-    stop_cheat_caller_address(d.games);
-    assert_eq!(releases.current_release(), 2);
-    assert_eq!(releases.game_release(game_id), 1);
-    assert_eq!(registry(d).create_game(launch), game_id);
-    assert!(safe(d, super::authority()).create_game(CreateGameParams { name: 'retired-new-game', ..launch }).is_err());
-    assert_eq!(registry(d).next_game_id(), game_id + 1);
-    assert_eq!(registry(d).game_id_by_name('retired-new-game'), 0);
-    assert_eq!(releases.game_release(game_id), 1);
-    snforge_std::interact_with_state(
-        d.games,
-        || {
-            assert_eq!(crate::state::read().game_creation_releases.read(game_id), 1);
-            assert_eq!(crate::logic::game::game(game_id), before);
-        },
     );
 }
 

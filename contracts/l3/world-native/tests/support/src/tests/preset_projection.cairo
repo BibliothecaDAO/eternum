@@ -3,21 +3,16 @@ pub use snforge_std::fs::{FileTrait, read_txt};
 pub use snforge_std::{interact_with_state, start_cheat_caller_address};
 pub use starknet::ContractAddress;
 pub use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
-pub use crate::artificer::{IArtificerDispatcher, IArtificerDispatcherTrait};
 pub use crate::bridge::{IBridgeDispatcher, IBridgeDispatcherTrait};
 pub use crate::buildings::{IBuildingRulesDispatcher, IBuildingRulesDispatcherTrait};
 pub use crate::expeditions::{IExpeditionRulesDispatcher, IExpeditionRulesDispatcherTrait};
 pub use crate::exploration_rewards::{IExtractionDispatcher, IExtractionDispatcherTrait};
-pub use crate::game::{
-    IGameDispatcher, IGameDispatcherTrait, ISeasonLifecycleDispatcher, ISeasonLifecycleDispatcherTrait,
-};
-pub use crate::hyperstructures::{IHyperstructuresDispatcher, IHyperstructuresDispatcherTrait};
+pub use crate::game::{IGameDispatcher, IGameDispatcherTrait};
 pub use crate::mines::{IMineRulesDispatcher, IMineRulesDispatcherTrait};
 pub use crate::production::{IProductionRulesDispatcher, IProductionRulesDispatcherTrait};
 pub use crate::registrar::{
     IRegistrarDispatcher, IRegistrarDispatcherTrait, IRegistrarSafeDispatcher, IRegistrarSafeDispatcherTrait,
 };
-pub use crate::relics::{IRelicsDispatcher, IRelicsDispatcherTrait};
 pub use crate::settlement::{ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait};
 pub use crate::spires::{ISpiresDispatcher, ISpiresDispatcherTrait};
 pub use crate::village::{IVillagePassesDispatcher, IVillagePassesDispatcherTrait};
@@ -42,11 +37,6 @@ pub fn current_definition(name: ByteArray) -> (u32, crate::presets::PresetDefini
     assert!(registration.is_empty());
     (preset_id, definition)
 }
-pub fn retired_frontier_chest_rules() -> crate::relics::ChestRules {
-    let (preset_id, definition) = current_definition("frontier-retired");
-    assert_eq!(preset_id, 5);
-    definition.economy.chests.expect('retired cash rules missing')
-}
 pub fn frontier_discovery_rules() -> crate::expeditions::FrontierDiscoveryRules {
     let (_, definition) = current_definition("frontier-check");
     definition.economy.discovery.unwrap()
@@ -62,26 +52,6 @@ pub fn launch(address: ContractAddress, name: ByteArray) -> u32 {
     registrar.create_game(params)
 }
 
-#[feature("safe_dispatcher")]
-pub fn assert_unfunded_cash_rules_refuse_registration() {
-    let d = super::registrar::setup();
-    start_cheat_caller_address(d.games, super::authority());
-    let (preset_id, mut definition) = current_definition("frontier-check");
-    definition
-        .economy
-        .chests =
-            Some(
-                crate::relics::ChestRules {
-                    pool_bps: 7000,
-                    top_n: 10,
-                    price_ceiling: 0,
-                    claim_window_seconds: 0,
-                    shares: crate::relics::ChestTiers { common: 0, uncommon: 0, rare: 0, epic: 0, legendary: 0 },
-                },
-            );
-    assert!(IRegistrarSafeDispatcher { contract_address: d.games }.register_preset(preset_id, definition).is_err());
-    assert_eq!(IRegistrarDispatcher { contract_address: d.games }.preset_commitment(preset_id), 0);
-}
 pub fn compare_current_launch(name: ByteArray) {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
@@ -223,9 +193,6 @@ pub fn observe_settlement(ref rows: Array<ObservedRow>, address: ContractAddress
 }
 pub fn observe_economy(ref rows: Array<ObservedRow>, address: ContractAddress, game_id: u32) {
     let key = array![game_id.into()].span();
-    let hyperstructures = IHyperstructuresDispatcher { contract_address: address };
-    let relics = IRelicsDispatcher { contract_address: address };
-    let artificer = IArtificerDispatcher { contract_address: address };
     let bridge = IBridgeDispatcher { contract_address: address };
     let withdrawals = IWithdrawalsDispatcher { contract_address: address };
     if let Some(deep) = interact_with_state(address, || observed_deep_rules(game_id)) {
@@ -240,20 +207,14 @@ pub fn observe_economy(ref rows: Array<ObservedRow>, address: ContractAddress, g
     if let Some(race) = interact_with_state(address, || crate::logic::race::rules(game_id)) {
         row(ref rows, 'RaceRules', key, race);
     }
-    row(ref rows, 'HyperstructureRules', key, hyperstructures.hyperstructure_rules(game_id));
-    row(ref rows, 'RelicRules', key, relics.relic_rules(game_id));
     if let Some(labor) =
         interact_with_state(address, || crate::logic::preset_record::for_game(game_id).labor_rules.read()) {
         row(ref rows, 'LaborRules', key, labor);
-    }
-    if let Some(chests) = relics.chest_rules(game_id) {
-        row(ref rows, 'ChestRules', key, chests);
     }
     if let Some(discovery) =
         interact_with_state(address, || crate::logic::preset_record::for_game(game_id).discovery_rules.read()) {
         row(ref rows, 'FrontierDiscoveryRules', key, discovery);
     }
-    row(ref rows, 'ArtificerCost', key, artificer.artificer_cost(game_id));
     let deposits = interact_with_state(address, || crate::logic::preset_record::for_game(game_id).deposit_rules.read());
     if deposits.is_some() {
         row(ref rows, 'DepositRules', key, bridge.deposit_rules(game_id));
@@ -276,9 +237,7 @@ pub fn observe_economy(ref rows: Array<ObservedRow>, address: ContractAddress, g
 pub fn observe_rewards(ref rows: Array<ObservedRow>, address: ContractAddress, game_id: u32) {
     let key = array![game_id.into()].span();
     let extraction = IExtractionDispatcher { contract_address: address };
-    let season_lifecycle = ISeasonLifecycleDispatcher { contract_address: address };
     row(ref rows, 'ExtractionRewards', key, extraction.extraction_rewards(game_id));
-    row(ref rows, 'SeasonWinThreshold', key, season_lifecycle.season_win_threshold(game_id));
 }
 
 fn observed_quest_rules(game_id: u32) -> Option<crate::quests::QuestRules> {

@@ -2,8 +2,7 @@
 pub mod ProductionState {
     use starknet::storage::StorageMapReadAccess;
     use crate::events::RowSet;
-    use crate::production::{ProductionBonus, ProductionRecipe, RecipeKey};
-    use crate::resources::ResourceKey;
+    use crate::production::{ProductionRecipe, RecipeKey};
 
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
@@ -30,8 +29,6 @@ pub mod ProductionState {
                 complex_inputs: inputs.slice(row.first_input + row.simple_count, row.complex_count),
             }
         }
-        fn bonus(self: @ComponentState<TContractState>, key: ResourceKey) -> ProductionBonus {
-            self.data.production.bonuses.read((key.game_id, key.entity_id))
         }
     }
 }

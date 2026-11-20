@@ -526,10 +526,3 @@ const holdsSince = (stories: readonly StoryEventData[], limit: number): number =
   if (stories.length < limit) return 0;
   return Math.min(...stories.map((story) => Number(BigInt(story.timestamp)))) + 1;
 };
-
-/** The season's winner once its SeasonEnded story is in history; null until then. */
-export const useSeasonWinner = (): bigint | null => {
-  const { data: ended } = useStoryEvents(1, "SeasonEnded");
-  const winner = ended[0]?.owner;
-  return winner ? BigInt(winner) : null;
-};

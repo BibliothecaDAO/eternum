@@ -2,17 +2,13 @@
 pub mod RelicState {
     use games_storage::release::LogicClasses;
     use starknet::ContractAddress;
-    use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
+    use starknet::storage::StoragePointerReadAccess;
     use crate::commands::ExecutionContext;
-    use crate::game::{IPointsDispatcherTrait, IPointsLibraryDispatcher, assert_playing};
+    use crate::game::assert_playing;
     use crate::logic::release::ReleaseState;
     use crate::logic::release::ReleaseState::InternalTrait as LifeInternalTrait;
-    use crate::relics::{
-        ApplyRelic, IRelicMapDispatcherTrait, IRelicMapLibraryDispatcher, IRelicProductionDispatcherTrait,
-        IRelicProductionLibraryDispatcher, IRelicTroopsDispatcherTrait, IRelicTroopsLibraryDispatcher, OpenChest,
-        Recipient, RelicRule,
-    };
-    use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
+    use crate::relics::{ApplyRelic, IRelicMapDispatcherTrait, IRelicMapLibraryDispatcher, Recipient};
+    use crate::resources::ResourceKey;
     use crate::stamina::StaminaSourceTrait;
     use crate::troops::{ExplorerKey, ExplorerRecordTrait};
 
@@ -35,48 +31,6 @@ pub mod RelicState {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of crate::relics::IRelics<ComponentState<TContractState>> {
-        fn lords_budget(self: @ComponentState<TContractState>, game_id: u32) -> Option<crate::relics::LordsBudget> {
-            self.data.relics.rollover_budget.read(game_id)
-        }
-        fn chest_rules(self: @ComponentState<TContractState>, game_id: u32) -> Option<crate::relics::ChestRules> {
-            crate::logic::preset_record::for_game(game_id).rollover_chest_rules.read()
-        }
-        fn site_chest(self: @ComponentState<TContractState>, key: ResourceKey) -> Option<crate::relics::SiteChest> {
-            self.data.structures.site_chests.read((key.game_id, key.entity_id))
-        }
-        fn relic_rules(self: @ComponentState<TContractState>, game_id: u32) -> Span<RelicRule> {
-            if crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read() != 0 {
-                return array![].span();
-            }
-            let preset = crate::logic::preset_record::for_game(game_id);
-            let mut rules = array![];
-            for id in crate::relics::FIRST_RELIC..crate::relics::LAST_RELIC + 1 {
-                rules.append(preset.relic_rules.read(id));
-            }
-            rules.span()
-        }
-        fn open_relic_chest(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            actor: ContractAddress,
-            command: OpenChest,
-            context: crate::commands::ActionContext,
-        ) -> () {
-            let context = crate::commands::execution_context(game_id, context);
-
-            self.assert_command(game_id, context.timestamp, context);
-            let classes = self.logic_classes(game_id);
-            let explorer = crate::logic::troops::command_explorer(
-                ExplorerKey { game_id, explorer_id: command.explorer_id }, Some(actor), context.timestamp, context,
-            );
-            assert!(explorer.troops.count != 0, "explorer is dead");
-            assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to chest");
-            let chest_id = IRelicMapLibraryDispatcher { class_hash: classes.raid.read() }
-                .consume_relic_chest(game_id, command.coord);
-            assert!(context.rules.unbox().day_unit_seconds == 0, "day games have no resource chests");
-            self.pay_chest(game_id, actor, command, chest_id, explorer.owner, context);
-            ()
-        }
         fn apply_relic(
             ref self: ComponentState<TContractState>,
             game_id: u32,
@@ -87,37 +41,10 @@ pub mod RelicState {
             let context = crate::commands::execution_context(game_id, context);
 
             self.assert_command(game_id, context.timestamp, context);
-            if let Recipient::ArmySlot(index) = command.recipient {
-                self.activate_army_relic(game_id, actor, command, index, context);
-                return;
-            }
-            assert!(!crate::logic::army_relics::enabled(game_id), "use an army relic slot");
-            assert!(
-                command.relic_id >= crate::relics::FIRST_RELIC && command.relic_id <= crate::relics::LAST_RELIC,
-                "invalid relic resource",
-            );
-            let preset = crate::logic::preset_record::for_game(game_id);
-            let rule = preset.relic_rules.read(command.relic_id);
-            let payer = self.apply_effect(game_id, actor, command, rule, context.timestamp, context);
-            self
-                .resources(game_id)
-                .spend_resource(
-                    ResourceKey { game_id, entity_id: command.entity_id },
-                    command.relic_id,
-                    crate::rules::RESOURCE_PRECISION,
-                    context.timestamp,
-                    crate::commands::resource_context(context),
-                );
-            self
-                .resources(game_id)
-                .spend_resource(
-                    ResourceKey { game_id, entity_id: payer },
-                    38,
-                    rule.essence_cost * crate::rules::RESOURCE_PRECISION,
-                    context.timestamp,
-                    crate::commands::resource_context(context),
-                );
-            self.record_activation(game_id, actor, command, rule, context);
+            let Recipient::ArmySlot(index) = command.recipient else {
+                panic!("use an army relic slot")
+            };
+            self.activate_army_relic(game_id, actor, command, index, context);
         }
     }
     #[embeddable_as(ArmyProgressionImpl)]
@@ -252,59 +179,6 @@ pub mod RelicState {
             ()
         }
     }
-    #[embeddable_as(ArtificerImpl)]
-    pub impl Artificer<
-        TContractState,
-        +HasComponent<TContractState>,
-        impl Life: ReleaseState::HasComponent<TContractState>,
-        +Drop<TContractState>,
-    > of crate::artificer::IArtificer<ComponentState<TContractState>> {
-        fn artificer_cost(self: @ComponentState<TContractState>, game_id: u32) -> u128 {
-            crate::logic::preset_record::for_game(game_id).artificer_cost.read()
-        }
-        fn craft_relic(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            actor: ContractAddress,
-            structure_id: u64,
-            context: crate::commands::ActionContext,
-        ) -> () {
-            let context = crate::commands::execution_context(game_id, context);
-
-            self.assert_command(game_id, context.timestamp, context);
-            let key = ResourceKey { game_id, entity_id: structure_id };
-            let structure = crate::logic::structures::structure(key).expect('missing structure');
-            assert!(
-                structure.base.category == crate::taxonomy::REALM_CATEGORY
-                    || structure.base.category == crate::taxonomy::VILLAGE_CATEGORY,
-                "structure is not a realm or village",
-            );
-            assert!(structure.owner == actor, "actor does not own structure");
-            self
-                .resources(game_id)
-                .spend_resource(
-                    key,
-                    crate::artificer::RESEARCH,
-                    self.artificer_cost(game_id),
-                    context.timestamp,
-                    crate::commands::resource_context(context),
-                );
-            let mut root = context.raw_root;
-            let seed = crate::random::game_root(ref root, game_id);
-            let relic = crate::relics::draw_relic(self.relic_rules(game_id), seed);
-            self
-                .resources(game_id)
-                .grant_resource(
-                    key,
-                    relic,
-                    crate::rules::RESOURCE_PRECISION,
-                    context.timestamp,
-                    crate::commands::resource_context(context),
-                );
-            self.record_crafted_relic(game_id, actor, structure_id, relic, context.timestamp);
-            ()
-        }
-    }
     #[generate_trait]
     pub impl InternalImpl<
         TContractState,
@@ -360,129 +234,10 @@ pub mod RelicState {
             crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
         }
 
-        fn pay_chest(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            actor: ContractAddress,
-            command: OpenChest,
-            chest_id: u64,
-            home: u64,
-            context: ExecutionContext,
-        ) {
-            let config = context.rules.unbox();
-            let chest = crate::logic::relic_chests::take(ResourceKey { game_id, entity_id: chest_id });
-            let relics = crate::relics::pack_relics(chest);
-            let army = ResourceKey { game_id, entity_id: command.explorer_id };
-            let realm = ResourceKey { game_id, entity_id: home };
-            for id in relics {
-                let holder = if crate::relics::is_army_relic(*id) {
-                    army
-                } else {
-                    realm
-                };
-                self
-                    .resources(game_id)
-                    .grant_resource(
-                        holder,
-                        *id,
-                        crate::rules::RESOURCE_PRECISION,
-                        context.timestamp,
-                        crate::commands::resource_context(context),
-                    );
-            }
-            let points = config.victory_points_grant_config.relic_open_points.into();
-            IPointsLibraryDispatcher { class_hash: get_dep_component!(@self, Life).classes(game_id).season.read() }
-                .register_relic_points(game_id, actor, crate::commands::action_context(context));
-            self.record_chest_opened(game_id, actor, command, chest, relics, points, context.timestamp);
-        }
-
-        fn record_crafted_relic(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            actor: ContractAddress,
-            structure_id: u64,
-            relic: u8,
-            timestamp: u64,
-        ) {
-            self
-                .emit(
-                    crate::ownership::StoryEvent {
-                        version: 2,
-                        game_id,
-                        entity_id: Some(structure_id),
-                        owner: Some(actor),
-                        timestamp,
-                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
-                        story: crate::ownership::Story::RelicCrafted(relic),
-                    },
-                );
-        }
-        fn record_activation(
-            self: @ComponentState<TContractState>,
-            game_id: u32,
-            actor: ContractAddress,
-            command: ApplyRelic,
-            rule: RelicRule,
-            context: ExecutionContext,
-        ) {
-            let ticks: u64 = match command.relic_id {
-                39 | 40 => rule.uses.into(),
-                45 | 46 => 0,
-                _ => rule.duration.into(),
-            };
-            crate::logic::stories::emit_entity_story(
-                ResourceKey { game_id, entity_id: command.entity_id },
-                actor,
-                crate::ownership::Story::RelicActivated(
-                    crate::relics::RelicActivated {
-                        relic_id: command.relic_id,
-                        recipient: command.recipient,
-                        rate_bps: rule.rate_bps,
-                        duration_seconds: ticks * context.rules.unbox().tick_config.armies_tick_in_seconds,
-                        radius: if command.relic_id == 45 || command.relic_id == 46 {
-                            rule.uses
-                        } else {
-                            0
-                        },
-                    },
-                ),
-                context.timestamp,
-            );
-        }
-        fn record_chest_opened(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            actor: ContractAddress,
-            command: OpenChest,
-            chest: crate::relics::RelicChest,
-            relics: Span<u8>,
-            points: u128,
-            timestamp: u64,
-        ) {
-            self
-                .emit(
-                    crate::ownership::StoryEvent {
-                        version: 2,
-                        game_id,
-                        entity_id: Some(command.explorer_id),
-                        owner: Some(actor),
-                        timestamp,
-                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
-                        story: crate::ownership::Story::RelicChestOpened(
-                            crate::relics::ChestOpened {
-                                explorer_id: command.explorer_id, coord: command.coord, chest, relics, points,
-                            },
-                        ),
-                    },
-                );
-        }
         fn logic_classes(
             self: @ComponentState<TContractState>, game_id: u32,
         ) -> starknet::storage::StoragePointer<LogicClasses> {
             get_dep_component!(self, Life).classes(game_id)
-        }
-        fn resources(self: @ComponentState<TContractState>, game_id: u32) -> IResourceOperationsLibraryDispatcher {
-            IResourceOperationsLibraryDispatcher { class_hash: self.logic_classes(game_id).resources.read() }
         }
         fn assert_command(
             self: @ComponentState<TContractState>,
@@ -491,42 +246,6 @@ pub mod RelicState {
             game_context: crate::commands::ExecutionContext,
         ) {
             assert_playing(game_context.game.unbox(), timestamp);
-        }
-        fn apply_effect(
-            self: @ComponentState<TContractState>,
-            game_id: u32,
-            actor: ContractAddress,
-            command: ApplyRelic,
-            rule: RelicRule,
-            timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
-        ) -> u64 {
-            let classes = self.logic_classes(game_id);
-            if command.recipient == Recipient::Explorer {
-                let explorer = crate::logic::troops::command_explorer(
-                    ExplorerKey { game_id, explorer_id: command.entity_id }, Some(actor), timestamp, game_context,
-                );
-                IRelicTroopsLibraryDispatcher { class_hash: classes.troops.read() }
-                    .apply_troop_relic(
-                        game_id, actor, command, rule, timestamp, crate::commands::action_context(game_context),
-                    );
-                explorer.owner
-            } else {
-                let key = ResourceKey { game_id, entity_id: command.entity_id };
-                assert!(crate::logic::structures::owner(key) == actor, "actor does not own structure");
-                if command.recipient == Recipient::StructureProduction {
-                    IRelicProductionLibraryDispatcher { class_hash: classes.production.read() }
-                        .apply_production_relic(
-                            key, command.relic_id, rule, timestamp, crate::commands::action_context(game_context),
-                        );
-                } else {
-                    IRelicTroopsLibraryDispatcher { class_hash: classes.troops.read() }
-                        .apply_troop_relic(
-                            game_id, actor, command, rule, timestamp, crate::commands::action_context(game_context),
-                        );
-                }
-                command.entity_id
-            }
         }
     }
 }

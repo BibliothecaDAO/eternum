@@ -14,7 +14,6 @@ export const nativeCommandBits = {
   "LevelUp": "64",
   "SettleBlitzRoster": "128",
   "ProvisionRealm": "256",
-  "CreateReservedHyperstructure": "512",
   "SettleSeason": "1024",
   "SettleVillage": "2048",
   "ReceiveVillageArmy": "4096",
@@ -33,15 +32,8 @@ export const nativeCommandBits = {
   "BindBitcoinPhase": "134217728",
   "ClaimBitcoinPhase": "268435456",
   "BattleGuard": "536870912",
-  "InitializeHyperstructure": "274877906944",
-  "ContributeHyperstructure": "549755813888",
-  "AllocateHyperstructureShares": "1099511627776",
-  "SetConstructionAccess": "2199023255552",
-  "OpenRelicChest": "4398046511104",
   "ApplyRelic": "8796093022208",
-  "CloseSeason": "17592186044416",
   "RecordBlitzResults": "2251799813685248",
-  "CraftRelic": "4503599627370496",
   "CreateGuild": "9007199254740992",
   "JoinGuild": "18014398509481984",
   "LeaveGuild": "36028797018963968",
@@ -72,7 +64,6 @@ export interface NativeCommandPayloads {
   LevelUp: BigNumberish;
   SettleBlitzRoster: undefined;
   ProvisionRealm: BigNumberish;
-  CreateReservedHyperstructure: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish };
   SettleSeason: { readonly selected_realm: { readonly kind: "Some"; readonly value: BigNumberish } | { readonly kind: "None"; readonly value: undefined }; readonly order: { readonly kind: "Some"; readonly value: BigNumberish } | { readonly kind: "None"; readonly value: undefined } };
   SettleVillage: { readonly pass_id: BigNumberish; readonly connected_realm_entity_id: BigNumberish };
   ReceiveVillageArmy: BigNumberish;
@@ -91,15 +82,8 @@ export interface NativeCommandPayloads {
   BindBitcoinPhase: BigNumberish;
   ClaimBitcoinPhase: { readonly phase: BigNumberish; readonly mine_ids: readonly (BigNumberish)[] };
   BattleGuard: { readonly attacker_id: BigNumberish; readonly defender_id: BigNumberish; readonly relic_slot: { readonly kind: "Some"; readonly value: BigNumberish } | { readonly kind: "None"; readonly value: undefined } };
-  InitializeHyperstructure: BigNumberish;
-  ContributeHyperstructure: { readonly hyperstructure_id: BigNumberish; readonly from_structure_id: BigNumberish; readonly resources: readonly ({ readonly resource_type: BigNumberish; readonly amount: BigNumberish })[] };
-  AllocateHyperstructureShares: { readonly hyperstructure_id: BigNumberish; readonly shareholders: readonly ({ readonly player: BigNumberish; readonly bps: BigNumberish })[] };
-  SetConstructionAccess: { readonly hyperstructure_id: BigNumberish; readonly access: { readonly kind: "Public"; readonly value: undefined } | { readonly kind: "Private"; readonly value: undefined } | { readonly kind: "GuildOnly"; readonly value: undefined } };
-  OpenRelicChest: { readonly explorer_id: BigNumberish; readonly coord: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish } };
   ApplyRelic: { readonly entity_id: BigNumberish; readonly relic_id: BigNumberish; readonly recipient: { readonly kind: "Explorer"; readonly value: undefined } | { readonly kind: "StructureProduction"; readonly value: undefined } | { readonly kind: "StructureGuard"; readonly value: undefined } | { readonly kind: "ArmySlot"; readonly value: BigNumberish } };
-  CloseSeason: undefined;
   RecordBlitzResults: undefined;
-  CraftRelic: BigNumberish;
   CreateGuild: { readonly owned_structure_id: BigNumberish; readonly public: boolean; readonly name: BigNumberish };
   JoinGuild: { readonly owned_structure_id: BigNumberish; readonly guild_id: BigNumberish };
   LeaveGuild: undefined;

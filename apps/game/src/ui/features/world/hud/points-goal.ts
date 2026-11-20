@@ -8,8 +8,6 @@ import { useMemo } from "react";
 export interface PointsGrants {
   exploreTile: number;
   claimCampFromBandits: number;
-  claimHyperstructureFromBandits: number;
-  openRelicCrate: number;
 }
 
 /** The game's goal in one line: "Most points in 1h wins", or "Most points wins" for a game with no set end. */
@@ -18,18 +16,11 @@ export const goalLine = (lengthSeconds: number | null): string =>
     ? `Most points in ${formatDuration(lengthSeconds)} wins`
     : "Most points wins";
 
-/**
- * The goal and what scores, in one compact line: the top bar's hover. "Most points in 1h wins ·
- * tile +5 · crate +250 · camp or rift +250 · Hyperstructure +1,000, then per minute": a held Hyperstructure's rate
- * by the minute, as every rate is.
- */
 export const goalScoring = (lengthSeconds: number | null, grants: PointsGrants): string =>
   [
     goalLine(lengthSeconds),
     `tile +${formatExact(grants.exploreTile)}`,
-    `crate +${formatExact(grants.openRelicCrate)}`,
     `camp or rift +${formatExact(grants.claimCampFromBandits)}`,
-    `Hyperstructure +${formatExact(grants.claimHyperstructureFromBandits)}, then per minute`,
   ].join(" · ");
 
 /** The running game's length in seconds, from its main start to its end; null for a game with no set end. */

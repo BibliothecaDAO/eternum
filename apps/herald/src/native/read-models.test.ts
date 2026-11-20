@@ -1,7 +1,6 @@
 import { buildNativePreset } from "../../../../config/deployer/clean/config/native-preset";
 import { loadNativePresetConfiguration } from "../../../../config/deployer/clean/registrar/native-preset";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
-import { nativeIdentifiers } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { createHeraldRequestHandler } from "../http";
 import { WorldFold } from "../world-fold";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -419,58 +418,6 @@ describe("native directory and leaderboard", () => {
     expect(members(1)).toEqual({ 1: 3, 2: 1, 3: 1, 4: 0 });
   });
 
-  it("adds unsettled shares with contract rounding, caps at game end, and never double counts checkpointed points", () => {
-    const { fold, native } = world();
-    native.applyReceipt(
-      fold,
-      receipt([
-        pointsAward("1", "0x111", "1000000", "1000000", "1000000"),
-        pointsAward("2", "0x111", "999000000", "999000000", "999000000"),
-        rowEvent("HyperstructureShares", ["1", "7"], {
-          start_at: 100n,
-          multiplier: 2n,
-          shareholders: [
-            { player: 273n, bps: 3333n },
-            { player: 546n, bps: 6667n },
-          ],
-        }),
-      ]),
-      11,
-      0,
-    );
-    const leaderboard = (time: number) => buildNativeLeaderboard((name) => fold.modelRows(name), "1", time, null);
-    expect(leaderboard(100).entries.map(({ address, totalPoints }) => [address, totalPoints])).toEqual([
-      ["0x111", 1],
-      ["0x222", 0],
-    ]);
-    expect(leaderboard(101).entries.map(({ address, totalPoints }) => [address, totalPoints])).toEqual([
-      ["0x111", 1.6666],
-      ["0x222", 1.3334],
-    ]);
-    const ended = leaderboard(200);
-    expect(leaderboard(900)).toEqual(ended);
-    native.applyReceipt(
-      fold,
-      receipt([
-        pointsAward("1", "0x111", "66660000", "67660000", "67660000"),
-        pointsAward("1", "0x222", "133340000", "133340000", "201000000"),
-        rowEvent("HyperstructureShares", ["1", "7"], {
-          start_at: 200n,
-          multiplier: 2n,
-          shareholders: [
-            { player: 273n, bps: 3333n },
-            { player: 546n, bps: 6667n },
-          ],
-        }),
-      ]),
-      12,
-      0,
-    );
-    expect(leaderboard(900)).toEqual(ended);
-    native.applyReceipt(fold, receipt([gameEvent("1", "0", "1")]), 13, 0);
-    expect(leaderboard(201).entries[0].totalPoints).toBe(134.6734);
-  });
-
   it("keeps exact integer rank ordering before display conversion and ignores history score totals", () => {
     const { fold, native } = world();
     const huge = 2n ** 100n;
@@ -483,7 +430,7 @@ describe("native directory and leaderboard", () => {
       11,
       0,
     );
-    const result = buildNativeLeaderboard((name) => fold.modelRows(name), "1", 30, new Map());
+    const result = buildNativeLeaderboard((name) => fold.modelRows(name), "1", new Map());
     expect(result.entries.map(({ address, rank }) => [address, rank])).toEqual([
       ["0x222", 1],
       ["0x111", 2],
@@ -498,12 +445,7 @@ describe("native directory and leaderboard", () => {
     const { fold, native, decoder } = world();
     native.applyReceipt(
       fold,
-      receipt(
-        seedDerivedRows(fold, decoder, [
-          gameEvent("1", "0", "0", "101"),
-          rulesEvent("1", "120", BigInt(nativeIdentifiers.rule.SEASON_CLOSE)),
-        ]),
-      ),
+      receipt(seedDerivedRows(fold, decoder, [gameEvent("1", "0", "0", "101"), rulesEvent("1", "120")])),
       11,
       0,
     );
@@ -576,7 +518,7 @@ describe("native directory and leaderboard", () => {
     expect(() => buildNativeDirectory({ chain: "madara", confirmedBlock: 10, timestamp: 30, fold })).toThrow(
       "Missing native SettlementRules",
     );
-    expect(() => buildNativeLeaderboard((name) => fold.modelRows(name), "1", 30, null)).toThrow(
+    expect(() => buildNativeLeaderboard((name) => fold.modelRows(name), "1", null)).toThrow(
       "Missing native SliceRules",
     );
   });
@@ -619,7 +561,7 @@ it("waits for the complete result before freezing and restores tied standings fr
   expect(fold.finalizedGameIds()).toEqual(["1"]);
   const restored = WorldFold.restore(decoder.registry, fold.checkpoint());
   expect(restored.finalizedGameIds()).toEqual(["1"]);
-  const result = buildNativeLeaderboard((name) => restored.modelRows(name), "1", 500, null);
+  const result = buildNativeLeaderboard((name) => restored.modelRows(name), "1", null);
   expect(result.entries.map(({ address, rank, totalPoints }) => ({ address, rank, totalPoints }))).toEqual([
     { address: "0x111", rank: 1, totalPoints: 9.5 },
     { address: "0x222", rank: 1, totalPoints: 9.5 },
@@ -664,7 +606,7 @@ it.each(["Blitz", "check-blitz-abc"])(
         fold,
         playerAddress: "0x111",
       }),
-      standings: buildNativeLeaderboard((name) => fold.modelRows(name), "1", 500, null),
+      standings: buildNativeLeaderboard((name) => fold.modelRows(name), "1", null),
     });
 
     const live = world();

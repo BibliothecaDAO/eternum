@@ -34,7 +34,7 @@ type RuinRelicState =
   | { kind: "room"; relic: ArmyRelic }
   | { kind: "full"; relic: ArmyRelic; carried: readonly [ArmyRelic, ArmyRelic, ArmyRelic]; chosen: 0 | 1 | 2 | null };
 
-const RUIN_RELIC_MODELS = ["RuinRelic", "RuinCache", "SliceRules", "ChestRules", ...ARMY_RELIC_MODELS] as const;
+const RUIN_RELIC_MODELS = ["RuinRelic", "RuinCache", "SliceRules", ...ARMY_RELIC_MODELS] as const;
 
 const sameRelic = (a: ArmyRelic | null, b: ArmyRelic) => a !== null && a.kind === b.kind && a.rank === b.rank;
 

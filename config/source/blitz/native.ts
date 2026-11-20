@@ -1,6 +1,6 @@
 import type { NativePreset } from "../common/native-preset";
 import { nativeRuleConstants as rule } from "../../../contracts/l3/world-native/schema/balance.gen";
-import { realmResourcePool, relicRules } from "../common/native-data";
+import { realmResourcePool } from "../common/native-data";
 import { arenaModeRules, arenaCommandMask } from "../common/native-commands";
 import { blitzBalance } from "./balance";
 
@@ -17,7 +17,6 @@ export const blitzPreset: NativePreset = {
   banes: null,
   startingTroops: [],
   realmResources: realmResourcePool,
-  relics: relicRules,
   supplies: blitzBalance.blitz!.exploration!.rewards!.map(({ rewardId, percent, probabilityBps }) => ({
     resource_type: rewardId!,
     percent: percent!,

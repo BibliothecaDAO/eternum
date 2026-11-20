@@ -2,7 +2,6 @@ import { expect, test } from "bun:test";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { nativeRuleConstants } from "../../contracts/l3/world-native/schema/balance.gen";
 import { NativeDecoder } from "../../apps/herald/src/native/decoder";
 import { manifest } from "../../apps/herald/src/native/fixtures";
 import type { FoldCheckpoint, FoldCheckpointRow } from "../../apps/herald/src/types";
@@ -124,13 +123,10 @@ test("a game the checkpoint does not hold is refused", () => {
   expect(() => gameFacts(checkpoint(), at(100), 99)).toThrow("Game 99 is not in this checkpoint");
 });
 
-/** Game 1 settled under a season-closing rule, folded and evicted by Herald itself. */
 function settledFrontierGame(evict: boolean): FoldCheckpoint {
   const rows: Record<string, FoldCheckpointRow[]> = {
     GameRegistry: [{ ...registry(1, OLD_END, true), key: { game_id: "1" } }],
-    SliceRules: [
-      { entity_id: "0x1", key: { game_id: "1" }, value: { mode_rules: String(nativeRuleConstants.SEASON_CLOSE) } },
-    ],
+    SliceRules: [{ entity_id: "0x1", key: { game_id: "1" }, value: { day_unit_seconds: "3600" } }],
     ExplorerTroops: [army(1, 7, "4015")],
   };
   const registryOfModels = new NativeDecoder(manifest).registry;

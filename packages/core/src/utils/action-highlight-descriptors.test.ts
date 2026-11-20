@@ -58,7 +58,6 @@ describe("resolveActionHighlightDescriptors", () => {
   it.each([
     [ActionType.Attack, "attack"],
     [ActionType.Help, "support"],
-    [ActionType.Chest, "chest"],
     [ActionType.CreateArmy, "create-army"],
   ] as const)("maps %s endpoints to the %s highlight kind", (actionType, kind) => {
     const feltCenter = 100;

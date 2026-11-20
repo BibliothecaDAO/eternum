@@ -9,7 +9,7 @@ import { IS_MOBILE } from "@/ui/config";
 import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import { env } from "../../env";
 import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
-import { configureGltfTextureSupport, transitionDB } from "./utils/";
+import { configureGltfTextureSupport } from "./utils/";
 import { trackGuiFolder, type TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
 import {
   createRendererFrameFailureCircuit,
@@ -86,7 +86,6 @@ export default class GameRenderer {
   private isAnimationLoopRunning = false;
   private game: SetupResult;
   private sceneManager!: SceneManager;
-  private cleanupIntervals: NodeJS.Timeout[] = [];
   private guiFolders: TrackableGuiFolder[] = [];
   private readonly graphicsGui = createGraphicsGuiLifetime();
   private readonly isMobileDevice = IS_MOBILE;
@@ -243,10 +242,6 @@ export default class GameRenderer {
     bootstrapRendererStartupRuntime({
       animate: () => measure("animate-start", () => this.animate()),
       attachInteractionRuntime: () => measure("attach-interaction", () => this.attachInteractionRuntime()),
-      cleanupExpiredTransitions: (maxAgeMs) => transitionDB.cleanupExpired(maxAgeMs),
-      debug: (message) => {
-        if (import.meta.env.DEV) console.debug(message);
-      },
       document,
       initializeHudScene: () =>
         measure("hud-scene", () => {
@@ -255,10 +250,6 @@ export default class GameRenderer {
       initialSceneName,
       isDestroyed: this.isDestroyed,
       prepareScenes: () => measure("prepare-scenes", () => this.prepareScenes()),
-      registerCleanupInterval: (intervalId) => {
-        this.cleanupIntervals = this.cleanupIntervals || [];
-        this.cleanupIntervals.push(intervalId);
-      },
       rendererDomElement: this.renderer.domElement,
       syncRouteFromLocation: () => measure("sync-route", () => this.sessionRuntime.syncRouteFromLocation()),
       warn: (message) => console.warn(message),
@@ -470,7 +461,6 @@ export default class GameRenderer {
 
     destroyRendererRuntime({
       backend: this.backend,
-      cleanupIntervals: this.cleanupIntervals,
       controls: this.controls,
       effectsBridgeRuntime: this.supportRuntimeRegistry.getEffectsBridge(),
       guiFolders: this.guiFolders ?? [],

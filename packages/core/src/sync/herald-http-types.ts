@@ -172,11 +172,6 @@ export interface HeraldFrontierLeaderboard {
   game_id: string;
   mode: "frontier";
   entries: HeraldFrontierLeaderboardEntry[];
-  /**
-   * The season's top prizes, as the game holds them (FrontierPrize, ChestRules, LordsWithdrawal): the prize pool in whole
-   * LORDS, how many places the game pays at most, how many the ledger fixed once the winners are posted, and each
-   * place's award receipt. Null while no prize pool is published.
-   */
   prize: HeraldFrontierPrize | null;
 }
 

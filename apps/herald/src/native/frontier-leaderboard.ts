@@ -115,20 +115,9 @@ function applyStory(player: Standing, event: HeraldHistoryEvent): void {
     case "ExplorationReward":
       creditResource(player.entry, reward.payload);
       break;
-    case "RewardChestOpened":
-      creditOpenedChest(player.entry, reward.payload);
-      break;
     default:
       throw new Error(`Unhandled Frontier reward: ${reward.kind satisfies never}`);
   }
-}
-
-/** An opening records whole LORDS, including zero for an expired chest; it is never a site clear. */
-function creditOpenedChest(entry: HeraldFrontierLeaderboardEntry, reward: Row): void {
-  const amount = integer(reward.amount);
-  if (amount < 0n) throw new Error("Negative Frontier reward");
-  entry.chests_earned++;
-  entry.rewards.lords = (integer(entry.rewards.lords) + amount).toString();
 }
 
 function creditSiteClear(player: Standing, payout: Row, event: HeraldHistoryEvent): void {

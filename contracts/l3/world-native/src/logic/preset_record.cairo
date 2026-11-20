@@ -33,8 +33,7 @@ pub fn store(commitment: felt252, definition: crate::presets::PresetDefinition) 
         definition.rules.mode_rules,
         definition.rules.day_unit_seconds,
     );
-    write_economy(preset, commitment, definition.rules, definition.economy);
-    preset.season_win_points.write(definition.season_win_points);
+    write_economy(preset, commitment, definition.economy);
 }
 
 // Resource tables are owned by Production; registration remains one atomic transaction.
@@ -112,27 +111,15 @@ pub fn store_settlement(
     preset.spires.write(settlement.spires);
 }
 
-fn write_economy(
-    preset: PresetWrite, commitment: felt252, rules: crate::rules::SliceRules, economy: crate::presets::EconomyPreset,
-) {
+fn write_economy(preset: PresetWrite, commitment: felt252, economy: crate::presets::EconomyPreset) {
     preset.labor_rules.write(economy.labor);
     write_quests(preset, economy.quests);
     write_banes(preset, economy.banes);
     write_deep(preset, economy.deep);
     preset.race_rules.write(economy.race);
-    write_hyperstructures(preset, rules, economy.hyperstructures);
-    let classes = crate::state::read().releases.read(crate::state::read().current_release.read()).classes;
-    crate::presets::IPresetRelicsDispatcherTrait::store_relic_preset(
-        crate::presets::IPresetRelicsLibraryDispatcher { class_hash: classes.relics },
-        commitment,
-        economy.relics,
-        economy.chests,
-        rules.mode_rules,
-        rules.day_unit_seconds,
-    );
     preset.discovery_rules.write(economy.discovery);
-    preset.artificer_cost.write(economy.research_cost);
     if let Some(withdrawals) = economy.withdrawals {
+        let classes = crate::state::read().releases.read(crate::state::read().current_release.read()).classes;
         crate::presets::IPresetWithdrawalsDispatcherTrait::store_withdrawal_preset(
             crate::presets::IPresetWithdrawalsLibraryDispatcher { class_hash: classes.production },
             commitment,
@@ -437,55 +424,6 @@ fn validate_beast_guards(depth: crate::expeditions::DepthRules) {
     assert!(depth.beast_strong_lower <= depth.beast_strong_upper, "invalid strong beast range");
     assert!(depth.beast_weak_upper < depth.beast_strong_lower, "beast ranges overlap");
     assert!(depth.beast_strong_upper < depth.site_guard_lower, "beasts must be weaker than sites");
-}
-
-fn write_hyperstructures(
-    preset: PresetWrite, game_rules: crate::rules::SliceRules, rules: crate::hyperstructures::HyperstructureRules,
-) {
-    assert!(
-        !rules.resources.is_empty() || !crate::rules::rule_enabled(game_rules, crate::rules::DISCOVER_HYPERSTRUCTURES),
-        "empty construction requirements",
-    );
-    for index in 0..rules.resources.len() {
-        let cost = *rules.resources.at(index);
-        assert!(cost.resource_type >= 1 && cost.resource_type <= 23, "invalid construction resource");
-        assert!(cost.minimum != 0 && cost.minimum <= cost.maximum, "invalid construction range");
-        for previous in 0..index {
-            assert!(
-                *rules.resources.at(previous).resource_type != cost.resource_type, "duplicate construction resource",
-            );
-        }
-        preset.hyper_costs.write(index, cost);
-    }
-    preset.hyper_cost_count.write(rules.resources.len());
-    preset.hyper_shards.write(rules.initialize_shards);
-}
-
-pub fn store_relics(
-    commitment: felt252,
-    rules: Span<crate::relics::RelicRule>,
-    chests: Option<crate::relics::ChestRules>,
-    mode_rules: u32,
-    day_unit_seconds: u32,
-) {
-    crate::logic::release::assert_authority();
-    let preset = crate::state::write().presets.entry(commitment);
-    assert!(chests.is_none(), "LORDS presets are retired");
-    if day_unit_seconds != 0 {
-        assert!(rules.is_empty(), "army relic loadouts replace resource relics");
-        assert!(mode_rules & crate::rules::DISCOVER_CHESTS == 0, "army relics have no LORDS chests");
-    } else {
-        assert!(rules.len() == 18, "all eighteen relic rules required");
-        let mut total: u128 = 0;
-        for index in 0..18_u32 {
-            let rule = *rules.at(index);
-            total += rule.draw_weight;
-            preset.relic_rules.write(crate::relics::FIRST_RELIC + index.try_into().unwrap(), rule);
-        }
-        assert!(total != 0, "empty relic discovery pool");
-        assert!(*rules.at(6).uses == 1 && *rules.at(7).uses == 2, "invalid reveal radii");
-    }
-    preset.rollover_chest_rules.write(chests);
 }
 
 fn write_exploration(

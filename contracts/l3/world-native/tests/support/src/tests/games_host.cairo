@@ -81,15 +81,11 @@ pub mod GamesTest {
     #[abi(embed_v0)]
     impl SettlementPoolFixture = GamesFixture::SettlementPoolFixture<ContractState>;
     #[abi(embed_v0)]
-    impl BlitzReservationsFixture = GamesFixture::BlitzReservationsFixture<ContractState>;
-    #[abi(embed_v0)]
     impl MapFixture = GamesFixture::MapFixture<ContractState>;
     #[abi(embed_v0)]
     impl ExtractionFixture = GamesFixture::ExtractionFixture<ContractState>;
     #[abi(embed_v0)]
     impl RelicMapFixture = GamesFixture::RelicMapFixture<ContractState>;
-    #[abi(embed_v0)]
-    impl RelicTroopsFixture = GamesFixture::RelicTroopsFixture<ContractState>;
     #[abi(embed_v0)]
     impl GuardsFixture = GamesFixture::GuardsFixture<ContractState>;
     #[abi(embed_v0)]
@@ -133,8 +129,6 @@ pub mod GamesTest {
     #[abi(embed_v0)]
     impl ExplorationGrantFixture = GamesFixture::ExplorationGrantFixture<ContractState>;
     #[abi(embed_v0)]
-    impl RelicProductionFixture = GamesFixture::RelicProductionFixture<ContractState>;
-    #[abi(embed_v0)]
     impl ProductionRulesFixture = GamesFixture::ProductionRulesFixture<ContractState>;
     #[abi(embed_v0)]
     impl ProductionCommandsFixture = GamesFixture::ProductionCommandsFixture<ContractState>;
@@ -151,13 +145,9 @@ pub mod GamesTest {
     #[abi(embed_v0)]
     impl WithdrawalsFixture = GamesFixture::WithdrawalsFixture<ContractState>;
     #[abi(embed_v0)]
-    impl SeasonLifecycleFixture = GamesFixture::SeasonLifecycleFixture<ContractState>;
-    #[abi(embed_v0)]
     impl GameSettlementFixture = GamesFixture::GameSettlementFixture<ContractState>;
     #[abi(embed_v0)]
     impl PointsFixture = GamesFixture::PointsFixture<ContractState>;
-    #[abi(embed_v0)]
-    impl HyperstructuresFixture = GamesFixture::HyperstructuresFixture<ContractState>;
     #[abi(embed_v0)]
     impl GuildsFixture = GamesFixture::GuildsFixture<ContractState>;
     #[abi(embed_v0)]
@@ -170,8 +160,6 @@ pub mod GamesTest {
     impl BlitzResultsFixture = GamesFixture::BlitzResultsFixture<ContractState>;
     #[abi(embed_v0)]
     impl RelicsFixture = GamesFixture::RelicsFixture<ContractState>;
-    #[abi(embed_v0)]
-    impl ArtificerFixture = GamesFixture::ArtificerFixture<ContractState>;
     #[external(v0)]
     fn layout_tile(self: @ContractState, key: crate::map::TileKey) -> Option<crate::map::TileOpt> {
         crate::logic::map::tile(key)

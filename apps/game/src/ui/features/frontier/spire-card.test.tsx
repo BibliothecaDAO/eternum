@@ -615,7 +615,6 @@ describe("a realm's spire, from the player's path", () => {
         new Map(),
         new Map(),
         new Map(),
-        new Map(),
         NOW,
         0x111n as never,
       );

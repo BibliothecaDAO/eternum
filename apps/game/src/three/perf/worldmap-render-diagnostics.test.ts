@@ -41,8 +41,6 @@ describe("worldmap-render-diagnostics", () => {
     incrementWorldmapRenderCounter("staleTerrainCacheFingerprintRejectCount" as any, 5);
     incrementWorldmapRenderCounter("preparedChunkPrewarmHits" as any, 6);
     incrementWorldmapRenderCounter("preparedChunkPrewarmMisses" as any, 2);
-    incrementWorldmapRenderCounter("postCommitManagerCatchUpImmediate" as any, 3);
-    incrementWorldmapRenderCounter("postCommitManagerCatchUpDeferred" as any, 1);
     incrementWorldmapForceRefreshReason("visibility_recovery");
     incrementWorldmapForceRefreshReason("visibility_recovery");
 
@@ -78,8 +76,6 @@ describe("worldmap-render-diagnostics", () => {
     expect(snapshot.counters).toHaveProperty("staleTerrainCacheFingerprintRejectCount", 5);
     expect(snapshot.counters).toHaveProperty("preparedChunkPrewarmHits", 6);
     expect(snapshot.counters).toHaveProperty("preparedChunkPrewarmMisses", 2);
-    expect(snapshot.counters).toHaveProperty("postCommitManagerCatchUpImmediate", 3);
-    expect(snapshot.counters).toHaveProperty("postCommitManagerCatchUpDeferred", 1);
     expect(snapshot.forceRefreshReasons.visibility_recovery).toBe(2);
   });
 

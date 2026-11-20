@@ -44,7 +44,7 @@ function result(store: NativeFactStore, gameId: number, players: { player: numbe
     },
   ]);
 }
-const headline = (store: NativeFactStore, winner: bigint | null = null) => resolveGameEndHeadline(store, 1, winner);
+const headline = (store: NativeFactStore) => resolveGameEndHeadline(store, 1);
 /** Every ranked account's registered points: a final result is read only once each of them is known. */
 function points(store: NativeFactStore, gameId: number, accounts: number[]) {
   store.applyFacts(
@@ -81,12 +81,6 @@ describe("game end headlines", () => {
     ]);
     points(store, 1, [42, 43, 44]);
     expect(headline(store)?.description).toEqual([{ player: 42n }, " and ", { player: 43n }, " share victory!"]);
-  });
-  it("announces the authoritative season winner without requiring a finite end clock", () => {
-    const store = new NativeFactStore();
-    game(store, 0);
-    expect(headline(store)).toBeNull();
-    expect(headline(store, 42n)?.description).toEqual([{ player: 42n }, " wins!"]);
   });
   it("names no winner from a broken result: it is reported, never thrown into the headline bridge", () => {
     const store = new NativeFactStore();

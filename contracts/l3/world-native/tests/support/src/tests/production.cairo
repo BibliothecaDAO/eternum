@@ -1,7 +1,7 @@
 pub use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
 pub use crate::commands::Command;
 pub use crate::game::{IGameDispatcher, IGameDispatcherTrait};
-pub use crate::production::{ProductionBonus, ProductionRecipe, RecipeConfig, RefillProduction};
+pub use crate::production::{ProductionRecipe, RecipeConfig, RefillProduction};
 pub use crate::registrar::{IRegistrarSafeDispatcher, IRegistrarSafeDispatcherTrait};
 pub use crate::resources::{IResourceOperationsDispatcher, ResourceAmount, ResourceRule, ResourceSlot};
 pub use crate::tests::state::ResourceObservationTrait;

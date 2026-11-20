@@ -13,27 +13,6 @@ pub fn source(game_id: u32) -> Option<DepositSource> {
         })
 }
 
-pub fn configure(game_id: u32, value: DepositSource) {
-    crate::logic::release::assert_authority();
-    assert!(value.chain != 0 && value.ledger != 0.try_into().unwrap() && value.signer != 0, "invalid deposit source");
-    if let Some(previous) = source(game_id) {
-        assert!(previous.chain == value.chain && previous.ledger == value.ledger, "deposit source is immutable");
-        assert!(value.epoch >= previous.epoch, "deposit signer epoch regressed");
-        assert!(value.epoch != previous.epoch || value.signer == previous.signer, "deposit signer epoch reused");
-    }
-    crate::logic::game::game(game_id);
-    let preset = crate::logic::preset_record::for_game(game_id);
-    assert!(preset.rules.day_unit_seconds.read() != 0, "deposits require Frontier");
-    assert!(preset.rollover_chest_rules.read().is_some(), "game has no LORDS balance");
-    crate::state::write()
-        .entry
-        .deposit_sources
-        .write(game_id, Some((value.chain, value.ledger, value.signer, value.epoch)));
-    let mut values = array![];
-    value.serialize(ref values);
-    emit('DepositSource', array![game_id.into()], values);
-}
-
 pub fn balance(game_id: u32, account: ContractAddress) -> SpendLords {
     let (available, consumed, swept) = crate::state::read().entry.spend_lords.read((game_id, account));
     SpendLords { available, consumed, swept }

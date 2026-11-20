@@ -300,21 +300,8 @@ const PointsBreakdown = ({ own }: { own: HeraldLeaderboardEntry }) => {
   const entry = buildLandingLeaderboard([own])[0];
   const kinds = [
     { icon: "explore", word: RESULT_WORDS.tiles, count: entry.exploredTiles, points: entry.exploredTilePoints },
-    { icon: "chest", word: RESULT_WORDS.crates, count: entry.relicCratesOpened, points: entry.relicCratePoints },
     // Herald counts rifts and camps as one: one row, as the share card draws it.
     { icon: "rift", word: RESULT_WORDS.riftsAndCamps, count: entry.riftsTaken, points: entry.riftPoints },
-    {
-      icon: "hyperstructure",
-      word: RESULT_WORDS.hyperstructuresTaken,
-      count: entry.hyperstructuresConquered,
-      points: entry.hyperstructurePoints,
-    },
-    {
-      icon: "crown",
-      word: RESULT_WORDS.hyperstructuresHeld,
-      count: entry.hyperstructuresHeld ?? undefined,
-      points: entry.hyperstructuresHeldPoints,
-    },
   ] as const;
   const scored = kinds.filter((kind) => (kind.points ?? 0) > 0);
   // None scored: the panel says so, never an empty plate (qa-app-1 P3-11).

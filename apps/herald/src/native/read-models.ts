@@ -5,9 +5,6 @@ import {
   type HeraldLeaderboard,
   type HeraldPlayerStructure,
   type PlayerActivityBreakdown,
-  type ShareAllocation,
-  sharePointCutoff,
-  unclaimedSharePoints,
 } from "@bibliothecadao/eternum/game-sync";
 import { nativeGameModeOf } from "@bibliothecadao/eternum";
 import { dayOf, expeditionRealmSite, entityHomeNamespace, isRealmCategory } from "@bibliothecadao/eternum/expeditions";
@@ -29,7 +26,6 @@ export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
   "BlitzRoster",
   "BlitzResult",
   "PlayerPoints",
-  "HyperstructureShares",
   "ChestRules",
   "LordsBudget",
   "FrontierPrize",
@@ -327,24 +323,15 @@ function structurePosition(
 export function buildNativeLeaderboard(
   modelRows: (model: string) => FoldRow[],
   gameId: string,
-  timestamp: number,
   activity: ReadonlyMap<string, PlayerActivityBreakdown> | null,
 ): HeraldLeaderboard {
   const rows = (model: string) => gameRows(modelRows(model), gameId);
-  const game = required(modelRows("GameRegistry"), gameId, "GameRegistry");
-  const rules = required(modelRows("SliceRules"), gameId, "SliceRules");
+  required(modelRows("GameRegistry"), gameId, "GameRegistry");
+  required(modelRows("SliceRules"), gameId, "SliceRules");
   const result = rows("BlitzResult")[0];
   // Standings carry addresses only: a player's name is their identity profile, resolved by the client.
-  if (result?.complete === true)
-    return finalStandings(
-      gameId,
-      result,
-      rows("BlitzRoster"),
-      registeredPlayerPoints(rows("PlayerEntry"), rows("PlayerPoints")),
-      activity,
-    );
   const points = registeredPlayerPoints(rows("PlayerEntry"), rows("PlayerPoints"));
-  addUnclaimedSharePoints(points, rows("HyperstructureShares"), game, rules, timestamp);
+  if (result?.complete === true) return finalStandings(gameId, result, rows("BlitzRoster"), points, activity);
   return rankPlayers(gameId, points, activity);
 }
 
@@ -380,23 +367,6 @@ function registeredPlayerPoints(entries: Row[], registered: Row[]): Map<string, 
   for (const entry of entries) creditPoints(points, entry.player, 0n);
   for (const player of registered) creditPoints(points, player.address, integer(player.points));
   return points;
-}
-
-function addUnclaimedSharePoints(
-  points: Map<string, bigint>,
-  allocations: Row[],
-  game: Row,
-  rules: Row,
-  timestamp: number,
-): void {
-  const cutoff = sharePointCutoff(
-    { dev_mode_on: game.dev_mode_on === true, end_at: integer(game.end_at) },
-    BigInt(timestamp),
-  );
-  const rate = integer(record(rules.victory_points_grant_config).hyp_points_per_second);
-  for (const allocation of allocations)
-    for (const share of unclaimedSharePoints(allocation as unknown as ShareAllocation, rate, cutoff))
-      creditPoints(points, share.player, share.points);
 }
 
 function creditPoints(points: Map<string, bigint>, player: unknown, amount: bigint): void {

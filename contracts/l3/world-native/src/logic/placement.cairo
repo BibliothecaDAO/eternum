@@ -1,6 +1,6 @@
 #[starknet::contract]
 pub mod PlacementLogic {
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
+    use starknet::storage::StoragePointerReadAccess;
     use crate::geometry::{spire_neighbor, tile_key};
     use crate::logic::map::MapState;
     use crate::logic::release::ReleaseState;
@@ -102,10 +102,6 @@ pub mod PlacementLogic {
     #[abi(embed_v0)]
     impl Settlements of crate::settlement::ISettlementPool<ContractState> {
         #[cfg(feature: "test_support")]
-        fn reserved_hyperstructures(self: @ContractState, game_id: u32) -> u32 {
-            self.settlements.data.settlement_pool.reserved_hyperstructures.read(game_id)
-        }
-        #[cfg(feature: "test_support")]
         fn settlement_pool(self: @ContractState, game_id: u32, center: Coord) -> SettlementPool {
             self.settlements.pool(game_id, center, crate::logic::settlement::rules(game_id))
         }
@@ -117,71 +113,8 @@ pub mod PlacementLogic {
             self.settlements.claim_village(game_id, center, crate::logic::settlement::rules(game_id), registered, seed)
         }
     }
-    #[abi(embed_v0)]
-    impl Reservations of crate::settlement::IBlitzReservations<ContractState> {
-        fn initialize_reservations(ref self: ContractState, game_id: u32) {
-            let game_context = crate::commands::load_context(game_id, 0, starknet::get_block_timestamp());
-
-            if self.settlements.data.settlement_pool.reserved_hyperstructures.read(game_id) != 0 {
-                return;
-            }
-            let rules = crate::logic::settlement::rules(game_id);
-            self.settlements.reserve_blitz_locations(game_id, self.map_center(game_id, game_context), rules);
-            self.reserve_sites(game_id, 255, starknet::get_block_timestamp(), game_context);
-        }
-
-        fn release_hyperstructure(ref self: ContractState, game_id: u32, coord: Coord) {
-            crate::logic::map::MapState::release_hyperstructure(tile_key(game_id, coord));
-        }
-    }
-
     #[generate_trait]
     impl Internal of InternalTrait {
-        fn reserve_sites(
-            ref self: ContractState,
-            game_id: u32,
-            count: u8,
-            timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
-        ) {
-            let game = game_context.game.unbox();
-            let game_rules = game_context.rules.unbox();
-            assert!(
-                crate::rules::rule_enabled(game_rules, crate::rules::RESERVED_HYPERSTRUCTURES),
-                "reserved hyperstructures disabled",
-            );
-            assert!(game.end_at == 0 || timestamp < game.end_at, "game ended");
-            let rules = crate::logic::settlement::rules(game_id);
-            let required = crate::settlement_grid::reservation_count(rules.registration_limit);
-            let center = self.map_center(game_id, game_context);
-            let mut placed = self.settlements.data.settlement_pool.reserved_hyperstructures.read(game_id);
-            let last = core::cmp::min(required, placed + count.into());
-            while placed < last {
-                let coord = crate::settlement_grid::reservation_location(center, rules.spacing, placed);
-                let key = tile_key(game_id, coord);
-                let previous = crate::logic::map::tile(key).map(|tile| tile.data).unwrap_or(0);
-                if previous / BIOME_SCALE % BYTE_RANGE == 0 {
-                    crate::logic::map::MapState::reveal(
-                        key, crate::logic::map::biome(key, crate::commands::biome_context(game_context)),
-                    );
-                }
-                crate::logic::map::MapState::reserve_hyperstructure(key);
-                placed += 1;
-            }
-            if placed != self.settlements.data.settlement_pool.reserved_hyperstructures.read(game_id) {
-                self.settlements.data.settlement_pool.reserved_hyperstructures.write(game_id, placed);
-                self
-                    .emit(
-                        crate::events::RowSet {
-                            version: 1,
-                            model: 'HyperstructureReservations',
-                            keys: array![game_id.into()].span(),
-                            values: array![placed.into()].span(),
-                        },
-                    );
-            }
-        }
-
         fn create_spire(
             ref self: ContractState, game_id: u32, coord: Coord, game_context: crate::commands::ExecutionContext,
         ) -> u64 {

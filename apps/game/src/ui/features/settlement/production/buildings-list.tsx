@@ -1,10 +1,7 @@
 import { HudButton, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceChip } from "@/ui/features/economy/resources";
 
-import { configManager, getStructureRelicEffects } from "@bibliothecadao/eternum";
-import { useNativeRowOrAbsent } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { Building, RealmInfo, ResourcesIds, formatCount, resourceName } from "@bibliothecadao/types";
 import { useMemo } from "react";
@@ -22,15 +19,7 @@ export const BuildingsList = ({
   producedResources: ResourcesIds[];
   productionBuildings: Building[];
 }) => {
-  const currentDefaultTick = useCurrentDefaultTick();
-
   const resourceManager = useResourceManager(realm.entityId);
-  const keys = { game_id: configManager.getActiveGameId(), entity_id: realm.entityId };
-  const productionBoostBonus = useNativeRowOrAbsent("ProductionBonus", keys);
-  const activeRelicEffects = useMemo(() => {
-    if (!productionBoostBonus) return [];
-    return getStructureRelicEffects(productionBoostBonus, currentDefaultTick);
-  }, [productionBoostBonus, currentDefaultTick]);
 
   const productions = useMemo(() => {
     return producedResources
@@ -54,8 +43,6 @@ export const BuildingsList = ({
 
   const selectedProduction =
     selectedResource !== null ? productions.find((p) => p.resource === selectedResource) : null;
-
-  if (!productionBoostBonus) return <p>Loading production…</p>;
 
   if (selectedResource !== null) {
     if (!selectedProduction) {
@@ -94,7 +81,6 @@ export const BuildingsList = ({
                   resourceId={production.resource}
                   resourceManager={resourceManager}
                   showTransfer={false}
-                  activeRelicEffects={activeRelicEffects}
                   canOpenProduction={production.buildings.length > 0}
                   onManageProduction={(resource) => onSelectProduction(resource)}
                 />

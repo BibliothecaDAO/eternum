@@ -91,10 +91,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.bridge_withdraw_from_realm(props);
   };
 
-  const create_hyperstructure = async (
-    props: SystemProps.SystemSigner & { x: number; y: number; alt: boolean },
-  ): Promise<GetTransactionReceiptResponse> => provider.create_hyperstructure(props);
-
   const provision_realm = async (
     props: SystemProps.UpgradeRealmProps & { upgrade?: boolean },
   ): Promise<GetTransactionReceiptResponse> => provider.provision_realm(props);
@@ -139,26 +135,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     props: SystemProps.ExecuteRealmProductionPlanProps,
   ): Promise<GetTransactionReceiptResponse> => {
     return await provider.execute_realm_production_plan(props);
-  };
-
-  const initialize_hyperstructure = async (
-    props: SystemProps.InitializeHyperstructureProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.initialize(props);
-  };
-
-  const contribute_to_construction = async (
-    props: SystemProps.ContributeToConstructionProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.contribute_to_construction(props);
-  };
-
-  const set_access = async (props: SystemProps.SetAccessProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.set_access(props);
-  };
-
-  const end_game = async (props: SystemProps.EndGameProps): Promise<BatchTransactionReceipt> => {
-    return await provider.end_game(props);
   };
 
   const create_guild = async (props: SystemProps.CreateGuildProps): Promise<GetTransactionReceiptResponse> => {
@@ -285,16 +261,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
 
   const interact_site = (props: SystemProps.InteractSiteProps) => provider.interact_site(props);
 
-  const open_chest = async (props: SystemProps.OpenChestProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.open_chest(props);
-  };
-
-  const burn_research_for_relic = async (
-    props: SystemProps.BurnResearchForRelicProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.burn_research_for_relic(props);
-  };
-
   const apply_relic = async (props: SystemProps.ApplyRelicProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.apply_relic(props);
   };
@@ -309,18 +275,12 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     bitcoin_mine_bind_phase: withAuth(bitcoin_mine_bind_phase),
     upgrade_realm: withAuth(upgrade_realm),
     provision_realm: withAuth(provision_realm),
-    create_hyperstructure: withAuth(create_hyperstructure),
     receive_army_grant: withAuth(receive_army_grant),
     destroy_building: withAuth(destroy_building),
     pause_production: withAuth(pause_production),
     resume_production: withAuth(resume_production),
     execute_realm_production_plan: withAuth(execute_realm_production_plan),
     create_building: withAuth(create_building),
-
-    initialize_hyperstructure: withAuth(initialize_hyperstructure),
-    contribute_to_construction: withAuth(contribute_to_construction),
-    set_access: withAuth(set_access),
-    end_game: withAuth(end_game),
 
     create_guild: withAuth(create_guild),
     join_guild: withAuth(join_guild),
@@ -361,9 +321,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
 
     leave_guild: withAuth(leave_guild),
 
-    open_chest: withAuth(open_chest),
     interact_site: withAuth(interact_site),
-    burn_research_for_relic: withAuth(burn_research_for_relic),
     apply_relic: withAuth(apply_relic),
   };
 

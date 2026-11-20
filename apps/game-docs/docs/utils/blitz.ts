@@ -53,13 +53,6 @@ const campChance =
   (1 - spireChance - riftChance) *
   (exploration.campFindProbability / (exploration.campFindProbability + exploration.campFindFailProbability));
 
-// Every timed relic lasts the same number of army ticks; the Stamina relics count theirs as uses (native-data.ts).
-const timedRelic = blitzPreset.relics.find((relic) => relic.duration > 0);
-if (!timedRelic) throw new Error("Blitz has no timed relic");
-
-// A Blitz map's Hyperstructure rings stand this far apart: settlement_grid.cairo `distances(spacing).step`.
-const ringStep = (blitzPreset.spacing * 3) / 2 + 3;
-
 // The game's combat rules as the contract reads them: the deployer's own mapping of the config, its 64.64 fixed-point
 // values as the bigints the exchange takes.
 const FIXED_ONE = 2n ** 64n;
@@ -238,18 +231,12 @@ export const BLITZ = {
     },
   },
   map: {
-    ringStep: n(ringStep),
     exploreCap: n(limit.exploreRewardStrengthCap),
     spireFind: pct(spireChance),
     spireEssence: n(CONTRACT.spireEssence),
     riftFind: pct(riftChance),
     campFind: pct(campChance),
-    crateMinutes: n(exploration.relicDiscoveryIntervalSeconds / 60),
-    crateHexes: n(exploration.relicHexDistanceFromCenter),
-    relicMinutes: n((timedRelic.duration * tickSeconds) / 60),
-    luckyCrate: `1 in ${n(10_000 / CONTRACT.luckyChestBps)}`,
     lightGuard: range(limit.lightGuardLowerBound, limit.lightGuardUpperBound),
-    heavyGuard: range(limit.heavyGuardLowerBound, limit.heavyGuardUpperBound),
     riftPerSecond: n(config.mines.kinds[1].productionRate),
     // A rift's total output is its kind's minimum cap times one of `capSteps` draws (contracts mines.cairo `cap`).
     riftTotal:
@@ -266,9 +253,6 @@ export const BLITZ = {
   points: {
     tile: pointsOf(points.pointsForTileExploration),
     claim: pointsOf(points.pointsForNonHyperstructureClaimAgainstBandits),
-    crate: pointsOf(points.pointsForRelicDiscovery),
-    hyperstructure: pointsOf(points.pointsForHyperstructureClaimAgainstBandits),
-    perRealmPerSecond: pointsOf(points.hyperstructurePointsPerCycle),
   },
   transport: {
     donkeyKg: n(Number(config.carryCapacityGram[2]) / 1000),

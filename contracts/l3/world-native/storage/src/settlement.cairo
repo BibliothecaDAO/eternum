@@ -3,7 +3,6 @@ use starknet::storage::Map;
 
 #[starknet::storage_node]
 pub struct SettlementPoolStateStorage {
-    pub reserved_hyperstructures: Map<u32, u32>,
     pub opened: Map<(u32, bool), u32>,
     pub available_count: Map<(u32, bool), u16>,
     pub candidates: Map<(u32, bool, u16), u32>,

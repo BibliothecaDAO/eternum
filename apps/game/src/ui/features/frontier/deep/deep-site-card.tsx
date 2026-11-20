@@ -32,15 +32,7 @@ import { STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { useSelectedOwnArmy } from "../sites/selected-army";
 import { DeepSiteView, type DeepBlock, type DeepGuard, type DeepOrder, type DeepTickPay } from "./deep-site-view";
 
-const MODELS = [
-  ...STAMINA_MODELS,
-  ...GUARD_MODELS,
-  "DeepSite",
-  "DeepEntries",
-  "ArmyRelicEffect",
-  "ChestRules",
-  "AltarBar",
-] as const;
+const MODELS = [...STAMINA_MODELS, ...GUARD_MODELS, "DeepSite", "DeepEntries", "ArmyRelicEffect", "AltarBar"] as const;
 
 export function useSelectedDeepSite(): Site | null {
   const { setup } = useGame();

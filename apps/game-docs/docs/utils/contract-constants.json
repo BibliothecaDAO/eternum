@@ -72,12 +72,6 @@
     "value": 40
   },
   {
-    "key": "luckyChestBps",
-    "file": "relics.cairo",
-    "source": "pub const LUCKY_CHEST_BPS: u128 = 2000;",
-    "value": 2000
-  },
-  {
     "key": "lowStaminaTenths",
     "file": "combat.cairo",
     "source": "BRAVO_STAMINA_BONUS_DAMAGE_MULTIPLIER = FixedTrait::new(7, false) / FixedTrait::new(10, false);",

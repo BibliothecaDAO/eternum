@@ -1,7 +1,6 @@
 #[starknet::contract]
 pub mod ProductionLogic {
     use starknet::ContractAddress;
-    use starknet::storage::StorageMapWriteAccess;
     use crate::arrivals::{ArrivalKey, OffloadArrival, has_arrived};
     use crate::events::RowSet;
     use crate::game::assert_playing;
@@ -13,7 +12,7 @@ pub mod ProductionLogic {
     use crate::logic::withdrawals::WithdrawalState;
     use crate::ownership::{Story, StoryEvent};
     #[cfg(feature: "test_support")]
-    use crate::production::{ProductionBonus, ProductionRecipe};
+    use crate::production::ProductionRecipe;
     use crate::production::{RecipeKey, RefillProduction};
     use crate::resources::ResourceKey;
     use crate::troops::ExplorerKey;
@@ -94,45 +93,10 @@ pub mod ProductionLogic {
     }
 
     #[abi(embed_v0)]
-    impl RelicProduction of crate::relics::IRelicProduction<ContractState> {
-        fn apply_production_relic(
-            ref self: ContractState,
-            key: ResourceKey,
-            relic_id: u8,
-            rule: crate::relics::RelicRule,
-            timestamp: u64,
-            game_context: crate::commands::ActionContext,
-        ) {
-            let game_context = crate::commands::execution_context(key.game_id, game_context);
-
-            let rules = game_context.rules.unbox();
-            let mut bonus = self.production.bonus(key);
-            crate::relics::boost_production(
-                ref bonus, relic_id, rule, timestamp, rules.tick_config.armies_tick_in_seconds,
-            );
-            self.production.data.production.bonuses.write((key.game_id, key.entity_id), bonus);
-            let mut values = array![];
-            bonus.serialize(ref values);
-            self
-                .emit(
-                    RowSet {
-                        version: 1,
-                        model: 'ProductionBonus',
-                        keys: array![key.game_id.into(), key.entity_id.into()].span(),
-                        values: values.span(),
-                    },
-                );
-        }
-    }
-    #[abi(embed_v0)]
     impl ProductionRules of crate::production::IProductionRules<ContractState> {
         #[cfg(feature: "test_support")]
         fn production_recipe(self: @ContractState, key: RecipeKey) -> ProductionRecipe {
             self.production.recipe(key)
-        }
-        #[cfg(feature: "test_support")]
-        fn production_bonus(self: @ContractState, key: ResourceKey) -> ProductionBonus {
-            self.production.bonus(key)
         }
     }
     #[abi(embed_v0)]
@@ -376,7 +340,6 @@ pub mod ProductionLogic {
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
         ) {
-            let output = crate::production::bonus_output(self.production.bonus(key), resource_type, output, timestamp);
             self
                 .resources
                 .refill_production(

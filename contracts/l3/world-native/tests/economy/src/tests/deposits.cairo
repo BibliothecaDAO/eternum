@@ -3,7 +3,6 @@ use snforge_std::signature::stark_curve::{StarkCurveKeyPair, StarkCurveKeyPairIm
 use snforge_std::{start_cheat_block_timestamp, start_cheat_caller_address, start_cheat_chain_id};
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use world_test_support::tests::state::ResourceObservationTrait;
-use crate::commands::Command;
 use crate::deposits::{DepositSource, LordsDeposit, SpendLords, authorization_hash, deposit_hash};
 use crate::entry::{
     ILedgerOperatorDispatcher, ILedgerOperatorDispatcherTrait, ILedgerOperatorSafeDispatcher,
@@ -126,7 +125,7 @@ fn credit_cancel_rotation_and_season_sweep_have_one_irreversible_outcome() {
 }
 #[test]
 #[feature("safe_dispatcher")]
-fn principal_only_sweep_needs_no_published_reward_budget() {
+fn principal_only_sweep_returns_deposits_once_after_the_season_end() {
     let (d, game_id, key_army) = super::registrar::setup_frontier_relics();
     let realm = GameState { contract_address: d.games }.resolved_explorer(key_army).unwrap().owner;
     let entry = ILedgerOperatorDispatcher { contract_address: d.games };
@@ -160,10 +159,6 @@ fn principal_only_sweep_needs_no_published_reward_budget() {
     entry.sweep_lords(game_id, realm);
     assert_eq!(entry.spend_lords(game_id, d.actor), SpendLords { available: 0, consumed: 0, swept: 40 });
     assert_eq!(entry.principal_withdrawal(game_id, d.actor).unwrap().amount, 40);
-    assert!(
-        snforge_std::interact_with_state(d.games, || crate::state::read().relics.rollover_budget.read(game_id))
-            .is_none(),
-    );
 }
 
 #[test]
@@ -225,9 +220,6 @@ fn mixed_sweep_keeps_both_balances_game_pinned_until_applied() {
     );
     assert_eq!(entry.spend_lords(game_id, d.actor), SpendLords { available: 40, consumed: 0, swept: 0 });
     assert!(entry.principal_withdrawal(game_id, d.actor).is_none());
-    let budget = snforge_std::interact_with_state(
-        d.games, || crate::state::read().relics.rollover_budget.read(game_id),
-    );
     start_cheat_block_timestamp(d.games, context.game.unbox().end_at);
     snforge_std::start_cheat_transaction_hash(d.games, 88203);
     entry.sweep_lords(game_id, home);
@@ -241,9 +233,6 @@ fn mixed_sweep_keeps_both_balances_game_pinned_until_applied() {
         d.games, || crate::state::read().relics.lords_withdrawals.read(88203).unwrap(),
     );
     assert_eq!((earned.account, earned.amount, earned.prize_rank), (d.actor, 30, 0));
-    assert_eq!(
-        snforge_std::interact_with_state(d.games, || crate::state::read().relics.rollover_budget.read(game_id)), budget,
-    );
     snforge_std::start_cheat_transaction_hash(d.games, 88204);
     entry.sweep_lords(game_id, home);
     assert!(
@@ -264,9 +253,6 @@ fn mixed_sweep_keeps_both_balances_game_pinned_until_applied() {
         resources.resource_balance(ResourceSlot { game_id, entity_id: home, resource_type: crate::resources::LORDS }),
         0,
     );
-    assert_eq!(
-        snforge_std::interact_with_state(d.games, || crate::state::read().relics.rollover_budget.read(game_id)), budget,
-    );
     assert_eq!(entry.spend_lords(game_id, d.actor), SpendLords { available: 0, consumed: 0, swept: 40 });
     assert_eq!(entry.principal_withdrawal(game_id, d.actor).unwrap().amount, 40);
     assert!(
@@ -278,15 +264,12 @@ fn mixed_sweep_keeps_both_balances_game_pinned_until_applied() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn season_one_refuses_chests_bitcoin_and_bridge_commands_and_cannot_configure_deposits() {
+fn season_one_refuses_bitcoin_and_bridge_commands() {
     let (d, game_id) = super::registrar::setup_open_frontier_preset("frontier", 1);
     let (release, preset) = super::play_fixture::pins(d.games, game_id);
     super::play_fixture::caller(d.games, d.actor, 360);
     let home = ResourceKey { game_id, entity_id: 1 };
     for command in array![
-        Command::OpenRelicChest(
-            crate::relics::OpenChest { explorer_id: 1, coord: crate::troops::Coord { alt: false, x: 0, y: 0 } },
-        ),
         Command::ContributeBitcoinLabor(crate::bitcoin::ContributeLabor { structure_id: 1, amount: 1 }),
         Command::ClaimBitcoinPhase(crate::bitcoin::ClaimPhase { phase: 0, mine_ids: array![1_u64].span() }),
         super::bridge::deposit(home), super::bridge::withdraw(home, d.actor),
@@ -295,12 +278,6 @@ fn season_one_refuses_chests_bitcoin_and_bridge_commands_and_cannot_configure_de
             d, game_id, release, preset, super::play_fixture::encode(command), "command disabled",
         );
     }
-    start_cheat_caller_address(d.games, super::authority());
-    let source = DepositSource {
-        chain: 'SN_TEST', ledger: 'ledger'.try_into().unwrap(), signer: key().public_key, epoch: 0,
-    };
-    assert!(ILedgerOperatorSafeDispatcher { contract_address: d.games }.configure_deposits(game_id, source).is_err());
-    assert!(snforge_std::interact_with_state(d.games, || crate::logic::deposits::source(game_id)).is_none());
 }
 
 fn seed_deposit_source(games: starknet::ContractAddress, game_id: u32, source: DepositSource) {

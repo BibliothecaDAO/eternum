@@ -299,7 +299,6 @@ export class ArmyActionManager {
     structureHexes: Map<number, Map<number, HexEntityInfo>>,
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
     exploredHexes: Map<number, Map<number, BiomeType>>,
-    chestHexes: Map<number, Map<number, HexEntityInfo>>,
     currentDefaultTick: number,
     playerAddress: ContractAddress,
   ): ActionPaths {
@@ -339,7 +338,6 @@ export class ArmyActionManager {
         playerAddress,
       );
       const hasStructure = structureHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
-      const hasChest = chestHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
       const isStructureMine = isViewerOwner(
         structureHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER)?.owner,
         playerAddress,
@@ -393,8 +391,6 @@ export class ArmyActionManager {
         }
         actionType = ActionType.Attack;
         staminaCost = this.getAttackStaminaRequirement();
-      } else if (hasChest) {
-        actionType = ActionType.Chest;
       } else if (this.isOccupiedHex({ col, row })) {
         actionPaths.refuse(key, { reason: "occupied" });
         continue;
@@ -452,13 +448,12 @@ export class ArmyActionManager {
         const hasArmy = armyHexes.get(current.col - this.FELT_CENTER)?.has(current.row - this.FELT_CENTER) || false;
         const hasStructure =
           structureHexes.get(current.col - this.FELT_CENTER)?.has(current.row - this.FELT_CENTER) || false;
-        const hasChest = chestHexes.get(current.col - this.FELT_CENTER)?.has(current.row - this.FELT_CENTER) || false;
         const hasSpire = this.isWorldSpireHex(current);
 
         actionPaths.set(currentKey, path);
 
         // cannot go through these hexes so need to stop here
-        if (!isExplored || hasArmy || hasStructure || hasChest || hasSpire) continue;
+        if (!isExplored || hasArmy || hasStructure || hasSpire) continue;
 
         const neighbors = getLayerNeighborHexes(current.col, current.row, startPos.alt);
         for (const { col, row } of neighbors) {
@@ -469,11 +464,10 @@ export class ArmyActionManager {
           const hasArmy = armyHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
           const hasStructure = structureHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
           const biome = exploredHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
-          const hasChest = chestHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
           const hasSpire = this.isWorldSpireHex({ col, row });
 
           // A target ends a route where it stands: the attack paths or the distance decide it below.
-          if (hasSpire || hasArmy || hasStructure || hasChest) continue;
+          if (hasSpire || hasArmy || hasStructure) continue;
           if (this.isOccupiedHex({ col, row })) {
             actionPaths.refuse(neighborKey, { reason: "occupied" });
             continue;
@@ -527,7 +521,7 @@ export class ArmyActionManager {
       playerAddress,
     );
 
-    this.refuseTargetsBeyondStep(actionPaths, startPos, [armyHexes, structureHexes, chestHexes]);
+    this.refuseTargetsBeyondStep(actionPaths, startPos, [armyHexes, structureHexes]);
     this.addDepthEntry(actionPaths, startPos, currentDefaultTick);
     return actionPaths;
   }

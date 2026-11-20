@@ -15,7 +15,7 @@ import { createMicrotaskGameSyncScheduler } from "./scheduler";
 import type { WorldSpatialProjection } from "./world-spatial-projection";
 import { eventConfirmationRank } from "./event-confirmation";
 
-export type GameSyncRuntimeStatus = "idle" | "subscribing" | "snapshotting" | "replaying" | "running" | "stopped";
+type GameSyncRuntimeStatus = "idle" | "subscribing" | "snapshotting" | "replaying" | "running" | "stopped";
 
 export class SupersededGameSyncStartError extends Error {
   constructor() {

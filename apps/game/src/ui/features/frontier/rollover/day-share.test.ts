@@ -22,7 +22,7 @@ const fight = (minute: number, after: { army: string; guard: string }) => ({
 const TOTALS = { reveals: 31, cleared: 4, chests: 1, essence: 1200, labor: 340, lords: 0 };
 
 describe("a Frontier day's trail", () => {
-  it("marks each clear by its site, each chest, and each fight that cleared nothing, in the order they happened", () => {
+  it("marks each clear by its site and each fight that cleared nothing, in the order they happened", () => {
     const stories = [
       clear(StructureType.Rift, 30),
       { story: "ExplorationReward", storyPayload: {}, timestampMs: at(1) },
@@ -30,11 +30,10 @@ describe("a Frontier day's trail", () => {
       fight(9, { army: "432000000000", guard: "0" }),
       fight(20, { army: "0", guard: "90000000000" }),
       fight(25, { army: "300000000000", guard: "90000000000" }),
-      { story: "RewardChestOpened", storyPayload: { amount: "5" }, timestampMs: at(40) },
       clear(StructureType.Beasts, 50),
       clear(StructureType.Camp, 60),
     ];
-    expect(dayTrail(stories)).toEqual(["Ruin", "army-lost", "guard-holds", "Rift", "chest", "Beasts", "Camp"]);
+    expect(dayTrail(stories)).toEqual(["Ruin", "army-lost", "guard-holds", "Rift", "Beasts", "Camp"]);
   });
 
   it("is empty for a day of scouting alone", () => {
@@ -121,14 +120,6 @@ describe("a Frontier day's best moment", () => {
       guard: 666,
       paid: { resource: "essence", amount: 4_800 },
     });
-  });
-
-  it("puts a ruin chest's LORDS before any clear", () => {
-    const stories = [
-      ...won(2, StructureType.Rift, 666, null),
-      { story: "RewardChestOpened", storyPayload: { amount: "128" }, timestampMs: at(5) },
-    ];
-    expect(dayBest(stories, 31)).toEqual({ kind: "chest", lords: 128 });
   });
 
   it("is the land revealed on a day with no clear", () => {

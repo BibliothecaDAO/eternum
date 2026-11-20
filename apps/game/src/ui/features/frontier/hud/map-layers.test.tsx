@@ -3,9 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
-import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { openPlace } from "@/play/navigation/open-place";
 import { requestLayerView } from "@/three/scenes/worldmap-layer-request";
 import { MapViewControls } from "@/ui/features/world/containers/top-header/map-view-controls";
@@ -17,9 +15,6 @@ import {
   setBlockTimestampSource,
 } from "@bibliothecadao/eternum";
 import { deepCenter, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { StructureType } from "@bibliothecadao/types";
-import { frontierPreset } from "../../../../../../../config/source/frontier/native";
-import { nativeReleaseConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 
 import { campBeside } from "../sites/site-fixture";
 
@@ -29,20 +24,9 @@ import { PlaceNav } from "./place-nav";
 const context = vi.hoisted(() => ({
   store: null as NativeFactStore | null,
   mapView: true,
-  /** Herald's history read of the player's own stories (useStoryEvents); by default it failed, proving nothing. */
-  history: {
-    data: [] as object[],
-    isPending: false,
-    isError: true,
-    holdsSince: undefined as number | undefined,
-    completeThroughBlock: null as number | null,
-  },
 }));
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: context.store } }) }));
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: context.mapView }) }));
-vi.mock("@/hooks/store/use-story-events-store", () => ({
-  useStoryEvents: () => ({ ...context.history, refetch: () => {} }),
-}));
 vi.mock("@/play/navigation/open-place", () => ({ openPlace: vi.fn() }));
 vi.mock("@/three/scenes/worldmap-layer-request", () => ({ requestLayerView: vi.fn() }));
 
@@ -61,9 +45,6 @@ afterEach(() => {
   host.remove();
   setBlockTimestampSource(null);
   vi.clearAllMocks();
-  context.history = { data: [], isPending: false, isError: true, holdsSince: undefined, completeThroughBlock: null };
-  useAccountStore.setState({ account: null } as never);
-  useConnectionStore.setState({ snapshotBlock: null });
 });
 
 /** The open list's choices, each by its word and whether it is the one shown. */
@@ -152,31 +133,9 @@ describe("the map's layers", () => {
   });
 });
 
-const chestDay = (researched = 3n) => {
+const researchedDay = (researched = 3n) => {
   const { store } = campBeside();
   store.applyFacts([
-    {
-      model: "ChestRules",
-      key: "0xc1",
-      value: {
-        game_id: 1,
-        price_ceiling: BigInt(frontierPreset.chests.priceCeiling),
-        shares: frontierPreset.chests.shares,
-        claim_window_seconds: frontierPreset.chests.claimWindowSeconds,
-        pool_bps: frontierPreset.chests.poolBps,
-        top_n: frontierPreset.chests.topN,
-      },
-    },
-    {
-      model: "GameRelease",
-      key: "0x1ab0",
-      value: {
-        game_id: 1,
-        release_id: nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE,
-        created_release_id: 3,
-        preset_commitment: 0x1abn,
-      },
-    },
     { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: researched << 48n } },
   ] as never);
   context.store = store;
@@ -185,7 +144,7 @@ const chestDay = (researched = 3n) => {
   const now = expeditionDayEndsAt(rules, rules.startMainAt) + 10;
   const today = seasonDay(rules, now)!;
   clockAt(store, now);
-  return { store, realm, rules, now, today };
+  return { store, realm, rules, today };
 };
 
 /**
@@ -198,66 +157,6 @@ const clockAt = (store: NativeFactStore, seconds: number) =>
     setBlockTimestampSource(() => seconds);
     store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: seconds });
   });
-
-/** Today's discovery row for realm 7: whether any ruin was cleared today, as the contract writes it on every clear. */
-const discovered = (store: NativeFactStore, day: number, ruinCleared: boolean) =>
-  act(() =>
-    store.applyFacts([
-      {
-        model: "ExpeditionDiscovery",
-        key: `0x8${day}`,
-        value: { game_id: 1, structure_id: 7n, epoch: BigInt(day), empty_reveals: 0, ruin_cleared: ruinCleared },
-      },
-    ] as never),
-  );
-
-/** A ruin cleared by `home` in the band of `day` at `depth`, in the home's own column: its site's clear receipt. */
-const cleared = (store: NativeFactStore, rules: ExpeditionRules, home: number, day: number, depth: number) =>
-  act(() => store.applyFacts([receipt(rules, home, day, depth)] as never));
-/** The same receipt leaving the store, as Herald removes a row whose region leaves the subscription's scope. */
-const outOfScope = (store: NativeFactStore, rules: ExpeditionRules, home: number, day: number, depth: number) =>
-  act(() => store.applyFacts([{ ...receipt(rules, home, day, depth), value: null }] as never));
-const receipt = (rules: ExpeditionRules, home: number, day: number, depth: number) => ({
-  model: "ExpeditionSite",
-  key: `0x9${home}${day}${depth}`,
-  value: {
-    game_id: 1,
-    entity_id: BigInt(9_000 + home * 100 + day * 10 + depth),
-    category: StructureType.Ruin,
-    initial_guard_count: 999n,
-    alt: false,
-    col: (home - 1) * rules.spacing + 1,
-    row: (day * 4 + depth) * rules.spacing + 1,
-    clear: { explorer_id: 201n, home_id: BigInt(home), reward: null },
-  },
-});
-
-/**
- * Realm 7's army 201 moved into its own column at `depth` today, which brings that layer's region into scope: its tile
- * row leaves and the new one comes, as Herald sends a move.
- */
-const armyIn = (store: NativeFactStore, rules: ExpeditionRules, today: number, depth: number) =>
-  act(() => {
-    const tile = [...store.entries("TileOccupancy")].find(([, row]) => row.entity_id === 201n)![1];
-    const key = `0x75${today}${depth}`;
-    store.applyFacts([
-      {
-        model: "ArmyDay",
-        key: store.wireKeyOf("ArmyDay", { game_id: 1, explorer_id: 201n })!,
-        value: { game_id: 1, explorer_id: 201, day: String(today) },
-      },
-      { model: "TileOccupancy", key: armyTileKeys.get(store) ?? SITE_FIXTURE_ARMY_TILE_KEY, value: null },
-      {
-        model: "TileOccupancy",
-        key,
-        value: { ...tile, col: 6 * rules.spacing + 2, row: (today * 4 + depth) * rules.spacing + 2 },
-      },
-    ] as never);
-    armyTileKeys.set(store, key);
-  });
-/** The army's tile row as Herald keys it on the wire (site-fixture's, then each move's): a move removes it by this key. */
-const SITE_FIXTURE_ARMY_TILE_KEY = "0x75";
-const armyTileKeys = new WeakMap<NativeFactStore, string>();
 
 /** The switch of the HUD over the real layers: the desktop's World tab, or a phone's view slot. */
 const LayerSwitch = ({
@@ -298,202 +197,25 @@ const LayerSwitch = ({
   );
 };
 
-/** The switch's four marks, each layer's chest as it says it. */
-const switchMarks = () =>
-  [...host.querySelectorAll(".ui-layer-chests [data-chest]")].map((mark) => mark.getAttribute("aria-label"));
-/** The open list's rows: each layer's word, whether it is checked, and the chest ending its row. */
 const listRows = () =>
   [...document.querySelectorAll('[role="menu"] [role^="menuitem"]')].map((item) => [
     item.textContent,
     item.getAttribute("aria-checked"),
-    item.querySelector("[data-chest]")?.getAttribute("data-chest") ?? null,
   ]);
 
-describe("each layer's ruin chest today, on the layer switch", () => {
-  it("opens every layer while nothing was cleared today, marks today's clears, and opens again tomorrow", () => {
-    const { store, realm, rules, now, today } = chestDay();
-    expect(today).toBe(1);
-    discovered(store, today, false);
-    // Another realm's clear, and realm 7's own of the day before, take nothing of today's.
-    cleared(store, rules, 8, today, 1);
-    cleared(store, rules, 7, today - 1, 2);
-    context.mapView = true;
-    act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
-    expect(switchMarks()).toEqual([
-      "Surface: chest to take today",
-      "Veil: chest to take today",
-      "Hollow: chest to take today",
-      "Deep: chest to take today",
-    ]);
-
-    // Realm 7 clears today's Surface ruin: its region is the home's own, always held.
-    discovered(store, today, true);
-    cleared(store, rules, 7, today, 0);
-    act(() => host.querySelector<HTMLButtonElement>('[role="tab"][aria-haspopup]')!.click());
-    expect(listRows()).toEqual([
-      ["Surface", "true", "claimed"],
-      ["Veil", "false", "unknown"],
-      ["Hollow", "false", "unknown"],
-      ["Deep", "false", "unknown"],
-    ]);
-    choose("Hollow");
-    expect(requestLayerView).toHaveBeenCalledTimes(1);
-
-    // The day turns: tomorrow's discovery holds no clear, so every researched layer has its chest again.
-    clockAt(store, expeditionDayEndsAt(rules, now) + 1);
-    expect(switchMarks()).toEqual([
-      "Surface: chest to take today",
-      "Veil: chest to take today",
-      "Hollow: chest to take today",
-      "Deep: chest to take today",
-    ]);
-  });
-
-  it("never reopens a taken chest whose layer's receipts leave the scope: it reads unknown until an army is there", () => {
-    const { store, realm, rules, today } = chestDay();
-    discovered(store, today, true);
-    armyIn(store, rules, today, 1);
-    cleared(store, rules, 7, today, 1);
-    context.mapView = true;
-    act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
-    expect(switchMarks()[1]).toBe("Veil: chest taken today");
-
-    // The army leaves Ethereal I: the subscription drops that region, and Herald removes its receipt.
-    armyIn(store, rules, today, 2);
-    outOfScope(store, rules, 7, today, 1);
-    expect(switchMarks()).toEqual([
-      "Surface: chest to take today",
-      "Veil: chest not known without an army there",
-      "Hollow: chest to take today",
-      "Deep: chest not known without an army there",
-    ]);
-
-    // A fresh snapshot of that scope never had the receipt: the same marks.
-    act(() => root.unmount());
-    root = createRoot(host);
-    const fresh = chestDay();
-    discovered(fresh.store, fresh.today, true);
-    armyIn(fresh.store, fresh.rules, fresh.today, 2);
-    act(() => root.render(<LayerSwitch rules={fresh.rules} realm={fresh.realm} />));
-    expect(switchMarks()[1]).toBe("Veil: chest not known without an army there");
-  });
-
-  it("reads today's clears from the player's whole history of the day: no layer is unknown, wherever the armies are", () => {
-    const { store, realm, rules, now, today } = chestDay();
-    discovered(store, today, true);
-    // Ethereal I cleared earlier today; its army left, and Herald removed the receipt from the store.
-    wholeHistory(rules, now, [ruinPayout(rules, now, today, 1, "0xc1")]);
-    context.mapView = true;
-    act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
-    expect(switchMarks()).toEqual([
-      "Surface: chest to take today",
-      "Veil: chest taken today",
-      "Hollow: chest to take today",
-      "Deep: chest to take today",
-    ]);
-  });
-
-  it("opens nothing from a history that lacks the day's start or a payout's battle", () => {
-    const { store, realm, rules, now, today } = chestDay();
-    discovered(store, today, true);
-    const [payout, battle] = ruinPayout(rules, now, today, 1, "0xc1");
-    // The battle that placed the payout is missing: the payout cannot be put on a layer.
-    wholeHistory(rules, now, [[payout!]]);
-    context.mapView = true;
-    act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
-    expect(switchMarks()[1]).toBe("Veil: chest not known without an army there");
-
-    // The read holds only stories after the day began: the clear it places is taken, but it opens nothing.
-    act(() => {
-      context.history = { ...context.history, data: [payout!, battle!], holdsSince: now };
-      root.render(<LayerSwitch rules={rules} realm={realm} />);
-    });
-    expect(switchMarks().slice(1, 3)).toEqual([
-      "Veil: chest taken today",
-      "Hollow: chest not known without an army there",
-    ]);
-  });
-
-  it("never opens from a history behind the snapshot, of unknown coverage, or held over a reconnect", () => {
-    const { store, realm, rules, now, today } = chestDay();
-    // Ethereal I cleared today: its receipt left with its army; the discovery row says a ruin was cleared.
-    discovered(store, today, true);
-    context.mapView = true;
-    const unknownI = "Veil: chest not known without an army there";
-
-    // An empty history complete only through block 10, behind the snapshot's block 20.
-    wholeHistory(rules, now, [], 10);
-    act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
-    expect(switchMarks()[1]).toBe(unknownI);
-
-    // Herald does not say how far its history is complete.
-    wholeHistory(rules, now, [], null);
-    act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
-    expect(switchMarks()[1]).toBe(unknownI);
-
-    // A reconnect: the new snapshot is at block 30, the cached history still through 20 with Ethereal II's clear.
-    wholeHistory(rules, now, [ruinPayout(rules, now, today, 2, "0xc2")]);
-    act(() => {
-      useConnectionStore.setState({ snapshotBlock: 30 });
-      root.render(<LayerSwitch rules={rules} realm={realm} />);
-    });
-    expect(switchMarks().slice(1, 3)).toEqual([unknownI, "Hollow: chest taken today"]);
-  });
-
-  it("never opens a layer whose clear lands after the history read, until its story arrives", () => {
-    const { store, realm, rules, now, today } = chestDay();
-    discovered(store, today, false);
-    wholeHistory(rules, now, []);
-    context.mapView = true;
-    act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
-    expect(switchMarks()[1]).toBe("Veil: chest to take today");
-
-    // Ethereal I is cleared after the read: the discovery row has it, the history not yet, no receipt in scope.
-    discovered(store, today, true);
-    expect(switchMarks()[1]).toBe("Veil: chest not known without an army there");
-
-    // The stream brings its payout and battle into the read: taken, and the others proven open again.
-    act(() => {
-      context.history = { ...context.history, data: ruinPayout(rules, now, today, 1, "0xc3") };
-      root.render(<LayerSwitch rules={rules} realm={realm} />);
-    });
-    expect(switchMarks()).toEqual([
-      "Surface: chest to take today",
-      "Veil: chest taken today",
-      "Hollow: chest to take today",
-      "Deep: chest to take today",
-    ]);
-  });
-
+describe("the layer switch over the real layers", () => {
   it.each([
     ["a desktop", false],
     ["a phone", true],
-  ])(
-    "on %s before Veil, the switch stays Realm / World and carries the Surface's chest and three locks",
-    (_, phone) => {
-      const { store, realm, rules, today } = chestDay(0n);
-      discovered(store, today, false);
-      context.mapView = true;
-      act(() => root.render(<LayerSwitch rules={rules} realm={realm} phone={phone} />));
-      expect(switchMarks()).toEqual([
-        "Surface: chest to take today",
-        "Veil: needs Spire lore",
-        "Hollow: needs Spire lore",
-        "Deep: needs Spire lore",
-      ]);
-      expect(host.querySelector("[aria-haspopup]")).toBeNull();
-
-      discovered(store, today, true);
-      cleared(store, rules, 7, today, 0);
-      expect(switchMarks()[0]).toBe("Surface: chest taken today");
-    },
-  );
+  ])("on %s before Veil, the switch stays Realm / World with no list", (_, phone) => {
+    const { rules, realm } = researchedDay(0n);
+    context.mapView = true;
+    act(() => root.render(<LayerSwitch rules={rules} realm={realm} phone={phone} />));
+    expect(host.querySelector("[aria-haspopup]")).toBeNull();
+  });
 
   it("opens the same list from the realm's view, where a layer opens the map at the realm's site in it", () => {
-    const { store, realm, rules, today } = chestDay();
-    discovered(store, today, true);
-    armyIn(store, rules, today, 1);
-    cleared(store, rules, 7, today, 1);
+    const { realm, rules, today } = researchedDay();
     context.mapView = false;
     act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
     const tabs = [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
@@ -501,14 +223,13 @@ describe("each layer's ruin chest today, on the layer switch", () => {
       ["Realm", "true"],
       ["Surface", "false"],
     ]);
-    expect(switchMarks()[1]).toBe("Veil: chest taken today");
 
     act(() => tabs[1]!.click());
     expect(listRows()).toEqual([
-      ["Surface", "false", "open"],
-      ["Veil", "false", "claimed"],
-      ["Hollow", "false", "unknown"],
-      ["Deep", "false", "unknown"],
+      ["Surface", "false"],
+      ["Veil", "false"],
+      ["Hollow", "false"],
+      ["Deep", "false"],
     ]);
     choose("Hollow");
     expect(requestLayerView).not.toHaveBeenCalled();
@@ -522,24 +243,22 @@ describe("each layer's ruin chest today, on the layer switch", () => {
     ]);
   });
 
-  it("on a phone in the realm's view, the view slot carries the marks and lists Realm checked, then each layer", () => {
-    const { store, realm, rules, today } = chestDay();
-    discovered(store, today, false);
+  it("on a phone in the realm's view, the view slot lists Realm checked, then each layer", () => {
+    const { realm, rules } = researchedDay();
     context.mapView = false;
     const toRealm = vi.fn();
     const chosen = vi.fn();
     act(() => root.render(<LayerSwitch rules={rules} realm={realm} phone toRealm={toRealm} chosen={chosen} />));
     const slot = host.querySelector<HTMLButtonElement>("[data-switch]")!;
     expect(slot.textContent).toBe("Surface");
-    expect(switchMarks()).toHaveLength(4);
 
     act(() => slot.click());
     expect(listRows()).toEqual([
-      ["Realm", "true", null],
-      ["Surface", "false", "open"],
-      ["Veil", "false", "open"],
-      ["Hollow", "false", "open"],
-      ["Deep", "false", "open"],
+      ["Realm", "true"],
+      ["Surface", "false"],
+      ["Veil", "false"],
+      ["Hollow", "false"],
+      ["Deep", "false"],
     ]);
     choose("Realm");
     expect([toRealm.mock.calls.length, chosen.mock.calls.length]).toEqual([0, 1]);
@@ -548,49 +267,6 @@ describe("each layer's ruin chest today, on the layer switch", () => {
     expect(openPlace).toHaveBeenCalledTimes(1);
   });
 });
-
-/**
- * Realm 7's player signed in, the store's snapshot at block 20, and Herald's history of their stories holding the
- * whole day (read from before it began) through `through` (the snapshot's block by default).
- */
-const wholeHistory = (
-  rules: ExpeditionRules,
-  now: number,
-  stories: object[][],
-  through: number | null = SNAPSHOT_BLOCK,
-) => {
-  useAccountStore.setState({ account: { address: "0x111" } } as never);
-  useConnectionStore.setState({ snapshotBlock: SNAPSHOT_BLOCK });
-  const start = expeditionDayEndsAt(rules, rules.startMainAt);
-  context.history = {
-    data: stories.flat(),
-    isPending: false,
-    isError: false,
-    holdsSince: start - 1,
-    completeThroughBlock: through,
-  };
-  expect(now).toBeGreaterThan(start);
-};
-const SNAPSHOT_BLOCK = 20;
-
-/** A ruin's payout to realm 7 today at `depth`, and the battle that won it in the same transaction, as history reads them. */
-const ruinPayout = (rules: ExpeditionRules, now: number, today: number, depth: number, tx: string) => {
-  const story = (kind: string, storyPayload: object) => ({
-    story: kind,
-    storyPayload,
-    tx_hash: tx,
-    owner: "0x111",
-    timestampMs: (now - 5) * 1_000,
-    timestamp: String(now - 5),
-  });
-  return [
-    story("SitePayout", { structure_id: 7, explorer_id: 201, site_id: 9_301, category: StructureType.Ruin }),
-    story("BattleEvent", {
-      defender_id: 9_301,
-      coord: { x: 6 * rules.spacing + 3, y: (today * 4 + depth) * rules.spacing + 3 },
-    }),
-  ];
-};
 
 const DEEP_RULES = {
   game_id: 1,
@@ -610,8 +286,8 @@ const DEEP_RULES = {
 };
 
 describe("the shared Deep in the map layer menu", () => {
-  it("shows Deep without a private chest and visits its shared center", () => {
-    const { store, realm } = chestDay(3n);
+  it("shows Deep and visits its shared center", () => {
+    const { store, realm } = researchedDay(3n);
     store.applyFacts([
       {
         model: "SettlementRules",
@@ -627,8 +303,6 @@ describe("the shared Deep in the map layer menu", () => {
     const open = () => act(() => [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')][1]!.click());
     open();
     expect(listRows().map(([label]) => label)).toEqual(["Surface", "Veil", "Hollow", "Deep"]);
-    expect(listRows().at(-1)?.[2]).toBeNull();
-    expect(switchMarks()).toHaveLength(3);
     choose("Deep");
     expect(requestLayerView).toHaveBeenCalledTimes(1);
     expect(requestLayerView).toHaveBeenCalledWith(deepCenter(rules.spacing));
@@ -639,7 +313,7 @@ describe("the shared Deep in the map layer menu", () => {
   });
 
   it("opens the Deep at the gate of the player's own Aspect", () => {
-    const { store, realm } = chestDay(3n);
+    const { store, realm } = researchedDay(3n);
     store.applyFacts([
       {
         model: "SettlementRules",

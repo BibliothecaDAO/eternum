@@ -11,8 +11,8 @@ it("covers every native story and tests every cumulative level", () => {
   const storyType = event.event.members.find((member: { name: string }) => member.name === "story").type;
   const variants = schema.types[storyType].variants.map((variant: { name: string }) => variant.name);
   const nativeLevels = {
-    important: ["BattleEvent", "RaidEvent", "StructureCapturedStory", "SeasonEnded", "BlitzFinalized"],
-    all: ["ResourceReceiveArrivalStory", "ResourceTransferStory", "BitcoinAwardStory", "HyperstructurePoints"],
+    important: ["BattleEvent", "RaidEvent", "StructureCapturedStory", "BlitzFinalized"],
+    all: ["ResourceReceiveArrivalStory", "ResourceTransferStory", "BitcoinAwardStory"],
     // The player's own taps: the Feed and the Log tell them.
     excluded: [
       "ProductionStory",
@@ -26,15 +26,11 @@ it("covers every native story and tests every cumulative level", () => {
       "SkillPointSpent",
       "SitePayout",
       "ExplorationReward",
-      "RelicCrafted",
-      "RelicActivated",
       "TroopsTransferred",
       "RealmCreatedStory",
       "SpireDiscovered",
       "BuildingPlacementStory",
       "StructureLevelUpStory",
-      "RelicChestOpened",
-      "RewardChestOpened",
       "LordsWithdrawn",
       "SiteUsed",
     ],
@@ -74,7 +70,7 @@ it("uses event-time recipients, normalizes duplicates, and excludes neutral addr
       to_entity_owner_address: "2",
     }),
   ).toEqual([]);
-  expect(storyRecipients("SeasonEnded", "0x003", battle)).toEqual(["0x3"]);
+  expect(storyRecipients("BlitzFinalized", "0x003", battle)).toEqual(["0x3"]);
   expect(storyRecipients("SkillPointSpent", "0x003", { explorer_id: 7 })).toEqual([]);
   expect(storyRecipients("BattleEvent", "0xff", { attacker: { player: "0x1" }, defender: { player: "0x01" } })).toEqual(
     ["0x1"],
@@ -83,7 +79,7 @@ it("uses event-time recipients, normalizes duplicates, and excludes neutral addr
     "0x2",
   ]);
   expect(() => storyRecipients("BattleEvent", "0x1", { attacker: {}, defender: {} })).toThrow("event-time");
-  expect(() => storyRecipients("SeasonEnded", "garbage", {})).toThrow();
+  expect(() => storyRecipients("BlitzFinalized", "garbage", {})).toThrow();
 });
 
 it("validates the versioned preference boundary without accepting owner overrides or invalid revisions", () => {
@@ -136,6 +132,6 @@ it("pushes fights between players only where players fight: never in Frontier, w
       expect(includesStoryNotification("important", story, mode), `${story} in ${mode}`).toBe(true);
   }
   // Everything else a Frontier player is pushed is the same as anywhere.
-  expect(includesStoryNotification("important", "SeasonEnded", "frontier")).toBe(true);
+  expect(includesStoryNotification("important", "BlitzFinalized", "frontier")).toBe(true);
   expect(includesStoryNotification("all", "ResourceTransferStory", "frontier")).toBe(true);
 });

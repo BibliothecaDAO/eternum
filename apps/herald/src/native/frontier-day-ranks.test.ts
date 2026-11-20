@@ -8,7 +8,7 @@ import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import { encodeMembers } from "./serde";
 import { manifest, schema } from "./fixtures";
 
-function openedChest(owner: number, amount: number) {
+function ruinPayout(owner: number, siteId: number) {
   const layout = schema.games.events.find((event) => event.name === "StoryEvent")!;
   const values = {
     version: 2,
@@ -18,7 +18,14 @@ function openedChest(owner: number, amount: number) {
     tx_hash: 85,
     timestamp: start,
     story: new CairoCustomEnum({
-      RewardChestOpened: { explorer_id: 7, structure_id: 1, coord: { alt: false, x: 40, y: 12 }, amount },
+      SitePayout: {
+        xp: 85,
+        structure_id: 1,
+        explorer_id: 7,
+        site_id: siteId,
+        category: 10,
+        reward: new CairoOption(CairoOptionVariant.None),
+      },
     }),
   };
   return {
@@ -149,7 +156,7 @@ it("replays a checkpoint before closure, excluding changes at the boundary and r
       {
         block_number: 11,
         timestamp: end - 1,
-        transactions: [{ transaction: { type: "INVOKE" }, receipt: receipt([openedChest(1, 50), openedChest(1, 0)]) }],
+        transactions: [{ transaction: { type: "INVOKE" }, receipt: receipt([ruinPayout(1, 20), ruinPayout(1, 21)]) }],
       },
     ],
     [
@@ -215,7 +222,7 @@ it("replays a checkpoint before closure, excluding changes at the boundary and r
     "disconnected",
   );
   expect(fold.checkpoint()).toEqual(before);
-  blocks.get(11)!.transactions[0]!.receipt = receipt([openedChest(999, 50)]);
+  blocks.get(11)!.transactions[0]!.receipt = receipt([ruinPayout(999, 20)]);
   await expect(replayWithFrontierDays(native, history, { ...input, fold })).rejects.toThrow("settled realm");
   expect(fold.checkpoint()).toEqual(before);
 });

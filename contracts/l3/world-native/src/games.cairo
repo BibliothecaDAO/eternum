@@ -71,15 +71,6 @@ pub mod Games {
     impl Registrar = GamesEntry::RegistrarImpl<ContractState>;
     #[abi(embed_v0)]
     impl LedgerOperator of crate::entry::ILedgerOperator<ContractState> {
-        fn configure_deposits(ref self: ContractState, game_id: u32, source: crate::deposits::DepositSource) {
-            crate::entry::ILedgerOperatorDispatcherTrait::configure_deposits(
-                crate::entry::ILedgerOperatorLibraryDispatcher {
-                    class_hash: self.release.classes(game_id).bridge.read(),
-                },
-                game_id,
-                source,
-            )
-        }
         fn deposit_source(self: @ContractState, game_id: u32) -> Option<crate::deposits::DepositSource> {
             crate::entry::ILedgerOperatorDispatcherTrait::deposit_source(
                 crate::entry::ILedgerOperatorLibraryDispatcher {

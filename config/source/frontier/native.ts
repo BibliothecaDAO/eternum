@@ -40,20 +40,13 @@ export const frontierPreset = {
   banes: null,
   startingTroops: Array.from({ length: 17 }, () => "Knight" as const),
   realmResources: [],
-  relics: [],
   supplies: [],
   bridgeResources: [],
   id: FRONTIER_PRESET_ID,
   gameType: "frontier",
   environmentGameType: "frontier",
   settlementMode: "Single",
-  modeRules:
-    rule.HOME_REWARDS |
-    rule.UNOWNED_TARGETS |
-    rule.DEPTH_CONTENTS |
-    rule.REVEAL_SUPPLIES |
-    rule.SEASON_CLOSE |
-    rule.DISCOVER_CHESTS,
+  modeRules: rule.HOME_REWARDS | rule.UNOWNED_TARGETS | rule.DEPTH_CONTENTS | rule.REVEAL_SUPPLIES,
   entryRule: rule.ENTRY_OPEN,
   commandMask: (
     [
@@ -73,7 +66,6 @@ export const frontierPreset = {
       "BuySeal",
       "EnterDepth",
       "InteractSite",
-      "OpenRelicChest",
       "SetEntityName",
       "MarkGameSettled",
     ] satisfies Array<keyof typeof nativeCommandBits>

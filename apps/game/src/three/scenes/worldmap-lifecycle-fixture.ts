@@ -19,8 +19,6 @@ interface WorldmapLifecycleFixture {
   destroyCalls: {
     armyManager: number;
     structureManager: number;
-    reservedHyperstructureManager: number;
-    chestManager: number;
     fxManager: number;
     resourceFXManager: number;
   };
@@ -52,8 +50,6 @@ export function createWorldmapLifecycleFixture(): WorldmapLifecycleFixture {
   const destroyCalls = {
     armyManager: 0,
     structureManager: 0,
-    reservedHyperstructureManager: 0,
-    chestManager: 0,
     fxManager: 0,
     resourceFXManager: 0,
   };
@@ -137,16 +133,6 @@ export function createWorldmapLifecycleFixture(): WorldmapLifecycleFixture {
         structureManager: {
           destroy: () => {
             destroyCalls.structureManager += 1;
-          },
-        },
-        reservedHyperstructureManager: {
-          destroy: () => {
-            destroyCalls.reservedHyperstructureManager += 1;
-          },
-        },
-        chestManager: {
-          destroy: () => {
-            destroyCalls.chestManager += 1;
           },
         },
         fxManager: {

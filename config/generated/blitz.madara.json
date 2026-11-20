@@ -1331,13 +1331,6 @@
     },
     "buildingFixedCostScalePercent": 1000
   },
-  "hyperstructures": {
-    "hyperstructureInitializationShardsCost": {
-      "resource": 24,
-      "amount": 0
-    },
-    "hyperstructureConstructionCost": []
-  },
   "realmUpgradeCosts": {
     "0": [],
     "1": [],
@@ -1389,7 +1382,6 @@
   "realmMaxLevel": 4,
   "villageMaxLevel": 1,
   "victoryPoints": {
-    "pointsForWin": "0",
     "hyperstructurePointsPerCycle": "1000000",
     "pointsForHyperstructureClaimAgainstBandits": "1000000000",
     "pointsForNonHyperstructureClaimAgainstBandits": "250000000",
@@ -1445,9 +1437,6 @@
     "realm_fp_per_sec": 0,
     "village_fp_per_sec": 0,
     "owner_share_percent": 0
-  },
-  "artificer": {
-    "research_cost_for_relic": 0
   },
   "trade": {
     "maxCount": 0

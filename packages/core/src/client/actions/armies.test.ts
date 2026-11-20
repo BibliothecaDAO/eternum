@@ -94,7 +94,6 @@ it("plans around standing structures and leaves a cleared site's tile open", asy
       ],
       getArmies: () => [],
       getTiles: () => [],
-      getChests: () => [],
     },
   } as never);
   expect(indexes.structureHexes.has(5)).toBe(false);

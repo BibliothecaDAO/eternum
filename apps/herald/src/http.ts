@@ -205,10 +205,8 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
         return jsonResponse({ error: "season_one_ranks_aspects" }, 404);
       try {
         const gameId = leaderboardMatch[1];
-        const timestamp = state.chainTimestamp();
-        if (timestamp <= 0) return jsonResponse({ error: "chain_clock_unavailable" }, 503);
         const head = state.confirmedBlock();
-        const board = await leaderboard(gameId, timestamp);
+        const board = await leaderboard(gameId);
         const response = jsonResponse(board);
         response.headers.set("X-Confirmed-Block", String(head));
         return response;
@@ -284,7 +282,7 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
 function cachedLeaderboard(state: HeraldHttpState, build: WorldReadModels["leaderboard"]) {
   let block = -1;
   const responses = new Map<string, HeraldGameLeaderboard>();
-  return async (requestedGame: string, timestamp: number): Promise<HeraldGameLeaderboard> => {
+  return async (requestedGame: string): Promise<HeraldGameLeaderboard> => {
     const head = state.confirmedBlock();
     if (block !== head) {
       responses.clear();
@@ -307,7 +305,7 @@ function cachedLeaderboard(state: HeraldHttpState, build: WorldReadModels["leade
       const history = await state.history.frontierHistory(gameId, head);
       response = buildFrontierLeaderboard((model) => facts.get(model) ?? [], gameId, history);
     } else {
-      response = build(state.fold.modelRows, gameId, timestamp, state.history?.activity(gameId) ?? null);
+      response = build(state.fold.modelRows, gameId, state.history?.activity(gameId) ?? null);
     }
     if (state.confirmedBlock() === head) responses.set(gameId, response);
     return response;

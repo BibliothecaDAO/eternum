@@ -21,8 +21,6 @@ vi.mock("../ui/features/debug/procedural-terrain-debug-view", () => ({
   ProceduralTerrainDebugView: () => <Tool name="terrain" />,
 }));
 vi.mock("../ui/features/debug/model-lab-view", () => ({ ModelLabView: () => <Tool name="models" /> }));
-vi.mock("../ui/features/debug/reward-lab-view", () => ({ RewardLabView: () => <Tool name="rewards" /> }));
-vi.mock("./relic-chest/view", () => ({ RelicChestLab: () => <Tool name="relic-chest" /> }));
 vi.mock("../ui/features/debug/terrain-prop-debug-view", () => ({ TerrainPropDebugView: () => <Tool name="props" /> }));
 vi.mock("./endgame-mist/view", () => ({ EndgameMistLabView: () => <Tool name="endgame" /> }));
 vi.mock("./day-end/view", () => ({ DayEndLabView: () => <Tool name="day-end" /> }));
@@ -166,7 +164,6 @@ it.each([
   ["/lab/map-labels?zoom=close&hover=28", "map-labels", "Game", "Map labels & sites"],
   ["/lab/terrain?mode=frontier", "terrain", "Art", "Terrain"],
   ["/lab/terrain-props", "props", "Art", "Terrain"],
-  ["/lab/rewards", "rewards", "Art", "Chests"],
   ["/lab/chunks", "chunks", "Art", "Bench"],
   ["/lab/data?view=balance", "data", "Data", "Balance & data"],
   ["/lab/data/usage?mode=blitz", "ui-usage", "Data", "UI usage"],

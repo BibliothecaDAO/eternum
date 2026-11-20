@@ -42,7 +42,6 @@ import { supplyPostScenario } from "./supply-post-scenario";
 import { reinforceScenario } from "./reinforce-scenario";
 import { researchScenario } from "./research-scenario";
 import { shopScenario } from "./shop-scenario";
-import { ruinChestsScenario, ruinChestsSurfaceScenario } from "./ruin-chests-scenario";
 import { ruinFarScenario, ruinFightScenario } from "./ruin-fight-scenario";
 import { seasonOpensScenario } from "./season-opens-scenario";
 import { settleScenario } from "./settle-scenario";
@@ -92,8 +91,6 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "low-stamina": lowStaminaScenario,
   "ruin-fight": ruinFightScenario,
   "ruin-far": ruinFarScenario,
-  "ruin-chests": ruinChestsScenario,
-  "ruin-chests-surface": ruinChestsSurfaceScenario,
   camp: campScenario,
   "cleared-camp": clearedCampScenario,
   fight: fightScenario,

@@ -206,7 +206,6 @@ pub mod TroopState {
 pub mod TroopsLogic {
     use starknet::ContractAddress;
     use crate::commands::CreateExplorer;
-    use crate::game::assert_playing;
     use crate::geometry::{neighbor, tile_key};
     use crate::logic::release::ReleaseState;
     use crate::logic::troops::TroopState;
@@ -236,31 +235,6 @@ pub mod TroopsLogic {
         OwnershipDeleted: crate::events::RowDeleted,
     }
 
-    #[abi(embed_v0)]
-    impl RelicTroops of crate::relics::IRelicTroops<ContractState> {
-        fn apply_troop_relic(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: crate::relics::ApplyRelic,
-            rule: crate::relics::RelicRule,
-            timestamp: u64,
-            game_context: crate::commands::ActionContext,
-        ) {
-            let game_context = crate::commands::execution_context(game_id, game_context);
-
-            assert_playing(game_context.game.unbox(), timestamp);
-            let rules = game_context.rules.unbox();
-            match command.recipient {
-                crate::relics::Recipient::Explorer => self
-                    .boost_explorer(game_id, actor, command, rule, rules, timestamp, game_context),
-                crate::relics::Recipient::StructureGuard => self
-                    .boost_guards(game_id, actor, command, rule, rules, timestamp),
-                crate::relics::Recipient::StructureProduction => panic!("production relic requires resources domain"),
-                crate::relics::Recipient::ArmySlot(_) => panic!("army relic requires relics domain"),
-            }
-        }
-    }
     #[abi(embed_v0)]
     impl Guards of crate::guards::IGuards<ContractState> {
         fn guard(self: @ContractState, key: crate::guards::GuardKey) -> crate::guards::Guard {
@@ -910,7 +884,6 @@ pub mod TroopsLogic {
 }
 
 pub mod troop_helpers {
-    use starknet::ContractAddress;
     use starknet::storage::StoragePointerReadAccess;
     use crate::commands::ExecutionContext;
     use crate::game::assert_playing;
@@ -920,7 +893,6 @@ pub mod troop_helpers {
     use crate::map::{IMapLogicDispatcherTrait, IMapLogicLibraryDispatcher};
     use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
     use crate::rules::{RESOURCE_PRECISION, SliceRules};
-    use crate::stamina::StaminaSourceTrait;
     use crate::structures::IStructureOperationsLibraryDispatcher;
     use crate::troops::{Coord, ExplorerKey, ExplorerTroops};
     #[generate_trait]
@@ -1008,80 +980,6 @@ pub mod troop_helpers {
             IMapLogicLibraryDispatcher { class_hash: Release::get_component(self).classes(game_id).map.read() }
         }
 
-        fn boost_explorer(
-            ref self: TContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: crate::relics::ApplyRelic,
-            rule: crate::relics::RelicRule,
-            rules: SliceRules,
-            timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
-        ) {
-            let key = ExplorerKey { game_id, explorer_id: command.entity_id };
-            let mut explorer = crate::logic::troops::authorized_explorer(key, actor, timestamp, game_context);
-            assert!(!explorer.coord.alt, "relic explorer must be on surface");
-            explorer
-                .troops
-                .stamina
-                .refill(
-                    ref explorer.troops.boosts,
-                    explorer.troops.category,
-                    explorer.troops.tier,
-                    rules.troop_stamina_config,
-                    rules.tick_config.armies_tick_in_seconds,
-                    timestamp,
-                );
-            crate::relics::boost_explorer(
-                ref explorer.troops.boosts, command.relic_id, rule, timestamp, rules.tick_config.armies_tick_in_seconds,
-            );
-            if command.relic_id == 45 || command.relic_id == 46 {
-                crate::relics::IRelicMapDispatcherTrait::reveal_relic_ring(
-                    crate::relics::IRelicMapLibraryDispatcher {
-                        class_hash: Release::get_component(@self).classes(game_id).raid.read(),
-                    },
-                    game_id,
-                    explorer.coord,
-                    rule.uses,
-                    crate::commands::biome_context(game_context),
-                );
-            }
-            crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
-        }
-        fn boost_guards(
-            ref self: TContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: crate::relics::ApplyRelic,
-            rule: crate::relics::RelicRule,
-            rules: SliceRules,
-            timestamp: u64,
-        ) {
-            crate::logic::troops::owned_structure(game_id, command.entity_id, actor);
-            assert!(command.relic_id == 49 || command.relic_id == 50, "invalid guard relic");
-            for slot in 0_u8..4 {
-                let key = crate::guards::GuardKey { game_id, structure_id: command.entity_id, slot };
-                let mut guard = crate::logic::guards::guard(key);
-                guard
-                    .troops
-                    .stamina
-                    .refill(
-                        ref guard.troops.boosts,
-                        guard.troops.category,
-                        guard.troops.tier,
-                        rules.troop_stamina_config,
-                        rules.tick_config.armies_tick_in_seconds,
-                        timestamp,
-                    );
-                guard.troops.boosts.decr_damage_gotten_percent_num = rule.rate_bps;
-                guard
-                    .troops
-                    .boosts
-                    .decr_damage_gotten_end_at =
-                        crate::relics::bonus_end_at(timestamp, rule.duration, rules.tick_config.armies_tick_in_seconds);
-                crate::logic::guards::GuardState::save(key, guard);
-            }
-        }
         fn pay_movement(
             ref self: TContractState,
             game_id: u32,

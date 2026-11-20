@@ -45,7 +45,6 @@ enum BuildingFilenames {
   Dragonhide = "dragonhide.glb",
 }
 
-export const ChestModelPath = "/models/reward-tiles/chest-c2.glb";
 export const RiftModelPath = "/models/reward-tiles/rift.glb";
 const BITCOIN_MINE_MODEL_PATH = "/models/ethereal/bitcoin-mine.glb";
 const RIFT_MODEL_PATH = "/models/reward-tiles/rift.glb";

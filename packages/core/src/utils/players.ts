@@ -43,7 +43,7 @@ export const getPlayerInfo = (
     .filter((player) => player !== undefined);
 
   const leaderboard = LeaderboardManager.instance(store);
-  const scoresKnown = playerInfo.every((player) => leaderboard.getPlayerRegisteredPoints(player.address) !== null);
+  const scoresKnown = playerInfo.every((player) => leaderboard.getPlayerPoints(player.address) !== null);
   return playerInfo.map((player) => {
     const rankIndex = playersByRank.findIndex(([address]) => address === player.address);
     const points = rankIndex === -1 ? leaderboard.getPlayerPoints(player.address) : playersByRank[rankIndex][1];

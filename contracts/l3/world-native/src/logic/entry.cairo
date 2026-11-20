@@ -50,11 +50,6 @@ pub mod EntryAdministration {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of crate::entry::ILedgerOperator<ComponentState<TContractState>> {
-        fn configure_deposits(
-            ref self: ComponentState<TContractState>, game_id: u32, source: crate::deposits::DepositSource,
-        ) {
-            crate::logic::deposits::configure(game_id, source)
-        }
         fn deposit_source(
             self: @ComponentState<TContractState>, game_id: u32,
         ) -> Option<crate::deposits::DepositSource> {

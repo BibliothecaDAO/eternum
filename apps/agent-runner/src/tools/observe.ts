@@ -192,11 +192,8 @@ const renderSurroundings = (game: RunnerGame, army: ArmyInfo): string => {
         ? `reserved site at (${structure.hexCoords.col},${structure.hexCoords.row})`
         : `structure #${structure.entityId} ${describeOwner(game, structure.entityId)} at (${structure.hexCoords.col},${structure.hexCoords.row})`,
     );
-  const chests = projection
-    .getChestsInBounds(bounds)
-    .map((chest) => `chest #${chest.entityId} at (${chest.hexCoords.col},${chest.hexCoords.row})`);
   const explored = `${tiles.length} explored tiles within ${NEARBY_REACH} (${biomes})`;
-  const around = clipList([...structures, ...others, ...chests], 6).join("; ") || "nothing else";
+  const around = clipList([...structures, ...others], 6).join("; ") || "nothing else";
   return `Explorer #${army.entityId} at (${center.x},${center.y}): ${explored}; ${around}`;
 };
 

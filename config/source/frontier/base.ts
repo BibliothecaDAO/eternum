@@ -165,6 +165,5 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
     pointsForNonHyperstructureClaimAgainstBandits: 0n,
     pointsForTileExploration: 0n,
     pointsForRelicDiscovery: 0n,
-    pointsForWin: 0n,
   },
 });

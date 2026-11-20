@@ -14,7 +14,6 @@ import {
   RealmInfo,
   formatWait,
   resourceName,
-  formatPercent,
   formatCharge,
   formatTypedNumber,
 } from "@bibliothecadao/types";
@@ -35,15 +34,12 @@ export const ResourceProductionControls = ({
   sizing,
   setSizing,
   realm,
-  bonusPercent,
   compact = false,
 }: {
   selectedResource: number;
   sizing: RunSizing;
   setSizing: (sizing: RunSizing) => void;
   realm: RealmInfo;
-  /** The running bonus on this resource's output, in ten-thousandths. */
-  bonusPercent: number;
   compact?: boolean;
 }) => {
   const {
@@ -61,7 +57,7 @@ export const ResourceProductionControls = ({
   const refusal = useActNowRefusal();
   const currentDefaultTick = useCurrentDefaultTick();
 
-  const recipe = recipeOf(selectedResource, bonusPercent);
+  const recipe = recipeOf(selectedResource);
 
   const resourceManager = useResourceManager(realm.entityId);
   // Each input's balance in resource units, as the chain spends it; an unknown one is left out, so it covers nothing.
@@ -169,9 +165,6 @@ export const ResourceProductionControls = ({
           <span className="flex items-center gap-1.5 text-hud-strong">
             {run ? runOutputLine(run, selectedResource) : "—"}
             <ResourceIcon resource={selectedResource} size="xs" withTooltip={false} />
-            {bonusPercent > 0 && (
-              <span className="text-hud-good">{formatPercent(bonusPercent / 10_000, { signed: true })} bonus</span>
-            )}
           </span>
           <span className="text-hud-label text-hud-cue">Time required {timeRequired}</span>
         </div>
@@ -188,15 +181,9 @@ export const ResourceProductionControls = ({
   );
 };
 
-/**
- * The recipe that burns resources, in the chain's units, with the bonus on its output. Undefined when this game defines
- * none, or one that burns or makes nothing, which the chain refuses.
- */
-const recipeOf = (resource: number, bonusPercent: number): ProductionRecipe | undefined => {
+const recipeOf = (resource: number): ProductionRecipe | undefined => {
   const recipe = configManager.getRecipeUnits(resource, false);
-  return recipe && recipe.inputs.length > 0 && recipe.outputUnits > 0n
-    ? { ...recipe, bonusPercent: BigInt(bonusPercent) }
-    : undefined;
+  return recipe && recipe.inputs.length > 0 && recipe.outputUnits > 0n ? recipe : undefined;
 };
 
 /**

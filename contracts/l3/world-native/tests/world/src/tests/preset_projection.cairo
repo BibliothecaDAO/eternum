@@ -1,4 +1,4 @@
-use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
+use starknet::storage::StoragePathEntry;
 pub use world_test_support::tests::preset_projection::*;
 
 
@@ -8,12 +8,10 @@ fn current_frontier_launch_readers_match_herald_projection() {
 }
 
 #[test]
-#[feature("safe_dispatcher")]
-fn current_frontier_check_has_no_cash_rules_and_refuses_unfunded_ones() {
-    let (preset_id, preset) = current_definition("frontier-check");
+fn current_frontier_check_launch_readers_match_herald_projection() {
+    let (preset_id, _) = current_definition("frontier-check");
     assert_eq!(preset_id, 104);
-    assert!(preset.economy.chests.is_none());
-    assert_unfunded_cash_rules_refuse_registration();
+    compare_current_launch("frontier-check");
 }
 
 #[test]
@@ -40,15 +38,13 @@ fn current_frontier_rejects_a_reintroduced_supply_pool() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn current_frontier_requires_discovery_rejects_cash_rules_and_refuses_sequential_odds() {
+fn current_frontier_requires_discovery_and_refuses_sequential_odds() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
-    for invalid in 0_u8..3 {
+    for invalid in 0_u8..2 {
         let (preset_id, mut definition) = current_definition("frontier-check");
         if invalid == 0 {
             definition.economy.discovery = None;
-        } else if invalid == 1 {
-            definition.economy.chests = Some(retired_frontier_chest_rules());
         } else {
             definition.rules.map_config.camp_win_probability = 4;
         }
@@ -295,46 +291,38 @@ fn the_fixture_preset_stores_exact_race_payments_stages_and_triumphs() {
 fn malformed_race_rules_leave_no_preset_registered() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
-    for invalid in 0_u8..14 {
+    for invalid in 0_u8..11 {
         let (preset_id, mut definition) = current_definition("frontier-check");
         let mut race = definition.economy.race.unwrap();
         if invalid == 0 {
             definition.economy.deep = None;
         } else if invalid == 1 {
-            definition.season_win_points = 1;
-        } else if invalid == 2 {
             race.season_days = 0;
-        } else if invalid == 3 {
+        } else if invalid == 2 {
             race.season_days = 49;
-        } else if invalid == 4 {
+        } else if invalid == 3 {
             let deep = definition.economy.deep.unwrap();
             let pay = crate::deep::DeepPay { crowd: 0, ..deep.building_pay };
             definition.economy.deep = Some(crate::deep::DeepRules { building_pay: pay, ..deep });
-        } else if invalid == 5 {
+        } else if invalid == 4 {
             let deep = definition.economy.deep.unwrap();
             let pay = crate::deep::DeepPay { pair: deep.building_pay.alone + 1, ..deep.building_pay };
             definition.economy.deep = Some(crate::deep::DeepRules { building_pay: pay, ..deep });
-        } else if invalid == 6 {
+        } else if invalid == 5 {
             race.stage_height = definition.economy.deep.unwrap().building_pay.alone - 1;
-        } else if invalid == 7 {
+        } else if invalid == 6 {
             race.clear_mist_percent = 99;
-        } else if invalid == 8 {
+        } else if invalid == 7 {
             race.second_wind_percent = 201;
-        } else if invalid == 9 {
+        } else if invalid == 8 {
             race.pale_moon_percent = 0;
-        } else if invalid == 10 {
+        } else if invalid == 9 {
             race.spoils_percent = 99;
-        }
-        if invalid == 11 {
+        } else {
             let discovery = definition.economy.discovery.unwrap();
             definition
                 .economy
                 .discovery = Some(crate::expeditions::FrontierDiscoveryRules { beasts_bps: 4000, ..discovery });
-        }
-        if invalid == 12 {
-            definition.rules.mode_rules = definition.rules.mode_rules | crate::rules::DISCOVER_HYPERSTRUCTURES;
-        } else if invalid == 13 {
-            definition.rules.mode_rules = definition.rules.mode_rules | crate::rules::RESERVED_HYPERSTRUCTURES;
         }
         definition.economy.race = Some(race);
         assert!(IRegistrarSafeDispatcher { contract_address: d.games }.register_preset(preset_id, definition).is_err());

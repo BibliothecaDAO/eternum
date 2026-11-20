@@ -35,10 +35,7 @@ pub struct GameOverrides {
 #[derive(Copy, Drop, Serde)]
 pub enum PointActivity {
     Exploration,
-    RelicChest,
-    HyperstructureCapture,
     StructureCapture,
-    Hyperstructure,
 }
 
 #[derive(Drop, starknet::Event)]
@@ -68,20 +65,10 @@ pub trait IPoints<T> {
         ref self: T, game_id: u32, actor: ContractAddress, game_context: crate::commands::ActionContext,
     );
     fn register_capture(
-        ref self: T, game_id: u32, actor: ContractAddress, category: u8, game_context: crate::commands::ActionContext,
-    ) -> u128;
-    fn register_relic_points(
         ref self: T, game_id: u32, actor: ContractAddress, game_context: crate::commands::ActionContext,
-    );
-    fn register_hyperstructure_points(ref self: T, game_id: u32, actor: ContractAddress, amount: u128);
+    ) -> u128;
     fn player_points(self: @T, game_id: u32, actor: ContractAddress) -> u128;
     fn season_points(self: @T, game_id: u32) -> u128;
-}
-
-#[starknet::interface]
-pub trait ISeasonLifecycle<T> {
-    fn season_win_threshold(self: @T, game_id: u32) -> u128;
-    fn close_season(ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext) -> u64;
 }
 
 pub fn status_at(game: GameRegistry, timestamp: u64) -> GameStatus {

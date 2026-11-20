@@ -8,7 +8,6 @@ import {
   Mesh,
   MeshStandardMaterial,
   Sphere,
-  Vector3,
 } from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import type { AnimationVisibilityContext } from "../types/animation";
@@ -16,7 +15,6 @@ import { queueInstanceUpdate } from "../utils/instance-update-ranges";
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import { disposeSkinnedSceneTemplates } from "../characters/skinned-asset-resources";
 import { createArcaneStoneMaterial, createRuneFlameMaterials } from "./reward-summoning-effects";
-import { ChestPresentation } from "./chest-presentation";
 import { RiftPresentation } from "./rift-presentation";
 import { RewardTileBatch, resolveRewardBatchKey } from "./reward-tile-batch";
 import { placedModelPhase, placedModelTime } from "../utils/placed-model-phase";
@@ -38,9 +36,7 @@ export class RewardTileModel {
   private readonly ownedMaterials = new Set<Material>();
   private bounds?: { box: Box3; sphere: Sphere };
   private count = 0;
-  private readonly chest?: ChestPresentation;
-  private readonly rift?: RiftPresentation;
-  private readonly cameraPosition = new Vector3(0, 0, 1);
+  private readonly rift: RiftPresentation;
   /** How high the tile's model stands over its origin: its plate clears this. */
   readonly height: number;
 
@@ -52,8 +48,7 @@ export class RewardTileModel {
     gltf.scene.updateMatrixWorld(true);
     this.height = Math.max(0, new Box3().setFromObject(gltf.scene).max.y);
     this.pose = gltf.scene.clone(true);
-    if (this.pose.getObjectByName("ChestBody")) this.chest = new ChestPresentation(this.pose);
-    else this.rift = new RiftPresentation(this.pose);
+    this.rift = new RiftPresentation(this.pose);
     this.mixer = new AnimationMixer(this.pose);
     gltf.animations.forEach((clip) => this.mixer.clipAction(clip).play());
     this.energy.glyphStrength.value = 0.8;
@@ -112,17 +107,14 @@ export class RewardTileModel {
     this.time += delta;
     if (!this.count || !this.group.visible || !this.isNearCamera(visibility)) return;
     this.energy.clock.value = this.time;
-    if (!this.rift) this.samplePose();
     for (const [index, placement] of this.placements) {
-      if (this.rift) this.samplePlacementPose(placement);
+      this.samplePlacementPose(placement);
       this.writePose(index, placement);
     }
   }
 
-  updatePresentation(nightAmount: number, cameraPosition?: Vector3): void {
-    if (cameraPosition) this.cameraPosition.copy(cameraPosition);
-    this.chest?.setNightAmount(nightAmount);
-    this.rift?.setNightAmount(nightAmount);
+  updatePresentation(nightAmount: number): void {
+    this.rift.setNightAmount(nightAmount);
   }
 
   dispose(): void {
@@ -132,8 +124,7 @@ export class RewardTileModel {
     this.instancedMeshes.forEach((mesh) => mesh.dispose());
     this.batches.forEach((batch) => batch.dispose());
     this.ownedMaterials.forEach((material) => material.dispose());
-    this.chest?.dispose();
-    this.rift?.dispose();
+    this.rift.dispose();
     this.energy.glyph.dispose();
     this.energy.flame.dispose();
     disposeSkinnedSceneTemplates([this.template.scene]);
@@ -178,7 +169,7 @@ export class RewardTileModel {
     );
     mesh.name = source.name;
     mesh.receiveShadow = true;
-    if (this.rift && source.morphTargetInfluences?.length) {
+    if (source.morphTargetInfluences?.length) {
       // Allocate once before compilation; each placement owns one morph row while sharing the geometry.
       mesh.count = Math.max(2, this.capacity);
       mesh.setMorphAt(0, source);
@@ -205,20 +196,15 @@ export class RewardTileModel {
 
   private samplePlacementPose(placement: Matrix4): void {
     const phase = placedModelPhase(placement.elements[12], placement.elements[14]);
-    this.samplePose(this.rift ? placedModelTime(this.time, phase) : this.time);
+    this.samplePose(placedModelTime(this.time, phase));
   }
 
   private samplePose(seconds = this.time): void {
     this.mixer.setTime(seconds);
-    for (let index = 0; index < 2; index++) {
-      const ring = this.pose.getObjectByName(`ArcaneSealRing${index}`);
-      if (ring) ring.rotation.y = seconds * (index === 0 ? 0.24 : -0.32);
-    }
     this.pose.updateMatrixWorld(true);
   }
 
   private writePose(index: number, placement: Matrix4): void {
-    this.chest?.faceCamera(this.cameraPosition, placement);
     this.batches.forEach((batch) => batch.writePose(index, placement));
     this.instancedMeshes.forEach((mesh, part) => {
       const source = this.sources[part];

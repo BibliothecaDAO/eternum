@@ -139,12 +139,6 @@ pub fn discovered_structure(
         Discovery::Mine => (
             crate::taxonomy::MINE_CATEGORY, crate::taxonomy::MINE_OCCUPIER, 0_u8, capacities.fragment_mine_capacity,
         ),
-        Discovery::Hyperstructure => (
-            crate::taxonomy::HYPERSTRUCTURE_CATEGORY,
-            crate::taxonomy::HYPERSTRUCTURE_OCCUPIER,
-            3,
-            capacities.hyperstructure_capacity,
-        ),
         Discovery::BitcoinMine => (
             crate::taxonomy::BITCOIN_MINE_CATEGORY,
             crate::taxonomy::BITCOIN_MINE_OCCUPIER,
@@ -164,13 +158,13 @@ pub fn discovered_structure(
         Discovery::Beasts => (
             crate::taxonomy::BEASTS_CATEGORY, crate::taxonomy::BEASTS_OCCUPIER, 0, capacities.camp_capacity,
         ),
-        Discovery::None | Discovery::Shrine | Discovery::Well | Discovery::Spire |
-        Discovery::Chest => panic!("discovery is not a structure"),
+        Discovery::None | Discovery::Shrine | Discovery::Well |
+        Discovery::Spire => panic!("discovery is not a structure"),
     };
     assert!(
         discovery == Discovery::Mine || coord.alt == (discovery == Discovery::BitcoinMine), "invalid discovery layer",
     );
-    let max_guards = if discovery == Discovery::Hyperstructure || discovery == Discovery::BitcoinMine {
+    let max_guards = if discovery == Discovery::BitcoinMine {
         4
     } else {
         1

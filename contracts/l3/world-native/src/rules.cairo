@@ -213,8 +213,6 @@ pub const ENTRY_ROSTER: u8 = 2;
 
 pub const HOME_REWARDS: u32 = 1;
 pub const DISCOVER_CAMPS: u32 = 2;
-pub const DISCOVER_CHESTS: u32 = 4;
-pub const DISCOVER_HYPERSTRUCTURES: u32 = 8;
 pub const SPIRES: u32 = 16;
 pub const UNOWNED_TARGETS: u32 = 32;
 pub const CAPTURE_VILLAGES: u32 = 64;
@@ -223,11 +221,7 @@ pub const REVEAL_SUPPLIES: u32 = 262144;
 // Blitz finds dormant reward spires; expedition games discover one descent spire per home, day and layer.
 pub const DISCOVER_SPIRES: u32 = 2097152;
 pub const SAME_OWNER_TRANSFER: u32 = 256;
-pub const SEASON_CLOSE: u32 = 1024;
-pub const RESERVED_HYPERSTRUCTURES: u32 = 2048;
 pub const DEV_VILLAGE_ENTRY: u32 = 8192;
-pub const OWNER_ONLY_SHARES: u32 = 16384;
-pub const HYPERSTRUCTURE_MULTIPLIERS: u32 = 32768;
 pub const PRODUCTION_START: u32 = 131072;
 
 pub fn rule_enabled(rules: SliceRules, rule: u32) -> bool {

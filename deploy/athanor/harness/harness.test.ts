@@ -201,7 +201,6 @@ describe("Madara harness workload", () => {
       ({
         structureHexes: new Map(),
         armyHexes: new Map(),
-        chestHexes: new Map(),
         exploredHexes: new Map([1, 2, 3, 11].map((x) => [x, new Map([[0, {}]])])),
       }) as ReturnType<HarnessGame["armyPathIndexes"]>;
     const setupTransactions: TrackedTransaction[] = [];
@@ -1174,7 +1173,6 @@ function fakeWorld(extraExplorer?: [number, ExplorerRow]): FakeWorld {
       structureHexes: new Map(),
       armyHexes: new Map(),
       exploredHexes: new Map(),
-      chestHexes: new Map(),
     }),
     factHeadBlock: () => 1,
     tileView: (coord) => ({ explored: explored.has(key(coord)), occupierId: 0 }),

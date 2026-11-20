@@ -1,6 +1,6 @@
 import type { ActionPath } from "./action-paths";
 
-export type ActionHighlightKind = "route" | "destination" | "frontier" | "support" | "attack" | "chest" | "create-army";
+export type ActionHighlightKind = "route" | "destination" | "frontier" | "support" | "attack" | "create-army";
 
 export interface ActionHighlightDescriptor {
   hex: { col: number; row: number };
@@ -28,8 +28,6 @@ function resolveHighlightKind(actionType: ActionPath["actionType"], isEndpoint: 
       return "attack";
     case "help":
       return "support";
-    case "chest":
-      return "chest";
     case "create_army":
       return "create-army";
     default:

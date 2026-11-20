@@ -6,7 +6,7 @@ import { type DoubleClickTarget, runWorldmapDoubleClick } from "./worldmap-doubl
 
 /** What a double-click on `target` did: the one action it took, or none. */
 const doubleClick = (target: DoubleClickTarget) => {
-  const actions = { throughSpire: vi.fn(), enterStructure: vi.fn(), foundHyperstructure: vi.fn() };
+  const actions = { throughSpire: vi.fn(), enterStructure: vi.fn() };
   runWorldmapDoubleClick(target, actions);
   const taken = Object.entries(actions).filter(([, action]) => action.mock.calls.length > 0);
   expect(taken.length).toBeLessThanOrEqual(1);
@@ -38,8 +38,7 @@ describe("a double-click on the world map goes inside only what has an inside", 
     });
   });
 
-  it("founds a reserved Hyperstructure site at once, and ignores an army, a chest or an empty tile", () => {
-    expect(doubleClick({ kind: "reserved-hyperstructure" })).toBe("foundHyperstructure");
+  it("ignores an army or an empty tile", () => {
     expect(doubleClick({ kind: "other" })).toBe("nothing");
   });
 });
@@ -52,5 +51,5 @@ it("is the world map's double-click: the scene reads its target and hands it eac
   );
   expect(handler).toContain("runWorldmapDoubleClick(this.doubleClickTargetAt(hexCoords), {");
   expect(handler).toContain("throughSpire: () => this.lookThroughSpire(hexCoords)");
-  expect(handler).toContain("foundHyperstructure: () => void this.createReservedHyperstructureFromWorldmap(hexCoords)");
+  expect(handler).toContain("enterStructure: () => this.enterStructureFromSelectedHex(hexCoords)");
 });

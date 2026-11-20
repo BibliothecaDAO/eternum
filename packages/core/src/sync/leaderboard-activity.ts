@@ -4,10 +4,7 @@ interface PlayerActivityStat {
 }
 export interface PlayerActivityBreakdown {
   exploration: PlayerActivityStat;
-  openRelicChest: PlayerActivityStat;
-  hyperStructureBanditsDefeat: PlayerActivityStat;
   otherStructureBanditsDefeat: PlayerActivityStat;
-  hyperstructureShare: PlayerActivityStat;
 }
 export interface PlayerLeaderboardActivityEntry {
   address: string;
@@ -25,8 +22,5 @@ export interface PointsRegistration {
 
 export const createEmptyActivityBreakdown = (): PlayerActivityBreakdown => ({
   exploration: { count: 0, points: 0 },
-  openRelicChest: { count: 0, points: 0 },
-  hyperStructureBanditsDefeat: { count: 0, points: 0 },
   otherStructureBanditsDefeat: { count: 0, points: 0 },
-  hyperstructureShare: { count: 0, points: 0 },
 });

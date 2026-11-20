@@ -110,7 +110,7 @@ const createHarness = () => {
         { ...key, data: (BigInt(input.biome ?? 4) << 41n) | (BigInt(input.rewardExtracted ? 1 : 0) << 113n) },
         false,
       );
-      const category = input.occupierType ?? TileOccupier.Chest;
+      const category = input.occupierType ?? TileOccupier.Spire;
       if (category !== 0)
         write(
           "TileOccupancy",
@@ -388,25 +388,6 @@ describe("WorldSpatialProjection", () => {
     );
   });
 
-  it("rebuilds a surface-chest index from native facts and excludes non-renderable tiles", () => {
-    const { projection, writeTile } = createHarness();
-    writeTile("chest", { col: 100, row: 200, occupierId: 7 });
-    writeTile("ethereal-chest", { alt: true, col: 100, row: 200, occupierId: 8 });
-    writeTile("plain-tile", { col: 101, row: 200, occupierId: 0, occupierType: TileOccupier.None });
-
-    projection.start();
-
-    expect(projection.getChests(false)).toEqual([
-      { kind: "chest", entityId: 7, hexCoords: { alt: false, col: 100, row: 200 } },
-    ]);
-    expect(projection.getChestsAtHex({ alt: false, col: 100, row: 200 }).map(({ entityId }) => entityId)).toEqual([7]);
-    expect(
-      projection
-        .getChestsInBounds({ alt: false, minCol: 96, maxCol: 100, minRow: 196, maxRow: 204 })
-        .map(({ entityId }) => entityId),
-    ).toEqual([7]);
-  });
-
   it("indexes real structures by entity and reserved hyperstructures by coordinate", () => {
     const { projection, writeTile } = createHarness();
     writeTile("realm", {
@@ -532,9 +513,8 @@ describe("WorldSpatialProjection", () => {
         writeTile("destination", { col: 20, row: 21, occupierId: 7 });
       }
 
-      expect(projection.getChest(7)?.hexCoords).toEqual({ alt: false, col: 20, row: 21 });
-      expect(projection.getChestsAtHex({ alt: false, col: 10, row: 11 })).toEqual([]);
-      expect(projection.getChestsAtHex({ alt: false, col: 20, row: 21 }).map(({ entityId }) => entityId)).toEqual([7]);
+      expect(projection.getTileAtHex({ alt: false, col: 10, row: 11 })).toBeUndefined();
+      expect(projection.getTileAtHex({ alt: false, col: 20, row: 21 })?.occupierId).toBe(7);
     },
   );
 
@@ -581,27 +561,25 @@ describe("WorldSpatialProjection", () => {
 
   it("restores missed updates and deletions from a full rebuild", () => {
     const { projection, removeTile, writeTile } = createHarness();
-    writeTile("chest", { col: 10, row: 11, occupierId: 7 });
+    writeTile("spire", { col: 10, row: 11, occupierId: 7 });
     projection.start();
 
-    removeTile("chest", { skipUpdateStream: true });
-    expect(projection.getChest(7)).toBeDefined();
+    removeTile("spire", { skipUpdateStream: true });
+    expect(projection.getTileAtHex({ alt: false, col: 10, row: 11 })).toBeDefined();
 
     projection.rebuild();
 
-    expect(projection.getChest(7)).toBeUndefined();
+    expect(projection.getTileAtHex({ alt: false, col: 10, row: 11 })).toBeUndefined();
   });
 
   it("does not return an offscreen deletion when its bounds are queried later", () => {
     const { projection, removeTile, writeTile } = createHarness();
-    writeTile("offscreen-chest", { col: 200, row: 201, occupierId: 7 });
+    writeTile("offscreen-spire", { col: 200, row: 201, occupierId: 7 });
     projection.start();
 
-    removeTile("offscreen-chest");
+    removeTile("offscreen-spire");
 
-    expect(projection.getChestsInBounds({ alt: false, minCol: 196, maxCol: 204, minRow: 196, maxRow: 204 })).toEqual(
-      [],
-    );
+    expect(projection.getTilesInBounds({ alt: false, minCol: 196, maxCol: 204, minRow: 196, maxRow: 204 })).toEqual([]);
   });
 
   it("publishes one complete change and detaches cleanly", () => {
@@ -610,7 +588,7 @@ describe("WorldSpatialProjection", () => {
     projection.start();
     const unsubscribe = projection.subscribe(listener);
 
-    writeTile("chest", { col: 10, row: 11, occupierId: 7 });
+    writeTile("spire", { col: 10, row: 11, occupierId: 7 });
     projection.flush();
 
     expect(listener).toHaveBeenCalledWith([
@@ -623,11 +601,6 @@ describe("WorldSpatialProjection", () => {
           hexCoords: { alt: false, col: 10, row: 11 },
         }),
       }),
-      expect.objectContaining({
-        kind: "chest",
-        entityId: 7,
-        current: { kind: "chest", entityId: 7, hexCoords: { alt: false, col: 10, row: 11 } },
-      }),
     ]);
 
     unsubscribe();
@@ -637,7 +610,7 @@ describe("WorldSpatialProjection", () => {
 
     projection.dispose();
     writeTile("third", { col: 14, row: 15, occupierId: 9 });
-    expect(projection.getChests(false)).toEqual([]);
+    expect(projection.getTiles(false)).toEqual([]);
   });
 
   it("publishes structure variant, move, and reserved-site removal changes", () => {
@@ -849,12 +822,10 @@ describe("WorldSpatialProjection", () => {
     const { projection, writeArmy, writeTile } = createHarness();
     projection.start();
     const tileListener = vi.fn();
-    const chestListener = vi.fn();
     const structureListener = vi.fn();
     const armyListener = vi.fn();
     const listener = vi.fn();
     projection.subscribeTiles(tileListener);
-    projection.subscribeChests(chestListener);
     projection.subscribeStructures(structureListener);
     projection.subscribeArmies(armyListener);
     projection.subscribe(listener);
@@ -879,7 +850,6 @@ describe("WorldSpatialProjection", () => {
       expect.objectContaining({ entityId: 7 }),
       expect.objectContaining({ entityId: 8 }),
     ]);
-    expect(chestListener).not.toHaveBeenCalled();
     expect(structureListener).not.toHaveBeenCalled();
     expect(listener).toHaveBeenCalledOnce();
     expect(listener).toHaveBeenCalledWith([
@@ -954,8 +924,8 @@ describe("WorldSpatialProjection", () => {
     const listener = vi.fn();
     projection.subscribe(listener);
 
-    writeTile("chest", { col: 10, row: 11, occupierId: 7 });
-    removeTile("chest");
+    writeTile("spire", { col: 10, row: 11, occupierId: 7 });
+    removeTile("spire");
     writeArmy("army", { explorerId: 8, col: 20, row: 21 });
     removeArmy("army");
     writeArmy("returning-army", { explorerId: 9, col: 40, row: 41 });
@@ -963,7 +933,7 @@ describe("WorldSpatialProjection", () => {
     projection.flush();
 
     expect(listener).not.toHaveBeenCalled();
-    expect(projection.getChests(false)).toEqual([]);
+    expect(projection.getTileAtHex({ alt: false, col: 10, row: 11 })).toBeUndefined();
     expect(projection.getArmies(false).map(({ entityId }) => entityId)).toEqual([9]);
   });
 
@@ -1016,21 +986,21 @@ describe("WorldSpatialProjection", () => {
     const { projection, writeTile } = createHarness();
     projection.start();
     const listener = vi.fn();
-    projection.subscribeChests(listener);
+    projection.subscribeTiles(listener);
 
-    writeTile("live-chest", { col: 10, row: 11, occupierId: 7 });
-    writeTile("missed-chest", { col: 12, row: 13, occupierId: 8 }, true);
+    writeTile("live-spire", { col: 10, row: 11, occupierId: 7 });
+    writeTile("missed-spire", { col: 12, row: 13, occupierId: 8 }, true);
     projection.rebuild();
 
     expect(listener).toHaveBeenCalledOnce();
     expect(listener).toHaveBeenCalledWith([
       expect.objectContaining({
-        entityId: 7,
-        current: expect.objectContaining({ hexCoords: { alt: false, col: 10, row: 11 } }),
+        spatialId: "tile:0:10:11",
+        current: expect.objectContaining({ occupierId: 7 }),
       }),
       expect.objectContaining({
-        entityId: 8,
-        current: expect.objectContaining({ hexCoords: { alt: false, col: 12, row: 13 } }),
+        spatialId: "tile:0:12:13",
+        current: expect.objectContaining({ occupierId: 8 }),
       }),
     ]);
   });
@@ -1038,7 +1008,7 @@ describe("WorldSpatialProjection", () => {
   it("drops pending changes on dispose", () => {
     const { projection, writeTile } = createHarness();
     projection.start();
-    writeTile("chest", { col: 10, row: 11, occupierId: 7 });
+    writeTile("spire", { col: 10, row: 11, occupierId: 7 });
 
     projection.dispose();
     const listener = vi.fn();

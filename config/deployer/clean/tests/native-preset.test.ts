@@ -73,8 +73,9 @@ describe("native presets", () => {
       expect(nativeReleasePresets[id]).toBeUndefined();
     expect(nativeCommandBits).not.toHaveProperty("RefillStamina");
     expect(nativeCommandBits).not.toHaveProperty("WithdrawLords");
+    for (const retired of ["OpenRelicChest", "CraftRelic", "CloseSeason", "ContributeHyperstructure"])
+      expect(nativeCommandBits).not.toHaveProperty(retired);
     const mask = nativePresets[FRONTIER_S1_PRESET_ID]!.commandMask;
-    expect(mask & BigInt(nativeCommandBits.OpenRelicChest)).toBe(0n);
     expect(mask & BigInt(nativeCommandBits.ApplyRelic)).not.toBe(0n);
   });
 
@@ -113,37 +114,17 @@ describe("native presets", () => {
     }
   });
 
-  test("historical paying presets carry chest rules without a funding amount", () => {
-    for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID]) {
-      expect(nativePresets[id]!.chests).not.toHaveProperty("pool");
-      const chests = buildNativePreset(
-        loadNativePresetConfiguration("madara.frontier", id),
-        id,
-      ).economy.chests.unwrap();
-      expect(chests).toEqual({
-        price_ceiling: 50n,
-        shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
-        claim_window_seconds: 604800,
-        pool_bps: 7000,
-        top_n: 10,
-      });
-    }
-  });
-
   test("Frontier presets cannot grant or import resource relics into an army", () => {
     const frontierPresets = Object.values(nativePresets).filter(({ gameType }) => gameType === "frontier");
     expect(frontierPresets.length).toBeGreaterThan(0);
     for (const source of frontierPresets) {
       expect(source.gameType).toBe("frontier");
       const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id);
-      expect(preset.economy.chests.isSome()).toBe(source.chests !== null);
       expect(preset.rules.day_unit_seconds).toBeGreaterThan(0);
-      expect(preset.economy.relics).toEqual([]);
       expect(preset.exploration).toEqual([]);
       expect(source.bridgeResources).toEqual([]);
       expect(preset.economy.withdrawals.isNone()).toBe(true);
       for (const command of [
-        "CraftRelic",
         "DepositResource",
         "OffloadArrival",
         "SendResources",
@@ -215,19 +196,6 @@ describe("native presets", () => {
       ).toEqual([26, 29, 32].map((resource_type) => ({ resource_type, amount: 1_000_000_000_000n })));
     },
   );
-
-  test("Frontier caps daily chest prices without supplying a season duration", () => {
-    const config = loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID);
-    const preset = buildNativePreset(config, FRONTIER_PRESET_ID);
-    expect(preset.economy.chests.unwrap()).toEqual({
-      price_ceiling: 50n,
-      shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
-      claim_window_seconds: 604800,
-      pool_bps: 7000,
-      top_n: 10,
-    });
-    expect(config.season.durationSeconds).toBe(0);
-  });
 
   test.each([FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID])(
     "Frontier preset %i removes one chest rarity at each depth and preserves the remaining proportions",
@@ -523,20 +491,6 @@ describe("native presets", () => {
     ]).toEqual([0, 0, 0, 0]);
   });
 
-  // The HS held rule says a realm settled later counts from the next capture: a capture recounts the realms only where
-  // shares follow the owner (transfer_hyperstructure_shares), so every preset that counts them must have that rule.
-  test("every preset that counts the realms around a hyperstructure gives its shares to whoever captures it", () => {
-    const withRules = (rules: number) =>
-      Object.values(nativePresets)
-        .filter((preset) => (preset.modeRules & rules) === rules)
-        .map((preset) => preset.id);
-    const counted = withRules(nativeRuleConstants.HYPERSTRUCTURE_MULTIPLIERS);
-    expect(counted.length).toBeGreaterThan(0);
-    expect(withRules(nativeRuleConstants.HYPERSTRUCTURE_MULTIPLIERS | nativeRuleConstants.OWNER_ONLY_SHARES)).toEqual(
-      counted,
-    );
-  });
-
   test("Frontier combat is biome-neutral while Blitz keeps its terrain bonus", () => {
     const frontier = buildNativePreset(
       loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
@@ -569,7 +523,6 @@ describe("native presets", () => {
       stamina_crossbowman_max: 120,
       stamina_paladin_max: 120,
     });
-    expect(design.economy.relics).toEqual([]);
     expect(design.settlement.realms.resources).toEqual([
       { resource_type: 26, amount: 1_500_000_000_000n },
       { resource_type: 35, amount: 4_500_000_000_000n },
@@ -684,8 +637,8 @@ describe("native presets", () => {
 
   test("large resource amounts retain bigint precision and missing balance entries fail", () => {
     const config = configuration(2);
-    config.hyperstructures.hyperstructureInitializationShardsCost.amount = 20_000_000;
-    expect(buildNativePreset(config, 2).economy.hyperstructures.initialize_shards).toBe(20_000_000_000000000n);
+    config.startingResources[0]!.amount = 20_000_000;
+    expect(buildNativePreset(config, 2).settlement.realms.resources[0]!.amount).toBe(20_000_000_000000000n);
     delete (config.resources.resourceWeightsGrams as Partial<Record<number, number>>)[3];
     expect(() => buildNativePreset(config, 2)).toThrow("Missing resource weight for 3");
   });
@@ -693,11 +646,9 @@ describe("native presets", () => {
   test("building a changed preset cannot mutate the next definition's tables", () => {
     const first = buildNativePreset(configuration(2), 2);
     first.settlement.villages.resource_pool[0].weight = 1;
-    first.economy.relics[0].rate_bps = 1;
     first.settlement.realms.realm_resources.length = 0;
     const next = buildNativePreset(configuration(2), 2);
     expect(next.settlement.villages.resource_pool[0].weight).toBe(19815);
-    expect(next.economy.relics[0].rate_bps).toBe(5000);
     expect(next.settlement.realms.realm_resources).toHaveLength(9);
   });
 
@@ -744,17 +695,11 @@ describe("native presets", () => {
   });
 });
 
-test("rejects missing research costs and bridge tokens before registration", () => {
+test("rejects missing bridge tokens before registration", () => {
   const previous = nativePresets[2]!.bridgeResources;
   nativePresets[2]!.bridgeResources = [37];
   try {
     for (const [mutation, error] of [
-      [
-        (config) => {
-          delete config.artificer;
-        },
-        "Native research cost",
-      ],
       [
         (config) => {
           delete (config.setup!.addresses as { resources?: unknown }).resources;
@@ -831,13 +776,8 @@ describe("scaled Frontier presets", () => {
       const ledger = buildLedgerEconomicPreset("frontier", { presetId });
       expect(world.rules.day_unit_seconds).toBe(dayUnit);
       expect(ledger.day_unit_seconds).toBe(dayUnit);
-      if (presetId === FRONTIER_FIXTURE_PRESET_ID || presetId === FRONTIER_PLAYGROUND_PRESET_ID) {
-        expect(world.economy.chests.isNone()).toBe(true);
-        expect(ledger.claim_window_seconds).toBe(0);
-      } else {
-        expect(world.economy.chests.unwrap()).toMatchObject({ claim_window_seconds: 604_800 });
-        expect(ledger.claim_window_seconds).toBe(604_800);
-      }
+      const historical = presetId !== FRONTIER_FIXTURE_PRESET_ID && presetId !== FRONTIER_PLAYGROUND_PRESET_ID;
+      expect(ledger.claim_window_seconds).toBe(historical ? 604_800 : 0);
     }
   });
 
@@ -887,20 +827,10 @@ describe("Devcon's fast Frontier preset", () => {
     expect(fast.structures.research).toEqual(normal.structures.research);
   });
 
-  test("registers Devcon's 70-percent chest split and top three without changing normal Frontier", () => {
-    const normal = definition(FRONTIER_PRESET_ID).economy.chests.unwrap();
-    const devcon = definition(FRONTIER_DEVCON_PRESET_ID).economy.chests.unwrap();
-    const ledger = buildLedgerEconomicPreset("frontier", { presetId: FRONTIER_DEVCON_PRESET_ID });
-    expect(normal).toMatchObject({ pool_bps: 7000, top_n: 10 });
-    expect(devcon).toMatchObject({ pool_bps: 7000, top_n: 3 });
-    expect(ledger).toMatchObject({ frontier_chest_bps: 7000, frontier_top_n: 3 });
-    const normalChests = nativePresets[FRONTIER_PRESET_ID]!.chests;
-    if (!normalChests) throw new Error("Frontier must define chest rules");
-    expect(nativePresets[FRONTIER_DEVCON_PRESET_ID]!.chests).toEqual({
-      ...normalChests,
-      topN: 3,
-    });
-    expect(definition(FRONTIER_PRESET_ID).economy.chests.unwrap()).toEqual(normal);
+  test("registers Devcon's 70-percent chest split and top three on the ledger without changing normal Frontier", () => {
+    const ledger = (presetId: number) => buildLedgerEconomicPreset("frontier", { presetId });
+    expect(ledger(FRONTIER_PRESET_ID)).toMatchObject({ frontier_chest_bps: 7000, frontier_top_n: 10 });
+    expect(ledger(FRONTIER_DEVCON_PRESET_ID)).toMatchObject({ frontier_chest_bps: 7000, frontier_top_n: 3 });
   });
 
   test("every seeded bag has five 4–12-hour days while activity stays at three times normal", () => {
@@ -1267,23 +1197,6 @@ test("Clear Mist must fit one categorical discovery draw", () => {
   }
 });
 
-test("race registration excludes generated and reserved hyperstructures", () => {
-  const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
-  const previous = { race: source.race, deep: source.deep, modeRules: source.modeRules };
-  try {
-    source.race = raceFixture();
-    source.deep = deepFixture();
-    for (const flag of [nativeRuleConstants.DISCOVER_HYPERSTRUCTURES, nativeRuleConstants.RESERVED_HYPERSTRUCTURES]) {
-      source.modeRules = previous.modeRules | flag;
-      expect(() => buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id)).toThrow(
-        "Race has no map hyperstructures",
-      );
-    }
-  } finally {
-    Object.assign(source, previous);
-  }
-});
-
 test("preset 7 activates the complete Slice 1 rules while fixtures and historical definitions stay isolated", () => {
   for (const source of Object.values(nativePresets)) {
     const environment = source.gameType === "blitz" ? "madara.blitz" : "madara.frontier";
@@ -1299,7 +1212,6 @@ test("preset 7 activates the complete Slice 1 rules while fixtures and historica
     expect(source.deep).toEqual(deepFixture());
     expect(source.race).toEqual(raceFixture());
     expect(built.economy.labor.isNone()).toBe(true);
-    expect(built.economy.chests.isNone()).toBe(true);
     expect(built.rules.mode_rules & nativeRuleConstants.DISCOVER_SPIRES).not.toBe(0);
     for (const command of [
       "ClaimDailyQuest",

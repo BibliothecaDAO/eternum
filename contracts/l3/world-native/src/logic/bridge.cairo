@@ -64,8 +64,7 @@ pub mod BridgeState {
                     .transfer_from(actor, get_contract_address(), command.amount),
                 "bridge token transfer failed",
             );
-            let amount = withdrawals
-                .retained_tokens(game_id, command.resource_type, command.amount, self.completed(game_id));
+            let amount = withdrawals.retained_tokens(game_id, command.resource_type, command.amount);
             let fees = self
                 .platform_fees(
                     game_id,
@@ -126,8 +125,7 @@ pub mod BridgeState {
                     context.timestamp,
                     crate::commands::resource_context(context),
                 );
-            let amount = withdrawals
-                .retained_amount(game_id, command.resource_type, command.amount, self.completed(game_id));
+            let amount = withdrawals.retained_amount(game_id, command.resource_type, command.amount);
             let realm_fee = self
                 .realm_fee(
                     game_id,
@@ -165,9 +163,6 @@ pub mod BridgeState {
         }
         fn structure(self: @ComponentState<TContractState>, game_id: u32, entity_id: u64) -> Structure {
             crate::logic::structures::structure(ResourceKey { game_id, entity_id }).expect('structure does not exist')
-        }
-        fn completed(self: @ComponentState<TContractState>, game_id: u32) -> u32 {
-            crate::logic::hyperstructures::completed_hyperstructure_count(game_id)
         }
         fn authorize(
             self: @ComponentState<TContractState>,

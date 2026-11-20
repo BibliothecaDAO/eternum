@@ -18,7 +18,6 @@ import { useHudMode } from "@/hooks/use-hud-mode";
 import { GameCycleEffects } from "../shared/components/game-cycle-effects";
 import { BlockTimestampPoller } from "../shared/components/block-timestamp-poller";
 import { ActionRunners } from "../action-runners";
-import { ChestOpenings } from "../features/military/chest/chest-openings";
 import { ExpeditionRollover } from "../features/world/components/expeditions/expedition-rollover";
 import { FrontierHud } from "../features/frontier/frontier-hud";
 import { useExpeditionRules } from "../features/frontier/frontier-home";
@@ -76,7 +75,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 const BackgroundSystems = () => (
   <>
     <ActionRunners />
-    <ChestOpenings />
     <BlockTimestampPoller />
     <GameCycleEffects />
     <AutomationSystems />

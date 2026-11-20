@@ -33,13 +33,10 @@ pub fn rules(blitz: bool) -> crate::rules::SliceRules {
     } else {
         crate::rules::ENTRY_ENTITLEMENT
     };
-    rules.map_config.hyps_win_prob = 0;
-    rules.map_config.hyps_fail_prob = 1;
     rules.map_config.shards_mines_win_probability = 0;
     rules.map_config.shards_mines_fail_probability = 1;
     rules.map_config.camp_win_probability = 1;
     rules.map_config.camp_fail_probability = 0;
-    rules.map_config.relic_discovery_interval_sec = 60000;
     rules
 }
 pub fn setup(blitz: bool) -> (super::Deployment, ResourceKey) {

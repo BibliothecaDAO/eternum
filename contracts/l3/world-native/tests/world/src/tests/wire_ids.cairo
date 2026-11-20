@@ -1,4 +1,4 @@
-use crate::commands::{Command, route_command};
+use crate::commands::{Command, route_command, validated_command};
 use crate::ownership::{Story, StructureLevelUpStory};
 
 #[test]
@@ -28,6 +28,10 @@ fn retired_command_tags_have_neither_a_route_nor_a_typed_command() {
             let mut frame = values.span();
             assert!(Serde::<Command>::deserialize(ref frame).is_none());
         }
+    }
+    for tag in array![9_u32, 38, 39, 40, 41, 42, 44, 52] {
+        assert!(routes.at(tag).is_none());
+        assert_eq!(validated_command(array![tag.into(), 7].span()).unwrap_err(), 'INVALID_COMMAND');
     }
 }
 

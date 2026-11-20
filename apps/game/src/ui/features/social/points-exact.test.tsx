@@ -18,20 +18,13 @@ vi.mock("./player/use-leaderboard-effects", () => ({
 
 const grants: VictoryPointGrants = {
   exploreTile: 5,
-  openRelicCrate: 250,
-  claimCampFromBandits: 300,
-  claimHyperstructureFromBandits: 12_500,
-  hyperstructurePerSecond: 2,
-  hyperstructureScale: "per-realm",
+  claimCampFromBandits: 12_500,
 };
 
 const activity = (entries: Partial<Record<string, { count: number; points: number }>>) =>
   ({
     exploration: { count: 0, points: 0 },
-    openRelicChest: { count: 0, points: 0 },
     otherStructureBanditsDefeat: { count: 0, points: 0 },
-    hyperStructureBanditsDefeat: { count: 0, points: 0 },
-    hyperstructureShare: { count: 0, points: 0 },
     ...entries,
   }) as PlayerCustom["activityBreakdown"];
 
@@ -52,7 +45,6 @@ const player = (name: string, points: number, rank: number, breakdown = activity
   isInvited: false,
   guild: undefined,
   activityBreakdown: breakdown,
-  accruingHoldPoints: 0,
   mmrDelta: null,
 });
 
@@ -87,15 +79,13 @@ describe("points on the leaderboard are exact, either side of ten thousand", () 
           50_000,
           1,
           activity({
-            openRelicChest: { count: 1, points: 12_430 },
-            hyperStructureBanditsDefeat: { count: 0, points: 10_000 },
-            hyperstructureShare: { count: 0, points: 12_430 },
-            exploration: { count: 0, points: 1 },
+            otherStructureBanditsDefeat: { count: 1, points: 12_430 },
+            exploration: { count: 0, points: 10_000 },
           }),
         ),
       ]),
     );
-    expect(read).toEqual(expect.arrayContaining(["1 · 12,430 points", "10,000 points", "12,430 points", "1 point"]));
+    expect(read).toEqual(expect.arrayContaining(["1 · 12,430 points", "10,000 points"]));
     expect(read.join(" ")).not.toMatch(/\d(\.\d)?K\b/);
   });
 

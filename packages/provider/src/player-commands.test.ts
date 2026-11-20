@@ -105,22 +105,6 @@ describe("player command callers", () => {
     expect(decoded()).toEqual({ structure_id: 12n, category: 0n, tier: 0n, amount: 100n, direction: 4n, slot: 2n });
   });
 
-  it("preserves exact contribution units through the compiled command ABI", async () => {
-    const { calls, signer, decoded } = setup();
-    const amount = 9_007_199_254_740_993n;
-    await calls.contribute_to_construction({
-      signer,
-      hyperstructure_entity_id: 9,
-      contributor_entity_id: 4,
-      contributions: [{ resource: 1, amount }],
-    });
-    expect(decoded()).toEqual({
-      hyperstructure_id: 9n,
-      from_structure_id: 4n,
-      resources: [{ resource_type: 1n, amount }],
-    });
-  });
-
   it("approves the native bridge before submitting a deposit", async () => {
     const { calls, signer, submit, wait, decoded } = setup();
     const amount = (1n << 180n) + 3n;

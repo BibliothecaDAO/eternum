@@ -1,7 +1,5 @@
-pub mod approved_frontier_extension;
 pub mod army_relics;
 pub mod arrivals;
-pub mod artificer;
 pub mod aspects;
 pub mod balance;
 pub mod banes;
@@ -35,7 +33,6 @@ pub mod games_entry;
 pub mod geometry;
 pub mod guards;
 pub mod guilds;
-pub mod hyperstructures;
 pub mod logic;
 pub mod map;
 pub mod math;

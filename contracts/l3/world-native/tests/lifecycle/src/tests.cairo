@@ -15,7 +15,6 @@ mod entry;
 mod expedition_spires;
 
 mod frontier_extension;
-mod hyperstructures;
 
 mod quest_producers;
 mod quests;

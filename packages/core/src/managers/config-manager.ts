@@ -17,10 +17,6 @@ import {
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 
-/** The first relic's resource id: the game's relic rules are listed from it (relics.cairo FIRST_RELIC). */
-const FIRST_RELIC_ID = ResourcesIds.StaminaRelic1;
-/** The stamina relics, which last their uses rather than their duration. */
-const STAMINA_RELIC_IDS = new Set<number>([ResourcesIds.StaminaRelic1, ResourcesIds.StaminaRelic2]);
 import { buildingCostModeOf, type BuildingCostMode } from "../utils/building-cost-mode";
 import { enabledHelpTransfers, type HelpBetween, type HelpTransfer } from "../utils/army-help";
 import { isModeRuleEnabled } from "../utils/mode-rules";
@@ -163,12 +159,6 @@ export class ClientConfigManager {
   get buildingCostMode(): BuildingCostMode {
     return buildingCostModeOf(this.facts().inGame("BuildingRule", this.gameId));
   }
-  get structureCosts() {
-    return { [StructureType.Hyperstructure]: [this.getHyperstructureConstructionCosts()] };
-  }
-  get hyperstructureTotalCosts() {
-    return this.getHyperstructureTotalCosts();
-  }
   get mapCenter() {
     return this.getMapCenter();
   }
@@ -184,23 +174,6 @@ export class ClientConfigManager {
     if (category === StructureType.Realm) return limits.realm_max;
     if (category === StructureType.Village) return limits.village_max;
     return 0;
-  }
-  getHyperstructureTotalCosts() {
-    return this.facts()
-      .require("HyperstructureRules", { game_id: this.gameId })
-      .resources.map((row) => ({
-        resource: row.resource_type as ResourcesIds,
-        min_amount: row.minimum,
-        max_amount: row.maximum,
-      }));
-  }
-  getHyperstructureConstructionCosts() {
-    return {
-      resource: ResourcesIds.AncientFragment,
-      amount: this.divideByPrecision(
-        Number(this.facts().require("HyperstructureRules", { game_id: this.gameId }).initialize_shards),
-      ),
-    };
   }
   getResourceWeightKg(resourceId: number) {
     const rule = this.facts().get("ResourceRule", { game_id: this.gameId, resource_type: resourceId });
@@ -492,31 +465,11 @@ export class ClientConfigManager {
   getDevModeConfig() {
     return { dev_mode_on: this.game().dev_mode_on };
   }
-  getHyperstructureConfig() {
-    return {
-      timeBetweenSharesChange: 0,
-      pointsPerCycle: wholePoints(this.rules().victory_points_grant_config.hyp_points_per_second),
-      pointsForWin: wholePoints(this.facts().require("SeasonWinThreshold", { game_id: this.gameId }).points),
-    };
-  }
-  /**
-   * What each scoring action grants in this game, in whole victory points. A held hyperstructure earns its rate every
-   * second, times what the contract's multiplier counts (hyperstructures.cairo): 1 without the multiplier rule,
-   * otherwise each realm settled on the six sites around it.
-   */
   getVictoryPointGrants() {
-    const rules = this.rules();
-    const grants = rules.victory_points_grant_config;
-    const hyperstructureScale: "flat" | "per-realm" = !isModeRuleEnabled(rules, "HYPERSTRUCTURE_MULTIPLIERS")
-      ? "flat"
-      : "per-realm";
+    const grants = this.rules().victory_points_grant_config;
     return {
       exploreTile: wholePoints(grants.explore_tiles_points),
       claimCampFromBandits: wholePoints(grants.claim_otherstructure_points),
-      claimHyperstructureFromBandits: wholePoints(grants.claim_hyperstructure_points),
-      openRelicCrate: wholePoints(grants.relic_open_points),
-      hyperstructurePerSecond: wholePoints(grants.hyp_points_per_second),
-      hyperstructureScale,
     };
   }
   getBasePopulationCapacity() {
@@ -561,27 +514,6 @@ export class ClientConfigManager {
   }
   getSpireTravelEssenceCost() {
     return this.divideByPrecision(Number(this.rules().spire_travel_essence_cost));
-  }
-  /**
-   * How long a relic's effect lasts, in seconds (0 for one that acts at once), and the Essence it costs to activate,
-   * as the game's relic rules set them: rules are listed from the first relic id, and the stamina relics last their
-   * uses, the others their duration, each in army ticks (relics.cairo, boost_explorer and boost_production). The rule
-   * holds the cost in whole Essence, which the chain scales to resource precision when it spends it.
-   */
-  getRelicActivation(relicId: number): { durationSeconds: number; essenceCost: number } {
-    const rules = this.facts().require("RelicRules", { game_id: this.gameId }).rules;
-    const rule = rules[relicId - FIRST_RELIC_ID];
-    if (!rule) throw new Error(`No relic rule for relic ${relicId}`);
-    const ticks = STAMINA_RELIC_IDS.has(relicId) ? rule.uses : rule.duration;
-    return {
-      durationSeconds: ticks * this.getTick(TickIds.Armies),
-      essenceCost: Number(rule.essence_cost),
-    };
-  }
-  getArtificerConfig() {
-    return {
-      research_cost_for_relic: Number(this.facts().require("ArtificerCost", { game_id: this.gameId }).research),
-    };
   }
   getLaborConfig(resourceId: number) {
     const recipe = this.facts().require("ProductionRecipe", { game_id: this.gameId, resource_type: resourceId });

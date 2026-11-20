@@ -205,9 +205,6 @@ fn tile_presence_follows_terrain_or_occupancy_on_both_layers() {
                     data: crate::map::coordinate_bits(key) + 11 * crate::map::BIOME_SCALE,
                 };
                 assert_eq!(crate::logic::map::tile(key), Some(revealed));
-                crate::logic::map::MapState::reserve_hyperstructure(key);
-                crate::logic::map::MapState::release_hyperstructure(key);
-                assert_eq!(crate::logic::map::tile(key), Some(revealed));
                 assert_eq!(crate::logic::map::occupancy(key), None);
                 crate::logic::map::MapState::mark_reward_extracted(key);
                 assert_eq!(
@@ -274,22 +271,16 @@ fn reverse_positions_preserve_origin_full_coordinates_and_clear_on_vacate() {
 }
 
 #[test]
-fn tile_only_occupants_and_reservations_have_no_reverse_position() {
+fn a_tile_only_spire_has_no_reverse_position() {
     let d = super::registrar::setup();
     interact_with_state(
         d.games,
         || {
             let key = crate::map::TileKey { game_id: 7, alt: false, col: 120, row: 130 };
-            for category in array![crate::taxonomy::CHEST_OCCUPIER, crate::taxonomy::SPIRE_OCCUPIER] {
-                crate::logic::map::MapState::occupy(key, 99, category, false);
-                assert_eq!(crate::logic::map::entity_coord(ResourceKey { game_id: 7, entity_id: 99 }), None);
-                assert!(crate::logic::map::occupancy(key).is_some());
-                crate::logic::map::MapState::vacate(key, 99);
-            }
-            crate::logic::map::MapState::reveal(key, 11);
-            crate::logic::map::MapState::reserve_hyperstructure(key);
-            assert_eq!(crate::logic::map::entity_coord(ResourceKey { game_id: 7, entity_id: 0 }), None);
-            crate::logic::map::MapState::release_hyperstructure(key);
+            crate::logic::map::MapState::occupy(key, 99, crate::taxonomy::SPIRE_OCCUPIER, false);
+            assert_eq!(crate::logic::map::entity_coord(ResourceKey { game_id: 7, entity_id: 99 }), None);
+            assert!(crate::logic::map::occupancy(key).is_some());
+            crate::logic::map::MapState::vacate(key, 99);
             assert_eq!(crate::logic::map::occupancy(key), None);
         },
     );

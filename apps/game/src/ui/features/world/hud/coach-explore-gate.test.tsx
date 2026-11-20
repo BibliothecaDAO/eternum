@@ -8,9 +8,7 @@ const world = vi.hoisted(() => ({
   holdings: [] as unknown[],
   projection: {
     getArmy: () => ({ hexCoords: { col: 4, row: 5, alt: false } }),
-    getChests: () => [],
     subscribeArmies: () => () => {},
-    subscribeChests: () => () => {},
   },
 }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCurrentDefaultTick: () => 350, useNowMs: () => 350_000 }));

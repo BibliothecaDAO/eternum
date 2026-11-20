@@ -419,7 +419,7 @@ describe("an open preview whose order changes before its verb is pressed", () =>
   });
 });
 
-it.each([ActionType.Explore, ActionType.Move, ActionType.Attack, ActionType.Chest])(
+it.each([ActionType.Explore, ActionType.Move, ActionType.Attack])(
   "on a Frontier phone, a hold on %s shows facts without sending",
   (actionType) => {
     useUIStore.setState((state) => ({

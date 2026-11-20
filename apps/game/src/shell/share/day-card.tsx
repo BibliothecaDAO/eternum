@@ -144,13 +144,6 @@ const PAID: Record<"essence" | "labor" | "lords", { icon: IconMeaning; name: str
 };
 
 const heroOf = (best: DayBest): Moment => {
-  if (best.kind === "chest")
-    return {
-      icon: "reward-chest",
-      title: DAY_SHARE_WORDS.best.chest,
-      detail: null,
-      paid: { ...PAID.lords, value: `+${formatShort(best.lords)}` },
-    };
   if (best.kind === "clear")
     return {
       icon: TARGET_MARKS[best.site].icon,
@@ -161,5 +154,4 @@ const heroOf = (best: DayBest): Moment => {
   return { icon: "explore", title: DAY_SHARE_WORDS.best.reveals(formatAmount(best.count)), detail: null, paid: null };
 };
 
-/** What the best moment shows, for its glow's colour: a chest, a site by its kind, or the land. */
 const heroKind = (best: DayBest) => (best.kind === "clear" ? best.site : best.kind);

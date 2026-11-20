@@ -52,13 +52,7 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
   const viewer = useAccountAddress();
   const currentDefaultTick = useCurrentDefaultTick();
   const isUpgradeLocked = useInFlight("castle", structureEntityId) !== undefined;
-  const facts = useNativeFacts([
-    "StructureBuildings",
-    "ResourceWeight",
-    "ResourceBalance",
-    "ResourceProduction",
-    "ProductionBonus",
-  ]);
+  const facts = useNativeFacts(["StructureBuildings", "ResourceWeight", "ResourceBalance", "ResourceProduction"]);
   const liveStructure = useNativeRow(
     "Structure",
     structureEntityId

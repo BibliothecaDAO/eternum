@@ -10,24 +10,12 @@ import {
   type AttackForecast,
 } from "@bibliothecadao/eternum";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
-import {
-  BiomeType,
-  DISPLAYED_SLOT_NUMBER_MAP,
-  ID,
-  RelicEffect,
-  ResourcesIds,
-  TroopTier,
-  TroopType,
-  type Troops,
-} from "@bibliothecadao/types";
+import { BiomeType, DISPLAYED_SLOT_NUMBER_MAP, ID, TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 import { useAttackTargetData } from "../hooks/use-attack-target";
 import { AttackTarget } from "../types";
 import type { GuardOption, LiveSnapshot, WorkingArmy } from "./battle-lab.types";
-
-const toResourceIds = (effects: RelicEffect[]): ResourcesIds[] =>
-  effects.map((effect) => Number(effect.id)) as ResourcesIds[];
 
 interface BattleLabLiveData {
   snapshot: LiveSnapshot | null;
@@ -52,14 +40,7 @@ export const useBattleLabLiveData = (
   const facts = useNativeFacts(ATTACK_FORECAST_MODELS);
   const chainSecond = useCurrentDefaultTick();
 
-  const { attackerRelicEffects, targetRelicEffects, target, targetResources, isLoading } = useAttackTargetData(
-    attackerEntityId,
-    targetHex,
-    alt,
-  );
-
-  const attackerRelicIds = useMemo(() => toResourceIds(attackerRelicEffects), [attackerRelicEffects]);
-  const targetRelicIds = useMemo(() => toResourceIds(targetRelicEffects), [targetRelicEffects]);
+  const { target, targetResources, isLoading } = useAttackTargetData(attackerEntityId, targetHex, alt);
 
   const forecast = useMemo(() => {
     if (!enabled || !target) return undefined;
@@ -80,12 +61,8 @@ export const useBattleLabLiveData = (
       game_id: configManager.getActiveGameId(),
       entity_id: attackerEntityId,
     });
-    const guards = structure
-      ? guardOptions(getGuardsByStructure(structure, facts.store), attackerRelicIds, chainSecond)
-      : [];
+    const guards = structure ? guardOptions(getGuardsByStructure(structure, facts.store), chainSecond) : [];
     if (!guards) return null;
-    const army = (troops: Troops, oaths: number, relics: ResourcesIds[]) =>
-      workingArmy(troops, oaths, relics, chainSecond);
     return {
       biome:
         forecast.outcome === "fights"
@@ -95,18 +72,17 @@ export const useBattleLabLiveData = (
       attackerEntityId,
       guards,
       guardSlot: sides.attacker.guardSlot ?? null,
-      armyAttacker: structure ? null : army(sides.attacker.troops, sides.attacker.oaths, attackerRelicIds),
-      defender: sides.defender ? army(sides.defender.troops, sides.defender.oaths, targetRelicIds) : null,
+      armyAttacker: structure ? null : workingArmy(sides.attacker.troops, sides.attacker.oaths, chainSecond),
+      defender: sides.defender ? workingArmy(sides.defender.troops, sides.defender.oaths, chainSecond) : null,
       defenderAlt: alt,
     };
-  }, [alt, facts, forecast, attackerEntityId, targetHex.x, targetHex.y, chainSecond, attackerRelicIds, targetRelicIds]);
+  }, [alt, facts, forecast, attackerEntityId, targetHex.x, targetHex.y, chainSecond]);
 
   return { snapshot, forecast, target, targetResources, isLoading };
 };
 
 const guardOptions = (
   guards: ReturnType<typeof getGuardsByStructure>,
-  relics: ResourcesIds[],
   chainSecond: number,
 ): GuardOption[] | undefined =>
   guards
@@ -115,10 +91,10 @@ const guardOptions = (
     .map((guard) => ({
       slot: guard.slot,
       label: `Slot ${DISPLAYED_SLOT_NUMBER_MAP[guard.slot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]}`,
-      army: workingArmy(guard.troops, 0, relics, chainSecond),
+      army: workingArmy(guard.troops, 0, chainSecond),
     }));
 
-const workingArmy = (troops: Troops, oaths: number, relics: ResourcesIds[], chainSecond: number): WorkingArmy => ({
+const workingArmy = (troops: Troops, oaths: number, chainSecond: number): WorkingArmy => ({
   oaths,
   stamina: Number(StaminaManager.getStamina(troops, chainSecond).amount),
   maxStamina: StaminaManager.getMaxStamina(troops.category as TroopType, troops.tier as TroopTier, troops.staminaMax),
@@ -126,5 +102,4 @@ const workingArmy = (troops: Troops, oaths: number, relics: ResourcesIds[], chai
   troopType: troops.category as TroopType,
   tier: troops.tier as TroopTier,
   battle_cooldown_end: Number(troops.battle_cooldown_end),
-  relics,
 });

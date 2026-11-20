@@ -10,13 +10,7 @@ import { FrontierModel, frontierModelKind } from "../structures/frontier-model";
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { realmModelIndex, isWonderModelPath } from "../structures/realm-design";
 import { MineKinds, structureName, troopTierIndex } from "@bibliothecadao/types";
-import {
-  configManager,
-  getHyperstructureProgress,
-  siteDisplayName,
-  siteKindOf,
-  type SiteKind,
-} from "@bibliothecadao/eternum";
+import { configManager, siteDisplayName, siteKindOf, type SiteKind } from "@bibliothecadao/eternum";
 import {
   FALLEN_REALM_RUIN_MODEL_INDEX,
   frontierBeastModelIndex,
@@ -137,7 +131,6 @@ import {
 } from "../frame-budget-work-queue";
 
 import { HyperstructureModel } from "../structures/hyperstructure-model";
-import { readHyperstructureConstruction } from "../structures/hyperstructure-state";
 
 type StructureModel = InstancedModel | RewardTileModel;
 
@@ -299,8 +292,6 @@ export class StructureManager {
   private pendingVisibleStructureTransitionToken?: number;
   private previousVisibleIds: Set<ID> = new Set(); // Committed visible ownership; also drives point cleanup.
   private visibleStructureWindow?: VisibleStructureWindow;
-  private readonly pendingHyperstructureBuilds = new Set<ID>();
-  // Per-entity StructureInfo; a Structure, StructureBuildings, Hyperstructure, or projection change deletes the entry.
   private readonly structureInfoCache = new Map<ID, StructureInfo>();
   private readonly unpresentableStructures = new Set<ID>();
   private readonly metrics: StructureManagerMetrics = {
@@ -376,7 +367,6 @@ export class StructureManager {
   }
 
   private removeStructurePresentation(entityId: ID): void {
-    this.pendingHyperstructureBuilds.delete(entityId);
     const entityNumericId = safeInteger(entityId);
     this.attachmentManager.removeAttachments(entityNumericId);
     this.activeStructureAttachmentEntities.delete(entityNumericId);
@@ -389,7 +379,6 @@ export class StructureManager {
   }
 
   private handleStructureProjectionChanges(changes: readonly StructureSpatialProjectionChange[]): void {
-    this.trackClaimedHyperstructureSites(changes);
     changes.forEach(({ previous, current }) => {
       this.invalidateStructureInfo(previous?.entityId);
       this.invalidateStructureInfo(current?.entityId);
@@ -402,22 +391,6 @@ export class StructureManager {
     this.metrics.visibleStructureChangeSetUpdates += 1;
     if (refreshEntityIds.size > 0) {
       void this.requestVisibleStructuresRefresh({ refreshEntityIds });
-    }
-  }
-
-  private trackClaimedHyperstructureSites(changes: readonly StructureSpatialProjectionChange[]): void {
-    const bounds = this.visibleStructureWindow?.bounds;
-    if (!bounds) return;
-    const claimedSites = changes.flatMap(({ previous, current }) =>
-      previous?.reserved && !current && isWithinBounds(previous.hexCoords, bounds) ? [previous.hexCoords] : [],
-    );
-    if (claimedSites.length === 0) return;
-    for (const { previous, current } of changes) {
-      if (previous || !current || current.reserved) continue;
-      const { alt, col, row } = current.hexCoords;
-      if (claimedSites.some((site) => site.alt === alt && site.col === col && site.row === row)) {
-        this.pendingHyperstructureBuilds.add(current.entityId);
-      }
     }
   }
 
@@ -438,7 +411,6 @@ export class StructureManager {
         structureWindow.structures.set(entityId, visibleRenderable);
       } else {
         structureWindow.structures.delete(entityId);
-        this.pendingHyperstructureBuilds.delete(entityId);
       }
       if (wasVisible || visibleRenderable) touchedEntityIds.add(entityId);
     });
@@ -485,10 +457,7 @@ export class StructureManager {
           } else if (
             change.model === "Structure" ||
             change.model === "ExpeditionSite" ||
-            change.model === "StructureBuildings" ||
-            change.model === "Hyperstructure" ||
-            change.model === "HyperstructureProgress" ||
-            change.model === "HyperstructureShares"
+            change.model === "StructureBuildings"
           ) {
             const row = change.current ?? change.previous;
             if (row?.game_id === configManager.getActiveGameId()) touched.add(safeInteger(row.entity_id));
@@ -592,7 +561,6 @@ export class StructureManager {
         },
         stage: 0,
         level: 0,
-        initialized: false,
         isMine: false,
         isAlly: false,
         owner: { address: 0n, ownerName: "", guildName: "" },
@@ -633,7 +601,6 @@ export class StructureManager {
         row: renderable.hexCoords.row - FELT_CENTER(),
       },
       stage: renderInfo.stage,
-      initialized: this.resolveHyperstructureInitialized(renderable.entityId, renderInfo.type),
       level: renderInfo.level,
       isMine: isAddressEqualToAccount(ownerAddress),
       isAlly: false,
@@ -668,11 +635,6 @@ export class StructureManager {
   private resolveSiteKind(entityId: ID, structureType: StructureType): SiteKind | undefined {
     const site = this.store?.get("ExpeditionSite", { game_id: configManager.getActiveGameId(), entity_id: entityId });
     return site && !site.clear ? siteKindOf(structureType) : undefined;
-  }
-
-  private resolveHyperstructureInitialized(entityId: ID, structureType: StructureType): boolean {
-    if (structureType !== StructureType.Hyperstructure || !this.store) return false;
-    return getHyperstructureProgress(entityId, this.store).initialized;
   }
 
   private resolveActiveProductions(entityId: ID): Array<{ buildingCount: number; buildingType: BuildingType }> {
@@ -871,7 +833,6 @@ export class StructureManager {
     this.structureInfoCache.clear();
     this.chunkAssetPrewarmPromises.clear();
     this.visibleStructureWindow = undefined;
-    this.pendingHyperstructureBuilds.clear();
     this.visibleStructureCount = 0;
     this.pendingVisibleStructureRefreshIds.clear();
     this.pendingVisibleStructureTransitionToken = undefined;
@@ -933,7 +894,6 @@ export class StructureManager {
     this.previousVisibleIds.clear();
     this.structureInfoCache.clear();
     this.visibleStructureWindow = undefined;
-    this.pendingHyperstructureBuilds.clear();
 
     this.plates.dispose();
     this.compactLabelIds.clear();
@@ -1634,13 +1594,12 @@ export class StructureManager {
       ? this.addVisibleCosmeticStructureInstances(structure, dirtyModels)
       : this.addVisibleBaseStructureInstances(structure, dirtyModels);
     for (const binding of bindings) {
-      if (binding.model instanceof HyperstructureModel && this.store) {
-        const construction = readHyperstructureConstruction(this.store, safeInteger(structure.entityId));
-        binding.model.setConstructionAt(
-          binding.instanceIndex,
-          construction,
-          this.pendingHyperstructureBuilds.delete(structure.entityId),
-        );
+      if (binding.model instanceof HyperstructureModel) {
+        binding.model.setConstructionAt(binding.instanceIndex, {
+          entityId: structure.entityId,
+          progress: 100,
+          completed: true,
+        });
       }
       if (binding.model instanceof SettlementModel) {
         binding.model.setRelationshipAt(binding.instanceIndex, resolveSettlementRelationship(structure.isMine));
@@ -1896,9 +1855,6 @@ export class StructureManager {
     this.queryStructuresInBounds(bounds).forEach((renderable) => {
       if (!renderable.reserved) structures.set(renderable.entityId, renderable);
     });
-    for (const id of this.pendingHyperstructureBuilds) {
-      if (!structures.has(id)) this.pendingHyperstructureBuilds.delete(id);
-    }
     this.visibleStructureWindow = { chunkKey, bounds, structures };
     return this.visibleStructureWindow;
   }

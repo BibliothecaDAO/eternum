@@ -80,37 +80,6 @@ fn select_location(mode: SettlementMode, a: Coord, b: Coord, c: Coord, middle: C
     }
 }
 
-pub fn reservation_count(limit: u16) -> u32 {
-    let mut ring = 0_u32;
-    while limit.into() >= 6 * ring * ring + 1 {
-        ring += 1;
-    }
-    1 + 3 * ring * (ring + 1)
-}
-
-pub fn reservation_location(center: Coord, spacing: u32, candidate: u32) -> Coord {
-    if candidate == 0 {
-        return center;
-    }
-    let step = distances(spacing).step;
-    let mut point = candidate - 1;
-    let mut ring = 1;
-    while point >= 6 * ring {
-        point -= 6 * ring;
-        ring += 1;
-    }
-    let (outward, tangent) = *array![(0_u8, 2_u8), (5, 1), (4, 0), (3, 5), (2, 4), (1, 3)].at(point / ring);
-    neighbor_at_distance(neighbor_at_distance(center, outward, step * ring), tangent, step * (point % ring))
-}
-
 fn neighbor_at_distance(coord: Coord, direction: u8, distance: u32) -> Coord {
     checked_neighbor_at_distance(coord, direction, distance).expect('settlement geometry exhausted')
-}
-
-pub fn hyperstructure_scan_distance(spacing: u32, mode: SettlementMode) -> u32 {
-    distances(spacing).base + if mode == SettlementMode::Single {
-        2
-    } else {
-        0
-    }
 }

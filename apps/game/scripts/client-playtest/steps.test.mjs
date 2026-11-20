@@ -10,7 +10,7 @@ import { ARMY_PLATE_HEIGHT } from "../../src/three/constants/army-constants";
 import { ARMY_LABEL_POINT } from "./plates.mjs";
 import { MAP_LEAST_SHARE } from "./hud-layout.mjs";
 import { HUD_MAP_LEAST_SHARE } from "../../src/tokens";
-import { CHAT, CLOSE, ruinRule, EVENTS_WORDS, MENU, REALM_LABOR, SEASON } from "../../src/ui/design-system/kit/words";
+import { CHAT, CLOSE, EVENTS_WORDS, MENU, REALM_LABOR, SEASON } from "../../src/ui/design-system/kit/words";
 import {
   CLOSEST_CAMERA_DISTANCE,
   FARTHEST_CAMERA_DISTANCE,
@@ -1068,15 +1068,12 @@ describe("lab-hud-devices", () => {
   });
 });
 
-it("the relic ruin fight proof refuses either historical cash entitlement", () => {
+it("the ruin fight proof completes once the card opens with its Attack, the camera still", () => {
   const verify = STEP_SETS["lab-ruin-fight"].steps.find((step) => step.name === "open-the-fight").verify;
   const camera = { col: 1, row: 2 };
   const before = { ruinToken: [0, 180], camera };
-  const after = { camera, buttons: ["Attack"], ruinRule: null, sheet: "Ruin" };
+  const after = { camera, buttons: ["Attack"], sheet: "Ruin" };
   expect(verify({ played: { before, after } }).status).toBe("completed");
-  for (const rule of [ruinRule(false), ruinRule(true)]) {
-    expect(verify({ played: { before, after: { ...after, ruinRule: rule } } }).status).toBe("failed");
-  }
 });
 
 it("requires an opened army panel and no retired LORDS controls", () => {

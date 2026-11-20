@@ -1,11 +1,9 @@
 import { useLeaderboardActivity } from "@/hooks/use-leaderboard-activity";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import {
   type PlayerActivityBreakdown,
   type PlayerLeaderboardActivityEntry,
 } from "@/services/leaderboard/player-activity-breakdown-service";
-import { EndSeasonButton } from "../components/end-season-button";
 import { PlayerList, type PlayerCustom } from "./player-list";
 import { normalizeLeaderboardAddress } from "./finalized-blitz-leaderboard";
 import { useInGameLeaderboard } from "./use-in-game-leaderboard";
@@ -63,8 +61,6 @@ export const PlayersPanel = ({
     () => (activityEntries ? buildActivityBreakdownLookup(activityEntries) : null),
     [activityEntries],
   );
-  const mode = useGameModeConfig();
-
   const leaderboardPlayers: PlayerCustom[] = useMemo(() => {
     const leaderboardPlayers = players
       // filter out players with no address
@@ -86,9 +82,6 @@ export const PlayersPanel = ({
             createEmptyActivityBreakdown())
           : undefined;
 
-        // Finalized games rank by the on-chain final standings; live games by the native facts.store's standing: registered
-        // points plus the hold points accruing since each hyperstructure's last checkpoint. The row's columns are the
-        // registered points by activity with those accruing hold points under HS held, so Points is their sum.
         const liveRank = standing?.rank ?? player.rank;
         const livePoints = standing?.points ?? player.points;
         const rank = isFinalized ? (standing?.rank ?? Number.MAX_SAFE_INTEGER) : liveRank;
@@ -101,8 +94,7 @@ export const PlayersPanel = ({
           rank,
           isInvited,
           guild,
-          activityBreakdown: breakdownOfStanding(breakdown, standing?.registeredPoints),
-          accruingHoldPoints: standing?.accruingHoldPoints ?? 0,
+          activityBreakdown: breakdownOfStanding(breakdown, standing?.points),
           mmrDelta:
             mmr.status === "ready"
               ? (mmr.deltaByAccount.get(normalizeLeaderboardAddress(player.address)) ?? null)
@@ -129,7 +121,6 @@ export const PlayersPanel = ({
           Points breakdown is unavailable.
         </p>
       )}
-      {mode.ui.showEndSeasonButton && <EndSeasonButton className="mb-2 w-full" />}
       <PlayerList
         players={leaderboardPlayers}
         grants={configManager.getVictoryPointGrants()}

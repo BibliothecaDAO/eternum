@@ -1,6 +1,5 @@
 import { readStandingFrontierBeast, type FrontierBeast } from "@/three/structures/frontier-beast";
 import {
-  availableRuinLords,
   armyOaths,
   armyRelicReward,
   configManager,
@@ -16,7 +15,6 @@ import {
   siteKindOf,
   type AttackForecast,
   type AttackRefusal,
-  type SiteKind,
 } from "@bibliothecadao/eternum";
 import {
   readSiteReward,
@@ -57,9 +55,7 @@ export interface SiteCardPlan {
   guard: { type: TroopType; tier: TroopTier; count: number } | null | undefined;
   kind: AttackTargetKind;
 
-  /** A ruin's stored tier and whole LORDS; unknown until its chest fact arrives. */
   ruinDepth?: string;
-  chest: { tier: number; amount: number; funded: boolean } | null | undefined;
 
   payout: { resourceId: ResourcesIds; amount: number; fits: number } | null | undefined;
   attackStamina: number;
@@ -86,15 +82,10 @@ export const readSiteCard = (
   const guards = getDefendingGuards(structure, store, attack?.timestamp);
   const guard = guards?.[0];
   const kind = siteKindOf(structure.base.category);
-  const chest = kind === "Ruin" ? store.get("SiteChest", { game_id: site.game_id, entity_id: site.entity_id }) : null;
-  const payout = readSiteReward(store, site, attack?.timestamp);
-  const baseReward =
-    kind === "Ruin"
-      ? chest && { resourceType: ResourcesIds.Lords, amount: chest.amount * PRECISION }
-      : payout.known?.reward;
+  const baseReward = kind === "Ruin" ? null : readSiteReward(store, site, attack?.timestamp).known?.reward;
   const planned = attack ? forecastFrom(store, attack, structure.entity_id) : undefined;
   const clean = clearsCleanly(planned?.forecast, guards?.length ?? 0);
-  const reward = baseReward && attack ? attackerReward(store, attack, kind, baseReward, clean) : baseReward;
+  const reward = baseReward && attack ? attackerReward(store, attack, baseReward, clean) : baseReward;
   const beast = readStandingFrontierBeast(store, site.game_id, safeInteger(site.entity_id));
   return {
     name: beast?.name ?? attackTargetName(kind),
@@ -105,14 +96,6 @@ export const readSiteCard = (
       kind === "Ruin"
         ? layerName(Math.floor(site.row / store.require("SettlementRules", { game_id: site.game_id }).spacing) % 4)
         : undefined,
-    chest: chest && {
-      tier: chest.tier,
-      amount: Number(chest.amount),
-      funded:
-        chest.amount > 0n &&
-        availableRuinLords(store, site.game_id, attack?.timestamp ?? getBlockTimestamp().currentDefaultTick) >=
-          chest.amount,
-    },
     payout: reward && fittingPayout(store, site.game_id, reward, attack),
     holdsOath: siteHoldsOath(store, site),
     attackStamina: attackStaminaOf(store, attack),
@@ -128,12 +111,10 @@ const attackStaminaOf = (store: NativeFactStore, attack: SiteAttack | null): num
 const attackerReward = (
   store: NativeFactStore,
   attack: SiteAttack,
-  kind: SiteKind,
   reward: { resourceType: ResourcesIds; amount: bigint },
   clean: boolean,
 ) => {
-  const paid =
-    kind === "Ruin" ? reward : { ...reward, amount: oathSitePay(armyOaths(store, attack.army), reward.amount, clean) };
+  const paid = { ...reward, amount: oathSitePay(armyOaths(store, attack.army), reward.amount, clean) };
   return armyRelicReward(store, attack.army, paid, attack.timestamp);
 };
 
@@ -151,7 +132,6 @@ export const readArmyCard = (
     name: "Army",
     guard: troops === undefined ? undefined : troops.count > 0n ? troopsOf(troops) : null,
     kind: "Army",
-    chest: null,
     payout: null,
     holdsOath: false,
     attackStamina: attackStaminaOf(store, attack),

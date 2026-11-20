@@ -43,7 +43,6 @@ describe("Worldmap lifecycle baseline", () => {
 
     expect(fixture.destroyCalls.armyManager).toBe(1);
     expect(fixture.destroyCalls.structureManager).toBe(1);
-    expect(fixture.destroyCalls.chestManager).toBe(1);
     expect(fixture.destroyCalls.fxManager).toBe(1);
     expect(fixture.destroyCalls.resourceFXManager).toBe(1);
   });

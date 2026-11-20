@@ -4,7 +4,6 @@ import { ProceduralArmyCharacterLayer } from "@/three/characters/procedural-army
 import { isWonderModelPath } from "../structures/realm-design";
 import { RewardTileModel } from "@/three/rewards/reward-tile-model";
 import {
-  ChestModelPath,
   RiftModelPath,
   isRealmModelPath,
   SPIRE_MODEL_PATH,
@@ -128,7 +127,7 @@ export class TerrainLabInteraction {
     this.hover.update(delta);
     for (const [key, model] of this.models) {
       if ((key.startsWith("/") || key === HYPERSTRUCTURE_MODEL_PATH) && model.group.visible) {
-        if (model instanceof RewardTileModel) model.updatePresentation(0, this.camera.position);
+        if (model instanceof RewardTileModel) model.updatePresentation(0);
         if (model instanceof SpireModel) model.updateAnimations(delta, { camera: this.camera });
         else model.updateAnimations(delta, { cameraPosition: this.camera.position });
       }
@@ -399,7 +398,7 @@ export class TerrainLabInteraction {
     if (path === SPIRE_MODEL_PATH) return new SpireModel(gltf, capacity);
     if (isSettlementModelPath(path))
       return new SettlementModel(gltf, capacity, isRealmModelPath(path) ? "realm" : "village", isWonderModelPath(path));
-    if (path === ChestModelPath || path === RiftModelPath) return new RewardTileModel(gltf, capacity);
+    if (path === RiftModelPath) return new RewardTileModel(gltf, capacity);
     return new InstancedModel(gltf, capacity, false, name);
   }
 

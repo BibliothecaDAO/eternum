@@ -39,20 +39,16 @@ type CategoryCapabilities = {
   holdsInventory: boolean;
   /** Houses a population. */
   housesPopulation: boolean;
-  /** Crafts relics (relics.cairo's craft_relic). */
-  craftsRelics: boolean;
 };
 const NONE: CategoryCapabilities = {
   builds: false,
   holdsInventory: false,
   housesPopulation: false,
-  craftsRelics: false,
 };
 const SETTLEMENT: CategoryCapabilities = {
   builds: true,
   holdsInventory: true,
   housesPopulation: true,
-  craftsRelics: true,
 };
 
 /**
@@ -62,7 +58,7 @@ const SETTLEMENT: CategoryCapabilities = {
 const CATEGORY_CAPABILITIES: Record<StructureType, CategoryCapabilities> = {
   [StructureType.Realm]: SETTLEMENT,
   [StructureType.Village]: SETTLEMENT,
-  [StructureType.Camp]: { ...NONE, builds: true, holdsInventory: true, housesPopulation: true },
+  [StructureType.Camp]: SETTLEMENT,
   [StructureType.Mine]: { ...NONE, holdsInventory: true },
   [StructureType.Hyperstructure]: { ...NONE, holdsInventory: true },
   [StructureType.Bank]: NONE,

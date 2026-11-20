@@ -1,2 +1,0 @@
-export const PROGRESS_HALF_THRESHOLD = 50;
-export const PROGRESS_FINAL_THRESHOLD = 100;

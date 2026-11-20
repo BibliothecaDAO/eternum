@@ -519,8 +519,6 @@ it("matches all Oath damage vectors on both sides, including bows and stacked sl
         simulatedArmy(a!, beforeA!, ao!),
         simulatedArmy(b!, beforeB!, bo!),
         BiomeType.Underground,
-        [],
-        [],
         { attackerIsStructureGuard: ag === 1n, defenderIsStructureGuard: bg === 1n },
       ),
     ).toMatchObject({

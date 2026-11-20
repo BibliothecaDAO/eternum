@@ -241,8 +241,6 @@ export const guardedSiteKind = (type: StructureType, beast?: { name: string }): 
     ? `${beast.name} ${structureName(type)}`
     : frontierSiteName(type, beast);
 
-/** What a player earns with a ruin's clear, as another player's line and their own say it. */
-export const CHEST_EARNED = "chest earned";
 export const VICTORY = "Victory";
 export const ARMY_LOST = "Army lost";
 export const GUARD_HOLDS = "Guard holds";

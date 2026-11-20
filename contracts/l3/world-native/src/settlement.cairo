@@ -93,14 +93,6 @@ pub trait ISettlementPool<T> {
     #[cfg(feature: "test_support")]
     fn village_pool(self: @T, game_id: u32, center: Coord) -> SettlementPool;
     fn claim_village(ref self: T, game_id: u32, registered: u16, seed: u256, center: Coord) -> Coord;
-    #[cfg(feature: "test_support")]
-    fn reserved_hyperstructures(self: @T, game_id: u32) -> u32;
-}
-
-#[starknet::interface]
-pub trait IBlitzReservations<T> {
-    fn initialize_reservations(ref self: T, game_id: u32);
-    fn release_hyperstructure(ref self: T, game_id: u32, coord: Coord);
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -124,13 +116,6 @@ pub trait IRealmCreation<T> {
 #[starknet::interface]
 pub trait ISettlementDisplacement<T> {
     fn displace_explorer(ref self: T, game_id: u32, explorer_id: u64, game_context: crate::commands::ActionContext);
-}
-
-#[starknet::interface]
-pub trait IBlitzHyperstructures<T> {
-    fn create_reserved_hyperstructure(
-        ref self: T, game_id: u32, actor: ContractAddress, coord: Coord, context: crate::commands::ActionContext,
-    );
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

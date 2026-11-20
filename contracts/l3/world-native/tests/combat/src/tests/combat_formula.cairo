@@ -259,48 +259,40 @@ fn an_exchange_without_a_capture_spends_the_full_attack_stamina() {
 }
 
 #[test]
-fn combat_relics_change_casualties_for_their_full_window_and_replace_on_reapplication() {
-    for id in array![41_u8, 43] {
-        for replace in array![false, true] {
-            let mut boosted = test_troops(TroopType::Knight, TroopTier::T2, 10000, 120);
-            let rule = crate::relics::RelicRule {
-                duration: 3, rate_bps: 5000, uses: 0, essence_cost: 0, draw_weight: 0,
-            };
-            crate::relics::boost_explorer(ref boosted.boosts, id, rule, 47, 10);
-            let end = if replace {
-                crate::relics::boost_explorer(
-                    ref boosted.boosts, id, crate::relics::RelicRule { duration: 1, ..rule }, 52, 10,
-                );
-                62_u64
+fn combat_boosts_change_casualties_until_their_end_time() {
+    for damage in array![true, false] {
+        let mut boosted = test_troops(TroopType::Knight, TroopTier::T2, 10000, 120);
+        if damage {
+            boosted.boosts.incr_damage_dealt_percent_num = 5000;
+            boosted.boosts.incr_damage_dealt_end_at = 77;
+        } else {
+            boosted.boosts.decr_damage_gotten_percent_num = 5000;
+            boosted.boosts.decr_damage_gotten_end_at = 77;
+        }
+        for now in array![76_u64, 77] {
+            let plain = test_troops(TroopType::Knight, TroopTier::T2, 10000, 120);
+            let mut attacker = if damage {
+                boosted
             } else {
-                77
+                plain
             };
-            for now in array![end - 1, end] {
-                let plain = test_troops(TroopType::Knight, TroopTier::T2, 10000, 120);
-                let mut attacker = if id == 41 {
-                    boosted
-                } else {
-                    plain
-                };
-                let mut defender = if id == 43 {
-                    boosted
-                } else {
-                    plain
-                };
-                let mut plain_attacker = plain;
-                let mut plain_defender = plain;
-                let battle = CombatContext { timestamp: now, ..context(Biome::Underground) };
-                attacker.attack_with_context(ref defender, battle, stamina_config(), damage_config(), 60, 60);
-                plain_attacker
-                    .attack_with_context(ref plain_defender, battle, stamina_config(), damage_config(), 60, 60);
-                if now == end {
-                    assert_eq!(defender.count, plain_defender.count);
-                    assert_eq!(attacker.count, plain_attacker.count);
-                } else if id == 41 {
-                    assert!(defender.count < plain_defender.count, "active damage relic must increase casualties");
-                } else {
-                    assert!(defender.count > plain_defender.count, "active defence relic must reduce casualties");
-                }
+            let mut defender = if damage {
+                plain
+            } else {
+                boosted
+            };
+            let mut plain_attacker = plain;
+            let mut plain_defender = plain;
+            let battle = CombatContext { timestamp: now, ..context(Biome::Underground) };
+            attacker.attack_with_context(ref defender, battle, stamina_config(), damage_config(), 60, 60);
+            plain_attacker.attack_with_context(ref plain_defender, battle, stamina_config(), damage_config(), 60, 60);
+            if now == 77 {
+                assert_eq!(defender.count, plain_defender.count);
+                assert_eq!(attacker.count, plain_attacker.count);
+            } else if damage {
+                assert!(defender.count < plain_defender.count, "an active damage boost must increase casualties");
+            } else {
+                assert!(defender.count > plain_defender.count, "an active defence boost must reduce casualties");
             }
         }
     }

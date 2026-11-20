@@ -77,7 +77,7 @@ export async function waitForActionOutcome(
 }
 
 const isBatchCommand = (type: TransactionType | undefined): boolean =>
-  type === TransactionType.END_GAME || type === TransactionType.BITCOIN_MINE_CLAIM_PHASE_REWARD;
+  type === TransactionType.BITCOIN_MINE_CLAIM_PHASE_REWARD;
 
 /** The receipt's refusal, or, for an applied receipt, success once an applied snapshot covers its block. */
 async function outcomeFromReceipt(

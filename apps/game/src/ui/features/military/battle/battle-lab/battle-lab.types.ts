@@ -1,12 +1,9 @@
 import type { Army } from "@bibliothecadao/eternum";
-import type { BiomeType, ID, ResourcesIds } from "@bibliothecadao/types";
+import type { BiomeType, ID } from "@bibliothecadao/types";
 
 export type BattleLabMode = "live" | "sim";
 
-/** An army the simulator runs on. Mirrors core `Army` + the equipped relics. */
-export interface WorkingArmy extends Army {
-  relics: ResourcesIds[];
-}
+export type WorkingArmy = Army;
 
 /** One selectable guard slot when the attacker is a structure. */
 export interface GuardOption {

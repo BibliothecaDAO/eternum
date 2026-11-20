@@ -47,18 +47,11 @@ import {
 } from "@/game-entry/play-route-readiness-store";
 import { parsePlayRoute } from "@/play/navigation/play-route";
 import { resolvePlayRouteWorldPosition } from "@/play/navigation/play-route-target";
-import {
-  clearPendingReservedHyperstructureCreation,
-  isPendingReservedHyperstructureCreation,
-  submitActiveWorldBlitzHyperstructureCreation,
-} from "@/services/blitz/blitz-hyperstructure-creation";
 import { type DoubleClickTarget, runWorldmapDoubleClick } from "./worldmap-double-click";
 import { HEX_SIZE, WORLD_CHUNK_CONFIG } from "@/three/constants";
 import { ArmyManager } from "@/three/managers/army-manager";
 import { CombatPresentationCoordinator } from "@/three/combat/combat-presentation-coordinator";
 import { BattleDirectionManager } from "@/three/managers/battle-direction-manager";
-import { ChestManager } from "@/three/managers/chest-manager";
-import { ReservedHyperstructureManager } from "@/three/managers/reserved-hyperstructure-manager";
 import { HoverHexManager } from "@/three/managers/hover-hex-manager";
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { OwnershipRingLayer } from "@/three/managers/ownership-ring-layer";
@@ -129,7 +122,6 @@ import {
 
 import { FELT_CENTER } from "@/ui/config";
 import { HelpModal } from "@/ui/features/military";
-import { openRelicCrate } from "@/ui/features/military/chest/open-relic-crate";
 import { letGoOfClearedSite, letGoOfLostSelection } from "./worldmap-lost-selection";
 import { traceFlightPlanner } from "../flight-trace";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
@@ -208,7 +200,6 @@ import {
 } from "./worldmap-hover-reconciliation";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { resolveHighlightLayerPalette, resolveHoverVisualPalette } from "../managers/worldmap-interaction-palette";
-import { isCommittedManagerChunk } from "../managers/manager-update-convergence";
 import { SceneName } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
 import {
@@ -259,13 +250,6 @@ import {
   settleWorldmapShortcutSelectionProtection,
   shouldResetWorldmapShortcutRefreshUiReason,
 } from "./worldmap-shortcut-selection-runtime";
-import {
-  clearWorldmapPostCommitManagerCatchUpState,
-  createWorldmapPostCommitManagerCatchUpState,
-  drainWorldmapPostCommitManagerCatchUpQueue,
-  enqueueWorldmapPostCommitManagerCatchUpTask,
-  scheduleWorldmapPostCommitManagerCatchUpDrain,
-} from "./worldmap-post-commit-manager-catchup-runtime";
 import { prepareWorldmapChunkRuntime } from "./worldmap-chunk-preparation-runtime";
 import {
   WorldmapExactTerrainPreparationRuntime,
@@ -323,7 +307,6 @@ import { type OrderTip, orderFood, orderTip, refusedOrderVerb } from "@/ui/featu
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { type PlacedOrderTip, PointerOrderTip } from "./worldmap-order-tip";
 import { getGameModeId } from "@/config/game-modes";
-import { onChestOpenRequest } from "./worldmap-chest-open-request";
 import { shouldQueueArmySelectionRecovery } from "./worldmap-army-tab-selection";
 import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
 import {
@@ -365,7 +348,6 @@ import {
   resolveWorldmapChunkRefreshDebounceMs,
   shouldDelayWorldmapChunkSwitch,
 } from "./worldmap-chunk-switch-delay-policy";
-import { classifyWorldmapUploadWork, resolveWorldmapPostCommitWorkAction } from "./worldmap-upload-budget-policy";
 import {
   applyWorldmapSwitchOffRuntimeState,
   invalidateWorldmapSwitchOffTransitionState,
@@ -733,13 +715,6 @@ export default class WorldmapScene extends WarpTravel {
   private currentChunkBounds?: { box: Box3; sphere: Sphere };
   private readonly prefetchedAhead: string[] = [];
   private readonly maxPrefetchedAhead = WORLDMAP_CHUNK_POLICY.prefetch.maxAhead;
-  private postCommitManagerCatchUpRuntimeState = createWorldmapPostCommitManagerCatchUpState<{
-    chunkKey: string;
-    options?: { force?: boolean; transitionToken?: number };
-    estimatedUploadBytes: number;
-    deferredCount?: number;
-  }>();
-  private readonly postCommitManagerCatchUpBudgetBytes = 256 * 1024;
   private directionalPresentationChunkKeys: Set<string> = new Set();
   private activeDirectionalPresentationPrewarms: Set<string> = new Set();
   private readonly exactTerrainPreparations =
@@ -899,34 +874,11 @@ export default class WorldmapScene extends WarpTravel {
     this.chunkTransitionRuntimeState.isTransitioning = value;
   }
 
-  private get postCommitManagerCatchUpQueue() {
-    return this.postCommitManagerCatchUpRuntimeState.queue;
-  }
-
-  private set postCommitManagerCatchUpQueue(
-    value: Array<{
-      chunkKey: string;
-      options?: { force?: boolean; transitionToken?: number };
-      estimatedUploadBytes: number;
-      deferredCount?: number;
-    }>,
-  ) {
-    this.postCommitManagerCatchUpRuntimeState.queue = value;
-  }
-
-  private get postCommitManagerCatchUpFrameHandle(): number | null {
-    return this.postCommitManagerCatchUpRuntimeState.frameHandle;
-  }
-
-  private set postCommitManagerCatchUpFrameHandle(value: number | null) {
-    this.postCommitManagerCatchUpRuntimeState.frameHandle = value;
-  }
   private handleTransactionProgress?: (...args: any[]) => void;
   private readonly cameraTargetHexUpdateIntervalMs = 100;
   private armySelectionRecoveryInFlight: Set<ID> = new Set();
   private structureManager!: StructureManager;
   private memoryMonitor?: MemoryMonitor;
-  private chestManager!: ChestManager;
   private worldSpatialProjection!: WorldSpatialProjection;
   private unsubscribeWorldSpatialProjection?: () => void;
   private unbindMapSelection?: () => void;
@@ -973,7 +925,6 @@ export default class WorldmapScene extends WarpTravel {
     this.minimapCameraMoveTarget = detail;
     this.minimapCameraMoveThrottled?.();
   };
-  private stopChestOpenRequests?: () => void;
   private armySelectRequestHandler = () => {
     if (this.sceneManager.getCurrentScene() === SceneName.WorldMap) this.selectAwaitedArmy();
   };
@@ -1133,8 +1084,6 @@ export default class WorldmapScene extends WarpTravel {
   private readonly chunkRecoveryProgress = createWorldmapChunkRecoveryProgress();
 
   // Label groups
-  private chestLabelsGroup!: Group;
-  private reservedHyperstructureManager!: ReservedHyperstructureManager;
   private spireManager!: SpireManager;
   /** The block second the veil's nearness was last asked at. */
   private veilCheckedAt = -1;
@@ -1237,9 +1186,7 @@ export default class WorldmapScene extends WarpTravel {
     this.scene.add(this.proceduralTerrain.object3d);
     this.strategicMarkers = new StrategicMarkerLayer();
     this.scene.add(this.strategicMarkers.object3d);
-    this.resourceFXManager = new ResourceFXManager(this.scene, 1.2, {
-      terrainSurface: this.proceduralTerrain,
-    });
+    this.resourceFXManager = new ResourceFXManager(this.scene, 1.2);
     void this.proceduralTerrain.loadProps().catch((error) => {
       console.warn("[WorldMap] Optional procedural terrain props failed to load", error);
     });
@@ -1305,8 +1252,6 @@ export default class WorldmapScene extends WarpTravel {
     this.worldSpatialProjection = requireActiveGameSyncRuntime().requireWorldSpatialProjection();
     this.unbindMapSelection = bindMapSelection(this.worldSpatialProjection);
     this.mapPlates = new MapPlateLayer(() => document.getElementById("labelrenderer"));
-    this.chestLabelsGroup = new Group();
-    this.chestLabelsGroup.name = "ChestLabelsGroup";
     this.spireLabelsGroup = new Group();
     this.spireLabelsGroup.name = "SpireLabelsGroup";
 
@@ -1362,11 +1307,6 @@ export default class WorldmapScene extends WarpTravel {
       this.chunkWorkQueue,
       this.compilePipelines,
     );
-    this.reservedHyperstructureManager = new ReservedHyperstructureManager(
-      this.scene,
-      this.worldSpatialProjection,
-      this.getTerrainSurface(),
-    );
     this.spireManager = new SpireManager(
       this.scene,
       this.worldSpatialProjection,
@@ -1383,16 +1323,6 @@ export default class WorldmapScene extends WarpTravel {
       this.mapPlates.createScope("shrine"),
       this.mapPlates.createScope("deep-gate"),
       this.getTerrainSurface(),
-    );
-    this.chestManager = new ChestManager(
-      this.scene,
-      this.renderChunkSize,
-      this.worldSpatialProjection,
-      this.chestLabelsGroup,
-      this,
-      this.chunkSize,
-      this.chunkWorkQueue,
-      this.compilePipelines,
     );
 
     // Bootstrap applyRenderVisualProfile may have run before these managers existed; apply the
@@ -1438,11 +1368,6 @@ export default class WorldmapScene extends WarpTravel {
           show: (entityId: ID) => this.structureManager.showLabel(entityId),
           hide: (entityId: ID) => this.structureManager.hideLabel(entityId),
           hideAll: () => this.structureManager.hideAllLabels(),
-        },
-        chest: {
-          show: (entityId: ID) => this.chestManager.showLabel(entityId),
-          hide: (entityId: ID) => this.chestManager.hideLabel(entityId),
-          hideAll: () => this.chestManager.hideAllLabels(),
         },
       },
       (hexCoords: HexPosition) => this.getHexagonEntity(hexCoords),
@@ -1505,11 +1430,6 @@ export default class WorldmapScene extends WarpTravel {
       const changes = projectionChangesForLayer(published, activeMapLayer());
       if (changes.length === 0) return;
       this.syncProjectedStructurePathfinding(changes);
-      changes.forEach(({ previous, current }) => {
-        if (previous?.reserved && !current?.reserved) {
-          clearPendingReservedHyperstructureCreation(previous.hexCoords);
-        }
-      });
       this.reconcileHoverLabelsForProjectionChanges(changes);
       this.refreshTerrainPropOccupancy();
       this.syncStructureMarkers(changes);
@@ -1538,7 +1458,6 @@ export default class WorldmapScene extends WarpTravel {
           this.refreshStructureMarkersForEntity(safeInteger(home.home));
       }
     });
-    const unsubscribeChests = this.worldSpatialProjection.subscribeChests(() => this.refreshTerrainPropOccupancy());
     const unsubscribeSelectedArmyMap = this.worldSpatialProjection.subscribe((published) => {
       if (projectionChangesForLayer(published, activeMapLayer()).length > 0) this.refreshSelectedArmyOrders();
     });
@@ -1548,7 +1467,6 @@ export default class WorldmapScene extends WarpTravel {
       unsubscribeStructures();
       unsubscribeTerrainEcology();
       unsubscribeArmies();
-      unsubscribeChests();
       unsubscribeCampaigns();
     };
   }
@@ -1812,7 +1730,6 @@ export default class WorldmapScene extends WarpTravel {
     this.fxManager.setVisible(ladder.fx);
     this.resourceFXManager.setVisible(ladder.fx);
     this.combatPresentation?.setVisible(ladder.fx);
-    this.reservedHyperstructureManager.setModelVisible(ladder.structureModels);
     this.spireManager.setModelVisible(ladder.structureModels);
     this.mapSiteManager.setModelVisible(ladder.structureModels);
     this.strategicMarkers.setVisible(ladder.band === CameraView.Far);
@@ -1843,7 +1760,6 @@ export default class WorldmapScene extends WarpTravel {
     }
     this.registerBattleWorldUpdateSubscriptions();
     this.registerExplorerRewardWorldUpdateSubscriptions();
-    this.registerChestWorldUpdateSubscriptions();
     this.registerSitePayoutWorldUpdateSubscriptions();
   }
 
@@ -1868,20 +1784,6 @@ export default class WorldmapScene extends WarpTravel {
             this.playBurst(new Vector3(world.x, 0.1, world.z), "site.clear", 1);
           },
         });
-      }),
-    );
-  }
-
-  // A flourish only, for crates inside the loaded chunk: the reward itself lands in native store on the army or its home,
-  // and the feed row (the UI's) covers every opening in the world.
-  private registerChestWorldUpdateSubscriptions(): void {
-    this.addWorldUpdateSubscription(
-      this.worldUpdateListener.Chests.onChestOpened((opening) => {
-        if (this.currentChunk === "null" || getActiveGameSyncRuntime()?.getStatus() !== "running") return;
-        const hex = Position.fromContract({ x: opening.hex.x, y: opening.hex.y }).getNormalized();
-        if (!this.isColRowInCurrentRenderBounds(hex.x, hex.y)) return;
-        const revealed = this.chestManager.revealReward({ col: opening.hex.x, row: opening.hex.y }, opening);
-        if (!revealed) void this.resourceFXManager.playChestRewardBurst(opening, hex.x, hex.y);
       }),
     );
   }
@@ -1948,9 +1850,6 @@ export default class WorldmapScene extends WarpTravel {
     window.addEventListener(LAYER_VIEW_REQUEST_EVENT, this.layerViewRequestHandler);
     window.addEventListener(ORDER_REQUEST_EVENT, this.orderRequestHandler);
     window.addEventListener(DEPLOY_ON_MAP_EVENT, this.deployOnMapHandler);
-    this.stopChestOpenRequests = onChestOpenRequest(({ explorerId, hex }) => {
-      if (this.sceneManager.getCurrentScene() === SceneName.WorldMap) void this.openChest(explorerId, hex);
-    });
     this.controls.addEventListener("change", this.handleWorldmapControlsChange);
     window.addEventListener("resize", this.handleTerrainViewportResize);
     publishCameraView(this.controls.target, this.getCurrentCameraDistance());
@@ -2576,14 +2475,12 @@ export default class WorldmapScene extends WarpTravel {
     runWorldmapDoubleClick(this.doubleClickTargetAt(hexCoords), {
       throughSpire: () => this.lookThroughSpire(hexCoords),
       enterStructure: () => this.enterStructureFromSelectedHex(hexCoords),
-      foundHyperstructure: () => void this.createReservedHyperstructureFromWorldmap(hexCoords),
     });
   }
 
   /** What stands on a double-clicked hex (normalized), as runWorldmapDoubleClick reads it. */
   private doubleClickTargetAt(hexCoords: HexPosition): DoubleClickTarget {
     if (this.litSpireAt(hexCoords) || this.isLayerSpireHex(hexCoords)) return { kind: "spire" };
-    if (this.isReservedHyperstructureHex(hexCoords)) return { kind: "reserved-hyperstructure" };
     const { structure } = this.getHexagonEntity(hexCoords);
     const standing =
       structure &&
@@ -2702,42 +2599,6 @@ export default class WorldmapScene extends WarpTravel {
     void this.enterStructureFromWorldmap(structure, hexCoords);
   }
 
-  private async createReservedHyperstructureFromWorldmap(hexCoords: HexPosition): Promise<void> {
-    if (!canIssueOrders() || refusedBeforePlay()) return;
-    const contract = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
-    const contractHex = { col: contract.x, row: contract.y };
-    if (isPendingReservedHyperstructureCreation(contractHex)) {
-      return;
-    }
-
-    const account = useAccountStore.getState().account;
-    if (!account) {
-      toast.error("Your game account is not ready yet.");
-      return;
-    }
-
-    try {
-      const didSubmit = await submitActiveWorldBlitzHyperstructureCreation({
-        account,
-        contractHex,
-        systemCalls: this.game.systemCalls,
-      });
-
-      if (!didSubmit) {
-        return;
-      }
-    } catch (error) {
-      toast.failed(error, "Unable to create this Hyperstructure right now.");
-    }
-  }
-
-  private isReservedHyperstructureHex(hexCoords: HexPosition): boolean {
-    const contractPosition = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
-    return this.worldSpatialProjection
-      .getStructuresAtHex({ alt: activeMapLayer(), col: contractPosition.x, row: contractPosition.y })
-      .some((structure) => structure.reserved);
-  }
-
   private async enterStructureFromWorldmap(structure: HexEntityInfo, hexCoords: HexPosition) {
     const isMine = isViewerOwner(structure.owner, accountAddress());
 
@@ -2767,14 +2628,8 @@ export default class WorldmapScene extends WarpTravel {
     const structure = standing
       ? { id: standing.entityId, owner: this.getStructureOwnerAddress(standing.entityId) }
       : undefined;
-    const projectedChest = this.worldSpatialProjection.getChestsAtHex({
-      alt: activeMapLayer(),
-      col: contractHex.x,
-      row: contractHex.y,
-    })[0];
-    const chest = projectedChest ? { id: projectedChest.entityId, owner: 0n } : undefined;
 
-    return { army, structure, chest };
+    return { army, structure };
   }
 
   private reconcileHoverLabels(reason: HoverLabelRecoveryReason = "hover"): HoverLabelReconcileResult | null {
@@ -2825,18 +2680,15 @@ export default class WorldmapScene extends WarpTravel {
       return;
     if (hexCoords && this.tapActsForSelection(hexCoords) && this.answerTapWithSelectedOrder(hexCoords)) return;
     const viewer = accountAddress();
-    const {
-      army: standingArmy,
-      structure,
-      chest,
-    } = hexCoords ? this.getHexagonEntity(hexCoords) : { army: undefined, structure: undefined, chest: undefined };
+    const { army: standingArmy, structure } = hexCoords
+      ? this.getHexagonEntity(hexCoords)
+      : { army: undefined, structure: undefined };
     const army = standingArmy ?? (hexCoords ? this.getOwnArmyOrderedTo(hexCoords) : undefined);
     const clickPlan = resolveWorldmapHexClickPlan({
       hexCoords,
       accountAddress: viewer,
       army: army ? { id: army.id, owner: army.owner } : undefined,
       structure: structure ? { id: structure.id, owner: structure.owner } : undefined,
-      chest: chest ? { id: chest.id } : undefined,
     });
 
     if (!hexCoords) {
@@ -2913,8 +2765,8 @@ export default class WorldmapScene extends WarpTravel {
    * only order there, if any, takes it onto the tile: a move or an explore.
    */
   private isBareGround(hexCoords: HexPosition): boolean {
-    const { army, structure, chest } = this.getHexagonEntity(hexCoords);
-    if (army || structure || chest || this.hasSiteCardAt(hexCoords)) return false;
+    const { army, structure } = this.getHexagonEntity(hexCoords);
+    if (army || structure || this.hasSiteCardAt(hexCoords)) return false;
     const armyId = this.selectedArmyId();
     if (armyId !== null && this.isArmysSpire(armyId, hexCoords)) return false;
     const path = getLiveWorldmapEntityActions().actionPaths.get(ActionPaths.posKey(hexCoords, true));
@@ -3120,9 +2972,9 @@ export default class WorldmapScene extends WarpTravel {
     const named = this.nameOrderAt(hexCoords, refusal)?.line;
     const reason = named && rankedText(named);
     if (army === null || !refusal || !reason) return;
-    const { army: armyThere, structure, chest } = this.getHexagonEntity(hexCoords);
+    const { army: armyThere, structure } = this.getHexagonEntity(hexCoords);
     const verb = refusedOrderVerb({
-      holds: this.holdsOwnSelectable(hexCoords) ? "friend" : armyThere || structure ? "target" : chest ? "crate" : null,
+      holds: this.holdsOwnSelectable(hexCoords) ? "friend" : armyThere || structure ? "target" : null,
       explored: this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) === true,
     });
     const tip = { line: verb, cost: null };
@@ -3223,8 +3075,6 @@ export default class WorldmapScene extends WarpTravel {
           this.onArmySpireTravel(actionPath, selectedEntityId);
         } else if (actionType === ActionType.Help) {
           this.onArmyHelp(actionPath, selectedEntityId);
-        } else if (actionType === ActionType.Chest) {
-          this.onChestSelection(actionPath, selectedEntityId);
         } else if (actionType === ActionType.CreateArmy) {
           this.onArmyCreate(actionPath, selectedEntityId);
         } else if (actionType === ActionType.EnterDepth) {
@@ -3736,7 +3586,6 @@ export default class WorldmapScene extends WarpTravel {
     const { path, selectedEntityId } = action;
     if (type === ActionType.Attack) this.onArmyAttack(path, selectedEntityId);
     else if (type === ActionType.Help) this.onArmyHelp(path, selectedEntityId);
-    else if (type === ActionType.Chest) this.onChestSelection(path, selectedEntityId);
     else this.onArmySpireTravel(path, selectedEntityId);
     return true;
   }
@@ -4215,7 +4064,6 @@ export default class WorldmapScene extends WarpTravel {
       structureHexes: this.buildProjectedStructureActionIndex(),
       armyHexes: this.buildProjectedArmyActionIndex(),
       exploredHexes: this.buildProjectedExploredTileIndex(),
-      chestHexes: this.buildProjectedChestActionIndex(),
       currentDefaultTick,
       playerAddress,
     });
@@ -4226,17 +4074,6 @@ export default class WorldmapScene extends WarpTravel {
     this.updateEntityActionPaths(paths, actionPaths.getRefusals());
     this.highlightHexManager.highlightHexes(highlightedHexes);
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
-  }
-
-  private buildProjectedChestActionIndex(): Map<number, Map<number, HexEntityInfo>> {
-    const index = new Map<number, Map<number, HexEntityInfo>>();
-    this.worldSpatialProjection.getChests(activeMapLayer()).forEach((chest) => {
-      const normalized = Position.fromContract({ x: chest.hexCoords.col, y: chest.hexCoords.row }).getNormalized();
-      const row = index.get(normalized.x) ?? new Map<number, HexEntityInfo>();
-      row.set(normalized.y, { id: chest.entityId, owner: 0n });
-      index.set(normalized.x, row);
-    });
-    return index;
   }
 
   private buildProjectedExploredTileIndex(): Map<number, Map<number, BiomeType>> {
@@ -4343,21 +4180,6 @@ export default class WorldmapScene extends WarpTravel {
   private hasSiteCardAt(hexCoords: HexPosition): boolean {
     const { col, row } = contractHexOf(hexCoords);
     return getTileAt(this.game.store, activeMapLayer(), col, row)?.occupier_type === TileOccupier.DeepSite;
-  }
-
-  /** Right-click on a chest with the adjacent army selected opens it. */
-  private onChestSelection(actionPath: ActionPath[], selectedEntityId: ID) {
-    void this.openChest(selectedEntityId, actionPath[actionPath.length - 1].hex);
-  }
-
-  /**
-   * The one chest opener, for a tap here or the HUD's request: a relic crate's command goes out, and its result comes
-   * back as its story, whether the chest yields Blitz relics or Frontier LORDS.
-   */
-  private async openChest(explorerId: ID, hex: HexPosition): Promise<void> {
-    const account = useAccountStore.getState().account;
-    if (!account) return;
-    await openRelicCrate({ systemCalls: this.game.systemCalls, account, explorerId, hex });
   }
 
   /** The selection ring stands on the selected hex the selection derives: the tile every panel and card names. */
@@ -4479,7 +4301,6 @@ export default class WorldmapScene extends WarpTravel {
       const hex = { col: contract.x, row: contract.y };
       return (
         this.worldSpatialProjection.getStructuresAtHex({ ...hex, alt: activeMapLayer() }).length > 0 ||
-        this.worldSpatialProjection.getChestsAtHex({ ...hex, alt: activeMapLayer() }).length > 0 ||
         this.worldSpatialProjection.getTileAtHex({ ...hex, alt: activeMapLayer() })?.occupierType === TileOccupier.Spire
       );
     });
@@ -4561,7 +4382,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private getWorldmapLabelGroups(): Group[] {
-    return [this.chestLabelsGroup, this.spireLabelsGroup];
+    return [this.spireLabelsGroup];
   }
 
   private attachWorldmapLabelGroupsToScene(): void {
@@ -4582,7 +4403,6 @@ export default class WorldmapScene extends WarpTravel {
     this.hoverMapSite(null);
     this.armyManager.removeLabelsFromScene();
     this.structureManager.removeLabelsFromScene();
-    this.chestManager.removeLabelsFromScene();
   }
 
   private async refreshWarpTravelScene(setupContext: SceneSetupContext): Promise<void> {
@@ -4849,7 +4669,6 @@ export default class WorldmapScene extends WarpTravel {
     });
     this.applyWorldmapSceneExitProjection(nextSceneName);
     this.mapPlates.setVisible(false);
-    // A reward's chest staged mid-moment ends with the map, and the moment beside it with it.
     this.invalidateWorldmapSwitchOffTransitions();
     // A dive through a spire ends with the map: it writes the shared camera and canvas no more.
     this.spireDive?.cancel();
@@ -4942,13 +4761,6 @@ export default class WorldmapScene extends WarpTravel {
         presentResult(`explore:${targetKey}`);
       });
     }
-  }
-
-  isColRowInCurrentRenderBounds(col: number, row: number) {
-    const startRow = parseInt(this.currentChunk.split(",")[0]);
-    const startCol = parseInt(this.currentChunk.split(",")[1]);
-    const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
-    return col >= bounds.minCol && col <= bounds.maxCol && row >= bounds.minRow && row <= bounds.maxRow;
   }
 
   isColRowInVisibleChunk(col: number, row: number) {
@@ -5952,126 +5764,7 @@ export default class WorldmapScene extends WarpTravel {
     return true;
   }
 
-  private deferNonCriticalManagerCatchUpForChunk(
-    chunkKey: string,
-    options?: {
-      force?: boolean;
-      transitionToken?: number;
-    },
-  ): void {
-    if (!WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled) {
-      void this.updateNonCriticalManagersForChunk(chunkKey, options).catch((error) => {
-        console.error("[WorldMap] Legacy non-critical manager catch-up failed:", error);
-      });
-      return;
-    }
-
-    const uploadWork = classifyWorldmapUploadWork({
-      matrixInstanceCount: this.chestManager.getVisibleCount(),
-      colorInstanceCount: 0,
-      isCachedReplay: false,
-      stage: "visible_commit",
-    });
-    const postCommitWorkAction = resolveWorldmapPostCommitWorkAction({
-      estimatedUploadBytes: uploadWork.estimatedUploadBytes,
-      budgetBytes: this.postCommitManagerCatchUpBudgetBytes,
-    });
-
-    enqueueWorldmapPostCommitManagerCatchUpTask({
-      state: this.postCommitManagerCatchUpRuntimeState,
-      task: {
-        chunkKey,
-        options,
-        estimatedUploadBytes: uploadWork.estimatedUploadBytes,
-        deferredCount: postCommitWorkAction === "deferred" ? 0 : undefined,
-      },
-    });
-    this.schedulePostCommitManagerCatchUpDrain();
-  }
-
-  private schedulePostCommitManagerCatchUpDrain(): void {
-    scheduleWorldmapPostCommitManagerCatchUpDrain({
-      onDrain: () => {
-        this.drainPostCommitManagerCatchUpQueue();
-      },
-      requestAnimationFrameFn:
-        typeof window.requestAnimationFrame === "function"
-          ? (callback) => window.requestAnimationFrame(() => callback())
-          : undefined,
-      setTimeoutFn: (callback, delayMs) => window.setTimeout(callback, delayMs) as unknown as number,
-      state: this.postCommitManagerCatchUpRuntimeState,
-    });
-  }
-
-  private deferNonCriticalManagerCatchUpForCommittedChunk(
-    chunkKey: string,
-    options?: {
-      force?: boolean;
-      transitionToken?: number;
-    },
-  ): void {
-    this.deferNonCriticalManagerCatchUpForChunk(chunkKey, {
-      ...options,
-      // Critical visible managers already caught up to the committed chunk.
-      // Let the deferred fanout refresh only the remaining non-critical work.
-      force: false,
-    });
-  }
-
-  private drainPostCommitManagerCatchUpQueue(): void {
-    void drainWorldmapPostCommitManagerCatchUpQueue({
-      budgetBytes: this.postCommitManagerCatchUpBudgetBytes,
-      onHeadDeferred: () => {
-        incrementWorldmapRenderCounter("postCommitManagerCatchUpDeferred");
-      },
-      onImmediateTask: () => {
-        incrementWorldmapRenderCounter("postCommitManagerCatchUpImmediate");
-      },
-      onTaskError: (_task, error) => {
-        console.error("[WorldMap] Deferred manager catch-up failed:", error);
-      },
-      onTaskSkipped: (task) => {
-        // The task was dropped because its chunk/token went stale (e.g. a fast
-        // pan or a stall that bumped the transition token). Re-enqueue a fresh
-        // non-critical catch-up for the current committed chunk so the chest
-        // render is never silently lost. Loop-safe: only when the current chunk
-        // actually differs from the skipped one and isn't already queued (a
-        // matching chunk+token would not have been skipped in the first place).
-        const currentChunk = this.currentChunk;
-        if (
-          currentChunk &&
-          currentChunk !== task.chunkKey &&
-          isCommittedManagerChunk(currentChunk) &&
-          !this.postCommitManagerCatchUpRuntimeState.queue.some((queued) => queued.chunkKey === currentChunk)
-        ) {
-          this.deferNonCriticalManagerCatchUpForCommittedChunk(currentChunk, {
-            transitionToken: this.chunkTransitionToken,
-          });
-        }
-      },
-      runTask: (task) => this.updateNonCriticalManagersForChunk(task.chunkKey, task.options),
-      scheduleDrain: () => {
-        this.schedulePostCommitManagerCatchUpDrain();
-      },
-      shouldRunTask: (task) =>
-        shouldRunManagerUpdate({
-          transitionToken: task.options?.transitionToken,
-          expectedTransitionToken: this.chunkTransitionToken,
-          currentChunk: this.currentChunk,
-          targetChunk: task.chunkKey,
-        }),
-      state: this.postCommitManagerCatchUpRuntimeState,
-    });
-  }
-
   private clearStreamingWorkState(): void {
-    clearWorldmapPostCommitManagerCatchUpState({
-      cancelAnimationFrameFn:
-        typeof window.cancelAnimationFrame === "function" ? (handle) => window.cancelAnimationFrame(handle) : undefined,
-      clearTimeoutFn: (handle) => window.clearTimeout(handle),
-      state: this.postCommitManagerCatchUpRuntimeState,
-      usesAnimationFrame: typeof window.cancelAnimationFrame === "function",
-    });
     this.directionalPresentationChunkKeys.clear();
     this.activeDirectionalPresentationPrewarms.clear();
   }
@@ -6523,8 +6216,6 @@ export default class WorldmapScene extends WarpTravel {
     this.structureManager.refreshTerrainPlacement();
     this.spireManager.refreshTerrainPlacement();
     this.mapSiteManager.refreshTerrainPlacement();
-    this.reservedHyperstructureManager.refreshTerrainPlacement();
-    this.chestManager.refreshTerrainPlacement();
     this.armyManager.refreshTerrainPlacement();
     this.ownershipRings.refreshTerrainPlacement();
     this.highlightHexManager.refreshTerrainPlacement();
@@ -7082,17 +6773,6 @@ export default class WorldmapScene extends WarpTravel {
     const recoveryInput = { chunkKey, transitionToken };
     this.armyManager.recoverChunkUpdateAfterStall(recoveryInput);
     this.structureManager.recoverChunkUpdateAfterStall(recoveryInput);
-    this.chestManager.recoverChunkUpdateAfterStall(recoveryInput);
-
-    // Stall recovery commits the chest manager's currentChunk without rendering,
-    // so the next *unforced* same-chunk update would be skipped
-    // (shouldSkipUnforcedChunkRefresh) and the chest models would never appear.
-    // Chest is the only manager on the deferred path, so force a chest catch-up
-    // for the recovered chunk here to break that latch.
-    this.deferNonCriticalManagerCatchUpForChunk(chunkKey, {
-      force: true,
-      transitionToken: this.chunkTransitionToken,
-    });
   }
 
   private handleChunkPresentationTimeout(info: WorldmapChunkPresentationTimeoutInfo): void {
@@ -7819,8 +7499,6 @@ export default class WorldmapScene extends WarpTravel {
       stagedPathEnabled: WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled,
       runImmediateFullManagerCatchUp: () => this.updateManagersForChunk(targetChunkKey, managerOptions),
       runImmediateCriticalManagerCatchUp: () => this.updateCriticalManagersForChunk(targetChunkKey, managerOptions),
-      scheduleDeferredNonCriticalManagerCatchUp: () =>
-        this.deferNonCriticalManagerCatchUpForCommittedChunk(targetChunkKey, managerOptions),
     });
   }
 
@@ -8067,8 +7745,6 @@ export default class WorldmapScene extends WarpTravel {
             this.updateManagersForChunk(targetChunkKey, options),
           runImmediateCriticalManagerCatchUp: (targetChunkKey, options) =>
             this.updateCriticalManagersForChunk(targetChunkKey, { ...options, triggerReason }),
-          scheduleDeferredNonCriticalManagerCatchUp: (targetChunkKey, options) =>
-            this.deferNonCriticalManagerCatchUpForChunk(targetChunkKey, options),
           stagedPathEnabled: WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled,
           projectionSyncSucceeded,
           transitionToken,
@@ -8131,11 +7807,6 @@ export default class WorldmapScene extends WarpTravel {
             label: "structure",
             updateChunk: (targetChunkKey, targetOptions) =>
               this.structureManager.updateChunk(targetChunkKey, targetOptions),
-          },
-          {
-            label: "chest",
-            updateChunk: (targetChunkKey, targetOptions) =>
-              this.chestManager.updateChunk(targetChunkKey, targetOptions),
           },
         ],
         onManagerFailed: (label, reason) => {
@@ -8294,44 +7965,6 @@ export default class WorldmapScene extends WarpTravel {
     ]);
   }
 
-  private async updateNonCriticalManagersForChunk(
-    chunkKey: string,
-    options?: { force?: boolean; transitionToken?: number },
-  ) {
-    if (
-      !shouldRunManagerUpdate({
-        transitionToken: options?.transitionToken,
-        expectedTransitionToken: this.chunkTransitionToken,
-        currentChunk: this.currentChunk,
-        targetChunk: chunkKey,
-      })
-    ) {
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_update_skipped_stale");
-      return;
-    }
-
-    const managerStartedAt = performance.now();
-    recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_update_started");
-
-    try {
-      await this.chestManager.updateChunk(chunkKey, options);
-    } catch (reason) {
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_update_failed");
-      console.error(`[CHUNK SYNC] chest manager failed for chunk ${chunkKey}`, reason);
-    } finally {
-      const durationMs = performance.now() - managerStartedAt;
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_duration_recorded", {
-        durationMs,
-      });
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_catch_up_duration_recorded", {
-        durationMs,
-      });
-      recordWorldmapRenderDuration("chunkManagerCatchUpMs", durationMs);
-      recordWorldmapRenderDuration("updateManagersForChunk", durationMs);
-      this.retryPendingHoverLabelRecovery("non_critical_manager_catch_up");
-    }
-  }
-
   public advanceGameEnd(frame: ReturnType<typeof endgameFrame>, delta: number): void {
     if (frame.phase === "live") {
       if (this.veilIsNear()) this.spireManager.prepareGameEnd();
@@ -8384,7 +8017,6 @@ export default class WorldmapScene extends WarpTravel {
       this.resourceFXManager.update(deltaTime);
       this.selectedHexManager.update(deltaTime);
       this.orderTargetRing.update(deltaTime);
-      this.chestManager.update(deltaTime);
     }
     this.updateCameraTargetHexThrottled?.();
     setWorldmapRenderGauge("activeLabels", this.hoverLabelManager.getActiveLabelCount());
@@ -8725,7 +8357,6 @@ export default class WorldmapScene extends WarpTravel {
     return (
       this.armyManager.hasMovingArmies() ||
       this.resourceFXManager.hasActiveFx() ||
-      this.chestManager.hasActiveLabelAnimations() ||
       this.fxManager.hasActiveLabelFx() ||
       this.hoverLabelManager.hasActiveLabels()
     );
@@ -8777,10 +8408,8 @@ export default class WorldmapScene extends WarpTravel {
     destroyWorldmapOwnedManagers({
       armyManager: this.armyManager,
       structureManager: this.structureManager,
-      reservedHyperstructureManager: this.reservedHyperstructureManager,
       spireManager: this.spireManager,
       mapSiteManager: this.mapSiteManager,
-      chestManager: this.chestManager,
       fxManager: this.fxManager,
       resourceFXManager: this.resourceFXManager,
     });
@@ -8797,7 +8426,6 @@ export default class WorldmapScene extends WarpTravel {
     window.removeEventListener(LAYER_VIEW_REQUEST_EVENT, this.layerViewRequestHandler);
     window.removeEventListener(ORDER_REQUEST_EVENT, this.orderRequestHandler);
     window.removeEventListener(DEPLOY_ON_MAP_EVENT, this.deployOnMapHandler);
-    this.stopChestOpenRequests?.();
     this.clearCache();
 
     this.hoverLabelManager.dispose();
@@ -9234,8 +8862,6 @@ export default class WorldmapScene extends WarpTravel {
     this.showSelectedHexRing(useUIStore.getState().selectedHex);
     this.armyManager.resetLayer();
     this.structureManager.resetLayer();
-    this.chestManager.resetLayer();
-    this.reservedHyperstructureManager.resetLayer();
     this.mapSiteManager.resetLayer();
     this.strategicMarkers.clear();
   }

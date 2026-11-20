@@ -60,38 +60,6 @@ fn settlement_pool_claims_are_distinct_and_game_scoped() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn reservation_initialization_is_idempotent_and_game_scoped() {
-    let deployment = setup(true);
-    let games = IGameDispatcher { contract_address: deployment.games };
-    let mut game_rules = play_fixture::rules();
-    game_rules.mode_rules = super::play_fixture::BLITZ_RULES;
-    game_rules.command_mask = super::play_fixture::BLITZ_COMMAND_MASK;
-    game_rules.entry_rule = crate::rules::ENTRY_ROSTER;
-    start_cheat_caller_address(deployment.games, authority());
-    super::play_fixture::seed_game(deployment.games, 3, games.game(1), game_rules);
-    seed_settlement(deployment, 3, SettlementRules { mode: SettlementMode::Triple, registration_limit: 2, ..rules() });
-    let map = deployment.games;
-    let safe = IBlitzReservationsSafeDispatcher { contract_address: map };
-    start_cheat_caller_address(map, deployment.actor);
-    start_cheat_caller_address(map, deployment.games);
-    safe.initialize_reservations(3).unwrap();
-    let pool = ISettlementPoolDispatcher { contract_address: map };
-    assert!(pool.reserved_hyperstructures(3) == 7);
-    assert!(pool.reserved_hyperstructures(1) == 0);
-    safe.initialize_reservations(3).unwrap();
-    assert!(pool.reserved_hyperstructures(3) == 7);
-    let center = 2147483646 - game_rules.map_center_offset;
-    let key = crate::map::TileKey { game_id: 3, alt: false, col: center, row: center };
-    let _tile = IMapLogicDispatcher { contract_address: map }.tile(key).unwrap();
-    let occupancy = IMapLogicDispatcher { contract_address: map }.occupancy(key).unwrap();
-    assert_eq!(occupancy.category, 39);
-    assert!(occupancy.is_structure);
-    assert_eq!(occupancy.entity_id, 0);
-    start_cheat_caller_address(map, deployment.actor);
-}
-
-#[test]
-#[feature("safe_dispatcher")]
 fn starting_troop_table_must_be_complete_before_configuration_commits() {
     let deployment = setup(true);
     let registry = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
@@ -161,7 +129,7 @@ fn entry_entitlements_require_operator_and_compare_every_registration_field() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn village_placement_shares_reservations_with_fixed_blitz_and_eternum_entries() {
+fn village_placement_shares_reservations_with_eternum_entries() {
     let deployment = setup(true);
     let games = IGameDispatcher { contract_address: deployment.games };
     super::play_fixture::seed_game(
@@ -182,27 +150,8 @@ fn village_placement_shares_reservations_with_fixed_blitz_and_eternum_entries() 
     let _ = ISettlementPoolSafeDispatcher { contract_address: map };
     start_cheat_caller_address(map, deployment.actor);
     start_cheat_caller_address(map, deployment.games);
-    crate::settlement::IBlitzReservationsDispatcherTrait::initialize_reservations(
-        crate::settlement::IBlitzReservationsDispatcher { contract_address: map }, 3,
-    );
-    start_cheat_caller_address(map, deployment.games);
-    let game_rules = IGameDispatcher { contract_address: deployment.games }.rules(3);
-    let center = 2147483646 - game_rules.map_center_offset;
     for game_id in array![1_u32, 3] {
         let mut seen = array![];
-        if game_id == 3 {
-            for index in 0..2_u32 {
-                remember_distinct(
-                    ref seen,
-                    crate::settlement_grid::settlement_location(
-                        crate::troops::Coord { alt: false, x: center, y: center },
-                        SettlementMode::Triple,
-                        rules().spacing,
-                        index,
-                    ),
-                );
-            }
-        }
         for village in 0..8_u32 {
             remember_distinct(
                 ref seen,

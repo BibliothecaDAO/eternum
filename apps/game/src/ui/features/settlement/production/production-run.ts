@@ -1,13 +1,8 @@
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 
-/**
- * A recipe as the chain runs it, in its integer resource units: what each cycle burns, what it makes, and the realm's
- * active bonus on that output in ten-thousandths (0 when none is running).
- */
 export interface ProductionRecipe {
   inputs: readonly { resource: number; units: bigint }[];
   outputUnits: bigint;
-  bonusPercent: bigint;
 }
 
 /** What sizes a run: the output typed, an input's budget typed, or Max (the most whole cycles the holdings cover). */
@@ -23,34 +18,20 @@ export interface ProductionRun {
   inputs: { resource: number; units: bigint }[];
 }
 
-const BONUS_SCALE = 10_000n;
-
 /** An amount a player typed, in resource units: the precision every balance and charge settles to. */
 const toUnits = (amount: number): bigint => BigInt(Math.round(amount * RESOURCE_PRECISION));
 /** Resource units as the amount a player reads. */
 export const fromUnits = (units: bigint): number => Number(units) / RESOURCE_PRECISION;
 
-/** The output a run makes: every cycle's, plus the bonus on the total, rounded down as refill_output's percentage. */
-const bonusOutput = (recipe: ProductionRecipe, cycles: bigint): bigint => {
-  const output = recipe.outputUnits * cycles;
-  return output + (output * recipe.bonusPercent) / BONUS_SCALE;
-};
-
 const runOf = (recipe: ProductionRecipe, cycles: bigint): ProductionRun => ({
   cycles,
-  outputUnits: bonusOutput(recipe, cycles),
+  outputUnits: recipe.outputUnits * cycles,
   inputs: recipe.inputs.map(({ resource, units }) => ({ resource, units: units * cycles })),
 });
 
-/**
- * The fewest whole cycles whose output reaches the wanted amount: the chain runs whole cycles only. The output with its
- * bonus is the exact product rounded down to a unit, and the wanted amount is whole units, so the exact quotient's
- * ceiling is already the answer.
- */
 const cyclesForOutput = (recipe: ProductionRecipe, wanted: bigint): bigint => {
   if (wanted <= 0n) return 0n;
-  const perCycle = recipe.outputUnits * (BONUS_SCALE + recipe.bonusPercent);
-  return (wanted * BONUS_SCALE + perCycle - 1n) / perCycle;
+  return (wanted + recipe.outputUnits - 1n) / recipe.outputUnits;
 };
 
 /** The whole cycles a budget of one input pays for; none when the recipe does not burn it. */

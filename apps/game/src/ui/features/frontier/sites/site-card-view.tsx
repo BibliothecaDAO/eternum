@@ -1,21 +1,12 @@
 import type { FrontierBeast } from "@/three/structures/frontier-beast";
-import { type Troops, formatExact, LORDS } from "@bibliothecadao/types";
+import { type Troops, formatExact } from "@bibliothecadao/types";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import {
-  HudButton,
-  HudChip,
-  HudCost,
-  HudNotice,
-  HudRarity,
-  HudSheet,
-  HudWindowFoot,
-} from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudCost, HudNotice, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import { type Reason, reasonLine } from "@/ui/design-system/kit/reasons";
 import {
-  type Tier,
   ON_ITS_WAY,
   ARMY,
   ATTACK,
@@ -24,7 +15,6 @@ import {
   REALM,
   RELIC_WORDS,
   REST_DID_NOT_FIT,
-  ruinRule,
   SEASON_CLIMB,
   siteTitle,
   SITE_OATH,
@@ -65,16 +55,6 @@ export type SiteVerb =
   | { kind: "far" }
   | { kind: "blocked"; reason: string };
 
-/**
- * A guarded site's card (wireframe 06), read as its result will read (the owner's option A), headed as the owner picked
- * (28 October 2026, layout V1: "v1 token header yes"). The guard stands at its head as the dock draws an army: its
- * portrait, its strength under it. Beside it, what the site is (its kind and its beast, where the title does not say
- * them), or with an army in reach what this attack comes to; then, on one row, what the clear pays (what fits, with its
- * or a ruin's chest with its tier and exact LORDS): "This attack earns" over the reward when it clears the site, the
- * reward dimmed when it does not (owner, 26 October 2026: "moving the clear rewards in the 'this attack clears it' ->
- * This attack earns xxx"). With an army selected, each side's troops before and after, the guard's strength said there
- * and not on its token. Its foot is the sheet's: Realm on the left, the one step alone on the right.
- */
 export const SiteCardView = ({
   site,
   name,
@@ -83,12 +63,10 @@ export const SiteCardView = ({
   guard,
   fight,
   pay,
-  chest,
   relic,
   holdsOath = false,
   cache,
   replacement,
-  ruinChoice,
   verb,
   receipt,
   onRealm,
@@ -103,15 +81,12 @@ export const SiteCardView = ({
   fight: SiteFight | undefined;
   /** What a camp or rift pays: the full amount, and what fits when the store would overflow. */
   pay: { icon: IconMeaning; amount: number; fits?: number } | null;
-  /** A ruin's chest: its tier and the exact LORDS stored with it; undefined until the facts carry them. */
-  chest?: { tier: Tier; lords: number };
   /** A Season 1 ruin's relic, rolled when it was found: the clearing army carries it. */
   relic?: ArmyRelic;
   holdsOath?: boolean;
   cache?: number;
   /** Before a full army clears a ruin: the relic it replaces, chosen there. */
   replacement?: ReactNode;
-  ruinChoice?: { depth: string; perDepth: boolean };
   verb: SiteVerb | null;
   receipt?: ReactNode;
   /** The way to make room when the payout does not all fit. */
@@ -132,14 +107,12 @@ export const SiteCardView = ({
   // an army is no site.
   const countsOnBoard = site !== "Army";
   const reward =
-    cache !== undefined || relic || chest || pay || countsOnBoard ? (
+    cache !== undefined || relic || pay || countsOnBoard ? (
       <Reward dimmed={facing !== undefined && !clears(facing)}>
         {cache !== undefined ? (
           <CachePay fragments={cache} />
         ) : relic ? (
           <RelicPay relic={relic} />
-        ) : chest ? (
-          <ChestPay chest={chest} />
         ) : pay ? (
           <Pay pay={pay} />
         ) : null}
@@ -175,12 +148,6 @@ export const SiteCardView = ({
           {reward}
         </span>
       </header>
-      {ruinChoice && (
-        <p data-ruin-rule className="text-hud-label">
-          <span className="text-hud-muted">{ruinChoice.depth} · </span>
-          <span className="text-hud-ink">{ruinRule(ruinChoice.perDepth)}</span>
-        </p>
-      )}
       {!armyless && <FightPanel army={army} guard={guard} facing={facing} beast={beast} guardIcon={guardIcon} />}
       {receipt}
       {replacement}
@@ -298,18 +265,6 @@ const Pay = ({ pay }: { pay: { icon: IconMeaning; amount: number; fits?: number 
     </span>
   );
 };
-
-/** A ruin's chest: the exact LORDS it pays, fixed when it was found, and its tier. */
-const ChestPay = ({ chest }: { chest: { tier: Tier; lords: number } }) => (
-  <>
-    <span className="flex items-center gap-1.5" aria-label={`${formatExact(chest.lords)} ${LORDS}`}>
-      <SemanticIcon name="chest" size={22} />
-      <SemanticIcon name="lords" size={18} />
-      <span className="text-hud-title leading-none tabular-nums text-hud-gold">+{formatExact(chest.lords)}</span>
-    </span>
-    <HudRarity tier={chest.tier} />
-  </>
-);
 
 const Verb = ({
   verb,

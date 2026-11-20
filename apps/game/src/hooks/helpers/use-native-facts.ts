@@ -50,24 +50,3 @@ export const useNativeRow = <M extends NativeModelName>(
   const read = () => (keys ? store.get(model, keys) : undefined);
   return useSyncExternalStore(subscribe, read, read);
 };
-
-/** Missing sparse facts are readable only through the schema's declared absence gate. */
-export const useNativeRowOrAbsent = <M extends NativeModelName>(
-  model: M,
-  keys: ReadKeys<M> | undefined,
-): NativeRows[M] | undefined => {
-  const {
-    setup: { store },
-  } = useGame();
-  // Parent removal and snapshot replacement can change the gate without writing this sparse model.
-  const subscribe = useCallback((changed: () => void) => store.subscribe(changed), [store]);
-  const facts = useFactsAt(store, useSyncExternalStore(subscribe, store.getRevision, store.getRevision));
-  const key =
-    keys === undefined
-      ? undefined
-      : JSON.stringify(keys, (_field, value) => (typeof value === "bigint" ? value.toString() : value));
-  return useMemo(
-    () => (key === undefined ? undefined : facts.store.requireOrAbsent(model, JSON.parse(key)).known),
-    [facts, model, key],
-  );
-};

@@ -48,7 +48,7 @@
     {
       "id": 9,
       "name": "CreateReservedHyperstructure",
-      "retired": false
+      "retired": true
     },
     {
       "id": 10,
@@ -193,27 +193,27 @@
     {
       "id": 38,
       "name": "InitializeHyperstructure",
-      "retired": false
+      "retired": true
     },
     {
       "id": 39,
       "name": "ContributeHyperstructure",
-      "retired": false
+      "retired": true
     },
     {
       "id": 40,
       "name": "AllocateHyperstructureShares",
-      "retired": false
+      "retired": true
     },
     {
       "id": 41,
       "name": "SetConstructionAccess",
-      "retired": false
+      "retired": true
     },
     {
       "id": 42,
       "name": "OpenRelicChest",
-      "retired": false
+      "retired": true
     },
     {
       "id": 43,
@@ -223,7 +223,7 @@
     {
       "id": 44,
       "name": "CloseSeason",
-      "retired": false
+      "retired": true
     },
     {
       "id": 45,
@@ -263,7 +263,7 @@
     {
       "id": 52,
       "name": "CraftRelic",
-      "retired": false
+      "retired": true
     },
     {
       "id": 53,
@@ -475,12 +475,12 @@
     {
       "id": 17,
       "name": "HyperstructurePoints",
-      "retired": false
+      "retired": true
     },
     {
       "id": 18,
       "name": "RelicChestOpened",
-      "retired": false
+      "retired": true
     },
     {
       "id": 19,
@@ -490,7 +490,7 @@
     {
       "id": 20,
       "name": "SeasonEnded",
-      "retired": false
+      "retired": true
     },
     {
       "id": 21,
@@ -510,7 +510,7 @@
     {
       "id": 24,
       "name": "RelicCrafted",
-      "retired": false
+      "retired": true
     },
     {
       "id": 25,
@@ -560,12 +560,12 @@
     {
       "id": 34,
       "name": "RewardChestOpened",
-      "retired": false
+      "retired": true
     },
     {
       "id": 35,
       "name": "RelicActivated",
-      "retired": false
+      "retired": true
     },
     {
       "id": 36,

@@ -155,7 +155,7 @@ describe("an action's outcome", () => {
       TX,
       running,
       undefined,
-      TransactionType.END_GAME,
+      TransactionType.BITCOIN_MINE_CLAIM_PHASE_REWARD,
     );
     await vi.waitFor(() => expect(runtime.waitForTransaction).toHaveBeenCalledWith(TX));
     applied({ block: 12, hash: TX, status: "PRE_CONFIRMED" });
@@ -175,7 +175,15 @@ describe("an action's outcome", () => {
         () => new Promise<never>((resolve) => setTimeout(() => resolve(receipt({ events: [progress] }) as never), 500)),
       ),
     };
-    const outcome = waitForActionOutcome(runtime, rpc, GAMES, TX, running, undefined, TransactionType.END_GAME);
+    const outcome = waitForActionOutcome(
+      runtime,
+      rpc,
+      GAMES,
+      TX,
+      running,
+      undefined,
+      TransactionType.BITCOIN_MINE_CLAIM_PHASE_REWARD,
+    );
     await vi.advanceTimersByTimeAsync(500);
     await expect(outcome).resolves.toMatchObject({ status: "SUCCEEDED", batchRemaining: "3" });
     vi.useRealTimers();

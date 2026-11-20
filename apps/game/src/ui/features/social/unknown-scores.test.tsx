@@ -36,17 +36,12 @@ const player: PlayerCustom = {
   isInvited: false,
   guild: undefined,
   activityBreakdown: null,
-  accruingHoldPoints: 0,
   mmrDelta: null,
 };
 
 const grants: VictoryPointGrants = {
   exploreTile: 5,
-  openRelicCrate: 250,
   claimCampFromBandits: 300,
-  claimHyperstructureFromBandits: 1_500,
-  hyperstructurePerSecond: 2,
-  hyperstructureScale: "per-realm",
 };
 
 describe("the leaderboard's columns", () => {
@@ -65,16 +60,7 @@ describe("the leaderboard's columns", () => {
     const columns = [...dom(html).querySelectorAll(".ui-table-head > div")].map((cell) =>
       [...cell.children].map((line) => line.textContent),
     );
-    expect(columns).toEqual([
-      ["Rank"],
-      ["Name"],
-      ["Tiles", "5 each"],
-      ["Crates", "250 each"],
-      ["Camps & Rifts", "300 each"],
-      ["HS taken", "1,500 each"],
-      ["HS held", "x/min"],
-      ["Points"],
-    ]);
+    expect(columns).toEqual([["Rank"], ["Name"], ["Tiles", "5 each"], ["Camps & Rifts", "300 each"], ["Points"]]);
   });
 });
 
@@ -91,7 +77,7 @@ describe("the scoring rules on a phone", () => {
       />,
     );
     expect(dom(html).querySelector('[aria-label="Scoring rules"]')?.textContent).toBe(
-      "Tiles 5 each · Crates 250 each · Camps & Rifts 300 each · HS taken 1,500 each · HS held x/min",
+      "Tiles 5 each · Camps & Rifts 300 each",
     );
   });
 });

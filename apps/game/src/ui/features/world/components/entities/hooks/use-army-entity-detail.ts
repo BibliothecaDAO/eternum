@@ -3,13 +3,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { usePlayerDisplayName } from "@/hooks/use-player-profile";
-import {
-  configManager,
-  getExplorerOwner,
-  getArmyRelicEffects,
-  getGuildFromPlayerAddress,
-  isViewerOwner,
-} from "@bibliothecadao/eternum";
+import { configManager, getExplorerOwner, getGuildFromPlayerAddress, isViewerOwner } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow, useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
@@ -70,12 +64,6 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     });
   }, [timestamp, explorer, slotFacts]);
 
-  const currentTroops = staminaSnapshot?.troops ?? null;
-  const relicEffects = useMemo(
-    () => (currentTroops ? getArmyRelicEffects(currentTroops, timestamp) : []),
-    [currentTroops, timestamp],
-  );
-
   const addressName = usePlayerDisplayName(owner) ?? "";
   const derivedData: DerivedArmyData | undefined = useMemo(() => {
     if (!explorer) return undefined;
@@ -126,7 +114,6 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     explorerResources,
     structure,
     structureResources,
-    relicEffects,
     derivedData,
     isLoadingExplorer: explorer === undefined,
     isLoadingStructure: explorer?.owner !== undefined && structure === undefined,

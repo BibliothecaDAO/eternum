@@ -41,7 +41,7 @@ const army: Army = {
 };
 const simulator = new CombatSimulator(parameters, rules);
 const simulate = (attacker: Army, defender: Army) =>
-  simulator.simulateBattle(100, attacker, defender, BiomeType.None, [], [], {});
+  simulator.simulateBattle(100, attacker, defender, BiomeType.None, {});
 
 describe("battle lab exchange", () => {
   it("shows exact losses and stamina across two attacks", () => {
@@ -92,8 +92,6 @@ describe("battle lab exchange", () => {
       { ...army, troopType: TroopType.Crossbowman },
       { ...army, troopType: TroopType.Paladin },
       BiomeType.None,
-      [],
-      [],
       { attackDistance: 2, defenderIsStructureGuard: true },
     );
     expect(result).toEqual({

@@ -16,7 +16,6 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCurrentDefaultTick: (
 // The realm's production bonus row, read as present and empty: no relic is active.
 vi.mock("@/hooks/helpers/use-native-facts", async (importOriginal) => ({
   ...(await importOriginal<object>()),
-  useNativeRowOrAbsent: () => ({}),
 }));
 vi.mock("@/hooks/helpers/use-buildings", () => ({
   useBuildings: () =>

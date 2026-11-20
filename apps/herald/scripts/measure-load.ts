@@ -202,7 +202,6 @@ function gameRows(game: number): RpcEvent[] {
       ...place(game, structure, player * 1000, 0, 1, true),
       row("StructureBuildings", [game, structure]),
       row("ResourceWeight", [game, structure]),
-      row("ProductionBonus", [game, structure]),
     );
     for (let index = 0; index < BUILDINGS_PER_REALM; index++)
       events.push(row("Building", [game, structure, index % 7, Math.floor(index / 7)]));

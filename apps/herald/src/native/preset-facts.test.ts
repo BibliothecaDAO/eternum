@@ -179,19 +179,12 @@ describe("verified preset configuration facts", () => {
     }
   });
 
-  it("projects the ruin chest rules and each depth's five tier odds", () => {
+  it("projects each depth's five ruin tier odds", () => {
     const world = setup();
     const preset = registration();
     applyRegistration(world, preset);
     world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
-    const rules = world.fold.gameRows("ChestRules", "1")[0]!.value;
-    expect(rules).not.toHaveProperty("pool");
-    expect(rules).not.toHaveProperty("price");
-    expect(Number(rules.price_ceiling)).toBe(50);
-    expect(world.fold.gameRows("LordsBudget", "1")).toEqual([]);
     const tiers = ["common", "uncommon", "rare", "epic", "legendary"];
-    const shares = rules.shares as Record<string, unknown>;
-    expect(tiers.map((tier) => Number(shares[tier]))).toEqual([1, 2, 4, 10, 20]);
     const odds = world.fold
       .gameRows("DepthRules", "1")
       .map(({ value }) => value.chest as Record<string, unknown>)
@@ -247,7 +240,7 @@ describe("verified preset configuration facts", () => {
     const preset = registration();
     const before = world.fold.checkpoint();
     const wrong = [...preset.accountCalldata];
-    wrong[wrong.length - 1] = "99";
+    wrong[5] = String(BigInt(wrong[5]!) + 1n);
     expect(() => world.native.applyReceipt(world.fold, receipt([preset.event]), 10, 0, wrong)).toThrow(
       "commitment mismatch",
     );

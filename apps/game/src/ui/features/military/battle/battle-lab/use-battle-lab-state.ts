@@ -1,4 +1,4 @@
-import { BiomeType, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useReducer } from "react";
 
 import type { BattleLabMode, LiveSnapshot, WorkingArmy } from "./battle-lab.types";
@@ -40,7 +40,6 @@ const DEFAULT_ATTACKER: WorkingArmy = {
   tier: TroopTier.T1,
   battle_cooldown_end: 0,
   oaths: 0,
-  relics: [],
 };
 
 const DEFAULT_DEFENDER: WorkingArmy = {
@@ -50,22 +49,10 @@ const DEFAULT_DEFENDER: WorkingArmy = {
   tier: TroopTier.T1,
   battle_cooldown_end: 0,
   oaths: 0,
-  relics: [],
-};
-
-const sameRelics = (a: ResourcesIds[], b: ResourcesIds[]) => {
-  if (a.length !== b.length) return false;
-  const sa = [...a].sort();
-  const sb = [...b].sort();
-  return sa.every((id, i) => id === sb[i]);
 };
 
 const sameEditable = (a: WorkingArmy, b: WorkingArmy) =>
-  a.stamina === b.stamina &&
-  a.troopCount === b.troopCount &&
-  a.troopType === b.troopType &&
-  a.tier === b.tier &&
-  sameRelics(a.relics, b.relics);
+  a.stamina === b.stamina && a.troopCount === b.troopCount && a.troopType === b.troopType && a.tier === b.tier;
 
 /** Derived: has the user edited any working value away from the live baseline? */
 const selectIsEdited = (state: BattleLabState): boolean => {

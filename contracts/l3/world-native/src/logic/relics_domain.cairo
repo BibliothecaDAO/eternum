@@ -19,20 +19,6 @@ pub mod RelicsLogic {
     impl ArmyProgression = RelicState::ArmyProgressionImpl<ContractState>;
 
     #[abi(embed_v0)]
-    impl PresetRelics of crate::presets::IPresetRelics<ContractState> {
-        fn store_relic_preset(
-            ref self: ContractState,
-            commitment: felt252,
-            rules: Span<crate::relics::RelicRule>,
-            chests: Option<crate::relics::ChestRules>,
-            mode_rules: u32,
-            day_unit_seconds: u32,
-        ) {
-            crate::logic::preset_record::store_relics(commitment, rules, chests, mode_rules, day_unit_seconds);
-        }
-    }
-
-    #[abi(embed_v0)]
     impl StaminaShop of crate::fragments::IStaminaShop<ContractState> {
         fn buy_stamina(
             ref self: ContractState,

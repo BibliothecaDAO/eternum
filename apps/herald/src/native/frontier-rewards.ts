@@ -2,7 +2,7 @@ import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import { record, type Row } from "./values";
 
 /** The receipt kinds used by season history, replay and reward totals. */
-export const FRONTIER_REWARD_STORIES = ["SitePayout", "ExplorationReward", "RewardChestOpened"] as const;
+export const FRONTIER_REWARD_STORIES = ["SitePayout", "ExplorationReward"] as const;
 
 export function frontierRewardOf(
   event: HeraldHistoryEvent,

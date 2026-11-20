@@ -1,4 +1,4 @@
-type ManagerName = "army" | "structure" | "chest";
+type ManagerName = "army" | "structure";
 
 interface ManagerUpdateCall {
   manager: ManagerName;
@@ -17,7 +17,7 @@ interface SnapshotAttachLifecycleOptions {
   sinceLastSnapshot?: boolean;
 }
 
-const LABEL_GROUP_NAMES = ["ArmyLabelsGroup", "StructureLabelsGroup", "ChestLabelsGroup"] as const;
+const LABEL_GROUP_NAMES = ["ArmyLabelsGroup", "StructureLabelsGroup"] as const;
 
 export function createWorldmapSharedRuntimeFixture(options: CreateWorldmapSharedRuntimeFixtureOptions = {}) {
   const attachLifecycle: string[] = [];
@@ -47,7 +47,6 @@ export function createWorldmapSharedRuntimeFixture(options: CreateWorldmapShared
   const detachManagerLabels = () => {
     detachLifecycle.push("army:removeLabelsFromScene");
     detachLifecycle.push("structure:removeLabelsFromScene");
-    detachLifecycle.push("chest:removeLabelsFromScene");
   };
 
   const fanOutManagerUpdate = async (chunkKey: string, force: boolean) => {
@@ -57,7 +56,7 @@ export function createWorldmapSharedRuntimeFixture(options: CreateWorldmapShared
       transitionToken,
     };
 
-    (["army", "structure", "chest"] as const).forEach((manager) => {
+    (["army", "structure"] as const).forEach((manager) => {
       managerUpdateCalls.push({
         manager,
         chunkKey,

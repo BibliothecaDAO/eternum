@@ -17,19 +17,11 @@ describe("a player's points, beside the leaderboard", () => {
       <PointsByActivity
         breakdown={{
           exploration: stat(123, 615),
-          openRelicChest: stat(0, 0),
           otherStructureBanditsDefeat: stat(3, 750),
-          hyperStructureBanditsDefeat: stat(2, 2_000),
-          hyperstructureShare: stat(0, 2_000),
         }}
       />,
     );
-    expect(lines(html)).toEqual([
-      "Tiles explored · 123 = 615 points",
-      "Rifts and camps taken · 3 = 750 points",
-      "Hyperstructures taken · 2 = 2,000 points",
-      "Hyperstructures held = 2,000 points",
-    ]);
+    expect(lines(html)).toEqual(["Tiles explored · 123 = 615 points", "Rifts and camps taken · 3 = 750 points"]);
   });
 
   it("says when a player has no points yet, and when their points are still being read", () => {
@@ -39,10 +31,7 @@ describe("a player's points, beside the leaderboard", () => {
         <PointsByActivity
           breakdown={{
             exploration: none,
-            openRelicChest: none,
             otherStructureBanditsDefeat: none,
-            hyperStructureBanditsDefeat: none,
-            hyperstructureShare: none,
           }}
         />,
       ),

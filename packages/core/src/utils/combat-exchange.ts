@@ -1,5 +1,4 @@
 import { oathAttackStamina, oathDamageMultiplier, oathFuryRefund, oathSkillMultiplier, oathTwinDamage } from "./oaths";
-import { bonusActive } from "./relic";
 import { BiomeType, RESOURCE_PRECISION, type Troops } from "@bibliothecadao/types";
 import { type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
@@ -344,15 +343,15 @@ const incomingMultiplier = (troops: ExchangeTroops, isStructureGuard: boolean, d
     ? percent(dayUnitSeconds === 0 ? 85 : nativeRuleConstants.FRONTIER_KNIGHT_GUARD_DAMAGE_PERCENT)
     : unscaled(1);
 
+const boostEnded = (endAt: number, timestamp: number): boolean => endAt !== 0 && timestamp >= endAt;
+
 const activeBoosts = (troops: ExchangeTroops, timestamp: number) => ({
-  dealt:
-    troops.boosts.incr_damage_dealt_end_at !== 0 && !bonusActive(troops.boosts.incr_damage_dealt_end_at, timestamp)
-      ? 0
-      : troops.boosts.incr_damage_dealt_percent_num,
-  gotten:
-    troops.boosts.decr_damage_gotten_end_at !== 0 && !bonusActive(troops.boosts.decr_damage_gotten_end_at, timestamp)
-      ? 0
-      : troops.boosts.decr_damage_gotten_percent_num,
+  dealt: boostEnded(troops.boosts.incr_damage_dealt_end_at, timestamp)
+    ? 0
+    : troops.boosts.incr_damage_dealt_percent_num,
+  gotten: boostEnded(troops.boosts.decr_damage_gotten_end_at, timestamp)
+    ? 0
+    : troops.boosts.decr_damage_gotten_percent_num,
 });
 
 const refundMultiplier = (dealt: Fixed, taken: Fixed): Fixed => {

@@ -70,17 +70,6 @@ export const campBeside = (
       beast_strong_lower: 1350,
       beast_strong_upper: 1650,
     }),
-    set("0x101", "LordsBudget", {
-      game_id: 1,
-      pool: "1000000",
-      pool_left: "1000000",
-      open: "0",
-      day: "0",
-      price: "50",
-      rolled_shares: "0",
-      yesterday_shares: "0",
-      yesterday_ticks: "0",
-    }),
     set("0x100", "SliceRules", {
       ...preset.rules,
       game_id: 1,
@@ -109,9 +98,6 @@ export const campBeside = (
       ...SITE_TILE,
       clear: null,
     }),
-    ...(kind === "Ruin"
-      ? [set("0x76", "SiteChest", { game_id: 1, entity_id: entityId, tier: 3, amount: "500", reservation_day: "0" })]
-      : []),
     ...(guardKnown
       ? [
           set("0x73", "Guard", {

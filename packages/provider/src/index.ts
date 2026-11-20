@@ -675,14 +675,6 @@ export class EternumProvider extends EventEmitter {
     } as GetTransactionReceiptResponse;
   }
 
-  public async create_hyperstructure(props: SystemProps.SystemSigner & { x: number; y: number; alt: boolean }) {
-    return this.submitCommand(
-      props.signer,
-      { kind: "CreateReservedHyperstructure", value: { alt: props.alt, x: props.x, y: props.y } },
-      TransactionType.CREATE_HYPERSTRUCTURE,
-    );
-  }
-
   public async enter_depth(props: SystemProps.SystemSigner & { explorerId: number; depth: number }) {
     return this.submitCommand(
       props.signer,
@@ -1054,49 +1046,6 @@ export class EternumProvider extends EventEmitter {
     return this.submitCommand(props.signer, { kind: "LeaveGuild", value: undefined }, TransactionType.LEAVE_GUILD);
   }
 
-  public async initialize(props: SystemProps.InitializeHyperstructureProps) {
-    return this.submitCommand(
-      props.signer,
-      { kind: "InitializeHyperstructure", value: props.hyperstructure_id },
-      TransactionType.INITIALIZE_HYPERSTRUCTURE,
-    );
-  }
-
-  public async contribute_to_construction(props: SystemProps.ContributeToConstructionProps) {
-    return this.submitCommand(
-      props.signer,
-      {
-        kind: "ContributeHyperstructure",
-        value: {
-          hyperstructure_id: props.hyperstructure_entity_id,
-          from_structure_id: props.contributor_entity_id,
-          resources: props.contributions.map(({ resource, amount }) => ({ resource_type: resource, amount })),
-        },
-      },
-      TransactionType.CONTRIBUTE,
-    );
-  }
-
-  public async set_access(props: SystemProps.SetAccessProps) {
-    return this.submitCommand(
-      props.signer,
-      {
-        kind: "SetConstructionAccess",
-        value: {
-          hyperstructure_id: props.hyperstructure_entity_id,
-          access: unitVariant(props.access, ["Public", "Private", "GuildOnly"] as const),
-        },
-      },
-      TransactionType.SET_ACCESS,
-    );
-  }
-
-  public async end_game(props: SystemProps.EndGameProps) {
-    return requireBatchReceipt(
-      await this.submitCommand(props.signer, { kind: "CloseSeason", value: undefined }, TransactionType.END_GAME),
-    );
-  }
-
   public async burn_resource_for_resource_production(props: SystemProps.BurnOtherPredefinedResourcesForResourcesProps) {
     return this.submitCommand(
       props.signer,
@@ -1120,22 +1069,6 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
-  public async open_chest(props: SystemProps.OpenChestProps) {
-    return this.submitCommand(
-      props.signer,
-      { kind: "OpenRelicChest", value: { explorer_id: props.explorer_id, coord: props.chest_coord } },
-      TransactionType.OPEN_CHEST,
-    );
-  }
-
-  public async burn_research_for_relic(props: SystemProps.BurnResearchForRelicProps) {
-    return this.submitCommand(
-      props.signer,
-      { kind: "CraftRelic", value: props.structure_id },
-      TransactionType.BURN_RESEARCH_FOR_RELIC,
-    );
-  }
-
   public async apply_relic(props: SystemProps.ApplyRelicProps) {
     return this.submitCommand(
       props.signer,
@@ -1144,10 +1077,7 @@ export class EternumProvider extends EventEmitter {
         value: {
           entity_id: props.entity_id,
           relic_id: props.relic_resource_id,
-          recipient:
-            props.relic_slot === undefined
-              ? unitVariant(props.recipient_type, ["Explorer", "StructureProduction", "StructureGuard"] as const)
-              : { kind: "ArmySlot", value: props.relic_slot },
+          recipient: { kind: "ArmySlot", value: props.relic_slot },
         },
       },
       TransactionType.APPLY_RELIC,

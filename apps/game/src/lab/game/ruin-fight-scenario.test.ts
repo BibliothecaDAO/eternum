@@ -1,4 +1,4 @@
-import { configManager, WorldUpdateListener, ruinLimit, dayOf, readExpeditionRules } from "@bibliothecadao/eternum";
+import { configManager, WorldUpdateListener, dayOf, readExpeditionRules } from "@bibliothecadao/eternum";
 import { NativeFactStore, type GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { afterEach, expect, it, vi } from "vitest";
@@ -24,15 +24,12 @@ it.each([ruinFightScenario, ruinFarScenario])(
       army,
       timestamp: startsAt,
     });
-    expect(plan.chest).toBeUndefined();
     expect(plan.ruinDepth).toBe("Surface");
-    expect(plan.payout).toBeUndefined();
-    expect(ruinLimit(store, 1)).toBe("none");
+    expect(plan.payout).toBeNull();
     expect(site.clear).toBeNull();
     const rules = readExpeditionRules(store, 1)!;
     const day = dayOf(rules, startsAt)!;
     expect(day.index).toBe(Math.floor(site.row / rules.spacing / 4));
-    expect(store.get("SiteChest", { game_id: 1, entity_id: BigInt(SITE) })).toBeUndefined();
     expect(store.require("RuinRelic", { game_id: 1, entity_id: BigInt(SITE) })).toMatchObject({
       kind: "Blade",
       rank: 2,
@@ -46,12 +43,10 @@ it.each([ruinFightScenario, ruinFarScenario])(
 it("answers the attack on the ruin as the chain clears it, and its payout story pairs with its winning battle", () => {
   vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
   const scenario = ruinFightScenario();
-  expect(ruinLimit(scenario.store, 1)).toBe("none");
   const chain = new NativeFactStore();
   chain.applyFacts(rowsOf(scenario.store) as never);
   const army = chain.require("ExplorerTroops", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) });
   const staminaBefore = (army.troops.stamina as { Inline: { amount: bigint } }).Inline.amount;
-  const budgetBefore = chain.get("LordsBudget", { game_id: 1 });
   const lordsBefore = chain.get("ResourceBalance", {
     game_id: 1,
     entity_id: 7n,
@@ -81,9 +76,6 @@ it("answers the attack on the ruin as the chain clears it, and its payout story 
       }),
     );
 
-  expect(answered.some((fact) => fact.model === "SiteChest")).toBe(false);
-  expect(chain.get("SiteChest", { game_id: 1, entity_id: BigInt(SITE) })).toBeUndefined();
-  expect(chain.get("LordsBudget", { game_id: 1 })).toEqual(budgetBefore);
   expect(chain.require("ArmyRelics", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) })).toMatchObject({
     first: { kind: "Blade", rank: 2 },
     second: null,

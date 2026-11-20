@@ -64,13 +64,10 @@ export const orderTip = (order: TileOrder): OrderTip | null => {
   return refused === null ? null : { line: refused, cost: null };
 };
 
-const OPEN_CRATE = "Open crate";
-
 const ORDERS: Partial<Record<ActionType, string>> = {
   [ActionType.Explore]: EXPLORE,
   [ActionType.Move]: MOVE,
   [ActionType.Attack]: ATTACK,
-  [ActionType.Chest]: OPEN_CRATE,
   [ActionType.Help]: `${TRANSFER} troops`,
   [ActionType.SpireTravel]: "Travel through the spire",
   [ActionType.EnterDepth]: SPIRE_WORDS.order,
@@ -82,8 +79,7 @@ const orderOf = ({ path, exploreStamina, food, byRealm }: TileOrder): OrderTip |
   if (path && byRealm && actionType === ActionType.Help) return { line: REINFORCE.verb, cost: null };
   const line = actionType === undefined ? undefined : ORDERS[actionType];
   if (!path || line === undefined) return null;
-  // A crate costs nothing; the spire's entry is free, and its card picks the Ethereal layer to enter.
-  if (actionType === ActionType.Chest || actionType === ActionType.EnterDepth) return { line, cost: null };
+  if (actionType === ActionType.EnterDepth) return { line, cost: null };
   const stamina = computeEffectiveStaminaCost(path.slice(1), actionType, exploreStamina);
   const pieces = [
     ...(stamina > 0 ? [`${formatCharge(stamina)} ${STAMINA}`] : []),
@@ -99,20 +95,15 @@ const joinPieces = (pieces: readonly (RankedWords | string)[]): RankedWords | st
     ? pieces.join(" · ")
     : pieces.flatMap((piece, index) => [...(index > 0 ? [" · "] : []), ...asRanked(piece)]);
 
-/**
- * The order a tile the planner refused would take, by what it holds: troops passed to the player's own army, an attack
- * on a target, a crate's opening, else a move onto revealed land or an explore into the fog.
- */
 export const refusedOrderVerb = ({
   holds,
   explored,
 }: {
-  holds: "friend" | "target" | "crate" | null;
+  holds: "friend" | "target" | null;
   explored: boolean;
 }): string => {
   if (holds === "friend") return ORDERS[ActionType.Help]!;
   if (holds === "target") return ATTACK;
-  if (holds === "crate") return OPEN_CRATE;
   return explored ? MOVE : EXPLORE;
 };
 

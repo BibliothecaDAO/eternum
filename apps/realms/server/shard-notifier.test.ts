@@ -840,10 +840,10 @@ describe.concurrent("shard notifications", () => {
     herald.state.mode = "blitz"; // a fight between players pushes in Blitz
     await worker.runCron();
     await pause(polls(5)); // the notifier reaches the shard's head
-    herald.story("HyperstructurePoints", { points: "many" }); // its copy refuses a count that is not a number
+    herald.story("BitcoinAwardStory", { winner_paid: "many" });
     herald.story("BuildingPlacementStory", { change: "Created" }); // the player's own build: the Feed tells it
     herald.story("ExplorationReward", {}); // the player's own find, likewise
-    herald.story("HyperstructurePoints", { points: 2_000_000 }); // their share paid without a tap: delivered at All
+    herald.story("BitcoinAwardStory", { winner_paid: 2_000_000 });
     herald.battle();
     await waitUntil(() => push.received.length >= 2, 20_000);
     await pause(polls(5)); // nothing more comes for the page
@@ -1232,15 +1232,16 @@ describe.concurrent("shard notifications", () => {
   it("a result the push service keeps refusing for a while still lands once it takes pushes again", async () => {
     const { herald, push, worker } = await createHarness("important");
     try {
+      herald.state.mode = "blitz";
       push.status = 503;
       await worker.runCron();
       await pause(polls(5)); // the notifier reaches the shard's head
-      herald.story("SeasonEnded", {});
+      herald.story("BlitzFinalized", {});
       await waitUntil(() => push.received.length >= 5, 90_000); // five refusals, past the old five-attempt cut
       push.status = 201;
       await waitUntil(() => push.received.includes(201), 120_000);
       expect(push.received).toEqual([503, 503, 503, 503, 503, 201]);
-      expect(await push.words()).toContain("The season is over / Frontier: see where you finished.");
+      expect(await push.words()).toContain("Your Blitz is settled / Blitz: see where you finished.");
     } finally {
       await worker.dispose();
     }

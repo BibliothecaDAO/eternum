@@ -20,12 +20,8 @@ pub enum Story {
     BuildingPaymentStory: BuildingPaymentStory,
     BitcoinAwardStory: crate::bitcoin::BitcoinAwardStory,
     StructureCapturedStory: StructureCapturedStory,
-    HyperstructurePoints: crate::hyperstructures::SharePoints,
-    RelicChestOpened: crate::relics::ChestOpened,
     ExplorationReward: crate::exploration_rewards::ExtractedReward,
-    SeasonEnded: ContractAddress,
     BlitzFinalized: felt252,
-    RelicCrafted: u8,
     ExplorerCreateStory: crate::troop_management::ExplorerCreated,
     ExplorerAddStory: crate::troop_management::ExplorerAdded,
     ExplorerDeleteStory: crate::troop_management::ExplorerRemoved,
@@ -35,8 +31,6 @@ pub enum Story {
     SkillPointSpent: crate::progression::SkillPointSpent,
     SitePayout: crate::expeditions::SitePayout,
     SpireDiscovered: crate::exploration_rewards::ExtractedReward,
-    RewardChestOpened: crate::relics::RewardChestOpened,
-    RelicActivated: crate::relics::RelicActivated,
     SiteUsed: crate::relics::SiteUsed,
 }
 

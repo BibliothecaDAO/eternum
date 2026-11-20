@@ -1,4 +1,3 @@
-use eternum_cubit::f128::types::fixed::FixedTrait;
 use crate::random::lottery;
 use crate::rules::MapConfig;
 
@@ -6,7 +5,6 @@ use crate::rules::MapConfig;
 pub enum Discovery {
     None,
     Mine,
-    Hyperstructure,
     BitcoinMine,
     Camp,
     Rift,
@@ -15,23 +13,15 @@ pub enum Discovery {
     Shrine,
     Well,
     Spire,
-    Chest,
 }
 
 // One reveal in two hundred, in basis points, when spire discovery is on.
 pub const SPIRE_FIND_BPS: u128 = 50;
 
 
-pub fn surface(config: MapConfig, seed: u256, distance: u128, hyperstructures: u32, mode_rules: u32) -> Discovery {
+pub fn surface(config: MapConfig, seed: u256, mode_rules: u32) -> Discovery {
     if mode_rules & crate::rules::DISCOVER_SPIRES != 0 && lottery(seed, 3, SPIRE_FIND_BPS, 10000 - SPIRE_FIND_BPS) {
         return Discovery::Spire;
-    }
-    if mode_rules & crate::rules::DISCOVER_HYPERSTRUCTURES != 0 {
-        let hyper_success = hyperstructure_weight(config, distance, hyperstructures);
-        let hyper_total: u128 = config.hyps_win_prob.into() + config.hyps_fail_prob.into();
-        if lottery(seed, 1, hyper_success, hyper_total - hyper_success) {
-            return Discovery::Hyperstructure;
-        }
     }
     if lottery(seed, 2, config.shards_mines_win_probability.into(), config.shards_mines_fail_probability.into()) {
         return Discovery::Mine;
@@ -51,14 +41,6 @@ pub fn ethereal(config: MapConfig, enabled: bool, spire_adjacent: bool, seed: u2
     } else {
         Discovery::None
     }
-}
-
-fn hyperstructure_weight(config: MapConfig, distance: u128, hyperstructures: u32) -> u128 {
-    let initial = FixedTrait::new(config.hyps_win_prob.into(), false);
-    let radius = FixedTrait::new(config.hyps_fail_prob_increase_p_hex.into(), false) / FixedTrait::new(10000, false);
-    let weighted = (initial * radius.pow(FixedTrait::new_unscaled(distance, false))).mag;
-    let penalty: u128 = hyperstructures.into() * config.hyps_fail_prob_increase_p_fnd.into();
-    weighted - core::cmp::min(weighted, penalty)
 }
 
 pub fn validate_frontier(rules: crate::expeditions::FrontierDiscoveryRules, find_percent: u16) {
@@ -116,7 +98,6 @@ pub fn frontier(
 pub fn tile_occupier(discovery: Discovery) -> Option<u8> {
     match discovery {
         Discovery::Spire => Some(crate::taxonomy::DORMANT_SPIRE_OCCUPIER),
-        Discovery::Chest => Some(crate::taxonomy::CHEST_OCCUPIER),
         _ => None,
     }
 }

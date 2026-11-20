@@ -58,48 +58,6 @@ fn main() {
         btc_win.unwrap(),
         btc_edge.unwrap()
     );
-    let weights: Vec<u128> = (0..18)
-        .map(|i| match i {
-            14 | 15 => 0,
-            16 => 600,
-            17 => 200,
-            _ => {
-                if i % 2 == 0 {
-                    750
-                } else {
-                    400
-                }
-            }
-        })
-        .collect();
-    let total: u128 = weights.iter().sum();
-    let relics: Vec<usize> = (1..=6)
-        .map(|i| {
-            let roll = draw(12345, i * 18, total);
-            let mut cumulative = 0;
-            weights
-                .iter()
-                .position(|weight| {
-                    cumulative += weight;
-                    roll < cumulative
-                })
-                .unwrap()
-                + 39
-        })
-        .collect();
-    let mut salt = 0;
-    let mut chosen = Vec::new();
-    while chosen.len() < 3 {
-        salt += 18;
-        let direction = draw(321 - 12, salt, 6);
-        if !chosen.contains(&direction) {
-            chosen.push(direction);
-        }
-    }
-    println!(
-        "{{\"relics\":{:?},\"chestDirections\":{:?}}}",
-        relics, chosen
-    );
     let mut discovery = [0u32; 7];
     let mut doubled = 0u32;
     let mut essence = 0u32;

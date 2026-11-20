@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "baaa3531fad3af4496b31a00c4e2cdc1cda23626225ff1697556b5f37b82350f",
+  "schemaIdentity": "3dadae7084c953b8684f573522e7661b0eac88b0d7ebe5879c55d473fa7e186e",
   "commandAbi": [
     {
       "type": "interface",
@@ -87,11 +87,6 @@
           "name": "ProvisionRealm",
           "type": "core::integer::u64",
           "wireId": 8
-        },
-        {
-          "name": "CreateReservedHyperstructure",
-          "type": "world_native::troops::Coord",
-          "wireId": 9
         },
         {
           "name": "SettleSeason",
@@ -184,49 +179,14 @@
           "wireId": 29
         },
         {
-          "name": "InitializeHyperstructure",
-          "type": "core::integer::u64",
-          "wireId": 38
-        },
-        {
-          "name": "ContributeHyperstructure",
-          "type": "world_native::hyperstructures::Contribution",
-          "wireId": 39
-        },
-        {
-          "name": "AllocateHyperstructureShares",
-          "type": "world_native::hyperstructures::AllocateShares",
-          "wireId": 40
-        },
-        {
-          "name": "SetConstructionAccess",
-          "type": "world_native::hyperstructures::SetConstructionAccess",
-          "wireId": 41
-        },
-        {
-          "name": "OpenRelicChest",
-          "type": "world_native::relics::OpenChest",
-          "wireId": 42
-        },
-        {
           "name": "ApplyRelic",
           "type": "world_native::relics::ApplyRelic",
           "wireId": 43
         },
         {
-          "name": "CloseSeason",
-          "type": "()",
-          "wireId": 44
-        },
-        {
           "name": "RecordBlitzResults",
           "type": "()",
           "wireId": 51
-        },
-        {
-          "name": "CraftRelic",
-          "type": "core::integer::u64",
-          "wireId": 52
         },
         {
           "name": "CreateGuild",
@@ -513,38 +473,6 @@
     },
     {
       "type": "struct",
-      "name": "world_native::troops::Coord",
-      "members": [
-        {
-          "name": "alt",
-          "type": "core::bool"
-        },
-        {
-          "name": "x",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "y",
-          "type": "core::integer::u32"
-        }
-      ]
-    },
-    {
-      "type": "enum",
-      "name": "core::bool",
-      "variants": [
-        {
-          "name": "False",
-          "type": "()"
-        },
-        {
-          "name": "True",
-          "type": "()"
-        }
-      ]
-    },
-    {
-      "type": "struct",
       "name": "world_native::realms::SettleSeason",
       "members": [
         {
@@ -690,6 +618,20 @@
       ]
     },
     {
+      "type": "enum",
+      "name": "core::bool",
+      "variants": [
+        {
+          "name": "False",
+          "type": "()"
+        },
+        {
+          "name": "True",
+          "type": "()"
+        }
+      ]
+    },
+    {
       "type": "struct",
       "name": "world_native::buildings::ChangeBuilding",
       "members": [
@@ -700,6 +642,24 @@
         {
           "name": "coord",
           "type": "world_native::troops::Coord"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::troops::Coord",
+      "members": [
+        {
+          "name": "alt",
+          "type": "core::bool"
+        },
+        {
+          "name": "x",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "y",
+          "type": "core::integer::u32"
         }
       ]
     },
@@ -756,108 +716,6 @@
         {
           "name": "relic_slot",
           "type": "core::option::Option::<core::integer::u8>"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::hyperstructures::Contribution",
-      "members": [
-        {
-          "name": "hyperstructure_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "from_structure_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "resources",
-          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::hyperstructures::AllocateShares",
-      "members": [
-        {
-          "name": "hyperstructure_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "shareholders",
-          "type": "core::array::Span::<world_native::hyperstructures::Share>"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::hyperstructures::Share>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::hyperstructures::Share>"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::hyperstructures::Share",
-      "members": [
-        {
-          "name": "player",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "bps",
-          "type": "core::integer::u16"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::hyperstructures::SetConstructionAccess",
-      "members": [
-        {
-          "name": "hyperstructure_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "access",
-          "type": "world_native::hyperstructures::ConstructionAccess"
-        }
-      ]
-    },
-    {
-      "type": "enum",
-      "name": "world_native::hyperstructures::ConstructionAccess",
-      "variants": [
-        {
-          "name": "Public",
-          "type": "()"
-        },
-        {
-          "name": "Private",
-          "type": "()"
-        },
-        {
-          "name": "GuildOnly",
-          "type": "()"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::relics::OpenChest",
-      "members": [
-        {
-          "name": "explorer_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "coord",
-          "type": "world_native::troops::Coord"
         }
       ]
     },
@@ -1298,15 +1156,7 @@
       "scope": "game"
     },
     {
-      "name": "ArtificerCost",
-      "scope": "game"
-    },
-    {
       "name": "BlitzResult",
-      "scope": "game"
-    },
-    {
-      "name": "SeasonWinThreshold",
       "scope": "game"
     },
     {
@@ -1314,7 +1164,7 @@
       "scope": "game"
     },
     {
-      "name": "RelicRules",
+      "name": "DepositSource",
       "scope": "game"
     },
     {
@@ -1327,10 +1177,6 @@
     },
     {
       "name": "ExpeditionDiscovery",
-      "scope": "game"
-    },
-    {
-      "name": "DepositSource",
       "scope": "game"
     },
     {
@@ -1422,11 +1268,11 @@
       "scope": "game"
     },
     {
-      "name": "ChestRules",
+      "name": "FrontierPrize",
       "scope": "game"
     },
     {
-      "name": "FrontierPrize",
+      "name": "ChestRules",
       "scope": "game"
     },
     {
@@ -1434,19 +1280,7 @@
       "scope": "game"
     },
     {
-      "name": "SiteChest",
-      "scope": "game"
-    },
-    {
-      "name": "RelicChest",
-      "scope": "game"
-    },
-    {
       "name": "LordsWithdrawal",
-      "scope": "game"
-    },
-    {
-      "name": "RelicDiscovery",
       "scope": "game"
     },
     {
@@ -1503,10 +1337,6 @@
     },
     {
       "name": "RealmGrants",
-      "scope": "game"
-    },
-    {
-      "name": "HyperstructureReservations",
       "scope": "game"
     },
     {
@@ -1646,10 +1476,6 @@
       "scope": "game"
     },
     {
-      "name": "ProductionBonus",
-      "scope": "game"
-    },
-    {
       "name": "ProductionRecipe",
       "scope": "game"
     },
@@ -1683,22 +1509,6 @@
     },
     {
       "name": "StructureBuildings",
-      "scope": "game"
-    },
-    {
-      "name": "Hyperstructure",
-      "scope": "game"
-    },
-    {
-      "name": "HyperstructureProgress",
-      "scope": "game"
-    },
-    {
-      "name": "HyperstructureShares",
-      "scope": "game"
-    },
-    {
-      "name": "HyperstructureRules",
       "scope": "game"
     },
     {

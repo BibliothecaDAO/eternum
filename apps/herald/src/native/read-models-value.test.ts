@@ -20,7 +20,7 @@ function standings(players: { wallet: string; rank: number }[]) {
   };
   const rows = (model: string): FoldRow[] =>
     (facts[model] ?? []).map((value, index) => ({ key: String(index), value: { game_id: "1", ...value } }));
-  return buildNativeLeaderboard(rows, "1", 500, null);
+  return buildNativeLeaderboard(rows, "1", null);
 }
 
 it("maps frozen L2 wallets to shard accounts and reads final points from native facts", () => {

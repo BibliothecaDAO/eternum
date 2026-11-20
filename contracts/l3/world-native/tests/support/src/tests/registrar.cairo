@@ -19,11 +19,11 @@ pub use crate::registrar::{
     CreateGameParams, IRegistrarDispatcher, IRegistrarDispatcherTrait, IRegistrarSafeDispatcher,
     IRegistrarSafeDispatcherTrait, RosterPlayer,
 };
-pub use crate::relics::{ChestTiers, IRelicsDispatcher, IRelicsDispatcherTrait};
+pub use crate::relics::ChestTiers;
 pub use crate::resources::{
     IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceKey, ResourceRule, ResourceSlot,
 };
-pub use crate::rules::{DISCOVER_CAMPS, DISCOVER_CHESTS, HOME_REWARDS, RESOURCE_PRECISION};
+pub use crate::rules::{DISCOVER_CAMPS, HOME_REWARDS, RESOURCE_PRECISION};
 pub use crate::settlement::{
     ISettlementCommandsDispatcher, ISettlementCommandsDispatcherTrait, ISettlementCommandsSafeDispatcher,
     ISettlementCommandsSafeDispatcherTrait, ISettlementCreationDispatcher, ISettlementCreationDispatcherTrait,
@@ -119,14 +119,6 @@ pub fn definition(blitz: bool) -> PresetDefinition {
             deep: None,
             labor: None,
             discovery: None,
-            hyperstructures: if blitz {
-                crate::hyperstructures::HyperstructureRules { initialize_shards: 0, resources: array![].span() }
-            } else {
-                super::hyperstructures::rules()
-            },
-            relics: super::relics::rules(),
-            chests: None,
-            research_cost: 100,
             withdrawals: if blitz {
                 None
             } else {
@@ -159,7 +151,6 @@ pub fn definition(blitz: bool) -> PresetDefinition {
             crate::exploration_rewards::ExplorationReward { resource_type: 1, percent: 10, percent_max: 10, weight: 1 },
         ]
             .span(),
-        season_win_points: 1000,
     }
 }
 pub fn roster(count: u32) -> Span<RosterPlayer> {
@@ -177,11 +168,7 @@ pub fn params(blitz: bool) -> CreateGameParams {
         start_settling_at: 200,
         start_main_at: 2 * crate::balance::rules::TICK_CONFIG.armies_tick_in_seconds,
         duration_seconds: 100,
-        end_grace_seconds: if blitz {
-            0
-        } else {
-            10
-        },
+        end_grace_seconds: 0,
         dev_mode_on: false,
         roster: if blitz {
             roster(2)
@@ -261,9 +248,7 @@ pub // The expedition preset uses seeded day bags.
     preset.rules.day_unit_seconds = DAY_UNIT;
     preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
     let (_, frontier) = super::preset_projection::current_definition("frontier-check");
-    preset.economy.chests = frontier.economy.chests;
     preset.economy.labor = frontier.economy.labor;
-    preset.economy.relics = array![].span();
     preset.settlement.depths = frontier.settlement.depths;
     preset.structures.board = frontier.structures.board;
     preset.structures.research = frontier.structures.research;
@@ -468,9 +453,7 @@ pub fn assert_capture_at(
         preset.structures.board = frontier.structures.board;
         preset.structures.research = frontier.structures.research;
     }
-    preset.economy.chests = frontier.economy.chests;
     preset.economy.labor = frontier.economy.labor;
-    preset.economy.relics = array![].span();
     preset.settlement.depths = frontier.settlement.depths;
     preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DEPTH_CONTENTS;
     preset.rules.map_config.camp_win_probability = 0;
@@ -942,9 +925,7 @@ pub fn setup_frontier_relics_with_preset(
             );
     }
     preset.settlement.depths = depths.span();
-    preset.economy.chests = None;
     preset.economy.labor = frontier.economy.labor;
-    preset.economy.relics = array![].span();
     if let Some(discovery) = discovery {
         preset.economy.discovery = Some(discovery);
     }
@@ -1100,7 +1081,6 @@ pub fn setup_open_frontier_preset(name: ByteArray, bags: u64) -> (super::Deploym
 
 pub fn labor_home_definition(name: ByteArray) -> PresetDefinition {
     let (_, mut preset) = super::preset_projection::current_definition(name);
-    preset.economy.chests = None;
     let mut depths = array![];
     for index in 0..preset.settlement.depths.len() {
         depths
@@ -1111,7 +1091,6 @@ pub fn labor_home_definition(name: ByteArray) -> PresetDefinition {
             );
     }
     preset.settlement.depths = depths.span();
-    preset.rules.mode_rules = preset.rules.mode_rules & (0xffffffff - crate::rules::DISCOVER_CHESTS);
     preset
 }
 

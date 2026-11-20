@@ -449,21 +449,21 @@ describe("declared fact absence", () => {
     const update = () => store.setSnapshot({ gameId: 1, complete, actor: null, timestamp: 350 });
     update();
     const key = { game_id: 1, entity_id: 7 };
+    const guardKey = { game_id: 1, structure_id: 7, slot: 1 };
     store.applyFacts([set("0x7", "Structure", structure("0x111"))]);
-    expect(store.requireOrAbsent("ProductionBonus", key).unknown).toContain("INCOMPLETE_SNAPSHOT");
+    expect(store.requireOrAbsent("Guard", guardKey).unknown).toContain("INCOMPLETE_SNAPSHOT");
     complete = true;
     update();
-    expect(store.requireOrAbsent("ProductionBonus", key).known?.incr_labor_rate_percent_num).toBe(0);
-    const guard = store.requireOrAbsent("Guard", { game_id: 1, structure_id: 7, slot: 1 });
+    const guard = store.requireOrAbsent("Guard", guardKey);
     expect(guard.known?.troops.count).toBe(0n);
     expect(guard.known?.destroyed_tick).toBe(0);
-    expect(store.requireOrAbsent("ProductionBonus", { ...key, entity_id: 8 }).unknown).toContain("UNKNOWN_PARENT");
+    expect(store.requireOrAbsent("Guard", { ...guardKey, structure_id: 8 }).unknown).toContain("UNKNOWN_PARENT");
     // A remote production row does not prove the presence of its resource owner.
     expect(store.requireOrAbsent("ResourceBalance", { ...key, resource_type: 1 }).unknown).toContain("UNKNOWN_PARENT");
     store.applyFacts([remove("0x7", "Structure")]);
-    expect(store.requireOrAbsent("ProductionBonus", key).unknown).toContain("UNKNOWN_PARENT");
+    expect(store.requireOrAbsent("Guard", guardKey).unknown).toContain("UNKNOWN_PARENT");
   });
-  it("uses the declared resource, hyperstructure and settlement parents", () => {
+  it("uses the declared resource and settlement parents", () => {
     const store = new NativeFactStore();
     store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, day_unit_seconds: 0 })]);
     store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 350 });
@@ -471,7 +471,6 @@ describe("declared fact absence", () => {
     const resource = { ...entity, resource_type: 2 };
     store.applyFacts([
       set("0x1", "ResourceWeight", { ...entity, capacity: "100", weight: "0" }),
-      set("0x2", "Hyperstructure", { ...entity, stage: "Construction", access: "Public", seed: "12" }),
       set("0x3", "SettlementRules", {
         game_id: 1,
         registration_start: 1,
@@ -489,7 +488,6 @@ describe("declared fact absence", () => {
       output_amount_left: 0n,
       last_settled_at: 0,
     });
-    expect(store.requireOrAbsent("HyperstructureProgress", resource).known?.contributed).toBe(0n);
     expect(store.requireOrAbsent("SettlementProgress", { game_id: 1 }).known).toEqual({
       game_id: 1,
       registered: 0,

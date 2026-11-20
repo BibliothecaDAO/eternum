@@ -122,7 +122,7 @@ describe("a guarded site's card", () => {
     expect(document.querySelector("section[role=dialog] dl")).toBeNull();
   });
 
-  it("heads a loss in red with the guard left, dims a ruin's chest, and keeps Attack, in red", () => {
+  it("heads a loss in red with the guard left, dims the reward, and keeps Attack, in red", () => {
     act(() =>
       root.render(
         <SiteCardView
@@ -135,7 +135,6 @@ describe("a guarded site's card", () => {
             guardLeft: 2_300,
           }}
           pay={null}
-          chest={{ tier: 3, lords: 128 }}
           verb={{ kind: "attack", stamina: 30, onAttack: () => {} }}
           onClose={() => {}}
         />,
@@ -143,16 +142,11 @@ describe("a guarded site's card", () => {
     );
     const card = document.querySelector("section[aria-label='Ruin']")!;
     expect(card.querySelectorAll('[data-icon="beast-ammit"]')).toHaveLength(2);
-    // The headline says the loss, and the chest this attack does not win stands dimmed beside it.
-    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("BladeYour army is lost+128Rare+1 site");
-    expect(card.querySelector(".ui-frame__body header .opacity-50")?.textContent).toBe("+128Rare+1 site");
+    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("BladeYour army is lost+1 site");
+    expect(card.querySelector(".ui-frame__body header .opacity-50")?.textContent).toBe("+1 site");
     expect(card.querySelector('[data-icon="troops"]')).toBeNull();
     expect(card.querySelector('[data-combat-mark="Blade"]')?.textContent).toBe("Blade");
     expect(card.textContent).toContain("2,300");
-    expect(card.querySelector('[aria-label="128 LORDS"]')).not.toBeNull();
-    // The chest's rarity is its word on its plate, never pips.
-    expect(card.querySelector(".ui-rarity")?.textContent).toBe("Rare");
-    expect(card.querySelectorAll(".ui-rarity i")).toHaveLength(0);
     const attack = buttons().find((button) => button.textContent?.startsWith("Attack"))!;
     expect(attack.disabled).toBe(false);
     expect(attack.dataset.kind).toBe("danger");
@@ -507,38 +501,6 @@ it("titles a single roaming Wraith by its species", () => {
   );
   expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Wraith");
   expect(host.querySelector("[data-combat-mark]")?.textContent).toBe("Bow");
-});
-
-it.each([
-  [true, "One ruin per depth a day · others here vanish"],
-  [false, "One ruin a day · the rest vanish"],
-] as const)("explains the pinned ruin rule (%s) and disables an unfunded attack", (perDepth, rule) => {
-  act(() =>
-    root.render(
-      <SiteCardView
-        site="Ruin"
-        beast={undefined}
-        army={army}
-        guard={1000}
-        fight={undefined}
-        pay={null}
-        chest={{ tier: 4, lords: 500 }}
-        ruinChoice={{ depth: "Hollow", perDepth }}
-        verb={{ kind: "blocked", reason: "Today's LORDS budget cannot fund this ruin." }}
-        onClose={() => {}}
-      />,
-    ),
-  );
-  // The ruin's rule is in sight on the card, never only on a hover (owner, 30 October: "the text here could be more
-  // explicit !").
-  expect(host.querySelector("[data-ruin-rule]")!.textContent).toBe(`Hollow · ${rule}`);
-  expect(host.querySelector("[data-ruin-rule] [data-tip]")).toBeNull();
-  expect(host.textContent).toContain("Today's LORDS budget cannot fund this ruin.");
-  const attack = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
-    (button) => button.textContent === "Attack",
-  )!;
-  expect(attack.disabled).toBe(true);
-  act(() => attack.click());
 });
 
 describe("one fight panel for every state of every target (owner, 10-27: 'this panel doesnt match at all')", () => {

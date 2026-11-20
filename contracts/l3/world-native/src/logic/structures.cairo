@@ -191,7 +191,6 @@ pub mod StructuresLogic {
     use crate::geometry::tile_key;
     use crate::logic::buildings::BuildingState;
     use crate::logic::release::ReleaseState;
-    use crate::logic::relics::RelicState;
     use crate::logic::structures::StructureState;
     use crate::map::IMapLogicDispatcherTrait;
     use crate::mines::{IMineRulesDispatcherTrait, IMineRulesLibraryDispatcher, MinePoolKey};
@@ -205,14 +204,9 @@ pub mod StructuresLogic {
     impl BuildingInternal = BuildingState::InternalImpl<ContractState>;
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
-    component!(path: RelicState, storage: relics, event: RelicEvent);
-    #[abi(embed_v0)]
-    impl Artificer = RelicState::ArtificerImpl<ContractState>;
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
-        #[substorage(v0)]
-        relics: RelicState::Storage,
         #[flat]
         pub data: crate::state::Storage,
         #[substorage(v0)]
@@ -223,7 +217,6 @@ pub mod StructuresLogic {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
-        RelicEvent: RelicState::Event,
         ReleaseEvent: ReleaseState::Event,
         StructureEvent: StructureState::Event,
         BuildingEvent: BuildingState::Event,
@@ -260,41 +253,6 @@ pub mod StructuresLogic {
     }
 
     #[abi(embed_v0)]
-    impl BlitzHyperstructures of crate::settlement::IBlitzHyperstructures<ContractState> {
-        fn create_reserved_hyperstructure(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            coord: Coord,
-            context: crate::commands::ActionContext,
-        ) {
-            let context = crate::commands::execution_context(game_id, context);
-
-            let classes = self.release.classes(game_id);
-            let game = context.game.unbox();
-            assert!(
-                crate::rules::rule_enabled(context.rules.unbox(), crate::rules::RESERVED_HYPERSTRUCTURES),
-                "reserved hyperstructures disabled",
-            );
-            assert!(game.end_at == 0 || context.timestamp < game.end_at, "game ended");
-            crate::settlement::IBlitzReservationsDispatcherTrait::release_hyperstructure(
-                crate::settlement::IBlitzReservationsLibraryDispatcher { class_hash: classes.placement.read() },
-                game_id,
-                coord,
-            );
-            self
-                .place_discovery(
-                    game_id,
-                    crate::entity_ids::home_for_actor(game_id, actor),
-                    coord,
-                    Discovery::Hyperstructure,
-                    0,
-                    context.timestamp,
-                    true,
-                    context,
-                );
-        }
-    }
     #[abi(embed_v0)]
     impl Structures of crate::structures::IStructureOperations<ContractState> {
         fn create_discovery(
@@ -309,7 +267,7 @@ pub mod StructuresLogic {
         ) -> u64 {
             let game_context = crate::commands::execution_context(game_id, game_context);
 
-            self.place_discovery(game_id, home_id, coord, discovery, seed, timestamp, false, game_context)
+            self.place_discovery(game_id, home_id, coord, discovery, seed, timestamp, game_context)
         }
 
         #[cfg(feature: "test_support")]
@@ -534,12 +492,10 @@ pub mod StructuresLogic {
                     crate::commands::action_context(game_context),
                 );
             }
-            self.change_owner(key, owner, timestamp, game_context);
+            crate::logic::structures::StructureState::transfer_owner(key, owner);
             let points = if record.owner == 0.try_into().unwrap() {
                 IPointsLibraryDispatcher { class_hash: self.release.classes(key.game_id).season.read() }
-                    .register_capture(
-                        key.game_id, owner, record.base.category, crate::commands::action_context(game_context),
-                    )
+                    .register_capture(key.game_id, owner, crate::commands::action_context(game_context))
             } else {
                 0
             };
@@ -595,16 +551,6 @@ pub mod StructuresLogic {
                 );
             }
         }
-        fn create_hyperstructure(ref self: ContractState, key: ResourceKey, seed: u256, completed: bool) {
-            crate::hyperstructures::IHyperstructuresDispatcherTrait::record_hyperstructure(
-                crate::hyperstructures::IHyperstructuresLibraryDispatcher {
-                    class_hash: self.release.classes(key.game_id).economy.read(),
-                },
-                key,
-                seed.try_into().unwrap(),
-                completed,
-            );
-        }
         fn create_producer(
             ref self: ContractState,
             key: ResourceKey,
@@ -643,7 +589,6 @@ pub mod StructuresLogic {
             discovery: Discovery,
             seed: u256,
             timestamp: u64,
-            completed: bool,
             game_context: crate::commands::ExecutionContext,
         ) -> u64 {
             let rules = game_context.rules.unbox();
@@ -695,7 +640,6 @@ pub mod StructuresLogic {
                             );
                     }
                 },
-                Discovery::Hyperstructure => self.create_hyperstructure(key, seed, completed),
                 Discovery::BitcoinMine => {},
                 Discovery::Camp => {
                     if rules.day_unit_seconds == 0 {
@@ -736,8 +680,8 @@ pub mod StructuresLogic {
                         crate::logic::army_relics::store_cache(key, reward, depth);
                     }
                 },
-                Discovery::None | Discovery::Shrine | Discovery::Well | Discovery::Spire |
-                Discovery::Chest => panic!("discovery is not a structure"),
+                Discovery::None | Discovery::Shrine | Discovery::Well |
+                Discovery::Spire => panic!("discovery is not a structure"),
             }
             crate::logic::structures::StructureState::create(key, record);
             crate::logic::map::MapState::occupy(tile_key(game_id, coord), id, occupier, true);
@@ -891,27 +835,6 @@ pub mod StructuresLogic {
             crate::logic::structure_actions::grant_starting_troops(
                 key, category, resources, guards.into() * RESOURCE_PRECISION, timestamp, game_context,
             );
-        }
-
-        fn change_owner(
-            ref self: ContractState,
-            key: ResourceKey,
-            owner: ContractAddress,
-            timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
-        ) {
-            let record = crate::logic::structures::record(key);
-            crate::logic::structures::StructureState::transfer_owner(key, owner);
-            if record.base.category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY {
-                crate::hyperstructures::IHyperstructuresDispatcherTrait::transfer_hyperstructure_shares(
-                    crate::hyperstructures::IHyperstructuresLibraryDispatcher {
-                        class_hash: self.release.classes(key.game_id).economy.read(),
-                    },
-                    key,
-                    owner,
-                    crate::commands::action_context(game_context),
-                );
-            }
         }
 
         fn assert_authority(self: @ContractState) {

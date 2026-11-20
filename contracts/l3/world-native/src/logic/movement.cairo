@@ -96,34 +96,9 @@ pub mod MovementLogic {
                         crate::logic::map::MapState::reveal(tile, biome.into());
                         IPointsLibraryDispatcher { class_hash: self.release.classes(game_id).season.read() }
                             .register_exploration(game_id, actor, crate::commands::action_context(context));
-                        if !destination.alt {
-                            crate::relics::IRelicMapDispatcherTrait::discover_relic_chest(
-                                crate::relics::IRelicMapLibraryDispatcher {
-                                    class_hash: self.release.classes(game_id).raid.read(),
-                                },
-                                game_id,
-                                explorer.owner,
-                                destination,
-                                explorer.coord,
-                                seed,
-                                context.timestamp,
-                                crate::commands::action_context(context),
-                            );
-                        }
                         self
                             .map_dispatcher(game_id)
-                            .discovery(
-                                tile,
-                                seed,
-                                crate::hyperstructures::IHyperstructuresDispatcherTrait::hyperstructure_count(
-                                    crate::hyperstructures::IHyperstructuresLibraryDispatcher {
-                                        class_hash: self.release.classes(game_id).economy.read(),
-                                    },
-                                    game_id,
-                                ),
-                                context.timestamp,
-                                crate::commands::action_context(context),
-                            )
+                            .discovery(tile, seed, context.timestamp, crate::commands::action_context(context))
                     };
                 if rules.day_unit_seconds == 0
                     && discovery != crate::discovery::Discovery::None

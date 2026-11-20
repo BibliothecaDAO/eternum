@@ -73,13 +73,12 @@ describe("Frontier's tile card", () => {
     });
   });
 
-  it("names a ruin by the beast its depth calls for, and pays its chest", () => {
+  it("names a ruin by the beast its depth calls for, and pays no resource", () => {
     setBlockTimestampSource(() => 350);
     const { store, site, structure } = campBeside("Ruin");
     const plan = readSiteCard(store, site, structure, null);
     expect(plan.name).toBe("Ammit");
-    expect(plan.payout).toEqual({ resourceId: ResourcesIds.Lords, amount: 500, fits: 500 });
-    expect(plan.chest).toMatchObject({ tier: 3, amount: 500, funded: true });
+    expect(plan.payout).toBeNull();
     expect(plan.ruinDepth).toBe("Veil");
     const rift = campBeside("Rift");
     expect(readSiteCard(rift.store, rift.site, rift.structure, null).payout).toEqual({
@@ -121,18 +120,6 @@ it("refuses another player's army outside the Deep, near or far, as the contract
   expect(readArmyCard(store, other, attack({ col: 44, row: 12, alt: false }))).toMatchObject({
     fight: { refused: true },
     blocked: "outside-deep",
-  });
-});
-
-it("shows a ruin's fixed quote but refuses funding when the shared budget is spent", () => {
-  setBlockTimestampSource(() => 350);
-  const { store, site, structure } = campBeside("Ruin");
-  const budget = store.require("LordsBudget", { game_id: 1 });
-  store.applyFacts([{ model: "LordsBudget", key: "0x101", value: { ...budget, pool_left: 0n } }]);
-  expect(readSiteCard(store, site, structure, null).chest).toEqual({
-    tier: 3,
-    amount: 500,
-    funded: false,
   });
 });
 
@@ -237,7 +224,7 @@ it("clips the Plunder reward after applying its bonus and leaves wheat unchanged
   });
 });
 
-it("pays Rage's share more on a camp the attacker clears, before Plunder, and leaves a ruin's chest", () => {
+it("pays Rage's share more on a camp the attacker clears, before Plunder, and nothing on a ruin", () => {
   const holdRage = (store: ReturnType<typeof campBeside>["store"]) => {
     const key = { game_id: 1, explorer_id: 201n };
     const progress = store.require("ArmyProgress", key);
@@ -262,7 +249,7 @@ it("pays Rage's share more on a camp the attacker clears, before Plunder, and le
   holdRage(ruin.store);
   expect(
     readSiteCard(ruin.store, ruin.site, ruin.structure, ruin.attack({ col: 41, row: 12, alt: false })).payout,
-  ).toMatchObject({ resourceId: ResourcesIds.Lords, amount: 500 });
+  ).toBeNull();
 });
 
 it("pays Perfection's share more only when the attack clears the camp with under its loss line lost", () => {

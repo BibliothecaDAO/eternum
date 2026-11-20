@@ -19,7 +19,7 @@ import gsap from "gsap";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { LeaderboardEffectsOverlay } from "./leaderboard-effects";
 import type { MmrForecast } from "./mmr-forecast";
-import { describeHyperstructureHold, type VictoryPointGrants } from "@/ui/shared/lib/victory-point-grants";
+import type { VictoryPointGrants } from "@/ui/shared/lib/victory-point-grants";
 import { HudIconButton, HudTableHead, HudTableRow } from "@/ui/design-system/kit/hud-elements";
 import { revealOwnPlace } from "@/ui/design-system/kit/own-place";
 import { PlayerEffect, useLeaderboardEffects } from "./use-leaderboard-effects";
@@ -32,8 +32,6 @@ export interface PlayerCustom extends PlayerInfo {
   guild: GuildInfo | undefined;
   /** The player's registered points by activity; null while none is known that adds up to their standing. */
   activityBreakdown: PlayerActivityBreakdown | null;
-  /** Hold points the total counts that are not registered yet (use-in-game-leaderboard), shown under HS held. */
-  accruingHoldPoints: number;
   /** The MMR the player would gain or lose if the game ended now; null where the ledger gave none. */
   mmrDelta: number | null;
 }
@@ -52,14 +50,8 @@ interface PlayerListProps {
 interface PlayerWithActivityStats extends PlayerCustom {
   tilesExplored: number;
   tilesExploredPoints: number;
-  cratesOpened: number;
-  cratesOpenedPoints: number;
   riftsTaken: number;
   riftsTakenPoints: number;
-  hyperstructuresTaken: number;
-  hyperstructuresTakenPoints: number;
-  hyperstructuresHeld: number;
-  hyperstructuresHeldPoints: number;
 }
 
 const formatActivityValue = (count: number, points: number): string => {
@@ -77,10 +69,10 @@ const formatActivityValue = (count: number, points: number): string => {
  * as its "if it ended now".
  */
 const GRID_TEMPLATES = {
-  plain: { cols: "44px minmax(0, 1fr) auto", colsWide: "48px 220px repeat(5, 96px) 80px" },
-  plainMmr: { cols: "44px minmax(0, 1fr) auto auto", colsWide: "48px 220px repeat(5, 96px) 80px 112px" },
-  tribe: { cols: "44px minmax(0, 1fr) auto", colsWide: "48px 200px 120px repeat(5, 96px) 80px" },
-  tribeMmr: { cols: "44px minmax(0, 1fr) auto auto", colsWide: "48px 200px 120px repeat(5, 96px) 80px 112px" },
+  plain: { cols: "44px minmax(0, 1fr) auto", colsWide: "48px 220px repeat(2, 96px) 80px" },
+  plainMmr: { cols: "44px minmax(0, 1fr) auto auto", colsWide: "48px 220px repeat(2, 96px) 80px 112px" },
+  tribe: { cols: "44px minmax(0, 1fr) auto", colsWide: "48px 200px 120px repeat(2, 96px) 80px" },
+  tribeMmr: { cols: "44px minmax(0, 1fr) auto auto", colsWide: "48px 200px 120px repeat(2, 96px) 80px 112px" },
 } as const;
 
 type GridTemplate = (typeof GRID_TEMPLATES)[keyof typeof GRID_TEMPLATES];
@@ -101,14 +93,10 @@ const MmrDeltaCell = ({ delta }: { delta: number | null }) => (
 /** A column only wide screens have room for; a narrow row says it under the name instead. */
 const WIDE_ONLY = "hidden md:flex";
 
-/** What a player did, in words, for the narrow row that has no columns for it: "3 tiles, 1 crate". */
 const summarizeActivity = (player: PlayerWithActivityStats): string =>
   [
     [player.tilesExplored, "tile", "tiles"],
-    [player.cratesOpened, "crate", "crates"],
     [player.riftsTaken, "rift or camp", "rifts and camps"],
-    [player.hyperstructuresTaken, "hyperstructure taken", "hyperstructures taken"],
-    [player.hyperstructuresHeld, "hyperstructure held", "hyperstructures held"],
   ]
     .filter(([count]) => (count as number) > 0)
     .map(([count, one, many]) => `${formatExact(count as number)} ${count === 1 ? one : many}`)
@@ -121,15 +109,8 @@ const resolvePlayerActivityStats = (player: PlayerCustom): PlayerWithActivitySta
     ...player,
     tilesExplored: activity?.exploration.count ?? 0,
     tilesExploredPoints: activity?.exploration.points ?? 0,
-    cratesOpened: activity?.openRelicChest.count ?? 0,
-    cratesOpenedPoints: activity?.openRelicChest.points ?? 0,
     riftsTaken: activity?.otherStructureBanditsDefeat.count ?? 0,
     riftsTakenPoints: activity?.otherStructureBanditsDefeat.points ?? 0,
-    hyperstructuresTaken: activity?.hyperStructureBanditsDefeat.count ?? 0,
-    hyperstructuresTakenPoints: activity?.hyperStructureBanditsDefeat.points ?? 0,
-    hyperstructuresHeld: player.hyperstructures,
-    // What holding earned: the points registered at checkpoints, and those accruing since, which Points counts too.
-    hyperstructuresHeldPoints: (activity?.hyperstructureShare.points ?? 0) + player.accruingHoldPoints,
   };
 };
 
@@ -312,23 +293,11 @@ const resolveColumns = (
     { label: "Name", align: "justify-start text-left" },
     ...(showTribeDetails ? [{ label: "Tribe", align: "hidden text-left md:block" }] : []),
     { label: "Tiles", align: activity, grant: each(grants.exploreTile), tip: "Explore a tile" },
-    { label: "Crates", align: activity, grant: each(grants.openRelicCrate), tip: "Open a relic crate" },
     {
       label: "Camps & Rifts",
       align: activity,
       grant: each(grants.claimCampFromBandits),
       tip: `Claim an Essence Rift or Camp from ${NEUTRAL_OWNER_NAME}`,
-    },
-    {
-      label: "HS taken",
-      align: activity,
-      grant: each(grants.claimHyperstructureFromBandits),
-      tip: `Claim a Hyperstructure from ${NEUTRAL_OWNER_NAME}`,
-    },
-    {
-      label: "HS held",
-      align: activity,
-      ...describeHyperstructureHold(grants),
     },
     { label: "Points", align: "justify-end text-right md:justify-center md:text-center" },
     ...(mmr === "off"
@@ -423,11 +392,7 @@ const PlayerRow = ({
   const breakdownKnown = player.activityBreakdown !== null;
   const activityLabel = (count: number, points: number) => (breakdownKnown ? formatActivityValue(count, points) : "…");
   const tilesLabel = activityLabel(player.tilesExplored, player.tilesExploredPoints);
-  const cratesLabel = activityLabel(player.cratesOpened, player.cratesOpenedPoints);
   const riftsLabel = activityLabel(player.riftsTaken, player.riftsTakenPoints);
-  const hyperstructuresTakenLabel = activityLabel(player.hyperstructuresTaken, player.hyperstructuresTakenPoints);
-  const hyperstructuresHeldLabel = activityLabel(player.hyperstructuresHeld, player.hyperstructuresHeldPoints);
-  const hasShareholderPoints = player.accruingHoldPoints > 0;
   const activitySummary = breakdownKnown ? summarizeActivity(player) : "…";
 
   // Determine row glow based on effect
@@ -488,26 +453,9 @@ const PlayerRow = ({
           </div>
         ) : null}
         {activityCell(tilesLabel)}
-        {activityCell(cratesLabel)}
         {activityCell(riftsLabel)}
-        {activityCell(hyperstructuresTakenLabel)}
-        {activityCell(hyperstructuresHeldLabel)}
         <div className="flex items-center justify-end gap-2 text-hud-strong text-hud-gold md:justify-center">
           <span>{player.points === null ? "—" : formatExact(player.points)}</span>
-          {hasShareholderPoints && (
-            <span
-              className="text-hud-label text-hud-good"
-              onMouseEnter={() =>
-                setTooltip({
-                  content: <div className="text-hud-accent">Includes real-time hyperstructure shareholder points</div>,
-                  position: "top",
-                })
-              }
-              onMouseLeave={() => setTooltip(null)}
-            >
-              ⚡
-            </span>
-          )}
         </div>
         {showMmr && <MmrDeltaCell delta={player.mmrDelta} />}
       </HudTableRow>

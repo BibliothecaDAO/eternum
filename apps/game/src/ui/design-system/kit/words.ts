@@ -329,7 +329,7 @@ import {
   type SocialProvider,
 } from "@realms-world/identity";
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
-import type { AttackRefusal, RuinChest } from "@bibliothecadao/eternum";
+import type { AttackRefusal } from "@bibliothecadao/eternum";
 import {
   FRAGMENT,
   FRAGMENTS,
@@ -343,15 +343,12 @@ import {
   formatClockTime,
   formatDuration,
   getRelicInfo,
-  relicEffect,
   ResourcesIds,
   formatCharge,
   formatRate,
   resourceName,
   formatHeldAgainst,
   layerName,
-  structureName,
-  StructureType,
   tierNumeral as rankNumeral,
   asRanked,
   type RankedWords,
@@ -610,7 +607,7 @@ export const EVENTS_WORDS = {
   lens: "Show",
   lenses: { important: "Important", all: "All" },
   lensTips: {
-    important: "Your fights and captures, armies lost, crates you opened and a Hyperstructure taken by anyone",
+    important: "Your fights and captures, and armies lost",
     all: "Everything players do in the world",
   },
   /**
@@ -620,7 +617,7 @@ export const EVENTS_WORDS = {
   feedLenses: { all: "All", important: "Important", mine: "Mine" },
   feedLensTips: {
     all: "Everything players do in the world",
-    important: "Fights, captures, cleared sites and chests, anyone's",
+    important: "Fights, captures and cleared sites, anyone's",
     mine: "Everything you do",
   },
   failed: "Event history could not load.",
@@ -692,12 +689,6 @@ export const startsNewArmies = (attribute: string, tier: number): RankedWords =>
   { rank: tier },
 ];
 
-const RUIN = structureName(StructureType.Ruin);
-/** The daily clear closes only the ruin's own depth; cards and forecasts share this rule. */
-export const ruinRule = (perDepth: boolean): string =>
-  perDepth
-    ? `One ${RUIN.toLowerCase()} per depth a day · others here vanish`
-    : `One ${RUIN.toLowerCase()} a day · the rest vanish`;
 /** A map plate's words: a thing with no guard, the troops on their way to one. */
 export const UNDEFENDED = "Undefended";
 /**
@@ -757,14 +748,6 @@ export const CASTLE = "Castle";
 const HUT = buildingName(BuildingType.WorkersHut, true);
 /** The castle rows that unlock the three depths beyond the spire. */
 export const LAYER = "Layer";
-/** A layer's ruin chest today, as the layer switch's marks say it to assistive technology: "Ethereal II: chest taken". */
-export const layerChestLine = (layer: string, chest: RuinChest): string => `${layer}: ${LAYER_CHEST[chest]}`;
-const LAYER_CHEST = {
-  open: "chest to take today",
-  claimed: "chest taken today",
-  unknown: "chest not known without an army there",
-  locked: `needs ${loreOf(SPIRE)}`,
-} as const satisfies Record<RuinChest, string>;
 
 /**
  * A realm's spire, its card's words: whose it is, the army it acts for, each depth's entry or why not, and what entering
@@ -1016,8 +999,6 @@ export const HEADLINE_EYEBROWS = {
   "five-min-warning": "Timer Warning",
   "t3-building": "Military Milestone",
 } as const;
-/** Where a crate cannot be opened from yet: what opening it needs, said in place of its Open. */
-export const CRATE_NEEDS_AN_ARMY = "Needs an army beside it";
 /** A field army about to be raised, before it has a number (the Military window's Deploy). */
 export const NEW_ARMY = "The new army";
 
@@ -1109,10 +1090,7 @@ export const RESULT_WORDS = {
   theGame: "The game",
   yourPoints: "Your points",
   tiles: "Tiles explored",
-  crates: "Crates opened",
   riftsAndCamps: "Rifts and camps",
-  hyperstructuresTaken: "Hyperstructures taken",
-  hyperstructuresHeld: "Hyperstructures held",
   sitesCleared: "Sites cleared",
   chests: "Chests",
   deepest: "Deepest",
@@ -1177,7 +1155,6 @@ export const DAY_SHARE_WORDS = {
   playFree: "Free to play",
   /** The day's best moment, its card's headline: a chest, a clear by its site's name, or the land revealed. */
   best: {
-    chest: "Ruin chest opened",
     clear: (site: string) => `${site} cleared`,
     reveals: (count: string) => `${count} tiles revealed`,
   },
@@ -1375,10 +1352,6 @@ export const HOME_STEP_WORDS = {
       .join(" · "),
 } as const;
 
-/** The Season chip's tip: what a common chest pays today, and the pool the season pays chests from. */
-export const commonChestPays = (lords: string) => `A Common chest pays ${lords} LORDS today`;
-export const seasonPool = (lords: string, today: string | undefined) =>
-  `Season pool ${lords} LORDS${today === undefined ? "" : `, ${today} released today`}`;
 export const POOL_NOT_PUBLISHED = "Pool not published yet";
 /** The season's top prizes, as a podium names itself to assistive technology. */
 export const SEASON_PRIZES = "Season prizes";
@@ -2010,7 +1983,6 @@ export const NOTIFICATION_KIND_WORDS = {
   messages: "messages",
   deliveries: "deliveries",
   bitcoin: "Bitcoin payouts",
-  points: "Hyperstructure points",
 } as const satisfies Record<NotificationKind, string>;
 
 /** Kinds of alert as one list, in the table's order ("fights, results and messages"). */
@@ -2247,41 +2219,6 @@ export const relicShortName = (relicId: ResourcesIds): string => {
   const relic = getRelicInfo(relicId);
   if (!relic) throw new Error(`Resource ${relicId} is not a relic`);
   return relic.name.replace(" Relic", "");
-};
-
-/** The title of a window that activates a relic: "Activate Stamina I". */
-export const activateRelic = (relicId: ResourcesIds): string => `Activate ${relicShortName(relicId)}`;
-
-/** Who would activate a relic: an army, named by the realm it came from ("Army of Egonal"), or a structure. */
-export const relicHolderLine = (isArmy: boolean, home: string | null): string =>
-  isArmy ? (home ? `${ARMY} of ${home}` : ARMY) : "Structure";
-
-/** A stamina relic on an army already at full stamina: it speeds a refill the army has not started. */
-export const STAMINA_FULL = "Stamina is full";
-
-/** A relic's activation as the game's relic rules set it: what it costs, and how long it works. */
-interface RelicActivation {
-  essenceCost: number;
-  durationSeconds: number;
-}
-
-/** What a relic does and for how long: "Increases damage by 20% for 30m". */
-export const relicEffectLine = (
-  relicId: ResourcesIds,
-  { durationSeconds }: Pick<RelicActivation, "durationSeconds">,
-) => (durationSeconds > 0 ? `${relicEffect(relicId)} for ${formatDuration(durationSeconds)}` : relicEffect(relicId));
-
-/**
- * The one line every relic's hover says: its name, what it does, for how long, and what activating it costs ("Damage
- * I: Increases damage by 20% for 30m. Costs 500 Essence to activate."); given the Essence its holder can pay with, what
- * it lacks ("Costs 500 Essence to activate; you have 200.").
- */
-export const relicLine = (relicId: ResourcesIds, activation: RelicActivation, essenceHeld?: number): string => {
-  const short = essenceHeld !== undefined && essenceHeld < activation.essenceCost;
-  const pair = formatHeldAgainst(essenceHeld, activation.essenceCost);
-  const cost = `Costs ${short ? pair.need : formatCharge(activation.essenceCost)} ${ESSENCE} to activate`;
-  const held = short ? `; you have ${pair.held}` : "";
-  return `${relicShortName(relicId)}: ${relicEffectLine(relicId, activation)}. ${cost}${held}.`;
 };
 
 // A realm's automation.

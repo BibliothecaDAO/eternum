@@ -31,7 +31,6 @@ vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: true
 vi.mock("./build/build-sheet", () => ({ BuildSheet: () => null, useOpenPlot: () => null }));
 vi.mock("./sites/map-site-card", () => ({ MapSiteCard: () => null, useSelectedMapSite: () => null }));
 vi.mock("./upgrade/castle-upgrade", () => ({ CastleUpgrade: () => null, useKeepSelected: () => null }));
-vi.mock("@/ui/features/military/chest/use-adjacent-own-explorer", () => ({ useAdjacentOwnExplorer: () => 201 }));
 const { tapped } = vi.hoisted(() => ({
   tapped: { current: null as { category: number; innerCol: number; innerRow: number } | null },
 }));
@@ -42,11 +41,7 @@ vi.mock("./building/building-card", () => ({
 
 import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useChestOpeningStore } from "@/hooks/store/use-chest-opening-store";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
-import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
-import { onChestOpenRequest } from "@/three/scenes/worldmap-chest-open-request";
-import { ChestOpenings } from "@/ui/features/military/chest/chest-openings";
 import { campBeside, otherArmyAt, reloadSiteFacts, SITE, SITE_TILE } from "./sites/site-fixture";
 import { attachMapSelectionPositions } from "@/hooks/store/map-selection";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -415,118 +410,6 @@ it("stands Research alone over the spire card, and shows the next selection's ca
   } finally {
     act(() => root.unmount());
     useUIStore.getState().selectOnMap(null);
-  }
-});
-
-it("selects a Frontier chest, follows missing metadata and expiry across clock ticks, opens through the world bridge and retains its receipt", async () => {
-  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-  const { store } = campBeside();
-  const chestHex = { col: 4, row: 5 };
-  const chestTile = { occupierType: TileOccupier.Chest, occupierId: 900, hexCoords: { ...chestHex, alt: false } };
-  tiles.current = [chestTile];
-  useAccountStore.setState({ account: { address: "0x111" } as never });
-  const previousClock = useChainTimeStore.getState();
-  let elapsedMs = 0;
-  const performanceNow = vi.spyOn(performance, "now").mockImplementation(() => elapsedMs);
-  useChainTimeStore.getState().anchor({ timestamp: 350_000, source: "herald-head" });
-  useChestOpeningStore.setState({ openings: {} });
-  useUIStore.getState().selectOnMap({ kind: "hex", hex: chestHex });
-  const host = document.createElement("div");
-  document.body.append(host);
-  const root = createRoot(host);
-  const setup = { store } as never;
-  const request = vi.fn(({ explorerId, hex }) => {
-    expect(explorerId).toBe(201);
-    expect(hex).toEqual(chestHex);
-    tiles.current = [];
-    store.applyEvent({
-      model: "StoryEvent",
-      key: "0x400",
-      value: {
-        game_id: 1,
-        timestamp: 350,
-        story: {
-          RewardChestOpened: {
-            explorer_id: explorerId,
-            structure_id: 7,
-            coord: { alt: false, x: hex.col, y: hex.row },
-            amount: 17,
-          },
-        },
-      },
-    });
-  });
-  const stop = onChestOpenRequest(request);
-  try {
-    await act(async () =>
-      root.render(
-        <GameProvider value={setup} account={{ address: "0x111" } as never}>
-          <ChestOpenings />
-          <FrontierSelectionSheet realm={null} onResearch={() => undefined} />
-        </GameProvider>,
-      ),
-    );
-    expect(host.querySelector('[data-kit-sheet][aria-label="Reward Chest"]')).not.toBeNull();
-    expect(host.textContent).toContain("Syncing chest reward");
-    await act(async () =>
-      store.applyFacts([
-        {
-          model: "SiteChest",
-          key: "0xcce5",
-          value: {
-            game_id: 1,
-            entity_id: 900,
-            tier: 0,
-            amount: "17",
-            reservation_day: "0",
-          },
-        },
-      ] as never),
-    );
-    expect(host.textContent).toContain("17 LORDS");
-    expect(host.textContent).toContain("Expires at day's end");
-    await act(async () => {
-      elapsedMs = 1_000;
-      useChainTimeStore.getState().tick();
-    });
-    expect(useChainTimeStore.getState().nowMs).toBe(351_000);
-    expect(host.textContent).toContain("17 LORDS");
-    expect(host.textContent).toContain("Expires at day's end");
-    expect(host.textContent).not.toContain("Chain time is not known yet");
-    await act(async () => {
-      elapsedMs = 49_999;
-      useChainTimeStore.getState().tick();
-    });
-    expect(host.textContent).toContain("17 LORDS");
-    await act(async () => {
-      elapsedMs = 50_000;
-      useChainTimeStore.getState().tick();
-    });
-    expect(useChainTimeStore.getState().nowMs).toBe(400_000);
-    expect(host.textContent).toContain("0 LORDS");
-    expect(host.textContent).toContain("Expired");
-    await act(async () => useChainTimeStore.getState().anchor({ timestamp: 350_000, source: "herald-head" }));
-    const open = [...host.querySelectorAll("button")].find((button) => button.textContent === "Open")!;
-    expect(open.disabled).toBe(false);
-    await act(async () => open.click());
-    expect(request).toHaveBeenCalledTimes(1);
-    expect(host.textContent).toContain("17 LORDS paid to the army's realm");
-    expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Open")).toBe(false);
-    await act(async () => useUIStore.getState().closeSelectedTile());
-    expect(host.querySelector('[aria-label="Reward Chest"]')).toBeNull();
-    await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: chestHex }));
-    expect(host.textContent).toContain("17 LORDS paid to the army's realm");
-    await act(async () => useUIStore.getState().setMapLayer(true));
-    expect(host.querySelector('[aria-label="Reward Chest"]')).toBeNull();
-  } finally {
-    stop();
-    act(() => root.unmount());
-    host.remove();
-    useUIStore.getState().selectOnMap(null);
-    useUIStore.getState().setMapLayer(false);
-    useAccountStore.setState({ account: null });
-    performanceNow.mockRestore();
-    useChainTimeStore.setState(previousClock);
   }
 });
 

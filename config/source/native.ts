@@ -1,4 +1,3 @@
-import { nativeRuleConstants } from "../../contracts/l3/world-native/schema/balance.gen";
 import { frontierSeasonOnePreset } from "./frontier/season-one";
 import { buildingIds, frontierPreset } from "./frontier/native";
 import { frontierDevconPreset } from "./frontier/devcon";
@@ -34,7 +33,7 @@ const frontierFixturePreset: NativePreset = {
     buildings: frontierSeasonOnePreset.balance.buildings,
     startingResources: frontierSeasonOnePreset.balance.startingResources,
   },
-  modeRules: frontierPreset.modeRules & ~nativeRuleConstants.DISCOVER_CHESTS,
+  modeRules: frontierPreset.modeRules,
   dailyQuest: frontierPreset.dailyQuest,
   banes: frontierPreset.banes,
   labor: frontierPreset.labor,

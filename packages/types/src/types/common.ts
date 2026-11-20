@@ -103,11 +103,7 @@ export enum TickIds {
 
 export enum EntityType {
   DONKEY,
-  ARMY,
-  STRUCTURE,
 }
-
-export type RelicEffect = { id: ResourcesIds; endAt: number };
 
 /** Derived regeneration intervals and the last boundary this army can live through. */
 export type StaminaEffects = {

@@ -4,10 +4,7 @@ export type EffectIntensity = "small" | "medium" | "large";
 
 export interface PointDeltas {
   tilesExploredPoints: number;
-  cratesOpenedPoints: number;
   riftsTakenPoints: number;
-  hyperstructuresTakenPoints: number;
-  hyperstructuresHeldPoints: number;
   totalPoints: number;
 }
 
@@ -24,10 +21,7 @@ export interface PlayerEffect {
 
 interface PlayerSnapshot {
   tilesExploredPoints: number;
-  cratesOpenedPoints: number;
   riftsTakenPoints: number;
-  hyperstructuresTakenPoints: number;
-  hyperstructuresHeldPoints: number;
   totalPoints: number;
   rank: number;
 }
@@ -37,10 +31,7 @@ interface RankedPlayerWithActivity {
   rank: number;
   points: number | null;
   tilesExploredPoints: number;
-  cratesOpenedPoints: number;
   riftsTakenPoints: number;
-  hyperstructuresTakenPoints: number;
-  hyperstructuresHeldPoints: number;
 }
 
 const EFFECT_DURATION_MS = 2500;
@@ -48,10 +39,7 @@ const MOCKUP_INTERVAL_MS = 4000;
 
 const createEmptyDeltas = (): PointDeltas => ({
   tilesExploredPoints: 0,
-  cratesOpenedPoints: 0,
   riftsTakenPoints: 0,
-  hyperstructuresTakenPoints: 0,
-  hyperstructuresHeldPoints: 0,
   totalPoints: 0,
 });
 
@@ -96,10 +84,7 @@ export const useLeaderboardEffects = (
       const address = normalizeAddress(player.address);
       currentSnapshots.set(address, {
         tilesExploredPoints: player.tilesExploredPoints,
-        cratesOpenedPoints: player.cratesOpenedPoints,
         riftsTakenPoints: player.riftsTakenPoints,
-        hyperstructuresTakenPoints: player.hyperstructuresTakenPoints,
-        hyperstructuresHeldPoints: player.hyperstructuresHeldPoints,
         totalPoints: player.points,
         rank: player.rank,
       });
@@ -127,16 +112,7 @@ export const useLeaderboardEffects = (
 
       const deltas: PointDeltas = {
         tilesExploredPoints: Math.max(0, currentSnapshot.tilesExploredPoints - previousSnapshot.tilesExploredPoints),
-        cratesOpenedPoints: Math.max(0, currentSnapshot.cratesOpenedPoints - previousSnapshot.cratesOpenedPoints),
         riftsTakenPoints: Math.max(0, currentSnapshot.riftsTakenPoints - previousSnapshot.riftsTakenPoints),
-        hyperstructuresTakenPoints: Math.max(
-          0,
-          currentSnapshot.hyperstructuresTakenPoints - previousSnapshot.hyperstructuresTakenPoints,
-        ),
-        hyperstructuresHeldPoints: Math.max(
-          0,
-          currentSnapshot.hyperstructuresHeldPoints - previousSnapshot.hyperstructuresHeldPoints,
-        ),
         totalPoints: Math.max(0, currentSnapshot.totalPoints - previousSnapshot.totalPoints),
       };
 
@@ -190,15 +166,9 @@ export const useLeaderboardEffects = (
     for (const player of selectedPlayers) {
       const address = normalizeAddress(player.address);
       const deltas = createEmptyDeltas();
-      const categories = [
-        "tilesExploredPoints",
-        "cratesOpenedPoints",
-        "riftsTakenPoints",
-        "hyperstructuresTakenPoints",
-        "hyperstructuresHeldPoints",
-      ] as const;
+      const categories = ["tilesExploredPoints", "riftsTakenPoints"] as const;
       const shuffledCategories = categories.toSorted(() => Math.random() - 0.5);
-      const numCategories = 1 + Math.floor(Math.random() * 3);
+      const numCategories = 1 + Math.floor(Math.random() * categories.length);
       let totalGain = 0;
 
       for (let index = 0; index < numCategories; index += 1) {

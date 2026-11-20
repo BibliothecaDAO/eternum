@@ -4,10 +4,7 @@ import type { HistoryCodec } from "../history-store";
 
 const activities = {
   Exploration: "exploration",
-  RelicChest: "openRelicChest",
-  HyperstructureCapture: "hyperStructureBanditsDefeat",
   StructureCapture: "otherStructureBanditsDefeat",
-  Hyperstructure: "hyperstructureShare",
 } as const;
 
 export function createNativeHistoryCodec(schema: NativeSchema): HistoryCodec {

@@ -157,8 +157,6 @@ export const BattleLab = ({
       state.attacker,
       state.defender,
       state.biome,
-      state.attacker.relics,
-      state.defender.relics,
       combatContext,
     );
     if (!result.ok) return null;

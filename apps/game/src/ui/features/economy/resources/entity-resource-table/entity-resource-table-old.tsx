@@ -1,23 +1,16 @@
-import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_TIER_NAMES } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceChip } from "@/ui/features/economy/resources";
-import {
-  configManager,
-  getBuildingCount,
-  getStructureArmyRelicEffects,
-  getStructureRelicEffects,
-  isMilitaryResource,
-} from "@bibliothecadao/eternum";
+import { configManager, getBuildingCount, isMilitaryResource } from "@bibliothecadao/eternum";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { useNativeRowOrAbsent, useNativeRow, useNativeFacts } from "@/hooks/helpers/use-native-facts";
+import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { BuildingType, getBuildingFromResource, ID, ResourcesIds } from "@bibliothecadao/types";
 import { HudButton } from "@/ui/design-system/kit/hud-elements";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { ALWAYS_SHOW_RESOURCES } from "./utils";
 
 interface EntityResourceTableOldProps {
@@ -47,17 +40,7 @@ export const EntityResourceTableOld = React.memo(
 
     const keys = entityId ? { game_id: configManager.getActiveGameId(), entity_id: entityId } : undefined;
     const structureBuildings = useNativeRow("StructureBuildings", keys);
-    const productionBoostBonus = useNativeRowOrAbsent("ProductionBonus", keys);
-    const guards = useNativeFacts([...GUARD_MODELS]);
     const now = useCurrentDefaultTick();
-
-    const activeRelicEffects = useMemo(() => {
-      const structureArmyRelicEffects = [...guards.store.inGame("Guard", configManager.getActiveGameId())]
-        .filter((guard) => entityId !== undefined && guard.structure_id === BigInt(entityId))
-        .flatMap((guard) => getStructureArmyRelicEffects(guard, now));
-      const structureRelicEffects = productionBoostBonus ? getStructureRelicEffects(productionBoostBonus, now) : [];
-      return [...structureRelicEffects, ...structureArmyRelicEffects];
-    }, [now, productionBoostBonus, guards, entityId]);
 
     const resourceManager = useResourceManager(entityId);
 
@@ -70,7 +53,6 @@ export const EntityResourceTableOld = React.memo(
     }, []);
 
     if (!entityId || !resourceManager) return <div>No Entity Selected</div>;
-    if (!productionBoostBonus) return <div>Loading production…</div>;
 
     return (
       <div className="flex flex-col gap-3">
@@ -171,7 +153,6 @@ export const EntityResourceTableOld = React.memo(
                           resourceId={resourceId}
                           resourceManager={resourceManager}
                           hideZeroBalance={!showAllResources && !ALWAYS_SHOW_RESOURCES.includes(resourceId)}
-                          activeRelicEffects={activeRelicEffects}
                           canOpenProduction={hasProductionBuilding}
                           disableButtons={disableButtons}
                         />
