@@ -32,8 +32,8 @@ pub mod AspectState {
     pub impl Aspects<
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of crate::aspects::IAspects<ComponentState<TContractState>> {
-        fn draw_realm(self: @ComponentState<TContractState>, orders: u128, order: u8, seed: u256) -> u32 {
-            assert!(crate::aspects::order_aspect(orders, order) != 0, "Order has no Aspect");
+        fn draw_realm(self: @ComponentState<TContractState>, order: u8, seed: u256) -> u32 {
+            assert!(crate::aspects::order_aspect(super::rules(), order) != 0, "Order has no Aspect");
             assert!(
                 self.data.realms.catalogue_count.read() == crate::realms::CANONICAL_REALM_COUNT,
                 "incomplete realm catalogue",
@@ -45,10 +45,7 @@ pub mod AspectState {
         }
 
         fn join(ref self: ComponentState<TContractState>, key: ResourceKey, order: u8) {
-            let Some(orders) = super::rules(key.game_id) else {
-                return;
-            };
-            let aspect = crate::aspects::order_aspect(orders, order);
+            let aspect = crate::aspects::order_aspect(super::rules(), order);
             assert!(
                 self.data.settlements.home_aspects.read((key.game_id, key.entity_id)) == 0, "Aspect already chosen",
             );

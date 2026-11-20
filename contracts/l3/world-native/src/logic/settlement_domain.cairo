@@ -291,8 +291,7 @@ pub mod SettlementLogic {
             }
             let mut root = context.raw_root;
             let seed = crate::random::game_root(ref root, context.game_id);
-            crate::logic::aspects::dispatcher(context.game_id)
-                .draw_realm(crate::logic::aspects::rules(), order.expect('choose an Order'), seed)
+            crate::logic::aspects::dispatcher(context.game_id).draw_realm(order.expect('choose an Order'), seed)
         }
 
         fn claim_frontier_source(

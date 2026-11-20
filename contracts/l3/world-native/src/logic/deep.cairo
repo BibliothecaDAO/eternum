@@ -1,4 +1,3 @@
-use starknet::storage::StoragePointerReadAccess;
 use crate::commands::ExecutionContext;
 use crate::geometry::tile_key;
 use crate::troops::{Coord, ExplorerKey, IBattleResolutionDispatcherTrait};
