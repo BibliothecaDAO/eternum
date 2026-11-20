@@ -27,8 +27,6 @@ export type { ShardDirectory, RegisteredShard } from "./official-shards";
 
 export { computeSeasonTop } from "./season-top";
 
-export { readBlitzRoster } from "./shard-roster";
-
 export { readFrontierFunding, frontierTreasuryAmount, type FrontierFundingTerms } from "./frontier-funding";
 
 export { ServiceResponseFailure, serviceError, serviceFailure, serviceResponseFailure } from "./service-error";
