@@ -23,7 +23,10 @@ export interface ShareWorld {
   creditFragments: (payout: SharePayout) => Promise<Response>;
 }
 
-export const shareWorldOf = (env: Pick<IdentityEnv, "DB" | "GUARDIAN" | "VALUE_RELAY" | "OPERATOR_TOKEN">, fetchShard: typeof fetch): ShareWorld => ({
+export const shareWorldOf = (
+  env: Pick<IdentityEnv, "DB" | "GUARDIAN" | "VALUE_RELAY" | "OPERATOR_TOKEN">,
+  fetchShard: typeof fetch,
+): ShareWorld => ({
   db: env.DB,
   glory: (game) => gloryOn(env, fetchShard, game),
   seasonGames: () => openFrontierGames(env, fetchShard, Math.floor(Date.now() / 1000)),

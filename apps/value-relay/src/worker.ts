@@ -644,7 +644,10 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       ),
     );
   }
-  private async operateShard<T>(chainId: string, operate: (shard: Awaited<ReturnType<typeof readRegisteredShard>>) => Promise<T>) {
+  private async operateShard<T>(
+    chainId: string,
+    operate: (shard: Awaited<ReturnType<typeof readRegisteredShard>>) => Promise<T>,
+  ) {
     const result = await Effect.runPromise(
       this.shardSigning.withPermit(
         Effect.result(

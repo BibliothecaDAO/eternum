@@ -249,7 +249,10 @@ export function createShareStore(db: D1Database) {
       )
       .bind(sharer, game.chainId, game.gameId, friend)
       .all<{ email: string }>();
-    const own = await db.prepare('SELECT "email" FROM "user" WHERE "realmsId" = ?').bind(friend).first<{ email: string }>();
+    const own = await db
+      .prepare('SELECT "email" FROM "user" WHERE "realmsId" = ?')
+      .bind(friend)
+      .first<{ email: string }>();
     return own !== null && !others.results.some(({ email }) => mailboxOf(email) === mailboxOf(own.email));
   };
 

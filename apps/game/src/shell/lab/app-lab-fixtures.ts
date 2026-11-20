@@ -318,7 +318,15 @@ export const LAB_NO_SHARES: ShareTally = {
   fragmentsEarned: 0,
 };
 export const LAB_SHARE_TALLIES: Partial<Record<keyof typeof LAB_SCREENS, ShareTally>> = {
-  "shared-days": { links: 9, posted: 7, visits: 1_240, joined: 31, activated: 12, friendsPaid: 8, fragmentsEarned: 800 },
+  "shared-days": {
+    links: 9,
+    posted: 7,
+    visits: 1_240,
+    joined: 31,
+    activated: 12,
+    friendsPaid: 8,
+    fragmentsEarned: 800,
+  },
 };
 
 /** The Realms the linked wallet holds on each screen that reads them (the relay's held-Realms answer). */

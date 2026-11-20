@@ -3208,7 +3208,15 @@ describe("shared links", () => {
 
   it("counts a friend who opened the link, then joined, then earned 100 Glory", async () => {
     const sharer = await player("sharer-funnel");
-    expect(await sharer.tally()).toEqual({ links: 0, posted: 0, visits: 0, joined: 0, activated: 0, friendsPaid: 0, fragmentsEarned: 0 });
+    expect(await sharer.tally()).toEqual({
+      links: 0,
+      posted: 0,
+      visits: 0,
+      joined: 0,
+      activated: 0,
+      friendsPaid: 0,
+      fragmentsEarned: 0,
+    });
     const code = await sharer.share(3);
     expect((await sharer.browser.request(`/api/shares/${code}/posted`, { method: "POST" })).status).toBe(204);
 
@@ -3217,14 +3225,38 @@ describe("shared links", () => {
     const friendBrowser = createBrowser();
     await visit(friendBrowser, code);
     await visit(friendBrowser, code);
-    expect(await sharer.tally()).toEqual({ links: 1, posted: 1, visits: 1, joined: 0, activated: 0, friendsPaid: 0, fragmentsEarned: 0 });
+    expect(await sharer.tally()).toEqual({
+      links: 1,
+      posted: 1,
+      visits: 1,
+      joined: 0,
+      activated: 0,
+      friendsPaid: 0,
+      fragmentsEarned: 0,
+    });
 
     const friend = await player("friend-funnel", friendBrowser);
-    expect(await sharer.tally()).toEqual({ links: 1, posted: 1, visits: 1, joined: 1, activated: 0, friendsPaid: 0, fragmentsEarned: 0 });
+    expect(await sharer.tally()).toEqual({
+      links: 1,
+      posted: 1,
+      visits: 1,
+      joined: 1,
+      activated: 0,
+      friendsPaid: 0,
+      fragmentsEarned: 0,
+    });
     friend.earn(99);
     expect((await sharer.tally()).activated).toBe(0);
     friend.earn(100);
-    expect(await sharer.tally()).toEqual({ links: 1, posted: 1, visits: 1, joined: 1, activated: 1, friendsPaid: 0, fragmentsEarned: 0 });
+    expect(await sharer.tally()).toEqual({
+      links: 1,
+      posted: 1,
+      visits: 1,
+      joined: 1,
+      activated: 1,
+      friendsPaid: 0,
+      fragmentsEarned: 0,
+    });
   });
 
   it("dates a join from the account's making, and counts Glory earned in the link's game however late it is first read", async () => {
@@ -3385,7 +3417,15 @@ describe("shared links", () => {
       moment: titans.aspect,
       name: "Dana",
     });
-    expect(await sharer.tally()).toEqual({ links: 1, posted: 0, visits: 2, joined: 1, activated: 0, friendsPaid: 0, fragmentsEarned: 0 });
+    expect(await sharer.tally()).toEqual({
+      links: 1,
+      posted: 0,
+      visits: 2,
+      joined: 1,
+      activated: 0,
+      friendsPaid: 0,
+      fragmentsEarned: 0,
+    });
   });
 
   const inviteCode = async (who: Awaited<ReturnType<typeof player>>, aspect: number) =>
@@ -3419,7 +3459,13 @@ describe("shared links", () => {
     const credits = fragmentCredits();
     expect(credits.filter(({ amount }) => amount === 100)).toHaveLength(10);
     expect(credits.filter(({ amount }) => amount === 1000)).toEqual([
-      { id: `friends:${chainId}:${gameId}:${sharer.realmsId}`, realmsId: sharer.realmsId, chainId, gameId, amount: 1000 },
+      {
+        id: `friends:${chainId}:${gameId}:${sharer.realmsId}`,
+        realmsId: sharer.realmsId,
+        chainId,
+        gameId,
+        amount: 1000,
+      },
     ]);
   });
 
@@ -3438,7 +3484,13 @@ describe("shared links", () => {
     await minuteCron();
     await minuteCron();
     expect(await sharer.tally()).toMatchObject({ activated: 2, friendsPaid: 1, fragmentsEarned: 100 });
-    const paid = { id: `friend:${chainId}:${gameId}:${friend.realmsId}`, realmsId: sharer.realmsId, chainId, gameId, amount: 100 };
+    const paid = {
+      id: `friend:${chainId}:${gameId}:${friend.realmsId}`,
+      realmsId: sharer.realmsId,
+      chainId,
+      gameId,
+      amount: 100,
+    };
     expect(fragmentCredits()).toEqual([paid, paid]);
   });
 
