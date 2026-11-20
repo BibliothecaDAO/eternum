@@ -63,7 +63,7 @@ vi.mock("./shard-client", () => ({
     });
     gameId = async (name: string) => (name === "frontier-1" ? 1 : 0);
     gameRelease = async (gameId: number) => mock.pins.get(gameId)!;
-    game = async () => ({ settled: false, preset_id: 7n, family: 1n });
+    game = async () => ({ settled: false, family: 1n });
     applyRelease = async (gameId: number, releaseId: number) => {
       mock.pins.set(gameId, releaseId);
       return `0x${gameId}${releaseId}`;

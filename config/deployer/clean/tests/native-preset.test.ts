@@ -2,9 +2,9 @@ import { frontierSeasonOnePreset } from "../../../source/frontier/season-one";
 import { buildingIds } from "../../../source/frontier/native";
 import { buildLedgerEconomicPreset } from "../ledger/economics";
 import { findRegistrarGame } from "../registrar/calls";
-import { nativeReleasePresets, nativePresets } from "../../../source/native";
+import { nativePresets } from "../../../source/native";
 import { describe, expect, test, mock } from "bun:test";
-import { CallData, type RpcProvider } from "starknet";
+import type { RpcProvider } from "starknet";
 import schema from "../../../../contracts/l3/world-native/schema/schema.json";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
@@ -27,7 +27,6 @@ import { RESOURCE_PRECISION, ResourcesIds, deepSites } from "../../../../package
 import { buildNativeGameParams, loadNativePresetConfiguration } from "../registrar/native-preset";
 
 const abi = [...Object.values(schema.types), ...schema.games.entrypoints];
-const codec = new CallData(abi);
 
 function configuration(preset: number) {
   const config = loadNativePresetConfiguration("madara.blitz", preset);
@@ -35,10 +34,7 @@ function configuration(preset: number) {
 }
 
 describe("native presets", () => {
-  test("release registrations contain only Blitz and nonpaying Season 1", () => {
-    for (const id of [2, FRONTIER_S1_PRESET_ID]) expect(nativeReleasePresets[id]!.chests).toBeNull();
-    for (const id of [FRONTIER_PRESET_ID, FRONTIER_DEVCON_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID])
-      expect(nativeReleasePresets[id]).toBeUndefined();
+  test("the release's commands leave out retired ones and Season 1 opens army relics", () => {
     expect(nativeCommandBits).not.toHaveProperty("RefillStamina");
     expect(nativeCommandBits).not.toHaveProperty("WithdrawLords");
     for (const retired of ["OpenRelicChest", "CraftRelic", "CloseSeason", "ContributeHyperstructure"])
@@ -68,13 +64,7 @@ describe("native presets", () => {
       expect(preset.rules.day_unit_seconds).toBeGreaterThan(0);
       expect(source.bridgeResources).toEqual([]);
       expect(preset.economy.withdrawals.isNone()).toBe(true);
-      for (const command of [
-        "DepositResource",
-        "OffloadArrival",
-        "SendResources",
-        "TransferExplorerResources",
-        "TransferExplorerResourcesToStructure",
-      ] as const) {
+      for (const command of ["OffloadArrival", "TransferExplorerResources"] as const) {
         expect(preset.rules.command_mask & BigInt(nativeCommandBits[command])).toBe(0n);
       }
       const grants = [
@@ -184,7 +174,7 @@ describe("native presets", () => {
       const legacy = buildNativePreset(loadNativePresetConfiguration(network, id), id);
       expect(legacy.rules.command_mask & BigInt(nativeCommandBits.InteractSite)).toBe(0n);
     }
-    for (const command of ["SendResources", "TransferExplorerResourcesToStructure", "WithdrawResource"] as const)
+    for (const command of ["OffloadArrival", "TransferExplorerResources"] as const)
       expect(mask & BigInt(nativeCommandBits[command])).toBe(0n);
   });
   test("the accelerated Frontier preset is Frontier with every season clock 120 times faster, under its own id", () => {
@@ -823,7 +813,6 @@ test("an optional Deep preset serializes its rings, its beasts in kind order and
       building_pay: deep.buildingPay,
       altar_threshold: deep.altarThreshold,
     });
-    codec.compile("register_preset", { preset_id: source.id, definition: built });
   } finally {
     source.deep = previous;
   }
@@ -875,7 +864,6 @@ test("the daily quest codec replaces legacy labor and preserves whole reward uni
       essence: 1500n,
       bonus_percent: 150,
     });
-    codec.compile("register_preset", { preset_id: source.id, definition: built });
     for (const invalid of [
       { ...questFixture(), baseCounts: [1] },
       { ...questFixture(), baseCounts: [1, 1, 1, 0, 1, 2, 15] },
@@ -923,7 +911,6 @@ test("the bane codec preserves whole quest units and refuses invalid effects", (
       production_percent: 50,
       quest_counts: [3n, 6n, 9n, 12n, 20n, 40n, 60n, 80n, 2500n, 6000n, 10000n, 15000n],
     });
-    codec.compile("register_preset", { preset_id: source.id, definition: built });
     for (const invalid of [
       { ...baneFixture(), chanceStep: 0 },
       { ...baneFixture(), chanceStep: 101 },
@@ -974,7 +961,6 @@ test("the race codec preserves its season length, stages and Triumph rates", () 
       pale_moon_percent: 50,
       spoils_percent: 200,
     });
-    codec.compile("register_preset", { preset_id: source.id, definition: built });
   } finally {
     Object.assign(source, previous);
   }
@@ -1089,6 +1075,5 @@ test("preset 7 activates the complete Slice 1 rules while fixtures and historica
       [0, 6000, 3000, 1000, 0],
       [0, 0, 6000, 3000, 1000],
     ]);
-    codec.compile("register_preset", { preset_id: source.id, definition: built });
   }
 });

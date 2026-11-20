@@ -56,7 +56,6 @@ function shard(
     gameRelease: async (gameId) => pins[gameId]!,
     game: async (gameId) => ({
       settled: settled.includes(gameId),
-      preset_id: 7n,
       family: BigInt(blitzGames.includes(gameId) ? BLITZ : FRONTIER),
     }),
     applyRelease: async (gameId, releaseId) => {
@@ -114,9 +113,9 @@ test("a Frontier release leaves every Blitz game on its own release", async () =
   expect(applied).toEqual([[1, 3]]);
 });
 
-test.each([5n, 6n, 101n])("an existing game on retired preset %s keeps its release", async (presetId) => {
+test("a game of another family keeps its release", async () => {
   const { chain, applied, pins } = shard(2, { 1: 1, 2: 1 });
-  chain.game = async (gameId) => ({ settled: false, preset_id: gameId === 1 ? presetId : 7n, family: 1n });
+  chain.game = async (gameId) => ({ settled: false, family: gameId === 1 ? 2n : 1n });
   expect(await advanceGames(chain, published(1, 2), candidate(2), ["game-1", "game-2"])).toEqual([
     { gameId: 2, from: 1, to: 2, transactions: ["0x22"] },
   ]);
@@ -247,7 +246,7 @@ describe("interrupted Frontier launches", () => {
       }),
       gameId: async (name) => games[name] ?? 0,
       gameRelease: async (gameId) => pins.get(gameId)!,
-      game: async () => ({ settled: false, preset_id: 7n, family: 1n }),
+      game: async () => ({ settled: false, family: 1n }),
       applyRelease: async (gameId, releaseId) => {
         pins.set(gameId, releaseId);
         applied.push([gameId, releaseId]);

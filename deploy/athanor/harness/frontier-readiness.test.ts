@@ -13,7 +13,6 @@ function realm() {
   const values: Record<string, Record<string, unknown>> = {
     SliceRules: { ...rules, game_id: 1, mode_rules: 0 },
     GameRegistry: gameRegistryRow({
-      preset_id: 5,
       start_settling_at: "0",
       start_main_at: "200",
       scheduled_end_at: "86600",

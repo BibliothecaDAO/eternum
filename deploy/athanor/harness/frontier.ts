@@ -40,10 +40,9 @@ import {
 } from "@bibliothecadao/types";
 import type { NativeCommand } from "../../../contracts/l3/world-native/schema/commands.gen";
 import type { NativeRows } from "../../../contracts/l3/world-native/schema/client.gen";
-import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
+import { seasonOneReleaseDefinition } from "../../../config/deployer/clean/config/native-preset";
 import { nativePresetForId } from "../../../config/source/native";
 import { FRONTIER_FIXTURE_PRESET_ID } from "../../../config/source/common/native-preset-modes";
-import { loadNativePresetConfiguration } from "../../../config/deployer/clean/registrar/native-preset";
 import type { HarnessAccount } from "./account-factory";
 import { actorKey, type HarnessGameClient } from "./game-client";
 import { createRpcMetrics, trackTransaction, type TrackedTransaction, type WorkloadResult } from "./driver";
@@ -216,10 +215,8 @@ export async function runFrontierWorkload(options: RunFrontierOptions): Promise<
 
 type RuleRecorder = ReturnType<typeof recordRules>;
 
-/** The real-speed pass's observations, against the preset its season was created from. */
 function recordRules(client: GameClient) {
-  const presetId = client.setup.store.require("GameRegistry", { game_id: client.gameId }).preset_id;
-  const definition = buildNativePreset(loadNativePresetConfiguration("madara.frontier", presetId), presetId);
+  const definition = seasonOneReleaseDefinition();
   const evidence: FrontierRuleEvidence = { rates: [], charges: [] };
   return {
     evidence,

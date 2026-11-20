@@ -255,9 +255,8 @@ async function waitUntilPlaying({ setup: { store }, gameId: game_id }: GameClien
     const timestamp = getBlockTimestamp().currentBlockTimestamp;
     if (current.end_at !== 0n && timestamp >= Number(current.end_at)) throw new Error(`Game ${game_id} has ended`);
     if (
-      current.ready &&
-      (current.dev_mode_on ||
-        (timestamp >= Number(current.start_main_at) && timestamp >= Number(current.start_settling_at)))
+      current.dev_mode_on ||
+      (timestamp >= Number(current.start_main_at) && timestamp >= Number(current.start_settling_at))
     )
       return;
     await sleep(1_000);

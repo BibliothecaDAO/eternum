@@ -84,11 +84,6 @@ export const nativePresets: Record<number, NativePreset> = Object.fromEntries(
   }),
 );
 
-/** Definitions supported by this release; historical paying presets remain available for decoding. */
-export const nativeReleasePresets: Record<number, NativePreset> = Object.fromEntries(
-  Object.entries(nativePresets).filter(([, preset]) => preset.chests === null),
-);
-
 export function nativePresetForId(id: number): NativePreset {
   const preset = nativePresets[id];
   if (!preset) throw new Error(`Unsupported native preset ${id}`);
