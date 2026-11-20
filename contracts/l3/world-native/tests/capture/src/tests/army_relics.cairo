@@ -4,29 +4,7 @@ use super::registrar::*;
 fn relic_game() -> (
     super::Deployment, u32, u64, u64, ExplorerKey, crate::expeditions::FrontierDiscoveryRules, ChestTiers,
 ) {
-    let (_, mut preset) = super::preset_projection::current_definition("frontier-check");
-    preset.rules.troop_limit_config.settlement_deployment_cap = 6000;
-    let mut stock = array![];
-    for grant in preset.settlement.realms.resources {
-        stock
-            .append(
-                crate::resources::ResourceAmount {
-                    amount: if *grant
-                        .resource_type == crate::troops::troop_resource(crate::troops::TroopType::Knight, 0) {
-                        12000 * RESOURCE_PRECISION
-                    } else {
-                        *grant.amount
-                    },
-                    ..*grant,
-                },
-            );
-    }
-    preset.settlement.realms.resources = stock.span();
-    preset.economy.race = None;
-    preset.rules.tick_config.armies_tick_in_seconds = 1;
-    preset.rules.troop_stamina_config.stamina_gain_per_tick = 120;
-    preset.rules.battle_config.cooldown_seconds = 0;
-    preset.rules.battle_config.regular_immunity_ticks = 0;
+    let (_, preset) = super::preset_projection::current_definition("frontier-check");
     let (d, game_id) = create_open_frontier(1, preset, BAG_SECONDS);
     assert!(
         execute_in_game(
@@ -42,6 +20,7 @@ fn relic_game() -> (
     let home = ResourceKey { game_id, entity_id: home_id };
     let explorer_id = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
     let key = ExplorerKey { game_id, explorer_id };
+    strong_frontier_army(d, game_id, key);
     let discovery = snforge_std::interact_with_state(
         d.games, || crate::logic::discovery::lore_rules(crate::logic::research::require(home).learned),
     );
@@ -212,6 +191,7 @@ fn discover_relic(
     cache: bool,
     timestamp: u64,
 ) -> ResourceKey {
+    super::progression::set_bar(d, key, crate::balance::rules::TROOP_STAMINA_CONFIG.stamina_knight_max.into(), timestamp);
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     let destination = crate::geometry::neighbor(army.coord, 0);
     let root = relic_root(key.game_id, rules, odds, expected, cache);
