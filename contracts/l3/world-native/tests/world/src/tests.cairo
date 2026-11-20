@@ -184,9 +184,7 @@ fn indirect_or_zero_caller_is_rejected_before_root() {
     play_fixture::caller(d.games, d.actor, 100);
     for caller in array![authority(), 0.try_into().unwrap()] {
         start_cheat_caller_address(d.games, caller);
-        assert_entry_refusal(
-            d, 1, release, play_fixture::encode(action(d, 1).command), "direct account required",
-        );
+        assert_entry_refusal(d, 1, release, play_fixture::encode(action(d, 1).command), "direct account required");
     }
 }
 
@@ -434,9 +432,7 @@ fn command_list_and_calldata_limits_are_checked_before_root() {
     for command in array![oversized_list, oversized_calldata.span(), array![0, 7, 256, 0, 0, 0].span()] {
         let mut spy = spy_events();
         assert!(
-            IPlayFixtureSafeDispatcher { contract_address: d.games }
-                .play_with_root(1, release, command, 1)
-                .is_err(),
+            IPlayFixtureSafeDispatcher { contract_address: d.games }.play_with_root(1, release, command, 1).is_err(),
         );
         assert_eq!(play_fixture::pins(d.games, 1), release);
         assert!(GameState { contract_address: d.games }.explorer(ExplorerKey { game_id: 1, explorer_id: 7 }).is_none());

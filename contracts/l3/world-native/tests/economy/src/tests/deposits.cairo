@@ -287,9 +287,7 @@ fn season_one_rejects_lords_commands_and_cannot_configure_deposits() {
             crate::relics::OpenChest { explorer_id: 1, coord: crate::troops::Coord { alt: false, x: 0, y: 0 } },
         ),
     ] {
-        super::assert_entry_refusal(
-            d, game_id, release, super::play_fixture::encode(command), "command disabled",
-        );
+        super::assert_entry_refusal(d, game_id, release, super::play_fixture::encode(command), "command disabled");
     }
     start_cheat_caller_address(d.games, super::authority());
     let source = DepositSource {

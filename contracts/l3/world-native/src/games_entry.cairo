@@ -78,12 +78,7 @@ pub mod GamesEntry {
         impl Release: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of crate::games::IGamesPlay<ComponentState<TContractState>> {
-        fn play(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            release_id: u32,
-            command: Span<felt252>,
-        ) {
+        fn play(ref self: ComponentState<TContractState>, game_id: u32, release_id: u32, command: Span<felt252>) {
             let actor = self.validate_play(game_id, release_id, command);
             let timestamp = starknet::get_block_timestamp();
             self.assign_settlement_home_before_roll(game_id, actor, command);
@@ -129,10 +124,7 @@ pub mod GamesEntry {
         }
 
         fn validate_play(
-            self: @ComponentState<TContractState>,
-            game_id: u32,
-            release_id: u32,
-            command: Span<felt252>,
+            self: @ComponentState<TContractState>, game_id: u32, release_id: u32, command: Span<felt252>,
         ) -> ContractAddress {
             let actor = get_caller_address();
             assert!(

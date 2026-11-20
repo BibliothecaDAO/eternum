@@ -52,13 +52,7 @@ pub mod GamesTest {
     }
     #[abi(embed_v0)]
     impl RootFixture of crate::tests::play_fixture::IPlayFixture<ContractState> {
-        fn play_with_root(
-            ref self: ContractState,
-            game_id: u32,
-            release_id: u32,
-            command: Span<felt252>,
-            root: u256,
-        ) {
+        fn play_with_root(ref self: ContractState, game_id: u32, release_id: u32, command: Span<felt252>, root: u256) {
             let actor = self.entry.validate_play(game_id, release_id, command);
             self.entry.assign_settlement_home_before_roll(game_id, actor, command);
             let applied = self.entry.apply_gameplay(game_id, actor, command, root, starknet::get_block_timestamp());

@@ -15,9 +15,7 @@ pub struct TestAction {
 
 #[starknet::interface]
 pub trait IPlayFixture<T> {
-    fn play_with_root(
-        ref self: T, game_id: u32, release_id: u32, command: Span<felt252>, root: u256,
-    );
+    fn play_with_root(ref self: T, game_id: u32, release_id: u32, command: Span<felt252>, root: u256);
     fn last_applied(self: @T) -> bool;
 }
 pub use crate::command_masks::BLITZ_COMMAND_MASK;
