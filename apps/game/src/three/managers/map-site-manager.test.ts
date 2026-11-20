@@ -101,13 +101,20 @@ vi.mock("../structures/hyperstructure-model", async () => {
 });
 
 import { aspects, DEEP_BEASTS, deepSites, MineKinds, ordersOfAspect, TileOccupier } from "@bibliothecadao/types";
+import { deepGateTiles } from "@bibliothecadao/eternum/game-client";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { FRONTIER_BEASTS } from "../structures/frontier-beast";
 import { DEEP_SITE_FACES } from "@/ui/features/frontier/deep/deep-site-faces";
 import { MapSiteManager } from "./map-site-manager";
 import { PLATE_CLEARANCE } from "./structure-visible-presentation";
 
-const noGates = () => ({ setLabel: vi.fn(), retainOnly: vi.fn(), dispose: vi.fn() });
+const noGates = () => ({
+  setLabel: vi.fn(),
+  retainOnly: vi.fn(),
+  dispose: vi.fn(),
+  setHover: vi.fn(),
+  clearHover: vi.fn(),
+});
 
 const tile = (col: number, occupierType: number) => ({
   hexCoords: { col, row: 0, alt: false },
@@ -312,6 +319,11 @@ describe("the Deep's sites on the map", () => {
     expect(drawn).toEqual(
       aspects.map(({ id, name }) => [id, name, "portal", ordersOfAspect(id)[0]!.orderId, id === 2 ? "own" : "neutral"]),
     );
+    const [north] = deepGateTiles(4, 1024);
+    manager.hover({ col: north!.col, row: north!.row });
+    expect(gates.setHover).toHaveBeenLastCalledWith(north!.aspect);
+    manager.hover({ col: 0, row: 0 });
+    expect(gates.clearHover).toHaveBeenCalled();
     manager.destroy();
   });
 });

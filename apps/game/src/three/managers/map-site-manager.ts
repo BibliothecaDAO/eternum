@@ -166,6 +166,9 @@ export class MapSiteManager {
         );
     if (site) this.plates.setHover(site.occupierId);
     else this.plates.clearHover();
+    const gate = tile && this.gateTiles().find(({ col, row }) => col === tile.col && row === tile.row);
+    if (gate) this.gates.setHover(gate.aspect);
+    else this.gates.clearHover();
   }
 
   public setModelVisible(visible: boolean): void {
@@ -259,17 +262,22 @@ export class MapSiteManager {
   }
 
   private refreshGates(): void {
-    const game_id = configManager.getActiveGameId();
-    const rules = this.store.get("DeepRules", { game_id });
-    if (!rules || !this.modelVisible || activeMapLayer()) return this.gates.retainOnly([]);
-    const { spacing } = this.store.require("SettlementRules", { game_id });
-    const own = viewerAspects(this.store, game_id, accountAddress() ?? null);
-    for (const gate of deepGateTiles(rules.gate_distance, spacing)) {
+    const gates = this.modelVisible ? this.gateTiles() : [];
+    if (gates.length === 0) return this.gates.retainOnly([]);
+    const own = viewerAspects(this.store, configManager.getActiveGameId(), accountAddress() ?? null);
+    for (const gate of gates) {
       const position = getWorldPositionForHex({ col: gate.col - FELT_CENTER(), row: gate.row - FELT_CENTER() });
       placePositionOnTerrain(position, this.terrain, PLATE_CLEARANCE);
       this.gates.setLabel({ entityId: gate.aspect, position, plate: gatePlate(gate.aspect, own.has(gate.aspect)) });
     }
     this.gates.retainOnly(aspects.map(({ id }) => id));
+  }
+
+  private gateTiles(): ReturnType<typeof deepGateTiles> {
+    const game_id = configManager.getActiveGameId();
+    const rules = this.store.get("DeepRules", { game_id });
+    if (!rules || activeMapLayer()) return [];
+    return deepGateTiles(rules.gate_distance, this.store.require("SettlementRules", { game_id }).spacing);
   }
 
   private deepPlate(tile: TileSpatialRenderable): MapPlateInput {
