@@ -339,6 +339,11 @@ import {
   formatDollars,
   formatExact,
   formatCount,
+  formatOrdinal,
+  FRIEND_FRAGMENTS,
+  FRIEND_GLORY,
+  FRIENDS_BONUS_FRAGMENTS,
+  FRIENDS_LIMIT,
   formatClockTime,
   formatDuration,
   getRelicInfo,
@@ -1195,6 +1200,10 @@ export const SHARED_DAYS_WORDS = {
     joined: "Friends who joined",
     activated: "Cleared a site",
   },
+  friendsPaid: "Friends paid",
+  fragmentsEarned: `${FRAGMENTS} earned`,
+  ofLimit: (paid: number) => `${formatExact(paid)}/${formatExact(FRIENDS_LIMIT)}`,
+  friendRule: `A friend who joins by your Aspect link and reaches ${formatExact(FRIEND_GLORY)} ${ASPECT_PAGE_WORDS.glory} pays you ${formatCount(FRIEND_FRAGMENTS, FRAGMENT, FRAGMENTS)}. Your ${formatOrdinal(FRIENDS_LIMIT)} adds ${formatExact(FRIENDS_BONUS_FRAGMENTS)}.`,
 } as const;
 
 /** A shared link's landing: who shared which day, and the way into Frontier. */

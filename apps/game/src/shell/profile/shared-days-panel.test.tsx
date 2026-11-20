@@ -68,10 +68,32 @@ it("counts each step a friend took through the player's shared days", async () =
     ["1.2K", "Opened by friends"],
     ["31", "Friends who joined"],
     ["12", "Cleared a site"],
+    ["0/10", "Friends paid"],
+    ["0", "Fragments earned"],
   ]);
 });
 
-it("stands only once the player has posted a day, and says nothing when identity cannot tell", async () => {
+it("counts the friends an Aspect link brought who were paid, the Fragments they earned, and the rule that pays them", async () => {
+  service.shareTally.mockResolvedValue({
+    links: 1,
+    posted: 0,
+    visits: 40,
+    joined: 9,
+    activated: 8,
+    friendsPaid: 8,
+    fragmentsEarned: 800,
+  });
+  await draw();
+  expect(figures().slice(-2)).toEqual([
+    ["8/10", "Friends paid"],
+    ["800", "Fragments earned"],
+  ]);
+  expect(host.textContent).toContain(
+    "A friend who joins by your Aspect link and reaches 100 Glory pays you 100 Fragments. Your 10th adds 1,000.",
+  );
+});
+
+it("stands only once the player has posted a day or a friend joined, and says nothing when identity cannot tell", async () => {
   service.shareTally.mockResolvedValue({
     links: 0,
     posted: 0,
@@ -112,7 +134,7 @@ it("never shows the account before's counts to the next account on the same app,
     fragmentsEarned: 0,
   });
   await draw(client);
-  expect(figures()).toHaveLength(4);
+  expect(figures()).toHaveLength(6);
 
   // A signs out, then B signs in; B's read is slow, then refused.
   identity.session = null;
