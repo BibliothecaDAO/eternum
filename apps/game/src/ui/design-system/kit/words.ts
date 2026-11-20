@@ -1344,7 +1344,7 @@ export const HOME_STEP_WORDS = {
   changeOnYou: "Change it on You",
   loading: "Reading what you hold…",
   freeHome: "A free home",
-  freeHomeLine: "Hold a Realm or a Devcon ticket to add a daily claim.",
+  freeHomeLine: "Hold a Realm to add a daily claim.",
   taken: "Taken",
   keepFree: "Continue with my free home",
   attachTitle: "Choose a daily claim",

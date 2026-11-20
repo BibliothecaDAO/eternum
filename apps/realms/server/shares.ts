@@ -147,7 +147,9 @@ export async function handleShareReport(world: ShareWorld) {
 }
 
 export async function settleShareInvites(world: ShareWorld) {
-  return settleShares(world, nowSeconds());
+  const now = nowSeconds();
+  const { games } = await settleShares(world, now);
+  await deliverSharePayouts(world, games, now);
 }
 
 async function settleShares(world: ShareWorld, now: number, sharer?: string) {
@@ -158,7 +160,7 @@ async function settleShares(world: ShareWorld, now: number, sharer?: string) {
   try {
     games = await world.seasonGames();
   } catch {
-    return { unsettled: pending.length };
+    return { unsettled: pending.length, games: [] };
   }
   const unsettled = new Set<string>();
   const activated = new Set<string>();
@@ -174,8 +176,7 @@ async function settleShares(world: ShareWorld, now: number, sharer?: string) {
       }
   }
   await store.markActivated([...activated], now);
-  await deliverSharePayouts(world, games, now);
-  return { unsettled: [...unsettled].filter((friend) => !activated.has(friend)).length };
+  return { unsettled: [...unsettled].filter((friend) => !activated.has(friend)).length, games };
 }
 
 const isDecidedIn = (join: PendingJoin, game: ShareGame) =>

@@ -30,6 +30,7 @@ import { realmsIdOf } from "./realms-id";
 import { routeIdentityRequest } from "./routes";
 import { codeHashInScope } from "./campaigns";
 import { accountKey } from "./campaign-entry";
+import { settleShareInvites, shareWorldOf } from "./shares";
 import { ORIGIN } from "./workerd-harness";
 import { createTestD1 } from "./test-d1";
 import { sendCampaign, stillFits, visitRecord } from "../scripts/comeback-campaign";
@@ -92,7 +93,6 @@ const memoryBucket = () => {
   };
 };
 const shareCards = memoryBucket();
-/** The value relay's golden upgrade route, as identity calls it through its service binding. */
 const relay = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
   Response.json({ campaign: "devcon-2026", tier: "golden" }),
 );
@@ -3265,7 +3265,7 @@ describe("shared links", () => {
     await other.tally();
     expect(await activatedAt()).toBeNull();
 
-    heralds.delete(`${shard}/games/${gameId}/leaderboard`);
+    heralds.delete(raceUrl);
     expect(await sharer.tally()).toMatchObject({ joined: 1, activated: 0, friendsPaid: 0, fragmentsEarned: 0 });
     vi.useFakeTimers({ toFake: ["Date"], now: Date.now() + 28 * 24 * 3_600_000, shouldAdvanceTime: true });
     onTestFinished(() => {
@@ -3395,6 +3395,7 @@ describe("shared links", () => {
     await visit(browser, code);
     return player(name, browser);
   };
+  const minuteCron = () => settleShareInvites(shareWorldOf(env, fetchShard));
   const fragmentCredits = () =>
     relay.mock.calls
       .filter(([url]) => String(url).endsWith("/api/value/operator/fragments"))
@@ -3408,10 +3409,13 @@ describe("shared links", () => {
     for (let index = 0; index < 11; index++) friends.push(await joinBy(code, `payout-friend-${index}`));
     relay.mockClear();
     for (const friend of friends.slice(0, 9)) friend.earn(100);
+    expect(await sharer.tally()).toMatchObject({ activated: 9, friendsPaid: 0, fragmentsEarned: 0 });
+    await minuteCron();
     expect(await sharer.tally()).toMatchObject({ activated: 9, friendsPaid: 9, fragmentsEarned: 900 });
     for (const friend of friends.slice(9)) friend.earn(150);
+    await minuteCron();
+    await minuteCron();
     expect(await sharer.tally()).toMatchObject({ activated: 11, friendsPaid: 10, fragmentsEarned: 2000 });
-    expect(await sharer.tally()).toMatchObject({ friendsPaid: 10, fragmentsEarned: 2000 });
     const credits = fragmentCredits();
     expect(credits.filter(({ amount }) => amount === 100)).toHaveLength(10);
     expect(credits.filter(({ amount }) => amount === 1000)).toEqual([
@@ -3419,7 +3423,7 @@ describe("shared links", () => {
     ]);
   });
 
-  it("pays nothing for a friend on the sharer's own mailbox, and retries a credit the relay refused until it takes it, once", async () => {
+  it("pays nothing for a friend on the sharer's own mailbox, and the minute cron retries a credit the relay refused until it takes it, once", async () => {
     const sharer = await player("mailbox-sharer");
     publishAspects(sharer.account, 3);
     const code = await inviteCode(sharer, 3);
@@ -3429,9 +3433,11 @@ describe("shared links", () => {
     friend.earn(100);
     relay.mockClear();
     relay.mockResolvedValueOnce(Response.json({ error: "fragment_credit_unavailable" }, { status: 503 }));
+    await minuteCron();
     expect(await sharer.tally()).toMatchObject({ activated: 2, friendsPaid: 0, fragmentsEarned: 0 });
+    await minuteCron();
+    await minuteCron();
     expect(await sharer.tally()).toMatchObject({ activated: 2, friendsPaid: 1, fragmentsEarned: 100 });
-    expect(await sharer.tally()).toMatchObject({ friendsPaid: 1, fragmentsEarned: 100 });
     const paid = { id: `friend:${chainId}:${gameId}:${friend.realmsId}`, realmsId: sharer.realmsId, chainId, gameId, amount: 100 };
     expect(fragmentCredits()).toEqual([paid, paid]);
   });
@@ -3446,6 +3452,7 @@ describe("shared links", () => {
     const friend = await joinBy(((await made.json()) as { code: string }).code, "preseason-friend");
     relay.mockClear();
     friend.earn(100);
+    await minuteCron();
     expect(await sharer.tally()).toMatchObject({ activated: 1, friendsPaid: 1, fragmentsEarned: 100 });
     expect(fragmentCredits()).toEqual([
       { id: `friend:${chainId}:${gameId}:${friend.realmsId}`, realmsId: sharer.realmsId, chainId, gameId, amount: 100 },
