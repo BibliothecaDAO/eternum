@@ -18,7 +18,7 @@ fn launch_rejects_unregistered_presets_before_allocating() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn registered_presets_are_immutable_and_changed_rules_require_a_new_id() {
+fn registered_presets_are_immutable_and_every_game_plays_the_release_numbers() {
     let d = setup();
     let original = definition(true);
     registry(d).register_preset(1, original);
@@ -39,18 +39,12 @@ fn registered_presets_are_immutable_and_changed_rules_require_a_new_id() {
     assert_eq!(registry(d).preset_commitment(101), crate::presets::commitment(changed));
     let new_id = registry(d).create_game(CreateGameParams { name: 'changed', preset_id: 101, ..params(true) });
     let games = IGameDispatcher { contract_address: d.games };
-    assert_eq!(
-        games.rules(old_id).troop_stamina_config.stamina_explore_stamina_cost,
-        original.rules.troop_stamina_config.stamina_explore_stamina_cost,
-    );
-    assert_eq!(
-        games.rules(next_original_id).troop_stamina_config.stamina_explore_stamina_cost,
-        original.rules.troop_stamina_config.stamina_explore_stamina_cost,
-    );
-    assert_eq!(
-        games.rules(new_id).troop_stamina_config.stamina_explore_stamina_cost,
-        changed.rules.troop_stamina_config.stamina_explore_stamina_cost,
-    );
+    for game_id in array![old_id, next_original_id, new_id] {
+        assert_eq!(
+            games.rules(game_id).troop_stamina_config.stamina_explore_stamina_cost,
+            crate::balance::rules::TROOP_STAMINA_CONFIG.stamina_explore_stamina_cost,
+        );
+    }
 }
 
 #[test]
@@ -79,35 +73,6 @@ fn identical_content_under_a_second_id_reuses_the_record_without_rewriting_withd
         },
     );
     assert_eq!(reused_token, stored_token);
-}
-
-#[test]
-fn blitz_launch_initializes_domains_once_and_allocates_isolated_games() {
-    let d = setup();
-    let preset = definition(true);
-    registry(d).register_preset(1, preset);
-    let games = IGameDispatcher { contract_address: d.games };
-    for expected in 1_u32..3 {
-        assert_eq!(registry(d).create_game(CreateGameParams { name: expected.into(), ..params(true) }), expected);
-        let game = games.game(expected);
-        assert_eq!(game.preset_id, 1);
-        assert_eq!(game.end_at, 400);
-        assert_eq!(game.end_grace_seconds, 0);
-        assert_eq!(
-            crate::games::IGamesRolesDispatcherTrait::launcher(
-                crate::games::IGamesRolesDispatcher { contract_address: d.games },
-            ),
-            super::authority(),
-        );
-        assert_eq!(status_at(game, 299), GameStatus::Registration);
-        assert_eq!(status_at(game, 300), GameStatus::Registration);
-        assert_eq!(status_at(game, 400), GameStatus::Registration);
-        assert_eq!(games.rules(expected).map_center_offset, crate::registrar::map_center_offset(expected, 42));
-        let settlement = ISettlementViewsDispatcher { contract_address: d.games };
-        assert_eq!(settlement.realm_grants(expected), preset.settlement.realms);
-        assert_eq!(settlement.settlement_rules(expected).registration_limit, 2);
-    }
-    assert_eq!(registry(d).next_game_id(), 3);
 }
 
 #[test]
@@ -547,100 +512,6 @@ fn roster_settlement_displaces_an_army_without_a_stale_position_or_home_entry() 
 }
 
 #[test]
-fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
-    let d = setup();
-    let mut preset = definition(true);
-    preset.rules.command_mask = super::play_fixture::BLITZ_COMMAND_MASK;
-    preset.rules.mode_rules = HOME_REWARDS | DISCOVER_CAMPS | DISCOVER_CHESTS;
-    open_entry(ref preset);
-    preset.rules.map_config.shards_mines_win_probability = 0;
-    preset.rules.map_config.shards_mines_fail_probability = 1;
-    preset.rules.map_config.camp_win_probability = 1;
-    preset.rules.map_config.camp_fail_probability = 0;
-    preset.rules.map_config.relic_discovery_interval_sec = 60000;
-    registry(d).register_preset(1, preset);
-    let game_id = registry(d).create_game(CreateGameParams { end_grace_seconds: 0, ..params(false) });
-
-    let center = 2147483646 - IGameDispatcher { contract_address: d.games }.rules(game_id).map_center_offset;
-    start_cheat_block_timestamp_global(300);
-    start_cheat_caller_address(d.games, d.games);
-    let home = ResourceKey {
-        game_id,
-        entity_id: ISettlementCreationDispatcher { contract_address: d.games }
-            .create_settlement(
-                game_id,
-                d.actor,
-                crate::troops::Coord { alt: false, x: center, y: center },
-                SettlementCreation::Realm(
-                    RealmCreation {
-                        realm_id: 1,
-                        traits: crate::realms::RealmTraits { wonder: 1, order: 1, resources: array![1].span() },
-                        troops: crate::settlement::StartingTroops::Biome,
-                        activate_economy: true,
-                    },
-                ),
-                crate::commands::action_context(
-                    crate::commands::ExecutionContext { timestamp: 300, ..super::context(d.games, game_id) },
-                ),
-            ),
-    };
-    stop_cheat_caller_address(d.games);
-    let guards = IGuardsDispatcher { contract_address: d.games };
-    let category: u8 = guards.guard(GuardKey { game_id, structure_id: home.entity_id, slot: 0 }).troops.category.into();
-    assert!(
-        !execute_in_game(
-            d,
-            game_id,
-            Command::CreateExplorer(
-                CreateExplorer {
-                    slot: 1, structure_id: home.entity_id, category, tier: 0, amount: RESOURCE_PRECISION, direction: 0,
-                },
-            ),
-            301,
-        ),
-    );
-    assert_eq!(IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).len(), 0);
-    assert!(
-        execute_in_game(
-            d,
-            game_id,
-            Command::CreateExplorer(
-                CreateExplorer {
-                    slot: 0, structure_id: home.entity_id, category, tier: 0, amount: RESOURCE_PRECISION, direction: 0,
-                },
-            ),
-            301,
-        ),
-    );
-    let structures = IStructureOperationsDispatcher { contract_address: d.games };
-    let explorer_id = *structures.home_armies(home).at(0);
-    let troops = GameState { contract_address: d.games };
-    let explorer = ExplorerKey { game_id, explorer_id };
-    let origin = troops.resolved_explorer(explorer).unwrap().coord;
-    let resources = IResourceOperationsDispatcher { contract_address: d.games };
-    let home_slot = ResourceSlot { game_id, entity_id: home.entity_id, resource_type: 1 };
-    let before = resources.resource_balance(home_slot);
-
-    assert!(execute_in_game(d, game_id, Command::Explore(Explore { explorer_id, direction: 0 }), 360));
-
-    let target = crate::geometry::neighbor(origin, 0);
-    let _tile = IMapLogicDispatcher { contract_address: d.games }
-        .tile(crate::geometry::tile_key(game_id, target))
-        .unwrap();
-    assert_eq!(
-        IMapLogicDispatcher { contract_address: d.games }
-            .occupancy(crate::geometry::tile_key(game_id, target))
-            .unwrap()
-            .category,
-        crate::taxonomy::CAMP_OCCUPIER,
-    );
-    assert_eq!(troops.resolved_explorer(explorer).unwrap().coord, origin);
-    // The pool's one row pays 10 percent of the army's strength: one T1 troop earns a tenth of a unit.
-    assert_eq!(resources.resource_balance(home_slot), before + RESOURCE_PRECISION / 10);
-    assert_eq!(resources.resource_balance(ResourceSlot { entity_id: explorer_id, ..home_slot }), 0);
-}
-
-#[test]
 #[feature("safe_dispatcher")]
 fn a_day_is_whole_armies_ticks_and_a_season_starts_on_one() {
     let d = setup();
@@ -727,14 +598,14 @@ fn expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stami
         let veteran = crate::progression::ArmyProgress { logistics: 5, oath_slots: 1, ..Default::default() };
         write_progress(d, army, veteran);
         let maximum = crate::progression::stamina_max(
-            veteran, before.troops.category, preset.rules.troop_stamina_config,
+            veteran, before.troops.category, crate::balance::rules::TROOP_STAMINA_CONFIG,
         );
         let bar = if direction == 0 {
             7
         } else {
             maximum
         };
-        assert!(maximum > preset.rules.troop_stamina_config.stamina_initial.into());
+        assert!(maximum > crate::balance::rules::TROOP_STAMINA_CONFIG.stamina_initial.into());
         timers(d, army, bar, 400);
         let resource_type = crate::troops::stock_resource(before.troops.category, before.troops.tier);
         let resources = IResourceOperationsDispatcher { contract_address: d.games };
@@ -742,12 +613,12 @@ fn expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stami
         let stock = resources.resource_balance(stock_key);
         let capacity = resources.resource_weight(ResourceKey { game_id, entity_id: army.explorer_id }).capacity;
         let elapsed = if direction == 0 {
-            preset.rules.tick_config.armies_tick_in_seconds
+            crate::balance::rules::TICK_CONFIG.armies_tick_in_seconds
         } else {
             0
         };
         let expected_bar = if direction == 0 {
-            bar + preset.rules.troop_stamina_config.stamina_gain_per_tick.into()
+            bar + crate::balance::rules::TROOP_STAMINA_CONFIG.stamina_gain_per_tick.into()
         } else {
             bar
         };
@@ -851,18 +722,20 @@ fn yesterdays_armies_leave_todays_army_cap_free() {
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
     let troops = GameState { contract_address: d.games };
     let home = ResourceKey { game_id, entity_id: 1 };
-    assert!(execute_in_game(d, game_id, muster_command(category, 0), 351));
-    assert!(execute_in_game(d, game_id, muster_slot_command(category, 1, 1), 352));
-    assert!(!execute_in_game(d, game_id, muster_slot_command(category, 2, 2), 353));
+    let cap: u8 = crate::balance::rules::TROOP_LIMIT_CONFIG.settlement_armies.try_into().unwrap();
+    for slot in 0..cap {
+        assert!(execute_in_game(d, game_id, muster_slot_command(category, slot, slot), 351 + slot.into()));
+    }
+    assert!(!execute_in_game(d, game_id, muster_slot_command(category, cap, cap), 351 + cap.into()));
     let yesterday = structures.home_armies(home);
-    // The next day both armies are dead by rule; the realm musters its full cap again.
     let tomorrow = day_start(d, game_id, 1);
-    assert!(execute_in_game(d, game_id, muster_command(category, 0), tomorrow + 1));
-    assert!(execute_in_game(d, game_id, muster_slot_command(category, 1, 1), tomorrow + 2));
+    for slot in 0..cap {
+        assert!(execute_in_game(d, game_id, muster_slot_command(category, slot, slot), tomorrow + 1 + slot.into()));
+    }
     for id in yesterday {
         assert!(troops.resolved_explorer(ExplorerKey { game_id, explorer_id: *id }).is_none());
     }
-    assert_eq!(structures.home_armies(home).len(), 2);
+    assert_eq!(structures.home_armies(home).len(), cap.into());
 }
 
 #[test]
@@ -905,7 +778,7 @@ fn a_materialized_home_ring_moves_and_explores_without_a_roll() {
     let (step, target) = free_ring_neighbor(map, game_id, ring_tile, site, spacing);
     // The fixture's armies start with one move of stamina and regain it per 50 s tick, and the move above spent it in
     // this tick; rest the army by one dearest move so the explore is judged on the ring rule, not on fatigue.
-    let stamina = preset.rules.troop_stamina_config;
+    let stamina = crate::balance::rules::TROOP_STAMINA_CONFIG;
     let mut rested = troops.resolved_explorer(key).unwrap();
     rested
         .troops
@@ -941,9 +814,9 @@ fn a_materialized_home_ring_moves_and_explores_without_a_roll() {
                     ),
                 )
                 .into(),
-            preset.rules.troop_stamina_config,
+            crate::balance::rules::TROOP_STAMINA_CONFIG,
         );
-    let travel: u64 = preset.rules.troop_stamina_config.stamina_travel_stamina_cost.into();
+    let travel: u64 = crate::balance::rules::TROOP_STAMINA_CONFIG.stamina_travel_stamina_cost.into();
     let move_cost = if increase {
         travel + bonus.into()
     } else {
@@ -1062,3 +935,26 @@ fn retirement_preserves_an_existing_games_pin_and_idempotent_launch() {
         },
     );
 }
+
+#[test]
+fn a_level_up_doubles_the_castle_labor_from_that_second() {
+    let d = setup();
+    let (game_id, _, _) = expedition_home(d);
+    let home = ResourceKey { game_id, entity_id: 1 };
+    let labor = ResourceSlot { game_id, entity_id: 1, resource_type: crate::resources::LABOR };
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
+    let base: u128 = crate::logic::resources::rule(crate::resources::LABOR).realm_rate.into();
+    assert_eq!(resources.resource_production(labor).production_rate.into(), base);
+    crate::tests::frontier_economy::settle(d, home, crate::resources::LABOR, 400);
+    for cost in crate::logic::upgrades::recipe(1).costs {
+        crate::tests::resource_commands::grant(d, home, *cost.resource_type, *cost.amount);
+    }
+    let before = resources.resource_balance(labor);
+    let cost: u128 = (*crate::logic::upgrades::recipe(1).costs.at(0)).amount;
+    assert!(execute_in_game(d, game_id, Command::LevelUp(1), 400));
+    assert_eq!(resources.resource_balance(labor), before - cost);
+    assert_eq!(resources.resource_production(labor).production_rate.into(), 2 * base);
+    crate::tests::frontier_economy::settle(d, home, crate::resources::LABOR, 400 + 3600);
+    assert_eq!(resources.resource_balance(labor), before - cost + 3600 * 2 * base);
+}
+

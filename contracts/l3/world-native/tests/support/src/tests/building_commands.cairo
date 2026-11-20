@@ -134,7 +134,7 @@ pub fn replay_buildings(record: bool) {
     }
     super::spatial_replay::compare("buildings", frames, record);
 }
-pub fn seed_board_castle(deployment: super::Deployment, home: ResourceKey) {
+pub fn seed_board_castle(deployment: super::Deployment, home: ResourceKey, producing_from: u64) {
     // Workshop copy pricing excludes the castle provisioned at settlement.
     set_fixture(
         deployment.games,
@@ -145,6 +145,37 @@ pub fn seed_board_castle(deployment: super::Deployment, home: ResourceKey) {
     );
     let mut counts = IStructureOperationsDispatcher { contract_address: deployment.games }.structure_buildings(home);
     crate::buildings::change_count(ref counts, 25, true);
+    set_fixture(
+        deployment.games,
+        selector!("buildings"),
+        selector!("structure_buildings"),
+        array![home.game_id.into(), home.entity_id.into()].span(),
+        counts,
+    );
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
+    let level = IStructureOperationsDispatcher { contract_address: deployment.games }
+        .structure(home)
+        .unwrap()
+        .base
+        .level;
+    let timestamp = producing_from;
+    start_cheat_caller_address(deployment.games, deployment.games);
+    crate::resources::IResourceOperationsDispatcherTrait::start_production(
+        resources,
+        home,
+        crate::resources::LABOR,
+        crate::logic::resources::castle_labor_rate(level),
+        crate::resources::UNLIMITED_OUTPUT,
+        timestamp,
+        crate::commands::resource_context(
+            crate::commands::ExecutionContext { timestamp, ..super::context(deployment.games, home.game_id) },
+        ),
+    );
+    stop_cheat_caller_address(deployment.games);
+}
+pub fn grant_population(deployment: super::Deployment, home: ResourceKey, extra: u32) {
+    let mut counts = IStructureOperationsDispatcher { contract_address: deployment.games }.structure_buildings(home);
+    counts.population.max += extra;
     set_fixture(
         deployment.games,
         selector!("buildings"),
@@ -172,9 +203,8 @@ pub /// A board realm with its castle, every command open, room for many buildin
  fn research_world() -> (super::Deployment, ResourceKey, crate::presets::PresetDefinition) {
     let mut preset = building_preset(Some(board_rules()));
     preset.rules.command_mask = 0xffffffffffffffffffffffffffffffff;
-    preset.rules.building_config.base_population = 40;
     let (d, home) = building_world_with_preset(preset);
-    seed_board_castle(d, home);
+    grant_population(d, home, 40);
     let limits = preset.rules.troop_limit_config;
     // Research needs the empire's ruled labor limit; a grant cannot bypass the level-0 store's cap.
     snforge_std::interact_with_state(
@@ -186,6 +216,7 @@ pub /// A board realm with its castle, every command open, room for many buildin
             }
         },
     );
+    seed_board_castle(d, home, 40);
     super::resource_commands::grant(d, home, crate::resources::LABOR, 10000000 * crate::rules::RESOURCE_PRECISION);
     super::resource_commands::grant(d, home, crate::resources::ESSENCE, 10000000 * crate::rules::RESOURCE_PRECISION);
     (d, home, preset)

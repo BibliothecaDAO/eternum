@@ -22,7 +22,6 @@ pub use crate::troops::ExplorerKey;
 pub use crate::upgrades::{UpgradeLimits, UpgradeRecipe};
 pub mod army_merge;
 pub mod artificer;
-pub mod bitcoin;
 pub mod blitz_results;
 pub mod bridge;
 pub mod building_commands;

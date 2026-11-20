@@ -94,11 +94,12 @@ pub fn root_for(game_id: u32, day: u64, chance: u16, kind: u8) -> u256 {
 
 #[test]
 fn exploration_settles_mist_tide_until_the_exact_lights_quorum_second() {
-    let mut preset = definition();
-    preset.rules.tick_config.armies_tick_in_seconds = 60;
-    preset.rules.troop_stamina_config.stamina_gain_per_tick = 2;
-    let maximum: u64 = preset.rules.troop_stamina_config.stamina_knight_max.into();
-    let cost: u64 = preset.rules.troop_stamina_config.stamina_explore_stamina_cost.into();
+    let preset = definition();
+    let stamina = crate::balance::rules::TROOP_STAMINA_CONFIG;
+    let maximum: u64 = stamina.stamina_knight_max.into();
+    let cost: u64 = stamina.stamina_explore_stamina_cost.into();
+    let span = 2 * crate::balance::rules::TICK_CONFIG.armies_tick_in_seconds;
+    let full: u64 = 2 * stamina.stamina_gain_per_tick.into();
     let (d, game_id) = super::aspects::setup_aspect_preset(5, preset);
     let home = found(d, game_id, 360);
     train(d, home, 360);
@@ -128,7 +129,7 @@ fn exploration_settles_mist_tide_until_the_exact_lights_quorum_second() {
         );
         assert!(
             world_test_support::tests::registrar::explore_with_root(
-                d, game_id, explorer_id, root, tomorrow + step * 60,
+                d, game_id, explorer_id, root, tomorrow + step * span,
             ),
         );
         interact_with_state(
@@ -138,12 +139,12 @@ fn exploration_settles_mist_tide_until_the_exact_lights_quorum_second() {
                 let gained = if step == 0 {
                     0
                 } else if step == 1 {
-                    1
+                    full / 2
                 } else {
-                    3
+                    full / 2 + full
                 };
                 assert_eq!(bar.amount, maximum - cost * (step + 1) + gained);
-                assert_eq!(bar.settled_at, (tomorrow + step * 60).try_into().unwrap());
+                assert_eq!(bar.settled_at, (tomorrow + step * span).try_into().unwrap());
                 assert_eq!(bar.remainder, 0);
             },
         );
@@ -152,7 +153,7 @@ fn exploration_settles_mist_tide_until_the_exact_lights_quorum_second() {
         d.games,
         || {
             let progress = crate::logic::banes::progress(game_id, 1, 1);
-            assert_eq!(progress.ended_at, tomorrow + 60);
+            assert_eq!(progress.ended_at, tomorrow + span);
         },
     );
 }

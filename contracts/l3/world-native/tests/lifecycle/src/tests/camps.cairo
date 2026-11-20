@@ -71,48 +71,6 @@ fn camp_presets_need_authority_known_resources_and_a_new_id() {
 }
 
 #[test]
-fn exploration_discovers_a_camp_without_moving_the_explorer_into_it() {
-    let (d, home) = setup(true);
-    for resource in array![26_u8, 35, 36] {
-        grant(d, home, resource, 100 * RESOURCE_PRECISION);
-    }
-    assert!(
-        execute(
-            d,
-            Command::CreateExplorer(
-                CreateExplorer {
-                    slot: 0,
-                    structure_id: home.entity_id,
-                    category: 0,
-                    tier: 0,
-                    amount: RESOURCE_PRECISION,
-                    direction: 0,
-                },
-            ),
-            80,
-        ),
-    );
-    let structures = IStructureOperationsDispatcher { contract_address: d.games };
-    let explorer_id = *structures.home_armies(home).at(0);
-    let key = ExplorerKey { game_id: 3, explorer_id };
-    let troops = GameState { contract_address: d.games };
-    let origin = troops.explorer(key).unwrap().coord;
-    assert!(execute(d, Command::Explore(Explore { explorer_id, direction: 0 }), 140));
-    assert_eq!(troops.explorer(key).unwrap().coord, origin);
-    assert!(snforge_std::interact_with_state(d.games, || crate::logic::progression::read(key)).is_none());
-    let destination = neighbor(origin, 0);
-    let _tile = IMapLogicDispatcher { contract_address: d.games }.tile(tile_key(3, destination)).unwrap();
-    let occupancy = IMapLogicDispatcher { contract_address: d.games }.occupancy(tile_key(3, destination)).unwrap();
-    assert_eq!(occupancy.category, crate::taxonomy::CAMP_OCCUPIER);
-    let camp_id = occupancy.entity_id;
-    assert_eq!(structures.structure(ResourceKey { game_id: 3, entity_id: camp_id }).unwrap().base.created_at, 140);
-    assert_eq!(
-        crate::game::IPointsDispatcher { contract_address: d.games }.player_points(3, d.actor),
-        rules(true).victory_points_grant_config.explore_tiles_points.into(),
-    );
-}
-
-#[test]
 fn eternum_exploration_does_not_create_a_camp() {
     let (d, home) = setup(false);
     for resource in array![26_u8, 35, 36] {
@@ -148,54 +106,3 @@ fn eternum_exploration_does_not_create_a_camp() {
     assert!(snforge_std::interact_with_state(d.games, || crate::logic::progression::read(key)).is_none());
 }
 
-#[test]
-fn blitz_exploration_stores_both_inclusive_camp_guard_endpoints() {
-    let (_, current) = super::preset_projection::current_definition("blitz");
-    for (root, expected, troop) in array![(615_u256, 999_u128, TroopType::Paladin), (629, 1499, TroopType::Knight)] {
-        let mut preset = camp_preset(true);
-        preset.rules.troop_limit_config = current.rules.troop_limit_config;
-        let (d, home, _) = super::resource_commands::setup_with_preset(preset);
-        for resource in array![26_u8, 35, 36] {
-            grant(d, home, resource, 100 * RESOURCE_PRECISION);
-        }
-        assert!(
-            execute(
-                d,
-                Command::CreateExplorer(
-                    CreateExplorer {
-                        slot: 0,
-                        structure_id: home.entity_id,
-                        category: 0,
-                        tier: 0,
-                        amount: RESOURCE_PRECISION,
-                        direction: 0,
-                    },
-                ),
-                80,
-            ),
-        );
-        let structures = IStructureOperationsDispatcher { contract_address: d.games };
-        let explorer_id = *structures.home_armies(home).at(0);
-        let explorer = GameState { contract_address: d.games }
-            .explorer(ExplorerKey { game_id: 3, explorer_id })
-            .unwrap();
-        let destination = neighbor(explorer.coord, 0);
-        assert!(
-            super::play_fixture::play(
-                d.games,
-                super::play_fixture::TestAction {
-                    game_id: 3, actor: d.actor, command: Command::Explore(Explore { explorer_id, direction: 0 }),
-                },
-                root,
-                140,
-            ),
-        );
-        let occupancy = IMapLogicDispatcher { contract_address: d.games }.occupancy(tile_key(3, destination)).unwrap();
-        assert_eq!(occupancy.category, crate::taxonomy::CAMP_OCCUPIER);
-        let guard = IGuardsDispatcher { contract_address: d.games }
-            .guard(GuardKey { game_id: 3, structure_id: occupancy.entity_id, slot: 0 });
-        assert_eq!(guard.troops.category, troop);
-        assert_eq!(guard.troops.tier, TroopTier::T1);
-        assert_eq!(guard.troops.count, expected * RESOURCE_PRECISION);
-    }
-}

@@ -372,9 +372,9 @@ fn a_tier_the_realm_cannot_pay_in_labor_is_refused_and_changes_nothing() {
         home,
         crate::resources::LABOR,
         held - (legendary - 1),
-        30,
+        40,
         crate::commands::resource_context(
-            crate::commands::ExecutionContext { timestamp: 30, ..crate::tests::context(d.games, home.game_id) },
+            crate::commands::ExecutionContext { timestamp: 40, ..crate::tests::context(d.games, home.game_id) },
         ),
     );
     stop_cheat_caller_address(d.games);
@@ -391,7 +391,7 @@ fn a_copy_costs_its_base_times_one_plus_the_square_of_the_copies_before_it() {
     preset.rules.building_config.base_population = 40;
     preset.rules.building_config.base_cost_percent_increase = 10000;
     let (d, home) = building_world_with_preset(preset);
-    seed_board_castle(d, home);
+    seed_board_castle(d, home, 40);
     let farm = *crate::balance::structures::BUILDINGS.span().at(crate::research::FARM.into() - 1);
     assert_eq!(farm.simple_count, 1);
     let cost = *crate::balance::structures::BUILDING_COSTS.span().at(farm.first_cost);
@@ -694,7 +694,7 @@ fn range_and_camp_open_at_city_and_depot_at_kingdom() {
     let mut preset = building_preset(Some(board_rules()));
     preset.rules.building_config.base_population = 40;
     let (d, home) = building_world_with_preset(preset);
-    seed_board_castle(d, home);
+    seed_board_castle(d, home, 40);
     super::resource_commands::grant(d, home, crate::resources::ESSENCE, 100000 * crate::rules::RESOURCE_PRECISION);
     for category in array![crate::research::RANGE, crate::research::CONSCRIPTION_CAMP, crate::research::RATIONS_DEPOT] {
         assert_terminal_rejection(d, build_toward(home, category, 0), 40);

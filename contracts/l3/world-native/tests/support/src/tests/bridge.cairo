@@ -25,9 +25,6 @@ pub fn setup_with_platform_fees(
     rules.mode_rules = super::play_fixture::TEST_RULES;
     rules.command_mask = super::play_fixture::BLITZ_COMMAND_MASK;
     rules.entry_rule = crate::rules::ENTRY_ENTITLEMENT;
-    rules.speed_config.donkey_sec_per_km = 1;
-    rules.tick_config.delivery_tick_in_seconds = 1;
-    rules.capacity_config.donkey_capacity = 100;
     let d = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
     let (mut withdrawals, token, _) = super::bridge::wallet_preset(d, paused);
     withdrawals
@@ -93,7 +90,11 @@ pub fn tokens(token: ContractAddress, actor: ContractAddress) -> u256 {
 }
 pub fn arrival(d: super::Deployment, target: ResourceKey, travel: u64) -> Span<ResourceAmount> {
     IResourceOperationsDispatcher { contract_address: d.games }
-        .resource_arrival(crate::arrivals::arrival_key(3, target.entity_id, 1, 40, travel))
+        .resource_arrival(
+            crate::arrivals::arrival_key(
+                3, target.entity_id, crate::balance::rules::TICK_CONFIG.delivery_tick_in_seconds, 40, travel,
+            ),
+        )
         .resources
 }
 pub fn amount(value: u128) -> Span<ResourceAmount> {

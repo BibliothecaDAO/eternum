@@ -63,7 +63,7 @@ fn fifty_day_limit_finishes_once_before_a_rejected_order_and_keeps_settlement_in
             assert!(game.settled);
             assert_eq!(
                 crate::state::read().deep.paid_tick.read(game_id),
-                Some(end / preset.rules.tick_config.armies_tick_in_seconds),
+                Some(end / crate::balance::rules::TICK_CONFIG.armies_tick_in_seconds),
             );
         },
     );

@@ -77,16 +77,17 @@ fn different_logistics_caps_and_exhausted_slots_never_refill_a_merge() {
         (1_u8, 5_u8, false), (5, 1, false), (5, 4, false), (5, 1, true),
     ] {
         let d = setup();
-        let (game_id, preset, category) = expedition_home(d);
+        let (game_id, _, category) = expedition_home(d);
         let (source, target) = expedition_armies(d, game_id, category);
+        let stamina = crate::tests::context(d.games, game_id).rules.unbox().troop_stamina_config;
         let winning = ArmyProgress { logistics: winner_logistics, oath_slots: 1, ..Default::default() };
         let losing = ArmyProgress { logistics: loser_logistics, oath_slots: 1, ..Default::default() };
         write_progress(d, target, winning);
         write_progress(d, source, losing);
         let state = GameState { contract_address: d.games };
         let kind = state.explorer(source).unwrap().troops.category;
-        let maximum = crate::progression::stamina_max(winning, kind, preset.rules.troop_stamina_config);
-        let other_max = crate::progression::stamina_max(losing, kind, preset.rules.troop_stamina_config);
+        let maximum = crate::progression::stamina_max(winning, kind, stamina);
+        let other_max = crate::progression::stamina_max(losing, kind, stamina);
         timers(d, target, maximum, 0);
         timers(d, source, if tired {
             0
@@ -111,7 +112,7 @@ fn different_logistics_caps_and_exhausted_slots_never_refill_a_merge() {
 #[test]
 fn a_full_merge_over_the_survivor_cap_is_atomic_and_expired_armies_cannot_merge() {
     let d = setup();
-    let (game_id, preset, category) = expedition_home(d);
+    let (game_id, _, category) = expedition_home(d);
     let (source, target) = expedition_armies(d, game_id, category);
     write_progress(d, source, ArmyProgress { logistics: 5, oath_slots: 1, ..Default::default() });
     let state = GameState { contract_address: d.games };
@@ -144,8 +145,9 @@ fn a_full_merge_over_the_survivor_cap_is_atomic_and_expired_armies_cannot_merge(
         },
     );
     let mut full = state.resolved_explorer(source).unwrap();
-    let limit: u128 = crate::troops::max_army_size(preset.rules.troop_limit_config, 0, full.troops.tier).into();
-    let other_limit: u128 = crate::troops::max_army_size(preset.rules.troop_limit_config, 1, full.troops.tier).into();
+    let limits = crate::tests::context(d.games, game_id).rules.unbox().troop_limit_config;
+    let limit: u128 = crate::troops::max_army_size(limits, 0, full.troops.tier).into();
+    let other_limit: u128 = crate::troops::max_army_size(limits, 1, full.troops.tier).into();
     assert!(limit + 3 <= other_limit);
     full.troops.count = limit * RESOURCE_PRECISION;
     super::resource_commands::set_explorer_fixture(d.games, source, full);

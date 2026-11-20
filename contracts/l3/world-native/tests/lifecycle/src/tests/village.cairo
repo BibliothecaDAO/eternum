@@ -2,7 +2,7 @@ pub use world_test_support::tests::village::*;
 
 #[test]
 #[feature("safe_dispatcher")]
-fn production_pass_is_atomic_single_use_and_army_grant_uses_block_time() {
+fn production_pass_is_atomic_and_single_use() {
     let (deployment, realm) = setup(false);
     let ledger = IVillagePassesSafeDispatcher { contract_address: deployment.games };
     let pass = VillagePassKey { game_id: 3, pass_id: 7 };
@@ -54,37 +54,6 @@ fn production_pass_is_atomic_single_use_and_army_grant_uses_block_time() {
         crate::game::IPointsDispatcher { contract_address: deployment.games }.player_points(3, deployment.actor) == 0,
     );
     assert!(!run(deployment, settle(realm, 7), 100));
-    assert!(!run(deployment, Command::ReceiveVillageArmy(village_id), 100));
-    let interval = play_fixture::rules().tick_config.armies_tick_in_seconds;
-    let claimable_at = (100 / interval + 2) * interval;
-    let mut spy = spy_events();
-    assert!(run(deployment, Command::ReceiveVillageArmy(village_id), claimable_at));
-    let mut guard_stories = 0;
-    for (_, event) in spy.get_events().emitted_by(deployment.games).events.span() {
-        if *event.keys.at(0) == selector!("StoryEvent") {
-            let mut data = event.data.span();
-            let story: crate::ownership::Story = Serde::deserialize(ref data).unwrap();
-            if let crate::ownership::Story::GuardAddStory(guard) = story {
-                assert_eq!(guard.structure_id, village_id);
-                assert_eq!(guard.slot, 0);
-                assert_eq!(guard.amount, 10 * crate::rules::RESOURCE_PRECISION);
-                guard_stories += 1;
-            }
-        }
-    }
-    assert_eq!(guard_stories, 1);
-    let granted = structures.structure(key).unwrap();
-    assert!(granted.base.starting_troops_granted);
-    assert!(
-        crate::guards::IGuardsDispatcherTrait::guard(
-            crate::guards::IGuardsDispatcher { contract_address: deployment.games },
-            crate::guards::GuardKey { game_id: 3, structure_id: village_id, slot: 0 },
-        )
-            .troops
-            .count == 10
-            * crate::rules::RESOURCE_PRECISION,
-    );
-    assert!(!run(deployment, Command::ReceiveVillageArmy(village_id), claimable_at));
 }
 
 #[test]

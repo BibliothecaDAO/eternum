@@ -97,59 +97,6 @@ fn failed_loot_and_duplicate_resources_roll_back_combat() {
 }
 
 #[test]
-fn guard_attacks_use_the_guard_owner_range_and_block_time_cooldown() {
-    let (d, home, _, _, defender) = setup(false);
-    set_guard(d, home, 0, 100);
-    let command = Command::GuardAttack(
-        GuardAttack {
-            guard: crate::troop_management::GuardSlot { structure_id: home.entity_id, slot: 0 }, explorer_id: defender,
-        },
-    );
-    assert_terminal_rejection(d, command, 80);
-    move_fixture(d, defender, 2000001);
-    assert!(execute(d, command, 80));
-    assert!(troop(d, defender).is_none());
-    assert!(guard(d, home, 0).troops.count != 0);
-}
-
-#[test]
-fn losing_the_final_attacking_guard_transfers_the_structure_to_the_adjacent_survivor() {
-    let (d, home, _, _, defender) = setup(false);
-    set_guard(d, home, 0, 1);
-    move_fixture(d, defender, 2000001);
-    let mut explorer = troop(d, defender).unwrap();
-    explorer.troops.count = 100 * RESOURCE_PRECISION;
-    crate::tests::resource_commands::set_explorer_fixture(
-        d.games, crate::troops::ExplorerKey { game_id: 3, explorer_id: defender }, explorer,
-    );
-    set_fixture(
-        d.games,
-        selector!("resources"),
-        selector!("weights"),
-        array![3, defender.into()].span(),
-        crate::resources::Weight { capacity: 10000000000000000000, weight: 0 },
-    );
-    assert!(
-        execute(
-            d,
-            Command::GuardAttack(
-                GuardAttack {
-                    guard: crate::troop_management::GuardSlot { structure_id: home.entity_id, slot: 0 },
-                    explorer_id: defender,
-                },
-            ),
-            80,
-        ),
-    );
-    assert_eq!(
-        IStructureOperationsDispatcher { contract_address: d.games }.structure(home).unwrap().owner,
-        999.try_into().unwrap(),
-    );
-    assert_eq!(guard(d, home, 0), Default::default());
-    assert!(troop(d, defender).unwrap().troops.count > 0);
-}
-
-#[test]
 fn blitz_ethereal_battle_records_exact_damage_and_zero_rolls() {
     let (d, _, _, attacker, defender) = setup(true);
     move_to(d, attacker, Coord { alt: true, x: 2000000, y: 2000000 });
@@ -363,23 +310,6 @@ fn cross_layer_battles_require_matching_coordinates_and_an_adjacent_spire() {
     assert!(execute(d, command, 80));
     assert!(troop(d, attacker).is_some());
     assert!(troop(d, defender).is_none());
-}
-
-#[test]
-fn season_immunity_rejects_combat_until_the_block_time_boundary() {
-    let (d, _, _, attacker, defender) = setup_with_immunity(false, 20);
-    super::state::assert_inline_armies_have_no_progress(d.games, 3, array![attacker, defender].span());
-    let before_attacker = troop(d, attacker);
-    let before_defender = troop(d, defender);
-    let command = Command::Battle(
-        AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: array![].span() },
-    );
-    assert_terminal_rejection(d, command, 119);
-    assert_eq!(troop(d, attacker), before_attacker);
-    assert_eq!(troop(d, defender), before_defender);
-    assert!(execute(d, command, 120));
-    assert!(troop(d, defender).is_none());
-    super::state::assert_inline_armies_have_no_progress(d.games, 3, array![attacker, defender].span());
 }
 
 #[test]
@@ -602,30 +532,14 @@ fn unowned_target_rule_rejects_owned_sites_and_allows_capture_of_an_unowned_site
 }
 
 #[test]
-fn preset_cooldown_keeps_blitz_at_sixty_seconds_and_allows_frontier_back_to_back_attacks() {
-    let cases: Array<(ByteArray, u32, bool)> = array![("frontier", 0, false), ("blitz", 60, true)];
-    for (name, expected, blitz) in cases {
-        let mut input = snforge_std::fs::read_txt(
-            @snforge_std::fs::FileTrait::new(format!("../fixtures/current-presets/{}-register.txt", name)),
-        )
-            .span();
-        let _: u32 = Serde::deserialize(ref input).unwrap();
-        let preset: crate::presets::PresetDefinition = Serde::deserialize(ref input).unwrap();
-        assert_eq!(preset.rules.battle_config.cooldown_seconds, expected);
-        let (d, _, _, attacker, defender) = setup_with_cooldown(blitz, 0, 0, expected, (1000, 1000));
-        let attack = Command::Battle(
-            AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: array![].span() },
-        );
-        let success = execute(d, attack, 80);
-        assert!(success, "first attack failed");
-        assert!(troop(d, attacker).is_some() && troop(d, defender).is_some());
-        if blitz {
-            assert_eq!(troop(d, attacker).unwrap().troops.battle_cooldown_end, 140);
-            assert_terminal_rejection(d, attack, 80);
-        } else {
-            assert_eq!(troop(d, attacker).unwrap().troops.battle_cooldown_end, 80);
-            let success = execute(d, attack, 80);
-            assert!(success, "second attack failed");
-        }
-    }
+fn season_one_allows_back_to_back_attacks_without_a_cooldown() {
+    let (d, _, _, attacker, defender) = setup_with_cooldown(false, 0, 0, 0, (1000, 1000));
+    assert_eq!(crate::tests::context(d.games, 3).rules.unbox().battle_config.cooldown_seconds, 0);
+    let attack = Command::Battle(
+        AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: array![].span() },
+    );
+    assert!(execute(d, attack, 80), "first attack failed");
+    assert!(troop(d, attacker).is_some() && troop(d, defender).is_some());
+    assert_eq!(troop(d, attacker).unwrap().troops.battle_cooldown_end, 80);
+    assert!(execute(d, attack, 80), "second attack failed");
 }

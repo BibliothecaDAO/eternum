@@ -121,10 +121,7 @@ fn launcher_hotfix_migrates_a_populated_frontier_day_once_and_play_continues() {
         .unwrap();
     assert_eq!(home_state.owner, other.actor);
     assert_eq!(home_state.metadata.realm_id, 2);
-    let guard = crate::guards::IGuardsDispatcherTrait::guard(
-        crate::guards::IGuardsDispatcher { contract_address: d.games },
-        crate::guards::GuardKey { game_id, structure_id: other_home.entity_id, slot: 0 },
-    );
+    let troop = world_test_support::tests::registrar::held_troop(d, other_home);
     assert!(
         super::resource_commands::execute_in_game(
             other,
@@ -133,7 +130,7 @@ fn launcher_hotfix_migrates_a_populated_frontier_day_once_and_play_continues() {
                 crate::commands::CreateExplorer {
                     slot: 0,
                     structure_id: other_home.entity_id,
-                    category: guard.troops.category.into(),
+                    category: troop.into(),
                     tier: 0,
                     amount: crate::rules::RESOURCE_PRECISION,
                     direction: 0,

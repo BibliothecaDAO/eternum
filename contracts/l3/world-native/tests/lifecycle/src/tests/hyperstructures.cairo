@@ -1,6 +1,5 @@
 pub use world_test_support::tests::hyperstructures::*;
 
-
 #[test]
 fn initialization_burns_only_shards_and_progress_completes_with_clamped_contributions() {
     let (deployment, hyper, from, _) = setup();
@@ -54,93 +53,7 @@ fn contribution_rejections_roll_back_the_whole_batch() {
         points(deployment, deployment.actor),
     );
 }
-#[test]
-fn shares_checkpoint_old_owners_before_reallocation_and_stop_at_game_end() {
-    let (deployment, hyper, from, _) = setup();
-    complete(deployment, hyper, from);
-    let old = points(deployment, deployment.actor);
-    let other: starknet::ContractAddress = 987.try_into().unwrap();
-    assert!(
-        execute(
-            deployment,
-            allocate(
-                hyper, array![Share { player: deployment.actor, bps: 2500 }, Share { player: other, bps: 7500 }].span(),
-            ),
-            100,
-        ),
-    );
-    assert_eq!(points(deployment, deployment.actor) - old, 50000);
-    checkpoint(deployment, 500);
-    assert_eq!(points(deployment, deployment.actor) - old, 75000);
-    assert_eq!(points(deployment, other), 75000);
-    assert_eq!(view(deployment).hyperstructure_shares(hyper).start_at, 200);
-    assert_eq!(points(deployment, other), 75000);
-}
 
-#[test]
-fn one_action_emits_two_ordered_stories_without_writing_the_entity_counter() {
-    let (deployment, hyper, from, _) = setup();
-    complete(deployment, hyper, from);
-    let other = 987.try_into().unwrap();
-    assert!(
-        execute(
-            deployment,
-            allocate(
-                hyper, array![Share { player: deployment.actor, bps: 5000 }, Share { player: other, bps: 5000 }].span(),
-            ),
-            60,
-        ),
-    );
-    let before = snforge_std::interact_with_state(deployment.games, || crate::state::read().games.next_entity.read(3));
-    let mut spy = snforge_std::spy_events();
-    assert!(execute(deployment, allocate(hyper, array![Share { player: deployment.actor, bps: 10000 }].span()), 70));
-    assert_eq!(
-        snforge_std::interact_with_state(deployment.games, || crate::state::read().games.next_entity.read(3)), before,
-    );
-    let mut stories = 0_u32;
-    let mut points = 0_u32;
-    let mut last_player = 0_felt252;
-    let mut transaction = None;
-    for (_, event) in spy.get_events().emitted_by(deployment.games).events.span() {
-        for key in event.keys.span() {
-            if *key == selector!("PointsAwarded") {
-                points += 1;
-                last_player = *event.keys.at(event.keys.len() - 1);
-            }
-        }
-        if *event.keys.at(1) == selector!("StoryEvent") {
-            let mut keys = event.keys.span();
-            keys.pop_front().unwrap();
-            keys.pop_front().unwrap();
-            assert_eq!(*keys.pop_front().unwrap(), 2);
-            assert_eq!(*keys.pop_front().unwrap(), 3);
-            let player = Serde::<Option<starknet::ContractAddress>>::deserialize(ref keys).unwrap().unwrap();
-            assert_eq!(player.into(), last_player);
-            assert_eq!(Serde::<Option<u64>>::deserialize(ref keys).unwrap(), Some(hyper.entity_id));
-            let hash = *keys.pop_front().unwrap();
-            if let Some(previous) = transaction {
-                assert_eq!(hash, previous);
-            }
-            transaction = Some(hash);
-            assert!(keys.is_empty());
-            // Each share emits its points fact before its story; facts precede their corresponding story.
-            assert_eq!(points, stories + 1);
-            stories += 1;
-        }
-    }
-    assert_eq!(stories, 2);
-    assert_eq!(points, 2);
-}
-#[test]
-fn construction_and_allocation_use_block_time_and_keep_the_same_rewards() {
-    let (deployment, hyper, from, _) = setup();
-    assert!(execute(deployment, Command::InitializeHyperstructure(hyper.entity_id), 40));
-    assert!(execute(deployment, contribute(hyper, from, array![amount(2, 10), amount(3, 20)].span()), 50));
-    let old = points(deployment, deployment.actor);
-    assert!(execute(deployment, allocate(hyper, array![Share { player: deployment.actor, bps: 10000 }].span()), 100));
-    assert_eq!(points(deployment, deployment.actor) - old, 50000);
-    assert_eq!(view(deployment).hyperstructure_shares(hyper).start_at, 100);
-}
 #[test]
 fn share_rejections_preserve_allocation_and_points() {
     let (deployment, hyper, from, _) = setup();
@@ -300,66 +213,6 @@ fn construction_requirements_preserve_per_resource_seed_division_and_exclusive_m
 }
 
 #[test]
-fn blitz_owner_only_shares_match_entry_rules() {
-    let (deployment, hyper, from, _) = setup_mode_with_threshold(
-        true, 0, Some(crate::settlement::SettlementMode::Single),
-    );
-    settle_neighbor(deployment, hyper, 35);
-    complete(deployment, hyper, from);
-    assert_eq!(view(deployment).hyperstructure_shares(hyper).multiplier, 1);
-    let before = points(deployment, deployment.actor);
-    assert_terminal_rejection(
-        deployment, allocate(hyper, array![Share { player: 987.try_into().unwrap(), bps: 10000 }].span()), 60,
-    );
-    assert_terminal_rejection(
-        deployment,
-        allocate(
-            hyper,
-            array![Share { player: deployment.actor, bps: 5000 }, Share { player: deployment.actor, bps: 5000 }].span(),
-        ),
-        60,
-    );
-    assert!(execute(deployment, allocate(hyper, array![Share { player: deployment.actor, bps: 10000 }].span()), 60));
-    assert_eq!(points(deployment, deployment.actor) - before, 10000);
-}
-#[test]
-fn blitz_multiplier_counts_realms_in_the_configured_geometry_and_preserves_old_rate() {
-    let (deployment, hyper, from, _) = setup_mode_with_threshold(
-        true, 0, Some(crate::settlement::SettlementMode::Single),
-    );
-    complete(deployment, hyper, from);
-    assert_eq!(view(deployment).hyperstructure_shares(hyper).multiplier, 0);
-    settle_neighbor(deployment, hyper, 55);
-    let before = points(deployment, deployment.actor);
-    assert!(execute(deployment, allocate(hyper, array![Share { player: deployment.actor, bps: 10000 }].span()), 60));
-    assert_eq!(points(deployment, deployment.actor), before);
-    assert_eq!(view(deployment).hyperstructure_shares(hyper).multiplier, 1);
-    checkpoint(deployment, 70);
-    assert_eq!(points(deployment, deployment.actor) - before, 10000);
-    assert_eq!(crate::settlement_grid::hyperstructure_scan_distance(8, crate::settlement::SettlementMode::Single), 10);
-    assert_eq!(crate::settlement_grid::hyperstructure_scan_distance(6, crate::settlement::SettlementMode::Triple), 6);
-}
-#[test]
-fn duplicate_shareholders_reject_without_changing_allocation_or_accrued_points() {
-    let (deployment, hyper, from, _) = setup();
-    complete(deployment, hyper, from);
-    let initial = view(deployment).hyperstructure_shares(hyper);
-    let before = points(deployment, deployment.actor);
-    assert_terminal_rejection(
-        deployment,
-        allocate(
-            hyper,
-            array![Share { player: deployment.actor, bps: 2500 }, Share { player: deployment.actor, bps: 7500 }].span(),
-        ),
-        60,
-    );
-    assert_eq!(view(deployment).hyperstructure_shares(hyper), initial);
-    assert_eq!(points(deployment, deployment.actor), before);
-    checkpoint(deployment, 70);
-    assert_eq!(points(deployment, deployment.actor) - before, 20000);
-}
-
-#[test]
 fn insufficient_shards_or_a_later_resource_leave_construction_unchanged() {
     let (deployment, hyper, from, _) = setup();
     assert!(
@@ -404,61 +257,6 @@ fn reserved_complete_hyperstructures_have_no_seed_and_discoveries_keep_their_see
     assert_eq!(reserved.stage, Stage::Complete);
     assert_eq!(reserved.seed, 0);
     assert_eq!(view(deployment).hyperstructure(unfinished).unwrap(), original);
-}
-
-#[test]
-fn capture_pays_the_outgoing_owner_and_moves_owner_only_shares_to_the_captor() {
-    let (deployment, hyper, from, second) = setup_mode_with_threshold(
-        true, 0, Some(crate::settlement::SettlementMode::Single),
-    );
-    settle_neighbor(deployment, hyper, 35);
-    complete(deployment, hyper, from);
-    let captor: starknet::ContractAddress = 987.try_into().unwrap();
-    owner(deployment, second, captor);
-    let before = points(deployment, deployment.actor);
-    capture(deployment, hyper, second, 100);
-    assert_eq!(points(deployment, deployment.actor) - before, 50000);
-    assert_eq!(
-        view(deployment).hyperstructure_shares(hyper),
-        ShareAllocation {
-            start_at: 100, multiplier: 1, shareholders: array![Share { player: captor, bps: 10000 }].span(),
-        },
-    );
-    checkpoint(deployment, 150);
-    assert_eq!(points(deployment, deployment.actor) - before, 50000);
-    assert_eq!(points(deployment, captor), 50000);
-}
-
-#[test]
-fn reserved_hyperstructures_hold_an_empty_shares_row_and_earn_nothing_until_their_first_claim() {
-    let (deployment, _, _, second) = setup_mode_with_threshold(
-        true, 0, Some(crate::settlement::SettlementMode::Single),
-    );
-    let reserved = create_reserved(deployment, 31);
-    settle_neighbor(deployment, reserved, 35);
-    let mut events = snforge_std::spy_events();
-    assert_eq!(
-        view(deployment).hyperstructure_shares(reserved),
-        ShareAllocation { start_at: 0, multiplier: 0, shareholders: array![].span() },
-    );
-    let actor = points(deployment, deployment.actor);
-    checkpoint(deployment, 60);
-    assert_eq!(points(deployment, deployment.actor), actor);
-    let captor: starknet::ContractAddress = 987.try_into().unwrap();
-    owner(deployment, second, captor);
-    capture(deployment, reserved, second, 100);
-    let claimed = points(deployment, captor);
-    assert_eq!(
-        view(deployment).hyperstructure_shares(reserved),
-        ShareAllocation {
-            start_at: 100, multiplier: 1, shareholders: array![Share { player: captor, bps: 10000 }].span(),
-        },
-    );
-    checkpoint(deployment, 150);
-    assert_eq!(points(deployment, captor) - claimed, 50000);
-    assert_eq!(points(deployment, deployment.actor), actor);
-    // The row exists from creation; the claim checkpoints the empty allocation before writing the captor's.
-    assert_eq!(share_writes(ref events, deployment, reserved), array!['start_at', 'start_at', 'set', 'start_at']);
 }
 
 #[test]

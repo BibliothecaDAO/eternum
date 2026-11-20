@@ -48,11 +48,12 @@ fn height(d: Deployment, game_id: u32, aspect: u8) -> u32 {
 
 #[test]
 fn recorded_second_wind_multiplies_mist_tide_and_changes_real_exploration_refills() {
-    let mut preset = definition(5);
-    preset.rules.tick_config.armies_tick_in_seconds = 60;
-    preset.rules.troop_stamina_config.stamina_gain_per_tick = 2;
-    let maximum: u64 = preset.rules.troop_stamina_config.stamina_knight_max.into();
-    let cost: u64 = preset.rules.troop_stamina_config.stamina_explore_stamina_cost.into();
+    let preset = definition(5);
+    let stamina = crate::balance::rules::TROOP_STAMINA_CONFIG;
+    let maximum: u64 = stamina.stamina_knight_max.into();
+    let cost: u64 = stamina.stamina_explore_stamina_cost.into();
+    let span = 2 * crate::balance::rules::TICK_CONFIG.armies_tick_in_seconds;
+    let full: u64 = 2 * stamina.stamina_gain_per_tick.into();
     let (d, game_id) = super::aspects::setup_aspect_preset(5, preset);
     let home = ResourceKey { game_id, entity_id: found(d, game_id, 1) };
     super::banes::train(d, home, 360);
@@ -91,7 +92,7 @@ fn recorded_second_wind_multiplies_mist_tide_and_changes_real_exploration_refill
         );
         assert!(
             world_test_support::tests::registrar::explore_with_root(
-                d, game_id, explorer_id, root, tomorrow + step * 60,
+                d, game_id, explorer_id, root, tomorrow + step * span,
             ),
         );
         interact_with_state(
@@ -101,9 +102,9 @@ fn recorded_second_wind_multiplies_mist_tide_and_changes_real_exploration_refill
                 let gained = if step == 0 {
                     0
                 } else if step == 1 {
-                    2
+                    full
                 } else {
-                    6
+                    full + 2 * full
                 };
                 assert_eq!(bar.amount, maximum - cost * (step + 1) + gained);
             },
@@ -127,10 +128,12 @@ fn recorded_second_wind_multiplies_mist_tide_and_changes_real_exploration_refill
                 maximum,
                 10000,
                 crate::troops::StaminaRefill {
-                    stamina_config: rules.troop_stamina_config, armies_tick_in_seconds: 60, timestamp: tomorrow + 60,
+                    stamina_config: rules.troop_stamina_config,
+                    armies_tick_in_seconds: crate::balance::rules::TICK_CONFIG.armies_tick_in_seconds,
+                    timestamp: tomorrow + span,
                 },
             );
-            assert_eq!(bar.amount, 2);
+            assert_eq!(bar.amount, full);
         },
     );
 }

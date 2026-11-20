@@ -175,7 +175,7 @@ pub fn params(blitz: bool) -> CreateGameParams {
         name: 'native',
         preset_id: 1,
         start_settling_at: 200,
-        start_main_at: 300,
+        start_main_at: 2 * crate::balance::rules::TICK_CONFIG.armies_tick_in_seconds,
         duration_seconds: 100,
         end_grace_seconds: if blitz {
             0
@@ -199,7 +199,7 @@ pub fn params(blitz: bool) -> CreateGameParams {
         seed: 42,
     }
 }
-pub const DAY_UNIT: u32 = 60;
+pub const DAY_UNIT: u32 = 240;
 pub const BAG_SECONDS: u64 = 1200;
 pub const FRONTIER_DAY_UNIT: u32 = 14400;
 pub const FRONTIER_BAG_SECONDS: u64 = 288000;
@@ -254,8 +254,11 @@ pub // The expedition preset uses seeded day bags.
     open_entry(ref preset);
     preset.rules.command_mask = preset.rules.command_mask
         | (*read_txt(@FileTrait::new("../fixtures/frontier-command-mask.txt")).at(0)).try_into().unwrap();
+    assert!(
+        Into::<u32, u64>::into(DAY_UNIT) % crate::balance::rules::TICK_CONFIG.armies_tick_in_seconds == 0,
+        "a fixture day is whole release ticks",
+    );
     preset.rules.day_unit_seconds = DAY_UNIT;
-    preset.rules.tick_config.armies_tick_in_seconds = 60;
     preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
     let (_, frontier) = super::preset_projection::current_definition("frontier-check");
     preset.economy.chests = frontier.economy.chests;
@@ -299,9 +302,22 @@ pub fn expedition_home(d: super::Deployment) -> (u32, PresetDefinition, u8) {
             350,
         ),
     );
-    let guards = IGuardsDispatcher { contract_address: d.games };
-    let category: u8 = guards.guard(GuardKey { game_id, structure_id: 1, slot: 0 }).troops.category.into();
-    (game_id, preset, category)
+    (game_id, preset, held_troop(d, ResourceKey { game_id, entity_id: 1 }).into())
+}
+pub fn held_troop(d: super::Deployment, home: ResourceKey) -> crate::troops::TroopType {
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
+    let mut held = array![];
+    for category in array![
+        crate::troops::TroopType::Knight, crate::troops::TroopType::Paladin, crate::troops::TroopType::Crossbowman,
+    ] {
+        let resource_type = crate::troops::troop_resource(category, 0);
+        if resources
+            .resource_balance(ResourceSlot { game_id: home.game_id, entity_id: home.entity_id, resource_type }) != 0 {
+            held.append(category);
+        }
+    }
+    assert_eq!(held.len(), 1, "a home holds one starting troop type");
+    *held.at(0)
 }
 pub fn muster_command(category: u8, direction: u8) -> Command {
     muster_slot_command(category, direction, 0)
@@ -386,6 +402,18 @@ pub fn grant_troop_recipe(d: super::Deployment, home: ResourceKey, troop: u8, tr
             );
     }
 }
+pub fn stamina_after_capture(reveal_at: u64, capture_at: u64) -> u64 {
+    let stamina = crate::balance::rules::TROOP_STAMINA_CONFIG;
+    let explored: u64 = (stamina.stamina_knight_max - stamina.stamina_explore_stamina_cost).into();
+    stamina_after_attack(explored, reveal_at, capture_at)
+}
+pub fn stamina_after_attack(bar: u64, settled_at: u64, attack_at: u64) -> u64 {
+    let stamina = crate::balance::rules::TROOP_STAMINA_CONFIG;
+    let tick = crate::balance::rules::TICK_CONFIG.armies_tick_in_seconds;
+    let regained: u64 = (attack_at / tick - settled_at / tick) * stamina.stamina_gain_per_tick.into();
+    let ready = core::cmp::min(stamina.stamina_knight_max.into(), bar + regained);
+    ready - stamina.stamina_attack_req.into() + stamina.capture_stamina_refund.into()
+}
 pub fn assert_expedition_capture(depth: u8) {
     assert_capture_with_reveal(
         depth,
@@ -460,20 +488,6 @@ pub fn assert_capture_at(
     preset.rules.troop_limit_config.t1_tier_modifier = 100;
     preset.rules.troop_limit_config.t2_tier_strength = 3;
     preset.rules.battle_config.regular_immunity_ticks = 0;
-    preset
-        .rules
-        .troop_stamina_config =
-            crate::rules::TroopStaminaConfig {
-                stamina_initial: 150,
-                stamina_gain_per_tick: 0,
-                stamina_knight_max: 150,
-                stamina_attack_req: 50,
-                stamina_explore_stamina_cost: 30,
-                stamina_bonus_value: 0,
-                damage_stamina_refund: false,
-                capture_stamina_refund: 25,
-                ..preset.rules.troop_stamina_config,
-            };
     preset.rules.map_config.shards_mines_win_probability = 0;
     preset.rules.map_config.shards_mines_fail_probability = 1;
     preset
@@ -669,7 +683,10 @@ pub fn assert_capture_at(
     let mut payout_events = snforge_std::spy_events();
     assert!(execute_in_game(d, game_id, attack, capture_at));
     assert_site_removed(d, camp);
-    assert_eq!(troops.resolved_explorer(army_key).unwrap().troops.stamina.inline().amount, 95);
+    assert_eq!(
+        troops.resolved_explorer(army_key).unwrap().troops.stamina.inline().amount,
+        stamina_after_capture(reveal_at, capture_at),
+    );
     let site_after = snforge_std::interact_with_state(
         d.games, || {
             crate::logic::expeditions::expedition_site(camp).unwrap()
@@ -696,7 +713,10 @@ pub fn assert_capture_at(
         );
     }
     assert!(!execute_in_game(d, game_id, attack, capture_at));
-    assert_eq!(troops.resolved_explorer(army_key).unwrap().troops.stamina.inline().amount, 95);
+    assert_eq!(
+        troops.resolved_explorer(army_key).unwrap().troops.stamina.inline().amount,
+        stamina_after_capture(reveal_at, capture_at),
+    );
     let mut relics = 0_u128;
     for id in 39_u8..57 {
         relics += resources.resource_balance(ResourceSlot { game_id, entity_id: explorer_id, resource_type: id });
@@ -743,7 +763,10 @@ pub fn assert_capture_at(
             capture_at + 1,
         ),
     );
-    assert_eq!(troops.resolved_explorer(army_key).unwrap().troops.stamina.inline().amount, 70);
+    assert_eq!(
+        troops.resolved_explorer(army_key).unwrap().troops.stamina.inline().amount,
+        stamina_after_attack(stamina_after_capture(reveal_at, capture_at), capture_at, capture_at + 1),
+    );
     assert_site_removed(d, ResourceKey { game_id, entity_id: mine_id });
     let mut total_relics = 0_u128;
     for id in 39_u8..57 {

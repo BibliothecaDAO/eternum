@@ -441,13 +441,12 @@ describe("home ring", () => {
       .map(BigInt);
     expect(values.slice(0, 2)).toEqual([1n, 21n]);
     expect(values).toHaveLength(2 + 21 * 5);
-    // The Cairo test's season draws from seed 42 in 60 s units from t=300, and reads each ring 50 s into its day.
     const fixtureSeason = {
       seed: 42n,
-      startMainAt: 300,
-      scheduledEndAt: 300 + 21 * 20 * 60,
-      endAt: 300 + 21 * 20 * 60,
-      dayUnitSeconds: 60,
+      startMainAt: 240,
+      scheduledEndAt: 240 + 21 * 20 * 60,
+      endAt: 240 + 21 * 20 * 60,
+      dayUnitSeconds: 240,
     };
     let dayStart = fixtureSeason.startMainAt;
     for (let day = 0; day < 3; day++) {

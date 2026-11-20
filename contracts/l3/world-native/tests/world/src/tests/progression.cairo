@@ -2,37 +2,36 @@ pub use world_test_support::tests::progression::*;
 
 #[test]
 fn logistics_tiers_set_the_maximum_stamina_by_the_ruled_table() {
-    let (_, frontier) = super::preset_projection::current_definition("frontier-check");
-    let rules = frontier.rules.troop_stamina_config;
-    for (logistics, maximum) in array![(0_u8, 120_u64), (1, 140), (2, 165), (3, 195), (4, 230), (5, 270)] {
+    let rules = crate::balance::rules::TROOP_STAMINA_CONFIG;
+    let base: u64 = rules.stamina_knight_max.into();
+    for (logistics, added) in array![(0_u8, 0_u64), (1, 20), (2, 45), (3, 75), (4, 110), (5, 150)] {
         let progress = ArmyProgress { logistics, oath_slots: 1, ..Default::default() };
-        assert_eq!(crate::progression::stamina_max(progress, crate::troops::TroopType::Knight, rules), maximum);
+        assert_eq!(crate::progression::stamina_max(progress, crate::troops::TroopType::Knight, rules), base + added);
     }
 }
 
 #[test]
 fn added_stamina_stops_at_the_armys_own_maximum() {
-    let (_, frontier) = super::preset_projection::current_definition("frontier-check");
-    let rules = frontier.rules.troop_stamina_config;
+    let rules = crate::balance::rules::TROOP_STAMINA_CONFIG;
+    let base: u64 = rules.stamina_knight_max.into();
     let maximum = crate::progression::stamina_max(
         ArmyProgress { logistics: 3, oath_slots: 1, ..Default::default() }, crate::troops::TroopType::Knight, rules,
     );
-    assert_eq!(maximum, 195);
+    assert_eq!(maximum, base + 75);
     let mut boosts: crate::troops::TroopBoosts = Default::default();
-    // Past the troop's base of 120, up to the army's own 195, and never beyond it.
-    let mut bar = crate::troops::Stamina { amount: 110, settled_at: 5, remainder: 0 };
+    let mut bar = crate::troops::Stamina { amount: base - 10, settled_at: 5, remainder: 0 };
     bar.add(ref boosts, maximum, rules, 25, 120, 5);
-    assert_eq!(bar.amount, 135);
+    assert_eq!(bar.amount, base + 15);
     bar.add(ref boosts, maximum, rules, 100, 120, 5);
-    assert_eq!(bar.amount, 195);
+    assert_eq!(bar.amount, maximum);
 }
 
 #[test]
 fn an_armys_own_maximum_reads_its_logistics_tier_and_a_troops_without_progress() {
     let d = super::registrar::setup();
-    let (game_id, preset, category) = super::registrar::expedition_home(d);
+    let (game_id, _, category) = super::registrar::expedition_home(d);
     let (key, _) = super::registrar::expedition_armies(d, game_id, category);
-    let rules = preset.rules.troop_stamina_config;
+    let rules = crate::balance::rules::TROOP_STAMINA_CONFIG;
     write_progress(d, key, ArmyProgress { logistics: 3, oath_slots: 1, ..Default::default() });
     let (troops, own, other) = snforge_std::interact_with_state(
         d.games,
@@ -53,7 +52,7 @@ fn an_armys_own_maximum_reads_its_logistics_tier_and_a_troops_without_progress()
 #[test]
 fn training_starts_only_later_armies_at_their_realms_tiers_and_full_at_their_logistics_maximum() {
     let d = super::registrar::setup();
-    let (game_id, preset, category) = super::registrar::expedition_home(d);
+    let (game_id, _, category) = super::registrar::expedition_home(d);
     let home = crate::resources::ResourceKey { game_id, entity_id: 1 };
     snforge_std::start_cheat_caller_address(d.games, d.games);
     crate::resources::IResourceOperationsDispatcher { contract_address: d.games }
@@ -82,12 +81,12 @@ fn training_starts_only_later_armies_at_their_realms_tiers_and_full_at_their_log
     let troops = super::state::GameState { contract_address: d.games }.resolved_explorer(trained).unwrap().troops;
     assert_eq!(
         troops.stamina.inline().amount,
-        crate::progression::stamina_max(progress, troops.category, preset.rules.troop_stamina_config),
+        crate::progression::stamina_max(progress, troops.category, crate::balance::rules::TROOP_STAMINA_CONFIG),
     );
     assert_eq!(
         troops.stamina.inline().amount,
         crate::stamina::StaminaImpl::max(
-            troops.category, crate::troops::TroopTier::T1, preset.rules.troop_stamina_config,
+            troops.category, crate::troops::TroopTier::T1, crate::balance::rules::TROOP_STAMINA_CONFIG,
         )
             + crate::rules::logistics_stamina(1).into(),
     );
@@ -120,14 +119,16 @@ fn deployed_armies_keep_their_troops_oath_count_after_home_research_changes() {
         (2, crate::research::ROW_CROSSBOW_OATHS, crate::research::RANGE),
     ] {
         let d = super::registrar::setup();
-        let (game_id, preset, _) = super::registrar::expedition_home(d);
+        let (game_id, _, _) = super::registrar::expedition_home(d);
         let home = crate::resources::ResourceKey { game_id, entity_id: 1 };
         snforge_std::interact_with_state(
             d.games,
             || {
                 for _ in 0_u8..3 {
                     let base = crate::logic::structures::structure(home).unwrap().base;
-                    crate::logic::structures::StructureState::upgrade(home, base, preset.rules.troop_limit_config);
+                    crate::logic::structures::StructureState::upgrade(
+                        home, base, crate::balance::rules::TROOP_LIMIT_CONFIG,
+                    );
                 }
             },
         );

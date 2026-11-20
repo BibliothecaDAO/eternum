@@ -287,7 +287,7 @@ pub fn season_case() -> (Deployment, TestAction, u64) {
         d.games, selector!("realms"), selector!("traits"), array![1].span(), 0x4000001_u32,
     );
     let command = Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), order: None });
-    (d, TestAction { game_id, actor: d.actor, command }, 350)
+    (d, TestAction { game_id, actor: d.actor, command }, super::registrar::params(false).start_main_at + 50)
 }
 pub fn live_loot_case(insufficient: bool, full: bool) -> (Deployment, TestAction) {
     let (d, _, _, attacker, defender) = super::combat_actions::setup_with_cooldown(

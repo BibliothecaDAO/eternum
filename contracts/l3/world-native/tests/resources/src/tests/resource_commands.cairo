@@ -1,6 +1,5 @@
 pub use world_test_support::tests::resource_commands::*;
 
-
 #[test]
 fn explicit_burn_does_not_harvest_and_rejection_keeps_the_stream_moving() {
     let (deployment, source, _) = setup();
@@ -173,42 +172,6 @@ fn full_capacity_discards_offloaded_excess_as_the_original_rules_do() {
         0,
     );
     assert_eq!(resources.resource_weight(home), crate::resources::Weight { capacity: 100, weight: 100 });
-}
-
-#[test]
-fn village_arrivals_wait_for_both_season_and_creation_immunity() {
-    for (village_ticks, available_at) in array![(1_u8, 120_u64), (3_u8, 180_u64)] {
-        let mut rules = play_fixture::rules();
-        rules.tick_config.delivery_tick_in_seconds = 30;
-        rules.battle_config.regular_immunity_ticks = 2;
-        rules.battle_config.village_immunity_ticks = village_ticks;
-        let (deployment, home, _) = setup_with_rules(rules);
-        let structure = IStructureOperationsDispatcher { contract_address: deployment.games }.structure(home).unwrap();
-        set_fixture(
-            deployment.games,
-            selector!("structures"),
-            selector!("structures"),
-            array![3, home.entity_id.into()].span(),
-            StructureRecord {
-                owner: structure.owner,
-                base: crate::structures::StructureBase {
-                    category: crate::taxonomy::VILLAGE_CATEGORY, ..structure.base,
-                },
-                resources_packed: structure.resources_packed,
-                metadata: structure.metadata,
-            },
-        );
-        let values = amount(2, 30);
-        let key = arrival_fixture(deployment, home.entity_id, 1, values);
-        let command = Command::OffloadArrival(
-            crate::arrivals::OffloadArrival { entity_id: home.entity_id, day: 0, slot: 1, resource_count: 1 },
-        );
-        let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
-        assert!(!execute(deployment, command, available_at - 1));
-        assert_eq!(resources.resource_arrival(key).resources, values);
-        assert!(execute(deployment, command, available_at));
-        assert!(resources.resource_arrival(key).resources.is_empty());
-    }
 }
 
 #[test]

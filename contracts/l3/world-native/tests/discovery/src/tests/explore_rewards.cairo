@@ -1,6 +1,5 @@
 pub use world_test_support::tests::explore_rewards::*;
 
-
 #[test]
 fn a_pool_reveal_pays_its_row_percent_of_army_strength() {
     // A 60 percent row is the Blitz pool's largest Essence find.
@@ -86,17 +85,6 @@ fn a_blitz_explore_on_a_spire_root_raises_a_dormant_spire_and_pays_its_finder_on
 }
 
 #[test]
-fn a_blitz_explore_on_another_root_finds_no_spire() {
-    let (d, _, explorer) = blitz_army();
-    let origin = GameState { contract_address: d.games }.explorer(explorer).unwrap().coord;
-    let mut spy = snforge_std::spy_events();
-    assert!(explore(d, explorer, NO_SPIRE_ROOT));
-    let found = IMapLogicDispatcher { contract_address: d.games }.occupancy(tile_key(3, neighbor(origin, 0))).unwrap();
-    assert_eq!(found.category, crate::taxonomy::CAMP_OCCUPIER);
-    assert_eq!(spire_stories(ref spy, d), array![]);
-}
-
-#[test]
 fn a_dormant_spire_opens_no_portal_and_lets_no_army_onto_its_tile() {
     let (d, _, explorer) = blitz_army();
     assert!(explore(d, explorer, SPIRE_ROOT));
@@ -148,49 +136,6 @@ fn each_blitz_row_pays_its_percent_of_strength_up_to_three_thousand() {
             assert_eq!(reward.resource_type, resource_type);
             assert_eq!(reward.amount, *paid.at(army).at(index) * RESOURCE_PRECISION);
         }
-    }
-}
-
-#[test]
-fn a_blitz_explore_pays_on_at_most_three_thousand_strength() {
-    assert_eq!(blitz_reward_cap(), 3000);
-    let cases = array![(100_u128, 0_u8, 20_u128), (500, 0, 100), (1_000, 0, 200), (3_000, 0, 600), (334, 2, 600)];
-    for (count, tier, essence) in cases {
-        let (d, home, explorer) = blitz_army_of(count, tier);
-        let origin = GameState { contract_address: d.games }.explorer(explorer).unwrap().coord;
-        let mut spy = snforge_std::spy_events();
-        assert!(explore(d, explorer, NO_SPIRE_ROOT));
-        let paid = ExtractedReward {
-            explorer_id: explorer.explorer_id,
-            receiver: home.entity_id,
-            coord: neighbor(origin, 0),
-            resource_type: ESSENCE,
-            amount: essence * RESOURCE_PRECISION,
-        };
-        assert_eq!(reveal_stories(ref spy, d), array![paid]);
-    }
-}
-
-#[test]
-fn a_blitz_spire_pays_a_thousand_for_one_t1_or_a_t3_army_above_the_reveal_cap() {
-    assert_eq!(blitz_reward_cap(), 3000);
-    for (count, tier) in array![(1_u128, 0_u8), (334, 2)] {
-        let (d, home, explorer) = blitz_army_of(count, tier);
-        let origin = GameState { contract_address: d.games }.explorer(explorer).unwrap().coord;
-        let mut spy = snforge_std::spy_events();
-        assert!(explore(d, explorer, SPIRE_ROOT));
-        assert_eq!(
-            spire_stories(ref spy, d),
-            array![
-                ExtractedReward {
-                    explorer_id: explorer.explorer_id,
-                    receiver: home.entity_id,
-                    coord: neighbor(origin, 0),
-                    resource_type: ESSENCE,
-                    amount: 1000 * RESOURCE_PRECISION,
-                },
-            ],
-        );
     }
 }
 

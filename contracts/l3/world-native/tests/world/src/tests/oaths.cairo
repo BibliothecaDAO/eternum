@@ -224,7 +224,21 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
     let read_slot = || snforge_std::interact_with_state(
         d.games, || crate::logic::army_slot_storage::read(slot_key).unwrap(),
     );
-    let stamina = crate::troops::Stamina { settled_at: 369, ..read_slot().stamina };
+    let stamina = snforge_std::interact_with_state(
+        d.games,
+        || {
+            let rules = crate::commands::load_context(game_id, 0, 369).rules.unbox();
+            let refill = crate::troops::StaminaRefill {
+                timestamp: 369,
+                stamina_config: rules.troop_stamina_config,
+                armies_tick_in_seconds: rules.tick_config.armies_tick_in_seconds,
+            };
+            crate::logic::army_slot_storage::resolve(key, crate::logic::troops::explorer(key).unwrap(), Some(refill))
+                .troops
+                .stamina
+                .inline()
+        },
+    );
     assert!(
         super::resource_commands::execute_in_game(
             d,
@@ -241,7 +255,7 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
     assert_eq!(read_slot().stamina, stamina);
     assert!(
         super::resource_commands::execute_in_game(
-            d, game_id, super::registrar::muster_slot_command(army.troops.category.into(), 0, slot), 370,
+            d, game_id, super::registrar::muster_slot_command(army.troops.category.into(), 0, slot), 369,
         ),
     );
     let remustered = read_slot();
@@ -898,10 +912,8 @@ fn enlightenment_regains_forty_stamina_an_hour_where_the_army_regains_thirty() {
                 let rules = crate::commands::load_context(game_id, 0, 360).rules.unbox();
                 let refill = crate::troops::StaminaRefill {
                     timestamp: 360 + 3600,
-                    stamina_config: crate::rules::TroopStaminaConfig {
-                        stamina_gain_per_tick: 1, ..rules.troop_stamina_config,
-                    },
-                    armies_tick_in_seconds: 120,
+                    stamina_config: rules.troop_stamina_config,
+                    armies_tick_in_seconds: rules.tick_config.armies_tick_in_seconds,
                 };
                 crate::logic::army_slot_storage::resolve(
                     key, crate::logic::troops::explorer(key).unwrap(), Some(refill),
