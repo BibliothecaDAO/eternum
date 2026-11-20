@@ -18,6 +18,14 @@ const combatMembers = combatBody
 export const factWireTypes = [
   {
     type: "struct",
+    name: "world_native::mines::MineWeight",
+    members: [
+      { name: "kind", type: "core::integer::u8" },
+      { name: "weight", type: "core::integer::u32" },
+    ],
+  },
+  {
+    type: "struct",
     name: "world_native::buildings::BuildingRule",
     members: [
       { name: "population_cost", type: "core::integer::u8" },
