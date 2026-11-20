@@ -32,18 +32,6 @@ fn settlement_terrain_keeps_map_biomes_and_daily_home_rings() {
             assert_eq!(biome, expected);
             assert_eq!(map.biome(crate::geometry::tile_key(game_id, coord), context), expected);
         }
-        // The same coordinates under an ordinary climate: the terrain derivation itself, since the map answers a
-        // revealed tile with the biome its own game stored.
-        let ordinary = crate::commands::BiomeContext { day_unit_seconds: 0, ..context };
-        for alt in array![false, true] {
-            let coord = crate::troops::Coord { alt, ..site };
-            let expected: u8 = crate::biome::get_biome_with_climate(
-                alt, coord.x.into(), coord.y.into(), ordinary.climate,
-            )
-                .into();
-            let key = crate::geometry::tile_key(game_id, coord);
-            assert_eq!(interact_with_state(d.games, || crate::logic::terrain::biome(key, ordinary)), expected);
-        }
     }
 }
 

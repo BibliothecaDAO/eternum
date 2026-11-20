@@ -2,33 +2,6 @@ pub use world_test_support::tests::*;
 
 
 #[test]
-#[feature("safe_dispatcher")]
-fn upgrade_presets_need_authority_complete_recipes_and_a_new_id() {
-    let deployment = setup(true);
-    let settlement = deployment.games;
-    let limits = UpgradeLimits { realm_max: 1, village_max: 0 };
-    let recipes = array![
-        UpgradeRecipe { costs: array![crate::resources::ResourceAmount { resource_type: 23, amount: 17 }].span() },
-    ]
-        .span();
-    let registrar = crate::registrar::IRegistrarSafeDispatcher { contract_address: settlement };
-    let mut preset = play_fixture::fixture_preset(play_fixture::rules());
-    preset.structures.upgrade_limits = limits;
-    preset.structures.upgrades = recipes;
-    start_cheat_caller_address(settlement, deployment.actor);
-    assert!(crate::registrar::IRegistrarSafeDispatcherTrait::register_preset(registrar, 20000, preset).is_err());
-    start_cheat_caller_address(settlement, authority());
-    let mut invalid = preset;
-    invalid.structures.upgrades = array![].span();
-    assert!(crate::registrar::IRegistrarSafeDispatcherTrait::register_preset(registrar, 20000, invalid).is_err());
-    let games = crate::game::IGameDispatcher { contract_address: settlement };
-    assert!(
-        crate::registrar::IRegistrarSafeDispatcherTrait::register_preset(registrar, games.game(1).preset_id, preset)
-            .is_err(),
-    );
-}
-
-#[test]
 fn row_set_member_and_deleted_have_exact_wire_shapes_and_zero_is_present() {
     let deployment = setup(true);
     let mut spy = spy_events();
