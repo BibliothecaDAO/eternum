@@ -1,5 +1,4 @@
 import { CalendarConflict } from "./calendar";
-import approved from "../../../config/source/frontier/extension.json";
 import type { GameEnvironmentId } from "../../../config/shared/game-environments";
 import { Context, Effect, Layer } from "effect";
 import type { LaunchRunStore } from "../../../config/deployer/clean/launch/run-store";
@@ -29,9 +28,9 @@ export interface LaunchServiceStore extends LaunchRunStore {
   /** The shard chain this store's runs launch on, as the directory selects it. */
   targetChain(): Promise<string>;
   officialChain(): Promise<string | null>;
-  /** Queues a run, retaining running/complete runs. Frontier retries must keep their preset and window. */
+  /** Queues a run, retaining running/complete runs. Frontier retries must keep their window. */
   enqueue(request: CreateGameRequest): Promise<LaunchRun>;
-  /** Creates a run once; an existing run is untouched, and a different Frontier preset or window is refused. */
+  /** Creates a run once; an existing run is untouched, and a different Frontier window is refused. */
   schedule(request: CreateGameRequest): Promise<LaunchRun>;
   list(environment: GameEnvironmentId): Promise<LaunchRun[]>;
   playerDirectoryGames(): Promise<{ chainId: string; games: { gameId: number; slotId: number | null }[] }[]>;
@@ -152,8 +151,7 @@ export class D1LaunchStore implements LaunchServiceStore {
          available_at = excluded.available_at, error_message = NULL, completed_at = NULL, updated_at = excluded.updated_at
        WHERE launch_runs.status NOT IN ('running', 'complete')
          AND (excluded.environment != 'madara.frontier' OR (
-           json_extract(launch_runs.request, '$.version') = json_extract(excluded.request, '$.version')
-           AND json_extract(launch_runs.request, '$.gameStartTime') = json_extract(excluded.request, '$.gameStartTime')
+           json_extract(launch_runs.request, '$.gameStartTime') = json_extract(excluded.request, '$.gameStartTime')
            AND json_extract(launch_runs.request, '$.durationSeconds') IS json_extract(excluded.request, '$.durationSeconds')
          ))`,
     );
@@ -397,7 +395,6 @@ export class D1LaunchStore implements LaunchServiceStore {
          WHERE ?10 = 0 OR EXISTS (
            SELECT 1 FROM season_phases WHERE phase = 'frontier'
              AND 'frontier-' || CAST(starts_at / 1000 AS INTEGER) = ?4
-             AND preset_id = CAST(json_extract(?5, '$.version') AS INTEGER)
              AND starts_at = unixepoch(json_extract(?5, '$.gameStartTime')) * 1000
              AND ends_at = starts_at + json_extract(?5, '$.durationSeconds') * 1000
          ) OR EXISTS (
@@ -421,18 +418,8 @@ export class D1LaunchStore implements LaunchServiceStore {
 }
 
 const assertSameFrontierLaunch = (stored: CreateGameRequest, requested: CreateGameRequest) => {
-  if (!("version" in stored) || !("version" in requested)) throw new CalendarConflict("Invalid Frontier request");
-  const approvedExtension =
-    stored.version === String(approved.presetId) &&
-    stored.gameStartTime === new Date(approved.start * 1000).toISOString() &&
-    stored.durationSeconds === approved.oldEnd - approved.start &&
-    requested.durationSeconds === approved.end - approved.start;
-  if (
-    stored.version !== requested.version ||
-    stored.gameStartTime !== requested.gameStartTime ||
-    (stored.durationSeconds !== requested.durationSeconds && !approvedExtension)
-  )
-    throw new CalendarConflict("That Frontier name holds another preset or season window");
+  if (stored.gameStartTime !== requested.gameStartTime || stored.durationSeconds !== requested.durationSeconds)
+    throw new CalendarConflict("That Frontier name holds another season window");
 };
 
 export const databaseLayer = (store: LaunchServiceStore): Layer.Layer<LaunchDatabase> =>

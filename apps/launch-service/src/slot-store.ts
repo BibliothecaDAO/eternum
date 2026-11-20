@@ -1,7 +1,6 @@
 import { launchFailure } from "./errors";
 import { BLITZ_SLOT_PREPARATION_SECONDS } from "@realms-world/value-ledger";
 import { SlotCancelled, type BlitzValuePort, type SlotResolver } from "./paid-blitz";
-import { nativePresetIdFor } from "../../../config/source/native";
 import type { D1LaunchStore } from "./store";
 import {
   blitzSlotWindow,
@@ -115,7 +114,6 @@ export class D1SlotStore implements SlotStore {
       (closed?.groups ?? []).map((_, groupIndex) =>
         this.launches.scheduleStatement({
           environment: "madara.blitz",
-          version: String(nativePresetIdFor("blitz")),
           gameName: `${name}-${groupIndex + 1}`,
           gameStartTime: new Date(Date.parse(slot.closesAt) + BLITZ_SLOT_PREPARATION_SECONDS * 1000).toISOString(),
           durationSeconds: closed!.slot.end - closed!.slot.close - BLITZ_SLOT_PREPARATION_SECONDS,

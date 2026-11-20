@@ -4,6 +4,7 @@ import { readFileSync, writeFileSync, renameSync } from "node:fs";
 import { join } from "node:path";
 import { Account, byteArray, CallData, hash, json, num, type Call, type RpcProvider } from "starknet";
 import { buildLedgerEconomicPreset, chestPresetFor } from "../../config/deployer/clean/ledger/economics";
+import { presetIdForEnvironment } from "../../config/deployer/clean/constants";
 import { awardableCosmetics } from "../../contracts/l2/ledger/scripts/chest-preset.js";
 import { addressBook, root, type Environment, type Inputs, type Target } from "./settings";
 import { classAt, isMissing, isContractRevert, confirm, send } from "./chain";
@@ -202,8 +203,9 @@ const call = (contractAddress: string, entrypoint: string, values: Parameters<ty
   entrypoint,
   calldata: CallData.compile(values),
 });
-export function setupCalls(target: Target, assets: Assets, pauser: string, frontierPresetId: number) {
+export function setupCalls(target: Target, assets: Assets, pauser: string) {
   assertProductionLords(target, assets.lords);
+  const frontierPresetId = presetIdForEnvironment("madara.frontier");
   const chests = chestPresetFor(target.environment as Environment);
   const metadata = (collection: string, attributes: number) =>
     call(collection, "set_attrs_raw_to_ipfs_cid", [attributes, byteArray.byteArrayFromString(target.picture), false]);
@@ -349,7 +351,7 @@ export async function configureLedger(
   readPresence = setupPresenceReader(account),
 ) {
   const head = await setupHead(account);
-  const desired = setupCalls(target, assets, pauser, Number(input.frontierPresetId));
+  const desired = setupCalls(target, assets, pauser);
   output("Reading collectible metadata on mainnet.");
   const present = await Promise.all(desired.map((operation) => readPresence(operation, head)));
   const missing = desired.filter((_, index) => !present[index]);

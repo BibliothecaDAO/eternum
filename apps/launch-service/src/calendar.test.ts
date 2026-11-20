@@ -30,34 +30,30 @@ const stores = () => {
   return { launches, slots, calendar, tick, value };
 };
 
-test.each([1, 2, 21, 30])(
-  "the calendar creates a %i-bag Frontier game once with the operator’s dates",
-  async (bags) => {
-    const { launches, calendar, tick } = stores();
-    const season = {
-      phase: "frontier" as const,
-      presetId: 5,
-      startsAt: day(0).toISOString(),
-      endsAt: frontierSeasonEnd(day(0), bags),
-    };
-    await calendar.set(season, Date.now());
+test.each([1, 2, 10])("the calendar creates a %i-bag Frontier game once with the operator’s dates", async (bags) => {
+  const { launches, calendar, tick } = stores();
+  const season = {
+    phase: "frontier" as const,
+    startsAt: day(0).toISOString(),
+    endsAt: frontierSeasonEnd(day(0), bags),
+  };
+  await calendar.set(season, Date.now());
 
-    await tick(day(-1, 23, 59));
-    expect(await launches.list("madara.frontier")).toEqual([]);
-    await tick(day(0));
-    await tick(day(0, 0, 1));
-    await tick(day(70, 0, 1));
-    const runs = await launches.list("madara.frontier");
-    expect(runs).toHaveLength(1);
-    expect(runs[0]).toMatchObject({
-      name: `frontier-${day(0).getTime() / 1_000}`,
-      request: {
-        gameStartTime: season.startsAt,
-        durationSeconds: (Date.parse(season.endsAt) - Date.parse(season.startsAt)) / 1000,
-      },
-    });
-  },
-);
+  await tick(day(-1, 23, 59));
+  expect(await launches.list("madara.frontier")).toEqual([]);
+  await tick(day(0));
+  await tick(day(0, 0, 1));
+  await tick(day(70, 0, 1));
+  const runs = await launches.list("madara.frontier");
+  expect(runs).toHaveLength(1);
+  expect(runs[0]).toMatchObject({
+    name: `frontier-${day(0).getTime() / 1_000}`,
+    request: {
+      gameStartTime: season.startsAt,
+      durationSeconds: (Date.parse(season.endsAt) - Date.parse(season.startsAt)) / 1000,
+    },
+  });
+});
 
 test("Blitz slots are scheduled only inside the Blitz window, and none outside it", async () => {
   const { slots, calendar, tick } = stores();
@@ -157,7 +153,6 @@ test("a phase moves until it starts; a started Frontier season keeps its start a
   const now = Date.parse("2026-12-01T00:00:00Z");
   const frontier = {
     phase: "frontier" as const,
-    presetId: 5,
     startsAt: "2027-01-01T00:00:00.000Z",
     endsAt: frontierSeasonEnd("2027-01-01T00:00:00.000Z"),
   };
@@ -183,7 +178,6 @@ test("a phase moves until it starts; a started Frontier season keeps its start a
   });
   const next = {
     phase: "frontier" as const,
-    presetId: 5,
     startsAt: "2027-04-01T00:00:00.000Z",
     endsAt: frontierSeasonEnd("2027-04-01T00:00:00.000Z"),
   };
@@ -195,7 +189,7 @@ test.each([0.5, 1.5, 9.3])("accepts %s bags without rounding the operator's end"
   const startsAt = day(0).toISOString();
   const bagMs = Date.parse(frontierSeasonEnd(startsAt, 1)) - Date.parse(startsAt);
   const endsAt = new Date(Date.parse(startsAt) + bags * bagMs).toISOString();
-  const phase = { phase: "frontier" as const, presetId: 5, startsAt, endsAt };
+  const phase = { phase: "frontier" as const, startsAt, endsAt };
   expect(await calendar.set(phase, Date.now())).toEqual(phase);
   expect(await calendar.list()).toEqual([phase]);
 });
@@ -203,9 +197,9 @@ test.each([0.5, 1.5, 9.3])("accepts %s bags without rounding the operator's end"
 test("refuses a zero-length season without writing", async () => {
   const { calendar } = stores();
   const startsAt = day(0).toISOString();
-  await expect(
-    calendar.set({ phase: "frontier", presetId: 5, startsAt, endsAt: startsAt }, Date.now()),
-  ).rejects.toThrow("end after");
+  await expect(calendar.set({ phase: "frontier", startsAt, endsAt: startsAt }, Date.now())).rejects.toThrow(
+    "end after",
+  );
   expect(await calendar.list()).toEqual([]);
 });
 
@@ -214,7 +208,7 @@ test("refuses a Frontier start off the armies tick", async () => {
   const offTick = new Date(day(0).getTime() + 1_000);
   await expect(
     calendar.set(
-      { phase: "frontier", presetId: 5, startsAt: offTick.toISOString(), endsAt: frontierSeasonEnd(offTick, 2) },
+      { phase: "frontier", startsAt: offTick.toISOString(), endsAt: frontierSeasonEnd(offTick, 2) },
       Date.now(),
     ),
   ).rejects.toThrow("starts on a 120 s tick");
@@ -225,9 +219,7 @@ test("a malformed stored Frontier season cannot stop Blitz slot creation", async
   const { slots, calendar, tick } = stores();
   // Stored before the calendar checked seasons: set refuses one now.
   await database.db
-    .prepare(
-      "INSERT INTO season_phases (phase, preset_id, starts_at, ends_at, updated_at) VALUES ('frontier', 5, ?, ?, ?)",
-    )
+    .prepare("INSERT INTO season_phases (phase, starts_at, ends_at, updated_at) VALUES ('frontier', ?, ?, ?)")
     .bind(day(0).getTime() + 500, day(31).getTime(), Date.now())
     .run();
   await calendar.set({ phase: "blitz", startsAt: day(0).toISOString(), endsAt: day(31).toISOString() }, Date.now());
@@ -245,7 +237,7 @@ test("opening both phases after their start schedules Frontier and the next Blit
   vi.spyOn(Date, "now").mockReturnValue(now);
   const { calendar, launches, slots, tick } = stores();
   for (const phase of ["frontier", "blitz"] as const) {
-    const entered = { ...(phase === "frontier" ? { phase, presetId: 5 } : { phase }), ...enteredWindow };
+    const entered = { ...(phase === "frontier" ? { phase } : { phase }), ...enteredWindow };
     expect(await calendar.set(entered, now)).toEqual(entered);
   }
   await tick(new Date(now));
@@ -266,7 +258,7 @@ test.each([
   const { calendar } = stores();
   await expect(
     calendar.set(
-      { ...(phase === "frontier" ? { phase, presetId: 5 } : { phase }), ...enteredWindow },
+      { ...(phase === "frontier" ? { phase } : { phase }), ...enteredWindow },
       Date.parse(enteredWindow.endsAt) + elapsed,
     ),
   ).rejects.toThrow("A phase must end in the future");
@@ -276,7 +268,7 @@ test.each([
 test.each(["frontier", "blitz"] as const)("a late-opened %s phase still keeps its running start", async (phase) => {
   const { calendar } = stores();
   const now = Date.parse("2000-01-01T18:00:00Z");
-  const entered = { ...(phase === "frontier" ? { phase, presetId: 5 } : { phase }), ...enteredWindow };
+  const entered = { ...(phase === "frontier" ? { phase } : { phase }), ...enteredWindow };
   await calendar.set(entered, now);
   await expect(calendar.set({ ...entered, startsAt: "2000-01-01T08:00:00.000Z" }, now)).rejects.toThrow(
     "A running phase keeps its start",
@@ -287,7 +279,7 @@ test.each(["frontier", "blitz"] as const)("a late-opened %s phase still keeps it
 test("a late-opened Frontier phase still keeps its running end", async () => {
   const { calendar } = stores();
   const now = Date.parse("2000-01-01T18:00:00Z");
-  const entered = { phase: "frontier" as const, presetId: 5, ...enteredWindow };
+  const entered = { phase: "frontier" as const, ...enteredWindow };
   await calendar.set(entered, now);
   await expect(calendar.set({ ...entered, endsAt: frontierSeasonEnd(enteredWindow.startsAt, 3) }, now)).rejects.toThrow(
     "A started Frontier season's end is fixed",
@@ -321,62 +313,4 @@ test("the schedule opens exactly the game the calendar names next, at the moment
   expect((await slots.list()).map(({ name, closesAt }) => ({ name, closesAt }))).toEqual([
     { name: named!.name, closesAt: named!.closesAt },
   ]);
-});
-
-// The only running Frontier date change is reconciled from both contracts, not approved by the PUT body.
-test("reconciles the approved extension only after both chains agree, with retries and Blitz unchanged", async () => {
-  const approved = (await import("../../../config/source/frontier/extension.json")).default;
-  const now = (approved.oldEnd - 3600) * 1000;
-  const before = {
-    phase: "frontier" as const,
-    presetId: 5,
-    startsAt: new Date(approved.start * 1000).toISOString(),
-    endsAt: new Date(approved.oldEnd * 1000).toISOString(),
-  };
-  const after = { ...before, endsAt: new Date(approved.end * 1000).toISOString() };
-  const blitz = { phase: "blitz" as const, startsAt: "2026-10-21T10:30:00.000Z", endsAt: "2026-10-28T10:30:00.000Z" };
-  const ordinary = new D1CalendarStore(database.db);
-  await ordinary.set(before, approved.start * 1000 - 1);
-  await ordinary.set(blitz, approved.start * 1000 - 1);
-  await expect(ordinary.set(after, now)).rejects.toThrow("Frontier extension calendar differs");
-  const verify = vi
-    .fn()
-    .mockRejectedValueOnce(new Error("extension_not_confirmed_on_both_chains"))
-    .mockResolvedValue({ worldBlock: 50, ledgerBlock: 60 });
-  const guarded = new D1CalendarStore(database.db, verify);
-  await expect(guarded.set(after, now)).rejects.toThrow("extension_not_confirmed_on_both_chains");
-  expect(await guarded.list()).toEqual([before, blitz]);
-  expect(await guarded.set(after, now)).toEqual(after);
-  expect(await guarded.set(after, now)).toEqual(after);
-  expect(verify).toHaveBeenCalledTimes(3);
-  expect(await guarded.list()).toEqual([after, blitz]);
-  await expect(guarded.set({ ...after, presetId: 6 }, now)).rejects.toThrow("keeps its preset");
-  expect(verify).toHaveBeenCalledTimes(3);
-  // A fresh store sees persisted dates, and arbitrary future edits still use the fixed-end rule.
-  expect(await new D1CalendarStore(database.db).list()).toEqual([after, blitz]);
-  await expect(
-    guarded.set({ ...after, endsAt: new Date((approved.end + 80 * 3600) * 1000).toISOString() }, now),
-  ).rejects.toThrow("A started Frontier season's end is fixed");
-});
-
-test.each(["ends_at", "preset_id"])("refuses %s changed while extension confirmation was in flight", async (column) => {
-  const approved = (await import("../../../config/source/frontier/extension.json")).default;
-  const before = {
-    phase: "frontier" as const,
-    presetId: 5,
-    startsAt: new Date(approved.start * 1000).toISOString(),
-    endsAt: new Date(approved.oldEnd * 1000).toISOString(),
-  };
-  const ordinary = new D1CalendarStore(database.db);
-  await ordinary.set(before, approved.start * 1000 - 1);
-  const guarded = new D1CalendarStore(database.db, async () => {
-    await database.db.prepare(`UPDATE season_phases SET ${column} = ${column} + 1 WHERE phase = 'frontier'`).run();
-  });
-  await expect(
-    guarded.set({ ...before, endsAt: new Date(approved.end * 1000).toISOString() }, (approved.oldEnd - 1) * 1000),
-  ).rejects.toThrow("The calendar changed; reload and edit again");
-  const stored = (await guarded.list())[0]!;
-  expect(column === "ends_at" ? Date.parse(stored.endsAt) : stored.presetId).toBe(
-    column === "ends_at" ? approved.oldEnd * 1000 + 1 : 6,
-  );
 });

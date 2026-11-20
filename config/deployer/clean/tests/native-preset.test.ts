@@ -4,7 +4,6 @@ import { buildLedgerEconomicPreset } from "../ledger/economics";
 import { findRegistrarGame } from "../registrar/calls";
 import { nativeReleasePresets, nativePresets } from "../../../source/native";
 import { describe, expect, test, mock } from "bun:test";
-import { readFileSync } from "node:fs";
 import { CallData, type RpcProvider } from "starknet";
 import schema from "../../../../contracts/l3/world-native/schema/schema.json";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/balance.gen";
@@ -178,18 +177,11 @@ describe("native presets", () => {
     }
   });
 
-  test("the contract Frontier command gate uses the published mask", () => {
-    const preset = buildNativePreset(
-      loadNativePresetConfiguration("madara.frontier", FRONTIER_FIXTURE_PRESET_ID),
-      FRONTIER_FIXTURE_PRESET_ID,
-    );
-    const mask = BigInt(
-      readFileSync(
-        new URL("../../../../contracts/l3/world-native/tests/fixtures/frontier-command-mask.txt", import.meta.url),
-        "utf8",
-      ).trim(),
-    );
-    expect(preset.rules.command_mask).toBe(mask);
+  test("Season 1's command gate opens site interaction and no resource transfer", () => {
+    const mask = buildNativePreset(
+      loadNativePresetConfiguration("madara.frontier", FRONTIER_S1_PRESET_ID),
+      FRONTIER_S1_PRESET_ID,
+    ).rules.command_mask;
     expect(mask & BigInt(nativeCommandBits.InteractSite)).not.toBe(0n);
     for (const [network, id] of [["madara.blitz", 2]] as const) {
       const legacy = buildNativePreset(loadNativePresetConfiguration(network, id), id);

@@ -7,7 +7,7 @@ import { applyDeploymentConfigOverrides } from "../config/config-loader";
 import {
   DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
   DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
-  defaultPresetForEnvironment,
+  presetIdForEnvironment,
 } from "../constants";
 import { resolveDeploymentEnvironment } from "../environment";
 import {
@@ -67,7 +67,7 @@ function createRuntime(request: LaunchGameRequest): LaunchRuntime {
     provider: new RpcProvider({ nodeUrl: rpcUrl }),
     rpcUrl,
     startTime: parseStartTime(request.startTime),
-    presetId: resolvePresetId(request.version ?? defaultPresetForEnvironment(request.environmentId)),
+    presetId: resolvePresetId(request.version ?? String(presetIdForEnvironment(request.environmentId))),
     progress: createProgressReporter(),
   };
 }

@@ -9,8 +9,7 @@ const Instant = Schema.String.pipe(
   ),
 );
 const Dates = { startsAt: Instant, endsAt: Instant };
-const FrontierRequest = Schema.Struct({ ...Dates, presetId: Schema.Number });
-const BlitzRequest = Schema.Struct(Dates);
+const PhaseRequest = Schema.Struct(Dates);
 const PHASES = new Set(["frontier", "blitz"]);
 
 /**
@@ -30,17 +29,9 @@ export function createCalendarRoutes(calendar: CalendarStore, now: () => number 
     let requested: SeasonPhase;
     try {
       const body = await context.req.json();
-      if (phase === "frontier") {
-        requested = { phase, ...Schema.decodeUnknownSync(FrontierRequest)(body) };
-      } else {
-        if (body && "presetId" in body) throw new Error("Blitz has no calendar preset");
-        requested = { phase: "blitz", ...Schema.decodeUnknownSync(BlitzRequest)(body) };
-      }
+      requested = { phase: phase as SeasonPhase["phase"], ...Schema.decodeUnknownSync(PhaseRequest)(body) };
     } catch {
-      return context.json(
-        { error: "A phase needs whole-second dates; Frontier also needs a numeric presetId, Blitz has none" },
-        400,
-      );
+      return context.json({ error: "A phase needs whole-second dates" }, 400);
     }
     try {
       return context.json(await calendar.set(requested, now()));

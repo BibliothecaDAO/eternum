@@ -127,7 +127,6 @@ function settledFrontierGame(evict: boolean): FoldCheckpoint {
       model: definition.name,
       rows: rows[definition.name] ?? [],
     })),
-    preset_preimages: [],
   });
   if (evict) fold.evictFinalizedGames();
   return fold.checkpoint();

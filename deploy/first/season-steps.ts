@@ -79,13 +79,9 @@ async function shardConnection(context: Season) {
     firstRelease: firstReleaseOf(publicManifest.releases),
   };
 }
-function assertCalendarGame(phase: FrontierSeasonPhase, native: { presetId: number; start: number; end: number }) {
-  if (
-    native.presetId !== phase.presetId ||
-    native.start !== Date.parse(phase.startsAt) / 1000 ||
-    native.end !== Date.parse(phase.endsAt) / 1000
-  )
-    throw new PublicError("Confirmed Frontier game differs from calendar preset or dates");
+function assertCalendarGame(phase: FrontierSeasonPhase, native: { start: number; end: number }) {
+  if (native.start !== Date.parse(phase.startsAt) / 1000 || native.end !== Date.parse(phase.endsAt) / 1000)
+    throw new PublicError("Confirmed Frontier game differs from calendar dates");
 }
 async function funding(context: Season) {
   const selected = await frontierGame(context);
@@ -156,12 +152,7 @@ export function seasonSteps(context: Season): Step[] {
         return {
           done: phases.some((phase) => phase.phase === "frontier"),
           detail: phases.length
-            ? phases
-                .map(
-                  (phase) =>
-                    `${phase.phase}${phase.phase === "frontier" ? ` preset ${phase.presetId}` : ""} ${phase.startsAt} to ${phase.endsAt}`,
-                )
-                .join("; ")
+            ? phases.map((phase) => `${phase.phase} ${phase.startsAt} to ${phase.endsAt}`).join("; ")
             : "set missing phases from saved dates",
         };
       },
@@ -172,10 +163,9 @@ export function seasonSteps(context: Season): Step[] {
         const ends = seconds(context.inputs!.frontierEnd);
         if (!(ends > Date.now() / 1000)) throw new PublicError(PHASE_END_ERROR);
         context.output(
-          `Setting frontier preset ${context.inputs!.frontierPresetId} calendar: ${new Date(begins * 1000).toISOString()} to ${new Date(ends * 1000).toISOString()}.`,
+          `Setting frontier calendar: ${new Date(begins * 1000).toISOString()} to ${new Date(ends * 1000).toISOString()}.`,
         );
         await service(context, "/api/factory/calendar/frontier", "PUT", {
-          presetId: Number(context.inputs!.frontierPresetId),
           startsAt: new Date(begins * 1000).toISOString(),
           endsAt: new Date(ends * 1000).toISOString(),
         });

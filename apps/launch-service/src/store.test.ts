@@ -1,7 +1,4 @@
 import { D1CalendarStore } from "./calendar-store";
-import { nativePresetIdFor } from "../../../config/source/native";
-import { frontierPreset } from "../../../config/source/frontier/native";
-import { seasonSeconds } from "../../../packages/core/src/utils/days";
 import { frontierSeasonEnd } from "./test-dates";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { scheduleFrontierSeason } from "./schedule";
@@ -36,7 +33,6 @@ test("supports both launch formats and refuses an unknown environment", async ()
   const frontier = await store.enqueue({ environment: "madara.frontier", gameName: "new-frontier" });
   expect((await store.find("madara.blitz", blitz.name))?.id).toBe(blitz.id);
   expect((await store.list("madara.frontier")).map((run) => run.id)).toEqual([frontier.id]);
-  expect("version" in frontier.request && frontier.request.version).toBe(String(nativePresetIdFor("frontier")));
   await expect(
     database.db.prepare("UPDATE launch_runs SET environment = 'unsupported' WHERE id = ?").bind(frontier.id).run(),
   ).rejects.toThrow("CHECK constraint failed");
@@ -71,10 +67,9 @@ test("a launch interrupted while running is resumed, not queued twice", async ()
   expect(await store.list("madara.blitz")).toHaveLength(1);
 });
 
-/** The calendar uses the Frontier preset season length. */
+/** The calendar uses Season 1's full race. */
 const season = (startsAt: string) => ({
   phase: "frontier" as const,
-  presetId: 5,
   startsAt,
   endsAt: frontierSeasonEnd(startsAt),
 });
@@ -88,9 +83,8 @@ test("one Frontier season is created once by every tick and continued like any f
   expect(await scheduleFrontierSeason(store, season(seasonStart))).toMatchObject({ id: queued.id, status: "queued" });
   const run = (await store.startNext(Date.now()))!;
   expect(run.request).toMatchObject({
-    version: "5",
     gameStartTime: seasonStart,
-    durationSeconds: seasonSeconds(21, frontierPreset.dayUnitSeconds),
+    durationSeconds: (Date.parse(frontierSeasonEnd(seasonStart)) - Date.parse(seasonStart)) / 1000,
   });
   await store.retry(run.id, "rpc down", 60_000);
   // A tick while the season waits to retry must not reset its attempts or its delay.

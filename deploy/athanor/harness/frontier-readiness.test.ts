@@ -3,13 +3,18 @@ import { expect, it } from "bun:test";
 import { ResourceManager, type GameClient } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
-import preset from "../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
+import { loadNativePresetConfiguration } from "../../../config/deployer/clean/registrar/native-preset";
+import { nativePresetIdFor } from "../../../config/source/native";
 import { waitForWheatState } from "./frontier";
+
+const seasonOne = nativePresetIdFor("frontier");
+const rules = buildNativePreset(loadNativePresetConfiguration("madara.frontier", seasonOne), seasonOne).rules;
 
 function realm() {
   const store = new NativeFactStore();
   const values: Record<string, Record<string, unknown>> = {
-    SliceRules: { ...preset.rules, game_id: 1, mode_rules: 0 },
+    SliceRules: { ...rules, game_id: 1, mode_rules: 0 },
     GameRegistry: gameRegistryRow({
       preset_id: 5,
       start_settling_at: "0",
@@ -72,10 +77,4 @@ it("a shard that never completes wheat synchronization fails with its state, not
   const { client, snapshot } = realm();
   snapshot(false);
   await expect(waitForWheatState(client, 7, 10)).rejects.toThrow("wheat=unknown");
-});
-
-it("the readiness fixture keeps the registered preset's rule and calendar values", () => {
-  const expected = new NativeFactStore();
-  expected.applyFacts([{ model: "SliceRules", key: "0x1", value: { ...preset.rules, game_id: 1, mode_rules: 0 } }]);
-  expect(realm().store.get("SliceRules", { game_id: 1 })).toEqual(expected.get("SliceRules", { game_id: 1 }));
 });

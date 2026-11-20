@@ -287,14 +287,11 @@ export interface Config {
     shardsMineInitialFishBalance: number;
     relicDiscoveryIntervalSeconds: number;
     relicHexDistanceFromCenter: number;
-    bitcoinMineWinProbability: number;
-    bitcoinMineFailProbability: number;
   };
   tick: {
     defaultTickIntervalInSeconds: number;
     armiesTickIntervalInSeconds: number; // 1 hour
     deliveryTickIntervalInSeconds: number;
-    bitcoinPhaseInSeconds: number;
   };
   carryCapacityGram: Record<CapacityConfig, bigint | number | string>;
   speed: {
@@ -464,11 +461,6 @@ export interface Config {
   factory: {
     address: string;
   };
-  bitcoin?: {
-    prizePerPhase: number;
-    minimumLabor: number;
-    ownerCutBps: number;
-  };
   mines?: {
     kinds: Record<
       number,
@@ -507,8 +499,6 @@ export type FactoryMapConfigOverrides = Partial<
     | "shardsMinesFailProbability"
     | "campFindProbability"
     | "campFindFailProbability"
-    | "bitcoinMineWinProbability"
-    | "bitcoinMineFailProbability"
     | "hyperstructureWinProbAtCenter"
     | "hyperstructureFailProbAtCenter"
     | "hyperstructureFailProbIncreasePerHexDistance"

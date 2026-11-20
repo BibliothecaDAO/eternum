@@ -6,8 +6,6 @@ export const arenaExplorationConfig: ConfigPatch = {
     shardsMinesWinProbability: 1_000,
     campFindProbability: 1_500,
     campFindFailProbability: 48_500,
-    bitcoinMineWinProbability: 0,
-    bitcoinMineFailProbability: 1,
     hyperstructureWinProbAtCenter: 0,
     hyperstructureFailProbAtCenter: 1,
     hyperstructureFailProbIncreasePerHexDistance: 9_820,

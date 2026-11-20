@@ -7,7 +7,8 @@ import { CairoOption, CairoOptionVariant, shortString } from "starknet";
 import { applyDeploymentConfigOverrides } from "../../../config/deployer/clean/config/config-loader";
 import { loadNativePresetConfiguration } from "../../../config/deployer/clean/registrar/native-preset";
 import { buildCreateGameParams } from "../../../config/deployer/clean/registrar/preset";
-import { nativePresetForId } from "../../../config/source/native";
+import { presetIdForEnvironment } from "../../../config/deployer/clean/constants";
+import { resolveDeploymentEnvironment } from "../../../config/deployer/clean/environment";
 import type { CreateGameRequest } from "./schemas";
 import type { ReleaseChain } from "./release";
 import type { LaunchGameSummary } from "../../../config/deployer/clean/types";
@@ -196,7 +197,7 @@ export class LaunchShard extends ShardOperator implements ReleaseChain {
     return {
       environment: request.environment,
       chain: "madara",
-      gameType: nativePresetForId(Number(request.version)).gameType,
+      gameType: resolveDeploymentEnvironment(request.environment).gameType,
       gameName: request.gameName,
       gameId,
       worldAddress: this.target.gamesAddress,
@@ -218,8 +219,8 @@ export function buildLaunchGameParams(
   players: readonly RosterSeat[],
   seater: string,
 ) {
-  if (!request.gameStartTime || !request.version) throw new Error("durable_launch_parameters_missing");
-  const presetId = Number(request.version);
+  if (!request.gameStartTime) throw new Error("durable_launch_parameters_missing");
+  const presetId = presetIdForEnvironment(request.environment);
   const config = applyDeploymentConfigOverrides(loadNativePresetConfiguration(request.environment, presetId), {
     startMainAt: Math.floor(Date.parse(request.gameStartTime) / 1000),
     factoryAddress: "",

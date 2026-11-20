@@ -1,7 +1,7 @@
 import {
   DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
   DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
-  defaultPresetForEnvironment,
+  presetIdForEnvironment,
 } from "../constants";
 import { resolveDeploymentEnvironment } from "../environment";
 import type {
@@ -161,7 +161,7 @@ function requireGameLaunchArgs(args: Args): {
 
 function resolveSharedLaunchDefaults(environment: DeploymentEnvironment) {
   return {
-    version: defaultPresetForEnvironment(environment.id),
+    version: String(presetIdForEnvironment(environment.id)),
     waitForFactoryIndexTimeoutMs: DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
     waitForFactoryIndexPollMs: DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
   };

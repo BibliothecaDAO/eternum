@@ -1,7 +1,6 @@
 import { parseArgs } from "node:util";
 import { CallData, hash } from "starknet";
 import schema from "../../../contracts/l3/world-native/schema/schema.json";
-import { nativePresetIdFor } from "../../../config/source/native";
 import { splitPlaytestRoster } from "../../../packages/value-ledger/src/blitz-roster";
 import { BLITZ_SLOT_PREPARATION_SECONDS } from "../../../packages/value-ledger/src/blitz-timetable";
 import { seaterLabels } from "../../../packages/value-ledger/src/shard-accounts";
@@ -51,7 +50,6 @@ function blitzLaunch(run: string, groupIndex: number, roster: string[], seater: 
   return {
     request: {
       environment: "madara.blitz",
-      version: String(nativePresetIdFor("blitz")),
       gameName: `split-${run}-${groupIndex + 1}`,
       gameStartTime: new Date(startsAt * 1000).toISOString(),
       durationSeconds: GAME_SECONDS,

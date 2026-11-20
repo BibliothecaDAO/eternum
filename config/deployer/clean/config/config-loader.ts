@@ -50,8 +50,6 @@ const MAP_CONFIG_OVERRIDE_LIMITS = {
   shardsMinesFailProbability: U16_MAX,
   campFindProbability: U16_MAX,
   campFindFailProbability: U16_MAX,
-  bitcoinMineWinProbability: U16_MAX,
-  bitcoinMineFailProbability: U16_MAX,
   hyperstructureWinProbAtCenter: HYPERSTRUCTURE_PAIR_SUM,
   hyperstructureFailProbAtCenter: HYPERSTRUCTURE_PAIR_SUM,
   hyperstructureFailProbIncreasePerHexDistance: U16_MAX,
@@ -71,12 +69,6 @@ const MAP_CONFIG_OVERRIDE_PAIR_GROUPS = [
     label: "Camp chance",
     winKey: "campFindProbability",
     failKey: "campFindFailProbability",
-    sum: U16_MAX,
-  },
-  {
-    label: "Bitcoin Mine chance",
-    winKey: "bitcoinMineWinProbability",
-    failKey: "bitcoinMineFailProbability",
     sum: U16_MAX,
   },
   {

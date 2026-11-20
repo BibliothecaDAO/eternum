@@ -9,7 +9,6 @@ const BASE_POPULATION_CAPACITY = 6;
 const DEFAULT_TICK_INTERVAL_SECONDS = 1;
 const ARMIES_TICK_INTERVAL_SECONDS = ONE_MINUTE_IN_SECONDS;
 const DELIVERY_TICK_INTERVAL_SECONDS = ONE_MINUTE_IN_SECONDS * 3;
-const BITCOIN_PHASE_SECONDS = ONE_MINUTE_IN_SECONDS * 10;
 const DONKEY_SPEED_FOR_RESOURCES = 9;
 const DONKEY_SPEED_FOR_TROOPS = 27;
 const BATTLE_GRACE_TICK_COUNT = 24;
@@ -43,7 +42,6 @@ const VILLAGE_TOKEN_MINT_RECIPIENT = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ec
 export function buildCommonBaseConfig(): ConfigPatch {
   return {
     spireTravelEssenceCost: 0,
-    bitcoin: { prizePerPhase: 1, minimumLabor: 100, ownerCutBps: 2000 },
     mines: {
       kinds: {
         1: { resourceType: 38, buildingCategory: 39, productionRate: 5, capMinimum: 36000, capSteps: 1 },
@@ -61,7 +59,6 @@ export function buildCommonBaseConfig(): ConfigPatch {
       defaultTickIntervalInSeconds: DEFAULT_TICK_INTERVAL_SECONDS,
       armiesTickIntervalInSeconds: ARMIES_TICK_INTERVAL_SECONDS,
       deliveryTickIntervalInSeconds: DELIVERY_TICK_INTERVAL_SECONDS,
-      bitcoinPhaseInSeconds: BITCOIN_PHASE_SECONDS,
     },
     carryCapacityGram: {
       [CapacityConfig.None]: 0,

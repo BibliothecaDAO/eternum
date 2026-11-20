@@ -121,7 +121,6 @@ test("the operator sets calendar phases while reads stay public", async () => {
         method: "PUT",
         headers: token,
         body: JSON.stringify({
-          presetId: 5,
           startsAt: day(0).toISOString(),
           endsAt: frontierSeasonEnd(day(0)),
         }),
