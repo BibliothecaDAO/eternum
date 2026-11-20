@@ -332,34 +332,25 @@ describe("screens", () => {
 });
 
 describe("actions", () => {
-  it("sends a free test Blitz to dev's launch service with dev's token and logs who sent it", async () => {
-    const body = JSON.stringify({ name: "test-owner", players: ["0x1"] });
-    expect(await call(dev, "/api/actions/test-blitz", await owner(), { method: "POST", body })).toEqual({
+  it("sends a slot to dev's launch service with dev's token and logs who sent it", async () => {
+    const body = JSON.stringify({ name: "blitz-20261017-1200", closesAt: "2026-10-17T11:55:00Z" });
+    expect(await call(dev, "/api/actions/slots", await owner(), { method: "POST", body })).toEqual({
       status: 202,
       body: { status: "queued" },
     });
     expect(launchCalls).toEqual([
-      { url: `${DEV}/api/factory/test-blitz`, method: "POST", authorization: "Bearer dev-operator-token", body },
+      { url: `${DEV}/api/slots`, method: "POST", authorization: "Bearer dev-operator-token", body },
     ]);
     expect((await call(dev, "/api/audit", await owner())).body.actions).toMatchObject([
       {
         email: "owner@realms.world",
         environment: "dev",
-        action: "Free test Blitz",
-        request: JSON.stringify({ method: "POST", path: "/api/factory/test-blitz", body: JSON.parse(body) }),
+        action: "Open Blitz slot",
+        request: JSON.stringify({ method: "POST", path: "/api/slots", body: JSON.parse(body) }),
         state: "done",
         status: 202,
       },
     ]);
-  });
-
-  it("refuses a test Blitz on production, sending and logging nothing", async () => {
-    const body = JSON.stringify({ name: "test-owner", players: ["0x1"] });
-    expect((await call(production, "/api/actions/test-blitz", await owner(), { method: "POST", body })).status).toBe(
-      404,
-    );
-    expect(launchCalls).toEqual([]);
-    expect((await call(production, "/api/audit", await owner())).body.actions).toEqual([]);
   });
 
   it("deletes a production run with production's token, on the launch route it names", async () => {
@@ -401,8 +392,8 @@ describe("actions", () => {
       )
       .run();
     try {
-      const body = JSON.stringify({ name: "test-owner", players: ["0x1"] });
-      expect(await call(dev, "/api/actions/test-blitz", await owner(), { method: "POST", body })).toEqual({
+      const body = JSON.stringify({ name: "blitz-20261017-1200", closesAt: "2026-10-17T11:55:00Z" });
+      expect(await call(dev, "/api/actions/slots", await owner(), { method: "POST", body })).toEqual({
         status: 202,
         body: { status: "queued" },
       });
@@ -411,7 +402,7 @@ describe("actions", () => {
       await db.prepare("DROP TRIGGER refuse_done").run();
     }
     expect((await call(dev, "/api/audit", await owner())).body.actions).toMatchObject([
-      { action: "Free test Blitz", state: "sent", status: null, response: null },
+      { action: "Open Blitz slot", state: "sent", status: null, response: null },
     ]);
   });
 

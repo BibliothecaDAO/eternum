@@ -17,7 +17,6 @@ and is sent again is logged, and sent, twice):
 
 | Action                  | Launch route                                                         | Environments |
 | ----------------------- | -------------------------------------------------------------------- | ------------ |
-| Free test Blitz         | `POST /api/factory/test-blitz`                                       | dev only     |
 | Open a paid Blitz slot  | `POST /api/slots`                                                    | both         |
 | Refund a slot           | `POST /api/slots/:name/refund`                                       | both         |
 | Set a phase             | `PUT /api/factory/calendar/frontier\|blitz`                          | both         |
