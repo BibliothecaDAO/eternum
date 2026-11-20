@@ -124,7 +124,7 @@ fn expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stami
         let (army, _) = expedition_armies(d, home);
         let state = GameState { contract_address: d.games };
         let mut before = state.resolved_explorer(army).unwrap();
-        let center = crate::expeditions::site(crate::logic::settlement::spacing(), 1, 0, 0);
+        let center = crate::expeditions::site(crate::logic::settlement::spacing(), crate::entity_ids::namespace(home.entity_id), 0, 0);
         // Direction 1 is occupied by the second army; use the first army there only after removing it.
         if direction == 1 {
             let armies = IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home);
@@ -154,8 +154,10 @@ fn expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stami
         let resource_type = crate::troops::stock_resource(before.troops.category, before.troops.tier);
         let resources = IResourceOperationsDispatcher { contract_address: d.games };
         let stock_key = ResourceSlot { game_id, entity_id: home.entity_id, resource_type };
+        super::resource_commands::fund_troops(d, home, resource_type, 2 * RESOURCE_PRECISION);
         let stock = resources.resource_balance(stock_key);
         let capacity = resources.resource_weight(ResourceKey { game_id, entity_id: army.explorer_id }).capacity;
+        let count = before.troops.count;
         let elapsed = if direction == 0 {
             crate::balance::rules::TICK_CONFIG.armies_tick_in_seconds
         } else {
@@ -176,7 +178,7 @@ fn expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stami
         );
         let after = state.resolved_explorer(army).unwrap();
         assert_eq!(after.coord, before.coord);
-        assert_eq!(after.troops.count, 5 * RESOURCE_PRECISION);
+        assert_eq!(after.troops.count, count + 2 * RESOURCE_PRECISION);
         assert_eq!(slot(d, army, 0).stamina.amount, expected_bar);
         assert_eq!(
             slot(d, army, 0).stamina.settled_at,
@@ -186,7 +188,8 @@ fn expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stami
         assert_eq!(progress(d, army), Some(veteran));
         assert_eq!(resources.resource_balance(stock_key), stock - 2 * RESOURCE_PRECISION);
         assert_eq!(
-            resources.resource_weight(ResourceKey { game_id, entity_id: army.explorer_id }).capacity, capacity * 5 / 3,
+            resources.resource_weight(ResourceKey { game_id, entity_id: army.explorer_id }).capacity,
+            capacity * (count + 2 * RESOURCE_PRECISION) / count,
         );
     }
 }
@@ -199,11 +202,11 @@ fn expedition_recruitment_refuses_other_regions_depths_and_expired_armies_withou
         let (army, _) = expedition_armies(d, home);
         let state = GameState { contract_address: d.games };
         let mut explorer = state.resolved_explorer(army).unwrap();
-        let site = crate::expeditions::site(crate::logic::settlement::spacing(), 1, 0, 0);
+        let site = crate::expeditions::site(crate::logic::settlement::spacing(), crate::entity_ids::namespace(home.entity_id), 0, 0);
         explorer.coord = match location {
             0 => crate::geometry::neighbor(crate::geometry::neighbor(site, 0), 0),
-            1 => crate::geometry::neighbor(crate::expeditions::site(crate::logic::settlement::spacing(), 2, 0, 0), 0),
-            2 => crate::geometry::neighbor(crate::expeditions::site(crate::logic::settlement::spacing(), 1, 0, 1), 0),
+            1 => crate::geometry::neighbor(crate::expeditions::site(crate::logic::settlement::spacing(), crate::entity_ids::namespace(home.entity_id) + 1, 0, 0), 0),
+            2 => crate::geometry::neighbor(crate::expeditions::site(crate::logic::settlement::spacing(), crate::entity_ids::namespace(home.entity_id), 0, 1), 0),
             _ => explorer.coord,
         };
         crate::tests::resource_commands::set_explorer_fixture(d.games, army, explorer);
@@ -281,12 +284,16 @@ fn yesterdays_armies_leave_todays_army_cap_free() {
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
     let troops = GameState { contract_address: d.games };
     let cap: u8 = crate::balance::rules::TROOP_LIMIT_CONFIG.settlement_armies.try_into().unwrap();
+    let starting: u8 = structures.home_armies(home).len().try_into().unwrap();
+    let troop = crate::troops::troop_resource(held_troop(d, home), 0);
+    super::resource_commands::fund_troops(d, home, troop, (2 * cap).into() * RESOURCE_PRECISION);
+    let today = super::play_fixture::FIXTURE_START + 1;
+    for slot in starting..cap {
+        assert!(execute_in_game(d, game_id, muster_command(home, category, slot, slot), today));
+    }
+    assert!(!execute_in_game(d, game_id, muster_command(home, category, cap, cap), today));
     let yesterday = structures.home_armies(home);
     assert_eq!(yesterday.len(), cap.into());
-    let troop = crate::troops::troop_resource(held_troop(d, home), 0);
-    super::resource_commands::fund_troops(d, home, troop, (cap + 1).into() * RESOURCE_PRECISION);
-    let today = super::play_fixture::FIXTURE_START + 1;
-    assert!(!execute_in_game(d, game_id, muster_command(home, category, cap, cap), today));
     let tomorrow = day_start(d, game_id, 1);
     for slot in 0..cap {
         assert!(execute_in_game(d, game_id, muster_command(home, category, slot, slot), tomorrow + 1 + slot.into()));
