@@ -15,6 +15,7 @@ import { toast } from "@/ui/features/event-feed/notify";
 import {
   armyAtItsSpire,
   armySpireChance,
+  DEEP_DEPTH,
   configManager,
   entityMapPosition,
   expeditionDayEndsAt,
@@ -141,7 +142,7 @@ const OwnSpire = ({ spire }: { spire: Spire }) => {
   const depths = offered.filter((depth) => depth <= spire.deepest);
   const choice = (depth: 1 | 2 | 3) => {
     if (!actor || !position || !beside) return { why: null, open: false };
-    if (spire.targetDepth !== undefined || (depth === 3 && sharedDeep)) return { why: null, open: true };
+    if (spire.targetDepth !== undefined || (depth === DEEP_DEPTH && sharedDeep)) return { why: null, open: true };
     const landing = { game_id: gameId, alt: false, col: position.x, row: position.y + depth * rules.spacing };
     if (store.get("TileOccupancy", landing)) return { why: SPIRE_WORDS.landingTaken, open: false };
     return { why: null, open: true };

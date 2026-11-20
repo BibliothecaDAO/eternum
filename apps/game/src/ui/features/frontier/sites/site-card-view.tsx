@@ -22,6 +22,7 @@ import {
   ATTACKING,
   MOVE,
   REALM,
+  RELIC_WORDS,
   REST_DID_NOT_FIT,
   ruinRule,
   SEASON_CLIMB,
@@ -85,6 +86,7 @@ export const SiteCardView = ({
   chest,
   relic,
   holdsOath = false,
+  cache,
   replacement,
   ruinChoice,
   verb,
@@ -106,6 +108,7 @@ export const SiteCardView = ({
   /** A Season 1 ruin's relic, rolled when it was found: the clearing army carries it. */
   relic?: ArmyRelic;
   holdsOath?: boolean;
+  cache?: number;
   /** Before a full army clears a ruin: the relic it replaces, chosen there. */
   replacement?: ReactNode;
   ruinChoice?: { depth: string; perDepth: boolean };
@@ -129,9 +132,17 @@ export const SiteCardView = ({
   // an army is no site.
   const countsOnBoard = site !== "Army";
   const reward =
-    relic || chest || pay || countsOnBoard ? (
+    cache !== undefined || relic || chest || pay || countsOnBoard ? (
       <Reward dimmed={facing !== undefined && !clears(facing)}>
-        {relic ? <RelicPay relic={relic} /> : chest ? <ChestPay chest={chest} /> : pay ? <Pay pay={pay} /> : null}
+        {cache !== undefined ? (
+          <CachePay fragments={cache} />
+        ) : relic ? (
+          <RelicPay relic={relic} />
+        ) : chest ? (
+          <ChestPay chest={chest} />
+        ) : pay ? (
+          <Pay pay={pay} />
+        ) : null}
         {holdsOath && (
           <HudChip icons={["shrine"]} label={SITE_OATH.label} tip={SITE_OATH.rule}>
             {SITE_OATH.holds}
@@ -211,6 +222,12 @@ const outcomeWord = (facing: Facing, earns: boolean): string => {
 };
 
 /** What the clear pays, in the headline; dimmed when this attack does not clear the site. */
+const CachePay = ({ fragments }: { fragments: number }) => (
+  <span data-ruin-cache>
+    <HudChip icons={["fragment"]}>{RELIC_WORDS.cache(fragments)}</HudChip>
+  </span>
+);
+
 const Reward = ({ dimmed, children }: { dimmed: boolean; children: ReactNode }) => (
   <span className={cn("flex flex-wrap items-center gap-2", dimmed && "opacity-50")}>{children}</span>
 );

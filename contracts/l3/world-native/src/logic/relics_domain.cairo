@@ -56,6 +56,15 @@ pub mod RelicsLogic {
         ) {
             crate::logic::oaths::choose(game_id, actor, command, context);
         }
+        fn reroll_oath(
+            ref self: ContractState,
+            game_id: u32,
+            actor: starknet::ContractAddress,
+            command: crate::oaths::RerollOath,
+            context: crate::commands::ActionContext,
+        ) {
+            crate::logic::oaths::reroll(game_id, actor, command, context);
+        }
         fn offer_oaths(
             ref self: ContractState, key: crate::troops::ExplorerKey, coord: crate::troops::Coord, seed: u256,
         ) {

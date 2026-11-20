@@ -1050,6 +1050,66 @@ const RESEARCH_ACTION_STEPS = [
   ),
 ];
 
+const SHOP_ACTION_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  clickToResultStep("refill", "BuyStamina", refillTheArmy, ({ played }) => played.watching && { watch: "refilled" }),
+  clickToResultStep("get-pass", "BuySeal", getThePass, ({ played }) => played.watching && { watch: "pass-held" }),
+];
+
+async function refillTheArmy({ browser }) {
+  const panel = await openTheArmyPanel(browser);
+  if (!panel.region) return { panel };
+  const price = await readUntil(() => browser.read(buttonLabelled("^Refill stamina · ")), Boolean, SHEET_WAIT_MS);
+  if (!price) return { panel, price };
+  browser.tap(price.offset);
+  const refill = await readUntil(
+    () => browser.read(buttonLabelled("^Refill · [0-9,]+ Fragments$")),
+    Boolean,
+    SHEET_WAIT_MS,
+  );
+  if (!refill) return { panel, refill };
+  watchFor(browser, "refilled", staminaRefilled);
+  browser.tap(refill.offset);
+  return { bought: refill.name, watching: true, region: panel.region };
+}
+
+const staminaRefilled = `(() => {
+  const answer = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "BuyStamina").at(-1);
+  const bought = answer?.answered.find(({ model }) => model === "ExplorerTroops")?.value.troops.stamina.Inline?.amount;
+  const meter = document.querySelector('[data-kit-sheet] [data-stamina-line] [role="meter"]');
+  if (bought === undefined || !meter?.hasAttribute("aria-valuenow")) return false;
+  return Number(meter.getAttribute("aria-valuenow")) >= Math.min(Number(bought), Number(meter.getAttribute("aria-valuemax")));
+})()`;
+
+async function getThePass({ browser }) {
+  while (browser.read(SHEET_NAME) !== null) {
+    browser.press("Escape");
+    await readUntil(
+      () => browser.read(SHEET_NAME),
+      (name) => name === null,
+      SHEET_WAIT_MS,
+    );
+  }
+  const shop = await readUntil(() => browser.read(buttonLabelled("^Fragments [0-9,]+$")), Boolean, SHEET_WAIT_MS);
+  if (!shop) return { shop };
+  browser.tap(shop.offset);
+  const pass = await readUntil(() => browser.read(sheetButton("Get the Pass$")), Boolean, SHEET_WAIT_MS);
+  if (!pass) return { shop: shop.name, pass };
+  watchFor(browser, "pass-held", passHeld);
+  browser.tap(pass.offset);
+  return {
+    shop: shop.name,
+    watching: true,
+    region: browser.read(sheetRegion('[data-kit-sheet] [data-shop="pass"]')),
+  };
+}
+
+const passHeld = `(() => {
+  const answer = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "BuySeal").at(-1);
+  return answer?.answered.some(({ model }) => model === "Seal") === true &&
+    document.querySelector('[data-kit-sheet] [data-shop="pass"]')?.textContent.includes("You have the Season Pass") === true;
+})()`;
+
 function deleteOathArmyStep() {
   const press = async (browser, verb, confirming = false) => {
     const within = confirming ? '[data-kit-sheet] [role="alertdialog"]' : "[data-kit-sheet]";
@@ -1177,6 +1237,42 @@ function oathPassSteps(capped) {
   ];
 }
 
+function rerollOathStep() {
+  return clickToResultStep(
+    "reroll-oath",
+    "RerollOath",
+    async ({ browser }) => {
+      const before = browser.read("Number(document.querySelector('[data-oath-pick]')?.dataset.oathPick)");
+      const redraw = browser.read(elementAt('[data-reroll-oath="0"]'));
+      if (!redraw) return { before, missing: true };
+      watchFor(
+        browser,
+        "oath-rerolled",
+        `(() => {
+        const result = (window.__labChain?.sent ?? []).filter(({command}) => command.kind === "RerollOath").at(-1);
+        const row = result?.answered.find(({model}) => model === "ArmyProgress")?.value;
+        const shown = Number(document.querySelector('[data-oath-pick]')?.dataset.oathPick);
+        return row && Number(row.oath_pick) === shown && shown !== ${before} && !document.querySelector('[data-reroll-oath="0"]');
+      })()`,
+      );
+      browser.tap(redraw.offset);
+      return { before, watching: true };
+    },
+    ({ played, actionLatency }) => {
+      const answer = (actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "RerollOath").at(-1);
+      if (!answer) return undefined;
+      const pick = Number(answer.answered.find(({ model }) => model === "ArmyProgress")?.value?.oath_pick);
+      const others = oathRules.REROLLED - 16;
+      const redrawn =
+        (pick & oathRules.REROLLED) !== 0 &&
+        (pick & 15) !== (played.before & 15) &&
+        (pick & others) === (played.before & others);
+      if (!redrawn) return failed("The redraw did not replace exactly the first card", { pick, before: played.before });
+      return played.watching && { watch: "oath-rerolled" };
+    },
+  );
+}
+
 function oathPickSteps(full, layer = "Map") {
   return [
     { name: "enter-on-map", settleMs: 3000, verify: inScene("map", layer) },
@@ -1212,6 +1308,7 @@ function oathPickSteps(full, layer = "Map") {
           ? completed(played)
           : failed("Three Oath cards did not appear", played),
     },
+    ...(layer === "Deep" ? [] : [rerollOathStep()]),
     clickToResultStep(
       "choose-oath",
       "ChooseOath",
@@ -5981,8 +6078,6 @@ export const UNMEASURED_COMMANDS = {
   MarkGameSettled:
     "sent by the value relay's operator once a season's game has ended (apps/value-relay), never by a player",
   SetEntityName: "no control in the game sends it: only the provider's set_entity_name, which nothing calls",
-  BuySeal: "no control sends it yet: the shop's Season Pass row that spends Fragments on it is still being built",
-  BuyStamina: "no control sends it yet: the army's Buy stamina button that spends Fragments on it is still being built",
 };
 
 /**
@@ -6355,6 +6450,7 @@ export const STEP_SETS = {
   "lab-scouts": { game: labSpireGame("scouts"), steps: SCOUT_DEPLOY_STEPS },
   "lab-actions-deploy": { game: labSpireGame("actions"), steps: DEPLOY_ACTION_STEPS },
   "lab-actions-research": { game: labSpireGame("research"), steps: RESEARCH_ACTION_STEPS },
+  "lab-actions-shop": { game: labSpireGame("shop"), steps: SHOP_ACTION_STEPS },
   "lab-daily-quest": { game: labSpireGame("quest"), steps: DAILY_QUEST_STEPS },
   ...Object.fromEntries(
     Object.entries(BANE_COLLECTIONS).map(([stage, expected]) => [
@@ -6391,7 +6487,7 @@ export const STEP_SETS = {
         play: async ({ browser }) => {
           const panel = await openTheArmyPanel(browser);
           const controls = browser.read(
-            `JSON.stringify([...document.querySelectorAll("button")].map(button => button.getAttribute("aria-label") ?? button.textContent.trim()).filter(label => /^(Refill|Withdraw|Deposit LORDS|LORDS )/.test(label)))`,
+            `JSON.stringify([...document.querySelectorAll("button")].map(button => button.getAttribute("aria-label") ?? button.textContent.trim()).filter(label => /^(Withdraw|Deposit LORDS|LORDS )|LORDS$/.test(label)))`,
           );
           return { panel, controls };
         },

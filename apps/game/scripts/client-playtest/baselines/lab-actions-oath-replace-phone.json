@@ -1,9 +1,9 @@
 {
   "measured": {
-    "commit": "9548745604f49889a182912e60615d53a2bd7ef8",
+    "commit": "fd0bb33ea862ee7a07b180329b66caf06076b691",
     "steps": "lab-actions-oath-replace",
     "device": "phone",
-    "run": "/home/djizus/.local/state/flow/eternum/results/66f7097e715f0359cf1c68fabf8ce942f6508a3e/playtest-oath-pick.45bdd3f9/playtest/390x844/lab-actions-oath-replace/2026-11-17T04-58-10-000Z-spectator",
+    "run": "/home/djizus/.local/state/flow/eternum/results/4e2f3fd37cc946d9385617b48c210dd7ed287635/playtest-oath-pick.c56aa6a7/playtest/390x844/lab-actions-oath-replace/2026-11-19T22-05-29-946Z-spectator",
     "machine": "Flow worker on tower; headless Chromium, 390x844, WebGPU forced to WebGL; lab reply delay 300 ms"
   },
   "byMode": {
@@ -12,9 +12,17 @@
         "choose-oath": {
           "verdict.clickToResult.totalMs": {
             "n": 3,
-            "median": 323.6,
-            "min": 322.8,
-            "max": 324.1
+            "median": 315.7,
+            "min": 315.7,
+            "max": 321.1
+          }
+        },
+        "reroll-oath": {
+          "verdict.clickToResult.totalMs": {
+            "n": 3,
+            "median": 318.9,
+            "min": 318.5,
+            "max": 323.2
           }
         }
       }

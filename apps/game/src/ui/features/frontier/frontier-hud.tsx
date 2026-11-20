@@ -53,7 +53,9 @@ import { HudBands } from "./hud/hud-bands";
 import { MenuPage } from "./hud/menu-page";
 import { useHowToPlay } from "@/ui/modules/how-to-play";
 import { FrontierRealms } from "./value/frontier-realms";
-import { PurseRow, RealmsChip } from "./value/lords-purse";
+import { FragmentsPurse, PurseRow, RealmsChip } from "./value/lords-purse";
+import { useFragmentsHeld } from "./value/fragments";
+import { ShopSheet } from "./shop/shop-sheet";
 import { useHomeKind } from "@/hooks/helpers/use-home-kind";
 import { useCampaignMark } from "./value/campaign-home";
 import { dailyClaimWaiting, type DailyClaimWaiting } from "./value/realm-labor";
@@ -62,6 +64,7 @@ import { OfflineNotice } from "./hud/offline-notice";
 import { SceneFailureNotice } from "./hud/scene-failure-notice";
 import { NextOrderBar, OrderBar } from "./hud/order-bar";
 import { PickedArmy } from "./hud/picked-army";
+import { ArmyRefill, sellsStamina } from "./army/army-refill";
 import { useArmySpireStatus } from "./spire-card";
 import { DailyQuest } from "./day/daily-quest";
 import { OpeningProvider, usePartShown } from "./opening/opening-context";
@@ -181,6 +184,7 @@ const FrontierHudBody = ({
   });
   const seasonRank = useSeasonRank();
   const aspectsOpen = usePartShown("aspects");
+  const fragments = useFragmentsChip();
   const layers = useMapLayers(rules, shown, visit ? null : realm);
   // The store card a ring or a plate opened, under the realm card on a desktop and under the strip on a phone.
   const [openStore, setOpenStore] = useState<CardStore | null>(null);
@@ -209,11 +213,11 @@ const FrontierHudBody = ({
   const purse = spectating ? (
     <IdentityChip compact />
   ) : (
-    realm &&
-    !visit &&
-    claimWaiting && (
+    own &&
+    (claimWaiting || fragments !== null) && (
       <PurseRow>
-        <RealmsChip waiting={claimWaiting} narrow onOpen={() => setSurface("realms")} />
+        {fragments !== null && <FragmentsPurse fragments={fragments} onOpen={() => setSurface("shop")} />}
+        {claimWaiting && <RealmsChip waiting={claimWaiting} narrow onOpen={() => setSurface("realms")} />}
       </PurseRow>
     )
   );
@@ -254,6 +258,7 @@ const FrontierHudBody = ({
       {surface === "realms" && realm && !visit && <FrontierRealms labor={realmLabor} onClose={close} />}
       {surface === "army" && realm && !visit && <FrontierArmy realm={realm} onClose={close} />}
       {surface === "army-lost" && <ArmyLostSheet onClose={close} />}
+      {surface === "shop" && own && <ShopSheet onClose={close} />}
       {surface === "settings" && (
         <HudSheet label={SETTINGS} onClose={close}>
           <SettingsPanel />
@@ -444,10 +449,17 @@ const ArmyAction = ({
 /** The picked army in a phone's action row, with Spire while it stands at its spire. */
 const ActingArmy = ({ army, onOpenArmy }: { army: DockArmy; onOpenArmy: (explorerId: number) => void }) => {
   const spire = useArmySpireStatus(army.explorerId);
+  const held = useFragmentsHeld();
   return (
     <PickedArmy
       army={army}
-      refill={army.stamina && <StaminaReading stamina={army.stamina} />}
+      refill={
+        sellsStamina(army, held) ? (
+          <ArmyRefill army={army} look="reading" />
+        ) : (
+          army.stamina && <StaminaReading stamina={army.stamina} />
+        )
+      }
       spire={spire}
       onDetails={() => onOpenArmy(army.explorerId)}
     />
@@ -481,6 +493,7 @@ const PendingOrder = ({
   army: DockArmy;
 }) => {
   const labor = useRealmStores(realm, rules)?.labor;
+  const held = useFragmentsHeld();
   return (
     <OrderBar
       kind={order.kind}
@@ -491,6 +504,7 @@ const PendingOrder = ({
       laborFits={
         labor?.limit === undefined || labor.amount === undefined ? undefined : Math.max(0, labor.limit - labor.amount)
       }
+      refill={sellsStamina(army, held) ? <ArmyRefill army={army} look="button" /> : undefined}
       onCancel={() => useUIStore.getState().updateEntityActionHoveredHex(null)}
       onGo={() => requestOrderAt(order.target)}
     />
@@ -554,6 +568,7 @@ const FrontierRealmPanel = ({
   const goToPlace = useGoToFrontierPlace(realm);
   const mark = useCampaignMark(realm);
   const kind = useHomeKind(realm);
+  const fragments = useFragmentsChip();
   return (
     <RealmPanel
       name={name}
@@ -568,7 +583,14 @@ const FrontierRealmPanel = ({
         waiting,
         storeCards,
         onRealms: () => onSurface("realms"),
+        ...(fragments !== null && { fragments, onShop: () => onSurface("shop") }),
       })}
     />
   );
+};
+
+const useFragmentsChip = (): number | null => {
+  const shown = usePartShown("fragments-chip");
+  const fragments = useFragmentsHeld();
+  return shown ? fragments : null;
 };

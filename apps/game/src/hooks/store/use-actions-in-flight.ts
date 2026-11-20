@@ -24,6 +24,7 @@ interface InFlight {
   refill: true;
   tier: true;
   shipment: true;
+  seal: true;
 }
 type Subject = keyof InFlight;
 type Key = string | number;

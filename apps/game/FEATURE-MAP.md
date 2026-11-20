@@ -1061,10 +1061,20 @@ build sheet. Research and building gems run from Common I to Legendary V; the mo
 
 ## Army stamina and relics
 
-Select an army to read its stamina. Ruins award relics to its three slots. A full army chooses which slot the next ruin
-replaces; activating a carried relic consumes it. Open `/lab/game?scenario=relics` to exercise activation and
-replacement. Season 1 removes paid refills, the LORDS purse, deposits and manual withdrawals. Existing balances retain
-the season-end sweep.
+Select an army to read its stamina. Ruins award relics to its three slots, or, a ruin holding an Ancient cache, its
+Fragments (the ruin's card says "Ancient cache: N Fragments" in place of the relic). A full army chooses which slot the
+next ruin replaces; activating a carried relic consumes it. Open `/lab/game?scenario=relics` to exercise activation and
+replacement. Season 1 removes LORDS refills, the LORDS purse, deposits and manual withdrawals. Existing balances retain
+the season-end sweep. Above the Deep, stamina is bought with Fragments, 2 points a Fragment: **Refill** on the army's
+panel (its price fills the bar), the phone's picked army's stamina, or the order bar when an order is short; the confirm
+buys up to the account's Fragments. Kit lab: `army-refill`, `army-refill-ready`, `army-refill-short`, `move-refill`.
+
+**Shop**: the Fragments chip (the phone's purse row; the desktop realm panel's ring) opens it once the "shop" moment is
+reached (an army out of stamina, or Fragments held). The Season Pass row: what it gives (the daily quest's bonus from
+`QuestRules`), **Get the Pass** for 1,000 Fragments, or while short how many more and their price in dollars, and the
+code field (the waiting screen's redeem, granted at once in a running game); once the account's Seal row exists it says
+the Pass is held. Then the Fragments row (a cent each) and the stamina refill rate. Kit lab: `shop`, `shop-ready`,
+`shop-held`.
 
 `pnpm --dir apps/game playtest --steps lab-no-lords --iterations 1 --out <evidence>` checks the army panel and HUD.
 

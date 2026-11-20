@@ -68,6 +68,7 @@ export const frontierPreset = {
       "LevelUp",
       "Research",
       "ChooseOath",
+      "RerollOath",
       "BuyStamina",
       "BuySeal",
       "EnterDepth",

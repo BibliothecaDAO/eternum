@@ -89,6 +89,22 @@ it("names the relic the ruin guards in what its clear pays", () => {
   expect(host.querySelector("[data-ruin-relic]")?.getAttribute("aria-label")).toBe("Pays a relic: Epic Blade");
 });
 
+it("names a ruin's Ancient cache in place of its relic, and sends a full army's attack without a replacement", async () => {
+  const { host, attack, button, store } = ruinCard(FULL);
+  act(() =>
+    store.applyFacts([
+      { model: "RuinCache", key: "0xbc", value: { game_id: 1, entity_id: SITE, fragments: 12 } },
+    ] as never),
+  );
+  expect(host.querySelector("[data-ruin-cache]")?.textContent).toBe("Ancient cache: 12 Fragments");
+  expect(host.querySelector("[data-ruin-relic]")).toBeNull();
+  expect(host.querySelector("[data-relic-replacement]")).toBeNull();
+  await act(async () => button("Attack")!.click());
+  expect(attack).toHaveBeenCalledWith(
+    expect.objectContaining({ explorer_id: 201, structure_id: SITE, relic_slot: undefined }),
+  );
+});
+
 it("attacks with no slot named while the army has room: the contract fills a free one", async () => {
   const { host, attack, button } = ruinCard([{ kind: "Ward", rank: 1 }, null, null]);
   expect(host.querySelector("[data-relic-replacement]")).toBeNull();

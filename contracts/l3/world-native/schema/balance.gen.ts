@@ -119,7 +119,8 @@ export const nativeOathConstants = {
   "FURY_REFUND_PERCENT": 50,
   "PERFECTION_PAY_PERCENT": 150,
   "PERFECTION_LOSS_PERCENT": 15,
-  "TWINS_DAMAGE_PERCENT": 30
+  "TWINS_DAMAGE_PERCENT": 30,
+  "REROLLED": 4096
 } as const;
 export const nativeResearchConstants = {
   "ROW_FARM": 0,
@@ -153,4 +154,14 @@ export const nativeResearchConstants = {
   "SCOUTS_LODGE": 43,
   "SCOUTS_LODGE_LEVEL": 1
 } as const;
-export const nativeBalanceIdentity = "43c4c429f97b80e608f2f7f29c66d2a02652c8dc2b708d91026f4a0755578daf";
+export const nativeFragmentConstants = {
+  "WONDER_QUEST_FRAGMENTS": 10,
+  "SEAL_FRAGMENTS": 1000,
+  "OATH_REROLL_FRAGMENTS": 25,
+  "STAMINA_PER_FRAGMENT": 2,
+  "CACHE_TROOPS_PER_FRAGMENT": 100,
+  "SURFACE_CACHE_PERCENT": 19,
+  "VEIL_CACHE_PERCENT": 10,
+  "HOLLOW_CACHE_PERCENT": 5
+} as const;
+export const nativeBalanceIdentity = "968a2e31d8864d840aa0b69f413f060c9c1f6dde46b854a6575bcb29e1806818";

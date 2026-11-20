@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   formatAmount,
+  formatDollars,
   formatGain,
   formatCharge,
   formatExact,
@@ -91,6 +92,10 @@ describe("numbers", () => {
     expect(formatPercent(-0.05, { signed: true })).toBe("-5%");
     expect(formatPercent(0, { signed: true })).toBe("0%");
     expect(formatPercent(undefined)).toBe("—");
+  });
+
+  it("writes a price in cents as dollars and cents", () => {
+    expect([660, 90, 1, 100_000].map(formatDollars)).toEqual(["$6.60", "$0.90", "$0.01", "$1,000.00"]);
   });
 
   it("writes a minute's rate whole from 1 a minute up, and to two figures below 1 (owner's rule of 26 October)", () => {

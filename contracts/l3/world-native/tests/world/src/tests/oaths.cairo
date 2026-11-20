@@ -2,7 +2,7 @@ use snforge_std::fs::{FileTrait, read_txt};
 use snforge_std::{EventSpyTrait, EventsFilterTrait};
 use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
 use crate::guards::IGuardsDispatcherTrait;
-use crate::oaths::{ChooseOath, card, draw, held};
+use crate::oaths::{ChooseOath, RerollOath, card, draw, held};
 use crate::stamina::{StaminaSourceTrait, StaminaTrait};
 use crate::troops::{ExplorerRecordTrait, StaminaSource};
 use super::progression::read_progress;
@@ -280,11 +280,16 @@ fn the_offer_entry_grants_on_the_surface_and_preserves_progress_in_the_deep() {
 }
 
 #[test]
-fn packing_preserves_all_sixteen_held_bits_and_the_offer() {
-    let value = crate::progression::ArmyProgress { logistics: 5, oath_slots: 5, oaths: 65535, oath_pick: 4095 };
-    assert_eq!(
-        crate::progression::ArmyProgressPacking::unpack(crate::progression::ArmyProgressPacking::pack(value)), value,
-    );
+fn packing_preserves_all_sixteen_held_bits_and_the_offer_with_its_rerolled_cards() {
+    for oath_pick in array![4095_u16, crate::oaths::REROLLED * 2 - 1, crate::oaths::REROLLED + 2107] {
+        let value = crate::progression::ArmyProgress { logistics: 5, oath_slots: 5, oaths: 65535, oath_pick };
+        assert_eq!(
+            crate::progression::ArmyProgressPacking::unpack(crate::progression::ArmyProgressPacking::pack(value)),
+            value,
+        );
+    }
+    let before = crate::progression::ArmyProgress { logistics: 3, oath_slots: 2, oaths: 9, oath_pick: 2107 };
+    assert_eq!(crate::progression::ArmyProgressPacking::pack(before), 9 + 2 * 65536 + 2107 * 524288 + 3 * 2147483648);
 }
 
 #[test]
@@ -532,6 +537,71 @@ fn a_new_army_holds_two_oaths_before_any_research_and_refuses_a_third_without_a_
     assert!(super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(swap), 362));
     assert_eq!(
         read_progress(d, key).oaths, crate::oaths::bit(crate::oaths::FOX) | crate::oaths::bit(crate::oaths::RAGE),
+    );
+}
+
+#[test]
+fn a_reroll_costs_its_fragments_and_redraws_one_card_of_a_pick_once_from_the_oaths_neither_held_nor_shown() {
+    let (d, game_id, key) = super::registrar::setup_frontier_relics();
+    let offer: u16 = Into::<u8, u16>::into(crate::oaths::POWER - 1)
+        + Into::<u8, u16>::into(crate::oaths::FOX - 1) * 16
+        + Into::<u8, u16>::into(crate::oaths::SKILL - 1) * 256;
+    let price: u128 = crate::fragments::OATH_REROLL_FRAGMENTS.into();
+    open_pick(d, key, offer);
+    earn_fragments(d, game_id, price - 1);
+    assert!(!reroll_card(d, key, offer, 1, 360));
+    assert_eq!(read_progress(d, key).oath_pick, offer);
+    earn_fragments(d, game_id, price + 1);
+    assert!(reroll_card(d, key, offer, 1, 360));
+    let rerolled = read_progress(d, key).oath_pick;
+    let redrawn = card(rerolled, 1);
+    assert_eq!(card(rerolled, 0), crate::oaths::POWER);
+    assert_eq!(card(rerolled, 2), crate::oaths::SKILL);
+    assert!(redrawn != crate::oaths::POWER && redrawn != crate::oaths::FOX && redrawn != crate::oaths::SKILL);
+    assert_eq!(rerolled / crate::oaths::REROLLED, 1);
+    assert_eq!(fragments(d, game_id), price);
+    assert!(!reroll_card(d, key, rerolled, 1, 361));
+    assert!(!reroll_card(d, key, rerolled, 0, 361));
+    assert!(!reroll_card(d, key, offer, 0, 361));
+    assert_eq!(fragments(d, game_id), price);
+    let take = ChooseOath { explorer_id: key.explorer_id, expected_pick: rerolled, oath: Some(redrawn), replace: None };
+    assert!(super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(take), 362));
+    assert_eq!(read_progress(d, key).oaths, crate::oaths::bit(redrawn));
+    assert_eq!(read_progress(d, key).oath_pick, 0);
+    let shown = crate::oaths::bit(crate::oaths::POWER)
+        | crate::oaths::bit(crate::oaths::FOX)
+        | crate::oaths::bit(crate::oaths::SKILL);
+    hold_oaths(d, key, 65535 ^ shown);
+    open_pick(d, key, offer);
+    assert!(!reroll_card(d, key, offer, 2, 363));
+    hold_oaths(d, key, 0);
+    super::progression::place_army_at_depth(d, key, 3);
+    assert!(!reroll_card(d, key, offer, 2, 364));
+    assert_eq!(fragments(d, game_id), price);
+    assert_eq!(read_progress(d, key).oath_pick, offer);
+}
+
+fn reroll_card(d: super::Deployment, key: crate::troops::ExplorerKey, pick: u16, index: u8, timestamp: u64) -> bool {
+    let reroll = RerollOath { explorer_id: key.explorer_id, expected_pick: pick, index };
+    super::resource_commands::execute_in_game(d, key.game_id, crate::commands::Command::RerollOath(reroll), timestamp)
+}
+
+fn earn_fragments(d: super::Deployment, game_id: u32, amount: u128) {
+    snforge_std::interact_with_state(d.games, || crate::logic::fragments::add(game_id, d.actor, amount));
+}
+
+fn fragments(d: super::Deployment, game_id: u32) -> u128 {
+    snforge_std::interact_with_state(d.games, || crate::logic::fragments::balance(game_id, d.actor))
+}
+
+fn hold_oaths(d: super::Deployment, key: crate::troops::ExplorerKey, oaths: u16) {
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let mut progress = crate::logic::progression::require(key);
+            progress.oaths = oaths;
+            crate::logic::progression::write(key, progress);
+        },
     );
 }
 

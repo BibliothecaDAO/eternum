@@ -85,8 +85,15 @@ import { type DayEnd, DayEndBlock, dayEndItems, DayEndNotice } from "@/ui/featur
 import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useEventFeedStore } from "@/ui/features/event-feed/event-feed-store";
-import { RefillButton, RefillConfirm, RefillPrice, StaminaRefill } from "@/ui/features/frontier/army/refill";
+import {
+  fragmentsToFill,
+  RefillButton,
+  RefillConfirm,
+  RefillPrice,
+  StaminaRefill,
+} from "@/ui/features/frontier/army/refill";
 import { LordsPurse, PurseRow, RealmsChip } from "@/ui/features/frontier/value/lords-purse";
+import { ShopCodeField, ShopView } from "@/ui/features/frontier/shop/shop-sheet";
 import type { DailyClaimWaiting } from "@/ui/features/frontier/value/realm-labor";
 import { DayPill } from "@/ui/features/frontier/hud/day-pill";
 import { RealmPanel } from "@/ui/features/frontier/hud/realm-panel";
@@ -465,13 +472,12 @@ const CASTLE_SIDE = (level: number, limit: number) => ({
   maxArmySize: [3_000, 9_000, 25_000, 50_000][level],
 });
 
-/** The veteran army's panel; with `lords` its refill is offered, with `confirm` the refill's confirm is open. */
 /**
  * `owner`: the owner's Army 4 (4 November, the panel he found crowded); `ready` holds a III point. `ethereal`: the army
  * in an Ethereal depth.
  */
 type LabArmySheet = {
-  lords?: number;
+  fragments?: number;
   confirm?: boolean;
   stamina?: number;
   owner?: "crowded" | "ready";
@@ -669,6 +675,8 @@ const FIGHT_STATES: Record<string, LabState> = Object.fromEntries(
     { clock: CLOCK, stores: STORES, armies: ARMIES, site },
   ]),
 );
+
+const LAB_FRAGMENTS = 340;
 
 const STATES = {
   ...FIGHT_STATES,
@@ -935,50 +943,52 @@ const STATES = {
     stores: STORES,
     armies: ARMIES,
     selected: 0,
-    army: { stamina: 20, lords: 1_240, confirm: true },
+    army: { stamina: 20, fragments: LAB_FRAGMENTS, confirm: true },
   },
   "army-refill-ready": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
     selected: 0,
-    army: { stamina: 20, lords: 1_240 },
+    army: { stamina: 20, fragments: LAB_FRAGMENTS },
   },
   "army-full": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
     selected: 0,
-    army: { stamina: 170, lords: 1_240 },
+    army: { stamina: 170, fragments: LAB_FRAGMENTS },
   },
-  // The owner's Army 4 (4 November): 0 LORDS as he met it, or 1,240 LORDS and a point to spend.
   "army-crowded": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
     selected: 0,
-    army: { lords: 0, owner: "crowded" },
+    army: { fragments: 0, owner: "crowded" },
   },
   "army-crowded-ready": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
     selected: 0,
-    army: { lords: 1_240, owner: "ready" },
+    army: { fragments: LAB_FRAGMENTS, owner: "ready" },
   },
   "army-refill-short": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
     selected: 0,
-    army: { stamina: 20, lords: 40 },
+    army: { stamina: 20, fragments: 0 },
   },
+  shop: { clock: CLOCK, stores: STORES, armies: ARMIES, shop: { fragments: LAB_FRAGMENTS, held: false } },
+  "shop-ready": { clock: CLOCK, stores: STORES, armies: ARMIES, shop: { fragments: 1_250, held: false } },
+  "shop-held": { clock: CLOCK, stores: STORES, armies: ARMIES, shop: { fragments: LAB_FRAGMENTS, held: true } },
   "move-refill": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
     selected: 0,
-    refill: 1_240,
+    refill: LAB_FRAGMENTS,
     order: { ...EXPLORE, stamina: { cost: 30, held: 10, wait: 40 * 60 } },
   },
   "move-refill-short": {
@@ -986,7 +996,7 @@ const STATES = {
     stores: STORES,
     armies: ARMIES,
     selected: 0,
-    refill: 40,
+    refill: 0,
     order: { ...EXPLORE, stamina: { cost: 30, held: 10, wait: 40 * 60 } },
   },
   // A store's card, opened from its ring (desktop) or its plate (phone): filling, full, and made by no building.
@@ -1257,6 +1267,7 @@ type LabState = {
   /** The card a store's ring or plate opened. */
   storeCard?: StoreLine;
   army?: LabArmySheet;
+  shop?: { fragments: number; held: boolean };
   /**
    * A phone's picked army: the owner's Army 2 (27 October: 14/140, 100 of 126 LORDS, a level to buy), it rested, or its
    * realm holding 500 LORDS.
@@ -1465,6 +1476,16 @@ export const HudLab = () => {
         {lab.dayShare && <DayShareSheet shared={lab.dayShare} onClose={noop} />}
         {lab.alertsPopup && <AlertsPopupCard ask={{ kind: lab.alertsPopup, act: noop, notNow: noop }} />}
         {lab.army && <LabArmy army={lab.army} />}
+        {lab.shop && (
+          <ShopView
+            fragments={lab.shop.fragments}
+            pass={lab.shop.held ? { held: true } : { held: false, buying: false, onBuy: noop }}
+            questBonus={50}
+            bar={180}
+            code={<ShopCodeField />}
+            onClose={noop}
+          />
+        )}
         {(lab.realmView === "build" ||
           lab.realmView === "build-early" ||
           lab.realmView === "build-short" ||
@@ -1594,18 +1615,17 @@ const LabDeploySheet = ({
 
 /** A phone's picked army on the fiction, as the action row draws it in the dock's place. */
 const LabPicked = ({ lab }: { lab: LabState }) => {
-  const { army, lords } = labPickedArmy(lab);
+  const { army, fragments } = labPickedArmy(lab);
   return (
     <PickedArmy
       army={army}
-      refill={<StaminaRefill stamina={army.stamina!} held={lords} onRefill={noop} />}
+      refill={<StaminaRefill stamina={army.stamina!} held={fragments} onRefill={noop} />}
       onDetails={noop}
     />
   );
 };
 
-/** The owner's Army 2, rested or its realm able to pay its refill (`picked`), else the state's selected army, with the realm's LORDS. */
-const labPickedArmy = (lab: LabState): { army: PickedArmyView; lords: number } => {
+const labPickedArmy = (lab: LabState): { army: PickedArmyView; fragments: number } => {
   const index = lab.selected ?? 0;
   const base = {
     explorerId: index + 1,
@@ -1622,7 +1642,7 @@ const labPickedArmy = (lab: LabState): { army: PickedArmyView; lords: number } =
       stamina: { current: rested ? 140 : 14, max: 140, perExplore: 20 },
       secondsToFull: rested ? 0 : 4 * HOUR + 11 * 60,
     };
-    return { army, lords: lab.picked === "pay" ? 500 : 100 };
+    return { army, fragments: lab.picked === "pay" ? LAB_FRAGMENTS : 0 };
   }
   const army = lab.armies[index];
   const current = army.stamina ?? 0;
@@ -1633,7 +1653,7 @@ const labPickedArmy = (lab: LabState): { army: PickedArmyView; lords: number } =
       stamina: { current, max: 150, perExplore: LAB_EXPLORE },
       secondsToFull: (150 - current) * 60,
     },
-    lords: lab.purse?.lords ?? LAB_LORDS,
+    fragments: LAB_FRAGMENTS,
   };
 };
 
@@ -1647,17 +1667,13 @@ const OWNER_ARMY: ArmyView = {
   revealYield: 704,
 };
 
-/**
- * An army's panel on the fiction (the veteran, or the owner's Army 4), with its refill where the realm's LORDS are
- * given and its Delete after its name (on its status only), or the refill's confirm.
- */
 const LabArmy = ({ army }: { army: LabArmySheet }) => {
   const base = army.owner ? OWNER_ARMY : VETERAN_ARMY;
   const stamina = { ...base.stamina, current: army.stamina ?? base.stamina.current };
   const full = stamina.current >= stamina.max;
   const view = { ...base, stamina, ethereal: army.ethereal, ...(full ? { secondsToFull: 0 } : {}) };
   if (army.confirm)
-    return <RefillConfirm stamina={stamina} held={army.lords} sending={false} onRefill={noop} onCancel={noop} />;
+    return <RefillConfirm stamina={stamina} held={army.fragments} sending={false} onRefill={noop} onCancel={noop} />;
   return (
     <HudSheet
       label={base.name}
@@ -1667,8 +1683,8 @@ const LabArmy = ({ army }: { army: LabArmySheet }) => {
       <ArmyDetail
         army={view}
         refill={
-          army.lords === undefined || full ? undefined : (
-            <RefillPrice price={stamina.max - stamina.current} held={army.lords} onRefill={noop} />
+          army.fragments === undefined || full ? undefined : (
+            <RefillPrice price={fragmentsToFill(stamina)} held={army.fragments} onRefill={noop} />
           )
         }
       />

@@ -238,6 +238,10 @@ paths = "apps/game/src/lab/game/oath-slots-scenario.ts apps/game/src/ui/features
 cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && for view in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4196 --steps lab-town --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$view" --out "$FLOW_TMP/playtest/$view" || exit; done'
 paths = "apps/game/src/lab/game/town-scenario.ts apps/game/src/ui/features/frontier/build/ apps/game/src/ui/features/frontier/research/ apps/game/src/ui/features/frontier/deploy/ packages/core/src/utils/troop-raise-cost.ts"
 
+[kind.playtest-shop]
+cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4201.lock" && flock 8 && for view in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4201 --steps lab-actions-shop --iterations 3 --renderer-modes webgpu-force-webgl --viewport "$view" --out "$FLOW_TMP/playtest/$view/lab-actions-shop" || exit $?; done'
+paths = "apps/game/src/ui/features/frontier/shop/ apps/game/src/ui/features/frontier/army/army-refill.tsx apps/game/src/ui/features/frontier/army/refill.tsx apps/game/src/ui/features/frontier/value/fragments.ts apps/game/src/lab/game/shop-scenario.ts"
+
 [kind.playtest-oath-pick]
 cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4198.lock" && flock 8 && proof_failed=0 && for view in 1920x1080 390x844; do for scenario in lab-actions-oath-pick lab-actions-oath-replace; do pnpm --dir apps/game playtest --port 4198 --steps "$scenario" --iterations 3 --renderer-modes webgpu-force-webgl --viewport "$view" --out "$FLOW_TMP/playtest/$view/$scenario" || proof_failed=$(($? == 128 && proof_failed != 1 ? 128 : 1)); done; done && exit "$proof_failed"'
 paths = "apps/game/src/ui/features/frontier/army/ apps/game/src/lab/game/oath-pick-scenario.ts packages/core/src/utils/oaths.ts"

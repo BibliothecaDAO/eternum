@@ -602,13 +602,15 @@ army capacity.
 
 An earned Oath opens three cards at once, drawn at random from the Oaths the army does not hold, and blocks that army's
 commands until answered. Choose a card; with full slots, choose the held Oath it replaces, or Pass for the stamina shown
-on the button, capped at the army's maximum. The pick cannot be dismissed by Escape, Back or an outside press.
-`build.sh playtest-oath-pick` plays `/lab/game?scenario=oath-pick` and `oath-replace` on desktop and phone, recording
-the signed choice and resulting held Oath. Each path opens Delete, checks the Oath loss warning, cancels to retain the
-army, then confirms and checks the army and Oath record disappear. The freed slot retains its stamina. Native tests
-cover Shrine reveals, persistence, deletion and remustering with an empty Oath record; these browser proofs use recorded
-offers. `build.sh playtest-oath-vitriol` also runs `lab-oath-decline` and `lab-oath-pass-capped` to check the pass
-reward, including overflow at the maximum.
+on the button, capped at the army's maximum. The pick cannot be dismissed by Escape, Back or an outside press. One
+Redraw a pick swaps the card it is under for an Oath neither held nor shown, for the Fragments its button shows (none in
+the Deep); the playtest redraws the first card before it chooses. `build.sh playtest-oath-pick` plays
+`/lab/game?scenario=oath-pick` and `oath-replace` on desktop and phone, recording the signed choice and resulting held
+Oath. Each path opens Delete, checks the Oath loss warning, cancels to retain the army, then confirms and checks the
+army and Oath record disappear. The freed slot retains its stamina. Native tests cover Shrine reveals, persistence,
+deletion and remustering with an empty Oath record; these browser proofs use recorded offers.
+`build.sh playtest-oath-vitriol` also runs `lab-oath-decline` and `lab-oath-pass-capped` to check the pass reward,
+including overflow at the maximum.
 
 Vitriol changes the Deep's field and guard loss to its generated rule value. `/lab/game?scenario=oath-vitriol` and
 `build.sh playtest-oath-vitriol` choose it through the Oath panel, read the reduced field drain, and join the Ethereal

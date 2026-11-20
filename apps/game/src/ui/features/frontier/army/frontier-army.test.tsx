@@ -4,12 +4,16 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
+import { formatCount, FRAGMENT, FRAGMENTS } from "@bibliothecadao/types";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import type { DockArmy } from "../hud/dock-armies";
 
 const game = vi.hoisted(() => ({
   spendPoint: vi.fn(() => Promise.resolve({ transaction_hash: "0x7" })),
   chooseOath: vi.fn(() => Promise.resolve({ transaction_hash: "0x8" })),
+  rerollOath: vi.fn(() => Promise.resolve({ transaction_hash: "0x9" })),
+  fragments: null as number | null,
+  ethereal: undefined as number | undefined,
   staminaKnown: true,
   select: vi.fn(),
   learned: 0n,
@@ -56,7 +60,7 @@ vi.mock("@/hooks/context/game-context", () => ({
               ? { learned: game.learned }
               : game.rules,
       },
-      systemCalls: { spend_skill_point: game.spendPoint, choose_oath: game.chooseOath },
+      systemCalls: { spend_skill_point: game.spendPoint, choose_oath: game.chooseOath, reroll_oath: game.rerollOath },
     },
     account: { account: game.signer },
   }),
@@ -75,9 +79,10 @@ vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => true }));
 vi.mock("../deploy/use-deploy-plan", () => ({ useDeployPlan: () => ({ open: [] }) }));
 vi.mock("../sites/well-refill", () => ({ useWellRefill: (_id: number, ratio: number) => ({ shown: ratio }) }));
 vi.mock("../hud/dock-armies", () => ({
-  useDockArmies: () => [game.staminaKnown ? army : { ...army, stamina: undefined }],
+  useDockArmies: () => [{ ...army, ethereal: game.ethereal, ...(game.staminaKnown ? {} : { stamina: undefined }) }],
 }));
 vi.mock("../frontier-reveal-yield", () => ({ useArmyRevealYield: () => 75 }));
+vi.mock("../value/fragments", () => ({ useFragmentsHeld: () => game.fragments }));
 // The army stands away from its spire: its panel has no Spire (spire-card.test.tsx plays the spire).
 vi.mock("../spire-card", () => ({ useArmySpireStatus: () => null }));
 
@@ -202,4 +207,46 @@ it("opens an earned pick before the army's stamina is known, its cards answerabl
     oath: oaths.FOX,
     replace: null,
   });
+});
+
+it("redraws the card at its place for its Fragments, once a pick, never short of Fragments or in the Deep", async () => {
+  const { FrontierOathPick } = await import("./oath-pick");
+  const { nativeFragmentConstants, nativeOathConstants: oaths } = await import("@bibliothecadao/eternum/game-client");
+  const price = nativeFragmentConstants.OATH_REROLL_FRAGMENTS;
+  const offer = oaths.POWER - 1 + ((oaths.FOX - 1) << 4) + ((oaths.RAGE - 1) << 8);
+  const redraws = () => [...host.querySelectorAll<HTMLButtonElement>("[data-reroll-oath]")];
+  const show = (pick: number, fragments: number | null, ethereal: number | undefined) => {
+    game.progress.oath_pick = pick;
+    game.fragments = fragments;
+    game.ethereal = ethereal;
+    act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
+  };
+  game.staminaKnown = true;
+  game.progress.oath_slots = 1;
+  game.progress.oaths = 0;
+  show(offer, price, undefined);
+  expect(redraws().map((redraw) => [redraw.dataset.rerollOath, redraw.disabled])).toEqual([
+    ["0", false],
+    ["1", false],
+    ["2", false],
+  ]);
+  expect(host.querySelector(`[data-oath-id="${oaths.RAGE}"] [data-reroll-oath]`)!.textContent).toBe(
+    `Redraw: ${formatCount(price, FRAGMENT, FRAGMENTS)}`,
+  );
+  await act(async () => redraws()[2]!.click());
+  expect(game.rerollOath).toHaveBeenCalledWith({
+    signer: game.signer,
+    explorerId: army.explorerId,
+    expectedPick: offer,
+    index: 2,
+  });
+  show(offer + oaths.REROLLED, price, undefined);
+  expect(redraws()).toHaveLength(0);
+  show(offer, price - 1, undefined);
+  expect(redraws().map((redraw) => redraw.disabled)).toEqual([true, true, true]);
+  show(offer, null, undefined);
+  expect(redraws()).toHaveLength(0);
+  const { DEEP_DEPTH } = await import("@bibliothecadao/eternum");
+  show(offer, price, DEEP_DEPTH);
+  expect(redraws()).toHaveLength(0);
 });

@@ -29,11 +29,12 @@ type TargetSite = Pick<NativeRows["ExpeditionSite"], "game_id" | "entity_id" | "
  */
 type RuinRelicState =
   | { kind: "none" }
+  | { kind: "cache"; fragments: number }
   | { kind: "unknown"; relic: ArmyRelic | null }
   | { kind: "room"; relic: ArmyRelic }
   | { kind: "full"; relic: ArmyRelic; carried: readonly [ArmyRelic, ArmyRelic, ArmyRelic]; chosen: 0 | 1 | 2 | null };
 
-const RUIN_RELIC_MODELS = ["RuinRelic", "SliceRules", "ChestRules", ...ARMY_RELIC_MODELS] as const;
+const RUIN_RELIC_MODELS = ["RuinRelic", "RuinCache", "SliceRules", "ChestRules", ...ARMY_RELIC_MODELS] as const;
 
 const sameRelic = (a: ArmyRelic | null, b: ArmyRelic) => a !== null && a.kind === b.kind && a.rank === b.rank;
 
@@ -60,6 +61,8 @@ export const ruinRelicState = (
   now: number,
   choice: ReplacementChoice | null,
 ): RuinRelicState => {
+  const cache = store.get("RuinCache", { game_id: site.game_id, entity_id: site.entity_id });
+  if (cache) return { kind: "cache", fragments: Number(cache.fragments) };
   const relic = relicPaidBy(store, site);
   if (relic === null) return { kind: "none" };
   if (relic === undefined) return { kind: "unknown", relic: null };

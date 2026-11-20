@@ -6,6 +6,7 @@ pub fn requires_answer(game_id: u32, command: Command) -> bool {
         Command::BuySeal(_) => false,
         Command::BuyStamina(value) => waiting(game_id, value.explorer_id),
         Command::ChooseOath(_) => false,
+        Command::RerollOath(_) => false,
         Command::ClaimDailyQuest(_) => false,
         Command::CreateExplorer(_) => false,
         Command::Explore(value) => waiting(game_id, value.explorer_id),

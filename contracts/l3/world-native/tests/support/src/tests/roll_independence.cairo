@@ -15,6 +15,7 @@ pub fn typed_commands() -> Array<Command> {
         Command::ChooseOath(
             crate::oaths::ChooseOath { explorer_id: 999999, expected_pick: 571, oath: None, replace: None },
         ),
+        Command::RerollOath(crate::oaths::RerollOath { explorer_id: 999999, expected_pick: 571, index: 0 }),
         Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: 999999, day: 0 }),
         Command::CreateExplorer(
             crate::commands::CreateExplorer {

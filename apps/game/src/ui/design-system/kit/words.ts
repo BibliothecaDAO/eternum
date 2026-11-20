@@ -331,10 +331,13 @@ import {
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
 import type { AttackRefusal, RuinChest } from "@bibliothecadao/eternum";
 import {
+  FRAGMENT,
+  FRAGMENTS,
   SEASON_PASS,
   BuildingType,
   buildingName,
   formatAmount,
+  formatDollars,
   formatExact,
   formatCount,
   formatClockTime,
@@ -343,6 +346,7 @@ import {
   relicEffect,
   ResourcesIds,
   formatCharge,
+  formatRate,
   resourceName,
   formatHeldAgainst,
   layerName,
@@ -893,6 +897,11 @@ export const DAY_BANNER_WORDS = {
 export interface OpeningRules {
   knightsAnHour: number;
   deepTickSeconds: number;
+  staminaPerSecond: number;
+  staminaPerFragment: number;
+  relicMinutesPerTier: number;
+  scoutExploreStamina: number;
+  exploreStamina: number;
 }
 
 export const OPENING_WORDS = {
@@ -901,9 +910,15 @@ export const OPENING_WORDS = {
     barracks: (rules: OpeningRules) =>
       `A Barracks raises ${formatAmount(rules.knightsAnHour)} Knights an hour. Knights fill your armies.`,
     guard: () => "Send 150% of the guard's troops to win.",
+    shop: (rules: OpeningRules) =>
+      `Stamina refills ${formatRate(rules.staminaPerSecond)}. A ${FRAGMENT} refills ${formatAmount(rules.staminaPerFragment)} points now.`,
     essence: () => "Essence buys research and lores.",
+    relic: (rules: OpeningRules) =>
+      `A relic works for ${formatAmount(rules.relicMinutesPerTier)} minutes per tier. An army carries ${ARMY_RELIC_SLOTS}.`,
     "well-lore": () => "Your armies can now find wells.",
     "shrine-lore": () => "Your armies can now find shrines.",
+    city: (rules: OpeningRules) =>
+      `Scouts reveal for ${formatAmount(rules.scoutExploreStamina)} stamina, not ${formatAmount(rules.exploreStamina)}.`,
     deep: (rules: OpeningRules) =>
       `Every tick (${formatAmount(rules.deepTickSeconds)} seconds) drains troops. Your army panel shows its loss and time left. Hold a site to earn.`,
     bane: () => "A bane. Today's quest is the bane quest. Your Aspect ends the bane when enough members finish it.",
@@ -1227,6 +1242,26 @@ export const LEAVE = "Leave";
 /** Buying stamina points for LORDS. */
 export const REFILL = "Refill";
 export const REFILLING = "Refilling…";
+export const REFILL_FAILED = "The refill could not be bought.";
+
+export const SHOP_WORDS = {
+  title: "Shop",
+  fragments: (held: number) => `${FRAGMENTS} ${formatExact(held)}`,
+  pass: SEASON_PASS,
+  passFor: "For the whole season",
+  questBonus: (percent: number) => `Daily quest pays ${formatExact(percent)}% more`,
+  getPass: "Get the Pass",
+  getting: "Getting…",
+  passFailed: `The ${SEASON_PASS} could not be bought.`,
+  short: (held: number, more: number, cents: number) =>
+    `You have ${formatExact(held)}. Get ${formatExact(more)} more for ${formatDollars(cents)}.`,
+  held: `You have the ${SEASON_PASS}`,
+  haveCode: "Have a code?",
+  fragmentsLine: (cents: number) => `${formatCount(cents, "cent")} each. Stamina, rerolls, the Pass.`,
+  stamina: "Stamina refill",
+  staminaLine: (points: number, bar: number, fragments: number, cents: number) =>
+    `Each ${FRAGMENT} refills ${formatExact(points)} points. A bar of ${formatExact(bar)} is ${formatCount(fragments, FRAGMENT, FRAGMENTS)}, ${formatDollars(cents)}.`,
+} as const;
 
 /** LORDS leaving the game for the wallet linked to the account. */
 export const WITHDRAW = "Withdraw";
@@ -2354,8 +2389,10 @@ export const ARMY_MANAGEMENT = {
   deleteFailed: "The army could not be deleted.",
 } as const;
 
+const ARMY_RELIC_SLOTS = 3;
 export const RELIC_WORDS = {
   title: "Relics",
+  cache: (fragments: number) => `Ancient cache: ${formatExact(fragments)} ${FRAGMENTS}`,
   kinds: { Blade: "Blade", Ward: "Ward", Plunder: "Plunder", FarEye: "Far-Eye" },
   blade: (amount: string) => `+${amount} damage dealt`,
   ward: (amount: string) => `−${amount} damage taken`,
@@ -2371,7 +2408,7 @@ export const RELIC_WORDS = {
   /** A ruin's relic, before the fight: the beast is as big as the relic is rare. */
   guards: (relic: string) => `Pays a relic: ${relic}`,
   /** Choosing which of three carried relics the ruin's relic replaces, before the attack. */
-  full: "Your army carries 3 relics. Choose the one this relic replaces.",
+  full: `Your army carries ${ARMY_RELIC_SLOTS} relics. Choose the one this relic replaces.`,
   replace: (relic: string) => `Replace ${relic}`,
   /** The held attack's step while the army's relics are not known yet: whether it must choose cannot be told. */
   reading: "Reading the army's relics…",

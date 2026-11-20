@@ -4,6 +4,7 @@ export const nativeCommandBits = {
   "BuySeal": "18889465931478580854784",
   "BuyStamina": "37778931862957161709568",
   "ChooseOath": "9444732965739290427392",
+  "RerollOath": "75557863725914323419136",
   "ClaimDailyQuest": "4722366482869645213696",
   "CreateExplorer": "1",
   "Explore": "2",
@@ -61,6 +62,7 @@ export interface NativeCommandPayloads {
   BuySeal: undefined;
   BuyStamina: { readonly explorer_id: BigNumberish; readonly fragments: BigNumberish };
   ChooseOath: { readonly explorer_id: BigNumberish; readonly expected_pick: BigNumberish; readonly oath: { readonly kind: "Some"; readonly value: BigNumberish } | { readonly kind: "None"; readonly value: undefined }; readonly replace: { readonly kind: "Some"; readonly value: BigNumberish } | { readonly kind: "None"; readonly value: undefined } };
+  RerollOath: { readonly explorer_id: BigNumberish; readonly expected_pick: BigNumberish; readonly index: BigNumberish };
   ClaimDailyQuest: { readonly home: BigNumberish; readonly day: BigNumberish };
   CreateExplorer: { readonly slot: BigNumberish; readonly structure_id: BigNumberish; readonly category: BigNumberish; readonly tier: BigNumberish; readonly amount: BigNumberish; readonly direction: BigNumberish };
   Explore: { readonly explorer_id: BigNumberish; readonly direction: BigNumberish };

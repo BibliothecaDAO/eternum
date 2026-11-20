@@ -379,6 +379,11 @@
       "id": 75,
       "name": "BuyStamina",
       "retired": false
+    },
+    {
+      "id": 76,
+      "name": "RerollOath",
+      "retired": false
     }
   ],
   "stories": [

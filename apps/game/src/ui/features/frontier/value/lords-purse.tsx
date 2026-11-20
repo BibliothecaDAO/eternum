@@ -1,7 +1,7 @@
 import { formatExact, formatGain, LORDS, formatShort } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudPill } from "@/ui/design-system/kit/hud-elements";
-import { ESSENCE, LABOR, REALM_LABOR } from "@/ui/design-system/kit/words";
+import { ESSENCE, LABOR, REALM_LABOR, SHOP_WORDS } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 import type { DailyClaimWaiting } from "./realm-labor";
@@ -13,6 +13,17 @@ import type { DailyClaimWaiting } from "./realm-labor";
  */
 export const PurseRow = ({ children }: { children: ReactNode }) => (
   <div className="pointer-events-auto flex shrink-0 gap-1.5">{children}</div>
+);
+
+export const FragmentsPurse = ({ fragments, onOpen }: { fragments: number; onOpen: () => void }) => (
+  <HudPill label={SHOP_WORDS.fragments(fragments)} onPress={onOpen}>
+    {[
+      <span key="fragments" className="flex items-center gap-1.5 tabular-nums">
+        <SemanticIcon name="fragment" size={26} />
+        {formatShort(fragments)}
+      </span>,
+    ]}
+  </HudPill>
 );
 
 /**

@@ -1,0 +1,31 @@
+{
+  "measured": {
+    "commit": "5d8b33013ca3094450a6ea865c1feb526d2a62ea",
+    "steps": "lab-actions-shop",
+    "device": "phone",
+    "run": "/home/djizus/.local/state/flow/eternum/results/438384fd234482d94d560f12ca5302eaaf32a988/playtest-shop.48a8bf65/playtest/390x844/lab-actions-shop/2026-11-19T21-35-52-556Z-spectator",
+    "machine": "Flow worker on tower; headless Chromium, 390x844, WebGPU forced to WebGL; lab reply delay 300 ms"
+  },
+  "byMode": {
+    "webgpu-force-webgl": {
+      "steps": {
+        "refill": {
+          "verdict.clickToResult.totalMs": {
+            "n": 3,
+            "median": 324.4,
+            "min": 321.3,
+            "max": 324.9
+          }
+        },
+        "get-pass": {
+          "verdict.clickToResult.totalMs": {
+            "n": 3,
+            "median": 316.2,
+            "min": 316.2,
+            "max": 316.3
+          }
+        }
+      }
+    }
+  }
+}

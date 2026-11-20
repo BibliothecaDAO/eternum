@@ -25,6 +25,8 @@ import { TROOP_TYPES, TroopType } from "../types/common";
 const UNKNOWN = "—";
 
 export const LORDS = "LORDS";
+export const FRAGMENT = "Fragment";
+export const FRAGMENTS = "Fragments";
 export const SEASON_PASS = "Season Pass";
 /** A chest's rarity, common to legendary. */
 export const TIER_WORDS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"] as const;

@@ -54,6 +54,12 @@ describe("player command callers", () => {
     expect(decoded().replace.isNone()).toBe(true);
   });
 
+  it("encodes an Oath card reroll through the signed command caller", async () => {
+    const { calls, signer, decoded } = setup();
+    await calls.reroll_oath({ signer, explorerId: 90, expectedPick: 4667, index: 2 });
+    expect(decoded()).toEqual({ explorer_id: 90n, expected_pick: 4667n, index: 2n });
+  });
+
   it("encodes both home and cleared-camp reinforcement through the compiled command ABI", async () => {
     const { calls, signer, decoded } = setup();
     await calls.explorer_add({ signer, to_explorer_id: 90, amount: 1000000000, supply_post: 711 });

@@ -3,8 +3,16 @@ import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { configManager } from "@bibliothecadao/eternum";
 import { useDockArmies } from "../hud/dock-armies";
 import type { Account } from "starknet";
-import { heldOaths, oathCards, oathColour, type oathColours, oathPassStamina } from "@bibliothecadao/eternum";
-import { nativeOathConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  DEEP_DEPTH,
+  heldOaths,
+  oathCards,
+  oathColour,
+  type oathColours,
+  oathPassStamina,
+  oathRerollIndex,
+} from "@bibliothecadao/eternum";
+import { nativeFragmentConstants, nativeOathConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useGame } from "@/hooks/context/game-context";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -13,6 +21,8 @@ import { HudButton, HudCard, HudModalLayer, HudWindow } from "@/ui/design-system
 import { Icon } from "@/ui/design-system/icon";
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
 import { toast } from "@/ui/features/event-feed/notify";
+import { formatCount, FRAGMENT, FRAGMENTS } from "@bibliothecadao/types";
+import { useFragmentsHeld } from "../value/fragments";
 import { oathEffectDescription, oathName } from "./oath-details";
 
 const colourClass = {
@@ -21,10 +31,13 @@ const colourClass = {
   gold: "border-hud-gold text-hud-gold",
 } satisfies Record<(typeof oathColours)[number]["colour"], string>;
 
+const REDRAW_PRICE = formatCount(nativeFragmentConstants.OATH_REROLL_FRAGMENTS, FRAGMENT, FRAGMENTS);
+
 export function FrontierOathPick({ realm }: { realm: NativeRows["Structure"] | null }) {
   const { store } = useNativeFacts(["ArmyProgress"]);
   const allowed = useUIStore(canIssueOrders);
   const armies = useDockArmies(realm);
+  const fragments = useFragmentsHeld();
   const waiting = allowed
     ? armies.flatMap((army) => {
         const progress = store.get("ArmyProgress", {
@@ -48,6 +61,7 @@ export function FrontierOathPick({ realm }: { realm: NativeRows["Structure"] | n
           explorerId={waiting.army.explorerId}
           progress={waiting.progress}
           stamina={waiting.army.stamina}
+          fragments={waiting.army.ethereal === DEEP_DEPTH ? null : fragments}
         />
       </HudWindow>
     </HudModalLayer>
@@ -58,10 +72,12 @@ function ArmyOathPick({
   explorerId,
   progress,
   stamina,
+  fragments,
 }: {
   explorerId: number;
   progress: NativeRows["ArmyProgress"];
   stamina: { current: number; max: number } | undefined;
+  fragments: number | null;
 }) {
   const { setup, account } = useGame();
   const allowed = useUIStore(canIssueOrders);
@@ -80,6 +96,15 @@ function ArmyOathPick({
         replace,
       }),
     ).catch((error: unknown) => toast.failed(error, "The Oath could not be chosen."));
+  const reroll = (index: number) =>
+    sendOnce("army", explorerId, { order: "use" }, () =>
+      setup.systemCalls.reroll_oath({
+        signer: account.account as unknown as Account,
+        explorerId,
+        expectedPick: progress.oath_pick,
+        index,
+      }),
+    ).catch((error: unknown) => toast.failed(error, "The card could not be redrawn."));
 
   return (
     <section
@@ -93,22 +118,36 @@ function ArmyOathPick({
       </span>
       {picked === null ? (
         <div className="grid grid-cols-3 gap-1">
-          {oathCards(progress.oath_pick).map((id) => (
-            <div
-              key={id}
-              data-oath-id={id}
-              className={`min-w-0 rounded border-t-4 ${colourClass[oathColour(id).colour]}`}
-            >
-              <HudCard
-                size="sm"
-                title={oathName(id)}
-                picture={<Icon name={orderMeaning(id)} size={40} />}
-                detail={<span className={colourClass[oathColour(id).colour]}>{oathEffectDescription(id)}</span>}
-                disabled={!allowed || sending}
-                onClick={() => (full ? setPicked(id) : choose(id))}
-              />
-            </div>
-          ))}
+          {oathCards(progress.oath_pick).map((id) => {
+            const rerollIndex = oathRerollIndex(progress.oath_pick, progress.oaths, id);
+            return (
+              <div
+                key={id}
+                data-oath-id={id}
+                className={`flex min-w-0 flex-col gap-1 rounded border-t-4 ${colourClass[oathColour(id).colour]}`}
+              >
+                <HudCard
+                  size="sm"
+                  title={oathName(id)}
+                  picture={<Icon name={orderMeaning(id)} size={40} />}
+                  detail={<span className={colourClass[oathColour(id).colour]}>{oathEffectDescription(id)}</span>}
+                  disabled={!allowed || sending}
+                  onClick={() => (full ? setPicked(id) : choose(id))}
+                />
+                {rerollIndex !== null && fragments !== null && (
+                  <HudButton
+                    kind="secondary"
+                    disabled={!allowed || sending || fragments < nativeFragmentConstants.OATH_REROLL_FRAGMENTS}
+                    onClick={() => reroll(rerollIndex)}
+                    data-reroll-oath={rerollIndex}
+                    aria-label={`Redraw ${oathName(id)} for ${REDRAW_PRICE}`}
+                  >
+                    Redraw: {REDRAW_PRICE}
+                  </HudButton>
+                )}
+              </div>
+            );
+          })}
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-1">

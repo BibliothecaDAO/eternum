@@ -14,7 +14,7 @@ pub fn buy_seal(game_id: u32, actor: ContractAddress, context: crate::commands::
     let execution = crate::commands::execution_context(game_id, context);
     crate::game::assert_playing(execution.game.unbox(), context.timestamp);
     assert!(crate::state::read().entry.seals.read((game_id, actor)).is_none(), "seal already held");
-    spend(game_id, actor, crate::fragments::SEAL_PRICE.into());
+    spend(game_id, actor, crate::fragments::SEAL_FRAGMENTS.into());
     crate::logic::entry::grant_seal(game_id, actor);
 }
 
@@ -50,7 +50,7 @@ pub fn buy_stamina(
     );
 }
 
-fn spend(game_id: u32, account: ContractAddress, amount: u128) {
+pub fn spend(game_id: u32, account: ContractAddress, amount: u128) {
     let available = balance(game_id, account);
     assert!(available >= amount, "not enough fragments");
     write(game_id, account, available - amount);

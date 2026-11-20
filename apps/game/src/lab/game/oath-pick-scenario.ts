@@ -1,20 +1,39 @@
 import { resolveExplorerTroops, staminaAt } from "@bibliothecadao/eternum/troop-stamina";
 import { seasonOneResearchPrices } from "./season-one-research";
-import { chooseOath, oathPassStamina } from "@bibliothecadao/eternum";
-import { nativeOathConstants as oaths, nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
+import {
+  armyEtherealLayer,
+  chooseOath,
+  DEEP_DEPTH,
+  heldOaths,
+  oathCards,
+  oathPassStamina,
+  rerollOath,
+} from "@bibliothecadao/eternum";
+import {
+  nativeFragmentConstants,
+  nativeOathConstants as oaths,
+  nativeResearchConstants as research,
+} from "@bibliothecadao/eternum/game-client";
 import { encodeNativeCommand } from "@bibliothecadao/provider";
 import { nativeBindings } from "@/runtime/world/native-bindings";
 import { currentArmy, currentResourceWeight, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { spireScenario } from "./spire-scenario";
 import { wire, type LabCommand, type LabFact, type LabScenario } from "./lab-chain";
+import { fragmentsSpent, holdFragments } from "./shop-scenario";
+
+const FRAGMENTS_HELD = 100n;
 
 export function oathPickScenario(full = false, game = spireScenario(), fightOath: number = oaths.POWER): LabScenario {
   prepareOathArmy(game.store, full, fightOath);
+  holdFragments(game.store, game.player, FRAGMENTS_HELD);
   return {
     ...game,
     answer: (command, chain, now) =>
-      answerDeletion(command, chain) ?? answerChoice(command, chain, now) ?? game.answer(command, chain, now),
+      answerDeletion(command, chain) ??
+      answerChoice(command, chain, now) ??
+      answerReroll(command, chain, game.player) ??
+      game.answer(command, chain, now),
   };
 }
 
@@ -106,6 +125,25 @@ function answerChoice(command: LabCommand, chain: NativeFactStore, now: number):
       key: chain.wireKeyOf("ArmyProgress", current)!,
       value: wire(chosen),
     },
+  ];
+}
+
+function answerReroll(command: LabCommand, chain: NativeFactStore, player: string): LabFact[] | null {
+  if (command.kind !== "RerollOath") return null;
+  const [explorer_id, expected, index, ...extra] = command.calldata.slice(5).map(Number);
+  if (extra.length) throw new Error("Extra Oath reroll fields");
+  if (armyEtherealLayer(chain, 1, explorer_id!) === DEEP_DEPTH) throw new Error("no oath is rerolled in the Deep");
+  const current = chain.require("ArmyProgress", { game_id: 1, explorer_id: explorer_id! });
+  const unseen = [...heldOaths(current.oaths), ...oathCards(expected!)];
+  const oath = Array.from({ length: 16 }, (_, at) => at + 1).find((id) => !unseen.includes(id));
+  if (oath === undefined) throw new Error("No Oath left to reroll");
+  return [
+    {
+      model: "ArmyProgress",
+      key: chain.wireKeyOf("ArmyProgress", current)!,
+      value: wire(rerollOath(current, expected!, index!, oath)),
+    },
+    fragmentsSpent(chain, player, BigInt(nativeFragmentConstants.OATH_REROLL_FRAGMENTS)),
   ];
 }
 

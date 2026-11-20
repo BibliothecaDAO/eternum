@@ -70,18 +70,20 @@ pub impl ArmyProgressPacking of starknet::storage_access::StorePacking<ArmyProgr
                 + crate::research::OATH_SLOTS_STEPS,
             "invalid oath slots",
         );
-        assert!(value.oath_pick < 4096, "invalid oath pick");
+        assert!(value.oath_pick < crate::oaths::REROLLED * 2, "invalid oath pick");
+        let pick: u64 = value.oath_pick.into();
         value.oaths.into()
             + Into::<u8, u64>::into(value.oath_slots) * 65536
-            + Into::<u16, u64>::into(value.oath_pick) * 524288
+            + pick % 4096 * 524288
             + Into::<u8, u64>::into(value.logistics) * 2147483648
+            + pick / 4096 * 17179869184
     }
     fn unpack(value: u64) -> ArmyProgress {
         ArmyProgress {
             oaths: (value % 65536).try_into().unwrap(),
             oath_slots: (value / 65536 % 8).try_into().unwrap(),
-            oath_pick: (value / 524288 % 4096).try_into().unwrap(),
-            logistics: (value / 2147483648).try_into().unwrap(),
+            oath_pick: (value / 524288 % 4096 + value / 17179869184 * 4096).try_into().unwrap(),
+            logistics: (value / 2147483648 % 8).try_into().unwrap(),
         }
     }
 }
