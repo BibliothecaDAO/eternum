@@ -128,22 +128,22 @@
     {
       "id": 25,
       "name": "ContributeBitcoinLabor",
-      "retired": false
+      "retired": true
     },
     {
       "id": 26,
       "name": "CloseBitcoinPhase",
-      "retired": false
+      "retired": true
     },
     {
       "id": 27,
       "name": "BindBitcoinPhase",
-      "retired": false
+      "retired": true
     },
     {
       "id": 28,
       "name": "ClaimBitcoinPhase",
-      "retired": false
+      "retired": true
     },
     {
       "id": 29,
@@ -258,7 +258,7 @@
     {
       "id": 51,
       "name": "RecordBlitzResults",
-      "retired": false
+      "retired": true
     },
     {
       "id": 52,
@@ -440,7 +440,7 @@
     {
       "id": 10,
       "name": "BitcoinAwardStory",
-      "retired": false
+      "retired": true
     },
     {
       "id": 11,
