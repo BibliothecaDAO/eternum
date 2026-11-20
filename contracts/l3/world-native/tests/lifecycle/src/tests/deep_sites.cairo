@@ -90,7 +90,9 @@ pub fn descend(d: Deployment, key: ExplorerKey, now: u64) {
         let spire_key = crate::spires::ExpeditionSpireKey { game_id, structure_id: home, epoch, depth };
         let found = interact_with_state(d.games, || crate::logic::spires::read(spire_key)).and_then(|row| row.location);
         if let Some(spire) = found {
-            set_explorer_fixture(d.games, key, ExplorerTroops { coord: crate::geometry::neighbor(spire, 0), ..army(d, key) });
+            set_explorer_fixture(
+                d.games, key, ExplorerTroops { coord: crate::geometry::neighbor(spire, 0), ..army(d, key) },
+            );
         } else {
             let spire = crate::geometry::neighbor(army(d, key).coord, 0);
             assert!(interact_with_state(d.games, || crate::logic::spires::discover(spire_key, spire, 1000, 0)));
