@@ -93,8 +93,8 @@ and the six day totals). No map position, email, wallet address, key or event ti
 control.
 
 - `GET /api/shares` (signed in): the account's
-  `{links, posted, visits, joined, activated, friendsPaid, fragmentsEarned}`, its joins settled and its payouts
-  delivered first.
+  `{links, posted, visits, joined, activated, friendsPaid, fragmentsEarned}`, its joins settled first; the minute cron
+  delivers the payouts they earn.
 - `GET /api/operator/shares` (operator token): every moment's funnel (`moments`: kind, chain, game, moment and the five
   counts), first visits from others' browsers by the tag their link carried (`firstVisitsByTag`: `x`, `system`, and null
   for none), the 20 sharers who brought the most (`topSharers`), `settledAt` and `unsettledJoins`, the joins whose

@@ -47,8 +47,6 @@ export const DEVCON = {
   leaderboardPool: n(leaderboardPool),
   places: chests.topN,
   prizes: prizeShares(BigInt(leaderboardPool), chests.topN).map((share) => n(Number(share))),
-  goldenOneIn: Math.round(1 / campaign.referral.goldenOdds),
-  goldenLinkAt: campaign.referral.goldenLinkAt,
   claim: { ticket: claimOf(false), golden: claimOf(true), realm: n(Number(rules.amount)) },
   day: { shortestHours: hoursOf(SHORT_DAY_UNITS), longestHours: hoursOf(LONG_DAY_UNITS) },
   speed: n(frontierDevconPreset.clockScale.activity),
