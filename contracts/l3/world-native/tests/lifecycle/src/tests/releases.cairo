@@ -17,7 +17,7 @@ fn fresh_shard_uses_the_published_release_without_running_its_upgrade_migration(
     let (games, _) = super::deploy("Games", @args);
     let releases = IReleasesDispatcher { contract_address: games };
     let safe = IReleasesSafeDispatcher { contract_address: games };
-    assert_eq!(releases.current_release(), 7);
+    assert_eq!(releases.open_release_of(crate::game::FRONTIER), 7);
     assert_eq!(releases.release(7), release);
     assert!(safe.release(1).is_err());
     let registrar = IRegistrarDispatcher { contract_address: games };
@@ -29,6 +29,33 @@ fn fresh_shard_uses_the_published_release_without_running_its_upgrade_migration(
     releases.register_release(7, release);
     releases.apply_release(game_id, 7);
     assert_eq!(releases.game_release(game_id), 7);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn a_blitz_release_neither_moves_a_frontier_game_nor_applies_to_it() {
+    let d = super::registrar::setup();
+    let releases = IReleasesDispatcher { contract_address: d.games };
+    let safe = IReleasesSafeDispatcher { contract_address: d.games };
+    let registrar = IRegistrarDispatcher { contract_address: d.games };
+    start_cheat_caller_address(d.games, authority());
+    registrar.register_preset(1, super::registrar::definition(true));
+    let game_id = registrar.create_game(super::registrar::params(true));
+    let frontier = releases.release(1);
+    let blitz = crate::logic::release::Release { family: crate::game::BLITZ, previous: 0, ..frontier };
+    releases.register_release(2, blitz);
+    releases.open_release(2);
+    assert_eq!(releases.open_release_of(crate::game::FRONTIER), 1);
+    assert_eq!(releases.open_release_of(crate::game::BLITZ), 2);
+    assert_eq!(releases.game_release(game_id), 1);
+    assert!(safe.apply_release(game_id, 2).is_err());
+    assert!(safe.register_release(3, crate::logic::release::Release { previous: 2, ..frontier }).is_err());
+    releases.register_release(3, crate::logic::release::Release { previous: 1, ..frontier });
+    releases.apply_release(game_id, 3);
+    assert_eq!(releases.game_release(game_id), 3);
+    assert_eq!(releases.latest_release_of(crate::game::FRONTIER), 3);
+    assert_eq!(releases.latest_release_of(crate::game::BLITZ), 2);
+    assert_eq!(releases.open_release_of(crate::game::BLITZ), 2);
 }
 
 #[test]
@@ -49,17 +76,17 @@ fn a_registered_release_reaches_new_games_only_once_the_launcher_opens_it() {
         ..original,
     };
     start_cheat_caller_address(d.games, d.actor);
-    assert!(safe.register_release(2, next).is_err());
+    assert!(safe.register_release(2, crate::logic::release::Release { previous: 1, ..next }).is_err());
     start_cheat_caller_address(d.games, authority());
     let missing_movement = Release {
         classes: games_storage::release::LogicClasses { movement: 0.try_into().unwrap(), ..original.classes },
         ..original,
     };
-    assert!(safe.register_release(2, missing_movement).is_err());
+    assert!(safe.register_release(2, crate::logic::release::Release { previous: 1, ..missing_movement }).is_err());
     assert!(!releases.release_registered(2));
-    releases.register_release(2, next);
+    releases.register_release(2, crate::logic::release::Release { previous: 1, ..next });
     assert!(releases.release_registered(2));
-    assert_eq!(releases.current_release(), 1);
+    assert_eq!(releases.open_release_of(crate::game::FRONTIER), 1);
     let staged = registrar.create_game(CreateGameParams { name: 'staged-release', ..params });
     assert_eq!(releases.game_release(staged), 1);
     assert!(safe.open_release(3).is_err());
@@ -67,28 +94,28 @@ fn a_registered_release_reaches_new_games_only_once_the_launcher_opens_it() {
     assert!(safe.open_release(2).is_err());
     start_cheat_caller_address(d.games, authority());
     releases.open_release(2);
-    assert_eq!(releases.current_release(), 2);
+    assert_eq!(releases.open_release_of(crate::game::FRONTIER), 2);
     assert_eq!(releases.game_release(first), 1);
     assert_eq!(releases.game_release(staged), 1);
     assert_eq!(registrar.create_game(params), first);
     let second = registrar.create_game(CreateGameParams { name: 'new-release', ..params });
     assert_eq!(releases.game_release(second), 2);
     let mut events = spy_events();
-    releases.register_release(2, next);
-    releases.register_release(1, original);
+    releases.register_release(2, crate::logic::release::Release { previous: 1, ..next });
+    releases.register_release(1, crate::logic::release::Release { previous: 0, ..original });
     releases.open_release(2);
-    assert_eq!(releases.current_release(), 2);
+    assert_eq!(releases.open_release_of(crate::game::FRONTIER), 2);
     assert!(safe.open_release(1).is_err());
     assert!(events.get_events().emitted_by(d.games).events.is_empty());
-    let error = safe.register_release(2, original).unwrap_err();
+    let error = safe.register_release(2, crate::logic::release::Release { previous: 1, ..original }).unwrap_err();
     let mut expected = array![core::byte_array::BYTE_ARRAY_MAGIC];
     let message: ByteArray = "release is immutable";
     message.serialize(ref expected);
     expected.append('ENTRYPOINT_FAILED');
     assert_eq!(error, expected);
-    assert!(safe.register_release(0, original).is_err());
-    assert!(safe.register_release(4, original).is_err());
-    assert_eq!(releases.release(2), next);
+    assert!(safe.register_release(0, crate::logic::release::Release { previous: 0, ..original }).is_err());
+    assert!(safe.register_release(4, crate::logic::release::Release { previous: 3, ..original }).is_err());
+    assert_eq!(releases.release(2), crate::logic::release::Release { previous: 1, ..next });
 }
 
 #[test]
@@ -158,7 +185,7 @@ fn launcher_hotfix_migrates_a_populated_frontier_day_once_and_play_continues() {
     let seed = games.game(game_id).seed;
     start_cheat_caller_address(d.games, authority());
     releases
-        .register_release(2, Release { migration: declare_logic("ReleaseMigrationFixture"), ..releases.release(1) });
+        .register_release(2, crate::logic::release::Release { previous: 1, ..Release { migration: declare_logic("ReleaseMigrationFixture"), ..releases.release(1) } });
     assert!(safe.apply_release(game_id, 2).is_err());
     assert_eq!(releases.game_release(game_id), 1);
     start_cheat_caller_address(d.games, d.actor);
@@ -191,7 +218,7 @@ fn failing_migration_rolls_back_pin_and_data() {
     start_cheat_caller_address(d.games, authority());
     releases
         .register_release(
-            2, Release { migration: declare_logic("FailingReleaseMigrationFixture"), ..releases.release(1) },
+            2, crate::logic::release::Release { previous: 1, ..Release { migration: declare_logic("FailingReleaseMigrationFixture"), ..releases.release(1) } },
         );
     let game = games.game(1);
     let release_fact = stored_release_fact(d.games, 1);
@@ -216,7 +243,7 @@ fn hotfix_refuses_old_release_pins_and_accepts_current_pins() {
     let old_release = super::play_fixture::pins(d.games, 1);
     let releases = IReleasesDispatcher { contract_address: d.games };
     start_cheat_caller_address(d.games, authority());
-    releases.register_release(2, releases.release(1));
+    releases.register_release(2, crate::logic::release::Release { previous: 1, ..releases.release(1) });
     releases.apply_release(1, 2);
     let before = gameplay_facts(d.games);
     super::play_fixture::caller(d.games, d.actor, 100);
@@ -247,8 +274,8 @@ fn migrations_cannot_be_skipped_and_rollback_is_a_new_forward_release() {
     start_cheat_caller_address(d.games, authority());
     let original = releases.release(1);
     let migration = Release { migration: declare_logic("ReleaseMigrationFixture"), ..original };
-    releases.register_release(2, migration);
-    releases.register_release(3, migration);
+    releases.register_release(2, crate::logic::release::Release { previous: 1, ..migration });
+    releases.register_release(3, crate::logic::release::Release { previous: 2, ..migration });
     let games = IGameDispatcher { contract_address: d.games };
     let before = games.game(1);
     let error = safe.apply_release(1, 3).unwrap_err();
@@ -266,10 +293,10 @@ fn migrations_cannot_be_skipped_and_rollback_is_a_new_forward_release() {
     releases.apply_release(1, 3);
     assert_eq!(games.game(1).seed, before.seed + 11);
     assert!(safe.apply_release(1, 2).is_err());
-    releases.register_release(4, original);
+    releases.register_release(4, crate::logic::release::Release { previous: 3, ..original });
     releases.apply_release(1, 4);
     assert_eq!(releases.game_release(1), 4);
-    assert_eq!(releases.release(4), original);
+    assert_eq!(releases.release(4), crate::logic::release::Release { previous: 3, ..original });
     assert_eq!(games.game(1).seed, before.seed + 11);
 }
 
@@ -283,18 +310,18 @@ fn creation_release_survives_hotfixes_and_retried_launches() {
     start_cheat_caller_address(d.games, authority());
     registrar.register_preset(1, preset);
     let logic = releases.release(1);
-    releases.register_release(2, logic);
+    releases.register_release(2, crate::logic::release::Release { previous: 1, ..logic });
     releases.open_release(2);
     let existing = registrar.create_game(params);
     let legacy = registrar.create_game(CreateGameParams { name: 'before-origin', ..params });
     // Simulate a game created before this storage field existed.
     interact_with_state(d.games, || crate::state::write().game_creation_releases.write(legacy, 0));
-    releases.register_release(3, logic);
+    releases.register_release(3, crate::logic::release::Release { previous: 2, ..logic });
     releases.open_release(3);
     let next = registrar.create_game(CreateGameParams { name: 'next-season', ..params });
     releases.apply_release(existing, 3);
     releases.apply_release(legacy, 3);
-    releases.register_release(4, logic);
+    releases.register_release(4, crate::logic::release::Release { previous: 3, ..logic });
     let mut spy = spy_events();
     for (game_id, created_release) in array![(existing, 2_u32), (legacy, 0), (next, 3)] {
         releases.apply_release(game_id, 4);
@@ -329,22 +356,20 @@ fn village_pass_registration_keeps_its_owner_in_the_games_pinned_release() {
     let without_village_passes = declare_logic("TroopFixture");
     releases
         .register_release(
-            2,
-            Release {
+            2, crate::logic::release::Release { previous: 1, ..Release {
                 classes: games_storage::release::LogicClasses { season: without_village_passes, ..original.classes },
                 ..original,
-            },
+            } },
         );
     releases.apply_release(game_id, 2);
     releases
         .register_release(
-            3,
-            Release {
+            3, crate::logic::release::Release { previous: 2, ..Release {
                 classes: games_storage::release::LogicClasses {
                     settlement: without_village_passes, ..original.classes,
                 },
                 ..original,
-            },
+            } },
         );
     releases.open_release(2);
     releases.open_release(3);
@@ -355,7 +380,7 @@ fn village_pass_registration_keeps_its_owner_in_the_games_pinned_release() {
     let stored = interact_with_state(d.games, || crate::state::read().village.village_passes.read((game_id, 1)));
     assert_eq!(stored, Some(crate::village::VillagePass { owner: d.actor, village_id: 0 }));
     assert_eq!(releases.game_release(game_id), 2);
-    assert_eq!(releases.current_release(), 3);
+    assert_eq!(releases.open_release_of(crate::game::FRONTIER), 3);
 }
 
 #[test]
@@ -383,13 +408,13 @@ fn a_migration_free_release_reaches_a_populated_season_one_game_rewriting_no_fac
     let candidate = releases.release(1);
     let before = season_facts(d, game_id, armies);
     start_cheat_caller_address(d.games, authority());
-    releases.register_release(2, candidate);
+    releases.register_release(2, crate::logic::release::Release { previous: 1, ..candidate });
     start_cheat_caller_address(d.games, d.actor);
     let mut tune = spy_events();
     releases.apply_release(game_id, 2);
     assert_only_pin_moved(ref tune, d, game_id, 2);
     assert_eq!(season_facts(d, game_id, armies), before);
-    assert_eq!(releases.current_release(), 1);
+    assert_eq!(releases.open_release_of(crate::game::FRONTIER), 1);
     let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
     let tick = (360 / interval + 1) * interval;
     super::deep_sites::applied(
@@ -403,13 +428,13 @@ fn a_migration_free_release_reaches_a_populated_season_one_game_rewriting_no_fac
     assert!(season_facts(d, game_id, armies) != before);
     let played = season_facts(d, game_id, armies);
     start_cheat_caller_address(d.games, authority());
-    releases.register_release(3, candidate);
+    releases.register_release(3, crate::logic::release::Release { previous: 2, ..candidate });
     start_cheat_caller_address(d.games, d.actor);
     let mut rollback = spy_events();
     releases.apply_release(game_id, 3);
     assert_only_pin_moved(ref rollback, d, game_id, 3);
     assert_eq!(season_facts(d, game_id, armies), played);
-    assert_eq!(releases.release(3), candidate);
+    assert_eq!(releases.release(3), crate::logic::release::Release { previous: 2, ..candidate });
     assert_eq!(releases.game_release(game_id), 3);
 }
 
@@ -427,8 +452,8 @@ fn a_game_stuck_at_its_deep_boundary_plays_again_once_the_launcher_applies_a_che
         ..cheaper,
     };
     start_cheat_caller_address(d.games, authority());
-    releases.register_release(2, stuck);
-    releases.register_release(3, cheaper);
+    releases.register_release(2, crate::logic::release::Release { previous: 1, ..stuck });
+    releases.register_release(3, crate::logic::release::Release { previous: 2, ..cheaper });
     start_cheat_caller_address(d.games, d.actor);
     releases.apply_release(game_id, 2);
     let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;

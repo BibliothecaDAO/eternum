@@ -461,7 +461,7 @@ fn owner_registration_and_launcher_game_creation_have_separate_roles() {
     );
     start_cheat_caller_address(d.games, authority());
     crate::registrar::IRegistrarDispatcherTrait::register_preset(registry, 1, registrar::definition(true));
-    releases.register_release(2, release);
+    releases.register_release(2, crate::logic::release::Release { previous: 1, ..release });
     assert!(crate::registrar::IRegistrarSafeDispatcherTrait::create_game(safe, registrar::params(true)).is_err());
     assert!(
         crate::logic::release::IReleasesSafeDispatcherTrait::open_release(

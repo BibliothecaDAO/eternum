@@ -74,6 +74,14 @@ test("every constant is either a hashed identifier or a tunable number, and a qu
   );
 });
 
+test("the game families the contract names are the families every reader is generated with", async () => {
+  const families = (await readBalanceConstants(root)).nativeFamilyConstants;
+  assert.deepEqual(families, { FRONTIER: 1, BLITZ: 2 });
+  assert.deepEqual(identifierConstants(await readBalanceConstants(root)).family, families);
+  const schemaModule = await readFile(new URL("schema/client.gen.ts", root), "utf8");
+  for (const [name, id] of Object.entries(families)) assert.match(schemaModule, new RegExp(`"${name}": ${id}`));
+});
+
 test("the balance identity moves with a tunable number only, not with a rename or an identifier", () => {
   const balance = {
     nativeOathConstants: { POWER: 12, SKILL_BELOW_STAMINA: 10, POWER_DAMAGE_PERCENT: 20 },

@@ -82,7 +82,7 @@ pub mod RegistrarState {
 
         fn create_game(ref self: ComponentState<TContractState>, params: CreateGameParams) -> u32 {
             crate::logic::release::assert_launcher();
-            let classes = get_dep_component!(@self, Life).current_classes();
+            let classes = crate::logic::release::family_classes(params.family);
             let preset_commitment = self.data.registrar.presets.read(params.preset_id);
             assert!(preset_commitment != 0, "preset is not registered");
             let preset = self.data.presets.entry(preset_commitment);
@@ -107,7 +107,7 @@ pub mod RegistrarState {
             assert!(preset.rollover_chest_rules.read().is_none(), "LORDS presets are retired");
             let game_id = self.data.registrar.next_game.read();
             assert!(game_id != 0 && game_id < 0xffffffff, "game identity space exhausted");
-            let release_id = self.data.current_release.read();
+            let release_id = self.data.open_releases.read(params.family);
             self.data.game_releases.write(game_id, release_id);
             self.data.game_creation_releases.write(game_id, release_id);
             self.register_roster(game_id, params.roster);

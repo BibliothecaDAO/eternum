@@ -9,7 +9,8 @@ pub trait IReleases<T> {
     fn register_release(ref self: T, release_id: u32, release: Release);
     fn open_release(ref self: T, release_id: u32);
     fn apply_release(ref self: T, game_id: u32, release_id: u32);
-    fn current_release(self: @T) -> u32;
+    fn open_release_of(self: @T, family: u8) -> u32;
+    fn latest_release_of(self: @T, family: u8) -> u32;
     fn release_registered(self: @T, release_id: u32) -> bool;
     fn game_release(self: @T, game_id: u32) -> u32;
     fn release(self: @T, release_id: u32) -> Release;
@@ -22,6 +23,13 @@ pub trait IReleaseMigration<T> {
 
 pub fn assert_authority() {
     assert!(starknet::get_caller_address() == crate::state::read().authority.read(), "only domain authority");
+}
+
+pub fn family_classes(family: u8) -> games_storage::release::LogicClasses {
+    let state = crate::state::read();
+    let release_id = state.open_releases.read(family);
+    assert!(release_id != 0, "family has no open release");
+    state.releases.read(release_id).classes
 }
 
 pub fn assert_launcher() {
@@ -60,30 +68,34 @@ pub mod ReleaseState {
                 return;
             }
             assert!(release_id != 0 && self.release_registered(release_id - 1), "release must be next");
+            assert!(release.family != 0, "release has no family");
+            assert!(release.previous == self.latest_release_of(release.family), "release must follow its family");
             games_storage::release::validate(release.classes);
             self.data.releases.write(release_id, release);
+            self.data.family_latest.write(release.family, release_id);
         }
 
         fn open_release(ref self: ComponentState<TContractState>, release_id: u32) {
             super::assert_launcher();
-            let current = self.current_release();
+            let release = self.release(release_id);
+            let current = self.open_release_of(release.family);
             if release_id == current {
                 return;
             }
-            assert!(release_id == current + 1, "release must follow the open release");
-            self.release(release_id);
-            self.data.current_release.write(release_id);
+            assert!(release.previous == current, "release must follow the open release");
+            self.data.open_releases.write(release.family, release_id);
         }
 
         fn apply_release(ref self: ComponentState<TContractState>, game_id: u32, release_id: u32) {
-            crate::logic::game::game(game_id);
+            let game = crate::logic::game::game(game_id);
             super::assert_launcher();
             let target = self.release(release_id);
             let previous_release = self.game_release(game_id);
             if release_id == previous_release {
                 return;
             }
-            assert!(release_id == previous_release + 1, "release must follow game pin");
+            assert!(target.family == game.family, "release of another family");
+            assert!(target.previous == previous_release, "release must follow game pin");
             // A failed migration reverts the pin and every data write in the same transaction.
             self.data.game_releases.write(game_id, release_id);
             crate::logic::game::emit_release(game_id, release_id);
@@ -93,8 +105,12 @@ pub mod ReleaseState {
             }
         }
 
-        fn current_release(self: @ComponentState<TContractState>) -> u32 {
-            self.data.current_release.read()
+        fn open_release_of(self: @ComponentState<TContractState>, family: u8) -> u32 {
+            self.data.open_releases.read(family)
+        }
+
+        fn latest_release_of(self: @ComponentState<TContractState>, family: u8) -> u32 {
+            self.data.family_latest.read(family)
         }
 
         fn release_registered(self: @ComponentState<TContractState>, release_id: u32) -> bool {
@@ -123,10 +139,8 @@ pub mod ReleaseState {
             super::assert_authority();
         }
 
-        fn current_classes(self: @ComponentState<TContractState>) -> LogicClasses {
-            let release_id = self.data.current_release.read();
-            assert!(release_id != 0, "shard has no release");
-            self.data.releases.read(release_id).classes
+        fn family_classes(self: @ComponentState<TContractState>, family: u8) -> LogicClasses {
+            super::family_classes(family)
         }
 
         fn classes(

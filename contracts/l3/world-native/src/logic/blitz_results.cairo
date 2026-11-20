@@ -24,7 +24,7 @@ pub mod BlitzResultState {
     pub impl Commands<
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of crate::blitz_results::IBlitzResults<ComponentState<TContractState>> {
-        fn blitz_result(self: @ComponentState<TContractState>, game_id: u32) -> BlitzResult {
+        fn game_result(self: @ComponentState<TContractState>, game_id: u32) -> BlitzResult {
             let roster = self.roster(game_id);
             let mut players = array![];
             let complete = !roster.is_empty() && self.data.blitz_results.ranked_results.read((game_id, 0)).rank != 0;
@@ -104,7 +104,7 @@ pub mod BlitzResultState {
         fn emit_result(
             ref self: ComponentState<TContractState>, game_id: u32, launcher: ContractAddress, timestamp: u64,
         ) {
-            let result = crate::blitz_results::IBlitzResults::blitz_result(@self, game_id);
+            let result = crate::blitz_results::IBlitzResults::game_result(@self, game_id);
             let mut values = array![];
             result.serialize(ref values);
             self

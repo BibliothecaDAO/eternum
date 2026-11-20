@@ -1281,10 +1281,10 @@ fn retirement_preserves_an_existing_games_pin_and_idempotent_launch() {
     let releases = IReleasesDispatcher { contract_address: d.games };
     let original = releases.release(1);
     start_cheat_caller_address(d.games, super::authority());
-    releases.register_release(2, original);
+    releases.register_release(2, crate::logic::release::Release { previous: 1, ..original });
     releases.open_release(2);
     stop_cheat_caller_address(d.games);
-    assert_eq!(releases.current_release(), 2);
+    assert_eq!(releases.open_release_of(crate::game::FRONTIER), 2);
     assert_eq!(releases.game_release(game_id), 1);
     assert_eq!(registry(d).create_game(launch), game_id);
     assert!(safe(d, super::authority()).create_game(CreateGameParams { name: 'retired-new-game', ..launch }).is_err());

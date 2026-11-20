@@ -601,6 +601,10 @@ export const factWireTypes = [
         type: "core::felt252",
       },
       {
+        name: "family",
+        type: "core::integer::u8",
+      },
+      {
         name: "preset_id",
         type: "core::integer::u32",
       },

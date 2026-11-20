@@ -5,7 +5,7 @@ pub use world_test_support::tests::blitz_results::*;
 fn the_shard_derives_all_competition_ties_and_zero_point_players_in_one_call() {
     let d = setup(array![600, 600, 400, 0, 0].span());
     assert!(submit(d));
-    let complete = view(d).blitz_result(3);
+    let complete = view(d).game_result(3);
     assert_eq!(complete.players, array![result(0, 1), result(1, 1), result(2, 3), result(3, 4), result(4, 4)].span());
     assert!(complete.complete);
     let expected = core::poseidon::poseidon_hash_span(
@@ -17,7 +17,7 @@ fn the_shard_derives_all_competition_ties_and_zero_point_players_in_one_call() {
     );
     assert_eq!(complete.commitment, expected);
     assert!(submit(d));
-    assert_eq!(view(d).blitz_result(3), complete);
+    assert_eq!(view(d).game_result(3), complete);
 }
 
 #[test]
@@ -28,7 +28,7 @@ fn a_maximum_roster_completes_atomically_without_caller_ranks_or_a_cursor() {
     }
     let d = setup(scores.span());
     assert!(submit(d));
-    let complete = view(d).blitz_result(3);
+    let complete = view(d).game_result(3);
     assert!(complete.complete && complete.players.len() == 24);
     for index in 0_u32..24 {
         assert_eq!(*complete.players.at(index), result(index, 1));
@@ -59,7 +59,7 @@ fn results_require_finished_point_settlement_without_authority() {
         crate::game::GameRegistry { settled: false, ..game },
     );
     assert!(!submit(d));
-    assert!(view(d).blitz_result(3).players.is_empty());
+    assert!(view(d).game_result(3).players.is_empty());
     assert!(execute(d, Command::MarkGameSettled, 500));
     assert!(submit(d));
 }
@@ -70,7 +70,7 @@ fn results_are_game_scoped_and_an_absent_roster_rejects() {
     let d = setup(array![100].span());
     assert!(submit(d));
     let safe = IBlitzResultsSafeDispatcher { contract_address: d.games };
-    assert!(safe.blitz_result(4).is_err());
+    assert!(safe.game_result(4).is_err());
     set_fixture(d.games, selector!("registrar"), selector!("roster_sizes"), array![4].span(), 1_u32);
     set_fixture(
         d.games,
@@ -79,11 +79,11 @@ fn results_are_game_scoped_and_an_absent_roster_rejects() {
         array![4, 0].span(),
         RosterPlayer { account: player(0), wallet: player(0) },
     );
-    let other = view(d).blitz_result(4);
+    let other = view(d).game_result(4);
     assert!(other.players.is_empty());
     assert!(!other.complete);
     assert_eq!(other.commitment, 0);
-    assert!(view(d).blitz_result(3).complete);
+    assert!(view(d).game_result(3).complete);
 }
 
 #[test]
@@ -98,11 +98,11 @@ fn final_history_is_emitted_once_and_retry_does_not_rewrite_the_result() {
         }
     }
     assert_eq!(result_events, 2);
-    let complete = view(d).blitz_result(3);
+    let complete = view(d).game_result(3);
     assert!(complete.complete);
     let mut retry = snforge_std::spy_events();
     assert!(submit(d));
-    assert_eq!(view(d).blitz_result(3), complete);
+    assert_eq!(view(d).game_result(3), complete);
     for (_, event) in retry.get_events().emitted_by(d.games).events {
         assert!(*event.keys.at(0) != selector!("BlitzEvent"), "retry re-emitted final result");
     }
@@ -117,7 +117,7 @@ fn any_caller_gets_the_same_immutable_result_from_the_frozen_roster() {
     assert_eq!(owner.actor, super::authority());
     assert!(submit(first));
     assert!(submit(owner));
-    assert_eq!(view(first).blitz_result(3), view(second).blitz_result(3));
+    assert_eq!(view(first).game_result(3), view(second).game_result(3));
 }
 
 #[test]
@@ -150,8 +150,8 @@ fn tied_results_sort_by_frozen_payout_wallet_instead_of_shard_account() {
         RosterPlayer { account: player(1), wallet: player(0) },
     );
     assert!(submit(d));
-    assert_eq!(view(d).blitz_result(3).players, array![result(0, 1), result(1, 1)].span());
-    assert!(view(d).blitz_result(3).complete);
+    assert_eq!(view(d).game_result(3).players, array![result(0, 1), result(1, 1)].span());
+    assert!(view(d).game_result(3).complete);
 }
 
 #[test]
@@ -172,8 +172,8 @@ fn results_resolve_scores_through_the_frozen_wallet_to_account_binding() {
         RosterPlayer { account: player(1), wallet: player(0) },
     );
     assert!(submit(d));
-    assert_eq!(view(d).blitz_result(3).players, array![result(1, 1), result(0, 2)].span());
-    assert!(view(d).blitz_result(3).complete);
+    assert_eq!(view(d).game_result(3).players, array![result(1, 1), result(0, 2)].span());
+    assert!(view(d).game_result(3).complete);
 }
 
 

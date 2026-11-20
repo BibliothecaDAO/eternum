@@ -53,13 +53,13 @@ fn setup() -> super::Deployment {
     );
     start_cheat_caller_address(d.games, authority());
     let release = releases.release(1);
-    releases.register_release(2, release);
-    releases.register_release(3, release);
+    releases.register_release(2, crate::logic::release::Release { previous: 1, ..release });
+    releases.register_release(3, crate::logic::release::Release { previous: 2, ..release });
     for id in 1_u32..3 {
         releases.apply_release(id, 2);
         releases.apply_release(id, 3);
     }
-    releases.register_release(4, Release { migration: declare_logic("ReleaseMigration"), ..release });
+    releases.register_release(4, crate::logic::release::Release { previous: 3, ..Release { migration: declare_logic("ReleaseMigration"), ..release } });
     start_cheat_chain_id(d.games, approved::CHAIN_ID);
     start_cheat_block_timestamp(d.games, approved::OLD_END - 3600);
     d
@@ -116,7 +116,7 @@ fn approved_extension_changes_only_end_emits_row_and_retries_without_events() {
     assert!(game(d).settled);
     let ended = game(d);
     start_cheat_caller_address(d.games, authority());
-    releases.register_release(5, releases.release(4));
+    releases.register_release(5, crate::logic::release::Release { previous: 4, ..releases.release(4) });
     releases.apply_release(1, 5);
     assert_eq!(releases.game_release(1), 5);
     assert_eq!(game(d), ended);

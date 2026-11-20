@@ -2030,9 +2030,9 @@ pub mod GamesFixture {
     pub impl BlitzResultsFixture<
         TContractState, +Drop<TContractState>,
     > of crate::blitz_results::IBlitzResults<TContractState> {
-        fn blitz_result(self: @TContractState, game_id: u32) -> crate::blitz_results::BlitzResult {
+        fn game_result(self: @TContractState, game_id: u32) -> crate::blitz_results::BlitzResult {
             let classes = fixture_classes(game_id);
-            crate::blitz_results::IBlitzResultsDispatcherTrait::blitz_result(
+            crate::blitz_results::IBlitzResultsDispatcherTrait::game_result(
                 crate::blitz_results::IBlitzResultsLibraryDispatcher { class_hash: classes.prizes.read() }, game_id,
             )
         }

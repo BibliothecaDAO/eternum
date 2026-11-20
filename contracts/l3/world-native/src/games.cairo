@@ -48,7 +48,7 @@ pub trait IGamesRandomness<T> {
 
 #[starknet::contract]
 pub mod Games {
-    use starknet::ContractAddress;
+    use starknet::{ContractAddress, SyscallResultTrait};
     use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
     use crate::games::Authentication;
     use crate::games_entry::GamesEntry;
@@ -138,12 +138,16 @@ pub mod Games {
         }
         fn ledger_operator(self: @ContractState) -> ContractAddress {
             crate::entry::ILedgerOperatorDispatcherTrait::ledger_operator(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
+                crate::entry::ILedgerOperatorLibraryDispatcher {
+                    class_hash: crate::logic::release::family_classes(crate::game::FRONTIER).bridge,
+                },
             )
         }
         fn set_ledger_operator(ref self: ContractState, operator: ContractAddress) {
             crate::entry::ILedgerOperatorDispatcherTrait::set_ledger_operator(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
+                crate::entry::ILedgerOperatorLibraryDispatcher {
+                    class_hash: crate::logic::release::family_classes(crate::game::FRONTIER).bridge,
+                },
                 operator,
             );
         }
@@ -232,9 +236,8 @@ pub mod Games {
 
     #[external(v0)]
     fn initialize_realm_traits(ref self: ContractState, first_realm: u32, packed_traits: Span<u32>) {
-        let state = crate::state::read();
         // The immutable realm catalogue belongs to the shard, so administration uses the current release.
-        let classes = state.releases.read(state.current_release.read()).classes;
+        let classes = crate::logic::release::family_classes(crate::game::FRONTIER);
         crate::realms::ISeasonRealmsDispatcherTrait::initialize_realm_traits(
             crate::realms::ISeasonRealmsLibraryDispatcher { class_hash: classes.settlement },
             first_realm,
@@ -311,12 +314,10 @@ pub mod Games {
     }
 
     #[external(v0)]
-    fn blitz_result(self: @ContractState, game_id: u32) -> crate::blitz_results::BlitzResult {
-        crate::blitz_results::IBlitzResultsDispatcherTrait::blitz_result(
-            crate::blitz_results::IBlitzResultsLibraryDispatcher {
-                class_hash: self.release.classes(game_id).prizes.read(),
-            },
-            game_id,
+    fn game_result(self: @ContractState, game_id: u32) -> Span<felt252> {
+        starknet::syscalls::library_call_syscall(
+            self.release.classes(game_id).prizes.read(), selector!("game_result"), array![game_id.into()].span(),
         )
+            .unwrap_syscall()
     }
 }

@@ -5,6 +5,7 @@ pub const UNIT: u32 = 14400;
 pub const START: u64 = 1_800_000_000;
 pub fn season(seed: felt252) -> GameRegistry {
     GameRegistry {
+        family: crate::game::FRONTIER,
         name: 'frontier',
         preset_id: 5,
         settled: false,

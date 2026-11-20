@@ -110,6 +110,7 @@ pub mod GamesEntry {
             assert!(authentication.guardian_public_key.is_non_zero(), "zero guardian");
             games_storage::release::validate(release.classes);
             assert!(release_id != 0, "zero release id");
+            assert!(release.family != 0 && release.previous == 0, "first release of a family");
             assert!(core::ec::EcPointImpl::new(vrf_public_key.x, vrf_public_key.y).is_some(), "invalid VRF key");
             assert!(l2_gas_bound != 0, "zero L2 gas bound");
             self.vrf_key_x.write(vrf_public_key.x);
@@ -117,7 +118,8 @@ pub mod GamesEntry {
             self.vrf_gas_bound.write(l2_gas_bound);
             self.data.authority.write(owner);
             self.data.launcher.write(launcher);
-            self.data.current_release.write(release_id);
+            self.data.open_releases.write(release.family, release_id);
+            self.data.family_latest.write(release.family, release_id);
             self.data.releases.write(release_id, release);
             self.data.registrar.next_game.write(1);
             self.authentication_state.authentication.write(authentication);
@@ -240,9 +242,8 @@ pub mod GamesEntry {
             }
         }
 
-        fn registrar(self: @ComponentState<TContractState>) -> IRegistrarLibraryDispatcher {
-            let classes = self.data.releases.read(self.data.current_release.read()).classes;
-            IRegistrarLibraryDispatcher { class_hash: classes.registry }
+        fn registrar(self: @ComponentState<TContractState>, family: u8) -> IRegistrarLibraryDispatcher {
+            IRegistrarLibraryDispatcher { class_hash: crate::logic::release::family_classes(family).registry }
         }
     }
 
@@ -255,11 +256,11 @@ pub mod GamesEntry {
     > of crate::registrar::IRegistrar<ComponentState<TContractState>> {
         fn register_preset(ref self: ComponentState<TContractState>, preset_id: u32, definition: PresetDefinition) {
             crate::logic::release::assert_authority();
-            self.registrar().register_preset(preset_id, definition);
+            self.registrar(crate::game::FRONTIER).register_preset(preset_id, definition);
         }
         fn create_game(ref self: ComponentState<TContractState>, params: CreateGameParams) -> u32 {
             crate::logic::release::assert_launcher();
-            self.registrar().create_game(params)
+            self.registrar(params.family).create_game(params)
         }
 
         fn preset_commitment(self: @ComponentState<TContractState>, preset_id: u32) -> felt252 {

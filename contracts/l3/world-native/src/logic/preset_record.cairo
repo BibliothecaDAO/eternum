@@ -12,7 +12,7 @@ pub fn store(commitment: felt252, definition: crate::presets::PresetDefinition) 
         return;
     }
     preset.rules.write(definition.rules);
-    let classes = crate::state::read().releases.read(crate::state::read().current_release.read()).classes;
+    let classes = crate::logic::release::family_classes(crate::game::FRONTIER);
     crate::presets::IPresetResourcesDispatcherTrait::store_resource_preset(
         crate::presets::IPresetResourcesLibraryDispatcher { class_hash: classes.production },
         commitment,
@@ -121,7 +121,7 @@ fn write_economy(
     write_deep(preset, economy.deep);
     preset.race_rules.write(economy.race);
     write_hyperstructures(preset, rules, economy.hyperstructures);
-    let classes = crate::state::read().releases.read(crate::state::read().current_release.read()).classes;
+    let classes = crate::logic::release::family_classes(crate::game::FRONTIER);
     crate::presets::IPresetRelicsDispatcherTrait::store_relic_preset(
         crate::presets::IPresetRelicsLibraryDispatcher { class_hash: classes.relics },
         commitment,

@@ -10,6 +10,7 @@ import { encodeMembers } from "./serde";
 import type { NativeSchema } from "./schema";
 import type { DecodedWorldEvent } from "../types";
 import { seasonSeconds } from "../../../../packages/core/src/utils/days";
+import { nativeIdentifiers } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 /** Generated inputs for current contract validation, separate from immutable launch recordings. */
 export function currentPresetFixture(presetId: number, fixtureSchema: NativeSchema = schema) {
@@ -30,6 +31,10 @@ export function currentPresetFixture(presetId: number, fixtureSchema: NativeSche
 function fixtureLaunchParams(presetId: number, definition: ReturnType<typeof buildNativePreset>) {
   return {
     name: shortString.encodeShortString(`projection_${presetId}`),
+    family:
+      nativePresetForId(presetId).gameType === "frontier"
+        ? nativeIdentifiers.family.FRONTIER
+        : nativeIdentifiers.family.BLITZ,
     preset_id: presetId,
     start_settling_at: 1800,
     start_main_at: 1800,
