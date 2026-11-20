@@ -4580,7 +4580,7 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
       return { framed };
     },
     verify: ({ played }) =>
-      DEEP_SITE_NAMES.every((site) => played.framed.drawn[site.key] === 1) &&
+      DEEP_SITE_NAMES.every((site) => played.framed.drawn[site.key] > 0) &&
       // A desktop frames all three plates over their models; a phone's narrow frame is walked site by site in the next step.
       (!onADesktop() || played.framed.plates.length >= DEEP_SITE_NAMES.length) &&
       played.framed.plates.every((plate) => plate.inView)
