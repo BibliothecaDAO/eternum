@@ -29,6 +29,8 @@ import { generateKeyPairSync } from "node:crypto";
 import { realmsIdOf } from "./realms-id";
 import { routeIdentityRequest } from "./routes";
 import { codeHashInScope } from "./campaigns";
+import type { User } from "better-auth";
+import { accountDeletion } from "./account-deletion";
 import { accountKey } from "./campaign-entry";
 import { settleShareInvites, shareWorldOf } from "./shares";
 import { ORIGIN } from "./workerd-harness";
@@ -3557,6 +3559,23 @@ describe("shared links", () => {
     await minuteCron();
     expect(await sharer.tally()).toMatchObject({ friendsPaid: 1, fragmentsEarned: 100 });
     expect(fragmentCredits().map(({ gameId: paidIn }) => paidIn)).toEqual([otherGame, otherGame]);
+  });
+
+  it("pays nothing to a sharer who deleted their account, however late their friend earns the Glory", async () => {
+    const sharer = await player("deleted-sharer");
+    publishAspects(sharer.account, 4);
+    const friend = await joinBy(await inviteCode(sharer, 4), "deleted-sharer-friend");
+    const user = await env.DB.prepare('SELECT * FROM "user" WHERE "realmsId" = ?').bind(sharer.realmsId).first<User>();
+    await env.DB.batch(accountDeletion(env.DB, user!, sharer.realmsId, Date.now()));
+    relay.mockClear();
+    friend.earn(100);
+    await minuteCron();
+    expect(fragmentCredits()).toEqual([]);
+    expect(
+      await env.DB.prepare('SELECT COUNT(*) AS "rows" FROM "share_payouts" WHERE "sharer" = ?')
+        .bind(sharer.realmsId)
+        .first<{ rows: number }>(),
+    ).toEqual({ rows: 0 });
   });
 
   it("tells a new account the invite it came by, and nothing to an account no link brought", async () => {

@@ -212,7 +212,8 @@ export function createShareStore(db: D1Database) {
         .prepare(
           `SELECT j."friend", l."sharer", l."kind", l."chain_id" AS "chainId", l."game_id" AS "gameId"
            FROM "share_joins" j JOIN "share_links" l ON l."code" = j."code"
-           WHERE j."activated_at" IS NULL AND (?1 IS NULL OR l."sharer" = ?1)`,
+           WHERE j."activated_at" IS NULL AND (?1 IS NULL OR l."sharer" = ?1)
+             AND NOT EXISTS (SELECT 1 FROM "account_deletions" d WHERE d."realms_id" = l."sharer")`,
         )
         .bind(sharer ?? null)
         .all<PendingJoin>()

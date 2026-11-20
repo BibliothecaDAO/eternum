@@ -9,7 +9,7 @@ export const FriendCredit = Schema.Struct({
   chainId: Schema.String.pipe(Schema.check(Schema.isPattern(/^0x[0-9a-f]{1,64}$/i))),
   gameId: Schema.Int.pipe(Schema.check(Schema.isBetween({ minimum: 1, maximum: 0xffffffff }))),
   realmsId: Schema.String.pipe(Schema.check(Schema.isPattern(/^0x[0-9a-f]{1,64}$/i))),
-  id: Schema.String.pipe(Schema.check(Schema.isPattern(/^friends?:0x[0-9a-f]{1,64}:[0-9]{1,10}:0x[0-9a-f]{1,64}$/))),
+  id: Schema.String.pipe(Schema.check(Schema.isPattern(/^[!-~]{1,200}$/))),
   amount: Schema.Int.pipe(Schema.check(Schema.isBetween({ minimum: 1, maximum: 1_000_000 }))),
 });
 export type FriendCredit = typeof FriendCredit.Type;

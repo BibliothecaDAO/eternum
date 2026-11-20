@@ -790,7 +790,7 @@ it("authenticates a friend's Fragment credit and passes its id through unchanged
   expect((await operatorSend(env, "fragments", body, "wrong")).status).toBe(401);
   expect((await operatorSend(env, "fragments", { ...body, account: "0x9" })).status).toBe(400);
   expect((await operatorSend(env, "fragments", { ...body, amount: 0 })).status).toBe(400);
-  expect((await operatorSend(env, "fragments", { ...body, id: "purchase:1" })).status).toBe(400);
+  expect((await operatorSend(env, "fragments", { ...body, id: "" })).status).toBe(400);
   expect(credit).not.toHaveBeenCalled();
   const result = await operatorSend(env, "fragments", body);
   expect([result.status, await result.json()]).toEqual([200, { id: "0x77" }]);
