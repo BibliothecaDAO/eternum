@@ -1,3 +1,4 @@
+import { gameRegistryRow } from "../../test-support/game-registry";
 import { expect, it } from "vitest";
 import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import {
@@ -18,20 +19,7 @@ function fixture() {
     {
       model: "GameRegistry",
       key: "1",
-      value: {
-        game_id: 1,
-        preset_id: 7,
-        name: "1",
-        seed: 5,
-        start_settling_at: 1,
-        start_main_at: 100,
-        scheduled_end_at: 10_000,
-        end_at: 10_000,
-        ready: true,
-        settled: false,
-        dev_mode_on: false,
-        end_grace_seconds: 0,
-      },
+      value: gameRegistryRow({ preset_id: 7, seed: "5", scheduled_end_at: "10000", end_at: "10000" }),
     },
     {
       model: "SettlementRules",

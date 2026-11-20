@@ -1,3 +1,4 @@
+import { gameRegistryRow } from "../../../../../packages/core/src/test-support/game-registry";
 import { configManager, dayOf, readExpeditionRules } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { relicChestRelics } from "@bibliothecadao/types";
@@ -41,20 +42,7 @@ export function chestStudyGame(frontier = false) {
     {
       model: "GameRegistry",
       key: "0x5",
-      value: {
-        game_id: 1,
-        preset_id: blitzPreset.id,
-        name: "1",
-        start_settling_at: "1",
-        start_main_at: "100",
-        scheduled_end_at: "1000",
-        end_at: "1000",
-        settled: false,
-        ready: true,
-        dev_mode_on: false,
-        end_grace_seconds: 0,
-        seed: "1",
-      },
+      value: gameRegistryRow({ preset_id: blitzPreset.id }),
     },
     {
       model: "SettlementRules",

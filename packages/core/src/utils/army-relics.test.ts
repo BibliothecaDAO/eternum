@@ -1,3 +1,4 @@
+import { gameRegistryRow } from "../test-support/game-registry";
 import { describe, expect, it } from "vitest";
 import { NativeFactStore } from "../client/native-fact-store";
 import { armyRelicsEnabled } from "./army-relics";
@@ -26,20 +27,13 @@ const calendar = [
   {
     model: "GameRegistry",
     key: "0x3",
-    value: {
-      game_id: 1,
-      name: 0n,
+    value: gameRegistryRow({
+      name: "0",
       preset_id: 7,
-      settled: false,
-      ready: true,
-      dev_mode_on: false,
-      start_settling_at: 0n,
-      start_main_at: 100n,
-      scheduled_end_at: 1_000_000n,
-      end_at: 1_000_000n,
-      end_grace_seconds: 0,
-      seed: 1n,
-    },
+      start_settling_at: "0",
+      scheduled_end_at: "1000000",
+      end_at: "1000000",
+    }),
   },
   {
     model: "SettlementRules",

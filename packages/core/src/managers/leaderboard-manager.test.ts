@@ -1,3 +1,4 @@
+import { gameRegistryRow } from "../test-support/game-registry";
 import { afterEach, describe, expect, it } from "vitest";
 import { NativeFactStore } from "../client/native-fact-store";
 import { configManager } from "./config-manager";
@@ -53,21 +54,12 @@ describe("native leaderboard", () => {
       game_id: 23,
       victory_points_grant_config: { ...preset.rules.victory_points_grant_config, hyp_points_per_second: 1000000 },
     });
-    upsert(store, [23], "GameRegistry", {
-      game_id: 23,
-      preset_id: 2,
-      name: 1n,
-
-      start_settling_at: 1n,
-      start_main_at: 1n,
-      scheduled_end_at: 200n,
-      end_at: 200n,
-      settled: false,
-      ready: true,
-      dev_mode_on: false,
-      end_grace_seconds: 0,
-      seed: 1n,
-    });
+    upsert(
+      store,
+      [23],
+      "GameRegistry",
+      gameRegistryRow({ game_id: 23, preset_id: 2, start_main_at: "1", scheduled_end_at: "200", end_at: "200" }),
+    );
     configManager.setStore(store);
     const shares = {
       game_id: 23,
@@ -120,21 +112,7 @@ describe("native leaderboard", () => {
       spacing: 10,
       mode: "Single",
     });
-    upsert(store, [23], "GameRegistry", {
-      game_id: 23,
-      preset_id: 2,
-      name: 1n,
-
-      start_settling_at: 1n,
-      start_main_at: 100n,
-      scheduled_end_at: 1000n,
-      end_at: 1000n,
-      settled: false,
-      ready: true,
-      dev_mode_on: false,
-      end_grace_seconds: 0,
-      seed: 1n,
-    });
+    upsert(store, [23], "GameRegistry", gameRegistryRow({ game_id: 23, preset_id: 2 }));
     configManager.setActiveGame(23, 2);
     const manager = new LeaderboardManager(store);
     expect(manager.getPlayerRegisteredPoints(PLAYER)).toBe(0);
@@ -171,20 +149,19 @@ describe("native leaderboard", () => {
           hyp_points_per_second: options.grant ?? 1_000_000,
         },
       });
-      upsert(store, [23], "GameRegistry", {
-        game_id: 23,
-        preset_id: 2,
-        name: 1n,
-        start_settling_at: 1n,
-        start_main_at: 1n,
-        scheduled_end_at: options.endAt ?? 1_000n,
-        end_at: options.endAt ?? 1_000n,
-        settled: false,
-        ready: true,
-        dev_mode_on: options.devMode ?? false,
-        end_grace_seconds: 0,
-        seed: 1n,
-      });
+      upsert(
+        store,
+        [23],
+        "GameRegistry",
+        gameRegistryRow({
+          game_id: 23,
+          preset_id: 2,
+          start_main_at: "1",
+          scheduled_end_at: String(options.endAt ?? 1_000n),
+          end_at: String(options.endAt ?? 1_000n),
+          dev_mode_on: options.devMode ?? false,
+        }),
+      );
       upsert(store, [23, 7], "HyperstructureShares", {
         game_id: 23,
         entity_id: 7,

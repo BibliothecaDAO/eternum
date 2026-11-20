@@ -1,3 +1,4 @@
+import { gameRegistryRow } from "../../../packages/core/src/test-support/game-registry";
 import { expect, it } from "bun:test";
 import { ResourceManager, type GameClient } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -9,20 +10,13 @@ function realm() {
   const store = new NativeFactStore();
   const values: Record<string, Record<string, unknown>> = {
     SliceRules: { ...preset.rules, game_id: 1, mode_rules: 0 },
-    GameRegistry: {
-      game_id: 1,
-      name: 1n,
+    GameRegistry: gameRegistryRow({
       preset_id: 5,
-      settled: false,
-      ready: true,
-      dev_mode_on: false,
-      start_settling_at: 0n,
-      start_main_at: 200n,
-      scheduled_end_at: 86_600n,
-      end_at: 86_600n,
-      end_grace_seconds: 0,
-      seed: 1n,
-    },
+      start_settling_at: "0",
+      start_main_at: "200",
+      scheduled_end_at: "86600",
+      end_at: "86600",
+    }),
     SettlementRules: { game_id: 1, registration_start: 1, registration_limit: 0, spacing: 100, mode: "Single" },
     PlayerEntry: { game_id: 1, owner: 0x111n, player: 0xaaan },
     Structure: {

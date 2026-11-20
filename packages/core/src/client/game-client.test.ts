@@ -1,3 +1,4 @@
+import { gameRegistryRow } from "../test-support/game-registry";
 // @vitest-environment node
 
 import { TransactionType } from "@bibliothecadao/provider";
@@ -76,20 +77,17 @@ const reviewRegistry = {
   rows: [
     {
       key: "0x36",
-      value: {
+      value: gameRegistryRow({
         name: "0x7465737432",
         seed: "0x1",
-        ready: true,
         scheduled_end_at: "0x6ad5da80",
         end_at: "0x6ad5da80",
-        game_id: "0x36",
+        game_id: 54,
         settled: true,
-        preset_id: "0x2",
-        dev_mode_on: false,
+        preset_id: 2,
         start_main_at: "0x6ad5cf60",
-        end_grace_seconds: "0x0",
         start_settling_at: "0x6ad5ce34",
-      },
+      }),
     },
   ],
 };

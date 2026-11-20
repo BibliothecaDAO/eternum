@@ -1,3 +1,4 @@
+import { gameRegistryRow } from "../../test-support/game-registry";
 import { ContractAddress, getNeighborHexes, StructureType } from "@bibliothecadao/types";
 import { hash } from "starknet";
 import { afterEach, describe, expect, it } from "vitest";
@@ -151,20 +152,13 @@ const seedFrontierRules = (store: NativeFactStore, input: { startMainAt: number;
     {
       model: "GameRegistry",
       key: "0x102",
-      value: {
+      value: gameRegistryRow({
         game_id: GAME_ID,
         preset_id: 2,
-        name: "1",
-        start_settling_at: "1",
         start_main_at: String(input.startMainAt),
         scheduled_end_at: "1000000",
         end_at: "1000000",
-        settled: false,
-        ready: true,
-        dev_mode_on: false,
-        end_grace_seconds: 0,
-        seed: "1",
-      },
+      }),
     },
   ] as never);
 

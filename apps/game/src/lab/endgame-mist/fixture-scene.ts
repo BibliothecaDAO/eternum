@@ -1,3 +1,4 @@
+import { gameRegistryRow } from "../../../../../packages/core/src/test-support/game-registry";
 import { Euler, Group, Matrix4, Vector3, type Camera, type Scene } from "three";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
@@ -78,20 +79,13 @@ export class EndgameFixtureScene {
       {
         model: "GameRegistry",
         key: "1",
-        value: {
-          game_id: 1,
+        value: gameRegistryRow({
           preset_id: 2,
-          name: "1",
-          start_settling_at: "1",
           start_main_at: "1",
           scheduled_end_at: "0",
           end_at: "0",
           settled: ended,
-          ready: true,
-          dev_mode_on: false,
-          end_grace_seconds: 0,
-          seed: "1",
-        },
+        }),
       },
     ]);
   }

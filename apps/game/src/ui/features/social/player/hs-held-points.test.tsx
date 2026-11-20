@@ -1,3 +1,4 @@
+import { gameRegistryRow } from "../../../../../../../packages/core/src/test-support/game-registry";
 // @vitest-environment jsdom
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -62,20 +63,12 @@ const ownersGame = () => {
     game_id: GAME,
     victory_points_grant_config: { ...preset.rules.victory_points_grant_config, hyp_points_per_second: 1_000_000 },
   });
-  write(store, [GAME], "GameRegistry", {
-    game_id: GAME,
-    preset_id: 2,
-    name: 1n,
-    start_settling_at: 1n,
-    start_main_at: 1n,
-    scheduled_end_at: 100_000n,
-    end_at: 100_000n,
-    settled: false,
-    ready: true,
-    dev_mode_on: false,
-    end_grace_seconds: 0,
-    seed: 1n,
-  });
+  write(
+    store,
+    [GAME],
+    "GameRegistry",
+    gameRegistryRow({ game_id: GAME, preset_id: 2, start_main_at: "1", scheduled_end_at: "100000", end_at: "100000" }),
+  );
   configManager.setStore(store);
   write(store, [GAME, Number(PLAYER)], "PlayerPoints", {
     game_id: GAME,

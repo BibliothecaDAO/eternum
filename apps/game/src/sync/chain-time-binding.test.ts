@@ -1,3 +1,4 @@
+import { gameRegistryRow } from "../../../../packages/core/src/test-support/game-registry";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { configManager, getBlockTimestamp, ResourceManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
@@ -83,20 +84,17 @@ it("keeps chain time where Herald's head put it while a realm's production waits
       last_settled_at: HEAD_SECONDS - 60,
     }),
     fact("0x2", "SliceRules", { ...preset.rules, game_id: 1, mode_rules: nativeRuleConstants.PRODUCTION_START }),
-    fact("0x2", "GameRegistry", {
-      game_id: 1,
-      name: 1n,
-      preset_id: 1,
-      settled: false,
-      ready: true,
-      dev_mode_on: false,
-      start_settling_at: BigInt(HEAD_SECONDS - 60),
-      start_main_at: BigInt(startsAt),
-      scheduled_end_at: BigInt(startsAt + 3600),
-      end_at: BigInt(startsAt + 3600),
-      end_grace_seconds: 0,
-      seed: 1n,
-    }),
+    fact(
+      "0x2",
+      "GameRegistry",
+      gameRegistryRow({
+        preset_id: 1,
+        start_settling_at: String(HEAD_SECONDS - 60),
+        start_main_at: String(startsAt),
+        scheduled_end_at: String(startsAt + 3600),
+        end_at: String(startsAt + 3600),
+      }),
+    ),
   ]);
 
   expect(new ResourceManager(store, 7, 1).balanceWithProduction(HEAD_SECONDS, 23)?.balance).toBe(0);

@@ -1,3 +1,4 @@
+import { gameRegistryRow } from "../../../../../../packages/core/src/test-support/game-registry";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { describe, expect, it, vi } from "vitest";
 import { resolveGameEndHeadline } from "./game-end-headline";
@@ -7,20 +8,15 @@ function game(store: NativeFactStore, endAt = 100) {
     {
       model: "GameRegistry",
       key: "0x1",
-      value: {
-        game_id: 1,
-        name: 0,
+      value: gameRegistryRow({
+        name: "0",
         preset_id: 2,
-        settled: false,
-        ready: true,
-        dev_mode_on: false,
-        start_settling_at: 1,
-        start_main_at: 2,
-        scheduled_end_at: endAt,
-        end_at: endAt,
+        start_main_at: "2",
+        scheduled_end_at: String(endAt),
+        end_at: String(endAt),
         end_grace_seconds: 10,
-        seed: 0,
-      },
+        seed: "0",
+      }),
     },
   ]);
 }

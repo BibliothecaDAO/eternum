@@ -1,3 +1,4 @@
+import { gameRegistryRow } from "../../../../../../../packages/core/src/test-support/game-registry";
 // @vitest-environment jsdom
 import { configManager } from "@bibliothecadao/eternum";
 import { StructureType } from "@bibliothecadao/types";
@@ -62,20 +63,11 @@ beforeEach(() => {
     game_id: 23,
     victory_points_grant_config: { ...preset.rules.victory_points_grant_config, hyp_points_per_second: 1_000_000 },
   });
-  put("GameRegistry", [23], {
-    game_id: 23,
-    preset_id: 2,
-    name: 1n,
-    start_settling_at: 1n,
-    start_main_at: 1n,
-    scheduled_end_at: 200n,
-    end_at: 200n,
-    settled: false,
-    ready: true,
-    dev_mode_on: false,
-    end_grace_seconds: 0,
-    seed: 1n,
-  });
+  put(
+    "GameRegistry",
+    [23],
+    gameRegistryRow({ game_id: 23, preset_id: 2, start_main_at: "1", scheduled_end_at: "200", end_at: "200" }),
+  );
   put("HyperstructureShares", [23, 7], allocation());
   put("TileOpt", [23, 0, 10, 12], { game_id: 23, alt: false, col: 10, row: 12, data: 2n << 41n });
   put("TileOccupancy", [23, 0, 10, 12], {

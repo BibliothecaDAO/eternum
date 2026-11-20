@@ -1,3 +1,4 @@
+import { gameRegistryRow } from "../test-support/game-registry";
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { describe, expect, it } from "vitest";
@@ -12,21 +13,14 @@ const upsert = (key: string, models: Record<string, Record<string, unknown>>): G
   Object.entries(models).map(([model, value]) => ({ model, key, value }));
 const weight = (game = 1) => ({ game_id: game, entity_id: 7, capacity: 1000n, weight: 0n });
 const balance = (game = 1) => ({ game_id: game, entity_id: 7, resource_type: 23, balance: 9007199254740993n });
-const game = {
-  game_id: 1,
-  name: 1n,
+const game = gameRegistryRow({
   preset_id: 1,
-
-  settled: false,
   ready: false,
-  dev_mode_on: false,
-  start_settling_at: 0n,
-  start_main_at: 200n,
-  scheduled_end_at: 1100n,
-  end_at: 1100n,
-  end_grace_seconds: 0,
-  seed: 1n,
-};
+  start_settling_at: "0",
+  start_main_at: "200",
+  scheduled_end_at: "1100",
+  end_at: "1100",
+});
 const production = {
   game_id: 1,
   entity_id: 7,

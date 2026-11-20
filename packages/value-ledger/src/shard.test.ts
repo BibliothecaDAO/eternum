@@ -1,3 +1,4 @@
+import { gameRegistryRow } from "../../core/src/test-support/game-registry";
 import { gamesAbi as abi, gamesEvent, response } from "../test-support/abi";
 import { beforeEach, expect, it, vi } from "vitest";
 import { shortString, ec, CallData, RpcError } from "starknet";
@@ -43,19 +44,20 @@ beforeEach(() => {
     query.entrypoint === "l2_gas_bound"
       ? ["1000000"]
       : query.entrypoint === "game"
-        ? response(abi, "game", {
-            name: 0,
-            preset_id: 2,
-            settled: false,
-            ready: false,
-            dev_mode_on: false,
-            start_settling_at: 0,
-            start_main_at: 0,
-            scheduled_end_at: 0,
-            end_at: 0,
-            end_grace_seconds: 0,
-            seed: 0,
-          })
+        ? response(
+            abi,
+            "game",
+            gameRegistryRow({
+              name: "0",
+              preset_id: 2,
+              ready: false,
+              start_settling_at: "0",
+              start_main_at: "0",
+              scheduled_end_at: "0",
+              end_at: "0",
+              seed: "0",
+            }),
+          )
         : ["2"],
   );
   rpc.execute.mockResolvedValue({ transaction_hash: "0xabc" });
@@ -244,19 +246,20 @@ it("settles an ended game one batch at a time until it reads settled, and sends 
   const batches = [3, 0];
   let settled = false;
   const game = () =>
-    response(abi, "game", {
-      name: 0,
-      preset_id: 7,
-      settled,
-      ready: true,
-      dev_mode_on: false,
-      start_settling_at: 0,
-      start_main_at: 0,
-      scheduled_end_at: 0,
-      end_at: 0,
-      end_grace_seconds: 0,
-      seed: 0,
-    });
+    response(
+      abi,
+      "game",
+      gameRegistryRow({
+        name: "0",
+        preset_id: 7,
+        settled,
+        start_settling_at: "0",
+        start_main_at: "0",
+        scheduled_end_at: "0",
+        end_at: "0",
+        seed: "0",
+      }),
+    );
   const views = rpc.call.getMockImplementation()!;
   rpc.call.mockImplementation(async (query) => (query.entrypoint === "game" ? game() : views(query)));
   rpc.receipt.mockImplementation(async () => {
