@@ -20,7 +20,9 @@ fn relic_game() -> (
     let home = ResourceKey { game_id, entity_id: home_id };
     let explorer_id = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
     let key = ExplorerKey { game_id, explorer_id };
-    strong_frontier_army(d, game_id, key);
+    let mut army = strong_frontier_army(d, game_id, key);
+    army.troops.count = 5000 * RESOURCE_PRECISION;
+    super::resource_commands::set_explorer_fixture(d.games, key, army);
     let discovery = snforge_std::interact_with_state(
         d.games, || crate::logic::discovery::lore_rules(crate::logic::research::require(home).learned),
     );
