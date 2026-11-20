@@ -6,11 +6,9 @@ pub use crate::stamina::StaminaSourceTrait;
 pub use crate::troops::{Stamina, TroopBoosts, TroopTier, TroopType, Troops};
 pub fn context(biome: Biome) -> CombatContext {
     CombatContext {
-        day_unit_seconds: 0,
         timestamp: 1,
         attacker_biome: biome,
         defender_biome: biome,
-        attack_distance: 1,
         attacker_is_structure_guard: false,
         defender_is_structure_guard: false,
         attacker_oaths: 0,

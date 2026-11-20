@@ -80,21 +80,6 @@ pub mod GamesFixture {
                 game_context,
             )
         }
-        fn discovery(
-            self: @TContractState,
-            key: crate::map::TileKey,
-            seed: u256,
-            timestamp: u64,
-            game_context: crate::commands::ActionContext,
-        ) -> crate::discovery::Discovery {
-            crate::map::IMapLogicDispatcherTrait::discovery(
-                crate::map::IMapLogicLibraryDispatcher { class_hash: fixture_class(key.game_id, crate::slots::MAP) },
-                key,
-                seed,
-                timestamp,
-                game_context,
-            )
-        }
         fn reveal_structure_surroundings(
             ref self: TContractState,
             game_id: u32,
@@ -141,25 +126,6 @@ pub mod GamesFixture {
             context: crate::commands::ActionContext,
         ) {
             crate::exploration_rewards::IExtractionDispatcherTrait::extract_exploration_reward(
-                crate::exploration_rewards::IExtractionLibraryDispatcher {
-                    class_hash: fixture_class(game_id, crate::slots::PRIZES),
-                },
-                game_id,
-                actor,
-                explorer_id,
-                coord,
-                context,
-            )
-        }
-        fn raise_dormant_spire(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            explorer_id: u64,
-            coord: crate::troops::Coord,
-            context: crate::commands::ActionContext,
-        ) {
-            crate::exploration_rewards::IExtractionDispatcherTrait::raise_dormant_spire(
                 crate::exploration_rewards::IExtractionLibraryDispatcher {
                     class_hash: fixture_class(game_id, crate::slots::PRIZES),
                 },

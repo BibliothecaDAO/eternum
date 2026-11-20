@@ -1,6 +1,6 @@
 pub use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
 pub use crate::commands::{Command, CreateExplorer, Explore};
-pub use crate::discovery::{Discovery, surface};
+pub use crate::discovery::Discovery;
 pub use crate::game::IGameDispatcherTrait;
 pub use crate::geometry::{neighbor, tile_key};
 pub use crate::guards::{GuardKey, IGuardsDispatcher, IGuardsDispatcherTrait};

@@ -77,7 +77,7 @@ fn a_season_starts_and_ends_on_an_army_tick() {
 #[test]
 fn expedition_armies_merge_into_the_lower_stamina_and_never_past_the_size_limit() {
     let d = setup();
-    let (game_id, home, category) = expedition_home(d);
+    let (game_id, home, _) = expedition_home(d);
     let (source, target) = expedition_armies(d, home);
     let troops = GameState { contract_address: d.games };
     assert!(
@@ -120,7 +120,7 @@ fn expedition_armies_merge_into_the_lower_stamina_and_never_past_the_size_limit(
 fn expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stamina() {
     for direction in 0_u8..6 {
         let d = setup();
-        let (game_id, home, category) = expedition_home(d);
+        let (game_id, home, _) = expedition_home(d);
         let (army, _) = expedition_armies(d, home);
         let state = GameState { contract_address: d.games };
         let mut before = state.resolved_explorer(army).unwrap();
@@ -198,7 +198,7 @@ fn expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stami
 fn expedition_recruitment_refuses_other_regions_depths_and_expired_armies_without_spending() {
     for location in 0_u8..4 {
         let d = setup();
-        let (game_id, home, category) = expedition_home(d);
+        let (game_id, home, _) = expedition_home(d);
         let (army, _) = expedition_armies(d, home);
         let state = GameState { contract_address: d.games };
         let mut explorer = state.resolved_explorer(army).unwrap();
@@ -307,7 +307,7 @@ fn yesterdays_armies_leave_todays_army_cap_free() {
 #[test]
 fn a_materialized_home_ring_moves_and_explores_without_a_roll() {
     let d = setup();
-    let (game_id, home, category) = expedition_home(d);
+    let (game_id, home, _) = expedition_home(d);
     let spacing = crate::logic::settlement::spacing();
     let map = IMapLogicDispatcher { contract_address: d.games };
     let troops = GameState { contract_address: d.games };
