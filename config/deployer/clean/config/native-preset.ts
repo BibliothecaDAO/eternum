@@ -1,8 +1,4 @@
-import {
-  nativeRaceConstants,
-  nativeQuestConstants as quest,
-  nativeRuleConstants as presetRule,
-} from "../../../../contracts/l3/world-native/schema/balance.gen";
+import { nativeRaceConstants, nativeQuestConstants as quest } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { DAYS_PER_BAG } from "@bibliothecadao/eternum/expeditions";
 import { buildingIds } from "../../../source/frontier/native";
 import { nativePresetForId } from "../../../source/native";
@@ -255,14 +251,7 @@ function buildSettlement(config: Config, preset: ReturnType<typeof nativePresetF
       resources: amounts(config.villageStartingResources, config.resources.resourcePrecision),
       resource_pool: villageResourcePool.map((choice) => ({ ...choice })),
     },
-    spires: !(preset.modeRules & presetRule.SPIRES)
-      ? new CairoOption(CairoOptionVariant.None)
-      : new CairoOption(CairoOptionVariant.Some, {
-          count: config.settlement.spires_max_count,
-          base_distance: config.settlement.base_distance,
-          layer_distance: config.settlement.spires_layer_distance,
-          max_layer: config.settlement.layer_max,
-        }),
+    spires: new CairoOption(CairoOptionVariant.None),
   };
 }
 

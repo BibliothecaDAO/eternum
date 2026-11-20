@@ -7,10 +7,7 @@ import { describe, expect, test, mock } from "bun:test";
 import { readFileSync } from "node:fs";
 import { CallData, type RpcProvider } from "starknet";
 import schema from "../../../../contracts/l3/world-native/schema/schema.json";
-import {
-  nativeResearchConstants as research,
-  nativeRuleConstants,
-} from "../../../../contracts/l3/world-native/schema/balance.gen";
+import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
 import { applyDeploymentConfigOverrides } from "../config/config-loader";
 import { buildNativePreset } from "../config/native-preset";
@@ -1067,7 +1064,6 @@ test("preset 7 activates the complete Slice 1 rules while fixtures and historica
     expect(source.deep).toEqual(deepFixture());
     expect(source.race).toEqual(raceFixture());
     expect(built.economy.labor.isNone()).toBe(true);
-    expect(built.rules.mode_rules & nativeRuleConstants.DISCOVER_SPIRES).not.toBe(0);
     for (const command of [
       "ClaimDailyQuest",
       "Battle",

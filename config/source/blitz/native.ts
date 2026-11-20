@@ -21,7 +21,7 @@ export const blitzPreset: NativePreset = {
   gameType: "blitz",
   environmentGameType: "blitz",
   settlementMode: "Triple",
-  modeRules: arenaModeRules | rule.DISCOVER_SPIRES,
+  modeRules: arenaModeRules,
   entryRule: rule.ENTRY_ROSTER,
   commandMask: arenaCommandMask,
   spacing: 6,
