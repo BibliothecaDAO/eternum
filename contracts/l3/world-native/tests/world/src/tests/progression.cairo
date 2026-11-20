@@ -66,14 +66,14 @@ fn training_starts_only_later_armies_at_their_realms_tiers_and_full_at_their_log
             ),
         );
     snforge_std::stop_cheat_caller_address(d.games);
-    let untrained = deploy(d, game_id, category, 0);
+    let untrained = deploy(d, home, category, 2, FIXTURE_START + 1);
     assert_eq!(read_progress(d, untrained), ArmyProgress { logistics: 0, oath_slots: 2, ..Default::default() });
 
     let learned = crate::research::learn(0, crate::research::ROW_SUPPLY_YARD, 0);
     snforge_std::interact_with_state(
         d.games, || crate::logic::research::write(home, crate::research::RealmKnowledge { learned }),
     );
-    let trained = deploy(d, game_id, category, 1);
+    let trained = deploy(d, home, category, 2, super::registrar::day_start(d, game_id, 1) + 1);
     let progress = read_progress(d, trained);
     assert_eq!(progress.logistics, 1);
     // Training changes no army already deployed.
@@ -139,7 +139,7 @@ fn deployed_armies_keep_their_troops_oath_count_after_home_research_changes() {
         for resource in array![1_u8, 26, 29, 32, 35, crate::resources::LABOR, crate::resources::ESSENCE] {
             super::resource_commands::grant(d, home, resource, 1000000 * crate::rules::RESOURCE_PRECISION);
         }
-        let old = deploy(d, game_id, category, 0);
+        let old = deploy(d, home, category, 2, FIXTURE_START + 1);
         assert_eq!(read_progress(d, old).oath_slots, 2);
         assert!(
             super::resource_commands::execute_in_game(
@@ -151,7 +151,7 @@ fn deployed_armies_keep_their_troops_oath_count_after_home_research_changes() {
                 d, game_id, super::building_commands::research(home, row, 0), FIXTURE_START + 1,
             ),
         );
-        let new = deploy(d, game_id, category, 1);
+        let new = deploy(d, home, category, 2, super::registrar::day_start(d, game_id, 1) + 1);
         assert_eq!(read_progress(d, new).oath_slots, 3);
         assert_eq!(read_progress(d, old).oath_slots, 2);
         assert_eq!(read_progress(d, new).logistics, 0);
