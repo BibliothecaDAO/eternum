@@ -440,7 +440,7 @@ const OwnerSend = ({
       {outcome?.kind === "refused" && <span className="text-app-label text-app-bad">{outcome.reason}</span>}
       {holder === null && !confirming ? (
         <>
-          <span className="text-app-label text-app-muted">{WALLET_WORDS.whichHolds(shortAddress(owner))}</span>
+          <span className="text-app-label text-app-muted">{WALLET_WORDS.chooseWallet}</span>
           <WalletRows wallet={wallet} />
         </>
       ) : (

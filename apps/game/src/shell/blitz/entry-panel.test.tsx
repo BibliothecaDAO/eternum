@@ -228,7 +228,7 @@ it("reads a slot's entry and refund with the payout wallet that pays, signed by 
   const replaced = await mount({ ...TERMS, registration: seat, cancelled: true }, "0xb0b");
   expect(replaced.textContent).toContain("0xb0b");
   await press(replaced, "Take refund");
-  await settled(() => expect(replaced.textContent).toContain("Which wallet holds 0xb0b?"));
+  await settled(() => expect(replaced.textContent).toContain("Choose your wallet"));
   expect(payout.transactions()).toHaveLength(1);
   await press(replaced, "Braavos");
   expect(await promptsOf(former)).toHaveLength(1);

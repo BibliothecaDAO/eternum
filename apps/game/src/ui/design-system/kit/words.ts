@@ -1753,7 +1753,7 @@ export const WALLET_WORDS = {
   braavos: "Braavos",
   controller: "Controller",
   extension: "extension",
-  byEmail: "by email",
+  byEmail: "email wallet",
   yourWallet: "Your wallet",
   realmsWallet: "Realms wallet",
   createWallet: "Create my wallet",
@@ -1807,7 +1807,7 @@ export const WALLET_WORDS = {
   wrongWallet: (owner: string) => `Only ${owner} can sign this`,
   paymentFailed: "The wallet did not confirm it",
   tryAgain: "Try again",
-  whichHolds: (owner: string) => `Which wallet holds ${owner}?`,
+  chooseWallet: "Choose your wallet",
 } as const;
 
 /** What every value screen shares: a fee the payout wallet cannot pay yet. */

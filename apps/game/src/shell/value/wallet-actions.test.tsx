@@ -97,7 +97,7 @@ it("asks which wallet only where this browser never opened it, and opens it unas
   const ready = installWallet("argentX", { account: LINKED, locked: true });
   installWallet("braavos", { account: OTHER, locked: true });
   const first = await openSend();
-  await settled(() => expect(first.container.textContent).toContain("Which wallet holds 0x04a1…3e9f?"));
+  await settled(() => expect(first.container.textContent).toContain("Choose your wallet"));
   expect(ready.connections()).toEqual([]);
   await press(first.container, "Ready");
   await settled(() => expect(first.landed).toHaveBeenCalledOnce());

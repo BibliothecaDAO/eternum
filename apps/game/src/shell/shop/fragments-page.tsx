@@ -8,7 +8,7 @@ import { nativeFragmentConstants } from "@bibliothecadao/eternum/game-client";
 import { identityClient, useIdentitySession } from "@/hooks/context/identity-session";
 import { useDefaultWallet } from "@/hooks/context/default-wallet";
 import { payoutAddressOf } from "@/hooks/context/payout-wallet";
-import { AppButton, AppChoice, AppNotice, AppPanel } from "@/ui/design-system/kit/app-elements";
+import { AppButton, AppChoice, AppFigure, AppNotice, AppPanel } from "@/ui/design-system/kit/app-elements";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { FRAGMENTS_PAGE_WORDS } from "@/ui/design-system/kit/words";
 
@@ -119,10 +119,11 @@ const Pay = ({ payer, paying, onSent }: { payer: string; paying: Paying; onSent:
     title={FRAGMENTS_PAGE_WORDS.pack(paying.fragments)}
   >
     <div className="flex flex-col gap-3" data-fragment-quote={paying.quote.id}>
-      <span className="text-app-heading text-app-ink">{FRAGMENTS_PAGE_WORDS.price(paying.fragments)}</span>
-      <span className="text-app-label text-app-muted">
-        {FRAGMENTS_PAGE_WORDS.paidAs(lordsOf(BigInt(paying.quote.lordsWei)))}
-      </span>
+      <AppFigure
+        tone="gold"
+        value={FRAGMENTS_PAGE_WORDS.price(paying.fragments)}
+        label={FRAGMENTS_PAGE_WORDS.paidAs(lordsOf(BigInt(paying.quote.lordsWei)))}
+      />
       <Suspense fallback={<Loading />}>
         <WalletSign
           owner={payer}
