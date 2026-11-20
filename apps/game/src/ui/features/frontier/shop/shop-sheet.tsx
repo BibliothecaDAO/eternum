@@ -1,7 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import type { Account } from "starknet";
-import { configManager, readSeasonPass } from "@bibliothecadao/eternum";
-import { nativeFragmentConstants } from "@bibliothecadao/eternum/game-client";
+import { configManager, readLaborBonus, readSeasonPass } from "@bibliothecadao/eternum";
+import { nativeFragmentConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { FRAGMENT_CENTS, formatCharge, formatShort, MIN_FRAGMENTS } from "@bibliothecadao/types";
 import { useGame } from "@/hooks/context/game-context";
 import { notificationOwnerOf, useIdentitySessionStore } from "@/hooks/context/identity-session";
@@ -11,13 +11,14 @@ import { useRedeemSealCode } from "@/shell/play/seal-code";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudField, HudNotice, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { failureLine } from "@/ui/design-system/kit/failure-lines";
-import { SEAL_CODE_WORDS, SHOP_WORDS } from "@/ui/design-system/kit/words";
+import { REALM, SEAL_CODE_WORDS, SHOP_WORDS } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 
 import { fragmentsToFill } from "../army/refill";
+import { campaignMarkOf } from "../value/campaign-home";
 import { useFragmentsHeld } from "../value/fragments";
 
-const SHOP_MODELS = ["Seal", "QuestRules", "SliceRules"] as const;
+const SHOP_MODELS = ["Seal", "QuestRules", "SliceRules", "CampaignHome", "SettledRealm"] as const;
 const PASS_PRICE = nativeFragmentConstants.SEAL_FRAGMENTS;
 const POINTS = nativeFragmentConstants.STAMINA_PER_FRAGMENT;
 const PASS_KEY = 0;
@@ -28,21 +29,23 @@ export interface ShopViewProps {
   fragments: number;
   pass: PassState | null;
   questBonus: number | null;
+  bonusHeld: string | null;
   bar: number | null;
   code: ReactNode;
   onClose: () => void;
 }
 
-export const ShopSheet = ({ onClose }: { onClose: () => void }) => {
-  const reading = useShopReading();
+export const ShopSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]; onClose: () => void }) => {
+  const reading = useShopReading(realm);
   return reading && <ShopView {...reading} code={<ShopCodeField />} onClose={onClose} />;
 };
 
-export const ShopView = ({ fragments, pass, questBonus, bar, code, onClose }: ShopViewProps) => (
+export const ShopView = ({ fragments, pass, questBonus, bonusHeld, bar, code, onClose }: ShopViewProps) => (
   <HudSheet label={SHOP_WORDS.title} beside={<FragmentsHeld fragments={fragments} />} onClose={onClose}>
     <section data-shop="pass" className="flex flex-col gap-2">
       <HudRow lead={<Icon name="final-seal" size={48} />} title={SHOP_WORDS.pass} detail={SHOP_WORDS.passFor} />
       {questBonus !== null && <span className="text-hud-body text-hud-ink">{SHOP_WORDS.questBonus(questBonus)}</span>}
+      {bonusHeld !== null && <HudNotice tone="good" line={SHOP_WORDS.bonusHeld(bonusHeld)} />}
       {pass && <PassFoot pass={pass} fragments={fragments} />}
       {pass && !pass.held && code}
     </section>
@@ -133,7 +136,7 @@ export const ShopCodeField = () => {
   );
 };
 
-function useShopReading(): Omit<ShopViewProps, "code" | "onClose"> | null {
+function useShopReading(realm: NativeRows["Structure"]): Omit<ShopViewProps, "code" | "onClose"> | null {
   const { setup, account } = useGame();
   useNativeRevision(SHOP_MODELS);
   const fragments = useFragmentsHeld();
@@ -152,8 +155,22 @@ function useShopReading(): Omit<ShopViewProps, "code" | "onClose"> | null {
     fragments,
     pass: seal.known ? (seal.known.present ? { held: true } : { held: false, buying: sending, onBuy: buy }) : null,
     questBonus: quest ? quest.bonus_percent - 100 : null,
+    bonusHeld: freeBonusHolder(setup.store, realm, owner),
     bar: slice ? slice.troop_stamina_config.stamina_knight_max : null,
   };
+}
+
+function freeBonusHolder(
+  store: ReturnType<typeof useGame>["setup"]["store"],
+  realm: NativeRows["Structure"],
+  owner: bigint,
+): string | null {
+  const home = Number(realm.entity_id);
+  const source = readLaborBonus(store, realm.game_id, home, owner).known?.source;
+  if (source === "realm") return REALM;
+  if (source !== "campaign") return null;
+  const mark = campaignMarkOf(store.get("CampaignHome", { game_id: realm.game_id, home }), realm.base.level);
+  return mark && SHOP_WORDS.ticket(mark.line);
 }
 
 const fragmentsForBar = (bar: number): number => fragmentsToFill({ current: 0, max: bar });
