@@ -18,6 +18,106 @@ const combatMembers = combatBody
 export const factWireTypes = [
   {
     type: "struct",
+    name: "world_native::buildings::BuildingRule",
+    members: [
+      { name: "population_cost", type: "core::integer::u8" },
+      { name: "capacity_grant", type: "core::integer::u8" },
+      { name: "simple_cost", type: "core::array::Span::<world_native::resources::ResourceAmount>" },
+      { name: "complex_cost", type: "core::array::Span::<world_native::resources::ResourceAmount>" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::expeditions::DepthRules",
+    members: [
+      { name: "reveal_percent", type: "core::integer::u16" },
+      { name: "site_guard_lower", type: "core::integer::u16" },
+      { name: "site_guard_upper", type: "core::integer::u16" },
+      { name: "reveal_site_neighbors", type: "core::bool" },
+      { name: "chest", type: "world_native::relics::ChestTiers" },
+      { name: "guard_step", type: "core::integer::u32" },
+      { name: "beast_weak_lower", type: "core::integer::u16" },
+      { name: "beast_weak_upper", type: "core::integer::u16" },
+      { name: "beast_strong_lower", type: "core::integer::u16" },
+      { name: "beast_strong_upper", type: "core::integer::u16" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::production::ProductionRecipe",
+    members: [
+      { name: "simple_output", type: "core::integer::u64" },
+      { name: "complex_output", type: "core::integer::u64" },
+      { name: "simple_inputs", type: "core::array::Span::<world_native::resources::ResourceAmount>" },
+      { name: "complex_inputs", type: "core::array::Span::<world_native::resources::ResourceAmount>" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::realms::RealmTraits",
+    members: [
+      { name: "wonder", type: "core::integer::u8" },
+      { name: "order", type: "core::integer::u8" },
+      { name: "resources", type: "core::array::Span::<core::integer::u8>" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::relics::ChestTiers",
+    members: [
+      { name: "common", type: "core::integer::u16" },
+      { name: "uncommon", type: "core::integer::u16" },
+      { name: "rare", type: "core::integer::u16" },
+      { name: "epic", type: "core::integer::u16" },
+      { name: "legendary", type: "core::integer::u16" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::relics::LordsWithdrawal",
+    members: [
+      { name: "account", type: "core::starknet::contract_address::ContractAddress" },
+      { name: "amount", type: "core::integer::u128" },
+      { name: "prize_rank", type: "core::integer::u16" },
+      { name: "prize_count", type: "core::integer::u16" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::settlement::RealmGrants",
+    members: [
+      { name: "resources", type: "core::array::Span::<world_native::resources::ResourceAmount>" },
+      { name: "starting_troops", type: "core::array::Span::<world_native::troops::TroopType>" },
+      { name: "realm_resources", type: "core::array::Span::<core::integer::u8>" },
+    ],
+  },
+  {
+    type: "enum",
+    name: "world_native::settlement::SettlementMode",
+    variants: [
+      { name: "Single", type: "()" },
+      { name: "Triple", type: "()" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::village::VillageResource",
+    members: [
+      { name: "resource_type", type: "core::integer::u8" },
+      { name: "weight", type: "core::integer::u128" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::village::VillageRules",
+    members: [
+      { name: "troop_delay_ticks", type: "core::integer::u16" },
+      { name: "resources", type: "core::array::Span::<world_native::resources::ResourceAmount>" },
+      { name: "resource_pool", type: "core::array::Span::<world_native::village::VillageResource>" },
+    ],
+  },
+  {
+    type: "struct",
     name: "world_native::banes::BaneRules",
     members: [
       { name: "chance_step", type: "core::integer::u16" },
