@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { scanSource } from "./check.mjs";
+import { aspects } from "@bibliothecadao/types";
+
+import { gameNouns, scanSource } from "./check.mjs";
 
 const context = {
   nouns: new Set(["Wheat", "Knight", "City"]),
@@ -327,5 +329,13 @@ test("finds a formula a player would read, in a string or across JSX, and leaves
       "5 voice: A number, never a formula",
       "6 number.formula",
     ],
+  );
+});
+
+test("holds every Aspect's catalog name to the game nouns no player-read code spells by hand", () => {
+  const nouns = gameNouns();
+  assert.deepEqual(
+    aspects.filter(({ name }) => !nouns.has(name)),
+    [],
   );
 });

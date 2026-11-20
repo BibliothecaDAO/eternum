@@ -4,12 +4,6 @@ import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { nativeOathConstants as oathRules } from "../../../../contracts/l3/world-native/schema/balance.gen";
 
-export const oathColours = [
-  { mask: oathRules.RED, colour: "red" },
-  { mask: oathRules.BLUE, colour: "blue" },
-  { mask: oathRules.GOLD, colour: "gold" },
-] as const;
-
 export function heldOaths(mask: number): number[] {
   return Array.from({ length: 16 }, (_, index) => index + 1).filter((id) => holdsOath(mask, id));
 }
@@ -37,12 +31,6 @@ export function rerollOath(progress: NativeRows["ArmyProgress"], expected: numbe
   const scale = 1 << (index * 4);
   const pick = expected - (oathCard(expected, index) - 1) * scale + (oath - 1) * scale + oathRules.REROLLED;
   return { ...progress, oath_pick: pick };
-}
-
-export function oathColour(id: number): (typeof oathColours)[number] {
-  const colour = oathColours.find(({ mask }) => holdsOath(mask, id));
-  if (!colour) throw new Error(`Unknown Oath ${id}`);
-  return colour;
 }
 
 export function chooseOath(

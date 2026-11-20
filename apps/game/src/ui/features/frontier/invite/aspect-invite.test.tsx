@@ -82,14 +82,14 @@ it("offers nothing to a home that joined no Aspect", async () => {
 it("invites to the home's Aspect by its name and its Orders' crests, posting and copying the player's own link", async () => {
   createShare.mockResolvedValue("INVT2345");
   await renderInvite(2);
-  expect(panel()!.textContent).toContain("Invite a friend to Harmony");
+  expect(panel()!.textContent).toContain("Invite a friend to Luminary");
   expect(panel()!.querySelectorAll("[data-icon], img, svg").length).toBeGreaterThanOrEqual(4);
   expect(createShare).toHaveBeenCalledWith({ kind: "aspect", chainId: getActiveGame()!.chainId, gameId: 1, moment: 2 });
 
   await vi.waitFor(() => expect(button("Post on X")?.hasAttribute("disabled")).toBe(false));
   await act(async () => button("Post on X")!.click());
   const post = new URL(opened.mock.calls[0]![0] as string);
-  expect(post.searchParams.get("text")).toBe("Join me in Harmony in Frontier.");
+  expect(post.searchParams.get("text")).toBe("Join me in Luminary in Frontier.");
   expect(post.searchParams.get("url")).toBe(`${window.location.origin}/s/INVT2345?via=x`);
 
   await act(async () => button("Copy link")!.click());

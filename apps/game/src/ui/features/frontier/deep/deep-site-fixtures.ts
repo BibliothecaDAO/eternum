@@ -61,7 +61,7 @@ export const DEEP_SITE_CASES = {
     pay: { ...pay, height: 6 },
     guard: {
       kind: "held",
-      aspect: "Might",
+      aspect: "Prowess",
       next: 103,
       slots: withShares([slot(3, "Aldor", 6_000), slot(1, "Brek", 2_000, true)]),
     },
@@ -73,7 +73,7 @@ export const DEEP_SITE_CASES = {
     pay: { ...pay, glory: 0, labor: 300 },
     guard: {
       kind: "held",
-      aspect: "Might",
+      aspect: "Prowess",
       next: 102,
       slots: withShares([slot(2, "Brek", 4_000, true)]),
     },

@@ -27,9 +27,9 @@ describe("the Aspect page", () => {
   it("ranks the four hyperstructures by height with their stage, the player's own selected", () => {
     draw(ASPECT_PAGE_CASES["Mid-season, the player's Aspect second"]);
     const race = part("data-aspect-race");
-    expect(race.indexOf("Might")).toBeLessThan(race.indexOf("Harmony"));
-    expect(race.indexOf("Harmony")).toBeLessThan(race.indexOf("Chaos"));
-    expect(race.indexOf("Chaos")).toBeLessThan(race.indexOf("Guile"));
+    expect(race.indexOf("Prowess")).toBeLessThan(race.indexOf("Luminary"));
+    expect(race.indexOf("Luminary")).toBeLessThan(race.indexOf("Havoc"));
+    expect(race.indexOf("Havoc")).toBeLessThan(race.indexOf("Insight"));
     expect(race).toContain("Stage 4 of 5 · 6,400 of 10,000");
     expect(race).toContain("Stage 3 of 5 · 5,200 of 10,000");
     expect(race).toContain("Stage 1 of 5 · 900 of 10,000");
@@ -63,7 +63,7 @@ describe("the Aspect page", () => {
 
   it("names the Aspect that finished first once the age is won, and finished rows say so", () => {
     draw(ASPECT_PAGE_CASES["Age won by another Aspect"]);
-    expect(part("data-aspect-race")).toContain("Might finished first and won the age");
+    expect(part("data-aspect-race")).toContain("Prowess finished first and won the age");
     expect(part("data-aspect-race")).toContain("Finished · 10,000 of 10,000");
     const triumphs = part("data-aspect-triumphs");
     expect(triumphs).toContain("Clear Mist · day 12");

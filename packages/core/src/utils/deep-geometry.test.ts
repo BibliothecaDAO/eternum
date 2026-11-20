@@ -14,7 +14,7 @@ const store = (aspects: Record<string, number>, rules: { gate_distance: number }
 });
 
 describe("the Deep's gates", () => {
-  it("opens each home's view on its Aspect's gate where the contract stands it: Might, Harmony, Chaos, Guile around the centre", () => {
+  it("opens each home's view on its Aspect's gate where the contract stands it: Prowess, Luminary, Havoc, Insight around the centre", () => {
     const homes = store({ "1": 1, "2": 2, "3": 3, "4": 4 });
     expect([1n, 2n, 3n, 4n].map((home) => deepViewFor(homes as never, 7, home, 1024))).toEqual([
       { col: 512, row: 3588 },
