@@ -91,8 +91,7 @@ function fixture() {
           release.migration,
         ];
       }
-      if (entrypoint === "latest_release_of")
-        return [String(Math.max(0, ...[...state.releases.keys()]))];
+      if (entrypoint === "latest_release_of") return [String(Math.max(0, ...[...state.releases.keys()]))];
       if (entrypoint === "realm_catalogue") return [String(catalogue.initialized), catalogue.digest];
       if (entrypoint === "authentication")
         return [state.authentication.account_class, state.authentication.guardian_public_key];
