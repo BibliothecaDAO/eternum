@@ -107,7 +107,7 @@ fn initialize(game_id: u32) {
     let state = crate::state::write();
     crate::logic::deep_ticks::initialize(game_id);
     let start = state.games.games.entry(game_id).start_main_at.read();
-    let spacing = crate::logic::preset_record::for_game(game_id).settlement_spacing.read();
+    let spacing = crate::logic::settlement::spacing();
     let seed: u256 = state.games.games.entry(game_id).seed.read().into();
     for index in 0..site_count() {
         if state.deep.site_ids.read((game_id, index)) != 0 {

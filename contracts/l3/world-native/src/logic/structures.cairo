@@ -240,7 +240,7 @@ pub mod StructuresLogic {
             assert!(record.owner == actor, "actor does not own village");
             assert!(record.base.category == crate::taxonomy::VILLAGE_CATEGORY, "structure is not a village");
             assert!(!record.base.starting_troops_granted, "army grant already claimed");
-            let grants = crate::logic::village::rules(game_id);
+            let grants = crate::logic::village::rules();
             let interval = context.rules.unbox().tick_config.armies_tick_in_seconds;
             let claimable_at: u64 = record.base.created_at.into() / interval + grants.troop_delay_ticks.into();
             assert!(context.timestamp / interval >= claimable_at, "army grant cannot be claimed yet");
@@ -341,7 +341,7 @@ pub mod StructuresLogic {
                     if realm.activate_economy {
                         self.provision_realm_economy(key, realm.troops, context.timestamp, context);
                     } else if realm.troops != crate::settlement::StartingTroops::None {
-                        let grants = crate::logic::settlement::grants(game_id);
+                        let grants = crate::logic::settlement::grants();
                         self.grant_realm_troops(key, realm.troops, grants.resources, context.timestamp, context);
                     }
                     crate::logic::stories::emit_entity_story(
@@ -354,7 +354,7 @@ pub mod StructuresLogic {
                 crate::settlement::SettlementCreation::Village(_) => {
                     self
                         .grant_non_troop_resources(
-                            key, crate::logic::village::rules(game_id).resources, context.timestamp, context,
+                            key, crate::logic::village::rules().resources, context.timestamp, context,
                         );
                     let rules = context.rules.unbox();
                     self
@@ -750,7 +750,7 @@ pub mod StructuresLogic {
                 context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp,
             )
                 .index;
-            let origin = crate::expeditions::site(crate::logic::settlement::rules(game_id).spacing, realm_id, today, 0);
+            let origin = crate::expeditions::site(crate::logic::settlement::spacing(), realm_id, today, 0);
             crate::logic::map::raise_expedition_home(
                 tile_key(game_id, origin), crate::commands::biome_context(context),
             );
@@ -781,7 +781,7 @@ pub mod StructuresLogic {
             let counts = self.buildings.data.buildings.structure_buildings.read((key.game_id, key.entity_id));
             const LABOR_COUNT_SCALE: u128 = 0x10000000000000000;
             assert!(counts.packed_counts_2 / LABOR_COUNT_SCALE % 256 == 0, "realm already provisioned");
-            let grants = crate::logic::settlement::grants(key.game_id);
+            let grants = crate::logic::settlement::grants();
             self.grant_realm_troops(key, troops, grants.resources, timestamp, game_context);
             self.grant_non_troop_resources(key, grants.resources, timestamp, game_context);
             let rules = game_context.rules.unbox();
@@ -833,7 +833,6 @@ pub mod StructuresLogic {
                 crate::settlement::StartingTroops::Biome => crate::logic::structure_actions::biome_troop(
                     key, game_context,
                 ),
-                crate::settlement::StartingTroops::Dealt(category) => category,
             };
             let guards = game_context.rules.unbox().troop_limit_config.starting_guard;
             crate::logic::structure_actions::grant_starting_troops(

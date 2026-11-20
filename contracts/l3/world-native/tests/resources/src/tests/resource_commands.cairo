@@ -336,49 +336,28 @@ fn eternum_troop_deposits_require_ownership_for_category_8() {
 }
 
 #[test]
-fn delayed_village_troops_ignore_the_connection_and_keep_transport_ownership_rules() {
-    for blitz_mode_on in array![false, true] {
-        let (deployment, from, to) = setup_with_rules(
-            crate::rules::SliceRules {
-                mode_rules: if blitz_mode_on {
-                    super::play_fixture::BLITZ_RULES
-                } else {
-                    super::play_fixture::TEST_RULES
-                },
-                command_mask: if blitz_mode_on {
-                    super::play_fixture::BLITZ_COMMAND_MASK
-                } else {
-                    super::play_fixture::BLITZ_COMMAND_MASK
-                },
-                entry_rule: if blitz_mode_on {
-                    crate::rules::ENTRY_ROSTER
-                } else {
-                    crate::rules::ENTRY_ENTITLEMENT
-                },
-                ..play_fixture::rules(),
-            },
-        );
-        village_fixture(deployment, to, deployment.actor);
-        grant(deployment, from, 26, 100);
-        grant(deployment, from, 25, 10 * crate::rules::RESOURCE_PRECISION);
-        let transfer = crate::resources::ResourceTransfer {
-            from_entity_id: from.entity_id, to_entity_id: to.entity_id, resources: amount(26, 30),
-        };
-        assert!(execute(deployment, Command::SendResources(transfer), 40));
-        let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
-        let arrival = ArrivalKey { game_id: 3, entity_id: to.entity_id, day: 0, slot: 2 };
-        assert_eq!(resources.resource_arrival(arrival).resources, amount(26, 30));
-        village_fixture(deployment, to, 0x999.try_into().unwrap());
-        if blitz_mode_on {
-            let before = resource_facts(deployment, from);
-            assert_terminal_rejection(deployment, Command::SendResources(transfer), 40);
-            assert_eq!(resource_facts(deployment, from), before);
-            assert_eq!(resources.resource_arrival(arrival).resources, amount(26, 30));
-        } else {
-            assert!(execute(deployment, Command::SendResources(transfer), 40));
-            assert_eq!(resources.resource_arrival(arrival).resources, amount(26, 60));
-        }
-    }
+fn delayed_village_troops_ignore_the_connection() {
+    let (deployment, from, to) = setup_with_rules(
+        crate::rules::SliceRules {
+            mode_rules: super::play_fixture::TEST_RULES,
+            command_mask: super::play_fixture::BLITZ_COMMAND_MASK,
+            entry_rule: crate::rules::ENTRY_ENTITLEMENT,
+            ..play_fixture::rules(),
+        },
+    );
+    village_fixture(deployment, to, deployment.actor);
+    grant(deployment, from, 26, 100);
+    grant(deployment, from, 25, 10 * crate::rules::RESOURCE_PRECISION);
+    let transfer = crate::resources::ResourceTransfer {
+        from_entity_id: from.entity_id, to_entity_id: to.entity_id, resources: amount(26, 30),
+    };
+    assert!(execute(deployment, Command::SendResources(transfer), 40));
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
+    let arrival = ArrivalKey { game_id: 3, entity_id: to.entity_id, day: 0, slot: 2 };
+    assert_eq!(resources.resource_arrival(arrival).resources, amount(26, 30));
+    village_fixture(deployment, to, 0x999.try_into().unwrap());
+    assert!(execute(deployment, Command::SendResources(transfer), 40));
+    assert_eq!(resources.resource_arrival(arrival).resources, amount(26, 60));
 }
 
 #[test]

@@ -51,6 +51,7 @@ pub struct PresetDefinition {
 
 pub fn validate(preset: PresetDefinition) {
     let rules = preset.rules;
+    assert!(rules.entry_rule != crate::rules::ENTRY_ROSTER, "the release seats no fixed roster");
     if let Some(race) = preset.economy.race {
         assert!(preset.economy.deep.is_some(), "race requires the Deep");
         crate::race::validate(race);
@@ -160,5 +161,5 @@ pub trait IPresetWithdrawals<T> {
 
 #[starknet::interface]
 pub trait IPresetSettlement<T> {
-    fn store_settlement_preset(ref self: T, commitment: felt252, settlement: SettlementPreset, entry_rule: u8);
+    fn store_settlement_preset(ref self: T, commitment: felt252, settlement: SettlementPreset);
 }

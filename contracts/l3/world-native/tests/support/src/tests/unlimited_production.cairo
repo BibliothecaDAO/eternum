@@ -36,7 +36,7 @@ pub /// A realm's labor producer as provisioning starts it: no cap on what it ma
 pub fn blitz_rules() -> crate::rules::SliceRules {
     crate::rules::SliceRules {
         mode_rules: super::play_fixture::BLITZ_RULES,
-        entry_rule: crate::rules::ENTRY_ROSTER,
+        entry_rule: crate::rules::ENTRY_ENTITLEMENT,
         command_mask: super::play_fixture::BLITZ_COMMAND_MASK,
         ..super::play_fixture::rules(),
     }

@@ -48,11 +48,7 @@ pub fn setup_with_cooldown(
             } else {
                 super::play_fixture::BLITZ_COMMAND_MASK
             };
-    rules.entry_rule = if blitz {
-        crate::rules::ENTRY_ROSTER
-    } else {
-        crate::rules::ENTRY_ENTITLEMENT
-    };
+    rules.entry_rule = crate::rules::ENTRY_ENTITLEMENT;
     rules.battle_config.regular_immunity_ticks = immunity;
     rules.battle_config.village_immunity_ticks = 0;
     rules.tick_config.armies_tick_in_seconds = 5;

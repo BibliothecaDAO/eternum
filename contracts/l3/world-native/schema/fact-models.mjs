@@ -1286,12 +1286,6 @@ export function defineFactModels({ struct, model: declare }) {
       struct("realms::RealmTraits"),
     ),
     model(
-      "BlitzSettlementOrder",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      [{ name: "players", type: "core::array::Span::<core::integer::u8>" }],
-    ),
-    model(
       "BlitzRoster",
       "game",
       [{ name: "game_id", type: "core::integer::u32" }],
@@ -1599,7 +1593,6 @@ const behaviouralFacts = {
   },
   VillagePass: { domain: "village", fields: { owner: "owner", consumedBy: "village_id" } },
   VillagePool: { domain: "village", fields: { availableLocations: "available" } },
-  BlitzSettlementOrder: { domain: "realm/blitz", fields: { players: "players" } },
   BlitzRoster: { domain: "realm/blitz", fields: { players: "players" } },
   PlayerEntry: { domain: "realm/blitz", fields: { player: "player" } },
   UpgradeLimits: { domain: "structure", fields: { realmMaximum: "realm_max", villageMaximum: "village_max" } },
@@ -1688,7 +1681,6 @@ export const syncScopes = {
       "BitcoinPhase",
       "MineKindConfig",
       "MinePool",
-      "BlitzSettlementOrder",
       "BlitzRoster",
       "RealmGrants",
       "SettlementRules",

@@ -15,16 +15,12 @@ pub fn validate(orders: Span<u8>) {
     }
 }
 
-pub fn pack(orders: Span<u8>) -> Option<u128> {
-    validate(orders);
-    if orders.is_empty() {
-        return None;
-    }
+pub fn pack(orders: Span<u8>) -> u128 {
     let mut packed = 0_u128;
     for index in 0_u32..16 {
         packed = packed * 256 + Into::<u8, u128>::into(*orders.at(15 - index));
     }
-    Some(packed)
+    packed
 }
 
 pub fn order_aspect(mut packed: u128, order: u8) -> u8 {

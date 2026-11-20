@@ -396,7 +396,7 @@ fn assert_army_opponents(game_id: u32, attacker: ExplorerTroops, defender: Explo
     if rules.day_unit_seconds == 0 {
         return;
     }
-    let spacing = crate::logic::settlement::rules(game_id).spacing;
+    let spacing = crate::logic::settlement::spacing();
     assert!(
         crate::deep::contains(attacker.coord, spacing) && crate::deep::contains(defender.coord, spacing),
         "army combat requires Deep",

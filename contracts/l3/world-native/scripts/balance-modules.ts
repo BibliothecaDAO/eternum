@@ -37,6 +37,7 @@ export function balanceModules(definition: PresetDefinition): Record<string, str
     banes: banesModule(present<BaneRules>(definition.economy.banes, "world banes")),
     deep: deepModule(present<DeepRow>(definition.economy.deep, "the Deep")),
     race: raceModule(present<CairoRow>(definition.economy.race, "the race")),
+    settlement: settlementModule(definition.settlement),
   };
 }
 
@@ -262,6 +263,57 @@ function expeditionsModule(definition: PresetDefinition): string {
   ].join("\n\n");
 }
 
+function settlementModule(settlement: PresetDefinition["settlement"]): string {
+  const { spacing, order_aspects: orderAspects, realms, villages } = settlement;
+  const startingTroops = realms.starting_troops.map((troop) => troop.activeVariant());
+  assertSettlementFits(spacing, orderAspects, startingTroops, realms.realm_resources);
+  assertVillagePoolComplete(villages.resource_pool);
+  if (settlement.spires.isSome()) throw new Error("Season 1 places no spires: its preset names a layout");
+  return [
+    "use crate::resources::ResourceAmount;",
+    "use crate::troops::TroopType;",
+    "use crate::village::VillageResource;",
+    `pub const SETTLEMENT_SPACING_STEPS: u32 = ${spacing};`,
+    list("ORDER_ASPECTS", "u8", orderAspects.map(String)),
+    table("REALM_GRANTS", "ResourceAmount", realms.resources),
+    list(
+      "STARTING_TROOPS",
+      "TroopType",
+      startingTroops.map((troop) => `TroopType::${troop}`),
+    ),
+    list("REALM_RESOURCES", "u8", realms.realm_resources.map(String)),
+    `pub const VILLAGE_TROOP_DELAY_TICK_COUNT: u16 = ${villages.troop_delay_ticks};`,
+    table("VILLAGE_GRANTS", "ResourceAmount", villages.resources),
+    table("VILLAGE_RESOURCE_POOL", "VillageResource", villages.resource_pool),
+  ].join("\n\n");
+}
+
+function assertSettlementFits(
+  spacing: number,
+  orderAspects: number[],
+  troops: string[],
+  realmResources: number[],
+): void {
+  if (!Number.isSafeInteger(spacing) || spacing < 2 || spacing % 2)
+    throw new Error("Season 1 settlement spacing must be an even number of at least 2");
+  if (orderAspects.length !== 16) throw new Error("Season 1 Aspects need every Order");
+  for (const aspect of [1, 2, 3, 4])
+    if (orderAspects.filter((held) => held === aspect).length !== 4)
+      throw new Error(`Season 1 Aspect ${aspect} needs four Orders`);
+  if (troops.length !== 17) throw new Error("Season 1 names one starting troop type per biome");
+  if (realmResources.length > 16) throw new Error("Season 1 realm resources exceed packed capacity");
+  if (realmResources.some((resource) => resource < 1 || resource > 58))
+    throw new Error("Season 1 names an invalid realm resource");
+}
+
+function assertVillagePoolComplete(pool: Array<{ resource_type: number; weight: number | bigint }>): void {
+  if (pool.length !== 22) throw new Error("Season 1 village resource pool is incomplete");
+  if (pool.some(({ resource_type, weight }) => resource_type < 1 || resource_type > 22 || weight <= 0))
+    throw new Error("Season 1 village resource pool holds an invalid outcome");
+  if (new Set(pool.map(({ resource_type }) => resource_type)).size !== pool.length)
+    throw new Error("Season 1 village resource pool repeats an outcome");
+}
+
 function assertDepthPlayable(depth: CairoRow, layer: number): void {
   const relicsPerLayer = cairoConstant("src/army_relics.cairo", "RELICS_PER_LAYER");
   const n = (field: string) => Number(depth[field]);
@@ -330,6 +382,10 @@ function numbers(name: string, type: string, values: CairoValue[]): string {
 
 function table(name: string, type: string, rows: CairoRow[], nested: Record<string, string> = {}): string {
   return `pub const ${name}: [${type}; ${rows.length}] = [${rows.map((row) => struct(type, row, nested)).join(", ")}];`;
+}
+
+function list(name: string, type: string, values: string[]): string {
+  return `pub const ${name}: [${type}; ${values.length}] = [${values.join(", ")}];`;
 }
 
 function struct(type: string, row: CairoRow, nested: Record<string, string> = {}): string {

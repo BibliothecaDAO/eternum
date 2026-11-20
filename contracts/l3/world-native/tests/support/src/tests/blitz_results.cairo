@@ -24,7 +24,7 @@ pub fn setup(scores: Span<u128>) -> super::Deployment {
     let (d, _, _) = setup_with_rules(
         crate::rules::SliceRules {
             mode_rules: super::play_fixture::BLITZ_RULES,
-            entry_rule: crate::rules::ENTRY_ROSTER,
+            entry_rule: crate::rules::ENTRY_ENTITLEMENT,
             command_mask: super::play_fixture::BLITZ_COMMAND_MASK,
             ..super::play_fixture::rules(),
         },

@@ -1,11 +1,9 @@
 #[starknet::contract]
 pub mod PlacementLogic {
-    use starknet::storage::StoragePointerReadAccess;
-    use crate::geometry::{spire_neighbor, tile_key};
+    use crate::geometry::tile_key;
     use crate::logic::map::MapState;
     use crate::logic::release::ReleaseState;
     use crate::logic::settlement::SettlementPoolState;
-    use crate::map::{BIOME_SCALE, BYTE_RANGE};
     #[cfg(feature: "test_support")]
     use crate::settlement::SettlementPool;
     use crate::troops::Coord;
@@ -28,9 +26,9 @@ pub mod PlacementLogic {
     #[abi(embed_v0)]
     impl PresetSettlement of crate::presets::IPresetSettlement<ContractState> {
         fn store_settlement_preset(
-            ref self: ContractState, commitment: felt252, settlement: crate::presets::SettlementPreset, entry_rule: u8,
+            ref self: ContractState, commitment: felt252, settlement: crate::presets::SettlementPreset,
         ) {
-            crate::logic::preset_record::store_settlement(commitment, settlement, entry_rule);
+            crate::logic::preset_record::store_settlement(commitment, settlement);
         }
     }
     #[storage]
@@ -52,34 +50,14 @@ pub mod PlacementLogic {
         RowSet: crate::events::RowSet,
     }
     #[abi(embed_v0)]
-    impl Spires of crate::spires::ISpires<ContractState> {
-        fn initialize_spires(ref self: ContractState, game_id: u32) {
-            let game_context = crate::commands::load_context(game_id, 0, starknet::get_block_timestamp());
-            assert!(
-                crate::rules::rule_enabled(game_context.rules.unbox(), crate::rules::SPIRES), "spires are disabled",
-            );
-            let layout = crate::logic::preset_record::for_game(game_id).spires.read().expect('missing season spires');
-            let center = self.map_center(game_id, game_context);
-            for ordinal in 0_u32..layout.count.into() {
-                self.create_spire(game_id, crate::spires::location(center, layout, ordinal), game_context);
-            }
-        }
-        #[cfg(feature: "test_support")]
-        fn spire_layout(self: @ContractState, game_id: u32) -> Option<crate::spires::SpireLayout> {
-            crate::logic::preset_record::for_game(game_id).spires.read()
-        }
-    }
-    #[abi(embed_v0)]
     impl SeasonPlacement of crate::realms::ISeasonPlacement<ContractState> {
         fn claim_season_settlement(
             ref self: ContractState, game_id: u32, settled_count: u16, seed: u256, center: Coord,
         ) -> Coord {
             let mut rules = crate::logic::settlement::rules(game_id);
-            assert!(rules.mode == crate::settlement::SettlementMode::Single, "season settlement requires one realm");
             rules.registration_limit = 0xffff;
             for _ in 0..64_u32 {
-                let coords = self.settlements.claim(game_id, center, rules, settled_count, seed);
-                let coord = *coords.at(0);
+                let coord = self.settlements.claim(game_id, center, rules, settled_count, seed);
                 let occupied = crate::logic::map::occupancy(tile_key(game_id, coord)).is_some();
                 if !occupied {
                     return coord;
@@ -100,44 +78,6 @@ pub mod PlacementLogic {
         }
         fn claim_village(ref self: ContractState, game_id: u32, registered: u16, seed: u256, center: Coord) -> Coord {
             self.settlements.claim_village(game_id, center, crate::logic::settlement::rules(game_id), registered, seed)
-        }
-    }
-    #[generate_trait]
-    impl Internal of InternalTrait {
-        fn create_spire(
-            ref self: ContractState, game_id: u32, coord: Coord, game_context: crate::commands::ExecutionContext,
-        ) -> u64 {
-            for alt in array![false, true] {
-                let occupied = crate::logic::map::occupancy(tile_key(game_id, Coord { alt, ..coord }));
-                assert!(occupied.is_none(), "spire tile occupied");
-            }
-            let id: u64 = crate::logic::game::allocate_setup_entity(game_id).into();
-            for alt in array![false, true] {
-                let center = Coord { alt, ..coord };
-                self.reveal_spire_access(game_id, center, game_context);
-                crate::logic::map::MapState::occupy(
-                    tile_key(game_id, center), id, crate::taxonomy::SPIRE_OCCUPIER, true,
-                );
-                for direction in 0_u8..6 {
-                    self.reveal_spire_access(game_id, spire_neighbor(center, direction), game_context);
-                }
-            }
-            id
-        }
-        fn reveal_spire_access(
-            ref self: ContractState, game_id: u32, coord: Coord, game_context: crate::commands::ExecutionContext,
-        ) {
-            let key = tile_key(game_id, coord);
-            let data = crate::logic::map::tile(key).map(|tile| tile.data).unwrap_or(0);
-            if data / BIOME_SCALE % BYTE_RANGE == 0 {
-                crate::logic::map::MapState::reveal(
-                    key, crate::logic::map::biome(key, crate::commands::biome_context(game_context)),
-                );
-            }
-        }
-
-        fn map_center(self: @ContractState, game_id: u32, game_context: crate::commands::ExecutionContext) -> Coord {
-            crate::settlement_grid::map_center(game_context.rules.unbox().map_center_offset)
         }
     }
 }

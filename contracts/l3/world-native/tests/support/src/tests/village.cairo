@@ -31,10 +31,6 @@ pub fn setup(dev: bool) -> (Deployment, u64) {
 }
 pub fn village_preset(mode: SettlementMode, game_rules: crate::rules::SliceRules) -> crate::presets::PresetDefinition {
     let mut preset = play_fixture::fixture_preset(game_rules);
-    preset.settlement.mode = mode;
-    preset.settlement.spacing = 6;
-    preset.settlement.realms = super::settlement::grants_for(preset.rules.entry_rule);
-    preset.settlement.villages = VillageRules { troop_delay_ticks: 2, ..village_rules() };
     let data = read_txt(@FileTrait::new("../fixtures/current-presets/conformance.txt"));
     let mut fields = data.span();
     let _: crate::rules::SliceRules = Serde::deserialize(ref fields).unwrap();
@@ -106,7 +102,7 @@ pub fn assert_blitz_village(mode: SettlementMode) {
         mode,
         crate::rules::SliceRules {
             mode_rules: super::play_fixture::BLITZ_RULES,
-            entry_rule: crate::rules::ENTRY_ROSTER,
+            entry_rule: crate::rules::ENTRY_ENTITLEMENT,
             command_mask: super::play_fixture::BLITZ_COMMAND_MASK,
             ..play_fixture::rules(),
         },

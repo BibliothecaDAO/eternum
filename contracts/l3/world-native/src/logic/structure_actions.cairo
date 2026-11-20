@@ -24,7 +24,7 @@ pub fn biome_troop(key: ResourceKey, game_context: crate::commands::ExecutionCon
     let biome = map_dispatcher(key.game_id)
         .biome(tile_key(key.game_id, coord), crate::commands::biome_context(game_context));
     assert!(biome > 0 && biome <= 17, "starting troops require a biome");
-    crate::logic::settlement::biome_troop(key.game_id, biome)
+    crate::logic::settlement::biome_troop(biome)
 }
 
 pub fn grant_starting_troops(

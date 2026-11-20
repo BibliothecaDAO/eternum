@@ -81,8 +81,7 @@ fn roll(
         game_id: key.game_id,
         structure_id: home,
         epoch: crate::expeditions::region_day(
-            crate::troops::Coord { alt: key.alt, x: key.col, y: key.row },
-            crate::logic::settlement::rules(key.game_id).spacing,
+            crate::troops::Coord { alt: key.alt, x: key.col, y: key.row }, crate::logic::settlement::spacing(),
         ),
     };
     let depth = crate::logic::expeditions::depth_at(key.game_id, Coord { alt: key.alt, x: key.col, y: key.row });

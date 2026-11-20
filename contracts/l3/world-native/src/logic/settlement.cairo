@@ -3,40 +3,28 @@ use crate::settlement::{EntryKey, PlayerEntry, RealmGrants, SettlementRules};
 
 pub fn rules(game_id: u32) -> SettlementRules {
     let state = crate::state::read();
-    let preset = crate::logic::preset_record::for_game(game_id);
     SettlementRules {
         registration_start: state.games.overrides.entry(game_id).registration_start.read(),
         registration_limit: state.registrar.roster_sizes.read(game_id).try_into().unwrap(),
-        mode: preset.settlement_mode.read(),
-        spacing: preset.settlement_spacing.read(),
+        mode: crate::settlement::SettlementMode::Single,
+        spacing: spacing(),
     }
 }
 
-pub fn grants(game_id: u32) -> RealmGrants {
-    let preset = crate::logic::preset_record::for_game(game_id);
-    let mut resources = array![];
-    for index in 0..preset.realm_grant_count.read() {
-        resources.append(preset.realm_grants.read(index));
-    }
-    let mut starting_troops = array![];
-    if preset.rules.entry_rule.read() != crate::rules::ENTRY_ROSTER {
-        for biome in 1_u8..18 {
-            starting_troops.append(preset.starting_troops.read(biome));
-        }
-    }
-    let mut realm_resources = array![];
-    for index in 0..preset.realm_resource_count.read() {
-        realm_resources.append(preset.realm_resources.read(index));
-    }
+pub fn spacing() -> u32 {
+    crate::balance::settlement::SETTLEMENT_SPACING_STEPS
+}
+
+pub fn grants() -> RealmGrants {
     RealmGrants {
-        resources: resources.span(), starting_troops: starting_troops.span(), realm_resources: realm_resources.span(),
+        resources: crate::balance::settlement::REALM_GRANTS.span(),
+        starting_troops: crate::balance::settlement::STARTING_TROOPS.span(),
+        realm_resources: crate::balance::settlement::REALM_RESOURCES.span(),
     }
 }
 
-pub fn biome_troop(game_id: u32, biome: u8) -> crate::troops::TroopType {
-    let preset = crate::logic::preset_record::for_game(game_id);
-    assert!(preset.rules.entry_rule.read() != crate::rules::ENTRY_ROSTER, "a fixed roster deals its troop types");
-    preset.starting_troops.read(biome)
+pub fn biome_troop(biome: u8) -> crate::troops::TroopType {
+    *crate::balance::settlement::STARTING_TROOPS.span().at(biome.into() - 1)
 }
 
 pub fn entry(key: EntryKey) -> Option<PlayerEntry> {
@@ -44,22 +32,12 @@ pub fn entry(key: EntryKey) -> Option<PlayerEntry> {
     state.settlements.entries.read((key.game_id, key.owner))
 }
 
-#[cfg(feature: "test_support")]
-pub fn blitz_order(game_id: u32) -> Span<u8> {
-    let state = crate::state::read();
-    let mut players = array![];
-    for index in 0..state.settlements.blitz_order_size.read(game_id) {
-        players.append(state.settlements.blitz_order.read((game_id, index)));
-    }
-    players.span()
-}
-
 #[starknet::component]
 pub mod SettlementPoolState {
     use core::num::traits::CheckedAdd;
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::RowSet;
-    use crate::settlement::{SettlementLocation, SettlementMode, SettlementPool, SettlementRules};
+    use crate::settlement::{SettlementLocation, SettlementPool, SettlementRules};
     use crate::settlement_grid::{settlement_location, target_pool_size};
     use crate::troops::Coord;
 
@@ -84,7 +62,7 @@ pub mod SettlementPoolState {
         fn village_pool(
             self: @ComponentState<TContractState>, game_id: u32, center: Coord, rules: SettlementRules,
         ) -> SettlementPool {
-            self.project_pool(game_id, true, center, SettlementRules { mode: SettlementMode::Single, ..rules })
+            self.project_pool(game_id, true, center, rules)
         }
         fn project_pool(
             self: @ComponentState<TContractState>, game_id: u32, village: bool, center: Coord, rules: SettlementRules,
@@ -94,12 +72,14 @@ pub mod SettlementPoolState {
                 available
                     .append(
                         SettlementLocation {
-                            coords: settlement_location(
-                                center,
-                                rules.mode,
-                                rules.spacing,
-                                self.data.settlement_pool.candidates.read((game_id, village, index)),
-                            ),
+                            coords: array![
+                                settlement_location(
+                                    center,
+                                    rules.spacing,
+                                    self.data.settlement_pool.candidates.read((game_id, village, index)),
+                                ),
+                            ]
+                                .span(),
                         },
                     );
             }
@@ -114,7 +94,7 @@ pub mod SettlementPoolState {
             rules: SettlementRules,
             registered: u16,
             seed: u256,
-        ) -> Span<Coord> {
+        ) -> Coord {
             let target = target_pool_size(registered, rules.registration_limit);
             assert!(target != 0, "no open settlements");
             self.prepare_pool(game_id, false, center, rules, target);
@@ -128,19 +108,13 @@ pub mod SettlementPoolState {
             registered: u16,
             seed: u256,
         ) -> Coord {
-            // Fixed Blitz spots were reserved at creation; only Eternum entries open a rolling window.
-            let target = if rules.mode == SettlementMode::Triple {
-                0
-            } else {
-                target_pool_size(registered, rules.registration_limit)
-            };
+            let target = target_pool_size(registered, rules.registration_limit);
             if self.prepare_pool(game_id, false, center, rules, target) {
                 self.emit_pool(game_id, false, center, rules);
             }
-            let single = SettlementRules { mode: SettlementMode::Single, ..rules };
             // Village passes have no registration quota. Six candidates is the planner's initial window.
-            self.prepare_pool(game_id, true, center, single, 6);
-            *self.take_candidate(game_id, true, center, single, seed).at(0)
+            self.prepare_pool(game_id, true, center, rules, 6);
+            self.take_candidate(game_id, true, center, rules, seed)
         }
         fn prepare_pool(
             ref self: ComponentState<TContractState>,
@@ -155,9 +129,9 @@ pub mod SettlementPoolState {
             let previous = count;
             let mut opened = self.data.settlement_pool.opened.read(key);
             while count < target {
-                let coords = settlement_location(center, rules.mode, rules.spacing, opened);
+                let coord = settlement_location(center, rules.spacing, opened);
                 opened = opened.checked_add(1).expect('settlement geometry exhausted');
-                if !self.reserve_location(game_id, coords) {
+                if !self.reserve_location(game_id, coord) {
                     continue;
                 }
                 self.data.settlement_pool.candidates.write((game_id, village, count), opened - 1);
@@ -170,15 +144,11 @@ pub mod SettlementPoolState {
             self.data.settlement_pool.opened.write(key, opened);
             true
         }
-        fn reserve_location(ref self: ComponentState<TContractState>, game_id: u32, coords: Span<Coord>) -> bool {
-            for coord in coords {
-                if self.data.settlement_pool.reserved.read((game_id, *coord.x, *coord.y)) {
-                    return false;
-                }
+        fn reserve_location(ref self: ComponentState<TContractState>, game_id: u32, coord: Coord) -> bool {
+            if self.data.settlement_pool.reserved.read((game_id, coord.x, coord.y)) {
+                return false;
             }
-            for coord in coords {
-                self.data.settlement_pool.reserved.write((game_id, *coord.x, *coord.y), true);
-            }
+            self.data.settlement_pool.reserved.write((game_id, coord.x, coord.y), true);
             true
         }
         fn take_candidate(
@@ -188,7 +158,7 @@ pub mod SettlementPoolState {
             center: Coord,
             rules: SettlementRules,
             seed: u256,
-        ) -> Span<Coord> {
+        ) -> Coord {
             let count = self.data.settlement_pool.available_count.read((game_id, village));
             assert!(count != 0, "no open settlements");
             let selected: u16 = crate::random::range(seed, 98139, count.into()).try_into().unwrap();
@@ -206,7 +176,7 @@ pub mod SettlementPoolState {
             }
             self.data.settlement_pool.available_count.write((game_id, village), remaining);
             self.emit_pool(game_id, village, center, rules);
-            settlement_location(center, rules.mode, rules.spacing, candidate)
+            settlement_location(center, rules.spacing, candidate)
         }
         fn emit_pool(
             ref self: ComponentState<TContractState>,
@@ -413,26 +383,6 @@ pub mod SettlementState {
                         model: 'PlayerEntry',
                         keys: array![key.game_id.into(), key.owner.into()].span(),
                         values: array![player.into()].span(),
-                    },
-                );
-        }
-
-        fn initialize_blitz_order(ref self: ComponentState<TContractState>, game_id: u32, count: u32, root: u256) {
-            assert!(self.data.settlements.blitz_order_size.read(game_id) == 0, "settlement order already fixed");
-            let players = crate::settlement::shuffle_roster(count, root);
-            for index in 0..players.len() {
-                self.data.settlements.blitz_order.write((game_id, index), *players.at(index));
-            }
-            self.data.settlements.blitz_order_size.write(game_id, count);
-            let mut values = array![];
-            players.serialize(ref values);
-            self
-                .emit(
-                    RowSet {
-                        version: 1,
-                        model: 'BlitzSettlementOrder',
-                        keys: array![game_id.into()].span(),
-                        values: values.span(),
                     },
                 );
         }

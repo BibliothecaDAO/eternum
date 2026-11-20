@@ -17,20 +17,6 @@ fn award_context(d: super::Deployment) -> crate::commands::ActionContext {
 }
 
 #[test]
-fn timed_games_accept_commands_until_their_clock_stops() {
-    let rules = crate::rules::SliceRules {
-        mode_rules: super::play_fixture::BLITZ_RULES,
-        entry_rule: crate::rules::ENTRY_ROSTER,
-        command_mask: super::play_fixture::BLITZ_COMMAND_MASK,
-        ..super::play_fixture::rules(),
-    };
-    let (blitz, home, _) = setup_with_rules(rules);
-    let name = Command::SetEntityName(crate::names::SetEntityName { entity_id: home.entity_id, name: 'Last turn' });
-    assert!(execute(blitz, name, 199));
-    assert_terminal_rejection(blitz, name, 200);
-}
-
-#[test]
 fn a_zero_point_activity_changes_no_total_and_emits_no_award() {
     let (d, _, _) = setup_with_rules(rules_awarding(0, 7));
     let mut spy = snforge_std::spy_events();

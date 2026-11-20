@@ -89,15 +89,6 @@ pub fn game_exists(game_id: u32) -> bool {
     crate::state::read().games.games.entry(game_id).preset_id.read() != 0
 }
 
-/// The last seat opens a fixed-roster game. Its start and end were fixed at creation: a late roster plays a shorter
-/// game.
-pub fn mark_roster_ready(game_id: u32) {
-    let mut game = game(game_id);
-    assert!(!game.ready, "roster already ready");
-    game.ready = true;
-    write_game(game_id, game);
-}
-
 pub fn emit_release(game_id: u32, release_id: u32) {
     // Zero identifies games created before creation releases were recorded.
     let created_release_id = crate::state::read().game_creation_releases.read(game_id);

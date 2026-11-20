@@ -42,21 +42,11 @@ pub fn reserve_homes(game_id: u32, owner: ContractAddress) {
     if state.games.home_reservations.read((game_id, owner)) != 0 {
         return;
     }
-    let count: u8 = match crate::logic::settlement::rules(game_id).mode {
-        crate::settlement::SettlementMode::Triple => 3,
-        _ => 1,
-    };
-    let mut first = 0_u32;
-    for index in 0..count {
-        let id = crate::logic::game::allocate_setup_entity(game_id);
-        assert!(id <= MAX_HOME_NAMESPACE, "home namespace exceeds safe entity ids");
-        assert!(state.games.namespace_owners.read((game_id, id)).is_zero(), "setup namespace already assigned");
-        state.games.namespace_owners.write((game_id, id), owner);
-        if index == 0 {
-            first = id;
-        }
-    }
-    let reservation = Into::<u32, u64>::into(first) + Into::<u8, u64>::into(count) * LOCAL_RANGE;
+    let first = crate::logic::game::allocate_setup_entity(game_id);
+    assert!(first <= MAX_HOME_NAMESPACE, "home namespace exceeds safe entity ids");
+    assert!(state.games.namespace_owners.read((game_id, first)).is_zero(), "setup namespace already assigned");
+    state.games.namespace_owners.write((game_id, first), owner);
+    let reservation = Into::<u32, u64>::into(first) + LOCAL_RANGE;
     state.games.home_reservations.write((game_id, owner), reservation);
 }
 
@@ -68,7 +58,7 @@ pub fn assign_open_home(game_id: u32, owner: ContractAddress) -> EntityId {
         return previous;
     }
     let digest: u256 = core::poseidon::poseidon_hash_span(array![game_id.into(), owner.into()].span()).into();
-    let spacing = crate::logic::settlement::rules(game_id).spacing;
+    let spacing = crate::logic::settlement::spacing();
     let regions = core::cmp::min(0x7fffffff_u32 / spacing, MAX_HOME_NAMESPACE);
     assert!(regions != 0, "no expedition home regions");
     let first: u32 = (digest % regions.into()).try_into().unwrap();
