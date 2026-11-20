@@ -1,14 +1,14 @@
+import { MAINNET_TOKENS } from "./tokens";
+
 /** The one market source: AVNU, on Starknet mainnet. Nothing else is asked what a token is worth. */
 const QUOTES_URL = "https://starknet.api.avnu.fi/swap/v3/quotes";
 const BUILD_URL = "https://starknet.api.avnu.fi/swap/v3/build";
 const PRICES_URL = "https://starknet.impulse.avnu.fi/v3/tokens/prices";
 
-export const LORDS_ADDRESS =
-  "0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49";
+export const LORDS_ADDRESS = MAINNET_TOKENS.lords.address;
 const AVNU_ROUTER =
   "0x04270219d365d6b017231b52e92b3fb5d7c8378b05e9abc97724537a80e93b0f";
-const USDC_ADDRESS =
-  "0x053c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8";
+const USDC_ADDRESS = MAINNET_TOKENS.usdc.address;
 /** A cent in USDC's smallest unit (6 decimals). */
 const USDC_PER_CENT = 10_000n;
 

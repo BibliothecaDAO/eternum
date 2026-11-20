@@ -130,7 +130,17 @@ export const prepareDefaultWalletSend = async (
   owner: string,
   calls: Call[],
   provider: ProviderInterface,
+  lordsBought = 0n,
 ): Promise<PreparedSend> => {
+  const { execution, fee, requested } = await buildDefaultWalletSend(calls);
+  if (fee) await requireFeeRoom(provider, owner, requested, fee, lordsBought);
+  return { execution, fee };
+};
+
+export const defaultWalletFeeOf = async (calls: Call[]): Promise<WalletFee | null> =>
+  (await buildDefaultWalletSend(calls)).fee;
+
+const buildDefaultWalletSend = async (calls: Call[]) => {
   const requested = calls.map((call) => ({
     contractAddress: call.contractAddress,
     entrypoint: call.entrypoint,
@@ -140,16 +150,21 @@ export const prepareDefaultWalletSend = async (
   const execution = built.typedData as unknown as TypedData;
   const fee = built.fee && { estimated: BigInt(built.fee.estimated), max: BigInt(built.fee.max) };
   if (!buildsExactly(execution, requested, fee)) throw new UnexpectedExecutionError();
-  if (fee) await requireFeeRoom(provider, owner, requested, fee);
-  return { execution, fee };
+  return { execution, fee, requested };
 };
 
 /**
  * The fee is the execution's last call, a LORDS transfer of up to its max: it runs after the asked calls, so the
  * wallet must hold what they spend of LORDS plus that max, as the paymaster checks before it submits.
  */
-const requireFeeRoom = async (provider: ProviderInterface, owner: string, calls: AskedCall[], fee: WalletFee) => {
-  const held = await tokenBalanceOf(provider, WALLET_GAS_TOKEN, owner);
+const requireFeeRoom = async (
+  provider: ProviderInterface,
+  owner: string,
+  calls: AskedCall[],
+  fee: WalletFee,
+  lordsBought: bigint,
+) => {
+  const held = (await tokenBalanceOf(provider, WALLET_GAS_TOKEN, owner)) + lordsBought;
   if (feeTokenSpentBy(calls) + fee.max > held) throw new FeeRoomShortError(fee, held);
 };
 
@@ -290,7 +305,7 @@ const RECEIPT_POLL_MS = 1_000;
 /** The wallet's STRK, the token the network fee is paid in on the build's L2. */
 const feeBalanceOf = (provider: ProviderInterface, owner: string) => tokenBalanceOf(provider, L2_CHAIN.gasToken, owner);
 
-const tokenBalanceOf = async (provider: ProviderInterface, token: string, owner: string): Promise<bigint> => {
+export const tokenBalanceOf = async (provider: ProviderInterface, token: string, owner: string): Promise<bigint> => {
   const [low, high] = await provider.callContract({
     contractAddress: token,
     entrypoint: "balance_of",

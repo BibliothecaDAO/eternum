@@ -339,6 +339,7 @@ import {
   formatAmount,
   formatDollars,
   formatExact,
+  formatFigure,
   formatCount,
   formatOrdinal,
   FRIEND_FRAGMENTS,
@@ -1287,6 +1288,13 @@ export const FRAGMENTS_PAGE_WORDS = {
   delivered: (fragments: number) => `+${formatCount(fragments, FRAGMENT, FRAGMENTS)}`,
   backToShop: "Back to the shop",
   linkWallet: "Link a wallet to pay",
+  payWith: "Pay with",
+  tokenCost: (amount: number, symbol: string) => `≈ ${formatFigure(amount)} ${symbol}`,
+  lordsCost: (lords: number) => `${formatExact(lords)} LORDS`,
+  holds: (amount: number) => `You hold ${formatFigure(amount)}`,
+  pricingTokens: "Reading your wallet…",
+  tooLittle: (cents: number, symbols: readonly string[]) =>
+    `Your wallet holds too little to pay ${formatDollars(cents)}. Add ${symbols.join(", ")} to it.`,
   refused: {
     payment_refused: "The payment was refused.",
     refund_due: "The payment came short or late. Your LORDS will be refunded.",

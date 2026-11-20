@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import { IdentityRequestError, type FragmentPrice } from "@realms-world/identity";
@@ -17,13 +17,10 @@ import { Loading } from "../loading";
 import { SignedInOnly } from "../profile/profile-pages";
 import { linkWalletHref } from "../profile/settings-route";
 import { nextOf } from "../return-path";
-import { lordsOf, transferLordsCall } from "../value/ledger";
+import { lordsOf } from "../value/ledger";
 import { WalletUnread } from "../value/wallet-unread";
 import { followPayment, forgetPayment, rememberPayment, sentPaymentOf, type SentPayment } from "./fragment-payment";
-
-const WalletSign = lazy(() =>
-  import("@/shell/value/wallet-actions").then((module) => ({ default: module.WalletSign })),
-);
+import { PayWith } from "./pay-with";
 
 const PACKS = Object.values(STORE_PRODUCTS).map(({ fragments }) => fragments);
 const SEAL = nativeFragmentConstants.SEAL_FRAGMENTS;
@@ -32,7 +29,7 @@ const POLL_MS = 3_000;
 type ShopGame = { chainId: string; gameId: number };
 type Quote = NonNullable<FragmentPrice["quote"]>;
 type Refusal = keyof typeof FRAGMENTS_PAGE_WORDS.refused;
-type Paying = { fragments: number; quote: Quote };
+type Paying = { fragments: number; cents: number; quote: Quote };
 
 export const FragmentsPage = () => {
   const { search } = useLocation();
@@ -48,7 +45,7 @@ export const FragmentsPage = () => {
 
 const Purchase = ({ account, game, next }: { account: string; game: ShopGame; next: string }) => {
   const { pathname, search } = useLocation();
-  const { payer, failed, retry } = usePayer();
+  const { payer, passkey, failed, retry } = usePayer();
   const [paying, setPaying] = useState<Paying | null>(null);
   const [sent, setSent] = useState<SentPayment | null>(() => sentPaymentOf(account));
   if (sent) {
@@ -72,7 +69,7 @@ const Purchase = ({ account, game, next }: { account: string; game: ShopGame; ne
     rememberPayment(account, payment);
     setSent(payment);
   };
-  return <Pay payer={payer} paying={paying} onSent={onSent} />;
+  return <Pay payer={payer} passkey={passkey} paying={paying} onSent={onSent} />;
 };
 
 const Choose = ({ game, onPriced }: { game: ShopGame; onPriced: (paying: Paying) => void }) => {
@@ -80,7 +77,7 @@ const Choose = ({ game, onPriced }: { game: ShopGame; onPriced: (paying: Paying)
   const price = useMutation({ mutationFn: (wanted: number) => identityClient.priceFragments(game, wanted) });
   const pay = () =>
     price.mutate(fragments, {
-      onSuccess: ({ fragments: priced, quote }) => quote && onPriced({ fragments: priced, quote }),
+      onSuccess: ({ fragments: priced, cents, quote }) => quote && onPriced({ fragments: priced, cents, quote }),
     });
   return (
     <div className="flex flex-col gap-4">
@@ -113,7 +110,17 @@ const Choose = ({ game, onPriced }: { game: ShopGame; onPriced: (paying: Paying)
   );
 };
 
-const Pay = ({ payer, paying, onSent }: { payer: string; paying: Paying; onSent: (hash: string) => void }) => (
+const Pay = ({
+  payer,
+  passkey,
+  paying,
+  onSent,
+}: {
+  payer: string;
+  passkey: boolean;
+  paying: Paying;
+  onSent: (hash: string) => void;
+}) => (
   <AppPanel
     icon={paying.fragments === SEAL ? "final-seal" : "fragment"}
     title={FRAGMENTS_PAGE_WORDS.pack(paying.fragments)}
@@ -124,14 +131,7 @@ const Pay = ({ payer, paying, onSent }: { payer: string; paying: Paying; onSent:
         value={FRAGMENTS_PAGE_WORDS.price(paying.fragments)}
         label={FRAGMENTS_PAGE_WORDS.paidAs(lordsOf(BigInt(paying.quote.lordsWei)))}
       />
-      <Suspense fallback={<Loading />}>
-        <WalletSign
-          owner={payer}
-          calls={[transferLordsCall(paying.quote.token, paying.quote.treasury, BigInt(paying.quote.lordsWei))]}
-          onSent={onSent}
-          onLanded={() => undefined}
-        />
-      </Suspense>
+      <PayWith payer={payer} passkey={passkey} quote={paying.quote} cents={paying.cents} onSent={onSent} />
     </div>
   </AppPanel>
 );
@@ -186,7 +186,7 @@ const usePayer = () => {
   const { wallet, failed, retry } = useDefaultWallet();
   const payer =
     wallet === undefined ? undefined : (wallet?.address ?? (session ? payoutAddressOf(session.user) : null));
-  return { payer, failed, retry };
+  return { payer, passkey: Boolean(wallet), failed, retry };
 };
 
 const shopGameOf = (search: string): ShopGame | null => {

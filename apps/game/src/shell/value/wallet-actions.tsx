@@ -85,6 +85,7 @@ export const WalletSign = (props: {
   onLanded: () => void;
   onSent?: (hash: string) => void;
   onFeeShort?: (spendable: bigint) => void;
+  lordsBought?: bigint;
 }) => {
   const { wallet: defaultWallet, failed, retry } = useDefaultWallet();
   const uncertain = useUncertainSend(props.owner, JSON.stringify(props.calls), props.onLanded);
@@ -102,6 +103,7 @@ export const WalletSign = (props: {
         onSent={props.onSent}
         onUnconfirmed={uncertain.check}
         onFeeShort={props.onFeeShort}
+        lordsBought={props.lordsBought}
       />
     ) : (
       <StarknetProvider>
@@ -232,6 +234,7 @@ const PasskeySend = ({
   onSent,
   onUnconfirmed,
   onFeeShort,
+  lordsBought = 0n,
 }: {
   wallet: DefaultWallet;
   calls: Call[];
@@ -239,6 +242,7 @@ const PasskeySend = ({
   onSent?: (hash: string) => void;
   onUnconfirmed: () => void;
   onFeeShort?: (spendable: bigint) => void;
+  lordsBought?: bigint;
 }) => {
   const prepared = useRef<{ send: Promise<PreparedSend>; at: number } | null>(null);
   const panelClosed = usePanelClosed();
@@ -249,7 +253,7 @@ const PasskeySend = ({
   // Callers build their calls on each render; the send is prepared again only when what they ask for changes.
   const asked = JSON.stringify(calls);
   const prepare = useCallback(() => {
-    const send = prepareDefaultWalletSend(wallet.address, JSON.parse(asked) as Call[], l2Provider());
+    const send = prepareDefaultWalletSend(wallet.address, JSON.parse(asked) as Call[], l2Provider(), lordsBought);
     prepared.current = { send, at: Date.now() };
     send.then(
       ({ fee }) => prepared.current?.send === send && setPriced({ kind: "priced", fee }),
