@@ -115,6 +115,10 @@
       "SUPPLY_YARD": 42,
       "SCOUTS_LODGE": 43,
       "SCOUTS_LODGE_LEVEL": 1
+    },
+    "family": {
+      "FRONTIER": 1,
+      "BLITZ": 2
     }
   },
   "tilePackingConstants": {
@@ -2089,8 +2093,29 @@
       },
       {
         "type": "function",
-        "name": "current_release",
-        "inputs": [],
+        "name": "open_release_of",
+        "inputs": [
+          {
+            "name": "family",
+            "type": "core::integer::u8"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::integer::u32"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "latest_release_of",
+        "inputs": [
+          {
+            "name": "family",
+            "type": "core::integer::u8"
+          }
+        ],
         "outputs": [
           {
             "type": "core::integer::u32"
@@ -2456,7 +2481,7 @@
       },
       {
         "type": "function",
-        "name": "blitz_result",
+        "name": "game_result",
         "inputs": [
           {
             "name": "game_id",
@@ -2465,7 +2490,7 @@
         ],
         "outputs": [
           {
-            "type": "world_native::blitz_results::BlitzResult"
+            "type": "core::array::Span::<core::felt252>"
           }
         ],
         "state_mutability": "view"
@@ -7098,6 +7123,12 @@
           "feltLength": 1
         },
         {
+          "name": "family",
+          "type": "core::integer::u8",
+          "id": "0x66616d696c79",
+          "feltLength": 1
+        },
+        {
           "name": "preset_id",
           "type": "core::integer::u32",
           "id": "0x7072657365745f6964",
@@ -7159,7 +7190,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 11
+      "valueLength": 12
     },
     {
       "name": "GameOverrides",
@@ -8407,6 +8438,14 @@
       "type": "struct",
       "name": "games_storage::release::Release",
       "members": [
+        {
+          "name": "family",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "previous",
+          "type": "core::integer::u32"
+        },
         {
           "name": "classes",
           "type": "games_storage::release::LogicClasses"
@@ -10244,6 +10283,10 @@
           "type": "core::felt252"
         },
         {
+          "name": "family",
+          "type": "core::integer::u8"
+        },
+        {
           "name": "preset_id",
           "type": "core::integer::u32"
         },
@@ -11807,6 +11850,10 @@
         {
           "name": "name",
           "type": "core::felt252"
+        },
+        {
+          "name": "family",
+          "type": "core::integer::u8"
         },
         {
           "name": "preset_id",
@@ -13823,5 +13870,5 @@
       ]
     }
   },
-  "identity": "0dcaa19b709894ec2b00f2930eb6674e436d8f9b5813410cc44da71219806240"
+  "identity": "6efb2e919dd1a172159bba7a9c90c0f8ae7b53992bb1835acd13acf19a1e1f1f"
 }

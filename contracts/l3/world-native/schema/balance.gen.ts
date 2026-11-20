@@ -165,4 +165,8 @@ export const nativeFragmentConstants = {
   "VEIL_CACHE_PERCENT": 10,
   "HOLLOW_CACHE_PERCENT": 5
 } as const;
+export const nativeFamilyConstants = {
+  "FRONTIER": 1,
+  "BLITZ": 2
+} as const;
 export const nativeBalanceIdentity = "a81cc113dc80f8ffa6a5de411072d686175cabf1e6fba5380676a9246604d2af";
