@@ -467,7 +467,26 @@ fn public_attacks_apply_held_oaths_to_the_army_and_the_rival_guard() {
 }
 
 #[test]
-fn public_field_battles_apply_held_oaths_on_both_sides() {
+fn the_first_public_field_battle_applies_held_oaths_on_both_sides() {
+    public_field_battle(0);
+}
+
+#[test]
+fn the_second_public_field_battle_applies_held_oaths_on_both_sides() {
+    public_field_battle(1);
+}
+
+#[test]
+fn the_third_public_field_battle_applies_held_oaths_on_both_sides() {
+    public_field_battle(2);
+}
+
+#[test]
+fn the_fourth_public_field_battle_applies_held_oaths_on_both_sides() {
+    public_field_battle(3);
+}
+
+fn public_field_battle(nth: felt252) {
     let values = snforge_std::fs::read_txt(@snforge_std::fs::FileTrait::new("../fixtures/oath-damage.txt"));
     let mut fields = values.span();
     let mut battles = 0;
@@ -480,6 +499,10 @@ fn public_field_battles_apply_held_oaths_on_both_sides() {
         let (before_a, before_b, after_a, after_b): (u128, u128, u128, u128) = Serde::deserialize(ref fields).unwrap();
         let knights = a == crate::troops::TroopType::Knight && b == crate::troops::TroopType::Knight;
         if ag || bg || !knights {
+            continue;
+        }
+        if battles != nth {
+            battles += 1;
             continue;
         }
         let (d, game_id) = super::aspects::setup_aspect_preset(872 + battles, oath_vector_preset());
@@ -504,9 +527,9 @@ fn public_field_battles_apply_held_oaths_on_both_sides() {
         );
         assert_eq!(army(d, attacker).troops.count, after_a * crate::rules::RESOURCE_PRECISION);
         assert_eq!(army(d, defender).troops.count, after_b * crate::rules::RESOURCE_PRECISION);
-        battles += 1;
+        return;
     }
-    assert_eq!(battles, 4);
+    panic!("the oath vectors hold too few public field battles");
 }
 
 fn oath_vector_preset() -> crate::presets::PresetDefinition {
