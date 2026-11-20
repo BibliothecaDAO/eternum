@@ -1,4 +1,3 @@
-import { nativeIdentifiers } from "../../../contracts/l3/world-native/schema/client.gen";
 import { Schema } from "effect";
 import { ShardOperator, type ShardTarget } from "@realms-world/value-ledger/shard";
 import { hash } from "starknet";
@@ -33,7 +32,6 @@ export async function creditFriendFragments(target: FragmentCreditTarget, credit
   const onChain = {
     id: hash.starknetKeccak(credit.id).toString(),
     account,
-    source: nativeIdentifiers.fragment.FRIEND,
     amount: credit.amount,
   };
   try {

@@ -14,8 +14,7 @@ pub fn add(game_id: u32, account: ContractAddress, amount: u128) {
 pub fn credit(game_id: u32, credit: FragmentCredit) {
     assert!(credit.id != 0 && credit.amount != 0, "empty fragment credit");
     assert!(credit.account != 0.try_into().unwrap(), "invalid fragment account");
-    assert!(credit.source == crate::fragments::FRIEND, "invalid fragment source");
-    let receipt = (credit.account, credit.source, credit.amount);
+    let receipt = (credit.account, credit.amount);
     if let Some(previous) = crate::state::read().entry.fragment_credits.read((game_id, credit.id)) {
         assert!(previous == receipt, "fragment credit differs");
         return;
@@ -26,7 +25,7 @@ pub fn credit(game_id: u32, credit: FragmentCredit) {
     emit(
         'FragmentCredit',
         array![game_id.into(), credit.id],
-        array![credit.account.into(), credit.source.into(), credit.amount.into()],
+        array![credit.account.into(), credit.amount.into()],
     );
     add(game_id, credit.account, credit.amount);
 }

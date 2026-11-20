@@ -15,7 +15,7 @@ fn credit(d: super::Deployment, game_id: u32, credit: FragmentCredit) -> bool {
 }
 
 fn friend(d: super::Deployment, id: felt252, amount: u128) -> FragmentCredit {
-    FragmentCredit { id, account: d.actor, source: crate::fragments::FRIEND, amount }
+    FragmentCredit { id, account: d.actor, amount }
 }
 
 fn earn(d: super::Deployment, game_id: u32, amount: u128) {
@@ -84,7 +84,6 @@ fn only_the_ledger_operator_credits_a_friend_s_fragments_once_for_each_credit_id
     assert!(credit(d, game_id, friend(d, 'friend-1', 100)));
     assert!(credit(d, game_id, friend(d, 'friend-1', 100)));
     assert!(!credit(d, game_id, friend(d, 'friend-1', 1000)));
-    assert!(!credit(d, game_id, FragmentCredit { source: 1, ..friend(d, 'friend-2', 100) }));
     assert!(!credit(d, game_id, friend(d, 'friend-2', 0)));
     assert!(credit(d, game_id, friend(d, 'friends-10', 1000)));
     assert_eq!(balance(d, game_id), 1100);

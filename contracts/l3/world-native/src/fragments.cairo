@@ -1,6 +1,5 @@
 use starknet::ContractAddress;
 
-pub const FRIEND: u8 = 2;
 pub const WONDER_QUEST_FRAGMENTS: u16 = 10;
 pub const SEAL_FRAGMENTS: u16 = 1000;
 pub const OATH_REROLL_FRAGMENTS: u16 = 25;
@@ -14,7 +13,6 @@ pub const HOLLOW_CACHE_PERCENT: u8 = 5;
 pub struct FragmentCredit {
     pub id: felt252,
     pub account: ContractAddress,
-    pub source: u8,
     pub amount: u128,
 }
 

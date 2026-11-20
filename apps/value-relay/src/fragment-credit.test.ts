@@ -1,6 +1,5 @@
 import { expect, it, vi } from "vitest";
 import { CallData, hash } from "starknet";
-import { nativeIdentifiers } from "../../../contracts/l3/world-native/schema/client.gen";
 import { gamesAbi } from "../../../packages/value-ledger/test-support/abi";
 import { creditFriendFragments } from "./fragment-credit";
 
@@ -28,7 +27,6 @@ it("credits the sharer's account under the payout's own id as a friend's Fragmen
     credit: {
       id: hash.starknetKeccak(credit.id).toString(),
       account: "0x123",
-      source: nativeIdentifiers.fragment.FRIEND,
       amount: 100,
     },
   };
