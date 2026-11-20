@@ -861,11 +861,10 @@ Sources: `src/expeditions.cairo:114-141`, `src/logic/movement.cairo:234-243`, `s
 | Tome (new) | XP the army earns                     | +40%             | +40%   | +200%     |
 | Lasts      |                                       | 30 min           | 30 min | 2 h 30    |
 
-One relic for each thing an army does: hit, last, loot, look, grow. Four are the code's army relics (damage, damage
-taken, exploration reward, reveal radius · `packages/types/src/constants/relics.ts:70-160`, `src/relics.cairo:5-11`), in
-five tiers where the code has two; the Tome is one new modifier on the XP grant; the stamina relic stays off. A
-Legendary Blade against a Legendary Ward nets ×1.13. Six Surface camps give 420 XP, a Rare skill point; with a Rare Tome
-924, an Epic one.
+One relic for each thing an army does: hit, last, loot, recover, grow. Four are the contract's army relics, in five
+tiers (Blade, Ward, Plunder and Stamina · `src/army_relics.cairo`); the Tome is one new modifier on the XP grant. The
+Stamina relic raises the regeneration rate while it runs and never grants stamina outright. A Legendary Blade against a
+Legendary Ward nets ×1.13. Six Surface camps give 420 XP, a Rare skill point; with a Rare Tome 924, an Epic one.
 
 | Relic rule        | Season 1                                                                                   | In code today                                                                    |
 | ----------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
