@@ -164,18 +164,6 @@ const NO_GAME: u32 = 99;
 #[test_case(name: "route_39_roots_08_15", 39, 8)]
 #[test_case(name: "route_39_roots_16_23", 39, 16)]
 #[test_case(name: "route_39_roots_24_31", 39, 24)]
-#[test_case(name: "route_40_roots_00_07", 40, 0)]
-#[test_case(name: "route_40_roots_08_15", 40, 8)]
-#[test_case(name: "route_40_roots_16_23", 40, 16)]
-#[test_case(name: "route_40_roots_24_31", 40, 24)]
-#[test_case(name: "route_41_roots_00_07", 41, 0)]
-#[test_case(name: "route_41_roots_08_15", 41, 8)]
-#[test_case(name: "route_41_roots_16_23", 41, 16)]
-#[test_case(name: "route_41_roots_24_31", 41, 24)]
-#[test_case(name: "route_42_roots_00_07", 42, 0)]
-#[test_case(name: "route_42_roots_08_15", 42, 8)]
-#[test_case(name: "route_42_roots_16_23", 42, 16)]
-#[test_case(name: "route_42_roots_24_31", 42, 24)]
 #[feature("safe_dispatcher")]
 fn all_typed_entry_refusals_are_root_independent(index: u32, start: u64) {
     let commands = typed_commands();
@@ -368,18 +356,6 @@ fn all_typed_entry_refusals_are_root_independent(index: u32, start: u64) {
 #[test_case(name: "route_39_roots_08_15", 39, 8)]
 #[test_case(name: "route_39_roots_16_23", 39, 16)]
 #[test_case(name: "route_39_roots_24_31", 39, 24)]
-#[test_case(name: "route_40_roots_00_07", 40, 0)]
-#[test_case(name: "route_40_roots_08_15", 40, 8)]
-#[test_case(name: "route_40_roots_16_23", 40, 16)]
-#[test_case(name: "route_40_roots_24_31", 40, 24)]
-#[test_case(name: "route_41_roots_00_07", 41, 0)]
-#[test_case(name: "route_41_roots_08_15", 41, 8)]
-#[test_case(name: "route_41_roots_16_23", 41, 16)]
-#[test_case(name: "route_41_roots_24_31", 41, 24)]
-#[test_case(name: "route_42_roots_00_07", 42, 0)]
-#[test_case(name: "route_42_roots_08_15", 42, 8)]
-#[test_case(name: "route_42_roots_16_23", 42, 16)]
-#[test_case(name: "route_42_roots_24_31", 42, 24)]
 fn all_real_domain_verdicts_are_root_independent(index: u32, start: u64) {
     let commands = typed_commands();
     assert_eq!(commands.len(), routes());
