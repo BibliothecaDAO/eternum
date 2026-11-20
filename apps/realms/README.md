@@ -107,14 +107,10 @@ curl -s -H "authorization: Bearer $OPERATOR_TOKEN" https://<identity origin>/api
 
 ## Free Ancient Seal codes
 
-One command issues a batch of free Ancient Seal codes and loads them into an environment's database:
-
-```bash
-CAMPAIGN_CODE_SEED=<secret> pnpm --dir apps/realms seal-codes <staging|production> <label> <count> <out> [last day YYYY-MM-DD]
-```
-
-It writes the printed codes to `<out>/codes.txt` (readable by you only) and their hashes to `<out>/codes.sql`, then
-loads that file with `wrangler d1 execute DB --remote --env <environment>` (your Cloudflare login). The same seed and
-label give the same codes, and a code already loaded is left as it is, so the command is safe to run again after a
-failure. A player redeems one code per account in the shop (`POST /api/seal-code`); the Seal reaches every Frontier game
-the account entered, through the relay, and a game entered later grants it on entry.
+One command, `pnpm --dir apps/realms seal-codes`, issues a batch of free Ancient Seal codes and loads them into an
+environment's database; run without arguments, it prints its usage. It writes the printed codes to `<out>/codes.txt`
+(readable by you only) and their hashes to `<out>/codes.sql`, then loads that file with
+`wrangler d1 execute DB --remote --env <environment>` (your Cloudflare login). The same seed and label give the same
+codes, and a code already loaded is left as it is, so the command is safe to run again after a failure. A player redeems
+one code per account in the shop (`POST /api/seal-code`); the Seal reaches every Frontier game the account entered,
+through the relay, and a game entered later grants it on entry.
