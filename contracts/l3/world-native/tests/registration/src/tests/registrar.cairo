@@ -168,13 +168,11 @@ fn expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stami
         } else {
             bar
         };
-        assert!(
-            execute_in_game(
-                d,
-                game_id,
-                crate::tests::frontier_economy::reinforce(army.explorer_id, 2),
-                super::play_fixture::FIXTURE_START + 10 + elapsed,
-            ),
+        super::resource_commands::assert_executes(
+            d,
+            game_id,
+            crate::tests::frontier_economy::reinforce(army.explorer_id, 2),
+            super::play_fixture::FIXTURE_START + 10 + elapsed,
         );
         let after = state.resolved_explorer(army).unwrap();
         assert_eq!(after.coord, before.coord);
