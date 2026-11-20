@@ -175,7 +175,6 @@ function blitzRpc(
     case "game_seater":
       return response(gamesAbi, entry, game!.seater);
     case "game_release":
-    case "preset_commitment":
       return response(gamesAbi, entry, 1);
     case "l2_gas_bound":
       return response(gamesAbi, entry, SHARD_MANIFEST.l2GasBound);

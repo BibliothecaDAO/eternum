@@ -55,7 +55,7 @@ it("launches a Blitz from its closed slot: creation parameters, settling time, o
   expect(create).not.toHaveBeenCalled();
 
   head.mockResolvedValue({ block_number: 11, block_hash: "0x11", timestamp: 100 });
-  const pins = { gameId: 7, release: 1n, commitment: 2n, l2GasBound: 3n };
+  const pins = { gameId: 7, release: 1n, l2GasBound: 3n };
   vi.spyOn(native, "pins").mockResolvedValue(pins);
   vi.spyOn(native, "seaterAccount").mockReturnValue(native);
   vi.spyOn(native, "view").mockResolvedValue(0x5an);
@@ -171,7 +171,6 @@ const releasedShard = (existing: Record<string, number>, currentRelease: number)
       const pins = vi.spyOn(native, "pins").mockImplementation(async (gameId) => ({
         gameId,
         release: BigInt(byId(gameId).release),
-        commitment: 2n,
         l2GasBound: 3n,
       }));
       vi.spyOn(native, "pendingNonce").mockImplementation(async () => nonce);

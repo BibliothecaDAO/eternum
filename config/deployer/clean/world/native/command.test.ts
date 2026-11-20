@@ -145,14 +145,13 @@ describe("player-signed administrative gameplay", () => {
     expect(invoke.signature).toHaveLength(3);
     expect(BigInt(invoke.resource_bounds.l2_gas.max_amount)).toBe(0x1234n);
     // Realms Cairo-1 account: one call, target, selector, span length, play(game,pins,command span).
-    expect(invoke.calldata.slice(0, 8).map(BigInt)).toEqual([
+    expect(invoke.calldata.slice(0, 7).map(BigInt)).toEqual([
       1n,
       0x77n,
       BigInt(hash.getSelectorFromName("play")),
-      5n,
+      4n,
       7n,
       2n,
-      4n,
       1n,
     ]);
   });
