@@ -78,7 +78,7 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
       ? 0
       : oathAttackStamina(armyOaths(setup.store, selected.army), configManager.getCombatConfig().stamina_attack_req);
   const stamina = useArmyStamina(userId, need);
-  const approach = useOrderAt(useApproachTile(tile, !block && !adjacent));
+  const approach = useOrderAt(useApproachTile(tile, site.open && !block && !adjacent));
   const act = async () => {
     if (userId === null || !account.account) return;
     try {
@@ -96,22 +96,23 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
       toast.failed(error, DEEP_WORDS.orderFailed);
     }
   };
-  const order: DeepOrder | DeepBlock =
-    block ??
-    (adjacent
-      ? stamina && isCovered(stamina)
-        ? { kind: "act", verb, busy, onAct: act }
-        : { kind: "short", verb: "attack", line: staminaShortfall(stamina?.held, need, stamina?.wait) }
-      : approach
-        ? {
-            kind: "move",
-            cost: costLine([
-              { of: "stamina", amount: approach.stamina.cost },
-              { of: "wheat", amount: approach.wheat.cost },
-            ]),
-            onMove: () => requestOrderAt(approach.target),
-          }
-        : "pickArmy");
+  const order: DeepOrder | DeepBlock = !site.open
+    ? { kind: "closed", realms: site.opensAt }
+    : (block ??
+      (adjacent
+        ? stamina && isCovered(stamina)
+          ? { kind: "act", verb, busy, onAct: act }
+          : { kind: "short", verb: "attack", line: staminaShortfall(stamina?.held, need, stamina?.wait) }
+        : approach
+          ? {
+              kind: "move",
+              cost: costLine([
+                { of: "stamina", amount: approach.stamina.cost },
+                { of: "wheat", amount: approach.wheat.cost },
+              ]),
+              onMove: () => requestOrderAt(approach.target),
+            }
+          : "pickArmy"));
   const catalog = deepSites.find((kind) => kind.id === site.kind)!;
   return (
     <DeepSiteView
@@ -162,7 +163,6 @@ function selectionBlock(
   site: Site,
   selected: Selected,
 ): DeepBlock | undefined {
-  if (!site.open) return "closed";
   if (!selected) return "pickArmy";
   const key = { game_id, explorer_id: selected.army.explorer_id };
   if (store.get("DeepGuard", key)) return "guarding";

@@ -69,7 +69,7 @@ fn guard_target(
     let rules = context.rules.unbox();
     if let Some(site) = crate::logic::deep_sites::site(key) {
         let day = crate::days::day_of(context.game.unbox(), rules.day_unit_seconds, context.timestamp);
-        assert!(site.day == day.index, "Deep day not settled");
+        assert!(site.day == day.index, "Deep is settling, try again");
         crate::logic::deep_sites::assert_open(key.game_id, site);
         let coord = crate::logic::map::entity_coord(key).expect('missing Deep site position');
         assert!(crate::geometry::adjacent(attacker.coord, coord), "Deep site requires adjacency");

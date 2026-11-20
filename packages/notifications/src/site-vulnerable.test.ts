@@ -39,13 +39,12 @@ it("opens the site's coordinate and gives it one identity per owner, site kind a
     expect(() => parseNotificationPayload({ ...alert, target }, input.now)).toThrow();
 });
 
-it("says which ring opened, what a held building now pays, and opens that ring once per owner and day", () => {
+it("says which ring opened and how many sites it adds, and opens that ring once per owner and day", () => {
   const input = {
     chainId: "0xa",
     gameId: 1,
     ring: 1,
-    sites: 4,
-    pay: 3,
+    sites: 6,
     col: 8,
     row: -8,
     day: 2,
@@ -55,7 +54,7 @@ it("says which ring opened, what a held building now pays, and opens that ring o
   };
   const alert = buildRingOpenNotification(input)!;
   expect(alert.title).toBe("Ring 2 has opened");
-  expect(alert.body).toBe("4 more sites can be taken today. A held building now pays 3 a tick.");
+  expect(alert.body).toBe("6 more sites can be taken today.");
   expect(alert.target).toBe("/g/0xa/1/map?col=8&row=-8");
   expect(alert.kind).toBe("site-vulnerable");
   expect(buildRingOpenNotification({ ...input, now: 2000 })!.id).toBe(alert.id);

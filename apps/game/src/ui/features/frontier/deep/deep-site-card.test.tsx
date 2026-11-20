@@ -81,15 +81,17 @@ describe("the Deep site's live native binding", () => {
       const perTick = (amount: bigint) => Number(amount / BigInt(RESOURCE_PRECISION));
       expect(hud.host.querySelector("[data-deep-pay]")?.textContent).toContain(`${perTick(rules.mine_per_tick)} labor`);
       const sites = readDeepSites(hud.store, scenario.startsAt, 1);
+      const ladder = [rules.building_pay.alone, rules.building_pay.pair, rules.building_pay.crowd];
       for (const site of sites) {
         hud.render(<DeepSiteCard site={site} onClose={() => {}} />);
         const pay = hud.host.querySelector("[data-deep-pay]")!.textContent;
+        const openOfKind = sites.filter((other) => other.kind === site.kind && other.open).length;
+        const building = ladder[Math.min(openOfKind, ladder.length) - 1];
         if (site.kind === nativeRuleConstants.DEEP_MINE) expect(pay).toContain(`${perTick(rules.mine_per_tick)} labor`);
         else if (site.kind === nativeRuleConstants.DEEP_CORE)
           expect(pay).toContain(`${perTick(rules.core_per_tick)} Essence`);
-        else expect(pay).toContain(`${rules.building_pay.alone} Glory`);
-        if (site.kind === nativeRuleConstants.DEEP_FOUNDATION)
-          expect(pay).toContain(`+${rules.building_pay.alone} height`);
+        else expect(pay).toContain(`${building} Glory`);
+        if (site.kind === nativeRuleConstants.DEEP_FOUNDATION) expect(pay).toContain(`+${building} height`);
         if (site.kind === nativeRuleConstants.DEEP_ALTAR) expect(pay).toContain("300 of 1,500");
       }
       act(() =>

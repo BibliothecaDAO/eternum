@@ -10,4 +10,5 @@ pub struct DeepStorage<TSite, TGuard> {
     pub sites: Map<(u32, u64), Option<TSite>>,
     pub realms_entered: Map<(u32, u64), u32>,
     pub realm_entered: Map<(u32, u64, u64), bool>,
+    pub day_draws: Map<(u32, u64), Option<u256>>,
 }

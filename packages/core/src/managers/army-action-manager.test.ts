@@ -227,6 +227,35 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     }
   });
 
+  it("routes around a Deep site corner on the straight line to a hex beyond it, one step longer", () => {
+    vi.spyOn(StaminaManager.prototype, "getStamina").mockReturnValue({
+      amount: 10n,
+      settled_at: 0,
+      remainder: 0,
+    } as any);
+    const { manager, components, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } =
+      createTestSetup();
+    const corner = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0]!;
+    const direction = getDirectionBetweenAdjacentHexes(oldFeltStart, corner)!;
+    const beyond = getNeighborHexes(corner.col, corner.row).find(
+      (hex) => getDirectionBetweenAdjacentHexes(corner, hex) === direction,
+    )!;
+    for (const hex of getHexesWithinRadius(oldFeltStart.col, oldFeltStart.row, 2))
+      setNestedMapValue(exploredHexes, hex.col - TEST_FELT_CENTER, hex.row - TEST_FELT_CENTER, 1 as BiomeType);
+    components.TileOpt.set(
+      toTileEntityKey(false, corner.col, corner.row),
+      buildTileOptData({ ...corner, biome: 1, occupierType: TileOccupier.DeepSite, occupierId: 806 }),
+    );
+
+    const paths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
+
+    expect(paths.getRefusals().get(ActionPaths.posKey(corner))).toEqual({ reason: "occupied" });
+    const route = paths.get(ActionPaths.posKey(beyond))!.map(({ hex }) => ActionPaths.posKey(hex));
+    expect(route).toHaveLength(4);
+    expect(route.at(-1)).toBe(ActionPaths.posKey(beyond));
+    expect(route).not.toContain(ActionPaths.posKey(corner));
+  });
+
   it.each([false, true])("uses stride-one portal access on the army's layer (alt=%s)", (alt) => {
     const { manager, components, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } =
       createTestSetup();

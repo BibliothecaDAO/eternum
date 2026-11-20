@@ -397,7 +397,7 @@ fn a_migration_free_release_reaches_a_populated_season_one_game_rewriting_no_fac
         visitor,
         game_id,
         crate::commands::Command::Move(
-            crate::commands::Move { explorer_id: walker.explorer_id, directions: array![0].span() },
+            crate::commands::Move { explorer_id: walker.explorer_id, directions: array![3].span() },
         ),
         tick,
     );
@@ -450,7 +450,7 @@ fn a_game_stuck_at_its_deep_boundary_plays_again_once_the_launcher_applies_a_che
 
 fn step(walker: ExplorerKey) -> crate::commands::Command {
     crate::commands::Command::Move(
-        crate::commands::Move { explorer_id: walker.explorer_id, directions: array![0].span() },
+        crate::commands::Move { explorer_id: walker.explorer_id, directions: array![3].span() },
     )
 }
 

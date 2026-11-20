@@ -54,13 +54,14 @@ export type DeepGuard =
   | { kind: "open" };
 
 /** Why the selected army has no order at the site, in the words the card shows. */
-export type DeepBlock = "pickArmy" | "closed" | "guarding" | "full" | "rival" | "otherDay" | "noTroops";
+export type DeepBlock = "pickArmy" | "guarding" | "full" | "rival" | "otherDay" | "noTroops";
 
 /** The card's order: the site's own verb beside it, the same verb held for stamina, or the Move that brings the army. */
 export type DeepOrder =
   | { kind: "act"; verb: "attack" | "take" | "join"; busy?: string; onAct: () => void }
   | { kind: "short"; verb: "attack"; line: string }
-  | { kind: "move"; cost: string; onMove: () => void };
+  | { kind: "move"; cost: string; onMove: () => void }
+  | { kind: "closed"; realms: number };
 
 export interface DeepSiteProps {
   site: (typeof deepSites)[number]["key"];
@@ -185,6 +186,7 @@ const SlotRow = ({ slot, next }: { slot: DeepSlot; next: boolean }) => (
 
 const OrderFoot = ({ order }: { order: DeepOrder | DeepBlock }) => {
   if (typeof order === "string") return <HudWindowFoot note={DEEP_WORDS[order]} />;
+  if (order.kind === "closed") return <HudWindowFoot note={DEEP_WORDS.opensAt(order.realms)} />;
   return (
     <HudWindowFoot note={order.kind === "move" ? <HudCost line={order.cost} /> : undefined}>
       {order.kind === "act" && (

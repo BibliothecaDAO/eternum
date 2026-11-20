@@ -114,9 +114,9 @@ fn invalid_deep_rules_leave_no_preset_registered() {
         } else if invalid == 6 {
             deep.rings = array![ring(5, 0), ring(6, 30)].span();
         } else if invalid == 7 {
-            deep.rings = array![ring(20, 0)].span();
+            deep.rings = array![ring(4, 0)].span();
         } else if invalid == 8 {
-            deep.gate_distance = 5;
+            deep.gate_distance = 4;
         } else if invalid == 9 {
             deep.beasts = deep.beasts.slice(0, 3);
         } else if invalid == 10 {

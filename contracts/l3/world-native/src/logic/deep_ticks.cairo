@@ -80,9 +80,12 @@ pub fn assert_caught_up(game_id: u32, context: ExecutionContext) {
         return;
     }
     let interval = context.rules.unbox().tick_config.armies_tick_in_seconds;
-    let last = core::cmp::min(context.timestamp, context.game.unbox().end_at) / interval;
+    assert_paid_to(game_id, core::cmp::min(context.timestamp, context.game.unbox().end_at) / interval);
+}
+
+pub fn assert_paid_to(game_id: u32, tick: u64) {
     let cursor = crate::state::read().deep.paid_tick.read(game_id).expect('missing Deep cursor');
-    assert!(cursor >= last, "the Deep is catching up");
+    assert!(cursor >= tick, "The Deep is catching up, try again in a moment");
 }
 
 fn walk(game_id: u32, cursor: u64, last: u64, context: ExecutionContext) -> u64 {
@@ -98,9 +101,15 @@ fn walk(game_id: u32, cursor: u64, last: u64, context: ExecutionContext) -> u64 
     while reached < last {
         let boundary = (reached + 1) * interval;
         if boundary - 1 >= held.day_end {
+            if reached > cursor {
+                save_cursor(game_id, reached);
+                write_payouts(game_id, ref payouts, held, reached * interval, context);
+                return reached;
+            }
+            if !roll_over(game_id, context) {
+                return reached;
+            }
             save_cursor(game_id, last);
-            write_payouts(game_id, ref payouts, held, reached * interval, context);
-            roll_over(game_id, ExecutionContext { timestamp: boundary - 1, ..context });
             return last;
         }
         let (drained, deaths) = drain(held, boundary, interval);
@@ -137,6 +146,7 @@ fn held(game_id: u32, context: ExecutionContext) -> Held {
     let mut ticks = array![];
     let mut zeros = array![];
     let mut day_end = 0;
+    let open = crate::logic::deep_sites::open_by_kind(game_id);
     for index in 0..crate::logic::deep_sites::site_count(game_id) {
         let site_id = crate::logic::deep_sites::site_id(game_id, index);
         let site = crate::logic::deep_sites::site(ResourceKey { game_id, entity_id: site_id })
@@ -175,12 +185,7 @@ fn held(game_id: u32, context: ExecutionContext) -> Held {
         } else if site.kind == crate::rules::DEEP_MINE {
             (0, rules.mine_per_tick.read())
         } else {
-            (
-                crate::deep::building_pay(
-                    rules.building_pay.read(), crate::logic::deep_sites::open_rings(game_id, site.day),
-                ),
-                0,
-            )
+            (crate::deep::building_pay(rules.building_pay.read(), *open.at(site.kind.into())), 0)
         };
         sites.append(Site { kind: site.kind, aspect, pay, amount, first, last: guards.len() });
     }
@@ -412,10 +417,10 @@ fn settle_guard(held: Held, index: u32, context: ExecutionContext) {
     crate::logic::deep_armies::drained(key, army, before, *held.ticks.at(index), context);
 }
 
-fn roll_over(game_id: u32, context: ExecutionContext) {
+fn roll_over(game_id: u32, context: ExecutionContext) -> bool {
     crate::deep::IDeepSitesDispatcherTrait::rollover_deep(
         crate::logic::deep_sites::dispatcher(game_id), game_id, crate::commands::action_context(context),
-    );
+    )
 }
 
 fn bridge(game_id: u32) -> crate::deep::IDeepBanesLibraryDispatcher {

@@ -1,7 +1,7 @@
 import { frontierSeasonOnePreset } from "../../../../config/source/frontier/season-one";
 import { NATIVE_RELEASE_ID } from "../../../../deploy/release/native-release";
 import type { HeraldGameSnapshot } from "@bibliothecadao/eternum/game-sync";
-import { nativeBaneConstants } from "@bibliothecadao/eternum/game-client";
+import { nativeBaneConstants, nativeRuleConstants } from "@bibliothecadao/eternum/game-client";
 import { deepSites, RESOURCE_PRECISION, TileOccupier } from "@bibliothecadao/types";
 import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import explorerFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
@@ -376,7 +376,15 @@ export function siteSnapshot(
     }),
   ]);
   const rings = site.entered === undefined ? [0] : [0, 1];
-  const sites = rings.flatMap((ring) => deepSites.map((kind) => ({ ring, kind, id: 800 + 100 * ring + kind.id })));
+  const ringKinds = [...deepSites, ...deepSites.slice(0, nativeRuleConstants.DEEP_RING_SITES - deepSites.length)];
+  const sites = rings.flatMap((ring) =>
+    ringKinds.map((kind, place) => ({
+      ring,
+      kind,
+      id: 800 + 100 * ring + place,
+      at: place < deepSites.length ? offsets[kind.key] : { x: 10 + 30 * (place - deepSites.length), y: 10 },
+    })),
+  );
   put(
     "DeepSite",
     sites.map(({ ring, kind, id }) => row(id, { entity_id: id, kind: kind.id, ring, day: TODAY })),
@@ -387,11 +395,11 @@ export function siteSnapshot(
   put("DeepArmy", [row(NEIGHBOUR_ARMY, { explorer_id: NEIGHBOUR_ARMY, last_tick: site.lastTick })]);
   put("TileOccupancy", [
     armyPosition(ARMY, HOME, bar),
-    ...sites.map(({ ring, kind, id }) =>
+    ...sites.map(({ ring, id, at }) =>
       row(id, {
         entity_id: id,
-        col: offsets[kind.key].x + 25,
-        row: offsets[kind.key].y + 325 + 3 * ring,
+        col: at.x + 25,
+        row: at.y + 325 + 3 * ring,
         alt: false,
         category: TileOccupier.DeepSite,
         is_structure: false,
@@ -400,7 +408,7 @@ export function siteSnapshot(
   ]);
   put(
     "Guard",
-    sites.map(({ ring, kind, id }) =>
+    sites.map(({ id }) =>
       row(id, {
         structure_id: id,
         slot: 0,
@@ -408,7 +416,7 @@ export function siteSnapshot(
         troops: {
           ...explorerFixture.expected.value.troops,
           stamina: { Inline: { amount: 120, settled_at: bar.settledAt, remainder: 0 } },
-          count: ring === 0 && kind.id === mine.id ? 0 : 10000 * RESOURCE_PRECISION,
+          count: id === 800 + mine.id ? 0 : 10000 * RESOURCE_PRECISION,
         },
       }),
     ),

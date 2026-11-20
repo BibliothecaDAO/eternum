@@ -17,6 +17,7 @@ export interface DeepSiteView {
   position: { x: number; y: number; alt: boolean };
   ring: number;
   open: boolean;
+  opensAt: number;
   buildingPay: number;
   day: number;
   beastTroops: bigint;
@@ -33,10 +34,10 @@ export function readDeepSites(
   const today = readDeepDay(store, timestamp, gameId);
   if (!today) return [];
   const rows = [...store.inGame("DeepSite", gameId)];
-  if (rows.length !== today.rules.rings.length * nativeRuleConstants.DEEP_KIND_COUNT)
+  if (rows.length !== today.rules.rings.length * nativeRuleConstants.DEEP_RING_SITES)
     throw new Error("Incomplete Deep site facts");
   return rows
-    .sort((left, right) => left.ring - right.ring || left.kind - right.kind)
+    .sort((left, right) => left.ring - right.ring || Number(left.entity_id - right.entity_id))
     .map((site) => deepSiteView(store, today, site, timestamp));
 }
 
@@ -71,9 +72,7 @@ export function readDeepRingOpening(
   const site = store.get("DeepSite", { game_id: gameId, entity_id: siteId });
   const today = site && readDeepDay(store, timestamp, gameId);
   if (!site || !today) return undefined;
-  const ring = today.rules.rings[site.ring];
-  if (!ring) throw new Error(`Site ${site.entity_id} is outside its preset rules`);
-  return ringOpening(store, today, site, ring);
+  return ringOpening(store, today, site, siteRing(today, site));
 }
 
 interface DeepDay {
@@ -103,20 +102,21 @@ function deepSiteView(
   if (!kind) throw new Error(`Unknown site kind ${site.kind}`);
   const gameId = site.game_id;
   const { current, guard, troops } = todaysBeast(store, today, site);
-  const ring = today.rules.rings[site.ring];
-  if (!ring) throw new Error(`Site ${site.entity_id} is outside its preset rules`);
   const entered = requireEntered(realmsEntered(store, gameId, today));
+  const isOpen = (row: NativeRows["DeepSite"]) => ringOpens(entered, siteRing(today, row));
+  const payingAt = Math.max(entered, siteRing(today, site).realms);
+  const openOfKind = [...store.inGame("DeepSite", gameId)].filter(
+    (row) => row.kind === site.kind && ringOpens(payingAt, siteRing(today, row)),
+  ).length;
   return {
     id: site.entity_id,
     kind: kind.id,
     name: kind.name,
     position: entityMapPosition(store, gameId, site.entity_id),
     ring: site.ring,
-    open: ringOpens(entered, ring),
-    buildingPay: deepBuildingPay(
-      today.rules.building_pay,
-      today.rules.rings.filter((candidate) => ringOpens(entered, candidate)).length,
-    ),
+    open: isOpen(site),
+    opensAt: siteRing(today, site).realms,
+    buildingPay: deepBuildingPay(today.rules.building_pay, openOfKind),
     day: today.index,
     beastTroops: troops,
     guard,
@@ -144,6 +144,12 @@ type RingOpening = { known: { open: boolean; realms: number } } | { unknown: str
 type DeepRing = NativeRows["DeepRules"]["rings"][number];
 
 const ringOpens = (entered: number, ring: DeepRing): boolean => entered >= ring.realms;
+
+function siteRing(today: DeepDay, site: NativeRows["DeepSite"]): DeepRing {
+  const ring = today.rules.rings[site.ring];
+  if (!ring) throw new Error(`Site ${site.entity_id} is outside its preset rules`);
+  return ring;
+}
 
 function ringOpening(
   store: NativeFactStore,

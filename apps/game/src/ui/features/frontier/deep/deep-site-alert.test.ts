@@ -2,7 +2,7 @@ import { siteGuardTroops } from "../../../../../../realms/server/fixtures/shard-
 import { expect, it } from "vitest";
 import { deepScenario } from "@/lab/game/deep-scenario";
 import { planDeepRingOpenings, planDeepSiteWatches } from "../../../../../../realms/server/deep-site-watch";
-import { RESOURCE_PRECISION, deepSites } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import {
   nativeRuleConstants,
   readDeepSites,
@@ -245,6 +245,5 @@ it("ignores a closed ring, then plans each open site at its own time and announc
   expect(open.map(({ kind }) => kind)).toEqual([nativeRuleConstants.DEEP_MINE, nativeRuleConstants.DEEP_MINE]);
   expect(open.find(({ siteId }) => siteId === guarded[0]!.siteId)?.dueAt).toBe(guarded[0]!.dueAt);
   expect(open.find(({ siteId }) => siteId !== guarded[0]!.siteId)?.dueAt).toBe(f.startsAt * 1000);
-  const pay = f.store.require("DeepRules", { game_id: 1 }).building_pay.pair;
-  expect(f.rings()).toEqual([expect.objectContaining({ ring: 1, day: 0, pay, sites: deepSites.length })]);
+  expect(f.rings()).toEqual([expect.objectContaining({ ring: 1, day: 0, sites: nativeRuleConstants.DEEP_RING_SITES })]);
 });

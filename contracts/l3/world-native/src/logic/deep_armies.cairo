@@ -16,9 +16,6 @@ pub fn settle(key: ExplorerKey, mut army: ExplorerTroops, context: ExecutionCont
     let Some(rules) = crate::logic::deep_sites::rules_entry(key.game_id) else {
         return army;
     };
-    if crate::logic::deep_guards::entry(key).is_some() {
-        crate::logic::deep_ticks::assert_caught_up(key.game_id, context);
-    }
     let Some(last_tick) = crate::state::read().deep.army_ticks.read((key.game_id, key.explorer_id)) else {
         assert!(!crate::logic::deep::contains(key.game_id, army.coord), "Deep army has no tick");
         return army;
@@ -27,6 +24,9 @@ pub fn settle(key: ExplorerKey, mut army: ExplorerTroops, context: ExecutionCont
         context.game.unbox(), context.rules.unbox().day_unit_seconds, crate::logic::army_days::require(key),
     );
     let tick = core::cmp::min(context.timestamp, day.end) / context.rules.unbox().tick_config.armies_tick_in_seconds;
+    if crate::logic::deep_guards::entry(key).is_some() {
+        crate::logic::deep_ticks::assert_paid_to(key.game_id, tick);
+    }
     if tick <= last_tick {
         return army;
     }

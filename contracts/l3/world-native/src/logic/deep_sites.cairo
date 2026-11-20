@@ -23,7 +23,7 @@ pub fn beast(game_id: u32, kind: u8) -> DeepBeast {
 }
 
 pub fn site_count(game_id: u32) -> u8 {
-    rules_entry(game_id).expect('missing Deep rules').ring_count.read() * crate::rules::DEEP_KIND_COUNT
+    rules_entry(game_id).expect('missing Deep rules').ring_count.read() * crate::rules::DEEP_RING_SITES
 }
 
 pub fn site_id(game_id: u32, index: u8) -> u64 {
@@ -38,14 +38,25 @@ pub fn is_open(game_id: u32, site: DeepSite) -> bool {
     crate::state::read().deep.realms_entered.read((game_id, site.day)) >= ring(game_id, site.ring).realms
 }
 
-pub fn open_rings(game_id: u32, day: u64) -> u8 {
-    let entered = crate::state::read().deep.realms_entered.read((game_id, day));
-    let count = rules_entry(game_id).expect('missing Deep rules').ring_count.read();
-    let mut open = 0;
-    while open < count && entered >= ring(game_id, open).realms {
-        open += 1;
+pub fn open_by_kind(game_id: u32) -> Span<u8> {
+    let mut open = array![];
+    for index in 0..site_count(game_id) {
+        let row = site(ResourceKey { game_id, entity_id: site_id(game_id, index) }).expect('missing Deep site');
+        if is_open(game_id, row) {
+            open.append(row.kind);
+        }
     }
-    open
+    let mut counts = array![];
+    for kind in 0..crate::rules::DEEP_KIND_COUNT {
+        let mut count = 0_u8;
+        for held in open.span() {
+            if *held == kind {
+                count += 1;
+            }
+        }
+        counts.append(count);
+    }
+    counts.span()
 }
 
 pub fn assert_open(game_id: u32, site: DeepSite) {
@@ -96,42 +107,78 @@ fn initialize(game_id: u32) {
     crate::logic::deep_ticks::initialize(game_id);
     let start = state.games.games.entry(game_id).start_main_at.read();
     let spacing = crate::logic::preset_record::for_game(game_id).settlement_spacing.read();
+    let seed: u256 = state.games.games.entry(game_id).seed.read().into();
     for index in 0..site_count(game_id) {
         if state.deep.site_ids.read((game_id, index)) != 0 {
             continue;
         }
-        let band = index / crate::rules::DEEP_KIND_COUNT;
-        let place = index % crate::rules::DEEP_KIND_COUNT;
+        let band = index / crate::rules::DEEP_RING_SITES;
+        let place = index % crate::rules::DEEP_RING_SITES;
         let entity_id: u64 = crate::logic::game::allocate_setup_entity(game_id).into();
         state.deep.site_ids.write((game_id, index), entity_id);
-        let coord = crate::deep::place(band, ring(game_id, band).radius, place, spacing);
+        let coord = crate::deep::place(ring(game_id, band).radius, place, spacing);
         crate::logic::map::MapState::occupy(
             crate::geometry::tile_key(game_id, coord), entity_id, crate::taxonomy::DEEP_SITE_OCCUPIER, false,
         );
-        let opening = DeepSite { kind: crate::deep::kind_on(band, place, 0), ring: band, day: 0 };
+        let kind = crate::deep::kind_at(crate::deep::ring_draw(seed, game_id, band, 0), place);
+        let opening = DeepSite { kind, ring: band, day: 0 };
         reset_beast(ResourceKey { game_id, entity_id }, opening, start);
     }
 }
 
-pub fn rollover(game_id: u32, context: ExecutionContext) {
-    if rules_entry(game_id).is_none() {
-        return;
-    }
+pub fn rollover(game_id: u32, context: ExecutionContext) -> bool {
+    let Some(rules) = rules_entry(game_id) else {
+        return true;
+    };
     let game = context.game.unbox();
     if context.timestamp < game.start_main_at || (game.end_at != 0 && context.timestamp >= game.end_at) {
-        return;
+        return true;
     }
     let day = crate::days::day_of(game, context.rules.unbox().day_unit_seconds, context.timestamp);
-    for index in 0..site_count(game_id) {
-        let key = ResourceKey { game_id, entity_id: site_id(game_id, index) };
-        let previous = site(key).expect('missing initialized Deep site');
-        if previous.day != day.index {
+    let draw = day_draw(game_id, day.index, context.raw_root);
+    let mut spent = 0;
+    for band in 0..rules.ring_count.read() {
+        let first = band * crate::rules::DEEP_RING_SITES;
+        if site(ResourceKey { game_id, entity_id: site_id(game_id, first) }).unwrap().day == day.index {
+            continue;
+        }
+        let cost = ring_guards(game_id, band) * crate::rules::DEEP_CATCH_UP_DEATH_TICKS + 1;
+        if spent != 0 && spent + cost > crate::rules::DEEP_CATCH_UP_GUARD_TICKS {
+            return false;
+        }
+        spent += cost;
+        let ring_draw = crate::deep::ring_draw(draw, game_id, band, day.index);
+        for place in 0..crate::rules::DEEP_RING_SITES {
+            let key = ResourceKey { game_id, entity_id: site_id(game_id, first + place) };
             crate::logic::deep_guards::expire(key, context);
-            let place = index % crate::rules::DEEP_KIND_COUNT;
-            let kind = crate::deep::kind_on(previous.ring, place, day.index);
-            reset_beast(key, DeepSite { kind, ring: previous.ring, day: day.index }, day.start);
+            let kind = crate::deep::kind_at(ring_draw, place);
+            reset_beast(key, DeepSite { kind, ring: band, day: day.index }, day.start);
         }
     }
+    true
+}
+
+fn day_draw(game_id: u32, day: u64, raw_root: u256) -> u256 {
+    let state = crate::state::write();
+    if let Some(draw) = state.deep.day_draws.read((game_id, day)) {
+        return draw;
+    }
+    state.deep.day_draws.write((game_id, day), Some(raw_root));
+    raw_root
+}
+
+fn ring_guards(game_id: u32, band: u8) -> u64 {
+    let state = crate::state::read();
+    let mut guards = 0;
+    for place in 0..crate::rules::DEEP_RING_SITES {
+        let entity_id = site_id(game_id, band * crate::rules::DEEP_RING_SITES + place);
+        for slot in 0..crate::rules::DEEP_GUARD_SLOTS {
+            if state.deep.slots.read((game_id, entity_id, slot)) != 0 {
+                guards += 1;
+            }
+        }
+    }
+    guards
 }
 
 fn reset_beast(key: ResourceKey, value: DeepSite, timestamp: u64) {
@@ -199,8 +246,8 @@ pub mod DeepSites {
         }
         fn rollover_deep(
             ref self: ComponentState<TContractState>, game_id: u32, context: crate::commands::ActionContext,
-        ) {
-            super::rollover(game_id, crate::commands::execution_context(game_id, context));
+        ) -> bool {
+            super::rollover(game_id, crate::commands::execution_context(game_id, context))
         }
     }
 }
