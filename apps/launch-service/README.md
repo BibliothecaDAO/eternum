@@ -27,9 +27,8 @@ create-run route is removed.
 The registrar serializes its device's shard writes. Each game is created with its complete roster, then the existing
 automatic realm seating completes. A retry re-resolves the historical cohort and verifies an existing game's roster
 before resuming. Paid launches retry transient failures with backoff until success or slot cancellation. The launch
-service records no game results. The independent monitor re-resolves the complete slot cohort and checks every frozen
-pair before the relay posts a game's results; mismatches pause payouts, unavailable evidence cannot pass. Each result
-allocates only its own registrations.
+service records no game results, and nothing posts one: the value monitor pauses payouts on any result the ledger
+records.
 
 Normal game names cannot start with `check-`. Operator-only `/api/factory/operator/launcher/enrol` enrolls the Worker's
 own signer. Deployment registers the shard as pending, enrolls the Worker, hands it the launcher role, and reads that
