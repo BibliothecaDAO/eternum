@@ -159,7 +159,7 @@ fn account_upgrade_and_non_account_are_rejected_before_identity_read() {
     );
     play_fixture::caller(d.games, d.actor, 100);
     assert_entry_refusal(d, 1, release, play_fixture::encode(action(d, 1).command), "unapproved account class");
-    let (non_account, _) = deploy("BankTokenFixture", @array![d.actor.into()]);
+    let (non_account, _) = deploy("AccountUpgradeFixture", @array![]);
     play_fixture::caller(d.games, non_account, 100);
     assert_entry_refusal(d, 1, release, play_fixture::encode(action(d, 1).command), "unapproved account class");
 }
