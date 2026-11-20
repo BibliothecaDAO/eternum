@@ -126,24 +126,88 @@
     "BYTE_RANGE": "0x100",
     "REWARD_EXTRACTED_FLAG": "0x20000000000000000000000000000"
   },
-  "logicClasses": {
-    "season": "SeasonLogic",
-    "map": "MapLogic",
-    "placement": "PlacementLogic",
-    "construction": "ConstructionLogic",
-    "production": "ProductionLogic",
-    "structures": "StructuresLogic",
-    "troops": "TroopsLogic",
-    "settlement": "SettlementLogic",
-    "resources": "ResourcesLogic",
-    "economy": "EconomyLogic",
-    "prizes": "PrizesLogic",
-    "registry": "RegistryLogic",
-    "combat": "CombatLogic",
-    "bridge": "BridgeLogic",
-    "relics": "RelicsLogic",
-    "movement": "MovementLogic"
-  },
+  "logicClasses": [
+    {
+      "slot": 0,
+      "name": "season",
+      "contract": "SeasonLogic"
+    },
+    {
+      "slot": 1,
+      "name": "map",
+      "contract": "MapLogic"
+    },
+    {
+      "slot": 2,
+      "name": "placement",
+      "contract": "PlacementLogic"
+    },
+    {
+      "slot": 3,
+      "name": "construction",
+      "contract": "ConstructionLogic"
+    },
+    {
+      "slot": 4,
+      "name": "production",
+      "contract": "ProductionLogic"
+    },
+    {
+      "slot": 5,
+      "name": "structures",
+      "contract": "StructuresLogic"
+    },
+    {
+      "slot": 6,
+      "name": "troops",
+      "contract": "TroopsLogic"
+    },
+    {
+      "slot": 7,
+      "name": "settlement",
+      "contract": "SettlementLogic"
+    },
+    {
+      "slot": 8,
+      "name": "resources",
+      "contract": "ResourcesLogic"
+    },
+    {
+      "slot": 9,
+      "name": "economy",
+      "contract": "EconomyLogic"
+    },
+    {
+      "slot": 10,
+      "name": "prizes",
+      "contract": "PrizesLogic"
+    },
+    {
+      "slot": 11,
+      "name": "registry",
+      "contract": "RegistryLogic"
+    },
+    {
+      "slot": 12,
+      "name": "combat",
+      "contract": "CombatLogic"
+    },
+    {
+      "slot": 13,
+      "name": "bridge",
+      "contract": "BridgeLogic"
+    },
+    {
+      "slot": 14,
+      "name": "relics",
+      "contract": "RelicsLogic"
+    },
+    {
+      "slot": 15,
+      "name": "movement",
+      "contract": "MovementLogic"
+    }
+  ],
   "version": 2,
   "cairoVersion": "2.17.0",
   "encoding": "cairo-serde",
@@ -1761,6 +1825,54 @@
     "entrypoints": [
       {
         "type": "function",
+        "name": "view_call",
+        "inputs": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "slot",
+            "type": "core::integer::u8"
+          },
+          {
+            "name": "calldata",
+            "type": "core::array::Span::<core::felt252>"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::array::Span::<core::felt252>"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "authority_call",
+        "inputs": [
+          {
+            "name": "family",
+            "type": "core::integer::u8"
+          },
+          {
+            "name": "slot",
+            "type": "core::integer::u8"
+          },
+          {
+            "name": "calldata",
+            "type": "core::array::Span::<core::felt252>"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::array::Span::<core::felt252>"
+          }
+        ],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
         "name": "configure_deposits",
         "inputs": [
           {
@@ -2057,6 +2169,10 @@
           {
             "name": "release",
             "type": "games_storage::release::Release"
+          },
+          {
+            "name": "classes",
+            "type": "core::array::Span::<core::starknet::class_hash::ClassHash>"
           }
         ],
         "outputs": [],
@@ -2166,6 +2282,22 @@
         "outputs": [
           {
             "type": "games_storage::release::Release"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "release_classes",
+        "inputs": [
+          {
+            "name": "release_id",
+            "type": "core::integer::u32"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::array::Span::<core::starknet::class_hash::ClassHash>"
           }
         ],
         "state_mutability": "view"
@@ -7733,6 +7865,16 @@
         }
       ]
     },
+    "core::array::Span::<core::starknet::class_hash::ClassHash>": {
+      "type": "struct",
+      "name": "core::array::Span::<core::starknet::class_hash::ClassHash>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<core::starknet::class_hash::ClassHash>"
+        }
+      ]
+    },
     "core::array::Span::<world_native::blitz_results::RankedPlayer>": {
       "type": "struct",
       "name": "core::array::Span::<world_native::blitz_results::RankedPlayer>",
@@ -8359,76 +8501,6 @@
         }
       ]
     },
-    "games_storage::release::LogicClasses": {
-      "type": "struct",
-      "name": "games_storage::release::LogicClasses",
-      "members": [
-        {
-          "name": "season",
-          "type": "core::starknet::class_hash::ClassHash"
-        },
-        {
-          "name": "map",
-          "type": "core::starknet::class_hash::ClassHash"
-        },
-        {
-          "name": "placement",
-          "type": "core::starknet::class_hash::ClassHash"
-        },
-        {
-          "name": "construction",
-          "type": "core::starknet::class_hash::ClassHash"
-        },
-        {
-          "name": "production",
-          "type": "core::starknet::class_hash::ClassHash"
-        },
-        {
-          "name": "structures",
-          "type": "core::starknet::class_hash::ClassHash"
-        },
-        {
-          "name": "troops",
-          "type": "core::starknet::class_hash::ClassHash"
-        },
-        {
-          "name": "settlement",
-          "type": "core::starknet::class_hash::ClassHash"
-        },
-        {
-          "name": "resources",
-          "type": "core::starknet::class_hash::ClassHash"
-        },
-        {
-          "name": "economy",
-          "type": "core::starknet::class_hash::ClassHash"
-        },
-        {
-          "name": "prizes",
-          "type": "core::starknet::class_hash::ClassHash"
-        },
-        {
-          "name": "registry",
-          "type": "core::starknet::class_hash::ClassHash"
-        },
-        {
-          "name": "combat",
-          "type": "core::starknet::class_hash::ClassHash"
-        },
-        {
-          "name": "bridge",
-          "type": "core::starknet::class_hash::ClassHash"
-        },
-        {
-          "name": "relics",
-          "type": "core::starknet::class_hash::ClassHash"
-        },
-        {
-          "name": "movement",
-          "type": "core::starknet::class_hash::ClassHash"
-        }
-      ]
-    },
     "games_storage::release::Release": {
       "type": "struct",
       "name": "games_storage::release::Release",
@@ -8442,8 +8514,8 @@
           "type": "core::integer::u32"
         },
         {
-          "name": "classes",
-          "type": "games_storage::release::LogicClasses"
+          "name": "slot_count",
+          "type": "core::integer::u8"
         },
         {
           "name": "migration",
@@ -13865,5 +13937,5 @@
       ]
     }
   },
-  "identity": "e921ea1119ce5dad93ff287c5a9ee4c9db5759febfd23e273898f0b2a4baa18a"
+  "identity": "dbe561af36a04f7cf39c5cf6c6bccf862398ee39ec3bb853a1283f8e20627a3e"
 }
