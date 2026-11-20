@@ -6,7 +6,7 @@ import { afterEach, expect, it, vi } from "vitest";
 
 vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/runtime/l2-rpc")>()),
-  l2Provider: () => ({ callContract: () => new Promise(() => {}) }),
+  l2Provider: () => ({ callContract: async () => [`0x${(10n ** 24n).toString(16)}`, "0x0"] }),
 }));
 vi.mock("@/hooks/context/starknet-provider", async () => ({
   StarknetProvider: (await import("@/ui/modules/identity/test-wallet")).StandInStarknetProvider,

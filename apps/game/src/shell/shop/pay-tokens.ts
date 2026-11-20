@@ -15,6 +15,7 @@ export const PAY_TOKEN_ICONS = {
 } as const satisfies Record<MainnetToken, IconMeaning>;
 
 const SLIPPAGE = 0.01;
+const FEE_ROOM_PER_FEE_PRICED = 2n;
 
 type Quote = NonNullable<FragmentPrice["quote"]>;
 
@@ -50,7 +51,8 @@ export const paymentIn = async (
   const purchase = (lords: bigint) =>
     avnuLordsPurchase({ sellToken: token.address, lordsWei: lords, taker: payer, slippage: SLIPPAGE });
   const exact = await purchase(lordsWei);
-  const fee = passkey ? ((await defaultWalletFeeOf([...exact.calls, pay]))?.max ?? 0n) : 0n;
+  const priced = passkey ? ((await defaultWalletFeeOf([...exact.calls, pay]))?.max ?? 0n) : 0n;
+  const fee = priced * FEE_ROOM_PER_FEE_PRICED;
   const bought = fee === 0n ? exact : await purchase(lordsWei + fee);
   return {
     token,

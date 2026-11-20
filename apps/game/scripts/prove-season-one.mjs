@@ -43,7 +43,7 @@ const PAGES = [
     file: "fragments-pay",
     url: FRAGMENTS_URL,
     press: { after: "[data-fragment-packs]", button: "Pay $10.00" },
-    shown: "[data-fragment-quote]",
+    shown: "[data-pay-tokens]",
   },
 ];
 const SIZES = [

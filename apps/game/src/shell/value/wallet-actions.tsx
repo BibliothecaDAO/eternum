@@ -260,7 +260,7 @@ const PasskeySend = ({
       (cause: unknown) => prepared.current?.send === send && setPriced(whyNotPrepared(cause)),
     );
     return send;
-  }, [wallet.address, asked]);
+  }, [wallet.address, asked, lordsBought]);
   useEffect(() => {
     void prepare().catch(() => {});
   }, [prepare]);

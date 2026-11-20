@@ -206,7 +206,7 @@ it("shows the Realms wallet's fee in LORDS before its passkey confirms, and open
     const { container, landed } = await openSend();
     await settled(() => expect(buttonsOf(container)).toEqual(["Confirm with your passkey"]));
     expect(container.textContent).toContain("Network fee about 7.89 LORDS, at most 9.12");
-    expect(prepare).toHaveBeenCalledWith(LINKED, CALLS, expect.anything());
+    expect(prepare).toHaveBeenCalledWith(LINKED, CALLS, expect.anything(), 0n);
     await press(container, "Confirm with your passkey");
     await settled(() => expect(landed).toHaveBeenCalledOnce());
     expect(sendFromDefault).toHaveBeenCalledWith(

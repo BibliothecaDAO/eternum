@@ -6,7 +6,7 @@ const BUILD_URL = "https://starknet.api.avnu.fi/swap/v3/build";
 const PRICES_URL = "https://starknet.impulse.avnu.fi/v3/tokens/prices";
 
 export const LORDS_ADDRESS = MAINNET_TOKENS.lords.address;
-const AVNU_ROUTER =
+export const AVNU_ROUTER =
   "0x04270219d365d6b017231b52e92b3fb5d7c8378b05e9abc97724537a80e93b0f";
 const USDC_ADDRESS = MAINNET_TOKENS.usdc.address;
 /** A cent in USDC's smallest unit (6 decimals). */

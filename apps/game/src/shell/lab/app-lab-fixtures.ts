@@ -1,6 +1,7 @@
 import type { HeraldFrontierLeaderboard, HeraldLeaderboard } from "@bibliothecadao/eternum/game-sync";
 import { StructureType } from "@bibliothecadao/types";
 import { uint256 } from "starknet";
+import { LORDS_ADDRESS } from "@realms-world/chain";
 import { buildLedgerEconomicPreset, chestPresetFor } from "../../../../../config/deployer/clean/ledger/economics";
 import { blitzVictoryPointConfig } from "../../../../../config/source/blitz/balance";
 import { VICTORY_POINTS_MULTIPLIER } from "../../../../../config/source/common/arena/points";
@@ -508,7 +509,7 @@ export const labSealCode = (screen: LabScreen) => ({ held: screen === "preseason
 export const LAB_FRAGMENT_QUOTE = {
   id: "lab-quote",
   lordsWei: String(2_750n * 10n ** 18n),
-  token: "0x10e5",
+  token: LORDS_ADDRESS,
   treasury: "0x7a",
   expiresAt: NOW + 600,
 };

@@ -4,6 +4,7 @@ import type { FragmentPrice } from "@realms-world/identity";
 
 import { l2Provider } from "@/runtime/l2-rpc";
 import { AppChoice, AppNotice } from "@/ui/design-system/kit/app-elements";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { FRAGMENTS_PAGE_WORDS } from "@/ui/design-system/kit/words";
 import { tokenBalanceOf } from "@/ui/modules/identity/wallet-send";
 
@@ -35,6 +36,8 @@ export const PayWith = ({
   const [chosen, setChosen] = useState<PayToken["key"] | null>(null);
   if (reading.pending) return <AppNotice line={FRAGMENTS_PAGE_WORDS.pricingTokens} />;
   const payable = reading.payable;
+  if (payable.length === 0 && reading.failure)
+    return <ServiceFailure service={reading.failure.service} error={reading.failure.error} retry={reading.retry} />;
   if (payable.length === 0)
     return (
       <AppNotice
@@ -97,7 +100,17 @@ const useTokenPayments = (tokens: PayToken[], quote: Quote, payer: string, passk
     const payment = payments[index]?.data;
     return held !== undefined && payment && held >= payment.most ? [{ payment, held }] : [];
   });
-  return { pending, payable };
+  const unread = balances.find(({ error }) => error);
+  const unpriced = payments.find(({ error }) => error);
+  const failure = unread
+    ? { service: "ledger" as const, error: unread.error }
+    : unpriced
+      ? { service: "market" as const, error: unpriced.error }
+      : null;
+  const retry = () => {
+    for (const query of [...balances, ...payments]) if (query.error) void query.refetch();
+  };
+  return { pending, payable, failure, retry };
 };
 
 const costOf = (payment: TokenPayment) =>

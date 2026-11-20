@@ -18,6 +18,7 @@ import { NotFoundPage } from "../not-found";
 import { PlayPage } from "../play/play-page";
 import { SharedLinkPage } from "../share/shared-link-page";
 import { FragmentsPage } from "../shop/fragments-page";
+import { answerAvnuRead, answerTokenBalances, isAvnuRead } from "./lab-pay-tokens";
 import { PlayerPage, ProfilePage, SettingsPage } from "../profile/profile-pages";
 import { ResultsPage } from "../season-tab/results-page";
 import { SeasonPage } from "../season-tab/season-page";
@@ -213,6 +214,9 @@ function installLabFixtures(screen: LabScreen, field: number | null): () => void
     "shareTally",
     "readDefaultWallet",
     "deleteAccount",
+    "priceFragments",
+    "payFragments",
+    "fragmentPayment",
   ];
   const descriptors = identityMethods.map(
     (name) => [name, Object.getOwnPropertyDescriptor(identityClient, name)] as const,
@@ -220,7 +224,9 @@ function installLabFixtures(screen: LabScreen, field: number | null): () => void
   answerAppReads(screen, field);
   answerChat(screen);
   answerIdentity(screen);
+  const restoreBalances = answerTokenBalances();
   return () => {
+    restoreBalances();
     window.fetch = previousFetch;
     window.WebSocket = previousWebSocket;
     for (const [name, descriptor] of descriptors) {
@@ -267,6 +273,7 @@ const answerAppReads = (screen: LabScreen, field: number | null) => {
   if (field !== null) answers["/games/1/leaderboard"] = () => json(labFrontierBoard(field, boardReads++));
   window.fetch = (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);
+    if (isAvnuRead(url)) return Promise.resolve(answerAvnuRead(url, init?.body?.toString()));
     const answer = answers[url.pathname];
     return answer ? Promise.resolve(answer(url)) : network(input, init);
   };
