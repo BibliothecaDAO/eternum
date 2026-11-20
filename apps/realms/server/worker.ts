@@ -10,6 +10,7 @@ import { superviseNotifiers } from "./directory";
 import { decodeIdentityEnv, type IdentityEnv } from "./env";
 import { routeIdentityRequest } from "./routes";
 import { deliverQueuedSealGrants, sealCodeWorldOf } from "./seal-codes";
+import { settleShareInvites, shareWorldOf } from "./shares";
 
 /**
  * The identity Worker, served under the app's /api: better-auth owns /api/auth/*, and the rest are the account's
@@ -34,6 +35,7 @@ export default {
     await finishWalletRecoveries(env);
     await finishAccountDeletions(env);
     await deliverQueuedSealGrants(sealCodeWorldOf(env, fetch));
+    await settleShareInvites(shareWorldOf(env, fetch));
   },
 };
 
