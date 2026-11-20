@@ -474,8 +474,6 @@ pub mod StructuresLogic {
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) -> () {
-            let game_context = crate::commands::execution_context(key.game_id, game_context);
-
             let record = crate::logic::structures::record(key);
             let owner = crate::logic::structures::record(
                 ResourceKey { game_id: key.game_id, entity_id: capturing_home },

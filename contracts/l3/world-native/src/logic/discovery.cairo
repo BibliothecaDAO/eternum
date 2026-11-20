@@ -12,6 +12,7 @@ pub fn reveal(
         .unwrap_or(false);
     assert!(!already_revealed, "expedition tile already revealed");
     crate::logic::map::MapState::reveal(key, crate::logic::map::biome(key, biome));
+    let home = crate::state::read().troops.explorers.entry((key.game_id, explorer_id)).owner.read();
     let result = roll(key, explorer_id, seed, context);
     let guarded = match result {
         crate::discovery::Discovery::Camp | crate::discovery::Discovery::Rift | crate::discovery::Discovery::Ruin(_) |
@@ -60,7 +61,6 @@ pub fn lore_rules(learned: u64) -> crate::expeditions::FrontierDiscoveryRules {
 fn roll(
     key: TileKey, explorer_id: u64, seed: u256, context: crate::commands::ActionContext,
 ) -> crate::discovery::Discovery {
-    let home = crate::state::read().troops.explorers.entry((key.game_id, explorer_id)).owner.read();
     assert!(home != 0, "missing exploring army");
     let home_key = crate::resources::ResourceKey { game_id: key.game_id, entity_id: home };
     let learned = crate::logic::research::require(home_key).learned;
