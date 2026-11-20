@@ -692,8 +692,6 @@ pub mod TroopsLogic {
                 "army size limit",
             );
             let mut troops = initial_troops(category, tier, command.amount, rules, context.timestamp);
-            // A slot's first army of the day starts full at its own maximum, read from the progress it is
-            // created with; a slot an army already used keeps the bar that army left.
             troops
                 .stamina =
                     crate::logic::army_slots::allocate(
