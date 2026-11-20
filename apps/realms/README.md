@@ -62,10 +62,18 @@ phone's Share), and answers who shared which moment.
 
 Sign-up reports nothing of its own. Settlement gives each account made after one of its browsers opened another player's
 link to the first such link (first touch), never to the sharer's own accounts or any account on a browser the sharer was
-signed in on, joined when the account was made. A join counts as activated once the season board of the link's game
-shows the account with a site cleared: the season is the window, so a clear there counts however late a read finds it,
-and a clear in another game never does. A board that cannot answer leaves its joins for the next read. A sharer's tally
-read settles that sharer's joins; the operator's report settles every join. A visit from the sharer's own browsers is
+signed in on, joined when the account was made. A join counts as activated once the account's homes hold
+`FRIEND_GLORY` (100) Glory in the link's game, as its Herald's `RaceMember` rows say; a pre-season Aspect invite (no
+game) counts in the listed shard's open Frontier games, the first to reach it deciding. Only games that have not ended
+settle. A Herald that cannot answer leaves its joins for the next read. A sharer's tally read settles that sharer's
+joins; the operator's report and the minute cron settle every join.
+
+An Aspect invite pays its sharer in the friend's game: `FRIEND_FRAGMENTS` (100) for each of the first `FRIENDS_LIMIT`
+(10) friends, and `FRIENDS_BONUS_FRAGMENTS` (1,000) more at the tenth (`@bibliothecadao/types` shop constants). A friend
+on the sharer's mailbox, or on one an already paid friend has, activates but pays nothing (one person counts once). Each
+payout is a `share_payouts` row whose id is the credit's id on chain; settlement sends unpaid rows to the relay's
+`/api/value/operator/fragments`, which calls `credit_fragments` with source FRIEND, and marks a row paid once the relay
+accepts it. A refused or lost delivery is retried on the next settle, and the chain pays an id once. A visit from the sharer's own browsers is
 never counted. A friend who opens the link in one browser (X's in-app browser) and signs up in another is not the
 link's: the browser id is the only tie.
 
@@ -84,65 +92,14 @@ answer), and once published the card's pixels (name, portrait, day, closing rank
 and the six day totals). No map position, email, wallet address, key or event time. The code is unlisted, not an access
 control.
 
-- `GET /api/shares` (signed in): the account's `{links, posted, visits, joined, activated}`, its joins settled first.
+- `GET /api/shares` (signed in): the account's `{links, posted, visits, joined, activated, friendsPaid,
+  fragmentsEarned}`, its joins settled and its payouts delivered first.
 - `GET /api/operator/shares` (operator token): every moment's funnel (`moments`: kind, chain, game, moment and the five
   counts), first visits from others' browsers by the tag their link carried (`firstVisitsByTag`: `x`, `system`, and null
-  for none), the 20 sharers who brought the most (`topSharers`), `settledAt` and `unsettledJoins`, the joins whose board
+  for none), the 20 sharers who brought the most (`topSharers`), `settledAt` and `unsettledJoins`, the joins whose Herald
   could not answer. A tag names the button that made the link, not the app that carried it, and posts are not counted
   per tag, so visits by tag are not a rate per post.
 
 ```bash
 curl -s -H "authorization: Bearer $OPERATOR_TOKEN" https://<identity origin>/api/operator/shares | jq '.moments[:7]'
 ```
-
-## Campaign tickets and founded free homes
-
-Players open `/join/devcon/<code>`, sign in, and redeem through `/api/campaigns/redeem`. A free home can receive its
-first source after founding: a campaign ticket or a held Realm. A home with a source cannot switch. The relay's
-`/api/value/realm-entry` verifies the held NFT or reads the ticket and uses the existing contract entrypoint. A player
-returns to game entry → Choose a daily claim → Add this daily claim. The founding picker shows the ticket and held
-Realms together, marks used Realms as taken, and submits only the player’s confirmed choice. Tickets are one per
-account. Registration preserves the home's identity, traits and prior daily grants. The existing daily action pays that
-source's reward. A late NFT grants the normal held-Realm Labor, without Essence or missed-days compensation.
-
-Production recovery starts with one account, after the owner's production go and the compatible release and services are
-deployed:
-
-1. Select one account from the approved 22-account file whose free home has at least one unclaimed game day before
-   today. Save a confirmed Herald snapshot and calculate its expected missed-day grants from the home's founding
-   timestamp, the game's day calendar, prior `LaborGrant` rows and the ticket tier drawn in the next step.
-2. For that account only, send authenticated operator POSTs to `/api/operator/campaign-draw` with
-   `{ campaign: "devcon-2026", realmsId }`, then `/api/value/operator/campaign-entry` with
-   `{ chainId, gameId, realmsId }`. Keep credentials, account identifiers and responses in private files. Do not start
-   the bulk command yet.
-3. Wait for confirmed Herald indexing. Check that the same home gained the expected source and one `LaborGrant` for each
-   previously unclaimed day through yesterday. Check exact tier amounts, allowing Labor's existing storage cap and
-   accrued production; Essence must show the full nonzero catch-up. Today's grant must remain untouched. Compare the
-   snapshots for unexpected changes to other homes. If any amount or row differs, stop before the other accounts.
-4. Once the first account's grant is verified, run the command below with the same original 22-account file and the
-   approved production origin, chain and game. It safely retries the first account without paying again, then recovers
-   the other 21. Verify the final counts and Herald grants; reruns retain each ticket and never duplicate grants.
-
-For that bulk step, run from the repository root (replace the illustrated dev target with the approved target):
-
-```sh
-OPERATOR_TOKEN_FILE=/private/operator-token pnpm --dir apps/realms campaign-founded-homes \
-  /private/affected.json https://play.dev-realms.party CHAIN_ID GAME_ID devcon-2026
-```
-
-The command selects exactly 22 distinct `home: "free"` accounts. It draws each ticket from D1 through the authenticated
-`/api/operator/campaign-draw`, then registers it through `/api/value/operator/campaign-entry`. It prints counts only. A
-retry retains the original ticket and repeats registration safely, including after interruption between the steps. These
-routes reuse the existing draw, eligibility and relay registration paths; their cost is two operator handlers and the
-recovery script, allowing recovery without player impersonation or exporting the relay signing key. Production execution
-requires separate approval. The compatible contract release and both Workers must be deployed first.
-
-Only the operator recovery route sets the Devcon recovery attestation in existing entitlement metadata. It compensates
-unclaimed game days from founding through yesterday, through the normal capped Labor and uncapped Essence grant. Today's
-claim stays separate. Exact retries pay nothing again, and recovery can finish if ordinary registration landed between
-the draw and recovery. The contract verifies the attestation and home state; the script supplies the incident's approved
-account list. Ordinary late redemption and late NFT attachment carry no compensation attestation.
-
-Service behavior is checked with `pnpm --dir apps/realms test server/identity.test.ts` and
-`pnpm --dir apps/value-relay test src/realm-entry.test.ts src/worker-jobs.test.ts`. Live release preservation and claim
-payment additionally require the three-snapshot dev rehearsal recorded in the change's report.

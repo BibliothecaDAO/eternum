@@ -3,7 +3,7 @@
     "details": [
       {
         "appIDs": [],
-        "components": [{ "/": "/g/*" }, { "/": "/join/devcon/*" }, { "/": "/results/*" }]
+        "components": [{ "/": "/g/*" }, { "/": "/results/*" }]
       }
     ]
   },

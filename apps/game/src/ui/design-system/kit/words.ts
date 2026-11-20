@@ -324,7 +324,6 @@ import {
   PRINTED_CODE_LENGTH,
   SHARED_MOMENT_WORDS,
   sharerName,
-  type CampaignKey,
   type SealCodeRefusal,
   type SocialProvider,
 } from "@realms-world/identity";
@@ -1290,8 +1289,6 @@ export const claimRealmLaborLabel = (amount: number, essence = 0) =>
     ...(amount > 0 ? [`${formatExact(amount)} Labor`] : []),
     ...(essence > 0 ? [`${formatExact(essence)} Essence`] : []),
   ].join(" · ")}`;
-/** A campaign home's mark beside its realm's rank: the event that founded it, golden for a golden ticket's. */
-export const DEVCON = "Devcon";
 export const CLAIMING_LABOR = "Claiming";
 /** Today's Labor against a full store: what of it lands, the rest is lost with the claim. */
 export const laborFits = (fits: number, total: number) =>
@@ -1335,12 +1332,7 @@ export const numberedRealm = (realmId: number, name: string | undefined) =>
   name ? `${realmId} · ${name}` : String(realmId);
 export const NO_HELD_REALMS = "Your linked wallet holds no Realm";
 export const HELD_REALMS_UNREADABLE = "Your Realms cannot be read right now";
-export const TICKET_UNREADABLE = "Your ticket cannot be read right now";
 export const INVALID_REALM_NUMBER = "Enter a Realm number from 1–8,000.";
-/** A campaign's name where its tickets are named: on the Realm step, the ticket a home can be founded with. */
-const CAMPAIGN_NAMES: Record<CampaignKey, string> = { "devcon-2026": DEVCON };
-export const campaignTicketName = (campaign: CampaignKey, golden: boolean) =>
-  `${golden ? "Golden " : ""}${CAMPAIGN_NAMES[campaign]} ticket`;
 /** The Realm step: its one job, the home the player founds, and what it offers to found it with. */
 export const HOME_STEP_WORDS = {
   title: "Choose your home",
@@ -1350,7 +1342,6 @@ export const HOME_STEP_WORDS = {
   /** The name a new account was given at sign-up, said where the player first chooses something of their own. */
   playsAs: (name: string) => `You play as ${name}`,
   changeOnYou: "Change it on You",
-  /** While the account's Realms and ticket are read: the step offers nothing yet, and says why. */
   loading: "Reading what you hold…",
   freeHome: "A free home",
   freeHomeLine: "Hold a Realm or a Devcon ticket to add a daily claim.",
@@ -1368,11 +1359,7 @@ export const HOME_STEP_WORDS = {
   /** The strip's last tile: every choice, in a grid with search. */
   all: (count: number) => `All ${count}`,
   search: (count: number) => `Search ${count} Realms`,
-  /** Over the choices: "1 ticket · 3 Realms". */
-  count: (tickets: number, realms: number) =>
-    [tickets ? formatCount(tickets, "ticket") : null, realms ? formatCount(realms, "Realm") : null]
-      .filter(Boolean)
-      .join(" · "),
+  count: (realms: number) => formatCount(realms, "Realm"),
 } as const;
 
 /** The Season chip's tip: what a common chest pays today, and the pool the season pays chests from. */
@@ -1486,110 +1473,13 @@ export const SIGN_IN_WORDS = {
   continueInBrowser: "Continue in browser",
 } as const;
 
-/** Devcon's landing and its ticket: the realm it promises, the ticket opened, and what each tier gives each day. */
 export const JOIN_WORDS = {
   realm: "A Devcon realm is yours",
-  yourTicket: "Your ticket",
-  /** A second flyer on an account that already holds its ticket: the held one, never the flyer's. */
-  alreadyHeld: "You already hold your Devcon ticket",
-  open: "Open your ticket",
-  opening: "Opening…",
   sealed: "A realm waits for you",
   stub: "Devcon · Mumbai",
-  golden: "Golden ticket",
   goldenLine: "A golden realm waits",
   goldenStub: "Golden · Devcon · Mumbai",
   laborEachDay: (amount: number) => `${formatExact(amount)} Labor ${EACH_DAY}`,
-  essenceEachDay: (amount: number) => `${formatExact(amount)} Essence ${EACH_DAY}`,
-  /** The reveal's way on, into the Devcon game's Realm step. */
-  startAdventure: "Start your adventure",
-  continue: "Continue",
-  closed: "Devcon tickets have closed.",
-  taken: "Another player already opened this ticket.",
-  founded: "Your realm already has a daily claim. Give this flyer to a friend.",
-  noTicket: "This link holds no ticket. Scan the QR on your Devcon flyer.",
-  failed: "Your ticket could not be opened.",
-  /** Over a friend's referral link: who sent it, by their chosen name. */
-  sentYou: (name: string | null) => `${name ?? "A friend"} sent you a Devcon realm`,
-  /** Under the sealed ticket: the season's end, in the event's clock. */
-  openUntil: (moment: string) => `Open it until ${moment}.`,
-  selfReferral: "This is your own invite link. Share it with a friend.",
-  referralUnknown: "This invite link holds no ticket.",
-} as const;
-
-/** Invite friends, on You: the referral link, its friends' progress, and what they earn the inviter. */
-export const REFERRAL_WORDS = {
-  title: "Invite friends",
-  /** What the inviter's friends get and can still earn them, by their home. */
-  promise: {
-    free: (oneIn: number) =>
-      `Each friend who signs up through your link gets a Devcon realm, 1 in ${oneIn} of them golden. When a friend founds a realm and clears a site, you get a Devcon realm too.`,
-    ticket: "Your friends earned you a Devcon ticket. Add it to your home from its daily claim.",
-    devcon: (oneIn: number) =>
-      `Each friend who signs up through your link gets a Devcon realm, 1 in ${oneIn} of them golden. A golden friend who founds a realm and clears a site turns your realm golden.`,
-    golden: "Your realm is golden. Each friend who signs up through your link still gets a Devcon realm.",
-    held: "Each friend who signs up through your link gets a Devcon realm. Your home already has its daily claim, so it earns nothing more.",
-  },
-  /** Golden earned on a Devcon home the game has not confirmed yet: nothing is promised for a claim before it is. */
-  pending: "Golden earned. Your realm turns golden once the game confirms it; until then it claims as it does now.",
-  copy: "Copy",
-  copied: "Copied",
-  share: "Share",
-  shareText: "A Devcon realm for you in Realms: Frontier",
-  /** The link's way to golden, counted friends of the number that turns it. */
-  toGoldenLink: (counted: number, of: number) => `${counted} of ${of} friends`,
-  goldenLinkChip: "Golden link",
-  forEachFriend: "A Devcon realm",
-  forEachFriendDetail: "for each friend",
-  yourRealm: "Your Devcon realm",
-  yourRealmDetail: "when a friend founds and clears a site",
-  goldenFriend: "A golden friend",
-  goldenFriendDetail: (oneIn: number) => `1 in ${oneIn} tickets, once that friend counts`,
-  goldenLink: "A golden link",
-  goldenLinkDetail: (of: number) => `at ${of} friends: you and every friend`,
-  friend: {
-    signed: "Signed up, not founded yet",
-    founded: "Founded, clearing a first site",
-    counted: "Founded and cleared a site",
-    excluded: "Same email or device as another player, so not counted",
-  },
-  /** A friend whose name is not chosen yet. */
-  unnamed: "A friend",
-  counted: "Counted",
-  waiting: "Waiting",
-  notCounted: "Not counted",
-  golden: "Golden",
-  unreadable: "Your invite link could not be loaded.",
-  ticketTitle: (name: string | null) => `${name ?? "A friend"} counted: your Devcon realm`,
-  ticketBody: "Your friend founded a realm and cleared a site. Add this ticket to your home from its daily claim.",
-  ticketAction: "Add it to my home",
-  /** Golden said once the realm is golden on the board, or the golden ticket waits to be added to a home. */
-  goldenTitle: (linkGolden: boolean) => (linkGolden ? "Your link went golden" : "A golden friend counted"),
-  goldenBody: {
-    ticket: "Your Devcon ticket is golden. Add it to your home from its daily claim.",
-    golden: "Your Devcon realm is golden from your next daily claim. Days you already claimed stay as they were.",
-  },
-  goldenAction: { ticket: "Add it to my home", golden: "Open my realm" },
-  /** A phone's compact panel: the same facts in a line each. */
-  compact: {
-    promise: {
-      free: (oneIn: number) =>
-        `Each friend gets a Devcon realm, 1 in ${oneIn} golden. Your first counted friend gets you one.`,
-      ticket: "Friends earned you a Devcon ticket: add it from your daily claim.",
-      devcon: (oneIn: number) =>
-        `Each friend gets a Devcon realm, 1 in ${oneIn} golden. A golden friend who counts makes yours golden.`,
-      golden: "Your realm is golden. Each friend still gets a Devcon realm.",
-      held: "Each friend gets a Devcon realm. Your home earns nothing more.",
-    },
-    pending: "Golden earned: waiting for the game to confirm it.",
-    /** What counts a friend, said where the slots count them: the rule the statuses below name the next step of. */
-    linkRule: (at: number) =>
-      `Friends count once they found a realm and clear a site. At ${at}, your link turns golden.`,
-    linkGolden: "Your link is golden: every friend on it too.",
-    /** Each friend's next step to count, or why they never will. */
-    status: { signed: "Not founded yet", founded: "No site cleared yet", excluded: "Not counted" },
-    excluded: "Same email or device as another player",
-  },
 } as const;
 
 /** Blitz's rows and lobby: the steps on Join, the seat's cost, and what stands where an action cannot. */
@@ -1753,7 +1643,6 @@ export const PROFILE_WORDS = {
   /** The counts at the foot of the player's own card, each opening its sheet. */
   holdings: "Holdings",
   realms: "Realms",
-  ticket: "Ticket",
   /** Under a count the holdings could not read: it says why in its sheet. */
   unknownCount: "—",
   /** Recent games with none finished yet: the player's own, and another player's. */

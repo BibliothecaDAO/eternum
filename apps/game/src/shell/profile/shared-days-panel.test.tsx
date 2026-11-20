@@ -52,7 +52,7 @@ const figures = () =>
   ]);
 
 it("counts each step a friend took through the player's shared days", async () => {
-  service.shareTally.mockResolvedValue({ links: 6, posted: 5, visits: 1_240, joined: 31, activated: 12 });
+  service.shareTally.mockResolvedValue({ links: 6, posted: 5, visits: 1_240, joined: 31, activated: 12, friendsPaid: 0, fragmentsEarned: 0 });
   await draw();
   expect(host.querySelector("section")?.getAttribute("aria-label")).toBe("Your shared days");
   expect(figures()).toEqual([
@@ -64,11 +64,11 @@ it("counts each step a friend took through the player's shared days", async () =
 });
 
 it("stands only once the player has posted a day, and says nothing when identity cannot tell", async () => {
-  service.shareTally.mockResolvedValue({ links: 0, posted: 0, visits: 0, joined: 0, activated: 0 });
+  service.shareTally.mockResolvedValue({ links: 0, posted: 0, visits: 0, joined: 0, activated: 0, friendsPaid: 0, fragmentsEarned: 0 });
   await draw();
   expect(host.textContent).toBe("");
   // A sheet opened and closed without a post made a link, but shared no day.
-  service.shareTally.mockResolvedValue({ links: 1, posted: 0, visits: 0, joined: 0, activated: 0 });
+  service.shareTally.mockResolvedValue({ links: 1, posted: 0, visits: 0, joined: 0, activated: 0, friendsPaid: 0, fragmentsEarned: 0 });
   await draw();
   expect(host.textContent).toBe("");
   service.shareTally.mockRejectedValue(new Error("identity unavailable"));
@@ -78,7 +78,7 @@ it("stands only once the player has posted a day, and says nothing when identity
 
 it("never shows the account before's counts to the next account on the same app, while its own are read or refused", async () => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  service.shareTally.mockResolvedValue({ links: 6, posted: 5, visits: 1_240, joined: 31, activated: 12 });
+  service.shareTally.mockResolvedValue({ links: 6, posted: 5, visits: 1_240, joined: 31, activated: 12, friendsPaid: 0, fragmentsEarned: 0 });
   await draw(client);
   expect(figures()).toHaveLength(4);
 

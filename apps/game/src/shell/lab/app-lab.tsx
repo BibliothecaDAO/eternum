@@ -14,7 +14,6 @@ import { rewardKey } from "../season-tab/reward";
 import { PageAddress } from "../frame/page-address";
 import { CreditsPage, PrivacyPage, TermsPage } from "../legal";
 import { WhatsNewPage } from "../news/news";
-import { JoinDevconPage } from "../join/join-devcon-page";
 import { NotFoundPage } from "../not-found";
 import { PlayPage } from "../play/play-page";
 import { SharedLinkPage } from "../share/shared-link-page";
@@ -30,10 +29,6 @@ import {
   LAB_FINAL_BOARDS,
   LAB_FRONTIER_FINAL_BOARD,
   LAB_FRONTIER_UNPUBLISHED_BOARD,
-  LAB_DEVCON_TICKETS,
-  LAB_FIRST_REFERRAL,
-  LAB_REFERRALS,
-  LAB_REFERRER,
   LAB_NO_SHARES,
   LAB_SHARE_TALLIES,
   LAB_GUARDIAN,
@@ -139,9 +134,6 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
         <Route path="doorway/:state" element={<LabDoorway />} />
         <Route path="season-end-devcon/:step/:who" element={<LabSeasonEndDevcon />} />
         <Route path="s/:code" element={<SharedLinkPage />} />
-        <Route path="join/devcon" element={<JoinDevconPage />} />
-        <Route path="join/devcon/:code" element={<JoinDevconPage />} />
-        <Route path="join/devcon/r/:referral" element={<JoinDevconPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </PageAddress.Provider>
@@ -215,9 +207,6 @@ function installLabFixtures(screen: LabScreen, field: number | null): () => void
     "linkWallet",
     "getBuildOrders",
     "saveBuildOrders",
-    "redeemCampaignTicket",
-    "campaignReferral",
-    "campaignReferrer",
     "shareTally",
     "readDefaultWallet",
     "deleteAccount",
@@ -280,12 +269,6 @@ const answerAppReads = (screen: LabScreen, field: number | null) => {
   };
 };
 
-/**
- * The identity service's answers for the account page: a code is always sent, and a wallet change or the account's
- * deletion spends the lab's one code and refuses any other, as the service refuses it. A Devcon screen's account holds its ticket, or opens it
- * with any flyer's code, as the service answers a first redemption. The client holds its own fetch, so its calls are
- * answered on the client itself.
- */
 const answerIdentity = (screen: LabScreen) => {
   identityClient.listSignInProviders = async () => ["discord"];
   identityClient.availableSignInProviders = async () => [...SOCIAL_PROVIDERS];
@@ -293,15 +276,6 @@ const answerIdentity = (screen: LabScreen) => {
   const spend = async (code: unknown) => {
     if (code !== LAB_EMAIL_CODE) throw new IdentityRequestError(400, "INVALID_OTP");
   };
-  const ticket = LAB_DEVCON_TICKETS[screen];
-  let held = ticket?.held === true;
-  identityClient.redeemCampaignTicket = async (campaign, opening) => {
-    if (!ticket || (opening === null && !held)) throw new IdentityRequestError(400, "invalid_redemption");
-    held = true;
-    return { campaign, tier: ticket.tier };
-  };
-  identityClient.campaignReferral = async () => LAB_REFERRALS[screen] ?? LAB_FIRST_REFERRAL;
-  identityClient.campaignReferrer = async () => LAB_REFERRER;
   identityClient.shareTally = async () => LAB_SHARE_TALLIES[screen] ?? LAB_NO_SHARES;
   let intent = labOrderIntent(screen);
   identityClient.getOrderIntent = async () => intent;

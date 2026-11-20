@@ -30,7 +30,7 @@ jobs:
       # Bubblewrap writes an App Link filter for the whole host; regenerating the project drops the shared-link paths.
       - name: Keep App Links to the shared game links
         run: |
-          for path in /g/ /join/devcon/ /results/; do
+          for path in /g/ /results/; do
             grep -q "android:pathPrefix=\"$path\"" apps/android/app/src/main/AndroidManifest.xml ||
               { echo "::error title=App Links::$path is missing from the App Link filter"; exit 1; }
           done

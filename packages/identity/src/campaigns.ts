@@ -26,8 +26,6 @@ export const CAMPAIGNS = {
     startsAt: Date.UTC(2026, 10, 3, 5, 0) / 1000,
     /** Nov 6 2026, 23:30 IST: the Devcon season's end, after which no new ticket is given and no friend counts. */
     redeemUntil: Date.UTC(2026, 10, 6, 18, 0) / 1000,
-    /** How many of its printed flyers are golden: the flyer print run's count, read by the code generator only. */
-    printedGolden: 15,
     /**
      * Golden through friends: each friend's ticket is golden at these odds, drawn as the link gives it, and a golden
      * friend who counts (founded a realm, cleared a site) turns the inviter golden; at `goldenLinkAt` counted friends the
@@ -43,7 +41,6 @@ interface Campaign {
   clock: { timeZone: string; zone: string };
   startsAt: number;
   redeemUntil: number;
-  printedGolden: number;
   referral: { goldenOdds: number; goldenLinkAt: number };
 }
 
