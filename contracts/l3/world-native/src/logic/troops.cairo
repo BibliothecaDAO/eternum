@@ -683,8 +683,7 @@ pub mod TroopsLogic {
             crate::logic::map::raise_expedition_home(
                 tile_key(game_id, origin), crate::commands::biome_context(context),
             );
-            let destination = crate::logic::map::tile(tile_key(game_id, coord))
-                .expect('deployment tile unexplored');
+            let destination = crate::logic::map::tile(tile_key(game_id, coord)).expect('deployment tile unexplored');
             let biome = destination.data / crate::map::BIOME_SCALE % crate::map::BYTE_RANGE;
             assert!(biome > 0 && biome <= 17, "deployment tile unexplored");
             assert!(
@@ -703,11 +702,7 @@ pub mod TroopsLogic {
                             slot: command.slot,
                             home: command.structure_id,
                             epoch: today,
-                            allowance: home
-                                .base
-                                .troop_max_explorer_count
-                                .try_into()
-                                .expect('invalid slot allowance'),
+                            allowance: home.base.troop_max_explorer_count.try_into().expect('invalid slot allowance'),
                             initial: troops.stamina.inline(),
                             category,
                             stamina_config: rules.troop_stamina_config,

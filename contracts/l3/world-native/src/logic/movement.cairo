@@ -8,7 +8,6 @@ pub mod MovementLogic {
     use crate::logic::troops::TroopState;
     use crate::map::{BIOME_SCALE, BYTE_RANGE, IMapLogicDispatcherTrait};
     use crate::resources::{IResourceOperationsDispatcherTrait, ResourceKey};
-    use crate::structures::IStructureOperationsDispatcherTrait;
     use crate::troops::{Coord, ExplorerKey};
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;

@@ -193,7 +193,6 @@ pub mod StructuresLogic {
     use crate::logic::release::ReleaseState;
     use crate::logic::structures::StructureState;
     use crate::map::IMapLogicDispatcherTrait;
-    use crate::mines::{IMineRulesDispatcherTrait, IMineRulesLibraryDispatcher, MinePoolKey};
     use crate::ownership::{Story, StoryEvent};
     use crate::resources::{IResourceOperationsDispatcherTrait, ResourceKey};
     use crate::rules::RESOURCE_PRECISION;
@@ -594,12 +593,9 @@ pub mod StructuresLogic {
             crate::logic::structure_actions::resources_dispatcher(game_id)
                 .initialize_resources(key, capacity * RESOURCE_PRECISION);
             match discovery {
-                Discovery::Mine => {
-                },
-                Discovery::Camp => {
-                },
-                Discovery::Rift |
-                Discovery::Beasts => {},
+                Discovery::Mine => {},
+                Discovery::Camp => {},
+                Discovery::Rift | Discovery::Beasts => {},
                 Discovery::Ruin(reward) => {
                     crate::logic::army_relics::store_ruin(key, reward);
                     let depth = crate::logic::expeditions::depth_at(game_id, coord);

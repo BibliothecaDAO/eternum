@@ -113,12 +113,12 @@ pub mod SeasonLogic {
             );
             context.game = BoxTrait::new(crate::logic::game::game(game_id));
             if crate::commands::ICommandIngressDispatcherTrait::requires_oath_answer(
-                    crate::commands::ICommandIngressLibraryDispatcher {
-                        class_hash: crate::logic::release::class_of(game_id, crate::slots::INGRESS),
-                    },
-                    game_id,
-                    arguments,
-                ) {
+                crate::commands::ICommandIngressLibraryDispatcher {
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::INGRESS),
+                },
+                game_id,
+                arguments,
+            ) {
                 return Err(
                     crate::commands::Rejection { status_class: 'GAMEPLAY_REJECTED', reason: "ANSWER_OATH_FIRST" },
                 );

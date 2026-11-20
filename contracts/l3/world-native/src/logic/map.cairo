@@ -298,8 +298,8 @@ pub mod MapLogic {
                 return stored;
             }
             if !crate::expeditions::is_home_ring(
-                    Coord { alt: key.alt, x: key.col, y: key.row }, crate::logic::settlement::spacing(),
-                ) {
+                Coord { alt: key.alt, x: key.col, y: key.row }, crate::logic::settlement::spacing(),
+            ) {
                 return stored;
             }
             crate::logic::map::raise_expedition_home(key, game_context);

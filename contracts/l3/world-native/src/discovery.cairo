@@ -1,4 +1,3 @@
-
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub enum Discovery {
     None,

@@ -1,5 +1,4 @@
 use starknet::ContractAddress;
-use crate::troops::Coord;
 
 pub const CANONICAL_REALM_COUNT: u32 = 8000;
 
