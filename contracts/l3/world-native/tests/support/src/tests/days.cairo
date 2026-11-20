@@ -8,7 +8,6 @@ pub fn season(seed: felt252) -> GameRegistry {
         family: crate::game::FRONTIER,
         name: 'frontier',
         settled: false,
-        ready: true,
         dev_mode_on: false,
         start_settling_at: START,
         start_main_at: START,

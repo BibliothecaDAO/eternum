@@ -38,7 +38,7 @@
     {
       "id": 7,
       "name": "SettleBlitzRoster",
-      "retired": false
+      "retired": true
     },
     {
       "id": 8,

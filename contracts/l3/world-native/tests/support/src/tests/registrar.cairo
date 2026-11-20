@@ -13,7 +13,7 @@ use crate::logic::release::{IReleasesDispatcher, IReleasesDispatcherTrait};
 pub use crate::map::{IMapLogicDispatcher, IMapLogicDispatcherTrait, TileKey};
 pub use crate::registrar::{
     CreateGameParams, IRegistrarDispatcher, IRegistrarDispatcherTrait, IRegistrarSafeDispatcher,
-    IRegistrarSafeDispatcherTrait, RosterPlayer,
+    IRegistrarSafeDispatcherTrait,
 };
 pub use crate::relics::ChestTiers;
 pub use crate::resources::{
@@ -21,8 +21,7 @@ pub use crate::resources::{
 };
 pub use crate::rules::{DISCOVER_CAMPS, HOME_REWARDS, RESOURCE_PRECISION};
 pub use crate::settlement::{
-    ISettlementCommandsDispatcher, ISettlementCommandsDispatcherTrait, ISettlementCommandsSafeDispatcher,
-    ISettlementCommandsSafeDispatcherTrait, ISettlementCreationDispatcher, ISettlementCreationDispatcherTrait,
+    ISettlementCreationDispatcher, ISettlementCreationDispatcherTrait,
     ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait, RealmCreation, SettlementCreation, SettlementMode,
 };
 pub use crate::stamina::StaminaSourceTrait;
@@ -46,14 +45,6 @@ pub fn registry(d: super::Deployment) -> IRegistrarDispatcher {
 pub fn safe(d: super::Deployment, caller: starknet::ContractAddress) -> IRegistrarSafeDispatcher {
     snforge_std::cheat_caller_address(d.games, caller, snforge_std::CheatSpan::TargetCalls(1));
     IRegistrarSafeDispatcher { contract_address: d.games }
-}
-pub fn roster(count: u32) -> Span<RosterPlayer> {
-    let mut players = array![];
-    for index in 1..count + 1 {
-        let account = Into::<u32, felt252>::into(2000 + index).try_into().unwrap();
-        players.append(RosterPlayer { account, wallet: account });
-    }
-    players.span()
 }
 pub fn bag_seconds() -> u64 {
     crate::day_schedule::UNITS_PER_BAG * crate::balance::rules::SWITCHES.day_unit_seconds.into()

@@ -5,7 +5,7 @@ pub fn rules(game_id: u32) -> SettlementRules {
     let state = crate::state::read();
     SettlementRules {
         registration_start: state.games.overrides.entry(game_id).registration_start.read(),
-        registration_limit: state.registrar.roster_sizes.read(game_id).try_into().unwrap(),
+        registration_limit: 0,
         mode: crate::settlement::SettlementMode::Single,
         spacing: spacing(),
     }

@@ -1,4 +1,3 @@
-use core::num::traits::Zero;
 use starknet::ContractAddress;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -10,26 +9,16 @@ pub struct CreateGameParams {
     pub duration_seconds: u64,
     pub end_grace_seconds: u32,
     pub dev_mode_on: bool,
-    pub roster: Span<RosterPlayer>,
-    /// The pool account that seats this fixed roster; zero for an open-entry game.
-    pub seater: ContractAddress,
     pub registration_start: u32,
     pub biome_climate: crate::rules::BiomeClimateConfig,
     pub map_override: Option<crate::rules::MapConfig>,
     pub seed: felt252,
-}
-#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
-pub struct RosterPlayer {
-    pub account: ContractAddress,
-    pub wallet: ContractAddress,
 }
 
 #[starknet::interface]
 pub trait IRegistrar<T> {
     fn next_game_id(self: @T) -> u32;
     fn game_id_by_name(self: @T, name: felt252) -> u32;
-    fn blitz_roster(self: @T, game_id: u32) -> Span<RosterPlayer>;
-    fn game_seater(self: @T, game_id: u32) -> ContractAddress;
     fn create_game(ref self: T, params: CreateGameParams) -> u32;
 }
 #[starknet::interface]
@@ -50,8 +39,6 @@ pub fn validate_params(params: CreateGameParams) {
         "registration must open before settling",
     );
     assert!(params.end_grace_seconds == 0, "result finalisation has no grace period");
-    assert!(params.roster.is_empty(), "Eternum does not use a fixed roster");
-    assert!(params.seater.is_zero(), "an open game has no seater");
 }
 
 pub fn map_center_offset(game_id: u32, seed: felt252) -> u32 {
@@ -66,7 +53,6 @@ pub fn build_game(params: CreateGameParams) -> crate::game::GameRegistry {
         name: params.name,
         family: params.family,
         settled: false,
-        ready: true,
         dev_mode_on: params.dev_mode_on,
         start_settling_at: params.start_settling_at,
         start_main_at: params.start_main_at,

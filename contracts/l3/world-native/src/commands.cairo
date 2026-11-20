@@ -320,24 +320,13 @@ pub fn validated_command(
 
 pub fn admit(game_id: u32, actor: ContractAddress, command: Span<felt252>) {
     let (index, route, _) = validated_command(command).expect('INVALID_COMMAND');
-    let rules = crate::balance::rules::SWITCHES;
-    assert!(crate::rules::command_enabled(rules.command_mask, index.into()), "command disabled");
-    assert_roster_admits(game_id, actor, index);
-    if route.selector == selector!("settle_season")
-        && rules.entry_rule == crate::rules::ENTRY_OPEN
-        && rules.day_unit_seconds != 0 {
+    assert!(
+        crate::rules::command_enabled(crate::balance::rules::SWITCHES.command_mask, index.into()), "command disabled",
+    );
+    assert!(crate::logic::game::game_exists(game_id), "game does not exist");
+    if route.selector == selector!("settle_season") {
         crate::entity_ids::assign_open_home(game_id, actor);
     }
-}
-
-fn assert_roster_admits(game_id: u32, actor: ContractAddress, index: u32) {
-    if index != crate::command_routes::SETTLE_BLITZ_ROSTER {
-        assert!(crate::logic::game::game(game_id).ready, "roster not ready");
-        return;
-    }
-    let registrar = crate::state::read().registrar;
-    assert!(registrar.roster_sizes.read(game_id) != 0, "roster not frozen");
-    assert!(actor == registrar.seaters.read(game_id), "only the game's seater");
 }
 
 #[starknet::interface]

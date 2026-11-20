@@ -7,7 +7,6 @@ pub type Storage =
         crate::game::GameOverrides,
         crate::guards::Guard,
         crate::guilds::Guild,
-        crate::registrar::RosterPlayer,
         crate::relics::LordsWithdrawal,
         crate::resources::Production,
         crate::resources::Weight,

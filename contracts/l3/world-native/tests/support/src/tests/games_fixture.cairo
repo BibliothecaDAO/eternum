@@ -727,26 +727,6 @@ pub mod GamesFixture {
         }
     }
     #[starknet::embeddable]
-    pub impl SettlementCommandsFixture<
-        TContractState, +Drop<TContractState>,
-    > of crate::settlement::ISettlementCommands<TContractState> {
-        fn settle_blitz_roster(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            context: crate::commands::ActionContext,
-        ) -> u64 {
-            crate::settlement::ISettlementCommandsDispatcherTrait::settle_blitz_roster(
-                crate::settlement::ISettlementCommandsLibraryDispatcher {
-                    class_hash: fixture_class(game_id, crate::slots::SETTLEMENT),
-                },
-                game_id,
-                actor,
-                context,
-            )
-        }
-    }
-    #[starknet::embeddable]
     pub impl ResourcesFixture<
         TContractState, +Drop<TContractState>,
     > of crate::resources::IResourceOperations<TContractState> {

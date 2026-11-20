@@ -14,7 +14,6 @@ pub fn requires_answer(game_id: u32, command: Command) -> bool {
         Command::Move(value) => waiting(game_id, value.explorer_id),
         Command::ToggleAlternate(value) => waiting(game_id, value.explorer_id),
         Command::LevelUp(_) => false,
-        Command::SettleBlitzRoster(_) => false,
         Command::ProvisionRealm(_) => false,
         Command::SettleSeason(_) => false,
         Command::SettleVillage(_) => false,

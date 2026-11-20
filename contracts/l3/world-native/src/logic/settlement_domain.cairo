@@ -42,7 +42,6 @@ pub mod SettlementLogic {
             assert!(key.game_id != 0, "game id zero is reserved");
             crate::logic::entry::assert_ledger_operator();
             self.villages.register(key, owner);
-            crate::entity_ids::reserve_homes(key.game_id, owner);
         }
     }
     #[storage]
@@ -213,28 +212,15 @@ pub mod SettlementLogic {
         ) {
             assert!(key.game_id != 0, "game id zero is reserved");
             assert!(crate::logic::game::game_exists(key.game_id), "prepare an existing game");
-            assert!(
-                crate::balance::rules::SWITCHES.entry_rule != crate::rules::ENTRY_ROSTER,
-                "Blitz uses a fixed roster",
-            );
             crate::logic::entry::assert_ledger_operator();
             assert!(key.owner.is_non_zero(), "invalid entitlement owner");
             self.settlements.register_entitlement(key, entitlement);
-            crate::entity_ids::reserve_homes(key.game_id, key.owner);
         }
         fn settled_realm(self: @ContractState, game_id: u32, realm_id: u32) -> u64 {
             self.settlements.data.settlements.held_realm_homes.read((game_id, realm_id))
         }
         fn entry_entitlement(self: @ContractState, key: EntryKey) -> Option<crate::settlement::EntryEntitlement> {
             self.settlements.data.settlements.entitlements.read((key.game_id, key.owner))
-        }
-    }
-    #[abi(embed_v0)]
-    impl SettlementCommands of crate::settlement::ISettlementCommands<ContractState> {
-        fn settle_blitz_roster(
-            ref self: ContractState, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
-        ) -> u64 {
-            panic!("Blitz rosters are not settled in this release")
         }
     }
     #[generate_trait]

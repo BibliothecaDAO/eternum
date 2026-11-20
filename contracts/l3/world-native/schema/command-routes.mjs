@@ -38,12 +38,6 @@ export const commandRoutes = [
     entrypoint: "level_up",
   },
   {
-    name: "SettleBlitzRoster",
-    logic: "settlement",
-    entrypoint: "settle_blitz_roster",
-    batch: true,
-  },
-  {
     name: "ProvisionRealm",
     logic: "structures",
     entrypoint: "activate_realm_economy",

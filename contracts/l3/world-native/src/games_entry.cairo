@@ -8,7 +8,7 @@ pub mod GamesEntry {
     use starknet::{ContractAddress, get_caller_address, get_tx_info};
     use crate::games::Authentication;
     use crate::logic::release::ReleaseState;
-    use crate::registrar::{CreateGameParams, IRegistrarDispatcherTrait, IRegistrarLibraryDispatcher, RosterPlayer};
+    use crate::registrar::{CreateGameParams, IRegistrarDispatcherTrait, IRegistrarLibraryDispatcher};
 
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
@@ -236,12 +236,6 @@ pub mod GamesEntry {
         }
         fn game_id_by_name(self: @ComponentState<TContractState>, name: felt252) -> u32 {
             self.data.registrar.launch_ids.read(name)
-        }
-        fn blitz_roster(self: @ComponentState<TContractState>, game_id: u32) -> Span<RosterPlayer> {
-            crate::logic::registrar::blitz_roster(game_id)
-        }
-        fn game_seater(self: @ComponentState<TContractState>, game_id: u32) -> ContractAddress {
-            self.data.registrar.seaters.read(game_id)
         }
     }
 }

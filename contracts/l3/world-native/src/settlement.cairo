@@ -59,13 +59,6 @@ pub struct EntryEntitlement {
 }
 
 #[starknet::interface]
-pub trait ISettlementCommands<T> {
-    fn settle_blitz_roster(
-        ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
-    ) -> u64;
-}
-
-#[starknet::interface]
 pub trait ISettlementEntry<T> {
     fn register_entitlement(ref self: T, key: EntryKey, entitlement: EntryEntitlement);
     fn entry_entitlement(self: @T, key: EntryKey) -> Option<EntryEntitlement>;

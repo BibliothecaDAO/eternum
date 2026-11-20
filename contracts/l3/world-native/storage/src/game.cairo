@@ -9,5 +9,4 @@ pub struct GameStateStorage<TGameRegistry, TGameOverrides> {
     pub home_entities: Map<(u32, u32), u32>,
     pub open_homes: Map<(u32, ContractAddress), u64>,
     pub namespace_owners: Map<(u32, u32), ContractAddress>,
-    pub home_reservations: Map<(u32, ContractAddress), u64>,
 }

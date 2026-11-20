@@ -8,7 +8,6 @@ pub struct CommandRoute {
     pub batch: bool,
 }
 
-pub const SETTLE_BLITZ_ROSTER: u32 = 7;
 pub const CHOOSE_OATH: u32 = 73;
 
 pub const COMMAND_IDS: [u32; 43] = [
@@ -100,7 +99,6 @@ pub enum Command {
     Move: crate::commands::Move,
     ToggleAlternate: crate::commands::ToggleAlternate,
     LevelUp: core::integer::u64,
-    SettleBlitzRoster,
     ProvisionRealm: core::integer::u64,
     SettleSeason: crate::realms::SettleSeason,
     SettleVillage: crate::village::SettleVillage,
@@ -176,7 +174,6 @@ pub impl CommandSerde of Serde<Command> {
                 output.append(6);
                 Serde::serialize(value, ref output);
             },
-            Command::SettleBlitzRoster(_) => { output.append(7); },
             Command::ProvisionRealm(value) => {
                 output.append(8);
                 Serde::serialize(value, ref output);
@@ -300,7 +297,6 @@ pub impl CommandSerde of Serde<Command> {
             4 => Some(Command::ToggleAlternate(Serde::deserialize(ref serialized)?)),
             5 => None,
             6 => Some(Command::LevelUp(Serde::deserialize(ref serialized)?)),
-            7 => Some(Command::SettleBlitzRoster(())),
             8 => Some(Command::ProvisionRealm(Serde::deserialize(ref serialized)?)),
             9 => None,
             10 => Some(Command::SettleSeason(Serde::deserialize(ref serialized)?)),
