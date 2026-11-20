@@ -145,7 +145,7 @@ fn expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stami
             maximum
         };
         assert!(maximum > crate::balance::rules::TROOP_STAMINA_CONFIG.stamina_initial.into());
-        timers(d, army, bar, super::play_fixture::FIXTURE_START + 50);
+        timers(d, army, bar, (super::play_fixture::FIXTURE_START + 50).try_into().unwrap());
         let resource_type = crate::troops::stock_resource(before.troops.category, before.troops.tier);
         let resources = IResourceOperationsDispatcher { contract_address: d.games };
         let stock_key = ResourceSlot { game_id, entity_id: home.entity_id, resource_type };
@@ -169,7 +169,7 @@ fn expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stami
         assert_eq!(after.troops.count, 5 * RESOURCE_PRECISION);
         assert_eq!(slot(d, army, 0).stamina.amount, expected_bar);
         assert_eq!(slot(d, army, 0).stamina.settled_at, (super::play_fixture::FIXTURE_START + 10 + elapsed).try_into().unwrap());
-        assert_eq!(after.troops.battle_cooldown_end, super::play_fixture::FIXTURE_START + 50);
+        assert_eq!(after.troops.battle_cooldown_end, (super::play_fixture::FIXTURE_START + 50).try_into().unwrap());
         assert_eq!(progress(d, army), Some(veteran));
         assert_eq!(resources.resource_balance(stock_key), stock - 2 * RESOURCE_PRECISION);
         assert_eq!(
@@ -186,9 +186,9 @@ fn expedition_recruitment_refuses_other_regions_depths_and_expired_armies_withou
         let (army, _) = expedition_armies(d, home);
         let state = GameState { contract_address: d.games };
         let mut explorer = state.resolved_explorer(army).unwrap();
-        let home = crate::expeditions::site(crate::logic::settlement::spacing(), 1, 0, 0);
+        let site = crate::expeditions::site(crate::logic::settlement::spacing(), 1, 0, 0);
         explorer.coord = match location {
-            0 => crate::geometry::neighbor(crate::geometry::neighbor(home, 0), 0),
+            0 => crate::geometry::neighbor(crate::geometry::neighbor(site, 0), 0),
             1 => crate::geometry::neighbor(crate::expeditions::site(crate::logic::settlement::spacing(), 2, 0, 0), 0),
             2 => crate::geometry::neighbor(crate::expeditions::site(crate::logic::settlement::spacing(), 1, 0, 1), 0),
             _ => explorer.coord,

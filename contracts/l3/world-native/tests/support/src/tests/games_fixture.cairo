@@ -1323,6 +1323,15 @@ pub mod GamesFixture {
             )
         }
     }
+    fn current_ledger_operator_dispatcher() -> crate::entry::ILedgerOperatorLibraryDispatcher {
+        let state = crate::state::read();
+        let release_id = state.open_releases.read(crate::game::FRONTIER);
+        assert!(release_id != 0, "shard has no release");
+        crate::entry::ILedgerOperatorLibraryDispatcher {
+            class_hash: crate::logic::release::release_class(release_id, crate::slots::BRIDGE),
+        }
+    }
+
     fn ledger_operator_dispatcher(game_id: u32) -> crate::entry::ILedgerOperatorLibraryDispatcher {
         crate::entry::ILedgerOperatorLibraryDispatcher {
             class_hash: crate::logic::release::class_of(game_id, crate::slots::BRIDGE),

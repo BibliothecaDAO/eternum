@@ -102,6 +102,7 @@ pub mod SettlementLogic {
         }
         #[cfg(feature: "test_support")]
         fn realm_catalogue(self: @ContractState) -> crate::realms::RealmCatalogue {
+            use starknet::storage::StoragePointerReadAccess;
             crate::realms::RealmCatalogue {
                 initialized: self.realms.data.realms.catalogue_count.read(),
                 digest: self.realms.data.realms.catalogue_digest.read(),

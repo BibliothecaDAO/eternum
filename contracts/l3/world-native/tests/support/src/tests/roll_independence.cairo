@@ -32,7 +32,7 @@ pub fn typed_commands() -> Array<Command> {
         ),
         Command::Move(crate::commands::Move { explorer_id: 999999, directions: array![0_u8].span() }),
         Command::ToggleAlternate(crate::commands::ToggleAlternate { explorer_id: 999999, spire_direction: 0 }),
-        Command::LevelUp(999999), Command::SettleBlitzRoster, Command::ProvisionRealm(999999),
+        Command::LevelUp(999999), Command::ProvisionRealm(999999),
         Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, order: None }),
         Command::SettleVillage(crate::village::SettleVillage { pass_id: 1, connected_realm_entity_id: 999999 }),
         Command::ReceiveVillageArmy(999999),

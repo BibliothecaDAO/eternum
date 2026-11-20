@@ -26,7 +26,6 @@ pub mod camps;
 pub mod combat_actions;
 pub mod combat_formula;
 pub mod days;
-pub mod discovery_guards;
 pub mod entity_ids;
 pub mod entry;
 pub mod fact_wire;
