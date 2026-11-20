@@ -613,8 +613,16 @@ pub fn assert_capture_at(
     assert!(site_before.clear.is_none());
     assert_eq!(site_before.category, crate::taxonomy::CAMP_CATEGORY);
     assert_eq!((site_before.col, site_before.row, site_before.alt), (coord.x, coord.y, coord.alt));
+    let labor_limit = snforge_std::interact_with_state(
+        d.games, || crate::logic::resources::store_limit(home, crate::resources::LABOR).unwrap(),
+    );
+    let store_room = labor_limit - resources.resource_balance(labor_supply);
     let camp_credit = labor_room
-        .unwrap_or(site_before.initial_guard_count / 2 * (2 + Into::<u8, u128>::into(depth)) / 2);
+        .unwrap_or(
+            core::cmp::min(
+                site_before.initial_guard_count / 2 * (2 + Into::<u8, u128>::into(depth)) / 2, store_room,
+            ),
+        );
     let camp_reward = Some(
         crate::resources::ResourceAmount { resource_type: crate::resources::LABOR, amount: camp_credit },
     );
