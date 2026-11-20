@@ -6,6 +6,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { nativeReleaseConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 
 // The real Frontier HUD on the lab's game with an army out (the lab's frontier-army view); only the network and the
 // identity stand in.
@@ -112,6 +113,20 @@ const rowButton = (name: RegExp) =>
   )!;
 const staminaMeter = () =>
   details()!.parentElement!.querySelector<HTMLElement>('[role="meter"][aria-label="Stamina"]')!;
+const sealRelease = (store: InstanceType<typeof NativeFactStore>) => {
+  const release = store.require("GameRelease", { game_id: 1 });
+  return {
+    model: "GameRelease",
+    key: store.wireKeyOf("GameRelease", release),
+    value: {
+      ...release,
+      release_id: nativeReleaseConstants.SEAL_RELEASE,
+      created_release_id: nativeReleaseConstants.SEAL_RELEASE,
+      preset_commitment: String(release.preset_commitment),
+    },
+  };
+};
+
 /** The lab realm's LORDS. */
 const realmLords = (lords: number) => ({
   model: "ResourceBalance",
@@ -159,15 +174,14 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
   });
 
-  it("keeps stamina read-only when a historical LORDS balance arrives", async () => {
+  it("reads stamina on its Fragments refill, which a historical LORDS balance neither fills nor unlocks", async () => {
     const store = await renderHud();
+    await act(async () => store.applyFacts([sealRelease(store)] as never));
     await select(ARMY);
-    const reading = () => [staminaMeter().getAttribute("aria-valuenow"), staminaMeter().getAttribute("aria-valuemax")];
-    expect(reading()).toEqual(["90", "150"]);
-    expect(rowButton(/^Refill /)).toBeUndefined();
+    const refill = () => [rowButton(/^Refill /).getAttribute("aria-label"), rowButton(/^Refill /).disabled];
+    expect(refill()).toEqual(["Refill 90/150", true]);
     await act(async () => store.applyFacts([realmLords(40)] as never));
-    expect(reading()).toEqual(["90", "150"]);
-    expect(rowButton(/^Refill /)).toBeUndefined();
+    expect(refill()).toEqual(["Refill 90/150", true]);
     expect(host.querySelector("[data-kit-sheet]")).toBeNull();
   });
 
