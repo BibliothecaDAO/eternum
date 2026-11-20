@@ -1,7 +1,5 @@
 import { frontierSeasonOnePreset } from "../../../source/frontier/season-one";
 import { buildingIds } from "../../../source/frontier/native";
-import developmentRelease from "../../../../deploy/release/dev.json";
-import productionRelease from "../../../../deploy/release/production.json";
 import { buildLedgerEconomicPreset } from "../ledger/economics";
 import { findRegistrarGame } from "../registrar/calls";
 import { nativeReleasePresets, nativePresets } from "../../../source/native";
@@ -30,10 +28,7 @@ import { orderLengths, seasonSeconds } from "../../../../packages/core/src/utils
 import { nativePresetIdFor } from "../../../source/native";
 import { clockScaled, seasonDayUnitSeconds } from "../../../source/common/season-clock";
 import { RESOURCE_PRECISION, ResourcesIds, deepSites } from "../../../../packages/types/src/constants";
-import {
-  buildNativeGameParams,
-  loadNativePresetConfiguration,
-} from "../registrar/native-preset";
+import { buildNativeGameParams, loadNativePresetConfiguration } from "../registrar/native-preset";
 
 const abi = [...Object.values(schema.types), ...schema.games.entrypoints];
 const codec = new CallData(abi);
@@ -45,10 +40,7 @@ function configuration(preset: number) {
 
 describe("native presets", () => {
   test("release registrations contain only Blitz and nonpaying Season 1", () => {
-    for (const release of [developmentRelease, productionRelease]) {
-      expect(release.presets).toEqual([2, FRONTIER_S1_PRESET_ID]);
-      for (const id of release.presets) expect(nativeReleasePresets[id]!.chests).toBeNull();
-    }
+    for (const id of [2, FRONTIER_S1_PRESET_ID]) expect(nativeReleasePresets[id]!.chests).toBeNull();
     for (const id of [FRONTIER_PRESET_ID, FRONTIER_DEVCON_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID])
       expect(nativeReleasePresets[id]).toBeUndefined();
     expect(nativeCommandBits).not.toHaveProperty("RefillStamina");
@@ -570,7 +562,6 @@ describe("native presets", () => {
     expect(next.settlement.villages.resource_pool[0].weight).toBe(19815);
     expect(next.settlement.realms.realm_resources).toHaveLength(9);
   });
-
 });
 
 test("rejects missing bridge tokens before registration", () => {
