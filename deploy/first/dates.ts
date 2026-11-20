@@ -3,7 +3,6 @@ import { assertFrontierSeason, CalendarConflict } from "../../apps/launch-servic
 import { PublicError } from "./errors";
 import { apnsKeyOf, signInClientsOf, WEI, type Inputs, type Target } from "./settings";
 export interface SeasonDates {
-  frontierPresetId: string;
   frontierStart: string;
   frontierEnd: string;
 }
@@ -14,13 +13,11 @@ export function seconds(value: string) {
   return Date.parse(value) / 1000;
 }
 export function validateDates(dates: SeasonDates) {
-  if (!/^[1-9][0-9]*$/.test(dates.frontierPresetId ?? ""))
-    throw new PublicError("Set frontierPresetId to an explicit registered Frontier preset ID");
   const start = seconds(dates.frontierStart),
     end = seconds(dates.frontierEnd);
   if (start <= 0) throw new PublicError("Each season must end after its explicit start");
   try {
-    assertFrontierSeason(start * 1000, end * 1000, Number(dates.frontierPresetId));
+    assertFrontierSeason(start * 1000, end * 1000);
   } catch (error) {
     if (error instanceof CalendarConflict) throw new PublicError(error.message);
     throw error;
@@ -48,7 +45,6 @@ export function setupQuestions(target: Target): [keyof Inputs, string][] {
       ? [["alertEmail", "Alert email (where the status monitor reports incidents)"] as [keyof Inputs, string]]
       : []),
     ["amount", "Frontier deposit in whole tokens"],
-    ["frontierPresetId", "Frontier native preset ID"],
     ["frontierStart", "Frontier start, YYYY-MM-DDTHH:MM:SSZ"],
     ["frontierEnd", "Frontier end, YYYY-MM-DDTHH:MM:SSZ"],
     ...(target.coldAdmin

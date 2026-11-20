@@ -118,7 +118,7 @@ test("a changed unsent setup sends the newly computed calls with the current non
   const files = store();
   const rpc = account();
   files.write("transaction-setup.json", { nonce: "7", calls: tampered });
-  const input = { frontierPresetId: "6" } as Inputs;
+  const input = {} as Inputs;
   const provider = {
     ...rpc,
     getBlockWithTxHashes: async () => ({ block_number: 5, timestamp: 1 }),

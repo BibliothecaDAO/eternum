@@ -15,7 +15,6 @@ it("launches a Blitz from its closed slot: creation parameters, settling time, o
   const launch = {
     request: {
       environment: "madara.blitz" as const,
-      version: "2",
       gameName: "paid-retry",
       gameStartTime: new Date(400000).toISOString(),
       durationSeconds: 60,
@@ -109,7 +108,6 @@ const releasedShard = (existing: Record<string, number>, currentRelease: number)
   const launches = ["game-1", "game-2"].map((gameName) => ({
     request: {
       environment: "madara.blitz" as const,
-      version: "2",
       gameName,
       gameStartTime: new Date(400000).toISOString(),
       durationSeconds: 60,

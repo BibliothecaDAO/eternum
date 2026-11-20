@@ -30,9 +30,8 @@ import {
   buildLedgerEconomicPreset,
   buildRegisterLedgerPresetCalldata,
 } from "../../config/deployer/clean/ledger/economics";
-import { LEDGER_PRESET_FIELD_COUNT, decodeLedgerPreset } from "../../packages/value-ledger/src/codecs";
-import { frontierDevconPreset } from "../../config/source/frontier/devcon";
-import { seasonDayUnitSeconds } from "../../config/source/common/season-clock";
+import { LEDGER_PRESET_FIELD_COUNT } from "../../packages/value-ledger/src/codecs";
+import { presetIdForEnvironment } from "../../config/deployer/clean/constants";
 
 const temporary: string[] = [];
 const fetchBefore = globalThis.fetch;
@@ -66,7 +65,6 @@ const input: Inputs = {
   discordClientSecret: "fake-discord-secret",
   avnuPaymasterApiKey: "fake-avnu-key",
   amount: "1000000",
-  frontierPresetId: "5",
   frontierStart: "2027-01-01T00:00:00Z",
   frontierEnd: "2027-01-21T00:00:00Z",
 };
@@ -363,15 +361,16 @@ test("fixed salt deploy resumes after a lost acknowledgement without declaring o
   );
 });
 
-test("setup keeps only missing role calls and preserves the selected Frontier preset in both environments", async () => {
-  const dev = setupCalls(environments.dev, assets, "0x33", 5);
+test("setup keeps only missing role calls and registers Season 1's ledger preset in both environments", async () => {
+  const seasonOne = presetIdForEnvironment("madara.frontier");
+  const dev = setupCalls(environments.dev, assets, "0x33");
   expect(
     dev.filter((call) => call.entrypoint === "register_preset").map((call) => (call.calldata as string[])[0]),
-  ).toEqual(["5"]);
-  const production = setupCalls(environments.production, { ...assets, lords: mainnetAddresses.lords }, "0x33", 5);
+  ).toEqual([String(seasonOne)]);
+  const production = setupCalls(environments.production, { ...assets, lords: mainnetAddresses.lords }, "0x33");
   expect(
     production.filter((call) => call.entrypoint === "register_preset").map((call) => (call.calldata as string[])[0]),
-  ).toEqual(["5"]);
+  ).toEqual([String(seasonOne)]);
   const provider = { callContract: async () => ["0x1"] } as unknown as RpcProvider;
   expect(await setupPresenceReader(provider)(dev[0]!, 10)).toBe(true);
   provider.callContract = async () => ["0x0"];
@@ -383,7 +382,6 @@ const setupOf = (target: Target, entrypoint: string) =>
     target,
     { ...assets, lords: target.environment === "production" ? mainnetAddresses.lords : assets.lords },
     "0x33",
-    5,
   ).filter((call) => call.entrypoint === entrypoint);
 const registered = (call: { calldata: unknown }) => call.calldata as string[];
 
@@ -404,7 +402,11 @@ test("setup refuses a registered preset whose fields differ instead of pretendin
 test("dev registers its mystery chests and their cosmetics metadata exactly as before", () => {
   const mystery = buildMysteryChestPreset();
   expect(setupOf(environments.dev, "register_preset").map(registered)).toEqual([
-    buildRegisterLedgerPresetCalldata(5, buildLedgerEconomicPreset("frontier", { presetId: 5 }), mystery),
+    buildRegisterLedgerPresetCalldata(
+      presetIdForEnvironment("madara.frontier"),
+      buildLedgerEconomicPreset("frontier", { presetId: presetIdForEnvironment("madara.frontier") }),
+      mystery,
+    ),
   ]);
   const cosmetics = setupOf(environments.dev, "set_attrs_raw_to_ipfs_cid").filter(
     (call) => call.contractAddress === assets.cosmetics,
@@ -428,7 +430,11 @@ test("production's chests pay one entry of LORDS from a 90% reserve and award no
   // The ledger pays the reserve out of the pool left after its protocol cut; more would fail every result.
   expect(economics.chest_lords_bps + economics.protocol_cut_bps).toBeLessThanOrEqual(10000);
   expect(frontier).toEqual(
-    buildRegisterLedgerPresetCalldata(5, buildLedgerEconomicPreset("frontier", { chests: lords, presetId: 5 }), lords),
+    buildRegisterLedgerPresetCalldata(
+      presetIdForEnvironment("madara.frontier"),
+      buildLedgerEconomicPreset("frontier", { chests: lords, presetId: presetIdForEnvironment("madara.frontier") }),
+      lords,
+    ),
   );
   const metadata = setupOf(environments.production, "set_attrs_raw_to_ipfs_cid");
   expect(metadata.every((call) => call.contractAddress === assets.chests)).toBe(true);
@@ -452,7 +458,7 @@ test("setup reads registered chest rewards back against its own call; mystery ch
 });
 
 test("metadata presence follows all confirmed event pages; differing metadata refuses", async () => {
-  const operation = setupCalls(environments.dev, assets, "0x33", 5).find(
+  const operation = setupCalls(environments.dev, assets, "0x33").find(
     (call) => call.entrypoint === "set_attrs_raw_to_ipfs_cid",
   )!;
   const args = operation.calldata as string[];
@@ -527,7 +533,6 @@ test("setup asks for an alert email on production only, and dev's inputs can nev
     "discordClientId",
     "discordClientSecret",
     "amount",
-    "frontierPresetId",
     "frontierStart",
     "frontierEnd",
   ]);
@@ -930,39 +935,12 @@ test("publishes the ledger's deployment block beside its address, the same on a 
   }
 });
 
-test("date validation requires a native Frontier preset and uses its season clock", () => {
+test("date validation uses Season 1's season clock", () => {
   const dates = {
     ...input,
-    frontierPresetId: "6",
     frontierStart: "2026-11-03T05:00:00Z",
     frontierEnd: "2026-11-06T18:00:00Z",
   };
   expect(() => validateDates(dates)).not.toThrow();
-  expect(() => validateDates({ ...dates, frontierEnd: "2026-11-06T18:00:01Z" })).toThrow("40 s tick");
-  expect(() => validateDates({ ...dates, frontierPresetId: "" })).toThrow("registered Frontier preset");
-  expect(() => validateDates({ ...dates, frontierPresetId: "1" })).toThrow("registered Frontier preset");
+  expect(() => validateDates({ ...dates, frontierEnd: "2026-11-06T18:00:01Z" })).toThrow("120 s tick");
 });
-
-test.each(["dev", "production"] as const)(
-  "%s registers Devcon's ID, clock and chest terms from the preset source",
-  (environment) => {
-    const preset = frontierDevconPreset;
-    const calls = setupCalls(
-      environments[environment],
-      { ...assets, lords: mainnetAddresses.lords },
-      "0x33",
-      preset.id,
-    );
-    const frontier = calls.find(
-      (call) => call.entrypoint === "register_preset" && registered(call)[0] === String(preset.id),
-    )!;
-    const calldata = registered(frontier);
-    expect(calldata[0]).toBe(String(preset.id));
-    expect(decodeLedgerPreset(calldata.slice(1, 1 + LEDGER_PRESET_FIELD_COUNT))).toMatchObject({
-      dayUnit: seasonDayUnitSeconds(preset),
-      claimWindow: preset.chests.claimWindowSeconds,
-      frontierChestBps: preset.chests.poolBps,
-      frontierTopN: preset.chests.topN,
-    });
-  },
-);

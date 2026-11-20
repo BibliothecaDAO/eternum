@@ -1,6 +1,6 @@
 import { DAYS_PER_BAG, seasonSeconds } from "../../../packages/core/src/utils/days";
-import { nativePresets } from "../../../config/source/native";
-import { clockScaled, seasonDayUnitSeconds } from "../../../config/source/common/season-clock";
+import { frontierSeasonOnePreset } from "../../../config/source/frontier/season-one";
+import { seasonDayUnitSeconds } from "../../../config/source/common/season-clock";
 import { FRONTIER_ARMIES_TICK_SECONDS } from "../../../config/source/frontier/clock";
 
 /**
@@ -14,8 +14,8 @@ interface PhaseDates {
   endsAt: string;
 }
 
-export type FrontierSeasonPhase = PhaseDates & { phase: "frontier"; presetId: number };
-export type SeasonPhase = FrontierSeasonPhase | (PhaseDates & { phase: "blitz"; presetId?: never });
+export type FrontierSeasonPhase = PhaseDates & { phase: "frontier" };
+export type SeasonPhase = FrontierSeasonPhase | (PhaseDates & { phase: "blitz" });
 
 /**
  * The next Blitz game the schedule opens (`nextBlitzGame`, schedule.ts): its slot's name, its start, when its entry
@@ -30,7 +30,7 @@ export interface NextBlitzGame {
 
 export interface CalendarStore {
   list(): Promise<SeasonPhase[]>;
-  /** Sets dates and Frontier's preset; a running or queued Frontier season retains its identity. */
+  /** Sets a phase's dates; a running or queued Frontier season retains its dates. */
   set(phase: SeasonPhase, now: number): Promise<SeasonPhase>;
 }
 
@@ -38,23 +38,17 @@ export class CalendarConflict extends Error {}
 
 export const PHASE_END_ERROR = "A phase must end in the future";
 
-/** A Frontier season has a positive duration with both boundaries on army ticks. */
-export const assertFrontierSeason = (startsAt: number, endsAt: number, presetId: number) => {
-  const preset = nativePresets[presetId];
-  if (!Number.isSafeInteger(presetId) || !preset || preset.gameType !== "frontier")
-    throw new CalendarConflict("Select a registered Frontier preset");
-  const scale = preset.clockScale?.activity ?? 1;
-  const tickMs = clockScaled(FRONTIER_ARMIES_TICK_SECONDS, scale, "armies_tick") * 1_000;
+/** A Frontier season has a positive duration with both boundaries on army ticks, within Season 1's race. */
+export const assertFrontierSeason = (startsAt: number, endsAt: number) => {
+  const preset = frontierSeasonOnePreset;
+  const tickMs = FRONTIER_ARMIES_TICK_SECONDS * 1_000;
   if (tickMs <= 0) throw new Error("Frontier has no armies tick");
   if (![startsAt, endsAt].every(Number.isSafeInteger)) throw new CalendarConflict("Invalid season dates");
   if (startsAt % tickMs !== 0) throw new CalendarConflict(`A Frontier season starts on a ${tickMs / 1_000} s tick`);
   if (endsAt <= startsAt) throw new CalendarConflict("A Frontier season must end after it starts");
   if (endsAt % tickMs !== 0) throw new CalendarConflict(`A Frontier season ends on a ${tickMs / 1_000} s tick`);
-  if (preset.race) {
-    const unit = seasonDayUnitSeconds(preset);
-    const limit = seasonSeconds(preset.race.seasonDays / DAYS_PER_BAG, unit) * 1_000;
-    if (endsAt - startsAt > limit) throw new CalendarConflict("Race exceeds the preset season day limit");
-  }
+  const limit = seasonSeconds(preset.race.seasonDays / DAYS_PER_BAG, seasonDayUnitSeconds(preset)) * 1_000;
+  if (endsAt - startsAt > limit) throw new CalendarConflict("Race exceeds the season day limit");
 };
 
 /** Whether the phase is running at this instant: from its start, up to but not including its end. */

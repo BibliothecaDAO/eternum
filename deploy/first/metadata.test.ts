@@ -78,7 +78,7 @@ test("apply starts every presence read together", async () => {
     environments.dev,
     assets,
     "0x33",
-    { frontierPresetId: "5" } as Inputs,
+    {} as Inputs,
     {} as PrivateStore,
     () => {},
     read,

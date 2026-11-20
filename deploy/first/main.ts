@@ -121,7 +121,7 @@ async function collectInputs(context: Deployment) {
 const waiting = (detail: string) => ({ done: false, waiting: detail, detail });
 /** The seasons setup was given, as it reads them back to the operator. */
 const seasonSummary = (inputs: Inputs) =>
-  `Frontier preset ${inputs.frontierPresetId} ${inputs.frontierStart} to ${inputs.frontierEnd}, pool ${inputs.amount}.`;
+  `Frontier ${inputs.frontierStart} to ${inputs.frontierEnd}, pool ${inputs.amount}.`;
 export function preparationSteps(context: Deployment): Step[] {
   let readSetup: ReturnType<typeof setupPresenceReader> | undefined;
   return [
@@ -295,7 +295,6 @@ export function preparationSteps(context: Deployment): Step[] {
           context.target,
           context.assets,
           accountIdentity(context.keys.monitor).address,
-          Number(context.inputs.frontierPresetId),
         );
         context.output("Reading collectible metadata on mainnet.");
         readSetup ??= setupPresenceReader(context.provider);

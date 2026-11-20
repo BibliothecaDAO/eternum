@@ -18,12 +18,11 @@ afterEach(() => {
 });
 const now = Date.parse("2027-01-01T00:00:00Z");
 const input = {
-  frontierPresetId: "5",
   frontierStart: "2027-02-01T00:00:00Z",
   frontierEnd: "2027-02-21T00:00:00Z",
   amount: "1000",
 } as Inputs;
-type Phase = { phase: string; presetId?: number; startsAt: string; endsAt: string };
+type Phase = { phase: string; startsAt: string; endsAt: string };
 function setup(phases: Phase[], target: (typeof environments)[keyof typeof environments] = environments.dev) {
   spyOn(Date, "now").mockReturnValue(now);
   const base = mkdtempSync(join(tmpdir(), "calendar-recovery-"));
@@ -82,7 +81,7 @@ test.each(["dev", "production"] as const)(
     expect((await step.inspect()).done).toBe(false);
     await step.apply();
     expect(writes.map(({ url, body }) => [url.split("/").at(-1), body])).toEqual([
-      ["frontier", { presetId: 5, startsAt: "2027-02-01T00:00:00.000Z", endsAt: "2027-02-21T00:00:00.000Z" }],
+      ["frontier", { startsAt: "2027-02-01T00:00:00.000Z", endsAt: "2027-02-21T00:00:00.000Z" }],
     ]);
     expect(ledgerReads).toEqual([]);
     expect((await step.inspect()).done).toBe(true);
@@ -90,18 +89,18 @@ test.each(["dev", "production"] as const)(
 );
 test("an ended Frontier phase, including the exact end boundary, is replaced with the explicit new dates", async () => {
   const { step, writes } = setup([
-    { phase: "frontier", presetId: 5, startsAt: "2026-01-01T00:00:00Z", endsAt: "2027-01-01T00:00:00Z" },
+    { phase: "frontier", startsAt: "2026-01-01T00:00:00Z", endsAt: "2027-01-01T00:00:00Z" },
   ]);
   expect((await step.inspect()).done).toBe(false);
   await step.apply();
   expect(writes.map(({ body }) => body)).toEqual([
-    { presetId: 5, startsAt: "2027-02-01T00:00:00.000Z", endsAt: "2027-02-21T00:00:00.000Z" },
+    { startsAt: "2027-02-01T00:00:00.000Z", endsAt: "2027-02-21T00:00:00.000Z" },
   ]);
   expect((await step.inspect()).done).toBe(true);
 });
 test("a published phase remains authoritative when the private directory has earlier dates", async () => {
   const { step, writes } = setup([
-    { phase: "frontier", presetId: 5, startsAt: "2026-12-01T00:00:00Z", endsAt: "2027-04-01T00:00:00Z" },
+    { phase: "frontier", startsAt: "2026-12-01T00:00:00Z", endsAt: "2027-04-01T00:00:00Z" },
   ]);
   const observation = await step.inspect();
   expect(observation.done).toBe(true);
@@ -120,7 +119,7 @@ test("an unset phase accepts the unchanged entered dates after its start", async
   await step.apply();
   expect(output).toEqual(["Setting frontier preset 5 calendar: 2026-10-12T07:00:00.000Z to 2026-10-18T23:00:00.000Z."]);
   expect(writes.map(({ body }) => body)).toEqual([
-    { presetId: 5, startsAt: "2026-10-12T07:00:00.000Z", endsAt: "2026-10-18T23:00:00.000Z" },
+    { startsAt: "2026-10-12T07:00:00.000Z", endsAt: "2026-10-18T23:00:00.000Z" },
   ]);
   expect((await step.inspect()).done).toBe(true);
 });
@@ -132,16 +131,15 @@ test.each([0, 1000])("an unset phase at or beyond its end refuses before writing
   expect(writes).toEqual([]);
 });
 
-test("publishes the selected Devcon preset with its explicit window", async () => {
+test("publishes the explicit window and no preset", async () => {
   const { context, step, writes } = setup([]);
   context.inputs = {
     ...input,
-    frontierPresetId: "6",
     frontierStart: "2027-11-03T06:30:00Z",
     frontierEnd: "2027-11-06T14:30:00Z",
   };
   await step.apply();
   expect(writes.map(({ body }) => body)).toEqual([
-    { presetId: 6, startsAt: "2027-11-03T06:30:00.000Z", endsAt: "2027-11-06T14:30:00.000Z" },
+    { startsAt: "2027-11-03T06:30:00.000Z", endsAt: "2027-11-06T14:30:00.000Z" },
   ]);
 });
