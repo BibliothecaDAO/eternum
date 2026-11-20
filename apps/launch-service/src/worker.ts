@@ -64,4 +64,3 @@ const launchAppOf = (env: LaunchEnv, chainId?: string | null) => {
     },
   });
 };
-
