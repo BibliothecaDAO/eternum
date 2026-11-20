@@ -1096,7 +1096,7 @@ async function getThePass({ browser }) {
   const shop = await readUntil(() => browser.read(buttonLabelled("^Fragments [0-9,]+$")), Boolean, SHEET_WAIT_MS);
   if (!shop) return { shop };
   browser.tap(shop.offset);
-  const pass = await readUntil(() => browser.read(sheetButton("Get the Pass$")), Boolean, SHEET_WAIT_MS);
+  const pass = await readUntil(() => browser.read(sheetButton("Get the Ancient Seal$")), Boolean, SHEET_WAIT_MS);
   if (!pass) return { shop: shop.name, pass };
   watchFor(browser, "pass-held", passHeld);
   browser.tap(pass.offset);
@@ -1110,7 +1110,7 @@ async function getThePass({ browser }) {
 const passHeld = `(() => {
   const answer = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "BuySeal").at(-1);
   return answer?.answered.some(({ model }) => model === "Seal") === true &&
-    document.querySelector('[data-kit-sheet] [data-shop="pass"]')?.textContent.includes("You have the Season Pass") === true;
+    document.querySelector('[data-kit-sheet] [data-shop="pass"]')?.textContent.includes("You have the Ancient Seal") === true;
 })()`;
 
 function deleteOathArmyStep() {

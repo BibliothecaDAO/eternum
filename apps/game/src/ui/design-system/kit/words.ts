@@ -333,7 +333,7 @@ import type { AttackRefusal, RuinChest } from "@bibliothecadao/eternum";
 import {
   FRAGMENT,
   FRAGMENTS,
-  SEASON_PASS,
+  ANCIENT_SEAL,
   BuildingType,
   buildingName,
   formatAmount,
@@ -456,18 +456,18 @@ export const SEASON_INVITE_WORDS = {
   copy: "Copy invite link",
 } as const;
 export const SEAL_CODE_WORDS = {
-  title: `Free ${SEASON_PASS}?`,
+  title: `Free ${ANCIENT_SEAL}?`,
   line: "Quest bonus and a Realm skin. One code, one account.",
   label: "Your code",
   placeholder: `${PRINTED_CODE_LENGTH} letters and digits`,
   redeem: "Redeem",
   redeeming: "Redeeming",
-  held: `Your ${SEASON_PASS} is held`,
+  held: `Your ${ANCIENT_SEAL} is held`,
   heldLine: "It is yours when the season opens.",
   refused: {
     invalid_code: `A code is ${PRINTED_CODE_LENGTH} letters and digits.`,
     code_unavailable: "That code is taken, expired or not one of ours.",
-    seal_owned: `This account has the ${SEASON_PASS} already.`,
+    seal_owned: `This account has the ${ANCIENT_SEAL} already.`,
   } satisfies Record<SealCodeRefusal, string>,
 } as const;
 /** The day-done card: "Day 12 done · Realm kept · Day 13 is open", and its one verb. */
@@ -1246,17 +1246,17 @@ export const REFILL_FAILED = "The refill could not be bought.";
 export const SHOP_WORDS = {
   title: "Shop",
   fragments: (held: number) => `${FRAGMENTS} ${formatExact(held)}`,
-  pass: SEASON_PASS,
+  pass: ANCIENT_SEAL,
   passFor: "For the whole season",
   questBonus: (percent: number) => `Daily quest pays ${formatExact(percent)}% more`,
-  getPass: "Get the Pass",
+  getPass: `Get the ${ANCIENT_SEAL}`,
   getting: "Getting…",
-  passFailed: `The ${SEASON_PASS} could not be bought.`,
+  passFailed: `The ${ANCIENT_SEAL} could not be bought.`,
   short: (held: number, more: number, cents: number) =>
     `You have ${formatExact(held)}. Get ${formatExact(more)} more for ${formatDollars(cents)}.`,
-  held: `You have the ${SEASON_PASS}`,
+  held: `You have the ${ANCIENT_SEAL}`,
   haveCode: "Have a code?",
-  fragmentsLine: (cents: number) => `${formatCount(cents, "cent")} each. Stamina, rerolls, the Pass.`,
+  fragmentsLine: (cents: number) => `${formatCount(cents, "cent")} each. Stamina, rerolls, the ${ANCIENT_SEAL}.`,
   stamina: "Stamina refill",
   staminaLine: (points: number, bar: number, fragments: number, cents: number) =>
     `Each ${FRAGMENT} refills ${formatExact(points)} points. A bar of ${formatExact(bar)} is ${formatCount(fragments, FRAGMENT, FRAGMENTS)}, ${formatDollars(cents)}.`,

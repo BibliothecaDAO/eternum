@@ -36,7 +36,7 @@ afterEach(() => {
 
 const text = () => host.textContent ?? "";
 const getPass = () =>
-  [...host.querySelectorAll("button")].find((button) => button.textContent?.includes("Get the Pass"));
+  [...host.querySelectorAll("button")].find((button) => button.textContent?.includes("Get the Ancient Seal"));
 
 const view = (over: Partial<ShopViewProps>) => {
   const onBuy = vi.fn();
@@ -57,16 +57,16 @@ const view = (over: Partial<ShopViewProps>) => {
 };
 
 describe("the shop", () => {
-  it("offers the Season Pass for 1,000 Fragments, and says what is missing in dollars while short", () => {
+  it("offers the Ancient Seal for 1,000 Fragments, and says what is missing in dollars while short", () => {
     view({});
-    expect(text()).toContain("Season Pass");
+    expect(text()).toContain("Ancient Seal");
     expect(text()).toContain("For the whole season");
     expect(text()).toContain("Daily quest pays 50% more");
     expect(getPass()?.disabled).toBe(true);
     expect(host.querySelector("[data-shop-short]")?.textContent).toBe("You have 340. Get 660 more for $6.60.");
     expect(host.querySelector("[data-code]")).not.toBeNull();
     expect(text()).toContain("Fragments 340");
-    expect(text()).toContain("1 cent each. Stamina, rerolls, the Pass.");
+    expect(text()).toContain("1 cent each. Stamina, rerolls, the Ancient Seal.");
     expect(text()).toContain("Each Fragment refills 2 points. A bar of 180 is 90 Fragments, $0.90.");
   });
 
@@ -75,20 +75,20 @@ describe("the shop", () => {
     expect(host.querySelector("[data-shop-short]")?.textContent).toBe("You have 990. Get 100 more for $1.00.");
   });
 
-  it("sends the purchase from Get the Pass once the Fragments cover it", () => {
+  it("sends the purchase from Get the Ancient Seal once the Fragments cover it", () => {
     const { onBuy } = view({ fragments: 1_200 });
     expect(host.querySelector("[data-shop-short]")).toBeNull();
     act(() => getPass()!.click());
     expect(onBuy).toHaveBeenCalledOnce();
   });
 
-  it("offers no purchase or code while it is not known whether the account holds the Pass", () => {
+  it("offers no purchase or code while it is not known whether the account holds the Ancient Seal", () => {
     view({ pass: null });
     expect(getPass()).toBeUndefined();
     expect(host.querySelector("[data-code]")).toBeNull();
   });
 
-  it("reads a held Pass from the account's Seal row: no purchase, no code, the Pass named as held", () => {
+  it("reads a held Ancient Seal from the account's Seal row: no purchase, no code, the Ancient Seal named as held", () => {
     const store = transferArmies();
     store.applyFacts([
       {
@@ -116,7 +116,7 @@ describe("the shop", () => {
         </QueryClientProvider>,
       ),
     );
-    expect(text()).toContain("You have the Season Pass");
+    expect(text()).toContain("You have the Ancient Seal");
     expect(getPass()).toBeUndefined();
     expect(host.querySelector("[data-shop=code]")).toBeNull();
   });
