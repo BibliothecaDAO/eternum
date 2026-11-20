@@ -24,7 +24,7 @@ fn set_stamina(d: super::Deployment, key: crate::troops::ExplorerKey, deficit: u
             );
             let mut bar = army.troops.stamina.inline();
             bar.amount = maximum - deficit;
-            bar.settled_at = FIXTURE_START + 10;
+            bar.settled_at = (FIXTURE_START + 10).try_into().unwrap();
             bar.remainder = 0;
             army.troops.stamina = StaminaSource::Inline(bar);
             crate::logic::army_slot_storage::persist(key, original.into_record(), army.troops);

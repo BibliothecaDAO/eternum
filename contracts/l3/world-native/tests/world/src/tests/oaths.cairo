@@ -1,6 +1,5 @@
 use snforge_std::fs::{FileTrait, read_txt};
 use snforge_std::{EventSpyTrait, EventsFilterTrait};
-use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
 use crate::guards::IGuardsDispatcherTrait;
 use crate::oaths::{ChooseOath, RerollOath, card, draw, held};
 use crate::stamina::{StaminaSourceTrait, StaminaTrait};
@@ -48,7 +47,7 @@ fn the_last_drawable_oath_comes_alone_and_none_left_opens_no_pick() {
 fn a_revealed_shrine_offers_a_new_army_three_oaths_and_an_army_holding_fourteen_the_two_it_lacks() {
     let fourteen = 65535 ^ crate::oaths::bit(crate::oaths::SKILL) ^ crate::oaths::bit(crate::oaths::FOX);
     for (oaths, offered) in array![(0_u16, 3_u32), (fourteen, 2)] {
-        let (d, game_id, key) = super::registrar::setup_frontier_relics();
+        let (d, _, key) = super::registrar::setup_frontier_relics();
         snforge_std::interact_with_state(
             d.games,
             || {
@@ -293,7 +292,7 @@ fn a_revealed_well_refills_forty_percent_of_the_bar_eighty_with_reflection_and_n
                 let mut bar = army.troops.stamina.inline();
                 bar.amount = crate::troops::explore_stamina_cost(army.troops.category, rules, progress.oaths).into()
                     + left;
-                bar.settled_at = FIXTURE_START + 10;
+                bar.settled_at = (FIXTURE_START + 10).try_into().unwrap();
                 bar.remainder = 0;
                 army.troops.stamina = StaminaSource::Inline(bar);
                 crate::logic::army_slot_storage::persist(key, original.into_record(), army.troops);
@@ -430,7 +429,7 @@ fn passing_matches_client_vectors_and_cannot_be_replayed_with_empty_or_full_slot
                     );
                     let mut bar = army.troops.stamina.inline();
                     bar.amount = maximum - deficit;
-                    bar.settled_at = FIXTURE_START + 10;
+                    bar.settled_at = (FIXTURE_START + 10).try_into().unwrap();
                     bar.remainder = 0;
                     army.troops.stamina = StaminaSource::Inline(bar);
                     crate::logic::army_slot_storage::persist(key, original.into_record(), army.troops);
@@ -686,7 +685,7 @@ fn the_twins_add_a_share_of_the_adjacent_own_army_damage_and_a_one_troop_twin_ad
         let (d, game_id, key) = super::registrar::setup_frontier_relics();
         let mut army = super::registrar::strong_frontier_army(d, game_id, key);
         army.troops.count = 300 * precision;
-        army.troops.stamina = crate::troops::Stamina { amount: 100, settled_at: FIXTURE_START + 10, remainder: 0 }.into();
+        army.troops.stamina = crate::troops::Stamina { amount: 100, settled_at: (FIXTURE_START + 10).try_into().unwrap(), remainder: 0 }.into();
         super::resource_commands::set_explorer_fixture(d.games, key, army);
         snforge_std::interact_with_state(
             d.games,
@@ -921,7 +920,7 @@ fn set_stamina(
             let maximum = crate::progression::stamina_max(progress, army.troops.category, rules.troop_stamina_config);
             let mut bar = army.troops.stamina.inline();
             bar.amount = amount.unwrap_or(maximum);
-            bar.settled_at = FIXTURE_START + 10;
+            bar.settled_at = (FIXTURE_START + 10).try_into().unwrap();
             bar.remainder = 0;
             army.troops.stamina = StaminaSource::Inline(bar);
             crate::logic::army_slot_storage::persist(key, original.into_record(), army.troops);
