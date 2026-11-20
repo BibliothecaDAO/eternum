@@ -65,7 +65,7 @@ export interface SlotKey {
 }
 
 /** A wallet's place in a ranking the ledger is asked to rate: competition ranks (1, 1, 3), ties by wallet number. */
-export interface RankedWallet {
+interface RankedWallet {
   wallet: string;
   rank: number;
 }
