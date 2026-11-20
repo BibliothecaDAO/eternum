@@ -1,16 +1,3 @@
-/**
- * Campaigns: an event's tickets to a campaign home, a realm the player founds through the campaign rather than with a
- * Realm they hold. Each printed code is good for one account; the identity Worker keeps the codes hashed with the tier
- * each gives (apps/realms/server/campaigns.ts), so only it knows which are golden. A code every flyer shares draws one of
- * the unspent printed codes at random for each account that brings it, and a regular ticket once none is left. A friend's
- * referral link gives a ticket with no printed code, golden by chance, and its inviter earns a ticket, then golden, as
- * friends found and clear a site. An account holds one ticket per campaign, and the relay registers it onchain, under the
- * campaign's key as a short string, when that account founds its home in one of the campaign's games. Nothing else gives
- * a ticket: posters and promotion link to the game itself, where any account founds an ordinary home.
- *
- * What is public about a campaign lives here, read alike by the Worker, the code generator that prints its flyers, the
- * landing that opens its tickets, and the docs page, patch notes and admin lab that state its season's dates.
- */
 export const PRINTED_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 export const PRINTED_CODE_LENGTH = 8;
 
@@ -43,11 +30,7 @@ interface Campaign {
 
 export type CampaignKey = keyof typeof CAMPAIGNS;
 
-export const TICKET_TIERS = ["regular", "golden"] as const;
-export type TicketTier = (typeof TICKET_TIERS)[number];
-
-export const isCampaignKey = (value: unknown): value is CampaignKey =>
-  typeof value === "string" && Object.hasOwn(CAMPAIGNS, value);
+export type TicketTier = "regular" | "golden";
 
 /** A moment of a campaign's season as players read it in one zone: "Tue 3 Nov 10:30 IST". */
 export const seasonMoment = (seconds: number, timeZone: string, zone: string) =>

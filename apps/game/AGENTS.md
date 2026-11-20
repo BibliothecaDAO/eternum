@@ -559,8 +559,8 @@ or account address in those measurements and never fabricates an RPC reply or ap
 directory for each run; the handshake expires after three minutes.
 
 A founded free home's daily source is self-serve at game entry → Choose a daily claim → Add this daily claim. The picker
-uses the same ticket and linked-wallet holdings as founding. The home keeps its traits, and Herald's `CampaignHome` or
-`SettledRealm` update enables the normal claim.
+offers the Realms the account holds, linked wallets included, as founding does. The home keeps its traits, and Herald's
+`CampaignHome` or `SettledRealm` update enables the normal claim.
 
 `--steps home-claim --player <saved test identity> --storage-state <private state file>` opens Realm Labor, claims once,
 and checks today's claimed mark. It leaves the sheet screenshot and text; use the confirmed snapshot to verify exact
@@ -569,7 +569,7 @@ Labor/Essence and the day's receipt.
 `--steps home-recovery` first records the existing entry picker's offered source and continues with the free home. On
 the map it writes `<step>-registration-ready.json`; after operator registration and the third snapshot, write
 `<step>-registered.json`. It then claims through Realm Labor and verifies today's claimed mark. This rehearsal uses a
-source-less dev home with a held ticket and leaves the source attachment to the operator.
+source-less dev home whose account holds a Realm and leaves the source attachment to the operator.
 
 The discovered-Spire path is `/lab/game?scenario=discovered-spire`: select Army 1, open Spire, then Enter Ethereal II.
 `build.sh playtest-spire-discovery` drives that path at desktop and phone sizes, asserts that only the next layer is

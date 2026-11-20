@@ -446,27 +446,25 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   **Redeem** (`/api/seal-code`) hold one operator's code on the account (a taken, expired or unknown code is refused in
   the field); once held, **Your Season Pass is held**. Under it **Bring friends** and, in the foot, **Copy invite
   link**: the account's link to its Aspect for the coming season (`/api/shares` with no game), which a friend's first
-  visit ties to the account they make. Operator codes:
-  `pnpm --dir apps/realms seal-codes <label> <count> <out> [last day]` (clear codes in `codes.txt`, hashes in
-  `codes.sql`). Lab: `/lab/app/preseason` (signed out), `/lab/app/preseason-member` (the pick),
-  `/lab/app/preseason-chosen` (kept; code SEAL2345 redeems), `/lab/app/preseason-sealed` (code held) and
-  `/lab/app/preseason-invited-pick` (invited to Might); proof: `build.sh prove-season-one` (each, desktop and phone).
-- Creating a Frontier home (the game's entry): with nothing to choose (a ticket or a free home, no Realm held) the realm
-  is created without a press, the doorway's bar saying **Preparing your realm**; a failure asks with the picker below. A
+  visit ties to the account they make. Operator codes: `apps/realms` README, Free Ancient Seal codes. Lab:
+  `/lab/app/preseason` (signed out), `/lab/app/preseason-member` (the pick), `/lab/app/preseason-chosen` (kept; code
+  SEAL2345 redeems), `/lab/app/preseason-sealed` (code held) and `/lab/app/preseason-invited-pick` (invited to Might);
+  proof: `build.sh prove-season-one` (each, desktop and phone).
+- Creating a Frontier home (the game's entry): with nothing to choose (no Realm held, so a free home) the realm is
+  created without a press, the doorway's bar saying **Preparing your realm**; a failure asks with the picker below. A
   Realm holder gets **Choose your home**, **You play as <name>** (changed on You), then **Create your realm**, pinned in
   the foot row on a phone: the chosen home stands large (a Realm's map from the marketplace's Realm index, its name,
-  number, Order, resources and wonder; or your Devcon ticket) with what it claims each day by the game's preset. Under
-  it a strip of the other choices (six, two on a phone); past that **All N** opens every choice in a grid with **Search
-  N Realms** (name or number), maps loading as they scroll in. It starts on your ticket when you hold one, else your
-  first Realm (wonders first, then the most resources, then by number). No Realm number is typed: with neither a ticket
-  nor a Realm it offers **A free home** (and **Link the wallet that holds your Realms** without a linked wallet); when
-  the index cannot be read it says so with **Try again**. The chosen tile wears a gold ring and a check. **Create your
-  realm** waits until the step knows what you hold (the step says **Reading what you hold…**), and spins with **Creating
-  your realm…** while the home is founded. A Realm already registered for the game shows alone, **Registered for this
-  game**. Once created, the player arrives in the new realm (the map boots, then hands off), where the open plot nearest
-  the castle is lit for its first build, the Barracks: tap it, then **Build**. The relay checks the holder live on
-  Starknet, so a Realm just bought counts and one just sold does not; when Starknet does not answer it says **Realm
-  check unavailable. Try again.**
+  number, Order, resources and wonder) with what it claims each day by the game's preset. Under it a strip of the other
+  choices (six, two on a phone); past that **All N** opens every choice in a grid with **Search N Realms** (name or
+  number), maps loading as they scroll in. It starts on your first Realm (wonders first, then the most resources, then
+  by number). No Realm number is typed: with no Realm it offers **A free home** (and **Link the wallet that holds your
+  Realms** without a linked wallet); when the index cannot be read it says so with **Try again**. The chosen tile wears
+  a gold ring and a check. **Create your realm** waits until the step knows what you hold (the step says **Reading what
+  you hold…**), and spins with **Creating your realm…** while the home is founded. A Realm already registered for the
+  game shows alone, **Registered for this game**. Once created, the player arrives in the new realm (the map boots, then
+  hands off), where the open plot nearest the castle is lit for its first build, the Barracks: tap it, then **Build**.
+  The relay checks the holder live on Starknet, so a Realm just bought counts and one just sold does not; when Starknet
+  does not answer it says **Realm check unavailable. Try again.**
 - Entering a game (the doorway, `ui/features/game-entry/doorway/`, one screen from the entry to play, the lazy game
   code's wait included): the realm under its Order's emblem, one bar with what runs (**Signing in**, **Preparing your
   realm**, **Loading the map**, **Entering the world**), its percent (the steps' spans, the map's following the opening
@@ -976,17 +974,18 @@ identity as the sheet opens (the game's address while it is made, or when nobody
 Nothing leaves the device until a way to post is pressed: Post on X (or a phone's Share) publishes the card the link
 unfurls as, titled "<name> shared Day 12 of Frontier"; closing the sheet publishes nothing. The link's landing says who
 shared which day and leads into the game, recording the visit for this browser; an account made on that browser
-afterwards is the link's, and counts as activated once it clears a site on the link's season board (`apps/realms`
-README, Shared links). A phone's sheet shows and copies the tall cut (1080 × 1350) and draws the wide cut out of sight
-for the unfurl. A phone whose share sheet takes images also gets **Share** above the two steps: the tall card's PNG, the
-post's line and the link, to any app (the season recap stays X only). Each link carries the button that made it
-(`?via=x`, `?via=system`), which its landing hands identity with the visit. What a player's shared days brought stands
-on You as **Your shared days** once they posted one: days posted, opened by friends, friends who joined, and those who
-cleared a site. Dev: `/lab/kit/hud/day-share` (a rich day), `day-share-thin`; `/lab/kit/hud/day-done` and
-`today-earlier` show the button; `/lab/app/shared-days/profile`. Code: `rollover/day-share.ts` (best moment, trail and
-post), `rollover/day-share-sheet.tsx` (the sheet, and `useDayShare`, which both places open it through) and
-`system-share.tsx`, `shell/share/` (its steps, the account's links in `own-shares.ts`, and the landing),
-`shell/profile/shared-days-panel.tsx`.
+afterwards is the link's, and counts as activated once it holds `FRIEND_GLORY` Glory in the link's game (`apps/realms`
+README, Shared links), which pays the sharer Fragments. A phone's sheet shows and copies the tall cut (1080 × 1350) and
+draws the wide cut out of sight for the unfurl. A phone whose share sheet takes images also gets **Share** above the two
+steps: the tall card's PNG, the post's line and the link, to any app (the season recap stays X only). Each link carries
+the button that made it (`?via=x`, `?via=system`), which its landing hands identity with the visit. What a player's
+shared days brought stands on You as **Your shared days** once they posted one or a friend joined: days posted, opened
+by friends, friends who joined, and those who reached the Glory; then **Friends paid** (of `FRIENDS_LIMIT`), **Fragments
+earned** and the payout rule (`SHARED_DAYS_WORDS`). Dev: `/lab/kit/hud/day-share` (a rich day), `day-share-thin`;
+`/lab/kit/hud/day-done` and `today-earlier` show the button; `/lab/app/shared-days/profile`. Code:
+`rollover/day-share.ts` (best moment, trail and post), `rollover/day-share-sheet.tsx` (the sheet, and `useDayShare`,
+which both places open it through) and `system-share.tsx`, `shell/share/` (its steps, the account's links in
+`own-shares.ts`, and the landing), `shell/profile/shared-days-panel.tsx`.
 
 Coming back to a tab the browser put away (a phone's, mostly): a lost GPU (WebGL's context, which phones take from a tab
 in the background, or WebGPU's device) boots the page again on its route once it is seen, and a Herald stream silent for
