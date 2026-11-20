@@ -7,7 +7,7 @@ import {
   readDeepBeastTroops,
   readDeepRingOpening,
   safeInteger,
-  viewerAspect,
+  viewerAspects,
   type NativeFactStore,
 } from "@bibliothecadao/eternum/game-client";
 import { accountAddress } from "@/hooks/store/use-account-store";
@@ -263,11 +263,11 @@ export class MapSiteManager {
     const rules = this.store.get("DeepRules", { game_id });
     if (!rules || !this.modelVisible || activeMapLayer()) return this.gates.retainOnly([]);
     const { spacing } = this.store.require("SettlementRules", { game_id });
-    const own = viewerAspect(this.store, game_id, accountAddress() ?? null);
+    const own = viewerAspects(this.store, game_id, accountAddress() ?? null);
     for (const gate of deepGateTiles(rules.gate_distance, spacing)) {
       const position = getWorldPositionForHex({ col: gate.col - FELT_CENTER(), row: gate.row - FELT_CENTER() });
       placePositionOnTerrain(position, this.terrain, PLATE_CLEARANCE);
-      this.gates.setLabel({ entityId: gate.aspect, position, plate: gatePlate(gate.aspect, gate.aspect === own) });
+      this.gates.setLabel({ entityId: gate.aspect, position, plate: gatePlate(gate.aspect, own.has(gate.aspect)) });
     }
     this.gates.retainOnly(aspects.map(({ id }) => id));
   }
