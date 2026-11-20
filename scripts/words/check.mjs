@@ -117,13 +117,14 @@ const SVG_PATH = /^[\sMLCQSTAZHV,.\d-]*$/i;
 const AMOUNT_HINT = /\/\s*1_?000|1e[369]|toFixed|compact|thousand|million/i;
 
 const types = await import("@bibliothecadao/types");
-const nounsOf = () =>
+export const gameNouns = () =>
   new Set([
     ...types.resources.map((resource) => resource.trait).filter((trait) => /^[A-Z][A-Za-z ]+$/.test(trait)),
     ...Object.values(types.StructureTypeToNameMapping),
     ...Object.values(types.MineKinds).map((kind) => kind.name),
     ...Object.values(types.RealmLevelNames),
     ...Object.values(types.GUARD_SLOT_NAMES),
+    ...types.aspects.map((aspect) => aspect.name),
     "Crossbowman",
     "Blitz",
     "Frontier",
@@ -862,7 +863,7 @@ const namedFunction = (node) =>
   undefined;
 
 async function inventory() {
-  const context = { nouns: nounsOf(), voiceRules: voiceRulesOf() };
+  const context = { nouns: gameNouns(), voiceRules: voiceRulesOf() };
   const hits = [];
   for (const [root, dir] of Object.entries(ROOTS)) {
     for (const path of sourceFiles(dir)) {

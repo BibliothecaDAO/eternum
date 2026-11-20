@@ -70,11 +70,6 @@ function realmOfOrder(order: number): number {
   throw new Error(`No canonical Realm of Order ${order}`);
 }
 
-/**
- * The same founding by an account a friend's Aspect invite brought (/lab/game?scenario=aspect-settle-invited): identity
- * answers its joined link as it answers a new account that opened Linden's Harmony link, so the Aspect step offers Harmony
- * first and the founding carries the Aspect tapped.
- */
 export const aspectSettleInvitedScenario = (): LabScenario => ({
   ...aspectSettleScenario(),
   joined: { kind: "aspect", chainId: LAB_GAME.chainId, gameId: LAB_GAME.gameId, moment: 2, name: "Linden" },

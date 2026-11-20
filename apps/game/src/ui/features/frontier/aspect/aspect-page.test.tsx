@@ -40,10 +40,10 @@ describe("the race board from native facts", () => {
     ]);
     const page = aspectPage(board, (home) => getStructureName(home, store).name);
     expect(page.race?.standings.map((row) => [row.aspect, row.own])).toEqual([
-      ["Harmony", false],
-      ["Might", true],
-      ["Chaos", false],
-      ["Guile", false],
+      ["Luminary", false],
+      ["Prowess", true],
+      ["Havoc", false],
+      ["Insight", false],
     ]);
     expect(page.own?.triumphs).toEqual([
       { stage: 1, day: 2 },
@@ -75,7 +75,7 @@ describe("the race board from native facts", () => {
     });
     expect(game.end_at).toBeLessThan(game.scheduled_end_at);
     expect(board.own!.members.every((member) => member.guards.length === 0)).toBe(true);
-    expect(aspectPage(board, () => "Realm").race?.result?.winner).toBe("Harmony");
+    expect(aspectPage(board, () => "Realm").race?.result?.winner).toBe("Luminary");
   });
 
   it("accepts a known zero receipt only for an existing member and keeps incomplete snapshots unknown", () => {

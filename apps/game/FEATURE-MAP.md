@@ -453,7 +453,7 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   `pnpm --dir apps/realms seal-codes <label> <count> <out> [last day]` (clear codes in `codes.txt`, hashes in
   `codes.sql`). Lab: `/lab/app/preseason` (signed out), `/lab/app/preseason-member` (the pick),
   `/lab/app/preseason-chosen` (kept; code SEAL2345 redeems), `/lab/app/preseason-sealed` (code held) and
-  `/lab/app/preseason-invited-pick` (invited to Might); proof: `build.sh prove-season-one` (each, desktop and phone).
+  `/lab/app/preseason-invited-pick` (invited to Prowess); proof: `build.sh prove-season-one` (each, desktop and phone).
 - Creating a Frontier home (the game's entry): with nothing to choose (a ticket or a free home, no Realm held) the realm
   is created without a press, the doorway's bar saying **Preparing your realm**; a failure asks with the picker below. A
   Realm holder gets **Choose your home**, **You play as <name>** (changed on You), then **Create your realm**, pinned in
@@ -1189,18 +1189,18 @@ finisher. Canonical proof: `playtest --steps lab-race-expired`.
   player's Aspect is drawn as an ally on the map.
 - **Today** shows the week's seven quests with today marked.
 
-The Deep has four gates, one an Aspect (north Might, east Harmony, south Chaos, west Guile), each drawn on its tile as a
-portal token wearing its Aspect's first Order crest with the Aspect's name on its plate, the player's own gate in their
-colour (`deepGateTiles`); an army entering arrives on the nearest free tile around its Aspect's gate. Choosing Deep in
-the map's layers, or looking through a spire into the Deep, opens the view on the player's own Aspect's gate (the centre
-for a spectator; `deepViewFor`, core `deep-geometry.ts`). Its sites stand in four rings of six corner sites around the
-centre, each ring one Hyperstructure archive, one Essence core, one Ethereal mine and one Bane altar and two more kinds
-drawn each day. Ring 1 opens with the day, each later ring when the Realms entered today reach its count; a closed
-site's card says so and refuses Attack and Join; on the map it stands dormant, its building and no beast, pinned with a
-lock in place of its kind, its plate reading "Opens at N Realms today" (`/lab/game?scenario=deep-closed`, checked by
-`build.sh playtest-deep`). The map draws the archive as a hyperstructure's bare foundation, the core as a rift, the mine
-as a fragment mine and the altar as a Shrine (`DEEP_SITE_LOOKS`, `src/three/managers/map-site-manager.ts`). While an
-open site's beast guards it, that beast stands alone on the tile at its row's size and idle, the building hidden as a
+The Deep has four gates, one an Aspect (north Prowess, east Luminary, south Havoc, west Insight), each drawn on its tile
+as a portal token wearing its Aspect's first Order crest with the Aspect's name on its plate, the player's own gate in
+their colour (`deepGateTiles`); an army entering arrives on the nearest free tile around its Aspect's gate. Choosing
+Deep in the map's layers, or looking through a spire into the Deep, opens the view on the player's own Aspect's gate
+(the centre for a spectator; `deepViewFor`, core `deep-geometry.ts`). Its sites stand in four rings of six corner sites
+around the centre, each ring one Hyperstructure archive, one Essence core, one Ethereal mine and one Bane altar and two
+more kinds drawn each day. Ring 1 opens with the day, each later ring when the Realms entered today reach its count; a
+closed site's card says so and refuses Attack and Join; on the map it stands dormant, its building and no beast, pinned
+with a lock in place of its kind, its plate reading "Opens at N Realms today" (`/lab/game?scenario=deep-closed`, checked
+by `build.sh playtest-deep`). The map draws the archive as a hyperstructure's bare foundation, the core as a rift, the
+mine as a fragment mine and the altar as a Shrine (`DEEP_SITE_LOOKS`, `src/three/managers/map-site-manager.ts`). While
+an open site's beast guards it, that beast stands alone on the tile at its row's size and idle, the building hidden as a
 camp's is (`DEEP_BEASTS`: the archive's Colossus, the core's Warlock, the mine's Balrog, the altar's Basilisk on its own
 model); the building returns once armies hold the site. Each site's plate stays over its model.
 

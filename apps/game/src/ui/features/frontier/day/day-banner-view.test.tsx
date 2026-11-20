@@ -81,10 +81,10 @@ describe("the day's banner", () => {
     const shown = [...host.querySelectorAll("[data-icon]")]
       .map((each) => each.getAttribute("data-icon")!)
       .filter((icon) => orderIcons.has(icon as never));
-    const might = aspects[0];
+    const prowess = aspects[0];
     expect(shown.toSorted()).toEqual(
       orders
-        .filter((order) => order.aspect === might.id)
+        .filter((order) => order.aspect === prowess.id)
         .map(({ orderId }) => orderMeaning(orderId))
         .toSorted(),
     );

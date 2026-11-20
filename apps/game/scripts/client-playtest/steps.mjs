@@ -859,10 +859,6 @@ const FOUNDED_ASPECTS = `JSON.stringify((window.__labChain?.sent ?? [])
   .filter(({ command }) => command.kind === "SettleSeason")
   .map(({ answered }) => Number((answered ?? []).find(({ model }) => model === "HomeAspect")?.value?.aspect)))`;
 
-/**
- * A founding by an account a friend's Aspect invite brought: the Aspect step opens with Harmony first, tagged Invited and
- * naming Linden, every card open only once the invite is read; tapping Harmony signs SettleSeason with that Aspect.
- */
 const ASPECT_SETTLE_INVITED_STEPS = [
   {
     name: "found-from-the-invite",
@@ -878,7 +874,7 @@ const ASPECT_SETTLE_INVITED_STEPS = [
         `JSON.stringify(document.querySelector(".aspect-picker__invited")?.textContent ?? null)`,
       );
       extraScreenshot("invited-aspect-step");
-      browser.click("Join Harmony");
+      browser.click("Join Luminary");
       const orders = await chooseFirstOrder(browser);
       const settles = await readUntil(
         () => browser.read(ASPECT_SETTLES),
@@ -895,18 +891,18 @@ const ASPECT_SETTLE_INVITED_STEPS = [
     verify: ({ played }) =>
       JSON.stringify(played.cards.map(({ label, invite }) => [label, invite])) ===
         JSON.stringify([
-          ["Join Harmony", "Invited"],
-          ["Join Might", null],
-          ["Join Chaos", null],
-          ["Join Guile", null],
+          ["Join Luminary", "Invited"],
+          ["Join Prowess", null],
+          ["Join Havoc", null],
+          ["Join Insight", null],
         ]) &&
-      played.line === "Linden invited you to Harmony" &&
+      played.line === "Linden invited you to Luminary" &&
       played.settles.length === 1 &&
       JSON.stringify(played.settles[0]) === JSON.stringify(["1", "0", played.orders?.[0]?.order]) &&
       JSON.stringify(played.aspects) === JSON.stringify([2])
         ? completed(played)
         : failed(
-            "The invited player must meet Harmony first, tagged and named, and found in the Order tapped inside it",
+            "The invited player must meet Luminary first, tagged and named, and found in the Order tapped inside it",
             played,
           ),
   },
@@ -927,7 +923,7 @@ const ASPECT_SETTLE_STEPS = [
       })`);
       const choosing = extraScreenshot("aspect-choice");
       if (choice.sent !== 0 || choice.cards.length !== 4) return { choice, choosing };
-      browser.click("Join Chaos");
+      browser.click("Join Havoc");
       const orders = await chooseFirstOrder(browser);
       await waitFor(browser, (seen) => seen.playable && seen.scene === "hex", PLAYABLE_WAIT_MS);
       const founded = browser.read(`JSON.stringify(
@@ -953,7 +949,7 @@ const ASPECT_SETTLE_STEPS = [
       const members = founded?.answered.find(({ model }) => model === "AspectMembers")?.value;
       return played.choice?.sent === 0 &&
         played.choice.cards?.length === 4 &&
-        played.choice.cards.includes("Join Chaos") &&
+        played.choice.cards.includes("Join Havoc") &&
         played.founded?.length === 1 &&
         founded.command.calldata.slice(5).map(Number).join(",") === `1,0,${played.orders?.[0]?.order}` &&
         Number(home?.home) === 7 &&
@@ -964,7 +960,7 @@ const ASPECT_SETTLE_STEPS = [
         seen.playable &&
         isIn(seen, "Realm", "hex")
         ? completed(played)
-        : failed("The Order chosen inside Chaos must be submitted and its Aspect become the home's membership", played);
+        : failed("The Order chosen inside Havoc must be submitted and its Aspect become the home's membership", played);
     },
   },
 ];
@@ -1628,7 +1624,7 @@ const BANE_COLLECTIONS = {
     essence: "1500000000000",
     quest: "The Stand",
     count: "3 of 3 sites",
-    head: "Might's bane",
+    head: "Prowess's bane",
   },
 };
 
@@ -4315,14 +4311,14 @@ function raceBoardSteps(result) {
         const scoped = played.race?.scopes?.at(-1)?.structures ?? [];
         return race?.visible &&
           members?.visible &&
-          race.text.includes("Harmony") &&
-          race.text.includes("Might") &&
-          race.text.includes("Chaos") &&
-          race.text.includes("Guile") &&
+          race.text.includes("Luminary") &&
+          race.text.includes("Prowess") &&
+          race.text.includes("Havoc") &&
+          race.text.includes("Insight") &&
           race.text.includes(result === "won" ? "10,000 of 10,000" : "6,400 of 10,000") &&
           (result !== "expired" || race.text.includes("No Aspect finished its hyperstructure")) &&
           race.text.includes(result === "won" ? "200K" : "64K") &&
-          played.invite?.invite.text.includes("Invite a friend to Might") &&
+          played.invite?.invite.text.includes("Invite a friend to Prowess") &&
           members.text.includes("1.3K") &&
           members.text.includes("3.8K") &&
           scoped.includes(7) &&
@@ -4352,11 +4348,11 @@ function raceBoardSteps(result) {
             verify: ({ played }) => {
               const text = played.feed.rows.join(" | ");
               return played.feed.visible &&
-                text.includes("Might beat Harmony") &&
-                text.includes("Harmony beat Might") &&
-                text.includes("Might and Harmony fought to a stand") &&
-                text.includes("Might and Harmony wiped each other out") &&
-                text.includes("Harmony wiped out") &&
+                text.includes("Prowess beat Luminary") &&
+                text.includes("Luminary beat Prowess") &&
+                text.includes("Prowess and Luminary fought to a stand") &&
+                text.includes("Prowess and Luminary wiped each other out") &&
+                text.includes("Luminary wiped out") &&
                 played.feed.rows.length === 4
                 ? completed(played)
                 : failed(

@@ -4267,7 +4267,7 @@ describe("shared links", () => {
     who.browser.request("/api/shares", { body: { kind: "aspect", chainId, gameId, moment: aspect } });
 
   it("invites to the sharer's own Aspect only, as the game's Herald names it", async () => {
-    const sharer = await player("inviter-harmony");
+    const sharer = await player("inviter-luminary");
     await env.DB.prepare(`UPDATE "user" SET "name" = 'Linden' WHERE "realmsId" = ?`).bind(sharer.realmsId).run();
     publishAspects(sharer.account, 2);
     const made = await invite(sharer, 2);
@@ -4337,13 +4337,13 @@ describe("shared links", () => {
   });
 
   it("tells a new account the invite it came by, and nothing to an account no link brought", async () => {
-    const sharer = await player("inviter-chaos");
+    const sharer = await player("inviter-havoc");
     await env.DB.prepare(`UPDATE "user" SET "name" = 'Cael' WHERE "realmsId" = ?`).bind(sharer.realmsId).run();
     publishAspects(sharer.account, 3);
     const code = ((await (await invite(sharer, 3)).json()) as { code: string }).code;
     const friendBrowser = createBrowser();
     await visit(friendBrowser, code);
-    const friend = await player("invited-to-chaos", friendBrowser);
+    const friend = await player("invited-to-havoc", friendBrowser);
     expect(await (await friend.browser.request("/api/shares/joined")).json()).toEqual({
       kind: "aspect",
       chainId,
@@ -4363,7 +4363,7 @@ describe("shared links", () => {
     const code = ((await (await invite(sharer, 4)).json()) as { code: string }).code;
     const [status, html] = await page(code);
     expect(status).toBe(200);
-    expect(tag(html, "og:title")).toBe("Orrin invites you to Guile in Frontier");
+    expect(tag(html, "og:title")).toBe("Orrin invites you to Insight in Frontier");
   });
 
   /** A JPEG as the share sheet's browser makes it: its start marker, then the rest of its bytes. */

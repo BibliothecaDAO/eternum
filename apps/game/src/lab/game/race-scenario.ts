@@ -117,7 +117,6 @@ export function expiredRaceScenario(): LabScenario {
   return { ...scenario, startsAt: Number(end) + 1 };
 }
 
-/** A home of the Harmony Aspect, rival to the player's. */
 const RIVAL_HOME = 11n;
 const SITE = 800n;
 

@@ -63,7 +63,7 @@ describe("a Deep site's card", () => {
   it("lists a held site's four slots from the top, marks the one fought next and leaves free slots free", () => {
     const fixture = DEEP_SITE_CASES["Foundation held, two slots filled"];
     draw(fixture);
-    expect(text()).toContain("Held by Might");
+    expect(text()).toContain("Held by Prowess");
     const rows = document.querySelector("[data-deep-slots]")!.textContent!;
     expect(rows.indexOf("Aldor · fought next")).toBeGreaterThan(-1);
     expect(rows.indexOf("Aldor")).toBeLessThan(rows.indexOf("Brek"));
