@@ -2,7 +2,8 @@ import { expect, it, vi } from "vitest";
 import { dayOf } from "../../../../packages/core/src/utils/days";
 import { closingFrontierDays, replayWithFrontierDays } from "./frontier-day-ranks";
 import type { FoldRow, RpcBlockWithReceipts } from "../types";
-import { receipt, rowEvent, rulesEvent, seedDerivedRows, setup, structureValue } from "./fixtures";
+import { gameRegistryEvent, receipt, rowEvent, rulesEvent, seedDerivedRows, setup, structureValue } from "./fixtures";
+import { gameRegistryRow } from "../../../../packages/core/src/test-support/game-registry";
 import { WorldFold } from "../world-fold";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import { encodeMembers } from "./serde";
@@ -47,16 +48,14 @@ const calendar = {
   endAt: start + 21 * 20 * 3600,
   dayUnitSeconds: 3600,
 };
-const game = {
+const game = gameRegistryRow({
   name: "0x46526f6e74696572",
-  game_id: 1,
   preset_id: 5,
-  seed: 42n,
-  start_main_at: start,
-  scheduled_end_at: start + 1000000,
-  end_at: start + 1000000,
-  settled: false,
-};
+  seed: "42",
+  start_main_at: String(start),
+  scheduled_end_at: String(start + 1000000),
+  end_at: String(start + 1000000),
+});
 const rows = {
   GameRegistry: [{ key: "1", value: game }],
   SliceRules: [{ key: "1", value: { game_id: 1, day_unit_seconds: 3600 } }],
@@ -117,15 +116,7 @@ it("closes no ranked day for a Season 1 game, which races Aspects by height", ()
 
 it("replays a checkpoint before closure, excluding changes at the boundary and rejecting partial replay", async () => {
   const { fold, native, decoder } = setup();
-  const gameEvent = rowEvent("GameRegistry", ["1"], {
-    ...game,
-    name: 1,
-    creator: 1,
-    ready: true,
-    dev_mode_on: false,
-    start_settling_at: start,
-    end_grace_seconds: 0,
-  });
+  const gameEvent = gameRegistryEvent({ ...game, name: "1", start_settling_at: String(start) });
   native.applyReceipt(fold, receipt([gameEvent]), 10, 0);
   seedDerivedRows(fold, decoder, [rulesEvent("1", "3600")]);
   native.applyReceipt(

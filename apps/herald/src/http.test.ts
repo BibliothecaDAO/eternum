@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 import { buildNativeDirectory, buildNativeLeaderboard } from "./native/read-models";
 import { createHeraldRequestHandler } from "./http";
 import { shardManifest } from "./native/fixtures";
+import { gameRegistryRow } from "../../../packages/core/src/test-support/game-registry";
 import type { GameSnapshot } from "./types";
 
 const snapshot: GameSnapshot = {
@@ -38,19 +39,16 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
         return [
           {
             key: "0x2",
-            value: {
-              game_id: "0x7",
+            value: gameRegistryRow({
+              game_id: 7,
               name: "0x74657374",
-              preset_id: "0x2",
-              settled: false,
-              ready: true,
-              dev_mode_on: false,
+              preset_id: 2,
               start_settling_at: "0x1",
               start_main_at: "0x2",
               scheduled_end_at: "0x3",
               end_at: "0x3",
-              end_grace_seconds: "0x4",
-            },
+              end_grace_seconds: 4,
+            }),
           },
         ];
       }

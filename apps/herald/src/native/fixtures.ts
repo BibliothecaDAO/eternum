@@ -9,6 +9,7 @@ import { NativeDecoder } from "./decoder";
 import { NativeIngestion } from "./ingestion";
 import type { NativeManifest, NativeSchema } from "./schema";
 import { buildShardManifest } from "../shard-manifest";
+import { gameRegistryRow, type GameRegistryWire } from "../../../../packages/core/src/test-support/game-registry";
 export const schema = schemaJson as unknown as NativeSchema;
 export const manifest: NativeManifest = {
   world: { address: setFixture.deployment.games },
@@ -65,6 +66,11 @@ export function rowEvent(name: string, keys: string[], values: DecodedRecord): R
     keys: [...layout.prefix, "1", model.identity],
     data: [String(keys.length), ...keys, String(felts.length), ...felts],
   };
+}
+
+export function gameRegistryEvent(overrides: Partial<GameRegistryWire> = {}): RpcEvent {
+  const { game_id, ...values } = gameRegistryRow(overrides);
+  return rowEvent("GameRegistry", [String(game_id)], values);
 }
 
 /** Named synthetic values: encoding always follows the current schema. */

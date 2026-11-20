@@ -102,18 +102,13 @@ async function expeditionWorld() {
     fold,
     receipt(
       seedDerivedRows(fold, decoder, [
-        rowEvent("GameRegistry", ["1"], {
+        gameRegistryEvent({
           name: "7",
-          preset_id: "1",
-          creator: "10",
-          settled: false,
-          ready: true,
-          dev_mode_on: false,
+          preset_id: 1,
           start_settling_at: String(dayStart + 120),
           start_main_at: String(dayStart + 120),
           scheduled_end_at: String(dayStart + 120 + 2 * 288_000),
           end_at: String(dayStart + 120 + 2 * 288_000),
-          end_grace_seconds: "0",
           seed: "7",
         }),
         rowEvent("SettlementRules", ["1"], {

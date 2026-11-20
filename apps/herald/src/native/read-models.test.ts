@@ -12,6 +12,7 @@ import {
   pointsAward,
   manifest,
   seedDerivedRows,
+  gameRegistryEvent,
   receipt,
   rowEvent,
   rulesEvent,
@@ -21,18 +22,17 @@ import {
 } from "./fixtures";
 
 function gameEvent(game = "1", settled = "0", dev = "0", preset = "2", name = "Blitz") {
-  return rowEvent("GameRegistry", [game], {
+  return gameRegistryEvent({
+    game_id: Number(game),
     name: "0x" + Buffer.from(name).toString("hex"),
-    preset_id: preset,
-    creator: "0x111",
+    preset_id: Number(preset),
     settled: BigInt(settled) !== 0n,
-    ready: true,
     dev_mode_on: BigInt(dev) !== 0n,
     start_settling_at: "10",
     start_main_at: "20",
     scheduled_end_at: "200",
     end_at: "200",
-    end_grace_seconds: "10",
+    end_grace_seconds: 10,
     seed: "42",
   });
 }
@@ -86,22 +86,23 @@ function structure(id: string, category: string, owner: string, level = "0") {
 it("never lists deployment check games or counts them as Frontier seasons", () => {
   const { fold, native } = world();
   const name = BigInt("0x" + Buffer.from("check-frontier-abc").toString("hex"));
-  native.applyReceipt(fold, receipt([rowEvent("GameRegistry", ["1"], { ...eventValue(), name })]), 11, 0);
-  function eventValue() {
-    return {
-      name,
-      preset_id: 5n,
-      settled: false,
-      ready: true,
-      dev_mode_on: false,
-      start_settling_at: 10n,
-      start_main_at: 20n,
-      scheduled_end_at: 200n,
-      end_at: 200n,
-      end_grace_seconds: 10n,
-      seed: 42n,
-    };
-  }
+  native.applyReceipt(
+    fold,
+    receipt([
+      gameRegistryEvent({
+        name: String(name),
+        preset_id: 5,
+        start_settling_at: "10",
+        start_main_at: "20",
+        scheduled_end_at: "200",
+        end_at: "200",
+        end_grace_seconds: 10,
+        seed: "42",
+      }),
+    ]),
+    11,
+    0,
+  );
   const directory = buildNativeDirectory({ chain: "madara", confirmedBlock: 11, timestamp: 30, fold });
   expect(directory.games.map(({ game_id }) => game_id)).toEqual([2]);
 });

@@ -3,6 +3,7 @@ import { dayOf } from "../../../../packages/core/src/utils/days";
 import { buildNativeDirectory } from "./read-models";
 import type { DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
+import { gameRegistryRow } from "../../../../packages/core/src/test-support/game-registry";
 
 const start = 1_800_000_000;
 const calendar = {
@@ -17,19 +18,17 @@ const input = (timestamp: number): DirectoryInput => {
     { game_id: 1, preset_id: 5, settled: true },
     { game_id: 2, preset_id: 2, settled: false },
     { game_id: 3, preset_id: 5, settled: false },
-  ].map((game) => ({
-    ...game,
-    name: "0x536561736f6e",
-    creator: "0x1",
-    ready: true,
-    dev_mode_on: false,
-    start_settling_at: start - 100,
-    start_main_at: start,
-    scheduled_end_at: start + 21 * 20 * 14_400,
-    end_at: start + 21 * 20 * 14_400,
-    end_grace_seconds: 0,
-    seed: 42n,
-  }));
+  ].map((game) =>
+    gameRegistryRow({
+      ...game,
+      name: "0x536561736f6e",
+      start_settling_at: String(start - 100),
+      start_main_at: String(start),
+      scheduled_end_at: String(start + 21 * 20 * 14_400),
+      end_at: String(start + 21 * 20 * 14_400),
+      seed: "42",
+    }),
+  );
   const rows: Record<string, Record<string, unknown>[]> = {
     GameRegistry: games,
     SliceRules: games.map((game) => ({ game_id: game.game_id, day_unit_seconds: game.preset_id === 5 ? 14_400 : 0 })),
@@ -104,26 +103,20 @@ it("does not require a season seed for a game without a day schedule", () => {
 
 it("folds the extension row and preserves the added days through a checkpoint reload", async () => {
   const { default: approved } = await import("../../../../config/source/frontier/extension.json");
-  const { setup, rowEvent, receipt, seedDerivedRows, rulesEvent } = await import("./fixtures");
+  const { setup, gameRegistryEvent, rowEvent, receipt, seedDerivedRows, rulesEvent } = await import("./fixtures");
   const { WorldFold } = await import("../world-fold");
   const { shortString, CairoCustomEnum } = await import("starknet");
   const { fold, native, decoder } = setup();
   const game = {
-    game_id: 1,
     name: shortString.encodeShortString(approved.name),
     preset_id: approved.presetId,
-    creator: 1,
-    ready: true,
-    settled: false,
-    dev_mode_on: false,
-    start_main_at: approved.start,
-    start_settling_at: approved.start,
-    scheduled_end_at: approved.oldEnd,
-    end_at: approved.oldEnd,
-    end_grace_seconds: 0,
-    seed: BigInt(approved.seed),
+    start_main_at: String(approved.start),
+    start_settling_at: String(approved.start),
+    scheduled_end_at: String(approved.oldEnd),
+    end_at: String(approved.oldEnd),
+    seed: String(BigInt(approved.seed)),
   };
-  native.applyReceipt(fold, receipt([rowEvent("GameRegistry", ["1"], game)]), 10, 0);
+  native.applyReceipt(fold, receipt([gameRegistryEvent(game)]), 10, 0);
   seedDerivedRows(fold, decoder, [
     rulesEvent("1", String(approved.dayUnit)),
     rowEvent("SettlementRules", ["1"], {
@@ -144,7 +137,7 @@ it("folds the extension row and preserves the added days through a checkpoint re
   expect(directory(fold, approved.oldEnd).day_index).toBeNull();
   native.applyReceipt(
     fold,
-    receipt([rowEvent("GameRegistry", ["1"], { ...game, end_at: approved.end, scheduled_end_at: approved.end })]),
+    receipt([gameRegistryEvent({ ...game, end_at: String(approved.end), scheduled_end_at: String(approved.end) })]),
     11,
     0,
   );

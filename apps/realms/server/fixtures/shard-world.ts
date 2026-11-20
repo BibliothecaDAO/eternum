@@ -5,6 +5,7 @@ import { nativeBaneConstants, nativeRuleConstants } from "@bibliothecadao/eternu
 import { deepSites, RESOURCE_PRECISION, TileOccupier } from "@bibliothecadao/types";
 import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import explorerFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
+import { gameRegistryRow } from "../../../../packages/core/src/test-support/game-registry";
 
 export const siteGuardTroops = (ticksUntilClear: number, clearableTroops = 800) =>
   clearableTroops + ticksUntilClear * frontierSeasonOnePreset.deep.lossPerTick;
@@ -192,20 +193,16 @@ export const snapshot = (
       rows: [
         {
           key: "0x5",
-          value: {
+          value: gameRegistryRow({
             game_id: GAME_ID,
             name: "0x1",
             preset_id: 1,
-            settled: false,
-            ready: true,
-            dev_mode_on: false,
-            start_settling_at: SEASON_START,
-            start_main_at: SEASON_START,
-            scheduled_end_at: SEASON_START + 2 * 20 * DAY_UNIT_SECONDS,
-            end_at: SEASON_START + 2 * 20 * DAY_UNIT_SECONDS,
-            end_grace_seconds: 0,
+            start_settling_at: String(SEASON_START),
+            start_main_at: String(SEASON_START),
+            scheduled_end_at: String(SEASON_START + 2 * 20 * DAY_UNIT_SECONDS),
+            end_at: String(SEASON_START + 2 * 20 * DAY_UNIT_SECONDS),
             seed: "0x1",
-          },
+          }),
         },
       ],
     },
