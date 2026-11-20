@@ -26,11 +26,11 @@ pub fn rules() -> SettlementRules {
         spacing: crate::balance::settlement::SETTLEMENT_SPACING_STEPS,
     }
 }
-pub fn seed_settlement(deployment: Deployment, rules: SettlementRules) -> u32 {
+pub fn seed_settlement(deployment: Deployment, name: felt252, rules: SettlementRules) -> u32 {
     play_fixture::create_game(
         deployment.games,
         crate::registrar::CreateGameParams {
-            registration_start: rules.registration_start, ..play_fixture::fixture_params('settlement'),
+            registration_start: rules.registration_start, ..play_fixture::fixture_params(name),
         },
     )
 }
