@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import avnuSwap from "./fixtures/avnu-swap-receipt.json";
+import lordsTransfer from "./fixtures/lords-transfer-receipt.json";
 import {
   isRevertedPayment,
   isSettledPayment,
@@ -85,5 +87,70 @@ describe("a LORDS payment", () => {
       isRevertedPayment({ ...receipt([]), execution_status: "REVERTED" }),
     ).toBe(true);
     expect(isRevertedPayment(receipt([]))).toBe(false);
+  });
+});
+
+describe("a LORDS payment read from mainnet receipts", () => {
+  const SENDER =
+    "0x20a813da9f67b4b5407c49ffd0f69b861b7b5b38f81457365f43fb882a0c0d8";
+  const RECEIVER =
+    "0x6daa55364a0593f8d5d6adcc2c8e646afb7231c973f4b681d0439980bd85be6";
+  const ROUTER =
+    "0x4270219d365d6b017231b52e92b3fb5d7c8378b05e9abc97724537a80e93b0f";
+  const RELAYER =
+    "0x57130b602e11b30d6e1b82ced26d9ed694702a9eb5ee2d960ffad776091d5b1";
+  const BUYER =
+    "0x39f0fd8bec01515b543461fb41331cb5e6814c2343439e7f9e9c3dd1159f7c7";
+  const BOUGHT = 0x34b8a597f7fcd8a6fn;
+
+  it("counts a wallet's plain transfer, settled on L1", () => {
+    expect(isSettledPayment(lordsTransfer)).toBe(true);
+    expect(
+      lordsPaidBy(lordsTransfer, {
+        token: TOKEN,
+        treasury: RECEIVER,
+        payers: [SENDER],
+      }),
+    ).toBe(0x80d968f9c3eb0f330n);
+    expect(
+      lordsPaidBy(lordsTransfer, {
+        token: TOKEN,
+        treasury: RECEIVER,
+        payers: [RECEIVER],
+      }),
+    ).toBe(0n);
+  });
+
+  it("counts none of the LORDS an AVNU swap's router sends, whoever relayed or received the swap", () => {
+    expect(isSettledPayment(avnuSwap)).toBe(true);
+    for (const payer of [BUYER, RELAYER])
+      expect(
+        lordsPaidBy(avnuSwap, {
+          token: TOKEN,
+          treasury: BUYER,
+          payers: [payer],
+        }),
+      ).toBe(0n);
+    expect(
+      lordsPaidBy(avnuSwap, {
+        token: TOKEN,
+        treasury: BUYER,
+        payers: [ROUTER],
+      }),
+    ).toBe(BOUGHT);
+  });
+
+  it("counts the transfer a buyer adds after that swap, built here onto the real receipt", () => {
+    const swappedThenSent = {
+      ...avnuSwap,
+      events: [...avnuSwap.events, dataTransfer(BUYER, TREASURY, BOUGHT)],
+    };
+    expect(
+      lordsPaidBy(swappedThenSent, {
+        token: TOKEN,
+        treasury: TREASURY,
+        payers: [BUYER],
+      }),
+    ).toBe(BOUGHT);
   });
 });

@@ -66,6 +66,17 @@ const paying = (wei: bigint, from = WALLET, status = "SUCCEEDED"): SettledReceip
   ],
 });
 
+const ROUTER = "0x4270219d365d6b017231b52e92b3fb5d7c8378b05e9abc97724537a80e93b0f";
+
+const swappedThenSent = (wei: bigint, sentBy: string): SettledReceipt["receipt"] => ({
+  execution_status: "SUCCEEDED",
+  finality_status: "ACCEPTED_ON_L2",
+  events: [
+    { from_address: TOKEN, keys: [TRANSFER], data: [ROUTER, WALLET, `0x${wei.toString(16)}`, "0x0"] },
+    { from_address: TOKEN, keys: [TRANSFER], data: [sentBy, TREASURY, `0x${wei.toString(16)}`, "0x0"] },
+  ],
+});
+
 const shop = async () => {
   const db = await migrated();
   const receipts = new Map<string, SettledReceipt>();
@@ -171,6 +182,17 @@ it("keeps delivering a payment the chain has not settled or the relay did not ta
   await settleFragmentPayments(world);
   expect(await pay(offer.id, "0x1")).toEqual([200, { state: "delivered", fragments: 500 }]);
   expect(credits.map(({ id }) => id)).toEqual(["lords:0x1"]);
+});
+
+it("delivers a swap's LORDS the wallet then sent to the treasury, and refuses LORDS the swap's router sent there itself", async () => {
+  const { quote, pay, receipts, credits, settle } = await shop();
+  const [, { quote: offer }] = await quote(1_000);
+  receipts.set("0x5a", settle(swappedThenSent(BigInt(offer.lordsWei), ROUTER)));
+  expect(await pay(offer.id, "0x5a")).toEqual([409, { error: "payment_refused" }]);
+  expect(credits).toEqual([]);
+  receipts.set("0x5b", settle(swappedThenSent(BigInt(offer.lordsWei), WALLET)));
+  expect(await pay(offer.id, "0x5b")).toEqual([200, { state: "delivered", fragments: 1_000 }]);
+  expect(credits.map(({ id, amount }) => [id, amount])).toEqual([["lords:0x5b", 1_000]]);
 });
 
 it("refuses a payment that reverted or that no wallet of the account sent, and takes another transaction for the quote", async () => {
