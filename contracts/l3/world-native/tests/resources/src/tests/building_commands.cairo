@@ -466,13 +466,28 @@ fn frontier_storage_grants_clip_at_each_exact_s2_cap_without_changing_troops() {
                     crate::logic::research::write(home, crate::research::RealmKnowledge { learned: knowledge });
                 },
             );
+            let board = crate::balance::structures::BOARD;
+            let wheat_store: u128 = (*array![
+                board.settlement_resource_cap, board.city_resource_cap, board.kingdom_resource_cap,
+                board.empire_resource_cap,
+            ]
+                .at(level))
+                .into();
+            let labor_store: u128 = (*crate::balance::structures::LABOR_STORES.span().at(level)).into();
+            let troop_cap: u128 = Into::<u32, u128>::into(
+                crate::troops::deployment_cap(crate::balance::rules::TROOP_LIMIT_CONFIG, level.try_into().unwrap()),
+            )
+                * board.troop_store_deploys.into();
             for resource_type in array![crate::resources::WHEAT, crate::resources::LABOR, 26_u8] {
-                let resource_cap = *array![6000_u128, 18000, 40000, 80000].at(level);
-                let troop_cap = *array![6000_u128, 18000, 50000, 120000].at(level);
+                let store = if resource_type == crate::resources::WHEAT {
+                    wheat_store
+                } else {
+                    labor_store
+                };
                 let cap = if resource_type == 26 {
                     troop_cap
                 } else {
-                    resource_cap * (5 + 2 * Into::<u8, u128>::into(picks)) / 5
+                    store * (10000 + Into::<u8, u128>::into(picks) * board.storage_step_bps.into()) / 10000
                 };
                 // Clear prior stock before testing each grant, so larger stores cannot mask clipping.
                 set_fixture(

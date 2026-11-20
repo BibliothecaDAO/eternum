@@ -65,6 +65,7 @@ export const frontierSeasonOnePreset = {
     beastStrongUpper: 495 * 2 ** index,
     chest: layerRuinOdds[index] ?? depth.chest,
   })),
+  board: { ...frontierPreset.board!, laborStoreCaps: [5000, 15000, 50000, 100000] },
   labor: null,
   discovery: { ...frontierPreset.discovery, beastsBps: 900 },
   dailyQuest: { baseCounts: [1, 1, 1, 1, 1, 2, 15], labor: 1000, essence: 1500, bonusPercent: 150 },

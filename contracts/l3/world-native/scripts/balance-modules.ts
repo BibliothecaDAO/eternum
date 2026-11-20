@@ -23,7 +23,7 @@ export function balanceModules(definition: PresetDefinition): Record<string, str
   assertPayWithinStage(definition.economy);
   return {
     resources: resourcesModule(definition.resources),
-    structures: structuresModule(definition.structures),
+    structures: structuresModule(definition.structures, laborStores()),
     rules: rulesModule(definition.rules),
     expeditions: expeditionsModule(definition),
     quests: questsModule(definition.economy.quests.unwrap()),
@@ -90,7 +90,13 @@ function resourcesModule(resources: PresetDefinition["resources"]): string {
   ].join("\n\n");
 }
 
-function structuresModule(structures: PresetDefinition["structures"]): string {
+function laborStores(): readonly number[] {
+  const stores = nativePresetForId(FRONTIER_S1_PRESET_ID).board?.laborStoreCaps;
+  if (!stores) throw new Error("The release's preset must name its castle labor stores");
+  return stores;
+}
+
+function structuresModule(structures: PresetDefinition["structures"], labor: readonly number[]): string {
   const board = structures.board.unwrap();
   if (!board) throw new Error("The release's preset must have a realm board");
   const buildingCosts: CairoRow[] = [];
@@ -118,6 +124,7 @@ function structuresModule(structures: PresetDefinition["structures"]): string {
     "use crate::resources::ResourceAmount;",
     "use crate::upgrades::UpgradeRow;",
     record("BOARD", "BoardRules", board),
+    `pub const LABOR_STORES: [u32; ${labor.length}] = [${labor.join(", ")}];`,
     table("BUILDINGS", "BuildingRow", buildings),
     table("BUILDING_COSTS", "ResourceAmount", buildingCosts),
     table("RESEARCH_PRICES", "ResearchPrice", researchPrices(structures.research)),

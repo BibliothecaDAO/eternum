@@ -59,6 +59,7 @@ export interface NativePreset {
     /** Troop storage in full deployments; wheat/labor base caps by realm level, in whole units. */
     troopStoreDeploys: number;
     resourceStoreCaps: readonly [number, number, number, number];
+    laborStoreCaps?: readonly [number, number, number, number];
   };
   /** One price per research row tier above common; rows are research.cairo's ROW_* ids. */
   research: readonly { row: number; tier: number; essenceCost: number; laborCost: number }[];

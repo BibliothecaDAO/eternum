@@ -108,8 +108,8 @@ fn wheat_labor_and_troops_each_fill_to_their_own_limit_and_essence_has_none() {
     grant(deployment, home, WHEAT, 2 * limit);
     assert_eq!(stored(deployment, home, WHEAT), limit);
     // A full granary leaves every other store its whole room.
-    grant(deployment, home, crate::resources::LABOR, 2 * limit);
-    assert_eq!(stored(deployment, home, crate::resources::LABOR), limit);
+    grant(deployment, home, crate::resources::LABOR, 2 * labor_store(0));
+    assert_eq!(stored(deployment, home, crate::resources::LABOR), labor_store(0));
     grant(deployment, home, KNIGHT, 2 * limit);
     assert_eq!(stored(deployment, home, KNIGHT), limit);
     grant(deployment, home, crate::resources::ESSENCE, 2 * limit);
@@ -120,7 +120,7 @@ fn wheat_labor_and_troops_each_fill_to_their_own_limit_and_essence_has_none() {
 fn a_payout_pays_what_fits_and_never_blocks() {
     let (deployment, home) = frontier_realm(frontier_preset());
     assert!(execute(deployment, build(home, FARM, WEST), 40));
-    let limit = castle_limit(0);
+    let limit = labor_store(0);
     store_exactly(deployment, home, crate::resources::LABOR, limit - 10);
     assert!(execute(deployment, demolish(home, WEST), 50));
     assert_eq!(stored(deployment, home, crate::resources::LABOR), limit);

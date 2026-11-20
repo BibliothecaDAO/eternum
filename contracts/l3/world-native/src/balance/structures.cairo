@@ -18,6 +18,8 @@ pub const BOARD: BoardRules = BoardRules {
     empire_resource_cap: 80000,
 };
 
+pub const LABOR_STORES: [u32; 4] = [5000, 15000, 50000, 100000];
+
 pub const BUILDINGS: [BuildingRow; 44] = [
     BuildingRow { population_cost: 0, capacity_grant: 6, first_cost: 0, simple_count: 1, complex_count: 0 },
     BuildingRow { population_cost: 2, capacity_grant: 0, first_cost: 1, simple_count: 0, complex_count: 0 },

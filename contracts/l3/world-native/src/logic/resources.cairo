@@ -45,7 +45,9 @@ pub fn store_limit(key: ResourceKey, resource_type: u8) -> Option<u128> {
     if base.category != crate::taxonomy::REALM_CATEGORY {
         return None;
     }
-    let cap: u128 = if resource_type == crate::resources::WHEAT || resource_type == crate::resources::LABOR {
+    let cap: u128 = if resource_type == crate::resources::LABOR {
+        (*crate::balance::structures::LABOR_STORES.span().at(base.level.into())).into()
+    } else if resource_type == crate::resources::WHEAT {
         let cap = match base.level {
             0 => board.settlement_resource_cap,
             1 => board.city_resource_cap,

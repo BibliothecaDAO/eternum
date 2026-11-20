@@ -817,3 +817,14 @@ fn a_level_up_doubles_the_castle_labor_from_that_second() {
     assert_eq!(resources.resource_balance(labor), before - cost + 3600 * 2 * base);
 }
 
+
+#[test]
+fn each_castle_level_stores_the_next_level_price() {
+    let stores = crate::balance::structures::LABOR_STORES.span();
+    for level in 0..3_u8 {
+        let store: u128 = Into::<u32, u128>::into(*stores.at(level.into())) * RESOURCE_PRECISION;
+        for cost in crate::logic::upgrades::recipe(level + 1).costs {
+            assert!(store >= *cost.amount, "a castle level cannot hold the next level's price");
+        }
+    }
+}
