@@ -284,11 +284,6 @@ pub mod SettlementState {
                     || entitlement.metadata_2 == crate::settlement::CAMPAIGN_GOLDEN.into(),
                 "invalid campaign tier",
             );
-            let preset = crate::logic::preset_record::for_game(key.game_id);
-            assert!(
-                preset.rules.entry_rule.read() == crate::rules::ENTRY_OPEN && preset.rules.day_unit_seconds.read() != 0,
-                "campaign requires Frontier",
-            );
         }
         fn claim_campaign_home(
             ref self: ComponentState<TContractState>, key: EntryKey, home: u64, entitlement: EntryEntitlement,
@@ -317,11 +312,6 @@ pub mod SettlementState {
             assert!(
                 entitlement.metadata_1 == 0 && entitlement.metadata_2 == 0 && entitlement.metadata_3 == 0,
                 "held Realm uses catalogue",
-            );
-            let rules = crate::logic::preset_record::for_game(key.game_id).rules;
-            assert!(
-                rules.entry_rule.read() == crate::rules::ENTRY_OPEN && rules.day_unit_seconds.read() != 0,
-                "held Realm requires Frontier",
             );
             let realm_id: u32 = entitlement.realm_id.try_into().unwrap();
             assert!(

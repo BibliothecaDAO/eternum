@@ -24,7 +24,7 @@ pub fn refill(
     if since == request.timestamp {
         return;
     }
-    let unit = crate::logic::preset_record::for_game(home.game_id).rules.day_unit_seconds.read();
+    let unit = crate::balance::rules::SWITCHES.day_unit_seconds;
     if since == 0 || unit == 0 || crate::logic::expeditions::depth_at(home.game_id, coord) == 3 {
         settle(ref stamina, ref boosts, maximum, request, request.timestamp, rate_bps);
         return;

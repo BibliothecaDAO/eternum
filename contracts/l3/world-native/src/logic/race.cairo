@@ -55,7 +55,7 @@ fn initialize(game_id: u32) {
 
 fn validate_game(game_id: u32) {
     let game = crate::logic::game::game(game_id);
-    let unit: u64 = crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read().into();
+    let unit: u64 = crate::balance::rules::SWITCHES.day_unit_seconds.into();
     let duration = rules().season_days / crate::days::DAYS_PER_BAG * crate::days::UNITS_PER_BAG * unit;
     assert!(game.scheduled_end_at - game.start_main_at <= duration, "race exceeds season day limit");
 }
@@ -201,7 +201,7 @@ fn schedule_triumph(key: AspectKey, before: u32, height: u32, timestamp: u64) {
     }
     let game = crate::logic::game::game(key.game_id);
     let day = crate::days::day_of(
-        game, crate::logic::preset_record::for_game(key.game_id).rules.day_unit_seconds.read(), timestamp - 1,
+        game, crate::balance::rules::SWITCHES.day_unit_seconds, timestamp - 1,
     );
     if day.end >= game.end_at {
         return;

@@ -167,9 +167,9 @@ pub fn record_labor_grant(day: u64, grant: crate::entry::LaborGrant) {
 
 #[inline(never)]
 fn grant_resource_context(game_id: u32) -> crate::commands::ResourceContext {
-    let rules = crate::logic::preset_record::for_game(game_id).rules;
+    let rules = crate::balance::rules::SWITCHES;
     crate::commands::ResourceContext {
-        production_start: if rules.mode_rules.read() & crate::rules::PRODUCTION_START != 0 {
+        production_start: if rules.mode_rules & crate::rules::PRODUCTION_START != 0 {
             crate::state::read().games.games.entry(game_id).start_main_at.read().try_into().unwrap()
         } else {
             0

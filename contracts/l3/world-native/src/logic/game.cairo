@@ -17,7 +17,7 @@ pub fn game(game_id: u32) -> GameRegistry {
     game
 }
 pub fn rules(game_id: u32) -> SliceRules {
-    let switches = crate::logic::preset_record::for_game(game_id).rules;
+    let switches = crate::balance::rules::SWITCHES;
     let overrides = crate::state::read().games.overrides.read(game_id);
     SliceRules {
         battle_config: crate::balance::rules::BATTLE_CONFIG,
@@ -34,10 +34,10 @@ pub fn rules(game_id: u32) -> SliceRules {
         victory_points_grant_config: crate::balance::rules::VICTORY_POINTS_GRANT_CONFIG,
         map_center_offset: overrides.map_center_offset,
         spire_travel_essence_cost: crate::balance::rules::SPIRE_TRAVEL_ESSENCE_COST,
-        command_mask: switches.command_mask.read(),
-        mode_rules: switches.mode_rules.read(),
-        day_unit_seconds: switches.day_unit_seconds.read(),
-        entry_rule: switches.entry_rule.read(),
+        command_mask: switches.command_mask,
+        mode_rules: switches.mode_rules,
+        day_unit_seconds: switches.day_unit_seconds,
+        entry_rule: switches.entry_rule,
         speed_config: crate::balance::rules::SPEED_CONFIG,
     }
 }

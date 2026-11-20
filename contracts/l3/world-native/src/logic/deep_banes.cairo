@@ -139,7 +139,7 @@ fn day(game_id: u32, timestamp: u64) -> Option<crate::days::Day> {
     }
     Some(
         crate::days::day_of(
-            game, crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read(), timestamp,
+            game, crate::balance::rules::SWITCHES.day_unit_seconds, timestamp,
         ),
     )
 }

@@ -59,8 +59,7 @@ pub mod QuestState {
                 return;
             }
             let game = crate::logic::game::game(home.game_id);
-            let preset = crate::logic::preset_record::for_game(home.game_id);
-            let day = crate::days::day_of(game, preset.rules.day_unit_seconds.read(), timestamp).index;
+            let day = crate::days::day_of(game, crate::balance::rules::SWITCHES.day_unit_seconds, timestamp).index;
             let selected = crate::logic::banes::quest_kind(home, day);
             if selected != kind {
                 return;

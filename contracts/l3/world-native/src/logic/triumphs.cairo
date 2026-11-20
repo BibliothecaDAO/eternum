@@ -9,7 +9,7 @@ pub struct Period {
 }
 
 pub fn period(home: ResourceKey, stage: u8) -> Option<Period> {
-    let unit = crate::logic::preset_record::for_game(home.game_id).rules.day_unit_seconds.read();
+    let unit = crate::balance::rules::SWITCHES.day_unit_seconds;
     if unit == 0 {
         return None;
     }

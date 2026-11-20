@@ -320,12 +320,12 @@ pub fn validated_command(
 
 pub fn admit(game_id: u32, actor: ContractAddress, command: Span<felt252>) {
     let (index, route, _) = validated_command(command).expect('INVALID_COMMAND');
-    let rules = crate::logic::preset_record::for_game(game_id).rules;
-    assert!(crate::rules::command_enabled(rules.command_mask.read(), index.into()), "command disabled");
+    let rules = crate::balance::rules::SWITCHES;
+    assert!(crate::rules::command_enabled(rules.command_mask, index.into()), "command disabled");
     assert_roster_admits(game_id, actor, index);
     if route.selector == selector!("settle_season")
-        && rules.entry_rule.read() == crate::rules::ENTRY_OPEN
-        && rules.day_unit_seconds.read() != 0 {
+        && rules.entry_rule == crate::rules::ENTRY_OPEN
+        && rules.day_unit_seconds != 0 {
         crate::entity_ids::assign_open_home(game_id, actor);
     }
 }

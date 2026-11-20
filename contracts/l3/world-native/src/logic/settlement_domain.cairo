@@ -214,10 +214,7 @@ pub mod SettlementLogic {
             assert!(key.game_id != 0, "game id zero is reserved");
             assert!(crate::logic::game::game_exists(key.game_id), "prepare an existing game");
             assert!(
-                crate::logic::preset_record::for_game(key.game_id)
-                    .rules
-                    .entry_rule
-                    .read() != crate::rules::ENTRY_ROSTER,
+                crate::balance::rules::SWITCHES.entry_rule != crate::rules::ENTRY_ROSTER,
                 "Blitz uses a fixed roster",
             );
             crate::logic::entry::assert_ledger_operator();

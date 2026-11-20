@@ -6,7 +6,7 @@ pub fn offer(key: ExplorerKey, coord: crate::troops::Coord, seed: u256) {
     if crate::logic::expeditions::depth_at(key.game_id, coord) >= 3 {
         return;
     }
-    let mask = crate::logic::preset_record::for_game(key.game_id).rules.command_mask.read();
+    let mask = crate::balance::rules::SWITCHES.command_mask;
     if !crate::rules::command_enabled(mask, crate::command_routes::CHOOSE_OATH.into()) {
         return;
     }
