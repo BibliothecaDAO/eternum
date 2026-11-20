@@ -1071,10 +1071,11 @@ buys up to the account's Fragments. Kit lab: `army-refill`, `army-refill-ready`,
 
 **Shop**: the Fragments chip (the phone's purse row; the desktop realm panel's ring) opens it once the "shop" moment is
 reached (an army out of stamina, or Fragments held). The Ancient Seal row: what it gives (the daily quest's bonus from
-`QuestRules`), **Get the Ancient Seal** for 1,000 Fragments, or while short how many more and their price in dollars,
-and the code field (the waiting screen's redeem, granted at once in a running game); once the account's Seal row exists
-it says the Ancient Seal is held. Then the Fragments row (a cent each) and the stamina refill rate. Kit lab: `shop`,
-`shop-ready`, `shop-held`.
+`QuestRules`; an account whose Realm or campaign ticket already pays it reads **Your Realm gives this bonus already**),
+**Get the Ancient Seal** for 1,000 Fragments, or while short how many more and their price in dollars, and the code
+field (the waiting screen's redeem, granted at once in a running game); once the account's Seal row exists it says the
+Ancient Seal is held. Then the Fragments row (a cent each) and the stamina refill rate. Kit lab: `shop`, `shop-ready`,
+`shop-held`.
 
 `pnpm --dir apps/game playtest --steps lab-no-lords --iterations 1 --out <evidence>` checks the army panel and HUD.
 

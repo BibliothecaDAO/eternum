@@ -1481,6 +1481,7 @@ export const HudLab = () => {
             fragments={lab.shop.fragments}
             pass={lab.shop.held ? { held: true } : { held: false, buying: false, onBuy: noop }}
             questBonus={50}
+            bonusHeld={null}
             bar={180}
             code={<ShopCodeField />}
             onClose={noop}

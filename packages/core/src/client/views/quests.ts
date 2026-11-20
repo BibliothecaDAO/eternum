@@ -118,7 +118,7 @@ function readQuestFacts(store: NativeFactStore, at: QuestAt, bane: BaneDay | nul
   return {
     known: {
       progress: progress.known,
-      bonus: bonus.known.present,
+      bonus: bonus.known.source !== null,
       receipts: { ordinary: ordinary.known.row, bonus: extra.known.row },
     },
   };
@@ -136,21 +136,26 @@ function readReceipt(
   return absent.known ? { known: { row: undefined } } : { unknown: absent.unknown };
 }
 
-function readLaborBonus(
+export type LaborBonusSource = "seal" | "campaign" | "realm" | null;
+
+export function readLaborBonus(
   store: NativeFactStore,
   gameId: number,
   home: number,
   owner: bigint,
-): NativeFactResult<{ present: boolean }> {
+): NativeFactResult<{ source: LaborBonusSource }> {
   const seal = readSeasonPass(store, gameId, owner);
-  if (!seal.known || seal.known.present) return seal;
+  if (!seal.known) return seal;
+  if (seal.known.present) return { known: { source: "seal" } };
   const campaign = presentOrKnownAbsent(store, "CampaignHome", store.get("CampaignHome", { game_id: gameId, home }), {
     game_id: gameId,
     home,
   });
-  if (!campaign.known || campaign.known.present) return campaign;
+  if (!campaign.known) return campaign;
+  if (campaign.known.present) return { known: { source: "campaign" } };
   const held = heldRealmForHome(store, { gameId, entityId: home }) !== null;
-  return presentOrKnownAbsent(store, "SettledRealm", held || undefined, { game_id: gameId, home });
+  const realm = presentOrKnownAbsent(store, "SettledRealm", held || undefined, { game_id: gameId, home });
+  return realm.known ? { known: { source: realm.known.present ? "realm" : null } } : realm;
 }
 
 export function fragmentsSold(store: NativeFactStore, gameId: number): boolean {

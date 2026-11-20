@@ -1249,6 +1249,8 @@ export const SHOP_WORDS = {
   pass: ANCIENT_SEAL,
   passFor: "For the whole season",
   questBonus: (percent: number) => `Daily quest pays ${formatExact(percent)}% more`,
+  bonusHeld: (holder: string) => `Your ${holder} gives this bonus already`,
+  ticket: (campaign: string) => `${campaign} ticket`,
   getPass: `Get the ${ANCIENT_SEAL}`,
   getting: "Getting…",
   passFailed: `The ${ANCIENT_SEAL} could not be bought.`,

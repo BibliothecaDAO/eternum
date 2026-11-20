@@ -258,7 +258,7 @@ const FrontierHudBody = ({
       {surface === "realms" && realm && !visit && <FrontierRealms labor={realmLabor} onClose={close} />}
       {surface === "army" && realm && !visit && <FrontierArmy realm={realm} onClose={close} />}
       {surface === "army-lost" && <ArmyLostSheet onClose={close} />}
-      {surface === "shop" && own && <ShopSheet onClose={close} />}
+      {surface === "shop" && own && <ShopSheet realm={own} onClose={close} />}
       {surface === "settings" && (
         <HudSheet label={SETTINGS} onClose={close}>
           <SettingsPanel />

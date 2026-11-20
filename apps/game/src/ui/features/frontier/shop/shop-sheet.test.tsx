@@ -46,6 +46,7 @@ const view = (over: Partial<ShopViewProps>) => {
         fragments={340}
         pass={{ held: false, buying: false, onBuy }}
         questBonus={50}
+        bonusHeld={null}
         bar={180}
         code={<i data-code />}
         onClose={() => {}}
@@ -73,6 +74,12 @@ describe("the shop", () => {
   it("prices a gap below the smallest purchase at that purchase", () => {
     view({ fragments: 990 });
     expect(host.querySelector("[data-shop-short]")?.textContent).toBe("You have 990. Get 100 more for $1.00.");
+  });
+
+  it("tells an account whose Realm already pays the quest bonus that it does, beside the Seal's offer", () => {
+    view({ bonusHeld: "Realm" });
+    expect(host.querySelector("[data-shop=pass]")?.textContent).toContain("Your Realm gives this bonus already");
+    expect(getPass()).toBeDefined();
   });
 
   it("sends the purchase from Get the Ancient Seal once the Fragments cover it", () => {
@@ -111,7 +118,7 @@ describe("the shop", () => {
       root.render(
         <QueryClientProvider client={new QueryClient()}>
           <GameProvider value={{ store, systemCalls: {} } as never} account={{ address: PLAYER } as never}>
-            <ShopSheet onClose={() => {}} />
+            <ShopSheet realm={store.require("Structure", { game_id: 1, entity_id: 7 })} onClose={() => {}} />
           </GameProvider>
         </QueryClientProvider>,
       ),
