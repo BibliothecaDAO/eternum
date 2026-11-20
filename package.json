@@ -84,6 +84,7 @@
     "check:realms-x": "node --test scripts/check-realms-x-account.test.mjs && node scripts/check-realms-x-account.mjs",
     "check:test-scripts": "node --test scripts/check-test-scripts-run-once.test.mjs && node scripts/check-test-scripts-run-once.mjs",
     "check:worker-fetch": "node --test scripts/check-worker-fetch-options.test.mjs && node scripts/check-worker-fetch-options.mjs",
+    "check:game-registry-rows": "node --test scripts/check-game-registry-rows.test.mjs && node scripts/check-game-registry-rows.mjs",
     "lab:deploy-gameplay": "bun deploy/athanor/scripts/deploy-gameplay-contracts.ts",
     "lab:harness": "bun --tsconfig-override deploy/athanor/harness/tsconfig.json deploy/athanor/harness/run.ts",
     "lab:harness:test": "bun test --tsconfig-override deploy/athanor/harness/tsconfig.json deploy/athanor/harness",

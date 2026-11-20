@@ -74,6 +74,9 @@ jobs:
       - name: Check Worker code asks fetch for no option the Workers runtime refuses
         run: pnpm check:worker-fetch
 
+      - name: Check every GameRegistry fixture row comes from its one builder
+        run: pnpm check:game-registry-rows
+
       - name: Check the Realms X account is written in one place
         run: pnpm check:realms-x
 
