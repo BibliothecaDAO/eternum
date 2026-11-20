@@ -146,8 +146,6 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
     shardsMinesFailProbability: 1,
     campFindProbability: 0,
     campFindFailProbability: 1,
-    bitcoinMineWinProbability: 0,
-    bitcoinMineFailProbability: 1,
     hyperstructureWinProbAtCenter: 0,
     hyperstructureFailProbAtCenter: 1,
     relicDiscoveryIntervalSeconds: 0,

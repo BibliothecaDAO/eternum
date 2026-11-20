@@ -47,15 +47,15 @@ describe("applyDeploymentConfigOverrides", () => {
       startMainAt: 1_763_112_600,
       factoryAddress: "0xabc",
       mapConfigOverrides: {
-        bitcoinMineWinProbability: 1638,
-        bitcoinMineFailProbability: 63897,
+        campFindProbability: 1638,
+        campFindFailProbability: 63897,
         hyperstructureWinProbAtCenter: 12345,
         hyperstructureFailProbAtCenter: 87655,
       },
     });
 
-    expect(result.exploration.bitcoinMineWinProbability).toBe(1638);
-    expect(result.exploration.bitcoinMineFailProbability).toBe(63897);
+    expect(result.exploration.campFindProbability).toBe(1638);
+    expect(result.exploration.campFindFailProbability).toBe(63897);
     expect(result.exploration.hyperstructureWinProbAtCenter).toBe(12345);
     expect(result.exploration.hyperstructureFailProbAtCenter).toBe(87655);
   });
