@@ -1260,7 +1260,7 @@ export const SHOP_WORDS = {
   fragmentsLine: (cents: number) => `${formatCount(cents, "cent")} each. Stamina, rerolls, the Pass.`,
   stamina: "Stamina refill",
   staminaLine: (points: number, bar: number, fragments: number, cents: number) =>
-    `1 ${FRAGMENT} = ${formatExact(points)} points. A bar of ${formatExact(bar)} is ${formatCount(fragments, FRAGMENT, FRAGMENTS)}, ${formatDollars(cents)}.`,
+    `Each ${FRAGMENT} refills ${formatExact(points)} points. A bar of ${formatExact(bar)} is ${formatCount(fragments, FRAGMENT, FRAGMENTS)}, ${formatDollars(cents)}.`,
 } as const;
 
 /** LORDS leaving the game for the wallet linked to the account. */

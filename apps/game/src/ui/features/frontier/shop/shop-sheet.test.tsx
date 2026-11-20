@@ -67,7 +67,7 @@ describe("the shop", () => {
     expect(host.querySelector("[data-code]")).not.toBeNull();
     expect(text()).toContain("Fragments 340");
     expect(text()).toContain("1 cent each. Stamina, rerolls, the Pass.");
-    expect(text()).toContain("1 Fragment = 2 points. A bar of 180 is 90 Fragments, $0.90.");
+    expect(text()).toContain("Each Fragment refills 2 points. A bar of 180 is 90 Fragments, $0.90.");
   });
 
   it("prices a gap below the smallest purchase at that purchase", () => {
