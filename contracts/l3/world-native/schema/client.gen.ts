@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "fc7021a49f3af85dc4b8107c59ea6065bfe278463a93a4df6ca4f1e77408f0ff";
+export const nativeFactSchemaIdentity = "d77a77ffdb3f0e9a3cbef9c85baa82638f3ffa0472339a804a746fe414e45cd2";
 export const nativeIdentifiers = {
   "rule": {
     "MAX_BLITZ_ROSTER_PLAYERS": 24,
@@ -121,9 +121,6 @@ export const nativeIdentifiers = {
     "SUPPLY_YARD": 42,
     "SCOUTS_LODGE": 43,
     "SCOUTS_LODGE_LEVEL": 1
-  },
-  "fragment": {
-    "FRIEND": 2
   }
 } as const;
 export const nativeReleaseConstants = {
@@ -231,7 +228,7 @@ export interface NativeRows {
   ExpeditionSpire: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly depth: number; readonly reveals: number; readonly location: ({ readonly alt: boolean; readonly x: number; readonly y: number }) | null };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly empty_reveals: number; readonly ruin_cleared: boolean };
   DepositSource: { readonly game_id: number; readonly chain: bigint; readonly ledger: bigint; readonly signer: bigint; readonly epoch: bigint };
-  FragmentCredit: { readonly game_id: number; readonly id: bigint; readonly account: bigint; readonly source: number; readonly amount: bigint };
+  FragmentCredit: { readonly game_id: number; readonly id: bigint; readonly account: bigint; readonly amount: bigint };
   Fragments: { readonly game_id: number; readonly account: bigint; readonly balance: bigint };
   Seal: { readonly game_id: number; readonly account: bigint; readonly granted_at: bigint };
   SpendLords: { readonly game_id: number; readonly account: bigint; readonly available: bigint; readonly consumed: bigint; readonly swept: bigint };
@@ -704,7 +701,6 @@ export const nativeFactModels = {
       "game_id": "u32",
       "id": "felt",
       "account": "felt",
-      "source": "u8",
       "amount": "u128"
     }
   },

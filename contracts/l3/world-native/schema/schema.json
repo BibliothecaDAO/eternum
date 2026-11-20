@@ -115,9 +115,6 @@
       "SUPPLY_YARD": 42,
       "SCOUTS_LODGE": 43,
       "SCOUTS_LODGE_LEVEL": 1
-    },
-    "fragment": {
-      "FRIEND": 2
     }
   },
   "tilePackingConstants": {
@@ -3028,12 +3025,6 @@
           "feltLength": 1
         },
         {
-          "name": "source",
-          "type": "core::integer::u8",
-          "id": "0x736f75726365",
-          "feltLength": 1
-        },
-        {
           "name": "amount",
           "type": "core::integer::u128",
           "id": "0x616d6f756e74",
@@ -3041,7 +3032,7 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": 3
+      "valueLength": 2
     },
     {
       "name": "Fragments",
@@ -10294,10 +10285,6 @@
           "type": "core::starknet::contract_address::ContractAddress"
         },
         {
-          "name": "source",
-          "type": "core::integer::u8"
-        },
-        {
           "name": "amount",
           "type": "core::integer::u128"
         }
@@ -13913,5 +13900,5 @@
       ]
     }
   },
-  "identity": "fc7021a49f3af85dc4b8107c59ea6065bfe278463a93a4df6ca4f1e77408f0ff"
+  "identity": "d77a77ffdb3f0e9a3cbef9c85baa82638f3ffa0472339a804a746fe414e45cd2"
 }
