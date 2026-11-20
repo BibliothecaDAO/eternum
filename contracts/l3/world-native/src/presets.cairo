@@ -109,11 +109,6 @@ pub fn validate(preset: PresetDefinition) {
         Into::<u32, u64>::into(rules.day_unit_seconds) % rules.tick_config.armies_tick_in_seconds == 0,
         "day unit is not whole ticks",
     );
-    if rules.bitcoin_mine_config.enabled {
-        assert!(rules.tick_config.bitcoin_phase_in_seconds != 0, "zero Bitcoin phase duration");
-        assert!(rules.bitcoin_mine_config.prize_per_phase != 0, "zero Bitcoin prize");
-    }
-    assert!(rules.bitcoin_mine_config.owner_cut_bps <= 10000, "invalid Bitcoin owner cut");
 
     let map = preset.rules.map_config;
     assert!(

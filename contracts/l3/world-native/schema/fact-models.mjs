@@ -378,132 +378,6 @@ export const factWireTypes = [
   },
   {
     type: "struct",
-    name: "world_native::bitcoin::ClaimKey",
-    members: [
-      {
-        name: "game_id",
-        type: "core::integer::u32",
-      },
-      {
-        name: "phase",
-        type: "core::integer::u64",
-      },
-      {
-        name: "mine_id",
-        type: "core::integer::u64",
-      },
-    ],
-  },
-  {
-    type: "struct",
-    name: "world_native::bitcoin::Contribution",
-    members: [
-      {
-        name: "labor",
-        type: "core::integer::u128",
-      },
-      {
-        name: "structure_id",
-        type: "core::integer::u64",
-      },
-    ],
-  },
-  {
-    type: "struct",
-    name: "world_native::bitcoin::ContributionKey",
-    members: [
-      {
-        name: "game_id",
-        type: "core::integer::u32",
-      },
-      {
-        name: "phase",
-        type: "core::integer::u64",
-      },
-      {
-        name: "player",
-        type: "core::starknet::contract_address::ContractAddress",
-      },
-    ],
-  },
-  {
-    type: "struct",
-    name: "world_native::bitcoin::MineFunding",
-    members: [
-      {
-        name: "eligible_from",
-        type: "core::integer::u64",
-      },
-      {
-        name: "next_phase",
-        type: "core::integer::u64",
-      },
-      {
-        name: "unsplit_carry",
-        type: "core::integer::u128",
-      },
-      {
-        name: "winner_carry",
-        type: "core::integer::u128",
-      },
-    ],
-  },
-  {
-    type: "struct",
-    name: "world_native::bitcoin::Phase",
-    members: [
-      {
-        name: "total_labor",
-        type: "core::integer::u128",
-      },
-      {
-        name: "contributors",
-        type: "core::integer::u32",
-      },
-      {
-        name: "state",
-        type: "world_native::bitcoin::PhaseStatus",
-      },
-      {
-        name: "root",
-        type: "core::integer::u256",
-      },
-    ],
-  },
-  {
-    type: "enum",
-    name: "world_native::bitcoin::PhaseStatus",
-    variants: [
-      {
-        name: "Open",
-        type: "()",
-      },
-      {
-        name: "Closed",
-        type: "()",
-      },
-      {
-        name: "Bound",
-        type: "()",
-      },
-    ],
-  },
-  {
-    type: "struct",
-    name: "world_native::bitcoin::PhaseKey",
-    members: [
-      {
-        name: "game_id",
-        type: "core::integer::u32",
-      },
-      {
-        name: "phase",
-        type: "core::integer::u64",
-      },
-    ],
-  },
-  {
-    type: "struct",
     name: "world_native::buildings::Building",
     members: [
       {
@@ -1064,11 +938,6 @@ export function defineFactModels({ struct, model: declare }) {
         value: "zero",
         meaning: "No players have settled or registered realms in this game.",
       };
-    if (row.name === "PlayerPoints")
-      row.absence = {
-        value: "zero",
-        meaning: "The chain writes a player's points on their first award; no row means the player has scored nothing.",
-      };
     const observation = behaviouralFacts[row.name];
     return observation ? { ...row, observation } : row;
   };
@@ -1100,12 +969,6 @@ export function defineFactModels({ struct, model: declare }) {
       [{ name: "guild_id", type: "core::starknet::contract_address::ContractAddress" }],
     ),
     model("GuildWhitelist", "game", struct("guilds::WhitelistKey"), [{ name: "allowed", type: "core::bool" }]),
-    model(
-      "BlitzResult",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      struct("blitz_results::BlitzResult"),
-    ),
     model(
       "DepositSource",
       "game",
@@ -1271,10 +1134,6 @@ export function defineFactModels({ struct, model: declare }) {
       { name: "token", type: struct("withdrawals::ResourceToken")[1].type },
     ]),
     model("Guard", "game", struct("guards::GuardKey"), struct("guards::Guard")),
-    model("BitcoinMine", "game", struct("resources::ResourceKey"), struct("bitcoin::MineFunding")),
-    model("BitcoinClaim", "game", struct("bitcoin::ClaimKey"), [{ name: "claimed", type: "core::bool" }]),
-    model("BitcoinPhase", "game", struct("bitcoin::PhaseKey"), struct("bitcoin::Phase")),
-    model("BitcoinContribution", "game", struct("bitcoin::ContributionKey"), struct("bitcoin::Contribution")),
     model("MineKindConfig", "game", struct("mines::MineKindKey"), struct("mines::MineKindConfig")),
     model("MinePool", "game", struct("mines::MinePoolKey"), [
       { name: "weights", type: "core::array::Span::<world_native::mines::MineWeight>" },
@@ -1483,51 +1342,12 @@ export function defineFactModels({ struct, model: declare }) {
     model("GameRegistry", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("game::GameRegistry")),
     model("GameOverrides", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("game::GameOverrides")),
     model("SliceRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("rules::SliceRules")),
-    {
-      ...model(
-        "PlayerPoints",
-        "game",
-        [
-          { name: "game_id", type: "core::integer::u32" },
-          { name: "actor", type: "core::starknet::contract_address::ContractAddress" },
-        ].map((key) => ({
-          ...key,
-          name: key.name === "actor" ? "address" : key.name,
-        })),
-        [{ name: "points", type: "core::integer::u128" }],
-      ),
-      eventProjection: "PointsAwarded",
-    },
-    {
-      ...model(
-        "PointsTotal",
-        "game",
-        [{ name: "game_id", type: "core::integer::u32" }],
-        [{ name: "total", type: "core::integer::u128" }],
-      ),
-      eventProjection: "PointsAwarded",
-    },
   ].map((fact) => (presetDerivedModels.has(fact.name) ? { ...fact, derivedFrom: "preset" } : fact));
 }
 
 // Paths describe observable values, not serialized row positions.
 const behaviouralFacts = {
   Guard: { domain: "troops", fields: { troops: "troops", destroyedAt: "destroyed_tick" } },
-  BitcoinMine: {
-    domain: "bitcoin",
-    fields: {
-      eligibleFrom: "eligible_from",
-      nextClaim: "next_phase",
-      unsplitCarry: "unsplit_carry",
-      winnerCarry: "winner_carry",
-    },
-  },
-  BitcoinClaim: { domain: "bitcoin", fields: { claimed: "claimed" } },
-  BitcoinPhase: {
-    domain: "bitcoin",
-    fields: { labor: "total_labor", contributors: "contributors", state: "state", root: "root" },
-  },
-  BitcoinContribution: { domain: "bitcoin", fields: { labor: "labor", destination: "structure_id" } },
   RealmTraits: { domain: "realm/season", fields: { wonder: "wonder", order: "order", resources: "resources" } },
   ResourceBalance: { domain: "resources", fields: { balance: "balance" } },
   ResourceProduction: {
@@ -1623,8 +1443,6 @@ const behaviouralFacts = {
       counts3: "packed_counts_3",
     },
   },
-  PointsTotal: { domain: "points", fields: { registered: "total" } },
-  PlayerPoints: { domain: "points", fields: { registered: "points" } },
   MineKindConfig: {
     domain: "mines",
     fields: {
@@ -1674,7 +1492,6 @@ export const syncScopes = {
       "Preset",
       "SpireLayout",
       "CampRules",
-      "BlitzResult",
       "ChestRules",
       "LaborRules",
       "DeepRules",
@@ -1685,7 +1502,6 @@ export const syncScopes = {
       "DepositSource",
       "WithdrawalRules",
       "ResourceToken",
-      "BitcoinPhase",
       "MineKindConfig",
       "MinePool",
       "BlitzSettlementOrder",
@@ -1707,10 +1523,8 @@ export const syncScopes = {
       "GameRegistry",
       "GameRelease",
       "SliceRules",
-      "PointsTotal",
     ].map((name) => [name, shared]),
   ),
-  PlayerPoints: { owners: ["address"] },
   RealmTraits: { realmTraits: ["realm_id"] },
   SettledRealm: { entities: ["home"] },
   CampaignHome: { entities: ["home"] },
@@ -1738,8 +1552,6 @@ export const syncScopes = {
   Guild: { owners: ["guild_id"] },
   GuildMember: { owners: ["actor"] },
   GuildWhitelist: byPlayer,
-  BitcoinContribution: byPlayer,
-  PointsAwarded: byPlayer,
   LordsWithdrawal: { owners: ["account"] },
   LaborGrant: { owners: ["account"] },
   Fragments: { owners: ["account"] },
@@ -1770,11 +1582,9 @@ export const syncScopes = {
   ArmySlot: { entities: ["structure_id"], epoch: "epoch" },
   ExplorerTroops: { entities: ["explorer_id"] },
   Guard: { entities: ["structure_id"] },
-  BitcoinClaim: { entities: ["mine_id"] },
   BattleEvent: { entities: ["attacker_id", "defender_id"] },
   ResourceProduction: { entities: ["entity_id"] },
   Structure: byEntity,
-  BitcoinMine: byEntity,
   ResourceBalance: byEntity,
   ResourceWeight: byEntity,
   ResourceArrival: byEntity,

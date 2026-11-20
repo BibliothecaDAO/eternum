@@ -8,8 +8,6 @@ pub mod aspect_activity;
 pub mod aspects;
 pub mod bane_calendar;
 pub mod banes;
-pub mod bitcoin;
-pub mod blitz_results;
 pub mod bridge;
 pub mod bridge_domain;
 pub mod buildings;

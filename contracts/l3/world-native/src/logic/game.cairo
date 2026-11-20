@@ -30,8 +30,6 @@ pub fn rules(game_id: u32) -> SliceRules {
         capacity_config: crate::balance::rules::CAPACITY_CONFIG,
         structure_capacity_config: crate::balance::rules::STRUCTURE_CAPACITY_CONFIG,
         building_config: crate::balance::rules::BUILDING_CONFIG,
-        bitcoin_mine_config: crate::balance::rules::BITCOIN_MINE_CONFIG,
-        victory_points_grant_config: crate::balance::rules::VICTORY_POINTS_GRANT_CONFIG,
         map_center_offset: overrides.map_center_offset,
         spire_travel_essence_cost: crate::balance::rules::SPIRE_TRAVEL_ESSENCE_COST,
         command_mask: switches.command_mask.read(),

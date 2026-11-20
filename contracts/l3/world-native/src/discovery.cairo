@@ -5,7 +5,6 @@ use crate::rules::MapConfig;
 pub enum Discovery {
     None,
     Mine,
-    BitcoinMine,
     Camp,
     Rift,
     Ruin: crate::army_relics::ArmyRelic,
@@ -31,16 +30,6 @@ pub fn surface(config: MapConfig, seed: u256, mode_rules: u32) -> Discovery {
         return Discovery::Camp;
     }
     Discovery::None
-}
-
-pub fn ethereal(config: MapConfig, enabled: bool, spire_adjacent: bool, seed: u256) -> Discovery {
-    if enabled
-        && !spire_adjacent
-        && lottery(seed, 10, config.bitcoin_mine_win_probability.into(), config.bitcoin_mine_fail_probability.into()) {
-        Discovery::BitcoinMine
-    } else {
-        Discovery::None
-    }
 }
 
 // One categorical draw per reveal. After `empty_reveal_limit` empty reveals in a row the draw covers only the kinds

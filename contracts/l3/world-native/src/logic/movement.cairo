@@ -2,7 +2,6 @@
 pub mod MovementLogic {
     use starknet::ContractAddress;
     use crate::commands::{ExecutionContext, Explore};
-    use crate::game::{IPointsDispatcherTrait, IPointsLibraryDispatcher};
     use crate::geometry::{neighbor, spire_neighbor, tile_key};
     use crate::logic::release::ReleaseState;
     use crate::logic::relics::RelicState;
@@ -93,10 +92,6 @@ pub mod MovementLogic {
                         )
                     } else {
                         crate::logic::map::MapState::reveal(tile, biome.into());
-                        IPointsLibraryDispatcher {
-                            class_hash: crate::logic::release::class_of(game_id, crate::slots::SEASON),
-                        }
-                            .register_exploration(game_id, actor, crate::commands::action_context(context));
                         self
                             .map_dispatcher(game_id)
                             .discovery(tile, seed, context.timestamp, crate::commands::action_context(context))

@@ -55,7 +55,7 @@ pub trait IGamesSlots<T> {
 #[starknet::contract]
 pub mod Games {
     use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
-    use starknet::{ContractAddress, SyscallResultTrait};
+    use starknet::ContractAddress;
     use crate::games::Authentication;
     use crate::games_entry::GamesEntry;
     use crate::logic::release::{ISlotAuthorityDispatcherTrait, ISlotViewsDispatcherTrait, ReleaseState};
@@ -191,29 +191,6 @@ pub mod Games {
     }
     #[abi(embed_v0)]
     impl HomeGrants of crate::entry::IHomeGrants<ContractState> {
-        fn grant_labor(
-            ref self: ContractState, home: crate::entry::LaborHome, day: u64, account: ContractAddress,
-        ) -> crate::entry::LaborGrant {
-            crate::entry::IHomeGrantsDispatcherTrait::grant_labor(
-                crate::entry::IHomeGrantsLibraryDispatcher {
-                    class_hash: crate::logic::release::class_of(home.game_id, crate::slots::BRIDGE),
-                },
-                home,
-                day,
-                account,
-            )
-        }
-        fn labor_grant(
-            self: @ContractState, home: crate::entry::LaborHome, day: u64,
-        ) -> Option<crate::entry::LaborGrant> {
-            crate::entry::IHomeGrantsDispatcherTrait::labor_grant(
-                crate::entry::IHomeGrantsLibraryDispatcher {
-                    class_hash: crate::logic::release::class_of(home.game_id, crate::slots::BRIDGE),
-                },
-                home,
-                day,
-            )
-        }
         fn grant_seal(ref self: ContractState, game_id: u32, account: ContractAddress) {
             crate::entry::IHomeGrantsDispatcherTrait::grant_seal(
                 crate::entry::IHomeGrantsLibraryDispatcher {
@@ -322,11 +299,6 @@ pub mod Games {
         crate::logic::game::game(game_id)
     }
 
-    #[external(v0)]
-    fn player_points(self: @ContractState, game_id: u32, actor: ContractAddress) -> u128 {
-        crate::state::read().season.player_points.read((game_id, actor))
-    }
-
     /// A realm's home ring for the day at `timestamp`, from the game's own map rule: the one read Herald makes to show
     /// a watched realm's ring before any command writes it.
     #[external(v0)]
@@ -341,15 +313,5 @@ pub mod Games {
             region_id,
             timestamp,
         )
-    }
-
-    #[external(v0)]
-    fn game_result(self: @ContractState, game_id: u32) -> Span<felt252> {
-        starknet::syscalls::library_call_syscall(
-            crate::logic::release::class_of(game_id, crate::slots::PRIZES),
-            selector!("game_result"),
-            array![game_id.into()].span(),
-        )
-            .unwrap_syscall()
     }
 }

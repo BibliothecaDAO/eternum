@@ -4,16 +4,12 @@ pub mod PrizesLogic {
     use starknet::storage::StoragePointerReadAccess;
     use crate::events::RowSet;
     use crate::geometry::tile_key;
-    use crate::logic::blitz_results::BlitzResultState;
     use crate::logic::lords::LordsState;
     use crate::logic::race::RaceState;
     use crate::logic::release::ReleaseState;
     use crate::map::{BIOME_SCALE, BYTE_RANGE};
     use crate::troops::Coord;
 
-    component!(path: BlitzResultState, storage: blitz, event: BlitzEvent);
-    #[abi(embed_v0)]
-    impl BlitzResults = BlitzResultState::BlitzResultsImpl<ContractState>;
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
     component!(path: LordsState, storage: relics, event: RelicEvent);
@@ -31,8 +27,6 @@ pub mod PrizesLogic {
         #[substorage(v0)]
         release: ReleaseState::Storage,
         #[substorage(v0)]
-        blitz: BlitzResultState::Storage,
-        #[substorage(v0)]
         race: RaceState::Storage,
     }
     #[event]
@@ -40,7 +34,6 @@ pub mod PrizesLogic {
     enum Event {
         RelicEvent: LordsState::Event,
         ReleaseEvent: ReleaseState::Event,
-        BlitzEvent: BlitzResultState::Event,
         RaceEvent: RaceState::Event,
         MapEvent: crate::logic::map::MapState::Event,
         StoryEvent: crate::ownership::StoryEvent,

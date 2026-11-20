@@ -10,7 +10,6 @@ pub fn assert_ledger_operator() {
 pub mod EntryAdministration {
     use starknet::ContractAddress;
     use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess, StoragePointerWriteAccess};
-    use crate::entry::{LaborGrant, LaborHome};
     use crate::logic::release::ReleaseState;
     use crate::logic::release::ReleaseState::InternalTrait as LifeInternal;
 
@@ -96,20 +95,6 @@ pub mod EntryAdministration {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of crate::entry::IHomeGrants<ComponentState<TContractState>> {
-        fn grant_labor(
-            ref self: ComponentState<TContractState>, home: LaborHome, day: u64, account: ContractAddress,
-        ) -> LaborGrant {
-            let _ = (home, day, account);
-            panic!("labor is disabled")
-        }
-        fn labor_grant(self: @ComponentState<TContractState>, home: LaborHome, day: u64) -> Option<LaborGrant> {
-            match self.data.entry.home_labor_grants.read((home.game_id, home.home, day)) {
-                Some((
-                    account, amount, essence,
-                )) => Some(LaborGrant { game_id: home.game_id, account, home: home.home, amount, essence }),
-                None => None,
-            }
-        }
         fn grant_seal(ref self: ComponentState<TContractState>, game_id: u32, account: ContractAddress) {
             super::assert_ledger_operator();
             super::grant_seal(game_id, account)

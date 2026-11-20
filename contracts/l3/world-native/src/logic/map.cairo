@@ -240,7 +240,6 @@ pub mod MapLogic {
                 category == crate::taxonomy::BANK_CATEGORY
                     || category == crate::taxonomy::MINE_CATEGORY
                     || category == crate::taxonomy::CAMP_CATEGORY
-                    || category == crate::taxonomy::BITCOIN_MINE_CATEGORY
             };
             assert!(guarded, "invalid guarded structure category");
             let guards = if site {
@@ -277,7 +276,7 @@ pub mod MapLogic {
     }
     #[abi(embed_v0)]
     impl Sites = DeepSites::DeepSitesImpl<ContractState>;
-    use crate::geometry::{spire_neighbor, tile_key};
+    use crate::geometry::tile_key;
     use crate::logic::map::MapState;
     use crate::logic::release::ReleaseState;
     use crate::map::{BIOME_SCALE, BYTE_RANGE, TileKey, TileOpt};
@@ -320,16 +319,8 @@ pub mod MapLogic {
             let game_context = crate::commands::execution_context(key.game_id, game_context);
 
             let rules = game_context.rules.unbox();
-            let coord = Coord { alt: key.alt, x: key.col, y: key.row };
             if key.alt {
-                let mut adjacent = false;
-                for direction in 0_u8..6 {
-                    let tile = crate::logic::map::occupancy(tile_key(key.game_id, spire_neighbor(coord, direction)));
-                    if tile.map(|tile| tile.category == crate::taxonomy::SPIRE_OCCUPIER).unwrap_or(false) {
-                        adjacent = true;
-                    }
-                }
-                crate::discovery::ethereal(rules.map_config, rules.bitcoin_mine_config.enabled, adjacent, seed)
+                crate::discovery::Discovery::None
             } else {
                 crate::discovery::surface(rules.map_config, seed, rules.mode_rules)
             }

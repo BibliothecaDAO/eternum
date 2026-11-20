@@ -81,7 +81,6 @@ function presetFixtureSchema(): NativeSchema {
     "relics",
     "army_relics",
     "registrar",
-    "blitz_results",
     "progression",
     "withdrawals",
   ])

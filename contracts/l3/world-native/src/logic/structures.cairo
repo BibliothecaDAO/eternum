@@ -187,7 +187,7 @@ pub mod StructuresLogic {
     use crate::buildings::{Building, BuildingKey};
     use crate::discovery::Discovery;
     use crate::events::RowSet;
-    use crate::game::{IPointsDispatcherTrait, IPointsLibraryDispatcher, assert_playing};
+    use crate::game::assert_playing;
     use crate::geometry::tile_key;
     use crate::logic::buildings::BuildingState;
     use crate::logic::release::ReleaseState;
@@ -482,30 +482,12 @@ pub mod StructuresLogic {
             )
                 .owner;
             assert!(owner != 0.try_into().unwrap(), "capturing home is unowned");
-            if record.base.category == crate::taxonomy::BITCOIN_MINE_CATEGORY {
-                crate::bitcoin::IBitcoinFundingDispatcherTrait::bitcoin_mine_captured(
-                    crate::bitcoin::IBitcoinFundingLibraryDispatcher {
-                        class_hash: crate::logic::release::class_of(key.game_id, crate::slots::SEASON),
-                    },
-                    key,
-                    timestamp,
-                    crate::commands::action_context(game_context),
-                );
-            }
             crate::logic::structures::StructureState::transfer_owner(key, owner);
-            let points = if record.owner == 0.try_into().unwrap() {
-                IPointsLibraryDispatcher {
-                    class_hash: crate::logic::release::class_of(key.game_id, crate::slots::SEASON),
-                }
-                    .register_capture(key.game_id, owner, crate::commands::action_context(game_context))
-            } else {
-                0
-            };
             crate::logic::stories::emit_entity_story(
                 key,
                 owner,
                 Story::StructureCapturedStory(
-                    crate::ownership::StructureCapturedStory { previous_owner: record.owner, new_owner: owner, points },
+                    crate::ownership::StructureCapturedStory { previous_owner: record.owner, new_owner: owner },
                 ),
                 timestamp,
             );
@@ -614,13 +596,7 @@ pub mod StructuresLogic {
                     .reveal_structure_surroundings(game_id, coord, crate::commands::biome_context(game_context));
             }
             crate::logic::structure_actions::resources_dispatcher(game_id)
-                .initialize_resources(
-                    key,
-                    capacity * RESOURCE_PRECISION,
-                    record.base.category,
-                    timestamp,
-                    crate::commands::action_context(game_context),
-                );
+                .initialize_resources(key, capacity * RESOURCE_PRECISION);
             match discovery {
                 Discovery::Mine => {
                     if rules.day_unit_seconds == 0 {
@@ -642,7 +618,6 @@ pub mod StructuresLogic {
                             );
                     }
                 },
-                Discovery::BitcoinMine => {},
                 Discovery::Camp => {
                     if rules.day_unit_seconds == 0 {
                         assert!(
@@ -731,13 +706,7 @@ pub mod StructuresLogic {
             }
             let capacity: u128 = core::num::traits::Bounded::MAX;
             crate::logic::structure_actions::resources_dispatcher(game_id)
-                .initialize_resources(
-                    key,
-                    capacity,
-                    record.base.category,
-                    record.base.created_at.into(),
-                    crate::commands::action_context(game_context),
-                );
+                .initialize_resources(key, capacity);
             key
         }
         fn raise_realm_home(

@@ -7,7 +7,6 @@ pub const BANK_CATEGORY: u8 = 3;
 pub const MINE_CATEGORY: u8 = 4;
 pub const VILLAGE_CATEGORY: u8 = 5;
 pub const CAMP_CATEGORY: u8 = 7;
-pub const BITCOIN_MINE_CATEGORY: u8 = 8;
 
 pub const NONE_OCCUPIER: u8 = 0;
 // A realm's occupier is its first one plus its level, so each run of four follows the realm levels.
@@ -36,7 +35,6 @@ pub const EXPLORER_CROSSBOWMAN_T3_OCCUPIER: u8 = 23;
 pub const CHEST_OCCUPIER: u8 = 34;
 pub const SPIRE_OCCUPIER: u8 = 35;
 pub const CAMP_OCCUPIER: u8 = 37;
-pub const BITCOIN_MINE_OCCUPIER: u8 = 38;
 pub const RESERVED_HYPERSTRUCTURE_OCCUPIER: u8 = 39;
 // A spire found by a Blitz reveal: it paid its finder once and stands dormant, with no portal and no other use.
 pub const DORMANT_SPIRE_OCCUPIER: u8 = 45;

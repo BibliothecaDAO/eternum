@@ -28,7 +28,6 @@ pub mod GamesEntry {
         GameplayRejected: crate::commands::GameplayRejected,
         BatchProgress: crate::commands::BatchProgress,
         StoryEvent: crate::ownership::StoryEvent,
-        PointsAwarded: crate::game::PointsAwarded,
         RowSet: crate::events::RowSet,
     }
 

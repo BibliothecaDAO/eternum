@@ -19,20 +19,12 @@ pub trait ILedgerOperator<T> {
 
 #[starknet::interface]
 pub trait IHomeGrants<T> {
-    fn grant_labor(ref self: T, home: LaborHome, day: u64, account: ContractAddress) -> LaborGrant;
-    fn labor_grant(self: @T, home: LaborHome, day: u64) -> Option<LaborGrant>;
     fn grant_seal(ref self: T, game_id: u32, account: ContractAddress);
 }
 
 #[starknet::interface]
 pub trait IResourceContext<T> {
     fn resource_context(self: @T, game_id: u32) -> crate::commands::ResourceContext;
-}
-
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct LaborHome {
-    pub game_id: u32,
-    pub home: u64,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

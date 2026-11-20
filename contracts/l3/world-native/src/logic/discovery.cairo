@@ -12,18 +12,6 @@ pub fn reveal(
         .unwrap_or(false);
     assert!(!already_revealed, "expedition tile already revealed");
     crate::logic::map::MapState::reveal(key, crate::logic::map::biome(key, biome));
-    let home = crate::state::read().troops.explorers.entry((key.game_id, explorer_id)).owner.read();
-    let actor = crate::logic::structures::owner(
-        crate::resources::ResourceKey { game_id: key.game_id, entity_id: home },
-    );
-    crate::game::IPointsDispatcherTrait::register_exploration(
-        crate::game::IPointsLibraryDispatcher {
-            class_hash: crate::logic::release::class_of(key.game_id, crate::slots::SEASON),
-        },
-        key.game_id,
-        actor,
-        context,
-    );
     let result = roll(key, explorer_id, seed, context);
     let guarded = match result {
         crate::discovery::Discovery::Camp | crate::discovery::Discovery::Rift | crate::discovery::Discovery::Ruin(_) |

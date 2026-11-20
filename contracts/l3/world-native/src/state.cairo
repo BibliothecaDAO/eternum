@@ -24,10 +24,6 @@ pub type Storage =
     games_storage::games::GamesStorage<
         Preset,
         crate::resources::ResourceAmount,
-        crate::bitcoin::Phase,
-        crate::bitcoin::Contribution,
-        crate::bitcoin::MineFunding,
-        crate::blitz_results::RankedPlayer,
         crate::buildings::Building,
         crate::buildings::StructureBuildings,
         crate::game::GameRegistry,
