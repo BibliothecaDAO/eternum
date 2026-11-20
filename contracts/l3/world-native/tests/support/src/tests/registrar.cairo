@@ -619,9 +619,7 @@ pub fn assert_capture_at(
     let store_room = labor_limit - resources.resource_balance(labor_supply);
     let camp_credit = labor_room
         .unwrap_or(
-            core::cmp::min(
-                site_before.initial_guard_count / 2 * (2 + Into::<u8, u128>::into(depth)) / 2, store_room,
-            ),
+            core::cmp::min(site_before.initial_guard_count / 2 * (2 + Into::<u8, u128>::into(depth)) / 2, store_room),
         );
     let camp_reward = Some(
         crate::resources::ResourceAmount { resource_type: crate::resources::LABOR, amount: camp_credit },
