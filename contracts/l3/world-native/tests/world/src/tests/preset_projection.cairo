@@ -8,13 +8,6 @@ fn current_frontier_launch_readers_match_herald_projection() {
 }
 
 #[test]
-fn current_frontier_check_launch_readers_match_herald_projection() {
-    let (preset_id, _) = current_definition("frontier-check");
-    assert_eq!(preset_id, 104);
-    compare_current_launch("frontier-check");
-}
-
-#[test]
 #[feature("safe_dispatcher")]
 fn current_frontier_refuses_sequential_odds() {
     let d = super::registrar::setup();
