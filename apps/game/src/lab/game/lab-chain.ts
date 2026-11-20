@@ -54,7 +54,7 @@ const LAB_L2_GAS_BOUND = "0x47868c00";
 export type LabFact = { model: string; key: string; value: unknown };
 
 /** A command the game signed, as the lab read it off the play call: its variant and its fields, in ABI order. */
-export type LabCommand = { kind: string; fields: Record<string, string>; calldata: string[] };
+export type LabCommand = { kind: string; fields: Record<string, string>; span: string[] };
 
 export interface LabScenario {
   /** The game the route opens on: every fact Herald's snapshot carries. */
@@ -438,7 +438,7 @@ const answerLaborClaims = (
     if (!rules) throw new Error("The lab claim has no season rules");
     const day = dayOf(rules, now())!.index;
     const hash = `0x1ab${(record.sent.length + 1).toString(16).padStart(4, "0")}de1a`;
-    const command: LabCommand = { kind: "GrantLabor", fields: { day: String(day) }, calldata: [] };
+    const command: LabCommand = { kind: "GrantLabor", fields: { day: String(day) }, span: [] };
     const answered = grantLabor(chain, scenario.player, gameId, BigInt(home), day).map(keyedAsHeldOnChain);
     record.sent.push({ hash, command, answered });
     await new Promise((applied) => setTimeout(applied, LAB_BLOCK_MS));
@@ -695,9 +695,8 @@ type AbiItem = {
   variants?: { name: string; type: string; wireId?: number }[];
 };
 
-/** A play call's command, as native-submission builds it: game, release, commitment, the span's length, the span. */
 const readCommand = (bindings: NativeWorldBindings, calldata: string[]): LabCommand => {
-  const span = calldata.slice(4);
+  const span = calldata.slice(3);
   const abi = bindings.commandAbi as unknown as AbiItem[];
   const commands = abi.find((item) => item.type === "enum" && item.name === "world_native::commands::Command");
   const variant = commands?.variants?.find(({ wireId }) => wireId === Number(span[0]));
@@ -708,7 +707,7 @@ const readCommand = (bindings: NativeWorldBindings, calldata: string[]): LabComm
     members.length === span.length - 1
       ? Object.fromEntries(members.map((member, index) => [member.name, BigInt(span[index + 1]).toString()]))
       : {};
-  return { kind: variant.name, fields, calldata };
+  return { kind: variant.name, fields, span };
 };
 
 /** The lab shard's Herald, answering the game's one stream socket with Herald's own messages. */

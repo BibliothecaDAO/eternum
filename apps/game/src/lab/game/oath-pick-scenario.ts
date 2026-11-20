@@ -109,7 +109,7 @@ function heldSet(count: number): number {
 
 function answerChoice(command: LabCommand, chain: NativeFactStore, now: number): LabFact[] | null {
   if (command.kind !== "ChooseOath") return null;
-  const fields = command.calldata.slice(5).map(Number);
+  const fields = command.span.slice(1).map(Number);
   const explorer_id = fields.shift()!;
   const expected = fields.shift()!;
   const oath = fields.shift() === 0 ? fields.shift()! : null;
@@ -130,7 +130,7 @@ function answerChoice(command: LabCommand, chain: NativeFactStore, now: number):
 
 function answerReroll(command: LabCommand, chain: NativeFactStore, player: string): LabFact[] | null {
   if (command.kind !== "RerollOath") return null;
-  const [explorer_id, expected, index, ...extra] = command.calldata.slice(5).map(Number);
+  const [explorer_id, expected, index, ...extra] = command.span.slice(1).map(Number);
   if (extra.length) throw new Error("Extra Oath reroll fields");
   if (armyEtherealLayer(chain, 1, explorer_id!) === DEEP_DEPTH) throw new Error("no oath is rerolled in the Deep");
   const current = chain.require("ArmyProgress", { game_id: 1, explorer_id: explorer_id! });
@@ -177,12 +177,12 @@ function passStamina(chain: NativeFactStore, explorer_id: number, now: number): 
 
 function answerDeletion(command: LabCommand, chain: NativeFactStore): LabFact[] | null {
   if (command.kind !== "ManageTroops") return null;
-  const explorer_id = BigInt(command.calldata.at(-1)!);
+  const explorer_id = BigInt(command.span.at(-1)!);
   const encoded = encodeNativeCommand(nativeBindings.commandAbi, {
     kind: "ManageTroops",
     value: { kind: "RemoveExplorer", value: explorer_id },
   });
-  const payload = command.calldata.slice(4);
+  const payload = command.span;
   if (payload.length !== encoded.length || payload.some((field, index) => BigInt(field) !== BigInt(encoded[index]!)))
     return null;
   const key = { game_id: 1, explorer_id };

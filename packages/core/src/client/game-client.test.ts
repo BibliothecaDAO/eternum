@@ -166,7 +166,6 @@ const playerAccount = (address = "0x111") => {
   return { account: { address, execute, getNonce, getTransactionStatus } as unknown as AccountInterface, execute };
 };
 const explore = { kind: "Explore", value: { explorer_id: 9, direction: 2 } } as const;
-/** The play call's calldata: game, release id, preset commitment, then the command span. */
 const playCalldata = (execute: ReturnType<typeof playerAccount>["execute"]) =>
   (execute.mock.calls[0]![0] as { calldata: string[] }).calldata;
 
@@ -263,7 +262,7 @@ describe("createGameClient", () => {
     void client.setup.network.provider.submitCommand(account, explore, TransactionType.EXPLORE).catch(() => undefined);
     await vi.waitFor(() => expect(execute).toHaveBeenCalledOnce());
     expect(execute.mock.calls[0]![0]).toMatchObject({ contractAddress: "0x1", entrypoint: "play" });
-    expect(playCalldata(execute).slice(0, 3)).toEqual(["54", "1", String(0x789n)]);
+    expect(playCalldata(execute).slice(0, 2)).toEqual(["54", "1"]);
     client.dispose();
   });
 
