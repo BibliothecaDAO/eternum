@@ -31,7 +31,7 @@ export function useAspectFights(owners: readonly bigint[]): AspectFeedReading {
     queryKey: ["aspectFights", chainId, game, members],
     queryFn: async () => {
       try {
-        const shard = requireShard(chainId);
+        const shard = requireShard();
         const { spacing } = setup.store.require("SettlementRules", { game_id: game });
         return await readDeepFightWindow(
           (offset) =>
