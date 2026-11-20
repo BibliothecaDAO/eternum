@@ -2567,29 +2567,6 @@
       "valueLength": null
     },
     {
-      "name": "ExtractionRewards",
-      "identity": "0x45787472616374696f6e52657761726473",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "rewards",
-          "type": "core::array::Span::<world_native::exploration_rewards::ExplorationReward>",
-          "id": "0x72657761726473",
-          "feltLength": null
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": null,
-      "derivedFrom": "preset"
-    },
-    {
       "name": "DepositSource",
       "identity": "0x4465706f736974536f75726365",
       "scope": "game",
@@ -7210,16 +7187,6 @@
         }
       ]
     },
-    "core::array::Span::<world_native::exploration_rewards::ExplorationReward>": {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::exploration_rewards::ExplorationReward>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::exploration_rewards::ExplorationReward>"
-        }
-      ]
-    },
     "core::array::Span::<world_native::mines::MineKindEntry>": {
       "type": "struct",
       "name": "core::array::Span::<world_native::mines::MineKindEntry>",
@@ -9524,28 +9491,6 @@
         }
       ]
     },
-    "world_native::exploration_rewards::ExplorationReward": {
-      "type": "struct",
-      "name": "world_native::exploration_rewards::ExplorationReward",
-      "members": [
-        {
-          "name": "resource_type",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "percent",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "percent_max",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "weight",
-          "type": "core::integer::u128"
-        }
-      ]
-    },
     "world_native::exploration_rewards::ExtractedReward": {
       "type": "struct",
       "name": "world_native::exploration_rewards::ExtractedReward",
@@ -10424,10 +10369,6 @@
         {
           "name": "economy",
           "type": "world_native::presets::EconomyPreset"
-        },
-        {
-          "name": "exploration",
-          "type": "core::array::Span::<world_native::exploration_rewards::ExplorationReward>"
         }
       ]
     },
@@ -12754,5 +12695,5 @@
       ]
     }
   },
-  "identity": "3dadae7084c953b8684f573522e7661b0eac88b0d7ebe5879c55d473fa7e186e"
+  "identity": "1398723ba6d834faf4bd15ff31cad5e34bdfa42a8adf8f336c260b4d1f001d6b"
 }

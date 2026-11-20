@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "3dadae7084c953b8684f573522e7661b0eac88b0d7ebe5879c55d473fa7e186e";
+export const nativeFactSchemaIdentity = "1398723ba6d834faf4bd15ff31cad5e34bdfa42a8adf8f336c260b4d1f001d6b";
 export const nativeIdentifiers = {
   "rule": {
     "MAX_BLITZ_ROSTER_PLAYERS": 24,
@@ -208,7 +208,6 @@ export interface NativeRows {
   GuildMember: { readonly game_id: number; readonly actor: bigint; readonly guild_id: bigint };
   GuildWhitelist: { readonly game_id: number; readonly guild_id: bigint; readonly player: bigint; readonly allowed: boolean };
   BlitzResult: { readonly game_id: number; readonly players: readonly ({ readonly wallet: bigint; readonly rank: number })[]; readonly complete: boolean; readonly commitment: bigint };
-  ExtractionRewards: { readonly game_id: number; readonly rewards: readonly ({ readonly resource_type: number; readonly percent: bigint; readonly percent_max: bigint; readonly weight: bigint })[] };
   DepositSource: { readonly game_id: number; readonly chain: bigint; readonly ledger: bigint; readonly signer: bigint; readonly epoch: bigint };
   FrontierDiscoveryRules: { readonly game_id: number; readonly beasts_bps: number; readonly camp_bps: number; readonly rift_bps: number; readonly ruin_bps: number; readonly shrine_bps: number; readonly well_bps: number; readonly empty_reveal_limit: number };
   ExpeditionSpire: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly depth: number; readonly reveals: number; readonly location: ({ readonly alt: boolean; readonly x: number; readonly y: number }) | null };
@@ -316,7 +315,6 @@ export interface NativeKeys {
   GuildMember: { readonly game_id: number; readonly actor: bigint };
   GuildWhitelist: { readonly game_id: number; readonly guild_id: bigint; readonly player: bigint };
   BlitzResult: { readonly game_id: number };
-  ExtractionRewards: { readonly game_id: number };
   DepositSource: { readonly game_id: number };
   FrontierDiscoveryRules: { readonly game_id: number };
   ExpeditionSpire: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly depth: number };
@@ -511,23 +509,6 @@ export const nativeFactModels = {
       ],
       "complete": "boolean",
       "commitment": "felt"
-    }
-  },
-  "ExtractionRewards": {
-    "keys": [
-      "game_id"
-    ],
-    "scope": "game",
-    "fields": {
-      "game_id": "u32",
-      "rewards": [
-        {
-          "resource_type": "u8",
-          "percent": "u128",
-          "percent_max": "u128",
-          "weight": "u128"
-        }
-      ]
     }
   },
   "DepositSource": {
@@ -2478,7 +2459,6 @@ export const nativeSyncScopes = {
   "SpireLayout": "shared",
   "CampRules": "shared",
   "BlitzResult": "shared",
-  "ExtractionRewards": "shared",
   "ChestRules": "shared",
   "LaborRules": "shared",
   "DeepRules": "shared",
