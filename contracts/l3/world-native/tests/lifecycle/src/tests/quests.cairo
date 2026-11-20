@@ -360,7 +360,7 @@ fn a_full_labor_store_still_collects_essence_and_records_the_actual_grant_once()
 
 #[test]
 #[feature("safe_dispatcher")]
-fn late_campaign_recovery_attaches_the_bonus_without_bypassing_any_quest() {
+fn a_late_campaign_ticket_attaches_the_bonus_without_bypassing_any_quest() {
     let (d, game_id) = quest_game();
     let home = found(d, game_id);
     let tomorrow = interact_with_state(
@@ -376,7 +376,7 @@ fn late_campaign_recovery_attaches_the_bonus_without_bypassing_any_quest() {
         realm_id: 0,
         metadata_1: 'devcon-2026',
         metadata_2: crate::settlement::CAMPAIGN_NORMAL.into(),
-        metadata_3: 'devcon-recovery',
+        metadata_3: 0,
         pass_kind: crate::settlement::CAMPAIGN_KIND,
     };
     snforge_std::start_cheat_block_timestamp(d.games, tomorrow);

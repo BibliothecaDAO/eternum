@@ -375,62 +375,6 @@ fn a_late_held_realm_keeps_the_home_and_grants_only_today_without_essence() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn flyer_recovery_grants_missed_days_once_and_leaves_today_to_the_normal_claim() {
-    for (tier, amount) in array![(1_u8, 1000_u128), (2_u8, 2000_u128)] {
-        let (d, game_id) = super::registrar::setup_labor_home_game("devcon", 3);
-        set_operator(d, authority());
-        let game = crate::game::IGameDispatcherTrait::game(
-            crate::game::IGameDispatcher { contract_address: d.games }, game_id,
-        );
-        let boundary = crate::days::day_of(game, 7200, 360).end;
-        let home = found_at(d, game_id, boundary - 1);
-        let labor = balance(d, home, LABOR);
-        let essence = balance(d, home, ESSENCE);
-        let resource = ResourceKey { game_id, entity_id: home.home };
-        let before = interact_with_state(d.games, || crate::logic::structures::record(resource));
-        let production = interact_with_state(d.games, || crate::logic::resources::production(resource, LABOR));
-        start_cheat_block_timestamp(d.games, boundary);
-        let recovery = EntryEntitlement { metadata_3: 'devcon-recovery', ..ticket(tier) };
-        register(d, game_id, recovery);
-        let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
-        let grant = operator.labor_grant(home, 0).unwrap().unwrap();
-        assert_eq!(grant.amount, amount * RESOURCE_PRECISION);
-        assert_eq!(grant.essence, amount * RESOURCE_PRECISION);
-        assert_eq!(balance(d, home, LABOR), labor + production.production_rate.into() + grant.amount);
-        assert_eq!(balance(d, home, ESSENCE), essence + grant.essence);
-        assert_eq!(interact_with_state(d.games, || crate::logic::structures::record(resource)), before);
-        assert!(operator.labor_grant(home, 1).unwrap().is_none());
-        let mut retry = spy_events();
-        register(d, game_id, recovery);
-        assert_eq!(retry.get_events().emitted_by(d.games).events.len(), 0);
-        let today = operator.grant_labor(home, 1, d.actor).unwrap();
-        assert_eq!(today.essence, amount * RESOURCE_PRECISION);
-        assert_eq!(balance(d, home, ESSENCE), essence + 2 * amount * RESOURCE_PRECISION);
-    }
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn recovery_requires_a_founded_devcon_home_and_pays_nothing_for_today() {
-    let (d, game_id) = super::registrar::setup_labor_home_game("devcon", 3);
-    set_operator(d, authority());
-    start_cheat_caller_address(d.games, authority());
-    let key = EntryKey { game_id, owner: d.actor };
-    let recovery = EntryEntitlement { metadata_3: 'devcon-recovery', ..ticket(1) };
-    assert!(ledger(d).register_entitlement(key, recovery).is_err());
-    let home = found(d, game_id);
-    let labor = balance(d, home, LABOR);
-    let essence = balance(d, home, ESSENCE);
-    start_cheat_caller_address(d.games, authority());
-    assert!(ledger(d).register_entitlement(key, EntryEntitlement { metadata_1: 'other', ..recovery }).is_err());
-    register(d, game_id, recovery);
-    assert_eq!(balance(d, home, LABOR), labor);
-    assert_eq!(balance(d, home, ESSENCE), essence);
-    assert!(IHomeGrantsSafeDispatcher { contract_address: d.games }.labor_grant(home, 0).unwrap().is_none());
-}
-
-#[test]
-#[feature("safe_dispatcher")]
 fn an_ordinary_late_ticket_does_not_compensate_previous_days() {
     let (d, game_id) = super::registrar::setup_labor_home_game("devcon", 3);
     set_operator(d, authority());
@@ -449,111 +393,15 @@ fn an_ordinary_late_ticket_does_not_compensate_previous_days() {
     assert_eq!(balance(d, home, ESSENCE), essence);
 }
 
-fn golden_upgrade() -> EntryEntitlement {
-    EntryEntitlement { metadata_3: 'devcon-upgrade', ..ticket(crate::settlement::CAMPAIGN_GOLDEN) }
-}
-
 #[test]
 #[feature("safe_dispatcher")]
-fn golden_upgrade_changes_an_unclaimed_day_without_recovering_missed_days() {
+fn a_registered_campaign_source_never_changes_and_takes_no_marker() {
     let (d, home) = campaign_home("devcon", crate::settlement::CAMPAIGN_NORMAL);
-    let game = crate::game::IGameDispatcherTrait::game(
-        crate::game::IGameDispatcher { contract_address: d.games }, home.game_id,
-    );
-    start_cheat_block_timestamp(d.games, crate::days::day_of(game, 7200, 360).end);
-    let labor = balance(d, home, LABOR);
-    let essence = balance(d, home, ESSENCE);
-    register(d, home.game_id, golden_upgrade());
-    assert_eq!(balance(d, home, LABOR), labor);
-    assert_eq!(balance(d, home, ESSENCE), essence);
-    let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
-    assert!(operator.labor_grant(home, 0).unwrap().is_none());
-    assert!(
-        ledger(d)
-            .register_entitlement(
-                EntryKey { game_id: home.game_id, owner: d.actor },
-                EntryEntitlement { metadata_3: 'devcon-recovery', ..ticket(2) },
-            )
-            .is_err(),
-    );
-    assert!(operator.labor_grant(home, 0).unwrap().is_none());
-    let today = operator.grant_labor(home, 1, d.actor).unwrap();
-    assert_eq!(today.essence, 2000 * RESOURCE_PRECISION);
-    assert_eq!(balance(d, home, ESSENCE), essence + today.essence);
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn separate_regular_homes_can_both_upgrade_to_golden_and_claim_the_unpaid_day() {
-    let (d, game_id) = super::registrar::setup_labor_home_game("devcon", 3);
-    let other = super::bind_authority(d);
-    set_operator(d, authority());
-    for player in array![d, other] {
-        register(player, game_id, ticket(1));
-        let home = found(player, game_id);
-        register(player, game_id, golden_upgrade());
-        let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
-        let grant = operator.grant_labor(home, 0, player.actor).unwrap();
-        assert_eq!(grant.amount, 2000 * RESOURCE_PRECISION);
-        assert_eq!(grant.essence, 2000 * RESOURCE_PRECISION);
-        assert_eq!(
-            ledger(d).entry_entitlement(EntryKey { game_id, owner: player.actor }).unwrap(), Some(golden_upgrade()),
-        );
-    }
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn golden_upgrade_refuses_unfounded_free_held_wrong_campaign_and_closed_homes() {
-    for case in 0_u8..9 {
-        let (d, game_id) = super::registrar::setup_labor_home_game("devcon", 3);
-        set_operator(d, authority());
-        let entry = EntryKey { game_id, owner: d.actor };
-        start_cheat_caller_address(d.games, authority());
-        assert!(ledger(d).register_entitlement(entry, golden_upgrade()).is_err());
-        if case == 1 {
-            found(d, game_id);
-        } else {
-            let source = if case == 2 {
-                EntryEntitlement { realm_id: 711, pass_kind: 2, metadata_1: 0, metadata_2: 0, metadata_3: 0 }
-            } else if case == 3 {
-                EntryEntitlement { metadata_1: 'other', ..ticket(1) }
-            } else {
-                ticket(1)
-            };
-            register(d, game_id, source);
-            if case != 0 {
-                found(d, game_id);
-            }
-        }
-        start_cheat_caller_address(d.games, authority());
-        if case == 4 {
-            let game = crate::game::IGameDispatcherTrait::game(
-                crate::game::IGameDispatcher { contract_address: d.games }, game_id,
-            );
-            start_cheat_block_timestamp(d.games, game.end_at);
-        }
-        if case == 5 {
-            start_cheat_caller_address(d.games, d.actor);
-        }
-        if case == 8 {
-            interact_with_state(
-                d.games,
-                || {
-                    let home = crate::entity_ids::home_for_actor(game_id, d.actor);
-                    crate::state::write().structures.structures.entry((game_id, home)).owner.write(authority());
-                },
-            );
-        }
-        let upgrade = if case == 6 {
-            EntryEntitlement { metadata_1: 'other', ..golden_upgrade() }
-        } else if case == 7 {
-            EntryEntitlement { realm_id: 711, ..golden_upgrade() }
-        } else {
-            golden_upgrade()
-        };
-        let previous = ledger(d).entry_entitlement(entry).unwrap();
-        assert!(ledger(d).register_entitlement(entry, upgrade).is_err());
-        assert_eq!(ledger(d).entry_entitlement(entry).unwrap(), previous);
+    let entry = EntryKey { game_id: home.game_id, owner: d.actor };
+    register(d, home.game_id, ticket(crate::settlement::CAMPAIGN_NORMAL));
+    assert!(ledger(d).register_entitlement(entry, ticket(crate::settlement::CAMPAIGN_GOLDEN)).is_err());
+    for marker in array!['devcon-recovery', 'devcon-upgrade'] {
+        let marked = EntryEntitlement { metadata_3: marker, ..ticket(crate::settlement::CAMPAIGN_NORMAL) };
+        assert!(ledger(d).register_entitlement(entry, marked).is_err());
     }
 }
