@@ -7,12 +7,10 @@
       "ENTRY_ROSTER": 2,
       "HOME_REWARDS": 1,
       "DISCOVER_CAMPS": 2,
-      "SPIRES": 16,
       "UNOWNED_TARGETS": 32,
       "CAPTURE_VILLAGES": 64,
       "DEPTH_CONTENTS": 128,
       "REVEAL_SUPPLIES": 262144,
-      "DISCOVER_SPIRES": 2097152,
       "SAME_OWNER_TRANSFER": 256,
       "DEV_VILLAGE_ENTRY": 8192,
       "PRODUCTION_START": 131072,
@@ -4483,34 +4481,6 @@
           "wonder": "wonder",
           "order": "order",
           "resources": "resources"
-        }
-      }
-    },
-    {
-      "name": "BlitzSettlementOrder",
-      "identity": "0x426c69747a536574746c656d656e744f72646572",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "players",
-          "type": "core::array::Span::<core::integer::u8>",
-          "id": "0x706c6179657273",
-          "feltLength": null
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": null,
-      "observation": {
-        "domain": "realm/blitz",
-        "fields": {
-          "players": "players"
         }
       }
     },
@@ -12799,5 +12769,5 @@
       ]
     }
   },
-  "identity": "409e20064f204285ce1f4874dbea8279d183beb34ec1c68793568dc3c0ea878f"
+  "identity": "fd199ce02d68e2a7708003d64e0e56f0d51169dd1e8bd20b54359833b8c6204c"
 }

@@ -20,12 +20,10 @@ export const nativeRuleConstants = {
   "ENTRY_ROSTER": 2,
   "HOME_REWARDS": 1,
   "DISCOVER_CAMPS": 2,
-  "SPIRES": 16,
   "UNOWNED_TARGETS": 32,
   "CAPTURE_VILLAGES": 64,
   "DEPTH_CONTENTS": 128,
   "REVEAL_SUPPLIES": 262144,
-  "DISCOVER_SPIRES": 2097152,
   "SAME_OWNER_TRANSFER": 256,
   "DEV_VILLAGE_ENTRY": 8192,
   "PRODUCTION_START": 131072,
@@ -163,4 +161,12 @@ export const nativeFamilyConstants = {
   "FRONTIER": 1,
   "BLITZ": 2
 } as const;
-export const nativeBalanceIdentity = "a81cc113dc80f8ffa6a5de411072d686175cabf1e6fba5380676a9246604d2af";
+export const nativeStructureConstants = {
+  "LABOR_STORES": [
+    5000,
+    15000,
+    50000,
+    100000
+  ]
+} as const;
+export const nativeBalanceIdentity = "ebfe86fda60e5296037a0bc8d8d3336dcd62da488fe2bf6b34fe71d704b16543";

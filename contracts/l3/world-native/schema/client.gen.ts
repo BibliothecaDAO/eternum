@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "409e20064f204285ce1f4874dbea8279d183beb34ec1c68793568dc3c0ea878f";
+export const nativeFactSchemaIdentity = "fd199ce02d68e2a7708003d64e0e56f0d51169dd1e8bd20b54359833b8c6204c";
 export const nativeIdentifiers = {
   "rule": {
     "MAX_BLITZ_ROSTER_PLAYERS": 24,
@@ -13,12 +13,10 @@ export const nativeIdentifiers = {
     "ENTRY_ROSTER": 2,
     "HOME_REWARDS": 1,
     "DISCOVER_CAMPS": 2,
-    "SPIRES": 16,
     "UNOWNED_TARGETS": 32,
     "CAPTURE_VILLAGES": 64,
     "DEPTH_CONTENTS": 128,
     "REVEAL_SUPPLIES": 262144,
-    "DISCOVER_SPIRES": 2097152,
     "SAME_OWNER_TRANSFER": 256,
     "DEV_VILLAGE_ENTRY": 8192,
     "PRODUCTION_START": 131072,
@@ -253,7 +251,6 @@ export interface NativeRows {
   MineKindConfig: { readonly game_id: number; readonly kind: number; readonly resource_type: number; readonly building_category: number; readonly production_rate: bigint; readonly cap_min: bigint; readonly cap_steps: number };
   MinePool: { readonly game_id: number; readonly weights: readonly ({ readonly kind: number; readonly weight: number })[] };
   RealmTraits: { readonly realm_id: number; readonly wonder: number; readonly order: number; readonly resources: readonly (number)[] };
-  BlitzSettlementOrder: { readonly game_id: number; readonly players: readonly (number)[] };
   BlitzRoster: { readonly game_id: number; readonly players: readonly ({ readonly account: bigint; readonly wallet: bigint })[] };
   RealmGrants: { readonly game_id: number; readonly resources: readonly ({ readonly resource_type: number; readonly amount: bigint })[]; readonly starting_troops: readonly ("Knight" | "Paladin" | "Crossbowman")[]; readonly realm_resources: readonly (number)[] };
   SettlementRules: { readonly game_id: number; readonly registration_start: number; readonly registration_limit: number; readonly mode: "Single" | "Triple"; readonly spacing: number };
@@ -360,7 +357,6 @@ export interface NativeKeys {
   MineKindConfig: { readonly game_id: number; readonly kind: number };
   MinePool: { readonly game_id: number };
   RealmTraits: { readonly realm_id: number };
-  BlitzSettlementOrder: { readonly game_id: number };
   BlitzRoster: { readonly game_id: number };
   RealmGrants: { readonly game_id: number };
   SettlementRules: { readonly game_id: number };
@@ -1236,18 +1232,6 @@ export const nativeFactModels = {
       "wonder": "u8",
       "order": "u8",
       "resources": [
-        "u8"
-      ]
-    }
-  },
-  "BlitzSettlementOrder": {
-    "keys": [
-      "game_id"
-    ],
-    "scope": "game",
-    "fields": {
-      "game_id": "u32",
-      "players": [
         "u8"
       ]
     }
@@ -2476,7 +2460,6 @@ export const nativeSyncScopes = {
   "BitcoinPhase": "shared",
   "MineKindConfig": "shared",
   "MinePool": "shared",
-  "BlitzSettlementOrder": "shared",
   "BlitzRoster": "shared",
   "RealmGrants": "shared",
   "SettlementRules": "shared",
