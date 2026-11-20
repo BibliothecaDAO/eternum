@@ -429,7 +429,6 @@ export class ClientConfigManager {
       [CapacityConfig.FragmentMineStructure]: structures.fragment_mine_capacity,
       [CapacityConfig.BankStructure]: structures.bank_structure_capacity,
       [CapacityConfig.CampStructure]: structures.camp_capacity,
-      [CapacityConfig.BitcoinMineStructure]: structures.bitcoin_mine_capacity,
       [CapacityConfig.Donkey]: general.donkey_capacity,
       [CapacityConfig.Army]: general.troop_capacity,
       [CapacityConfig.Storehouse]: general.storehouse_boost_capacity,

@@ -377,15 +377,3 @@ export interface ApplyRelicProps extends SystemSigner {
   relic_slot: 0 | 1 | 2;
 }
 
-export interface BitcoinMineContributeLaborProps extends SystemSigner {
-  structure_id: BigNumberish;
-  labor_amount: BigNumberish;
-}
-
-export interface BitcoinMinePhaseProps extends SystemSigner {
-  phase_id: BigNumberish;
-}
-
-export interface BitcoinMineClaimPhaseRewardProps extends BitcoinMinePhaseProps {
-  mine_ids: BigNumberish[];
-}

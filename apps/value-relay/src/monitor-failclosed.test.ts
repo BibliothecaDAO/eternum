@@ -23,7 +23,6 @@ const fixture = () => {
       withdrawalReceipt: () => Effect.succeed(null),
       conservation: () => Effect.succeed([]),
       withdrawal: vi.fn(() => Effect.fail(new RelayFailure({ operation: "shard_unavailable" }))),
-      result: () => Effect.succeed(null),
     },
     ledger: {
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
@@ -46,15 +45,6 @@ const fixture = () => {
           rewind: false,
           fromBlock: 1,
         }),
-      postedResults: () =>
-        Effect.succeed({
-          rows: [],
-          next: null,
-          head: 1000,
-          anchor: { number: 1000, hash: "0xa" },
-          rewind: false,
-          fromBlock: 1,
-        }),
       pause: vi.fn(() => Effect.void),
     },
   };
@@ -70,10 +60,7 @@ it("never stores a fault or pauses for repeated unavailable reads, and recovers 
   const f = fixture();
   for (let tick = 0; tick < 5; tick++) {
     await expect(f.tick()).rejects.toMatchObject({ operation: "shard_unavailable" });
-    expect(await f.store.load()).toMatchObject({
-      halted: null,
-      cursors: { postedResults: { fromBlock: 1001, page: null, anchor: { number: 1000, hash: "0xa" } } },
-    });
+    expect(await f.store.load()).toMatchObject({ halted: null });
   }
   expect(f.ports.ledger.pause).not.toHaveBeenCalled();
   f.ports.shard.withdrawal = () => Effect.succeed(f.receipt);

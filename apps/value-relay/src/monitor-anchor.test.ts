@@ -77,9 +77,8 @@ const monitorWithStorage = () => {
   );
 };
 
-/** Where each audited stream (paid claims, posted results) started reading on this tick. */
 const auditStarts = () =>
-  ["WithdrawalPaid", "ResultsApplied"].map(
+  ["WithdrawalPaid", "WithdrawalReported"].map(
     (name) => ledger.reads.find((read) => read.keys.includes(hash.getSelectorFromName(name)))?.from,
   );
 

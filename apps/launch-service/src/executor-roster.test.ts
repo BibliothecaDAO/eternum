@@ -22,7 +22,6 @@ const native = vi.hoisted(() => ({
         configMode: "batched",
         configSteps: [],
         dryRun: false,
-        finalizeAt: 160,
         settlementTransactions: 1,
       })),
   ),
@@ -32,7 +31,6 @@ vi.mock("./shard-client", () => ({
     launchBlitz = native.launchBlitz;
   },
 }));
-vi.mock("./results", () => ({ finalizeGame: vi.fn() }));
 let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
 /** The chain the bound identity lists, and the chain its shard's manifest answers. */
 let listedChain = TEST_CHAIN;
@@ -84,7 +82,7 @@ const executeRun = (
 it("launches a whole slot from whichever game run it picked, resolving the slot once and completing every game", async () => {
   const store = new D1LaunchStore(database.db, testChain());
   const queue = (groupIndex: number) =>
-    store.schedule("game", {
+    store.schedule({
       environment: "madara.blitz",
       gameName: `blitz-1100-${groupIndex + 1}`,
       slotId: 12,
@@ -112,21 +110,20 @@ it("launches a whole slot from whichever game run it picked, resolving the slot 
     ["blitz-1100-2", 12, "0x5b"],
   ]);
   expect(summary).toMatchObject({ gameName: "blitz-1100-1", gameId: 7 });
-  expect(await store.find("game", "madara.blitz", sibling.name)).toMatchObject({
+  expect(await store.find("madara.blitz", sibling.name)).toMatchObject({
     status: "complete",
     summary: { gameId: 8, settlementTransactions: 1 },
   });
-  expect(await store.find("result", "madara.blitz", sibling.name)).toMatchObject({ status: "queued" });
   // The retry of an interrupted run launches the same slot again; the completed sibling is left as it is.
   await executeRun(picked, store, distinct, value);
   expect(native.launchBlitz).toHaveBeenCalledTimes(2);
-  expect(await store.find("game", "madara.blitz", sibling.name)).toMatchObject({ status: "complete" });
+  expect(await store.find("madara.blitz", sibling.name)).toMatchObject({ status: "complete" });
 });
 
 it("refuses a slot game queued for a dev chain when the bound shard now answers as another chain", async () => {
   listedChain = DEV_CHAIN;
   manifestChain = PRODUCTION_CHAIN;
-  const run = await new D1LaunchStore(database.db, testChain(DEV_CHAIN)).schedule("game", {
+  const run = await new D1LaunchStore(database.db, testChain(DEV_CHAIN)).schedule({
     environment: "madara.blitz",
     gameName: "blitz-1100-1",
     slotId: 12,

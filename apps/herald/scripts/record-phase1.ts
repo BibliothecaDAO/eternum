@@ -261,11 +261,14 @@ async function contractReadCheck(
   kind: string,
   blockNumber: number,
 ) {
-  const [nonce, playerPoints] = await Promise.all([
-    callFelt(options.rpcUrl, worldAddress, "next_nonce", [options.gameId, options.actor], blockNumber),
-    callFelt(options.rpcUrl, worldAddress, "player_points", [options.gameId, options.actor], blockNumber),
-  ]);
-  return { kind, transactionHash, nonce, playerPoints };
+  const nonce = await callFelt(
+    options.rpcUrl,
+    worldAddress,
+    "next_nonce",
+    [options.gameId, options.actor],
+    blockNumber,
+  );
+  return { kind, transactionHash, nonce };
 }
 
 async function readBlocks(

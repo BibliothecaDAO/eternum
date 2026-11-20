@@ -7,7 +7,6 @@ import { clockLine } from "@/ui/design-system/kit/clock-chip";
 import { AppChip, AppRow } from "@/ui/design-system/kit/app-elements";
 import { RowThumb } from "@/ui/design-system/kit/list-row";
 import { openedFrom } from "../frame/opened-from";
-import { isSameStarknetAddress } from "@realms-world/identity";
 import { type DirectoryGame, gameRefOf, useLeaderboard } from "../herald";
 import { ageOf, type AgeMode } from "../play/ages";
 import { resultsHref } from "./results-link";
@@ -23,12 +22,8 @@ export const gameTitle = (game: DirectoryGame) => `${ageOf(ageOfGame(game)).name
 /** The player's place in a finished game ("3rd"), and for a Frontier season the LORDS its Ruin chests paid. */
 const usePlace = (game: DirectoryGame, player: string) => {
   const board = useLeaderboard(gameRefOf(game));
-  if (board.data?.mode === "frontier") {
-    const own = findOwnEntry(board.data.entries, player);
-    return { rank: own?.rank, lords: own && wholeLords(own.rewards.lords) };
-  }
-  const entry = board.data?.entries.find((candidate) => isSameStarknetAddress(candidate.address, player));
-  return { rank: entry?.rank, lords: undefined };
+  const own = board.data && findOwnEntry(board.data.entries, player);
+  return { rank: own?.rank, lords: own && wholeLords(own.rewards.lords) };
 };
 
 /**

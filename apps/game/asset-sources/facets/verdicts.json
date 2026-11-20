@@ -747,10 +747,6 @@
     "verdict": "beats shipped",
     "reason": "Dark suspended spire and portal orb from the shipped spire model."
   },
-  "faceted/bitcoin-mine": {
-    "verdict": "equal",
-    "reason": "Bitcoin Mine: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
-  },
   "faceted/realm-0": {
     "verdict": "beats shipped",
     "reason": "At 24/32 px the straw and canvas masses distinguish the low settlement from stone realms; the former stone keep did not match Canvas & Thatch."

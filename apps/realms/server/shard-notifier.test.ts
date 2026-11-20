@@ -842,10 +842,10 @@ describe.concurrent("shard notifications", () => {
     herald.state.mode = "blitz"; // a fight between players pushes in Blitz
     await worker.runCron();
     await pause(polls(5)); // the notifier reaches the shard's head
-    herald.story("BitcoinAwardStory", { winner_paid: "many" });
+    herald.story("ResourceTransferStory", { to_entity_id: 11, travel_time: "soon" });
     herald.story("BuildingPlacementStory", { change: "Created" }); // the player's own build: the Feed tells it
     herald.story("ExplorationReward", {}); // the player's own find, likewise
-    herald.story("BitcoinAwardStory", { winner_paid: 2_000_000 });
+    herald.story("ResourceReceiveArrivalStory", {});
     herald.battle();
     await waitUntil(() => push.received.length >= 2, 20_000);
     await pause(polls(5)); // nothing more comes for the page

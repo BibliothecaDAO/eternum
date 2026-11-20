@@ -12,7 +12,6 @@ const HEADLINE_THEME_MAP: Record<HeadlineType, { icon: IconMeaning; tone?: "good
   "hyper-capture": { icon: "crown" },
   elimination: { icon: "skull", tone: "bad" },
   "game-start": { icon: "crown", tone: "good" },
-  "game-end": { icon: "victory", tone: "good" },
   "five-min-warning": { icon: "hourglass", tone: "warn" },
   "t3-building": { icon: "defend" },
 };

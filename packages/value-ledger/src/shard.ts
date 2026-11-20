@@ -82,12 +82,12 @@ export class ShardOperator {
       l2GasBound: await this.gasBound(),
     };
   }
-  async playCommand(gameId: number, name: "MarkGameSettled" | "RecordBlitzResults") {
-    return this.play(await this.pins(gameId), name, closedBlockReceipt);
+  async markGameSettled(gameId: number) {
+    return this.play(await this.pins(gameId), "MarkGameSettled", closedBlockReceipt);
   }
   async settleGame(gameId: number) {
     while (!(await this.view<{ settled: boolean }>("game", [gameId])).settled) {
-      const result = await this.playCommand(gameId, "MarkGameSettled");
+      const result = await this.markGameSettled(gameId);
       const remaining = batchRemaining(result.events, this.target.gamesAddress, result.transactionHash, {
         gameId,
         missing: "reject",
@@ -174,7 +174,7 @@ export interface PlayPins {
   release: bigint;
   l2GasBound: bigint;
 }
-type AdminPlay = "SettleBlitzRoster" | "MarkGameSettled" | "RecordBlitzResults";
+type AdminPlay = "SettleBlitzRoster" | "MarkGameSettled";
 type ReceiptWait = (provider: RpcProvider, transactionHash: string) => ReturnType<typeof pollReceipt>;
 
 /** The stamping RPC's codes for a write it refused before forwarding, and one forwarded without a readable reply. */

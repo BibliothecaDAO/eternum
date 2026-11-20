@@ -5,14 +5,13 @@ import { Context, Effect, Layer } from "effect";
 import type { LaunchRunStore } from "../../../config/deployer/clean/launch/run-store";
 import type { LaunchGameSummary } from "../../../config/deployer/clean/types";
 import { DatabaseFailure } from "./errors";
-import { launchName, launchRunPath, type LaunchRun, type LaunchSummary } from "./model";
-import { applyDurableLaunchDefaults, isCalendarFrontier, type LaunchJobRequest, type LaunchKind } from "./schemas";
+import { launchRunPath, type LaunchRun } from "./model";
+import { applyDurableLaunchDefaults, isCalendarFrontier, type CreateGameRequest } from "./schemas";
 
 interface LaunchRunRow {
   id: string;
   slot_id: number | null;
   chain_id: string;
-  kind: LaunchKind;
   environment: GameEnvironmentId;
   name: string;
   request: string;
@@ -31,21 +30,21 @@ export interface LaunchServiceStore extends LaunchRunStore {
   targetChain(): Promise<string>;
   officialChain(): Promise<string | null>;
   /** Queues a run, retaining running/complete runs. Frontier retries must keep their preset and window. */
-  enqueue(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun>;
+  enqueue(request: CreateGameRequest): Promise<LaunchRun>;
   /** Creates a run once; an existing run is untouched, and a different Frontier preset or window is refused. */
-  schedule(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun>;
-  list(environment: GameEnvironmentId, kind?: LaunchKind): Promise<LaunchRun[]>;
+  schedule(request: CreateGameRequest): Promise<LaunchRun>;
+  list(environment: GameEnvironmentId): Promise<LaunchRun[]>;
   playerDirectoryGames(): Promise<{ chainId: string; games: { gameId: number; slotId: number | null }[] }[]>;
   /** Unfinished work belonging to the shards the registrar still serves. */
   pending(): Promise<LaunchRun[]>;
   /** Failed work on the shards the registrar still serves. */
   failed(): Promise<LaunchRun[]>;
-  find(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<LaunchRun | null>;
+  find(environment: GameEnvironmentId, name: string): Promise<LaunchRun | null>;
   /** The run to execute now: one interrupted while running, else the oldest due queued run. Either costs an attempt. */
   startNext(now: number): Promise<LaunchRun | null>;
   /** When the next queued run falls due, if any. */
   nextDue(): Promise<number | null>;
-  complete(runId: string, summary: LaunchSummary): Promise<void>;
+  complete(runId: string, summary: LaunchGameSummary): Promise<void>;
   /** A paid slot's game runs on this chain, one per group, in group order. */
   slotGames(slotId: number): Promise<LaunchRun[]>;
   /** Completes the other game runs a slot launch settled alongside the run it executed, whatever their queue state. */
@@ -54,7 +53,7 @@ export interface LaunchServiceStore extends LaunchRunStore {
   /** Requeues a run that ran too early; the attempt is given back. */
   defer(runId: string, delayMs: number): Promise<void>;
   fail(runId: string, errorMessage: string): Promise<void>;
-  delete(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<boolean>;
+  delete(environment: GameEnvironmentId, name: string): Promise<boolean>;
 }
 
 export class LaunchDatabase extends Context.Service<LaunchDatabase, LaunchServiceStore>()("launch/LaunchDatabase") {}
@@ -65,10 +64,9 @@ const toRun = (row: LaunchRunRow): LaunchRun => ({
   id: row.id,
   slotId: row.slot_id,
   chainId: row.chain_id,
-  kind: row.kind,
   environment: row.environment,
   name: row.name,
-  request: JSON.parse(row.request) as LaunchJobRequest,
+  request: JSON.parse(row.request) as CreateGameRequest,
   status: row.status,
   attempts: row.attempts,
   dueAt: iso(row.available_at),
@@ -76,10 +74,10 @@ const toRun = (row: LaunchRunRow): LaunchRun => ({
   updatedAt: iso(row.updated_at),
   ...(row.completed_at ? { completedAt: iso(row.completed_at) } : {}),
   ...(row.error_message ? { errorMessage: row.error_message } : {}),
-  ...(row.summary ? { summary: JSON.parse(row.summary) as LaunchSummary } : {}),
+  ...(row.summary ? { summary: JSON.parse(row.summary) as LaunchGameSummary } : {}),
 });
 
-const storedSummary = <S extends LaunchSummary>(runId: string, summary: S): S => ({
+const storedSummary = (runId: string, summary: LaunchGameSummary): LaunchGameSummary => ({
   ...summary,
   outputPath: `${launchRunPath(runId)}/summary`,
 });
@@ -112,7 +110,7 @@ const groupDeclaredGames = (rows: DeclaredGameRow[]) => {
   return [...chains].map(([chainId, games]) => ({ chainId, games: games.sort((a, b) => a.gameId - b.gameId) }));
 };
 
-const SELECT_RUN = "SELECT * FROM launch_runs WHERE chain_id = ? AND kind = ? AND environment = ? AND name = ?";
+const SELECT_RUN = "SELECT * FROM launch_runs WHERE chain_id = ? AND kind = 'game' AND environment = ? AND name = ?";
 const SCHEDULE_ONCE = "ON CONFLICT (chain_id, kind, environment, name) DO NOTHING";
 
 /**
@@ -145,10 +143,9 @@ export class D1LaunchStore implements LaunchServiceStore {
     return this.chainId();
   }
 
-  async enqueue(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun> {
+  async enqueue(request: CreateGameRequest): Promise<LaunchRun> {
     // Retrying a calendar season preserves its declared identity even before the first launch succeeds.
     return this.insertRun(
-      kind,
       request,
       `ON CONFLICT (chain_id, kind, environment, name) DO UPDATE SET
          id = excluded.id, request = excluded.request, status = 'queued', attempts = 0,
@@ -162,22 +159,18 @@ export class D1LaunchStore implements LaunchServiceStore {
     );
   }
 
-  async schedule(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun> {
-    return this.insertRun(kind, request, SCHEDULE_ONCE);
+  async schedule(request: CreateGameRequest): Promise<LaunchRun> {
+    return this.insertRun(request, SCHEDULE_ONCE);
   }
 
-  async list(environment: GameEnvironmentId, kind?: LaunchKind): Promise<LaunchRun[]> {
-    const chain = await this.chainId();
-    const statement = kind
-      ? this.db
-          .prepare(
-            "SELECT * FROM launch_runs WHERE chain_id = ? AND environment = ? AND kind = ? ORDER BY updated_at DESC, id",
-          )
-          .bind(chain, environment, kind)
-      : this.db
-          .prepare("SELECT * FROM launch_runs WHERE chain_id = ? AND environment = ? ORDER BY updated_at DESC, id")
-          .bind(chain, environment);
-    return (await statement.all<LaunchRunRow>()).results.map(toRun);
+  async list(environment: GameEnvironmentId): Promise<LaunchRun[]> {
+    const { results } = await this.db
+      .prepare(
+        "SELECT * FROM launch_runs WHERE chain_id = ? AND environment = ? AND kind = 'game' ORDER BY updated_at DESC, id",
+      )
+      .bind(await this.chainId(), environment)
+      .all<LaunchRunRow>();
+    return results.map(toRun);
   }
 
   /**
@@ -185,7 +178,7 @@ export class D1LaunchStore implements LaunchServiceStore {
    * state: a run names its game before creating it, and one interrupted after creating it may not have recorded it.
    */
   async gameNames(environment: GameEnvironmentId): Promise<string[]> {
-    return (await this.list(environment, "game")).map(({ name }) => name);
+    return (await this.list(environment)).map(({ name }) => name);
   }
 
   async rosterCohorts(): Promise<import("@realms-world/value-ledger").SlotCohort[]> {
@@ -229,15 +222,17 @@ export class D1LaunchStore implements LaunchServiceStore {
     if (official === null) return [];
     const chain = BigInt(official);
     const { results } = await this.db
-      .prepare(`SELECT * FROM launch_runs WHERE chain_id <> '' AND ${condition} ORDER BY created_at, id`)
+      .prepare(
+        `SELECT * FROM launch_runs WHERE chain_id <> '' AND kind = 'game' AND ${condition} ORDER BY created_at, id`,
+      )
       .all<LaunchRunRow>();
     return results.filter((row) => BigInt(row.chain_id) === chain).map(toRun);
   }
 
-  async find(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<LaunchRun | null> {
+  async find(environment: GameEnvironmentId, name: string): Promise<LaunchRun | null> {
     const row = await this.db
       .prepare(SELECT_RUN)
-      .bind(await this.chainId(), kind, environment, name)
+      .bind(await this.chainId(), environment, name)
       .first<LaunchRunRow>();
     return row ? toRun(row) : null;
   }
@@ -246,7 +241,7 @@ export class D1LaunchStore implements LaunchServiceStore {
     const chain = await this.chainId();
     const interrupted = await this.db
       .prepare(
-        "UPDATE launch_runs SET attempts = attempts + 1, updated_at = ? WHERE chain_id = ? AND status = 'running' RETURNING *",
+        "UPDATE launch_runs SET attempts = attempts + 1, updated_at = ? WHERE chain_id = ? AND kind = 'game' AND status = 'running' RETURNING *",
       )
       .bind(now, chain)
       .first<LaunchRunRow>();
@@ -254,7 +249,7 @@ export class D1LaunchStore implements LaunchServiceStore {
     const due = await this.db
       .prepare(
         `UPDATE launch_runs SET status = 'running', attempts = attempts + 1, updated_at = ?1
-         WHERE id = (SELECT id FROM launch_runs WHERE chain_id = ?2 AND status = 'queued' AND available_at <= ?1
+         WHERE id = (SELECT id FROM launch_runs WHERE chain_id = ?2 AND kind = 'game' AND status = 'queued' AND available_at <= ?1
                      ORDER BY created_at, id LIMIT 1)
          RETURNING *`,
       )
@@ -265,24 +260,23 @@ export class D1LaunchStore implements LaunchServiceStore {
 
   async nextDue(): Promise<number | null> {
     const row = await this.db
-      .prepare("SELECT MIN(available_at) AS due FROM launch_runs WHERE chain_id = ? AND status = 'queued'")
+      .prepare(
+        "SELECT MIN(available_at) AS due FROM launch_runs WHERE chain_id = ? AND kind = 'game' AND status = 'queued'",
+      )
       .bind(await this.chainId())
       .first<{ due: number | null }>();
     return row?.due ?? null;
   }
 
-  async complete(runId: string, summary: LaunchSummary): Promise<void> {
+  async complete(runId: string, summary: LaunchGameSummary): Promise<void> {
     const now = Date.now();
-    const chain = await this.chainId();
-    await this.db.batch([
-      this.db
-        .prepare(
-          `UPDATE launch_runs SET status = 'complete', summary = ?, error_message = NULL, completed_at = ?, updated_at = ?
-           WHERE id = ? AND status = 'running'`,
-        )
-        .bind(JSON.stringify(storedSummary(runId, summary)), now, now, runId),
-      ...this.resultRunFor(chain, summary, now),
-    ]);
+    await this.db
+      .prepare(
+        `UPDATE launch_runs SET status = 'complete', summary = ?, error_message = NULL, completed_at = ?, updated_at = ?
+         WHERE id = ? AND status = 'running'`,
+      )
+      .bind(JSON.stringify(storedSummary(runId, summary)), now, now, runId)
+      .run();
   }
 
   async slotGames(slotId: number): Promise<LaunchRun[]> {
@@ -298,44 +292,16 @@ export class D1LaunchStore implements LaunchServiceStore {
   async completeGames(games: readonly { runId: string; summary: LaunchGameSummary }[]): Promise<void> {
     if (!games.length) return;
     const now = Date.now();
-    const chain = await this.chainId();
     await this.db.batch(
-      games.flatMap(({ runId, summary }) => [
+      games.map(({ runId, summary }) =>
         this.db
           .prepare(
             `UPDATE launch_runs SET status = 'complete', summary = ?, error_message = NULL, completed_at = ?, updated_at = ?
              WHERE id = ? AND status IN ('queued', 'running')`,
           )
           .bind(JSON.stringify(storedSummary(runId, summary)), now, now, runId),
-        ...this.resultRunFor(chain, summary, now),
-      ]),
+      ),
     );
-  }
-
-  /** A launched Blitz game has its result recorded at its actual end, in the same write as the launch completes. */
-  private resultRunFor(chain: string, summary: LaunchSummary, now: number): D1PreparedStatement[] {
-    if (!("startTime" in summary) || summary.gameType !== "blitz" || summary.dryRun) return [];
-    if (!summary.gameId || !summary.finalizeAt) throw new Error("Settled Blitz game has no finalization schedule");
-    const request = { environment: summary.environment, gameName: summary.gameName, gameId: summary.gameId };
-    return [
-      this.db
-        .prepare(
-          `INSERT INTO launch_runs
-             (id, chain_id, kind, environment, name, request, status, available_at, created_at, updated_at)
-           VALUES (?, ?, 'result', ?, ?, ?, 'queued', ?, ?, ?)
-           ON CONFLICT (chain_id, kind, environment, name) DO NOTHING`,
-        )
-        .bind(
-          crypto.randomUUID(),
-          chain,
-          summary.environment,
-          summary.gameName,
-          JSON.stringify(request),
-          summary.finalizeAt * 1_000,
-          now,
-          now,
-        ),
-    ];
   }
 
   async retry(runId: string, errorMessage: string, retryDelayMs: number): Promise<void> {
@@ -370,24 +336,24 @@ export class D1LaunchStore implements LaunchServiceStore {
       .run();
   }
 
-  async delete(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<boolean> {
-    if (kind === "game" && isCalendarFrontier(environment, name)) return false;
+  async delete(environment: GameEnvironmentId, name: string): Promise<boolean> {
+    if (isCalendarFrontier(environment, name)) return false;
     const result = await this.db
       .prepare(
-        "DELETE FROM launch_runs WHERE chain_id = ? AND kind = ? AND environment = ? AND name = ? AND status <> 'running' AND slot_id IS NULL",
+        "DELETE FROM launch_runs WHERE chain_id = ? AND kind = 'game' AND environment = ? AND name = ? AND status <> 'running' AND slot_id IS NULL",
       )
-      .bind(await this.chainId(), kind, environment, name)
+      .bind(await this.chainId(), environment, name)
       .run();
     return result.meta.changes === 1;
   }
 
   async loadGame(environment: LaunchGameSummary["environment"], gameName: string): Promise<LaunchGameSummary | null> {
-    const run = await this.find("game", environment, gameName);
+    const run = await this.find(environment, gameName);
     return (run?.summary as LaunchGameSummary | undefined) ?? null;
   }
 
   async saveGame(summary: LaunchGameSummary): Promise<LaunchGameSummary> {
-    const run = await this.find("game", summary.environment, summary.gameName);
+    const run = await this.find(summary.environment, summary.gameName);
     if (!run) throw new Error(`No queued launch owns summary ${summary.gameName}`);
     const stored = storedSummary(run.id, summary);
     await this.db
@@ -401,62 +367,60 @@ export class D1LaunchStore implements LaunchServiceStore {
    * The statement that queues a run once, for a caller that must write it inside its own atomic batch (a slot's freeze
    * queues its games with the roster). This store stays the only writer of launch runs.
    */
-  async scheduleStatement(kind: LaunchKind, request: LaunchJobRequest): Promise<D1PreparedStatement> {
-    return this.insertStatement(await this.chainId(), kind, applyDurableLaunchDefaults(kind, request), SCHEDULE_ONCE);
+  async scheduleStatement(request: CreateGameRequest): Promise<D1PreparedStatement> {
+    return this.insertStatement(await this.chainId(), applyDurableLaunchDefaults(request), SCHEDULE_ONCE);
   }
 
-  private async insertRun(kind: LaunchKind, request: LaunchJobRequest, conflict: string): Promise<LaunchRun> {
-    const durableRequest = applyDurableLaunchDefaults(kind, request);
+  private async insertRun(request: CreateGameRequest, conflict: string): Promise<LaunchRun> {
+    const durableRequest = applyDurableLaunchDefaults(request);
     const chain = await this.chainId();
     const [, selected] = await this.db.batch<LaunchRunRow>([
-      this.insertStatement(chain, kind, durableRequest, conflict),
-      this.db.prepare(SELECT_RUN).bind(chain, kind, durableRequest.environment, launchName(kind, durableRequest)),
+      this.insertStatement(chain, durableRequest, conflict),
+      this.db.prepare(SELECT_RUN).bind(chain, durableRequest.environment, durableRequest.gameName),
     ]);
     const row = selected!.results[0];
     if (!row) throw new CalendarConflict("Frontier launch differs from the published calendar");
     const run = toRun(row);
-    if (kind === "game" && durableRequest.environment === "madara.frontier")
-      assertSameFrontierLaunch(run.request, durableRequest);
+    if (durableRequest.environment === "madara.frontier") assertSameFrontierLaunch(run.request, durableRequest);
     return run;
   }
 
-  private insertStatement(chain: string, kind: LaunchKind, request: LaunchJobRequest, conflict: string) {
+  private insertStatement(chain: string, request: CreateGameRequest, conflict: string) {
     const now = Date.now();
-    const calendarSeason = kind === "game" && isCalendarFrontier(request.environment, request.gameName);
+    const calendarSeason = isCalendarFrontier(request.environment, request.gameName);
     // A cron read can become stale before insertion. Exact retries also work after the calendar advances.
     return this.db
       .prepare(
         `INSERT INTO launch_runs
            (id, chain_id, kind, environment, name, request, status, available_at, created_at, updated_at, slot_id)
-         SELECT ?1, ?2, ?3, ?4, ?5, ?6, 'queued', ?7, ?8, ?9, ?10
-         WHERE ?11 = 0 OR EXISTS (
+         SELECT ?1, ?2, 'game', ?3, ?4, ?5, 'queued', ?6, ?7, ?8, ?9
+         WHERE ?10 = 0 OR EXISTS (
            SELECT 1 FROM season_phases WHERE phase = 'frontier'
-             AND 'frontier-' || CAST(starts_at / 1000 AS INTEGER) = ?5
-             AND preset_id = CAST(json_extract(?6, '$.version') AS INTEGER)
-             AND starts_at = unixepoch(json_extract(?6, '$.gameStartTime')) * 1000
-             AND ends_at = starts_at + json_extract(?6, '$.durationSeconds') * 1000
+             AND 'frontier-' || CAST(starts_at / 1000 AS INTEGER) = ?4
+             AND preset_id = CAST(json_extract(?5, '$.version') AS INTEGER)
+             AND starts_at = unixepoch(json_extract(?5, '$.gameStartTime')) * 1000
+             AND ends_at = starts_at + json_extract(?5, '$.durationSeconds') * 1000
          ) OR EXISTS (
-           SELECT 1 FROM launch_runs WHERE chain_id = ?2 AND kind = ?3 AND environment = ?4 AND name = ?5
-             AND request = ?6
+           SELECT 1 FROM launch_runs WHERE chain_id = ?2 AND kind = 'game' AND environment = ?3 AND name = ?4
+             AND request = ?5
          ) ${conflict}`,
       )
       .bind(
         crypto.randomUUID(),
         chain,
-        kind,
         request.environment,
-        launchName(kind, request),
+        request.gameName,
         JSON.stringify(request),
         now,
         now,
         now,
-        "slotId" in request ? (request.slotId ?? null) : null,
+        request.slotId ?? null,
         calendarSeason ? 1 : 0,
       );
   }
 }
 
-const assertSameFrontierLaunch = (stored: LaunchJobRequest, requested: LaunchJobRequest) => {
+const assertSameFrontierLaunch = (stored: CreateGameRequest, requested: CreateGameRequest) => {
   if (!("version" in stored) || !("version" in requested)) throw new CalendarConflict("Invalid Frontier request");
   const approvedExtension =
     stored.version === String(approved.presetId) &&

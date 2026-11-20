@@ -42,7 +42,6 @@ describe("existing history progress", () => {
       expect(readBlock).not.toHaveBeenCalled();
       expect(checkpointStore.save).not.toHaveBeenCalled();
       expect(await store.historyProgress()).toBe(500001);
-      expect(store.activity("7")).not.toBeNull();
       expect(
         (await store.queryEvents({ gameId: "7", model: "StoryEvent", limit: 10, offset: 0 })).complete_through_block,
       ).toBe(500001);
@@ -101,7 +100,7 @@ describe("confirmed story cursor", () => {
 });
 
 describe("native confirmed history", () => {
-  it("rebuilds native activity, combat history and review across restart without mirroring state", async () => {
+  it("rebuilds combat history and review across restart without mirroring state", async () => {
     const { createNativeHistoryCodec } = await import("./native/history");
     const { setup, receipt, battleEvent, schema: nativeSchema, manifest } = await import("./native/fixtures");
     const nativeHistoryCodec = createNativeHistoryCodec(nativeSchema);
@@ -116,20 +115,7 @@ describe("native confirmed history", () => {
       await store.appendEvents([], 9);
       const cursor = (await store.queryStoryCursor(null, 2)).next_cursor;
       const { native, fold } = setup();
-      const award = nativeSchema.games.events.find(({ name }) => name === "PointsAwarded")!;
-      const result = native.applyReceipt(
-        fold,
-        receipt([
-          {
-            from_address: manifest.world.address,
-            keys: [...award.prefix, "1", "1", "0x111"],
-            data: ["0", "5000000", "5000000", "5000000"],
-          },
-          battleEvent(),
-        ]),
-        10,
-        0,
-      );
+      const result = native.applyReceipt(fold, receipt([battleEvent()]), 10, 0);
       await admin.query(`
         CREATE FUNCTION ${namespace}.reject_history_commit() RETURNS trigger LANGUAGE plpgsql AS $$
           BEGIN RAISE EXCEPTION 'history commit rejected'; END $$;
@@ -137,25 +123,18 @@ describe("native confirmed history", () => {
           DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION ${namespace}.reject_history_commit()
       `);
       await expect(store.appendEvents(result.events, 10)).rejects.toThrow("history commit rejected");
-      expect(store.activity("1").size).toBe(0);
       expect(await store.historyProgress()).toBe(9);
       expect((await store.queryStoryCursor(cursor, 10)).items).toEqual([]);
       await admin.query(`DROP TRIGGER reject_history_commit ON ${namespace}.herald_history_events;
         DROP FUNCTION ${namespace}.reject_history_commit()`);
       await store.appendEvents(result.events, 10);
       await store.appendEvents(result.events, 10);
-      const before = store.activity("1");
-      expect([...before.values()][0].exploration).toEqual({ count: 1, points: 5 });
-      expect((await store.queryStoryCursor(cursor, 10)).items.map(({ model }) => model)).toEqual([
-        "PointsAwarded",
-        "BattleEvent",
-      ]);
+      expect((await store.queryStoryCursor(cursor, 10)).items.map(({ model }) => model)).toEqual(["BattleEvent"]);
       const snapshot = fold.reviewSnapshot(1, 10);
       await store.freezeReviewSnapshot(snapshot.game_id, () => snapshot);
       await store.close();
       store = new HistoryStore(url.toString(), "madara", manifest.world.address, nativeHistoryCodec);
       await store.initialize();
-      expect(store.activity("1")).toEqual(before);
       expect(await store.reviewSnapshot("1")).toEqual(snapshot);
       const repeated = vi.fn(() => {
         throw new Error("Finalized review must not be rebuilt");

@@ -95,7 +95,7 @@ it.each([302, 200])(
           compatibilityDate: "2026-07-30",
           script: `import {WorkerEntrypoint} from 'cloudflare:workers';
 export class ValueIdentity extends WorkerEntrypoint { shard(){return {chainId:'${chain}',url:'https://shard.test'}} l2ChainId(){return '0x534e5f4d41494e'} }
-export class RosterMonitor extends WorkerEntrypoint { verifyRoster(){return 0} }
+export class RosterMonitor extends WorkerEntrypoint {}
 export default {fetch(){return new Response(null,{status:404})}};`,
         },
       ],
@@ -166,7 +166,7 @@ it("finishes a chest only for a signed-in player's page on our origin, and answe
         compatibilityDate: "2026-07-30",
         script: `import {WorkerEntrypoint} from 'cloudflare:workers';
 export class ValueIdentity extends WorkerEntrypoint { shard(){return null} authenticate(cookie){return cookie === 'session=player' ? {realmsId:'0x7'} : null} }
-export class RosterMonitor extends WorkerEntrypoint { verifyRoster(){return 0} }
+export class RosterMonitor extends WorkerEntrypoint {}
 export default {fetch(){return new Response(null,{status:404})}};`,
       },
     ],

@@ -1,11 +1,6 @@
 import type { IdentitySessionStatus } from "@/hooks/context/identity-session";
 import { StructureType } from "@bibliothecadao/types";
 
-export interface IdentityStanding {
-  rank: number;
-  points: number;
-}
-
 export interface OwnedStructureCounts {
   structures: number;
   realms: number;
@@ -16,7 +11,7 @@ export type IdentityChipState =
   | { kind: "signed-out" }
   | { kind: "unnamed" }
   | { kind: "connecting"; name: string | null; error: string | null }
-  | { kind: "player"; name: string; realmCount: number; standing: IdentityStanding | null };
+  | { kind: "player"; name: string; realmCount: number };
 
 export interface IdentityChipInput {
   /** `isExplicitSpectateSession()` from `utils/spectator-session` — the session-level spectator intent. */
@@ -27,17 +22,9 @@ export interface IdentityChipInput {
   /** The in-game player name for the gameplay address (players slice), when the address has registered one. */
   playerName: string | null;
   owned: OwnedStructureCounts;
-  standing: IdentityStanding | null;
 }
 
 export const NO_OWNED_STRUCTURES: OwnedStructureCounts = { structures: 0, realms: 0 };
-
-// A brand-new player at rank 9000 with 0 points gains nothing from seeing it; the rank shows once they have
-// either scored or climbed into the top 500.
-const RANK_THRESHOLD = 500;
-
-const isMeaningfullyRanked = (standing: IdentityStanding): boolean =>
-  Number.isFinite(standing.rank) && (standing.rank <= RANK_THRESHOLD || standing.points > 0);
 
 /**
  * One identity, one output. The session is the only "logged in" fact: a session without a chosen name is asked for
@@ -56,17 +43,12 @@ export const resolveIdentityChipState = (input: IdentityChipInput): IdentityChip
 
 /** A named session: spectating, its gameplay account still deploying, or playing under the in-game name. */
 const namedState = (
-  { isExplicitSpectateSession, gameplayAccount, owned, standing }: IdentityChipInput,
+  { isExplicitSpectateSession, gameplayAccount, owned }: IdentityChipInput,
   name: string,
 ): IdentityChipState => {
   if (isExplicitSpectateSession) return { kind: "spectating", name, canPlay: owned.structures > 0 };
   if (!gameplayAccount.address) return { kind: "connecting", name, error: gameplayAccount.provisioningError };
-  return {
-    kind: "player",
-    name,
-    realmCount: owned.realms,
-    standing: standing && isMeaningfullyRanked(standing) ? standing : null,
-  };
+  return { kind: "player", name, realmCount: owned.realms };
 };
 
 interface OwnedStructureRow {

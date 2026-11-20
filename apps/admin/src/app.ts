@@ -70,7 +70,8 @@ const WRITES: Action[] = [
     route: ({ kind, game, name, verb }) =>
       isGameEnvironment(game) &&
       named(name) &&
-      ((kind === "runs" && (verb === "continue" || verb === "delete")) || (kind === "results" && verb === "continue"))
+      kind === "runs" &&
+      (verb === "continue" || verb === "delete")
         ? { path: `/api/factory/${kind}/${game}/${name}/actions/${verb}`, action: `${verb} ${kind} ${name}` }
         : null,
   },

@@ -37,11 +37,9 @@ export const testChain =
 export const completeFreeFixture = async (
   store: import("./store").D1LaunchStore,
   runId: string,
-  summary: import("./model").LaunchSummary,
+  summary: import("../../../config/deployer/clean/types").LaunchGameSummary,
 ) => {
-  if ("startTime" in summary) {
-    await store.saveGame(summary);
-  }
+  await store.saveGame(summary);
   await store.complete(runId, summary);
 };
 

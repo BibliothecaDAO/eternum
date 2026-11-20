@@ -726,7 +726,7 @@ const LoadingSection = () => (
 );
 
 /** The game's player chip as it draws today: name, rank, points and the game's goal. */
-const LabPlayerPill = () => <HudPill>{playerReadings("clientlane", { rank: 1, points: 310 })}</HudPill>;
+const LabPlayerPill = () => <HudPill>{playerReadings("clientlane")}</HudPill>;
 
 const TopBarSection = () => (
   <Element

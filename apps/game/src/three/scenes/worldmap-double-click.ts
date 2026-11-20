@@ -17,7 +17,6 @@ const STRUCTURE_DOUBLE_CLICK = {
   [StructureType.Bank]: "none",
   [StructureType.Mine]: "none",
   [StructureType.Camp]: "none",
-  [StructureType.BitcoinMine]: "none",
   [StructureType.Rift]: "none",
   [StructureType.Ruin]: "none",
   [StructureType.Beasts]: "none",

@@ -4,11 +4,10 @@ import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import { createHeraldRequestHandler } from "../http";
 import { WorldFold } from "../world-fold";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildNativeDirectory, buildNativeLeaderboard, directoryFact } from "./read-models";
+import { buildNativeDirectory, directoryFact } from "./read-models";
 import {
   structureValue,
   explorerValue,
-  pointsAward,
   manifest,
   seedDerivedRows,
   gameRegistryEvent,
@@ -170,7 +169,7 @@ it("projects a late campaign source without marking any NFT as taken", () => {
   expect(entry.taken_realm_ids).toEqual([]);
 });
 
-describe("native directory and leaderboard", () => {
+describe("native directory", () => {
   it("keeps each player's frozen payout wallet after the game ends and has none for a nonmember", () => {
     const { fold, native } = world();
     native.applyReceipt(fold, receipt([gameEvent("1", "1")]), 12, 0);
@@ -419,27 +418,6 @@ describe("native directory and leaderboard", () => {
     expect(members(1)).toEqual({ 1: 3, 2: 1, 3: 1, 4: 0 });
   });
 
-  it("keeps exact integer rank ordering before display conversion and ignores history score totals", () => {
-    const { fold, native } = world();
-    const huge = 2n ** 100n;
-    native.applyReceipt(
-      fold,
-      receipt([
-        pointsAward("1", "0x111", String(huge), String(huge), String(huge)),
-        pointsAward("1", "0x222", String(huge + 1n), String(huge + 1n), String(2n * huge + 1n)),
-      ]),
-      11,
-      0,
-    );
-    const result = buildNativeLeaderboard((name) => fold.modelRows(name), "1", new Map());
-    expect(result.entries.map(({ address, rank }) => [address, rank])).toEqual([
-      ["0x222", 1],
-      ["0x111", 2],
-    ]);
-    // A chain name is not a player's name; the client resolves identity profiles by address.
-    expect(result.entries.every((entry) => !("name" in entry))).toBe(true);
-  });
-
   // The old-state dev incident: a clear deleted the site's TileOccupancy and the player took the site.
   // The player's directory still answers; the tile-less site is listed without a position and reported.
   it("answers a player who cleared a Frontier site, through the season's close", () => {
@@ -519,54 +497,7 @@ describe("native directory and leaderboard", () => {
     expect(() => buildNativeDirectory({ chain: "madara", confirmedBlock: 10, timestamp: 30, fold })).toThrow(
       "Missing native SettlementRules",
     );
-    expect(() => buildNativeLeaderboard((name) => fold.modelRows(name), "1", null)).toThrow(
-      "Missing native SliceRules",
-    );
   });
-});
-
-it("waits for the complete result before freezing and restores tied standings from a checkpoint", () => {
-  const { fold, native, decoder } = world();
-  native.applyReceipt(fold, receipt([gameEvent("1", "1")]), 12, 0);
-  expect(fold.finalizedGameIds()).not.toContain("1");
-  native.applyReceipt(
-    fold,
-    receipt([
-      rowEvent("BlitzResult", ["1"], {
-        players: [{ wallet: 1000n, rank: 1n }],
-        complete: false,
-        commitment: 0n,
-      }),
-    ]),
-    13,
-    0,
-  );
-  expect(fold.finalizedGameIds()).not.toContain("1");
-  native.applyReceipt(
-    fold,
-    receipt([
-      pointsAward("1", "0x111", "9500000", "9500000", "9500000"),
-      pointsAward("1", "0x222", "9500000", "9500000", "9500000"),
-      rowEvent("BlitzResult", ["1"], {
-        players: [
-          { wallet: 1000n, rank: 1n },
-          { wallet: 1001n, rank: 1n },
-        ],
-        complete: true,
-        commitment: 123n,
-      }),
-    ]),
-    14,
-    0,
-  );
-  expect(fold.finalizedGameIds()).toEqual(["1"]);
-  const restored = WorldFold.restore(decoder.registry, fold.checkpoint());
-  expect(restored.finalizedGameIds()).toEqual(["1"]);
-  const result = buildNativeLeaderboard((name) => restored.modelRows(name), "1", null);
-  expect(result.entries.map(({ address, rank, totalPoints }) => ({ address, rank, totalPoints }))).toEqual([
-    { address: "0x111", rank: 1, totalPoints: 9.5 },
-    { address: "0x222", rank: 1, totalPoints: 9.5 },
-  ]);
 });
 
 it.each(["Blitz", "check-blitz-abc"])(
@@ -588,33 +519,21 @@ it.each(["Blitz", "check-blitz-abc"])(
       rowEvent("TileOpt", ["2", "0", "5", "5"], { data: 1n }),
       gameEvent("2", "0", "0", "1"),
       gameEvent("1", "1", "0", "2", name),
-      pointsAward("1", "0x111", "9500000", "9500000", "9500000"),
-      pointsAward("1", "0x222", "9000000", "9000000", "9000000"),
-      rowEvent("BlitzResult", ["1"], {
-        players: [
-          { wallet: 1000n, rank: 1n },
-          { wallet: 1001n, rank: 2n },
-        ],
-        complete: true,
-        commitment: 123n,
-      }),
     ];
-    const readModels = (fold: WorldFold) => ({
-      directory: buildNativeDirectory({
+    const readModels = (fold: WorldFold) =>
+      buildNativeDirectory({
         chain: "madara",
         confirmedBlock: 11,
         timestamp: 500,
         fold,
         playerAddress: "0x111",
-      }),
-      standings: buildNativeLeaderboard((name) => fold.modelRows(name), "1", null),
-    });
+      });
 
     const live = world();
     live.native.applyReceipt(live.fold, receipt(finalized), 11, 0);
     const before = readModels(live.fold);
     expect(live.fold.finalizedGameIds()).toContain("1");
-    if (name.startsWith("check-")) expect(before.directory.games.map(({ game_id }) => game_id)).not.toContain(1);
+    if (name.startsWith("check-")) expect(before.games.map(({ game_id }) => game_id)).not.toContain(1);
     expect(live.fold.reviewSnapshot("1", 11).models.some(({ model }) => model === "TileOpt")).toBe(true);
     live.fold.evictFinalizedGames();
     live.native.applyReceipt(live.fold, receipt([tileData("1"), tileData("2")]), 12, 0);
@@ -622,7 +541,7 @@ it.each(["Blitz", "check-blitz-abc"])(
     expect(live.fold.gameRows("TileOpt", "1")).toEqual([]);
     expect(live.fold.gameRows("TileOpt", "2")[0].value.data).toBe("0x2");
     expect(() => live.fold.snapshot("1", 12)).toThrow("Game 1 is finalized");
-    expect(live.fold.snapshot("1", 12, ["GameRegistry", "BlitzResult"]).models).toHaveLength(2);
+    expect(live.fold.snapshot("1", 12, ["GameRegistry", "SliceRules"]).models).toHaveLength(2);
 
     const replay = world();
     replay.native.applyReceipt(replay.fold, receipt(finalized), 11, 0);

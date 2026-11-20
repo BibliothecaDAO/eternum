@@ -54,7 +54,6 @@ const KEEP_NAMES: Record<StructureType, string> = {
   [StructureType.Bank]: "Bank",
   [StructureType.Hyperstructure]: "Hyperstructure",
   [StructureType.Mine]: "Mine",
-  [StructureType.BitcoinMine]: "Mine",
   [StructureType.Rift]: "Rift",
   [StructureType.Ruin]: "Ruin",
   [StructureType.Beasts]: "Beasts",

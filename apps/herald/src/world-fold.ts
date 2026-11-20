@@ -18,7 +18,6 @@ import {
 } from "@bibliothecadao/eternum/game-sync-models";
 import { toJsonValue, type ModelRegistry } from "./model-registry";
 import { directoryFact, FINALIZED_GAME_MODELS } from "./native/read-models";
-import { nativeRowKey } from "./native/row-key";
 import { rowStreamKeys } from "./subscription-keys";
 import type {
   DecodedRecord,
@@ -73,24 +72,10 @@ const checkpointRow = ([entityId, row]: [string, StoredModelRow]): FoldCheckpoin
 });
 
 export function finalizedGames(rows: (model: string) => readonly DecodedRecord[]): string[] {
-  const rules = new Map(rows("SliceRules").map((value) => [BigInt(value.game_id as string).toString(), value]));
-  const results = new Set(
-    rows("BlitzResult")
-      .filter((value) => value.complete === true)
-      .map((value) => BigInt(value.game_id as string).toString()),
-  );
   return rows("GameRegistry")
-    .filter((value) => {
-      if (value.settled !== true) return false;
-      const gameId = BigInt(value.game_id as string).toString();
-      const config = rules.get(gameId);
-      if (!config) throw new Error(`Finalized game ${gameId} has no rules`);
-      return isFrontierSeason(config) || results.has(gameId);
-    })
+    .filter((value) => value.settled === true)
     .map((value) => BigInt(value.game_id as string).toString());
 }
-
-const isFrontierSeason = (rules: DecodedRecord) => BigInt(rules.day_unit_seconds as string) > 0n;
 
 /**
  * A checkpoint is only restorable when it was folded from exactly the registry's persistent model set: a model added
@@ -269,9 +254,8 @@ export class WorldFold {
     return fold;
   }
 
-  public apply(event: DecodedWorldEvent, onDerivedRow?: (change: FoldChange) => void): FoldChange | undefined {
+  public apply(event: DecodedWorldEvent): FoldChange | undefined {
     if (event.kind === "event") {
-      this.applyEventRows(event).forEach((change) => onDerivedRow?.(change));
       return {
         event: true,
         gameId: this.eventGameId(event),
@@ -772,36 +756,5 @@ export class WorldFold {
       }),
     );
     return undefined;
-  }
-
-  private applyEventRows(event: Extract<DecodedWorldEvent, { kind: "event" }>): FoldChange[] {
-    if (event.model.name === "PointsAwarded") return this.applyPointsAward(event);
-    return [];
-  }
-
-  private applyPointsAward(event: Extract<DecodedWorldEvent, { kind: "event" }>): FoldChange[] {
-    const { game_id, player } = event.key;
-    const { player_points, season_points } = event.value;
-    return [
-      {
-        model: "PlayerPoints",
-        keys: [game_id, player],
-        key: { game_id, address: player },
-        value: { points: player_points },
-      },
-      { model: "PointsTotal", keys: [game_id], key: { game_id }, value: { total: season_points } },
-    ].flatMap(({ model, keys, key, value }) => {
-      const codec = this.registry.persistent.find(({ definition }) => definition.name === model);
-      if (!codec) throw new Error(`Missing native points schema: ${model}`);
-      const change = this.apply({
-        kind: "set",
-        model: codec.definition,
-        entityId: nativeRowKey(keys.map(String)),
-        position: event.position,
-        key,
-        value,
-      });
-      return change ? [change] : [];
-    });
   }
 }

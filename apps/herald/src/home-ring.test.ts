@@ -901,24 +901,16 @@ describe("client and Herald subscription scope parity", () => {
         models.flatMap(({ model, rows }) => rows.map((row) => ({ ...row, model }))),
         new Map(models.map(({ model, rows }) => [model, new Set(rows.map(({ key }) => key))])),
       );
-      expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: BigInt(actor) }).unknown).toContain(
-        "INCOMPLETE_SNAPSHOT",
-      );
       state(true);
       expect(store.subscriptionScope().known).toEqual(fold.subscriptionScope("1", actor, timestamp));
     };
     snapshot();
-    expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xan }).known?.points).toBe(0n);
-    expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xbn }).unknown).toContain(
-      "OUTSIDE_SNAPSHOT_SCOPE",
-    );
     actor = "0xb";
     snapshot();
     expect(() => store.require("Structure", { game_id: 1, entity_id: 1n })).toThrow("not synchronized");
     // Clock invalidation cannot block an applied actor snapshot's first action.
     store.setSnapshot({ gameId: 1, actor, complete: true, timestamp: undefined });
     expect(() => store.require("Structure", { game_id: 1, entity_id: 2n })).not.toThrow();
-    expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xbn }).unknown).toBe("UNKNOWN_SCOPE_CLOCK");
     state(true);
 
     const result = native.applyReceipt(
@@ -935,9 +927,6 @@ describe("client and Herald subscription scope parity", () => {
             ...body.set.filter(({ model }) => isClientGameSyncModel(model)),
             ...body.del.filter(({ model }) => isClientGameSyncModel(model)).map((row) => ({ ...row, value: null })),
           ]);
-          expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xan }).unknown).toBe(
-            "UNKNOWN_SCOPE_CLOCK",
-          );
         } else if (body.type === "head") state(true, timestamp);
       }
     };
@@ -953,7 +942,6 @@ describe("client and Herald subscription scope parity", () => {
     expect(fold.subscriptionScope("1", actor, timestamp).expedition?.owners).toEqual(new Set(["11"]));
     deliver(subscription!.project({ type: "head", block: 11, preconfirmed: true, timestamp }));
     expect(store.subscriptionScope().known).toEqual(overlay.subscriptionScope("1", actor, timestamp));
-    expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xan }).known?.points).toBe(0n);
     // The new entry links account 0xb to owner 0xa, so its home must become visible atomically.
     expect(store.require("Structure", { game_id: 1, entity_id: 1n }).owner).toBe(10n);
 

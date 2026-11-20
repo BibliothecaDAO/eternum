@@ -131,8 +131,7 @@ const Standing = () => {
   const { season } = useSeason();
   const { data: player } = useRealmsPlayer();
   const board = useLeaderboard(season ? gameRefOf(season) : null);
-  const entries = board.data?.mode === "frontier" ? board.data.entries : [];
-  const own = findOwnEntry(entries, player);
+  const own = findOwnEntry(board.data?.entries ?? [], player);
   if (!own) return null;
   return (
     <AppPanel>
@@ -187,7 +186,7 @@ const FrontierBoard = ({ rows }: { rows: number }) => {
   const failed = failure ?? (board.isError ? board : undefined);
   if (failed) return <ServiceFailure service="season" error={failed.error} retry={() => void failed.refetch()} />;
   if (!season || board.isPending) return <Loading />;
-  const frontier = board.data?.mode === "frontier" ? board.data : undefined;
+  const frontier = board.data;
   const entries = frontier?.entries ?? [];
   const own = findOwnEntry(entries, player);
   if (entries.length === 0)
@@ -228,7 +227,7 @@ const PastSeason = ({ season }: { season: DirectoryGame }) => {
   const board = useLeaderboard(gameRefOf(season));
   const here = useLocation();
   const navigate = useNavigate();
-  const winner = board.data?.mode === "frontier" ? seasonWinner(board.data) : undefined;
+  const winner = board.data && seasonWinner(board.data);
   return (
     <AppRow
       lead={<RowThumb painting={ageOf("frontier").painting} size={10} />}

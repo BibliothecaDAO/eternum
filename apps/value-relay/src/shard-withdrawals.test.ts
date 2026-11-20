@@ -265,7 +265,7 @@ it("filters only value models and resumes every deployed RowSet depth without ga
   for (const query of calls) {
     expect(query.keys.slice(-2)).toEqual([
       ["0x1"],
-      ["LordsWithdrawal", "BlitzResult"].map(shortString.encodeShortString),
+      ["LordsWithdrawal"].map(shortString.encodeShortString),
     ]);
   }
   expect(calls.map((query) => query.keys.length)).toEqual([3, 3, 4]);
@@ -280,49 +280,37 @@ it("does not fetch the full class again when the next alarm creates another read
   expect(rpc.contract).toHaveBeenCalledTimes(2);
 });
 
-// Game 10 of dev chain DEV_18dfa7f2b475f083, as its shard emitted it at block 75,043: the prizes logic runs by library
-// call from the Games contract and emits under BlitzEvent, a path the Games class itself does not declare.
 const DEV_CHAIN = "0x4445565f31386466613766326234373566303833";
-const GAME_TEN_WALLET = "0x269cb810bc22316f8e6a53d164398e83f8255f7e980621f6083e5f7bad74fa0";
-const GAME_TEN_COMMITMENT = "0x3712465ef7b04dd2fbf16ed51b0fd17c6f2c88a3f5e1b2887eeabf07cb353fd";
-const gameTenResult = {
+const logicDebit = withdrawalEvent(7, "0xbeef", "0x123", 17);
+const logicWithdrawal = {
   from_address: address,
-  keys: [
-    hash.getSelectorFromName("BlitzEvent"),
-    hash.getSelectorFromName("RowSet"),
-    "0x1",
-    shortString.encodeShortString("BlitzResult"),
-  ],
-  data: ["0x1", "0xa", "0x5", "0x1", GAME_TEN_WALLET, "0x1", "0x1", GAME_TEN_COMMITMENT],
+  ...logicDebit,
+  keys: [hash.getSelectorFromName("RelicEvent"), ...logicDebit.keys],
   transaction_hash: "0xbeef",
   block_number: 10,
   block_hash: "0xa",
 };
-const PRIZES_LOGIC = "0x77";
-const prizesLogicAbi = () => [
+const RELICS_LOGIC_CLASS = "0x77";
+const relicsLogicAbi = () => [
   {
     type: "event",
-    name: "prizes::Event",
+    name: "relics::Event",
     kind: "enum",
-    variants: [{ name: "BlitzEvent", type: "prizes::BlitzResultState::Event", kind: "nested" }],
+    variants: [{ name: "RelicEvent", type: "relics::RelicState::Event", kind: "nested" }],
   },
   {
     type: "event",
-    name: "prizes::BlitzResultState::Event",
+    name: "relics::RelicState::Event",
     kind: "enum",
     variants: [{ name: "RowSet", type: "fixture::RowSet", kind: "nested" }],
   },
   (abi as { name: string }[]).find((item) => item.name === "fixture::RowSet")!,
 ];
 
-/**
- * A shard whose Games class is `gamesClass` and whose one release answers `release`, holding game 10's result. The node
- * returns an event only when every key position the filter names matches it.
- */
-const shardWithGameTen = (gamesClass: unknown[], classes: string[]) => {
+const shardWithLogicWithdrawal = (gamesClass: unknown[], classes: string[]) => {
   rpc.chain.mockResolvedValue(DEV_CHAIN);
   rpc.contract.mockImplementation(async (classHash: string) => ({
-    abi: BigInt(classHash) === BigInt(PRIZES_LOGIC) ? prizesLogicAbi() : gamesClass,
+    abi: BigInt(classHash) === BigInt(RELICS_LOGIC_CLASS) ? relicsLogicAbi() : gamesClass,
   }));
   rpc.call.mockImplementation(async ({ entrypoint, calldata }: { entrypoint: string; calldata: string[] }) => {
     if (entrypoint === "open_release_of") return ["0x1"];
@@ -332,15 +320,14 @@ const shardWithGameTen = (gamesClass: unknown[], classes: string[]) => {
   rpc.events.mockImplementation(async ({ keys }: { keys: string[][] }) => ({
     events: keys.every(
       (allowed, index) =>
-        !allowed.length || allowed.some((key) => BigInt(key) === BigInt(gameTenResult.keys[index] ?? "0x-1")),
+        !allowed.length || allowed.some((key) => BigInt(key) === BigInt(logicWithdrawal.keys[index] ?? "0x-1")),
     )
-      ? [gameTenResult]
+      ? [logicWithdrawal]
       : [],
   }));
 };
 
-/** Every Blitz result the relay reads from block 10, through each event filter. */
-const resultsAtBlockTen = async (firstRelease = 1) => {
+const withdrawalsAtBlockTen = async (firstRelease = 1) => {
   const reader = new ShardReader({
     chainId: DEV_CHAIN,
     rpcUrl: "https://shard.test/rpc",
@@ -348,16 +335,16 @@ const resultsAtBlockTen = async (firstRelease = 1) => {
     firstRelease,
   });
   const ports = shardWithdrawalPorts(reader, fixture().bindings);
-  const results = [];
+  const withdrawals = [];
   let cursor: string | null = null;
   do {
-    const page: { results: readonly unknown[]; next?: string | null } = await Effect.runPromise(
+    const page: { withdrawals: readonly unknown[]; next?: string | null } = await Effect.runPromise(
       ports.eventsPage(10, 10, cursor),
     );
-    results.push(...page.results);
+    withdrawals.push(...page.withdrawals);
     cursor = page.next ?? null;
   } while (cursor);
-  return results;
+  return withdrawals;
 };
 
 const LOGIC_CLASSES = 16;
@@ -366,44 +353,48 @@ const releaseAnswer = (entrypoint: string, classes: string[]) =>
     ? [String(classes.length), ...classes]
     : ["0x1", "0x0", String(classes.length), "0x0"];
 
-const GAME_TEN = [
+const LOGIC_WITHDRAWAL = [
   {
-    chainId: DEV_CHAIN,
-    gameId: 10,
-    rows: [{ wallet: GAME_TEN_WALLET, rank: 1 }],
-    commitment: GAME_TEN_COMMITMENT,
+    prizeRank: 0,
+    prizeCount: 0,
     blockNumber: 10,
+    chainId: DEV_CHAIN,
+    seasonId: 3,
+    transactionHash: "0xbeef",
+    realmsId: "0x2",
+    amount: "17000000000000000000",
+    confirmedAt: 1000,
   },
 ];
 
-it("reads a Blitz result that a release's logic class emits under its own event enum", async () => {
+it("reads a withdrawal that a release's logic class emits under its own event enum", async () => {
   // The Games class: its events, and the committed release entrypoints and types its Release layout is read from.
-  shardWithGameTen([...abi, ...gamesAbi], Array(LOGIC_CLASSES).fill(PRIZES_LOGIC));
-  expect(await resultsAtBlockTen()).toEqual(GAME_TEN);
+  shardWithLogicWithdrawal([...abi, ...gamesAbi], Array(LOGIC_CLASSES).fill(RELICS_LOGIC_CLASS));
+  expect(await withdrawalsAtBlockTen()).toEqual(LOGIC_WITHDRAWAL);
 });
 
 it("reads a release with one more logic slot than today, from its class list alone", async () => {
-  shardWithGameTen([...abi, ...gamesAbi], [...Array(LOGIC_CLASSES).fill("0x66"), PRIZES_LOGIC]);
-  expect(await resultsAtBlockTen()).toEqual(GAME_TEN);
+  shardWithLogicWithdrawal([...abi, ...gamesAbi], [...Array(LOGIC_CLASSES).fill("0x66"), RELICS_LOGIC_CLASS]);
+  expect(await withdrawalsAtBlockTen()).toEqual(LOGIC_WITHDRAWAL);
 });
 
 it("reads a fresh chain from the release it began at, never asking for releases it does not hold", async () => {
   // A chain deployed at release 5 holds release 5 alone: its Games contract reverts "unknown release" below it.
-  shardWithGameTen([...abi, ...gamesAbi], []);
+  shardWithLogicWithdrawal([...abi, ...gamesAbi], []);
   const asked: string[] = [];
   rpc.call.mockImplementation(async ({ entrypoint, calldata }: { entrypoint: string; calldata: string[] }) => {
     if (entrypoint === "open_release_of") return ["0x5"];
     if (entrypoint === "release_registered") return [calldata[0] === "5" || calldata[0] === "6" ? "0x1" : "0x0"];
     asked.push(calldata[0]!);
     if (BigInt(calldata[0]!) < 5n) throw new Error("unknown release");
-    return releaseAnswer(entrypoint, Array(LOGIC_CLASSES).fill(PRIZES_LOGIC));
+    return releaseAnswer(entrypoint, Array(LOGIC_CLASSES).fill(RELICS_LOGIC_CLASS));
   });
-  expect(await resultsAtBlockTen(5)).toEqual(GAME_TEN);
+  expect(await withdrawalsAtBlockTen(5)).toEqual(LOGIC_WITHDRAWAL);
   expect(new Set(asked)).toEqual(new Set(["5", "6"]));
 });
 
 it("refuses a chain whose current release is older than the first its manifest names", async () => {
-  shardWithGameTen([...abi, ...gamesAbi], Array(LOGIC_CLASSES).fill(PRIZES_LOGIC));
+  shardWithLogicWithdrawal([...abi, ...gamesAbi], Array(LOGIC_CLASSES).fill(RELICS_LOGIC_CLASS));
   const reader = new ShardReader({
     chainId: DEV_CHAIN,
     rpcUrl: "https://shard.test/rpc",
@@ -537,7 +528,6 @@ it.each([false, true])(
       shard: {
         ...f.ports,
         conservation: () => Effect.succeed([]),
-        result: () => Effect.succeed(null),
       },
       ledger: {
         pause,
@@ -546,7 +536,6 @@ it.each([false, true])(
         reportedClaims: () =>
           Effect.succeed({ ...page, rows: [...(leading ? [report("0xabc", 17n)] : []), report("0xdef", 6000n)] }),
         paidClaims: () => Effect.succeed({ ...page, rows: [] }),
-        postedResults: () => Effect.succeed({ ...page, rows: [] }),
       },
     };
     const store = {

@@ -8,40 +8,26 @@ import { UnifiedArmyCreationBody } from "@/ui/features/military/components/unifi
 import { GuildListHeader, GuildRow } from "@/ui/features/social/guilds/guild-list";
 import { PlayerList, type PlayerCustom } from "@/ui/features/social/player/player-list";
 import { ProductionStatusBadge } from "@/ui/shared";
-import type { VictoryPointGrants } from "@/ui/shared/lib/victory-point-grants";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { type ReactNode, useMemo } from "react";
 
-const GRANTS: VictoryPointGrants = {
-  exploreTile: 5,
-  claimCampFromBandits: 250,
-};
-
-const player = (address: bigint, name: string, rank: number, points: number, isUser = false): PlayerCustom => ({
+const player = (address: bigint, name: string, hyperstructures: number, isUser = false): PlayerCustom => ({
   entity: `0x${address.toString(16)}`,
   address,
   name,
-  points,
-  rank,
   realms: 2,
   mines: 0,
-  hyperstructures: rank === 1 ? 2 : 0,
+  hyperstructures,
   villages: 0,
   banks: 0,
   isAlive: true,
   guildName: "",
   isUser,
-  isInvited: false,
   guild: undefined,
-  activityBreakdown: {
-    exploration: { count: 40 - rank * 8, points: (40 - rank * 8) * 5 },
-    otherStructureBanditsDefeat: { count: 0, points: 0 },
-  } as PlayerCustom["activityBreakdown"],
-  mmrDelta: null,
 });
 
-const PLAYERS = [player(1n, "djizus", 1, 2_870), player(2n, "clientlane", 2, 120, true), player(3n, "uxplay", 3, 80)];
+const PLAYERS = [player(1n, "djizus", 2), player(2n, "clientlane", 0, true), player(3n, "uxplay", 0)];
 
 const GUILD = {
   entityId: 1n,
@@ -49,9 +35,6 @@ const GUILD = {
   isOwner: false,
   isMember: true,
   memberCount: 4,
-  points: 3_070,
-  rank: 1,
-  prize: { lords: 1_200, strk: 40 },
   realms: 6,
   mines: 0,
   hyperstructures: 2,
@@ -138,8 +121,6 @@ export const AreaDLab = () => {
           <div className="w-fit">
             <PlayerList
               players={PLAYERS}
-              grants={GRANTS}
-              mmr="off"
               viewPlayerInfo={() => undefined}
               whitelistPlayer={() => undefined}
               isLoading={false}
@@ -148,7 +129,7 @@ export const AreaDLab = () => {
         </Surface>
         <Surface name="tribes">
           <div className="w-[56rem]">
-            <GuildListHeader activeSort={{ sortKey: "rank", sort: "asc" }} setActiveSort={() => undefined} />
+            <GuildListHeader activeSort={{ sortKey: "name", sort: "asc" }} setActiveSort={() => undefined} />
             <GuildRow guild={GUILD} onClick={() => undefined} />
           </div>
         </Surface>

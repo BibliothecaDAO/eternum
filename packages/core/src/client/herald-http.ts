@@ -2,7 +2,7 @@ import {
   HeraldHttpError,
   type HeraldGameDirectory,
   type HeraldFrontierDayRanks,
-  type HeraldGameLeaderboard,
+  type HeraldFrontierLeaderboard,
   type HeraldGameSnapshot,
   type HeraldHistoryPage,
 } from "../sync/herald-http-types";
@@ -130,15 +130,14 @@ export const feltEquals = (left: unknown, right: unknown): boolean => {
   }
 };
 
-/** A game's leaderboard in its mode's shape: Frontier's season board, or the points board of every other mode. */
-export const fetchHeraldLeaderboard = async (shard: Shard, gameId: number): Promise<HeraldGameLeaderboard> => {
+export const fetchHeraldLeaderboard = async (shard: Shard, gameId: number): Promise<HeraldFrontierLeaderboard> => {
   if (!Number.isSafeInteger(gameId) || gameId <= 0)
     throw new Error(`Herald leaderboard requires a positive game id; received ${gameId}`);
-  const board = await fetchHeraldJson<HeraldGameLeaderboard>(
+  const board = await fetchHeraldJson<HeraldFrontierLeaderboard>(
     buildHeraldUrl(shard, `/games/${gameId}/leaderboard`),
     `Herald leaderboard for ${shard.url} game ${gameId}`,
   );
-  if (board.mode === "frontier" && board.entries.some((entry) => entry.campaign === undefined))
+  if (board.entries.some((entry) => entry.campaign === undefined))
     throw new Error("Herald Frontier leaderboard is missing campaign identity");
   return board;
 };

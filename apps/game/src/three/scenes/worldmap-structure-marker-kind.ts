@@ -10,7 +10,6 @@ const STRUCTURE_MARKER_KIND: Record<StructureType, StrategicStructureMarkerKind>
   [StructureType.Hyperstructure]: "hyperstructure",
   [StructureType.Bank]: "bank",
   [StructureType.Mine]: "mine",
-  [StructureType.BitcoinMine]: "mine",
   [StructureType.Village]: "village",
   [StructureType.Camp]: "village",
   [StructureType.Rift]: "mine",

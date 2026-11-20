@@ -115,8 +115,6 @@ export const getStructureInfoFromTileOccupier = (
       return { type: StructureType.Bank, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
     case TileOccupier.Camp:
       return { type: StructureType.Camp, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
-    case TileOccupier.BitcoinMine:
-      return { type: StructureType.BitcoinMine, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
     case TileOccupier.Rift:
       return { type: StructureType.Rift, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
     case TileOccupier.Ruin:

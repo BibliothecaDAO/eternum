@@ -114,25 +114,22 @@ it("uses the fixed ordinary v3 play frame and a native three-felt device signatu
   expect(signed).toHaveLength(3);
   expect(signed[0]).toBe(ec.starkCurve.getStarkKey(device));
 });
-it.each(["MarkGameSettled", "RecordBlitzResults"] as const)(
-  "encodes %s from the generated routes without a runtime Command enum",
-  async (name) => {
-    const operator = new ShardOperator({
-      chainId: "0x1",
-      rpcUrl: "https://shard.test",
-      gamesAddress: "0x10",
-      accountAddress: "0x20",
-      privateKey: "0x1",
-    });
-    await operator.playCommand(7, name);
-    expect(rpc.execute.mock.calls[0]![0].calldata).toEqual([
-      "7",
-      "2",
-      "1",
-      ...encodeNativeCommand(bindings.commandAbi, { kind: name, value: undefined }),
-    ]);
-  },
-);
+it("encodes MarkGameSettled from the generated routes without a runtime Command enum", async () => {
+  const operator = new ShardOperator({
+    chainId: "0x1",
+    rpcUrl: "https://shard.test",
+    gamesAddress: "0x10",
+    accountAddress: "0x20",
+    privateKey: "0x1",
+  });
+  await operator.markGameSettled(7);
+  expect(rpc.execute.mock.calls[0]![0].calldata).toEqual([
+    "7",
+    "2",
+    "1",
+    ...encodeNativeCommand(bindings.commandAbi, { kind: "MarkGameSettled", value: undefined }),
+  ]);
+});
 
 it("rejects a successful invoke carrying the generated GameplayRejected event", async () => {
   rpc.receipt.mockResolvedValue({
@@ -182,7 +179,7 @@ it("reads a seat once pre-confirmed, while results still wait for a closed block
   expect(rpc.receipt).toHaveBeenCalledTimes(1);
   rpc.receipt.mockClear();
   rpc.receipt.mockResolvedValueOnce(preConfirmed).mockResolvedValueOnce(accepted);
-  await operator.playCommand(7, "MarkGameSettled");
+  await operator.markGameSettled(7);
   expect(rpc.receipt).toHaveBeenCalledTimes(2);
 });
 

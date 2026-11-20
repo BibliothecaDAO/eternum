@@ -995,7 +995,6 @@ export const HEADLINE_EYEBROWS = {
   "hyper-capture": "World Event",
   elimination: "War Report",
   "game-start": "Game started",
-  "game-end": "Game result",
   "five-min-warning": "Timer Warning",
   "t3-building": "Military Milestone",
 } as const;
@@ -1087,23 +1086,11 @@ export const YOU = "You";
 
 /** A finished game's Results: its panels and how its points were made, each kind on its row. */
 export const RESULT_WORDS = {
-  theGame: "The game",
-  yourPoints: "Your points",
-  tiles: "Tiles explored",
-  riftsAndCamps: "Rifts and camps",
   sitesCleared: "Sites cleared",
   chests: "Chests",
   deepest: "Deepest",
   /** A finished game's map, opened as a spectator: how it ended, to scout. */
   endMap: "See the end map",
-  /** Results read by a signed-in player who had no seat in the game. */
-  noSeat: "You had no seat in this game.",
-  /** A Blitz's Results whose game no list read holds: named by its number. */
-  blitzGame: (gameId: number) => `Blitz · game ${gameId}`,
-  /** Your points, for a game the player scored nothing in. */
-  noPoints: "No points scored.",
-  /** Share, once the result's line and address are on the clipboard. */
-  copied: "Link copied",
 } as const;
 /** A Frontier season's recap (in the game when it ends, and on its Results) and its share card. */
 export const RECAP_WORDS = {
@@ -1982,7 +1969,6 @@ export const NOTIFICATION_KIND_WORDS = {
   results: "results",
   messages: "messages",
   deliveries: "deliveries",
-  bitcoin: "Bitcoin payouts",
 } as const satisfies Record<NotificationKind, string>;
 
 /** Kinds of alert as one list, in the table's order ("fights, results and messages"). */

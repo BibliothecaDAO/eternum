@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { readNodeHealth } from "./node-health";
 import { describe, expect, it, vi } from "vitest";
 
-import { buildNativeDirectory, buildNativeLeaderboard } from "./native/read-models";
+import { buildNativeDirectory } from "./native/read-models";
 import { createHeraldRequestHandler } from "./http";
 import { shardManifest } from "./native/fixtures";
 import { gameRegistryRow } from "../../../packages/core/src/test-support/game-registry";
@@ -60,7 +60,6 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
               game_id: "7",
               mode_rules: 0,
               day_unit_seconds: 0,
-              victory_points_grant_config: { hyp_points_per_second: "1" },
             },
           },
         ];
@@ -80,7 +79,6 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
       next_cursor: { block: 12, transaction: 2147483647, event: 2147483647 },
       items: [],
     }),
-    activity: () => new Map(),
     queryEvents: async (query) => ({
       complete_through_block: 12,
       items: [
@@ -196,14 +194,6 @@ describe("herald HTTP", () => {
   });
 });
 
-it("serves the prepared leaderboard aggregate without paging history", async () => {
-  const response = await handler(new Request("http://herald/games/7/leaderboard"));
-  expect(response.headers.get("X-Confirmed-Block")).toBe("12");
-  expect(response.status).toBe(200);
-  expect(response.headers.get("access-control-allow-origin")).toBe("*");
-  expect(await response.json()).toEqual({ mode: "points", game_id: "7", entries: [] });
-});
-
 it("answers no site ranking for a Season 1 game, whose race is between Aspects", async () => {
   const season = createHeraldRequestHandler({
     ...httpState,
@@ -214,7 +204,8 @@ it("answers no site ranking for a Season 1 game, whose race is between Aspects",
   });
   const response = await season(new Request("http://herald/games/7/leaderboard"));
   expect([response.status, await response.json()]).toEqual([404, { error: "season_one_ranks_aspects" }]);
-  expect((await handler(new Request("http://herald/games/7/leaderboard"))).status).toBe(200);
+  const other = await handler(new Request("http://herald/games/7/leaderboard"));
+  expect([other.status, await other.json()]).toEqual([503, { error: "Game 7 has no Frontier leaderboard" }]);
 });
 
 it("passes a battle-only history filter to the store before pagination", async () => {
@@ -241,7 +232,6 @@ it("passes a battle-only history filter to the store before pagination", async (
         items: [],
       }),
       queryEvents,
-      activity: () => new Map(),
       reviewSnapshot: async () => snapshot,
     },
   });
@@ -369,7 +359,7 @@ it("builds one public directory per head and never caches responses by requested
   const handler = createHeraldRequestHandler({
     ...httpState,
     confirmedBlock: () => block,
-    readModels: { directory: build, leaderboard: buildNativeLeaderboard },
+    readModels: { directory: build },
     fold: {
       ...httpState.fold,
       modelRows: (model) =>
@@ -406,15 +396,19 @@ it("builds one public directory per head and never caches responses by requested
 
 it("caches each leaderboard once per confirmed head and drops all previous-head results", async () => {
   let block = 12;
-  const build = vi.fn(buildNativeLeaderboard);
+  const frontierHistory = vi.fn(async () => []);
+  const frontierRows = (model: string) =>
+    model === "SliceRules"
+      ? [{ key: "7", value: { game_id: "7", day_unit_seconds: 14400 } }]
+      : httpState.fold.modelRows(model);
   const handler = createHeraldRequestHandler({
     ...httpState,
     confirmedBlock: () => block,
-    readModels: { directory: buildNativeDirectory, leaderboard: build },
+    history: { ...httpState.history!, frontierHistory },
     fold: {
       ...httpState.fold,
       modelRows: (model) =>
-        httpState.fold.modelRows(model).flatMap((row) => [row, { ...row, value: { ...row.value, game_id: "8" } }]),
+        frontierRows(model).flatMap((row) => [row, { ...row, value: { ...row.value, game_id: "8" } }]),
     },
   });
   const responseCaches = new Set<Map<unknown, unknown>>();
@@ -431,7 +425,7 @@ it("caches each leaderboard once per confirmed head and drops all previous-head 
         expect(response.status).toBe(200);
         expect((await response.json()).game_id).toBe(BigInt(game).toString());
       }
-      expect(build).toHaveBeenCalledTimes((head + 1) * 2);
+      expect(frontierHistory).toHaveBeenCalledTimes((head + 1) * 2);
       for (const cache of responseCaches) expect(cache.size).toBe(2);
     }
     expect(responseCaches.size).toBe(1);

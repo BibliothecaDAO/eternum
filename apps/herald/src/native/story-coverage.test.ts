@@ -34,20 +34,7 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
   },
   BuildingPlacementStory: { fields: [1, 12, 34, 4, 2], expected: { coord, category: 4n, change: "Paused" } },
   BuildingPaymentStory: { fields: [1, 12, 34, 4, 1, 1, 100], expected: { coord, category: 4n, cost: resources } },
-  BitcoinAwardStory: {
-    fields: [2, 9, 17, 34, 3, 9, 80, 20],
-    expected: {
-      phase: 2n,
-      mine_id: 9n,
-      winner: 17n,
-      owner: 34n,
-      winner_destination: 3n,
-      owner_destination: 9n,
-      winner_paid: 80n,
-      owner_paid: 20n,
-    },
-  },
-  StructureCapturedStory: { fields: [17, 34, 50], expected: { previous_owner: 17n, new_owner: 34n, points: 50n } },
+  StructureCapturedStory: { fields: [17, 34], expected: { previous_owner: 17n, new_owner: 34n } },
   ExplorationReward: {
     fields: [7, 3, 1, 12, 34, 1, 100],
     expected: { explorer_id: 7n, receiver: 3n, coord, resource_type: 1n, amount: 100n },
@@ -117,12 +104,6 @@ const standalone = {
     ],
     key: { game_id: 1n, actor: 17n, tx_hash: 85n },
     value: { status_class: BigInt(shortString.encodeShortString("GAMEPLAY_REJECTED")), reason: "domain rejected" },
-  },
-  PointsAwarded: {
-    keys: ["1", "1", "17"],
-    data: ["1", "50", "100", "200"],
-    key: { game_id: 1n, player: 17n },
-    value: { activity: "StructureCapture", points: 50n, player_points: 100n, season_points: 200n },
   },
 };
 

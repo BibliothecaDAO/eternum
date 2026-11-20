@@ -80,7 +80,6 @@ const PAYLOADS: Record<string, Record<string, unknown>> = {
   RaidEvent: { player: "0x1", target_owner: "0x2", success: true },
   StructureCapturedStory: { previous_owner: "0x2", new_owner: "0x1" },
   ResourceTransferStory: { to_entity_id: 11, travel_time: 0 },
-  BitcoinAwardStory: { winner_paid: 5 },
 };
 const DELIVERED = [...nativeStoryVariants, "BattleEvent", "RaidEvent"].filter((story) =>
   includesStoryNotification("all", story, "blitz"),
@@ -103,7 +102,6 @@ it("puts every delivered story into its own words, in production as in developme
     expect(DELIVERED.sort()).toEqual(
       [
         "BattleEvent",
-        "BitcoinAwardStory",
         "BlitzFinalized",
         "RaidEvent",
         "ResourceReceiveArrivalStory",
@@ -126,18 +124,6 @@ it.each(["LordsWithdrawn", "BuildingPlacementStory", "ExplorationReward", "Skill
 );
 
 it.each([
-  [{ winner_paid: "1000000", winner_destination: 7 }, "The Bitcoin mine paid you", "your share is in your realm."],
-  // A winner whose contributing realm is no longer theirs is paid nothing, though the mine's owner may be.
-  [
-    { winner_paid: 0, winner_destination: 0, owner_paid: "500000" },
-    "Your Bitcoin share was not paid",
-    "the realm you contributed from is no longer yours.",
-  ],
-] as const)("tells a Bitcoin phase's winner what was actually paid to them: %o", (payload, title, body) => {
-  expect(storyNotificationCopy("BitcoinAwardStory", payload)).toEqual({ title, body });
-});
-
-it.each([
   [{ to_entity_id: 11, travel_time: 0 }, "Resources received", "they are in your stores."],
   [{ to_entity_id: 11, travel_time: 600 }, "Resources on the way", "a shipment is heading to your stores."],
 ] as const)("tells the receiver goods landed only when they took no road: %o", (payload, title, body) => {
@@ -145,7 +131,6 @@ it.each([
 });
 
 it.each([
-  ["BitcoinAwardStory", {}],
   ["ResourceTransferStory", { to_entity_id: 11 }],
   ["ResourceTransferStory", { to_entity_id: 11, travel_time: "soon" }],
 ] as const)("refuses to word %s from a payload that does not say it: %o", (story, payload) => {

@@ -116,7 +116,7 @@ describe("Herald leaderboards", () => {
     await expect(fetchHeraldLeaderboard(world, 3)).rejects.toThrow("missing campaign identity");
   });
 
-  it("names each leaderboard by its mode, Frontier's season board or the points board", async () => {
+  it("reads a Frontier season board as Herald serves it", async () => {
     vi.stubGlobal("fetch", mockFetch);
     const frontier = {
       game_id: "3",
@@ -135,13 +135,8 @@ describe("Herald leaderboards", () => {
         },
       ],
     };
-    const points = { game_id: "4", mode: "points", entries: [] };
-    mockFetch.mockImplementation(
-      async (input) =>
-        new Response(JSON.stringify(String(input).includes("/games/3/") ? frontier : points), { status: 200 }),
-    );
+    mockFetch.mockResolvedValue(new Response(JSON.stringify(frontier), { status: 200 }));
 
     await expect(fetchHeraldLeaderboard(world, 3)).resolves.toEqual(frontier);
-    await expect(fetchHeraldLeaderboard(world, 4)).resolves.toEqual(points);
   });
 });

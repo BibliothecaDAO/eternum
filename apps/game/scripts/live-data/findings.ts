@@ -309,7 +309,7 @@ export function usageReport(c: Counts, pulled: string, throughBlock: number): Us
       `Relic crates ${n(c.count("blitz", "Open relic crate"))}, relics used ${n(c.count("blitz", "Use relic"))}, disband ${n(c.count("blitz", "Disband army"))}, Shrine ${n(c.count("frontier", "Use Shrine"))}, Well ${n(c.count("frontier", "Use Well"))}, Realm labor claims ${n(c.count("frontier", "Claim Realm labor"))}.`,
     ],
     outOfScope: [
-      "Eternum only (never drawn in Blitz or Frontier): Trade, Tribes, Faith, Hyperstructure construction, Bitcoin mining.",
+      "Eternum only (never drawn in Blitz or Frontier): Trade, Tribes, Faith, Hyperstructure construction.",
       `Craft relic: its button shows only on a Research balance, which no realm has held; ${n(c.count("blitz", "Craft relic"))} crafts.`,
       `Withdraw LORDS: ${n(c.count("frontier", "Withdraw LORDS"))} so far, but it is the payout path.`,
     ],

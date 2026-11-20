@@ -72,7 +72,7 @@ export interface ValueRow {
   values: string[];
   transactionHash: string;
 }
-const VALUE_MODELS = ["LordsWithdrawal", "BlitzResult"] as const;
+const VALUE_MODELS = ["LordsWithdrawal"] as const;
 /** Header batches in flight at once: a Worker holds at most six connections. */
 const HEADER_BATCHES_IN_FLIGHT = 4;
 

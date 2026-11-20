@@ -12,7 +12,7 @@ import { expeditionRealmSite, expeditionDayEndsAt, seasonDay } from "@bibliothec
 import { parseArgs } from "node:util";
 import { presetRegistration, presetLaunch, PRESET_FIXTURE_DURATION_SECONDS } from "../src/native/preset-fixtures";
 import { LiveWorld } from "../src/live-world";
-import { receipt, rowEvent, schema, setup, manifest, pointsAward } from "../src/native/fixtures";
+import { receipt, rowEvent, schema, setup, manifest } from "../src/native/fixtures";
 import { decodeMembers } from "../src/native/serde";
 import type { StreamSocket } from "../src/game-stream";
 import type { RpcBlockWithReceipts, RpcEvent } from "../src/types";
@@ -101,10 +101,6 @@ const row = (model: string, keys: (string | number)[], overrides: Record<string,
 const owner = (game: number, player: number) => 0x1000 + game * 100 + player;
 const realm = (game: number, player: number) => game * 10_000 + player + 1;
 
-function initialPoints(game: number, player: number): RpcEvent {
-  return pointsAward(String(game), String(owner(game, player)), "1000000", "1000000", String((player + 1) * 1000000));
-}
-
 /** One Frontier game: each player's realm, two armies and explored tiles in its own region of today's expedition. */
 function frontierRows(game: number): RpcEvent[] {
   const events = presetLaunch(preset, game, Math.floor(now / 1000));
@@ -114,7 +110,6 @@ function frontierRows(game: number): RpcEvent[] {
     const column = player * SPACING;
     events.push(
       row("PlayerEntry", [game, address], { player: address }),
-      initialPoints(game, player),
       row("Structure", [game, structure], {
         owner: address,
         "base.category": "1",
@@ -196,7 +191,6 @@ function gameRows(game: number): RpcEvent[] {
     const structure = realm(game, player);
     events.push(
       row("PlayerEntry", [game, owner(game, player)]),
-      initialPoints(game, player),
       row("EntityName", [game, structure]),
       row("Structure", [game, structure]),
       ...place(game, structure, player * 1000, 0, 1, true),
@@ -388,8 +382,8 @@ for (let second = 1; second <= SIMULATED_MINUTES * 60; second++) {
     const ended = activeGames.shift()!;
     sessions.get(ended)!.forEach((session) => live.detach(session));
     sessions.delete(ended);
-    const result = [row("GameRegistry", [ended], { settled: "1" }), row("BlitzResult", [ended], { complete: "1" })];
-    native.applyReceipt(fold, receipt(result, `0x${next().toString(16)}`), block, 0);
+    const settled = [row("GameRegistry", [ended], { settled: "1" })];
+    native.applyReceipt(fold, receipt(settled, `0x${next().toString(16)}`), block, 0);
     const started = Math.max(...activeGames) + 1;
     const events = gameRows(started);
     for (let start = 0; start < events.length; start += 500)

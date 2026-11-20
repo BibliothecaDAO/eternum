@@ -56,13 +56,6 @@ const launcherJoinFailure = (env: LaunchEnv, chainId: string, error: unknown): J
   return failure;
 };
 
-/**
- * The registrar: the one object that executes launches, so the launcher signs one transaction stream at a time and each
- * seater its own. Each alarm first freezes every slot whose registration has closed, then runs the next due launch to
- * its end, from the same read of the ledger the freeze made. It wakes at the next due freeze (a slot's close, or the
- * retry of a failed one) as well as the next due run. A launch interrupted by a restart is resumed from chain state on
- * the next alarm, because creation, roster settlement and result batches each check the chain before writing.
- */
 export class Registrar extends DurableObject<Record<string, unknown>> {
   private readonly signing = Semaphore.makeUnsafe(1);
   private processing = false;
@@ -75,10 +68,6 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
     return (await this.ctx.storage.get<JoinFailure | null>("joinFailure")) ?? null;
   }
 
-  /**
-   * Arms the alarm for a run due at `dueAt`. Every path that queues a run calls this, so the alarm is always the
-   * earliest due run, whoever queued it: a ready run never waits behind a result sleeping until its game's end.
-   */
   async armFor(dueAt: number): Promise<void> {
     const alarm = await this.ctx.storage.getAlarm();
     // Written every time, never trusted: an alarm left at a moment that has passed without firing is armed again.

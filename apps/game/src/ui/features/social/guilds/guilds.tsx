@@ -1,17 +1,11 @@
 import { useFactView } from "@/hooks/use-fact-view";
 import { guildsView } from "@/sync/fact-views";
-import { LORDS_PRIZE_POOL, STRK_PRIZE_POOL } from "@/ui/constants";
 import { CreateGuildButton } from "./create-guild-button";
 import { GuildListHeader, GuildRow } from "./guild-list";
 import { useSocialStore } from "../components/use-social-store";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { sortItems } from "@/ui/utils/utils";
-import {
-  calculateGuildLordsPrize,
-  getGuildFromPlayerAddress,
-  LeaderboardManager,
-  toHexString,
-} from "@bibliothecadao/eternum";
+import { getGuildFromPlayerAddress, toHexString } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { usePlayerWhitelist } from "@/hooks/helpers/use-guilds";
 import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
@@ -56,37 +50,21 @@ export const Guilds = ({
     [account.address, membership],
   );
 
-  // Aggregate player data per guild
   const guildsWithStats = useMemo(() => {
-    const leaderboardManager = LeaderboardManager.instance(store);
-
     const guildStats = new Map<
       string,
-      {
-        totalPoints: number | null;
-        totalRealms: number;
-        totalMines: number;
-        totalHypers: number;
-        memberCount: number;
-      }
+      { totalRealms: number; totalMines: number; totalHypers: number; memberCount: number }
     >();
 
     players.forEach((player) => {
       const guild = getGuildFromPlayerAddress(player.address, store);
       if (guild) {
         const stats = guildStats.get(guild.entityId.toString()) || {
-          totalPoints: 0,
           totalRealms: 0,
           totalMines: 0,
           totalHypers: 0,
           memberCount: 0,
         };
-
-        // Calculate real-time total points including unregistered shareholder points
-        const totalPlayerPoints = leaderboardManager.getPlayerPoints(player.address);
-
-        stats.totalPoints =
-          stats.totalPoints === null || totalPlayerPoints === null ? null : stats.totalPoints + totalPlayerPoints;
         stats.totalRealms += player.realms || 0;
         stats.totalMines += player.mines || 0;
         stats.totalHypers += player.hyperstructures || 0;
@@ -96,37 +74,22 @@ export const Guilds = ({
       }
     });
 
-    const scoresKnown = [...guildStats.values()].every((stats) => stats.totalPoints !== null);
-    return guilds
-      .map((guild) => {
-        const stats = guildStats.get(guild.entityId.toString()) || {
-          totalPoints: 0,
-          totalRealms: 0,
-          totalMines: 0,
-          totalHypers: 0,
-          memberCount: 0,
-        };
-        return {
-          ...guild,
-          points: stats.totalPoints,
-          realms: stats.totalRealms,
-          mines: stats.totalMines,
-          hyperstructures: stats.totalHypers,
-          structureCount: stats.totalRealms + stats.totalMines + stats.totalHypers,
-          memberCount: stats.memberCount,
-        };
-      })
-      .toSorted((a, b) =>
-        a.points === null ? (b.points === null ? 0 : 1) : b.points === null ? -1 : b.points - a.points,
-      )
-      .map((guild, index) => {
-        const rank = scoresKnown ? index + 1 : null;
-        return {
-          ...guild,
-          rank,
-          prize: rank === null ? null : calculateGuildLordsPrize(rank, LORDS_PRIZE_POOL, STRK_PRIZE_POOL),
-        };
-      });
+    return guilds.map((guild) => {
+      const stats = guildStats.get(guild.entityId.toString()) || {
+        totalRealms: 0,
+        totalMines: 0,
+        totalHypers: 0,
+        memberCount: 0,
+      };
+      return {
+        ...guild,
+        realms: stats.totalRealms,
+        mines: stats.totalMines,
+        hyperstructures: stats.totalHypers,
+        structureCount: stats.totalRealms + stats.totalMines + stats.totalHypers,
+        memberCount: stats.memberCount,
+      };
+    });
   }, [guilds, players, store]);
 
   const filteredGuilds = useMemo(
@@ -145,124 +108,62 @@ export const Guilds = ({
           return nameMatch;
         }),
         guildsActiveSort,
-        { sortKey: "rank", sort: "asc" },
+        { sortKey: "name", sort: "asc" },
       ),
     [guildsWithStats, guildsGuildSearchTerm, guildInvites, guildsViewGuildInvites, guildsActiveSort],
   );
 
-  const generateSocialData = () => {
-    const leaderboardManager = LeaderboardManager.instance(store);
-
-    const socialData = {
-      timestamp: new Date().toISOString(),
-      gameInfo: {
-        totalPlayers: players.length,
-        totalTribes: guilds.length,
-      },
-      tribes: guildsWithStats.map((guild) => {
-        // For each guild, we need to get the members from the existing player data
-        // since we can't call hooks inside this function
-        const guildPlayers = players.filter((player) => {
-          const playerGuild = getGuildFromPlayerAddress(player.address, store);
-          return playerGuild?.entityId === guild.entityId;
-        });
-
-        // Find tribe owner - the owner's address matches the guild's entityId
-        const owner = guildPlayers.find((player) => player.address === guild.entityId);
-
-        // Calculate total tribe points for prize distribution
-        const totalTribePoints = guildPlayers.reduce<number | null>((sum, player) => {
-          const points = leaderboardManager.getPlayerPoints(player.address);
-          return sum === null || points === null ? null : sum + points;
-        }, 0);
-
-        // Get detailed member info with points and prize calculations
-        const membersWithPoints = guildPlayers.map((player) => {
-          const totalPoints = leaderboardManager.getPlayerPoints(player.address);
-
-          // Calculate prize distribution
-          const isOwner = player.address === guild.entityId;
-          const pointsShare =
-            totalTribePoints === null || totalPoints === null
-              ? null
-              : totalTribePoints > 0
-                ? totalPoints / totalTribePoints
-                : 0;
-
-          // Owner gets 30% + their share of the remaining 70%
-          // Non-owners get their share of the 70%
-          const ownerBonus = isOwner ? 0.3 : 0;
-          const memberShare = pointsShare === null ? null : pointsShare * 0.7;
-          const totalShare = memberShare === null ? null : ownerBonus + memberShare;
-
-          const lordsReward = guild.prize === null || totalShare === null ? null : guild.prize.lords * totalShare;
-          const strkReward = guild.prize === null || totalShare === null ? null : guild.prize.strk * totalShare;
-
-          return {
-            address: toHexString(player.address),
-            name: player.name,
-            isOwner: isOwner,
-            points: totalPoints,
-            pointsShare: pointsShare,
-            realms: player.realms || 0,
-            mines: player.mines || 0,
-            hyperstructures: player.hyperstructures || 0,
-            villages: player.villages || 0,
-            banks: player.banks || 0,
-            totalLordsReward: lordsReward,
-            totalStrkReward: strkReward,
-            rewards: {
-              lords: lordsReward,
-              strk: strkReward,
-              ownerBonus: guild.prize === null ? null : isOwner ? guild.prize.lords * 0.3 : 0,
-              ownerBonusStrk: guild.prize === null ? null : isOwner ? guild.prize.strk * 0.3 : 0,
-              memberShare: guild.prize === null || memberShare === null ? null : guild.prize.lords * memberShare,
-              memberShareStrk: guild.prize === null || memberShare === null ? null : guild.prize.strk * memberShare,
-            },
-          };
-        });
-
-        return {
-          entityId: toHexString(guild.entityId),
-          name: guild.name,
-          rank: guild.rank,
-          isPublic: guild.isPublic,
-          totalPoints: guild.points,
-          totalRealms: guild.realms,
-          totalMines: guild.mines,
-          totalHyperstructures: guild.hyperstructures,
-          memberCount: guild.memberCount,
-          prize: guild.prize,
-          owner: {
-            address: owner ? toHexString(owner.address) : null,
-            name: owner?.name || "Unknown",
-          },
-          members: membersWithPoints,
-        };
-      }),
-      players: players.map((player) => {
-        const guild = getGuildFromPlayerAddress(player.address, store);
-        const totalPoints = leaderboardManager.getPlayerPoints(player.address);
-
-        return {
+  const generateSocialData = () => ({
+    timestamp: new Date().toISOString(),
+    gameInfo: {
+      totalPlayers: players.length,
+      totalTribes: guilds.length,
+    },
+    tribes: guildsWithStats.map((guild) => {
+      const guildPlayers = players.filter(
+        (player) => getGuildFromPlayerAddress(player.address, store)?.entityId === guild.entityId,
+      );
+      const owner = guildPlayers.find((player) => player.address === guild.entityId);
+      return {
+        entityId: toHexString(guild.entityId),
+        name: guild.name,
+        isPublic: guild.isPublic,
+        totalRealms: guild.realms,
+        totalMines: guild.mines,
+        totalHyperstructures: guild.hyperstructures,
+        memberCount: guild.memberCount,
+        owner: {
+          address: owner ? toHexString(owner.address) : null,
+          name: owner?.name || "Unknown",
+        },
+        members: guildPlayers.map((player) => ({
           address: toHexString(player.address),
           name: player.name,
-          rank: player.rank,
-          points: totalPoints,
+          isOwner: player.address === guild.entityId,
           realms: player.realms || 0,
           mines: player.mines || 0,
           hyperstructures: player.hyperstructures || 0,
           villages: player.villages || 0,
           banks: player.banks || 0,
-          isAlive: player.isAlive,
-          tribeName: guild?.name || null,
-          tribeEntityId: guild ? toHexString(guild.entityId) : null,
-        };
-      }),
-    };
-
-    return socialData;
-  };
+        })),
+      };
+    }),
+    players: players.map((player) => {
+      const guild = getGuildFromPlayerAddress(player.address, store);
+      return {
+        address: toHexString(player.address),
+        name: player.name,
+        realms: player.realms || 0,
+        mines: player.mines || 0,
+        hyperstructures: player.hyperstructures || 0,
+        villages: player.villages || 0,
+        banks: player.banks || 0,
+        isAlive: player.isAlive,
+        tribeName: guild?.name || null,
+        tribeEntityId: guild ? toHexString(guild.entityId) : null,
+      };
+    }),
+  });
 
   const downloadSocialData = () => {
     const socialData = generateSocialData();
@@ -314,7 +215,7 @@ export const Guilds = ({
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-2">
             <HudButton kind="secondary" onClick={() => setGuildsViewGuildInvites(!guildsViewGuildInvites)}>
-              {guildsViewGuildInvites ? "Show Tribe Rankings" : "Show Tribe Invites"}
+              {guildsViewGuildInvites ? "Show All Tribes" : "Show Tribe Invites"}
             </HudButton>
             <HudButton kind="quiet" icon="download" onClick={downloadSocialData} title="Download social data as JSON">
               Export Data

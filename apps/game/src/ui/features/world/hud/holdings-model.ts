@@ -22,7 +22,6 @@ const KINDS = [
   StructureType.Camp,
   StructureType.Mine,
   StructureType.Rift,
-  StructureType.BitcoinMine,
   StructureType.Hyperstructure,
   StructureType.Bank,
   StructureType.Ruin,

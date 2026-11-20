@@ -119,21 +119,6 @@ export function explorerValue(owner: string, count = 0n, amount = 0n, settledAt 
   };
 }
 
-export function pointsAward(
-  game: string,
-  player: string,
-  amount: string,
-  playerPoints: string,
-  seasonPoints: string,
-): RpcEvent {
-  const layout = schema.games.events.find((event) => event.name === "PointsAwarded")!;
-  return {
-    from_address: manifest.world.address,
-    keys: [...layout.prefix, "1", game, player],
-    data: ["1", amount, playerPoints, seasonPoints],
-  };
-}
-
 /** Unit-test projections enter the fold directly; they are never accepted as chain row events. */
 export function seedDerivedRows(fold: WorldFold, decoder: NativeDecoder, events: RpcEvent[]): RpcEvent[] {
   return events.filter((event) => {

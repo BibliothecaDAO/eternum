@@ -51,7 +51,6 @@ const block = (number: number): ConfirmedBlock => ({
   parentHash: `0x${number}`,
   status: "ACCEPTED_ON_L2",
   withdrawals: [withdrawal(number)],
-  results: [],
 });
 const seed = async () => {
   const f = setup();

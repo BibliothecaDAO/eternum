@@ -48,7 +48,6 @@ const fixture = () => {
     ctx as unknown as DurableObjectState,
     {
       L2_RPC_URL: "https://ledger.test",
-      LAUNCH: { rosterCohorts: async () => [] },
       IDENTITY: { l2ChainId: async () => "0x1", shard: async () => null },
     } as never,
   );
@@ -216,10 +215,10 @@ it("requires an operator token and a recorded reason to clear a monitor halt wit
   });
 });
 
-describe.each(["paidClaims", "postedResults"] as const)(
+describe.each(["paidClaims"] as const)(
   "resetting a %s halt the previous version recorded",
   (stream) => {
-    const row = stream === "paidClaims" ? "paidClaims:0x1:0xabc" : "postedResults:0x1:1";
+    const row = "paidClaims:0x1:0xabc";
     const ledger = {
       paid: [
         {
@@ -234,7 +233,6 @@ describe.each(["paidClaims", "postedResults"] as const)(
           paidAt: 1,
         },
       ],
-      posted: [{ chainId: "0x1", gameId: 1, commitment: "0x2" }],
       anchor: "0xa",
     };
     const pause = vi.fn(() => Effect.void);
@@ -264,7 +262,6 @@ describe.each(["paidClaims", "postedResults"] as const)(
             realmsId: "0x2",
             confirmedAt: 1,
           }),
-        result: (chainId, gameId) => Effect.succeed({ chainId, gameId, commitment: "0x1", rows: [] }),
       },
       ledger: {
         frontierPool: () => Effect.succeed("0"),
@@ -279,7 +276,6 @@ describe.each(["paidClaims", "postedResults"] as const)(
             fromBlock: 0,
           }),
         paidClaims: () => page(stream === "paidClaims" ? ledger.paid : []),
-        postedResults: () => page(stream === "postedResults" ? ledger.posted : []),
         pause,
       },
     };
@@ -294,7 +290,7 @@ describe.each(["paidClaims", "postedResults"] as const)(
     it("waives nothing, re-observes the row, and makes the next reset durable", async () => {
       const f = fixture();
       f.data.set("progress", {
-        halted: stream === "paidClaims" ? "paid_wallet_mismatch:0xabc" : "blitz_result_mismatch:1",
+        halted: "paid_wallet_mismatch:0xabc",
         fault: { row, stream, cursor: { fromBlock: 0, page: null }, offset: 0 },
       });
       expect(await f.monitor.reset(row, "Investigated")).toMatchObject({ halted: null, waived: null });
@@ -311,8 +307,7 @@ describe.each(["paidClaims", "postedResults"] as const)(
       await Effect.runPromise(runMonitor(ports, persisted(f.data)));
       expect(pause).not.toHaveBeenCalled();
       // ...and a rewritten row on the same claim or game is checked again and pauses.
-      if (stream === "paidClaims") ledger.paid = [{ ...ledger.paid[0]!, amount: "2", wallet: "0x999" }];
-      else ledger.posted = [{ ...ledger.posted[0]!, commitment: "0x3" }];
+      ledger.paid = [{ ...ledger.paid[0]!, amount: "2", wallet: "0x999" }];
       ledger.anchor = "0xc";
       await Effect.runPromise(runMonitor(ports, persisted(f.data)));
       expect(pause).toHaveBeenCalledOnce();

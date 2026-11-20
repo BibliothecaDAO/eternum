@@ -26,8 +26,6 @@ const reportedFailures = new WeakSet<object>();
 export const wasReported = (error: unknown): boolean =>
   typeof error === "object" && error !== null && reportedFailures.has(error);
 
-export type BatchTransactionReceipt = GetTransactionReceiptResponse & { remaining: bigint };
-
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
 
 export function createSystemCalls({ provider, authHandler }: { provider: any; authHandler?: SystemCallAuthHandler }) {
@@ -65,19 +63,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
   const buy_seal = (props: Parameters<typeof provider.buy_seal>[0]) => provider.buy_seal(props);
   const reroll_oath = (props: Parameters<typeof provider.reroll_oath>[0]) => provider.reroll_oath(props);
   const research = (props: Parameters<typeof provider.research>[0]) => provider.research(props);
-
-  const bitcoin_mine_contribute_labor = async (
-    props: SystemProps.BitcoinMineContributeLaborProps,
-  ): Promise<GetTransactionReceiptResponse> => provider.bitcoin_mine_contribute_labor(props);
-
-  const bitcoin_mine_close_phase = (props: SystemProps.BitcoinMinePhaseProps): Promise<GetTransactionReceiptResponse> =>
-    provider.bitcoin_mine_close_phase(props);
-  const bitcoin_mine_bind_phase = (props: SystemProps.BitcoinMinePhaseProps): Promise<GetTransactionReceiptResponse> =>
-    provider.bitcoin_mine_bind_phase(props);
-
-  const bitcoin_mine_claim_phase_reward = async (
-    props: SystemProps.BitcoinMineClaimPhaseRewardProps,
-  ): Promise<BatchTransactionReceipt> => provider.bitcoin_mine_claim_phase_reward(props);
 
   const bridge_deposit_into_realm = async (
     props: SystemProps.BridgeDepositIntoRealmProps,
@@ -269,10 +254,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     send_resources_multiple: withAuth(send_resources_multiple),
     arrivals_offload: withAuth(arrivals_offload),
     set_entity_name: withAuth(set_entity_name),
-    bitcoin_mine_contribute_labor: withAuth(bitcoin_mine_contribute_labor),
-    bitcoin_mine_claim_phase_reward: withAuth(bitcoin_mine_claim_phase_reward),
-    bitcoin_mine_close_phase: withAuth(bitcoin_mine_close_phase),
-    bitcoin_mine_bind_phase: withAuth(bitcoin_mine_bind_phase),
     upgrade_realm: withAuth(upgrade_realm),
     provision_realm: withAuth(provision_realm),
     receive_army_grant: withAuth(receive_army_grant),

@@ -20,7 +20,6 @@ import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { useStructureEntityDetail } from "../hooks/use-structure-entity-detail";
 import { useStructureProductionSummary } from "../structure-production-summary";
 import { MergedResourcePanel } from "@/ui/features/world/containers/left-facets/merged-resource-panel";
-import { BitcoinMiningActionPanel } from "../../actions/bitcoin-mining-action-panel";
 
 interface StructureBannerEntityDetailProps {
   structureEntityId: ID;
@@ -195,8 +194,6 @@ export const StructureBannerEntityDetail = memo(
             <p className="text-hud-body text-hud-muted">No resources stored.</p>
           )}
         </HudPanel>
-
-        <BitcoinMiningActionPanel structureEntityId={structureEntityId} />
       </HudPanel>
     );
   },

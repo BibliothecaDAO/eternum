@@ -87,7 +87,7 @@ describe("phase-1 recording generator", () => {
       actor: "0xa",
       gameId: "2",
       records: [record],
-      checks: [{ kind: "FinalState", transactionHash: "0x12", nonce: "0x3", playerPoints: "0x0" }],
+      checks: [{ kind: "FinalState", transactionHash: "0x12", nonce: "0x3" }],
       finalSnapshot: snapshot,
     });
     expect(Object.keys(recording)).toEqual([

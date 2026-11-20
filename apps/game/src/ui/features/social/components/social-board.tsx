@@ -15,7 +15,6 @@ import { ReactNode, useCallback, useEffect, useMemo } from "react";
 import { GuildMembers } from "../guilds/guild-members";
 import { Guilds } from "../guilds/guilds";
 import { PlayersPanel } from "../player/players-panel";
-import { useInGameLeaderboard } from "../player/use-in-game-leaderboard";
 import { PlayerId } from "./player-id";
 import { useSocialStore } from "./use-social-store";
 
@@ -56,8 +55,8 @@ export const LEADERBOARD_POPOVER_ID = "leaderboard";
 /** The leaderboard hangs from the top centre as a HUD window as large as its table and rows, draggable by its bar. */
 export const LeaderboardSurface = () => (
   <HudWindow
-    title="Leaderboard"
-    icon="victory"
+    title="Players"
+    icon="person"
     size="fit"
     onClose={() => usePopoverStore.getState().close(LEADERBOARD_POPOVER_ID)}
   >
@@ -79,13 +78,11 @@ const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) =
   const isExpanded = useSocialStore((state) => state.isExpanded);
   const selectedGuild = useSocialStore((state) => state.selectedGuild);
   const selectedPlayer = useSocialStore((state) => state.selectedPlayer);
-  const playersByRank = useSocialStore((state) => state.playersByRank);
   const playerInfo = useSocialStore((state) => state.playerInfo);
   const setSelectedTab = useSocialStore((state) => state.setSelectedTab);
   const setIsExpanded = useSocialStore((state) => state.setIsExpanded);
   const setSelectedGuild = useSocialStore((state) => state.setSelectedGuild);
   const setSelectedPlayer = useSocialStore((state) => state.setSelectedPlayer);
-  const setPlayersByRank = useSocialStore((state) => state.setPlayersByRank);
   const setPlayerInfo = useSocialStore((state) => state.setPlayerInfo);
 
   const phone = useLayout() === "phone";
@@ -106,33 +103,11 @@ const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) =
   );
   const playerStructureCountsMap = useMemo(() => countStructuresByOwner(structures), [structures]);
 
-  // One leaderboard source: the same standings the identity chip and the players panel read, recomputed on the
-  // bridge's leaderboard revision and the coarse tick instead of a private manager interval.
-  const { standingsByAddress } = useInGameLeaderboard();
-  const rankedPlayers = useMemo(
-    () =>
-      [...standingsByAddress.values()]
-        .toSorted((left, right) => left.rank - right.rank)
-        .map((standing): [ContractAddress, number] => [standing.address, standing.points]),
-    [standingsByAddress],
-  );
-
-  useEffect(() => {
-    setPlayersByRank(rankedPlayers);
-  }, [rankedPlayers, setPlayersByRank]);
-
   useEffect(() => {
     setPlayerInfo(
-      getPlayerInfo(
-        players,
-        ContractAddress(account.address),
-        playersByRank,
-        playerStructureCountsMap,
-        store,
-        names.text,
-      ),
+      getPlayerInfo(players, ContractAddress(account.address), playerStructureCountsMap, store, names.text),
     );
-  }, [players, account.address, playersByRank, playerStructureCountsMap, store, setPlayerInfo, names]);
+  }, [players, account.address, playerStructureCountsMap, store, setPlayerInfo, names]);
 
   // The chosen tribe pressed again shows its members once more (its player's card has no Back), else folds them.
   const viewGuildMembers = useCallback(

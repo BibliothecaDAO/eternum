@@ -9,7 +9,7 @@ import type { CalendarStore } from "./calendar";
 import { createCalendarRoutes } from "./calendar-routes";
 import type { SlotStore } from "./slots";
 import { toFactoryRunRecord, type LaunchRun } from "./model";
-import { type LaunchJobRequest, type LaunchKind } from "./schemas";
+import type { CreateGameRequest } from "./schemas";
 import type { LaunchServiceStore } from "./store";
 import type { RegisteredShard } from "@realms-world/value-ledger";
 import {
@@ -45,11 +45,10 @@ const readEnvironment = (value: string | undefined): GameEnvironmentId => {
 const respondWithRun = async (
   context: Context,
   { store, registrar }: Pick<LaunchAppDependencies, "store" | "registrar">,
-  kind: LaunchKind,
-  request: LaunchJobRequest,
+  request: CreateGameRequest,
 ) => {
   try {
-    const run = await store.enqueue(kind, request);
+    const run = await store.enqueue(request);
     // A queued run is due now.
     await registrar.armFor(Date.now());
     return context.json(toFactoryRunRecord(run), 202);
@@ -61,45 +60,42 @@ const respondWithRun = async (
   }
 };
 
-const findRun = async (context: Context, store: LaunchServiceStore, kind: LaunchKind, name: string) => {
+const findRun = async (context: Context, store: LaunchServiceStore, name: string) => {
   const environment = readEnvironment(context.req.param("environment"));
-  const run = await store.find(kind, environment, name);
+  const run = await store.find(environment, name);
   return run ? context.json(toFactoryRunRecord(run)) : context.json({ error: "Launch run not found." }, 404);
 };
 
 const continueRun = async (
   context: Context,
   dependencies: Pick<LaunchAppDependencies, "store" | "registrar">,
-  kind: LaunchKind,
   name: string,
 ) => {
   const environment = readEnvironment(context.req.param("environment"));
-  const run = await dependencies.store.find(kind, environment, name);
+  const run = await dependencies.store.find(environment, name);
   if (!run) return context.json({ error: "Launch run not found." }, 404);
-  return respondWithRun(context, dependencies, kind, run.request);
+  return respondWithRun(context, dependencies, run.request);
 };
 
-const deleteRun = async (context: Context, store: LaunchServiceStore, kind: LaunchKind, name: string) => {
+const deleteRun = async (context: Context, store: LaunchServiceStore, name: string) => {
   const environment = readEnvironment(context.req.param("environment"));
-  const run = await store.find(kind, environment, name);
+  const run = await store.find(environment, name);
   if (!run) return context.json({ error: "Launch run not found." }, 409);
-  const deleted = await store.delete(kind, environment, name);
+  const deleted = await store.delete(environment, name);
   return deleted
     ? context.json({ deleted: true })
     : context.json({ error: "Run is missing, active, or retains a calendar or paid-slot identity." }, 409);
 };
 
 const failedRunReport = (run: LaunchRun) => ({
-  kind: run.kind,
   environment: run.environment,
   name: run.name,
   error: run.errorMessage ?? null,
   failedAt: run.updatedAt,
 });
 
-const strandedRunReport = ({ chainId, kind, environment, name, status }: LaunchRun) => ({
+const strandedRunReport = ({ chainId, environment, name, status }: LaunchRun) => ({
   chainId,
-  kind,
   environment,
   name,
   status,
@@ -166,17 +162,13 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   });
 
   app.get("/api/factory/runs/:environment/:name", (context) =>
-    findRun(context, dependencies.store, "game", context.req.param("name")),
+    findRun(context, dependencies.store, context.req.param("name")),
   );
   app.post("/api/factory/runs/:environment/:name/actions/continue", (context) =>
-    continueRun(context, dependencies, "game", context.req.param("name")),
+    continueRun(context, dependencies, context.req.param("name")),
   );
   app.post("/api/factory/runs/:environment/:name/actions/delete", (context) =>
-    deleteRun(context, dependencies.store, "game", context.req.param("name")),
-  );
-
-  app.post("/api/factory/results/:environment/:name/actions/continue", (context) =>
-    continueRun(context, dependencies, "result", context.req.param("name")),
+    deleteRun(context, dependencies.store, context.req.param("name")),
   );
 
   // The Cloudflare deploy's release step: the running Frontier games take the release its commit ships, as its box

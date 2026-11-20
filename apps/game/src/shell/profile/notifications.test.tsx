@@ -54,7 +54,7 @@ it("offers three levels, lights the saved one with what it brings, and saves the
 
 it("says what each level brings in words the server delivers by", () => {
   expect(levelMeaning("off")).toBe("No alerts");
-  expect(levelMeaning("all")).toBe("Important, plus deliveries and Bitcoin payouts");
+  expect(levelMeaning("all")).toBe("Important, plus deliveries");
 });
 
 /** Every kind a level's line names, with the lines of the levels below it, which it carries too. */

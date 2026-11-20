@@ -7,12 +7,11 @@ import {
 } from "@realms-world/value-ledger";
 import type { LaunchEnv } from "./env";
 import { LaunchExecutionFailure } from "./errors";
-import type { LaunchRun, LaunchSummary } from "./model";
+import type { LaunchGameSummary } from "../../../config/deployer/clean/types";
+import type { LaunchRun } from "./model";
 import { LaunchShard, type BlitzLaunch } from "./shard-client";
 import type { LaunchServiceStore } from "./store";
 import type { SlotResolver } from "./paid-blitz";
-import { finalizeGame } from "./results";
-import type { CreateGameRequest } from "./schemas";
 
 interface LaunchTarget {
   directory: ShardDirectory & import("@realms-world/value-ledger").RegistrationIdentity;
@@ -22,7 +21,7 @@ interface LaunchTarget {
   seaters(): Promise<string[]>;
 }
 interface LaunchExecutorService {
-  execute(run: LaunchRun, store: LaunchServiceStore): Effect.Effect<LaunchSummary, LaunchExecutionFailure>;
+  execute(run: LaunchRun, store: LaunchServiceStore): Effect.Effect<LaunchGameSummary, LaunchExecutionFailure>;
 }
 export class LaunchExecutor extends Context.Service<LaunchExecutor, LaunchExecutorService>()("launch/LaunchExecutor") {}
 export const launchTargetOf = (
@@ -59,7 +58,7 @@ const executeRun = async (
   store: LaunchServiceStore,
   target: LaunchTarget,
   resolveSlot: SlotResolver,
-): Promise<LaunchSummary> => {
+): Promise<LaunchGameSummary> => {
   await requireActiveChain(target.directory, run.chainId);
   const { shard } = await readLaunchShard(target.directory, run.chainId);
   if (BigInt(run.chainId) !== BigInt(shard.chainId)) throw new Error("queued_launch_shard_changed");
@@ -70,11 +69,8 @@ const executeRun = async (
     accountAddress: target.accountAddress,
     privateKey: target.privateKey,
   });
-  if (run.kind === "result" && "gameId" in run.request) return finalizeGame(run.request, native);
-  if (run.kind !== "game" || "gameId" in run.request) throw new Error("stored_launch_kind_differs");
-  const request = run.request;
-  if (request.environment === "madara.blitz") return launchBlitz(run, store, target, resolveSlot, native);
-  return store.saveGame(await native.create(request, Date.parse(run.createdAt)));
+  if (run.request.environment === "madara.blitz") return launchBlitz(run, store, target, resolveSlot, native);
+  return store.saveGame(await native.create(run.request, Date.parse(run.createdAt)));
 };
 
 /**
@@ -87,7 +83,7 @@ const launchBlitz = async (
   target: LaunchTarget,
   resolveSlot: SlotResolver,
   native: LaunchShard,
-): Promise<LaunchSummary> => {
+): Promise<LaunchGameSummary> => {
   const games = await blitzGamesOf(run, store, resolveSlot, target.seaters);
   const summaries = await native.launchBlitz(games.map(({ launch }) => launch));
   const others = games.flatMap(({ runId }, index) => (runId === run.id ? [] : [{ runId, summary: summaries[index]! }]));
@@ -106,7 +102,7 @@ const blitzGamesOf = async (
   return rosters.map(({ game, players, groupIndex }) => ({
     runId: game.id,
     launch: {
-      request: game.request as CreateGameRequest,
+      request: game.request,
       players,
       createdAt: Date.parse(game.createdAt),
       seater: seaters[groupIndex % seaters.length]!,
@@ -118,7 +114,7 @@ const blitzRostersOf = async (run: LaunchRun, store: LaunchServiceStore, resolve
   if (run.slotId === null) throw new Error("Blitz games require a closed paid slot");
   const { groups } = await resolveSlot({ chainId: run.chainId, slotId: run.slotId });
   return (await store.slotGames(run.slotId)).map((game) => {
-    const groupIndex = (game.request as CreateGameRequest).groupIndex;
+    const groupIndex = game.request.groupIndex;
     if (!Number.isInteger(groupIndex)) throw new Error("Blitz games require a closed paid slot");
     const players = groups[groupIndex!];
     if (!players?.length) throw new Error("closed_slot_group_missing");

@@ -16,10 +16,6 @@ vi.mock("@/hooks/use-player-profile", () => ({
   usePlayerDisplayName: () => "Player",
   usePlayerProfile: () => ({ name: null, portrait: null, known: true }),
 }));
-vi.mock("@/hooks/use-leaderboard-activity", () => ({ useLeaderboardActivity: () => ({ data: [] }) }));
-vi.mock("../player/use-in-game-leaderboard", () => ({
-  useInGameLeaderboard: () => ({ standingsByAddress: new Map() }),
-}));
 vi.mock("@/ui/design-system/icon", () => ({ Icon: () => null }));
 
 import { PlayerId } from "./player-id";

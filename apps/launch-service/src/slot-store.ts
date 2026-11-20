@@ -35,7 +35,7 @@ export class D1SlotStore implements SlotStore {
 
   async create(name: string, closesAt: string): Promise<void> {
     if (
-      (await this.launches.find("game", "madara.blitz", `${name}-1`)) &&
+      (await this.launches.find("madara.blitz", `${name}-1`)) &&
       !(await this.db
         .prepare("SELECT name FROM playtest_slots WHERE name = ? AND chain_id=?")
         .bind(name, await this.launches.targetChain())
@@ -113,7 +113,7 @@ export class D1SlotStore implements SlotStore {
       await this.value.markRefundable(key, closed.refunds.slice(offset, offset + 100));
     const jobs = await Promise.all(
       (closed?.groups ?? []).map((_, groupIndex) =>
-        this.launches.scheduleStatement("game", {
+        this.launches.scheduleStatement({
           environment: "madara.blitz",
           version: String(nativePresetIdFor("blitz")),
           gameName: `${name}-${groupIndex + 1}`,

@@ -1,10 +1,7 @@
-import {
-  createEmptyActivityBreakdown,
-  type HeraldGameDirectory,
-  type HeraldGameDirectoryEntry,
-  type HeraldLeaderboard,
-  type HeraldPlayerStructure,
-  type PlayerActivityBreakdown,
+import type {
+  HeraldGameDirectory,
+  HeraldGameDirectoryEntry,
+  HeraldPlayerStructure,
 } from "@bibliothecadao/eternum/game-sync";
 import { nativeGameModeOf } from "@bibliothecadao/eternum";
 import { dayOf, expeditionRealmSite, entityHomeNamespace, isRealmCategory } from "@bibliothecadao/eternum/expeditions";
@@ -24,8 +21,6 @@ export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
   "AspectRules",
   "AspectMembers",
   "BlitzRoster",
-  "BlitzResult",
-  "PlayerPoints",
   "ChestRules",
   "LordsBudget",
   "FrontierPrize",
@@ -318,78 +313,6 @@ function structurePosition(
     }),
   );
   return null;
-}
-
-export function buildNativeLeaderboard(
-  modelRows: (model: string) => FoldRow[],
-  gameId: string,
-  activity: ReadonlyMap<string, PlayerActivityBreakdown> | null,
-): HeraldLeaderboard {
-  const rows = (model: string) => gameRows(modelRows(model), gameId);
-  required(modelRows("GameRegistry"), gameId, "GameRegistry");
-  required(modelRows("SliceRules"), gameId, "SliceRules");
-  const result = rows("BlitzResult")[0];
-  // Standings carry addresses only: a player's name is their identity profile, resolved by the client.
-  const points = registeredPlayerPoints(rows("PlayerEntry"), rows("PlayerPoints"));
-  if (result?.complete === true) return finalStandings(gameId, result, rows("BlitzRoster"), points, activity);
-  return rankPlayers(gameId, points, activity);
-}
-
-function finalStandings(
-  gameId: string,
-  result: Row,
-  rosters: Row[],
-  points: Map<string, bigint>,
-  activity: ReadonlyMap<string, PlayerActivityBreakdown> | null,
-): HeraldLeaderboard {
-  const roster = (rosters[0]?.players as Row[] | undefined) ?? [];
-  return {
-    mode: "points",
-    game_id: integer(gameId).toString(),
-    entries: (result.players as Row[]).map((player) => {
-      const member = roster.find((row) => address(row.wallet) === address(player.wallet));
-      if (!member) throw new Error(`Final result wallet ${player.wallet} is outside the roster`);
-      const account = address(member.account);
-      const score = points.get(account);
-      if (score === undefined) throw new Error(`Missing final PlayerPoints for ${account}`);
-      return {
-        address: account,
-        totalPoints: Number(score) / 1_000_000,
-        rank: number(player.rank),
-        activityBreakdown: activity?.get(account) ?? createEmptyActivityBreakdown(),
-      };
-    }),
-  };
-}
-
-function registeredPlayerPoints(entries: Row[], registered: Row[]): Map<string, bigint> {
-  const points = new Map<string, bigint>();
-  for (const entry of entries) creditPoints(points, entry.player, 0n);
-  for (const player of registered) creditPoints(points, player.address, integer(player.points));
-  return points;
-}
-
-function creditPoints(points: Map<string, bigint>, player: unknown, amount: bigint): void {
-  const key = address(player);
-  points.set(key, (points.get(key) ?? 0n) + amount);
-}
-
-function rankPlayers(
-  gameId: string,
-  points: Map<string, bigint>,
-  activity: ReadonlyMap<string, PlayerActivityBreakdown> | null,
-): HeraldLeaderboard {
-  const ranked = [...points].sort(([left, a], [right, b]) => (a === b ? left.localeCompare(right) : a > b ? -1 : 1));
-  const entries = ranked.map(([player, value], index) => ({
-    address: player,
-    totalPoints: Number(value) / 1_000_000,
-    rank: index + 1,
-    activityBreakdown: activity?.get(player) ?? createEmptyActivityBreakdown(),
-  }));
-  for (let index = 1; index < entries.length; index++) {
-    if (ranked[index][1] === ranked[index - 1][1]) entries[index].rank = entries[index - 1].rank;
-  }
-  return { mode: "points", game_id: integer(gameId).toString(), entries };
 }
 
 function shortString(value: unknown): string {

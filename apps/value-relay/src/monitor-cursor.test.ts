@@ -37,7 +37,6 @@ it("keeps checked-through block and page continuation across ticks without rerea
       withdrawalReceipt: () => Effect.succeed(null),
       conservation: () => Effect.succeed([]),
       withdrawal,
-      result: () => Effect.succeed(null),
     },
     ledger: {
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
@@ -52,15 +51,6 @@ it("keeps checked-through block and page continuation across ticks without rerea
           fromBlock: 0,
         }),
       paidClaims,
-      postedResults: () =>
-        Effect.succeed({
-          rows: [],
-          next: null,
-          head: 10,
-          anchor: { number: 10, hash: "0xa" },
-          rewind: false,
-          fromBlock: 1,
-        }),
       pause: () => Effect.void,
     },
   };
@@ -108,7 +98,6 @@ it("an exact row reset skips only that claim, still faults on the next unchecked
       withdrawalReceipt: () => Effect.succeed(null),
       conservation: () => Effect.succeed([]),
       withdrawal: checked,
-      result: () => Effect.succeed(null),
     },
     ledger: {
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
@@ -125,15 +114,6 @@ it("an exact row reset skips only that claim, still faults on the next unchecked
       paidClaims: () =>
         Effect.succeed({
           rows,
-          head: 10,
-          anchor: { number: 10, hash: "0xa" },
-          rewind: false,
-          fromBlock: 1,
-          next: null,
-        }),
-      postedResults: () =>
-        Effect.succeed({
-          rows: [],
           head: 10,
           anchor: { number: 10, hash: "0xa" },
           rewind: false,
@@ -182,7 +162,6 @@ it("keeps every cleared conservation row cleared, not only the last one", async 
       withdrawalReceipt: () => Effect.succeed(null),
       conservation: () => Effect.succeed(games),
       withdrawal: () => Effect.succeed(null),
-      result: () => Effect.succeed(null),
     },
     ledger: {
       frontierPool: () => Effect.succeed("0"),
@@ -197,7 +176,6 @@ it("keeps every cleared conservation row cleared, not only the last one", async 
           fromBlock: 0,
         }),
       paidClaims: () => Effect.succeed(page),
-      postedResults: () => Effect.succeed(page),
       pause,
     },
   };
@@ -219,7 +197,7 @@ it("keeps every cleared conservation row cleared, not only the last one", async 
   expect(pause).not.toHaveBeenCalled();
 });
 
-describe.each(["paidClaims", "postedResults"] as const)("a cleared %s fault", (stream) => {
+describe.each(["paidClaims"] as const)("a cleared %s fault", (stream) => {
   /** Progress kept only as JSON, read through a fresh store each tick, as the Durable Object keeps it. */
   const persistedStore = () => {
     let persisted = JSON.stringify({ halted: null });
@@ -246,7 +224,6 @@ describe.each(["paidClaims", "postedResults"] as const)("a cleared %s fault", (s
           paidAt: 1,
         },
       ],
-      posted: [{ chainId: "0x1", gameId: 1, commitment: "0x2" }],
       rewind: false,
       anchor: "0xa",
     };
@@ -283,7 +260,6 @@ describe.each(["paidClaims", "postedResults"] as const)("a cleared %s fault", (s
             realmsId: "0x2",
             confirmedAt: 1,
           }),
-        result: (chainId, gameId) => Effect.succeed({ chainId, gameId, commitment: "0x1", rows: [] }),
       },
       ledger: {
         frontierPool: () => Effect.succeed("0"),
@@ -298,7 +274,6 @@ describe.each(["paidClaims", "postedResults"] as const)("a cleared %s fault", (s
             fromBlock: 0,
           }),
         paidClaims: () => page(stream === "paidClaims" ? ledger.paid : []),
-        postedResults: () => page(stream === "postedResults" ? ledger.posted : []),
         pause,
       },
     };
@@ -329,29 +304,21 @@ describe.each(["paidClaims", "postedResults"] as const)("a cleared %s fault", (s
     const run = scenario();
     await run.tick();
     await run.resetAndRewind("0xb");
-    if (stream === "paidClaims")
-      run.ledger.paid = [{ ...run.ledger.paid[0]!, amount: "2", wallet: "0x999", paymentTransactionHash: "0x456" }];
-    else run.ledger.posted = [{ ...run.ledger.posted[0]!, commitment: "0x3" }];
+    run.ledger.paid = [{ ...run.ledger.paid[0]!, amount: "2", wallet: "0x999", paymentTransactionHash: "0x456" }];
     await run.tick();
     expect(run.pause).toHaveBeenCalledOnce();
     expect(run.haltedAtPause).toEqual([expect.stringMatching(/mismatch/)]);
-    expect((await run.store().load()).fault?.row).toBe(
-      stream === "paidClaims" ? "paidClaims:0x1:0xabc" : "postedResults:0x1:1",
-    );
+    expect((await run.store().load()).fault?.row).toBe("paidClaims:0x1:0xabc");
   });
 
   it("still faults on a new row beside the cleared one", async () => {
     const run = scenario();
     await run.tick();
     await run.resetAndRewind("0xb");
-    if (stream === "paidClaims")
-      run.ledger.paid = [...run.ledger.paid, { ...run.ledger.paid[0]!, transactionHash: "0xbbb" }];
-    else run.ledger.posted = [...run.ledger.posted, { ...run.ledger.posted[0]!, gameId: 2 }];
+    run.ledger.paid = [...run.ledger.paid, { ...run.ledger.paid[0]!, transactionHash: "0xbbb" }];
     await run.tick();
     expect(run.pause).toHaveBeenCalledOnce();
-    expect((await run.store().load()).fault?.row).toBe(
-      stream === "paidClaims" ? "paidClaims:0x1:0xbbb" : "postedResults:0x1:2",
-    );
+    expect((await run.store().load()).fault?.row).toBe("paidClaims:0x1:0xbbb");
   });
 });
 
@@ -378,7 +345,6 @@ it.each([null, "999"])(
         withdrawalReceipt: () =>
           Effect.succeed(amount === null ? null : { ...report, amount, account: "0x3", confirmedAt: 100 }),
         conservation: () => Effect.succeed([]),
-        result: () => Effect.succeed(null),
         withdrawal: () =>
           Effect.succeed(amount === null ? null : { ...report, amount, realmsId: "0x2", confirmedAt: 100 }),
       },
@@ -388,7 +354,6 @@ it.each([null, "999"])(
         pause,
         paidClaims,
         reportedClaims: () => Effect.succeed({ ...page, rows: [report] }),
-        postedResults: () => Effect.succeed({ ...page, rows: [] }),
       },
     };
     const store = {

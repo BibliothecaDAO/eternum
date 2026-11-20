@@ -2,7 +2,7 @@ import { safeInteger } from "../utils/safe-integer";
 import { nativeModelDefinition } from "./native-models";
 import { nativePlay } from "./native-submission";
 import { invalidateGameplayNonce } from "./submit";
-import { EternumProvider, type TransactionType } from "@bibliothecadao/provider";
+import { EternumProvider } from "@bibliothecadao/provider";
 import { NativeFactStore } from "./native-fact-store";
 import {
   ContractAddress,
@@ -217,7 +217,6 @@ const routeActionOutcomes = (
   const wait = (
     transactionHash: string,
     inBlock?: Promise<void>,
-    transactionType?: TransactionType,
     startedAt?: number,
   ) =>
     waitForActionOutcome(
@@ -227,7 +226,6 @@ const routeActionOutcomes = (
       transactionHash,
       stopped,
       inBlock,
-      transactionType,
       startedAt,
     );
   provider.setTransactionStreamWaiter(wait, (transactionHash) => runtime.recordSubmittedTransaction(transactionHash));

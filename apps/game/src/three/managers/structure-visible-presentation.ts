@@ -10,9 +10,8 @@ export const STRUCTURE_SURFACE_LIFT = 0.05;
  */
 export const PLATE_CLEARANCE = 0.45;
 
-/** Realms and the Bitcoin mine are modelled with its base at the terrain top: terrain owns its support, so it takes no lift. */
 export function sitsDirectlyOnTerrain(structureType: unknown): boolean {
-  return structureType === StructureType.BitcoinMine || structureType === StructureType.Realm;
+  return structureType === StructureType.Realm;
 }
 
 interface ApplyVisibleStructurePresentationInput<

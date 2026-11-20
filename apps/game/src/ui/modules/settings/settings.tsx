@@ -21,13 +21,11 @@ import {
   HudSlider,
   HudSwitch,
 } from "@/ui/design-system/kit/hud-elements";
-import { normalizeLeaderboardAddress } from "@/ui/features/social/player/finalized-blitz-leaderboard";
-import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { ContractAddress, formatExact } from "@bibliothecadao/types";
+import { ContractAddress } from "@bibliothecadao/types";
 
 import { getGameModeId } from "@/config/game-modes";
 import { hudFor } from "@/ui/layouts/hud-for";
@@ -75,7 +73,6 @@ function ProfileHeader() {
   const { session } = useIdentitySession();
   const address = useAccountStore((state) => state.account?.address ?? null);
   const profile = usePlayerProfile(address);
-  const { standingsByAddress } = useInGameLeaderboard();
   const {
     setup: { store },
   } = useGame();
@@ -84,14 +81,9 @@ function ProfileHeader() {
   const owner = address ? ContractAddress(address) : null;
   // The players slice already prefers the session username for the signed-in user.
   const name = profile.name;
-  const standing = owner === null ? null : (standingsByAddress.get(normalizeLeaderboardAddress(owner)) ?? null);
   const guild = owner === null ? null : (getGuildFromPlayerAddress(owner, store)?.name ?? null);
   const spectating = isExplicitSpectateSession();
-  const facts = [
-    standing && `#${standing.rank} · ${formatExact(Math.round(standing.points))} points`,
-    guild,
-    spectating && name && `as ${name}`,
-  ].filter(Boolean);
+  const facts = [guild, spectating && name && `as ${name}`].filter(Boolean);
 
   // Who, then where they stand, then the address to copy: two lines beside the portrait.
   return (

@@ -969,11 +969,6 @@
       "label": "Spire",
       "family": "Structures"
     },
-    "bitcoin-mine": {
-      "art": "bitcoin-mine",
-      "label": "Bitcoin Mine",
-      "family": "Structures"
-    },
     "realm-0": {
       "art": "realm-0",
       "label": "Settlement",
@@ -1173,11 +1168,6 @@
       "art": "hourglass",
       "label": "Timer",
       "family": "Statuses"
-    },
-    "bitcoinMine": {
-      "art": "bitcoin-mine",
-      "label": "Bitcoinmine",
-      "family": "Structures"
     },
     "storage": {
       "art": "resources",

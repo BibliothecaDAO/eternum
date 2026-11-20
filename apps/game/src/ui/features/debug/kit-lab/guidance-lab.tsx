@@ -194,7 +194,7 @@ const nextUpStates = (): { label: string; steps: NextStep[]; refusal?: string }[
 ];
 
 /** The top bar's player chip as a player reads it: name, rank, points and the game's goal. */
-const LabPlayerPill = () => <HudPill>{playerReadings("clientlane", { rank: 1, points: 310 })}</HudPill>;
+const LabPlayerPill = () => <HudPill>{playerReadings("clientlane")}</HudPill>;
 
 /**
  * Dev only: the points-first guidance a newcomer sees, the real components on the deploy fixture in the War room skin,

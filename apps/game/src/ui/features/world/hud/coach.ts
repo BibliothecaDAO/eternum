@@ -1,6 +1,6 @@
 import { getHexDistance, formatCount, formatExact } from "@bibliothecadao/types";
 import type { TroopStack } from "@/ui/features/military/components/unified-army-creation-modal/types";
-import type { PointsGrants } from "./points-goal";
+import type { VictoryPointGrants } from "@/ui/shared/lib/victory-point-grants";
 
 /** A hex in contract space, as the map and its facts give it. */
 export interface CoachHex {
@@ -43,7 +43,7 @@ interface CoachState {
   troopsOnHand: TroopsOnHand | null;
   /** The army is wiped out at any roll attacking the target's guards as they stand. */
   certainLoss: (army: CoachArmy, target: CoachTarget) => boolean;
-  grants: PointsGrants;
+  grants: VictoryPointGrants;
 }
 
 export type CoachAct =
@@ -91,7 +91,7 @@ const armyToExplore = (armies: readonly CoachArmy[]): CoachArmy | undefined => {
   return able.find((army) => army.selected) ?? able.toSorted((left, right) => right.entityId - left.entityId)[0];
 };
 
-const exploreStep = (army: CoachArmy, grants: PointsGrants): CoachStep => {
+const exploreStep = (army: CoachArmy, grants: VictoryPointGrants): CoachStep => {
   const points = `+${formatExact(grants.exploreTile)} points a tile`;
   return army.selected
     ? {

@@ -24,14 +24,6 @@ export interface CreateGameRequest extends SharedLaunchOptions {
   gameName: string;
   gameStartTime?: string;
 }
-export interface FinalizeGameRequest {
-  environment: "madara.blitz";
-  gameName: string;
-  gameId: number;
-}
-
-export type LaunchJobRequest = CreateGameRequest | FinalizeGameRequest;
-export type LaunchKind = "game" | "result";
 
 /**
  * A season is one open-entry game named by its start, so scheduling the same start twice names the same game. It runs
@@ -59,20 +51,7 @@ const isRegisteredPresetForEnvironment = (environment: CreateGameRequest["enviro
   return preset !== undefined && preset.gameType === resolveDeploymentEnvironment(environment).gameType;
 };
 
-export function applyDurableLaunchDefaults(kind: "game", request: CreateGameRequest, now?: number): CreateGameRequest;
-export function applyDurableLaunchDefaults(
-  kind: "result",
-  request: FinalizeGameRequest,
-  now?: number,
-): FinalizeGameRequest;
-export function applyDurableLaunchDefaults(kind: LaunchKind, request: LaunchJobRequest, now?: number): LaunchJobRequest;
-export function applyDurableLaunchDefaults(
-  kind: LaunchKind,
-  request: LaunchJobRequest,
-  now = Date.now(),
-): LaunchJobRequest {
-  if (kind === "result") return request;
-  if (!("gameName" in request) || "gameId" in request) throw new Error("Invalid game request");
+export function applyDurableLaunchDefaults(request: CreateGameRequest, now = Date.now()): CreateGameRequest {
   if (!isPublicGameName(request.gameName)) throw new Error("check- names are reserved for deployment");
   if (isCalendarFrontier(request.environment, request.gameName)) assertCalendarFrontierRequest(request);
   const version =

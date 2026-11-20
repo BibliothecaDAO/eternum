@@ -47,7 +47,7 @@ it from here.
    HUD part drawn over another. A notice over the map stands long enough to read, then goes by itself. An army's loss is
    one: its notice closes after 3 s, sooner by its × or a new pick on the map
    (`src/ui/features/frontier/army/army-lost.tsx:12`, `:20`). Pages outside a match, such as Results, are left by their
-   own buttons (`src/shell/season-tab/results-page.tsx:192`). Not yet: Frontier's day turn. A summary that is shown
+   own buttons (`src/shell/season-tab/results-page.tsx:140`). Not yet: Frontier's day turn. A summary that is shown
    covers the map and takes every press until Continue (`src/ui/features/frontier/rollover/day-end-screen.tsx:36`,
    `src/hooks/store/use-day-end-store.ts:115`), and the day's turn then brings the camera onto the realm's new site,
    with or without a summary (`src/ui/features/world/components/expeditions/expedition-rollover.tsx:75`). The playtest's
@@ -447,7 +447,7 @@ npx -y agent-browser --session game-check \
    not use shell routes such as `/results` unless the user explicitly asks for the results page.
 
 6. Known in-game controls:
-   - In-game leaderboard: top-right social/leaderboard icon opens the `Leaderboard` popup.
+   - In-game players: the name chip in the top bar opens the `Players` window.
    - Production window: selected realm left panel `PRODUCTION` card, then `MODIFY`.
    - Army view: press `Tab` to cycle/select a player army through the world-map shortcut logic.
 

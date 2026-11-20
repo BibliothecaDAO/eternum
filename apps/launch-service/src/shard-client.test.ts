@@ -71,7 +71,6 @@ it("launches a Blitz from its closed slot: creation parameters, settling time, o
       gameId: 7,
       startTime: 400,
       durationSeconds: 60,
-      finalizeAt: 460,
       settlementTransactions: 1,
     }),
   ]);

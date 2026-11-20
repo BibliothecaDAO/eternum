@@ -340,7 +340,6 @@ const monitor = (data = new Map<string, unknown>()) =>
       L2_RPC_URL: "https://ledger.test",
       PAUSER_ACCOUNT_ADDRESS: "0x9",
       ENVIRONMENT: "staging",
-      LAUNCH: { rosterCohorts: async () => [], directoryGames: async () => [] },
       IDENTITY: { l2ChainId: async () => "0x1", shard: async () => null },
       RELAY_REPORT: { held: async () => [] },
     } as never,

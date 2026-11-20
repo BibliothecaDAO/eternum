@@ -288,10 +288,6 @@ export class NativeIngestion {
     );
   }
   private commit(fold: WorldFold, events: DecodedWorldEvent[]) {
-    return events.flatMap((event) => {
-      const derived: FoldChange[] = [];
-      const change = fold.apply(event, (row) => derived.push(row));
-      return [{ event, change }, ...derived.map((change) => ({ event, change }))];
-    });
+    return events.map((event) => ({ event, change: fold.apply(event) }));
   }
 }

@@ -105,7 +105,7 @@ def pull(base="https://herald.realms.party", game=1):
     pull_ledger(folder)
     named = set(players)
     for g in load(folder, "blitz.json").values():
-        named |= {r["account"] for r in g["entry"]["roster"]} | {e["address"] for e in g["leaderboard"]["entries"]}
+        named |= {r["account"] for r in g["entry"]["roster"]}
     named = sorted(named)
     names = {}
     for start in range(0, len(named), 20):
@@ -122,8 +122,8 @@ def pull(base="https://herald.realms.party", game=1):
 
 
 BLITZ_MODELS = (
-    "BlitzResult", "BlitzRoster", "SettlementProgress", "Hyperstructure", "HyperstructureShares", "PlayerPoints",
-    "RelicChest", "GameRegistry", "PlayerEntry",
+    "BlitzRoster", "SettlementProgress", "Hyperstructure", "HyperstructureShares", "RelicChest", "GameRegistry",
+    "PlayerEntry",
 )
 
 
@@ -138,7 +138,7 @@ def history_of(base, game):
 
 
 def pull_blitz(folder, base):
-    """Every Blitz game the Herald lists: its directory entry, history, leaderboard and frozen review rows."""
+    """Every Blitz game the Herald lists: its directory entry, history and frozen review rows."""
     games = {}
     for entry in get(f"{base}/games")["games"]:
         if entry["mode"] != "blitz":
@@ -150,7 +150,7 @@ def pull_blitz(folder, base):
             rows = {m["model"]: m["rows"] for m in review["models"] if m["model"] in BLITZ_MODELS and m["rows"]}
         except urllib.error.HTTPError as error:
             rows = {"error": error.code}
-        games[game] = {"entry": entry, "history": items, "leaderboard": get(f"{base}/games/{game}/leaderboard"), "review": rows}
+        games[game] = {"entry": entry, "history": items, "review": rows}
     save(folder, "blitz.json", games)
 
 
@@ -776,14 +776,14 @@ DROPOUT_MINUTES = 15
 
 
 def section_blitz(folder, who):
-    """Blitz on the same shard: every listed game, from the directory, its history, leaderboard and review rows."""
+    """Blitz on the same shard: every listed game, from the directory, its history and review rows."""
     games = load(folder, "blitz.json")
     print("# Blitz\n")
     fmt = lambda t: datetime.fromtimestamp(t, UTC).strftime("%m-%d %H:%M")  # noqa: E731
-    rows, sources, winners, dropouts, accounts = [], collections.Counter(), [], [], collections.Counter()
+    rows, dropouts, accounts = [], [], collections.Counter()
     for gid in sorted(games, key=int):
         g = games[gid]
-        entry, items, board, review = g["entry"], g["history"], g["leaderboard"], g["review"]
+        entry, items, review = g["entry"], g["history"], g["review"]
         clock = entry["clock"]
         roster = [r["account"] for r in entry["roster"]]
         for a in roster:
@@ -798,11 +798,6 @@ def section_blitz(folder, who):
             owner = v.get("owner") or (v.get("attacker") or {}).get("player")
             if owner and kind not in ("RealmCreatedStory", "GuardAddStory", "BlitzFinalized"):
                 last[owner] = max(last.get(owner, 0), num(v.get("timestamp", "0x0")))
-        entries = sorted(board["entries"], key=lambda e: e["rank"])
-        scored = [e for e in entries if e["totalPoints"]]
-        for e in entries:
-            for source, b in e["activityBreakdown"].items():
-                sources[source] += b["points"]
         for a in roster:
             if a not in last:
                 dropouts.append((gid, who(a), "never acted"))
@@ -810,9 +805,6 @@ def section_blitz(folder, who):
                 dropouts.append((gid, who(a), f"last action {(clock['end_at'] - last[a]) / 60:.0f} min before the end"))
         hypers = review.get("Hyperstructure", []) if isinstance(review, dict) else []
         complete = sum(1 for h in hypers if h["value"]["stage"] == "Complete")
-        top = entries[0] if entries else None
-        if top:
-            winners.append((gid, who(top["address"]), top["totalPoints"], top["activityBreakdown"]))
         rows.append(
             [
                 gid,
@@ -820,9 +812,6 @@ def section_blitz(folder, who):
                 f"{(clock['end_at'] - clock['start_main_at']) / 3600:.1f}",
                 f"{entry['registration']['count']}/{entry['registration']['max']}",
                 len([a for a in roster if a in last]),
-                len(scored),
-                f"{who(top['address'])} {top['totalPoints']}" if top else "",
-                entries[1]["totalPoints"] if len(entries) > 1 else "",
                 f"{complete}/{len(hypers)}",
                 kinds["RelicChestOpened"],
                 kinds["StructureCapturedStory"],
@@ -835,15 +824,9 @@ def section_blitz(folder, who):
     print(f"Players per game: {spread(sizes)}; " + ", ".join(f"{k} players: {v} games" for k, v in sorted(collections.Counter(sizes).items()))
           + f". Solo games: {sizes.count(1)} of {len(sizes)}.\n")
     table(
-        ["game", "main starts (UTC)", "hours", "registered/max", "acted", "scored", "winner, points", "2nd points",
-         "hyperstructures complete/on map", "relic crates opened", "captures", "battles", "reveals"],
+        ["game", "main starts (UTC)", "hours", "registered/max", "acted", "hyperstructures complete/on map",
+         "relic crates opened", "captures", "battles", "reveals"],
         rows,
-    )
-    total = sum(sources.values())
-    print("Points by source, all games: " + ", ".join(f"{k} {v} ({100 * v / max(1, total):.0f}%)" for k, v in sources.most_common()) + ".\n")
-    table(
-        ["game", "winner", "points", "by source"],
-        [[g, w, p, ", ".join(f"{k} {b['points']}" for k, b in br.items() if b["points"])] for g, w, p, br in winners],
     )
     print(f"Registered players who never acted or stopped more than {DROPOUT_MINUTES} min before the end: {len(dropouts)}")
     for gid, name, why in dropouts:

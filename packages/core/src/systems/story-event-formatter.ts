@@ -7,7 +7,6 @@ import {
   formatClockTime,
   formatExact,
   formatGain,
-  formatPoints,
   guardedSiteKind,
   GuardSlot,
   guardSlotName,
@@ -18,7 +17,6 @@ import {
   scaledToUnits,
   troopPlural,
   VERDICT_WORDS,
-  wholePoints,
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { displayPlayerName, getStructureName, siteDisplayName, type PlayerNameResolver } from "../utils/entities";
@@ -181,30 +179,18 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
     ]),
     icon: "prize",
   }),
-  // Who took what from whom; from a player, what went with it; from a guard, the points it paid.
   StructureCapturedStory: (event, payload, components, resolvePlayerName) => ({
-    title: withPoints(
-      [
-        `${nameOwner(payload.new_owner, components, resolvePlayerName) ?? "Someone"} took ${subjectOf(event.entityId, components)} from ${
-          isViewer(payload.previous_owner, event.viewerAddress)
-            ? "you"
-            : (nameOwner(payload.previous_owner, components, resolvePlayerName) ?? "its holder")
-        }`,
-        toBigIntSafe(payload.previous_owner) ? CAPTURE_AFTERMATH : null,
-      ]
-        .filter(Boolean)
-        .join(". "),
-      payload.points,
-    ),
+    title: [
+      `${nameOwner(payload.new_owner, components, resolvePlayerName) ?? "Someone"} took ${subjectOf(event.entityId, components)} from ${
+        isViewer(payload.previous_owner, event.viewerAddress)
+          ? "you"
+          : (nameOwner(payload.previous_owner, components, resolvePlayerName) ?? "its holder")
+      }`,
+      toBigIntSafe(payload.previous_owner) ? CAPTURE_AFTERMATH : null,
+    ]
+      .filter(Boolean)
+      .join(". "),
     icon: "battle",
-  }),
-  BitcoinAwardStory: (_event, payload, components, resolvePlayerName) => ({
-    title: "Bitcoin mine paid",
-    description: joinPieces([
-      `${nameOwner(payload.winner, components, resolvePlayerName) ?? "—"} +${formatResourceAmount(payload.winner_paid) ?? "—"}`,
-      `${nameOwner(payload.owner, components, resolvePlayerName) ?? "—"} +${formatResourceAmount(payload.owner_paid) ?? "—"}`,
-    ]),
-    icon: "prize",
   }),
   BlitzFinalized: () => ({ title: "Blitz finalized", icon: "scroll" }),
   SitePayout: (event, payload, components, resolvePlayerName) => {
@@ -872,12 +858,6 @@ function formatLanding(sentAtMs: number, travelSeconds: unknown): string | undef
  * a draw; neither is both falling. The event's `winner_id` is not read: it records the winner as a home structure, a
  * guarded structure or an attacking structure depending on who attacked whom.
  */
-/** A line and the points it scored, when it scored any: "… · +250 points". Story points are at contract precision. */
-const withPoints = (line: string, points: unknown): string => {
-  const whole = points === undefined || points === null ? 0 : wholePoints(BigInt(String(points)));
-  return whole > 0 ? `${line} · +${formatPoints(whole)}` : line;
-};
-
 /**
  * What a find gave, as every reader writes it (the feed's story, the day log, the reveal's rise): its gain from one
  * unit up ("+12"), and nothing below one, so a find under a unit says no amount at all (owner, 26 October: "djizus

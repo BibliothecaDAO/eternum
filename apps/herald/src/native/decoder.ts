@@ -118,10 +118,6 @@ export class NativeDecoder {
     if (!model) throw new Error("Unknown native model");
     if (model.derivedFrom)
       throw new Error(`Native model ${model.name} is derived-only from ${model.derivedFrom}; row events are forbidden`);
-    if (model.eventProjection)
-      throw new Error(
-        `Native model ${model.name} is projected from ${model.eventProjection}; row events are forbidden`,
-      );
     const memberEvent = layout.name === "RowMemberSet";
     if (header.length !== (memberEvent ? 3 : 2)) throw new Error("Malformed native event header");
     const frame = readFrame(event.data, layout.name !== "RowDeleted");
