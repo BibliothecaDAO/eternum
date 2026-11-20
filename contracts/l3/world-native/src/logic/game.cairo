@@ -16,13 +16,28 @@ pub fn game(game_id: u32) -> GameRegistry {
     game
 }
 pub fn rules(game_id: u32) -> SliceRules {
-    let preset = crate::logic::preset_record::for_game(game_id).rules.read();
+    let switches = crate::logic::preset_record::for_game(game_id).rules;
     let overrides = crate::state::read().games.overrides.read(game_id);
     SliceRules {
+        battle_config: crate::balance::rules::BATTLE_CONFIG,
+        map_config: overrides.map.unwrap_or(crate::balance::rules::MAP_CONFIG),
         biome_climate_config: overrides.biome_climate,
-        map_config: overrides.map.unwrap_or(preset.map_config),
+        tick_config: crate::balance::rules::TICK_CONFIG,
+        troop_damage_config: crate::balance::rules::TROOP_DAMAGE_CONFIG,
+        troop_stamina_config: crate::balance::rules::TROOP_STAMINA_CONFIG,
+        troop_limit_config: crate::balance::rules::TROOP_LIMIT_CONFIG,
+        capacity_config: crate::balance::rules::CAPACITY_CONFIG,
+        structure_capacity_config: crate::balance::rules::STRUCTURE_CAPACITY_CONFIG,
+        building_config: crate::balance::rules::BUILDING_CONFIG,
+        bitcoin_mine_config: crate::balance::rules::BITCOIN_MINE_CONFIG,
+        victory_points_grant_config: crate::balance::rules::VICTORY_POINTS_GRANT_CONFIG,
         map_center_offset: overrides.map_center_offset,
-        ..preset,
+        spire_travel_essence_cost: crate::balance::rules::SPIRE_TRAVEL_ESSENCE_COST,
+        command_mask: switches.command_mask.read(),
+        mode_rules: switches.mode_rules.read(),
+        day_unit_seconds: switches.day_unit_seconds.read(),
+        entry_rule: switches.entry_rule.read(),
+        speed_config: crate::balance::rules::SPEED_CONFIG,
     }
 }
 pub fn create(game_id: u32, game: GameRegistry, overrides: GameOverrides) {

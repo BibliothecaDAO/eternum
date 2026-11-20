@@ -50,7 +50,7 @@ pub fn initialize(game_id: u32) {
         return;
     }
     let tick = state.games.games.entry(game_id).start_main_at.read()
-        / crate::logic::preset_record::for_game(game_id).rules.tick_config.armies_tick_in_seconds.read();
+        / crate::balance::rules::TICK_CONFIG.armies_tick_in_seconds;
     save_cursor(game_id, tick);
 }
 

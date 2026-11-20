@@ -49,7 +49,7 @@ pub mod ReleaseMigration {
             );
             let preset = crate::logic::preset_record::for_game(game_id);
             let day_unit = preset.rules.day_unit_seconds.read();
-            let tick = preset.rules.tick_config.armies_tick_in_seconds.read();
+            let tick = crate::balance::rules::TICK_CONFIG.armies_tick_in_seconds;
             assert!(day_unit == approved::DAY_UNIT, "Frontier extension days differ");
             assert!(
                 preset

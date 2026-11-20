@@ -53,9 +53,9 @@ pub mod LordsState {
                 } else {
                     0
                 },
-                troop_capacity: rules.capacity_config.troop_capacity.read(),
-                spire_fee: rules.spire_travel_essence_cost.read(),
-                delivery_tick: rules.tick_config.delivery_tick_in_seconds.read(),
+                troop_capacity: crate::balance::rules::CAPACITY_CONFIG.troop_capacity,
+                spire_fee: crate::balance::rules::SPIRE_TRAVEL_ESSENCE_COST,
+                delivery_tick: crate::balance::rules::TICK_CONFIG.delivery_tick_in_seconds,
             };
             self.withdraw_realm_lords(realm, owner, balance / crate::rules::RESOURCE_PRECISION, timestamp, context);
         }
