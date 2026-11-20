@@ -17,18 +17,13 @@ games start every 90 minutes on the UTC grid: 00:00, 01:30, 03:00, through 22:30
 the next slot still open for registration. Preparation, the preset's full game duration and strictly more than ten
 minutes for result settlement must fit inside the calendar window; the relay checks the same bounds against the
 confirmed ledger season before signing. A calendar extension cannot extend that ledger season. Published slots keep
-their original times when the timetable changes. At close, the relay reads confirmed registrations in pages of 100.
-Identity history resolves each payer at its registration block time. The earliest registration for each account gets a
-seat; unlinked and duplicate payers become refundable. Balanced groups retain registration order and contain at most 24
-players. An empty slot creates no game. D1 keeps schedule and job metadata, never a copy of a paid roster: a paid game's
-players are re-read from the ledger. Paid operator one-offs use the same `/api/slots` route; the general factory
-create-run route is removed.
+their original times when the timetable changes. A new paid slot is refused until the Blitz family returns: only a slot
+the ledger already holds is answered. Such a slot never freezes or launches; its only way out is the refund. Before
+close the operator's refund cancels it, after its end it aborts it, and every registrant then reclaims the exact payment
+from the ledger. D1 keeps schedule and job metadata, never a copy of a paid roster.
 
-The registrar serializes its device's shard writes. Each game is created with its complete roster, then the existing
-automatic realm seating completes. A retry re-resolves the historical cohort and verifies an existing game's roster
-before resuming. Paid launches retry transient failures with backoff until success or slot cancellation. The launch
-service records no game results, and nothing posts one: the value monitor pauses payouts on any result the ledger
-records.
+The registrar serializes its device's shard writes and creates open-entry games. The launch service records no game
+results, and nothing posts one: the value monitor pauses payouts on any result the ledger records.
 
 Normal game names cannot start with `check-`. Operator-only `/api/factory/operator/launcher/enrol` enrolls the Worker's
 own signer. Deployment registers the shard as pending, enrolls the Worker, hands it the launcher role, and reads that

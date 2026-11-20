@@ -1,7 +1,7 @@
 import { absentLedgerSlot, ledgerCall } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
-import { openSlotOnLedger, refundSlotOnLedger, markSlotRefundable } from "./blitz-launch";
+import { openSlotOnLedger, refundSlotOnLedger } from "./blitz-launch";
 
 const rpc = vi.hoisted(() => ({
   block: vi.fn(),
@@ -78,15 +78,6 @@ it("cancels before start and automatically waits until the earliest legal abort 
   expect(await Effect.runPromise(refundSlotOnLedger(credentials, key))).toBeNull();
   expect(rpc.execute.mock.calls[0]![0].calldata.map(BigInt)).toEqual(
     ledgerCall("abort_slot", { key: { shard: key.chainId, slot_id: key.slotId } }).map(BigInt),
-  );
-});
-
-it("encodes refunds with the committed SlotKey and wallet array", async () => {
-  await Effect.runPromise(markSlotRefundable(credentials, key, ["0xa", "0xb"]));
-  expect(rpc.execute.mock.calls[0]![0].calldata.map(BigInt)).toEqual(
-    ledgerCall("mark_refundable", { key: { shard: key.chainId, slot_id: key.slotId }, wallets: ["0xa", "0xb"] }).map(
-      BigInt,
-    ),
   );
 });
 

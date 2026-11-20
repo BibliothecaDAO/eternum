@@ -149,7 +149,6 @@ async function probeSlots(read: Reader, playUrl: string): Promise<Status> {
   return "up";
 }
 
-/** The launch Worker answers 503 while any run has failed or is stranded, or a launcher or slot could not join or freeze. */
 async function probeLaunch(read: Reader, playUrl: string): Promise<Status> {
   if ((await body(read, playUrl + "/api/factory/health")).service !== "launch")
     throw new Error("Launch health missing");

@@ -44,13 +44,7 @@ export interface LaunchServiceStore extends LaunchRunStore {
   /** When the next queued run falls due, if any. */
   nextDue(): Promise<number | null>;
   complete(runId: string, summary: LaunchGameSummary): Promise<void>;
-  /** A paid slot's game runs on this chain, one per group, in group order. */
-  slotGames(slotId: number): Promise<LaunchRun[]>;
-  /** Completes the other game runs a slot launch settled alongside the run it executed, whatever their queue state. */
-  completeGames(games: readonly { runId: string; summary: LaunchGameSummary }[]): Promise<void>;
   retry(runId: string, errorMessage: string, retryDelayMs: number): Promise<void>;
-  /** Requeues a run that ran too early; the attempt is given back. */
-  defer(runId: string, delayMs: number): Promise<void>;
   fail(runId: string, errorMessage: string): Promise<void>;
   delete(environment: GameEnvironmentId, name: string): Promise<boolean>;
 }
@@ -258,31 +252,6 @@ export class D1LaunchStore implements LaunchServiceStore {
       .run();
   }
 
-  async slotGames(slotId: number): Promise<LaunchRun[]> {
-    const { results } = await this.db
-      .prepare(
-        "SELECT * FROM launch_runs WHERE chain_id = ? AND kind = 'game' AND slot_id = ? ORDER BY json_extract(request,'$.groupIndex')",
-      )
-      .bind(await this.chainId(), slotId)
-      .all<LaunchRunRow>();
-    return results.map(toRun);
-  }
-
-  async completeGames(games: readonly { runId: string; summary: LaunchGameSummary }[]): Promise<void> {
-    if (!games.length) return;
-    const now = Date.now();
-    await this.db.batch(
-      games.map(({ runId, summary }) =>
-        this.db
-          .prepare(
-            `UPDATE launch_runs SET status = 'complete', summary = ?, error_message = NULL, completed_at = ?, updated_at = ?
-             WHERE id = ? AND status IN ('queued', 'running')`,
-          )
-          .bind(JSON.stringify(storedSummary(runId, summary)), now, now, runId),
-      ),
-    );
-  }
-
   async retry(runId: string, errorMessage: string, retryDelayMs: number): Promise<void> {
     const now = Date.now();
     await this.db
@@ -291,18 +260,6 @@ export class D1LaunchStore implements LaunchServiceStore {
          WHERE id = ? AND status = 'running'`,
       )
       .bind(now + retryDelayMs, errorMessage, now, runId)
-      .run();
-  }
-
-  async defer(runId: string, delayMs: number): Promise<void> {
-    const now = Date.now();
-    await this.db
-      .prepare(
-        `UPDATE launch_runs SET status = 'queued', attempts = attempts - 1, available_at = ?, error_message = NULL,
-           updated_at = ?
-         WHERE id = ? AND status = 'running'`,
-      )
-      .bind(now + delayMs, now, runId)
       .run();
   }
 
@@ -340,14 +297,6 @@ export class D1LaunchStore implements LaunchServiceStore {
       .bind(JSON.stringify(stored), Date.now(), run.id)
       .run();
     return stored;
-  }
-
-  /**
-   * The statement that queues a run once, for a caller that must write it inside its own atomic batch (a slot's freeze
-   * queues its games with the roster). This store stays the only writer of launch runs.
-   */
-  async scheduleStatement(request: CreateGameRequest): Promise<D1PreparedStatement> {
-    return this.insertStatement(await this.chainId(), applyDurableLaunchDefaults(request), SCHEDULE_ONCE);
   }
 
   private async insertRun(request: CreateGameRequest, conflict: string): Promise<LaunchRun> {

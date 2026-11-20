@@ -37,17 +37,6 @@ export const refundSlotOnLedger = (credentials: Credentials, key: LedgerSlotKey)
     return null;
   });
 
-export const markSlotRefundable = (credentials: Credentials, key: LedgerSlotKey, wallets: readonly string[]) =>
-  relayOperation("mark unseated registrations refundable", async () => {
-    if (wallets.length)
-      await submit(credentials, "mark_refundable", [
-        key.chainId,
-        String(key.slotId),
-        String(wallets.length),
-        ...wallets,
-      ]);
-  });
-
 const submit = async (credentials: Credentials, entrypoint: string, calldata: string[]) => {
   const provider = rpcAt(credentials.rpcUrl);
   const account = new Account({ provider, address: credentials.accountAddress, signer: credentials.privateKey });

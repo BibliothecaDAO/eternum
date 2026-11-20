@@ -43,7 +43,7 @@ export const completeFreeFixture = async (
   await store.complete(runId, summary);
 };
 
-export const slotValueFixture = (count = 0) => {
+export const slotValueFixture = () => {
   const slot = {
     exists: true,
     seasonId: 1,
@@ -51,28 +51,12 @@ export const slotValueFixture = (count = 0) => {
     close: 100,
     end: 460,
     pool: "0",
-    registeredCount: count,
+    registeredCount: 0,
     cancelled: false,
   };
   return {
     slot: async () => slot,
     openSlot: async () => {},
     refundSlot: async (): Promise<number | null> => null,
-    markRefundable: async () => {},
-    registrations: async () => ({
-      slot,
-      blockNumber: 10,
-      blockHash: "0xabc",
-      secondsUntilClose: 0,
-      next: null,
-      registrations: Array.from({ length: count }, (_, i) => ({
-        wallet: `0x${(i + 1).toString(16)}`,
-        registeredAt: 90,
-      })),
-    }),
   };
-};
-export const registrationIdentityFixture = {
-  accountsAtRegistration: async (page: readonly { wallet: string }[]) =>
-    page.map(({ wallet }) => `0x${(BigInt(wallet) + 100n).toString(16)}`),
 };

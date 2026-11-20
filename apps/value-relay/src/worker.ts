@@ -20,10 +20,8 @@ import {
   readRegisteredShard,
   type ShardDirectory,
   rpcAt,
-  readRegistrationPage,
   readLedgerSlot,
   type LedgerSlotKey,
-  type RegistrationQuery,
 } from "@realms-world/value-ledger";
 import { processSeasonTops } from "./season-tops";
 import { seasonLedgerReads, postSeasonTop } from "./season-ledger";
@@ -31,7 +29,7 @@ import { ledgerBatches } from "./ledger-batches";
 import { isLedgerReadTick } from "@realms-world/chain";
 import { beginCause, causeDue, completeCause, raiseCause, retryCause } from "./ledger-cause";
 import { onIdentityChain } from "./ledger-chain";
-import { openSlotOnLedger, refundSlotOnLedger, markSlotRefundable } from "./blitz-launch";
+import { openSlotOnLedger, refundSlotOnLedger } from "./blitz-launch";
 import { ShardReader, shardConnection } from "./shard-rpc";
 import { publishFrontierPools } from "./frontier-pools";
 import { awardFrontierPrizes } from "./frontier-prizes";
@@ -650,27 +648,6 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       ),
     );
   }
-  async registrations(query: RegistrationQuery) {
-    await this.requireLaunchSlot(query);
-    return Effect.runPromise(
-      onIdentityChain(
-        this.env.L2_RPC_URL,
-        this.env.IDENTITY,
-        relayOperation("read closed slot registrations", () =>
-          readRegistrationPage(rpcAt(this.env.L2_RPC_URL), ledgerAddress(this.env.ENVIRONMENT), query),
-        ),
-      ),
-    );
-  }
-  async markRefundable(key: LedgerSlotKey, wallets: readonly string[]) {
-    await this.requireLaunchSlot(key);
-    return Effect.runPromise(
-      this.ledgerPermit(
-        relayEffect("write ledger slot", () => markSlotRefundable(ledgerCredentialsOf(this.env), key, wallets)),
-        [key.chainId],
-      ),
-    );
-  }
   async refundSlot(key: LedgerSlotKey) {
     await this.requireLaunchSlot(key);
     return Effect.runPromise(
@@ -794,14 +771,8 @@ export class ValueLaunch extends WorkerEntrypoint<RelayEnv> {
   slot(key: LedgerSlotKey) {
     return ledgerOf(this.env).slot(key);
   }
-  registrations(query: RegistrationQuery) {
-    return ledgerOf(this.env).registrations(query);
-  }
   openSlot(key: LedgerSlotKey, window: { start: number; end: number }) {
     return ledgerOf(this.env).openSlot(key, window);
-  }
-  markRefundable(key: LedgerSlotKey, wallets: readonly string[]) {
-    return ledgerOf(this.env).markRefundable(key, wallets);
   }
   refundSlot(key: LedgerSlotKey) {
     return ledgerOf(this.env).refundSlot(key);

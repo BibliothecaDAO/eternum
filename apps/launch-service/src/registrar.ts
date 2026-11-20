@@ -3,7 +3,6 @@ import {
   LAUNCHER_LABEL,
   officialChain,
   readRegisteredShard,
-  seaterLabels,
   serviceFailure,
   type RegisteredShard,
 } from "@realms-world/value-ledger";
@@ -13,9 +12,6 @@ import { decodeLaunchEnv, type LaunchEnv } from "./env";
 import { launchExecutorLayer, launchTargetOf } from "./executor";
 import { processNextLaunch } from "./process-launch";
 import { joinBotAccount } from "./launcher-account";
-import { slotResolver } from "./paid-blitz";
-import { D1SlotStore, FREEZE_RETRY_MS } from "./slot-store";
-import { launchFailure } from "./errors";
 import { advanceGames, openForNewGames, type ReleaseIdentity, type ReleaseReport } from "./release";
 import { LaunchShard } from "./shard-client";
 import { D1LaunchStore, databaseLayer } from "./store";
@@ -42,10 +38,6 @@ interface ChainPass {
   joinFailure: JoinFailure | null;
 }
 const IDLE: ChainPass = { next: null, joinFailure: null };
-const earliest = (...moments: (number | null)[]): number | null => {
-  const due = moments.filter((moment): moment is number => moment !== null);
-  return due.length ? Math.min(...due) : null;
-};
 const launcherJoinFailure = (env: LaunchEnv, chainId: string, error: unknown): JoinFailure => {
   const diagnostic = serviceFailure(error, joinErrors, "launcher_join_failed", [
     env.OPERATOR_TOKEN,
@@ -107,7 +99,6 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
     });
   }
 
-  /** The launcher and the seaters sign one transaction stream at a time: launches and release steps never overlap. */
   private async signingAlone<T>(work: () => Promise<T>): Promise<T> {
     const outcome = await Effect.runPromise(
       this.signing.withPermit(
@@ -133,33 +124,15 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
 
   private async advanceChain(env: LaunchEnv, chainId: string): Promise<ChainPass> {
     const store = new D1LaunchStore(env.DB, async () => chainId);
-    const resolveSlot = slotResolver(env.VALUE_RELAY, env.IDENTITY);
-    const slots = new D1SlotStore(env.DB, store, env.VALUE_RELAY, resolveSlot);
-    const freeze = await this.freezeClosedSlots(slots);
     let accountAddress: string;
     try {
       accountAddress = await joinBotAccount(env, env.IDENTITY, chainId, LAUNCHER_LABEL);
     } catch (error) {
-      return { next: earliest(freeze, Date.now() + 30000), joinFailure: launcherJoinFailure(env, chainId, error) };
+      return { next: Date.now() + 30000, joinFailure: launcherJoinFailure(env, chainId, error) };
     }
-    const seaters = () => Promise.all(seaterLabels.map((label) => joinBotAccount(env, env.IDENTITY, chainId, label)));
-    const target = launchTargetOf(env, accountAddress, seaters);
-    const services = Layer.mergeAll(databaseLayer(store), launchExecutorLayer(target, resolveSlot));
+    const target = launchTargetOf(env, accountAddress);
+    const services = Layer.mergeAll(databaseLayer(store), launchExecutorLayer(target));
     await Effect.runPromise(processNextLaunch(Date.now()).pipe(Effect.provide(services)));
-    return { next: earliest(freeze, await store.nextDue()), joinFailure: null };
-  }
-
-  /**
-   * Freezes every closed slot and returns when the next freeze is due. Each slot's freeze records its own failure and
-   * its retry; a pass that cannot reach its database is retried as a whole, and the launches still run meanwhile.
-   */
-  private async freezeClosedSlots(slots: D1SlotStore): Promise<number | null> {
-    try {
-      await slots.freezeDueSlots();
-      return await slots.nextFreeze();
-    } catch (error) {
-      console.error("slot_freeze_unavailable", launchFailure(error));
-      return Date.now() + FREEZE_RETRY_MS;
-    }
+    return { next: await store.nextDue(), joinFailure: null };
   }
 }

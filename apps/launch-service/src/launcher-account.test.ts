@@ -1,7 +1,7 @@
 import { beforeEach, expect, it, vi } from "vitest";
 import { botRealmsId, realmsAccountAddress } from "@realms-world/identity/account";
 import { shortString } from "starknet";
-import { LAUNCHER_LABEL, seaterLabels } from "@realms-world/value-ledger";
+import { LAUNCHER_LABEL } from "@realms-world/value-ledger";
 import { joinBotAccount } from "./launcher-account";
 const mock = vi.hoisted(() => ({
   manifest: vi.fn(),
@@ -54,18 +54,6 @@ it("joins the fixed launcher on every alarm without a deployment record", async 
   expect(mock.join).toHaveBeenCalledTimes(2);
   mock.manifest.mockRejectedValueOnce(new Error("unlisted_shard"));
   await expect(joinBotAccount(env as never, directory, "0x2", LAUNCHER_LABEL)).rejects.toThrow("unlisted_shard");
-});
-it("joins a seater as its own bot account, approved under its own label", async () => {
-  await joinBotAccount(env as never, directory, chainId, seaterLabels[3]!);
-  expect(mock.join.mock.calls[0][0]).toMatchObject({
-    realmsId: botRealmsId(shortString.encodeShortString("ETERNUM_SEATER_3")),
-  });
-  await mock.join.mock.calls[0][0].approve({ counter: 1 });
-  const [, approval] = env.IDENTITY_HTTP.fetch.mock.calls.at(-1) as unknown as [string, RequestInit];
-  expect(JSON.parse(String(approval.body))).toMatchObject({
-    label: shortString.encodeShortString("ETERNUM_SEATER_3"),
-    counter: 1,
-  });
 });
 it("reports an approval's HTTP status and fixed service code", async () => {
   await joinBotAccount(env as never, directory, chainId, LAUNCHER_LABEL);

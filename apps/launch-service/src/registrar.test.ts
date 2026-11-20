@@ -9,9 +9,6 @@ const mock = vi.hoisted(() => ({
   nextDue: vi.fn(),
   target: vi.fn(),
   layer: vi.fn(),
-  slotStore: vi.fn(),
-  freeze: vi.fn(),
-  nextFreeze: vi.fn(),
   launched: vi.fn(),
   manifest: vi.fn(),
   shard: vi.fn(),
@@ -28,16 +25,6 @@ vi.mock("cloudflare:workers", () => ({
 }));
 vi.mock("./env", () => ({ decodeLaunchEnv: (env: unknown) => env }));
 vi.mock("./launcher-account", () => ({ joinBotAccount: mock.account }));
-vi.mock("./slot-store", () => ({
-  D1SlotStore: class {
-    constructor(...args: unknown[]) {
-      mock.slotStore(...args);
-    }
-    freezeDueSlots = mock.freeze;
-    nextFreeze = mock.nextFreeze;
-  },
-  FREEZE_RETRY_MS: 30_000,
-}));
 vi.mock("@realms-world/value-ledger", async (original) => ({
   ...(await original<typeof import("@realms-world/value-ledger")>()),
   readRegisteredShard: mock.manifest,
@@ -92,8 +79,6 @@ beforeEach(() => {
   mock.process.mockReturnValue(Effect.void);
   mock.nextDue.mockResolvedValue(2000);
   mock.layer.mockReturnValue(Layer.empty);
-  mock.freeze.mockResolvedValue(undefined);
-  mock.nextFreeze.mockResolvedValue(null);
 });
 afterEach(() => vi.restoreAllMocks());
 const setup = (shard: { chainId: string; url: string } | null = { chainId: "0x1", url: "https://shard.test" }) => {
@@ -127,13 +112,11 @@ it("retries a failed launcher join beyond platform retries without consuming due
   });
   expect(mock.process).not.toHaveBeenCalled();
   expect(mock.nextDue).not.toHaveBeenCalled();
-  // A closed slot still freezes while the launcher cannot join.
-  expect(mock.freeze).toHaveBeenCalledTimes(8);
   mock.account.mockResolvedValue("0x2");
   await f.registrar.alarm();
   expect(await f.registrar.joinFailure()).toBeNull();
   expect(mock.process).toHaveBeenCalledOnce();
-  expect(mock.target).toHaveBeenCalledWith(expect.anything(), "0x2", expect.any(Function));
+  expect(mock.target).toHaveBeenCalledWith(expect.anything(), "0x2");
   expect(f.setAlarm).toHaveBeenLastCalledWith(2000);
 });
 it("retries other account failures without consuming due runs", async () => {
@@ -159,42 +142,6 @@ it("reports an executing alarm as awake even after its stored alarm has fired", 
   finish("0x2");
   await processing;
   expect(await f.registrar.wakeAt()).toBeNull();
-});
-
-it("freezes every closed slot first, launches from that same read of the slot, and wakes at the next close", async () => {
-  const f = setup();
-  mock.account.mockResolvedValue("0x2");
-  mock.nextFreeze.mockResolvedValue(1500);
-  await f.registrar.alarm();
-  expect(mock.freeze.mock.invocationCallOrder[0]).toBeLessThan(mock.process.mock.invocationCallOrder[0]!);
-  const [, , , freezeResolver] = mock.slotStore.mock.calls[0]!;
-  const [, launchResolver] = mock.layer.mock.calls[0]!;
-  expect(launchResolver).toBe(freezeResolver);
-  expect(f.setAlarm).toHaveBeenLastCalledWith(1500);
-});
-
-it("still launches when the freeze cannot read its database, and retries the freeze itself without the cron", async () => {
-  const f = setup();
-  mock.account.mockResolvedValue("0x2");
-  mock.nextDue.mockResolvedValue(null);
-  mock.freeze.mockRejectedValueOnce(new Error("d1_unavailable"));
-  vi.spyOn(console, "error").mockImplementation(() => {});
-  await f.registrar.alarm();
-  expect(mock.process).toHaveBeenCalledOnce();
-  expect(f.setAlarm).toHaveBeenLastCalledWith(31_000);
-  // The retry freezes; with no slot left unfrozen and no run due, nothing re-arms.
-  await f.registrar.alarm();
-  expect(mock.freeze).toHaveBeenCalledTimes(2);
-  expect(f.setAlarm).toHaveBeenCalledOnce();
-});
-
-it("wakes again at once for a slot that closed while the alarm ran", async () => {
-  const f = setup();
-  mock.account.mockResolvedValue("0x2");
-  mock.nextDue.mockResolvedValue(null);
-  mock.nextFreeze.mockResolvedValue(900);
-  await f.registrar.alarm();
-  expect(f.setAlarm).toHaveBeenLastCalledWith(1000);
 });
 
 const RELEASE = {

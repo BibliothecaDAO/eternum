@@ -1,18 +1,10 @@
-import { slotResolver } from "./paid-blitz";
 import { day, frontierSeasonEnd } from "./test-dates";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { createLaunchApp } from "./app";
 import { D1LaunchStore } from "./store";
 import { D1SlotStore } from "./slot-store";
 import { D1CalendarStore } from "./calendar-store";
-import {
-  createLaunchTestDatabase,
-  testChain,
-  slotValueFixture,
-  registrationIdentityFixture,
-  TEST_CHAIN,
-  DEV_CHAIN,
-} from "./test-database";
+import { createLaunchTestDatabase, testChain, slotValueFixture, TEST_CHAIN, DEV_CHAIN } from "./test-database";
 import type { ReleaseIdentity, ReleaseReport } from "./release";
 import type { RegisteredShard } from "@realms-world/value-ledger";
 
@@ -28,8 +20,8 @@ afterEach(async () => {
 });
 const fixture = (chain = TEST_CHAIN) => {
   const store = new D1LaunchStore(database.db, testChain(chain));
-  const value = slotValueFixture(1);
-  const slots = new D1SlotStore(database.db, store, value, slotResolver(value, registrationIdentityFixture));
+  const value = slotValueFixture();
+  const slots = new D1SlotStore(database.db, store, value);
   const calendar = new D1CalendarStore(database.db);
   const armFor = vi.fn();
   const wakeAt = vi.fn(async (): Promise<number | null> => 0);
@@ -187,12 +179,11 @@ test("public health names a failed join before any run has failed", async () => 
 
 test("health answers healthy and empty before the directory lists any chain", async () => {
   const store = new D1LaunchStore(database.db, async () => null);
-  const value = slotValueFixture(1);
   const app = createLaunchApp({
     config: { operatorToken: "operator-test-token" },
     deployment: { environment: "staging", version: "test", revision: "abc1234" },
     store,
-    slots: new D1SlotStore(database.db, store, value, slotResolver(value, registrationIdentityFixture)),
+    slots: new D1SlotStore(database.db, store, slotValueFixture()),
     calendar: new D1CalendarStore(database.db),
     registrar: { armFor: vi.fn(), joinFailure: async () => null, wakeAt: async () => 0, applyRelease: vi.fn() },
   });
@@ -218,57 +209,6 @@ test("health forgets retired work but names an unarmed due run on the live chain
   const failed = await app.request("/api/factory/health");
   expect(failed.status).toBe(503);
   expect(await failed.json()).toMatchObject({ failedRuns: [{ name: "live", error: "game_creation_failed" }] });
-});
-
-test("health names a stalled ledger close, preserves the failure through reads, and clears it when the cron retries", async () => {
-  const { app, slots, value, store } = fixture();
-  await slots.create("stalled", close());
-  await database.db
-    .prepare("UPDATE playtest_slots SET closes_at=?")
-    .bind(Date.now() - 60_000)
-    .run();
-  const page = await value.registrations();
-  const registrations = vi.spyOn(value, "registrations").mockResolvedValue({ ...page, secondsUntilClose: 492 });
-  await slots.freezeDueSlots();
-  expect((await slots.get("stalled")).frozenAt).toBeNull();
-  expect(await store.list("madara.blitz")).toEqual([]);
-  const health = await app.request("/api/factory/health");
-  expect(health.status).toBe(503);
-  expect(await health.json()).toMatchObject({
-    freezeFailures: [
-      {
-        chainId: TEST_CHAIN,
-        name: "stalled",
-        code: "registration_open",
-        secondsUntilClose: 492,
-      },
-    ],
-  });
-  expect(
-    await new D1SlotStore(database.db, store, value, slotResolver(value, registrationIdentityFixture)).freezeFailures(),
-  ).toHaveLength(1);
-  registrations.mockResolvedValue(page);
-  await slots.freezeDueSlots();
-  expect((await slots.get("stalled")).frozenAt).not.toBeNull();
-  expect(await store.list("madara.blitz")).toHaveLength(1);
-  const recovered = await app.request("/api/factory/health");
-  expect(recovered.status).toBe(200);
-  expect(await recovered.json()).toMatchObject({ freezeFailures: [] });
-});
-
-test("health exposes fixed freeze codes but never private diagnostic text", async () => {
-  const { app, slots, value } = fixture();
-  await slots.create("failed", close());
-  await database.db.prepare("UPDATE playtest_slots SET closes_at=0").run();
-  vi.spyOn(value, "registrations").mockRejectedValue(new Error("registration_history_incomplete: Bearer secret-value"));
-  const log = vi.spyOn(console, "error").mockImplementation(() => {});
-  await slots.freezeDueSlots();
-  const health = await app.request("/api/factory/health");
-  expect(health.status).toBe(503);
-  const body = await health.text();
-  expect(body).toContain('"code":"registration_history_incomplete"');
-  expect(body).not.toContain("secret-value");
-  expect(JSON.stringify(log.mock.calls)).not.toContain("secret-value");
 });
 
 const applyRelease = (app: ReturnType<typeof fixture>["app"], body: unknown) =>
