@@ -96,7 +96,7 @@ export const snapshot = (
       rows: [
         {
           key: "0x1",
-          value: { game_id: GAME_ID, release_id: RELEASE, preset_commitment: "0x1", created_release_id: RELEASE },
+          value: { game_id: GAME_ID, release_id: RELEASE, created_release_id: RELEASE },
         },
       ],
     },

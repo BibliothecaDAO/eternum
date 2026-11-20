@@ -106,7 +106,6 @@ it("uses the fixed ordinary v3 play frame and a native three-felt device signatu
     new CallData(abi).compile("play", {
       game_id: 7,
       release_id: 2,
-      preset_commitment: 2,
       command: encodeNativeCommand(bindings.commandAbi, { kind: "SettleBlitzRoster", value: undefined }),
     }),
   );

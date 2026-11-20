@@ -174,7 +174,6 @@ const chestDay = (researched = 3n) => {
         game_id: 1,
         release_id: nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE,
         created_release_id: 3,
-        preset_commitment: 0x1abn,
       },
     },
     { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: researched << 48n } },

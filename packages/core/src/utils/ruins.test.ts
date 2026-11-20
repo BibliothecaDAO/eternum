@@ -27,7 +27,7 @@ const site = (entity_id: bigint, row: number) => ({
 const release = (release_id = nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE) => ({
   model: "GameRelease" as const,
   key: "0x61",
-  value: { game_id: 1, release_id, created_release_id: 1, preset_commitment: 0n },
+  value: { game_id: 1, release_id, created_release_id: 1 },
 });
 
 const historicalRules = [

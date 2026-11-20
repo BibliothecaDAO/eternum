@@ -146,7 +146,7 @@ for (const historical of [true, false]) {
     store.applyFacts([
       upsert("0x8", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: BigInt(retiredTown.learned) }),
       upsert("0x6", "BoardRules", { ...store.require("BoardRules", { game_id: 1 }), ration_step: PRECISION / 5n }),
-      upsert("0x9", "GameRelease", { game_id: 1, created_release_id: 1, release_id: 2, preset_commitment: "0x789" }),
+      upsert("0x9", "GameRelease", { game_id: 1, created_release_id: 1, release_id: 2 }),
     ]);
     const gate = followGameRelease(
       store,

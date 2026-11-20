@@ -79,7 +79,6 @@ function launch(preset: ReturnType<typeof registration>, gameId = 1, rosterSize 
     rowEvent("GameRelease", [String(gameId)], {
       release_id: "1",
       created_release_id: 1,
-      preset_commitment: preset.commitment,
     }),
   ];
 }
@@ -375,7 +374,7 @@ describe("verified preset configuration facts", () => {
     );
   });
 
-  it("refuses unproven execution status, trailing calldata and a mismatched game pin atomically", () => {
+  it("refuses unproven execution status and trailing calldata atomically", () => {
     const world = setup();
     const preset = registration();
     const before = world.fold.checkpoint();
@@ -394,17 +393,6 @@ describe("verified preset configuration facts", () => {
     );
     expect(world.fold.checkpoint()).toEqual(before);
     applyRegistration(world, preset);
-    const registered = world.fold.checkpoint();
-    const invalid = launch(preset);
-    invalid[invalid.length - 1] = rowEvent("GameRelease", ["1"], {
-      release_id: 1n,
-      created_release_id: 1,
-      preset_commitment: 999n,
-    });
-    expect(() => world.native.applyReceipt(world.fold, receipt(invalid), 11, 0)).toThrow(
-      "differs from registered preset",
-    );
-    expect(world.fold.checkpoint()).toEqual(registered);
   });
 });
 

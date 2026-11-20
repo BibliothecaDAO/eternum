@@ -67,7 +67,7 @@ const releaseSnapshot = {
   rows: [
     {
       key: hash.computePoseidonHashOnElements([54]),
-      value: { game_id: 54, release_id: 1, created_release_id: 1, preset_commitment: "0x789" },
+      value: { game_id: 54, release_id: 1, created_release_id: 1 },
     },
   ],
 };
@@ -438,7 +438,7 @@ describe("createGameClient", () => {
       {
         model: "GameRelease",
         key: releaseSnapshot.rows[0]!.key,
-        value: { game_id: 54, release_id: 2, created_release_id: 1, preset_commitment: "0x789" },
+        value: { game_id: 54, release_id: 2, created_release_id: 1 },
       },
     ]);
     await flushMicrotasks(30);
@@ -482,7 +482,7 @@ describe("createGameClient", () => {
         {
           model: "GameRelease",
           key: releaseSnapshot.rows[0]!.key,
-          value: { game_id: 54, release_id: 2, created_release_id: 1, preset_commitment: "0x789" },
+          value: { game_id: 54, release_id: 2, created_release_id: 1 },
         },
       ],
     });
@@ -524,7 +524,7 @@ describe("createGameClient", () => {
         {
           model: "GameRelease",
           key: releaseSnapshot.rows[0]!.key,
-          value: { game_id: 54, release_id: 2, created_release_id: 1, preset_commitment: "0x789" },
+          value: { game_id: 54, release_id: 2, created_release_id: 1 },
         },
       ],
     });

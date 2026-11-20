@@ -26,7 +26,6 @@ const OTHER = "0x1";
 const pin = (created: number, release: number) => ({
   game_id: GAME_ID,
   release_id: release,
-  preset_commitment: "0x1",
   created_release_id: created,
 });
 

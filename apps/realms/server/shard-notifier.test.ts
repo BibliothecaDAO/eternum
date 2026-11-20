@@ -187,7 +187,7 @@ const createHerald = () => {
       const pin = state.pins.get(url.searchParams.get("owner") ?? "");
       if (pin)
         scoped.models.find(({ model }) => model === "GameRelease")!.rows = [
-          { key: "0x1", value: { game_id: GAME_ID, preset_commitment: "0x1", ...pin } },
+          { key: "0x1", value: { game_id: GAME_ID, ...pin } },
         ];
       if (url.searchParams.get("owner") === PLAYER_ACCOUNT && state.publishAfterPlayerRead) {
         Object.assign(state.catalogue, state.publishAfterPlayerRead);

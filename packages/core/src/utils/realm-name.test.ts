@@ -28,7 +28,7 @@ const storeFor = (release: number, settledHome?: bigint) => {
     {
       model: "GameRelease",
       key: "1",
-      value: { game_id: 1, release_id: release, preset_commitment: 1n, created_release_id: release },
+      value: { game_id: 1, release_id: release, created_release_id: release },
     },
     ...(settledHome === undefined
       ? []
@@ -64,7 +64,7 @@ describe("Realm identity", () => {
           {
             model: "GameRelease",
             key: String(game_id),
-            value: { game_id, release_id, created_release_id, preset_commitment: 1n },
+            value: { game_id, release_id, created_release_id },
           },
         ]);
       writeRelease(1, 2, created);

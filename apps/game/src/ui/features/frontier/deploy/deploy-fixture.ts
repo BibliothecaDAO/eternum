@@ -79,7 +79,6 @@ export const frontierDay = () => {
       game_id: 1,
       release_id: NATIVE_RELEASE_ID,
       created_release_id: NATIVE_RELEASE_ID,
-      preset_commitment: "0x1ab",
     }),
     set("0x7", "Structure", realm),
     ...preset.resources.map((rule) => set(`0x5${rule.resource_type}`, "ResourceRule", { ...rule, game_id: 1 })),

@@ -10,7 +10,7 @@ vi.mock("../../../../deploy/release/native-release", async (original) => {
 
 const readable = (release: number) => () =>
   assertReleaseReadable(
-    { game_id: 1, release_id: release, created_release_id: release, preset_commitment: "0x789" },
+    { game_id: 1, release_id: release, created_release_id: release },
     { [release]: "schema" },
     "schema",
     "http://shard.test",
