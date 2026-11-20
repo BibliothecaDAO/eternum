@@ -19,25 +19,17 @@ pub fn grants() -> crate::settlement::RealmGrants {
     assert!(fields.is_empty(), "trailing settlement fixture");
     grants
 }
-pub fn grants_for(entry_rule: u8) -> crate::settlement::RealmGrants {
-    if entry_rule == crate::rules::ENTRY_ROSTER {
-        crate::settlement::RealmGrants { starting_troops: array![].span(), ..grants() }
-    } else {
-        grants()
-    }
-}
 pub fn rules() -> SettlementRules {
-    SettlementRules { registration_start: 10, registration_limit: 96, mode: SettlementMode::Single, spacing: 6 }
+    SettlementRules {
+        registration_start: 10,
+        registration_limit: 96,
+        mode: SettlementMode::Single,
+        spacing: crate::balance::settlement::SETTLEMENT_SPACING_STEPS,
+    }
 }
 pub fn seed_settlement(deployment: Deployment, game_id: u32, rules: SettlementRules) {
     let games = IGameDispatcher { contract_address: deployment.games };
     let mut preset = play_fixture::fixture_preset(games.rules(game_id));
-    if rules.mode != SettlementMode::Single {
-        preset.rules.entry_rule = crate::rules::ENTRY_ROSTER;
-    }
-    preset.settlement.mode = rules.mode;
-    preset.settlement.spacing = rules.spacing;
-    preset.settlement.realms = grants_for(preset.rules.entry_rule);
     play_fixture::seed_game_with_preset(deployment.games, game_id, games.game(game_id), preset);
     snforge_std::interact_with_state(
         deployment.games,

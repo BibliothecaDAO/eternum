@@ -59,7 +59,7 @@ pub fn create_games(registry: ContractAddress) {
     }
 }
 pub fn fixture_preset(rules: crate::rules::SliceRules) -> crate::presets::PresetDefinition {
-    let mut preset = super::registrar::definition(rules.entry_rule == crate::rules::ENTRY_ROSTER);
+    let mut preset = super::registrar::definition(false);
     preset.rules = rules;
     if rules.day_unit_seconds != 0 {
         preset
@@ -72,14 +72,6 @@ pub fn fixture_preset(rules: crate::rules::SliceRules) -> crate::presets::Preset
                 );
     }
     preset.economy.withdrawals = None;
-    preset
-        .settlement
-        .spires =
-            if crate::rules::rule_enabled(rules, crate::rules::SPIRES) {
-                Some(crate::spires::SpireLayout { count: 1, base_distance: 0, layer_distance: 0, max_layer: 0 })
-            } else {
-                None
-            };
     preset
 }
 pub fn seed_game(registry: ContractAddress, game_id: u32, game: GameRegistry, rules: crate::rules::SliceRules) {

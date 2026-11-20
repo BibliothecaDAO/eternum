@@ -28,11 +28,7 @@ pub fn rules(blitz: bool) -> crate::rules::SliceRules {
             } else {
                 super::play_fixture::BLITZ_COMMAND_MASK
             };
-    rules.entry_rule = if blitz {
-        crate::rules::ENTRY_ROSTER
-    } else {
-        crate::rules::ENTRY_ENTITLEMENT
-    };
+    rules.entry_rule = crate::rules::ENTRY_ENTITLEMENT;
     rules.map_config.shards_mines_win_probability = 0;
     rules.map_config.shards_mines_fail_probability = 1;
     rules.map_config.camp_win_probability = 1;

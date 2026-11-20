@@ -52,6 +52,7 @@ pub fn safe(d: super::Deployment, caller: starknet::ContractAddress) -> IRegistr
     IRegistrarSafeDispatcher { contract_address: d.games }
 }
 pub fn definition(blitz: bool) -> PresetDefinition {
+    let (_, release) = super::preset_projection::current_definition("frontier");
     let mut resources = array![];
     for resource_type in 1_u8..59 {
         resources.append(ResourceRule { resource_type, unit_weight: 1, realm_rate: 10, village_rate: 5 });
@@ -68,11 +69,7 @@ pub fn definition(blitz: bool) -> PresetDefinition {
             } else {
                 super::play_fixture::BLITZ_COMMAND_MASK
             },
-            entry_rule: if blitz {
-                crate::rules::ENTRY_ROSTER
-            } else {
-                crate::rules::ENTRY_ENTITLEMENT
-            },
+            entry_rule: crate::rules::ENTRY_ENTITLEMENT,
             ..super::play_fixture::rules(),
         },
         resources: ResourcePreset {
@@ -89,29 +86,7 @@ pub fn definition(blitz: bool) -> PresetDefinition {
             upgrade_limits: crate::upgrades::UpgradeLimits { realm_max: 1, village_max: 1 },
             upgrades: array![crate::upgrades::UpgradeRecipe { costs: array![].span() }].span(),
         },
-        settlement: SettlementPreset {
-            order_aspects: array![].span(),
-            mode: if blitz {
-                SettlementMode::Triple
-            } else {
-                SettlementMode::Single
-            },
-            spacing: 6,
-            depths: array![].span(),
-            realms: super::settlement::grants_for(
-                if blitz {
-                    crate::rules::ENTRY_ROSTER
-                } else {
-                    crate::rules::ENTRY_ENTITLEMENT
-                },
-            ),
-            villages: super::village::village_rules(),
-            spires: if blitz {
-                None
-            } else {
-                Some(crate::spires::SpireLayout { count: 1, base_distance: 0, layer_distance: 0, max_layer: 0 })
-            },
-        },
+        settlement: SettlementPreset { order_aspects: array![].span(), ..release.settlement },
         economy: EconomyPreset {
             race: None,
             banes: None,
@@ -229,7 +204,6 @@ pub fn day_start(d: super::Deployment, game_id: u32, index: u64) -> u64 {
 /// Open entry draws starting troops from the biome table, which a fixed-roster definition leaves empty.
 pub fn open_entry(ref preset: PresetDefinition) {
     preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
-    preset.settlement.realms = super::settlement::grants_for(crate::rules::ENTRY_OPEN);
 }
 pub // The expedition preset uses seeded day bags.
  fn expedition_preset() -> PresetDefinition {
@@ -250,7 +224,6 @@ pub // The expedition preset uses seeded day bags.
     preset.rules.map_config.camp_win_probability = 0;
     preset.rules.map_config.shards_mines_win_probability = 0;
     preset.rules.mode_rules = HOME_REWARDS | crate::rules::DEPTH_CONTENTS;
-    preset.settlement.spacing = 1024;
     preset.rules.map_config.shards_mines_win_probability = 0;
     preset.rules.map_config.shards_mines_fail_probability = 1;
     preset.rules.troop_limit_config.settlement_armies = 2;
@@ -455,7 +428,6 @@ pub fn assert_capture_at(
         | crate::rules::UNOWNED_TARGETS
         | crate::rules::DEPTH_CONTENTS
         | crate::rules::REVEAL_SUPPLIES;
-    preset.settlement.spacing = 1024;
     preset.rules.troop_limit_config.camp_armies = 0;
     preset.rules.troop_limit_config.starting_guard = 0;
     preset.rules.troop_limit_config.settlement_deployment_cap = 3000;
@@ -831,7 +803,6 @@ pub fn setup_frontier_relics_with_preset(
         | HOME_REWARDS
         | crate::rules::REVEAL_SUPPLIES
         | crate::rules::DEPTH_CONTENTS;
-    preset.settlement.spacing = 1024;
     preset.rules.troop_limit_config.starting_guard = 0;
     preset.rules.troop_limit_config.settlement_armies = 2;
     preset.rules.map_config.shards_mines_win_probability = 0;
