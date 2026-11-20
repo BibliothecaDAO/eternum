@@ -5,6 +5,7 @@ import type { FragmentPrice } from "@realms-world/identity";
 import { l2Provider } from "@/runtime/l2-rpc";
 import { AppChoice, AppNotice } from "@/ui/design-system/kit/app-elements";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
+import { shortAddress } from "@/ui/design-system/kit/address";
 import { FRAGMENTS_PAGE_WORDS } from "@/ui/design-system/kit/words";
 import { tokenBalanceOf } from "@/ui/modules/identity/wallet-send";
 
@@ -51,7 +52,7 @@ export const PayWith = ({
   const paying = payable.find(({ payment }) => payment.token.key === chosen) ?? payable[0]!;
   return (
     <div className="flex flex-col gap-3">
-      <span className="text-app-label text-app-muted">{FRAGMENTS_PAGE_WORDS.payWith}</span>
+      <span className="text-app-label text-app-muted">{FRAGMENTS_PAGE_WORDS.payFrom(shortAddress(payer))}</span>
       <div className="grid grid-cols-2 gap-2" data-pay-tokens>
         {payable.map(({ payment, held }) => (
           <AppChoice

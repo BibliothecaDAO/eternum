@@ -113,7 +113,8 @@ it("offers the store's packs in dollars, the Ancient Seal's chosen, and pays its
   expect(packs.map((pack) => pack.getAttribute("aria-pressed"))).toEqual(["false", "false", "true"]);
   await press(page, "Pay $10.00");
   expect(price).toHaveBeenCalledWith(GAME, 1_000);
-  expect(page.textContent).toContain("Paid as 2,750 LORDS");
+  expect(page.textContent).toContain("The treasury receives 2,750 LORDS");
+  expect(page.textContent).not.toContain("Paid as");
   await settled(() => expect(wallet.transactions()).toHaveLength(1));
   expect(wallet.transactions()[0]).toEqual([
     {
@@ -127,6 +128,17 @@ it("offers the store's packs in dollars, the Ancient Seal's chosen, and pays its
   expect(page.textContent).toContain("+1,000 Fragments");
   await press(page, "Back to the shop");
   expect(page.querySelector("[data-where]")?.textContent).toBe("/g/0x52/7/map#shop");
+});
+
+it("names the wallet whose balances it lists", async () => {
+  installWallet("argentX", { account: WALLET });
+  vi.spyOn(identityClient, "priceFragments").mockResolvedValue({ fragments: 1_000, cents: 1_000, quote: QUOTE });
+  const page = await mount();
+  await press(page, "Pay $10.00");
+  await settled(() => expect(page.querySelector("[data-pay-tokens]")).not.toBeNull());
+  expect(page.textContent).toContain("Pay from your wallet 0x4a1");
+  expect(page.querySelector("[data-pay-tokens] button")?.textContent).toContain("Holds 1,000,000");
+  expect(page.textContent).not.toContain("You hold");
 });
 
 it("says a price that expired before the payment was read, and offers the packs again", async () => {

@@ -129,7 +129,7 @@ const Pay = ({
       <AppFigure
         tone="gold"
         value={FRAGMENTS_PAGE_WORDS.price(paying.fragments)}
-        label={FRAGMENTS_PAGE_WORDS.paidAs(lordsOf(BigInt(paying.quote.lordsWei)))}
+        label={FRAGMENTS_PAGE_WORDS.treasuryReceives(lordsOf(BigInt(paying.quote.lordsWei)))}
       />
       <PayWith payer={payer} passkey={passkey} quote={paying.quote} cents={paying.cents} onSent={onSent} />
     </div>
