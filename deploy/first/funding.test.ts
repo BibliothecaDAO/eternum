@@ -15,6 +15,7 @@ import { environments, WEI } from "./settings";
 import { frontierDevconPreset } from "../../config/source/frontier/devcon";
 import { seasonDayUnitSeconds } from "../../config/source/common/season-clock";
 import { buildLedgerEconomicPreset } from "../../config/deployer/clean/ledger/economics";
+import { releaseLine } from "../../packages/core/src/test-support/releases";
 
 const preset = frontierDevconPreset;
 const dayUnit = seasonDayUnitSeconds(preset);
@@ -139,7 +140,7 @@ test.each([
       return Response.json({
         games: [{ game_id: gameId, mode: "frontier", clock: { start_main_at: startSeconds } }],
       });
-    if (path === "/manifest") return Response.json({ chainId, releaseSchemas: { "1": "0xs" } });
+    if (path === "/manifest") return Response.json({ chainId, releases: releaseLine("0xs", [1]) });
     throw new Error("Unexpected test request");
   }) as typeof fetch;
   const context = {
@@ -250,7 +251,7 @@ async function coldFunding(lords: string, held: bigint) {
       });
     if (path === "/games")
       return Response.json({ games: [{ game_id: 1, mode: "frontier", clock: { start_main_at: startSeconds } }] });
-    if (path === "/manifest") return Response.json({ chainId: "0x10", releaseSchemas: { "1": "0xs" } });
+    if (path === "/manifest") return Response.json({ chainId: "0x10", releases: releaseLine("0xs", [1]) });
     throw new Error("Unexpected test request");
   }) as typeof fetch;
   const context = {

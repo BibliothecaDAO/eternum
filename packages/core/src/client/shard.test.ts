@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { afterEach, expect, it, vi } from "vitest";
+import { releaseLine } from "../test-support/releases";
 
 const freshPage = async () => {
   vi.resetModules();
@@ -10,7 +11,7 @@ const schemaHash = "compiled-schema";
 const manifest = (chainId: string) => ({
   version: 1,
   chainId,
-  releaseSchemas: { "7": schemaHash },
+  releases: releaseLine(schemaHash, [7]),
   rpcUrl: "https://rpc.shard.test",
   l2GasBound: "0x47868c00",
   accountClassHash: "0x2",
@@ -62,11 +63,14 @@ it("resolves the game's release and leaves the shared shard registry unchanged o
   const { openShard, refreshShardRelease, requireShard } = await freshPage();
   serve(manifest("0x0b"));
   const opened = await openShard("https://hotfix.shard.test", schemaHash);
-  serve({ ...manifest("0x0b"), releaseSchemas: { "7": schemaHash, "8": schemaHash, "9": "new-schema" } });
+  serve({
+    ...manifest("0x0b"),
+    releases: { ...releaseLine(schemaHash, [7, 8]), "9": { schema: "new-schema", family: 1, previous: 8 } },
+  });
   const refreshed = await refreshShardRelease(opened.url, "8", schemaHash);
-  expect(refreshed.releaseSchemas["8"]).toBe(schemaHash);
+  expect(refreshed.releases["8"]?.schema).toBe(schemaHash);
   expect(requireShard("0xb")).toBe(opened);
-  expect(opened.releaseSchemas).toEqual({ "7": schemaHash });
+  expect(opened.releases).toEqual(releaseLine(schemaHash, [7]));
   await expect(refreshShardRelease(opened.url, "7", schemaHash)).resolves.toBeDefined();
   await expect(refreshShardRelease(opened.url, "9", schemaHash)).rejects.toThrow("release 9");
   await expect(refreshShardRelease(opened.url, "10", schemaHash)).rejects.toThrow("release 10");
@@ -93,4 +97,11 @@ it("validates shard authority before inserting a manifest into the registry", as
   ).rejects.toThrow("reserved chain");
   expect(() => requireShard("0xc")).toThrow("not open");
   await expect(openShard("https://trusted.test", schemaHash)).resolves.toMatchObject({ chainId: "0xc" });
+});
+
+it("refuses a shard whose Herald serves release schemas without their families", async () => {
+  const { openShard } = await freshPage();
+  const { releases: _, ...old } = manifest("0x1");
+  serve({ ...old, releaseSchemas: { "7": schemaHash } });
+  await expect(openShard("https://old.shard.test", schemaHash)).rejects.toThrow("manifest names no releases");
 });

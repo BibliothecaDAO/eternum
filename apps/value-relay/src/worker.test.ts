@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { Miniflare } from "miniflare";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import schema from "../../../contracts/l3/world-native/schema/schema.json";
+import { releaseLine } from "../../../packages/core/src/test-support/releases";
 
 const bundle = mkdtempSync(join(tmpdir(), "relay-bundle-"));
 beforeAll(() => {
@@ -30,7 +31,7 @@ it.each([302, 200])(
       chainId: chain,
       l2GasBound: "0x47868c00",
       vrfPublicKey: { x: "0x1", y: "0x2" },
-      releaseSchemas: { "1": schema.identity },
+      releases: releaseLine(schema.identity, [1]),
       rpcUrl: "https://shard.test/rpc",
       accountClassHash: "0x2",
       guardianPublicKey: "0x9",

@@ -9,6 +9,7 @@ import { shardWithdrawalPorts } from "./shard-withdrawals";
 import { RelayFailure } from "./ports";
 import { SHARD_PAGE_BLOCKS } from "./shard-page";
 import { frontierPayment } from "./adapters";
+import { releaseLine } from "../../../packages/core/src/test-support/releases";
 
 const rpc = vi.hoisted(() => ({
   classHash: vi.fn(),
@@ -421,27 +422,25 @@ it("refuses a chain whose current release is older than the first its manifest n
 
 it("connects to a registered shard from the first release its manifest maps", () => {
   const manifest = { rpcUrl: "https://shard.test/rpc", chainId: DEV_CHAIN, contracts: { games: address } };
-  expect(shardConnection({ ...manifest, releaseSchemas: { "5": "0xs" } })).toEqual({
+  expect(shardConnection({ ...manifest, releases: releaseLine("0xs", [5]) })).toEqual({
     rpcUrl: "https://shard.test/rpc",
     chainId: DEV_CHAIN,
     gamesAddress: address,
     firstRelease: 5,
   });
-  expect(
-    shardConnection({ ...manifest, releaseSchemas: { "3": "0xs", "1": "0xs", "4": "0xs", "2": "0xs" } }).firstRelease,
-  ).toBe(1);
-  expect(() => shardConnection({ ...manifest, releaseSchemas: {} })).toThrow("invalid_shard_manifest_releases");
+  expect(shardConnection({ ...manifest, releases: releaseLine("0xs", [3, 1, 4, 2]) }).firstRelease).toBe(1);
+  expect(() => shardConnection({ ...manifest, releases: {} })).toThrow("invalid_shard_manifest_releases");
   expect(() => shardConnection({ ...manifest } as unknown as Parameters<typeof shardConnection>[0])).toThrow(
     "invalid_shard_manifest_releases",
   );
-  expect(() => shardConnection({ ...manifest, releaseSchemas: { latest: "0xs" } })).toThrow(
-    "invalid_shard_manifest_releases",
-  );
+  expect(() =>
+    shardConnection({ ...manifest, releases: { latest: { schema: "0xs", family: 1, previous: 0 } } }),
+  ).toThrow("invalid_shard_manifest_releases");
 });
 
 it("reads a shard's first release from the manifest its Herald serves, for that chain only", async () => {
   const herald = (status: number, body: unknown) => (async () => Response.json(body, { status })) as typeof fetch;
-  const manifest = { chainId: DEV_CHAIN, releaseSchemas: { "6": "0xs", "5": "0xs" } };
+  const manifest = { chainId: DEV_CHAIN, releases: releaseLine("0xs", [6, 5]) };
   expect(await readFirstRelease("https://herald.test", DEV_CHAIN, herald(200, manifest))).toBe(5);
   await expect(readFirstRelease("https://herald.test", "0x1", herald(200, manifest))).rejects.toThrow(
     "herald_manifest_chain_differs",

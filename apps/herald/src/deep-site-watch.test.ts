@@ -14,6 +14,7 @@ import { WorldFold } from "./world-fold";
 import { setup, schema, receipt, rowEvent } from "./native/fixtures";
 import { nativeRowKey } from "./native/row-key";
 import type { MadaraRpc } from "./madara-rpc";
+import { releaseLine } from "../../../packages/core/src/test-support/releases";
 
 async function heldMine(now: number) {
   const { decoder, fold, native } = setup();
@@ -77,7 +78,7 @@ it("plans a Deep site opportunity from Herald's actor snapshot with public rival
   vi.stubGlobal("fetch", async (address: string) => {
     const url = new URL(address);
     if (url.pathname === "/manifest")
-      return Response.json({ version: 1, releaseSchemas: { [RELEASE]: schema.identity } });
+      return Response.json({ version: 1, releases: releaseLine(schema.identity, [RELEASE]) });
     return Response.json(
       live.snapshot(
         String(GAME_ID),
@@ -95,7 +96,7 @@ it("plans a Deep site opportunity from Herald's actor snapshot with public rival
       owner: "player",
     },
     now * 1000,
-    { [RELEASE]: schema.identity },
+    releaseLine(schema.identity, [RELEASE]),
   );
   expect(watches).toEqual([
     expect.objectContaining({

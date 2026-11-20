@@ -5,6 +5,7 @@ import { createReadStream, readdirSync, readFileSync, renameSync, writeFileSync 
 import { join } from "node:path";
 import { createInterface } from "node:readline";
 import { createGunzip } from "node:zlib";
+import type { NativeReleases } from "../../../../packages/core/src/sync/herald-http-types";
 import { NativeDecoder } from "../../../herald/src/native/decoder";
 import { type DecodedEvent, type Mode, nameCommands, peakHoldings } from "./commands";
 import { Counts, type LeaderboardEntry, usageReport } from "./findings";
@@ -14,7 +15,7 @@ const readJson = (path: string) => JSON.parse(readFileSync(path, "utf8"));
 const plain = (value: unknown) =>
   JSON.parse(JSON.stringify(value, (_, v) => (typeof v === "bigint" ? `0x${v.toString(16)}` : v)));
 
-function decoderFor(schema: any, gamesContract: string, releaseSchemas: Record<string, string>) {
+function decoderFor(schema: any, gamesContract: string, releases: NativeReleases) {
   return new NativeDecoder({
     world: { address: gamesContract },
     native: {
@@ -23,7 +24,7 @@ function decoderFor(schema: any, gamesContract: string, releaseSchemas: Record<s
       activeSchema: schema.identity,
       schemas: { [schema.identity]: schema },
       logic: schema.logicClasses,
-      releaseSchemas,
+      releases,
     },
   } as never);
 }
@@ -42,7 +43,7 @@ async function decodeEvents(raw: string, folder: string, throughBlock: number) {
   const manifest = readJson(join(folder, "manifest.json"));
   const contract: string = manifest.contracts.games;
   const schema = readJson(join(folder, "schema.json"));
-  const decoder = decoderFor(schema, contract, manifest.releaseSchemas);
+  const decoder = decoderFor(schema, contract, manifest.releases);
   const events: DecodedEvent[] = [];
   const failures = new Map<string, number>();
   for (const segment of segmentsOf(raw, contract)) {

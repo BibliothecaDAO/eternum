@@ -1,7 +1,5 @@
-/**
- * The world release this commit ships. Bump it for every published change to the logic table or migration: the box
- * half registers it on the running shard, and the Cloudflare half advances running Frontier games on supported presets before the
- * client that expects it goes live.
- */
-export const NATIVE_RELEASE_ID = 10;
-export const NATIVE_BALANCE_SINCE_RELEASE = 10;
+import { nativeIdentifiers } from "../../contracts/l3/world-native/schema/client.gen";
+
+export const NATIVE_RELEASES = {
+  frontier: { family: nativeIdentifiers.family.FRONTIER, release: 10, since: 10 },
+} as const;

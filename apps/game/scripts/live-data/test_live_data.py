@@ -43,7 +43,7 @@ class Chain:
 
     def get(self, url):
         if url.endswith("/manifest"):
-            return {"contracts": {"games": GAMES}, "releaseSchemas": {"1": "abc"}, "rpcUrl": "rpc"}
+            return {"contracts": {"games": GAMES}, "releases": {"1": {"schema": "abc", "family": 1, "previous": 0}}, "rpcUrl": "rpc"}
         return {"identity": "abc"}
 
     def rpc_batch(self, _url, calls):

@@ -1,5 +1,5 @@
 import { gameRegistryRow } from "../../../../../../../packages/core/src/test-support/game-registry";
-import { NATIVE_RELEASE_ID } from "../../../../../../../deploy/release/native-release";
+import { NATIVE_RELEASES } from "../../../../../../../deploy/release/native-release";
 import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import {
@@ -27,8 +27,8 @@ export const realmBoard = () => {
     set("0x3", "GameRegistry", gameRegistryRow({ preset_id: 2 })),
     set("0x1ab0", "GameRelease", {
       game_id: 1,
-      release_id: NATIVE_RELEASE_ID,
-      created_release_id: NATIVE_RELEASE_ID,
+      release_id: NATIVE_RELEASES.frontier.release,
+      created_release_id: NATIVE_RELEASES.frontier.release,
     }),
     ...preset.resources.map((rule) => set(`0x5${rule.resource_type}`, "ResourceRule", { ...rule, game_id: 1 })),
     ...preset.buildings.map(({ category, rule }) =>

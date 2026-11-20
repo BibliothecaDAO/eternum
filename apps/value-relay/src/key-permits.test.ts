@@ -6,6 +6,7 @@ vi.mock("./environment", async (original) => ({
 import { Effect } from "effect";
 import { expect, it, vi } from "vitest";
 import { ValueRelay } from "./worker";
+import { releaseLine } from "../../../packages/core/src/test-support/releases";
 vi.mock("cloudflare:workers", () => ({
   WorkerEntrypoint: class {},
   DurableObject: class {
@@ -21,7 +22,7 @@ vi.mock("@realms-world/value-ledger", async (original) => ({
     chainId: "0x1",
     rpcUrl: "https://proxy.test/rpc/v0_10_2",
     contracts: { games: "0x77" },
-    releaseSchemas: { "1": "0xs" },
+    releases: releaseLine("0xs", [1]),
     url: "https://shard.test",
   }),
   rpcAt: () => ({ getChainId: async () => "0x1" }),

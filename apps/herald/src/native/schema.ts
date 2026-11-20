@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import type { NativeReleases } from "@bibliothecadao/eternum/game-sync";
 import type { Abi } from "starknet";
 
 export interface NativeMember {
@@ -58,7 +59,7 @@ export interface NativeRelease {
   verifierClassHash?: string;
   migrationClassHash: string;
   releaseId: number;
-  releaseSchemas: Record<string, string>;
+  releases: NativeReleases;
   releaseBalances?: Record<string, string>;
   logic: Record<string, string>;
 }

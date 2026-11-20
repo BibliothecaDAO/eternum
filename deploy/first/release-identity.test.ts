@@ -6,7 +6,7 @@ import * as processTools from "./process";
 import { PrivateStore } from "./private-store";
 import { readReleaseIdentity, recordReleaseIdentity, RELEASE_SOURCES } from "./release-identity";
 import { environments, root } from "./settings";
-import { NATIVE_RELEASE_ID } from "../release/native-release";
+import { NATIVE_RELEASES } from "../release/native-release";
 
 const commit = "c".repeat(40);
 const built = "b".repeat(40);
@@ -23,7 +23,7 @@ function store() {
   return new PrivateStore(join(base, "private"), join(base, "repository"), true);
 }
 /** The box's build record as `release.json` holds it, written by the box half at `commit`. */
-const boxBuild = (buildCommit: string, releaseId = NATIVE_RELEASE_ID) => ({
+const boxBuild = (buildCommit: string, releaseId: number = NATIVE_RELEASES.frontier.release) => ({
   commit: buildCommit,
   releaseId,
   schema: "2fbdecd09f961d7b387524eef591d8a0185c2dea59c7c334560c9789a444149e",
@@ -33,7 +33,7 @@ const boxBuild = (buildCommit: string, releaseId = NATIVE_RELEASE_ID) => ({
   images: { init: "sha256:1" },
 });
 const IDENTITY = {
-  releaseId: NATIVE_RELEASE_ID,
+  releaseId: NATIVE_RELEASES.frontier.release,
   schema: "2fbdecd09f961d7b387524eef591d8a0185c2dea59c7c334560c9789a444149e",
   logic: { season: "0x55e0", troops: "0x77a2" },
   migration: "0x0",
@@ -83,9 +83,9 @@ test("a box build whose release sources differ is refused, and nothing is record
 });
 
 test("a box build of another release number is refused", async () => {
-  box(boxBuild(commit, NATIVE_RELEASE_ID - 1));
+  box(boxBuild(commit, NATIVE_RELEASES.frontier.release - 1));
   await expect(recordReleaseIdentity(store(), target, commit)).rejects.toThrow(
-    `The box half built release ${NATIVE_RELEASE_ID - 1}; this commit ships release ${NATIVE_RELEASE_ID}.`,
+    `The box half built release ${NATIVE_RELEASES.frontier.release - 1}; this commit ships release ${NATIVE_RELEASES.frontier.release}.`,
   );
 });
 

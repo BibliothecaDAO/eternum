@@ -1,5 +1,5 @@
 import { frontierSeasonOnePreset } from "../../../../config/source/frontier/season-one";
-import { NATIVE_RELEASE_ID } from "../../../../deploy/release/native-release";
+import { NATIVE_RELEASES } from "../../../../deploy/release/native-release";
 import type { HeraldGameSnapshot } from "@bibliothecadao/eternum/game-sync";
 import { nativeBaneConstants, nativeRuleConstants } from "@bibliothecadao/eternum/game-client";
 import { deepSites, RESOURCE_PRECISION, TileOccupier } from "@bibliothecadao/types";
@@ -11,7 +11,7 @@ export const siteGuardTroops = (ticksUntilClear: number, clearableTroops = 800) 
   clearableTroops + ticksUntilClear * frontierSeasonOnePreset.deep.lossPerTick;
 
 export const GAME_ID = 1;
-export const RELEASE = NATIVE_RELEASE_ID;
+export const RELEASE = NATIVE_RELEASES.frontier.release;
 export const PLAYER_ACCOUNT = "0x4b1d";
 export const HOME = 5;
 export const ARMY = 7;

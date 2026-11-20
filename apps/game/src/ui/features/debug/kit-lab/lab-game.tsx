@@ -8,6 +8,7 @@ import { openShard } from "@bibliothecadao/eternum/shard";
 import { type ReactNode, useEffect, useState } from "react";
 
 import { installLabGame, LAB_CHAIN, labGameProfile, PLAYER } from "./fixture-game";
+import { releaseLine } from "../../../../../../../packages/core/src/test-support/releases";
 
 const LAB_SCHEMA = "0xlab";
 
@@ -77,7 +78,7 @@ const useLabShard = (preset: number) => {
     void openShard("https://127.0.0.1:1", LAB_SCHEMA, undefined, {
       version: 1,
       chainId: LAB_CHAIN,
-      releaseSchemas: { lab: LAB_SCHEMA },
+      releases: releaseLine(LAB_SCHEMA, [1]),
       rpcUrl: "https://127.0.0.1:1/rpc",
       accountClassHash: "0x1",
       contracts: { games: "0x1" },

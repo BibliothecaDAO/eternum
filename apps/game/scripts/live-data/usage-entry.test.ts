@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { gzipSync } from "node:zlib";
 import { beforeEach, expect, it } from "vitest";
 import { IncompleteDecode, writeUsage } from "./usage";
+import { releaseLine } from "../../../../packages/core/src/test-support/releases";
 
 // The release's own schema, as prod's Herald serves it at /schemas/<identity>.
 const SCHEMA = JSON.parse(
@@ -30,7 +31,7 @@ beforeEach(() => {
     "leaderboard.json": { entries: [] },
     "pulled.json": { at: "2026-10-26T09:28:50+00:00" },
     "schema.json": SCHEMA,
-    "manifest.json": { contracts: { games: GAMES }, releaseSchemas: { "1": SCHEMA.identity } },
+    "manifest.json": { contracts: { games: GAMES }, releases: releaseLine(SCHEMA.identity, [1]) },
   };
   for (const [name, body] of Object.entries(files)) writeFileSync(join(pull, name), JSON.stringify(body));
   writeFileSync(join(pull, "usage.json"), PREVIOUS);
@@ -76,7 +77,7 @@ it("rejects a valid but unsupported schema before replacing the report", async (
   writeFileSync(join(pull, "schema.json"), JSON.stringify(historical));
   writeFileSync(
     join(pull, "manifest.json"),
-    JSON.stringify({ contracts: { games: GAMES }, releaseSchemas: { "1": historical.identity } }),
+    JSON.stringify({ contracts: { games: GAMES }, releases: releaseLine(historical.identity, [1]) }),
   );
   segment("0-100.jsonl.gz", [
     {

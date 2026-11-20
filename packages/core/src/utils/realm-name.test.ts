@@ -5,6 +5,7 @@ import { getStructureName } from "./entities";
 import { NativeFactStore } from "../client/native-fact-store";
 import { advanceGames } from "../../../../apps/launch-service/src/release";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { releaseLine } from "../test-support/releases";
 vi.stubGlobal("localStorage", { getItem: () => null });
 
 const home: NativeRows["Structure"] = {
@@ -91,7 +92,7 @@ describe("Realm identity", () => {
           game: async () => ({ settled: false, preset_id: 2n, family: 1n }),
           applyRelease,
         },
-        { releaseSchemas: { "2": schema, "3": schema, "4": schema } },
+        { releases: releaseLine(schema, [2, 3, 4]) },
         { releaseId: 4, schema, logic, migration: "0x0" },
         ["running", "next-season"],
       );

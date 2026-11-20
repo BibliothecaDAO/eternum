@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { dayOf } from "../../packages/core/src/utils/days";
-import { NATIVE_RELEASE_ID } from "./native-release";
+import { NATIVE_RELEASES } from "./native-release";
 import type { GameFacts } from "./game-facts";
 import { rehearseTune, type TuneSteps } from "./rehearse-tune";
 
@@ -38,8 +38,8 @@ function chain(afterTune: GameFacts, lag = 1) {
   const runs: string[][] = [];
   const steps: TuneSteps = {
     facts: async () => {
-      if (!tuned) return facts(NATIVE_RELEASE_ID - 1);
-      if (stale-- > 0) return facts(NATIVE_RELEASE_ID - 1);
+      if (!tuned) return facts(NATIVE_RELEASES.frontier.release - 1);
+      if (stale-- > 0) return facts(NATIVE_RELEASES.frontier.release - 1);
       return afterTune;
     },
     run: async (argv) => {
@@ -55,7 +55,7 @@ function chain(afterTune: GameFacts, lag = 1) {
 }
 
 test("a rehearsal registers the tune, applies it at the game's next day start and reports only the pin moving", async () => {
-  const { steps, runs, start } = chain(facts(NATIVE_RELEASE_ID));
+  const { steps, runs, start } = chain(facts(NATIVE_RELEASES.frontier.release));
   const report = await rehearseTune(steps, 1, "/private", []);
   expect(runs).toEqual([
     ["pnpm", "run", "deploy", "dev"],
@@ -63,7 +63,7 @@ test("a rehearsal registers the tune, applies it at the game's next day start an
   ]);
   expect(report.appliedAt).toBe(dayOf(CALENDAR, start / 1000)!.end * 1000);
   expect(dayOf(CALENDAR, report.appliedAt / 1000)!.start * 1000).toBe(report.appliedAt);
-  expect(report.releases).toEqual([NATIVE_RELEASE_ID - 1, NATIVE_RELEASE_ID]);
+  expect(report.releases).toEqual([NATIVE_RELEASES.frontier.release - 1, NATIVE_RELEASES.frontier.release]);
   expect(report.changes.map(({ model, members, expected }) => ({ model, members, expected }))).toEqual([
     { model: "GameRelease", members: ["release_id"], expected: true },
   ]);
@@ -71,19 +71,21 @@ test("a rehearsal registers the tune, applies it at the game's next day start an
 });
 
 test("a fact the tune does not name that changed is reported as unexpected", async () => {
-  const { steps } = chain(facts(NATIVE_RELEASE_ID, "0x63"));
+  const { steps } = chain(facts(NATIVE_RELEASES.frontier.release, "0x63"));
   const report = await rehearseTune(steps, 1, "/private", []);
   expect(report.unexpected).toBe(1);
   expect(report.changes.find((change) => !change.expected)).toMatchObject({ model: "ExplorerTroops" });
-  const named = await rehearseTune(chain(facts(NATIVE_RELEASE_ID, "0x63")).steps, 1, "/private", [
+  const named = await rehearseTune(chain(facts(NATIVE_RELEASES.frontier.release, "0x63")).steps, 1, "/private", [
     "ExplorerTroops.count",
   ]);
   expect(named.unexpected).toBe(0);
 });
 
 test("a game already on the release refuses before the Cloudflare half applies anything", async () => {
-  const { steps, runs } = chain(facts(NATIVE_RELEASE_ID));
-  steps.facts = async () => facts(NATIVE_RELEASE_ID);
-  await expect(rehearseTune(steps, 1, "/private", [])).rejects.toThrow(`already runs release ${NATIVE_RELEASE_ID}`);
+  const { steps, runs } = chain(facts(NATIVE_RELEASES.frontier.release));
+  steps.facts = async () => facts(NATIVE_RELEASES.frontier.release);
+  await expect(rehearseTune(steps, 1, "/private", [])).rejects.toThrow(
+    `already runs release ${NATIVE_RELEASES.frontier.release}`,
+  );
   expect(runs).toEqual([["pnpm", "run", "deploy", "dev"]]);
 });

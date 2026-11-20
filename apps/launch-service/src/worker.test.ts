@@ -13,6 +13,7 @@ import { CallData, hash } from "starknet";
 import { launcherAccountAddress } from "@realms-world/value-ledger";
 import { gamesAbi, gamesEvent, response } from "../../../packages/value-ledger/test-support/abi";
 import schema from "../../../contracts/l3/world-native/schema/schema.json";
+import { releaseLine } from "../../../packages/core/src/test-support/releases";
 
 /**
  * The Worker as Cloudflare runs it: the bundle wrangler deploys, its cron tick, its registrar Durable Object and D1 in
@@ -32,7 +33,7 @@ const SHARD_MANIFEST = {
   chainId: SHARD_CHAIN,
   l2GasBound: "0x47868c00",
   vrfPublicKey: { x: "0x1", y: "0x2" },
-  releaseSchemas: { "1": schema.identity },
+  releases: releaseLine(schema.identity, [1]),
   rpcUrl: `${SHARD_URL}/rpc`,
   accountClassHash: "0x2",
   guardianPublicKey: "0x9",

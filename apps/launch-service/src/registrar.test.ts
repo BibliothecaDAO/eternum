@@ -2,6 +2,7 @@ import { Effect, Layer } from "effect";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { Registrar } from "./registrar";
 import { LAUNCHER_LABEL } from "@realms-world/value-ledger";
+import { releaseLine } from "../../../packages/core/src/test-support/releases";
 const mock = vi.hoisted(() => ({
   account: vi.fn(),
   process: vi.fn(),
@@ -206,7 +207,7 @@ const RELEASE_MANIFEST = {
   chainId: "0x1",
   rpcUrl: "https://rpc.shard.test",
   contracts: { games: "0x9" },
-  releaseSchemas: { "1": RELEASE.schema, "2": RELEASE.schema },
+  releases: releaseLine(RELEASE.schema, [1, 2]),
 };
 const SHARD = { chainId: "0x1", url: "https://shard.test" };
 

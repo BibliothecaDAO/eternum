@@ -37,6 +37,8 @@ import {
   vapidKeys,
   waitUntil,
 } from "./workerd-harness";
+import { releaseLine } from "../../../packages/core/src/test-support/releases";
+import type { NativeReleases } from "@bibliothecadao/eternum/game-sync";
 
 /**
  * The shard notifier runs as it does on Cloudflare: the bundled Worker with its Durable Object, alarms and D1 in
@@ -114,10 +116,10 @@ const createHerald = () => {
     /** The players whose scoped stream has been sent its whole snapshot. */
     streamedSnapshots: [] as string[],
     /** The releases the manifest lists. */
-    catalogue: { [RELEASE]: bindings.schemaIdentity } as Record<string, string>,
+    catalogue: { [RELEASE]: releaseLine(bindings.schemaIdentity, [RELEASE - 1, RELEASE])[RELEASE]! } as NativeReleases,
     pins: new Map<string, { release_id: number; created_release_id: number }>(),
     /** Releases published into the catalogue once the player's own armies have been read. */
-    publishAfterPlayerRead: null as null | Record<string, string>,
+    publishAfterPlayerRead: null as null | NativeReleases,
   };
   const answer = (url: URL): unknown => {
     if (url.pathname === "/games") state.gamesReads++;
@@ -133,7 +135,7 @@ const createHerald = () => {
         version: 1,
         chainId: state.chain,
         contracts: { games: "0x5e45" },
-        releaseSchemas: state.catalogue,
+        releases: state.catalogue,
       };
     if (url.pathname === "/games")
       return {
@@ -685,7 +687,7 @@ describe.concurrent("shard notifications", () => {
 
   describe("a release published while a story page's rested armies are read", () => {
     const NEIGHBOUR = "0x7e1";
-    const play = async (published: Record<string, string>) => {
+    const play = async (published: NativeReleases) => {
       const harness = await createHarness("important");
       const { herald, worker } = harness;
       await worker.db
@@ -704,7 +706,7 @@ describe.concurrent("shard notifications", () => {
     };
 
     it("alerts the second actor once the catalogue is read again, with no further action", async () => {
-      const { herald, push, worker } = await play({ [RELEASE - 1]: bindings.schemaIdentity });
+      const { herald, push, worker } = await play(releaseLine(bindings.schemaIdentity, [RELEASE - 1]));
       try {
         await waitUntil(() => push.received.length >= 1, 90_000);
         expect(herald.state.publishAfterPlayerRead).toBeNull();
@@ -717,7 +719,7 @@ describe.concurrent("shard notifications", () => {
     }, 150_000);
 
     it("sends nothing when the release it names cannot be read", async () => {
-      const { herald, push, worker } = await play({ [RELEASE - 1]: "0x1" });
+      const { herald, push, worker } = await play(releaseLine("0x1", [RELEASE - 1]));
       try {
         await waitUntil(() => herald.state.publishAfterPlayerRead === null, 30_000);
         await pause(ticks(REST_TICKS + 3) + polls(5));

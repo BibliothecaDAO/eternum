@@ -33,7 +33,7 @@ export interface RegisteredRelease {
 }
 
 /** Herald's public manifest for the shard: the schema each release it can decode maps to. */
-export type PublishedReleases = Pick<ShardManifest, "releaseSchemas">;
+export type PublishedReleases = Pick<ShardManifest, "releases">;
 
 /** A release as the deployed commit's box build baked it: its id, schema, and logic and migration classes. */
 export interface ReleaseIdentity {
@@ -186,7 +186,7 @@ async function runningGamePins(chain: ReleaseChain, gameNames: readonly string[]
 /** Herald decodes every release from the oldest pin up with the commit's schema, or a game would leave its clients. */
 function requirePublished(herald: PublishedReleases, release: ReleaseIdentity, releaseIds: readonly number[]) {
   for (const releaseId of [release.releaseId, ...releaseIds])
-    if (herald.releaseSchemas[String(releaseId)] !== release.schema) throw new Error("release_unpublished");
+    if (herald.releases[String(releaseId)]?.schema !== release.schema) throw new Error("release_unpublished");
 }
 
 async function advanceGame(

@@ -9,7 +9,7 @@ import { registerNativeRelease } from "./releases";
 import { buildNativeManifest } from "./manifest";
 import type { NativeWorld } from "./types";
 import { nativeBalanceIdentity } from "../../../../../contracts/l3/world-native/schema/balance.gen";
-import { NATIVE_BALANCE_SINCE_RELEASE } from "../../../../../deploy/release/native-release";
+import { NATIVE_RELEASES } from "../../../../../deploy/release/native-release";
 
 const authentication = { account_class: "0x77", guardian_public_key: "0x88" };
 const catalogueDigest = realmCatalogueDigest(canonicalRealmTraits.length);
@@ -122,14 +122,21 @@ function fixture() {
     getTransactionStatus: async () => ({ finality_status: "ACCEPTED_ON_L2" }),
     getTransactionReceipt: async () => ({ execution_status: "SUCCEEDED", block_number: 10 }),
   };
-  local.previous = buildNativeManifest(local, { blockNumber: 10 } as never, {
-    chainId: "0x1",
-    accountClassHash: "0x77",
-    contracts: {},
-    guardianPublicKey: "0x99",
-    l2GasBound: "0x47868c00",
-    vrfPublicKey: { x: "0x1", y: "0x2" },
-  });
+  local.previous = buildNativeManifest(
+    local,
+    {
+      before: { blockNumber: 10 } as never,
+      after: { releases: { "1": { schema: local.release.schema, family: 1, previous: 0 } } } as never,
+    },
+    {
+      chainId: "0x1",
+      accountClassHash: "0x77",
+      contracts: {},
+      guardianPublicKey: "0x99",
+      l2GasBound: "0x47868c00",
+      vrfPublicKey: { x: "0x1", y: "0x2" },
+    },
+  );
   return { local, rpc, state, catalogue };
 }
 
@@ -168,6 +175,28 @@ describe("native deployment planning", () => {
         previous: local.previous,
       }),
     ).toThrow("seed native-test; native-other is refused");
+  });
+  test("a manifest that lists release schemas without their families is refused", () => {
+    const { local } = fixture();
+    const { releases, ...native } = local.previous!.native;
+    expect(() =>
+      loadNativeWorld({
+        artifacts: "missing",
+        schemaPath: "missing",
+        seed: local.seed,
+        authority: local.authority,
+        authentication,
+        launcher: "0x99",
+        ledgerOperator: "0x99",
+        vrfPublicKey: { x: "0x1", y: "0x2" },
+        l2GasBound: "0x47868c00",
+        release: local.release,
+        previous: {
+          ...local.previous!,
+          native: { ...native, releaseSchemas: { "1": releases["1"]!.schema } },
+        } as never,
+      }),
+    ).toThrow("lists no releases with their families");
   });
   test("an unchanged deployment submits zero transactions", async () => {
     const { local, rpc } = fixture();
@@ -261,6 +290,30 @@ describe("native deployment planning", () => {
     await expect(deployNativeWorld(local, rpc as unknown as Account, () => {})).rejects.toThrow("Games is immutable");
   });
 
+  test("a release the chain registered after the manifest was last written is copied from its own release row", async () => {
+    const { local, rpc, state } = fixture();
+    const shard = {
+      chainId: "0x1",
+      accountClassHash: "0x77",
+      contracts: {},
+      guardianPublicKey: "0x99",
+      l2GasBound: "0x47868c00",
+      vrfPublicKey: { x: "0x1", y: "0x2" },
+    };
+    const synced = await inspectNativeWorld(local, rpc as unknown as RpcProvider);
+    local.previous = buildNativeManifest(local, { before: synced, after: synced }, shard);
+    state.releases.set(2, { ...structuredClone(state.releases.get(1)!), previous: 1 });
+    local.release.releaseId = 3;
+    local.release.classes.logic.movement = "0x456";
+    local.logic.find(({ name }) => name === "movement")!.classHash = "0x456";
+    const report = await deployNativeWorld(local, rpc as unknown as Account, () => {});
+    expect(buildNativeManifest(local, report, shard).native.releases).toEqual({
+      "1": { schema: local.release.schema, family: 1, previous: 0 },
+      "2": { schema: local.release.schema, family: 1, previous: 1 },
+      "3": { schema: local.release.schema, family: 1, previous: 2 },
+    });
+  });
+
   test("a hotfix registers once, preserves the Games address, and leaves every game on its pin", async () => {
     const { local, rpc, state } = fixture();
     const shard = {
@@ -271,7 +324,8 @@ describe("native deployment planning", () => {
       l2GasBound: "0x47868c00",
       vrfPublicKey: { x: "0x1", y: "0x2" },
     };
-    local.previous = buildNativeManifest(local, await inspectNativeWorld(local, rpc as unknown as RpcProvider), shard);
+    const synced = await inspectNativeWorld(local, rpc as unknown as RpcProvider);
+    local.previous = buildNativeManifest(local, { before: synced, after: synced }, shard);
     local.release.releaseId = 2;
     local.release.classes.logic.movement = "0x456";
     local.logic.find(({ name }) => name === "movement")!.classHash = "0x456";
@@ -285,10 +339,10 @@ describe("native deployment planning", () => {
     expect(BigInt(state.releases.get(1)!.classes.movement)).toBe(0x123n);
     expect(BigInt(state.releases.get(2)!.classes.movement)).toBe(0x456n);
     expect(state.gamePins.get(7)).toBe(1);
-    const published = buildNativeManifest(local, first.before, shard);
-    expect(published.native.releaseSchemas).toEqual({
-      "1": local.previous.native.activeSchema,
-      "2": local.release.schema,
+    const published = buildNativeManifest(local, first, shard);
+    expect(published.native.releases).toEqual({
+      "1": { schema: local.previous.native.activeSchema, family: 1, previous: 0 },
+      "2": { schema: local.release.schema, family: 1, previous: 1 },
     });
     expect(published.native.releaseBalances).toEqual({ "1": nativeBalanceIdentity, "2": nativeBalanceIdentity });
     transactions.length = 0;
@@ -331,9 +385,10 @@ describe("native deployment planning", () => {
       l2GasBound: "0x47868c00",
       vrfPublicKey: { x: "0x1", y: "0x2" },
     };
-    const since = NATIVE_BALANCE_SINCE_RELEASE;
+    const since = NATIVE_RELEASES.frontier.since;
     const other = "0".repeat(64);
-    local.previous = buildNativeManifest(local, await inspectNativeWorld(local, rpc as unknown as RpcProvider), shard);
+    const synced = await inspectNativeWorld(local, rpc as unknown as RpcProvider);
+    local.previous = buildNativeManifest(local, { before: synced, after: synced }, shard);
     local.release.releaseId = since + 1;
     local.previous.native.releaseBalances = { [since]: other };
     await expect(
@@ -341,7 +396,7 @@ describe("native deployment planning", () => {
         throw new Error("unexpected transaction");
       }),
     ).rejects.toThrow(
-      `NATIVE_BALANCE_SINCE: release ${since} runs other balance numbers; set NATIVE_BALANCE_SINCE_RELEASE to ${since + 1}`,
+      `NATIVE_BALANCE_SINCE: release ${since} runs other balance numbers; set NATIVE_RELEASES.frontier.since to ${since + 1}`,
     );
     const accepted = (releaseBalances: Record<string, string> | undefined, releaseId = since + 1) =>
       expect(() =>

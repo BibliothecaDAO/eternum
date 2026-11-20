@@ -321,9 +321,9 @@ def pull_events(folder, base, last_block):
     every published segment whole and the next run starts after the last one."""
     manifest = get(f"{base}/manifest")
     games_contract = manifest["contracts"]["games"]
-    newest_release = max(manifest["releaseSchemas"], key=int)
+    newest_release = max(manifest["releases"], key=int)
     save(folder, "manifest.json", manifest)
-    save(folder, "schema.json", get(f"{base}/schemas/{manifest['releaseSchemas'][newest_release]}"))
+    save(folder, "schema.json", get(f"{base}/schemas/{manifest['releases'][newest_release]['schema']}"))
     segments = events_folder(games_contract)
     os.makedirs(segments, exist_ok=True)
     first = events_scanned_through(segments) + 1

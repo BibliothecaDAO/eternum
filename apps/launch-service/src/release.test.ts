@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { advanceGames, openForNewGames, type ReleaseChain, type ReleaseIdentity } from "./release";
 import { D1LaunchStore } from "./store";
 import { createLaunchTestDatabase, testChain } from "./test-database";
+import { releaseLine } from "../../../packages/core/src/test-support/releases";
 
 const SCHEMA = "2fbdecd09f961d7b387524eef591d8a0185c2dea59c7c334560c9789a444149e";
 const LOGIC = { season: "0x55e0", troops: "0x77a2", movement: "0x4de0" };
@@ -68,9 +69,7 @@ function shard(
   return { chain, applied, pins, opened };
 }
 
-const published = (...releases: number[]) => ({
-  releaseSchemas: Object.fromEntries(releases.map((release) => [String(release), SCHEMA])),
-});
+const published = (...releases: number[]) => ({ releases: releaseLine(SCHEMA, releases) });
 
 test("a running Frontier game on release 1 takes release 2 once it is registered and published", async () => {
   const { chain, applied } = shard(2, { 1: 1 });
@@ -176,12 +175,17 @@ test.each([
 });
 
 test.each([
-  ["Herald still serves only release 1", { releaseSchemas: { "1": SCHEMA } }],
-  ["Herald maps the pin's release to another schema", { releaseSchemas: { "1": "0".repeat(64), "2": SCHEMA } }],
+  ["Herald still serves only release 1", { releases: releaseLine(SCHEMA, [1]) }],
   [
-    "Herald maps every release, uniformly, to another schema",
-    { releaseSchemas: { "1": "f".repeat(64), "2": "f".repeat(64) } },
+    "Herald maps the pin's release to another schema",
+    {
+      releases: {
+        "1": { schema: "0".repeat(64), family: 1, previous: 0 },
+        "2": { schema: SCHEMA, family: 1, previous: 1 },
+      },
+    },
   ],
+  ["Herald maps every release, uniformly, to another schema", { releases: releaseLine("f".repeat(64), [1, 2]) }],
 ])("%s: refused, nothing sent", async (_case, herald) => {
   const { chain, applied } = shard(2, { 1: 1 });
   await expect(advanceGames(chain, herald, candidate(2), ["game-1"])).rejects.toThrow("release_unpublished");

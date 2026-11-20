@@ -28,6 +28,7 @@ import type { AccountInterface, Call } from "starknet";
 import { LAB_CHAIN_ID } from "./lab-shard";
 
 import { FRONTIER_S1_PRESET_ID, nativeGameModeOf } from "../../../../../config/source/common/native-preset-modes";
+import { releaseLine } from "../../../../../packages/core/src/test-support/releases";
 import {
   nativeFactModels,
   nativeFactSchemaIdentity,
@@ -294,9 +295,10 @@ const answerDirectory = (
   const manifest = {
     version: 1,
     chainId: LAB_GAME.chainId,
-    releaseSchemas: Object.fromEntries(
-      [...chain.rows("GameRelease")].flatMap((row) =>
-        [row.created_release_id, row.release_id].map((release) => [String(release), nativeFactSchemaIdentity]),
+    releases: releaseLine(
+      nativeFactSchemaIdentity,
+      [...new Set([...chain.rows("GameRelease")].flatMap((row) => [row.created_release_id, row.release_id]))].sort(
+        (left, right) => left - right,
       ),
     ),
     rpcUrl: LAB_SHARD_RPC,

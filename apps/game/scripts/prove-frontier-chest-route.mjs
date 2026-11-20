@@ -64,7 +64,7 @@ export async function proveFrontierChestRoute(browser, { baseUrl, backend, out }
         const directory=await response.json();
         const shard=directory.shard;
         if(shard?.manifest)
-          for(const id of Object.keys(shard.manifest.releaseSchemas))shard.manifest.releaseSchemas[id]=${JSON.stringify(schemaIdentity)};
+          for(const release of Object.values(shard.manifest.releases))release.schema=${JSON.stringify(schemaIdentity)};
         return new Response(JSON.stringify(directory),{status:response.status,headers:{'content-type':'application/json'}});
       };
     `,

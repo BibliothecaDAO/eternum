@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { dayOf } from "../../packages/core/src/utils/days";
-import { NATIVE_RELEASE_ID } from "./native-release";
+import { NATIVE_RELEASES } from "./native-release";
 import { diffFacts, readGameFacts, type FactChange, type GameFacts } from "./game-facts";
 
 const USAGE = "Usage: rehearse-tune.ts <game_id> /absolute/private-directory [--expect Model,Model.member,...]";
@@ -31,13 +31,13 @@ export async function rehearseTune(
   await steps.run(["pnpm", "run", "deploy", "dev"]);
   await steps.sleep(Math.max(0, nextDayBoundary(await steps.facts(gameId), steps.now()) - steps.now()));
   const before = await steps.facts(gameId);
-  if (pinnedRelease(before) >= NATIVE_RELEASE_ID)
+  if (pinnedRelease(before) >= NATIVE_RELEASES.frontier.release)
     throw new Error(
       `Game ${gameId} already runs release ${pinnedRelease(before)}; bump the release to rehearse a tune`,
     );
   const appliedAt = steps.now();
   await steps.run(["pnpm", "run", "deploy:cloudflare", "dev", directory]);
-  const after = await factsOnRelease(steps, gameId, NATIVE_RELEASE_ID);
+  const after = await factsOnRelease(steps, gameId, NATIVE_RELEASES.frontier.release);
   const changes = diffFacts(before, after, ["GameRelease.release_id", ...expect]);
   return {
     gameId,

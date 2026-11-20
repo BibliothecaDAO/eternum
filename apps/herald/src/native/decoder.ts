@@ -142,7 +142,7 @@ export class NativeDecoder {
   }
 
   private requireReleaseSchema(releaseId: string): void {
-    const identity = this.manifest.native.releaseSchemas[releaseId];
+    const identity = this.manifest.native.releases[releaseId]?.schema;
     // This fold's registry and checkpoint use one schema. Refuse before any migration rows enter it.
     if (identity !== this.schema.identity) throw new NativeReleaseSchemaUnavailable(releaseId, identity);
   }

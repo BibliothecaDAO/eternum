@@ -58,6 +58,7 @@ const labelled = (workers: EventEmitter[]) =>
     }) as unknown as Worker,
   }));
 import { holdsForSite } from "./frontier";
+import { releaseLine } from "../../../packages/core/src/test-support/releases";
 
 const TEST_ENDPOINTS = { RPC_URL: "http://127.0.0.1:28310/rpc/v0_10_2", HERALD_URL: "http://127.0.0.1:28311" };
 const savedEndpoints = { RPC_URL: process.env.RPC_URL, HERALD_URL: process.env.HERALD_URL };
@@ -86,7 +87,7 @@ describe("Madara harness workload", () => {
             accountClassHash: "0x2",
             guardianPublicKey: "0x3",
             l2GasBound: "0x1234",
-            releaseSchemas: { "1": bindings.schemaIdentity },
+            releases: releaseLine(bindings.schemaIdentity, [1]),
             rpcUrl: new URL("/rpc", request.url).href,
           });
         const call = (await request.json()) as { id: number };

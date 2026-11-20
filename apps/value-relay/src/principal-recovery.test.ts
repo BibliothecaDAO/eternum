@@ -10,6 +10,7 @@ import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
 import { ValueRelay } from "./worker";
 import { mutateDeposit } from "./deposit-ledger";
+import { releaseLine } from "../../../packages/core/src/test-support/releases";
 
 vi.mock("cloudflare:workers", () => ({
   WorkerEntrypoint: class {},
@@ -36,7 +37,7 @@ vi.mock("@realms-world/value-ledger", async (original) => ({
     chainId: "0x1",
     rpcUrl: "https://shard.test",
     contracts: { games: "0x2" },
-    releaseSchemas: { "1": "0xs" },
+    releases: releaseLine("0xs", [1]),
   }),
 }));
 vi.mock("@realms-world/value-ledger/deposits", async (original) => ({

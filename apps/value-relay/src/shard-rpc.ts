@@ -20,29 +20,29 @@ export const shardConnection = (shard: {
   rpcUrl: string;
   chainId: string;
   contracts: Record<string, string>;
-  releaseSchemas: Record<string, string>;
+  releases: Record<string, unknown>;
 }): ShardConnection => ({
   rpcUrl: shard.rpcUrl,
   gamesAddress: shard.contracts.games!,
   chainId: shard.chainId,
-  firstRelease: firstReleaseOf(shard.releaseSchemas),
+  firstRelease: firstReleaseOf(shard.releases),
 });
 
 /** The first release of the shard a Herald serves, from its manifest, refused when Herald names another chain. */
 export const readFirstRelease = async (heraldUrl: string, chainId: string, network: typeof fetch = fetch) => {
   const response = await network(new URL("/manifest", heraldUrl), { signal: AbortSignal.timeout(10_000) });
   if (!response.ok) throw new Error("herald_manifest_unavailable");
-  const manifest = (await response.json()) as { chainId: string; releaseSchemas: Record<string, string> };
+  const manifest = (await response.json()) as { chainId: string; releases: Record<string, unknown> };
   if (BigInt(manifest.chainId) !== BigInt(chainId)) throw new Error("herald_manifest_chain_differs");
-  return firstReleaseOf(manifest.releaseSchemas);
+  return firstReleaseOf(manifest.releases);
 };
 
 /** Releases are registered one after another from the chain's first, so the manifest's lowest is where it began. */
-export const firstReleaseOf = (releaseSchemas: Record<string, string>) => {
-  const releases = Object.keys(releaseSchemas ?? {}).map(Number);
-  if (!releases.length || !releases.every((release) => Number.isSafeInteger(release) && release > 0))
+export const firstReleaseOf = (releases: Record<string, unknown>) => {
+  const ids = Object.keys(releases ?? {}).map(Number);
+  if (!ids.length || !ids.every((release) => Number.isSafeInteger(release) && release > 0))
     throw new Error("invalid_shard_manifest_releases");
-  return Math.min(...releases);
+  return Math.min(...ids);
 };
 interface ShardEvent {
   from_address: string;

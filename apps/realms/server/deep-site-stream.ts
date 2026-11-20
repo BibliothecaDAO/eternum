@@ -37,13 +37,14 @@ export function followDeepSites(
   let enabled = false;
   let stopped = false;
   let pin: NativeRows["GameRelease"] | undefined;
+  let family: number | undefined;
   const stop = () => {
     stopped = true;
     transport.dispose();
   };
   const revalidate = async () => {
     try {
-      assertPinReadable(shardUrl, pin, await readReleaseCatalogue(shardUrl));
+      assertPinReadable(shardUrl, pin, family, await readReleaseCatalogue(shardUrl));
     } catch (error) {
       if (error instanceof ShardReleaseMismatchError) return stop();
       console.error("deep_site_release_unchecked", shardUrl, gameId, error);
@@ -55,10 +56,12 @@ export function followDeepSites(
       onSnapshotStart() {
         enabled = false;
         pin = undefined;
+        family = undefined;
       },
       onSnapshotModel(model, facts) {
         if (model === "DeepRules") enabled = facts.length > 0;
         if (model === "GameRelease") pin = facts[0]?.value as NativeRows["GameRelease"] | undefined;
+        if (model === "GameRegistry") family = (facts[0]?.value as NativeRows["GameRegistry"] | undefined)?.family;
       },
       onSnapshotEnd() {
         if (!enabled) {

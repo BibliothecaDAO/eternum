@@ -5,11 +5,12 @@ import {
   ShardReleaseMismatchError,
 } from "@bibliothecadao/eternum/game-client";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import type { NativeReleases } from "@bibliothecadao/eternum/game-sync";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 
 const MANIFEST_TIMEOUT_MS = 10_000;
 
-export type ReleaseCatalogue = Record<string, string>;
+export type ReleaseCatalogue = NativeReleases;
 
 /** The shard's release catalogue, the one the game client checks a game's pins against. */
 export const readReleaseCatalogue = async (shardUrl: string): Promise<ReleaseCatalogue> => {
@@ -18,10 +19,9 @@ export const readReleaseCatalogue = async (shardUrl: string): Promise<ReleaseCat
     redirect: "manual",
   });
   if (!response.ok) throw new Error(`${shardUrl}/manifest answered ${response.status}`);
-  const { releaseSchemas } = (await response.json()) as { releaseSchemas?: ReleaseCatalogue };
-  if (typeof releaseSchemas !== "object" || releaseSchemas === null)
-    throw new Error(`${shardUrl}/manifest names no release schemas`);
-  return releaseSchemas;
+  const { releases } = (await response.json()) as { releases?: ReleaseCatalogue };
+  if (typeof releases !== "object" || releases === null) throw new Error(`${shardUrl}/manifest names no releases`);
+  return releases;
 };
 
 /**
@@ -31,10 +31,12 @@ export const readReleaseCatalogue = async (shardUrl: string): Promise<ReleaseCat
 export const assertPinReadable = (
   shardUrl: string,
   pin: NativeRows["GameRelease"] | undefined,
+  family: number | undefined,
   catalogue: ReleaseCatalogue,
 ): void => {
   if (!pin) throw new ShardReleaseMismatchError(shardUrl, "no release pin");
-  assertReleaseReadable(pin, catalogue, bindings.schemaIdentity, shardUrl);
+  if (family === undefined) throw new ShardReleaseMismatchError(shardUrl, "no game family");
+  assertReleaseReadable(pin, family, catalogue, bindings.schemaIdentity, shardUrl);
 };
 
 /**
@@ -52,7 +54,7 @@ export const readGameFacts = async (
   const snapshot = await fetchHeraldGameSnapshot(
     { url: shardUrl },
     gameId,
-    [...models, "GameRelease"],
+    [...models, "GameRelease", "GameRegistry"],
     scope.actor,
     scope.owner,
   );
@@ -61,7 +63,12 @@ export const readGameFacts = async (
   store.applyFacts(
     snapshot.models.flatMap(({ model, rows }) => rows.map((row) => ({ model, key: row.key, value: row.value }))),
   );
-  assertPinReadable(shardUrl, store.get("GameRelease", { game_id: gameId }), catalogue);
+  assertPinReadable(
+    shardUrl,
+    store.get("GameRelease", { game_id: gameId }),
+    store.get("GameRegistry", { game_id: gameId })?.family,
+    catalogue,
+  );
   store.setSnapshot({ gameId, actor: scope.actor, complete: true, timestamp: Math.floor(now / 1000) });
   return store;
 };

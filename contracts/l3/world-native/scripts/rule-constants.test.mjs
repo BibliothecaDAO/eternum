@@ -159,9 +159,9 @@ test("release thresholds are generated for every reader, decoders included, in t
 
 test("every release threshold is a release this commit ships or an earlier one", async () => {
   const shipped = (await readFile(new URL("../../../deploy/release/native-release.ts", root), "utf8")).match(
-    /^export const NATIVE_RELEASE_ID = ([0-9]+);$/m,
+    /^  frontier: \{ family: [^,]+, release: ([0-9]+), since: [0-9]+ \},$/m,
   );
-  assert.ok(shipped, "missing NATIVE_RELEASE_ID");
+  assert.ok(shipped, "missing the Frontier release line");
   for (const [name, release] of Object.entries(await readReleaseConstants(root)))
     assert.ok(release <= Number(shipped[1]), `${name} is release ${release}, after the release this commit ships`);
 });

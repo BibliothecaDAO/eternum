@@ -1,19 +1,21 @@
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { NATIVE_BALANCE_SINCE_RELEASE, NATIVE_RELEASE_ID } from "../../../../deploy/release/native-release";
+import { NATIVE_RELEASES } from "../../../../deploy/release/native-release";
+import type { NativeReleases } from "../sync/herald-http-types";
 import type { NativeFactStore } from "./native-fact-store";
 import { GameOnOlderNumbersError, refreshShardRelease, ShardReleaseMismatchError, type Shard } from "./shard";
 
 /** Validate each game pin once, shared by every concurrent sender: an action waits until its pin is readable. */
 export function followGameRelease(
   store: NativeFactStore,
-  input: { gameId: number; shard: Pick<Shard, "url" | "releaseSchemas">; schemaIdentity: string },
+  input: { gameId: number; shard: Pick<Shard, "url" | "releases">; schemaIdentity: string },
   onUnknownDecoder: (error: ShardReleaseMismatchError) => void,
 ) {
   const controller = new AbortController();
-  let catalogue = input.shard.releaseSchemas;
+  let catalogue = input.shard.releases;
   let validated: NativeRows["GameRelease"] | undefined;
   let validation: { pin: NativeRows["GameRelease"]; promise: Promise<void> } | undefined;
   const pin = () => store.require("GameRelease", { game_id: input.gameId });
+  const family = () => store.require("GameRegistry", { game_id: input.gameId }).family;
 
   const validate = (): Promise<void> => {
     const candidate = pin();
@@ -33,14 +35,14 @@ export function followGameRelease(
 
   const validateRelease = async (candidate: NativeRows["GameRelease"]): Promise<void> => {
     while (!controller.signal.aborted && sameReleaseSpan(candidate, pin())) {
-      const missing = firstUnreadRelease(candidate, catalogue, input.schemaIdentity, input.shard.url);
+      const missing = firstUnreadRelease(candidate, family(), catalogue, input.schemaIdentity, input.shard.url);
       if (missing === undefined) {
         validated = candidate;
         return;
       }
       try {
         const shard = await refreshShardRelease(input.shard.url, String(missing), input.schemaIdentity);
-        catalogue = shard.releaseSchemas;
+        catalogue = shard.releases;
       } catch (error) {
         if (!sameReleaseSpan(candidate, pin())) return;
         if (error instanceof ShardReleaseMismatchError) throw error;
@@ -90,32 +92,44 @@ const sameReleaseSpan = (left: NativeRows["GameRelease"] | undefined, right: Nat
 
 export function assertReleaseReadable(
   pin: NativeRows["GameRelease"],
-  catalogue: Readonly<Record<string, string>>,
+  family: number,
+  catalogue: NativeReleases,
   schema: string,
   shardUrl: string,
 ): void {
   const span = `${pin.created_release_id}..${pin.release_id}`;
   if (!Number.isSafeInteger(pin.created_release_id) || !Number.isSafeInteger(pin.release_id))
     throw new ShardReleaseMismatchError(shardUrl, span);
-  const unread = firstUnreadRelease(pin, catalogue, schema, shardUrl);
+  const unread = firstUnreadRelease(pin, family, catalogue, schema, shardUrl);
   if (unread !== undefined) throw new ShardReleaseMismatchError(shardUrl, String(unread));
 }
 
+const releaseLineOf = (family: number, shardUrl: string) => {
+  const line = Object.values(NATIVE_RELEASES).find((candidate) => candidate.family === family);
+  if (!line) throw new ShardReleaseMismatchError(shardUrl, `family ${family}`);
+  return line;
+};
+
 function firstUnreadRelease(
   pin: NativeRows["GameRelease"],
-  catalogue: Readonly<Record<string, string>>,
+  family: number,
+  catalogue: NativeReleases,
   schema: string,
   shardUrl: string,
 ): number | undefined {
   if (pin.created_release_id < 1 || pin.created_release_id > pin.release_id)
     throw new ShardReleaseMismatchError(shardUrl, `${pin.created_release_id}..${pin.release_id}`);
-  if (pin.release_id < NATIVE_BALANCE_SINCE_RELEASE)
-    throw new GameOnOlderNumbersError(shardUrl, String(pin.release_id));
-  if (pin.release_id > NATIVE_RELEASE_ID) throw new ShardReleaseMismatchError(shardUrl, String(pin.release_id));
-  for (let release = pin.created_release_id; release <= pin.release_id; release++) {
+  const line = releaseLineOf(family, shardUrl);
+  if (pin.release_id < line.since) throw new GameOnOlderNumbersError(shardUrl, String(pin.release_id));
+  if (pin.release_id > line.release) throw new ShardReleaseMismatchError(shardUrl, String(pin.release_id));
+  for (let release = pin.release_id; ; ) {
     const known = catalogue[String(release)];
     if (known === undefined) return release;
-    if (known !== schema) throw new ShardReleaseMismatchError(shardUrl, String(release));
+    if (known.family !== family || known.schema !== schema)
+      throw new ShardReleaseMismatchError(shardUrl, String(release));
+    if (release === pin.created_release_id) return undefined;
+    if (known.previous < pin.created_release_id || known.previous >= release)
+      throw new ShardReleaseMismatchError(shardUrl, String(release));
+    release = known.previous;
   }
-  return undefined;
 }
