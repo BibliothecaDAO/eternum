@@ -15,12 +15,11 @@ pub enum Discovery {
     Spire,
 }
 
-// One reveal in two hundred, in basis points, when spire discovery is on.
 pub const SPIRE_FIND_BPS: u128 = 50;
 
 
 pub fn surface(config: MapConfig, seed: u256, mode_rules: u32) -> Discovery {
-    if mode_rules & crate::rules::DISCOVER_SPIRES != 0 && lottery(seed, 3, SPIRE_FIND_BPS, 10000 - SPIRE_FIND_BPS) {
+    if lottery(seed, 3, SPIRE_FIND_BPS, 10000 - SPIRE_FIND_BPS) {
         return Discovery::Spire;
     }
     if lottery(seed, 2, config.shards_mines_win_probability.into(), config.shards_mines_fail_probability.into()) {

@@ -14,13 +14,10 @@ fn a_spire_pays_a_thousand_essence_with_only_an_active_exploration_relic_bonus()
 }
 
 #[test]
-fn a_spire_root_finds_a_spire_only_under_the_spire_rule() {
+fn a_spire_root_finds_a_spire_before_a_camp() {
     let config = super::camps::rules(true).map_config;
-    let hit = explore_seed(SPIRE_ROOT);
-    let miss = explore_seed(NO_SPIRE_ROOT);
-    assert_eq!(surface(config, hit, DISCOVER_SPIRES + DISCOVER_CAMPS), Discovery::Spire);
-    assert_eq!(surface(config, miss, DISCOVER_SPIRES + DISCOVER_CAMPS), Discovery::Camp);
-    assert_eq!(surface(config, hit, DISCOVER_CAMPS), Discovery::Camp);
+    assert_eq!(surface(config, explore_seed(SPIRE_ROOT), DISCOVER_CAMPS), Discovery::Spire);
+    assert_eq!(surface(config, explore_seed(NO_SPIRE_ROOT), DISCOVER_CAMPS), Discovery::Camp);
 }
 
 #[test]
@@ -30,7 +27,7 @@ fn about_one_reveal_in_two_hundred_finds_a_spire() {
     config.camp_fail_probability = 1;
     let mut spires: u128 = 0;
     for sample in 0_u64..10000 {
-        if surface(config, 0x5350495245 + sample.into(), DISCOVER_SPIRES) == Discovery::Spire {
+        if surface(config, 0x5350495245 + sample.into(), 0) == Discovery::Spire {
             spires += 1;
         }
     }

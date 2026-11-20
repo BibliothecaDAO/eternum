@@ -215,30 +215,16 @@ pub mod MovementLogic {
             let spacing = self.expedition_spacing(game_id);
             let today = crate::days::day_of(context.game.unbox(), rules.day_unit_seconds, context.timestamp).index;
             let source_depth = crate::logic::expeditions::depth_at(game_id, explorer.coord);
-            let discovered = crate::rules::rule_enabled(rules, crate::rules::DISCOVER_SPIRES);
-            let origin = if discovered {
-                crate::logic::spires::descent_origin(
-                    crate::spires::ExpeditionSpireKey {
-                        game_id, structure_id: explorer.owner, epoch: today, depth: source_depth,
-                    },
-                    explorer.coord,
-                    command.depth,
-                )
-            } else {
-                let spire = crate::expeditions::spire(spacing, crate::entity_ids::namespace(explorer.owner), today);
-                assert!(
-                    explorer.coord == spire || crate::geometry::adjacent(explorer.coord, spire),
-                    "army must be at its realm's spire",
-                );
-                explorer.coord
-            };
-            let destination = if command.depth == 3 && crate::logic::deep_sites::enabled(game_id) {
+            let origin = crate::logic::spires::descent_origin(
+                crate::spires::ExpeditionSpireKey { game_id, structure_id: explorer.owner, epoch: today, depth: source_depth },
+                explorer.coord,
+                command.depth,
+            );
+            let destination = if command.depth == 3 {
                 crate::logic::deep_ticks::assert_caught_up(game_id, context);
                 crate::logic::deep::arrival(game_id, crate::logic::aspects::home_aspect(home_key), context)
-            } else if discovered {
-                crate::logic::spires::nearest_free_arrival(game_id, Coord { y: origin.y + spacing, ..origin }, spacing)
             } else {
-                Coord { y: origin.y + Into::<u8, u32>::into(command.depth) * spacing, ..origin }
+                crate::logic::spires::nearest_free_arrival(game_id, Coord { y: origin.y + spacing, ..origin }, spacing)
             };
             let location = tile_key(game_id, destination);
             if !crate::logic::deep::contains(game_id, destination) {

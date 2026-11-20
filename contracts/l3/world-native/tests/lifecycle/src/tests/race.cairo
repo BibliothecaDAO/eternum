@@ -160,16 +160,6 @@ fn factory_initializes_four_height_counters_without_map_structures() {
             }
         },
     );
-    let (_, mut ordinary_preset) = world_test_support::tests::preset_projection::current_definition("frontier-check");
-    ordinary_preset.economy.race = None;
-    let (ordinary, ordinary_game) = super::aspects::setup_aspect_preset(5, ordinary_preset);
-    interact_with_state(
-        ordinary.games,
-        || {
-            assert_eq!(race(ordinary_game).race_rules(ordinary_game), None);
-            assert_eq!(race(ordinary_game).race_result(ordinary_game), None);
-        },
-    );
 }
 
 #[test]
@@ -287,11 +277,7 @@ fn a_stage_on_the_last_tick_does_not_schedule_a_triumph_outside_the_season() {
 #[test]
 fn recorded_clear_mist_changes_real_reveals_only_on_its_day() {
     for spires in array![false, true] {
-        let mut preset = super::banes::definition();
-        if spires {
-            preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DISCOVER_SPIRES;
-        }
-        let (d, game_id) = super::aspects::setup_aspect_preset(5, preset);
+        let (d, game_id) = super::aspects::setup_aspect_preset(5, super::banes::definition());
         let home = ResourceKey { game_id, entity_id: found(d, game_id, 1) };
         super::banes::train(d, home, 360);
         if spires {

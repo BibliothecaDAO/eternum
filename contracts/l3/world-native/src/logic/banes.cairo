@@ -80,11 +80,6 @@ pub fn complete(home: ResourceKey, day: u64, timestamp: u64) {
 }
 
 pub fn read_effects(home: ResourceKey, from: u64, until: u64) -> BaneEffects {
-    if !crate::logic::aspects::enabled(home.game_id) {
-        return BaneEffects {
-            windows: array![].span(), beast_percent: 100, stamina_percent: 100, production_percent: 100,
-        };
-    }
     let effects = BaneEffects {
         windows: array![].span(),
         beast_percent: crate::balance::banes::BEAST_PERCENT,

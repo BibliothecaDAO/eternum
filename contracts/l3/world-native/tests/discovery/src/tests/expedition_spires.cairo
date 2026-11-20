@@ -4,16 +4,11 @@ use world_native::troops::Coord;
 const HERE: Coord = Coord { alt: false, x: 50, y: 50 };
 
 #[test]
-fn locked_lore_disabled_discovery_and_the_deep_do_not_advance_spire_odds() {
+fn locked_lore_and_the_deep_do_not_advance_spire_odds() {
     let key = ExpeditionSpireKey { game_id: 1, structure_id: 17, epoch: 0, depth: 0 };
     let learned = world_test_support::tests::registrar::lore(world_native::research::LORE_SPIRES);
-    let enabled = world_native::rules::DISCOVER_SPIRES;
-    for (candidate, knowledge, mode_rules) in array![
-        (key, 0_u64, enabled), (key, learned, 0_u32), (ExpeditionSpireKey { depth: 3, ..key }, learned, enabled),
-    ] {
-        assert!(
-            !world_native::logic::spires::discover_on_reveal(candidate, HERE, knowledge, mode_rules, 100, seed_for(0)),
-        );
+    for (candidate, knowledge) in array![(key, 0_u64), (ExpeditionSpireKey { depth: 3, ..key }, learned)] {
+        assert!(!world_native::logic::spires::discover_on_reveal(candidate, HERE, knowledge, 100, seed_for(0)));
         assert!(world_native::logic::spires::read(candidate).is_none());
     }
 }

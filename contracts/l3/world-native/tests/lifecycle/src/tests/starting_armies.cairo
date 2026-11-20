@@ -19,7 +19,7 @@ fn settle(d: Deployment, game_id: u32, held: bool, timestamp: u64) -> bool {
                 order: if held {
                     None
                 } else {
-                    Some(world_test_support::tests::registrar::order_of_aspect(d, game_id, 1))
+                    Some(world_test_support::tests::registrar::aspect_order(1))
                 },
             },
         ),

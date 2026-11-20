@@ -147,10 +147,9 @@ pub mod RelicState {
             let context = crate::commands::execution_context(site.game_id, context);
             let explorer_key = ExplorerKey { game_id: site.game_id, explorer_id };
             let explorer = crate::logic::troops::command_explorer(explorer_key, None, context.timestamp, context);
-            if crate::logic::army_relics::enabled(site.game_id)
-                && crate::logic::expeditions::expedition_site(site)
-                    .expect('missing expedition site')
-                    .category == crate::taxonomy::RUIN_CATEGORY {
+            if crate::logic::expeditions::expedition_site(site)
+                .expect('missing expedition site')
+                .category == crate::taxonomy::RUIN_CATEGORY {
                 crate::logic::army_relics::award(explorer_key, site, relic_slot);
             }
             if context.rules.unbox().day_unit_seconds != 0 {
@@ -191,7 +190,6 @@ pub mod RelicState {
             index: u8,
             context: ExecutionContext,
         ) {
-            assert!(crate::logic::army_relics::enabled(game_id), "army relics are disabled");
             let key = ExplorerKey { game_id, explorer_id: command.entity_id };
             let explorer = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
             let relic = crate::logic::army_relics::activate(key, index, command.relic_id, context.timestamp);

@@ -5,10 +5,6 @@ use crate::guards::{Guard, GuardKey};
 use crate::resources::ResourceKey;
 use crate::troops::ExplorerKey;
 
-pub fn enabled(game_id: u32) -> bool {
-    crate::logic::preset_record::for_game(game_id).deep_rules.read().is_some()
-}
-
 pub fn rules() -> DeepSettings {
     crate::balance::deep::DEEP_SETTINGS
 }
@@ -99,9 +95,6 @@ pub fn reward_beast_clear(key: ExplorerKey, home: u64, cleared: ResourceKey, tim
 }
 
 fn initialize(game_id: u32) {
-    if !enabled(game_id) {
-        return;
-    }
     let state = crate::state::write();
     crate::logic::deep_ticks::initialize(game_id);
     let start = state.games.games.entry(game_id).start_main_at.read();
@@ -126,9 +119,6 @@ fn initialize(game_id: u32) {
 }
 
 pub fn rollover(game_id: u32, context: ExecutionContext) -> bool {
-    if !enabled(game_id) {
-        return true;
-    }
     let game = context.game.unbox();
     if context.timestamp < game.start_main_at || (game.end_at != 0 && context.timestamp >= game.end_at) {
         return true;

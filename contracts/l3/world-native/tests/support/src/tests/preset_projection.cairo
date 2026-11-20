@@ -162,13 +162,11 @@ pub fn observe_settlement(ref rows: Array<ObservedRow>, address: ContractAddress
     let settlement_views = ISettlementViewsDispatcher { contract_address: address };
     let villages = IVillagePassesDispatcher { contract_address: address };
     let expedition_rules = IExpeditionRulesDispatcher { contract_address: address };
-    if let Some(packed) = interact_with_state(address, || crate::logic::aspects::rules(game_id)) {
-        let mut orders = array![];
-        for order in 1_u8..17 {
-            orders.append(crate::aspects::order_aspect(packed, order));
-        }
-        row(ref rows, 'AspectRules', key, orders.span());
+    let mut orders = array![];
+    for order in 1_u8..17 {
+        orders.append(crate::aspects::order_aspect(crate::logic::aspects::rules(), order));
     }
+    row(ref rows, 'AspectRules', key, orders.span());
     row(ref rows, 'RealmGrants', key, settlement_views.realm_grants(game_id));
     row(ref rows, 'VillageRules', key, villages.village_rules(game_id));
     for depth in 0..crate::balance::expeditions::DEPTH_RULES.span().len() {
@@ -184,14 +182,10 @@ pub fn observe_economy(ref rows: Array<ObservedRow>, address: ContractAddress, g
     let key = array![game_id.into()].span();
     let bridge = IBridgeDispatcher { contract_address: address };
     let withdrawals = IWithdrawalsDispatcher { contract_address: address };
-    if interact_with_state(address, || crate::logic::deep_sites::enabled(game_id)) {
-        row(ref rows, 'DeepRules', key, interact_with_state(address, || observed_deep_rules()));
-    }
+    row(ref rows, 'DeepRules', key, interact_with_state(address, || observed_deep_rules()));
     row(ref rows, 'QuestRules', key, interact_with_state(address, || observed_quest_rules()));
     row(ref rows, 'BaneRules', key, interact_with_state(address, || observed_bane_rules()));
-    if let Some(race) = interact_with_state(address, || crate::logic::race::rules(game_id)) {
-        row(ref rows, 'RaceRules', key, race);
-    }
+    row(ref rows, 'RaceRules', key, crate::logic::race::rules());
     row(ref rows, 'FrontierDiscoveryRules', key, crate::balance::expeditions::FRONTIER_DISCOVERY);
     let deposits = interact_with_state(address, || crate::logic::preset_record::for_game(game_id).deposit_rules.read());
     if deposits.is_some() {

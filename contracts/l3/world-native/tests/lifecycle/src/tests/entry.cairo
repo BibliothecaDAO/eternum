@@ -124,7 +124,7 @@ fn held_realm_settlement_uses_catalogue_traits_and_cannot_be_repeated() {
     assert!(ledger(d).register_entitlement(other_key, held).is_err());
     assert!(ledger(d).entry_entitlement(other_key).unwrap().is_none());
     let free = crate::commands::Command::SettleSeason(
-        crate::realms::SettleSeason { selected_realm: None, order: super::registrar::first_order_choice(d, game_id) },
+        crate::realms::SettleSeason { selected_realm: None, order: Some(super::registrar::aspect_order(1)) },
     );
     assert!(!super::resource_commands::execute_in_game(other, game_id, command, 360));
     assert!(super::resource_commands::execute_in_game(other, game_id, free, 360));
@@ -157,7 +157,7 @@ fn resume_reserved_realm_after_a_second_owner_attempts_entry(alternative: Option
     } else {
         crate::commands::Command::SettleSeason(
             crate::realms::SettleSeason {
-                selected_realm: None, order: super::registrar::first_order_choice(d, game_id),
+                selected_realm: None, order: Some(super::registrar::aspect_order(1)),
             },
         )
     };
@@ -193,7 +193,7 @@ fn interrupted_held_entry_keeps_its_claim_and_the_buyer_can_register_another_rea
 fn a_free_settlement_attaches_only_the_chosen_held_realm_once() {
     let (d, game_id) = super::registrar::setup_open_frontier();
     let command = crate::commands::Command::SettleSeason(
-        crate::realms::SettleSeason { selected_realm: None, order: super::registrar::first_order_choice(d, game_id) },
+        crate::realms::SettleSeason { selected_realm: None, order: Some(super::registrar::aspect_order(1)) },
     );
     assert!(super::resource_commands::execute_in_game(d, game_id, command, 360));
     let home = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));

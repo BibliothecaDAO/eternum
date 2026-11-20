@@ -93,7 +93,6 @@ fn roll(
         crate::spires::ExpeditionSpireKey { game_id: key.game_id, structure_id: home, epoch: counter.epoch, depth },
         Coord { alt: key.alt, x: key.col, y: key.row },
         learned,
-        crate::logic::preset_record::for_game(key.game_id).rules.mode_rules.read(),
         find_percent,
         seed,
     ) {

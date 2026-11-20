@@ -1,6 +1,5 @@
 use starknet::storage::StoragePointerReadAccess;
 use crate::banes::MIST_TIDE;
-use crate::race::{IRaceDispatcherTrait, IRaceLibraryDispatcher};
 use crate::resources::ResourceKey;
 use crate::stamina::StaminaTrait;
 use crate::troops::{Coord, Stamina, StaminaRefill, TroopBoosts};
@@ -51,8 +50,7 @@ pub fn refill(
 }
 
 fn second_wind(home: ResourceKey) -> Option<Wind> {
-    let race = IRaceLibraryDispatcher { class_hash: crate::logic::release::classes(home.game_id).economy.read() };
-    let rules = race.race_rules(home.game_id)?;
+    let rules = crate::logic::race::rules();
     let period = crate::logic::triumphs::period(home, crate::race::SECOND_WIND_STAGE)?;
     Some(
         Wind {

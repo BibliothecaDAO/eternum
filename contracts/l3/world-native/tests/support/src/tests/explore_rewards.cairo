@@ -5,7 +5,7 @@ pub use crate::exploration_rewards::{ExtractedReward, spire_reward};
 pub use crate::geometry::{neighbor, tile_key};
 pub use crate::map::IMapLogicDispatcher;
 pub use crate::resources::{ESSENCE, LABOR, ResourceKey};
-pub use crate::rules::{DISCOVER_CAMPS, DISCOVER_SPIRES, RESOURCE_PRECISION};
+pub use crate::rules::{DISCOVER_CAMPS, RESOURCE_PRECISION};
 pub use crate::tests::state::{GameState, MapObservationTrait, StructureObservationTrait, TroopObservationTrait};
 pub use crate::troops::{ExplorerKey, TroopTier, Troops};
 pub use super::play_fixture::{TestAction, play, rejection};

@@ -79,8 +79,7 @@ fn follow_surface_path(d: Deployment, key: ExplorerKey, path: Span<Coord>, now: 
 
 #[test]
 fn discovered_spires_take_a_real_army_through_each_layer_to_the_shared_deep() {
-    let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("frontier-check");
-    preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DISCOVER_SPIRES;
+    let (_, preset) = world_test_support::tests::preset_projection::current_definition("frontier-check");
     let (d, game_id) = super::aspects::setup_aspect_preset(93, preset);
     let home = found(d, game_id, 1);
     let realm = ResourceKey { game_id, entity_id: home };
