@@ -156,7 +156,6 @@ export const nativeResearchConstants = {
   "SCOUTS_LODGE_LEVEL": 1
 } as const;
 export const nativeFragmentConstants = {
-  "FRIEND": 2,
   "WONDER_QUEST_FRAGMENTS": 10,
   "SEAL_FRAGMENTS": 1000,
   "OATH_REROLL_FRAGMENTS": 25,

@@ -22,11 +22,7 @@ pub fn credit(game_id: u32, credit: FragmentCredit) {
     let game = crate::logic::game::game(game_id);
     assert!(game.end_at == 0 || starknet::get_block_timestamp() < game.end_at, "game ended");
     crate::state::write().entry.fragment_credits.write((game_id, credit.id), Some(receipt));
-    emit(
-        'FragmentCredit',
-        array![game_id.into(), credit.id],
-        array![credit.account.into(), credit.amount.into()],
-    );
+    emit('FragmentCredit', array![game_id.into(), credit.id], array![credit.account.into(), credit.amount.into()]);
     add(game_id, credit.account, credit.amount);
 }
 
