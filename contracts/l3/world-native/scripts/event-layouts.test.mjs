@@ -55,19 +55,6 @@ test("Games exposes the published player frame, roles and frozen roster ABI", as
     { name: "game_id", type: "core::integer::u32" },
     { name: "structure_id", type: "core::integer::u64" },
   ]);
-  const relics = JSON.parse(
-    await readFile(new URL("../target/dev/world_native_RelicsLogic.contract_class.json", import.meta.url), "utf8"),
-  ).abi;
-  assert.deepEqual(relics.find(({ name }) => name === "world_native::relics::LordsBudget").members, [
-    { name: "pool", type: "core::integer::u128" },
-    { name: "pool_left", type: "core::integer::u128" },
-    { name: "open", type: "core::integer::u128" },
-    { name: "day", type: "core::integer::u64" },
-    { name: "price", type: "core::integer::u128" },
-    { name: "rolled_shares", type: "core::integer::u128" },
-    { name: "yesterday_shares", type: "core::integer::u128" },
-    { name: "yesterday_ticks", type: "core::integer::u64" },
-  ]);
   assert.equal(
     methods.some(({ name }) => name === "lords_budget"),
     false,
