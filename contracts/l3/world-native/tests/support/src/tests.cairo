@@ -162,6 +162,8 @@ pub fn setup_with_host(
     let mut calldata = array![authority().into(), authority().into()];
     authentication.serialize(ref calldata);
     calldata.append(1);
+    calldata.append(crate::game::FRONTIER.into());
+    calldata.append(0);
     classes.serialize(ref calldata);
     calldata.append(0);
     append_vrf_configuration(ref calldata);
