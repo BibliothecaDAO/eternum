@@ -40,7 +40,6 @@ test("the schema identity hashes every identifier and no tunable number", async 
 const QUANTITY =
   /_(BPS|PERCENT|STAMINA|PER_[A-Z]+|FRAGMENTS|LIMIT|CAP|SHARE|COUNT|SIZE|SECONDS|PLAYERS|LEVEL|STEPS|BASE|SLOTS|STORES|RINGS|COST|AMOUNT|RATE|MAX|MIN|BELOW|ABOVE|UNDER|OVER|THRESHOLD)$/;
 const HASHED_QUANTITIES = [
-  "rule.MAX_BLITZ_ROSTER_PLAYERS",
   "rule.FRONTIER_REPORT_GRACE_SECONDS",
   "rule.DEEP_MAP_SIZE",
   "rule.DEEP_KIND_COUNT",
@@ -127,23 +126,18 @@ test("a wire change changes the schema identity", async () => {
   assert.notEqual(sha256(changed), identity);
 });
 
-test("native roster constants publish their rule values in the generated balance module", async () => {
+test("native rule constants publish their rule values in the generated balance module", async () => {
   const rules = await readRuleConstants(root);
   const balance = await readBalanceModule();
   for (const [name, value] of Object.entries(rules))
     assert.match(balance, new RegExp(`^  "?${name}"?: ${value},?$`, "m"));
-  const shared = await readFile(new URL("src/roster_limits.cairo", root), "utf8");
-  const value = shared.match(/^pub const MAX_BLITZ_ROSTER_PLAYERS: u32 = ([0-9]+);$/m);
-  assert.ok(value, "missing shared MAX_BLITZ_ROSTER_PLAYERS");
-  assert.equal(rules.MAX_BLITZ_ROSTER_PLAYERS, Number(value[1]));
 });
 
 test("a missing shared rule refuses schema generation instead of becoming a silent zero", async () => {
-  const directory = await mkdtemp(join(tmpdir(), "roster-rule-test-"));
+  const directory = await mkdtemp(join(tmpdir(), "shared-rule-test-"));
   try {
     await mkdir(join(directory, "src"));
-    await writeFile(join(directory, "src/rules.cairo"), "pub const MAX: u32 = crate::roster_limits::MISSING;\n");
-    await writeFile(join(directory, "src/roster_limits.cairo"), "pub const MAX_BLITZ_ROSTER_PLAYERS: u32 = 24;\n");
+    await writeFile(join(directory, "src/rules.cairo"), "pub const MAX: u32 = crate::days::MISSING;\n");
     await writeFile(
       join(directory, "src/day_schedule.cairo"),
       "pub const FRONTIER_REPORT_GRACE_SECONDS: u32 = 3600;\n",
