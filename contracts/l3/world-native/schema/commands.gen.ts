@@ -27,13 +27,8 @@ export const nativeCommandBits = {
   "DestroyBuilding": "4194304",
   "PauseBuildingProduction": "8388608",
   "ResumeBuildingProduction": "16777216",
-  "ContributeBitcoinLabor": "33554432",
-  "CloseBitcoinPhase": "67108864",
-  "BindBitcoinPhase": "134217728",
-  "ClaimBitcoinPhase": "268435456",
   "BattleGuard": "536870912",
   "ApplyRelic": "8796093022208",
-  "RecordBlitzResults": "2251799813685248",
   "CreateGuild": "9007199254740992",
   "JoinGuild": "18014398509481984",
   "LeaveGuild": "36028797018963968",
@@ -77,13 +72,8 @@ export interface NativeCommandPayloads {
   DestroyBuilding: { readonly structure_id: BigNumberish; readonly coord: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish } };
   PauseBuildingProduction: { readonly structure_id: BigNumberish; readonly coord: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish } };
   ResumeBuildingProduction: { readonly structure_id: BigNumberish; readonly coord: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish } };
-  ContributeBitcoinLabor: { readonly structure_id: BigNumberish; readonly amount: BigNumberish };
-  CloseBitcoinPhase: BigNumberish;
-  BindBitcoinPhase: BigNumberish;
-  ClaimBitcoinPhase: { readonly phase: BigNumberish; readonly mine_ids: readonly (BigNumberish)[] };
   BattleGuard: { readonly attacker_id: BigNumberish; readonly defender_id: BigNumberish; readonly relic_slot: { readonly kind: "Some"; readonly value: BigNumberish } | { readonly kind: "None"; readonly value: undefined } };
   ApplyRelic: { readonly entity_id: BigNumberish; readonly relic_id: BigNumberish; readonly recipient: { readonly kind: "Explorer"; readonly value: undefined } | { readonly kind: "StructureProduction"; readonly value: undefined } | { readonly kind: "StructureGuard"; readonly value: undefined } | { readonly kind: "ArmySlot"; readonly value: BigNumberish } };
-  RecordBlitzResults: undefined;
   CreateGuild: { readonly owned_structure_id: BigNumberish; readonly public: boolean; readonly name: BigNumberish };
   JoinGuild: { readonly owned_structure_id: BigNumberish; readonly guild_id: BigNumberish };
   LeaveGuild: undefined;

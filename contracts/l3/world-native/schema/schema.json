@@ -349,80 +349,8 @@
         ]
       },
       {
-        "name": "PointsAwarded",
-        "prefix": [
-          "0x3c13ec798226b99ece5ff7cda6fda330a04d9f80b95a25689a4e0e66a6b4ca8"
-        ],
-        "members": [
-          {
-            "name": "version",
-            "type": "core::integer::u8",
-            "kind": "key"
-          },
-          {
-            "name": "game_id",
-            "type": "core::integer::u32",
-            "kind": "key"
-          },
-          {
-            "name": "player",
-            "type": "core::starknet::contract_address::ContractAddress",
-            "kind": "key"
-          },
-          {
-            "name": "activity",
-            "type": "world_native::game::PointActivity",
-            "kind": "data"
-          },
-          {
-            "name": "points",
-            "type": "core::integer::u128",
-            "kind": "data"
-          },
-          {
-            "name": "player_points",
-            "type": "core::integer::u128",
-            "kind": "data"
-          },
-          {
-            "name": "season_points",
-            "type": "core::integer::u128",
-            "kind": "data"
-          }
-        ]
-      },
-      {
         "name": "RowSet",
         "prefix": [
-          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-        ],
-        "members": [
-          {
-            "name": "version",
-            "type": "core::integer::u8",
-            "kind": "key"
-          },
-          {
-            "name": "model",
-            "type": "core::felt252",
-            "kind": "key"
-          },
-          {
-            "name": "keys",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          },
-          {
-            "name": "values",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          }
-        ]
-      },
-      {
-        "name": "RowSet",
-        "prefix": [
-          "0x2ee4180742549f953a9645d6fa6ae6f280bda1bf24df98d232139c12dbe228e",
           "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
         ],
         "members": [
@@ -1387,79 +1315,6 @@
       {
         "name": "RowSet",
         "prefix": [
-          "0x3928dc11165e890253f789440484151979481b14f31e18bdb3efce1debf3f99",
-          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-        ],
-        "members": [
-          {
-            "name": "version",
-            "type": "core::integer::u8",
-            "kind": "key"
-          },
-          {
-            "name": "model",
-            "type": "core::felt252",
-            "kind": "key"
-          },
-          {
-            "name": "keys",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          },
-          {
-            "name": "values",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          }
-        ]
-      },
-      {
-        "name": "StoryEvent",
-        "prefix": [
-          "0x3928dc11165e890253f789440484151979481b14f31e18bdb3efce1debf3f99",
-          "0x33b7d96bc1ff34b0a89214516b6ef5d2b8bdd9c301222eda2a1e96f78b84b96"
-        ],
-        "members": [
-          {
-            "name": "version",
-            "type": "core::integer::u8",
-            "kind": "key"
-          },
-          {
-            "name": "game_id",
-            "type": "core::integer::u32",
-            "kind": "key"
-          },
-          {
-            "name": "owner",
-            "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
-            "kind": "key"
-          },
-          {
-            "name": "entity_id",
-            "type": "core::option::Option::<core::integer::u64>",
-            "kind": "key"
-          },
-          {
-            "name": "tx_hash",
-            "type": "core::felt252",
-            "kind": "key"
-          },
-          {
-            "name": "story",
-            "type": "world_native::ownership::Story",
-            "kind": "data"
-          },
-          {
-            "name": "timestamp",
-            "type": "core::integer::u64",
-            "kind": "data"
-          }
-        ]
-      },
-      {
-        "name": "RowSet",
-        "prefix": [
           "0x1802590aa0d0014b09ee2fa499bc79af325f29b5060b277105bd4c749e5e9ad",
           "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
         ],
@@ -1913,50 +1768,6 @@
         "outputs": [
           {
             "type": "world_native::entry::FrontierPrize"
-          }
-        ],
-        "state_mutability": "view"
-      },
-      {
-        "type": "function",
-        "name": "grant_labor",
-        "inputs": [
-          {
-            "name": "home",
-            "type": "world_native::entry::LaborHome"
-          },
-          {
-            "name": "day",
-            "type": "core::integer::u64"
-          },
-          {
-            "name": "account",
-            "type": "core::starknet::contract_address::ContractAddress"
-          }
-        ],
-        "outputs": [
-          {
-            "type": "world_native::entry::LaborGrant"
-          }
-        ],
-        "state_mutability": "external"
-      },
-      {
-        "type": "function",
-        "name": "labor_grant",
-        "inputs": [
-          {
-            "name": "home",
-            "type": "world_native::entry::LaborHome"
-          },
-          {
-            "name": "day",
-            "type": "core::integer::u64"
-          }
-        ],
-        "outputs": [
-          {
-            "type": "core::option::Option::<world_native::entry::LaborGrant>"
           }
         ],
         "state_mutability": "view"
@@ -2439,26 +2250,6 @@
       },
       {
         "type": "function",
-        "name": "player_points",
-        "inputs": [
-          {
-            "name": "game_id",
-            "type": "core::integer::u32"
-          },
-          {
-            "name": "actor",
-            "type": "core::starknet::contract_address::ContractAddress"
-          }
-        ],
-        "outputs": [
-          {
-            "type": "core::integer::u128"
-          }
-        ],
-        "state_mutability": "view"
-      },
-      {
-        "type": "function",
         "name": "expedition_home_ring",
         "inputs": [
           {
@@ -2477,22 +2268,6 @@
         "outputs": [
           {
             "type": "core::array::Span::<(world_native::troops::Coord, core::integer::u8)>"
-          }
-        ],
-        "state_mutability": "view"
-      },
-      {
-        "type": "function",
-        "name": "game_result",
-        "inputs": [
-          {
-            "name": "game_id",
-            "type": "core::integer::u32"
-          }
-        ],
-        "outputs": [
-          {
-            "type": "core::array::Span::<core::felt252>"
           }
         ],
         "state_mutability": "view"
@@ -2683,40 +2458,6 @@
       ],
       "keyLength": 3,
       "valueLength": 1
-    },
-    {
-      "name": "BlitzResult",
-      "identity": "0x426c69747a526573756c74",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "players",
-          "type": "core::array::Span::<world_native::blitz_results::RankedPlayer>",
-          "id": "0x706c6179657273",
-          "feltLength": null
-        },
-        {
-          "name": "complete",
-          "type": "core::bool",
-          "id": "0x636f6d706c657465",
-          "feltLength": 1
-        },
-        {
-          "name": "commitment",
-          "type": "core::felt252",
-          "id": "0x636f6d6d69746d656e74",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": null
     },
     {
       "name": "DepositSource",
@@ -4159,197 +3900,6 @@
         "fields": {
           "troops": "troops",
           "destroyedAt": "destroyed_tick"
-        }
-      }
-    },
-    {
-      "name": "BitcoinMine",
-      "identity": "0x426974636f696e4d696e65",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "entity_id",
-          "type": "core::integer::u64",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "eligible_from",
-          "type": "core::integer::u64",
-          "id": "0x656c696769626c655f66726f6d",
-          "feltLength": 1
-        },
-        {
-          "name": "next_phase",
-          "type": "core::integer::u64",
-          "id": "0x6e6578745f7068617365",
-          "feltLength": 1
-        },
-        {
-          "name": "unsplit_carry",
-          "type": "core::integer::u128",
-          "id": "0x756e73706c69745f6361727279",
-          "feltLength": 1
-        },
-        {
-          "name": "winner_carry",
-          "type": "core::integer::u128",
-          "id": "0x77696e6e65725f6361727279",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 2,
-      "valueLength": 4,
-      "observation": {
-        "domain": "bitcoin",
-        "fields": {
-          "eligibleFrom": "eligible_from",
-          "nextClaim": "next_phase",
-          "unsplitCarry": "unsplit_carry",
-          "winnerCarry": "winner_carry"
-        }
-      }
-    },
-    {
-      "name": "BitcoinClaim",
-      "identity": "0x426974636f696e436c61696d",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "phase",
-          "type": "core::integer::u64",
-          "feltLength": 1
-        },
-        {
-          "name": "mine_id",
-          "type": "core::integer::u64",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "claimed",
-          "type": "core::bool",
-          "id": "0x636c61696d6564",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 3,
-      "valueLength": 1,
-      "observation": {
-        "domain": "bitcoin",
-        "fields": {
-          "claimed": "claimed"
-        }
-      }
-    },
-    {
-      "name": "BitcoinPhase",
-      "identity": "0x426974636f696e5068617365",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "phase",
-          "type": "core::integer::u64",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "total_labor",
-          "type": "core::integer::u128",
-          "id": "0x746f74616c5f6c61626f72",
-          "feltLength": 1
-        },
-        {
-          "name": "contributors",
-          "type": "core::integer::u32",
-          "id": "0x636f6e7472696275746f7273",
-          "feltLength": 1
-        },
-        {
-          "name": "state",
-          "type": "world_native::bitcoin::PhaseStatus",
-          "id": "0x7374617465",
-          "feltLength": 1
-        },
-        {
-          "name": "root",
-          "type": "core::integer::u256",
-          "id": "0x726f6f74",
-          "feltLength": 2
-        }
-      ],
-      "keyLength": 2,
-      "valueLength": 5,
-      "observation": {
-        "domain": "bitcoin",
-        "fields": {
-          "labor": "total_labor",
-          "contributors": "contributors",
-          "state": "state",
-          "root": "root"
-        }
-      }
-    },
-    {
-      "name": "BitcoinContribution",
-      "identity": "0x426974636f696e436f6e747269627574696f6e",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "phase",
-          "type": "core::integer::u64",
-          "feltLength": 1
-        },
-        {
-          "name": "player",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "labor",
-          "type": "core::integer::u128",
-          "id": "0x6c61626f72",
-          "feltLength": 1
-        },
-        {
-          "name": "structure_id",
-          "type": "core::integer::u64",
-          "id": "0x7374727563747572655f6964",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 3,
-      "valueLength": 2,
-      "observation": {
-        "domain": "bitcoin",
-        "fields": {
-          "labor": "labor",
-          "destination": "structure_id"
         }
       }
     },
@@ -6809,7 +6359,7 @@
           "name": "map_config",
           "type": "world_native::rules::MapConfig",
           "id": "0x6d61705f636f6e666967",
-          "feltLength": 12
+          "feltLength": 10
         },
         {
           "name": "biome_climate_config",
@@ -6821,7 +6371,7 @@
           "name": "tick_config",
           "type": "world_native::rules::TickConfig",
           "id": "0x7469636b5f636f6e666967",
-          "feltLength": 3
+          "feltLength": 2
         },
         {
           "name": "troop_damage_config",
@@ -6851,25 +6401,13 @@
           "name": "structure_capacity_config",
           "type": "world_native::rules::StructureCapacityConfig",
           "id": "0x7374727563747572655f63617061636974795f636f6e666967",
-          "feltLength": 7
+          "feltLength": 6
         },
         {
           "name": "building_config",
           "type": "world_native::rules::BuildingConfig",
           "id": "0x6275696c64696e675f636f6e666967",
           "feltLength": 2
-        },
-        {
-          "name": "bitcoin_mine_config",
-          "type": "world_native::rules::BitcoinMineConfig",
-          "id": "0x626974636f696e5f6d696e655f636f6e666967",
-          "feltLength": 4
-        },
-        {
-          "name": "victory_points_grant_config",
-          "type": "world_native::rules::VictoryPointsGrantConfig",
-          "id": "0x766963746f72795f706f696e74735f6772616e745f636f6e666967",
-          "feltLength": 5
         },
         {
           "name": "map_center_offset",
@@ -6915,75 +6453,8 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 100,
+      "valueLength": 87,
       "derivedFrom": "preset"
-    },
-    {
-      "name": "PlayerPoints",
-      "identity": "0x506c61796572506f696e7473",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "address",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "points",
-          "type": "core::integer::u128",
-          "id": "0x706f696e7473",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 2,
-      "valueLength": 1,
-      "absence": {
-        "value": "zero",
-        "meaning": "The chain writes a player's points on their first award; no row means the player has scored nothing."
-      },
-      "observation": {
-        "domain": "points",
-        "fields": {
-          "registered": "points"
-        }
-      },
-      "eventProjection": "PointsAwarded"
-    },
-    {
-      "name": "PointsTotal",
-      "identity": "0x506f696e7473546f74616c",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "total",
-          "type": "core::integer::u128",
-          "id": "0x746f74616c",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 1,
-      "observation": {
-        "domain": "points",
-        "fields": {
-          "registered": "total"
-        }
-      },
-      "eventProjection": "PointsAwarded"
     }
   ],
   "events": [
@@ -7056,53 +6527,6 @@
           {
             "name": "reason",
             "type": "core::byte_array::ByteArray",
-            "kind": "data"
-          }
-        ]
-      }
-    },
-    {
-      "name": "PointsAwarded",
-      "scope": "game",
-      "version": 1,
-      "event": {
-        "type": "event",
-        "name": "world_native::game::PointsAwarded",
-        "kind": "struct",
-        "members": [
-          {
-            "name": "version",
-            "type": "core::integer::u8",
-            "kind": "key"
-          },
-          {
-            "name": "game_id",
-            "type": "core::integer::u32",
-            "kind": "key"
-          },
-          {
-            "name": "player",
-            "type": "core::starknet::contract_address::ContractAddress",
-            "kind": "key"
-          },
-          {
-            "name": "activity",
-            "type": "world_native::game::PointActivity",
-            "kind": "data"
-          },
-          {
-            "name": "points",
-            "type": "core::integer::u128",
-            "kind": "data"
-          },
-          {
-            "name": "player_points",
-            "type": "core::integer::u128",
-            "kind": "data"
-          },
-          {
-            "name": "season_points",
-            "type": "core::integer::u128",
             "kind": "data"
           }
         ]
@@ -7269,16 +6693,6 @@
         }
       ]
     },
-    "core::array::Span::<core::integer::u64>": {
-      "type": "struct",
-      "name": "core::array::Span::<core::integer::u64>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<core::integer::u64>"
-        }
-      ]
-    },
     "core::array::Span::<core::integer::u8>": {
       "type": "struct",
       "name": "core::array::Span::<core::integer::u8>",
@@ -7296,16 +6710,6 @@
         {
           "name": "snapshot",
           "type": "@core::array::Array::<core::starknet::class_hash::ClassHash>"
-        }
-      ]
-    },
-    "core::array::Span::<world_native::blitz_results::RankedPlayer>": {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::blitz_results::RankedPlayer>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::blitz_results::RankedPlayer>"
         }
       ]
     },
@@ -7696,20 +7100,6 @@
         {
           "name": "Some",
           "type": "world_native::deposits::PrincipalWithdrawal"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::entry::LaborGrant>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::entry::LaborGrant>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::entry::LaborGrant"
         },
         {
           "name": "None",
@@ -8108,230 +7498,6 @@
         {
           "name": "kind",
           "type": "core::integer::u8"
-        }
-      ]
-    },
-    "world_native::bitcoin::BitcoinAwardStory": {
-      "type": "struct",
-      "name": "world_native::bitcoin::BitcoinAwardStory",
-      "members": [
-        {
-          "name": "phase",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "mine_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "winner",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "owner",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "winner_destination",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "owner_destination",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "winner_paid",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "owner_paid",
-          "type": "core::integer::u128"
-        }
-      ]
-    },
-    "world_native::bitcoin::ClaimKey": {
-      "type": "struct",
-      "name": "world_native::bitcoin::ClaimKey",
-      "members": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "phase",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "mine_id",
-          "type": "core::integer::u64"
-        }
-      ]
-    },
-    "world_native::bitcoin::ClaimPhase": {
-      "type": "struct",
-      "name": "world_native::bitcoin::ClaimPhase",
-      "members": [
-        {
-          "name": "phase",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "mine_ids",
-          "type": "core::array::Span::<core::integer::u64>"
-        }
-      ]
-    },
-    "world_native::bitcoin::ContributeLabor": {
-      "type": "struct",
-      "name": "world_native::bitcoin::ContributeLabor",
-      "members": [
-        {
-          "name": "structure_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "amount",
-          "type": "core::integer::u128"
-        }
-      ]
-    },
-    "world_native::bitcoin::Contribution": {
-      "type": "struct",
-      "name": "world_native::bitcoin::Contribution",
-      "members": [
-        {
-          "name": "labor",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "structure_id",
-          "type": "core::integer::u64"
-        }
-      ]
-    },
-    "world_native::bitcoin::ContributionKey": {
-      "type": "struct",
-      "name": "world_native::bitcoin::ContributionKey",
-      "members": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "phase",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "player",
-          "type": "core::starknet::contract_address::ContractAddress"
-        }
-      ]
-    },
-    "world_native::bitcoin::MineFunding": {
-      "type": "struct",
-      "name": "world_native::bitcoin::MineFunding",
-      "members": [
-        {
-          "name": "eligible_from",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "next_phase",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "unsplit_carry",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "winner_carry",
-          "type": "core::integer::u128"
-        }
-      ]
-    },
-    "world_native::bitcoin::Phase": {
-      "type": "struct",
-      "name": "world_native::bitcoin::Phase",
-      "members": [
-        {
-          "name": "total_labor",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "contributors",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "state",
-          "type": "world_native::bitcoin::PhaseStatus"
-        },
-        {
-          "name": "root",
-          "type": "core::integer::u256"
-        }
-      ]
-    },
-    "world_native::bitcoin::PhaseKey": {
-      "type": "struct",
-      "name": "world_native::bitcoin::PhaseKey",
-      "members": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "phase",
-          "type": "core::integer::u64"
-        }
-      ]
-    },
-    "world_native::bitcoin::PhaseStatus": {
-      "type": "enum",
-      "name": "world_native::bitcoin::PhaseStatus",
-      "variants": [
-        {
-          "name": "Open",
-          "type": "()"
-        },
-        {
-          "name": "Closed",
-          "type": "()"
-        },
-        {
-          "name": "Bound",
-          "type": "()"
-        }
-      ]
-    },
-    "world_native::blitz_results::BlitzResult": {
-      "type": "struct",
-      "name": "world_native::blitz_results::BlitzResult",
-      "members": [
-        {
-          "name": "players",
-          "type": "core::array::Span::<world_native::blitz_results::RankedPlayer>"
-        },
-        {
-          "name": "complete",
-          "type": "core::bool"
-        },
-        {
-          "name": "commitment",
-          "type": "core::felt252"
-        }
-      ]
-    },
-    "world_native::blitz_results::RankedPlayer": {
-      "type": "struct",
-      "name": "world_native::blitz_results::RankedPlayer",
-      "members": [
-        {
-          "name": "wallet",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "rank",
-          "type": "core::integer::u16"
         }
       ]
     },
@@ -8860,26 +8026,6 @@
           "wireId": 24
         },
         {
-          "name": "ContributeBitcoinLabor",
-          "type": "world_native::bitcoin::ContributeLabor",
-          "wireId": 25
-        },
-        {
-          "name": "CloseBitcoinPhase",
-          "type": "core::integer::u64",
-          "wireId": 26
-        },
-        {
-          "name": "BindBitcoinPhase",
-          "type": "core::integer::u64",
-          "wireId": 27
-        },
-        {
-          "name": "ClaimBitcoinPhase",
-          "type": "world_native::bitcoin::ClaimPhase",
-          "wireId": 28
-        },
-        {
           "name": "BattleGuard",
           "type": "world_native::commands::Battle",
           "wireId": 29
@@ -8888,11 +8034,6 @@
           "name": "ApplyRelic",
           "type": "world_native::relics::ApplyRelic",
           "wireId": 43
-        },
-        {
-          "name": "RecordBlitzResults",
-          "type": "()",
-          "wireId": 51
         },
         {
           "name": "CreateGuild",
@@ -9361,20 +8502,6 @@
         }
       ]
     },
-    "world_native::entry::LaborHome": {
-      "type": "struct",
-      "name": "world_native::entry::LaborHome",
-      "members": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "home",
-          "type": "core::integer::u64"
-        }
-      ]
-    },
     "world_native::entry::LaborRules": {
       "type": "struct",
       "name": "world_native::entry::LaborRules",
@@ -9700,20 +8827,6 @@
         {
           "name": "scheduled_end_at",
           "type": "core::integer::u64"
-        }
-      ]
-    },
-    "world_native::game::PointActivity": {
-      "type": "enum",
-      "name": "world_native::game::PointActivity",
-      "variants": [
-        {
-          "name": "Exploration",
-          "type": "()"
-        },
-        {
-          "name": "StructureCapture",
-          "type": "()"
         }
       ]
     },
@@ -10291,11 +9404,6 @@
           "wireId": 9
         },
         {
-          "name": "BitcoinAwardStory",
-          "type": "world_native::bitcoin::BitcoinAwardStory",
-          "wireId": 10
-        },
-        {
           "name": "StructureCapturedStory",
           "type": "world_native::ownership::StructureCapturedStory",
           "wireId": 11
@@ -10373,10 +9481,6 @@
         {
           "name": "new_owner",
           "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "points",
-          "type": "core::integer::u128"
         }
       ]
     },
@@ -11466,28 +10570,6 @@
         }
       ]
     },
-    "world_native::rules::BitcoinMineConfig": {
-      "type": "struct",
-      "name": "world_native::rules::BitcoinMineConfig",
-      "members": [
-        {
-          "name": "enabled",
-          "type": "core::bool"
-        },
-        {
-          "name": "prize_per_phase",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "min_labor_per_contribution",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "owner_cut_bps",
-          "type": "core::integer::u16"
-        }
-      ]
-    },
     "world_native::rules::BuildingConfig": {
       "type": "struct",
       "name": "world_native::rules::BuildingConfig",
@@ -11538,14 +10620,6 @@
         },
         {
           "name": "camp_fail_probability",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "bitcoin_mine_win_probability",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "bitcoin_mine_fail_probability",
           "type": "core::integer::u16"
         },
         {
@@ -11619,14 +10693,6 @@
           "type": "world_native::rules::BuildingConfig"
         },
         {
-          "name": "bitcoin_mine_config",
-          "type": "world_native::rules::BitcoinMineConfig"
-        },
-        {
-          "name": "victory_points_grant_config",
-          "type": "world_native::rules::VictoryPointsGrantConfig"
-        },
-        {
           "name": "map_center_offset",
           "type": "core::integer::u32"
         },
@@ -11697,10 +10763,6 @@
         {
           "name": "camp_capacity",
           "type": "core::integer::u64"
-        },
-        {
-          "name": "bitcoin_mine_capacity",
-          "type": "core::integer::u64"
         }
       ]
     },
@@ -11714,10 +10776,6 @@
         },
         {
           "name": "delivery_tick_in_seconds",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "bitcoin_phase_in_seconds",
           "type": "core::integer::u64"
         }
       ]
@@ -11925,32 +10983,6 @@
         {
           "name": "capture_stamina_refund",
           "type": "core::integer::u16"
-        }
-      ]
-    },
-    "world_native::rules::VictoryPointsGrantConfig": {
-      "type": "struct",
-      "name": "world_native::rules::VictoryPointsGrantConfig",
-      "members": [
-        {
-          "name": "hyp_points_per_second",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "claim_hyperstructure_points",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "claim_otherstructure_points",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "explore_tiles_points",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "relic_open_points",
-          "type": "core::integer::u32"
         }
       ]
     },
@@ -12799,5 +11831,5 @@
       ]
     }
   },
-  "identity": "409e20064f204285ce1f4874dbea8279d183beb34ec1c68793568dc3c0ea878f"
+  "identity": "42d0fec2a11eebe4baaafa767dedf1c726c18b572c057254384bbea445ddc591"
 }

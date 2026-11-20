@@ -11,9 +11,9 @@ pub struct CommandRoute {
 pub const SETTLE_BLITZ_ROSTER: u32 = 7;
 pub const CHOOSE_OATH: u32 = 73;
 
-pub const COMMAND_IDS: [u32; 48] = [
-    74, 75, 73, 76, 72, 0, 1, 2, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 16, 17, 18, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
-    43, 51, 53, 54, 55, 56, 57, 58, 59, 60, 62, 63, 64, 65, 66, 67, 69,
+pub const COMMAND_IDS: [u32; 43] = [
+    74, 75, 73, 76, 72, 0, 1, 2, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 16, 17, 18, 20, 21, 22, 23, 24, 29, 43, 53, 54, 55,
+    56, 57, 58, 59, 60, 62, 63, 64, 65, 66, 67, 69,
 ];
 pub const COMMAND_ROUTES: [Option<CommandRoute>; 77] = [
     Some(CommandRoute { logic: 6, selector: selector!("create_explorer"), items_offset: None, batch: false }),
@@ -61,9 +61,8 @@ pub const COMMAND_ROUTES: [Option<CommandRoute>; 77] = [
     Some(CommandRoute { logic: 12, selector: selector!("battle_guard"), items_offset: None, batch: false }), None, None,
     None, None, None, None, None, None, None, None, None, None, None,
     Some(CommandRoute { logic: 14, selector: selector!("apply_relic"), items_offset: None, batch: false }), None, None,
-    None, None, None, None, None,
-    None,
-    None, Some(CommandRoute { logic: 13, selector: selector!("create_guild"), items_offset: None, batch: false }),
+    None, None, None, None, None, None, None,
+    Some(CommandRoute { logic: 13, selector: selector!("create_guild"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 13, selector: selector!("join_guild"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 13, selector: selector!("leave_guild"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 13, selector: selector!("set_guild_whitelist"), items_offset: None, batch: false }),

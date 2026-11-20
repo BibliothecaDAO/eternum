@@ -8,6 +8,8 @@ pub const MAP_CONFIG: crate::rules::MapConfig = crate::rules::MapConfig {
     shards_mines_fail_probability: 1,
     camp_win_probability: 0,
     camp_fail_probability: 1,
+    bitcoin_mine_win_probability: 0,
+    bitcoin_mine_fail_probability: 1,
     hyps_win_prob: 0,
     hyps_fail_prob: 1,
     hyps_fail_prob_increase_p_hex: 9820,
@@ -17,7 +19,7 @@ pub const MAP_CONFIG: crate::rules::MapConfig = crate::rules::MapConfig {
 };
 
 pub const TICK_CONFIG: crate::rules::TickConfig = crate::rules::TickConfig {
-    armies_tick_in_seconds: 120, delivery_tick_in_seconds: 180,
+    armies_tick_in_seconds: 120, delivery_tick_in_seconds: 180, bitcoin_phase_in_seconds: 600,
 };
 
 pub const TROOP_DAMAGE_CONFIG: crate::rules::TroopDamageConfig = crate::rules::TroopDamageConfig {
@@ -91,6 +93,18 @@ pub const STRUCTURE_CAPACITY_CONFIG: crate::rules::StructureCapacityConfig = cra
 
 pub const BUILDING_CONFIG: crate::rules::BuildingConfig = crate::rules::BuildingConfig {
     base_population: 6, base_cost_percent_increase: 10000,
+};
+
+pub const BITCOIN_MINE_CONFIG: crate::rules::BitcoinMineConfig = crate::rules::BitcoinMineConfig {
+    enabled: false, prize_per_phase: 0, min_labor_per_contribution: 100000000000, owner_cut_bps: 2000,
+};
+
+pub const VICTORY_POINTS_GRANT_CONFIG: crate::rules::VictoryPointsGrantConfig = crate::rules::VictoryPointsGrantConfig {
+    hyp_points_per_second: 0,
+    claim_hyperstructure_points: 0,
+    claim_otherstructure_points: 0,
+    explore_tiles_points: 0,
+    relic_open_points: 0,
 };
 
 pub const SPIRE_TRAVEL_ESSENCE_COST: u128 = 0;
