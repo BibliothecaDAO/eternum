@@ -19,6 +19,7 @@ fn relic_game() -> (
     super::resource_commands::stock(
         d, home, crate::troops::troop_resource(crate::troops::TroopType::Knight, 0), 12000 * RESOURCE_PRECISION,
     );
+    super::resource_commands::stock(d, home, crate::resources::WHEAT, 100000 * RESOURCE_PRECISION);
     let explorer_id = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
     let key = ExplorerKey { game_id, explorer_id };
     let mut army = strong_frontier_army(d, game_id, key);

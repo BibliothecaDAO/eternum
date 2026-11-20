@@ -29,7 +29,7 @@ fn a_cleared_camp_reinforces_from_home_on_each_layer_above_the_deep() {
             ),
         );
         let mut army = super::army_activity::army(d, key);
-        army.coord = crate::expeditions::site(1024, 1, 0, depth);
+        army.coord = crate::expeditions::site(crate::balance::settlement::SETTLEMENT_SPACING_STEPS, 1, 0, depth);
         army.coord.x += 10;
         set_explorer_fixture(d.games, key, army);
         let destination = crate::geometry::neighbor(army.coord, 0);

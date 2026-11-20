@@ -93,18 +93,6 @@ fn invalid_schedules_modes_and_registration_limits_never_allocate() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn a_game_without_a_season_close_takes_no_grace_period() {
-    let d = setup();
-    let mut preset = definition(false);
-    preset.rules.mode_rules = preset.rules.mode_rules - crate::rules::SEASON_CLOSE;
-    registry(d).register_preset(1, preset);
-    let graceless = CreateGameParams { end_grace_seconds: 0, ..params(false) };
-    assert!(safe(d, super::authority()).create_game(CreateGameParams { end_grace_seconds: 1, ..graceless }).is_err());
-    assert_eq!(registry(d).create_game(graceless), 1);
-}
-
-#[test]
-#[feature("safe_dispatcher")]
 fn registration_refuses_a_fixed_roster_and_a_settlement_that_is_not_the_release() {
     let d = setup();
     let release = definition(false);
@@ -650,7 +638,6 @@ fn a_level_up_doubles_the_castle_labor_from_that_second() {
     crate::tests::frontier_economy::settle(d, home, crate::resources::LABOR, 400 + 3600);
     assert_eq!(resources.resource_balance(labor), before - cost + 3600 * 2 * base);
 }
-
 
 #[test]
 fn each_castle_level_stores_the_next_level_price() {

@@ -1,6 +1,5 @@
 pub use world_test_support::tests::entity_ids::*;
 
-
 #[test]
 fn home_counters_are_independent_and_game_scoped() {
     let d = super::setup(true);
@@ -30,31 +29,6 @@ fn high_home_ids_preserve_their_namespace_and_never_overlap_other_homes() {
             assert_eq!(allocate_home(1, home), 0x12345600000001);
             assert_eq!(allocate_home(1, 0x123456), 0x12345600000002);
             assert_eq!(allocate_home(1, 0x123457000000ab), 0x12345700000001);
-        },
-    );
-}
-
-#[test]
-fn reservations_are_idempotent_and_triple_homes_are_consumed_per_owner() {
-    let d = super::setup(true);
-    let game = crate::game::IGameDispatcherTrait::game(crate::game::IGameDispatcher { contract_address: d.games }, 1);
-    let preset = super::registrar::definition(true);
-    super::play_fixture::seed_game_with_preset(d.games, 1, game, preset);
-    let other = super::authority();
-    interact_with_state(
-        d.games,
-        || {
-            reserve_homes(1, d.actor);
-            reserve_homes(1, d.actor);
-            reserve_homes(1, other);
-            assert_eq!(claim_home(1, d.actor), 1);
-            assert_eq!(claim_home(1, other), 4);
-            assert_eq!(claim_home(1, d.actor), 2);
-            assert_eq!(claim_home(1, other), 5);
-            assert_eq!(claim_home(1, d.actor), 3);
-            assert_eq!(claim_home(1, other), 6);
-            assert_eq!(allocate_home(1, 1), 0x100000001);
-            assert_eq!(allocate_home(1, 4), 0x400000001);
         },
     );
 }

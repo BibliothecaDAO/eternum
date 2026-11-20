@@ -115,7 +115,19 @@ fn refuses_a_second_source(held_first: bool) {
             360,
         ),
     );
-    found(d, game_id);
+    let order = if held_first {
+        None
+    } else {
+        super::registrar::first_order_choice(d, game_id)
+    };
+    assert!(
+        super::resource_commands::execute_in_game(
+            d,
+            game_id,
+            crate::commands::Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, order }),
+            360,
+        ),
+    );
     start_cheat_caller_address(d.games, authority());
     assert!(ledger(d).register_entitlement(key, second).is_err());
     ledger(d).register_entitlement(key, first).unwrap();
