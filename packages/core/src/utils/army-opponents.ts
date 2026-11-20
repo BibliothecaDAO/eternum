@@ -53,11 +53,20 @@ export function isAspectAlly(
   viewer: bigint | null,
   home: number | bigint,
 ): boolean {
-  if (viewer === null) return false;
   const aspect = store.get("HomeAspect", { game_id, home })?.aspect;
-  if (aspect === undefined) return false;
-  for (const realm of store.structuresOwnedBy(game_id, viewer)) {
-    if (store.get("HomeAspect", { game_id, home: realm.entity_id })?.aspect === aspect) return true;
-  }
-  return false;
+  return aspect !== undefined && viewerAspects(store, game_id, viewer).has(aspect);
+}
+
+export function viewerAspects(
+  store: Pick<NativeFactStore, "get" | "structuresOwnedBy">,
+  game_id: number,
+  viewer: bigint | null,
+): Set<number> {
+  if (viewer === null) return new Set();
+  return new Set(
+    [...store.structuresOwnedBy(game_id, viewer)].flatMap((realm) => {
+      const aspect = store.get("HomeAspect", { game_id, home: realm.entity_id })?.aspect;
+      return aspect === undefined ? [] : [aspect];
+    }),
+  );
 }

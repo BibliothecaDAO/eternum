@@ -1,7 +1,7 @@
 import { Scene, Group, Mesh, BoxGeometry, MeshBasicMaterial } from "three";
 import { describe, expect, it, vi } from "vitest";
 
-const { load, models, mode, foundations, beasts, beastTroops, openings, clock, publish } = vi.hoisted(() => ({
+const { load, models, mode, foundations, beasts, beastTroops, openings, clock, publish, viewer } = vi.hoisted(() => ({
   mode: { id: "frontier" },
   load: vi.fn(),
   models: [] as Array<{ name: string; count: number; setCount: (count: number) => void }>,
@@ -11,7 +11,9 @@ const { load, models, mode, foundations, beasts, beastTroops, openings, clock, p
   openings: new Map<number, unknown>(),
   clock: { tick: 0 as number | undefined, day: 86_400 },
   publish: vi.fn(),
+  viewer: { address: 0x111n as bigint | undefined },
 }));
+vi.mock("@/hooks/store/use-account-store", () => ({ accountAddress: () => viewer.address }));
 vi.mock("@/observability/map-selection", () => ({ publishMapSelection: publish }));
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
@@ -98,12 +100,21 @@ vi.mock("../structures/hyperstructure-model", async () => {
   };
 });
 
-import { DEEP_BEASTS, deepSites, MineKinds, TileOccupier } from "@bibliothecadao/types";
+import { aspects, DEEP_BEASTS, deepSites, MineKinds, ordersOfAspect, TileOccupier } from "@bibliothecadao/types";
+import { deepGateTiles } from "@bibliothecadao/eternum/game-client";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { FRONTIER_BEASTS } from "../structures/frontier-beast";
 import { DEEP_SITE_FACES } from "@/ui/features/frontier/deep/deep-site-faces";
 import { MapSiteManager } from "./map-site-manager";
 import { PLATE_CLEARANCE } from "./structure-visible-presentation";
+
+const noGates = () => ({
+  setLabel: vi.fn(),
+  retainOnly: vi.fn(),
+  dispose: vi.fn(),
+  setHover: vi.fn(),
+  clearHover: vi.fn(),
+});
 
 const tile = (col: number, occupierType: number) => ({
   hexCoords: { col, row: 0, alt: false },
@@ -130,7 +141,13 @@ describe("the Deep's sites on the map", () => {
       require: (_model: string, key: { entity_id: number }) => site(key),
       subscribe: () => () => {},
     };
-    const manager = new MapSiteManager(new Scene(), projection as never, store as never, plates as never);
+    const manager = new MapSiteManager(
+      new Scene(),
+      projection as never,
+      store as never,
+      plates as never,
+      noGates() as never,
+    );
     await vi.waitFor(() =>
       expect(models.map(({ name }) => name).toSorted()).toEqual(["Bane altar", "Essence core", "Ethereal mine"]),
     );
@@ -173,7 +190,13 @@ describe("the Deep's sites on the map", () => {
         return () => {};
       },
     };
-    const manager = new MapSiteManager(new Scene(), projection as never, store as never, plates as never);
+    const manager = new MapSiteManager(
+      new Scene(),
+      projection as never,
+      store as never,
+      plates as never,
+      noGates() as never,
+    );
     await vi.waitFor(() =>
       expect(beasts.map(({ species }) => species).toSorted()).toEqual(["basilisk", "troll", "troll"]),
     );
@@ -218,7 +241,13 @@ describe("the Deep's sites on the map", () => {
       require: (_model: string, key: { entity_id: number }) => site(key),
       subscribe: () => () => {},
     };
-    const manager = new MapSiteManager(new Scene(), projection as never, store as never, plates as never);
+    const manager = new MapSiteManager(
+      new Scene(),
+      projection as never,
+      store as never,
+      plates as never,
+      noGates() as never,
+    );
     const look = (entityId: number) => {
       const { icon, reward } = plates.setLabel.mock.calls.findLast(([plate]) => plate.entityId === entityId)![0].plate;
       return { icon, reward };
@@ -229,16 +258,18 @@ describe("the Deep's sites on the map", () => {
     manager.destroy();
   });
 
-  it("draws every site's building with its kind's look, and no beast, while chain time is not known yet, then each guarding beast and closed ring's lock once a head binds it", async () => {
-    const { manager, plates } = guardedSites(undefined);
+  it("draws every site's building with its kind's look, and no beast, while chain time is not known yet, then each open site's guarding beast and a closed ring's site dormant, its building under a lock, once a head binds it", async () => {
+    const core = 10 + deepSites.findIndex(({ key }) => key === "core");
+    const { manager, plates } = guardedSites(undefined, [], ["core"]);
     await vi.waitFor(() =>
       expect(models.map(({ name }) => name).toSorted()).toEqual(["Bane altar", "Essence core", "Ethereal mine"]),
     );
     expect(beasts).toEqual([]);
     expect(plates.setLabel.mock.calls.map(([plate]) => plate.plate.icon)).not.toContain("lock");
     headAt(100);
-    await vi.waitFor(() => expect(standingBeasts()).toEqual(["basilisk", "dark-fey", "troll", "troll"]));
-    expect(plates.setLabel.mock.lastCall![0].plate.icon).toBe("lock");
+    await vi.waitFor(() => expect(standingBeasts()).toEqual(["basilisk", "troll", "troll"]));
+    expect(models.find(({ name }) => name === "Essence core")!.count).toBe(1);
+    expect(plates.setLabel.mock.calls.findLast(([plate]) => plate.entityId === core)![0].plate.icon).toBe("lock");
     manager.destroy();
   });
 
@@ -252,9 +283,52 @@ describe("the Deep's sites on the map", () => {
     manager.destroy();
     clock.tick = 0;
   });
+
+  it("draws each Aspect's gate on its tile as a portal wearing its first Order's crest, named from the catalog, the viewer's own gate in their colour", () => {
+    mode.id = "frontier";
+    clock.tick = 0;
+    viewer.address = 0x111n;
+    const projection = { getTiles: () => [], subscribeTiles: () => () => {} };
+    const plates = { setLabel: vi.fn(), retainOnly: vi.fn(), dispose: vi.fn(), setHover: vi.fn(), clearHover: vi.fn() };
+    const gates = noGates();
+    const store = {
+      get: (model: string, key: { home?: bigint }) =>
+        model === "DeepRules"
+          ? { gate_distance: 4 }
+          : model === "HomeAspect" && key.home === 9n
+            ? { aspect: 2 }
+            : undefined,
+      require: (model: string) => (model === "SettlementRules" ? { spacing: 1024 } : undefined),
+      structuresOwnedBy: (_game: number, owner: bigint) => (owner === 0x111n ? [{ entity_id: 9n }] : []),
+      subscribe: () => () => {},
+    };
+    const manager = new MapSiteManager(
+      new Scene(),
+      projection as never,
+      store as never,
+      plates as never,
+      gates as never,
+    );
+    const drawn = gates.setLabel.mock.calls.map(([{ entityId, plate }]) => [
+      entityId,
+      plate.name,
+      plate.icon,
+      plate.crest,
+      plate.relation,
+    ]);
+    expect(drawn).toEqual(
+      aspects.map(({ id, name }) => [id, name, "portal", ordersOfAspect(id)[0]!.orderId, id === 2 ? "own" : "neutral"]),
+    );
+    const [north] = deepGateTiles(4, 1024);
+    manager.hover({ col: north!.col, row: north!.row });
+    expect(gates.setHover).toHaveBeenLastCalledWith(north!.aspect);
+    manager.hover({ col: 0, row: 0 });
+    expect(gates.clearHover).toHaveBeenCalled();
+    manager.destroy();
+  });
 });
 
-function guardedSites(tick: number | undefined, beaten: string[] = []) {
+function guardedSites(tick: number | undefined, beaten: string[] = [], closed: string[] = []) {
   mode.id = "frontier";
   models.length = 0;
   beasts.length = 0;
@@ -268,7 +342,7 @@ function guardedSites(tick: number | undefined, beaten: string[] = []) {
   openings.clear();
   deepSites.forEach(({ key }, index) => {
     beastTroops.set(10 + index, beaten.includes(key) ? 0n : 5_000n);
-    openings.set(10 + index, { known: { open: false, realms: 30 } });
+    openings.set(10 + index, { known: { open: !closed.includes(key), realms: 30 } });
   });
   const tiles = deepSites.map((_, index) => tile(10 + index, TileOccupier.DeepSite));
   const projection = { getTiles: () => tiles, subscribeTiles: () => () => {} };
@@ -279,7 +353,10 @@ function guardedSites(tick: number | undefined, beaten: string[] = []) {
     require: (_model: string, key: { entity_id: number }) => site(key),
     subscribe: () => () => {},
   };
-  return { manager: new MapSiteManager(new Scene(), projection as never, store as never, plates as never), plates };
+  return {
+    manager: new MapSiteManager(new Scene(), projection as never, store as never, plates as never, noGates() as never),
+    plates,
+  };
 }
 
 function headAt(tick: number) {
