@@ -11,6 +11,8 @@ vi.mock("@/sync/action-outcome", async (original) => ({
 }));
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { shortString } from "starknet";
+import { REALM_SKINS } from "@/three/structures/realm-skins";
 import { configManager } from "@bibliothecadao/eternum";
 import { nativeReleaseConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import { GameProvider } from "@/hooks/context/game-context";
@@ -96,35 +98,56 @@ describe("the shop", () => {
   });
 
   it("reads a held Ancient Seal from the account's Seal row: no purchase, no code, the Ancient Seal named as held", () => {
-    const store = transferArmies();
-    store.applyFacts([
-      {
-        model: "Seal",
-        key: "0x5ea1",
-        value: { game_id: 1, account: PLAYER, granted_at: "1" },
-      },
-      {
-        model: "GameRelease",
-        key: "0x1ab0",
-        value: {
-          game_id: 1,
-          release_id: nativeReleaseConstants.SEAL_RELEASE,
-          created_release_id: nativeReleaseConstants.SEAL_RELEASE,
-          preset_commitment: "0x1ab",
-        },
-      },
-    ]);
-    act(() =>
-      root.render(
-        <QueryClientProvider client={new QueryClient()}>
-          <GameProvider value={{ store, systemCalls: {} } as never} account={{ address: PLAYER } as never}>
-            <ShopSheet realm={store.require("Structure", { game_id: 1, entity_id: 7 })} onClose={() => {}} />
-          </GameProvider>
-        </QueryClientProvider>,
-      ),
-    );
+    renderShop([{ model: "Seal", key: "0x5ea1", value: { game_id: 1, account: PLAYER, granted_at: "1" } }]);
     expect(text()).toContain("You have the Ancient Seal");
     expect(getPass()).toBeUndefined();
     expect(host.querySelector("[data-shop=code]")).toBeNull();
   });
+
+  it("tells the holder of a Realm settled as this home that its Realm pays the quest bonus already", () => {
+    renderShop([{ model: "SettledRealm", key: "0x5e7", value: { game_id: 1, realm_id: 42, home: "7" } }]);
+    expect(host.querySelector("[data-shop=pass]")?.textContent).toContain("Your Realm gives this bonus already");
+    expect(getPass()).toBeDefined();
+  });
+
+  it("tells a campaign ticket home that its ticket pays the quest bonus already", () => {
+    const campaign = shortString.encodeShortString("devcon-2026");
+    renderShop([
+      { model: "CampaignHome", key: "0xca7", value: { game_id: 1, home: "7", campaign_id: campaign, tier: 1 } },
+    ]);
+    expect(host.querySelector("[data-shop=pass]")?.textContent).toContain(
+      `Your ${REALM_SKINS.devcon.label} ticket gives this bonus already`,
+    );
+  });
+
+  it("names no free bonus for a home with neither a Realm nor a ticket", () => {
+    renderShop([]);
+    expect(host.querySelector("[data-shop=pass]")?.textContent).not.toContain("gives this bonus already");
+  });
 });
+
+const renderShop = (facts: object[]) => {
+  const store = transferArmies();
+  store.applyFacts([
+    ...facts,
+    {
+      model: "GameRelease",
+      key: "0x1ab0",
+      value: {
+        game_id: 1,
+        release_id: nativeReleaseConstants.SEAL_RELEASE,
+        created_release_id: nativeReleaseConstants.SEAL_RELEASE,
+        preset_commitment: "0x1ab",
+      },
+    },
+  ] as never);
+  act(() =>
+    root.render(
+      <QueryClientProvider client={new QueryClient()}>
+        <GameProvider value={{ store, systemCalls: {} } as never} account={{ address: PLAYER } as never}>
+          <ShopSheet realm={store.require("Structure", { game_id: 1, entity_id: 7 })} onClose={() => {}} />
+        </GameProvider>
+      </QueryClientProvider>,
+    ),
+  );
+};
