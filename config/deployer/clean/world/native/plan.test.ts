@@ -51,7 +51,9 @@ function fixture() {
     ledger: local.ledgerOperator,
     key: local.vrfPublicKey,
     bound: local.l2GasBound,
-    releases: new Map([[1, { classes: structuredClone(local.release.classes.logic), migration: "0x0" }]]),
+    releases: new Map([
+      [1, { family: 1, previous: 0, classes: structuredClone(local.release.classes.logic), migration: "0x0" }],
+    ]),
     gamesClassHash: "0x123",
     gamePins: new Map([
       [7, 1],
@@ -82,8 +84,15 @@ function fixture() {
       if (entrypoint === "release") {
         const release = state.releases.get(Number(calldata[0]));
         if (!release) throw new Error("unknown release");
-        return [...Object.keys(schemaJson.logicClasses).map((name) => release.classes[name]), release.migration];
+        return [
+          String(release.family),
+          String(release.previous),
+          ...Object.keys(schemaJson.logicClasses).map((name) => release.classes[name]),
+          release.migration,
+        ];
       }
+      if (entrypoint === "latest_release_of")
+        return [String(Math.max(0, ...[...state.releases.keys()]))];
       if (entrypoint === "realm_catalogue") return [String(catalogue.initialized), catalogue.digest];
       if (entrypoint === "authentication")
         return [state.authentication.account_class, state.authentication.guardian_public_key];
@@ -97,12 +106,12 @@ function fixture() {
     execute: async ({ entrypoint, calldata }: { entrypoint: string; calldata: string[] }) => {
       state.operations.push(entrypoint);
       if (entrypoint === "register_release") {
-        const id = Number(calldata[0]);
-        state.releases.set(id, {
-          classes: Object.fromEntries(
-            Object.keys(schemaJson.logicClasses).map((name, index) => [name, calldata[index + 1]]),
-          ),
-          migration: calldata[Object.keys(schemaJson.logicClasses).length + 1],
+        const [id, family, previous, ...rest] = calldata;
+        state.releases.set(Number(id), {
+          family: Number(family),
+          previous: Number(previous),
+          classes: Object.fromEntries(Object.keys(schemaJson.logicClasses).map((name, index) => [name, rest[index]])),
+          migration: rest[Object.keys(schemaJson.logicClasses).length],
         });
       } else if (entrypoint === "set_launcher") {
         state.launcher = calldata[0]!;
@@ -273,6 +282,7 @@ describe("native deployment planning", () => {
     expect(first.after.synced).toBe(true);
     expect(first.after.worldAddress).toBe("0x1");
     expect(transactions).toEqual(["declare", "register_release"]);
+    expect(state.releases.get(2)).toMatchObject({ family: 1, previous: 1 });
     expect(BigInt(state.releases.get(1)!.classes.movement)).toBe(0x123n);
     expect(BigInt(state.releases.get(2)!.classes.movement)).toBe(0x456n);
     expect(state.gamePins.get(7)).toBe(1);

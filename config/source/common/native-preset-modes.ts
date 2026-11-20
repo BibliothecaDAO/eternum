@@ -1,4 +1,5 @@
 import type { GameType } from "./types";
+import { nativeIdentifiers } from "../../../contracts/l3/world-native/schema/client.gen";
 
 /** Historical accelerated Frontier preset. */
 export const FRONTIER_ACCELERATED_PRESET_ID = 101;
@@ -35,3 +36,10 @@ export function nativeGameModeOf(presetId: number): GameType {
   if (!mode) throw new Error(`Unknown native preset ${presetId}`);
   return mode;
 }
+
+const GAME_FAMILIES = {
+  frontier: nativeIdentifiers.family.FRONTIER,
+  blitz: nativeIdentifiers.family.BLITZ,
+} satisfies Record<GameType, number>;
+
+export const nativeFamilyOf = (presetId: number): number => GAME_FAMILIES[nativeGameModeOf(presetId)];

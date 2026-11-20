@@ -324,7 +324,7 @@ const shardWithGameTen = (gamesClass: unknown[], release: string[]) => {
     abi: BigInt(classHash) === BigInt(PRIZES_LOGIC) ? prizesLogicAbi() : gamesClass,
   }));
   rpc.call.mockImplementation(async ({ entrypoint, calldata }: { entrypoint: string; calldata: string[] }) => {
-    if (entrypoint === "current_release") return ["0x1"];
+    if (entrypoint === "open_release_of") return ["0x1"];
     if (entrypoint === "release_registered") return [calldata[0] === "1" ? "0x1" : "0x0"];
     return release;
   });
@@ -391,7 +391,7 @@ it("reads a fresh chain from the release it began at, never asking for releases 
   shardWithGameTen([...abi, ...gamesAbi], []);
   const asked: string[] = [];
   rpc.call.mockImplementation(async ({ entrypoint, calldata }: { entrypoint: string; calldata: string[] }) => {
-    if (entrypoint === "current_release") return ["0x5"];
+    if (entrypoint === "open_release_of") return ["0x5"];
     if (entrypoint === "release_registered") return [calldata[0] === "5" || calldata[0] === "6" ? "0x1" : "0x0"];
     asked.push(calldata[0]!);
     if (BigInt(calldata[0]!) < 5n) throw new Error("unknown release");
@@ -472,7 +472,7 @@ it("pays a withdrawal the relics logic emits under its own event enum, read from
         : [...abi, ...gamesAbi],
   }));
   rpc.call.mockImplementation(async ({ entrypoint, calldata }: { entrypoint: string; calldata: string[] }) => {
-    if (entrypoint === "current_release") return ["0x1"];
+    if (entrypoint === "open_release_of") return ["0x1"];
     if (entrypoint === "release_registered") return [calldata[0] === "1" ? "0x1" : "0x0"];
     return [...Array(17).fill(RELICS_LOGIC), "0x0"];
   });

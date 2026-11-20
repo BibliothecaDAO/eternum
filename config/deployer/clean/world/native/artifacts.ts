@@ -4,6 +4,7 @@ import { hash, CallData } from "starknet";
 import { schemaIdentity, type NativeSchema } from "../../../../../apps/herald/src/native/schema";
 import { readClassArtifact } from "../../shared/declare";
 import { nativeBalanceIdentity } from "../../../../../contracts/l3/world-native/schema/balance.gen";
+import { nativeIdentifiers } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { NATIVE_BALANCE_SINCE_RELEASE } from "../../../../../deploy/release/native-release";
 import type { NativeAuthentication, NativeReleaseFacts, NativeWorld, NativeWorldManifest } from "./types";
 
@@ -63,7 +64,12 @@ export function loadNativeWorld(input: {
     l2_gas_bound: input.l2GasBound,
     authentication: input.authentication,
     release_id: input.release.releaseId,
-    release: { classes: input.release.classes.logic, migration: input.release.migrationClassHash },
+    release: {
+      family: nativeIdentifiers.family.FRONTIER,
+      previous: 0,
+      classes: input.release.classes.logic,
+      migration: input.release.migrationClassHash,
+    },
   });
   const publishedSchema = previous?.native.releaseSchemas[String(input.release.releaseId)];
   if (publishedSchema && publishedSchema !== input.release.schema)

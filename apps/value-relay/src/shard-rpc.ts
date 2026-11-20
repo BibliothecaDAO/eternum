@@ -2,6 +2,7 @@ import { normalizeStarknetAddress, isSameStarknetAddress } from "../../../packag
 import { RelayFailure } from "./failure";
 import { SHARD_PAGE_BLOCKS } from "./shard-page";
 import { hash, shortString, type RpcProvider } from "starknet";
+import { nativeIdentifiers } from "../../../contracts/l3/world-native/schema/client.gen";
 import { readClassAbi, readShardAbi } from "../../../packages/value-ledger/src/shard-abi";
 import { rpcAt, rpcBatch } from "../../../packages/value-ledger/src/rpc";
 import { SHARD_RPC_MAX_BATCH_CALLS } from "../../../packages/value-ledger/src/shard-rpc-limits";
@@ -325,7 +326,7 @@ const releaseClasses = async (
     provider.callContract({ contractAddress: address, entrypoint, calldata }, number);
   const registered = async (release: bigint) =>
     BigInt((await call("release_registered", [release.toString()]))[0] ?? "0") === 1n;
-  const [current] = await call("current_release", []);
+  const [current] = await call("open_release_of", [String(nativeIdentifiers.family.FRONTIER)]);
   const open = BigInt(current ?? "0");
   if (open > 0n && open < BigInt(firstRelease)) throw new Error("shard_release_before_manifest");
   const classes = new Set<string>();

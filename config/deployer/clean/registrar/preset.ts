@@ -1,4 +1,5 @@
 import { nativePresetForId } from "../../../source/native";
+import { nativeFamilyOf } from "../../../source/common/native-preset-modes";
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { CapacityConfig, type Config } from "@bibliothecadao/types";
 import { hash, shortString } from "starknet";
@@ -178,6 +179,7 @@ export function buildCreateGameParams(config: Config, input: CreateGamePayloadIn
 
   return {
     name: shortString.encodeShortString(input.gameName),
+    family: nativeFamilyOf(input.presetId),
     preset_id: input.presetId,
     start_settling_at: startSettlingAt,
     start_main_at: input.startMainAt,

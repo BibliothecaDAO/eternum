@@ -11,17 +11,25 @@ import type { RegisteredShard } from "@realms-world/value-ledger";
 
 /** What advancing reads and writes on the shard, as the launcher. */
 export interface ReleaseChain {
-  currentRelease(): Promise<number>;
+  openReleaseOf(family: number): Promise<number>;
+  latestReleaseOf(family: number): Promise<number>;
   releaseRegistered(releaseId: number): Promise<boolean>;
   /** The logic and migration classes registered under `releaseId`, as hex strings. */
-  registeredRelease(releaseId: number): Promise<{ logic: Record<string, string>; migration: string }>;
+  registeredRelease(releaseId: number): Promise<RegisteredRelease>;
   /** The game the launcher created under `name`, or 0 when none exists. */
   gameId(name: string): Promise<number>;
   gameRelease(gameId: number): Promise<number>;
-  game(gameId: number): Promise<{ settled: boolean; preset_id: bigint }>;
+  game(gameId: number): Promise<{ settled: boolean; preset_id: bigint; family: bigint }>;
   /** Applies `releaseId` to the game, waits for its receipt, and returns the transaction hash. */
   applyRelease(gameId: number, releaseId: number): Promise<string>;
   openRelease(releaseId: number): Promise<string>;
+}
+
+export interface RegisteredRelease {
+  family: number;
+  previous: number;
+  logic: Record<string, string>;
+  migration: string;
 }
 
 /** Herald's public manifest for the shard: the schema each release it can decode maps to. */
@@ -107,18 +115,24 @@ export async function advanceGames(
   release: ReleaseIdentity,
   gameNames: readonly string[],
 ): Promise<AdvancedGame[]> {
-  await requireRegistered(chain, release);
-  const pins = await runningGamePins(chain, gameNames);
-  if (pins.some(({ releaseId }) => releaseId > release.releaseId)) throw new Error("release_downgrade");
-  requirePublished(herald, release, pins);
+  const { family } = await requireRegistered(chain, release);
+  const plans = [];
+  for (const pin of await runningGamePins(chain, gameNames, family))
+    plans.push({ ...pin, line: await releasesAfter(chain, release.releaseId, pin.releaseId) });
+  requirePublished(
+    herald,
+    release,
+    plans.flatMap(({ releaseId, line }) => [releaseId, ...line]),
+  );
   const advanced: AdvancedGame[] = [];
-  for (const pin of pins) advanced.push(await advanceGame(chain, pin, release.releaseId));
+  for (const plan of plans) advanced.push(await advanceGame(chain, plan, release.releaseId));
   return advanced;
 }
 
 export async function openForNewGames(chain: ReleaseChain, release: ReleaseIdentity): Promise<string[]> {
+  const { family } = await chain.registeredRelease(release.releaseId);
   const transactions: string[] = [];
-  for (let next = (await chain.currentRelease()) + 1; next <= release.releaseId; next++)
+  for (const next of await releasesAfter(chain, release.releaseId, await chain.openReleaseOf(family)))
     transactions.push(await chain.openRelease(next));
   return transactions;
 }
@@ -126,9 +140,20 @@ export async function openForNewGames(chain: ReleaseChain, release: ReleaseIdent
 /** The shard's registered release is the commit's, number and contents: the box half registers it first. */
 async function requireRegistered(chain: ReleaseChain, release: ReleaseIdentity) {
   if (!(await chain.releaseRegistered(release.releaseId))) throw new Error("release_not_registered");
-  if (await chain.releaseRegistered(release.releaseId + 1)) throw new Error("release_older_than_shard");
-  if (!sameContents(await chain.registeredRelease(release.releaseId), release))
-    throw new Error("release_contents_differ");
+  const registered = await chain.registeredRelease(release.releaseId);
+  if ((await chain.latestReleaseOf(registered.family)) !== release.releaseId)
+    throw new Error("release_older_than_shard");
+  if (!sameContents(registered, release)) throw new Error("release_contents_differ");
+  return registered;
+}
+
+async function releasesAfter(chain: ReleaseChain, releaseId: number, from: number) {
+  const line: number[] = [];
+  for (let id = releaseId; id !== from; id = (await chain.registeredRelease(id)).previous) {
+    if (id === 0) throw new Error("release_downgrade");
+    line.unshift(id);
+  }
+  return line;
 }
 
 function sameContents(registered: { logic: Record<string, string>; migration: string }, release: ReleaseIdentity) {
@@ -146,31 +171,30 @@ const sameFelt = (left: string | undefined, right: string | undefined) =>
  * A launch run names its game before creating it, and a launch interrupted after creating it may not have recorded it
  * yet, so each name is resolved on the chain. Games on retired presets keep their original release.
  */
-async function runningGamePins(chain: ReleaseChain, gameNames: readonly string[]) {
+async function runningGamePins(chain: ReleaseChain, gameNames: readonly string[], family: number) {
   const pins: { gameId: number; releaseId: number }[] = [];
   for (const name of gameNames) {
     const gameId = await chain.gameId(name);
     if (!gameId) continue;
     const game = await chain.game(gameId);
-    if (!game.settled && nativeReleasePresets[Number(game.preset_id)])
+    if (!game.settled && Number(game.family) === family && nativeReleasePresets[Number(game.preset_id)])
       pins.push({ gameId, releaseId: await chain.gameRelease(gameId) });
   }
   return pins;
 }
 
 /** Herald decodes every release from the oldest pin up with the commit's schema, or a game would leave its clients. */
-function requirePublished(herald: PublishedReleases, release: ReleaseIdentity, pins: readonly { releaseId: number }[]) {
-  const first = Math.min(release.releaseId, ...pins.map((pin) => pin.releaseId));
-  for (let releaseId = first; releaseId <= release.releaseId; releaseId++)
+function requirePublished(herald: PublishedReleases, release: ReleaseIdentity, releaseIds: readonly number[]) {
+  for (const releaseId of [release.releaseId, ...releaseIds])
     if (herald.releaseSchemas[String(releaseId)] !== release.schema) throw new Error("release_unpublished");
 }
 
 async function advanceGame(
   chain: ReleaseChain,
-  { gameId, releaseId: from }: { gameId: number; releaseId: number },
+  { gameId, releaseId: from, line }: { gameId: number; releaseId: number; line: readonly number[] },
   releaseId: number,
 ): Promise<AdvancedGame> {
   const transactions: string[] = [];
-  for (let next = from + 1; next <= releaseId; next++) transactions.push(await chain.applyRelease(gameId, next));
+  for (const next of line) transactions.push(await chain.applyRelease(gameId, next));
   return { gameId, from, to: releaseId, transactions };
 }

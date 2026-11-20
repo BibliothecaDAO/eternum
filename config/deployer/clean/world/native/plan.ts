@@ -3,6 +3,7 @@ import { CallData, type RpcProvider } from "starknet";
 import { deployedClass, isClassDeclared } from "../../shared/declare";
 import { canonicalRealmTraits, realmCatalogueDigest } from "./realm-catalogue";
 import type { NativePlan, NativeWorld } from "./types";
+import { nativeIdentifiers } from "../../../../../contracts/l3/world-native/schema/client.gen";
 
 export async function inspectNativeWorld(local: NativeWorld, provider: RpcProvider): Promise<NativePlan> {
   assertHotfixSchema(local.release, local.previous);
@@ -108,10 +109,12 @@ async function inspectRelease(
     block,
   );
   const registered = new CallData(local.games.sierra.abi).parse("release", raw) as {
+    family: bigint;
     classes: Record<string, bigint>;
     migration: bigint;
   };
   if (
+    registered.family !== BigInt(nativeIdentifiers.family.FRONTIER) ||
     !local.logic.every(({ name, classHash }) => registered.classes[name] === BigInt(classHash)) ||
     registered.migration !== BigInt(local.release.migrationClassHash)
   )
