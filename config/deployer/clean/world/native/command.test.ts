@@ -205,16 +205,6 @@ describe("player-signed administrative gameplay", () => {
   });
 });
 
-it("records shard-derived results once without requiring a caller batch or progress event", async () => {
-  const { input, invokes, transactionHashes, events } = setup();
-  events(() => []);
-  const command = { kind: "RecordBlitzResults", value: undefined } as const;
-  const result = await completeNativeAdminCommand({ ...input, command });
-  expect(result).toEqual({ transactionHash: transactionHashes[0], transactions: 1 });
-  expect(invokes).toHaveLength(1);
-  expect(invokes[0].calldata.slice(-2).map(BigInt)).toEqual([1n, 51n]);
-});
-
 /** Return the submitted frame's hash so status polling cannot confirm a different transaction. */
 function invokeHash(invoke: Invoke, chainId: string): string {
   return hash.calculateInvokeTransactionHash({
