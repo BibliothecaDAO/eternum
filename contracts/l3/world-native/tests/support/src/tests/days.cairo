@@ -13,7 +13,6 @@ pub fn season(seed: felt252) -> GameRegistry {
         start_main_at: START,
         end_at: START + 21 * 20 * UNIT.into(),
         scheduled_end_at: START + 21 * 20 * UNIT.into(),
-        end_grace_seconds: 0,
         seed,
     }
 }

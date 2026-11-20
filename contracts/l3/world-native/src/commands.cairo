@@ -1,5 +1,4 @@
 use starknet::ContractAddress;
-use starknet::storage::StorageMapReadAccess;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct CreateExplorer {

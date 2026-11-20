@@ -95,19 +95,12 @@ pub fn expedition_home(d: super::Deployment) -> (u32, ResourceKey, u8) {
     (game_id, home, held_troop(d, home).into())
 }
 pub fn held_troop(d: super::Deployment, home: ResourceKey) -> crate::troops::TroopType {
-    let resources = IResourceOperationsDispatcher { contract_address: d.games };
-    let mut held = array![];
-    for category in array![
-        crate::troops::TroopType::Knight, crate::troops::TroopType::Paladin, crate::troops::TroopType::Crossbowman,
-    ] {
-        let resource_type = crate::troops::troop_resource(category, 0);
-        if resources
-            .resource_balance(ResourceSlot { game_id: home.game_id, entity_id: home.entity_id, resource_type }) != 0 {
-            held.append(category);
-        }
-    }
-    assert_eq!(held.len(), 1, "a home holds one starting troop type");
-    *held.at(0)
+    let army = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
+    GameState { contract_address: d.games }
+        .explorer(ExplorerKey { game_id: home.game_id, explorer_id: army })
+        .unwrap()
+        .troops
+        .category
 }
 pub fn muster_command(home: ResourceKey, category: u8, direction: u8, slot: u8) -> Command {
     Command::CreateExplorer(

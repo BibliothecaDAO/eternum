@@ -60,10 +60,6 @@ pub mod SeasonLogic {
             assert!(
                 crate::game::status_at(game, context.timestamp) == crate::game::GameStatus::Ended, "game has not ended",
             );
-            assert!(
-                game.end_grace_seconds == 0 || context.timestamp > game.end_at + game.end_grace_seconds.into(),
-                "game settlement grace period is active",
-            );
             game.settled = true;
             crate::logic::game::write_game(game_id, game);
             (0)

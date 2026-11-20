@@ -11,7 +11,6 @@ fn invalid_schedules_and_registration_windows_never_allocate() {
         CreateGameParams { duration_seconds: 0, ..request },
         CreateGameParams { start_settling_at: request.start_main_at + 1, ..request },
         CreateGameParams { registration_start: request.start_settling_at.try_into().unwrap(), ..request },
-        CreateGameParams { end_grace_seconds: 1, ..request },
     ] {
         assert!(safe(d, super::authority()).create_game(input).is_err());
     }
@@ -19,14 +18,13 @@ fn invalid_schedules_and_registration_windows_never_allocate() {
 }
 
 #[test]
-fn settlement_uses_block_time_after_grace_and_allows_retry_after_rejection() {
+fn settlement_uses_block_time_after_the_end_and_allows_retry_after_rejection() {
     let (d, _, _) = super::resource_commands::setup();
     let command = crate::commands::Command::MarkGameSettled;
-    super::resource_commands::assert_terminal_rejection(d, command, 100);
+    super::resource_commands::assert_terminal_rejection(d, command, super::play_fixture::FIXTURE_START);
     let d = super::bind_authority(d);
     let games = IGameDispatcher { contract_address: d.games };
-    let game = games.game(3);
-    let boundary = game.end_at + game.end_grace_seconds.into();
+    let boundary = games.game(3).end_at - 1;
     super::resource_commands::assert_terminal_rejection(d, command, boundary);
     assert!(!games.game(3).settled);
     assert!(super::resource_commands::execute(d, command, boundary + 1));

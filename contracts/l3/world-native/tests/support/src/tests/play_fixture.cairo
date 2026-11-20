@@ -27,7 +27,6 @@ pub fn fixture_params(name: felt252) -> crate::registrar::CreateGameParams {
         start_settling_at: FIXTURE_START,
         start_main_at: FIXTURE_START,
         duration_seconds: FIXTURE_SEASON_SECONDS,
-        end_grace_seconds: 0,
         dev_mode_on: false,
         registration_start: 0,
         biome_climate: crate::rules::BiomeClimateConfig {

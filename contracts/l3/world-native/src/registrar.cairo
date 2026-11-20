@@ -7,7 +7,6 @@ pub struct CreateGameParams {
     pub start_settling_at: u64,
     pub start_main_at: u64,
     pub duration_seconds: u64,
-    pub end_grace_seconds: u32,
     pub dev_mode_on: bool,
     pub registration_start: u32,
     pub biome_climate: crate::rules::BiomeClimateConfig,
@@ -38,7 +37,6 @@ pub fn validate_params(params: CreateGameParams) {
         Into::<u32, u64>::into(params.registration_start) < params.start_settling_at,
         "registration must open before settling",
     );
-    assert!(params.end_grace_seconds == 0, "result finalisation has no grace period");
 }
 
 pub fn map_center_offset(game_id: u32, seed: felt252) -> u32 {
@@ -58,7 +56,6 @@ pub fn build_game(params: CreateGameParams) -> crate::game::GameRegistry {
         start_main_at: params.start_main_at,
         end_at: params.start_main_at + params.duration_seconds,
         scheduled_end_at: params.start_main_at + params.duration_seconds,
-        end_grace_seconds: params.end_grace_seconds,
         seed: params.seed,
     }
 }

@@ -18,6 +18,45 @@ const combatMembers = combatBody
 export const factWireTypes = [
   {
     type: "struct",
+    name: "world_native::deep::DeepRing",
+    members: [
+      { name: "radius", type: "core::integer::u32" },
+      { name: "realms", type: "core::integer::u32" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::deep::DeepBeast",
+    members: [
+      { name: "count", type: "core::integer::u128" },
+      { name: "bow", type: "core::bool" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::deep::DeepPay",
+    members: [
+      { name: "alone", type: "core::integer::u32" },
+      { name: "pair", type: "core::integer::u32" },
+      { name: "crowd", type: "core::integer::u32" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::deep::DeepRules",
+    members: [
+      { name: "gate_distance", type: "core::integer::u32" },
+      { name: "rings", type: "core::array::Span::<world_native::deep::DeepRing>" },
+      { name: "beasts", type: "core::array::Span::<world_native::deep::DeepBeast>" },
+      { name: "loss_per_tick", type: "core::integer::u128" },
+      { name: "core_per_tick", type: "core::integer::u128" },
+      { name: "mine_per_tick", type: "core::integer::u128" },
+      { name: "building_pay", type: "world_native::deep::DeepPay" },
+      { name: "altar_threshold", type: "core::integer::u32" },
+    ],
+  },
+  {
+    type: "struct",
     name: "world_native::combat::ArmyCombat",
     members: combatMembers,
   },
@@ -239,14 +278,6 @@ export const factWireTypes = [
         name: "expires_at",
         type: "core::integer::u64",
       },
-    ],
-  },
-  {
-    type: "struct",
-    name: "world_native::withdrawals::ResourceTokenKey",
-    members: [
-      { name: "game_id", type: "core::integer::u32" },
-      { name: "resource_type", type: "core::integer::u8" },
     ],
   },
   {
@@ -490,15 +521,7 @@ export const factWireTypes = [
         type: "core::integer::u8",
       },
       {
-        name: "preset_id",
-        type: "core::integer::u32",
-      },
-      {
         name: "settled",
-        type: "core::bool",
-      },
-      {
-        name: "ready",
         type: "core::bool",
       },
       {
@@ -516,10 +539,6 @@ export const factWireTypes = [
       {
         name: "end_at",
         type: "core::integer::u64",
-      },
-      {
-        name: "end_grace_seconds",
-        type: "core::integer::u32",
       },
       {
         name: "seed",
@@ -852,20 +871,14 @@ const presetDerivedModels = new Set([
   "BuildingRule",
   "BoardRules",
   "ResearchPrice",
-  "CampRules",
   "UpgradeLimits",
   "UpgradeRecipe",
   "RealmGrants",
   "VillageRules",
   "DepthRules",
-  "SpireLayout",
   "ChestRules",
-  "LaborRules",
   "DeepRules",
   "FrontierDiscoveryRules",
-  "DepositRules",
-  "WithdrawalRules",
-  "ResourceToken",
 ]);
 
 export function defineFactModels({ struct, model: declare }) {
@@ -953,14 +966,6 @@ export function defineFactModels({ struct, model: declare }) {
     return observation ? { ...row, observation } : row;
   };
   return [
-    model(
-      "Preset",
-      "deployment",
-      [{ name: "preset_id", type: "core::integer::u32" }],
-      [{ name: "commitment", type: "core::felt252" }],
-    ),
-    model("SpireLayout", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("spires::SpireLayout")),
-    model("CampRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("camps::CampRules")),
     model(
       "Guild",
       "game",
@@ -1110,7 +1115,6 @@ export function defineFactModels({ struct, model: declare }) {
       ],
       struct("entry::LaborGrant").filter(({ name }) => name !== "game_id" && name !== "home"),
     ),
-    model("LaborRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("entry::LaborRules")),
     model("DeepRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("deep::DeepRules")),
     model(
       "LaborGrant",
@@ -1134,16 +1138,6 @@ export function defineFactModels({ struct, model: declare }) {
       ],
       struct("relics::LordsWithdrawal"),
     ),
-    model("DepositRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("bridge::DepositRules")),
-    model(
-      "WithdrawalRules",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      struct("withdrawals::WithdrawalRules"),
-    ),
-    model("ResourceToken", "game", struct("withdrawals::ResourceTokenKey"), [
-      { name: "token", type: struct("withdrawals::ResourceToken")[1].type },
-    ]),
     model("Guard", "game", struct("guards::GuardKey"), struct("guards::Guard")),
     model("MineKindConfig", "game", struct("mines::MineKindKey"), struct("mines::MineKindConfig")),
     model("MinePool", "game", struct("mines::MinePoolKey"), [
@@ -1154,12 +1148,6 @@ export function defineFactModels({ struct, model: declare }) {
       "deployment",
       [{ name: "realm_id", type: "core::integer::u32" }],
       struct("realms::RealmTraits"),
-    ),
-    model(
-      "BlitzRoster",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      [{ name: "players", type: "core::array::Span::<world_native::registrar::RosterPlayer>" }],
     ),
     model("RealmGrants", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("settlement::RealmGrants")),
     model(
@@ -1424,7 +1412,6 @@ const behaviouralFacts = {
   },
   VillagePass: { domain: "village", fields: { owner: "owner", consumedBy: "village_id" } },
   VillagePool: { domain: "village", fields: { availableLocations: "available" } },
-  BlitzRoster: { domain: "realm/blitz", fields: { players: "players" } },
   PlayerEntry: { domain: "realm/blitz", fields: { player: "player" } },
   UpgradeLimits: { domain: "structure", fields: { realmMaximum: "realm_max", villageMaximum: "village_max" } },
   UpgradeRecipe: { domain: "structure", fields: { costs: "costs" } },
@@ -1493,22 +1480,14 @@ export const syncScopes = {
   BatchProgress: "actor",
   ...Object.fromEntries(
     [
-      "Preset",
-      "SpireLayout",
-      "CampRules",
       "ChestRules",
-      "LaborRules",
       "DeepRules",
       "LordsBudget",
       "FrontierPrize",
       "FrontierDiscoveryRules",
-      "DepositRules",
       "DepositSource",
-      "WithdrawalRules",
-      "ResourceToken",
       "MineKindConfig",
       "MinePool",
-      "BlitzRoster",
       "RealmGrants",
       "SettlementRules",
       "SettlementProgress",

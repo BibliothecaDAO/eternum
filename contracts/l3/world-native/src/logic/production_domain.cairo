@@ -249,7 +249,7 @@ pub mod ProductionLogic {
         fn assert_resource_command(
             self: @ContractState, game_id: u32, timestamp: u64, game_context: crate::commands::ExecutionContext,
         ) {
-            crate::game::assert_main_with_grace(game_context.game.unbox(), timestamp);
+            crate::game::assert_main_through_end(game_context.game.unbox(), timestamp);
         }
         fn assert_production_command(
             self: @ContractState,

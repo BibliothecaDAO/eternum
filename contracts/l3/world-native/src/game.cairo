@@ -19,7 +19,6 @@ pub struct GameRegistry {
     pub start_settling_at: u64,
     pub start_main_at: u64,
     pub end_at: u64,
-    pub end_grace_seconds: u32,
     pub seed: felt252,
     pub scheduled_end_at: u64,
 }
@@ -56,18 +55,7 @@ pub fn assert_playing(game: GameRegistry, now: u64) {
     assert!(game.end_at == 0 || now < game.end_at, "game ended");
 }
 
-pub fn assert_main_with_grace(game: GameRegistry, now: u64) {
+pub fn assert_main_through_end(game: GameRegistry, now: u64) {
     assert!(game.dev_mode_on || (now >= game.start_main_at && now >= game.start_settling_at), "game not started");
-    assert_grace_end(game, now);
-}
-
-pub fn assert_settling_with_grace(game: GameRegistry, now: u64) {
-    assert!(game.dev_mode_on || now >= game.start_settling_at, "settling not started");
-    assert_grace_end(game, now);
-}
-
-fn assert_grace_end(game: GameRegistry, now: u64) {
-    if game.end_at != 0 && now >= game.end_at {
-        assert!(now <= game.end_at + game.end_grace_seconds.into(), "game grace period ended");
-    }
+    assert!(game.end_at == 0 || now <= game.end_at, "game ended");
 }
