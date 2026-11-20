@@ -5,4 +5,3 @@ export const findResourceById = (value: number) => {
 };
 
 export const RESOURCE_PRECISION = 1_000_000_000;
-
