@@ -66,7 +66,6 @@ pub fn reveal_reward(
     }
 }
 
-/// A dormant spire's one grant, independent of army size, tier and the reveal cap.
 fn boosted_amount(amount: u128, boosts: crate::troops::TroopBoosts, timestamp: u64) -> u128 {
     if crate::relics::bonus_active(boosts.incr_explore_reward_end_at, timestamp) {
         amount + amount * boosts.incr_explore_reward_percent_num.into() / 10000

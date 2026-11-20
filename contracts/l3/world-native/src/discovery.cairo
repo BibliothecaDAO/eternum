@@ -12,8 +12,6 @@ pub enum Discovery {
     Spire,
 }
 
-
-
 // One categorical draw per reveal. After `empty_reveal_limit` empty reveals in a row the draw covers only the kinds
 // still allowed. Each ruin carries its relic from discovery until the winning army clears it.
 pub fn frontier(
