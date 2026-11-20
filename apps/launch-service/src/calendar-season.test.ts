@@ -99,12 +99,8 @@ test("canonical launch requests never fill a missing start or duration", async (
   const launches = new D1LaunchStore(database.db, testChain());
   const request = frontierSeasonRequest(oneBag);
   for (const field of ["gameStartTime", "durationSeconds"] as const)
-    await expect(launches.enqueue({ ...request, [field]: undefined })).rejects.toThrow(
-      "explicit start and duration",
-    );
-  await expect(launches.enqueue({ ...request, gameStartTime: "2026-11-08T18:30:00.500Z" })).rejects.toThrow(
-    "tick",
-  );
+    await expect(launches.enqueue({ ...request, [field]: undefined })).rejects.toThrow("explicit start and duration");
+  await expect(launches.enqueue({ ...request, gameStartTime: "2026-11-08T18:30:00.500Z" })).rejects.toThrow("tick");
   expect(await launches.list("madara.frontier")).toEqual([]);
 });
 
