@@ -3511,6 +3511,43 @@ describe("shared links", () => {
     ]);
   });
 
+  it("counts a sharer's paid friends in the newest game that paid them, each game capped on its own", async () => {
+    const otherGame = gameId + 1;
+    heralds.set(`${shard}/games`, {
+      chain: chainId,
+      games: [gameId, otherGame].map((id) => ({ game_id: id, name: "season", mode: "frontier", status: "Live", clock: { end_at: 0 } })),
+    });
+    onTestFinished(() => {
+      publishGames();
+      heralds.delete(`${shard}/games/${otherGame}/snapshot?models=RaceMember%2CStructure`);
+    });
+    const sharer = await player("two-games-sharer");
+    const titans = orders.find(({ fullOrderName }) => fullOrderName === "Order of Titans")!;
+    await sharer.browser.request("/api/order-intent", { body: { order: titans.orderId } });
+    const made = await sharer.browser.request("/api/shares", {
+      body: { kind: "aspect", chainId: null, gameId: null, moment: titans.aspect },
+    });
+    const code = ((await made.json()) as { code: string }).code;
+    const first = await joinBy(code, "two-games-first");
+    const second = await joinBy(code, "two-games-second");
+    first.earn(100);
+    heralds.set(`${shard}/games/${otherGame}/snapshot?models=RaceMember%2CStructure`, {
+      game_id: String(otherGame),
+      confirmed_block: 1,
+      models: [
+        { model: "RaceMember", rows: [{ key: "1", value: { game_id: otherGame, entity_id: "1", glory: String(100e9) } }] },
+        { model: "Structure", rows: [{ key: "1", value: { game_id: otherGame, entity_id: "1", owner: second.account } }] },
+      ],
+    });
+    relay.mockClear();
+    await minuteCron();
+    expect(fragmentCredits().map(({ gameId: paidIn, amount }) => [paidIn, amount])).toEqual([
+      [gameId, 100],
+      [otherGame, 100],
+    ]);
+    expect(await sharer.tally()).toMatchObject({ activated: 2, friendsPaid: 1, fragmentsEarned: 100 });
+  });
+
   it("tells a new account the invite it came by, and nothing to an account no link brought", async () => {
     const sharer = await player("inviter-chaos");
     await env.DB.prepare(`UPDATE "user" SET "name" = 'Cael' WHERE "realmsId" = ?`).bind(sharer.realmsId).run();

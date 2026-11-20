@@ -67,7 +67,7 @@ it("counts each step a friend took through the player's shared days", async () =
     ["5", "Days posted"],
     ["1.2K", "Opened by friends"],
     ["31", "Friends who joined"],
-    ["12", "Cleared a site"],
+    ["12", "Reached 100 Glory"],
     ["0/10", "Friends paid"],
     ["0", "Fragments earned"],
   ]);

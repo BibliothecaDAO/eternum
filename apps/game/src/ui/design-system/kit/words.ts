@@ -1198,7 +1198,7 @@ export const SHARED_DAYS_WORDS = {
     posted: "Days posted",
     visits: "Opened by friends",
     joined: "Friends who joined",
-    activated: "Cleared a site",
+    activated: `Reached ${formatExact(FRIEND_GLORY)} ${ASPECT_PAGE_WORDS.glory}`,
   },
   friendsPaid: "Friends paid",
   fragmentsEarned: `${FRAGMENTS} earned`,

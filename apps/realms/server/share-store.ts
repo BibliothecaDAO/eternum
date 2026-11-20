@@ -293,7 +293,9 @@ export function createShareStore(db: D1Database) {
     const paid = await db
       .prepare(
         `SELECT COUNT("friend") AS "friendsPaid", COALESCE(SUM("amount"), 0) AS "fragmentsEarned"
-         FROM "share_payouts" WHERE "sharer" = ? AND "paid_at" IS NOT NULL`,
+         FROM "share_payouts" WHERE "sharer" = ?1 AND "paid_at" IS NOT NULL
+           AND ("chain_id", "game_id") = (SELECT "chain_id", "game_id" FROM "share_payouts" WHERE "sharer" = ?1
+                                          ORDER BY "created_at" DESC, "game_id" DESC LIMIT 1)`,
       )
       .bind(sharer)
       .first<{ friendsPaid: number; fragmentsEarned: number }>();
