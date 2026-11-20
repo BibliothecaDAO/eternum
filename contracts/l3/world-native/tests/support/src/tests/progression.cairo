@@ -16,8 +16,9 @@ pub fn bar(d: super::Deployment, key: crate::troops::ExplorerKey, game_id: u32) 
     snforge_std::interact_with_state(
         d.games,
         || {
-            let context = crate::commands::load_context(game_id, 123, 360);
-            crate::logic::troops::active_explorer(key, 360, context).troops.stamina.inline().amount
+            let now = super::play_fixture::FIXTURE_START;
+            let context = crate::commands::load_context(game_id, 123, now);
+            crate::logic::troops::active_explorer(key, now, context).troops.stamina.inline().amount
         },
     )
 }
@@ -34,23 +35,15 @@ pub /// Sets the slot army's bar to `amount` at the current second, through the 
         },
     );
 }
-pub fn deploy(d: super::Deployment, game_id: u32, category: u8, direction: u8) -> crate::troops::ExplorerKey {
-    let home = crate::resources::ResourceKey { game_id, entity_id: 1 };
-    let command = crate::commands::Command::CreateExplorer(
-        crate::commands::CreateExplorer {
-            slot: direction,
-            structure_id: 1,
-            category,
-            tier: 0,
-            amount: 3 * crate::rules::RESOURCE_PRECISION,
-            direction,
-        },
-    );
-    assert!(super::resource_commands::execute_in_game(d, game_id, command, 351));
+pub fn deploy(
+    d: super::Deployment, home: crate::resources::ResourceKey, category: u8, slot: u8, timestamp: u64,
+) -> crate::troops::ExplorerKey {
+    let command = super::registrar::muster_command(home, category, slot, slot);
+    super::resource_commands::assert_executes(d, home.game_id, command, timestamp);
     let armies = crate::tests::state::StructureObservationTrait::home_armies(
         crate::structures::IStructureOperationsDispatcher { contract_address: d.games }, home,
     );
-    crate::troops::ExplorerKey { game_id, explorer_id: *armies.at(armies.len() - 1) }
+    crate::troops::ExplorerKey { game_id: home.game_id, explorer_id: *armies.at(armies.len() - 1) }
 }
 
 

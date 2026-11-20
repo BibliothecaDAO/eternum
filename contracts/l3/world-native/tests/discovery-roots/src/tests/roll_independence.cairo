@@ -2,6 +2,8 @@ pub use world_test_support::tests::roll_independence::*;
 
 
 // Independent fixtures keep each VM below the event bound; every root group also compares against root zero.
+const NO_GAME: u32 = 99;
+
 #[test_case(name: "route_00_roots_00_07", 0, 0)]
 #[test_case(name: "route_00_roots_08_15", 0, 8)]
 #[test_case(name: "route_00_roots_16_23", 0, 16)]
@@ -188,14 +190,14 @@ fn all_typed_entry_refusals_are_root_independent(index: u32, start: u64) {
         } else {
             start + sample - 1
         };
-        let d = fresh_world(false);
+        let d = fresh_world();
 
         let before = play_fixture::gameplay_snapshot(d.games);
         let release = play_fixture::pins(d.games, 1);
-        play_fixture::caller(d.games, d.actor, 100);
+        play_fixture::caller(d.games, d.actor, play_fixture::FIXTURE_START);
         let mut spy = snforge_std::spy_events();
         let error = IPlayFixtureSafeDispatcher { contract_address: d.games }
-            .play_with_root(1, release, play_fixture::encode(command), root.into())
+            .play_with_root(NO_GAME, release, play_fixture::encode(command), root.into())
             .unwrap_err();
         if let Some(previous) = expected {
             assert_eq!(error.span(), previous);
@@ -391,10 +393,12 @@ fn all_real_domain_verdicts_are_root_independent(index: u32, start: u64) {
         } else {
             start + sample - 1
         };
-        let d = fresh_world(true);
+        let d = fresh_world();
 
         let mut spy = snforge_std::spy_events();
-        let applied = play_fixture::play(d.games, TestAction { game_id: 1, actor: d.actor, command }, root.into(), 100);
+        let applied = play_fixture::play(
+            d.games, TestAction { game_id: 1, actor: d.actor, command }, root.into(), play_fixture::FIXTURE_START,
+        );
         if let Some(previous) = expected {
             assert_eq!(applied, previous, "route {} root {}", index, root);
         }
