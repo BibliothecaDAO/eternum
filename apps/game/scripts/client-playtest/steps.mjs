@@ -34,7 +34,10 @@ import {
   judgeAfterDoorway,
 } from "./evidence.mjs";
 import { watchReleaseMove } from "./stale-release.mjs";
-import { nativeOathConstants as oathRules } from "../../../../contracts/l3/world-native/schema/balance.gen.ts";
+import {
+  nativeOathConstants as oathRules,
+  nativeRuleConstants as rules,
+} from "../../../../contracts/l3/world-native/schema/balance.gen.ts";
 import { openOrderSendGate, touchAt, VIEWPORT } from "./browser-session.mjs";
 import { ENTRY_BUTTON, findHomeCardEntry } from "./player-entry.mjs";
 import { judgeClickToResult, measureClickToResult } from "./click-latency.mjs";
@@ -4010,6 +4013,9 @@ const DEEP_SITE_NAMES = deepSites.map(({ key, name }) => ({
   beast: DEEP_BEASTS[key].name,
 }));
 const JOINED_SITE = DEEP_SITE_NAMES.find(({ key }) => key === "deep:mine");
+const everyRingSiteDrawn = (drawn) =>
+  DEEP_SITE_NAMES.every((site) => drawn[site.key] > 0) &&
+  DEEP_SITE_NAMES.reduce((total, site) => total + (drawn[site.key] ?? 0), 0) === rules.DEEP_RING_SITES;
 
 /** One Deep site's plate, found by its name: where a press on its model lands (page px from the centre), whether its plate stands wholly in the frame, and the card open now. */
 const siteState = ({ name, icon }) => `JSON.stringify((() => {
@@ -4571,21 +4577,19 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
       await sleep(ZOOM_SETTLE_MS);
       const framed = await readUntil(
         () => browser.read(DRAWN_SITES),
-        (state) =>
-          DEEP_SITE_NAMES.every((site) => state.drawn[site.key] > 0) &&
-          (!onADesktop() || state.plates.length >= DEEP_SITE_NAMES.length),
+        (state) => everyRingSiteDrawn(state.drawn) && (!onADesktop() || state.plates.length >= DEEP_SITE_NAMES.length),
         PLAYABLE_WAIT_MS,
       );
       extraScreenshot("deep-sites");
       return { framed };
     },
     verify: ({ played }) =>
-      DEEP_SITE_NAMES.every((site) => played.framed.drawn[site.key] === 1) &&
+      everyRingSiteDrawn(played.framed.drawn) &&
       // A desktop frames all three plates over their models; a phone's narrow frame is walked site by site in the next step.
       (!onADesktop() || played.framed.plates.length >= DEEP_SITE_NAMES.length) &&
       played.framed.plates.every((plate) => plate.inView)
         ? completed(played)
-        : failed("The Deep's four sites are each drawn, and a desktop frames their plates", played),
+        : failed("Every site of the Deep's open ring is drawn, and a desktop frames their plates", played),
   },
 ];
 
@@ -4614,7 +4618,7 @@ const deepClosedSteps = () => [
     verify: ({ played }) =>
       played.tokens.length > 0 &&
       played.tokens.every((icon) => icon === "lock") &&
-      (!onADesktop() || played.tokens.length === DEEP_SITE_NAMES.length)
+      (!onADesktop() || played.tokens.length === rules.DEEP_RING_SITES)
         ? completed(played)
         : failed("Every site of a closed ring is pinned with a lock in place of its kind", played),
   },
