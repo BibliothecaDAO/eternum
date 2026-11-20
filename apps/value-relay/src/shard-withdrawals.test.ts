@@ -263,10 +263,7 @@ it("filters only value models and resumes every deployed RowSet depth without ga
   expect(calls[1].continuation_token).toBe("more");
   expect(calls[2].continuation_token).toBeUndefined();
   for (const query of calls) {
-    expect(query.keys.slice(-2)).toEqual([
-      ["0x1"],
-      ["LordsWithdrawal"].map(shortString.encodeShortString),
-    ]);
+    expect(query.keys.slice(-2)).toEqual([["0x1"], ["LordsWithdrawal"].map(shortString.encodeShortString)]);
   }
   expect(calls.map((query) => query.keys.length)).toEqual([3, 3, 4]);
 });

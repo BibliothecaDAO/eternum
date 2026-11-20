@@ -68,10 +68,7 @@ const WRITES: Action[] = [
     pattern: ":kind/:game/:name/:verb",
     carriesBody: false,
     route: ({ kind, game, name, verb }) =>
-      isGameEnvironment(game) &&
-      named(name) &&
-      kind === "runs" &&
-      (verb === "continue" || verb === "delete")
+      isGameEnvironment(game) && named(name) && kind === "runs" && (verb === "continue" || verb === "delete")
         ? { path: `/api/factory/${kind}/${game}/${name}/actions/${verb}`, action: `${verb} ${kind} ${name}` }
         : null,
   },

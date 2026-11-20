@@ -271,9 +271,7 @@ fn season_one_refuses_bridge_commands() {
     let release = super::play_fixture::pins(d.games, game_id);
     super::play_fixture::caller(d.games, d.actor, 360);
     let home = ResourceKey { game_id, entity_id: 1 };
-    for command in array![
-        super::bridge::deposit(home), super::bridge::withdraw(home, d.actor),
-    ] {
+    for command in array![super::bridge::deposit(home), super::bridge::withdraw(home, d.actor)] {
         super::assert_entry_refusal(d, game_id, release, super::play_fixture::encode(command), "command disabled");
     }
 }

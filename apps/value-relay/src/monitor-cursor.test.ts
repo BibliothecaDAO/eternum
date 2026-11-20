@@ -50,7 +50,15 @@ it("keeps checked-through block and page continuation across ticks without rerea
           rewind: false,
           fromBlock: 0,
         }),
-      postedResults: () => Effect.succeed({ rows: [], next: null, head: 1000, anchor: { number: 1000, hash: "0xa" }, rewind: false, fromBlock: 1 }),
+      postedResults: () =>
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 1000,
+          anchor: { number: 1000, hash: "0xa" },
+          rewind: false,
+          fromBlock: 1,
+        }),
       paidClaims,
       pause: () => Effect.void,
     },
@@ -112,7 +120,15 @@ it("an exact row reset skips only that claim, still faults on the next unchecked
           rewind: false,
           fromBlock: 0,
         }),
-      postedResults: () => Effect.succeed({ rows: [], next: null, head: 1000, anchor: { number: 1000, hash: "0xa" }, rewind: false, fromBlock: 1 }),
+      postedResults: () =>
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 1000,
+          anchor: { number: 1000, hash: "0xa" },
+          rewind: false,
+          fromBlock: 1,
+        }),
       paidClaims: () =>
         Effect.succeed({
           rows,

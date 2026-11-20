@@ -703,8 +703,7 @@ pub mod StructuresLogic {
                 crate::logic::map::MapState::occupy(tile_key(game_id, coord), key.entity_id, occupier, true);
             }
             let capacity: u128 = core::num::traits::Bounded::MAX;
-            crate::logic::structure_actions::resources_dispatcher(game_id)
-                .initialize_resources(key, capacity);
+            crate::logic::structure_actions::resources_dispatcher(game_id).initialize_resources(key, capacity);
             key
         }
         fn raise_realm_home(

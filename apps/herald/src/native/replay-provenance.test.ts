@@ -11,8 +11,7 @@ describe("native replay provenance", () => {
     const provenance = changed.native.schemas[schema.identity]!;
     if (kind === "model")
       provenance.models.find((row) => row.name === "Fragments")!.members[0]!.type = "core::integer::u64";
-    if (kind === "event")
-      provenance.games.events.find((row) => row.name === "BattleEvent")!.members[0]!.kind = "data";
+    if (kind === "event") provenance.games.events.find((row) => row.name === "BattleEvent")!.members[0]!.kind = "data";
     if (kind === "nested type") {
       const battle = provenance.types["world_native::rules::BattleConfig"]!;
       if (battle.type !== "struct") throw new Error("Expected BattleConfig struct");

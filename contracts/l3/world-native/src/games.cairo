@@ -54,8 +54,8 @@ pub trait IGamesSlots<T> {
 
 #[starknet::contract]
 pub mod Games {
-    use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
     use starknet::ContractAddress;
+    use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
     use crate::games::Authentication;
     use crate::games_entry::GamesEntry;
     use crate::logic::release::{ISlotAuthorityDispatcherTrait, ISlotViewsDispatcherTrait, ReleaseState};

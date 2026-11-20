@@ -214,11 +214,7 @@ const routeActionOutcomes = (
   stopped: AbortSignal,
 ): GameClient["waitForAction"] => {
   const { provider } = setupResult.network;
-  const wait = (
-    transactionHash: string,
-    inBlock?: Promise<void>,
-    startedAt?: number,
-  ) =>
+  const wait = (transactionHash: string, inBlock?: Promise<void>, startedAt?: number) =>
     waitForActionOutcome(
       runtime,
       provider.provider,

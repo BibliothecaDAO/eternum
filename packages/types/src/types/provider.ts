@@ -376,4 +376,3 @@ export interface ApplyRelicProps extends SystemSigner {
   relic_resource_id: BigNumberish;
   relic_slot: 0 | 1 | 2;
 }
-

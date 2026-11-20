@@ -48,10 +48,7 @@ it("raises the first army at the realm with troops on hand, or asks for a barrac
 
 it("explores first, then goes for The Vanguard's nearest camp or rift", () => {
   const route = steps([army(1, 0)], [target("Rift", 9), target("Camp", 6)]);
-  expect(route.map(({ line }) => line)).toEqual([
-    "Your army can explore",
-    "Take Camp from The Vanguard",
-  ]);
+  expect(route.map(({ line }) => line)).toEqual(["Your army can explore", "Take Camp from The Vanguard"]);
   expect(route[0].act).toEqual({ kind: "go", armyId: 1, target: null });
   expect(route[1].act).toEqual({ kind: "go", armyId: 1, target: { col: 6, row: 0 } });
 });

@@ -36,7 +36,15 @@ const fixture = () => {
           rewind: false,
           fromBlock: 0,
         }),
-      postedResults: () => Effect.succeed({ rows: [], next: null, head: 1000, anchor: { number: 1000, hash: "0xa" }, rewind: false, fromBlock: 1 }),
+      postedResults: () =>
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 1000,
+          anchor: { number: 1000, hash: "0xa" },
+          rewind: false,
+          fromBlock: 1,
+        }),
       paidClaims: () =>
         Effect.succeed({
           rows: [{ ...receipt, paymentTransactionHash: "0xdef", paidAt: 1, wallet: "0x123" }],

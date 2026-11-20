@@ -592,11 +592,7 @@ export class EternumProvider extends EventEmitter {
         transaction_hash: tx.transaction_hash,
       } as unknown as GetTransactionReceiptResponse;
     }
-    const streamReceipt = this.waitForTransactionWithCheckInternal(
-      tx.transaction_hash,
-      tx.inBlock,
-      submitStartedAt,
-    );
+    const streamReceipt = this.waitForTransactionWithCheckInternal(tx.transaction_hash, tx.inBlock, submitStartedAt);
     // The checking timer labels uncertainty only; it cannot establish inclusion or free the next command.
     const checking = setTimeout(
       () => {
@@ -642,11 +638,9 @@ export class EternumProvider extends EventEmitter {
       } as unknown as GetTransactionReceiptResponse;
     }
 
-    const transaction = await this.transactionStreamWaiter(transactionHash, inBlock, startedAt).catch(
-      (error) => {
-        throw attachTransactionFailureStage(error, "confirmation");
-      },
-    );
+    const transaction = await this.transactionStreamWaiter(transactionHash, inBlock, startedAt).catch((error) => {
+      throw attachTransactionFailureStage(error, "confirmation");
+    });
 
     // Reverted before the roll (the shard's checks) or refused by the game (rolled back, reason recorded): either way
     // nothing applied, and the player reads the reason.

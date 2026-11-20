@@ -184,8 +184,7 @@ pub fn explorer_fixture(deployment: Deployment, id: u64, owner: u64, coord: Coor
     );
     let key = ResourceKey { game_id: 3, entity_id: id };
     start_cheat_caller_address(deployment.games, deployment.games);
-    IResourceOperationsDispatcher { contract_address: deployment.games }
-        .initialize_resources(key, capacity);
+    IResourceOperationsDispatcher { contract_address: deployment.games }.initialize_resources(key, capacity);
     stop_cheat_caller_address(deployment.games);
     key
 }

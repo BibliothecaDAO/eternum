@@ -54,8 +54,7 @@ export const useCoachSteps = (): NextStep[] => {
   const certainLoss = useCertainLoss();
   const act = useCoachAct();
   const steps = useMemo(
-    () =>
-      coachSteps({ holds, armies, targets, troopsOnHand, certainLoss }),
+    () => coachSteps({ holds, armies, targets, troopsOnHand, certainLoss }),
     [holds, armies, targets, troopsOnHand, certainLoss],
   );
   return steps.map((step) => toNextStep(step, act));

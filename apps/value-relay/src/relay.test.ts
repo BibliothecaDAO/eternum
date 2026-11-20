@@ -4,13 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { runRelay } from "./relay";
 import { runMonitor, type MonitorProgress } from "./monitor";
 import { frontierPayment } from "./adapters";
-import {
-  RelayFailure,
-  type RelayPorts,
-  type MonitorPorts,
-  type ConfirmedBlock,
-  type Withdrawal,
-} from "./ports";
+import { RelayFailure, type RelayPorts, type MonitorPorts, type ConfirmedBlock, type Withdrawal } from "./ports";
 import type { RelayStore, RelayProgress } from "./state";
 
 const withdrawal: Withdrawal = {
@@ -151,7 +145,15 @@ const fixture = () => {
           rewind: false,
           fromBlock: 0,
         }),
-      postedResults: () => Effect.succeed({ rows: [], next: null, head: 1000, anchor: { number: 1000, hash: "0xa" }, rewind: false, fromBlock: 1 }),
+      postedResults: () =>
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 1000,
+          anchor: { number: 1000, hash: "0xa" },
+          rewind: false,
+          fromBlock: 1,
+        }),
       paidClaims: () =>
         Effect.succeed({
           rows: [{ ...withdrawal, paymentTransactionHash: "0xdef", paidAt: 1000, wallet: "0x123" }],
@@ -274,36 +276,33 @@ describe("confirmed value relay", () => {
 });
 
 describe("independent payout monitor", () => {
-  it.each(["missing_receipt", "wrong_amount", "wrong_season", "wrong_wallet"])(
-    "pauses on %s",
-    async (fault) => {
-      const f = fixture();
-      if (fault === "wrong_wallet")
-        f.ports.ledger.paidClaims = () =>
-          Effect.succeed({
-            rows: [{ ...withdrawal, paymentTransactionHash: "0xdef", paidAt: 1000, wallet: "0xbad" }],
-            next: null,
-            head: 1000,
-            anchor: { number: 1000, hash: "0xa" },
-            rewind: false,
-            fromBlock: 1,
-          });
-      if (fault === "missing_receipt") f.ports.shard.withdrawal = () => Effect.succeed(null);
-      if (fault === "wrong_amount") f.ports.shard.withdrawal = () => Effect.succeed({ ...withdrawal, amount: "18" });
-      if (fault === "wrong_season") f.ports.shard.withdrawal = () => Effect.succeed({ ...withdrawal, seasonId: 5 });
-      let progress: MonitorProgress = { halted: null };
-      const pause = vi.fn(() => Effect.void);
-      const store = {
-        load: async () => progress,
-        save: async (p: MonitorProgress) => {
-          progress = p;
-        },
-      };
-      await Effect.runPromise(runMonitor({ ...f.ports, ledger: { ...f.ports.ledger, pause } }, store));
-      expect(progress.halted).toBeTruthy();
-      expect(pause).toHaveBeenCalledTimes(1);
-    },
-  );
+  it.each(["missing_receipt", "wrong_amount", "wrong_season", "wrong_wallet"])("pauses on %s", async (fault) => {
+    const f = fixture();
+    if (fault === "wrong_wallet")
+      f.ports.ledger.paidClaims = () =>
+        Effect.succeed({
+          rows: [{ ...withdrawal, paymentTransactionHash: "0xdef", paidAt: 1000, wallet: "0xbad" }],
+          next: null,
+          head: 1000,
+          anchor: { number: 1000, hash: "0xa" },
+          rewind: false,
+          fromBlock: 1,
+        });
+    if (fault === "missing_receipt") f.ports.shard.withdrawal = () => Effect.succeed(null);
+    if (fault === "wrong_amount") f.ports.shard.withdrawal = () => Effect.succeed({ ...withdrawal, amount: "18" });
+    if (fault === "wrong_season") f.ports.shard.withdrawal = () => Effect.succeed({ ...withdrawal, seasonId: 5 });
+    let progress: MonitorProgress = { halted: null };
+    const pause = vi.fn(() => Effect.void);
+    const store = {
+      load: async () => progress,
+      save: async (p: MonitorProgress) => {
+        progress = p;
+      },
+    };
+    await Effect.runPromise(runMonitor({ ...f.ports, ledger: { ...f.ports.ledger, pause } }, store));
+    expect(progress.halted).toBeTruthy();
+    expect(pause).toHaveBeenCalledTimes(1);
+  });
   it("retries a failed pause from the persisted stop condition", async () => {
     const f = fixture();
     f.ports.shard.withdrawal = () => Effect.succeed(null);
@@ -343,9 +342,7 @@ it("detects a parent mismatch before recording or paying the new block", async (
   await f.run();
   f.ports.shard.confirmedHead = () => Effect.succeed(1);
   f.ports.shard.eventsPage = (number) =>
-    Effect.succeed(
-      number === 0 ? block : { ...block, number: 1, hash: "0xb", parentHash: "0xc", withdrawals: [] },
-    );
+    Effect.succeed(number === 0 ? block : { ...block, number: 1, hash: "0xb", parentHash: "0xc", withdrawals: [] });
   await expect(f.run()).rejects.toThrow();
   expect(await f.store.progress()).toMatchObject({ nextBlock: 1, halted: "parent_hash_changed:1" });
 });

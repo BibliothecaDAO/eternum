@@ -1,13 +1,6 @@
 import type { NotificationLevel } from "./preferences";
 import { includesKind, type NotificationKind } from "./notification-kinds";
-import {
-  battleCopy,
-  captureStoryCopy,
-  raidStoryCopy,
-  says,
-  type StoryCopy,
-  transferStoryCopy,
-} from "./story-copy";
+import { battleCopy, captureStoryCopy, raidStoryCopy, says, type StoryCopy, transferStoryCopy } from "./story-copy";
 import type { NativeStoryVariant } from "../../../contracts/l3/world-native/schema/client.gen";
 
 type RecipientSource = "capture" | "owner" | "transferReceiver" | "nativeBattle" | "raid";

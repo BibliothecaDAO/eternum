@@ -90,7 +90,6 @@ it("encodes refunds with the committed SlotKey and wallet array", async () => {
   );
 });
 
-
 it("does not submit an open or refund when the slot view fails", async () => {
   rpc.call.mockRejectedValue(new Error("RPC unavailable"));
   await expect(Effect.runPromise(openSlotOnLedger(credentials, key, { start: 100, end: 160 }))).rejects.toMatchObject({

@@ -215,107 +215,104 @@ it("requires an operator token and a recorded reason to clear a monitor halt wit
   });
 });
 
-describe.each(["paidClaims"] as const)(
-  "resetting a %s halt the previous version recorded",
-  (stream) => {
-    const row = "paidClaims:0x1:0xabc";
-    const ledger = {
-      paid: [
-        {
+describe.each(["paidClaims"] as const)("resetting a %s halt the previous version recorded", (stream) => {
+  const row = "paidClaims:0x1:0xabc";
+  const ledger = {
+    paid: [
+      {
+        prizeRank: 0,
+        prizeCount: 0,
+        chainId: "0x1",
+        transactionHash: "0xabc",
+        seasonId: 1,
+        wallet: "0x123",
+        amount: "1",
+        paymentTransactionHash: "0xdef",
+        paidAt: 1,
+      },
+    ],
+    anchor: "0xa",
+  };
+  const pause = vi.fn(() => Effect.void);
+  const page = <A>(rows: A[]) =>
+    Effect.succeed({
+      rows,
+      head: 10,
+      anchor: { number: 10, hash: ledger.anchor },
+      rewind: true,
+      fromBlock: 1,
+      next: null,
+    });
+  const ports: MonitorPorts = {
+    // The check always disagrees: neither identity nor the shard matches the ledger.
+    identity: { matchesPayDecision: () => Effect.succeed(false) },
+    shard: {
+      withdrawalReceipt: () => Effect.succeed(null),
+      conservation: () => Effect.succeed([]),
+      withdrawal: (chainId, transactionHash) =>
+        Effect.succeed({
           prizeRank: 0,
           prizeCount: 0,
-          chainId: "0x1",
-          transactionHash: "0xabc",
+          chainId,
+          transactionHash,
           seasonId: 1,
-          wallet: "0x123",
           amount: "1",
-          paymentTransactionHash: "0xdef",
-          paidAt: 1,
-        },
-      ],
-      anchor: "0xa",
-    };
-    const pause = vi.fn(() => Effect.void);
-    const page = <A>(rows: A[]) =>
-      Effect.succeed({
-        rows,
-        head: 10,
-        anchor: { number: 10, hash: ledger.anchor },
-        rewind: true,
-        fromBlock: 1,
-        next: null,
-      });
-    const ports: MonitorPorts = {
-      // The check always disagrees: neither identity nor the shard matches the ledger.
-      identity: { matchesPayDecision: () => Effect.succeed(false) },
-      shard: {
-        withdrawalReceipt: () => Effect.succeed(null),
-        conservation: () => Effect.succeed([]),
-        withdrawal: (chainId, transactionHash) =>
-          Effect.succeed({
-            prizeRank: 0,
-            prizeCount: 0,
-            chainId,
-            transactionHash,
-            seasonId: 1,
-            amount: "1",
-            realmsId: "0x2",
-            confirmedAt: 1,
-          }),
-      },
-      ledger: {
-        frontierPool: () => Effect.succeed("0"),
-        finalFrontierPool: () => Effect.succeed(null),
-        reportedClaims: () =>
-          Effect.succeed({
-            rows: [],
-            next: null,
-            head: 0,
-            anchor: { number: 0, hash: "0x1" },
-            rewind: false,
-            fromBlock: 0,
-          }),
-        postedResults: () => page([]),
-        paidClaims: () => page(stream === "paidClaims" ? ledger.paid : []),
-        pause,
-      },
-    };
-    /** The Durable Object's progress, read and written only through JSON, as storage keeps it. */
-    const persisted = (data: Map<string, unknown>) => ({
-      load: async (): Promise<MonitorProgress> => JSON.parse(JSON.stringify(data.get("progress"))),
-      save: async (next: MonitorProgress) => {
-        data.set("progress", JSON.parse(JSON.stringify(next)));
-      },
-    });
+          realmsId: "0x2",
+          confirmedAt: 1,
+        }),
+    },
+    ledger: {
+      frontierPool: () => Effect.succeed("0"),
+      finalFrontierPool: () => Effect.succeed(null),
+      reportedClaims: () =>
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 0,
+          anchor: { number: 0, hash: "0x1" },
+          rewind: false,
+          fromBlock: 0,
+        }),
+      postedResults: () => page([]),
+      paidClaims: () => page(stream === "paidClaims" ? ledger.paid : []),
+      pause,
+    },
+  };
+  /** The Durable Object's progress, read and written only through JSON, as storage keeps it. */
+  const persisted = (data: Map<string, unknown>) => ({
+    load: async (): Promise<MonitorProgress> => JSON.parse(JSON.stringify(data.get("progress"))),
+    save: async (next: MonitorProgress) => {
+      data.set("progress", JSON.parse(JSON.stringify(next)));
+    },
+  });
 
-    it("waives nothing, re-observes the row, and makes the next reset durable", async () => {
-      const f = fixture();
-      f.data.set("progress", {
-        halted: "paid_wallet_mismatch:0xabc",
-        fault: { row, stream, cursor: { fromBlock: 0, page: null }, offset: 0 },
-      });
-      expect(await f.monitor.reset(row, "Investigated")).toMatchObject({ halted: null, waived: null });
-      pause.mockClear();
-      // The unchanged row is checked again and halts again, this time recording what it saw.
-      await Effect.runPromise(runMonitor(ports, persisted(f.data)));
-      expect(pause).toHaveBeenCalledOnce();
-      const fact = (await f.monitor.status()).fault?.fact;
-      expect(fact).toMatch(new RegExp(`^${stream}:`));
-      expect(await f.monitor.reset(row, "Investigated again")).toMatchObject({ halted: null, waived: fact });
-      // That clearance is durable: an unchanged replay at a new anchor stays cleared...
-      ledger.anchor = "0xb";
-      pause.mockClear();
-      await Effect.runPromise(runMonitor(ports, persisted(f.data)));
-      expect(pause).not.toHaveBeenCalled();
-      // ...and a rewritten row on the same claim or game is checked again and pauses.
-      ledger.paid = [{ ...ledger.paid[0]!, amount: "2", wallet: "0x999" }];
-      ledger.anchor = "0xc";
-      await Effect.runPromise(runMonitor(ports, persisted(f.data)));
-      expect(pause).toHaveBeenCalledOnce();
-      expect((await f.monitor.status()).halted).toMatch(/mismatch/);
+  it("waives nothing, re-observes the row, and makes the next reset durable", async () => {
+    const f = fixture();
+    f.data.set("progress", {
+      halted: "paid_wallet_mismatch:0xabc",
+      fault: { row, stream, cursor: { fromBlock: 0, page: null }, offset: 0 },
     });
-  },
-);
+    expect(await f.monitor.reset(row, "Investigated")).toMatchObject({ halted: null, waived: null });
+    pause.mockClear();
+    // The unchanged row is checked again and halts again, this time recording what it saw.
+    await Effect.runPromise(runMonitor(ports, persisted(f.data)));
+    expect(pause).toHaveBeenCalledOnce();
+    const fact = (await f.monitor.status()).fault?.fact;
+    expect(fact).toMatch(new RegExp(`^${stream}:`));
+    expect(await f.monitor.reset(row, "Investigated again")).toMatchObject({ halted: null, waived: fact });
+    // That clearance is durable: an unchanged replay at a new anchor stays cleared...
+    ledger.anchor = "0xb";
+    pause.mockClear();
+    await Effect.runPromise(runMonitor(ports, persisted(f.data)));
+    expect(pause).not.toHaveBeenCalled();
+    // ...and a rewritten row on the same claim or game is checked again and pauses.
+    ledger.paid = [{ ...ledger.paid[0]!, amount: "2", wallet: "0x999" }];
+    ledger.anchor = "0xc";
+    await Effect.runPromise(runMonitor(ports, persisted(f.data)));
+    expect(pause).toHaveBeenCalledOnce();
+    expect((await f.monitor.status()).halted).toMatch(/mismatch/);
+  });
+});
 
 it("reports unreadable history without pausing when no waiting report is known", async () => {
   address.mockImplementation(() => {

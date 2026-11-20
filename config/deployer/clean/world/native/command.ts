@@ -8,10 +8,7 @@ import { createOperatorAccount } from "../../shared/madara-account";
 import { confirmedTransactionReceipt } from "../../shared/transaction";
 import type { RegistrarWorld } from "./types";
 
-const administrativeCommands = new Set<NativeCommand["kind"]>([
-  "SettleBlitzRoster",
-  "MarkGameSettled",
-]);
+const administrativeCommands = new Set<NativeCommand["kind"]>(["SettleBlitzRoster", "MarkGameSettled"]);
 
 const repeatableBatches = new Set<NativeCommand["kind"]>(["SettleBlitzRoster", "MarkGameSettled"]);
 
