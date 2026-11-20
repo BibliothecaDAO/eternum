@@ -100,7 +100,7 @@ const readResearchFacts = (
       troopsPerHour: buildingOutput(store, realm, BuildingType.ResourceKnightT1, 0).base * 3600,
     },
     laborStore: (level) => {
-      const base = ResourceManager.castleStoreLimit(store, realm.game_id, level);
+      const base = ResourceManager.castleStoreLimit(store, realm.game_id, level, ResourcesIds.Labor);
       if (base === undefined) throw new Error(`No castle store at level ${level}`);
       return (whole(base) * (10_000 + storeroomPicks * board.storage_step_bps)) / 10_000;
     },

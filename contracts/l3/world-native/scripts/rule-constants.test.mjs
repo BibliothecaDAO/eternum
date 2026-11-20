@@ -11,6 +11,7 @@ import {
   readLogicSlots,
   readRuleConstants,
   readReleaseConstants,
+  readStructureConstants,
 } from "./rule-constants.mjs";
 import { createHash } from "node:crypto";
 
@@ -37,7 +38,7 @@ test("the schema identity hashes every identifier and no tunable number", async 
 });
 
 const QUANTITY =
-  /_(BPS|PERCENT|STAMINA|PER_[A-Z]+|FRAGMENTS|LIMIT|CAP|SHARE|COUNT|SIZE|SECONDS|PLAYERS|LEVEL|STEPS|BASE|SLOTS|RINGS|COST|AMOUNT|RATE|MAX|MIN|BELOW|ABOVE|UNDER|OVER|THRESHOLD)$/;
+  /_(BPS|PERCENT|STAMINA|PER_[A-Z]+|FRAGMENTS|LIMIT|CAP|SHARE|COUNT|SIZE|SECONDS|PLAYERS|LEVEL|STEPS|BASE|SLOTS|STORES|RINGS|COST|AMOUNT|RATE|MAX|MIN|BELOW|ABOVE|UNDER|OVER|THRESHOLD)$/;
 const HASHED_QUANTITIES = [
   "rule.MAX_BLITZ_ROSTER_PLAYERS",
   "rule.FRONTIER_REPORT_GRACE_SECONDS",
@@ -179,4 +180,38 @@ test("every release threshold is a release this commit ships or an earlier one",
   assert.ok(shipped, "missing the Frontier release line");
   for (const [name, release] of Object.entries(await readReleaseConstants(root)))
     assert.ok(release <= Number(shipped[1]), `${name} is release ${release}, after the release this commit ships`);
+});
+
+test("a castle's labor store at each level is read from the release's structures, tables and records left out", async () => {
+  const release = await mkdtemp(join(tmpdir(), "structure-constants-"));
+  try {
+    await mkdir(join(release, "src/balance"), { recursive: true });
+    await writeFile(
+      join(release, "src/balance/structures.cairo"),
+      [
+        "pub const BOARD: BoardRules = BoardRules { troop_store_deploys: 2, settlement_resource_cap: 6000 };",
+        "pub const LABOR_STORES: [u32; 4] = [5000, 15000, 50000, 100000];",
+        "pub const UPGRADE_LEVELS: [u8; 3] = [",
+        "    1, 2,",
+        "    3,",
+        "];",
+        "pub const BUILDINGS: [BuildingRow; 1] = [BuildingRow { category: 1, first_cost: 0 }];",
+      ].join("\n"),
+    );
+    assert.deepEqual(await readStructureConstants(pathToFileURL(release + sep)), {
+      LABOR_STORES: [5000, 15000, 50000, 100000],
+      UPGRADE_LEVELS: [1, 2, 3],
+    });
+    await writeFile(
+      join(release, "src/balance/structures.cairo"),
+      "pub const LABOR_STORES: [u32; 4] = [5000, 15000, 50000];",
+    );
+    await assert.rejects(readStructureConstants(pathToFileURL(release + sep)), /declares 4 values and lists 3/);
+  } finally {
+    await rm(release, { recursive: true, force: true });
+  }
+});
+
+test("the release in the tree stores 5k, 15k, 50k and 100k labor by castle level", async () => {
+  assert.deepEqual((await readStructureConstants(root)).LABOR_STORES, [5000, 15000, 50000, 100000]);
 });

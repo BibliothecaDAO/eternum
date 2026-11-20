@@ -4,18 +4,16 @@ import type { DecodedRecord, DecodedWorldEvent } from "../types";
 import type { NativeDecoder } from "./decoder";
 import { encodeMembers } from "./serde";
 
-/** ABI decoding has already checked every member and complete span in these records. */
 type PresetRecord = Record<string, unknown>;
 type EmitRule = (model: string, value: PresetRecord, key?: PresetRecord) => void;
 const record = (value: unknown) => value as PresetRecord;
 const records = (value: unknown) => value as PresetRecord[];
 const some = (value: unknown): PresetRecord | undefined => {
-  if (!(value instanceof CairoOption)) throw new Error("Decoded preset option is missing");
+  if (!(value instanceof CairoOption)) throw new Error("A release definition option is missing");
   return value.isSome() ? record(value.unwrap()) : undefined;
 };
 
-/** Configuration is a projection of the verified registration and the chain's immutable launch facts. */
-export function derivePresetFacts(
+export function deriveReleaseFacts(
   decoder: NativeDecoder,
   definition: DecodedRecord,
   overrides: DecodedRecord,
@@ -43,7 +41,7 @@ function derivedRow(
 ): DecodedWorldEvent {
   const schema = decoder.manifest.native.schemas[decoder.manifest.native.activeSchema]!;
   const model = schema.models.find((candidate) => candidate.name === name);
-  if (!model) throw new Error(`Derived preset model ${name} is absent from the schema`);
+  if (!model) throw new Error(`Release rule model ${name} is absent from the schema`);
   const row = decoder.decodeRowSet(
     name,
     encodeMembers(schema, model.keys, { game_id: launch.key.game_id, ...keys }),

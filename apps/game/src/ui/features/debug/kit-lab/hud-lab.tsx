@@ -60,7 +60,7 @@ import { MID_REALM, VETERAN_ARMY } from "@/ui/features/frontier/research/progres
 import { ResearchPanel } from "@/ui/features/frontier/research/research-panel";
 import { BuildingCardView, type CardMakes } from "@/ui/features/frontier/building/building-card";
 import { buildingIcon, buildingName } from "@/ui/features/frontier/build/building-names";
-import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
+import { nativeResearchConstants as research, nativeStructureConstants } from "@bibliothecadao/eternum/game-client";
 import { readResearchTree } from "@/ui/features/frontier/research/research-tree";
 import { StoreCard, type StoreLine } from "@/ui/features/frontier/production/store-card";
 import { sidePicks } from "@/ui/features/frontier/research/sides-taken";
@@ -461,12 +461,13 @@ const EARLY_TILES: LabTile[] = [
     trainingPrice,
   ),
 ];
-const CASTLE_SIDE = (level: number, limit: number) => ({
+const CASTLE_SIDE = (level: number, wheatStore: number) => ({
   level,
   art: realmMeaning(level),
   plots: [6, 18, 36, 60][level],
   slots: [3, 4, 5, 6][level],
-  limit,
+  wheatStore,
+  laborStore: nativeStructureConstants.LABOR_STORES[level],
   maxArmySize: [3_000, 9_000, 25_000, 50_000][level],
 });
 

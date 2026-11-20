@@ -1,5 +1,5 @@
 import { storyTag } from "./fixtures";
-import { presetRegistration, presetLaunch } from "./preset-fixtures";
+import { presetRelease, presetLaunch } from "./preset-fixtures";
 import { createNativeWorldIngestion } from "./world-ingestion";
 import { loadNativeWorld } from "./load";
 import { describe, expect, it, vi } from "vitest";
@@ -21,17 +21,17 @@ function block(number: number, events: RpcEvent[]): RpcBlockWithReceipts {
     transactions: [{ receipt: receipt(events, `0x${number.toString(16)}`), transaction: { type: "INVOKE" } }],
   };
 }
+const BLITZ = presetRelease(2);
+
 function wireHistory() {
   const events = [setFixture.raw, pointsAward("1", "0x111", "100", "100", "100")];
-  const preset = presetRegistration(2);
-  const launched = block(10, [preset.event, ...presetLaunch(preset, 1, 1800), ...events]);
-  launched.transactions[0]!.transaction.calldata = preset.calldata;
+  const launched = block(10, [...presetLaunch(BLITZ, 1, 1800), ...events]);
   return [launched, block(11, [setFixture.raw]), block(12, [deleted.raw]), block(13, [setFixture.raw])];
 }
 
 describe("native confirmed replay and transaction delivery", () => {
   it("rebuilds native event fixtures through deletes and a checkpoint reconnect", async () => {
-    const { native, decoder, fold } = setup();
+    const { native, decoder, fold } = setup(BLITZ.definitions);
     const history = wireHistory();
     const rpc = { readBlock: vi.fn(async (number: number) => history[number - 10]) };
     await native.replay({ fold, rpc, fromBlock: 10, toBlock: 11 });
@@ -73,7 +73,7 @@ describe("native confirmed replay and transaction delivery", () => {
     expect(restored.modelRows("GameRegistry")).toHaveLength(1);
   });
   it("does not keep partial replay state if a later block fetch fails", async () => {
-    const { native, fold } = setup();
+    const { native, fold } = setup(BLITZ.definitions);
     const before = fold.checkpoint();
     const rpc = {
       readBlock: vi.fn(async (number: number) => {
@@ -85,7 +85,7 @@ describe("native confirmed replay and transaction delivery", () => {
     expect(fold.checkpoint()).toEqual(before);
   });
   it("publishes both domains in one diff only after the full receipt arrives, sampling its latency once", () => {
-    const { native, decoder, fold } = setup();
+    const { native, decoder, fold } = setup(BLITZ.definitions);
     const messages: Record<string, unknown>[] = [];
     const diffLatency = new DiffLatencyMonitor();
     const sampled = vi.spyOn(diffLatency, "record");
@@ -121,7 +121,7 @@ describe("native confirmed replay and transaction delivery", () => {
     malformed.raw,
     { ...setFixture.raw, keys: [...setFixture.raw.keys.slice(0, 2), "2", ...setFixture.raw.keys.slice(3)] },
   ])("rejects invalid rows without partial publication and accepts the next valid receipt", (invalid) => {
-    const { native, decoder, fold } = setup();
+    const { native, decoder, fold } = setup(BLITZ.definitions);
     const messages: string[] = [];
     const live = new LiveWorld({
       native,
@@ -147,7 +147,7 @@ describe("native confirmed replay and transaction delivery", () => {
 });
 
 it("confirms a receipt from its pre-confirmed decode at the confirmed position, and decodes afresh when its events differ", async () => {
-  const { native, decoder, fold } = setup();
+  const { native, decoder, fold } = setup(BLITZ.definitions);
   const [genesis] = wireHistory();
   await native.replay({ fold, rpc: { readBlock: async () => genesis! }, fromBlock: 10, toBlock: 10 });
   const pending = receipt([setFixture.raw, pointsAward("1", "0x111", "200", "200", "200")], "0xb1");
@@ -183,7 +183,7 @@ it("confirms a receipt from its pre-confirmed decode at the confirmed position, 
 });
 
 it("rebuilds state and history from genesis in one replay when history lags the checkpoint", async () => {
-  const { native, decoder } = setup();
+  const { native, decoder } = setup(BLITZ.definitions);
   const blocks = wireHistory();
   const rpc = {
     blockNumber: vi.fn(async () => 13),
@@ -205,7 +205,7 @@ it("rebuilds state and history from genesis in one replay when history lags the 
 });
 
 it("reports a member write to a row it does not hold once, skips it, and keeps folding", async () => {
-  const { native, decoder, fold } = setup();
+  const { native, decoder, fold } = setup(BLITZ.definitions);
   const model = schema.models.find(({ name }) => name === "TileOpt")!;
   const layout = schema.games.events.find(({ name }) => name === "RowMemberSet")!;
   const unheldTile = {
@@ -252,7 +252,7 @@ it("reports a member write to a row it does not hold once, skips it, and keeps f
 });
 
 it("halts a confirmed rejection at the last checkpoint without killing receipt subscriptions or startup", async () => {
-  const { native, decoder, fold } = setup();
+  const { native, decoder, fold } = setup(BLITZ.definitions);
   const before = fold.checkpoint();
   const rpc = {
     blockNumber: vi.fn(async () => 10),
@@ -287,7 +287,7 @@ it("halts a confirmed rejection at the last checkpoint without killing receipt s
 });
 
 it("halts a live confirmed fold atomically while leaving the process available", async () => {
-  const { native, decoder, fold } = setup();
+  const { native, decoder, fold } = setup(BLITZ.definitions);
   const before = fold.checkpoint();
   const rpc = {
     readBlock: vi.fn(async () => block(10, [setFixture.raw, malformed.raw])),
@@ -334,7 +334,7 @@ it("halts a live confirmed fold atomically while leaving the process available",
 });
 
 it("keeps two story identities from overlay through confirmation, each its transaction and event index", async () => {
-  const { native, fold, decoder } = setup();
+  const { native, fold, decoder } = setup(BLITZ.definitions);
   const layout = schema.games.events.find((event) => event.name === "StoryEvent")!;
   const story = (index: number): RpcEvent => ({
     from_address: decoder.registry.worldAddress,
@@ -365,7 +365,7 @@ it("keeps two story identities from overlay through confirmation, each its trans
 });
 
 it("retains only one 64-block cold-replay window and no receipts, checkpointing before fetching the next", async () => {
-  const { native } = setup();
+  const { native } = setup(BLITZ.definitions);
   let saved = -1;
   let historyThrough = -1;
   const retained: { events: number; changes: number; receipts: number; rows: number }[] = [];
@@ -423,7 +423,7 @@ it("retains only one 64-block cold-replay window and no receipts, checkpointing 
 });
 
 it("keeps a completed startup window when the next window rejects a receipt and resumes from it", async () => {
-  const { native, decoder } = setup();
+  const { native, decoder } = setup(BLITZ.definitions);
   let saved: ReturnType<WorldFold["checkpoint"]> | undefined;
   let historyThrough = -1;
   let broken = true;
@@ -453,14 +453,14 @@ it("keeps a completed startup window when the next window rejects a receipt and 
   expect(failed.fold.checkpoint()).toEqual(saved);
   expect(native.halted?.block).toBe(70);
   broken = false;
-  const restarted = setup().native;
+  const restarted = setup(BLITZ.definitions).native;
   const loaded = await loadNativeWorld({ chain: "madara", native: restarted, rpc, checkpointStore, history });
   expect(loaded.confirmedBlock).toBe(130);
   expect(loaded.metrics.pages).toBe(67);
 });
 
 it("commits replay at a decoded-event budget without splitting a block", async () => {
-  const { native, fold } = setup();
+  const { native, fold } = setup(BLITZ.definitions);
   const events = Array.from({ length: 9000 }, () => setFixture.raw);
   const rpc = { readBlock: async (number: number) => block(number, events) };
   const committed: number[] = [];
@@ -488,7 +488,7 @@ it("commits replay at a decoded-event budget without splitting a block", async (
 });
 
 it("reuses owned-event decode across foreign fee events with original offsets", async () => {
-  const { native, fold, decoder } = setup();
+  const { native, fold, decoder } = setup(BLITZ.definitions);
   const foreign = { from_address: "0xf00", keys: [], data: [] };
   const pending = receipt([foreign, setFixture.raw], "0xabc");
   const earlier = native.applyReceipt(fold.overlay(), pending, null, 0);
@@ -506,7 +506,7 @@ it("reuses owned-event decode across foreign fee events with original offsets", 
 });
 
 it("checkpoints budgeted cold replay before fetching the following block", async () => {
-  const { native } = setup();
+  const { native } = setup(BLITZ.definitions);
   let saved = 0,
     historyThrough = 0;
   const blocks = Array.from({ length: 3 }, (_, index) =>

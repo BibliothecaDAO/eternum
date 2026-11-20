@@ -1,5 +1,4 @@
 import { replayWithFrontierDays } from "./native/frontier-day-ranks";
-import { NativePresetCalldataUnavailable } from "./native/preset-preimages";
 import { worldView } from "@bibliothecadao/eternum";
 import { GameSubscription } from "./game-subscription";
 import { decodeHomeRing, HomeRing, homeRingTileData, type HomeRingTile, type HomeRingView } from "./home-ring";
@@ -100,8 +99,6 @@ export class LiveWorld {
   private readonly transactionSenders = new Map<string, string | null>();
 
   private readonly transactionCalldata = new Map<string, string[]>();
-
-  private readonly registrationReceipts = new Map<string, RpcReceipt[]>();
 
   private readonly pendingReceipts = new Map<string, RpcReceipt[]>();
 
@@ -544,19 +541,12 @@ export class LiveWorld {
   private async rebuildOverlay(): Promise<void> {
     const block = await this.input.rpc.readBlock("pre_confirmed", this.native.decoder.manifest.world.address, {
       knownTransaction: (hash) => this.knownTransaction(hash),
-      needsCalldata: (events) => this.native.decoder.needsPresetCalldata(events),
     });
     const preview = this.overlayFold.overlay();
     const prepared: { receipt: RpcReceipt; transactionIndex: number; earlier: PreconfirmedDecode }[] = [];
     for (const { receipt, transactionIndex } of this.native.receipts(block)) {
       try {
-        const decoded = this.native.applyReceipt(
-          preview,
-          receipt,
-          block.block_number,
-          transactionIndex,
-          block.transactions[transactionIndex]!.transaction.calldata,
-        ).decoded;
+        const decoded = this.native.applyReceipt(preview, receipt, block.block_number, transactionIndex).decoded;
         prepared.push({ receipt, transactionIndex, earlier: { events: receipt.events, decoded } });
       } catch (error) {
         this.native.rejectReceipt(receipt, block.block_number, error, false);
@@ -568,13 +558,7 @@ export class LiveWorld {
       this.recordTransactionSender(receipt.transaction_hash, transaction);
     // Validation above is atomic for the block; publication stays atomic for each player action.
     for (const { receipt, transactionIndex, earlier } of prepared)
-      this.applyOverlayReceipt(
-        receipt,
-        block.block_number,
-        transactionIndex,
-        earlier,
-        block.transactions[transactionIndex]!.transaction,
-      );
+      this.applyOverlayReceipt(receipt, block.block_number, transactionIndex, earlier);
   }
 
   /** Applies a pre-confirmed receipt to the overlay, recording its arrival-to-publish latency the first time. */
@@ -591,24 +575,13 @@ export class LiveWorld {
     block: number | null,
     index: number,
     earlier?: PreconfirmedDecode,
-    validatedTransaction?: RpcTransaction,
   ): boolean {
     const identity = overlayIdentity(receipt);
     if (this.overlayReceipts.has(identity)) return true;
     let result: ReturnType<NativeIngestion["applyReceipt"]>;
     try {
-      result = this.native.applyReceipt(
-        this.overlayFold,
-        receipt,
-        block,
-        index,
-        validatedTransaction
-          ? validatedTransaction.calldata
-          : this.transactionCalldata.get(normalizeFelt(receipt.transaction_hash)),
-        earlier,
-      );
+      result = this.native.applyReceipt(this.overlayFold, receipt, block, index, earlier);
     } catch (error) {
-      if (this.deferRegistrationReceipt(receipt, error)) return false;
       this.native.rejectReceipt(receipt, block, error, false);
       return false;
     }
@@ -641,21 +614,8 @@ export class LiveWorld {
       this.native.rejectRouting(identity, error);
     }
     this.recordSenderAndPublishPending(hash, transaction);
-    if (transaction.calldata !== undefined) {
+    if (transaction.calldata !== undefined)
       setBoundedTransactionEntry(this.transactionCalldata, identity, transaction.calldata);
-      const waiting = this.registrationReceipts.get(identity) ?? [];
-      this.registrationReceipts.delete(identity);
-      waiting.forEach((receipt) => this.acceptReceipt(receipt));
-    }
-  }
-
-  private deferRegistrationReceipt(receipt: RpcReceipt, error: unknown): boolean {
-    if (!(error instanceof NativePresetCalldataUnavailable)) return false;
-    const hash = normalizeFelt(receipt.transaction_hash);
-    const waiting = this.registrationReceipts.get(hash) ?? [];
-    if (!waiting.some((candidate) => candidate.finality_status === receipt.finality_status)) waiting.push(receipt);
-    setBoundedTransactionEntry(this.registrationReceipts, hash, waiting);
-    return true;
   }
 
   private publishTransactionReceipt(hash: string, _sender: string | null | undefined, receipt: RpcReceipt): void {
@@ -685,7 +645,6 @@ export class LiveWorld {
       this.transactionGames.delete(hash);
       this.transactionSenders.delete(hash);
       this.pendingReceipts.delete(hash);
-      this.registrationReceipts.delete(hash);
       this.transactionCalldata.delete(hash);
     }
   }

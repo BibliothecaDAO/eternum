@@ -1,6 +1,6 @@
 import { frontierSeasonOnePreset as preset } from "../../../../../../../config/source/frontier/season-one";
 
-import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
+import { nativeResearchConstants as research, nativeStructureConstants } from "@bibliothecadao/eternum/game-client";
 
 import { frontierBaseConfig } from "../../../../../../../config/source/frontier/base";
 import { ResourcesIds } from "@bibliothecadao/types";
@@ -38,7 +38,8 @@ const realmOn = (
       troopsPerHour: preset.balance.resources.productionByComplexRecipeOutputs[ResourcesIds.Knight] * 3600,
     },
     laborStore: (level) =>
-      (preset.board.resourceStoreCaps[level]! * (10_000 + storeroomPicks * preset.board.storageStepBps)) / 10_000,
+      (nativeStructureConstants.LABOR_STORES[level]! * (10_000 + storeroomPicks * preset.board.storageStepBps)) /
+      10_000,
   };
 };
 

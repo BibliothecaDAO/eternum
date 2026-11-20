@@ -10,7 +10,7 @@ import { expeditionRealmSite, expeditionDayEndsAt, seasonDay } from "@bibliothec
 //                     after the run the day rolls over, and every subscriber's scope with it
 // Run: pnpm --dir apps/herald measure:load --shape frontier --players 2000 --minutes 3 --sample-every 1
 import { parseArgs } from "node:util";
-import { presetRegistration, presetLaunch, PRESET_FIXTURE_DURATION_SECONDS } from "../src/native/preset-fixtures";
+import { presetRelease, presetLaunch, PRESET_FIXTURE_DURATION_SECONDS } from "../src/native/preset-fixtures";
 import { LiveWorld } from "../src/live-world";
 import { receipt, rowEvent, schema, setup, manifest, pointsAward } from "../src/native/fixtures";
 import { decodeMembers } from "../src/native/serde";
@@ -32,7 +32,7 @@ const GAMES = FRONTIER ? 1 : 4;
 const PLAYERS_PER_GAME = FRONTIER ? Number(flags.players) : 24;
 const SIMULATED_MINUTES = Number(flags.minutes);
 const TILES_PER_PLAYER = FRONTIER ? 50 : 300;
-const preset = presetRegistration(FRONTIER ? 5 : 2);
+const preset = presetRelease(FRONTIER ? 5 : 2);
 const SPACING = Number(preset.definition.settlement.spacing);
 // presetLaunch's games start now and draw their days from seed 1.
 const expedition = () => ({
@@ -263,9 +263,8 @@ const heapMb = () => {
   return Math.round(process.memoryUsage().heapUsed / 1_048_576);
 };
 
-const { native, decoder, fold } = setup();
+const { native, decoder, fold } = setup(preset.definitions);
 let block = 10;
-native.applyReceipt(fold, receipt([preset.event]), block, 0, preset.calldata);
 for (let game = 1; game <= GAMES; game++) {
   const events = gameRows(game);
   for (let start = 0; start < events.length; start += 500)

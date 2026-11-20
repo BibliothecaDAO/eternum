@@ -1,35 +1,29 @@
-import { CallData, CairoOption, CairoOptionVariant, hash, type Abi } from "starknet";
+import { CairoOption, CairoOptionVariant } from "starknet";
 import { buildNativePreset } from "../../../../config/deployer/clean/config/native-preset";
 import { loadNativePresetConfiguration } from "../../../../config/deployer/clean/registrar/native-preset";
-import { gameRegistryEvent, manifest, rowEvent, schema } from "./fixtures";
-import { presetPreimageCommitment } from "./preset-preimages";
+import { gameRegistryEvent, rowEvent } from "./fixtures";
+import { readReleaseDefinitions, releaseDefinitionText } from "./release-definition";
 
-/** Successful direct registration input for replay tests and the load campaign. */
-export function presetRegistration(presetId: 2 | 5) {
+export function presetRelease(
+  presetId: number,
+  release = 1,
+  amend?: (definition: ReturnType<typeof buildNativePreset>) => void,
+) {
   const environment = presetId === 2 ? "madara.blitz" : "madara.frontier";
   const definition = buildNativePreset(loadNativePresetConfiguration(environment, presetId), presetId);
-  const codec = new CallData([...Object.values(schema.types), ...schema.games.entrypoints] as Abi);
-  const calldata = codec.compile("register_preset", { preset_id: presetId, definition });
-  const commitment = presetPreimageCommitment(calldata.slice(1));
+  amend?.(definition);
   return {
     presetId,
+    release,
     definition,
-    commitment,
-    calldata: [
-      "1",
-      manifest.world.address,
-      hash.getSelectorFromName("register_preset"),
-      String(calldata.length),
-      ...calldata,
-    ],
-    event: rowEvent("Preset", [String(presetId)], { commitment }),
+    definitions: readReleaseDefinitions(JSON.parse(releaseDefinitionText(release, definition))),
   };
 }
 
 export const PRESET_FIXTURE_DURATION_SECONDS = 864000;
 
 export function presetLaunch(
-  preset: ReturnType<typeof presetRegistration>,
+  preset: ReturnType<typeof presetRelease>,
   gameId: number,
   timestamp: number,
   roster: number[] = [],
@@ -55,6 +49,6 @@ export function presetLaunch(
       end_at: String(timestamp + PRESET_FIXTURE_DURATION_SECONDS),
     }),
     rowEvent("GameOverrides", [game], overrides),
-    rowEvent("GameRelease", [game], { release_id: 1, created_release_id: 1 }),
+    rowEvent("GameRelease", [game], { release_id: preset.release, created_release_id: preset.release }),
   ];
 }

@@ -9,39 +9,18 @@ import { RESOURCE_PRECISION, TroopTier, TroopType, type Troops } from "@biblioth
 import { ClientConfigManager } from "../../../../packages/core/src/managers/config-manager";
 import { affordableAt, musterStamina, staminaAt } from "../../../../packages/core/src/managers/troop-stamina";
 import { describe, expect, it, vi } from "vitest";
-import { CallData, CairoOption, CairoOptionVariant, hash, type Abi } from "starknet";
-import { buildNativePreset } from "../../../../config/deployer/clean/config/native-preset";
-import { loadNativePresetConfiguration } from "../../../../config/deployer/clean/registrar/native-preset";
+import { CairoOption, CairoOptionVariant } from "starknet";
+import type { buildNativePreset } from "../../../../config/deployer/clean/config/native-preset";
 import { LiveWorld } from "../live-world";
 import type { MadaraRpc } from "../madara-rpc";
 import { WorldFold } from "../world-fold";
 import type { RpcEvent } from "../types";
-import { gameRegistryEvent, manifest, receipt, rowEvent, schema, setup } from "./fixtures";
-import { presetPreimageCommitment } from "./preset-preimages";
+import { gameRegistryEvent, receipt, rowEvent, schema, setup } from "./fixtures";
+import { presetRelease } from "./preset-fixtures";
+import { readReleaseDefinitions, releaseDefinitionText } from "./release-definition";
 
-const codec = new CallData([...Object.values(schema.types), ...schema.games.entrypoints] as Abi);
-
-function registration(presetId = 5, amend?: (definition: ReturnType<typeof buildNativePreset>) => void) {
-  const environment = presetId === 2 ? "madara.blitz" : "madara.frontier";
-  const definition = buildNativePreset(loadNativePresetConfiguration(environment, presetId), presetId);
-  amend?.(definition);
-  const calldata = codec.compile("register_preset", { preset_id: presetId, definition });
-  const commitment = presetPreimageCommitment(calldata.slice(1));
-  const accountCalldata = [
-    "1",
-    manifest.world.address,
-    hash.getSelectorFromName("register_preset"),
-    String(calldata.length),
-    ...calldata,
-  ];
-  return {
-    presetId,
-    definition,
-    commitment,
-    accountCalldata,
-    event: rowEvent("Preset", [String(presetId)], { commitment: commitment }),
-  };
-}
+const registration = (presetId = 5, amend?: (definition: ReturnType<typeof buildNativePreset>) => void) =>
+  presetRelease(presetId, 1, amend);
 
 function launch(preset: ReturnType<typeof registration>, gameId = 1, rosterSize = 0, overrideMap = true): RpcEvent[] {
   const overrides = {
@@ -73,22 +52,17 @@ function launch(preset: ReturnType<typeof registration>, gameId = 1, rosterSize 
     }),
     rowEvent("GameOverrides", [String(gameId)], overrides),
     rowEvent("GameRelease", [String(gameId)], {
-      release_id: "1",
-      created_release_id: 1,
+      release_id: preset.release,
+      created_release_id: preset.release,
     }),
   ];
 }
 
-function applyRegistration(world: ReturnType<typeof setup>, preset: ReturnType<typeof registration>) {
-  return world.native.applyReceipt(world.fold, receipt([preset.event]), 10, 0, preset.accountCalldata);
-}
-
-describe("verified preset configuration facts", () => {
+describe("a release's rule rows", () => {
   it("publishes the S1 Order mapping and leaves earlier presets without Aspect rules", () => {
     for (const presetId of [5, 7]) {
-      const world = setup();
       const preset = registration(presetId);
-      applyRegistration(world, preset);
+      const world = setup(preset.definitions);
       world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
       const store = new NativeFactStore();
       store.applyFacts(
@@ -101,9 +75,8 @@ describe("verified preset configuration facts", () => {
   });
 
   it("projects both beast strength ranges and renamed discovery odds into client facts", () => {
-    const world = setup();
     const preset = registration();
-    applyRegistration(world, preset);
+    const world = setup(preset.definitions);
     world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
     const store = new NativeFactStore();
     for (const model of ["DepthRules", "FrontierDiscoveryRules"] as const) {
@@ -123,9 +96,8 @@ describe("verified preset configuration facts", () => {
   });
 
   it("carries Frontier stamina from registration through facts to client costs and Logistics bars", () => {
-    const world = setup();
     const preset = registration();
-    applyRegistration(world, preset);
+    const world = setup(preset.definitions);
     world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
     const store = new NativeFactStore();
     store.applyFacts(
@@ -175,9 +147,8 @@ describe("verified preset configuration facts", () => {
   });
 
   it("projects each depth's five ruin tier odds", () => {
-    const world = setup();
     const preset = registration();
-    applyRegistration(world, preset);
+    const world = setup(preset.definitions);
     world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
     const tiers = ["common", "uncommon", "rare", "epic", "legendary"];
     const odds = world.fold
@@ -188,9 +159,8 @@ describe("verified preset configuration facts", () => {
   });
 
   it("derives the complete launch config, preserving the chain's overrides", () => {
-    const world = setup();
     const preset = registration();
-    applyRegistration(world, preset);
+    const world = setup(preset.definitions);
     world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
     expect(world.fold.gameRows("ResourceRule", "1")).toHaveLength(58);
     expect(world.fold.gameRows("ProductionRecipe", "1")).toHaveLength(58);
@@ -223,48 +193,25 @@ describe("verified preset configuration facts", () => {
   });
 
   it("takes Blitz registration_limit from the immutable launch roster", () => {
-    const world = setup();
     const preset = registration(2);
-    applyRegistration(world, preset);
+    const world = setup(preset.definitions);
     world.native.applyReceipt(world.fold, receipt(launch(preset, 1, 2)), 11, 0);
     expect(BigInt(world.fold.gameRows("SettlementRules", "1")[0]!.value.registration_limit as string)).toBe(2n);
   });
 
-  it("refuses a mismatched preimage and an unknown call path without partial state", () => {
-    const world = setup();
+  it("refuses a launch whose release has no rule definition, without partial state", () => {
     const preset = registration();
+    const world = setup(presetRelease(5, 2).definitions);
     const before = world.fold.checkpoint();
-    const wrong = [...preset.accountCalldata];
-    wrong[5] = String(BigInt(wrong[5]!) + 1n);
-    expect(() => world.native.applyReceipt(world.fold, receipt([preset.event]), 10, 0, wrong)).toThrow(
-      "commitment mismatch",
-    );
-    expect(world.fold.checkpoint()).toEqual(before);
-    const unknown = [...preset.accountCalldata];
-    unknown[2] = hash.getSelectorFromName("unrecognized_registration");
-    expect(() => world.native.applyReceipt(world.fold, receipt([preset.event]), 10, 0, unknown)).toThrow(
-      "preset registration must be a direct authority account call",
-    );
-    expect(world.fold.checkpoint()).toEqual(before);
-    expect(() => world.native.applyReceipt(world.fold, receipt([preset.event]), 10, 0, ["99"])).toThrow(
-      "preset registration must be a direct authority account call",
+    expect(() => world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0)).toThrow(
+      "No rule definition for release 1",
     );
     expect(world.fold.checkpoint()).toEqual(before);
   });
 
-  it("ignores reverted registration, and restores verified preimages across checkpoints and overlays", () => {
-    const world = setup();
+  it("derives the same launch on an overlay and after a checkpoint restore", () => {
     const preset = registration();
-    const before = world.fold.checkpoint();
-    world.native.applyReceipt(
-      world.fold,
-      { ...receipt([preset.event]), execution_status: "REVERTED" },
-      10,
-      0,
-      preset.accountCalldata,
-    );
-    expect(world.fold.checkpoint()).toEqual(before);
-    applyRegistration(world, preset);
+    const world = setup(preset.definitions);
     const restored = WorldFold.restore(world.decoder.registry, world.fold.checkpoint());
     const overlay = restored.overlay();
     world.native.applyReceipt(overlay, receipt(launch(preset)), null, 0);
@@ -272,9 +219,10 @@ describe("verified preset configuration facts", () => {
     world.native.applyReceipt(restored, receipt(launch(preset)), 11, 0);
     expect(restored.snapshot(1, 11)).toEqual(overlay.snapshot(1, 11));
   });
-  it("defers a pre-confirmed registration until calldata arrives, then derives its launch atomically", () => {
-    const world = setup();
+
+  it("publishes a pre-confirmed launch with all its rule rows in one diff", () => {
     const preset = registration();
+    const world = setup(preset.definitions);
     const live = new LiveWorld({
       native: world.native,
       registry: world.decoder.registry,
@@ -289,17 +237,6 @@ describe("verified preset configuration facts", () => {
     const session = live.attach("1", { send: (text) => messages.push(JSON.parse(text)) });
     live.resume(session, { epoch: "previous", seq: 0, type: "resume" });
     messages.length = 0;
-    const pending = { ...receipt([preset.event], "0x99"), finality_status: "PRE_CONFIRMED" };
-    live.acceptReceipt(pending);
-    expect(world.native.receiptFailures).toBe(0);
-    expect(world.fold.checkpoint().preset_preimages).toEqual([]);
-    live.acceptTransaction({
-      type: "INVOKE",
-      transaction_hash: "0x99",
-      finality_status: "PRE_CONFIRMED",
-      calldata: preset.accountCalldata,
-    });
-    messages.length = 0;
     live.acceptReceipt({ ...receipt(launch(preset), "0x100"), finality_status: "PRE_CONFIRMED" });
     expect(world.native.receiptFailures).toBe(0);
     const diffs = messages.filter((message) => message.type === "diff");
@@ -308,80 +245,50 @@ describe("verified preset configuration facts", () => {
     expect(world.fold.gameRows("ResourceRule", "1")).toHaveLength(0);
   });
 
-  it("revalidates preimages when reusing pre-confirmed decodes, and rolls a later replay failure back", async () => {
-    const world = setup();
+  it("rolls a replay back whole when a later block fails", async () => {
     const preset = registration();
-    const pending = receipt([preset.event]);
-    const decoded = world.native.applyReceipt(world.fold.overlay(), pending, null, 0, preset.accountCalldata).decoded;
-    const blocks = [
-      {
-        block_number: 10,
-        timestamp: 1800,
-        transactions: [{ receipt: pending, transaction: { type: "INVOKE", calldata: preset.accountCalldata } }],
-      },
-      {
-        block_number: 11,
-        timestamp: 1801,
-        transactions: [{ receipt: receipt(launch(preset)), transaction: { type: "INVOKE" } }],
-      },
-    ];
-    await world.native.replay({
-      fold: world.fold,
-      rpc: { readBlock: async (number) => blocks[Number(number) - 10]! },
-      fromBlock: 10,
-      toBlock: 11,
-      preconfirmed: (candidate) => (candidate === pending ? { events: pending.events, decoded } : undefined),
-    });
-    expect(world.fold.checkpoint().preset_preimages).toHaveLength(1);
-    expect(world.fold.gameRows("ResourceRule", "1")).toHaveLength(58);
-    const fresh = setup();
-    const before = fresh.fold.checkpoint();
+    const world = setup(preset.definitions);
+    const before = world.fold.checkpoint();
+    const launched = {
+      block_number: 10,
+      timestamp: 1800,
+      transactions: [{ receipt: receipt(launch(preset)), transaction: { type: "INVOKE" } }],
+    };
     await expect(
-      fresh.native.replay({
-        fold: fresh.fold,
+      world.native.replay({
+        fold: world.fold,
         rpc: {
           readBlock: async (number) => {
             if (number === 11) throw new Error("block unavailable");
-            return blocks[0]!;
+            return launched;
           },
         },
         fromBlock: 10,
         toBlock: 11,
       }),
     ).rejects.toThrow("block unavailable");
-    expect(fresh.fold.checkpoint()).toEqual(before);
+    expect(world.fold.checkpoint()).toEqual(before);
+  });
+
+  it("reads back exactly the definition the generator writes, and refuses a file that names no release", () => {
+    const { definition } = registration(7);
+    const written = releaseDefinitionText(11, definition);
+    const read = readReleaseDefinitions(JSON.parse(written));
+    expect([...read.keys()]).toEqual([11]);
+    expect(releaseDefinitionText(11, read.get(11))).toBe(written);
+    expect(() => readReleaseDefinitions({ definition: JSON.parse(written).definition })).toThrow(
+      "A release definition names no release",
+    );
   });
 
   it("uses the preset map only when the chain explicitly records no map override", () => {
-    const world = setup();
     const preset = registration();
-    applyRegistration(world, preset);
+    const world = setup(preset.definitions);
     world.native.applyReceipt(world.fold, receipt(launch(preset, 1, 0, false)), 11, 0);
     const rules = world.fold.gameRows("SliceRules", "1")[0]!.value;
     expect(BigInt((rules.map_config as Record<string, string>).shards_mines_win_probability)).toBe(
       BigInt(preset.definition.rules.map_config.shards_mines_win_probability),
     );
-  });
-
-  it("refuses unproven execution status and trailing calldata atomically", () => {
-    const world = setup();
-    const preset = registration();
-    const before = world.fold.checkpoint();
-    expect(() =>
-      world.native.applyReceipt(
-        world.fold,
-        { ...receipt([preset.event]), execution_status: undefined },
-        10,
-        0,
-        preset.accountCalldata,
-      ),
-    ).toThrow("successful execution");
-    const trailing = [...preset.accountCalldata, "0"];
-    expect(() => world.native.applyReceipt(world.fold, receipt([preset.event]), 10, 0, trailing)).toThrow(
-      "Trailing account calldata",
-    );
-    expect(world.fold.checkpoint()).toEqual(before);
-    applyRegistration(world, preset);
   });
 });
 
@@ -402,7 +309,6 @@ it("projects optional Deep rules from verified registration and publishes no row
     altar_threshold: 1_500,
   };
   for (const enabled of [false, true]) {
-    const world = setup();
     const preset = registration(FRONTIER_FIXTURE_PRESET_ID, (definition) => {
       if (enabled) {
         definition.economy.deep = new CairoOption(CairoOptionVariant.Some, deep);
@@ -411,7 +317,7 @@ it("projects optional Deep rules from verified registration and publishes no row
         definition.economy.race = new CairoOption(CairoOptionVariant.None);
       }
     });
-    applyRegistration(world, preset);
+    const world = setup(preset.definitions);
     world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
     const store = new NativeFactStore();
     store.applyFacts(
@@ -424,14 +330,13 @@ it("projects optional Deep rules from verified registration and publishes no row
 it("projects daily quest rules from verified registration, without a legacy claim row", () => {
   const rules = { base_counts: [1, 1, 1, 1, 1, 2, 15], labor: 1000n, essence: 1500n, bonus_percent: 150 };
   for (const enabled of [false, true]) {
-    const world = setup();
     const preset = registration(FRONTIER_FIXTURE_PRESET_ID, (definition) => {
       if (enabled) {
         definition.economy.quests = new CairoOption(CairoOptionVariant.Some, rules);
         definition.economy.labor = new CairoOption(CairoOptionVariant.None);
       }
     });
-    applyRegistration(world, preset);
+    const world = setup(preset.definitions);
     world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
     const store = new NativeFactStore();
     store.applyFacts(
@@ -452,7 +357,6 @@ it("projects optional bane rules from the verified preset with whole Cull counts
     quest_counts: [3n, 6n, 9n, 12n, 20n, 40n, 60n, 80n, 2500n, 6000n, 10000n, 15000n],
   };
   for (const enabled of [false, true]) {
-    const world = setup();
     const preset = registration(FRONTIER_FIXTURE_PRESET_ID, (definition) => {
       if (enabled) {
         definition.economy.banes = new CairoOption(CairoOptionVariant.Some, rules);
@@ -465,7 +369,7 @@ it("projects optional bane rules from the verified preset with whole Cull counts
         definition.economy.labor = new CairoOption(CairoOptionVariant.None);
       }
     });
-    applyRegistration(world, preset);
+    const world = setup(preset.definitions);
     world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
     const store = new NativeFactStore();
     store.applyFacts(
@@ -485,7 +389,6 @@ it("projects optional race rules from verified registration into the native fact
     spoils_percent: 200,
   } satisfies Omit<NativeRows["RaceRules"], "game_id">;
   for (const enabled of [false, true]) {
-    const world = setup();
     const preset = registration(FRONTIER_FIXTURE_PRESET_ID, (definition) => {
       if (enabled) {
         definition.economy.race = new CairoOption(CairoOptionVariant.Some, rules);
@@ -508,7 +411,7 @@ it("projects optional race rules from verified registration into the native fact
         definition.economy.race = new CairoOption(CairoOptionVariant.None);
       }
     });
-    applyRegistration(world, preset);
+    const world = setup(preset.definitions);
     world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
     const store = new NativeFactStore();
     store.applyFacts(
@@ -519,9 +422,8 @@ it("projects optional race rules from verified registration into the native fact
 });
 
 it("publishes every active Season 1 rule through verified registration and launch", () => {
-  const world = setup();
   const preset = registration(FRONTIER_S1_PRESET_ID);
-  applyRegistration(world, preset);
+  const world = setup(preset.definitions);
   world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
   const store = new NativeFactStore();
   for (const [model, rules] of [

@@ -201,7 +201,7 @@ async function run(options: Options): Promise<void> {
         ];
       });
       if (!hasRecordingFacts(decoded, options.gameId)) continue;
-      ingestion.applyReceipt(fold, receipt, block.block_number, transactionIndex, transaction.calldata);
+      ingestion.applyReceipt(fold, receipt, block.block_number, transactionIndex);
       records.push({ transaction, receipt: { ...receipt, block_number: block.block_number } });
       if (hasActorNonceWrite(decoded, options.gameId, options.actor))
         actionCheckpoints.push({ transactionHash: receipt.transaction_hash, blockNumber: block.block_number });
