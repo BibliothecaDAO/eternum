@@ -159,4 +159,12 @@ export const nativeFragmentConstants = {
   "VEIL_CACHE_PERCENT": 10,
   "HOLLOW_CACHE_PERCENT": 5
 } as const;
-export const nativeBalanceIdentity = "a81cc113dc80f8ffa6a5de411072d686175cabf1e6fba5380676a9246604d2af";
+export const nativeStructureConstants = {
+  "LABOR_STORES": [
+    5000,
+    15000,
+    50000,
+    100000
+  ]
+} as const;
+export const nativeBalanceIdentity = "ebfe86fda60e5296037a0bc8d8d3336dcd62da488fe2bf6b34fe71d704b16543";
