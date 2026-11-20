@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "1398723ba6d834faf4bd15ff31cad5e34bdfa42a8adf8f336c260b4d1f001d6b",
+  "schemaIdentity": "2a3135bce74303a309d24f7f1bfd494d36f1ce68c2714683b24c964742bedb11",
   "commandAbi": [
     {
       "type": "interface",
@@ -1322,10 +1322,6 @@
     {
       "name": "RealmTraits",
       "scope": "deployment"
-    },
-    {
-      "name": "BlitzSettlementOrder",
-      "scope": "game"
     },
     {
       "name": "BlitzRoster",

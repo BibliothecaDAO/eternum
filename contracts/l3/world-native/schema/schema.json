@@ -4335,34 +4335,6 @@
       }
     },
     {
-      "name": "BlitzSettlementOrder",
-      "identity": "0x426c69747a536574746c656d656e744f72646572",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "players",
-          "type": "core::array::Span::<core::integer::u8>",
-          "id": "0x706c6179657273",
-          "feltLength": null
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": null,
-      "observation": {
-        "domain": "realm/blitz",
-        "fields": {
-          "players": "players"
-        }
-      }
-    },
-    {
       "name": "BlitzRoster",
       "identity": "0x426c69747a526f73746572",
       "scope": "game",
@@ -12695,5 +12667,5 @@
       ]
     }
   },
-  "identity": "1398723ba6d834faf4bd15ff31cad5e34bdfa42a8adf8f336c260b4d1f001d6b"
+  "identity": "2a3135bce74303a309d24f7f1bfd494d36f1ce68c2714683b24c964742bedb11"
 }
