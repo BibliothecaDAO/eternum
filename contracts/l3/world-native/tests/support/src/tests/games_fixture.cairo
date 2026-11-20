@@ -32,21 +32,6 @@ pub mod GamesFixture {
     }
 
     #[starknet::embeddable]
-    pub impl SpiresFixture<TContractState, +Drop<TContractState>> of crate::spires::ISpires<TContractState> {
-        fn initialize_spires(ref self: TContractState, game_id: u32) {
-            let classes = fixture_classes(game_id);
-            crate::spires::ISpiresDispatcherTrait::initialize_spires(
-                crate::spires::ISpiresLibraryDispatcher { class_hash: classes.placement.read() }, game_id,
-            )
-        }
-        fn spire_layout(self: @TContractState, game_id: u32) -> Option<crate::spires::SpireLayout> {
-            let classes = fixture_classes(game_id);
-            crate::spires::ISpiresDispatcherTrait::spire_layout(
-                crate::spires::ISpiresLibraryDispatcher { class_hash: classes.placement.read() }, game_id,
-            )
-        }
-    }
-    #[starknet::embeddable]
     pub impl SeasonPlacementFixture<
         TContractState, +Drop<TContractState>,
     > of crate::realms::ISeasonPlacement<TContractState> {
@@ -622,12 +607,6 @@ pub mod GamesFixture {
     pub impl SettlementViewsFixture<
         TContractState, +Drop<TContractState>,
     > of crate::settlement::ISettlementViews<TContractState> {
-        fn blitz_settlement_order(self: @TContractState, game_id: u32) -> Span<u8> {
-            let classes = fixture_classes(game_id);
-            crate::settlement::ISettlementViewsDispatcherTrait::blitz_settlement_order(
-                crate::settlement::ISettlementViewsLibraryDispatcher { class_hash: classes.settlement.read() }, game_id,
-            )
-        }
         fn settlement_rules(self: @TContractState, game_id: u32) -> crate::settlement::SettlementRules {
             let classes = fixture_classes(game_id);
             crate::settlement::ISettlementViewsDispatcherTrait::settlement_rules(

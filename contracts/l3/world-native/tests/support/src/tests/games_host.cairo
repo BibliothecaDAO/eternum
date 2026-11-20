@@ -75,7 +75,6 @@ pub mod GamesTest {
     #[abi(embed_v0)]
     impl CaptureFixture = GamesFixture::CaptureFixture<ContractState>;
     #[abi(embed_v0)]
-    impl SpiresFixture = GamesFixture::SpiresFixture<ContractState>;
     #[abi(embed_v0)]
     impl SeasonPlacementFixture = GamesFixture::SeasonPlacementFixture<ContractState>;
     #[abi(embed_v0)]

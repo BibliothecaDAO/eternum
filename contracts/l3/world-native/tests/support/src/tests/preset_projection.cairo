@@ -14,7 +14,6 @@ pub use crate::registrar::{
     IRegistrarDispatcher, IRegistrarDispatcherTrait, IRegistrarSafeDispatcher, IRegistrarSafeDispatcherTrait,
 };
 pub use crate::settlement::{ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait};
-pub use crate::spires::{ISpiresDispatcher, ISpiresDispatcherTrait};
 pub use crate::village::{IVillagePassesDispatcher, IVillagePassesDispatcherTrait};
 pub use crate::withdrawals::{IWithdrawalsDispatcher, IWithdrawalsDispatcherTrait};
 
@@ -163,7 +162,6 @@ pub fn observe_settlement(ref rows: Array<ObservedRow>, address: ContractAddress
     let settlement_views = ISettlementViewsDispatcher { contract_address: address };
     let villages = IVillagePassesDispatcher { contract_address: address };
     let expedition_rules = IExpeditionRulesDispatcher { contract_address: address };
-    let spires = ISpiresDispatcher { contract_address: address };
     if let Some(packed) = interact_with_state(address, || crate::logic::aspects::rules(game_id)) {
         let mut orders = array![];
         for order in 1_u8..17 {
@@ -180,9 +178,6 @@ pub fn observe_settlement(ref rows: Array<ObservedRow>, address: ContractAddress
             array![game_id.into(), depth.into()].span(),
             expedition_rules.depth_rules(game_id, depth.try_into().unwrap()),
         );
-    }
-    if let Some(layout) = spires.spire_layout(game_id) {
-        row(ref rows, 'SpireLayout', key, layout);
     }
 }
 pub fn observe_economy(ref rows: Array<ObservedRow>, address: ContractAddress, game_id: u32) {
