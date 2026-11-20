@@ -204,6 +204,25 @@ const shareTallySchema = Schema.Struct({
   fragmentsEarned: Schema.Number,
 });
 export type ShareTally = typeof shareTallySchema.Type;
+const fragmentPriceSchema = Schema.Struct({
+  fragments: Schema.Number,
+  cents: Schema.Number,
+  quote: Schema.NullOr(
+    Schema.Struct({
+      id: Schema.String,
+      lordsWei: Schema.String,
+      token: Schema.String,
+      treasury: Schema.String,
+      expiresAt: Schema.Number,
+    }),
+  ),
+});
+export type FragmentPrice = typeof fragmentPriceSchema.Type;
+const fragmentPaymentSchema = Schema.Struct({
+  state: Schema.Literals(["delivering", "delivered"]),
+  fragments: Schema.optional(Schema.Number),
+});
+export type FragmentPayment = typeof fragmentPaymentSchema.Type;
 
 const readJson = async <T>(response: Response, decode: (value: unknown) => T): Promise<T> => {
   if (!response.ok) throw await requestFailure(response);
@@ -569,6 +588,27 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
   const joinedShare = async (): Promise<JoinedShare> =>
     readJson(await request("/shares/joined", { method: "GET", cache: "no-store" }), decode(joinedShareSchema));
 
+  const priceFragments = async (game: { chainId: string; gameId: number }, fragments: number): Promise<FragmentPrice> =>
+    readJson(
+      await request(
+        `/shop/fragments?${new URLSearchParams({ chain: game.chainId, game: String(game.gameId), fragments: String(fragments) })}`,
+        { method: "GET", cache: "no-store" },
+      ),
+      decode(fragmentPriceSchema),
+    );
+
+  const payFragments = async (quoteId: string, transactionHash: string): Promise<FragmentPayment> =>
+    readJson(
+      await request("/shop/fragments/pay", { method: "POST", body: JSON.stringify({ quoteId, transactionHash }) }),
+      decode(fragmentPaymentSchema),
+    );
+
+  const fragmentPayment = async (transactionHash: string): Promise<FragmentPayment> =>
+    readJson(
+      await request(`/shop/fragments/pay/${encodeURIComponent(transactionHash)}`, { method: "GET", cache: "no-store" }),
+      decode(fragmentPaymentSchema),
+    );
+
   /** What the account's shared links brought, settled as it is read. */
   const shareTally = async (): Promise<ShareTally> =>
     readJson(await request("/shares", { method: "GET", cache: "no-store" }), decode(shareTallySchema));
@@ -632,6 +672,9 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     openShare,
     joinedShare,
     shareTally,
+    priceFragments,
+    payFragments,
+    fragmentPayment,
     getPushConfiguration: () => pushRequest("config", decode(pushConfigurationSchema)),
     registerPushSubscription: (input: PushRegistration) =>
       pushRequest("subscribe", decode(Schema.Struct({ id: Schema.String })), input),

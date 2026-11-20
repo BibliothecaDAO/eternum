@@ -23,6 +23,7 @@ import { PlayerPage, ProfilePage, SettingsPage } from "./shell/profile/profile-p
 import { ResultsPage } from "./shell/season-tab/results-page";
 import { SeasonPage } from "./shell/season-tab/season-page";
 import { SharedLinkPage } from "./shell/share/shared-link-page";
+import { FragmentsPage } from "./shell/shop/fragments-page";
 import { FirstFrame } from "./shell/first-frame";
 import { ConnectFlow } from "./shell/sign-in/connect-flow";
 import { LAB_GAME_ROUTE } from "./lab/game/lab-shard";
@@ -70,6 +71,7 @@ export const appRoutes = (
       <Route path="results/:id" element={<ResultsPage />} />
       <Route path="profile" element={<ProfilePage />} />
       <Route path="profile/settings" element={<SettingsPage />} />
+      <Route path="shop/fragments" element={<FragmentsPage />} />
       <Route path="p/:address" element={<PlayerPage />} />
       <Route path="scroll" element={<WhatsNewPage />} />
       <Route path="chat" element={<ChatPage />} />

@@ -1484,6 +1484,7 @@ export const HudLab = () => {
             bonusHeld={null}
             bar={180}
             code={<ShopCodeField />}
+            onGetFragments={noop}
             onClose={noop}
           />
         )}

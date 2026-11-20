@@ -123,7 +123,7 @@ export const PlayerPage = () => {
  * The page for a signed-in player, the player's account known from the session; else the card that says why not
  * (signed out, a name still to claim with Sign out under it, or this device removed), placed by the page.
  */
-const SignedInOnly = ({
+export const SignedInOnly = ({
   fallback,
   children,
 }: {

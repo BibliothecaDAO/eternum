@@ -83,13 +83,15 @@ export const WalletSign = (props: {
   owner: string;
   calls: Call[];
   onLanded: () => void;
+  onSent?: (hash: string) => void;
   onFeeShort?: (spendable: bigint) => void;
 }) => {
   const { wallet: defaultWallet, failed, retry } = useDefaultWallet();
   const uncertain = useUncertainSend(props.owner, JSON.stringify(props.calls), props.onLanded);
   if (defaultWallet === undefined) return failed ? <WalletUnread onRetry={retry} /> : <Loading />;
   if (uncertain.state.kind === "checking") return <Loading />;
-  if (uncertain.state.kind === "pending") return <OnItsWay uncertain={uncertain} onLanded={props.onLanded} />;
+  if (uncertain.state.kind === "pending")
+    return <OnItsWay uncertain={uncertain} onLanded={props.onLanded} onSent={props.onSent} />;
   const lastFailed = uncertain.state.lastFailed;
   const send =
     defaultWallet && isSameStarknetAddress(defaultWallet.address, props.owner) ? (
@@ -97,6 +99,7 @@ export const WalletSign = (props: {
         wallet={defaultWallet}
         calls={props.calls}
         onLanded={props.onLanded}
+        onSent={props.onSent}
         onUnconfirmed={uncertain.check}
         onFeeShort={props.onFeeShort}
       />
@@ -159,9 +162,11 @@ const useUncertainSend = (owner: string, asked: string, onLanded: () => void) =>
 const OnItsWay = ({
   uncertain,
   onLanded,
+  onSent,
 }: {
   uncertain: ReturnType<typeof useUncertainSend>;
   onLanded: () => void;
+  onSent?: (hash: string) => void;
 }) => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -172,7 +177,7 @@ const OnItsWay = ({
     setBusy(true);
     setError(null);
     try {
-      const sent = await submitSigned({ ...send, ownerSignature }, l2Provider(), () => {}, "again");
+      const sent = await submitSigned({ ...send, ownerSignature }, l2Provider(), (hash) => onSent?.(hash), "again");
       if (sent.kind === "landed") return onLanded();
     } catch (cause) {
       setError(failureSentence("send", cause));
@@ -224,12 +229,14 @@ const PasskeySend = ({
   wallet,
   calls,
   onLanded,
+  onSent,
   onUnconfirmed,
   onFeeShort,
 }: {
   wallet: DefaultWallet;
   calls: Call[];
   onLanded: () => void;
+  onSent?: (hash: string) => void;
   onUnconfirmed: () => void;
   onFeeShort?: (spendable: bigint) => void;
 }) => {
@@ -270,7 +277,10 @@ const PasskeySend = ({
         ready.execution,
         asked,
         l2Provider(),
-        () => setState({ kind: "confirming" }),
+        (hash) => {
+          setState({ kind: "confirming" });
+          onSent?.(hash);
+        },
         closed,
       );
       if (sent.kind === "abandoned") return;
@@ -375,11 +385,13 @@ const OwnerSend = ({
   owner,
   calls,
   onLanded,
+  onSent,
   onUnconfirmed,
 }: {
   owner: string;
   calls: Call[];
   onLanded: () => void;
+  onSent?: (hash: string) => void;
   onUnconfirmed: () => void;
 }) => {
   const { connectors } = useConnect();
@@ -394,7 +406,10 @@ const OwnerSend = ({
       owner,
       calls,
       provider,
-      () => setOutcome({ kind: "confirming" }),
+      (hash) => {
+        setOutcome({ kind: "confirming" });
+        onSent?.(hash);
+      },
       panelClosed(),
     );
     if (sent.kind === "abandoned") return;

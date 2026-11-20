@@ -331,6 +331,7 @@ import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifi
 import type { AttackRefusal, RuinChest } from "@bibliothecadao/eternum";
 import {
   FRAGMENT,
+  FRAGMENT_CENTS,
   FRAGMENTS,
   ANCIENT_SEAL,
   BuildingType,
@@ -1270,6 +1271,30 @@ export const SHOP_WORDS = {
   stamina: "Stamina refill",
   staminaLine: (points: number, bar: number, fragments: number, cents: number) =>
     `Each ${FRAGMENT} refills ${formatExact(points)} points. A bar of ${formatExact(bar)} is ${formatCount(fragments, FRAGMENT, FRAGMENTS)}, ${formatDollars(cents)}.`,
+} as const;
+
+export const FRAGMENTS_PAGE_WORDS = {
+  title: `Get ${FRAGMENTS}`,
+  pack: (fragments: number) => formatCount(fragments, FRAGMENT, FRAGMENTS),
+  sealPack: `The ${ANCIENT_SEAL}`,
+  price: (fragments: number) => formatDollars(fragments * FRAGMENT_CENTS),
+  pay: (fragments: number) => `Pay ${formatDollars(fragments * FRAGMENT_CENTS)}`,
+  pricing: "Getting your price…",
+  paidAs: (lords: number) => `Paid as ${formatExact(lords)} LORDS`,
+  noPrice: "No price right now. Try again in a minute.",
+  dailyCap: `That is more ${FRAGMENTS} than one day allows.`,
+  delivering: `Your ${FRAGMENTS} are on their way…`,
+  delivered: (fragments: number) => `+${formatCount(fragments, FRAGMENT, FRAGMENTS)}`,
+  backToShop: "Back to the shop",
+  linkWallet: "Link a wallet to pay",
+  refused: {
+    payment_refused: "The payment was refused.",
+    refund_due: "The payment came short or late. Your LORDS will be refunded.",
+    quote_expired: "The price expired. Choose again.",
+    quote_paid: "This price was paid already.",
+    transaction_used: `That payment bought ${FRAGMENTS} already.`,
+    unknown_quote: "This price is no longer known. Choose again.",
+  },
 } as const;
 
 /** LORDS leaving the game for the wallet linked to the account. */

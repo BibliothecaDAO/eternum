@@ -1,4 +1,5 @@
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import type { Account } from "starknet";
 import { configManager, readLaborBonus, readSeasonPass } from "@bibliothecadao/eternum";
 import { nativeFragmentConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
@@ -11,7 +12,10 @@ import { useRedeemSealCode } from "@/shell/play/seal-code";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudField, HudNotice, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { failureLine } from "@/ui/design-system/kit/failure-lines";
-import { REALM, SEAL_CODE_WORDS, SHOP_WORDS } from "@/ui/design-system/kit/words";
+import { FRAGMENTS_PAGE_WORDS, REALM, SEAL_CODE_WORDS, SHOP_WORDS } from "@/ui/design-system/kit/words";
+import { parsePlayRoute } from "@/play/navigation/play-route";
+import { returnPathOf } from "@/shell/return-path";
+import { fragmentsHref } from "@/shell/shop/fragments-route";
 import { toast } from "@/ui/features/event-feed/notify";
 
 import { fragmentsToFill } from "../army/refill";
@@ -32,15 +36,28 @@ export interface ShopViewProps {
   bonusHeld: string | null;
   bar: number | null;
   code: ReactNode;
+  onGetFragments: () => void;
   onClose: () => void;
 }
 
+const SHOP_RETURN = "#shop";
+
 export const ShopSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]; onClose: () => void }) => {
   const reading = useShopReading(realm);
-  return reading && <ShopView {...reading} code={<ShopCodeField />} onClose={onClose} />;
+  const getFragments = useGetFragments();
+  return reading && <ShopView {...reading} code={<ShopCodeField />} onGetFragments={getFragments} onClose={onClose} />;
 };
 
-export const ShopView = ({ fragments, pass, questBonus, bonusHeld, bar, code, onClose }: ShopViewProps) => (
+export const ShopView = ({
+  fragments,
+  pass,
+  questBonus,
+  bonusHeld,
+  bar,
+  code,
+  onGetFragments,
+  onClose,
+}: ShopViewProps) => (
   <HudSheet label={SHOP_WORDS.title} beside={<FragmentsHeld fragments={fragments} />} onClose={onClose}>
     <section data-shop="pass" className="flex flex-col gap-2">
       <HudRow lead={<Icon name="final-seal" size={48} />} title={SHOP_WORDS.pass} detail={SHOP_WORDS.passFor} />
@@ -53,6 +70,11 @@ export const ShopView = ({ fragments, pass, questBonus, bonusHeld, bar, code, on
       lead={<Icon name="fragment" size={32} />}
       title={SHOP_WORDS.fragments(fragments)}
       detail={SHOP_WORDS.fragmentsLine(FRAGMENT_CENTS)}
+      controls={
+        <HudButton kind="secondary" icon="fragment" onClick={onGetFragments}>
+          {FRAGMENTS_PAGE_WORDS.title}
+        </HudButton>
+      }
     />
     {bar !== null && (
       <HudRow
@@ -136,7 +158,28 @@ export const ShopCodeField = () => {
   );
 };
 
-function useShopReading(realm: NativeRows["Structure"]): Omit<ShopViewProps, "code" | "onClose"> | null {
+export const useReturnToShop = (openShop: () => void) => {
+  const { pathname, search, hash } = useLocation();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (hash !== SHOP_RETURN) return;
+    openShop();
+    navigate({ pathname, search }, { replace: true });
+  }, [hash, navigate, openShop, pathname, search]);
+};
+
+const useGetFragments = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  return () => {
+    const game = parsePlayRoute(location);
+    if (game) navigate(fragmentsHref(game, `${returnPathOf(location)}${SHOP_RETURN}`));
+  };
+};
+
+function useShopReading(
+  realm: NativeRows["Structure"],
+): Omit<ShopViewProps, "code" | "onGetFragments" | "onClose"> | null {
   const { setup, account } = useGame();
   useNativeRevision(SHOP_MODELS);
   const fragments = useFragmentsHeld();

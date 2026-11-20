@@ -49,7 +49,7 @@ export const sendFromWallet = async (
   owner: string,
   calls: Call[],
   provider: ProviderInterface,
-  onSigned: () => void,
+  onSigned: (hash: string) => void,
   closed: AbortSignal,
 ): Promise<WalletSendOutcome> => {
   if (!isSameStarknetAddress(account.address, owner)) throw new WrongWalletError(owner);
@@ -78,7 +78,7 @@ export const sendFromWallet = async (
     throw error;
   }
   rememberUncertain({ ...intent, hash: sent });
-  onSigned();
+  onSigned(sent);
   return settled(owner, await landedOrRefused(provider, sent));
 };
 
@@ -167,7 +167,7 @@ export const sendFromDefaultWallet = async (
   prepared: TypedData,
   calls: string,
   provider: ProviderInterface,
-  onSigned: () => void,
+  onSigned: (hash: string) => void,
   closed: AbortSignal,
 ): Promise<WalletSendOutcome> => {
   // Its panel closed while the send was prepared again: no passkey opens for a payment no one is looking at.
@@ -203,7 +203,7 @@ export const sendFromDefaultWallet = async (
 export const submitSigned = async (
   send: SignedPasskeySend,
   provider: ProviderInterface,
-  onSigned: () => void,
+  onSigned: (hash: string) => void,
   submission: "first" | "again",
 ): Promise<WalletSendOutcome> => {
   rememberUncertain(send);
@@ -219,7 +219,7 @@ export const submitSigned = async (
     throw error;
   }
   rememberUncertain({ ...send, hash: sent });
-  onSigned();
+  onSigned(sent);
   return settled(send.owner, await landedOrRefused(provider, sent));
 };
 

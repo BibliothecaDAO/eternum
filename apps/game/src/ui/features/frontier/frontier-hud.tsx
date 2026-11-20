@@ -52,7 +52,7 @@ import { useHowToPlay } from "@/ui/modules/how-to-play";
 import { FrontierRealms } from "./value/frontier-realms";
 import { FragmentsPurse, PurseRow, RealmsChip } from "./value/lords-purse";
 import { useFragmentsHeld } from "./value/fragments";
-import { ShopSheet } from "./shop/shop-sheet";
+import { ShopSheet, useReturnToShop } from "./shop/shop-sheet";
 import { useHomeKind } from "@/hooks/helpers/use-home-kind";
 import { useCampaignMark } from "./value/campaign-home";
 import { dailyClaimWaiting, type DailyClaimWaiting } from "./value/realm-labor";
@@ -143,6 +143,7 @@ const FrontierHudBody = ({
   });
   const desktop = useLayout() === "desktop";
   const { surface, openSurface: setSurface, showsCard } = useOnePanel(card?.key ?? null, !desktop);
+  useReturnToShop(() => setSurface("shop"));
   const realmLabor = useRealmLabor(rules, realm);
   const claimWaiting = dailyClaimWaiting(realmLabor?.plan);
   const research = useResearchTree(realm);

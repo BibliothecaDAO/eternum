@@ -11,6 +11,7 @@ vi.mock("@/sync/action-outcome", async (original) => ({
 }));
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { shortString } from "starknet";
 import { REALM_SKINS } from "@/three/structures/realm-skins";
 import { configManager } from "@bibliothecadao/eternum";
@@ -51,6 +52,7 @@ const view = (over: Partial<ShopViewProps>) => {
         bonusHeld={null}
         bar={180}
         code={<i data-code />}
+        onGetFragments={() => {}}
         onClose={() => {}}
         {...over}
       />,
@@ -120,6 +122,17 @@ describe("the shop", () => {
     );
   });
 
+  it("opens Get Fragments for this game, coming back to the game's shop", () => {
+    renderShop([]);
+    const get = [...host.querySelectorAll("button")].find((button) => button.textContent === "Get Fragments")!;
+    act(() => get.click());
+    const opened = new URL(host.querySelector("[data-opened]")!.textContent!, "https://realms.test");
+    expect(opened.pathname).toBe("/shop/fragments");
+    expect(opened.searchParams.get("chain")).toBe("0x1");
+    expect(opened.searchParams.get("game")).toBe("1");
+    expect(opened.searchParams.get("next")).toBe("/g/0x1/1/map#shop");
+  });
+
   it("names no free bonus for a home with neither a Realm nor a ticket", () => {
     renderShop([]);
     expect(host.querySelector("[data-shop=pass]")?.textContent).not.toContain("gives this bonus already");
@@ -143,11 +156,26 @@ const renderShop = (facts: object[]) => {
   ] as never);
   act(() =>
     root.render(
-      <QueryClientProvider client={new QueryClient()}>
-        <GameProvider value={{ store, systemCalls: {} } as never} account={{ address: PLAYER } as never}>
-          <ShopSheet realm={store.require("Structure", { game_id: 1, entity_id: 7 })} onClose={() => {}} />
-        </GameProvider>
-      </QueryClientProvider>,
+      <MemoryRouter initialEntries={["/g/0x1/1/map"]}>
+        <QueryClientProvider client={new QueryClient()}>
+          <GameProvider value={{ store, systemCalls: {} } as never} account={{ address: PLAYER } as never}>
+            <Routes>
+              <Route
+                path="/g/:chain/:game/:scene"
+                element={
+                  <ShopSheet realm={store.require("Structure", { game_id: 1, entity_id: 7 })} onClose={() => {}} />
+                }
+              />
+              <Route path="/shop/fragments" element={<Opened />} />
+            </Routes>
+          </GameProvider>
+        </QueryClientProvider>
+      </MemoryRouter>,
     ),
   );
+};
+
+const Opened = () => {
+  const { pathname, search } = useLocation();
+  return <i data-opened>{`${pathname}${search}`}</i>;
 };
