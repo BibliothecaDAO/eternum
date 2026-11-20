@@ -1,6 +1,5 @@
 #[starknet::component]
 pub mod ProductionState {
-    use starknet::storage::StorageMapReadAccess;
     use crate::events::RowSet;
     use crate::production::{ProductionRecipe, RecipeKey};
 
@@ -28,7 +27,6 @@ pub mod ProductionState {
                 simple_inputs: inputs.slice(row.first_input, row.simple_count),
                 complex_inputs: inputs.slice(row.first_input + row.simple_count, row.complex_count),
             }
-        }
         }
     }
 }
