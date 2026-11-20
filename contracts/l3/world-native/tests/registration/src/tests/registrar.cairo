@@ -84,11 +84,13 @@ fn expedition_armies_merge_into_the_lower_stamina_and_never_past_the_size_limit(
         d.games, crate::troops::ExplorerKey { game_id: game_id.into(), explorer_id: source.explorer_id }, tired,
     );
     assert!(troops.resolved_explorer(target).unwrap().troops.stamina.inline().amount > 5);
+    let source_count = tired.troops.count;
+    let target_count = troops.resolved_explorer(target).unwrap().troops.count;
     assert!(execute_in_game(d, game_id, transfer(source, target, 1), super::play_fixture::FIXTURE_START + 2));
     let merged = troops.resolved_explorer(target).unwrap();
-    assert_eq!(merged.troops.count, 4 * RESOURCE_PRECISION);
+    assert_eq!(merged.troops.count, target_count + RESOURCE_PRECISION);
     assert_eq!(merged.troops.stamina.inline().amount, 5);
-    assert_eq!(troops.resolved_explorer(source).unwrap().troops.count, 2 * RESOURCE_PRECISION);
+    assert_eq!(troops.resolved_explorer(source).unwrap().troops.count, source_count - RESOURCE_PRECISION);
 
     // An army at its size limit takes no more troops.
     let rules = IGameDispatcher { contract_address: d.games }.rules(game_id);
@@ -106,7 +108,7 @@ fn expedition_armies_merge_into_the_lower_stamina_and_never_past_the_size_limit(
     );
     assert!(!execute_in_game(d, game_id, transfer(source, target, 1), super::play_fixture::FIXTURE_START + 3));
     assert_eq!(troops.resolved_explorer(target).unwrap().troops.count, limit);
-    assert_eq!(troops.resolved_explorer(source).unwrap().troops.count, 2 * RESOURCE_PRECISION);
+    assert_eq!(troops.resolved_explorer(source).unwrap().troops.count, source_count - RESOURCE_PRECISION);
 }
 
 #[test]
@@ -258,11 +260,12 @@ fn yesterdays_armies_leave_todays_army_cap_free() {
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
     let troops = GameState { contract_address: d.games };
     let cap: u8 = crate::balance::rules::TROOP_LIMIT_CONFIG.settlement_armies.try_into().unwrap();
-    for slot in 0..cap {
-        assert!(execute_in_game(d, game_id, muster_command(home, category, slot, slot), super::play_fixture::FIXTURE_START + 1 + slot.into()));
-    }
-    assert!(!execute_in_game(d, game_id, muster_command(home, category, cap, cap), super::play_fixture::FIXTURE_START + 1 + cap.into()));
     let yesterday = structures.home_armies(home);
+    assert_eq!(yesterday.len(), cap.into());
+    let troop = crate::troops::troop_resource(held_troop(d, home), 0);
+    super::resource_commands::fund_troops(d, home, troop, (cap + 1).into() * RESOURCE_PRECISION);
+    let today = super::play_fixture::FIXTURE_START + 1;
+    assert!(!execute_in_game(d, game_id, muster_command(home, category, cap, cap), today));
     let tomorrow = day_start(d, game_id, 1);
     for slot in 0..cap {
         assert!(execute_in_game(d, game_id, muster_command(home, category, slot, slot), tomorrow + 1 + slot.into()));
@@ -282,7 +285,6 @@ fn a_materialized_home_ring_moves_and_explores_without_a_roll() {
     let troops = GameState { contract_address: d.games };
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
-    assert!(execute_in_game(d, game_id, muster_command(home, category, 0, 2), super::play_fixture::FIXTURE_START + 1));
     let key = ExplorerKey {
         game_id, explorer_id: *structures.home_armies(home).at(0),
     };

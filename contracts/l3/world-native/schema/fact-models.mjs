@@ -18,6 +18,103 @@ const combatMembers = combatBody
 export const factWireTypes = [
   {
     type: "struct",
+    name: "world_native::banes::BaneRules",
+    members: [
+      { name: "chance_step", type: "core::integer::u16" },
+      { name: "quorum_percent", type: "core::integer::u16" },
+      { name: "beast_percent", type: "core::integer::u16" },
+      { name: "stamina_percent", type: "core::integer::u16" },
+      { name: "production_percent", type: "core::integer::u16" },
+      { name: "quest_counts", type: "core::array::Span::<core::integer::u128>" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::quests::QuestRules",
+    members: [
+      { name: "base_counts", type: "core::array::Span::<core::integer::u32>" },
+      { name: "labor", type: "core::integer::u128" },
+      { name: "essence", type: "core::integer::u128" },
+      { name: "bonus_percent", type: "core::integer::u16" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::buildings::BoardRules",
+    members: [
+      { name: "demolition_refund_bps", type: "core::integer::u16" },
+      { name: "workshop_rate", type: "core::integer::u64" },
+      { name: "output_step_bps", type: "core::integer::u16" },
+      { name: "storage_step_bps", type: "core::integer::u16" },
+      { name: "population_step_bps", type: "core::integer::u16" },
+      { name: "ration_step", type: "core::integer::u128" },
+      { name: "troop_store_deploys", type: "core::integer::u8" },
+      { name: "settlement_resource_cap", type: "core::integer::u32" },
+      { name: "city_resource_cap", type: "core::integer::u32" },
+      { name: "kingdom_resource_cap", type: "core::integer::u32" },
+      { name: "empire_resource_cap", type: "core::integer::u32" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::expeditions::FrontierDiscoveryRules",
+    members: [
+      { name: "beasts_bps", type: "core::integer::u16" },
+      { name: "camp_bps", type: "core::integer::u16" },
+      { name: "rift_bps", type: "core::integer::u16" },
+      { name: "ruin_bps", type: "core::integer::u16" },
+      { name: "shrine_bps", type: "core::integer::u16" },
+      { name: "well_bps", type: "core::integer::u16" },
+      { name: "empty_reveal_limit", type: "core::integer::u8" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::race::RaceRules",
+    members: [
+      { name: "season_days", type: "core::integer::u64" },
+      { name: "stage_height", type: "core::integer::u32" },
+      { name: "clear_mist_percent", type: "core::integer::u16" },
+      { name: "second_wind_percent", type: "core::integer::u16" },
+      { name: "pale_moon_percent", type: "core::integer::u16" },
+      { name: "spoils_percent", type: "core::integer::u16" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::research::ResearchPrice",
+    members: [
+      { name: "essence", type: "core::integer::u128" },
+      { name: "labor", type: "core::integer::u128" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::resources::ResourceRule",
+    members: [
+      { name: "resource_type", type: "core::integer::u8" },
+      { name: "unit_weight", type: "core::integer::u128" },
+      { name: "realm_rate", type: "core::integer::u64" },
+      { name: "village_rate", type: "core::integer::u64" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::upgrades::UpgradeLimits",
+    members: [
+      { name: "realm_max", type: "core::integer::u8" },
+      { name: "village_max", type: "core::integer::u8" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::upgrades::UpgradeRecipe",
+    members: [
+      { name: "costs", type: "core::array::Span::<world_native::resources::ResourceAmount>" },
+    ],
+  },
+  {
+    type: "struct",
     name: "world_native::deep::DeepRing",
     members: [
       { name: "radius", type: "core::integer::u32" },
