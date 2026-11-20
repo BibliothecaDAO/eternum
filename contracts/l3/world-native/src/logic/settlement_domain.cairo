@@ -287,10 +287,6 @@ pub mod SettlementLogic {
         fn claim_frontier_source(
             ref self: ContractState, key: EntryKey, home: u64, entitlement: crate::settlement::EntryEntitlement,
         ) -> Option<u32> {
-            if entitlement.pass_kind == crate::settlement::CAMPAIGN_KIND {
-                self.settlements.claim_campaign_home(key, home, entitlement);
-                return None;
-            }
             assert!(entitlement.pass_kind == crate::settlement::HELD_REALM_KIND, "Frontier home source required");
             let realm_id = entitlement.realm_id.try_into().expect('invalid canonical realm');
             self.settlements.claim_held_realm(key, realm_id, home);

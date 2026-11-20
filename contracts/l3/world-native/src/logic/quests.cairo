@@ -10,7 +10,6 @@ pub fn read(home: ResourceKey, day: u64) -> QuestProgress {
 pub fn labor_bonus(home: ResourceKey, owner: starknet::ContractAddress) -> bool {
     let state = crate::state::read();
     state.entry.seals.read((home.game_id, owner)).is_some()
-        || state.settlements.campaign_homes.read((home.game_id, home.entity_id)).is_some()
         || holds_realm(home, owner)
 }
 
