@@ -346,6 +346,17 @@ export const factWireTypes = [
   },
   {
     type: "struct",
+    name: "world_native::entry::LaborGrant",
+    members: [
+      { name: "game_id", type: "core::integer::u32" },
+      { name: "account", type: "core::starknet::contract_address::ContractAddress" },
+      { name: "home", type: "core::integer::u64" },
+      { name: "amount", type: "core::integer::u128" },
+      { name: "essence", type: "core::integer::u128" },
+    ],
+  },
+  {
+    type: "struct",
     name: "world_native::arrivals::Arrival",
     members: [
       {

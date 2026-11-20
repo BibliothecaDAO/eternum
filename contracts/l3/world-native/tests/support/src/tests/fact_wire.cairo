@@ -19,6 +19,7 @@ pub struct FactWire {
     pub structure_buildings: crate::buildings::StructureBuildings,
     pub game_registry: crate::game::GameRegistry,
     pub game_overrides: crate::game::GameOverrides,
+    pub labor_grant: crate::entry::LaborGrant,
     pub tile_opt: crate::map::TileOpt,
     pub tile_occupancy: crate::map::TileOccupancy,
     pub army_slot_key: crate::troops::ArmySlotKey,

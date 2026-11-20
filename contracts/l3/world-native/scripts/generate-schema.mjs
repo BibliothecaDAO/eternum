@@ -218,12 +218,6 @@ const schema = {
       ),
     },
     {
-      name: "PointsAwarded",
-      scope: "game",
-      version: 1,
-      event: productionAbi.find((item) => item.type === "event" && item.name === "world_native::game::PointsAwarded"),
-    },
-    {
       name: "StoryEvent",
       scope: "game",
       version: 2,
