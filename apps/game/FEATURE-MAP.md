@@ -445,9 +445,9 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   and **Play as <Order's name>**; kept on the account (`/api/order-intent`); a save that fails says so with **Try
   again**, and an Order already kept in another Aspect (on another device) shows that one. An account a friend's
   pre-season invite brought sees the invited Aspect first, chosen, tagged **<name> invited you**. With an Order kept,
-  **You're in <Aspect>**, the Order, the day it opens and **Starts in …**, then **Free Season Pass?**: a code field and
+  **You're in <Aspect>**, the Order, the day it opens and **Starts in …**, then **Free Ancient Seal?**: a code field and
   **Redeem** (`/api/seal-code`) hold one operator's code on the account (a taken, expired or unknown code is refused in
-  the field); once held, **Your Season Pass is held**. Under it **Bring friends** and, in the foot, **Copy invite
+  the field); once held, **Your Ancient Seal is held**. Under it **Bring friends** and, in the foot, **Copy invite
   link**: the account's link to its Aspect for the coming season (`/api/shares` with no game), which a friend's first
   visit ties to the account they make. Operator codes:
   `pnpm --dir apps/realms seal-codes <label> <count> <out> [last day]` (clear codes in `codes.txt`, hashes in
@@ -1070,11 +1070,11 @@ panel (its price fills the bar), the phone's picked army's stamina, or the order
 buys up to the account's Fragments. Kit lab: `army-refill`, `army-refill-ready`, `army-refill-short`, `move-refill`.
 
 **Shop**: the Fragments chip (the phone's purse row; the desktop realm panel's ring) opens it once the "shop" moment is
-reached (an army out of stamina, or Fragments held). The Season Pass row: what it gives (the daily quest's bonus from
-`QuestRules`), **Get the Pass** for 1,000 Fragments, or while short how many more and their price in dollars, and the
-code field (the waiting screen's redeem, granted at once in a running game); once the account's Seal row exists it says
-the Pass is held. Then the Fragments row (a cent each) and the stamina refill rate. Kit lab: `shop`, `shop-ready`,
-`shop-held`.
+reached (an army out of stamina, or Fragments held). The Ancient Seal row: what it gives (the daily quest's bonus from
+`QuestRules`), **Get the Ancient Seal** for 1,000 Fragments, or while short how many more and their price in dollars,
+and the code field (the waiting screen's redeem, granted at once in a running game); once the account's Seal row exists
+it says the Ancient Seal is held. Then the Fragments row (a cent each) and the stamina refill rate. Kit lab: `shop`,
+`shop-ready`, `shop-held`.
 
 `pnpm --dir apps/game playtest --steps lab-no-lords --iterations 1 --out <evidence>` checks the army panel and HUD.
 
