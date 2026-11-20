@@ -20,6 +20,14 @@ import { keepBrowser, noteBrowser } from "./browsers";
 import { handleBuildOrders } from "./build-orders";
 import { avnuQuote } from "./lords-price";
 import { handleFragmentPrice } from "./fragment-price";
+import {
+  fragmentPaymentWorldOf,
+  handleFragmentPay,
+  handleFragmentPayment,
+  handleShopRefunded,
+  handleShopRefunds,
+  lordsPayeeOf,
+} from "./fragment-payments";
 import { shopAccessOf } from "./shop-game";
 import { handlePurchaseCheck, handleStoreReceipt, storeVerifiersOf } from "./store-receipts";
 import { handleOpeningProgress } from "./opening-progress";
@@ -144,9 +152,19 @@ export const routeIdentityRequest = async (
     });
   if (pathname === "/api/shop/fragments")
     return handleFragmentPrice(request, auth, {
+      db: env.DB,
       access: shopAccessOf(env, platform.fetchShard, nowSeconds),
       readLordsQuote: avnuQuote,
+      payee: lordsPayeeOf(env),
+      now: nowSeconds,
     });
+  if (pathname === "/api/shop/fragments/pay") return handleFragmentPay(request, auth, fragmentPaymentWorldOf(env));
+  if (pathname.startsWith("/api/shop/fragments/pay/"))
+    return handleFragmentPayment(request, auth, fragmentPaymentWorldOf(env));
+  if (pathname === "/api/operator/shop/refunds" && (request.method === "GET" || request.method === "POST")) {
+    if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
+    return request.method === "GET" ? handleShopRefunds(env.DB) : handleShopRefunded(request, env.DB);
+  }
   if (pathname.startsWith("/api/shares") || pathname === "/api/operator/shares")
     return routeShares(request, env, auth, platform, pathname);
   if (pathname.startsWith("/api/notifications/push/")) return handlePushSubscriptions(request, auth, env);

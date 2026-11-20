@@ -8,6 +8,7 @@ import { readCampaignCode } from "./campaigns";
 import { aspectOn } from "./account-aspect";
 import { accountKey, gloryOn, playerAccounts } from "./campaign-entry";
 import type { IdentityEnv } from "./env";
+import { creditFragmentsOf } from "./fragment-credit";
 import { json } from "./http";
 import { intendedAspect, inviteSide } from "./order-intent";
 import { createShareStore } from "./share-store";
@@ -32,13 +33,7 @@ export const shareWorldOf = (
   seasonGames: () => openFrontierGames(env, fetchShard, Math.floor(Date.now() / 1000)),
   aspectOf: (game, account) => aspectOn(env, fetchShard, game, account),
   accountOf: playerAccounts(env),
-  creditFragments: (payout) =>
-    env.VALUE_RELAY.fetch("https://value-relay/api/value/operator/fragments", {
-      method: "POST",
-      redirect: "manual",
-      headers: { authorization: `Bearer ${env.OPERATOR_TOKEN}`, "content-type": "application/json" },
-      body: JSON.stringify(payout),
-    }),
+  creditFragments: (payout) => creditFragmentsOf(env)(payout),
 });
 
 /** How many sharers the operator's report ranks. */

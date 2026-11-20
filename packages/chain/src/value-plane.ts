@@ -12,7 +12,8 @@ export type ValuePlaneContract =
   | "seasonPass"
   | "villagePass"
   | "lootChests"
-  | "cosmetics";
+  | "cosmetics"
+  | "treasury";
 
 export type ValueEnvironment = "staging" | "production";
 

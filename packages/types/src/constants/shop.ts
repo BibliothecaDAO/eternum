@@ -1,5 +1,6 @@
 export const FRAGMENT_CENTS = 1;
 export const MIN_FRAGMENTS = 100;
+export const FRAGMENTS_A_DAY = 10_000;
 export const FRIEND_GLORY = 100;
 export const FRIEND_FRAGMENTS = 100;
 export const FRIENDS_LIMIT = 10;

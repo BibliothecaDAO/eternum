@@ -140,6 +140,8 @@ export const accountDeletion = (db: D1Database, user: User, realmsId: string, no
     db.prepare(`DELETE FROM "${table}" WHERE "${column}" = ?`).bind(realmsId),
   ),
   db.prepare(`UPDATE "store_receipts" SET "owner" = NULL WHERE "owner" = ?`).bind(realmsId),
+  db.prepare(`DELETE FROM "fragment_quotes" WHERE "owner" = ? AND "transaction_hash" IS NULL`).bind(realmsId),
+  db.prepare(`UPDATE "fragment_quotes" SET "owner" = NULL WHERE "owner" = ?`).bind(realmsId),
   db.prepare(`DELETE FROM "session" WHERE "userId" = ?`).bind(user.id),
   db.prepare(`DELETE FROM "account" WHERE "userId" = ?`).bind(user.id),
   db.prepare(`DELETE FROM "verification" WHERE "identifier" = ?`).bind(`sign-in-otp-${user.email.toLowerCase()}`),

@@ -114,3 +114,23 @@ environment's database; run without arguments, it prints its usage. It writes th
 codes, and a code already loaded is left as it is, so the command is safe to run again after a failure. A player redeems
 one code per account in the shop (`POST /api/seal-code`); the Seal reaches every Frontier game the account entered,
 through the relay, and a game entered later grants it on entry.
+
+## Fragments paid in LORDS
+
+`GET /api/shop/fragments?chain&game&fragments=N` quotes N Fragments (a cent each, priced in LORDS by AVNU, rounded up to
+5 LORDS) as one transfer of the environment's LORDS to its treasury, both read from `contracts/common/addresses/`, held
+for ten minutes; an account buys at most `FRAGMENTS_A_DAY` a day. The player sends the transfer, then
+`POST /api/shop/fragments/pay {quoteId, transactionHash}`: identity reads the receipt on the environment's L2, counts
+the transfers of that token from the account's default or linked wallet to the treasury, records the payment in
+`store_receipts` as `lords:<transaction>` and delivers the Fragments to the quote's game through the relay
+(`credit_fragments`, the receipt as its id), so a retry pays once. The minute cron finishes what a request left open. A
+payment that reverted or that no wallet of the account sent is refused; one below the quote, after the quote expired or
+past the daily limit is kept for a refund. A wallet's transfer pays one quote, whenever it was sent. The operator pays
+each refund by hand from the list, then records the transfer that paid it, which takes it off the list; recording the
+same transfer again changes nothing, and another transfer for a refund already recorded is refused:
+
+```bash
+curl -s -H "authorization: Bearer $OPERATOR_TOKEN" https://<identity origin>/api/operator/shop/refunds | jq '.refunds'
+curl -s -H "authorization: Bearer $OPERATOR_TOKEN" https://<identity origin>/api/operator/shop/refunds \
+  -d '{"transactionHash":"<the payment>","refundTransaction":"<the transfer that refunded it>"}'
+```
