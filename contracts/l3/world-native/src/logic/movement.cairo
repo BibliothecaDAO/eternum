@@ -216,7 +216,9 @@ pub mod MovementLogic {
             let today = crate::days::day_of(context.game.unbox(), rules.day_unit_seconds, context.timestamp).index;
             let source_depth = crate::logic::expeditions::depth_at(game_id, explorer.coord);
             let origin = crate::logic::spires::descent_origin(
-                crate::spires::ExpeditionSpireKey { game_id, structure_id: explorer.owner, epoch: today, depth: source_depth },
+                crate::spires::ExpeditionSpireKey {
+                    game_id, structure_id: explorer.owner, epoch: today, depth: source_depth,
+                },
                 explorer.coord,
                 command.depth,
             );

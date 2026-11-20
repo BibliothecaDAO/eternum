@@ -45,11 +45,7 @@ import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store"
 import { campBeside, otherArmyAt, reloadSiteFacts, SITE, SITE_TILE } from "./sites/site-fixture";
 import { attachMapSelectionPositions } from "@/hooks/store/map-selection";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import {
-  configManager,
-  setBlockTimestampSource,
-  setEntityNameLocalStorage,
-} from "@bibliothecadao/eternum";
+import { configManager, setBlockTimestampSource, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
 import { BuildingType, siteName, TileOccupier } from "@bibliothecadao/types";
 import { transferArmies, TRANSFER_TAPPED } from "./army/transfer-fixture";
 import { useSelectionCard } from "./frontier-selection-sheet";

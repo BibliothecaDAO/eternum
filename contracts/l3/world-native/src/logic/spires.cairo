@@ -2,11 +2,8 @@ use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use crate::spires::{ExpeditionSpire, ExpeditionSpireKey};
 use crate::troops::Coord;
 
-pub fn discover_on_reveal(
-    key: ExpeditionSpireKey, coord: Coord, learned: u64, find_percent: u16, seed: u256,
-) -> bool {
-    if key.depth >= 3
-        || crate::research::tier(learned, crate::research::ROW_LORE) < crate::research::LORE_SPIRES {
+pub fn discover_on_reveal(key: ExpeditionSpireKey, coord: Coord, learned: u64, find_percent: u16, seed: u256) -> bool {
+    if key.depth >= 3 || crate::research::tier(learned, crate::research::ROW_LORE) < crate::research::LORE_SPIRES {
         return false;
     }
     discover(key, coord, find_percent, seed)

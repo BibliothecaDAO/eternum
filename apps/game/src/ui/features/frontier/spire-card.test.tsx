@@ -368,7 +368,6 @@ describe("a realm's spire, from the player's path", () => {
       });
     },
   );
-
 });
 
 describe("discovered expedition Spires", () => {

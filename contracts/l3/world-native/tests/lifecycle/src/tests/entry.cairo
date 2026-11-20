@@ -156,9 +156,7 @@ fn resume_reserved_realm_after_a_second_owner_attempts_entry(alternative: Option
         held_command
     } else {
         crate::commands::Command::SettleSeason(
-            crate::realms::SettleSeason {
-                selected_realm: None, order: Some(super::registrar::aspect_order(1)),
-            },
+            crate::realms::SettleSeason { selected_realm: None, order: Some(super::registrar::aspect_order(1)) },
         )
     };
     assert!(super::resource_commands::execute_in_game(buyer, game_id, buyer_command, 360));
