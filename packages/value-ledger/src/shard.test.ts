@@ -1,3 +1,4 @@
+import { gameRegistryRow } from "../../core/src/test-support/game-registry";
 import { gamesAbi as abi, gamesEvent, response } from "../test-support/abi";
 import { beforeEach, expect, it, vi } from "vitest";
 import { shortString, ec, CallData, RpcError } from "starknet";
@@ -43,19 +44,20 @@ beforeEach(() => {
     query.entrypoint === "l2_gas_bound"
       ? ["1000000"]
       : query.entrypoint === "game"
-        ? response(abi, "game", {
-            name: 0,
-            preset_id: 2,
-            settled: false,
-            ready: false,
-            dev_mode_on: false,
-            start_settling_at: 0,
-            start_main_at: 0,
-            scheduled_end_at: 0,
-            end_at: 0,
-            end_grace_seconds: 0,
-            seed: 0,
-          })
+        ? response(
+            abi,
+            "game",
+            gameRegistryRow({
+              name: "0",
+              preset_id: 2,
+              ready: false,
+              start_settling_at: "0",
+              start_main_at: "0",
+              scheduled_end_at: "0",
+              end_at: "0",
+              seed: "0",
+            }),
+          )
         : ["2"],
   );
   rpc.execute.mockResolvedValue({ transaction_hash: "0xabc" });
@@ -85,7 +87,6 @@ it("uses the fixed ordinary v3 play frame and a native three-felt device signatu
       calldata: [
         "7",
         "2",
-        "2",
         "1",
         ...encodeNativeCommand(bindings.commandAbi, { kind: "SettleBlitzRoster", value: undefined }),
       ],
@@ -106,7 +107,6 @@ it("uses the fixed ordinary v3 play frame and a native three-felt device signatu
     new CallData(abi).compile("play", {
       game_id: 7,
       release_id: 2,
-      preset_commitment: 2,
       command: encodeNativeCommand(bindings.commandAbi, { kind: "SettleBlitzRoster", value: undefined }),
     }),
   );
@@ -127,7 +127,6 @@ it.each(["MarkGameSettled", "RecordBlitzResults"] as const)(
     await operator.playCommand(7, name);
     expect(rpc.execute.mock.calls[0]![0].calldata).toEqual([
       "7",
-      "2",
       "2",
       "1",
       ...encodeNativeCommand(bindings.commandAbi, { kind: name, value: undefined }),
@@ -242,19 +241,20 @@ it("settles an ended game one batch at a time until it reads settled, and sends 
   const batches = [3, 0];
   let settled = false;
   const game = () =>
-    response(abi, "game", {
-      name: 0,
-      preset_id: 7,
-      settled,
-      ready: true,
-      dev_mode_on: false,
-      start_settling_at: 0,
-      start_main_at: 0,
-      scheduled_end_at: 0,
-      end_at: 0,
-      end_grace_seconds: 0,
-      seed: 0,
-    });
+    response(
+      abi,
+      "game",
+      gameRegistryRow({
+        name: "0",
+        preset_id: 7,
+        settled,
+        start_settling_at: "0",
+        start_main_at: "0",
+        scheduled_end_at: "0",
+        end_at: "0",
+        seed: "0",
+      }),
+    );
   const views = rpc.call.getMockImplementation()!;
   rpc.call.mockImplementation(async (query) => (query.entrypoint === "game" ? game() : views(query)));
   rpc.receipt.mockImplementation(async () => {
@@ -282,7 +282,7 @@ it("settles an ended game one batch at a time until it reads settled, and sends 
   await operator.settleGame(7);
   expect(rpc.execute).toHaveBeenCalledTimes(2);
   for (const [call] of rpc.execute.mock.calls)
-    expect(call.calldata.slice(4)).toEqual(
+    expect(call.calldata.slice(3)).toEqual(
       encodeNativeCommand(bindings.commandAbi, { kind: "MarkGameSettled", value: undefined }),
     );
   await operator.settleGame(7);

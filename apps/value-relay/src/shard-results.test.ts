@@ -1,4 +1,4 @@
-import { gamesAbi as abi, response, hex } from "../../../packages/value-ledger/test-support/abi";
+import { gamesAbi as abi } from "../../../packages/value-ledger/test-support/abi";
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
 import { blitzCommitment } from "@realms-world/value-ledger/commitment";
@@ -29,16 +29,21 @@ const rows = [
   { wallet: "0x789", rank: 3 },
 ];
 const result = { chainId: "0x1", gameId: 7, rows, commitment: blitzCommitment({ chainId: "0x1", gameId: 7, rows }) };
+const resultValues = (players: typeof rows, complete: boolean, commitment: string) => [
+  String(players.length),
+  ...players.flatMap(({ wallet, rank }) => [wallet, String(rank)]),
+  complete ? "1" : "0",
+  commitment,
+];
 const row = (): ValueRow => ({
   model: "BlitzResult",
   keys: ["7"],
   transactionHash: "0xabc",
-  values: response(abi, "blitz_result", { players: rows, complete: true, commitment: result.commitment }).map(hex),
+  values: resultValues(rows, true, result.commitment),
 });
+const span = (values: string[]) => [String(values.length), ...values];
 const reader = () =>
   new ShardReader({ chainId: "0x1", gamesAddress: "0x10", rpcUrl: "https://shard.test/rpc", firstRelease: 1 });
-const ranked = abi.find((entry) => entry.name === "world_native::blitz_results::RankedPlayer")!;
-const record = abi.find((entry) => entry.name === "world_native::blitz_results::BlitzResult")!;
 let classVersion = 0;
 beforeEach(() => {
   vi.clearAllMocks();
@@ -52,16 +57,16 @@ beforeEach(() => {
     status: "ACCEPTED_ON_L2",
   });
   rpc.contract.mockResolvedValue({ abi });
-  rpc.call.mockResolvedValue(row().values);
+  rpc.call.mockResolvedValue(span(row().values));
 });
 it("reads precisely the committed frozen wallets and competition ranks at a confirmed head", async () => {
   expect(await Effect.runPromise(shardResultPort(reader())("0x1", 7))).toEqual(result);
-  expect(rpc.call).toHaveBeenCalledWith({ contractAddress: "0x10", entrypoint: "blitz_result", calldata: ["7"] }, 10);
+  expect(rpc.call).toHaveBeenCalledWith({ contractAddress: "0x10", entrypoint: "game_result", calldata: ["7"] }, 10);
   expect(rpc.classHash).toHaveBeenCalledWith("0x10", 10);
 });
 it("ingests only completed records while retaining withdrawals in the same confirmed block", async () => {
   const source = reader();
-  const partial = { ...row(), values: response(abi, "blitz_result", { players: [], complete: false, commitment: 0 }) };
+  const partial = { ...row(), values: resultValues([], false, "0x0") };
   vi.spyOn(source, "page").mockResolvedValue({
     block: {
       block_number: 10,
@@ -112,25 +117,28 @@ it.each([
 ])("refuses malformed ranks, bools, ordering or commitments (%s)", (...values) => {
   expect(() => decodeBlitzResult("0x1", { ...row(), values })).toThrow();
 });
-it("refuses the previous account/points result ABI even when the raw record is empty", async () => {
-  rpc.contract.mockResolvedValue({
-    abi: [
-      record,
-      {
-        ...ranked,
-        members: [
-          { name: "player", type: "ContractAddress" },
-          { name: "points", type: "u64" },
-          { name: "rank", type: "u16" },
-        ],
-      },
-      abi.find((entry) => entry.name === "blitz_result"),
-    ],
-  });
-  rpc.call.mockResolvedValue(["0", "0", "0x0"]);
+it.each([
+  ["no game_result", abi.filter((entry) => entry.name !== "game_result")],
+  [
+    "a typed game_result",
+    abi.map((entry) =>
+      entry.name === "game_result"
+        ? { ...entry, outputs: [{ type: "world_native::blitz_results::BlitzResult" }] }
+        : entry,
+    ),
+  ],
+])("refuses a Games class with %s before reading it", async (_case, classAbi) => {
+  rpc.contract.mockResolvedValue({ abi: classAbi });
   await expect(Effect.runPromise(shardResultPort(reader())("0x1", 7))).rejects.toThrow();
   expect(rpc.call).not.toHaveBeenCalled();
 });
+it.each([[[]], [["10", ...row().values]], [["8", ...row().values]]])(
+  "refuses a result span whose length differs from its values (%j)",
+  async (values) => {
+    rpc.call.mockResolvedValue(values);
+    await expect(Effect.runPromise(shardResultPort(reader())("0x1", 7))).rejects.toThrow();
+  },
+);
 
 it("propagates an absent game's roster refusal instead of calling it an incomplete result", async () => {
   rpc.call.mockRejectedValue(new Error("game has no Blitz roster"));

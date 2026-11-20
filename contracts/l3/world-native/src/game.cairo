@@ -1,5 +1,7 @@
 use starknet::ContractAddress;
 use crate::rules::SliceRules;
+pub const FRONTIER: u8 = 1;
+pub const BLITZ: u8 = 2;
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub enum GameStatus {
     #[default]
@@ -12,6 +14,7 @@ pub enum GameStatus {
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct GameRegistry {
     pub name: felt252,
+    pub family: u8,
     pub preset_id: u32,
     pub settled: bool,
     pub ready: bool,

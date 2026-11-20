@@ -5,6 +5,7 @@ use crate::presets::PresetDefinition;
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct CreateGameParams {
     pub name: felt252,
+    pub family: u8,
     pub preset_id: u32,
     pub start_settling_at: u64,
     pub start_main_at: u64,
@@ -85,6 +86,7 @@ pub fn map_center_offset(game_id: u32, seed: felt252) -> u32 {
 pub fn build_game(params: CreateGameParams, entry_rule: u8) -> crate::game::GameRegistry {
     crate::game::GameRegistry {
         name: params.name,
+        family: params.family,
         preset_id: params.preset_id,
         settled: false,
         ready: entry_rule != crate::rules::ENTRY_ROSTER,

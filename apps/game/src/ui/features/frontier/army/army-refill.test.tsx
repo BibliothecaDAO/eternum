@@ -53,7 +53,7 @@ const render = (
     {
       model: "GameRelease",
       key: "0x1ab0",
-      value: { game_id: 1, release_id: release, created_release_id: release, preset_commitment: "0x1ab" },
+      value: { game_id: 1, release_id: release, created_release_id: release },
     },
   ]);
   const buy = vi.fn().mockResolvedValue({ transaction_hash: "0x2" });

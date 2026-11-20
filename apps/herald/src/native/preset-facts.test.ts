@@ -16,7 +16,7 @@ import { LiveWorld } from "../live-world";
 import type { MadaraRpc } from "../madara-rpc";
 import { WorldFold } from "../world-fold";
 import type { RpcEvent } from "../types";
-import { manifest, receipt, rowEvent, schema, setup } from "./fixtures";
+import { gameRegistryEvent, manifest, receipt, rowEvent, schema, setup } from "./fixtures";
 import { presetPreimageCommitment } from "./preset-preimages";
 
 const codec = new CallData([...Object.values(schema.types), ...schema.games.entrypoints] as Abi);
@@ -62,24 +62,19 @@ function launch(preset: ReturnType<typeof registration>, gameId = 1, rosterSize 
           }),
         ]
       : []),
-    rowEvent("GameRegistry", [String(gameId)], {
+    gameRegistryEvent({
+      game_id: gameId,
       name: "0x123",
-      preset_id: String(preset.presetId),
-      settled: false,
-      ready: true,
-      dev_mode_on: false,
+      preset_id: preset.presetId,
       start_settling_at: "1800",
       start_main_at: "1800",
       scheduled_end_at: "999999",
       end_at: "999999",
-      end_grace_seconds: "0",
-      seed: "1",
     }),
     rowEvent("GameOverrides", [String(gameId)], overrides),
     rowEvent("GameRelease", [String(gameId)], {
       release_id: "1",
       created_release_id: 1,
-      preset_commitment: preset.commitment,
     }),
   ];
 }
@@ -368,7 +363,7 @@ describe("verified preset configuration facts", () => {
     );
   });
 
-  it("refuses unproven execution status, trailing calldata and a mismatched game pin atomically", () => {
+  it("refuses unproven execution status and trailing calldata atomically", () => {
     const world = setup();
     const preset = registration();
     const before = world.fold.checkpoint();
@@ -387,17 +382,6 @@ describe("verified preset configuration facts", () => {
     );
     expect(world.fold.checkpoint()).toEqual(before);
     applyRegistration(world, preset);
-    const registered = world.fold.checkpoint();
-    const invalid = launch(preset);
-    invalid[invalid.length - 1] = rowEvent("GameRelease", ["1"], {
-      release_id: 1n,
-      created_release_id: 1,
-      preset_commitment: 999n,
-    });
-    expect(() => world.native.applyReceipt(world.fold, receipt(invalid), 11, 0)).toThrow(
-      "differs from registered preset",
-    );
-    expect(world.fold.checkpoint()).toEqual(registered);
   });
 });
 

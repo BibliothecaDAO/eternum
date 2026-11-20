@@ -31,7 +31,11 @@ export function registrarWorldOf(
   };
 }
 
-export function buildNativeManifest(local: NativeWorld, before: NativePlan, shard: ShardRecord): NativeWorldManifest {
+export function buildNativeManifest(
+  local: NativeWorld,
+  report: { before: NativePlan; after: NativePlan },
+  shard: ShardRecord,
+): NativeWorldManifest {
   const games = local.games;
   const abis = new Map(
     [games, ...local.logic]
@@ -62,14 +66,14 @@ export function buildNativeManifest(local: NativeWorld, before: NativePlan, shar
     shard,
     native: {
       version: 2,
-      deploymentBlock: local.previous?.native.deploymentBlock ?? before.blockNumber,
+      deploymentBlock: local.previous?.native.deploymentBlock ?? report.before.blockNumber,
       activeSchema: local.schema.identity,
       schemas: { ...local.previous?.native.schemas, [local.schema.identity]: local.schema },
       gamesClassHash: games.classHash,
       verifierClassHash: local.verifier.classHash,
       migrationClassHash: local.release.migrationClassHash,
       releaseId: local.release.releaseId,
-      releaseSchemas: { ...local.previous?.native.releaseSchemas, [local.release.releaseId]: local.release.schema },
+      releases: { ...local.previous?.native.releases, ...report.after.releases },
       releaseBalances: { ...local.previous?.native.releaseBalances, [local.release.releaseId]: nativeBalanceIdentity },
       logic: Object.fromEntries(local.logic.map(({ name, classHash }) => [name, classHash])),
     },

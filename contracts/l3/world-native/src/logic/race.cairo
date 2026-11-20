@@ -1,5 +1,5 @@
 use core::dict::Felt252Dict;
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
 use crate::race::{AspectHyperstructure, AspectKey, RaceMember, RaceResult, RaceRules, TriumphKey};
 use crate::resources::ResourceKey;
 
@@ -88,7 +88,7 @@ pub impl DeepRaceImpl of DeepRaceTrait {
         let rules = rules(game_id);
         let state = crate::state::read();
         let bridge = crate::deep::IDeepBanesLibraryDispatcher {
-            class_hash: state.releases.entry(state.game_releases.read(game_id)).classes.bridge.read(),
+            class_hash: crate::logic::release::release_class(state.game_releases.read(game_id), crate::slots::BRIDGE),
         };
         let mut heights: Felt252Dict<u32> = Default::default();
         let mut block_ends: Felt252Dict<u64> = Default::default();

@@ -85,11 +85,13 @@ export interface HeraldGameDirectoryEntry {
   status: HeraldGameStatus;
 }
 
+export type NativeReleases = Readonly<Record<string, { schema: string; family: number; previous: number }>>;
+
 /** GET /manifest: everything a client needs to open a shard beyond the shard's own URL. */
 export interface ShardManifest {
   version: 1;
   chainId: string;
-  releaseSchemas: Record<string, string>;
+  releases: NativeReleases;
   rpcUrl: string;
   accountClassHash: string;
   contracts: Record<string, string>;

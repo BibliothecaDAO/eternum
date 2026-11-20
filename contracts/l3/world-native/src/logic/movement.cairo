@@ -1,7 +1,6 @@
 #[starknet::contract]
 pub mod MovementLogic {
     use starknet::ContractAddress;
-    use starknet::storage::StoragePointerReadAccess;
     use crate::commands::{ExecutionContext, Explore};
     use crate::game::{IPointsDispatcherTrait, IPointsLibraryDispatcher};
     use crate::geometry::{neighbor, spire_neighbor, tile_key};
@@ -85,7 +84,7 @@ pub mod MovementLogic {
                     if rules.day_unit_seconds != 0 {
                         crate::discovery::IExpeditionRevealDispatcherTrait::reveal_expedition_tile(
                             crate::discovery::IExpeditionRevealLibraryDispatcher {
-                                class_hash: self.release.classes(game_id).construction.read(),
+                                class_hash: crate::logic::release::class_of(game_id, crate::slots::CONSTRUCTION),
                             },
                             tile,
                             command.explorer_id,
@@ -94,7 +93,9 @@ pub mod MovementLogic {
                         )
                     } else {
                         crate::logic::map::MapState::reveal(tile, biome.into());
-                        IPointsLibraryDispatcher { class_hash: self.release.classes(game_id).season.read() }
+                        IPointsLibraryDispatcher {
+                            class_hash: crate::logic::release::class_of(game_id, crate::slots::SEASON),
+                        }
                             .register_exploration(game_id, actor, crate::commands::action_context(context));
                         self
                             .map_dispatcher(game_id)
@@ -131,7 +132,7 @@ pub mod MovementLogic {
             crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
 
             let extraction = crate::exploration_rewards::IExtractionLibraryDispatcher {
-                class_hash: self.release.classes(game_id).prizes.read(),
+                class_hash: crate::logic::release::class_of(game_id, crate::slots::PRIZES),
             };
             if discovery == crate::discovery::Discovery::Spire && rules.day_unit_seconds == 0 {
                 crate::exploration_rewards::IExtractionDispatcherTrait::raise_dormant_spire(

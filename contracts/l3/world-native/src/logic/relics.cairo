@@ -1,12 +1,10 @@
 #[starknet::component]
 pub mod RelicState {
-    use games_storage::release::LogicClasses;
     use starknet::ContractAddress;
     use starknet::storage::StoragePointerReadAccess;
     use crate::commands::ExecutionContext;
     use crate::game::assert_playing;
     use crate::logic::release::ReleaseState;
-    use crate::logic::release::ReleaseState::InternalTrait as LifeInternalTrait;
     use crate::relics::{ApplyRelic, IRelicMapDispatcherTrait, IRelicMapLibraryDispatcher, Recipient};
     use crate::resources::ResourceKey;
     use crate::stamina::StaminaSourceTrait;
@@ -164,7 +162,7 @@ pub mod RelicState {
             if context.rules.unbox().day_unit_seconds != 0 {
                 crate::expeditions::ISiteRewardsDispatcherTrait::pay_expedition_site(
                     crate::expeditions::ISiteRewardsLibraryDispatcher {
-                        class_hash: self.logic_classes(site.game_id).resources.read(),
+                        class_hash: crate::logic::release::class_of(site.game_id, crate::slots::RESOURCES),
                     },
                     site,
                     explorer_key,
@@ -196,7 +194,9 @@ pub mod RelicState {
             let explorer = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
             let relic = crate::logic::army_relics::activate(key, index, command.relic_id, context.timestamp);
             if relic.kind == crate::army_relics::RelicKind::FarEye {
-                IRelicMapLibraryDispatcher { class_hash: self.logic_classes(game_id).raid.read() }
+                IRelicMapLibraryDispatcher {
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::ECONOMY),
+                }
                     .reveal_relic_tiles(
                         key,
                         explorer.coord,
@@ -231,11 +231,6 @@ pub mod RelicState {
             crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
         }
 
-        fn logic_classes(
-            self: @ComponentState<TContractState>, game_id: u32,
-        ) -> starknet::storage::StoragePointer<LogicClasses> {
-            get_dep_component!(self, Life).classes(game_id)
-        }
         fn assert_command(
             self: @ComponentState<TContractState>,
             game_id: u32,

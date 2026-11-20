@@ -2,11 +2,10 @@ import { completeNativeBatches } from "../../../../../packages/provider/src/nati
 import { batchRemaining, gameplayRejection } from "../../../../../packages/provider/src/native-receipt";
 import { encodeNativeCommand, type NativeCommand } from "../../../../../packages/provider/src/native-command";
 import { executeGameplayAccountTransaction } from "../../../../../packages/core/src/client/submit";
-import { CallData, RpcProvider } from "starknet";
+import { RpcProvider } from "starknet";
 import bindings from "../../../../../contracts/l3/world-native/schema/bindings.json";
 import { createOperatorAccount } from "../../shared/madara-account";
 import { confirmedTransactionReceipt } from "../../shared/transaction";
-import { nativeGamesAbi } from "./manifest";
 import type { RegistrarWorld } from "./types";
 
 const administrativeCommands = new Set<NativeCommand["kind"]>([
@@ -82,15 +81,12 @@ async function buildAdminPlay(input: AdminCommandInput) {
   const contractAddress = input.manifest.world.address;
   const read = (entrypoint: string, value: number | bigint) =>
     input.provider.callContract({ contractAddress, entrypoint, calldata: [String(value)] }, "pre_confirmed");
-  const codec = new CallData(nativeGamesAbi(input.manifest));
-  const [game, release] = await Promise.all([read("game", input.gameId), read("game_release", input.gameId)]);
-  const registry = codec.parse("game", game) as { preset_id: bigint };
-  const commitment = await read("preset_commitment", registry.preset_id);
-  if (release.length !== 1 || commitment.length !== 1) throw new Error("Malformed admin release pins");
+  const release = await read("game_release", input.gameId);
+  if (release.length !== 1) throw new Error("Malformed admin release pins");
   const command = encodeNativeCommand(bindings.commandAbi, input.command);
   return {
     contractAddress,
     entrypoint: "play",
-    calldata: [String(input.gameId), release[0]!, commitment[0]!, String(command.length), ...command],
+    calldata: [String(input.gameId), release[0]!, String(command.length), ...command],
   };
 }

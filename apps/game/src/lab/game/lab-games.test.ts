@@ -16,9 +16,7 @@ it.each(Object.keys(LAB_SCENARIOS))("builds the %s lab game", (name) => {
         {
           kind: "SettleSeason",
           fields: {},
-          calldata: name.startsWith("aspect-settle")
-            ? ["1", "0", "0", "0", "10", "1", "0", String(ordersOfAspect(3)[0]!.orderId)]
-            : [],
+          span: name.startsWith("aspect-settle") ? ["10", "1", "0", String(ordersOfAspect(3)[0]!.orderId)] : [],
         },
         chain,
         scenario.startsAt,

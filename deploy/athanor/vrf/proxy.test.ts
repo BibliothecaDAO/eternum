@@ -305,7 +305,7 @@ test("the same endpoint forwards role-guarded administration without a second ro
     expect(f.inspected).toHaveLength(0);
     // Seating is command7 through play: its roster permutation must use the authenticated root.
     const settle = invoke();
-    settle.calldata[8] = "0x7";
+    settle.calldata[7] = "0x7";
     expect((await f.call("starknet_addInvokeTransaction", [settle])).result.transaction_hash).toBe("0x777");
     expect(f.stamped).toHaveLength(1);
     expect(f.forwarded.at(-1).params[0].signature).toHaveLength(9);
@@ -509,9 +509,9 @@ test("play commands admit 256 felts and refuse 257 before stamping", async () =>
   const f = await fixture();
   const command = (length: number) => {
     const tx = invoke();
-    tx.calldata = [...tx.calldata.slice(0, 8), ...Array.from({ length }, () => "0x0")];
-    tx.calldata[3] = `0x${(length + 4).toString(16)}`;
-    tx.calldata[7] = `0x${length.toString(16)}`;
+    tx.calldata = [...tx.calldata.slice(0, 7), ...Array.from({ length }, () => "0x0")];
+    tx.calldata[3] = `0x${(length + 3).toString(16)}`;
+    tx.calldata[6] = `0x${length.toString(16)}`;
     return tx;
   };
   try {

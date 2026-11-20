@@ -1,20 +1,18 @@
 import { readShardAbi } from "../../../packages/value-ledger/src/shard-abi";
 import { relayOperation, type BlitzResult, type MonitorPorts } from "./ports";
 import { ShardReader, felt, sameFelt, uint, type ValueRow } from "./shard-rpc";
-import { blitzCommitment } from "@realms-world/value-ledger/commitment";
+import { blitzCommitment, blitzResultFields } from "@realms-world/value-ledger/commitment";
 
 /** Only a complete, canonical wallet/rank record with its matching v3 commitment is deliverable. */
 export const decodeBlitzResult = (chainId: string, row: ValueRow): BlitzResult | null => {
   if (row.model !== "BlitzResult" || row.keys.length !== 1) throw new Error("invalid_result_key");
   const gameId = Number(uint(row.keys[0]!, 32));
   const count = Number(uint(row.values[0]!, 8));
-  if (!gameId || count > 24 || row.values.length !== 2 * count + 3) throw new Error("invalid_result_layout");
-  const rows = Array.from({ length: count }, (_, index) => ({
-    wallet: felt(row.values[1 + 2 * index]!),
-    rank: Number(uint(row.values[2 + 2 * index]!, 16)),
-  }));
-  const complete = uint(row.values[1 + 2 * count]!, 1) === 1n;
-  const commitment = felt(row.values[2 + 2 * count]!);
+  const fields = blitzResultFields(row.values);
+  if (!gameId || count > 24) throw new Error("invalid_result_layout");
+  const rows = fields.rows.map(({ wallet, rank }) => ({ wallet: felt(wallet), rank: Number(uint(rank, 16)) }));
+  const complete = uint(fields.complete, 1) === 1n;
+  const commitment = felt(fields.commitment);
   if (!complete) {
     if (count !== 0 || BigInt(commitment) !== 0n) throw new Error("invalid_incomplete_result");
     return null;
@@ -33,37 +31,33 @@ export const shardResultPort =
       const head = await reader.head();
       const provider = reader.provider();
       validateResultAbi(await readShardAbi(provider, reader.connection.gamesAddress, head));
-      const values = await provider.callContract(
-        { contractAddress: reader.connection.gamesAddress, entrypoint: "blitz_result", calldata: [String(gameId)] },
+      const span = await provider.callContract(
+        { contractAddress: reader.connection.gamesAddress, entrypoint: "game_result", calldata: [String(gameId)] },
         head,
       );
       return decodeBlitzResult(chainId, {
         model: "BlitzResult",
         keys: [String(gameId)],
-        values,
+        values: spanValues(span),
         transactionHash: "0x0",
       });
     });
+
+const spanValues = ([length, ...values]: string[]) => {
+  if (length === undefined || Number(uint(length, 32)) !== values.length) throw new Error("invalid_result_span");
+  return values;
+};
 
 const validateResultAbi = (raw: unknown) => {
   const abi = typeof raw === "string" ? JSON.parse(raw) : raw;
   if (!Array.isArray(abi)) throw new Error("result_abi_unavailable");
   const items = abi.flatMap((item) => (item.type === "interface" ? item.items : [item]));
-  const entry = items.find((item) => item.type === "function" && item.name === "blitz_result");
-  const result = items.find((item) => item.type === "struct" && item.name === entry?.outputs?.[0]?.type);
-  const ranked = items.find((item) => item.type === "struct" && item.name.endsWith("::RankedPlayer"));
+  const entry = items.find((item) => item.type === "function" && item.name === "game_result");
   if (
     entry?.inputs?.length !== 1 ||
     !entry.inputs[0].type.endsWith("::u32") ||
-    entry.outputs.length !== 1 ||
-    result?.members?.map((member: { name: string }) => member.name).join() !== "players,complete,commitment" ||
-    !ranked ||
-    result.members[0].type !== `core::array::Span::<${ranked.name}>` ||
-    result.members[1].type !== "core::bool" ||
-    result.members[2].type !== "core::felt252" ||
-    ranked.members
-      ?.map((member: { name: string; type: string }) => `${member.name}:${member.type.split("::").at(-1)}`)
-      .join() !== "wallet:ContractAddress,rank:u16"
+    entry.outputs?.length !== 1 ||
+    entry.outputs[0].type !== "core::array::Span::<core::felt252>"
   )
     throw new Error("result_abi_mismatch");
 };

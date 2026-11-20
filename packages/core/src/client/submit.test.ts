@@ -779,7 +779,7 @@ describe("a send's stages, as the game client reports them", () => {
           onHash?.(stage, transactionHash);
         },
       },
-      { require: () => ({ release_id: 1n, preset_commitment: 2n }) } as unknown as Parameters<typeof nativePlay>[1],
+      { require: () => ({ release_id: 1n }) } as unknown as Parameters<typeof nativePlay>[1],
       3,
       CALL.contractAddress,
     );

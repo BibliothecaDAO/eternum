@@ -82,7 +82,7 @@ pub mod EntryAdministration {
             super::assert_ledger_operator();
             crate::relics::ILordsDispatcherTrait::sweep_lords(
                 crate::relics::ILordsLibraryDispatcher {
-                    class_hash: get_dep_component!(@self, Life).classes(game_id).prizes.read(),
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::PRIZES),
                 },
                 game_id,
                 structure_id,

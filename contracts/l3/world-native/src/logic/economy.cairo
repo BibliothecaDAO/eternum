@@ -1,7 +1,9 @@
 #[starknet::contract]
 pub mod EconomyLogic {
+    use crate::events::RowSet;
     use crate::logic::race::RaceState;
     use crate::logic::release::ReleaseState;
+    use crate::troops::Coord;
     component!(path: RaceState, storage: race, event: RaceEvent);
     #[abi(embed_v0)]
     impl Race = RaceState::RaceImpl<ContractState>;
@@ -20,5 +22,21 @@ pub mod EconomyLogic {
     enum Event {
         RaceEvent: RaceState::Event,
         ReleaseEvent: ReleaseState::Event,
+        BattleEvent: crate::troops::BattleEvent,
+        OwnershipRow: crate::events::RowSet,
+        RowSet: RowSet,
+        MapEvent: crate::logic::map::MapState::Event,
+    }
+    #[abi(embed_v0)]
+    impl RelicMap of crate::relics::IRelicMap<ContractState> {
+        fn reveal_relic_tiles(
+            ref self: ContractState,
+            key: crate::troops::ExplorerKey,
+            coord: Coord,
+            count: u8,
+            game_context: crate::commands::ActionContext,
+        ) {
+            crate::logic::army_relics::reveal_tiles(key, coord, count, game_context)
+        }
     }
 }

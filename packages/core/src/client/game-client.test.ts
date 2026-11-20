@@ -1,3 +1,4 @@
+import { gameRegistryRow } from "../test-support/game-registry";
 // @vitest-environment node
 
 import { TransactionType } from "@bibliothecadao/provider";
@@ -18,11 +19,12 @@ import { researchTier, troopOathSlots } from "../utils/realm-research";
 import { buildStoryEventPresentation } from "../systems/story-event-formatter";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { TroopType } from "@bibliothecadao/types";
+import { releaseLine } from "../test-support/releases";
 
-vi.mock("../../../../deploy/release/native-release", async (original) => ({
-  ...(await original<typeof import("../../../../deploy/release/native-release")>()),
-  NATIVE_BALANCE_SINCE_RELEASE: 1,
-}));
+vi.mock("../../../../deploy/release/native-release", async (original) => {
+  const { NATIVE_RELEASES } = await original<typeof import("../../../../deploy/release/native-release")>();
+  return { NATIVE_RELEASES: { frontier: { ...NATIVE_RELEASES.frontier, since: 1 } } };
+});
 
 class FakeSocket implements HeraldSocket {
   public onclose: (() => void) | null = null;
@@ -67,29 +69,33 @@ const releaseSnapshot = {
   rows: [
     {
       key: hash.computePoseidonHashOnElements([54]),
-      value: { game_id: 54, release_id: 1, created_release_id: 1, preset_commitment: "0x789" },
+      value: { game_id: 54, release_id: 1, created_release_id: 1 },
     },
   ],
+};
+const registrySnapshot = {
+  type: "snapshot",
+  epoch: "epoch-a",
+  seq: 0,
+  model: "GameRegistry",
+  rows: [{ key: "0x36", value: gameRegistryRow({ game_id: 54, preset_id: 2 }) }],
 };
 const reviewRegistry = {
   model: "GameRegistry",
   rows: [
     {
       key: "0x36",
-      value: {
+      value: gameRegistryRow({
         name: "0x7465737432",
         seed: "0x1",
-        ready: true,
         scheduled_end_at: "0x6ad5da80",
         end_at: "0x6ad5da80",
-        game_id: "0x36",
+        game_id: 54,
         settled: true,
-        preset_id: "0x2",
-        dev_mode_on: false,
+        preset_id: 2,
         start_main_at: "0x6ad5cf60",
-        end_grace_seconds: "0x0",
         start_settling_at: "0x6ad5ce34",
-      },
+      }),
     },
   ],
 };
@@ -107,7 +113,7 @@ const createHarness = (overrides: Partial<CreateGameClientInput> = {}) => {
     shard: {
       url: "http://herald.test",
       chainId: "0x1",
-      releaseSchemas: { "1": bindings.schemaIdentity },
+      releases: releaseLine(bindings.schemaIdentity, [1]),
       rpcUrl: "http://127.0.0.1:1",
       accountClassHash: "0x2",
       guardianPublicKey: "0x3",
@@ -131,7 +137,7 @@ const createHarness = (overrides: Partial<CreateGameClientInput> = {}) => {
     version: 1,
     ...input.shard,
     l2GasBound: "0x47868c00",
-    releaseSchemas: { "1": bindings.schemaIdentity, "2": bindings.schemaIdentity },
+    releases: releaseLine(bindings.schemaIdentity, [1, 2]),
   };
   const fetchManifest = vi.fn(async (_url?: string) => new Response(JSON.stringify(manifest)));
   vi.stubGlobal("fetch", fetchManifest);
@@ -166,7 +172,6 @@ const playerAccount = (address = "0x111") => {
   return { account: { address, execute, getNonce, getTransactionStatus } as unknown as AccountInterface, execute };
 };
 const explore = { kind: "Explore", value: { explorer_id: 9, direction: 2 } } as const;
-/** The play call's calldata: game, release id, preset commitment, then the command span. */
 const playCalldata = (execute: ReturnType<typeof playerAccount>["execute"]) =>
   (execute.mock.calls[0]![0] as { calldata: string[] }).calldata;
 
@@ -177,6 +182,7 @@ const bootClient = async (harness: ReturnType<typeof createHarness>) => {
   await flushMicrotasks();
   harness.sockets[0]!.receive(rulesSnapshot);
   harness.sockets[0]!.receive(releaseSnapshot);
+  harness.sockets[0]!.receive(registrySnapshot);
   harness.sockets[0]!.receive(snapshotEnd);
   return harness.settle(creation);
 };
@@ -263,7 +269,7 @@ describe("createGameClient", () => {
     void client.setup.network.provider.submitCommand(account, explore, TransactionType.EXPLORE).catch(() => undefined);
     await vi.waitFor(() => expect(execute).toHaveBeenCalledOnce());
     expect(execute.mock.calls[0]![0]).toMatchObject({ contractAddress: "0x1", entrypoint: "play" });
-    expect(playCalldata(execute).slice(0, 3)).toEqual(["54", "1", String(0x789n)]);
+    expect(playCalldata(execute).slice(0, 2)).toEqual(["54", "1"]);
     client.dispose();
   });
 
@@ -410,7 +416,7 @@ describe("createGameClient", () => {
     const socket = harness.sockets[0]!;
     socket.receive(hello);
     await flushMicrotasks();
-    for (const message of [rulesSnapshot, releaseSnapshot, snapshotEnd]) socket.receive(message);
+    for (const message of [rulesSnapshot, releaseSnapshot, registrySnapshot, snapshotEnd]) socket.receive(message);
     const client = await harness.settle(creation);
     const { account, execute } = playerAccount();
     void client.setup.network.provider.submitCommand(account, explore, TransactionType.EXPLORE).catch(() => undefined);
@@ -431,7 +437,7 @@ describe("createGameClient", () => {
     const socket = harness.sockets[0]!;
     socket.receive(hello);
     await flushMicrotasks();
-    for (const message of [rulesSnapshot, releaseSnapshot, snapshotEnd]) socket.receive(message);
+    for (const message of [rulesSnapshot, releaseSnapshot, registrySnapshot, snapshotEnd]) socket.receive(message);
     const client = await harness.settle(creation);
     if (failure === "503") harness.fetchManifest.mockResolvedValueOnce(new Response("temporary", { status: 503 }));
     else harness.fetchManifest.mockRejectedValueOnce(new DOMException("timed out", "TimeoutError"));
@@ -439,7 +445,7 @@ describe("createGameClient", () => {
       {
         model: "GameRelease",
         key: releaseSnapshot.rows[0]!.key,
-        value: { game_id: 54, release_id: 2, created_release_id: 1, preset_commitment: "0x789" },
+        value: { game_id: 54, release_id: 2, created_release_id: 1 },
       },
     ]);
     await flushMicrotasks(30);
@@ -463,7 +469,7 @@ describe("createGameClient", () => {
     const socket = harness.sockets[0]!;
     socket.receive(hello);
     await flushMicrotasks();
-    for (const message of [rulesSnapshot, releaseSnapshot, snapshotEnd]) socket.receive(message);
+    for (const message of [rulesSnapshot, releaseSnapshot, registrySnapshot, snapshotEnd]) socket.receive(message);
     const client = await harness.settle(creation);
     let finishRefresh!: () => void;
     harness.fetchManifest.mockImplementationOnce(
@@ -483,7 +489,7 @@ describe("createGameClient", () => {
         {
           model: "GameRelease",
           key: releaseSnapshot.rows[0]!.key,
-          value: { game_id: 54, release_id: 2, created_release_id: 1, preset_commitment: "0x789" },
+          value: { game_id: 54, release_id: 2, created_release_id: 1 },
         },
       ],
     });
@@ -507,11 +513,17 @@ describe("createGameClient", () => {
     const socket = harness.sockets[0]!;
     socket.receive(hello);
     await flushMicrotasks();
-    for (const message of [rulesSnapshot, releaseSnapshot, snapshotEnd]) socket.receive(message);
+    for (const message of [rulesSnapshot, releaseSnapshot, registrySnapshot, snapshotEnd]) socket.receive(message);
     const client = await harness.settle(creation);
     harness.fetchManifest.mockResolvedValueOnce(
       new Response(
-        JSON.stringify({ ...harness.manifest, releaseSchemas: { "1": bindings.schemaIdentity, "2": "unknown" } }),
+        JSON.stringify({
+          ...harness.manifest,
+          releases: {
+            ...releaseLine(bindings.schemaIdentity, [1]),
+            "2": { schema: "unknown", family: 1, previous: 1 },
+          },
+        }),
       ),
     );
     socket.receive({
@@ -525,7 +537,7 @@ describe("createGameClient", () => {
         {
           model: "GameRelease",
           key: releaseSnapshot.rows[0]!.key,
-          value: { game_id: 54, release_id: 2, created_release_id: 1, preset_commitment: "0x789" },
+          value: { game_id: 54, release_id: 2, created_release_id: 1 },
         },
       ],
     });
@@ -546,6 +558,7 @@ describe("createGameClient", () => {
     await flushMicrotasks();
     harness.sockets[0]!.receive(rulesSnapshot);
     harness.sockets[0]!.receive(releaseSnapshot);
+    harness.sockets[0]!.receive(registrySnapshot);
     harness.sockets[0]!.receive(snapshotEnd);
     const client = await harness.settle(creation);
 
@@ -570,6 +583,7 @@ describe("createGameClient", () => {
     await flushMicrotasks();
     harness.sockets[0]!.receive(rulesSnapshot);
     harness.sockets[0]!.receive(releaseSnapshot);
+    harness.sockets[0]!.receive(registrySnapshot);
     harness.sockets[0]!.receive(snapshotEnd);
     for (let round = 0; round < 20; round += 1) {
       harness.input.scheduler!.flushNext();
@@ -605,11 +619,18 @@ for (const archived of [false, true]) {
   for (const incompatible of [null, 1, 2, 3]) {
     it(`reads town state and history only across matching releases: archived=${archived}, incompatible=${incompatible}`, async () => {
       const harness = createHarness();
-      const releaseSchemas = Object.fromEntries(
-        [1, 2, 3].map((id) => [String(id), id === incompatible ? retiredTown.schemaIdentity : bindings.schemaIdentity]),
+      const releases = Object.fromEntries(
+        [1, 2, 3].map((id) => [
+          String(id),
+          {
+            schema: id === incompatible ? retiredTown.schemaIdentity : bindings.schemaIdentity,
+            family: 1,
+            previous: id - 1,
+          },
+        ]),
       );
       expect(retiredTown.schemaIdentity).not.toBe(bindings.schemaIdentity);
-      harness.input.shard.releaseSchemas = releaseSchemas;
+      harness.input.shard.releases = releases;
       const release = {
         ...releaseSnapshot,
         rows: [{ ...releaseSnapshot.rows[0]!, value: { ...releaseSnapshot.rows[0]!.value, release_id: 3 } }],
@@ -626,7 +647,7 @@ for (const archived of [false, true]) {
             JSON.stringify(
               String(url).endsWith("/review/snapshot")
                 ? { game_id: "54", confirmed_block: 12, models }
-                : { ...harness.manifest, releaseSchemas },
+                : { ...harness.manifest, releases },
             ),
           ),
       );

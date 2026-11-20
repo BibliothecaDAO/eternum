@@ -1,15 +1,16 @@
-use starknet::storage::StoragePointerReadAccess;
 use crate::geometry::tile_key;
 use crate::map::{IMapLogicDispatcherTrait, IMapLogicLibraryDispatcher};
 use crate::ownership::Story;
 use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
 
 pub fn map_dispatcher(game_id: u32) -> IMapLogicLibraryDispatcher {
-    IMapLogicLibraryDispatcher { class_hash: crate::logic::release::classes(game_id).map.read() }
+    IMapLogicLibraryDispatcher { class_hash: crate::logic::release::class_of(game_id, crate::slots::MAP) }
 }
 
 pub fn resources_dispatcher(game_id: u32) -> IResourceOperationsLibraryDispatcher {
-    IResourceOperationsLibraryDispatcher { class_hash: crate::logic::release::classes(game_id).resources.read() }
+    IResourceOperationsLibraryDispatcher {
+        class_hash: crate::logic::release::class_of(game_id, crate::slots::RESOURCES),
+    }
 }
 
 pub fn biome_troop(key: ResourceKey, game_context: crate::commands::ExecutionContext) -> crate::troops::TroopType {
@@ -81,7 +82,7 @@ fn deploy_starting_armies(
         timestamp: core::cmp::max(timestamp, context.game.start_main_at), ..context,
     };
     let allocator = crate::troops::IArmyAllocationLibraryDispatcher {
-        class_hash: crate::logic::release::classes(key.game_id).troops.read(),
+        class_hash: crate::logic::release::class_of(key.game_id, crate::slots::TROOPS),
     };
     let actor = crate::logic::structures::record(key).owner;
     for slot in 0_u8..2 {
@@ -121,7 +122,7 @@ fn grant_starting_guard(
     );
     crate::guards::IGuardsDispatcherTrait::add_starting_guard(
         crate::guards::IGuardsLibraryDispatcher {
-            class_hash: crate::logic::release::classes(key.game_id).troops.read(),
+            class_hash: crate::logic::release::class_of(key.game_id, crate::slots::TROOPS),
         },
         key,
         category,

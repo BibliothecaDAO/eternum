@@ -51,7 +51,9 @@ pub fn refill(
 }
 
 fn second_wind(home: ResourceKey) -> Option<Wind> {
-    let race = IRaceLibraryDispatcher { class_hash: crate::logic::release::classes(home.game_id).economy.read() };
+    let race = IRaceLibraryDispatcher {
+        class_hash: crate::logic::release::class_of(home.game_id, crate::slots::ECONOMY),
+    };
     let rules = race.race_rules(home.game_id)?;
     let period = crate::logic::triumphs::period(home, crate::race::SECOND_WIND_STAGE)?;
     Some(

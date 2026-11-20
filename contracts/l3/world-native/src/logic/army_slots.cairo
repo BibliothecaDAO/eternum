@@ -1,4 +1,4 @@
-use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
+use starknet::storage::StorageMapReadAccess;
 use crate::stamina::StaminaSourceTrait;
 use crate::troops::{
     ArmySlotAction, ArmySlotAllocation, ExplorerKey, ExplorerRecord, ExplorerTroops, IArmySlotStaminaDispatcherTrait,
@@ -9,7 +9,9 @@ fn dispatch(key: ExplorerKey, action: ArmySlotAction) -> ResolvedArmySlot {
     let state = crate::state::read();
     let release = state.game_releases.read(key.game_id);
     assert!(release != 0, "game has no release");
-    IArmySlotStaminaLibraryDispatcher { class_hash: state.releases.entry(release).classes.relics.read() }
+    IArmySlotStaminaLibraryDispatcher {
+        class_hash: crate::logic::release::release_class(release, crate::slots::RELICS),
+    }
         .army_slot_stamina(key, action)
 }
 

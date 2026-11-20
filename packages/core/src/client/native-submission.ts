@@ -82,13 +82,7 @@ export function nativePlay(
       calls: {
         contractAddress: games,
         entrypoint: "play",
-        calldata: [
-          String(gameId),
-          String(release.release_id),
-          String(release.preset_commitment),
-          String(command.length),
-          ...command,
-        ],
+        calldata: [String(gameId), String(release.release_id), String(command.length), ...command],
       },
     });
     return { transaction_hash, inBlock };

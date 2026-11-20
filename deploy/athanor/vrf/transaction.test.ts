@@ -17,7 +17,7 @@ test("only one canonical V3 Games.play with the manifest bounds is admitted", ()
     { fee_data_availability_mode: "L2" },
   ])
     expect(gameInvoke({ ...invoke(), ...patch }, identity)).toBeUndefined();
-  for (const index of [0, 1, 2, 3, 4, 5, 7]) {
+  for (const index of [0, 1, 2, 3, 4, 5, 6]) {
     const tx = invoke();
     tx.calldata[index] = index === 4 || index === 5 ? "0x100000000" : "0x999";
     expect(gameInvoke(tx, identity)).toBeUndefined();

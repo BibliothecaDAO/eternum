@@ -125,7 +125,6 @@ pub mod SettlementLogic {
         ) -> () {
             let context = crate::commands::execution_context(game_id, context);
 
-            let classes = self.release.classes(game_id);
             let owner = actor;
             let game = context.game.unbox();
             let rules = context.rules.unbox();
@@ -153,7 +152,9 @@ pub mod SettlementLogic {
                 .resolve_season_realm(key, command.selected_realm, progress.realm_count, seed, context);
             self.realms.reserve(game_id, realm_id, progress.realm_count);
             let coord = if rules.day_unit_seconds == 0 {
-                ISeasonPlacementLibraryDispatcher { class_hash: classes.placement.read() }
+                ISeasonPlacementLibraryDispatcher {
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::PLACEMENT),
+                }
                     .claim_season_settlement(
                         game_id,
                         progress.realm_count,
@@ -163,7 +164,9 @@ pub mod SettlementLogic {
             } else {
                 crate::settlement::off_map_realm_reference(realm_id)
             };
-            ISettlementCreationLibraryDispatcher { class_hash: classes.structures.read() }
+            ISettlementCreationLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(game_id, crate::slots::STRUCTURES),
+            }
                 .create_settlement(
                     game_id,
                     actor,
@@ -303,7 +306,9 @@ pub mod SettlementLogic {
             let traits = self.realms.traits(realm_id);
             crate::logic::aspects::dispatcher(game_id)
                 .join(crate::resources::ResourceKey { game_id, entity_id: home }, traits.order);
-            ISettlementCreationLibraryDispatcher { class_hash: self.release.classes(game_id).structures.read() }
+            ISettlementCreationLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(game_id, crate::slots::STRUCTURES),
+            }
                 .create_settlement(
                     game_id,
                     actor,
@@ -389,7 +394,7 @@ pub mod SettlementLogic {
             context: DomainContext,
         ) -> u64 {
             let structures = ISettlementCreationLibraryDispatcher {
-                class_hash: self.release.classes(game_id).structures.read(),
+                class_hash: crate::logic::release::class_of(game_id, crate::slots::STRUCTURES),
             };
             let mut progress = self.settlements.data.settlements.progress.read(game_id);
             let grants = crate::logic::settlement::grants(game_id);

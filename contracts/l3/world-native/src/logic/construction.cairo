@@ -644,7 +644,9 @@ pub mod ConstructionLogic {
         }
 
         fn resources_dispatcher(self: @ContractState, game_id: u32) -> IResourceOperationsLibraryDispatcher {
-            IResourceOperationsLibraryDispatcher { class_hash: self.release.classes(game_id).resources.read() }
+            IResourceOperationsLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(game_id, crate::slots::RESOURCES),
+            }
         }
         fn spend(
             ref self: ContractState,

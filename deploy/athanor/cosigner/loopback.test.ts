@@ -92,7 +92,7 @@ function rpcAnswer(ledger: boolean, method: string, params: { request?: { entry_
       };
     case "starknet_call":
       if (ledger) return ledgerCall(params.request!.entry_point_selector);
-      if (BigInt(params.request!.entry_point_selector) === BigInt(hash.getSelectorFromName("current_release")))
+      if (BigInt(params.request!.entry_point_selector) === BigInt(hash.getSelectorFromName("open_release_of")))
         return ["0"];
   }
   throw new Error(`unexpected_rpc:${method}`);

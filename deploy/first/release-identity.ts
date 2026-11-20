@@ -8,7 +8,7 @@ import { PublicError } from "./errors";
 import { command, CommandFailure, shell } from "./process";
 import type { Target } from "./settings";
 import type { PrivateStore } from "./private-store";
-import { NATIVE_RELEASE_ID } from "../release/native-release";
+import { NATIVE_RELEASES } from "../release/native-release";
 import type { ReleaseIdentity } from "../../apps/launch-service/src/operator-api";
 
 /**
@@ -60,9 +60,9 @@ interface BoxBuild {
 async function verifiedReleaseIdentity(target: Target, commit: string): Promise<ReleaseIdentity | null> {
   const build = await boxBuild(target);
   if (!build) return null;
-  if (build.releaseId !== NATIVE_RELEASE_ID)
+  if (build.releaseId !== NATIVE_RELEASES.frontier.release)
     throw new PublicError(
-      `The box half built release ${build.releaseId}; this commit ships release ${NATIVE_RELEASE_ID}. Run the box half at this commit first.`,
+      `The box half built release ${build.releaseId}; this commit ships release ${NATIVE_RELEASES.frontier.release}. Run the box half at this commit first.`,
     );
   if (build.commit !== commit && (await releaseSourcesDiffer(build.commit, commit)))
     throw new PublicError(

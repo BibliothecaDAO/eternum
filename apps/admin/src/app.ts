@@ -28,7 +28,6 @@ interface Action {
   method: "POST" | "PUT";
   /** The page's path for it, under ACTIONS; the catch-all run action is listed last so it matches last. */
   pattern: string;
-  devOnly?: boolean;
   carriesBody: boolean;
   route: (params: Record<string, string>) => { path: string; action: string } | null;
 }
@@ -43,13 +42,6 @@ const isGameEnvironment = (value: string | undefined) => GAME_ENVIRONMENTS.some(
 const named = (value: string | undefined): value is string => value !== undefined && NAME.test(value);
 
 const WRITES: Action[] = [
-  {
-    method: "POST",
-    pattern: "test-blitz",
-    devOnly: true,
-    carriesBody: true,
-    route: () => ({ path: "/api/factory/test-blitz", action: "Free test Blitz" }),
-  },
   {
     method: "POST",
     pattern: "slots",
@@ -135,7 +127,7 @@ export const adminApp = (dependencies: AdminDependencies) => {
 
   const write = (action: Action) => async (context: AdminContext) => {
     const route = action.route(context.req.param());
-    if (!route || (action.devOnly && config.environment !== "dev")) return context.notFound();
+    if (!route) return context.notFound();
     let body: string | null;
     try {
       body = await readBody(context, action.carriesBody);

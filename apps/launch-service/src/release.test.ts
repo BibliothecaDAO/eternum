@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { advanceGames, openForNewGames, type ReleaseChain, type ReleaseIdentity } from "./release";
 import { D1LaunchStore } from "./store";
 import { createLaunchTestDatabase, testChain } from "./test-database";
+import { releaseLine } from "../../../packages/core/src/test-support/releases";
 
 const SCHEMA = "2fbdecd09f961d7b387524eef591d8a0185c2dea59c7c334560c9789a444149e";
 const LOGIC = { season: "0x55e0", troops: "0x77a2", movement: "0x4de0" };
@@ -15,31 +16,51 @@ const candidate = (releaseId: number, changes: Partial<ReleaseIdentity> = {}): R
   ...changes,
 });
 
-type Registered = { logic: Record<string, string>; migration: string };
+type Registered = { logic: string[]; migration: string };
+const FRONTIER = 1;
+const BLITZ = 2;
 
 function shard(
   latest: number,
   pins: Record<number, number>,
-  { settled = [] as number[], registered = { logic: { ...LOGIC }, migration: "0x0" } as Registered, open = 1 } = {},
+  {
+    settled = [] as number[],
+    registered = { logic: Object.values(LOGIC), migration: "0x0" } as Registered,
+    blitz = [] as number[],
+    blitzGames = [] as number[],
+  } = {},
 ) {
   const applied: [number, number][] = [];
   const opened: number[] = [];
-  let current = open;
+  const familyOf = (releaseId: number) => (blitz.includes(releaseId) ? BLITZ : FRONTIER);
+  const latestOf = (family: number, below = latest + 1) =>
+    Math.max(0, ...Array.from({ length: below - 1 }, (_, index) => index + 1).filter((id) => familyOf(id) === family));
+  const previousOf = (releaseId: number) => latestOf(familyOf(releaseId), releaseId);
+  const open = { [FRONTIER]: latestOf(FRONTIER, 2), [BLITZ]: 0 } as Record<number, number>;
   const chain: ReleaseChain = {
-    currentRelease: async () => current,
+    openReleaseOf: async (family) => open[family]!,
+    latestReleaseOf: async (family) => latestOf(family),
     releaseRegistered: async (releaseId) => releaseId >= 1 && releaseId <= latest,
     openRelease: async (releaseId) => {
-      if (releaseId !== current + 1 || releaseId > latest) throw new Error("release must follow the open release");
-      current = releaseId;
+      if (previousOf(releaseId) !== open[familyOf(releaseId)]) throw new Error("release must follow the open release");
+      open[familyOf(releaseId)] = releaseId;
       opened.push(releaseId);
       return `0x${releaseId}`;
     },
-    registeredRelease: async () => registered,
+    registeredRelease: async (releaseId) => ({
+      ...(releaseId === latest ? registered : { logic: Object.values(LOGIC), migration: "0x0" }),
+      family: familyOf(releaseId),
+      previous: previousOf(releaseId),
+    }),
     gameId: async (name) => (pins[Number(name.replace("game-", ""))] === undefined ? 0 : Number(name.slice(5))),
     gameRelease: async (gameId) => pins[gameId]!,
-    game: async (gameId) => ({ settled: settled.includes(gameId), preset_id: 7n }),
+    game: async (gameId) => ({
+      settled: settled.includes(gameId),
+      preset_id: 7n,
+      family: BigInt(blitzGames.includes(gameId) ? BLITZ : FRONTIER),
+    }),
     applyRelease: async (gameId, releaseId) => {
-      if (releaseId !== pins[gameId]! + 1) throw new Error("release must follow game pin");
+      if (previousOf(releaseId) !== pins[gameId]) throw new Error("release must follow game pin");
       pins[gameId] = releaseId;
       applied.push([gameId, releaseId]);
       return `0x${gameId}${releaseId}`;
@@ -48,9 +69,7 @@ function shard(
   return { chain, applied, pins, opened };
 }
 
-const published = (...releases: number[]) => ({
-  releaseSchemas: Object.fromEntries(releases.map((release) => [String(release), SCHEMA])),
-});
+const published = (...releases: number[]) => ({ releases: releaseLine(SCHEMA, releases) });
 
 test("a running Frontier game on release 1 takes release 2 once it is registered and published", async () => {
   const { chain, applied } = shard(2, { 1: 1 });
@@ -63,7 +82,7 @@ test("a running Frontier game on release 1 takes release 2 once it is registered
 test("advancing the running games leaves the release closed to new games", async () => {
   const { chain, opened } = shard(2, { 1: 1 });
   await advanceGames(chain, published(1, 2), candidate(2), ["game-1"]);
-  expect(await chain.currentRelease()).toBe(1);
+  expect(await chain.openReleaseOf(FRONTIER)).toBe(1);
   expect(opened).toEqual([]);
 });
 
@@ -72,12 +91,32 @@ test("opening for new games walks every staged release in order, and a rerun sen
   expect(await openForNewGames(chain, candidate(3))).toEqual(["0x2", "0x3"]);
   expect(opened).toEqual([2, 3]);
   expect(await openForNewGames(chain, candidate(3))).toEqual([]);
-  expect(await chain.currentRelease()).toBe(3);
+  expect(await chain.openReleaseOf(FRONTIER)).toBe(3);
+});
+
+test("a Blitz release between two Frontier releases is neither opened nor applied for Frontier", async () => {
+  const { chain, applied, opened } = shard(3, { 1: 1 }, { blitz: [2] });
+  expect(await advanceGames(chain, published(1, 3), candidate(3), ["game-1"])).toEqual([
+    { gameId: 1, from: 1, to: 3, transactions: ["0x13"] },
+  ]);
+  expect(applied).toEqual([[1, 3]]);
+  expect(await openForNewGames(chain, candidate(3))).toEqual(["0x3"]);
+  expect(opened).toEqual([3]);
+  expect(await chain.openReleaseOf(BLITZ)).toBe(0);
+});
+
+test("a Frontier release leaves every Blitz game on its own release", async () => {
+  const { chain, applied, pins } = shard(3, { 1: 1, 2: 2 }, { blitz: [2], blitzGames: [2] });
+  expect(await advanceGames(chain, published(1, 3), candidate(3), ["game-1", "game-2"])).toEqual([
+    { gameId: 1, from: 1, to: 3, transactions: ["0x13"] },
+  ]);
+  expect(pins).toEqual({ 1: 3, 2: 2 });
+  expect(applied).toEqual([[1, 3]]);
 });
 
 test.each([5n, 6n, 101n])("an existing game on retired preset %s keeps its release", async (presetId) => {
   const { chain, applied, pins } = shard(2, { 1: 1, 2: 1 });
-  chain.game = async (gameId) => ({ settled: false, preset_id: gameId === 1 ? presetId : 7n });
+  chain.game = async (gameId) => ({ settled: false, preset_id: gameId === 1 ? presetId : 7n, family: 1n });
   expect(await advanceGames(chain, published(1, 2), candidate(2), ["game-1", "game-2"])).toEqual([
     { gameId: 2, from: 1, to: 2, transactions: ["0x22"] },
   ]);
@@ -114,19 +153,25 @@ test.each([
   ["an older commit, over a newer registered release", shard(3, { 1: 3 }), candidate(2), "release_older_than_shard"],
   [
     "the same release number registered with other logic",
-    shard(2, { 1: 1 }, { registered: { logic: { ...LOGIC, movement: "0x456" }, migration: "0x0" } }),
+    shard(2, { 1: 1 }, { registered: { logic: [LOGIC.season, LOGIC.troops, "0x456"], migration: "0x0" } }),
     candidate(2),
     "release_contents_differ",
   ],
   [
     "the same release number registered with another migration",
-    shard(2, { 1: 1 }, { registered: { logic: { ...LOGIC }, migration: "0x99" } }),
+    shard(2, { 1: 1 }, { registered: { logic: Object.values(LOGIC), migration: "0x99" } }),
     candidate(2),
     "release_contents_differ",
   ],
   [
     "a registered release missing one of the commit's logic classes",
-    shard(2, { 1: 1 }, { registered: { logic: { season: LOGIC.season, troops: LOGIC.troops }, migration: "0x0" } }),
+    shard(2, { 1: 1 }, { registered: { logic: [LOGIC.season, LOGIC.troops], migration: "0x0" } }),
+    candidate(2),
+    "release_contents_differ",
+  ],
+  [
+    "a registered release with the commit's classes in other slots",
+    shard(2, { 1: 1 }, { registered: { logic: [LOGIC.troops, LOGIC.season, LOGIC.movement], migration: "0x0" } }),
     candidate(2),
     "release_contents_differ",
   ],
@@ -136,12 +181,17 @@ test.each([
 });
 
 test.each([
-  ["Herald still serves only release 1", { releaseSchemas: { "1": SCHEMA } }],
-  ["Herald maps the pin's release to another schema", { releaseSchemas: { "1": "0".repeat(64), "2": SCHEMA } }],
+  ["Herald still serves only release 1", { releases: releaseLine(SCHEMA, [1]) }],
   [
-    "Herald maps every release, uniformly, to another schema",
-    { releaseSchemas: { "1": "f".repeat(64), "2": "f".repeat(64) } },
+    "Herald maps the pin's release to another schema",
+    {
+      releases: {
+        "1": { schema: "0".repeat(64), family: 1, previous: 0 },
+        "2": { schema: SCHEMA, family: 1, previous: 1 },
+      },
+    },
   ],
+  ["Herald maps every release, uniformly, to another schema", { releases: releaseLine("f".repeat(64), [1, 2]) }],
 ])("%s: refused, nothing sent", async (_case, herald) => {
   const { chain, applied } = shard(2, { 1: 1 });
   await expect(advanceGames(chain, herald, candidate(2), ["game-1"])).rejects.toThrow("release_unpublished");
@@ -185,13 +235,19 @@ describe("interrupted Frontier launches", () => {
     const pins = new Map(Object.values(games).map((gameId) => [gameId, 1]));
     const applied: [number, number][] = [];
     const chain: ReleaseChain = {
-      currentRelease: async () => 1,
+      openReleaseOf: async () => 1,
+      latestReleaseOf: async () => 2,
       releaseRegistered: async (releaseId) => releaseId <= 2,
       openRelease: async () => "0x2",
-      registeredRelease: async () => ({ logic: { ...LOGIC }, migration: "0x0" }),
+      registeredRelease: async (releaseId) => ({
+        logic: Object.values(LOGIC),
+        migration: "0x0",
+        family: 1,
+        previous: releaseId - 1,
+      }),
       gameId: async (name) => games[name] ?? 0,
       gameRelease: async (gameId) => pins.get(gameId)!,
-      game: async () => ({ settled: false, preset_id: 7n }),
+      game: async () => ({ settled: false, preset_id: 7n, family: 1n }),
       applyRelease: async (gameId, releaseId) => {
         pins.set(gameId, releaseId);
         applied.push([gameId, releaseId]);

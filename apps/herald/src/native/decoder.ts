@@ -46,7 +46,13 @@ export class NativeDecoder {
     this.schema = active;
     this.emitter = normalizeFelt(manifest.world.address);
     if (BigInt(this.emitter) === 0n) throw new Error("Zero Games emitter");
-    if (Object.keys(release.logic).sort().join() !== Object.keys(active.logicClasses).sort().join())
+    if (
+      Object.keys(release.logic).sort().join() !==
+      active.logicClasses
+        .map(({ name }) => name)
+        .sort()
+        .join()
+    )
       throw new Error("Native logic class set mismatch");
     this.layouts = active.games.events;
     const codecs = active.models.map((model) => modelCodec(active, model));
@@ -142,7 +148,7 @@ export class NativeDecoder {
   }
 
   private requireReleaseSchema(releaseId: string): void {
-    const identity = this.manifest.native.releaseSchemas[releaseId];
+    const identity = this.manifest.native.releases[releaseId]?.schema;
     // This fold's registry and checkpoint use one schema. Refuse before any migration rows enter it.
     if (identity !== this.schema.identity) throw new NativeReleaseSchemaUnavailable(releaseId, identity);
   }

@@ -1,5 +1,5 @@
-import { FRONTIER_FIXTURE_PRESET_ID } from "../../../../../../../config/source/common/native-preset-modes";
-import { NATIVE_RELEASE_ID } from "../../../../../../../deploy/release/native-release";
+import { gameRegistryRow } from "../../../../../../../packages/core/src/test-support/game-registry";
+import { NATIVE_RELEASES } from "../../../../../../../deploy/release/native-release";
 import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
@@ -61,25 +61,11 @@ export const frontierDay = () => {
       mode: "Single",
     }),
     set("0x9", "UpgradeLimits", { game_id: 1, realm_max: 3, village_max: 3 }),
-    set("0x3", "GameRegistry", {
-      game_id: 1,
-      preset_id: FRONTIER_FIXTURE_PRESET_ID,
-      name: "1",
-      start_settling_at: "1",
-      start_main_at: "100",
-      scheduled_end_at: "1000",
-      end_at: "1000",
-      settled: false,
-      ready: true,
-      dev_mode_on: false,
-      end_grace_seconds: 0,
-      seed: "1",
-    }),
+    set("0x3", "GameRegistry", gameRegistryRow()),
     set("0x1ab0", "GameRelease", {
       game_id: 1,
-      release_id: NATIVE_RELEASE_ID,
-      created_release_id: NATIVE_RELEASE_ID,
-      preset_commitment: "0x1ab",
+      release_id: NATIVE_RELEASES.frontier.release,
+      created_release_id: NATIVE_RELEASES.frontier.release,
     }),
     set("0x7", "Structure", realm),
     ...preset.resources.map((rule) => set(`0x5${rule.resource_type}`, "ResourceRule", { ...rule, game_id: 1 })),

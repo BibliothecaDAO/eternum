@@ -55,6 +55,7 @@ pub mod roster_limits;
 pub mod rules;
 pub mod settlement;
 pub mod settlement_grid;
+pub mod slots;
 pub mod spires;
 pub mod stamina;
 pub mod state;

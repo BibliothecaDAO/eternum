@@ -15,10 +15,11 @@ import {
   publishClient,
   publishCloudflare,
 } from "./publish";
-import { NATIVE_RELEASE_ID } from "../release/native-release";
+import { NATIVE_RELEASES } from "../release/native-release";
 import { Platform, databaseWorkers, workers, workerSecrets, type Secrets } from "./platform";
 import { PrivateStore } from "./private-store";
 import { environments, shardInputs, type Inputs } from "./settings";
+import { releaseLine } from "../../packages/core/src/test-support/releases";
 
 const revision = "a".repeat(40);
 const input = {
@@ -208,7 +209,7 @@ test("dry publish refuses every write before commands or transports", async () =
 
 /** The release the checkout's run read from the box's build, recorded for `commit`. */
 const IDENTITY = {
-  releaseId: NATIVE_RELEASE_ID,
+  releaseId: NATIVE_RELEASES.frontier.release,
   schema: "2fbdecd09f961d7b387524eef591d8a0185c2dea59c7c334560c9789a444149e",
   logic: { season: "0x55e0", troops: "0x77a2" },
   migration: "0x0",
@@ -216,7 +217,11 @@ const IDENTITY = {
 const CHAIN = "0x5245414c4d535f444556";
 const recordIdentity = (value: Platform, commit = revision) =>
   value.store.write("release-identity.json", { commit, release: IDENTITY, chainId: CHAIN });
-const HERALD = { version: 1, chainId: CHAIN, releaseSchemas: { [String(NATIVE_RELEASE_ID)]: IDENTITY.schema } };
+const HERALD = {
+  version: 1,
+  chainId: CHAIN,
+  releases: releaseLine(IDENTITY.schema, [NATIVE_RELEASES.frontier.release]),
+};
 const PREVIOUS = { url: "https://old-herald.test", chainId: "0x1" };
 const boxOf = (value: Platform) => ({ chainId: CHAIN, url: shardInputs(value.target).public_herald_url });
 
@@ -281,8 +286,8 @@ function workerDeploys(value: Platform, order: string[], refuse = (_worker: stri
 const REPORT = {
   shard: {
     chainId: "0x1",
-    releaseId: NATIVE_RELEASE_ID,
-    games: [{ gameId: 1, from: 1, to: NATIVE_RELEASE_ID, transactions: ["0xa"] }],
+    releaseId: NATIVE_RELEASES.frontier.release,
+    games: [{ gameId: 1, from: 1, to: NATIVE_RELEASES.frontier.release, transactions: ["0xa"] }],
     opened: [],
   },
 };
@@ -308,7 +313,7 @@ test("the launch Worker's report of the release opened for new games is printed"
   releaseRoute(value, () => Response.json({ shard: { ...REPORT.shard, opened: ["0xb"] } }));
   const log = spyOn(console, "log").mockImplementation(() => {});
   await advanceFrontierRelease(value, revision);
-  expect(log).toHaveBeenCalledWith(`New games on 0x1 start on release ${NATIVE_RELEASE_ID}.`);
+  expect(log).toHaveBeenCalledWith(`New games on 0x1 start on release ${NATIVE_RELEASES.frontier.release}.`);
 });
 
 test.each([
@@ -324,7 +329,9 @@ test.each([
   const calls = commands();
   const order = deployOrder(value);
   releaseRoute(value, () => Response.json({ error: code }, { status: 409 }), { rows: [boxOf(value)] });
-  await expect(publishCloudflare(value, revision)).rejects.toThrow(`Release ${NATIVE_RELEASE_ID}: ${reason}.`);
+  await expect(publishCloudflare(value, revision)).rejects.toThrow(
+    `Release ${NATIVE_RELEASES.frontier.release}: ${reason}.`,
+  );
   expect(order).toEqual(["launch"]);
   expect(calls.map((call) => call.argv.join(" "))).toContain("pnpm --dir apps/game build");
   expect(calls.some((call) => call.argv.includes("wrangler"))).toBe(false);
@@ -428,7 +435,7 @@ test("a refused release on a fresh chain leaves identity, the row and the launch
     Response.json({ error: "release_unpublished" }, { status: 409 }),
   );
   workerDeploys(value, order);
-  await expect(publishCloudflare(value, revision)).rejects.toThrow(`Release ${NATIVE_RELEASE_ID}`);
+  await expect(publishCloudflare(value, revision)).rejects.toThrow(`Release ${NATIVE_RELEASES.frontier.release}`);
   expect(order).toEqual([...published(["identity"]), "directory", ...published(["launch"]), "release"]);
   expect(directory.rows).toEqual([boxOf(value)]);
 });
@@ -512,9 +519,9 @@ test.each([
   ["Herald serves another chain", { ...HERALD, chainId: "0x999" }, CHAIN, "Herald serves another chain than the box's"],
   [
     "Herald does not publish the release",
-    { ...HERALD, releaseSchemas: {} },
+    { ...HERALD, releases: {} },
     CHAIN,
-    `Herald does not publish release ${NATIVE_RELEASE_ID} with the box's schema`,
+    `Herald does not publish release ${NATIVE_RELEASES.frontier.release} with the box's schema`,
   ],
   ["the box has not prepared its shard", HERALD, null, "The box half has not prepared its shard"],
 ])("%s: the listing is refused before any PUT, and the previous row stays", async (_, herald, chainId, message) => {

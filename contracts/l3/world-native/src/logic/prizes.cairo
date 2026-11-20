@@ -156,7 +156,7 @@ pub mod PrizesLogic {
             );
             crate::exploration_rewards::IExplorationGrantDispatcherTrait::grant_exploration_reward(
                 crate::exploration_rewards::IExplorationGrantLibraryDispatcher {
-                    class_hash: self.release.classes(game_id).resources.read(),
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::RESOURCES),
                 },
                 crate::resources::ResourceKey { game_id, entity_id: receiver },
                 reward.resource_type,

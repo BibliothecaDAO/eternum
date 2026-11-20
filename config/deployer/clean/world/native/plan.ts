@@ -1,8 +1,10 @@
 import { assertBalanceSince, assertHotfixSchema } from "./artifacts";
 import { CallData, type RpcProvider } from "starknet";
+import type { NativeReleases } from "@bibliothecadao/eternum/game-sync";
 import { deployedClass, isClassDeclared } from "../../shared/declare";
 import { canonicalRealmTraits, realmCatalogueDigest } from "./realm-catalogue";
 import type { NativePlan, NativeWorld } from "./types";
+import { NATIVE_RELEASES } from "../../../../../deploy/release/native-release";
 
 export async function inspectNativeWorld(local: NativeWorld, provider: RpcProvider): Promise<NativePlan> {
   assertHotfixSchema(local.release, local.previous);
@@ -26,11 +28,13 @@ export async function inspectNativeWorld(local: NativeWorld, provider: RpcProvid
     blockers.push("Games is immutable; the deployed class differs from this release");
   let realmCatalogue: NativePlan["realmCatalogue"];
   let releaseRegistered = false;
+  let releases: NativeReleases = {};
   let roleChanges: NativePlan["roleChanges"] = [];
   if (deployedClassHash && blockers.length === 0) {
     roleChanges = await inspectGamesConfiguration(local, provider, blockNumber, blockers);
     releaseRegistered = await inspectRelease(local, provider, blockNumber, blockers);
     realmCatalogue = await inspectRealmCatalogue(local, provider, blockNumber, blockers);
+    if (releaseRegistered) releases = await readUnpublishedLine(local, provider, blockNumber);
   }
   return {
     worldAddress: local.games.address,
@@ -39,6 +43,7 @@ export async function inspectNativeWorld(local: NativeWorld, provider: RpcProvid
     deployedClassHash,
     realmCatalogue,
     releaseRegistered,
+    releases,
     roleChanges,
     blockers,
     synced:
@@ -103,20 +108,41 @@ async function inspectRelease(
     if (!(await isRegistered(releaseId - 1))) blockers.push("Release must follow the latest registered release");
     return false;
   }
-  const raw = await provider.callContract(
-    { contractAddress: local.games.address, entrypoint: "release", calldata: [String(local.release.releaseId)] },
-    block,
-  );
-  const registered = new CallData(local.games.sierra.abi).parse("release", raw) as {
-    classes: Record<string, bigint>;
-    migration: bigint;
-  };
+  const codec = new CallData(local.games.sierra.abi);
+  const view = async (entrypoint: string) =>
+    codec.parse(
+      entrypoint,
+      await provider.callContract(
+        { contractAddress: local.games.address, entrypoint, calldata: [String(local.release.releaseId)] },
+        block,
+      ),
+    );
+  const registered = (await view("release")) as { family: bigint; migration: bigint };
+  const classes = (await view("release_classes")) as bigint[];
   if (
-    !local.logic.every(({ name, classHash }) => registered.classes[name] === BigInt(classHash)) ||
+    registered.family !== BigInt(NATIVE_RELEASES.frontier.family) ||
+    classes.length !== local.logic.length ||
+    !local.logic.every(({ classHash }, slot) => classes[slot] === BigInt(classHash)) ||
     registered.migration !== BigInt(local.release.migrationClassHash)
   )
     blockers.push("Release is immutable; registered contents differ from release facts");
   return blockers.length === 0;
+}
+
+async function readUnpublishedLine(local: NativeWorld, provider: RpcProvider, block: number) {
+  const published = local.previous?.native.releases ?? {};
+  const codec = new CallData(local.games.sierra.abi);
+  const line: Record<string, { schema: string; family: number; previous: number }> = {};
+  for (let id = local.release.releaseId; id !== 0 && !(String(id) in published); ) {
+    const raw = await provider.callContract(
+      { contractAddress: local.games.address, entrypoint: "release", calldata: [String(id)] },
+      block,
+    );
+    const { family, previous } = codec.parse("release", raw) as { family: bigint; previous: bigint };
+    line[String(id)] = { schema: local.release.schema, family: Number(family), previous: Number(previous) };
+    id = Number(previous);
+  }
+  return line;
 }
 
 async function inspectRealmCatalogue(local: NativeWorld, provider: RpcProvider, block: number, blockers: string[]) {

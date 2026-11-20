@@ -5,7 +5,6 @@ pub mod BridgeState {
     use crate::bridge::{Deposit, DepositRules, IDepositTokenDispatcher, IDepositTokenDispatcherTrait, Withdraw};
     use crate::events::RowSet;
     use crate::logic::release::ReleaseState;
-    use crate::logic::release::ReleaseState::InternalTrait as LifeInternalTrait;
     use crate::logic::withdrawals::WithdrawalState;
     use crate::logic::withdrawals::WithdrawalState::InternalTrait as WithdrawalInternalTrait;
     use crate::ownership::{ResourceTransferStory, Story, StoryEvent, TransferType};
@@ -150,16 +149,13 @@ pub mod BridgeState {
         impl Withdrawals: WithdrawalState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
-        fn logic_classes(
-            self: @ComponentState<TContractState>, game_id: u32,
-        ) -> starknet::storage::StoragePointer<games_storage::release::LogicClasses> {
-            get_dep_component!(self, Life).classes(game_id)
-        }
         fn withdrawals(self: @ComponentState<TContractState>) -> @WithdrawalState::ComponentState<TContractState> {
             get_dep_component!(self, Withdrawals)
         }
         fn resources(self: @ComponentState<TContractState>, game_id: u32) -> IResourceOperationsLibraryDispatcher {
-            IResourceOperationsLibraryDispatcher { class_hash: self.logic_classes(game_id).resources.read() }
+            IResourceOperationsLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(game_id, crate::slots::RESOURCES),
+            }
         }
         fn structure(self: @ComponentState<TContractState>, game_id: u32, entity_id: u64) -> Structure {
             crate::logic::structures::structure(ResourceKey { game_id, entity_id }).expect('structure does not exist')
@@ -315,7 +311,9 @@ pub mod BridgeState {
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
         ) {
-            IResourceDeliveryLibraryDispatcher { class_hash: self.logic_classes(game_id).resources.read() }
+            IResourceDeliveryLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(game_id, crate::slots::RESOURCES),
+            }
                 .queue_resource_delivery(
                     ResourceKey { game_id, entity_id: to_id },
                     resource,

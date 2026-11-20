@@ -103,7 +103,6 @@ describe("the shop", () => {
           game_id: 1,
           release_id: nativeReleaseConstants.SEAL_RELEASE,
           created_release_id: nativeReleaseConstants.SEAL_RELEASE,
-          preset_commitment: "0x1ab",
         },
       },
     ]);

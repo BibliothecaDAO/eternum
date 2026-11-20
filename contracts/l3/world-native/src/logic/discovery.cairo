@@ -16,9 +16,13 @@ pub fn reveal(
     let actor = crate::logic::structures::owner(
         crate::resources::ResourceKey { game_id: key.game_id, entity_id: home },
     );
-    let classes = crate::logic::release::classes(key.game_id);
     crate::game::IPointsDispatcherTrait::register_exploration(
-        crate::game::IPointsLibraryDispatcher { class_hash: classes.season.read() }, key.game_id, actor, context,
+        crate::game::IPointsLibraryDispatcher {
+            class_hash: crate::logic::release::class_of(key.game_id, crate::slots::SEASON),
+        },
+        key.game_id,
+        actor,
+        context,
     );
     let result = roll(key, explorer_id, seed, context);
     let guarded = match result {
@@ -28,7 +32,9 @@ pub fn reveal(
     };
     if guarded {
         crate::structures::IStructureOperationsDispatcherTrait::create_discovery(
-            crate::structures::IStructureOperationsLibraryDispatcher { class_hash: classes.structures.read() },
+            crate::structures::IStructureOperationsLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(key.game_id, crate::slots::STRUCTURES),
+            },
             key.game_id,
             home,
             Coord { alt: key.alt, x: key.col, y: key.row },
@@ -40,7 +46,9 @@ pub fn reveal(
     }
     if result == crate::discovery::Discovery::Shrine {
         crate::oaths::IOathsDispatcherTrait::offer_oaths(
-            crate::oaths::IOathsLibraryDispatcher { class_hash: classes.relics.read() },
+            crate::oaths::IOathsLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(key.game_id, crate::slots::RELICS),
+            },
             crate::troops::ExplorerKey { game_id: key.game_id, explorer_id },
             Coord { alt: key.alt, x: key.col, y: key.row },
             seed,

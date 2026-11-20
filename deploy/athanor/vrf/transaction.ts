@@ -87,11 +87,11 @@ function oneGameCall(call: unknown, games: string) {
   if (!entry) return undefined;
   if (
     entry.name === "play" &&
-    (call.length < 9 ||
-      call.length > 8 + 256 ||
+    (call.length < 8 ||
+      call.length > 7 + 256 ||
       felt(call[4])! > 0xffffffffn ||
       felt(call[5])! > 0xffffffffn ||
-      felt(call[7]) !== BigInt(call.length - 8))
+      felt(call[6]) !== BigInt(call.length - 7))
   )
     return undefined;
   return entry;

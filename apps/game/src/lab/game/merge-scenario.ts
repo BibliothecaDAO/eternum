@@ -82,7 +82,7 @@ const TRANSFER = 4n;
  */
 const readTransfer = (command: LabCommand) => {
   if (command.kind !== "ManageTroops") return null;
-  const [, variant, sourceVariant, source, targetVariant, target, amount] = command.calldata.slice(4).map(BigInt);
+  const [, variant, sourceVariant, source, targetVariant, target, amount] = command.span.map(BigInt);
   if (variant !== TRANSFER || sourceVariant !== 0n || targetVariant !== 0n) return null;
   return { source, target, amount };
 };

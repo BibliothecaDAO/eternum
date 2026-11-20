@@ -47,7 +47,6 @@ pub mod progression;
 pub mod quest_progress;
 pub mod quests;
 pub mod race;
-pub mod raid;
 pub mod realms;
 pub mod registrar;
 pub mod registry;

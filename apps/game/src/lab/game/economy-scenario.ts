@@ -110,7 +110,7 @@ const balance = (store: NativeFactStore, entity: bigint, resource: number, amoun
   );
 
 const produce = (command: LabCommand, chain: NativeFactStore, now: number): LabFact[] => {
-  const [, home, resourceCount, resource, amountCount, cycles] = command.calldata.slice(4).map(BigInt);
+  const [, home, resourceCount, resource, amountCount, cycles] = command.span.map(BigInt);
   if (home !== HOME || resourceCount !== 1n || amountCount !== 1n || resource !== BigInt(ResourcesIds.Knight))
     throw new Error("The economy fixture produces one knight recipe at its home");
   const recipe = chain.require("ProductionRecipe", { game_id: 1, resource_type: Number(resource) });
@@ -134,7 +134,7 @@ const produce = (command: LabCommand, chain: NativeFactStore, now: number): LabF
 };
 
 const transfer = (command: LabCommand, chain: NativeFactStore, now: number): LabFact[] => {
-  const [, from, to, count, resource, amount] = command.calldata.slice(4).map(BigInt);
+  const [, from, to, count, resource, amount] = command.span.map(BigInt);
   if (from !== HOME || to !== DESTINATION || count !== 1n || resource !== BigInt(ResourcesIds.Wheat))
     throw new Error("The economy fixture sends wheat between its two realms");
   const rules = chain.require("SliceRules", { game_id: 1 });

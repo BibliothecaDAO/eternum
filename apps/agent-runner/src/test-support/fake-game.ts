@@ -1,3 +1,4 @@
+import { gameRegistryRow } from "../../../../packages/core/src/test-support/game-registry";
 import {
   ClientConfigManager,
   createGameActions,
@@ -246,18 +247,21 @@ export const seedGameRegistry = (
   store: NativeFactStore,
   input: { status: string; startMainAt: number; endAt: number },
 ): void => {
-  writeFact(store, "GameRegistry", [GAME_ID], {
-    game_id: GAME_ID,
-    name: 0n,
-    preset_id: 2,
-    settled: input.status === "Ended",
-    ready: true,
-    dev_mode_on: true,
-    start_settling_at: 0n,
-    start_main_at: BigInt(input.startMainAt),
-    scheduled_end_at: BigInt(input.endAt),
-    end_at: BigInt(input.endAt),
-    end_grace_seconds: 0,
-    seed: 0n,
-  });
+  writeFact(
+    store,
+    "GameRegistry",
+    [GAME_ID],
+    gameRegistryRow({
+      game_id: GAME_ID,
+      name: "0",
+      preset_id: 2,
+      settled: input.status === "Ended",
+      dev_mode_on: true,
+      start_settling_at: "0",
+      start_main_at: String(input.startMainAt),
+      scheduled_end_at: String(input.endAt),
+      end_at: String(input.endAt),
+      seed: "0",
+    }),
+  );
 };

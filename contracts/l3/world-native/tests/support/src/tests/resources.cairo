@@ -42,7 +42,7 @@ pub mod ResourceFixture {
     }
     #[constructor]
     fn constructor(ref self: ContractState, bridge: starknet::ClassHash) {
-        crate::state::write().releases.entry(1).classes.bridge.write(bridge);
+        crate::state::write().release_classes.write((1, crate::slots::BRIDGE), bridge);
     }
     #[abi(embed_v0)]
     impl Fixture of super::IResourceFixture<ContractState> {

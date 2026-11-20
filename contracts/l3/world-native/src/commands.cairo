@@ -1,4 +1,5 @@
 use starknet::ContractAddress;
+use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct CreateExplorer {
@@ -317,9 +318,30 @@ pub fn validated_command(
     Ok(route)
 }
 
+pub fn admit(game_id: u32, actor: ContractAddress, command: Span<felt252>) {
+    let (index, route, _) = validated_command(command).expect('INVALID_COMMAND');
+    let rules = crate::logic::preset_record::for_game(game_id).rules;
+    assert!(crate::rules::command_enabled(rules.command_mask.read(), index.into()), "command disabled");
+    assert_roster_admits(game_id, actor, index);
+    if route.selector == selector!("settle_season")
+        && rules.entry_rule.read() == crate::rules::ENTRY_OPEN
+        && rules.day_unit_seconds.read() != 0 {
+        crate::entity_ids::assign_open_home(game_id, actor);
+    }
+}
+
+fn assert_roster_admits(game_id: u32, actor: ContractAddress, index: u32) {
+    if index != crate::command_routes::SETTLE_BLITZ_ROSTER {
+        assert!(crate::logic::game::game(game_id).ready, "roster not ready");
+        return;
+    }
+    let registrar = crate::state::read().registrar;
+    assert!(registrar.roster_sizes.read(game_id) != 0, "roster not frozen");
+    assert!(actor == registrar.seaters.read(game_id), "only the game's seater");
+}
+
 #[starknet::interface]
 pub trait ICommandIngress<T> {
-    fn validate_command(self: @T, command: Span<felt252>) -> u32;
+    fn admit(ref self: T, game_id: u32, actor: ContractAddress, command: Span<felt252>);
     fn requires_oath_answer(self: @T, game_id: u32, command: Span<felt252>) -> bool;
-    fn assign_open_home(ref self: T, game_id: u32, actor: ContractAddress);
 }

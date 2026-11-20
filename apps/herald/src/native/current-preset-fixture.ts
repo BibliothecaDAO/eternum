@@ -10,6 +10,8 @@ import { encodeMembers } from "./serde";
 import type { NativeSchema } from "./schema";
 import type { DecodedWorldEvent } from "../types";
 import { seasonSeconds } from "../../../../packages/core/src/utils/days";
+import { nativeIdentifiers } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { releaseLine } from "../../../../packages/core/src/test-support/releases";
 
 /** Generated inputs for current contract validation, separate from immutable launch recordings. */
 export function currentPresetFixture(presetId: number, fixtureSchema: NativeSchema = schema) {
@@ -30,6 +32,7 @@ export function currentPresetFixture(presetId: number, fixtureSchema: NativeSche
 function fixtureLaunchParams(presetId: number, definition: ReturnType<typeof buildNativePreset>) {
   return {
     name: shortString.encodeShortString(`projection_${presetId}`),
+    family: nativeIdentifiers.family.FRONTIER,
     preset_id: presetId,
     start_settling_at: 1800,
     start_main_at: 1800,
@@ -56,10 +59,10 @@ function projectLaunch(schema: NativeSchema, registration: string[], params: Ret
       ...manifest.native,
       activeSchema: schema.identity,
       schemas: { [schema.identity]: schema },
-      releaseSchemas: { "1": schema.identity },
+      releases: releaseLine(schema.identity, [1]),
     },
   });
-  const launch = decoder.decodeRowSet("GameRelease", ["1"], ["1", "1", "1"]);
+  const launch = decoder.decodeRowSet("GameRelease", ["1"], ["1", "1"]);
   const overrides = {
     registration_start: params.registration_start,
     biome_climate: params.biome_climate,

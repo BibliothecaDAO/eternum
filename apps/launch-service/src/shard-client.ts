@@ -14,6 +14,7 @@ import type { LaunchGameSummary } from "../../../config/deployer/clean/types";
 
 export interface ShardGame {
   name: bigint;
+  family: bigint;
   preset_id: bigint;
   settled: boolean;
   ready: boolean;
@@ -68,17 +69,23 @@ export class LaunchShard extends ShardOperator implements ReleaseChain {
   game(gameId: number) {
     return this.view<ShardGame>("game", [gameId]);
   }
-  async currentRelease() {
-    return Number(await this.view<bigint>("current_release", []));
+  async openReleaseOf(family: number) {
+    return Number(await this.view<bigint>("open_release_of", [family]));
+  }
+  async latestReleaseOf(family: number) {
+    return Number(await this.view<bigint>("latest_release_of", [family]));
   }
   releaseRegistered(releaseId: number) {
     return this.view<boolean>("release_registered", [releaseId]);
   }
   async registeredRelease(releaseId: number) {
-    const release = await this.view<{ classes: Record<string, bigint>; migration: bigint }>("release", [releaseId]);
+    const release = await this.view<{ family: bigint; previous: bigint; migration: bigint }>("release", [releaseId]);
+    const classes = await this.view<bigint[]>("release_classes", [releaseId]);
     const hex = (value: bigint) => `0x${value.toString(16)}`;
     return {
-      logic: Object.fromEntries(Object.entries(release.classes).map(([name, classHash]) => [name, hex(classHash)])),
+      family: Number(release.family),
+      previous: Number(release.previous),
+      logic: classes.map(hex),
       migration: hex(release.migration),
     };
   }
@@ -235,6 +242,7 @@ export function buildLaunchGameParams(
   });
   return {
     name: common.name,
+    family: common.family,
     preset_id: presetId,
     start_settling_at: startSettlingAt,
     start_main_at: startMainAt,

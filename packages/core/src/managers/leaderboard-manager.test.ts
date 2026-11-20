@@ -1,3 +1,4 @@
+import { gameRegistryRow } from "../test-support/game-registry";
 import { describe, expect, it } from "vitest";
 import { NativeFactStore } from "../client/native-fact-store";
 import { configManager } from "./config-manager";
@@ -51,21 +52,7 @@ describe("native leaderboard", () => {
       spacing: 10,
       mode: "Single",
     });
-    upsert(store, [23], "GameRegistry", {
-      game_id: 23,
-      preset_id: 2,
-      name: 1n,
-
-      start_settling_at: 1n,
-      start_main_at: 100n,
-      scheduled_end_at: 1000n,
-      end_at: 1000n,
-      settled: false,
-      ready: true,
-      dev_mode_on: false,
-      end_grace_seconds: 0,
-      seed: 1n,
-    });
+    upsert(store, [23], "GameRegistry", gameRegistryRow({ game_id: 23, preset_id: 2 }));
     configManager.setActiveGame(23, 2);
     const manager = new LeaderboardManager(store);
     expect(manager.getPlayerPoints(PLAYER)).toBe(0);

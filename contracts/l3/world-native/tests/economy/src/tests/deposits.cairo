@@ -204,17 +204,18 @@ fn mixed_sweep_keeps_both_balances_game_pinned_until_applied() {
     releases
         .register_release(
             2,
-            crate::logic::release::Release {
-                classes: games_storage::release::LogicClasses {
-                    prizes: super::declare_logic("ChangedSweepFixture"), ..original.classes,
-                },
-                ..original,
-            },
+            crate::logic::release::Release { previous: 1, ..original },
+            world_test_support::tests::releases::with_class(
+                releases.release_classes(1), crate::slots::PRIZES, super::declare_logic("ChangedSweepFixture"),
+            ),
         );
     releases.open_release(2);
-    assert_eq!(releases.current_release(), 2);
+    assert_eq!(releases.open_release_of(crate::game::FRONTIER), 2);
     assert_eq!(releases.game_release(game_id), 1);
-    assert_eq!(releases.release(2).classes.bridge, original.classes.bridge);
+    assert_eq!(
+        *releases.release_classes(2)[crate::slots::BRIDGE.into()],
+        *releases.release_classes(1)[crate::slots::BRIDGE.into()],
+    );
     assert_eq!(
         resources.resource_balance(ResourceSlot { game_id, entity_id: home, resource_type: crate::resources::LORDS }),
         30 * crate::rules::RESOURCE_PRECISION,
@@ -267,7 +268,7 @@ fn mixed_sweep_keeps_both_balances_game_pinned_until_applied() {
 #[feature("safe_dispatcher")]
 fn season_one_refuses_bitcoin_and_bridge_commands() {
     let (d, game_id) = super::registrar::setup_open_frontier_preset("frontier", 1);
-    let (release, preset) = super::play_fixture::pins(d.games, game_id);
+    let release = super::play_fixture::pins(d.games, game_id);
     super::play_fixture::caller(d.games, d.actor, 360);
     let home = ResourceKey { game_id, entity_id: 1 };
     for command in array![
@@ -275,9 +276,7 @@ fn season_one_refuses_bitcoin_and_bridge_commands() {
         Command::ClaimBitcoinPhase(crate::bitcoin::ClaimPhase { phase: 0, mine_ids: array![1_u64].span() }),
         super::bridge::deposit(home), super::bridge::withdraw(home, d.actor),
     ] {
-        super::assert_entry_refusal(
-            d, game_id, release, preset, super::play_fixture::encode(command), "command disabled",
-        );
+        super::assert_entry_refusal(d, game_id, release, super::play_fixture::encode(command), "command disabled");
     }
 }
 
@@ -299,11 +298,11 @@ fn seed_deposit_source(games: starknet::ContractAddress, game_id: u32, source: D
 fn unknown_command_tags_refuse_before_a_roll(offset: u32) {
     let index: felt252 = (crate::command_routes::COMMAND_ROUTES.span().len() + offset).into();
     let (d, game_id) = super::registrar::setup_open_frontier_preset("frontier", 1);
-    let (release, preset) = super::play_fixture::pins(d.games, game_id);
+    let release = super::play_fixture::pins(d.games, game_id);
     super::play_fixture::caller(d.games, d.actor, 360);
     let before = super::play_fixture::gameplay_snapshot(d.games);
     let result = super::play_fixture::IPlayFixtureSafeDispatcher { contract_address: d.games }
-        .play_with_root(game_id, release, preset, array![index, 1, 1].span(), 123);
+        .play_with_root(game_id, release, array![index, 1, 1].span(), 123);
     assert!(result.is_err());
     assert_eq!(super::play_fixture::gameplay_snapshot(d.games), before);
 }
@@ -320,15 +319,13 @@ fn automatic_returns_keep_the_games_bridge_until_its_release_is_applied() {
     releases
         .register_release(
             2,
-            crate::logic::release::Release {
-                classes: games_storage::release::LogicClasses {
-                    bridge: super::declare_logic("ChangedSweepFixture"), ..original.classes,
-                },
-                ..original,
-            },
+            crate::logic::release::Release { previous: 1, ..original },
+            world_test_support::tests::releases::with_class(
+                releases.release_classes(1), crate::slots::BRIDGE, super::declare_logic("ChangedSweepFixture"),
+            ),
         );
     releases.open_release(2);
-    assert_eq!(releases.current_release(), 2);
+    assert_eq!(releases.open_release_of(crate::game::FRONTIER), 2);
     assert_eq!(releases.game_release(game_id), 1);
     let entry = ILedgerOperatorSafeDispatcher { contract_address: d.games };
     assert_eq!(entry.deposit_source(game_id).unwrap(), None);

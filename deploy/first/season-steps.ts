@@ -67,7 +67,7 @@ async function shardConnection(context: Season) {
   const manifest = await nativeDocument(context.target);
   if (!manifest?.shard?.chainId || !manifest.world?.address)
     throw new PublicError("Box native-world.json is unavailable");
-  const publicManifest = await jsonGet<{ chainId: string; releaseSchemas: Record<string, string> }>(
+  const publicManifest = await jsonGet<{ chainId: string; releases: Record<string, unknown> }>(
     `${release.public_herald_url}/manifest`,
   );
   if (BigInt(manifest.shard.chainId) !== BigInt(publicManifest.chainId))
@@ -76,7 +76,7 @@ async function shardConnection(context: Season) {
     rpcUrl: release.public_rpc_url,
     chainId: manifest.shard.chainId,
     gamesAddress: manifest.world.address,
-    firstRelease: firstReleaseOf(publicManifest.releaseSchemas),
+    firstRelease: firstReleaseOf(publicManifest.releases),
   };
 }
 function assertCalendarGame(phase: FrontierSeasonPhase, native: { presetId: number; start: number; end: number }) {

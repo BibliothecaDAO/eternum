@@ -9,6 +9,8 @@ import { NativeDecoder } from "./decoder";
 import { NativeIngestion } from "./ingestion";
 import type { NativeManifest, NativeSchema } from "./schema";
 import { buildShardManifest } from "../shard-manifest";
+import { gameRegistryRow, type GameRegistryWire } from "../../../../packages/core/src/test-support/game-registry";
+import { releaseLine } from "../../../../packages/core/src/test-support/releases";
 export const schema = schemaJson as unknown as NativeSchema;
 export const manifest: NativeManifest = {
   world: { address: setFixture.deployment.games },
@@ -16,12 +18,12 @@ export const manifest: NativeManifest = {
     version: 2,
     deploymentBlock: 10,
     activeSchema: schema.identity,
-    releaseSchemas: { "1": schema.identity },
+    releases: releaseLine(schema.identity, [1]),
     schemas: { [schema.identity]: schema },
     gamesClassHash: "0x123",
     migrationClassHash: "0x0",
     releaseId: 1,
-    logic: Object.fromEntries(Object.keys(schema.logicClasses).map((name) => [name, "0x123"])),
+    logic: Object.fromEntries(schema.logicClasses.map(({ name }) => [name, "0x123"])),
   },
 };
 export const shardManifest = buildShardManifest(
@@ -65,6 +67,11 @@ export function rowEvent(name: string, keys: string[], values: DecodedRecord): R
     keys: [...layout.prefix, "1", model.identity],
     data: [String(keys.length), ...keys, String(felts.length), ...felts],
   };
+}
+
+export function gameRegistryEvent(overrides: Partial<GameRegistryWire> = {}): RpcEvent {
+  const { game_id, ...values } = gameRegistryRow(overrides);
+  return rowEvent("GameRegistry", [String(game_id)], values);
 }
 
 /** Named synthetic values: encoding always follows the current schema. */

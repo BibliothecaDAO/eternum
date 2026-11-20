@@ -153,7 +153,6 @@ async function load() {
   if (state.screen === "games") renderGames(data);
   if (state.screen === "deploys") renderDeploys(data);
   if (state.screen === "audit") renderAudit(data);
-  $("[data-kind='test-blitz']").disabled = environment !== "dev";
 }
 
 /**
@@ -165,11 +164,7 @@ function openAction({ title, fields = [], method, route, launchPath, body, note 
   $("#action-error").hidden = true;
   $("#action-form").innerHTML =
     fields
-      .map(([label, name, value, kind]) =>
-        kind === "lines"
-          ? `<label>${label}<textarea name="${name}" rows="4">${esc(value)}</textarea></label>`
-          : `<label>${label}<input name="${name}" value="${esc(value)}"></label>`,
-      )
+      .map(([label, name, value]) => `<label>${label}<input name="${name}" value="${esc(value)}"></label>`)
       .join("") + (note ? `<p class="note">${note}</p>` : "");
   const values = () => Object.fromEntries(new FormData($("#action-form")));
   const preview = () => {
@@ -192,21 +187,7 @@ function openAction({ title, fields = [], method, route, launchPath, body, note 
   $("#action-dialog").showModal();
 }
 
-const lines = (text) => text.split(/\s+/).filter(Boolean);
 const NEW_GAME = {
-  "test-blitz": () =>
-    openAction({
-      title: "Free test Blitz",
-      fields: [
-        ["Name (test-…)", "name", "test-"],
-        ["Player accounts, one per line", "players", "", "lines"],
-      ],
-      method: "POST",
-      route: "test-blitz",
-      launchPath: "/api/factory/test-blitz",
-      body: (v) => ({ name: v.name, players: lines(v.players) }),
-      note: "Live five minutes after this is sent. Sending the same name and players again returns the same game.",
-    }),
   "open-slot": () =>
     openAction({
       title: "Open a paid Blitz slot",

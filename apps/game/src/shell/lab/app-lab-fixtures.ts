@@ -22,6 +22,7 @@ import type { SlotKey } from "../value/ledger";
 import type { PlayedGameKeys } from "../season-tab/reward";
 import type { SeasonPrize } from "../season-tab/blitz-season";
 import type { Reward } from "../season-tab/reward";
+import { releaseLine } from "../../../../../packages/core/src/test-support/releases";
 
 /**
  * The app lab's one fiction, the handoff's: Day 12 of a Frontier season, today ends with 7h 14m left, the player
@@ -685,7 +686,7 @@ export const LAB_FIELD_MIN = RIVAL_SITES.length + 1;
 export const LAB_SHARD_MANIFEST = {
   version: 1,
   chainId: LAB_CHAIN,
-  releaseSchemas: { "1": nativeFactSchemaIdentity },
+  releases: releaseLine(nativeFactSchemaIdentity, [1]),
   rpcUrl: "https://rpc.lab.invalid",
   accountClassHash: "0x2",
   contracts: { games: "0x1ab" },

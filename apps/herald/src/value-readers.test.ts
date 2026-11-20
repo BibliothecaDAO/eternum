@@ -9,7 +9,15 @@ import { ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { createHeraldRequestHandler } from "./http";
 import { LiveWorld } from "./live-world";
 import type { MadaraRpc } from "./madara-rpc";
-import { receipt, rowEvent, rulesEvent, seedDerivedRows, setup, shardManifest } from "./native/fixtures";
+import {
+  gameRegistryEvent,
+  receipt,
+  rowEvent,
+  rulesEvent,
+  seedDerivedRows,
+  setup,
+  shardManifest,
+} from "./native/fixtures";
 import { memoryFinalFacts } from "../../value-relay/src/final-facts";
 import { memoryObligations } from "../../value-relay/src/obligations";
 import { frontierSettlementEvidence, sweepFrontierLords } from "../../value-relay/src/frontier-sweep";
@@ -64,17 +72,12 @@ async function endedSeason() {
     native.applyReceipt(fold, receipt(seedDerivedRows(fold, decoder, events)), 9, 0);
   apply([
     rulesEvent("1", "14400"),
-    rowEvent("GameRegistry", ["1"], {
-      name: "1",
-      preset_id: "6",
-      settled: false,
-      ready: true,
-      dev_mode_on: false,
+    gameRegistryEvent({
+      preset_id: 6,
       start_settling_at: String(season.start),
       start_main_at: String(season.start),
       scheduled_end_at: String(season.end),
       end_at: String(season.end),
-      end_grace_seconds: "0",
       seed: "7",
     }),
     rowEvent("SettlementRules", ["1"], {

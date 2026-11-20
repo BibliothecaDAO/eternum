@@ -59,7 +59,7 @@ export const actionsScenario = (): LabScenario => {
 };
 
 /** A command's span after its variant, as felts: fields and spans in ABI order. */
-const spanOf = (command: LabCommand): bigint[] => command.calldata.slice(5).map((felt) => BigInt(felt));
+const spanOf = (command: LabCommand): bigint[] => command.span.slice(1).map((felt) => BigInt(felt));
 
 /** Where `directions` lead from `from`, one neighbour per step. */
 const walk = (from: Hex, directions: number[]): Hex =>

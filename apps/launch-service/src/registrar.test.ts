@@ -2,6 +2,7 @@ import { Effect, Layer } from "effect";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { Registrar } from "./registrar";
 import { LAUNCHER_LABEL } from "@realms-world/value-ledger";
+import { releaseLine } from "../../../packages/core/src/test-support/releases";
 const mock = vi.hoisted(() => ({
   account: vi.fn(),
   process: vi.fn(),
@@ -47,16 +48,22 @@ vi.mock("./shard-client", () => ({
     constructor(target: unknown) {
       mock.shard(target);
     }
-    currentRelease = async () => mock.open;
+    openReleaseOf = async () => mock.open;
+    latestReleaseOf = async () => 2;
     releaseRegistered = async (releaseId: number) => releaseId <= 2;
     openRelease = async (releaseId: number) => {
       mock.open = releaseId;
       return `0x0${releaseId}`;
     };
-    registeredRelease = async () => ({ logic: { season: "0x55e0", troops: "0x77a2" }, migration: "0x0" });
+    registeredRelease = async (releaseId: number) => ({
+      logic: ["0x55e0", "0x77a2"],
+      migration: "0x0",
+      family: 1,
+      previous: releaseId - 1,
+    });
     gameId = async (name: string) => (name === "frontier-1" ? 1 : 0);
     gameRelease = async (gameId: number) => mock.pins.get(gameId)!;
-    game = async () => ({ settled: false, preset_id: 7n });
+    game = async () => ({ settled: false, preset_id: 7n, family: 1n });
     applyRelease = async (gameId: number, releaseId: number) => {
       mock.pins.set(gameId, releaseId);
       return `0x${gameId}${releaseId}`;
@@ -200,7 +207,7 @@ const RELEASE_MANIFEST = {
   chainId: "0x1",
   rpcUrl: "https://rpc.shard.test",
   contracts: { games: "0x9" },
-  releaseSchemas: { "1": RELEASE.schema, "2": RELEASE.schema },
+  releases: releaseLine(RELEASE.schema, [1, 2]),
 };
 const SHARD = { chainId: "0x1", url: "https://shard.test" };
 

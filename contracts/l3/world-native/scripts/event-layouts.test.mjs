@@ -16,13 +16,12 @@ test("Games exposes the published player frame, roles and frozen roster ABI", as
   assert.deepEqual(method("play").inputs, [
     { name: "game_id", type: "core::integer::u32" },
     { name: "release_id", type: "core::integer::u32" },
-    { name: "preset_commitment", type: "core::felt252" },
     { name: "command", type: "core::array::Span::<core::felt252>" },
   ]);
   assert.deepEqual(method("play").outputs, []);
   assert.deepEqual(
     method("constructor").inputs.map(({ name }) => name),
-    ["owner", "launcher", "authentication", "release_id", "release", "vrf_public_key", "l2_gas_bound"],
+    ["owner", "launcher", "authentication", "release_id", "release", "classes", "vrf_public_key", "l2_gas_bound"],
   );
   for (const name of [
     "owner",
@@ -32,6 +31,9 @@ test("Games exposes the published player frame, roles and frozen roster ABI", as
     "set_ledger_operator",
     "create_game",
     "register_preset",
+    "release_classes",
+    "view_call",
+    "authority_call",
   ])
     method(name);
   assert.deepEqual(method("create_game").inputs, [

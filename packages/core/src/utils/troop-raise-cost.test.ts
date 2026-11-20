@@ -6,11 +6,12 @@ import { canPayTroopRaise, readTroopRaiseCost } from "./troop-raise-cost";
 import { followGameRelease } from "../client/game-release";
 import { nativeFactSchemaIdentity } from "../../../../contracts/l3/world-native/schema/client.gen";
 import retiredTown from "../client/fixtures/retired-town.json";
+import { gameRegistryRow } from "../test-support/game-registry";
 
-vi.mock("../../../../deploy/release/native-release", async (original) => ({
-  ...(await original<typeof import("../../../../deploy/release/native-release")>()),
-  NATIVE_BALANCE_SINCE_RELEASE: 1,
-}));
+vi.mock("../../../../deploy/release/native-release", async (original) => {
+  const { NATIVE_RELEASES } = await original<typeof import("../../../../deploy/release/native-release")>();
+  return { NATIVE_RELEASES: { frontier: { ...NATIVE_RELEASES.frontier, since: 1 } } };
+});
 
 const PRECISION = 1_000_000_000n;
 const upsert = (key: string, model: string, value: Record<string, unknown>): GameSyncFact => ({ model, key, value });
@@ -146,7 +147,8 @@ for (const historical of [true, false]) {
     store.applyFacts([
       upsert("0x8", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: BigInt(retiredTown.learned) }),
       upsert("0x6", "BoardRules", { ...store.require("BoardRules", { game_id: 1 }), ration_step: PRECISION / 5n }),
-      upsert("0x9", "GameRelease", { game_id: 1, created_release_id: 1, release_id: 2, preset_commitment: "0x789" }),
+      upsert("0x9", "GameRelease", { game_id: 1, created_release_id: 1, release_id: 2 }),
+      upsert("0xa", "GameRegistry", gameRegistryRow()),
     ]);
     const gate = followGameRelease(
       store,
@@ -155,9 +157,9 @@ for (const historical of [true, false]) {
         schemaIdentity: nativeFactSchemaIdentity,
         shard: {
           url: "http://shard.test",
-          releaseSchemas: {
-            "1": historical ? retiredTown.schemaIdentity : nativeFactSchemaIdentity,
-            "2": nativeFactSchemaIdentity,
+          releases: {
+            "1": { schema: historical ? retiredTown.schemaIdentity : nativeFactSchemaIdentity, family: 1, previous: 0 },
+            "2": { schema: nativeFactSchemaIdentity, family: 1, previous: 1 },
           },
         },
       },

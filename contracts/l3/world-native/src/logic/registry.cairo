@@ -1,5 +1,11 @@
 #[starknet::contract]
 pub mod RegistryLogic {
+    #[abi(embed_v0)]
+    impl ReleaseValidation of crate::logic::release::IReleaseValidation<ContractState> {
+        fn validate_release(self: @ContractState, family: u8, classes: Span<starknet::ClassHash>) {
+            crate::logic::release::validate_release(family, classes);
+        }
+    }
     component!(path: crate::logic::aspects::AspectState, storage: aspects, event: AspectEvent);
     #[abi(embed_v0)]
     impl Aspects = crate::logic::aspects::AspectState::AspectsImpl<ContractState>;

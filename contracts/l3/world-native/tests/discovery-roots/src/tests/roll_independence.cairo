@@ -211,11 +211,11 @@ fn all_typed_entry_refusals_are_root_independent(index: u32, start: u64) {
         let d = fresh_world(false);
 
         let before = play_fixture::gameplay_snapshot(d.games);
-        let (release, preset) = play_fixture::pins(d.games, 1);
+        let release = play_fixture::pins(d.games, 1);
         play_fixture::caller(d.games, d.actor, 100);
         let mut spy = snforge_std::spy_events();
         let error = IPlayFixtureSafeDispatcher { contract_address: d.games }
-            .play_with_root(1, release, preset, play_fixture::encode(command), root.into())
+            .play_with_root(1, release, play_fixture::encode(command), root.into())
             .unwrap_err();
         if let Some(previous) = expected {
             assert_eq!(error.span(), previous);

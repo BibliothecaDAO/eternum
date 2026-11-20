@@ -1,7 +1,7 @@
 import { CallData, CairoOption, CairoOptionVariant, hash, type Abi } from "starknet";
 import { buildNativePreset } from "../../../../config/deployer/clean/config/native-preset";
 import { loadNativePresetConfiguration } from "../../../../config/deployer/clean/registrar/native-preset";
-import { manifest, rowEvent, schema } from "./fixtures";
+import { gameRegistryEvent, manifest, rowEvent, schema } from "./fixtures";
 import { presetPreimageCommitment } from "./preset-preimages";
 
 /** Successful direct registration input for replay tests and the load campaign. */
@@ -45,20 +45,16 @@ export function presetLaunch(
     ...(roster.length
       ? [rowEvent("BlitzRoster", [game], { players: roster.map((account) => ({ account, wallet: account })) })]
       : []),
-    rowEvent("GameRegistry", [game], {
+    gameRegistryEvent({
+      game_id: gameId,
       name: "0x706172697479",
       preset_id: preset.presetId,
-      settled: false,
-      ready: true,
-      dev_mode_on: false,
-      start_settling_at: timestamp,
-      start_main_at: timestamp,
-      scheduled_end_at: timestamp + PRESET_FIXTURE_DURATION_SECONDS,
-      end_at: timestamp + PRESET_FIXTURE_DURATION_SECONDS,
-      end_grace_seconds: 0,
-      seed: 1,
+      start_settling_at: String(timestamp),
+      start_main_at: String(timestamp),
+      scheduled_end_at: String(timestamp + PRESET_FIXTURE_DURATION_SECONDS),
+      end_at: String(timestamp + PRESET_FIXTURE_DURATION_SECONDS),
     }),
     rowEvent("GameOverrides", [game], overrides),
-    rowEvent("GameRelease", [game], { release_id: 1, created_release_id: 1, preset_commitment: preset.commitment }),
+    rowEvent("GameRelease", [game], { release_id: 1, created_release_id: 1 }),
   ];
 }

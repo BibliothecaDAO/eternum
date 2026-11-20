@@ -1,3 +1,4 @@
+import { gameRegistryRow } from "../../test-support/game-registry";
 import { readFileSync } from "node:fs";
 import { readBaneDay, readBaneEffects } from "./banes";
 import { describe, expect, it } from "vitest";
@@ -30,20 +31,7 @@ function fixture() {
     {
       model: "GameRegistry",
       key: "1",
-      value: {
-        game_id: 1,
-        preset_id: 7,
-        name: "1",
-        start_settling_at: 1,
-        start_main_at: 100,
-        scheduled_end_at: 10_000,
-        end_at: 10_000,
-        settled: false,
-        ready: true,
-        dev_mode_on: false,
-        end_grace_seconds: 0,
-        seed: 5,
-      },
+      value: gameRegistryRow({ preset_id: 7, scheduled_end_at: "10000", end_at: "10000", seed: "5" }),
     },
     {
       model: "SettlementRules",

@@ -15,7 +15,7 @@ pub struct BlitzResult {
 
 #[starknet::interface]
 pub trait IBlitzResults<T> {
-    fn blitz_result(self: @T, game_id: u32) -> BlitzResult;
+    fn game_result(self: @T, game_id: u32) -> BlitzResult;
     fn record_blitz_results(ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext);
 }
 

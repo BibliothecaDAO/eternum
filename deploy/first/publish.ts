@@ -4,7 +4,7 @@ import { setTimeout } from "node:timers/promises";
 import { command } from "./process";
 import { Platform, databaseWorkers, workers, type Secrets, type Worker } from "./platform";
 import { clientSite, shardInputs, type PagesSite } from "./settings";
-import { NATIVE_RELEASE_ID } from "../release/native-release";
+import { NATIVE_RELEASES } from "../release/native-release";
 import { readReleaseIdentity } from "./release-identity";
 import type { ApplyReleaseRequest, ReleaseIdentity, ReleaseReport } from "../../apps/launch-service/src/operator-api";
 import { CHAT_RETENTION_BATCH } from "../../apps/realms/server/chat/chat-objects";
@@ -149,11 +149,11 @@ async function requireHeraldServes(herald: string, chainId: string, release: Rel
     throw new PublicError(`Herald manifest: HTTP ${response.status}.`, response.status, "manifest_unavailable");
   const manifest = (await response.json().catch(() => null)) as {
     chainId?: unknown;
-    releaseSchemas?: Record<string, unknown>;
+    releases?: Record<string, { schema?: unknown } | undefined>;
   } | null;
   if (!isSameChain(manifest?.chainId, chainId))
     throw new PublicError("Herald serves another chain than the box's; rerun the box half (pnpm run deploy)");
-  if (manifest?.releaseSchemas?.[String(release.releaseId)] !== release.schema)
+  if (manifest?.releases?.[String(release.releaseId)]?.schema !== release.schema)
     throw new PublicError(
       `Herald does not publish release ${release.releaseId} with the box's schema; rerun the box half (pnpm run deploy)`,
     );
@@ -222,14 +222,18 @@ export async function advanceFrontierRelease(platform: Platform, revision: strin
   const body = (await response.json().catch(() => null)) as (ReleaseReport & { error?: string }) | null;
   if (!response.ok || body?.shard === undefined) {
     const code = typeof body?.error === "string" ? body.error : "release_apply_failed";
-    throw new PublicError(`Release ${NATIVE_RELEASE_ID}: ${RELEASE_REFUSALS[code] ?? code}.`, response.status, code);
+    throw new PublicError(
+      `Release ${NATIVE_RELEASES.frontier.release}: ${RELEASE_REFUSALS[code] ?? code}.`,
+      response.status,
+      code,
+    );
   }
   platform.store.write("release-advance.json", body);
   if (body.shard) {
     const { chainId, games, opened } = body.shard;
     for (const { gameId, from, to } of games)
       console.log(`Frontier game ${gameId} on ${chainId}: release ${from} → ${to}.`);
-    if (opened.length) console.log(`New games on ${chainId} start on release ${NATIVE_RELEASE_ID}.`);
+    if (opened.length) console.log(`New games on ${chainId} start on release ${NATIVE_RELEASES.frontier.release}.`);
   }
 }
 

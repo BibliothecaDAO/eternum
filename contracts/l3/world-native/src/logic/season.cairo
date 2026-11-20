@@ -13,7 +13,6 @@ pub trait IGameplay<T> {
 #[starknet::contract]
 pub mod SeasonLogic {
     const MAX_PHASES_PER_CLAIM: u32 = 8;
-    use games_storage::release::LogicClasses;
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use starknet::{ContractAddress, get_tx_info};
     use crate::commands::{ExecutionContext as DomainContext, domain_rejection, rejection};
@@ -137,7 +136,6 @@ pub mod SeasonLogic {
     }
 
     fn dispatch(
-        classes: starknet::storage::StoragePointer<LogicClasses>,
         route: crate::command_routes::CommandRoute,
         game_id: u32,
         actor: ContractAddress,
@@ -148,7 +146,7 @@ pub mod SeasonLogic {
         calldata.append_span(arguments);
         crate::commands::action_context(context).serialize(ref calldata);
         starknet::syscalls::library_call_syscall(
-            crate::command_routes::logic_class(classes, route.logic), route.selector, calldata.span(),
+            crate::logic::release::class_of(game_id, route.logic), route.selector, calldata.span(),
         )
     }
 
@@ -175,7 +173,7 @@ pub mod SeasonLogic {
             if crate::logic::aspects::enabled(game_id) {
                 crate::banes::IWorldBanesDispatcherTrait::prepare_bane_day(
                     crate::banes::IWorldBanesLibraryDispatcher {
-                        class_hash: self.release.classes(game_id).bridge.read(),
+                        class_hash: crate::logic::release::class_of(game_id, crate::slots::BRIDGE),
                     },
                     game_id,
                     crate::commands::action_context(context),
@@ -184,7 +182,7 @@ pub mod SeasonLogic {
             if crate::logic::deep_sites::enabled(game_id) {
                 crate::deep::IDeepTicksDispatcherTrait::settle_deep(
                     crate::deep::IDeepTicksLibraryDispatcher {
-                        class_hash: self.release.classes(game_id).prizes.read(),
+                        class_hash: crate::logic::release::class_of(game_id, crate::slots::PRIZES),
                     },
                     game_id,
                     crate::commands::action_context(context),
@@ -194,7 +192,7 @@ pub mod SeasonLogic {
             if rules.day_unit_seconds != 0
                 && crate::commands::ICommandIngressDispatcherTrait::requires_oath_answer(
                     crate::commands::ICommandIngressLibraryDispatcher {
-                        class_hash: self.release.classes(game_id).placement.read(),
+                        class_hash: crate::logic::release::class_of(game_id, crate::slots::INGRESS),
                     },
                     game_id,
                     arguments,
@@ -203,8 +201,7 @@ pub mod SeasonLogic {
                     crate::commands::Rejection { status_class: 'GAMEPLAY_REJECTED', reason: "ANSWER_OATH_FIRST" },
                 );
             }
-            let result = dispatch(self.release.classes(game_id), route, game_id, actor, payload, context)
-                .map_err(|error| domain_rejection(error))?;
+            let result = dispatch(route, game_id, actor, payload, context).map_err(|error| domain_rejection(error))?;
             if route.batch {
                 let mut output = result;
                 let remaining: u64 = Serde::deserialize(ref output).expect('missing batch result');
@@ -230,7 +227,6 @@ pub mod SeasonLogic {
         ) -> () {
             let context = crate::commands::execution_context(game_id, context);
 
-            let classes = self.release.classes(game_id);
             let owner = actor;
             let game = context.game.unbox();
             let rules = context.rules.unbox();
@@ -246,14 +242,18 @@ pub mod SeasonLogic {
             let village_rules = self.villages.rules(game_id);
             let resource = crate::village::select_resource(village_rules.resource_pool, seed);
             let progress = self.data.settlements.progress.read(game_id);
-            let coord = ISettlementPoolLibraryDispatcher { class_hash: classes.placement.read() }
+            let coord = ISettlementPoolLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(game_id, crate::slots::PLACEMENT),
+            }
                 .claim_village(
                     game_id,
                     progress.registered,
                     seed,
                     crate::settlement_grid::map_center(context.rules.unbox().map_center_offset),
                 );
-            let village_id = ISettlementCreationLibraryDispatcher { class_hash: classes.structures.read() }
+            let village_id = ISettlementCreationLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(game_id, crate::slots::STRUCTURES),
+            }
                 .create_settlement(
                     game_id,
                     actor,
@@ -421,7 +421,9 @@ pub mod SeasonLogic {
     #[generate_trait]
     impl BitcoinHelpers of BitcoinHelpersTrait {
         fn resources(self: @ContractState, game_id: u32) -> IResourceOperationsLibraryDispatcher {
-            IResourceOperationsLibraryDispatcher { class_hash: self.release.classes(game_id).resources.read() }
+            IResourceOperationsLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(game_id, crate::slots::RESOURCES),
+            }
         }
         fn claim_bound_phases(
             ref self: ContractState,

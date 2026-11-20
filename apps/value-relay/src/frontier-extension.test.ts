@@ -1,3 +1,4 @@
+import { gameRegistryRow } from "../../../packages/core/src/test-support/game-registry";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { CallData, shortString } from "starknet";
 import approved from "../../../config/source/frontier/extension.json";
@@ -42,19 +43,15 @@ beforeEach(() => {
   rpc.now = approved.oldEnd - 3600;
   rpc.l2chain = shortString.encodeShortString("SN_MAIN");
   rpc.l2status = "ACCEPTED_ON_L2";
-  game = {
-    name: shortString.encodeShortString(approved.name),
+  game = gameRegistryRow({
+    name: String(shortString.encodeShortString(approved.name)),
     preset_id: approved.presetId,
-    settled: false,
-    ready: true,
-    dev_mode_on: false,
-    start_settling_at: approved.start,
-    start_main_at: approved.start,
-    scheduled_end_at: approved.end,
-    end_at: approved.end,
-    end_grace_seconds: 0,
-    seed: approved.seed,
-  };
+    start_settling_at: String(approved.start),
+    start_main_at: String(approved.start),
+    scheduled_end_at: String(approved.end),
+    end_at: String(approved.end),
+    seed: String(approved.seed),
+  });
   projected = { ...game, game_id: 1 };
   ledgerEnd = approved.end;
   ledgerSeed = approved.seed;

@@ -1,6 +1,6 @@
 import { resolveEndpoint } from "@realms-world/chain";
 
-import type { ShardManifest } from "../sync/herald-http-types";
+import type { NativeReleases, ShardManifest } from "../sync/herald-http-types";
 
 /**
  * A shard is one chain with its games, reached through one URL: its Herald. Everything else a client needs — the
@@ -12,7 +12,7 @@ export interface Shard {
   /** Herald's origin: games directory, snapshots, history and the game streams live under it. */
   url: string;
   chainId: string;
-  releaseSchemas: Readonly<Record<string, string>>;
+  releases: NativeReleases;
   rpcUrl: string;
   accountClassHash: string;
   /** The key that authorizes device keys on this shard's Realms accounts; with the class, it fixes their addresses. */
@@ -69,8 +69,8 @@ export async function openShard(
   const shard = listedManifest
     ? buildShard(resolveEndpoint(url, { name: "Shard URL" }), listedManifest)
     : await readShard(url);
-  if (!Object.values(shard.releaseSchemas).includes(schemaHash))
-    throw new ShardReleaseMismatchError(shard.url, Object.keys(shard.releaseSchemas).join(", "));
+  if (!Object.values(shard.releases).some(({ schema }) => schema === schemaHash))
+    throw new ShardReleaseMismatchError(shard.url, Object.keys(shard.releases).join(", "));
   validate?.(shard);
   return registerShard(shard);
 }
@@ -78,7 +78,7 @@ export async function openShard(
 /** Re-read the release catalogue without replacing the shared shard registry or fetching decoder bytes. */
 export async function refreshShardRelease(url: string, releaseId: string, schemaHash: string): Promise<Shard> {
   const shard = await readShard(url);
-  if (shard.releaseSchemas[releaseId] !== schemaHash) throw new ShardReleaseMismatchError(shard.url, releaseId);
+  if (shard.releases[releaseId]?.schema !== schemaHash) throw new ShardReleaseMismatchError(shard.url, releaseId);
   return shard;
 }
 
@@ -103,10 +103,12 @@ const buildShard = (url: string, manifest: ShardManifest): Shard => {
   if (manifest.version !== 1) throw new Error(`Shard ${url} serves manifest version ${manifest.version}`);
   const worldAddress = manifest.contracts[ENTRYPOINT_CONTRACT];
   if (!worldAddress) throw new Error(`Shard ${url} manifest names no ${ENTRYPOINT_CONTRACT} contract`);
+  if (typeof manifest.releases !== "object" || manifest.releases === null)
+    throw new Error(`Shard ${url} manifest names no releases; its Herald predates release families`);
   return {
     url,
     chainId: normalizeChainId(manifest.chainId),
-    releaseSchemas: manifest.releaseSchemas,
+    releases: manifest.releases,
     rpcUrl: resolveEndpoint(manifest.rpcUrl, { name: `RPC URL of shard ${url}` }),
     accountClassHash: manifest.accountClassHash,
     guardianPublicKey: manifest.guardianPublicKey,

@@ -1,3 +1,4 @@
+import { gameRegistryRow } from "../test-support/game-registry";
 import { StaminaManager } from "../managers/stamina-manager";
 import { configManager } from "../managers/config-manager";
 import { musterStamina, openArmySlots, resolveExplorerTroops, troopStaminaLimits } from "../managers/troop-stamina";
@@ -513,21 +514,7 @@ describe("declared fact absence", () => {
         spacing: 10,
         mode: "Single",
       }),
-      set("0x3", "GameRegistry", {
-        game_id: 1,
-        preset_id: 2,
-        name: "1",
-
-        start_settling_at: "1",
-        start_main_at: "100",
-        scheduled_end_at: "1000",
-        end_at: "1000",
-        settled: false,
-        ready: true,
-        dev_mode_on: false,
-        end_grace_seconds: 0,
-        seed: "1",
-      }),
+      set("0x3", "GameRegistry", gameRegistryRow({ preset_id: 2 })),
     ]);
     setBlockTimestampSource(() => 350);
     store.applyFacts([set("0x7", "Structure", structure("0x111"))]);
@@ -622,21 +609,7 @@ describe("declared fact absence", () => {
         spacing: 10,
         mode: "Single",
       }),
-      set("0x3", "GameRegistry", {
-        game_id: 1,
-        preset_id: 2,
-        name: "1",
-
-        start_settling_at: "1",
-        start_main_at: "100",
-        scheduled_end_at: "1000",
-        end_at: "1000",
-        settled: false,
-        ready: true,
-        dev_mode_on: false,
-        end_grace_seconds: 0,
-        seed: "1",
-      }),
+      set("0x3", "GameRegistry", gameRegistryRow({ preset_id: 2 })),
       set("0x7", "Structure", structure("0x111")),
     ]);
     setBlockTimestampSource(() => 350);
@@ -691,21 +664,7 @@ describe("declared fact absence", () => {
         spacing: 10,
         mode: "Single",
       }),
-      set("0x3", "GameRegistry", {
-        game_id: 1,
-        preset_id: 2,
-        name: "1",
-
-        start_settling_at: "1",
-        start_main_at: "100",
-        scheduled_end_at: "1000",
-        end_at: "1000",
-        settled: false,
-        ready: true,
-        dev_mode_on: false,
-        end_grace_seconds: 0,
-        seed: "1",
-      }),
+      set("0x3", "GameRegistry", gameRegistryRow({ preset_id: 2 })),
       set("0x7", "Structure", structure("0x111")),
       set("0x80", "ArmySlot", {
         game_id: 1,
@@ -745,21 +704,7 @@ describe("declared fact absence", () => {
         spacing: 10,
         mode: "Single",
       }),
-      set("0x3", "GameRegistry", {
-        game_id: 1,
-        preset_id: 2,
-        name: "1",
-
-        start_settling_at: "1",
-        start_main_at: "100",
-        scheduled_end_at: "1000",
-        end_at: "1000",
-        settled: false,
-        ready: true,
-        dev_mode_on: false,
-        end_grace_seconds: 0,
-        seed: "1",
-      }),
+      set("0x3", "GameRegistry", gameRegistryRow({ preset_id: 2 })),
     ]);
     store.applyFacts([
       set("0x7", "Structure", structure("0x111")),

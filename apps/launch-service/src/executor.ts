@@ -13,7 +13,6 @@ import type { LaunchServiceStore } from "./store";
 import type { SlotResolver } from "./paid-blitz";
 import { finalizeGame } from "./results";
 import type { CreateGameRequest } from "./schemas";
-import { testBlitzRoster } from "./test-blitz";
 
 interface LaunchTarget {
   directory: ShardDirectory & import("@realms-world/value-ledger").RegistrationIdentity;
@@ -96,12 +95,6 @@ const launchBlitz = async (
   return summaries[games.findIndex(({ runId }) => runId === run.id)]!;
 };
 
-/**
- * The games a Blitz run launches, each with its frozen roster and its seater: a slot's groups are dealt to the seater
- * pool round-robin by group index, so a restarted run names the same seater for every game. A paid slot's groups come
- * from the ledger through the alarm's one resolution, never copied; a test game names its own roster. The pool is
- * joined only once the rosters check out, so a refused run writes nothing to the shard.
- */
 const blitzGamesOf = async (
   run: LaunchRun,
   store: LaunchServiceStore,
@@ -122,8 +115,7 @@ const blitzGamesOf = async (
 };
 
 const blitzRostersOf = async (run: LaunchRun, store: LaunchServiceStore, resolveSlot: SlotResolver) => {
-  if (run.slotId === null)
-    return [{ game: run, players: testBlitzRoster(run.request as CreateGameRequest, run.chainId), groupIndex: 0 }];
+  if (run.slotId === null) throw new Error("Blitz games require a closed paid slot");
   const { groups } = await resolveSlot({ chainId: run.chainId, slotId: run.slotId });
   return (await store.slotGames(run.slotId)).map((game) => {
     const groupIndex = (game.request as CreateGameRequest).groupIndex;

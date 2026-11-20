@@ -19,7 +19,7 @@ import {
 import { readClassArtifact } from "../../config/deployer/clean/shared/declare";
 import { registrarWorldOf } from "../../config/deployer/clean/world/native/manifest";
 import { schemaIdentity, type NativeSchema } from "../../apps/herald/src/native/schema";
-import { NATIVE_RELEASE_ID } from "./native-release";
+import { NATIVE_RELEASES } from "./native-release";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const WORLD = resolve(ROOT, "contracts/l3/world-native");
@@ -41,14 +41,12 @@ function releaseFacts() {
     return [String(id), presetRegistrationCall(definition, id, registrar).commitment];
   });
   return {
-    releaseId: NATIVE_RELEASE_ID,
+    releaseId: NATIVE_RELEASES.frontier.release,
     migrationClassHash: "0x0",
     schema: schema.identity,
     classes: {
       games: worldClass("Games"),
-      logic: Object.fromEntries(
-        Object.entries(schema.logicClasses).map(([name, contract]) => [name, worldClass(contract)]),
-      ),
+      logic: Object.fromEntries(schema.logicClasses.map(({ name, contract }) => [name, worldClass(contract)])),
       account: classHash(ACCOUNT),
       verifier: classHash(resolve(ROOT, "contracts/l3/vrf-verifier/target/dev/realms_vrf_verifier_Verifier")),
     },

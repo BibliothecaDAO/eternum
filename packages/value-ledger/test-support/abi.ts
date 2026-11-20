@@ -40,7 +40,7 @@ export function gamesEvent(name: string, values: Record<string, unknown>) {
   if (!layout) throw new Error(`Missing Games event: ${name}`);
   return eventFields(gamesAbi, layout, values);
 }
-export const hex = (felt: string) => `0x${BigInt(felt).toString(16)}`;
+const hex = (felt: string) => `0x${BigInt(felt).toString(16)}`;
 
 // Project the generated direct event layouts into an ABI container for RPC fixtures.
 // Nested aliases still share these generated member definitions; no event fields are repeated here.

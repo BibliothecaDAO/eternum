@@ -1,4 +1,4 @@
-use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
+use starknet::storage::StorageMapReadAccess;
 use crate::quests::IQuestProgressDispatcherTrait;
 use crate::resources::ResourceKey;
 
@@ -9,7 +9,9 @@ pub fn record(home: ResourceKey, kind: u8, amount: u128, timestamp: u64) {
     let state = crate::state::read();
     let release = state.game_releases.read(home.game_id);
     assert!(release != 0, "game has no release");
-    crate::quests::IQuestProgressLibraryDispatcher { class_hash: state.releases.entry(release).classes.bridge.read() }
+    crate::quests::IQuestProgressLibraryDispatcher {
+        class_hash: crate::logic::release::release_class(release, crate::slots::BRIDGE),
+    }
         .record_quest_progress(home, kind, amount, timestamp);
 }
 

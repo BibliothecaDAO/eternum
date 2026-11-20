@@ -28,7 +28,7 @@ it("applies the Far-Eye command through the real fact decoder, including an init
   try {
     await executeGameplayAccountTransaction({
       account: useAccountStore.getState().account!,
-      calls: { contractAddress: "0x1ab", entrypoint: "play", calldata: ["1", "3", "0", String(span.length), ...span] },
+      calls: { contractAddress: "0x1ab", entrypoint: "play", calldata: ["1", "3", String(span.length), ...span] },
       shard: { chainId: LAB_GAME.chainId, l2GasBound: BigInt("0x47868c00") },
     });
     await vi.advanceTimersByTimeAsync(300);

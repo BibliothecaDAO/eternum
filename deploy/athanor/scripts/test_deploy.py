@@ -285,6 +285,10 @@ class RestartUnfinishedTest(unittest.TestCase):
                 'migration class 0x0, release has 0x23'])
 
 
+def frontier_line(schemas):
+    return {release: {"schema": schema, "family": 1, "previous": int(release) - 1} for release, schema in schemas.items()}
+
+
 class PublishReleasesTest(unittest.TestCase):
     """Herald serves the release mapping it read at its start; a release init registered later needs a restart."""
 
@@ -294,10 +298,10 @@ class PublishReleasesTest(unittest.TestCase):
             (directory / "data").mkdir()
             (directory / "data/native-world.json").write_text(json.dumps({"native": {
                 "releaseId": release_id, "activeSchema": "0xs",
-                "releaseSchemas": release_schemas or {"1": "0xs", "2": "0xs"}}}))
+                "releases": frontier_line(release_schemas or {"1": "0xs", "2": "0xs"})}}))
             stages = []
             with (
-                patch.object(deploy, "service_json", side_effect=[{"releaseSchemas": value} for value in served]) as read,
+                patch.object(deploy, "service_json", side_effect=[{"releases": frontier_line(value)} for value in served]) as read,
                 patch.object(deploy, "wait_for_identity"),
                 patch.object(deploy.subprocess, "run") as run,
             ):

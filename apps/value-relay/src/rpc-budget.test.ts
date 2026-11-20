@@ -26,6 +26,7 @@ import { awardFrontierPrizes } from "./frontier-prizes";
 import { sweepFrontierLords } from "./frontier-sweep";
 import { relayDeposits, type DepositRelayPorts } from "./deposits";
 import type { LordsDeposit } from "@realms-world/value-ledger/deposits";
+import { releaseLine } from "../../../packages/core/src/test-support/releases";
 
 vi.mock("cloudflare:workers", () => ({
   WorkerEntrypoint: class {},
@@ -280,7 +281,7 @@ vi.mock("@realms-world/value-ledger", async (original) => {
       rpcUrl: "https://shard.test",
       url: "https://herald.test",
       contracts: { games: "0x20" },
-      releaseSchemas: { "1": "0xs" },
+      releases: releaseLine("0xs", [1]),
     }),
     requireActiveChain: async () => {},
     relayAccountAddress: () => "0x5",

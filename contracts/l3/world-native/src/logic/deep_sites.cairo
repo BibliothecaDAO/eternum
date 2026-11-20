@@ -88,7 +88,9 @@ pub fn dispatcher(game_id: u32) -> crate::deep::IDeepSitesLibraryDispatcher {
     let state = crate::state::read();
     let release = state.game_releases.read(game_id);
     assert!(release != 0, "game has no release");
-    crate::deep::IDeepSitesLibraryDispatcher { class_hash: state.releases.entry(release).classes.map.read() }
+    crate::deep::IDeepSitesLibraryDispatcher {
+        class_hash: crate::logic::release::release_class(release, crate::slots::MAP),
+    }
 }
 
 pub fn reward_beast_clear(key: ExplorerKey, home: u64, cleared: ResourceKey, timestamp: u64) {

@@ -37,7 +37,7 @@ export function farEyeScenario(): LabScenario {
     answer: (command, chain, now) => {
       if (command.kind !== "ApplyRelic") return scenario.answer(command, chain, now);
       const held = chain.require("ArmyRelics", { game_id: 1, explorer_id: SPIRE_ARMY });
-      const [, entityId, requested, , slot] = command.calldata.slice(4).map(Number);
+      const [, entityId, requested, , slot] = command.span.map(Number);
       if (!held.first || entityId !== SPIRE_ARMY || slot !== 0 || requested !== relicId(held.first)) return [];
       const position = chain.entityOccupancy(1, SPIRE_ARMY)!;
       const tiles = getHexesWithinRadius(position.col, position.row, 4)

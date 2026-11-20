@@ -37,7 +37,7 @@ pub trait IGamesRoles<T> {
 
 #[starknet::interface]
 pub trait IGamesPlay<T> {
-    fn play(ref self: T, game_id: u32, release_id: u32, preset_commitment: felt252, command: Span<felt252>);
+    fn play(ref self: T, game_id: u32, release_id: u32, command: Span<felt252>);
 }
 
 #[starknet::interface]
@@ -46,13 +46,19 @@ pub trait IGamesRandomness<T> {
     fn l2_gas_bound(self: @T) -> u64;
 }
 
+#[starknet::interface]
+pub trait IGamesSlots<T> {
+    fn view_call(self: @T, game_id: u32, slot: u8, calldata: Span<felt252>) -> Span<felt252>;
+    fn authority_call(ref self: T, family: u8, slot: u8, calldata: Span<felt252>) -> Span<felt252>;
+}
+
 #[starknet::contract]
 pub mod Games {
-    use starknet::ContractAddress;
     use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
+    use starknet::{ContractAddress, SyscallResultTrait};
     use crate::games::Authentication;
     use crate::games_entry::GamesEntry;
-    use crate::logic::release::ReleaseState;
+    use crate::logic::release::{ISlotAuthorityDispatcherTrait, ISlotViewsDispatcherTrait, ReleaseState};
     component!(path: GamesEntry, storage: entry, event: EntryEvent);
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl EntryInternal = GamesEntry::InternalImpl<ContractState>;
@@ -70,11 +76,32 @@ pub mod Games {
     #[abi(embed_v0)]
     impl Registrar = GamesEntry::RegistrarImpl<ContractState>;
     #[abi(embed_v0)]
+    impl Slots of crate::games::IGamesSlots<ContractState> {
+        fn view_call(self: @ContractState, game_id: u32, slot: u8, calldata: Span<felt252>) -> Span<felt252> {
+            crate::logic::release::ISlotViewsLibraryDispatcher {
+                class_hash: filled(crate::logic::release::class_of(game_id, slot)),
+            }
+                .slot_view(game_id, calldata)
+        }
+        fn authority_call(ref self: ContractState, family: u8, slot: u8, calldata: Span<felt252>) -> Span<felt252> {
+            crate::logic::release::assert_authority();
+            crate::logic::release::ISlotAuthorityLibraryDispatcher {
+                class_hash: filled(crate::logic::release::family_class(family, slot)),
+            }
+                .slot_authority(family, calldata)
+        }
+    }
+
+    fn filled(class_hash: starknet::ClassHash) -> starknet::ClassHash {
+        assert!(core::num::traits::Zero::is_non_zero(@class_hash), "no logic class in this slot");
+        class_hash
+    }
+    #[abi(embed_v0)]
     impl LedgerOperator of crate::entry::ILedgerOperator<ContractState> {
         fn deposit_source(self: @ContractState, game_id: u32) -> Option<crate::deposits::DepositSource> {
             crate::entry::ILedgerOperatorDispatcherTrait::deposit_source(
                 crate::entry::ILedgerOperatorLibraryDispatcher {
-                    class_hash: self.release.classes(game_id).bridge.read(),
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::BRIDGE),
                 },
                 game_id,
             )
@@ -89,7 +116,7 @@ pub mod Games {
         ) {
             crate::entry::ILedgerOperatorDispatcherTrait::deliver_deposit(
                 crate::entry::ILedgerOperatorLibraryDispatcher {
-                    class_hash: self.release.classes(game_id).bridge.read(),
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::BRIDGE),
                 },
                 game_id,
                 deposit,
@@ -101,7 +128,7 @@ pub mod Games {
         fn deposit_receipt(self: @ContractState, game_id: u32, id: u64) -> Option<crate::deposits::DepositReceipt> {
             crate::entry::ILedgerOperatorDispatcherTrait::deposit_receipt(
                 crate::entry::ILedgerOperatorLibraryDispatcher {
-                    class_hash: self.release.classes(game_id).bridge.read(),
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::BRIDGE),
                 },
                 game_id,
                 id,
@@ -110,7 +137,7 @@ pub mod Games {
         fn spend_lords(self: @ContractState, game_id: u32, account: ContractAddress) -> crate::deposits::SpendLords {
             crate::entry::ILedgerOperatorDispatcherTrait::spend_lords(
                 crate::entry::ILedgerOperatorLibraryDispatcher {
-                    class_hash: self.release.classes(game_id).bridge.read(),
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::BRIDGE),
                 },
                 game_id,
                 account,
@@ -121,7 +148,7 @@ pub mod Games {
         ) -> Option<crate::deposits::PrincipalWithdrawal> {
             crate::entry::ILedgerOperatorDispatcherTrait::principal_withdrawal(
                 crate::entry::ILedgerOperatorLibraryDispatcher {
-                    class_hash: self.release.classes(game_id).bridge.read(),
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::BRIDGE),
                 },
                 game_id,
                 account,
@@ -129,12 +156,16 @@ pub mod Games {
         }
         fn ledger_operator(self: @ContractState) -> ContractAddress {
             crate::entry::ILedgerOperatorDispatcherTrait::ledger_operator(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
+                crate::entry::ILedgerOperatorLibraryDispatcher {
+                    class_hash: crate::logic::release::family_class(crate::game::FRONTIER, crate::slots::BRIDGE),
+                },
             )
         }
         fn set_ledger_operator(ref self: ContractState, operator: ContractAddress) {
             crate::entry::ILedgerOperatorDispatcherTrait::set_ledger_operator(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
+                crate::entry::ILedgerOperatorLibraryDispatcher {
+                    class_hash: crate::logic::release::family_class(crate::game::FRONTIER, crate::slots::BRIDGE),
+                },
                 operator,
             );
         }
@@ -142,7 +173,7 @@ pub mod Games {
         fn frontier_prize(self: @ContractState, game_id: u32) -> crate::entry::FrontierPrize {
             crate::entry::ILedgerOperatorDispatcherTrait::frontier_prize(
                 crate::entry::ILedgerOperatorLibraryDispatcher {
-                    class_hash: self.release.classes(game_id).bridge.read(),
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::BRIDGE),
                 },
                 game_id,
             )
@@ -151,7 +182,7 @@ pub mod Games {
         fn sweep_lords(ref self: ContractState, game_id: u32, structure_id: u64) {
             crate::entry::ILedgerOperatorDispatcherTrait::sweep_lords(
                 crate::entry::ILedgerOperatorLibraryDispatcher {
-                    class_hash: self.release.classes(game_id).bridge.read(),
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::BRIDGE),
                 },
                 game_id,
                 structure_id,
@@ -165,7 +196,7 @@ pub mod Games {
         ) -> crate::entry::LaborGrant {
             crate::entry::IHomeGrantsDispatcherTrait::grant_labor(
                 crate::entry::IHomeGrantsLibraryDispatcher {
-                    class_hash: self.release.classes(home.game_id).bridge.read(),
+                    class_hash: crate::logic::release::class_of(home.game_id, crate::slots::BRIDGE),
                 },
                 home,
                 day,
@@ -177,7 +208,7 @@ pub mod Games {
         ) -> Option<crate::entry::LaborGrant> {
             crate::entry::IHomeGrantsDispatcherTrait::labor_grant(
                 crate::entry::IHomeGrantsLibraryDispatcher {
-                    class_hash: self.release.classes(home.game_id).bridge.read(),
+                    class_hash: crate::logic::release::class_of(home.game_id, crate::slots::BRIDGE),
                 },
                 home,
                 day,
@@ -185,7 +216,9 @@ pub mod Games {
         }
         fn grant_seal(ref self: ContractState, game_id: u32, account: ContractAddress) {
             crate::entry::IHomeGrantsDispatcherTrait::grant_seal(
-                crate::entry::IHomeGrantsLibraryDispatcher { class_hash: self.release.classes(game_id).bridge.read() },
+                crate::entry::IHomeGrantsLibraryDispatcher {
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::BRIDGE),
+                },
                 game_id,
                 account,
             )
@@ -215,19 +248,22 @@ pub mod Games {
         authentication: Authentication,
         release_id: u32,
         release: crate::logic::release::Release,
+        classes: Span<starknet::ClassHash>,
         vrf_public_key: realms_vrf_verifier::vendor::ecvrf::Point,
         l2_gas_bound: u64,
     ) {
-        self.entry.initializer(owner, launcher, authentication, release_id, release, vrf_public_key, l2_gas_bound);
+        self
+            .entry
+            .initializer(owner, launcher, authentication, release_id, release, classes, vrf_public_key, l2_gas_bound);
     }
 
     #[external(v0)]
     fn initialize_realm_traits(ref self: ContractState, first_realm: u32, packed_traits: Span<u32>) {
-        let state = crate::state::read();
         // The immutable realm catalogue belongs to the shard, so administration uses the current release.
-        let classes = state.releases.read(state.current_release.read()).classes;
         crate::realms::ISeasonRealmsDispatcherTrait::initialize_realm_traits(
-            crate::realms::ISeasonRealmsLibraryDispatcher { class_hash: classes.settlement },
+            crate::realms::ISeasonRealmsLibraryDispatcher {
+                class_hash: crate::logic::release::family_class(crate::game::FRONTIER, crate::slots::SETTLEMENT),
+            },
             first_realm,
             packed_traits,
         );
@@ -238,9 +274,10 @@ pub mod Games {
         fn register_entitlement(
             ref self: ContractState, key: crate::settlement::EntryKey, entitlement: crate::settlement::EntryEntitlement,
         ) {
-            let classes = self.release.classes(key.game_id);
             crate::settlement::ISettlementEntryDispatcherTrait::register_entitlement(
-                crate::settlement::ISettlementEntryLibraryDispatcher { class_hash: classes.settlement.read() },
+                crate::settlement::ISettlementEntryLibraryDispatcher {
+                    class_hash: crate::logic::release::class_of(key.game_id, crate::slots::SETTLEMENT),
+                },
                 key,
                 entitlement,
             );
@@ -257,9 +294,12 @@ pub mod Games {
 
     #[external(v0)]
     fn register_village_pass(ref self: ContractState, key: crate::village::VillagePassKey, owner: ContractAddress) {
-        let classes = self.release.classes(key.game_id);
         crate::village::IVillagePassesDispatcherTrait::register_village_pass(
-            crate::village::IVillagePassesLibraryDispatcher { class_hash: classes.settlement.read() }, key, owner,
+            crate::village::IVillagePassesLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(key.game_id, crate::slots::SETTLEMENT),
+            },
+            key,
+            owner,
         );
     }
     #[external(v0)]
@@ -294,7 +334,9 @@ pub mod Games {
         self: @ContractState, game_id: u32, region_id: u32, timestamp: u64,
     ) -> Span<(crate::troops::Coord, u8)> {
         crate::map::IMapLogicDispatcherTrait::expedition_home_ring(
-            crate::map::IMapLogicLibraryDispatcher { class_hash: self.release.classes(game_id).map.read() },
+            crate::map::IMapLogicLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(game_id, crate::slots::MAP),
+            },
             game_id,
             region_id,
             timestamp,
@@ -302,12 +344,12 @@ pub mod Games {
     }
 
     #[external(v0)]
-    fn blitz_result(self: @ContractState, game_id: u32) -> crate::blitz_results::BlitzResult {
-        crate::blitz_results::IBlitzResultsDispatcherTrait::blitz_result(
-            crate::blitz_results::IBlitzResultsLibraryDispatcher {
-                class_hash: self.release.classes(game_id).prizes.read(),
-            },
-            game_id,
+    fn game_result(self: @ContractState, game_id: u32) -> Span<felt252> {
+        starknet::syscalls::library_call_syscall(
+            crate::logic::release::class_of(game_id, crate::slots::PRIZES),
+            selector!("game_result"),
+            array![game_id.into()].span(),
         )
+            .unwrap_syscall()
     }
 }

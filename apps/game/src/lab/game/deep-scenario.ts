@@ -149,7 +149,7 @@ export const deepScenario = (closedRing = false): LabScenario => {
     opensOn: center,
     answer: (command, chain) => {
       if (command.kind !== "InteractSite") return [];
-      const [rawId, alt, x, y] = command.calldata.slice(5);
+      const [rawId, alt, x, y] = command.span.slice(1);
       if (rawId === undefined || alt === undefined || x === undefined || y === undefined) return [];
       if (BigInt(alt) !== 0n || BigInt(x) !== BigInt(center.col) || BigInt(y) !== BigInt(center.row)) return [];
       const explorer_id = BigInt(rawId);

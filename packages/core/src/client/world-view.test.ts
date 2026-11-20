@@ -6,7 +6,7 @@ import { worldView } from "./world-view";
 describe("worldView", () => {
   it("names a view the deployed Games contract exposes", () => {
     expect(worldView(schema, "expedition_home_ring")).toBe("expedition_home_ring");
-    expect(worldView(schema, "blitz_result")).toBe("blitz_result");
+    expect(worldView(schema, "game_result")).toBe("game_result");
   });
 
   it("refuses a logic-class view that only a test fixture forwards", () => {

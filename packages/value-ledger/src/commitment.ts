@@ -17,3 +17,17 @@ export const blitzCommitment = (result: Pick<BlitzResult, "chainId" | "gameId" |
   for (const row of result.rows) felts.push(row.wallet, row.rank);
   return hash.computePoseidonHashOnElements(felts);
 };
+
+export const blitzResultFields = (values: readonly string[]) => {
+  const count = Number(values[0]);
+  if (!Number.isSafeInteger(count) || count < 0 || values.length !== 2 * count + 3)
+    throw new Error("invalid_result_layout");
+  return {
+    rows: Array.from({ length: count }, (_, index) => ({
+      wallet: values[1 + 2 * index]!,
+      rank: values[2 + 2 * index]!,
+    })),
+    complete: values[1 + 2 * count]!,
+    commitment: values[2 + 2 * count]!,
+  };
+};

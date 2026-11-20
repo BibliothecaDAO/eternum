@@ -212,9 +212,10 @@ pub fn reveal_tiles(
 
 fn reveal_and_pay(army: ExplorerKey, point: crate::troops::Coord, seed: u256, context: crate::commands::ActionContext) {
     let game_id = army.game_id;
-    let classes = crate::logic::release::classes(game_id);
     let found = crate::discovery::IExpeditionRevealDispatcherTrait::reveal_expedition_tile(
-        crate::discovery::IExpeditionRevealLibraryDispatcher { class_hash: classes.construction.read() },
+        crate::discovery::IExpeditionRevealLibraryDispatcher {
+            class_hash: crate::logic::release::class_of(game_id, crate::slots::CONSTRUCTION),
+        },
         crate::geometry::tile_key(game_id, point),
         army.explorer_id,
         seed,
@@ -226,7 +227,9 @@ fn reveal_and_pay(army: ExplorerKey, point: crate::troops::Coord, seed: u256, co
     let explorer = crate::logic::troops::explorer(army).expect('missing revealing army');
     let actor = crate::logic::structures::owner(ResourceKey { game_id, entity_id: explorer.owner });
     crate::exploration_rewards::IExtractionDispatcherTrait::extract_exploration_reward(
-        crate::exploration_rewards::IExtractionLibraryDispatcher { class_hash: classes.prizes.read() },
+        crate::exploration_rewards::IExtractionLibraryDispatcher {
+            class_hash: crate::logic::release::class_of(game_id, crate::slots::PRIZES),
+        },
         game_id,
         actor,
         army.explorer_id,

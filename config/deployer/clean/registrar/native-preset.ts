@@ -92,6 +92,7 @@ export function buildNativeGameParams(config: Config, input: CreateGamePayloadIn
   const common = buildCreateGameParams(config, { ...input, startMainAt: nativeSeasonStart(config, input) });
   return {
     name: common.name,
+    family: common.family,
     preset_id: common.preset_id,
     start_settling_at: common.start_settling_at,
     start_main_at: common.start_main_at,

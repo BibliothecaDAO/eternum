@@ -8,6 +8,7 @@ import {
   balanceIdentity,
   identifierConstants,
   readBalanceConstants,
+  readLogicSlots,
   readRuleConstants,
   readReleaseConstants,
 } from "./rule-constants.mjs";
@@ -80,6 +81,20 @@ test("every release balance number outside a table or a record is named with its
       if (/^(u\d+|i\d+|felt252)$/.test(type.trim()))
         assert.match(name, QUANTITY, `${module}: ${name} is tunable without a unit`);
   }
+});
+
+test("the published logic slots are the slots src/slots.cairo numbers, in their order", async () => {
+  const slots = await readLogicSlots(root);
+  assert.deepEqual(slots[0], { slot: 0, name: "season", contract: "SeasonLogic" });
+  assert.deepEqual((await readSchema()).logicClasses, slots);
+});
+
+test("the game families the contract names are the families every reader is generated with", async () => {
+  const families = (await readBalanceConstants(root)).nativeFamilyConstants;
+  assert.deepEqual(families, { FRONTIER: 1, BLITZ: 2 });
+  assert.deepEqual(identifierConstants(await readBalanceConstants(root)).family, families);
+  const schemaModule = await readFile(new URL("schema/client.gen.ts", root), "utf8");
+  for (const [name, id] of Object.entries(families)) assert.match(schemaModule, new RegExp(`"${name}": ${id}`));
 });
 
 test("the balance identity moves with a tunable number only, not with a rename or an identifier", () => {
@@ -159,9 +174,9 @@ test("release thresholds are generated for every reader, decoders included, in t
 
 test("every release threshold is a release this commit ships or an earlier one", async () => {
   const shipped = (await readFile(new URL("../../../deploy/release/native-release.ts", root), "utf8")).match(
-    /^export const NATIVE_RELEASE_ID = ([0-9]+);$/m,
+    /^  frontier: \{ family: [^,]+, release: ([0-9]+), since: [0-9]+ \},$/m,
   );
-  assert.ok(shipped, "missing NATIVE_RELEASE_ID");
+  assert.ok(shipped, "missing the Frontier release line");
   for (const [name, release] of Object.entries(await readReleaseConstants(root)))
     assert.ok(release <= Number(shipped[1]), `${name} is release ${release}, after the release this commit ships`);
 });

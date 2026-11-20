@@ -27,7 +27,9 @@ fn observe(d: Deployment, home: ResourceKey, kind: u8, amount: u128) {
     interact_with_state(
         d.games,
         || {
-            IQuestProgressLibraryDispatcher { class_hash: crate::logic::release::classes(home.game_id).bridge.read() }
+            IQuestProgressLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(home.game_id, crate::slots::BRIDGE),
+            }
                 .record_quest_progress(home, kind, amount, 360);
         },
     );
@@ -238,10 +240,13 @@ fn fund(d: Deployment, home: ResourceKey, resource_type: u8, amount: u128) {
     interact_with_state(
         d.games,
         || {
-            let classes = crate::logic::release::classes(home.game_id);
-            let context = IResourceContextLibraryDispatcher { class_hash: classes.bridge.read() }
+            let context = IResourceContextLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(home.game_id, crate::slots::BRIDGE),
+            }
                 .resource_context(home.game_id);
-            IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() }
+            IResourceOperationsLibraryDispatcher {
+                class_hash: crate::logic::release::class_of(home.game_id, crate::slots::RESOURCES),
+            }
                 .grant_resource(home, resource_type, amount, 360, context);
         },
     );

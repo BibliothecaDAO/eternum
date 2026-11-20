@@ -89,16 +89,10 @@ export async function signPlayerInvoke(account: Account, call: Call, bounds: Pla
 }
 
 /** Games.play has one published command span; every producer uses the same pins and length encoding. */
-export function buildPlayCall(
-  games: string,
-  gameId: number,
-  releaseId: number,
-  presetCommitment: string | bigint,
-  command: readonly string[],
-): Call {
+export function buildPlayCall(games: string, gameId: number, releaseId: number, command: readonly string[]): Call {
   return {
     contractAddress: games,
     entrypoint: "play",
-    calldata: [String(gameId), String(releaseId), String(presetCommitment), String(command.length), ...command],
+    calldata: [String(gameId), String(releaseId), String(command.length), ...command],
   };
 }

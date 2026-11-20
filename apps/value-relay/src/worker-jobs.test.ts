@@ -16,6 +16,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ValuePlaneAddressMissingError } from "@realms-world/chain";
 import worker, { ValueRelay } from "./worker";
 import { RelayFailure } from "./ports";
+import { releaseLine } from "../../../packages/core/src/test-support/releases";
 
 vi.mock("cloudflare:workers", () => ({
   WorkerEntrypoint: class {},
@@ -36,7 +37,7 @@ vi.mock("@realms-world/value-ledger", async (importOriginal) => ({
     chainId: "0x1",
     rpcUrl: "https://shard.test",
     contracts: { games: "0x2" },
-    releaseSchemas: { "1": "0xs" },
+    releases: releaseLine("0xs", [1]),
   }),
 }));
 const deposits = vi.hoisted(() => vi.fn());

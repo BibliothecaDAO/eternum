@@ -4,7 +4,7 @@ use crate::banes::{BaneEffects, BaneProgress, BaneWindow, IBaneEffectsDispatcher
 use crate::resources::ResourceKey;
 
 pub fn effects(home: ResourceKey, from: u64, until: u64) -> BaneEffects {
-    IBaneEffectsLibraryDispatcher { class_hash: crate::logic::release::classes(home.game_id).bridge.read() }
+    IBaneEffectsLibraryDispatcher { class_hash: crate::logic::release::class_of(home.game_id, crate::slots::BRIDGE) }
         .bane_effects(home, from, until)
 }
 

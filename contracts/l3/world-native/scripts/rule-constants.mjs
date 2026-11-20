@@ -31,6 +31,7 @@ export async function readBalanceConstants(root) {
     nativeOathConstants: await readOathConstants(root),
     nativeResearchConstants: await readResearchConstants(root),
     nativeFragmentConstants: await readFragmentConstants(root),
+    nativeFamilyConstants: await readFamilyConstants(root),
   };
 }
 
@@ -71,6 +72,10 @@ async function readOathConstants(root) {
   return unsignedConstants(await readFile(new URL("src/oaths.cairo", root), "utf8"), "8|16");
 }
 
+async function readFamilyConstants(root) {
+  return unsignedConstants(await readFile(new URL("src/game.cairo", root), "utf8"), "8");
+}
+
 async function readFragmentConstants(root) {
   return unsignedConstants(await readFile(new URL("src/fragments.cairo", root), "utf8"), "8|16");
 }
@@ -79,6 +84,17 @@ async function readArrivalConstants(root) {
   const { SLOTS_PER_DAY } = unsignedConstants(await readFile(new URL("src/arrivals.cairo", root), "utf8"), "8");
   if (SLOTS_PER_DAY === undefined) throw new Error("Missing Cairo arrival slot count");
   return { SLOTS_PER_DAY };
+}
+
+export async function readLogicSlots(root) {
+  const { FRONTIER_SLOTS, ...slots } = unsignedConstants(await readFile(new URL("src/slots.cairo", root), "utf8"), "8");
+  const ordered = Object.entries(slots).sort(([, left], [, right]) => left - right);
+  if (ordered.length !== FRONTIER_SLOTS || ordered.some(([, slot], index) => slot !== index))
+    throw new Error("Cairo logic slots must number 0 to FRONTIER_SLOTS - 1");
+  return ordered.map(([constant, slot]) => {
+    const name = constant.toLowerCase();
+    return { slot, name, contract: `${name[0].toUpperCase()}${name.slice(1)}Logic` };
+  });
 }
 
 /** Release behavior is not part of the immutable fact wire schema. */

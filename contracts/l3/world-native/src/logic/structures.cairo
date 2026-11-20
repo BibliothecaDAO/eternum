@@ -390,7 +390,7 @@ pub mod StructuresLogic {
             );
             crate::upgrades::IStructureUpgradesDispatcherTrait::level_up(
                 crate::upgrades::IStructureUpgradesLibraryDispatcher {
-                    class_hash: self.release.classes(game_id).construction.read(),
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::CONSTRUCTION),
                 },
                 game_id,
                 actor,
@@ -485,7 +485,7 @@ pub mod StructuresLogic {
             if record.base.category == crate::taxonomy::BITCOIN_MINE_CATEGORY {
                 crate::bitcoin::IBitcoinFundingDispatcherTrait::bitcoin_mine_captured(
                     crate::bitcoin::IBitcoinFundingLibraryDispatcher {
-                        class_hash: self.release.classes(key.game_id).season.read(),
+                        class_hash: crate::logic::release::class_of(key.game_id, crate::slots::SEASON),
                     },
                     key,
                     timestamp,
@@ -494,7 +494,7 @@ pub mod StructuresLogic {
             }
             crate::logic::structures::StructureState::transfer_owner(key, owner);
             let points = if record.owner == 0.try_into().unwrap() {
-                IPointsLibraryDispatcher { class_hash: self.release.classes(key.game_id).season.read() }
+                IPointsLibraryDispatcher { class_hash: crate::logic::release::class_of(key.game_id, crate::slots::SEASON) }
                     .register_capture(key.game_id, owner, crate::commands::action_context(game_context))
             } else {
                 0
@@ -623,7 +623,7 @@ pub mod StructuresLogic {
                 Discovery::Mine => {
                     if rules.day_unit_seconds == 0 {
                         let (kind, config, cap) = IMineRulesLibraryDispatcher {
-                            class_hash: self.release.classes(game_id).production.read(),
+                            class_hash: crate::logic::release::class_of(game_id, crate::slots::PRODUCTION),
                         }
                             .mine_draw(MinePoolKey { game_id }, seed);
                         record.metadata.mine_kind = kind;
@@ -687,7 +687,7 @@ pub mod StructuresLogic {
             crate::logic::map::MapState::occupy(tile_key(game_id, coord), id, occupier, true);
             crate::guards::IGuardInitializationDispatcherTrait::initialize_structure_guards(
                 crate::guards::IGuardInitializationLibraryDispatcher {
-                    class_hash: self.release.classes(game_id).map.read(),
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::MAP),
                 },
                 key,
                 seed,
@@ -759,7 +759,9 @@ pub mod StructuresLogic {
         ) {
             if let Some(occupancy) = crate::logic::map::occupancy(tile_key(game_id, coord)) {
                 assert!(!occupancy.is_structure, "tile occupied by structure");
-                ISettlementDisplacementLibraryDispatcher { class_hash: self.release.classes(game_id).movement.read() }
+                ISettlementDisplacementLibraryDispatcher {
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::MOVEMENT),
+                }
                     .displace_explorer(game_id, occupancy.entity_id, crate::commands::action_context(game_context));
             }
             self.reveal_structure_tile(game_id, coord, game_context);

@@ -13,6 +13,7 @@ import type { MadaraRpc } from "./madara-rpc";
 import {
   structureValue,
   explorerValue,
+  gameRegistryEvent,
   seedDerivedRows,
   raw,
   receipt,
@@ -91,18 +92,13 @@ const frontierWorld = (homeRingView?: HomeRingView, call?: MadaraRpc["call"]) =>
     fold,
     receipt(
       seedDerivedRows(fold, decoder, [
-        rowEvent("GameRegistry", ["1"], {
+        gameRegistryEvent({
           name: "7",
-          preset_id: "1",
-          creator: "10",
-          settled: false,
-          ready: true,
-          dev_mode_on: false,
+          preset_id: 1,
           start_settling_at: String(DAY_START + 120),
           start_main_at: String(DAY_START + 120),
           scheduled_end_at: String(DAY_START + 120 + 2 * 288_000),
           end_at: String(DAY_START + 120 + 2 * 288_000),
-          end_grace_seconds: "0",
           seed: "7",
         }),
         rowEvent("SettlementRules", ["1"], {

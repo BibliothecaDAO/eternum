@@ -1,3 +1,4 @@
+import { gameRegistryRow } from "../../../../../../packages/core/src/test-support/game-registry";
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from "vitest";
 import {
@@ -56,20 +57,14 @@ async function harness(ended = false, discovered = false, revealWhilePreparing =
       {
         model: "GameRegistry",
         key: "1",
-        value: {
+        value: gameRegistryRow({
           game_id: 13,
           preset_id: 2,
-          name: "1",
-          start_settling_at: "1",
           start_main_at: "1",
           scheduled_end_at: "0",
           end_at: "0",
           settled,
-          ready: true,
-          dev_mode_on: false,
-          end_grace_seconds: 0,
-          seed: "1",
-        },
+        }),
       },
     ]);
   registry(ended);

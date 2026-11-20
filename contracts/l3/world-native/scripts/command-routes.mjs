@@ -2,8 +2,8 @@ import { commandRoutes } from "../schema/command-routes.mjs";
 import { assignWireIds, renderWireSerde, wireIds } from "./wire-ids.mjs";
 
 // Replaces separately maintained command payload types, discriminants and the dispatch match.
-export function compileCommandRoutes(artifacts, types, feltLength) {
-  const logic = types.get("games_storage::release::LogicClasses").members.map(({ name }) => name);
+export function compileCommandRoutes(artifacts, types, feltLength, logicClasses) {
+  const logic = logicClasses.map(({ name }) => name);
   const routes = assignWireIds("commands", commandRoutes).map((route) =>
     compileRoute(route, artifacts, types, logic, feltLength),
   );
@@ -12,7 +12,7 @@ export function compileCommandRoutes(artifacts, types, feltLength) {
     name: "world_native::commands::Command",
     variants: routes.map(({ name, payload, wireId }) => ({ name, type: payload, wireId })),
   };
-  return { command, cairo: renderRoutes(routes, logic) };
+  return { command, cairo: renderRoutes(routes) };
 }
 
 function compileRoute(route, artifacts, types, logic, feltLength) {
@@ -59,7 +59,7 @@ function itemOffset(route, payload, types, feltLength) {
 
 const isSpan = (type) => /^core::array::(?:Span|Array)::</.test(type);
 
-function renderRoutes(routes, logic) {
+function renderRoutes(routes) {
   const definitions = wireIds.commands.map(({ id }) => {
     const route = routes.find(({ wireId }) => wireId === id);
     if (!route) return "    None,";
@@ -72,7 +72,6 @@ function renderRoutes(routes, logic) {
       : `    ${name}: ${payload.replaceAll("world_native::", "crate::").replaceAll("core::starknet::", "starknet::")},`,
   );
   return `// Generated from schema/command-routes.mjs and production logic ABIs.
-use starknet::storage::StoragePointerReadAccess;
 
 #[derive(Copy, Drop)]
 pub struct CommandRoute {
@@ -89,13 +88,6 @@ pub const COMMAND_IDS: [u32; ${routes.length}] = [${routes.map(({ wireId }) => w
 pub const COMMAND_ROUTES: [Option<CommandRoute>; ${definitions.length}] = [
 ${definitions.join("\n")}
 ];
-
-pub fn logic_class(classes: starknet::storage::StoragePointer<games_storage::release::LogicClasses>, index: u8) -> starknet::ClassHash {
-    match index {
-${logic.map((name, index) => `        ${index} => classes.${name}.read(),`).join("\n")}
-        _ => panic!("unknown command logic"),
-    }
-}
 
 // Decode the complete command before reading a roll; routes retain the same wire discriminants.
 #[derive(Copy, Drop, Debug, PartialEq)]

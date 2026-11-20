@@ -1,3 +1,4 @@
+import { gameRegistryRow } from "../test-support/game-registry";
 import {
   BiomeType,
   BiomeTypeToId,
@@ -72,20 +73,19 @@ function frontier() {
     mode: "Triple",
     spacing: SPACING,
   });
-  write("GameRegistry", {
-    game_id: GAME_ID,
-    name: 0n,
-    preset_id: 7,
-    settled: false,
-    ready: true,
-    dev_mode_on: false,
-    start_settling_at: 0n,
-    start_main_at: BigInt(START),
-    scheduled_end_at: BigInt(START + DAY * 50),
-    end_at: BigInt(START + DAY * 50),
-    end_grace_seconds: 0,
-    seed: 0n,
-  });
+  write(
+    "GameRegistry",
+    gameRegistryRow({
+      game_id: GAME_ID,
+      name: "0",
+      preset_id: 7,
+      start_settling_at: "0",
+      start_main_at: String(START),
+      scheduled_end_at: String(START + DAY * 50),
+      end_at: String(START + DAY * 50),
+      seed: "0",
+    }),
+  );
   write("DeepRules", {
     game_id: GAME_ID,
     gate_distance: 4,

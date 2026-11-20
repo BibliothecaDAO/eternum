@@ -11,15 +11,15 @@ pub mod GamesFixture {
     use crate::tests::fixtures::{IFixtureDispatcherTrait, IFixtureLibraryDispatcher};
 
     // Uncreated-game regressions used the deployed domain before a release pin existed.
-    fn fixture_classes(game_id: u32) -> starknet::storage::StoragePointer<games_storage::release::LogicClasses> {
+    fn fixture_class(game_id: u32, slot: u8) -> starknet::ClassHash {
         let state = crate::state::read();
         let pin = state.game_releases.read(game_id);
         let release_id = if pin == 0 {
-            state.current_release.read()
+            state.open_releases.read(crate::game::FRONTIER)
         } else {
             pin
         };
-        state.releases.entry(release_id).classes
+        crate::logic::release::release_class(release_id, slot)
     }
 
     #[starknet::embeddable]
@@ -34,15 +34,15 @@ pub mod GamesFixture {
     #[starknet::embeddable]
     pub impl SpiresFixture<TContractState, +Drop<TContractState>> of crate::spires::ISpires<TContractState> {
         fn initialize_spires(ref self: TContractState, game_id: u32) {
-            let classes = fixture_classes(game_id);
             crate::spires::ISpiresDispatcherTrait::initialize_spires(
-                crate::spires::ISpiresLibraryDispatcher { class_hash: classes.placement.read() }, game_id,
+                crate::spires::ISpiresLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::PLACEMENT) },
+                game_id,
             )
         }
         fn spire_layout(self: @TContractState, game_id: u32) -> Option<crate::spires::SpireLayout> {
-            let classes = fixture_classes(game_id);
             crate::spires::ISpiresDispatcherTrait::spire_layout(
-                crate::spires::ISpiresLibraryDispatcher { class_hash: classes.placement.read() }, game_id,
+                crate::spires::ISpiresLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::PLACEMENT) },
+                game_id,
             )
         }
     }
@@ -53,9 +53,10 @@ pub mod GamesFixture {
         fn claim_season_settlement(
             ref self: TContractState, game_id: u32, settled_count: u16, seed: u256, center: crate::troops::Coord,
         ) -> crate::troops::Coord {
-            let classes = fixture_classes(game_id);
             crate::realms::ISeasonPlacementDispatcherTrait::claim_season_settlement(
-                crate::realms::ISeasonPlacementLibraryDispatcher { class_hash: classes.placement.read() },
+                crate::realms::ISeasonPlacementLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::PLACEMENT),
+                },
                 game_id,
                 settled_count,
                 seed,
@@ -70,9 +71,10 @@ pub mod GamesFixture {
         fn settlement_pool(
             self: @TContractState, game_id: u32, center: crate::troops::Coord,
         ) -> crate::settlement::SettlementPool {
-            let classes = fixture_classes(game_id);
             crate::settlement::ISettlementPoolDispatcherTrait::settlement_pool(
-                crate::settlement::ISettlementPoolLibraryDispatcher { class_hash: classes.placement.read() },
+                crate::settlement::ISettlementPoolLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::PLACEMENT),
+                },
                 game_id,
                 center,
             )
@@ -80,9 +82,10 @@ pub mod GamesFixture {
         fn village_pool(
             self: @TContractState, game_id: u32, center: crate::troops::Coord,
         ) -> crate::settlement::SettlementPool {
-            let classes = fixture_classes(game_id);
             crate::settlement::ISettlementPoolDispatcherTrait::village_pool(
-                crate::settlement::ISettlementPoolLibraryDispatcher { class_hash: classes.placement.read() },
+                crate::settlement::ISettlementPoolLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::PLACEMENT),
+                },
                 game_id,
                 center,
             )
@@ -90,9 +93,10 @@ pub mod GamesFixture {
         fn claim_village(
             ref self: TContractState, game_id: u32, registered: u16, seed: u256, center: crate::troops::Coord,
         ) -> crate::troops::Coord {
-            let classes = fixture_classes(game_id);
             crate::settlement::ISettlementPoolDispatcherTrait::claim_village(
-                crate::settlement::ISettlementPoolLibraryDispatcher { class_hash: classes.placement.read() },
+                crate::settlement::ISettlementPoolLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::PLACEMENT),
+                },
                 game_id,
                 registered,
                 seed,
@@ -103,9 +107,10 @@ pub mod GamesFixture {
     #[starknet::embeddable]
     pub impl MapFixture<TContractState, +Drop<TContractState>> of crate::map::IMapLogic<TContractState> {
         fn biome(self: @TContractState, key: crate::map::TileKey, game_context: crate::commands::BiomeContext) -> u8 {
-            let classes = fixture_classes(key.game_id);
             crate::map::IMapLogicDispatcherTrait::biome(
-                crate::map::IMapLogicLibraryDispatcher { class_hash: classes.map.read() }, key, game_context,
+                crate::map::IMapLogicLibraryDispatcher { class_hash: fixture_class(key.game_id, crate::slots::MAP) },
+                key,
+                game_context,
             )
         }
         fn discovery(
@@ -115,9 +120,8 @@ pub mod GamesFixture {
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) -> crate::discovery::Discovery {
-            let classes = fixture_classes(key.game_id);
             crate::map::IMapLogicDispatcherTrait::discovery(
-                crate::map::IMapLogicLibraryDispatcher { class_hash: classes.map.read() },
+                crate::map::IMapLogicLibraryDispatcher { class_hash: fixture_class(key.game_id, crate::slots::MAP) },
                 key,
                 seed,
                 timestamp,
@@ -130,25 +134,27 @@ pub mod GamesFixture {
             coord: crate::troops::Coord,
             game_context: crate::commands::BiomeContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::map::IMapLogicDispatcherTrait::reveal_structure_surroundings(
-                crate::map::IMapLogicLibraryDispatcher { class_hash: classes.map.read() }, game_id, coord, game_context,
+                crate::map::IMapLogicLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::MAP) },
+                game_id,
+                coord,
+                game_context,
             )
         }
         fn reveal_destination_tile(
             ref self: TContractState, key: crate::map::TileKey, game_context: crate::commands::BiomeContext,
         ) -> Option<crate::map::TileOpt> {
-            let classes = fixture_classes(key.game_id);
             crate::map::IMapLogicDispatcherTrait::reveal_destination_tile(
-                crate::map::IMapLogicLibraryDispatcher { class_hash: classes.map.read() }, key, game_context,
+                crate::map::IMapLogicLibraryDispatcher { class_hash: fixture_class(key.game_id, crate::slots::MAP) },
+                key,
+                game_context,
             )
         }
         fn expedition_home_ring(
             self: @TContractState, game_id: u32, region_id: u32, timestamp: u64,
         ) -> Span<(crate::troops::Coord, u8)> {
-            let classes = fixture_classes(game_id);
             crate::map::IMapLogicDispatcherTrait::expedition_home_ring(
-                crate::map::IMapLogicLibraryDispatcher { class_hash: classes.map.read() },
+                crate::map::IMapLogicLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::MAP) },
                 game_id,
                 region_id,
                 timestamp,
@@ -167,9 +173,10 @@ pub mod GamesFixture {
             coord: crate::troops::Coord,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::exploration_rewards::IExtractionDispatcherTrait::extract_exploration_reward(
-                crate::exploration_rewards::IExtractionLibraryDispatcher { class_hash: classes.prizes.read() },
+                crate::exploration_rewards::IExtractionLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::PRIZES),
+                },
                 game_id,
                 actor,
                 explorer_id,
@@ -185,9 +192,10 @@ pub mod GamesFixture {
             coord: crate::troops::Coord,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::exploration_rewards::IExtractionDispatcherTrait::raise_dormant_spire(
-                crate::exploration_rewards::IExtractionLibraryDispatcher { class_hash: classes.prizes.read() },
+                crate::exploration_rewards::IExtractionLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::PRIZES),
+                },
                 game_id,
                 actor,
                 explorer_id,
@@ -205,9 +213,10 @@ pub mod GamesFixture {
             count: u8,
             game_context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(key.game_id);
             crate::relics::IRelicMapDispatcherTrait::reveal_relic_tiles(
-                crate::relics::IRelicMapLibraryDispatcher { class_hash: classes.raid.read() },
+                crate::relics::IRelicMapLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::ECONOMY),
+                },
                 key,
                 coord,
                 count,
@@ -226,9 +235,10 @@ pub mod GamesFixture {
             timestamp: u64,
             rules: crate::rules::SliceRules,
         ) {
-            let classes = fixture_classes(key.game_id);
             crate::guards::IGuardInitializationDispatcherTrait::initialize_structure_guards(
-                crate::guards::IGuardInitializationLibraryDispatcher { class_hash: classes.map.read() },
+                crate::guards::IGuardInitializationLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::MAP),
+                },
                 key,
                 seed,
                 timestamp,
@@ -239,9 +249,11 @@ pub mod GamesFixture {
     #[starknet::embeddable]
     pub impl GuardsFixture<TContractState, +Drop<TContractState>> of crate::guards::IGuards<TContractState> {
         fn guard(self: @TContractState, key: crate::guards::GuardKey) -> crate::guards::Guard {
-            let classes = fixture_classes(key.game_id);
             crate::guards::IGuardsDispatcherTrait::guard(
-                crate::guards::IGuardsLibraryDispatcher { class_hash: classes.troops.read() }, key,
+                crate::guards::IGuardsLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::TROOPS),
+                },
+                key,
             )
         }
         fn add_starting_guard(
@@ -252,9 +264,10 @@ pub mod GamesFixture {
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(key.game_id);
             crate::guards::IGuardsDispatcherTrait::add_starting_guard(
-                crate::guards::IGuardsLibraryDispatcher { class_hash: classes.troops.read() },
+                crate::guards::IGuardsLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::TROOPS),
+                },
                 key,
                 category,
                 amount,
@@ -275,9 +288,10 @@ pub mod GamesFixture {
             command: crate::troop_management::ManageTroops,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::troop_management::ITroopManagementDispatcherTrait::manage_troops(
-                crate::troop_management::ITroopManagementLibraryDispatcher { class_hash: classes.troops.read() },
+                crate::troop_management::ITroopManagementLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::TROOPS),
+                },
                 game_id,
                 actor,
                 command,
@@ -296,9 +310,10 @@ pub mod GamesFixture {
             command: crate::commands::CreateExplorer,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::commands::ICreateExplorerDispatcherTrait::create_explorer(
-                crate::commands::ICreateExplorerLibraryDispatcher { class_hash: classes.troops.read() },
+                crate::commands::ICreateExplorerLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::TROOPS),
+                },
                 game_id,
                 actor,
                 command,
@@ -315,9 +330,10 @@ pub mod GamesFixture {
             command: crate::commands::Explore,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::commands::IExploreDispatcherTrait::explore(
-                crate::commands::IExploreLibraryDispatcher { class_hash: classes.movement.read() },
+                crate::commands::IExploreLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::MOVEMENT),
+                },
                 game_id,
                 actor,
                 command,
@@ -333,9 +349,11 @@ pub mod GamesFixture {
         fn building_rule(
             self: @TContractState, key: crate::buildings::BuildingRuleKey,
         ) -> crate::buildings::BuildingRule {
-            let classes = fixture_classes(key.game_id);
             crate::buildings::IBuildingRulesDispatcherTrait::building_rule(
-                crate::buildings::IBuildingRulesLibraryDispatcher { class_hash: classes.construction.read() }, key,
+                crate::buildings::IBuildingRulesLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::CONSTRUCTION),
+                },
+                key,
             )
         }
     }
@@ -353,9 +371,10 @@ pub mod GamesFixture {
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) -> u64 {
-            let classes = fixture_classes(game_id);
             crate::structures::IStructureOperationsDispatcherTrait::create_discovery(
-                crate::structures::IStructureOperationsLibraryDispatcher { class_hash: classes.structures.read() },
+                crate::structures::IStructureOperationsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::STRUCTURES),
+                },
                 game_id,
                 home_id,
                 coord,
@@ -373,9 +392,10 @@ pub mod GamesFixture {
             grants: Span<(u8, u128)>,
         ) -> u64 {
             crate::tests::play_fixture::prepare_fixture_home(game_id, actor);
-            let classes = fixture_classes(game_id);
             crate::structures::IStructureOperationsDispatcherTrait::provision_realm(
-                crate::structures::IStructureOperationsLibraryDispatcher { class_hash: classes.structures.read() },
+                crate::structures::IStructureOperationsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::STRUCTURES),
+                },
                 game_id,
                 actor,
                 coord,
@@ -396,9 +416,10 @@ pub mod GamesFixture {
             context: crate::commands::ActionContext,
         ) -> u64 {
             crate::tests::play_fixture::prepare_fixture_home(game_id, actor);
-            let classes = fixture_classes(game_id);
             crate::settlement::ISettlementCreationDispatcherTrait::create_settlement(
-                crate::settlement::ISettlementCreationLibraryDispatcher { class_hash: classes.structures.read() },
+                crate::settlement::ISettlementCreationLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::STRUCTURES),
+                },
                 game_id,
                 actor,
                 coord,
@@ -418,9 +439,10 @@ pub mod GamesFixture {
             command: crate::buildings::CreateBuilding,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::buildings::IBuildingCommandsDispatcherTrait::create_building(
-                crate::buildings::IBuildingCommandsLibraryDispatcher { class_hash: classes.construction.read() },
+                crate::buildings::IBuildingCommandsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::CONSTRUCTION),
+                },
                 game_id,
                 actor,
                 command,
@@ -434,9 +456,10 @@ pub mod GamesFixture {
             command: crate::buildings::ChangeBuilding,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::buildings::IBuildingCommandsDispatcherTrait::destroy_building(
-                crate::buildings::IBuildingCommandsLibraryDispatcher { class_hash: classes.construction.read() },
+                crate::buildings::IBuildingCommandsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::CONSTRUCTION),
+                },
                 game_id,
                 actor,
                 command,
@@ -450,9 +473,10 @@ pub mod GamesFixture {
             command: crate::buildings::ChangeBuilding,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::buildings::IBuildingCommandsDispatcherTrait::pause_building_production(
-                crate::buildings::IBuildingCommandsLibraryDispatcher { class_hash: classes.construction.read() },
+                crate::buildings::IBuildingCommandsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::CONSTRUCTION),
+                },
                 game_id,
                 actor,
                 command,
@@ -466,9 +490,10 @@ pub mod GamesFixture {
             command: crate::buildings::ChangeBuilding,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::buildings::IBuildingCommandsDispatcherTrait::resume_building_production(
-                crate::buildings::IBuildingCommandsLibraryDispatcher { class_hash: classes.construction.read() },
+                crate::buildings::IBuildingCommandsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::CONSTRUCTION),
+                },
                 game_id,
                 actor,
                 command,
@@ -479,9 +504,11 @@ pub mod GamesFixture {
     #[starknet::embeddable]
     pub impl NamesFixture<TContractState, +Drop<TContractState>> of crate::names::INames<TContractState> {
         fn entity_name(self: @TContractState, key: crate::resources::ResourceKey) -> crate::names::EntityName {
-            let classes = fixture_classes(key.game_id);
             crate::names::INamesDispatcherTrait::entity_name(
-                crate::names::INamesLibraryDispatcher { class_hash: classes.structures.read() }, key,
+                crate::names::INamesLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::STRUCTURES),
+                },
+                key,
             )
         }
         fn set_entity_name(
@@ -491,9 +518,8 @@ pub mod GamesFixture {
             command: crate::names::SetEntityName,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::names::INamesDispatcherTrait::set_entity_name(
-                crate::names::INamesLibraryDispatcher { class_hash: classes.structures.read() },
+                crate::names::INamesLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::STRUCTURES) },
                 game_id,
                 actor,
                 command,
@@ -512,9 +538,10 @@ pub mod GamesFixture {
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(key.game_id);
             crate::guards::IStructureCaptureDispatcherTrait::capture_structure(
-                crate::guards::IStructureCaptureLibraryDispatcher { class_hash: classes.structures.read() },
+                crate::guards::IStructureCaptureLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::STRUCTURES),
+                },
                 key,
                 capturing_home,
                 timestamp,
@@ -528,31 +555,44 @@ pub mod GamesFixture {
     > of crate::realms::ISeasonRealms<TContractState> {
         fn initialize_realm_traits(ref self: TContractState, first_realm: u32, packed_traits: Span<u32>) {
             let state = crate::state::read();
-            let classes = state.releases.entry(state.current_release.read()).classes;
             crate::realms::ISeasonRealmsDispatcherTrait::initialize_realm_traits(
-                crate::realms::ISeasonRealmsLibraryDispatcher { class_hash: classes.settlement.read() },
+                crate::realms::ISeasonRealmsLibraryDispatcher {
+                    class_hash: crate::logic::release::release_class(
+                        state.open_releases.read(crate::game::FRONTIER), crate::slots::SETTLEMENT,
+                    ),
+                },
                 first_realm,
                 packed_traits,
             )
         }
         fn realm_catalogue(self: @TContractState) -> crate::realms::RealmCatalogue {
             let state = crate::state::read();
-            let classes = state.releases.entry(state.current_release.read()).classes;
             crate::realms::ISeasonRealmsDispatcherTrait::realm_catalogue(
-                crate::realms::ISeasonRealmsLibraryDispatcher { class_hash: classes.settlement.read() },
+                crate::realms::ISeasonRealmsLibraryDispatcher {
+                    class_hash: crate::logic::release::release_class(
+                        state.open_releases.read(crate::game::FRONTIER), crate::slots::SETTLEMENT,
+                    ),
+                },
             )
         }
         fn realm_traits(self: @TContractState, realm_id: u32) -> crate::realms::RealmTraits {
             let state = crate::state::read();
-            let classes = state.releases.entry(state.current_release.read()).classes;
             crate::realms::ISeasonRealmsDispatcherTrait::realm_traits(
-                crate::realms::ISeasonRealmsLibraryDispatcher { class_hash: classes.settlement.read() }, realm_id,
+                crate::realms::ISeasonRealmsLibraryDispatcher {
+                    class_hash: crate::logic::release::release_class(
+                        state.open_releases.read(crate::game::FRONTIER), crate::slots::SETTLEMENT,
+                    ),
+                },
+                realm_id,
             )
         }
         fn available_realm(self: @TContractState, game_id: u32, index: u32) -> u32 {
-            let classes = fixture_classes(game_id);
             crate::realms::ISeasonRealmsDispatcherTrait::available_realm(
-                crate::realms::ISeasonRealmsLibraryDispatcher { class_hash: classes.settlement.read() }, game_id, index,
+                crate::realms::ISeasonRealmsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::SETTLEMENT),
+                },
+                game_id,
+                index,
             )
         }
         fn settle_season(
@@ -562,9 +602,10 @@ pub mod GamesFixture {
             command: crate::realms::SettleSeason,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::realms::ISeasonRealmsDispatcherTrait::settle_season(
-                crate::realms::ISeasonRealmsLibraryDispatcher { class_hash: classes.settlement.read() },
+                crate::realms::ISeasonRealmsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::SETTLEMENT),
+                },
                 game_id,
                 actor,
                 command,
@@ -577,25 +618,32 @@ pub mod GamesFixture {
         TContractState, +Drop<TContractState>,
     > of crate::village::IVillagePasses<TContractState> {
         fn village_rules(self: @TContractState, game_id: u32) -> crate::village::VillageRules {
-            let classes = fixture_classes(game_id);
             crate::village::IVillagePassesDispatcherTrait::village_rules(
-                crate::village::IVillagePassesLibraryDispatcher { class_hash: classes.settlement.read() }, game_id,
+                crate::village::IVillagePassesLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::SETTLEMENT),
+                },
+                game_id,
             )
         }
         fn village_pass(
             self: @TContractState, key: crate::village::VillagePassKey,
         ) -> Option<crate::village::VillagePass> {
-            let classes = fixture_classes(key.game_id);
             crate::village::IVillagePassesDispatcherTrait::village_pass(
-                crate::village::IVillagePassesLibraryDispatcher { class_hash: classes.settlement.read() }, key,
+                crate::village::IVillagePassesLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::SETTLEMENT),
+                },
+                key,
             )
         }
         fn register_village_pass(
             ref self: TContractState, key: crate::village::VillagePassKey, owner: starknet::ContractAddress,
         ) {
-            let classes = fixture_classes(key.game_id);
             crate::village::IVillagePassesDispatcherTrait::register_village_pass(
-                crate::village::IVillagePassesLibraryDispatcher { class_hash: classes.settlement.read() }, key, owner,
+                crate::village::IVillagePassesLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::SETTLEMENT),
+                },
+                key,
+                owner,
             )
         }
     }
@@ -608,9 +656,8 @@ pub mod GamesFixture {
             command: crate::village::SettleVillage,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::village::IVillagesDispatcherTrait::settle_village(
-                crate::village::IVillagesLibraryDispatcher { class_hash: classes.season.read() },
+                crate::village::IVillagesLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::SEASON) },
                 game_id,
                 actor,
                 command,
@@ -623,35 +670,45 @@ pub mod GamesFixture {
         TContractState, +Drop<TContractState>,
     > of crate::settlement::ISettlementViews<TContractState> {
         fn blitz_settlement_order(self: @TContractState, game_id: u32) -> Span<u8> {
-            let classes = fixture_classes(game_id);
             crate::settlement::ISettlementViewsDispatcherTrait::blitz_settlement_order(
-                crate::settlement::ISettlementViewsLibraryDispatcher { class_hash: classes.settlement.read() }, game_id,
+                crate::settlement::ISettlementViewsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::SETTLEMENT),
+                },
+                game_id,
             )
         }
         fn settlement_rules(self: @TContractState, game_id: u32) -> crate::settlement::SettlementRules {
-            let classes = fixture_classes(game_id);
             crate::settlement::ISettlementViewsDispatcherTrait::settlement_rules(
-                crate::settlement::ISettlementViewsLibraryDispatcher { class_hash: classes.settlement.read() }, game_id,
+                crate::settlement::ISettlementViewsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::SETTLEMENT),
+                },
+                game_id,
             )
         }
         fn realm_grants(self: @TContractState, game_id: u32) -> crate::settlement::RealmGrants {
-            let classes = fixture_classes(game_id);
             crate::settlement::ISettlementViewsDispatcherTrait::realm_grants(
-                crate::settlement::ISettlementViewsLibraryDispatcher { class_hash: classes.settlement.read() }, game_id,
+                crate::settlement::ISettlementViewsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::SETTLEMENT),
+                },
+                game_id,
             )
         }
         fn settlement_progress(self: @TContractState, game_id: u32) -> crate::settlement::SettlementProgress {
-            let classes = fixture_classes(game_id);
             crate::settlement::ISettlementViewsDispatcherTrait::settlement_progress(
-                crate::settlement::ISettlementViewsLibraryDispatcher { class_hash: classes.settlement.read() }, game_id,
+                crate::settlement::ISettlementViewsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::SETTLEMENT),
+                },
+                game_id,
             )
         }
         fn player_entry(
             self: @TContractState, key: crate::settlement::EntryKey,
         ) -> Option<crate::settlement::PlayerEntry> {
-            let classes = fixture_classes(key.game_id);
             crate::settlement::ISettlementViewsDispatcherTrait::player_entry(
-                crate::settlement::ISettlementViewsLibraryDispatcher { class_hash: classes.settlement.read() }, key,
+                crate::settlement::ISettlementViewsLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::SETTLEMENT),
+                },
+                key,
             )
         }
     }
@@ -665,9 +722,12 @@ pub mod GamesFixture {
             entitlement: crate::settlement::EntryEntitlement,
         ) {
             let state = crate::state::read();
-            let classes = state.releases.entry(state.current_release.read()).classes;
             crate::settlement::ISettlementEntryDispatcherTrait::register_entitlement(
-                crate::settlement::ISettlementEntryLibraryDispatcher { class_hash: classes.settlement.read() },
+                crate::settlement::ISettlementEntryLibraryDispatcher {
+                    class_hash: crate::logic::release::release_class(
+                        state.open_releases.read(crate::game::FRONTIER), crate::slots::SETTLEMENT,
+                    ),
+                },
                 key,
                 entitlement,
             )
@@ -679,9 +739,13 @@ pub mod GamesFixture {
             self: @TContractState, key: crate::settlement::EntryKey,
         ) -> Option<crate::settlement::EntryEntitlement> {
             let state = crate::state::read();
-            let classes = state.releases.entry(state.current_release.read()).classes;
             crate::settlement::ISettlementEntryDispatcherTrait::entry_entitlement(
-                crate::settlement::ISettlementEntryLibraryDispatcher { class_hash: classes.settlement.read() }, key,
+                crate::settlement::ISettlementEntryLibraryDispatcher {
+                    class_hash: crate::logic::release::release_class(
+                        state.open_releases.read(crate::game::FRONTIER), crate::slots::SETTLEMENT,
+                    ),
+                },
+                key,
             )
         }
     }
@@ -695,9 +759,10 @@ pub mod GamesFixture {
             actor: starknet::ContractAddress,
             context: crate::commands::ActionContext,
         ) -> u64 {
-            let classes = fixture_classes(game_id);
             crate::settlement::ISettlementCommandsDispatcherTrait::settle_blitz_roster(
-                crate::settlement::ISettlementCommandsLibraryDispatcher { class_hash: classes.settlement.read() },
+                crate::settlement::ISettlementCommandsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::SETTLEMENT),
+                },
                 game_id,
                 actor,
                 context,
@@ -716,9 +781,10 @@ pub mod GamesFixture {
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(key.game_id);
             crate::resources::IResourceOperationsDispatcherTrait::initialize_resources(
-                crate::resources::IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() },
+                crate::resources::IResourceOperationsLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::RESOURCES),
+                },
                 key,
                 capacity,
                 category,
@@ -732,18 +798,21 @@ pub mod GamesFixture {
             amount: u128,
             game_context: crate::commands::ResourceContext,
         ) {
-            let classes = fixture_classes(key.game_id);
             crate::resources::IResourceOperationsDispatcherTrait::initialize_explorer_resources(
-                crate::resources::IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() },
+                crate::resources::IResourceOperationsLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::RESOURCES),
+                },
                 key,
                 amount,
                 game_context,
             )
         }
         fn destroy_resources(ref self: TContractState, key: crate::resources::ResourceKey) {
-            let classes = fixture_classes(key.game_id);
             crate::resources::IResourceOperationsDispatcherTrait::destroy_resources(
-                crate::resources::IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() }, key,
+                crate::resources::IResourceOperationsLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::RESOURCES),
+                },
+                key,
             )
         }
         fn change_explorer_capacity(
@@ -753,9 +822,10 @@ pub mod GamesFixture {
             increase: bool,
             game_context: crate::commands::ResourceContext,
         ) {
-            let classes = fixture_classes(key.game_id);
             crate::resources::IResourceOperationsDispatcherTrait::change_explorer_capacity(
-                crate::resources::IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() },
+                crate::resources::IResourceOperationsLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::RESOURCES),
+                },
                 key,
                 amount,
                 increase,
@@ -770,9 +840,10 @@ pub mod GamesFixture {
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
         ) -> u128 {
-            let classes = fixture_classes(key.game_id);
             crate::resources::IResourceOperationsDispatcherTrait::grant_resource(
-                crate::resources::IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() },
+                crate::resources::IResourceOperationsLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::RESOURCES),
+                },
                 key,
                 resource_type,
                 amount,
@@ -788,9 +859,10 @@ pub mod GamesFixture {
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
         ) {
-            let classes = fixture_classes(key.game_id);
             crate::resources::IResourceOperationsDispatcherTrait::spend_resource(
-                crate::resources::IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() },
+                crate::resources::IResourceOperationsLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::RESOURCES),
+                },
                 key,
                 resource_type,
                 amount,
@@ -807,9 +879,10 @@ pub mod GamesFixture {
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
         ) {
-            let classes = fixture_classes(key.game_id);
             crate::resources::IResourceOperationsDispatcherTrait::start_production(
-                crate::resources::IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() },
+                crate::resources::IResourceOperationsLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::RESOURCES),
+                },
                 key,
                 resource_type,
                 rate,
@@ -826,9 +899,10 @@ pub mod GamesFixture {
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
         ) {
-            let classes = fixture_classes(key.game_id);
             crate::resources::IResourceOperationsDispatcherTrait::stop_production(
-                crate::resources::IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() },
+                crate::resources::IResourceOperationsLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::RESOURCES),
+                },
                 key,
                 resource_type,
                 rate,
@@ -844,9 +918,10 @@ pub mod GamesFixture {
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
         ) {
-            let classes = fixture_classes(key.game_id);
             crate::resources::IResourceOperationsDispatcherTrait::raise_troops(
-                crate::resources::IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() },
+                crate::resources::IResourceOperationsLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::RESOURCES),
+                },
                 key,
                 resource_type,
                 amount,
@@ -861,9 +936,10 @@ pub mod GamesFixture {
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
         ) {
-            let classes = fixture_classes(from.game_id);
             crate::resources::IResourceOperationsDispatcherTrait::assert_loot_available(
-                crate::resources::IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() },
+                crate::resources::IResourceOperationsLibraryDispatcher {
+                    class_hash: fixture_class(from.game_id, crate::slots::RESOURCES),
+                },
                 from,
                 resources,
                 timestamp,
@@ -878,9 +954,10 @@ pub mod GamesFixture {
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
         ) {
-            let classes = fixture_classes(from.game_id);
             crate::resources::IResourceOperationsDispatcherTrait::take_loot(
-                crate::resources::IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() },
+                crate::resources::IResourceOperationsLibraryDispatcher {
+                    class_hash: fixture_class(from.game_id, crate::slots::RESOURCES),
+                },
                 from,
                 to,
                 resources,
@@ -894,9 +971,10 @@ pub mod GamesFixture {
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
         ) {
-            let classes = fixture_classes(key.game_id);
             crate::resources::IResourceOperationsDispatcherTrait::settle_production(
-                crate::resources::IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() },
+                crate::resources::IResourceOperationsLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::RESOURCES),
+                },
                 key,
                 timestamp,
                 game_context,
@@ -910,9 +988,10 @@ pub mod GamesFixture {
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
         ) {
-            let classes = fixture_classes(key.game_id);
             crate::resources::IResourceOperationsDispatcherTrait::change_structure_capacity(
-                crate::resources::IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() },
+                crate::resources::IResourceOperationsLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::RESOURCES),
+                },
                 key,
                 amount,
                 adding,
@@ -928,9 +1007,10 @@ pub mod GamesFixture {
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
         ) {
-            let classes = fixture_classes(key.game_id);
             crate::resources::IResourceOperationsDispatcherTrait::spend_food(
-                crate::resources::IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() },
+                crate::resources::IResourceOperationsLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::RESOURCES),
+                },
                 key,
                 wheat,
                 fish,
@@ -944,9 +1024,10 @@ pub mod GamesFixture {
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
         ) {
-            let classes = fixture_classes(key.game_id);
             crate::resources::IResourceOperationsDispatcherTrait::spend_spire_fee(
-                crate::resources::IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() },
+                crate::resources::IResourceOperationsLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::RESOURCES),
+                },
                 key,
                 timestamp,
                 game_context,
@@ -965,9 +1046,10 @@ pub mod GamesFixture {
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
         ) {
-            let classes = fixture_classes(key.game_id);
             crate::resources::IResourceDeliveryDispatcherTrait::queue_resource_delivery(
-                crate::resources::IResourceDeliveryLibraryDispatcher { class_hash: classes.resources.read() },
+                crate::resources::IResourceDeliveryLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::RESOURCES),
+                },
                 key,
                 resource,
                 travel_time,
@@ -979,17 +1061,22 @@ pub mod GamesFixture {
     #[starknet::embeddable]
     pub impl MineRulesFixture<TContractState, +Drop<TContractState>> of crate::mines::IMineRules<TContractState> {
         fn mine_kind(self: @TContractState, key: crate::mines::MineKindKey) -> crate::mines::MineKindConfig {
-            let classes = fixture_classes(key.game_id);
             crate::mines::IMineRulesDispatcherTrait::mine_kind(
-                crate::mines::IMineRulesLibraryDispatcher { class_hash: classes.production.read() }, key,
+                crate::mines::IMineRulesLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::PRODUCTION),
+                },
+                key,
             )
         }
         fn mine_draw(
             self: @TContractState, key: crate::mines::MinePoolKey, seed: u256,
         ) -> (u8, crate::mines::MineKindConfig, u128) {
-            let classes = fixture_classes(key.game_id);
             crate::mines::IMineRulesDispatcherTrait::mine_draw(
-                crate::mines::IMineRulesLibraryDispatcher { class_hash: classes.production.read() }, key, seed,
+                crate::mines::IMineRulesLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::PRODUCTION),
+                },
+                key,
+                seed,
             )
         }
     }
@@ -1005,9 +1092,10 @@ pub mod GamesFixture {
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
         ) {
-            let classes = fixture_classes(key.game_id);
             crate::exploration_rewards::IExplorationGrantDispatcherTrait::grant_exploration_reward(
-                crate::exploration_rewards::IExplorationGrantLibraryDispatcher { class_hash: classes.resources.read() },
+                crate::exploration_rewards::IExplorationGrantLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::RESOURCES),
+                },
                 key,
                 resource_type,
                 amount,
@@ -1023,9 +1111,11 @@ pub mod GamesFixture {
         fn production_recipe(
             self: @TContractState, key: crate::production::RecipeKey,
         ) -> crate::production::ProductionRecipe {
-            let classes = fixture_classes(key.game_id);
             crate::production::IProductionRulesDispatcherTrait::production_recipe(
-                crate::production::IProductionRulesLibraryDispatcher { class_hash: classes.production.read() }, key,
+                crate::production::IProductionRulesLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::PRODUCTION),
+                },
+                key,
             )
         }
     }
@@ -1040,9 +1130,10 @@ pub mod GamesFixture {
             command: crate::production::RefillProduction,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::production::IProductionCommandsDispatcherTrait::burn_resource_for_resource_production(
-                crate::production::IProductionCommandsLibraryDispatcher { class_hash: classes.production.read() },
+                crate::production::IProductionCommandsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::PRODUCTION),
+                },
                 game_id,
                 actor,
                 command,
@@ -1061,9 +1152,10 @@ pub mod GamesFixture {
             command: crate::resources::ResourceTransfer,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::commands::IResourceCommandsDispatcherTrait::send_resources(
-                crate::commands::IResourceCommandsLibraryDispatcher { class_hash: classes.production.read() },
+                crate::commands::IResourceCommandsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::PRODUCTION),
+                },
                 game_id,
                 actor,
                 command,
@@ -1077,9 +1169,10 @@ pub mod GamesFixture {
             command: crate::resources::ResourceTransfer,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::commands::IResourceCommandsDispatcherTrait::transfer_explorer_resources_to_structure(
-                crate::commands::IResourceCommandsLibraryDispatcher { class_hash: classes.production.read() },
+                crate::commands::IResourceCommandsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::PRODUCTION),
+                },
                 game_id,
                 actor,
                 command,
@@ -1093,9 +1186,10 @@ pub mod GamesFixture {
             command: crate::arrivals::OffloadArrival,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::commands::IResourceCommandsDispatcherTrait::offload_arrival(
-                crate::commands::IResourceCommandsLibraryDispatcher { class_hash: classes.production.read() },
+                crate::commands::IResourceCommandsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::PRODUCTION),
+                },
                 game_id,
                 actor,
                 command,
@@ -1109,9 +1203,10 @@ pub mod GamesFixture {
             command: crate::resources::ResourceBurn,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::commands::IResourceCommandsDispatcherTrait::burn_structure_resources(
-                crate::commands::IResourceCommandsLibraryDispatcher { class_hash: classes.production.read() },
+                crate::commands::IResourceCommandsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::PRODUCTION),
+                },
                 game_id,
                 actor,
                 command,
@@ -1125,9 +1220,10 @@ pub mod GamesFixture {
             command: crate::resources::ResourceTransfer,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::commands::IResourceCommandsDispatcherTrait::transfer_explorer_resources(
-                crate::commands::IResourceCommandsLibraryDispatcher { class_hash: classes.production.read() },
+                crate::commands::IResourceCommandsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::PRODUCTION),
+                },
                 game_id,
                 actor,
                 command,
@@ -1142,37 +1238,48 @@ pub mod GamesFixture {
         TContractState, +Drop<TContractState>,
     > of crate::bitcoin::IBitcoinViews<TContractState> {
         fn bitcoin_mine(self: @TContractState, key: crate::resources::ResourceKey) -> crate::bitcoin::MineFunding {
-            let classes = fixture_classes(key.game_id);
             crate::bitcoin::IBitcoinViewsDispatcherTrait::bitcoin_mine(
-                crate::bitcoin::IBitcoinViewsLibraryDispatcher { class_hash: classes.season.read() }, key,
+                crate::bitcoin::IBitcoinViewsLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::SEASON),
+                },
+                key,
             )
         }
         fn bitcoin_claimed(self: @TContractState, key: crate::bitcoin::ClaimKey) -> bool {
-            let classes = fixture_classes(key.game_id);
             crate::bitcoin::IBitcoinViewsDispatcherTrait::bitcoin_claimed(
-                crate::bitcoin::IBitcoinViewsLibraryDispatcher { class_hash: classes.season.read() }, key,
+                crate::bitcoin::IBitcoinViewsLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::SEASON),
+                },
+                key,
             )
         }
         fn bitcoin_phase(self: @TContractState, key: crate::bitcoin::PhaseKey) -> crate::bitcoin::Phase {
-            let classes = fixture_classes(key.game_id);
             crate::bitcoin::IBitcoinViewsDispatcherTrait::bitcoin_phase(
-                crate::bitcoin::IBitcoinViewsLibraryDispatcher { class_hash: classes.season.read() }, key,
+                crate::bitcoin::IBitcoinViewsLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::SEASON),
+                },
+                key,
             )
         }
         fn bitcoin_contribution(
             self: @TContractState, key: crate::bitcoin::ContributionKey,
         ) -> crate::bitcoin::Contribution {
-            let classes = fixture_classes(key.game_id);
             crate::bitcoin::IBitcoinViewsDispatcherTrait::bitcoin_contribution(
-                crate::bitcoin::IBitcoinViewsLibraryDispatcher { class_hash: classes.season.read() }, key,
+                crate::bitcoin::IBitcoinViewsLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::SEASON),
+                },
+                key,
             )
         }
         fn bitcoin_contributor(
             self: @TContractState, key: crate::bitcoin::PhaseKey, index: u32,
         ) -> starknet::ContractAddress {
-            let classes = fixture_classes(key.game_id);
             crate::bitcoin::IBitcoinViewsDispatcherTrait::bitcoin_contributor(
-                crate::bitcoin::IBitcoinViewsLibraryDispatcher { class_hash: classes.season.read() }, key, index,
+                crate::bitcoin::IBitcoinViewsLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::SEASON),
+                },
+                key,
+                index,
             )
         }
     }
@@ -1187,9 +1294,10 @@ pub mod GamesFixture {
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(key.game_id);
             crate::bitcoin::IBitcoinFundingDispatcherTrait::register_bitcoin_structure(
-                crate::bitcoin::IBitcoinFundingLibraryDispatcher { class_hash: classes.season.read() },
+                crate::bitcoin::IBitcoinFundingLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::SEASON),
+                },
                 key,
                 category,
                 timestamp,
@@ -1202,9 +1310,10 @@ pub mod GamesFixture {
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(key.game_id);
             crate::bitcoin::IBitcoinFundingDispatcherTrait::bitcoin_mine_captured(
-                crate::bitcoin::IBitcoinFundingLibraryDispatcher { class_hash: classes.season.read() },
+                crate::bitcoin::IBitcoinFundingLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::SEASON),
+                },
                 key,
                 timestamp,
                 game_context,
@@ -1222,9 +1331,10 @@ pub mod GamesFixture {
             command: crate::bitcoin::ClaimPhase,
             context: crate::commands::ActionContext,
         ) -> u64 {
-            let classes = fixture_classes(game_id);
             crate::bitcoin::IBitcoinCommandsDispatcherTrait::claim_bitcoin_phase(
-                crate::bitcoin::IBitcoinCommandsLibraryDispatcher { class_hash: classes.season.read() },
+                crate::bitcoin::IBitcoinCommandsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::SEASON),
+                },
                 game_id,
                 actor,
                 command,
@@ -1238,9 +1348,10 @@ pub mod GamesFixture {
             command: crate::bitcoin::ContributeLabor,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::bitcoin::IBitcoinCommandsDispatcherTrait::contribute_bitcoin_labor(
-                crate::bitcoin::IBitcoinCommandsLibraryDispatcher { class_hash: classes.season.read() },
+                crate::bitcoin::IBitcoinCommandsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::SEASON),
+                },
                 game_id,
                 actor,
                 command,
@@ -1254,9 +1365,10 @@ pub mod GamesFixture {
             phase: u64,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::bitcoin::IBitcoinCommandsDispatcherTrait::close_bitcoin_phase(
-                crate::bitcoin::IBitcoinCommandsLibraryDispatcher { class_hash: classes.season.read() },
+                crate::bitcoin::IBitcoinCommandsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::SEASON),
+                },
                 game_id,
                 actor,
                 phase,
@@ -1270,9 +1382,10 @@ pub mod GamesFixture {
             phase: u64,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::bitcoin::IBitcoinCommandsDispatcherTrait::bind_bitcoin_phase(
-                crate::bitcoin::IBitcoinCommandsLibraryDispatcher { class_hash: classes.season.read() },
+                crate::bitcoin::IBitcoinCommandsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::SEASON),
+                },
                 game_id,
                 actor,
                 phase,
@@ -1283,21 +1396,22 @@ pub mod GamesFixture {
     #[starknet::embeddable]
     pub impl GameFixture<TContractState, +Drop<TContractState>> of crate::game::IGame<TContractState> {
         fn game(self: @TContractState, game_id: u32) -> crate::game::GameRegistry {
-            let classes = fixture_classes(game_id);
             crate::game::IGameDispatcherTrait::game(
-                crate::game::IGameLibraryDispatcher { class_hash: classes.registry.read() }, game_id,
+                crate::game::IGameLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::REGISTRY) },
+                game_id,
             )
         }
         fn rules(self: @TContractState, game_id: u32) -> crate::rules::SliceRules {
-            let classes = fixture_classes(game_id);
             crate::game::IGameDispatcherTrait::rules(
-                crate::game::IGameLibraryDispatcher { class_hash: classes.registry.read() }, game_id,
+                crate::game::IGameLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::REGISTRY) },
+                game_id,
             )
         }
         fn write_game(ref self: TContractState, game_id: u32, game: crate::game::GameRegistry) {
-            let classes = fixture_classes(game_id);
             crate::game::IGameDispatcherTrait::write_game(
-                crate::game::IGameLibraryDispatcher { class_hash: classes.registry.read() }, game_id, game,
+                crate::game::IGameLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::REGISTRY) },
+                game_id,
+                game,
             )
         }
     }
@@ -1307,17 +1421,21 @@ pub mod GamesFixture {
         TContractState, +Drop<TContractState>,
     > of crate::withdrawals::IWithdrawals<TContractState> {
         fn withdrawal_rules(self: @TContractState, game_id: u32) -> crate::withdrawals::WithdrawalRules {
-            let classes = fixture_classes(game_id);
             crate::withdrawals::IWithdrawalsDispatcherTrait::withdrawal_rules(
-                crate::withdrawals::IWithdrawalsLibraryDispatcher { class_hash: classes.production.read() }, game_id,
+                crate::withdrawals::IWithdrawalsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::PRODUCTION),
+                },
+                game_id,
             )
         }
         fn resource_token(
             self: @TContractState, key: crate::withdrawals::ResourceTokenKey,
         ) -> starknet::ContractAddress {
-            let classes = fixture_classes(key.game_id);
             crate::withdrawals::IWithdrawalsDispatcherTrait::resource_token(
-                crate::withdrawals::IWithdrawalsLibraryDispatcher { class_hash: classes.production.read() }, key,
+                crate::withdrawals::IWithdrawalsLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::PRODUCTION),
+                },
+                key,
             )
         }
     }
@@ -1331,9 +1449,10 @@ pub mod GamesFixture {
             actor: starknet::ContractAddress,
             context: crate::commands::ActionContext,
         ) -> u64 {
-            let classes = fixture_classes(game_id);
             crate::registrar::IGameSettlementDispatcherTrait::mark_game_settled(
-                crate::registrar::IGameSettlementLibraryDispatcher { class_hash: classes.season.read() },
+                crate::registrar::IGameSettlementLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::SEASON),
+                },
                 game_id,
                 actor,
                 context,
@@ -1348,9 +1467,8 @@ pub mod GamesFixture {
             actor: starknet::ContractAddress,
             game_context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::game::IPointsDispatcherTrait::register_exploration(
-                crate::game::IPointsLibraryDispatcher { class_hash: classes.season.read() },
+                crate::game::IPointsLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::SEASON) },
                 game_id,
                 actor,
                 game_context,
@@ -1362,24 +1480,24 @@ pub mod GamesFixture {
             actor: starknet::ContractAddress,
             game_context: crate::commands::ActionContext,
         ) -> u128 {
-            let classes = fixture_classes(game_id);
             crate::game::IPointsDispatcherTrait::register_capture(
-                crate::game::IPointsLibraryDispatcher { class_hash: classes.season.read() },
+                crate::game::IPointsLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::SEASON) },
                 game_id,
                 actor,
                 game_context,
             )
         }
         fn player_points(self: @TContractState, game_id: u32, actor: starknet::ContractAddress) -> u128 {
-            let classes = fixture_classes(game_id);
             crate::game::IPointsDispatcherTrait::player_points(
-                crate::game::IPointsLibraryDispatcher { class_hash: classes.season.read() }, game_id, actor,
+                crate::game::IPointsLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::SEASON) },
+                game_id,
+                actor,
             )
         }
         fn season_points(self: @TContractState, game_id: u32) -> u128 {
-            let classes = fixture_classes(game_id);
             crate::game::IPointsDispatcherTrait::season_points(
-                crate::game::IPointsLibraryDispatcher { class_hash: classes.season.read() }, game_id,
+                crate::game::IPointsLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::SEASON) },
+                game_id,
             )
         }
     }
@@ -1388,23 +1506,27 @@ pub mod GamesFixture {
         fn guild_member(
             self: @TContractState, game_id: u32, actor: starknet::ContractAddress,
         ) -> starknet::ContractAddress {
-            let classes = fixture_classes(game_id);
             crate::guilds::IGuildsDispatcherTrait::guild_member(
-                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.bridge.read() }, game_id, actor,
+                crate::guilds::IGuildsLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::BRIDGE) },
+                game_id,
+                actor,
             )
         }
         fn guild(
             self: @TContractState, game_id: u32, guild_id: starknet::ContractAddress,
         ) -> Option<crate::guilds::Guild> {
-            let classes = fixture_classes(game_id);
             crate::guilds::IGuildsDispatcherTrait::guild(
-                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.bridge.read() }, game_id, guild_id,
+                crate::guilds::IGuildsLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::BRIDGE) },
+                game_id,
+                guild_id,
             )
         }
         fn guild_whitelisted(self: @TContractState, key: crate::guilds::WhitelistKey) -> bool {
-            let classes = fixture_classes(key.game_id);
             crate::guilds::IGuildsDispatcherTrait::guild_whitelisted(
-                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.bridge.read() }, key,
+                crate::guilds::IGuildsLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::BRIDGE),
+                },
+                key,
             )
         }
         fn create_guild(
@@ -1414,9 +1536,8 @@ pub mod GamesFixture {
             command: crate::guilds::CreateGuild,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::guilds::IGuildsDispatcherTrait::create_guild(
-                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.bridge.read() },
+                crate::guilds::IGuildsLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::BRIDGE) },
                 game_id,
                 actor,
                 command,
@@ -1430,9 +1551,8 @@ pub mod GamesFixture {
             command: crate::guilds::JoinGuild,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::guilds::IGuildsDispatcherTrait::join_guild(
-                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.bridge.read() },
+                crate::guilds::IGuildsLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::BRIDGE) },
                 game_id,
                 actor,
                 command,
@@ -1445,9 +1565,11 @@ pub mod GamesFixture {
             actor: starknet::ContractAddress,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::guilds::IGuildsDispatcherTrait::leave_guild(
-                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.bridge.read() }, game_id, actor, context,
+                crate::guilds::IGuildsLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::BRIDGE) },
+                game_id,
+                actor,
+                context,
             )
         }
         fn set_guild_whitelist(
@@ -1457,9 +1579,8 @@ pub mod GamesFixture {
             command: crate::guilds::SetWhitelist,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::guilds::IGuildsDispatcherTrait::set_guild_whitelist(
-                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.bridge.read() },
+                crate::guilds::IGuildsLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::BRIDGE) },
                 game_id,
                 actor,
                 command,
@@ -1473,9 +1594,8 @@ pub mod GamesFixture {
             member: starknet::ContractAddress,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::guilds::IGuildsDispatcherTrait::remove_guild_member(
-                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.bridge.read() },
+                crate::guilds::IGuildsLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::BRIDGE) },
                 game_id,
                 actor,
                 member,
@@ -1486,9 +1606,11 @@ pub mod GamesFixture {
     #[starknet::embeddable]
     pub impl BridgeFixture<TContractState, +Drop<TContractState>> of crate::bridge::IBridge<TContractState> {
         fn deposit_rules(self: @TContractState, game_id: u32) -> crate::bridge::DepositRules {
-            let classes = fixture_classes(game_id);
             crate::bridge::IBridgeDispatcherTrait::deposit_rules(
-                crate::bridge::IBridgeLibraryDispatcher { class_hash: classes.production.read() }, game_id,
+                crate::bridge::IBridgeLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::PRODUCTION),
+                },
+                game_id,
             )
         }
         fn deposit_resource(
@@ -1498,9 +1620,10 @@ pub mod GamesFixture {
             command: crate::bridge::Deposit,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::bridge::IBridgeDispatcherTrait::deposit_resource(
-                crate::bridge::IBridgeLibraryDispatcher { class_hash: classes.production.read() },
+                crate::bridge::IBridgeLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::PRODUCTION),
+                },
                 game_id,
                 actor,
                 command,
@@ -1514,9 +1637,10 @@ pub mod GamesFixture {
             command: crate::bridge::Withdraw,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::bridge::IBridgeDispatcherTrait::withdraw_resource(
-                crate::bridge::IBridgeLibraryDispatcher { class_hash: classes.production.read() },
+                crate::bridge::IBridgeLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::PRODUCTION),
+                },
                 game_id,
                 actor,
                 command,
@@ -1527,16 +1651,16 @@ pub mod GamesFixture {
 
     fn current_ledger_operator_dispatcher() -> crate::entry::ILedgerOperatorLibraryDispatcher {
         let state = crate::state::read();
-        let release_id = state.current_release.read();
+        let release_id = state.open_releases.read(crate::game::FRONTIER);
         assert!(release_id != 0, "shard has no release");
         crate::entry::ILedgerOperatorLibraryDispatcher {
-            class_hash: state.releases.entry(release_id).classes.bridge.read(),
+            class_hash: crate::logic::release::release_class(release_id, crate::slots::BRIDGE),
         }
     }
 
     fn ledger_operator_dispatcher(game_id: u32) -> crate::entry::ILedgerOperatorLibraryDispatcher {
         crate::entry::ILedgerOperatorLibraryDispatcher {
-            class_hash: crate::logic::release::classes(game_id).bridge.read(),
+            class_hash: crate::logic::release::class_of(game_id, crate::slots::BRIDGE),
         }
     }
 
@@ -1604,7 +1728,7 @@ pub mod GamesFixture {
         ) -> crate::entry::LaborGrant {
             crate::entry::IHomeGrantsDispatcherTrait::grant_labor(
                 crate::entry::IHomeGrantsLibraryDispatcher {
-                    class_hash: crate::logic::release::classes(home.game_id).bridge.read(),
+                    class_hash: crate::logic::release::class_of(home.game_id, crate::slots::BRIDGE),
                 },
                 home,
                 day,
@@ -1616,7 +1740,7 @@ pub mod GamesFixture {
         ) -> Option<crate::entry::LaborGrant> {
             crate::entry::IHomeGrantsDispatcherTrait::labor_grant(
                 crate::entry::IHomeGrantsLibraryDispatcher {
-                    class_hash: crate::logic::release::classes(home.game_id).bridge.read(),
+                    class_hash: crate::logic::release::class_of(home.game_id, crate::slots::BRIDGE),
                 },
                 home,
                 day,
@@ -1625,7 +1749,7 @@ pub mod GamesFixture {
         fn grant_seal(ref self: TContractState, game_id: u32, account: starknet::ContractAddress) {
             crate::entry::IHomeGrantsDispatcherTrait::grant_seal(
                 crate::entry::IHomeGrantsLibraryDispatcher {
-                    class_hash: crate::logic::release::classes(game_id).bridge.read(),
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::BRIDGE),
                 },
                 game_id,
                 account,
@@ -1636,10 +1760,12 @@ pub mod GamesFixture {
     pub impl BlitzResultsFixture<
         TContractState, +Drop<TContractState>,
     > of crate::blitz_results::IBlitzResults<TContractState> {
-        fn blitz_result(self: @TContractState, game_id: u32) -> crate::blitz_results::BlitzResult {
-            let classes = fixture_classes(game_id);
-            crate::blitz_results::IBlitzResultsDispatcherTrait::blitz_result(
-                crate::blitz_results::IBlitzResultsLibraryDispatcher { class_hash: classes.prizes.read() }, game_id,
+        fn game_result(self: @TContractState, game_id: u32) -> crate::blitz_results::BlitzResult {
+            crate::blitz_results::IBlitzResultsDispatcherTrait::game_result(
+                crate::blitz_results::IBlitzResultsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::PRIZES),
+                },
+                game_id,
             )
         }
         fn record_blitz_results(
@@ -1648,9 +1774,10 @@ pub mod GamesFixture {
             actor: starknet::ContractAddress,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::blitz_results::IBlitzResultsDispatcherTrait::record_blitz_results(
-                crate::blitz_results::IBlitzResultsLibraryDispatcher { class_hash: classes.prizes.read() },
+                crate::blitz_results::IBlitzResultsLibraryDispatcher {
+                    class_hash: fixture_class(game_id, crate::slots::PRIZES),
+                },
                 game_id,
                 actor,
                 context,
@@ -1667,9 +1794,8 @@ pub mod GamesFixture {
             command: crate::relics::ApplyRelic,
             context: crate::commands::ActionContext,
         ) {
-            let classes = fixture_classes(game_id);
             crate::relics::IRelicsDispatcherTrait::apply_relic(
-                crate::relics::IRelicsLibraryDispatcher { class_hash: classes.relics.read() },
+                crate::relics::IRelicsLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::RELICS) },
                 game_id,
                 actor,
                 command,
@@ -1682,30 +1808,56 @@ pub mod GamesFixture {
     pub impl CaptureFixture<TContractState, +Drop<TContractState>> of super::ICapture<TContractState> {
         fn destroy(ref self: TContractState, key: crate::troops::ExplorerKey) {
             let state = crate::state::read();
-            let classes = state.releases.entry(state.current_release.read()).classes;
-            IFixtureDispatcherTrait::destroy(IFixtureLibraryDispatcher { class_hash: classes.troops.read() }, key)
+            IFixtureDispatcherTrait::destroy(
+                IFixtureLibraryDispatcher {
+                    class_hash: crate::logic::release::release_class(
+                        state.open_releases.read(crate::game::FRONTIER), crate::slots::TROOPS,
+                    ),
+                },
+                key,
+            )
         }
         fn update_troops(ref self: TContractState, key: crate::troops::ExplorerKey, troops: crate::troops::Troops) {
             let state = crate::state::read();
-            let classes = state.releases.entry(state.current_release.read()).classes;
             IFixtureDispatcherTrait::update_troops(
-                IFixtureLibraryDispatcher { class_hash: classes.troops.read() }, key, troops,
+                IFixtureLibraryDispatcher {
+                    class_hash: crate::logic::release::release_class(
+                        state.open_releases.read(crate::game::FRONTIER), crate::slots::TROOPS,
+                    ),
+                },
+                key,
+                troops,
             )
         }
         fn received_actor(self: @TContractState) -> starknet::ContractAddress {
             let state = crate::state::read();
-            let classes = state.releases.entry(state.current_release.read()).classes;
-            IFixtureDispatcherTrait::received_actor(IFixtureLibraryDispatcher { class_hash: classes.troops.read() })
+            IFixtureDispatcherTrait::received_actor(
+                IFixtureLibraryDispatcher {
+                    class_hash: crate::logic::release::release_class(
+                        state.open_releases.read(crate::game::FRONTIER), crate::slots::TROOPS,
+                    ),
+                },
+            )
         }
         fn received_root(self: @TContractState) -> u256 {
             let state = crate::state::read();
-            let classes = state.releases.entry(state.current_release.read()).classes;
-            IFixtureDispatcherTrait::received_root(IFixtureLibraryDispatcher { class_hash: classes.troops.read() })
+            IFixtureDispatcherTrait::received_root(
+                IFixtureLibraryDispatcher {
+                    class_hash: crate::logic::release::release_class(
+                        state.open_releases.read(crate::game::FRONTIER), crate::slots::TROOPS,
+                    ),
+                },
+            )
         }
         fn received_timestamp(self: @TContractState) -> u64 {
             let state = crate::state::read();
-            let classes = state.releases.entry(state.current_release.read()).classes;
-            IFixtureDispatcherTrait::received_timestamp(IFixtureLibraryDispatcher { class_hash: classes.troops.read() })
+            IFixtureDispatcherTrait::received_timestamp(
+                IFixtureLibraryDispatcher {
+                    class_hash: crate::logic::release::release_class(
+                        state.open_releases.read(crate::game::FRONTIER), crate::slots::TROOPS,
+                    ),
+                },
+            )
         }
     }
 }

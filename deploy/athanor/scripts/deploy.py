@@ -233,19 +233,20 @@ def publish_releases(directory, config, report_stage=ignore_stage):
     began at (a fresh chain begins at the current release) to its current one."""
     report_stage("publish releases")
     native = json.loads((directory / "data/native-world.json").read_text())["native"]
-    if served_releases(config) != native["releaseSchemas"]:
+    if served_releases(config) != native["releases"]:
         subprocess.run([*compose(directory), "up", "-d", "--no-deps", "--force-recreate", "herald"],
                        check=True, stdout=sys.stdout, stderr=sys.stderr)
         wait_for_identity(config)
     served = served_releases(config)
-    releases = sorted({*map(int, native["releaseSchemas"]), native["releaseId"]})
-    unpublished = [release for release in releases if served.get(str(release)) != native["activeSchema"]]
-    if served != native["releaseSchemas"] or unpublished:
-        raise RuntimeError(f"Herald does not publish releases {unpublished or sorted(native['releaseSchemas'])}")
+    releases = sorted({*map(int, native["releases"]), native["releaseId"]})
+    unpublished = [release for release in releases
+                   if served.get(str(release), {}).get("schema") != native["activeSchema"]]
+    if served != native["releases"] or unpublished:
+        raise RuntimeError(f"Herald does not publish releases {unpublished or sorted(map(int, native['releases']))}")
 
 
 def served_releases(config):
-    return service_json(config["public_herald_url"].rstrip("/") + "/manifest", timeout=10).get("releaseSchemas", {})
+    return service_json(config["public_herald_url"].rstrip("/") + "/manifest", timeout=10).get("releases", {})
 
 
 def deployed_facts(data):

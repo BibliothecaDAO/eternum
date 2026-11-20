@@ -4,10 +4,14 @@ fn setup() -> (super::Deployment, u32) {
     let (d, game_id) = super::registrar::setup_open_frontier();
     let releases = IReleasesDispatcher { contract_address: d.games };
     start_cheat_caller_address(d.games, authority());
-    releases.register_release(2, Release { migration: declare_logic("ReleaseMigration"), ..releases.release(1) });
+    releases
+        .register_release(
+            2,
+            Release { previous: 1, migration: declare_logic("ReleaseMigration"), ..releases.release(1) },
+            releases.release_classes(1),
+        );
     (d, game_id)
 }
-
 #[test]
 fn release_backfills_the_scheduled_end_once_without_extending_play() {
     let (d, game_id) = setup();

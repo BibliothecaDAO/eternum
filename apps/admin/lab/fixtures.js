@@ -73,17 +73,6 @@ const ENVIRONMENTS = {
 
 const audit = [
   {
-    id: 2,
-    at: now - 40 * 60_000,
-    email: "owner@realms.world",
-    environment: "dev",
-    action: "Free test Blitz",
-    request: "{}",
-    state: "done",
-    status: 202,
-    response: "{}",
-  },
-  {
     id: 1,
     at: now - 90 * 60_000,
     email: "owner@realms.world",
@@ -131,12 +120,6 @@ const write = (environment, route, body) => {
   const env = ENVIRONMENTS[environment];
   const [first, ...rest] = route;
   let action = route.join(" ");
-  if (first === "test-blitz") {
-    if (environment !== "dev") return json({ error: "Not Found" }, 404);
-    if (!/^test-[a-z0-9-]{1,26}$/.test(body.name ?? "")) return json({ error: "Invalid test Blitz" }, 400);
-    env.runs.unshift(run(body.name, "madara.blitz", "queued", undefined));
-    action = "Free test Blitz";
-  }
   if (first === "slots" && rest.length === 0) {
     env.slots.unshift({
       chainId: "",

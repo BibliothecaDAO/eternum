@@ -4,7 +4,7 @@ import { hash, CallData } from "starknet";
 import { schemaIdentity, type NativeSchema } from "../../../../../apps/herald/src/native/schema";
 import { readClassArtifact } from "../../shared/declare";
 import { nativeBalanceIdentity } from "../../../../../contracts/l3/world-native/schema/balance.gen";
-import { NATIVE_BALANCE_SINCE_RELEASE } from "../../../../../deploy/release/native-release";
+import { NATIVE_RELEASES } from "../../../../../deploy/release/native-release";
 import type { NativeAuthentication, NativeReleaseFacts, NativeWorld, NativeWorldManifest } from "./types";
 
 export function loadNativeWorld(input: {
@@ -22,6 +22,8 @@ export function loadNativeWorld(input: {
 }): NativeWorld {
   if (input.previous && input.previous.native?.version !== 2)
     throw new Error("Games requires a fresh deployment; the peer-contract manifest cannot be reused");
+  if (input.previous && typeof input.previous.native.releases !== "object")
+    throw new Error("The shard's manifest lists no releases with their families; deploy a fresh shard");
   // A manifest names the shard's one Games; another seed would deploy a second beside it and drop its history.
   if (input.previous && input.previous.world.seed !== input.seed)
     throw new Error(`The shard's Games was deployed with seed ${input.previous.world.seed}; ${input.seed} is refused`);
@@ -35,7 +37,7 @@ export function loadNativeWorld(input: {
       resolve(input.artifacts, `world_native_${name}.contract_class.json`),
       resolve(input.artifacts, `world_native_${name}.compiled_contract_class.json`),
     );
-  const logic = Object.entries(schema.logicClasses).map(([name, contract]) => ({ name, ...readClass(contract) }));
+  const logic = schema.logicClasses.map(({ name, contract }) => ({ name, ...readClass(contract) }));
   const artifact = readClass("Games");
   const migration =
     BigInt(input.release.migrationClassHash) === 0n
@@ -62,10 +64,9 @@ export function loadNativeWorld(input: {
     vrf_public_key: input.vrfPublicKey,
     l2_gas_bound: input.l2GasBound,
     authentication: input.authentication,
-    release_id: input.release.releaseId,
-    release: { classes: input.release.classes.logic, migration: input.release.migrationClassHash },
+    ...releaseRegistration(input.release, schema, 0),
   });
-  const publishedSchema = previous?.native.releaseSchemas[String(input.release.releaseId)];
+  const publishedSchema = previous?.native.releases[String(input.release.releaseId)]?.schema;
   if (publishedSchema && publishedSchema !== input.release.schema)
     throw new Error("Release schema is immutable; manifest and release facts differ");
   const salt = hash.starknetKeccak(`${input.seed}:games`).toString();
@@ -86,6 +87,19 @@ export function loadNativeWorld(input: {
     migration,
     release: input.release,
     previous,
+  };
+}
+
+export function releaseRegistration(release: NativeReleaseFacts, schema: NativeSchema, previous: number) {
+  return {
+    release_id: release.releaseId,
+    release: {
+      family: NATIVE_RELEASES.frontier.family,
+      previous,
+      slot_count: schema.logicClasses.length,
+      migration: release.migrationClassHash,
+    },
+    classes: schema.logicClasses.map(({ name }) => release.classes.logic[name]),
   };
 }
 
@@ -119,10 +133,12 @@ export function assertHotfixSchema(release: NativeReleaseFacts, previous?: Nativ
 export function assertBalanceSince(release: NativeReleaseFacts, previous?: NativeWorldManifest): void {
   const changed = Object.entries(previous?.native.releaseBalances ?? {}).find(
     ([id, numbers]) =>
-      Number(id) >= NATIVE_BALANCE_SINCE_RELEASE && Number(id) < release.releaseId && numbers !== nativeBalanceIdentity,
+      Number(id) >= NATIVE_RELEASES.frontier.since &&
+      Number(id) < release.releaseId &&
+      numbers !== nativeBalanceIdentity,
   );
   if (changed)
     throw new Error(
-      `NATIVE_BALANCE_SINCE: release ${changed[0]} runs other balance numbers; set NATIVE_BALANCE_SINCE_RELEASE to ${release.releaseId}`,
+      `NATIVE_BALANCE_SINCE: release ${changed[0]} runs other balance numbers; set NATIVE_RELEASES.frontier.since to ${release.releaseId}`,
     );
 }
