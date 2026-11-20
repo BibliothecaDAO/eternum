@@ -112,7 +112,6 @@ fn two_thousand_open_homes_need_no_preparation_or_shared_counter() {
                 assert_eq!(crate::entity_ids::assign_open_home(1, actor), home);
                 assert_eq!(claim_home(1, actor), home);
                 assert_eq!(allocate_home(1, home), home + 1);
-                assert_eq!(crate::state::read().games.home_reservations.read((1, actor)), 0);
             }
             assert_eq!(crate::state::read().games.next_entity.read(1), before);
         },
@@ -154,9 +153,6 @@ fn every_allocator_returns_ids_at_or_below_the_safe_integer_boundary() {
             crate::state::write().games.next_entity.write(1, 0xfffffff8);
             assert_eq!(crate::logic::game::allocate_setup_entity(1), 0xfffffff8);
             assert!(Into::<u32, u64>::into(0xfffffff8) < 0x20000000000000);
-            crate::state::write().games.next_entity.write(1, maximum);
-            reserve_homes(1, d.actor);
-            assert_eq!(claim_home(1, d.actor), maximum.into());
             let open = crate::entity_ids::assign_open_home(1, 999.try_into().unwrap());
             assert!(namespace(open) <= maximum && open < 0x20000000000000);
         },

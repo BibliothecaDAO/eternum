@@ -360,18 +360,13 @@ fn an_identity_that_does_not_match_the_account_address_is_rejected() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn disabled_commands_and_unready_rosters_revert_before_root() {
+fn a_command_the_release_disables_reverts_before_root() {
     let d = setup(true);
-    let game = crate::game::IGameDispatcherTrait::game(crate::game::IGameDispatcher { contract_address: d.games }, 1);
-    let rules = crate::rules::SliceRules { command_mask: 0, ..play_fixture::rules() };
-    play_fixture::seed_game(d.games, 1, game, rules);
+    assert!(!crate::rules::command_enabled(crate::balance::rules::SWITCHES.command_mask, 4));
+    let toggle = Command::ToggleAlternate(crate::commands::ToggleAlternate { explorer_id: 7, spire_direction: 0 });
     let release = play_fixture::pins(d.games, 1);
-    play_fixture::caller(d.games, d.actor, 100);
-    assert_entry_refusal(d, 1, release, play_fixture::encode(action(d, 1).command), "command disabled");
-    play_fixture::seed_game(d.games, 1, crate::game::GameRegistry { ready: false, ..game }, play_fixture::rules());
-    let release = play_fixture::pins(d.games, 1);
-    play_fixture::caller(d.games, d.actor, 100);
-    assert_entry_refusal(d, 1, release, play_fixture::encode(action(d, 1).command), "roster not ready");
+    play_fixture::caller(d.games, d.actor, play_fixture::FIXTURE_START);
+    assert_entry_refusal(d, 1, release, play_fixture::encode(toggle), "command disabled");
 }
 
 #[test]
@@ -413,9 +408,6 @@ fn owner_registration_and_launcher_game_creation_have_separate_roles() {
     set_launcher(d, d.actor);
     start_cheat_caller_address(d.games, d.actor);
     assert!(
-        crate::registrar::IRegistrarSafeDispatcherTrait::register_preset(safe, 1, registrar::definition(true)).is_err(),
-    );
-    assert!(
         crate::logic::release::IReleasesSafeDispatcherTrait::register_release(
             crate::logic::release::IReleasesSafeDispatcher { contract_address: d.games },
             2,
@@ -425,10 +417,9 @@ fn owner_registration_and_launcher_game_creation_have_separate_roles() {
             .is_err(),
     );
     start_cheat_caller_address(d.games, authority());
-    crate::registrar::IRegistrarDispatcherTrait::register_preset(registry, 1, registrar::definition(true));
     releases
         .register_release(2, crate::logic::release::Release { previous: 1, ..release }, releases.release_classes(1));
-    assert!(crate::registrar::IRegistrarSafeDispatcherTrait::create_game(safe, registrar::params(true)).is_err());
+    assert!(crate::registrar::IRegistrarSafeDispatcherTrait::create_game(safe, play_fixture::fixture_params('launcher')).is_err());
     assert!(
         crate::logic::release::IReleasesSafeDispatcherTrait::open_release(
             crate::logic::release::IReleasesSafeDispatcher { contract_address: d.games }, 2,
@@ -437,7 +428,7 @@ fn owner_registration_and_launcher_game_creation_have_separate_roles() {
     );
     start_cheat_caller_address(d.games, d.actor);
     releases.open_release(2);
-    let game_id = crate::registrar::IRegistrarDispatcherTrait::create_game(registry, registrar::params(true));
+    let game_id = crate::registrar::IRegistrarDispatcherTrait::create_game(registry, play_fixture::fixture_params('launcher'));
     assert_eq!(releases.game_release(game_id), 2);
     assert_eq!(IGamesRolesDispatcher { contract_address: d.games }.owner(), authority());
     assert_eq!(IGamesRolesDispatcher { contract_address: d.games }.launcher(), d.actor);
@@ -452,9 +443,8 @@ fn game_registry_wire_contains_only_game_configuration() {
     assert_eq!(
         encoded.span(),
         array![
-            game.name, game.family.into(), game.preset_id.into(), 0, 1, 1, game.start_settling_at.into(),
-            game.start_main_at.into(), game.end_at.into(), game.end_grace_seconds.into(), game.seed,
-            game.scheduled_end_at.into(),
+            game.name, game.family.into(), 0, 0, game.start_settling_at.into(), game.start_main_at.into(),
+            game.end_at.into(), game.seed, game.scheduled_end_at.into(),
         ]
             .span(),
     );
@@ -504,16 +494,13 @@ fn constructor_vrf_configuration_is_immutable_and_refuses_invalid_inputs() {
     }
 }
 mod army_relics;
-mod bridge;
 mod days;
 mod entity_ids;
 mod fragments;
-mod guilds;
 
 mod lane_interfaces;
 
 mod oaths;
-mod preset_projection;
 mod progression;
 mod race;
 mod rule_storage;
