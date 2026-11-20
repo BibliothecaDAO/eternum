@@ -206,16 +206,10 @@ describe("a release's rule rows", () => {
 
   it("refuses a launch whose release has no rule definition, without partial state", () => {
     const preset = registration();
-    const world = setup(preset.definitions);
+    const world = setup(presetRelease(5, 2).definitions);
     const before = world.fold.checkpoint();
-    const unknown = launch(preset);
-    unknown[unknown.length - 1] = rowEvent("GameRelease", ["1"], {
-      release_id: 99,
-      created_release_id: 99,
-      preset_commitment: 0,
-    });
-    expect(() => world.native.applyReceipt(world.fold, receipt(unknown), 11, 0)).toThrow(
-      "No rule definition for release 99",
+    expect(() => world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0)).toThrow(
+      "No rule definition for release 1",
     );
     expect(world.fold.checkpoint()).toEqual(before);
   });
@@ -301,7 +295,6 @@ describe("a release's rule rows", () => {
       BigInt(preset.definition.rules.map_config.shards_mines_win_probability),
     );
   });
-
 });
 
 it("projects optional Deep rules from verified registration and publishes no row for None", () => {
