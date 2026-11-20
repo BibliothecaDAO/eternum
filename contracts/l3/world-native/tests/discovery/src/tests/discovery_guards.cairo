@@ -11,7 +11,6 @@ fn blitz_light_and_heavy_guards_reach_both_inclusive_endpoints_in_every_slot() {
         assert_endpoints(preset.rules, category, 1, TroopTier::T1, 999, 1499, 370, 623);
     }
     assert_endpoints(preset.rules, BANK_CATEGORY, 3, TroopTier::T2, 1499, 1999, 370, 623);
-    assert_endpoints(preset.rules, BITCOIN_MINE_CATEGORY, 4, TroopTier::T2, 1499, 1999, 370, 623);
 }
 
 #[test]

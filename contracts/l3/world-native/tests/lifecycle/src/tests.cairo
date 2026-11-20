@@ -4,7 +4,6 @@ mod army_activity;
 mod aspects;
 
 mod banes;
-mod blitz_results;
 mod campaign;
 mod camps;
 mod deep_catch_up;

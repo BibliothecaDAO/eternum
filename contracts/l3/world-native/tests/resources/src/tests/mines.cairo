@@ -203,7 +203,6 @@ fn ethereal_discovery_never_draws_from_the_ordinary_mine_pool() {
     let d = super::setup(true);
     let game = IGameDispatcher { contract_address: d.games };
     let mut rules = super::play_fixture::rules();
-    rules.bitcoin_mine_config.enabled = false;
     rules.map_config.shards_mines_win_probability = 1;
     rules.map_config.shards_mines_fail_probability = 0;
     let mut preset = super::play_fixture::fixture_preset(rules);

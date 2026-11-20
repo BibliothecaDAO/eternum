@@ -1,5 +1,5 @@
 pub use crate::rules::{RESOURCE_PRECISION, SliceRules};
-pub use crate::taxonomy::{BANK_CATEGORY, BITCOIN_MINE_CATEGORY, CAMP_CATEGORY, MINE_CATEGORY};
+pub use crate::taxonomy::{BANK_CATEGORY, CAMP_CATEGORY, MINE_CATEGORY};
 pub use crate::troops::{TroopTier, TroopType, discovery_guards};
 pub fn assert_endpoints(
     rules: SliceRules,

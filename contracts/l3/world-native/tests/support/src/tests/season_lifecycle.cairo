@@ -1,7 +1,6 @@
 pub use snforge_std::fs::{FileTrait, read_txt};
 pub use snforge_std::{EventSpyTrait, EventsFilterTrait, start_cheat_caller_address, stop_cheat_caller_address};
 pub use crate::commands::Command;
-pub use crate::game::{IPointsDispatcher, IPointsDispatcherTrait};
 pub use super::resource_commands::{assert_terminal_rejection, execute, setup_with_rules};
 pub fn execute_batch(d: super::Deployment, command: Command, timestamp: u64, expected: u64) {
     execute_batch_in_game(d, 3, command, timestamp, expected);
@@ -23,6 +22,4 @@ pub fn execute_batch_in_game(d: super::Deployment, game_id: u32, command: Comman
     }
     assert_eq!(count, 1);
 }
-pub fn points(deployment: super::Deployment) -> IPointsDispatcher {
-    IPointsDispatcher { contract_address: deployment.games }
-}
+

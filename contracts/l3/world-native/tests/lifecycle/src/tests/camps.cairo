@@ -45,7 +45,6 @@ fn camp_reveals_six_biomes_without_neighbor_lotteries_or_points() {
         assert!(map.occupancy(tile_key(3, neighbor(coord(), direction))).is_none());
         assert!((tile.data / 0x20000000000) % 256 != 0);
     }
-    assert_eq!(crate::game::IPointsDispatcher { contract_address: d.games }.season_points(3), 0);
     assert_eq!(key.game_id, 3);
 }
 #[test]

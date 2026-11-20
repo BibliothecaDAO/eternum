@@ -55,19 +55,12 @@ fn level_up_rejects_unowned_missing_wrong_category_unfunded_and_maximum_structur
 #[test]
 fn discovery_uses_pinned_weight_totals_offsets_and_layer_restrictions() {
     let config = super::play_fixture::rules().map_config;
-    // Pinned Eternum/Blitz exploration: mine 1000/50000, camp 1500/50000, Bitcoin 200/10000.
     assert_eq!(config.shards_mines_win_probability, 1000);
     assert_eq!(config.shards_mines_fail_probability, 49000);
     assert_eq!(config.camp_win_probability, 1500);
     assert_eq!(config.camp_fail_probability, 48500);
-    assert_eq!(config.bitcoin_mine_win_probability, 200);
-    assert_eq!(config.bitcoin_mine_fail_probability, 9800);
     // Independent draws from the pinned Poseidon RNG with fixed salt 18, offsets 2, 7 and 10.
     assert_eq!(surface(config, 14892, crate::rules::DISCOVER_CAMPS), Discovery::Mine);
     assert_eq!(surface(config, 14897, crate::rules::DISCOVER_CAMPS), Discovery::Camp);
     assert_eq!(surface(config, 3229451, crate::rules::DISCOVER_CAMPS), Discovery::Camp);
-    assert_eq!(ethereal(config, true, false, 7496), Discovery::BitcoinMine); // draw 199
-    assert_eq!(ethereal(config, true, false, 4236), Discovery::None); // draw 200
-    assert_eq!(ethereal(config, false, false, 7496), Discovery::None);
-    assert_eq!(ethereal(config, true, true, 7496), Discovery::None);
 }

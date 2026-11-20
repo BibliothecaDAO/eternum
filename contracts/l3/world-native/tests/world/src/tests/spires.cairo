@@ -52,12 +52,6 @@ fn production_initialization_places_the_same_spire_identity_on_both_layers_witho
             }
         }
     }
-    assert_eq!(
-        crate::game::IPointsDispatcherTrait::season_points(
-            crate::game::IPointsDispatcher { contract_address: d.games }, 3,
-        ),
-        0,
-    );
     assert!(map(d).tile(tile_key(1, center(d, 1))).is_none());
     // Spire tiles and their access rings, on both layers, keep the biome the terrain derives for them.
     let mut tiles = array![];

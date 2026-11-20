@@ -4,7 +4,7 @@ pub use snforge_std::{
 };
 pub use starknet::storage::StorageMapWriteAccess;
 pub use crate::commands::Command;
-pub use crate::game::{IGameDispatcher, IGameDispatcherTrait, IPointsDispatcherTrait};
+pub use crate::game::{IGameDispatcher, IGameDispatcherTrait};
 pub use crate::map::IMapLogicDispatcher;
 pub use crate::resources::{IResourceOperationsDispatcher, ResourceKey, ResourceSlot};
 pub use crate::settlement::{
