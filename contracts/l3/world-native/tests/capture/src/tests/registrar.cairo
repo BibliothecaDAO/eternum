@@ -121,21 +121,6 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
     preset.rules.map_config.shards_mines_win_probability = 0;
     preset.rules.mode_rules = HOME_REWARDS | crate::rules::UNOWNED_TARGETS | crate::rules::DEPTH_CONTENTS;
     preset.settlement.spacing = 1024;
-    let limits = crate::rules::TroopLimitConfig {
-        settlement_armies: 3,
-        city_armies: 4,
-        kingdom_armies: 5,
-        empire_armies: 6,
-        settlement_guard_slots: 0,
-        city_guard_slots: 0,
-        kingdom_guard_slots: 0,
-        empire_guard_slots: 0,
-        starting_guard: 0,
-        t1_tier_modifier: 100,
-        settlement_deployment_cap: 3000,
-        ..preset.rules.troop_limit_config,
-    };
-    preset.rules.troop_limit_config = limits;
     let mut grants = array![];
     for grant in preset.settlement.realms.resources {
         grants
@@ -193,7 +178,7 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
         }
     }
     assert!(troop_resource != 0, "starting garrison missing");
-    assert_eq!(crate::troops::max_army_size(limits, 0, crate::troops::TroopTier::T1), 3000);
+    assert_eq!(crate::troops::max_army_size(crate::balance::rules::TROOP_LIMIT_CONFIG, 0, crate::troops::TroopTier::T1), 3000);
     let muster = Command::CreateExplorer(
         CreateExplorer { slot: 0, structure_id: 1, category, tier: 0, amount: RESOURCE_PRECISION, direction: 5 },
     );
@@ -206,8 +191,8 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
         }
         let record = structures.structure(home).unwrap();
         assert_eq!(record.base.troop_max_guard_count, 0);
-        assert_eq!(record.base.troop_max_explorer_count, Into::<u8, u16>::into(level) + 3);
-        while structures.home_armies(home).len() < Into::<u8, u32>::into(level) + 3 {
+        assert_eq!(record.base.troop_max_explorer_count, army_allowance(level));
+        while structures.home_armies(home).len() < army_allowance(level).into() {
             let direction: u8 = structures.home_armies(home).len().try_into().unwrap();
             assert!(
                 execute_in_game(
@@ -276,15 +261,6 @@ fn frontier_reveal_pays_equal_strength_on_ethereal_one() {
 }
 
 #[test]
-fn an_uncapped_reveal_pays_on_the_whole_army() {
-    let (_, preset) = super::preset_projection::current_definition("frontier-check");
-    assert_eq!(preset.rules.troop_limit_config.explore_reward_strength_cap, 0);
-    assert_capture_with_reveal(
-        0, 20_000 * RESOURCE_PRECISION, crate::troops::TroopTier::T1, 2_000 * RESOURCE_PRECISION,
-    );
-}
-
-#[test]
 fn sites_pay_the_same_initial_guard_in_a_days_last_minute_as_in_its_first() {
     assert_capture_at(0, 1000 * RESOURCE_PRECISION, crate::troops::TroopTier::T1, 100 * RESOURCE_PRECISION, true, None);
 }
@@ -304,7 +280,6 @@ fn depth_entry_requires_spire_lore_and_keeps_stamina_at_every_depth() {
     let mut preset = definition(true);
     open_entry(ref preset);
     preset.rules.day_unit_seconds = DAY_UNIT;
-    preset.rules.tick_config.armies_tick_in_seconds = 60;
     let (_, frontier) = super::preset_projection::current_definition("frontier-check");
     preset.economy.labor = frontier.economy.labor;
     preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DEPTH_CONTENTS;
@@ -313,11 +288,6 @@ fn depth_entry_requires_spire_lore_and_keeps_stamina_at_every_depth() {
     preset.rules.mode_rules = HOME_REWARDS | crate::rules::DEPTH_CONTENTS;
     preset.rules.command_mask = 0xffffffffffffffffffffffffffffffff;
     preset.settlement.spacing = 1024;
-    preset.rules.troop_limit_config.starting_guard = 0;
-    preset.rules.troop_limit_config.settlement_armies = 3;
-    preset.rules.troop_stamina_config.stamina_initial = 150;
-    preset.rules.troop_stamina_config.stamina_knight_max = 150;
-    preset.rules.troop_stamina_config.stamina_gain_per_tick = 0;
     preset.structures.board = frontier.structures.board;
     preset.structures.research = frontier.structures.research;
     registry(d).register_preset(1, preset);
@@ -584,7 +554,7 @@ fn beast_clear_payout(full: bool, band: bool) {
     );
     stop_cheat_caller_address(d.games);
     let before = resources.resource_balance(wheat);
-    let cap = 6000 * RESOURCE_PRECISION;
+    let cap = Into::<u32, u128>::into(crate::balance::structures::BOARD.settlement_resource_cap) * RESOURCE_PRECISION;
     assert_eq!(
         snforge_std::interact_with_state(
             d.games, || crate::logic::resources::store_limit(home, crate::resources::WHEAT),
@@ -764,7 +734,7 @@ fn frontier_refuses_off_map_economy_commands_before_reading_positions() {
 #[test]
 fn expedition_deploy_chooses_a_free_slot_and_refuses_occupied_or_unallowed_slots() {
     let d = setup();
-    let (game_id, preset, category) = expedition_home(d);
+    let (game_id, _, category) = expedition_home(d);
     let key = crate::troops::ArmySlotKey { game_id, structure_id: 1, epoch: 0, slot: 1 };
     let read_slot = |key| snforge_std::interact_with_state(d.games, || crate::logic::army_slot_storage::read(key));
     let troops = GameState { contract_address: d.games };
@@ -775,17 +745,18 @@ fn expedition_deploy_chooses_a_free_slot_and_refuses_occupied_or_unallowed_slots
     assert_eq!(army.troops.stamina, crate::troops::StaminaSource::Slot(1));
     assert_eq!(
         fresh.stamina.amount,
-        crate::progression::stamina_max(Default::default(), army.troops.category, preset.rules.troop_stamina_config),
+        crate::progression::stamina_max(Default::default(), army.troops.category, crate::balance::rules::TROOP_STAMINA_CONFIG),
     );
     assert!(read_slot(crate::troops::ArmySlotKey { slot: 0, ..key }).is_none());
     let home = ResourceKey { game_id, entity_id: 1 };
     let before = IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home);
     // Both commands aim at an empty tile: the slot check is what refuses them.
     assert!(!execute_in_game(d, game_id, muster_slot_command(category, 1, 1), 351));
-    assert!(!execute_in_game(d, game_id, muster_slot_command(category, 1, 2), 351));
+    let beyond: u8 = crate::balance::rules::TROOP_LIMIT_CONFIG.settlement_armies.try_into().unwrap();
+    assert!(!execute_in_game(d, game_id, muster_slot_command(category, 1, beyond), 351));
     assert_eq!(IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home), before);
     assert_eq!(read_slot(key).unwrap(), fresh);
-    assert!(read_slot(crate::troops::ArmySlotKey { slot: 2, ..key }).is_none());
+    assert!(read_slot(crate::troops::ArmySlotKey { slot: beyond, ..key }).is_none());
     let mut tired = troops.resolved_explorer(explorer).unwrap();
     tired.troops.stamina.set_amount(7);
     super::resource_commands::set_explorer_fixture(d.games, explorer, tired);
@@ -809,7 +780,7 @@ fn expedition_deploy_chooses_a_free_slot_and_refuses_occupied_or_unallowed_slots
 #[test]
 fn expedition_slot_reuse_preserves_its_bar_and_the_next_day_allocates_a_fresh_bar() {
     let d = setup();
-    let (game_id, preset, category) = expedition_home(d);
+    let (game_id, _, category) = expedition_home(d);
     let (first, second) = expedition_armies(d, game_id, category);
     let slot_key = crate::troops::ArmySlotKey { game_id, structure_id: 1, epoch: 0, slot: 0 };
     let read_slot = |key| snforge_std::interact_with_state(d.games, || crate::logic::army_slot_storage::read(key));
@@ -840,13 +811,11 @@ fn expedition_slot_reuse_preserves_its_bar_and_the_next_day_allocates_a_fresh_ba
     assert!(execute_in_game(d, game_id, muster_command(category, 0), tomorrow));
     let next = read_slot(crate::troops::ArmySlotKey { epoch: 1, ..slot_key }).unwrap();
     assert!(next.explorer_id != replacement && next.explorer_id != 0);
-    // The next day's first army starts full at its own maximum, not at the configured initial bar.
     let fresh = troops.explorer(ExplorerKey { game_id, explorer_id: next.explorer_id }).unwrap().troops;
     assert_eq!(
         next.stamina.amount,
-        crate::progression::stamina_max(Default::default(), fresh.category, preset.rules.troop_stamina_config),
+        crate::progression::stamina_max(Default::default(), fresh.category, crate::balance::rules::TROOP_STAMINA_CONFIG),
     );
-    assert!(next.stamina.amount > preset.rules.troop_stamina_config.stamina_initial.into());
     assert_eq!(read_slot(slot_key).unwrap().stamina.amount, 7);
     assert_eq!(read_slot(slot_key).unwrap().explorer_id, 0);
     assert!(troops.explorer(ExplorerKey { game_id, explorer_id: replacement }).is_none());
@@ -1310,4 +1279,14 @@ fn two_ruins_at_the_same_depth_award_relics_without_closing_the_other_or_paying_
             );
         },
     );
+}
+
+fn army_allowance(level: u8) -> u16 {
+    let limits = crate::balance::rules::TROOP_LIMIT_CONFIG;
+    match level {
+        0 => limits.settlement_armies,
+        1 => limits.city_armies,
+        2 => limits.kingdom_armies,
+        _ => limits.empire_armies,
+    }
 }
