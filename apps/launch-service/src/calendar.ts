@@ -30,7 +30,6 @@ export interface NextBlitzGame {
 
 export interface CalendarStore {
   list(): Promise<SeasonPhase[]>;
-  /** Sets a phase's dates; a running or queued Frontier season retains its dates. */
   set(phase: SeasonPhase, now: number): Promise<SeasonPhase>;
 }
 
@@ -38,7 +37,6 @@ export class CalendarConflict extends Error {}
 
 export const PHASE_END_ERROR = "A phase must end in the future";
 
-/** A Frontier season has a positive duration with both boundaries on army ticks, within Season 1's race. */
 export const assertFrontierSeason = (startsAt: number, endsAt: number) => {
   const preset = frontierSeasonOnePreset;
   const tickMs = FRONTIER_ARMIES_TICK_SECONDS * 1_000;

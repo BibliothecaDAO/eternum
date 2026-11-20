@@ -67,7 +67,6 @@ export class D1CalendarStore implements CalendarStore {
   }
 }
 
-/** A running phase keeps its start, and a running Frontier season its end. A started Blitz window may end sooner or later. */
 const rejectChangeToStartedPhase = (current: PhaseRow | null, startsAt: number, endsAt: number, now: number) => {
   // A phase that has not started, or has ended, is free: the next season is a new start and end on the same row.
   if (!current || current.starts_at > now || current.ends_at <= now) return;

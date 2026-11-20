@@ -13,10 +13,8 @@ const firstDay = (Math.floor(Date.now() / DAY_MS) + 2) * DAY_MS;
 export const day = (days: number, hour = 0, minute = 0, second = 0) =>
   new Date(firstDay + days * DAY_MS + ((hour * 60 + minute) * 60 + second) * 1_000);
 
-/** Season 1's full race, in bags of days. */
 const SEASON_BAGS = frontierSeasonOnePreset.race.seasonDays / DAYS_PER_BAG;
 
-/** A test season lasting the requested bags of days; by default Season 1's full race. */
 export const frontierSeasonEnd = (startsAt: Date | string, bags = SEASON_BAGS) =>
   new Date(
     new Date(startsAt).getTime() + seasonSeconds(bags, frontierSeasonOnePreset.dayUnitSeconds) * 1_000,

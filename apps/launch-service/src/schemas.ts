@@ -21,10 +21,6 @@ export interface CreateGameRequest extends SharedLaunchOptions {
   gameStartTime?: string;
 }
 
-/**
- * A season is one open-entry game named by its start, so scheduling the same start twice names the same game. It runs
- * to the calendar's planned end; the release's own duration is only a fallback for games created outside the calendar.
- */
 export const frontierSeasonRequest = (season: FrontierSeasonPhase): CreateGameRequest => {
   const start = Date.parse(season.startsAt);
   const end = Date.parse(season.endsAt);

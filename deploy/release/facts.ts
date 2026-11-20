@@ -1,10 +1,3 @@
-/**
- * The facts a release deploys, read from this checkout's compiled contracts: the class of every contract a shard's
- * initialization deploys, the release id and the active schema. The init image bakes them at build; the box records
- * them in release.json with its commit and images; the deploy command compares a deployed shard against them.
- *
- *   bun deploy/release/facts.ts > release-facts.json
- */
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";

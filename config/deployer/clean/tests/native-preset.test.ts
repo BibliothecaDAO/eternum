@@ -9,7 +9,7 @@ import schema from "../../../../contracts/l3/world-native/schema/schema.json";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
 import { applyDeploymentConfigOverrides } from "../config/config-loader";
-import { buildNativePreset } from "../config/native-preset";
+import { buildNativePreset, seasonOneReleaseDefinition } from "../config/native-preset";
 import { balanceModules } from "../../../../contracts/l3/world-native/scripts/balance-modules";
 import {
   FRONTIER_ACCELERATED_PRESET_ID,
@@ -178,10 +178,7 @@ describe("native presets", () => {
   });
 
   test("Season 1's command gate opens site interaction and no resource transfer", () => {
-    const mask = buildNativePreset(
-      loadNativePresetConfiguration("madara.frontier", FRONTIER_S1_PRESET_ID),
-      FRONTIER_S1_PRESET_ID,
-    ).rules.command_mask;
+    const mask = seasonOneReleaseDefinition().rules.command_mask;
     expect(mask & BigInt(nativeCommandBits.InteractSite)).not.toBe(0n);
     for (const [network, id] of [["madara.blitz", 2]] as const) {
       const legacy = buildNativePreset(loadNativePresetConfiguration(network, id), id);
@@ -796,10 +793,7 @@ test("Frontier discoveries use the approved narrow guard ranges at every depth",
 });
 
 test("Season 1 and its check preset share the canonical Aspect mapping", () => {
-  const season = buildNativePreset(
-    loadNativePresetConfiguration("madara.frontier", FRONTIER_S1_PRESET_ID),
-    FRONTIER_S1_PRESET_ID,
-  );
+  const season = seasonOneReleaseDefinition();
   expect(season.settlement.order_aspects).toEqual([1, 2, 3, 4, 4, 3, 4, 4, 1, 2, 2, 1, 1, 3, 3, 2]);
   expect(nativePresets[FRONTIER_FIXTURE_PRESET_ID]!.orderAspects).toEqual(season.settlement.order_aspects);
   expect(nativePresets[FRONTIER_PLAYGROUND_PRESET_ID]!.orderAspects).toEqual(season.settlement.order_aspects);
@@ -1019,9 +1013,7 @@ test("the release's discovery must fit one draw under Clear Mist and Detection",
   const source = nativePresets[FRONTIER_S1_PRESET_ID]!;
   const previous = source.discovery;
   const modules = () =>
-    balanceModules(
-      buildNativePreset(loadNativePresetConfiguration("madara.frontier", FRONTIER_S1_PRESET_ID), FRONTIER_S1_PRESET_ID),
-    );
+    balanceModules(seasonOneReleaseDefinition());
   try {
     expect(modules).not.toThrow();
     source.discovery = { ...previous!, beastsBps: 4000 };

@@ -3,13 +3,10 @@ import { expect, it } from "bun:test";
 import { ResourceManager, type GameClient } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
-import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
-import { loadNativePresetConfiguration } from "../../../config/deployer/clean/registrar/native-preset";
-import { nativePresetIdFor } from "../../../config/source/native";
+import { seasonOneReleaseDefinition } from "../../../config/deployer/clean/config/native-preset";
 import { waitForWheatState } from "./frontier";
 
-const seasonOne = nativePresetIdFor("frontier");
-const rules = buildNativePreset(loadNativePresetConfiguration("madara.frontier", seasonOne), seasonOne).rules;
+const rules = seasonOneReleaseDefinition().rules;
 
 function realm() {
   const store = new NativeFactStore();
