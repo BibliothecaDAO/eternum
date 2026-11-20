@@ -345,7 +345,6 @@ export const isAtExpeditionSpire = (spire: { col: number; row: number }, coord: 
   (spire.col === coord.x && spire.row === coord.y) ||
   getNeighborHexes(spire.col, spire.row).some((hex) => hex.col === coord.x && hex.row === coord.y);
 
-/** A discovered spire has one destination; an older preset's home portal retains its researched choices. */
 export type ExpeditionSpireView = {
   col: number;
   row: number;
@@ -353,11 +352,6 @@ export type ExpeditionSpireView = {
   targetDepth?: EtherealLayer;
   realm: NativeRows["Structure"];
 };
-
-export function discoversSpires(store: Pick<NativeFactStore, "get">, gameId: number): boolean {
-  const rules = store.get("SliceRules", { game_id: gameId });
-  return rules !== undefined && (rules.mode_rules & nativeRuleConstants.DISCOVER_SPIRES) !== 0;
-}
 
 function realmSpires(
   store: Pick<NativeFactStore, "get" | "require">,
@@ -367,10 +361,6 @@ function realmSpires(
   const rules = isRealmCategory(realm.base.category) ? readExpeditionRules(store, realm.game_id) : null;
   if (!rules) return [];
   const deepest = reachableDepth(store, realm.game_id, realm.entity_id) ?? 0;
-  if (!discoversSpires(store, realm.game_id)) {
-    const spire = deepest > 0 ? expeditionSpireTile(rules, realm, nowSeconds) : null;
-    return spire ? [{ ...spire, deepest, realm }] : [];
-  }
   const epoch = seasonDay(rules, nowSeconds);
   if (epoch === null) return [];
   return ([1, 2, 3] as const).flatMap((targetDepth) => {
@@ -384,7 +374,6 @@ function realmSpires(
   });
 }
 
-/** The living army's discovered spire on its current layer, or the older preset's home portal. */
 export const armyRealmSpire = (
   store: Pick<NativeFactStore, "get" | "require" | "entityOccupancy">,
   gameId: number,
@@ -396,7 +385,6 @@ export const armyRealmSpire = (
     army && army.troops.count > 0n ? store.get("Structure", { game_id: gameId, entity_id: army.owner }) : null;
   if (!realm) return null;
   const spires = realmSpires(store, realm, nowSeconds);
-  if (!discoversSpires(store, gameId)) return spires[0] ?? null;
   const rules = readExpeditionRules(store, gameId);
   if (!rules) return null;
   const depth = expeditionDepth(rules, entityMapPosition(store, gameId, explorerId));
@@ -410,7 +398,6 @@ export const armySpireChance = (
   explorerId: number | bigint,
   nowSeconds: number,
 ): number | null => {
-  if (!discoversSpires(store, gameId)) return null;
   const rules = readExpeditionRules(store, gameId);
   const army = store.get("ExplorerTroops", { game_id: gameId, explorer_id: explorerId });
   const position = store.entityOccupancy(gameId, explorerId);

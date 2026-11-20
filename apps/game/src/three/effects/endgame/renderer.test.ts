@@ -123,7 +123,7 @@ async function harness(ended = false, discovered = false, revealWhilePreparing =
         })),
       );
   });
-  const manager = new SpireManager(scene, projection, new Group(), undefined, undefined, undefined, compile);
+  const manager = new SpireManager(scene, projection, new Group(), undefined, undefined, compile);
   owned.push(() => {
     manager.destroy();
     projection.dispose();
