@@ -48,7 +48,7 @@ Marks: (new) is a rule the code does not have today; (first value) is a number t
 | Map            | A ruin's beast is as big as its relic is rare: 1,000, 2,500, 5,000, 10,000 or 25,000                                                                                                                                                                                                | 1,000, 25,000                                            | No big fight for a small prize                           | You see the beast, you know the relic                                    |
 | Map            | A Troll camp your Realm cleared is a supply post: armies next to it are refilled with troops                                                                                                                                                                                        | —                                                        | Reinforcing below the Surface                            | A full army at the door of the Deep                                      |
 | Relics         | 5 relics, 3 per army; a 4th replaces one you choose                                                                                                                                                                                                                                 | 3                                                        | Power you time yourself                                  | A loadout spent in the fight it was built for                            |
-| Relics         | Each relic gains 1 step per tier and works 30 minutes per tier: Blade +10% damage, Ward −5% damage taken, Plunder +20% loot, Tome +40% XP, Far-Eye 6 tiles revealed                                                                                                                 | +10%, −5%, +20%, +40%, 6 tiles, 30 min                   | Rarity that means something                              | A rarer relic is plainly better                                          |
+| Relics         | Each relic gains 1 step per tier and works 30 minutes per tier: Blade +10% damage, Ward −5% damage taken, Plunder +20% loot, Tome +40% XP, Stamina +20% stamina regeneration                                                                                                        | +10%, −5%, +20%, +40%, +20%, 30 min                      | Rarity that means something                              | A rarer relic is plainly better                                          |
 | Quest          | 1 quest per day, the same for everyone, from a set of 7: each comes 1 time per week                                                                                                                                                                                                 | 7                                                        | A reason to play today                                   | A day unlike yesterday                                                   |
 | Quest          | Its count is the quest's base count times the Realm's level (1 to 4)                                                                                                                                                                                                                | a base count, × level                                    | A quest sized to your Realm                              | Every level is asked a fair share                                        |
 | Quest          | Its reward is 1,000 labor and 1,500 Essence, ×2 at each Realm level                                                                                                                                                                                                                 | 1,000, 1,500, ×2 per level                               | Resources for the Realm                                  | The next building or level sooner                                        |
@@ -659,7 +659,7 @@ Sources: `src/combat.cairo:129-403`
 - **Gets you to:** Spend stamina on reveals to find the day's sites, its ruins and its spire.
 - **Payoff:** Every reveal pays the Realm; nearly one in four finds something; the spire is found by the tenth at the
   latest.
-- **Depth:** Where to look and when to stop: Scouting tilts the finds, a Far-Eye opens tiles at once.
+- **Depth:** Where to look and when to stop: Scouting tilts the finds.
 - **Choices:** Reveal more or go fight what you found; which kind Scouting favours.
 - **Against today:** Find odds are today's. New: spires are found, at rising odds; Scouts reveal for 10; the reveal
   reward counts up to 10,000 troops; the Deep has nothing to reveal.
@@ -852,14 +852,14 @@ Sources: `src/expeditions.cairo:114-141`, `src/logic/movement.cairo:234-243`, `s
 - **Against today:** Relics are off in Frontier today. Season 1 turns five on, in five tiers, held by the army that won
   them and gone with it at day end, switched on anywhere. The Forge stays off.
 
-| Relic                       | Does                                  | Each tier (tune) | Common | Legendary |
-| --------------------------- | ------------------------------------- | ---------------- | ------ | --------- |
-| Blade                       | damage dealt                          | +10%             | +10%   | +50%      |
-| Ward                        | damage taken                          | −5%              | −5%    | −25%      |
-| Plunder                     | labor and Essence from a cleared site | +20%             | +20%   | +100%     |
-| Far-Eye                     | reveals the nearest tiles at once     | 6 tiles          | 6      | 30        |
-| Tome (new)                  | XP the army earns                     | +40%             | +40%   | +200%     |
-| Lasts (all but the Far-Eye) |                                       | 30 min           | 30 min | 2 h 30    |
+| Relic      | Does                                  | Each tier (tune) | Common | Legendary |
+| ---------- | ------------------------------------- | ---------------- | ------ | --------- |
+| Blade      | damage dealt                          | +10%             | +10%   | +50%      |
+| Ward       | damage taken                          | −5%              | −5%    | −25%      |
+| Plunder    | labor and Essence from a cleared site | +20%             | +20%   | +100%     |
+| Stamina    | stamina regeneration                  | +20%             | +20%   | +100%     |
+| Tome (new) | XP the army earns                     | +40%             | +40%   | +200%     |
+| Lasts      |                                       | 30 min           | 30 min | 2 h 30    |
 
 One relic for each thing an army does: hit, last, loot, look, grow. Four are the code's army relics (damage, damage
 taken, exploration reward, reveal radius · `packages/types/src/constants/relics.ts:70-160`, `src/relics.cairo:5-11`), in
@@ -1350,8 +1350,8 @@ Sources:
   Spire 10,000. **Buildings:** Farm, Barracks and Lodge from 500; the Storeroom at 10,000 labor, from City. **The
   start:** 3,000 Knights in two armies, 6,000 wheat.
 - **The quest:** its seven base counts and its reward (1,000 labor and 1,500 Essence, ×2 at each Realm level).
-- **The relics' steps** (Blade +10%, Ward −5%, Plunder +20%, Tome +40%, Far-Eye 6 tiles a tier) and 30 minutes a tier;
-  ruin beasts 1,000 to 25,000.
+- **The relics' steps** (Blade +10%, Ward −5%, Plunder +20%, Tome +40%, Stamina +20% regeneration a tier) and 30 minutes
+  a tier; ruin beasts 1,000 to 25,000.
 - **Charge** 10 to 50%; **the Scout's** −25%; the spire's odds, +10% a reveal.
 - **Not needed for the playtest:** the shop, the store builds and the live LORDS quote.
 

@@ -240,22 +240,6 @@ pub mod GamesFixture {
                 crate::relics::IRelicMapLibraryDispatcher { class_hash: classes.raid.read() }, game_id,
             )
         }
-        fn reveal_relic_tiles(
-            ref self: TContractState,
-            key: crate::troops::ExplorerKey,
-            coord: crate::troops::Coord,
-            count: u8,
-            game_context: crate::commands::ActionContext,
-        ) {
-            let classes = fixture_classes(key.game_id);
-            crate::relics::IRelicMapDispatcherTrait::reveal_relic_tiles(
-                crate::relics::IRelicMapLibraryDispatcher { class_hash: classes.raid.read() },
-                key,
-                coord,
-                count,
-                game_context,
-            )
-        }
         fn discover_relic_chest(
             ref self: TContractState,
             game_id: u32,

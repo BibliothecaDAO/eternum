@@ -16,12 +16,6 @@ const CARRIED: [ArmyRelic, ArmyRelic, ArmyRelic] = [
   { kind: "Plunder", rank: 3 },
 ];
 
-/**
- * An army's relics in a Season 1 day (/lab/game?scenario=relics): the spire's army carrying three relics, a Rare Ward
- * running, beside a ruin whose beast guards an Epic Blade. The chain answers ApplyRelic as army_relics.cairo does: the
- * slot's relic is spent and its kind runs for 30 minutes a tier (a Far-Eye reveals at once and leaves nothing running).
- * Every other command is the spire's.
- */
 export const relicsScenario = (): LabScenario => {
   const spire = spireScenario();
   const { store, startsAt } = spire;
@@ -63,5 +57,5 @@ const switchOn = (command: LabCommand, chain: LabScenario["store"], now: number)
   if (!relic || RELIC_KINDS.indexOf(relic.kind) * 5 + relic.rank !== relicId) return [];
   slots[slot] = null;
   const seconds = relicSeconds(relic);
-  return [armyRelics(slots), ...(seconds === null ? [] : [effect(relic, now + seconds)])];
+  return [armyRelics(slots), effect(relic, now + seconds)];
 };
