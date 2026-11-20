@@ -87,19 +87,6 @@ pub mod SettlementPoolState {
                 opened: self.data.settlement_pool.opened.read((game_id, village)), available: available.span(),
             }
         }
-        fn claim(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            center: Coord,
-            rules: SettlementRules,
-            registered: u16,
-            seed: u256,
-        ) -> Coord {
-            let target = target_pool_size(registered, rules.registration_limit);
-            assert!(target != 0, "no open settlements");
-            self.prepare_pool(game_id, false, center, rules, target);
-            self.take_candidate(game_id, false, center, rules, seed)
-        }
         fn claim_village(
             ref self: ComponentState<TContractState>,
             game_id: u32,

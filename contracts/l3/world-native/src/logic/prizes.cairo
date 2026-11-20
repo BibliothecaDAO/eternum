@@ -83,26 +83,6 @@ pub mod PrizesLogic {
                 );
             ()
         }
-        fn raise_dormant_spire(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            explorer_id: u64,
-            coord: Coord,
-            context: crate::commands::ActionContext,
-        ) {
-            let context = crate::commands::execution_context(game_id, context);
-            let explorer = self.revealing_explorer(game_id, actor, explorer_id, context);
-            crate::logic::map::MapState::occupy(
-                tile_key(game_id, coord),
-                crate::entity_ids::allocate_home(game_id, explorer.owner),
-                crate::taxonomy::DORMANT_SPIRE_OCCUPIER,
-                false,
-            );
-            let reward = crate::exploration_rewards::spire_reward(explorer.troops.boosts, context.timestamp);
-            let paid = self.pay_reveal(game_id, explorer_id, explorer, coord, reward, context);
-            self.record_story(game_id, actor, context.timestamp, paid, crate::ownership::Story::SpireDiscovered(paid));
-        }
     }
     #[generate_trait]
     impl ExtractionInternal of ExtractionInternalTrait {

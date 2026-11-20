@@ -333,10 +333,8 @@ pub mod StructuresLogic {
             let key = self.place_settlement(game_id, coord, record, context);
             match creation {
                 crate::settlement::SettlementCreation::Realm(realm) => {
-                    if context.rules.unbox().day_unit_seconds != 0 {
-                        crate::logic::research::write(key, crate::research::RealmKnowledge { learned: 0 });
-                        self.raise_realm_home(game_id, crate::entity_ids::namespace(key.entity_id), context);
-                    }
+                    crate::logic::research::write(key, crate::research::RealmKnowledge { learned: 0 });
+                    self.raise_realm_home(game_id, crate::entity_ids::namespace(key.entity_id), context);
 
                     if realm.activate_economy {
                         self.provision_realm_economy(key, realm.troops, context.timestamp, context);
@@ -597,58 +595,12 @@ pub mod StructuresLogic {
                 .initialize_resources(key, capacity * RESOURCE_PRECISION);
             match discovery {
                 Discovery::Mine => {
-                    if rules.day_unit_seconds == 0 {
-                        let (kind, config, cap) = IMineRulesLibraryDispatcher {
-                            class_hash: crate::logic::release::class_of(game_id, crate::slots::PRODUCTION),
-                        }
-                            .mine_draw(MinePoolKey { game_id }, seed);
-                        record.metadata.mine_kind = kind;
-                        self
-                            .create_producer(
-                                key,
-                                cap,
-                                config.production_rate,
-                                config.resource_type,
-                                config.building_category,
-                                rules.building_config.base_population,
-                                timestamp,
-                                game_context,
-                            );
-                    }
                 },
                 Discovery::Camp => {
-                    if rules.day_unit_seconds == 0 {
-                        assert!(
-                            crate::rules::rule_enabled(rules, crate::rules::DISCOVER_CAMPS),
-                            "camp discovery is disabled",
-                        );
-                        for resource in crate::balance::structures::CAMP_GRANTS.span() {
-                            crate::logic::structure_actions::resources_dispatcher(game_id)
-                                .grant_resource(
-                                    key,
-                                    *resource.resource_type,
-                                    *resource.amount,
-                                    timestamp,
-                                    crate::commands::resource_context(game_context),
-                                );
-                        }
-                        self
-                            .create_producer(
-                                key,
-                                crate::resources::UNLIMITED_OUTPUT,
-                                crate::balance::structures::CAMP_LABOR_RATE,
-                                23,
-                                25,
-                                rules.building_config.base_population,
-                                timestamp,
-                                game_context,
-                            );
-                    }
                 },
                 Discovery::Rift |
-                Discovery::Beasts => { assert!(rules.day_unit_seconds != 0, "site requires expeditions"); },
+                Discovery::Beasts => {},
                 Discovery::Ruin(reward) => {
-                    assert!(rules.day_unit_seconds != 0, "site requires expeditions");
                     crate::logic::army_relics::store_ruin(key, reward);
                     let depth = crate::logic::expeditions::depth_at(game_id, coord);
                     if crate::fragments::holds_cache(seed, depth) {
@@ -685,9 +637,8 @@ pub mod StructuresLogic {
                 crate::entity_ids::claim_home(game_id, record.owner)
             };
             let key = ResourceKey { game_id, entity_id: id };
-            let rules = game_context.rules.unbox();
             let village = record.base.category == crate::taxonomy::VILLAGE_CATEGORY;
-            let on_map = rules.day_unit_seconds == 0 || village;
+            let on_map = village;
             if on_map {
                 self.prepare_settlement_tile(game_id, coord, game_context);
             }

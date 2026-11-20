@@ -97,25 +97,6 @@ pub mod MapState {
         write_occupancy(key, Some(TileOccupancy { entity_id, category, is_structure }));
     }
 
-    pub fn upgrade_realm(key: TileKey, entity_id: u64, wonder: bool, level: u8) {
-        let previous = crate::logic::map::occupancy(key).expect('missing realm tile');
-        assert!(!key.alt && previous.is_structure, "not a surface structure");
-        assert!(previous.entity_id == entity_id, "occupier mismatch");
-        assert!(
-            previous.category >= crate::taxonomy::REALM_REGULAR_LEVEL_1_OCCUPIER
-                && previous.category <= crate::taxonomy::REALM_WONDER_LEVEL_4_OCCUPIER,
-            "not a realm tile",
-        );
-        assert!(level <= 3, "invalid realm level");
-        let category = level
-            + if wonder {
-                crate::taxonomy::REALM_WONDER_LEVEL_1_OCCUPIER
-            } else {
-                crate::taxonomy::REALM_REGULAR_LEVEL_1_OCCUPIER
-            };
-        write_occupancy(key, Some(TileOccupancy { category, ..previous }));
-    }
-
     pub fn vacate(key: TileKey, entity_id: u64) {
         let previous = crate::logic::map::occupancy(key).expect('undiscovered tile');
         assert!(!previous.is_structure, "cannot vacate structure");
@@ -233,16 +214,8 @@ pub mod MapLogic {
             let base = crate::logic::structures::record(key).base;
             let category = base.category;
             // Every guarded structure an expedition discovers is a site whose guard follows its kind and depth.
-            let site = rules.day_unit_seconds != 0;
-            let guarded = if site {
-                crate::expeditions::is_site_category(category)
-            } else {
-                category == crate::taxonomy::BANK_CATEGORY
-                    || category == crate::taxonomy::MINE_CATEGORY
-                    || category == crate::taxonomy::CAMP_CATEGORY
-            };
-            assert!(guarded, "invalid guarded structure category");
-            let guards = if site {
+            assert!(crate::expeditions::is_site_category(category), "invalid guarded structure category");
+            let guards = {
                 assert!(crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS), "site requires depth rules");
                 let depth = crate::logic::expeditions::depth_rules_at(
                     key.game_id, crate::structures::structure_coord(key),
@@ -257,8 +230,6 @@ pub mod MapLogic {
                     crate::troops::frontier_guard(category, depth, seed, rules, timestamp)
                 };
                 array![guard].span()
-            } else {
-                crate::troops::discovery_guards(category, seed, rules, timestamp)
             };
             assert!(base.troop_max_guard_count <= 4, "invalid guard slot limit");
             assert!(guards.len() <= base.troop_max_guard_count.into(), "guards exceed structure limit");
@@ -269,9 +240,7 @@ pub mod MapLogic {
                 assert!(crate::logic::guards::guard(guard_key) == Default::default(), "guards already initialized");
                 crate::logic::guards::GuardState::save(guard_key, crate::guards::Guard { troops, destroyed_tick: 0 });
             }
-            if site {
-                crate::logic::expeditions::create_site(key, guards);
-            }
+            crate::logic::expeditions::create_site(key, guards);
         }
     }
     #[abi(embed_v0)]
@@ -309,23 +278,6 @@ pub mod MapLogic {
         fn biome(self: @ContractState, key: TileKey, game_context: crate::commands::BiomeContext) -> u8 {
             crate::logic::map::biome(key, game_context)
         }
-        fn discovery(
-            self: @ContractState,
-            key: TileKey,
-            seed: u256,
-            timestamp: u64,
-            game_context: crate::commands::ActionContext,
-        ) -> crate::discovery::Discovery {
-            let game_context = crate::commands::execution_context(key.game_id, game_context);
-
-            let rules = game_context.rules.unbox();
-            if key.alt {
-                crate::discovery::Discovery::None
-            } else {
-                crate::discovery::surface(rules.map_config, seed, rules.mode_rules)
-            }
-        }
-
         fn reveal_structure_surroundings(
             ref self: ContractState, game_id: u32, coord: Coord, game_context: crate::commands::BiomeContext,
         ) {
@@ -345,8 +297,7 @@ pub mod MapLogic {
             if stored.map(|tile| tile.data / BIOME_SCALE % BYTE_RANGE != 0).unwrap_or(false) {
                 return stored;
             }
-            if game_context.day_unit_seconds == 0
-                || !crate::expeditions::is_home_ring(
+            if !crate::expeditions::is_home_ring(
                     Coord { alt: key.alt, x: key.col, y: key.row }, crate::logic::settlement::spacing(),
                 ) {
                 return stored;

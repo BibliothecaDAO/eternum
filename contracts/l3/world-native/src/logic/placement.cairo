@@ -1,6 +1,5 @@
 #[starknet::contract]
 pub mod PlacementLogic {
-    use crate::geometry::tile_key;
     use crate::logic::map::MapState;
     use crate::logic::release::ReleaseState;
     use crate::logic::settlement::SettlementPoolState;
@@ -40,23 +39,6 @@ pub mod PlacementLogic {
         MapEvent: MapState::Event,
         SettlementEvent: SettlementPoolState::Event,
         RowSet: crate::events::RowSet,
-    }
-    #[abi(embed_v0)]
-    impl SeasonPlacement of crate::realms::ISeasonPlacement<ContractState> {
-        fn claim_season_settlement(
-            ref self: ContractState, game_id: u32, settled_count: u16, seed: u256, center: Coord,
-        ) -> Coord {
-            let mut rules = crate::logic::settlement::rules(game_id);
-            rules.registration_limit = 0xffff;
-            for _ in 0..64_u32 {
-                let coord = self.settlements.claim(game_id, center, rules, settled_count, seed);
-                let occupied = crate::logic::map::occupancy(tile_key(game_id, coord)).is_some();
-                if !occupied {
-                    return coord;
-                }
-            }
-            panic!("no vacant settlement in search limit")
-        }
     }
     #[abi(embed_v0)]
     impl Settlements of crate::settlement::ISettlementPool<ContractState> {

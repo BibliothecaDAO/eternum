@@ -32,24 +32,6 @@ pub mod GamesFixture {
     }
 
     #[starknet::embeddable]
-    pub impl SeasonPlacementFixture<
-        TContractState, +Drop<TContractState>,
-    > of crate::realms::ISeasonPlacement<TContractState> {
-        fn claim_season_settlement(
-            ref self: TContractState, game_id: u32, settled_count: u16, seed: u256, center: crate::troops::Coord,
-        ) -> crate::troops::Coord {
-            crate::realms::ISeasonPlacementDispatcherTrait::claim_season_settlement(
-                crate::realms::ISeasonPlacementLibraryDispatcher {
-                    class_hash: fixture_class(game_id, crate::slots::PLACEMENT),
-                },
-                game_id,
-                settled_count,
-                seed,
-                center,
-            )
-        }
-    }
-    #[starknet::embeddable]
     pub impl SettlementPoolFixture<
         TContractState, +Drop<TContractState>,
     > of crate::settlement::ISettlementPool<TContractState> {

@@ -305,7 +305,7 @@ pub fn max_army_size(config: crate::rules::TroopLimitConfig, level: u8, tier: Tr
 
 pub fn explore_stamina_cost(category: TroopType, rules: crate::rules::SliceRules, oaths: u16) -> u16 {
     let base = rules.troop_stamina_config.stamina_explore_stamina_cost;
-    let cost = if rules.day_unit_seconds != 0 && category == TroopType::Paladin {
+    let cost = if category == TroopType::Paladin {
         crate::rules::SCOUT_EXPLORE_STAMINA.into()
     } else {
         base
@@ -346,57 +346,6 @@ pub fn spend_stamina(
             timestamp,
             true,
         );
-}
-
-pub fn discovery_guards(category: u8, seed: u256, rules: crate::rules::SliceRules, timestamp: u64) -> Span<Troops> {
-    use crate::troops::{TroopTier, TroopType};
-    let light_guard = category == crate::taxonomy::MINE_CATEGORY || category == crate::taxonomy::CAMP_CATEGORY;
-    let limits = rules.troop_limit_config;
-    let (lower, upper) = if light_guard {
-        (limits.light_guard_lower_bound, limits.light_guard_upper_bound)
-    } else {
-        (limits.heavy_guard_lower_bound, limits.heavy_guard_upper_bound)
-    };
-    let lower: u128 = lower.into();
-    let upper: u128 = upper.into();
-    let three_guards = category == crate::taxonomy::BANK_CATEGORY;
-    let count = if light_guard {
-        1_u8
-    } else if three_guards {
-        3
-    } else {
-        4
-    };
-    let tier = if light_guard {
-        TroopTier::T1
-    } else {
-        TroopTier::T2
-    };
-    let mut guards = array![];
-    for slot in 0_u8..count {
-        let guard_seed = seed + if three_guards {
-            Into::<u8, u256>::into(slot)
-        } else {
-            0
-        };
-        let category = if light_guard {
-            match crate::random::range(guard_seed, 2, 3) {
-                0 => TroopType::Knight,
-                1 => TroopType::Paladin,
-                _ => TroopType::Crossbowman,
-            }
-        } else {
-            match slot {
-                1 => TroopType::Knight,
-                2 => TroopType::Crossbowman,
-                _ => TroopType::Paladin,
-            }
-        };
-        let count = lower + crate::random::range(guard_seed, 1, upper - lower + 1);
-        let troops = discovered_guard(category, tier, count, rules, timestamp);
-        guards.append(troops);
-    }
-    guards.span()
 }
 
 // A family determines its mark; the same draw determines a roaming family and its size.

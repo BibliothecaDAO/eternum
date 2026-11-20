@@ -54,9 +54,7 @@ pub mod MovementLogic {
             assert!(explorer.troops.count != 0, "explorer is dead");
             crate::logic::map::MapState::vacate(tile_key(game_id, explorer.coord), command.explorer_id);
             let destination = neighbor(explorer.coord, command.direction);
-            if rules.day_unit_seconds != 0 {
-                crate::logic::deep::assert_step(game_id, explorer.coord, destination);
-            }
+            crate::logic::deep::assert_step(game_id, explorer.coord, destination);
             crate::logic::deep::clear_expired_occupant(game_id, destination, context);
             let tile = tile_key(game_id, destination);
             let data = self
@@ -80,37 +78,15 @@ pub mod MovementLogic {
             let mut discovery = crate::discovery::Discovery::None;
             if exploring {
                 discovery =
-                    if rules.day_unit_seconds != 0 {
-                        crate::discovery::IExpeditionRevealDispatcherTrait::reveal_expedition_tile(
-                            crate::discovery::IExpeditionRevealLibraryDispatcher {
-                                class_hash: crate::logic::release::class_of(game_id, crate::slots::CONSTRUCTION),
-                            },
-                            tile,
-                            command.explorer_id,
-                            seed,
-                            crate::commands::action_context(context),
-                        )
-                    } else {
-                        crate::logic::map::MapState::reveal(tile, biome.into());
-                        self
-                            .map_dispatcher(game_id)
-                            .discovery(tile, seed, context.timestamp, crate::commands::action_context(context))
-                    };
-                if rules.day_unit_seconds == 0
-                    && discovery != crate::discovery::Discovery::None
-                    && crate::discovery::tile_occupier(discovery).is_none() {
-                    self
-                        .structures_dispatcher(game_id)
-                        .create_discovery(
-                            game_id,
-                            explorer.owner,
-                            destination,
-                            discovery,
-                            seed,
-                            context.timestamp,
-                            crate::commands::action_context(context),
-                        );
-                }
+                    crate::discovery::IExpeditionRevealDispatcherTrait::reveal_expedition_tile(
+                        crate::discovery::IExpeditionRevealLibraryDispatcher {
+                            class_hash: crate::logic::release::class_of(game_id, crate::slots::CONSTRUCTION),
+                        },
+                        tile,
+                        command.explorer_id,
+                        seed,
+                        crate::commands::action_context(context),
+                    )
             }
             if discovery == crate::discovery::Discovery::None {
                 explorer.coord = destination;
@@ -129,16 +105,6 @@ pub mod MovementLogic {
             let extraction = crate::exploration_rewards::IExtractionLibraryDispatcher {
                 class_hash: crate::logic::release::class_of(game_id, crate::slots::PRIZES),
             };
-            if discovery == crate::discovery::Discovery::Spire && rules.day_unit_seconds == 0 {
-                crate::exploration_rewards::IExtractionDispatcherTrait::raise_dormant_spire(
-                    extraction,
-                    game_id,
-                    actor,
-                    command.explorer_id,
-                    destination,
-                    crate::commands::action_context(context),
-                );
-            }
             if exploring && !explorer.coord.alt && !crate::logic::deep::contains(game_id, explorer.coord) {
                 crate::exploration_rewards::IExtractionDispatcherTrait::extract_exploration_reward(
                     extraction,
@@ -195,7 +161,6 @@ pub mod MovementLogic {
             let context = crate::commands::execution_context(game_id, context);
 
             let rules = self.authorize(game_id, context);
-            assert!(rules.day_unit_seconds != 0, "depth entry requires expeditions");
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let mut explorer = crate::logic::troops::field_explorer(key, actor, context.timestamp, context);
             assert!(explorer.troops.count != 0, "explorer is dead");
@@ -257,9 +222,7 @@ pub mod MovementLogic {
             crate::logic::map::MapState::vacate(tile_key(game_id, explorer.coord), command.explorer_id);
             for direction in command.directions {
                 let destination = neighbor(explorer.coord, *direction);
-                if rules.day_unit_seconds != 0 {
-                    crate::logic::deep::assert_step(game_id, explorer.coord, destination);
-                }
+                crate::logic::deep::assert_step(game_id, explorer.coord, destination);
                 crate::logic::deep::clear_expired_occupant(game_id, destination, context);
                 let tile = tile_key(game_id, destination);
                 let data = self

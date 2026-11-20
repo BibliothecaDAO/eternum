@@ -15,8 +15,7 @@ pub fn resources_dispatcher(game_id: u32) -> IResourceOperationsLibraryDispatche
 
 pub fn biome_troop(key: ResourceKey, game_context: crate::commands::ExecutionContext) -> crate::troops::TroopType {
     let record = crate::logic::structures::record(key);
-    let coord = if game_context.rules.unbox().day_unit_seconds != 0
-        && record.base.category == crate::taxonomy::REALM_CATEGORY {
+    let coord = if record.base.category == crate::taxonomy::REALM_CATEGORY {
         crate::settlement::off_map_realm_reference(record.metadata.realm_id.into())
     } else {
         crate::structures::structure_coord(key)

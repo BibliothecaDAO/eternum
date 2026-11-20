@@ -9,7 +9,6 @@ pub mod SettlementLogic {
     use crate::logic::settlement::SettlementState;
     use crate::logic::upgrades::UpgradeState;
     use crate::logic::village::VillageState;
-    use crate::realms::{ISeasonPlacementDispatcherTrait, ISeasonPlacementLibraryDispatcher};
     use crate::settlement::{
         EntryKey, ISettlementCreationDispatcherTrait, ISettlementCreationLibraryDispatcher, RealmCreation,
         SettlementCreation,
@@ -126,65 +125,10 @@ pub mod SettlementLogic {
         ) -> () {
             let context = crate::commands::execution_context(game_id, context);
 
-            let owner = actor;
             let game = context.game.unbox();
-            let rules = context.rules.unbox();
-            assert!(rules.entry_rule != crate::rules::ENTRY_ROSTER, "not a season game");
             assert!(game.dev_mode_on || context.timestamp >= game.start_settling_at, "settling not started");
             assert!(game.end_at == 0 || context.timestamp < game.end_at, "game ended");
-            if rules.entry_rule == crate::rules::ENTRY_OPEN && rules.day_unit_seconds != 0 {
-                self.settle_open_frontier(game_id, actor, command, context);
-                return;
-            }
-            assert!(command.order.is_none(), "Aspects are disabled");
-            let key = EntryKey { game_id, owner: owner };
-            if command.selected_realm.is_some() {
-                assert!(game.dev_mode_on, "development mode required");
-                self.settlements.record_entry(key, actor);
-            } else {
-                let requires_entitlement = !context.game.unbox().dev_mode_on
-                    && rules.entry_rule == crate::rules::ENTRY_ENTITLEMENT;
-                self.settlements.reserve_entry(key, actor, requires_entitlement);
-            }
-            let mut root = context.raw_root;
-            let seed = crate::random::game_root(ref root, game_id);
-            let mut progress = self.settlements.data.settlements.progress.read(game_id);
-            let (realm_id, traits) = self
-                .resolve_season_realm(key, command.selected_realm, progress.realm_count, seed, context);
-            self.realms.reserve(game_id, realm_id, progress.realm_count);
-            let coord = if rules.day_unit_seconds == 0 {
-                ISeasonPlacementLibraryDispatcher {
-                    class_hash: crate::logic::release::class_of(game_id, crate::slots::PLACEMENT),
-                }
-                    .claim_season_settlement(
-                        game_id,
-                        progress.realm_count,
-                        seed,
-                        crate::settlement_grid::map_center(context.rules.unbox().map_center_offset),
-                    )
-            } else {
-                crate::settlement::off_map_realm_reference(realm_id)
-            };
-            ISettlementCreationLibraryDispatcher {
-                class_hash: crate::logic::release::class_of(game_id, crate::slots::STRUCTURES),
-            }
-                .create_settlement(
-                    game_id,
-                    actor,
-                    coord,
-                    SettlementCreation::Realm(
-                        RealmCreation {
-                            realm_id: realm_id.try_into().unwrap(),
-                            traits,
-                            troops: crate::settlement::StartingTroops::Biome,
-                            activate_economy: true,
-                        },
-                    ),
-                    crate::commands::action_context(context),
-                );
-            progress.realm_count += 1;
-            self.settlements.write_progress(game_id, progress);
-            ()
+            self.settle_open_frontier(game_id, actor, command, context);
         }
     }
 
@@ -291,37 +235,6 @@ pub mod SettlementLogic {
             let realm_id = entitlement.realm_id.try_into().expect('invalid canonical realm');
             self.settlements.claim_held_realm(key, realm_id, home);
             Some(realm_id)
-        }
-
-        fn resolve_season_realm(
-            self: @ContractState,
-            key: EntryKey,
-            selected: Option<u32>,
-            settled: u16,
-            seed: u256,
-            game_context: crate::commands::ExecutionContext,
-        ) -> (u32, crate::realms::RealmTraits) {
-            if let Some(realm_id) = selected {
-                return (realm_id, self.realms.traits(realm_id));
-            }
-            let rules = game_context.rules.unbox();
-            if game_context.game.unbox().dev_mode_on || rules.entry_rule == crate::rules::ENTRY_OPEN {
-                let remaining = crate::realms::CANONICAL_REALM_COUNT - settled.into();
-                assert!(remaining > 0, "all canonical realms allocated");
-                let index = crate::random::range(seed, 71419, remaining.into()).try_into().unwrap();
-                let realm_id = self.realms.available(key.game_id, index, settled);
-                return (realm_id, self.realms.traits(realm_id));
-            }
-            let entitlement = self
-                .settlements
-                .data
-                .settlements
-                .entitlements
-                .read((key.game_id, key.owner))
-                .expect('missing entitlement');
-            assert!(entitlement.pass_kind == 1, "season pass required");
-            let realm_id = entitlement.realm_id.try_into().expect('realm id exceeds u32');
-            (realm_id, crate::realms::decode_entitlement(entitlement.metadata_1))
         }
     }
 }

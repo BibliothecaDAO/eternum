@@ -1,5 +1,3 @@
-use crate::random::lottery;
-use crate::rules::MapConfig;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub enum Discovery {
@@ -14,22 +12,7 @@ pub enum Discovery {
     Spire,
 }
 
-pub const SPIRE_FIND_BPS: u128 = 50;
 
-
-pub fn surface(config: MapConfig, seed: u256, mode_rules: u32) -> Discovery {
-    if lottery(seed, 3, SPIRE_FIND_BPS, 10000 - SPIRE_FIND_BPS) {
-        return Discovery::Spire;
-    }
-    if lottery(seed, 2, config.shards_mines_win_probability.into(), config.shards_mines_fail_probability.into()) {
-        return Discovery::Mine;
-    }
-    if mode_rules & crate::rules::DISCOVER_CAMPS != 0
-        && lottery(seed, 7, config.camp_win_probability.into(), config.camp_fail_probability.into()) {
-        return Discovery::Camp;
-    }
-    Discovery::None
-}
 
 // One categorical draw per reveal. After `empty_reveal_limit` empty reveals in a row the draw covers only the kinds
 // still allowed. Each ruin carries its relic from discovery until the winning army clears it.

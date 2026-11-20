@@ -112,8 +112,7 @@ pub mod SeasonLogic {
                 crate::commands::action_context(context),
             );
             context.game = BoxTrait::new(crate::logic::game::game(game_id));
-            if rules.day_unit_seconds != 0
-                && crate::commands::ICommandIngressDispatcherTrait::requires_oath_answer(
+            if crate::commands::ICommandIngressDispatcherTrait::requires_oath_answer(
                     crate::commands::ICommandIngressLibraryDispatcher {
                         class_hash: crate::logic::release::class_of(game_id, crate::slots::INGRESS),
                     },

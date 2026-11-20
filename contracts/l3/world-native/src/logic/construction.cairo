@@ -254,15 +254,6 @@ pub mod ConstructionLogic {
             if record.base.category == crate::taxonomy::REALM_CATEGORY && self.has_castle(key) {
                 self.raise_castle_labor(key, record.base.level, next_level, context);
             }
-            if record.base.category == crate::taxonomy::REALM_CATEGORY && context.rules.unbox().day_unit_seconds == 0 {
-                let coord = crate::structures::structure_coord(key);
-                crate::logic::map::MapState::upgrade_realm(
-                    crate::map::TileKey { game_id, alt: coord.alt, col: coord.x, row: coord.y },
-                    structure_id,
-                    record.metadata.has_wonder,
-                    next_level,
-                );
-            }
             self.emit_structure_upgrade(key, actor, next_level, context.timestamp);
             ()
         }

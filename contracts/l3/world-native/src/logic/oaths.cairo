@@ -25,7 +25,6 @@ pub fn choose(
 ) {
     let execution = crate::commands::execution_context(game_id, context);
     crate::game::assert_playing(execution.game.unbox(), context.timestamp);
-    assert!(execution.rules.unbox().day_unit_seconds != 0, "oaths require a day game");
     let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
     let army = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, execution);
     assert!(army.troops.count != 0, "explorer is dead");
@@ -48,7 +47,6 @@ pub fn reroll(
 ) {
     let execution = crate::commands::execution_context(game_id, context);
     crate::game::assert_playing(execution.game.unbox(), context.timestamp);
-    assert!(execution.rules.unbox().day_unit_seconds != 0, "oaths require a day game");
     let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
     let army = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, execution);
     assert!(army.troops.count != 0, "explorer is dead");
