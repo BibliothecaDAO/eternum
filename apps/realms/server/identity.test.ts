@@ -3547,8 +3547,14 @@ describe("shared links", () => {
       game_id: String(otherGame),
       confirmed_block: 1,
       models: [
-        { model: "RaceMember", rows: [{ key: "1", value: { game_id: otherGame, entity_id: "1", glory: String(100e9) } }] },
-        { model: "Structure", rows: [{ key: "1", value: { game_id: otherGame, entity_id: "1", owner: second.account } }] },
+        {
+          model: "RaceMember",
+          rows: [{ key: "1", value: { game_id: otherGame, entity_id: "1", glory: String(100e9) } }],
+        },
+        {
+          model: "Structure",
+          rows: [{ key: "1", value: { game_id: otherGame, entity_id: "1", owner: second.account } }],
+        },
       ],
     });
     relay.mockClear();
