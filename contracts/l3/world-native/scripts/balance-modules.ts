@@ -172,7 +172,12 @@ function rulesModule(rules: PresetDefinition["rules"]): string {
       if (!type) throw new Error(`Rule ${field} has no Cairo type`);
       return number(name, type, value as CairoValue);
     })
+    .concat(record("SWITCHES", "crate::rules::ReleaseSwitches", releaseSwitches(rules)))
     .join("\n\n");
+}
+
+function releaseSwitches(rules: PresetDefinition["rules"]): CairoRow {
+  return Object.fromEntries([...SWITCHES].map((field) => [field, (rules as Record<string, CairoValue>)[field]]));
 }
 
 function deepModule(deep: DeepRow): string {

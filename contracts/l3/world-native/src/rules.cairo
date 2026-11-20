@@ -183,6 +183,14 @@ pub struct VictoryPointsGrantConfig {
     pub relic_open_points: u32,
 }
 
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ReleaseSwitches {
+    pub command_mask: u128,
+    pub mode_rules: u32,
+    pub day_unit_seconds: u32,
+    pub entry_rule: u8,
+}
+
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct SliceRules {
     pub battle_config: BattleConfig,
