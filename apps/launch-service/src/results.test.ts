@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { completeBlitzResults, type ResultOperations } from "./results";
+import { completeBlitzResults, gameResult, type ResultOperations } from "./results";
 function fixture() {
   let complete = false;
   const operations: ResultOperations = {
@@ -55,4 +55,36 @@ describe("native result jobs", () => {
     operations.record = vi.fn(async () => undefined);
     await expect(completeBlitzResults(operations)).rejects.toThrow("result_not_complete");
   });
+});
+
+describe("game result", () => {
+  const shardAnswering = (span: bigint[]) => {
+    const view = vi.fn(async () => span);
+    return { shard: { view } as unknown as Parameters<typeof gameResult>[0], view };
+  };
+  it("reads the ranked wallets, completeness and commitment from the game's result span", async () => {
+    const { shard, view } = shardAnswering([2n, 0x123n, 1n, 0x456n, 2n, 1n, 0xabcn]);
+    expect(await gameResult(shard, 7)).toEqual({
+      players: [
+        { wallet: 0x123n, rank: 1 },
+        { wallet: 0x456n, rank: 2 },
+      ],
+      complete: true,
+      commitment: 0xabcn,
+    });
+    expect(view).toHaveBeenCalledWith("game_result", [7]);
+  });
+  it("reads an incomplete result as no players and no commitment", async () => {
+    expect(await gameResult(shardAnswering([0n, 0n, 0n]).shard, 7)).toEqual({
+      players: [],
+      complete: false,
+      commitment: 0n,
+    });
+  });
+  it.each([[[]], [[2n, 0x123n, 1n, 1n, 0xabcn]], [[0n, 0n, 0n, 0n]]])(
+    "refuses a span whose length does not match its count (case %#)",
+    async (span) => {
+      await expect(gameResult(shardAnswering(span).shard, 7)).rejects.toThrow("invalid_result_layout");
+    },
+  );
 });
