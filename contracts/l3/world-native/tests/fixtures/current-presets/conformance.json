@@ -10,8 +10,6 @@
       "shards_mines_fail_probability": 49000,
       "camp_win_probability": 1500,
       "camp_fail_probability": 48500,
-      "bitcoin_mine_win_probability": 200,
-      "bitcoin_mine_fail_probability": 9800,
       "hyps_win_prob": 2000,
       "hyps_fail_prob": 98000,
       "hyps_fail_prob_increase_p_hex": 9820,
@@ -29,8 +27,7 @@
     },
     "tick_config": {
       "armies_tick_in_seconds": 60,
-      "delivery_tick_in_seconds": 180,
-      "bitcoin_phase_in_seconds": 600
+      "delivery_tick_in_seconds": 180
     },
     "troop_damage_config": {
       "damage_biome_bonus_num": 3000,
@@ -96,25 +93,11 @@
       "hyperstructure_capacity": "0xffffffffffffffff",
       "fragment_mine_capacity": "0xffffffffffffffff",
       "bank_structure_capacity": "0xffffffffffffffff",
-      "camp_capacity": "0xffffffffffffffff",
-      "bitcoin_mine_capacity": "0xffffffffffffffff"
+      "camp_capacity": "0xffffffffffffffff"
     },
     "building_config": {
       "base_population": 6,
       "base_cost_percent_increase": 1000
-    },
-    "bitcoin_mine_config": {
-      "enabled": true,
-      "prize_per_phase": "0x3b9aca00",
-      "min_labor_per_contribution": "0x174876e800",
-      "owner_cut_bps": 2000
-    },
-    "victory_points_grant_config": {
-      "hyp_points_per_second": "0xf4240",
-      "claim_hyperstructure_points": "0xb2d05e00",
-      "claim_otherstructure_points": "0x1dcd6500",
-      "explore_tiles_points": "0x989680",
-      "relic_open_points": "0x3b9aca00"
     },
     "map_center_offset": 20,
     "spire_travel_essence_cost": "0x2540be400",

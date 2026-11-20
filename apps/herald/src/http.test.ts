@@ -403,6 +403,7 @@ it("caches each leaderboard once per confirmed head and drops all previous-head 
       : httpState.fold.modelRows(model);
   const handler = createHeraldRequestHandler({
     ...httpState,
+    undecodableEventCount: () => 0,
     confirmedBlock: () => block,
     history: { ...httpState.history!, frontierHistory },
     fold: {
