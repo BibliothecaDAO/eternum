@@ -19,7 +19,7 @@ export { blitzSlotFitsSeason, readLedgerSlot, readLedgerRegistration, readRegist
 export type { LedgerSlotKey, SlotRegistration, RegistrationPage, RegistrationQuery } from "./blitz-slots";
 export type { LedgerSlot } from "./codecs";
 export { resolveBlitzRoster, splitPlaytestRoster } from "./blitz-roster";
-export type { RegistrationIdentity, SlotCohort, LaunchCohorts } from "./blitz-roster";
+export type { RegistrationIdentity } from "./blitz-roster";
 
 export { officialChain, requireActiveChain, readRegisteredShard } from "./official-shards";
 export { isDevShardChain } from "./dev-shard";

@@ -128,8 +128,8 @@ const scenario = async (
     bindings.commandAbi as Abi,
     () => 9,
   );
-  provider.setTransactionStreamWaiter((hash, inBlock, type, startedAt) =>
-    waitForActionOutcome(runtime as never, rpc as never, GAMES, hash, stopped.signal, inBlock, type, startedAt),
+  provider.setTransactionStreamWaiter((hash, inBlock, startedAt) =>
+    waitForActionOutcome(runtime as never, rpc as never, GAMES, hash, stopped.signal, inBlock, startedAt),
   );
   for (const name of ["transactionComplete", "transactionFailed", "transactionChecking"] as const)
     provider.on(

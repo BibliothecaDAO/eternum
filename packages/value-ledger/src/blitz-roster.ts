@@ -29,18 +29,6 @@ export async function resolveBlitzRoster(registrations: readonly SlotRegistratio
   return { players, refunds };
 }
 
-export interface SlotCohort {
-  chainId: string;
-  slotId: number;
-  complete: boolean;
-  games: { gameId: number; groupIndex: number }[];
-}
-export interface LaunchCohorts {
-  rosterCohorts(): Promise<SlotCohort[]>;
-  /** Every launched game the directory declares, with the slot that paid for it; null for a game outside any slot. */
-  directoryGames(): Promise<{ chainId: string; games: { gameId: number; slotId: number | null }[] }[]>;
-}
-
 /** Preserve the caller's roster order; earlier groups receive the extra player. */
 export function splitPlaytestRoster<T>(roster: readonly T[]): T[][] {
   const gameCount = Math.ceil(roster.length / nativeRuleConstants.MAX_BLITZ_ROSTER_PLAYERS);

@@ -151,7 +151,7 @@ pub struct StructureCapacityConfig {
     pub hyperstructure_capacity: u64, // grams
     pub fragment_mine_capacity: u64, // grams
     pub bank_structure_capacity: u64,
-    pub camp_capacity: u64 // grams
+    pub camp_capacity: u64,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]

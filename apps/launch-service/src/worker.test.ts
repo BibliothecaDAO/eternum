@@ -210,7 +210,7 @@ beforeAll(async () => {
             type: "ESModule",
             path: join(bundle, "clock.js"),
             contents: `import worker from "./worker.js";
-              export { Registrar, ValueLaunchDirectory } from "./worker.js";
+              export { Registrar } from "./worker.js";
               const realNow = Date.now;
               export default {
                 ...worker,

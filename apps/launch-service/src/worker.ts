@@ -1,4 +1,3 @@
-import { WorkerEntrypoint } from "cloudflare:workers";
 import { officialChain } from "@realms-world/value-ledger";
 import { Effect } from "effect";
 import { createLaunchApp } from "./app";
@@ -65,16 +64,3 @@ const launchAppOf = (env: LaunchEnv, chainId?: string | null) => {
     },
   });
 };
-
-/** Private immutable game-to-slot metadata; player ownership is read from the ledger and shard. */
-export class ValueLaunchDirectory extends WorkerEntrypoint<Record<string, unknown>> {
-  override fetch() {
-    return new Response(null, { status: 404 });
-  }
-  rosterCohorts() {
-    return launchStoresOf(decodeLaunchEnv(this.env)).launches.rosterCohorts();
-  }
-  directoryGames() {
-    return launchStoresOf(decodeLaunchEnv(this.env)).launches.playerDirectoryGames();
-  }
-}
