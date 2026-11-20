@@ -1,3 +1,4 @@
+import { gameRegistryRow } from "../../../../../../../packages/core/src/test-support/game-registry";
 import { NATIVE_RELEASE_ID } from "../../../../../../../deploy/release/native-release";
 import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -23,20 +24,7 @@ export const realmBoard = () => {
   store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1 })] as never);
   store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
   store.applyFacts([
-    set("0x3", "GameRegistry", {
-      game_id: 1,
-      preset_id: 2,
-      name: "1",
-      start_settling_at: "1",
-      start_main_at: "100",
-      scheduled_end_at: "1000",
-      end_at: "1000",
-      settled: false,
-      ready: true,
-      dev_mode_on: false,
-      end_grace_seconds: 0,
-      seed: "1",
-    }),
+    set("0x3", "GameRegistry", gameRegistryRow({ preset_id: 2 })),
     set("0x1ab0", "GameRelease", {
       game_id: 1,
       release_id: NATIVE_RELEASE_ID,
