@@ -75,13 +75,10 @@ export class ShardOperator {
     this.bound ??= this.view<bigint>("l2_gas_bound", []);
     return this.bound;
   }
-  /** What every play of one game repeats: its release and preset pins and the shard's fixed gas bound. */
   async pins(gameId: number): Promise<PlayPins> {
-    const game = await this.view<{ preset_id: bigint }>("game", [gameId]);
     return {
       gameId,
       release: await this.view<bigint>("game_release", [gameId]),
-      commitment: await this.view<bigint>("preset_commitment", [game.preset_id]),
       l2GasBound: await this.gasBound(),
     };
   }
@@ -169,13 +166,12 @@ export class ShardOperator {
 
 const playCalldata = (pins: PlayPins, name: AdminPlay) => {
   const command = encodeNativeCommand(bindings.commandAbi, { kind: name, value: undefined });
-  return [String(pins.gameId), String(pins.release), String(pins.commitment), String(command.length), ...command];
+  return [String(pins.gameId), String(pins.release), String(command.length), ...command];
 };
 
 export interface PlayPins {
   gameId: number;
   release: bigint;
-  commitment: bigint;
   l2GasBound: bigint;
 }
 type AdminPlay = "SettleBlitzRoster" | "MarkGameSettled" | "RecordBlitzResults";

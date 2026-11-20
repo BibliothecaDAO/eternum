@@ -247,8 +247,7 @@ export class NativeIngestion {
     const release = fold.currentRow("GameRelease", key)?.value;
     if (!game || !release) throw new Error("GameOverrides requires GameRegistry and GameRelease");
     const preset = fold.currentRow("Preset", nativeRowKey([String(game.preset_id)]))?.value;
-    if (!preset || BigInt(preset.commitment as string) !== BigInt(release.preset_commitment as string))
-      throw new Error("GameRelease preset commitment differs from registered preset");
+    if (!preset) throw new Error("GameOverrides requires its game's registered preset");
     const schema = this.decoder.manifest.native.schemas[this.decoder.manifest.native.activeSchema]!;
     const definition = decodePresetPreimage(schema, fold.presetPreimage(String(preset.commitment)));
     const roster = fold.currentRow("BlitzRoster", key)?.value.players as unknown[] | undefined;
