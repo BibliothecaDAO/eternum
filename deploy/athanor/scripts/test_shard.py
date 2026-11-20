@@ -564,7 +564,7 @@ class PackageStartTest(unittest.TestCase):
         with patch.dict(shard.os.environ, {**self.environ, **settings}), redirect_stdout(io.StringIO()):
             config = self.package.configuration()
             self.package.prepare(config)
-            self.package.deploy(config, {})
+            self.package.deploy(config)
 
     def published(self, volume, name):
         return self.volumes[volume] / name
