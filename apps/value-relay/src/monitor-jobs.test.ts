@@ -244,7 +244,6 @@ describe.each(["paidClaims"] as const)("resetting a %s halt the previous version
       next: null,
     });
   const ports: MonitorPorts = {
-    // The check always disagrees: neither identity nor the shard matches the ledger.
     identity: { matchesPayDecision: () => Effect.succeed(false) },
     shard: {
       withdrawalReceipt: () => Effect.succeed(null),
@@ -278,7 +277,6 @@ describe.each(["paidClaims"] as const)("resetting a %s halt the previous version
       pause,
     },
   };
-  /** The Durable Object's progress, read and written only through JSON, as storage keeps it. */
   const persisted = (data: Map<string, unknown>) => ({
     load: async (): Promise<MonitorProgress> => JSON.parse(JSON.stringify(data.get("progress"))),
     save: async (next: MonitorProgress) => {
@@ -294,18 +292,15 @@ describe.each(["paidClaims"] as const)("resetting a %s halt the previous version
     });
     expect(await f.monitor.reset(row, "Investigated")).toMatchObject({ halted: null, waived: null });
     pause.mockClear();
-    // The unchanged row is checked again and halts again, this time recording what it saw.
     await Effect.runPromise(runMonitor(ports, persisted(f.data)));
     expect(pause).toHaveBeenCalledOnce();
     const fact = (await f.monitor.status()).fault?.fact;
     expect(fact).toMatch(new RegExp(`^${stream}:`));
     expect(await f.monitor.reset(row, "Investigated again")).toMatchObject({ halted: null, waived: fact });
-    // That clearance is durable: an unchanged replay at a new anchor stays cleared...
     ledger.anchor = "0xb";
     pause.mockClear();
     await Effect.runPromise(runMonitor(ports, persisted(f.data)));
     expect(pause).not.toHaveBeenCalled();
-    // ...and a rewritten row on the same claim or game is checked again and pauses.
     ledger.paid = [{ ...ledger.paid[0]!, amount: "2", wallet: "0x999" }];
     ledger.anchor = "0xc";
     await Effect.runPromise(runMonitor(ports, persisted(f.data)));
