@@ -841,9 +841,9 @@ pub mod StructuresLogic {
                 .create_producer(
                     key,
                     crate::resources::UNLIMITED_OUTPUT,
-                    crate::logic::resources::rule(23).realm_rate,
-                    23,
-                    25,
+                    crate::logic::resources::castle_labor_rate(crate::logic::structures::record(key).base.level),
+                    crate::resources::LABOR,
+                    crate::research::WORKSHOP,
                     rules.building_config.base_population,
                     timestamp,
                     game_context,

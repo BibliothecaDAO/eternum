@@ -55,7 +55,7 @@ pub fn store_limit(key: ResourceKey, resource_type: u8) -> Option<u128> {
         };
         cap.into()
     } else {
-        Into::<u32, u128>::into(crate::troops::deployment_cap(preset.rules.troop_limit_config.read(), base.level))
+        Into::<u32, u128>::into(crate::troops::deployment_cap(crate::balance::rules::TROOP_LIMIT_CONFIG, base.level))
             * Into::<u8, u128>::into(board.troop_store_deploys)
     };
     let castle_base = cap * crate::rules::RESOURCE_PRECISION;
@@ -72,6 +72,14 @@ pub fn store_limit(key: ResourceKey, resource_type: u8) -> Option<u128> {
     };
     let stores: u128 = stores.into();
     Some(castle_base * (10000 + stores * board.storage_step_bps.into()) / 10000)
+}
+
+pub fn castle_labor_rate(level: u8) -> u64 {
+    let mut rate = rule(crate::resources::LABOR).realm_rate;
+    for _ in 0..level {
+        rate *= 2;
+    }
+    rate
 }
 
 pub fn rule(resource_type: u8) -> crate::resources::ResourceRule {

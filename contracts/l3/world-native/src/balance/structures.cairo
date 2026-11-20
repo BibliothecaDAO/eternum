@@ -137,7 +137,7 @@ pub const UPGRADES: [UpgradeRow; 3] = [
 ];
 
 pub const UPGRADE_COSTS: [ResourceAmount; 3] = [
-    ResourceAmount { resource_type: 23, amount: 4000000000000 },
+    ResourceAmount { resource_type: 23, amount: 2500000000000 },
     ResourceAmount { resource_type: 23, amount: 15000000000000 },
-    ResourceAmount { resource_type: 23, amount: 40000000000000 },
+    ResourceAmount { resource_type: 23, amount: 50000000000000 },
 ];

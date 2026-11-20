@@ -33,7 +33,11 @@ export const frontierSeasonOnePreset = {
     resources: {
       productionBySimpleRecipe: { [ResourcesIds.Paladin]: [{ resource: ResourcesIds.Wheat, amount: 2 }] },
       productionBySimpleRecipeOutputs: { [ResourcesIds.Paladin]: 1 },
-      productionByComplexRecipeOutputs: { [ResourcesIds.Paladin]: 100 / 3600, [ResourcesIds.Knight]: 100 / 3600 },
+      productionByComplexRecipeOutputs: {
+        [ResourcesIds.Paladin]: 100 / 3600,
+        [ResourcesIds.Knight]: 100 / 3600,
+        [ResourcesIds.Labor]: 100 / 3600,
+      },
     },
     buildings: {
       simpleBuildingCost: { [research.SCOUTS_LODGE]: [{ resource: ResourcesIds.Labor, amount: 500 }] },
@@ -43,6 +47,11 @@ export const frontierSeasonOnePreset = {
       { resource: ResourcesIds.Wheat, amount: 6000 },
       { resource: ResourcesIds.Labor, amount: 2000 },
     ],
+    realmUpgradeCosts: {
+      1: [{ resource: ResourcesIds.Labor, amount: 2500 }],
+      2: [{ resource: ResourcesIds.Labor, amount: 15000 }],
+      3: [{ resource: ResourcesIds.Labor, amount: 50000 }],
+    },
   },
   orderAspects,
   depths: frontierPreset.depths.map((depth, index) => ({

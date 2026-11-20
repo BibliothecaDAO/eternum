@@ -26,7 +26,7 @@ pub const RESOURCE_RULES: [ResourceRule; 58] = [
     ResourceRule { resource_type: 20, unit_weight: 0, realm_rate: 0, village_rate: 0 },
     ResourceRule { resource_type: 21, unit_weight: 0, realm_rate: 0, village_rate: 0 },
     ResourceRule { resource_type: 22, unit_weight: 0, realm_rate: 0, village_rate: 0 },
-    ResourceRule { resource_type: 23, unit_weight: 1, realm_rate: 28000000, village_rate: 14000000 },
+    ResourceRule { resource_type: 23, unit_weight: 1, realm_rate: 27777778, village_rate: 13888889 },
     ResourceRule { resource_type: 24, unit_weight: 0, realm_rate: 0, village_rate: 0 },
     ResourceRule { resource_type: 25, unit_weight: 0, realm_rate: 0, village_rate: 0 },
     ResourceRule { resource_type: 26, unit_weight: 1, realm_rate: 27777778, village_rate: 13888889 },
@@ -87,7 +87,7 @@ pub const RECIPES: [RecipeRow; 58] = [
     RecipeRow { simple_output: 0, complex_output: 0, first_input: 0, simple_count: 0, complex_count: 0 },
     RecipeRow { simple_output: 0, complex_output: 0, first_input: 0, simple_count: 0, complex_count: 0 },
     RecipeRow { simple_output: 0, complex_output: 0, first_input: 0, simple_count: 0, complex_count: 0 },
-    RecipeRow { simple_output: 0, complex_output: 28000000, first_input: 0, simple_count: 0, complex_count: 0 },
+    RecipeRow { simple_output: 0, complex_output: 27777778, first_input: 0, simple_count: 0, complex_count: 0 },
     RecipeRow { simple_output: 0, complex_output: 0, first_input: 0, simple_count: 0, complex_count: 0 },
     RecipeRow { simple_output: 0, complex_output: 0, first_input: 0, simple_count: 0, complex_count: 0 },
     RecipeRow {

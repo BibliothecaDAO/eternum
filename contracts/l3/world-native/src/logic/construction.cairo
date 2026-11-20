@@ -267,6 +267,9 @@ pub mod ConstructionLogic {
             crate::logic::structures::StructureState::upgrade(
                 key, record.base, context.rules.unbox().troop_limit_config,
             );
+            if record.base.category == crate::taxonomy::REALM_CATEGORY && self.has_castle(key) {
+                self.raise_castle_labor(key, record.base.level, next_level, context);
+            }
             if record.base.category == crate::taxonomy::REALM_CATEGORY && context.rules.unbox().day_unit_seconds == 0 {
                 let coord = crate::structures::structure_coord(key);
                 crate::logic::map::MapState::upgrade_realm(
@@ -659,6 +662,42 @@ pub mod ConstructionLogic {
             game_context: crate::commands::ResourceContext,
         ) {
             self.resources_dispatcher(key.game_id).spend_resource(key, resource_type, amount, timestamp, game_context);
+        }
+        fn has_castle(self: @ContractState, key: ResourceKey) -> bool {
+            let centre = BuildingKey {
+                game_id: key.game_id, structure_id: key.entity_id, inner_col: 10, inner_row: 10,
+            };
+            match crate::logic::buildings::building(centre) {
+                Some(building) => building.category == crate::research::WORKSHOP,
+                None => false,
+            }
+        }
+        fn raise_castle_labor(
+            ref self: ContractState,
+            key: ResourceKey,
+            level: u8,
+            next_level: u8,
+            context: crate::commands::ExecutionContext,
+        ) {
+            let resources = self.resources_dispatcher(key.game_id);
+            let resource_context = crate::commands::resource_context(context);
+            resources
+                .stop_production(
+                    key,
+                    crate::resources::LABOR,
+                    crate::logic::resources::castle_labor_rate(level),
+                    context.timestamp,
+                    resource_context,
+                );
+            resources
+                .start_production(
+                    key,
+                    crate::resources::LABOR,
+                    crate::logic::resources::castle_labor_rate(next_level),
+                    crate::resources::UNLIMITED_OUTPUT,
+                    context.timestamp,
+                    resource_context,
+                );
         }
     }
 }
