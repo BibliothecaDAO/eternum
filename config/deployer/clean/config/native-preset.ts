@@ -1,4 +1,7 @@
-import { nativeRaceConstants, nativeQuestConstants as quest } from "../../../../contracts/l3/world-native/schema/balance.gen";
+import {
+  nativeRaceConstants,
+  nativeQuestConstants as quest,
+} from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { DAYS_PER_BAG } from "@bibliothecadao/eternum/expeditions";
 import { buildingIds } from "../../../source/frontier/native";
 import { nativePresetForId } from "../../../source/native";
