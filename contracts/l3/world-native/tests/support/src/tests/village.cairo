@@ -69,13 +69,13 @@ pub // The realm a settlement created, read from its RealmCreatedStory.
 pub // Settles one season realm. Catalogue loading is covered separately; this draw uses the pinned salt 71419 after
 // scoping raw root 987654321 to game 3: realm 3492.
 fn settle_season_realm(deployment: Deployment) -> u64 {
-    super::entry::set_operator(deployment, 0.try_into().unwrap());
     super::resource_commands::set_fixture(
         deployment.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
     );
     super::resource_commands::set_fixture(
         deployment.games, selector!("realms"), selector!("traits"), array![3492].span(), 0x9000002_u32,
     );
+    play_fixture::hold_realm(deployment, 3, deployment.actor, 3492);
     let mut spy = spy_events();
     assert!(
         run(
@@ -90,30 +90,20 @@ pub fn assert_season_entitlement_mode(has_operator: bool, has_entitlement: bool)
     let d = season_world();
     // The authenticated account is the player that holds entitlements.
     let owner = d.actor;
+    super::resource_commands::set_fixture(
+        d.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
+    );
+    super::resource_commands::set_fixture(
+        d.games, selector!("realms"), selector!("traits"), array![7].span(), 0x9000002_u32,
+    );
     if has_entitlement {
-        super::resource_commands::set_fixture(
-            d.games,
-            selector!("settlements"),
-            selector!("entitlements"),
-            array![3, owner.into()].span(),
-            Some(
-                crate::settlement::EntryEntitlement {
-                    realm_id: 7, metadata_1: 0x0103070402020302010009, metadata_2: 0, metadata_3: 0, pass_kind: 1,
-                },
-            ),
-        );
+        play_fixture::hold_realm(d, 3, owner, 7);
     }
     super::entry::set_operator(d, if has_operator {
         authority()
     } else {
         0.try_into().unwrap()
     });
-    super::resource_commands::set_fixture(
-        d.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
-    );
-    super::resource_commands::set_fixture(
-        d.games, selector!("realms"), selector!("traits"), array![3492].span(), 0x9000002_u32,
-    );
     let mut spy = spy_events();
     assert_eq!(
         run(
