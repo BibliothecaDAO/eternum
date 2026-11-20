@@ -76,17 +76,37 @@ pub fn deployed(d: Deployment, game_id: u32, aspect: u8, count: u128) -> Explore
     let key = ExplorerKey {
         game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: home, epoch: 0, slot: 0 }),
     };
-    descend(d, key);
+    descend(d, key, 360);
     key
 }
 
-pub fn descend(d: Deployment, key: ExplorerKey) {
+pub fn descend(d: Deployment, key: ExplorerKey, now: u64) {
     let game_id = key.game_id;
     let home = army(d, key).owner;
-    world_test_support::tests::registrar::learn_spire_lore(d, ResourceKey { game_id, entity_id: home }, 360);
-    applied(
-        d, game_id, Command::EnterDepth(crate::commands::EnterDepth { explorer_id: key.explorer_id, depth: 3 }), 360,
-    );
+    world_test_support::tests::registrar::learn_spire_lore(d, ResourceKey { game_id, entity_id: home }, now);
+    let context = crate::tests::context(d.games, game_id);
+    let epoch = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, now).index;
+    for depth in 0_u8..3 {
+        let spire_key = crate::spires::ExpeditionSpireKey { game_id, structure_id: home, epoch, depth };
+        let found = interact_with_state(d.games, || crate::logic::spires::read(spire_key)).and_then(|row| row.location);
+        if let Some(spire) = found {
+            set_explorer_fixture(d.games, key, ExplorerTroops { coord: crate::geometry::neighbor(spire, 0), ..army(d, key) });
+        } else {
+            let spire = crate::geometry::neighbor(army(d, key).coord, 0);
+            interact_with_state(
+                d.games,
+                || {
+                    while !crate::logic::spires::discover(spire_key, spire, 100, 0) {}
+                },
+            );
+        }
+        applied(
+            d,
+            game_id,
+            Command::EnterDepth(crate::commands::EnterDepth { explorer_id: key.explorer_id, depth: depth + 1 }),
+            now,
+        );
+    }
 }
 
 pub fn applied(d: Deployment, game_id: u32, command: Command, now: u64) {
@@ -343,9 +363,7 @@ fn one_player_cannot_fill_two_slots_and_day_rollover_restores_every_beast() {
     let second = ExplorerKey {
         game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: home, epoch: 0, slot: 1 }),
     };
-    applied(
-        d, game_id, Command::EnterDepth(crate::commands::EnterDepth { explorer_id: second.explorer_id, depth: 3 }), 360,
-    );
+    descend(d, second, 360);
     beside(d, second, target, 1);
     refused(d, game_id, join(d, second, target), 360, "player already guards site");
     assert!(held(d, second).is_none());
@@ -356,12 +374,7 @@ fn one_player_cannot_fill_two_slots_and_day_rollover_restores_every_beast() {
     let fresh = ExplorerKey {
         game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: home, epoch: 1, slot: 0 }),
     };
-    applied(
-        d,
-        game_id,
-        Command::EnterDepth(crate::commands::EnterDepth { explorer_id: fresh.explorer_id, depth: 3 }),
-        tomorrow,
-    );
+    descend(d, fresh, tomorrow);
     for kind in 0..crate::rules::DEEP_KIND_COUNT {
         let current = site(d, game_id, kind);
         assert_eq!(interact_with_state(d.games, || crate::logic::deep_sites::site(current).unwrap().day), 1);
