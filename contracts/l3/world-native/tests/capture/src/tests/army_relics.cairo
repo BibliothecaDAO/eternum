@@ -10,9 +10,7 @@ fn relic_game() -> (
         execute_in_game(
             d,
             game_id,
-            Command::SettleSeason(
-                crate::realms::SettleSeason { selected_realm: None, order: first_order_choice(d, game_id) },
-            ),
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, order: Some(aspect_order(1)) }),
             360,
         ),
     );

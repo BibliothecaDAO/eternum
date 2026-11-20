@@ -3,11 +3,8 @@ use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePoin
 use crate::race::{AspectHyperstructure, AspectKey, RaceMember, RaceResult, RaceRules, TriumphKey};
 use crate::resources::ResourceKey;
 
-pub fn rules(game_id: u32) -> Option<RaceRules> {
-    if crate::logic::preset_record::for_game(game_id).race_rules.read().is_none() {
-        return None;
-    }
-    Some(crate::balance::race::RACE_RULES)
+pub fn rules() -> RaceRules {
+    crate::balance::race::RACE_RULES
 }
 
 pub fn member(key: ResourceKey) -> RaceMember {
@@ -49,21 +46,17 @@ pub fn result(game_id: u32) -> Option<RaceResult> {
 }
 
 fn initialize(game_id: u32) {
-    let Some(rules) = rules(game_id) else {
-        return;
-    };
-    validate_game(game_id, rules);
+    validate_game(game_id);
     for aspect in 1_u8..5 {
         let key = AspectKey { game_id, aspect };
         emit('AspectHyperstructure', key, hyperstructure(key));
     }
 }
 
-fn validate_game(game_id: u32, rules: RaceRules) {
-    assert!(crate::logic::aspects::rules(game_id).is_some(), "race requires Aspects");
+fn validate_game(game_id: u32) {
     let game = crate::logic::game::game(game_id);
     let unit: u64 = crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read().into();
-    let duration = rules.season_days / crate::days::DAYS_PER_BAG * crate::days::UNITS_PER_BAG * unit;
+    let duration = rules().season_days / crate::days::DAYS_PER_BAG * crate::days::UNITS_PER_BAG * unit;
     assert!(game.scheduled_end_at - game.start_main_at <= duration, "race exceeds season day limit");
 }
 
@@ -71,7 +64,6 @@ fn validate_game(game_id: u32, rules: RaceRules) {
 #[derive(Destruct)]
 pub struct DeepRace {
     game_id: u32,
-    rules: Option<RaceRules>,
     finish_height: u32,
     heights: Felt252Dict<u32>,
     block_ends: Felt252Dict<u64>,
@@ -85,7 +77,6 @@ pub struct DeepRace {
 #[generate_trait]
 pub impl DeepRaceImpl of DeepRaceTrait {
     fn load(game_id: u32, boundary: u64) -> DeepRace {
-        let rules = rules(game_id);
         let state = crate::state::read();
         let bridge = crate::deep::IDeepBanesLibraryDispatcher {
             class_hash: crate::logic::release::release_class(state.game_releases.read(game_id), crate::slots::BRIDGE),
@@ -94,20 +85,15 @@ pub impl DeepRaceImpl of DeepRaceTrait {
         let mut block_ends: Felt252Dict<u64> = Default::default();
         for aspect in 1_u8..5 {
             heights.insert(aspect.into(), hyperstructure(AspectKey { game_id, aspect }).height);
-            if rules.is_some() {
-                block_ends
-                    .insert(
-                        aspect.into(),
-                        crate::deep::IDeepBanesDispatcherTrait::height_block_end(bridge, game_id, aspect, boundary - 1),
-                    );
-            }
+            block_ends
+                .insert(
+                    aspect.into(),
+                    crate::deep::IDeepBanesDispatcherTrait::height_block_end(bridge, game_id, aspect, boundary - 1),
+                );
         }
         DeepRace {
             game_id,
-            rules,
-            finish_height: rules
-                .map(|value| value.stage_height * Into::<u8, u32>::into(crate::race::STAGE_COUNT))
-                .unwrap_or(0),
+            finish_height: rules().stage_height * Into::<u8, u32>::into(crate::race::STAGE_COUNT),
             heights,
             block_ends,
             raised: array![],
@@ -121,14 +107,11 @@ pub impl DeepRaceImpl of DeepRaceTrait {
     fn pay(
         ref self: DeepRace, kind: u8, aspect: u8, shares: Span<crate::deep::DeepShare>, amount: u32, boundary: u64,
     ) -> (Span<u128>, Span<u128>) {
-        let Some(rules) = self.rules else {
-            return (array![].span(), array![].span());
-        };
         let glory = crate::race::split_payment(
             Into::<u32, u128>::into(amount) * crate::rules::RESOURCE_PRECISION, shares,
         );
         let height = if kind == crate::rules::DEEP_FOUNDATION {
-            self.build(rules, aspect, amount, boundary)
+            self.build(aspect, amount, boundary)
         } else {
             0
         };
@@ -181,7 +164,7 @@ pub impl DeepRaceImpl of DeepRaceTrait {
         }
     }
 
-    fn build(ref self: DeepRace, rules: RaceRules, aspect: u8, amount: u32, boundary: u64) -> u32 {
+    fn build(ref self: DeepRace, aspect: u8, amount: u32, boundary: u64) -> u32 {
         let before = self.heights.get(aspect.into());
         if boundary - 1 < self.block_ends.get(aspect.into()) {
             return 0;
@@ -201,7 +184,7 @@ pub impl DeepRaceImpl of DeepRaceTrait {
         }
         self.heights.insert(aspect.into(), height);
         let key = AspectKey { game_id: self.game_id, aspect };
-        schedule_triumph(key, rules, before, height, boundary);
+        schedule_triumph(key, before, height, boundary);
         if height == self.finish_height {
             finish(self.game_id, Some(aspect), boundary);
             self.finished = true;
@@ -210,9 +193,10 @@ pub impl DeepRaceImpl of DeepRaceTrait {
     }
 }
 
-fn schedule_triumph(key: AspectKey, rules: RaceRules, before: u32, height: u32, timestamp: u64) {
-    let stage: u8 = (height / rules.stage_height).try_into().unwrap();
-    if stage == crate::race::STAGE_COUNT || before / rules.stage_height == height / rules.stage_height {
+fn schedule_triumph(key: AspectKey, before: u32, height: u32, timestamp: u64) {
+    let stage_height = rules().stage_height;
+    let stage: u8 = (height / stage_height).try_into().unwrap();
+    if stage == crate::race::STAGE_COUNT || before / stage_height == height / stage_height {
         return;
     }
     let game = crate::logic::game::game(key.game_id);
@@ -229,7 +213,7 @@ fn schedule_triumph(key: AspectKey, rules: RaceRules, before: u32, height: u32, 
 }
 
 pub fn finish_expired(game_id: u32, timestamp: u64) {
-    if rules(game_id).is_none() || result(game_id).is_some() {
+    if result(game_id).is_some() {
         return;
     }
     let game = crate::logic::game::game(game_id);
@@ -288,9 +272,6 @@ pub mod RaceState {
         }
         fn finish_expired_race(ref self: ComponentState<TContractState>, game_id: u32, timestamp: u64) {
             super::finish_expired(game_id, timestamp);
-        }
-        fn race_rules(self: @ComponentState<TContractState>, game_id: u32) -> Option<crate::race::RaceRules> {
-            super::rules(game_id)
         }
         fn race_member(
             self: @ComponentState<TContractState>, key: crate::resources::ResourceKey,

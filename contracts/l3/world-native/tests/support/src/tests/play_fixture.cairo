@@ -23,9 +23,8 @@ pub const BLITZ_RULES: u32 = crate::rules::HOME_REWARDS
     + crate::rules::DISCOVER_CAMPS
     + crate::rules::CAPTURE_VILLAGES
     + crate::rules::SAME_OWNER_TRANSFER
-    + crate::rules::PRODUCTION_START
-    + crate::rules::DISCOVER_SPIRES;
-pub const TEST_RULES: u32 = crate::rules::SPIRES + crate::rules::DEV_VILLAGE_ENTRY;
+    + crate::rules::PRODUCTION_START;
+pub const TEST_RULES: u32 = crate::rules::DEV_VILLAGE_ENTRY;
 pub fn rules() -> crate::rules::SliceRules {
     let data = read_txt(@FileTrait::new("../fixtures/current-presets/conformance.txt"));
     let mut fields = data.span();

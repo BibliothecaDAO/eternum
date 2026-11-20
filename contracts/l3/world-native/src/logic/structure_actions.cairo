@@ -47,8 +47,7 @@ pub fn grant_starting_troops(
         if kind == resource_type {
             resources_dispatcher(key.game_id)
                 .grant_resource(key, kind, amount + guards, timestamp, crate::commands::resource_context(game_context));
-            if record.base.category == crate::taxonomy::REALM_CATEGORY
-                && crate::logic::aspects::rules(key.game_id).is_some() {
+            if record.base.category == crate::taxonomy::REALM_CATEGORY {
                 deploy_starting_armies(key, category, amount, timestamp, game_context);
             }
             grant_starting_guard(key, category, guards, timestamp, game_context);

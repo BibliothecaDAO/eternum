@@ -3,9 +3,6 @@ use crate::commands::ExecutionContext;
 use crate::troops::{ExplorerKey, ExplorerTroops, IBattleResolutionDispatcherTrait};
 
 pub fn enter(key: ExplorerKey, home: u64, context: ExecutionContext) {
-    if !crate::logic::deep_sites::enabled(key.game_id) {
-        return;
-    }
     let state = crate::state::read();
     assert!(state.deep.army_ticks.read((key.game_id, key.explorer_id)).is_none(), "army already entered Deep");
     write_tick(key, context.timestamp / context.rules.unbox().tick_config.armies_tick_in_seconds);
@@ -13,9 +10,6 @@ pub fn enter(key: ExplorerKey, home: u64, context: ExecutionContext) {
 }
 
 pub fn settle(key: ExplorerKey, mut army: ExplorerTroops, context: ExecutionContext) -> ExplorerTroops {
-    if !crate::logic::deep_sites::enabled(key.game_id) {
-        return army;
-    }
     let rules = crate::logic::deep_sites::rules();
     let Some(last_tick) = crate::state::read().deep.army_ticks.read((key.game_id, key.explorer_id)) else {
         assert!(!crate::logic::deep::contains(key.game_id, army.coord), "Deep army has no tick");

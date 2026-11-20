@@ -10,7 +10,7 @@ import { forgetCameraView, publishCameraView } from "./worldmap-camera-view";
 import { followArmyCrossing } from "./worldmap-layer-follow";
 import { SelectedArmyOrders } from "./worldmap-selected-army-orders";
 import { TileOccupier } from "@bibliothecadao/types";
-import { SpireManager, type RuleSpires } from "../managers/spire-manager";
+import { SpireManager } from "../managers/spire-manager";
 import { MapSiteManager } from "../managers/map-site-manager";
 import { activeMapLayer } from "@/three/map-layer";
 import type { ReactNode } from "react";
@@ -83,7 +83,6 @@ import {
   armyRealmSpire,
   configManager,
   dayOf,
-  discoversSpires,
   expeditionDepth,
   type ExpeditionRules,
   expeditionSpires,
@@ -94,7 +93,6 @@ import {
   NEUTRAL_BIOME_CLIMATE,
   Position,
   readExpeditionRules,
-  regionSpire,
   spawnRing,
   spireEtherealView,
   structureMapPosition,
@@ -1313,7 +1311,6 @@ export default class WorldmapScene extends WarpTravel {
       this.spireLabelsGroup,
       this.getTerrainSurface(),
       this.markLabelsDirty,
-      this.createRuleSpires(),
       this.compilePipelines,
     );
     this.mapSiteManager = new MapSiteManager(
@@ -1392,29 +1389,6 @@ export default class WorldmapScene extends WarpTravel {
       isSwitchedOff: () => this.isSwitchedOff,
       reconcileHexHover: (hex) => this.hoverLabelManager.reconcileHexHover(hex),
     });
-  }
-
-  /** Frontier's spires stand by rule on each researched realm's ring; they move when knowledge or the day changes. */
-  private createRuleSpires(): RuleSpires {
-    const store = this.game.store;
-    const projection = this.worldSpatialProjection;
-    return {
-      hexes: () =>
-        discoversSpires(store, configManager.getActiveGameId())
-          ? []
-          : expeditionSpires(store, configManager.getActiveGameId(), getBlockTimestamp().currentBlockTimestamp),
-      subscribe: (onChange) => {
-        const unsubscribeFacts = store.subscribe((changes) => {
-          if (changes.some((change) => ["Structure", "RealmKnowledge"].includes(change.model))) onChange();
-        });
-        // The day turning over re-projects every realm onto its new site.
-        const unsubscribeStructures = projection.subscribeStructures(() => onChange());
-        return () => {
-          unsubscribeFacts();
-          unsubscribeStructures();
-        };
-      },
-    };
   }
 
   private bindWorldSpatialProjectionLifecycle(): void {
@@ -2536,13 +2510,11 @@ export default class WorldmapScene extends WarpTravel {
     const down = expeditionDepth(rules, { y: to.row }) > expeditionDepth(rules, { y: from.row });
     const upper = down ? from : to;
     const gameId = configManager.getActiveGameId();
-    const portal = discoversSpires(this.game.store, gameId)
-      ? expeditionSpires(this.game.store, gameId, getBlockTimestamp().currentBlockTimestamp).find(
-          (spire) =>
-            spire.targetDepth === expeditionDepth(rules, { y: upper.row }) + 1 &&
-            Math.floor(spire.col / rules.spacing) === Math.floor(upper.col / rules.spacing),
-        )
-      : regionSpire(rules, upper);
+    const portal = expeditionSpires(this.game.store, gameId, getBlockTimestamp().currentBlockTimestamp).find(
+      (spire) =>
+        spire.targetDepth === expeditionDepth(rules, { y: upper.row }) + 1 &&
+        Math.floor(spire.col / rules.spacing) === Math.floor(upper.col / rules.spacing),
+    );
     if (!portal) {
       await this.cutToMapHex(to);
       return true;

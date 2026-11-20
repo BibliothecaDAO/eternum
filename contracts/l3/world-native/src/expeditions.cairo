@@ -133,12 +133,6 @@ pub fn home_ring_center(coord: Coord, spacing: u32) -> Coord {
     Coord { alt: false, x: coord.x / spacing * spacing + spacing / 2, y: coord.y / spacing * spacing + spacing / 2 }
 }
 
-// The day's spire, which depth research lights: one of the home ring's six tiles, turning one step each day so the
-// first march from home differs daily. It is a rule, not a stored structure.
-pub fn spire(spacing: u32, region_id: u32, day: u64) -> Coord {
-    crate::geometry::neighbor(site(spacing, region_id, day, 0), (day % 6).try_into().unwrap())
-}
-
 
 pub fn assert_same_region(origin: Coord, destination: Coord, spacing: u32) {
     assert!(inside_region(origin, destination, spacing), "outside expedition region");

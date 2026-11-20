@@ -55,9 +55,6 @@ pub fn initialize(game_id: u32) {
 }
 
 pub fn settle(game_id: u32, context: ExecutionContext) {
-    if !crate::logic::deep_sites::enabled(game_id) {
-        return;
-    }
     let game = context.game.unbox();
     if context.timestamp < game.start_main_at {
         return;
@@ -76,9 +73,6 @@ pub fn settle(game_id: u32, context: ExecutionContext) {
 }
 
 pub fn assert_caught_up(game_id: u32, context: ExecutionContext) {
-    if !crate::logic::deep_sites::enabled(game_id) {
-        return;
-    }
     let interval = context.rules.unbox().tick_config.armies_tick_in_seconds;
     assert_paid_to(game_id, core::cmp::min(context.timestamp, context.game.unbox().end_at) / interval);
 }

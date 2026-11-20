@@ -41,21 +41,13 @@ vi.mock("./building/building-card", () => ({
 
 import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { campBeside, otherArmyAt, reloadSiteFacts, SITE, SITE_TILE } from "./sites/site-fixture";
 import { attachMapSelectionPositions } from "@/hooks/store/map-selection";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import {
-  configManager,
-  expeditionSpireTile,
-  readExpeditionRules,
-  setBlockTimestampSource,
-  setEntityNameLocalStorage,
-} from "@bibliothecadao/eternum";
-import { BuildingType, getNeighborHexes, siteName, TileOccupier } from "@bibliothecadao/types";
+import { configManager, setBlockTimestampSource, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
+import { BuildingType, siteName, TileOccupier } from "@bibliothecadao/types";
 import { transferArmies, TRANSFER_TAPPED } from "./army/transfer-fixture";
 import { useSelectionCard } from "./frontier-selection-sheet";
-import { useOnePanel } from "./hud/one-panel";
 
 /** The selection's card as the HUD draws it. */
 const FrontierSelectionSheet = (props: Parameters<typeof useSelectionCard>[0]) =>
@@ -300,117 +292,6 @@ describe("Frontier's selection sheet", () => {
     expect(enemySheet(false)).toBeNull();
     expect(enemySheet(true)).toBe("Army");
   });
-});
-
-/** The realm's army standing beside its spire, Ethereal I researched: the spire's card acts for it. */
-const armyAtSpire = () => {
-  const { store } = campBeside();
-  // Realm 7's day-0 site is in its home region, 7; the fixture's clock (t=350) is on day 0.
-  const spire = expeditionSpireTile(
-    readExpeditionRules(store, 1)!,
-    store.require("Structure", { game_id: 1, entity_id: 7 }),
-    350,
-  )!;
-  const beside = getNeighborHexes(spire.col, spire.row)[0];
-  store.applyFacts([
-    { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 3n << 48n } },
-    {
-      model: "DepthRules",
-      key: "0x901",
-      value: {
-        game_id: 1,
-        depth: 1,
-        reveal_percent: 100,
-        site_guard_lower: 1,
-        site_guard_upper: 2,
-        reveal_site_neighbors: false,
-        chest: { common: 10000, uncommon: 0, rare: 0, epic: 0, legendary: 0 },
-        guard_step: 1,
-        beast_weak_lower: 300,
-        beast_weak_upper: 350,
-        beast_strong_lower: 450,
-        beast_strong_upper: 550,
-      },
-    },
-    {
-      model: "TileOccupancy",
-      key: "0x75",
-      value: null,
-    },
-    {
-      model: "TileOccupancy",
-      key: "0x904",
-      // The army stands beside the realm's spire.
-      value: {
-        game_id: 1,
-        alt: false,
-        col: beside.col,
-        row: beside.row,
-        entity_id: 201,
-        category: 15,
-        is_structure: false,
-      },
-    },
-  ] as never);
-  useAccountStore.setState({ account: { address: "0x111" } as never });
-  useBlockTimestampStore.setState({ currentBlockTimestamp: 350, currentDefaultTick: 350 });
-  return { store, spire };
-};
-
-it("stands Research alone over the spire card, and shows the next selection's card", () => {
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  const { store, spire } = armyAtSpire();
-  const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
-  /** The HUD's card and surface, both through the one panel; Research and its close as their buttons. */
-  const Hud = () => {
-    const card = useSelectionCard({ realm, onResearch: () => undefined });
-    const { surface, openSurface, showsCard } = useOnePanel(card?.key ?? null);
-    return (
-      <>
-        <button type="button" onClick={() => openSurface("research")}>
-          Research
-        </button>
-        <button type="button" onClick={() => openSurface(null)}>
-          Close
-        </button>
-        {surface && <section data-kit-sheet aria-label={surface} />}
-        {showsCard && card?.sheet}
-      </>
-    );
-  };
-  // The spire tapped with the army selected: its card stands.
-  useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: spire });
-  tiles.current = [];
-  const host = document.createElement("div");
-  const root = createRoot(host);
-  act(() =>
-    root.render(
-      <GameProvider value={{ store, systemCalls: {} } as never} account={{ address: "0x111" } as never}>
-        <Hud />
-      </GameProvider>,
-    ),
-  );
-  const press = (word: string) =>
-    act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === word)!.click());
-  const sheets = () => [...host.querySelectorAll("[data-kit-sheet]")].map((sheet) => sheet.getAttribute("aria-label"));
-  try {
-    expect(sheets()).toEqual(["Spire"]);
-
-    press("Research");
-    expect(sheets()).toEqual(["research"]);
-    // Closed and opened again, Research still stands alone; the card waits for the next selection.
-    press("Close");
-    expect(sheets()).toEqual([]);
-    press("Research");
-    expect(sheets()).toEqual(["research"]);
-
-    // The next selection, the spire tapped alone, opens its card in Research's place.
-    act(() => useUIStore.getState().selectOnMap({ kind: "hex", hex: spire }));
-    expect(sheets()).toEqual(["Spire"]);
-  } finally {
-    act(() => root.unmount());
-    useUIStore.getState().selectOnMap(null);
-  }
 });
 
 it("the map's actual transfer selection shows the survivor before the player confirms", async () => {

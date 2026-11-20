@@ -19,7 +19,6 @@ fn setup(kind: u8) -> (Deployment, ExplorerKey, crate::expeditions::FrontierDisc
         claim_bit *= 2;
     }
     preset.rules.command_mask = preset.rules.command_mask | claim_bit;
-    preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DISCOVER_SPIRES;
     preset.rules.battle_config.regular_immunity_ticks = 0;
     preset.rules.battle_config.cooldown_seconds = 0;
     let mut seed = 1_u64;

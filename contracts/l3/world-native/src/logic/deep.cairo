@@ -1,13 +1,9 @@
-use starknet::storage::StoragePointerReadAccess;
 use crate::commands::ExecutionContext;
 use crate::geometry::tile_key;
 use crate::troops::{Coord, ExplorerKey, IBattleResolutionDispatcherTrait};
 
 pub fn contains(game_id: u32, coord: Coord) -> bool {
-    if !crate::logic::game::game_exists(game_id) {
-        return false;
-    }
-    crate::logic::deep_sites::enabled(game_id) && crate::deep::contains(coord, crate::logic::settlement::spacing())
+    crate::logic::game::game_exists(game_id) && crate::deep::contains(coord, crate::logic::settlement::spacing())
 }
 
 pub fn assert_step(game_id: u32, origin: Coord, destination: Coord) {

@@ -425,60 +425,6 @@ fn depth_entry_requires_spire_lore_and_keeps_stamina_at_every_depth() {
     assert_eq!(resources.resource_balance(essence), balance);
 }
 
-#[test]
-fn an_army_enters_a_depth_only_from_its_realms_spire_which_turns_each_day() {
-    let d = setup();
-    let (game_id, preset, category) = expedition_home(d);
-    let structures = IStructureOperationsDispatcher { contract_address: d.games };
-    let home = ResourceKey { game_id, entity_id: 1 };
-    let record = structures.structure(home).unwrap();
-    super::resource_commands::set_fixture(
-        d.games,
-        selector!("structures"),
-        selector!("structures"),
-        array![game_id.into(), 1].span(),
-        crate::structures::StructureRecord {
-            owner: record.owner,
-            base: record.base, // The realm's produced resources play no part in depth entry.
-            resources_packed: 0,
-            metadata: record.metadata,
-        },
-    );
-    snforge_std::interact_with_state(
-        d.games,
-        || {
-            crate::logic::research::write(
-                home,
-                crate::research::RealmKnowledge {
-                    learned: world_test_support::tests::registrar::lore(crate::research::LORE_SPIRES),
-                },
-            );
-        },
-    );
-    let spacing = SETTLEMENT_SPACING_STEPS;
-    // The army musters at t=351, on day 0.
-    let spire = crate::expeditions::spire(spacing, 1, 0);
-    let site = crate::expeditions::site(spacing, 1, 0, 0);
-    let day: u8 = 0;
-    assert_eq!(spire, crate::geometry::neighbor(site, day));
-    // The next day's spire stands one step further round that day's ring.
-    assert_eq!(
-        crate::expeditions::spire(spacing, 1, 1),
-        crate::geometry::neighbor(crate::expeditions::site(spacing, 1, 1, 0), (day + 1) % 6),
-    );
-    // An army beside the realm's site but two tiles from its spire cannot enter a depth.
-    assert!(execute_in_game(d, game_id, muster_command(category, (day + 3) % 6), 351));
-    let away = *structures.home_armies(home).at(0);
-    let troops = GameState { contract_address: d.games };
-    let before = troops.resolved_explorer(ExplorerKey { game_id, explorer_id: away }).unwrap();
-    assert!(
-        !execute_in_game(
-            d, game_id, Command::EnterDepth(crate::commands::EnterDepth { explorer_id: away, depth: 1 }), 352,
-        ),
-    );
-    assert_eq!(troops.resolved_explorer(ExplorerKey { game_id, explorer_id: away }).unwrap(), before);
-}
-
 
 #[test]
 fn a_herd_clear_pays_wheat_once_and_removes_its_blocker() {
@@ -1051,7 +997,7 @@ fn open_frontier_settlement_uses_only_each_players_home_and_entry() {
     let progress = views.settlement_progress(game_id);
     let other = super::bind_authority(d);
     let command = Command::SettleSeason(
-        crate::realms::SettleSeason { selected_realm: None, order: first_order_choice(d, game_id) },
+        crate::realms::SettleSeason { selected_realm: None, order: Some(aspect_order(1)) },
     );
     assert!(execute_in_game(d, game_id, command, 360));
     assert!(execute_in_game(other, game_id, command, 360));

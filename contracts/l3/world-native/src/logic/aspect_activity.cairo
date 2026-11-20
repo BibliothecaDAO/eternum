@@ -3,9 +3,6 @@ use crate::resources::ResourceKey;
 use crate::troops::ArmySlotKey;
 
 pub fn record_first_allocation(home: ResourceKey, day: u64, allowance: u8) {
-    if crate::logic::aspects::rules(home.game_id).is_none() {
-        return;
-    }
     for slot in 0..allowance {
         if crate::logic::army_slot_storage::read(
             ArmySlotKey { game_id: home.game_id, structure_id: home.entity_id, epoch: day, slot },

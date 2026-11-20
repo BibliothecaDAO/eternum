@@ -8,9 +8,6 @@ pub fn prepare(game_id: u32, context: crate::commands::ActionContext) {
 }
 
 pub fn initialize(game_id: u32) {
-    if !crate::logic::aspects::enabled(game_id) {
-        return;
-    }
     let game = crate::logic::game::game(game_id);
     let unit = crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read();
     prepare_at(game_id, game, unit, game.start_main_at, 0);
@@ -46,7 +43,7 @@ fn prepare_at(game_id: u32, game: crate::game::GameRegistry, unit: u32, timestam
 }
 
 pub fn kind(game_id: u32, day: u64) -> Option<u8> {
-    if !crate::logic::aspects::enabled(game_id) || world_stopped(game_id, day) {
+    if world_stopped(game_id, day) {
         return None;
     }
     let kind = crate::state::read().banes.world_days.read((game_id, day)).expect('world day is not prepared');

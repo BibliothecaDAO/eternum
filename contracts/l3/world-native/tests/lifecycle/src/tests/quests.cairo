@@ -44,8 +44,7 @@ fn progress_observations_freeze_completion_and_the_player_collects_only_once() {
             game_id,
             Command::SettleSeason(
                 crate::realms::SettleSeason {
-                    selected_realm: None,
-                    order: Some(world_test_support::tests::registrar::order_of_aspect(d, game_id, 1)),
+                    selected_realm: None, order: Some(world_test_support::tests::registrar::aspect_order(1)),
                 },
             ),
             360,
@@ -164,7 +163,7 @@ fn quest_labor(
                     order: if held {
                         None
                     } else {
-                        Some(world_test_support::tests::registrar::order_of_aspect(d, game_id, 1))
+                        Some(world_test_support::tests::registrar::aspect_order(1))
                     },
                 },
             ),
@@ -259,8 +258,7 @@ fn found(d: Deployment, game_id: u32) -> ResourceKey {
             game_id,
             Command::SettleSeason(
                 crate::realms::SettleSeason {
-                    selected_realm: None,
-                    order: Some(world_test_support::tests::registrar::order_of_aspect(d, game_id, 1)),
+                    selected_realm: None, order: Some(world_test_support::tests::registrar::aspect_order(1)),
                 },
             ),
             360,

@@ -1,6 +1,5 @@
 import { expeditionSpireTile, readExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { nativeRuleConstants } from "../../../../../../contracts/l3/world-native/schema/balance.gen";
 import { getNeighborHexes, TileOccupier } from "@bibliothecadao/types";
 
 import { campBeside } from "./sites/site-fixture";
@@ -78,14 +77,8 @@ export const applySpireDiscovery = (store: NativeFactStore, depth: 0 | 1 | 2) =>
   const surface = expeditionSpireTile(rules, store.require("Structure", { game_id: 1, entity_id: 7 }), SPIRE_DAY_NOW)!;
   const spire = { col: surface.col + 2, row: surface.row + depth * rules.spacing };
   const [armyTile] = getNeighborHexes(spire.col, spire.row);
-  const slice = store.require("SliceRules", { game_id: 1 });
   const occupancy = store.entityOccupancy(1, SPIRE_ARMY)!;
   store.applyFacts([
-    {
-      model: "SliceRules",
-      key: store.wireKeyOf("SliceRules", slice)!,
-      value: { ...slice, mode_rules: slice.mode_rules | nativeRuleConstants.DISCOVER_SPIRES },
-    },
     {
       model: "ExpeditionSpire",
       key: "0x5f01",

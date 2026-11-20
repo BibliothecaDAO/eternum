@@ -3,10 +3,6 @@ use crate::army_relics::{ArmyRelic, ArmyRelicEffect, ArmyRelicEffectKey, ArmyRel
 use crate::resources::ResourceKey;
 use crate::troops::ExplorerKey;
 
-pub fn enabled(game_id: u32) -> bool {
-    crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read() != 0
-}
-
 pub fn read(key: ExplorerKey) -> ArmyRelics {
     let packed = crate::state::read().relics.army_relics.read((key.game_id, key.explorer_id));
     let mut loadout: ArmyRelics = Default::default();

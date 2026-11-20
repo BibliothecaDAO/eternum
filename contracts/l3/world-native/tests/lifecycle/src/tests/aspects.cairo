@@ -46,7 +46,7 @@ fn new_player(d: Deployment, index: u8) -> Deployment {
 #[test]
 fn every_free_home_founds_a_realm_of_the_order_it_chose_and_joins_that_orders_aspect_once() {
     let (d, game_id) = setup_aspects(42);
-    let orders = interact_with_state(d.games, || crate::logic::aspects::rules(game_id).unwrap());
+    let orders = crate::logic::aspects::rules();
     for order in 1_u8..17 {
         let player = new_player(d, order);
         assert!(settle(player, game_id, Some(order)));
@@ -77,7 +77,7 @@ fn every_free_home_founds_a_realm_of_the_order_it_chose_and_joins_that_orders_as
 #[test]
 fn free_home_requires_a_valid_order_and_a_failed_choice_reserves_nothing() {
     let (d, game_id) = setup_aspects(42);
-    let order = world_test_support::tests::registrar::order_of_aspect(d, game_id, 2);
+    let order = world_test_support::tests::registrar::aspect_order(2);
     assert!(!settle(d, game_id, None));
     assert!(!settle(d, game_id, Some(0)));
     assert!(!settle(d, game_id, Some(17)));
@@ -141,7 +141,7 @@ fn orders_round_trip_without_loot_suffix_order() {
 #[feature("safe_dispatcher")]
 fn a_founded_home_attaches_only_a_realm_of_its_aspect() {
     let (d, game_id) = setup_aspects(43);
-    assert!(settle(d, game_id, Some(world_test_support::tests::registrar::order_of_aspect(d, game_id, 2))));
+    assert!(settle(d, game_id, Some(world_test_support::tests::registrar::aspect_order(2))));
     start_cheat_caller_address(d.games, authority());
     let key = EntryKey { game_id, owner: d.actor };
     let entitlement = EntryEntitlement {

@@ -983,23 +983,8 @@ pub fn apply_ruin_depth_release(d: super::Deployment, game_id: u32) {
     stop_cheat_caller_address(d.games);
 }
 
-pub fn first_order_choice(d: super::Deployment, game_id: u32) -> Option<u8> {
-    snforge_std::interact_with_state(
-        d.games,
-        || {
-            if let Some(orders) = crate::logic::aspects::rules(game_id) {
-                Some(order_in_aspect(orders, 1))
-            } else {
-                None
-            }
-        },
-    )
-}
-
-pub fn order_of_aspect(d: super::Deployment, game_id: u32, aspect: u8) -> u8 {
-    snforge_std::interact_with_state(
-        d.games, || order_in_aspect(crate::logic::aspects::rules(game_id).expect('Aspects are disabled'), aspect),
-    )
+pub fn aspect_order(aspect: u8) -> u8 {
+    order_in_aspect(crate::logic::aspects::rules(), aspect)
 }
 
 pub fn order_in_aspect(orders: u128, aspect: u8) -> u8 {

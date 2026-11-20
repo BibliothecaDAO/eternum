@@ -170,25 +170,21 @@ pub mod SeasonLogic {
             if !context.game.unbox().ready && index != crate::command_routes::SETTLE_BLITZ_ROSTER {
                 return Err(rejection('ROSTER_NOT_READY'));
             }
-            if crate::logic::aspects::enabled(game_id) {
-                crate::banes::IWorldBanesDispatcherTrait::prepare_bane_day(
-                    crate::banes::IWorldBanesLibraryDispatcher {
-                        class_hash: crate::logic::release::class_of(game_id, crate::slots::BRIDGE),
-                    },
-                    game_id,
-                    crate::commands::action_context(context),
-                );
-            }
-            if crate::logic::deep_sites::enabled(game_id) {
-                crate::deep::IDeepTicksDispatcherTrait::settle_deep(
-                    crate::deep::IDeepTicksLibraryDispatcher {
-                        class_hash: crate::logic::release::class_of(game_id, crate::slots::PRIZES),
-                    },
-                    game_id,
-                    crate::commands::action_context(context),
-                );
-                context.game = BoxTrait::new(crate::logic::game::game(game_id));
-            }
+            crate::banes::IWorldBanesDispatcherTrait::prepare_bane_day(
+                crate::banes::IWorldBanesLibraryDispatcher {
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::BRIDGE),
+                },
+                game_id,
+                crate::commands::action_context(context),
+            );
+            crate::deep::IDeepTicksDispatcherTrait::settle_deep(
+                crate::deep::IDeepTicksLibraryDispatcher {
+                    class_hash: crate::logic::release::class_of(game_id, crate::slots::PRIZES),
+                },
+                game_id,
+                crate::commands::action_context(context),
+            );
+            context.game = BoxTrait::new(crate::logic::game::game(game_id));
             if rules.day_unit_seconds != 0
                 && crate::commands::ICommandIngressDispatcherTrait::requires_oath_answer(
                     crate::commands::ICommandIngressLibraryDispatcher {

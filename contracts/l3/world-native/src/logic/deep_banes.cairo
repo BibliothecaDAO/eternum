@@ -145,9 +145,6 @@ fn day(game_id: u32, timestamp: u64) -> Option<crate::days::Day> {
 }
 
 pub fn team_quest(home: crate::resources::ResourceKey, day: u64) -> Option<u8> {
-    if !crate::logic::aspects::enabled(home.game_id) {
-        return None;
-    }
     let aspect = crate::logic::aspects::home_aspect(home);
     bane(TeamBaneKey { game_id: home.game_id, aspect, day }).map(|bane| bane.quest)
 }

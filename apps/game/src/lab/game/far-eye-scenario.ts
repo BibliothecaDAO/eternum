@@ -12,13 +12,7 @@ export function farEyeScenario(): LabScenario {
   const scenario = exploreScenario();
   const { store } = scenario;
   const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: SPIRE_ARMY });
-  const rules = store.require("SliceRules", { game_id: 1 });
   store.applyFacts([
-    {
-      model: "SliceRules",
-      key: store.wireKeyOf("SliceRules", rules)!,
-      value: wire({ ...rules, mode_rules: rules.mode_rules | nativeRuleConstants.DISCOVER_SPIRES }),
-    },
     {
       model: "ArmyRelics",
       key: "0xfae1",

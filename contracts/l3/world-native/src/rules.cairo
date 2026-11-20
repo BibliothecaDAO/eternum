@@ -213,13 +213,10 @@ pub const ENTRY_ROSTER: u8 = 2;
 
 pub const HOME_REWARDS: u32 = 1;
 pub const DISCOVER_CAMPS: u32 = 2;
-pub const SPIRES: u32 = 16;
 pub const UNOWNED_TARGETS: u32 = 32;
 pub const CAPTURE_VILLAGES: u32 = 64;
 pub const DEPTH_CONTENTS: u32 = 128;
 pub const REVEAL_SUPPLIES: u32 = 262144;
-// Blitz finds dormant reward spires; expedition games discover one descent spire per home, day and layer.
-pub const DISCOVER_SPIRES: u32 = 2097152;
 pub const SAME_OWNER_TRANSFER: u32 = 256;
 pub const DEV_VILLAGE_ENTRY: u32 = 8192;
 pub const PRODUCTION_START: u32 = 131072;

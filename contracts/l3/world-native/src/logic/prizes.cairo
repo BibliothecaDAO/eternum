@@ -100,10 +100,6 @@ pub mod PrizesLogic {
             context: crate::commands::ActionContext,
         ) {
             let context = crate::commands::execution_context(game_id, context);
-            assert!(
-                crate::rules::rule_enabled(context.rules.unbox(), crate::rules::DISCOVER_SPIRES),
-                "spire discovery is disabled",
-            );
             let explorer = self.revealing_explorer(game_id, actor, explorer_id, context);
             crate::logic::map::MapState::occupy(
                 tile_key(game_id, coord),

@@ -55,7 +55,7 @@ pub mod QuestState {
         fn record_quest_progress(
             ref self: ComponentState<TContractState>, home: ResourceKey, kind: u8, amount: u128, timestamp: u64,
         ) {
-            if amount == 0 || !crate::logic::aspects::enabled(home.game_id) {
+            if amount == 0 {
                 return;
             }
             let game = crate::logic::game::game(home.game_id);
@@ -110,7 +110,6 @@ pub mod QuestState {
                 context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp,
             )
                 .index;
-            assert!(crate::logic::aspects::enabled(game_id), "daily quests are disabled");
             assert!(command.day == day, "incorrect quest day");
             let progress = super::read(home, day);
             assert!(progress.completed_level != 0, "daily quest is unfinished");

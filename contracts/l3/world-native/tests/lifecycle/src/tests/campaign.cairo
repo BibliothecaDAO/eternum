@@ -28,9 +28,7 @@ fn found_at(d: Deployment, game_id: u32, timestamp: u64) -> ResourceKey {
             d,
             game_id,
             crate::commands::Command::SettleSeason(
-                crate::realms::SettleSeason {
-                    selected_realm: None, order: super::registrar::first_order_choice(d, game_id),
-                },
+                crate::realms::SettleSeason { selected_realm: None, order: Some(super::registrar::aspect_order(1)) },
             ),
             timestamp,
         ),
