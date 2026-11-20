@@ -131,7 +131,7 @@ it("offers the store's packs in dollars, the Ancient Seal's chosen, and pays its
 });
 
 it("names the wallet whose balances it lists", async () => {
-  installWallet("argentX", { account: WALLET });
+  installWallet("argentX", { account: WALLET, approves: false });
   vi.spyOn(identityClient, "priceFragments").mockResolvedValue({ fragments: 1_000, cents: 1_000, quote: QUOTE });
   const page = await mount();
   await press(page, "Pay $10.00");
