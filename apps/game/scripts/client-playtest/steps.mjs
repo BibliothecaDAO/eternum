@@ -34,7 +34,10 @@ import {
   judgeAfterDoorway,
 } from "./evidence.mjs";
 import { watchReleaseMove } from "./stale-release.mjs";
-import { nativeOathConstants as oathRules } from "../../../../contracts/l3/world-native/schema/balance.gen.ts";
+import {
+  nativeOathConstants as oathRules,
+  nativeRuleConstants as ruleConstants,
+} from "../../../../contracts/l3/world-native/schema/balance.gen.ts";
 import { openOrderSendGate, touchAt, VIEWPORT } from "./browser-session.mjs";
 import { ENTRY_BUTTON, findHomeCardEntry } from "./player-entry.mjs";
 import { judgeClickToResult, measureClickToResult } from "./click-latency.mjs";
@@ -4614,7 +4617,7 @@ const deepClosedSteps = () => [
     verify: ({ played }) =>
       played.tokens.length > 0 &&
       played.tokens.every((icon) => icon === "lock") &&
-      (!onADesktop() || played.tokens.length === DEEP_SITE_NAMES.length)
+      (!onADesktop() || played.tokens.length === ruleConstants.DEEP_RING_SITES)
         ? completed(played)
         : failed("Every site of a closed ring is pinned with a lock in place of its kind", played),
   },
