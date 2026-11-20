@@ -38,7 +38,8 @@ const realmOn = (
       troopsPerHour: preset.balance.resources.productionByComplexRecipeOutputs[ResourcesIds.Knight] * 3600,
     },
     laborStore: (level) =>
-      (nativeStructureConstants.LABOR_STORES[level]! * (10_000 + storeroomPicks * preset.board.storageStepBps)) / 10_000,
+      (nativeStructureConstants.LABOR_STORES[level]! * (10_000 + storeroomPicks * preset.board.storageStepBps)) /
+      10_000,
   };
 };
 

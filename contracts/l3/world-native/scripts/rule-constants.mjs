@@ -77,7 +77,8 @@ function unsignedLists(source) {
           .map((value) => value.trim())
           .filter(Boolean)
           .map(Number);
-        if (values.length !== Number(length)) throw new Error(`${name} declares ${length} values and lists ${values.length}`);
+        if (values.length !== Number(length))
+          throw new Error(`${name} declares ${length} values and lists ${values.length}`);
         return [name, values];
       },
     ),

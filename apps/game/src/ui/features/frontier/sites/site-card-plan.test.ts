@@ -1,6 +1,11 @@
 import oathDamage from "../../../../../../../contracts/l3/world-native/tests/fixtures/oath-damage.txt?raw";
 import { deepBattleTargetScenario } from "@/lab/game/battle-target-scenario";
-import { nativeOathConstants as oaths, nativeRuleConstants, readDeepSites } from "@bibliothecadao/eternum/game-client";
+import {
+  nativeOathConstants as oaths,
+  nativeRuleConstants,
+  nativeStructureConstants,
+  readDeepSites,
+} from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { afterEach, describe, expect, it } from "vitest";
 import { armyRelicReward, setBlockTimestampSource } from "@bibliothecadao/eternum";
@@ -92,7 +97,7 @@ describe("Frontier's tile card", () => {
 it("shows only the camp reward that fits in the home labor store", () => {
   const { store, site, structure, attack } = campBeside();
   const home = attack({ col: 41, row: 12, alt: false }).army.owner;
-  const limit = BigInt(store.require("BoardRules", { game_id: 1 }).settlement_resource_cap) * 1_000_000_000n;
+  const limit = BigInt(nativeStructureConstants.LABOR_STORES[0]!) * 1_000_000_000n;
   store.applyFacts([
     {
       model: "ResourceBalance",
@@ -198,7 +203,7 @@ it("forecasts Blade, Ward and Plunder at the attack second and drops them exactl
 it("clips the Plunder reward after applying its bonus and leaves wheat unchanged", () => {
   const { store, site, structure, attack } = campBeside();
   const action = attack({ col: 41, row: 12, alt: false });
-  const limit = BigInt(store.require("BoardRules", { game_id: 1 }).settlement_resource_cap) * 1_000_000_000n;
+  const limit = BigInt(nativeStructureConstants.LABOR_STORES[0]!) * 1_000_000_000n;
   const keys = { game_id: 1, entity_id: action.army.owner, resource_type: ResourcesIds.Labor };
   store.applyFacts([
     relicEffectFact("Plunder"),
