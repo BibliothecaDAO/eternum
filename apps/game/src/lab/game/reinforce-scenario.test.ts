@@ -24,7 +24,7 @@ it("raises the troops into the army beside home, its realm paying them from its 
       {
         kind: "ManageTroops",
         fields: {},
-        calldata: ["1", "0", "0", "3", "0", "2", String(SPIRE_ARMY), String(amount * PRECISION), "1"],
+        span: ["0", "2", String(SPIRE_ARMY), String(amount * PRECISION), "1"],
       },
       chain,
       game.startsAt,
@@ -44,11 +44,11 @@ it("opens the supply-post game and charges reinforcement to the clearing home's 
   const command = {
     kind: "ManageTroops",
     fields: {},
-    calldata: ["1", "0", "0", "6", "0", "2", String(SPIRE_ARMY), String(100n * PRECISION), "0", String(SUPPLY_POST)],
+    span: ["0", "2", String(SPIRE_ARMY), String(100n * PRECISION), "0", String(SUPPLY_POST)],
   };
-  expect(() =>
-    game.answer({ ...command, calldata: [...command.calldata.slice(0, -2), "1"] }, chain, game.startsAt),
-  ).toThrow("Army is not beside its supply source");
+  expect(() => game.answer({ ...command, span: [...command.span.slice(0, -2), "1"] }, chain, game.startsAt)).toThrow(
+    "Army is not beside its supply source",
+  );
   chain.applyFacts(game.answer(command, chain, game.startsAt) as never);
   const after = readReinforcePlan(chain, realm, SPIRE_ARMY, game.startsAt)!;
   expect(chain.require("ExplorerTroops", ARMY).troops.count).toBe(1598n * PRECISION);

@@ -55,7 +55,7 @@ const RECRUIT_EXPLORER = 2n;
 /** A ManageTroops RecruitExplorer, as its span reads: [command, RecruitExplorer, explorer, amount]; null otherwise. */
 const readRecruit = (command: LabCommand) => {
   if (command.kind !== "ManageTroops") return null;
-  const [, variant, explorerId, amount, option, site] = command.calldata.slice(4).map(BigInt);
+  const [, variant, explorerId, amount, option, site] = command.span.map(BigInt);
   if (variant !== RECRUIT_EXPLORER) return null;
   if (option !== 0n && option !== 1n) throw new Error("Missing reinforcement source");
   if (option === 0n && site === undefined) throw new Error("Missing supply post id");

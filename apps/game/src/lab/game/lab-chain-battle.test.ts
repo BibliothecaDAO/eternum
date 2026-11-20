@@ -25,7 +25,7 @@ it("sends a ruin fight through the lab account with its payout events separate f
   try {
     await executeGameplayAccountTransaction({
       account: useAccountStore.getState().account!,
-      calls: { contractAddress: "0x1ab", entrypoint: "play", calldata: ["1", "3", "0", String(span.length), ...span] },
+      calls: { contractAddress: "0x1ab", entrypoint: "play", calldata: ["1", "3", String(span.length), ...span] },
       shard: { chainId: LAB_GAME.chainId, l2GasBound: BigInt("0x47868c00") },
     });
     await vi.advanceTimersByTimeAsync(300);
@@ -43,7 +43,7 @@ it("sends a ruin fight through the lab account with its payout events separate f
     vi.setSystemTime(startedAt + 1000);
     await executeGameplayAccountTransaction({
       account: useAccountStore.getState().account!,
-      calls: { contractAddress: "0x1ab", entrypoint: "play", calldata: ["1", "3", "0", String(span.length), ...span] },
+      calls: { contractAddress: "0x1ab", entrypoint: "play", calldata: ["1", "3", String(span.length), ...span] },
       shard: { chainId: LAB_GAME.chainId, l2GasBound: BigInt("0x47868c00") },
     });
     expect(window.__labChain!.sent).toHaveLength(1);

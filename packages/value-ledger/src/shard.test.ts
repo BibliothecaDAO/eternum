@@ -85,7 +85,6 @@ it("uses the fixed ordinary v3 play frame and a native three-felt device signatu
       calldata: [
         "7",
         "2",
-        "2",
         "1",
         ...encodeNativeCommand(bindings.commandAbi, { kind: "SettleBlitzRoster", value: undefined }),
       ],
@@ -106,7 +105,6 @@ it("uses the fixed ordinary v3 play frame and a native three-felt device signatu
     new CallData(abi).compile("play", {
       game_id: 7,
       release_id: 2,
-      preset_commitment: 2,
       command: encodeNativeCommand(bindings.commandAbi, { kind: "SettleBlitzRoster", value: undefined }),
     }),
   );
@@ -127,7 +125,6 @@ it.each(["MarkGameSettled", "RecordBlitzResults"] as const)(
     await operator.playCommand(7, name);
     expect(rpc.execute.mock.calls[0]![0].calldata).toEqual([
       "7",
-      "2",
       "2",
       "1",
       ...encodeNativeCommand(bindings.commandAbi, { kind: name, value: undefined }),
@@ -287,7 +284,7 @@ it("settles an ended game one batch at a time until it reads settled, and sends 
   await operator.settleGame(7);
   expect(rpc.execute).toHaveBeenCalledTimes(2);
   for (const [call] of rpc.execute.mock.calls)
-    expect(call.calldata.slice(4)).toEqual(
+    expect(call.calldata.slice(3)).toEqual(
       encodeNativeCommand(bindings.commandAbi, { kind: "MarkGameSettled", value: undefined }),
     );
   await operator.settleGame(7);

@@ -9,7 +9,7 @@ import { scoutsScenario } from "./scouts-scenario";
 import { researchScenario } from "./research-scenario";
 
 const whole = (amount: number) => String(BigInt(amount) * BigInt(RESOURCE_PRECISION));
-const command = (kind: string, fields: Record<string, string>): LabCommand => ({ kind, fields, calldata: [] });
+const command = (kind: string, fields: Record<string, string>): LabCommand => ({ kind, fields, span: [] });
 const balance = (facts: LabFact[], resource: ResourcesIds) =>
   facts.find(
     ({ model, value }) =>
@@ -62,7 +62,7 @@ it("answers a deploy with a new army of the troops sent beside the realm, its tr
   const slotKey = { game_id: 1, structure_id: 7n, epoch: 0n, slot: 1 };
   const before = chain.require("ArmySlot", slotKey).stamina.amount;
   const moved = game.answer(
-    { kind: "Move", fields: {}, calldata: ["0", "0", "0", "0", "0", army.explorer_id, "1", "1"] },
+    { kind: "Move", fields: {}, span: ["0", army.explorer_id, "1", "1"] },
     chain,
     game.startsAt + 31,
   );

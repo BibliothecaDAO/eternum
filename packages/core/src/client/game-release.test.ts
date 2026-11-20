@@ -16,7 +16,7 @@ const setup = () => {
       {
         model: "GameRelease",
         key: hash.computePoseidonHashOnElements([1]),
-        value: { game_id: 1, release_id: releaseId, created_release_id: createdReleaseId, preset_commitment: "0x789" },
+        value: { game_id: 1, release_id: releaseId, created_release_id: createdReleaseId },
       },
     ]);
   write(1);
@@ -76,7 +76,7 @@ it("revalidates a pin after a failed manifest read was superseded by another pin
       {
         model: "GameRelease",
         key: hash.computePoseidonHashOnElements([1]),
-        value: { game_id: 1, release_id, created_release_id: 1, preset_commitment: "0x789" },
+        value: { game_id: 1, release_id, created_release_id: 1 },
       },
     ]);
   write(1);
@@ -135,7 +135,7 @@ it("refreshes a missing historical release before allowing the game", async () =
     {
       model: "GameRelease",
       key: "0x1",
-      value: { game_id: 1, release_id: 2, created_release_id: 1, preset_commitment: "0x789" },
+      value: { game_id: 1, release_id: 2, created_release_id: 1 },
     },
   ]);
   const fetched = vi.fn().mockResolvedValue(

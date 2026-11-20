@@ -141,7 +141,6 @@ const sealRelease = (store: NativeFactStore) => {
       ...release,
       release_id: nativeReleaseConstants.SEAL_RELEASE,
       created_release_id: nativeReleaseConstants.SEAL_RELEASE,
-      preset_commitment: String(release.preset_commitment),
     },
   };
 };

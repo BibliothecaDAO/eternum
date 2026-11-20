@@ -24,13 +24,7 @@ it("settles the lab's old Deep rate before the Oath response, matching the nativ
       replace: { kind: "None", value: undefined },
     },
   });
-  chain.applyFacts(
-    game.answer(
-      { kind: "ChooseOath", fields: {}, calldata: ["1", "0", "0", String(span.length), ...span] },
-      chain,
-      boundary,
-    ) as never,
-  );
+  chain.applyFacts(game.answer({ kind: "ChooseOath", fields: {}, span }, chain, boundary) as never);
   const after = chain.require("ExplorerTroops", key);
   expect(after.troops.count).toBe(before.troops.count - chain.require("DeepRules", { game_id: 1 }).loss_per_tick);
   expect(chain.require("DeepArmy", key).last_tick).toBe(BigInt(boundary / interval));

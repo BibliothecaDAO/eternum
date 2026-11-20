@@ -50,7 +50,7 @@ const staminaSpent = (store: NativeFactStore, now: number): LabFact[] => {
 
 /** DestroyBuilding (ChangeBuilding: the structure, then its plot as a Coord of alt, x and y): that plot's building gone. */
 const demolish = (command: LabCommand, chain: NativeFactStore): LabFact[] => {
-  const [, structureId, , col, row] = command.calldata.slice(4).map(BigInt);
+  const [, structureId, , col, row] = command.span.map(BigInt);
   const [key] = [...chain.entries("Building")].find(
     ([, building]) =>
       building.structure_id === structureId && BigInt(building.inner_col) === col && BigInt(building.inner_row) === row,

@@ -116,7 +116,7 @@ function blitzRpc(
       createdGames.push({ ...game, seated: 0, closedSeated: 0, seats: 0 });
     } else {
       expect(selector).toBe(BigInt(hash.getSelectorFromName("play")));
-      expect(args.slice(4).map(BigInt)).toEqual(
+      expect(args.slice(3).map(BigInt)).toEqual(
         encodeNativeCommand(bindings.commandAbi, { kind: "SettleBlitzRoster", value: undefined }).map(BigInt),
       );
       const gameId = Number(args[0]);
@@ -175,7 +175,6 @@ function blitzRpc(
     case "game_seater":
       return response(gamesAbi, entry, game!.seater);
     case "game_release":
-    case "preset_commitment":
       return response(gamesAbi, entry, 1);
     case "l2_gas_bound":
       return response(gamesAbi, entry, SHARD_MANIFEST.l2GasBound);

@@ -194,7 +194,7 @@ async function prepareWavePayloads(game: WaveGame) {
     const pin = player.client.setup.store.require("GameRelease", { game_id: game.gameId });
     return signPlayerInvoke(
       player.account,
-      buildPlayCall(game.games, game.gameId, pin.release_id, pin.preset_commitment, command),
+      buildPlayCall(game.games, game.gameId, pin.release_id, command),
       game.bounds,
     );
   });

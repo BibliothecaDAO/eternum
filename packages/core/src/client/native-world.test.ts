@@ -18,7 +18,7 @@ const storeWithRelease = (releaseId: number) => {
       {
         model: "GameRelease",
         key: hash.computePoseidonHashOnElements([1n]),
-        value: { game_id: 1, release_id: id, created_release_id: releaseId, preset_commitment: "0x789" },
+        value: { game_id: 1, release_id: id, created_release_id: releaseId },
       },
     ]);
   writeRelease(releaseId);
@@ -58,7 +58,7 @@ describe("a game command as the player's own invoke", () => {
     expect(account.execute.mock.calls[0]![0]).toEqual({
       contractAddress: GAMES,
       entrypoint: "play",
-      calldata: ["1", "1", String(0x789n), "2", "6", "7"],
+      calldata: ["1", "1", "2", "6", "7"],
     });
   });
 
@@ -82,7 +82,7 @@ describe("a game command as the player's own invoke", () => {
     expect(account.execute.mock.calls[0]![0]).toEqual({
       contractAddress: GAMES,
       entrypoint: "play",
-      calldata: ["1", "2", String(0x789n), String(EXPLORE.length), ...EXPLORE],
+      calldata: ["1", "2", String(EXPLORE.length), ...EXPLORE],
     });
   });
 

@@ -61,7 +61,7 @@ it("answers the attack on the ruin as the chain clears it, and its payout story 
   new WorldUpdateListener({ store: chain } as unknown as GameClientSetup).SitePayouts.onSitePayout(paid);
 
   const answered = scenario.answer(
-    { kind: "BattleGuard", fields: { attacker_id: String(SPIRE_ARMY), defender_id: String(SITE) }, calldata: [] },
+    { kind: "BattleGuard", fields: { attacker_id: String(SPIRE_ARMY), defender_id: String(SITE) }, span: [] },
     chain,
     scenario.startsAt + 10,
   );

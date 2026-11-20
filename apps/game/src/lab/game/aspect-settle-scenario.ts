@@ -35,7 +35,7 @@ export const aspectSettleScenario = (): LabScenario => {
     ...scenario,
     answer: (command, chain, now) => {
       if (command.kind !== "SettleSeason") return scenario.answer(command, chain, now);
-      const payload = command.calldata.slice(5).map(Number);
+      const payload = command.span.slice(1).map(Number);
       if (payload.length !== 3 || payload[0] !== 1 || payload[1] !== 0)
         throw new Error("The free home needs an Order and no selected Realm");
       const chosen = orders.find(({ orderId }) => orderId === payload[2]);
