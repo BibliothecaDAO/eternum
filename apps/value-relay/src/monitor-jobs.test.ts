@@ -275,6 +275,7 @@ describe.each(["paidClaims"] as const)(
             rewind: false,
             fromBlock: 0,
           }),
+        postedResults: () => page([]),
         paidClaims: () => page(stream === "paidClaims" ? ledger.paid : []),
         pause,
       },

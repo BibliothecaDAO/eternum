@@ -16,6 +16,7 @@ import {
   type LedgerPage,
   type LedgerAnchor,
   type PaidClaim,
+  type PostedResult,
   type ReportedClaim,
   type MonitorPorts,
 } from "./ports";
@@ -42,7 +43,7 @@ export const ledgerMonitorReads = (
   ledger: LedgerContract,
 ): Pick<
   MonitorPorts["ledger"],
-  "reportedClaims" | "paidClaims" | "frontierPool" | "finalFrontierPool"
+  "reportedClaims" | "paidClaims" | "postedResults" | "frontierPool" | "finalFrontierPool"
 > => {
   const address = ledger.contractAddress;
   return {
@@ -81,6 +82,10 @@ export const ledgerMonitorReads = (
     reportedClaims: (cursor, fromBlock, anchor) =>
       relayOperation("read ledger reported claims", () =>
         ledgerEventPage(rpcAt(rpcUrl), ledger, ["WithdrawalReported"], cursor, fromBlock, decodeReport, anchor),
+      ),
+    postedResults: (cursor, fromBlock, anchor) =>
+      relayOperation("read ledger posted results", () =>
+        ledgerEventPage(rpcAt(rpcUrl), ledger, ["ResultsApplied"], cursor, fromBlock, decodeResult, anchor),
       ),
     paidClaims: (cursor, fromBlock, anchor) =>
       relayOperation("read ledger paid claims", async () => {
@@ -186,6 +191,10 @@ const readCursor = (value: string): { head: number; token: string; hash?: string
     token: cursor.token,
     ...(typeof cursor.hash === "string" ? { hash: cursor.hash } : {}),
   };
+};
+const decodeResult = (event: EmittedEvent): PostedResult => {
+  if (event.keys.length !== 3 || event.data.length !== 5) throw new Error("invalid_result_event");
+  return { chainId: event.keys[1]!, gameId: ledgerInteger(event.keys[2]!), commitment: event.data[2]! };
 };
 const decodeReport = (event: EmittedEvent): ReportedClaim => {
   const { paymentTransactionHash, ...report } = decodePayment(event);

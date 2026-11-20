@@ -535,6 +535,7 @@ it.each([false, true])(
         finalFrontierPool: () => Effect.succeed(null),
         reportedClaims: () =>
           Effect.succeed({ ...page, rows: [...(leading ? [report("0xabc", 17n)] : []), report("0xdef", 6000n)] }),
+        postedResults: () => Effect.succeed({ ...page, rows: [] }),
         paidClaims: () => Effect.succeed({ ...page, rows: [] }),
       },
     };

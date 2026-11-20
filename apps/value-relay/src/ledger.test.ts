@@ -4,6 +4,7 @@ import { Effect } from "effect";
 import { hash } from "starknet";
 import { beforeEach, expect, it, vi } from "vitest";
 import { ledgerChestChanges, ledgerMonitorReads } from "./ledger";
+import { runMonitor, type MonitorProgress } from "./monitor";
 
 const rpc = vi.hoisted(() => ({
   call: vi.fn(),
@@ -265,4 +266,45 @@ it("enumerates confirmed withdrawal reports before payments using the compiled r
       to_block: { block_number: 1000 },
     }),
   );
+});
+it("pauses payouts on any result the ledger records, since no game family posts one", async () => {
+  const event = ledgerEvent("ResultsApplied", {
+    key: { shard: 1, game_id: 7 },
+    slot_id: 12,
+    season_id: 1,
+    result_commitment: "0x5",
+    pool: { low: 0, high: 0 },
+  });
+  rpc.events.mockImplementation(async ({ keys }: { keys: string[][] }) => ({
+    events:
+      keys[0]![0] === hash.getSelectorFromName("ResultsApplied")
+        ? [{ ...event, from_address: "0x10", transaction_hash: "0xdef", block_number: 900, block_hash: "0xa" }]
+        : [],
+    continuation_token: "",
+  }));
+  const pause = vi.fn(() => Effect.void);
+  const reads = ledgerMonitorReads(credentials.rpcUrl, ledger);
+  let saved: MonitorProgress = { halted: null };
+  const progress = await Effect.runPromise(
+    runMonitor(
+      {
+        identity: { matchesPayDecision: () => Effect.succeed(true) },
+        shard: {
+          withdrawalReceipt: () => Effect.succeed(null),
+          withdrawal: () => Effect.succeed(null),
+          conservation: () => Effect.succeed([]),
+        },
+        ledger: { ...reads, pause },
+      },
+      {
+        load: async () => saved,
+        save: async (next) => {
+          saved = next;
+        },
+      },
+    ),
+  );
+  expect(progress.halted).toBe("blitz_result_posted:7");
+  expect(progress.fault?.row).toBe("postedResults:0x1:7");
+  expect(pause).toHaveBeenCalledTimes(1);
 });

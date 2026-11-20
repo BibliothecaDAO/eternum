@@ -39,7 +39,7 @@ const AUDIT_DUE = "audit:due";
 
 /** What `tick` returns when the audit ran: errors and unread pages mean more to do; a halted monitor waits for its operator. */
 const auditFinished = (observation: {
-  value: { halted: string | null; cursors?: Partial<Record<"reportedClaims" | "paidClaims", { page: string | null }>> } | null;
+  value: { halted: string | null; cursors?: Record<string, { page: string | null } | undefined> } | null;
   value_error: string | null;
   season_error: string | null;
   deposit_error?: string | null;
@@ -50,7 +50,7 @@ const auditFinished = (observation: {
       observation.value_error === null &&
       !observation.deposit_error &&
       (observation.season_error === null || observation.season_error.startsWith("season_review_pending")) &&
-      [observation.value.cursors?.reportedClaims, observation.value.cursors?.paidClaims].every((cursor) => !cursor?.page);
+      Object.values(observation.value.cursors ?? {}).every((cursor) => !cursor?.page);
 
 export class ValueMonitor extends DurableObject<MonitorEnv> {
   private readonly checking = Semaphore.makeUnsafe(1);
@@ -359,6 +359,8 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage): Monitor
         relayOperation("ledger reports unavailable", () => Effect.runPromise(ledgerReads().reportedClaims(...read))),
       paidClaims: (...read: Parameters<LedgerPorts["paidClaims"]>) =>
         relayOperation("ledger paid claims unavailable", () => Effect.runPromise(ledgerReads().paidClaims(...read))),
+      postedResults: (...read: Parameters<LedgerPorts["postedResults"]>) =>
+        relayOperation("ledger results unavailable", () => Effect.runPromise(ledgerReads().postedResults(...read))),
       pause: () =>
         relayOperation("ledger pause unavailable", () =>
           Effect.runPromise(

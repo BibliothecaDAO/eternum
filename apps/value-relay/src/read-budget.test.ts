@@ -216,6 +216,7 @@ function auditPoolReads(games: number, audits: number, finalAt: { block: number;
       frontierPool: poolReads,
       finalFrontierPool: finalReads,
       reportedClaims: () => Effect.succeed(page),
+      postedResults: () => Effect.succeed(page),
       paidClaims: () => Effect.succeed(page),
       pause: () => Effect.void,
     },

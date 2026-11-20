@@ -99,7 +99,7 @@ const fixture = () => {
     ledger: RelayPorts["ledger"] &
       Pick<
         MonitorPorts["ledger"],
-        "reportedClaims" | "paidClaims" | "frontierPool" | "finalFrontierPool"
+        "reportedClaims" | "paidClaims" | "postedResults" | "frontierPool" | "finalFrontierPool"
       >;
     shard: RelayPorts["shard"] & Pick<MonitorPorts["shard"], "withdrawalReceipt" | "conservation">;
   } = {
@@ -151,6 +151,7 @@ const fixture = () => {
           rewind: false,
           fromBlock: 0,
         }),
+      postedResults: () => Effect.succeed({ rows: [], next: null, head: 1000, anchor: { number: 1000, hash: "0xa" }, rewind: false, fromBlock: 1 }),
       paidClaims: () =>
         Effect.succeed({
           rows: [{ ...withdrawal, paymentTransactionHash: "0xdef", paidAt: 1000, wallet: "0x123" }],

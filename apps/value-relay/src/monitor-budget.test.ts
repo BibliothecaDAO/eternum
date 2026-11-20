@@ -35,6 +35,7 @@ vi.mock("./chain", () => ({ ledgerPauserAdapter: () => calls.pause }));
 const ports = vi.hoisted(() => ({
   reportedClaims: vi.fn(),
   paidClaims: vi.fn(),
+  postedResults: vi.fn(),
   frontierPool: vi.fn(),
   finalFrontierPool: vi.fn(),
 }));
@@ -71,6 +72,7 @@ beforeEach(() => {
   });
   ports.reportedClaims.mockReturnValue(Effect.succeed({ ...page, head: 0, fromBlock: 0 }));
   ports.paidClaims.mockReturnValue(Effect.succeed(page));
+  ports.postedResults.mockReturnValue(Effect.succeed(page));
 });
 const storage = new Map<string, unknown>();
 const monitorOver = (data: Map<string, unknown>) =>
@@ -91,11 +93,11 @@ const monitorOver = (data: Map<string, unknown>) =>
     } as never,
   );
 const chainReads = () =>
-  [ports.reportedClaims, ports.paidClaims, calls.season, calls.custody, calls.balance].reduce(
+  [ports.reportedClaims, ports.paidClaims, ports.postedResults, calls.season, calls.custody, calls.balance].reduce(
     (total, read) => total + read.mock.calls.length,
     0,
   );
-const AUDIT = 5;
+const AUDIT = 6;
 /** Runs the cron for these minutes, as the Worker does: asks every minute, says `hourly` on the hour. */
 async function minutes(worker: ValueMonitor, from: number, to: number, onMinute?: (minute: number) => Promise<void>) {
   for (let minute = from; minute < to; minute++) {

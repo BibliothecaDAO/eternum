@@ -42,6 +42,8 @@ vi.mock("./ledger", () => ({
         rewind: false,
         fromBlock: 0,
       }),
+    postedResults: () =>
+      Effect.succeed({ rows: [], head: 1, anchor: { number: 1, hash: "0xa" }, rewind: false, next: null }),
     paidClaims: () =>
       Effect.succeed({ rows: [], head: 1, anchor: { number: 1, hash: "0xa" }, rewind: false, next: null }),
   }),

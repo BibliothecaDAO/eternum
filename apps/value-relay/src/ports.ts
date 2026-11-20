@@ -84,6 +84,11 @@ export interface PaidClaim extends Omit<Withdrawal, "realmsId" | "confirmedAt"> 
   paidAt: number;
   paymentTransactionHash: string;
 }
+export interface PostedResult {
+  chainId: string;
+  gameId: number;
+  commitment: string;
+}
 export interface LedgerPage<A> {
   rows: readonly A[];
   next: string | null;
@@ -158,6 +163,11 @@ export interface MonitorPorts {
       anchor?: LedgerAnchor,
     ): RelayEffect<LedgerPage<ReportedClaim>>;
     paidClaims(after: string | null, fromBlock?: number, anchor?: LedgerAnchor): RelayEffect<LedgerPage<PaidClaim>>;
+    postedResults(
+      after: string | null,
+      fromBlock?: number,
+      anchor?: LedgerAnchor,
+    ): RelayEffect<LedgerPage<PostedResult>>;
     pause(): RelayEffect<void>;
   };
 }
