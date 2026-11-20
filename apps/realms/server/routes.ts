@@ -122,7 +122,6 @@ export const routeIdentityRequest = async (
   if (pathname === "/api/devices/bots" && request.method === "POST") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
     return handleBotDeviceApproval(request, {
-      db: env.DB,
       guardian: env.GUARDIAN,
       accountClassHash: ACCOUNT_CLASS_HASH,
     });

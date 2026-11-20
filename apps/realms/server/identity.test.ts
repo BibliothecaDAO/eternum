@@ -12,7 +12,7 @@ import {
 } from "@realms-world/identity";
 import { botRealmsId, deviceChangeHash, realmsAccountAddress } from "@realms-world/identity/account";
 import { createGuardian } from "@realms-world/guardian";
-import { byteArray, CallData, ec, hash, outsideExecution, typedData, type TypedData } from "starknet";
+import { byteArray, CallData, constants, ec, hash, outsideExecution, typedData, type TypedData } from "starknet";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 
 import { Effect } from "effect";
@@ -1147,7 +1147,7 @@ describe("identity Worker", () => {
     expect(await refused.json()).toEqual({ error: "account_not_secured" });
   });
 
-  it("signs player and bot changes only for the listed chain", async () => {
+  it("signs a player's change only for the listed chain, a bot's first device on any shard chain, and neither on Starknet", async () => {
     const browser = createBrowser();
     await signInWithCode(browser, "chain-allow-list@realms.test");
     const player = deviceChangeFor((await browser.session())!.user.realmsId);
@@ -1156,34 +1156,36 @@ describe("identity Worker", () => {
       label: "0xb07",
       account: realmsAccountAddress(botRealmsId("0xb07"), ACCOUNT_CLASS_HASH, await env.GUARDIAN.publicKey()),
     };
-    const changes = [
-      ["/api/devices", player],
-      ["/api/devices/bots", bot],
-    ] as const;
     const signing = vi.spyOn(env.GUARDIAN, "signDeviceChange");
+    const ask = async (path: string, change: object, chainId: string) => {
+      signing.mockClear();
+      const response = await browser.request(path, { body: { ...change, chainId }, token: OPERATOR_TOKEN });
+      return { status: response.status, body: await response.json(), signed: signing.mock.calls.length };
+    };
     try {
-      for (const listed of [true, false]) {
-        if (listed) await listShard("https://devices.realms.test", CHAIN_ID);
-        else await env.DB.prepare("DELETE FROM shards").run();
-        for (const [path, change] of changes) {
-          signing.mockClear();
-          const response = await browser.request(path, {
-            body: { ...change, chainId: `0x0${CHAIN_ID.slice(2)}` },
-            token: OPERATOR_TOKEN,
-          });
-          expect(response.status).toBe(listed ? 200 : 403);
-          expect(signing).toHaveBeenCalledTimes(listed ? 1 : 0);
-        }
-      }
       await listShard("https://devices.realms.test", CHAIN_ID);
-      for (const chainId of ["0x123", "0x534e5f4d41494e", "0x534e5f5345504f4c4941"]) {
-        for (const [path, change] of changes) {
-          signing.mockClear();
-          const response = await browser.request(path, { body: { ...change, chainId }, token: OPERATOR_TOKEN });
-          expect(response.status).toBe(403);
-          expect(await response.json()).toEqual({ error: "chain_not_approved" });
-          expect(signing).not.toHaveBeenCalled();
-        }
+      const listed = `0x0${CHAIN_ID.slice(2)}`;
+      expect((await ask("/api/devices", player, listed)).signed).toBe(1);
+      expect((await ask("/api/devices/bots", bot, listed)).signed).toBe(1);
+      await env.DB.prepare("DELETE FROM shards").run();
+      expect(await ask("/api/devices", player, listed)).toEqual({
+        status: 403,
+        body: { error: "chain_not_approved" },
+        signed: 0,
+      });
+      const unlisted = await ask("/api/devices/bots", bot, "0x123");
+      expect([unlisted.status, unlisted.signed]).toEqual([200, 1]);
+      for (const chainId of Object.values(constants.StarknetChainId)) {
+        await listShard("https://devices.realms.test", chainId);
+        for (const [path, change] of [
+          ["/api/devices", player],
+          ["/api/devices/bots", bot],
+        ] as const)
+          expect(await ask(path, change, chainId)).toEqual({
+            status: 403,
+            body: { error: "chain_not_approved" },
+            signed: 0,
+          });
       }
     } finally {
       signing.mockRestore();

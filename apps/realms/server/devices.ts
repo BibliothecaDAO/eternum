@@ -1,5 +1,6 @@
 import { normalizeStarknetAddress as canonicalFelt } from "@realms-world/identity";
 import { Data, Effect, Schema } from "effect";
+import { constants } from "starknet";
 import { botRealmsId, realmsAccountAddress, type DeviceChange } from "@realms-world/identity/account";
 import type { Guardian } from "@realms-world/guardian";
 
@@ -95,7 +96,7 @@ const BotDeviceRequest = Schema.Struct({
  */
 export const handleBotDeviceApproval = (
   request: Request,
-  { db, guardian, accountClassHash }: Pick<DeviceChangeDependencies, "db" | "guardian" | "accountClassHash">,
+  { guardian, accountClassHash }: Pick<DeviceChangeDependencies, "guardian" | "accountClassHash">,
 ): Promise<Response> =>
   Effect.runPromise(
     Effect.gen(function* () {
@@ -115,7 +116,7 @@ export const handleBotDeviceApproval = (
         return yield* new DeviceRequestError({ code: "not_a_bot_account", status: 403 });
       }
       const change: DeviceChange = requested;
-      const signature = yield* signListedDeviceChange(db, guardian, change);
+      const signature = yield* signDeviceChange(guardian, change);
       return json({ ...change, signature: [signature.r, signature.s] });
     }).pipe(
       Effect.catchTag("DeviceRequestError", (error) => Effect.succeed(json({ error: error.code }, error.status))),
@@ -129,8 +130,16 @@ const signListedDeviceChange = (db: D1Database, guardian: Guardian, change: Devi
       catch: () => new DeviceRequestError({ code: "shard_list_unavailable", status: 503 }),
     });
     if (!shard) return yield* new DeviceRequestError({ code: "chain_not_approved", status: 403 });
-    return yield* Effect.promise(() => guardian.signDeviceChange(change));
+    return yield* signDeviceChange(guardian, change);
   });
+
+const isPublicStarknet = (chainId: string) =>
+  Object.values(constants.StarknetChainId).some((chain) => BigInt(chain) === BigInt(chainId));
+
+const signDeviceChange = (guardian: Guardian, change: DeviceChange) =>
+  isPublicStarknet(change.chainId)
+    ? Effect.fail(new DeviceRequestError({ code: "chain_not_approved", status: 403 }))
+    : Effect.promise(() => guardian.signDeviceChange(change));
 
 const readDeviceChange = (request: Request) =>
   Effect.tryPromise({ try: () => request.json(), catch: () => undefined }).pipe(
