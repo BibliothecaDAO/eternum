@@ -15,6 +15,7 @@ import { knownAmount } from "@/ui/utils/utils";
 import {
   ArmyActionManager,
   ATTACK_FORECAST_MODELS,
+  configManager,
   forecastAttack,
   getBalance,
   getTileAt,

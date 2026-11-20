@@ -131,7 +131,8 @@ const Standing = () => {
   const { season } = useSeason();
   const { data: player } = useRealmsPlayer();
   const board = useLeaderboard(season ? gameRefOf(season) : null);
-  const own = findOwnEntry(board.data?.entries ?? [], player);
+  const entries = board.data?.entries ?? [];
+  const own = findOwnEntry(entries, player);
   if (!own) return null;
   return (
     <AppPanel>
