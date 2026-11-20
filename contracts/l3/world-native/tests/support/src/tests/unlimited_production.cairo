@@ -37,9 +37,10 @@ pub fn labor_stays_unlimited_through_every_settlement() {
     let (deployment, home, _) = super::resource_commands::setup();
     let start = super::play_fixture::FIXTURE_START;
     start_unlimited_labor(deployment, home, start + 40);
+    let rate: u128 = resources(deployment).resource_production(slot(home, LABOR)).production_rate.into();
     let before = resources(deployment).resource_balance(slot(home, LABOR));
     for timestamp in array![start + 50, start + 60, start + 75, start + 100] {
         assert_eq!(settle(deployment, home, LABOR, timestamp).output_amount_left, UNLIMITED_OUTPUT);
     }
-    assert_eq!(resources(deployment).resource_balance(slot(home, LABOR)), before + 3 * 60);
+    assert_eq!(resources(deployment).resource_balance(slot(home, LABOR)), before + rate * 60);
 }

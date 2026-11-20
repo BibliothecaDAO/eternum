@@ -17,8 +17,8 @@ pub fn create(home: ResourceKey, category: u8) -> Command {
         CreateBuilding { structure_id: home.entity_id, directions: array![0_u8].span(), category, use_simple: true },
     )
 }
-pub fn east() -> BuildingKey {
-    BuildingKey { game_id: 3, structure_id: 1, inner_col: 11, inner_row: 10 }
+pub fn east(home: ResourceKey) -> BuildingKey {
+    BuildingKey { game_id: home.game_id, structure_id: home.entity_id, inner_col: 11, inner_row: 10 }
 }
 pub fn change(home: ResourceKey) -> ChangeBuilding {
     ChangeBuilding { structure_id: home.entity_id, coord: Coord { alt: false, x: 11, y: 10 } }
