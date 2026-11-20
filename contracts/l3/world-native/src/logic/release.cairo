@@ -76,7 +76,7 @@ pub mod ReleaseState {
         }
 
         fn apply_release(ref self: ComponentState<TContractState>, game_id: u32, release_id: u32) {
-            let game = crate::logic::game::game(game_id);
+            crate::logic::game::game(game_id);
             super::assert_launcher();
             let target = self.release(release_id);
             let previous_release = self.game_release(game_id);
@@ -86,7 +86,7 @@ pub mod ReleaseState {
             assert!(release_id == previous_release + 1, "release must follow game pin");
             // A failed migration reverts the pin and every data write in the same transaction.
             self.data.game_releases.write(game_id, release_id);
-            crate::logic::game::emit_release(game_id, release_id, crate::logic::game::preset_commitment(game));
+            crate::logic::game::emit_release(game_id, release_id);
             if target.migration.is_non_zero() {
                 IReleaseMigrationLibraryDispatcher { class_hash: target.migration }
                     .migrate(game_id, previous_release, release_id);

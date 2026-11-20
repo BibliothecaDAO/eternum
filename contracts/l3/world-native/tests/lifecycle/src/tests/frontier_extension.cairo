@@ -1,5 +1,5 @@
 use snforge_std::{start_cheat_block_timestamp, start_cheat_chain_id};
-use starknet::storage::{StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
+use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
 use world_test_support::tests::releases::*;
 use crate::approved_frontier_extension as approved;
 
@@ -28,7 +28,7 @@ fn setup() -> super::Deployment {
         || {
             crate::state::write()
                 .presets
-                .entry(crate::logic::game::preset_commitment(crate::logic::game::game(1)))
+                .entry(crate::state::read().registrar.presets.read(crate::logic::game::game(1).preset_id))
                 .rollover_chest_rules
                 .write(Some(chest_rules));
             crate::state::write()

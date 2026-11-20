@@ -82,10 +82,9 @@ pub mod GamesEntry {
             ref self: ComponentState<TContractState>,
             game_id: u32,
             release_id: u32,
-            preset_commitment: felt252,
             command: Span<felt252>,
         ) {
-            let actor = self.validate_play(game_id, release_id, preset_commitment, command);
+            let actor = self.validate_play(game_id, release_id, command);
             let timestamp = starknet::get_block_timestamp();
             self.assign_settlement_home_before_roll(game_id, actor, command);
             let raw_root = self.verify_stamp_before_roll();
@@ -133,7 +132,6 @@ pub mod GamesEntry {
             self: @ComponentState<TContractState>,
             game_id: u32,
             release_id: u32,
-            preset_commitment: felt252,
             command: Span<felt252>,
         ) -> ContractAddress {
             let actor = get_caller_address();
@@ -145,7 +143,6 @@ pub mod GamesEntry {
             assert!(game_id != 0 && crate::logic::game::game_exists(game_id), "invalid game");
             let game = crate::logic::game::game(game_id);
             assert!(release_id == self.data.game_releases.read(game_id), "stale release");
-            assert!(preset_commitment == crate::logic::game::preset_commitment(game), "invalid preset");
             crate::commands::ICommandIngressDispatcherTrait::validate_command(
                 crate::commands::ICommandIngressLibraryDispatcher {
                     class_hash: get_dep_component!(self, Release).classes(game_id).placement.read(),

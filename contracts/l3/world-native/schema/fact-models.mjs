@@ -1488,7 +1488,6 @@ export function defineFactModels({ struct, model: declare }) {
       [{ name: "game_id", type: "core::integer::u32" }],
       [
         { name: "release_id", type: "core::integer::u32" },
-        { name: "preset_commitment", type: "core::felt252" },
         { name: "created_release_id", type: "core::integer::u32" },
       ],
     ),

@@ -213,12 +213,12 @@ pub fn set_launcher(deployment: Deployment, launcher: ContractAddress) {
 
 #[feature("safe_dispatcher")]
 pub fn assert_entry_refusal(
-    deployment: Deployment, game_id: u32, release: u32, preset: felt252, command: Span<felt252>, message: ByteArray,
+    deployment: Deployment, game_id: u32, release: u32, command: Span<felt252>, message: ByteArray,
 ) {
     let before = play_fixture::pins(deployment.games, 1);
     let mut spy = spy_events();
     let error = IPlayFixtureSafeDispatcher { contract_address: deployment.games }
-        .play_with_root(game_id, release, preset, command, 987654321)
+        .play_with_root(game_id, release, command, 987654321)
         .unwrap_err();
     let mut expected = array![core::byte_array::BYTE_ARRAY_MAGIC];
     message.serialize(ref expected);

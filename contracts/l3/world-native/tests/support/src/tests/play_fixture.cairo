@@ -16,7 +16,7 @@ pub struct TestAction {
 #[starknet::interface]
 pub trait IPlayFixture<T> {
     fn play_with_root(
-        ref self: T, game_id: u32, release_id: u32, preset_commitment: felt252, command: Span<felt252>, root: u256,
+        ref self: T, game_id: u32, release_id: u32, command: Span<felt252>, root: u256,
     );
     fn last_applied(self: @T) -> bool;
 }
@@ -137,15 +137,8 @@ pub fn seed_game_with_preset(
         },
     );
 }
-pub fn pins(games: ContractAddress, game_id: u32) -> (u32, felt252) {
-    snforge_std::interact_with_state(
-        games,
-        || {
-            let state = crate::state::read();
-            let game = crate::logic::game::game(game_id);
-            (state.game_releases.read(game_id), crate::logic::game::preset_commitment(game))
-        },
-    )
+pub fn pins(games: ContractAddress, game_id: u32) -> u32 {
+    snforge_std::interact_with_state(games, || crate::state::read().game_releases.read(game_id))
 }
 pub fn encode(command: Command) -> Span<felt252> {
     let mut encoded = array![];
@@ -159,10 +152,10 @@ pub fn caller(games: ContractAddress, actor: ContractAddress, timestamp: u64) {
     snforge_std::start_cheat_block_timestamp(games, timestamp);
 }
 pub fn play(games: ContractAddress, action: TestAction, root: u256, timestamp: u64) -> bool {
-    let (release, preset) = pins(games, action.game_id);
+    let release = pins(games, action.game_id);
     caller(games, action.actor, timestamp);
     let fixture = IPlayFixtureDispatcher { contract_address: games };
-    fixture.play_with_root(action.game_id, release, preset, encode(action.command), root);
+    fixture.play_with_root(action.game_id, release, encode(action.command), root);
     fixture.last_applied()
 }
 pub fn rejection(ref spy: snforge_std::EventSpy, games: ContractAddress) -> crate::commands::GameplayRejected {
@@ -181,7 +174,7 @@ pub fn rejection(ref spy: snforge_std::EventSpy, games: ContractAddress) -> crat
 
 #[feature("safe_dispatcher")]
 pub fn assert_preflight_rejection(games: ContractAddress, action: TestAction, timestamp: u64) {
-    let (release, preset) = pins(games, action.game_id);
+    let release = pins(games, action.game_id);
     let before = snforge_std::interact_with_state(
         games,
         || {
@@ -193,10 +186,10 @@ pub fn assert_preflight_rejection(games: ContractAddress, action: TestAction, ti
     let mut spy = snforge_std::spy_events();
     assert!(
         IPlayFixtureSafeDispatcher { contract_address: games }
-            .play_with_root(action.game_id, release, preset, encode(action.command), 987654321)
+            .play_with_root(action.game_id, release, encode(action.command), 987654321)
             .is_err(),
     );
-    assert_eq!(pins(games, action.game_id), (release, preset));
+    assert_eq!(pins(games, action.game_id), release);
     assert_eq!(
         snforge_std::interact_with_state(
             games,

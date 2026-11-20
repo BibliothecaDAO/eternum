@@ -115,7 +115,7 @@ pub mod RegistrarState {
             let game = build_game(params, rules.entry_rule);
             let overrides = game_overrides(game_id, params);
             crate::logic::game::create(game_id, game, overrides);
-            crate::logic::game::emit_release(game_id, release_id, crate::logic::game::preset_commitment(game));
+            crate::logic::game::emit_release(game_id, release_id);
             for player in params.roster {
                 crate::entity_ids::reserve_homes(game_id, (*player).account);
             }

@@ -16,7 +16,6 @@ test("Games exposes the published player frame, roles and frozen roster ABI", as
   assert.deepEqual(method("play").inputs, [
     { name: "game_id", type: "core::integer::u32" },
     { name: "release_id", type: "core::integer::u32" },
-    { name: "preset_commitment", type: "core::felt252" },
     { name: "command", type: "core::array::Span::<core::felt252>" },
   ]);
   assert.deepEqual(method("play").outputs, []);

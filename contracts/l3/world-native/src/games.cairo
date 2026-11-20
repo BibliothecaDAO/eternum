@@ -37,7 +37,7 @@ pub trait IGamesRoles<T> {
 
 #[starknet::interface]
 pub trait IGamesPlay<T> {
-    fn play(ref self: T, game_id: u32, release_id: u32, preset_commitment: felt252, command: Span<felt252>);
+    fn play(ref self: T, game_id: u32, release_id: u32, command: Span<felt252>);
 }
 
 #[starknet::interface]

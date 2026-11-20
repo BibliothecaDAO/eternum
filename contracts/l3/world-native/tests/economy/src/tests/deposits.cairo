@@ -280,7 +280,7 @@ fn mixed_sweep_keeps_both_balances_game_pinned_until_applied() {
 #[feature("safe_dispatcher")]
 fn season_one_rejects_lords_commands_and_cannot_configure_deposits() {
     let (d, game_id) = super::registrar::setup_open_frontier_preset("frontier", 1);
-    let (release, preset) = super::play_fixture::pins(d.games, game_id);
+    let release = super::play_fixture::pins(d.games, game_id);
     super::play_fixture::caller(d.games, d.actor, 360);
     for command in array![
         Command::OpenRelicChest(
@@ -288,7 +288,7 @@ fn season_one_rejects_lords_commands_and_cannot_configure_deposits() {
         ),
     ] {
         super::assert_entry_refusal(
-            d, game_id, release, preset, super::play_fixture::encode(command), "command disabled",
+            d, game_id, release, super::play_fixture::encode(command), "command disabled",
         );
     }
     start_cheat_caller_address(d.games, super::authority());
@@ -317,11 +317,11 @@ fn seed_deposit_source(games: starknet::ContractAddress, game_id: u32, source: D
 fn unknown_command_tags_refuse_before_a_roll(offset: u32) {
     let index: felt252 = (crate::command_routes::COMMAND_ROUTES.span().len() + offset).into();
     let (d, game_id) = super::registrar::setup_open_frontier_preset("frontier", 1);
-    let (release, preset) = super::play_fixture::pins(d.games, game_id);
+    let release = super::play_fixture::pins(d.games, game_id);
     super::play_fixture::caller(d.games, d.actor, 360);
     let before = super::play_fixture::gameplay_snapshot(d.games);
     let result = super::play_fixture::IPlayFixtureSafeDispatcher { contract_address: d.games }
-        .play_with_root(game_id, release, preset, array![index, 1, 1].span(), 123);
+        .play_with_root(game_id, release, array![index, 1, 1].span(), 123);
     assert!(result.is_err());
     assert_eq!(super::play_fixture::gameplay_snapshot(d.games), before);
 }

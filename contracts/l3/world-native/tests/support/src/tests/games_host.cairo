@@ -56,11 +56,10 @@ pub mod GamesTest {
             ref self: ContractState,
             game_id: u32,
             release_id: u32,
-            preset_commitment: felt252,
             command: Span<felt252>,
             root: u256,
         ) {
-            let actor = self.entry.validate_play(game_id, release_id, preset_commitment, command);
+            let actor = self.entry.validate_play(game_id, release_id, command);
             self.entry.assign_settlement_home_before_roll(game_id, actor, command);
             let applied = self.entry.apply_gameplay(game_id, actor, command, root, starknet::get_block_timestamp());
             self.last_applied.write(applied);

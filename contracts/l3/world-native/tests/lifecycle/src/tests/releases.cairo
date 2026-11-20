@@ -213,7 +213,7 @@ fn hotfix_refuses_old_release_pins_and_accepts_current_pins() {
         ),
         ..super::action(d, 1),
     };
-    let (old_release, commitment) = super::play_fixture::pins(d.games, 1);
+    let old_release = super::play_fixture::pins(d.games, 1);
     let releases = IReleasesDispatcher { contract_address: d.games };
     start_cheat_caller_address(d.games, authority());
     releases.register_release(2, releases.release(1));
@@ -226,14 +226,13 @@ fn hotfix_refuses_old_release_pins_and_accepts_current_pins() {
             super::play_fixture::IPlayFixtureSafeDispatcher { contract_address: d.games },
             1,
             old_release,
-            commitment,
             super::play_fixture::encode(action.command),
             987654321,
         )
             .is_err(),
     );
     assert_eq!(gameplay_facts(d.games), before);
-    assert_eq!(super::play_fixture::pins(d.games, 1), (2, commitment));
+    assert_eq!(super::play_fixture::pins(d.games, 1), 2);
     assert!(spy.get_events().emitted_by(d.games).events.is_empty());
     super::execute(d, action);
     assert!(GameState { contract_address: d.games }.explorer(ExplorerKey { game_id: 1, explorer_id: 8 }).is_some());

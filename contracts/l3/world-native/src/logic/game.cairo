@@ -82,14 +82,7 @@ pub fn mark_roster_ready(game_id: u32) {
     write_game(game_id, game);
 }
 
-/// The preset id is immutable; every game keeps the definition it launched with.
-pub fn preset_commitment(game: GameRegistry) -> felt252 {
-    let commitment = crate::state::read().registrar.presets.read(game.preset_id);
-    assert!(commitment != 0, "game has no preset");
-    commitment
-}
-
-pub fn emit_release(game_id: u32, release_id: u32, preset_commitment: felt252) {
+pub fn emit_release(game_id: u32, release_id: u32) {
     // Zero identifies games created before creation releases were recorded.
     let created_release_id = crate::state::read().game_creation_releases.read(game_id);
     emit_game_fact(
@@ -97,7 +90,7 @@ pub fn emit_release(game_id: u32, release_id: u32, preset_commitment: felt252) {
             version: 1,
             model: 'GameRelease',
             keys: array![game_id.into()].span(),
-            values: array![release_id.into(), preset_commitment, created_release_id.into()].span(),
+            values: array![release_id.into(), created_release_id.into()].span(),
         },
     );
 }
