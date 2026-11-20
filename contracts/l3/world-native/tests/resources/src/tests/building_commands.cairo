@@ -474,9 +474,9 @@ fn frontier_storage_grants_clip_at_each_exact_s2_cap_without_changing_troops() {
                 .at(level))
                 .into();
             let labor_store: u128 = (*crate::balance::structures::LABOR_STORES.span().at(level)).into();
-            let troop_cap: u128 = Into::<u32, u128>::into(
-                crate::troops::deployment_cap(crate::balance::rules::TROOP_LIMIT_CONFIG, level.try_into().unwrap()),
-            )
+            let troop_cap: u128 = Into::<
+                u32, u128,
+            >::into(crate::troops::deployment_cap(crate::balance::rules::TROOP_LIMIT_CONFIG, level.try_into().unwrap()))
                 * board.troop_store_deploys.into();
             for resource_type in array![crate::resources::WHEAT, crate::resources::LABOR, 26_u8] {
                 let store = if resource_type == crate::resources::WHEAT {

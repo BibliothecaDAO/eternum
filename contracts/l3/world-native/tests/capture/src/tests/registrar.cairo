@@ -178,7 +178,9 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
         }
     }
     assert!(troop_resource != 0, "starting garrison missing");
-    assert_eq!(crate::troops::max_army_size(crate::balance::rules::TROOP_LIMIT_CONFIG, 0, crate::troops::TroopTier::T1), 3000);
+    assert_eq!(
+        crate::troops::max_army_size(crate::balance::rules::TROOP_LIMIT_CONFIG, 0, crate::troops::TroopTier::T1), 3000,
+    );
     let muster = Command::CreateExplorer(
         CreateExplorer { slot: 0, structure_id: 1, category, tier: 0, amount: RESOURCE_PRECISION, direction: 5 },
     );
@@ -745,7 +747,9 @@ fn expedition_deploy_chooses_a_free_slot_and_refuses_occupied_or_unallowed_slots
     assert_eq!(army.troops.stamina, crate::troops::StaminaSource::Slot(1));
     assert_eq!(
         fresh.stamina.amount,
-        crate::progression::stamina_max(Default::default(), army.troops.category, crate::balance::rules::TROOP_STAMINA_CONFIG),
+        crate::progression::stamina_max(
+            Default::default(), army.troops.category, crate::balance::rules::TROOP_STAMINA_CONFIG,
+        ),
     );
     assert!(read_slot(crate::troops::ArmySlotKey { slot: 0, ..key }).is_none());
     let home = ResourceKey { game_id, entity_id: 1 };
@@ -814,7 +818,9 @@ fn expedition_slot_reuse_preserves_its_bar_and_the_next_day_allocates_a_fresh_ba
     let fresh = troops.explorer(ExplorerKey { game_id, explorer_id: next.explorer_id }).unwrap().troops;
     assert_eq!(
         next.stamina.amount,
-        crate::progression::stamina_max(Default::default(), fresh.category, crate::balance::rules::TROOP_STAMINA_CONFIG),
+        crate::progression::stamina_max(
+            Default::default(), fresh.category, crate::balance::rules::TROOP_STAMINA_CONFIG,
+        ),
     );
     assert_eq!(read_slot(slot_key).unwrap().stamina.amount, 7);
     assert_eq!(read_slot(slot_key).unwrap().explorer_id, 0);

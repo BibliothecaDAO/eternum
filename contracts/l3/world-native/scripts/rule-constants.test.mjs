@@ -26,11 +26,7 @@ test("the schema identity hashes every identifier and no tunable number", async 
   const identifiers = identifierConstants(balance);
   assert.deepEqual(wire.identifierConstants, identifiers);
   const identifierNames = new Set(Object.values(identifiers).flatMap(Object.keys));
-  assert.ok(
-    ["ENTRY_OPEN", "ENTRY_ROSTER", "ASH_FALL", "POWER"].every((name) =>
-      identifierNames.has(name),
-    ),
-  );
+  assert.ok(["ENTRY_OPEN", "ENTRY_ROSTER", "ASH_FALL", "POWER"].every((name) => identifierNames.has(name)));
   const hashed = JSON.stringify(wire);
   const tunables = Object.values(balance)
     .flatMap(Object.keys)
