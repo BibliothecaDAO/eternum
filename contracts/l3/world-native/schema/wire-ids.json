@@ -313,12 +313,12 @@
     {
       "id": 62,
       "name": "DepositResource",
-      "retired": false
+      "retired": true
     },
     {
       "id": 63,
       "name": "WithdrawResource",
-      "retired": false
+      "retired": true
     },
     {
       "id": 64,

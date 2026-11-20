@@ -177,7 +177,16 @@ function rulesModule(rules: PresetDefinition["rules"]): string {
 }
 
 function releaseSwitches(rules: PresetDefinition["rules"]): CairoRow {
+  assertSwitchesPlayable(rules);
   return Object.fromEntries([...SWITCHES].map((field) => [field, (rules as Record<string, CairoValue>)[field]]));
+}
+
+function assertSwitchesPlayable(rules: PresetDefinition["rules"]): void {
+  const day = Number(rules.day_unit_seconds);
+  const tick = Number(rules.tick_config.armies_tick_in_seconds);
+  if (Number(rules.entry_rule) !== cairoConstant("src/rules.cairo", "ENTRY_OPEN"))
+    throw new Error("Season 1 entry is open: the release seats no fixed roster");
+  if (day === 0 || tick === 0 || day % tick !== 0) throw new Error("Season 1 days are whole army ticks");
 }
 
 function deepModule(deep: DeepRow): string {
@@ -299,8 +308,10 @@ function assertSettlementFits(
   troops: string[],
   realmResources: number[],
 ): void {
-  if (!Number.isSafeInteger(spacing) || spacing < 2 || spacing % 2)
-    throw new Error("Season 1 settlement spacing must be an even number of at least 2");
+  if (!Number.isSafeInteger(spacing) || spacing < 16 || spacing % 2)
+    throw new Error("Season 1 settlement spacing must be an even number of at least 16");
+  if (spacing * cairoConstant("src/realms.cairo", "CANONICAL_REALM_COUNT") >= 0x7fffffff)
+    throw new Error("Season 1 settlement spacing exhausts the map");
   if (orderAspects.length !== 16) throw new Error("Season 1 Aspects need every Order");
   for (const aspect of [1, 2, 3, 4])
     if (orderAspects.filter((held) => held === aspect).length !== 4)
@@ -356,6 +367,7 @@ function assertDiscoveryFits(rules: CairoRow, clearMistPercent: number): void {
 }
 
 function questsModule(quests: QuestRules): string {
+  assertQuestsPlayable(quests);
   return [
     numbers("BASE_COUNTS", "u32", quests.base_counts),
     number("LABOR_AMOUNT", "u128", quests.labor),
@@ -365,6 +377,7 @@ function questsModule(quests: QuestRules): string {
 }
 
 function banesModule(banes: BaneRules): string {
+  assertBanesPlayable(banes);
   return [
     number("CHANCE_STEP_PERCENT", "u16", banes.chance_step),
     number("QUORUM_PERCENT", "u16", banes.quorum_percent),
@@ -373,6 +386,34 @@ function banesModule(banes: BaneRules): string {
     number("PRODUCTION_PERCENT", "u16", banes.production_percent),
     numbers("QUEST_COUNTS", "u128", banes.quest_counts),
   ].join("\n\n");
+}
+
+function assertQuestsPlayable(quests: QuestRules): void {
+  const refuse = (reason: string) => {
+    throw new Error(`Season 1 quests: ${reason}`);
+  };
+  if (quests.base_counts.length !== cairoConstant("src/quests.cairo", "QUEST_COUNT")) refuse("a bag of seven quests");
+  if (quests.base_counts.some((count) => Number(count) === 0)) refuse("empty quest target");
+  const labor = BigInt(quests.labor);
+  const essence = BigInt(quests.essence);
+  if (labor === 0n || essence === 0n) refuse("empty quest reward");
+  if (Number(quests.bonus_percent) < 100) refuse("the bonus reduces the reward");
+  const largest = ((1n << 128n) - 1n) / BigInt(cairoConstant("src/rules.cairo", "RESOURCE_PRECISION"));
+  if ((labor * 8n * BigInt(quests.bonus_percent)) / 100n > largest || essence * 8n > largest)
+    refuse("the reward exceeds a resource amount");
+}
+
+function assertBanesPlayable(banes: BaneRules): void {
+  const percent = (field: keyof BaneRules) => Number(banes[field]);
+  const within = (value: number) => value > 0 && value <= 100;
+  const refuse = (reason: string) => {
+    throw new Error(`Season 1 banes: ${reason}`);
+  };
+  if (!within(percent("chance_step")) || !within(percent("quorum_percent"))) refuse("invalid chance or quorum");
+  if (percent("beast_percent") < 100) refuse("a world bane weakens beasts");
+  if (!within(percent("stamina_percent")) || !within(percent("production_percent"))) refuse("invalid rate");
+  if (banes.quest_counts.length !== 12 || banes.quest_counts.some((count) => Number(count) === 0))
+    refuse("four Realm levels of quest targets for each bane");
 }
 
 function present<T>(option: { unwrap(): unknown }, group: string): T {

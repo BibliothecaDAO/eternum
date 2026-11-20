@@ -1,24 +1,5 @@
-pub type Preset =
-    games_storage::presets::PresetStorage<
-        crate::rules::SliceRules,
-        crate::resources::ResourceAmount,
-        crate::production::RecipeTerms,
-        crate::mines::MineKindConfig,
-        crate::mines::MineWeight,
-        crate::buildings::BoardRules,
-        crate::research::ResearchPrice,
-        crate::buildings::BuildingTerms,
-        crate::upgrades::UpgradeLimits,
-        crate::bridge::DepositRules,
-        crate::withdrawals::WithdrawalTerms,
-        crate::withdrawals::Retention,
-        crate::deep::DeepSettings,
-        crate::race::RaceRules,
-    >;
-
 pub type Storage =
     games_storage::games::GamesStorage<
-        Preset,
         crate::resources::ResourceAmount,
         crate::bitcoin::Phase,
         crate::bitcoin::Contribution,

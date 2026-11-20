@@ -18,12 +18,6 @@ pub struct MineKindConfig {
     pub cap_steps: u32,
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct MineKindEntry {
-    pub kind: u8,
-    pub config: MineKindConfig,
-}
-
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct MineWeight {
     pub kind: u8,

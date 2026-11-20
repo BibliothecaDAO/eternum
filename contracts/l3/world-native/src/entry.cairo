@@ -36,14 +36,6 @@ pub struct LaborHome {
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct LaborRules {
-    pub amount: u128,
-    pub campaign_essence: u128,
-    pub golden_amount: u128,
-    pub golden_essence: u128,
-}
-
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct LaborGrant {
     pub game_id: u32,
     pub account: ContractAddress,

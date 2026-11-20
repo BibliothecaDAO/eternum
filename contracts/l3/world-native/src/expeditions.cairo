@@ -82,17 +82,15 @@ pub fn depth_reward(amount: u128, depth: u8) -> u128 {
     amount * (2 + depth.into()) / 2
 }
 
-pub fn validate_game(rules: crate::registrar::LaunchRules, start: u64, duration: u64) {
-    if rules.day_unit_seconds == 0 {
-        return;
-    }
-    assert!(rules.spacing >= 16, "expedition regions are too small");
-    assert!(start % rules.armies_tick_seconds == 0, "season does not start on a tick");
-    assert!(duration > 0 && duration % rules.armies_tick_seconds == 0, "season does not end on a tick");
-    let spacing: u128 = rules.spacing.into();
+pub fn validate_game(start: u64, duration: u64) {
+    let tick = crate::balance::rules::TICK_CONFIG.armies_tick_in_seconds;
+    assert!(start % tick == 0, "season does not start on a tick");
+    assert!(duration > 0 && duration % tick == 0, "season does not end on a tick");
+    let spacing: u128 = crate::logic::settlement::spacing().into();
     // Before the seed is drawn, bound the map using the shortest possible day.
-    let season_days: u128 = (duration / (2 * Into::<u32, u64>::into(rules.day_unit_seconds))).into() + 3;
-    assert!(spacing * crate::realms::CANONICAL_REALM_COUNT.into() < 0x7fffffff, "expedition map exhausted");
+    let season_days: u128 = (duration / (2 * Into::<u32, u64>::into(crate::balance::rules::SWITCHES.day_unit_seconds)))
+        .into()
+        + 3;
     assert!(season_days * 4 * spacing < 0x7fffffff, "expedition season exceeds map");
 }
 

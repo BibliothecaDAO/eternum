@@ -88,7 +88,7 @@ pub fn sweep(game_id: u32, account: ContractAddress) {
         return;
     }
     let game = crate::state::read().games.games.entry(game_id);
-    assert!(game.preset_id.read() != 0, "game does not exist");
+    assert!(crate::logic::game::game_exists(game_id), "game does not exist");
     assert!(starknet::get_block_timestamp() >= game.end_at.read(), "season has not ended");
     assert!(withdrawal(game_id, account).is_none(), "principal already swept");
     let amount = value.available;

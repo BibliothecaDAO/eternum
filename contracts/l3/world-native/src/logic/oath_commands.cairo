@@ -55,8 +55,6 @@ pub fn requires_answer(game_id: u32, command: Command) -> bool {
             ManageTroops::RecruitGuard(_) | ManageTroops::RemoveGuard(_) => false,
         },
         Command::GuardAttack(_) => false,
-        Command::DepositResource(_) => false,
-        Command::WithdrawResource(_) => false,
         Command::ProvisionAndUpgradeRealm(_) => false,
         Command::SetEntityName(value) => waiting(game_id, value.entity_id),
         Command::EnterDepth(value) => waiting(game_id, value.explorer_id),

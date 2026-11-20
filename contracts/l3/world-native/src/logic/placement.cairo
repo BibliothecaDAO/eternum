@@ -23,14 +23,6 @@ pub mod PlacementLogic {
             crate::logic::oath_commands::requires_answer(game_id, command)
         }
     }
-    #[abi(embed_v0)]
-    impl PresetSettlement of crate::presets::IPresetSettlement<ContractState> {
-        fn store_settlement_preset(
-            ref self: ContractState, commitment: felt252, settlement: crate::presets::SettlementPreset,
-        ) {
-            crate::logic::preset_record::store_settlement(commitment, settlement);
-        }
-    }
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {

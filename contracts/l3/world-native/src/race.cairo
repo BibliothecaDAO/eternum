@@ -65,10 +65,6 @@ pub trait IRace<T> {
 }
 
 
-pub fn validate(rules: RaceRules) {
-    assert!(rules == crate::balance::race::RACE_RULES, "race rules are not the release's");
-}
-
 // Largest remainders allocate the indivisible units; home identity breaks an exact tie.
 pub fn split_payment(amount: u128, shares: Span<crate::deep::DeepShare>) -> Span<u128> {
     assert!(!shares.is_empty() && shares.len() <= crate::rules::DEEP_GUARD_SLOTS.into(), "invalid reward guard count");

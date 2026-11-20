@@ -196,16 +196,6 @@ export const commandRoutes = [
     entrypoint: "guard_attack",
   },
   {
-    name: "DepositResource",
-    logic: "production",
-    entrypoint: "deposit_resource",
-  },
-  {
-    name: "WithdrawResource",
-    logic: "production",
-    entrypoint: "withdraw_resource",
-  },
-  {
     name: "ProvisionAndUpgradeRealm",
     logic: "structures",
     entrypoint: "provision_and_upgrade_realm",

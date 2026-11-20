@@ -29,7 +29,7 @@ pub mod LordsState {
             crate::logic::entry::assert_ledger_operator();
             let timestamp = starknet::get_block_timestamp();
             let game = self.data.games.games.entry(game_id);
-            assert!(game.preset_id.read() != 0, "game does not exist");
+            assert!(crate::logic::game::game_exists(game_id), "game does not exist");
             assert!(timestamp >= game.end_at.read(), "season has not ended");
             let realm = ResourceKey { game_id, entity_id: structure_id };
             let record = self.data.structures.structures.entry((game_id, structure_id));

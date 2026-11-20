@@ -13,14 +13,6 @@ pub const LIGHTS: u8 = 8;
 pub const CULL: u8 = 9;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct QuestRules {
-    pub base_counts: Span<u32>,
-    pub labor: u128,
-    pub essence: u128,
-    pub bonus_percent: u16,
-}
-
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ClaimDailyQuest {
     pub home: u64,
     pub day: u64,
@@ -46,21 +38,6 @@ pub trait IDailyQuest<T> {
 #[starknet::interface]
 pub trait IQuestProgress<T> {
     fn record_quest_progress(ref self: T, home: crate::resources::ResourceKey, kind: u8, amount: u128, timestamp: u64);
-}
-
-pub fn validate(rules: QuestRules) {
-    assert!(rules.base_counts.len() == QUEST_COUNT.into(), "daily quest bag must contain seven quests");
-    for count in rules.base_counts {
-        assert!(*count != 0, "empty quest target");
-    }
-    assert!(rules.labor != 0 && rules.essence != 0, "empty quest reward");
-    assert!(rules.bonus_percent >= 100, "quest bonus reduces reward");
-    let (labor, essence) = reward(rules.labor, rules.essence, rules.bonus_percent, 4);
-    let maximum: u128 = core::num::traits::Bounded::MAX;
-    assert!(
-        labor <= maximum / crate::rules::RESOURCE_PRECISION && essence <= maximum / crate::rules::RESOURCE_PRECISION,
-        "quest reward exceeds resource amount",
-    );
 }
 
 pub fn daily_quest(seed: felt252, day: u64) -> u8 {

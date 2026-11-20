@@ -1,20 +1,3 @@
-pub fn validate(orders: Span<u8>) {
-    if orders.is_empty() {
-        return;
-    }
-    assert!(orders.len() == 16, "Aspects need every Order");
-    for aspect in 1_u8..5 {
-        let mut members = 0_u8;
-        for order in orders {
-            assert!(*order >= 1 && *order <= 4, "invalid Aspect");
-            if *order == aspect {
-                members += 1;
-            }
-        }
-        assert!(members == 4, "Aspect needs four Orders");
-    }
-}
-
 pub fn pack(orders: Span<u8>) -> u128 {
     let mut packed = 0_u128;
     for index in 0_u32..16 {

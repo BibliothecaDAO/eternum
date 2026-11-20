@@ -15,12 +15,6 @@ pub struct ProductionRecipe {
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct RecipeConfig {
-    pub resource_type: u8,
-    pub recipe: ProductionRecipe,
-}
-
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct RefillProduction {
     pub structure_id: u64,
     pub resource_types: Span<u8>,

@@ -13,7 +13,7 @@ pub enum Event {
 pub fn game(game_id: u32) -> GameRegistry {
     let state = crate::state::read();
     let game = state.games.games.read(game_id);
-    assert!(game.preset_id != 0, "game does not exist");
+    assert!(game.family != 0, "game does not exist");
     game
 }
 pub fn rules(game_id: u32) -> SliceRules {
@@ -44,7 +44,7 @@ pub fn rules(game_id: u32) -> SliceRules {
 pub fn create(game_id: u32, game: GameRegistry, overrides: GameOverrides) {
     let state = crate::state::write();
     assert!(game_id != 0 && !game_exists(game_id), "game already exists or reserved");
-    assert!(game.preset_id != 0, "invalid game identity");
+    assert!(game.family != 0, "invalid game identity");
     assert!(game.start_main_at >= game.start_settling_at && game.end_at > game.start_main_at, "invalid game times");
     state.games.overrides.write(game_id, overrides);
     state.games.next_entity.write(game_id, 1);
@@ -86,7 +86,7 @@ fn emit_game_fact(row: RowSet) {
 }
 
 pub fn game_exists(game_id: u32) -> bool {
-    crate::state::read().games.games.entry(game_id).preset_id.read() != 0
+    crate::state::read().games.games.entry(game_id).family.read() != 0
 }
 
 pub fn emit_release(game_id: u32, release_id: u32) {

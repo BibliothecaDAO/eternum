@@ -8,7 +8,6 @@ pub mod GamesEntry {
     use starknet::{ContractAddress, get_caller_address, get_tx_info};
     use crate::games::Authentication;
     use crate::logic::release::ReleaseState;
-    use crate::presets::PresetDefinition;
     use crate::registrar::{CreateGameParams, IRegistrarDispatcherTrait, IRegistrarLibraryDispatcher, RosterPlayer};
 
     #[storage]
@@ -228,18 +227,11 @@ pub mod GamesEntry {
         impl Release: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of crate::registrar::IRegistrar<ComponentState<TContractState>> {
-        fn register_preset(ref self: ComponentState<TContractState>, preset_id: u32, definition: PresetDefinition) {
-            crate::logic::release::assert_authority();
-            self.registrar(crate::game::FRONTIER).register_preset(preset_id, definition);
-        }
         fn create_game(ref self: ComponentState<TContractState>, params: CreateGameParams) -> u32 {
             crate::logic::release::assert_launcher();
             self.registrar(params.family).create_game(params)
         }
 
-        fn preset_commitment(self: @ComponentState<TContractState>, preset_id: u32) -> felt252 {
-            self.data.registrar.presets.read(preset_id)
-        }
         fn next_game_id(self: @ComponentState<TContractState>) -> u32 {
             self.data.registrar.next_game.read()
         }

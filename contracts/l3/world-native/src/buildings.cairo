@@ -110,11 +110,6 @@ pub struct BuildingRule {
     pub simple_cost: Span<crate::resources::ResourceAmount>,
     pub complex_cost: Span<crate::resources::ResourceAmount>,
 }
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct BuildingRuleConfig {
-    pub category: u8,
-    pub rule: BuildingRule,
-}
 #[derive(Copy, Drop)]
 pub struct BuildingRow {
     pub population_cost: u8,

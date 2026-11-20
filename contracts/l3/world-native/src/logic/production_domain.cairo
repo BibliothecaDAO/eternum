@@ -5,11 +5,9 @@ pub mod ProductionLogic {
     use crate::events::RowSet;
     use crate::game::assert_playing;
     use crate::logic::arrivals::ArrivalState;
-    use crate::logic::bridge::BridgeState;
     use crate::logic::production::ProductionState;
     use crate::logic::release::ReleaseState;
     use crate::logic::resources::ResourceState;
-    use crate::logic::withdrawals::WithdrawalState;
     use crate::ownership::{Story, StoryEvent};
     #[cfg(feature: "test_support")]
     use crate::production::ProductionRecipe;
@@ -28,26 +26,9 @@ pub mod ProductionLogic {
     impl ArrivalInternal = ArrivalState::InternalImpl<ContractState>;
     impl ProductionInternal = ProductionState::InternalImpl<ContractState>;
 
-    #[abi(embed_v0)]
-    impl PresetResources of crate::presets::IPresetResources<ContractState> {
-        fn store_resource_preset(
-            ref self: ContractState, commitment: felt252, resources: crate::presets::ResourcePreset,
-        ) {
-            crate::logic::preset_record::store_resources(commitment, resources);
-        }
-    }
-    component!(path: BridgeState, storage: bridge, event: BridgeEvent);
-    #[abi(embed_v0)]
-    impl Bridge = BridgeState::BridgeImpl<ContractState>;
-    component!(path: WithdrawalState, storage: withdrawals, event: WithdrawalEvent);
-    impl WithdrawalInternal = WithdrawalState::InternalImpl<ContractState>;
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
-        #[substorage(v0)]
-        withdrawals: WithdrawalState::Storage,
-        #[substorage(v0)]
-        bridge: BridgeState::Storage,
         #[substorage(v0)]
         release: ReleaseState::Storage,
         #[substorage(v0)]
@@ -62,8 +43,6 @@ pub mod ProductionLogic {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
-        WithdrawalEvent: WithdrawalState::Event,
-        BridgeEvent: BridgeState::Event,
         MineEvent: crate::logic::mines::MineState::Event,
         ReleaseEvent: ReleaseState::Event,
         ResourceEvent: ResourceState::Event,
@@ -356,25 +335,6 @@ pub mod ProductionLogic {
                 ),
                 timestamp,
             );
-        }
-    }
-    #[abi(embed_v0)]
-    impl PresetWithdrawals of crate::presets::IPresetWithdrawals<ContractState> {
-        fn store_withdrawal_preset(
-            ref self: ContractState, commitment: felt252, withdrawals: crate::presets::WithdrawalPreset,
-        ) {
-            crate::logic::preset_record::store_withdrawals(commitment, withdrawals);
-        }
-    }
-    #[abi(embed_v0)]
-    impl Withdrawals of crate::withdrawals::IWithdrawals<ContractState> {
-        #[cfg(feature: "test_support")]
-        fn withdrawal_rules(self: @ContractState, game_id: u32) -> crate::withdrawals::WithdrawalRules {
-            self.withdrawals.rules(game_id)
-        }
-        #[cfg(feature: "test_support")]
-        fn resource_token(self: @ContractState, key: crate::withdrawals::ResourceTokenKey) -> ContractAddress {
-            self.withdrawals.token(key)
         }
     }
     #[abi(embed_v0)]

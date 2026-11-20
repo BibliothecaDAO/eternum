@@ -12,7 +12,6 @@ pub mod games;
 pub mod guards;
 pub mod guilds;
 pub mod map;
-pub mod presets;
 pub mod quests;
 pub mod realms;
 pub mod registrar;

@@ -10,15 +10,36 @@ pub fn blitz_roster(game_id: u32) -> Span<RosterPlayer> {
     }
     players.span()
 }
+fn initialize_gameplay(game_id: u32) {
+    crate::banes::IWorldBanesDispatcherTrait::initialize_bane_calendar(
+        crate::banes::IWorldBanesLibraryDispatcher {
+            class_hash: crate::logic::release::class_of(game_id, crate::slots::BRIDGE),
+        },
+        game_id,
+    );
+    crate::deep::IDeepSitesDispatcherTrait::initialize_deep(
+        crate::deep::IDeepSitesLibraryDispatcher {
+            class_hash: crate::logic::release::class_of(game_id, crate::slots::MAP),
+        },
+        game_id,
+    );
+    crate::race::IRaceDispatcherTrait::initialize_race(
+        crate::race::IRaceLibraryDispatcher {
+            class_hash: crate::logic::release::class_of(game_id, crate::slots::ECONOMY),
+        },
+        game_id,
+    );
+}
 #[starknet::component]
 pub mod RegistrarState {
     use starknet::storage::{
-        StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess,
+        StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
         StoragePointerWriteAccess,
     };
     use crate::events::RowSet;
     use crate::logic::release::ReleaseState;
     use crate::registrar::{CreateGameParams, RosterPlayer, build_game, game_overrides};
+    use super::initialize_gameplay;
 
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
@@ -38,28 +59,6 @@ pub mod RegistrarState {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of crate::registrar::IRegistrar<ComponentState<TContractState>> {
-        fn register_preset(
-            ref self: ComponentState<TContractState>, preset_id: u32, definition: crate::presets::PresetDefinition,
-        ) {
-            crate::logic::release::assert_authority();
-            assert!(preset_id != 0, "preset id zero is reserved");
-            assert!(self.data.registrar.presets.read(preset_id) == 0, "preset id already registered");
-            crate::presets::validate(definition);
-            let commitment = crate::presets::commitment(definition);
-            assert!(commitment != 0, "empty preset commitment");
-            crate::logic::preset_record::store(commitment, definition);
-            self.data.registrar.presets.write(preset_id, commitment);
-            let values = array![commitment];
-            self
-                .emit(
-                    RowSet {
-                        version: 1, model: 'Preset', keys: array![preset_id.into()].span(), values: values.span(),
-                    },
-                );
-        }
-        fn preset_commitment(self: @ComponentState<TContractState>, preset_id: u32) -> felt252 {
-            self.data.registrar.presets.read(preset_id)
-        }
         fn next_game_id(self: @ComponentState<TContractState>) -> u32 {
             self.data.registrar.next_game.read()
         }
@@ -77,17 +76,7 @@ pub mod RegistrarState {
             crate::logic::release::assert_launcher();
             let release_id = self.data.open_releases.read(params.family);
             assert!(release_id != 0, "family has no open release");
-            let preset_commitment = self.data.registrar.presets.read(params.preset_id);
-            assert!(preset_commitment != 0, "preset is not registered");
-            let preset = self.data.presets.entry(preset_commitment);
-            let rules = crate::registrar::LaunchRules {
-                mode_rules: preset.rules.mode_rules.read(),
-                day_unit_seconds: preset.rules.day_unit_seconds.read(),
-                armies_tick_seconds: crate::balance::rules::TICK_CONFIG.armies_tick_in_seconds,
-                entry_rule: preset.rules.entry_rule.read(),
-                spacing: crate::logic::settlement::spacing(),
-            };
-            crate::registrar::validate_params(params, rules);
+            crate::registrar::validate_params(params);
             let mut encoded = array![];
             params.serialize(ref encoded);
             let commitment = core::poseidon::poseidon_hash_span(encoded.span());
@@ -104,14 +93,14 @@ pub mod RegistrarState {
             self.data.game_creation_releases.write(game_id, release_id);
             self.register_roster(game_id, params.roster);
             self.data.registrar.seaters.write(game_id, params.seater);
-            let game = build_game(params, rules.entry_rule);
+            let game = build_game(params);
             let overrides = game_overrides(game_id, params);
             crate::logic::game::create(game_id, game, overrides);
             crate::logic::game::emit_release(game_id, release_id);
             for player in params.roster {
                 crate::entity_ids::reserve_homes(game_id, (*player).account);
             }
-            crate::logic::presets::initialize_gameplay(game_id, rules.mode_rules);
+            initialize_gameplay(game_id);
             self.data.registrar.launch_ids.write(params.name, game_id);
             self.data.registrar.launch_commitments.write(params.name, commitment);
             self.write_next_game(game_id + 1);

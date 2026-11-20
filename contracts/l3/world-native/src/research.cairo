@@ -49,13 +49,6 @@ pub struct ResearchPrice {
     pub labor: u128,
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct ResearchPriceConfig {
-    pub row: u8,
-    pub tier: u8,
-    pub price: ResearchPrice,
-}
-
 // Buys the next tier. `choice` selects the Farm or Workshop side; every other row takes 0.
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct Research {

@@ -134,8 +134,6 @@ pub enum Command {
     MarkGameSettled,
     ManageTroops: crate::troop_management::ManageTroops,
     GuardAttack: crate::combat_actions::GuardAttack,
-    DepositResource: crate::bridge::Deposit,
-    WithdrawResource: crate::bridge::Withdraw,
     ProvisionAndUpgradeRealm: core::integer::u64,
     SetEntityName: crate::names::SetEntityName,
     EnterDepth: crate::commands::EnterDepth,
@@ -295,14 +293,6 @@ pub impl CommandSerde of Serde<Command> {
                 output.append(60);
                 Serde::serialize(value, ref output);
             },
-            Command::DepositResource(value) => {
-                output.append(62);
-                Serde::serialize(value, ref output);
-            },
-            Command::WithdrawResource(value) => {
-                output.append(63);
-                Serde::serialize(value, ref output);
-            },
             Command::ProvisionAndUpgradeRealm(value) => {
                 output.append(64);
                 Serde::serialize(value, ref output);
@@ -391,8 +381,6 @@ pub impl CommandSerde of Serde<Command> {
             59 => Some(Command::ManageTroops(Serde::deserialize(ref serialized)?)),
             60 => Some(Command::GuardAttack(Serde::deserialize(ref serialized)?)),
             61 => None,
-            62 => Some(Command::DepositResource(Serde::deserialize(ref serialized)?)),
-            63 => Some(Command::WithdrawResource(Serde::deserialize(ref serialized)?)),
             64 => Some(Command::ProvisionAndUpgradeRealm(Serde::deserialize(ref serialized)?)),
             65 => Some(Command::SetEntityName(Serde::deserialize(ref serialized)?)),
             66 => Some(Command::EnterDepth(Serde::deserialize(ref serialized)?)),

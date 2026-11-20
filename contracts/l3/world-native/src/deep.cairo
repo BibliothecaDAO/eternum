@@ -33,18 +33,6 @@ pub struct DeepPay {
     pub crowd: u32,
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct DeepRules {
-    pub gate_distance: u32,
-    pub rings: Span<DeepRing>,
-    pub beasts: Span<DeepBeast>,
-    pub loss_per_tick: u128,
-    pub core_per_tick: u128,
-    pub mine_per_tick: u128,
-    pub building_pay: DeepPay,
-    pub altar_threshold: u32,
-}
-
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct DeepSettings {
     pub gate_distance: u32,
@@ -61,18 +49,6 @@ pub struct DeepSite {
     pub kind: u8,
     pub ring: u8,
     pub day: u64,
-}
-
-pub fn settings(rules: DeepRules) -> DeepSettings {
-    DeepSettings {
-        gate_distance: rules.gate_distance,
-        ring_count: rules.rings.len().try_into().unwrap(),
-        loss_per_tick: rules.loss_per_tick,
-        core_per_tick: rules.core_per_tick,
-        mine_per_tick: rules.mine_per_tick,
-        building_pay: rules.building_pay,
-        altar_threshold: rules.altar_threshold,
-    }
 }
 
 pub fn building_pay(pay: DeepPay, open: u8) -> u32 {
@@ -134,26 +110,17 @@ pub fn kind_at(draw: u256, place: u8) -> u8 {
     kind.try_into().unwrap()
 }
 
-pub fn validate(rules: DeepRules, spacing: u32) {
-    assert!(
-        settings(rules) == crate::balance::deep::DEEP_SETTINGS
-            && rules.rings == crate::balance::deep::DEEP_RINGS.span()
-            && rules.beasts == crate::balance::deep::DEEP_BEASTS.span(),
-        "Deep rules are not the release's",
-    );
-    validate_layout(rules, spacing);
-}
-
-fn validate_layout(rules: DeepRules, spacing: u32) {
+pub fn assert_layout_fits() {
+    let spacing = crate::logic::settlement::spacing();
     let middle = center(spacing);
     let mut gates = array![];
     for aspect in 1_u8..5 {
-        let entrance = gate(rules.gate_distance, aspect, spacing);
+        let entrance = gate(crate::balance::deep::DEEP_SETTINGS.gate_distance, aspect, spacing);
         assert!(contains(entrance, spacing) && outside_plaza(entrance, middle), "Deep gate outside map");
         gates.append(entrance);
     }
     let mut sites: Array<Coord> = array![];
-    for ring in rules.rings {
+    for ring in crate::balance::deep::DEEP_RINGS.span() {
         for index in 0..crate::rules::DEEP_RING_SITES {
             let site = place(*ring.radius, index, spacing);
             assert!(contains(site, spacing) && outside_plaza(site, middle), "Deep site outside map");

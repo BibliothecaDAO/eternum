@@ -30,10 +30,3 @@ pub fn discover(previous: ExpeditionSpire, coord: Coord, find_percent: u16, seed
     } }
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
-pub struct SpireLayout {
-    pub count: u16,
-    pub base_distance: u8,
-    pub layer_distance: u8,
-    pub max_layer: u8,
-}
