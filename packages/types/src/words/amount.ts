@@ -11,6 +11,7 @@ const exact = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 // Nine places: the resource precision every balance and charge settles to, which a typed amount keeps.
 const typed = new Intl.NumberFormat("en-US", { maximumFractionDigits: 9 });
 const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
+const dollars = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 
 /**
  * A known amount, exact while a player still counts it against a price ("1,250 labor") and compact past ten
@@ -165,11 +166,6 @@ export const formatPercent = (fraction: number | undefined, { signed = false } =
   return `${text}%`;
 };
 
-/**
- * A rate, from its amount a second, always written a minute's, so any two rates on screen compare at a glance (owner,
- * 3 November 2026: "it should always be by min"): whole from one a minute ("+66/min", "+8/min": no decimal a player has
- * to read), two figures under it ("+0.6/min"), signed. Never a second, never an hour. Nothing gained reads "0/min".
- */
 export const formatRate = (perSecond: number | undefined): string => {
   if (perSecond === undefined) return "—";
   const perMinute = perSecond * 60;
@@ -200,3 +196,5 @@ export const formatPopulation = (used: number, capacity: number): string =>
 /** The same in words, on a hover or in a line: "Population 5 of 6". */
 export const formatPopulationInWords = (used: number, capacity: number): string =>
   `Population ${wholeCount(used)} of ${wholeCount(capacity)}`;
+
+export const formatDollars = (cents: number): string => dollars.format(cents / 100);

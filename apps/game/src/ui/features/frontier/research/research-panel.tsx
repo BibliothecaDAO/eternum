@@ -1,4 +1,4 @@
-import { researchHasIndependentSides } from "@bibliothecadao/eternum";
+import { researchHasIndependentSides, isOathResearch } from "@bibliothecadao/eternum";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, IconGroup, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudPage, HudRanked, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
@@ -63,7 +63,6 @@ export const ResearchPanel = ({
     <NodeTile key={item.key} node={item} picked={item.key === node?.key} onPick={() => onPick(item.key)} />
   );
   const branch = (key: Branch) => nodes.filter((item) => item.branch === key);
-  const [barracks, ...training] = branch("army");
   return (
     <HudPage label={RESEARCH} icon="research" onClose={onClose}>
       <div className="grid min-h-0 flex-1 grid-cols-3 content-start gap-2 overflow-y-auto">
@@ -71,11 +70,7 @@ export const ResearchPanel = ({
           <BranchHead key={key} branch={key} />
         ))}
         <div className="flex flex-col gap-2">{branch("economy").map(tile)}</div>
-        <div className="flex flex-col gap-2">
-          {barracks && tile(barracks)}
-          {barracks?.gate && <Gate met={barracks.gate.met} word={RESEARCH_TREE.gate(barracks.gate.name)} />}
-          {training.map(tile)}
-        </div>
+        <div className="flex flex-col gap-2">{branch("army").map(tile)}</div>
         <div className="flex flex-col">
           {branch("castle").map((item) => (
             <div key={item.key} className="flex flex-col pb-2">
@@ -116,19 +111,6 @@ const BranchHead = ({ branch }: { branch: Branch }) => (
   </span>
 );
 
-/** The Barracks' gate to the training buildings, lit once reached. */
-const Gate = ({ met, word }: { met: boolean; word: string }) => (
-  <span
-    className={cn(
-      "flex items-center justify-center gap-1 border-y border-dashed py-0.5 text-hud-label",
-      met ? "border-hud-good text-hud-good" : "border-hud-line text-hud-muted",
-    )}
-  >
-    <Icon name={met ? "unlock" : "lock"} size={14} />
-    {word}
-  </span>
-);
-
 /**
  * A node as a tile: its painting with its state's mark, its name under it, then its tier's gem or its price. A compact
  * tile (a row of them on the castle's card) keeps its painting, mark and name, which a phone cannot hover for (audit
@@ -146,29 +128,32 @@ export const NodeTile = ({
   onPick: () => void;
 }) => {
   const look = STATE_LOOK[node.state];
-  const reading =
-    node.maxTier === 5 ? (
-      researchHasIndependentSides(node.row) && node.sides ? (
-        <span className="flex gap-2">
-          {node.sides.map((side) => (
-            <span
-              key={side.name}
-              className="flex items-center gap-0.5"
-              aria-label={`${side.name} ${tierNumeral(side.tier as Rank)}`}
-            >
-              <IconGroup name={side.icon} size={14} />
-              <HudTier tier={side.tier as Rank} />
-            </span>
-          ))}
-        </span>
-      ) : (
-        <HudTier tier={tierOf(node)} />
-      )
-    ) : (
-      <span className="text-hud-label tabular-nums text-hud-muted">
-        {node.state === "done" ? RESEARCH_TREE.states.done : RESEARCH_TREE.price(formatAmount(node.price?.essence))}
+  const reading = isOathResearch(node.row) ? (
+    <span className="text-hud-label">
+      <HudRanked words={node.gives.now} />
+    </span>
+  ) : node.maxTier === 5 ? (
+    researchHasIndependentSides(node.row) && node.sides ? (
+      <span className="flex gap-2">
+        {node.sides.map((side) => (
+          <span
+            key={side.name}
+            className="flex items-center gap-0.5"
+            aria-label={`${side.name} ${tierNumeral(side.tier as Rank)}`}
+          >
+            <IconGroup name={side.icon} size={14} />
+            <HudTier tier={side.tier as Rank} />
+          </span>
+        ))}
       </span>
-    );
+    ) : (
+      <HudTier tier={tierOf(node)} />
+    )
+  ) : (
+    <span className="text-hud-label tabular-nums text-hud-muted">
+      {node.state === "done" ? RESEARCH_TREE.states.done : RESEARCH_TREE.price(formatAmount(node.price?.essence))}
+    </span>
+  );
   return (
     <button
       type="button"
@@ -222,7 +207,12 @@ const NodeChoice = ({
   const missing = firstMissing(node);
   const fixing = missing && fix(missing);
   const verb: RankedWords | string =
-    node.sides?.[side]?.name ?? (node.nextTier ? [`${node.name} `, { rank: node.nextTier }] : node.name);
+    node.sides?.[side]?.name ??
+    (isOathResearch(node.row)
+      ? RESEARCH_TREE.oaths
+      : node.nextTier
+        ? [`${node.name} `, { rank: node.nextTier }]
+        : node.name);
   const price = node.needs.filter(isPrice);
   return (
     <div
@@ -280,7 +270,6 @@ const NodeChoice = ({
           </span>
         </span>
       )}
-      {node.gate && <span className="text-hud-label text-hud-muted">{node.gate.line}</span>}
       {missing && !isPrice(missing) && (
         <span className="flex items-center gap-2 text-hud-label text-hud-bad">
           <Icon name={needIcon(missing)} size={16} />
@@ -288,8 +277,8 @@ const NodeChoice = ({
         </span>
       )}
       {node.state !== "done" && (
-        <div className="flex items-center gap-2">
-          <span className="flex gap-1">
+        <div data-research-footer className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
+          <span className="flex shrink-0 gap-1">
             {price.map((need) => (
               <span
                 key={need.kind}
@@ -304,20 +293,20 @@ const NodeChoice = ({
               </span>
             ))}
           </span>
-          <span className="flex-1" />
-          {fixing && (
-            <HudButton kind="secondary" icon={fixing.icon} onClick={fixing.onFix}>
+          {fixing ? (
+            <HudButton kind="primary" icon={fixing.icon} onClick={fixing.onFix}>
               {fixing.word}
             </HudButton>
+          ) : (
+            <HudButton
+              kind="primary"
+              disabled={node.state !== "ready" || choice === undefined}
+              busy={sending ? RESEARCHING : undefined}
+              onClick={() => choice !== undefined && onResearch(choice)}
+            >
+              <HudRanked words={RESEARCH_TREE.research(verb)} />
+            </HudButton>
           )}
-          <HudButton
-            kind="primary"
-            disabled={node.state !== "ready" || choice === undefined}
-            busy={sending ? RESEARCHING : undefined}
-            onClick={() => choice !== undefined && onResearch(choice)}
-          >
-            <HudRanked words={RESEARCH_TREE.research(verb)} />
-          </HudButton>
         </div>
       )}
     </div>
@@ -333,6 +322,12 @@ const needIcon = (need: Need): IconMeaning =>
 
 /** The node's tier and its next as gems, complete at Legendary, or a one-off node's price. */
 const LevelLine = ({ node }: { node: TreeNode }) => {
+  if (isOathResearch(node.row))
+    return (
+      <span className="text-hud-label">
+        <HudRanked words={node.gives.now} />
+      </span>
+    );
   if (node.maxTier === 5 && node.nextTier) return <HudTierStep from={tierOf(node)} to={node.nextTier} />;
   if (node.maxTier === 5)
     return (

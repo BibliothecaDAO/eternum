@@ -4,8 +4,8 @@ import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
 import { nativePresetForId, nativePresetIdFor } from "../../../../config/source/native";
 import { ClientConfigManager } from "./config-manager";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 
 function fixture(gameId = 54) {
   const store = new NativeFactStore();
@@ -73,8 +73,8 @@ describe("native immutable configuration", () => {
     });
   });
 
-  it("says a held hyperstructure's rate counts each realm around it where the multiplier rule is on, and doubles in a Duel", () => {
-    const scale = (mode: "Single" | "Duel") => {
+  it("says a held hyperstructure's rate counts each realm around it where the multiplier rule is on", () => {
+    const scale = (mode: "Single" | "Triple") => {
       const { manager, write } = fixture();
       write("SliceRules", [54], {
         ...preset.rules,
@@ -85,7 +85,7 @@ describe("native immutable configuration", () => {
       return manager.getVictoryPointGrants().hyperstructureScale;
     };
     expect(scale("Single")).toBe("per-realm");
-    expect(scale("Duel")).toBe("double");
+    expect(scale("Triple")).toBe("per-realm");
   });
 
   it("throws for absent building rules instead of granting zero-cost population", () => {
@@ -189,19 +189,6 @@ describe("native immutable configuration", () => {
     expect(() => manager.getTick(TickIds.Armies)).toThrow("not synchronized");
     write("SliceRules", [54], { ...preset.rules, game_id: 54 });
     expect(manager.getTick(TickIds.Armies)).toBe(Number(preset.rules.tick_config.armies_tick_in_seconds));
-  });
-
-  it("rolls combat dice everywhere in a dice game, on the ethereal layer in an ethereal-dice game, else never", () => {
-    const { manager, write } = fixture();
-    const withRules = (mode_rules: number) => {
-      write("SliceRules", [54], { ...preset.rules, game_id: 54, mode_rules });
-      return [manager.rollsCombatDice(true), manager.rollsCombatDice(false)];
-    };
-    const base =
-      preset.rules.mode_rules & ~(nativeRuleConstants.COMBAT_DICE | nativeRuleConstants.COMBAT_DICE_ETHEREAL);
-    expect(withRules(base)).toEqual([false, false]);
-    expect(withRules(base | nativeRuleConstants.COMBAT_DICE_ETHEREAL)).toEqual([true, false]);
-    expect(withRules(base | nativeRuleConstants.COMBAT_DICE)).toEqual([true, true]);
   });
 
   it("pays reveals from strength and depth only in a game with reveal supplies", () => {

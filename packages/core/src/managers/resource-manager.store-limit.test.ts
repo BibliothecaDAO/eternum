@@ -1,4 +1,4 @@
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import { NativeFactStore } from "../client/native-fact-store";
@@ -43,7 +43,6 @@ const boardRealm = (wheat: bigint) => {
         storage_step_bps: 5000,
         population_step_bps: 2500,
         ration_step: PRECISION / 4n,
-        training_gate_tier: 2,
       },
     }),
     ...upsert("0x3", { Structure: realm(0) }),

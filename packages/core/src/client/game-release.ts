@@ -1,5 +1,7 @@
+import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { NATIVE_BALANCE_SINCE_RELEASE, NATIVE_RELEASE_ID } from "../../../../deploy/release/native-release";
 import type { NativeFactStore } from "./native-fact-store";
-import { refreshShardRelease, ShardReleaseMismatchError, type Shard } from "./shard";
+import { GameOnOlderNumbersError, refreshShardRelease, ShardReleaseMismatchError, type Shard } from "./shard";
 
 /** Validate each game pin once, shared by every concurrent sender: an action waits until its pin is readable. */
 export function followGameRelease(
@@ -9,15 +11,15 @@ export function followGameRelease(
 ) {
   const controller = new AbortController();
   let catalogue = input.shard.releaseSchemas;
-  let validated: number | undefined;
-  let validation: { releaseId: number; promise: Promise<void> } | undefined;
-  const pin = () => store.require("GameRelease", { game_id: input.gameId }).release_id;
+  let validated: NativeRows["GameRelease"] | undefined;
+  let validation: { pin: NativeRows["GameRelease"]; promise: Promise<void> } | undefined;
+  const pin = () => store.require("GameRelease", { game_id: input.gameId });
 
   const validate = (): Promise<void> => {
-    const releaseId = pin();
-    if (validated === releaseId) return Promise.resolve();
-    if (validation?.releaseId === releaseId) return validation.promise;
-    const promise = validateRelease(releaseId)
+    const candidate = pin();
+    if (sameReleaseSpan(validated, candidate)) return Promise.resolve();
+    if (validation && sameReleaseSpan(validation.pin, candidate)) return validation.promise;
+    const promise = validateRelease(candidate)
       .catch((error: unknown) => {
         if (error instanceof ShardReleaseMismatchError) onUnknownDecoder(error);
         throw error;
@@ -25,26 +27,23 @@ export function followGameRelease(
       .finally(() => {
         if (validation?.promise === promise) validation = undefined;
       });
-    validation = { releaseId, promise };
+    validation = { pin: candidate, promise };
     return promise;
   };
 
-  const validateRelease = async (releaseId: number): Promise<void> => {
-    while (!controller.signal.aborted && pin() === releaseId) {
-      const knownSchema = catalogue[String(releaseId)];
-      if (knownSchema !== undefined) {
-        if (knownSchema !== input.schemaIdentity)
-          throw new ShardReleaseMismatchError(input.shard.url, String(releaseId));
-        validated = releaseId;
+  const validateRelease = async (candidate: NativeRows["GameRelease"]): Promise<void> => {
+    while (!controller.signal.aborted && sameReleaseSpan(candidate, pin())) {
+      const missing = firstUnreadRelease(candidate, catalogue, input.schemaIdentity, input.shard.url);
+      if (missing === undefined) {
+        validated = candidate;
         return;
       }
       try {
-        const shard = await refreshShardRelease(input.shard.url, String(releaseId), input.schemaIdentity);
+        const shard = await refreshShardRelease(input.shard.url, String(missing), input.schemaIdentity);
         catalogue = shard.releaseSchemas;
       } catch (error) {
-        if (pin() !== releaseId) return;
+        if (!sameReleaseSpan(candidate, pin())) return;
         if (error instanceof ShardReleaseMismatchError) throw error;
-        // Manifest availability does not invalidate the live fact stream. Keep actions gated and retry.
         await waitToRetry(controller.signal);
       }
     }
@@ -55,7 +54,7 @@ export function followGameRelease(
     do {
       controller.signal.throwIfAborted();
       await validate();
-    } while (validated !== pin());
+    } while (!sameReleaseSpan(validated, pin()));
   };
 
   const unsubscribe = store.subscribe((changes) => {
@@ -84,4 +83,39 @@ function waitToRetry(signal: AbortSignal): Promise<void> {
     }, 1_000);
     signal.addEventListener("abort", abort, { once: true });
   });
+}
+
+const sameReleaseSpan = (left: NativeRows["GameRelease"] | undefined, right: NativeRows["GameRelease"]): boolean =>
+  left?.release_id === right.release_id && left?.created_release_id === right.created_release_id;
+
+export function assertReleaseReadable(
+  pin: NativeRows["GameRelease"],
+  catalogue: Readonly<Record<string, string>>,
+  schema: string,
+  shardUrl: string,
+): void {
+  const span = `${pin.created_release_id}..${pin.release_id}`;
+  if (!Number.isSafeInteger(pin.created_release_id) || !Number.isSafeInteger(pin.release_id))
+    throw new ShardReleaseMismatchError(shardUrl, span);
+  const unread = firstUnreadRelease(pin, catalogue, schema, shardUrl);
+  if (unread !== undefined) throw new ShardReleaseMismatchError(shardUrl, String(unread));
+}
+
+function firstUnreadRelease(
+  pin: NativeRows["GameRelease"],
+  catalogue: Readonly<Record<string, string>>,
+  schema: string,
+  shardUrl: string,
+): number | undefined {
+  if (pin.created_release_id < 1 || pin.created_release_id > pin.release_id)
+    throw new ShardReleaseMismatchError(shardUrl, `${pin.created_release_id}..${pin.release_id}`);
+  if (pin.release_id < NATIVE_BALANCE_SINCE_RELEASE)
+    throw new GameOnOlderNumbersError(shardUrl, String(pin.release_id));
+  if (pin.release_id > NATIVE_RELEASE_ID) throw new ShardReleaseMismatchError(shardUrl, String(pin.release_id));
+  for (let release = pin.created_release_id; release <= pin.release_id; release++) {
+    const known = catalogue[String(release)];
+    if (known === undefined) return release;
+    if (known !== schema) throw new ShardReleaseMismatchError(shardUrl, String(release));
+  }
+  return undefined;
 }

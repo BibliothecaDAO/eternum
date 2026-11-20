@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { researchRowCategory } from "@bibliothecadao/eternum";
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -21,18 +22,7 @@ afterEach(() => {
   host.remove();
 });
 
-/**
- * Rifts took the first two ranks, Sanctuaries the third, Trolls the last two: each kind holds its own Scouting steps
- * (rules.cairo: +10%, +15%, +20%, +25%, +30%).
- */
-const LODGE_LEGENDARY = [
-  ["Rifts", "Found more", "+25%"],
-  ["Trolls", "Found more", "+55%"],
-  ["Sanctuaries", "Found more", "+20%"],
-];
-
-const nodeOf = (realm: RealmResearchFacts, row: number) =>
-  readResearchTree(realm).find((node) => node.row === row && node.maxTier === 5)!;
+const nodeOf = (realm: RealmResearchFacts, row: number) => readResearchTree(realm).find((node) => node.row === row)!;
 
 /** The card as a building's tap opens it, on the lab's realm some days in (a City; Farm rare, Barracks rare). */
 const draw = (
@@ -117,12 +107,15 @@ it("reads each side now against the next tier, picks a side by its row, and rese
 });
 
 it("keeps Research, dimmed, when the labor storage cannot hold the tier's price, saying why with its fix", () => {
-  const { onResearch, onFix } = draw(research.ROW_BARRACKS, {
-    realm: { ...MID_REALM, learned: { ...MID_REALM.learned, 2: { tier: 3, sides: [0, 0, 0] } } },
+  const { onResearch, onFix } = draw(research.ROW_SUPPLY_YARD, {
+    realm: {
+      ...MID_REALM,
+      learned: { ...MID_REALM.learned, [research.ROW_SUPPLY_YARD]: { tier: 4, sides: [0, 0, 0, 0] } },
+    },
   });
-  const verb = button(/^Research Drill$/)!;
+  const verb = button(/^Research$/)!;
   expect(verb.disabled).toBe(true);
-  expect(host.querySelector('[role="status"]')!.textContent).toBe("Labor storage 18,000 / 24,000 · Kingdom");
+  expect(host.querySelector('[role="status"]')!.textContent).toBe("Labor storage 18,000 / 60,000 · Empire");
   act(() => verb.click());
   expect(onResearch).not.toHaveBeenCalled();
   act(() => button(/^Level up the castle$/)!.click());
@@ -157,10 +150,10 @@ it("says the Essence the Workshops need against what is held, beside Research di
 });
 
 it("shows a training building's one figure, what every new army starts with, now and next", () => {
-  draw(research.ROW_WAR_HALL, { standing: 1 });
+  draw(research.ROW_SUPPLY_YARD, { standing: 1 });
   expect(card().textContent).toContain("1 building");
   expect(card().textContent).not.toContain("1 buildings");
-  expect(rows()).toEqual([["Battle", "Every new army", "+10% damage", "→", "+25% damage"]]);
+  expect(rows()).toEqual([["Logistics", "Every new army", "+20 max stamina", "→", "+45 max stamina"]]);
   expect(button(/^Research$/)).toBeDefined();
   // Common is I on the card and current column; the next tier is II.
   expect(gems()).toEqual(["I", "I", "II"]);
@@ -198,46 +191,6 @@ it("reads a viewer's building as it stands: what it makes and its tier, with not
 /** The lab's realm with the Essence and labor for a Scouts' lodge tier. */
 const RICH: RealmResearchFacts = { ...MID_REALM, essence: 1_000_000, labor: 15_000 };
 
-it("shows the Scouts' lodge's three kinds, each held now and next, and researches the kind picked by its row", () => {
-  const { onResearch } = draw(research.ROW_SCOUTS_LODGE, { realm: RICH, standing: 1 });
-  // The lodge took Rifts at Uncommon.
-  expect(rows()).toEqual([
-    ["Rifts", "Found more", "+10%", "→", "+25%"],
-    ["Trolls", "Found more", "0%", "→", "+15%"],
-    ["Sanctuaries", "Found more", "0%", "→", "+15%"],
-  ]);
-  act(() => button(/^Rifts/)!.click());
-  act(() => button(/^Research Rifts$/)!.click());
-  expect(onResearch).toHaveBeenLastCalledWith(1);
-  act(() => button(/^Sanctuaries/)!.click());
-  act(() => button(/^Research Sanctuaries$/)!.click());
-  expect(onResearch).toHaveBeenLastCalledWith(2);
-});
-
-it("requires a valid selection again if a provisional Sanctuary unlock disappears", () => {
-  draw(research.ROW_SCOUTS_LODGE, { realm: RICH });
-  act(() => button(/^Sanctuaries/)!.click());
-  const learned = { ...RICH.learned };
-  delete learned[research.ROW_SHRINE];
-  delete learned[research.ROW_WELL];
-  const { onResearch } = draw(research.ROW_SCOUTS_LODGE, { realm: { ...RICH, learned } });
-  expect(button(/^Sanctuaries/)).toBeUndefined();
-  expect(button(/^Research/)).toBeUndefined();
-  act(() => button(/^Rifts/)!.click());
-  act(() => button(/^Research Rifts$/)!.click());
-  expect(onResearch).toHaveBeenCalledWith(research.KIND_RIFTS);
-});
-
-it("at the lodge's Legendary says which kind holds what research gave it", () => {
-  const legendary: RealmResearchFacts = {
-    ...MID_REALM,
-    learned: { ...MID_REALM.learned, [research.ROW_SCOUTS_LODGE]: { tier: 5, sides: [1, 1, 2, 0, 0] } },
-  };
-  draw(research.ROW_SCOUTS_LODGE, { realm: legendary, standing: 1 });
-  expect(rows()).toEqual(LODGE_LEGENDARY);
-  expect(button(/^Research/)).toBeUndefined();
-});
-
 it("lets the owner choose the other research side after the first reaches V", () => {
   const realm: RealmResearchFacts = {
     ...RICH,
@@ -251,10 +204,12 @@ it("lets the owner choose the other research side after the first reaches V", ()
   expect(onResearch).toHaveBeenCalledWith(1);
 });
 
-it("says under every research figure, on every building's card, what the figure does, the Barracks' gate too", () => {
-  const buildings = readResearchTree(MID_REALM).filter((node) => node.maxTier === 5);
-  expect(buildings.map(({ name }) => name)).toEqual(
-    expect.arrayContaining(["Farm", "Workshop", "Barracks", "Hut", "War hall", "Scouts' lodge"]),
+it("says under every research figure, on every building's card, what the figure does", () => {
+  const buildings = readResearchTree(MID_REALM).filter((node) => researchRowCategory[node.row] !== undefined);
+  expect(buildings.map(({ row }) => row).sort((a, b) => a - b)).toEqual(
+    Object.keys(researchRowCategory)
+      .map(Number)
+      .sort((a, b) => a - b),
   );
   for (const node of buildings) {
     draw(node.row);
@@ -262,6 +217,15 @@ it("says under every research figure, on every building's card, what the figure 
     expect(shown).toEqual(node.figures.map(({ name, line }) => [name, line]));
     for (const [, line] of shown) expect(line).toMatch(/\w{3,}/);
   }
-  draw(research.ROW_BARRACKS);
-  expect(card().textContent).toContain("Training buildings open");
 });
+
+for (const row of [research.ROW_KNIGHT_OATHS, research.ROW_SCOUT_OATHS, research.ROW_CROSSBOW_OATHS]) {
+  it(`shows the two free Oath slots and lets its building research a third on row ${row}`, () => {
+    const { onResearch } = draw(row, { realm: { ...RICH, standing: { ...RICH.standing, [row]: 1 } } });
+    expect(card().textContent).toContain("2 Oath slots");
+    expect(card().textContent).toContain("3 Oath slots");
+    expect(card().textContent).not.toContain("Untrained");
+    act(() => button(/^Research Oath slots$/)!.click());
+    expect(onResearch).toHaveBeenCalledWith(0);
+  });
+}

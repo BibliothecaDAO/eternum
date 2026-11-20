@@ -1,29 +1,13 @@
-pub const SHRINE_COMMON_BPS: u32 = 5000;
-pub const SHRINE_UNCOMMON_BPS: u32 = 3000;
-pub const SHRINE_RARE_BPS: u32 = 1500;
-pub const SHRINE_EPIC_BPS: u32 = 400;
-pub const SHRINE_LEGENDARY_BPS: u32 = 100;
+pub const RELIC_BLADE_BPS: u32 = 1000;
+pub const RELIC_WARD_BPS: u32 = 500;
+pub const RELIC_PLUNDER_BPS: u32 = 2000;
+pub const RELIC_SECONDS_PER_RANK: u32 = 1800;
+pub const STAMINA_REGEN_RELIC_STEP_PERCENT: u32 = 20;
 pub const ATTRIBUTE_CAP: u8 = 5;
-pub const SKILL_POINT_REFILL_BASE: u8 = 10;
-pub const SKILL_POINT_REFILL_STEP: u8 = 10;
+pub const SCOUT_EXPLORE_STAMINA: u8 = 10;
+pub const FRONTIER_LIGHT_DAMAGE_PERCENT: u8 = 75;
+pub const FRONTIER_KNIGHT_GUARD_DAMAGE_PERCENT: u8 = 75;
 // Rank 0 is untrained; Common I through Legendary V retain the original ceilings.
-pub const BATTLE_COMMON_BPS: u32 = 1000;
-pub const BATTLE_UNCOMMON_BPS: u32 = 2500;
-pub const BATTLE_RARE_BPS: u32 = 4500;
-pub const BATTLE_EPIC_BPS: u32 = 7000;
-pub const BATTLE_LEGENDARY_BPS: u32 = 10000;
-
-pub fn battle_bonus_bps(tier: u8) -> u32 {
-    match tier {
-        0 => 0,
-        1 => BATTLE_COMMON_BPS,
-        2 => BATTLE_UNCOMMON_BPS,
-        3 => BATTLE_RARE_BPS,
-        4 => BATTLE_EPIC_BPS,
-        5 => BATTLE_LEGENDARY_BPS,
-        _ => panic!("invalid attribute tier"),
-    }
-}
 
 pub const LOGISTICS_COMMON_STAMINA: u32 = 20;
 pub const LOGISTICS_UNCOMMON_STAMINA: u32 = 45;
@@ -43,47 +27,11 @@ pub fn logistics_stamina(tier: u8) -> u32 {
     }
 }
 
-pub const SCOUTING_COMMON_BPS: u32 = 1000;
-pub const SCOUTING_UNCOMMON_BPS: u32 = 1500;
-pub const SCOUTING_RARE_BPS: u32 = 2000;
-pub const SCOUTING_EPIC_BPS: u32 = 2500;
-pub const SCOUTING_LEGENDARY_BPS: u32 = 3000;
-
-pub fn scouting_increment_bps(tier: u8) -> u32 {
-    match tier {
-        0 => 0,
-        1 => SCOUTING_COMMON_BPS,
-        2 => SCOUTING_UNCOMMON_BPS,
-        3 => SCOUTING_RARE_BPS,
-        4 => SCOUTING_EPIC_BPS,
-        5 => SCOUTING_LEGENDARY_BPS,
-        _ => panic!("invalid attribute tier"),
-    }
-}
-
-pub const HOMECOMING_COMMON_BPS: u32 = 300;
-pub const HOMECOMING_UNCOMMON_BPS: u32 = 800;
-pub const HOMECOMING_RARE_BPS: u32 = 1400;
-pub const HOMECOMING_EPIC_BPS: u32 = 2100;
-pub const HOMECOMING_LEGENDARY_BPS: u32 = 3000;
-
-pub fn homecoming_bps(tier: u8) -> u32 {
-    match tier {
-        0 => 0,
-        1 => HOMECOMING_COMMON_BPS,
-        2 => HOMECOMING_UNCOMMON_BPS,
-        3 => HOMECOMING_RARE_BPS,
-        4 => HOMECOMING_EPIC_BPS,
-        5 => HOMECOMING_LEGENDARY_BPS,
-        _ => panic!("invalid attribute tier"),
-    }
-}
 
 pub const RESOURCE_PRECISION: u128 = 1000000000;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct TroopDamageConfig {
-    pub damage_raid_percent_num: u16,
     // Combat modifiers. Used for biome damage calculations
     pub damage_biome_bonus_num: u16,
     // Used in damage calculations for troop scaling
@@ -255,12 +203,10 @@ pub struct SliceRules {
     pub mode_rules: u32,
     pub day_unit_seconds: u32,
     pub entry_rule: u8,
-    pub faith_enabled: bool,
     pub speed_config: SpeedConfig,
 }
 
 pub const MAX_BLITZ_ROSTER_PLAYERS: u32 = crate::roster_limits::MAX_BLITZ_ROSTER_PLAYERS;
-pub const DUEL_ROSTER_PLAYERS: u32 = crate::roster_limits::DUEL_ROSTER_PLAYERS;
 pub const ENTRY_ENTITLEMENT: u8 = 0;
 pub const ENTRY_OPEN: u8 = 1;
 pub const ENTRY_ROSTER: u8 = 2;
@@ -274,10 +220,7 @@ pub const UNOWNED_TARGETS: u32 = 32;
 pub const CAPTURE_VILLAGES: u32 = 64;
 pub const DEPTH_CONTENTS: u32 = 128;
 pub const REVEAL_SUPPLIES: u32 = 262144;
-// Every battle rolls a d20 per side.
-pub const COMBAT_DICE: u32 = 524288;
-pub const COMBAT_DICE_ETHEREAL: u32 = 1048576;
-// One reveal in two hundred finds a dormant spire that pays its finder Essence once.
+// Blitz finds dormant reward spires; expedition games discover one descent spire per home, day and layer.
 pub const DISCOVER_SPIRES: u32 = 2097152;
 pub const SAME_OWNER_TRANSFER: u32 = 256;
 pub const SEASON_CLOSE: u32 = 1024;
@@ -431,7 +374,6 @@ pub fn command_enabled(mask: u128, index: u128) -> bool {
 pub struct BattleConfig {
     pub regular_immunity_ticks: u8,
     pub village_immunity_ticks: u8,
-    pub village_raid_immunity_ticks: u8,
     pub cooldown_seconds: u32,
 }
 
@@ -604,6 +546,24 @@ pub struct SpeedConfig {
     pub donkey_sec_per_km_troops: u16,
 }
 
-pub const WELL_STAMINA_DIVISOR: u8 = 2;
+pub const WELL_REFILL_PERCENT: u8 = 40;
+pub const BEAST_HERD_SHARE: u8 = 1;
+pub const BEAST_BAND_SHARE: u8 = 2;
 
 pub const FRONTIER_REPORT_GRACE_SECONDS: u32 = crate::days::FRONTIER_REPORT_GRACE_SECONDS;
+
+pub const SPIRE_REVEAL_LIMIT: u8 = 10;
+
+pub const DEEP_MAP_SIZE: u32 = 50;
+pub const DEEP_FOUNDATION: u8 = 0;
+pub const DEEP_CORE: u8 = 1;
+pub const DEEP_MINE: u8 = 2;
+pub const DEEP_ALTAR: u8 = 3;
+pub const DEEP_KIND_COUNT: u8 = 4;
+pub const DEEP_RING_LIMIT: u8 = 4;
+pub const DEEP_RING_SITES: u8 = 6;
+pub const DEEP_PLAZA_RADIUS: u32 = 4;
+pub const DEEP_SITE_SPACING: u128 = 3;
+pub const DEEP_GUARD_SLOTS: u8 = 4;
+pub const DEEP_CATCH_UP_GUARD_TICKS: u64 = 2200;
+pub const DEEP_CATCH_UP_DEATH_TICKS: u64 = 60;

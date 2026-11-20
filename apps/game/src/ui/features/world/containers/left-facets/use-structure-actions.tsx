@@ -7,7 +7,6 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { configManager } from "@bibliothecadao/eternum";
 import { LeftView } from "@/types";
-import { MarketModal } from "@/ui/features/economy/trading";
 import { openProduction, PRODUCTION_SURFACE_ID } from "@/ui/features/settlement/production/open-production";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
@@ -17,7 +16,7 @@ export interface StructureActionBadge {
 }
 
 export interface StructureAction {
-  id: "build" | "production" | "military" | "transfer" | "trade";
+  id: "build" | "production" | "military" | "transfer";
   label: string;
   active: boolean;
   badges?: StructureActionBadge[];
@@ -30,15 +29,14 @@ type NativeCommand = Parameters<typeof configManager.isCommandEnabled>[0];
 
 /**
  * The commands each realm action issues. An action is offered only where the game's command mask enables one of
- * them, so a mode that leaves a command out (Frontier has no transfers, production burns or market) loses the
+ * them, so a mode that leaves a command out (Frontier has no transfers or production burns) loses the
  * action with it, whatever the mode.
  */
 const ACTION_COMMANDS: Record<StructureAction["id"], NativeCommand[]> = {
   build: ["CreateBuilding"],
-  production: ["BurnResourceForResourceProduction", "BurnLaborForResourceProduction"],
+  production: ["BurnResourceForResourceProduction"],
   military: ["CreateExplorer", "ManageTroops"],
   transfer: ["SendResources", "OffloadArrival"],
-  trade: ["CreateTradeOrder", "AcceptTradeOrder", "BuyFromBank", "SellToBank"],
 };
 
 export const isStructureActionEnabled = (
@@ -47,7 +45,7 @@ export const isStructureActionEnabled = (
 ): boolean => ACTION_COMMANDS[id].some(isCommandEnabled);
 
 /**
- * The actions of the active owned structure (Build, Production, Military, Transfer, Trade) that the game's commands
+ * The actions of the active owned structure (Build, Production, Military, Transfer) that the game's commands
  * allow, each with its open state and dispatch, and shut with the reason until play opens. Null for a spectator or while a foreign structure is selected, so the
  * desktop panel and the compact strip appear and disappear together.
  */
@@ -60,7 +58,6 @@ export function useStructureActions(): StructureAction[] | null {
   const setView = useUIStore((state) => state.setLeftNavigationView);
   const openId = usePopoverStore((state) => state.openId);
   const closePopover = usePopoverStore((state) => state.close);
-  const openSurface = usePopoverStore((state) => state.openSurface);
   const arrivedArrivalsNumber = useUIStore((state) => state.arrivedArrivalsNumber);
   const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
   const ordersAllowed = useUIStore(canIssueOrders);
@@ -83,12 +80,6 @@ export function useStructureActions(): StructureAction[] | null {
     if (openId === PRODUCTION_SURFACE_ID) closePopover();
     else openProduction({ realmId: safeInteger(structureEntityId) });
   };
-  const openMarket = () => {
-    setView(LeftView.None);
-    if (openId === "market") closePopover();
-    else openSurface({ id: "market", content: <MarketModal />, anchor: "right-edge" });
-  };
-
   const actions: StructureAction[] = [
     {
       id: "build",
@@ -121,13 +112,6 @@ export function useStructureActions(): StructureAction[] | null {
         { count: arrivedArrivalsNumber, tone: "ready" },
         { count: pendingArrivalsNumber, tone: "pending" },
       ],
-    },
-    {
-      id: "trade",
-      label: "Trade",
-      active: openId === "market",
-      onClick: openMarket,
-      refusal,
     },
   ];
   return actions.filter((action) =>

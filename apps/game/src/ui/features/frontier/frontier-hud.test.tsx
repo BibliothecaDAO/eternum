@@ -1,13 +1,16 @@
 // @vitest-environment jsdom
+import { layerName } from "@bibliothecadao/types";
 import { SeasonOver } from "@/shell/season-tab/season-over";
 import approvedExtension from "../../../../../../config/source/frontier/extension.json";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
+import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { shortString } from "starknet";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { nativeReleaseConstants } from "../../../../../../contracts/l3/world-native/schema/client.gen";
 import type { HudSurface } from "./hud/frontier-nav";
 
 // The real Frontier HUD on the lab's game. Only the network, the identity and the chat pane's own drawing stand in: the
@@ -83,6 +86,8 @@ let shownStore: NativeFactStore;
 
 beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  // These tests play the whole HUD; the opening interface has its own tests.
+  useWorldAppearanceStore.setState({ showEverything: true });
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => new Response(JSON.stringify({ blocked: [], version: 0 }), { status: 200 })),
@@ -116,7 +121,7 @@ const renderHud = () =>
     root.render(
       <MemoryRouter>
         <QueryClientProvider client={new QueryClient()}>
-          <LabGame preset={5} facts={() => [LABOR_RULES]}>
+          <LabGame preset={5} facts={(store) => [LABOR_RULES, sealRelease(store)]}>
             {(store) => {
               shownStore = store;
               return <FrontierHud seasonOver={SeasonOver} rules={readExpeditionRules(store, 1)!} />;
@@ -126,6 +131,20 @@ const renderHud = () =>
       </MemoryRouter>,
     ),
   );
+
+const sealRelease = (store: NativeFactStore) => {
+  const release = store.require("GameRelease", { game_id: 1 });
+  return {
+    model: "GameRelease",
+    key: store.wireKeyOf("GameRelease", release),
+    value: {
+      ...release,
+      release_id: nativeReleaseConstants.SEAL_RELEASE,
+      created_release_id: nativeReleaseConstants.SEAL_RELEASE,
+      preset_commitment: String(release.preset_commitment),
+    },
+  };
+};
 
 const LABOR_RULES = {
   model: "LaborRules",
@@ -306,10 +325,10 @@ it.each([false, true])(
       .map((badge) => badge.getAttribute("aria-label"))
       .filter((label) => /Settlement|City|Kingdom|Empire/.test(label ?? ""));
     expect(badges).toEqual([
-      `${campaigns ? "Devcon · " : ""}Empire · Ethereal III`,
-      `${campaigns ? "Golden Devcon · " : ""}City · Ethereal II`,
+      `${campaigns ? "Devcon · " : ""}Empire · Deep`,
+      `${campaigns ? "Golden Devcon · " : ""}City · Hollow`,
       "Settlement",
-      "Wonder · Kingdom · Ethereal I",
+      "Wonder · Kingdom · Veil",
     ]);
     const paintings = [...host.querySelectorAll('section[aria-label="Season"] [role="img"]')]
       .filter((badge) => /Settlement|City|Kingdom|Empire/.test(badge.getAttribute("aria-label") ?? ""))
@@ -441,7 +460,7 @@ it("gives a phone a Realm / World switch: it names where it goes, the board then
   expect(toggle().textContent).toBe("Realm");
   await act(async () => toggle().click());
   expect(window.location.pathname).toMatch(/\/hex$/);
-  expect(toggle().textContent).toBe("World");
+  expect(toggle().textContent).toBe(layerName(0));
   expect(toggle().getAttribute("aria-current")).toBeNull();
   // A page open over the board: World still goes to the map, and the page goes with it.
   const feed = () => slots().find((button) => button.textContent?.endsWith("Feed"))!;
@@ -514,8 +533,6 @@ it.each([
   },
 );
 
-/** The control `selector` finds, pressed. */
-const press = (selector: string) => act(async () => host.querySelector<HTMLButtonElement>(selector)!.click());
 /** The Menu opened, then its row named `word` pressed. */
 const fromMenu = async (word: string) => {
   await pressPlace("Menu");
@@ -532,7 +549,10 @@ const PHONE_SURFACES = {
   season: { label: "Season", open: () => fromMenu("Season") },
   realms: { label: "Realm Labor", open: () => fromMenu("Realm Labor") },
   settings: { label: "Settings", open: () => fromMenu("Settings") },
-  withdraw: { label: "Withdraw", open: () => press('button[aria-label^="LORDS"]') },
+  shop: {
+    label: "Shop",
+    open: () => act(async () => host.querySelector<HTMLButtonElement>('button[aria-label^="Fragments"]')!.click()),
+  },
 } satisfies Record<
   // An army's sheet and a lost army's open from an army, which this lab game has none of: frontier-army.test and
   // tile-card.test stand those two in the frame.
@@ -666,6 +686,7 @@ it("keeps the extended season live past its old end and reloads its final day fr
                       ...store.require("GameRegistry", { game_id: 1 }),
                       start_main_at: String(approved.start),
                       start_settling_at: String(approved.start),
+                      scheduled_end_at: String(approved.end),
                       end_at: String(approved.end),
                       seed: approved.seed,
                       settled: false,

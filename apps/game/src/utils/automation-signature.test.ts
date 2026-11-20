@@ -28,7 +28,7 @@ describe("computeAutomationConfigSignature", () => {
       "1": baseRealm({
         presetId: "custom",
         customPercentages: {
-          [ResourcesIds.Knight]: { resourceToResource: 10, laborToResource: 0 },
+          [ResourcesIds.Knight]: { resourceToResource: 10 },
         },
       }),
     });
@@ -36,7 +36,7 @@ describe("computeAutomationConfigSignature", () => {
       "1": baseRealm({
         presetId: "custom",
         customPercentages: {
-          [ResourcesIds.Knight]: { resourceToResource: 15, laborToResource: 0 },
+          [ResourcesIds.Knight]: { resourceToResource: 15 },
         },
       }),
     });
@@ -48,8 +48,8 @@ describe("computeAutomationConfigSignature", () => {
       "1": baseRealm({
         presetId: "custom",
         customPercentages: {
-          [ResourcesIds.Knight]: { resourceToResource: 10, laborToResource: 5 },
-          [ResourcesIds.Crossbowman]: { resourceToResource: 20, laborToResource: 0 },
+          [ResourcesIds.Knight]: { resourceToResource: 10 },
+          [ResourcesIds.Crossbowman]: { resourceToResource: 20 },
         },
       }),
     });
@@ -57,8 +57,8 @@ describe("computeAutomationConfigSignature", () => {
       "1": baseRealm({
         presetId: "custom",
         customPercentages: {
-          [ResourcesIds.Crossbowman]: { resourceToResource: 20, laborToResource: 0 },
-          [ResourcesIds.Knight]: { resourceToResource: 10, laborToResource: 5 },
+          [ResourcesIds.Crossbowman]: { resourceToResource: 20 },
+          [ResourcesIds.Knight]: { resourceToResource: 10 },
         },
       }),
     });

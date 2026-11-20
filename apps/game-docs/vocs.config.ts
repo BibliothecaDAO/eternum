@@ -1,5 +1,5 @@
 import { defineConfig } from "vocs";
-import { docsAliases, publicDir } from "./docs/utils/paths";
+import { docsAliases, publicDir } from "./paths";
 import llmTxtPlugin from "./vite-plugin-llm-txt.mjs";
 import BRAND from "./docs/brand.gen.json";
 import { linkPreviewUrl } from "../game/src/brand/link-preview";
@@ -99,7 +99,7 @@ export default defineConfig({
         { text: "Your realm", link: "/frontier/realm" },
         { text: "Armies", link: "/frontier/armies" },
         { text: "The expedition", link: "/frontier/expedition" },
-        { text: "Chests and LORDS", link: "/frontier/chests" },
+        { text: "Historical chests", link: "/frontier/chests" },
       ],
     },
     {
@@ -125,37 +125,6 @@ export default defineConfig({
             { text: "Getting started", link: "/development/getting-started" },
             { text: "Client", link: "/development/client" },
             { text: "Contracts", link: "/development/contracts" },
-          ],
-        },
-        {
-          text: "Eternum Season 1 (archive)",
-          collapsed: true,
-          items: [
-            { text: "Key concepts", link: "/eternum/key-concepts" },
-            { text: "Game entry", link: "/eternum/game-entry" },
-            { text: "World physics", link: "/eternum/world-physics" },
-            { text: "Realms", link: "/eternum/realm-and-villages/realm" },
-            { text: "Villages", link: "/eternum/realm-and-villages/villages" },
-            { text: "Buildings", link: "/eternum/realm-and-villages/buildings" },
-            { text: "Wonders", link: "/eternum/realm-and-villages/wonders" },
-            { text: "Materials", link: "/eternum/resources/resources" },
-            { text: "Production", link: "/eternum/resources/production" },
-            { text: "Automation", link: "/eternum/resources/automation" },
-            { text: "Storage", link: "/eternum/resources/storage" },
-            { text: "Transfers and trade", link: "/eternum/resources/transfers-and-trade" },
-            { text: "Bridging", link: "/eternum/resources/bridging" },
-            { text: "Armies", link: "/eternum/military/armies" },
-            { text: "Troop tiers", link: "/eternum/military/troop-tiers" },
-            { text: "Stamina and biomes", link: "/eternum/military/stamina-and-biomes" },
-            { text: "Damage", link: "/eternum/military/damage" },
-            { text: "Raiding", link: "/eternum/military/raiding" },
-            { text: "The world map", link: "/eternum/worldmap-movement/worldmap" },
-            { text: "Movement and exploration", link: "/eternum/worldmap-movement/movement" },
-            { text: "World structures", link: "/eternum/world-structures" },
-            { text: "Tribes", link: "/eternum/tribes" },
-            { text: "Victory", link: "/eternum/victory" },
-            { text: "Prize pool", link: "/eternum/prize-pool" },
-            { text: "Achievements", link: "/eternum/achievements" },
           ],
         },
       ],

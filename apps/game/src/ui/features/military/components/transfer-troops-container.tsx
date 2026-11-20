@@ -1,3 +1,4 @@
+import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
 import { MAX_ARMY_SIZE } from "@/ui/design-system/kit/words";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 
@@ -129,7 +130,7 @@ export const TransferTroopsContainer = ({
   const [loading, setLoading] = useState(false);
   const [troopAmount, setTroopAmount] = useState<number>(0);
   const [guardSlot, setGuardSlot] = useState<GuardSelection>(null);
-  const guardFacts = useNativeFacts(["Guard"]);
+  const guardFacts = useNativeFacts([...GUARD_MODELS]);
   const actorTypes = useMemo(() => getActorTypes(transferDirection), [transferDirection]);
   const selectedStructure = useNativeRow("Structure", {
     game_id: configManager.getActiveGameId(),
@@ -730,7 +731,6 @@ export const TransferTroopsContainer = ({
             signer: account,
             to_explorer_id: targetEntityId,
             amount: troopAmountWithPrecision,
-            home_direction: homeDirection,
           });
         } else if (typeof guardSlot === "number") {
           await guard_explorer_swap({

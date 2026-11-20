@@ -3,7 +3,7 @@
  * directory). The Cloudflare half cannot compile contracts, so it trusts the box's build only when that build's release
  * sources are this commit's; the launch Worker then holds the shard's registered release and Herald's mapping to it.
  */
-import { boxRead } from "./box";
+import { boxRead, nativeDocument } from "./box";
 import { PublicError } from "./errors";
 import { command, CommandFailure, shell } from "./process";
 import type { Target } from "./settings";
@@ -25,19 +25,26 @@ export const RELEASE_SOURCES = [
 /** Where the checkout's run leaves the identity for the export that publishes, beside the commit it was read for. */
 const RELEASE_IDENTITY = "release-identity.json";
 
+interface BoxRelease {
+  release: ReleaseIdentity | null;
+  chainId: string | null;
+}
+
 /** Read in the checkout, which has git and the box's SSH alias, before the commit is exported and published. */
 export async function recordReleaseIdentity(store: PrivateStore, target: Target, commit: string) {
-  store.write(RELEASE_IDENTITY, { commit, release: await verifiedReleaseIdentity(target, commit) });
+  const release = await verifiedReleaseIdentity(target, commit);
+  const chainId = (await nativeDocument(target))?.shard.chainId ?? null;
+  store.write(RELEASE_IDENTITY, { commit, release, chainId });
 }
 
 /** The identity recorded for exactly this commit; another commit's never stands in. */
-export function readReleaseIdentity(store: PrivateStore, commit: string): ReleaseIdentity | null {
-  const recorded = store.read<{ commit: string; release: ReleaseIdentity | null }>(RELEASE_IDENTITY);
+export function readReleaseIdentity(store: PrivateStore, commit: string): BoxRelease {
+  const recorded = store.read<{ commit: string } & BoxRelease>(RELEASE_IDENTITY);
   if (recorded?.commit !== commit)
     throw new PublicError(
       "No release identity was read for this commit; run pnpm run deploy:cloudflare from the checkout",
     );
-  return recorded.release;
+  return { release: recorded.release, chainId: recorded.chainId };
 }
 
 /** What the box records of its last build, as far as the release goes. */

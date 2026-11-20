@@ -4,6 +4,7 @@ import type { Abi } from "starknet";
 export interface NativeMember {
   name: string;
   type: string;
+  wireId?: number;
   id?: string;
   feltLength?: number | null;
 }
@@ -58,6 +59,7 @@ export interface NativeRelease {
   migrationClassHash: string;
   releaseId: number;
   releaseSchemas: Record<string, string>;
+  releaseBalances?: Record<string, string>;
   logic: Record<string, string>;
 }
 export interface NativeManifest {

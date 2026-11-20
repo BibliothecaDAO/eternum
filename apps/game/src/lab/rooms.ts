@@ -1,3 +1,4 @@
+import { layerName } from "@bibliothecadao/types";
 import { type ComponentType, lazy, type LazyExoticComponent } from "react";
 
 /** The games a page can draw; the lab's Game switch writes one into the address as `mode`. */
@@ -325,6 +326,36 @@ export const ROOMS: LabRoom[] = [
             "/lab/day-end",
             "day-end",
             load(() => import("./day-end/view"), "DayEndLabView"),
+          ),
+        ],
+      },
+      {
+        title: "Season 1",
+        modes: FRONTIER,
+        views: [
+          view(
+            `${layerName(3)} site`,
+            "/lab/season-one/deep-site",
+            "season-one/deep-site",
+            load(() => import("./season-one/deep-site-lab"), "DeepSiteLab"),
+          ),
+          view(
+            "Day banner",
+            "/lab/season-one/day-banner",
+            "season-one/day-banner",
+            load(() => import("./season-one/day-banner-lab"), "DayBannerLab"),
+          ),
+          view(
+            "Opening",
+            "/lab/season-one/opening",
+            "season-one/opening",
+            load(() => import("./season-one/opening-lab"), "OpeningLab"),
+          ),
+          view(
+            "Race",
+            "/lab/season-one/race",
+            "season-one/race",
+            load(() => import("./season-one/aspect-page-lab"), "AspectPageLab"),
           ),
         ],
       },

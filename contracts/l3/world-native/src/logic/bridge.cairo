@@ -10,10 +10,10 @@ pub mod BridgeState {
     use crate::logic::withdrawals::WithdrawalState::InternalTrait as WithdrawalInternalTrait;
     use crate::ownership::{ResourceTransferStory, Story, StoryEvent, TransferType};
     use crate::resources::{
-        IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceAmount, ResourceKey,
+        IResourceDeliveryDispatcherTrait, IResourceDeliveryLibraryDispatcher, IResourceOperationsDispatcherTrait,
+        IResourceOperationsLibraryDispatcher, ResourceAmount, ResourceKey,
     };
     use crate::structures::{Structure, structure_coord};
-    use crate::trade::{IEconomyDeliveryDispatcherTrait, IEconomyDeliveryLibraryDispatcher};
     use crate::withdrawals::{resource_amount, token_amount, transfer_or_mint};
 
     #[storage]
@@ -52,7 +52,8 @@ pub mod BridgeState {
             let rules = self.deposit_rules(game_id);
             assert!(!rules.paused, "resource bridge deposit is paused");
             let withdrawals = self.withdrawals();
-            let token = withdrawals.token(crate::market::MarketKey { game_id, resource_type: command.resource_type });
+            let token = withdrawals
+                .token(crate::withdrawals::ResourceTokenKey { game_id, resource_type: command.resource_type });
             assert!(
                 target.base.category != crate::taxonomy::VILLAGE_CATEGORY
                     || !crate::resources::is_troop_resource(command.resource_type),
@@ -114,7 +115,8 @@ pub mod BridgeState {
             let withdrawals = self.withdrawals();
             let rules = withdrawals.rules(game_id);
             assert!(!rules.paused, "resource bridge withdrawal is paused");
-            let token = withdrawals.token(crate::market::MarketKey { game_id, resource_type: command.resource_type });
+            let token = withdrawals
+                .token(crate::withdrawals::ResourceTokenKey { game_id, resource_type: command.resource_type });
             self
                 .resources(game_id)
                 .spend_resource(
@@ -139,30 +141,6 @@ pub mod BridgeState {
                     context,
                 );
             self.pay_withdrawal(game_id, command.recipient, token, amount, realm_fee, command.client_fee_recipient);
-            ()
-        }
-    }
-    #[embeddable_as(BankWithdrawalImpl)]
-    pub impl BankWithdrawal<
-        TContractState,
-        +HasComponent<TContractState>,
-        impl Life: ReleaseState::HasComponent<TContractState>,
-        impl Withdrawals: WithdrawalState::HasComponent<TContractState>,
-        +Drop<TContractState>,
-    > of crate::bridge::IBankWithdrawal<ComponentState<TContractState>> {
-        fn withdraw_bank_resources(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            actor: ContractAddress,
-            bank_id: u64,
-            resource_type: u8,
-            amount: u128,
-            timestamp: u64,
-            game_context: crate::commands::ActionContext,
-        ) -> () {
-            let game_context = crate::commands::execution_context(game_id, game_context);
-
-            self.withdraw_liquidity_token(game_id, actor, bank_id, resource_type, amount, timestamp, game_context);
             ()
         }
     }
@@ -265,38 +243,6 @@ pub mod BridgeState {
                 );
             transfer_or_mint(token, recipient, converted - token_amount(token, resource_fee) - fees);
         }
-        fn withdraw_liquidity_token(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            actor: ContractAddress,
-            bank_id: u64,
-            resource_type: u8,
-            amount: u128,
-            timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
-        ) {
-            let withdrawals = self.withdrawals();
-            let rules = withdrawals.rules(game_id);
-            assert!(!rules.paused, "resource bridge withdrawal is paused");
-            let token = withdrawals.token(crate::market::MarketKey { game_id, resource_type });
-            let amount = withdrawals.retained_amount(game_id, resource_type, amount, self.completed(game_id));
-            let fee = amount * rules.bank_fee_bps.into() / 10000;
-            if rules.bank_fee_bps != 0 {
-                assert!(fee != 0, "amount too small to pay bank fees");
-                self
-                    .deliver(
-                        game_id,
-                        0,
-                        bank_id,
-                        ResourceAmount { resource_type, amount: fee },
-                        0,
-                        true,
-                        timestamp,
-                        game_context,
-                    );
-            }
-            self.pay_withdrawal(game_id, actor, token, amount, fee, 0.try_into().unwrap());
-        }
         fn realm_fee(
             ref self: ComponentState<TContractState>,
             game_id: u32,
@@ -374,8 +320,8 @@ pub mod BridgeState {
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
         ) {
-            IEconomyDeliveryLibraryDispatcher { class_hash: self.logic_classes(game_id).resources.read() }
-                .queue_economy_delivery(
+            IResourceDeliveryLibraryDispatcher { class_hash: self.logic_classes(game_id).resources.read() }
+                .queue_resource_delivery(
                     ResourceKey { game_id, entity_id: to_id },
                     resource,
                     travel_time,

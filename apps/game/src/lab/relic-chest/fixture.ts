@@ -1,7 +1,7 @@
 import { configManager, dayOf, readExpeditionRules } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { relicChestRelics } from "@bibliothecadao/types";
-import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { blitzBalance } from "../../../../../config/source/blitz/balance";
 import { blitzPreset } from "../../../../../config/source/blitz/native";
 
@@ -47,6 +47,7 @@ export function chestStudyGame(frontier = false) {
         name: "1",
         start_settling_at: "1",
         start_main_at: "100",
+        scheduled_end_at: "1000",
         end_at: "1000",
         settled: false,
         ready: true,

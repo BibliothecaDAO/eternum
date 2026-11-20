@@ -1,30 +1,21 @@
-import { formatAmount } from "@bibliothecadao/types";
-import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudPanel, HudPortrait, HudRow, rankedTip } from "@/ui/design-system/kit/hud-elements";
-import { ARMIES, TROOPS, troopCount, UPGRADE, XP } from "@/ui/design-system/kit/words";
+import { type IconMeaning } from "@/ui/design-system/icon";
+import { HudPanel, HudPortrait, HudRow } from "@/ui/design-system/kit/hud-elements";
+import { ARMIES, TROOPS, troopCount } from "@/ui/design-system/kit/words";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import type { ReactNode } from "react";
 
 import type { EtherealLayer } from "@bibliothecadao/eternum";
+import type { DeepArmyLife } from "@bibliothecadao/eternum/game-client";
 
-import { EtherealMark, HomecomingReturn, SlotRing, StaminaReading, xpLine, type XpGoal } from "./army-token";
+import { DeepDrain, EtherealMark, SlotRing, StaminaReading } from "./army-token";
 
-/**
- * One army on a desktop's list: its painting with its number; its name with its XP beside it (what it buys next on
- * hover) and, in the day's last hour, what its Homecoming sends home; under them its troops and its stamina as a bar with
- * the exact count; at its end, while its XP buys a level now, the card fan. A press picks the army and opens its panel,
- * where its levels are bought. The desktop's form of the dock's token; a phone keeps the token. Read-only on a visit.
- */
 export const ArmyRow = ({
   label,
   number,
   art,
   troops,
-  returnsHome,
+  drain,
   stamina,
-  xp,
-  xpGoal,
-  canSpendSkillPoint,
   ethereal,
   selected,
   flyTarget,
@@ -32,16 +23,13 @@ export const ArmyRow = ({
 }: {
   label: string;
   number: number | undefined;
+  /** What its Deep site costs it: its troops fall each tick. None while it holds none. */
+  drain?: DeepArmyLife;
   /** The Ethereal layer it stands in; none on the surface. */
   ethereal?: EtherealLayer;
   art: IconMeaning | undefined;
   troops: number | undefined;
-  /** In the day's last hour, the troops its Homecoming sends home when the day ends; none otherwise. */
-  returnsHome?: number;
   stamina: StaminaBar | undefined;
-  xp: number | undefined;
-  xpGoal?: XpGoal;
-  canSpendSkillPoint: boolean;
   selected: boolean;
   /** Where a gain flies into the portrait. */
   flyTarget?: string;
@@ -61,25 +49,15 @@ export const ArmyRow = ({
       </span>
     }
     label={label}
-    title={
-      <RowLine
-        words={label}
-        figure={
-          <span {...rankedTip(xpLine(xp, xpGoal))} className="text-hud-gold">
-            {`${formatAmount(xp)} ${XP}`}
-          </span>
-        }
-      />
-    }
+    title={label}
     // The troops line is figures throughout, set as the HUD sets figures.
     detail={
       <span className="flex flex-col gap-1 tabular-nums">
         <RowLine words={troops === undefined ? "—" : troopCount(troops)} figure={<RowStamina stamina={stamina} />} />
-        {returnsHome !== undefined && <HomecomingReturn troops={returnsHome} words />}
+        {drain && <DeepDrain drain={drain} words />}
       </span>
     }
     // The trail is the card fan while a level is affordable now: the row itself opens the panel that buys it.
-    trail={<RowTrail>{canSpendSkillPoint && <SemanticIcon name="picks" size={20} data-tip={UPGRADE} />}</RowTrail>}
     selected={selected}
     onClick={onPick}
   />
@@ -142,6 +120,7 @@ const RowStamina = ({ stamina }: { stamina: StaminaBar | undefined }) => (
 );
 
 /** A list row's trail, the same place on every row whether it holds the card fan or nothing. */
+
 const RowTrail = ({ children }: { children?: ReactNode }) => (
   <span className="flex size-5 items-center justify-center">{children}</span>
 );

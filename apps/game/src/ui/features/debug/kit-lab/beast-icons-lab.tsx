@@ -60,7 +60,6 @@ export function BeastIconsLab() {
                   guardLeft: 0,
                 }}
                 pay={category === StructureType.Camp ? { icon: "labor", amount: 550 } : null}
-                xp={30}
                 verb={null}
                 onClose={() => {}}
               />

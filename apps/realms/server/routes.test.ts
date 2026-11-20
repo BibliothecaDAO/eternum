@@ -6,9 +6,9 @@ const handlers = vi.hoisted(() => ({ directory: vi.fn(), devices: vi.fn(), chat:
 vi.mock("./directory", () => ({
   handleDirectory: handlers.directory,
   handleDirectoryHistory: handlers.directory,
-  handleAdmitShard: vi.fn(),
-  handleRegisterPendingShard: vi.fn(),
-  handleShardStatus: vi.fn(),
+  handleRegisterShard: vi.fn(),
+  handleRemoveShard: vi.fn(),
+  directoryShard: vi.fn(),
 }));
 vi.mock("./devices", () => ({ handleDeviceChange: handlers.devices, handleBotDeviceApproval: vi.fn() }));
 vi.mock("./chat/routes", () => ({ routeChat: handlers.chat }));
@@ -36,7 +36,7 @@ beforeEach(() => {
     PUBLIC_RATE_LIMIT: limiter(30),
     DIRECTORY_RATE_LIMIT: limiter(600),
   } as unknown as IdentityEnv;
-  handlers.directory.mockImplementation(async () => Response.json({ shards: [] }));
+  handlers.directory.mockImplementation(async () => Response.json({ shard: null }));
   handlers.devices.mockImplementation(async () => Response.json({ signature: [] }));
   handlers.chat.mockImplementation(async () => Response.json({ blocked: [] }));
 });
@@ -71,6 +71,11 @@ it.each([
   ["/api/chat/blocks/0x2", "DELETE"],
   ["/api/notifications/preferences", "POST"],
   ["/api/build-orders", "POST"],
+  ["/api/opening", "POST"],
+  ["/api/order-intent", "POST"],
+  ["/api/seal-code", "POST"],
+  ["/api/shop/receipt", "POST"],
+  ["/api/shop/purchase-check", "POST"],
   ["/api/notifications/push/subscribe", "POST"],
 ])("rejects sibling-origin and originless cookie mutations at %s", async (path, method) => {
   for (const originHeader of [null, "https://herald.realms.party", "null"]) {
@@ -106,3 +111,18 @@ it("accepts app-origin mutations and leaves operator routes to bearer authentica
   );
   expect(denied.status).toBe(401);
 });
+
+it.each(["/api/operator/chat-retention"])(
+  "answers an operator POST at %s without an Origin by its token, never by the origin rule",
+  async (path) => {
+    for (const authorization of [undefined, "Bearer wrong"]) {
+      const response = await routeIdentityRequest(
+        new Request(origin + path, { method: "POST", headers: authorization ? { authorization } : {}, body: "{}" }),
+        env,
+        auth,
+        platform,
+      );
+      expect([response.status, await response.json()]).toEqual([401, { error: "unauthorized" }]);
+    }
+  },
+);

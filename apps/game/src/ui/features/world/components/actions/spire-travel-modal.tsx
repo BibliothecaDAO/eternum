@@ -6,7 +6,7 @@ import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { getTileAt, configManager, entityMapPosition } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { formatCharge, type ID } from "@bibliothecadao/types";
+import { eternumMapName, formatCharge, type ID } from "@bibliothecadao/types";
 import { resolveSpireCrossing } from "./spire-crossing";
 
 export const SpireTravelModal = ({
@@ -30,7 +30,7 @@ export const SpireTravelModal = ({
   const position = explorer ? entityMapPosition(store, explorer.game_id, explorerId) : undefined;
   const destination = position ? getTileAt(store, !position.alt, position.x, position.y) : undefined;
   const crossing = resolveSpireCrossing(position?.alt, destination);
-  const sideName = crossing.kind !== "unknown" && crossing.toEthereal ? "the Ethereal Layer" : "the surface";
+  const sideName = `the ${eternumMapName(crossing.kind !== "unknown" && crossing.toEthereal)}`;
 
   const handleTravel = () => {
     closeSurface();
@@ -79,8 +79,8 @@ export const SpireTravelModal = ({
             {crossing.kind === "unknown"
               ? "Cross the spire"
               : crossing.toEthereal
-                ? "Enter the Ethereal Layer"
-                : "Return to the surface"}
+                ? `Enter the ${eternumMapName(true)}`
+                : `Return to the ${eternumMapName(false)}`}
           </span>
         </Button>
       </div>

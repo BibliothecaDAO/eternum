@@ -1,20 +1,205 @@
-export { completeNativeBatches } from "./native-batch";
-export { batchRemaining, gameplayRejection } from "./native-receipt";
-export type { GameplayRejection } from "./native-receipt";
 export type { BatchTransactionReceipt } from "@bibliothecadao/types";
-import { requireBatchReceipt } from "./native-batch";
+export { completeNativeBatches } from "./native-batch";
 export { encodeNativeCommand } from "./native-command";
 export type { NativeCommand, NativeCommandPayloads } from "./native-command";
+export { batchRemaining, gameplayRejection } from "./native-receipt";
+export type { GameplayRejection } from "./native-receipt";
+import { requireBatchReceipt } from "./native-batch";
 /**
  * Provider class for interacting with the Eternum game contracts
  *
  * @param contracts - The shard's command entrypoint and bridge addresses
  * @param url - Optional RPC URL for the provider
  */
-import { encodeNativeCommand, type NativeCommand, type NativeCommandPayloads } from "./native-command";
-import type { Abi } from "starknet";
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param contracts - The shard's command entrypoint and bridge addresses
+ * @param url - Optional RPC URL for the provider
+ */
 import * as SystemProps from "@bibliothecadao/types";
 import EventEmitter from "eventemitter3";
+import type { Abi } from "starknet";
 import {
   Account,
   AccountInterface,
@@ -24,10 +209,11 @@ import {
   CallData,
   GetTransactionReceiptResponse,
   RpcProvider,
-  uint256,
   shortString,
+  uint256,
 } from "starknet";
-import { classifyTransactionError, TransactionFailure, extractErrorMessage } from "./classify-transaction-error";
+import { classifyTransactionError, extractErrorMessage, TransactionFailure } from "./classify-transaction-error";
+import { encodeNativeCommand, type NativeCommand } from "./native-command";
 import { ACTION_CHECKING_AFTER_MS, TransactionNotSentError } from "./transaction-not-sent";
 import {
   TransactionFailedPayload,
@@ -35,10 +221,10 @@ import {
   TransactionLifecycleMeta,
   TransactionProviderState,
   TransactionRetrySafety,
+  TransactionStreamWaiter,
   TransactionSubmitFailureKind,
   TransactionSubmitGuard,
   TransactionSubmitGuardContext,
-  TransactionStreamWaiter,
   TransactionType,
 } from "./types";
 /** Sends one game command as the signer's own transaction; resolves with its hash as soon as the send returns. */
@@ -61,13 +247,13 @@ export const createShardRpcProvider = (nodeUrl?: string): RpcProvider =>
 
 export {
   classifyTransactionError,
-  TransactionFailure,
   extractErrorMessage,
   formatErrorForConsole,
+  TransactionFailure,
 } from "./classify-transaction-error";
 export type { ClassifiedTransactionError } from "./classify-transaction-error";
+export { PLAY_REFUSALS, playRefusalReasonOf, PLAYS_IN_FLIGHT, type PlayRefusalReason } from "./play-refusal";
 export { ACTION_CHECKING_AFTER_MS, TransactionNotSentError } from "./transaction-not-sent";
-export { PLAY_REFUSALS, PLAYS_IN_FLIGHT, playRefusalReasonOf, type PlayRefusalReason } from "./play-refusal";
 export { TransactionType } from "./types";
 export type {
   TransactionFailedPayload,
@@ -75,10 +261,10 @@ export type {
   TransactionLifecycleMeta,
   TransactionProviderState,
   TransactionRetrySafety,
+  TransactionStreamWaiter,
   TransactionSubmitFailureKind,
   TransactionSubmitGuard,
   TransactionSubmitGuardContext,
-  TransactionStreamWaiter,
 } from "./types";
 
 const classifySubmitFailure = (
@@ -489,45 +675,6 @@ export class EternumProvider extends EventEmitter {
     } as GetTransactionReceiptResponse;
   }
 
-  public async create_order(props: SystemProps.CreateOrderProps) {
-    return this.submitCommand(
-      props.signer,
-      {
-        kind: "CreateTradeOrder",
-        value: {
-          maker_id: props.maker_id,
-          taker_id: props.taker_id,
-          offered_resource: props.maker_gives_resource_type,
-          requested_resource: props.taker_pays_resource_type,
-          offered_per_lot: props.maker_gives_min_resource_amount,
-          requested_per_lot: props.taker_pays_min_resource_amount,
-          lots: props.maker_gives_max_count,
-          expires_at: props.expires_at,
-        },
-      },
-      TransactionType.CREATE_ORDER,
-    );
-  }
-
-  public async accept_order(props: SystemProps.AcceptOrderProps) {
-    return this.submitCommand(
-      props.signer,
-      {
-        kind: "AcceptTradeOrder",
-        value: { trade_id: props.trade_id, taker_id: props.taker_id, lots: props.taker_buys_count },
-      },
-      TransactionType.ACCEPT_ORDER,
-    );
-  }
-
-  public async cancel_order(props: SystemProps.CancelOrderProps) {
-    return this.submitCommand(
-      props.signer,
-      { kind: "CancelTradeOrder", value: props.trade_id },
-      TransactionType.CANCEL_ORDER,
-    );
-  }
-
   public async create_hyperstructure(props: SystemProps.SystemSigner & { x: number; y: number; alt: boolean }) {
     return this.submitCommand(
       props.signer,
@@ -556,47 +703,69 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
-  /** Spends an army's point on one rank, or on stamina alone. */
-  public async spend_skill_point(
+  public async choose_oath(
     props: SystemProps.SystemSigner & {
       explorerId: number;
-      choice: NativeCommandPayloads["SpendSkillPoint"]["choice"];
+      expectedPick: number;
+      oath: number | null;
+      replace: number | null;
     },
   ) {
     return this.submitCommand(
       props.signer,
-      { kind: "SpendSkillPoint", value: { explorer_id: props.explorerId, choice: props.choice } },
-      TransactionType.SPEND_SKILL_POINT,
+      {
+        kind: "ChooseOath",
+        value: {
+          explorer_id: props.explorerId,
+          expected_pick: props.expectedPick,
+          oath: props.oath === null ? { kind: "None", value: undefined } : { kind: "Some", value: props.oath },
+          replace: props.replace === null ? { kind: "None", value: undefined } : { kind: "Some", value: props.replace },
+        },
+      },
+      TransactionType.CHOOSE_OATH,
     );
   }
 
-  /** Buys the chosen whole stamina points for one LORDS each from the army's realm. */
-  public async refill_stamina(props: SystemProps.SystemSigner & { explorerId: number; amount: number }) {
+  public async buy_stamina(props: SystemProps.SystemSigner & { explorerId: number; fragments: number }) {
     return this.submitCommand(
       props.signer,
-      { kind: "RefillStamina", value: { explorer_id: props.explorerId, amount: props.amount } },
-      TransactionType.REFILL_STAMINA,
+      { kind: "BuyStamina", value: { explorer_id: props.explorerId, fragments: props.fragments } },
+      TransactionType.BUY_STAMINA,
     );
   }
 
-  /**
-   * Takes whole LORDS out of a realm for the owner's payout wallet on Starknet: the shard debits the realm and records
-   * the withdrawal, which the relay pays; the receipt's transaction hash is the claim the ledger keys the payment by.
-   */
-  public async withdraw_lords(props: SystemProps.SystemSigner & { structureId: number; amount: number }) {
+  public async buy_seal(props: SystemProps.SystemSigner) {
+    return this.submitCommand(props.signer, { kind: "BuySeal", value: undefined }, TransactionType.BUY_SEAL);
+  }
+
+  public async reroll_oath(
+    props: SystemProps.SystemSigner & { explorerId: number; expectedPick: number; index: number },
+  ) {
     return this.submitCommand(
       props.signer,
-      { kind: "WithdrawLords", value: { structure_id: props.structureId, amount: props.amount } },
-      TransactionType.WITHDRAW_LORDS,
+      {
+        kind: "RerollOath",
+        value: { explorer_id: props.explorerId, expected_pick: props.expectedPick, index: props.index },
+      },
+      TransactionType.REROLL_OATH,
     );
   }
 
-  public async settle_season(props: SystemProps.SystemSigner & { selectedRealm?: number }) {
+  public async claim_daily_quest(props: SystemProps.SystemSigner & { home: number; day: number }) {
+    return this.submitCommand(
+      props.signer,
+      { kind: "ClaimDailyQuest", value: { home: props.home, day: props.day } },
+      TransactionType.CLAIM_DAILY_QUEST,
+    );
+  }
+
+  public async settle_season(props: SystemProps.SystemSigner & { selectedRealm?: number; order?: number }) {
     return this.submitCommand(
       props.signer,
       {
         kind: "SettleSeason",
         value: {
+          order: props.order === undefined ? { kind: "None", value: undefined } : { kind: "Some", value: props.order },
           selected_realm:
             props.selectedRealm === undefined
               ? { kind: "None", value: undefined }
@@ -652,7 +821,6 @@ export class EternumProvider extends EventEmitter {
           directions: props.directions,
           category: props.building_category,
           use_simple: props.use_simple,
-          scouting_kind: props.scouting_kind,
         },
       },
       TransactionType.CREATE_BUILDING,
@@ -668,7 +836,7 @@ export class EternumProvider extends EventEmitter {
           kind: "RecruitGuard",
           value: {
             guard: { structure_id: props.for_structure_id, slot: props.slot },
-            category: unitVariant(props.category, ["Knight", "Paladin", "Crossbowman"] as const),
+            category: unitVariant(props.category, SystemProps.TROOP_TYPES),
             tier: unitVariant(props.tier, ["T1", "T2", "T3"] as const),
             amount: props.amount,
           },
@@ -712,7 +880,17 @@ export class EternumProvider extends EventEmitter {
       props.signer,
       {
         kind: "ManageTroops",
-        value: { kind: "RecruitExplorer", value: { explorer_id: props.to_explorer_id, amount: props.amount } },
+        value: {
+          kind: "RecruitExplorer",
+          value: {
+            explorer_id: props.to_explorer_id,
+            amount: props.amount,
+            supply_post:
+              props.supply_post === undefined
+                ? { kind: "None", value: undefined }
+                : { kind: "Some", value: props.supply_post },
+          },
+        },
       },
       TransactionType.EXPLORER_ADD,
     );
@@ -794,7 +972,17 @@ export class EternumProvider extends EventEmitter {
   public async attack_explorer_vs_guard(props: SystemProps.AttackExplorerVsGuardProps) {
     return this.submitCommand(
       props.signer,
-      { kind: "BattleGuard", value: { attacker_id: props.explorer_id, defender_id: props.structure_id } },
+      {
+        kind: "BattleGuard",
+        value: {
+          attacker_id: props.explorer_id,
+          defender_id: props.structure_id,
+          relic_slot:
+            props.relic_slot === undefined
+              ? { kind: "None", value: undefined }
+              : { kind: "Some", value: props.relic_slot },
+        },
+      },
       TransactionType.ATTACK_EXPLORER_VS_GUARD,
     );
   }
@@ -810,53 +998,6 @@ export class EternumProvider extends EventEmitter {
         },
       },
       TransactionType.ATTACK_GUARD_VS_EXPLORER,
-    );
-  }
-
-  public async raid_explorer_vs_guard(props: SystemProps.RaidExplorerVsGuardProps) {
-    return this.submitCommand(
-      props.signer,
-      {
-        kind: "Raid",
-        value: {
-          explorer_id: props.explorer_id,
-          structure_id: props.structure_id,
-          steal_resources: resourceAmounts(props.steal_resources),
-        },
-      },
-      TransactionType.RAID_EXPLORER_VS_GUARD,
-    );
-  }
-
-  public async pledge_faith(props: SystemProps.PledgeFaithProps) {
-    return this.submitCommand(
-      props.signer,
-      { kind: "PledgeFaith", value: { structure_id: props.structure_id, wonder_id: props.wonder_id } },
-      TransactionType.PLEDGE_FAITH,
-    );
-  }
-
-  public async remove_faith(props: SystemProps.RemoveFaithProps) {
-    return this.submitCommand(
-      props.signer,
-      { kind: "RemoveFaith", value: props.structure_id },
-      TransactionType.REMOVE_FAITH,
-    );
-  }
-
-  public async update_wonder_ownership(props: SystemProps.UpdateWonderOwnershipProps) {
-    return this.submitCommand(
-      props.signer,
-      { kind: "UpdateWonderOwnership", value: props.wonder_id },
-      TransactionType.UPDATE_WONDER_OWNERSHIP,
-    );
-  }
-
-  public async update_structure_ownership(props: SystemProps.UpdateStructureOwnershipProps) {
-    return this.submitCommand(
-      props.signer,
-      { kind: "UpdateFaithfulOwnership", value: props.structure_id },
-      TransactionType.UPDATE_STRUCTURE_OWNERSHIP,
     );
   }
 
@@ -956,21 +1097,6 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
-  public async burn_labor_for_resource_production(props: SystemProps.BurnLaborResourcesForOtherProductionProps) {
-    return this.submitCommand(
-      props.signer,
-      {
-        kind: "BurnLaborForResourceProduction",
-        value: {
-          structure_id: props.from_entity_id,
-          resource_types: props.produced_resource_types,
-          amounts: props.production_cycles,
-        },
-      },
-      TransactionType.BURN_LABOR_FOR_RESOURCE_PRODUCTION,
-    );
-  }
-
   public async burn_resource_for_resource_production(props: SystemProps.BurnOtherPredefinedResourcesForResourcesProps) {
     return this.submitCommand(
       props.signer,
@@ -1018,21 +1144,13 @@ export class EternumProvider extends EventEmitter {
         value: {
           entity_id: props.entity_id,
           relic_id: props.relic_resource_id,
-          recipient: unitVariant(props.recipient_type, ["Explorer", "StructureProduction", "StructureGuard"] as const),
+          recipient:
+            props.relic_slot === undefined
+              ? unitVariant(props.recipient_type, ["Explorer", "StructureProduction", "StructureGuard"] as const)
+              : { kind: "ArmySlot", value: props.relic_slot },
         },
       },
       TransactionType.APPLY_RELIC,
-    );
-  }
-
-  public async transfer_structure_ownership(props: SystemProps.TransferStructureOwnershipProps) {
-    return this.submitCommand(
-      props.signer,
-      {
-        kind: "TransferStructureOwnership",
-        value: { entity_id: props.structure_id, new_owner: props.new_owner },
-      },
-      TransactionType.TRANSFER_STRUCTURE_OWNERSHIP,
     );
   }
 
@@ -1057,54 +1175,6 @@ export class EternumProvider extends EventEmitter {
       props.signer,
       { kind: "ResumeBuildingProduction", value: { structure_id: props.entity_id, coord: props.building_coord } },
       TransactionType.RESUME_BUILDING_PRODUCTION,
-    );
-  }
-
-  public async buy_resources(props: SystemProps.BuyResourcesProps) {
-    return this.submitCommand(
-      props.signer,
-      {
-        kind: "BuyFromBank",
-        value: {
-          bank_id: props.bank_entity_id,
-          structure_id: props.entity_id,
-          resource_type: props.resource_type,
-          amount: props.amount,
-        },
-      },
-      TransactionType.BUY,
-    );
-  }
-
-  public async sell_resources(props: SystemProps.SellResourcesProps) {
-    return this.submitCommand(
-      props.signer,
-      {
-        kind: "SellToBank",
-        value: {
-          bank_id: props.bank_entity_id,
-          structure_id: props.entity_id,
-          resource_type: props.resource_type,
-          amount: props.amount,
-        },
-      },
-      TransactionType.SELL,
-    );
-  }
-
-  public async remove_liquidity(props: SystemProps.RemoveLiquidityProps) {
-    return this.submitCommand(
-      props.signer,
-      {
-        kind: "RemoveBankLiquidity",
-        value: {
-          bank_id: props.bank_entity_id,
-          structure_id: props.entity_id,
-          resource_type: props.resource_type,
-          shares: props.shares,
-        },
-      },
-      TransactionType.REMOVE,
     );
   }
 
@@ -1135,21 +1205,6 @@ export class EternumProvider extends EventEmitter {
         },
       },
       TransactionType.TROOP_STRUCTURE_ADJACENT_TRANSFER,
-    );
-  }
-
-  public async structure_troop_adjacent_transfer(props: SystemProps.StructureTroopAdjacentTransferProps) {
-    return this.submitCommand(
-      props.signer,
-      {
-        kind: "TransferStructureResourcesToExplorer",
-        value: {
-          from_entity_id: props.from_structure_id,
-          to_entity_id: props.to_troop_id,
-          resources: resourceAmounts(props.resources),
-        },
-      },
-      TransactionType.STRUCTURE_TROOP_ADJACENT_TRANSFER,
     );
   }
 
@@ -1232,21 +1287,6 @@ export class EternumProvider extends EventEmitter {
     return receipt;
   }
 
-  public async add_liquidity(props: SystemProps.AddLiquidityProps) {
-    let receipt: GetTransactionReceiptResponse | undefined;
-    for (const value of props.calls)
-      receipt = await this.submitCommand(
-        props.signer,
-        {
-          kind: "AddBankLiquidity",
-          value: { bank_id: props.bank_entity_id, structure_id: props.entity_id, ...value },
-        },
-        TransactionType.ADD_LIQUIDITY,
-      );
-    if (!receipt) throw new Error("Liquidity deposit requires resources");
-    return receipt;
-  }
-
   public async send_resources_multiple(props: SystemProps.SendResourcesMultipleProps) {
     let receipt: GetTransactionReceiptResponse | undefined;
     for (const call of props.calls)
@@ -1269,27 +1309,20 @@ export class EternumProvider extends EventEmitter {
   public async execute_realm_production_plan(
     props: SystemProps.ExecuteRealmProductionPlanProps,
   ): Promise<GetTransactionReceiptResponse | undefined> {
-    let receipt: GetTransactionReceiptResponse | undefined;
-    for (const [kind, instructions] of [
-      ["BurnResourceForResourceProduction", props.resource_to_resource],
-      ["BurnLaborForResourceProduction", props.labor_to_resource],
-    ] as const) {
-      const selected = instructions?.filter(({ cycles }) => BigInt(cycles) > 0n) ?? [];
-      if (!selected.length) continue;
-      receipt = await this.submitCommand(
-        props.signer,
-        {
-          kind,
-          value: {
-            structure_id: props.realm_entity_id,
-            resource_types: selected.map(({ resource_id }) => resource_id),
-            amounts: selected.map(({ cycles }) => cycles),
-          },
+    const selected = props.resource_to_resource?.filter(({ cycles }) => BigInt(cycles) > 0n) ?? [];
+    if (!selected.length) return undefined;
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "BurnResourceForResourceProduction",
+        value: {
+          structure_id: props.realm_entity_id,
+          resource_types: selected.map(({ resource_id }) => resource_id),
+          amounts: selected.map(({ cycles }) => cycles),
         },
-        TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION,
-      );
-    }
-    return receipt;
+      },
+      TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION,
+    );
   }
 
   public async attack_explorer_vs_guard_and_garrison(props: SystemProps.AttackExplorerVsGuardAndGarrisonProps) {
@@ -1350,26 +1383,6 @@ export class EternumProvider extends EventEmitter {
       );
     if (!receipt) throw new Error("Bridge withdrawal requires resources");
     return receipt;
-  }
-
-  public async claim_wonder_points(
-    props: SystemProps.SystemSigner & { value: NativeCommandPayloads["ClaimWonderPoints"] },
-  ) {
-    return this.submitCommand(
-      props.signer,
-      { kind: "ClaimWonderPoints", value: props.value },
-      TransactionType.CLAIM_WONDER_POINTS,
-    );
-  }
-
-  public async claim_player_faith_points(
-    props: SystemProps.SystemSigner & { value: NativeCommandPayloads["ClaimPlayerFaithPoints"] },
-  ) {
-    return this.submitCommand(
-      props.signer,
-      { kind: "ClaimPlayerFaithPoints", value: props.value },
-      TransactionType.CLAIM_PLAYER_FAITH_POINTS,
-    );
   }
 }
 

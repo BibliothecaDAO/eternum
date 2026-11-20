@@ -1,11 +1,13 @@
 import type { HeraldFrontierLeaderboard, HeraldLeaderboard } from "@bibliothecadao/eternum/game-sync";
 import { StructureType } from "@bibliothecadao/types";
 import { uint256 } from "starknet";
+import { LORDS_ADDRESS } from "@realms-world/chain";
 import { buildLedgerEconomicPreset, chestPresetFor } from "../../../../../config/deployer/clean/ledger/economics";
 import { blitzVictoryPointConfig } from "../../../../../config/source/blitz/balance";
 import { VICTORY_POINTS_MULTIPLIER } from "../../../../../config/source/common/arena/points";
+import { FRONTIER_S1_PRESET_ID } from "../../../../../config/source/common/native-preset-modes";
 import { realmsAccountAddress } from "@realms-world/identity/account";
-import type { CampaignReferral, CampaignTicket, Session, ShareTally } from "@realms-world/identity";
+import type { Session, ShareTally } from "@realms-world/identity";
 
 import { orderEmblem } from "@/ui/design-system/kit/order-emblem";
 import type { DoorwayRealm } from "@/ui/features/game-entry/doorway/doorway-screen";
@@ -75,7 +77,13 @@ const game = (over: Partial<DirectoryGame>): DirectoryGame => ({
   ready: true,
   dev_mode_on: false,
   expedition: null,
-  clock: { start_settling_at: NOW - DAY, start_main_at: NOW - DAY, end_at: NOW + 7 * DAY, end_grace_seconds: 0 },
+  clock: {
+    start_settling_at: NOW - DAY,
+    start_main_at: NOW - DAY,
+    scheduled_end_at: NOW + 7 * DAY,
+    end_at: NOW + 7 * DAY,
+    end_grace_seconds: 0,
+  },
   player_count: 0,
   player_state: {
     registered: false,
@@ -118,6 +126,7 @@ const frontier = (withRealm: boolean) =>
     clock: {
       start_settling_at: NOW - 12 * DAY + LEFT_TODAY,
       start_main_at: NOW - 12 * DAY + LEFT_TODAY,
+      scheduled_end_at: NOW + 20 * DAY,
       end_at: NOW + 20 * DAY,
       end_grace_seconds: 0,
     },
@@ -131,7 +140,13 @@ const endedFrontier = game({
   name: "frontier-0",
   status: "Ended",
   season_number: 2,
-  clock: { start_settling_at: NOW - 21 * DAY, start_main_at: NOW - 21 * DAY, end_at: NOW - 3600, end_grace_seconds: 0 },
+  clock: {
+    start_settling_at: NOW - 21 * DAY,
+    start_main_at: NOW - 21 * DAY,
+    scheduled_end_at: NOW - 3600,
+    end_at: NOW - 3600,
+    end_grace_seconds: 0,
+  },
   player_count: 1240,
   player_state: owned,
 });
@@ -141,7 +156,13 @@ const liveBlitz = (member: boolean) =>
     game_id: 7,
     name: "blitz-1500-1",
     mode: "blitz",
-    clock: { start_settling_at: NOW - 3600, start_main_at: NOW - 2400, end_at: NOW + 5040, end_grace_seconds: 0 },
+    clock: {
+      start_settling_at: NOW - 3600,
+      start_main_at: NOW - 2400,
+      scheduled_end_at: NOW + 5040,
+      end_at: NOW + 5040,
+      end_grace_seconds: 0,
+    },
     player_count: 24,
     roster_count: 24,
     player_state: member ? owned : null,
@@ -154,7 +175,13 @@ const preparingBlitz = game({
   mode: "blitz",
   status: "Registration",
   ready: false,
-  clock: { start_settling_at: NOW + 3600, start_main_at: NOW + 7200, end_at: NOW + 14_400, end_grace_seconds: 0 },
+  clock: {
+    start_settling_at: NOW + 3600,
+    start_main_at: NOW + 7200,
+    scheduled_end_at: NOW + 14_400,
+    end_at: NOW + 14_400,
+    end_grace_seconds: 0,
+  },
   player_count: 18,
   roster_count: 24,
   player_state: {
@@ -177,6 +204,7 @@ const eternum = game({
   clock: {
     start_settling_at: NOW + 7 * DAY,
     start_main_at: NOW + 7 * DAY,
+    scheduled_end_at: NOW + 60 * DAY,
     end_at: NOW + 60 * DAY,
     end_grace_seconds: 0,
   },
@@ -187,7 +215,13 @@ const openEternum = game({
   ...eternum,
   status: "Live",
   ready: true,
-  clock: { start_settling_at: NOW - DAY, start_main_at: NOW - DAY, end_at: NOW + 60 * DAY, end_grace_seconds: 0 },
+  clock: {
+    start_settling_at: NOW - DAY,
+    start_main_at: NOW - DAY,
+    scheduled_end_at: NOW + 60 * DAY,
+    end_at: NOW + 60 * DAY,
+    end_grace_seconds: 0,
+  },
   player_state: {
     registered: true,
     settled: false,
@@ -202,6 +236,13 @@ const openEternum = game({
 /** One state per screen the painted pass draws. */
 export const LAB_SCREENS = {
   "first-visit": { signedIn: false, games: [frontier(false), liveBlitz(false), eternum] },
+  preseason: { signedIn: false, games: [] },
+  "preseason-member": { signedIn: true, games: [] },
+  "preseason-chosen": { signedIn: true, games: [] },
+  "preseason-sealed": { signedIn: true, games: [] },
+  "preseason-invited": { signedIn: false, games: [] },
+  "preseason-invited-pick": { signedIn: true, games: [] },
+  fragments: { signedIn: true, games: [] },
   home: { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   // Play for a player with the longest name an account takes (packages/identity account-rules), with the install
   // notice: the desktop bar must hold both at its narrowest width.
@@ -263,118 +304,31 @@ export const LAB_SCREENS = {
   "season-held": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "season-claimed": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "season-out": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
-  // Devcon's flyer landing (/join/devcon): an account holding no ticket, whose flyer opens a regular or a golden one, and
-  // one holding its golden ticket at the Devcon game's Realm step (doorway/home).
-  "devcon-flyer": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "devcon-golden": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "devcon-held": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  // A friend's referral link (/join/devcon/r/<code>): who sent it over the sealed ticket, which opens a regular one.
-  "devcon-referral": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  // Invite friends on You (/profile), for each home: a free home before its first friend counts, a Devcon home on its
-  // way to golden, a held Realm's, and the moments friends earn a free home its ticket and a Devcon home golden.
-  "invite-free": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "invite-devcon": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "invite-held": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "invite-earned": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "invite-golden": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "invite-pending": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "invite-link": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   // Your shared days on You (/profile): what a player's posted Frontier days brought.
   "shared-days": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
 } as const;
 
-/** The Devcon ticket each Devcon screen's account opens with any flyer's code, or already holds. */
-export const LAB_DEVCON_TICKETS: Partial<
-  Record<keyof typeof LAB_SCREENS, { tier: CampaignTicket["tier"]; held: boolean }>
-> = {
-  "devcon-flyer": { tier: "regular", held: false },
-  "devcon-golden": { tier: "golden", held: false },
-  "devcon-held": { tier: "golden", held: true },
-  "devcon-referral": { tier: "regular", held: false },
-};
-
-const LAB_REFERRAL_CODE = "7KQ2MX4D";
-/** The inviter a referral link names on the friend's landing. */
-export const LAB_REFERRER = "Isolde";
-type FriendState = CampaignReferral["friends"][number]["state"];
-/** A friend by state, with "*" after it for one whose ticket is golden. */
-type FriendSpec = FriendState | `${FriendState}*`;
-const FRIEND_NAMES = ["Corvin", "Isolde", "Tamsin", null, "Brannoc", "Wren"];
-const friends = (specs: FriendSpec[]) =>
-  specs.map((spec, index) => ({
-    name: FRIEND_NAMES[index % FRIEND_NAMES.length] ?? null,
-    state: spec.replace("*", "") as FriendState,
-    golden: spec.endsWith("*"),
-  }));
-const referral = (
-  home: CampaignReferral["home"],
-  specs: FriendSpec[],
-  {
-    tier = home === "free" || home === "held" ? null : "regular",
-    goldenPending = false,
-    linkGolden = false,
-    earned = {},
-  }: {
-    tier?: CampaignReferral["tier"];
-    goldenPending?: boolean;
-    linkGolden?: boolean;
-    earned?: Partial<CampaignReferral["earned"]>;
-  } = {},
-): CampaignReferral => ({
-  code: LAB_REFERRAL_CODE,
-  home,
-  tier,
-  goldenPending,
-  link: { counted: specs.filter((spec) => spec.startsWith("counted")).length, golden: linkGolden },
-  friends: friends(specs),
-  earned: { ticket: false, golden: false, ...earned },
-});
-
 /** What a screen's account's shared days brought; a screen this names none of has shared no day. */
-export const LAB_NO_SHARES: ShareTally = { links: 0, posted: 0, visits: 0, joined: 0, activated: 0 };
-export const LAB_SHARE_TALLIES: Partial<Record<keyof typeof LAB_SCREENS, ShareTally>> = {
-  "shared-days": { links: 9, posted: 7, visits: 1_240, joined: 31, activated: 12 },
+export const LAB_NO_SHARES: ShareTally = {
+  links: 0,
+  posted: 0,
+  visits: 0,
+  joined: 0,
+  activated: 0,
+  friendsPaid: 0,
+  fragmentsEarned: 0,
 };
-
-/** A screen's referral link on You when LAB_REFERRALS names none: a free home's, with no friend yet. */
-export const LAB_FIRST_REFERRAL = referral("free", []);
-
-/** Each screen's referral link and friends on You. */
-export const LAB_REFERRALS: Partial<Record<keyof typeof LAB_SCREENS, CampaignReferral>> = {
-  "invite-free": referral("free", ["founded", "signed*"]),
-  "invite-devcon": referral("devcon", ["counted", "counted", "excluded", "founded"]),
-  "invite-held": referral("held", ["counted*", "signed"]),
-  "invite-earned": referral("ticket", ["counted", "signed"], { earned: { ticket: true } }),
-  "invite-pending": referral("devcon", ["counted", "counted*", "founded"], {
-    tier: "golden",
-    goldenPending: true,
-    earned: { ticket: true, golden: true },
-  }),
-  "invite-golden": referral("golden", ["counted", "counted*", "founded"], {
-    tier: "golden",
-    earned: { ticket: true, golden: true },
-  }),
-  "invite-link": referral(
-    "golden",
-    [
-      "counted*",
-      "counted*",
-      "counted*",
-      "counted*",
-      "counted*",
-      "counted*",
-      "counted*",
-      "counted*",
-      "counted*",
-      "counted*",
-      "signed*",
-    ],
-    {
-      tier: "golden",
-      linkGolden: true,
-      earned: { ticket: true, golden: true },
-    },
-  ),
+export const LAB_SHARE_TALLIES: Partial<Record<keyof typeof LAB_SCREENS, ShareTally>> = {
+  "shared-days": {
+    links: 9,
+    posted: 7,
+    visits: 1_240,
+    joined: 31,
+    activated: 12,
+    friendsPaid: 8,
+    fragmentsEarned: 800,
+  },
 };
 
 /** The Realms the linked wallet holds on each screen that reads them (the relay's held-Realms answer). */
@@ -392,6 +346,11 @@ export const LAB_NAMES: Partial<Record<keyof typeof LAB_SCREENS, string>> = {
 /** The payout wallet linked on each screen's session; a screen not named here has none. */
 export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, string>> = {
   "wallet-ready": LAB_WALLET,
+  "preseason-member": LAB_WALLET,
+  "preseason-chosen": LAB_WALLET,
+  "preseason-sealed": LAB_WALLET,
+  "preseason-invited-pick": LAB_WALLET,
+  fragments: LAB_WALLET,
   "entry-choose": LAB_WALLET,
   "entry-short": LAB_WALLET,
   "entry-registered": LAB_WALLET,
@@ -509,9 +468,63 @@ export type LabScreen = keyof typeof LAB_SCREENS;
  * The season calendar as the launch service answers it: on `blitz-next`, the next ranked game starting in 1h 52m with
  * its entry opening in 17m; on `no-blitz`, none left in the season. Elsewhere a game is open, so the column shows it.
  */
+const PRESEASON_SCREENS: readonly LabScreen[] = [
+  "preseason",
+  "preseason-member",
+  "preseason-chosen",
+  "preseason-sealed",
+  "preseason-invited",
+  "preseason-invited-pick",
+];
+const LAB_ORDER_MEMBERS: Readonly<Record<number, number>> = {
+  1: 12,
+  9: 9,
+  12: 11,
+  13: 7,
+  2: 6,
+  10: 8,
+  11: 5,
+  16: 5,
+  3: 10,
+  6: 8,
+  14: 7,
+  15: 6,
+  4: 4,
+  5: 4,
+  7: 3,
+  8: 4,
+};
+export const labOrderIntent = (screen: LabScreen) => ({
+  order: screen === "preseason-chosen" || screen === "preseason-sealed" ? 1 : null,
+  members: LAB_ORDER_MEMBERS,
+});
+export const LAB_SEAL_CODE = "SEAL2345";
+export const LAB_SHARE_CODE = "MRGHT234";
+export const LAB_INVITE = { kind: "aspect", moment: 1, name: "Dana", order: 13, members: 39 } as const;
+export const labJoinedShare = (screen: LabScreen) =>
+  screen === "preseason-invited-pick"
+    ? ({ kind: "aspect", chainId: null, gameId: null, moment: LAB_INVITE.moment, name: LAB_INVITE.name } as const)
+    : null;
+export const labSealCode = (screen: LabScreen) => ({ held: screen === "preseason-sealed" });
+export const LAB_FRAGMENT_QUOTE = {
+  id: "lab-quote",
+  lordsWei: String(2_750n * 10n ** 18n),
+  token: LORDS_ADDRESS,
+  treasury: "0x7a",
+  expiresAt: NOW + 600,
+};
+
+const SEASON_ONE_PHASE = (at: (minutes: number) => string) => ({
+  phase: "frontier" as const,
+  startsAt: at(14 * 24 * 60 + 3 * 60 + 20),
+  endsAt: at(64 * 24 * 60),
+  presetId: FRONTIER_S1_PRESET_ID,
+});
+
 export const labCalendar = (screen: LabScreen) => {
-  if (screen !== "blitz-next") return { phases: [], nextBlitz: null };
   const at = (minutes: number) => new Date((NOW + minutes * 60) * 1000).toISOString();
+  if (PRESEASON_SCREENS.includes(screen)) return { phases: [SEASON_ONE_PHASE(at)], nextBlitz: null };
+  if (screen !== "blitz-next") return { phases: [], nextBlitz: null };
   return { phases: [], nextBlitz: { name: "blitz-next", startsAt: at(112), closesAt: at(107), opensAt: at(17) } };
 };
 
@@ -522,6 +535,12 @@ const QUIET_BLITZ_SCREENS: readonly LabScreen[] = [
   "blitz-results-lead",
   "eternum-lead",
   "eternum-open",
+  "preseason",
+  "preseason-member",
+  "preseason-chosen",
+  "preseason-sealed",
+  "preseason-invited",
+  "preseason-invited-pick",
 ];
 
 /** The screens whose player has no finished game to open. */
@@ -531,6 +550,12 @@ export const LAB_NO_HISTORY_SCREENS: readonly LabScreen[] = [
   "blitz-next",
   "eternum-lead",
   "eternum-open",
+  "preseason",
+  "preseason-member",
+  "preseason-chosen",
+  "preseason-sealed",
+  "preseason-invited",
+  "preseason-invited-pick",
 ];
 
 /** The slot closing at 16:30, two hours away, on the lab's shard; on the after-close screens, closed and split. */
@@ -1047,6 +1072,22 @@ export const LAB_DOORWAYS = {
   },
   // The Realm step: choose your home, then Create your realm.
   home: {
+    view: doorwayView({ source: "entry", phase: "settlement", audience: "player", signedIn: true }),
+    realm: null,
+  },
+  aspect: {
+    view: doorwayView({ source: "entry", phase: "settlement", audience: "player", signedIn: true }),
+    realm: null,
+  },
+  "aspect-realm": {
+    view: doorwayView({ source: "entry", phase: "settlement", audience: "player", signedIn: true }),
+    realm: null,
+  },
+  "aspect-kept": {
+    view: doorwayView({ source: "entry", phase: "settlement", audience: "player", signedIn: true }),
+    realm: null,
+  },
+  "realm-side": {
     view: doorwayView({ source: "entry", phase: "settlement", audience: "player", signedIn: true }),
     realm: null,
   },

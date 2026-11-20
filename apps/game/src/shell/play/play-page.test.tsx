@@ -1,13 +1,18 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { useEffect } from "react";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { formatClockTime } from "@bibliothecadao/types";
+import { aspects, formatClockTime, formatDate, formatLongDate, ordersOfAspect } from "@bibliothecadao/types";
 
-import type { NextBlitzGame, PlaytestSlot } from "../blitz-slot";
+import { FRONTIER_S1_PRESET_ID } from "../../../../../config/source/common/native-preset-modes";
+import { nativePresets } from "../../../../../config/source/native";
+
+import type { NextBlitzGame, PlaytestSlot, SeasonCalendar } from "../blitz-slot";
 import type { DirectoryGame } from "../herald";
+import type { SealCodeRefusal } from "@realms-world/identity";
 
 /** A query as the page reads it: answered with `data`, failed, or still on its way. */
 type Read<T> = { data: T | undefined; isSuccess: boolean; isError: boolean; error: unknown; refetch: () => void };
@@ -24,22 +29,49 @@ const reads = vi.hoisted(() => ({
   signedIn: true,
   directory: null as unknown as Read<{ games: DirectoryGame[] }>,
   slots: null as unknown as Read<{ slots: PlaytestSlot[] }>,
-  // The season calendar's next Blitz game: none left in the season unless a case names one.
-  nextBlitz: {
-    data: null,
+  calendar: {
+    data: { phases: [], nextBlitz: null },
     isSuccess: true,
     isError: false,
     error: null,
     refetch: () => {},
-  } as Read<NextBlitzGame | null>,
+  } as Read<SeasonCalendar>,
   history: null as unknown as Read<{ games: DirectoryGame[]; next: null; failures: { url: string }[] }>,
   // The signed-in account's build orders, as its identity service answers them: none saved unless a case says.
   buildOrders: { orders: [], active: null } as unknown,
+  intent: { order: null, members: {} } as { order: number | null; members: Record<number, number> },
+  chosen: [] as number[],
+  sealHeld: false,
+  redeemed: [] as string[],
+  shared: [] as unknown[],
+  joined: null as unknown,
 }));
 
 vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/hooks/context/identity-session")>()),
-  identityClient: { getBuildOrders: async () => ({ owner: "0x7", revision: 1, book: reads.buildOrders }) },
+  identityClient: {
+    getBuildOrders: async () => ({ owner: "0x7", revision: 1, book: reads.buildOrders }),
+    getOrderIntent: async () => reads.intent,
+    joinedShare: async () => reads.joined,
+    chooseOrder: async (order: number) => {
+      reads.chosen.push(order);
+      reads.intent = { order, members: { ...reads.intent.members, [order]: (reads.intent.members[order] ?? 0) + 1 } };
+      return reads.intent;
+    },
+    createShare: async (moment: unknown) => {
+      reads.shared.push(moment);
+      return "MRGHT234";
+    },
+    getSealCode: async () => ({ held: reads.sealHeld }),
+    redeemSealCode: async (code: string) => {
+      const { IdentityRequestError } = await import("@realms-world/identity");
+      reads.redeemed.push(code);
+      if (code.trim().toUpperCase() !== "SEAL2345")
+        throw new IdentityRequestError(410, "code_unavailable" satisfies SealCodeRefusal);
+      reads.sealHeld = true;
+      return { held: true };
+    },
+  },
   useIdentitySession: () =>
     reads.signedIn
       ? { status: "signed-in", session: { user: { id: "u", realmsId: "0x7" } } }
@@ -55,7 +87,7 @@ vi.mock("../herald", async (importOriginal) => ({
 vi.mock("../blitz-slot", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../blitz-slot")>()),
   usePlaytestSlots: () => reads.slots,
-  useNextBlitz: () => reads.nextBlitz,
+  useSeasonCalendar: () => reads.calendar,
 }));
 vi.mock("../blitz/entry", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../blitz/entry")>()),
@@ -63,9 +95,16 @@ vi.mock("../blitz/entry", async (importOriginal) => ({
   useSlotRegistered: () => 12,
 }));
 
+import { identityClient } from "@/hooks/context/identity-session";
+
 import { PlayPage } from "./play-page";
 
 import { useBuildOrderStore } from "@/hooks/use-build-orders";
+
+import { useConnectStore } from "../sign-in/connect";
+
+const HOUR = 3_600;
+const DAY = 24 * HOUR;
 
 const REALM = { entity_id: 1, category: 1, realm_id: 3098, level: 1, coord_x: 0, coord_y: 0, resources_packed: "0" };
 const game = (over: Partial<DirectoryGame>): DirectoryGame =>
@@ -77,7 +116,13 @@ const game = (over: Partial<DirectoryGame>): DirectoryGame =>
     status: "Live",
     ready: true,
     expedition: null,
-    clock: { start_settling_at: 0, start_main_at: 100, end_at: 4_000_000_000, end_grace_seconds: 0 },
+    clock: {
+      start_settling_at: 0,
+      start_main_at: 100,
+      scheduled_end_at: 4_000_000_000,
+      end_at: 4_000_000_000,
+      end_grace_seconds: 0,
+    },
     player_count: 10,
     roster_count: 0,
     player_state: {
@@ -116,7 +161,13 @@ const preparing = game({
   mode: "blitz",
   status: "Registration",
   ready: false,
-  clock: { start_settling_at: 0, start_main_at: 4_000_000_000, end_at: 4_000_100_000, end_grace_seconds: 0 },
+  clock: {
+    start_settling_at: 0,
+    start_main_at: 4_000_000_000,
+    scheduled_end_at: 4_000_100_000,
+    end_at: 4_000_100_000,
+    end_grace_seconds: 0,
+  },
   roster_count: 24,
   player_count: 18,
   player_state: {
@@ -144,8 +195,14 @@ afterEach(async () => {
   await cleanup?.();
   cleanup = null;
   reads.signedIn = true;
-  reads.nextBlitz = answered(null);
+  reads.calendar = answered({ phases: [], nextBlitz: null });
   reads.buildOrders = { orders: [], active: null };
+  reads.intent = { order: null, members: {} };
+  reads.chosen = [];
+  reads.sealHeld = false;
+  reads.redeemed = [];
+  reads.shared = [];
+  reads.joined = null;
   useBuildOrderStore.setState({ owner: null, status: "signed-out", book: null, revision: 0, notice: null });
 });
 
@@ -155,17 +212,20 @@ const mount = async () => {
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
+  const queries = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const render = () =>
     act(async () =>
       root.render(
-        <MemoryRouter initialEntries={["/"]}>
-          <Where />
-          <Routes>
-            <Route path="/" element={<PlayPage />} />
-            <Route path="/blitz/build-orders" element={<p>build orders</p>} />
-            <Route path="/blitz/:id" element={<p>lobby</p>} />
-          </Routes>
-        </MemoryRouter>,
+        <QueryClientProvider client={queries}>
+          <MemoryRouter initialEntries={["/"]}>
+            <Where />
+            <Routes>
+              <Route path="/" element={<PlayPage />} />
+              <Route path="/blitz/build-orders" element={<p>build orders</p>} />
+              <Route path="/blitz/:id" element={<p>lobby</p>} />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>,
       ),
     );
   await render();
@@ -175,6 +235,8 @@ const mount = async () => {
   };
   return { render, text: () => container.textContent ?? "", container };
 };
+
+const settle = () => act(() => new Promise<void>((resolve) => setTimeout(resolve, 0)));
 
 const press = (container: HTMLElement, word: string) =>
   act(async () =>
@@ -272,92 +334,21 @@ it("keeps Blitz on Play once an ended Blitz's results were seen, idle and saying
   expect(page.text()).not.toContain("No Blitz scheduled");
 });
 
-it("dims Eternum's column while its game is still to open, saying when it opens; lit once the player can enter", async () => {
-  const opening = game({
+it.each(["Registration", "Live"] as const)("offers no entry for a retired Eternum game in %s", async (status) => {
+  const retired = game({
     game_id: 9,
     mode: "eternum",
-    name: "eternum-1",
-    status: "Registration",
-    ready: false,
-    clock: {
-      start_settling_at: 3_900_000_000,
-      start_main_at: 3_900_000_000,
-      end_at: 4_000_000_000,
-      end_grace_seconds: 0,
-    },
+    status,
+    ready: true,
+    player_state: { ...ownSeason.player_state, registered: true },
   } as Partial<DirectoryGame>);
-  reads.directory = answered({ games: [ownSeason, opening] });
+  reads.directory = answered({ games: [ownSeason, retired] });
   reads.slots = answered({ slots: [] });
   reads.history = answered({ games: [], next: null, failures: [] });
   const page = await mount();
-  const eternum = () => page.container.querySelector<HTMLElement>('section[aria-label="Eternum"]')!;
-  // Frontier's day leads; Eternum stands beside it with its opening alone, idle, nothing in it to press.
-  const resume = page.container.querySelector<HTMLButtonElement>('[data-play-item] button[data-play-verb="resume"]');
-  expect(resume?.textContent).toBe("Resume");
-  expect(eternum().textContent).toMatch(/^EternumOpens \d{1,2} \w{3} 2093, \d\d:\d\d$/);
-  expect(eternum().hasAttribute("data-idle")).toBe(true);
-  expect(eternum().querySelector("a, button")).toBeNull();
-
-  // Open, with the player on its roster: Enter, and the column is live.
-  reads.directory = answered({
-    games: [
-      ownSeason,
-      {
-        ...opening,
-        status: "Live",
-        ready: true,
-        player_state: { ...opening.player_state, registered: true },
-      } as DirectoryGame,
-    ],
-  });
-  await page.render();
-  expect(eternum().textContent).toContain("Enter");
-  expect(eternum().hasAttribute("data-idle")).toBe(false);
-});
-
-it("dims Eternum leading Play while its game is still to open, as its column would be; lit once it can be entered", async () => {
-  const opening = game({
-    game_id: 9,
-    mode: "eternum",
-    name: "eternum-1",
-    status: "Registration",
-    ready: false,
-    clock: {
-      start_settling_at: 3_900_000_000,
-      start_main_at: 3_900_000_000,
-      end_at: 4_000_000_000,
-      end_grace_seconds: 0,
-    },
-  } as Partial<DirectoryGame>);
-  reads.directory = answered({ games: [opening] });
-  reads.slots = answered({ slots: [] });
-  reads.history = answered({ games: [], next: null, failures: [] });
-  const page = await mount();
-  const lead = () => page.container.querySelector<HTMLElement>('[data-play-item="0xa:9"] .app-game-card')!;
-  // Nothing else running: the unopened Eternum leads, idle, saying when it opens, nothing on it to press.
-  expect(lead().dataset.size).toBe("lead");
-  expect(lead().textContent).toMatch(/Opens \d{1,2} \w{3} 2093, \d\d:\d\d/);
-  expect(lead().hasAttribute("data-idle")).toBe(true);
-  expect(lead().querySelector("a, button")).toBeNull();
-
-  expect(lead().querySelector("[data-play-verb]")).toBeNull();
-
-  // Open, with the player on its roster: the lead's Enter, and it is lit.
-  reads.directory = answered({
-    games: [
-      {
-        ...opening,
-        status: "Live",
-        ready: true,
-        player_state: { ...opening.player_state, registered: true },
-      } as DirectoryGame,
-    ],
-  });
-  await page.render();
-  expect(lead().textContent).toContain("Enter");
-  expect(lead().hasAttribute("data-idle")).toBe(false);
-  // The lead's call to action by its verb's name, whatever its word: what the playtest runner presses to enter.
-  expect(lead().querySelector<HTMLButtonElement>("button[data-play-verb]")!.dataset.playVerb).toBe("enter");
+  expect(page.container.querySelector('[data-play-item="0xa:9"]')).toBeNull();
+  expect(page.container.querySelector('section[aria-label="Eternum"]')).toBeNull();
+  expect(page.container.querySelector('[data-play-verb="resume"]')?.textContent).toBe("Resume");
 });
 
 it("keeps the way to the build orders when the player's ended Blitz leads Play", async () => {
@@ -416,7 +407,7 @@ it("shows the calendar's next Blitz, its start and when its entry opens, until t
   reads.directory = answered({ games: [ownSeason] });
   reads.slots = answered({ slots: [] });
   reads.history = answered({ games: [], next: null, failures: [] });
-  reads.nextBlitz = answered(next);
+  reads.calendar = answered({ phases: [], nextBlitz: next });
   const page = await mount();
   const blitz = () => page.container.querySelector('section[aria-label="Blitz"]')?.textContent ?? null;
   const at = (iso: string) => formatClockTime(Date.parse(iso) / 1000);
@@ -428,7 +419,10 @@ it("shows the calendar's next Blitz, its start and when its entry opens, until t
   expect(page.container.querySelector('section[aria-label="Blitz"]')!.hasAttribute("data-idle")).toBe(false);
 
   // Its entry due: the schedule's next tick opens it.
-  reads.nextBlitz = answered({ ...next, opensAt: new Date((now - 1) * 1000).toISOString() });
+  reads.calendar = answered({
+    phases: [],
+    nextBlitz: { ...next, opensAt: new Date((now - 1) * 1000).toISOString() },
+  });
   await page.render();
   expect(blitz()).toBe(`Next ranked BlitzStarts ${at(next.startsAt)} · Entry opens in a moment${orders}`);
 
@@ -443,7 +437,7 @@ it("says the season calendar did not answer, never 'No Blitz', when it fails", a
   reads.directory = answered({ games: [ownSeason] });
   reads.slots = answered({ slots: [] });
   reads.history = answered({ games: [], next: null, failures: [] });
-  reads.nextBlitz = failed();
+  reads.calendar = failed();
   const page = await mount();
   expect(page.text()).toContain("Season did not answer.");
   expect(page.text()).not.toContain("No Blitz scheduled");
@@ -463,4 +457,286 @@ it("ends Blitz's column on the way to the player's build orders, naming the orde
   expect(rows.at(-1)?.textContent).toBe("Build ordersCoal rush");
   await act(async () => (rows.at(-1) as HTMLButtonElement).click());
   expect(page.text()).toBe("build orders");
+});
+
+describe("the season's countdown, while its first day is ahead and Play has no game to lead with", () => {
+  const now = Math.floor(Date.now() / 1000);
+  const startsAt = now + 14 * DAY + 3 * HOUR + 20 * 60;
+  const seasonOne = (from: number): SeasonCalendar => ({
+    phases: [
+      {
+        phase: "frontier",
+        startsAt: new Date(from * 1000).toISOString(),
+        endsAt: new Date((from + 50 * DAY) * 1000).toISOString(),
+        presetId: FRONTIER_S1_PRESET_ID,
+      },
+    ],
+    nextBlitz: null,
+  });
+  const NEXT_BLITZ: NextBlitzGame = {
+    name: "blitz-next",
+    startsAt: new Date((now + 2 * HOUR) * 1000).toISOString(),
+    closesAt: new Date((now + HOUR) * 1000).toISOString(),
+    opensAt: new Date((now + 30 * 60) * 1000).toISOString(),
+  };
+  const quietPlay = () => {
+    reads.slots = answered({ slots: [] });
+    reads.history = answered({ games: [], next: null, failures: [] });
+  };
+
+  it("names the day it opens, the time left, every Aspect with its Orders, and one way in for a visitor", async () => {
+    reads.signedIn = false;
+    reads.directory = answered({ games: [] });
+    reads.calendar = answered(seasonOne(startsAt));
+    quietPlay();
+    const page = await mount();
+    const countdown = page.container.querySelector("[data-season-countdown]")!;
+    expect(countdown.querySelector("h1")?.textContent).toBe(`The season opens ${formatLongDate(startsAt, now)}`);
+    expect(countdown.querySelector(".app-chip")?.textContent).toBe("Starts in 14d 4h");
+    expect(countdown.textContent).toContain(
+      `Pick your side before it starts. 4 Aspects, ${nativePresets[FRONTIER_S1_PRESET_ID]!.race!.seasonDays} days`,
+    );
+    expect(
+      [...countdown.querySelectorAll("[data-aspect]")].map((aspect) => [
+        aspect.textContent,
+        aspect.querySelectorAll("img").length,
+      ]),
+    ).toEqual(aspects.map(({ name }) => [name, 4]));
+    expect(page.container.querySelector("[data-play-item]")).toBeNull();
+    expect(page.text()).toContain("Free to play");
+    await press(page.container, "Create your account");
+    expect(useConnectStore.getState().request).toEqual({ next: null });
+  });
+
+  it("asks a signed-in account its Aspect, then its Order inside it, on one screen, keeps the choice, and then counts down", async () => {
+    reads.directory = answered({ games: [] });
+    reads.calendar = answered(seasonOne(startsAt));
+    const [giants, skill] = ordersOfAspect(1);
+    reads.intent = { order: null, members: { [giants!.orderId]: 30, [skill!.orderId]: 9 } };
+    quietPlay();
+    const page = await mount();
+    await settle();
+    const step = () => page.container.querySelector("[data-preseason-step]")?.getAttribute("data-preseason-step");
+    const card = (name: string) => page.container.querySelector<HTMLButtonElement>(`[data-aspect="${name}"]`)!;
+    const button = (word: string) =>
+      [...page.container.querySelectorAll("button")].find((each) => each.textContent?.includes(word));
+    expect(step()).toBe("pick");
+    expect(page.container.querySelector("[data-order]")).toBeNull();
+    expect(page.text()).not.toContain("Create your account");
+    expect(card("Prowess").textContent).toBe("Prowess39 membersabout 2.5K LORDSa player on average, of 100K");
+    expect(card("Insight").textContent).toContain("0 membersabout 100K LORDS");
+    expect(page.container.querySelector("[data-aspect-shared]")?.textContent).toBe(
+      "The Aspect's 100,000 LORDS are shared by Glory: your share follows your Glory, not an equal split. The first to finish adds 100,000 more.",
+    );
+    expect(
+      page.container.querySelector("[data-aspect-shared]")?.closest("p")?.previousElementSibling?.matches("ul"),
+    ).toBe(true);
+    expect(button("Choose your side")?.disabled).toBe(true);
+
+    await act(async () => card("Luminary").click());
+    await act(async () => card("Prowess").click());
+    expect(card("Prowess").getAttribute("aria-pressed")).toBe("true");
+    expect(card("Luminary").getAttribute("aria-pressed")).toBe("false");
+    expect([...page.container.querySelectorAll("[data-order]")].map((row) => row.getAttribute("data-order"))).toEqual(
+      ordersOfAspect(1).map(({ fullOrderName }) => fullOrderName),
+    );
+    await act(async () =>
+      page.container.querySelector<HTMLButtonElement>(`[data-order="${giants!.fullOrderName}"]`)!.click(),
+    );
+    expect(page.container.querySelector(`[data-order="${giants!.fullOrderName}"]`)?.textContent).toContain(
+      "30 members",
+    );
+    await press(page.container, `Play as ${giants!.orderName}`);
+    await settle();
+    expect(reads.chosen).toEqual([giants!.orderId]);
+    expect(step()).toBe("waiting");
+    expect(page.container.querySelector("h1")?.textContent).toBe("You're in Prowess");
+    expect(page.text()).toContain(`${giants!.fullOrderName} · opens ${formatDate(startsAt, now)}`);
+    expect(page.container.querySelector(".app-chip")?.textContent).toBe("Starts in 14d 4h");
+  });
+
+  it("puts the Aspect a friend invited the account to first, chosen, with who invited it; an invite to a game is not offered", async () => {
+    reads.directory = answered({ games: [] });
+    reads.calendar = answered(seasonOne(startsAt));
+    reads.joined = { kind: "aspect", chainId: null, gameId: null, moment: 3, name: "Dana" };
+    quietPlay();
+    const page = await mount();
+    await settle();
+    const cards = () => [...page.container.querySelectorAll("[data-aspect]")];
+    expect(cards().map((card) => card.getAttribute("data-aspect"))).toEqual([
+      "Havoc",
+      "Prowess",
+      "Luminary",
+      "Insight",
+    ]);
+    expect(cards()[0]!.getAttribute("aria-pressed")).toBe("true");
+    expect(page.container.querySelectorAll("[data-aspect-invited]")).toHaveLength(1);
+    expect(cards()[0]!.querySelector("[data-aspect-invited]")?.textContent).toBe("Dana invited you");
+    expect([...page.container.querySelectorAll("[data-order]")].map((row) => row.getAttribute("data-order"))).toEqual(
+      ordersOfAspect(3).map(({ fullOrderName }) => fullOrderName),
+    );
+
+    await cleanup?.();
+    reads.joined = { kind: "aspect", chainId: "0xa", gameId: 1, moment: 3, name: "Dana" };
+    const again = await mount();
+    await settle();
+    expect(
+      [...again.container.querySelectorAll("[data-aspect]")].map((card) => card.getAttribute("data-aspect")),
+    ).toEqual(aspects.map(({ name }) => name));
+    expect(again.container.querySelector("[data-aspect-invited]")).toBeNull();
+    expect(again.container.querySelector('[aria-pressed="true"]')).toBeNull();
+  });
+
+  it("holds a free Ancient Seal code on the waiting screen: a refused code says so in its field, a good one is held", async () => {
+    reads.directory = answered({ games: [] });
+    reads.calendar = answered(seasonOne(startsAt));
+    reads.intent = { order: ordersOfAspect(1)[0]!.orderId, members: {} };
+    quietPlay();
+    const page = await mount();
+    await settle();
+    await settle();
+    const card = () => page.container.querySelector("[data-seal-code]");
+    const type = (text: string) =>
+      act(() => {
+        const input = card()!.querySelector("input")!;
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, text);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    expect(card()?.getAttribute("data-seal-code")).toBe("open");
+    expect(card()?.textContent).toContain("Free Ancient Seal?");
+    expect(card()?.textContent).toContain("Quest bonus and a Realm skin. One code, one account.");
+
+    await type("TAKEN234");
+    await press(page.container, "Redeem");
+    await settle();
+    expect(card()?.querySelector(".app-field__line")?.textContent).toBe(
+      "That code is taken, expired or not one of ours.",
+    );
+    await type("seal2345");
+    expect(card()?.querySelector(".app-field__line")).toBeNull();
+    await press(page.container, "Redeem");
+    await settle();
+    expect(reads.redeemed).toEqual(["TAKEN234", "seal2345"]);
+    expect(card()?.getAttribute("data-seal-code")).toBe("held");
+    expect(card()?.textContent).toBe("Your Ancient Seal is heldIt is yours when the season opens.");
+    expect(card()?.querySelector("input")).toBeNull();
+  });
+
+  it("hands an account that kept its Order a link inviting friends to its Aspect for the coming season", async () => {
+    reads.directory = answered({ games: [] });
+    reads.calendar = answered(seasonOne(startsAt));
+    reads.intent = { order: ordersOfAspect(1)[0]!.orderId, members: {} };
+    quietPlay();
+    const written: string[] = [];
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: async (text: string) => void written.push(text) },
+    });
+    const page = await mount();
+    await settle();
+    await settle();
+    expect(reads.shared).toEqual([{ kind: "aspect", chainId: null, gameId: null, moment: 1 }]);
+    expect(page.container.querySelector("[data-season-invite]")?.textContent).toBe(
+      "Bring friendsCopy your Prowess link. A friend who opens it starts in Prowess.",
+    );
+    await press(page.container, "Copy invite link");
+    await settle();
+    expect(written).toEqual([`${window.location.origin}/s/MRGHT234?via=system`]);
+    expect(page.text()).toContain("Link copied");
+  });
+
+  it("says a choice that was not kept did not go through, and keeps it on Try again", async () => {
+    reads.directory = answered({ games: [] });
+    reads.calendar = answered(seasonOne(startsAt));
+    quietPlay();
+    const keep = identityClient.chooseOrder;
+    identityClient.chooseOrder = vi.fn(async () => {
+      throw new Error("503");
+    });
+    try {
+      const page = await mount();
+      await settle();
+      const [giants] = ordersOfAspect(1);
+      await act(async () => page.container.querySelector<HTMLButtonElement>('[data-aspect="Prowess"]')!.click());
+      await act(async () =>
+        page.container.querySelector<HTMLButtonElement>(`[data-order="${giants!.fullOrderName}"]`)!.click(),
+      );
+      await press(page.container, `Play as ${giants!.orderName}`);
+      await settle();
+      expect(page.text()).toContain("Season did not answer.");
+      expect(page.container.querySelector("[data-preseason-step]")?.getAttribute("data-preseason-step")).toBe("pick");
+
+      identityClient.chooseOrder = keep;
+      await press(page.container, "Try again");
+      await settle();
+      expect(reads.chosen).toEqual([giants!.orderId]);
+      expect(page.container.querySelector("[data-preseason-step]")?.getAttribute("data-preseason-step")).toBe(
+        "waiting",
+      );
+    } finally {
+      identityClient.chooseOrder = keep;
+    }
+  });
+
+  it("shows the Order kept elsewhere when the account already chose another Aspect, instead of asking again", async () => {
+    reads.directory = answered({ games: [] });
+    reads.calendar = answered(seasonOne(startsAt));
+    quietPlay();
+    const titans = ordersOfAspect(1).at(-1)!;
+    const keep = identityClient.chooseOrder;
+    identityClient.chooseOrder = vi.fn(async () => {
+      reads.intent = { order: titans.orderId, members: { [titans.orderId]: 1 } };
+      const { IdentityRequestError } = await import("@realms-world/identity");
+      throw new IdentityRequestError(409, "aspect_chosen");
+    });
+    try {
+      const page = await mount();
+      await settle();
+      const [perfection] = ordersOfAspect(2);
+      await act(async () => page.container.querySelector<HTMLButtonElement>('[data-aspect="Luminary"]')!.click());
+      await act(async () =>
+        page.container.querySelector<HTMLButtonElement>(`[data-order="${perfection!.fullOrderName}"]`)!.click(),
+      );
+      await press(page.container, `Play as ${perfection!.orderName}`);
+      await settle();
+      await settle();
+      expect(page.container.querySelector("[data-preseason-step]")?.getAttribute("data-preseason-step")).toBe(
+        "waiting",
+      );
+      expect(page.container.querySelector("h1")?.textContent).toBe("You're in Prowess");
+    } finally {
+      identityClient.chooseOrder = keep;
+    }
+  });
+
+  it("keeps Play while it holds anything else: the calendar's next Blitz, or a read that has not answered", async () => {
+    reads.signedIn = false;
+    reads.directory = answered({ games: [] });
+    reads.calendar = answered({ ...seasonOne(startsAt), nextBlitz: NEXT_BLITZ });
+    quietPlay();
+    const page = await mount();
+    expect(page.container.querySelector("[data-season-countdown]")).toBeNull();
+    expect(page.container.querySelector('section[aria-label="Blitz"]')?.textContent).toContain("Next ranked Blitz");
+
+    reads.calendar = answered(seasonOne(startsAt));
+    reads.slots = failed();
+    await page.render();
+    expect(page.container.querySelector("[data-season-countdown]")).toBeNull();
+    expect(page.text()).toContain("Try again");
+  });
+
+  it("gives Play back once a game leads it, or once the first day has come", async () => {
+    reads.signedIn = false;
+    reads.directory = answered({ games: [ownSeason] });
+    reads.calendar = answered(seasonOne(startsAt));
+    quietPlay();
+    const page = await mount();
+    expect(page.container.querySelector("[data-season-countdown]")).toBeNull();
+
+    reads.directory = answered({ games: [] });
+    reads.calendar = answered(seasonOne(now - 60));
+    await page.render();
+    expect(page.container.querySelector("[data-season-countdown]")).toBeNull();
+    expect(page.text()).toContain("No season");
+  });
 });

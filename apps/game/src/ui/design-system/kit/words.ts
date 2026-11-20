@@ -3,28 +3,359 @@
  * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
  * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
  */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
 import { APP_HOST } from "@/config/app-address";
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
-import { SHARED_MOMENT_WORDS, type CampaignKey, type SocialProvider } from "@realms-world/identity";
-import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
-import type { RuinChest } from "@bibliothecadao/eternum";
 import {
+  PRINTED_CODE_LENGTH,
+  SHARED_MOMENT_WORDS,
+  sharerName,
+  type SealCodeRefusal,
+  type SocialProvider,
+} from "@realms-world/identity";
+import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
+import type { AttackRefusal, RuinChest } from "@bibliothecadao/eternum";
+import {
+  FRAGMENT,
+  FRAGMENT_CENTS,
+  FRAGMENTS,
+  ANCIENT_SEAL,
   BuildingType,
-  XP,
   buildingName,
   formatAmount,
-  formatPercent,
+  formatDollars,
   formatExact,
+  formatFigure,
   formatCount,
+  formatOrdinal,
+  FRIEND_FRAGMENTS,
+  FRIEND_GLORY,
+  FRIENDS_BONUS_FRAGMENTS,
+  FRIENDS_LIMIT,
   formatClockTime,
   formatDuration,
   getRelicInfo,
   relicEffect,
   ResourcesIds,
   formatCharge,
+  formatRate,
   resourceName,
   formatHeldAgainst,
-  structurePlural,
+  layerName,
   structureName,
   StructureType,
   tierNumeral as rankNumeral,
@@ -39,11 +370,8 @@ export type Tier = 1 | 2 | 3 | 4 | 5;
 export type Rank = 0 | Tier;
 /** A tier by its numeral, Common I to Legendary V; untrained is 0. */
 export const tierNumeral = (tier: Rank): string => (tier === 0 ? "0" : rankNumeral(tier));
-/** Words with ranks in them, a skill point's gain, and their plain text: one way to write a rank in a line. */
-export { type RankedWords, rankedText, skillPointGain } from "@bibliothecadao/types";
 
-/** Species names shared by Frontier's models, plates and selected-site cards. */
-export { BEAST_NAMES } from "@bibliothecadao/types";
+export { type RankedWords, rankedText, skillPointGain } from "@bibliothecadao/types";
 
 export const LEFT = "left";
 export const DAY = "Day";
@@ -85,7 +413,7 @@ export const DAY_END = {
   endsIn: (day: number | undefined, secondsLeft: number | undefined) =>
     `${DAY} ${day ?? "—"} ends in ${dayLength(secondsLeft)}`,
   open: "Open",
-  goes: "At day end, today's map, its armies and chests go",
+  goes: "At day end, today's map and armies go",
   claim: "Claim today's Labor",
   claimVerb: "Claim",
   site: (name: string) => `Clear today's ${name}`,
@@ -107,6 +435,47 @@ export const CLOCK_WORDS = {
   /** Before the time left to a beginning: "Starts 16:30 · in 2h 4m". */
   in: "in",
 } as const;
+export const COUNTDOWN_WORDS = {
+  opens: (date: string) => `The season opens ${date}`,
+  line: (aspectCount: number, days: number | null) =>
+    days === null
+      ? `Pick your side before it starts. ${aspectCount} Aspects, one hyperstructure to build.`
+      : `Pick your side before it starts. ${aspectCount} Aspects, ${days} days, one hyperstructure to build.`,
+  create: "Create your account",
+  free: "Free to play",
+} as const;
+export const PRESEASON_WORDS = {
+  pick: "Choose your side",
+  average: (lords: string) => `about ${lords} LORDS`,
+  ofTotal: (total: string) => `a player on average, of ${total}`,
+  shared: (total: string, finishBonus: string) =>
+    `The Aspect's ${total} LORDS are shared by Glory: your share follows your Glory, not an equal split. The first to finish adds ${finishBonus} more.`,
+  orderTitle: "Choose your Order",
+  orderLine: (aspect: string) => `Inside ${aspect}. Your Order is your Realm's name and crest.`,
+  playAs: (order: string) => `Play as ${order}`,
+  youreIn: (aspect: string) => `You're in ${aspect}`,
+  waiting: (order: string, date: string) => `${order} · opens ${date}`,
+} as const;
+export const SEASON_INVITE_WORDS = {
+  title: "Bring friends",
+  line: (aspect: string) => `Copy your ${aspect} link. A friend who opens it starts in ${aspect}.`,
+  copy: "Copy invite link",
+} as const;
+export const SEAL_CODE_WORDS = {
+  title: `Free ${ANCIENT_SEAL}?`,
+  line: "Quest bonus and a Realm skin. One code, one account.",
+  label: "Your code",
+  placeholder: `${PRINTED_CODE_LENGTH} letters and digits`,
+  redeem: "Redeem",
+  redeeming: "Redeeming",
+  held: `Your ${ANCIENT_SEAL} is held`,
+  heldLine: "It is yours when the season opens.",
+  refused: {
+    invalid_code: `A code is ${PRINTED_CODE_LENGTH} letters and digits.`,
+    code_unavailable: "That code is taken, expired or not one of ours.",
+    seal_owned: `This account has the ${ANCIENT_SEAL} already.`,
+  } satisfies Record<SealCodeRefusal, string>,
+} as const;
 /** The day-done card: "Day 12 done · Realm kept · Day 13 is open", and its one verb. */
 export const DAY_DONE = "done";
 export const REALM_KEPT = "Realm kept";
@@ -127,7 +496,6 @@ export const CLOSE = "Close";
 /** The safe choice on a confirm: the primary. */
 export const KEEP = "Keep";
 
-export { XP, xpGainedLine } from "@bibliothecadao/types";
 /** The resources Frontier's stores hold, by the catalog's names: one casing, at a line's start or inside it. */
 export const ESSENCE = resourceName(ResourcesIds.Essence);
 export const LABOR = resourceName(ResourcesIds.Labor);
@@ -135,14 +503,11 @@ export const WHEAT = resourceName(ResourcesIds.Wheat);
 /** The realm's troops, as a store and an army's figure are named. */
 export const TROOPS = "Troops";
 export const STAMINA = "stamina";
-/** The explores a Well's stamina buys the army it refills: "+3 explores". */
-export const exploresBought = (count: number) => `+${count} ${count === 1 ? "explore" : "explores"}`;
 
 /** The HUD's tab for everything the player holds. */
 export const EMPIRE = "Empire";
 /** The places: the nav's words. */
 export const REALM = "Realm";
-/** The world map, as the Realm / World switch names it. */
 export const WORLD = "World";
 /** The realm's way home from its card's header: the map centred on it. */
 export const SHOW_MY_REALM = "Show my realm";
@@ -179,6 +544,7 @@ export const SEASON = "Season";
 export const RANK = "Rank";
 export const SITES = "Sites";
 export const SITES_CLEARED = "Sites cleared";
+export const SITE_OATH = { label: "Oath", holds: "Holds an Oath", rule: "Clearing it opens an Oath pick" } as const;
 /**
  * How the Season board ranks, said where players look (owner, 4 November 2026: "ppl have asked how to increase sites in the
  * leaderboard"): Herald ranks by sites cleared, then deepest depth (frontier-leaderboard.ts compareStandings), and every
@@ -195,11 +561,11 @@ export const SETTINGS = "Settings";
 /** Settings' row for the keys, and the list it opens in Settings' place. */
 /** The Build order panel: its name, and what it says when no realm has a step it can take now. */
 export const BUILD_ORDER_WORDS = {
+  levelUp: "Level up",
   title: "Build order",
   /** A step's verb: the row's reason already names what it builds or deploys, or the level it reaches. */
   build: "Build",
   deploy: "Deploy",
-  levelUp: "Level up",
   nothingNow: "Nothing to build now",
   /** The maker: the player's orders, saved on their account, one of them followed. */
   page: "Build orders",
@@ -317,24 +683,12 @@ export const heldAgainstNeed = (held: number | undefined, need: number): string 
   const pair = formatHeldAgainst(held, need);
   return `${pair.held} / ${pair.need}`;
 };
-/**
- * A training building's gate with the purchases bought toward it, on either Barracks side: "1/2". The count shows so a
- * first purchase visibly counts: a realm one purchase short read "2 research" before and after it.
- */
-export const purchasesOfGate = (bought: number, gate: number) => `${Math.min(bought, gate)}/${gate}`;
-/** What a locked training building still waits for: "Needs 1 more Barracks research purchase (1/2)". */
-export const needsResearchPurchases = (building: string, bought: number, gate: number) => {
-  const left = gate - bought;
-  return `Needs ${left} more ${building} research ${left === 1 ? "purchase" : "purchases"} (${purchasesOfGate(bought, gate)})`;
-};
 /** A training building already standing: a realm holds one of each. */
 export const ONE_A_REALM = "Built. A realm holds one.";
 /** The arrow beside a price that has risen (a screen reader's words). */
 export const PRICE_UP = "price raised";
 /** Why a price is above its first, on the arrow beside it, in one line and no sum: "Costs more with each one standing: 2". */
 export const priceRaised = (standing: string) => `Costs more with each one standing: ${standing}`;
-/** A market's price for one unit, as a shop says it, never as an equation: "0.03 LORDS each". */
-export const priceEach = (price: string, currency: string) => `${price} ${currency} each`;
 /** What a building does, in one line on its card's tooltip: "Wheat +5/min". */
 export const makes = (noun: string, rate: string) => `${noun} ${rate}`;
 export const takesPopulation = (amount: string) => `takes ${amount} ${POPULATION}`;
@@ -344,19 +698,7 @@ export const startsNewArmies = (attribute: string, tier: number): RankedWords =>
   { rank: tier },
 ];
 
-/**
- * An army's XP on its tooltip, against the skill point it earns next: "XP 8 of 100 · next [II] point". XP is a balance
- * an army spends on its attributes; it has no level.
- */
-export const xpTowardTip = (held: string, milestone: string, rank: number): RankedWords => [
-  `${XP} ${held} of ${milestone} · next `,
-  { rank },
-  " point",
-];
-
-/** The sites on the map, as their cards title them, and the verbs they take. */
-export const RIFT = structureName(StructureType.Rift, undefined, "frontier");
-export const RUIN = structureName(StructureType.Ruin, undefined, "frontier");
+const RUIN = structureName(StructureType.Ruin);
 /** The daily clear closes only the ruin's own depth; cards and forecasts share this rule. */
 export const ruinRule = (perDepth: boolean): string =>
   perDepth
@@ -376,23 +718,8 @@ export const CLEARED = "Cleared";
 export const CHESTS = "Chests";
 export const SHRINE = "Shrine";
 export const WELL = "Well";
-/**
- * What a Shrine's point does once spent, as the contract grants it: one attribute up a rank, up to the point's own, and
- * a refill never past the army's maximum: "Raises one attribute up to [III] · refills up to 40 stamina".
- */
-export const shrinePointUse = (rank: number, refill: string): RankedWords => [
-  "Raises one attribute up to ",
-  { rank },
-  ` · refills up to ${refill} ${STAMINA}`,
-];
-/**
- * Where an army stands from a Shrine, after its name: beside it (it can take the point now) or so many tiles off, said
- * as the player's nearest where no army is selected: "nearest, 3 tiles away".
- */
-export const shrineArmyAt = (tiles: number, nearest: boolean): string =>
-  `${nearest ? "nearest, " : ""}${tiles <= 1 ? "beside it" : `${formatExact(tiles)} tiles away`}`;
-/** A Well's refill share when no army is selected. */
-export const wellRefillShare = (percent: number): string => `${formatPercent(percent / 100)} max`;
+export const SPIRE = "Spire";
+const loreOf = (site: string) => `${site} lore`;
 export const ATTACK = "Attack";
 export const ATTACKING = "Attacking…";
 /** On an army's step while the order it was given before is still in flight. */
@@ -427,53 +754,31 @@ export const FIGHT_WORDS = {
  */
 export const fightLost = (lost: string, share: string) => `−${lost} · ${share}% lost`;
 export const NONE_LOST = "None lost";
-/** Why a village's trade in troops is refused, wherever the market and the bank say so. */
-export const VILLAGE_TROOP_TRADE_REFUSED = "Villages cannot trade military resources.";
-export const USE = "Use";
-export const USING = "Using…";
 
 /** Making something you own better: the castle a level, a building type a tier, an army an attribute tier. */
 export const UPGRADE = "Upgrade";
 
 /** The realm: its castle and levels, its buildings, and the row that counts a full realm's common buildings. */
 export const CASTLE = "Castle";
-export const BARRACKS = buildingName(BuildingType.ResourceKnightT1, true);
 const HUT = buildingName(BuildingType.WorkersHut, true);
-export const TRAINING_BUILDINGS = [
-  buildingName(BuildingType.WarHall, true),
-  buildingName(BuildingType.SupplyYard, true),
-  buildingName(BuildingType.ScoutsLodge, true),
-  buildingName(BuildingType.Hearth, true),
-] as const;
 /** The castle rows that unlock the three depths beyond the spire. */
-/** The layer a realm's spire is the portal to (owner, 4 November 2026: "its a portal to the ethereal layer bro"). */
-export const ETHEREAL = "Ethereal";
-export const DEPTH_NUMERALS = ["I", "II", "III"] as const;
-/** A depth by its name: "Ethereal II". */
-export const depthName = (depth: 1 | 2 | 3): string => `${ETHEREAL} ${DEPTH_NUMERALS[depth - 1]}`;
+export const LAYER = "Layer";
 /** A layer's ruin chest today, as the layer switch's marks say it to assistive technology: "Ethereal II: chest taken". */
 export const layerChestLine = (layer: string, chest: RuinChest): string => `${layer}: ${LAYER_CHEST[chest]}`;
 const LAYER_CHEST = {
   open: "chest to take today",
   claimed: "chest taken today",
   unknown: "chest not known without an army there",
-  locked: "not researched",
+  locked: `needs ${loreOf(SPIRE)}`,
 } as const satisfies Record<RuinChest, string>;
-/** The day's own layer, as a site's card names its depth (the layer switch calls it World). */
-const SURFACE = "Surface";
-/** A site's depth by its name, 0 the Surface, then Ethereal I to III; loud for a depth the map does not have. */
-export const siteDepthName = (depth: number): string => {
-  if (depth === 0) return SURFACE;
-  if (depth === 1 || depth === 2 || depth === 3) return depthName(depth);
-  throw new Error(`No expedition depth ${depth}`);
-};
 
 /**
  * A realm's spire, its card's words: whose it is, the army it acts for, each depth's entry or why not, and what entering
  * commits that army to.
  */
 export const SPIRE_WORDS = {
-  title: "Spire",
+  nextReveal: (percent: number) => `Spire · next reveal ${percent}%`,
+  title: SPIRE,
   enter: "Enter",
   /** The order on the spire's tile; its card then picks the Ethereal layer to enter. */
   order: "Enter the Spire",
@@ -482,8 +787,202 @@ export const SPIRE_WORDS = {
   away: (army: string) => `${army} must be beside the spire`,
   inDepth: (army: string, depth: string) => `${army} is in ${depth} today`,
   landingTaken: "Its landing is taken",
-  locked: "Research it to open it",
   commits: (army: string, left: string) => `${army} stays until the day ends (${left})`,
+} as const;
+
+const DEEP = layerName(3);
+export const ATTACK_REFUSAL_WORDS = {
+  "answer-oath-first": "Answer the Oath pick first",
+  "game-not-started": "The season has not started",
+  "game-ended": "The season has ended",
+  "guarding-deep-site": `This army holds a ${DEEP} site`,
+  "target-guards-deep-site": `Attack the ${DEEP} site it holds`,
+  "expired-army": "An army from an earlier day",
+  "deep-ring-closed": "This ring has not opened today",
+  "deep-site-not-adjacent": "Move beside the site to attack",
+  "target-must-be-unowned": "Only unclaimed structures can be attacked",
+  "own-target": "You hold it",
+  "outside-deep": `Armies fight only in the ${DEEP}`,
+  allied: "Allied armies cannot attack each other",
+  "season-immunity": "Under season immunity",
+  "village-immunity": "The village is under immunity",
+  "out-of-range": "Out of range",
+  "claim-needs-adjacency": "Move adjacent to claim",
+  "no-troops": "No troops",
+  cooldown: "On cooldown",
+  "insufficient-stamina": "Not enough stamina",
+} as const satisfies Record<AttackRefusal, string>;
+
+export const DEEP_WORDS = {
+  title: DEEP,
+  orderFailed: `The ${DEEP} order could not be sent.`,
+  purpose: {
+    foundation: "One site every Aspect fights for: holding it raises your Aspect's hyperstructure",
+    core: "Essence for you",
+    mine: "Labor for you",
+    altar: "Against a rival",
+  },
+  /** A Deep site's plate on the map: nobody holds it, and what a tick held pays. */
+  shared: "Every Aspect fights for it",
+  foundationPlate: (height: number) => `+${formatExact(height)} height a tick to the holder's hyperstructure`,
+  altarPlate: "Fills the holder's bane bar",
+  tickPays: "Each tick held pays",
+  splitByTroops: "split by troops",
+  glory: (amount: number) => `${formatExact(amount)} Glory`,
+  height: (amount: number) => `+${formatExact(amount)} height to your Aspect's hyperstructure`,
+  essence: (amount: number) => `${formatExact(amount)} Essence`,
+  labor: (amount: number) => `${formatExact(amount)} labor`,
+  bar: (perTick: number, charge: number, threshold: number) =>
+    `+${formatExact(perTick)} on the bane bar: ${formatExact(charge)} of ${formatExact(threshold)}`,
+  beast: (name: string, troops: number) => `Today's beast: ${name}, ${formatExact(troops)} troops`,
+  open: "No guard: the next army takes it",
+  heldBy: (aspect: string) => `Held by ${aspect}`,
+  freeSlot: "Free slot",
+  foughtInOrder: "An attacker fights them one after the other, from the top",
+  facesNext: "fought next",
+  /** What holding a site costs: the troops its army loses at each tick. */
+  drain: (troops: string) => `${troops} troops lost a tick`,
+  /** How long a guard's troops last: its army ticks, and the time until the last of them. */
+  lasts: (ticks: number, time: string) => `${formatExact(ticks)} ticks left (${time})`,
+  /** What the army panel's chip of those ticks counts. */
+  inTheDeep: `In the ${DEEP}`,
+  share: (percent: number) => `${percent}% of each tick`,
+  attack: "Attack",
+  take: "Take",
+  join: "Join",
+  pickArmy: `Select an army in the ${DEEP}`,
+  guarding: "Already guarding",
+  full: "All 4 slots are taken",
+  rival: "Another Aspect holds it",
+  otherDay: "Only today's armies can fight here",
+  opensAt: (realms: number) => `Opens at ${formatExact(realms)} Realms today`,
+  noTroops: "This army has no troops left",
+  readingStamina: "Reading the army's stamina…",
+  reading: "Reading the site…",
+  /** The map's order on a Deep site beside the army: its card then offers the site's own verb. */
+  order: "Open the site",
+} as const;
+/** The day's banner: today's quest, its count and reward, the bane or Triumph heading it, the Aspect's members. */
+export const DAY_BANNER_WORDS = {
+  today: "Today",
+  reading: "Reading today's quest…",
+  collect: "Collect",
+  collecting: "Collecting…",
+  collected: "Collected",
+  collectAgain: "Collect again",
+  worldBane: "World bane",
+  baneEnded: "Your Aspect ended the bane",
+  baneEndedShort: "Ended",
+  baneFrom: (aspect: string) => `Bane from ${aspect}`,
+  rivalBane: (aspect: string) => `${aspect}'s bane`,
+  heightBlocked: "Your Aspect's hyperstructure does not grow while the bane lasts",
+  beastBane: (percent: number) => `Guarded sites have ${formatExact(percent)}% strength while the bane lasts`,
+  staminaBane: (percent: number) => `Stamina returns at ${formatExact(percent)}% while the bane lasts`,
+  productionBane: (percent: number) => `Production runs at ${formatExact(percent)}% while the bane lasts`,
+  /** A quest's count in its own unit: "1 of 2 camps". */
+  count: (progress: number, target: number, unit: string) =>
+    `${formatExact(progress)} of ${formatExact(target)} ${unit}`,
+  /** How many members of the Aspect finished the bane's quest: "4 of 6 members". */
+  members: (completed: number, required: number) => `${formatExact(completed)} of ${formatExact(required)} members`,
+  membersShort: (completed: number, required: number) => `${formatExact(completed)} of ${formatExact(required)}`,
+  /** Today's claim waiting at the realm: "Labor and Essence waiting". */
+  claimWaiting: "Waiting in Realms",
+  triumph: "Triumph",
+  /** What the Aspect's active Triumph does, by its stage, at the percent the game's rules set. */
+  triumphRule: {
+    1: (percent: number) => `Sites are found at ${formatExact(percent)}% of the usual odds`,
+    2: (percent: number) => `Stamina returns at ${formatExact(percent)}%`,
+    3: (percent: number) => `Guarded sites have ${formatExact(percent)}% strength`,
+    4: (percent: number) => `Site rewards are ${formatExact(percent)}%`,
+  },
+  baneBar: "Your Aspect's bane bar",
+  barCharge: (charge: number, threshold: number) => `${formatExact(charge)} of ${formatExact(threshold)}`,
+} as const;
+/** What a moment's one line needs from the game's rules; the caller reads them, the line only names them. */
+export interface OpeningRules {
+  knightsAnHour: number;
+  deepTickSeconds: number;
+  staminaPerSecond: number;
+  staminaPerFragment: number;
+  relicMinutesPerTier: number;
+  scoutExploreStamina: number;
+  exploreStamina: number;
+}
+
+export const OPENING_WORDS = {
+  lines: {
+    launch: () => "This is your Realm. Build on the lit plot, then send an army into the mist.",
+    barracks: (rules: OpeningRules) =>
+      `A Barracks raises ${formatAmount(rules.knightsAnHour)} Knights an hour. Knights fill your armies.`,
+    guard: () => "Send 150% of the guard's troops to win.",
+    shop: (rules: OpeningRules) =>
+      `Stamina refills ${formatRate(rules.staminaPerSecond)}. A ${FRAGMENT} refills ${formatAmount(rules.staminaPerFragment)} points now.`,
+    essence: () => "Essence buys research and lores.",
+    relic: (rules: OpeningRules) =>
+      `A relic works for ${formatAmount(rules.relicMinutesPerTier)} minutes per tier. An army carries ${ARMY_RELIC_SLOTS}.`,
+    "well-lore": () => "Your armies can now find wells.",
+    "shrine-lore": () => "Your armies can now find shrines.",
+    city: (rules: OpeningRules) =>
+      `Scouts reveal for ${formatAmount(rules.scoutExploreStamina)} stamina, not ${formatAmount(rules.exploreStamina)}.`,
+    deep: (rules: OpeningRules) =>
+      `Every tick (${formatAmount(rules.deepTickSeconds)} seconds) drains troops. Your army panel shows its loss and time left. Hold a site to earn.`,
+    bane: () => "A bane. Today's quest is the bane quest. Your Aspect ends the bane when enough members finish it.",
+    aspects: () => "Your Aspect races to build its hyperstructure. Its page shows where every Aspect stands.",
+  },
+  gotIt: "Got it",
+  /** The offer that comes with the first Deep line: the site alert, off until the player turns it on. */
+  alertOffer: `Alert me when a ${DEEP} site can be taken`,
+  alertOn: "Turn on",
+  alertRetry: "Try again",
+  alertDecline: "Not now",
+  /** Why the alert is not on yet, by what stood in the way. */
+  alertProblem: {
+    preferences: "Your alert setting could not be saved.",
+    device: "This device could not turn alerts on.",
+    blocked: "This browser blocks alerts. Allow them in its settings, then try again.",
+    install: "Add the game to your home screen to get alerts on this phone.",
+    unavailable: "This browser cannot show alerts.",
+  },
+  /** The week's quests on the Today page: the day, and the quest each brings. */
+  week: "This week's quests",
+  weekDay: (day: number, quest: string) => `Day ${formatExact(day)}: ${quest}`,
+  interface: "Interface",
+  showEverything: "Show everything",
+} as const;
+/** The Aspect page (docs/plans/frontier-season-1.md, Aspects and the hyperstructure): the race, and the player's Aspect. */
+export const ASPECT_PAGE_WORDS = {
+  title: "Aspects",
+  race: "The hyperstructures",
+  height: (height: number, finish: number) => `${formatExact(height)} of ${formatExact(finish)}`,
+  stage: (stage: number, stages: number) => `Stage ${stage} of ${stages}`,
+  finished: "Finished",
+  won: (aspect: string) => `${aspect} finished first and won the age`,
+  noFinisher: "The age ended. No Aspect finished its hyperstructure.",
+  yours: (aspect: string) => `Your Aspect: ${aspect}`,
+  triumphs: "Triumphs",
+  triumph: { 1: "Clear Mist", 2: "Second Wind", 3: "Pale Moon", 4: "Spoils" },
+  triumphOn: (day: number) => `day ${formatExact(day)}`,
+  triumphAt: (stage: number) => `at stage ${stage}`,
+  baneBar: "Bane bar",
+  baneCharge: (charge: number, threshold: number) => `${formatExact(charge)} of ${formatExact(threshold)}`,
+  members: "Members",
+  glory: "Glory",
+  guards: (site: string) => `Guards the ${site}`,
+  noAspect: "Join an Aspect to see its members",
+  /** What an Aspect's height is worth in LORDS at the game's rate: displayed only, nothing is paid in the game. */
+  lords: (amount: number) => `${formatExact(amount)} LORDS`,
+  worth: "Worth at season end",
+  fights: `Fights in the ${DEEP}`,
+  noFights: `No fight in the ${DEEP} yet`,
+  fight: (winner: string, loser: string) => `${winner} beat ${loser}`,
+  fightLosses: (first: string, firstLost: number, second: string, secondLost: number) =>
+    `${first} lost ${formatExact(firstLost)}, ${second} lost ${formatExact(secondLost)} troops`,
+  standoff: (first: string, second: string) => `${first} and ${second} fought to a stand`,
+  mutual: (first: string, second: string) => `${first} and ${second} wiped each other out`,
+  readingFights: `Reading the ${DEEP}'s fights…`,
+  fightsFailed: `The ${DEEP}'s fights could not be read.`,
+  wiped: (aspect: string) => `${aspect} wiped out`,
+  reading: "Reading the race…",
 } as const;
 export const RESEARCHING = "Researching…";
 export const BUILDING = "Building…";
@@ -567,10 +1066,8 @@ export const TRANSFER_TROOPS = {
   waiting: "Waiting for both armies’ progress.",
   stale: "The armies changed: review the merge",
   merge: (army: string) => `Merge into ${army}`,
-  totalXp: "Total XP",
-  totalXpFor: (army: string) => `${army} total XP`,
-  losesProgress: (army: string) => `${army} loses its XP, points and upgrades.`,
-  /** The second press of a merge that loses a lot: the leaving army's total XP and the chosen target. */
+  losesProgress: (army: string) => `${army} loses its Logistics, Oath slots and held Oaths.`,
+  /** A second press confirms the loss of stronger Logistics training. */
   confirmMerge: (army: string) => `Confirm merge into ${army}`,
   amount: (from: string, to: string) => `Troops ${from} sends to ${to}`,
   pick: "Pick how many to send",
@@ -600,8 +1097,6 @@ export const STORE_MAKERS = {
   buildings: (count: string, total: string) => `${count} · ${total}`,
   castle: (rate: string) => `${CASTLE} · ${rate}`,
 };
-/** What an army's Homecoming sends home when the day ends, on its row or token in the day's last hour. */
-export const comesHomeAtDayEnd = (troops: string) => `${troops} come home at day end`;
 
 /** The day log's lines for what the player did, in the names the build cards and the dock use. */
 export const revealLine = (gain: string, resource: string) => `${gain} ${resource}`;
@@ -705,18 +1200,26 @@ export const SHARED_DAYS_WORDS = {
     posted: "Days posted",
     visits: "Opened by friends",
     joined: "Friends who joined",
-    activated: "Cleared a site",
+    activated: `Reached ${formatExact(FRIEND_GLORY)} ${ASPECT_PAGE_WORDS.glory}`,
   },
+  friendsPaid: "Friends paid",
+  fragmentsEarned: `${FRAGMENTS} earned`,
+  ofLimit: (paid: number) => `${formatExact(paid)}/${formatExact(FRIENDS_LIMIT)}`,
+  friendRule: `A friend who joins by your Aspect link and reaches ${formatExact(FRIEND_GLORY)} ${ASPECT_PAGE_WORDS.glory} pays you ${formatCount(FRIEND_FRAGMENTS, FRAGMENT, FRAGMENTS)}. Your ${formatOrdinal(FRIENDS_LIMIT)} adds ${formatExact(FRIENDS_BONUS_FRAGMENTS)}.`,
 } as const;
 
 /** A shared link's landing: who shared which day, and the way into Frontier. */
 export const SHARED_LINK_WORDS = {
   /** Its title and pitch are the link's unfurl's too (@realms-world/identity's SHARED_MOMENT_WORDS), so both say one thing. */
-  sharedDay: SHARED_MOMENT_WORDS.title,
+  title: SHARED_MOMENT_WORDS.title,
   pitch: SHARED_MOMENT_WORDS.pitch,
   play: "Start your adventure",
   opening: "Opening…",
   unknown: "This link leads to no shared day.",
+  invites: (name: string | null) => `${sharerName(name)} invites you`,
+  orders: (names: readonly string[]) => `Order of ${names.join(", ")}`,
+  allies: "Members of one Aspect never fight each other.",
+  plays: (name: string | null, order: string) => `${sharerName(name)} plays ${order}.`,
 } as const;
 /** A season's end, told one of two ways (story): the mist lifted, or it grew too strong. */
 export const SEASON_ENDINGS = { lifted: "The mist lifted", strong: "The mist grew too strong" } as const;
@@ -748,6 +1251,59 @@ export const LEAVE = "Leave";
 /** Buying stamina points for LORDS. */
 export const REFILL = "Refill";
 export const REFILLING = "Refilling…";
+export const REFILL_FAILED = "The refill could not be bought.";
+
+export const SHOP_WORDS = {
+  title: "Shop",
+  fragments: (held: number) => `${FRAGMENTS} ${formatExact(held)}`,
+  pass: ANCIENT_SEAL,
+  passFor: "For the whole season",
+  questBonus: (percent: number) => `Daily quest pays ${formatExact(percent)}% more`,
+  bonusHeld: (holder: string) => `Your ${holder} gives this bonus already`,
+  ticket: (campaign: string) => `${campaign} ticket`,
+  getPass: `Get the ${ANCIENT_SEAL}`,
+  getting: "Getting…",
+  passFailed: `The ${ANCIENT_SEAL} could not be bought.`,
+  short: (held: number, more: number, cents: number) =>
+    `You have ${formatExact(held)}. Get ${formatExact(more)} more for ${formatDollars(cents)}.`,
+  held: `You have the ${ANCIENT_SEAL}`,
+  haveCode: "Have a code?",
+  fragmentsLine: (cents: number) => `${formatCount(cents, "cent")} each. Stamina, rerolls, the ${ANCIENT_SEAL}.`,
+  stamina: "Stamina refill",
+  staminaLine: (points: number, bar: number, fragments: number, cents: number) =>
+    `Each ${FRAGMENT} refills ${formatExact(points)} points. A bar of ${formatExact(bar)} is ${formatCount(fragments, FRAGMENT, FRAGMENTS)}, ${formatDollars(cents)}.`,
+} as const;
+
+export const FRAGMENTS_PAGE_WORDS = {
+  title: `Get ${FRAGMENTS}`,
+  pack: (fragments: number) => formatCount(fragments, FRAGMENT, FRAGMENTS),
+  sealPack: `The ${ANCIENT_SEAL}`,
+  price: (fragments: number) => formatDollars(fragments * FRAGMENT_CENTS),
+  pay: (fragments: number) => `Pay ${formatDollars(fragments * FRAGMENT_CENTS)}`,
+  pricing: "Getting your price…",
+  paidAs: (lords: number) => `Paid as ${formatExact(lords)} LORDS`,
+  noPrice: "No price right now. Try again in a minute.",
+  dailyCap: `That is more ${FRAGMENTS} than one day allows.`,
+  delivering: `Your ${FRAGMENTS} are on their way…`,
+  delivered: (fragments: number) => `+${formatCount(fragments, FRAGMENT, FRAGMENTS)}`,
+  backToShop: "Back to the shop",
+  linkWallet: "Link a wallet to pay",
+  payWith: "Pay with",
+  tokenCost: (amount: number, symbol: string) => `≈ ${formatFigure(amount)} ${symbol}`,
+  lordsCost: (lords: number) => `${formatExact(lords)} LORDS`,
+  holds: (amount: number) => `You hold ${formatFigure(amount)}`,
+  pricingTokens: "Reading your wallet…",
+  tooLittle: (cents: number, symbols: readonly string[]) =>
+    `Your wallet holds too little to pay ${formatDollars(cents)}. Add ${symbols.join(", ")} to it.`,
+  refused: {
+    payment_refused: "The payment was refused.",
+    refund_due: "The payment came short or late. Your LORDS will be refunded.",
+    quote_expired: "The price expired. Choose again.",
+    quote_paid: "This price was paid already.",
+    transaction_used: `That payment bought ${FRAGMENTS} already.`,
+    unknown_quote: "This price is no longer known. Choose again.",
+  },
+} as const;
 
 /** LORDS leaving the game for the wallet linked to the account. */
 export const WITHDRAW = "Withdraw";
@@ -777,8 +1333,6 @@ export const claimRealmLaborLabel = (amount: number, essence = 0) =>
     ...(amount > 0 ? [`${formatExact(amount)} Labor`] : []),
     ...(essence > 0 ? [`${formatExact(essence)} Essence`] : []),
   ].join(" · ")}`;
-/** A campaign home's mark beside its realm's rank: the event that founded it, golden for a golden ticket's. */
-export const DEVCON = "Devcon";
 export const CLAIMING_LABOR = "Claiming";
 /** Today's Labor against a full store: what of it lands, the rest is lost with the claim. */
 export const laborFits = (fits: number, total: number) =>
@@ -822,12 +1376,7 @@ export const numberedRealm = (realmId: number, name: string | undefined) =>
   name ? `${realmId} · ${name}` : String(realmId);
 export const NO_HELD_REALMS = "Your linked wallet holds no Realm";
 export const HELD_REALMS_UNREADABLE = "Your Realms cannot be read right now";
-export const TICKET_UNREADABLE = "Your ticket cannot be read right now";
 export const INVALID_REALM_NUMBER = "Enter a Realm number from 1–8,000.";
-/** A campaign's name where its tickets are named: on the Realm step, the ticket a home can be founded with. */
-const CAMPAIGN_NAMES: Record<CampaignKey, string> = { "devcon-2026": DEVCON };
-export const campaignTicketName = (campaign: CampaignKey, golden: boolean) =>
-  `${golden ? "Golden " : ""}${CAMPAIGN_NAMES[campaign]} ticket`;
 /** The Realm step: its one job, the home the player founds, and what it offers to found it with. */
 export const HOME_STEP_WORDS = {
   title: "Choose your home",
@@ -837,10 +1386,9 @@ export const HOME_STEP_WORDS = {
   /** The name a new account was given at sign-up, said where the player first chooses something of their own. */
   playsAs: (name: string) => `You play as ${name}`,
   changeOnYou: "Change it on You",
-  /** While the account's Realms and ticket are read: the step offers nothing yet, and says why. */
   loading: "Reading what you hold…",
   freeHome: "A free home",
-  freeHomeLine: "Hold a Realm or a Devcon ticket to add a daily claim.",
+  freeHomeLine: "Hold a Realm to add a daily claim.",
   taken: "Taken",
   keepFree: "Continue with my free home",
   attachTitle: "Choose a daily claim",
@@ -855,11 +1403,7 @@ export const HOME_STEP_WORDS = {
   /** The strip's last tile: every choice, in a grid with search. */
   all: (count: number) => `All ${count}`,
   search: (count: number) => `Search ${count} Realms`,
-  /** Over the choices: "1 ticket · 3 Realms". */
-  count: (tickets: number, realms: number) =>
-    [tickets ? formatCount(tickets, "ticket") : null, realms ? formatCount(realms, "Realm") : null]
-      .filter(Boolean)
-      .join(" · "),
+  count: (realms: number) => formatCount(realms, "Realm"),
 } as const;
 
 /** The Season chip's tip: what a common chest pays today, and the pool the season pays chests from. */
@@ -973,110 +1517,8 @@ export const SIGN_IN_WORDS = {
   continueInBrowser: "Continue in browser",
 } as const;
 
-/** Devcon's landing and its ticket: the realm it promises, the ticket opened, and what each tier gives each day. */
 export const JOIN_WORDS = {
-  realm: "A Devcon realm is yours",
-  yourTicket: "Your ticket",
-  /** A second flyer on an account that already holds its ticket: the held one, never the flyer's. */
-  alreadyHeld: "You already hold your Devcon ticket",
-  open: "Open your ticket",
-  opening: "Opening…",
-  sealed: "A realm waits for you",
-  stub: "Devcon · Mumbai",
-  golden: "Golden ticket",
-  goldenLine: "A golden realm waits",
-  goldenStub: "Golden · Devcon · Mumbai",
   laborEachDay: (amount: number) => `${formatExact(amount)} Labor ${EACH_DAY}`,
-  essenceEachDay: (amount: number) => `${formatExact(amount)} Essence ${EACH_DAY}`,
-  /** The reveal's way on, into the Devcon game's Realm step. */
-  startAdventure: "Start your adventure",
-  continue: "Continue",
-  closed: "Devcon tickets have closed.",
-  taken: "Another player already opened this ticket.",
-  founded: "Your realm already has a daily claim. Give this flyer to a friend.",
-  noTicket: "This link holds no ticket. Scan the QR on your Devcon flyer.",
-  failed: "Your ticket could not be opened.",
-  /** Over a friend's referral link: who sent it, by their chosen name. */
-  sentYou: (name: string | null) => `${name ?? "A friend"} sent you a Devcon realm`,
-  /** Under the sealed ticket: the season's end, in the event's clock. */
-  openUntil: (moment: string) => `Open it until ${moment}.`,
-  selfReferral: "This is your own invite link. Share it with a friend.",
-  referralUnknown: "This invite link holds no ticket.",
-} as const;
-
-/** Invite friends, on You: the referral link, its friends' progress, and what they earn the inviter. */
-export const REFERRAL_WORDS = {
-  title: "Invite friends",
-  /** What the inviter's friends get and can still earn them, by their home. */
-  promise: {
-    free: (oneIn: number) =>
-      `Each friend who signs up through your link gets a Devcon realm, 1 in ${oneIn} of them golden. When a friend founds a realm and clears a site, you get a Devcon realm too.`,
-    ticket: "Your friends earned you a Devcon ticket. Add it to your home from its daily claim.",
-    devcon: (oneIn: number) =>
-      `Each friend who signs up through your link gets a Devcon realm, 1 in ${oneIn} of them golden. A golden friend who founds a realm and clears a site turns your realm golden.`,
-    golden: "Your realm is golden. Each friend who signs up through your link still gets a Devcon realm.",
-    held: "Each friend who signs up through your link gets a Devcon realm. Your home already has its daily claim, so it earns nothing more.",
-  },
-  /** Golden earned on a Devcon home the game has not confirmed yet: nothing is promised for a claim before it is. */
-  pending: "Golden earned. Your realm turns golden once the game confirms it; until then it claims as it does now.",
-  copy: "Copy",
-  copied: "Copied",
-  share: "Share",
-  shareText: "A Devcon realm for you in Realms: Frontier",
-  /** The link's way to golden, counted friends of the number that turns it. */
-  toGoldenLink: (counted: number, of: number) => `${counted} of ${of} friends`,
-  goldenLinkChip: "Golden link",
-  forEachFriend: "A Devcon realm",
-  forEachFriendDetail: "for each friend",
-  yourRealm: "Your Devcon realm",
-  yourRealmDetail: "when a friend founds and clears a site",
-  goldenFriend: "A golden friend",
-  goldenFriendDetail: (oneIn: number) => `1 in ${oneIn} tickets, once that friend counts`,
-  goldenLink: "A golden link",
-  goldenLinkDetail: (of: number) => `at ${of} friends: you and every friend`,
-  friend: {
-    signed: "Signed up, not founded yet",
-    founded: "Founded, clearing a first site",
-    counted: "Founded and cleared a site",
-    excluded: "Same email or device as another player, so not counted",
-  },
-  /** A friend whose name is not chosen yet. */
-  unnamed: "A friend",
-  counted: "Counted",
-  waiting: "Waiting",
-  notCounted: "Not counted",
-  golden: "Golden",
-  unreadable: "Your invite link could not be loaded.",
-  ticketTitle: (name: string | null) => `${name ?? "A friend"} counted: your Devcon realm`,
-  ticketBody: "Your friend founded a realm and cleared a site. Add this ticket to your home from its daily claim.",
-  ticketAction: "Add it to my home",
-  /** Golden said once the realm is golden on the board, or the golden ticket waits to be added to a home. */
-  goldenTitle: (linkGolden: boolean) => (linkGolden ? "Your link went golden" : "A golden friend counted"),
-  goldenBody: {
-    ticket: "Your Devcon ticket is golden. Add it to your home from its daily claim.",
-    golden: "Your Devcon realm is golden from your next daily claim. Days you already claimed stay as they were.",
-  },
-  goldenAction: { ticket: "Add it to my home", golden: "Open my realm" },
-  /** A phone's compact panel: the same facts in a line each. */
-  compact: {
-    promise: {
-      free: (oneIn: number) =>
-        `Each friend gets a Devcon realm, 1 in ${oneIn} golden. Your first counted friend gets you one.`,
-      ticket: "Friends earned you a Devcon ticket: add it from your daily claim.",
-      devcon: (oneIn: number) =>
-        `Each friend gets a Devcon realm, 1 in ${oneIn} golden. A golden friend who counts makes yours golden.`,
-      golden: "Your realm is golden. Each friend still gets a Devcon realm.",
-      held: "Each friend gets a Devcon realm. Your home earns nothing more.",
-    },
-    pending: "Golden earned: waiting for the game to confirm it.",
-    /** What counts a friend, said where the slots count them: the rule the statuses below name the next step of. */
-    linkRule: (at: number) =>
-      `Friends count once they found a realm and clear a site. At ${at}, your link turns golden.`,
-    linkGolden: "Your link is golden: every friend on it too.",
-    /** Each friend's next step to count, or why they never will. */
-    status: { signed: "Not founded yet", founded: "No site cleared yet", excluded: "Not counted" },
-    excluded: "Same email or device as another player",
-  },
 } as const;
 
 /** Blitz's rows and lobby: the steps on Join, the seat's cost, and what stands where an action cannot. */
@@ -1181,6 +1623,9 @@ export const DOORWAY_WORDS = {
   signInToPlay: "Sign in to play.",
   notOnThisGame: "Not on this game.",
   ended: "This game has ended.",
+  gameRefused: "This game ran on a different version of the game and cannot be opened here.",
+  gameOnOlderNumbers:
+    "This game still runs on older balance numbers than this version of the game, so it cannot be opened here.",
   deviceLimit: "Signed in on 8 devices already.",
   removeDevice: "Remove a device",
   /** A scene that could not be set up, named for what the player does not see; the cause is in the console. */
@@ -1237,7 +1682,6 @@ export const PROFILE_WORDS = {
   /** The counts at the foot of the player's own card, each opening its sheet. */
   holdings: "Holdings",
   realms: "Realms",
-  ticket: "Ticket",
   /** Under a count the holdings could not read: it says why in its sheet. */
   unknownCount: "—",
   /** Recent games with none finished yet: the player's own, and another player's. */
@@ -1317,7 +1761,7 @@ export const WALLET_WORDS = {
   braavos: "Braavos",
   controller: "Controller",
   extension: "extension",
-  byEmail: "by email",
+  byEmail: "email wallet",
   yourWallet: "Your wallet",
   realmsWallet: "Realms wallet",
   createWallet: "Create my wallet",
@@ -1371,7 +1815,7 @@ export const WALLET_WORDS = {
   wrongWallet: (owner: string) => `Only ${owner} can sign this`,
   paymentFailed: "The wallet did not confirm it",
   tryAgain: "Try again",
-  whichHolds: (owner: string) => `Which wallet holds ${owner}?`,
+  chooseWallet: "Choose your wallet",
 } as const;
 
 /** What every value screen shares: a fee the payout wallet cannot pay yet. */
@@ -1488,10 +1932,11 @@ export const LEVEL_WORDS = { off: "Off", important: "Important", all: "All" } as
 export const NOTIFICATION_KIND_WORDS = {
   "day-open": "each day's opening",
   "army-rested": "rested armies",
+  "site-vulnerable": `${DEEP} sites you can take`,
   fights: "fights",
   results: "results",
   messages: "messages",
-  deliveries: "deliveries and trades",
+  deliveries: "deliveries",
   bitcoin: "Bitcoin payouts",
   points: "Hyperstructure points",
 } as const satisfies Record<NotificationKind, string>;
@@ -1504,7 +1949,7 @@ const kindsList = (kinds: readonly NotificationKind[]): string => {
 
 /**
  * What a level brings, in one line under the levels: the kinds it carries beyond the level below it, as the kinds table
- * gives them ("Important, plus deliveries and trades, …").
+ * gives them ("Important, plus deliveries, …").
  */
 export const levelLine = (kinds: readonly NotificationKind[], below: NotificationLevel | null): string => {
   if (kinds.length === 0) return "No alerts";
@@ -1513,6 +1958,18 @@ export const levelLine = (kinds: readonly NotificationKind[], below: Notificatio
     ? `${list.charAt(0).toUpperCase()}${list.slice(1)}`
     : `${LEVEL_WORDS[below]}, plus ${list}`;
 };
+
+/** Invite a friend to the player's Aspect (U13): the panel, its two ways to post the link, and what can go wrong. */
+export const INVITE_WORDS = {
+  title: (aspect: string) => `Invite a friend to ${aspect}`,
+  line: (aspect: string) => `Join me in ${aspect} in Frontier.`,
+  post: "Post on X",
+  copy: "Copy link",
+  copied: "Link copied",
+  making: "Making your link",
+  failed: "Your invite link could not be made.",
+  copyFailed: "The link could not be copied.",
+} as const;
 
 /** What's new: its patch notes, and the legal pages' date. */
 export const NEWS_WORDS = {
@@ -1796,42 +2253,36 @@ export const RESEARCH_TREE = {
     granary: ["Granary", "Wheat storage"],
     tools: ["Tools", "Workshop labor"],
     storeroom: ["Storeroom", "Labor storage"],
-    drill: ["Drill", "Barracks troops"],
-    rations: ["Rations", "Wheat per troop"],
   },
-  /** The kinds a Scouting level finds more of; Frontier's camp is its Troll (the shared structure naming rule). */
-  kinds: {
-    camp: structurePlural(StructureType.Camp, undefined, "frontier"),
-    rift: structurePlural(StructureType.Rift, undefined, "frontier"),
-    sanctuaries: "Sanctuaries",
-  },
-  /** A Scouts' lodge kind's side: new armies find more of it. */
-  foundMore: "Found more",
   sidesLine: (made: string) => `Improve ${made} output and storage separately`,
   hutLine: "Hut population",
+  oaths: "Oath slots",
+  oathSlots: (count: number) => `${count} Oath ${count === 1 ? "slot" : "slots"}`,
+  oathOpen: "Open",
+  oathLocked: "Locked",
+  oathResearch: "Research for new armies",
+  conscriptionLine: "More troops from every troop building.",
+  rationsLine: "Armies leave for less wheat.",
+  troopsAnHour: "Troops an hour",
+  atEach: (building: string) => `At each ${building}`,
+  wheatATroop: "Wheat a troop",
+  onEachDeploy: "On each deploy",
   population: "Population",
-  gateLine: "Opens the 4 training buildings",
-  gateOpen: "Training buildings open",
-  gate: (barracks: string) => `${barracks} opens`,
   newArmiesStart: (attribute: string) => `New armies start with ${attribute}`,
   /** A training building's figure, under the attribute's name on its card: what that level is given to. */
   everyNewArmy: "Every new army",
   /** A level and what it gives: "[II] · +10% damage". */
   at: (tier: number, effect: string): RankedWords => [{ rank: tier }, ` · ${effect}`],
-  /**
-   * What an attribute gives, said as the figure and what it is a figure of, the one wording Research and an army's
-   * panel share (the owner, 22 October: by attribute, Homecoming compact): "+10% damage", "3% come home".
-   */
   effects: {
-    battle: (value: string) => `${value} damage`,
     logistics: (value: string) => `${value} max stamina`,
-    scouting: (value: string) => `${value} discovery`,
-    homecoming: (value: string) => `${value} come home`,
+    rations: (value: string) => `${value} wheat a troop`,
+    troops: (value: string) => `${value} troops an hour`,
   },
   nouns: { essence: ESSENCE, labor: LABOR },
   armiesFind: (site: string) => `Armies find ${site}s`,
   each: (gain: string) => `${gain} each`,
-  enters: (depth: string) => `Armies enter ${depth} at the spire`,
+  lore: loreOf,
+  opensLayers: `Opens every layer under the ${layerName(0)}`,
   opens: "Open",
   build: (building: string) => `Build a ${building}`,
   stands: (building: string) => `${building} stands`,
@@ -1846,28 +2297,84 @@ export const RESEARCH_TREE = {
 } as const;
 
 /**
- * An army's detail: status, attributes, the next skill point and level-up choices.
+ * An army's per-tile resource reward.
  */
 export const ARMY_DETAIL = {
-  /** A Scouting effect on the kind its levels went to: "+10% discovery on Rifts". */
-  onKind: (effect: string, kind: string) => `${effect} on ${kind}`,
-  scoutingNext: (now: string, step: string) => `${now} · ${step} on the kind you pick`,
   /**
    * What each tile the army explores sends home, on its stamina row: Essence or Labor, one of the two each reveal, as
    * the contract draws it (exploration_rewards.cairo's reveal_reward). The chip's name reads the label then the amount.
    */
   revealPays: (amount: string) => `+${amount} a tile`,
   revealPaysLabel: `${ESSENCE} or ${LABOR},`,
-  levelUp: "Level up",
-  levelUps: "Level-ups",
-  /** An attribute tile's hover: what its next tier gives and costs, "Rare: +10% → +20% damage · 200 XP". */
-  legendary: (attribute: string) => `${attribute} is legendary`,
 } as const;
 
 /** Deleting the picked army, for good. */
 export const ARMY_MANAGEMENT = {
   remove: "Delete",
   confirmDelete: "Delete this army?",
-  loss: "Its troops, skills, XP and carried resources are lost. Its slot keeps its stamina.",
+  loss: "Its troops, carried resources and held Oaths are lost. Its slot keeps its stamina.",
   deleteFailed: "The army could not be deleted.",
+} as const;
+
+const ARMY_RELIC_SLOTS = 3;
+export const RELIC_WORDS = {
+  title: "Relics",
+  cache: (fragments: number) => `Ancient cache: ${formatExact(fragments)} ${FRAGMENTS}`,
+  kinds: { Blade: "Blade", Ward: "Ward", Plunder: "Plunder", StaminaRegen: "Stamina" },
+  blade: (amount: string) => `+${amount} damage dealt`,
+  ward: (amount: string) => `−${amount} damage taken`,
+  plunder: (amount: string) => `+${amount} labor and Essence from a cleared site`,
+  staminaRegen: (amount: string) => `+${amount} stamina regeneration`,
+  empty: "Empty slot",
+  switchOn: "Switch on",
+  switching: "Switching on…",
+  /** A running relic and its time left: "Rare Ward · 20m left". */
+  runs: (relic: string, left: string) => `${relic} · ${left} left`,
+  /** Switching on a relic whose kind already runs: the new one takes its place. */
+  replacesRunning: "Replaces the one running",
+  /** A ruin's relic, before the fight: the beast is as big as the relic is rare. */
+  guards: (relic: string) => `Pays a relic: ${relic}`,
+  /** Choosing which of three carried relics the ruin's relic replaces, before the attack. */
+  full: `Your army carries ${ARMY_RELIC_SLOTS} relics. Choose the one this relic replaces.`,
+  replace: (relic: string) => `Replace ${relic}`,
+  /** The held attack's step while the army's relics are not known yet: whether it must choose cannot be told. */
+  reading: "Reading the army's relics…",
+  /** The held attack's step while what the ruin pays is not known yet: whether a relic comes cannot be told. */
+  readingRuin: "Reading the ruin's relic…",
+  /** The held attack's step while no relic is chosen: the choice itself is said just above it. */
+  chooseFirst: "Choose the relic to replace first",
+} as const;
+
+export const REALM_SIDE_WORDS = {
+  invited: (sender: string | null, invited: string, realms: string) =>
+    `${sharerName(sender)} plays ${invited}. Your Realm plays ${realms}.`,
+  kept: (kept: string, realms: string) => `You chose ${kept} before the season. Your Realm plays ${realms}.`,
+  bonus: "Your Realm holds the quest bonus.",
+  playRealm: "Play my Realm",
+  keeps: "You keep the quest bonus.",
+  apart: (sender: string | null) => `${sharerName(sender)} is in another Aspect.`,
+  joinFree: (aspect: string) => `Join ${aspect} for free`,
+  loses: "You lose the quest bonus.",
+} as const;
+const INVITED = "Invited";
+export const ASPECT_STEP_WORDS = {
+  title: "Choose your Aspect",
+  /** The title where nothing is chosen: a held Realm's home already plays for its Order's Aspect. */
+  yours: "Your Aspect",
+  line: "Your team for the season. Members of one Aspect never fight each other. You can't switch later.",
+  members: (count: number) => formatCount(count, "member"),
+  join: (aspect: string) => `Join ${aspect}`,
+  joining: (aspect: string) => `Joining ${aspect}…`,
+  foundingAs: (order: string) => `Founding as ${order}…`,
+  /** A held Realm's home: its Aspect is its Order's, so the step shows it and asks nothing. */
+  realmsAspect: (order: string, aspect: string) => `Your Realm's ${order} plays for ${aspect}`,
+  keptAspect: (aspect: string) => `You chose ${aspect} before the season. Choose your Order in it.`,
+  keptUnread: "Your Aspect for the season could not be read. Try again.",
+  /** The step's line for a friend's invite, and the invited card's tag; a sender with no name yet is not named. */
+  invitedTo: (sender: string | null, aspect: string) =>
+    sender === null ? `You were invited to ${aspect}` : `${sender} invited you to ${aspect}`,
+  invited: INVITED,
+  invitedBy: (sender: string | null) => (sender === null ? INVITED : `${sender} invited you`),
+  /** The step when the link the account came by could not be read: the Aspects stay open, and it can ask again. */
+  inviteUnread: "Your friend's invite could not be read. You can choose an Aspect, or try again.",
 } as const;

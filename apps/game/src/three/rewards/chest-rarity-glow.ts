@@ -3,7 +3,7 @@ import { HUD_SHEET } from "@/tokens";
 import type { ChestGlow } from "./chest-transitions";
 
 /** A chest's rarity, common (1) to legendary (5), as the HUD's rarity plates count it. */
-export type ChestRarity = 1 | 2 | 3 | 4 | 5;
+type ChestRarity = 1 | 2 | 3 | 4 | 5;
 
 /**
  * A chest's rarity as its glow when it opens: none for a common one; from uncommon up, light leaks from its lid in the

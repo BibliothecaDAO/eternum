@@ -1,13 +1,16 @@
 pub const RUIN_DEPTH_LIMIT_RELEASE: u32 = 9;
+pub const SEAL_RELEASE: u32 = 10;
 
 pub use games_storage::release::Release;
-use starknet::storage::StoragePointerReadAccess;
+use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
 
 #[starknet::interface]
 pub trait IReleases<T> {
     fn register_release(ref self: T, release_id: u32, release: Release);
+    fn open_release(ref self: T, release_id: u32);
     fn apply_release(ref self: T, game_id: u32, release_id: u32);
     fn current_release(self: @T) -> u32;
+    fn release_registered(self: @T, release_id: u32) -> bool;
     fn game_release(self: @T, game_id: u32) -> u32;
     fn release(self: @T, release_id: u32) -> Release;
 }
@@ -31,8 +34,7 @@ pub mod ReleaseState {
     use games_storage::release::LogicClasses;
     use starknet::ContractAddress;
     use starknet::storage::{
-        StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess,
-        StoragePointerWriteAccess,
+        StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
     use super::{IReleaseMigrationDispatcherTrait, IReleaseMigrationLibraryDispatcher, Release};
 
@@ -53,14 +55,23 @@ pub mod ReleaseState {
     > of super::IReleases<ComponentState<TContractState>> {
         fn register_release(ref self: ComponentState<TContractState>, release_id: u32, release: Release) {
             self.assert_authority();
-            let current = self.current_release();
-            if release_id != 0 && release_id <= current {
+            if self.release_registered(release_id) {
                 assert!(self.release(release_id) == release, "release is immutable");
                 return;
             }
-            assert!(release_id == current + 1, "release must be next");
+            assert!(release_id != 0 && self.release_registered(release_id - 1), "release must be next");
             games_storage::release::validate(release.classes);
             self.data.releases.write(release_id, release);
+        }
+
+        fn open_release(ref self: ComponentState<TContractState>, release_id: u32) {
+            super::assert_launcher();
+            let current = self.current_release();
+            if release_id == current {
+                return;
+            }
+            assert!(release_id == current + 1, "release must follow the open release");
+            self.release(release_id);
             self.data.current_release.write(release_id);
         }
 
@@ -86,6 +97,10 @@ pub mod ReleaseState {
             self.data.current_release.read()
         }
 
+        fn release_registered(self: @ComponentState<TContractState>, release_id: u32) -> bool {
+            self.data.releases.read(release_id).classes.season.is_non_zero()
+        }
+
         fn game_release(self: @ComponentState<TContractState>, game_id: u32) -> u32 {
             let release_id = self.data.game_releases.read(game_id);
             assert!(release_id != 0, "game has no release");
@@ -93,9 +108,8 @@ pub mod ReleaseState {
         }
 
         fn release(self: @ComponentState<TContractState>, release_id: u32) -> Release {
-            let release = self.data.releases.read(release_id);
-            assert!(release_id != 0 && release.classes.season.is_non_zero(), "unknown release");
-            release
+            assert!(self.release_registered(release_id), "unknown release");
+            self.data.releases.read(release_id)
         }
     }
 
@@ -118,9 +132,14 @@ pub mod ReleaseState {
         fn classes(
             self: @ComponentState<TContractState>, game_id: u32,
         ) -> starknet::storage::StoragePointer<LogicClasses> {
-            let release_id = self.data.game_releases.read(game_id);
-            assert!(release_id != 0, "game has no release");
-            self.data.releases.entry(release_id).classes
+            super::classes(game_id)
         }
     }
+}
+
+pub fn classes(game_id: u32) -> starknet::storage::StoragePointer<games_storage::release::LogicClasses> {
+    let state = crate::state::read();
+    let release_id = state.game_releases.read(game_id);
+    assert!(release_id != 0, "game has no release");
+    state.releases.entry(release_id).classes
 }

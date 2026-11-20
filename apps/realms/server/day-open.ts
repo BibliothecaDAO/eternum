@@ -4,7 +4,7 @@ import { dayOf, homeDailyClaim, isRealmCategory, type HomeDailyClaim } from "@bi
 import type { PushGame } from "@bibliothecadao/notifications";
 
 export type DayOpenGame = Pick<HeraldGameDirectoryEntry, "game_id" | "mode" | "status" | "expedition"> & {
-  clock: Pick<HeraldGameDirectoryEntry["clock"], "start_main_at" | "end_at">;
+  clock: Pick<HeraldGameDirectoryEntry["clock"], "start_main_at" | "end_at" | "scheduled_end_at">;
 };
 
 /** One Frontier game day about to open. Instants are milliseconds; `day` is the day's index (Day 1 is 0). */
@@ -42,14 +42,35 @@ export function planDayOpenings(
   return { prepare, nextAlarmAt };
 }
 
-function nextOpening(game: DayOpenGame, now: number): DayOpening | null {
+/** A Frontier game's day calendar, as its directory entry states it. */
+const calendarOf = (game: DayOpenGame) => {
   if (!game.expedition) throw new Error(`Game ${game.game_id} has no Frontier calendar`);
-  const calendar = {
+  return {
     seed: BigInt(game.expedition.seed),
     startMainAt: game.clock.start_main_at,
+    scheduledEndAt: game.clock.scheduled_end_at,
     endAt: game.clock.end_at,
     dayUnitSeconds: game.expedition.day_unit_seconds,
   };
+};
+
+/** The ids of the Frontier games in a day at `now`; a game between days, or not running, is left out. */
+export function runningFrontierGameIds(games: readonly DayOpenGame[], now: number): number[] {
+  return games
+    .filter((game) => game.mode === "frontier" && game.status !== "Ended" && game.status !== "Settled")
+    .filter((game) => dayOf(calendarOf(game), now) !== null)
+    .map((game) => game.game_id);
+}
+
+export function openFrontierGameIds(games: readonly DayOpenGame[], now: number): number[] {
+  return games
+    .filter((game) => game.mode === "frontier" && game.status !== "Ended" && game.status !== "Settled")
+    .filter((game) => game.clock.end_at === 0 || now < game.clock.end_at)
+    .map((game) => game.game_id);
+}
+
+function nextOpening(game: DayOpenGame, now: number): DayOpening | null {
+  const calendar = calendarOf(game);
   const seasonEnd = game.clock.end_at;
   if (!Number.isSafeInteger(calendar.startMainAt) || !Number.isSafeInteger(seasonEnd))
     throw new Error(`Game ${game.game_id} has an invalid Frontier calendar`);

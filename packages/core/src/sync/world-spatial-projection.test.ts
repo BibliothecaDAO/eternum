@@ -54,7 +54,17 @@ const createHarness = () => {
     }
   };
   const write = (
-    model: "TileOpt" | "TileOccupancy" | "ExplorerTroops" | "Structure" | "ExpeditionSite",
+    model:
+      | "TileOpt"
+      | "TileOccupancy"
+      | "ExplorerTroops"
+      | "Structure"
+      | "ExpeditionSite"
+      | "DeepRules"
+      | "DeepArmy"
+      | "ArmyDay"
+      | "ArmyProgress"
+      | "DeepGuard",
     alias: string,
     keys: (number | boolean)[],
     row: object,
@@ -165,6 +175,7 @@ const createHarness = () => {
     rules.set("GameRegistry", {
       game_id: 13,
       start_main_at: BigInt(startMainAt),
+      scheduled_end_at: BigInt(startMainAt + 21 * 20 * dayUnitSeconds),
       end_at: BigInt(startMainAt + 21 * 20 * dayUnitSeconds),
       seed: 1n,
     });
@@ -220,6 +231,62 @@ const createHarness = () => {
     source,
     projection: new WorldSpatialProjection({ store: source, bucketSize: 4 }),
     writeClearedSite,
+    atomic,
+    writeDeep: () => {
+      writeExpeditionRules(14400, 1024, 360);
+      rules.set("SliceRules", { game_id: 13, day_unit_seconds: 14400, tick_config: { armies_tick_in_seconds: 60n } });
+      write(
+        "DeepRules",
+        "deep",
+        [13],
+        {
+          game_id: 13,
+          gate_distance: 4,
+          rings: [{ radius: 5, realms: 0 }],
+          beasts: [
+            { count: 100n, bow: false },
+            { count: 100n, bow: true },
+            { count: 100n, bow: false },
+            { count: 100n, bow: true },
+          ],
+          loss_per_tick: 1n,
+          core_per_tick: 100n,
+          mine_per_tick: 100n,
+          building_pay: { alone: 1, pair: 1, crowd: 1 },
+          altar_threshold: 10,
+        },
+        false,
+      );
+    },
+    writeDeepArmy: (explorer: number) =>
+      atomic(() => {
+        write(
+          "ArmyProgress",
+          `progress-${explorer}`,
+          [13, explorer],
+          { game_id: 13, explorer_id: explorer, logistics: 0, oath_slots: 1, oaths: 0, oath_pick: 0 },
+          false,
+        );
+        write("ArmyDay", `day-${explorer}`, [13, explorer], { game_id: 13, explorer_id: explorer, day: 0n }, false);
+        write(
+          "DeepArmy",
+          `deep-${explorer}`,
+          [13, explorer],
+          { game_id: 13, explorer_id: explorer, last_tick: 6n },
+          false,
+        );
+      }),
+    joinDeep: (alias: string, explorer: number, site: number) =>
+      atomic(() => {
+        remove("TileOccupancy", `army-${alias}`);
+        write(
+          "DeepGuard",
+          `guard-${explorer}`,
+          [13, explorer],
+          { game_id: 13, explorer_id: explorer, site_id: site, slot: 0 },
+          false,
+        );
+      }),
     writeTile,
     writeArmy,
     writeExpeditionRules,
@@ -979,5 +1046,68 @@ describe("WorldSpatialProjection", () => {
     projection.flush();
 
     expect(listener).not.toHaveBeenCalled();
+  });
+});
+
+describe("shared Deep spatial projection", () => {
+  it("removes an exhausted army and stale occupancy on a clock-only head, retaining fixed terrain", () => {
+    let now = 360;
+    setBlockTimestampSource(() => now);
+    const harness = createHarness();
+    try {
+      harness.writeDeep();
+      harness.writeArmy("field", { explorerId: 11, col: 512, row: 3584, count: 2n });
+      harness.writeDeepArmy(11);
+      harness.projection.start();
+      expect(harness.projection.getTiles(false)).toHaveLength(2500);
+      expect(harness.projection.getArmies(false).map((army) => army.entityId)).toEqual([11]);
+      now = 420;
+      harness.projection.refreshTime();
+      expect(harness.projection.getArmy(11)).toBeDefined();
+      now = 480;
+      harness.projection.refreshTime();
+      expect(harness.projection.getArmy(11)).toBeUndefined();
+      expect(harness.projection.getTiles(false)).toHaveLength(2500);
+      const tile = harness.projection
+        .getTiles(false)
+        .find((tile) => tile.hexCoords.col === 512 && tile.hexCoords.row === 3584)!;
+      expect(tile.occupierId).toBe(0);
+      expect(harness.source.require("ExplorerTroops", { game_id: 13, explorer_id: 11 }).troops.count).toBe(2n);
+    } finally {
+      harness.projection.dispose();
+      setBlockTimestampSource(null);
+    }
+  });
+
+  it("folds guard membership and field departure atomically, including after rebuild", () => {
+    setBlockTimestampSource(() => 360);
+    const harness = createHarness();
+    try {
+      harness.writeDeep();
+      harness.writeArmy("field", { explorerId: 11, col: 512, row: 3584, count: 10n });
+      harness.writeDeepArmy(11);
+      harness.writeTile("site", { col: 513, row: 3584, occupierId: 20, occupierType: TileOccupier.DeepSite });
+      harness.projection.start();
+      const changes: ArmySpatialProjectionChange[][] = [];
+      harness.projection.subscribeArmies((batch) => changes.push([...batch]));
+      harness.joinDeep("field", 11, 20);
+      harness.projection.flush();
+      expect(harness.projection.getArmy(11)).toBeUndefined();
+      expect(changes).toHaveLength(1);
+      expect(changes[0]).toHaveLength(1);
+      expect(changes[0]![0]!.previous?.entityId).toBe(11);
+      expect(changes[0]![0]!.current).toBeUndefined();
+      harness.projection.rebuild();
+      expect(harness.projection.getArmies(false)).toEqual([]);
+      expect(harness.projection.getTiles(false)).toHaveLength(2500);
+      expect(harness.projection.getTiles(false).find((tile) => tile.occupierId === 20)?.hexCoords).toEqual({
+        col: 513,
+        row: 3584,
+        alt: false,
+      });
+    } finally {
+      harness.projection.dispose();
+      setBlockTimestampSource(null);
+    }
   });
 });

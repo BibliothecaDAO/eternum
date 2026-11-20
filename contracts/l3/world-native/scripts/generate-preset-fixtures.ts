@@ -1,12 +1,18 @@
+import { frontierSeasonOnePreset } from "../../../../config/source/frontier/season-one";
+import { nativeOathConstants as oaths } from "../schema/balance.gen";
+import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { shortString } from "starknet";
 import { schema as compiledSchema } from "../../../../apps/herald/src/native/fixtures";
 import { schemaIdentity, type NativeMember, type NativeSchema } from "../../../../apps/herald/src/native/schema";
-import { defineFactModels } from "../schema/fact-models.mjs";
-import { toJsonValue } from "../../../../apps/herald/src/model-registry";
+import { defineFactModels, factWireTypes } from "../schema/fact-models.mjs";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { encodeMembers } from "../../../../apps/herald/src/native/serde";
 import { currentPresetFixture, serializePresetRows } from "../../../../apps/herald/src/native/current-preset-fixture";
-import { FRONTIER_FIXTURE_PRESET_ID } from "../../../../config/source/common/native-preset-modes";
+import { arenaCommandMask } from "../../../../config/source/common/native-commands";
+import {
+  FRONTIER_S1_PRESET_ID,
+  FRONTIER_FIXTURE_PRESET_ID,
+} from "../../../../config/source/common/native-preset-modes";
 
 const schema = presetFixtureSchema();
 
@@ -15,48 +21,68 @@ mkdirSync(directory, { recursive: true });
 const write = (name: string, felts: string[]) => writeFileSync(new URL(name, directory), felts.join("\n") + "\n");
 for (const [name, id] of [
   ["blitz", 2],
-  ["eternum", 3],
-  ["frontier", 5],
-  ["devcon", 6],
+  ["frontier", FRONTIER_S1_PRESET_ID],
   ["frontier-check", FRONTIER_FIXTURE_PRESET_ID],
+  ["frontier-retired", 5],
+  ["devcon", 6],
+  ["accelerated", 101],
 ] as const) {
-  const fixture = await currentPresetFixture(id, schema);
+  const fixture = currentPresetFixture(id, schema);
   write(`${name}-register.txt`, fixture.registration);
   write(`${name}-create.txt`, fixture.creation);
   write(`${name}-rows.txt`, serializePresetRows(fixture.rows, schema));
-  if (id === 5) {
+  if (id === FRONTIER_S1_PRESET_ID) {
     writeFileSync(new URL("../frontier-command-mask.txt", directory), `${fixture.definition.rules.command_mask}\n`);
   }
-  if (id === 3) {
-    const current = conformancePreset(fixture.definition);
-    write("preset-3.txt", current.felts);
-    writeFileSync(new URL("preset-3.json", directory), JSON.stringify(toJsonValue(current.value), null, 2) + "\n");
-  }
 }
-console.log("Generated current Blitz, Eternum, Frontier and Frontier check preset inputs and Herald projections");
+write("../oath-deep-loss.txt", oathDeepLossVectors());
+write("../oath-prizes.txt", oathPrizeVectors());
+write("../oath-stamina.txt", oathStaminaVectors());
+write("../oath-fight.txt", oathFightVectors());
+write(
+  "../oath-pass-stamina.txt",
+  [0, oaths.PASS_STAMINA / 2, oaths.PASS_STAMINA, oaths.PASS_STAMINA * 2].flatMap((deficit) =>
+    [deficit, Math.min(deficit, oaths.PASS_STAMINA)].map(String),
+  ),
+);
+console.log("Generated current Blitz, Frontier and Frontier check preset inputs and Herald projections");
 
-function conformancePreset(definition: Awaited<ReturnType<typeof currentPresetFixture>>["definition"]) {
-  const value = {
-    rules: { ...definition.rules, map_center_offset: 20 },
-    resources: definition.resources.resources,
-    buildings: definition.structures.buildings,
-  };
-  const felts = encodeMembers(
+// Shared conformance conditions are independent of the playable preset catalog.
+const conformance = JSON.parse(readFileSync(new URL("conformance.json", directory), "utf8"));
+conformance.rules.command_mask = arenaCommandMask.toString();
+writeFileSync(new URL("conformance.json", directory), JSON.stringify(conformance, null, 2) + "\n");
+writeFileSync(
+  new URL("../../support/src/command_masks.cairo", directory),
+  `// Generated from the current preset command catalog.\npub const BLITZ_COMMAND_MASK: u128 = 0x${arenaCommandMask.toString(16)};\n`,
+);
+write(
+  "conformance.txt",
+  encodeMembers(
     schema,
     [
       { name: "rules", type: "world_native::rules::SliceRules" },
       { name: "resources", type: "core::array::Span::<world_native::resources::ResourceRule>" },
       { name: "buildings", type: "core::array::Span::<world_native::buildings::BuildingRuleConfig>" },
     ],
-    value,
-  );
-  return { value, felts };
-}
+    conformance,
+  ),
+);
 
 /** Fixture encoding can follow source edits before the single landing compile; production bindings still require ABI. */
 function presetFixtureSchema(): NativeSchema {
   const schema = structuredClone(compiledSchema);
-  for (const module of ["rules", "entry", "presets", "relics", "registrar", "blitz_results", "progression"])
+  for (const type of factWireTypes) schema.types[type.name] = type;
+  for (const module of [
+    "rules",
+    "entry",
+    "presets",
+    "relics",
+    "army_relics",
+    "registrar",
+    "blitz_results",
+    "progression",
+    "withdrawals",
+  ])
     readStructs(schema, module);
   schema.models = defineFactModels({
     struct: (name: string) => {
@@ -174,4 +200,123 @@ function feltLength(schema: NativeSchema, name: string): number | null {
 
 function sumLengths(lengths: (number | null)[]): number | null {
   return lengths.includes(null) ? null : lengths.reduce<number>((sum, length) => sum + length!, 0);
+}
+
+function oathPrizeVectors(): string[] {
+  const bit = (oath: number) => 1 << (oath - 1);
+  const amount = 1_003n * BigInt(RESOURCE_PRECISION) + 7n;
+  const sets = [
+    0,
+    bit(oaths.DETECTION),
+    bit(oaths.BRILLIANCE),
+    bit(oaths.RAGE),
+    bit(oaths.DETECTION) | bit(oaths.BRILLIANCE) | bit(oaths.RAGE),
+    bit(oaths.POWER),
+  ];
+  return sets.flatMap((held) => {
+    const percent = (oath: number, value: number) => ((held & bit(oath)) !== 0 ? value : 100);
+    return [100, 150].flatMap((base) =>
+      [
+        held,
+        base,
+        Math.floor((base * percent(oaths.DETECTION, oaths.DETECTION_FIND_PERCENT)) / 100),
+        amount,
+        (amount * BigInt(percent(oaths.BRILLIANCE, oaths.BRILLIANCE_PAY_PERCENT))) / 100n,
+        (amount * BigInt(percent(oaths.RAGE, oaths.RAGE_PAY_PERCENT))) / 100n,
+      ].map(String),
+    );
+  });
+}
+
+function oathStaminaVectors(): string[] {
+  const bit = (oath: number) => 1 << (oath - 1);
+  const sets = [
+    0,
+    bit(oaths.ANGER),
+    bit(oaths.TITANS),
+    bit(oaths.ENLIGHTENMENT),
+    bit(oaths.FOX),
+    bit(oaths.ANGER) | bit(oaths.TITANS) | bit(oaths.ENLIGHTENMENT) | bit(oaths.FOX),
+    bit(oaths.POWER),
+  ];
+  const hourTicks = 30;
+  return sets.flatMap((held) => {
+    const holds = (oath: number) => (held & bit(oath)) !== 0;
+    const regen = holds(oaths.ENLIGHTENMENT) ? oaths.ENLIGHTENMENT_REGEN_BPS : 10_000;
+    return [
+      [30, 20],
+      [10, 10],
+    ].flatMap(([attack, explore]) =>
+      [
+        held,
+        attack,
+        holds(oaths.ANGER) ? Math.min(attack!, oaths.ANGER_ATTACK_STAMINA) : attack,
+        explore,
+        holds(oaths.FOX) ? Math.floor((explore! * (100 - oaths.FOX_REVEAL_DISCOUNT_PERCENT)) / 100) : explore,
+        holds(oaths.TITANS) ? oaths.TITANS_STAMINA : 0,
+        regen,
+        Math.floor((hourTicks * regen) / 10_000),
+      ].map(String),
+    );
+  });
+}
+
+function oathFightVectors(): string[] {
+  const bit = (oath: number) => 1 << (oath - 1);
+  const amount = 1_003n * BigInt(RESOURCE_PRECISION) + 7n;
+  const sets = [
+    0,
+    bit(oaths.SKILL),
+    bit(oaths.FURY),
+    bit(oaths.PERFECTION),
+    bit(oaths.RAGE) | bit(oaths.PERFECTION),
+    bit(oaths.SKILL) | bit(oaths.FURY) | bit(oaths.PERFECTION),
+    bit(oaths.POWER),
+  ];
+  return sets.flatMap((held) => {
+    const holds = (oath: number) => (held & bit(oath)) !== 0;
+    return [
+      [oaths.SKILL_BELOW_STAMINA - 1, 30, 1_000, 860],
+      [oaths.SKILL_BELOW_STAMINA, 20, 1_000, 850],
+    ].flatMap(([bar, cost, before, after]) => {
+      const skill = holds(oaths.SKILL) && bar! < oaths.SKILL_BELOW_STAMINA ? 100 + oaths.SKILL_DAMAGE_PERCENT : 100;
+      const clean = (before! - after!) * 100 < before! * oaths.PERFECTION_LOSS_PERCENT;
+      const raged = holds(oaths.RAGE) ? (amount * BigInt(oaths.RAGE_PAY_PERCENT)) / 100n : amount;
+      return [
+        held,
+        bar,
+        (BigInt(skill) << 64n) / 100n,
+        cost,
+        holds(oaths.FURY) ? Math.floor((cost! * oaths.FURY_REFUND_PERCENT) / 100) : 0,
+        before,
+        after,
+        clean ? 1 : 0,
+        amount,
+        clean && holds(oaths.PERFECTION) ? (raged * BigInt(oaths.PERFECTION_PAY_PERCENT)) / 100n : raged,
+      ].map(String);
+    });
+  });
+}
+
+function oathDeepLossVectors(): string[] {
+  const precision = BigInt(RESOURCE_PRECISION);
+  const base = BigInt(frontierSeasonOnePreset.deep.lossPerTick) * precision;
+  const vitriol = BigInt(oaths.VITRIOL_LOSS_PER_TICK) * precision;
+  const mask = 1 << (oaths.VITRIOL - 1);
+  const power = 1 << (oaths.POWER - 1);
+  const troops = 1000n * precision;
+  const cases: [number, bigint, bigint, bigint][] = [
+    [0, troops, 2n, base],
+    [mask, troops, 2n, vitriol],
+    [mask | power, troops, 2n, vitriol],
+    [power, troops, 2n, base],
+    [mask, vitriol + 1n, 1n, vitriol],
+    [mask, vitriol, 1n, vitriol],
+    [mask, troops, 0n, vitriol],
+    [mask, troops, (troops + vitriol - 1n) / vitriol, vitriol],
+  ];
+  return cases.flatMap(([held, count, ticks, loss]) => {
+    const remaining = count - ticks * loss;
+    return [held, base, count, ticks, loss, remaining > 0n ? remaining : 0n].map(String);
+  });
 }

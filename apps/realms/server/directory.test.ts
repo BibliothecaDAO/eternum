@@ -4,10 +4,7 @@ import { afterEach, expect, test, vi } from "vitest";
 
 import { handleDirectory, handleDirectoryHistory, superviseNotifiers } from "./directory";
 
-const shards = [
-  { url: "https://first.test", chainId: "0x1", status: "active" },
-  { url: "https://second.test", chainId: "0x2", status: "draining" },
-];
+const shard = { url: "https://first.test", chainId: "0x1" };
 
 const game = (game_id: number, status: HeraldGameDirectoryEntry["status"], end_at = 0) =>
   ({ game_id, status, clock: { end_at }, player_state: { registered: game_id !== 4 } }) as HeraldGameDirectoryEntry;
@@ -33,18 +30,15 @@ const dependencies = (
     chains: { chainId: string; games: { gameId: number; slotId: number | null }[] }[];
   }>,
 ) => ({
-  db: { prepare: () => ({ all: async () => ({ results: shards }) }) } as unknown as D1Database,
+  db: { prepare: () => ({ first: async () => shard }) } as unknown as D1Database,
   cache: { match: async () => undefined, put: async () => undefined } as unknown as Cache,
-  fetchShard: vi.fn<typeof fetch>(async (input) => {
-    const shard = shards.find(({ url }) => String(input).startsWith(url))!;
-    return herald(shard.chainId, input);
-  }),
+  fetchShard: vi.fn<typeof fetch>(async (input) => herald(shard.chainId, input)),
   readLaunchDirectory,
 });
 
 afterEach(() => vi.restoreAllMocks());
 
-test("a failed entry read keeps both shard names visible as unavailable", async () => {
+test("a failed entry read keeps the shard's name visible as unavailable", async () => {
   vi.spyOn(console, "error").mockImplementation(() => undefined);
   const deps = dependencies(async () => {
     throw new Error("launch unavailable");
@@ -52,16 +46,24 @@ test("a failed entry read keeps both shard names visible as unavailable", async 
   const response = await handleDirectory(new Request("https://app.test/api/directory"), deps);
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual({
-    shards: shards.map((shard) => ({
-      ...shard,
-      manifest: null,
-      games: null,
-      error: "unavailable",
-    })),
+    shard: { ...shard, manifest: null, games: null, error: "unavailable" },
   });
 });
 
-test("a failed entry read refuses history terms and reports the affected shards", async () => {
+test("an empty directory lists no shard and no history", async () => {
+  const deps = {
+    ...dependencies(healthyLaunch),
+    db: { prepare: () => ({ first: async () => null }) } as unknown as D1Database,
+  };
+  expect(await (await handleDirectory(new Request("https://app.test/api/directory"), deps)).json()).toEqual({
+    shard: null,
+  });
+  const history = await handleDirectoryHistory(new Request("https://app.test/api/directory/history"), deps);
+  expect(await history.json()).toEqual({ games: [], next: null, failures: [] });
+  expect(deps.fetchShard).not.toHaveBeenCalled();
+});
+
+test("a failed entry read refuses history terms and reports the shard", async () => {
   vi.spyOn(console, "error").mockImplementation(() => undefined);
   const deps = dependencies(async () => {
     throw new Error("launch unavailable");
@@ -72,66 +74,54 @@ test("a failed entry read refuses history terms and reports the affected shards"
   expect(await first.json()).toEqual({
     games: [],
     next: null,
-    failures: shards.map(({ url }) => ({ url, error: "unavailable" })),
+    failures: [{ url: shard.url, error: "unavailable" }],
   });
   const second = await handleDirectoryHistory(request("&cursor=100:0x2:3"), deps);
   expect(await second.json()).toEqual({
     games: [],
     next: null,
-    failures: shards.map(({ url }) => ({ url, error: "unavailable" })),
+    failures: [{ url: shard.url, error: "unavailable" }],
   });
 });
 
-test("healthy launch records filter games independently on both chains", async () => {
+test("only the shard chain's launch records make its games visible", async () => {
   const deps = dependencies(async () => ({
     chains: [
-      { chainId: "0x1", games: [{ gameId: 1, slotId: null }] },
-      { chainId: "0x2", games: [2, 4].map((gameId) => ({ gameId, slotId: null })) },
+      { chainId: "0x1", games: [1, 4].map((gameId) => ({ gameId, slotId: null })) },
+      { chainId: "0x2", games: [{ gameId: 2, slotId: null }] },
     ],
   }));
   const response = await handleDirectory(new Request("https://app.test/api/directory"), deps);
   expect(await response.json()).toEqual({
-    shards: [
-      { ...shards[0], manifest: listedManifest("0x1"), games: [{ ...games[0], slotId: null }] },
-      { ...shards[1], manifest: listedManifest("0x2"), games: [{ ...games[1], slotId: null }] },
-    ],
+    shard: { ...shard, manifest: listedManifest("0x1"), games: [{ ...games[0], slotId: null }] },
   });
   const history = await handleDirectoryHistory(new Request("https://app.test/api/directory/history"), deps);
   expect(await history.json()).toEqual({
-    games: [{ ...games[3], slotId: null, chainId: "0x2", shardUrl: "https://second.test" }],
+    games: [{ ...games[3], slotId: null, chainId: "0x1", shardUrl: "https://first.test" }],
     next: null,
     failures: [],
   });
 });
 
-test("pending and retired shards have no player notification watcher", async () => {
+test("the listed shard has a player notification watcher, and an empty directory starts none", async () => {
   const watch = vi.fn(async () => {});
-  const stop = vi.fn(async () => {});
-  const db = {
-    prepare: () => ({
-      all: async () => ({
-        results: [
-          { ...shards[0], status: "pending" },
-          { ...shards[1], status: "retired" },
-          { url: "https://active.test", chainId: "0x3", status: "active" },
-        ],
-      }),
-    }),
-  } as unknown as D1Database;
-  const namespace = { idFromName: (name: string) => name, get: () => ({ watch, stop }) } as unknown as Parameters<
+  const named = vi.fn((name: string) => name);
+  const namespace = { idFromName: named, get: () => ({ watch }) } as unknown as Parameters<
     typeof superviseNotifiers
   >[1];
-  await superviseNotifiers(db, namespace);
-  expect(stop).toHaveBeenCalledTimes(2);
-  expect(watch).toHaveBeenCalledOnce();
-  expect(watch).toHaveBeenCalledWith({ url: "https://active.test", chainId: "0x3" });
+  const listing = (row: typeof shard | null) =>
+    ({ prepare: () => ({ first: async () => row }) }) as unknown as D1Database;
+  await superviseNotifiers(listing(shard), namespace);
+  await superviseNotifiers(listing(null), namespace);
+  expect(named.mock.calls).toEqual([[shard.url]]);
+  expect(watch.mock.calls).toEqual([[shard]]);
 });
 
 test("publishes the launch slot number and no ledger address payload", async () => {
   const deps = dependencies(async () => ({ chains: [{ chainId: "0x1", games: [{ gameId: 1, slotId: 12 }] }] }));
   deps.fetchShard.mockImplementation(async (input) => herald("0x1", input, [games[0]!]));
   const response = await handleDirectory(new Request("https://app.test/api/directory"), deps);
-  const game = ((await response.json()) as { shards: { games: { slotId: number }[] }[] }).shards[0]!.games[0]!;
+  const game = ((await response.json()) as { shard: { games: { slotId: number }[] } }).shard.games[0]!;
   expect(game.slotId).toBe(12);
   expect(game).not.toHaveProperty("entry");
 });
@@ -140,7 +130,7 @@ test("invalid slot metadata faults the shard", async () => {
   for (const slotId of [undefined, -1, 1.5]) {
     const deps = dependencies(async () => ({ chains: [{ chainId: "0x1", games: [{ gameId: 1, slotId }] }] }) as never);
     const response = await handleDirectory(new Request("https://app.test/api/directory"), deps);
-    expect(((await response.json()) as { shards: { games: unknown; error?: string }[] }).shards[0]).toMatchObject({
+    expect(((await response.json()) as { shard: { games: unknown; error?: string } }).shard).toMatchObject({
       games: null,
       error: "unavailable",
     });
@@ -156,14 +146,11 @@ const memoryCache = () => {
   } as unknown as Cache;
 };
 
-type DirectoryBody = { shards: { games: unknown; error?: string }[] };
-const shardsOf = async (response: Response) => ((await response.json()) as DirectoryBody).shards;
+type DirectoryBody = { shard: { games: unknown; error?: string } };
+const shardOf = async (response: Response) => ((await response.json()) as DirectoryBody).shard;
 
 const healthyLaunch = async () => ({
-  chains: shards.map(({ chainId }) => ({
-    chainId,
-    games: games.map(({ game_id }) => ({ gameId: game_id, slotId: null })),
-  })),
+  chains: [{ chainId: shard.chainId, games: games.map(({ game_id }) => ({ gameId: game_id, slotId: null })) }],
 });
 
 test("both routes read the launch records and the shard registry at the same time", async () => {
@@ -179,9 +166,9 @@ test("both routes read the launch records and the shard registry at the same tim
       }),
       db: {
         prepare: () => ({
-          all: async () => {
+          first: async () => {
             registryRead();
-            return { results: shards };
+            return shard;
           },
         }),
       } as unknown as D1Database,
@@ -201,15 +188,13 @@ test("everyone without a player shares one cached listing; a player's listing is
   const history = await handleDirectoryHistory(new Request("https://app.test/api/directory/history"), deps);
   expect(second).toEqual(first);
   const settled = ((await history.json()) as { games: { game_id: number }[] }).games;
-  expect(settled.map(({ game_id }) => game_id)).toEqual([4, 4, 3, 3]);
+  expect(settled.map(({ game_id }) => game_id)).toEqual([4, 3]);
   expect([deps.readLaunchDirectory, registry].map((read) => vi.mocked(read).mock.calls.length)).toEqual([1, 1]);
-  expect(gamesReads(deps.fetchShard)).toHaveLength(shards.length);
+  expect(gamesReads(deps.fetchShard)).toHaveLength(1);
 
   await handleDirectory(new Request("https://app.test/api/directory?player=0x123"), deps);
   expect(vi.mocked(deps.readLaunchDirectory).mock.calls.length).toBe(2);
-  expect(gamesReads(deps.fetchShard).slice(-shards.length)).toEqual(
-    shards.map(({ url }) => `${url}/games?player=0x123`),
-  );
+  expect(gamesReads(deps.fetchShard).at(-1)).toBe(`${shard.url}/games?player=0x123`);
 });
 
 test("a listing with a failed read is not shared: the next request reads again", async () => {
@@ -220,33 +205,23 @@ test("a listing with a failed read is not shared: the next request reads again",
     return healthyLaunch();
   });
   const deps = { ...dependencies(readLaunch), cache: memoryCache() };
-  const failed = await shardsOf(await handleDirectory(new Request("https://app.test/api/directory"), deps));
-  expect(failed.every((shard) => shard.error === "unavailable")).toBe(true);
+  const failed = await shardOf(await handleDirectory(new Request("https://app.test/api/directory"), deps));
+  expect(failed.error).toBe("unavailable");
   launchUp = true;
-  const recovered = await shardsOf(await handleDirectory(new Request("https://app.test/api/directory"), deps));
+  const recovered = await shardOf(await handleDirectory(new Request("https://app.test/api/directory"), deps));
   await handleDirectory(new Request("https://app.test/api/directory"), deps);
-  expect(recovered.every((shard) => Array.isArray(shard.games))).toBe(true);
+  expect(Array.isArray(recovered.games)).toBe(true);
   expect(readLaunch.mock.calls.length).toBe(2);
 });
 
-test("a shard whose manifest names another chain is listed as unavailable, and the other shard still answers", async () => {
+test("a shard whose manifest names another chain is listed as unavailable", async () => {
   vi.spyOn(console, "error").mockImplementation(() => undefined);
-  const deps = dependencies(async () => ({
-    chains: [
-      { chainId: "0x1", games: [{ gameId: 1, slotId: null }] },
-      { chainId: "0x2", games: [{ gameId: 2, slotId: null }] },
-    ],
-  }));
+  const deps = dependencies(async () => ({ chains: [{ chainId: "0x1", games: [{ gameId: 1, slotId: null }] }] }));
   deps.fetchShard.mockImplementation(async (input) =>
-    String(input).startsWith(shards[0]!.url)
-      ? herald("0x1", input)
-      : herald(String(input).endsWith("/manifest") ? "0x9" : "0x2", input),
+    herald(String(input).endsWith("/manifest") ? "0x9" : "0x1", input),
   );
   const response = await handleDirectory(new Request("https://app.test/api/directory"), deps);
   expect(await response.json()).toEqual({
-    shards: [
-      { ...shards[0], manifest: listedManifest("0x1"), games: [{ ...games[0], slotId: null }] },
-      { ...shards[1], manifest: null, games: null, error: "unavailable" },
-    ],
+    shard: { ...shard, manifest: null, games: null, error: "unavailable" },
   });
 });

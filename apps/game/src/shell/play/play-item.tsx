@@ -114,14 +114,6 @@ const ItemFacts = ({ item, now, firstVisit }: { item: PlayItem; now: number; fir
   const { game } = item;
   if (item.verb === "results")
     return <AppChip icon="victory">{`${PLAY_WORDS.ended} ${clockLine(null, game.clock.end_at, now)}`}</AppChip>;
-  if (item.mode === "eternum")
-    return item.verb === "enter" ? (
-      <AppChip tone="good" live>
-        {WORDS.live}
-      </AppChip>
-    ) : (
-      <AppClockChip prefix="opens" at={game.clock.start_main_at} now={now} />
-    );
   if (firstVisit) return <p className="text-app-body text-app-ink">{PITCH}</p>;
   if (game.status !== "Live") return <AppClockChip prefix="starts" at={game.clock.start_main_at} now={now} />;
   return <SeasonDay game={game} now={now} withPlayers={item.verb === "play"} />;
@@ -215,8 +207,6 @@ const lineParts = (item: PlayItem, now: number): string[] => {
   }
   const { game } = item;
   if (item.verb === "results") return [`${PLAY_WORDS.ended} ${clockLine(null, game.clock.end_at, now)}`];
-  if (item.mode === "eternum")
-    return [item.verb === "enter" ? WORDS.live : clockLine("opens", game.clock.start_main_at, now)];
   if (game.status !== "Live") return [clockLine("starts", game.clock.start_main_at, now)];
   const day = directoryDay(game, now);
   return [`${DAY} ${day.day ?? "—"}`, clockLine("ends", day.endsAt, now)];

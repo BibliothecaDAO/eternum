@@ -1,9 +1,23 @@
+import { ECONOMY_STEPS } from "./economy-steps.mjs";
+import {
+  DEEP_BEASTS,
+  deepSites,
+  FRONTIER_TROOP_NAMES,
+  LAYER_NAMES,
+  layerName,
+  TroopType,
+  ResourcesIds,
+  RESOURCE_PRECISION,
+} from "@bibliothecadao/types";
 import depthLooks from "../../src/three/terrain/ethereal-depths.json" with { type: "json" };
 import homeIcons from "../../src/ui/design-system/home-icons.json" with { type: "json" };
-import { existsSync, writeFileSync } from "node:fs";
+import iconMeanings from "../../asset-sources/facets/semantic-map.json" with { type: "json" };
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import realmAssets from "../../src/three/structures/realm-assets.json" with { type: "json" };
 import realmSkins from "../../src/three/structures/realm-skins.json" with { type: "json" };
 import sharp from "sharp";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import {
   blocked,
@@ -20,6 +34,10 @@ import {
   judgeAfterDoorway,
 } from "./evidence.mjs";
 import { watchReleaseMove } from "./stale-release.mjs";
+import {
+  nativeOathConstants as oathRules,
+  nativeRuleConstants as rules,
+} from "../../../../contracts/l3/world-native/schema/balance.gen.ts";
 import { openOrderSendGate, touchAt, VIEWPORT } from "./browser-session.mjs";
 import { ENTRY_BUTTON, findHomeCardEntry } from "./player-entry.mjs";
 import { judgeClickToResult, measureClickToResult } from "./click-latency.mjs";
@@ -27,19 +45,6 @@ import { proveResultOnScreen, startResultCapture } from "./result-capture.mjs";
 import { measureFrameChanges, recordFrames } from "./frames.mjs";
 import { againstTheirThings, judgePlates, PLATES_EXPRESSION } from "./plates.mjs";
 import { DESKTOP_MIN_WIDTH, judgeHudLayout, MAP_LEAST_SHARE } from "./hud-layout.mjs";
-import {
-  assertMixedRefill,
-  assertOnlyRefillAction,
-  assertRefillConservation,
-  assertRefillTransaction,
-  assertVisiblePurse,
-  liveDepositReads,
-  newActionHashes,
-  pollProof,
-  refillState,
-  visibleStaminaMatches,
-  watchDepositResponses,
-} from "./live-deposit-proof.mjs";
 
 /**
  * The playtest's steps. Each plays through the controls a player uses, then checks what a player would see, and is
@@ -107,7 +112,6 @@ export const HUD_WORDS = {
   close: "Close",
   chat: "Chat",
   realmLabor: "Realm Labor",
-  ruinRule: "One ruin per depth a day · others here vanish",
 };
 
 // A game's card on Play takes its step by the verb's name (`data-play-verb`, src/shell/play/play-item.tsx).
@@ -221,6 +225,7 @@ const clickToResultStep = (name, sends, press, resultOf, { settleMs = RESULT_SET
   verify: async ({ played, probe, actionLatency, window }) => {
     const result = resultOf({ played, actionLatency, since: window.from });
     if (!result) return judgeClickToResult(played, { missing: ["result"] });
+    if (result.status === "failed" || result.status === "blocked") return result;
     const measured = measureClickToResult({
       probe,
       actionLatency,
@@ -343,7 +348,7 @@ const SPIRE_ACTION_STEPS = [
 
 async function enterEtherealIIFromItsCard({ browser }) {
   const armyId = browser.observe().selection?.army?.id ?? null;
-  browser.click("Enter Ethereal II");
+  browser.click("Enter Hollow");
   // The view switches to the arrival, so the army's place on screen is read once it stands there.
   const locate = () => {
     const armyAt = armyOnScreen(browser, armyId);
@@ -352,11 +357,127 @@ async function enterEtherealIIFromItsCard({ browser }) {
   return { armyId, locate };
 }
 
+const RELIC_FORECAST_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  {
+    name: "activate-relics-and-read-forecast",
+    settleMs: 0,
+    play: async (context) => {
+      const { browser, extraScreenshot } = context;
+      await pickTheSpireArmy({ browser });
+      const before = await openTheRuinsCardUntil(showsBothSides)({
+        ...context,
+        extraScreenshot: (name) => extraScreenshot(`before-${name}`),
+      });
+      const beforeText = browser.read(`JSON.stringify(document.querySelector('[data-kit-sheet]')?.textContent ?? '')`);
+      browser.press("Escape");
+      await openTheArmyPanel(browser);
+      for (const [index, name] of ["Uncommon Blade", "Common Ward"].entries()) {
+        browser.run(["find", "role", "button", "click", "--name", `Switch on ${name}`]);
+        await readUntil(
+          () => browser.read(`window.__labChain?.sent.filter(row => row.command.kind === 'ApplyRelic').length ?? 0`),
+          (count) => count === index + 1,
+          MERGE_WAIT_MS,
+        );
+        await readUntil(
+          () => browser.read(`Boolean(document.querySelector('[data-army-relics] button[disabled]'))`),
+          (disabled) => !disabled,
+          MERGE_WAIT_MS,
+        );
+      }
+      browser.press("Escape");
+      const after = await openTheRuinsCardUntil(showsBothSides)({
+        ...context,
+        extraScreenshot: (name) => extraScreenshot(`after-${name}`),
+      });
+      return {
+        before: before.after,
+        after: after.after,
+        beforeText,
+        afterText: browser.read(`JSON.stringify(document.querySelector('[data-kit-sheet]')?.textContent ?? '')`),
+        sent: browser.read(`window.__labChain?.sent.filter(row => row.command.kind === 'ApplyRelic') ?? []`),
+      };
+    },
+    verify: ({ played }) => {
+      const effects = played.sent
+        .flatMap((row) => row.answered ?? [])
+        .filter((row) => row.model === "ArmyRelicEffect")
+        .map((row) => row.value);
+      return played.before.sides.length === 2 &&
+        played.after.sides.length === 2 &&
+        JSON.stringify(played.before.sides) !== JSON.stringify(played.after.sides) &&
+        effects.some((effect) => effect.kind === "Blade" && effect.rank === 2) &&
+        effects.some((effect) => effect.kind === "Ward" && effect.rank === 1)
+        ? completed(played)
+        : failed("switching on Blade and Ward must change the forecast and record both active effects", played);
+    },
+  },
+];
+
 /**
  * A fight (the lab's fight game): the army selected, the ruin beside it opened for its card from the tile that offers
  * Attack (a desktop's right-click, a phone's two taps), then the card's Attack; the result is the army's token showing
  * exactly the troops the chain left it.
  */
+const BATTLE_TARGET_STEPS = battleTargetSteps(attackFromTheSiteCard, "Map");
+const DEEP_BATTLE_TARGET_STEPS = battleTargetSteps(attackFromTheDeepCard, "Deep");
+
+function battleTargetSteps(attack, place, withOaths = false) {
+  const fields = readFileSync(
+    resolve(
+      dirname(fileURLToPath(import.meta.url)),
+      `../../../../contracts/l3/world-native/tests/fixtures/${withOaths ? "oath-damage" : "frontier-marks"}.txt`,
+    ),
+    "utf8",
+  )
+    .trim()
+    .split(/\s+/)
+    .map(Number);
+  const values = fields.filter((_, index) => !withOaths || index % 10 >= 6);
+  const offset = place === "Deep" ? 8 : 0;
+  return [
+    { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", place) },
+    { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
+    ...[
+      ["first-attack", values[offset + 2], values[offset + 3]],
+      ["same-fight", values[offset + 6], values[offset + 7]],
+    ].map(([name, attacker, defender]) =>
+      clickToResultStep(name, "BattleGuard", attack, ({ played, actionLatency }) => {
+        const answer = (actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "BattleGuard").at(-1);
+        const rows = answer?.answered ?? [];
+        const army = rows.find(({ model }) => model === "ExplorerTroops")?.value;
+        const guard =
+          rows.find(({ model }) => model === "Guard")?.value ??
+          rows.find(({ model, value }) => model === "ExplorerTroops" && value.explorer_id !== army?.explorer_id)?.value;
+        const combat = rows.find(({ model }) => model === "ArmyCombat")?.value;
+        const openingRecorded =
+          name === "first-attack"
+            ? combat && guard && BigInt(combat.last_target) === BigInt(guard.explorer_id ?? guard.structure_id)
+            : combat === undefined;
+        return played.watching &&
+          army &&
+          guard &&
+          openingRecorded &&
+          (!withOaths || place !== "Deep" || played.guardOaths?.includes(fields[23])) &&
+          BigInt(army.troops.count) === BigInt(attacker) * 1_000_000_000n &&
+          BigInt(guard.troops.count) === BigInt(defender) * 1_000_000_000n &&
+          played.forecast?.length === 2 &&
+          played.forecast[0].startsWith("Army ") &&
+          new RegExp(`→ ${attacker},(?!\\d)`).test(played.forecast[0]) &&
+          new RegExp(`→ ${defender},(?!\\d)`).test(played.forecast[1])
+          ? { watch: "fought" }
+          : undefined;
+      }),
+    ),
+  ];
+}
+
+const ORDER_ART = Object.fromEntries(
+  Object.values(iconMeanings).flatMap((meaning) =>
+    meaning.orderId === undefined ? [] : [[meaning.orderId, meaning.art]],
+  ),
+);
+
 const FIGHT_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
@@ -432,9 +553,12 @@ async function attackFromTheSiteCard({ browser }) {
   );
   if (!sheet.buttons.includes("Attack")) return { army, offered: target.offered, target: target.offset, sheet };
   const token = browser.read(armyToken(army));
-  watchFor(browser, "fought", tokensShowTheChainsCounts("BattleGuard"));
+  const forecast = browser.read(
+    `Array.from(document.querySelectorAll('[data-kit-sheet] [role="img"][aria-label*="→"]'), node => node.getAttribute('aria-label'))`,
+  );
+  watchFor(browser, "fought", tokensShowTheChainsCounts(browser, "BattleGuard"));
   browser.click("Attack");
-  return { army, offered: target.offered, target: target.offset, watching: true, region: token?.region };
+  return { army, offered: target.offered, target: target.offset, forecast, watching: true, region: token?.region };
 }
 
 /**
@@ -467,109 +591,19 @@ const armyToken = (army) => `JSON.stringify((() => {
 })())`;
 
 /**
- * Every army the lab chain's last `kind` answer wrote troops for shows exactly that count on its token, as the token
- * writes a count: the fight's attacker, both armies of a transfer.
+ * Every army in the next command's answer shows its resulting count on its token: the fight's attacker, both armies
+ * of a transfer. A previous answer cannot satisfy the watch before the new command runs.
  */
-const tokensShowTheChainsCounts = (kind) => `(() => {
-  const answer = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "${kind}").at(-1);
+const tokensShowTheChainsCounts = (browser, kind) => {
+  const after = browser.read("window.__labChain?.sent.length ?? 0");
+  return `(() => {
+  const answer = (window.__labChain?.sent ?? []).slice(${after}).filter(({ command }) => command.kind === "${kind}").at(-1);
   const rows = (answer?.answered ?? []).filter(({ model, value }) => model === "ExplorerTroops" && value !== null);
   return rows.length > 0 && rows.every(({ value }) =>
     document.querySelector('.mp-at[data-key="army:' + value.explorer_id + '"] .mp-count')?.textContent ===
       (BigInt(value.troops.count) / 1000000000n).toLocaleString("en-US"));
 })()`;
-
-/**
- * A Shrine and a Well used (the lab's sites game): each beside the army, used as a player uses it (a desktop's
- * right-click on the tile whose hover offers Use and what it gives; a phone's tap, which opens the site's sheet, then
- * Use); the result is that site leaving the map from its tile.
- */
-const SITE_ACTION_STEPS = [
-  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
-  clickToResultStep(
-    "shrine",
-    "InteractSite",
-    (context) => useTheSite(context, "Shrine", "III skill point"),
-    shrinePointGranted,
-  ),
-  clickToResultStep("well", "InteractSite", (context) => useTheSite(context, "Well", "+97 stamina"), wellRefilled),
-];
-
-async function useTheSite({ browser }, site, gives) {
-  await focusTheArmyFromItsDock(browser);
-  const armyAt = armyOnScreen(browser, browser.observe().selection?.army?.id);
-  if (!armyAt) return { site, offered: [] };
-  const offered = [];
-  for (const [dx, dy] of NEIGHBOUR_RING) {
-    const offset = [armyAt[0] + dx, armyAt[1] + dy];
-    if (onADesktop()) {
-      browser.hover(offset);
-      await sleep(HOVER_SETTLE_MS);
-      const tip = browser.read(TOOLTIP_TEXT);
-      offered.push(tip);
-      if (/^Use\b/.test(tip ?? "") && tip.includes(gives)) {
-        browser.rightClick(offset);
-        return { site, offered, target: offset, region: tileRegion(offset) };
-      }
-      continue;
-    }
-    browser.tap(offset);
-    const sheet = await readUntil(
-      () => browser.read(SHEET_NAME),
-      (name) => name !== null,
-      SHEET_WAIT_MS,
-    );
-    offered.push(sheet);
-    if (sheet === site) {
-      // A phone frames the tapped tile above the site's sheet: its result shows where the map now draws it.
-      const at = await settledHexOnScreen(browser);
-      browser.click("Use");
-      return { site, offered, target: offset, region: at && tileRegionAt(at) };
-    }
-    if (sheet !== null) browser.press("Escape");
-    if (!browser.observe().selection?.army) await focusTheArmyFromItsDock(browser);
-  }
-  return { site, offered };
-}
-
-// The pointer's tooltip whole: its order, then what it costs or gives ("Use", "III skill point").
-const TOOLTIP_TEXT = `JSON.stringify(document.querySelector('[role="tooltip"][aria-hidden="false"]')?.innerText.replace(/\\s+/g, " ").trim() ?? null)`;
-
-/** The discovery fixture promises one III point; using it leaves the army's XP alone. */
-function shrinePointGranted(context) {
-  const answer = (context.actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "InteractSite").at(-1);
-  const progress = answer?.answered.find(({ model }) => model === "ArmyProgress")?.value;
-  const consumed = answer?.answered.some(({ model, value }) => model === "ShrineReward" && value === null);
-  if (
-    !consumed ||
-    progress?.xp !== 40 ||
-    progress?.rare_points !== 1 ||
-    progress.common_points !== 0 ||
-    progress.uncommon_points !== 0 ||
-    progress.epic_points !== 0 ||
-    progress.legendary_points !== 0
-  )
-    return false;
-  return siteUsedUp(context);
-}
-
-/** Logistics III raises the bar to 195; the Well adds floor(195 / 2) to its 40 stamina. */
-function wellRefilled(context) {
-  const answer = (context.actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "InteractSite").at(-1);
-  const slot = answer?.answered.find(({ model }) => model === "ArmySlot")?.value;
-  if (BigInt(slot?.stamina.amount ?? 0) !== 137n) return false;
-  return siteUsedUp(context);
-}
-
-/** The site the lab's chain consumed for the step's InteractSite: its tile, vacated. */
-function siteUsedUp({ actionLatency }) {
-  const vacated = (actionLatency.chainAnswers ?? [])
-    .filter(({ kind }) => kind === "InteractSite")
-    .at(-1)
-    ?.answered.find(({ model, value }) => model === "TileOccupancy" && value === null);
-  const [, , col, row] = vacated?.key.split(":") ?? [];
-  return col && { presented: `site-gone:${col},${row}` };
-}
+};
 
 /**
  * Two of the realm's armies merged (the lab's merge game): the spire's army picked, the other right-clicked for the
@@ -586,8 +620,8 @@ function mergeActionSteps() {
 }
 
 /**
- * Presses the transfer card's merge, then confirms it as a player does: a merge that costs the army its XP asks once
- * more ("Lose 100 XP, merge into Army 2"), and that second press sends it. Each is pressed where it is drawn.
+ * Presses the transfer card's merge, then confirms it as a player does: a merge that costs the army its Logistics training asks once
+ * more ("Confirm merge into Army 2"), and that second press sends it. Each is pressed where it is drawn.
  */
 async function mergeTheArmies({ browser }, tiles) {
   const merge = browser.read(MERGE_BUTTON);
@@ -654,7 +688,7 @@ async function sendSomeTroops({ browser }, tiles) {
   if (!move) return { move };
   const tokens = Object.keys(tiles.byArmy ?? {}).map((army) => browser.read(armyToken(army))?.region);
   if (tokens.length !== 2 || !tokens.every(Boolean)) return { move: move.name, tokens };
-  watchFor(browser, "transferred", tokensShowTheChainsCounts("ManageTroops"));
+  watchFor(browser, "transferred", tokensShowTheChainsCounts(browser, "ManageTroops"));
   browser.tap(move.offset);
   return { move: move.name, watching: true, region: boxAround(tokens) };
 }
@@ -672,12 +706,32 @@ const boxAround = (regions) => {
  * A new army deployed (the lab's actions game): the dock's Deploy slot, the sheet's Max, then its Deploy; the result is
  * the army the chain created drawn on the map, beside the realm.
  */
+const SCOUT_DEPLOY_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  clickToResultStep(
+    "deploy-scouts",
+    "CreateExplorer",
+    (context) => deployFromTheDock(context, 400, FRONTIER_TROOP_NAMES[TroopType.Paladin]),
+    scoutsDeployed,
+  ),
+];
+
+const TOWN_DEPLOY_STEPS = [
+  { name: "enter-on-map", settleMs: 3000, verify: inScene("map") },
+  clickToResultStep(
+    "deploy-crossbows",
+    "CreateExplorer",
+    (context) => deployFromTheDock(context, 400, FRONTIER_TROOP_NAMES[TroopType.Crossbowman]),
+    crossbowsDeployed,
+  ),
+];
+
 const DEPLOY_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   clickToResultStep("deploy", "CreateExplorer", deployFromTheDock, armyDeployed),
 ];
 
-async function deployFromTheDock({ browser }, amount) {
+async function deployFromTheDock({ browser }, amount, troopName) {
   const before = Object.keys(browser.read(ARMY_TILES));
   browser.click("Deploy");
   const sheet = await readUntil(
@@ -686,6 +740,7 @@ async function deployFromTheDock({ browser }, amount) {
     SHEET_WAIT_MS,
   );
   if (sheet !== "Deploy") return { sheet };
+  if (troopName) browser.click(troopName);
   if (amount === undefined) browser.click("Max");
   else browser.run(["fill", '[data-kit-sheet] input[aria-label="Troops"]', String(amount)]);
   const deploy = await readUntil(() => browser.read(sheetButton("^Deploy$")), Boolean, SHEET_WAIT_MS);
@@ -696,6 +751,31 @@ async function deployFromTheDock({ browser }, amount) {
     return arrived ? armyRegion(arrived[1]) : null;
   };
   return { sheet, before, locate };
+}
+
+function scoutsDeployed(context) {
+  return troopDeployment(context, "Paladin", 32, 200_000_000_000n);
+}
+
+function crossbowsDeployed(context) {
+  return troopDeployment(context, "Crossbowman", 29, 280_000_000_000n);
+}
+
+function troopDeployment(context, category, resource, wheat) {
+  const answer = (context.actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "CreateExplorer").at(-1);
+  if (!answer) return undefined;
+  const army = answer.answered.find(({ model }) => model === "ExplorerTroops")?.value;
+  const balances = answer.answered.filter(({ model }) => model === "ResourceBalance").map(({ value }) => value);
+  const balance = (resource) => balances.find(({ resource_type }) => Number(resource_type) === resource)?.balance;
+  if (
+    army?.troops.category !== category ||
+    BigInt(army.troops.count) !== 400_000_000_000n ||
+    BigInt(balance(resource) ?? -1) !== 200_000_000_000n ||
+    BigInt(balance(35) ?? -1) !== wheat ||
+    balance(26) !== undefined
+  )
+    throw new Error("Deployment changed the wrong troops or price");
+  return armyDeployed(context);
 }
 
 /** The army the lab's chain created for the step's CreateExplorer, drawn on the map. */
@@ -712,6 +792,197 @@ function armyDeployed({ actionLatency }) {
  * the player's realm, then the game opening on it, on that realm. The wait covers the game's boot after the chain has
  * answered.
  */
+const STARTING_ARMY_BUTTONS = `JSON.stringify([...document.querySelectorAll('button[aria-label="Army 1"], button[aria-label="Army 2"]')].map(node => {
+  const box = node.getBoundingClientRect();
+  const visible = node.checkVisibility({ visibilityProperty: true, opacityProperty: true })
+    && box.width > 0 && box.height > 0 && box.top >= 0 && box.left >= 0
+    && box.bottom <= innerHeight && box.right <= innerWidth
+    && node.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2));
+  return { label: node.getAttribute("aria-label"), text: node.textContent, visible,
+    current: node.querySelector("[role=meter]")?.getAttribute("aria-valuenow"),
+    max: node.querySelector("[role=meter]")?.getAttribute("aria-valuemax") };
+}))`;
+
+/** The Aspect step's cards in the order drawn: each one's label, invite tag and whether it can be tapped. */
+const ASPECT_CARDS = `JSON.stringify([...document.querySelectorAll(".aspect-picker__card")].map((card) => ({
+  label: card.getAttribute("aria-label"),
+  invite: card.querySelector(".aspect-picker__invite")?.textContent ?? null,
+  open: !card.disabled,
+})))`;
+const ORDER_CHOICES = `JSON.stringify([...document.querySelectorAll(".aspect-picker__order")].map((order) => ({
+  label: order.getAttribute("aria-label"),
+  order: order.dataset.order,
+})))`;
+const chooseFirstOrder = async (browser) => {
+  const orders = await readUntil(
+    () => browser.read(ORDER_CHOICES),
+    (shown) => shown.length === 4,
+    PLAYABLE_WAIT_MS,
+  );
+  browser.click(orders[0].label);
+  return orders;
+};
+const ASPECT_SETTLES = `JSON.stringify((window.__labChain?.sent ?? [])
+  .filter(({ command }) => command.kind === "SettleSeason")
+  .map(({ command }) => command.calldata.slice(5).map((felt) => BigInt(felt).toString())))`;
+const FOUNDED_ASPECTS = `JSON.stringify((window.__labChain?.sent ?? [])
+  .filter(({ command }) => command.kind === "SettleSeason")
+  .map(({ answered }) => Number((answered ?? []).find(({ model }) => model === "HomeAspect")?.value?.aspect)))`;
+
+const ASPECT_SETTLE_INVITED_STEPS = [
+  {
+    name: "found-from-the-invite",
+    settleMs: 0,
+    play: async ({ browser, owner, extraScreenshot }) => {
+      await playFromTheHomeCard({ browser, owner });
+      const cards = await readUntil(
+        () => browser.read(ASPECT_CARDS),
+        (shown) => shown.length === 4 && shown.every(({ open }) => open),
+        PLAYABLE_WAIT_MS,
+      );
+      const line = browser.read(
+        `JSON.stringify(document.querySelector(".aspect-picker__invited")?.textContent ?? null)`,
+      );
+      extraScreenshot("invited-aspect-step");
+      browser.click("Join Luminary");
+      const orders = await chooseFirstOrder(browser);
+      const settles = await readUntil(
+        () => browser.read(ASPECT_SETTLES),
+        (signed) => signed.length > 0,
+        PLAYABLE_WAIT_MS,
+      );
+      const aspects = await readUntil(
+        () => browser.read(FOUNDED_ASPECTS),
+        (founded) => founded.length > 0 && founded.every(Number.isFinite),
+        PLAYABLE_WAIT_MS,
+      );
+      return { cards, line, orders, settles, aspects };
+    },
+    verify: ({ played }) =>
+      JSON.stringify(played.cards.map(({ label, invite }) => [label, invite])) ===
+        JSON.stringify([
+          ["Join Luminary", "Invited"],
+          ["Join Prowess", null],
+          ["Join Havoc", null],
+          ["Join Insight", null],
+        ]) &&
+      played.line === "Linden invited you to Luminary" &&
+      played.settles.length === 1 &&
+      JSON.stringify(played.settles[0]) === JSON.stringify(["1", "0", played.orders?.[0]?.order]) &&
+      JSON.stringify(played.aspects) === JSON.stringify([2])
+        ? completed(played)
+        : failed(
+            "The invited player must meet Luminary first, tagged and named, and found in the Order tapped inside it",
+            played,
+          ),
+  },
+];
+
+const ASPECT_SETTLE_STEPS = [
+  {
+    name: "found-in-chosen-aspect",
+    play: async ({ browser, owner, extraScreenshot, devTools }) => {
+      await playFromTheHomeCard({ browser, owner });
+      await waitUntil(
+        () => browser.read('document.querySelectorAll(".aspect-picker__card:not(:disabled)").length') === 4,
+        PLAYABLE_WAIT_MS,
+      );
+      const choice = browser.read(`JSON.stringify({
+        cards: [...document.querySelectorAll(".aspect-picker__card")].map(card => card.getAttribute("aria-label")),
+        sent: (window.__labChain?.sent ?? []).filter(({command}) => command.kind === "SettleSeason").length,
+      })`);
+      const choosing = extraScreenshot("aspect-choice");
+      if (choice.sent !== 0 || choice.cards.length !== 4) return { choice, choosing };
+      browser.click("Join Havoc");
+      const orders = await chooseFirstOrder(browser);
+      await waitFor(browser, (seen) => seen.playable && seen.scene === "hex", PLAYABLE_WAIT_MS);
+      const founded = browser.read(`JSON.stringify(
+        (window.__labChain?.sent ?? []).filter(({command}) => command.kind === "SettleSeason")
+      )`);
+      await waitUntil(() => {
+        const buttons = browser.read(STARTING_ARMY_BUTTONS);
+        return buttons.length === 2 && buttons.every((button) => button.visible);
+      }, PLAYABLE_WAIT_MS);
+      await devTools.send("Runtime.evaluate", {
+        expression: "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))))",
+        awaitPromise: true,
+        returnByValue: true,
+      });
+      const armyButtons = browser.read(STARTING_ARMY_BUTTONS);
+      extraScreenshot("starting-armies");
+      return { choice, choosing, orders, founded, armyButtons };
+    },
+    settleMs: 0,
+    verify: ({ played, seen }) => {
+      const [founded] = played.founded ?? [];
+      const home = founded?.answered.find(({ model }) => model === "HomeAspect")?.value;
+      const members = founded?.answered.find(({ model }) => model === "AspectMembers")?.value;
+      return played.choice?.sent === 0 &&
+        played.choice.cards?.length === 4 &&
+        played.choice.cards.includes("Join Havoc") &&
+        played.founded?.length === 1 &&
+        founded.command.calldata.slice(5).map(Number).join(",") === `1,0,${played.orders?.[0]?.order}` &&
+        Number(home?.home) === 7 &&
+        Number(home?.aspect) === 3 &&
+        Number(members?.aspect) === 3 &&
+        Number(members?.members) === 1 &&
+        hasStartingArmies(played) &&
+        seen.playable &&
+        isIn(seen, "Realm", "hex")
+        ? completed(played)
+        : failed("The Order chosen inside Havoc must be submitted and its Aspect become the home's membership", played);
+    },
+  },
+];
+
+function hasStartingArmies(played) {
+  const rows = played.founded?.[0]?.answered ?? [];
+  const armies = rows.filter(({ model }) => model === "ExplorerTroops").map(({ value }) => value);
+  const slots = rows.filter(({ model }) => model === "ArmySlot").map(({ value }) => value);
+  const days = rows.filter(({ model }) => model === "ArmyDay").map(({ value }) => value);
+  const balance = (resource) =>
+    rows.find(({ model, value }) => model === "ResourceBalance" && Number(value.resource_type) === resource)?.value
+      .balance;
+  return (
+    armies.length === 2 &&
+    slots.length === 2 &&
+    days.length === 2 &&
+    armies.every(
+      (army) =>
+        Number(army.owner) === 7 &&
+        army.troops.category === "Knight" &&
+        army.troops.tier === "T1" &&
+        BigInt(army.troops.count) === 1_500_000_000_000n,
+    ) &&
+    [0, 1].every((slot) => {
+      const army = armies.find(({ troops }) => troops.stamina.Slot === slot);
+      const bar = slots.find((value) => value.slot === slot);
+      return (
+        army &&
+        bar &&
+        String(bar.explorer_id) === String(army.explorer_id) &&
+        Number(bar.stamina.amount) === 120 &&
+        days.some((day) => String(day.explorer_id) === String(army.explorer_id) && Number(day.day) === 0)
+      );
+    }) &&
+    BigInt(balance(26) ?? -1) === 0n &&
+    BigInt(balance(35) ?? -1) === 6_000_000_000_000n &&
+    BigInt(balance(23) ?? -1) === 2_000_000_000_000n &&
+    BigInt(balance(38) ?? -1) === 0n &&
+    played.armyButtons?.length === 2 &&
+    ["Army 1", "Army 2"].every((label) =>
+      played.armyButtons.some(
+        (button) =>
+          button.label === label &&
+          button.visible === true &&
+          /1\.5k|1,500/.test(button.text) &&
+          Number(button.current) === 120 &&
+          Number(button.max) === 120,
+      ),
+    )
+  );
+}
+
 const SETTLE_ACTION_STEPS = [
   clickToResultStep("settle", "SettleSeason", playFromTheHomeCard, enteredOnTheRealm, { settleMs: SETTLE_RESULT_MS }),
 ];
@@ -738,40 +1009,480 @@ async function playFromTheHomeCard({ browser, owner }) {
   return { entry: entry.entry };
 }
 
-/**
- * A research bought (the lab's research game): Research opened, the Shrine's node picked, then its Research; the result
- * is that node showing the Shrine researched once the chain has answered it learned.
- */
 const RESEARCH_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   clickToResultStep(
     "research",
     "Research",
-    researchTheShrine,
+    researchWellLore,
     ({ played }) => played.watching && { watch: "researched" },
   ),
 ];
 
-const SHRINE_NODE = '[data-node="shrine"]';
+const SHOP_ACTION_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  clickToResultStep("refill", "BuyStamina", refillTheArmy, ({ played }) => played.watching && { watch: "refilled" }),
+  clickToResultStep("get-pass", "BuySeal", getThePass, ({ played }) => played.watching && { watch: "pass-held" }),
+];
 
-async function researchTheShrine({ browser }) {
+async function refillTheArmy({ browser }) {
+  const panel = await openTheArmyPanel(browser);
+  if (!panel.region) return { panel };
+  const price = await readUntil(() => browser.read(buttonLabelled("^Refill stamina · ")), Boolean, SHEET_WAIT_MS);
+  if (!price) return { panel, price };
+  browser.tap(price.offset);
+  const refill = await readUntil(
+    () => browser.read(buttonLabelled("^Refill · [0-9,]+ Fragments$")),
+    Boolean,
+    SHEET_WAIT_MS,
+  );
+  if (!refill) return { panel, refill };
+  watchFor(browser, "refilled", staminaRefilled);
+  browser.tap(refill.offset);
+  return { bought: refill.name, watching: true, region: panel.region };
+}
+
+const staminaRefilled = `(() => {
+  const answer = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "BuyStamina").at(-1);
+  const bought = answer?.answered.find(({ model }) => model === "ExplorerTroops")?.value.troops.stamina.Inline?.amount;
+  const meter = document.querySelector('[data-kit-sheet] [data-stamina-line] [role="meter"]');
+  if (bought === undefined || !meter?.hasAttribute("aria-valuenow")) return false;
+  return Number(meter.getAttribute("aria-valuenow")) >= Math.min(Number(bought), Number(meter.getAttribute("aria-valuemax")));
+})()`;
+
+async function getThePass({ browser }) {
+  while (browser.read(SHEET_NAME) !== null) {
+    browser.press("Escape");
+    await readUntil(
+      () => browser.read(SHEET_NAME),
+      (name) => name === null,
+      SHEET_WAIT_MS,
+    );
+  }
+  const shop = await readUntil(() => browser.read(buttonLabelled("^Fragments [0-9,]+$")), Boolean, SHEET_WAIT_MS);
+  if (!shop) return { shop };
+  browser.tap(shop.offset);
+  const pass = await readUntil(() => browser.read(sheetButton("Get the Ancient Seal$")), Boolean, SHEET_WAIT_MS);
+  if (!pass) return { shop: shop.name, pass };
+  watchFor(browser, "pass-held", passHeld);
+  browser.tap(pass.offset);
+  return {
+    shop: shop.name,
+    watching: true,
+    region: browser.read(sheetRegion('[data-kit-sheet] [data-shop="pass"]')),
+  };
+}
+
+const passHeld = `(() => {
+  const answer = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "BuySeal").at(-1);
+  return answer?.answered.some(({ model }) => model === "Seal") === true &&
+    document.querySelector('[data-kit-sheet] [data-shop="pass"]')?.textContent.includes("You have the Ancient Seal") === true;
+})()`;
+
+function deleteOathArmyStep() {
+  const press = async (browser, verb, confirming = false) => {
+    const within = confirming ? '[data-kit-sheet] [role="alertdialog"]' : "[data-kit-sheet]";
+    const button = await readUntil(() => browser.read(sheetButton(`^${verb}$`, within)), Boolean, SHEET_WAIT_MS);
+    if (!button) throw new Error(`Oath army has no ${verb} button`);
+    browser.tap(button.offset);
+  };
+  return {
+    name: "delete-oath-army",
+    play: async ({ browser, extraScreenshot }) => {
+      await openTheArmyPanel(browser);
+      const before = browser.read(`JSON.stringify((() => {
+        const answer = (window.__labChain?.sent ?? []).filter(({command}) => command.kind === "ChooseOath").at(-1);
+        const progress = answer?.answered.find(({model}) => model === "ArmyProgress");
+        return { progress, held: document.querySelector('[data-oath-slots]')?.textContent,
+          commands: window.__labChain?.sent.length };
+      })())`);
+      const armyId = Number(before.progress?.value?.explorer_id);
+      const progressKey = before.progress?.key
+        .split(":")
+        .map((felt) => BigInt(felt).toString())
+        .join(":");
+      const stamina = browser.read(`(() => {
+        const meter = document.querySelector('[data-kit-sheet] [data-stamina-line] [role="meter"]');
+        return meter?.hasAttribute('aria-valuenow') ? Number(meter.getAttribute('aria-valuenow')) : null;
+      })()`);
+      if (!armyId || !Number(before.progress?.value?.oaths) || !before.held || !Number.isFinite(stamina))
+        return { before, stamina };
+      await press(browser, "Delete");
+      const confirmation = browser.read(`JSON.stringify((() => {
+        const dialog = document.querySelector('[role="alertdialog"]');
+        const nodes = dialog ? [dialog, ...dialog.querySelectorAll('button')] : [];
+        return { text: dialog?.textContent, fits: nodes.length === 3 && nodes.every(node => {
+          const box = node.getBoundingClientRect();
+          return box.width > 0 && box.height > 0 && box.left >= 0 && box.right <= innerWidth &&
+            box.top >= 0 && box.bottom <= innerHeight &&
+            node.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2));
+        }) };
+      })())`);
+      extraScreenshot("delete-oath-confirmation");
+      if (!confirmation.fits || !confirmation.text?.includes("troops, carried resources and held Oaths are lost"))
+        return { before, confirmation };
+      await press(browser, "Cancel", true);
+      const retained = browser.read(`(() =>
+        !document.querySelector('[role="alertdialog"]') &&
+        document.querySelector('[data-oath-slots]')?.textContent === ${JSON.stringify(before.held)} &&
+        !!document.querySelector('.mp-at[data-key="army:${armyId}"]') &&
+        window.__labChain?.sent.length === ${before.commands})()`);
+      if (!retained) return { before, confirmation, retained };
+      await press(browser, "Delete");
+      await press(browser, "Delete", true);
+      const removed = await readUntil(
+        () =>
+          browser.read(`(() => {
+        const answer = (window.__labChain?.sent ?? []).at(-1);
+        const facts = answer?.answered ?? [];
+        const progress = facts.find(({model, key}) => model === "ArmyProgress" &&
+          key.split(":").map(felt => BigInt(felt).toString()).join(":") === ${JSON.stringify(progressKey)});
+        const army = facts.find(({model}) => model === "ExplorerTroops");
+        const slot = facts.find(({model}) => model === "ArmySlot")?.value;
+        return answer?.command.kind === "ManageTroops" &&
+          window.__labChain.sent.length === ${before.commands + 1} && progress?.value === null && army?.value === null &&
+          Number(slot?.explorer_id) === 0 && Number(slot?.stamina.amount) === ${stamina} &&
+          !document.querySelector('.mp-at[data-key="army:${armyId}"]') &&
+          !document.querySelector('[data-oath-slots]') && !window.__eternumMapSelection?.army;
+      })()`),
+        Boolean,
+        ORDER_OUTCOME_WAIT_MS,
+      );
+      const answer = browser.read("JSON.stringify(window.__labChain?.sent.at(-1))");
+      return { before, confirmation, stamina, retained, removed, answer };
+    },
+    verify: ({ played }) =>
+      played.confirmation?.fits && played.retained && played.removed
+        ? completed(played)
+        : failed("Oath army deletion or cancellation did not settle", played),
+  };
+}
+
+function oathPassSteps(capped) {
+  return [
+    ...oathPickSteps(true).slice(0, 2),
+    {
+      name: "decline-oath",
+      play: async ({ browser }) => {
+        const before = browser.read("window.__labChain.sent.length");
+        const held = browser.read("Number(document.querySelector('[data-oath-pick]')?.dataset.oathHeld)");
+        const preview = browser.read(`(() => {
+          const button = document.querySelector('[data-oath-pass-result]');
+          return { current: Number(button.dataset.oathPassCurrent), maximum: Number(button.dataset.oathPassMaximum), result: Number(button.dataset.oathPassResult) };
+        })()`);
+        const pass = browser.read(elementAt("[data-oath-pass-result]"));
+        browser.tap(pass.offset);
+        const declined = await readUntil(
+          () =>
+            browser.read(`(() => {
+          const answer = window.__labChain.sent.at(-1);
+          const progress = answer?.answered.find(({model}) => model === "ArmyProgress")?.value;
+          return window.__labChain.sent.length === ${before + 1} && answer.command.kind === "ChooseOath" &&
+            Number(progress?.oaths) === ${held} && Number(progress?.oath_pick) === 0 && !document.querySelector('[data-oath-pick]');
+        })()`),
+          Boolean,
+          ORDER_OUTCOME_WAIT_MS,
+        );
+        const answer = browser.read("JSON.stringify(window.__labChain.sent.at(-1))");
+        const slot = answer.answered.find(({ model }) => model === "ArmySlot")?.value;
+        await openTheArmyPanel(browser);
+        const shown = browser.read(
+          `Number(document.querySelector('[data-kit-sheet] [data-stamina-line] [role="meter"]')?.getAttribute('aria-valuenow'))`,
+        );
+        return { declined, answer, slot, preview, shown };
+      },
+      verify: ({ played }) => {
+        const amount = Number(played.slot?.stamina.amount);
+        const expected = capped ? oathRules.PASS_STAMINA / 2 : oathRules.PASS_STAMINA;
+        return played.declined &&
+          played.shown === amount &&
+          amount === played.preview.result &&
+          amount === Math.min(played.preview.current + oathRules.PASS_STAMINA, played.preview.maximum) &&
+          amount - played.preview.current === expected
+          ? completed({ ...played, expectedGain: expected })
+          : failed("Pass must retain the held Oath, clear the offer and write stamina", played);
+      },
+    },
+  ];
+}
+
+function rerollOathStep() {
+  return clickToResultStep(
+    "reroll-oath",
+    "RerollOath",
+    async ({ browser }) => {
+      const before = browser.read("Number(document.querySelector('[data-oath-pick]')?.dataset.oathPick)");
+      const redraw = browser.read(elementAt('[data-reroll-oath="0"]'));
+      if (!redraw) return { before, missing: true };
+      watchFor(
+        browser,
+        "oath-rerolled",
+        `(() => {
+        const result = (window.__labChain?.sent ?? []).filter(({command}) => command.kind === "RerollOath").at(-1);
+        const row = result?.answered.find(({model}) => model === "ArmyProgress")?.value;
+        const shown = Number(document.querySelector('[data-oath-pick]')?.dataset.oathPick);
+        return row && Number(row.oath_pick) === shown && shown !== ${before} && !document.querySelector('[data-reroll-oath="0"]');
+      })()`,
+      );
+      browser.tap(redraw.offset);
+      return { before, watching: true };
+    },
+    ({ played, actionLatency }) => {
+      const answer = (actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "RerollOath").at(-1);
+      if (!answer) return undefined;
+      const pick = Number(answer.answered.find(({ model }) => model === "ArmyProgress")?.value?.oath_pick);
+      const others = oathRules.REROLLED - 16;
+      const redrawn =
+        (pick & oathRules.REROLLED) !== 0 &&
+        (pick & 15) !== (played.before & 15) &&
+        (pick & others) === (played.before & others);
+      if (!redrawn) return failed("The redraw did not replace exactly the first card", { pick, before: played.before });
+      return played.watching && { watch: "oath-rerolled" };
+    },
+  );
+}
+
+function oathPickSteps(full, layer = "Map") {
+  return [
+    { name: "enter-on-map", settleMs: 3000, verify: inScene("map", layer) },
+    {
+      name: "open-oath-pick",
+      play: async ({ browser }) => {
+        const pick = await readUntil(() => browser.read(elementAt("[data-oath-pick]")), Boolean, SHEET_WAIT_MS);
+        const before = browser.read("window.__labChain.sent.length");
+        browser.press("Escape");
+        const outside = browser.read('document.elementFromPoint(5, 5)?.classList.contains("ui-modal")');
+        if (!outside) throw new Error("The outside press must land on the Oath backdrop");
+        browser.tap([5 - VIEWPORT.width / 2, 5 - VIEWPORT.height / 2]);
+        browser.run(["back"]);
+        const locked = browser.read(`Boolean(document.querySelector('[data-oath-pick]')) &&
+          !document.querySelector('.ui-modal button[aria-label="Close"]') && window.__labChain.sent.length === ${before}`);
+        return {
+          pick,
+          locked,
+          cards: browser.read("document.querySelectorAll('[data-oath-id]').length"),
+          visible: browser.read(`(() => {
+            const nodes = [...document.querySelectorAll('[data-oath-id], [data-oath-pick] > button')];
+            return nodes.length === 4 && nodes.every(node => {
+              const box = node.getBoundingClientRect();
+              return box.width > 0 && box.height > 0 && box.top >= 0 && box.bottom <= innerHeight &&
+                [box.top + 2, box.top + box.height / 2, box.bottom - 2].every(y =>
+                  node.contains(document.elementFromPoint(box.left + box.width / 2, y)));
+            });
+          })()`),
+        };
+      },
+      verify: ({ played }) =>
+        played.pick && played.locked && played.cards === 3 && played.visible
+          ? completed(played)
+          : failed("Three Oath cards did not appear", played),
+    },
+    ...(layer === "Deep" ? [] : [rerollOathStep()]),
+    clickToResultStep(
+      "choose-oath",
+      "ChooseOath",
+      async ({ browser }) => {
+        const chosen = browser.read("Number(document.querySelector('[data-oath-id]')?.dataset.oathId)");
+        const held = browser.read("Number(document.querySelector('[data-oath-pick]')?.dataset.oathHeld)");
+        const card = browser.read(elementAt("[data-oath-id]"));
+        if (!card) return { chosen, missing: true };
+        const watchChoice = (expected) =>
+          watchFor(
+            browser,
+            "oath-chosen",
+            `(() => {
+        const result = (window.__labChain?.sent ?? []).filter(({command}) => command.kind === "ChooseOath").at(-1);
+        const row = result?.answered.find(({model}) => model === "ArmyProgress")?.value;
+        return row && Number(row.oaths) === ${expected} && Number(row.oath_pick) === 0 && !document.querySelector('[data-oath-pick]');
+      })()`,
+          );
+        if (!full) {
+          const expected = held | (1 << (chosen - 1));
+          watchChoice(expected);
+          browser.tap(card.offset);
+          return { chosen, expected, watching: true };
+        }
+        browser.tap(card.offset);
+        const replace = await readUntil(() => browser.read(elementAt("[data-replace-oath]")), Boolean, SHEET_WAIT_MS);
+        if (!replace) return { chosen, missing: true };
+        const replaced = browser.read("Number(document.querySelector('[data-replace-oath]')?.dataset.replaceOath)");
+        const expected = (held & ~(1 << (replaced - 1))) | (1 << (chosen - 1));
+        watchChoice(expected);
+        browser.tap(replace.offset);
+        return { chosen, expected, watching: true };
+      },
+      ({ played, actionLatency }) => {
+        const answer = (actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "ChooseOath").at(-1);
+        if (!answer) return undefined;
+        const row = answer.answered.find(({ model }) => model === "ArmyProgress")?.value;
+        if (Number(row?.oaths) !== played.expected || Number(row?.oath_pick) !== 0)
+          return failed("The choice did not write exactly the selected Oath", { row });
+        return played.watching && { watch: "oath-chosen" };
+      },
+    ),
+    deleteOathArmyStep(),
+  ];
+}
+
+const OATH_SLOTS_STEPS = [
+  { name: "enter-on-map", settleMs: 3000, verify: inScene("map") },
+  clickToResultStep(
+    "research-oath-slot",
+    "Research",
+    async ({ browser }) => {
+      browser.click("Research");
+      await readUntil(() => browser.read(elementAt('[data-node="row-6"]')), Boolean, SHEET_WAIT_MS);
+      browser.read(
+        `(() => { document.querySelector('[data-node="row-6"]')?.scrollIntoView({ block: "nearest" }); return true; })()`,
+      );
+      const node = browser.read(elementAt('[data-node="row-6"]'));
+      if (!node || node.state !== "ready") return { node };
+      browser.tap(node.offset);
+      const action = await readUntil(() => browser.read(buttonNamed("Research Oath slots")), Boolean, SHEET_WAIT_MS);
+      if (!action) return { action };
+      watchFor(
+        browser,
+        "oath-researched",
+        `(() => {
+      const sent = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "Research").at(-1);
+      return sent?.answered.some(({ model, value }) => model === "RealmKnowledge" && ((BigInt(value.learned) >> 30n) & 3n) === 1n) &&
+        document.querySelector('[data-node="row-6"]')?.textContent.includes("3 Oath slots");
+    })()`,
+      );
+      browser.tap(action.offset);
+      return { watching: true, region: node.region };
+    },
+    ({ played, actionLatency }) => {
+      const answer = (actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "Research").at(-1);
+      if (!answer) return undefined;
+      const balances = answer.answered.filter(({ model }) => model === "ResourceBalance").map(({ value }) => value);
+      const balance = (id) => BigInt(balances.find(({ resource_type }) => Number(resource_type) === id)?.balance ?? -1);
+      if (
+        balance(ResourcesIds.Essence) !== 15000n * BigInt(RESOURCE_PRECISION) ||
+        balance(ResourcesIds.Labor) !== 4000n * BigInt(RESOURCE_PRECISION)
+      )
+        return failed("Oath research charged the wrong price", { balances });
+      return played.watching && { watch: "oath-researched" };
+    },
+  ),
+  {
+    name: "read-oath-refusal",
+    play: async ({ browser }) => {
+      await readUntil(() => browser.read(elementAt("[data-research-footer]")), Boolean, SHEET_WAIT_MS);
+      return browser.read(`(() => {
+        const footer = document.querySelector("[data-research-footer]");
+        if (!footer) return { footer: false };
+        const box = (element) => {
+          const { left, top, right, bottom, width, height } = element.getBoundingClientRect();
+          return { left, top, right, bottom, width, height };
+        };
+        const parts = [...footer.querySelectorAll("button, :scope > span > span[aria-label]")].map((element) => ({
+          text: element.textContent.trim(),
+          button: element.tagName === "BUTTON",
+          clipped: element.scrollWidth > element.clientWidth + 1,
+          ...box(element),
+        }));
+        const overlaps = [];
+        parts.forEach((a, i) => parts.slice(i + 1).forEach((b) => {
+          if (a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) overlaps.push([a.text, b.text]);
+        }));
+        return {
+          footer: true,
+          viewport: { width: innerWidth, height: innerHeight },
+          prices: parts.filter((part) => !part.button).map((part) => part.text),
+          actions: parts.filter((part) => part.button).map((part) => part.text),
+          overlaps,
+          clipped: parts.filter((part) => part.clipped).map((part) => part.text),
+          outside: parts.filter((part) => part.left < 0 || part.right > innerWidth || part.top < 0 || part.bottom > innerHeight).map((part) => part.text),
+          smallTargets: parts.filter((part) => part.button && (part.height < 32 || part.width < 32)).map((part) => part.text),
+        };
+      })()`);
+    },
+    verify: ({ played }) =>
+      played.footer &&
+      played.prices.length === 2 &&
+      played.actions.length === 1 &&
+      /^Level up the castle$/.test(played.actions[0]) &&
+      played.overlaps.length === 0 &&
+      played.clipped.length === 0 &&
+      played.outside.length === 0 &&
+      played.smallTargets.length === 0
+        ? completed(played)
+        : failed(
+            "The refused next Oath purchase's footer collides, is clipped, leaves the screen or has a small target",
+            played,
+          ),
+  },
+  {
+    name: "back-to-map",
+    play: async ({ browser }) => {
+      browser.run(["press", "Escape"]);
+      browser.run(["press", "Escape"]);
+      return {};
+    },
+    verify: inScene("map"),
+  },
+  clickToResultStep(
+    "deploy-with-oath-slots",
+    "CreateExplorer",
+    (context) => deployFromTheDock(context, 100),
+    (context) => {
+      const answer = (context.actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "CreateExplorer").at(-1);
+      if (!answer) return undefined;
+      const progress = answer.answered.find(({ model }) => model === "ArmyProgress")?.value;
+      if (Number(progress?.oath_slots) !== 3)
+        return failed("The new army did not inherit three Oath slots", { progress });
+      return armyDeployed(context);
+    },
+  ),
+  {
+    name: "read-army-oath-slots",
+    play: async ({ browser }) => {
+      const army = browser.read(buttonLabelled("^Army 2$"));
+      if (!army) return { army };
+      browser.tap(army.offset);
+      const details = await readUntil(() => browser.read(buttonLabelled("^Army 2: details$")), Boolean, SHEET_WAIT_MS);
+      if (details) browser.tap(details.offset);
+      await readUntil(() => browser.read(elementAt('[data-oath-slots="3"]')), Boolean, SHEET_WAIT_MS);
+      return browser.read(`(() => {
+        const slots = document.querySelector('[data-oath-slots="3"]');
+        const rect = slots?.getBoundingClientRect();
+        return { text: slots?.textContent, open: slots?.querySelectorAll('[aria-label$="· Open"]').length,
+          locked: slots?.querySelectorAll('[aria-label$="· Locked"]').length,
+          priced: slots?.querySelectorAll('[aria-label$="· Locked"] .ui-cost').length,
+          visible: Boolean(rect && rect.width && rect.height && rect.top >= 0 && rect.bottom <= innerHeight) };
+      })()`);
+    },
+    verify: ({ played }) =>
+      played.visible &&
+      played.open === 3 &&
+      played.locked === 2 &&
+      played.priced === 2 &&
+      played.text.includes("3 Oath slots")
+        ? completed(played)
+        : failed("The army's three open and two priced locked slots were not visible", played),
+  },
+];
+
+const WELL_LORE_NODE = '[data-node="well"]';
+
+async function researchWellLore({ browser }) {
   browser.click("Research");
-  const node = await readUntil(() => browser.read(elementAt(SHRINE_NODE)), Boolean, SHEET_WAIT_MS);
+  const node = await readUntil(() => browser.read(elementAt(WELL_LORE_NODE)), Boolean, SHEET_WAIT_MS);
   if (!node || node.state !== "ready") return { node };
   browser.tap(node.offset);
-  const research = await readUntil(() => browser.read(buttonNamed("Research Shrine")), Boolean, SHEET_WAIT_MS);
+  const research = await readUntil(() => browser.read(buttonNamed("Research Well lore")), Boolean, SHEET_WAIT_MS);
   if (!research) return { node, research };
-  watchFor(browser, "researched", shrineResearched);
+  watchFor(browser, "researched", wellLoreResearched);
   browser.tap(research.offset);
   return { node: node.state, watching: true, region: node.region };
 }
 
-/** The Shrine's node reads Researched, and the lab's chain has answered its Research with the Shrine learned. */
-const shrineResearched = `(() => {
+const wellLoreResearched = `(() => {
   const answer = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "Research").at(-1);
   const learned = answer?.answered.find(({ model }) => model === "RealmKnowledge")?.value.learned;
-  return learned !== undefined && ((BigInt(learned) >> 44n) & 1n) === 1n &&
-    document.querySelector(${JSON.stringify(SHRINE_NODE)})?.dataset.state === "done";
+  return learned !== undefined &&
+    document.querySelector(${JSON.stringify(WELL_LORE_NODE)})?.dataset.state === "done";
 })()`;
 
 /** An element's box, where it is from the screen's centre, and its state; null while it is not drawn. */
@@ -799,6 +1510,153 @@ const buttonNamed = (name) => `JSON.stringify((() => {
  * phone's Menu), then its daily Claim; the result is the sheet saying that Realm's labor was claimed today, once the
  * chain has granted it.
  */
+const DAILY_QUEST_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  {
+    name: "collect-daily-quest",
+    play: async ({ browser, extraScreenshot }) => {
+      const ready = await readUntil(
+        () =>
+          browser.read(`JSON.stringify((() => {
+        const panel = document.querySelector('[data-daily-quest]');
+        return { text: panel?.textContent, collect: [...(panel?.querySelectorAll('button') ?? [])].some(b => b.textContent === 'Collect' && !b.disabled) };
+      })())`),
+        (value) => value.collect,
+        PLAYABLE_WAIT_MS,
+      );
+      const before = extraScreenshot("quest-ready");
+      if (!ready?.collect) return { ready, before };
+      browser.click("Collect");
+      const collected = await readUntil(
+        () => browser.read(`Boolean(document.querySelector('[data-daily-quest] [aria-label="Collected"]'))`),
+        Boolean,
+        PLAYABLE_WAIT_MS,
+      );
+      const grants = browser.read(
+        `JSON.stringify((window.__labChain?.sent ?? []).filter(({command}) => command.kind === 'ClaimDailyQuest'))`,
+      );
+      return { ready, before, collected, grants };
+    },
+    settleMs: 0,
+    verify: ({ played }) => {
+      const [sent] = played.grants ?? [];
+      const receipt = sent?.answered.find(({ model }) => model === "LaborGrant")?.value;
+      const balances = sent?.answered.filter(({ model }) => model === "ResourceBalance") ?? [];
+      return played.ready?.collect &&
+        played.collected &&
+        played.grants?.length === 1 &&
+        Number(sent.command.fields.home) === 7 &&
+        Number(sent.command.fields.day) === 0 &&
+        Number(receipt?.home) === 7 &&
+        Number(receipt?.day) === 0 &&
+        receipt?.amount === "1000000000000" &&
+        receipt?.essence === "1500000000000" &&
+        balances.length === 2 &&
+        balances.every(({ value }) => value.balance === "1500000000000")
+        ? completed(played)
+        : failed("Collect must send the exact home/day and display its confirmed reward receipt", played);
+    },
+  },
+];
+
+const BANE_COLLECTIONS = {
+  world: {
+    button: "Collect",
+    receipts: ["LaborGrant"],
+    labor: "1500000000000",
+    essence: "1500000000000",
+    quest: "The Cull",
+    count: "2,500 of 2,500 troops",
+    head: "Ash Fall",
+  },
+  again: {
+    button: "Collect again",
+    receipts: ["BaneGrant"],
+    labor: "2500000000000",
+    essence: "3000000000000",
+    quest: "The Cull",
+    count: "2,500 of 2,500 troops",
+    head: "Ash Fall",
+  },
+  late: {
+    button: "Collect",
+    receipts: ["LaborGrant", "BaneGrant"],
+    labor: "2500000000000",
+    essence: "3000000000000",
+    quest: "The Cull",
+    count: "2,500 of 2,500 troops",
+    head: "Ash Fall",
+  },
+  team: {
+    button: "Collect",
+    receipts: ["LaborGrant"],
+    labor: "1500000000000",
+    essence: "1500000000000",
+    quest: "The Stand",
+    count: "3 of 3 sites",
+    head: "Prowess's bane",
+  },
+};
+
+const baneCollectionSteps = (expected) => [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  {
+    name: "collect-bane-quest",
+    play: async ({ browser, extraScreenshot }) => {
+      const ready = await readUntil(
+        () =>
+          browser.read(`JSON.stringify((() => {
+          const panel = document.querySelector('[data-daily-quest]');
+          const button = [...(panel?.querySelectorAll('button') ?? [])].find(b => b.textContent === ${JSON.stringify(expected.button)});
+          return { text: panel?.textContent, collect: Boolean(button && !button.disabled) };
+        })())`),
+        (value) => value.collect,
+        PLAYABLE_WAIT_MS,
+      );
+      const before = extraScreenshot("bane-ready");
+      if (!ready?.collect) return { ready, before };
+      browser.click(expected.button);
+      const collected = await readUntil(
+        () => browser.read(`Boolean(document.querySelector('[data-daily-quest] [aria-label="Collected"]'))`),
+        Boolean,
+        PLAYABLE_WAIT_MS,
+      );
+      const grants = browser.read(
+        `JSON.stringify((window.__labChain?.sent ?? []).filter(({command}) => command.kind === 'ClaimDailyQuest'))`,
+      );
+      return { ready, before, collected, grants };
+    },
+    settleMs: 0,
+    verify: ({ played }) => {
+      const [sent] = played.grants ?? [];
+      const receipts = sent?.answered.filter(({ model }) => model === "LaborGrant" || model === "BaneGrant") ?? [];
+      const balances = sent?.answered.filter(({ model }) => model === "ResourceBalance") ?? [];
+      const exact =
+        played.ready?.collect &&
+        played.collected &&
+        played.grants?.length === 1 &&
+        [expected.quest, expected.count, expected.head].every((text) => played.ready.text?.includes(text)) &&
+        Number(sent.command.fields.home) === 7 &&
+        Number(sent.command.fields.day) === 1 &&
+        receipts.length === expected.receipts.length &&
+        expected.receipts.every((model) => receipts.filter((receipt) => receipt.model === model).length === 1) &&
+        receipts.every(
+          ({ value }) =>
+            Number(value.home) === 7 &&
+            Number(value.day) === 1 &&
+            value.amount === "1000000000000" &&
+            value.essence === "1500000000000",
+        ) &&
+        balances.length === 2 &&
+        balances.some(({ value }) => Number(value.resource_type) === 23 && value.balance === expected.labor) &&
+        balances.some(({ value }) => Number(value.resource_type) === 38 && value.balance === expected.essence);
+      return exact
+        ? completed(played)
+        : failed("Bane collection must name the recorded quest and credit each exact receipt once", played);
+    },
+  },
+];
+
 const CLAIM_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   clickToResultStep("claim", "GrantLabor", claimARealmsLabor, ({ played }) => played.watching && { watch: "claimed" }),
@@ -849,243 +1707,71 @@ const realmClaimed = `(() => {
   return String(grant?.value.home) === "7" && today?.getAttribute("data-state") === "claimed";
 })()`;
 
-/**
- * An army's upkeep (the lab's upkeep game): its panel opened from the dock, then Refill and its confirm (the result: the
- * panel reading the stamina the chain refilled it to), then Level up and Level up again on Battle (the result: the
- * panel naming the tier the chain bought).
- */
-const ARMY_ACTION_STEPS = [
+const CLEAR_MIST_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  clickToResultStep("refill", "RefillStamina", refillTheArmy, ({ played }) => played.watching && { watch: "refilled" }),
-  clickToResultStep(
-    "tier",
-    "SpendSkillPoint",
-    levelUpTheArmy,
-    ({ played }) => played.watching && { watch: "tier-bought" },
-  ),
+  {
+    name: "clear-mist-odds",
+    play: async ({ browser }) => {
+      const panel = await openTheArmyPanel(browser);
+      const odds = await browser.read(`(() => {
+        const line = [...document.querySelectorAll('[data-spire-chance]')].find((candidate) => {
+          const rect = candidate.getBoundingClientRect();
+          return rect.width && rect.height;
+        });
+        const rect = line?.getBoundingClientRect();
+        return { text: line?.textContent, visible: Boolean(rect && rect.width && rect.height && rect.top >= 0 && rect.bottom <= innerHeight) };
+      })()`);
+      return { panel, odds };
+    },
+    settleMs: 0,
+    verify: ({ played }) =>
+      played.odds.visible && played.odds.text.includes("next reveal 20%")
+        ? completed(played)
+        : failed("The army's next Spire reveal must show Clear Mist's doubled chance", played),
+  },
 ];
 
-/** Keep the observed purse before the action; the final judgment can replay without a browser. */
-function purchasedRefillSteps() {
-  let before;
+function staminaEffectSteps(wind) {
   return [
+    { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
     {
-      ...ARMY_ACTION_STEPS[0],
+      name: "effect-refill",
       play: async ({ browser }) => {
-        before = await readPurchasedPurse(browser);
-        browser.press("Escape");
-        await readUntil(
-          () => browser.read(SHEET_NAME),
-          (name) => name === null,
+        const panel = await openTheArmyPanel(browser);
+        const reading = await readUntil(
+          () => readArmyStamina(browser),
+          (state) => state.visible,
           SHEET_WAIT_MS,
         );
-        return { before };
+        return { panel, reading };
       },
-    },
-    clickToResultStep(
-      "refill",
-      "RefillStamina",
-      (context) => refillTheArmy({ ...context, partial: true }),
-      ({ played }) => played.watching && { watch: "refilled" },
-    ),
-    ARMY_ACTION_STEPS[2],
-    {
-      name: "purchased-refill-isolation",
       settleMs: 0,
-      play: async ({ browser }) => ({
-        before,
-        after: await readPurchasedPurse(browser),
-        rejected: browser.read("JSON.stringify(window.__labChain?.rejected ?? [])"),
-        amounts: browser.read(`JSON.stringify((window.__labChain?.sent ?? [])
-          .filter(({ command, answered }) => command.kind === "RefillStamina" && answered?.length)
-          .map(({ command }) => command.fields.amount))`),
-      }),
       verify: ({ played }) => {
-        const { before, after, amounts } = played;
-        const amount = Number(amounts?.[0]);
-        if (!before || !after || amounts?.length !== 1 || !Number.isSafeInteger(amount) || amount <= 0)
-          return failed("Missing purse balances or one confirmed refill amount", played);
-        const purchased = Math.min(before.purchased, amount);
-        return after.purchased === before.purchased - purchased && after.earned === before.earned - (amount - purchased)
+        const { reading } = played;
+        const minimum = wind ? 60 : 50;
+        return reading.visible &&
+          reading.current >= minimum &&
+          reading.current < minimum + 10 &&
+          reading.maximum === 140 &&
+          reading.text.includes("Full in")
           ? completed(played)
-          : failed("Refill must spend purchased LORDS first and only the remainder from winnings", played);
+          : failed("Army bar and refill time must reflect the recorded stamina effects", played);
       },
     },
   ];
 }
 
-/**
- * The purse's deposit amount as a player meets it, on the lab's spend-lords game: the HUD field read at rest, typed
- * into with real keys after a tap on it, a deposit begun (a desktop's Tab then Enter, a phone's tap) with its payment
- * opened on the app sheet, and the same page loaded again with that begun deposit restored as the exact, locked amount.
- * The run's test profile holds no wallet, so nothing is handed to a wallet and nothing is uncertain: the restored
- * deposit offers Retry payment and Edit or cancel, without the uncertain line (an uncertain send's hold is the unit
- * tests'). A phone is Chrome's device
- * emulation: the field's numeric input mode and real browser key events injected after a real tap; a physical OS
- * keyboard is not exercised.
- */
-const DEPOSIT_AMOUNT_STEPS = [
-  {
-    name: "deposit-amount-at-rest",
-    settleMs: 0,
-    play: async ({ browser }) => {
-      await openDepositPurse(browser);
-      return browser.read(DEPOSIT_FIELD);
-    },
-    verify: ({ played }) => judgeDepositField(played, { value: "10", locked: false }),
-  },
-  {
-    name: "deposit-amount-typed",
-    settleMs: 0,
-    play: async ({ browser }) => {
-      const before = browser.read(DEPOSIT_FIELD);
-      if (!before) return { field: null };
-      browser.tap(before.offset);
-      for (let index = 0; index < before.value.length; index += 1) browser.press("Backspace");
-      browser.press("2");
-      browser.press("5");
-      return { viewportBefore: before.viewport, ...browser.read(DEPOSIT_FIELD) };
-    },
-    verify: ({ played }) =>
-      played.focused === true
-        ? judgeDepositField(played, { value: "25", locked: false })
-        : failed("The tap did not focus the amount", played),
-  },
-  {
-    name: "deposit-amount-begun",
-    settleMs: 0,
-    play: async ({ browser }) => {
-      const button = browser.read(sheetButton("^Deposit LORDS$"));
-      if (!button) return { blocked: "No Deposit LORDS button" };
-      const [dx, dy] = button.offset;
-      const underTap = browser.read(
-        `JSON.stringify(document.elementFromPoint(innerWidth / 2 + ${dx}, innerHeight / 2 + ${dy})?.closest("button")?.textContent.trim() ?? null)`,
-      );
-      if (browser.read("matchMedia('(pointer: coarse)').matches")) {
-        if (underTap !== "Deposit LORDS")
-          return { blocked: `The tap point holds ${underTap}, not Deposit LORDS`, button };
-        browser.tap(button.offset);
-      } else {
-        browser.press("Tab");
-        const focused = browser.read("JSON.stringify(document.activeElement?.textContent?.trim() ?? null)");
-        if (focused !== "Deposit LORDS")
-          return { blocked: `Tab from the amount reached ${focused}, not Deposit LORDS` };
-        browser.press("Enter");
-      }
-      const field = await readUntil(
-        () => browser.read(DEPOSIT_FIELD),
-        (state) => state?.disabled === true && state.edit && state.paying !== null,
-        SHEET_WAIT_MS,
-      );
-      return field ?? { field: null };
-    },
-    verify: ({ played }) =>
-      played.blocked
-        ? failed(played.blocked, played)
-        : played.edit && played.paying === "Deposit 25 LORDS"
-          ? judgeDepositField(played, { value: "25", locked: true })
-          : failed("A begun deposit must open its payment on the app sheet and, unsent, offer Edit or cancel", played),
-  },
-  {
-    name: "deposit-amount-restored",
-    settleMs: 0,
-    play: async (context) => {
-      const reloaded = await reloadOn("Map", "map", "spend-lords")(context);
-      await openDepositPurse(context.browser);
-      return { reloaded: reloaded.reloaded, ...context.browser.read(DEPOSIT_FIELD) };
-    },
-    verify: ({ played }) =>
-      !played.reloaded
-        ? failed("The page did not load again", played)
-        : played.retry && played.edit && !played.uncertain && !played.deposit && played.paying === null
-          ? judgeDepositField(played, { value: "25", locked: true })
-          : failed(
-              "A restored deposit never handed to a wallet must offer Retry payment and Edit or cancel, not an uncertain status",
-              played,
-            ),
-  },
-];
-
-/** The amount the purse will sign: its HUD field, what it holds, how it reads against its well, and what it offers. */
-const DEPOSIT_FIELD = `JSON.stringify((() => {
-  const sheet = document.querySelector('[data-kit-sheet][aria-label="LORDS"]');
-  const input = sheet?.querySelector('input[aria-label="Whole LORDS to deposit"]');
-  if (!input) return null;
-  const field = input.closest(".ui-field");
-  const rgb = (color) => color.match(/[\\d.]+/g).slice(0, 4).map(Number);
-  const backdrop = (element) => {
-    for (let at = element; at; at = at.parentElement) {
-      const [r, g, b, a = 1] = rgb(getComputedStyle(at).backgroundColor);
-      if (a > 0) return [r, g, b];
-    }
-    return [0, 0, 0];
-  };
-  const shown = (color, under, opacity) => color.slice(0, 3).map((value, index) => value * opacity + under[index] * (1 - opacity));
-  const luminance = (color) => color.map((value) => value / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)).reduce((sum, v, index) => sum + v * [0.2126, 0.7152, 0.0722][index], 0);
-  const opacity = Number(getComputedStyle(field ?? input).opacity);
-  const behind = backdrop((field ?? input).parentElement);
-  const well = shown(backdrop(field ?? input), behind, opacity);
-  const ink = shown(rgb(getComputedStyle(input).color), well, opacity);
-  const [light, dark] = [luminance(ink), luminance(well)].sort((a, b) => b - a);
-  const rect = input.getBoundingClientRect();
-  const button = (text) => [...sheet.querySelectorAll("button")].some((candidate) => candidate.textContent.trim() === text);
-  return {
-    value: input.value,
-    disabled: input.disabled,
-    focused: document.activeElement === input,
-    inputMode: input.inputMode,
-    name: input.getAttribute("aria-label"),
-    hudField: Boolean(field),
-    contrast: Math.round(((light + 0.05) / (dark + 0.05)) * 100) / 100,
-    fontPx: Number.parseFloat(getComputedStyle(input).fontSize),
-    offset: [Math.round(rect.left + rect.width / 2 - innerWidth / 2), Math.round(rect.top + rect.height / 2 - innerHeight / 2)],
-    viewport: { width: Math.round(visualViewport.width), height: Math.round(visualViewport.height) },
-    deposit: button("Deposit LORDS"),
-    edit: button("Edit or cancel deposit"),
-    retry: button("Retry payment"),
-    uncertain: [...sheet.querySelectorAll('[role="status"]')].some((line) => line.textContent.startsWith("Payment status is uncertain")),
-    paying: document.querySelector('[role="dialog"][aria-label^="Deposit "]')?.getAttribute("aria-label") ?? null,
-  };
-})())`;
-
-/** WCAG's least contrast for text: the editable amount must read at least this well against its well. */
-const AMOUNT_LEAST_CONTRAST = 4.5;
-
-function judgeDepositField(played, { value, locked }) {
-  if (!played?.hudField) return failed("The amount is not in the HUD's field", played);
-  if (played.name !== "Whole LORDS to deposit" || played.inputMode !== "numeric")
-    return failed("The amount lost its accessible name or numeric keyboard", played);
-  if (played.value !== value) return failed(`The amount reads ${played.value}, not ${value}`, played);
-  if (played.disabled !== locked)
-    return failed(locked ? "The begun amount can still be edited" : "The amount is locked", played);
-  if (!locked && played.contrast < AMOUNT_LEAST_CONTRAST)
-    return failed(`The amount's contrast ${played.contrast} is under ${AMOUNT_LEAST_CONTRAST}`, played);
-  return completed(played);
+function readArmyStamina(browser) {
+  return browser.read(`(() => {
+    const sheet = document.querySelector('[data-kit-sheet][aria-label^="Army "]');
+    const line = sheet?.querySelector('[data-stamina-line]');
+    const meter = line?.querySelector('[role="meter"][aria-label="stamina"]');
+    const rect = line?.getBoundingClientRect();
+    return { current: Number(meter?.getAttribute('aria-valuenow')), maximum: Number(meter?.getAttribute('aria-valuemax')),
+      text: line?.textContent, visible: Boolean(rect && rect.width && rect.height && rect.top >= 0 && rect.bottom <= innerHeight) };
+  })()`);
 }
 
-async function readPurchasedPurse(browser) {
-  if (browser.read(SHEET_NAME) !== null) browser.press("Escape");
-  const purse = browser.read(buttonLabelled("^LORDS "));
-  if (!purse) return null;
-  browser.tap(purse.offset);
-  const sheet = await readUntil(
-    () => browser.read(SHEET_NAME),
-    (name) => name === "LORDS",
-    SHEET_WAIT_MS,
-  );
-  if (sheet !== "LORDS") return null;
-  return browser.read(`JSON.stringify((() => {
-    const sheet = document.querySelector('[data-kit-sheet][aria-label="LORDS"]');
-    const earned = /^Winnings: ([\\d,]+) LORDS$/.exec(sheet?.querySelector('[data-earned-lords]')?.textContent ?? "");
-    const purchased = /^Spend-only: ([\\d,]+) LORDS$/.exec(sheet?.querySelector('[data-spend-lords]')?.textContent ?? "");
-    return earned && purchased ? {earned: Number(earned[1].replaceAll(",", "")), purchased: Number(purchased[1].replaceAll(",", ""))} : null;
-  })())`);
-}
-
-/**
- * Opens the readiest army's panel as a player does: its dock entry (a desktop opens it on select; a phone's details).
- * A panel already open (a phone's stands where its dock was) is used as it is.
- */
 async function openTheArmyPanel(browser) {
   const open = browser.read(SHEET_NAME);
   if (/^Army \d+$/.test(open ?? "")) {
@@ -1108,85 +1794,6 @@ async function openTheArmyPanel(browser) {
     region: sheet === army ? browser.read(sheetRegion(`[data-kit-sheet][aria-label="${army}"]`)) : null,
   };
 }
-
-async function refillTheArmy({ browser, partial = false }) {
-  const panel = await openTheArmyPanel(browser);
-  if (panel.sheet !== panel.army) return panel;
-  const maximum = browser.read(`JSON.stringify(Number(document.querySelector('[data-kit-sheet] [data-stamina-line]')
-    ?.textContent?.match(/\\/([\\d,]+)/)?.[1]?.replaceAll(",", "")))`);
-  if (!Number.isSafeInteger(maximum) || maximum <= 0) throw new Error("Army panel has no stamina maximum");
-  const refill = browser.read(sheetButton("^Refill"));
-  if (!refill) return { ...panel, refill };
-  browser.tap(refill.offset);
-  const confirm = await readUntil(
-    // The confirm's verb names what it buys: "Refill · 72 LORDS".
-    () => browser.read(buttonIn('[data-kit-sheet][aria-label="Refill"]', "^Refill · ")),
-    Boolean,
-    SHEET_WAIT_MS,
-  );
-  if (!confirm) return { ...panel, refill: refill.name, confirm };
-  if (partial) selectPartialRefill(browser);
-  watchFor(browser, "refilled", panelReadsTheChainsStamina(panel.army, maximum));
-  browser.tap(confirm.offset);
-  return { ...panel, refill: refill.name, watching: true };
-}
-
-function selectPartialRefill(browser, portion = 0.75) {
-  const slider = browser.read(`JSON.stringify((() => {
-    const input = document.querySelector('[data-kit-sheet][aria-label="Refill"] input[aria-label="Stamina to refill"]');
-    if (!input) return null;
-    const box = input.getBoundingClientRect();
-    return {offset: [box.left + box.width * ${portion} - innerWidth / 2, box.top + box.height / 2 - innerHeight / 2]};
-  })())`);
-  if (!slider) throw new Error("Refill has no stamina slider");
-  browser.tap(slider.offset);
-  const selected = browser.read(`JSON.stringify((() => {
-    const input = document.querySelector('[data-kit-sheet][aria-label="Refill"] input[aria-label="Stamina to refill"]');
-    return {amount: Number(input.value), missing: Number(input.max)};
-  })())`);
-  if (!(selected.amount > 0 && selected.amount < selected.missing))
-    throw new Error("Refill slider did not select a partial amount");
-  return selected;
-}
-
-/**
- * The army's panel reads the stamina the lab's chain refilled it to, out of the same maximum. The chain writes the bar
- * where the contract keeps it: a Frontier army's slot (ArmySlot), or the troops' own bar for an army without one.
- */
-const panelReadsTheChainsStamina = (army, maximum) => `(() => {
-  const refill = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "RefillStamina").at(-1);
-  const answered = (model) => refill?.answered.find((fact) => fact.model === model)?.value;
-  const amount = answered("ArmySlot")?.stamina.amount ?? answered("ExplorerTroops")?.troops.stamina.Inline?.amount;
-  const text = document.querySelector('[data-kit-sheet][aria-label="${army}"]')?.innerText ?? "";
-  return amount !== undefined && text.replaceAll(",", "").includes(amount + "/" + ${maximum});
-})()`;
-
-async function levelUpTheArmy({ browser }) {
-  const panel = await openTheArmyPanel(browser);
-  if (panel.sheet !== panel.army) return panel;
-  const choose = browser.read(sheetButton("^Level up$"));
-  if (!choose) return { ...panel, choose };
-  browser.tap(choose.offset);
-  const battle = await readUntil(() => browser.read(sheetButton("^Battle")), Boolean, SHEET_WAIT_MS);
-  if (!battle) return { ...panel, battle };
-  const buy = browser.read(sheetButton("^Level up$"));
-  if (!buy) return { ...panel, buy };
-  watchFor(browser, "tier-bought", panelShowsTheChainsTier(panel.army));
-  browser.tap(buy.offset);
-  return { ...panel, watching: true };
-}
-
-/**
- * The army's panel shows the Battle tier the lab's chain bought, back on its status: the point was its last, so the
- * choices have nothing left to buy and the panel returns to the army, its Battle tile at that tier.
- */
-const panelShowsTheChainsTier = (army) => `(() => {
-  const bought = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "SpendSkillPoint").at(-1);
-  const tier = bought?.answered.find(({ model }) => model === "ArmyProgress")?.value.battle;
-  const sheet = document.querySelector('[data-kit-sheet][aria-label="${army}"]');
-  return tier !== undefined &&
-    sheet?.querySelector('[data-army-step="stats"] button[aria-label^="Battle "] .ui-tier[data-tier="' + tier + '"]') != null;
-})()`;
 
 /**
  * A building demolished (the lab's upkeep game): the realm, a first-ring building tapped for its card, Delete, then
@@ -1251,47 +1858,6 @@ function buildingDemolished({ actionLatency }) {
  * does (a desktop's right-click on the tile whose hover offers Open crate; a phone's tap, then its card's Open); the
  * result is that chest consumed off its tile.
  */
-const CHEST_ACTION_STEPS = [
-  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
-  clickToResultStep("chest", "OpenRelicChest", openTheChest, chestOpened),
-];
-
-async function openTheChest({ browser }) {
-  await focusTheArmyFromItsDock(browser);
-  const armyAt = armyOnScreen(browser, browser.observe().selection?.army?.id);
-  if (!armyAt) return { offered: [] };
-  const offered = [];
-  for (const [dx, dy] of NEIGHBOUR_RING) {
-    const offset = [armyAt[0] + dx, armyAt[1] + dy];
-    if (onADesktop()) {
-      browser.hover(offset);
-      await sleep(HOVER_SETTLE_MS);
-      const tip = browser.read(TOOLTIP_TEXT);
-      offered.push(tip);
-      if (/^Open crate\b/.test(tip ?? "")) {
-        // A desktop's camera stays where it was: the chest stands where it was aimed.
-        browser.rightClick(offset);
-        return { offered, target: offset, chest: chestBody(screenPoint(offset)) };
-      }
-      continue;
-    }
-    browser.tap(offset);
-    const open = await readUntil(() => browser.read(sheetButton("^Open")), Boolean, SHEET_WAIT_MS);
-    offered.push(browser.read(SHEET_NAME));
-    if (open) {
-      // A phone frames the tapped tile above its card: the chest is found where the map now draws it.
-      const at = await settledHexOnScreen(browser);
-      browser.tap(open.offset);
-      return { offered, target: offset, chest: at && chestBody(at) };
-    }
-    if (browser.read(SHEET_NAME) !== null) browser.press("Escape");
-    if (!browser.observe().selection?.army) await focusTheArmyFromItsDock(browser);
-  }
-  return { offered };
-}
-
-// Where the screen draws the selected hex (page px), as the map reports it.
 const HEX_ON_SCREEN = `JSON.stringify(window.__eternumMapSelection?.hexOnScreen ?? null)`;
 
 /** The selected hex's place once the camera has stopped framing it: two readings a frame apart that agree. */
@@ -1310,416 +1876,6 @@ const screenPoint = ([dx, dy]) => ({ x: VIEWPORT.width / 2 + dx, y: VIEWPORT.hei
 
 /** A chest's body on its tile (page px): what its lid lifting changes, not the tile round it. */
 const chestBody = ({ x, y }) => ({ left: Math.round(x - 25), top: Math.round(y - 35), width: 50, height: 40 });
-
-/**
- * The chest the lab's chain consumed for the step's OpenRelicChest: its opening starting on its tile (the chest sinks
- * away seconds later), seen on the chest's own body where the map drew it.
- */
-function chestOpened({ played, actionLatency }) {
-  const vacated = (actionLatency.chainAnswers ?? [])
-    .filter(({ kind }) => kind === "OpenRelicChest")
-    .at(-1)
-    ?.answered.find(({ model, value }) => model === "TileOccupancy" && value === null);
-  const [, , col, row] = vacated?.key.split(":") ?? [];
-  return col && played.chest && { presented: `chest-opened:${col},${row}`, target: played.chest, onset: true };
-}
-
-/**
- * LORDS withdrawn (the lab's upkeep game, whose L2 ledger reads the tab answers): the purse's LORDS opened for Withdraw,
- * its Maximum, then Withdraw; the result is the purse reading the LORDS the chain debited the realm to (the ledger's
- * payment on L2 comes later, the relay's doing).
- */
-const WITHDRAW_ACTION_STEPS = [
-  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  clickToResultStep(
-    "withdraw",
-    "WithdrawLords",
-    withdrawTheLords,
-    ({ played }) => played.watching && { watch: "withdrawn" },
-  ),
-];
-
-function walletDepositStep(name) {
-  return {
-    name,
-    play: depositTenLords,
-    settleMs: 0,
-    verify: ({ played }) =>
-      played.blocked
-        ? blocked(played.blocked, played)
-        : played.credited
-          ? completed(played)
-          : failed(
-              played.error ?? "Deposit did not credit exactly ten spend-only LORDS while preserving winnings",
-              played,
-            ),
-  };
-}
-
-/** A wallet-funded ten-LORDS purchase on an isolated S1 rehearsal chain, through the real purse and wallet. */
-async function depositTenLords({ base, browser, owner, devTools }) {
-  const evidence = { responses: [] };
-  const stop = watchDepositResponses(devTools, evidence);
-  try {
-    Object.assign(evidence, await approveTenLords({ base, browser, owner, evidence }));
-  } catch (error) {
-    evidence.error = error.message;
-  } finally {
-    await stop();
-  }
-  return evidence;
-}
-
-async function approveTenLords({ base, browser, owner, evidence }) {
-  const route = browser.read("JSON.stringify(location.pathname)");
-  const chain = route.match(/\/g\/(0x[0-9a-f]+)\//i)?.[1];
-  if (!chain || !Buffer.from(chain.slice(2), "hex").toString().startsWith("S1_DEPOSIT_"))
-    throw new Error("Deposit proof requires an isolated S1_DEPOSIT_ shard");
-  const purse = browser.read(buttonLabelled("^LORDS "));
-  if (!purse) return { blocked: "No owned purse" };
-  if (browser.read(SHEET_NAME) !== "LORDS") browser.tap(purse.offset);
-  await readUntil(
-    () => browser.read(SHEET_NAME),
-    (name) => name === "LORDS",
-    SHEET_WAIT_MS,
-  );
-  const before = browser.read(DEPOSIT_BALANCES);
-  evidence.before = before;
-  if (browser.read(sheetButton("^Link a wallet to deposit$")))
-    return { blocked: "Link a funded test wallet before the headed proof; no linked wallet is available", before };
-  const button = browser.read(sheetButton("^Deposit LORDS$"));
-  if (!button || before.amount !== "10" || before.spend === null || before.earned === null)
-    return { blocked: "Deposit unavailable, balances missing, or amount is not ten", before };
-  browser.tap(button.offset);
-  const payment = await confirmPasskeyPayment({ base, browser, evidence, owner });
-  if (payment.blocked) return { ...payment, before };
-  if (!payment.pressed)
-    console.error(
-      "Confirm the ten-LORDS deposit in the linked wallet's prompt. Waiting up to ten minutes; Ctrl-C cancels.",
-    );
-  const after = await pollProof(
-    owner,
-    () => (evidence.after = browser.read(DEPOSIT_BALANCES)),
-    (state) =>
-      state.spend !== null &&
-      BigInt(state.spend) === BigInt(before.spend) + 10n &&
-      state.earned === before.earned &&
-      state.credited.some((id) => !before.credited.includes(id)),
-    10 * 60_000,
-    "No deposit credit within ten minutes: prepare the payout wallet in this persistent headed profile, confirm the payment, and check its devLords and its fee funding (LORDS for a Realms wallet, STRK for another)",
-  );
-  return {
-    before,
-    after,
-    fee: payment.fee,
-    credited:
-      after.spend !== null &&
-      BigInt(after.spend) === BigInt(before.spend) + 10n &&
-      after.earned === before.earned &&
-      after.credited.some((id) => !before.credited.includes(id)),
-  };
-}
-/** The deposit's payment on the app sheet, by its title ("Deposit 10 LORDS"). */
-const DEPOSIT_PAYMENT = '[role="dialog"][aria-label^="Deposit "]';
-const PASSKEY_CONFIRM = sheetButton("^Confirm with your passkey$", DEPOSIT_PAYMENT);
-const PAYMENT_TEXT = `JSON.stringify(document.querySelector(${JSON.stringify(DEPOSIT_PAYMENT)})?.textContent ?? null)`;
-const PRICING_WAIT_MS = 60_000;
-const FEE_DECISION_MS = 10 * 60_000;
-
-/**
- * A Realms wallet's payment, confirmed by the run once its fee and calls are on record: the fee the payment shows and
- * the paymaster's build (the calls the passkey signs, and their fee in LORDS wei) go to `<step>-fee-shown.json`, and
- * Confirm is pressed only after the operator writes `<step>-fee-approved.json` beside it; `<step>-fee-refused.json`
- * stops the step unsigned (a fee cap above what the wallet holds). A linked wallet's payment offers no passkey Confirm:
- * its own prompt is the person's.
- */
-async function confirmPasskeyPayment({ base, browser, evidence, owner }) {
-  const shown = `${base}-fee-shown.json`;
-  const approved = `${base}-fee-approved.json`;
-  const refused = `${base}-fee-refused.json`;
-  if ([shown, approved, refused].some((file) => existsSync(file))) throw new Error("fee evidence already exists");
-  const confirm = await readUntil(() => browser.read(PASSKEY_CONFIRM), Boolean, PRICING_WAIT_MS);
-  if (!confirm) return { pressed: false };
-  const build = await readUntil(() => evidence.responses.findLast(isWalletBuild) ?? null, Boolean, 10_000);
-  const fee = feeShownIn(browser.read(PAYMENT_TEXT));
-  writeFileSync(shown, JSON.stringify({ fee, build }, null, 2), { mode: 0o600, flag: "wx" });
-  console.error(
-    `Fee and calls on record: ${shown}. Write ${approved} to confirm with the passkey, or ${refused} to stop.`,
-  );
-  const decided = await waitUntil(() => {
-    owner.throwIfCancelled();
-    return existsSync(approved) || existsSync(refused);
-  }, FEE_DECISION_MS);
-  if (!decided) return { blocked: "No fee decision within ten minutes; nothing signed", fee };
-  if (existsSync(refused)) return { blocked: "Fee refused by the operator; nothing signed", fee };
-  const ready = browser.read(PASSKEY_CONFIRM);
-  if (!ready) return { blocked: "The payment no longer offers its passkey Confirm; nothing signed", fee };
-  browser.tap(ready.offset);
-  // A preparation gone stale is priced again on the press; a fee over the one approved is shown, and nothing signed.
-  const rose = await readUntil(() => browser.read(PAYMENT_TEXT)?.includes(FEE_ROSE) ?? false, Boolean, 5_000);
-  if (rose) return { blocked: "The fee rose past the approved one; nothing signed", fee };
-  return { pressed: true, fee };
-}
-
-const FEE_ROSE = "The network fee went up.";
-const isWalletBuild = (response) => new URL(response.url).pathname.endsWith("/auth/wallet/default/build");
-/** The payment's fee line ("Network fee about 10.71 LORDS, at most 32.11"), or null when it shows none. */
-const feeShownIn = (text) => text?.match(/Network fee about [\d.,]+ LORDS, at most [\d.,]+/)?.[0] ?? null;
-
-const DEPOSIT_BALANCES = `JSON.stringify({
-  spend:document.querySelector('[data-spend-lords]')?.getAttribute('data-spend-lords') ?? null,
-  earned:document.querySelector('[data-earned-lords]')?.getAttribute('data-earned-lords') ?? null,
-  amount:document.querySelector('[aria-label="Whole LORDS to deposit"]')?.value ?? null,
-  credited:[...document.querySelectorAll('[data-deposit-id]')].filter((row)=>/ · Credited$/.test(row.textContent)).map((row)=>row.getAttribute('data-deposit-id')),
-  text:document.querySelector('[role="dialog"]')?.textContent ?? null
-})`;
-
-const LIVE_ACTIONS = "JSON.stringify(globalThis.__clientActionLatencyMeasurements ?? [])";
-const LIVE_STAMINA = `JSON.stringify((() => {
-  const sheet = document.querySelector('[data-kit-sheet] [data-stamina-line]');
-  const reading = sheet?.textContent.replaceAll(',', '').match(/(\\d+)\\/(\\d+)/);
-  return reading ? {current: reading[1], maximum: reading[2]} : null;
-})())`;
-
-async function openDepositPurse(browser) {
-  if (browser.read(SHEET_NAME) !== "LORDS") {
-    if (browser.read(SHEET_NAME) !== null) browser.press("Escape");
-    const purse = browser.read(buttonLabelled("^LORDS "));
-    if (!purse) throw new Error("No owned LORDS purse");
-    browser.tap(purse.offset);
-    await readUntil(
-      () => browser.read(SHEET_NAME),
-      (name) => name === "LORDS",
-      SHEET_WAIT_MS,
-    );
-  }
-  const visible = browser.read(DEPOSIT_BALANCES);
-  if (visible.spend === null || visible.earned === null) throw new Error("Purse has no raw LORDS balances");
-  return visible;
-}
-
-async function depositProofDestination(browser, evidence) {
-  const route = browser.read("JSON.stringify(location.pathname)");
-  const match = /^\/g\/(0x[0-9a-f]+)\/(\d+)\//i.exec(route);
-  if (!match || !Buffer.from(match[1].slice(2), "hex").toString().startsWith("S1_DEPOSIT_"))
-    throw new Error("Live refill proof requires the selected S1_DEPOSIT_ game route");
-  const directory = browser.read(`(async () => {
-    const response = await fetch('/api/directory');
-    return JSON.stringify({status: response.status, body: await response.text()});
-  })()`);
-  evidence.responses.push({ url: "/api/directory", ...directory });
-  if (directory.status !== 200) throw new Error("The selected shard directory is unavailable");
-  const shard = JSON.parse(directory.body).shards.find((item) => BigInt(item.chainId) === BigInt(match[1]));
-  if (!shard?.manifest || !shard.games?.some((game) => Number(game.game_id) === Number(match[2])))
-    throw new Error("Selected game has no listed manifest");
-  if (BigInt(shard.manifest.chainId) !== BigInt(match[1])) throw new Error("Directory manifest chain mismatch");
-  return {
-    chainId: match[1],
-    gameId: Number(match[2]),
-    url: shard.url,
-    rpcUrl: shard.manifest.rpcUrl,
-    worldAddress: shard.manifest.contracts.games,
-  };
-}
-
-/** A bounded preparation uses the ordinary Explore control; no refill or tier purchase is sent here. */
-async function prepareMixedRefill(context, reads, evidence) {
-  const { browser, owner } = context;
-  for (let attempt = 0; attempt <= 8; attempt++) {
-    const purse = await openDepositPurse(browser);
-    if (BigInt(purse.spend) <= 0n || BigInt(purse.earned) <= 0n)
-      throw new Error(
-        `Mixed proof needs deposited LORDS and earned winnings; P=${purse.spend}, E=${purse.earned}. Earn winnings through a ruin chest before rerunning.`,
-      );
-    browser.press("Escape");
-    const panel = await openTheArmyPanel(browser);
-    const stamina = browser.read(LIVE_STAMINA);
-    const armyId = browser.observe().selection?.army?.id;
-    if (!armyId || panel.sheet !== panel.army || !stamina)
-      throw new Error("Deploy an owned army with a visible stamina panel before this proof");
-    if (BigInt(stamina.maximum) - BigInt(stamina.current) > BigInt(purse.spend) + 1n)
-      return { panel, armyId, purse, stamina };
-    if (attempt === 8)
-      throw new Error(
-        `After eight Explore attempts, Army ${armyId} still needs more than ${BigInt(purse.spend) + 1n} missing stamina for a mixed partial refill`,
-      );
-    browser.press("Escape");
-    const previous = browser.read(LIVE_ACTIONS);
-    const action = await exploreBesideArmy(context);
-    const preparation = { action };
-    evidence.preparation.push(preparation);
-    if (!action.pressedAt)
-      throw new Error(
-        "No ordinary Explore is available; provide food and a reachable unexplored tile to make missing stamina",
-      );
-    const hashes = await pollProof(
-      owner,
-      () => newActionHashes(browser.read(LIVE_ACTIONS), previous),
-      (hashes) => hashes.length > 0,
-      ORDER_OUTCOME_WAIT_MS,
-      "Preparation Explore has no action hash",
-    );
-    if (hashes.length !== 1) throw new Error("Preparation submitted more than one action");
-    preparation.receipt = await reads.receipt(hashes[0]);
-    preparation.receiptHead = await reads.receiptHead(preparation.receipt);
-    preparation.snapshot = await reads.snapshot(preparation.receipt.block_number);
-  }
-}
-
-/** One mixed partial refill, judged from its actual invocation, receipt, confirmed native facts and visible controls. */
-async function refillDepositedLords(context) {
-  const evidence = { responses: [], preparation: [] };
-  let reads;
-  try {
-    evidence.destination = await depositProofDestination(context.browser, evidence);
-    reads = liveDepositReads(context.owner, evidence, evidence.destination);
-    evidence.rpcChainId = await reads.verifyChain();
-    evidence.army = await prepareMixedRefill(context, reads, evidence);
-    evidence.before = await reads.snapshot();
-    const before = refillState(evidence.before, evidence.destination, evidence.army.armyId);
-    evidence.destination.actor = before.actor;
-    const confirm = await selectLiveRefill(context, evidence, before);
-    const previous = context.browser.read(LIVE_ACTIONS);
-    evidence.actionsBefore = previous;
-    context.browser.tap(confirm.offset);
-    await confirmLiveRefill(context, reads, evidence, before, previous);
-    const after = refillState(evidence.after, evidence.destination, evidence.army.armyId);
-    evidence.conservation = assertRefillConservation(before, after, evidence.amount, evidence.receiptHead.timestamp);
-    await reconcileVisibleRefill(context, reads, evidence, after);
-    evidence.actions = context.browser.read(LIVE_ACTIONS);
-    assertOnlyRefillAction(evidence.actions, previous, evidence.receipt.transaction_hash);
-    evidence.proven = true;
-  } catch (error) {
-    evidence.error = error.message;
-  } finally {
-    reads?.stop();
-  }
-  return evidence;
-}
-
-async function selectLiveRefill({ browser, extraScreenshot }, evidence, before) {
-  evidence.visibleBefore = await openDepositPurse(browser);
-  assertVisiblePurse(evidence.visibleBefore, before);
-  browser.press("Escape");
-  await openTheArmyPanel(browser);
-  if (browser.observe().selection?.army?.id !== evidence.army.armyId)
-    throw new Error("Army selection changed before refill");
-  const refill = browser.read(sheetButton("^Refill"));
-  if (!refill) throw new Error("Selected army offers no refill");
-  browser.tap(refill.offset);
-  await readUntil(
-    () => browser.read(SHEET_NAME),
-    (name) => name === "Refill",
-    SHEET_WAIT_MS,
-  );
-  const missing = browser.read(
-    `JSON.stringify(document.querySelector('[aria-label="Stamina to refill"]')?.max ?? null)`,
-  );
-  if (!missing) throw new Error("No visible stamina slider");
-  const purchased = BigInt(evidence.visibleBefore.spend);
-  const affordable = purchased + BigInt(evidence.visibleBefore.earned);
-  const upper = affordable < BigInt(missing) ? affordable : BigInt(missing) - 1n;
-  if (upper <= purchased) throw new Error(`Need missing stamina > ${purchased + 1n}; visible missing=${missing}`);
-  const target = purchased + (upper - purchased + 1n) / 2n;
-  selectPartialRefill(browser, Number(target) / Number(missing));
-  evidence.amount = browser.read(
-    `JSON.stringify(document.querySelector('[aria-label="Stamina to refill"]')?.value ?? null)`,
-  );
-  evidence.missing = missing;
-  assertMixedRefill(evidence.visibleBefore, evidence.amount, missing);
-  const confirm = browser.read(buttonIn('[data-kit-sheet][aria-label="Refill"]', "^Refill · "));
-  if (!confirm || confirm.name.replaceAll(",", "") !== `Refill · ${evidence.amount} LORDS`)
-    throw new Error("Refill confirm does not name the selected slider amount");
-  evidence.confirm = confirm.name;
-  evidence.beforeScreenshot = extraScreenshot("mixed-refill-before");
-  return confirm;
-}
-
-async function confirmLiveRefill({ browser, owner }, reads, evidence, before, previous) {
-  const hashes = await pollProof(
-    owner,
-    () => newActionHashes(browser.read(LIVE_ACTIONS), previous),
-    (hashes) => hashes.length > 0,
-    ORDER_OUTCOME_WAIT_MS,
-    "Refill has no normal action-record transaction hash",
-  );
-  if (hashes.length !== 1) throw new Error("Expected exactly one refill transaction");
-  evidence.receipt = await reads.receipt(hashes[0]);
-  if (evidence.receipt.block_number <= evidence.before.body.confirmed_block)
-    throw new Error("Refill receipt does not follow the before snapshot");
-  evidence.transaction = await reads.rpc("starknet_getTransactionByHash", { transaction_hash: hashes[0] });
-  assertRefillTransaction(
-    evidence.transaction,
-    evidence.receipt,
-    evidence.destination,
-    before.release,
-    evidence.army.armyId,
-    evidence.amount,
-  );
-  evidence.receiptHead = await reads.receiptHead(evidence.receipt);
-  evidence.after = await reads.snapshot(evidence.receipt.block_number);
-}
-
-async function reconcileVisibleRefill({ browser, owner, extraScreenshot }, reads, evidence, after) {
-  await pollProof(
-    owner,
-    () => browser.read(SHEET_NAME),
-    (name) => name === evidence.army.panel.army,
-    ORDER_OUTCOME_WAIT_MS,
-    "Refill did not return to the selected army panel",
-  );
-  evidence.visibleStamina = await pollProof(
-    owner,
-    async () => ({
-      panel: browser.read(LIVE_STAMINA),
-      armyId: browser.observe().selection?.army?.id,
-      head: await reads.rpc("starknet_getBlockWithTxHashes", { block_id: "latest" }),
-    }),
-    ({ panel, armyId, head }) =>
-      armyId === evidence.army.armyId &&
-      visibleStaminaMatches(panel, after, evidence.receiptHead.timestamp, head.timestamp),
-    ORDER_OUTCOME_WAIT_MS,
-    "Visible army stamina does not match confirmed refill plus regeneration",
-  );
-  evidence.afterScreenshot = extraScreenshot("mixed-refill-after");
-  evidence.visibleAfter = await pollProof(
-    owner,
-    () => openDepositPurse(browser),
-    (purse) => purse.spend === String(after.purchased.available) && purse.earned === String(after.earned),
-    ORDER_OUTCOME_WAIT_MS,
-    "Visible purse has not reconciled the confirmed refill",
-  );
-  assertVisiblePurse(evidence.visibleAfter, after);
-}
-
-async function withdrawTheLords({ browser }) {
-  const purse = browser.read(buttonLabelled("^LORDS "));
-  if (!purse) return { purse };
-  browser.tap(purse.offset);
-  const sheet = await readUntil(
-    () => browser.read(SHEET_NAME),
-    (name) => name === "Withdraw",
-    SHEET_WAIT_MS,
-  );
-  if (sheet !== "Withdraw") return { purse: purse.name, sheet };
-  const most = browser.read(sheetButton("^Maximum"));
-  if (!most) return { purse: purse.name, sheet, most };
-  browser.tap(most.offset);
-  const withdraw = await readUntil(() => browser.read(sheetButton("^Withdraw$")), Boolean, SHEET_WAIT_MS);
-  if (!withdraw) return { purse: purse.name, sheet, withdraw };
-  watchFor(browser, "withdrawn", purseReadsTheChainsLords);
-  browser.tap(withdraw.offset);
-  return { purse: purse.name, sheet, watching: true, region: purse.region };
-}
-
-/** The purse reads the LORDS the lab's chain debited the realm to for the step's WithdrawLords. */
-const purseReadsTheChainsLords = `(() => {
-  const withdrawal = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "WithdrawLords").at(-1);
-  const balance = withdrawal?.answered.find(({ model }) => model === "ResourceBalance")?.value.balance;
-  if (balance === undefined) return false;
-  const lords = (BigInt(balance) / 1000000000n).toLocaleString("en-US");
-  return [...document.querySelectorAll("button")].some((button) => button.getAttribute("aria-label") === "LORDS " + lords);
-})()`;
 
 /** A button on the page whose label (or text) matches `pattern`: its name and where it is from the screen's centre. */
 const buttonLabelled = (pattern) => `JSON.stringify((() => {
@@ -1857,8 +2013,7 @@ async function arrives(browser, place, scene) {
   return shown(browser.observe());
 }
 
-function inScene(scene) {
-  const place = scene === "map" ? "Map" : "Realm";
+function inScene(scene, place = scene === "map" ? "Map" : "Realm") {
   return ({ seen }) =>
     isIn(seen, place, scene)
       ? completed({ scene })
@@ -1872,17 +2027,16 @@ function inScene(scene) {
 const isIn = (seen, place, scene) =>
   seen.scene === scene &&
   seen.rendered === scene &&
-  [place, PLACE_TABS[place], place === "Map" && ETHEREAL].some((name) => Boolean(name && seen.place?.startsWith(name)));
-
-/** A desktop's World tab names the Ethereal layer the map shows, once the realm has one: the map still. */
-const ETHEREAL = "Ethereal";
+  [place, ...(PLACE_TABS[place] ?? []), ...(place === "Map" ? LAYER_NAMES : [])].some((name) =>
+    Boolean(name && seen.place?.startsWith(name)),
+  );
 
 /**
  * A place as the top bar's Realm / World names it: a desktop's HUD, every mode's, moves between the map and the realm
  * there; a phone's Frontier HUD has its place bar's switch, which names where it goes: Realm on the map, World on the
  * realm (the page reads where the player is from it).
  */
-const PLACE_TABS = { Map: "World", Realm: "Realm" };
+const PLACE_TABS = { Map: ["World", layerName(0)], Realm: ["Realm"] };
 
 /**
  * Presses the place bar's switch where there is one (a phone, as it names the place), else the top bar's tab (a
@@ -1892,19 +2046,18 @@ const PLACE_TABS = { Map: "World", Realm: "Realm" };
 function pressPlace(browser, place) {
   const presses = [
     () => browser.click(place),
-    () => browser.click(PLACE_TABS[place]),
-    () => browser.clickTab(PLACE_TABS[place]),
+    ...PLACE_TABS[place].flatMap((name) => [() => browser.click(name), () => browser.clickTab(name)]),
   ];
   for (const press of presses) {
     try {
       press();
-      if (browser.viewChoices().length > 0) browser.chooseView(PLACE_TABS[place]);
+      if (browser.viewChoices().length > 0) browser.chooseView(PLACE_TABS[place].at(-1));
       return;
     } catch {
       // Not this button: the next way there.
     }
   }
-  browser.chooseView(PLACE_TABS[place]);
+  browser.chooseView(PLACE_TABS[place].at(-1));
 }
 
 /** Where the HUD's standing parts sit on the map at rest. */
@@ -3026,6 +3179,68 @@ const LAB_SPIRE_STEPS = [
   { name: "enter-depth", play: enterEtherealII, settleMs: 0, verify: armyEnteredEtherealII },
 ];
 
+const DISCOVERED_SPIRE_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", "Veil") },
+  LAB_SPIRE_STEPS[1],
+  LAB_SPIRE_STEPS[2],
+  {
+    name: "spire-card",
+    play: pressSpire,
+    settleMs: 0,
+    verify: ({ played }) => {
+      const state = played.state;
+      return state.sheet === "Spire" &&
+        state.army &&
+        state.depths.length === 1 &&
+        state.depths[0].depth === "Hollow" &&
+        state.depths[0].enabled
+        ? completed(state)
+        : failed("Discovered Spire must offer only Hollow", state);
+    },
+  },
+  {
+    name: "enter-next-layer",
+    play: enterEtherealII,
+    settleMs: 0,
+    verify: ({ played }) => {
+      const { before, after, camera } = played;
+      const command = after.sent.at(-1);
+      return after.sent.length === before.sent.length + 1 &&
+        command?.kind === "EnterDepth" &&
+        Number(command.fields.explorer_id) === before.army.id &&
+        command.fields.depth === "2" &&
+        after.army?.id === before.army.id &&
+        after.army.hex.row - before.army.hex.row === 100 &&
+        after.army.hex.col === before.army.hex.col - 1 &&
+        camera &&
+        hexesApart(camera, after.army.hex) <= FRAMED_WITHIN_HEXES
+        ? completed(played)
+        : failed("Discovered Spire did not enter the adjacent layer and follow the army", played);
+    },
+  },
+  {
+    name: "next-spire-chance",
+    play: async ({ browser }) => {
+      await pickTheSpireArmy({ browser });
+      return readUntil(
+        () =>
+          browser.read(`JSON.stringify([...document.querySelectorAll('[data-spire-chance]')].filter(element => {
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return rect.width > 0 && rect.height > 0 && rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight && style.visibility !== 'hidden' && style.display !== 'none';
+      }).map(element => element.textContent))`),
+        (shown) => shown.includes("Spire · next reveal 10%"),
+        SPIRE_WAIT_MS,
+      );
+    },
+    settleMs: 0,
+    verify: ({ played }) =>
+      played.includes("Spire · next reveal 10%")
+        ? completed(played)
+        : failed("The new layer must show its own first-reveal Spire chance", played),
+  },
+];
+
 /**
  * The map's share of the page on an odd device (owner, 4 November: "on some weird mobile devices with weird shapes the
  * map is like 15%"), on the lab's sites game: the map at rest, the army picked, its panel, a site's card beside it,
@@ -3135,7 +3350,7 @@ async function openASiteCard(browser) {
 
 /** Each proof starts on the surface and uses the same Spire entry as a Frontier player. */
 function etherealDepthSteps(depth) {
-  const label = `Ethereal ${"I".repeat(depth)}`;
+  const label = layerName(depth);
   return [
     ...LAB_SPIRE_STEPS.slice(0, 3),
     {
@@ -3284,11 +3499,7 @@ function spireCardOffersDepths({ played, seen }) {
   if (shown.sheet !== "Spire") return failed(`Spire opened ${shown.sheet ?? "no card"}, not the spire's`, shown);
   if (!shown.army) return failed("Spire dropped the army", shown);
   const offered = shown.depths.map(({ depth, line, button, enabled }) => `${depth}|${line}|${button}|${enabled}`);
-  const expected = [
-    "Ethereal I|null|Enter|true",
-    "Ethereal II|null|Enter|true",
-    "Ethereal III|Research it to open it|Research|true",
-  ];
+  const expected = ["Veil|null|Enter|true", "Hollow|null|Enter|true", "Deep|null|Enter|true"];
   if (JSON.stringify(offered) !== JSON.stringify(expected))
     return failed(`the card offers ${offered.join(", ")}`, shown);
   if (!/^.+ stays until the day ends \(.+\)$/.test(shown.commitment ?? ""))
@@ -3299,7 +3510,7 @@ function spireCardOffersDepths({ played, seen }) {
 /** Presses Enter on Ethereal II, then reads the card and the army once the command's answer has moved the army. */
 async function enterEtherealII({ browser }) {
   const before = browser.read(SPIRE_STATE);
-  browser.click("Enter Ethereal II");
+  browser.click("Enter Hollow");
   const moved = (shown) => shown.sent.length > before.sent.length && shown.army?.hex.row !== before.army?.hex.row;
   const after = await readUntil(() => browser.read(SPIRE_STATE), moved, ORDER_OUTCOME_WAIT_MS);
   const framed = (camera) => camera !== null && hexesApart(camera, after.army.hex) <= FRAMED_WITHIN_HEXES;
@@ -3324,11 +3535,10 @@ function armyEnteredEtherealII({ played }) {
     return failed(`EnterDepth was sent for ${JSON.stringify(command.fields)}`, { before, after });
   // Two regions of Frontier's hundred rows straight below where it stood.
   if (after.army?.hex.col !== before.army.hex.col || after.army.hex.row - before.army.hex.row !== 200)
-    return failed("the army did not land in Ethereal II", { before, after });
+    return failed("the army did not land in Hollow", { before, after });
   if (played.camera === null || hexesApart(played.camera, after.army.hex) > FRAMED_WITHIN_HEXES)
-    return failed("the view did not switch to the army in Ethereal II", { before, after, camera: played.camera });
-  if (after.army?.id !== before.army.id)
-    return failed("the army is no longer selected in Ethereal II", { before, after });
+    return failed("the view did not switch to the army in Hollow", { before, after, camera: played.camera });
+  if (after.army?.id !== before.army.id) return failed("the army is no longer selected in Hollow", { before, after });
   return completed({ command, before: before.army, after: after.army, camera: played.camera });
 }
 
@@ -3381,7 +3591,7 @@ function viewWentIntoTheEtherealBelow({ played, seen }) {
   // The spire stands beside the army; Ethereal I is one region of Frontier's hundred rows below it.
   const below = { col: played.army.col, row: played.army.row + 100 };
   if (played.after === null || hexesApart(played.after, below) > FRAMED_WITHIN_HEXES)
-    return failed(`the camera looks at ${JSON.stringify(played.after)}, not Ethereal I below the spire`, played);
+    return failed(`the camera looks at ${JSON.stringify(played.after)}, not Veil below the spire`, played);
   return completed(played);
 }
 
@@ -3393,9 +3603,9 @@ function viewWentIntoTheEtherealBelow({ played, seen }) {
  */
 const LAB_LAYERS_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  { name: "into-ethereal-ii", play: chooseLayer("Ethereal II"), settleMs: 0, verify: cameraInLayer(2) },
-  { name: "back-to-world", play: chooseLayer("World"), settleMs: 0, verify: cameraInLayer(0) },
-  { name: "ethereal-ii-again", play: chooseLayer("Ethereal II"), settleMs: 0, verify: cameraInLayer(2) },
+  { name: "into-ethereal-ii", play: chooseLayer("Hollow"), settleMs: 0, verify: cameraInLayer(2) },
+  { name: "back-to-world", play: chooseLayer(LAYER_NAMES[0]), settleMs: 0, verify: cameraInLayer(0) },
+  { name: "ethereal-ii-again", play: chooseLayer("Hollow"), settleMs: 0, verify: cameraInLayer(2) },
   { name: "open-realm", play: goTo("Realm", "hex"), settleMs: 3_000, verify: inScene("hex") },
   { name: "open-map", play: goTo("Map", "map"), settleMs: 3_000, verify: inScene("map") },
 ];
@@ -3432,7 +3642,7 @@ async function cameraAtRest(browser) {
 const VIEW_SWITCH_WORD = `JSON.stringify(document.querySelector('nav[aria-label="Places"] [data-switch], [aria-label="Map view"] [role="tab"][aria-selected="true"]')?.textContent.trim() ?? null)`;
 
 /** The views a lab realm with Ethereal I and II lists, and the region's rows (Frontier's spacing). */
-const LAB_LAYERS = ["World", "Ethereal I", "Ethereal II"];
+const LAB_LAYERS = LAYER_NAMES.slice(0, 3);
 const REGION_ROWS = 100;
 
 /**
@@ -3850,18 +4060,639 @@ const LAB_SETTLE = { ...labSpireGame("settle"), entersFromHome: true };
 const LAB_FROM_HOME = { ...labSpireGame("from-home"), entersFromHome: true };
 /** The spire's army, the one a player picks first: the fixture's SPIRE_ARMY. */
 const PICKED_ARMY = 201;
+/** The lab's ally in the field beside the player's army (`fieldAlly` in `deep-scenario.ts`). */
+const FIELD_ALLY_ARMY = 399;
 const MERGE_WAIT_MS = 10_000;
 /** Where the pointer rests between hovers: high on the map, on no army's tile. */
 const POINTER_PARKED = [0, -300];
 /** An army's tile below its token at the map's default zoom (a player run never zooms): its label point's height. */
 const TOKEN_ABOVE_TILE_PX = 100;
 
+const DEEP_SITE_ICONS = { foundation: "hyperstructure", core: "essence", mine: "pickaxe", altar: "flame" };
+const DEEP_SITE_NAMES = deepSites.map(({ key, name }) => ({
+  name,
+  key: `deep:${key}`,
+  icon: DEEP_SITE_ICONS[key],
+  beast: DEEP_BEASTS[key].name,
+}));
+const JOINED_SITE = DEEP_SITE_NAMES.find(({ key }) => key === "deep:mine");
+const everyRingSiteDrawn = (drawn) =>
+  DEEP_SITE_NAMES.every((site) => drawn[site.key] > 0) &&
+  DEEP_SITE_NAMES.reduce((total, site) => total + (drawn[site.key] ?? 0), 0) === rules.DEEP_RING_SITES;
+
+/** One Deep site's plate, found by its name: where a press on its model lands (page px from the centre), whether its plate stands wholly in the frame, and the card open now. */
+const siteState = ({ name, icon }) => `JSON.stringify((() => {
+  const sheet = document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null;
+  const beast = document.querySelector('[data-kit-sheet] [data-state="beast"]')?.textContent ?? null;
+  const slot = document.querySelector('.mp-at:has([data-icon="${icon}"])');
+  if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return { sheet, beast, token: null, inView: false };
+  const box = slot.firstElementChild.getBoundingClientRect();
+  return {
+    sheet,
+    beast,
+    // The plate floats over the site's model: the press goes to the model under it, not to the hex behind the plate.
+    token: [Math.round(box.left + box.width / 2 - innerWidth / 2), Math.round(box.bottom + ${SITE_MODEL_BELOW_PLATE} - innerHeight / 2)],
+    inView: box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight,
+  };
+})())`;
+
+const SITE_MODEL_BELOW_PLATE = 65;
+
+const namesItsBeast = (line, beast) =>
+  beast === null ? line === null : typeof line === "string" && line.startsWith(`Today's beast: ${beast},`);
+
+const DEEP_JOIN_STATE = `JSON.stringify({
+  sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
+  text: document.querySelector("[data-kit-sheet]")?.textContent ?? "",
+  slots: document.querySelector("[data-deep-slots]")?.textContent ?? "",
+  pay: (() => {
+    const node = document.querySelector('[data-deep-pay]');
+    const rect = node?.getBoundingClientRect();
+    return { text: node?.textContent ?? "", visible: Boolean(rect && rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.bottom <= innerHeight) };
+  })(),
+  joined: (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "InteractSite"),
+  joinSite: (() => {
+    const slot = [...document.querySelectorAll('.mp-at')].find((node) =>
+      node.querySelector('[data-icon="pickaxe"]') || node.querySelector('.mp-word')?.textContent === "${JOINED_SITE.name}");
+    if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return null;
+    const token = slot.firstElementChild.getBoundingClientRect();
+    // The plate floats over the site's model: the press goes to the model under it, not to the hex behind the plate.
+    return [Math.round(token.left + token.width / 2 - innerWidth / 2), Math.round(token.bottom + ${SITE_MODEL_BELOW_PLATE} - innerHeight / 2)];
+  })(),
+})`;
+
+const RACE_BOARD_STATE = `JSON.stringify((() => {
+  const read = (selector) => {
+    const node = document.querySelector(selector);
+    const rect = node?.getBoundingClientRect();
+    return { text: node?.textContent ?? "", visible: Boolean(rect && rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.bottom <= innerHeight) };
+  };
+  return { race: read('[data-aspect-race]'), members: read('[data-aspect-members]'), triumphs: read('[data-aspect-triumphs]'),
+    invite: read('[aria-label^="Invite a friend"]'), banner: read('[data-daily-quest]'),
+    scopes: window.__labChain?.scopes ?? [], ended: Boolean(document.querySelector('[data-race-ended]')) };
+})())`;
+
+/** What the opening interface shows: the line over the map, the places on the bar and the day banner's parts. */
+const OPENING_STATE = `JSON.stringify({
+  lines: [...document.querySelectorAll(".ui-notice")].map((node) => node.textContent),
+  places: [...(document.querySelector('nav[aria-label="Places"]')?.querySelectorAll("button") ?? [])].map((node) => node.getAttribute("aria-label") ?? node.textContent),
+  banner: document.querySelector("[data-daily-quest]")?.textContent ?? "",
+  bar: Boolean(document.querySelector("[data-day-bane-bar]")),
+  stores: [...document.querySelectorAll("[data-store-kind], [data-kind]")].map((node) => node.getAttribute("data-store-kind") ?? node.getAttribute("data-kind")),
+})`;
+
+/** Turns Show everything on in the page's saved settings and loads the lab game again, as a player's setting persists. */
+const SHOW_EVERYTHING = `JSON.stringify((() => { localStorage.setItem("eternum-world-appearance", JSON.stringify({ state: { showEverything: true, fogStyle: "clear", reducedMotion: false, haptics: true, nextUpTips: true }, version: 0 })); return true; })())`;
+
+/** The Aspect page's feed: each fight's row, as a player reads it. */
+const ASPECT_FEED = `JSON.stringify((() => {
+  const feed = document.querySelector("[data-aspect-feed]");
+  const rect = feed?.getBoundingClientRect();
+  return {
+    visible: Boolean(rect && rect.width > 0 && rect.height > 0),
+    rows: [...(feed?.querySelectorAll(".ui-row") ?? [])].map((row) => row.textContent),
+    text: feed?.textContent ?? "",
+  };
+})())`;
+
+/** Every request this page made to a rank Herald serves a legacy game: a Season 1 game asks for none. */
+const RANK_REQUESTS = `JSON.stringify(performance.getEntriesByType("resource").map((entry) => entry.name).filter((name) => /\\/leaderboard|\\/days\\/\\d+\\/ranks/.test(name)))`;
+
+function raceBoardSteps(result) {
+  const scenario = result === null ? "race" : result === "won" ? "race-finished" : "race-expired";
+  return [
+    { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", "Deep") },
+    ...(result === null
+      ? [
+          {
+            name: "opening-at-launch",
+            settleMs: 0,
+            play: async ({ browser, extraScreenshot }) => {
+              const state = await readUntil(
+                () => browser.read(OPENING_STATE),
+                (read) => read.lines.length > 0,
+                PLAYABLE_WAIT_MS,
+              );
+              extraScreenshot("opening-line");
+              return { state };
+            },
+            verify: ({ played }) =>
+              played.state.lines.length > 0 &&
+              played.state.lines[0].includes("This is your Realm") &&
+              !played.state.places.includes("Research")
+                ? completed(played)
+                : failed(
+                    "The first session must open on the launch line, with Research still waiting on Essence",
+                    played,
+                  ),
+          },
+          {
+            name: "each-line-once-then-none-after-reload",
+            settleMs: 0,
+            play: async (context) => {
+              const { browser } = context;
+              const told = [];
+              for (let attempt = 0; attempt < 12; attempt += 1) {
+                const state = browser.read(OPENING_STATE);
+                if (state.lines.length === 0) break;
+                told.push(state.lines[0].replace(/Got it$/, ""));
+                browser.click("Got it");
+                await sleep(400);
+              }
+              const back = await reloadOn("Deep", "map", scenario)(context);
+              if (browser.read(`JSON.stringify(Boolean(document.querySelector('[aria-label="Close"]')))`))
+                browser.click(HUD_WORDS.close);
+              await sleep(2_000);
+              const after = browser.read(OPENING_STATE);
+              context.extraScreenshot("opening-after-reload");
+              return { told, after, back: back.reloaded };
+            },
+            verify: ({ played }) =>
+              played.back &&
+              played.told.length >= 2 &&
+              new Set(played.told).size === played.told.length &&
+              played.after.lines.length === 0
+                ? completed(played)
+                : failed("Each line must be told once, and none again after the page loads again", played),
+          },
+          {
+            name: "show-everything-shows-the-banner",
+            settleMs: 0,
+            play: async (context) => {
+              context.browser.read(SHOW_EVERYTHING);
+              const back = await reloadOn("Deep", "map", scenario)(context);
+              // The lab's reloaded page offers the wallet step first; a player puts it away to play on.
+              if (context.browser.read(`JSON.stringify(Boolean(document.querySelector('[aria-label="Close"]')))`))
+                context.browser.click(HUD_WORDS.close);
+              const state = await readUntil(
+                () => context.browser.read(OPENING_STATE),
+                (read) => read.banner.length > 0,
+                PLAYABLE_WAIT_MS,
+              );
+              context.extraScreenshot("day-banner-everything");
+              return { back, state };
+            },
+            verify: ({ played }) =>
+              played.state.bar && played.state.banner.includes("300 of 1,500")
+                ? completed(played)
+                : failed("With Show everything the day banner must show the Aspect's bane bar", played),
+          },
+        ]
+      : []),
+    {
+      name: "read-aspect-race",
+      play: async ({ browser, extraScreenshot }) => {
+        if (result === null) {
+          if (!onADesktop()) {
+            browser.click(HUD_WORDS.menu);
+            await sleep(500);
+          }
+          browser.click(HUD_WORDS.season);
+        }
+        const race = await readUntil(
+          () => browser.read(RACE_BOARD_STATE),
+          (state) => state.race.visible,
+          PLAYABLE_WAIT_MS,
+        );
+        extraScreenshot("aspect-standings");
+        browser.read(
+          `(() => { document.querySelector('[data-aspect-members]')?.scrollIntoView({ block: 'nearest' }); return true; })()`,
+        );
+        const members = await readUntil(
+          () => browser.read(RACE_BOARD_STATE),
+          (state) => state.members.visible,
+          PLAYABLE_WAIT_MS,
+        );
+        extraScreenshot("aspect-members");
+        browser.read(
+          `(() => { document.querySelector('[aria-label^="Invite a friend"]')?.scrollIntoView({ block: 'nearest' }); return true; })()`,
+        );
+        const invite = await readUntil(
+          () => browser.read(RACE_BOARD_STATE),
+          (state) => state.invite.visible,
+          PLAYABLE_WAIT_MS,
+        );
+        extraScreenshot("aspect-invite");
+        return { race, members, invite };
+      },
+      verify: ({ played }) => {
+        const race = played.race?.race;
+        const members = played.members?.members;
+        const scoped = played.race?.scopes?.at(-1)?.structures ?? [];
+        return race?.visible &&
+          members?.visible &&
+          race.text.includes("Luminary") &&
+          race.text.includes("Prowess") &&
+          race.text.includes("Havoc") &&
+          race.text.includes("Insight") &&
+          race.text.includes(result === "won" ? "10,000 of 10,000" : "6,400 of 10,000") &&
+          (result !== "expired" || race.text.includes("No Aspect finished its hyperstructure")) &&
+          race.text.includes(result === "won" ? "200K" : "64K") &&
+          played.invite?.invite.text.includes("Invite a friend to Prowess") &&
+          members.text.includes("1.3K") &&
+          members.text.includes("3.8K") &&
+          scoped.includes(7) &&
+          scoped.includes(9) &&
+          (result === null || played.race.ended)
+          ? completed(played)
+          : failed("The scoped native race must show four heights, both members' Glory and the early winner", played);
+      },
+    },
+    ...(result === null
+      ? [
+          {
+            name: "aspect-feed-reads-real-fights",
+            settleMs: 0,
+            play: async ({ browser, extraScreenshot }) => {
+              browser.read(
+                `(() => { document.querySelector('[data-aspect-feed]')?.scrollIntoView({ block: 'nearest' }); return true; })()`,
+              );
+              const feed = await readUntil(
+                () => browser.read(ASPECT_FEED),
+                (state) => state.rows.length >= 4,
+                PLAYABLE_WAIT_MS,
+              );
+              extraScreenshot("aspect-feed");
+              return { feed };
+            },
+            verify: ({ played }) => {
+              const text = played.feed.rows.join(" | ");
+              return played.feed.visible &&
+                text.includes("Prowess beat Luminary") &&
+                text.includes("Luminary beat Prowess") &&
+                text.includes("Prowess and Luminary fought to a stand") &&
+                text.includes("Prowess and Luminary wiped each other out") &&
+                text.includes("Luminary wiped out") &&
+                played.feed.rows.length === 4
+                ? completed(played)
+                : failed(
+                    "The feed must name each Deep fight's winner by its troops, skip the beast, and find the Deep fights past 120 surface fights",
+                    played,
+                  );
+            },
+          },
+        ]
+      : []),
+    {
+      name: "no-site-rank-requests",
+      settleMs: 0,
+      play: async ({ browser }) => ({ requests: browser.read(RANK_REQUESTS) }),
+      verify: ({ played }) =>
+        played.requests.length === 0
+          ? completed(played)
+          : failed("A Season 1 game must ask Herald for no leaderboard and no day ranks", played),
+    },
+  ];
+}
+
+/** The drain chip of the open army panel, and every drain chip on the page (a dock token's, a row's). */
+const DEEP_DRAIN_STATE = `JSON.stringify({
+  panel: document.querySelector("[data-kit-sheet] [data-deep-drain]")?.getAttribute("aria-label") ?? "",
+  all: [...document.querySelectorAll("[data-deep-drain]")].map((node) => node.getAttribute("aria-label")),
+})`;
+
+/** The side colour of a map label (`--mp-side`, map-plates.css): an ally's army is drawn in another colour than the player's own. */
+const ARMY_SIDES = `JSON.stringify(Object.fromEntries([...document.querySelectorAll('.mp-at[data-key^="army:"]')].map((slot) => [
+  slot.getAttribute("data-key"),
+  getComputedStyle(slot.querySelector("[style*='--mp-side']") ?? slot.firstElementChild ?? slot).getPropertyValue("--mp-side").trim(),
+])))`;
+
+/**
+ * The site models the map draws, by kind (`deep:<position>` for the Deep's three): how many of each, and the plates of
+ * the Deep's three sites (the icons their catalog gives them) with whether each stands wholly inside the page.
+ */
+const DRAWN_SITES = `JSON.stringify({
+  drawn: window.__eternumMapSelection?.drawnSites ?? {},
+  plates: ${JSON.stringify(DEEP_SITE_NAMES.map((site) => site.icon))}.flatMap((icon) => {
+    const slot = document.querySelector('.mp-at:has([data-icon="' + icon + '"])');
+    if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return [];
+    const box = slot.firstElementChild.getBoundingClientRect();
+    return [{ icon, inView: box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight }];
+  }),
+})`;
+
+async function attackFromTheDeepCard({ browser, extraScreenshot }) {
+  browser.hover(POINTER_PARKED);
+  await sleep(HOVER_SETTLE_MS);
+  const before = browser.read(DEEP_JOIN_STATE);
+  if (!before.joinSite) return { before };
+  if (before.sheet !== JOINED_SITE.name) {
+    if (onADesktop()) browser.rightClick(before.joinSite);
+    else browser.tap(before.joinSite);
+  }
+  const opened = await readUntil(
+    () => browser.read(MERGE_STATE),
+    (state) => state.buttons.includes("Attack"),
+    SHEET_WAIT_MS,
+  );
+  if (!opened.buttons.includes("Attack")) return { before, opened };
+  const forecast = browser.read(
+    `Array.from(document.querySelectorAll('[data-kit-sheet] [role="img"][aria-label*="→"]'), node => node.getAttribute('aria-label'))`,
+  );
+  const guardOaths = browser.read(
+    `Array.from(document.querySelectorAll("[data-guard-oaths]"), node => {
+      const art = ${JSON.stringify(ORDER_ART)};
+      const visible = Array.from(node.querySelectorAll("[data-oath] img")).filter(image => {
+        const box = image.getBoundingClientRect();
+        const shown = image.checkVisibility({ opacityProperty: true, visibilityProperty: true });
+        return shown && box.width > 0 && box.height > 0;
+      });
+      const painted = visible.filter(image =>
+        (image.currentSrc || image.src).endsWith("/" + art[image.closest("[data-oath]").dataset.oath] + ".webp"),
+      );
+      const mask = Number(node.dataset.guardOaths);
+      const shownMask = painted.reduce((bits, image) => bits | (1 << (Number(image.closest("[data-oath]").dataset.oath) - 1)), 0);
+      const held = mask.toString(2).split("").filter(bit => bit === "1").length;
+      return visible.length === held && painted.length === held && shownMask === mask ? mask : 0;
+    })`,
+  );
+  extraScreenshot("deep-forecast-before-attack");
+  if (guardOaths.some(Boolean)) {
+    browser.read(
+      `(() => { document.querySelector('[data-guard-oaths]')?.scrollIntoView({ block: "nearest" }); return true; })()`,
+    );
+    await sleep(HOVER_SETTLE_MS);
+    extraScreenshot("guard-oaths");
+  }
+  const after = browser.read("window.__labChain?.sent.length ?? 0");
+  const armyId = browser.observe().selection?.army?.id;
+  watchFor(
+    browser,
+    "fought",
+    `(() => {
+    const answer = (window.__labChain?.sent ?? []).slice(${after}).filter(({ command }) => command.kind === "BattleGuard").at(-1);
+    const rows = (answer?.answered ?? []).filter(({ model, value }) => model === "ExplorerTroops" && value !== null);
+    const ours = rows.find(({ value }) => Number(value.explorer_id) === ${armyId});
+    const theirs = rows.find(({ value }) => Number(value.explorer_id) !== ${armyId});
+    const count = (row) => (BigInt(row.value.troops.count) / 1000000000n).toLocaleString("en-US");
+    return ours && theirs && document.querySelector('.mp-at[data-key="army:${armyId}"] .mp-count')?.textContent === count(ours)
+      && document.querySelector('[data-deep-slots]')?.textContent.includes(count(theirs));
+  })()`,
+  );
+  browser.click("Attack");
+  await readUntil(
+    () =>
+      browser.read(
+        `(window.__labChain?.sent ?? []).slice(${after}).some(({ command, answered }) => command.kind === "BattleGuard" && answered.length > 0)`,
+      ),
+    Boolean,
+    MERGE_WAIT_MS,
+  );
+  if (onADesktop()) browser.rightClick(before.joinSite);
+  else browser.tap(before.joinSite);
+  await readUntil(
+    () => browser.read(DEEP_JOIN_STATE),
+    (state) => state.sheet === JOINED_SITE.name,
+    SHEET_WAIT_MS,
+  );
+  return { forecast, guardOaths, watching: true };
+}
+
+const deepLossVectors = readFileSync(
+  resolve(
+    dirname(fileURLToPath(import.meta.url)),
+    "../../../../contracts/l3/world-native/tests/fixtures/oath-deep-loss.txt",
+  ),
+  "utf8",
+)
+  .trim()
+  .split(/\s+/)
+  .map(Number);
+const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, minimumStamina = 60) => [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", "Deep") },
+  {
+    name: "ally-is-marked",
+    settleMs: 0,
+    play: async ({ browser, extraScreenshot }) => {
+      const sides = await readUntil(
+        () => browser.read(ARMY_SIDES),
+        (read) => Boolean(read[`army:${PICKED_ARMY}`] && read[`army:${FIELD_ALLY_ARMY}`]),
+        PLAYABLE_WAIT_MS,
+      );
+      extraScreenshot("ally-on-the-map");
+      return { sides };
+    },
+    verify: ({ played }) =>
+      played.sides[`army:${PICKED_ARMY}`] &&
+      played.sides[`army:${FIELD_ALLY_ARMY}`] &&
+      played.sides[`army:${PICKED_ARMY}`] !== played.sides[`army:${FIELD_ALLY_ARMY}`]
+        ? completed(played)
+        : failed("An ally's army must be drawn in a side colour other than the player's own", played),
+  },
+  { name: "pick-army", play: pickTheSpireArmy, settleMs: 1_500, verify: spireArmyPicked },
+  {
+    name: "field-army-drains",
+    settleMs: 0,
+    play: async ({ browser, extraScreenshot }) => {
+      await openTheArmyPanel(browser);
+      const drain = await readUntil(
+        () => browser.read(DEEP_DRAIN_STATE),
+        (state) => state.all.length > 0,
+        SHEET_WAIT_MS,
+      );
+      extraScreenshot("field-army-drain");
+      return { drain };
+    },
+    verify: ({ played }) =>
+      played.drain.all.some((line) => new RegExp(`${lossPerTick} troops lost a tick; \\d+ ticks left`).test(line))
+        ? completed(played)
+        : failed(
+            "An army waiting in the Deep's field must show its troop loss each tick before it holds a site",
+            played,
+          ),
+  },
+  {
+    name: "join-the-mine",
+    settleMs: 0,
+    play: async ({ browser, extraScreenshot }) => {
+      const before = browser.read(DEEP_JOIN_STATE);
+      if (!before.joinSite) return { before, after: before };
+      if (onADesktop()) browser.rightClick(before.joinSite);
+      else browser.tap(before.joinSite);
+      const opened = await readUntil(
+        () => browser.read(DEEP_JOIN_STATE),
+        (state) => state.sheet === JOINED_SITE.name,
+        MERGE_WAIT_MS,
+      );
+      extraScreenshot("mine-before-join");
+      if (!opened.text.includes("Join")) return { before, after: opened };
+      browser.click("Join");
+      const confirmed = await readUntil(
+        () => browser.read(DEEP_JOIN_STATE),
+        (state) => state.joined.length === 1 && state.joinSite !== null,
+        MERGE_WAIT_MS,
+      );
+      if (confirmed.joinSite) browser.tap(confirmed.joinSite);
+      const after = await readUntil(
+        () => browser.read(DEEP_JOIN_STATE),
+        (state) => state.sheet === JOINED_SITE.name && (state.slots.match(/Free slot/g) ?? []).length === 2,
+        MERGE_WAIT_MS,
+      );
+      extraScreenshot("mine-joined");
+      return { before, opened, confirmed, after };
+    },
+    verify: ({ played }) => {
+      const joined = played.after.joined;
+      const facts = joined.flatMap((row) => row.answered ?? []);
+      const guard = facts.find((fact) => fact.model === "DeepGuard" && Number(fact.value?.explorer_id) === PICKED_ARMY);
+      const leftField = facts.some((fact) => fact.model === "TileOccupancy" && fact.value === null);
+      return joined.length === 1 &&
+        guard?.value.slot === 1 &&
+        leftField &&
+        played.opened.pay.visible &&
+        /\d labor/.test(played.opened.pay.text) &&
+        played.after.sheet === JOINED_SITE.name &&
+        (played.after.slots.match(/Free slot/g) ?? []).length === 2
+        ? completed(played)
+        : failed("Join must submit InteractSite once, leave the field and show the second allied guard slot", played);
+    },
+  },
+  {
+    name: "deep-sites-each-selected",
+    settleMs: 0,
+    play: async ({ browser, extraScreenshot }) => {
+      // With the field army still picked, each site is visited and pressed as a player does: the camera brought to it,
+      // its plate and model in the frame, then a click (desktop) or tap (phone) on the model selects its hex and opens its card.
+      const visits = [];
+      for (const site of [...DEEP_SITE_NAMES.filter((each) => each !== JOINED_SITE), JOINED_SITE]) {
+        const { name, key } = site;
+        await panToHex(browser, browser.read(`window.__eternumMapSelection?.siteHexes?.["${key}"] ?? null`));
+        // The camera's hex stands at the frame's middle, which a phone's open card covers: a player drags the site up
+        // above the card before pressing it, so its model is under the finger and not under the card.
+        await panInto(browser, 1, ABOVE_THE_CARD_PX, ["KeyW", "KeyS"], () => browser.read(siteState(site)).token);
+        await sleep(HOVER_SETTLE_MS);
+        const before = browser.read(siteState(site));
+        if (before.token && before.inView) browser.tap(before.token);
+        const opened = await readUntil(
+          () => browser.read(siteState(site)),
+          (state) => state.sheet === name,
+          SHEET_WAIT_MS,
+        );
+        extraScreenshot(`site-${name.toLowerCase()}`);
+        visits.push({
+          name,
+          inView: before.inView,
+          sheet: opened.sheet,
+          beast: opened.beast,
+          expectedBeast: site === JOINED_SITE ? null : site.beast,
+        });
+      }
+      return { visits };
+    },
+    verify: ({ played }) =>
+      played.visits.every(
+        (visit) =>
+          visit.inView === true && visit.sheet === visit.name && namesItsBeast(visit.beast, visit.expectedBeast),
+      )
+        ? completed(played)
+        : failed(
+            "Each Deep site must be visited with its plate in the frame and open its own card, naming its own kind's beast while one guards it",
+            played,
+          ),
+  },
+  {
+    name: "reselect-guard-from-dock",
+    settleMs: 0,
+    play: async ({ browser, extraScreenshot }) => {
+      browser.press("Escape");
+      const panel = await openTheArmyPanel(browser);
+      const reading = await readUntil(
+        () => readArmyStamina(browser),
+        (state) => state.visible,
+        SHEET_WAIT_MS,
+      );
+      extraScreenshot("joined-guard-stamina");
+      return { panel, reading };
+    },
+    verify: ({ played }) =>
+      played.panel.army &&
+      played.panel.sheet === played.panel.army &&
+      played.reading.visible &&
+      played.reading.current >= minimumStamina &&
+      played.reading.current <= 140 &&
+      played.reading.maximum === 140
+        ? completed(played)
+        : failed("The joined slot army must reopen from the dock with its refilled stamina visible", played),
+  },
+  {
+    name: "guard-shows-its-drain",
+    settleMs: 0,
+    play: async ({ browser, extraScreenshot }) => {
+      const drain = await readUntil(
+        () => browser.read(DEEP_DRAIN_STATE),
+        (state) => state.panel.length > 0,
+        SHEET_WAIT_MS,
+      );
+      extraScreenshot("guard-drain");
+      return { drain };
+    },
+    verify: ({ played }) =>
+      played.drain.panel.includes(`${lossPerTick} troops lost a tick`) && /ticks left/.test(played.drain.panel)
+        ? completed(played)
+        : failed("A guard's panel must say its troop loss each tick and the ticks left", played),
+  },
+  {
+    name: "deep-sites-framed",
+    settleMs: 0,
+    play: async ({ browser, extraScreenshot }) => {
+      // Zoomed all the way out, as a player does with the wheel, the camera frames the whole Deep strip: the three sites.
+      browser.run(["eval", `void window.__playtest.wheel(100, ${ZOOM_IN_NOTCHES})`]);
+      await sleep(ZOOM_SETTLE_MS);
+      const framed = await readUntil(
+        () => browser.read(DRAWN_SITES),
+        (state) => everyRingSiteDrawn(state.drawn) && (!onADesktop() || state.plates.length >= DEEP_SITE_NAMES.length),
+        PLAYABLE_WAIT_MS,
+      );
+      extraScreenshot("deep-sites");
+      return { framed };
+    },
+    verify: ({ played }) =>
+      everyRingSiteDrawn(played.framed.drawn) &&
+      // A desktop frames all three plates over their models; a phone's narrow frame is walked site by site in the next step.
+      (!onADesktop() || played.framed.plates.length >= DEEP_SITE_NAMES.length) &&
+      played.framed.plates.every((plate) => plate.inView)
+        ? completed(played)
+        : failed("Every site of the Deep's open ring is drawn, and a desktop frames their plates", played),
+  },
+];
+
+const SITE_TOKENS = `JSON.stringify([...document.querySelectorAll(".mp-at")].flatMap((slot) => {
+  if (getComputedStyle(slot).display === "none") return [];
+  const icon = slot.querySelector("[data-icon]")?.getAttribute("data-icon");
+  return icon && ${JSON.stringify([...DEEP_SITE_NAMES.map((site) => site.icon), "lock"])}.includes(icon) ? [icon] : [];
+}))`;
+
+const deepClosedSteps = () => [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", "Deep") },
+  {
+    name: "closed-ring-locked",
+    settleMs: 0,
+    play: async ({ browser, extraScreenshot }) => {
+      browser.run(["eval", `void window.__playtest.wheel(100, ${ZOOM_IN_NOTCHES})`]);
+      await sleep(ZOOM_SETTLE_MS);
+      const tokens = await readUntil(
+        () => browser.read(SITE_TOKENS),
+        (read) => read.includes("lock"),
+        PLAYABLE_WAIT_MS,
+      );
+      extraScreenshot("closed-ring");
+      return { tokens };
+    },
+    verify: ({ played }) =>
+      played.tokens.length > 0 &&
+      played.tokens.every((icon) => icon === "lock") &&
+      (!onADesktop() || played.tokens.length === rules.DEEP_RING_SITES)
+        ? completed(played)
+        : failed("Every site of a closed ring is pinned with a lock in place of its kind", played),
+  },
+];
+
 /**
  * Two of the realm's armies merged as a player merges them, then hovered (owner, 2026-10-25: "due to an army merge I dont
  * see the hover label"): the spire's army picked, the other right-clicked for the transfer card, its Merge pressed (and
- * pressed again where the button then names the XP the merge loses) and answered by the chain, which keeps the army
- * tapped; then the surviving army's tile, hovered, opens its plate, and the emptied tile opens none. In merge-loses-xp
- * the picked army holds 100 XP, so the second press reads `confirm`; in merge-keeps-tapped one press merges.
+ * pressed again where the button then names the training the merge loses) and answered by the chain, which keeps the army
+ * tapped; then the surviving army's tile, hovered, opens its plate, and the emptied tile opens none. In merge-loses-training
+ * the picked army holds stronger Logistics training, so the second press reads `confirm`; in merge-keeps-tapped one press merges.
  */
 function labMergeSteps(confirm) {
   const tiles = { byArmy: null };
@@ -3929,6 +4760,62 @@ const LAB_REINFORCE_STEPS = [
   { name: "select-realm", play: selectTheRealm, settleMs: 0, verify: realmSelected },
   { name: "open-reinforce", play: openTheReinforcement, settleMs: 0, verify: reinforceSheetOpen },
   { name: "reinforce", play: reinforceWithMax, settleMs: 1_000, verify: armyReinforced },
+];
+
+const LAB_SUPPLY_POST_STEPS = [
+  { name: "enter-on-map", settleMs: 3000, verify: inScene("map") },
+  { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
+  {
+    name: "open-supply-post",
+    settleMs: 0,
+    play: async ({ browser, extraScreenshot }) => {
+      const armyAt = armyOnScreen(browser, PICKED_ARMY);
+      browser.press("Escape");
+      if (!armyAt) return { found: false };
+      for (const [dx, dy] of NEIGHBOUR_RING) {
+        browser.tap([armyAt[0] + dx, armyAt[1] + dy]);
+        const state = await readUntil(
+          () => browser.read(REINFORCE_STATE),
+          (shown) => shown.sheet?.startsWith("Supply post"),
+          SHEET_WAIT_MS,
+        );
+        if (state.sheet?.startsWith("Supply post")) {
+          extraScreenshot("supply-post");
+          const button = state.buttons.find((text) => text.startsWith("Reinforce Army"));
+          if (!button) return { found: false, state };
+          browser.click(button);
+          const sheet = await readUntil(
+            () => browser.read(REINFORCE_STATE),
+            (shown) => shown.sheet?.startsWith("Reinforce"),
+            SHEET_WAIT_MS,
+          );
+          return { found: sheet.sheet?.startsWith("Reinforce"), state, sheet };
+        }
+        browser.press("Escape");
+      }
+      return { found: false };
+    },
+    verify: ({ played }) =>
+      played.found
+        ? completed(played)
+        : failed("The cleared camp must offer reinforcement for its adjacent army", played),
+  },
+  {
+    name: "reinforce-from-camp",
+    settleMs: 1000,
+    play: async (context) => {
+      const result = await reinforceWithMax(context);
+      const calldata = context.browser.read(
+        `JSON.stringify(window.__labChain?.sent.find(({command}) => command.kind === "ManageTroops")?.command.calldata)`,
+      );
+      return { ...result, calldata };
+    },
+    verify: ({ played }) => {
+      if (!played.calldata || BigInt(played.calldata.at(-2)) !== 0n || BigInt(played.calldata.at(-1)) !== 711n)
+        return failed("Reinforcement must name the cleared camp", played);
+      return armyReinforced({ played });
+    },
+  },
 ];
 
 /** A tap's finger and a hold's, as the map's gesture recognizer tells them apart (its long press is 500 ms). */
@@ -4024,7 +4911,7 @@ const LAB_AFTER_BATTLE_STEPS = [
  * attacked on prod (src/lab/game/ruin-fight-scenario.ts). Picking the army in the HUD is a request to look at it, so the
  * camera goes to it; from there the fight leaves the camera where it was: the ruin's card opened from the map (a
  * desktop's right-click, a phone's tap), then Attack, its BattleGuard answered by the lab's chain, the ruin cleared, the
- * army's troops down by its losses and the ruin's chest shown.
+ * army's troops down by its losses, without a cash chest.
  */
 const LAB_RUIN_FIGHT_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
@@ -4048,6 +4935,27 @@ const LAB_RUIN_FAR_STEPS = [
   { name: "pick-army", play: pickTheArmyAndReadTheCamera, settleMs: 0, verify: cameraWentToTheArmy },
   { name: "open-the-far-card", play: openTheRuinsCardUntil(showsBothSides), settleMs: 0, verify: farCardForecasts },
 ];
+const SITE_EFFECT_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "pick-army", play: pickTheArmyAndReadTheCamera, settleMs: 0, verify: cameraWentToTheArmy },
+  {
+    name: "site-effects-card",
+    play: async (context) => {
+      const state = FIGHT_STATE.replaceAll(`structure:${LAB_RUIN}`, `structure:${7 * 2 ** 32 + LAB_RUIN}`);
+      const opened = await openTheRuinsCardUntil(showsBothSides, state)(context);
+      const text = context.browser.read(
+        `JSON.stringify([...document.querySelectorAll('[data-kit-sheet]')].filter(node => node.getBoundingClientRect().width).map(node => node.textContent).join(' '))`,
+      );
+      return { opened, text };
+    },
+    settleMs: 0,
+    verify: ({ played }) =>
+      played.opened.after.sides.some((side) => side.includes("500")) && /3k|3,000/.test(played.text)
+        ? completed(played)
+        : failed("The camp must show 500 guards and the doubled resource payout", played),
+  },
+];
+
 /** The ruin beside the army (site-fixture.ts) and how near a framed army stands to the camera's target, in hexes. */
 const LAB_RUIN = 710;
 const FRAMED_WITHIN_HEXES = 6;
@@ -4071,7 +4979,7 @@ const FIGHT_STATE = `JSON.stringify({
       Math.round(token.top + token.height / 2 + ${TOKEN_ABOVE_TILE_PX} - innerHeight / 2),
     ];
   })(),
-  // The chest with the LORDS it paid: the clear's moment at the centre of the screen, its LORDS shown once the lid opens.
+  // Cash-chest presentation must remain absent after a ruin clear.
   chest: Boolean(document.querySelector('[data-chest-moment] [aria-label$=" LORDS"]')),
 })`;
 
@@ -4102,28 +5010,69 @@ function cameraWentToTheArmy({ played }) {
 const UNDER_THE_CARD_PX = [70, 160];
 /** How far from the middle a ruin may stand across a phone and still be tapped whole: a far ruin is panned within. */
 const ACROSS_THE_PHONE_PX = [-120, 120];
+/** Where a site's model stands clear of a phone's open card (page px from the centre, upward): below the top bar, above the card. */
+const ABOVE_THE_CARD_PX = [-300, -60];
 const PAN_BURSTS = 16;
 const underTheCard = (token) => token && token[1] >= UNDER_THE_CARD_PX[0] && token[1] <= UNDER_THE_CARD_PX[1];
-async function panTheRuinUnderTheCard(browser) {
-  await panTheRuinInto(browser, 0, ACROSS_THE_PHONE_PX, ["KeyA", "KeyD"]);
-  await panTheRuinInto(browser, 1, UNDER_THE_CARD_PX, ["KeyW", "KeyS"]);
+async function panTheRuinUnderTheCard(browser, state = FIGHT_STATE) {
+  const readRuin = () => browser.read(state).ruinToken;
+  await panInto(browser, 0, ACROSS_THE_PHONE_PX, ["KeyA", "KeyD"], readRuin);
+  await panInto(browser, 1, UNDER_THE_CARD_PX, ["KeyW", "KeyS"], readRuin);
 }
 
 /**
- * Pans the map in bursts along one axis until the ruin's token stands within `band` on it. `keys` are first taken as
- * the one that moves the token forward on the axis and the one that moves it back; a key that moved it the other way
- * is turned round.
+ * Pans the map in bursts along one axis until the point `readPoint` gives (page px from the centre) stands within
+ * `band` on it. `keys` are first taken as the one that moves the point forward on the axis and the one that moves it
+ * back; a key that moved it the other way is turned round.
  */
-async function panTheRuinInto(browser, axis, band, keys) {
+async function panInto(browser, axis, band, keys, readPoint) {
   let [forward, back] = keys;
-  let last = browser.read(FIGHT_STATE).ruinToken;
+  let last = readPoint();
   for (let burst = 0; burst < PAN_BURSTS && last && (last[axis] < band[0] || last[axis] > band[1]); burst += 1) {
     const ahead = last[axis] < band[0];
     browser.run(["eval", `void window.__playtest.pan(["${ahead ? forward : back}"], 30)`]);
     await sleep(CAMERA_REPORT_MS);
-    const now = browser.read(FIGHT_STATE).ruinToken;
+    const now = readPoint();
     if (now && (ahead ? now[axis] < last[axis] : now[axis] > last[axis])) [forward, back] = [back, forward];
     last = now;
+  }
+}
+
+const PAN_MS = 400;
+const HEX_CLOSE = 1;
+
+/**
+ * Walks the camera to a contract hex as a player's keys do. Each key's pull is first measured (the camera's move for
+ * one 400 ms hold of D and one of W, as the screen's axes lie across the hex grid), then bursts are sized to close the
+ * remaining distance until the camera is within a hex of the target.
+ */
+async function panToHex(browser, target) {
+  if (!target) throw new Error("The map has not published the hex to walk to");
+  const camera = () => browser.read(`window.__eternumMapSelection?.camera ?? null`);
+  const burst = async (key, ticks) => {
+    const from = camera();
+    browser.run(["eval", `void window.__playtest.pan(["${key}"], ${ticks})`]);
+    await sleep(CAMERA_REPORT_MS);
+    const to = camera();
+    return [to.col - from.col, to.row - from.row];
+  };
+  const right = await burst("KeyD", PAN_MS);
+  const up = await burst("KeyW", PAN_MS);
+  const determinant = right[0] * up[1] - right[1] * up[0];
+  if (determinant === 0)
+    throw new Error(`The camera's keys move it along one line only: ${JSON.stringify([right, up])}`);
+  for (let attempt = 0; attempt < PAN_BURSTS; attempt += 1) {
+    const at = camera();
+    const miss = [target.col - at.col, target.row - at.row];
+    if (Math.hypot(...miss) <= HEX_CLOSE) return;
+    const rights = (miss[0] * up[1] - miss[1] * up[0]) / determinant;
+    const ups = (right[0] * miss[1] - right[1] * miss[0]) / determinant;
+    for (const [key, opposite, amount] of [
+      ["KeyD", "KeyA", rights],
+      ["KeyW", "KeyS", ups],
+    ])
+      if (Math.abs(amount) * PAN_MS >= 1)
+        await burst(amount > 0 ? key : opposite, Math.round(Math.abs(amount) * PAN_MS));
   }
 }
 
@@ -4138,15 +5087,16 @@ function showsBothSides(shown) {
  * Opens the ruin's card from the map with the army selected, a desktop's right-click, a phone's tap, and reads it
  * once it shows what `ready` waits for.
  */
-function openTheRuinsCardUntil(ready) {
+function openTheRuinsCardUntil(ready, requestedState) {
   return async ({ browser, extraScreenshot }) => {
-    if (!onADesktop()) await panTheRuinUnderTheCard(browser);
-    const before = browser.read(FIGHT_STATE);
+    const state = requestedState ?? FIGHT_STATE;
+    if (!onADesktop()) await panTheRuinUnderTheCard(browser, state);
+    const before = browser.read(state);
     if (!before.ruinToken) return { before, after: before };
     extraScreenshot("before-fight");
     if (onADesktop()) browser.rightClick(before.ruinToken);
     else browser.tap(before.ruinToken);
-    const after = await readUntil(() => browser.read(FIGHT_STATE), ready, MERGE_WAIT_MS);
+    const after = await readUntil(() => browser.read(state), ready, MERGE_WAIT_MS);
     extraScreenshot("fight-card");
     return { before, after };
   };
@@ -4164,7 +5114,7 @@ function farCardForecasts({ played }) {
 
 function fightCardOpenedCameraStill({ played }) {
   const { before, after } = played;
-  if (after.ruinRule !== HUD_WORDS.ruinRule) return failed("the ruin card shows another daily rule", played);
+  if (after.ruinRule !== null) return failed("a relic ruin must not show a daily entitlement", played);
   if (!before.ruinToken) return failed("the map draws no token for the ruin", played);
   if (!onADesktop() && !underTheCard(before.ruinToken))
     return failed("the ruin could not be panned under where its card opens", played);
@@ -4176,17 +5126,17 @@ function fightCardOpenedCameraStill({ played }) {
   return completed({ camera: after.camera, sheet: after.sheet, buttons: after.buttons });
 }
 
-/** Presses Attack, then waits for the chain's answer: the ruin gone from the map and its chest shown. */
+/** Presses Attack, then waits for the chain's answer: the ruin gone and the surviving troops shown. */
 async function attackTheRuin({ browser, extraScreenshot }) {
   const before = browser.read(FIGHT_STATE);
   const attack = before.buttons.find((text) => text.startsWith("Attack"));
   if (attack) browser.click(attack);
   const after = await readUntil(
     () => browser.read(FIGHT_STATE),
-    (shown) => shown.sent.includes("BattleGuard") && shown.ruinToken === null && shown.chest,
+    (shown) => shown.sent.includes("BattleGuard") && shown.ruinToken === null && shown.armyToken?.includes("4,011"),
     MERGE_WAIT_MS,
   );
-  extraScreenshot("chest");
+  extraScreenshot("cleared-ruin");
   await sleep(CAMERA_REPORT_MS);
   return { attack, before, after, settled: browser.read(FIGHT_STATE) };
 }
@@ -4230,7 +5180,7 @@ function ruinClearedCameraStill({ played }) {
   if (!played.attack) return failed("no Attack to press", played);
   if (!after.sent.includes("BattleGuard")) return failed("Attack sent no BattleGuard", played);
   if (after.ruinToken !== null) return failed("the ruin still stands on the map", played);
-  if (!after.chest) return failed("the ruin's chest never showed", played);
+  if (after.chest || settled.chest) return failed("a retired cash chest showed", played);
   if (!settled.armyToken?.includes("4,011")) return failed(`the army's token reads ${settled.armyToken}`, played);
   if (!before.camera) return failed("the page reports no camera", played);
   if (!sameHex(before.camera, settled.camera))
@@ -4436,7 +5386,7 @@ function mergeCardOpen({ played }) {
 }
 
 /**
- * Presses the card's Merge and, when the button then asks again with the XP the merge loses, that button too; then waits
+ * Presses the card's Merge and, when the button then asks again with the training the merge loses, that button too; then waits
  * for the chain's answer to leave the realm one army.
  */
 async function pressMerge({ browser }) {
@@ -4458,12 +5408,12 @@ async function pressMerge({ browser }) {
   return { merge, confirm, before, after };
 }
 
-/** The merge asked again only where it loses XP, in those words; it sent the transfer, and only the army tapped is left. */
+/** The merge asked again only where it loses stronger Logistics training, in those words; it sent the transfer, and only the army tapped is left. */
 function mergedIntoTheTapped({ played }, confirm) {
   if (!played.merge) return failed("no Merge to press", played);
   if (played.confirm !== confirm)
     return failed(
-      confirm ? `the merge never asked "${confirm}"` : `a merge that loses no XP asked "${played.confirm}"`,
+      confirm ? `the merge never asked "${confirm}"` : `a merge that loses no training asked "${played.confirm}"`,
       played,
     );
   if (!played.after.sent.includes("ManageTroops")) return failed("Merge sent no troop transfer", played);
@@ -4553,7 +5503,7 @@ const labDayTurnSteps = (expected) => [
 
 /** Prod's leading player's own day 2: 35 reveals and 5 sites cleared, paying 7,246 Essence and 524 Labor. */
 const RECORDED_DAY_2 = {
-  totals: ["35Reveals", "5Sites cleared", "0Chests", "+7,246Essence", "+524Labor", "+0LORDS"],
+  totals: ["35Reveals", "5Sites cleared", "0Chests", "+7.2KEssence", "+524Labor", "+0LORDS"],
   notice: null,
 };
 /** Day 2 past the history read: each total a dash, and the card says why. */
@@ -5090,6 +6040,11 @@ const DISMISSED_AT_EXPRESSION = `JSON.stringify(
  * fails a command that is neither.
  */
 export const UNMEASURED_COMMANDS = {
+  InteractSite: "lab-deep-join checks joining on desktop and phone; click timing baselines are not recorded",
+  Battle:
+    "Deep army combat has native and client regressions, but desktop and phone click timing baselines are not recorded",
+  ClaimDailyQuest: "lab-daily-quest checks collection on desktop and phone; click timing baselines are not recorded",
+  ApplyRelic: "army relic activation has a control, but its desktop and phone timing baselines are not recorded",
   MarkGameSettled:
     "sent by the value relay's operator once a season's game has ended (apps/value-relay), never by a player",
   SetEntityName: "no control in the game sends it: only the provider's set_entity_name, which nothing calls",
@@ -5170,7 +6125,7 @@ function armyManagementSteps() {
           });
         })())`);
         extraScreenshot("delete-confirmation");
-        if (!fits || !loss?.includes("troops, skills, XP and carried resources are lost")) return { loss, fits };
+        if (!fits || !loss?.includes("troops, carried resources and held Oaths are lost")) return { loss, fits };
         await press(browser, "Cancel", true);
         const retained = count(browser) === "10";
         if (!retained) return { armyId, loss, retained };
@@ -5376,21 +6331,6 @@ export const STEP_SETS = {
       },
     ],
   },
-  "s1-deposits": {
-    game: FRONTIER,
-    steps: [
-      ...FRONTIER_MAP.opening,
-      walletDepositStep("wallet-deposit"),
-      {
-        name: "live-mixed-refill",
-        play: refillDepositedLords,
-        settleMs: 0,
-        verify: ({ played }) =>
-          played.proven ? completed(played) : failed(played.error ?? "Missing live refill evidence", played),
-      },
-      walletDepositStep("wallet-deposit-for-sweep"),
-    ],
-  },
   "home-claim": {
     game: FRONTIER,
     steps: [
@@ -5439,6 +6379,10 @@ export const STEP_SETS = {
   "lab-devcon-art": { game: { ...LAB_SPIRE, lab: "devcon-0" }, steps: devconArtSteps },
   "lab-devcon-season": { game: { ...LAB_SPIRE, lab: "devcon-season" }, steps: [devconSeasonStep] },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
+  "lab-site-effects": { game: labSpireGame("site-effects"), steps: SITE_EFFECT_STEPS },
+  "lab-clear-mist": { game: labSpireGame("clear-mist"), steps: CLEAR_MIST_STEPS },
+  "lab-stamina-mist": { game: { ...LAB_SPIRE, lab: "stamina-mist" }, steps: staminaEffectSteps(false) },
+  "lab-stamina-wind": { game: { ...LAB_SPIRE, lab: "stamina-wind" }, steps: staminaEffectSteps(true) },
   "lab-layers": { game: LAB_SPIRE, steps: LAB_LAYERS_STEPS },
   ...Object.fromEntries(
     Object.keys(depthLooks).map((depth) => [
@@ -5446,34 +6390,93 @@ export const STEP_SETS = {
       { game: { ...LAB_SPIRE, lab: "ethereal-depths" }, steps: etherealDepthSteps(Number(depth)) },
     ]),
   ),
-  "lab-merge-loses-xp": {
-    game: labSpireGame("merge-loses-xp"),
-    steps: labMergeSteps("Lose 100 XP, merge into Army 2"),
+  "lab-merge-loses-training": {
+    game: labSpireGame("merge-loses-training"),
+    steps: labMergeSteps("Confirm merge into Army 2"),
   },
   "lab-merge-keeps-tapped": { game: labSpireGame("merge-keeps-tapped"), steps: labMergeSteps(null) },
+  "lab-supply-post": { game: labSpireGame("supply-post"), steps: LAB_SUPPLY_POST_STEPS },
   "lab-reinforce": { game: labSpireGame("reinforce"), steps: LAB_REINFORCE_STEPS },
   "lab-actions": { game: labSpireGame("actions"), steps: ACTION_STEPS },
   "lab-actions-spire": { game: LAB_SPIRE, steps: SPIRE_ACTION_STEPS },
   "lab-double-click": { game: { ...LAB_SPIRE, lab: "camp" }, steps: LAB_DOUBLE_CLICK_STEPS },
-  "lab-actions-merge": { game: labSpireGame("merge-loses-xp"), steps: mergeActionSteps() },
-  "lab-actions-transfer": { game: labSpireGame("merge-loses-xp"), steps: transferActionSteps() },
+  "lab-actions-merge": { game: labSpireGame("merge-loses-training"), steps: mergeActionSteps() },
+  "lab-economy": { game: { ...labSpireGame("economy"), mode: "blitz" }, steps: ECONOMY_STEPS },
+  "lab-actions-transfer": { game: labSpireGame("merge-loses-training"), steps: transferActionSteps() },
+  "lab-battle-target": { game: labSpireGame("battle-target"), steps: BATTLE_TARGET_STEPS },
+  "lab-deep-battle-target": { game: labSpireGame("deep-battle-target"), steps: DEEP_BATTLE_TARGET_STEPS },
+  "lab-oath-battle-target": {
+    game: labSpireGame("oath-battle-target"),
+    steps: battleTargetSteps(attackFromTheSiteCard, "Map", true),
+  },
+  "lab-oath-deep-battle-target": {
+    game: labSpireGame("oath-deep-battle-target"),
+    steps: battleTargetSteps(attackFromTheDeepCard, "Deep", true),
+  },
+  "lab-actions-oath-pick": { game: labSpireGame("oath-pick"), steps: oathPickSteps(false) },
+  "lab-actions-oath-replace": { game: labSpireGame("oath-replace"), steps: oathPickSteps(true) },
+  "lab-oath-slots": { game: labSpireGame("oath-slots"), steps: OATH_SLOTS_STEPS },
+  "lab-town": { game: labSpireGame("town"), steps: TOWN_DEPLOY_STEPS },
+  "lab-scouts": { game: labSpireGame("scouts"), steps: SCOUT_DEPLOY_STEPS },
   "lab-actions-deploy": { game: labSpireGame("actions"), steps: DEPLOY_ACTION_STEPS },
   "lab-actions-research": { game: labSpireGame("research"), steps: RESEARCH_ACTION_STEPS },
+  "lab-actions-shop": { game: labSpireGame("shop"), steps: SHOP_ACTION_STEPS },
+  "lab-daily-quest": { game: labSpireGame("quest"), steps: DAILY_QUEST_STEPS },
+  ...Object.fromEntries(
+    Object.entries(BANE_COLLECTIONS).map(([stage, expected]) => [
+      `lab-bane-${stage}`,
+      { game: labSpireGame(`bane-${stage}`), steps: baneCollectionSteps(expected) },
+    ]),
+  ),
   "lab-actions-claim": { game: labSpireGame("claim"), steps: CLAIM_ACTION_STEPS },
   "lab-far-place": { game: labSpireGame("far-place"), steps: FAR_PLACE_STEPS, devOverlays: true },
-  "lab-spend-lords": {
-    game: labSpireGame("spend-lords"),
-    steps: purchasedRefillSteps(),
+  "lab-relic-forecasts": { game: labSpireGame("relics"), steps: RELIC_FORECAST_STEPS },
+  "lab-race": { game: labSpireGame("race"), steps: raceBoardSteps(null) },
+  "lab-race-expired": { game: labSpireGame("race-expired"), steps: raceBoardSteps("expired") },
+  "lab-race-finished": { game: labSpireGame("race-finished"), steps: raceBoardSteps("won") },
+
+  "lab-discovered-spire": { game: labSpireGame("discovered-spire"), steps: DISCOVERED_SPIRE_STEPS },
+  "lab-oath-decline": { game: labSpireGame("oath-replace"), steps: oathPassSteps(false) },
+  "lab-oath-pass-capped": { game: labSpireGame("oath-pass-capped"), steps: oathPassSteps(true) },
+  "lab-oath-vitriol": {
+    game: labSpireGame("oath-vitriol"),
+    steps: [
+      ...oathPickSteps(false, "Deep").slice(0, -1),
+      ...deepJoinSteps(deepLossVectors[10] / RESOURCE_PRECISION, 40).slice(3),
+    ],
   },
-  "lab-deposit-amount": { game: labSpireGame("spend-lords"), steps: DEPOSIT_AMOUNT_STEPS },
-  "lab-actions-army": { game: labSpireGame("upkeep"), steps: ARMY_ACTION_STEPS },
+  "lab-deep-join": { game: labSpireGame("deep"), steps: deepJoinSteps() },
+  "lab-deep-closed": { game: labSpireGame("deep-closed"), steps: deepClosedSteps() },
+  "lab-no-lords": {
+    game: labSpireGame("upkeep"),
+    steps: [
+      { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+      {
+        name: "no-lords-controls",
+        play: async ({ browser }) => {
+          const panel = await openTheArmyPanel(browser);
+          const controls = browser.read(
+            `JSON.stringify([...document.querySelectorAll("button")].map(button => button.getAttribute("aria-label") ?? button.textContent.trim()).filter(label => /^(Withdraw|Deposit LORDS|LORDS )|LORDS$/.test(label)))`,
+          );
+          return { panel, controls };
+        },
+        settleMs: 0,
+        verify: ({ played }) =>
+          played.panel?.sheet === played.panel?.army && played.controls?.length === 0
+            ? completed(played)
+            : failed("Army panel missing or retired LORDS controls present", played),
+      },
+    ],
+  },
   "lab-actions-demolish": { game: labSpireGame("upkeep"), steps: DEMOLISH_ACTION_STEPS },
-  "lab-actions-chest": { game: labSpireGame("upkeep"), steps: CHEST_ACTION_STEPS },
   "lab-actions-settle": { game: LAB_SETTLE, steps: SETTLE_ACTION_STEPS },
-  "lab-actions-withdraw": { game: labSpireGame("upkeep"), steps: WITHDRAW_ACTION_STEPS },
+  "lab-aspect-settle": { game: { ...labSpireGame("aspect-settle"), entersFromHome: true }, steps: ASPECT_SETTLE_STEPS },
+  "lab-aspect-settle-invited": {
+    game: { ...labSpireGame("aspect-settle-invited"), entersFromHome: true },
+    steps: ASPECT_SETTLE_INVITED_STEPS,
+  },
   "lab-actions-fight": { game: labSpireGame("fight"), steps: FIGHT_ACTION_STEPS },
   "lab-actions-fight-lost": { game: labSpireGame("fight-lost"), steps: FIGHT_LOST_STEPS },
-  "lab-actions-sites": { game: labSpireGame("sites"), steps: SITE_ACTION_STEPS },
   "lab-hud-devices": { game: labSpireGame("sites"), steps: HUD_DEVICE_STEPS },
   "lab-after-battle": { game: labSpireGame("after-battle"), steps: LAB_AFTER_BATTLE_STEPS },
   "lab-visit": { game: labSpireGame("visit"), steps: LAB_VISIT_STEPS, devOverlays: true },
@@ -5481,7 +6484,7 @@ export const STEP_SETS = {
   "lab-ruin-fight": { game: labSpireGame("ruin-fight"), steps: LAB_RUIN_FIGHT_STEPS },
   "lab-ruin-far": { game: labSpireGame("ruin-far"), steps: LAB_RUIN_FAR_STEPS },
   "lab-hover-zoom": { game: labSpireGame("after-battle"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
-  "lab-hover-zoom-pair": { game: labSpireGame("merge-loses-xp"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
+  "lab-hover-zoom-pair": { game: labSpireGame("merge-loses-training"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
   "lab-high-ground": { game: labSpireGame("high-ground"), steps: LAB_HIGH_GROUND_STEPS, devOverlays: true },
   "lab-day-turn": { game: labDayTurn("day-turn"), steps: labDayTurnSteps(RECORDED_DAY_2) },
   "lab-day-later": { game: labDayTurn("day-later"), steps: labDayTurnSteps(RECORDED_DAY_2) },

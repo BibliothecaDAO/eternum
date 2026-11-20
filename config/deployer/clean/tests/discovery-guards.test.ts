@@ -7,8 +7,6 @@ import { buildTroopLimitConfig } from "../registrar/preset";
 describe("inclusive discovery guard presets", () => {
   test.each([
     ["blitz", 999, 1499, 1499, 1999],
-    ["eternum", 800, 1499, 800, 1499],
-    ["duel", 800, 1599, 800, 1599],
     ["frontier", 800, 1599, 800, 1599],
   ] as const)(
     "%s encodes its exact reachable endpoints",
@@ -33,7 +31,7 @@ describe("inclusive discovery guard presets", () => {
     const config = await buildConfig({ chain: "madara", gameType: "blitz" });
     const preset = buildNativePreset(config, 2);
     expect(config.banks.maxNumBanks).toBe(0);
-    expect(preset.rules.command_mask & BigInt(nativeCommandBits.CreateBanks)).toBe(0n);
+    expect("CreateBanks" in nativeCommandBits).toBe(false);
     expect(preset.rules.bitcoin_mine_config.enabled).toBe(false);
     expect(preset.rules.map_config.bitcoin_mine_win_probability).toBe(0);
   });

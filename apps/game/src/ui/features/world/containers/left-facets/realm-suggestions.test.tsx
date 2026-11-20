@@ -157,6 +157,7 @@ const fieldArmy = (store: NativeFactStore, id: number, category: TroopType, tier
     incr_explore_reward_end_at: 0,
   };
   store.applyFacts([
+    { model: "ArmyDay", key: `0xad${id}`, value: { game_id: 1, explorer_id: String(id), day: "0" } },
     {
       model: "ExplorerTroops",
       key: `0xa${id}`,

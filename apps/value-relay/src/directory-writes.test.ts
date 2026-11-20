@@ -31,17 +31,14 @@ const claim = (chainId: string) => ({
   amount: "1",
   confirmedAt: 1,
 });
-it("serializes ledger reports for different official shards and rechecks retirement after waiting for the key", async () => {
+it("serializes ledger reports and rechecks the official chain after waiting for the key", async () => {
   let release!: () => void, enter!: () => void;
   const held = new Promise<void>((resolve) => (release = resolve)),
     entered = new Promise<void>((resolve) => (enter = resolve));
-  let secondStatus: "active" | "retired" = "active";
+  let listed: { chainId: string; url: string } | null = { chainId: "0x1", url: "https://one.test" };
   const identity = {
     l2ChainId: async () => "0x3",
-    shards: async () => [
-      { chainId: "0x1", url: "https://one.test", status: "active" as const },
-      { chainId: "0x2", url: "https://two.test", status: secondStatus },
-    ],
+    shard: async () => listed,
   };
   const relay = new ValueRelay(
     { storage: { get: async () => undefined, put: async () => {} } } as unknown as DurableObjectState,
@@ -68,9 +65,9 @@ it("serializes ledger reports for different official shards and rechecks retirem
   );
   const first = relay.reportMany([claim("0x1")]);
   await entered;
-  const second = relay.reportMany([claim("0x2")]);
+  const second = relay.reportMany([claim("0x1")]);
   const refusal = expect(second).rejects.toMatchObject({ operation: "verify official value chain" });
-  secondStatus = "retired";
+  listed = null;
   release();
   await first;
   await refusal;
@@ -87,7 +84,7 @@ it.each([
   const relay = new ValueRelay(
     { storage: { get: async () => undefined, put: async () => {} } } as unknown as DurableObjectState,
     {
-      IDENTITY: { l2ChainId: async () => "0x3", shards: async () => [{ chainId: "0x1", status: "active" }] },
+      IDENTITY: { l2ChainId: async () => "0x3", shard: async () => ({ chainId: "0x1", url: "https://one.test" }) },
       ROSTER_MONITOR: { ledgerWritten: written },
       COSIGNER_URL: "https://cosigner.test",
       COSIGNER_TOKEN: "test-token",

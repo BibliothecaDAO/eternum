@@ -85,14 +85,13 @@ describe("a verb and what it costs (owner, sheet 2026-10-18: a button carries it
             line={costLine([
               { of: "stamina", amount: 20 },
               { of: "wheat", amount: 2.5 },
-              { of: "xp", amount: 100 },
             ])}
           />
         </>,
       ),
     );
     expect(host.querySelector(".ui-button")!.textContent).toBe("Move");
-    expect(host.querySelector(".ui-cost")!.textContent).toBe("20 stamina · 3 Wheat · 100 XP");
+    expect(host.querySelector(".ui-cost")!.textContent).toBe("20 stamina · 3 Wheat");
   });
 
   it("writes an unknown amount as a dash, and draws nothing for a verb that costs nothing", () => {

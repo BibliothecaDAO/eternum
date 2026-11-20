@@ -1,20 +1,11 @@
 import type { MapSelectionIntent } from "@/hooks/store/map-selection";
 import { readStructureMeaning, troopMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { type IconMeaning, iconMeanings } from "@/ui/design-system/icon-meaning";
-import { MAP_SITES, type MapSiteKind, mapSiteOf } from "@/config/map-sites";
-import { mapSite } from "@/ui/features/frontier/sites/map-site-plan";
-import {
-  activeTileOccupancy,
-  getEntityName,
-  isExpeditionRealm,
-  isRealmCategory,
-  structureMapPosition,
-} from "@bibliothecadao/eternum";
+import { getEntityName, isExpeditionRealm, isRealmCategory, structureMapPosition } from "@bibliothecadao/eternum";
 import type { GameRef, NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { rowInGameSyncScope } from "@bibliothecadao/eternum/game-sync";
 
 /** A tile of the map, on its layer (the surface, or the depth below). */
-export interface PlaceTile {
+interface PlaceTile {
   col: number;
   row: number;
   alt: boolean;
@@ -42,8 +33,7 @@ interface PlaceOwner {
  */
 type PlaceTarget =
   | { kind: "army"; entityId: number; tile?: PlaceTile; owner?: PlaceOwner }
-  | { kind: "structure"; entityId: number; tile?: PlaceTile; owner?: PlaceOwner }
-  | { kind: "site"; site: MapSiteKind; tile: PlaceTile };
+  | { kind: "structure"; entityId: number; tile?: PlaceTile; owner?: PlaceOwner };
 
 /**
  * A place on the map a message carries, in its metadata: the game it stands in (its shard's chain and its id there:
@@ -65,16 +55,13 @@ export type SharedPlace = PlaceTarget & {
  */
 export const placeKey = (place: SharedPlace): string => {
   const game = `${place.game.chainId}:${place.game.gameId}`;
-  if (place.kind !== "site") return `${game}/${place.kind}:${place.entityId}`;
-  const { col, row, alt } = place.tile;
-  return `${game}/site:${place.site}@${col},${row},${alt ? "depth" : "surface"}`;
+  return `${game}/${place.kind}:${place.entityId}`;
 };
 
 /** The metadata a message carrying a place is sent with. */
 export const placeMetadata = (place: SharedPlace) => ({ place });
 
 const ICONS: ReadonlySet<string> = new Set(iconMeanings);
-const SITES: ReadonlySet<string> = new Set(MAP_SITES.map((site) => site.kind));
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
 
@@ -105,13 +92,11 @@ const ownerOf = (owner: unknown): PlaceOwner | null =>
     : null;
 
 const targetOf = (place: Record<string, unknown>): PlaceTarget | null => {
-  const { kind, entityId, site } = place;
+  const { kind, entityId } = place;
   const tile = tileOf(place.tile);
   const owner = ownerOf(place.owner);
   if ((kind === "army" || kind === "structure") && Number.isSafeInteger(entityId))
     return { kind, entityId: entityId as number, ...(tile && { tile }), ...(owner && { owner }) };
-  if (kind === "site" && typeof site === "string" && SITES.has(site) && tile)
-    return { kind, site: site as MapSiteKind, tile };
   return null;
 };
 
@@ -152,11 +137,6 @@ export const placeOnMap = (
   at: number,
 ): SharedPlace | null => {
   const gameId = game.gameId;
-  if (target.kind === "site") {
-    const holds = mapSiteOf(activeTileOccupancy(store, { game_id: gameId, ...target.tile })?.category);
-    const site = mapSite(target.site);
-    return holds?.kind === target.site ? { ...target, game, name: site.name, icon: site.icon, at } : null;
-  }
   const name = getEntityName(target.entityId, store);
   if (!name) return null;
   if (target.kind === "army") {
@@ -215,14 +195,7 @@ export const placeLoaded = (store: NativeFactStore, game: PlaceGame, target: Pla
   const gameId = game.gameId;
   if (target.kind === "army")
     return store.get("ExplorerTroops", { game_id: gameId, explorer_id: BigInt(target.entityId) }) !== undefined;
-  if (target.kind === "structure")
-    return store.get("Structure", { game_id: gameId, entity_id: target.entityId }) !== undefined;
-  const tile = { game_id: gameId, ...target.tile };
-  if (store.get("TileOccupancy", tile) !== undefined) return true;
-  // The tile emptied, as the sync would hold it: by its region alone (no entity stands on it). A store with no sync
-  // scope to read (the lab's game) holds all it was given.
-  const scope = store.subscriptionScope().known;
-  return scope === undefined || rowInGameSyncScope("TileOccupancy", { ...tile, entity_id: 0 }, scope);
+  return store.get("Structure", { game_id: gameId, entity_id: target.entityId }) !== undefined;
 };
 
 /**
@@ -238,8 +211,5 @@ export const sharedPlaceOf = (
 ): SharedPlace | null => {
   if (selection?.kind === "army" || selection?.kind === "structure")
     return placeOnMap(store, game, { kind: selection.kind, entityId: Number(selection.entityId) }, now);
-  if (selection?.kind !== "hex") return null;
-  const tile = { col: selection.hex.col, row: selection.hex.row, alt };
-  const site = mapSiteOf(activeTileOccupancy(store, { game_id: game.gameId, ...tile })?.category);
-  return site ? placeOnMap(store, game, { kind: "site", site: site.kind, tile }, now) : null;
+  return null;
 };

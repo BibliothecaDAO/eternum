@@ -1,11 +1,12 @@
 import type { GameType } from "./types";
 
-/** The fixture preset for accelerated Frontier: fixtures and harness design runs create from it, the launcher never does. */
+/** Historical accelerated Frontier preset. */
 export const FRONTIER_ACCELERATED_PRESET_ID = 101;
-/** Frontier's own preset: the design the launcher's seasons create from. */
+/** Historical Frontier preset. */
 export const FRONTIER_PRESET_ID = 5;
-/** Frontier's three-times-speed Devcon season; registered separately from normal-speed seasons. */
+/** Historical Devcon preset. */
 export const FRONTIER_DEVCON_PRESET_ID = 6;
+export const FRONTIER_S1_PRESET_ID = 7;
 /** Immutable Frontier preset used by the committed contract fixtures. */
 export const FRONTIER_FIXTURE_PRESET_ID = 104;
 /**
@@ -20,14 +21,11 @@ const NATIVE_PRESET_MODES: Readonly<Record<number, GameType>> = {
   // Frontier's first design; registered on the shards and still played by the games created from it.
   1: "frontier",
   2: "blitz",
-  3: "eternum",
-  4: "duel",
   [FRONTIER_PRESET_ID]: "frontier",
   [FRONTIER_DEVCON_PRESET_ID]: "frontier",
+  [FRONTIER_S1_PRESET_ID]: "frontier",
   [FRONTIER_ACCELERATED_PRESET_ID]: "frontier",
-  // The first playtest's preset; registered on shard A and still played by the game created from it.
   102: "frontier",
-  103: "eternum",
   [FRONTIER_FIXTURE_PRESET_ID]: "frontier",
   [FRONTIER_PLAYGROUND_PRESET_ID]: "frontier",
 };

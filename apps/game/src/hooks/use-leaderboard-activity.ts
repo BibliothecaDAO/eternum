@@ -5,7 +5,6 @@ import { requireShard } from "@bibliothecadao/eternum/game-client";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useLatest } from "@/hooks/use-latest";
-import { getActiveGame } from "@/runtime/world";
 import { fetchLeaderboardActivityBreakdowns } from "@/services/leaderboard/player-activity-breakdown-service";
 
 /**
@@ -14,7 +13,7 @@ import { fetchLeaderboardActivityBreakdowns } from "@/services/leaderboard/playe
  * themselves come from the native store (useInGameLeaderboard); this is history, never a second copy of them.
  */
 export function useLeaderboardActivity() {
-  const shard = requireShard(getActiveGame()?.chainId);
+  const shard = requireShard();
   const gameId = configManager.getActiveGameId();
   const query = useQuery({
     queryKey: ["leaderboard-activity", shard.url, gameId],

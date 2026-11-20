@@ -8,6 +8,7 @@ pub mod ConstructionLogic {
     use crate::logic::buildings::BuildingState;
     use crate::logic::release::ReleaseState;
     use crate::logic::structures::StructureState;
+    use crate::map::TileKey;
     use crate::ownership::{Story, StoryEvent};
     use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
     use crate::rules::RESOURCE_PRECISION;
@@ -17,14 +18,7 @@ pub mod ConstructionLogic {
     impl BuildingInternal = BuildingState::InternalImpl<ContractState>;
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl PresetStructures of crate::presets::IPresetStructures<ContractState> {
-        fn store_structure_preset(
-            ref self: ContractState, commitment: felt252, structures: crate::presets::StructurePreset,
-        ) {
-            crate::logic::preset_record::store_structures(commitment, structures);
-        }
-    }
+
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
@@ -51,6 +45,15 @@ pub mod ConstructionLogic {
     }
 
     #[abi(embed_v0)]
+    impl PresetStructures of crate::presets::IPresetStructures<ContractState> {
+        fn store_structure_preset(
+            ref self: ContractState, commitment: felt252, structures: crate::presets::StructurePreset,
+        ) {
+            crate::logic::preset_record::store_structures(commitment, structures);
+        }
+    }
+
+    #[abi(embed_v0)]
     impl BuildingRules of crate::buildings::IBuildingRules<ContractState> {
         #[cfg(feature: "test_support")]
         fn building_rule(
@@ -60,6 +63,33 @@ pub mod ConstructionLogic {
         }
     }
 
+    #[abi(embed_v0)]
+    impl FrontierDiscovery of crate::expeditions::IFrontierDiscovery<ContractState> {
+        fn frontier_discovery_rules(
+            self: @ContractState, game_id: u32,
+        ) -> Option<crate::expeditions::FrontierDiscoveryRules> {
+            crate::logic::preset_record::for_game(game_id).discovery_rules.read()
+        }
+
+
+        fn expedition_discovery(
+            self: @ContractState, key: crate::expeditions::ExpeditionDiscoveryKey,
+        ) -> Option<crate::expeditions::ExpeditionDiscovery> {
+            crate::logic::expeditions::discovery(key)
+        }
+    }
+    #[abi(embed_v0)]
+    impl ExpeditionReveal of crate::discovery::IExpeditionReveal<ContractState> {
+        fn reveal_expedition_tile(
+            ref self: ContractState,
+            key: TileKey,
+            explorer_id: u64,
+            seed: u256,
+            context: crate::commands::ActionContext,
+        ) -> crate::discovery::Discovery {
+            crate::logic::discovery::reveal(key, explorer_id, seed, context)
+        }
+    }
     #[abi(embed_v0)]
     impl BuildingCommands of crate::buildings::IBuildingCommands<ContractState> {
         fn create_building(
@@ -77,13 +107,6 @@ pub mod ConstructionLogic {
             let location = crate::logic::buildings::building_key(key, coord);
             let rule = self.buildings.rule(crate::buildings::BuildingRuleKey { game_id, category: command.category });
             let board = self.buildings.board(game_id);
-            assert!(
-                command.scouting_kind == 0
-                    || (board.is_some()
-                        && command.category == crate::research::SCOUTS_LODGE
-                        && command.scouting_kind < 3),
-                "invalid construction scouting kind",
-            );
             if let Some(board) = board {
                 self.assert_board_category(key, command.category, board);
             }
@@ -118,7 +141,7 @@ pub mod ConstructionLogic {
             if board.is_some() {
                 let building = self.buildings.building(location).unwrap();
                 self.buildings.write_building(location, Building { labor_paid, ..building });
-                self.grant_training_start(key, command.category, command.scouting_kind);
+                self.grant_training_start(key, base, command.category, board.unwrap(), context);
             }
             ()
         }
@@ -395,38 +418,53 @@ pub mod ConstructionLogic {
             let resources = self.data.structures.structures.entry((key.game_id, key.entity_id)).resources_packed.read();
             assert!(crate::buildings::can_produce(category, resources), "structure cannot produce building resource");
         }
-        fn grant_training_start(ref self: ContractState, key: ResourceKey, category: u8, scouting_kind: u8) {
-            if !crate::research::is_training(category) {
-                return;
-            }
-            let row = crate::research::ROW_WAR_HALL + category - crate::research::WAR_HALL;
-            let before = crate::logic::research::require(key).learned;
-            if crate::research::tier(before, row) != 0 {
-                return;
-            }
-            let choice = if category == crate::research::SCOUTS_LODGE {
-                scouting_kind
-            } else {
-                0
-            };
-            crate::logic::research::write(
-                key, crate::research::RealmKnowledge { learned: crate::research::learn(before, row, choice) },
-            );
-        }
-
-        // A training building is unique and needs two Barracks purchases.
-        fn assert_board_category(
-            self: @ContractState, key: ResourceKey, category: u8, board: crate::buildings::BoardRules,
+        fn grant_training_start(
+            ref self: ContractState,
+            key: ResourceKey,
+            base: StructureBase,
+            category: u8,
+            board: crate::buildings::BoardRules,
+            context: crate::commands::ExecutionContext,
         ) {
             if !crate::research::is_training(category) {
                 return;
             }
+            let row = if category == crate::research::CONSCRIPTION_CAMP {
+                crate::research::ROW_CONSCRIPTION
+            } else if category == crate::research::RATIONS_DEPOT {
+                crate::research::ROW_RATIONS
+            } else {
+                crate::research::ROW_SUPPLY_YARD
+            };
+            let before = crate::logic::research::require(key).learned;
+            if crate::research::tier(before, row) != 0 {
+                return;
+            }
+            let after = crate::research::learn(before, row, 0);
+            crate::logic::research::write(key, crate::research::RealmKnowledge { learned: after });
+            self.apply_research(key, base, row, board, before, after, context);
+        }
+
+        fn assert_board_category(
+            self: @ContractState, key: ResourceKey, category: u8, board: crate::buildings::BoardRules,
+        ) {
+            let minimum = if category == crate::research::SCOUTS_LODGE {
+                crate::research::SCOUTS_LODGE_LEVEL
+            } else if category == crate::research::RANGE {
+                crate::research::RANGE_LEVEL
+            } else if category == crate::research::CONSCRIPTION_CAMP {
+                crate::research::CONSCRIPTION_CAMP_LEVEL
+            } else if category == crate::research::RATIONS_DEPOT {
+                crate::research::RATIONS_DEPOT_LEVEL
+            } else {
+                0
+            };
+            let level = self.data.structures.structures.entry((key.game_id, key.entity_id)).base.read().level;
+            assert!(level >= minimum, "building needs a higher realm level");
+            if !crate::research::is_training(category) {
+                return;
+            }
             assert!(self.standing(key, category) == 0, "training building is unique");
-            assert!(
-                crate::research::purchases(crate::logic::research::learned(key), crate::research::ROW_BARRACKS) >= board
-                    .training_gate_tier,
-                "training building needs barracks tier",
-            );
         }
         // The buildings of a type standing on a realm board; the castle's own labor producer is not a workshop.
         fn standing(self: @ContractState, key: ResourceKey, category: u8) -> u8 {
@@ -488,18 +526,20 @@ pub mod ConstructionLogic {
             after: u64,
             game_context: crate::commands::ExecutionContext,
         ) {
+            if row == crate::research::ROW_CONSCRIPTION {
+                for category in array![
+                    crate::research::BARRACKS, crate::research::RANGE, crate::research::SCOUTS_LODGE,
+                ] {
+                    self.change_researched_output(key, base, category, board, before, after, game_context);
+                }
+                return;
+            }
             let category = crate::research::row_category(row);
             if category == 0 {
                 return;
             }
             let standing = self.standing(key, category);
-            let (resource_type, old_rate) = self.buildings.board_output(key, base, category, board, before);
-            let (_, new_rate) = self.buildings.board_output(key, base, category, board, after);
-            if old_rate != new_rate {
-                let count: u64 = standing.into();
-                self.change_board_output(key, resource_type, old_rate * count, false, game_context);
-                self.change_board_output(key, resource_type, new_rate * count, true, game_context);
-            }
+            self.change_researched_output(key, base, category, board, before, after, game_context);
             if category == crate::research::HUT {
                 let old_bonus = self.buildings.hut_bonus(key.game_id, standing, board, before);
                 let new_bonus = self.buildings.hut_bonus(key.game_id, standing, board, after);
@@ -510,8 +550,27 @@ pub mod ConstructionLogic {
                     );
             }
         }
-        // A board building adds or removes its type's output and its hut tiers' population after its row and counts
-        // are written.
+        fn change_researched_output(
+            ref self: ContractState,
+            key: ResourceKey,
+            base: StructureBase,
+            category: u8,
+            board: crate::buildings::BoardRules,
+            before: u64,
+            after: u64,
+            game_context: crate::commands::ExecutionContext,
+        ) {
+            let count: u64 = self.standing(key, category).into();
+            if count == 0 {
+                return;
+            }
+            let (resource_type, old_rate) = self.buildings.board_output(key, base, category, board, before);
+            let (_, new_rate) = self.buildings.board_output(key, base, category, board, after);
+            if old_rate != new_rate {
+                self.change_board_output(key, resource_type, old_rate * count, false, game_context);
+                self.change_board_output(key, resource_type, new_rate * count, true, game_context);
+            }
+        }
         fn change_board_building(
             ref self: ContractState,
             key: ResourceKey,

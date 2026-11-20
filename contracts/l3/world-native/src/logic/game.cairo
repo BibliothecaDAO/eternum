@@ -40,6 +40,7 @@ pub fn create(game_id: u32, game: GameRegistry, overrides: GameOverrides) {
     );
 }
 pub fn write_game(game_id: u32, game: GameRegistry) {
+    assert!(game.end_at <= game.scheduled_end_at, "season end exceeds its calendar");
     let state = crate::state::write();
     state.games.games.write(game_id, game);
     emit_game(game_id, game);

@@ -1,4 +1,4 @@
-import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { NativeTroopType, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { Account, AccountInterface } from "starknet";
 import { BuildingType, CapacityConfig, RealmLevels, ResourcesIds, StructureType } from "../constants";
 
@@ -109,24 +109,34 @@ export enum EntityType {
 
 export type RelicEffect = { id: ResourcesIds; endAt: number };
 
+/** Derived regeneration intervals and the last boundary this army can live through. */
+export type StaminaEffects = {
+  readonly until: number;
+  readonly windows: readonly { start: number; end: number; rateBps: number }[];
+};
+
 export type Troops = Omit<NativeRows["ExplorerTroops"]["troops"], "stamina"> & {
   readonly stamina: NativeRows["ArmySlot"]["stamina"];
   /** Derived from the slot army's current attributes; never a stored fact. */
   readonly staminaMax?: number;
+  readonly staminaEffects?: StaminaEffects;
 };
 export type TroopTier = Troops["tier"];
 /** Every troop tier the game's schema allows: a tier the schema adds fails to compile until it is named here. */
 export const TroopTier = { T1: "T1", T2: "T2", T3: "T3" } as const satisfies { [Tier in Troops["tier"]]: Tier };
 export type TroopType = Troops["category"];
-/** Every troop type the game's schema allows, in the order players meet them; a type it adds fails to compile here. */
-export const TroopType = {
-  Knight: "Knight",
-  Crossbowman: "Crossbowman",
-  Paladin: "Paladin",
-} as const satisfies { [Category in Troops["category"]]: Category };
+/** Troop names in the contract's wire order. */
+export const TroopType = NativeTroopType;
 /** The troop catalog: every type and every tier, read from the two above. A list of troops is built from these. */
 export const TROOP_TYPES: readonly TroopType[] = Object.values(TroopType);
 export const TROOP_TIERS: readonly TroopTier[] = Object.values(TroopTier);
+/** A troop category's wire index, as generated from the native ABI. */
+export const troopTypeIndex = (category: TroopType): number => {
+  const index = TROOP_TYPES.indexOf(category);
+  if (index < 0) throw new Error(`Unknown troop category ${category}`);
+  return index;
+};
+
 /** A tier's place in the catalog, 0 for T1: the one way to turn a tier into a number. An unknown tier is loud. */
 export const troopTierIndex = (tier: TroopTier): number => {
   const index = TROOP_TIERS.indexOf(tier);
@@ -179,7 +189,10 @@ export interface Position {
   y: number;
 }
 
+export type AspectId = 1 | 2 | 3 | 4;
+
 export interface IOrder {
+  aspect: AspectId | null;
   orderId: number;
   orderName: string;
   fullOrderName: string;
@@ -376,7 +389,6 @@ export interface Config {
     spires_max_count: number;
     spires_settled_count: number;
     single_realm_mode: boolean;
-    two_player_mode: boolean;
   };
   biomeClimate: {
     elevationScaleBps: number;

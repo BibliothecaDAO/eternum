@@ -19,7 +19,6 @@ vi.mock("@realms-world/identity", async (original) => ({
     }),
 }));
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: {} } }) }));
-vi.mock("@/runtime/world", () => ({ getActiveGame: () => ({ chainId: "0x1" }) }));
 vi.mock("@bibliothecadao/eternum/game-client", async (original) => ({
   ...(await original<typeof import("@bibliothecadao/eternum/game-client")>()),
   requireShard: () => ({ url: "http://herald.test", chainId: "0x1", worldAddress: "0xabc" }),

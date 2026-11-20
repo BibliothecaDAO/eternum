@@ -29,12 +29,12 @@ interface LaunchRunRow {
 export interface LaunchServiceStore extends LaunchRunStore {
   /** The shard chain this store's runs launch on, as the directory selects it. */
   targetChain(): Promise<string>;
+  officialChain(): Promise<string | null>;
   /** Queues a run, retaining running/complete runs. Frontier retries must keep their preset and window. */
   enqueue(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun>;
   /** Creates a run once; an existing run is untouched, and a different Frontier preset or window is refused. */
   schedule(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun>;
   list(environment: GameEnvironmentId, kind?: LaunchKind): Promise<LaunchRun[]>;
-  /** Declared entry terms for created games, including registration before start and draining shards. */
   playerDirectoryGames(): Promise<{ chainId: string; games: { gameId: number; slotId: number | null }[] }[]>;
   /** Unfinished work belonging to the shards the registrar still serves. */
   pending(): Promise<LaunchRun[]>;
@@ -119,21 +119,26 @@ const SCHEDULE_ONCE = "ON CONFLICT (chain_id, kind, environment, name) DO NOTHIN
  * Launch runs are keyed by the selected directory chain; another shard's queue cannot block or retarget them.
  */
 export class D1LaunchStore implements LaunchServiceStore {
-  private chain?: Promise<string>;
+  private chain?: Promise<string | null>;
 
   constructor(
     private readonly db: D1Database,
-    private readonly chainOf: () => Promise<string>,
-    private readonly officialChains?: () => Promise<readonly string[]>,
+    private readonly chainOf: () => Promise<string | null>,
   ) {}
 
   // A failed manifest read is not remembered: the next operation reads it again.
-  private chainId(): Promise<string> {
+  officialChain(): Promise<string | null> {
     this.chain ??= this.chainOf().catch((error: unknown) => {
       this.chain = undefined;
       throw error;
     });
     return this.chain;
+  }
+
+  private async chainId(): Promise<string> {
+    const chain = await this.officialChain();
+    if (chain === null) throw new Error("no_official_chain");
+    return chain;
   }
 
   targetChain() {
@@ -220,11 +225,13 @@ export class D1LaunchStore implements LaunchServiceStore {
   }
 
   private async currentRuns(condition: string): Promise<LaunchRun[]> {
-    const chains = new Set(((await this.officialChains?.()) ?? [await this.chainId()]).map(BigInt));
+    const official = await this.officialChain();
+    if (official === null) return [];
+    const chain = BigInt(official);
     const { results } = await this.db
-      .prepare(`SELECT * FROM launch_runs WHERE chain_id <> '' AND ${condition} ORDER BY chain_id, created_at, id`)
+      .prepare(`SELECT * FROM launch_runs WHERE chain_id <> '' AND ${condition} ORDER BY created_at, id`)
       .all<LaunchRunRow>();
-    return results.filter((row) => chains.has(BigInt(row.chain_id))).map(toRun);
+    return results.filter((row) => BigInt(row.chain_id) === chain).map(toRun);
   }
 
   async find(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<LaunchRun | null> {

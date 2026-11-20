@@ -524,7 +524,7 @@ export const GAME_TASKS = {
     done: `document.querySelector('[aria-label="Season"]') !== null`,
   },
   research: {
-    goal: "Open Research for depth unlocks and the Scouts' lodge's Scouting choices",
+    goal: "Open Research for depth unlocks and Supply yard training",
     layouts: PHONE_AND_DESKTOP,
     view: "map",
     presses: [{ name: "Research", text: "^Research$" }],

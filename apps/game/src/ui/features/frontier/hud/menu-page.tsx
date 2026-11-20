@@ -1,3 +1,4 @@
+import { OpeningPartGate } from "../opening/opening-context";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudButton, HudPage, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { EXIT, MENU, REALM_LABOR, SEASON, SETTINGS, TODAY } from "@/ui/design-system/kit/words";
@@ -40,7 +41,9 @@ export const MenuPage = ({
   <HudPage label={MENU} icon="menu" onClose={onClose}>
     <nav className="flex flex-col">
       <MenuRow icon="clock" onClick={onToday} />
-      <MenuRow icon="victory" badge={<span className="text-hud-body tabular-nums">{rank}</span>} onClick={onSeason} />
+      <OpeningPartGate part="aspects">
+        <MenuRow icon="victory" badge={<span className="text-hud-body tabular-nums">{rank}</span>} onClick={onSeason} />
+      </OpeningPartGate>
       {realms && (
         <MenuRow
           icon="realm"
@@ -67,4 +70,12 @@ const MenuRow = ({
   icon: keyof typeof MENU_WORDS;
   badge?: ReactNode;
   onClick: () => void;
-}) => <HudRow lead={<SemanticIcon name={icon} size={22} />} title={MENU_WORDS[icon]} trail={badge} onClick={onClick} />;
+}) => (
+  <HudRow
+    lead={<SemanticIcon name={icon} size={22} />}
+    label={MENU_WORDS[icon]}
+    title={MENU_WORDS[icon]}
+    trail={badge}
+    onClick={onClick}
+  />
+);

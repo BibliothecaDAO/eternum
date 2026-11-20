@@ -14,6 +14,7 @@ export interface SeasonCalendar {
   seed: bigint;
   startMainAt: number;
   endAt: number;
+  scheduledEndAt: number;
   dayUnitSeconds: number;
 }
 
@@ -60,7 +61,9 @@ export const dayOf = (calendar: SeasonCalendar, timestamp: number): SeasonDay | 
     throw new Error("A season must have a positive, finite window");
   if (timestamp < startMainAt || timestamp >= calendar.endAt) return null;
   // The last two units belong to the day already running at their start, absorbing a shorter final stub.
-  const seasonUnits = Math.floor((calendar.endAt - startMainAt) / unit);
+  if (!Number.isSafeInteger(calendar.scheduledEndAt) || calendar.scheduledEndAt < calendar.endAt)
+    throw new Error("A season end must fit its scheduled calendar");
+  const seasonUnits = Math.floor((calendar.scheduledEndAt - startMainAt) / unit);
   const finalDayProbe = seasonUnits - Math.min(seasonUnits, 2);
   const at = Math.min(Math.floor((timestamp - startMainAt) / unit), finalDayProbe);
   const bag = Math.floor(at / DAY_UNITS_PER_BAG);
@@ -72,12 +75,26 @@ export const dayOf = (calendar: SeasonCalendar, timestamp: number): SeasonDay | 
       return {
         index,
         start: startMainAt + start * unit,
-        end: end > finalDayProbe ? calendar.endAt : startMainAt + end * unit,
+        end: Math.min(calendar.endAt, end > finalDayProbe ? calendar.scheduledEndAt : startMainAt + end * unit),
       };
     start = end;
     index += 1;
   }
   throw new Error("A bag's days cover the bag");
+};
+
+/** Resolve a persisted allocation day through the same calendar, including its clipped final day. */
+export const dayAtIndex = (calendar: SeasonCalendar, index: number): SeasonDay => {
+  if (!Number.isSafeInteger(index) || index < 0) throw new Error("Invalid day index");
+  const bag = Math.floor(index / DAYS_PER_BAG);
+  const units =
+    bag * DAY_UNITS_PER_BAG +
+    bagLengths(calendar.seed, bag)
+      .slice(0, index % DAYS_PER_BAG)
+      .reduce((sum, length) => sum + length, 0);
+  const day = dayOf(calendar, calendar.startMainAt + units * calendar.dayUnitSeconds);
+  if (!day || day.index !== index) throw new Error("Day index outside season");
+  return day;
 };
 
 /** How long a season of whole bags lasts, in seconds. */

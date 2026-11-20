@@ -44,7 +44,6 @@ describe("launch request helpers", () => {
         environment: "madara.blitz",
         game: "bltz-test-1",
         "start-time": "2026-03-18T10:00:00Z",
-        "two-player-mode": "true",
         "duration-seconds": "3600",
         "map-config-overrides-json": JSON.stringify({
           campFindProbability: 16384,
@@ -62,7 +61,6 @@ describe("launch request helpers", () => {
       environmentId: "madara.blitz",
       gameName: "bltz-test-1",
       startTime: "2026-03-18T10:00:00Z",
-      twoPlayerMode: true,
       durationSeconds: 3600,
       mapConfigOverrides: {
         campFindProbability: 16384,
@@ -94,14 +92,14 @@ describe("launch request helpers", () => {
 
   test("loads a single game from YAML and keeps explicit shared overrides", () => {
     const configPath = writeLaunchConfig(`launchKind: game
-environmentId: madara.eternum
+environmentId: madara.frontier
 gameName: season-one
 startTime: 2026-09-21T10:00:00Z
 durationSeconds: 86400
 `);
     expect(buildLaunchGameRequest({ "config-path": configPath, "duration-seconds": "3600" })).toMatchObject({
       gameName: "season-one",
-      environmentId: "madara.eternum",
+      environmentId: "madara.frontier",
       durationSeconds: 3600,
     });
   });

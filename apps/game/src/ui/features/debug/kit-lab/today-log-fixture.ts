@@ -1,4 +1,3 @@
-import { frontierArmyRules } from "../../frontier/army/progression-rules-fixture";
 import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import { dayLogLine } from "@/ui/features/frontier/log/day-line";
 import { campBeside, SITE } from "@/ui/features/frontier/sites/site-fixture";
@@ -11,19 +10,9 @@ const BEASTS = [
 ] as const;
 const troops = (count: bigint) => String(count * BigInt(RESOURCE_PRECISION));
 
-/**
- * Today as the owner's army played it on prod on 22 October (army 2536, game 1): its reveals, its four level-ups, the
- * two weak beasts it cleared, the fight the rift's guard held, then the rift's clear. Each story goes through the day
- * log's own line, over the sites fixture with prod's XP rules, so the sheet shows what Today writes for it.
- */
 export const ownerDayLog = (now: number) => {
   const { store } = campBeside("Rift");
   store.applyFacts([
-    {
-      model: "ArmyProgressionRules",
-      key: "0x101",
-      value: frontierArmyRules(),
-    },
     ...BEASTS.map(({ id, guard }, index) => ({
       model: "ExpeditionSite",
       key: `0x7${index + 7}`,

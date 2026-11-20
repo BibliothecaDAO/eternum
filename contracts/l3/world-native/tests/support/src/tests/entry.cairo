@@ -4,14 +4,14 @@ pub use snforge_std::{
 pub use starknet::ContractAddress;
 pub use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerWriteAccess};
 pub use crate::entry::{
-    ILedgerOperatorDispatcher, ILedgerOperatorDispatcherTrait, ILedgerOperatorSafeDispatcher,
-    ILedgerOperatorSafeDispatcherTrait,
+    IHomeGrantsSafeDispatcher, IHomeGrantsSafeDispatcherTrait, ILedgerOperatorDispatcher,
+    ILedgerOperatorDispatcherTrait, ILedgerOperatorSafeDispatcher, ILedgerOperatorSafeDispatcherTrait,
 };
 pub use crate::settlement::{
     EntryEntitlement, EntryKey, ISettlementEntrySafeDispatcher, ISettlementEntrySafeDispatcherTrait,
 };
 pub use crate::tests::state::{GameState, TroopObservationTrait};
-pub use crate::village::{IVillagesSafeDispatcher, IVillagesSafeDispatcherTrait, VillagePassKey};
+pub use crate::village::{IVillagePassesSafeDispatcher, IVillagePassesSafeDispatcherTrait, VillagePassKey};
 pub use super::{Deployment, authority, setup};
 pub fn set_operator(d: Deployment, operator: ContractAddress) {
     start_cheat_caller_address(d.games, authority());

@@ -26,6 +26,7 @@ const mount = () => {
       troopCount: 100,
       stamina: 50,
       battle_cooldown_end: 0,
+      oaths: 0,
       relics: [],
     });
     shown = army;

@@ -215,7 +215,7 @@ function decodeEvent(event: NativeRawEvent, schema: NativeSchema, layout: Native
   const versioned = keyMembers[0]?.name === "version";
   const projection = schema.events.find((projection) => projection.name === layout.name);
   if (!projection) throw new Error("Unowned native event");
-  // Each event is read at the version its compiled projection names (Story, Battle and Raid moved to 2).
+  // Each event is read at the version its compiled projection names (Story and Battle use version 2).
   if (versioned && BigInt(header[0] ?? -1) !== BigInt(projection.version))
     throw new Error("Unsupported native event version");
   const position = {

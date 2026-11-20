@@ -136,11 +136,13 @@ export class D1SlotStore implements SlotStore {
   }
 
   async freezeFailures(): Promise<SlotFreezeFailure[]> {
+    const chain = await this.launches.officialChain();
+    if (chain === null) return [];
     const { results } = await this.db
       .prepare(
         "SELECT chain_id,slot_id,name,freeze_failure FROM playtest_slots WHERE chain_id=? AND frozen_at IS NULL AND freeze_failure IS NOT NULL",
       )
-      .bind(await this.launches.targetChain())
+      .bind(chain)
       .all<SlotRow & { freeze_failure: string }>();
     return results.map((row) => ({
       chainId: row.chain_id,

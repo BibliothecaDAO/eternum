@@ -1,6 +1,12 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { RpcProvider } from "starknet";
-import { identityL2Configuration, identityProvider, verifyIdentityChain, fetchIdentityRpc } from "./l2";
+import {
+  identityL2Configuration,
+  identityProvider,
+  verifyIdentityChain,
+  fetchIdentityRpc,
+  readPaymentReceipt,
+} from "./l2";
 import { apnsCredentialsOf, decodeIdentityEnv, socialProvidersOf, vapidKeysOf } from "./env";
 import { verifyWalletOnL2 } from "./wallet-signature";
 
@@ -185,4 +191,21 @@ it("requires the generated push pair but no sign-in provider or duplicated const
   });
   for (const name of Object.keys(apns))
     expect(() => decodeIdentityEnv({ ...settings, ...apns, [name]: undefined })).toThrow("APNS_TEAM_ID, APNS_KEY_ID");
+});
+
+it("reads a payment once its block is closed, with the block's time, and an unknown or unclosed one as not yet there", async () => {
+  const receipt = { execution_status: "SUCCEEDED", finality_status: "ACCEPTED_ON_L2", events: [] };
+  const answers: Record<string, unknown> = {
+    "0x1": { result: { ...receipt, block_number: 7 } },
+    "0x2": { result: receipt },
+    "0x3": { error: { code: 29, message: "Transaction hash not found" } },
+  };
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (_url, init) => {
+    const { method, params } = JSON.parse(String(init?.body)) as { method: string; params: Record<string, unknown> };
+    if (method === "starknet_getBlockWithTxHashes") return Response.json({ result: { timestamp: 1_234 } });
+    return Response.json(answers[params.transaction_hash as string]);
+  });
+  expect(await readPaymentReceipt(env, "0x1")).toEqual({ receipt: { ...receipt, block_number: 7 }, timestamp: 1_234 });
+  expect(await readPaymentReceipt(env, "0x2")).toBeNull();
+  expect(await readPaymentReceipt(env, "0x3")).toBeNull();
 });

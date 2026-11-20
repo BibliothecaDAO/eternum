@@ -181,6 +181,14 @@ describe("native confirmed history", () => {
       expect(
         (await store.queryEvents({ gameId: "1", model: "BattleEvent", owner: "0x999", limit: 10, offset: 0 })).total,
       ).toBe(0);
+      const either = await store.queryEvents({
+        gameId: "1",
+        model: "BattleEvent",
+        owner: ["0x999", "0x222"],
+        limit: 10,
+        offset: 0,
+      });
+      expect(either.total).toBe(1);
       expect(battles.items[0].value).toMatchObject({
         attacker: { player: "0x111", before: "0x64", after: "0x5a" },
         defender: { player: "0x222", after: "0x0" },
@@ -210,6 +218,7 @@ describe("Frontier confirmed season history", () => {
         (index) =>
           new CairoCustomEnum({
             SitePayout: {
+              xp: 85,
               structure_id: 1,
               explorer_id: 7,
               site_id: 20 + index,
@@ -221,6 +230,7 @@ describe("Frontier confirmed season history", () => {
       stories.push(
         new CairoCustomEnum({
           SitePayout: {
+            xp: 85,
             structure_id: 1,
             explorer_id: 7,
             site_id: 9,

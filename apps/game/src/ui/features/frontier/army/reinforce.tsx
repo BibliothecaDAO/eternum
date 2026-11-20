@@ -24,7 +24,7 @@ import { useState } from "react";
 
 import { wheatStopsAt } from "../deploy/deploy-plan";
 import { type DockArmy, useDockArmies } from "../hud/dock-armies";
-import { homeDirectionOf, readReinforcePlan, type ReinforcePlan, reinforceRange } from "./reinforce-plan";
+import { reinforcementSource, readReinforcePlan, type ReinforcePlan, reinforceRange } from "./reinforce-plan";
 
 const REINFORCE_MODELS = [
   "ExplorerTroops",
@@ -33,6 +33,7 @@ const REINFORCE_MODELS = [
   "ResourceBalance",
   "ResourceProduction",
   "RealmKnowledge",
+  "ExpeditionSite",
 ] as const;
 
 /**
@@ -43,6 +44,7 @@ const REINFORCE_MODELS = [
 export const useSelectedReinforcement = (realm: NativeRows["Structure"] | null): DockArmy | null => {
   const { setup } = useGame();
   const armies = useDockArmies(realm);
+  const timestamp = useCurrentDefaultTick();
   const selection = useUIStore((state) => state.mapSelection);
   const ordersAllowed = useUIStore(canIssueOrders);
   if (!realm || !ordersAllowed || selection?.kind !== "structure" || !selection.tile) return null;
@@ -53,7 +55,9 @@ export const useSelectedReinforcement = (realm: NativeRows["Structure"] | null):
     return at !== undefined && !at.alt && at.col === tile.col && at.row === tile.row;
   };
   return (
-    armies.find((army) => standsThere(army) && homeDirectionOf(setup.store, realm, army.explorerId) !== null) ?? null
+    armies.find(
+      (army) => standsThere(army) && reinforcementSource(setup.store, realm, army.explorerId, timestamp) !== null,
+    ) ?? null
   );
 };
 
@@ -67,10 +71,12 @@ export const useSelectedReinforcement = (realm: NativeRows["Structure"] | null):
 export const ReinforceSheet = ({
   realm,
   army,
+  supplyPost,
   onClose,
 }: {
   realm: NativeRows["Structure"];
   army: DockArmy;
+  supplyPost?: number;
   onClose: () => void;
 }) => {
   const { setup, account } = useGame();
@@ -90,15 +96,15 @@ export const ReinforceSheet = ({
   const reinforce = async () => {
     const signer = account.account;
     // Where the army stands is read again as it is sent: one that has moved off the realm's side sends nothing.
-    const home_direction = homeDirectionOf(setup.store, realm, army.explorerId);
-    if (!signer || home_direction === null || shown <= 0) return;
+    const source = reinforcementSource(setup.store, realm, army.explorerId, defaultTick, supplyPost);
+    if (!signer || source === null || shown <= 0) return;
     try {
       await sendOnce("army", army.explorerId, { order: "use" }, () =>
         setup.systemCalls.explorer_add({
           signer,
           to_explorer_id: army.explorerId,
           amount: multiplyByPrecision(shown),
-          home_direction,
+          supply_post: source.supplyPost,
         }),
       );
     } catch (error) {

@@ -11,7 +11,6 @@ import type { RegistrarWorld } from "./types";
 
 const administrativeCommands = new Set<NativeCommand["kind"]>([
   "SettleBlitzRoster",
-  "CreateBanks",
   "MarkGameSettled",
   "RecordBlitzResults",
 ]);

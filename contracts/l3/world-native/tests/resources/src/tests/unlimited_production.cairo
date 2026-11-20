@@ -22,11 +22,7 @@ fn frontier_board_buildings_stay_unlimited_through_every_settlement() {
             deployment,
             Command::CreateBuilding(
                 CreateBuilding {
-                    scouting_kind: 0,
-                    structure_id: home.entity_id,
-                    directions: array![0_u8].span(),
-                    category: BARRACKS,
-                    use_simple: true,
+                    structure_id: home.entity_id, directions: array![0_u8].span(), category: BARRACKS, use_simple: true,
                 },
             ),
             40,
@@ -49,7 +45,9 @@ fn a_marker_already_worn_by_a_running_game_still_never_runs_out_or_wears_further
         selector!("resources"),
         selector!("productions"),
         array![home.game_id.into(), home.entity_id.into(), LABOR.into()].span(),
-        Production { building_count: 1, production_rate: 3, output_amount_left: WORN, last_settled_at: 40 },
+        Production {
+            remainder: 0, building_count: 1, production_rate: 3, output_amount_left: WORN, last_settled_at: 40,
+        },
     );
     let before = resources(deployment).resource_balance(slot(home, LABOR));
     assert_eq!(settle(deployment, home, LABOR, 100).output_amount_left, WORN);

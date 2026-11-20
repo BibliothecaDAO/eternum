@@ -21,6 +21,24 @@ const track = (confirmed: Promise<unknown> | undefined, provider = accepted) =>
   });
 
 describe("transaction confirmation deadline", () => {
+  it("retains submitted transaction evidence when an exploration reverts", async () => {
+    const provider = {
+      subscribeTransactionStatus: async () =>
+        statusSubscription({ finality_status: "ACCEPTED_ON_L2", execution_status: "REVERTED" }),
+    } as unknown as HarnessProvider;
+    const result = await track(never, provider);
+    expect(result).toMatchObject({
+      gameId: 1,
+      botId: 1,
+      kind: "explore",
+      outcome: "reverted",
+      finalityStatus: "ACCEPTED_ON_L2",
+    });
+    expect(BigInt(result.transactionHash!)).toBe(0x123n);
+    expect(result.submittedAt).toBeDefined();
+    expect(result.visibleAt).toBeUndefined();
+  });
+
   it("fails an action whose submission is never announced instead of waiting for it", async () => {
     const result = await trackTransaction({
       actionIndex: 0,

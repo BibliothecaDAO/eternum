@@ -79,7 +79,7 @@ const monitor = () => {
       PAUSER_ACCOUNT_ADDRESS: "0x9",
       ENVIRONMENT: "staging",
       LAUNCH: { rosterCohorts: calls.cohorts, directoryGames: calls.directory },
-      IDENTITY: { l2ChainId: async () => "0x1", shards: async () => [] },
+      IDENTITY: { l2ChainId: async () => "0x1", shard: async () => null },
       RELAY_REPORT: { held: async () => [] },
     } as never,
   );

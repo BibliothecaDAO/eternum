@@ -4,14 +4,14 @@ import { NodeIO } from "@gltf-transform/core";
 import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
 import draco from "draco3dgltf";
 import { it, expect } from "vitest";
-import { FRONTIER_BEASTS } from "../../src/three/structures/frontier-beast";
+import { FRONTIER_BEASTS, largestBeastScale } from "../../src/three/structures/frontier-beast";
 
 const deliveries = [
   ...Object.keys(FRONTIER_BEASTS).map((species) => ({
     species,
     directory: "public/models/frontier",
     sourceDirectory: "asset-sources/frontier-beasts/refined",
-    maxScale: FRONTIER_BEASTS[species].maxScale,
+    maxScale: largestBeastScale(species),
   })),
 ];
 

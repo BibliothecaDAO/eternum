@@ -1,12 +1,20 @@
 import { readClearedSite, SiteReceipt } from "../frontier/sites/site-receipt";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { siteClearXp, siteReward } from "@bibliothecadao/eternum";
-import { formatAmount, resourceName, frontierSiteName, StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { expeditionDepth, readExpeditionRules, siteReward } from "@bibliothecadao/eternum";
+import {
+  beastModel,
+  beastOf,
+  formatAmount,
+  resourceName,
+  frontierSiteName,
+  StructureType,
+  RESOURCE_PRECISION,
+} from "@bibliothecadao/types";
 import { mountClearedSiteStudy, type ClearedSiteStudy } from "@/three/debug/model-lab/cleared-site-renderer";
 import { Icon } from "@/ui/design-system/icon";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
-import { XP } from "@/ui/design-system/kit/words";
+
 import { campBeside } from "../frontier/sites/site-fixture";
 import "./cleared-site-lab.css";
 
@@ -41,16 +49,21 @@ export function ClearedSiteLab() {
       { model: "Guard", key: "0x73", value: null },
     ]);
     const receipt = readClearedSite(source.store, source.site.game_id, source.site);
-    if (!receipt) throw new Error("Cleared site study requires a receipt");
-    return receipt;
+    if (!receipt?.beast) throw new Error("Cleared site study requires a receipt naming its beast");
+    return { ...receipt, beast: receipt.beast };
   }, [kind, reward]);
-  const name = frontierSiteName(fixture.structure.base.category);
+  const name = frontierSiteName(fixture.structure.base.category, cleared.beast);
+  const herdModel = useMemo(() => {
+    const rules = readExpeditionRules(fixture.store, fixture.site.game_id);
+    if (!rules) throw new Error("Cleared site study requires expedition rules");
+    return beastModel(beastOf("herd", expeditionDepth(rules, { y: fixture.site.row })));
+  }, [fixture]);
 
   useEffect(() => {
     const abort = new AbortController();
     let dispose: (() => void) | undefined;
     setError(null);
-    void mountClearedSiteStudy(host.current!, { kind, distance }, abort.signal, select)
+    void mountClearedSiteStudy(host.current!, { kind, distance, beast: cleared.beast }, abort.signal, select)
       .then((view) => {
         dispose = view.dispose;
         if (abort.signal.aborted) dispose();
@@ -63,7 +76,7 @@ export function ClearedSiteLab() {
       abort.abort();
       dispose?.();
     };
-  }, [kind, distance]);
+  }, [kind, distance, cleared.beast]);
 
   const change = (key: string, value: string) =>
     setParams((previous) => {
@@ -73,7 +86,7 @@ export function ClearedSiteLab() {
     });
 
   return (
-    <main className="cleared-site-lab" data-ready={loaded === signature && !error}>
+    <main className="cleared-site-lab" data-ready={loaded === signature && !error} data-herd-model={herdModel}>
       <header>
         <Link to="/lab/models">Models</Link>
         <div>
@@ -130,9 +143,6 @@ export function ClearedSiteLab() {
                       {resourceName(reward.resourceType)}
                     </span>
                   )}
-                  <span>
-                    <strong>{formatAmount(siteClearXp(fixture.store, fixture.site))}</strong> {XP}
-                  </span>
                 </div>
               </>
             )}

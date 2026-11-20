@@ -10,7 +10,7 @@ const BROWSER_SECONDS = 400 * 24 * 60 * 60;
 const BROWSER_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 /** The id this browser carries; null when it has none yet, or one this service never set. */
-export const browserOf = (request: Request): string | null => {
+const browserOf = (request: Request): string | null => {
   const cookies = request.headers.get("cookie")?.split(";") ?? [];
   const value = cookies.map((cookie) => cookie.trim().split("=")).find(([name]) => name === BROWSER_COOKIE)?.[1];
   return value !== undefined && BROWSER_ID.test(value) ? value : null;

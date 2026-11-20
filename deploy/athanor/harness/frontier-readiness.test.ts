@@ -2,7 +2,7 @@ import { expect, it } from "bun:test";
 import { ResourceManager, type GameClient } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
-import preset from "../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { waitForWheatState } from "./frontier";
 
 function realm() {
@@ -18,6 +18,7 @@ function realm() {
       dev_mode_on: false,
       start_settling_at: 0n,
       start_main_at: 200n,
+      scheduled_end_at: 86_600n,
       end_at: 86_600n,
       end_grace_seconds: 0,
       seed: 1n,

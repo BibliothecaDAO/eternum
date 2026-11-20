@@ -9,10 +9,10 @@ const DRAG_CLOSES_PX = 64;
  * How a sheet closes, whatever it looks like: Escape, and the system back, which closes the sheet rather than the page
  * under it.
  */
-export const useSheetCloses = (onClose: () => void) => {
+export const useSheetCloses = (onClose?: () => void) => {
   const close = useLatest(onClose);
-  useSystemBackCloses(() => close.current());
-  useEscapeCloses(() => close.current());
+  useSystemBackCloses(onClose);
+  useEscapeCloses(() => close.current?.());
 };
 
 /**
@@ -136,7 +136,7 @@ const topSheetLeft = () => {
  * takes its entry once that step lands, so every entry names a sheet on screen. A sheet closed any other way steps back
  * off its own entry, so the back button never has to be pressed twice.
  */
-const useSystemBackCloses = (close: () => void) => {
+const useSystemBackCloses = (close?: () => void) => {
   const id = useId();
   const closeRef = useLatest(close);
   useEffect(() => {
@@ -151,7 +151,10 @@ const useSystemBackCloses = (close: () => void) => {
       else window.history.pushState({ ...state, kitSheets: [...openSheets(), id] }, "");
     };
     const onPop = () => {
-      if (entered && !openSheets().includes(id)) closeRef.current();
+      if (entered && !openSheets().includes(id)) {
+        if (closeRef.current) closeRef.current();
+        else enter();
+      }
     };
     window.addEventListener("popstate", onPop);
     if (steppingBack.size > 0) window.addEventListener("popstate", () => setTimeout(enter), { once: true });

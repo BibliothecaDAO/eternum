@@ -5,13 +5,9 @@ import type { HeraldGameDirectory, HeraldGameDirectoryEntry, ShardManifest } fro
 import type { IdentityEnv } from "./env";
 import { json } from "./http";
 
-const SHARD_STATUSES = ["pending", "active", "draining", "retired"] as const;
-type ShardStatus = (typeof SHARD_STATUSES)[number];
-
-interface ListedShard {
+interface DirectoryShard {
   url: string;
   chainId: string;
-  status: ShardStatus;
 }
 
 /** A shard's games, and the manifest the app opens the shard from, so a game's entry never waits on its Herald. */
@@ -20,7 +16,9 @@ interface ShardRead {
   manifest: ShardManifest;
 }
 
-type ShardListing = (ListedShard & ShardRead) | (ListedShard & { games: null; manifest: null; error: "unavailable" });
+type ShardListing =
+  | (DirectoryShard & ShardRead)
+  | (DirectoryShard & { games: null; manifest: null; error: "unavailable" });
 
 /** How long the shared listing is served from a colo's cache before it is read again. */
 const LISTING_CACHE_SECONDS = 15;
@@ -37,38 +35,23 @@ interface LaunchDirectory {
   chains: { chainId: string; games: { gameId: number; slotId: number | null }[] }[];
 }
 
-/** What both directory routes are built from: the launch records and every listed shard's games. */
 interface DirectoryListing {
   launchDirectory: LaunchDirectory | null;
-  listings: ShardListing[];
+  listing: ShardListing | null;
 }
 
-/**
- * GET /api/directory — every live or upcoming game on every listed shard, each carrying its shard's URL, chain id and
- * manifest so the app opens it on its own shard; a settled game leaves this list for the history. A shard that cannot be read is
- * listed by name with an error; it never empties the list. With ?player=<gameplay account>, each shard answers that
- * player's standing in its games; the shared listing is cached, a player's standing never is.
- */
 export const handleDirectory = async (request: Request, dependencies: DirectoryDependencies) => {
   const player = playerOf(request);
   if (player === INVALID) return json({ error: "invalid_player" }, 400);
-  const { launchDirectory, listings } = await readListing(request, dependencies, player);
+  const { launchDirectory, listing } = await readListing(request, dependencies, player);
+  if (listing === null) return json({ shard: null });
   return json({
-    shards: listings.map((listing) =>
-      listing.games === null || launchDirectory === null
-        ? { ...listing, games: null, manifest: null, error: "unavailable" }
-        : {
-            ...listing,
-            games: playerGames(listing, launchDirectory).filter((game) => !isSettled(game)),
-          },
-    ),
+    shard: isUnavailable(listing, launchDirectory)
+      ? { ...listing, games: null, manifest: null, error: "unavailable" }
+      : { ...listing, games: playerGames(listing, launchDirectory).filter((game) => !isSettled(game)) },
   });
 };
 
-/**
- * GET /api/directory/history?limit=&cursor=[&player=] — settled games across every listed shard, newest end first, a
- * page at a time. With ?player=, only the games that player entered. A shard that cannot be read is named in `failures`.
- */
 export const handleDirectoryHistory = async (request: Request, dependencies: DirectoryDependencies) => {
   const url = new URL(request.url);
   const player = playerOf(request);
@@ -77,24 +60,23 @@ export const handleDirectoryHistory = async (request: Request, dependencies: Dir
   if (player === INVALID) return json({ error: "invalid_player" }, 400);
   if (!Number.isInteger(limit) || limit < 1 || limit > HISTORY_PAGE_MAX) return json({ error: "invalid_limit" }, 400);
   if (cursor !== null && !HISTORY_CURSOR.test(cursor)) return json({ error: "invalid_cursor" }, 400);
-  const { launchDirectory, listings } = await readListing(request, dependencies, player);
-  const settled = listings
-    .flatMap((listing) =>
-      playerGames(listing, launchDirectory)
-        .filter((game) => isSettled(game) && (player === null || game.player_state?.registered === true))
-        .map((game) => ({ ...game, chainId: listing.chainId, shardUrl: listing.url })),
-    )
-    .sort((a, b) => historyPosition(b).localeCompare(historyPosition(a)));
+  const { launchDirectory, listing } = await readListing(request, dependencies, player);
+  const settled = listing === null ? [] : settledGames(listing, launchDirectory, player);
   const after = cursor === null ? settled : settled.filter((game) => historyPosition(game) < positionOfCursor(cursor));
   const games = after.slice(0, limit);
   return json({
     games,
     next: after.length > limit ? cursorOf(games.at(-1)!) : null,
-    failures: listings
-      .filter((listing) => listing.games === null || launchDirectory === null)
-      .map(({ url }) => ({ url, error: "unavailable" })),
+    failures:
+      listing !== null && isUnavailable(listing, launchDirectory) ? [{ url: listing.url, error: "unavailable" }] : [],
   });
 };
+
+const settledGames = (listing: ShardListing, launchDirectory: LaunchDirectory | null, player: string | null) =>
+  playerGames(listing, launchDirectory)
+    .filter((game) => isSettled(game) && (player === null || game.player_state?.registered === true))
+    .map((game) => ({ ...game, chainId: listing.chainId, shardUrl: listing.url }))
+    .sort((a, b) => historyPosition(b).localeCompare(historyPosition(a)));
 
 const HISTORY_PAGE = 20;
 const HISTORY_PAGE_MAX = 100;
@@ -117,7 +99,7 @@ const readListing = async (
   player: string | null,
 ): Promise<DirectoryListing> => {
   if (player) return readFreshListing(dependencies, player);
-  const key = new Request(new URL("/api/directory/shared-listing", request.url));
+  const key = new Request(new URL("/api/directory/shared-shard", request.url));
   const cached = await dependencies.cache.match(key);
   if (cached) return (await cached.json()) as DirectoryListing;
   const listing = await readFreshListing(dependencies, null);
@@ -130,30 +112,34 @@ const readListing = async (
 
 /** The launch records and the shard registry live in two databases in two regions: they are read together. */
 const readFreshListing = async (dependencies: DirectoryDependencies, player: string | null) => {
-  const [launchDirectory, listings] = await Promise.all([
+  const [launchDirectory, listing] = await Promise.all([
     readLaunchDirectoryRecords(dependencies),
-    listShards(dependencies, player),
+    readListedShard(dependencies, player),
   ]);
-  return { launchDirectory, listings };
+  return { launchDirectory, listing };
 };
 
-const isComplete = ({ launchDirectory, listings }: DirectoryListing) =>
-  launchDirectory !== null && listings.every((listing) => listing.games !== null);
+const isComplete = ({ launchDirectory, listing }: DirectoryListing) =>
+  launchDirectory !== null && listing?.games !== null;
 
-/** Every listed shard's games and manifest, each shard read on its own so one that fails is named and the rest answer. */
-const listShards = async (dependencies: DirectoryDependencies, player: string | null) =>
-  Promise.all(
-    (await listedShards(dependencies.db)).map((shard) =>
-      listShard(shard, () => readShard(shard, gamesUrl(shard, player), dependencies.fetchShard)),
-    ),
-  );
+const isUnavailable = (listing: ShardListing, launchDirectory: LaunchDirectory | null) =>
+  listing.games === null || launchDirectory === null;
 
-/** The shards players see: active ones, and draining ones still finishing their games. */
-export const listedShards = async (db: D1Database) =>
-  (await registeredShards(db)).filter((row) => row.status === "active" || row.status === "draining");
+const readListedShard = async (dependencies: DirectoryDependencies, player: string | null) => {
+  const shard = await directoryShard(dependencies.db);
+  return shard && listShard(shard, () => readShard(shard, gamesUrl(shard, player), dependencies.fetchShard));
+};
+
+export const directoryShard = (db: D1Database) =>
+  db.prepare('SELECT "url", "chainId" FROM "shards"').first<DirectoryShard>();
+
+export const directoryShardOf = async (db: D1Database, chainId: string) => {
+  const shard = await directoryShard(db);
+  return shard && BigInt(shard.chainId) === BigInt(chainId) ? shard : null;
+};
 
 /** A shard's game directory, as everyone sees it or with one player's standing in each game. */
-export const gamesUrl = (shard: ListedShard, player: string | null) =>
+export const gamesUrl = (shard: DirectoryShard, player: string | null) =>
   `${shard.url}/games${player ? `?player=${player}` : ""}`;
 
 const isSettled = (game: HeraldGameDirectoryEntry) => game.status === "Settled";
@@ -225,7 +211,7 @@ const positionOfCursor = (cursor: string) => {
   return historyPosition({ clock: { end_at: Number(endAt) }, chainId: chainId!, game_id: Number(gameId) });
 };
 
-const listShard = async (shard: ListedShard, read: () => Promise<ShardRead>): Promise<ShardListing> => {
+const listShard = async (shard: DirectoryShard, read: () => Promise<ShardRead>): Promise<ShardListing> => {
   try {
     return { ...shard, ...(await read()) };
   } catch (error) {
@@ -235,7 +221,7 @@ const listShard = async (shard: ListedShard, read: () => Promise<ShardRead>): Pr
 };
 
 /** A shard whose manifest cannot be read is unavailable, like one whose games cannot be: no client could open it. */
-const readShard = async (shard: ListedShard, gamesUrl: string, fetchShard: typeof fetch): Promise<ShardRead> => {
+const readShard = async (shard: DirectoryShard, gamesUrl: string, fetchShard: typeof fetch): Promise<ShardRead> => {
   const [games, manifest] = await Promise.all([
     fetchShardGames(shard, gamesUrl, fetchShard),
     readManifest(shard.url, fetchShard),
@@ -248,7 +234,7 @@ const readShard = async (shard: ListedShard, gamesUrl: string, fetchShard: typeo
 };
 
 /** A shard's games, read within the shard timeout and refused unless its Herald folds the shard's own chain. */
-export const fetchShardGames = async (shard: ListedShard, url: string, fetchShard: typeof fetch) => {
+export const fetchShardGames = async (shard: DirectoryShard, url: string, fetchShard: typeof fetch) => {
   const response = await fetchShard(url, { signal: AbortSignal.timeout(SHARD_TIMEOUT_MS), redirect: "manual" });
   if (!response.ok) throw new Error(`games directory answered ${response.status}`);
   const directory = (await response.json()) as HeraldGameDirectory;
@@ -265,28 +251,12 @@ interface AccountIdentity {
   guardianPublicKey: string;
 }
 
-/** Register the chain before enrollment; visibility starts after initialization and service role handoff. */
-export const handleRegisterPendingShard = (
+export const handleRegisterShard = (
   request: Request,
   db: D1Database,
   fetchShard: typeof fetch,
   identity: AccountIdentity,
-) => admitValidatedShard(request, db, fetchShard, identity, registerPendingShard);
-
-/** The deployment calls this after initialized facts and service roles are confirmed; an unregistered chain cannot be activated. */
-export const handleAdmitShard = (
-  request: Request,
-  db: D1Database,
-  fetchShard: typeof fetch,
-  identity: AccountIdentity,
-) => admitValidatedShard(request, db, fetchShard, identity, activatePendingShard);
-
-const admitValidatedShard = (
-  request: Request,
-  db: D1Database,
-  fetchShard: typeof fetch,
-  identity: AccountIdentity,
-  writeAdmission: (db: D1Database, url: string, chainId: string) => Promise<Response>,
+  notifiers: IdentityEnv["SHARD_NOTIFIER"],
 ) =>
   Effect.runPromise(
     Effect.gen(function* () {
@@ -295,70 +265,33 @@ const admitValidatedShard = (
       const manifest = yield* Effect.promise(() => readManifest(url, fetchShard));
       if (!manifest) return json({ error: "manifest_unavailable" }, 502);
       if (!hasAccountIdentity(manifest, identity)) return json({ error: "account_identity_differs" }, 409);
-      return yield* Effect.promise(() => writeAdmission(db, url, manifest.chainId));
+      const shard = { url, chainId: manifest.chainId };
+      yield* Effect.promise(() => replaceShard(db, notifiers, shard));
+      return json({ shard });
     }),
   );
 
-const registerPendingShard = async (db: D1Database, url: string, chainId: string) => {
-  const listed = await db
-    .prepare('SELECT "url", "status" FROM "shards" WHERE "chainId" = ?')
-    .bind(chainId)
-    .first<{ url: string; status: ShardStatus }>();
-  if (listed)
-    return listed.url === url
-      ? json({ url, chainId, status: listed.status })
-      : json({ error: "chain_id_listed", url: listed.url }, 409);
-  const relisted = await db
-    .prepare(
-      `UPDATE "shards" SET "chainId" = ?, "status" = 'pending', "addedAt" = ? WHERE "url" = ? AND "status" = 'retired' RETURNING "url"`,
-    )
-    .bind(chainId, Date.now(), url)
-    .first();
-  if (relisted) return json({ url, chainId, status: "pending" }, 201);
-  try {
-    await db
-      .prepare(`INSERT INTO "shards" ("url", "chainId", "status", "addedAt") VALUES (?, ?, 'pending', ?)`)
-      .bind(url, chainId, Date.now())
-      .run();
-  } catch {
-    return json({ error: "shard_listed" }, 409);
-  }
-  return json({ url, chainId, status: "pending" }, 201);
+export const handleRemoveShard = async (db: D1Database, notifiers: IdentityEnv["SHARD_NOTIFIER"]) => {
+  const listed = await directoryShard(db);
+  if (listed) await notifierOf(notifiers, listed).stop();
+  await db.prepare('DELETE FROM "shards"').run();
+  return json({ shard: null });
 };
 
-const activatePendingShard = async (db: D1Database, url: string, chainId: string) => {
-  const activated = await db
+const replaceShard = async (db: D1Database, notifiers: IdentityEnv["SHARD_NOTIFIER"], shard: DirectoryShard) => {
+  const listed = await directoryShard(db);
+  if (listed && listed.url !== shard.url) await notifierOf(notifiers, listed).stop();
+  await db
     .prepare(
-      `UPDATE "shards" SET "status" = 'active' WHERE "url" = ? AND "chainId" = ? AND "status" = 'pending' RETURNING "url"`,
+      'INSERT INTO "shards" ("slot", "chainId", "url") VALUES (1, ?, ?) ON CONFLICT ("slot") DO UPDATE SET "chainId" = excluded."chainId", "url" = excluded."url"',
     )
-    .bind(url, chainId)
-    .first();
-  if (activated) return json({ url, chainId, status: "active" }, 201);
-  const listed = await db
-    .prepare('SELECT "url", "status" FROM "shards" WHERE "chainId" = ?')
-    .bind(chainId)
-    .first<{ url: string; status: ShardStatus }>();
-  if (listed && listed.url !== url) return json({ error: "chain_id_listed", url: listed.url }, 409);
-  if (listed && ["active", "draining"].includes(listed.status)) return json({ url, chainId, status: listed.status });
-  return json({ error: "shard_not_pending" }, 409);
+    .bind(shard.chainId, shard.url)
+    .run();
+  await notifierOf(notifiers, shard).watch(shard);
 };
 
-/** POST /api/directory/shards/status {url, status} — drains or retires a listed shard. */
-export const handleShardStatus = async (request: Request, db: D1Database) => {
-  const body = (await request.json().catch(() => null)) as { url?: unknown; status?: unknown } | null;
-  const url = shardUrlOf(body?.url);
-  const status = SHARD_STATUSES.filter((candidate) => candidate !== "pending").find(
-    (candidate) => candidate === body?.status,
-  );
-  if (!url || !status) return json({ error: "invalid_shard_status" }, 400);
-  const updated = await db
-    .prepare(
-      `UPDATE "shards" SET "status" = ? WHERE "url" = ? AND ("status" IN ('active', 'draining') OR ? = 'retired') RETURNING "url"`,
-    )
-    .bind(status, url, status)
-    .first();
-  return updated ? json({ url, status }) : json({ error: "shard_status_change_refused" }, 409);
-};
+const notifierOf = (notifiers: IdentityEnv["SHARD_NOTIFIER"], shard: DirectoryShard) =>
+  notifiers.get(notifiers.idFromName(shard.url));
 
 /** One spelling per shard: an https origin with no path, so the same Herald is never listed twice. */
 const shardUrlOf = (value: unknown): string | null => {
@@ -401,20 +334,7 @@ const hasAccountIdentity = (manifest: Partial<AccountIdentity>, identity: Accoun
     return typeof value === "string" && FELT.test(value) && isSameStarknetAddress(value, identity[key]);
   });
 
-/** The directory's cron: every listed shard has a running notifier, and a retired one has none. */
 export const superviseNotifiers = async (db: D1Database, notifiers: IdentityEnv["SHARD_NOTIFIER"]): Promise<void> => {
-  const { results } = await db.prepare('SELECT "url", "chainId", "status" FROM "shards"').all<ListedShard>();
-  await Promise.all(
-    results.map((shard) => {
-      const notifier = notifiers.get(notifiers.idFromName(shard.url));
-      return ["pending", "retired"].includes(shard.status)
-        ? notifier.stop()
-        : notifier.watch({ url: shard.url, chainId: shard.chainId });
-    }),
-  );
+  const shard = await directoryShard(db);
+  if (shard) await notifierOf(notifiers, shard).watch(shard);
 };
-
-/** Private services read every registered lifecycle row; each write applies its active/draining rule. */
-export const registeredShards = async (db: D1Database) =>
-  (await db.prepare('SELECT url,"chainId",status FROM shards ORDER BY "addedAt", "chainId"').all<ListedShard>())
-    .results;

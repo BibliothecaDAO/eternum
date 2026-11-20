@@ -8,16 +8,18 @@ import { showDeployOnMap } from "@/three/scenes/worldmap-deploy-request";
 import { toast } from "@/ui/features/event-feed/notify";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { useDeployRing } from "@/ui/features/military/components/unified-army-creation-modal/use-deploy-ring";
-import { type ExpeditionRules, ResourceManager } from "@bibliothecadao/eternum";
+import { type ExpeditionRules, getTroopResourceId, ResourceManager } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import type { Direction } from "@bibliothecadao/types";
+import { FRONTIER_TROOP_NAMES, TROOP_TYPES, TroopTier, type TroopType, type Direction } from "@bibliothecadao/types";
 import { useEffect, useRef, useState } from "react";
 
 import { useGoToFrontierPlace } from "../frontier-home";
 import { useRealmStores } from "../realm-stores";
+import { madeStoreOf } from "../stores";
 import { secondsUntilHeld } from "../hud/army-order";
 import { armyArt } from "../hud/dock-armies";
 import { deployArmy, deployDirection, deployRange, previewDeploy, wheatStopsAt } from "./deploy-plan";
+import { TroopOathSlots } from "../army/oath-slots";
 import { DeployView } from "./deploy-view";
 import { useDeployPlan } from "./use-deploy-plan";
 
@@ -38,7 +40,8 @@ export const DeploySheet = ({
 }) => {
   const { setup } = useGame();
   const defaultTick = useCurrentDefaultTick();
-  const plan = useDeployPlan(realm);
+  const [troopType, setTroopType] = useState<TroopType>();
+  const plan = useDeployPlan(realm, troopType);
   const range = plan ? deployRange(plan) : { troopsMax: 0, wheatMax: 0, max: 0 };
   const [count, setCount] = useState<number | "max" | null>(null);
   // The sheet opens at no troops, so +500 gives exactly 500 (owner, 26 October 2026: "it should be 0 so I can press 500
@@ -67,7 +70,13 @@ export const DeploySheet = ({
   useDeployOnMap(realmId, direction);
   const deploying = useInFlight("deploy", realmId) !== undefined;
   const wheatPerHour = new ResourceManager(setup.store, realmId).wheatPerHour(defaultTick);
-  const nextTroopIn = useRealmStores(realm, rules)?.troops.nextIn;
+  const stores = useRealmStores(realm, rules);
+  const troopWaits = TROOP_TYPES.flatMap((type) => {
+    const kind = madeStoreOf(getTroopResourceId(type, TroopTier.T1));
+    const wait = kind ? stores?.[kind].nextIn : undefined;
+    return wait === undefined ? [] : [wait];
+  });
+  const nextTroopIn = troopWaits.length ? Math.min(...troopWaits) : undefined;
 
   /** The sheet closes as the army leaves; its slot on the dock carries the wait, and a refusal says why there. */
   const deploy = async () => {
@@ -93,6 +102,20 @@ export const DeploySheet = ({
 
   return (
     <DeployView
+      oathSlots={plan?.troops && <TroopOathSlots category={plan.troops.type} homeId={realmId} />}
+      troopSelection={{
+        choices:
+          plan?.choices.map((troops) => ({
+            category: troops.type,
+            name: FRONTIER_TROOP_NAMES[troops.type],
+            art: armyArt({ category: troops.type, tier: troops.tier }),
+          })) ?? [],
+        selected: plan?.troops?.type,
+        onPick: (type) => {
+          setTroopType(type);
+          setCount(null);
+        },
+      }}
       art={plan?.troops ? armyArt({ category: plan.troops.type, tier: plan.troops.tier }) : undefined}
       troopsAtHome={plan ? (plan.troops?.atHome ?? 0) : undefined}
       count={preview?.count}

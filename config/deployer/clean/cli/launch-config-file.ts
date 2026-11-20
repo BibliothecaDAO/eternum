@@ -15,7 +15,6 @@ const SHARED_STRING_FIELDS = [
 const SHARED_BOOLEAN_FIELDS = [
   ["devModeOn", "dev-mode-on"],
   ["singleRealmMode", "single-realm-mode"],
-  ["twoPlayerMode", "two-player-mode"],
   ["verboseConfigLogs", "verbose-config-logs"],
   ["dryRun", "dry-run"],
 ] as const;

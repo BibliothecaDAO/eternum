@@ -284,7 +284,7 @@ vi.mock("@realms-world/value-ledger", async (original) => {
     }),
     requireActiveChain: async () => {},
     relayAccountAddress: () => "0x5",
-    activeShards: async () => [{ chainId: "0x2" }],
+    officialChain: async () => ({ chainId: "0x2" }),
   };
 });
 
@@ -340,7 +340,7 @@ const monitor = (data = new Map<string, unknown>()) =>
       PAUSER_ACCOUNT_ADDRESS: "0x9",
       ENVIRONMENT: "staging",
       LAUNCH: { rosterCohorts: async () => [], directoryGames: async () => [] },
-      IDENTITY: { l2ChainId: async () => "0x1", shards: async () => [] },
+      IDENTITY: { l2ChainId: async () => "0x1", shard: async () => null },
       RELAY_REPORT: { held: async () => [] },
     } as never,
   );
@@ -356,7 +356,7 @@ const relayEnv = {
   COSIGNER_TOKEN: "t",
   IDENTITY: {
     l2ChainId: async () => "0x1",
-    shards: async () => [],
+    shard: async () => null,
     authenticate: async () => ({ realmsId: "0x77" }),
   },
   ROSTER_MONITOR: { ledgerWritten: async () => {} },

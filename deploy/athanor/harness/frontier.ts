@@ -1,5 +1,4 @@
 import { seasonDayUnitSeconds } from "../../../config/source/common/season-clock";
-import { lowestFittingPoint } from "@bibliothecadao/eternum";
 import { openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
 import { safeInteger } from "../../../packages/core/src/utils/safe-integer";
 import { entityHomeNamespace } from "@bibliothecadao/eternum/expeditions";
@@ -9,8 +8,7 @@ import { fetchHeraldGameHistory } from "@bibliothecadao/eternum/game-client";
 import {
   ArmyActionManager,
   canPayTroopRaise,
-  realmLearned,
-  researchedDepth,
+  RESEARCH_ROWS,
   researchRowCategory,
   researchTier,
   createGameActions,
@@ -24,6 +22,7 @@ import {
   entityMapPosition,
   liveHomeArmies,
   readExpeditionRules,
+  readBaneEffects,
   readTroopRaiseCost,
   ResourceManager,
   type GameClient,
@@ -40,13 +39,10 @@ import {
   TroopTier,
 } from "@bibliothecadao/types";
 import type { NativeCommand } from "../../../contracts/l3/world-native/schema/commands.gen";
-import {
-  nativeResearchConstants as research,
-  type NativeRows,
-} from "../../../contracts/l3/world-native/schema/client.gen";
+import type { NativeRows } from "../../../contracts/l3/world-native/schema/client.gen";
 import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
 import { nativePresetForId } from "../../../config/source/native";
-import { FRONTIER_ACCELERATED_PRESET_ID } from "../../../config/source/common/native-preset-modes";
+import { FRONTIER_FIXTURE_PRESET_ID } from "../../../config/source/common/native-preset-modes";
 import { loadNativePresetConfiguration } from "../../../config/deployer/clean/registrar/native-preset";
 import type { HarnessAccount } from "./account-factory";
 import { actorKey, type HarnessGameClient } from "./game-client";
@@ -76,7 +72,7 @@ const GUARDED_SITES = new Set<number>([
 
 /** A design run's day unit: the accelerated fixture preset's, which the season it plays must match. */
 const acceleratedDayUnitSeconds = (): number => {
-  const preset = nativePresetForId(FRONTIER_ACCELERATED_PRESET_ID);
+  const preset = nativePresetForId(FRONTIER_FIXTURE_PRESET_ID);
   return seasonDayUnitSeconds(preset);
 };
 
@@ -237,7 +233,14 @@ function recordRules(client: GameClient) {
       }
     },
     recordCharge(player: Player, charge: WheatCharge, before: WheatState, after: WheatState) {
-      const charged = wheatCharged(before, after);
+      const effects = readBaneEffects(
+        player.client.setup.store,
+        player.client.gameId,
+        player.realmId,
+        before.production.last_settled_at,
+        after.production.last_settled_at,
+      );
+      const charged = wheatCharged(before, after, known(effects.known, player.realmId, "production intervals"));
       if (charged === null) return;
       evidence.charges.push({
         botId: player.identity.botId,
@@ -715,10 +718,10 @@ function planUpgrade(client: GameClient, player: Player): Action | undefined {
       action: { kind: "LevelUp", value: player.realmId },
       type: TransactionType.LEVEL_UP,
     });
-  // Research the cheapest open row's next tier, always on its first side: Fields, Tools, Drill, camps.
+  // Research the cheapest open row's next tier on its first side.
   const learned = store.require("RealmKnowledge", { game_id: client.gameId, structure_id: player.realmId }).learned;
   const labor = balance(client, player, 23);
-  for (let row = 0; row < research.ROW_COUNT; row++) {
+  for (const row of RESEARCH_ROWS) {
     const category = researchRowCategory[row];
     if (category !== undefined && !standing(client, player, category)) continue;
     const price = store.get("ResearchPrice", { game_id: client.gameId, row, tier: researchTier(learned, row) + 1 });
@@ -905,32 +908,11 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
   const stamina = rules.troop_stamina_config;
   for (const army of activeArmies(client, player)) {
     const amount = game.explorerStamina(safeInteger(army.explorer_id), game.currentTicks().default);
-    const upgrade = affordableUpgrade(client, safeInteger(army.explorer_id));
-    if (upgrade)
-      return command(
-        client,
-        player,
-        {
-          kind: "SpendSkillPoint",
-          value: {
-            explorer_id: army.explorer_id,
-            choice:
-              upgrade === "Scouting"
-                ? { kind: "Scouting", value: { kind: "Rift", value: undefined } }
-                : { kind: upgrade, value: undefined },
-          },
-        },
-        TransactionType.SPEND_SKILL_POINT,
-      );
     const coord = entityMapPosition(client.setup.store, client.gameId, army.explorer_id);
     const neighbors = getNeighborHexes(coord.x, coord.y);
     const spacing = client.setup.store.require("SettlementRules", { game_id: client.gameId }).spacing;
     const realm = home(client, player);
-    const depth = known(
-      researchedDepth(client.setup.store, client.gameId, player.realmId),
-      player.realmId,
-      "researched depth",
-    );
+    const depth = realm.metadata.deepest_depth;
     const atEntrance =
       Math.floor(coord.y / spacing) % 4 === 0 &&
       neighbors.some(
@@ -965,7 +947,11 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
         player,
         {
           kind: "BattleGuard",
-          value: { attacker_id: army.explorer_id, defender_id: target.entity_id },
+          value: {
+            attacker_id: army.explorer_id,
+            defender_id: target.entity_id,
+            relic_slot: { kind: "None", value: undefined },
+          },
         },
         TransactionType.ATTACK_EXPLORER_VS_GUARD,
       );
@@ -1066,22 +1052,6 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
   }
 }
 /** An army beside a guard site waits to attack it: exploring on would walk it away from the capture it found. */
-/** The army's lowest attribute it can afford to Upgrade, as a player spreading XP would; none while it cannot pay. */
-function affordableUpgrade(client: GameClient, explorerId: number) {
-  const progress = client.setup.store.require("ArmyProgress", { game_id: client.gameId, explorer_id: explorerId });
-  const tiers = [
-    ["Battle", progress.battle],
-    ["Logistics", progress.logistics],
-    ["Scouting", progress.scouting],
-    ["Homecoming", progress.homecoming],
-  ] as const;
-  const [attribute] =
-    tiers
-      .filter(([, tier]) => lowestFittingPoint(progress, tier + 1) !== undefined)
-      .toSorted((a, b) => a[1] - b[1])[0] ?? [];
-  return attribute;
-}
-
 export function holdsForSite(stamina: number, attackRequirement: number): boolean {
   return stamina < attackRequirement;
 }
@@ -1111,17 +1081,7 @@ function observeProgress(client: GameClient, game: HarnessGame, player: Player) 
   const realm = home(client, player);
   for (const [lane, level] of [
     ["castle", realm.base.level],
-    [
-      "barracks",
-      researchTier(
-        known(realmLearned(client.setup.store, client.gameId, player.realmId), player.realmId, "realm knowledge"),
-        research.ROW_BARRACKS,
-      ),
-    ],
-    [
-      "depth",
-      known(researchedDepth(client.setup.store, client.gameId, player.realmId), player.realmId, "researched depth"),
-    ],
+    ["depth", realm.metadata.deepest_depth],
   ] as const) {
     if (level > 0 && !player.rungs.some((rung) => rung.lane === lane && rung.level === level))
       player.rungs.push({ lane, level, at: now() });

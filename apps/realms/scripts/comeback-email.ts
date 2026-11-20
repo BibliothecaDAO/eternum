@@ -1,7 +1,7 @@
 // The Devcon Season 0 comeback email: one email in three variants, sent from the identity Worker's sender (Realms
 // <no-reply@realms.party>, Resend). Its words and its send-record key come from a copy folder outside the repo
 // (comeback-copy.ts), checked against the live figures before anything goes. Every figure is read when it runs: the
-// players, the chests won and the LORDS left from Herald, the LORDS price from CoinGecko, a ticket home's daily claim,
+// players, the chests won and the LORDS left from Herald, the LORDS price from AVNU, a ticket home's daily claim,
 // regular and golden, from the game's LaborRules row; the invite's odds and count from the Devcon campaign
 // (packages/identity/src/campaigns.ts). Each email carries its account's stop link (server/news-email-opt-out.ts) as a
 // footer link and as List-Unsubscribe headers.
@@ -22,6 +22,7 @@ import environments from "../../../deploy/first/environments.json";
 import playtest from "../../../packages/core/src/sync/season-archives/playtest.json";
 import { sendEmail, type Email } from "../../../packages/notifications/src/email";
 import BRAND from "../../../packages/notifications/src/brand.gen.json";
+import { avnuUsdPrices, LORDS_ADDRESS } from "@realms-world/chain";
 import { newsEmailOptOutLink } from "../server/news-email-opt-out";
 import {
   copyFiles,
@@ -105,7 +106,7 @@ async function readSeason(): Promise<Season> {
     herald(`/games/${GAME}/snapshot`),
     herald(`/games/${GAME}/leaderboard`),
     readHistory(),
-    readLordsPrice(),
+    avnuUsdPrices([LORDS_ADDRESS]),
   ]);
   const game = (directory.games as Row[]).find((entry) => entry.game_id === GAME)!;
   const model = (name: string) =>
@@ -116,6 +117,7 @@ async function readSeason(): Promise<Season> {
   const activity = new Activity({
     seed: BigInt(game.expedition.seed),
     startMainAt: Number(game.clock.start_main_at),
+    scheduledEndAt: Number(game.clock.scheduled_end_at),
     endAt: Number(game.clock.end_at),
     dayUnitSeconds: Number(game.expedition.day_unit_seconds),
   });
@@ -127,7 +129,7 @@ async function readSeason(): Promise<Season> {
     won: (board.entries as Row[]).reduce((sum, entry) => sum + Number(entry.rewards?.lords ?? 0), 0),
     left,
     prize,
-    usdLeft: left * price,
+    usdLeft: left * price[LORDS_ADDRESS]!,
     endsAt: Number(game.clock.end_at),
     rules: model("LaborRules")[0] as LaborRuleAmounts,
     activity,
@@ -161,14 +163,6 @@ async function catchUpActivity(season: Season) {
   season.activity.noteHistory(fresh as HistoryEvent[]);
   season.activity.noteClaims((claims.models as Row[])[0]?.rows.map((row: Row) => row.value) ?? []);
   season.confirmedBlock = Number(claims.confirmed_block);
-}
-
-async function readLordsPrice(): Promise<number> {
-  const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=lords&vs_currencies=usd");
-  if (!response.ok) throw new Error(`CoinGecko: ${response.status}`);
-  const usd = ((await response.json()) as Row).lords?.usd;
-  if (typeof usd !== "number" || !(usd > 0)) throw new Error("CoinGecko: no LORDS price");
-  return usd;
 }
 
 // ---- Who gets which variant (counts only leave this file) -----------------------------------------------------------

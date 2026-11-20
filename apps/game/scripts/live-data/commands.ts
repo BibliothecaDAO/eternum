@@ -1,3 +1,7 @@
+import { nativeFactSchemaIdentity } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/balance.gen";
+import { researchHasIndependentSides, researchPicks } from "../../../../packages/core/src/utils/realm-research";
+
 /**
  * Every game transaction named by the command that sent it, with the options it used, its game and its player.
  *
@@ -34,45 +38,17 @@ const LABOR = 23;
 const DONKEY = 25;
 const TROOPS = ["Knight", "Crossbowman", "Paladin"];
 const TIERS = ["T1", "T2", "T3"];
-const RESEARCH_ROWS = [
-  "Farm",
-  "Workshop",
-  "Barracks",
-  "Hut",
-  "War Hall",
-  "Supply Yard",
-  "Scouts' Lodge",
-  "Hearth",
-  "Shrine",
-  "Well",
-  "Ethereal",
-];
-const RESEARCH_SIDES: Record<number, string[]> = {
-  0: ["Make", "Store"],
-  1: ["Make", "Store"],
-  2: ["Drill", "Rations"],
-  6: ["Camps", "Rifts", "Beasts"],
-};
-// research.cairo: each row's tier slot and, where it has sides, its choice slot (scale, size).
-const TIER_SLOT: [bigint, bigint][] = [
-  [0x1n, 8n],
-  [0x80n, 8n],
-  [0x4000n, 8n],
-  [0x200000n, 8n],
-  [0x1000000n, 8n],
-  [0x8000000n, 8n],
-  [0x40000000n, 8n],
-  [0x200000000n, 8n],
-  [0x100000000000n, 2n],
-  [0x200000000000n, 2n],
-  [0x400000000000n, 4n],
-];
-const CHOICE_SLOT: Record<number, [bigint, bigint]> = {
-  0: [0x8n, 2n],
-  1: [0x400n, 2n],
-  2: [0x20000n, 2n],
-  6: [0x1000000000n, 4n],
-};
+export const researchRows = Object.entries(research)
+  .filter(([name]) => name.startsWith("ROW_"))
+  .map(([name, row]) => ({
+    row,
+    name: researchLabel(name),
+    sides: researchHasIndependentSides(row)
+      ? Object.entries(research)
+          .filter(([name]) => name.startsWith("CHOICE_"))
+          .map(([name, choice]) => ({ name: researchLabel(name), choice }))
+      : [{ name: null, choice: 0 }],
+  }));
 const BUILDING_CHANGE: Record<string, string> = {
   Created: "Build",
   Destroyed: "Demolish building",
@@ -141,7 +117,16 @@ class Transaction {
 }
 
 /** Names every transaction, in chain order. */
-export function nameCommands(events: DecodedEvent[], modes: Record<string, Mode>): CommandRow[] {
+export function nameCommands(
+  events: DecodedEvent[],
+  modes: Record<string, Mode>,
+  schemaIdentity: string,
+): CommandRow[] {
+  if (schemaIdentity !== nativeFactSchemaIdentity) {
+    throw new Error(
+      `Unsupported command schema ${schemaIdentity}; expected ${nativeFactSchemaIdentity}; usage.json left as it was`,
+    );
+  }
   const owners = new Map<string, Owners>();
   const knowledge = new Map<string, Map<string, bigint>>();
   const rows: CommandRow[] = [];
@@ -392,21 +377,22 @@ function nameStoryless(t: Transaction, owners: Owners, knowledge: Map<string, bi
 }
 
 /** The row, tier and side one research command learned, from the bitfield before and after. */
-export function researchStep(
-  before: bigint,
-  after: bigint,
-): { row: string | null; tier: number | null; side: string | null } {
-  const tier = (learned: bigint, row: number) => Number((learned / TIER_SLOT[row][0]) % TIER_SLOT[row][1]);
-  for (let row = 0; row < TIER_SLOT.length; row++) {
-    const reached = tier(after, row);
-    if (reached !== tier(before, row) + 1) continue;
-    const choice = CHOICE_SLOT[row];
-    const side = choice
-      ? RESEARCH_SIDES[row][Number((after / (choice[0] * choice[1] ** BigInt(reached - 1))) % choice[1])]
-      : null;
-    return { row: RESEARCH_ROWS[row], tier: reached, side };
+function researchStep(before: bigint, after: bigint): { row: string | null; tier: number | null; side: string | null } {
+  for (const { name, row, sides } of researchRows) {
+    for (const side of sides) {
+      const reached = researchPicks(after, row, side.choice);
+      if (reached !== researchPicks(before, row, side.choice) + 1) continue;
+      return { row: name, tier: reached, side: side.name };
+    }
   }
   return { row: null, tier: null, side: null };
+}
+
+function researchLabel(name: string): string {
+  return name
+    .replace(/^(ROW|CHOICE)_/, "")
+    .toLowerCase()
+    .replace(/(^|_)([a-z])/g, (_, gap, letter) => `${gap ? " " : ""}${letter.toUpperCase()}`);
 }
 
 /** Distance between two offset hexes as the map stores them; enough to tell a step from a jump to another depth. */

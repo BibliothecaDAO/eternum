@@ -1,13 +1,12 @@
 import { shortString } from "starknet";
 import { describe, expect, it } from "vitest";
 import { toJsonValue } from "../model-registry";
-import { battleEvent, manifest, raw, schema, setup } from "./fixtures";
+import { battleEvent, manifest, raw, schema, setup, storyTag } from "./fixtures";
 
 // Wire payloads follow the Cairo story declarations, independently of the decoder.
 const resources = [{ resource_type: 1n, amount: 100n }];
 const coord = { alt: true, x: 12n, y: 34n };
 const stories: Record<string, { fields: number[]; expected: unknown }> = {
-  FaithPointsClaimedStory: { fields: [3, 10, 20], expected: { wonder_id: 3n, new_points: 10n, total_points: 20n } },
   StructureLevelUpStory: { fields: [2], expected: { new_level: 2n } },
   RealmCreatedStory: { fields: [1, 12, 34], expected: { coord } },
   GuardAddStory: {
@@ -49,62 +48,6 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
     },
   },
   StructureCapturedStory: { fields: [17, 34, 50], expected: { previous_owner: 17n, new_owner: 34n, points: 50n } },
-  TradeCreated: {
-    fields: [9, 3, 7, 1, 2, 10, 20, 4, 200],
-    expected: {
-      trade_id: 9n,
-      order: {
-        maker_id: 3n,
-        taker_id: 7n,
-        offered_resource: 1n,
-        requested_resource: 2n,
-        offered_per_lot: 10n,
-        requested_per_lot: 20n,
-        remaining_lots: 4n,
-        expires_at: 200n,
-      },
-    },
-  },
-  TradeAccepted: {
-    fields: [9, 3, 7, 1, 2, 40, 80],
-    expected: {
-      trade_id: 9n,
-      maker_id: 3n,
-      taker_id: 7n,
-      offered_resource: 1n,
-      requested_resource: 2n,
-      offered_amount: 40n,
-      requested_amount: 80n,
-    },
-  },
-  TradeCancelled: { fields: [9], expected: 9n },
-  BankSwap: {
-    fields: [9, 3, 1, 100, 50, 2, 3, 2, 1],
-    expected: {
-      bank_id: 9n,
-      structure_id: 3n,
-      resource_type: 1n,
-      lords_amount: 100n,
-      resource_amount: 50n,
-      owner_fee: 2n,
-      lp_fee: 3n,
-      resource_price: 2n,
-      buy: true,
-    },
-  },
-  BankLiquidity: {
-    fields: [9, 3, 1, 100, 50, 20, 2, 0],
-    expected: {
-      bank_id: 9n,
-      structure_id: 3n,
-      resource_type: 1n,
-      lords_amount: 100n,
-      resource_amount: 50n,
-      shares: 20n,
-      resource_price: 2n,
-      add: false,
-    },
-  },
   HyperstructurePoints: { fields: [17, 50], expected: { player: 17n, points: 50n } },
   RewardChestOpened: {
     fields: [7, 3, 1, 12, 34, 17],
@@ -123,11 +66,6 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
     expected: { explorer_id: 7n, receiver: 3n, coord, resource_type: 38n, amount: 3000n },
   },
   SeasonEnded: { fields: [17], expected: 17n },
-  FaithPledged: {
-    fields: [3, 9, 2000, 8000],
-    expected: { structure_id: 3n, wonder_id: 9n, owner_rate: 2000n, pledger_rate: 8000n },
-  },
-  FaithRemoved: { fields: [3, 9], expected: { structure_id: 3n, wonder_id: 9n } },
   BlitzFinalized: { fields: [11], expected: 11n },
   RelicCrafted: { fields: [4], expected: 4n },
   RelicActivated: {
@@ -135,8 +73,9 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
     expected: { relic_id: 41n, recipient: "Explorer", rate_bps: 2000n, duration_seconds: 1800n, radius: 0n },
   },
   SitePayout: {
-    fields: [3, 7, 9, 7, 0, 23, 500],
+    fields: [85, 3, 7, 9, 7, 0, 23, 500],
     expected: {
+      xp: 85n,
       structure_id: 3n,
       explorer_id: 7n,
       site_id: 9n,
@@ -200,27 +139,7 @@ const standalone = {
     key: { game_id: 1n, player: 17n },
     value: { activity: "Hyperstructure", points: 50n, player_points: 100n, season_points: 200n },
   },
-  RaidEvent: {
-    keys: ["2", "1", "7", "3"],
-    data: ["1", "17", "34", "100", "90", "1", "1", "100", "140"],
-    key: { game_id: 1n, explorer_id: 7n, structure_id: 3n },
-    value: {
-      success: true,
-      player: 17n,
-      target_owner: 34n,
-      troops_before: 100n,
-      troops_after: 90n,
-      requested_loot: resources,
-      timestamp: 140n,
-    },
-  },
 };
-
-function storyVariants() {
-  const type = schema.types["world_native::ownership::Story"];
-  if (type.type !== "enum") throw new Error("Missing compiled story enum");
-  return type.variants;
-}
 
 function assertDecoded(event: ReturnType<typeof raw>, key: unknown, value: Record<string, unknown>) {
   const decoded = setup().decoder.decode(event);
@@ -239,7 +158,7 @@ describe("compiled native history coverage", () => {
     [2, "Beasts"],
     [3, "Sanctuaries"],
   ] as const)("keeps Scouting history code %i as %s", (kind, name) => {
-    const variant = storyVariants().findIndex((variant) => variant.name === "SkillPointSpent");
+    const variant = Number(storyTag("SkillPointSpent"));
     for (const layout of schema.games.events.filter(({ name }) => name === "StoryEvent")) {
       assertDecoded(
         raw({
@@ -259,7 +178,7 @@ describe("compiled native history coverage", () => {
   });
   for (const [name, { fields, expected }] of Object.entries(stories)) {
     it(`decodes ${name} from every Games event prefix`, () => {
-      const variant = storyVariants().findIndex((variant) => variant.name === name);
+      const variant = Number(storyTag(name));
       for (const layout of schema.games.events.filter(({ name }) => name === "StoryEvent")) {
         assertDecoded(
           raw({
@@ -307,7 +226,7 @@ describe("compiled native history coverage", () => {
 });
 
 it.each([60, 5, 0])("decodes the actual capped well gain %s from every story prefix", (gain) => {
-  const variant = storyVariants().findIndex((v) => v.name === "SiteUsed");
+  const variant = Number(storyTag("SiteUsed"));
   expect(variant).toBeGreaterThanOrEqual(0);
   for (const layout of schema.games.events.filter(({ name }) => name === "StoryEvent")) {
     assertDecoded(
@@ -323,7 +242,7 @@ it.each([60, 5, 0])("decodes the actual capped well gain %s from every story pre
 });
 
 it.each([1, 2, 3, 4, 5])("decodes the granted Shrine rank %s from every story prefix", (rank) => {
-  const variant = storyVariants().findIndex((v) => v.name === "SiteUsed");
+  const variant = Number(storyTag("SiteUsed"));
   expect(variant).toBeGreaterThanOrEqual(0);
   for (const layout of schema.games.events.filter(({ name }) => name === "StoryEvent")) {
     assertDecoded(

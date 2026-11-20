@@ -19,7 +19,17 @@ export type DoorwayAudience = "player" | "spectator";
  * limit with Devices as its step. A map that could not be drawn offers the realm beside the retry, since the realm
  * view opens without it.
  */
-type DoorwayBlocker = { kind: "sign-in" } | { kind: "retry"; line: string; openRealm?: true } | { kind: "devices" };
+type DoorwayBlocker =
+  | { kind: "sign-in" }
+  | { kind: "retry"; line: string; openRealm?: true }
+  | { kind: "refused"; line: string }
+  | { kind: "devices" };
+
+export type GameRefusal = "release" | "older-numbers";
+const REFUSAL_LINES: Record<GameRefusal, string> = {
+  release: DOORWAY_WORDS.gameRefused,
+  "older-numbers": DOORWAY_WORDS.gameOnOlderNumbers,
+};
 
 export interface DoorwayView {
   steps: { step: DoorwayStep; state: StepState }[];
@@ -55,6 +65,8 @@ interface BootSide {
   realmCanOpen?: boolean;
   /** The game is over and finalized, so it leads to its results instead of booting. */
   ended?: boolean;
+  /** The game ran on a release this client cannot read, which no retry changes. */
+  refused?: GameRefusal;
   /** The share of the opening view's model loads and compiles done (model-preparation), while the map waits on them. */
   modelShare?: number;
 }
@@ -149,8 +161,16 @@ const entryPlace = ({ phase, signedIn, accountError, foundingFailed = false, bli
   }
 };
 
-const bootPlace = ({ phase, accountError, failedScene, realmCanOpen = false, ended = false }: BootSide): Place => {
+const bootPlace = ({
+  phase,
+  accountError,
+  failedScene,
+  realmCanOpen = false,
+  ended = false,
+  refused,
+}: BootSide): Place => {
   if (ended) return place("account", { done: true, spectating: "results" });
+  if (refused) return place("map", { blocker: { kind: "refused", line: REFUSAL_LINES[refused] } });
   switch (phase) {
     case "normalize_route":
     case "await_account":

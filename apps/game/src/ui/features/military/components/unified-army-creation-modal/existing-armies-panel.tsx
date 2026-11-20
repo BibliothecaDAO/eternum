@@ -5,7 +5,8 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { knownAmount } from "@/ui/utils/utils";
-import { configManager, getTroopResourceId, StaminaManager } from "@bibliothecadao/eternum";
+import { armyOaths, configManager, getTroopResourceId, StaminaManager } from "@bibliothecadao/eternum";
+import { useGame } from "@/hooks/context/game-context";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { useExplorersByStructure } from "@/hooks/helpers/use-armies";
 import { useSelectArmyOnMap } from "@/hooks/helpers/use-navigate";
@@ -59,6 +60,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
   const selectArmy = useSelectArmyOnMap();
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
   const timestamp = useCurrentDefaultTick();
+  const { setup } = useGame();
   const { confirming, ask, close } = useConfirmFor(army.entityId);
   const [deleting, setDeleting] = useState(false);
   const confirmsDisband = useConfirmsLoss();
@@ -129,7 +131,10 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
               stamina={{
                 current: Number(stamina.amount),
                 max: maxStamina,
-                perExplore: configManager.getExploreStaminaCost(),
+                perExplore: configManager.getExploreStaminaCost(
+                  army.troops.category,
+                  armyOaths(setup.store, { game_id: configManager.getActiveGameId(), explorer_id: army.entityId }),
+                ),
               }}
             />
           </span>

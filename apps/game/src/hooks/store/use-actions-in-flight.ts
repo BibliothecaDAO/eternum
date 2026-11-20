@@ -19,10 +19,12 @@ interface InFlight {
   plot: { type: BuildingType; plot: { col: number; row: number } };
   deploy: number;
   research: true;
+  quest: true;
   castle: true;
   refill: true;
   tier: true;
   shipment: true;
+  seal: true;
 }
 type Subject = keyof InFlight;
 type Key = string | number;

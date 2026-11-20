@@ -1,10 +1,11 @@
 import { mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { LOAD_REFUSAL_NOTE } from "./client-playtest/evidence.mjs";
 import { STEP_SETS } from "./client-playtest/steps.mjs";
-import { allocateRunDirectory, buildRunUrl, readPlaytestOptions } from "./run-client-playtest.mjs";
+import { allocateRunDirectory, buildRunUrl, finish, readPlaytestOptions } from "./run-client-playtest.mjs";
 
 describe("allocateRunDirectory", () => {
   it("gives every invocation a new directory and never writes into an existing one", () => {
@@ -197,5 +198,69 @@ describe("the page a run opens", () => {
       "spire",
       "webgpu-auto",
     ]);
+  });
+});
+
+describe("the runner's exit status", () => {
+  const bootedRun = {
+    ok: true,
+    expectedSteps: ["move"],
+    steps: [{ name: "move", verdict: { status: "completed" } }],
+    diagnostics: { activeMode: "webgpu", requestedMode: "webgpu-auto" },
+    metrics: { entryReadyMs: 2500, worldInteractiveMs: 3500 },
+    rendererMode: "webgpu-auto",
+    iteration: 1,
+  };
+  const atLoad = (load, iteration = 1) => ({
+    ...bootedRun,
+    iteration,
+    machine: { cpus: 16, loadAverageMax: load, loadSamples: [load] },
+  });
+  const owner = (releaseFailures = []) => ({ releaseFailures, held: () => [] });
+  const finishWith = (results, { argv = [], releaseFailures } = {}) => {
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    finish({
+      options: readPlaytestOptions(argv),
+      output: { stage: "done" },
+      owner: owner(releaseFailures),
+      results,
+      runDir: undefined,
+    });
+    return process.exitCode;
+  };
+
+  afterEach(() => {
+    process.exitCode = undefined;
+    vi.restoreAllMocks();
+  });
+
+  it("is 128 when the machine's load alone refused the run, 1 for a real failure, 0 for a pass", () => {
+    expect(finishWith([atLoad(31.4)])).toBe(128);
+    expect(finishWith([atLoad(13, 1), atLoad(13, 2)])).toBe(128);
+    expect(finishWith([{ ...atLoad(3), errors: ["boom"] }])).toBe(1);
+    expect(finishWith([{ ...atLoad(13), errors: ["boom"] }])).toBe(1);
+    expect(finishWith([atLoad(13, 1), { ...atLoad(3, 2), errors: ["boom"] }])).toBe(1);
+    expect(finishWith([atLoad(3)])).toBe(0);
+  });
+
+  it("is 1 when a teardown failed, at a quiet machine and at a loaded one", () => {
+    expect(finishWith([atLoad(3)], { releaseFailures: ["preview: would not stop"] })).toBe(1);
+    expect(finishWith([atLoad(13)], { releaseFailures: ["preview: would not stop"] })).toBe(1);
+    expect(finishWith([atLoad(3)], { releaseFailures: [`preview: shutdown failed; ${LOAD_REFUSAL_NOTE}`] })).toBe(1);
+  });
+
+  it("is 1 for a run compared with a baseline, even when its other failure is load: a lost timing is real", () => {
+    const dir = mkdtempSync(join(tmpdir(), "playtest-baseline-"));
+    try {
+      const baseline = join(dir, "baseline.json");
+      const timed = { median: 400, max: 500, n: 1 };
+      writeFileSync(
+        baseline,
+        JSON.stringify({ byMode: { "webgpu-auto": { steps: { move: { "verdict.clickToResult.totalMs": timed } } } } }),
+      );
+      expect(finishWith([atLoad(3, 1), atLoad(13, 2)], { argv: ["--compare", baseline] })).toBe(1);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
   });
 });

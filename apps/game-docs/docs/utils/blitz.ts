@@ -2,7 +2,7 @@ import { type CombatRules, type ExchangeTroops, resolveExchange } from "@bibliot
 import { BiomeType, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { buildTroopDamageConfig, buildTroopStaminaConfig } from "../../../../config/deployer/clean/registrar/preset";
 import { blitzPreset } from "../../../../config/source/blitz/native";
-import { nativeRuleConstants as rule } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants as rule } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { buildablePlotCount } from "../../../../packages/core/src/utils/castle-reach";
 
 import {
@@ -65,6 +65,7 @@ const ringStep = (blitzPreset.spacing * 3) / 2 + 3;
 const FIXED_ONE = 2n ** 64n;
 const damageRules = buildTroopDamageConfig(config);
 const combatRules: CombatRules = {
+  dayUnitSeconds: blitzPreset.dayUnitSeconds,
   cooldownSeconds: config.battle.cooldownSeconds,
   tickSeconds,
   damage: {
@@ -123,10 +124,11 @@ const fightOnGrassland = (attacker: ExchangeTroops, defender: ExchangeTroops, at
       attackDistance,
       attackerBiome: BiomeType.Grassland,
       defenderBiome: BiomeType.Grassland,
+      attackerOaths: 0,
+      defenderOaths: 0,
+      attackerTwin: null,
       attackerIsStructureGuard: false,
       defenderIsStructureGuard: false,
-      attackerRoll: 0,
-      defenderRoll: 0,
     },
     combatRules,
   );

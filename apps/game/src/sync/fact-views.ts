@@ -9,7 +9,6 @@ import { resolveFiniteSeasonEndAt, resolveSeasonStartTimestamp } from "@/ui/feat
 import {
   ClientConfigManager,
   configManager,
-  getStructureName,
   formatArmies,
   formatArrivals,
   formatGuilds,
@@ -124,7 +123,7 @@ const readSeasonClock = () => {
 };
 
 const PLAYER_STRUCTURE_FACTS = ["Structure", "StructureBuildings", "TileOccupancy"] as const;
-export const RESOURCE_FACTS = ["ResourceBalance", "ResourceProduction", "ResourceWeight", "ProductionBonus"] as const;
+export { RESOURCE_PRODUCTION_MODELS as RESOURCE_FACTS } from "@bibliothecadao/eternum";
 
 export const playerStructuresView: FactView<Structure[]> = {
   models: PLAYER_STRUCTURE_FACTS,
@@ -185,22 +184,6 @@ export const incomingTroopArrivalsView: FactView<ReturnType<typeof summarizeInco
 export const settlementPlayersView: FactView<bigint[]> = {
   models: ["PlayerEntry"],
   read: readBlitzSettlementPlayerAddresses,
-};
-
-export const faithFactsView: FactView<{
-  structures: (NativeRows["Structure"] & { display_name: string })[];
-  wonderFaith: NativeRows["WonderFaith"][];
-  faithfulStructures: NativeRows["FaithfulStructure"][];
-}> = {
-  models: ["Structure", "WonderFaith", "FaithfulStructure", "SettledRealm", "GameRelease"],
-  read: (store) => ({
-    structures: inActiveGame("Structure")(store).map((structure) => ({
-      ...structure,
-      display_name: getStructureName(structure, store).name,
-    })),
-    wonderFaith: inActiveGame("WonderFaith")(store),
-    faithfulStructures: inActiveGame("FaithfulStructure")(store),
-  }),
 };
 
 /** The game's clock and dev-mode gate, as its registry row states them. */

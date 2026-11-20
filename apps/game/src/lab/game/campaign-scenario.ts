@@ -75,7 +75,6 @@ export const devconSeasonScenario = (): LabScenario => ({
   })),
 });
 
-/** The campaign home and its claim use the same rules as the ticket landing. */
 export const campaignHomeFacts = (ticket: "regular" | "golden"): LabFact[] => [
   {
     model: "LaborRules",

@@ -1,8 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { NativeFactStore } from "../client/native-fact-store";
 import type { GameSyncFact } from "../sync/game-sync-types";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { canPayTroopRaise, readTroopRaiseCost } from "./troop-raise-cost";
+import { followGameRelease } from "../client/game-release";
+import { nativeFactSchemaIdentity } from "../../../../contracts/l3/world-native/schema/client.gen";
+import retiredTown from "../client/fixtures/retired-town.json";
+
+vi.mock("../../../../deploy/release/native-release", async (original) => ({
+  ...(await original<typeof import("../../../../deploy/release/native-release")>()),
+  NATIVE_BALANCE_SINCE_RELEASE: 1,
+}));
 
 const PRECISION = 1_000_000_000n;
 const upsert = (key: string, model: string, value: Record<string, unknown>): GameSyncFact => ({ model, key, value });
@@ -12,10 +20,13 @@ const realm = (board: boolean, wheat: bigint) => {
   const store = new NativeFactStore();
   store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 100 });
   store.applyFacts([
+    upsert("0x8", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: 0n }),
     upsert("0x1", "SliceRules", { ...preset.rules, game_id: 1, mode_rules: 0 }),
     upsert("0x2", "ResourceWeight", { game_id: 1, entity_id: 7, capacity: 1000n * PRECISION, weight: 0n }),
     upsert("0x3", "ResourceBalance", { game_id: 1, entity_id: 7, resource_type: 35, balance: wheat }),
     upsert("0x4", "ResourceProduction", {
+      remainder: 0,
+
       game_id: 1,
       entity_id: 7,
       resource_type: 35,
@@ -43,7 +54,6 @@ const realm = (board: boolean, wheat: bigint) => {
             storage_step_bps: 5000,
             population_step_bps: 2500,
             ration_step: PRECISION / 4n,
-            training_gate_tier: 2,
             troop_store_deploys: 2,
             settlement_resource_cap: 6000,
             city_resource_cap: 18000,
@@ -65,15 +75,12 @@ describe("troop raise cost", () => {
     expect(canPayTroopRaise(readTroopRaiseCost(store, 1, 7, 26, 6, 100))).toBe(false);
   });
 
-  it("takes a quarter wheat off each troop for every Rations pick, and nothing for Drill", () => {
+  it("keeps the recipe cost unchanged by Conscription research", () => {
     const store = realm(true, 10n * PRECISION);
-    const barracks = (learned: bigint) =>
-      store.applyFacts([upsert("0x8", "RealmKnowledge", { game_id: 1, structure_id: 7, learned })]);
-    // research.cairo: the Barracks tier at bit 14, its choices from bit 17, Rations = 1.
-    barracks(2n << 17n);
-    expect(readTroopRaiseCost(store, 1, 7, 26, 4, 100)![0]!.amount).toBe(6n * PRECISION);
-    barracks((1n << 14n) | (1n << 17n));
-    expect(readTroopRaiseCost(store, 1, 7, 26, 4, 100)![0]!.amount).toBe(7n * PRECISION);
+    for (const tier of [0n, 1n, 5n]) {
+      store.applyFacts([upsert("0x8", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: tier << 14n })]);
+      expect(readTroopRaiseCost(store, 1, 7, 26, 4, 100)![0]!.amount).toBe(8n * PRECISION);
+    }
   });
 
   it("rounds a fraction of a recipe up, as the contract never undercharges", () => {
@@ -102,3 +109,71 @@ describe("troop raise cost", () => {
     expect(canPayTroopRaise(undefined)).toBe(false);
   });
 });
+
+it("prices every Depot tier independently of Conscription and waits for knowledge", () => {
+  const store = realm(true, 100n * PRECISION);
+  for (let tier = 0n; tier <= 5n; tier++) {
+    store.applyFacts([
+      upsert("0x8", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: (5n << 14n) | (tier << 24n) }),
+    ]);
+    expect(readTroopRaiseCost(store, 1, 7, 26, 4, 100)).toEqual([
+      { resource: 35, amount: (8n - tier) * PRECISION, held: 100n * PRECISION },
+    ]);
+  }
+  store.applyFacts([{ model: "RealmKnowledge", key: "0x8", value: null }]);
+  expect(readTroopRaiseCost(store, 1, 7, 26, 4, 100)).toBeUndefined();
+});
+
+it("keeps fractional Rations discounts when the recipe is expressed in whole units", () => {
+  const store = realm(true, 100n * PRECISION);
+  store.applyFacts([
+    upsert("0x8", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: 1n << 24n }),
+    upsert("0x5", "ProductionRecipe", {
+      game_id: 1,
+      resource_type: 26,
+      simple_output: 1n,
+      simple_inputs: [{ resource_type: 35, amount: 2n }],
+      complex_output: 0n,
+      complex_inputs: [],
+    }),
+  ]);
+  expect(readTroopRaiseCost(store, 1, 7, 26, 1, 100)![0]!.amount).toBe((7n * PRECISION) / 4n);
+});
+
+for (const historical of [true, false]) {
+  it(`rejects retired War Hall knowledge before forecasting a Depot discount: historical=${historical}`, async () => {
+    const store = realm(true, 10n * PRECISION);
+    store.applyFacts([
+      upsert("0x8", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: BigInt(retiredTown.learned) }),
+      upsert("0x6", "BoardRules", { ...store.require("BoardRules", { game_id: 1 }), ration_step: PRECISION / 5n }),
+      upsert("0x9", "GameRelease", { game_id: 1, created_release_id: 1, release_id: 2, preset_commitment: "0x789" }),
+    ]);
+    const gate = followGameRelease(
+      store,
+      {
+        gameId: 1,
+        schemaIdentity: nativeFactSchemaIdentity,
+        shard: {
+          url: "http://shard.test",
+          releaseSchemas: {
+            "1": historical ? retiredTown.schemaIdentity : nativeFactSchemaIdentity,
+            "2": nativeFactSchemaIdentity,
+          },
+        },
+      },
+      () => undefined,
+    );
+    let forecast: ReturnType<typeof readTroopRaiseCost>;
+    const reading = gate.ready().then(() => (forecast = readTroopRaiseCost(store, 1, 7, 26, 5, 100)));
+    try {
+      if (historical) {
+        await expect(reading).rejects.toThrow("release 1");
+        expect(forecast).toBeUndefined();
+      } else {
+        expect(await reading).toEqual([{ resource: 35, amount: 9n * PRECISION, held: 10n * PRECISION }]);
+      }
+    } finally {
+      gate.dispose();
+    }
+  });
+}

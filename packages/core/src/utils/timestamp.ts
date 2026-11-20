@@ -1,7 +1,4 @@
 import { TickIds } from "@bibliothecadao/types";
-// Imported from the concrete module, not a barrel: barrel cycles leave this
-// module's consumers with uninitialized re-export bindings. configManager is
-// only dereferenced at call time, which keeps the remaining cycle harmless.
 import { configManager } from "../managers/config-manager";
 
 type TimestampSource = () => number;
@@ -26,15 +23,22 @@ export const setChainProvenTimestampSource = (source: (() => number | null) | nu
   chainProvenTimestampSource = source;
 };
 
+const tickAt = (seconds: number, tick: TickIds) => {
+  const interval = Number(configManager.getTick(tick));
+  if (!Number.isFinite(interval) || interval <= 0) throw new Error(`Invalid tick interval for ${tick}`);
+  return Math.floor(seconds / interval);
+};
+
+export const readDefaultTick = (): number | undefined => {
+  if (!timestampSource) return undefined;
+  const proven = chainProvenTimestampSource ? chainProvenTimestampSource() : timestampSource();
+  return proven === null ? undefined : tickAt(proven, TickIds.Default);
+};
+
 export const getBlockTimestamp = () => {
   if (!timestampSource) throw new Error("Chain time is not known yet: no confirmed head has bound a clock");
   const timestamp = timestampSource();
   const provenTimestamp = chainProvenTimestampSource ? chainProvenTimestampSource() : timestamp;
-  const tickAt = (seconds: number, tick: TickIds) => {
-    const interval = Number(configManager.getTick(tick));
-    if (!Number.isFinite(interval) || interval <= 0) throw new Error(`Invalid tick interval for ${tick}`);
-    return Math.floor(seconds / interval);
-  };
 
   return {
     currentBlockTimestamp: timestamp,

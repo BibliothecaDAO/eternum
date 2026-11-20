@@ -1,5 +1,4 @@
 import { launcherAccountAddress, relayAccountAddress } from "../../../packages/value-ledger/src/shard-accounts";
-import { assertPublicRpcBoundary } from "./public-rpc-check";
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { ec, hash, RpcProvider } from "starknet";
@@ -19,11 +18,6 @@ interface RoleInspection {
 }
 
 async function main(): Promise<void> {
-  if (process.argv[2] === "--public-rpc") {
-    if (process.argv.length < 4) throw new Error("Supply at least one public RPC URL");
-    for (const url of process.argv.slice(3)) console.log(JSON.stringify(await assertPublicRpcBoundary(url)));
-    return;
-  }
   const [directory, rpcUrl] = process.argv.slice(2);
   if (!directory || !rpcUrl) throw new Error("Usage: bun inspect-shard-roles.ts RUN_DIRECTORY RPC_URL");
   const provider = new RpcProvider({ nodeUrl: rpcUrl });

@@ -36,27 +36,6 @@ export interface SetEntityNameProps extends SystemSigner {
   name: string;
 }
 
-export interface CreateOrderProps extends SystemSigner {
-  maker_id: BigNumberish;
-  taker_id: BigNumberish;
-  maker_gives_resource_type: BigNumberish;
-  maker_gives_min_resource_amount: BigNumberish;
-  maker_gives_max_count: BigNumberish;
-  taker_pays_resource_type: BigNumberish;
-  taker_pays_min_resource_amount: BigNumberish;
-  expires_at: BigNumberish;
-}
-
-export interface AcceptOrderProps extends SystemSigner {
-  taker_id: BigNumberish;
-  trade_id: BigNumberish;
-  taker_buys_count: BigNumberish;
-}
-
-export interface CancelOrderProps extends SystemSigner {
-  trade_id: BigNumberish;
-}
-
 export interface SendResourcesMultipleProps extends SystemSigner {
   calls: {
     sender_entity_id: BigNumberish;
@@ -80,7 +59,6 @@ export interface ProductionPlanInstruction {
 export interface ExecuteRealmProductionPlanProps extends SystemSigner {
   realm_entity_id: BigNumberish;
   resource_to_resource?: ProductionPlanInstruction[];
-  labor_to_resource?: ProductionPlanInstruction[];
   skipQueue?: boolean;
 }
 
@@ -93,7 +71,6 @@ export interface CreateBuildingProps extends SystemSigner {
   directions: BigNumberish[];
   building_category: BuildingType;
   use_simple: boolean;
-  scouting_kind: 0 | 1 | 2;
 }
 
 export interface DestroyBuildingProps extends SystemSigner {
@@ -123,37 +100,6 @@ export interface ResumeProductionProps extends SystemSigner {
   };
 }
 
-export interface BuyResourcesProps extends SystemSigner {
-  bank_entity_id: BigNumberish;
-  entity_id: BigNumberish;
-  resource_type: BigNumberish;
-  amount: BigNumberish;
-}
-
-export interface SellResourcesProps extends SystemSigner {
-  bank_entity_id: BigNumberish;
-  entity_id: BigNumberish;
-  resource_type: BigNumberish;
-  amount: BigNumberish;
-}
-
-export interface AddLiquidityProps extends SystemSigner {
-  bank_entity_id: BigNumberish;
-  entity_id: BigNumberish;
-  calls: {
-    resource_type: BigNumberish;
-    resource_amount: BigNumberish;
-    lords_amount: BigNumberish;
-  }[];
-}
-
-export interface RemoveLiquidityProps extends SystemSigner {
-  bank_entity_id: BigNumberish;
-  entity_id: BigNumberish;
-  resource_type: BigNumberish;
-  shares: BigNumberish;
-}
-
 export interface CreateGuildProps extends SystemSigner {
   is_public: boolean;
   guild_name: string;
@@ -172,23 +118,6 @@ export interface RemoveGuildMember extends SystemSigner {
 
 export interface DisbandGuild extends SystemSigner {
   calls: { address: BigNumberish }[];
-}
-
-export interface PledgeFaithProps extends SystemSigner {
-  structure_id: BigNumberish;
-  wonder_id: BigNumberish;
-}
-
-export interface RemoveFaithProps extends SystemSigner {
-  structure_id: BigNumberish;
-}
-
-export interface UpdateWonderOwnershipProps extends SystemSigner {
-  wonder_id: BigNumberish;
-}
-
-export interface UpdateStructureOwnershipProps extends SystemSigner {
-  structure_id: BigNumberish;
 }
 
 export interface InitializeHyperstructureProps extends SystemSigner {
@@ -213,17 +142,6 @@ export interface EndGameProps extends SystemSigner {}
 /**
  * Props for burning labor to produce other resources
  */
-export interface BurnLaborResourcesForOtherProductionProps {
-  /** ID of the realm entity */
-  from_entity_id: number;
-  /** Array of cycles to burn */
-  production_cycles: number[];
-  /** Array of resource types to produce */
-  produced_resource_types: number[];
-  /** Account executing the transaction */
-  signer: Account | AccountInterface;
-}
-
 /**
  * Props for burning predefined resources to produce other resources
  */
@@ -333,6 +251,7 @@ export interface AttackExplorerVsExplorerProps extends SystemSigner {
  * Properties for explorer vs guard attack
  */
 export interface AttackExplorerVsGuardProps extends SystemSigner {
+  relic_slot?: 0 | 1 | 2;
   /** ID of the attacking explorer */
   explorer_id: number;
   /** ID of the structure with defending guard */
@@ -370,17 +289,6 @@ export interface AttackGuardVsExplorerProps extends SystemSigner {
 /**
  * Properties for raid explorer vs guard
  */
-export interface RaidExplorerVsGuardProps extends SystemSigner {
-  /** ID of the raiding explorer */
-  explorer_id: number;
-  /** ID of the structure being raided */
-  structure_id: number;
-  /** Direction to the structure */
-  structure_direction: number;
-  /** Resources to steal */
-  steal_resources: Resource[];
-}
-
 /**
  * Properties for adding troops to a guard
  */
@@ -433,8 +341,8 @@ export interface ExplorerAddProps extends SystemSigner {
   to_explorer_id: number;
   /** Number of troops to add */
   amount: number;
-  /** Direction to the explorer's home */
-  home_direction: number;
+  /** Cleared camp used instead of the home tile. */
+  supply_post?: number;
 }
 
 /**
@@ -472,21 +380,7 @@ export interface TroopTroopAdjacentTransferProps extends SystemSigner {
 /**
  * Properties for transferring resources from a structure to an adjacent troop
  */
-export interface StructureTroopAdjacentTransferProps extends SystemSigner {
-  /** ID of the structure sending resources */
-  from_structure_id: number;
-  /** ID of the troop receiving resources */
-  to_troop_id: number;
-  /** Resources to transfer */
-  resources: Resource[];
-}
-
 export interface LeaveGuildProps extends SystemSigner {}
-
-export interface TransferStructureOwnershipProps extends SystemSigner {
-  structure_id: BigNumberish;
-  new_owner: BigNumberish;
-}
 
 export interface InteractSiteProps extends SystemSigner {
   explorer_id: BigNumberish;
@@ -506,11 +400,10 @@ export interface BurnResearchForRelicProps extends SystemSigner {
   structure_id: BigNumberish;
 }
 
-export interface ApplyRelicProps extends SystemSigner {
+export type ApplyRelicProps = SystemSigner & {
   entity_id: BigNumberish;
   relic_resource_id: BigNumberish;
-  recipient_type: BigNumberish;
-}
+} & ({ recipient_type: BigNumberish; relic_slot?: never } | { recipient_type?: never; relic_slot: 0 | 1 | 2 });
 
 export interface BitcoinMineContributeLaborProps extends SystemSigner {
   structure_id: BigNumberish;

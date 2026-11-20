@@ -2,6 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
@@ -15,8 +16,9 @@ import {
   seasonDay,
   setBlockTimestampSource,
 } from "@bibliothecadao/eternum";
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { deepCenter, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { StructureType } from "@bibliothecadao/types";
+import { frontierPreset } from "../../../../../../../config/source/frontier/native";
 import { nativeReleaseConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 
 import { campBeside } from "../sites/site-fixture";
@@ -88,23 +90,23 @@ describe("the map's layers", () => {
     const views = layerViews(layers, { icon: "realm", go: () => onGo("realm") }, () => {});
     act(() => root.render(<PlaceNav place={null} onRealm={false} onGo={onGo} views={views} events={0} unread={0} />));
     const slot = host.querySelector<HTMLButtonElement>("[data-switch]")!;
-    expect(slot.textContent).toBe("Ethereal II");
+    expect(slot.textContent).toBe("Hollow");
     expect(slot.querySelector("img")?.getAttribute("src")).toContain("depth-2");
 
     act(() => slot.click());
     expect(openList()).toEqual([
       ["Realm", "false"],
-      ["World", "false"],
-      ["Ethereal I", "false"],
-      ["Ethereal II", "true"],
+      ["Surface", "false"],
+      ["Veil", "false"],
+      ["Hollow", "true"],
     ]);
     expect(onGo).not.toHaveBeenCalled();
-    choose("Ethereal I");
+    choose("Veil");
     expect(go).toHaveBeenCalledWith(1);
     expect(openList()).toEqual([]);
 
     act(() => slot.click());
-    choose("Ethereal II");
+    choose("Hollow");
     expect(go).toHaveBeenCalledTimes(1);
     act(() => slot.click());
     choose("Realm");
@@ -132,17 +134,17 @@ describe("the map's layers", () => {
     const tabs = [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
     expect(tabs.map((tab) => [tab.textContent, tab.getAttribute("aria-selected")])).toEqual([
       ["Realm", "false"],
-      ["Ethereal II", "true"],
+      ["Hollow", "true"],
     ]);
 
     act(() => tabs[1].click());
     expect(openList()).toEqual([
-      ["World", "false"],
-      ["Ethereal I", "false"],
-      ["Ethereal II", "true"],
+      ["Surface", "false"],
+      ["Veil", "false"],
+      ["Hollow", "true"],
     ]);
     expect(onNavigate).not.toHaveBeenCalled();
-    choose("World");
+    choose("Surface");
     expect(go).toHaveBeenCalledWith(0);
 
     act(() => tabs[0].click());
@@ -150,13 +152,21 @@ describe("the map's layers", () => {
   });
 });
 
-/**
- * Realm 7's day with per-depth ruins and `researched` layers (Ethereal I and II by default, Ethereal III locked), and its
- * army 201, the season's second day on the clock, so the first has clears of its own.
- */
-const chestDay = (researched = 2n) => {
+const chestDay = (researched = 3n) => {
   const { store } = campBeside();
   store.applyFacts([
+    {
+      model: "ChestRules",
+      key: "0xc1",
+      value: {
+        game_id: 1,
+        price_ceiling: BigInt(frontierPreset.chests.priceCeiling),
+        shares: frontierPreset.chests.shares,
+        claim_window_seconds: frontierPreset.chests.claimWindowSeconds,
+        pool_bps: frontierPreset.chests.poolBps,
+        top_n: frontierPreset.chests.topN,
+      },
+    },
     {
       model: "GameRelease",
       key: "0x1ab0",
@@ -231,6 +241,11 @@ const armyIn = (store: NativeFactStore, rules: ExpeditionRules, today: number, d
     const tile = [...store.entries("TileOccupancy")].find(([, row]) => row.entity_id === 201n)![1];
     const key = `0x75${today}${depth}`;
     store.applyFacts([
+      {
+        model: "ArmyDay",
+        key: store.wireKeyOf("ArmyDay", { game_id: 1, explorer_id: 201n })!,
+        value: { game_id: 1, explorer_id: 201, day: String(today) },
+      },
       { model: "TileOccupancy", key: armyTileKeys.get(store) ?? SITE_FIXTURE_ARMY_TILE_KEY, value: null },
       {
         model: "TileOccupancy",
@@ -295,7 +310,7 @@ const listRows = () =>
   ]);
 
 describe("each layer's ruin chest today, on the layer switch", () => {
-  it("opens every researched layer while nothing was cleared today, marks today's clears, and opens again tomorrow", () => {
+  it("opens every layer while nothing was cleared today, marks today's clears, and opens again tomorrow", () => {
     const { store, realm, rules, now, today } = chestDay();
     expect(today).toBe(1);
     discovered(store, today, false);
@@ -305,10 +320,10 @@ describe("each layer's ruin chest today, on the layer switch", () => {
     context.mapView = true;
     act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
     expect(switchMarks()).toEqual([
-      "World: chest to take today",
-      "Ethereal I: chest to take today",
-      "Ethereal II: chest to take today",
-      "Ethereal III: not researched",
+      "Surface: chest to take today",
+      "Veil: chest to take today",
+      "Hollow: chest to take today",
+      "Deep: chest to take today",
     ]);
 
     // Realm 7 clears today's Surface ruin: its region is the home's own, always held.
@@ -316,20 +331,21 @@ describe("each layer's ruin chest today, on the layer switch", () => {
     cleared(store, rules, 7, today, 0);
     act(() => host.querySelector<HTMLButtonElement>('[role="tab"][aria-haspopup]')!.click());
     expect(listRows()).toEqual([
-      ["World", "true", "claimed"],
-      ["Ethereal I", "false", "unknown"],
-      ["Ethereal II", "false", "unknown"],
+      ["Surface", "true", "claimed"],
+      ["Veil", "false", "unknown"],
+      ["Hollow", "false", "unknown"],
+      ["Deep", "false", "unknown"],
     ]);
-    choose("Ethereal II");
+    choose("Hollow");
     expect(requestLayerView).toHaveBeenCalledTimes(1);
 
     // The day turns: tomorrow's discovery holds no clear, so every researched layer has its chest again.
     clockAt(store, expeditionDayEndsAt(rules, now) + 1);
     expect(switchMarks()).toEqual([
-      "World: chest to take today",
-      "Ethereal I: chest to take today",
-      "Ethereal II: chest to take today",
-      "Ethereal III: not researched",
+      "Surface: chest to take today",
+      "Veil: chest to take today",
+      "Hollow: chest to take today",
+      "Deep: chest to take today",
     ]);
   });
 
@@ -340,16 +356,16 @@ describe("each layer's ruin chest today, on the layer switch", () => {
     cleared(store, rules, 7, today, 1);
     context.mapView = true;
     act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
-    expect(switchMarks()[1]).toBe("Ethereal I: chest taken today");
+    expect(switchMarks()[1]).toBe("Veil: chest taken today");
 
     // The army leaves Ethereal I: the subscription drops that region, and Herald removes its receipt.
     armyIn(store, rules, today, 2);
     outOfScope(store, rules, 7, today, 1);
     expect(switchMarks()).toEqual([
-      "World: chest to take today",
-      "Ethereal I: chest not known without an army there",
-      "Ethereal II: chest to take today",
-      "Ethereal III: not researched",
+      "Surface: chest to take today",
+      "Veil: chest not known without an army there",
+      "Hollow: chest to take today",
+      "Deep: chest not known without an army there",
     ]);
 
     // A fresh snapshot of that scope never had the receipt: the same marks.
@@ -359,7 +375,7 @@ describe("each layer's ruin chest today, on the layer switch", () => {
     discovered(fresh.store, fresh.today, true);
     armyIn(fresh.store, fresh.rules, fresh.today, 2);
     act(() => root.render(<LayerSwitch rules={fresh.rules} realm={fresh.realm} />));
-    expect(switchMarks()[1]).toBe("Ethereal I: chest not known without an army there");
+    expect(switchMarks()[1]).toBe("Veil: chest not known without an army there");
   });
 
   it("reads today's clears from the player's whole history of the day: no layer is unknown, wherever the armies are", () => {
@@ -370,10 +386,10 @@ describe("each layer's ruin chest today, on the layer switch", () => {
     context.mapView = true;
     act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
     expect(switchMarks()).toEqual([
-      "World: chest to take today",
-      "Ethereal I: chest taken today",
-      "Ethereal II: chest to take today",
-      "Ethereal III: not researched",
+      "Surface: chest to take today",
+      "Veil: chest taken today",
+      "Hollow: chest to take today",
+      "Deep: chest to take today",
     ]);
   });
 
@@ -385,7 +401,7 @@ describe("each layer's ruin chest today, on the layer switch", () => {
     wholeHistory(rules, now, [[payout!]]);
     context.mapView = true;
     act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
-    expect(switchMarks()[1]).toBe("Ethereal I: chest not known without an army there");
+    expect(switchMarks()[1]).toBe("Veil: chest not known without an army there");
 
     // The read holds only stories after the day began: the clear it places is taken, but it opens nothing.
     act(() => {
@@ -393,8 +409,8 @@ describe("each layer's ruin chest today, on the layer switch", () => {
       root.render(<LayerSwitch rules={rules} realm={realm} />);
     });
     expect(switchMarks().slice(1, 3)).toEqual([
-      "Ethereal I: chest taken today",
-      "Ethereal II: chest not known without an army there",
+      "Veil: chest taken today",
+      "Hollow: chest not known without an army there",
     ]);
   });
 
@@ -403,7 +419,7 @@ describe("each layer's ruin chest today, on the layer switch", () => {
     // Ethereal I cleared today: its receipt left with its army; the discovery row says a ruin was cleared.
     discovered(store, today, true);
     context.mapView = true;
-    const unknownI = "Ethereal I: chest not known without an army there";
+    const unknownI = "Veil: chest not known without an army there";
 
     // An empty history complete only through block 10, behind the snapshot's block 20.
     wholeHistory(rules, now, [], 10);
@@ -421,7 +437,7 @@ describe("each layer's ruin chest today, on the layer switch", () => {
       useConnectionStore.setState({ snapshotBlock: 30 });
       root.render(<LayerSwitch rules={rules} realm={realm} />);
     });
-    expect(switchMarks().slice(1, 3)).toEqual([unknownI, "Ethereal II: chest taken today"]);
+    expect(switchMarks().slice(1, 3)).toEqual([unknownI, "Hollow: chest taken today"]);
   });
 
   it("never opens a layer whose clear lands after the history read, until its story arrives", () => {
@@ -430,11 +446,11 @@ describe("each layer's ruin chest today, on the layer switch", () => {
     wholeHistory(rules, now, []);
     context.mapView = true;
     act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
-    expect(switchMarks()[1]).toBe("Ethereal I: chest to take today");
+    expect(switchMarks()[1]).toBe("Veil: chest to take today");
 
     // Ethereal I is cleared after the read: the discovery row has it, the history not yet, no receipt in scope.
     discovered(store, today, true);
-    expect(switchMarks()[1]).toBe("Ethereal I: chest not known without an army there");
+    expect(switchMarks()[1]).toBe("Veil: chest not known without an army there");
 
     // The stream brings its payout and battle into the read: taken, and the others proven open again.
     act(() => {
@@ -442,10 +458,10 @@ describe("each layer's ruin chest today, on the layer switch", () => {
       root.render(<LayerSwitch rules={rules} realm={realm} />);
     });
     expect(switchMarks()).toEqual([
-      "World: chest to take today",
-      "Ethereal I: chest taken today",
-      "Ethereal II: chest to take today",
-      "Ethereal III: not researched",
+      "Surface: chest to take today",
+      "Veil: chest taken today",
+      "Hollow: chest to take today",
+      "Deep: chest to take today",
     ]);
   });
 
@@ -453,23 +469,23 @@ describe("each layer's ruin chest today, on the layer switch", () => {
     ["a desktop", false],
     ["a phone", true],
   ])(
-    "on %s before Ethereal I, the switch stays Realm / World and carries the Surface's chest and three locks",
+    "on %s before Veil, the switch stays Realm / World and carries the Surface's chest and three locks",
     (_, phone) => {
       const { store, realm, rules, today } = chestDay(0n);
       discovered(store, today, false);
       context.mapView = true;
       act(() => root.render(<LayerSwitch rules={rules} realm={realm} phone={phone} />));
       expect(switchMarks()).toEqual([
-        "World: chest to take today",
-        "Ethereal I: not researched",
-        "Ethereal II: not researched",
-        "Ethereal III: not researched",
+        "Surface: chest to take today",
+        "Veil: needs Spire lore",
+        "Hollow: needs Spire lore",
+        "Deep: needs Spire lore",
       ]);
       expect(host.querySelector("[aria-haspopup]")).toBeNull();
 
       discovered(store, today, true);
       cleared(store, rules, 7, today, 0);
-      expect(switchMarks()[0]).toBe("World: chest taken today");
+      expect(switchMarks()[0]).toBe("Surface: chest taken today");
     },
   );
 
@@ -483,17 +499,18 @@ describe("each layer's ruin chest today, on the layer switch", () => {
     const tabs = [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
     expect(tabs.map((tab) => [tab.textContent, tab.getAttribute("aria-selected")])).toEqual([
       ["Realm", "true"],
-      ["World", "false"],
+      ["Surface", "false"],
     ]);
-    expect(switchMarks()[1]).toBe("Ethereal I: chest taken today");
+    expect(switchMarks()[1]).toBe("Veil: chest taken today");
 
     act(() => tabs[1]!.click());
     expect(listRows()).toEqual([
-      ["World", "false", "open"],
-      ["Ethereal I", "false", "claimed"],
-      ["Ethereal II", "false", "unknown"],
+      ["Surface", "false", "open"],
+      ["Veil", "false", "claimed"],
+      ["Hollow", "false", "unknown"],
+      ["Deep", "false", "unknown"],
     ]);
-    choose("Ethereal II");
+    choose("Hollow");
     expect(requestLayerView).not.toHaveBeenCalled();
     expect(openPlace).toHaveBeenCalledTimes(1);
     const [scene, position] = vi.mocked(openPlace).mock.calls[0]!;
@@ -513,20 +530,21 @@ describe("each layer's ruin chest today, on the layer switch", () => {
     const chosen = vi.fn();
     act(() => root.render(<LayerSwitch rules={rules} realm={realm} phone toRealm={toRealm} chosen={chosen} />));
     const slot = host.querySelector<HTMLButtonElement>("[data-switch]")!;
-    expect(slot.textContent).toBe("World");
+    expect(slot.textContent).toBe("Surface");
     expect(switchMarks()).toHaveLength(4);
 
     act(() => slot.click());
     expect(listRows()).toEqual([
       ["Realm", "true", null],
-      ["World", "false", "open"],
-      ["Ethereal I", "false", "open"],
-      ["Ethereal II", "false", "open"],
+      ["Surface", "false", "open"],
+      ["Veil", "false", "open"],
+      ["Hollow", "false", "open"],
+      ["Deep", "false", "open"],
     ]);
     choose("Realm");
     expect([toRealm.mock.calls.length, chosen.mock.calls.length]).toEqual([0, 1]);
     act(() => slot.click());
-    choose("Ethereal I");
+    choose("Veil");
     expect(openPlace).toHaveBeenCalledTimes(1);
   });
 });
@@ -573,3 +591,70 @@ const ruinPayout = (rules: ExpeditionRules, now: number, today: number, depth: n
     }),
   ];
 };
+
+const DEEP_RULES = {
+  game_id: 1,
+  gate_distance: 4,
+  rings: [{ radius: 5, realms: 0 }],
+  beasts: [
+    { count: 1000n, bow: false },
+    { count: 1000n, bow: true },
+    { count: 1000n, bow: false },
+    { count: 1000n, bow: true },
+  ],
+  loss_per_tick: 1n,
+  core_per_tick: 1n,
+  mine_per_tick: 1n,
+  building_pay: { alone: 1, pair: 1, crowd: 1 },
+  altar_threshold: 10,
+};
+
+describe("the shared Deep in the map layer menu", () => {
+  it("shows Deep without a private chest and visits its shared center", () => {
+    const { store, realm } = chestDay(3n);
+    store.applyFacts([
+      {
+        model: "SettlementRules",
+        key: "0x2",
+        value: { ...store.require("SettlementRules", { game_id: 1 }), spacing: 1024 },
+      },
+      { model: "DeepRules", key: "0xdeef", value: DEEP_RULES },
+    ] as never);
+    const rules = readExpeditionRules(store, 1)!;
+    context.mapView = true;
+    useUIStore.setState({ cameraTargetHex: { col: 512, row: 512 } });
+    act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
+    const open = () => act(() => [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')][1]!.click());
+    open();
+    expect(listRows().map(([label]) => label)).toEqual(["Surface", "Veil", "Hollow", "Deep"]);
+    expect(listRows().at(-1)?.[2]).toBeNull();
+    expect(switchMarks()).toHaveLength(3);
+    choose("Deep");
+    expect(requestLayerView).toHaveBeenCalledTimes(1);
+    expect(requestLayerView).toHaveBeenCalledWith(deepCenter(rules.spacing));
+    act(() => useUIStore.setState({ cameraTargetHex: deepCenter(rules.spacing) }));
+    expect([...host.querySelectorAll('[role="tab"]')][1]!.textContent).toBe("Deep");
+    open();
+    expect(listRows().at(-1)?.[1]).toBe("true");
+  });
+
+  it("opens the Deep at the gate of the player's own Aspect", () => {
+    const { store, realm } = chestDay(3n);
+    store.applyFacts([
+      {
+        model: "SettlementRules",
+        key: "0x2",
+        value: { ...store.require("SettlementRules", { game_id: 1 }), spacing: 1024 },
+      },
+      { model: "DeepRules", key: "0xdeef", value: DEEP_RULES },
+      { model: "HomeAspect", key: "0xa59", value: { game_id: 1, home: realm.entity_id, aspect: 2 } },
+    ] as never);
+    const rules = readExpeditionRules(store, 1)!;
+    context.mapView = true;
+    useUIStore.setState({ cameraTargetHex: { col: 512, row: 512 } });
+    act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
+    act(() => [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')][1]!.click());
+    choose("Deep");
+    expect(requestLayerView).toHaveBeenLastCalledWith({ col: 516, row: 3584 });
+  });
+});

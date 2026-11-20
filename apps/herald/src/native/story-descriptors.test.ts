@@ -2,7 +2,7 @@ import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import { GUARD_SLOT_NAMES, GuardSlot } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import { toJsonValue } from "../model-registry";
-import { manifest, raw, schema, setup } from "./fixtures";
+import { manifest, raw, schema, setup, storyTag } from "./fixtures";
 
 const categories = ["Knight", "Paladin", "Crossbowman"];
 const tiers = ["T1", "T2", "T3"];
@@ -10,10 +10,7 @@ const directions = ["East", "NorthEast", "NorthWest", "West", "SouthWest", "Sout
 const slots = ["Delta", "Gamma", "Beta", "Alpha"];
 
 function decodedStory(name: string, payload: number[]) {
-  const story = schema.types["world_native::ownership::Story"];
-  if (story.type !== "enum") throw new Error("Missing compiled story enum");
-  const variant = story.variants.findIndex((variant) => variant.name === name);
-  if (variant < 0) throw new Error(`Missing story ${name}`);
+  const variant = storyTag(name);
   const layout = schema.games.events.find((event) => event.name === "StoryEvent")!;
   const decoded = setup().decoder.decode(
     raw({

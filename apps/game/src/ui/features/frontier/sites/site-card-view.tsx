@@ -1,5 +1,5 @@
 import type { FrontierBeast } from "@/three/structures/frontier-beast";
-import { formatExact, LORDS, formatShort } from "@bibliothecadao/types";
+import { type Troops, formatExact, LORDS } from "@bibliothecadao/types";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -16,22 +16,23 @@ import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import { type Reason, reasonLine } from "@/ui/design-system/kit/reasons";
 import {
   type Tier,
+  ON_ITS_WAY,
   ARMY,
   ATTACK,
   ATTACKING,
   MOVE,
-  ON_ITS_WAY,
   REALM,
+  RELIC_WORDS,
   REST_DID_NOT_FIT,
   ruinRule,
   SEASON_CLIMB,
   siteTitle,
+  SITE_OATH,
   SITES_CLEARED,
   STORAGE,
   tooFarFrom,
   TROOPS,
   FIGHT_WORDS,
-  XP,
 } from "@/ui/design-system/kit/words";
 
 import type { OrderInFlight } from "@/hooks/store/use-actions-in-flight";
@@ -41,8 +42,11 @@ import { useEnterConfirms } from "../hud/enter-confirms";
 import type { Cost } from "../hud/army-order";
 import { GuardToken } from "../hud/army-token";
 import { FightSide } from "./fight-side";
+import { CombatMark } from "./combat-mark";
 import type { SiteFight } from "./site-card-plan";
 import { type AttackTargetKind, TARGET_MARKS, attackTargetName } from "./site-marks";
+import type { ArmyRelic } from "../relics/relic-catalog";
+import { RelicPay } from "../relics/relic-replacement";
 
 /** The step under the outcome: Attack (the same tap whatever the forecast), Move until the army is in reach, or
  * Attack held back, by the stamina the army lacks or by a site too far for one order, which the foot then says. */
@@ -66,7 +70,7 @@ export type SiteVerb =
  * (28 October 2026, layout V1: "v1 token header yes"). The guard stands at its head as the dock draws an army: its
  * portrait, its strength under it. Beside it, what the site is (its kind and its beast, where the title does not say
  * them), or with an army in reach what this attack comes to; then, on one row, what the clear pays (what fits, with its
- * XP, or a ruin's chest with its tier and exact LORDS): "This attack earns" over the reward when it clears the site, the
+ * or a ruin's chest with its tier and exact LORDS): "This attack earns" over the reward when it clears the site, the
  * reward dimmed when it does not (owner, 26 October 2026: "moving the clear rewards in the 'this attack clears it' ->
  * This attack earns xxx"). With an army selected, each side's troops before and after, the guard's strength said there
  * and not on its token. Its foot is the sheet's: Realm on the left, the one step alone on the right.
@@ -80,8 +84,11 @@ export const SiteCardView = ({
   fight,
   pay,
   chest,
+  relic,
+  holdsOath = false,
+  cache,
+  replacement,
   ruinChoice,
-  xp,
   verb,
   receipt,
   onRealm,
@@ -90,7 +97,7 @@ export const SiteCardView = ({
   site: AttackTargetKind;
   /** The site's own name, the one its map plate and every list give it: the card's title with its kind, as the hover. */
   name?: string;
-  beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: string }) | undefined;
+  beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: Troops["category"] }) | undefined;
   army: { art: IconMeaning; troops: number } | null;
   guard: number | null | undefined;
   fight: SiteFight | undefined;
@@ -98,17 +105,22 @@ export const SiteCardView = ({
   pay: { icon: IconMeaning; amount: number; fits?: number } | null;
   /** A ruin's chest: its tier and the exact LORDS stored with it; undefined until the facts carry them. */
   chest?: { tier: Tier; lords: number };
+  /** A Season 1 ruin's relic, rolled when it was found: the clearing army carries it. */
+  relic?: ArmyRelic;
+  holdsOath?: boolean;
+  cache?: number;
+  /** Before a full army clears a ruin: the relic it replaces, chosen there. */
+  replacement?: ReactNode;
   ruinChoice?: { depth: string; perDepth: boolean };
-  xp: number | undefined;
   verb: SiteVerb | null;
   receipt?: ReactNode;
   /** The way to make room when the payout does not all fit. */
   onRealm?: () => void;
   onClose: () => void;
 }) => {
-  const { word: kind, icon } = TARGET_MARKS[site];
+  const { icon } = TARGET_MARKS[site];
   const word = attackTargetName(site, beast);
-  const title = name ? siteTitle(name, kind, beast?.name) : word;
+  const title = name ? siteTitle(name, word, beast?.name) : word;
   // With no army selected the card says what the site is and pays, and its guard (owner, 28 October 2026: "agree with
   // no picker"); selecting an army, then the site, gives the fight.
   const armyless = army === null;
@@ -120,12 +132,20 @@ export const SiteCardView = ({
   // an army is no site.
   const countsOnBoard = site !== "Army";
   const reward =
-    chest || pay || xp !== undefined || countsOnBoard ? (
+    cache !== undefined || relic || chest || pay || countsOnBoard ? (
       <Reward dimmed={facing !== undefined && !clears(facing)}>
-        {chest ? <ChestPay chest={chest} /> : pay ? <Pay pay={pay} /> : null}
-        {xp !== undefined && !(chest && lost) && (
-          <HudChip>
-            {formatShort(xp, { signed: true })} {XP}
+        {cache !== undefined ? (
+          <CachePay fragments={cache} />
+        ) : relic ? (
+          <RelicPay relic={relic} />
+        ) : chest ? (
+          <ChestPay chest={chest} />
+        ) : pay ? (
+          <Pay pay={pay} />
+        ) : null}
+        {holdsOath && (
+          <HudChip icons={["shrine"]} label={SITE_OATH.label} tip={SITE_OATH.rule}>
+            {SITE_OATH.holds}
           </HudChip>
         )}
         {countsOnBoard && (
@@ -141,16 +161,12 @@ export const SiteCardView = ({
     <HudSheet label={title} onClose={onClose}>
       <header className="flex items-center gap-3">
         {typeof guard === "number" ? (
-          <GuardToken
-            label={beast?.name ?? TROOPS}
-            art={guardIcon}
-            troops={armyless ? guard : undefined}
-            tip={beast?.combatClass}
-          />
+          <GuardToken label={beast?.name ?? TROOPS} art={guardIcon} troops={armyless ? guard : undefined} />
         ) : (
           <SiteMark icon={beast ? beastMeaning(beast.beast) : icon} />
         )}
         <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+          {beast && <CombatMark category={beast.combatClass} />}
           {facing ? (
             <Outcome facing={facing} earns={reward !== null} />
           ) : (
@@ -167,6 +183,7 @@ export const SiteCardView = ({
       )}
       {!armyless && <FightPanel army={army} guard={guard} facing={facing} beast={beast} guardIcon={guardIcon} />}
       {receipt}
+      {replacement}
       <Verb
         verb={verb}
         site={word}
@@ -205,6 +222,12 @@ const outcomeWord = (facing: Facing, earns: boolean): string => {
 };
 
 /** What the clear pays, in the headline; dimmed when this attack does not clear the site. */
+const CachePay = ({ fragments }: { fragments: number }) => (
+  <span data-ruin-cache>
+    <HudChip icons={["fragment"]}>{RELIC_WORDS.cache(fragments)}</HudChip>
+  </span>
+);
+
 const Reward = ({ dimmed, children }: { dimmed: boolean; children: ReactNode }) => (
   <span className={cn("flex flex-wrap items-center gap-2", dimmed && "opacity-50")}>{children}</span>
 );
@@ -232,7 +255,7 @@ const FightPanel = ({
   army: { art: IconMeaning; troops: number } | null;
   guard: number | null | undefined;
   facing: Facing | undefined;
-  beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: string }) | undefined;
+  beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: Troops["category"] }) | undefined;
   guardIcon: IconMeaning;
 }) =>
   army || guard !== null ? (
@@ -253,7 +276,6 @@ const FightPanel = ({
           before={guard}
           kept={facing?.fight.guardLeft}
           side="theirs"
-          tip={beast?.combatClass}
         />
       )}
     </div>
@@ -336,16 +358,12 @@ const Verb = ({
 };
 
 /**
- * The word on an army's step while an order of that army is in flight: the step's own word for its own order, and
- * that the army is on its way for another. Undefined once the army is free.
- */
-export const inFlightWord = (inFlight: OrderInFlight | undefined, own: OrderInFlight, word: string) =>
-  inFlight && (inFlight === own ? word : ON_ITS_WAY);
-
-/**
  * The one line under the step: why an attack did not happen, in red, as the news; or, under Move, that the site is out
  * of reach. An attack that loses the army says so in the headline, from the same figures as the sides.
  */
+const inFlightWord = (inFlight: OrderInFlight | undefined, own: OrderInFlight, word: string) =>
+  inFlight && (inFlight === own ? word : ON_ITS_WAY);
+
 const verbLine = (verb: SiteVerb, site: string): { line: string | undefined; warns: boolean } => {
   if (verb.kind === "blocked") return { line: verb.reason, warns: true };
   if (verb.kind === "attack" && verb.refused && !verb.inFlight) return { line: verb.refused, warns: true };

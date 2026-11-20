@@ -1,10 +1,6 @@
-"""The identity service owns shard visibility; deployment and the runner use the same lifecycle requests."""
-import json
 import time
 from urllib.error import HTTPError, URLError
-from service_requests import identity_service_base, service_json
-
-PENDING_ROUTE_PREREQUISITE = "The identity service must carry the pending route before a shard from this code starts"
+from service_requests import service_json
 
 
 class HeraldIdentityRefused(RuntimeError):
@@ -32,37 +28,3 @@ def wait_for_identity(config):
             pass
         time.sleep(1)
     raise RuntimeError("Herald did not serve the prepared shard identity")
-
-
-def directory_status(config, status):
-    if status not in ("pending", "active", "retired"):
-        raise ValueError("Deployment can only register pending, activate or retire a shard")
-    base = identity_service_base(config["guardian_url"])
-    suffix = {
-        "pending": "/directory/shards/pending",
-        "active": "/directory/shards",
-        "retired": "/directory/shards/status",
-    }[status]
-    body = {"url": config["public_herald_url"]}
-    if status == "retired":
-        body["status"] = "retired"
-    try:
-        result = service_json(base + suffix, body)
-    except HTTPError as error:
-        if status == "pending" and error.code == 404:
-            error.close()
-            raise RuntimeError(PENDING_ROUTE_PREREQUISITE) from None
-        if status == "retired" and error.code in (404, 409):
-            try:
-                refusal = json.load(error).get("error")
-            except (ValueError, AttributeError, TypeError):
-                refusal = None
-            finally:
-                error.close()
-            if (error.code, refusal) in ((404, "shard_not_listed"), (409, "shard_status_change_refused")):
-                return {"url": config["public_herald_url"], "status": "retired"}
-        raise
-    allowed = {"pending": ("pending", "active", "draining"), "active": ("active", "draining"), "retired": ("retired",)}[status]
-    if result.get("status") not in allowed:
-        raise RuntimeError("Directory returned an unexpected shard status")
-    return result

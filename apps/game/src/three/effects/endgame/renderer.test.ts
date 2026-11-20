@@ -15,7 +15,7 @@ import { ClientConfigManager } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { TileOccupier } from "@bibliothecadao/types";
-import preset from "../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { runRendererFrame } from "../../renderer-frame-runtime";
 import { SpireManager } from "../../managers/spire-manager";
 import { SceneName } from "../../types";
@@ -58,10 +58,11 @@ async function harness(ended = false, discovered = false, revealWhilePreparing =
         key: "1",
         value: {
           game_id: 13,
-          preset_id: 3,
+          preset_id: 2,
           name: "1",
           start_settling_at: "1",
           start_main_at: "1",
+          scheduled_end_at: "0",
           end_at: "0",
           settled,
           ready: true,
@@ -97,7 +98,7 @@ async function harness(ended = false, discovered = false, revealWhilePreparing =
       },
     ]);
   const config = new ClientConfigManager();
-  config.setActiveGame(13, 3);
+  config.setActiveGame(13, 2);
   config.setStore(store);
   const projection = new WorldSpatialProjection({ store });
   projection.start();

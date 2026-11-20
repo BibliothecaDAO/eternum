@@ -11,8 +11,9 @@ import { WorldSpatialProjection, type HeraldGameDirectoryEntry } from "@biblioth
 import { ContractAddress, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { hash, type AccountInterface } from "starknet";
 import { vi } from "vitest";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import explorer from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
+import { nativeFactModels } from "../../../../contracts/l3/world-native/schema/client.gen";
 import type { RecentStoryEvent, RunnerGame } from "../game";
 
 const GAME_ID = 28;
@@ -192,7 +193,16 @@ function positionFacts(
 
 export const seedExplorer = (
   store: NativeFactStore,
-  input: { explorerId: number; owner: number; x: number; y: number; stamina?: bigint; count?: bigint; alt?: boolean },
+  input: {
+    explorerId: number;
+    owner: number;
+    x: number;
+    y: number;
+    stamina?: bigint;
+    count?: bigint;
+    alt?: boolean;
+    oaths?: number;
+  },
 ): void => {
   writeFact(
     store,
@@ -213,6 +223,23 @@ export const seedExplorer = (
     },
     positionFacts(store, input.explorerId, input.x, input.y, input.alt ?? false, TileOccupier.ExplorerKnightT1, false),
   );
+  writeFact(store, "ArmyProgress", [GAME_ID, input.explorerId], {
+    game_id: GAME_ID,
+    explorer_id: input.explorerId,
+    logistics: 0,
+    oath_slots: 4,
+    oaths: input.oaths ?? 0,
+    oath_pick: 0,
+  });
+  for (const [index, kind] of nativeFactModels.ArmyRelicEffect.fields.kind.enum.entries()) {
+    writeFact(store, "ArmyRelicEffect", [GAME_ID, input.explorerId, index], {
+      game_id: GAME_ID,
+      explorer_id: input.explorerId,
+      kind,
+      rank: 0,
+      expires_at: 0,
+    });
+  }
 };
 
 export const seedGameRegistry = (
@@ -222,12 +249,13 @@ export const seedGameRegistry = (
   writeFact(store, "GameRegistry", [GAME_ID], {
     game_id: GAME_ID,
     name: 0n,
-    preset_id: 3,
+    preset_id: 2,
     settled: input.status === "Ended",
     ready: true,
     dev_mode_on: true,
     start_settling_at: 0n,
     start_main_at: BigInt(input.startMainAt),
+    scheduled_end_at: BigInt(input.endAt),
     end_at: BigInt(input.endAt),
     end_grace_seconds: 0,
     seed: 0n,

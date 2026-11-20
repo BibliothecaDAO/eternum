@@ -40,7 +40,7 @@ const ActionBubble = ({ action }: { action: StructureAction }) => {
       disabled={action.refusal !== null}
       aria-label={action.label}
       aria-keyshortcuts={ORDER_KEYS[action.id]}
-      data-popover-anchor={action.id === "trade" ? "market" : action.id}
+      data-popover-anchor={action.id}
       data-tip={action.refusal ?? undefined}
       onClick={action.onClick}
     />

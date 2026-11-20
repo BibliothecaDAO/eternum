@@ -34,7 +34,7 @@ class DeploymentRefusalTest(unittest.TestCase):
             with self.subTest(stage=stage):
                 report, log = self.report_failure(fail)
                 self.assertEqual(report["stage"], stage)
-                self.assertEqual(report["restarted"], stage == "restart pending shard")
+                self.assertEqual(report["restarted"], stage == "restart unfinished shard")
                 self.assertIn("subprocess evidence", log)
                 self.assertNotIn("failure evidence", report["message"])
 
@@ -61,6 +61,6 @@ class DeploymentRefusalTest(unittest.TestCase):
             self.assertIn("stderr", kwargs)
             self.assertIn("stdout", kwargs)
             events.append(command[-1])
-        with patch.object(box_deploy.subprocess, "run", side_effect=compose), patch.object(box_deploy.subprocess, "check_output", return_value="0"), patch.object(box_deploy, "wait_for_identity", side_effect=lambda _: events.append("identity")), patch.object(box_deploy, "directory_status", side_effect=lambda *_: events.append("pending") or {"status": "pending"}):
+        with patch.object(box_deploy.subprocess, "run", side_effect=compose), patch.object(box_deploy.subprocess, "check_output", return_value="0"), patch.object(box_deploy, "wait_for_identity", side_effect=lambda _: events.append("identity")):
             box_deploy.start(Path("/unused"), {}, events.append)
-        self.assertEqual(events, ["prepare", "prepare", "start Herald", "metrics", "wait for Herald identity", "identity", "register pending", "pending", "start services", "-d", "initialise", "init"])
+        self.assertEqual(events, ["prepare", "prepare", "start Herald", "metrics", "wait for Herald identity", "identity", "start services", "-d", "initialise", "init"])

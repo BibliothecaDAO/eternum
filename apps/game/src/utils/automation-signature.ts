@@ -9,8 +9,7 @@ const encodePercentages = (percentages: Record<number, ResourceAutomationPercent
     .toSorted(([a], [b]) => Number(a) - Number(b))
     .map(([resourceId, value]) => {
       const r2r = Number.isFinite(value?.resourceToResource) ? value!.resourceToResource : 0;
-      const l2r = Number.isFinite(value?.laborToResource) ? value!.laborToResource : 0;
-      return `${resourceId}:${r2r}:${l2r}`;
+      return `${resourceId}:${r2r}`;
     })
     .join(",");
 };

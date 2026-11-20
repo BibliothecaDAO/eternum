@@ -65,13 +65,13 @@ const directoryChainOf = async (gameId: number): Promise<string> => {
   while (Date.now() < deadline) {
     const response = await fetch(`${ORIGIN}/api/directory`);
     if (!response.ok) throw new Error(`Directory unreadable: HTTP ${response.status}`);
-    const { shards } = (await response.json()) as {
-      shards: { chainId: string; games: { game_id: number; mode: string; slotId: number | null }[] | null }[];
+    const { shard } = (await response.json()) as {
+      shard: { chainId: string; games: { game_id: number; mode: string; slotId: number | null }[] | null } | null;
     };
-    const shard = shards.find(({ games }) =>
-      games?.some((game) => game.game_id === gameId && game.mode === "blitz" && game.slotId === null),
+    const listed = shard?.games?.some(
+      (game) => game.game_id === gameId && game.mode === "blitz" && game.slotId === null,
     );
-    if (shard) return shard.chainId;
+    if (shard && listed) return shard.chainId;
     await new Promise((resolve) => setTimeout(resolve, POLL_MS));
   }
   throw new Error(`Game ${gameId} was created but the directory does not list it`);

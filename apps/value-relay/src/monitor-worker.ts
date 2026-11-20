@@ -4,7 +4,7 @@ import { decodeMonitorSettings, type MonitorSettings } from "./monitor-env";
 import { checkSlotRoster, slotRosterReads } from "./roster-monitor";
 import { ledgerAddress, ledgerContractOf } from "./environment";
 import { bindLedgerState, ledgerOrNull, ledgerStateName } from "./ledger-state";
-import { activeShards, isDevShardChain, readRegisteredShard, type ShardDirectory } from "@realms-world/value-ledger";
+import { isDevShardChain, officialChain, readRegisteredShard, type ShardDirectory } from "@realms-world/value-ledger";
 import { processSeasonTops } from "./season-tops";
 import { seasonLedgerReads, challengeSeason } from "./season-ledger";
 import { isLedgerReadTick, LEDGER_READ_STALE_SECONDS } from "@realms-world/chain";
@@ -153,7 +153,6 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
           );
           const deposits = yield* Effect.result(
             relayOperation("audit deposited LORDS", async () => {
-              const observations = [];
               const ledger = {
                 rpcUrl: monitor.env.L2_RPC_URL,
                 address: ledgerAddress(monitor.env.ENVIRONMENT),
@@ -162,10 +161,12 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
               try {
                 const journal = await auditDepositCustody(ledger, monitor.ctx.storage);
                 if (!journal) return { enabled: false, games: [] };
-                for (const shard of await activeShards(monitor.env.IDENTITY)) {
-                  const registered = await readRegisteredShard(monitor.env.IDENTITY, shard.chainId);
+                const observations = [];
+                const official = await officialChain(monitor.env.IDENTITY);
+                if (official) {
+                  const registered = await readRegisteredShard(monitor.env.IDENTITY, official.chainId);
                   observations.push({
-                    chainId: shard.chainId,
+                    chainId: official.chainId,
                     games: await auditDeposits(shardConnection(registered), registered.url, ledger, journal),
                   });
                 }
@@ -412,13 +413,10 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage): Monitor
         }),
       conservation: () =>
         relayOperation("audit official shard conservation", async () => {
-          const balances = [];
-          for (const row of await activeShards(env.IDENTITY)) {
-            const { reader, shard } = await shardPorts(row.chainId);
-            const rows = await Effect.runPromise(shardConservationPort(reader.connection, shard.url, fetch, storage)());
-            balances.push(...rows);
-          }
-          return balances;
+          const official = await officialChain(env.IDENTITY);
+          if (!official) return [];
+          const { reader, shard } = await shardPorts(official.chainId);
+          return Effect.runPromise(shardConservationPort(reader.connection, shard.url, fetch, storage)());
         }),
     },
     ledger: {

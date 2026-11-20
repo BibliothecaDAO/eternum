@@ -95,7 +95,6 @@ export function buildCommonBaseConfig(): ConfigPatch {
       layer_capacity_increment: SETTLEMENT_LAYER_CAPACITY_INCREMENT,
       layer_capacity_bps: SETTLEMENT_LAYER_CAPACITY_BPS,
       single_realm_mode: false,
-      two_player_mode: false,
     },
     biomeClimate: {
       elevationScaleBps: NEUTRAL_BIOME_CLIMATE_BPS,

@@ -1,5 +1,8 @@
+import type { deepSites } from "../../../packages/types/src/constants/deep-sites";
 import type { ConfigPatch } from "./merge-config";
 import type { GameType } from "./types";
+
+type DeepKind = (typeof deepSites)[number]["key"];
 
 /** Five chest tiers, common to legendary: a depth's odds in basis points, or the shares each tier pays. */
 export interface ChestTiers {
@@ -17,7 +20,7 @@ export interface NativePreset {
    */
   clockScale?: { days: number; activity: number };
   /**
-   * What a fixture preset changes in its mode's balance (starting stock, prices); the rest of the balance is the mode's.
+   * What a preset changes in its mode's balance (starting stock, prices); the rest of the balance is the mode's.
    * Applied wherever a preset's configuration is loaded.
    */
   balance?: ConfigPatch;
@@ -37,8 +40,10 @@ export interface NativePreset {
   modeRules: number;
   entryRule: number;
   commandMask: bigint;
-  settlementMode: "Single" | "Triple" | "Duel";
+  settlementMode: "Single" | "Triple";
   spacing: number;
+  /** One Aspect per canonical Order, in Order-id order; empty disables teams. */
+  orderAspects: readonly number[];
   /** The unit a season's days are counted in (Frontier rules §9): a day lasts 2 to 6 units; 0 in modes without days. */
   dayUnitSeconds: number;
   board: null | {
@@ -53,13 +58,44 @@ export interface NativePreset {
     /** Wheat a Rations pick takes off each deployed troop. */
     rationStep: number;
     /** Total Barracks purchases needed to construct training. */
-    trainingGateTier: number;
     /** Troop storage in full deployments; wheat/labor base caps by realm level, in whole units. */
     troopStoreDeploys: number;
     resourceStoreCaps: readonly [number, number, number, number];
   };
   /** One price per research row tier above common; rows are research.cairo's ROW_* ids. */
   research: readonly { row: number; tier: number; essenceCost: number; laborCost: number }[];
+  race: null | {
+    seasonDays: number;
+    stageHeight: number;
+    clearMistPercent: number;
+    secondWindPercent: number;
+    paleMoonPercent: number;
+    spoilsPercent: number;
+  };
+  deep: null | {
+    gateDistance: number;
+    rings: readonly { radius: number; realms: number }[];
+    beasts: Record<DeepKind, { count: number; bow: boolean }>;
+    lossPerTick: number;
+    corePerTick: number;
+    minePerTick: number;
+    buildingPay: { alone: number; pair: number; crowd: number };
+    altarThreshold: number;
+  };
+  banes: null | {
+    chanceStep: number;
+    quorumPercent: number;
+    beastPercent: number;
+    staminaPercent: number;
+    productionPercent: number;
+    questCounts: readonly number[];
+  };
+  dailyQuest: null | {
+    baseCounts: readonly number[];
+    labor: number;
+    essence: number;
+    bonusPercent: number;
+  };
   discovery: null | {
     beastsBps: number;
     campBps: number;
@@ -68,16 +104,6 @@ export interface NativePreset {
     shrineBps: number;
     wellBps: number;
     emptyRevealLimit: number;
-  };
-  /** XP per reveal and the five cumulative skill-point thresholds. */
-  progression: null | {
-    revealXp: number;
-    revealXpPerDepth: number;
-    commonXp: number;
-    uncommonXp: number;
-    rareXp: number;
-    epicXp: number;
-    legendaryXp: number;
   };
   labor: null | { amount: number; campaignEssence: number; goldenAmount: number; goldenEssence: number };
   chests: null | {
@@ -91,8 +117,6 @@ export interface NativePreset {
     revealPercent: number;
     siteGuardLower: number;
     siteGuardUpper: number;
-    ruinGuardLower: number;
-    ruinGuardUpper: number;
     guardStep: number;
     beastWeakLower: number;
     beastWeakUpper: number;

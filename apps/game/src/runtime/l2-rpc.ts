@@ -1,10 +1,7 @@
-import { environmentL2, PUBLIC_L2_RPC_URL } from "@realms-world/chain";
+import { environmentL2, MAINNET_TOKENS, PUBLIC_L2_RPC_URL } from "@realms-world/chain";
 import { constants, RpcProvider } from "starknet";
 
 import { valueEnvironmentOf } from "@/shell/frame/environment";
-
-/** STRK, the token every Starknet network fee is paid in. */
-const STRK = "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
 
 /**
  * The L2 an environment's address book may name, by that name: its chain id, its name for players, its fee (gas)
@@ -14,7 +11,7 @@ const L2_CHAINS = {
   SN_MAIN: {
     id: constants.StarknetChainId.SN_MAIN,
     label: "Starknet mainnet",
-    gasToken: STRK,
+    gasToken: MAINNET_TOKENS.strk.address,
     explorer: "https://voyager.online",
   },
 } as const;
@@ -39,9 +36,6 @@ export const L2_LEDGER = ENVIRONMENT_L2.ledger;
  * ledger while a result it waits for is due, so it shows in the block it lands in.
  */
 export const L2_BLOCK_MS = 2_000;
-
-/** Where a player reads one of this build's L2 transactions. */
-export const l2TransactionUrl = (hash: string): string => `${L2_CHAIN.explorer}/tx/${hash}`;
 
 /** Whether a chain id, as a wallet or a payload gives it, is this build's L2. */
 export const isL2Chain = (chainId: bigint | string): boolean => BigInt(chainId) === BigInt(L2_CHAIN.id);

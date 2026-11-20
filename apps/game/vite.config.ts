@@ -19,6 +19,7 @@ import { assetLinks } from "./build/asset-links";
 import { labArtwork } from "./build/lab-artwork";
 import { isDevEnvironment } from "./src/shell/frame/environment";
 import { SHELL_COLORS } from "./src/tokens";
+import llmTxtPlugin from "../game-docs/vite-plugin-llm-txt.mjs";
 
 /**
  * The dev environment's install name and icons (the hatched corner) and its page title, so an installed dev app never
@@ -68,6 +69,7 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
     undefined;
 
   const plugins = [
+    llmTxtPlugin(),
     refuseRetiredVariables(),
     labArtwork(isDevEnvironment(appEnv.VITE_PUBLIC_ENVIRONMENT)),
     hashedModels(),

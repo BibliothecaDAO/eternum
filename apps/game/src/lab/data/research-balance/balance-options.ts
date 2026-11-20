@@ -1,12 +1,11 @@
-import { EARLY_REALM } from "@/ui/features/frontier/research/progression-fixture";
+import { frontierPreset } from "../../../../../../config/source/frontier/native";
 
 export type Counts = readonly [number, number];
-export type StudyRow = 0 | 1 | 2;
+export type StudyRow = 0 | 1;
 
 export const ROWS = [
   { row: 0, name: "Farm", icon: "farm", sides: ["Fields", "Granary"], baseRate: 302.4, unit: "wheat / hour" },
   { row: 1, name: "Workshop", icon: "workshop", sides: ["Tools", "Storeroom"], baseRate: 201.6, unit: "labor / hour" },
-  { row: 2, name: "Barracks", icon: "barracks", sides: ["Drill", "Rations"], baseRate: 100.8, unit: "troops / hour" },
 ] as const;
 export const REALMS = ["Settlement", "City", "Kingdom", "Empire"];
 export const LIVE_CAPACITY = [6000, 18000, 50000, 120000];
@@ -29,7 +28,9 @@ export const number = (value: number) => value.toLocaleString("en-US", { maximum
 
 export function nextPrice(row: StudyRow, counts: Counts, side: number) {
   if (counts[side]! >= 5) return undefined;
-  return EARLY_REALM.price(row, counts[side]! + 1);
+  const price = frontierPreset.research.find((entry) => entry.row === row && entry.tier === counts[side]! + 1);
+  if (!price) throw new Error(`Missing historical research price ${row}/${counts[side]! + 1}`);
+  return { essence: price.essenceCost, labor: price.laborCost };
 }
 
 export function capacity(level: number, picks: number) {
@@ -39,7 +40,6 @@ export function capacity(level: number, picks: number) {
 export function effect(row: StudyRow, side: number, picks: number, level: number) {
   const item = ROWS[row];
   if (side === 0) return `${number(item.baseRate * (1 + picks * 0.2))} ${item.unit}`;
-  if (row === 2) return `${number(2 - picks * 0.2)} wheat / deployed troop`;
   return `${number(capacity(level, picks))} ${row === 0 ? "wheat" : "labor"} capacity`;
 }
 

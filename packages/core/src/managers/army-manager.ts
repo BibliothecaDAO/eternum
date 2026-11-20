@@ -1,6 +1,14 @@
-import { Direction, ID, SystemCalls, TroopTier, troopTierIndex, TroopType } from "@bibliothecadao/types";
+import {
+  Direction,
+  ID,
+  SystemCalls,
+  TroopTier,
+  troopTierIndex,
+  TroopType,
+  troopTypeIndex,
+} from "@bibliothecadao/types";
 import { Account, AccountInterface } from "starknet";
-import { multiplyByPrecision } from "../utils";
+import { multiplyByPrecision } from "../utils/utils";
 
 export class ArmyManager {
   constructor(
@@ -13,13 +21,13 @@ export class ArmyManager {
     signer: Account | AccountInterface,
     armyEntityId: ID,
     troopCount: number,
-    homeDirection: Direction,
+    supplyPost?: number,
   ): Promise<void> {
     await this.systemCalls.explorer_add({
       signer,
       to_explorer_id: armyEntityId,
       amount: multiplyByPrecision(troopCount),
-      home_direction: homeDirection,
+      supply_post: supplyPost,
     });
   }
 
@@ -34,7 +42,7 @@ export class ArmyManager {
       signer,
       for_structure_id: this.realmEntityId,
       slot,
-      category: Object.keys(TroopType).indexOf(troopType),
+      category: troopTypeIndex(troopType),
       tier: troopTierIndex(troopTier),
       amount: multiplyByPrecision(troopCount),
     });
@@ -52,7 +60,7 @@ export class ArmyManager {
     return this.systemCalls.explorer_create({
       signer,
       for_structure_id: this.realmEntityId,
-      category: Object.keys(TroopType).indexOf(troopType),
+      category: troopTypeIndex(troopType),
       tier: troopTierIndex(troopTier),
       amount: multiplyByPrecision(troopCount),
       spawn_direction: spawnDirection,

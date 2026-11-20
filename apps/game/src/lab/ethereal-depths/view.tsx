@@ -4,7 +4,8 @@ import {
   mountProceduralTerrainDebugRenderer,
   type ProceduralTerrainDebugRendererHandle,
 } from "@/three/debug/procedural-terrain-debug-renderer";
-import { depthName, SPIRE_WORDS } from "@/ui/design-system/kit/words";
+import { layerName } from "@bibliothecadao/types";
+import { SPIRE_WORDS } from "@/ui/design-system/kit/words";
 import { EtherealDepthStage, readDepthLook } from "./stage";
 import looks from "@/three/terrain/ethereal-depths.json";
 import "./view.css";
@@ -67,7 +68,7 @@ export function EtherealDepthLabView() {
       <header className="depth-study-caption">
         <p>{choice.set === "current" ? "Original · shared basalt" : "Violet descent · approved"}</p>
         <h1>
-          {depthName(choice.depth)} · {choice.set === "current" ? "Basalt" : looks[choice.depth].title}
+          {layerName(choice.depth)} · {choice.set === "current" ? "Basalt" : looks[choice.depth].title}
         </h1>
         <p>{error ?? (ready ? "Terrain lab · fixed camera · actual model scale" : "Preparing terrain…")}</p>
       </header>
@@ -106,7 +107,7 @@ export function EtherealDepthLabView() {
           >
             {([1, 2, 3] as const).map((depth) => (
               <option key={depth} value={depth}>
-                {depthName(depth)}
+                {layerName(depth)}
               </option>
             ))}
           </select>

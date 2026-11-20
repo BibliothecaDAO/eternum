@@ -132,16 +132,15 @@ async function probeLedger(network: typeof fetch, targets: PublicValueTargets, n
 }
 
 async function readDirectory(read: Reader, playUrl: string) {
-  const directory = await body(read, playUrl + "/api/directory");
-  if (!Array.isArray(directory.shards)) throw new Error("Directory missing");
-  const targets = directory.shards.map(parseTarget);
-  const available = directory.shards.every(
-    (shard: { games?: unknown; error?: unknown }) =>
-      Array.isArray(shard.games) &&
-      !shard.error &&
-      shard.games.every((game: unknown) => game && typeof game === "object" && !("error" in game)),
-  );
-  return { targets, available };
+  const { shard } = await body(read, playUrl + "/api/directory");
+  if (shard === undefined) throw new Error("Directory missing");
+  if (shard === null) return { targets: [], available: true };
+  const { games, error } = shard as { games?: unknown; error?: unknown };
+  const available =
+    Array.isArray(games) &&
+    !error &&
+    games.every((game: unknown) => game && typeof game === "object" && !("error" in game));
+  return { targets: [parseTarget(shard)], available };
 }
 
 async function probeSlots(read: Reader, playUrl: string): Promise<Status> {
@@ -262,13 +261,11 @@ function requireReady(value: Record<string, unknown>) {
 }
 function parseTarget(value: unknown): Target {
   const target = value as Target;
-  if (!target || !felt(target.chainId) || !["active", "draining"].includes(target.status))
-    throw new Error("Invalid shard target");
+  if (!target || !felt(target.chainId)) throw new Error("Invalid shard target");
   const url = publicUrl(target.url);
   return {
     url: url.href.replace(/\/$/, ""),
     chainId: `0x${BigInt(target.chainId).toString(16)}`,
-    status: target.status,
   };
 }
 function publicUrl(value: unknown) {

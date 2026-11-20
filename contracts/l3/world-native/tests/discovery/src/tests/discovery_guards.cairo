@@ -17,21 +17,6 @@ fn blitz_light_and_heavy_guards_reach_both_inclusive_endpoints_in_every_slot() {
 }
 
 #[test]
-fn eternum_preserves_its_existing_inclusive_eight_hundred_to_fourteen_ninety_nine_draw() {
-    let (_, preset) = super::preset_projection::current_definition("eternum");
-    let limits = preset.rules.troop_limit_config;
-    assert_eq!((limits.light_guard_lower_bound, limits.light_guard_upper_bound), (800, 1499));
-    assert_eq!((limits.heavy_guard_lower_bound, limits.heavy_guard_upper_bound), (800, 1499));
-    for category in array![CAMP_CATEGORY, MINE_CATEGORY] {
-        assert_endpoints(preset.rules, category, 1, TroopTier::T1, 800, 1499, 171, 136);
-    }
-    for category in array![HYPERSTRUCTURE_CATEGORY, BANK_CATEGORY] {
-        assert_endpoints(preset.rules, category, 3, TroopTier::T2, 800, 1499, 171, 136);
-    }
-    assert_endpoints(preset.rules, BITCOIN_MINE_CATEGORY, 4, TroopTier::T2, 800, 1499, 171, 136);
-}
-
-#[test]
 fn single_value_guard_ranges_include_the_largest_u16() {
     let (_, mut preset) = super::preset_projection::current_definition("blitz");
     preset.rules.troop_limit_config.light_guard_lower_bound = 10;
@@ -87,18 +72,6 @@ fn light_guards_draw_all_three_troop_types_evenly() {
         // Each type expects 1,000 of 3,000 draws; a 100-draw margin is about 3.9 standard deviations.
         for count in array![knights, paladins, crossbowmen] {
             assert!(count >= 900 && count <= 1100, "light guard type odds drift");
-        }
-    }
-}
-
-#[test]
-fn eternum_uses_the_same_light_guard_type_draw() {
-    let (_, preset) = super::preset_projection::current_definition("eternum");
-    for category in array![CAMP_CATEGORY, MINE_CATEGORY] {
-        for (seed, troop) in array![(0_u256, TroopType::Crossbowman), (1, TroopType::Knight), (3, TroopType::Paladin)] {
-            let guard = *discovery_guards(category, seed, preset.rules, 360).at(0);
-            assert_eq!(guard.category, troop);
-            assert_eq!(guard.tier, TroopTier::T1);
         }
     }
 }

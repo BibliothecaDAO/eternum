@@ -4,14 +4,19 @@ import { hash } from "starknet";
 import { followGameRelease } from "./game-release";
 import { NativeFactStore } from "./native-fact-store";
 
+vi.mock("../../../../deploy/release/native-release", async (original) => ({
+  ...(await original<typeof import("../../../../deploy/release/native-release")>()),
+  NATIVE_BALANCE_SINCE_RELEASE: 1,
+}));
+
 const setup = () => {
   const store = new NativeFactStore();
-  const write = (releaseId: number) =>
+  const write = (releaseId: number, createdReleaseId = 1) =>
     store.applyFacts([
       {
         model: "GameRelease",
         key: hash.computePoseidonHashOnElements([1]),
-        value: { game_id: 1, release_id: releaseId, created_release_id: 1, preset_commitment: "0x789" },
+        value: { game_id: 1, release_id: releaseId, created_release_id: createdReleaseId, preset_commitment: "0x789" },
       },
     ]);
   write(1);
@@ -109,5 +114,53 @@ it("revalidates a pin after a failed manifest read was superseded by another pin
   await gate.ready();
   expect(fetched).toHaveBeenCalledTimes(2);
   expect(failed).not.toHaveBeenCalled();
+  gate.dispose();
+});
+
+for (const origin of [0, 3]) {
+  it(`rechecks a changed creation pin and refuses its invalid release interval: ${origin}`, async () => {
+    const { gate, write, failed } = setup();
+    write(2);
+    await gate.ready();
+    write(2, origin);
+    await expect(gate.ready()).rejects.toThrow(`release ${origin}..2`);
+    expect(failed).toHaveBeenCalledOnce();
+    gate.dispose();
+  });
+}
+
+it("refreshes a missing historical release before allowing the game", async () => {
+  const store = new NativeFactStore();
+  store.applyFacts([
+    {
+      model: "GameRelease",
+      key: "0x1",
+      value: { game_id: 1, release_id: 2, created_release_id: 1, preset_commitment: "0x789" },
+    },
+  ]);
+  const fetched = vi.fn().mockResolvedValue(
+    new Response(
+      JSON.stringify({
+        version: 1,
+        chainId: "0x1",
+        releaseSchemas: { "1": "old", "2": "schema" },
+        rpcUrl: "http://rpc.test",
+        l2GasBound: "0x47868c00",
+        contracts: { games: "0x1" },
+        accountClassHash: "0x2",
+        guardianPublicKey: "0x3",
+      }),
+    ),
+  );
+  vi.stubGlobal("fetch", fetched);
+  const failed = vi.fn();
+  const gate = followGameRelease(
+    store,
+    { gameId: 1, shard: { url: "http://shard.test", releaseSchemas: { "2": "schema" } }, schemaIdentity: "schema" },
+    failed,
+  );
+  await expect(gate.ready()).rejects.toThrow("release 1");
+  expect(fetched).toHaveBeenCalledOnce();
+  expect(failed).toHaveBeenCalledOnce();
   gate.dispose();
 });

@@ -20,7 +20,15 @@ const viewer = vi.hoisted(() => ({ address: null as string | null }));
 const shares = vi.hoisted(() => ({
   createShare: vi.fn(async () => "DAY2LINK"),
   sharePosted: vi.fn(async () => {}),
-  shareTally: vi.fn(async () => ({ links: 1, posted: 0, visits: 0, joined: 0, activated: 0 })),
+  shareTally: vi.fn(async () => ({
+    links: 1,
+    posted: 0,
+    visits: 0,
+    joined: 0,
+    activated: 0,
+    friendsPaid: 0,
+    fragmentsEarned: 0,
+  })),
   uploadShareCard: vi.fn(async () => {}),
 }));
 
@@ -56,6 +64,8 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowSeconds: () => REC
 vi.mock("@/hooks/context/game-context", async () => {
   const { NativeFactStore } = await import("@bibliothecadao/eternum/game-client");
   const store = new NativeFactStore();
+  // A game whose complete snapshot holds no race rules ranks players by the sites they cleared.
+  store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 0 });
   return { useGame: () => ({ setup: { store } }) };
 });
 vi.mock("../hud/dock-armies", async (importOriginal) => ({

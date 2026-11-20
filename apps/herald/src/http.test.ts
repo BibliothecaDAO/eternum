@@ -47,6 +47,7 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
               dev_mode_on: false,
               start_settling_at: "0x1",
               start_main_at: "0x2",
+              scheduled_end_at: "0x3",
               end_at: "0x3",
               end_grace_seconds: "0x4",
             },
@@ -205,6 +206,19 @@ it("serves the prepared leaderboard aggregate without paging history", async () 
   expect(await response.json()).toEqual({ mode: "points", game_id: "7", entries: [] });
 });
 
+it("answers no site ranking for a Season 1 game, whose race is between Aspects", async () => {
+  const season = createHeraldRequestHandler({
+    ...httpState,
+    fold: {
+      ...httpState.fold,
+      modelRows: (model: string) => (model === "RaceRules" ? [{ key: "7", value: { game_id: "7" } }] : []),
+    },
+  });
+  const response = await season(new Request("http://herald/games/7/leaderboard"));
+  expect([response.status, await response.json()]).toEqual([404, { error: "season_one_ranks_aspects" }]);
+  expect((await handler(new Request("http://herald/games/7/leaderboard"))).status).toBe(200);
+});
+
 it("passes a battle-only history filter to the store before pagination", async () => {
   const queryEvents = vi.fn(async () => ({ items: [], total: 0, limit: 350, offset: 0, complete_through_block: 12 }));
   const battleHandler = createHeraldRequestHandler({
@@ -240,6 +254,17 @@ it("passes a battle-only history filter to the store before pagination", async (
   expect(queryEvents).toHaveBeenCalledWith(
     expect.objectContaining({ gameId: "7", model: "StoryEvent", story: "BattleStory", limit: 350, offset: 0 }),
   );
+});
+
+it("passes every requested owner to the store, so one read serves an Aspect's fights", async () => {
+  const queryEvents = vi.fn(async () => ({ items: [], total: 0, limit: 100, offset: 0, complete_through_block: 12 }));
+  const handler = createHeraldRequestHandler({
+    ...httpState,
+    history: { ...httpState.history!, queryEvents },
+  });
+  const response = await handler(new Request("http://herald/games/7/history?model=BattleEvent&owner=0x1&owner=0x2"));
+  expect(response.status).toBe(200);
+  expect(queryEvents).toHaveBeenCalledWith(expect.objectContaining({ model: "BattleEvent", owner: ["0x1", "0x2"] }));
 });
 
 it("serves the bounded story cursor only when history decoding is healthy", async () => {

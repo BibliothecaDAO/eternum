@@ -1,3 +1,4 @@
+import { storyTag } from "./fixtures";
 import { describe, expect, it } from "vitest";
 import { toJsonValue } from "../model-registry";
 import { manifest, raw, seedDerivedRows, receipt, schema, setup, rowEvent } from "./fixtures";
@@ -67,6 +68,28 @@ describe("native resource facts", () => {
     const invalid = { ...arrival, data: ["4", "1", "7", "0", "1", "3", "2", "2", "10"] };
     expect(() => native.applyReceipt(fold, receipt([balance, invalid]), 10, 0)).toThrow();
     expect(fold.retainedRowCount()).toBe(0);
+  });
+
+  it("folds a dying army's weight to the same rows whether or not a set precedes its deletion", () => {
+    const folded = (death: ReturnType<typeof resourceEvent>[]) => {
+      const { native, fold } = setup();
+      native.applyReceipt(
+        fold,
+        receipt([
+          resourceEvent("ResourceWeight", ["1", "41"], { capacity: 900n, weight: 30n }),
+          resourceEvent("ResourceWeight", ["1", "42"], { capacity: 500n, weight: 0n }),
+        ]),
+        10,
+        0,
+      );
+      native.applyReceipt(fold, receipt(death), 11, 0);
+      return fold.modelRows("ResourceWeight").map((row) => row.value);
+    };
+    const deleted = resourceEvent("ResourceWeight", ["1", "41"]);
+    const shrunk = resourceEvent("ResourceWeight", ["1", "41"], { capacity: 0n, weight: 30n });
+
+    expect(folded([deleted])).toEqual([{ game_id: "0x1", entity_id: "0x2a", capacity: "0x1f4", weight: "0x0" }]);
+    expect(folded([shrunk, deleted])).toEqual(folded([deleted]));
   });
 });
 
@@ -158,7 +181,7 @@ describe("native production facts", () => {
       raw({
         from_address: manifest.world.address,
         keys: [...event.prefix, "2", "1", "0", "0x111", "0", "3", "0x55"],
-        data: ["7", "26", "125", "2", "23", "10", "35", "20", "1920"],
+        data: [storyTag("ProductionStory"), "26", "125", "2", "23", "10", "35", "20", "1920"],
       }),
     );
     expect(decoded.kind).toBe("event");
@@ -195,12 +218,12 @@ describe("native building facts", () => {
       if (decoded.kind !== "event") throw new Error("Expected building history event");
       return toJsonValue(decoded.value);
     };
-    expect(decode(["8", "0", "11", "10", "37", "1", "1920"])).toMatchObject({
+    expect(decode([storyTag("BuildingPlacementStory"), "0", "11", "10", "37", "1", "1920"])).toMatchObject({
       story: {
         BuildingPlacementStory: { coord: { alt: false, x: "0xb", y: "0xa" }, category: "0x25", change: "Destroyed" },
       },
     });
-    expect(decode(["9", "0", "11", "10", "37", "1", "23", "100", "1920"])).toMatchObject({
+    expect(decode([storyTag("BuildingPaymentStory"), "0", "11", "10", "37", "1", "23", "100", "1920"])).toMatchObject({
       story: { BuildingPaymentStory: { category: "0x25", cost: [{ resource_type: "0x17", amount: "0x64" }] } },
     });
     expect(fold.retainedRowCount()).toBe(0);

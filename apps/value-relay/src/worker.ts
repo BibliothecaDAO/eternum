@@ -9,13 +9,14 @@ import {
   registerHomeSource,
   type RealmEntryClaim,
 } from "./realm-entry";
+import { creditFriendFragments, FriendCredit } from "./fragment-credit";
 import { PlayerRequestError } from "./player-request";
 import { joinShardOperator } from "./shard-account";
 import { decodeRelaySettings, ledgerAddress, ledgerContractOf, type RelaySettings } from "./environment";
 import { bindLedgerState, ledgerOrNull, ledgerStateName } from "./ledger-state";
 import {
   relayAccountAddress,
-  activeShards,
+  officialChain,
   requireActiveChain,
   readRegisteredShard,
   type ShardDirectory,
@@ -37,6 +38,7 @@ import { handleLaborRequest } from "./labor-route";
 import { ShardReader, shardConnection } from "./shard-rpc";
 import { publishFrontierPools } from "./frontier-pools";
 import { awardFrontierPrizes } from "./frontier-prizes";
+import { settleEndedFrontierGames } from "./frontier-end";
 import { sweepFrontierLords, type FrontierSettlement, type PrincipalSweep } from "./frontier-sweep";
 import { settleFrontier } from "./frontier-settlement";
 import { frontierReceiptBindings } from "./frontier-binding";
@@ -47,7 +49,7 @@ import { shardWithdrawalPorts } from "./shard-withdrawals";
 import { chestLedgerReads, finishChestOnLedger } from "./chest-ledger";
 import { DurableChestStore, finishChestNow, finishRequestedChests } from "./chests";
 import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
-import { Effect, Result, Semaphore } from "effect";
+import { Effect, Option, Result, Schema, Semaphore } from "effect";
 import { ledgerResultAdapter, postVerifiedResult } from "./ledger";
 import { ledgerPaymentRead, ledgerPaymentProof, ledgerWithdrawalVoided, ledgerResetPayments } from "./chain";
 import { presentsOperatorToken } from "@realms-world/identity";
@@ -70,6 +72,7 @@ interface RelayEnv extends RelaySettings {
       realmsId: string,
       presetId: number,
     ): Promise<{ campaign: string; tier: "regular" | "golden" } | null>;
+    holdsSeal(realmsId: string): Promise<boolean>;
     recordPayDecisions(decisions: import("@realms-world/identity").LedgerPayDecision[]): Promise<void>;
     ratingsChanged(): Promise<void>;
     linkedWallet(id: string): Promise<string | null>;
@@ -380,8 +383,8 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   async deposits(chainId: string, realmsId: string, before?: string) {
     return depositHistory(await this.depositPorts(chainId, false), realmsId, before);
   }
-  async depositRetirement(chainId: string) {
-    const shard = await readRegisteredShard(this.env.IDENTITY, chainId);
+  async depositRetirement(chainId: string, url: string) {
+    const shard = await readRegisteredShard({ shard: async () => ({ chainId, url }) }, chainId);
     return checkDepositRetirement({
       shard: { ...shardConnection(shard), heraldUrl: shard.url },
       ledger: {
@@ -428,7 +431,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       proofs,
     };
     let unavailable: unknown;
-    for (const publish of [publishFrontierPools, awardFrontierPrizes]) {
+    for (const publish of [publishFrontierPools, settleEndedFrontierGames, awardFrontierPrizes]) {
       try {
         await publish(target, shard.url, ledger);
       } catch (error) {
@@ -614,26 +617,46 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       jobs: observation ?? null,
     };
   }
-  async realmEntry(claim: RealmEntryClaim) {
+  realmEntry(claim: RealmEntryClaim) {
+    return this.operateShard(claim.chainId, (shard) =>
+      registerHomeSource(
+        {
+          connection: shardConnection(shard),
+          heraldUrl: shard.url,
+          operatorAddress: relayAccountAddress(shard),
+          privateKey: this.env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
+          identity: this.env.IDENTITY,
+        },
+        claim,
+      ),
+    );
+  }
+  creditFragments(credit: FriendCredit) {
+    return this.operateShard(credit.chainId, (shard) =>
+      creditFriendFragments(
+        {
+          connection: shardConnection(shard),
+          operatorAddress: relayAccountAddress(shard),
+          privateKey: this.env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
+          identity: this.env.IDENTITY,
+        },
+        credit,
+      ),
+    );
+  }
+  private async operateShard<T>(
+    chainId: string,
+    operate: (shard: Awaited<ReturnType<typeof readRegisteredShard>>) => Promise<T>,
+  ) {
     const result = await Effect.runPromise(
       this.shardSigning.withPermit(
         Effect.result(
           Effect.tryPromise({
             try: async () => {
-              await this.portsFor(claim.chainId);
+              await this.portsFor(chainId);
               const progress = await this.store.progress();
               if (progress.halted) throw new Error("relay_halted_or_wrong_chain");
-              const shard = await readRegisteredShard(this.env.IDENTITY, claim.chainId);
-              return registerHomeSource(
-                {
-                  connection: shardConnection(shard),
-                  heraldUrl: shard.url,
-                  operatorAddress: relayAccountAddress(shard),
-                  privateKey: this.env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
-                  identity: this.env.IDENTITY,
-                },
-                claim,
-              );
+              return operate(await readRegisteredShard(this.env.IDENTITY, chainId));
             },
             catch: (error) => error,
           }),
@@ -671,8 +694,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   }
   async openSlot(key: LedgerSlotKey, window: { start: number; end: number }) {
     await this.requireLaunchSlot(key);
-    const shard = (await this.env.IDENTITY.shards()).find((row) => BigInt(row.chainId) === BigInt(key.chainId));
-    if (shard?.status !== "active") throw new Error("new_slot_requires_active_shard");
+    await requireActiveChain(this.env.IDENTITY, key.chainId);
     return Effect.runPromise(
       this.ledgerPermit(
         relayEffect("write ledger slot", () => openSlotOnLedger(ledgerCredentialsOf(this.env), key, window)),
@@ -819,17 +841,17 @@ const ledgerOf = (env: RelayEnv) =>
       ),
     ),
   );
-const heldOf = async (env: RelayEnv) =>
-  (await Promise.all((await env.IDENTITY.shards()).map((shard) => relayOf(env, shard.chainId).shardHeld()))).flat();
+const heldOf = async (env: RelayEnv) => {
+  const official = await officialChain(env.IDENTITY);
+  return official ? relayOf(env, official.chainId).shardHeld() : [];
+};
 const healthOf = async (env: RelayEnv) => {
   const ledger = await ledgerOf(env).ledgerHealth();
-  const shards = await Promise.all(
-    (await activeShards(env.IDENTITY)).map(async (shard) => ({
-      chainId: shard.chainId,
-      ...(await relayOf(env, shard.chainId).shardHealth()),
-    })),
-  );
-  return { ...ledger, success: ledger.success && shards.every((row) => row.success), shards, held: await heldOf(env) };
+  const official = await officialChain(env.IDENTITY);
+  const shard = official
+    ? { chainId: official.chainId, ...(await relayOf(env, official.chainId).shardHealth()) }
+    : null;
+  return { ...ledger, success: ledger.success && (shard?.success ?? true), shard, held: await heldOf(env) };
 };
 /** Diagnostics expose reasons only; the monitor independently verifies contract evidence. */
 export class RelayDiagnostics extends WorkerEntrypoint<RelayEnv> {
@@ -841,8 +863,8 @@ export class RelayDiagnostics extends WorkerEntrypoint<RelayEnv> {
   }
   /** The monitor's operator reset follows an admin's void of a report: the held honest claims are asked about now. */
   async recoverHeld() {
-    for (const shard of await activeShards(this.env.IDENTITY))
-      await relayOf(this.env, shard.chainId).requestReconcile();
+    const official = await officialChain(this.env.IDENTITY);
+    if (official) await relayOf(this.env, official.chainId).requestReconcile();
   }
 }
 export class ValueLaunch extends WorkerEntrypoint<RelayEnv> {
@@ -873,23 +895,24 @@ export class ValueLaunch extends WorkerEntrypoint<RelayEnv> {
 export default {
   async fetch(request: Request, raw: RelayEnv): Promise<Response> {
     const env = { ...raw, ...decodeRelaySettings(raw) };
-    if (new URL(request.url).pathname === "/api/value/operator/campaign-entry" && request.method === "POST")
-      return operatorCampaignEntry(request, env, "recover");
-    if (new URL(request.url).pathname === "/api/value/operator/campaign-upgrade" && request.method === "POST")
-      return operatorCampaignEntry(request, env, "upgrade");
+    if (new URL(request.url).pathname === "/api/value/operator/seal" && request.method === "POST")
+      return operatorSealGrant(request, env);
+    if (new URL(request.url).pathname === "/api/value/operator/fragments" && request.method === "POST")
+      return operatorFragmentCredit(request, env);
     if (new URL(request.url).pathname === "/api/value/operator/deposit-retirement" && request.method === "POST") {
       if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN))) return new Response(null, { status: 401 });
-      const body = (await request.json().catch(() => null)) as { chainId?: unknown } | null;
+      const body = (await request.json().catch(() => null)) as { chainId?: unknown; url?: unknown } | null;
       if (
         !body ||
         typeof body !== "object" ||
-        Object.keys(body).join() !== "chainId" ||
+        Object.keys(body).sort().join() !== "chainId,url" ||
         typeof body.chainId !== "string" ||
-        !/^0x[0-9a-f]+$/i.test(body.chainId)
+        !/^0x[0-9a-f]+$/i.test(body.chainId) ||
+        typeof body.url !== "string"
       )
         return Response.json({ error: "invalid_chain" }, { status: 400 });
       try {
-        return Response.json(await relayOf(env, body.chainId).depositRetirement(body.chainId), {
+        return Response.json(await relayOf(env, body.chainId).depositRetirement(body.chainId, body.url), {
           headers: { "cache-control": "no-store" },
         });
       } catch {
@@ -1024,13 +1047,8 @@ export default {
     } catch {
       console.error("ledger_tick_unavailable");
     }
-    for (const shard of await activeShards(env.IDENTITY)) {
-      try {
-        await relayOf(env, shard.chainId).tick(shard.chainId, hourly);
-      } catch {
-        /* One unavailable shard must not suppress another shard. */
-      }
-    }
+    const official = await officialChain(env.IDENTITY);
+    if (official) await relayOf(env, official.chainId).tick(official.chainId, hourly);
   },
 };
 
@@ -1077,11 +1095,23 @@ const relayEffect = <A, E>(operation: string, make: () => Effect.Effect<A, E>) =
   relayOperation(operation, () => Effect.runPromise(make()));
 
 /** Identity supplies the awarded ticket; operator requests cannot choose a tier, account or held Realm. */
-async function operatorCampaignEntry(
-  request: Request,
-  env: RelayEnv,
-  action: "recover" | "upgrade",
-): Promise<Response> {
+async function operatorFragmentCredit(request: Request, env: RelayEnv): Promise<Response> {
+  if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN)))
+    return Response.json({ error: "unauthorized" }, { status: 401 });
+  const credit = Schema.decodeUnknownOption(FriendCredit, { onExcessProperty: "error" })(
+    await request.json().catch(() => null),
+  );
+  if (Option.isNone(credit)) return Response.json({ error: "invalid_fragment_credit" }, { status: 400 });
+  try {
+    const result = await relayOf(env, credit.value.chainId).creditFragments(credit.value);
+    if (result.error) return Response.json({ error: result.error.code }, { status: result.error.status });
+    return Response.json(result.entry);
+  } catch {
+    return Response.json({ error: "value_service_unavailable" }, { status: 503 });
+  }
+}
+
+async function operatorSealGrant(request: Request, env: RelayEnv): Promise<Response> {
   if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN)))
     return Response.json({ error: "unauthorized" }, { status: 401 });
   const body = (await request.json().catch(() => null)) as {
@@ -1111,7 +1141,7 @@ async function operatorCampaignEntry(
       realmsId: body.realmsId,
       account,
       realmId: null,
-      ...(action === "recover" ? { recoverFlyer: true as const } : { upgradeCampaign: true as const }),
+      sealOnly: true,
     });
     if (result.error) return Response.json({ error: result.error.code }, { status: result.error.status });
     return Response.json(result.entry);

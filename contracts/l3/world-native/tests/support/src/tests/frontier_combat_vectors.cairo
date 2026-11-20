@@ -38,11 +38,11 @@ pub struct Outcome {
     pub defender_stamina_after: u64,
 }
 pub fn check_vectors(record: bool) {
-    let input = read_txt(@FileTrait::new("../fixtures/frontier-combat-v1.txt"));
+    let input = read_txt(@FileTrait::new("../fixtures/frontier-combat-v2.txt"));
     let mut fields = input.span();
     let version: u32 = Serde::deserialize(ref fields).unwrap();
     let count: u32 = Serde::deserialize(ref fields).unwrap();
-    assert_eq!(version, 1);
+    assert_eq!(version, 2);
     assert_eq!(count, 200);
     let damage: TroopDamageConfig = Serde::deserialize(ref fields).unwrap();
     let stamina: TroopStaminaConfig = Serde::deserialize(ref fields).unwrap();
@@ -96,14 +96,16 @@ pub fn resolve_exchange(
         .attack_with_context(
             ref defender,
             CombatContext {
+                day_unit_seconds: 0,
                 timestamp: exchange.timestamp,
-                attacker_roll: 0,
-                defender_roll: 0,
                 attacker_biome: exchange.biome.into(),
                 defender_biome: exchange.biome.into(),
                 attack_distance: exchange.attack_distance.into(),
                 attacker_is_structure_guard: exchange.attacker_is_structure_guard,
                 defender_is_structure_guard: exchange.defender_is_structure_guard,
+                attacker_oaths: 0,
+                defender_oaths: 0,
+                attacker_twin_damage: 0,
             },
             stamina,
             damage,

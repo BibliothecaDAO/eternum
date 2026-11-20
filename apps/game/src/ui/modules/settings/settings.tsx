@@ -1,5 +1,5 @@
 import { pageNavigation } from "@/utils/page-navigation";
-import { PROFILE_WORDS } from "@/ui/design-system/kit/words";
+import { OPENING_WORDS, PROFILE_WORDS } from "@/ui/design-system/kit/words";
 import { AudioCategory, useAudio } from "@/audio";
 import {
   identityClient,
@@ -201,8 +201,15 @@ function UsernameEditor({ name }: { name: string | null }) {
  * HUD has no Next up (owner, 4 November 2026: "Do cut next up indeed for frontier"), so there the switch is not drawn.
  */
 function NextUpSettings() {
-  const { nextUpTips, setNextUpTips } = useWorldAppearanceStore();
-  if (hudFor(getGameModeId(), true) === "frontier") return null;
+  const { nextUpTips, setNextUpTips, showEverything, setShowEverything } = useWorldAppearanceStore();
+  if (hudFor(getGameModeId(), true) === "frontier")
+    return (
+      <SettingsSection title={OPENING_WORDS.interface}>
+        <HudSetting name={OPENING_WORDS.showEverything}>
+          <HudSwitch on={showEverything} label={OPENING_WORDS.showEverything} onChange={setShowEverything} />
+        </HudSetting>
+      </SettingsSection>
+    );
   return (
     <SettingsSection title="Next up">
       <HudSetting name="Tips">

@@ -20,6 +20,7 @@ pub struct Explore {
 pub struct Battle {
     pub attacker_id: u64,
     pub defender_id: u64,
+    pub relic_slot: Option<u8>,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -160,7 +161,7 @@ pub fn route_command(
     }
     let index: u32 = (*arguments.pop_front().ok_or('INVALID_COMMAND')?).try_into().ok_or('INVALID_COMMAND')?;
     let routes = crate::command_routes::COMMAND_ROUTES.span();
-    let route = **routes.get(index).ok_or('INVALID_COMMAND')?;
+    let route = (**routes.get(index).ok_or('INVALID_COMMAND')?).ok_or('INVALID_COMMAND')?;
     if let Some(offset) = route.items_offset {
         let items: u32 = (**arguments.get(offset).ok_or('INVALID_COMMAND')?).try_into().ok_or('INVALID_COMMAND')?;
         if items > MAX_COMMAND_ITEMS {
@@ -229,13 +230,6 @@ pub trait IResourceCommands<T> {
         context: crate::commands::ActionContext,
     );
     fn transfer_explorer_resources(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: crate::resources::ResourceTransfer,
-        context: crate::commands::ActionContext,
-    );
-    fn transfer_structure_resources_to_explorer(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
@@ -326,5 +320,6 @@ pub fn validated_command(
 #[starknet::interface]
 pub trait ICommandIngress<T> {
     fn validate_command(self: @T, command: Span<felt252>) -> u32;
+    fn requires_oath_answer(self: @T, game_id: u32, command: Span<felt252>) -> bool;
     fn assign_open_home(ref self: T, game_id: u32, actor: ContractAddress);
 }

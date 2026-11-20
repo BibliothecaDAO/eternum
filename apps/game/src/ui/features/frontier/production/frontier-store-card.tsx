@@ -1,6 +1,6 @@
 import { useGame } from "@/hooks/context/game-context";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
-import { type ExpeditionRules, realmLearned, ResourceManager } from "@bibliothecadao/eternum";
+import { type ExpeditionRules, realmLearned, researchRowOf, ResourceManager } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { useGoToFrontierPlace } from "../frontier-home";
@@ -34,14 +34,15 @@ export const FrontierStoreCard = ({
   const goToPlace = useGoToFrontierPlace(realm);
   const {
     resource,
-    made: { row },
+    made: { category },
   } = FRONTIER_STORES[store];
+  const row = researchRowOf(category);
   const learned = realmLearned(setup.store, realm.game_id, realm.entity_id);
   const manager = new ResourceManager(setup.store, safeInteger(realm.entity_id));
   const line: StoreLine = {
     kind: store,
     perHour: reading?.perHour,
-    sides: learned === undefined ? undefined : sidePicks(learned, row),
+    sides: learned === undefined || row === undefined ? undefined : sidePicks(learned, row),
     held: reading?.amount,
     limit: reading?.limit,
     tone: reading?.tone ?? "calm",

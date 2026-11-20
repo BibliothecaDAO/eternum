@@ -1,9 +1,12 @@
 // @vitest-environment jsdom
+
+// @vitest-environment jsdom
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { skillPointGain } from "@bibliothecadao/types";
 import { Plate } from "./map-plates";
+
 import { Token, tokenReading, tokenSize } from "./map-plate-token";
 import type { ArmyPlate, StructurePlate } from "./map-plate-model";
 
@@ -59,7 +62,12 @@ describe("a thing's token, its plate closed (the owner's 2026-10-19 pick: tokens
       undefended: false,
       stamina: null,
       mark: null,
+      crest: null,
     });
+  });
+
+  it("wears the crest its plate names on the disk's corner", () => {
+    expect(tokenReading({ ...rift, crest: 7 }).crest).toBe(7);
   });
 
   it("tells an undefended structure from a Frontier realm, which has no guard to tell", () => {

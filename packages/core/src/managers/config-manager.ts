@@ -1,3 +1,4 @@
+import { exploreStaminaCost } from "../utils/explore-stamina";
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
 import {
   BiomeType,
@@ -28,9 +29,9 @@ import { hasEnabledProductionPath } from "../utils/production-path";
 import { disposeActiveGameSyncRuntime } from "../sync/game-sync-runtime";
 import { getBlockTimestamp } from "../utils/timestamp";
 import type { BiomeClimateConfig } from "../utils/biome";
-import type { CombatRules } from "../utils/combat-exchange";
+import { readCombatRules, type CombatRules } from "../utils/combat-exchange";
 
-const MAP_CENTER = 2147483646;
+import { mapCenter } from "../utils/map-center";
 type ResourceAmount = { readonly resource_type: number; readonly amount: bigint };
 const displayAmounts = (rows: readonly ResourceAmount[]) =>
   rows.map(({ resource_type, amount }) => ({
@@ -255,12 +256,6 @@ export class ClientConfigManager {
   attacksOnlyUnownedStructures(): boolean {
     return isModeRuleEnabled(this.rules(), "UNOWNED_TARGETS");
   }
-  /** Whether a battle rolls a d20 per side: everywhere in a game with combat dice, on the ethereal layer in one with
-   *  ethereal dice, and never otherwise. */
-  rollsCombatDice(defenderAlt: boolean): boolean {
-    const rules = this.rules();
-    return (defenderAlt && isModeRuleEnabled(rules, "COMBAT_DICE_ETHEREAL")) || isModeRuleEnabled(rules, "COMBAT_DICE");
-  }
   /** Whether a new reveal pays from the army's strength and depth (Frontier's reveal supplies) rather than the drawn
    *  exploration reward. */
   paysRevealSupplies(): boolean {
@@ -365,8 +360,8 @@ export class ClientConfigManager {
     return 1 + modifier;
   }
 
-  getExploreStaminaCost() {
-    return this.rules().troop_stamina_config.stamina_explore_stamina_cost;
+  getExploreStaminaCost(category: TroopType, oaths: number) {
+    return exploreStaminaCost(this.rules(), category, oaths);
   }
   getSeasonMainGameStartAt() {
     return Number(this.game().start_main_at);
@@ -382,13 +377,7 @@ export class ClientConfigManager {
   }
   /** The active game's combat rules, as its SliceRules carries them. */
   getCombatRules(): CombatRules {
-    const rules = this.rules();
-    return {
-      cooldownSeconds: rules.battle_config.cooldown_seconds,
-      tickSeconds: this.getTick(TickIds.Armies),
-      damage: rules.troop_damage_config,
-      stamina: rules.troop_stamina_config,
-    };
+    return readCombatRules(this.facts(), this.gameId);
   }
   /** Army strength a structure of this level may deploy. */
   getDeploymentCap(level: number): number {
@@ -422,21 +411,13 @@ export class ClientConfigManager {
   getCombatConfig() {
     const rules = this.rules();
     return {
+      day_unit_seconds: rules.day_unit_seconds,
       ...rules.troop_damage_config,
       stamina_bonus_value: rules.troop_stamina_config.stamina_bonus_value,
       stamina_attack_req: rules.troop_stamina_config.stamina_attack_req,
       stamina_defense_req: rules.troop_stamina_config.stamina_defense_req,
       tick_interval_seconds: this.getTick(TickIds.Armies),
     };
-  }
-  getBattleGraceTickCount() {
-    return this.rules().battle_config.regular_immunity_ticks;
-  }
-  getVillageSettlementImmunityTickCount() {
-    return this.rules().battle_config.village_immunity_ticks;
-  }
-  getVillagePostRaidImmunityTickCount() {
-    return this.rules().battle_config.village_raid_immunity_ticks;
   }
   getMinTravelStaminaCost() {
     const config = this.rules().troop_stamina_config;
@@ -464,18 +445,6 @@ export class ClientConfigManager {
     if (tickId === TickIds.Armies) return Number(config.armies_tick_in_seconds);
     if (tickId === TickIds.Delivery) return Number(config.delivery_tick_in_seconds);
     throw new Error("Unknown tick id");
-  }
-  getBankConfig() {
-    const rule = this.facts().require("BankRules", { game_id: this.gameId });
-    return { lpFeesNumerator: rule.lp_fee_num, lpFeesDenominator: rule.lp_fee_denom };
-  }
-  getAdminBankOwnerFee() {
-    const rule = this.facts().require("BankRules", { game_id: this.gameId });
-    return rule.owner_fee_num / rule.owner_fee_denom;
-  }
-  getAdminBankLpFee() {
-    const rule = this.getBankConfig();
-    return rule.lpFeesNumerator / rule.lpFeesDenominator;
   }
   getCapacityConfigKg(category: CapacityConfig) {
     if (category === CapacityConfig.None) return 0;
@@ -514,10 +483,7 @@ export class ClientConfigManager {
   canRefillProduction(resourceId: number): boolean {
     return hasEnabledProductionPath(
       this.facts().get("ProductionRecipe", { game_id: this.gameId, resource_type: resourceId }),
-      {
-        labor: this.isCommandEnabled("BurnLaborForResourceProduction"),
-        resource: this.isCommandEnabled("BurnResourceForResourceProduction"),
-      },
+      this.isCommandEnabled("BurnResourceForResourceProduction"),
     );
   }
   getSettlementConfig() {
@@ -535,17 +501,15 @@ export class ClientConfigManager {
   }
   /**
    * What each scoring action grants in this game, in whole victory points. A held hyperstructure earns its rate every
-   * second, times what the contract's multiplier counts (hyperstructures.cairo): 1 without the multiplier rule, 2 in a
-   * Duel, else each realm settled on the six sites around it.
+   * second, times what the contract's multiplier counts (hyperstructures.cairo): 1 without the multiplier rule,
+   * otherwise each realm settled on the six sites around it.
    */
   getVictoryPointGrants() {
     const rules = this.rules();
     const grants = rules.victory_points_grant_config;
-    const hyperstructureScale: "flat" | "double" | "per-realm" = !isModeRuleEnabled(rules, "HYPERSTRUCTURE_MULTIPLIERS")
+    const hyperstructureScale: "flat" | "per-realm" = !isModeRuleEnabled(rules, "HYPERSTRUCTURE_MULTIPLIERS")
       ? "flat"
-      : this.getSettlementConfig().mode === "Duel"
-        ? "double"
-        : "per-realm";
+      : "per-realm";
     return {
       exploreTile: wholePoints(grants.explore_tiles_points),
       claimCampFromBandits: wholePoints(grants.claim_otherstructure_points),
@@ -632,7 +596,7 @@ export class ClientConfigManager {
     };
   }
   getMapCenter() {
-    return MAP_CENTER - this.rules().map_center_offset;
+    return mapCenter(this.rules().map_center_offset);
   }
   getBiomeClimateConfig(): BiomeClimateConfig {
     return this.rules().biome_climate_config;

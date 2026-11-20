@@ -1,7 +1,8 @@
 import { formatFoodBlock, formatTravelBlockedSummary, getArmyFoodRequirementLabel } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
-import { configManager } from "@bibliothecadao/eternum";
+import { armyOaths, configManager } from "@bibliothecadao/eternum";
+import { useGame } from "@/hooks/context/game-context";
 import { memo, type ReactNode, useMemo } from "react";
 
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
@@ -58,6 +59,7 @@ const ArmyBannerEntityDetailContent = memo(
     } = useArmyEntityDetail({ armyEntityId });
     const activeRelicIds = useMemo(() => relicEffects.map((effect) => Number(effect.id)), [relicEffects]);
     const currentDefaultTick = useCurrentDefaultTick();
+    const { setup } = useGame();
     const inventoryItems = useMemo(
       () => buildDisplayItems(explorerResources, currentDefaultTick, activeRelicIds, RelicRecipientType.Explorer),
       [activeRelicIds, currentDefaultTick, explorerResources],
@@ -145,6 +147,10 @@ const ArmyBannerEntityDetailContent = memo(
           <TroopChip troops={explorer.troops} size="sm" className="w-full" />
           {derivedData.stamina && derivedData.maxStamina ? (
             <InlineStaminaBar
+              perExplore={configManager.getExploreStaminaCost(
+                explorer.troops.category,
+                armyOaths(setup.store, explorer),
+              )}
               currentStamina={currentStamina}
               maxStamina={maxStamina}
               isRecharging={derivedData.staminaDisplay?.isRecharging}
@@ -233,6 +239,7 @@ const formatRestTime = (seconds: number): string => {
 };
 
 const InlineStaminaBar = ({
+  perExplore,
   currentStamina,
   maxStamina,
   isRecharging,
@@ -240,6 +247,7 @@ const InlineStaminaBar = ({
   travelBlockedTitle,
   rightAccessory,
 }: {
+  perExplore: number;
   currentStamina: number;
   maxStamina: number;
   isRecharging?: boolean | null;
@@ -266,7 +274,7 @@ const InlineStaminaBar = ({
       <SemanticIcon name="stamina" className="h-3 w-3" />
       <span className="min-w-0 flex-1">
         <HudStamina
-          stamina={{ current: displayedCurrent, max: maxStamina, perExplore: configManager.getExploreStaminaCost() }}
+          stamina={{ current: displayedCurrent, max: maxStamina, perExplore }}
           tone={tone}
           filling={recharging}
         />

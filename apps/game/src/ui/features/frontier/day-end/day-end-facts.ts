@@ -1,10 +1,12 @@
+import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import {
+  armyOaths,
   configManager,
   getGuardsByStructure,
-  isCurrentExpeditionArmy,
+  isCurrentExpeditionRegion,
   liveHomeArmies,
   StaminaManager,
   structureMapPosition,
@@ -24,7 +26,7 @@ export interface DayEndFacts {
   armyCanExplore: boolean;
 }
 
-const DAY_END_MODELS = ["Structure", "ArmySlot", "ExplorerTroops", "TileOccupancy", "Guard"] as const;
+const DAY_END_MODELS = ["Structure", "ArmySlot", "ExplorerTroops", "TileOccupancy", ...GUARD_MODELS] as const;
 
 /** The player's day-end facts, recomputed as the store changes and the clock moves. */
 export const useDayEndFacts = (rules: ExpeditionRules, realm: NativeRows["Structure"] | null): DayEndFacts => {
@@ -51,10 +53,13 @@ const readDayEndFacts = (
 });
 
 const anArmyCanExplore = (store: NativeFactStore, realm: NativeRows["Structure"], tick: number): boolean => {
-  const cost = configManager.getExploreStaminaCost();
-  return liveHomeArmies(store, safeInteger(realm.entity_id), realm.game_id).some((army) => {
-    const troops = resolveExplorerTroops(store, army);
-    return troops !== undefined && Number(StaminaManager.getStamina(troops, tick).amount) >= cost;
+  return liveHomeArmies(store, safeInteger(realm.entity_id), realm.game_id, tick).some((army) => {
+    const troops = resolveExplorerTroops(store, army, tick);
+    return (
+      troops !== undefined &&
+      Number(StaminaManager.getStamina(troops, tick).amount) >=
+        configManager.getExploreStaminaCost(troops.category, armyOaths(store, army))
+    );
   });
 };
 
@@ -68,7 +73,7 @@ const guardedCampToday = (
     if (structure.base.category !== StructureType.Camp || structure.owner === realm.owner) continue;
     const position = structureMapPosition(store, structure);
     if (!position) continue;
-    if (isCurrentExpeditionArmy(rules, position, now) && isGuarded(structure, store)) return position;
+    if (isCurrentExpeditionRegion(rules, position, now) && isGuarded(structure, store)) return position;
   }
   return null;
 };

@@ -3,6 +3,8 @@ import { resolve } from "node:path";
 import { hash, CallData } from "starknet";
 import { schemaIdentity, type NativeSchema } from "../../../../../apps/herald/src/native/schema";
 import { readClassArtifact } from "../../shared/declare";
+import { nativeBalanceIdentity } from "../../../../../contracts/l3/world-native/schema/balance.gen";
+import { NATIVE_BALANCE_SINCE_RELEASE } from "../../../../../deploy/release/native-release";
 import type { NativeAuthentication, NativeReleaseFacts, NativeWorld, NativeWorldManifest } from "./types";
 
 export function loadNativeWorld(input: {
@@ -25,6 +27,7 @@ export function loadNativeWorld(input: {
     throw new Error(`The shard's Games was deployed with seed ${input.previous.world.seed}; ${input.seed} is refused`);
   const previous = input.previous;
   assertHotfixSchema(input.release, previous);
+  assertBalanceSince(input.release, previous);
   const schema = JSON.parse(readFileSync(input.schemaPath, "utf8")) as NativeSchema;
   if (schemaIdentity(schema) !== schema.identity) throw new Error("Native schema identity mismatch");
   const readClass = (name: string) =>
@@ -110,5 +113,16 @@ export function assertHotfixSchema(release: NativeReleaseFacts, previous?: Nativ
   if (previous && release.schema !== previous.native.activeSchema)
     throw new Error(
       "NATIVE_HOTFIX_SCHEMA_CHANGE: a hotfix must keep the shard fact schema; create a new shard or season",
+    );
+}
+
+export function assertBalanceSince(release: NativeReleaseFacts, previous?: NativeWorldManifest): void {
+  const changed = Object.entries(previous?.native.releaseBalances ?? {}).find(
+    ([id, numbers]) =>
+      Number(id) >= NATIVE_BALANCE_SINCE_RELEASE && Number(id) < release.releaseId && numbers !== nativeBalanceIdentity,
+  );
+  if (changed)
+    throw new Error(
+      `NATIVE_BALANCE_SINCE: release ${changed[0]} runs other balance numbers; set NATIVE_BALANCE_SINCE_RELEASE to ${release.releaseId}`,
     );
 }

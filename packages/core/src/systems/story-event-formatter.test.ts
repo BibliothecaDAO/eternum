@@ -4,6 +4,7 @@ import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
 import explorerFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 // The package index first, so the config singleton the utils read through it is evaluated before any story runs.
+// The package index first, so the config singleton the utils read through it is evaluated before any story runs.
 import { configManager } from "..";
 import { buildStoryEventPresentation, findGain } from "./story-event-formatter";
 import type { NativeStoryVariant } from "../../../../contracts/l3/world-native/schema/client.gen";
@@ -330,7 +331,7 @@ it("names a cleared site by its map name, with its recorded kind and payout, wit
     }),
   );
   expect(result.title).toBe(`${siteName(9)} cleared`);
-  expect(result.description).toMatch(/^Troll · Lord 0123's army · .*500/);
+  expect(result.description).toMatch(/^Camp · Lord 0123's army · .*500/);
   expect(
     buildStoryEventPresentation(
       own("SitePayout", {
@@ -341,7 +342,7 @@ it("names a cleared site by its map name, with its recorded kind and payout, wit
         reward: null,
       }),
     ),
-  ).toMatchObject({ title: `${siteName(9)} cleared`, description: "Beasts · Lord 0123's army · XP only" });
+  ).toMatchObject({ title: `${siteName(9)} cleared`, description: "Beasts · Lord 0123's army · No resource reward" });
   // The name its holder gave it, as the rename control writes it.
   const named = vi
     .spyOn(localStorage, "getItem")

@@ -22,7 +22,13 @@ vi.mock("@/hooks/store/use-ui-store", () => ({
   useUIStore: (select: (state: object) => unknown) =>
     select({ bumpMilitaryMapVersion: () => {}, selectOnMap: () => {}, setLeftNavigationView }),
 }));
-vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: null } }) }));
+vi.mock("@/hooks/context/game-context", () => ({
+  useGame: () => ({
+    setup: {
+      store: { require: (model: string) => (model === "SliceRules" ? { day_unit_seconds: 60 } : { oaths: 0 }) },
+    },
+  }),
+}));
 const deleteExplorerArmy = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock("@/sync/active-game-client", () => ({
   requireActiveGameClient: () => ({ actions: { deleteExplorerArmy } }),

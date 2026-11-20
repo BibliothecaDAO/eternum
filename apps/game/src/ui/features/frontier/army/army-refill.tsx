@@ -1,69 +1,50 @@
-import { useSpendLords } from "../value/use-spend-lords";
+import { useState } from "react";
+import type { Account } from "starknet";
+import { DEEP_DEPTH } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
-import { useConfirmFor } from "@/hooks/helpers/use-confirm-for";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { toast } from "@/ui/features/event-feed/notify";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { REFILL_FAILED } from "@/ui/design-system/kit/words";
 
 import type { DockArmy } from "../hud/dock-armies";
-import { useRealmLords } from "../value/use-realm-lords";
-import { RefillButton, RefillConfirm, RefillPrice, StaminaRefill } from "./refill";
+import { useFragmentsHeld } from "../value/fragments";
+import { fragmentsToFill, RefillButton, RefillConfirm, RefillPrice, StaminaRefill } from "./refill";
 
-/**
- * An army's Refill over the game's facts, priced at its missing points from the realm's LORDS: the order bar's button,
- * the army panel's priced refill or a phone's picked army's stamina; its confirm, and refill_stamina. Nothing for a bar
- * not known yet; for a full one, only the stamina.
- */
-export const ArmyRefill = ({
-  army,
-  realm,
-  look = "button",
-}: {
-  army: DockArmy;
-  realm: NativeRows["Structure"];
-  /** The order bar's button, the army panel's priced refill, or the stamina beside a phone's picked army. */
-  look?: "button" | "price" | "stamina";
-}) => {
+export const sellsStamina = (army: Pick<DockArmy, "stamina" | "ethereal">, held: number | null): boolean =>
+  held !== null && army.stamina !== undefined && army.ethereal !== DEEP_DEPTH && fragmentsToFill(army.stamina) > 0;
+
+export const ArmyRefill = ({ army, look }: { army: DockArmy; look: "price" | "reading" | "button" }) => {
   const { setup, account } = useGame();
-  const earned = useRealmLords(realm);
-  const purchased = useSpendLords(realm).balance?.available ?? 0n;
-  const spendOnly = Number(purchased > BigInt(Number.MAX_SAFE_INTEGER) ? BigInt(Number.MAX_SAFE_INTEGER) : purchased);
-  const held = earned === undefined ? undefined : Math.min(Number.MAX_SAFE_INTEGER, earned + spendOnly);
-  const { confirming, ask, close } = useConfirmFor(army.explorerId);
-  const refilling = useInFlight("refill", army.explorerId) !== undefined;
+  const held = useFragmentsHeld();
+  const sending = useInFlight("refill", army.explorerId) !== undefined;
+  const [confirming, setConfirming] = useState(false);
+  if (!army.stamina || held === null || !sellsStamina(army, held)) return null;
   const stamina = army.stamina;
-  if (!stamina) return null;
-  const price = Math.ceil(stamina.max - stamina.current);
-  const control = { held, refilling, onRefill: ask };
-
-  /** The confirm closes as the refill leaves; the army's Refill carries the wait, and a refusal says why. */
-  const refill = async (amount: number) => {
-    const signer = account.account;
-    if (!signer) return;
-    try {
-      await sendOnce("refill", army.explorerId, true, async () => {
-        const sent = await setup.systemCalls.refill_stamina({ signer, explorerId: army.explorerId, amount });
-        close();
-        return sent;
-      });
-    } catch (error) {
-      toast.failed(error, "The refill could not be sent.");
-    }
-  };
-
+  const open = () => setConfirming(true);
+  const buy = (fragments: number) =>
+    sendOnce("refill", army.explorerId, true, () =>
+      setup.systemCalls.buy_stamina({
+        signer: account.account as unknown as Account,
+        explorerId: army.explorerId,
+        fragments,
+      }),
+    )
+      .then(() => setConfirming(false))
+      .catch((error: unknown) => toast.failed(error, REFILL_FAILED));
   return (
     <>
-      {look === "stamina" && <StaminaRefill stamina={stamina} {...control} />}
-      {look === "price" && price > 0 && <RefillPrice price={price} {...control} />}
-      {look === "button" && price > 0 && <RefillButton {...control} />}
-      {confirming && price > 0 && (
+      {look === "price" && (
+        <RefillPrice price={fragmentsToFill(stamina)} held={held} refilling={sending} onRefill={open} />
+      )}
+      {look === "reading" && <StaminaRefill stamina={stamina} held={held} refilling={sending} onRefill={open} />}
+      {look === "button" && <RefillButton held={held} refilling={sending} onRefill={open} />}
+      {confirming && (
         <RefillConfirm
           stamina={stamina}
           held={held}
-          spendOnly={spendOnly}
-          sending={refilling}
-          onRefill={(amount) => void refill(amount)}
-          onCancel={close}
+          sending={sending}
+          onRefill={(fragments) => void buy(fragments)}
+          onCancel={() => setConfirming(false)}
         />
       )}
     </>

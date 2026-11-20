@@ -1,6 +1,7 @@
 import { beforeEach, expect, it, onTestFinished, vi } from "vitest";
 import { CairoOption, CairoOptionVariant, CallData, RpcProvider, shortString } from "starknet";
 import { Effect } from "effect";
+import { nativeReleaseConstants } from "../../../contracts/l3/world-native/schema/client.gen";
 import { gamesAbi } from "../../../packages/value-ledger/test-support/abi";
 import { holdsRealm as identityHoldsRealm } from "../../realms/server/realm-holdings";
 import { handleLaborRequest } from "./labor-route";
@@ -20,6 +21,7 @@ const io = vi.hoisted(() => ({
   wallet: vi.fn(),
   ticket: vi.fn(),
   held: vi.fn(),
+  seal: vi.fn(),
 }));
 vi.mock("./shard-snapshot", async (original) => ({
   ...(await original<typeof import("./shard-snapshot")>()),
@@ -52,6 +54,7 @@ const target = {
     holdsRealm: async (wallet: string, realmId: number) => BigInt(await io.owner(String(realmId))) === BigInt(wallet),
     heldRealmsWithMaps: io.held,
     campaignTicket: io.ticket,
+    holdsSeal: io.seal,
   },
 };
 const entitlement = { realm_id: 711n, metadata_1: 0n, metadata_2: 0n, metadata_3: 0n, pass_kind: 2n };
@@ -60,8 +63,7 @@ let entries: Record<string, unknown>[];
 let entryRule: number;
 let settledHome: bigint;
 let release: number;
-let campaignHomes: Record<string, unknown>[];
-let structures: Record<string, unknown>[];
+let seals: Record<string, unknown>[];
 beforeEach(() => {
   vi.resetAllMocks();
   registered = undefined;
@@ -69,8 +71,8 @@ beforeEach(() => {
   entryRule = 1;
   settledHome = 0n;
   release = 8;
-  campaignHomes = [];
-  structures = [];
+  seals = [];
+  io.seal.mockResolvedValue(false);
   io.account.mockResolvedValue("0x123");
   io.wallet.mockResolvedValue("0x456");
   io.owner.mockResolvedValue("0x456");
@@ -83,10 +85,9 @@ beforeEach(() => {
       { model: "SliceRules", rows: [{ value: { entry_rule: entryRule, day_unit_seconds: 86400 } }] },
       { model: "GameRelease", rows: [{ value: { release_id: release } }] },
       { model: "PlayerEntry", rows: entries.map((value) => ({ value })) },
-      { model: "CampaignHome", rows: campaignHomes.map((value) => ({ value })) },
-      { model: "Structure", rows: structures.map((value) => ({ value })) },
       { model: "EntryEntitlement", rows: registered ? [{ value: { owner: claim.account, ...registered } }] : [] },
       { model: "SettledRealm", rows: settledHome ? [{ value: { realm_id: 711, home: settledHome } }] : [] },
+      { model: "Seal", rows: seals.map((value) => ({ value })) },
     ],
   }));
   io.view.mockImplementation(async (method: string) =>
@@ -96,12 +97,15 @@ beforeEach(() => {
   );
   io.ticket.mockResolvedValue(null);
   io.admin.mockImplementation(
-    async (method: string, args: { entitlement: Record<keyof typeof entitlement, number | string> }) => {
+    async (
+      method: string,
+      args: { entitlement: Record<keyof typeof entitlement, number | string>; account?: string },
+    ) => {
       new CallData(gamesAbi).compile(method, args as never);
+      if (method === "grant_seal") return void seals.push({ game_id: 7, account: args.account, granted_at: 500 });
       registered = Object.fromEntries(
         Object.entries(args.entitlement).map(([field, value]) => [field, BigInt(value)]),
       ) as typeof entitlement;
-      if (campaignHomes.length) campaignHomes[0]!.tier = registered.metadata_2;
     },
   );
 });
@@ -114,6 +118,61 @@ it("registers a live held Realm and answers an exact retry without another write
   expect(await registerHomeSource(target, claim)).toEqual({ realmId: 711 });
   expect(io.admin).toHaveBeenCalledTimes(1);
   expect(io.owner).toHaveBeenCalledTimes(1);
+});
+it("grants a held Ancient Seal once as the account enters, then registers its source", async () => {
+  release = nativeReleaseConstants.SEAL_RELEASE;
+  io.seal.mockResolvedValue(true);
+  expect(await registerHomeSource(target, claim)).toEqual({ realmId: 711 });
+  expect(io.admin.mock.calls).toEqual([
+    ["grant_seal", { game_id: 7, account: "0x123" }],
+    [
+      "register_entitlement",
+      {
+        key: { game_id: 7, owner: "0x123" },
+        entitlement: { realm_id: 711, metadata_1: 0, metadata_2: 0, metadata_3: 0, pass_kind: 2 },
+      },
+    ],
+  ]);
+  expect(io.seal).toHaveBeenCalledExactlyOnceWith("0x2");
+  expect(await registerHomeSource(target, claim)).toEqual({ realmId: 711 });
+  expect(io.admin).toHaveBeenCalledTimes(2);
+  expect(io.seal).toHaveBeenCalledOnce();
+});
+it("grants no Seal in a game whose release has none, and enters it as before", async () => {
+  release = nativeReleaseConstants.SEAL_RELEASE - 1;
+  io.seal.mockResolvedValue(true);
+  expect(await registerHomeSource(target, claim)).toEqual({ realmId: 711 });
+  expect(io.admin).toHaveBeenCalledExactlyOnceWith("register_entitlement", expect.anything());
+  expect(io.seal).not.toHaveBeenCalled();
+});
+it("grants a free home its held Seal and nothing to an account that holds none", async () => {
+  release = nativeReleaseConstants.SEAL_RELEASE;
+  const free = { ...claim, realmId: null };
+  expect(await registerHomeSource(target, free)).toEqual({});
+  expect(io.admin).not.toHaveBeenCalled();
+  io.seal.mockResolvedValue(true);
+  expect(await registerHomeSource(target, free)).toEqual({});
+  expect(io.admin).toHaveBeenCalledExactlyOnceWith("grant_seal", { game_id: 7, account: "0x123" });
+});
+it("grants a Seal redeemed after entry without touching the home's source", async () => {
+  release = nativeReleaseConstants.SEAL_RELEASE;
+  registered = entitlement;
+  entries = [{ player: "0x123" }];
+  io.seal.mockResolvedValue(true);
+  const redeemed = { ...claim, realmId: null, sealOnly: true as const };
+  expect(await registerHomeSource(target, redeemed)).toEqual({});
+  expect(await registerHomeSource(target, redeemed)).toEqual({});
+  expect(io.admin).toHaveBeenCalledExactlyOnceWith("grant_seal", { game_id: 7, account: "0x123" });
+  expect(io.ticket).not.toHaveBeenCalled();
+});
+it("asks for a retry when identity cannot say or the chain refuses the Seal, and registers nothing", async () => {
+  release = nativeReleaseConstants.SEAL_RELEASE;
+  io.seal.mockRejectedValue(new Error("down"));
+  await expect(registerHomeSource(target, claim)).rejects.toMatchObject({ code: "seal_check_unavailable" });
+  io.seal.mockResolvedValue(true);
+  io.admin.mockRejectedValue(new Error("refused"));
+  await expect(registerHomeSource(target, claim)).rejects.toMatchObject({ code: "seal_grant_unavailable" });
+  expect(io.admin).toHaveBeenCalledExactlyOnceWith("grant_seal", { game_id: 7, account: "0x123" });
 });
 it("refuses a Realm not currently held and a missing linked wallet", async () => {
   io.owner.mockResolvedValue("0x999");
@@ -392,118 +451,4 @@ it("takes the shared entry without a Realm number through the HTTP route", async
   const response = await handleRealmEntryRequest(request({ gameId: 7 }), deps);
   expect([response.status, await response.json()]).toEqual([200, { campaign: "devcon-2026", tier: "regular" }]);
   expect(deps.register).toHaveBeenCalledExactlyOnceWith(shared);
-});
-
-it("attests flyer recovery only for a founded Devcon home, including an interrupted ordinary registration", async () => {
-  io.ticket.mockResolvedValue({ campaign: "devcon-2026", tier: "regular" });
-  const recovery = { ...shared, recoverFlyer: true as const };
-  await expect(registerHomeSource(target, recovery)).rejects.toMatchObject({
-    code: "recovery_requires_founded_devcon_home",
-  });
-  expect(io.admin).not.toHaveBeenCalled();
-  entries = [{ player: "0x123" }];
-  await registerHomeSource(target, shared);
-  expect(registered?.metadata_3).toBe(0n);
-  expect(await registerHomeSource(target, recovery)).toEqual({ campaign: "devcon-2026", tier: "regular" });
-  expect(registered?.metadata_3).toBe(BigInt(shortString.encodeShortString("devcon-recovery")));
-  expect(await registerHomeSource(target, recovery)).toEqual({ campaign: "devcon-2026", tier: "regular" });
-  expect(io.admin).toHaveBeenCalledTimes(2);
-});
-it("does not let a player attest flyer recovery", async () => {
-  const deps = route();
-  const response = await handleRealmEntryRequest(request({ gameId: 7, recoverFlyer: true }), deps);
-  expect(response.status).toBe(400);
-  expect(deps.register).not.toHaveBeenCalled();
-});
-
-function foundedRegularCampaign(marker = 0n) {
-  entries = [{ player: claim.account }];
-  registered = {
-    realm_id: 0n,
-    metadata_1: BigInt(shortString.encodeShortString("devcon-2026")),
-    metadata_2: 1n,
-    metadata_3: marker,
-    pass_kind: 3n,
-  };
-  campaignHomes = [{ home: "0x99", campaign_id: registered.metadata_1, tier: 1n }];
-  structures = [{ entity_id: "0x99", owner: claim.account }];
-  io.ticket.mockResolvedValue({ campaign: "devcon-2026", tier: "golden" });
-}
-const promotion = { ...shared, upgradeCampaign: true as const };
-
-it.each([0n, BigInt(shortString.encodeShortString("devcon-recovery"))])(
-  "upgrades the attested founded home from marker %s and retries without another write",
-  async (marker) => {
-    foundedRegularCampaign(marker);
-    const result = { campaign: "devcon-2026", tier: "golden" };
-    expect(await registerHomeSource(target, promotion)).toEqual(result);
-    expect(io.admin).toHaveBeenCalledExactlyOnceWith("register_entitlement", {
-      key: { game_id: 7, owner: claim.account },
-      entitlement: {
-        realm_id: 0,
-        metadata_1: shortString.encodeShortString("devcon-2026"),
-        metadata_2: 2,
-        metadata_3: shortString.encodeShortString("devcon-upgrade"),
-        pass_kind: 3,
-      },
-    });
-    expect(await registerHomeSource(target, promotion)).toEqual(result);
-    expect(io.admin).toHaveBeenCalledTimes(1);
-  },
-);
-
-it.each([
-  "unfounded",
-  "free",
-  "held",
-  "other campaign",
-  "other owner",
-  "home tier",
-  "no ticket",
-  "regular ticket",
-  "old release",
-  "mixed recovery",
-])("refuses a golden upgrade for %s before writing", async (kind) => {
-  foundedRegularCampaign();
-  if (kind === "unfounded") entries = [];
-  if (kind === "free") registered = undefined;
-  if (kind === "held") registered = entitlement;
-  if (kind === "other campaign") registered!.metadata_1 = 1n;
-  if (kind === "other owner") structures[0]!.owner = "0x444";
-  if (kind === "home tier") campaignHomes[0]!.tier = 2n;
-  if (kind === "no ticket") io.ticket.mockResolvedValue(null);
-  if (kind === "regular ticket") io.ticket.mockResolvedValue({ campaign: "devcon-2026", tier: "regular" });
-  if (kind === "old release") release = 7;
-  await expect(
-    registerHomeSource(target, kind === "mixed recovery" ? { ...promotion, recoverFlyer: true } : promotion),
-  ).rejects.toBeInstanceOf(Error);
-  expect(io.admin).not.toHaveBeenCalled();
-});
-
-it("leaves a printed golden home unchanged and never lets a player attest promotion", async () => {
-  foundedRegularCampaign();
-  registered!.metadata_2 = 2n;
-  campaignHomes[0]!.tier = 2n;
-  expect(await registerHomeSource(target, promotion)).toEqual({ campaign: "devcon-2026", tier: "golden" });
-  expect(registered!.metadata_3).toBe(0n);
-  expect(io.admin).not.toHaveBeenCalled();
-  const deps = route();
-  const response = await handleRealmEntryRequest(request({ gameId: 7, upgradeCampaign: true }), deps);
-  expect(response.status).toBe(400);
-  expect(deps.register).not.toHaveBeenCalled();
-});
-
-it("recovers an uncertain upgrade from confirmed state without reopening flyer compensation", async () => {
-  foundedRegularCampaign();
-  const write = io.admin.getMockImplementation()!;
-  io.admin.mockImplementationOnce(async (...args) => {
-    await write(...args);
-    throw new Error("response lost");
-  });
-  await expect(registerHomeSource(target, promotion)).rejects.toMatchObject({ code: "realm_registration_refused" });
-  expect(await registerHomeSource(target, promotion)).toEqual({ campaign: "devcon-2026", tier: "golden" });
-  await expect(registerHomeSource(target, { ...shared, recoverFlyer: true })).rejects.toMatchObject({
-    code: "conflicting_entry_entitlement",
-  });
-  expect(io.admin).toHaveBeenCalledTimes(1);
 });

@@ -15,8 +15,8 @@ describe("calculatePresetAllocations", () => {
 
   it("idle preset zeros every resource", () => {
     const result = calculatePresetAllocations([ResourcesIds.Wood, ResourcesIds.Coal], "idle");
-    expect(result.get(ResourcesIds.Wood)).toEqual({ resourceToResource: 0, laborToResource: 0 });
-    expect(result.get(ResourcesIds.Coal)).toEqual({ resourceToResource: 0, laborToResource: 0 });
+    expect(result.get(ResourcesIds.Wood)).toEqual({ resourceToResource: 0 });
+    expect(result.get(ResourcesIds.Coal)).toEqual({ resourceToResource: 0 });
   });
 
   it("custom preset returns an empty map (caller resolves stored values)", () => {
@@ -27,16 +27,16 @@ describe("calculatePresetAllocations", () => {
 
 describe("getAutomationOverallocation", () => {
   it("returns all false when no percentages are set", () => {
-    expect(getAutomationOverallocation(undefined)).toEqual({ resourceOver: false, laborOver: false });
-    expect(getAutomationOverallocation({})).toEqual({ resourceOver: false, laborOver: false });
+    expect(getAutomationOverallocation(undefined)).toEqual({ resourceOver: false });
+    expect(getAutomationOverallocation({})).toEqual({ resourceOver: false });
   });
 
   it("skips blocked output resources (does not count Wheat/Labor as a consumer)", () => {
     const result = getAutomationOverallocation({
-      [ResourcesIds.Wheat]: { resourceToResource: 95, laborToResource: 0 },
-      [ResourcesIds.Labor]: { resourceToResource: 95, laborToResource: 0 },
+      [ResourcesIds.Wheat]: { resourceToResource: 95 },
+      [ResourcesIds.Labor]: { resourceToResource: 95 },
     });
-    expect(result).toEqual({ resourceOver: false, laborOver: false });
+    expect(result).toEqual({ resourceOver: false });
   });
 });
 

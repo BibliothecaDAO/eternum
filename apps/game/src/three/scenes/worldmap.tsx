@@ -18,9 +18,6 @@ import { isMapPreviewAction } from "./worldmap-action-preview-policy";
 import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
 import { playRevealYield } from "@/ui/motion/moments/reveal-yield";
 import { playSiteClear } from "@/ui/features/frontier/sites/site-clear-moment";
-import { sendSiteUse, siteUseFacts, usableSiteAt } from "@/ui/features/frontier/sites/use-site";
-import { type ArmyProgressFacts, xpGained } from "@/ui/features/frontier/attributes/attributes";
-import { playArmyProgress } from "@/ui/features/frontier/attributes/progress-moment";
 import { canIssueOrders, refusedBeforePlay } from "@/utils/can-issue-orders";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
@@ -30,7 +27,6 @@ import { publishMapSelection } from "@/observability/map-selection";
 import { resolveSpawnActionPath, showArmyDeploymentTooltip } from "./worldmap-army-deployment";
 import { whenModelPreparationSettles } from "@/three/model-preparation";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
-import type { RendererOverlayPass } from "@/three/renderer-backend";
 import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
@@ -90,20 +86,24 @@ import { LAYER_VIEW_REQUEST_EVENT, type LayerViewRequest } from "@/three/scenes/
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { LeftView } from "@/types";
 import {
+  armyOaths,
   armyRealmSpire,
   configManager,
   dayOf,
+  discoversSpires,
+  expeditionDepth,
+  type ExpeditionRules,
   expeditionSpires,
   isArmyCrossing,
-  NEUTRAL_BIOME_CLIMATE,
-  Position,
-  spireEtherealView,
+  isExpeditionRealm,
   isOpenSpawnHex,
   isViewerOwner,
-  isExpeditionRealm,
+  NEUTRAL_BIOME_CLIMATE,
+  Position,
   readExpeditionRules,
-  type ExpeditionRules,
+  regionSpire,
   spawnRing,
+  spireEtherealView,
   structureMapPosition,
 } from "@bibliothecadao/eternum";
 import {
@@ -144,7 +144,12 @@ import {
   recordClientActionRendered,
   recordClientActionSubmitted,
 } from "@/observability/client-action-latency";
-import { safeInteger, type GameClientSetup as SetupResult, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  currentArmy,
+  safeInteger,
+  type GameClientSetup as SetupResult,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 import {
   ActionPath,
   ActionPaths,
@@ -319,8 +324,6 @@ import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { type PlacedOrderTip, PointerOrderTip } from "./worldmap-order-tip";
 import { getGameModeId } from "@/config/game-modes";
 import { onChestOpenRequest } from "./worldmap-chest-open-request";
-import { announcedRewardChestBeats, onRewardChestRequest } from "./worldmap-reward-chest-request";
-import { chestRarityGlow } from "../rewards/chest-rarity-glow";
 import { shouldQueueArmySelectionRecovery } from "./worldmap-army-tab-selection";
 import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
 import {
@@ -971,7 +974,6 @@ export default class WorldmapScene extends WarpTravel {
     this.minimapCameraMoveThrottled?.();
   };
   private stopChestOpenRequests?: () => void;
-  private stopRewardChestRequests?: () => void;
   private armySelectRequestHandler = () => {
     if (this.sceneManager.getCurrentScene() === SceneName.WorldMap) this.selectAwaitedArmy();
   };
@@ -1379,6 +1381,7 @@ export default class WorldmapScene extends WarpTravel {
       this.worldSpatialProjection,
       this.game.store,
       this.mapPlates.createScope("shrine"),
+      this.mapPlates.createScope("deep-gate"),
       this.getTerrainSurface(),
     );
     this.chestManager = new ChestManager(
@@ -1471,7 +1474,10 @@ export default class WorldmapScene extends WarpTravel {
     const store = this.game.store;
     const projection = this.worldSpatialProjection;
     return {
-      hexes: () => expeditionSpires(store, configManager.getActiveGameId(), getBlockTimestamp().currentBlockTimestamp),
+      hexes: () =>
+        discoversSpires(store, configManager.getActiveGameId())
+          ? []
+          : expeditionSpires(store, configManager.getActiveGameId(), getBlockTimestamp().currentBlockTimestamp),
       subscribe: (onChange) => {
         const unsubscribeFacts = store.subscribe((changes) => {
           if (changes.some((change) => ["Structure", "RealmKnowledge"].includes(change.model))) onChange();
@@ -1839,33 +1845,6 @@ export default class WorldmapScene extends WarpTravel {
     this.registerExplorerRewardWorldUpdateSubscriptions();
     this.registerChestWorldUpdateSubscriptions();
     this.registerSitePayoutWorldUpdateSubscriptions();
-    this.registerArmyProgressWorldUpdateSubscriptions();
-  }
-
-  /**
-   * The player's own army progressing (design §3.11 §2): an XP gain floats "+N XP" from the army and each level gained
-   * plays its beat with a ring burst there. A progress row arriving with the snapshot is history, not a gain; the
-   * army's card renders the fact, and this is only the flourish.
-   */
-  private registerArmyProgressWorldUpdateSubscriptions(): void {
-    this.addWorldUpdateSubscription(
-      this.game.store.subscribe((changes) => {
-        for (const change of changes) {
-          if (change.model !== "ArmyProgress" || !change.previous || !change.current) continue;
-          if (change.current.game_id !== configManager.getActiveGameId()) continue;
-          const owner = this.getEntityOwnerAddress(safeInteger(change.current.explorer_id));
-          if (owner === undefined || !isAddressEqualToAccount(owner)) continue;
-          this.playOwnArmyProgress(change.previous, change.current);
-        }
-      }),
-    );
-  }
-
-  private playOwnArmyProgress(before: ArmyProgressFacts, after: ArmyProgressFacts): void {
-    const xp = xpGained(before, after);
-    if (xp <= 0) return;
-    const hex = this.getArmyDisplayPosition(safeInteger(after.explorer_id));
-    playArmyProgress({ xp, at: hex ? projectHexToScreen(hex, this.camera) : null });
   }
 
   /**
@@ -1883,7 +1862,6 @@ export default class WorldmapScene extends WarpTravel {
         letGoOfClearedSite(payout.coord);
         playSiteClear({
           clear: payout,
-          troopsLost: payout.troopsLost,
           at: projectHexToScreen(hex, this.camera),
           burst: () => {
             const world = getWorldPositionForHex(hex);
@@ -1972,10 +1950,6 @@ export default class WorldmapScene extends WarpTravel {
     window.addEventListener(DEPLOY_ON_MAP_EVENT, this.deployOnMapHandler);
     this.stopChestOpenRequests = onChestOpenRequest(({ explorerId, hex }) => {
       if (this.sceneManager.getCurrentScene() === SceneName.WorldMap) void this.openChest(explorerId, hex);
-    });
-    this.stopRewardChestRequests = onRewardChestRequest((request) => {
-      if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
-      void this.chestManager.presentAtScreenCentre(announcedRewardChestBeats(request), chestRarityGlow(request.rarity));
     });
     this.controls.addEventListener("change", this.handleWorldmapControlsChange);
     window.addEventListener("resize", this.handleTerrainViewportResize);
@@ -2554,20 +2528,19 @@ export default class WorldmapScene extends WarpTravel {
   ): OrderTip | null {
     const key = ActionPaths.posKey(hexCoords, true);
     const path = getLiveWorldmapEntityActions().actionPaths.get(key);
-    const armyTroops = this.selectedArmyRow()?.troops;
-    const site = this.usableSiteAt(hexCoords);
+    const army = this.selectedArmyRow();
+    const armyTroops = army?.troops;
     const short = refusal?.reason === "stamina" ? this.selectedArmyShortOf(refusal.need) : undefined;
     return orderTip({
       path,
-      exploreStamina: configManager.getExploreStaminaCost(),
+      exploreStamina: army
+        ? configManager.getExploreStaminaCost(army.troops.category, armyOaths(this.game.store, army))
+        : 0,
       food: armyTroops ? orderFood(path, armyTroops) : { wheat: 0, fish: 0 },
       explored: this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) === true,
       refusal,
       staminaWait: short?.wait,
       staminaHeld: short?.held,
-      site: site
-        ? siteUseFacts(this.game.store, site, this.selectedArmyRow(), getBlockTimestamp().currentDefaultTick)
-        : undefined,
       byRealm: getLiveWorldmapEntityActions().selectedEntityId != null && this.selectedArmyId() === null,
     });
   }
@@ -2576,10 +2549,11 @@ export default class WorldmapScene extends WarpTravel {
   private selectedArmyRow() {
     const armyId = this.selectedArmyId();
     if (armyId === null) return undefined;
-    return this.game.store.get("ExplorerTroops", {
+    const army = this.game.store.get("ExplorerTroops", {
       game_id: configManager.getActiveGameId(),
       explorer_id: safeInteger(armyId),
     });
+    return army && currentArmy(this.game.store, army);
   }
 
   /**
@@ -2662,10 +2636,24 @@ export default class WorldmapScene extends WarpTravel {
       await this.cutToMapHex(to);
       return true;
     }
+    const down = expeditionDepth(rules, { y: to.row }) > expeditionDepth(rules, { y: from.row });
+    const upper = down ? from : to;
+    const gameId = configManager.getActiveGameId();
+    const portal = discoversSpires(this.game.store, gameId)
+      ? expeditionSpires(this.game.store, gameId, getBlockTimestamp().currentBlockTimestamp).find(
+          (spire) =>
+            spire.targetDepth === expeditionDepth(rules, { y: upper.row }) + 1 &&
+            Math.floor(spire.col / rules.spacing) === Math.floor(upper.col / rules.spacing),
+        )
+      : regionSpire(rules, upper);
+    if (!portal) {
+      await this.cutToMapHex(to);
+      return true;
+    }
     const dive = diveThroughSpire(
       this.controls,
       (claim) => this.spireDiveStage(claim),
-      spireCrossing(rules, from, to),
+      spireCrossing(rules, from, to, portal),
       useWorldAppearanceStore.getState().reducedMotion,
     );
     this.spireDive = dive;
@@ -2926,7 +2914,7 @@ export default class WorldmapScene extends WarpTravel {
    */
   private isBareGround(hexCoords: HexPosition): boolean {
     const { army, structure, chest } = this.getHexagonEntity(hexCoords);
-    if (army || structure || chest || this.usableSiteAt(hexCoords) !== null) return false;
+    if (army || structure || chest || this.hasSiteCardAt(hexCoords)) return false;
     const armyId = this.selectedArmyId();
     if (armyId !== null && this.isArmysSpire(armyId, hexCoords)) return false;
     const path = getLiveWorldmapEntityActions().actionPaths.get(ActionPaths.posKey(hexCoords, true));
@@ -2949,12 +2937,7 @@ export default class WorldmapScene extends WarpTravel {
     if (selectedEntityId === null || selectedEntityId === undefined) return false;
     const path = actionPaths.get(ActionPaths.posKey(hexCoords, true));
     const action = path && ActionPaths.getActionType(path);
-    return (
-      action === ActionType.UseSite ||
-      action === ActionType.EnterDepth ||
-      action === ActionType.CreateArmy ||
-      action === ActionType.Help
-    );
+    return action === ActionType.EnterDepth || action === ActionType.CreateArmy || action === ActionType.Help;
   }
 
   protected onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void {
@@ -3036,9 +3019,7 @@ export default class WorldmapScene extends WarpTravel {
     const order = orderOnTap({
       path,
       armySelected: this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined,
-      site:
-        (structure !== undefined && this.isStandingExpeditionSite(structure.id)) ||
-        this.usableSiteAt(hexCoords) !== null,
+      site: (structure !== undefined && this.isStandingExpeditionSite(structure.id)) || this.hasSiteCardAt(hexCoords),
       // An army of the player's standing on the spire is selected by the tap, as on any site.
       ownSpire: this.isArmysSpire(selectedEntityId, hexCoords) && !this.holdsOwnSelectable(hexCoords),
       onPhone: layoutNow() === "phone",
@@ -3227,13 +3208,7 @@ export default class WorldmapScene extends WarpTravel {
         const actionType = ActionPaths.getActionType(actionPath);
 
         // Only validate army availability for army-specific actions
-        const armyActions = [
-          ActionType.Explore,
-          ActionType.Move,
-          ActionType.Attack,
-          ActionType.SpireTravel,
-          ActionType.UseSite,
-        ];
+        const armyActions = [ActionType.Explore, ActionType.Move, ActionType.Attack, ActionType.SpireTravel];
         const isArmySelection = this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined;
         if (actionType && armyActions.includes(actionType) && isArmySelection) {
           // The army isn't drawn in the map's view now (a chunk on its way): no order, and the army stays selected.
@@ -3250,8 +3225,6 @@ export default class WorldmapScene extends WarpTravel {
           this.onArmyHelp(actionPath, selectedEntityId);
         } else if (actionType === ActionType.Chest) {
           this.onChestSelection(actionPath, selectedEntityId);
-        } else if (actionType === ActionType.UseSite) {
-          this.onSiteUse(actionPath, selectedEntityId);
         } else if (actionType === ActionType.CreateArmy) {
           this.onArmyCreate(actionPath, selectedEntityId);
         } else if (actionType === ActionType.EnterDepth) {
@@ -4367,27 +4340,9 @@ export default class WorldmapScene extends WarpTravel {
     })();
   }
 
-  /** The army uses the site its order names, where it stands: the card's own sender, with no card in between. */
-  private onSiteUse(actionPath: ActionPath[], selectedEntityId: ID) {
-    const account = useAccountStore.getState().account;
-    const target = actionPath[actionPath.length - 1].hex;
-    const site = this.usableSiteAt(sceneHexOf(target));
-    if (!account || !site) return;
-    void sendSiteUse({
-      systemCalls: this.game.systemCalls,
-      signer: account,
-      explorerId: safeInteger(selectedEntityId),
-      site,
-    });
-  }
-
-  /**
-   * The usable site (a Shrine or a Well) on this normalized tile of the shown layer, in contract coordinates; null where
-   * the tile holds none.
-   */
-  private usableSiteAt(hexCoords: HexPosition) {
-    const contract = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
-    return usableSiteAt(this.game.store, { col: contract.x, row: contract.y, alt: activeMapLayer() });
+  private hasSiteCardAt(hexCoords: HexPosition): boolean {
+    const { col, row } = contractHexOf(hexCoords);
+    return getTileAt(this.game.store, activeMapLayer(), col, row)?.occupier_type === TileOccupier.DeepSite;
   }
 
   /** Right-click on a chest with the adjacent army selected opens it. */
@@ -4886,11 +4841,6 @@ export default class WorldmapScene extends WarpTravel {
     this.resetZoomHardeningRuntimeState();
   }
 
-  /** A reward's chest staged over the map, drawn after it in passes of its own (RewardStage). */
-  public override getRewardStagePasses(): RendererOverlayPass[] {
-    return this.chestManager.getRewardStagePasses();
-  }
-
   onSwitchOff(nextSceneName?: SceneName) {
     this.logInteractionDebug("switch_off_invoked", {
       nextSceneName,
@@ -4900,7 +4850,6 @@ export default class WorldmapScene extends WarpTravel {
     this.applyWorldmapSceneExitProjection(nextSceneName);
     this.mapPlates.setVisible(false);
     // A reward's chest staged mid-moment ends with the map, and the moment beside it with it.
-    this.chestManager.endScreenCentrePresentation();
     this.invalidateWorldmapSwitchOffTransitions();
     // A dive through a spire ends with the map: it writes the shared camera and canvas no more.
     this.spireDive?.cancel();
@@ -8849,7 +8798,6 @@ export default class WorldmapScene extends WarpTravel {
     window.removeEventListener(ORDER_REQUEST_EVENT, this.orderRequestHandler);
     window.removeEventListener(DEPLOY_ON_MAP_EVENT, this.deployOnMapHandler);
     this.stopChestOpenRequests?.();
-    this.stopRewardChestRequests?.();
     this.clearCache();
 
     this.hoverLabelManager.dispose();

@@ -3,6 +3,7 @@ import { configManager } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { hash } from "starknet";
 import { beforeEach, describe, expect, it } from "vitest";
+
 import { readHyperstructureConstruction } from "./hyperstructure-state";
 
 let store: NativeFactStore;

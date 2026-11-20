@@ -37,12 +37,16 @@ export const useThisDevice = (owner: string | null) => {
   const [config, setConfig] = useState<PushConfiguration | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  /** Reads what this device does now, shows it and returns it. */
+  const refresh = useCallback(async (): Promise<ThisDeviceState> => {
     const app = iosAppBridge();
-    if (app) return setState(owner ? await iosAppPushState(app, owner) : "off");
-    const blocker = blockerOf();
-    if (blocker || !owner) return setState(blocker ?? "off");
-    setState((await readOn(owner)) ? "on" : "off");
+    const next: ThisDeviceState = app
+      ? owner
+        ? await iosAppPushState(app, owner)
+        : "off"
+      : (blockerOf() ?? (owner && (await readOn(owner)) ? "on" : "off"));
+    setState(next);
+    return next;
   }, [owner]);
 
   useEffect(() => {
@@ -53,8 +57,9 @@ export const useThisDevice = (owner: string | null) => {
     return () => window.removeEventListener("focus", onFocus);
   }, [refresh]);
 
-  const toggle = async () => {
-    if (!owner || (state !== "on" && state !== "off")) return;
+  /** Turns this device on or off and returns where it stands once that settled: "on" only when it is delivering. */
+  const toggle = async (): Promise<ThisDeviceState> => {
+    if (!owner || (state !== "on" && state !== "off")) return state;
     const turningOn = state === "off";
     setState("saving");
     setFailure(null);
@@ -76,7 +81,11 @@ export const useThisDevice = (owner: string | null) => {
       console.error("notification_device_failed", { error: cause instanceof Error ? cause.message : cause });
       setFailure(turningOn ? "on" : "off");
     }
-    await refresh().catch(() => setState(turningOn ? "off" : "on"));
+    return refresh().catch(() => {
+      const fallback = turningOn ? "off" : "on";
+      setState(fallback);
+      return fallback;
+    });
   };
 
   return { state, toggle, failed: failure !== null };

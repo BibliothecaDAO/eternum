@@ -14,7 +14,6 @@ describe("native game configuration", () => {
         durationSeconds: 3_600,
         devModeOn: false,
         singleRealmMode: false,
-        twoPlayerMode: false,
         useMapOverride: false,
       }),
     ).toThrow("positive chain timestamp");
@@ -26,26 +25,24 @@ describe("native game configuration", () => {
     try {
       const params = buildCreateGameParams(config, {
         gameName: "bltz-a2",
-        presetId: 4,
+        presetId: 2,
         startMainAt: 2_000_000_000,
         chainTimestamp: 1_999_990_000,
         durationSeconds: 7_200,
         devModeOn: true,
         singleRealmMode: false,
-        twoPlayerMode: true,
         useMapOverride: true,
       });
 
       // A launcher clock ahead of the chain cannot delay recorded settlement.
       expect(params).toMatchObject({
-        preset_id: 4,
+        preset_id: 2,
         start_settling_at: 1_999_990_000,
         start_main_at: 2_000_000_000,
         duration_seconds: 7_200,
         registration_start_at: 1_999_989_999,
-        registration_count_max: 2,
+        registration_count_max: config.blitz.registration.registration_count_max,
         dev_mode_on: true,
-        two_player_mode: true,
         use_map_override: true,
         end_grace_seconds: 0,
       });
@@ -70,7 +67,6 @@ describe("native game configuration", () => {
         durationSeconds: 3_600,
         devModeOn: true,
         singleRealmMode: false,
-        twoPlayerMode: false,
         useMapOverride: false,
       });
 
@@ -94,7 +90,6 @@ describe("native game configuration", () => {
       durationSeconds: 3_600,
       devModeOn: true,
       singleRealmMode: false,
-      twoPlayerMode: false,
       useMapOverride: false,
     };
 

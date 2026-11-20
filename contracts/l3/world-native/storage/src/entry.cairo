@@ -14,4 +14,7 @@ pub struct EntryAdministrationStorage {
     pub prize_winners: Map<(u32, u16), ContractAddress>,
     pub prize_awarded: Map<(u32, u16), bool>,
     pub home_labor_grants: Map<(u32, u64, u64), Option<(ContractAddress, u128, u128)>>,
+    pub seals: Map<(u32, ContractAddress), Option<u64>>,
+    pub fragments: Map<(u32, ContractAddress), u128>,
+    pub fragment_credits: Map<(u32, felt252), Option<(ContractAddress, u128)>>,
 }

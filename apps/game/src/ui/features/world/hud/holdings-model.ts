@@ -59,7 +59,7 @@ export const kindsHeld = (
     const presentsOneMineKind = kind === StructureType.Mine && onlyMineKind !== undefined;
     return {
       kind,
-      plural: structurePlural(kind, presentsOneMineKind ? onlyMineKind : undefined, mode),
+      plural: structurePlural(kind, presentsOneMineKind ? onlyMineKind : undefined),
       icon: presentsOneMineKind ? mineMeaning(onlyMineKind) : structureMeaning(kind, mode),
       count: counts.get(kind)!,
     };

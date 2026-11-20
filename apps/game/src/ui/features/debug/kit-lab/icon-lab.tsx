@@ -55,7 +55,7 @@ export function IconLab() {
       </div>
       <section aria-label="Action meanings">
         <div className="icon-controls">
-          {(["build", "production", "military", "transfer", "trade"] as const).map((id) => (
+          {(["build", "production", "military", "transfer"] as const).map((id) => (
             <ActionTile
               key={id}
               action={{

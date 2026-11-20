@@ -6,7 +6,7 @@ import { campBeside, SITE, SITE_TILE } from "./site-fixture";
 vi.stubGlobal("localStorage", { getItem: () => null });
 afterEach(() => vi.restoreAllMocks());
 const KINDS = ["Camp", "Rift", "Ruin", "Beasts"] as const;
-const SPECIES = { Camp: "Troll", Rift: "Dark fey", Ruin: "Ammit", Beasts: "Cyclops" };
+const SPECIES = { Camp: "Troll", Rift: "Fairy", Ruin: "Wyvern", Beasts: "Cyclops" };
 
 function encounter(kind: SiteKind) {
   const { store } = campBeside(kind);
@@ -38,8 +38,6 @@ function encounter(kind: SiteKind) {
           reveal_site_neighbors: false,
           chest: { common: 1, uncommon: 0, rare: 0, epic: 0, legendary: 0 },
           reveal_percent: 1,
-          ruin_guard_lower: 1,
-          ruin_guard_upper: 2,
           guard_step: 1,
         },
       },

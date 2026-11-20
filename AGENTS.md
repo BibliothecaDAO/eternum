@@ -171,10 +171,6 @@ Prefer clear result flow over scattered mutation.
 If a helper requires a fully resolved object, require it explicitly instead of threading optionals through the success
 path.
 
-### Comments
-
-Comments should explain why a choice exists, not restate obvious code.
-
 ### PR Writing
 
 Pull request titles and descriptions should sound like a thoughtful engineer explaining a change to another engineer.

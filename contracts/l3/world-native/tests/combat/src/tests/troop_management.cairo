@@ -22,7 +22,9 @@ fn recruitment_spends_troop_resources_and_updates_capacity_with_block_time_stami
         execute(
             d,
             manage(
-                ManageTroops::RecruitExplorer(RecruitExplorer { explorer_id: first, amount: 2 * RESOURCE_PRECISION }),
+                ManageTroops::RecruitExplorer(
+                    RecruitExplorer { explorer_id: first, amount: 2 * RESOURCE_PRECISION, supply_post: None },
+                ),
             ),
             140,
         ),
@@ -51,7 +53,11 @@ fn blitz_recruitment_still_caps_stamina_at_the_initial_bar() {
     assert!(
         execute(
             d,
-            manage(ManageTroops::RecruitExplorer(RecruitExplorer { explorer_id: first, amount: RESOURCE_PRECISION })),
+            manage(
+                ManageTroops::RecruitExplorer(
+                    RecruitExplorer { explorer_id: first, amount: RESOURCE_PRECISION, supply_post: None },
+                ),
+            ),
             140,
         ),
     );
@@ -136,7 +142,9 @@ fn malformed_amounts_overweight_transfers_and_wrong_categories_reject_without_sp
     let before = count(d, home);
     for amount in array![0, RESOURCE_PRECISION - 1, 100000000 * RESOURCE_PRECISION] {
         assert_terminal_rejection(
-            d, manage(ManageTroops::RecruitExplorer(RecruitExplorer { explorer_id: first, amount })), 140,
+            d,
+            manage(ManageTroops::RecruitExplorer(RecruitExplorer { explorer_id: first, amount, supply_post: None })),
+            140,
         );
     }
     assert_eq!(count(d, home), before);
@@ -311,7 +319,11 @@ fn recruitment_and_transfers_enforce_army_size_before_any_balance_or_capacity_ch
         d,
         manage(
             ManageTroops::RecruitExplorer(
-                RecruitExplorer { explorer_id: first, amount: Into::<u32, u128>::into(maximum) * RESOURCE_PRECISION },
+                RecruitExplorer {
+                    explorer_id: first,
+                    amount: Into::<u32, u128>::into(maximum) * RESOURCE_PRECISION,
+                    supply_post: None,
+                },
             ),
         ),
         140,
@@ -346,7 +358,7 @@ fn troop_actions_emit_one_unique_story_each_and_rejections_emit_none() {
     assert!(execute(d, Command::CreateExplorer(created), 140));
     let third = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(2);
     assert!(execute(d, recruit(home, 0, 3), 140));
-    let recruitment = RecruitExplorer { explorer_id: first, amount: 2 * RESOURCE_PRECISION };
+    let recruitment = RecruitExplorer { explorer_id: first, amount: 2 * RESOURCE_PRECISION, supply_post: None };
     assert!(execute(d, manage(ManageTroops::RecruitExplorer(recruitment)), 140));
     let slot = GuardSlot { structure_id: home.entity_id, slot: 0 };
     let mut expected = array![
@@ -369,7 +381,9 @@ fn troop_actions_emit_one_unique_story_each_and_rejections_emit_none() {
                 amount: 3 * RESOURCE_PRECISION,
             },
         ),
-        Story::ExplorerAddStory(recruitment),
+        Story::ExplorerAddStory(
+            crate::troop_management::ExplorerAdded { explorer_id: recruitment.explorer_id, amount: recruitment.amount },
+        ),
     ];
     for (source, target) in array![
         (Army::Explorer(first), Army::Explorer(second)), (Army::Explorer(first), Army::Guard(slot)),
@@ -521,4 +535,22 @@ fn occupied_explorer_destination_rejects_without_rewriting_the_tile_or_spending(
     assert_eq!(map.tile(location).unwrap(), tile);
     assert_eq!(troop(d, first).unwrap(), explorer);
     assert_eq!(count(d, home), balance);
+}
+
+#[test]
+fn reinforcement_sources_preserve_the_recorded_recruitment_payload() {
+    for supply_post in array![None, Some(711_u64)] {
+        let (id, story) = crate::troop_management::management_story(
+            ManageTroops::RecruitExplorer(RecruitExplorer { explorer_id: 7, amount: 10, supply_post }),
+        );
+        assert_eq!(id, 7);
+        match story {
+            crate::ownership::Story::ExplorerAddStory(value) => {
+                let mut fields = array![];
+                value.serialize(ref fields);
+                assert_eq!(fields.span(), array![7, 10].span());
+            },
+            _ => panic!("wrong reinforcement story"),
+        }
+    }
 }

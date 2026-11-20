@@ -1,6 +1,6 @@
-import { formatExact, formatShort } from "@bibliothecadao/types";
+import { formatShort } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { HudButton, HudChip, HudMeter, HudNotice, HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudNotice, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import {
   ARMIES_ENDED,
   CONTINUE,
@@ -22,8 +22,7 @@ import type { DayHistory } from "../log/player-day";
 /**
  * The day-done card (wireframe 11), over the map at the day's end (DayEndScreen places it): the day done and the realm
  * kept, when the new day ends and how long tomorrow lasts, the ended day's totals (and why they are unknown, when the
- * player's history cannot give them), the rank it moved to, and the troops the ended armies took with them against
- * those that came home. Share your day (once the day's totals are whole) opens the day's card to post; Continue goes on
+ * player's history cannot give them), the rank it moved to, and the troops the ended armies took with them. Share your day (once the day's totals are whole) opens the day's card to post; Continue goes on
  * into the new day.
  */
 export const DayDoneCard = ({
@@ -35,7 +34,6 @@ export const DayDoneCard = ({
   rank,
   armies,
   troopsLost,
-  returned,
   onShare,
   onContinue,
 }: {
@@ -51,8 +49,6 @@ export const DayDoneCard = ({
   /** How many armies ended with the day. */
   armies: number;
   troopsLost: number;
-  /** What Homecoming sent home, and what fitted the troop store. */
-  returned?: { sent: number; fitted: number };
   /** Opens the day's card to share; none while the day's totals are not whole. */
   onShare?: () => void;
   onContinue: () => void;
@@ -84,7 +80,7 @@ export const DayDoneCard = ({
         <SemanticIcon name="victory" size={24} />#{rank.from} → #{rank.to}
       </p>
     )}
-    {armies > 0 && <ArmiesLine armies={armies} troopsLost={troopsLost} returned={returned} />}
+    {armies > 0 && <ArmiesLine armies={armies} troopsLost={troopsLost} />}
     <div className="grid w-full gap-2">
       {onShare && (
         <HudButton kind="secondary" icon="share" onClick={onShare}>
@@ -99,35 +95,11 @@ export const DayDoneCard = ({
 );
 
 /**
- * How many armies ended with the day, counted ("×3"), the troops they took, and the troops returned beside it: what
- * fitted, by a full bar.
+ * How many armies ended with the day, counted ("×3"), and the troops they took.
  */
-const ArmiesLine = ({
-  armies,
-  troopsLost,
-  returned,
-}: {
-  armies: number;
-  troopsLost: number;
-  returned: { sent: number; fitted: number } | undefined;
-}) => (
+const ArmiesLine = ({ armies, troopsLost }: { armies: number; troopsLost: number }) => (
   <div className="flex items-center justify-center gap-1.5" aria-label={TROOPS}>
     <HudChip icons={["army"]} label={ARMIES_ENDED}>{`×${formatShort(armies)}`}</HudChip>
     <HudChip icons={["troops"]} label={TROOPS}>{`−${formatShort(troopsLost)}`}</HudChip>
-    {returned && (
-      <span className="flex items-center gap-1.5 pl-2.5">
-        <HudChip
-          icons={["order-enlightenment", "troops"]}
-        >{`${formatShort(returned.fitted, { signed: true })}`}</HudChip>
-        {returned.fitted < returned.sent && (
-          <>
-            <span className="text-hud-label tabular-nums text-hud-muted">{formatExact(returned.sent)}</span>
-            <span className="w-16">
-              <HudMeter share={1} tone="bad" label={TROOPS} />
-            </span>
-          </>
-        )}
-      </span>
-    )}
   </div>
 );

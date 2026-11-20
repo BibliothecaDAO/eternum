@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
-import { StructureType, structureName } from "@bibliothecadao/types";
+import { StructureType, structureName, eternumMapName } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HudButton, HudPill, HudTabs, type MenuItem } from "@/ui/design-system/kit/hud-elements";
 import { WORLD } from "@/ui/design-system/kit/words";
+import { HudButton, HudPill, HudTabs, type MenuItem } from "@/ui/design-system/kit/hud-elements";
 
 interface MapViewControlsProps {
   compact: boolean;
@@ -94,8 +94,8 @@ const CompactLayerSwitch = ({
   mapLayer: boolean;
   onLayerChange: (alt: boolean) => void;
 }) => {
-  const currentLayer = mapLayer ? "Ethereal" : "Surface";
-  const nextLayer = mapLayer ? "Surface" : "Ethereal";
+  const currentLayer = eternumMapName(mapLayer);
+  const nextLayer = eternumMapName(!mapLayer);
   return (
     <HudPill label="Map layer" role="group" className="pointer-events-auto px-1">
       {[
@@ -121,8 +121,8 @@ const LayerSwitch = ({ mapLayer, onLayerChange }: { mapLayer: boolean; onLayerCh
       <HudTabs
         key="layer"
         tabs={[
-          { key: "surface", label: "Surface", icon: "mountain" },
-          { key: "ethereal", label: "Ethereal", icon: "travel" },
+          { key: "surface", label: eternumMapName(false), icon: "mountain" },
+          { key: "ethereal", label: eternumMapName(true), icon: "travel" },
         ]}
         size="sm"
         value={mapLayer ? "ethereal" : "surface"}

@@ -18,7 +18,6 @@ import { useRequestSignIn } from "../sign-in/connect";
 import { AccountCard, SignOut } from "./account-card";
 import { DeleteAccount } from "./account-deletion";
 import { DevicesCard } from "./devices-page";
-import { InvitePanel } from "./invite-panel";
 import { SharedDaysPanel } from "./shared-days-panel";
 import { NotificationsCard } from "./notifications";
 import { PlayerCard, ProfileView, RecentGames } from "./profile-view";
@@ -124,7 +123,7 @@ export const PlayerPage = () => {
  * The page for a signed-in player, the player's account known from the session; else the card that says why not
  * (signed out, a name still to claim with Sign out under it, or this device removed), placed by the page.
  */
-const SignedInOnly = ({
+export const SignedInOnly = ({
   fallback,
   children,
 }: {
@@ -174,16 +173,11 @@ const SignInCard = ({ line, verb }: { line: string | null; verb: string }) => {
   );
 };
 
-/**
- * The player's own page: on desktop their card and the rows in the left column, their invite link, what their shared
- * days brought and their games at the right.
- */
 const OwnProfile = ({ account }: { account: string }) => {
   if (useLayout() === "phone")
     return (
       <div className="flex flex-col gap-4">
         <ProfileView account={account} own />
-        <InvitePanel />
         <SharedDaysPanel />
         <Rows />
       </div>
@@ -195,7 +189,6 @@ const OwnProfile = ({ account }: { account: string }) => {
         <Rows />
       </div>
       <div className="flex min-w-0 flex-col gap-5">
-        <InvitePanel />
         <SharedDaysPanel />
         <RecentGames account={account} own />
       </div>

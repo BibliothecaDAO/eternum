@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
-import { IdentityRequestError, SOCIAL_PROVIDERS } from "@realms-world/identity";
+import { IdentityRequestError, SOCIAL_PROVIDERS, type SealCodeRefusal } from "@realms-world/identity";
+import { answerLabBuildOrders } from "./lab-build-orders";
 
 import { BlitzLobbyPage } from "../blitz/blitz-pages";
 import { BuildOrdersPage } from "../build-orders/build-orders-page";
@@ -13,9 +14,11 @@ import { rewardKey } from "../season-tab/reward";
 import { PageAddress } from "../frame/page-address";
 import { CreditsPage, PrivacyPage, TermsPage } from "../legal";
 import { WhatsNewPage } from "../news/news";
-import { JoinDevconPage } from "../join/join-devcon-page";
 import { NotFoundPage } from "../not-found";
 import { PlayPage } from "../play/play-page";
+import { SharedLinkPage } from "../share/shared-link-page";
+import { FragmentsPage } from "../shop/fragments-page";
+import { answerAvnuRead, answerTokenBalances, isAvnuRead } from "./lab-pay-tokens";
 import { PlayerPage, ProfilePage, SettingsPage } from "../profile/profile-pages";
 import { ResultsPage } from "../season-tab/results-page";
 import { SeasonPage } from "../season-tab/season-page";
@@ -28,10 +31,6 @@ import {
   LAB_FINAL_BOARDS,
   LAB_FRONTIER_FINAL_BOARD,
   LAB_FRONTIER_UNPUBLISHED_BOARD,
-  LAB_DEVCON_TICKETS,
-  LAB_FIRST_REFERRAL,
-  LAB_REFERRALS,
-  LAB_REFERRER,
   LAB_NO_SHARES,
   LAB_SHARE_TALLIES,
   LAB_GUARDIAN,
@@ -61,6 +60,13 @@ import {
   LAB_WALLET,
   labRatings,
   labCalendar,
+  labOrderIntent,
+  LAB_INVITE,
+  labJoinedShare,
+  labSealCode,
+  LAB_FRAGMENT_QUOTE,
+  LAB_SEAL_CODE,
+  LAB_SHARE_CODE,
   labSlots,
   type LabScreen,
 } from "./app-lab-fixtures";
@@ -130,9 +136,8 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
         <Route path="connect/:step" element={<LabConnect />} />
         <Route path="doorway/:state" element={<LabDoorway />} />
         <Route path="season-end-devcon/:step/:who" element={<LabSeasonEndDevcon />} />
-        <Route path="join/devcon" element={<JoinDevconPage />} />
-        <Route path="join/devcon/:code" element={<JoinDevconPage />} />
-        <Route path="join/devcon/r/:referral" element={<JoinDevconPage />} />
+        <Route path="s/:code" element={<SharedLinkPage />} />
+        <Route path="shop/fragments" element={<FragmentsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </PageAddress.Provider>
@@ -206,12 +211,12 @@ function installLabFixtures(screen: LabScreen, field: number | null): () => void
     "linkWallet",
     "getBuildOrders",
     "saveBuildOrders",
-    "redeemCampaignTicket",
-    "campaignReferral",
-    "campaignReferrer",
     "shareTally",
     "readDefaultWallet",
     "deleteAccount",
+    "priceFragments",
+    "payFragments",
+    "fragmentPayment",
   ];
   const descriptors = identityMethods.map(
     (name) => [name, Object.getOwnPropertyDescriptor(identityClient, name)] as const,
@@ -219,7 +224,9 @@ function installLabFixtures(screen: LabScreen, field: number | null): () => void
   answerAppReads(screen, field);
   answerChat(screen);
   answerIdentity(screen);
+  const restoreBalances = answerTokenBalances();
   return () => {
+    restoreBalances();
     window.fetch = previousFetch;
     window.WebSocket = previousWebSocket;
     for (const [name, descriptor] of descriptors) {
@@ -241,9 +248,9 @@ const json = (body: unknown) =>
 const answerAppReads = (screen: LabScreen, field: number | null) => {
   const network = window.fetch.bind(window);
   let boardReads = 0;
-  const shard = { url: "https://lab.invalid", chainId: LAB_CHAIN, status: "active", games: LAB_SCREENS[screen].games };
+  const shard = { url: "https://lab.invalid", chainId: LAB_CHAIN, games: LAB_SCREENS[screen].games };
   const answers: Record<string, (url: URL) => Response> = {
-    "/api/directory": () => json({ shards: [field === null ? shard : { ...shard, manifest: LAB_SHARD_MANIFEST }] }),
+    "/api/directory": () => json({ shard: field === null ? shard : { ...shard, manifest: LAB_SHARD_MANIFEST } }),
     // The player's own finished Blitz.
     "/api/directory/history": () =>
       json({
@@ -266,17 +273,12 @@ const answerAppReads = (screen: LabScreen, field: number | null) => {
   if (field !== null) answers["/games/1/leaderboard"] = () => json(labFrontierBoard(field, boardReads++));
   window.fetch = (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);
+    if (isAvnuRead(url)) return Promise.resolve(answerAvnuRead(url, init?.body?.toString()));
     const answer = answers[url.pathname];
     return answer ? Promise.resolve(answer(url)) : network(input, init);
   };
 };
 
-/**
- * The identity service's answers for the account page: a code is always sent, and a wallet change or the account's
- * deletion spends the lab's one code and refuses any other, as the service refuses it. A Devcon screen's account holds its ticket, or opens it
- * with any flyer's code, as the service answers a first redemption. The client holds its own fetch, so its calls are
- * answered on the client itself.
- */
 const answerIdentity = (screen: LabScreen) => {
   identityClient.listSignInProviders = async () => ["discord"];
   identityClient.availableSignInProviders = async () => [...SOCIAL_PROVIDERS];
@@ -284,27 +286,41 @@ const answerIdentity = (screen: LabScreen) => {
   const spend = async (code: unknown) => {
     if (code !== LAB_EMAIL_CODE) throw new IdentityRequestError(400, "INVALID_OTP");
   };
-  const ticket = LAB_DEVCON_TICKETS[screen];
-  let held = ticket?.held === true;
-  identityClient.redeemCampaignTicket = async (campaign, opening) => {
-    if (!ticket || (opening === null && !held)) throw new IdentityRequestError(400, "invalid_redemption");
-    held = true;
-    return { campaign, tier: ticket.tier };
-  };
-  identityClient.campaignReferral = async () => LAB_REFERRALS[screen] ?? LAB_FIRST_REFERRAL;
-  identityClient.campaignReferrer = async () => LAB_REFERRER;
   identityClient.shareTally = async () => LAB_SHARE_TALLIES[screen] ?? LAB_NO_SHARES;
+  let intent = labOrderIntent(screen);
+  identityClient.getOrderIntent = async () => intent;
+  identityClient.chooseOrder = async (order) => {
+    intent = { ...intent, order };
+    return intent;
+  };
+  identityClient.createShare = async () => LAB_SHARE_CODE;
+  identityClient.joinedShare = async () => labJoinedShare(screen);
+  identityClient.openShare = async (code) => {
+    if (code !== LAB_SHARE_CODE) throw new IdentityRequestError(404, "share_unknown");
+    return LAB_INVITE;
+  };
+  let sealCode = labSealCode(screen);
+  identityClient.getSealCode = async () => sealCode;
+  identityClient.redeemSealCode = async (code) => {
+    if (code.trim().toUpperCase() !== LAB_SEAL_CODE)
+      throw new IdentityRequestError(410, "code_unavailable" satisfies SealCodeRefusal);
+    sealCode = { held: true };
+    return sealCode;
+  };
+  identityClient.priceFragments = async (_game, fragments) => ({
+    fragments,
+    cents: fragments,
+    quote: {
+      ...LAB_FRAGMENT_QUOTE,
+      lordsWei: String((BigInt(LAB_FRAGMENT_QUOTE.lordsWei) * BigInt(fragments)) / 1_000n),
+    },
+  });
+  identityClient.payFragments = async () => ({ state: "delivering" });
+  identityClient.fragmentPayment = async () => ({ state: "delivered", fragments: 1_000 });
   // The lab's player has made no Realms wallet, so the payout window offers Create my wallet.
   identityClient.readDefaultWallet = async () => null;
-  // The account's build orders, kept in the tab: each save is held, and read back, at the next revision.
-  let orders = { revision: 3, book: LAB_BUILD_ORDERS as unknown };
-  const buildOrders = () => ({ owner: useIdentitySessionStore.getState().session?.user.realmsId ?? "", ...orders });
+  answerLabBuildOrders();
   Object.assign(identityClient, {
-    getBuildOrders: async () => buildOrders(),
-    saveBuildOrders: async ({ book }: { book: unknown }) => {
-      orders = { revision: orders.revision + 1, book };
-      return buildOrders();
-    },
     unlinkWallet: spend,
     linkWallet: async ({ code }: { code?: string }) => spend(code).then(() => LAB_PLAYER),
     deleteAccount: spend,
@@ -324,50 +340,6 @@ const answerChat = (screen: LabScreen) => {
     lobbyWrites: canWrite,
     history: (zoneId) => (zoneId.startsWith("slot:") ? LAB_CHAT : LAB_GLOBAL_CHAT),
   });
-};
-
-/** Three orders a player saved, Coal rush the one followed. */
-const LAB_BUILD_ORDERS = {
-  active: "coal-rush",
-  orders: [
-    {
-      id: "coal-rush",
-      order: {
-        name: "Coal rush",
-        steps: [
-          { rank: "Settlement", goal: "farm", count: 2 },
-          { rank: "Settlement", goal: "levelUp" },
-          { rank: "City", goal: "coal", count: 2 },
-          { rank: "City", goal: "copper", count: 2 },
-          { rank: "City", goal: "barracks", count: 1 },
-          { rank: "City", goal: "levelUp" },
-          { rank: "Kingdom", goal: "army", count: 1 },
-          { rank: "Kingdom", goal: "farm", count: 4 },
-          { rank: "Empire", goal: "army", count: 3 },
-        ],
-      },
-    },
-    {
-      id: "wood-first",
-      order: {
-        name: "Wood first",
-        steps: [
-          { rank: "Settlement", goal: "wood", count: 2 },
-          { rank: "City", goal: "farm", count: 4 },
-        ],
-      },
-    },
-    {
-      id: "early-army",
-      order: {
-        name: "Early army",
-        steps: [
-          { rank: "Settlement", goal: "barracks", count: 1 },
-          { rank: "Settlement", goal: "army", count: 1 },
-        ],
-      },
-    },
-  ],
 };
 
 /** The screen's player by name: the one their session carries and the one identity answers for them. */

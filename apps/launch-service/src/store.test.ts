@@ -1,4 +1,5 @@
 import { D1CalendarStore } from "./calendar-store";
+import { nativePresetIdFor } from "../../../config/source/native";
 import { frontierPreset } from "../../../config/source/frontier/native";
 import { seasonSeconds } from "../../../packages/core/src/utils/days";
 import { frontierSeasonEnd } from "./test-dates";
@@ -32,12 +33,12 @@ const frontierSummary = (gameName: string, seasonStart: string) => ({
 test("supports both launch formats and refuses an unknown environment", async () => {
   const store = new D1LaunchStore(database.db, testChain());
   const blitz = await store.enqueue("game", { environment: "madara.blitz", gameName: "existing-blitz" });
-  const eternum = await store.enqueue("game", { environment: "madara.eternum", gameName: "new-eternum" });
+  const frontier = await store.enqueue("game", { environment: "madara.frontier", gameName: "new-frontier" });
   expect((await store.find("game", "madara.blitz", blitz.name))?.id).toBe(blitz.id);
-  expect((await store.list("madara.eternum")).map((run) => run.id)).toEqual([eternum.id]);
-  expect("version" in eternum.request && eternum.request.version).toBe("3");
+  expect((await store.list("madara.frontier")).map((run) => run.id)).toEqual([frontier.id]);
+  expect("version" in frontier.request && frontier.request.version).toBe(String(nativePresetIdFor("frontier")));
   await expect(
-    database.db.prepare("UPDATE launch_runs SET environment = 'unsupported' WHERE id = ?").bind(eternum.id).run(),
+    database.db.prepare("UPDATE launch_runs SET environment = 'unsupported' WHERE id = ?").bind(frontier.id).run(),
   ).rejects.toThrow("CHECK constraint failed");
 });
 
@@ -179,17 +180,13 @@ test("retirement preserves history while unfinished live work remains observable
   await new D1CalendarStore(database.db).set(season(seasonStart), Date.parse(seasonStart) - 1);
   const oldSeason = await scheduleFrontierSeason(oldChain, season(seasonStart));
 
-  // Another official chain shares the D1; its work remains isolated.
-  const live = ["0x1", "0x2"];
-  const newChain = new D1LaunchStore(database.db, testChain("0x2"), async () => live);
+  const newChain = new D1LaunchStore(database.db, testChain("0x2"));
   expect(await newChain.playerDirectoryGames()).toEqual([
     { chainId: "0x1", games: [7].map((gameId) => ({ gameId, slotId: null })) },
   ]);
   expect(await newChain.startNext(Date.now())).toBeNull();
-  expect((await newChain.pending()).map(({ chainId }) => chainId)).toEqual(["0x1", "0x1"]);
-  live.shift();
   expect(await newChain.pending()).toEqual([]);
-  live.unshift("0x1");
+  expect((await oldChain.pending()).map(({ chainId }) => chainId)).toEqual(["0x1", "0x1"]);
   const result = (await oldChain.startNext(Date.now()))!;
   await completeFreeFixture(oldChain, result.id, {
     environment: "madara.blitz",

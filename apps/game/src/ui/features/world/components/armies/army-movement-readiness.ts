@@ -3,19 +3,20 @@ import {
   getArmyStaminaRequirementWarnings,
 } from "@/ui/design-system/kit/words";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
-import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { resolveExplorerTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { useMemo } from "react";
 
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import {
+  armyOaths,
   computeExploreFoodCosts,
   computeTravelFoodCosts,
   configManager,
   divideByPrecision,
+  entityMapPosition,
   ResourceManager,
   StaminaManager,
   storedBiomeAt,
-  entityMapPosition,
 } from "@bibliothecadao/eternum";
 import { getNeighborHexes, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
@@ -101,10 +102,10 @@ export const readArmyMovementReadiness = ({
   store: NativeFactStore;
   currentDefaultTick: number;
 }): ArmyMovementReadiness | null => {
-  const troops = resolveExplorerTroops(store, army);
+  const troops = resolveExplorerTroops(store, army, currentDefaultTick);
   if (!troops) return null;
   const movementFoodCosts = army.owner
-    ? { travel: computeTravelFoodCosts(army.troops), explore: computeExploreFoodCosts(army.troops) }
+    ? { travel: computeTravelFoodCosts(troops), explore: computeExploreFoodCosts(troops) }
     : {
         travel: { wheatPayAmount: 0, fishPayAmount: 0 },
         explore: { wheatPayAmount: 0, fishPayAmount: 0 },
@@ -113,7 +114,7 @@ export const readArmyMovementReadiness = ({
   return deriveArmyMovementReadiness({
     currentStamina: Number(StaminaManager.getStamina(troops, currentDefaultTick).amount),
     minTravelStamina: resolveCheapestNeighborTravelStamina(army, store),
-    minExploreStamina: configManager.getExploreStaminaCost(),
+    minExploreStamina: configManager.getExploreStaminaCost(troops.category, armyOaths(store, army)),
     travelFoodCosts: movementFoodCosts.travel,
     exploreFoodCosts: movementFoodCosts.explore,
     food: resolveStructureFoodBalance(structureResources, currentDefaultTick),
@@ -124,7 +125,7 @@ export const useArmyMovementReadiness = (
   army: ExplorerTroopsValue | null | undefined,
   structureResources: ResourceValue | null | undefined,
 ): ArmyMovementReadiness | null => {
-  const slotFacts = useNativeFacts(["ArmySlot"]);
+  const slotFacts = useNativeFacts(STAMINA_MODELS);
   const currentDefaultTick = useCurrentDefaultTick();
 
   return useMemo(

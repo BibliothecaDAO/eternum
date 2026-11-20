@@ -1,6 +1,7 @@
 import { BuildingType, ID, ResourcesIds } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { configManager, getBuildingCount } from "..";
+import { configManager } from "../managers/config-manager";
+import { getBuildingCount } from "./packed-data";
 
 export const getBuildingQuantity = (entityId: ID, buildingType: BuildingType, store: NativeFactStore) => {
   const structureBuildings = store.get("StructureBuildings", {

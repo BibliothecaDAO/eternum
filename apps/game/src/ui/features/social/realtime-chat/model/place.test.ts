@@ -1,24 +1,12 @@
 import { expect, it } from "vitest";
 
-import { MAP_SITES, type MapSite } from "@/config/map-sites";
-import { mapSite } from "@/ui/features/frontier/sites/map-site-plan";
-import { messageWords, placeMetadata, placeOf, type SharedPlace } from "./place";
+import { messageWords, placeMetadata, placeOf } from "./place";
 
 const GAME = { chainId: "0x1ab", gameId: 3, name: "Frontier 3" };
 const MOONDEEP = { kind: "structure", entityId: 4242, game: GAME, name: "Moondeep", icon: "ruin", at: 1_000 } as const;
 const ARMY = { kind: "army", entityId: 77, game: GAME, name: "Iron Wardens", icon: "knight-t2", at: 1_000 } as const;
-const siteAt = (site: MapSite): SharedPlace => ({
-  kind: "site",
-  site: site.kind,
-  tile: { col: 4, row: 9, alt: true },
-  game: GAME,
-  name: mapSite(site.kind).name,
-  icon: mapSite(site.kind).icon,
-  at: 1_000,
-});
-
 it("reads back each kind of place a message was sent with, its game with it", () => {
-  for (const place of [MOONDEEP, ARMY, ...MAP_SITES.map(siteAt)]) expect(placeOf(placeMetadata(place))).toEqual(place);
+  for (const place of [MOONDEEP, ARMY]) expect(placeOf(placeMetadata(place))).toEqual(place);
 });
 
 it("reads a game's chain id in one case", () => {
@@ -26,7 +14,6 @@ it("reads a game's chain id in one case", () => {
 });
 
 it("reads no place from a message that carries none, or a place that is not one", () => {
-  const well = siteAt(MAP_SITES[0]);
   expect(placeOf(undefined)).toBeNull();
   expect(placeOf({ replyTo: { id: "m1" } })).toBeNull();
   expect(placeOf({ place: { ...MOONDEEP, kind: "tile" } })).toBeNull();
@@ -36,9 +23,7 @@ it("reads no place from a message that carries none, or a place that is not one"
   expect(placeOf({ place: { ...MOONDEEP, game: undefined } })).toBeNull();
   expect(placeOf({ place: { ...MOONDEEP, game: { ...GAME, chainId: "frontier" } } })).toBeNull();
   expect(placeOf({ place: { ...MOONDEEP, game: { ...GAME, gameId: "3" } } })).toBeNull();
-  // A site is one the map knows, on a tile with its layer.
-  expect(placeOf({ place: { ...well, site: "Spring" } })).toBeNull();
-  expect(placeOf({ place: { ...well, tile: { col: 4, row: 9 } } })).toBeNull();
+  expect(placeOf({ place: { ...MOONDEEP, kind: "site" } })).toBeNull();
 });
 
 it("writes a message with its place after its words as the chat names it, and a place sent alone as that name", () => {

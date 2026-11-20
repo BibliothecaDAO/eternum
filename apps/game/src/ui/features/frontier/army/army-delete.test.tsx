@@ -10,6 +10,7 @@ vi.mock("@/sync/action-outcome", async (original) => ({
   },
 }));
 
+import { nativeOathConstants } from "@bibliothecadao/eternum/game-client";
 import { GameProvider } from "@/hooks/context/game-context";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import type { DockArmy } from "../hud/dock-armies";
@@ -45,6 +46,14 @@ const PanelDelete = ({ army, onDeleted }: { army: DockArmy; onDeleted: () => voi
 
 const render = () => {
   const store = transferArmies();
+  const progress = store.require("ArmyProgress", { game_id: 1, explorer_id: 201 });
+  store.applyFacts([
+    {
+      model: "ArmyProgress",
+      key: store.wireKeyOf("ArmyProgress", progress)!,
+      value: { ...progress, explorer_id: "201", oaths: 1 << (nativeOathConstants.POWER - 1) },
+    },
+  ]);
   const remove = vi.fn().mockResolvedValue({ transaction_hash: "0x2" });
   const deleted = vi.fn();
   act(() =>
@@ -57,7 +66,7 @@ const render = () => {
       </GameProvider>,
     ),
   );
-  return { remove, deleted };
+  return { remove, deleted, store };
 };
 const press = async (find: (button: HTMLButtonElement) => boolean) =>
   act(async () => {
@@ -69,14 +78,17 @@ const trash = () => press((button) => button.getAttribute("aria-label") === "Del
 const verb = (name: string) => press((button) => button.textContent === name);
 
 it("deletes from the trash only after confirming every loss, then closes the army panel", async () => {
-  const { remove, deleted } = render();
+  const { remove, deleted, store } = render();
   expect(host.querySelector('[role="alertdialog"]')).toBeNull();
   await trash();
   expect(remove).not.toHaveBeenCalled();
   expect(host.querySelector('[role="alertdialog"]')?.textContent).toContain(
-    "troops, skills, XP and carried resources are lost",
+    "troops, carried resources and held Oaths are lost",
   );
   await verb("Cancel");
+  expect(store.require("ArmyProgress", { game_id: 1, explorer_id: 201 }).oaths).toBe(
+    1 << (nativeOathConstants.POWER - 1),
+  );
   expect(host.querySelector('[role="alertdialog"]')).toBeNull();
   expect(remove).not.toHaveBeenCalled();
   await trash();

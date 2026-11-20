@@ -1,4 +1,4 @@
-import { canEnterGame, isGameOver } from "@/runtime/world/directory";
+import { isGameOver } from "@/runtime/world/directory";
 
 import type { BlitzRow } from "../blitz-rows";
 import type { DirectoryGame } from "../herald";
@@ -62,7 +62,7 @@ export const gameKey = (game: Pick<DirectoryGame, "chainId" | "game_id">) => `${
  * The lead, first match wins: a Blitz seat to enter; a Frontier day under way; a Blitz seat still being prepared (its
  * lobby); Frontier's season to play (free when signed out), so a player with no realm finds it first rather than under
  * Blitz's cards (owner, 26 October 2026); a result of the player's not yet opened (any mode), which otherwise stays in
- * its age's column; a Blitz to join, else one to watch; Eternum, open or opening. With none of these, nothing is running
+ * its age's column; a Blitz to join, else one to watch. With none of these, nothing is running
  * and there is no lead.
  */
 const LEAD_ORDER: readonly ((item: PlayItem) => boolean)[] = [
@@ -73,16 +73,10 @@ const LEAD_ORDER: readonly ((item: PlayItem) => boolean)[] = [
   (item) => item.verb === "results",
   (item) => item.mode === "blitz" && item.verb === "join",
   (item) => item.mode === "blitz" && item.verb === "watch",
-  (item) => item.mode === "eternum",
 ];
 
 export const playBoard = (facts: PlayBoardFacts): PlayBoard => {
-  const items = [
-    ...blitzItems(facts.blitz),
-    ...frontierItems(facts),
-    ...eternumItems(facts.games),
-    ...resultItems(facts),
-  ];
+  const items = [...blitzItems(facts.blitz), ...frontierItems(facts), ...resultItems(facts)];
   const lead = LEAD_ORDER.map((matches) => items.find(matches)).find((item) => item !== undefined) ?? null;
   const rest = items.filter((item) => item !== lead);
   const ages = Object.fromEntries(
@@ -140,17 +134,6 @@ const frontierItems = ({ games, signedIn }: PlayBoardFacts): PlayItem[] => {
   return [gameItem(season, "frontier", live ? "now" : "next", "play", false)];
 };
 
-/** Eternum's next game: open to enter, or the moment it opens. */
-const eternumItems = (games: readonly DirectoryGame[]): PlayItem[] => {
-  const next = games
-    .filter((game) => game.mode === "eternum" && !isGameOver(game))
-    .toSorted((a, b) => a.clock.start_main_at - b.clock.start_main_at)[0];
-  if (!next) return [];
-  return canEnterGame(next)
-    ? [gameItem(next, "eternum", "now", "enter", false)]
-    : [gameItem(next, "eternum", "next", null, false)];
-};
-
 /**
  * The player's results not yet opened on this device, the newest per mode: a Frontier season over where they founded a
  * realm (still in the directory), and their finished games from the history. Signed out, there are none.
@@ -165,8 +148,11 @@ const resultItems = ({ signedIn, games, finished, seenResults }: PlayBoardFacts)
   });
 };
 
-/** A finished game's mode on Play: a Duel is a Blitz match; anything else unknown stays out. */
+/** A finished game's mode on Play: unknown modes stay out. */
 const modeOf = (game: DirectoryGame): PlayMode | null => {
   if (game.mode === "frontier" || game.mode === "eternum" || game.mode === "blitz") return game.mode;
-  return game.mode === "duel" ? "blitz" : null;
+  return null;
 };
+
+export const holdsNothing = (board: PlayBoard): boolean =>
+  board.lead === null && PLAY_MODES.every((mode) => board.ages[mode].length === 0);

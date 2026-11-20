@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { act } from "react";
+import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
@@ -8,9 +9,17 @@ const ARMY = 7;
 const CENTER = 2147483646;
 const ARMY_TILE = { col: CENTER + 4, row: CENTER + 5 };
 const CRATE_TILE = { col: CENTER + 9, row: CENTER + 5 };
+const store = new NativeFactStore();
+store.applyFacts([
+  {
+    model: "TileOccupancy",
+    key: "0x7",
+    value: { game_id: 1, entity_id: ARMY, ...ARMY_TILE, alt: false, category: 1, is_structure: false },
+  },
+]);
 
 vi.mock("@/hooks/context/game-context", () => ({
-  useGame: () => ({ setup: { store: { entityOccupancy: () => ({ ...ARMY_TILE, alt: false }) } } }),
+  useGame: () => ({ setup: { store } }),
 }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useCurrentDefaultTick: () => 1000,

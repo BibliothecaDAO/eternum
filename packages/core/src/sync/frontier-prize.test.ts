@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { prizeShares } from "./frontier-prize";
 
 describe("the season's prize places", () => {
-  // frontier_prizes.cairo's prize_amount: rank r of N takes N + 1 - r shares of N(N+1)/2, rounded down below the first,
+  // the ledger’s frontier_prizes.cairo's prize_amount: rank r of N takes N + 1 - r shares of N(N+1)/2, rounded down below the first,
   // and the first keeps what rounding leaves.
   it.each([
     { pool: 90_000n, count: 3, places: [45_000n, 30_000n, 15_000n] },

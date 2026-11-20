@@ -83,8 +83,6 @@ fn write_structures(preset: PresetWrite, structures: crate::presets::StructurePr
     }
     preset.camp_resource_count.write(camps.resources.len());
     preset.camp_labor_rate.write(camps.labor_rate);
-    assert!(structures.faith.owner_share_bps <= 10000, "invalid faith owner share");
-    preset.faith_rules.write(structures.faith);
     write_upgrades(preset, structures.upgrade_limits, structures.upgrades);
 }
 
@@ -107,6 +105,7 @@ pub fn store_settlement(
             },
         );
     preset.settlement_spacing.write(settlement.spacing);
+    preset.order_aspects.write(crate::aspects::pack(settlement.order_aspects));
     write_depths(preset, mode_rules, day_unit_seconds, settlement.depths);
     write_realm_grants(preset, settlement.realms, entry_rule);
     write_villages(preset, settlement.villages);
@@ -117,8 +116,10 @@ fn write_economy(
     preset: PresetWrite, commitment: felt252, rules: crate::rules::SliceRules, economy: crate::presets::EconomyPreset,
 ) {
     preset.labor_rules.write(economy.labor);
-    preset.trade_rules.write(economy.trade);
-    write_banks(preset, economy.banks);
+    write_quests(preset, economy.quests);
+    write_banes(preset, economy.banes);
+    write_deep(preset, economy.deep);
+    preset.race_rules.write(economy.race);
     write_hyperstructures(preset, rules, economy.hyperstructures);
     let classes = crate::state::read().releases.read(crate::state::read().current_release.read()).classes;
     crate::presets::IPresetRelicsDispatcherTrait::store_relic_preset(
@@ -129,13 +130,61 @@ fn write_economy(
         rules.mode_rules,
         rules.day_unit_seconds,
     );
-    preset.progression_rules.write(economy.progression);
     preset.discovery_rules.write(economy.discovery);
     preset.artificer_cost.write(economy.research_cost);
     if let Some(withdrawals) = economy.withdrawals {
         crate::presets::IPresetWithdrawalsDispatcherTrait::store_withdrawal_preset(
-            crate::presets::IPresetWithdrawalsLibraryDispatcher { class_hash: classes.bridge }, commitment, withdrawals,
+            crate::presets::IPresetWithdrawalsLibraryDispatcher { class_hash: classes.production },
+            commitment,
+            withdrawals,
         );
+    }
+}
+
+fn write_deep(preset: PresetWrite, rules: Option<crate::deep::DeepRules>) {
+    let Some(rules) = rules else {
+        return;
+    };
+    preset.deep_rules.write(Some(crate::deep::settings(rules)));
+    for index in 0..rules.rings.len() {
+        let ring = *rules.rings.at(index);
+        preset.deep_rings.write(index.try_into().unwrap(), (ring.radius, ring.realms));
+    }
+    for index in 0..rules.beasts.len() {
+        let beast = *rules.beasts.at(index);
+        preset.deep_beasts.write(index.try_into().unwrap(), (beast.count, beast.bow));
+    }
+}
+
+fn write_banes(preset: PresetWrite, rules: Option<crate::banes::BaneRules>) {
+    let Some(rules) = rules else {
+        return;
+    };
+    preset
+        .bane_rules
+        .write(
+            Some(
+                (
+                    rules.chance_step,
+                    rules.quorum_percent,
+                    rules.beast_percent,
+                    rules.stamina_percent,
+                    rules.production_percent,
+                ),
+            ),
+        );
+    for index in 0..rules.quest_counts.len() {
+        preset.bane_quest_counts.write(index.try_into().unwrap(), *rules.quest_counts.at(index));
+    }
+}
+
+fn write_quests(preset: PresetWrite, rules: Option<crate::quests::QuestRules>) {
+    let Some(rules) = rules else {
+        return;
+    };
+    preset.quest_rewards.write(Some((rules.labor, rules.essence, rules.bonus_percent)));
+    for index in 0..rules.base_counts.len() {
+        preset.quest_counts.write(index.try_into().unwrap(), *rules.base_counts.at(index));
     }
 }
 
@@ -222,16 +271,6 @@ fn write_mines(preset: PresetWrite, kinds: Span<crate::mines::MineKindEntry>, su
     preset.mine_pool_count.write(count);
 }
 
-fn write_banks(preset: PresetWrite, rules: crate::market::BankRules) {
-    assert!(
-        rules.lp_fee_num < rules.lp_fee_denom
-            && rules.owner_fee_num <= rules.owner_fee_denom
-            && rules.owner_fee_denom != 0,
-        "invalid bank fee ratio",
-    );
-    preset.bank_rules.write(rules);
-}
-
 fn write_buildings(
     preset: PresetWrite, rules: Span<crate::buildings::BuildingRuleConfig>, board: Option<crate::buildings::BoardRules>,
 ) {
@@ -258,7 +297,6 @@ fn write_buildings(
     if let Some(board) = board {
         assert!(board.demolition_refund_bps <= 10000, "invalid demolition refund");
         assert!(board.workshop_rate != 0, "zero workshop rate");
-        assert!(board.training_gate_tier <= 4, "invalid training gate tier");
         assert!(board.troop_store_deploys != 0, "zero troop store");
         assert!(
             board.settlement_resource_cap > 0
@@ -372,19 +410,26 @@ fn write_depths(
         assert!(
             value.site_guard_lower != 0 && value.site_guard_lower <= value.site_guard_upper, "invalid depth guards",
         );
-        assert!(value.ruin_guard_lower != 0 && value.ruin_guard_lower <= value.ruin_guard_upper, "invalid ruin guards");
         assert!(value.guard_step != 0, "zero guard step");
         assert!(
             Into::<u16, u32>::into(value.site_guard_lower) % value.guard_step == 0
-                && Into::<u16, u32>::into(value.site_guard_upper) % value.guard_step == 0
-                && value.ruin_guard_lower % value.guard_step == 0
-                && value.ruin_guard_upper % value.guard_step == 0,
+                && Into::<u16, u32>::into(value.site_guard_upper) % value.guard_step == 0,
             "guard bounds off grid",
         );
         validate_beast_guards(value);
+        validate_layer_relics(index.try_into().unwrap(), odds);
         preset.depth_rules.write(index.try_into().unwrap(), Some(value));
     }
     preset.depth_count.write(depths.len());
+}
+
+fn validate_layer_relics(layer: u8, odds: crate::relics::ChestTiers) {
+    let tiers = array![odds.common, odds.uncommon, odds.rare, odds.epic, odds.legendary];
+    for rank in 1_u8..6 {
+        if rank <= layer || rank > layer + crate::army_relics::RELICS_PER_LAYER {
+            assert!(*tiers.at((rank - 1).into()) == 0, "a layer's ruins hold only its three relics");
+        }
+    }
 }
 
 fn validate_beast_guards(depth: crate::expeditions::DepthRules) {
@@ -392,9 +437,6 @@ fn validate_beast_guards(depth: crate::expeditions::DepthRules) {
     assert!(depth.beast_strong_lower <= depth.beast_strong_upper, "invalid strong beast range");
     assert!(depth.beast_weak_upper < depth.beast_strong_lower, "beast ranges overlap");
     assert!(depth.beast_strong_upper < depth.site_guard_lower, "beasts must be weaker than sites");
-    assert!(
-        Into::<u16, u32>::into(depth.beast_strong_upper) < depth.ruin_guard_lower, "beasts must be weaker than ruins",
-    );
 }
 
 fn write_hyperstructures(
@@ -428,25 +470,10 @@ pub fn store_relics(
 ) {
     crate::logic::release::assert_authority();
     let preset = crate::state::write().presets.entry(commitment);
-    if let Some(value) = chests {
-        assert!(
-            day_unit_seconds != 0 && mode_rules & crate::rules::DEPTH_CONTENTS != 0, "chest tables require depth rules",
-        );
-        assert!(value.price_ceiling != 0, "empty chest rules");
-        assert!(
-            value.pool_bps > 0 && value.pool_bps < 10000 && value.top_n > 0 && value.top_n <= 100,
-            "invalid Frontier prize split",
-        );
-        let shares = value.shares;
-        assert!(
-            shares.common != 0
-                && shares.common <= shares.uncommon
-                && shares.uncommon <= shares.rare
-                && shares.rare <= shares.epic
-                && shares.epic <= shares.legendary,
-            "invalid chest shares",
-        );
-        assert!(rules.is_empty(), "ruin chests replace timed relics");
+    assert!(chests.is_none(), "LORDS presets are retired");
+    if day_unit_seconds != 0 {
+        assert!(rules.is_empty(), "army relic loadouts replace resource relics");
+        assert!(mode_rules & crate::rules::DISCOVER_CHESTS == 0, "army relics have no LORDS chests");
     } else {
         assert!(rules.len() == 18, "all eighteen relic rules required");
         let mut total: u128 = 0;
@@ -541,8 +568,8 @@ fn write_research(preset: PresetWrite, structures: crate::presets::StructurePres
     }
     // Every row's tiers are priced exactly once, from the first tier above common to the row's last.
     let mut expected = 0_u32;
-    for row in 0..crate::research::ROW_COUNT {
-        expected += crate::research::max_tier(row).into();
+    for row in crate::research::ROWS.span() {
+        expected += crate::research::max_tier(*row).into();
     }
     assert!(structures.research.len() == expected, "incomplete research prices");
     for entry in structures.research {

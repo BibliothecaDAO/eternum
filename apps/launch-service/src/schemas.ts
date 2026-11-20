@@ -8,7 +8,7 @@ export const isCalendarFrontier = (environment: string, name: string) =>
 
 export const isPublicGameName = (name: string) => !name.startsWith("check-");
 interface SharedLaunchOptions {
-  environment: "madara.blitz" | "madara.eternum" | "madara.frontier";
+  environment: "madara.blitz" | "madara.frontier";
   version?: string;
   devModeOn?: boolean;
   singleRealmMode?: boolean;

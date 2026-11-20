@@ -2,7 +2,7 @@ import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 import { type LabCommand, type LabFact, type LabScenario, wire } from "./lab-chain";
-import { armyProgress, besideOnOpenLand, PROGRESS_KEYS, progressionRules, spireScenario } from "./spire-scenario";
+import { armyProgress, besideOnOpenLand, spireScenario } from "./spire-scenario";
 
 /** The realm's second army, beside its first. */
 const MERGE_ARMY = 202;
@@ -12,13 +12,13 @@ const SECOND_ARMY_TROOPS = 2_517_000_000_000n;
 const LIMIT_RAISED = 3;
 
 /**
- * Which army holds the progression: the army picked, so merging it into the other loses its XP and the card asks twice,
- * or the army tapped, which a merge keeps with its XP.
+ * Which army holds the progression: the army picked, so merging it into the other loses its Logistics training and the card asks twice,
+ * or the army tapped, which a merge keeps with its Logistics training.
  */
 type Progressed = "picked" | "tapped";
 
 /**
- * Two of realm 7's armies side by side on the spire's game (/lab/game?scenario=merge-loses-xp or merge-keeps-tapped):
+ * Two of realm 7's armies side by side on the spire's game (/lab/game?scenario=merge-loses-training or merge-keeps-tapped):
  * the spire's 1,498 knights and 2,517 more beside them, alike and within the realm's army limit together, so they can
  * merge. The chain answers their transfer as troops.cairo's transfer_troops applies it between two explorers: a full
  * merge keeps the army merged into, the other is destroyed (its troops row and its tile's occupancy deleted). The owner's merge on prod (2026-10-25: "due to an army merge I dont see the hover label") ended
@@ -33,6 +33,14 @@ export const mergeScenario = (progressed: Progressed) => (): LabScenario => {
   store.applyFacts([
     raisedArmyLimit(store),
     {
+      model: "ArmyDay",
+      key: "0xad302",
+      value: wire({
+        ...store.require("ArmyDay", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) }),
+        explorer_id: MERGE_ARMY,
+      }),
+    },
+    {
       model: "ExplorerTroops",
       key: "0x1ab90",
       value: wire({ ...first, explorer_id: MERGE_ARMY, troops: { ...first.troops, count: SECOND_ARMY_TROOPS } }),
@@ -42,10 +50,9 @@ export const mergeScenario = (progressed: Progressed) => (): LabScenario => {
       key: "0x1ab91",
       value: wire({ ...occupancy, ...beside, entity_id: MERGE_ARMY }),
     },
-    progressionRules(),
     // The picked army is the spire's.
-    armyProgress(PROGRESS_KEYS.spireArmy, SPIRE_ARMY, progressed === "picked" ? 100 : 0),
-    armyProgress("0x1ab93", MERGE_ARMY, progressed === "tapped" ? 100 : 0),
+    armyProgress(store, SPIRE_ARMY, progressed === "picked" ? 5 : 0),
+    armyProgress(store, MERGE_ARMY, progressed === "tapped" ? 5 : 0),
   ] as never);
   return {
     ...spire,
@@ -106,6 +113,7 @@ const answerTransfer = (command: LabCommand, chain: NativeFactStore): LabFact[] 
   return [
     { model: "TileOccupancy", key: vacatedKey, value: null },
     { model: "ExplorerTroops", key: sourceKey, value: null },
+    { model: "ArmyDay", key: chain.wireKeyOf("ArmyDay", { game_id: 1, explorer_id: source })!, value: null },
     holding,
   ];
 };

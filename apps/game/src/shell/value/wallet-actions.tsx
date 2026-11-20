@@ -83,13 +83,16 @@ export const WalletSign = (props: {
   owner: string;
   calls: Call[];
   onLanded: () => void;
+  onSent?: (hash: string) => void;
   onFeeShort?: (spendable: bigint) => void;
+  lordsBought?: bigint;
 }) => {
   const { wallet: defaultWallet, failed, retry } = useDefaultWallet();
   const uncertain = useUncertainSend(props.owner, JSON.stringify(props.calls), props.onLanded);
   if (defaultWallet === undefined) return failed ? <WalletUnread onRetry={retry} /> : <Loading />;
   if (uncertain.state.kind === "checking") return <Loading />;
-  if (uncertain.state.kind === "pending") return <OnItsWay uncertain={uncertain} onLanded={props.onLanded} />;
+  if (uncertain.state.kind === "pending")
+    return <OnItsWay uncertain={uncertain} onLanded={props.onLanded} onSent={props.onSent} />;
   const lastFailed = uncertain.state.lastFailed;
   const send =
     defaultWallet && isSameStarknetAddress(defaultWallet.address, props.owner) ? (
@@ -97,8 +100,10 @@ export const WalletSign = (props: {
         wallet={defaultWallet}
         calls={props.calls}
         onLanded={props.onLanded}
+        onSent={props.onSent}
         onUnconfirmed={uncertain.check}
         onFeeShort={props.onFeeShort}
+        lordsBought={props.lordsBought}
       />
     ) : (
       <StarknetProvider>
@@ -159,9 +164,11 @@ const useUncertainSend = (owner: string, asked: string, onLanded: () => void) =>
 const OnItsWay = ({
   uncertain,
   onLanded,
+  onSent,
 }: {
   uncertain: ReturnType<typeof useUncertainSend>;
   onLanded: () => void;
+  onSent?: (hash: string) => void;
 }) => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -172,7 +179,7 @@ const OnItsWay = ({
     setBusy(true);
     setError(null);
     try {
-      const sent = await submitSigned({ ...send, ownerSignature }, l2Provider(), () => {}, "again");
+      const sent = await submitSigned({ ...send, ownerSignature }, l2Provider(), (hash) => onSent?.(hash), "again");
       if (sent.kind === "landed") return onLanded();
     } catch (cause) {
       setError(failureSentence("send", cause));
@@ -224,14 +231,18 @@ const PasskeySend = ({
   wallet,
   calls,
   onLanded,
+  onSent,
   onUnconfirmed,
   onFeeShort,
+  lordsBought = 0n,
 }: {
   wallet: DefaultWallet;
   calls: Call[];
   onLanded: () => void;
+  onSent?: (hash: string) => void;
   onUnconfirmed: () => void;
   onFeeShort?: (spendable: bigint) => void;
+  lordsBought?: bigint;
 }) => {
   const prepared = useRef<{ send: Promise<PreparedSend>; at: number } | null>(null);
   const panelClosed = usePanelClosed();
@@ -242,14 +253,14 @@ const PasskeySend = ({
   // Callers build their calls on each render; the send is prepared again only when what they ask for changes.
   const asked = JSON.stringify(calls);
   const prepare = useCallback(() => {
-    const send = prepareDefaultWalletSend(wallet.address, JSON.parse(asked) as Call[], l2Provider());
+    const send = prepareDefaultWalletSend(wallet.address, JSON.parse(asked) as Call[], l2Provider(), lordsBought);
     prepared.current = { send, at: Date.now() };
     send.then(
       ({ fee }) => prepared.current?.send === send && setPriced({ kind: "priced", fee }),
       (cause: unknown) => prepared.current?.send === send && setPriced(whyNotPrepared(cause)),
     );
     return send;
-  }, [wallet.address, asked]);
+  }, [wallet.address, asked, lordsBought]);
   useEffect(() => {
     void prepare().catch(() => {});
   }, [prepare]);
@@ -270,7 +281,10 @@ const PasskeySend = ({
         ready.execution,
         asked,
         l2Provider(),
-        () => setState({ kind: "confirming" }),
+        (hash) => {
+          setState({ kind: "confirming" });
+          onSent?.(hash);
+        },
         closed,
       );
       if (sent.kind === "abandoned") return;
@@ -375,11 +389,13 @@ const OwnerSend = ({
   owner,
   calls,
   onLanded,
+  onSent,
   onUnconfirmed,
 }: {
   owner: string;
   calls: Call[];
   onLanded: () => void;
+  onSent?: (hash: string) => void;
   onUnconfirmed: () => void;
 }) => {
   const { connectors } = useConnect();
@@ -394,7 +410,10 @@ const OwnerSend = ({
       owner,
       calls,
       provider,
-      () => setOutcome({ kind: "confirming" }),
+      (hash) => {
+        setOutcome({ kind: "confirming" });
+        onSent?.(hash);
+      },
       panelClosed(),
     );
     if (sent.kind === "abandoned") return;
@@ -425,7 +444,7 @@ const OwnerSend = ({
       {outcome?.kind === "refused" && <span className="text-app-label text-app-bad">{outcome.reason}</span>}
       {holder === null && !confirming ? (
         <>
-          <span className="text-app-label text-app-muted">{WALLET_WORDS.whichHolds(shortAddress(owner))}</span>
+          <span className="text-app-label text-app-muted">{WALLET_WORDS.chooseWallet}</span>
           <WalletRows wallet={wallet} />
         </>
       ) : (

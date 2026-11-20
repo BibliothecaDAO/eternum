@@ -35,6 +35,8 @@ it("keeps an open barracks figure fixed until the chain-proven floor advances", 
       model: "ResourceProduction",
       key: "0x99",
       value: {
+        remainder: 0,
+
         game_id: 1,
         entity_id: 7,
         resource_type: ResourcesIds.Knight,
@@ -60,7 +62,7 @@ it("keeps an open barracks figure fixed until the chain-proven floor advances", 
         </>,
       ),
     );
-    const troopRow = () => host.querySelector("section[aria-label='troops']")!.textContent;
+    const troopRow = () => host.querySelector("[data-store-card='troops']")!.closest("section")!.textContent;
     expect(troopRow()).toContain("420");
     act(() => vi.advanceTimersByTime(1000));
     expect(troopRow()).toContain("420");

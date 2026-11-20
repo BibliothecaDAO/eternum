@@ -81,6 +81,7 @@ describe("GameStreamHub", () => {
     });
     const payout = (category: number, amount: number) => ({
       SitePayout: {
+        xp: 85,
         structure_id: 7,
         explorer_id: 70,
         site_id: 99,
@@ -98,7 +99,7 @@ describe("GameStreamHub", () => {
       payout(7, 10),
       payout(9, 10),
       payout(11, 10),
-      { FaithPointsClaimedStory: { wonder_id: 7, new_points: 3, total_points: 4 } },
+      { StructureLevelUpStory: { new_level: 2 } },
     ];
     const events = variants.map((story) => {
       const values = {

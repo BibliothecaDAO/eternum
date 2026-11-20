@@ -40,10 +40,15 @@ pub mod ResourceFixture {
         #[flat]
         ResourceEvent: ResourceState::Event,
     }
+    #[constructor]
+    fn constructor(ref self: ContractState, bridge: starknet::ClassHash) {
+        crate::state::write().releases.entry(1).classes.bridge.write(bridge);
+    }
     #[abi(embed_v0)]
     impl Fixture of super::IResourceFixture<ContractState> {
         fn initialize(ref self: ContractState, key: ResourceKey, capacity: u128) {
             let state = crate::state::write();
+            state.game_releases.write(key.game_id, 1);
             state.games.games.entry(key.game_id).preset_id.write(1);
             state.registrar.presets.write(1, 1);
             state.presets.entry(1).rules.day_unit_seconds.write(0);
@@ -102,6 +107,11 @@ pub mod ResourceFixture {
     }
 }
 pub fn fixture() -> IResourceFixtureDispatcher {
-    let (contract_address, _) = declare("ResourceFixture").unwrap().contract_class().deploy(@array![]).unwrap();
+    let bridge = *declare("BridgeLogic").unwrap().contract_class().class_hash;
+    let (contract_address, _) = declare("ResourceFixture")
+        .unwrap()
+        .contract_class()
+        .deploy(@array![bridge.into()])
+        .unwrap();
     IResourceFixtureDispatcher { contract_address }
 }

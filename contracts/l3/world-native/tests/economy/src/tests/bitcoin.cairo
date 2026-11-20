@@ -410,7 +410,9 @@ fn a_single_guard_in_the_highest_slot_must_be_fought_before_capture() {
     assert!(
         execute(
             deployment,
-            Command::BattleGuard(crate::commands::Battle { attacker_id: explorer, defender_id: mine.entity_id }),
+            Command::BattleGuard(
+                crate::commands::Battle { attacker_id: explorer, defender_id: mine.entity_id, relic_slot: None },
+            ),
             40,
         ),
     );
@@ -454,7 +456,9 @@ fn defeating_the_last_guard_captures_the_mine_and_defers_funding_to_the_next_pha
     assert!(
         execute(
             deployment,
-            Command::BattleGuard(crate::commands::Battle { attacker_id: explorer, defender_id: mine.entity_id }),
+            Command::BattleGuard(
+                crate::commands::Battle { attacker_id: explorer, defender_id: mine.entity_id, relic_slot: None },
+            ),
             40,
         ),
     );
@@ -487,7 +491,9 @@ fn guard_attacks_reject_owned_wrong_layer_and_out_of_range_targets_without_advan
     let (deployment, home, _) = setup();
     let mine = mine(deployment, 2000100);
     let explorer = attacking_explorer(deployment, home, 2000000);
-    let attack = Command::BattleGuard(crate::commands::Battle { attacker_id: explorer, defender_id: mine.entity_id });
+    let attack = Command::BattleGuard(
+        crate::commands::Battle { attacker_id: explorer, defender_id: mine.entity_id, relic_slot: None },
+    );
     assert_terminal_rejection(deployment, attack, 40);
     set_owner(deployment, mine, deployment.actor);
     assert_terminal_rejection(deployment, attack, 40);
@@ -547,14 +553,12 @@ fn discovery_guard_initialization_rejects_more_guards_than_the_structure_allows(
     }
     start_cheat_caller_address(d.games, d.games);
     assert!(
-        crate::guards::IGuardsSafeDispatcherTrait::initialize_structure_guards(
-            crate::guards::IGuardsSafeDispatcher { contract_address: d.games },
+        crate::guards::IGuardInitializationSafeDispatcherTrait::initialize_structure_guards(
+            crate::guards::IGuardInitializationSafeDispatcher { contract_address: d.games },
             key,
             99,
             30,
-            crate::commands::action_context(
-                crate::commands::ExecutionContext { timestamp: 30, ..crate::tests::context(d.games, (key).game_id) },
-            ),
+            crate::tests::context(d.games, key.game_id).rules.unbox(),
         )
             .is_err(),
     );
@@ -928,7 +932,7 @@ fn audit_regression_contributions_and_settlement_share_the_final_partial_phase()
         selector!("games"),
         selector!("games"),
         array![3].span(),
-        crate::game::GameRegistry { end_at: 35, ..game },
+        crate::game::GameRegistry { end_at: 35, scheduled_end_at: 35, ..game },
     );
     assert!(execute(deployment, contribute(home, 100), 30));
     assert_terminal_rejection(deployment, contribute(home, 10), 35);

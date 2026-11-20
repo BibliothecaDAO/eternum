@@ -5,10 +5,9 @@ import { join } from "node:path";
 import { Account, byteArray, CallData, hash, json, num, type Call, type RpcProvider } from "starknet";
 import { buildLedgerEconomicPreset, chestPresetFor } from "../../config/deployer/clean/ledger/economics";
 import { awardableCosmetics } from "../../contracts/l2/ledger/scripts/chest-preset.js";
-import { addressBook, blitzPresetOf, root, type Environment, type Inputs, type Target } from "./settings";
+import { addressBook, root, type Environment, type Inputs, type Target } from "./settings";
 import { classAt, isMissing, isContractRevert, confirm, send } from "./chain";
 import { PublicError } from "./errors";
-import { setupSeason, type BlitzWindow } from "./blitz-season";
 import type { PrivateStore } from "./private-store";
 
 export type Assets = { ledger: string; lords: string; mmr: string; chests: string; cosmetics: string };
@@ -203,17 +202,9 @@ const call = (contractAddress: string, entrypoint: string, values: Parameters<ty
   entrypoint,
   calldata: CallData.compile(values),
 });
-export function setupCalls(
-  target: Target,
-  assets: Assets,
-  pauser: string,
-  frontierPresetId: number,
-  blitz: BlitzWindow | null,
-) {
+export function setupCalls(target: Target, assets: Assets, pauser: string, frontierPresetId: number) {
   assertProductionLords(target, assets.lords);
   const chests = chestPresetFor(target.environment as Environment);
-  // A Frontier-only environment registers no Blitz preset and opens no Blitz season.
-  const blitzPreset = blitz ? blitzPresetOf(target) : null;
   const metadata = (collection: string, attributes: number) =>
     call(collection, "set_attrs_raw_to_ipfs_cid", [attributes, byteArray.byteArrayFromString(target.picture), false]);
   return [
@@ -223,26 +214,18 @@ export function setupCalls(
     call(assets.ledger, "grant_role", [hash.getSelectorFromName("PAUSER_ROLE"), pauser]),
     ...chests.bands.map((band) => metadata(assets.chests, band.metadata)),
     ...awardableCosmetics(chests).map((item: number) => metadata(assets.cosmetics, item)),
-    ...(blitzPreset === null
-      ? []
-      : [
-          call(assets.ledger, "register_preset", [
-            blitzPreset,
-            buildLedgerEconomicPreset("blitz", { environment: target.environment as Environment, chests }),
-            chests.bands,
-            chests.items,
-          ]),
-        ]),
     call(assets.ledger, "register_preset", [
       frontierPresetId,
       buildLedgerEconomicPreset("frontier", { chests, presetId: frontierPresetId }),
       chests.bands,
       chests.items,
     ]),
-    ...(blitzPreset === null
-      ? []
-      : [call(assets.ledger, "open_season", [blitz!.seasonId, blitzPreset, blitz!.start, blitz!.end])]),
   ];
+}
+export async function setupHead(provider: RpcProvider) {
+  const head = await provider.getBlockWithTxHashes("latest");
+  if (!("block_number" in head)) throw new PublicError("Confirmed mainnet head required");
+  return head.block_number!;
 }
 /** Find the first block containing this contract; only code 20 means it did not exist yet. */
 export async function deploymentBlock(provider: RpcProvider, address: string, head: number) {
@@ -326,12 +309,7 @@ async function assertRegisteredChestRewards(provider: RpcProvider, operation: Ca
 }
 async function setupPresent(provider: RpcProvider, operation: Call, head: number) {
   const args = operation.calldata as string[];
-  const entrypoint =
-    operation.entrypoint === "grant_role"
-      ? "has_role"
-      : operation.entrypoint === "register_preset"
-        ? "get_preset"
-        : "get_season";
+  const entrypoint = operation.entrypoint === "grant_role" ? "has_role" : "get_preset";
   try {
     const result = await provider.callContract(
       {
@@ -354,19 +332,9 @@ async function setupPresent(provider: RpcProvider, operation: Call, head: number
         throw new PublicError("Registered preset differs");
       await assertRegisteredChestRewards(provider, operation, head);
     }
-    if (
-      entrypoint === "get_season" &&
-      (result.length !== 16 ||
-        BigInt(result[10]!) !== 1n ||
-        BigInt(result[11]!) !== BigInt(args[1]!) ||
-        BigInt(result[12]!) !== BigInt(args[2]!) ||
-        BigInt(result[13]!) !== BigInt(args[3]!))
-    )
-      throw new PublicError("Existing Blitz season differs");
     return true;
   } catch (error) {
-    const reason = entrypoint === "get_preset" ? "Ledger: unknown preset" : "Ledger: unknown Blitz season";
-    if (isContractRevert(error, reason)) return false;
+    if (entrypoint === "get_preset" && isContractRevert(error, "Ledger: unknown preset")) return false;
     throw error;
   }
 }
@@ -380,27 +348,16 @@ export async function configureLedger(
   output: (line: string) => void,
   readPresence = setupPresenceReader(account),
 ) {
-  const season = await setupSeason(account, target, assets.ledger, input);
-  const desired = setupCalls(target, assets, pauser, Number(input.frontierPresetId), season.blitz);
+  const head = await setupHead(account);
+  const desired = setupCalls(target, assets, pauser, Number(input.frontierPresetId));
   output("Reading collectible metadata on mainnet.");
-  const present = await Promise.all(desired.map((operation) => readPresence(operation, season.head)));
+  const present = await Promise.all(desired.map((operation) => readPresence(operation, head)));
   const missing = desired.filter((_, index) => !present[index]);
   if (!missing.length) return true;
-  if (missing.some((call) => call.entrypoint === "open_season") && season.blitz!.start <= season.now)
-    throw new PublicError(
-      "Blitz start is no longer in the future. Choose new explicit dates in inputs.json before sending setup.",
-    );
   if (target.coldAdmin) {
     store.write("cold-setup.json", { account: input.admin, calls: missing });
     return false;
   }
-  await send(
-    account,
-    missing,
-    store,
-    `setup-${assets.ledger}-${season.blitz?.seasonId ?? "frontier"}`,
-    output,
-    season.head,
-  );
+  await send(account, missing, store, `setup-${assets.ledger}-frontier`, output, head);
   return true;
 }

@@ -2,7 +2,7 @@ import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { nativeResearchConstants } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it } from "vitest";
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { HOUR, realmBoard } from "./build-fixture";
 import { readBuildOptions } from "./build-options";
 
@@ -80,7 +80,14 @@ describe("Frontier's build options", () => {
     // research.cairo names each board building by its category (FARM, WORKSHOP, …): a building it adds is offered,
     // or this fails (the catalog rule, audit 10-27 F7), never a hand-written list missing it.
     const named = Object.entries(nativeResearchConstants)
-      .filter(([name]) => !/^(ROW_|CHOICE_|KIND_)/.test(name))
+      .filter(
+        ([name]) =>
+          !name.startsWith("ROW_") &&
+          !name.startsWith("CHOICE_") &&
+          !name.startsWith("OATH_SLOTS_") &&
+          !name.startsWith("LORE_") &&
+          !name.endsWith("_LEVEL"),
+      )
       .map(([, category]) => category)
       .sort((a, b) => a - b);
     const offered = readBuildOptions(store, realm, true, 350)!.map(({ category }) => category);
@@ -93,27 +100,53 @@ describe("Frontier's build options", () => {
     expect(readBuildOptions(store, realm, true, 350)).toBeUndefined();
   });
 
-  it("opens training after mixed Barracks purchases, trained at the training building’s own tier", () => {
+  it("offers Logistics training without a Barracks research gate", () => {
     const { store, realm } = realmBoard();
-    const warHall = () =>
-      readBuildOptions(store, realm, true, 350)!.find(({ category }) => category === BuildingType.WarHall)!;
-    const gate = store.require("BoardRules", { game_id: 1 }).training_gate_tier;
-    expect(warHall()).toMatchObject({
-      standing: { gate, bought: 0 },
-      effect: { kind: "trains", attribute: "Battle" },
+    const supplyYard = () =>
+      readBuildOptions(store, realm, true, 350)!.find(({ category }) => category === BuildingType.SupplyYard)!;
+    expect(supplyYard()).toMatchObject({
+      standing: "open",
+      effect: { kind: "trains", attribute: "Logistics" },
       tier: 1,
     });
-    const learn = (learned: bigint) =>
-      store.applyFacts([
-        { model: "RealmKnowledge", key: "0x77", value: { game_id: 1, structure_id: realm.entity_id, learned } },
-      ] as never);
-    // The owner's realm on prod (4 November): Drill I, no Rations. The contract refuses a training building.
-    learn(1n << 14n);
-    expect(warHall().standing).toEqual({ gate: 2, bought: 1 });
-    // One Drill and one Rations purchase meet the two-purchase gate, as two Drill purchases do.
-    learn((1n << 14n) | (1n << 17n));
-    expect(warHall().standing).toBe("open");
-    learn(2n << 14n);
-    expect(warHall().standing).toBe("open");
   });
+});
+
+it("opens repeatable Scout production at City without Barracks research", () => {
+  const { store, realm } = realmBoard();
+  const lodge = (level: number) =>
+    readBuildOptions(store, { ...realm, base: { ...realm.base, level } }, true, 350)!.find(
+      ({ category }) => category === BuildingType.ScoutsLodge,
+    )!;
+  expect(lodge(0).standing).toEqual({ level: 1 });
+  expect(lodge(1).standing).toBe("open");
+  expect(lodge(1).effect).toMatchObject({ kind: "produces", resource: ResourcesIds.Paladin });
+  expect(lodge(1).tier).toBe(1);
+});
+
+it("opens the Range and Camp at City, the Depot at Kingdom, and keeps each research building unique", () => {
+  const { store, realm } = realmBoard();
+  const options = (level: number) =>
+    new Map(
+      readBuildOptions(store, { ...realm, base: { ...realm.base, level } }, true, 350)!.map((option) => [
+        option.category,
+        option,
+      ]),
+    );
+  expect(options(0).get(BuildingType.ResourceCrossbowmanT1)?.standing).toEqual({ level: 1 });
+  expect(options(0).get(BuildingType.ConscriptionCamp)?.standing).toEqual({ level: 1 });
+  expect(options(1).get(BuildingType.ResourceCrossbowmanT1)?.standing).toBe("open");
+  expect(options(1).get(BuildingType.ConscriptionCamp)?.standing).toBe("open");
+  expect(options(1).get(BuildingType.RationsDepot)?.standing).toEqual({ level: 2 });
+  expect(options(2).get(BuildingType.RationsDepot)?.standing).toBe("open");
+  const counts = store.require("StructureBuildings", { game_id: 1, entity_id: 7 });
+  store.applyFacts([
+    {
+      model: "StructureBuildings",
+      key: store.wireKeyOf("StructureBuildings", { game_id: 1, entity_id: 7 })!,
+      value: { ...counts, packed_counts_3: (1n << 64n) | (1n << 88n) },
+    },
+  ] as never);
+  expect(options(2).get(BuildingType.ConscriptionCamp)?.standing).toBe("built");
+  expect(options(2).get(BuildingType.RationsDepot)?.standing).toBe("built");
 });

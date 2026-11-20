@@ -1,4 +1,5 @@
 pub use world_test_support::tests::registrar::*;
+use crate::logic::release::{IReleasesDispatcher, IReleasesDispatcherTrait};
 use crate::tests::army_merge::{progress, slot, timers, write_progress};
 
 
@@ -180,7 +181,7 @@ fn invalid_schedules_modes_and_registration_limits_never_allocate() {
 fn a_late_preset_validation_failure_rolls_back_the_record_and_allows_retry() {
     let d = setup();
     let mut preset = definition(true);
-    preset.economy.banks.lp_fee_denom = 0;
+    preset.structures.upgrade_limits.realm_max = 4;
     let commitment = crate::presets::commitment(preset);
     start_cheat_caller_address(d.games, super::authority());
     let (caller, _) = super::deploy("RollbackFixture", @array![]);
@@ -566,7 +567,7 @@ fn automatic_blitz_settlement_holds_play_for_its_last_seat_and_never_moves_the_s
         realms
             .append(
                 crate::settlement_grid::reservation_location(
-                    crate::troops::Coord { alt: false, x: map_center, y: map_center }, SettlementMode::Triple, 6, index,
+                    crate::troops::Coord { alt: false, x: map_center, y: map_center }, 6, index,
                 ),
             );
     }
@@ -960,9 +961,7 @@ fn expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stami
         }
         before.coord = crate::geometry::neighbor(center, direction);
         crate::tests::resource_commands::set_explorer_fixture(d.games, army, before);
-        let veteran = crate::progression::ArmyProgress {
-            xp: 123, logistics: 5, rare_points: 2, ..crate::progression::initial(),
-        };
+        let veteran = crate::progression::ArmyProgress { logistics: 5, oath_slots: 1, ..Default::default() };
         write_progress(d, army, veteran);
         let maximum = crate::progression::stamina_max(
             veteran, before.troops.category, preset.rules.troop_stamina_config,
@@ -1210,5 +1209,93 @@ fn a_materialized_home_ring_moves_and_explores_without_a_roll() {
     // The home ring, the moved-to and the explored tiles keep the biome the terrain derives for them.
     assert!(
         super::terrain::assert_biomes_match_terrain(d, game_id, array![site, spawn, ring_tile, target].span()) != 0,
+    );
+}
+
+#[test_case("frontier-retired")]
+#[test_case("devcon")]
+#[test_case("accelerated")]
+#[feature("safe_dispatcher")]
+fn paying_presets_cannot_register_on_the_new_release(name: ByteArray) {
+    let d = setup();
+    let (id, mut preset) = super::preset_projection::current_definition(name);
+    assert!(preset.economy.chests.is_some());
+    let mut depths = array![];
+    for index in 0..preset.settlement.depths.len() {
+        depths
+            .append(
+                crate::expeditions::DepthRules {
+                    chest: world_test_support::tests::registrar::first_relic_odds(index),
+                    ..*preset.settlement.depths.at(index),
+                },
+            );
+    }
+    preset.settlement.depths = depths.span();
+    let error = safe(d, super::authority()).register_preset(id, preset).unwrap_err();
+    let mut expected = array![core::byte_array::BYTE_ARRAY_MAGIC];
+    let message: ByteArray = "LORDS presets are retired";
+    message.serialize(ref expected);
+    assert_eq!(error.span().slice(0, expected.len()), expected.span());
+    assert_eq!(registry(d).preset_commitment(id), 0);
+    assert_eq!(registry(d).next_game_id(), 1);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn an_already_registered_paying_preset_cannot_create_a_new_game() {
+    let d = setup();
+    let (id, preset) = super::preset_projection::current_definition("frontier-check");
+    registry(d).register_preset(id, preset);
+    let commitment = registry(d).preset_commitment(id);
+    let (_, historical) = super::preset_projection::current_definition("frontier-retired");
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            crate::state::write().presets.entry(commitment).rollover_chest_rules.write(historical.economy.chests);
+        },
+    );
+    let next = registry(d).next_game_id();
+    let params = CreateGameParams { preset_id: id, ..params(false) };
+    assert!(safe(d, super::authority()).create_game(params).is_err());
+    assert_eq!(registry(d).next_game_id(), next);
+    assert_eq!(registry(d).game_id_by_name(params.name), 0);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn retirement_preserves_an_existing_games_pin_and_idempotent_launch() {
+    let d = setup();
+    let (id, preset) = super::preset_projection::current_definition("frontier-check");
+    registry(d).register_preset(id, preset);
+    let launch = CreateGameParams { preset_id: id, start_main_at: 360, duration_seconds: 3600, ..params(false) };
+    let game_id = registry(d).create_game(launch);
+    let before = snforge_std::interact_with_state(d.games, || crate::logic::game::game(game_id));
+    let (_, historical) = super::preset_projection::current_definition("frontier-retired");
+    let commitment = registry(d).preset_commitment(id);
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            crate::state::write().presets.entry(commitment).rollover_chest_rules.write(historical.economy.chests);
+        },
+    );
+    let releases = IReleasesDispatcher { contract_address: d.games };
+    let original = releases.release(1);
+    start_cheat_caller_address(d.games, super::authority());
+    releases.register_release(2, original);
+    releases.open_release(2);
+    stop_cheat_caller_address(d.games);
+    assert_eq!(releases.current_release(), 2);
+    assert_eq!(releases.game_release(game_id), 1);
+    assert_eq!(registry(d).create_game(launch), game_id);
+    assert!(safe(d, super::authority()).create_game(CreateGameParams { name: 'retired-new-game', ..launch }).is_err());
+    assert_eq!(registry(d).next_game_id(), game_id + 1);
+    assert_eq!(registry(d).game_id_by_name('retired-new-game'), 0);
+    assert_eq!(releases.game_release(game_id), 1);
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            assert_eq!(crate::state::read().game_creation_releases.read(game_id), 1);
+            assert_eq!(crate::logic::game::game(game_id), before);
+        },
     );
 }

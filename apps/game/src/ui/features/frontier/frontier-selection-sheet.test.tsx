@@ -190,21 +190,20 @@ describe("Frontier's selection sheet", () => {
         // Another player's army keeps its own card, titled as an army; the receipt in it names its site. Otherwise the
         // receipt is the sheet, titled by the site. Either way the site's name shows exactly once.
         const sheet = host.querySelector("[data-kit-sheet]")!;
-        expect(sheet.getAttribute("aria-label")).toBe(foreign ? "Army" : expectedName);
+        expect(sheet.getAttribute("aria-label")).toBe(foreign ? "Army" : `Supply post · ${expectedName}`);
         expect(sheet.textContent!.split(expectedName).length - 1).toBe(1);
-        expect(host.textContent).toContain("Cleared · Troll");
+        expect(host.textContent).toContain("Cleared · Golem");
         expect(host.textContent).toContain("550 Labor");
-        expect(host.textContent).toContain("123 XP");
         const close = host.querySelector<HTMLButtonElement>('button[aria-label="Close"]');
         expect(close).not.toBeNull();
         await act(async () => close!.click());
         expect(host.querySelector("[data-kit-sheet]")).toBeNull();
         await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: SITE_TILE }));
         expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(
-          foreign ? "Army" : expectedName,
+          foreign ? "Army" : `Supply post · ${expectedName}`,
         );
         expect(host.querySelector("[data-kit-sheet]")!.textContent).toContain(expectedName);
-        expect(host.querySelector("[data-site-rewards]")?.textContent).toBe("550 Labor123 XP");
+        expect(host.querySelector("[data-site-rewards]")?.textContent).toBe("550 Labor");
       } finally {
         act(() => root.unmount());
         useUIStore.getState().selectOnMap(null);
@@ -250,8 +249,10 @@ describe("Frontier's selection sheet", () => {
       expect(host.querySelector("[data-kit-sheet]")).toBeNull();
       // The clear's row in the Feed selects the tile itself, as every match link does (openOnMap's "tile").
       await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: SITE_TILE }));
-      expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(siteName(SITE));
-      expect(host.textContent).toContain("Cleared · Troll");
+      expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(
+        `Supply post · ${siteName(SITE)}`,
+      );
+      expect(host.textContent).toContain("Cleared · Golem");
     } finally {
       act(() => root.unmount());
       giveBackPositions();
@@ -317,8 +318,7 @@ const armyAtSpire = () => {
   )!;
   const beside = getNeighborHexes(spire.col, spire.row)[0];
   store.applyFacts([
-    // research.cairo: the depth row's tier sits at bit 46; Ethereal I is researched.
-    { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 1n << 48n } },
+    { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 3n << 48n } },
     {
       model: "DepthRules",
       key: "0x901",
@@ -330,8 +330,6 @@ const armyAtSpire = () => {
         site_guard_upper: 2,
         reveal_site_neighbors: false,
         chest: { common: 10000, uncommon: 0, rare: 0, epic: 0, legendary: 0 },
-        ruin_guard_lower: 1,
-        ruin_guard_upper: 2,
         guard_step: 1,
         beast_weak_lower: 300,
         beast_weak_upper: 350,
@@ -534,7 +532,7 @@ it("selects a Frontier chest, follows missing metadata and expiry across clock t
 
 it("the map's actual transfer selection shows the survivor before the player confirms", async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-  const store = transferArmies(100, 0);
+  const store = transferArmies(2, 0);
   useAccountStore.setState({ account: { address: "0x111" } as never });
   tiles.current = [];
   useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: TRANSFER_TAPPED });
@@ -557,11 +555,10 @@ it("the map's actual transfer selection shows the survivor before the player con
       ),
     );
     expect(host.querySelector('[role="dialog"]')?.getAttribute("aria-label")).toBe("Transfer troops");
-    // Army 1 loses its 200 total XP (100 unspent, 100 in an upgrade); Army 2 keeps its progression and merged stamina.
     const expectMergePreview = () => {
-      expect(host.querySelector('[aria-label="Army 1 total XP"]')?.textContent).toBe("Total XP100→0");
-      expect(host.querySelector('[aria-label="Army 2 total XP"]')?.textContent).toBe("Total XP0→0");
-      expect(host.querySelector(".ui-notice")?.textContent).toBe("Army 1 loses its XP, points and upgrades.");
+      expect(host.querySelector(".ui-notice")?.textContent).toBe(
+        "Army 1 loses its Logistics, Oath slots and held Oaths.",
+      );
       expect(host.querySelector("s")).toBeNull();
       expect(host.textContent).toContain("100/120→7");
     };

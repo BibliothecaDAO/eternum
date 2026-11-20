@@ -11,10 +11,10 @@ import { inFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { toast } from "@/ui/features/event-feed/notify";
 import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-game-client";
-import { configManager, type GameClient, setBlockTimestampSource, learnResearch } from "@bibliothecadao/eternum";
-import { nativeResearchConstants as research, type GameClientSetup } from "@bibliothecadao/eternum/game-client";
-import { BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import { configManager, type GameClient, setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { type GameClientSetup } from "@bibliothecadao/eternum/game-client";
+import { buildingName, BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { buildingCounts, realmBoard } from "./build-fixture";
 import { BuildingsInFlight, BuildSheet } from "./build-sheet";
 
@@ -408,12 +408,12 @@ describe("the build sheet", () => {
       new RegExp(`^Farm: Wheat \\+[\\d,.]+/(?:s|min), takes ${farm} population$`),
     );
     expect(sheet.card("Hut").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(/^Hut: \+\d+ population$/);
-    expect(sheet.card("War hall").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(
-      /^War hall: new armies start with Battle I(, takes \d+ population)?$/,
+    expect(sheet.card("Supply yard").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(
+      /^Supply yard: new armies start with Logistics I(, takes \d+ population)?$/,
     );
     // The tier is the tooltip's gem, not a numeral in the words.
-    const ranks = JSON.parse(sheet.card("War hall").closest("[data-tip]")!.getAttribute("data-tip-ranks")!);
-    expect(ranks.slice(0, 3)).toEqual(["War hall: ", "new armies start with Battle ", { rank: 1 }]);
+    const ranks = JSON.parse(sheet.card("Supply yard").closest("[data-tip]")!.getAttribute("data-tip-ranks")!);
+    expect(ranks.slice(0, 3)).toEqual(["Supply yard: ", "new armies start with Logistics ", { rank: 1 }]);
     // No Farm stands on the board yet (the fixture's wheat comes with the realm): its price is its base.
     expect(sheet.card("Farm").querySelector('[aria-label="price raised"]')).toBeNull();
     expect(document.querySelector("[data-price-raised]")).toBeNull();
@@ -444,12 +444,14 @@ describe("the build sheet", () => {
     labor(store, 0n);
     store.applyFacts([
       fact("0x78", "ResourceProduction", {
+        remainder: 0,
+
         game_id: 1,
         entity_id: 7,
         resource_type: ResourcesIds.Labor,
         building_count: 1,
         production_rate: String((100n * BigInt(RESOURCE_PRECISION)) / 3_600n),
-        output_amount_left: "0",
+        output_amount_left: (1n << 128n) - 1n,
         last_settled_at: 350,
       }),
     ] as never);
@@ -465,7 +467,7 @@ describe("the build sheet", () => {
     expect(band(sheet, "Farm").getAttribute("data-tone")).toBe("bad");
     expect(band(sheet, "Farm").textContent).toMatch(/\d+[mhd]$/);
     // Training names its purchases against the gate instead of a building rarity.
-    expect(band(sheet, "War hall").textContent).toBe("0/2 research");
+    expect(band(sheet, "Supply yard").textContent).not.toContain("research");
     sheet.close();
 
     // Labor for all; the population full: a building that takes some says so in amber, the Hut stands ready.
@@ -481,13 +483,13 @@ describe("the build sheet", () => {
       fact("0x72", "StructureBuildings", {
         game_id: 1,
         entity_id: 7,
-        ...countsWith(BuildingType.WarHall, 1),
+        ...countsWith(BuildingType.SupplyYard, 1),
         population: { current: 2, max: 6 },
       }),
     ] as never);
     const built = open(store, realm);
-    expect(band(built, "War hall").getAttribute("data-tone")).toBe("good");
-    expect(band(built, "War hall").querySelector('[data-icon="check"]')).not.toBeNull();
+    expect(band(built, "Supply yard").getAttribute("data-tone")).toBe("good");
+    expect(band(built, "Supply yard").querySelector('[data-icon="check"]')).not.toBeNull();
     built.close();
   });
 
@@ -509,21 +511,22 @@ describe("the build sheet", () => {
       );
     // Independent Farm ranks occupy bits 0–2 and 3–5; the Hut rank starts at bit 21.
     // Two Fields purchases and one Granary purchase show different ranks.
-    learn(2n | (1n << 3n) | (3n << 21n));
+    learn(2n | (1n << 3n) | (3n << 14n) | (3n << 21n));
     const mixed = open(store, realm);
     expect(gems(mixed, "Farm")).toEqual(["fields II", "granary I"]);
     expect(gems(mixed, "Workshop")).toEqual(["tools Untrained", "storehouse Untrained"]);
-    expect(gems(mixed, "Barracks")).toEqual(["drill Untrained", "rations Untrained"]);
+    expect(gems(mixed, "Barracks")).toEqual(["I"]);
     // A row without sides keeps its type's one gem: the Hut at Rare III, a training building at Common I.
     expect(gems(mixed, "Hut")).toEqual(["III"]);
-    expect(gems(mixed, "War hall")).toEqual(["I"]);
+    expect(gems(mixed, "Supply yard")).toEqual(["I"]);
     // Gems, never words for them (owner, 27 October: "why no gems instead of the text ?").
-    expect(mixed.host.textContent).not.toMatch(/ from (Fields|Tools|Drill)/);
+    expect(mixed.host.textContent).not.toMatch(/ from (Fields|Tools)/);
     mixed.close();
     // Two Fields purchases with Granary untrained.
     learn(2n);
     const fields = open(store, realm);
     expect(gems(fields, "Farm")).toEqual(["fields II", "granary Untrained"]);
+    expect(gems(fields, "Barracks")).toEqual(["I"]);
     fields.close();
   });
 
@@ -559,61 +562,6 @@ describe("the build sheet", () => {
     expect(hutGives(2)).toBe(6 + 1);
   });
 
-  it("says what opens a locked training building, with the way there on the gold button", () => {
-    const { store, realm } = realmBoard();
-    const onResearch = vi.fn();
-    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-    const host = document.createElement("div");
-    document.body.append(host);
-    const root = createRoot(host);
-    const render = () =>
-      act(() =>
-        root.render(
-          <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
-            <BuildSheet realm={realm} plot={{ col: 11, row: 10 }} onResearch={onResearch} onClose={() => undefined} />
-          </GameProvider>,
-        ),
-      );
-    const card = (name: string) =>
-      [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")].find(
-        (card) => card.querySelector(".ui-card__title")?.textContent === name,
-      )!;
-    const gold = () => [...host.querySelectorAll("button")].at(-1)!;
-    render();
-    act(() => card("War hall").click());
-    // Training needs two Barracks purchases; no Barracks stands yet.
-    expect(host.querySelector('[role="status"]')!.textContent).toBe("Needs 2 more Barracks research purchases (0/2)");
-    expect(gold().textContent).toMatch(/^Build Barracks/);
-    act(() => gold().click());
-    expect(card("Barracks").getAttribute("aria-pressed")).toBe("true");
-
-    store.applyFacts([
-      fact("0x72", "StructureBuildings", {
-        game_id: 1,
-        entity_id: 7,
-        ...countsWith(BuildingType.ResourceKnightT1, 1),
-        population: { current: 3, max: 6 },
-      }),
-    ] as never);
-    render();
-    act(() => card("War hall").click());
-    expect(gold().textContent).toBe("Research");
-    act(() => gold().click());
-    expect(onResearch).toHaveBeenCalledOnce();
-
-    // The owner's realm on prod (4 November): Drill I bought, so the lock counts it and asks for one more.
-    store.applyFacts([
-      fact("0x77", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: String(1n << 14n) }),
-    ] as never);
-    render();
-    act(() => card("War hall").click());
-    expect(host.querySelector('[role="status"]')!.textContent).toBe("Needs 1 more Barracks research purchase (1/2)");
-    expect(card("War hall").closest(".ui-card")!.querySelector(".ui-chip")!.textContent).toBe("1/2 research");
-    expect(gold().textContent).toBe("Research");
-    act(() => root.unmount());
-    host.remove();
-  });
-
   it("says how much labor a building needs against what is held, and sends nobody to the map for it", () => {
     const { store, realm } = realmBoard();
     labor(store, 0n);
@@ -627,139 +575,6 @@ describe("the build sheet", () => {
     vi.restoreAllMocks();
   });
 });
-
-it.each(["retained", "withdrawn", "withdrawn before render"] as const)(
-  "submits only an available Scouts kind when its unlock is %s",
-  async (unlock) => {
-    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-    const { store, realm } = realmBoard();
-    store.applyFacts([
-      {
-        model: "RealmKnowledge",
-        key: "0x77",
-        value: { game_id: 1, structure_id: 7, learned: (1n << 14n) | (1n << 17n) },
-      },
-      {
-        model: "ResourceBalance",
-        key: "0x75",
-        value: {
-          game_id: 1,
-          entity_id: 7,
-          resource_type: ResourcesIds.Labor,
-          balance: 100000n * BigInt(RESOURCE_PRECISION),
-        },
-      },
-    ] as never);
-    const game = store.require("GameRegistry", { game_id: 1 });
-    store.applyFacts([{ model: "GameRegistry", key: "0x3", value: { ...game, preset_id: 5 } }]);
-    configManager.setActiveGame(1, 5);
-    configManager.setStore(store);
-    const lodge = store.require("BuildingRule", { game_id: 1, category: BuildingType.ScoutsLodge });
-    store.applyFacts([
-      {
-        model: "BuildingRule",
-        key: `0x6${BuildingType.ScoutsLodge}`,
-        value: {
-          ...lodge,
-          population_cost: 2,
-          simple_cost: [
-            { resource_type: ResourcesIds.Essence, amount: 6000n * BigInt(RESOURCE_PRECISION) },
-            { resource_type: ResourcesIds.Labor, amount: 1500n * BigInt(RESOURCE_PRECISION) },
-          ],
-        },
-      },
-    ]);
-    store.applyFacts([
-      {
-        model: "ResourceBalance",
-        key: "0x7638",
-        value: {
-          game_id: 1,
-          entity_id: 7,
-          resource_type: ResourcesIds.Essence,
-          balance: 12000n * BigInt(RESOURCE_PRECISION),
-        },
-      },
-    ]);
-    const placeBuilding = vi.fn(() => Promise.resolve({ transaction_hash: "0x2" }));
-    installActiveGameClient({
-      connect() {},
-      disconnect() {},
-      dispose() {},
-      actions: { placeBuilding },
-      waitForAction: () => Promise.resolve({ hash: "0x2", block: 10, status: "SUCCEEDED" }),
-    } as unknown as GameClient);
-    const host = document.createElement("div");
-    document.body.append(host);
-    const root = createRoot(host);
-    try {
-      act(() =>
-        root.render(
-          <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
-            <BuildSheet realm={realm} plot={{ col: 11, row: 10 }} onClose={() => {}} />
-          </GameProvider>,
-        ),
-      );
-      const card = [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")].find((button) =>
-        button.textContent?.includes("Scouts"),
-      )!;
-      act(() => card.click());
-      expect(card.querySelector(".ui-tier")?.textContent).toBe("I");
-      expect(card.querySelector('[aria-label="6,000 Essence"]')).not.toBeNull();
-      expect(card.querySelector('[aria-label="1,500 Labor"]')).not.toBeNull();
-      expect(host.textContent).not.toContain("Beasts");
-      expect(host.textContent).not.toContain("Sanctuaries");
-      const knowledge = store.require("RealmKnowledge", { game_id: 1, structure_id: 7 });
-      act(() =>
-        store.applyFacts([
-          {
-            model: "RealmKnowledge",
-            key: "0x77",
-            value: { ...knowledge, learned: learnResearch(knowledge.learned, research.ROW_SHRINE, 0) },
-          },
-        ]),
-      );
-      const sanctuaries = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
-        (button) => button.textContent === "Sanctuaries",
-      )!;
-      expect(sanctuaries.querySelectorAll("img[data-icon]").length).toBe(2);
-      act(() => sanctuaries.click());
-      expect(sanctuaries.getAttribute("aria-pressed")).toBe("true");
-      const build = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
-        (button) => button.textContent === "Build",
-      )!;
-      expect(build, host.textContent ?? "").toBeDefined();
-      if (unlock !== "retained") {
-        await act(async () => {
-          store.applyFacts([{ model: "RealmKnowledge", key: "0x77", value: knowledge }]);
-          if (unlock === "withdrawn before render") build.click();
-        });
-        expect(host.textContent).not.toContain("Sanctuaries");
-        expect(build.disabled).toBe(true);
-        await act(async () => build.click());
-        expect(placeBuilding).not.toHaveBeenCalled();
-        const rifts = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
-          (button) => button.textContent === "Rifts",
-        )!;
-        expect(rifts.getAttribute("aria-pressed")).toBe("false");
-        act(() => rifts.click());
-        expect(rifts.getAttribute("aria-pressed")).toBe("true");
-      }
-      expect(build.disabled).toBe(false);
-      await act(async () => build.click());
-      expect(placeBuilding).toHaveBeenCalledOnce();
-      expect(placeBuilding).toHaveBeenCalledWith(
-        expect.objectContaining({
-          buildingType: BuildingType.ScoutsLodge,
-          scoutingKind: unlock === "retained" ? 2 : 1,
-        }),
-      );
-    } finally {
-      act(() => root.unmount());
-      host.remove();
-    }
-  },
-);
 
 it("reds only the price lines the realm holds less of, so a training building short of Essence keeps its Labor white", () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -775,16 +590,16 @@ it("reds only the price lines the realm holds less of, so a training building sh
     {
       model: "RealmKnowledge",
       key: "0x77",
-      value: { game_id: 1, structure_id: 7, learned: (1n << 14n) | (1n << 17n) },
+      value: { game_id: 1, structure_id: 7, learned: 2n << 14n },
     },
   ] as never);
-  const lodge = store.require("BuildingRule", { game_id: 1, category: BuildingType.ScoutsLodge });
+  const supplyYard = store.require("BuildingRule", { game_id: 1, category: BuildingType.SupplyYard });
   store.applyFacts([
     {
       model: "BuildingRule",
-      key: `0x6${BuildingType.ScoutsLodge}`,
+      key: `0x6${BuildingType.SupplyYard}`,
       value: {
-        ...lodge,
+        ...supplyYard,
         population_cost: 0,
         simple_cost: [
           { resource_type: ResourcesIds.Essence, amount: 6000n * BigInt(RESOURCE_PRECISION) },
@@ -805,7 +620,7 @@ it("reds only the price lines the realm holds less of, so a training building sh
       ),
     );
     const card = [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")].find((button) =>
-      button.textContent?.includes("Scouts"),
+      button.textContent?.includes(buildingName(BuildingType.SupplyYard, true)),
     )!;
     const line = (label: string) => {
       const element = card.querySelector(`[aria-label="${label}"]`)!;

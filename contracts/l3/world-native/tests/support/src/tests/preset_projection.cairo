@@ -9,12 +9,10 @@ pub use crate::buildings::{IBuildingRulesDispatcher, IBuildingRulesDispatcherTra
 pub use crate::camps::{ICampRulesDispatcher, ICampRulesDispatcherTrait};
 pub use crate::expeditions::{IExpeditionRulesDispatcher, IExpeditionRulesDispatcherTrait};
 pub use crate::exploration_rewards::{IExtractionDispatcher, IExtractionDispatcherTrait};
-pub use crate::faith::{IFaithDispatcher, IFaithDispatcherTrait};
 pub use crate::game::{
     IGameDispatcher, IGameDispatcherTrait, ISeasonLifecycleDispatcher, ISeasonLifecycleDispatcherTrait,
 };
 pub use crate::hyperstructures::{IHyperstructuresDispatcher, IHyperstructuresDispatcherTrait};
-pub use crate::market::{IBankDispatcher, IBankDispatcherTrait};
 pub use crate::mines::{IMineRulesDispatcher, IMineRulesDispatcherTrait};
 pub use crate::production::{IProductionRulesDispatcher, IProductionRulesDispatcherTrait};
 pub use crate::registrar::{
@@ -23,9 +21,8 @@ pub use crate::registrar::{
 pub use crate::relics::{IRelicsDispatcher, IRelicsDispatcherTrait};
 pub use crate::settlement::{ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait};
 pub use crate::spires::{ISpiresDispatcher, ISpiresDispatcherTrait};
-pub use crate::trade::{ITradeDispatcher, ITradeDispatcherTrait};
 pub use crate::upgrades::{IUpgradeRulesDispatcher, IUpgradeRulesDispatcherTrait};
-pub use crate::village::{IVillagesDispatcher, IVillagesDispatcherTrait};
+pub use crate::village::{IVillagePassesDispatcher, IVillagePassesDispatcherTrait};
 pub use crate::withdrawals::{IWithdrawalsDispatcher, IWithdrawalsDispatcherTrait};
 
 #[derive(Drop, Serde, Debug, PartialEq)]
@@ -47,14 +44,16 @@ pub fn current_definition(name: ByteArray) -> (u32, crate::presets::PresetDefini
     assert!(registration.is_empty());
     (preset_id, definition)
 }
+pub fn retired_frontier_chest_rules() -> crate::relics::ChestRules {
+    let (preset_id, definition) = current_definition("frontier-retired");
+    assert_eq!(preset_id, 5);
+    definition.economy.chests.expect('retired cash rules missing')
+}
 pub fn frontier_discovery_rules() -> crate::expeditions::FrontierDiscoveryRules {
-    let (_, definition) = current_definition("frontier");
+    let (_, definition) = current_definition("frontier-check");
     definition.economy.discovery.unwrap()
 }
-pub fn frontier_progression_rules() -> crate::progression::ArmyProgressionRules {
-    let (_, definition) = current_definition("frontier");
-    definition.economy.progression.unwrap()
-}
+
 pub fn launch(address: ContractAddress, name: ByteArray) -> u32 {
     let (preset_id, definition) = current_definition(name.clone());
     let registrar = IRegistrarDispatcher { contract_address: address };
@@ -66,10 +65,10 @@ pub fn launch(address: ContractAddress, name: ByteArray) -> u32 {
 }
 
 #[feature("safe_dispatcher")]
-pub fn assert_all_zero_chest_rules_refuse_registration() {
+pub fn assert_unfunded_cash_rules_refuse_registration() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
-    let (preset_id, mut definition) = current_definition("frontier");
+    let (preset_id, mut definition) = current_definition("frontier-check");
     definition
         .economy
         .chests =
@@ -167,7 +166,6 @@ pub fn observe_structures(ref rows: Array<ObservedRow>, address: ContractAddress
     let key = array![game_id.into()].span();
     let building_rules = IBuildingRulesDispatcher { contract_address: address };
     let camp_rules = ICampRulesDispatcher { contract_address: address };
-    let faith = IFaithDispatcher { contract_address: address };
     let upgrade_rules = IUpgradeRulesDispatcher { contract_address: address };
     for category in 1_u8..crate::buildings::BUILDING_CATEGORY_COUNT + 1 {
         row(
@@ -180,7 +178,8 @@ pub fn observe_structures(ref rows: Array<ObservedRow>, address: ContractAddress
     if let Some(board) =
         interact_with_state(address, || crate::logic::construction::ConstructionLogic::observed_board_rules(game_id)) {
         row(ref rows, 'BoardRules', key, board);
-        for research_row in 0..crate::research::ROW_COUNT {
+        for row_ref in crate::research::ROWS.span() {
+            let research_row = *row_ref;
             for tier in 1..crate::research::max_tier(research_row) + 1 {
                 row(
                     ref rows,
@@ -192,7 +191,6 @@ pub fn observe_structures(ref rows: Array<ObservedRow>, address: ContractAddress
         }
     }
     row(ref rows, 'CampRules', key, camp_rules.camp_rules(game_id));
-    row(ref rows, 'FaithRules', key, faith.faith_rules(game_id));
     let limits = upgrade_rules.upgrade_limits(game_id);
     row(ref rows, 'UpgradeLimits', key, limits);
     for level in 1..core::cmp::max(limits.realm_max, limits.village_max) + 1 {
@@ -207,9 +205,16 @@ pub fn observe_structures(ref rows: Array<ObservedRow>, address: ContractAddress
 pub fn observe_settlement(ref rows: Array<ObservedRow>, address: ContractAddress, game_id: u32) {
     let key = array![game_id.into()].span();
     let settlement_views = ISettlementViewsDispatcher { contract_address: address };
-    let villages = IVillagesDispatcher { contract_address: address };
+    let villages = IVillagePassesDispatcher { contract_address: address };
     let expedition_rules = IExpeditionRulesDispatcher { contract_address: address };
     let spires = ISpiresDispatcher { contract_address: address };
+    if let Some(packed) = interact_with_state(address, || crate::logic::aspects::rules(game_id)) {
+        let mut orders = array![];
+        for order in 1_u8..17 {
+            orders.append(crate::aspects::order_aspect(packed, order));
+        }
+        row(ref rows, 'AspectRules', key, orders.span());
+    }
     row(ref rows, 'RealmGrants', key, settlement_views.realm_grants(game_id));
     row(ref rows, 'VillageRules', key, villages.village_rules(game_id));
     let depths = interact_with_state(address, || crate::logic::preset_record::for_game(game_id).depth_count.read());
@@ -227,15 +232,23 @@ pub fn observe_settlement(ref rows: Array<ObservedRow>, address: ContractAddress
 }
 pub fn observe_economy(ref rows: Array<ObservedRow>, address: ContractAddress, game_id: u32) {
     let key = array![game_id.into()].span();
-    let trade = ITradeDispatcher { contract_address: address };
-    let bank = IBankDispatcher { contract_address: address };
     let hyperstructures = IHyperstructuresDispatcher { contract_address: address };
     let relics = IRelicsDispatcher { contract_address: address };
     let artificer = IArtificerDispatcher { contract_address: address };
     let bridge = IBridgeDispatcher { contract_address: address };
     let withdrawals = IWithdrawalsDispatcher { contract_address: address };
-    row(ref rows, 'TradeRules', key, trade.trade_rules(game_id));
-    row(ref rows, 'BankRules', key, bank.bank_rules(game_id));
+    if let Some(deep) = interact_with_state(address, || observed_deep_rules(game_id)) {
+        row(ref rows, 'DeepRules', key, deep);
+    }
+    if let Some(quests) = interact_with_state(address, || observed_quest_rules(game_id)) {
+        row(ref rows, 'QuestRules', key, quests);
+    }
+    if let Some(banes) = interact_with_state(address, || observed_bane_rules(game_id)) {
+        row(ref rows, 'BaneRules', key, banes);
+    }
+    if let Some(race) = interact_with_state(address, || crate::logic::race::rules(game_id)) {
+        row(ref rows, 'RaceRules', key, race);
+    }
     row(ref rows, 'HyperstructureRules', key, hyperstructures.hyperstructure_rules(game_id));
     row(ref rows, 'RelicRules', key, relics.relic_rules(game_id));
     if let Some(labor) =
@@ -244,9 +257,6 @@ pub fn observe_economy(ref rows: Array<ObservedRow>, address: ContractAddress, g
     }
     if let Some(chests) = relics.chest_rules(game_id) {
         row(ref rows, 'ChestRules', key, chests);
-    }
-    if let Some(progression) = interact_with_state(address, || crate::logic::progression::rules(game_id)) {
-        row(ref rows, 'ArmyProgressionRules', key, progression);
     }
     if let Some(discovery) =
         interact_with_state(address, || crate::logic::preset_record::for_game(game_id).discovery_rules.read()) {
@@ -266,7 +276,7 @@ pub fn observe_economy(ref rows: Array<ObservedRow>, address: ContractAddress, g
                     ref rows,
                     'ResourceToken',
                     array![game_id.into(), resource_type.into()].span(),
-                    withdrawals.resource_token(crate::market::MarketKey { game_id, resource_type }),
+                    withdrawals.resource_token(crate::withdrawals::ResourceTokenKey { game_id, resource_type }),
                 );
             }
         }
@@ -278,4 +288,66 @@ pub fn observe_rewards(ref rows: Array<ObservedRow>, address: ContractAddress, g
     let season_lifecycle = ISeasonLifecycleDispatcher { contract_address: address };
     row(ref rows, 'ExtractionRewards', key, extraction.extraction_rewards(game_id));
     row(ref rows, 'SeasonWinThreshold', key, season_lifecycle.season_win_threshold(game_id));
+}
+
+fn observed_quest_rules(game_id: u32) -> Option<crate::quests::QuestRules> {
+    let preset = crate::logic::preset_record::for_game(game_id);
+    let Some((labor, essence, bonus_percent)) = preset.quest_rewards.read() else {
+        return None;
+    };
+    let mut base_counts = array![];
+    for kind in 0_u8..crate::quests::QUEST_COUNT {
+        base_counts.append(preset.quest_counts.read(kind));
+    }
+    Some(crate::quests::QuestRules { base_counts: base_counts.span(), labor, essence, bonus_percent })
+}
+
+fn observed_deep_rules(game_id: u32) -> Option<crate::deep::DeepRules> {
+    let preset = crate::logic::preset_record::for_game(game_id);
+    let settings = preset.deep_rules.read()?;
+    let mut rings = array![];
+    for index in 0..settings.ring_count {
+        let (radius, realms) = preset.deep_rings.read(index);
+        rings.append(crate::deep::DeepRing { radius, realms });
+    }
+    let mut beasts = array![];
+    for kind in 0..crate::rules::DEEP_KIND_COUNT {
+        let (count, bow) = preset.deep_beasts.read(kind);
+        beasts.append(crate::deep::DeepBeast { count, bow });
+    }
+    Some(
+        crate::deep::DeepRules {
+            gate_distance: settings.gate_distance,
+            rings: rings.span(),
+            beasts: beasts.span(),
+            loss_per_tick: settings.loss_per_tick,
+            core_per_tick: settings.core_per_tick,
+            mine_per_tick: settings.mine_per_tick,
+            building_pay: settings.building_pay,
+            altar_threshold: settings.altar_threshold,
+        },
+    )
+}
+
+fn observed_bane_rules(game_id: u32) -> Option<crate::banes::BaneRules> {
+    let preset = crate::logic::preset_record::for_game(game_id);
+    let Some((chance_step, quorum_percent, beast_percent, stamina_percent, production_percent)) = preset
+        .bane_rules
+        .read() else {
+        return None;
+    };
+    let mut quest_counts = array![];
+    for index in 0_u8..12 {
+        quest_counts.append(preset.bane_quest_counts.read(index));
+    }
+    Some(
+        crate::banes::BaneRules {
+            chance_step,
+            quorum_percent,
+            beast_percent,
+            stamina_percent,
+            production_percent,
+            quest_counts: quest_counts.span(),
+        },
+    )
 }

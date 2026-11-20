@@ -1,5 +1,5 @@
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
+import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { describe, expect, it } from "vitest";
 import { NativeFactStore } from "../client/native-fact-store";
 import { waitForWorldState } from "../client/wait-for-world-state";
@@ -22,6 +22,7 @@ const game = {
   dev_mode_on: false,
   start_settling_at: 0n,
   start_main_at: 200n,
+  scheduled_end_at: 1100n,
   end_at: 1100n,
   end_grace_seconds: 0,
   seed: 1n,
@@ -34,6 +35,7 @@ const production = {
   production_rate: 2n,
   output_amount_left: 10n,
   last_settled_at: 100,
+  remainder: 0,
 };
 
 describe("native resource facts", () => {
@@ -220,8 +222,9 @@ describe("native resource facts", () => {
     const manager = new ResourceManager(store, 7, 1);
     expect(manager.balanceWithProduction(1000, 23)!.balance).toBe(0);
     expect(manager.balanceWithProduction(1001, 23)!.balance).toBe(2);
-    expect(manager.getProductionEndsAt(23)).toBe(1005);
-    expect(manager.timeUntilValueReached(1001, 23)).toBe(4);
+    expect(manager.productionData(23, 1000)).toMatchObject({ timeRemainingSeconds: 5 });
+    expect(manager.productionData(23, 1001)).toMatchObject({ timeRemainingSeconds: 4 });
+    expect(manager.productionData(23, 1005)).toMatchObject({ timeRemainingSeconds: 0, isProducing: false });
   });
   it("settles troops and wheat alone against shared storage, and nothing consumes wheat", () => {
     const store = new NativeFactStore();
@@ -309,7 +312,5 @@ it.each([60, 120])("pays every second with an unchanged %s-second armies tick", 
   expect(manager.balanceWithProduction(239, 35)!.balance).toBe(23_900);
   expect(manager.balanceWithProduction(240, 35)!.balance).toBe(24_000);
   // The hourly figure derives directly from the per-second rate.
-  expect(ResourceManager.calculateResourceProductionData(35, manager.current(35)!, 130).productionPerSecond).toBe(
-    100 / 1e9,
-  );
+  expect(manager.productionData(35, 130)!.productionPerSecond).toBe(100 / 1e9);
 });

@@ -1,4 +1,7 @@
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useGame } from "@/hooks/context/game-context";
+import { FrontierAspectPage } from "@/ui/features/frontier/aspect/aspect-page";
 import { getActiveGame } from "@/runtime/world";
 import { campaignOfPreset } from "@/services/home-claim-rules";
 import { AppButton, AppIconButton } from "@/ui/design-system/kit/app-elements";
@@ -19,12 +22,7 @@ import { useFinishedGame } from "./finished-game";
 import { SeasonGreeting } from "./festival";
 import { prizeOf, SeasonRecap } from "./season-recap";
 
-/**
- * The season's recap once the game has ended, over the HUD: the same drawing of the season's end as the app's Results
- * (SeasonRecap), with Exit before its sharing. In the Devcon season, which ends on Diwali, a Devcon realm's owner on the
- * board is greeted first (SeasonGreeting) and See my season opens the recap; every other player meets the recap at
- * once. The ending is not yet a recorded fact: the mist lifted stands until Herald names it.
- */
+/** The ended game's native race board, or its format's recap, over the HUD. */
 export const SeasonOver = ({
   realm,
   withdraw,
@@ -33,8 +31,35 @@ export const SeasonOver = ({
   realm: NativeRows["Structure"] | null;
   withdraw?: ReactNode;
 }) => {
+  const { setup } = useGame();
+  useNativeRevision(["RaceRules", "GameRegistry", "RaceResult"]);
   useNowSeconds();
-  return configManager.isGameOver() ? <EndedSeason realm={realm} withdraw={withdraw} /> : null;
+  if (!configManager.isGameOver()) return null;
+  return setup.store.get("RaceRules", { game_id: configManager.getActiveGameId() }) ? (
+    <EndedRace withdraw={withdraw} />
+  ) : (
+    <EndedSeason realm={realm} withdraw={withdraw} />
+  );
+};
+
+const EndedRace = ({ withdraw }: { withdraw?: ReactNode }) => {
+  const navigate = useNavigate();
+  const [closed, setClosed] = useState(false);
+  if (closed) return null;
+  return (
+    <div
+      data-race-ended
+      className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-kit-ground/90 p-2 lg:p-8"
+    >
+      <div className="flex max-h-full w-full max-w-2xl flex-col gap-2 overflow-y-auto">
+        <FrontierAspectPage onClose={() => setClosed(true)} />
+        {withdraw}
+        <AppButton kind="primary" icon="exit" onClick={() => navigate("/")}>
+          {EXIT}
+        </AppButton>
+      </div>
+    </div>
+  );
 };
 
 /** The ended season's board, its directory entry, the viewer and their home's campaign, read once the season is over. */

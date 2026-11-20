@@ -1,5 +1,5 @@
 import type { NativePreset } from "../common/native-preset";
-import { nativeRuleConstants as rule } from "../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants as rule } from "../../../contracts/l3/world-native/schema/balance.gen";
 import { realmResourcePool, relicRules } from "../common/native-data";
 import { arenaModeRules, arenaCommandMask } from "../common/native-commands";
 import { blitzBalance } from "./balance";
@@ -9,7 +9,12 @@ export const blitzPreset: NativePreset = {
     protocolCutBps: 1000,
     mmrEnabled: true,
   },
+  orderAspects: [],
+  deep: null,
+  race: null,
   bitcoinEnabled: false,
+  dailyQuest: null,
+  banes: null,
   startingTroops: [],
   realmResources: realmResourcePool,
   relics: relicRules,
@@ -29,7 +34,6 @@ export const blitzPreset: NativePreset = {
   commandMask: arenaCommandMask,
   spacing: 6,
   dayUnitSeconds: 0,
-  progression: null,
   discovery: null,
   labor: null,
   chests: null,

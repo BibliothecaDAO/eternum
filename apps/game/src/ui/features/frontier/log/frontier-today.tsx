@@ -7,25 +7,22 @@ import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-c
 import { type ReactNode, useState } from "react";
 
 import { dayBounds, dayClock, seasonDay } from "../hud/day-clock";
-import { useDockArmies } from "../hud/dock-armies";
+
 import { useDayShare } from "../rollover/day-share-sheet";
+import { OpeningPartGate } from "../opening/opening-context";
+import { readQuestWeek } from "./quest-week";
+import { TodayWeek } from "./today-week";
 import { dayLogLine } from "./day-line";
 import { usePlayerDay } from "./player-day";
 import { type LogLine, TodaySheet } from "./today-sheet";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof readExpeditionRules>>;
 
-/**
- * Today over the stories of the realm's owner: the player's own realm, or the one a spectator watches. Today's totals
- * (the ruin's LORDS among them) and log, stepping back through earlier days, and, for the player's own realm, today's
- * armies with a tier their XP can buy, the row opening the first of them, and on an earlier day they played the way to
- * share it.
- */
 export const FrontierToday = ({
   rules,
   realm,
   dayEnd,
-  onOpenArmy,
+  own,
   onClose,
 }: {
   rules: ExpeditionRules;
@@ -33,8 +30,8 @@ export const FrontierToday = ({
   realm: NativeRows["Structure"] | null;
   /** The player's own day end (DayEndBlock); none for a realm that is not theirs. */
   dayEnd?: ReactNode;
-  /** Opens an army's sheet, for the row of armies with a tier to buy; none for a realm that is not the player's. */
-  onOpenArmy?: (explorerId: number) => void;
+  /** Whether this is the player’s own realm, whose quests can be shown. */
+  own?: boolean;
   onClose: () => void;
 }) => {
   const { setup } = useGame();
@@ -50,7 +47,12 @@ export const FrontierToday = ({
   const step = (to: number) => setChosen(to === today ? null : to);
   const ended = day !== undefined && today !== undefined && day < today;
   const { onShare, sheet } = useDayShare(realm, ended ? day : undefined, played);
-  const buyers = useDockArmies(onOpenArmy ? realm : null).filter(({ canSpendSkillPoint }) => canSpendSkillPoint);
+  const week =
+    own && realm && today !== undefined && day === today ? (
+      <OpeningPartGate part="today">
+        <TodayWeek week={readQuestWeek(setup.store, realm.game_id, realm.entity_id, today - 1)} />
+      </OpeningPartGate>
+    ) : undefined;
   return (
     <>
       <TodaySheet
@@ -60,9 +62,8 @@ export const FrontierToday = ({
         clock={clock}
         totals={played.totals}
         dayEnd={dayEnd}
+        week={week}
         lines={logLines(played.stories, setup.store)}
-        armiesToUpgrade={onOpenArmy && day === today ? buyers.length : undefined}
-        onArmies={onOpenArmy && buyers[0] ? () => onOpenArmy(buyers[0]!.explorerId) : undefined}
         history={played.history}
         onRetry={played.retry}
         onShare={onShare}

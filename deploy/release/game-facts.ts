@@ -150,11 +150,14 @@ async function readCheckpoint(environment: string) {
   return { checkpoint, at: { chain: chain!, confirmedBlock: Number(block) } };
 }
 
-async function snapshot(environment: string, game: string, out: string) {
-  const gameId = Number(game);
+export async function readGameFacts(environment: string, gameId: number): Promise<GameFacts> {
   if (!Number.isSafeInteger(gameId) || gameId <= 0) throw new Error("A game id is required");
   const { checkpoint, at } = await readCheckpoint(environment);
-  const facts = gameFacts(checkpoint, at, gameId);
+  return gameFacts(checkpoint, at, gameId);
+}
+
+async function snapshot(environment: string, game: string, out: string) {
+  const facts = await readGameFacts(environment, Number(game));
   writeFileSync(out, `${JSON.stringify(facts, null, 1)}\n`, { mode: 0o600 });
   const rows = Object.values(facts.models).reduce((sum, model) => sum + Object.keys(model).length, 0);
   console.log(JSON.stringify({ ...facts, models: Object.keys(facts.models).length, rows }));

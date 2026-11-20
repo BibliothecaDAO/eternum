@@ -1,4 +1,4 @@
-import { nativeRuleConstants as rule } from "../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants as rule } from "../../../contracts/l3/world-native/schema/balance.gen";
 import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
 
 export const arenaModeRules =
@@ -10,37 +10,12 @@ export const arenaModeRules =
   rule.RESERVED_HYPERSTRUCTURES |
   rule.OWNER_ONLY_SHARES |
   rule.HYPERSTRUCTURE_MULTIPLIERS |
-  rule.PRODUCTION_START |
-  rule.COMBAT_DICE_ETHEREAL;
+  rule.PRODUCTION_START;
 
-export function commandMask(disabled: Array<keyof typeof nativeCommandBits>): bigint {
+function commandMask(disabled: Array<keyof typeof nativeCommandBits>): bigint {
   let mask = Object.values(nativeCommandBits).reduce((mask, bit) => mask | BigInt(bit), 0n);
   for (const command of disabled) mask &= ~BigInt(nativeCommandBits[command]);
   return mask;
 }
 
-export const arenaCommandMask = commandMask([
-  "TransferStructureOwnership",
-  "TransferStructureResourcesToExplorer",
-  "BurnLaborForResourceProduction",
-  "CreateTradeOrder",
-  "AcceptTradeOrder",
-  "CancelTradeOrder",
-  "CreateBanks",
-  "BuyFromBank",
-  "SellToBank",
-  "AddBankLiquidity",
-  "RemoveBankLiquidity",
-  "PledgeFaith",
-  "RemoveFaith",
-  "UpdateWonderOwnership",
-  "UpdateFaithfulOwnership",
-  "ClaimWonderPoints",
-  "ClaimPlayerFaithPoints",
-  "Raid",
-  "EnterDepth",
-  "Research",
-  "InteractSite",
-  "RefillStamina",
-  "WithdrawLords",
-]);
+export const arenaCommandMask = commandMask(["EnterDepth", "Research", "InteractSite"]);

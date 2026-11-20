@@ -70,14 +70,14 @@ pub fn setup_with_reward(
     config.mode_rules = if blitz {
         super::play_fixture::BLITZ_RULES
     } else {
-        super::play_fixture::ETERNUM_RULES
+        super::play_fixture::TEST_RULES
     };
     config
         .command_mask =
             if blitz {
                 super::play_fixture::BLITZ_COMMAND_MASK
             } else {
-                super::play_fixture::ETERNUM_COMMAND_MASK
+                super::play_fixture::BLITZ_COMMAND_MASK
             };
     config.entry_rule = if blitz {
         crate::rules::ENTRY_ROSTER

@@ -1,7 +1,6 @@
 pub use crate::commands::Command;
 pub use crate::discovery::{Discovery, ethereal, surface};
 pub use crate::map::IMapLogicDispatcher;
-pub use crate::ownership::TransferOwnership;
 pub use crate::resources::{ResourceAmount, ResourceKey};
 pub use crate::structures::{IStructureOperationsDispatcher, StructureRecord};
 pub use crate::tests::state::{MapObservationTrait, StructureObservationTrait};

@@ -176,6 +176,7 @@ export const parseEntryRoute = (location: LocationLike): EntryRouteDescriptor | 
 
 export const buildEntryHref = (route: EntryRouteDescriptor): string => {
   const searchParams = new URLSearchParams();
+  const renderer = parseRendererOptions(new URLSearchParams(globalThis.location?.search));
 
   if (route.intent === "spectate") {
     searchParams.set("spectate", "true");
@@ -186,6 +187,9 @@ export const buildEntryHref = (route: EntryRouteDescriptor): string => {
   if (route.autoSettle) {
     searchParams.set("autoSettle", "true");
   }
+
+  if (renderer.rendererMode) searchParams.set("rendererMode", renderer.rendererMode);
+  if (renderer.verboseLogs) searchParams.set("logs", "1");
 
   return `${gamePath(route)}${buildSearch(searchParams)}`;
 };

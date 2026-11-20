@@ -1,3 +1,4 @@
+import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_TIER_NAMES } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -8,7 +9,6 @@ import {
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
   isMilitaryResource,
-  ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
@@ -48,7 +48,7 @@ export const EntityResourceTableOld = React.memo(
     const keys = entityId ? { game_id: configManager.getActiveGameId(), entity_id: entityId } : undefined;
     const structureBuildings = useNativeRow("StructureBuildings", keys);
     const productionBoostBonus = useNativeRowOrAbsent("ProductionBonus", keys);
-    const guards = useNativeFacts(["Guard"]);
+    const guards = useNativeFacts([...GUARD_MODELS]);
     const now = useCurrentDefaultTick();
 
     const activeRelicEffects = useMemo(() => {
@@ -114,15 +114,7 @@ export const EntityResourceTableOld = React.memo(
               }
 
               if (showProductionOnly) {
-                const productionInfo = resourceManager.current(resourceId);
-                if (!productionInfo) return false;
-                const { isProducing } = ResourceManager.calculateResourceProductionData(
-                  resourceId,
-                  productionInfo,
-                  now,
-                );
-
-                if (!isProducing) {
+                if (!resourceManager.isProducingAt(resourceId, now)) {
                   return false;
                 }
               }

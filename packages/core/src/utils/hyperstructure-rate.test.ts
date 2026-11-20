@@ -3,13 +3,13 @@ import { hash } from "starknet";
 import { StructureType } from "@bibliothecadao/types";
 import { NativeFactStore } from "../client/native-fact-store";
 import { configManager } from "../managers/config-manager";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { getHyperstructureRates, hyperstructureRate, hyperstructureRateWords } from "./hyperstructure";
 
 vi.stubGlobal("localStorage", { getItem: () => null });
 
-const grants = (hyperstructureScale: "flat" | "double" | "per-realm") => ({
+const grants = (hyperstructureScale: "flat" | "per-realm") => ({
   hyperstructurePerSecond: 1,
   hyperstructureScale,
 });
@@ -23,10 +23,9 @@ describe("a Hyperstructure's one rate", () => {
     expect(held(null)).toBeNull();
   });
 
-  it("shows an untaken one at what taking it now would pay: the realms the scan counts, two in a Duel, else one", () => {
+  it("shows an untaken one at what taking it now would pay: the realms the scan counts, or one without the rule", () => {
     const untaken = { taken: false, struckMultiplier: null, realmsInScan: 2 };
     expect(hyperstructureRate(grants("per-realm"), untaken)?.pointsPerSecond).toBe(2);
-    expect(hyperstructureRate(grants("double"), { ...untaken, realmsInScan: 5 })?.pointsPerSecond).toBe(2);
     expect(hyperstructureRate(grants("flat"), untaken)?.pointsPerSecond).toBe(1);
   });
 
@@ -103,7 +102,7 @@ const rateIn = (realms: (readonly [number, number])[], held?: { multiplier: numb
       shareholders: [{ player: 0xc1n, bps: 10_000 }],
     });
   }
-  configManager.setActiveGame(54, 3);
+  configManager.setActiveGame(54, 2);
   configManager.setStore(store);
   return getHyperstructureRates(store).get(1);
 };

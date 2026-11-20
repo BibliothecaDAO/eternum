@@ -1,8 +1,9 @@
 pub use core::dict::{Felt252Dict, Felt252DictTrait};
 pub use crate::discovery::{Discovery, frontier};
 pub use crate::expeditions::{ExpeditionDiscoveryKey, FrontierDiscoveryRules};
-pub use crate::relics::SiteChest;
-pub const CHEST: SiteChest = SiteChest { tier: 1, amount: 100, reservation_day: 0 };
+pub const RELIC: crate::army_relics::ArmyRelic = crate::army_relics::ArmyRelic {
+    kind: crate::army_relics::RelicKind::Blade, rank: 1,
+};
 pub fn rules() -> FrontierDiscoveryRules {
     FrontierDiscoveryRules { shrine_bps: 0, well_bps: 0, ..super::preset_projection::frontier_discovery_rules() }
 }

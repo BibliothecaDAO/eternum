@@ -1,10 +1,18 @@
 import { safeInteger } from "./safe-integer";
-import { type ID, formatRate, ResourcesIds, StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import {
+  type ID,
+  formatRate,
+  ResourcesIds,
+  StructureType,
+  structureName,
+  RESOURCE_PRECISION,
+} from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { configManager } from "../managers";
+import { configManager } from "../managers/config-manager";
 import { structureMapPosition } from "./expeditions";
 import { getTileAt } from "./tile";
+import { surfaceNeighborAtDistance } from "./travel";
 
 type VictoryPointGrants = ReturnType<typeof configManager.getVictoryPointGrants>;
 
@@ -17,8 +25,8 @@ export interface HyperstructureRate {
 /**
  * The one rate every surface shows for a Hyperstructure. A held one pays the game's rate times the multiplier its share
  * allocation was struck at when it was taken, zero included, and has no rate until that allocation is known; an
- * untaken one shows what taking it now would pay: the game's rate times 1, or, where the multiplier rule is on, 2 in a
- * Duel or the realms the contract's scan counts around it.
+ * untaken one shows what taking it now would pay: the game's rate times 1, or, where the multiplier rule is on,
+ * the realms the contract's scan counts around it.
  */
 export const getHyperstructureRates = (store: NativeFactStore): Map<ID, HyperstructureRate> => {
   const game_id = configManager.getActiveGameId();
@@ -51,8 +59,7 @@ export const hyperstructureRate = (
       ? null
       : { pointsPerSecond: grants.hyperstructurePerSecond * struckMultiplier, taken };
   }
-  const multiplier =
-    grants.hyperstructureScale === "flat" ? 1 : grants.hyperstructureScale === "double" ? 2 : realmsInScan;
+  const multiplier = grants.hyperstructureScale === "flat" ? 1 : realmsInScan;
   return { pointsPerSecond: grants.hyperstructurePerSecond * multiplier, taken };
 };
 
@@ -77,26 +84,16 @@ const realmsInMultiplierScan = (store: NativeFactStore, origin: { x: number; y: 
   const { spacing, mode } = configManager.getSettlementConfig();
   const distance = Number(spacing) + (mode === "Single" ? 2 : 0);
   return SCAN_TURNS.filter(([first, second]) => {
-    const tile = stepsFrom(stepsFrom(origin, first, distance), second, Math.floor(distance / 2));
+    const tile = surfaceNeighborAtDistance(
+      surfaceNeighborAtDistance(origin, first, distance),
+      second,
+      Math.floor(distance / 2),
+    );
     const occupant = getTileAt(store, false, tile.x, tile.y, game_id);
     if (!occupant?.occupier_is_structure) return false;
     const structure = store.get("Structure", { game_id, entity_id: occupant.occupier_id });
     return structure?.base.category === StructureType.Realm;
   }).length;
-};
-
-/** A surface tile `distance` steps away in one of six directions, as geometry.cairo `checked_neighbor_at_distance`. */
-const stepsFrom = ({ x, y }: { x: number; y: number }, direction: number, distance: number) => {
-  const column = x - (y + (y % 2)) / 2;
-  const [stepped, row] = [
-    [column + distance, y],
-    [column, y + distance],
-    [column - distance, y + distance],
-    [column - distance, y],
-    [column, y - distance],
-    [column + distance, y - distance],
-  ][direction];
-  return { x: stepped + (row + (row % 2)) / 2, y: row };
 };
 
 /** A Hyperstructure's rate in words, a minute's as every rate is: "points +120/min", or "points +120/min once taken". */
@@ -266,6 +263,7 @@ const hyperstructureSuffixes = [
 
 export const getHyperstructureName = (structure: NativeRows["Structure"]): string => {
   const seed = safeInteger(structure.entity_id);
+  const typeName = structureName(StructureType.Hyperstructure);
 
   // Same hash function as chest naming for consistency
   const hash = (n: number) => {
@@ -282,7 +280,7 @@ export const getHyperstructureName = (structure: NativeRows["Structure"]): strin
 
   // Base hyperstructure name
   const adjIndex = rand % hyperstructureAdjectives.length;
-  let hyperstructureName = `${hyperstructureAdjectives[adjIndex]} Hyperstructure`;
+  let hyperstructureName = `${hyperstructureAdjectives[adjIndex]} ${typeName}`;
 
   // Determine rarity/greatness (0-20)
   const greatness = rand % 21;
@@ -301,7 +299,7 @@ export const getHyperstructureName = (structure: NativeRows["Structure"]): strin
     const selectedDescriptor = hyperstructureDescriptors[descriptorIndex];
     const selectedPrefix = hyperstructurePrefixes[prefixIndex];
 
-    hyperstructureName = `${selectedDescriptor} of ${selectedPrefix} Hyperstructure`;
+    hyperstructureName = `${selectedDescriptor} of ${selectedPrefix} ${typeName}`;
 
     // Add additional suffix for legendary items (greatness === 20)
     if (greatness === 20) {

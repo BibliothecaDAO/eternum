@@ -12,7 +12,6 @@ import { useGame } from "@/hooks/context/game-context";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 
 import { ReactNode, useCallback, useEffect, useMemo } from "react";
-import { FaithLeaderboardPanel } from "../faith";
 import { GuildMembers } from "../guilds/guild-members";
 import { Guilds } from "../guilds/guilds";
 import { PlayersPanel } from "../player/players-panel";
@@ -67,7 +66,7 @@ export const LeaderboardSurface = () => (
 );
 
 /**
- * The social board: players, tribes and faith tabs with the expandable player / tribe detail column. It
+ * The social board: players and tribes tabs with the expandable player / tribe detail column. It
  * renders inside the identity chip's popover; its world-slice subscriptions exist only while that is open.
  */
 const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) => {
@@ -186,25 +185,8 @@ const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) =
       });
     }
 
-    if (isEternumMode) {
-      baseTabs.push({
-        key: "Faith",
-        component: <FaithLeaderboardPanel />,
-        expandedContent: null,
-      });
-    }
-
     return baseTabs;
-  }, [
-    focusOwnPlayer,
-    showGuildsTab,
-    isEternumMode,
-    selectedPlayer,
-    playerInfo,
-    viewPlayerInfo,
-    viewGuildMembers,
-    setIsExpanded,
-  ]);
+  }, [focusOwnPlayer, showGuildsTab, selectedPlayer, playerInfo, viewPlayerInfo, viewGuildMembers, setIsExpanded]);
 
   const tabsLength = tabs.length;
   const activeTabIndex = Math.max(0, Math.min(selectedTab, tabsLength - 1));

@@ -20,12 +20,7 @@ export const DEPLOYMENT_ENVIRONMENTS: Record<DeploymentEnvironmentId, Deployment
     gameType: "blitz",
     configPath: "config/generated/blitz.madara.json",
   },
-  "madara.eternum": {
-    id: "madara.eternum",
-    chain: "madara",
-    gameType: "eternum",
-    configPath: "config/generated/eternum.madara.json",
-  },
+
   "madara.frontier": {
     id: "madara.frontier",
     chain: "madara",

@@ -24,18 +24,21 @@ import { inFlight, sendOnce } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ActionPaths, ActionType, setBlockTimestampSource, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
+import { nativeTilePackingConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
-import { siteName } from "@bibliothecadao/types";
+import { BiomeType, BiomeTypeToId, siteName } from "@bibliothecadao/types";
 import type { ComponentProps } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { letGoOfClearedSite, letGoOfLostSelection } from "@/three/scenes/worldmap-lost-selection";
 import { ARMY_LOST_MS, ArmyLostSheet } from "../army/army-lost";
 import { useArmyPanelOpens } from "../army/army-opens";
 import { useOnePanel, useOrderSettledReturnsToTheArmy } from "../hud/one-panel";
-import { campBeside, otherArmyAt, SITE, SITE_TILE } from "./site-fixture";
+import { campBeside, otherArmyAt, placeSite, relicEffectFact, SITE, SITE_TILE } from "./site-fixture";
 import { TileCard } from "./tile-card";
 
 const APPLIED = { hash: "0x1", block: 9, status: "SUCCEEDED" };
+
+const mountedCards = new Set<() => void>();
 
 beforeEach(() => {
   waitForAction.mockReset();
@@ -43,6 +46,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  for (const unmount of mountedCards) unmount();
   resetGameSyncStoryEvents();
   setBlockTimestampSource(null);
   useUIStore.getState().selectOnMap(null);
@@ -114,6 +118,7 @@ const InTheHud = ({
 const renderCard = (army: "beside" | "far", hud?: "desktop" | "phone") => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store, site, structure } = campBeside();
+  placeSite(store);
   const standsAt = { game_id: 1, alt: false, col: 60, row: 12, entity_id: 201, category: 15, is_structure: false };
   if (army === "far")
     store.applyFacts([
@@ -126,6 +131,12 @@ const renderCard = (army: "beside" | "far", hud?: "desktop" | "phone") => {
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
+  const unmount = () => {
+    if (!mountedCards.delete(unmount)) return;
+    act(() => root.unmount());
+    host.remove();
+  };
+  mountedCards.add(unmount);
   act(() =>
     root.render(
       <GameProvider
@@ -149,10 +160,6 @@ const renderCard = (army: "beside" | "far", hud?: "desktop" | "phone") => {
   );
   const button = (word: string) =>
     [...host.querySelectorAll("button")].find((candidate) => candidate.textContent?.includes(word));
-  const unmount = () => {
-    act(() => root.unmount());
-    host.remove();
-  };
   return { host, store, attack, button, unmount };
 };
 
@@ -162,7 +169,7 @@ const fightSides = (host: HTMLElement) =>
     .map((side) => side.getAttribute("aria-label"))
     .filter((l) => l?.includes("→"));
 /** The fixture army's attack on the camp from beside it: what the card shows near or far. */
-const FORECAST = ["Army 1,498 → 1,178, −320 · 21% lost", "Troll 1,100 → 492, −608 · 55% lost"];
+const FORECAST = ["Army 1,498 → 1,041, −457 · 31% lost", "Golem 1,100 → 478, −622 · 57% lost"];
 
 describe("the tile card", () => {
   it("titles the site by its map name over its kind, names the guard, offers no Attack until an army is chosen, then attacks with the same tap", async () => {
@@ -170,12 +177,11 @@ describe("the tile card", () => {
     try {
       const card = host.querySelector(`section[aria-label="${siteName(SITE)}"]`);
       expect(card).not.toBeNull();
-      expect(card!.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Troll+825+123 XP+1 site");
-      expect(host.querySelector('header [aria-label="Troll 1,100"]')).not.toBeNull();
+      expect(card!.querySelector(".ui-frame__body header")?.textContent).toBe("1,100BladeGolem+825+1 site");
+      expect(host.querySelector('header [aria-label="Golem 1,100"]')).not.toBeNull();
       expect(button("Attack")).toBeUndefined();
 
       act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
-      // With an army chosen, the headline is the attack's; the Troll is its token and the guard's side.
       expect(card!.querySelectorAll('[data-icon="beast-troll"]')).toHaveLength(2);
       expect(button("Attack")?.disabled).toBe(false);
       await act(async () => button("Attack")!.click());
@@ -192,8 +198,8 @@ describe("the tile card", () => {
       const card = host.querySelector('section[aria-label="North Watch"]')!;
       expect(card).not.toBeNull();
       expect(card.textContent?.match(/North Watch/g)).toHaveLength(1);
-      expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Troll+825+123 XP+1 site");
-      expect(card.textContent?.match(/Troll/g)).toHaveLength(1);
+      expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100BladeGolem+825+1 site");
+      expect(card.textContent?.match(/Golem/g)).toHaveLength(1);
       expect(card.textContent).not.toMatch(/\bcamp\b/i);
     } finally {
       unmount();
@@ -218,7 +224,7 @@ describe("the tile card", () => {
     });
     expect(button("Move")?.disabled).toBe(false);
     expect(button("Attack")).toBeUndefined();
-    expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Troll");
+    expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Golem");
     expect(fightSides(host)).toEqual(FORECAST);
     unmount();
   });
@@ -234,21 +240,47 @@ describe("the tile card", () => {
     // Owner, 31 October 2026: "I should still have the projection even if I'm too far I think". The attack its army
     // would send from beside the site, and its headline; only Attack waits for the army to get there.
     expect(fightSides(host)).toEqual(FORECAST);
-    expect(host.querySelector(".ui-frame__body header")?.textContent).toBe("The guard holds+825+123 XP+1 site");
+    expect(host.querySelector(".ui-frame__body header")?.textContent).toBe("BladeThe guard holds+825+1 site");
     expect(button("Attack")?.disabled).toBe(true);
     expect(button("Move")).toBeUndefined();
-    expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Troll");
+    expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Golem");
     unmount();
   });
 
   it("is the same card for another player's army: its troops, the forecast, and Attack sent army against army", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store } = campBeside();
-    const other = otherArmyAt(store, 42, 12);
+    store.applyFacts([
+      {
+        model: "SettlementRules",
+        key: "0x2",
+        value: { ...store.require("SettlementRules", { game_id: 1 }), spacing: 1024 },
+      },
+      { model: "HomeAspect", key: "0xa701", value: { game_id: 1, home: 7n, aspect: 1 } },
+      { model: "HomeAspect", key: "0xa901", value: { game_id: 1, home: 9n, aspect: 2 } },
+      { model: "TileOccupancy", key: "0x75", value: null },
+      {
+        model: "TileOccupancy",
+        key: "0xa702",
+        value: { game_id: 1, entity_id: 201n, col: 511, row: 3584, alt: false, category: 15, is_structure: false },
+      },
+      {
+        model: "TileOpt",
+        key: "0xa703",
+        value: {
+          game_id: 1,
+          col: 512,
+          row: 3584,
+          alt: false,
+          data: BigInt(BiomeTypeToId[BiomeType.Grassland]) * BigInt(nativeTilePackingConstants.BIOME_SCALE),
+        },
+      },
+    ]);
+    const other = otherArmyAt(store, 512, 3584);
     useAccountStore.setState({ account: { address: "0x111" } as never });
     const attack = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
     const tile = {
-      hexCoords: { col: 42, row: 12, alt: false },
+      hexCoords: { col: 512, row: 3584, alt: false },
       biome: 11,
       occupierId: 301,
     } as unknown as TileSpatialRenderable;
@@ -275,6 +307,11 @@ describe("the tile card", () => {
     expect(attack).toHaveBeenCalledWith(
       expect.objectContaining({ aggressor_id: 201, defender_id: 301, steal_resources: [] }),
     );
+    act(() => store.applyFacts([{ model: "HomeAspect", key: "0xa901", value: { game_id: 1, home: 9n, aspect: 1 } }]));
+    expect(
+      [...host.querySelectorAll("button")].find((candidate) => candidate.textContent?.includes("Attack"))?.disabled,
+    ).toBe(true);
+    expect(host.textContent).toContain("Allied armies cannot attack each other");
     act(() => root.unmount());
     host.remove();
   });
@@ -622,4 +659,16 @@ describe("after the player's attack (owner, 30 October 2026: 'I'd like the army 
     noResult(host);
     unmount();
   });
+});
+
+it("refreshes the open forecast when only an army relic effect arrives", () => {
+  const { host, store, unmount } = renderCard("beside");
+  try {
+    act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
+    expect(fightSides(host)).toEqual(FORECAST);
+    act(() => store.applyFacts([relicEffectFact("Blade"), relicEffectFact("Ward")]));
+    expect(fightSides(host)).toEqual(["Army 1,498 → 1,064, −434 · 29% lost", "Golem 1,100 → 416, −684 · 62% lost"]);
+  } finally {
+    unmount();
+  }
 });

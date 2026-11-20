@@ -2,8 +2,8 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { configManager, getBlockTimestamp, ResourceManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
+import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { bindChainTime } from "./chain-time-binding";
 import { createGameSyncObserver } from "./game-sync-observer";
@@ -72,6 +72,8 @@ it("keeps chain time where Herald's head put it while a realm's production waits
   store.applyFacts([
     fact("0x1", "ResourceWeight", { game_id: 1, entity_id: 7, capacity: (1n << 128n) - 1n, weight: 0n }),
     fact("0x1", "ResourceProduction", {
+      remainder: 0,
+
       game_id: 1,
       entity_id: 7,
       resource_type: 23,
@@ -90,6 +92,7 @@ it("keeps chain time where Herald's head put it while a realm's production waits
       dev_mode_on: false,
       start_settling_at: BigInt(HEAD_SECONDS - 60),
       start_main_at: BigInt(startsAt),
+      scheduled_end_at: BigInt(startsAt + 3600),
       end_at: BigInt(startsAt + 3600),
       end_grace_seconds: 0,
       seed: 1n,

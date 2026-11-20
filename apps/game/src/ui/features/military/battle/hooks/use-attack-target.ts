@@ -1,4 +1,5 @@
-import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
+import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useTileAt } from "@/hooks/helpers/use-tile-at";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import {
@@ -6,6 +7,7 @@ import {
   configManager,
   getExplorerOwner,
   getArmyRelicEffects,
+  getDefendingGuards,
   getGuardsByStructure,
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
@@ -45,7 +47,7 @@ export const useAttackTargetData = (
   } = useGame();
 
   const targetTile = useTileAt(targetHex.x, targetHex.y, targetAlt);
-  const guardsFacts = useNativeFacts(["ArmySlot", "Guard", "Structure"]);
+  const guardsFacts = useNativeFacts(["ArmySlot", "ArmyRelicEffect", "ArmyProgress", ...GUARD_MODELS, "Structure"]);
 
   const currentDefaultTick = useCurrentDefaultTick();
   const attackerStructure = useNativeRow(
@@ -98,7 +100,7 @@ export const useAttackTargetData = (
     }
 
     if (attackerExplorer) {
-      const troops = resolveExplorerTroops(guardsFacts.store, attackerExplorer);
+      const troops = resolveExplorerCombatTroops(guardsFacts.store, attackerExplorer, currentDefaultTick);
       return troops ? getArmyRelicEffects(troops, currentDefaultTick) : [];
     }
 
@@ -110,9 +112,8 @@ export const useAttackTargetData = (
 
     if (targetTile.occupier_is_structure) {
       if (!targetStructure) return null;
-      const knownGuards = getGuardsByStructure(targetStructure, guardsFacts.store);
-      if (!knownGuards) return null;
-      const guards = knownGuards.filter((guard) => guard.troops.count > 0n).toSorted((a, b) => a.slot - b.slot);
+      const guards = getDefendingGuards(targetStructure, guardsFacts.store);
+      if (!guards) return null;
 
       return {
         info: guards.map((guard) => guard.troops),
@@ -127,7 +128,7 @@ export const useAttackTargetData = (
     }
 
     if (!targetExplorer) return null;
-    const troops = resolveExplorerTroops(guardsFacts.store, targetExplorer);
+    const troops = resolveExplorerCombatTroops(guardsFacts.store, targetExplorer, currentDefaultTick);
     if (!troops) return null;
     return {
       info: [troops],
@@ -137,7 +138,7 @@ export const useAttackTargetData = (
       hex: { x: targetTile.col, y: targetTile.row },
       addressOwner: getExplorerOwner(guardsFacts.store, targetExplorer),
     };
-  }, [guardsFacts, targetEntityId, targetExplorer, targetStructure, targetTile]);
+  }, [guardsFacts, targetEntityId, targetExplorer, targetStructure, targetTile, currentDefaultTick]);
 
   const targetRelicEffects = useMemo<RelicEffect[]>(() => {
     if (targetTile?.occupier_is_structure) {
@@ -152,7 +153,9 @@ export const useAttackTargetData = (
       return [...structureRelicEffects, ...getStructureRelicEffects(targetProductionBoost, currentDefaultTick)];
     }
 
-    const troops = targetExplorer ? resolveExplorerTroops(guardsFacts.store, targetExplorer) : undefined;
+    const troops = targetExplorer
+      ? resolveExplorerCombatTroops(guardsFacts.store, targetExplorer, currentDefaultTick)
+      : undefined;
     return troops ? getArmyRelicEffects(troops, currentDefaultTick) : [];
   }, [
     guardsFacts,

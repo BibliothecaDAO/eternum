@@ -2,18 +2,34 @@ import { homeIcon, homeKind } from "./home-icons";
 import { readRealmSkin, type RealmSkin } from "@/three/structures/realm-skins";
 import type { FrontierSpecies } from "@/three/structures/frontier-beast";
 import { BuildingType, getProducedResource, StructureType, type StructureNamingMode } from "@bibliothecadao/types";
-import { frontierBeast, isGuardedSite, nativeGameModeOf, readFrontierBeast } from "@bibliothecadao/eternum";
+import {
+  frontierBeast,
+  isGuardedSite,
+  nativeGameModeOf,
+  readFrontierBeast,
+  type ArchivedStoryVariant,
+} from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import type { NativeRows, NativeStoryVariant } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { iconDefinition, type IconMeaning, resourceMeaning } from "./icon-meaning";
 
-/** Every story the game can emit (the schema's story variants, a fight and a raid), by the act it tells. */
-const storyMeanings = {
-  BattleEvent: "attack",
-  RaidEvent: "raid",
+const archivedStoryMeanings = {
   FaithPointsClaimedStory: "shrine",
   FaithPledged: "shrine",
   FaithRemoved: "shrine",
+  TradeCreated: "trade",
+  TradeAccepted: "trade",
+  TradeCancelled: "trade",
+  BankSwap: "swap",
+  BankLiquidity: "bank",
+  TierBought: "research",
+} satisfies Record<ArchivedStoryVariant, IconMeaning>;
+
+/** Every story the game can emit (the schema's story variants, a fight and a raid), by the act it tells. */
+const storyMeanings = {
+  ...archivedStoryMeanings,
+  BattleEvent: "attack",
+  RaidEvent: "raid",
   StructureLevelUpStory: "upgrade",
   RealmCreatedStory: "realm",
   StructureCapturedStory: "flag",
@@ -26,11 +42,6 @@ const storyMeanings = {
   BuildingPlacementStory: "build",
   BuildingPaymentStory: "build",
   BitcoinAwardStory: "bitcoin-mine",
-  TradeCreated: "trade",
-  TradeAccepted: "trade",
-  TradeCancelled: "trade",
-  BankSwap: "swap",
-  BankLiquidity: "bank",
   HyperstructurePoints: "hyperstructure",
   RelicChestOpened: "relics",
   RelicCrafted: "relics",
@@ -46,10 +57,9 @@ const storyMeanings = {
   ExplorerDeleteStory: "military",
   TroopsTransferred: "military",
   LordsWithdrawn: "lords",
-  TierBought: "research",
   SkillPointSpent: "research",
   SiteUsed: "claim",
-} satisfies Record<NativeStoryVariant | "BattleEvent" | "RaidEvent" | "TierBought", IconMeaning>;
+} satisfies Record<NativeStoryVariant | "BattleEvent" | "RaidEvent" | keyof typeof archivedStoryMeanings, IconMeaning>;
 
 /** A story's painting, by its kind: the one table every Feed, Events and Log row reads. */
 export function storyMeaning(story: string): IconMeaning {
@@ -120,14 +130,15 @@ const BUILDING_PAINTINGS: Partial<Record<BuildingType, IconMeaning>> = {
   [BuildingType.ResourceLabor]: "workshop",
   [BuildingType.WorkersHut]: "workers-hut",
   [BuildingType.Storehouse]: "storehouse",
-  [BuildingType.WarHall]: "war-hall",
+  [BuildingType.RationsDepot]: "rations",
   [BuildingType.SupplyYard]: "supply-yard",
   [BuildingType.ScoutsLodge]: "scout-lodge",
-  [BuildingType.Hearth]: "hearth",
+  [BuildingType.ConscriptionCamp]: "camp",
 };
 /** Frontier names its troop building Barracks (buildingName), and paints it so; elsewhere it is "Knight T1". */
 const FRONTIER_BUILDING_PAINTINGS: Partial<Record<BuildingType, IconMeaning>> = {
   [BuildingType.ResourceKnightT1]: "barracks",
+  [BuildingType.ResourceCrossbowmanT1]: "war-hall",
 };
 
 /**

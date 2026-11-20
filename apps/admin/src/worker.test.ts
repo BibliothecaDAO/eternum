@@ -1,3 +1,4 @@
+import { GAME_ENVIRONMENTS } from "@bibliothecadao/launch-service/operator-api";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -119,7 +120,7 @@ const statusState = (chainId: string) =>
       ],
       incidents: [],
     },
-    targets: [{ url: "https://herald.test", chainId, status: "active" }],
+    targets: [{ url: "https://herald.test", chainId }],
     counters: {},
   });
 
@@ -310,11 +311,9 @@ describe("screens", () => {
     expect(body.calendar.value).toEqual([
       { phase: "frontier", presetId: 5, startsAt: "2026-10-15T20:00:00Z", endsAt: "2026-10-22T20:00:00Z" },
     ]);
-    expect(body.runs.value.map((run: { gameName: string }) => run.gameName)).toEqual([
-      "madara.blitz-run",
-      "madara.frontier-run",
-      "madara.eternum-run",
-    ]);
+    expect(body.runs.value.map((run: { gameName: string }) => run.gameName)).toEqual(
+      GAME_ENVIRONMENTS.map((environment) => `${environment}-run`),
+    );
   });
 
   it("shows what runs where and the commands that deploy it, sending nothing", async () => {
@@ -322,7 +321,7 @@ describe("screens", () => {
       environment: "production",
       workers: { ok: true, value: { version: "v-id", revision: "7ba76ed03a0" } },
       client: { ok: true, value: "7ba76ed03a0" },
-      shards: { ok: true, value: [{ url: "https://herald.test", chainId: "0xmainnet", status: "active" }] },
+      shards: { ok: true, value: [{ url: "https://herald.test", chainId: "0xmainnet" }] },
       commands: {
         box: "pnpm run deploy production",
         cloudflare: 'pnpm run deploy:cloudflare production "$HOME/.realms-production"',

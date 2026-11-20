@@ -29,13 +29,7 @@ import {
   RealmBuildingSummary,
 } from "./realm-building-summary";
 
-import {
-  configManager,
-  getBuildingCount,
-  getRealmInfo,
-  ResourceManager,
-  resolveUseSimpleCost,
-} from "@bibliothecadao/eternum";
+import { configManager, getBuildingCount, getRealmInfo, resolveUseSimpleCost } from "@bibliothecadao/eternum";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { useGame } from "@/hooks/context/game-context";
 import { useQuery } from "@/hooks/helpers/use-query";
@@ -428,11 +422,8 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
       const productionInfo = resourceData.current(resourceId);
       if (!productionInfo?.production) return;
 
-      const productionData = ResourceManager.calculateResourceProductionData(
-        resourceId,
-        productionInfo,
-        currentDefaultTick,
-      );
+      const productionData = resourceData.productionData(resourceId, currentDefaultTick);
+      if (!productionData) return;
 
       const totalBuildings = Number(productionInfo.production.building_count ?? 0);
 

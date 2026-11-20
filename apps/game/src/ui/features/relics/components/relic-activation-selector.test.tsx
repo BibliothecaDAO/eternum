@@ -57,6 +57,7 @@ function game(
     }),
     set("0x3", "GameRegistry", { ...store.require("GameRegistry", { game_id: 1 }), preset_id: presetId }),
     set("0xa1", "RelicRules", { game_id: 1, rules: preset.relics }),
+    set("0xad2", "ArmyDay", { game_id: 1, explorer_id: ARMY_ID, day: 0 }),
     set("0xa2", "ExplorerTroops", {
       ...explorerFixture.expected.value,
       game_id: 1,
@@ -183,7 +184,7 @@ it("keeps missing army facts unavailable, reports them in development, and resum
       {
         model: "GameRegistry",
         key: "0x3",
-        value: { ...state.store.require("GameRegistry", { game_id: 1 }), preset_id: 3 },
+        value: { ...state.store.require("GameRegistry", { game_id: 1 }), preset_id: 2 },
       },
       {
         model: "ArmySlot",
@@ -221,20 +222,18 @@ it("keeps missing army facts unavailable, reports them in development, and resum
         model: "ArmyProgress",
         key: "0xa9",
         value: {
-          common_points: 0,
-          uncommon_points: 0,
-          rare_points: 0,
-          epic_points: 0,
-          legendary_points: 0,
           game_id: 1,
           explorer_id: ARMY_ID,
-          xp: 0,
-          battle: 1,
           logistics: 1,
-          scouting: 0,
-          scouting_kinds: 0,
-          homecoming: 1,
+          oath_slots: 1,
+          oaths: 0,
+          oath_pick: 0,
         },
+      },
+      {
+        model: "ArmyRelicEffect",
+        key: "0xaa",
+        value: { game_id: 1, explorer_id: ARMY_ID, kind: "StaminaRegen", rank: 0, expires_at: "0" },
       },
     ] as never),
   );

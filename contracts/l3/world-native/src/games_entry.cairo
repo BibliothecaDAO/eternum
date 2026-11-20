@@ -152,7 +152,7 @@ pub mod GamesEntry {
                 },
                 command,
             );
-            let (index, route, _payload) = crate::commands::route_command(command).expect('INVALID_COMMAND');
+            let (index, _, _) = crate::commands::route_command(command).expect('INVALID_COMMAND');
             // The season class reads the game's rules once for the whole play; the ingress reads only its gate.
             let command_mask = crate::logic::preset_record::for_game(game_id).rules.command_mask.read();
             assert!(crate::rules::command_enabled(command_mask, index.into()), "command disabled");
@@ -160,14 +160,6 @@ pub mod GamesEntry {
             if index == crate::command_routes::SETTLE_BLITZ_ROSTER {
                 assert!(self.data.registrar.roster_sizes.read(game_id) != 0, "roster not frozen");
                 assert!(actor == self.data.registrar.seaters.read(game_id), "only the game's seater");
-            }
-            if route.selector == selector!("withdraw_lords") {
-                crate::relics::assert_claim_window(
-                    game, crate::logic::lords_budget::chest_rules(game_id), starknet::get_block_timestamp(),
-                );
-            }
-            if route.selector == selector!("create_banks") {
-                crate::logic::release::assert_launcher();
             }
             actor
         }

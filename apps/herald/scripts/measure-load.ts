@@ -40,6 +40,7 @@ const expedition = () => ({
   seed: 1n,
   spacing: SPACING,
   startMainAt,
+  scheduledEndAt: startMainAt + PRESET_FIXTURE_DURATION_SECONDS,
   endAt: startMainAt + PRESET_FIXTURE_DURATION_SECONDS,
 });
 const MAP_STRUCTURES_PER_GAME = 150;
@@ -74,7 +75,8 @@ function values(type: string, overrides: Record<string, string | string[]> = {},
     return definition.members.flatMap((member) =>
       values(member.type, overrides, path ? `${path}.${member.name}` : member.name),
     );
-  if (definition?.type === "enum") return ["0", ...values(definition.variants[0].type)];
+  if (definition?.type === "enum")
+    return [String(definition.variants[0].wireId ?? 0), ...values(definition.variants[0].type)];
   if (type === "()") return [];
   if (type === "core::bool") return ["1"];
   if (type.includes("core::array::")) return ["0"];
@@ -171,14 +173,7 @@ const frontierArmy = (game: number, player: number, army: number, x: number) => 
       "troops.count": "1000",
       "troops.stamina": ["1", String(army)],
     }),
-    row("ArmyProgress", [game, entity], {
-      xp: "0",
-      battle: "1",
-      logistics: "1",
-      scouting: "1",
-      scouting_kinds: "0",
-      homecoming: "1",
-    }),
+    row("ArmyProgress", [game, entity], { logistics: "1", oath_slots: "1", oaths: "0", oath_pick: "0" }),
     row("ArmySlot", [game, realm(game, player), seasonDay(expedition(), Math.floor(now / 1000))!, army], {
       explorer_id: String(entity),
       "stamina.amount": String(preset.definition.rules.troop_stamina_config.stamina_initial),

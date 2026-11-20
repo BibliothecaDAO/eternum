@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { CallData, shortString } from "starknet";
 import approved from "../../../config/source/frontier/extension.json";
-import { gamesAbi } from "../../../packages/value-ledger/test-support/abi";
+import { gamesAbi, response } from "../../../packages/value-ledger/test-support/abi";
 import { readFrontierExtension, requireExtendedFrontier } from "./frontier-extension";
 
 vi.mock("../../../packages/chain/src/value-plane", async (original) => ({
@@ -50,6 +50,7 @@ beforeEach(() => {
     dev_mode_on: false,
     start_settling_at: approved.start,
     start_main_at: approved.start,
+    scheduled_end_at: approved.end,
     end_at: approved.end,
     end_grace_seconds: 0,
     seed: approved.seed,
@@ -62,7 +63,7 @@ beforeEach(() => {
   ledgerPool = BigInt(approved.poolLords) * 10n ** 18n;
   preconfirmed = undefined;
   rpc.call.mockImplementation(async ({ entrypoint }) => {
-    if (entrypoint === "game") return encode(game);
+    if (entrypoint === "game") return response(gamesAbi, "game", game);
     throw new Error(`unexpected ${entrypoint}`);
   });
   rpc.ledger.mockImplementation(async ({ entrypoint }) => {
@@ -159,3 +160,14 @@ it.each(["projection", "seed", "pool", "closed", "release", "expired", "l2chain"
     await expect(run()).rejects.toThrow();
   },
 );
+
+it("rejects a projected schedule that differs from the confirmed game", async () => {
+  projected.scheduled_end_at = approved.oldEnd;
+  await expect(run()).rejects.toThrow("extension_projection_differs");
+});
+
+it("rejects an extension whose planned end was not moved with its actual end", async () => {
+  game.scheduled_end_at = approved.oldEnd;
+  projected.scheduled_end_at = approved.oldEnd;
+  await expect(run()).rejects.toThrow("extension_world_end_differs");
+});

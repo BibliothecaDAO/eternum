@@ -19,6 +19,7 @@ pub struct RealmCatalogue {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SettleSeason {
     pub selected_realm: Option<u32>,
+    pub order: Option<u8>,
 }
 
 #[starknet::interface]

@@ -2,7 +2,6 @@ import { exploreStaminaOf } from "@/lib/army-stamina/explore-stamina";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import {
   configManager,
-  type ExpeditionRules,
   type GameActions,
   getBalance,
   getTroopResourceId,
@@ -29,8 +28,6 @@ import {
   type TroopType,
 } from "@bibliothecadao/types";
 
-import { stocksAtNextDeploy } from "../frontier-home";
-
 /**
  * An open army slot and the stamina a new army starts on in it (the owner, 20 October 2026: "stamina is slot tied"):
  * full at its own maximum when the slot is fresh today, else the bar the slot's last army left, recovering since.
@@ -47,10 +44,10 @@ export interface SlotStart {
 
 /**
  * What Deploy needs, read from facts with no UI of its own: the open slots and the bar each would start an army on,
- * the troops at home and what raising them costs. Troops are one count; the troop resource they are drawn from is the
- * realm's own, never shown.
+ * the available troop stocks and what raising the selected kind costs.
  */
 interface DeployPlan {
+  choices: NonNullable<DeployPlan["troops"]>[];
   /** Today's open slots, in slot order, for the player to choose from. */
   open: SlotStart[];
 
@@ -76,29 +73,29 @@ export interface TroopRaise {
 
 /**
  * The realm's deploy today; unknown while any slot, troop or wheat balance, or the realm's research, is. Troops at home
- * are what this deploy finds: the stock and Homecoming's return from the armies whose day has ended, as much as fits.
+ * come from the current stock, including settled production, rounded down to whole troops.
  */
 export const readDeployPlan = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
-  rules: ExpeditionRules,
   clock: { now: number; defaultTick: number },
+  selected?: TroopType,
 ): DeployPlan | undefined => {
   const { defaultTick } = clock;
   const allowed = realm.base.troop_max_explorer_count;
   const open = openArmySlots(store, { game_id: realm.game_id, entity_id: realm.entity_id, allowedSlots: allowed });
-  // A troop's price waits on the realm's research: the Barracks' Rations lowers it.
   const learned = realmLearned(store, realm.game_id, realm.entity_id);
   if (!open || learned === undefined) return undefined;
-  const troops = readTroopsAtHome(store, realm, rules, clock);
-  if (troops === undefined) return undefined;
+  const choices = readTroopsAtHome(store, realm, clock);
+  if (choices === undefined) return undefined;
+  const troops = (selected ? choices.find(({ type }) => type === selected) : choices[0]) ?? null;
   const raise = troops && readTroopRaise(store, realm, troops, Math.min(troops.atHome, troops.cap), defaultTick);
   if (raise === undefined) return undefined;
   // A new army's Logistics starts at its realm's Supply yard tier, which raises the bar a fresh slot starts full at.
   const trained = researchTier(learned, research.ROW_SUPPLY_YARD);
-  const perExplore = exploreStaminaOf(store, realm.game_id);
+  const perExplore = troops ? exploreStaminaOf(store, realm.game_id, troops.type, 0) : 0;
   const starts = open.map((slot) => slotStart(slot, troops, trained, clock.defaultTick, perExplore));
-  return { open: starts, troops, raise };
+  return { open: starts, troops, raise, choices };
 };
 
 /** One open slot's start, through the core's one rule for it (musterStamina), on the dock's clock. */
@@ -128,24 +125,28 @@ const slotStart = (
 };
 
 /**
- * The troops at home: the first stack this deploy finds, Homecoming's fitting return included, with the castle's cap
+ * The troop stocks at home, with the castle's cap
  * on one army. Undefined while unknown.
  */
 const readTroopsAtHome = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
-  rules: ExpeditionRules,
   clock: { now: number; defaultTick: number },
-): DeployPlan["troops"] | undefined => {
-  const stocks = stocksAtNextDeploy(store, realm, rules, clock.now, clock.defaultTick);
-  if (!stocks) return undefined;
+): DeployPlan["choices"] | undefined => {
+  const choices: DeployPlan["choices"] = [];
   for (const tier of TROOP_TIERS)
     for (const type of TROOP_TYPES) {
-      const stock = stocks.get(getTroopResourceId(type, tier))!;
-      const atHome = stock.held + stock.fits;
-      if (atHome > 0) return { type, tier, atHome, cap: configManager.getMaxArmySize(realm.base.level, tier) };
+      const stock = getBalance(
+        safeInteger(realm.entity_id),
+        getTroopResourceId(type, tier),
+        clock.defaultTick,
+        store,
+      ).balance;
+      if (stock === undefined) return undefined;
+      const atHome = Math.floor(stock / RESOURCE_PRECISION);
+      if (atHome > 0) choices.push({ type, tier, atHome, cap: configManager.getMaxArmySize(realm.base.level, tier) });
     }
-  return null;
+  return choices;
 };
 
 /** What raising up to `most` troops of a kind costs the realm today; unknown while a balance it pays from is. */

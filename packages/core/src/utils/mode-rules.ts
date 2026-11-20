@@ -1,4 +1,4 @@
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 
 /** Whether a game's rules turn a mode rule on: the one reading of the rules mask on the client. */
 export const isModeRuleEnabled = (

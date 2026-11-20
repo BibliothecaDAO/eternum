@@ -34,6 +34,8 @@ const realmWithEssence = (essence: number) => {
       model: "ResourceProduction",
       key: "0xf38",
       value: {
+        remainder: 0,
+
         game_id: 1,
         entity_id: 7,
         resource_type: ResourcesIds.Essence,

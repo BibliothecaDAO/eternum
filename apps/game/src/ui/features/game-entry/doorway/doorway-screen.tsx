@@ -165,6 +165,8 @@ const Hold = ({
             retry("secondary"),
           )
         : hold(<AppNotice tone="bad" line={view.blocker.line} />, retry("primary"));
+    case "refused":
+      return hold(<AppNotice tone="bad" line={view.blocker.line} />, null);
     case "devices":
       return hold(
         <AppNotice

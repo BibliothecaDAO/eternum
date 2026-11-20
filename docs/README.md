@@ -20,6 +20,8 @@ Read [`AGENTS.md`](../AGENTS.md) first. It is the coding and review standard for
 - Alerts and what to do about each: [on-call runbook](../deploy/first/ON-CALL.md)
 - Google Play and App Store forms (data safety, privacy label, ratings, reviewer sign-in, listing copy):
   [store submission answers](./store-submission.md)
+- Frontier Season 1 design, frozen on 2026-11-12: [`docs/plans/frontier-season-1.md`](./plans/frontier-season-1.md). It
+  is the design the Season 1 build follows, with its build list; it is not shipped behavior.
 - Balance sources and generated presets: [`config/source`](../config/source) and
   [`config/generated`](../config/generated); regenerate with `pnpm run config:generate`
 - Herald (block folding, snapshots, ordered diffs): [`apps/herald/README.md`](../apps/herald/README.md)

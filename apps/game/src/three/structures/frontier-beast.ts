@@ -1,23 +1,39 @@
 import { readFrontierBeast } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { StructureType } from "@bibliothecadao/types";
+import {
+  BEASTS,
+  DEEP_BEASTS,
+  DEEPLESS_FOURTH_LAYER_BEASTS,
+  StructureType,
+  beastModel,
+  type BeastModel,
+} from "@bibliothecadao/types";
 import type { FrontierSpecies, FrontierBeast } from "@bibliothecadao/eternum";
 export { beastBand, frontierBeast, type FrontierSpecies, type FrontierBeast } from "@bibliothecadao/eternum";
-export { FALLEN_REALM_DEPTHS } from "@bibliothecadao/types";
 
 export const FALLEN_REALM_RUIN_PATH = "/models/outposts/ruin.glb";
 
-/** Loot tiers describe species provenance, never the guard's combat tier. */
 export const FRONTIER_BEASTS = {
-  troll: { path: "/models/frontier/beast-troll.glb", lootSurvivorId: 71, lootTier: 5, maxScale: 1.46 },
-  wyvern: { path: "/models/frontier/beast-wyvern.glb", lootSurvivorId: 37, lootTier: 3, maxScale: 1.38 },
-  hydra: { path: "/models/frontier/beast-hydra.glb", lootSurvivorId: 59, lootTier: 2, maxScale: 1.7 },
-  wraith: { path: "/models/frontier/beast-wraith.glb", lootSurvivorId: 18, lootTier: 4, maxScale: 1 },
-  cyclops: { path: "/models/frontier/beast-cyclops.glb", maxScale: 1 },
-  ammit: { path: "/models/frontier/beast-ammit.glb", lootSurvivorId: 32, lootTier: 2, maxScale: 1.2 },
-  basilisk: { path: "/models/frontier/beast-basilisk.glb", lootSurvivorId: 5, lootTier: 1, maxScale: 1.2 },
-  "dark-fey": { path: "/models/frontier/beast-dark-fey.glb", maxScale: 0.75 },
-} as const;
+  troll: { path: "/models/frontier/beast-troll.glb" },
+  wyvern: { path: "/models/frontier/beast-wyvern.glb" },
+  hydra: { path: "/models/frontier/beast-hydra.glb" },
+  wraith: { path: "/models/frontier/beast-wraith.glb" },
+  cyclops: { path: "/models/frontier/beast-cyclops.glb" },
+  ammit: { path: "/models/frontier/beast-ammit.glb" },
+  basilisk: { path: "/models/frontier/beast-basilisk.glb" },
+  "dark-fey": { path: "/models/frontier/beast-dark-fey.glb" },
+} as const satisfies Record<FrontierSpecies, { path: string }>;
+
+export const largestBeastScale = (species: BeastModel): number => {
+  const rows = [
+    ...Object.values(BEASTS),
+    ...Object.values(DEEPLESS_FOURTH_LAYER_BEASTS),
+    ...Object.values(DEEP_BEASTS),
+  ];
+  const scales = rows.filter((row) => beastModel(row) === species).map((row) => row.scale);
+  if (scales.length === 0) throw new Error(`No beast row stands on the ${species} model`);
+  return Math.max(...scales);
+};
 const BEAST_ORDER = Object.keys(FRONTIER_BEASTS) as FrontierSpecies[];
 export const FRONTIER_BEAST_PATHS = BEAST_ORDER.map((beast) => FRONTIER_BEASTS[beast].path);
 export const FALLEN_REALM_MODEL_PATHS = [FALLEN_REALM_RUIN_PATH, ...FRONTIER_BEAST_PATHS];

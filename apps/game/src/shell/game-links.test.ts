@@ -9,7 +9,7 @@ import { ageOf } from "./play/ages";
 it("names every mode as its pushes do and as Play's ages do, from the one table of mode names", () => {
   for (const mode of Object.keys(GAME_MODE_NAMES) as GameModeName[]) {
     expect(pushGameName({ mode }), mode).toBe(modeLabel({ mode, preset_id: 1 }));
-    if (mode !== "duel") expect(ageOf(mode).name, mode).toBe(modeLabel({ mode, preset_id: 1 }));
+    expect(ageOf(mode).name, mode).toBe(modeLabel({ mode, preset_id: 1 }));
   }
   // Devcon's season is Frontier in a push, never "Season 0".
   expect(pushGameName({ mode: "frontier" })).toBe("Frontier");

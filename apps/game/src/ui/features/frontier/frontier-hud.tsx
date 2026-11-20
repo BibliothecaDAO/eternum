@@ -1,7 +1,5 @@
+import { StaminaReading } from "./hud/army-token";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useHeldTicket } from "@/hooks/use-holdings";
-import { getActiveGame } from "@/runtime/world";
-import { campaignOfPreset } from "@/services/home-claim-rules";
 import { canIssueOrders, isWatching } from "@/utils/can-issue-orders";
 import { useRealmVisit } from "@/sync/active-game-client";
 import { dropNextOrder } from "@/three/scenes/worldmap-next-order";
@@ -23,10 +21,10 @@ import { RealmVisitFoot, useRealmVisitNavigation, useVisitedRealm } from "./boar
 import { FrontierSeason, useSeasonRank } from "./board/season-board";
 import { useSpectatorWatch } from "./board/spectator-watch";
 import { useExpeditionRules, useFrontierRealm, useGoToFrontierPlace } from "./frontier-home";
-import { ArmyRefill } from "./army/army-refill";
 import { ArmyLostSheet } from "./army/army-lost";
 import { useArmyPanelOpens, usePickArmy } from "./army/army-opens";
 import { FrontierArmy } from "./army/frontier-army";
+import { FrontierOathPick } from "./army/oath-pick";
 import { useSelectionCard } from "./frontier-selection-sheet";
 import { useRealmStores } from "./realm-stores";
 import { FrontierSurfaces } from "./frontier-surfaces";
@@ -52,58 +50,74 @@ import { HudBands } from "./hud/hud-bands";
 import { MenuPage } from "./hud/menu-page";
 import { useHowToPlay } from "@/ui/modules/how-to-play";
 import { FrontierRealms } from "./value/frontier-realms";
-import { FrontierPurse } from "./value/frontier-purse";
-import { useSpendLords } from "./value/use-spend-lords";
-import { useLinkWalletPrompt, useOwedLords } from "./value/link-wallet";
-import { SeasonPayout } from "./value/season-payout";
-import { LordsPurse, PurseRow, RealmsChip } from "./value/lords-purse";
+import { FragmentsPurse, PurseRow, RealmsChip } from "./value/lords-purse";
+import { useFragmentsHeld } from "./value/fragments";
+import { ShopSheet, useReturnToShop } from "./shop/shop-sheet";
 import { useHomeKind } from "@/hooks/helpers/use-home-kind";
 import { useCampaignMark } from "./value/campaign-home";
 import { dailyClaimWaiting, type DailyClaimWaiting } from "./value/realm-labor";
 import { useRealmLabor } from "./value/use-realm-labor";
-import { useRealmLords } from "./value/use-realm-lords";
 import { OfflineNotice } from "./hud/offline-notice";
 import { SceneFailureNotice } from "./hud/scene-failure-notice";
 import { NextOrderBar, OrderBar } from "./hud/order-bar";
 import { PickedArmy } from "./hud/picked-army";
-import { SpireButton, useArmyAtItsSpire } from "./spire-card";
+import { ArmyRefill, sellsStamina } from "./army/army-refill";
+import { useArmySpireStatus } from "./spire-card";
+import { DailyQuest } from "./day/daily-quest";
+import { OpeningProvider, usePartShown } from "./opening/opening-context";
+import { OpeningLineView } from "./opening/opening-line-view";
+import { OpeningOffer } from "./opening/opening-offer";
+import { useOpening } from "./opening/use-opening";
+import { useSiteAlertOffer } from "./opening/use-site-alert-offer";
 import { FrontierToday } from "./log/frontier-today";
 import { CARD_STORE_KINDS, type CardStore, FrontierStoreCard, isCardStore } from "./production/frontier-store-card";
 import { FrontierResearch } from "./research/frontier-research";
-import { ClearedRuinChest } from "./chest/cleared-ruin-chest";
-import { ChestLordsMoment } from "./chest/chest-lords-moment";
-import { dayClock } from "./hud/day-clock";
+
 import { BuildingsInFlight } from "./build/build-sheet";
 import { DayDone } from "./rollover/day-done";
 import { useRealmPopulation } from "./realm/realm-population";
-import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
+
 import { useDocumentClass } from "@/hooks/use-document-class";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 
-/**
- * Frontier's HUD, one set of parts in two compositions (the desktop's shared regions, a phone's bands): the realm and
- * its stores, a nav page or the map, the action bar while an army is selected, the armies and the places.
- * Everything else opens from these as a sheet.
- */
-export const FrontierHud = ({
-  rules,
-  seasonOver: SeasonOver,
-}: {
+type FrontierHudProps = {
   rules: ExpeditionRules;
   /** The host owns the shell recap; the HUD supplies the player's realm and pending payout. */
   seasonOver: ComponentType<{
     realm: NativeRows["Structure"] | null;
     withdraw?: ReactNode;
   }>;
+};
+
+/**
+ * Frontier's HUD, one set of parts in two compositions (the desktop's shared regions, a phone's bands): the realm and
+ * its stores, a nav page or the map, the action bar while an army is selected, the armies and the places.
+ * Everything else opens from these as a sheet. Its parts wait on their moment, and a moment's line shows once.
+ */
+export const FrontierHud = (props: FrontierHudProps) => {
+  const realm = useFrontierRealm();
+  const visit = useRealmVisit();
+  const { opened, line, gotIt, offerDue } = useOpening(props.rules, visit ? null : realm);
+  const offer = useSiteAlertOffer(offerDue);
+  return (
+    <OpeningProvider opened={opened}>
+      <FrontierHudBody {...props} opening={{ line, offer, gotIt }} />
+    </OpeningProvider>
+  );
+};
+
+const FrontierHudBody = ({
+  rules,
+  seasonOver: SeasonOver,
+  opening,
+}: FrontierHudProps & {
+  opening: Pick<ReturnType<typeof useOpening>, "line" | "gotIt"> & { offer: ReturnType<typeof useSiteAlertOffer> };
 }) => {
   // Parts shared with the Blitz and Eternum HUD read upright, untracked and in sentence case here (index.css).
   useDocumentClass("frontier-hud");
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const spectating = useUIStore(isWatching);
-  // A player's ticket to this season's campaign, read as they play: the read settles what friends earned and asks for
-  // a golden upgrade earned for this home, so it lands without a visit to You.
-  useHeldTicket(spectating ? null : campaignOfPreset(getActiveGame()?.presetId ?? -1));
   const realm = useFrontierRealm();
   // The realm on the board: on a visit (a spectator's watch is one too) the visited realm, whose strip, panel and
   // armies the HUD shows; no order renders for a realm the player does not own.
@@ -129,6 +143,7 @@ export const FrontierHud = ({
   });
   const desktop = useLayout() === "desktop";
   const { surface, openSurface: setSurface, showsCard } = useOnePanel(card?.key ?? null, !desktop);
+  useReturnToShop(() => setSurface("shop"));
   const realmLabor = useRealmLabor(rules, realm);
   const claimWaiting = dailyClaimWaiting(realmLabor?.plan);
   const research = useResearchTree(realm);
@@ -136,11 +151,9 @@ export const FrontierHud = ({
     if (surface !== "research") setResearchPick(undefined);
   }, [surface]);
   // Selecting one of the realm's armies opens its panel; a pick in the dock or Today goes the same way.
-  const [armyChoosing, setArmyChoosing] = useState(false);
   const armyPanel = useArmyPanelOpens(
     visit ? null : realm,
-    (choosing) => {
-      setArmyChoosing(choosing);
+    () => {
       setSurface("army");
     },
     desktop,
@@ -165,6 +178,8 @@ export const FrontierHud = ({
         },
   });
   const seasonRank = useSeasonRank();
+  const aspectsOpen = usePartShown("aspects");
+  const fragments = useFragmentsChip();
   const layers = useMapLayers(rules, shown, visit ? null : realm);
   // The store card a ring or a plate opened, under the realm card on a desktop and under the strip on a phone.
   const [openStore, setOpenStore] = useState<CardStore | null>(null);
@@ -190,18 +205,15 @@ export const FrontierHud = ({
       {storeCards?.open && storeCards.card}
     </>
   );
-  // A phone's purse: the player's realm's LORDS; a spectator sees there what the desktop's top bar says of them.
   const purse = spectating ? (
     <IdentityChip compact />
   ) : (
-    realm &&
-    !visit && (
-      <RealmPurse
-        realm={realm}
-        waiting={claimWaiting}
-        onWithdraw={() => setSurface("withdraw")}
-        onRealms={() => setSurface("realms")}
-      />
+    own &&
+    (claimWaiting || fragments !== null) && (
+      <PurseRow>
+        {fragments !== null && <FragmentsPurse fragments={fragments} onOpen={() => setSurface("shop")} />}
+        {claimWaiting && <RealmsChip waiting={claimWaiting} narrow onOpen={() => setSurface("realms")} />}
+      </PurseRow>
     )
   );
   const page =
@@ -216,8 +228,11 @@ export const FrontierHud = ({
     ) : undefined;
   const notices = (
     <>
-      <ClearedRuinChest />
-      <ChestLordsMoment />
+      {own && <DailyQuest realm={own} layout={desktop ? "desktop" : "phone"} />}
+      {opening.line && (
+        <OpeningLineView moment={opening.line.moment} rules={opening.line.rules} onGotIt={opening.gotIt} />
+      )}
+      {opening.offer && <OpeningOffer offer={opening.offer} />}
       <OfflineNotice />
       <SceneFailureNotice />
       {own && <DayEndNotice dayEnd={dayEnd} onOpen={() => setSurface("today")} />}
@@ -230,15 +245,15 @@ export const FrontierHud = ({
     </>
   );
   // A phone's dock picks an army, the map first; a desktop's opens its panel too.
-  const dock = shown && <DockFor rules={rules} realm={shown} onOpenArmy={desktop ? openArmy : pickArmy} />;
+  const dock = shown && <DockFor realm={shown} onOpenArmy={desktop ? openArmy : pickArmy} />;
   const sheets = (
     <>
       <FrontierSurfaces realm={realm} rules={rules} />
       {showsCard && card?.sheet}
-      {surface === "withdraw" && realm && !visit && <FrontierPurse realm={realm} onClose={close} />}
       {surface === "realms" && realm && !visit && <FrontierRealms labor={realmLabor} onClose={close} />}
-      {surface === "army" && realm && !visit && <FrontierArmy realm={realm} choosing={armyChoosing} onClose={close} />}
+      {surface === "army" && realm && !visit && <FrontierArmy realm={realm} onClose={close} />}
       {surface === "army-lost" && <ArmyLostSheet onClose={close} />}
+      {surface === "shop" && own && <ShopSheet realm={own} onClose={close} />}
       {surface === "settings" && (
         <HudSheet label={SETTINGS} onClose={close}>
           <SettingsPanel />
@@ -249,22 +264,20 @@ export const FrontierHud = ({
           rules={rules}
           realm={realm ?? visited}
           dayEnd={own && <DayEndBlock dayEnd={dayEnd} />}
-          onOpenArmy={realm && !visit ? openArmy : undefined}
+          own={Boolean(own)}
           onClose={close}
         />
       )}
-      {/* The card covers the HUD: Withdraw opens in its place; a board open as the season ends stays till closed. */}
-      {surface !== "season" && surface !== "withdraw" && (
-        <SeasonOver realm={visit ? null : realm} withdraw={realm && !visit && <SeasonPayout realm={realm} />} />
-      )}
+      {surface !== "season" && <SeasonOver realm={visit ? null : realm} />}
       {realm && <DayDone rules={rules} realm={realm} visiting={Boolean(visit)} />}
       <BuildingsInFlight />
+      <FrontierOathPick realm={realm} />
     </>
   );
 
   return desktop ? (
     <FrontierDesktop
-      season={{ rank: seasonRank, onOpen: () => setSurface("season") }}
+      season={aspectsOpen ? { rank: seasonRank, onOpen: () => setSurface("season") } : undefined}
       clock={<FrontierDayClock rules={rules} onOpenToday={() => setSurface("today")} />}
       worldTab={layers ? layerTab(layers) : undefined}
       realm={
@@ -401,7 +414,7 @@ const FrontierPhoneHud = ({
 /**
  * A phone's action row, the one row over the place bar that says what the pick lets the player do now (owner, 22 October
  * 2026: mobile direction A): with an order pending, its costs and verb; with the next order queued, its bar; with an
- * army picked, the army (a tap opens its card), its four sides, its stamina as its refill, and Level up; otherwise
+ * army picked, the army (a tap opens its card), its four sides, its stamina reading, and Level up; otherwise
  * nothing. A desktop has none: its orders go from the map, and the army's state is its panel's.
  */
 const ArmyAction = ({
@@ -412,7 +425,7 @@ const ArmyAction = ({
   rules: ExpeditionRules;
   realm: NativeRows["Structure"];
   /** Opens an army's panel (useArmyPanelOpens), on its level-up choices when `choosing`; none on a visit. */
-  onOpenArmy?: (explorerId: number, choosing?: boolean) => void;
+  onOpenArmy?: (explorerId: number) => void;
 }) => {
   const armies = useDockArmies(realm);
   const order = useArmyOrder();
@@ -424,48 +437,43 @@ const ArmyAction = ({
   if (order && selected) return <PendingOrder rules={rules} realm={realm} order={order} army={selected} />;
   if (selected && nextOrder?.entityId === selected.explorerId)
     return <NextOrderBar onCancel={() => dropNextOrder("cancelled", selected.explorerId)} />;
-  if (acting && onOpenArmy) return <ActingArmy army={acting} realm={realm} onOpenArmy={onOpenArmy} />;
+  if (acting && onOpenArmy) return <ActingArmy army={acting} onOpenArmy={onOpenArmy} />;
   return null;
 };
 
 /** The picked army in a phone's action row, with Spire while it stands at its spire. */
-const ActingArmy = ({
-  army,
-  realm,
-  onOpenArmy,
-}: {
-  army: DockArmy;
-  realm: NativeRows["Structure"];
-  onOpenArmy: (explorerId: number, choosing?: boolean) => void;
-}) => {
-  const spire = useArmyAtItsSpire(army.explorerId);
+const ActingArmy = ({ army, onOpenArmy }: { army: DockArmy; onOpenArmy: (explorerId: number) => void }) => {
+  const spire = useArmySpireStatus(army.explorerId);
+  const held = useFragmentsHeld();
   return (
     <PickedArmy
       army={army}
-      refill={<ArmyRefill army={army} realm={realm} look="stamina" />}
-      spire={spire && <SpireButton explorerId={army.explorerId} spire={spire} />}
+      refill={
+        sellsStamina(army, held) ? (
+          <ArmyRefill army={army} look="reading" />
+        ) : (
+          army.stamina && <StaminaReading stamina={army.stamina} />
+        )
+      }
+      spire={spire}
       onDetails={() => onOpenArmy(army.explorerId)}
-      onLevelUp={() => onOpenArmy(army.explorerId, army.canSpendSkillPoint)}
     />
   );
 };
 
 /** The dock over the realm's armies today; on a phone the action row takes its place while an army is picked. */
 const DockFor = ({
-  rules,
   realm,
   onOpenArmy,
 }: {
-  rules: ExpeditionRules;
   realm: NativeRows["Structure"];
   onOpenArmy?: (explorerId: number) => void;
 }) => {
   const armies = useDockArmies(realm);
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
   const phone = useLayout() === "phone";
-  const lastHour = dayClock(rules, useNowSeconds()).tone === "ember";
   if (phone && armies.some((army) => army.explorerId === selectedId)) return null;
-  return <ArmyDock realm={realm} armies={armies} lastHour={lastHour} onOpenArmy={onOpenArmy} />;
+  return <ArmyDock realm={realm} armies={armies} onOpenArmy={onOpenArmy} />;
 };
 
 const PendingOrder = ({
@@ -480,6 +488,7 @@ const PendingOrder = ({
   army: DockArmy;
 }) => {
   const labor = useRealmStores(realm, rules)?.labor;
+  const held = useFragmentsHeld();
   return (
     <OrderBar
       kind={order.kind}
@@ -490,8 +499,7 @@ const PendingOrder = ({
       laborFits={
         labor?.limit === undefined || labor.amount === undefined ? undefined : Math.max(0, labor.limit - labor.amount)
       }
-      xp={order.xp}
-      refill={<ArmyRefill army={army} realm={realm} />}
+      refill={sellsStamina(army, held) ? <ArmyRefill army={army} look="button" /> : undefined}
       onCancel={() => useUIStore.getState().updateEntityActionHoveredHex(null)}
       onGo={() => requestOrderAt(order.target)}
     />
@@ -531,7 +539,7 @@ const HudMenu = ({
 /**
  * The desktop's realm panel over the realm the HUD reads (the player's, or the one watched or visited): its name and
  * rank's steps in a header that takes the map home to it, its population and stores, and for the player's own realm
- * its LORDS (Withdraw), its Realms' labor (Realms) and each store's card.
+ * its daily home claim and each store's card.
  */
 const FrontierRealmPanel = ({
   rules,
@@ -551,13 +559,11 @@ const FrontierRealmPanel = ({
 }) => {
   const name = useGameModeConfig().structure.getName(realm).name;
   const stores = useStoreReadings(realm, rules);
-  const lords = useRealmLords(own ?? realm);
-  const owed = useOwedLords(own ?? realm);
-  const linkWalletLine = useLinkWalletPrompt(own ? owed : undefined);
   const population = useRealmPopulation(realm);
   const goToPlace = useGoToFrontierPlace(realm);
   const mark = useCampaignMark(realm);
   const kind = useHomeKind(realm);
+  const fragments = useFragmentsChip();
   return (
     <RealmPanel
       name={name}
@@ -569,48 +575,17 @@ const FrontierRealmPanel = ({
       stores={stores}
       onHome={() => goToPlace(true)}
       {...(own && {
-        lords,
-        linkWalletLine,
         waiting,
         storeCards,
-        onWithdraw: () => onSurface("withdraw"),
         onRealms: () => onSurface("realms"),
+        ...(fragments !== null && { fragments, onShop: () => onSurface("shop") }),
       })}
     />
   );
 };
 
-/**
- * Under the strip: the realm's LORDS, which open Withdraw, and beside them the Realms chip while the home's daily claim
- * has Labor or Essence waiting today.
- */
-const RealmPurse = ({
-  realm,
-  waiting,
-  onWithdraw,
-  onRealms,
-}: {
-  realm: NativeRows["Structure"];
-  waiting: DailyClaimWaiting | null;
-  onWithdraw: () => void;
-  onRealms: () => void;
-}) => (
-  <PurseRow>
-    {waiting && <RealmsChip waiting={waiting} narrow onOpen={onRealms} />}
-    <OwnLordsPurse realm={realm} onOpen={onWithdraw} />
-  </PurseRow>
-);
-
-/** The player's own realm's LORDS, marked while the account has no linked wallet to receive them. */
-const OwnLordsPurse = ({ realm, onOpen }: { realm: NativeRows["Structure"]; onOpen: () => void }) => {
-  const lords = useRealmLords(realm);
-  const spend = useSpendLords(realm);
-  return (
-    <LordsPurse
-      lords={lords}
-      spendOnly={spend.source ? (spend.balance?.available ?? 0n) : undefined}
-      linkWalletLine={useLinkWalletPrompt(useOwedLords(realm))}
-      onOpen={onOpen}
-    />
-  );
+const useFragmentsChip = (): number | null => {
+  const shown = usePartShown("fragments-chip");
+  const fragments = useFragmentsHeld();
+  return shown ? fragments : null;
 };

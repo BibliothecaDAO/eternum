@@ -19,11 +19,14 @@ const herald = vi.hoisted(() => ({
   /** The chain clock the HUD reads. */
   now: 0,
   /** The game's registry: prod's Playtest ended on 31 Oct 09:46Z, long after day 2. */
+  scheduledEndAt: 1793439960,
   game: { end_at: "1793439960" },
 }));
 /** The game's facts as the HUD and the day's turn read them: its registry, and realm 7 owned by the player. */
 const facts = vi.hoisted(() => ({
   get: (model: string) => (model === "GameRegistry" ? herald.game : undefined),
+  // A game whose complete snapshot holds no race rules ranks players by the sites they cleared.
+  absenceKnown: () => ({ known: {} }),
   structuresOwnedBy: () => [{ entity_id: 7 }],
 }));
 
@@ -33,7 +36,15 @@ const alerts = vi.hoisted(() => ({ owner: null as string | null }));
 const shares = vi.hoisted(() => ({
   createShare: vi.fn(async () => "DAY2LINK"),
   sharePosted: vi.fn(async () => {}),
-  shareTally: vi.fn(async () => ({ links: 4, posted: 3, visits: 12, joined: 3, activated: 1 })),
+  shareTally: vi.fn(async () => ({
+    links: 4,
+    posted: 3,
+    visits: 12,
+    joined: 3,
+    activated: 1,
+    friendsPaid: 0,
+    fragmentsEarned: 0,
+  })),
   uploadShareCard: vi.fn(async () => {}),
 }));
 /** The card's JPEG, as the browser makes it from the drawn card (a canvas jsdom has none of). */
@@ -102,7 +113,12 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
     // Realm 7's name, as the card writes it.
     getStructureName: () => ({ name: "Temtinos", originalName: "Temtinos" }),
     // The day's turn reads the game's calendar and the realm's site from the facts: realm 7's day-3 site.
-    readExpeditionRules: () => ({ ...recorded.calendar, endAt: Number(herald.game.end_at), spacing: 100 }),
+    readExpeditionRules: () => ({
+      ...recorded.calendar,
+      scheduledEndAt: herald.scheduledEndAt,
+      endAt: Number(herald.game.end_at),
+      spacing: 100,
+    }),
     isExpeditionRealm: () => true,
     expeditionRealmSite: () => ({ col: 650, row: 850 }),
   };
@@ -125,7 +141,7 @@ const { cardJpeg } = await import("@/utils/card-image");
 const { setViewportWidth } = await import("@/shell/frame/test-viewport");
 const { watchDayTurn } = await import("@/ui/features/world/components/expeditions/expedition-rollover");
 
-const RULES = { ...RECORDED_DAY.calendar, spacing: 100 };
+const RULES = { ...RECORDED_DAY.calendar, scheduledEndAt: herald.scheduledEndAt, spacing: 100 };
 const SUMMARY = "section[aria-label='Day 2 done']";
 
 let host: HTMLDivElement;
@@ -359,7 +375,11 @@ it("shows a dash for each total, and says history did not answer, with Try again
 
 describe("the alerts popup, which waits for the day's end", () => {
   /** Day 3, today: the summary of day 2 opens over it. */
-  const today = () => dayOf({ ...RULES, endAt: Number(herald.game.end_at) }, BEFORE_PLAYING_ON.now)!;
+  const today = () =>
+    dayOf(
+      { ...RULES, scheduledEndAt: herald.scheduledEndAt, endAt: Number(herald.game.end_at) },
+      BEFORE_PLAYING_ON.now,
+    )!;
   const popup = () => document.body.querySelector("[role='dialog'][aria-label='Know when to come back']");
   /** Day 2's end already gone through on this device: the map opens clear. */
   const day2Seen = () => window.localStorage.setItem(`frontier.day-done.1.${RECORDED_DAY.player}`, "2");
@@ -381,7 +401,7 @@ describe("the alerts popup, which waits for the day's end", () => {
     await settle();
     expect(host.querySelector(SUMMARY)).toBeNull();
     expect(popup()?.textContent).toContain(
-      "A push for each day's opening, rested armies, fights, results and messages.",
+      "A push for each day's opening, Deep sites you can take, rested armies, fights, results and messages.",
     );
     expect(useAskMemory.getState().shownAt).not.toBeNull();
   });

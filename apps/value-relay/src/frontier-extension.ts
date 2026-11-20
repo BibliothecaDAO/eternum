@@ -68,6 +68,7 @@ async function readApprovedWorld(connection: ShardConnection, heraldUrl: string)
     "start_settling_at",
     "start_main_at",
     "end_at",
+    "scheduled_end_at",
     "end_grace_seconds",
     "seed",
   ])
@@ -99,6 +100,7 @@ async function readApprovedWorld(connection: ShardConnection, heraldUrl: string)
   const release = Number(singleRow(snapshot, "GameRelease").release_id);
   if (
     ![approved.oldEnd, approved.end].includes(worldEnd) ||
+    !exact(game.scheduled_end_at, worldEnd) ||
     (worldEnd === approved.end && release !== approved.release)
   )
     throw new Error("extension_world_end_differs");

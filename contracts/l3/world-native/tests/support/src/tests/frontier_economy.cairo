@@ -22,7 +22,8 @@ pub const WEST: u8 = 3;
 pub /// A board realm carrying Frontier's own recipes: two wheat for each troop.
  fn frontier_preset() -> crate::presets::PresetDefinition {
     let mut preset = super::building_commands::building_preset(Some(super::building_commands::board_rules()));
-    let (_, frontier) = super::preset_projection::current_definition("frontier");
+    let (_, frontier) = super::preset_projection::current_definition("frontier-check");
+    preset.rules.command_mask = frontier.rules.command_mask;
     preset.resources.production = frontier.resources.production;
     preset
 }
@@ -48,11 +49,7 @@ pub fn frontier_realm(preset: crate::presets::PresetDefinition) -> (super::Deplo
 pub fn build(home: ResourceKey, category: u8, direction: u8) -> Command {
     Command::CreateBuilding(
         CreateBuilding {
-            scouting_kind: 0,
-            structure_id: home.entity_id,
-            directions: array![direction].span(),
-            category,
-            use_simple: true,
+            structure_id: home.entity_id, directions: array![direction].span(), category, use_simple: true,
         },
     )
 }
@@ -73,7 +70,9 @@ pub fn raise(home: ResourceKey, troops: u128, direction: u8) -> Command {
 }
 pub fn reinforce(explorer_id: u64, troops: u128) -> Command {
     Command::ManageTroops(
-        ManageTroops::RecruitExplorer(RecruitExplorer { explorer_id, amount: troops * RESOURCE_PRECISION }),
+        ManageTroops::RecruitExplorer(
+            RecruitExplorer { explorer_id, amount: troops * RESOURCE_PRECISION, supply_post: None },
+        ),
     )
 }
 pub fn resources(deployment: super::Deployment) -> IResourceOperationsDispatcher {
@@ -154,15 +153,5 @@ pub fn allow_armies(deployment: super::Deployment, home: ResourceKey) {
             resources_packed: original.resources_packed,
             metadata: original.metadata,
         },
-    );
-}
-pub fn learn_barracks(deployment: super::Deployment, home: ResourceKey, sides: Span<u8>) {
-    let mut learned = 0;
-    for side in sides {
-        learned = crate::research::learn(learned, crate::research::ROW_BARRACKS, *side);
-    }
-    let learned = learned;
-    snforge_std::interact_with_state(
-        deployment.games, || crate::logic::research::write(home, crate::research::RealmKnowledge { learned }),
     );
 }

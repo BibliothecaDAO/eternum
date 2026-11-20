@@ -38,10 +38,9 @@ pub const SPIRE_OCCUPIER: u8 = 35;
 pub const CAMP_OCCUPIER: u8 = 37;
 pub const BITCOIN_MINE_OCCUPIER: u8 = 38;
 pub const RESERVED_HYPERSTRUCTURE_OCCUPIER: u8 = 39;
-pub const SHRINE_OCCUPIER: u8 = 40;
-pub const WELL_OCCUPIER: u8 = 41;
 // A spire found by a Blitz reveal: it paid its finder once and stands dormant, with no portal and no other use.
 pub const DORMANT_SPIRE_OCCUPIER: u8 = 45;
+pub const DEEP_SITE_OCCUPIER: u8 = 46;
 
 pub const RIFT_CATEGORY: u8 = 9;
 pub const RUIN_CATEGORY: u8 = 10;
@@ -49,3 +48,7 @@ pub const BEASTS_CATEGORY: u8 = 11;
 pub const RIFT_OCCUPIER: u8 = 42;
 pub const RUIN_OCCUPIER: u8 = 43;
 pub const BEASTS_OCCUPIER: u8 = 44;
+
+pub fn is_explorer(category: u8) -> bool {
+    category >= EXPLORER_KNIGHT_T1_OCCUPIER && category <= EXPLORER_CROSSBOWMAN_T3_OCCUPIER
+}

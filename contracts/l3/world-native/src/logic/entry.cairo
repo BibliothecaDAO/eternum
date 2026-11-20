@@ -1,5 +1,5 @@
 use starknet::Event;
-use starknet::storage::{StorageMapWriteAccess, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
 
 pub fn assert_ledger_operator() {
@@ -10,9 +10,7 @@ pub fn assert_ledger_operator() {
 #[starknet::component]
 pub mod EntryAdministration {
     use starknet::ContractAddress;
-    use starknet::storage::{
-        StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess,
-    };
+    use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess, StoragePointerWriteAccess};
     use crate::entry::{LaborGrant, LaborHome};
     use crate::logic::release::ReleaseState;
     use crate::logic::release::ReleaseState::InternalTrait as LifeInternal;
@@ -78,6 +76,39 @@ pub mod EntryAdministration {
             get_dep_component!(@self, Life).assert_authority();
             self.data.entry.operator.write(operator);
         }
+
+        fn frontier_prize(self: @ComponentState<TContractState>, game_id: u32) -> crate::entry::FrontierPrize {
+            crate::entry::FrontierPrize {
+                pool: self.data.entry.prize_pool.read(game_id),
+                issued: self.data.entry.prize_issued.read(game_id),
+                count: self.data.entry.prize_count.read(game_id),
+            }
+        }
+
+        fn sweep_lords(ref self: ComponentState<TContractState>, game_id: u32, structure_id: u64) {
+            super::assert_ledger_operator();
+            crate::relics::ILordsDispatcherTrait::sweep_lords(
+                crate::relics::ILordsLibraryDispatcher {
+                    class_hash: get_dep_component!(@self, Life).classes(game_id).prizes.read(),
+                },
+                game_id,
+                structure_id,
+            );
+        }
+    }
+    #[embeddable_as(HomeGrantsImpl)]
+    pub impl HomeGrants<
+        TContractState,
+        +HasComponent<TContractState>,
+        impl Life: ReleaseState::HasComponent<TContractState>,
+        +Drop<TContractState>,
+    > of crate::entry::IHomeGrants<ComponentState<TContractState>> {
+        fn grant_labor(
+            ref self: ComponentState<TContractState>, home: LaborHome, day: u64, account: ContractAddress,
+        ) -> LaborGrant {
+            super::assert_ledger_operator();
+            self.grant_home_resources(home, day, account)
+        }
         fn labor_grant(self: @ComponentState<TContractState>, home: LaborHome, day: u64) -> Option<LaborGrant> {
             match self.data.entry.home_labor_grants.read((home.game_id, home.home, day)) {
                 Some((
@@ -86,98 +117,23 @@ pub mod EntryAdministration {
                 None => None,
             }
         }
-        fn publish_frontier_pool(
-            ref self: ComponentState<TContractState>, game_id: u32, amount: u128, prize_pool: u128,
+        fn grant_seal(ref self: ComponentState<TContractState>, game_id: u32, account: ContractAddress) {
+            super::assert_ledger_operator();
+            super::grant_seal(game_id, account)
+        }
+        fn credit_fragments(
+            ref self: ComponentState<TContractState>, game_id: u32, credit: crate::fragments::FragmentCredit,
         ) {
             super::assert_ledger_operator();
-            crate::logic::lords_budget::publish_pool(game_id, amount);
-            self.data.entry.prize_pool.write(game_id, prize_pool);
-            self.record_frontier_prize(game_id);
+            crate::logic::fragments::credit(game_id, credit)
         }
-        fn frontier_prize(self: @ComponentState<TContractState>, game_id: u32) -> crate::entry::FrontierPrize {
-            crate::entry::FrontierPrize {
-                pool: self.data.entry.prize_pool.read(game_id),
-                issued: self.data.entry.prize_issued.read(game_id),
-                count: self.data.entry.prize_count.read(game_id),
-            }
-        }
-        fn post_frontier_top(ref self: ComponentState<TContractState>, game_id: u32, winners: Array<ContractAddress>) {
-            super::assert_ledger_operator();
-            self.assert_prize_ready(game_id);
-            let count: u16 = winners.len().try_into().unwrap();
-            let rules = crate::logic::lords_budget::chest_rules(game_id);
-            assert!(count <= rules.top_n, "too many prize winners");
-            if let Some(previous) = self.data.entry.prize_count.read(game_id) {
-                assert!(previous == count, "prize winners already fixed");
-                for i in 0..count {
-                    assert!(
-                        self.data.entry.prize_winners.read((game_id, i + 1)) == *winners.at(i.into()),
-                        "prize winners already fixed",
-                    );
-                }
-                return;
-            }
-            for i in 0..count {
-                let winner = *winners.at(i.into());
-                assert!(winner != 0.try_into().unwrap(), "invalid prize winner");
-                assert!(self.data.settlements.entries.read((game_id, winner)).is_some(), "prize winner has no realm");
-                for j in 0..i {
-                    assert!(winner != *winners.at(j.into()), "duplicate prize winner");
-                }
-                self.data.entry.prize_winners.write((game_id, i + 1), winner);
-            }
-            self.data.entry.prize_count.write(game_id, Some(count));
-            self.record_frontier_prize(game_id);
-        }
-        fn sweep_lords(ref self: ComponentState<TContractState>, game_id: u32, structure_id: u64) {
-            super::assert_ledger_operator();
-            self.assert_season_ended(game_id);
-            let context = crate::commands::load_context(game_id, 0, starknet::get_block_timestamp());
-            crate::relics::ILordsDispatcherTrait::sweep_lords(
-                crate::relics::ILordsLibraryDispatcher {
-                    class_hash: get_dep_component!(@self, Life).classes(game_id).prizes.read(),
-                },
-                game_id,
-                structure_id,
-                crate::commands::action_context(context),
-            );
-        }
-        fn award_frontier_prize(ref self: ComponentState<TContractState>, game_id: u32, rank: u16) {
-            super::assert_ledger_operator();
-            if self.data.entry.prize_awarded.read((game_id, rank)) {
-                return;
-            }
-            self.assert_prize_ready(game_id);
-            let count = self.data.entry.prize_count.read(game_id).expect('prize winners not posted');
-            let amount = crate::frontier_prizes::prize_amount(self.data.entry.prize_pool.read(game_id), count, rank);
-            self.data.entry.prize_awarded.write((game_id, rank), true);
-            if amount == 0 {
-                return;
-            }
-            let account = self.data.entry.prize_winners.read((game_id, rank));
-            let withdrawal = crate::relics::LordsWithdrawal { account, amount, prize_rank: rank, prize_count: count };
-            let claim_id = starknet::get_tx_info().unbox().transaction_hash;
-            assert!(self.data.relics.lords_withdrawals.read(claim_id).is_none(), "withdrawal already recorded");
-            self.data.relics.lords_withdrawals.write(claim_id, Some(withdrawal));
-            self.data.entry.prize_issued.write(game_id, self.data.entry.prize_issued.read(game_id) + amount);
-            let mut values = array![];
-            withdrawal.serialize(ref values);
-            self
-                .emit(
-                    crate::events::RowSet {
-                        version: 1,
-                        model: 'LordsWithdrawal',
-                        keys: array![game_id.into(), claim_id].span(),
-                        values: values.span(),
-                    },
-                );
-            self.record_frontier_prize(game_id);
-        }
-        fn grant_labor(
-            ref self: ComponentState<TContractState>, home: LaborHome, day: u64, account: ContractAddress,
-        ) -> LaborGrant {
-            super::assert_ledger_operator();
-            self.grant_home_resources(home, day, account)
+    }
+    #[embeddable_as(ResourceContextImpl)]
+    pub impl ResourceContextView<
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
+    > of crate::entry::IResourceContext<ComponentState<TContractState>> {
+        fn resource_context(self: @ComponentState<TContractState>, game_id: u32) -> crate::commands::ResourceContext {
+            super::grant_resource_context(game_id)
         }
     }
     #[generate_trait]
@@ -187,29 +143,10 @@ pub mod EntryAdministration {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
-        fn assert_season_ended(self: @ComponentState<TContractState>, game_id: u32) {
-            let game = crate::logic::game::game(game_id);
-            assert!(starknet::get_block_timestamp() >= game.end_at, "season has not ended");
-        }
-        fn assert_prize_ready(self: @ComponentState<TContractState>, game_id: u32) {
-            self.assert_season_ended(game_id);
-            assert!(crate::logic::lords_budget::budget(game_id).is_some(), "Frontier pool not published");
-        }
-        fn record_frontier_prize(ref self: ComponentState<TContractState>, game_id: u32) {
-            let prize = crate::entry::ILedgerOperator::frontier_prize(@self, game_id);
-            let mut values = array![];
-            prize.serialize(ref values);
-            self
-                .emit(
-                    crate::events::RowSet {
-                        version: 1, model: 'FrontierPrize', keys: array![game_id.into()].span(), values: values.span(),
-                    },
-                );
-        }
         fn grant_home_resources(
             ref self: ComponentState<TContractState>, target: LaborHome, day: u64, account: ContractAddress,
         ) -> LaborGrant {
-            if let Some(previous) = crate::entry::ILedgerOperator::labor_grant(@self, target, day) {
+            if let Some(previous) = crate::entry::IHomeGrants::labor_grant(@self, target, day) {
                 assert!(
                     previous.game_id == target.game_id && previous.account == account && previous.home == target.home,
                     "labor already claimed",
@@ -218,15 +155,12 @@ pub mod EntryAdministration {
             }
             assert!(account != 0.try_into().unwrap(), "invalid labor account");
             let timestamp = starknet::get_block_timestamp();
-            let context = crate::commands::load_context(target.game_id, 0, timestamp);
-            crate::game::assert_playing(context.game.unbox(), timestamp);
-            let rules = crate::logic::preset_record::for_game(target.game_id)
-                .labor_rules
-                .read()
-                .expect('labor is disabled');
+            let game = crate::logic::game::game(target.game_id);
+            crate::game::assert_playing(game, timestamp);
+            let preset = crate::logic::preset_record::for_game(target.game_id);
+            let rules = preset.labor_rules.read().expect('labor is disabled');
             assert!(
-                day == crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, timestamp)
-                    .index,
+                day == crate::days::day_of(game, preset.rules.day_unit_seconds.read(), timestamp).index,
                 "incorrect labor day",
             );
             let campaign_tier = self.home_campaign_tier(target, account);
@@ -234,7 +168,7 @@ pub mod EntryAdministration {
                 target,
                 campaign_tier,
                 rules,
-                crate::commands::resource_context(context),
+                crate::entry::IResourceContext::resource_context(@self, target.game_id),
                 get_dep_component!(@self, Life).classes(target.game_id).resources.read(),
             );
             let grant = LaborGrant { game_id: target.game_id, account, home: target.home, amount, essence };
@@ -307,6 +241,27 @@ pub fn grant_home_amounts(
     (amount, essence)
 }
 
+pub fn grant_seal(game_id: u32, account: starknet::ContractAddress) {
+    assert!(account != 0.try_into().unwrap(), "invalid seal account");
+    let game = crate::logic::game::game(game_id);
+    let timestamp = starknet::get_block_timestamp();
+    assert!(game.end_at == 0 || timestamp < game.end_at, "game ended");
+    if crate::state::read().entry.seals.read((game_id, account)).is_some() {
+        return;
+    }
+    crate::state::write().entry.seals.write((game_id, account), Some(timestamp));
+    crate::logic::map::MapState::emit(
+        crate::logic::map::MapState::Event::RowSet(
+            crate::events::RowSet {
+                version: 1,
+                model: 'Seal',
+                keys: array![game_id.into(), account.into()].span(),
+                values: array![timestamp.into()].span(),
+            },
+        ),
+    );
+}
+
 pub fn record_labor_grant(day: u64, grant: crate::entry::LaborGrant) {
     crate::state::write()
         .entry
@@ -324,4 +279,19 @@ pub fn record_labor_grant(day: u64, grant: crate::entry::LaborGrant) {
     let mut data = array![];
     event.append_keys_and_data(ref keys, ref data);
     starknet::syscalls::emit_event_syscall(keys.span(), data.span()).unwrap();
+}
+
+#[inline(never)]
+fn grant_resource_context(game_id: u32) -> crate::commands::ResourceContext {
+    let rules = crate::logic::preset_record::for_game(game_id).rules;
+    crate::commands::ResourceContext {
+        production_start: if rules.mode_rules.read() & crate::rules::PRODUCTION_START != 0 {
+            crate::state::read().games.games.entry(game_id).start_main_at.read().try_into().unwrap()
+        } else {
+            0
+        },
+        troop_capacity: rules.capacity_config.troop_capacity.read(),
+        spire_fee: rules.spire_travel_essence_cost.read(),
+        delivery_tick: rules.tick_config.delivery_tick_in_seconds.read(),
+    }
 }

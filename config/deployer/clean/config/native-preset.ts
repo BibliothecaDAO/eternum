@@ -1,11 +1,13 @@
 import {
-  nativeResearchConstants,
+  nativeRaceConstants,
+  nativeQuestConstants as quest,
   nativeRuleConstants as presetRule,
-} from "../../../../contracts/l3/world-native/schema/client.gen";
+} from "../../../../contracts/l3/world-native/schema/balance.gen";
+import { DAYS_PER_BAG } from "@bibliothecadao/eternum/expeditions";
+import { buildingIds } from "../../../source/frontier/native";
 import { nativePresetForId } from "../../../source/native";
 import { clockScaled, seasonDayUnitSeconds } from "../../../source/common/season-clock";
-import { nativeProgressionRules } from "../../../source/common/progression";
-import { RESOURCE_PRECISION, ResourcesIds, type Config } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, ResourcesIds, deepSites, type Config } from "@bibliothecadao/types";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import {
   buildBiomeClimateConfig,
@@ -40,8 +42,6 @@ function hasNoProduction(resource: number) {
 }
 
 function buildRules(config: Config, preset: ReturnType<typeof nativePresetForId>) {
-  const faith = config.faith;
-  if (!faith) throw new Error("Native faith config is required");
   const cooldownSeconds = config.battle.cooldownSeconds;
   if (!Number.isSafeInteger(cooldownSeconds) || cooldownSeconds < 0 || cooldownSeconds > 0xffff_ffff)
     throw new Error("Native battle cooldownSeconds must be an explicit u32");
@@ -50,7 +50,6 @@ function buildRules(config: Config, preset: ReturnType<typeof nativePresetForId>
     battle_config: {
       regular_immunity_ticks: config.battle.regularImmunityTicks,
       village_immunity_ticks: config.battle.villageImmunityTicks,
-      village_raid_immunity_ticks: config.battle.villageRaidImmunityTicks,
       cooldown_seconds: cooldownSeconds,
     },
     map_config: buildMapConfig(config),
@@ -88,7 +87,6 @@ function buildRules(config: Config, preset: ReturnType<typeof nativePresetForId>
     day_unit_seconds: seasonDayUnitSeconds(preset),
     mode_rules: preset.modeRules,
     entry_rule: preset.entryRule,
-    faith_enabled: faith.enabled,
     speed_config: {
       donkey_sec_per_km: config.speed.donkey_for_resources,
       donkey_sec_per_km_troops: config.speed.donkey_for_troops,
@@ -171,12 +169,7 @@ function buildMines(config: Config) {
   };
 }
 
-// The Hearth is the last building category: the four training buildings follow the forty older ones.
-const buildingCategoryCount = nativeResearchConstants.HEARTH;
-
 function buildStructures(config: Config, preset: ReturnType<typeof nativePresetForId>) {
-  const faith = config.faith;
-  if (!faith) throw new Error("Native faith config is required");
   const precision = config.resources.resourcePrecision;
   const board = preset.board;
   return {
@@ -190,7 +183,6 @@ function buildStructures(config: Config, preset: ReturnType<typeof nativePresetF
             storage_step_bps: board.storageStepBps,
             population_step_bps: board.populationStepBps,
             ration_step: scaled(board.rationStep, precision),
-            training_gate_tier: board.trainingGateTier,
             troop_store_deploys: board.troopStoreDeploys,
             settlement_resource_cap: board.resourceStoreCaps[0],
             city_resource_cap: board.resourceStoreCaps[1],
@@ -202,8 +194,7 @@ function buildStructures(config: Config, preset: ReturnType<typeof nativePresetF
       tier,
       price: { essence: scaled(essenceCost, precision), labor: scaled(laborCost, precision) },
     })),
-    buildings: Array.from({ length: buildingCategoryCount }, (_, index) => {
-      const category = index + 1;
+    buildings: buildingIds.map((category: number) => {
       // Essence is mine-only, and only a realm board has training buildings; legacy presets have no storehouse recipe.
       const isNotBuilt = category === 39 || (category > 40 && board === null);
       const hasNoRecipe = isNotBuilt || (category === 2 && board === null);
@@ -230,12 +221,6 @@ function buildStructures(config: Config, preset: ReturnType<typeof nativePresetF
       }),
       labor_rate: scaled(config.campLaborPerSecond, precision),
     },
-    faith: {
-      wonder_rate: faith.wonder_base_fp_per_sec,
-      realm_rate: faith.realm_fp_per_sec,
-      village_rate: faith.village_fp_per_sec,
-      owner_share_bps: faith.owner_share_percent * 100,
-    },
     upgrade_limits: { realm_max: config.realmMaxLevel - 1, village_max: config.villageMaxLevel - 1 },
     upgrades: Array.from({ length: Math.max(config.realmMaxLevel, config.villageMaxLevel) - 1 }, (_, index) => ({
       costs: amounts(required(config.realmUpgradeCosts, index + 1, "upgrade cost"), precision),
@@ -247,14 +232,13 @@ function buildSettlement(config: Config, preset: ReturnType<typeof nativePresetF
   return {
     mode: new CairoCustomEnum({ [preset.settlementMode]: {} }),
     spacing: preset.spacing,
+    order_aspects: [...preset.orderAspects],
     depths: preset.depths.map((depth) => ({
       reveal_percent: depth.revealPercent,
       site_guard_lower: depth.siteGuardLower,
       site_guard_upper: depth.siteGuardUpper,
       reveal_site_neighbors: depth.revealSiteNeighbors,
       chest: depth.chest,
-      ruin_guard_lower: depth.ruinGuardLower,
-      ruin_guard_upper: depth.ruinGuardUpper,
       guard_step: depth.guardStep,
       beast_weak_lower: depth.beastWeakLower,
       beast_weak_upper: depth.beastWeakUpper,
@@ -288,8 +272,8 @@ function buildEconomy(
   tokens: Array<{ resource_type: number; token: string }>,
 ) {
   const chests = preset.chests;
-  if (chests === undefined || (chests !== null) !== (preset.dayUnitSeconds !== 0))
-    throw new Error("Explicit chest rules are required for expedition presets only");
+  if (chests === undefined || (chests !== null && preset.dayUnitSeconds === 0))
+    throw new Error("Chest rules must be explicit and require expedition days");
   if (chests !== null) {
     if (
       !Number.isInteger(chests.poolBps) ||
@@ -317,22 +301,9 @@ function buildEconomy(
     )
       throw new Error("Invalid ruin chest rules");
   }
-  const progression = preset.progression;
-  if (progression === undefined || (progression !== null) !== (preset.dayUnitSeconds !== 0))
-    throw new Error("Explicit progression rules are required for expedition presets only");
-  if (
-    progression &&
-    Object.entries(progression).some(
-      ([key, value]) =>
-        !Number.isSafeInteger(value) || value < (key === "revealXpPerDepth" ? 0 : 1) || value > 0xffff_ffff,
-    )
-  )
-    throw new Error("Progression XP values must be positive u32 integers");
-  if (progression && progression.revealXp + 3 * progression.revealXpPerDepth > 0xffff_ffff)
-    throw new Error("Depth reveal XP exceeds u32");
   const labor = preset.labor;
   if (
-    (labor !== null) !== (preset.dayUnitSeconds !== 0) ||
+    (labor !== null || preset.dailyQuest !== null) !== (preset.dayUnitSeconds !== 0) ||
     (labor !== null &&
       (!Number.isSafeInteger(labor.amount) ||
         labor.amount <= 0 ||
@@ -351,11 +322,11 @@ function buildEconomy(
             golden_amount: BigInt(preset.labor.goldenAmount),
             golden_essence: BigInt(preset.labor.goldenEssence),
           }),
+    deep: buildDeep(preset),
     discovery: buildDiscovery(preset),
-    progression:
-      progression === null
-        ? new CairoOption(CairoOptionVariant.None)
-        : new CairoOption(CairoOptionVariant.Some, nativeProgressionRules(progression)),
+    quests: buildQuests(preset),
+    banes: buildBanes(preset),
+    race: buildRace(preset),
     chests:
       chests === null
         ? new CairoOption(CairoOptionVariant.None)
@@ -366,13 +337,6 @@ function buildEconomy(
             pool_bps: chests.poolBps,
             top_n: chests.topN,
           }),
-    trade: { max_count: config.trade.maxCount },
-    banks: {
-      lp_fee_num: config.banks.lpFeesNumerator,
-      lp_fee_denom: config.banks.lpFeesDenominator,
-      owner_fee_num: config.banks.ownerFeesNumerator,
-      owner_fee_denom: config.banks.ownerFeesDenominator,
-    },
     hyperstructures: {
       initialize_shards: scaled(config.hyperstructures.hyperstructureInitializationShardsCost.amount),
       resources: config.hyperstructures.hyperstructureConstructionCost.map((resource) => ({
@@ -496,16 +460,6 @@ function validateRequiredNativeConfig(config: Config): void {
       throw new Error(`Invalid Bitcoin ${field}`);
   }
   if (config.bitcoin.ownerCutBps > 10000) throw new Error("Invalid Bitcoin owner cut");
-  if (!config.faith || typeof config.faith.enabled !== "boolean") throw new Error("Native faith config is required");
-  for (const field of [
-    "wonder_base_fp_per_sec",
-    "realm_fp_per_sec",
-    "village_fp_per_sec",
-    "owner_share_percent",
-  ] as const) {
-    if (!Number.isSafeInteger(config.faith[field]) || config.faith[field] < 0)
-      throw new Error(`Native faith ${field} is required and must be nonnegative`);
-  }
   if (!Number.isSafeInteger(config.artificer?.research_cost_for_relic) || config.artificer!.research_cost_for_relic < 0)
     throw new Error("Native research cost is required and must be nonnegative");
 }
@@ -515,7 +469,7 @@ function resolveBridgeTokens(config: Config, resources: readonly number[]) {
   const addresses = config.setup?.addresses;
   const configured = addresses?.resources;
   if (!configured || typeof configured !== "object" || Array.isArray(configured))
-    throw new Error("Eternum bridge resource tokens are required");
+    throw new Error("Bridge resource tokens are required");
   const tokens = [
     ...Object.values(configured!).map(([resource, token]) => ({
       resource_type: Number(resource),
@@ -523,7 +477,7 @@ function resolveBridgeTokens(config: Config, resources: readonly number[]) {
     })),
     { resource_type: ResourcesIds.Lords, token: addresses!.lords },
   ];
-  if (!tokens.length) throw new Error("Eternum bridge resource tokens are required");
+  if (!tokens.length) throw new Error("Bridge resource tokens are required");
   const seen = new Set<number>();
   for (const { resource_type, token } of tokens) {
     if (!Number.isSafeInteger(resource_type) || resource_type < 1 || resource_type > 58 || seen.has(resource_type))
@@ -541,6 +495,145 @@ function resolveBridgeTokens(config: Config, resources: readonly number[]) {
     .sort((a, b) => a.resource_type - b.resource_type);
 }
 
+function buildDeep(preset: ReturnType<typeof nativePresetForId>) {
+  const deep = preset.deep;
+  if (deep === null) return new CairoOption(CairoOptionVariant.None);
+  if (!deep || preset.dayUnitSeconds === 0 || preset.orderAspects.length === 0)
+    throw new Error("Deep requires explicit Aspect expedition rules");
+  validateDeep(deep);
+  return new CairoOption(CairoOptionVariant.Some, {
+    gate_distance: deep.gateDistance,
+    rings: deep.rings.map(({ radius, realms }) => ({ radius, realms })),
+    beasts: deepBeasts(deep).map(({ count, bow }) => ({ count: scaled(count), bow })),
+    loss_per_tick: scaled(deep.lossPerTick),
+    core_per_tick: scaled(deep.corePerTick),
+    mine_per_tick: scaled(deep.minePerTick),
+    building_pay: deep.buildingPay,
+    altar_threshold: deep.altarThreshold,
+  });
+}
+
+type DeepPreset = NonNullable<ReturnType<typeof nativePresetForId>["deep"]>;
+
+function deepBeasts(deep: DeepPreset) {
+  return [...deepSites].sort((left, right) => left.id - right.id).map(({ key }) => deep.beasts[key]);
+}
+
+function validateDeep(deep: DeepPreset) {
+  const amounts = [
+    ...deepBeasts(deep).map(({ count }) => count),
+    deep.lossPerTick,
+    deep.corePerTick,
+    deep.minePerTick,
+    deep.buildingPay.alone,
+    deep.buildingPay.pair,
+    deep.buildingPay.crowd,
+    deep.altarThreshold,
+    deep.gateDistance,
+    ...deep.rings.map(({ radius }) => radius),
+  ];
+  if (
+    amounts.some((value) => !Number.isSafeInteger(value) || value <= 0) ||
+    deep.altarThreshold > 0xffff_ffff ||
+    deep.buildingPay.alone > 0xffff_ffff ||
+    deep.buildingPay.pair > deep.buildingPay.alone ||
+    deep.buildingPay.crowd > deep.buildingPay.pair
+  )
+    throw new Error("Invalid Deep tick amounts");
+}
+
+function buildRace(preset: ReturnType<typeof nativePresetForId>) {
+  const race = preset.race;
+  if (race === null) return new CairoOption(CairoOptionVariant.None);
+  if (!race || !preset.deep) throw new Error("Race requires the Deep");
+  if (preset.modeRules & (presetRule.DISCOVER_HYPERSTRUCTURES | presetRule.RESERVED_HYPERSTRUCTURES))
+    throw new Error("Race has no map hyperstructures");
+  validateRace(race);
+  if (race.stageHeight < preset.deep.buildingPay.alone) throw new Error("A tick's height passes a whole stage");
+  return new CairoOption(CairoOptionVariant.Some, {
+    season_days: BigInt(race.seasonDays),
+    stage_height: race.stageHeight,
+    clear_mist_percent: race.clearMistPercent,
+    second_wind_percent: race.secondWindPercent,
+    pale_moon_percent: race.paleMoonPercent,
+    spoils_percent: race.spoilsPercent,
+  });
+}
+
+function validateRace(race: NonNullable<ReturnType<typeof nativePresetForId>["race"]>) {
+  const amounts = [race.seasonDays, race.stageHeight];
+  if (
+    amounts.some((value) => !Number.isSafeInteger(value) || value <= 0) ||
+    race.seasonDays % DAYS_PER_BAG !== 0 ||
+    race.stageHeight > Math.floor(0xffff_ffff / nativeRaceConstants.STAGE_COUNT)
+  )
+    throw new Error("Invalid race amounts");
+  const boosts = [race.clearMistPercent, race.secondWindPercent, race.spoilsPercent];
+  if (
+    boosts.some((value) => !Number.isSafeInteger(value) || value < 100 || value > 200) ||
+    !Number.isSafeInteger(race.paleMoonPercent) ||
+    race.paleMoonPercent <= 0 ||
+    race.paleMoonPercent > 100
+  )
+    throw new Error("Invalid Triumph rates");
+}
+
+function buildBanes(preset: ReturnType<typeof nativePresetForId>) {
+  const rules = preset.banes;
+  if (rules === null) return new CairoOption(CairoOptionVariant.None);
+  if (!rules || preset.dailyQuest === null) throw new Error("Banes require daily quests");
+  const percentages = [
+    rules.chanceStep,
+    rules.quorumPercent,
+    rules.beastPercent,
+    rules.staminaPercent,
+    rules.productionPercent,
+  ];
+  if (
+    percentages.some((value) => !Number.isSafeInteger(value) || value <= 0 || value > 0xffff) ||
+    rules.chanceStep > 100 ||
+    rules.quorumPercent > 100 ||
+    rules.beastPercent < 100 ||
+    rules.staminaPercent > 100 ||
+    rules.productionPercent > 100
+  )
+    throw new Error("Invalid bane percentages");
+  if (rules.questCounts.length !== 12 || rules.questCounts.some((value) => !Number.isSafeInteger(value) || value <= 0))
+    throw new Error("Invalid bane quest counts");
+  return new CairoOption(CairoOptionVariant.Some, {
+    chance_step: rules.chanceStep,
+    quorum_percent: rules.quorumPercent,
+    beast_percent: rules.beastPercent,
+    stamina_percent: rules.staminaPercent,
+    production_percent: rules.productionPercent,
+    quest_counts: rules.questCounts.map(BigInt),
+  });
+}
+
+function buildQuests(preset: ReturnType<typeof nativePresetForId>) {
+  const rules = preset.dailyQuest;
+  if (rules === null) return new CairoOption(CairoOptionVariant.None);
+  if (!rules || preset.dayUnitSeconds === 0 || preset.orderAspects.length === 0 || preset.labor !== null)
+    throw new Error("Daily quests require Aspect expeditions and replace labor claims");
+  if (
+    rules.baseCounts.length !== quest.QUEST_COUNT ||
+    rules.baseCounts.some((count) => !Number.isSafeInteger(count) || count <= 0 || count > 0xffff_ffff)
+  )
+    throw new Error("Invalid daily quest counts");
+  if (
+    [rules.labor, rules.essence, rules.bonusPercent].some((value) => !Number.isSafeInteger(value) || value <= 0) ||
+    rules.bonusPercent < 100 ||
+    rules.bonusPercent > 0xffff
+  )
+    throw new Error("Invalid daily quest reward");
+  return new CairoOption(CairoOptionVariant.Some, {
+    base_counts: rules.baseCounts,
+    labor: BigInt(rules.labor),
+    essence: BigInt(rules.essence),
+    bonus_percent: rules.bonusPercent,
+  });
+}
+
 function buildDiscovery(preset: ReturnType<typeof nativePresetForId>) {
   const rules = preset.discovery;
   if (rules === undefined || (rules !== null) !== (preset.dayUnitSeconds !== 0))
@@ -551,15 +644,15 @@ function buildDiscovery(preset: ReturnType<typeof nativePresetForId>) {
     rules.emptyRevealLimit < 1 ||
     rules.emptyRevealLimit > 255 ||
     rules.beastsBps + rules.campBps + rules.riftBps === 0 ||
-    rules.beastsBps +
+    (rules.beastsBps +
       rules.campBps +
       rules.riftBps +
       rules.ruinBps +
       rules.shrineBps +
       rules.wellBps +
-      // All ranks double one choice; Sanctuaries increases both sites together.
-      Math.max(rules.shrineBps + rules.wellBps, rules.campBps, rules.riftBps) >
-      10000
+      Math.max(rules.shrineBps + rules.wellBps, rules.campBps, rules.riftBps)) *
+      (preset.race?.clearMistPercent ?? 100) >
+      1_000_000
   )
     throw new Error("Invalid categorical discovery rules");
   return new CairoOption(CairoOptionVariant.Some, {

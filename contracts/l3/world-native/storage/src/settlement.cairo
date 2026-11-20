@@ -12,6 +12,8 @@ pub struct SettlementPoolStateStorage {
 
 #[starknet::storage_node]
 pub struct SettlementStateStorage<TSettlementProgress, TPlayerEntry, TEntryEntitlement> {
+    pub home_aspects: Map<(u32, u64), u8>,
+    pub aspect_members: Map<(u32, u8), u32>,
     pub progress: Map<u32, TSettlementProgress>,
     pub blitz_order: Map<(u32, u32), u8>,
     pub blitz_order_size: Map<u32, u32>,

@@ -12,8 +12,14 @@ import { toFactoryRunRecord, type LaunchRun } from "./model";
 import { type LaunchJobRequest, type LaunchKind } from "./schemas";
 import type { LaunchServiceStore } from "./store";
 import { isSameTestBlitz, readTestBlitz, testBlitzRequest, type TestBlitz } from "./test-blitz";
-import { isDevShardChain } from "@realms-world/value-ledger";
-import { isReleaseIdentity, RELEASE_REFUSALS, type ReleaseIdentity, type ReleaseReport } from "./release";
+import { isDevShardChain, type RegisteredShard } from "@realms-world/value-ledger";
+import {
+  isRegisteredShard,
+  isReleaseIdentity,
+  RELEASE_REFUSALS,
+  type ReleaseIdentity,
+  type ReleaseReport,
+} from "./release";
 
 interface LaunchAppDependencies {
   config: { operatorToken: string };
@@ -26,9 +32,9 @@ interface LaunchAppDependencies {
   /** The registrar that executes runs: every run queued here arms it for the run's due time. */
   registrar: {
     armFor(dueAt: number): Promise<void>;
-    joinFailures(): Promise<JoinFailure[]>;
+    joinFailure(): Promise<JoinFailure | null>;
     wakeAt(): Promise<number | null>;
-    applyRelease(release: ReleaseIdentity | null): Promise<ReleaseReport>;
+    applyRelease(release: ReleaseIdentity | null, shard: RegisteredShard | null): Promise<ReleaseReport>;
   };
 }
 
@@ -129,10 +135,10 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   // The schedule never requeues a failed season; its operator must continue it. Health names every failed run.
   app.get("/api/factory/health", async (context) => {
     try {
-      const [failed, pending, joins, wakeAt, freezes] = await Promise.all([
+      const [failed, pending, joinFailure, wakeAt, freezes] = await Promise.all([
         dependencies.store.failed(),
         dependencies.store.pending(),
-        dependencies.registrar.joinFailures(),
+        dependencies.registrar.joinFailure(),
         dependencies.registrar.wakeAt(),
         dependencies.slots.freezeFailures(),
       ]);
@@ -145,11 +151,11 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
           service: "launch",
           ...dependencies.deployment,
           failedRuns: failed.map(failedRunReport),
-          joinFailures: joins,
+          joinFailure,
           freezeFailures: freezes,
           strandedRuns: stranded.map(strandedRunReport),
         },
-        failed.length || stranded.length || joins.length || freezes.length ? 503 : 200,
+        failed.length || stranded.length || joinFailure || freezes.length ? 503 : 200,
       );
     } catch {
       return context.json({ status: "unavailable" }, 503);
@@ -201,11 +207,13 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   // build baked it, before its client goes live. A refusal names its reason; a rerun on games already there sends
   // nothing.
   app.post("/api/factory/release", async (context) => {
-    const body = (await context.req.json().catch(() => null)) as { release?: unknown } | null;
+    const body = (await context.req.json().catch(() => null)) as { release?: unknown; shard?: unknown } | null;
     const release = body?.release;
-    if (release !== null && !isReleaseIdentity(release)) return context.json({ error: "invalid_release" }, 400);
+    const shard = body?.shard;
+    if ((release !== null && !isReleaseIdentity(release)) || (shard !== null && !isRegisteredShard(shard)))
+      return context.json({ error: "invalid_release" }, 400);
     try {
-      return context.json(await dependencies.registrar.applyRelease(release));
+      return context.json(await dependencies.registrar.applyRelease(release, shard));
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
       if ((RELEASE_REFUSALS as readonly string[]).includes(message)) return context.json({ error: message }, 409);

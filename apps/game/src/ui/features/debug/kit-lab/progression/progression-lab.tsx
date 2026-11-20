@@ -1,7 +1,7 @@
 import { useHudMode } from "@/hooks/use-hud-mode";
 import { HudPanel, HudTabs } from "@/ui/design-system/kit/hud-elements";
-import { type ArmyView, readArmyDetail } from "@/ui/features/frontier/army/army-detail";
-import { ArmyDetail, useArmyStep } from "@/ui/features/frontier/army/army-panel";
+
+import { ArmyDetail } from "@/ui/features/frontier/army/army-panel";
 import { EARLY_ARMY, EARLY_REALM, MID_REALM, VETERAN_ARMY } from "@/ui/features/frontier/research/progression-fixture";
 import { ResearchPanel } from "@/ui/features/frontier/research/research-panel";
 import { readResearchTree, type RealmResearchFacts } from "@/ui/features/frontier/research/research-tree";
@@ -10,28 +10,17 @@ import { useSearchParams } from "react-router-dom";
 
 const noop = () => undefined;
 
-/** The army's detail on its status, or opened on its choices (`choosing`). */
-const LabArmyDetail = ({ army, choosing }: { army: ArmyView; choosing: boolean }) => (
-  <ArmyDetail army={army} sending={false} step={useArmyStep(army.available, choosing)} onLevelUp={noop} />
-);
-
-/**
- * Dev only: Frontier's progression as the owner picked it (20 October: "Branches I believe is good for the progression.
- * For the army C is best."), at /lab/kit/progression: the Research tree and the army's detail, the game's own panels on
- * the Frontier preset's numbers, on the owner's realm (the default, with Army 1 at 12 XP) or one some days in
- * (`?realm=mid`, with a veteran army). `?part=research|army` shows one alone at the screen's width, for a phone.
- */
 export const ProgressionLab = () => {
   useHudMode("frontier");
   const [params, setParams] = useSearchParams();
   const mid = params.get("realm") === "mid";
   const realm = mid ? MID_REALM : EARLY_REALM;
-  const army = readArmyDetail(mid ? VETERAN_ARMY : EARLY_ARMY);
+  const army = mid ? VETERAN_ARMY : EARLY_ARMY;
   const part = params.get("part");
   const research = <LabResearch key={String(mid)} realm={realm} />;
-  const armyPanel = (choosing: boolean) => (
+  const armyPanel = () => (
     <HudPanel title={army.name} icon="troops" collapsible={false} bodyClassName="px-3 pb-3">
-      <LabArmyDetail key={`${army.name}-${choosing}`} army={army} choosing={choosing} />
+      <ArmyDetail army={army} />
     </HudPanel>
   );
 
@@ -39,7 +28,7 @@ export const ProgressionLab = () => {
     return (
       <Ground>
         <div data-lab={part} className="mx-auto flex w-full max-w-[440px] flex-col gap-3 p-2">
-          {part === "research" ? research : [armyPanel(false), armyPanel(true)]}
+          {part === "research" ? research : armyPanel()}
         </div>
       </Ground>
     );
@@ -60,8 +49,7 @@ export const ProgressionLab = () => {
         </header>
         <div className="flex items-start gap-6">
           <Column name="Research · Branches">{research}</Column>
-          <Column name="Army · Stats">{armyPanel(false)}</Column>
-          <Column name="Army · Level up">{armyPanel(true)}</Column>
+          <Column name="Army · Stats">{armyPanel()}</Column>
         </div>
       </div>
     </Ground>

@@ -5,6 +5,8 @@ import { WorldSpatialProjection } from "../sync/world-spatial-projection";
 import { getTileAt } from "./tile";
 import { availableRuinLords, ruinChestsToday, ruinDisappeared } from "./ruins";
 import { nativeReleaseConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import conformance from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import { frontierPreset } from "../../../../config/source/frontier/native";
 import { dayOf } from "./days";
 
 const home = 7n * 0x100000000n + 1n;
@@ -28,10 +30,27 @@ const release = (release_id = nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE) =
   value: { game_id: 1, release_id, created_release_id: 1, preset_commitment: 0n },
 });
 
+const historicalRules = [
+  { model: "SliceRules", key: "0xc0", value: { ...conformance.rules, game_id: 1, day_unit_seconds: 1 } },
+  {
+    model: "ChestRules",
+    key: "0xc1",
+    value: {
+      game_id: 1,
+      price_ceiling: BigInt(frontierPreset.chests.priceCeiling),
+      shares: frontierPreset.chests.shares,
+      claim_window_seconds: frontierPreset.chests.claimWindowSeconds,
+      pool_bps: frontierPreset.chests.poolBps,
+      top_n: frontierPreset.chests.topN,
+    },
+  },
+];
+
 const setup = () => {
   const store = new NativeFactStore();
   store.setSnapshot({ gameId: 1, complete: true, timestamp: 350 });
   store.applyFacts([
+    ...historicalRules,
     release(),
     {
       model: "SettlementRules",
@@ -184,12 +203,12 @@ describe("a realm's daily ruin choice per depth", () => {
   });
 
   it("computes available LORDS using today's unlock, paid amounts and only today's reservations", () => {
-    const calendar = { startMainAt: 100, endAt: 1000, dayUnitSeconds: 100, seed: 1n };
+    const calendar = { startMainAt: 100, scheduledEndAt: 1000, endAt: 1000, dayUnitSeconds: 100, seed: 1n };
     const day = dayOf(calendar, 350)!;
     const budget = { pool: 9000n, pool_left: 8000n, open: 500n, day: BigInt(day.index) };
     const rows: Record<string, object> = {
       LordsBudget: budget,
-      GameRegistry: { start_main_at: 100n, end_at: 1000n, seed: 1n },
+      GameRegistry: { start_main_at: 100n, scheduled_end_at: 1000n, end_at: 1000n, seed: 1n },
       SliceRules: { day_unit_seconds: 100 },
     };
     const store = { get: (model: string) => rows[model] } as unknown as Pick<NativeFactStore, "get">;
@@ -206,7 +225,7 @@ describe("a realm's daily ruin choice per depth", () => {
 it("keeps the final day's ruin reservation held through an absorbed bag boundary", () => {
   const rows: Record<string, object> = {
     LordsBudget: { pool: 9000n, pool_left: 8000n, open: 500n, day: 9n },
-    GameRegistry: { start_main_at: 0n, end_at: 81n * 3600n, seed: 0x5eedn },
+    GameRegistry: { start_main_at: 0n, scheduled_end_at: 81n * 3600n, end_at: 81n * 3600n, seed: 0x5eedn },
     SliceRules: { day_unit_seconds: 7200 },
   };
   const store = { get: (model: string) => rows[model] } as unknown as Pick<NativeFactStore, "get">;
@@ -215,19 +234,27 @@ it("keeps the final day's ruin reservation held through an absorbed bag boundary
 });
 
 describe("each depth's ruin chest today", () => {
-  const rules = { dayUnitSeconds: 100, spacing: 100, startMainAt: 0, endAt: 100_000, seed: 1n };
+  const rules = {
+    dayUnitSeconds: 100,
+    spacing: 100,
+    startMainAt: 0,
+    scheduledEndAt: 100_000,
+    endAt: 100_000,
+    seed: 1n,
+  };
   const realm = { game_id: 1, entity_id: 7 };
   const discovery = (ruin_cleared: boolean) => ({
     model: "ExpeditionDiscovery",
     key: "0x71",
     value: { game_id: 1, structure_id: 7n, epoch: 0n, empty_reveals: 0, ruin_cleared },
   });
-  const chests = (releaseId: number, facts: object[]) => {
+  const chests = (releaseId: number, facts: object[], learned = 3n << 48n) => {
     const store = new NativeFactStore();
     store.setSnapshot({ gameId: 1, complete: true, timestamp: 1 });
     store.applyFacts([
+      ...historicalRules,
       release(releaseId),
-      { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 1n << 48n } },
+      { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned } },
       // Another realm cleared today's Ethereal I: its receipt is not realm 7's.
       {
         model: "ExpeditionSite",
@@ -244,11 +271,17 @@ describe("each depth's ruin chest today", () => {
     value: { ...site(home + 1n, 40), clear: { explorer_id: 1n, home_id: 7n, reward: null } },
   };
 
-  it("opens every researched depth while today's discovery says nothing was cleared, and locks the rest", () => {
+  it("opens every depth with Spire lore while today's discovery says nothing was cleared, and locks them without it", () => {
     expect(dayOf(rules, 1)?.index).toBe(0);
     expect(chests(nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE, [discovery(false)])).toEqual([
       "open",
       "open",
+      "open",
+      "open",
+    ]);
+    expect(chests(nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE, [discovery(false)], 2n << 48n)).toEqual([
+      "open",
+      "locked",
       "locked",
       "locked",
     ]);
@@ -259,8 +292,8 @@ describe("each depth's ruin chest today", () => {
     expect(chests(nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE, [discovery(true), surfaceClear])).toEqual([
       "claimed",
       "unknown",
-      "locked",
-      "locked",
+      "unknown",
+      "unknown",
     ]);
   });
 

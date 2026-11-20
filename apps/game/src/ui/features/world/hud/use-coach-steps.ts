@@ -12,14 +12,13 @@ import { useSpatialProjection } from "@/hooks/use-spatial-projection";
 import { gameStructuresView, playerStructuresView, selectableArmiesView } from "@/sync/fact-views";
 import { requestChestOpening } from "@/three/scenes/worldmap-chest-open-request";
 import { LeftView } from "@/types";
-import { forecastAttack } from "@/ui/features/military/battle/fight-forecast";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { knownAmount } from "@/ui/utils/utils";
 import {
   ArmyActionManager,
-  biomeTypeOf,
+  ATTACK_FORECAST_MODELS,
   configManager,
-  getGuardsByStructure,
+  forecastAttack,
   getBalance,
   getTileAt,
   getTroopResourceId,
@@ -28,8 +27,7 @@ import {
   structureMapPosition,
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
-import { BiomeType, StructureType, TROOP_TIERS, TROOP_TYPES } from "@bibliothecadao/types";
+import { StructureType, TROOP_TIERS, TROOP_TYPES } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import {
   type CoachAct,
@@ -227,31 +225,20 @@ const largestStack = (store: NativeFactStore, entityId: number, tick: number): T
  */
 const useCertainLoss = () => {
   const timestamp = useCurrentDefaultTick();
-  const facts = useNativeFacts(["ExplorerTroops", "Guard", "ArmySlot", "Structure", "TileOccupancy"]);
+  const facts = useNativeFacts(ATTACK_FORECAST_MODELS);
   return useMemo(() => {
-    const gameId = configManager.getActiveGameId();
+    const game_id = configManager.getActiveGameId();
     return (army: CoachArmy, target: CoachTarget): boolean => {
       const tile = getTileAt(facts.store, false, target.hex.col, target.hex.row);
-      const structure = tile && facts.store.get("Structure", { game_id: gameId, entity_id: Number(tile.occupier_id) });
-      const guard = structure
-        ? (getGuardsByStructure(structure, facts.store) ?? [])
-            .filter((slot) => slot.troops.count > 0n)
-            .toSorted((left, right) => left.slot - right.slot)[0]
-        : undefined;
-      const explorer = facts.store.get("ExplorerTroops", { game_id: gameId, explorer_id: army.entityId });
-      const troops = explorer ? resolveExplorerTroops(facts.store, explorer) : undefined;
-      if (!guard || !troops) return false;
-      const biome = tile && tile.biome !== 0 ? biomeTypeOf(tile.biome) : BiomeType.None;
-      const circumstances = {
+      if (!tile?.occupier_is_structure) return false;
+      const forecast = forecastAttack(
+        facts.store,
+        { game_id, entity_id: army.entityId },
+        { game_id, entity_id: tile.occupier_id },
         timestamp,
-        attackDistance: 1,
-        attackerBiome: biome,
-        defenderBiome: biome,
-        attackerIsStructureGuard: false,
-        defenderIsStructureGuard: true,
-      };
-      const rules = { rules: configManager.getCombatRules(), rollsDice: configManager.rollsCombatDice(false) };
-      return forecastAttack(troops, guard.troops, circumstances, rules).certainLoss;
+        { besideTarget: true },
+      );
+      return forecast?.outcome === "fights" && forecast.certainLoss;
     };
   }, [timestamp, facts]);
 };

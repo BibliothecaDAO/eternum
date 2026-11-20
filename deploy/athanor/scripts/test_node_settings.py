@@ -1,22 +1,18 @@
-from pathlib import Path
 import unittest
 
-import shard
-from test_shard import configuration
+from test_shard import deployed_compose
 
 
 class NodeSettingsTest(unittest.TestCase):
-    def test_package_and_runner_use_the_live_node_with_bounded_memory_and_no_other_overrides(self):
-        compose = shard.compose_configuration(configuration(), Path("/tmp/not-deployed"))
+    def test_the_deployed_node_runs_live_with_bounded_memory_and_no_other_overrides(self):
+        compose = deployed_compose()
         self.assertEqual(compose["services"]["prepare"]["environment"]["BLOCK_TIME"], "2s")
-        dev = shard.compose_configuration({**configuration(), "block_time": "1s"}, Path("/tmp/not-deployed"))
+        dev = deployed_compose({"block_time": "1s"})
         self.assertEqual(dev["services"]["prepare"]["environment"]["BLOCK_TIME"], "1s")
         node = compose["services"]["madara"]
         self.assertTrue(node["image"].endswith("40934db1cdcd0e37058531c9bda152b336a0b594e349cbf2578f3893e0cc20e2"))
         for key in ("mem_limit", "memswap_limit", "cpuset", "cpus", "cpu_quota", "ulimits", "pids_limit"):
             self.assertNotIn(key, node)
-        # The node's one placement: alone in its shard's slice, so the metrics collector can read its memory, and outside
-        # athanor.slice, so a measurement node keeps the host and none of the slice's limits.
         self.assertEqual(node["cgroup_parent"], "node-athanor-smoke.slice")
         self.assertEqual(compose["services"]["metrics"]["environment"]["NODE_SLICE"], "node-athanor-smoke.slice")
         self.assertIn("--db-max-kept-snapshots=0", node["command"])

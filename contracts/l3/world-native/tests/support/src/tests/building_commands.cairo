@@ -62,7 +62,7 @@ pub fn building_preset(board: Option<crate::buildings::BoardRules>) -> crate::pr
     preset.structures.buildings = configured.span();
     preset.structures.board = board;
     if board.is_some() {
-        let (_, frontier) = super::preset_projection::current_definition("frontier");
+        let (_, frontier) = super::preset_projection::current_definition("frontier-check");
         preset.structures.research = frontier.structures.research;
     }
     let recipe = UpgradeRecipe { costs: array![].span() };
@@ -90,7 +90,6 @@ pub fn board_rules() -> crate::buildings::BoardRules {
         storage_step_bps: 5000,
         population_step_bps: 2500,
         ration_step: crate::rules::RESOURCE_PRECISION / 4,
-        training_gate_tier: 2,
         troop_store_deploys: 2,
         settlement_resource_cap: 6000,
         city_resource_cap: 30000,
@@ -113,9 +112,7 @@ pub fn building_world(board: Option<crate::buildings::BoardRules>) -> (super::De
 }
 pub fn create(home: ResourceKey, category: u8) -> Command {
     Command::CreateBuilding(
-        CreateBuilding {
-            scouting_kind: 0, structure_id: home.entity_id, directions: array![0_u8].span(), category, use_simple: true,
-        },
+        CreateBuilding { structure_id: home.entity_id, directions: array![0_u8].span(), category, use_simple: true },
     )
 }
 pub fn east() -> BuildingKey {
@@ -258,7 +255,7 @@ pub fn board_output(deployment: super::Deployment, home: ResourceKey, category: 
 pub /// A board realm with its castle, every command open, room for many buildings and plenty of Essence and labor.
  fn research_world() -> (super::Deployment, ResourceKey, crate::presets::PresetDefinition) {
     let mut preset = building_preset(Some(board_rules()));
-    let (_, frontier) = super::preset_projection::current_definition("frontier");
+    let (_, frontier) = super::preset_projection::current_definition("frontier-check");
     preset.structures.buildings = frontier.structures.buildings;
     preset
         .structures
@@ -270,7 +267,10 @@ pub /// A board realm with its castle, every command open, room for many buildin
     for rule in preset.resources.resources {
         resources
             .append(
-                if *rule.resource_type == 26 || *rule.resource_type == 35 {
+                if *rule.resource_type == 26
+                    || *rule.resource_type == 29
+                    || *rule.resource_type == 32
+                    || *rule.resource_type == 35 {
                     crate::resources::ResourceRule { realm_rate: 40, ..*rule }
                 } else {
                     *rule
@@ -301,11 +301,7 @@ pub fn research(home: ResourceKey, row: u8, choice: u8) -> Command {
 pub fn build_toward(home: ResourceKey, category: u8, direction: u8) -> Command {
     Command::CreateBuilding(
         CreateBuilding {
-            scouting_kind: 0,
-            structure_id: home.entity_id,
-            directions: array![direction].span(),
-            category,
-            use_simple: true,
+            structure_id: home.entity_id, directions: array![direction].span(), category, use_simple: true,
         },
     )
 }

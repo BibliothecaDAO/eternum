@@ -42,6 +42,7 @@ class CiFileOwnership(unittest.TestCase):
             "contracts/l3/world-native/schema/schema.json",
             "contracts/l3/world-native/schema/bindings.json",
             "contracts/l3/world-native/schema/client.gen.ts",
+            "contracts/l3/world-native/schema/balance.gen.ts",
             "contracts/l3/world-native/schema/fixtures/row-set.json",
         ):
             with self.subTest(path=path):
@@ -58,7 +59,22 @@ class CiFileOwnership(unittest.TestCase):
     def test_docs_build_runs_when_a_number_it_states_changes(self):
         # The production Blitz price lives here; changing it once broke the docs build unseen.
         self.assertIn("docs", areas_run_by("deploy/first/environments.json"))
-        self.assertEqual(areas_run_by("apps/game-docs/docs/pages/blitz/entry.mdx"), {"docs"})
+        self.assertEqual(areas_run_by("apps/game-docs/docs/pages/blitz/entry.mdx"), {"client", "docs"})
+
+    def test_site_alert_planning_selects_its_client_fixture_and_worker_checks(self):
+        self.assertTrue({"client", "services", "herald", "native"}.issubset(areas_run_by("apps/realms/server/deep-site-watch.ts")))
+        self.assertTrue({"client", "services", "herald", "native"}.issubset(areas_run_by("apps/realms/server/fixtures/shard-world.ts")))
+
+    def test_the_client_export_and_its_sources_select_the_artifact_regression(self):
+        for path in (
+            "apps/game/vite.config.ts",
+            "apps/game/build/pwa-release.ts",
+            "apps/game-docs/docs/pages/frontier/expedition.mdx",
+            "apps/game-docs/vite-plugin-llm-txt.mjs",
+        ):
+            with self.subTest(path=path):
+                self.assertIn("docs", areas_run_by(path))
+                self.assertIn("client", areas_run_by(path))
 
     def test_client_publisher_inputs_select_both_deployment_areas(self):
         self.assertEqual(areas_run_by("apps/game/package.json"), {"client", "native", "runtime"})
@@ -72,8 +88,8 @@ class CiFileOwnership(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(areas_run_by(path), {"herald", "native", "runtime"})
 
-    def test_release_inputs_select_both_deployment_areas(self):
-        self.assertEqual(areas_run_by("deploy/release/dev.json"), {"native", "runtime"})
+    def test_release_inputs_select_every_area_reading_the_preset_tests(self):
+        self.assertEqual(areas_run_by("deploy/release/dev.json"), {"client", "herald", "services", "native", "runtime", "docs"})
 
     def test_landing_with_no_optional_inputs_runs_only_core_areas(self):
         for files in ([], ["README.md"], ["apps/value-relay/src/relay.ts"], ["apps/game/src/shell/blitz.ts"]):
@@ -114,7 +130,6 @@ class WorkflowCommands(unittest.TestCase):
             "apps/game-docs/docs/pages/index.mdx",
             "apps/game-docs/docs/pages/frontier/index.mdx",
             "apps/game-docs/docs/pages/blitz/index.mdx",
-            "apps/game-docs/docs/pages/eternum/key-concepts.mdx",
         ):
             with self.subTest(page=page):
                 self.assertIn("client", areas_run_by(page))

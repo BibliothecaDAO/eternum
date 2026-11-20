@@ -1,5 +1,11 @@
+import { frontierSeasonOnePreset } from "../../../../config/source/frontier/season-one";
+import {
+  FRONTIER_FIXTURE_PRESET_ID,
+  FRONTIER_S1_PRESET_ID,
+} from "../../../../config/source/common/native-preset-modes";
+import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { NativeFactStore } from "../../../../packages/core/src/client/native-fact-store";
-import { TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
 import { ClientConfigManager } from "../../../../packages/core/src/managers/config-manager";
 import { affordableAt, musterStamina, staminaAt } from "../../../../packages/core/src/managers/troop-stamina";
 import { describe, expect, it, vi } from "vitest";
@@ -15,9 +21,10 @@ import { presetPreimageCommitment } from "./preset-preimages";
 
 const codec = new CallData([...Object.values(schema.types), ...schema.games.entrypoints] as Abi);
 
-function registration(presetId = 5) {
+function registration(presetId = 5, amend?: (definition: ReturnType<typeof buildNativePreset>) => void) {
   const environment = presetId === 2 ? "madara.blitz" : "madara.frontier";
   const definition = buildNativePreset(loadNativePresetConfiguration(environment, presetId), presetId);
+  amend?.(definition);
   const calldata = codec.compile("register_preset", { preset_id: presetId, definition });
   const commitment = presetPreimageCommitment(calldata.slice(1));
   const accountCalldata = [
@@ -63,6 +70,7 @@ function launch(preset: ReturnType<typeof registration>, gameId = 1, rosterSize 
       dev_mode_on: false,
       start_settling_at: "1800",
       start_main_at: "1800",
+      scheduled_end_at: "999999",
       end_at: "999999",
       end_grace_seconds: "0",
       seed: "1",
@@ -81,6 +89,22 @@ function applyRegistration(world: ReturnType<typeof setup>, preset: ReturnType<t
 }
 
 describe("verified preset configuration facts", () => {
+  it("publishes the S1 Order mapping and leaves earlier presets without Aspect rules", () => {
+    for (const presetId of [5, 7]) {
+      const world = setup();
+      const preset = registration(presetId);
+      applyRegistration(world, preset);
+      world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
+      const store = new NativeFactStore();
+      store.applyFacts(
+        world.fold.gameRows("AspectRules", "1").map(({ key, value }) => ({ model: "AspectRules", key, value })),
+      );
+      expect(store.get("AspectRules", { game_id: 1 })).toEqual(
+        presetId === 7 ? { game_id: 1, orders: preset.definition.settlement.order_aspects } : undefined,
+      );
+    }
+  });
+
   it("projects both beast strength ranges and renamed discovery odds into client facts", () => {
     const world = setup();
     const preset = registration();
@@ -118,7 +142,7 @@ describe("verified preset configuration facts", () => {
     const rules = store.require("SliceRules", { game_id: 1 });
     const stamina = rules.troop_stamina_config;
     const tick = Number(rules.tick_config.armies_tick_in_seconds);
-    expect(manager.getExploreStaminaCost()).toBe(20);
+    expect(manager.getExploreStaminaCost(TroopType.Knight, 0)).toBe(20);
     expect(manager.getCombatConfig().stamina_attack_req).toBe(30);
     const troop = { category: TroopType.Knight, tier: TroopTier.T1 };
     const empty: Troops = {
@@ -138,7 +162,7 @@ describe("verified preset configuration facts", () => {
       battle_cooldown_end: 0,
     };
     expect(staminaAt(empty, 3700, stamina, tick).amount).toBe(30n);
-    expect(affordableAt(empty, 100, stamina, tick, manager.getExploreStaminaCost())).toBe(2500);
+    expect(affordableAt(empty, 100, stamina, tick, manager.getExploreStaminaCost(TroopType.Knight, 0))).toBe(2500);
     expect(affordableAt(empty, 100, stamina, tick, manager.getCombatConfig().stamina_attack_req)).toBe(3700);
     for (const [trained, maximum, explores, attacks] of [
       [0, 120, 6, 4],
@@ -150,7 +174,7 @@ describe("verified preset configuration facts", () => {
     ] as const) {
       const bar = musterStamina({ slot: 0, inherited: null }, troop, 100, stamina, trained, tick);
       expect(bar).toEqual({ amount: maximum, max: maximum });
-      expect(Math.floor(bar.amount / manager.getExploreStaminaCost())).toBe(explores);
+      expect(Math.floor(bar.amount / manager.getExploreStaminaCost(TroopType.Knight, 0))).toBe(explores);
       expect(Math.floor(bar.amount / manager.getCombatConfig().stamina_attack_req)).toBe(attacks);
     }
   });
@@ -192,9 +216,6 @@ describe("verified preset configuration facts", () => {
     expect(Number(game_id)).toBe(1);
     expect(Object.fromEntries(Object.entries(discovery).map(([key, value]) => [key, Number(value)]))).toEqual(
       preset.definition.economy.discovery.unwrap(),
-    );
-    expect(depths.map((row) => [Number(row.ruin_guard_lower), Number(row.ruin_guard_upper)])).toEqual(
-      expectedDepths.map((row) => [row.ruin_guard_lower, row.ruin_guard_upper]),
     );
 
     expect(world.fold.gameRows("GameOverrides", "1")).toHaveLength(1);
@@ -385,4 +406,157 @@ describe("verified preset configuration facts", () => {
     );
     expect(world.fold.checkpoint()).toEqual(registered);
   });
+});
+
+it("projects optional Deep rules from verified registration and publishes no row for None", () => {
+  const deep = {
+    gate_distance: 4,
+    rings: [{ radius: 5, realms: 0 }],
+    beasts: [
+      { count: 10_000_000_000_000n, bow: false },
+      { count: 10_000_000_000_000n, bow: true },
+      { count: 10_000_000_000_000n, bow: false },
+      { count: 10_000_000_000_000n, bow: true },
+    ],
+    loss_per_tick: BigInt(frontierSeasonOnePreset.deep.lossPerTick) * BigInt(RESOURCE_PRECISION),
+    core_per_tick: 500_000_000_000n,
+    mine_per_tick: 500_000_000_000n,
+    building_pay: { alone: 6, pair: 3, crowd: 2 },
+    altar_threshold: 1_500,
+  };
+  for (const enabled of [false, true]) {
+    const world = setup();
+    const preset = registration(FRONTIER_FIXTURE_PRESET_ID, (definition) => {
+      if (enabled) {
+        definition.economy.deep = new CairoOption(CairoOptionVariant.Some, deep);
+      } else {
+        definition.economy.deep = new CairoOption(CairoOptionVariant.None);
+        definition.economy.race = new CairoOption(CairoOptionVariant.None);
+      }
+    });
+    applyRegistration(world, preset);
+    world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
+    const store = new NativeFactStore();
+    store.applyFacts(
+      world.fold.gameRows("DeepRules", "1").map(({ key, value }) => ({ model: "DeepRules", key, value })),
+    );
+    expect(store.get("DeepRules", { game_id: 1 })).toEqual(enabled ? { game_id: 1, ...deep } : undefined);
+  }
+});
+
+it("projects daily quest rules from verified registration, without a legacy claim row", () => {
+  const rules = { base_counts: [1, 1, 1, 1, 1, 2, 15], labor: 1000n, essence: 1500n, bonus_percent: 150 };
+  for (const enabled of [false, true]) {
+    const world = setup();
+    const preset = registration(FRONTIER_FIXTURE_PRESET_ID, (definition) => {
+      if (enabled) {
+        definition.economy.quests = new CairoOption(CairoOptionVariant.Some, rules);
+        definition.economy.labor = new CairoOption(CairoOptionVariant.None);
+      }
+    });
+    applyRegistration(world, preset);
+    world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
+    const store = new NativeFactStore();
+    store.applyFacts(
+      world.fold.gameRows("QuestRules", "1").map(({ key, value }) => ({ model: "QuestRules", key, value })),
+    );
+    expect(store.get("QuestRules", { game_id: 1 })).toEqual(enabled ? { game_id: 1, ...rules } : undefined);
+    expect(world.fold.gameRows("LaborRules", "1")).toHaveLength(enabled ? 0 : 1);
+  }
+});
+
+it("projects optional bane rules from the verified preset with whole Cull counts", () => {
+  const rules = {
+    chance_step: 20,
+    quorum_percent: 25,
+    beast_percent: 150,
+    stamina_percent: 50,
+    production_percent: 50,
+    quest_counts: [3n, 6n, 9n, 12n, 20n, 40n, 60n, 80n, 2500n, 6000n, 10000n, 15000n],
+  };
+  for (const enabled of [false, true]) {
+    const world = setup();
+    const preset = registration(FRONTIER_FIXTURE_PRESET_ID, (definition) => {
+      if (enabled) {
+        definition.economy.banes = new CairoOption(CairoOptionVariant.Some, rules);
+        definition.economy.quests = new CairoOption(CairoOptionVariant.Some, {
+          base_counts: [1, 1, 1, 1, 1, 2, 15],
+          labor: 1000n,
+          essence: 1500n,
+          bonus_percent: 150,
+        });
+        definition.economy.labor = new CairoOption(CairoOptionVariant.None);
+      }
+    });
+    applyRegistration(world, preset);
+    world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
+    const store = new NativeFactStore();
+    store.applyFacts(
+      world.fold.gameRows("BaneRules", "1").map(({ key, value }) => ({ model: "BaneRules", key, value })),
+    );
+    expect(store.get("BaneRules", { game_id: 1 })).toEqual(enabled ? { game_id: 1, ...rules } : undefined);
+  }
+});
+
+it("projects optional race rules from verified registration into the native fact store", () => {
+  const rules = {
+    season_days: 50n,
+    stage_height: 2_000,
+    clear_mist_percent: 200,
+    second_wind_percent: 200,
+    pale_moon_percent: 50,
+    spoils_percent: 200,
+  } satisfies Omit<NativeRows["RaceRules"], "game_id">;
+  for (const enabled of [false, true]) {
+    const world = setup();
+    const preset = registration(FRONTIER_FIXTURE_PRESET_ID, (definition) => {
+      if (enabled) {
+        definition.economy.race = new CairoOption(CairoOptionVariant.Some, rules);
+        definition.economy.deep = new CairoOption(CairoOptionVariant.Some, {
+          gate_distance: 4,
+          rings: [{ radius: 5, realms: 0 }],
+          beasts: [
+            { count: 10000_000000000n, bow: false },
+            { count: 10000_000000000n, bow: true },
+            { count: 10000_000000000n, bow: false },
+            { count: 10000_000000000n, bow: true },
+          ],
+          loss_per_tick: BigInt(frontierSeasonOnePreset.deep.lossPerTick) * BigInt(RESOURCE_PRECISION),
+          core_per_tick: 500_000000000n,
+          mine_per_tick: 500_000000000n,
+          building_pay: { alone: 6, pair: 3, crowd: 2 },
+          altar_threshold: 1500,
+        });
+      } else {
+        definition.economy.race = new CairoOption(CairoOptionVariant.None);
+      }
+    });
+    applyRegistration(world, preset);
+    world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
+    const store = new NativeFactStore();
+    store.applyFacts(
+      world.fold.gameRows("RaceRules", "1").map(({ key, value }) => ({ model: "RaceRules", key, value })),
+    );
+    expect(store.get("RaceRules", { game_id: 1 })).toEqual(enabled ? { game_id: 1, ...rules } : undefined);
+  }
+});
+
+it("publishes every active Season 1 rule through verified registration and launch", () => {
+  const world = setup();
+  const preset = registration(FRONTIER_S1_PRESET_ID);
+  applyRegistration(world, preset);
+  world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
+  const store = new NativeFactStore();
+  for (const [model, rules] of [
+    ["DeepRules", preset.definition.economy.deep],
+    ["QuestRules", preset.definition.economy.quests],
+    ["BaneRules", preset.definition.economy.banes],
+    ["RaceRules", preset.definition.economy.race],
+  ] as const) {
+    store.applyFacts(world.fold.gameRows(model, "1").map(({ key, value }) => ({ model, key, value })));
+    const { game_id, ...actual } = store.require(model, { game_id: 1 });
+    expect(game_id).toBe(1);
+    expect(actual).toEqual(rules.unwrap());
+  }
+  expect(world.fold.gameRows("LaborRules", "1")).toEqual([]);
 });

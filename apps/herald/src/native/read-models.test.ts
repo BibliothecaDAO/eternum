@@ -1,7 +1,7 @@
 import { buildNativePreset } from "../../../../config/deployer/clean/config/native-preset";
 import { loadNativePresetConfiguration } from "../../../../config/deployer/clean/registrar/native-preset";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeIdentifiers } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { createHeraldRequestHandler } from "../http";
 import { WorldFold } from "../world-fold";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -30,6 +30,7 @@ function gameEvent(game = "1", settled = "0", dev = "0", preset = "2", name = "B
     dev_mode_on: BigInt(dev) !== 0n,
     start_settling_at: "10",
     start_main_at: "20",
+    scheduled_end_at: "200",
     end_at: "200",
     end_grace_seconds: "10",
     seed: "42",
@@ -54,7 +55,7 @@ function world() {
         rowEvent("SettlementRules", ["2"], {
           registration_start: 5n,
           registration_limit: 2n,
-          mode: new CairoCustomEnum({ Duel: {} }),
+          mode: new CairoCustomEnum({ Triple: {} }),
           spacing: 8n,
         }),
         rowEvent("SettlementProgress", ["1"], { registered: 2n, realm_count: 1n }),
@@ -95,6 +96,7 @@ it("never lists deployment check games or counts them as Frontier seasons", () =
       dev_mode_on: false,
       start_settling_at: 10n,
       start_main_at: 20n,
+      scheduled_end_at: 200n,
       end_at: 200n,
       end_grace_seconds: 10n,
       seed: 42n,
@@ -324,6 +326,7 @@ describe("native directory and leaderboard", () => {
         rowEvent("ExpeditionSite", ["1", "6"], {
           ...site,
           clear: new CairoOption(CairoOptionVariant.Some, {
+            xp: 85n,
             explorer_id: 201n,
             home_id: 7n,
             reward: new CairoOption(CairoOptionVariant.Some, { resource_type: 38, amount: 3_000_000_000_000n }),
@@ -385,6 +388,34 @@ describe("native directory and leaderboard", () => {
     expect(before.level).toBe(1);
     expect(after.level).toBe(2);
     expect(afterFact).not.toEqual(beforeFact);
+  });
+
+  it("publishes each Aspect's homes on a game with Aspects, 0 for an Aspect none joined, and none on a game without", () => {
+    const { fold, native, decoder } = world();
+    // The S1 preset's sixteen Orders, each in its Aspect; the order of the list is the preset's, not read here.
+    const orders = [0, 1, 2, 3, 4, 4, 3, 4, 4, 1, 2, 2, 1, 1, 3, 3, 2];
+    native.applyReceipt(
+      fold,
+      receipt(
+        seedDerivedRows(fold, decoder, [
+          rowEvent("AspectRules", ["1"], { orders }),
+          rowEvent("AspectMembers", ["1", "1"], { members: 3n }),
+          rowEvent("AspectMembers", ["1", "3"], { members: 1n }),
+        ]),
+      ),
+      11,
+      0,
+    );
+    const input = { chain: "madara", confirmedBlock: 11, timestamp: 30, fold };
+    const members = (gameId: number) =>
+      buildNativeDirectory(input).games.find(({ game_id }) => game_id === gameId)!.aspect_members;
+    expect(members(1)).toEqual({ 1: 3, 2: 0, 3: 1, 4: 0 });
+    expect(members(2)).toBeNull();
+
+    const revision = fold.directoryRevision();
+    native.applyReceipt(fold, receipt([rowEvent("AspectMembers", ["1", "2"], { members: 1n })]), 12, 0);
+    expect(fold.directoryRevision()).not.toBe(revision);
+    expect(members(1)).toEqual({ 1: 3, 2: 1, 3: 1, 4: 0 });
   });
 
   it("adds unsettled shares with contract rounding, caps at game end, and never double counts checkpointed points", () => {
@@ -469,7 +500,7 @@ describe("native directory and leaderboard", () => {
       receipt(
         seedDerivedRows(fold, decoder, [
           gameEvent("1", "0", "0", "101"),
-          rulesEvent("1", "120", BigInt(nativeRuleConstants.SEASON_CLOSE)),
+          rulesEvent("1", "120", BigInt(nativeIdentifiers.rule.SEASON_CLOSE)),
         ]),
       ),
       11,
@@ -510,7 +541,7 @@ describe("native directory and leaderboard", () => {
       fold,
       receipt([
         structure("6", RIFT, "0x111"),
-        site(new CairoOption(CairoOptionVariant.Some, { explorer_id: 2n, home_id: 1n, reward: none() })),
+        site(new CairoOption(CairoOptionVariant.Some, { xp: 85n, explorer_id: 2n, home_id: 1n, reward: none() })),
         vacated,
       ]),
       13,

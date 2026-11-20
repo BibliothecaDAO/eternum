@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { nativePresetIdFor } from "../../../config/source/native";
 import { applyDurableLaunchDefaults, type CreateGameRequest } from "./schemas";
 
 const gameRequest = (devModeOn?: boolean): CreateGameRequest => ({
@@ -23,9 +24,9 @@ describe("applyDurableLaunchDefaults", () => {
   });
 });
 
-it("selects the Eternum preset and rejects cross-mode presets", () => {
-  const request: CreateGameRequest = { environment: "madara.eternum", gameName: "eternum-test", devModeOn: false };
-  expect(applyDurableLaunchDefaults("game", request).version).toBe("3");
+it("selects the Frontier preset and rejects cross-mode presets", () => {
+  const request: CreateGameRequest = { environment: "madara.frontier", gameName: "frontier-test", devModeOn: false };
+  expect(applyDurableLaunchDefaults("game", request).version).toBe(String(nativePresetIdFor("frontier")));
   expect(() => applyDurableLaunchDefaults("game", { ...request, version: "2" })).toThrow();
   expect(() => applyDurableLaunchDefaults("game", { ...gameRequest(), version: "5" })).toThrow();
 });

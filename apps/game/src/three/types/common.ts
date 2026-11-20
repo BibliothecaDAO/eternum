@@ -63,6 +63,8 @@ export interface ArmyData {
   entityId: ID;
   hexCoords: Position;
   isMine: boolean;
+  /** Not the viewer's, but of the Aspect of one of the viewer's realms. */
+  isAlly: boolean;
   owningStructureId: ID | null;
   owner: { address: bigint; ownerName: string; guildName: string };
   color: string;

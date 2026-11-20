@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import { advanceGames, type ReleaseChain, type ReleaseIdentity } from "./release";
+import { advanceGames, openForNewGames, type ReleaseChain, type ReleaseIdentity } from "./release";
 import { D1LaunchStore } from "./store";
 import { createLaunchTestDatabase, testChain } from "./test-database";
 
@@ -15,24 +15,29 @@ const candidate = (releaseId: number, changes: Partial<ReleaseIdentity> = {}): R
   ...changes,
 });
 
-/**
- * A shard on release `current` whose registered releases hold `registered` (the candidate's contents by default), its
- * games named `game-<id>` and pinned as `pins` (settled ones marked), recording every release it applies.
- */
 type Registered = { logic: Record<string, string>; migration: string };
 
 function shard(
-  current: number,
+  latest: number,
   pins: Record<number, number>,
-  { settled = [] as number[], registered = { logic: { ...LOGIC }, migration: "0x0" } as Registered } = {},
+  { settled = [] as number[], registered = { logic: { ...LOGIC }, migration: "0x0" } as Registered, open = 1 } = {},
 ) {
   const applied: [number, number][] = [];
+  const opened: number[] = [];
+  let current = open;
   const chain: ReleaseChain = {
     currentRelease: async () => current,
+    releaseRegistered: async (releaseId) => releaseId >= 1 && releaseId <= latest,
+    openRelease: async (releaseId) => {
+      if (releaseId !== current + 1 || releaseId > latest) throw new Error("release must follow the open release");
+      current = releaseId;
+      opened.push(releaseId);
+      return `0x${releaseId}`;
+    },
     registeredRelease: async () => registered,
     gameId: async (name) => (pins[Number(name.replace("game-", ""))] === undefined ? 0 : Number(name.slice(5))),
     gameRelease: async (gameId) => pins[gameId]!,
-    isSettled: async (gameId) => settled.includes(gameId),
+    game: async (gameId) => ({ settled: settled.includes(gameId), preset_id: 7n }),
     applyRelease: async (gameId, releaseId) => {
       if (releaseId !== pins[gameId]! + 1) throw new Error("release must follow game pin");
       pins[gameId] = releaseId;
@@ -40,7 +45,7 @@ function shard(
       return `0x${gameId}${releaseId}`;
     },
   };
-  return { chain, applied, pins };
+  return { chain, applied, pins, opened };
 }
 
 const published = (...releases: number[]) => ({
@@ -53,6 +58,31 @@ test("a running Frontier game on release 1 takes release 2 once it is registered
     { gameId: 1, from: 1, to: 2, transactions: ["0x12"] },
   ]);
   expect(applied).toEqual([[1, 2]]);
+});
+
+test("advancing the running games leaves the release closed to new games", async () => {
+  const { chain, opened } = shard(2, { 1: 1 });
+  await advanceGames(chain, published(1, 2), candidate(2), ["game-1"]);
+  expect(await chain.currentRelease()).toBe(1);
+  expect(opened).toEqual([]);
+});
+
+test("opening for new games walks every staged release in order, and a rerun sends nothing", async () => {
+  const { chain, opened } = shard(3, {});
+  expect(await openForNewGames(chain, candidate(3))).toEqual(["0x2", "0x3"]);
+  expect(opened).toEqual([2, 3]);
+  expect(await openForNewGames(chain, candidate(3))).toEqual([]);
+  expect(await chain.currentRelease()).toBe(3);
+});
+
+test.each([5n, 6n, 101n])("an existing game on retired preset %s keeps its release", async (presetId) => {
+  const { chain, applied, pins } = shard(2, { 1: 1, 2: 1 });
+  chain.game = async (gameId) => ({ settled: false, preset_id: gameId === 1 ? presetId : 7n });
+  expect(await advanceGames(chain, published(1, 2), candidate(2), ["game-1", "game-2"])).toEqual([
+    { gameId: 2, from: 1, to: 2, transactions: ["0x22"] },
+  ]);
+  expect(pins).toEqual({ 1: 1, 2: 2 });
+  expect(applied).toEqual([[2, 2]]);
 });
 
 test("a rerun on games already at the release sends nothing", async () => {
@@ -155,11 +185,13 @@ describe("interrupted Frontier launches", () => {
     const pins = new Map(Object.values(games).map((gameId) => [gameId, 1]));
     const applied: [number, number][] = [];
     const chain: ReleaseChain = {
-      currentRelease: async () => 2,
+      currentRelease: async () => 1,
+      releaseRegistered: async (releaseId) => releaseId <= 2,
+      openRelease: async () => "0x2",
       registeredRelease: async () => ({ logic: { ...LOGIC }, migration: "0x0" }),
       gameId: async (name) => games[name] ?? 0,
       gameRelease: async (gameId) => pins.get(gameId)!,
-      isSettled: async () => false,
+      game: async () => ({ settled: false, preset_id: 7n }),
       applyRelease: async (gameId, releaseId) => {
         pins.set(gameId, releaseId);
         applied.push([gameId, releaseId]);

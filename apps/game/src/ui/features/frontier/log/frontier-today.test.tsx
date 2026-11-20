@@ -20,7 +20,7 @@ const asked = vi.hoisted(() => ({
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowSeconds: () => NOW }));
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: new NativeFactStore() } }) }));
 vi.mock("../hud/dock-armies", () => ({
-  useDockArmies: (realm: unknown) => (realm ? [{ explorerId: 9, canSpendSkillPoint: true }] : []),
+  useDockArmies: (realm: unknown) => (realm ? [{ explorerId: 9 }] : []),
 }));
 // History answers for the owner it is asked about: the watched player lost an army to a camp and cleared it with another
 // in one transaction today, then a guard held.
@@ -119,7 +119,13 @@ it("shows a spectator the watched realm's day, its owner's clears counted, with 
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
-  const rules = { dayUnitSeconds: 100, seed: 1n, startMainAt: 0, endAt: 21 * 20 * 14_400 } as never;
+  const rules = {
+    dayUnitSeconds: 100,
+    seed: 1n,
+    startMainAt: 0,
+    scheduledEndAt: 21 * 20 * 14_400,
+    endAt: 21 * 20 * 14_400,
+  } as never;
   const watched = { entity_id: 7, owner: OWNER } as never;
   act(() => root.render(inGame(<FrontierToday rules={rules} realm={watched} onClose={() => undefined} />)));
   try {
@@ -146,7 +152,13 @@ it("leaves every total unknown when the history read fails, with Retry, never si
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
-  const rules = { dayUnitSeconds: 100, seed: 1n, startMainAt: 0, endAt: 21 * 20 * 14_400 } as never;
+  const rules = {
+    dayUnitSeconds: 100,
+    seed: 1n,
+    startMainAt: 0,
+    scheduledEndAt: 21 * 20 * 14_400,
+    endAt: 21 * 20 * 14_400,
+  } as never;
   const watched = { entity_id: 7, owner: OWNER } as never;
   act(() => root.render(inGame(<FrontierToday rules={rules} realm={watched} onClose={() => undefined} />)));
   try {
@@ -175,7 +187,15 @@ it("Today loads the owner's shrine and well use from history, with the exact rec
       root.render(
         inGame(
           <FrontierToday
-            rules={{ dayUnitSeconds: 100, seed: 1n, startMainAt: 0, endAt: 21 * 20 * 14_400 } as never}
+            rules={
+              {
+                dayUnitSeconds: 100,
+                seed: 1n,
+                startMainAt: 0,
+                scheduledEndAt: 21 * 20 * 14_400,
+                endAt: 21 * 20 * 14_400,
+              } as never
+            }
             realm={{ entity_id: 7, owner: OWNER } as never}
             onClose={() => undefined}
           />,

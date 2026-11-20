@@ -2,14 +2,14 @@ import { KEEP, PROFILE_WORDS } from "@/ui/design-system/kit/words";
 import { useCallback, useEffect, useState } from "react";
 
 import { identityClient } from "@/hooks/context/identity-session";
-import { listOpenShards, openKnownShards } from "@/runtime/world/shards";
+import { openDirectoryShard } from "@/runtime/world/shards";
 import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
 import { Icon } from "@/ui/design-system/icon";
 import { AppButton, AppDialog, AppSetting } from "@/ui/design-system/kit/app-elements";
 import {
   getOrCreateDeviceKey,
   readAccountDevices,
-  revokeDeviceEverywhere,
+  revokeAccountDevice,
   type DeviceShard,
 } from "@bibliothecadao/eternum";
 
@@ -17,24 +17,10 @@ import { useRealmsPlayer } from "../herald";
 import { Loading } from "../loading";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 
-/** One device key and the shards where it signs for the player's account. */
-interface Device {
-  key: string;
-  shards: DeviceShard[];
-}
-
-/**
- * The account's devices across every shard this client knows, read from each shard's device events at the player's
- * one address. A shard that could not be read makes the list partial, and the page says Devices did not answer.
- */
-const readDevices = async (address: string) => {
-  const unopened = await openKnownShards();
-  const shards = listOpenShards().map((shard) => ({ ...shard, provider: getShardRpcProvider(shard.rpcUrl) }));
-  const { devices, failures } = await readAccountDevices(address, shards);
-  return {
-    devices: [...devices].map(([key, shards]): Device => ({ key, shards })),
-    partial: unopened.length + failures.length > 0,
-  };
+const deviceShard = async (): Promise<DeviceShard> => {
+  const shard = await openDirectoryShard();
+  if (!shard) throw new Error("no_official_chain");
+  return { ...shard, provider: getShardRpcProvider(shard.rpcUrl) };
 };
 
 /**
@@ -42,10 +28,8 @@ const readDevices = async (address: string) => {
  * registration has reached the shards' events yet (right after sign-in it may not have: qa-app-1 P3-5 read an empty
  * list). A device removed elsewhere never reaches this list; the page says it was removed instead.
  */
-const withThisDevice = (devices: Device[], thisDevice: string): Device[] =>
-  devices.some((device) => BigInt(device.key) === BigInt(thisDevice))
-    ? devices
-    : [{ key: thisDevice, shards: [] }, ...devices];
+const withThisDevice = (devices: string[], thisDevice: string): string[] =>
+  devices.some((device) => BigInt(device) === BigInt(thisDevice)) ? devices : [thisDevice, ...devices];
 
 /** A device's name until the identity Worker stores names at registration: "Device" and its key's last four. */
 const deviceName = (key: string) => PROFILE_WORDS.device(BigInt(key).toString(16).slice(-4));
@@ -58,35 +42,40 @@ export const DevicesCard = ({ realmsId }: { realmsId: string }) => {
   const thisDevice = getOrCreateDeviceKey(localStorage).publicKey;
   const player = useRealmsPlayer();
   const address = player.data;
-  const [devices, setDevices] = useState<Device[] | null>(null);
+  const [devices, setDevices] = useState<string[] | null>(null);
   const [failed, setFailed] = useState<unknown>(null);
-  const [asking, setAsking] = useState<Device | null>(null);
+  const [asking, setAsking] = useState<string | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
 
   const load = useCallback(() => {
     if (!address) return;
-    readDevices(address).then(
-      ({ devices, partial }) => {
-        setDevices(withThisDevice(devices, thisDevice));
-        setFailed(partial ? "partial" : null);
-      },
-      (cause: unknown) => setFailed(cause),
-    );
+    deviceShard()
+      .then((shard) => readAccountDevices(address, shard))
+      .then(
+        (devices) => {
+          setDevices(withThisDevice(devices, thisDevice));
+          setFailed(null);
+        },
+        (cause: unknown) => setFailed(cause),
+      );
   }, [address, thisDevice]);
   useEffect(load, [load]);
 
-  const remove = async (device: Device) => {
+  const remove = async (deviceKey: string) => {
     setAsking(null);
-    setRemoving(device.key);
-    const failures = await revokeDeviceEverywhere({
-      shards: device.shards,
-      realmsId,
-      device: getOrCreateDeviceKey(localStorage),
-      deviceKey: device.key,
-      approve: identityClient.approveDeviceChange,
-    });
+    setRemoving(deviceKey);
+    try {
+      await revokeAccountDevice({
+        shard: await deviceShard(),
+        realmsId,
+        device: getOrCreateDeviceKey(localStorage),
+        deviceKey,
+        approve: identityClient.approveDeviceChange,
+      });
+    } catch (cause) {
+      setFailed(cause);
+    }
     setRemoving(null);
-    if (failures.length > 0) setFailed(failures);
     load();
   };
 
@@ -105,7 +94,7 @@ export const DevicesCard = ({ realmsId }: { realmsId: string }) => {
       <DeviceRows devices={devices} thisDevice={thisDevice} removing={removing} onRemove={setAsking} />
       {asking && (
         <AppDialog
-          title={PROFILE_WORDS.removeAsk(deviceName(asking.key))}
+          title={PROFILE_WORDS.removeAsk(deviceName(asking))}
           onClose={() => setAsking(null)}
           actions={
             <>
@@ -132,18 +121,18 @@ const DeviceRows = ({
   removing,
   onRemove,
 }: {
-  devices: Device[];
+  devices: string[];
   thisDevice: string;
   removing: string | null;
-  onRemove: (device: Device) => void;
+  onRemove: (device: string) => void;
 }) =>
   devices.map((device) => {
-    const own = BigInt(device.key) === BigInt(thisDevice);
+    const own = BigInt(device) === BigInt(thisDevice);
     return (
       <AppSetting
-        key={device.key}
+        key={device}
         icon="monitor"
-        name={own ? PROFILE_WORDS.thisDevice : deviceName(device.key)}
+        name={own ? PROFILE_WORDS.thisDevice : deviceName(device)}
         control={
           own ? (
             <Icon name="check" size={22} />
@@ -151,7 +140,7 @@ const DeviceRows = ({
             <AppButton
               kind="secondary"
               tone="bad"
-              busy={removing === device.key ? PROFILE_WORDS.removing : undefined}
+              busy={removing === device ? PROFILE_WORDS.removing : undefined}
               disabled={removing !== null}
               onClick={() => onRemove(device)}
             >

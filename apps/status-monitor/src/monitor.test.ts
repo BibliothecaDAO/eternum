@@ -19,7 +19,7 @@ import {
 import { onRequestGet } from "../../status/functions/status.json";
 
 const now = 1791456000;
-const world = { url: "https://shard.public.test", chainId: "0xa", status: "active" };
+const world = { url: "https://shard.public.test", chainId: "0xa" };
 const valueTargets = {
   playUrl: "https://play.realms.party",
   ledgerRpcUrl: "https://ledger-rpc.public.test",
@@ -44,10 +44,10 @@ const network =
         result: rpc.method === "starknet_call" ? ["0x0"] : { block_number: 10, timestamp: now },
       });
     }
-    if (url.endsWith("/api/directory")) return response({ shards: [{ ...world, games: [] }] });
+    if (url.endsWith("/api/directory")) return response({ shard: { ...world, games: [] } });
     if (url.endsWith("/api/slots")) return response({ slots: [] });
     if (url.endsWith("/api/factory/health"))
-      return response({ service: "launch", failedRuns: [], joinFailures: [], freezeFailures: [], strandedRuns: [] });
+      return response({ service: "launch", failedRuns: [], joinFailure: null, freezeFailures: [], strandedRuns: [] });
     if (url.endsWith("/api/guardian")) return response({ publicKey: "0x1", accountClassHash: "0x2" });
     if (url.endsWith("/api/health/accounts") || url.endsWith("/api/chat/health")) return response({ success: true });
     if (url.endsWith("/manifest"))
@@ -282,7 +282,7 @@ it("treats directory entry-unavailable facts as an outage even if world heads ar
   const result = await probeServices(
     network({
       "https://play.realms.party/api/directory": response({
-        shards: [{ ...world, games: [{ error: "unavailable" }] }],
+        shard: { ...world, games: [{ error: "unavailable" }] },
       }),
     }),
     now,
@@ -291,6 +291,18 @@ it("treats directory entry-unavailable facts as an outage even if world heads ar
   );
   expect(result.probes.find((row) => row.id === "directory")!.status).toBe("down");
   expect(result.probes.find((row) => row.id === "shard:0xa")!.status).toBe("up");
+});
+
+it("probes no world while the directory lists no shard", async () => {
+  const result = await probeServices(
+    network({ "https://play.realms.party/api/directory": response({ shard: null }) }),
+    now,
+    [world],
+    valueTargets,
+  );
+  expect(result.targets).toEqual([]);
+  expect(result.probes.find((row) => row.id === "directory")!.status).toBe("up");
+  expect(result.probes.filter((row) => row.id.startsWith("shard:") || row.id.startsWith("node:"))).toEqual([]);
 });
 
 it("observes the ledger pause flag independently and exposes unknown instead of a false flag", async () => {
@@ -402,7 +414,7 @@ it("reports game launches down while a run has failed or is stranded", async () 
   const stranded = await probeServices(
     network({
       "https://play.realms.party/api/factory/health": Response.json(
-        { service: "launch", failedRuns: [], joinFailures: [], freezeFailures: [], strandedRuns: [{ id: 7 }] },
+        { service: "launch", failedRuns: [], joinFailure: null, freezeFailures: [], strandedRuns: [{ id: 7 }] },
         { status: 503 },
       ),
     }),

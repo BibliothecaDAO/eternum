@@ -2,7 +2,7 @@ import { readRealmSkin } from "@/three/structures/realm-skins";
 import { configManager, getExplorerOwner } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import type { FactView } from "@/sync/fact-views";
-import { arePlayersAllied, sideOf, watchedSide } from "@/utils/entity-ownership";
+import { sideOf, watchedSide } from "@/utils/entity-ownership";
 import { mineMeaning, readStructureMeaning, realmMarkerMeaning } from "@/ui/design-system/domain-icon-meaning";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import type { MarkerOwner } from "@/ui/design-system/hex-marker";
@@ -16,7 +16,6 @@ export const minimapMarkersView: FactView<Map<string, MinimapMarker>> = {
     "Structure",
     "CampaignHome",
     "ExplorerTroops",
-    "GuildMember",
     "PlayerEntry",
     "BlitzRoster",
     "GameRegistry",
@@ -33,7 +32,7 @@ export const minimapMarkersView: FactView<Map<string, MinimapMarker>> = {
       if (watched) return watched.seat === null ? "nobody" : `seat-${watched.seat}`;
       return sideOf({
         isMine: viewer !== null && owner === BigInt(viewer),
-        isAlly: arePlayersAllied(store, viewer, owner),
+        isAlly: false,
         owner: { address: owner },
       });
     };

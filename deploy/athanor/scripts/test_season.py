@@ -165,8 +165,8 @@ class OperatorSeasonTest(unittest.TestCase):
                 finally:
                     credential.assert_not_called()
 
-    def test_reviewed_dev_inputs_register_devcon_through_the_normal_deployer(self):
+    def test_reviewed_dev_inputs_register_current_presets_through_the_normal_deployer(self):
         with patch.object(deploy, "committed", return_value=True):
             inputs = deploy.load_inputs("dev")
         rendered = deploy.render_environment({**inputs, "chain_id": "DEV_REHEARSAL"}, "")
-        self.assertIn("PRESETS=2,5,6,101\n", rendered)
+        self.assertIn("PRESETS=2,7\n", rendered)

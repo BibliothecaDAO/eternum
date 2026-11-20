@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use crate::resources::ResourceKey;
+use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
 use crate::structures::Structure;
 
 pub fn active_explorer(
@@ -9,17 +9,16 @@ pub fn active_explorer(
     let rules = game_context.rules.unbox();
     if rules.day_unit_seconds != 0 {
         let today = crate::days::day_of(game_context.game.unbox(), rules.day_unit_seconds, timestamp).index;
-        assert!(
-            crate::expeditions::is_current(explorer.coord, crate::logic::settlement::rules(key.game_id).spacing, today),
-            "EXPIRED_ARMY",
-        );
+        assert!(crate::logic::army_days::require(key) == today, "EXPIRED_ARMY");
     }
     let refill = crate::troops::StaminaRefill {
         timestamp,
         stamina_config: rules.troop_stamina_config,
         armies_tick_in_seconds: rules.tick_config.armies_tick_in_seconds,
     };
-    crate::logic::army_slots::resolve(key, explorer, Some(refill))
+    let mut explorer = crate::logic::army_slots::resolve(key, explorer, Some(refill));
+    crate::logic::army_relics::combat_boosts(key, ref explorer.troops.boosts, timestamp);
+    crate::logic::deep_armies::settle(key, explorer, game_context)
 }
 
 pub fn owned_structure(game_id: u32, entity_id: u64, actor: ContractAddress) -> Structure {
@@ -33,18 +32,13 @@ pub fn authorized_explorer(
 ) -> ExplorerTroops {
     let explorer = active_explorer(key, timestamp, game_context);
     owned_structure(key.game_id, explorer.owner, actor);
-    if game_context.rules.unbox().day_unit_seconds != 0 {
-        crate::logic::expeditions::cache_ruin_depths(
-            crate::expeditions::ExpeditionDiscoveryKey {
-                game_id: key.game_id,
-                structure_id: explorer.owner,
-                epoch: crate::expeditions::region_day(
-                    explorer.coord, crate::logic::settlement::rules(key.game_id).spacing,
-                ),
-            },
-        );
-    }
     explorer
+}
+pub fn field_explorer(
+    key: ExplorerKey, actor: ContractAddress, timestamp: u64, context: crate::commands::ExecutionContext,
+) -> ExplorerTroops {
+    crate::logic::deep_guards::assert_field(key);
+    command_explorer(key, Some(actor), timestamp, context)
 }
 use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::troops::{ExplorerKey, ExplorerTroops};
@@ -99,6 +93,9 @@ pub mod TroopState {
             state.troops.explorers.entry((key.game_id, key.explorer_id)).owner.read() == 0, "explorer already exists",
         );
         assert!(explorer.owner != 0, "missing explorer owner");
+        if let crate::troops::StaminaSource::Slot(_) = explorer.troops.stamina {
+            crate::logic::army_combat::create(key);
+        }
         write_home_membership(key, 0, explorer.owner);
         state.troops.explorers.write((key.game_id, key.explorer_id), explorer);
 
@@ -150,6 +147,10 @@ pub mod TroopState {
         let previous = state.troops.explorers.entry((key.game_id, key.explorer_id)).owner.read();
         assert!(previous != 0, "missing explorer");
         write_home_membership(key, previous, 0);
+        crate::logic::deep_guards::remove(key);
+        crate::logic::deep_armies::remove(key);
+        crate::logic::army_days::remove(key);
+        crate::logic::army_combat::remove(key);
 
         // Owner zero marks absence; recreation overwrites the complete explorer.
         state.troops.explorers.entry((key.game_id, key.explorer_id)).owner.write(0);
@@ -169,7 +170,9 @@ pub mod TroopState {
             for slot in 0..count {
                 let id = state.troops.home_armies.read((key.game_id, previous, slot));
                 if id != key.explorer_id {
-                    state.troops.home_armies.write((key.game_id, previous, next), id);
+                    if next != slot {
+                        state.troops.home_armies.write((key.game_id, previous, next), id);
+                    }
                     next += 1;
                 }
             }
@@ -254,6 +257,7 @@ pub mod TroopsLogic {
                 crate::relics::Recipient::StructureGuard => self
                     .boost_guards(game_id, actor, command, rule, rules, timestamp),
                 crate::relics::Recipient::StructureProduction => panic!("production relic requires resources domain"),
+                crate::relics::Recipient::ArmySlot(_) => panic!("army relic requires relics domain"),
             }
         }
     }
@@ -261,52 +265,6 @@ pub mod TroopsLogic {
     impl Guards of crate::guards::IGuards<ContractState> {
         fn guard(self: @ContractState, key: crate::guards::GuardKey) -> crate::guards::Guard {
             crate::logic::guards::guard(key)
-        }
-        fn initialize_structure_guards(
-            ref self: ContractState,
-            key: ResourceKey,
-            seed: u256,
-            timestamp: u64,
-            game_context: crate::commands::ActionContext,
-        ) {
-            let game_context = crate::commands::execution_context(key.game_id, game_context);
-
-            let base = crate::logic::structures::structure(key).expect('missing guarded structure').base;
-            let category = base.category;
-            let rules = game_context.rules.unbox();
-            // Every guarded structure an expedition discovers is a site whose guard follows its kind and depth.
-            let site = rules.day_unit_seconds != 0;
-            let guarded = if site {
-                crate::expeditions::is_site_category(category)
-            } else {
-                category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY
-                    || category == crate::taxonomy::BANK_CATEGORY
-                    || category == crate::taxonomy::MINE_CATEGORY
-                    || category == crate::taxonomy::CAMP_CATEGORY
-                    || category == crate::taxonomy::BITCOIN_MINE_CATEGORY
-            };
-            assert!(guarded, "invalid guarded structure category");
-            let guards = if site {
-                assert!(crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS), "site requires depth rules");
-                let depth = crate::logic::expeditions::depth_rules_at(
-                    key.game_id, crate::structures::structure_coord(key),
-                );
-                array![crate::troops::frontier_guard(category, depth, seed, rules, timestamp)].span()
-            } else {
-                crate::troops::discovery_guards(category, seed, rules, timestamp)
-            };
-            assert!(base.troop_max_guard_count <= 4, "invalid guard slot limit");
-            assert!(guards.len() <= base.troop_max_guard_count.into(), "guards exceed structure limit");
-            for slot in 0..guards.len() {
-                let troops = *guards.at(slot);
-                let slot: u8 = slot.try_into().unwrap();
-                let guard_key = crate::guards::GuardKey { game_id: key.game_id, structure_id: key.entity_id, slot };
-                assert!(crate::logic::guards::guard(guard_key) == Default::default(), "guards already initialized");
-                crate::logic::guards::GuardState::save(guard_key, crate::guards::Guard { troops, destroyed_tick: 0 });
-            }
-            if site {
-                crate::logic::expeditions::create_site(key, guards);
-            }
         }
         fn add_starting_guard(
             ref self: ContractState,
@@ -336,7 +294,6 @@ pub mod TroopsLogic {
             crate::logic::guards::GuardState::save(guard_key, guard);
         }
     }
-
 
     #[abi(embed_v0)]
     impl Management of crate::troop_management::ITroopManagement<ContractState> {
@@ -488,9 +445,13 @@ pub mod TroopsLogic {
             let home = crate::logic::troops::owned_structure(game_id, explorer.owner, actor);
             assert!(
                 crate::geometry::adjacent(
-                    explorer.coord, self.army_home(ResourceKey { game_id, entity_id: explorer.owner }, game_context),
+                    explorer.coord,
+                    self
+                        .reinforcement_origin(
+                            ResourceKey { game_id, entity_id: explorer.owner }, command.supply_post, game_context,
+                        ),
                 ),
-                "explorer not adjacent to home",
+                "explorer not adjacent to supply",
             );
             self
                 .pay_troops(
@@ -712,20 +673,46 @@ pub mod TroopsLogic {
             let context = crate::commands::execution_context(game_id, context);
 
             let rules = self.authorize(game_id, context);
-            let home = crate::logic::troops::owned_structure(game_id, command.structure_id, actor);
+            crate::logic::troops::owned_structure(game_id, command.structure_id, actor);
             if rules.day_unit_seconds != 0 {
                 self
                     .expire_home_armies(
                         ResourceKey { game_id, entity_id: command.structure_id }, rules, context.timestamp, context,
                     );
             }
+            self
+                .pay_troops(
+                    game_id,
+                    command.structure_id,
+                    troop_type(command.category),
+                    troop_tier(command.tier),
+                    command.amount,
+                    context.timestamp,
+                    context,
+                );
+            Allocation::allocate_army(ref self, game_id, actor, command, crate::commands::action_context(context));
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl Allocation of crate::troops::IArmyAllocation<ContractState> {
+        fn allocate_army(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: CreateExplorer,
+            context: crate::commands::ActionContext,
+        ) -> u64 {
+            let context = crate::commands::execution_context(game_id, context);
+            let rules = context.rules.unbox();
+            let home = crate::logic::troops::owned_structure(game_id, command.structure_id, actor);
+            assert!(command.amount > 0, "empty army allocation");
             if rules.day_unit_seconds == 0 {
                 assert!(command.slot == 0, "slots require expedition");
             }
             let category = troop_type(command.category);
             let tier = troop_tier(command.tier);
             let id = crate::entity_ids::allocate_home(game_id, command.structure_id);
-            self.pay_troops(game_id, command.structure_id, category, tier, command.amount, context.timestamp, context);
             let today = if rules.day_unit_seconds == 0 {
                 0
             } else {
@@ -799,10 +786,9 @@ pub mod TroopsLogic {
                     ),
                     context.timestamp,
                 );
-            ()
+            id
         }
     }
-
 
     fn troop_type(value: u8) -> TroopType {
         match value {
@@ -836,6 +822,44 @@ pub mod TroopsLogic {
     }
     #[abi(embed_v0)]
     impl BattleResolution of crate::troops::IBattleResolution<ContractState> {
+        fn spend_claim(
+            ref self: ContractState,
+            key: ExplorerKey,
+            mut attacker: ExplorerTroops,
+            destination: crate::troops::Coord,
+            context: crate::commands::ActionContext,
+        ) -> ExplorerTroops {
+            let context = crate::commands::execution_context(key.game_id, context);
+            assert!(crate::geometry::adjacent(attacker.coord, destination), "structure claim requires adjacency");
+            let rules = context.rules.unbox();
+            attacker
+                .troops
+                .stamina
+                .spend(
+                    ref attacker.troops.boosts,
+                    attacker.troops.category,
+                    attacker.troops.tier,
+                    rules.troop_stamina_config,
+                    crate::oaths::attack_stamina(
+                        crate::logic::progression::held_oaths(key, context),
+                        rules.troop_stamina_config.stamina_attack_req,
+                    )
+                        .into(),
+                    rules.tick_config.armies_tick_in_seconds,
+                    context.timestamp,
+                    true,
+                );
+            crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(attacker));
+            attacker
+        }
+        fn expire_explorer(
+            ref self: ContractState,
+            key: ExplorerKey,
+            explorer: ExplorerTroops,
+            context: crate::commands::ActionContext,
+        ) {
+            super::expire_explorer(key, explorer, crate::commands::execution_context(key.game_id, context));
+        }
         fn command_explorer(
             self: @ContractState,
             key: ExplorerKey,
@@ -850,6 +874,16 @@ pub mod TroopsLogic {
                 None => crate::logic::troops::active_explorer(key, game_context.timestamp, game_context),
             }
         }
+        fn twins_companion(
+            self: @ContractState,
+            key: ExplorerKey,
+            attacker: ExplorerTroops,
+            game_context: crate::commands::ActionContext,
+        ) -> Option<crate::troops::Troops> {
+            crate::logic::troops::twins_companion(
+                key, attacker, crate::commands::execution_context(key.game_id, game_context),
+            )
+        }
         fn finish_battle(
             ref self: ContractState,
             key: ExplorerKey,
@@ -857,8 +891,11 @@ pub mod TroopsLogic {
             before: u128,
             game_context: crate::commands::ActionContext,
         ) {
+            if explorer.troops.count == 0 {
+                self.destroy_explorer(key, explorer);
+                return;
+            }
             let game_context = crate::commands::execution_context(key.game_id, game_context);
-
             self
                 .resources_dispatcher(key.game_id)
                 .change_explorer_capacity(
@@ -867,11 +904,7 @@ pub mod TroopsLogic {
                     false,
                     crate::commands::resource_context(game_context),
                 );
-            if explorer.troops.count == 0 {
-                self.destroy_explorer(key, explorer);
-            } else {
-                crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
-            }
+            crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
         }
     }
 }
@@ -894,6 +927,26 @@ pub mod troop_helpers {
     pub impl TroopHelpers<
         TContractState, impl Release: ReleaseState::HasComponent<TContractState>, +Drop<TContractState>,
     > of TroopHelpersTrait<TContractState> {
+        fn reinforcement_origin(
+            self: @TContractState, home: ResourceKey, supply_post: Option<u64>, context: ExecutionContext,
+        ) -> Coord {
+            let Some(site_id) = supply_post else {
+                return self.army_home(home, context);
+            };
+            let rules = context.rules.unbox();
+            assert!(rules.day_unit_seconds != 0, "supply post requires expeditions");
+            let site = crate::logic::expeditions::expedition_site(ResourceKey { entity_id: site_id, ..home })
+                .expect('missing supply post');
+            let today = crate::days::day_of(context.game.unbox(), rules.day_unit_seconds, context.timestamp).index;
+            let spacing = self.expedition_spacing(home.game_id);
+            let coord = Coord { alt: site.alt, x: site.col, y: site.row };
+            assert!(
+                crate::expeditions::is_supply_post(site, home.entity_id, today, spacing),
+                "not today's cleared home camp",
+            );
+            coord
+        }
+
         fn army_home(self: @TContractState, home: ResourceKey, context: ExecutionContext) -> Coord {
             let rules = context.rules.unbox();
             if rules.day_unit_seconds == 0 {
@@ -917,44 +970,13 @@ pub mod troop_helpers {
             game_context: crate::commands::ExecutionContext,
         ) {
             let today = crate::days::day_of(game_context.game.unbox(), rules.day_unit_seconds, timestamp).index;
-            let spacing = self.expedition_spacing(home.game_id);
             for id in crate::logic::troops::home_armies(home) {
                 let key = ExplorerKey { game_id: home.game_id, explorer_id: *id };
                 let explorer = crate::logic::troops::explorer(key).expect('missing home army');
-                if !crate::expeditions::is_current(explorer.coord, spacing, today) {
-                    self.return_troops(key, home, explorer, timestamp, game_context);
-                    self.destroy_explorer(key, explorer);
+                if crate::logic::army_days::require(key) != today {
+                    super::expire_explorer(key, explorer, game_context);
                 }
             }
-        }
-
-        /// Homecoming: an army the day has ended sends its own tier's share of its surviving troops back to the
-        /// realm's stock, in whole troops and as much as fits.
-        fn return_troops(
-            ref self: TContractState,
-            key: ExplorerKey,
-            home: ResourceKey,
-            explorer: ExplorerTroops,
-            timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
-        ) {
-            let Some(progress) = crate::logic::progression::read(key) else {
-                return;
-            };
-            let share: u128 = crate::rules::homecoming_bps(progress.homecoming).into();
-            let returned = explorer.troops.count / RESOURCE_PRECISION * share / 10000 * RESOURCE_PRECISION;
-            if returned == 0 {
-                return;
-            }
-            self
-                .resources_dispatcher(home.game_id)
-                .grant_resource(
-                    home,
-                    crate::troops::stock_resource(explorer.troops.category, explorer.troops.tier),
-                    returned,
-                    timestamp,
-                    crate::commands::resource_context(game_context),
-                );
         }
 
         fn reveal_depth_arrival(
@@ -1016,7 +1038,7 @@ pub mod troop_helpers {
             if command.relic_id == 45 || command.relic_id == 46 {
                 crate::relics::IRelicMapDispatcherTrait::reveal_relic_ring(
                     crate::relics::IRelicMapLibraryDispatcher {
-                        class_hash: Release::get_component(@self).classes(game_id).map.read(),
+                        class_hash: Release::get_component(@self).classes(game_id).raid.read(),
                     },
                     game_id,
                     explorer.coord,
@@ -1067,10 +1089,11 @@ pub mod troop_helpers {
             rules: SliceRules,
             biome: crate::biome::Biome,
             exploring: bool,
+            oaths: u16,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
         ) {
-            crate::troops::spend_stamina(ref explorer, rules, biome, exploring, timestamp);
+            crate::troops::spend_stamina(ref explorer, rules, biome, exploring, oaths, timestamp);
             self.pay_food(game_id, explorer, rules, exploring, timestamp, game_context);
         }
         fn pay_food(
@@ -1101,12 +1124,7 @@ pub mod troop_helpers {
         }
 
         fn destroy_explorer(ref self: TContractState, key: ExplorerKey, explorer: ExplorerTroops) {
-            crate::logic::army_slots::release(key, explorer);
-            self
-                .resources_dispatcher(key.game_id)
-                .destroy_resources(ResourceKey { game_id: key.game_id, entity_id: key.explorer_id });
-            crate::logic::map::MapState::vacate(tile_key(key.game_id, explorer.coord), key.explorer_id);
-            crate::logic::troops::TroopState::destroy(key);
+            super::destroy_explorer(key, explorer);
         }
     }
 }
@@ -1126,4 +1144,65 @@ pub fn command_explorer(
         actor,
         crate::commands::ActionContext { timestamp, ..crate::commands::action_context(context) },
     )
+}
+
+fn expire_explorer(key: ExplorerKey, mut explorer: ExplorerTroops, context: crate::commands::ExecutionContext) {
+    let today = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp)
+        .index;
+    assert!(crate::logic::army_days::require(key) < today, "army has not expired");
+    explorer = crate::logic::army_slots::resolve(key, explorer, None);
+    explorer = crate::logic::deep_armies::settle(key, explorer, context);
+    if explorer.troops.count == 0 {
+        return;
+    }
+    destroy_explorer(key, explorer);
+}
+
+
+fn destroy_explorer(key: ExplorerKey, explorer: ExplorerTroops) {
+    crate::logic::army_slots::release(key, explorer);
+    let state = crate::state::read();
+    let release = state.releases.entry(state.game_releases.read(key.game_id)).classes;
+    IResourceOperationsLibraryDispatcher { class_hash: release.resources.read() }
+        .destroy_resources(ResourceKey { game_id: key.game_id, entity_id: key.explorer_id });
+    if crate::logic::deep_guards::entry(key).is_none() {
+        crate::logic::map::MapState::vacate(crate::geometry::tile_key(key.game_id, explorer.coord), key.explorer_id);
+    }
+    crate::logic::troops::TroopState::destroy(key);
+}
+
+pub fn twins_companion(
+    key: ExplorerKey, attacker: ExplorerTroops, context: crate::commands::ExecutionContext,
+) -> Option<crate::troops::Troops> {
+    let owner = crate::logic::combat::explorer_owner(key, attacker);
+    let today = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp)
+        .index;
+    let mut largest: Option<crate::troops::Troops> = None;
+    for direction in 0_u8..6 {
+        let Some(coord) = crate::geometry::checked_neighbor_at_distance(attacker.coord, direction, 1) else {
+            continue;
+        };
+        let Some(occupant) = crate::logic::map::occupancy(crate::geometry::tile_key(key.game_id, coord)) else {
+            continue;
+        };
+        if occupant.is_structure || !crate::taxonomy::is_explorer(occupant.category) {
+            continue;
+        }
+        let twin_key = ExplorerKey { game_id: key.game_id, explorer_id: occupant.entity_id };
+        if crate::logic::army_days::require(twin_key) != today {
+            continue;
+        }
+        let twin = active_explorer(twin_key, context.timestamp, context);
+        if twin.troops.count == 0 || crate::logic::combat::explorer_owner(twin_key, twin) != owner {
+            continue;
+        }
+        let larger = match largest {
+            Some(troops) => troops.count < twin.troops.count,
+            None => true,
+        };
+        if larger {
+            largest = Some(twin.troops);
+        }
+    }
+    largest
 }

@@ -303,16 +303,27 @@ pub fn max_army_size(config: crate::rules::TroopLimitConfig, level: u8, tier: Tr
     cap * modifier.into() / (strength.into() * 100)
 }
 
+pub fn explore_stamina_cost(category: TroopType, rules: crate::rules::SliceRules, oaths: u16) -> u16 {
+    let base = rules.troop_stamina_config.stamina_explore_stamina_cost;
+    let cost = if rules.day_unit_seconds != 0 && category == TroopType::Paladin {
+        crate::rules::SCOUT_EXPLORE_STAMINA.into()
+    } else {
+        base
+    };
+    crate::oaths::explore_stamina(oaths, cost)
+}
+
 pub fn spend_stamina(
     ref explorer: ExplorerTroops,
     rules: crate::rules::SliceRules,
     biome: crate::biome::Biome,
     exploring: bool,
+    oaths: u16,
     timestamp: u64,
 ) {
     let stamina = rules.troop_stamina_config;
     let cost: u64 = if exploring {
-        stamina.stamina_explore_stamina_cost.into()
+        explore_stamina_cost(explorer.troops.category, rules, oaths).into()
     } else {
         let (increase, bonus) = explorer.troops.stamina_travel_bonus(biome, stamina);
         let base: u64 = stamina.stamina_travel_stamina_cost.into();
@@ -389,13 +400,11 @@ pub fn discovery_guards(category: u8, seed: u256, rules: crate::rules::SliceRule
     guards.span()
 }
 
-// Every Frontier guard is Knight T1, so counts order encounters without changing combat matchups.
+// A family determines its mark; the same draw determines a roaming family and its size.
 pub fn frontier_guard(
     category: u8, depth: crate::expeditions::DepthRules, seed: u256, rules: crate::rules::SliceRules, timestamp: u64,
 ) -> Troops {
-    let (lower, upper) = if category == crate::taxonomy::RUIN_CATEGORY {
-        (depth.ruin_guard_lower, depth.ruin_guard_upper)
-    } else if category == crate::taxonomy::RIFT_CATEGORY {
+    let (lower, upper) = if category == crate::taxonomy::RIFT_CATEGORY {
         (
             rift_guard_bound(depth.site_guard_lower, depth.guard_step),
             rift_guard_bound(depth.site_guard_upper, depth.guard_step),
@@ -405,8 +414,9 @@ pub fn frontier_guard(
     };
     let lower: u128 = lower.into();
     let upper: u128 = upper.into();
+    let band = category == crate::taxonomy::BEASTS_CATEGORY && beast_draw_is_band(seed);
     let count = if category == crate::taxonomy::BEASTS_CATEGORY {
-        let (lower, upper) = if crate::random::range(seed, 2, 2) == 0 {
+        let (lower, upper) = if !band {
             (depth.beast_weak_lower, depth.beast_weak_upper)
         } else {
             (depth.beast_strong_lower, depth.beast_strong_upper)
@@ -417,6 +427,26 @@ pub fn frontier_guard(
         let step: u128 = depth.guard_step.into();
         lower + step * crate::random::range(seed, 1, (upper - lower) / step + 1)
     };
+    let troop = if band || category == crate::taxonomy::RIFT_CATEGORY {
+        TroopType::Crossbowman
+    } else {
+        TroopType::Knight
+    };
+    discovered_guard(troop, TroopTier::T1, count, rules, timestamp)
+}
+
+pub fn beast_draw_is_band(seed: u256) -> bool {
+    let shares: u128 = (crate::rules::BEAST_HERD_SHARE + crate::rules::BEAST_BAND_SHARE).into();
+    crate::random::range(seed, 2, shares) >= crate::rules::BEAST_HERD_SHARE.into()
+}
+
+pub fn ruin_guard(
+    relic: crate::army_relics::ArmyRelic, depth: u8, seed: u256, rules: crate::rules::SliceRules, timestamp: u64,
+) -> Troops {
+    let base = crate::army_relics::ruin_strength(relic.rank, depth);
+    let spread = base * crate::army_relics::RUIN_GUARD_SPREAD_PERCENT / 100;
+    let step = crate::army_relics::RUIN_GUARD_STEP;
+    let count = base - spread + step * crate::random::range(seed, 1, 2 * spread / step + 1);
     discovered_guard(TroopType::Knight, TroopTier::T1, count, rules, timestamp)
 }
 
@@ -443,6 +473,16 @@ fn discovered_guard(
 
 #[starknet::interface]
 pub trait IBattleResolution<T> {
+    fn spend_claim(
+        ref self: T,
+        key: ExplorerKey,
+        attacker: ExplorerTroops,
+        destination: Coord,
+        context: crate::commands::ActionContext,
+    ) -> ExplorerTroops;
+    fn expire_explorer(
+        ref self: T, key: ExplorerKey, explorer: ExplorerTroops, context: crate::commands::ActionContext,
+    );
     // The explorer a command acts with: active this day, and owned by the actor when one is given.
     fn command_explorer(
         self: @T,
@@ -457,6 +497,9 @@ pub trait IBattleResolution<T> {
         before: u128,
         game_context: crate::commands::ActionContext,
     );
+    fn twins_companion(
+        self: @T, key: ExplorerKey, attacker: ExplorerTroops, game_context: crate::commands::ActionContext,
+    ) -> Option<Troops>;
 }
 
 #[derive(Copy, Drop, Serde)]
@@ -487,9 +530,19 @@ pub enum ArmySlotAction {
 pub struct ResolvedArmySlot {
     pub stamina: StaminaSource,
     // In basis points, the unit of every damage boost; the name predates that and is part of the declared schema.
-    pub battle_bonus_percent: u16,
 }
 #[starknet::interface]
 pub trait IArmySlotStamina<T> {
     fn army_slot_stamina(ref self: T, key: ExplorerKey, action: ArmySlotAction) -> ResolvedArmySlot;
+}
+
+#[starknet::interface]
+pub trait IArmyAllocation<T> {
+    fn allocate_army(
+        ref self: T,
+        game_id: u32,
+        actor: starknet::ContractAddress,
+        command: crate::commands::CreateExplorer,
+        context: crate::commands::ActionContext,
+    ) -> u64;
 }

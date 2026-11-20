@@ -1,4 +1,5 @@
-import { getGameModeId } from "@/config/game-modes";
+import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
+import { RESOURCE_PRODUCTION_MODELS } from "@bibliothecadao/eternum";
 import { NEW_ARMY, startsOn } from "@/ui/design-system/kit/words";
 import { musterStamina } from "@bibliothecadao/eternum/troop-stamina";
 import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -19,7 +20,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow, useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import {
   BuildingType,
-  buildingName,
+  resourceName,
   Direction,
   DISPLAYED_SLOT_NUMBER_MAP,
   getBuildingFromResource,
@@ -109,7 +110,7 @@ export const useArmyCreation = ({
       ? undefined
       : { game_id: configManager.getActiveGameId(), entity_id: activeStructureId },
   );
-  const facts = useNativeFacts(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Guard", "ExplorerTroops"]);
+  const facts = useNativeFacts([...RESOURCE_PRODUCTION_MODELS, ...GUARD_MODELS, "ExplorerTroops"]);
   const provision = useBlitzRealmProvision(activeStructureId ?? null);
 
   const troopOptions = useMemo<TroopSelectionOption[]>(() => {
@@ -548,13 +549,12 @@ function readTroopSupply(
   timestamp: number,
 ): TroopSupply {
   const resourceId = getTroopResourceId(troop.type, troop.tier);
-  const name = buildingName(getBuildingFromResource(resourceId), getGameModeId() === "frontier");
-  if (structureId === undefined) return { name, perHour: 0, secondsToFullArmy: null };
+  const name = resourceName(resourceId);
+  if (structureId === undefined) return { name, perHour: undefined, secondsToFullArmy: null };
   const manager = new ResourceManager(store, structureId);
-  const production = manager.isProducingAt(resourceId, timestamp) ? manager.current(resourceId) : undefined;
-  const perSecond = production
-    ? ResourceManager.calculateResourceProductionData(resourceId, production, timestamp).productionPerSecond
-    : 0;
+  const production = manager.productionData(resourceId, timestamp);
+  if (!production) return { name, perHour: undefined, secondsToFullArmy: null };
+  const perSecond = production.isProducing ? production.productionPerSecond : 0;
   const secondsToFullArmy = perSecond > 0 && fullArmy !== null ? Math.max(0, (fullArmy - available) / perSecond) : null;
   return { name, perHour: Math.floor(perSecond * 3600), secondsToFullArmy };
 }

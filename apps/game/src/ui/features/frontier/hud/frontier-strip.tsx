@@ -1,19 +1,15 @@
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { bankedCounterTarget } from "@/ui/motion/moments/banked-flight";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { nativeResearchConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { ComponentProps } from "react";
 
+import { usePartShown } from "../opening/opening-context";
 import { useRealmStores } from "../realm-stores";
 import { FRONTIER_STORES, STORE_KINDS, type StoreKind } from "../stores";
 import { dayClock } from "./day-clock";
 import { StatusStrip, type StoreReading } from "./status-strip";
 
-/**
- * The strip over the game's facts: today on the season's calendar, and what the realm holds against each store's limit,
- * its tone amber within the hour of full and ember at the limit (a visited realm's when visiting). Troops count what
- * the next deploy finds, Homecoming's return included.
- */
 export const FrontierStrip = ({
   rules,
   realm,
@@ -36,7 +32,12 @@ export const FrontierStrip = ({
 /** Each store of the realm (the strip's plates, the realm panel's rings): its reading and where a payout of it lands. */
 export const useStoreReadings = (realm: NativeRows["Structure"] | null, rules: ExpeditionRules): StoreReading[] => {
   const stores = useRealmStores(realm, rules);
-  return STORE_KINDS.map((kind) => {
+  const shown: Partial<Record<StoreKind, boolean>> = {
+    troops: usePartShown("troops-store"),
+    essence: usePartShown("essence-store"),
+    scouts: realm !== null && realm.base.level >= nativeResearchConstants.SCOUTS_LODGE_LEVEL,
+  };
+  return STORE_KINDS.filter((kind) => shown[kind] ?? true).map((kind) => {
     const store = stores?.[kind];
     return {
       kind,

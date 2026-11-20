@@ -20,8 +20,7 @@ pub trait IPlayFixture<T> {
     );
     fn last_applied(self: @T) -> bool;
 }
-pub const BLITZ_COMMAND_MASK: u128 = 71478916396378193887;
-pub const ETERNUM_COMMAND_MASK: u128 = 73786976294838206463;
+pub use crate::command_masks::BLITZ_COMMAND_MASK;
 pub const BLITZ_RULES: u32 = crate::rules::HOME_REWARDS
     + crate::rules::DISCOVER_CAMPS
     + crate::rules::DISCOVER_CHESTS
@@ -31,17 +30,18 @@ pub const BLITZ_RULES: u32 = crate::rules::HOME_REWARDS
     + crate::rules::OWNER_ONLY_SHARES
     + crate::rules::HYPERSTRUCTURE_MULTIPLIERS
     + crate::rules::PRODUCTION_START
-    + crate::rules::COMBAT_DICE_ETHEREAL
     + crate::rules::DISCOVER_SPIRES;
-pub const ETERNUM_RULES: u32 = crate::rules::DISCOVER_HYPERSTRUCTURES
+pub const TEST_RULES: u32 = crate::rules::DISCOVER_HYPERSTRUCTURES
     + crate::rules::SPIRES
     + crate::rules::SEASON_CLOSE
-    + crate::rules::DEV_VILLAGE_ENTRY
-    + crate::rules::COMBAT_DICE_ETHEREAL;
+    + crate::rules::DEV_VILLAGE_ENTRY;
 pub fn rules() -> crate::rules::SliceRules {
-    let data = read_txt(@FileTrait::new("../fixtures/current-presets/preset-3.txt"));
+    let data = read_txt(@FileTrait::new("../fixtures/current-presets/conformance.txt"));
     let mut fields = data.span();
-    Serde::deserialize(ref fields).unwrap()
+    let rules: crate::rules::SliceRules = Serde::deserialize(ref fields).unwrap();
+    crate::rules::SliceRules {
+        mode_rules: TEST_RULES, command_mask: BLITZ_COMMAND_MASK, entry_rule: crate::rules::ENTRY_ENTITLEMENT, ..rules,
+    }
 }
 pub fn create_games(registry: ContractAddress) {
     for game_id in array![1, 2] {
@@ -57,6 +57,7 @@ pub fn create_games(registry: ContractAddress) {
                 start_settling_at: 0,
                 start_main_at: 0,
                 end_at: 999999,
+                scheduled_end_at: 999999,
                 end_grace_seconds: 0,
                 seed: 1,
             },
@@ -76,7 +77,6 @@ pub fn fixture_preset(rules: crate::rules::SliceRules) -> crate::presets::Preset
                         amount: 1000, campaign_essence: 0, golden_amount: 1000, golden_essence: 0,
                     },
                 );
-        preset.economy.progression = Some(super::preset_projection::frontier_progression_rules());
     }
     preset.season_win_points = 0;
     preset.economy.withdrawals = None;

@@ -1,5 +1,4 @@
 import { blitzCommitment } from "@realms-world/value-ledger/commitment";
-import { batchRemaining } from "@realms-world/value-ledger/shard";
 import type { FinalizedGameSummary } from "./model";
 import type { FinalizeGameRequest } from "./schemas";
 import type { LaunchShard } from "./shard-client";
@@ -42,16 +41,7 @@ export const finalizeGame = async (request: FinalizeGameRequest, shard: LaunchSh
   const gameId = request.gameId;
   const commitment = await completeBlitzResults({
     secondsUntilEnd: async () => Number((await shard.game(gameId)).end_at) - (await shard.head()).timestamp,
-    settle: async () => {
-      while (!(await shard.game(gameId)).settled) {
-        const result = await shard.playCommand(gameId, "MarkGameSettled");
-        const remaining = batchRemaining(result.events, shard.target.gamesAddress, result.transactionHash, {
-          gameId,
-          missing: "reject",
-        });
-        if (!remaining && !(await shard.game(gameId)).settled) throw new Error("point_settlement_not_complete");
-      }
-    },
+    settle: () => shard.settleGame(gameId),
     progress: () => shard.view<ResultProgress>("blitz_result", [gameId]),
     record: () => shard.playCommand(gameId, "RecordBlitzResults"),
   });

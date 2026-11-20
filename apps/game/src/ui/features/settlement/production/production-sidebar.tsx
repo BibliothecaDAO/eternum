@@ -1,6 +1,6 @@
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { configManager, getStructureRelicEffects, ResourceManager } from "@bibliothecadao/eternum";
+import { configManager, getStructureRelicEffects } from "@bibliothecadao/eternum";
 import { useBuildings } from "@/hooks/helpers/use-buildings";
 import { useNativeRowOrAbsent } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
@@ -75,8 +75,8 @@ const SidebarRealm = ({
       let activeBuildings = 0;
 
       const productionInfo = resourceData.current(resourceId);
-      if (productionInfo) {
-        const productionData = ResourceManager.calculateResourceProductionData(resourceId, productionInfo, now);
+      const productionData = resourceData.productionData(resourceId, now);
+      if (productionInfo && productionData) {
         isProducing = productionData.isProducing;
         if (isProducing) {
           const buildingCount = productionInfo.production.building_count;

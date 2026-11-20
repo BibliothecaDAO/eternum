@@ -1,3 +1,4 @@
+import { deepTerrain } from "./deep";
 import { activeTileOccupancy } from "./ruins";
 import { BiomeIdToType, type BiomeType, type Tile } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
@@ -15,16 +16,26 @@ export function getTileAt(
   gameId = configManager.getActiveGameId(),
 ): Tile | undefined {
   const key = { game_id: gameId, alt, col, row };
-  return tileFactsToTile(key, store.get("TileOpt", key), activeTileOccupancy(store, key));
+  return tileFactsToTile(key, deepTerrain(store, key) ?? store.get("TileOpt", key), activeTileOccupancy(store, key));
+}
+
+/** A field entity occupies its own tile; a Deep guard occupies its site's tile. */
+export function entityMapOccupancy(
+  store: Pick<NativeFactStore, "entityOccupancy" | "get">,
+  gameId: number,
+  entityId: number | bigint,
+) {
+  const guard = store.get("DeepGuard", { game_id: gameId, explorer_id: BigInt(entityId) });
+  return store.entityOccupancy(gameId, guard?.site_id ?? entityId);
 }
 
 /** The canonical tile occupied by a live entity; a missing position is an incomplete fact set. */
 export function entityMapPosition(
-  store: Pick<NativeFactStore, "entityOccupancy">,
+  store: Pick<NativeFactStore, "entityOccupancy" | "get">,
   gameId: number,
   entityId: number | bigint,
 ): { x: number; y: number; alt: boolean } {
-  const tile = store.entityOccupancy(gameId, entityId);
+  const tile = entityMapOccupancy(store, gameId, entityId);
   if (!tile) throw new Error(`Missing native position for entity ${gameId}:${entityId}`);
   return { x: tile.col, y: tile.row, alt: tile.alt };
 }

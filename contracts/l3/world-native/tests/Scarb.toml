@@ -1,5 +1,5 @@
 [workspace]
-members = ["support", "capture", "combat", "discovery", "economy", "lifecycle", "registration", "resources", "world"]
+members = ["support", "capture", "combat", "discovery", "discovery-roots", "economy", "lifecycle", "registration", "resources", "world"]
 
 [workspace.dependencies]
 world_native = { path = "..", features = ["test_support"] }

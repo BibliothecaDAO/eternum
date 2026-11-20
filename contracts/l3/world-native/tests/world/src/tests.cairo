@@ -417,31 +417,6 @@ fn disabled_commands_and_unready_rosters_revert_before_root() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn only_current_launcher_can_create_banks_before_root() {
-    let d = setup(true);
-    let banks = array![
-        crate::market::BankPlacement {
-            name: 'bank', coord: crate::troops::Coord { alt: false, x: 2000000, y: 2000000 },
-        },
-    ]
-        .span();
-    let command = play_fixture::encode(Command::CreateBanks(banks));
-    let (release, preset) = play_fixture::pins(d.games, 1);
-    play_fixture::caller(d.games, d.actor, 100);
-    assert_entry_refusal(d, 1, release, preset, command, "only launcher");
-    set_launcher(d, d.actor);
-    let old_launcher = bind_authority(d);
-    play_fixture::caller(d.games, old_launcher.actor, 100);
-    assert_entry_refusal(d, 1, release, preset, command, "only launcher");
-    let mut spy = spy_events();
-    assert!(!play_fixture::play(d.games, TestAction { command: Command::CreateBanks(banks), ..action(d, 1) }, 1, 100));
-    let rejected = play_fixture::rejection(ref spy, d.games);
-    assert_eq!(rejected.status_class, 'GAMEPLAY_REJECTED');
-    assert_eq!(rejected.reason, "six regional banks required");
-}
-
-#[test]
-#[feature("safe_dispatcher")]
 fn command_list_and_calldata_limits_are_checked_before_root() {
     let d = setup(true);
     let (release, preset) = play_fixture::pins(d.games, 1);
@@ -493,7 +468,14 @@ fn owner_registration_and_launcher_game_creation_have_separate_roles() {
     crate::registrar::IRegistrarDispatcherTrait::register_preset(registry, 1, registrar::definition(true));
     releases.register_release(2, release);
     assert!(crate::registrar::IRegistrarSafeDispatcherTrait::create_game(safe, registrar::params(true)).is_err());
+    assert!(
+        crate::logic::release::IReleasesSafeDispatcherTrait::open_release(
+            crate::logic::release::IReleasesSafeDispatcher { contract_address: d.games }, 2,
+        )
+            .is_err(),
+    );
     start_cheat_caller_address(d.games, d.actor);
+    releases.open_release(2);
     let game_id = crate::registrar::IRegistrarDispatcherTrait::create_game(registry, registrar::params(true));
     assert_eq!(releases.game_release(game_id), 2);
     assert_eq!(IGamesRolesDispatcher { contract_address: d.games }.owner(), authority());
@@ -510,7 +492,7 @@ fn game_registry_wire_contains_only_game_configuration() {
         encoded.span(),
         array![
             game.name, game.preset_id.into(), 0, 1, 1, game.start_settling_at.into(), game.start_main_at.into(),
-            game.end_at.into(), game.end_grace_seconds.into(), game.seed,
+            game.end_at.into(), game.end_grace_seconds.into(), game.seed, game.scheduled_end_at.into(),
         ]
             .span(),
     );
@@ -558,13 +540,19 @@ fn constructor_vrf_configuration_is_immutable_and_refuses_invalid_inputs() {
         assert!(declare("Games").unwrap().contract_class().deploy(@args).is_err());
     }
 }
+mod army_relics;
 mod bridge;
 mod days;
 mod entity_ids;
-mod faith;
+mod fragments;
 mod guilds;
+
+mod lane_interfaces;
+
+mod oaths;
 mod preset_projection;
 mod progression;
+mod race;
 mod rule_storage;
 mod shared_storage;
 mod spires;
@@ -572,3 +560,4 @@ mod stamina;
 mod structure_rules;
 mod structure_storage;
 mod terrain;
+mod wire_ids;

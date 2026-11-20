@@ -1,5 +1,6 @@
+import { DAYS_PER_BAG, seasonSeconds } from "../../../packages/core/src/utils/days";
 import { nativePresets } from "../../../config/source/native";
-import { clockScaled } from "../../../config/source/common/season-clock";
+import { clockScaled, seasonDayUnitSeconds } from "../../../config/source/common/season-clock";
 import { FRONTIER_ARMIES_TICK_SECONDS } from "../../../config/source/frontier/clock";
 
 /**
@@ -49,6 +50,11 @@ export const assertFrontierSeason = (startsAt: number, endsAt: number, presetId:
   if (startsAt % tickMs !== 0) throw new CalendarConflict(`A Frontier season starts on a ${tickMs / 1_000} s tick`);
   if (endsAt <= startsAt) throw new CalendarConflict("A Frontier season must end after it starts");
   if (endsAt % tickMs !== 0) throw new CalendarConflict(`A Frontier season ends on a ${tickMs / 1_000} s tick`);
+  if (preset.race) {
+    const unit = seasonDayUnitSeconds(preset);
+    const limit = seasonSeconds(preset.race.seasonDays / DAYS_PER_BAG, unit) * 1_000;
+    if (endsAt - startsAt > limit) throw new CalendarConflict("Race exceeds the preset season day limit");
+  }
 };
 
 /** Whether the phase is running at this instant: from its start, up to but not including its end. */

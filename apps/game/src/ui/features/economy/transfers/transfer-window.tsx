@@ -21,7 +21,7 @@ import { WEIGHT_UNKNOWN } from "@/ui/design-system/kit/words";
 import { iconDefinition, resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { toast } from "@/ui/features/event-feed/notify";
-import { ResourceArrivals } from "@/ui/features/economy/trading";
+import { AllResourceArrivals as ResourceArrivals } from "./resource-arrivals";
 import { TransferAutomationAdvancedModal } from "@/ui/features/economy/transfers/transfer-automation-modal";
 import { deliveryLandsAt, isMilitaryResource, ResourceManager, shipmentTravelSeconds } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, ResourcesIds, formatCount, formatExact, formatHeldAgainst } from "@bibliothecadao/types";

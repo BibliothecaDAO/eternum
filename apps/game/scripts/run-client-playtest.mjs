@@ -34,6 +34,7 @@ import {
   comparePlaytestSummary,
   deriveBootMetrics,
   evaluatePlaytestSummary,
+  LOAD_REFUSAL_NOTE,
   failed,
   hasEntryFinished,
   RENDERER_MODES,
@@ -48,7 +49,12 @@ import {
   resolveBrowserExecutable,
   writeIntegratedGpuLauncher,
 } from "./client-playtest/integrated-gpu.mjs";
-import { continuePastTheDaySummary, enterAsPlayer, signInIfSignedOut } from "./client-playtest/player-entry.mjs";
+import {
+  continuePastTheDaySummary,
+  continueWithoutWallet,
+  enterAsPlayer,
+  signInIfSignedOut,
+} from "./client-playtest/player-entry.mjs";
 import { restorePasskeys } from "./client-playtest/passkeys.mjs";
 import { Cancelled, createRunOwner } from "./client-playtest/run-owner.mjs";
 import { STEP_SETS } from "./client-playtest/steps.mjs";
@@ -66,8 +72,7 @@ const PROBE_PATH = join(SCRIPTS_DIR, "client-playtest/probe.js");
 const DEFAULTS = { port: 4173, iterations: 3, rendererModes: RENDERER_MODES, timeoutMs: 30_000, cpuThrottle: 1 };
 const POLL_INTERVAL_MS = 500;
 const LOAD_SAMPLE_MS = 5_000;
-// Beside the session's GPU flags: a callable gc for retained-heap reads, and unrounded heap sizes.
-const MEMORY_ARGS = ["--js-flags=--expose-gc", "--enable-precise-memory-info"];
+const MEMORY_ARGS = ["--enable-precise-memory-info"];
 /** The GPU the page draws on: the machine's default, or its integrated one (`--gpu low-power`, integrated-gpu.mjs). */
 const GPUS = ["default", "low-power"];
 
@@ -246,9 +251,10 @@ async function main(argv) {
 }
 
 /** The summary is written whatever happened: a failed start or a cancel leaves a structured reason beside the log. */
-function finish({ options, output, owner, results, runDir }) {
+export function finish({ options, output, owner, results, runDir }) {
   const judged = options ? judgeRuns(results, options) : {};
-  const failures = [...(judged.gateEvaluation?.failures ?? [])];
+  const gateFailures = judged.gateEvaluation?.failures ?? [];
+  const failures = [...gateFailures, ...owner.releaseFailures.map((failure) => `release failed: ${failure}`)];
   if (output.failure) failures.unshift(`${output.failure.stage} failed: ${output.failure.error}`);
   const summary = {
     ...output,
@@ -262,8 +268,21 @@ function finish({ options, output, owner, results, runDir }) {
   const actionTable = clickToResultTable(summary.byMode ?? {});
   if (runDir && actionTable) writeFileSync(join(runDir, "click-to-result.md"), `${actionTable}\n`);
   console.log(JSON.stringify({ runDir, ok: summary.ok, failures, warnings: judged.gateEvaluation?.warnings }, null, 2));
-  process.exitCode = summary.ok ? 0 : 1;
+  process.exitCode = summary.ok
+    ? 0
+    : isRefusedOnlyForLoad({ options, output, owner, gateFailures })
+      ? LOAD_REFUSED_STATUS
+      : 1;
 }
+
+const LOAD_REFUSED_STATUS = 128;
+
+const isRefusedOnlyForLoad = ({ options, output, owner, gateFailures }) =>
+  !options?.comparePath &&
+  !output.failure &&
+  owner.releaseFailures.length === 0 &&
+  gateFailures.length > 0 &&
+  gateFailures.every((failure) => failure.endsWith(LOAD_REFUSAL_NOTE));
 
 /** A first signal cancels: the run stops at its next checkpoint and unwinds normally. A second one only hurries it. */
 function installCancellation(owner) {
@@ -305,10 +324,11 @@ async function resolvePlaytestGame({ baseUrl, chainId, gameId, mode }) {
     if (!newest) throw new Error(`No live ${mode} game in the directory: pass --chain-id and --game-id.`);
     return newest;
   }
-  const listed = (directory?.shards ?? [])
-    .filter((shard) => BigInt(shard.chainId) === BigInt(chainId))
-    .flatMap((shard) => shard.games ?? [])
-    .find((game) => Number(game.game_id) === gameId);
+  const shard = directory?.shard;
+  const listed =
+    shard && BigInt(shard.chainId) === BigInt(chainId)
+      ? (shard.games ?? []).find((game) => Number(game.game_id) === gameId)
+      : undefined;
   if (!listed) throw new Error(`game ${gameId} on ${chainId} is not in the directory`);
   if (listed.mode !== mode) {
     throw new Error(`game ${gameId} is ${listed.mode}; the playtest's steps are written for ${mode}`);
@@ -350,6 +370,11 @@ async function playRun(context) {
     browser.run(["set", "viewport", String(VIEWPORT.width), String(VIEWPORT.height)]);
     const devTools = await openPageDevTools(browser);
     releaseDevTools = owner.adopt(`DevTools ${label}`, () => devTools.close());
+    record.workerErrors = [];
+    devTools.onEvent(({ method, params }) => {
+      if (method === "ServiceWorker.workerErrorReported") record.workerErrors.push(params.errorMessage);
+    });
+    await devTools.send("ServiceWorker.enable");
     await presentAsChannel(devTools, context.channel);
     if (context.clientAtOrigin) {
       const { cdpUrl, targetId } = devTools;
@@ -418,6 +443,7 @@ async function playRun(context) {
     );
     browser.screenshot(join(runDir, `${label}-00-boot.png`));
     if (context.channel === "app-store") assertAppStorePage(browser);
+    record.walletInvitation = await continueWithoutWallet(browser, owner);
     if (player) record.daySummary = await continuePastTheDaySummary(browser, owner);
     // No order is sent before the run is proven to be in the game it was asked to play.
     record.game = assertInTargetGame(browser.observe().path, game);
@@ -459,6 +485,7 @@ async function playStep({ browser, captureResults, devTools, owner, step, base, 
   let startedOn = null;
   let probe = null;
   try {
+    await devTools.send("HeapProfiler.collectGarbage");
     startedOn = JSON.parse(browser.eval(`window.__playtest.step(${JSON.stringify(step.name)})`));
     const extraScreenshot = (suffix) => takeScreenshot(browser, `${base}-${suffix}.png`);
     if (profiled) await startCpuProfile(devTools);
@@ -466,6 +493,7 @@ async function playStep({ browser, captureResults, devTools, owner, step, base, 
     await owner.sleep(step.settleMs);
     if (profiled) attempt.played.cpuProfile = await writeCpuProfile(devTools, `${base}.cpuprofile`);
     browser.screenshot(screenshot);
+    await devTools.send("HeapProfiler.collectGarbage");
     browser.run(["eval", `window.__playtest.step(${JSON.stringify(`${step.name}:end`)})`]);
     const seen = browser.observe();
     const sameDocument = seen.timeOrigin === startedOn.timeOrigin;
@@ -483,7 +511,13 @@ async function playStep({ browser, captureResults, devTools, owner, step, base, 
     const verdict = failed(`${error instanceof Cancelled ? "cut short" : "the step threw"}: ${error.message}`);
     return {
       probe,
-      summary: { ...summary, played: attempt.played, verdict },
+      summary: {
+        ...summary,
+        played: attempt.played,
+        seen: readSafely(() => browser.observe()),
+        screenshot: readSafely(() => takeScreenshot(browser, screenshot)),
+        verdict,
+      },
       cancelled: error instanceof Cancelled ? error : null,
     };
   }
@@ -560,6 +594,8 @@ function writeRunEvidence({ browser, context, record }) {
     clientAtOrigin: context.clientAtOrigin ? { origin: context.baseUrl, served: record.servedFromBuild ?? null } : null,
     signIn: record.signIn ?? null,
     daySummary: record.daySummary ?? null,
+    walletInvitation: record.walletInvitation ?? false,
+    workerErrors: record.workerErrors ?? [],
     steps: record.steps.map(({ summary }) => summary),
     url: record.url,
   };

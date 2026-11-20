@@ -1,4 +1,3 @@
-import { duelBaseConfig } from "./duel/base";
 import { frontierBaseConfig } from "./frontier/base";
 import type { Config } from "../../packages/types/src/types/common";
 import type { ConfigurationNetwork } from "../shared/game-environments";
@@ -11,15 +10,11 @@ import {
 import { mergeConfigPatches } from "./common/merge-config";
 import type { BuildConfigOptions, GameType } from "./common/types";
 import { resolveBlitzChainConfig } from "./blitz/chains";
-import { eternumBaseConfig } from "./eternum/base";
-import { resolveEternumChainConfig } from "./eternum/chains";
 
 export type { BuildConfigOptions, GameType };
 
 function resolveBaseGameConfig(gameType: GameType) {
-  return { blitz: blitzBaseConfig, eternum: eternumBaseConfig, frontier: frontierBaseConfig, duel: duelBaseConfig }[
-    gameType
-  ];
+  return { blitz: blitzBaseConfig, frontier: frontierBaseConfig }[gameType];
 }
 
 const chainConfigByMode: Record<
@@ -28,8 +23,6 @@ const chainConfigByMode: Record<
 > = {
   frontier: () => ({}),
   blitz: resolveBlitzChainConfig,
-  duel: resolveBlitzChainConfig,
-  eternum: resolveEternumChainConfig,
 };
 
 export async function buildConfig(options: BuildConfigOptions): Promise<Config> {

@@ -1,3 +1,5 @@
+import { SITE_EFFECT_MODELS, readSiteEffects, effectiveGuardCount } from "../client/views/site-effects";
+import { currentResourceWeight } from "./deep";
 import { safeInteger } from "./safe-integer";
 import { inlineTroops, resolveExplorerTroops } from "../managers/troop-stamina";
 import { entityMapPosition } from "./tile";
@@ -15,7 +17,10 @@ import {
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { configManager, divideByPrecision, getArmyName, gramToKg, nanogramToKg, getTileAt } from "..";
+import { configManager } from "../managers/config-manager";
+import { divideByPrecision, gramToKg, nanogramToKg } from "./utils";
+import { getArmyName } from "./entities";
+import { getTileAt } from "./tile";
 import type { PlayerNameResolver } from "./entities";
 import { isViewerOwner } from "./viewer";
 
@@ -43,7 +48,7 @@ export const formatArmies = (
       {
         entityId: safeInteger(explorer.explorer_id),
         troops,
-        totalCapacity: weight ? getArmyTotalCapacityInKg(weight) : 0,
+        totalCapacity: weight ? getArmyTotalCapacityInKg(currentResourceWeight(store, weight)) : 0,
         weight: weight ? gramToKg(divideByPrecision(Number(weight.weight))) : 0,
         position,
         entity_owner_id: safeInteger(explorer.owner),
@@ -103,7 +108,20 @@ export const getTroopResourceId = (troopType: TroopType, troopTier: TroopTier): 
   }
 };
 
-export const getGuardsByStructure = (structure: NativeRows["Structure"], store: NativeFactStore) => {
+export const GUARD_MODELS = ["Guard", ...SITE_EFFECT_MODELS] as const;
+
+export const getGuardsByStructure = (
+  structure: NativeRows["Structure"],
+  store: NativeFactStore,
+  timestamp?: number,
+) => {
+  const site = store.get("ExpeditionSite", { game_id: structure.game_id, entity_id: structure.entity_id });
+  let beastBps = 10_000;
+  if (site) {
+    const effects = readSiteEffects(store, site, timestamp);
+    if (!effects.known) return undefined;
+    beastBps = effects.known.beastBps;
+  }
   const delay = configManager.getTroopConfig().troop_limit_config.guard_resurrection_delay;
   const tickSeconds = configManager.getTick(TickIds.Armies);
   const slots = Array.from({ length: structure.base.troop_max_guard_count }, (_, slot) =>
@@ -116,7 +134,10 @@ export const getGuardsByStructure = (structure: NativeRows["Structure"], store: 
       ? [
           {
             slot: guard.slot,
-            troops: inlineTroops(guard.troops, store.require("SliceRules", { game_id: structure.game_id })),
+            troops: inlineTroops(
+              { ...guard.troops, count: effectiveGuardCount(guard.troops.count, beastBps) },
+              store.require("SliceRules", { game_id: structure.game_id }),
+            ),
             destroyedTick: guard.destroyed_tick,
             cooldownEnd: guard.destroyed_tick === 0 ? 0 : guard.destroyed_tick * tickSeconds + delay,
           },
@@ -124,6 +145,11 @@ export const getGuardsByStructure = (structure: NativeRows["Structure"], store: 
       : [],
   );
 };
+
+export const getDefendingGuards = (structure: NativeRows["Structure"], store: NativeFactStore, timestamp?: number) =>
+  getGuardsByStructure(structure, store, timestamp)
+    ?.filter((guard) => guard.troops.count > 0n)
+    .toReversed();
 
 /** Seconds before a wiped guard slot accepts troops again; 0 when it is open. The contract only enforces the
  *  resurrection delay on an empty slot, so a slot that still holds troops never reads as cooling down. */
@@ -175,6 +201,4 @@ export const spawnRing = (
   });
 };
 
-export const getRemainingCapacityInKg = (weight: NativeRows["ResourceWeight"]) =>
-  nanogramToKg(Number(weight.capacity - weight.weight));
 export const getArmyTotalCapacityInKg = (weight: NativeRows["ResourceWeight"]) => nanogramToKg(Number(weight.capacity));

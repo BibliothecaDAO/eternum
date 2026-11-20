@@ -1,5 +1,11 @@
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { exploreStaminaCost } from "@bibliothecadao/eternum/troop-stamina";
+import type { TroopType } from "@bibliothecadao/types";
 
-/** The stamina one explore costs, as the game's troop stamina rules set it: one segment of every stamina bar. */
-export const exploreStaminaOf = (store: Pick<NativeFactStore, "require">, gameId: number): number =>
-  Number(store.require("SliceRules", { game_id: gameId }).troop_stamina_config.stamina_explore_stamina_cost);
+/** A bar segment is one reveal by this troop, under this game's rules. */
+export const exploreStaminaOf = (
+  store: Pick<NativeFactStore, "require">,
+  gameId: number,
+  category: TroopType,
+  oaths: number,
+): number => exploreStaminaCost(store.require("SliceRules", { game_id: gameId }), category, oaths);

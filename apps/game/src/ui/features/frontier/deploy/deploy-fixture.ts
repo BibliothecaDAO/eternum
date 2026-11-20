@@ -1,9 +1,11 @@
+import { FRONTIER_FIXTURE_PRESET_ID } from "../../../../../../../config/source/common/native-preset-modes";
+import { NATIVE_RELEASE_ID } from "../../../../../../../deploy/release/native-release";
 import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 
-export const DEPLOY_SLOT_KEY = "0x9";
+const DEPLOY_SLOT_KEY = "0x9";
 
 const set = (key: string, model: string, value: Record<string, unknown>) => ({ model, key, value });
 const realm = {
@@ -61,10 +63,11 @@ export const frontierDay = () => {
     set("0x9", "UpgradeLimits", { game_id: 1, realm_max: 3, village_max: 3 }),
     set("0x3", "GameRegistry", {
       game_id: 1,
-      preset_id: 3,
+      preset_id: FRONTIER_FIXTURE_PRESET_ID,
       name: "1",
       start_settling_at: "1",
       start_main_at: "100",
+      scheduled_end_at: "1000",
       end_at: "1000",
       settled: false,
       ready: true,
@@ -72,7 +75,12 @@ export const frontierDay = () => {
       end_grace_seconds: 0,
       seed: "1",
     }),
-    set("0x1ab0", "GameRelease", { game_id: 1, release_id: 3, created_release_id: 3, preset_commitment: "0x1ab" }),
+    set("0x1ab0", "GameRelease", {
+      game_id: 1,
+      release_id: NATIVE_RELEASE_ID,
+      created_release_id: NATIVE_RELEASE_ID,
+      preset_commitment: "0x1ab",
+    }),
     set("0x7", "Structure", realm),
     ...preset.resources.map((rule) => set(`0x5${rule.resource_type}`, "ResourceRule", { ...rule, game_id: 1 })),
     set("0x6", "ResourceWeight", { game_id: 1, entity_id: 7, capacity: "100000000000000", weight: "0" }),
@@ -90,7 +98,6 @@ export const frontierDay = () => {
       storage_step_bps: 5000,
       population_step_bps: 2500,
       ration_step: "0",
-      training_gate_tier: 2,
       troop_store_deploys: 2,
       settlement_resource_cap: 6000,
       city_resource_cap: 18000,
@@ -123,7 +130,7 @@ export const frontierDay = () => {
     }),
   ] as never);
   setBlockTimestampSource(() => 350);
-  configManager.setActiveGame(1, 3);
+  configManager.setActiveGame(1, 2);
   configManager.setStore(store);
   return { store, row: store.require("Structure", { game_id: 1, entity_id: 7 }) };
 };

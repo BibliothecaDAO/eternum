@@ -1,3 +1,20 @@
+import { nativeOathConstants as oaths } from "@bibliothecadao/eternum/game-client";
+import { oathPickScenario, oathPassCappedScenario } from "./oath-pick-scenario";
+import { oathSlotsScenario } from "./oath-slots-scenario";
+import { battleTargetScenario, deepBattleTargetScenario } from "./battle-target-scenario";
+import { townScenario } from "./town-scenario";
+import { scoutsScenario } from "./scouts-scenario";
+import { siteEffectsScenario } from "./site-effects-scenario";
+import { clearMistScenario } from "./spire-scenario";
+import { baneScenario } from "./bane-scenario";
+import { staminaScenario } from "./stamina-scenario";
+import { questScenario } from "./quest-scenario";
+import { aspectSettleInvitedScenario, aspectSettleScenario } from "./aspect-settle-scenario";
+import { deepScenario } from "./deep-scenario";
+import { expiredRaceScenario, raceScenario } from "./race-scenario";
+import { actionsScenario } from "./actions-scenario";
+import { economyScenario } from "./economy-scenario";
+import { relicsScenario } from "./relics-scenario";
 import { etherealDepthsScenario } from "./ethereal-depths-scenario";
 import { REALM_SKIN_MODELS } from "@/three/structures/realm-skins";
 import { campaignScenario, devconSeasonScenario, fullLaborCampaignScenario } from "./campaign-scenario";
@@ -10,42 +27,64 @@ import {
   pointSpentScenario,
 } from "./after-battle-scenario";
 import { campScenario } from "./camp-scenario";
-import { clearedCampScenario } from "./cleared-camp-scenario";
-import { actionsScenario } from "./actions-scenario";
 import { claimScenario } from "./claim-scenario";
-import { exploreScenario } from "./explore-scenario";
-import { mergeScenario } from "./merge-scenario";
+import { clearedCampScenario } from "./cleared-camp-scenario";
 import { dayTurnScenario } from "./day-turn-scenario";
+import { exploreScenario } from "./explore-scenario";
+import { farPlaceScenario } from "./far-place-scenario";
 import type { LabScenario } from "./lab-chain";
+import { mergeScenario } from "./merge-scenario";
 import { paintedBuildingsScenario } from "./painted-buildings-scenario";
-import { realmScenario } from "./realm-scenario";
 import { realmHeightScenario } from "./realm-height-scenario";
+import { realmScenario } from "./realm-scenario";
+import { supplyPostScenario } from "./supply-post-scenario";
+import { reinforceScenario } from "./reinforce-scenario";
+import { researchScenario } from "./research-scenario";
+import { shopScenario } from "./shop-scenario";
+import { ruinChestsScenario, ruinChestsSurfaceScenario } from "./ruin-chests-scenario";
 import { ruinFarScenario, ruinFightScenario } from "./ruin-fight-scenario";
 import { seasonOpensScenario } from "./season-opens-scenario";
-import { sitesScenario } from "./sites-scenario";
-import { highGroundScenario, SANDS, spireScenario } from "./spire-scenario";
-import { visitScenario } from "./visit-scenario";
-import { farPlaceScenario } from "./far-place-scenario";
-import { researchScenario } from "./research-scenario";
 import { settleScenario } from "./settle-scenario";
-import { upkeepScenario, spendLordsScenario } from "./upkeep-scenario";
-import { reinforceScenario } from "./reinforce-scenario";
-import { ruinChestsScenario, ruinChestsSurfaceScenario } from "./ruin-chests-scenario";
+import { highGroundScenario, discoveredSpireScenario, SANDS, spireScenario } from "./spire-scenario";
+import { upkeepScenario } from "./upkeep-scenario";
+import { visitScenario } from "./visit-scenario";
 
 /** The games the lab plays, by name: each a fixture and the chain's answers to the commands it proves. */
 export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   spire: spireScenario,
+  "discovered-spire": discoveredSpireScenario,
+  "clear-mist": clearMistScenario,
+  "site-effects": siteEffectsScenario,
+  deep: () => deepScenario(),
+  "deep-closed": () => deepScenario(true),
+  "deep-battle-target": deepBattleTargetScenario,
+  "oath-battle-target": () => battleTargetScenario(true),
+  "oath-deep-battle-target": () => deepBattleTargetScenario(true),
+  race: raceScenario,
+  "race-finished": () => raceScenario(true),
+  "race-expired": expiredRaceScenario,
+  economy: economyScenario,
+  relics: relicsScenario,
   "ethereal-depths": etherealDepthsScenario,
   /** The spire's game opened on the home page, entered by its card's Resume: a way back home there is the app's own. */
   "from-home": () => ({ ...spireScenario(), entersFromHome: true }),
   actions: actionsScenario,
+  scouts: scoutsScenario,
+  town: townScenario,
+  "oath-slots": oathSlotsScenario,
+  "oath-vitriol": () => oathPickScenario(false, deepScenario(), oaths.VITRIOL),
+  "oath-pick": () => oathPickScenario(),
+  "oath-replace": () => oathPickScenario(true),
+  "oath-pass-capped": oathPassCappedScenario,
+  "battle-target": battleTargetScenario,
   "high-ground": highGroundScenario,
   "day-end": dayEndScenario,
   realm: realmScenario,
   "realm-height": realmHeightScenario,
-  "merge-loses-xp": mergeScenario("picked"),
+  "merge-loses-training": mergeScenario("picked"),
   "merge-keeps-tapped": mergeScenario("tapped"),
   reinforce: reinforceScenario,
+  "supply-post": supplyPostScenario,
   "after-battle": afterBattleScenario,
   "point-spent": pointSpentScenario,
   "low-stamina": lowStaminaScenario,
@@ -58,16 +97,24 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   fight: fightScenario,
   "fight-lost": fightLostScenario,
   research: researchScenario,
+  shop: shopScenario,
   claim: claimScenario,
+  quest: questScenario,
+  "bane-world": () => baneScenario("world"),
+  "bane-again": () => baneScenario("again"),
+  "bane-late": () => baneScenario("late"),
+  "bane-team": () => baneScenario("team"),
   upkeep: upkeepScenario,
-  "spend-lords": spendLordsScenario,
+  "stamina-mist": () => staminaScenario(false),
+  "stamina-wind": () => staminaScenario(true),
   settle: settleScenario,
+  "aspect-settle": aspectSettleScenario,
+  "aspect-settle-invited": aspectSettleInvitedScenario,
   explore: exploreScenario,
   "painted-buildings": () => paintedBuildingsScenario(),
   "painted-buildings-sands": () => paintedBuildingsScenario(SANDS),
   visit: visitScenario,
   "far-place": farPlaceScenario,
-  sites: sitesScenario,
   "day-turn": dayTurnScenario("live"),
   "day-later": dayTurnScenario("later"),
   "day-turn-slow": dayTurnScenario("live", "late"),

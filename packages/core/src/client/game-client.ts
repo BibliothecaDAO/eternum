@@ -28,7 +28,7 @@ import { setGameScope } from "./game-scope";
 import { createHeraldGameSyncSession, type GameClientObserver } from "./herald-session";
 import type { PlayerNameResolver } from "../utils/entities";
 import { createGameViews, type GameViews } from "./views";
-import { type Shard } from "./shard";
+import { type Shard, type ShardReleaseMismatchError } from "./shard";
 import { followGameRelease } from "./game-release";
 import { waitForActionOutcome, type ActionOutcome } from "./transaction-outcome";
 
@@ -134,10 +134,12 @@ const startSync = async (
   transport: HeraldGameSyncTransport;
   waitForAction: GameClient["waitForAction"];
 }> => {
+  let releaseFailure: ShardReleaseMismatchError | undefined;
   const release = followGameRelease(
     setupResult.store,
     { gameId: input.gameId, shard: input.shard, schemaIdentity: input.bindings.schemaIdentity },
     (error) => {
+      releaseFailure = error;
       input.observer?.onLiveApplyFailed?.(error);
       disposeRuntime(runtime);
     },
@@ -169,8 +171,12 @@ const startSync = async (
     outcomes.abort(new Error("Game client disposed"));
   };
   runtime.subscribeResynced(() => input.observer?.onResynced?.());
-  await runtime.startSession(session);
-  await release.ready();
+  try {
+    await runtime.startSession(session);
+    await release.ready();
+  } catch (error) {
+    throw releaseFailure ?? error;
+  }
   // Chain time must be known before the first spatial projection reads it.
   await runtime.waitForConfirmedHead();
   const submit = nativePlay(

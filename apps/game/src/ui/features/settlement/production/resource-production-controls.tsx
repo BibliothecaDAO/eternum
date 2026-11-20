@@ -3,7 +3,7 @@ import { canIssueOrders, useActNowRefusal } from "@/utils/can-issue-orders";
 import { ActionFailureNotice } from "@/ui/features/event-feed/action-failure-notice";
 import { type ActionFailure, actionFailure } from "@/ui/features/event-feed/notify";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { AmountInput, HudButton, HudNotice, HudPanel, HudTabs } from "@/ui/design-system/kit/hud-elements";
+import { AmountInput, HudButton, HudNotice, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 import { configManager, getBuildingQuantity } from "@bibliothecadao/eternum";
@@ -12,14 +12,13 @@ import { useResourceManager } from "@/hooks/helpers/use-resources";
 import {
   getBuildingFromResource,
   RealmInfo,
-  ResourcesIds,
   formatWait,
   resourceName,
   formatPercent,
   formatCharge,
   formatTypedNumber,
 } from "@bibliothecadao/types";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   coversRun,
   fromUnits,
@@ -33,8 +32,6 @@ import { RunInputsPanel, type RunInput } from "./run-inputs-panel";
 
 export const ResourceProductionControls = ({
   selectedResource,
-  useRawResources: requestedRawResources,
-  setUseRawResources,
   sizing,
   setSizing,
   realm,
@@ -42,8 +39,6 @@ export const ResourceProductionControls = ({
   compact = false,
 }: {
   selectedResource: number;
-  useRawResources: boolean;
-  setUseRawResources: (value: boolean) => void;
   sizing: RunSizing;
   setSizing: (sizing: RunSizing) => void;
   realm: RealmInfo;
@@ -55,7 +50,7 @@ export const ResourceProductionControls = ({
     account: { account },
     setup: {
       store,
-      systemCalls: { burn_resource_for_resource_production, burn_labor_for_resource_production },
+      systemCalls: { burn_resource_for_resource_production },
     },
   } = useGame();
 
@@ -66,28 +61,16 @@ export const ResourceProductionControls = ({
   const refusal = useActNowRefusal();
   const currentDefaultTick = useCurrentDefaultTick();
 
-  const laborEnabled = configManager.isCommandEnabled("BurnLaborForResourceProduction");
-  const useRawResources = !laborEnabled || requestedRawResources;
-  const rawRecipe = recipeOf(selectedResource, false, bonusPercent);
-  const laborRecipe = laborEnabled ? recipeOf(selectedResource, true, bonusPercent) : undefined;
-  const canUseLabor = laborRecipe !== undefined;
-
-  // If labor can't be used and the current panel is labor, force user into standard production
-  useEffect(() => {
-    if (!canUseLabor && !useRawResources) {
-      setUseRawResources(true);
-    }
-  }, [canUseLabor, useRawResources, setUseRawResources]);
+  const recipe = recipeOf(selectedResource, bonusPercent);
 
   const resourceManager = useResourceManager(realm.entityId);
   // Each input's balance in resource units, as the chain spends it; an unknown one is left out, so it covers nothing.
   const balances: Record<number, bigint> = {};
-  [...(rawRecipe?.inputs ?? []), ...(laborRecipe?.inputs ?? [])].forEach(({ resource }) => {
+  (recipe?.inputs ?? []).forEach(({ resource }) => {
     const balance = resourceManager.balanceWithProduction(currentDefaultTick, resource)?.balance;
     if (balance !== undefined) balances[resource] = BigInt(Math.floor(balance));
   });
 
-  const recipe = useRawResources ? rawRecipe : laborRecipe;
   const run = recipe && planProductionRun(recipe, sizing, balances);
   const verdict = runVerdict(recipe, run, sizing, balances);
   const isDisabled = verdict !== null;
@@ -96,9 +79,8 @@ export const ResourceProductionControls = ({
     if (!run || isDisabled || !canIssueOrders() || isLoading) return;
     setFailure(null);
     setIsLoading(true);
-    const send = useRawResources ? burn_resource_for_resource_production : burn_labor_for_resource_production;
     try {
-      await send({
+      await burn_resource_for_resource_production({
         from_entity_id: realm.entityId,
         produced_resource_types: [selectedResource],
         production_cycles: [Number(run.cycles)],
@@ -111,14 +93,8 @@ export const ResourceProductionControls = ({
     }
   };
 
-  if (!rawRecipe && !laborRecipe) return null;
+  if (!recipe) return null;
 
-  // Switching recipe keeps the output the run makes, since the other recipe may not burn the budgeted input.
-  const chooseRecipe = (raw: boolean) => {
-    if (raw === useRawResources) return;
-    if (sizing.by !== "output") setSizing({ by: "output", amount: run ? fromUnits(run.outputUnits) : 1 });
-    setUseRawResources(raw);
-  };
   const amountField = (
     <AmountInput
       label={`Amount of ${resourceName(selectedResource)}`}
@@ -131,16 +107,6 @@ export const ResourceProductionControls = ({
   if (compact)
     return (
       <section aria-label={`${resourceName(selectedResource)} production`} className="flex flex-col gap-2">
-        {canUseLabor && (
-          <div role="group" aria-label="Production recipe" className="flex gap-1">
-            <HudButton kind="secondary" size="sm" aria-pressed={useRawResources} onClick={() => chooseRecipe(true)}>
-              Resources
-            </HudButton>
-            <HudButton kind="secondary" size="sm" aria-pressed={!useRawResources} onClick={() => chooseRecipe(false)}>
-              {resourceName(ResourcesIds.Labor)}
-            </HudButton>
-          </div>
-        )}
         <span className="flex flex-col gap-1">
           <span className="text-hud-label text-hud-muted">Amount of {resourceName(selectedResource)}</span>
           {amountField}
@@ -169,65 +135,33 @@ export const ResourceProductionControls = ({
     );
 
   const buildingCount = getBuildingQuantity(realm.entityId, getBuildingFromResource(selectedResource), store);
-  const standardCycles = run && rawRecipe ? Number(run.outputUnits) / Number(rawRecipe.outputUnits) : 0;
+  const standardCycles = run ? Number(run.outputUnits) / Number(recipe.outputUnits) : 0;
   const timeRequired = standardCycles
     ? formatWait(
         Math.floor((standardCycles / buildingCount) * (isVillageLikeStructureCategory(realm.category) ? 2 : 1)),
       )
     : "0s";
-  const panelFor = (panelRecipe: ProductionRecipe | undefined, raw: boolean, title: string) => (
+  const inputsPanel = (
     <RunInputsPanel
-      title={title}
-      inputs={panelRecipe && runInputs(planProductionRun(panelRecipe, sizing, balances), sizing, balances)}
-      onBudget={(resource, amount) => {
-        chooseRecipe(raw);
-        setSizing({ by: "input", resource, amount });
-      }}
-      onMax={() => {
-        chooseRecipe(raw);
-        setSizing({ by: "max" });
-      }}
-      onSelect={() => chooseRecipe(raw)}
+      title="Resources required"
+      inputs={runInputs(planProductionRun(recipe, sizing, balances), sizing, balances)}
+      onBudget={(resource, amount) => setSizing({ by: "input", resource, amount })}
+      onMax={() => setSizing({ by: "max" })}
+      onSelect={() => {}}
     />
-  );
-  const rawPanel = panelFor(rawRecipe, true, "Resources required");
-  // Only the tabs the player can select; the tab is derived from the production mode so the two never disagree.
-  const tabs = [
-    ...(laborRecipe
-      ? [{ label: "Labor Production", panel: panelFor(laborRecipe, false, "Labor required"), isRaw: false }]
-      : []),
-    { label: "Resource Production", panel: rawPanel, isRaw: true },
-  ];
-  const selectedTab = Math.max(
-    0,
-    tabs.findIndex((tab) => tab.isRaw === useRawResources),
   );
 
   return (
     <HudPanel kind="section" title={`Start production · ${resourceName(selectedResource)}`} collapsible={false}>
       <div className="flex flex-col gap-3">
-        <div className={canUseLabor ? "grid grid-cols-1 gap-4 lg:grid-cols-2" : "grid grid-cols-1 gap-4"}>
+        <div className="grid grid-cols-1 gap-4">
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <ResourceIcon resource={selectedResource} size="md" />
               {amountField}
             </div>
           </div>
-          {tabs.length > 1 ? (
-            <div className="flex flex-col gap-2">
-              <HudTabs
-                tabs={tabs.map((tab, index) => ({ key: index, label: tab.label }))}
-                value={selectedTab}
-                onChange={(index) => chooseRecipe(tabs[index].isRaw)}
-              />
-              <div role="tabpanel">{tabs[selectedTab]?.panel}</div>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {rawPanel}
-              <p className="text-hud-muted">Standard production only</p>
-            </div>
-          )}
+          <div className="flex flex-col gap-2">{inputsPanel}</div>
         </div>
 
         {failure && <ActionFailureNotice failure={failure} />}
@@ -255,11 +189,11 @@ export const ResourceProductionControls = ({
 };
 
 /**
- * A recipe in the chain's units, with the bonus on its output: the simple one burns labor, the complex one resources.
- * Undefined when this game defines none, or one that burns or makes nothing, which the chain refuses.
+ * The recipe that burns resources, in the chain's units, with the bonus on its output. Undefined when this game defines
+ * none, or one that burns or makes nothing, which the chain refuses.
  */
-const recipeOf = (resource: number, simple: boolean, bonusPercent: number): ProductionRecipe | undefined => {
-  const recipe = configManager.getRecipeUnits(resource, simple);
+const recipeOf = (resource: number, bonusPercent: number): ProductionRecipe | undefined => {
+  const recipe = configManager.getRecipeUnits(resource, false);
   return recipe && recipe.inputs.length > 0 && recipe.outputUnits > 0n
     ? { ...recipe, bonusPercent: BigInt(bonusPercent) }
     : undefined;

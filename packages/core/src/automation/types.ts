@@ -16,7 +16,6 @@ export const MAX_RESOURCE_ALLOCATION_PERCENT = 90;
 export const AUTOMATION_INPUT_BUDGET_PERCENT = 75;
 export const DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES: ResourceAutomationPercentages = {
   resourceToResource: 0,
-  laborToResource: 5,
 };
 export const DONKEY_DEFAULT_RESOURCE_PERCENT = 10;
 
@@ -24,7 +23,6 @@ export type RealmEntityType = "realm" | "village";
 
 export interface ResourceAutomationPercentages {
   resourceToResource: number;
-  laborToResource: number;
 }
 
 interface ResourceConsumptionRecord {
@@ -37,13 +35,12 @@ export interface RealmProductionEntry {
   cycles: number;
   produced: number;
   inputs: ResourceConsumptionRecord[];
-  method: "resource-to-resource" | "labor-to-resource";
+  method: "resource-to-resource";
 }
 
 export interface RealmAutomationExecutionSummary {
   executedAt: number;
   resourceToResource: RealmProductionEntry[];
-  laborToResource: RealmProductionEntry[];
   consumptionByResource: Record<number, number>;
   outputsByResource: Record<number, number>;
   skipped: { resourceId: ResourcesIds; reason: string }[];

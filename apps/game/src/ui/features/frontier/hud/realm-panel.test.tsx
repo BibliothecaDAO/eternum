@@ -74,7 +74,7 @@ it("reads the player's realm as Blitz's card reads a holding: name, rank, a ring
       "Essence 18,250",
       "Labor 9,640 of 18,000 · +10/min · Full in 2h",
       "Wheat 4,410 of 6,000 · +10/min · Full in 2h",
-      "Troops 1,200 of 6,000 · +10/min · Full in 2h",
+      "Knights 1,200 of 6,000 · +10/min · Full in 2h",
       "LORDS 1,240",
     ]),
   );
@@ -157,7 +157,10 @@ it("shows a realm watched or visited by its stores alone: no LORDS and no Realms
 });
 
 it("says the day and the time left in the top bar, and when the day ends and how long tomorrow lasts on hover", () => {
-  const clock = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, endAt: 21 * 20 * 14_400 }, 3_600);
+  const clock = dayClock(
+    { dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, scheduledEndAt: 21 * 20 * 14_400, endAt: 21 * 20 * 14_400 },
+    3_600,
+  );
   act(() => root.render(<DayPill clock={clock} />));
   const pill = host.querySelector('[aria-label="Day clock"]')!;
   expect(pill.textContent).toContain(`Day ${clock.day}`);
@@ -166,7 +169,10 @@ it("says the day and the time left in the top bar, and when the day ends and how
 });
 
 it("reads a 24-hour day in hours on the top bar and its hover, as Play does (live-qa-night-1 P3-8)", () => {
-  const day = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, endAt: 21 * 20 * 14_400 }, 3_600);
+  const day = dayClock(
+    { dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, scheduledEndAt: 21 * 20 * 14_400, endAt: 21 * 20 * 14_400 },
+    3_600,
+  );
   act(() => root.render(<DayPill clock={{ ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 }} />));
   const pill = host.querySelector('[aria-label="Day clock"]')!;
   expect(pill.textContent).toContain("24h left");

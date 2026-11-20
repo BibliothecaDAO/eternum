@@ -4,11 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { type SiteVerb, SiteCardView } from "./site-card-view";
 import { readSiteCard, type SiteFight } from "./site-card-plan";
-import { campBeside, SITE_TILE } from "./site-fixture";
+import { campBeside, placeSite } from "./site-fixture";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { TARGET_MARKS, type AttackTargetKind } from "./site-marks";
 import { plateRows } from "@/three/map-plates/map-plate-rows";
-import { frontierSiteName, StructureType } from "@bibliothecadao/types";
+import { frontierSiteName, StructureType, ResourcesIds } from "@bibliothecadao/types";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -29,11 +29,11 @@ const army = { art: "knight-t1" as const, troops: 5_000 };
 const buttons = () => [...document.querySelectorAll<HTMLButtonElement>("section[role=dialog] button")];
 
 describe("a guarded site's card", () => {
-  it("renders the depth-I Beasts reward and XP in This attack earns", () => {
+  it("renders the depth-I Beasts reward in This attack earns", () => {
     const { store, site, structure, attack } = campBeside("Beasts");
-    const plan = readSiteCard(store, site, structure, SITE_TILE, attack({ col: 41, row: 12, alt: false }));
-    expect(plan.payout).toEqual({ resourceId: 23, amount: 375, fits: 375 });
-    expect(plan.xp).toBe(118);
+    placeSite(store);
+    const plan = readSiteCard(store, site, structure, attack({ col: 41, row: 12, alt: false }));
+    expect(plan.payout).toEqual({ resourceId: ResourcesIds.Wheat, amount: 6000, fits: 5000 });
     const payout = plan.payout!;
     act(() =>
       root.render(
@@ -44,13 +44,14 @@ describe("a guarded site's card", () => {
           guard={plan.guard?.count}
           fight={{ troopsLost: 30, guardLeft: 0 }}
           pay={{ icon: resourceMeaning(payout.resourceId), amount: payout.amount, fits: payout.fits }}
-          xp={plan.xp}
           verb={{ kind: "attack", stamina: plan.attackStamina, onAttack: () => {} }}
           onClose={() => {}}
         />,
       ),
     );
-    expect(document.querySelector(".ui-frame__body header")?.textContent).toBe("This attack earns+375+118 XP+1 site");
+    expect(document.querySelector(".ui-frame__body header")?.textContent).toBe(
+      "BladeThis attack earns+5,000Full: the rest did not fit+1 site",
+    );
   });
 
   it("heads the attack with what it earns, and reads each side before and after as numbers alone", () => {
@@ -67,7 +68,6 @@ describe("a guarded site's card", () => {
             guardLeft: 0,
           }}
           pay={{ icon: "labor", amount: 550 }}
-          xp={82}
           verb={{ kind: "attack", stamina: 30, onAttack }}
           onClose={() => {}}
         />,
@@ -75,7 +75,7 @@ describe("a guarded site's card", () => {
     );
     const card = document.querySelector("section[aria-label='Troll']")!;
     // The owner, 26 October 2026: "moving the clear rewards in the 'this attack clears it' -> This attack earns xxx".
-    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("This attack earns+550+82 XP+1 site");
+    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("BladeThis attack earns+550+1 site");
     // Owner, 28 October 2026 ("v1 token header yes"): the guard heads the card as a token; with an army its strength is
     // the fight's to say, once.
     expect(card.querySelector("header [role='img']")?.getAttribute("aria-label")).toBe("Troll");
@@ -86,7 +86,6 @@ describe("a guarded site's card", () => {
     expect(sides).toEqual(["5,000 →4,820−180 · 4% lost", "1,100 →0−1,100 · 100% lost"]);
     expect(card.textContent).not.toContain("When cleared");
     expect(card.textContent).toContain("+550");
-    expect(card.textContent).toContain("+82 XP");
     const attack = buttons().find((button) => button.textContent?.startsWith("Attack"))!;
     expect(attack.textContent).toBe("Attack");
     expect(card.querySelector(".ui-cost")?.textContent).toBe("30 stamina");
@@ -107,7 +106,6 @@ describe("a guarded site's card", () => {
             guardLeft: 740,
           }}
           pay={{ icon: "wood", amount: 650, fits: 120 }}
-          xp={90}
           verb={{ kind: "attack", stamina: 30, onAttack: () => {} }}
           onRealm={() => {}}
           onClose={() => {}}
@@ -129,7 +127,7 @@ describe("a guarded site's card", () => {
       root.render(
         <SiteCardView
           site="Ruin"
-          beast={{ name: "Basilisk", beast: "basilisk", combatClass: "Knight" }}
+          beast={{ name: "Ammit", beast: "ammit", combatClass: "Knight" }}
           army={{ ...army, troops: 1_200 }}
           guard={3_400}
           fight={{
@@ -138,20 +136,18 @@ describe("a guarded site's card", () => {
           }}
           pay={null}
           chest={{ tier: 3, lords: 128 }}
-          xp={145}
           verb={{ kind: "attack", stamina: 30, onAttack: () => {} }}
           onClose={() => {}}
         />,
       ),
     );
     const card = document.querySelector("section[aria-label='Ruin']")!;
-    // The site's painting and the guard's side name the Basilisk.
-    expect(card.querySelectorAll('[data-icon="beast-basilisk"]')).toHaveLength(2);
+    expect(card.querySelectorAll('[data-icon="beast-ammit"]')).toHaveLength(2);
     // The headline says the loss, and the chest this attack does not win stands dimmed beside it.
-    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("Your army is lost+128Rare+1 site");
+    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("BladeYour army is lost+128Rare+1 site");
     expect(card.querySelector(".ui-frame__body header .opacity-50")?.textContent).toBe("+128Rare+1 site");
     expect(card.querySelector('[data-icon="troops"]')).toBeNull();
-    expect(card.querySelector('[data-tip="Knight"]')).not.toBeNull();
+    expect(card.querySelector('[data-combat-mark="Blade"]')?.textContent).toBe("Blade");
     expect(card.textContent).toContain("2,300");
     expect(card.querySelector('[aria-label="128 LORDS"]')).not.toBeNull();
     // The chest's rarity is its word on its plate, never pips.
@@ -178,7 +174,6 @@ describe("a guarded site's card", () => {
           guard={1_400}
           fight={{ troopsLost: 601, guardLeft: 1_033 }}
           pay={{ icon: "essence", amount: 4_200 }}
-          xp={93}
           verb={{ kind: "attack", stamina: 30, onAttack }}
           onClose={() => {}}
         />,
@@ -186,8 +181,8 @@ describe("a guarded site's card", () => {
     );
     const card = document.querySelector("section[aria-label='Blightglow Rift']")!;
     const header = card.querySelector(".ui-frame__body header")!;
-    expect(header.textContent).toBe("The guard holds+4,200+93 XP+1 site");
-    expect(header.querySelector(".opacity-50")?.textContent).toBe("+4,200+93 XP+1 site");
+    expect(header.textContent).toBe("BladeThe guard holds+4,200+1 site");
+    expect(header.querySelector(".opacity-50")?.textContent).toBe("+4,200+1 site");
     expect(card.textContent).toContain("794");
     expect(card.textContent).toContain("193");
     expect(card.textContent).toContain("1,400");
@@ -217,13 +212,12 @@ describe("a guarded site's card", () => {
             guardLeft: 0,
           }}
           pay={null}
-          xp={undefined}
           verb={{ kind: "attack", stamina: 30, onAttack: () => {} }}
           onClose={() => {}}
         />,
       ),
     );
-    expect(document.querySelector(".ui-frame__body header")?.textContent).toBe("This attack earns+1 site");
+    expect(document.querySelector(".ui-frame__body header")?.textContent).toBe("BladeThis attack earns+1 site");
     // The chip says what the board ranks by on its tip.
     expect(document.querySelector('[aria-label="Sites cleared +1 site"]')?.getAttribute("data-tip")).toBe(
       "Ranked by sites cleared, then deepest depth",
@@ -237,7 +231,6 @@ describe("a guarded site's card", () => {
           guard={1_100}
           fight={{ troopsLost: 180, guardLeft: 0 }}
           pay={null}
-          xp={undefined}
           verb={{ kind: "attack", stamina: 30, onAttack: () => {} }}
           onClose={() => {}}
         />,
@@ -260,7 +253,6 @@ describe("a guarded site's card", () => {
             guardLeft: 0,
           }}
           pay={{ icon: "labor", amount: 550, fits: 120 }}
-          xp={82}
           verb={{ kind: "attack", stamina: 30, onAttack: () => {} }}
           onRealm={onRealm}
           onClose={() => {}}
@@ -268,7 +260,7 @@ describe("a guarded site's card", () => {
       ),
     );
     const header = document.querySelector(".ui-frame__body header")!;
-    expect(header.textContent).toBe("This attack earns+120Full: the rest did not fit+82 XP+1 site");
+    expect(header.textContent).toBe("BladeThis attack earns+120Full: the rest did not fit+1 site");
     // The loss is said in sight on the chip, never only on a hover a phone has not got.
     expect(header.querySelector('[data-tip*="did not fit"]')).toBeNull();
     act(() =>
@@ -295,7 +287,6 @@ describe("a guarded site's card", () => {
             guardLeft: 0,
           }}
           pay={{ icon: "labor", amount: 550 }}
-          xp={82}
           verb={{ kind: "short", stamina: { cost: 30, held: 10, wait: 40 * 60 } }}
           onClose={() => {}}
         />,
@@ -311,13 +302,34 @@ describe("a guarded site's card", () => {
 });
 
 describe("a guarded site's card with no army chosen", () => {
+  it("shows a band's Oath beside its pay", () => {
+    for (const holdsOath of [true, false]) {
+      act(() =>
+        root.render(
+          <SiteCardView
+            site="Beasts"
+            beast={undefined}
+            army={null}
+            guard={1_200}
+            fight={undefined}
+            pay={{ icon: "wheat", amount: 3_600 }}
+            holdsOath={holdsOath}
+            verb={null}
+            onClose={() => {}}
+          />,
+        ),
+      );
+      expect(document.querySelector("section[role=dialog]")!.textContent?.includes("Holds an Oath")).toBe(holdsOath);
+    }
+  });
+
   it("names a rift by its name and kind, as the map's hover does, with an army chosen or not", () => {
     // The playtest's Brimdeep: its hover reads "Brimdeep Rift" over "Dark fey".
     const [hover] = plateRows({
       kind: "structure",
       relation: "neutral",
       owner: "",
-      beast: "Dark fey",
+      beast: "Fairy",
       name: frontierSiteName(StructureType.Rift),
       named: false,
       place: "Brimdeep",
@@ -333,12 +345,11 @@ describe("a guarded site's card with no army chosen", () => {
           <SiteCardView
             site="Rift"
             name="Brimdeep"
-            beast={{ name: "Dark fey", beast: "dark-fey", combatClass: "Paladin" }}
+            beast={{ name: "Fairy", beast: "dark-fey", combatClass: "Crossbowman" }}
             army={chosen}
             guard={1_200}
             fight={undefined}
             pay={{ icon: "essence", amount: 3_600 }}
-            xp={86}
             verb={null}
             onClose={() => {}}
           />,
@@ -354,12 +365,11 @@ describe("a guarded site's card with no army chosen", () => {
         <SiteCardView
           site="Ruin"
           name="North Watch"
-          beast={{ name: "Basilisk", beast: "basilisk", combatClass: "Knight" }}
+          beast={{ name: "Ammit", beast: "ammit", combatClass: "Knight" }}
           army={null}
           guard={1_100}
           fight={undefined}
           pay={null}
-          xp={undefined}
           verb={null}
           onClose={() => {}}
         />,
@@ -368,8 +378,8 @@ describe("a guarded site's card with no army chosen", () => {
     const card = document.querySelector("section[aria-label='North Watch Ruin']")!;
     expect(card.textContent?.match(/North Watch/g)).toHaveLength(1);
     // Its kind is in its title, as the hover says it; the guard's token, its strength under it, then its beast.
-    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Basilisk+1 site");
-    expect(card.querySelector("header [role='img']")?.getAttribute("aria-label")).toBe("Basilisk 1,100");
+    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100BladeAmmit+1 site");
+    expect(card.querySelector("header [role='img']")?.getAttribute("aria-label")).toBe("Ammit 1,100");
     expect(card.textContent?.match(/1,100|1\.1K/g)).toHaveLength(1);
   });
 
@@ -379,19 +389,18 @@ describe("a guarded site's card with no army chosen", () => {
       root.render(
         <SiteCardView
           site="Rift"
-          beast={{ name: "Dark fey", beast: "dark-fey", combatClass: "Knight" }}
+          beast={{ name: "Fairy", beast: "dark-fey", combatClass: "Crossbowman" }}
           army={null}
           guard={1_100}
           fight={undefined}
           pay={{ icon: "essence", amount: 3_300 }}
-          xp={82}
           verb={null}
           onClose={() => {}}
         />,
       ),
     );
     const card = document.querySelector("section[data-kit-sheet]")!;
-    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Dark fey+3,300+82 XP+1 site");
+    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100BowFairy+3,300+1 site");
     expect(card.querySelectorAll(".ui-row")).toHaveLength(0);
     expect(card.querySelectorAll("button")).toHaveLength(1);
     expect(card.textContent).not.toContain("Pick an army");
@@ -411,7 +420,6 @@ describe("Enter on a guarded site's card", () => {
         guardLeft: fight === "wins" ? 0 : 900,
       }}
       pay={{ icon: "labor", amount: 550 }}
-      xp={82}
       verb={{ kind: "attack", stamina: 30, onAttack }}
       onClose={() => {}}
     />
@@ -438,12 +446,11 @@ describe("a guarded site's card for an army out of reach", () => {
       root.render(
         <SiteCardView
           site="Rift"
-          beast={{ name: "Dark fey", beast: "dark-fey", combatClass: "Knight" }}
+          beast={{ name: "Fairy", beast: "dark-fey", combatClass: "Crossbowman" }}
           army={army}
           guard={1_100}
           fight={undefined}
           pay={{ icon: "essence", amount: 300 }}
-          xp={82}
           verb={{ kind: "far" }}
           onClose={() => {}}
         />,
@@ -459,12 +466,11 @@ describe("a guarded site's card for an army out of reach", () => {
       root.render(
         <SiteCardView
           site="Rift"
-          beast={{ name: "Dark fey", beast: "dark-fey", combatClass: "Knight" }}
+          beast={{ name: "Fairy", beast: "dark-fey", combatClass: "Crossbowman" }}
           army={army}
           guard={1_100}
           fight={undefined}
           pay={{ icon: "essence", amount: 300 }}
-          xp={82}
           verb={{ kind: "move", prices: [{ of: "stamina", amount: 20 }], onMove }}
           onClose={() => {}}
         />,
@@ -489,18 +495,18 @@ it("titles a single roaming Wraith by its species", () => {
     root.render(
       <SiteCardView
         site="Beasts"
-        beast={{ name: "Wraith", beast: "wraith", combatClass: "Knight" }}
+        beast={{ name: "Wraith", beast: "wraith", combatClass: "Crossbowman" }}
         army={null}
         guard={314}
         fight={undefined}
         pay={null}
-        xp={44}
         verb={null}
         onClose={() => {}}
       />,
     ),
   );
   expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Wraith");
+  expect(host.querySelector("[data-combat-mark]")?.textContent).toBe("Bow");
 });
 
 it.each([
@@ -517,8 +523,7 @@ it.each([
         fight={undefined}
         pay={null}
         chest={{ tier: 4, lords: 500 }}
-        xp={80}
-        ruinChoice={{ depth: "Ethereal II", perDepth }}
+        ruinChoice={{ depth: "Hollow", perDepth }}
         verb={{ kind: "blocked", reason: "Today's LORDS budget cannot fund this ruin." }}
         onClose={() => {}}
       />,
@@ -526,7 +531,7 @@ it.each([
   );
   // The ruin's rule is in sight on the card, never only on a hover (owner, 30 October: "the text here could be more
   // explicit !").
-  expect(host.querySelector("[data-ruin-rule]")!.textContent).toBe(`Ethereal II · ${rule}`);
+  expect(host.querySelector("[data-ruin-rule]")!.textContent).toBe(`Hollow · ${rule}`);
   expect(host.querySelector("[data-ruin-rule] [data-tip]")).toBeNull();
   expect(host.textContent).toContain("Today's LORDS budget cannot fund this ruin.");
   const attack = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
@@ -612,7 +617,6 @@ describe("one fight panel for every state of every target (owner, 10-27: 'this p
               guard={1_100}
               fight={fight}
               pay={null}
-              xp={undefined}
               verb={verb}
               onClose={() => {}}
             />,

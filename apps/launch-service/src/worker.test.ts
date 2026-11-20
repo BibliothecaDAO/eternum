@@ -168,6 +168,7 @@ function blitzRpc(
         ready: (params.block_id === "pre_confirmed" ? game!.seated : game!.closedSeated) === game!.roster.length,
         settled: false,
         end_at: game!.start_main_at + game!.duration_seconds,
+        scheduled_end_at: game!.start_main_at + game!.duration_seconds,
       });
     case "blitz_roster":
       return response(gamesAbi, entry, game!.roster);
@@ -322,7 +323,7 @@ beforeAll(async () => {
           }
           export class ValueIdentity extends WorkerEntrypoint {
             accountsAtRegistration(rows){return rows.map((_,i)=>"0x"+(i+257).toString(16));}
-            shards(){return [{chainId:${JSON.stringify(SHARD_CHAIN)},url:${JSON.stringify(SHARD_URL)},status:"active"}];}
+            shard(){return {chainId:${JSON.stringify(SHARD_CHAIN)},url:${JSON.stringify(SHARD_URL)}};}
           }
           export default {async fetch(request){count=Number(await request.text()); slots.clear(); return new Response(null,{status:204});}};`,
       },
@@ -469,9 +470,9 @@ it("launches a game that is ready now while a result waits an hour for its game'
   await db
     .prepare(
       `INSERT INTO launch_runs (id,chain_id,kind,environment,name,request,status,available_at,created_at,updated_at)
-    VALUES ('ready-game',?,'game','madara.eternum','bltz-ready',?,'queued',?,?,?)`,
+    VALUES ('ready-game',?,'game','madara.frontier','bltz-ready',?,'queued',?,?,?)`,
     )
-    .bind(SHARD_CHAIN, JSON.stringify({ environment: "madara.eternum", gameName: "bltz-ready" }), now, now, now)
+    .bind(SHARD_CHAIN, JSON.stringify({ environment: "madara.frontier", gameName: "bltz-ready" }), now, now, now)
     .run();
   await tick();
 
@@ -537,13 +538,13 @@ it.each([
     try {
       await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
       const deadline = Date.now() + 10000;
-      let health: { joinFailures?: { chainId: string; code: string }[] } = {};
+      let health: { joinFailure?: { chainId: string; code: string } | null } = {};
       while (Date.now() < deadline) {
         health = (await (await mf.dispatchFetch(`${ORIGIN}/api/factory/health`)).json()) as typeof health;
-        if (approvalRequests > 0 && health.joinFailures?.[0]?.code === code) break;
+        if (approvalRequests > 0 && health.joinFailure?.code === code) break;
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
-      expect(health.joinFailures).toMatchObject([{ chainId: SHARD_CHAIN, code }]);
+      expect(health.joinFailure).toMatchObject({ chainId: SHARD_CHAIN, code });
       expect(approvalRequests).toBeGreaterThan(0);
       expect(redirectRequests).toBe(0);
       expect(joinRpc.deployed).toBe(false);
@@ -560,14 +561,14 @@ it("joins a fresh account through identity approval and account deployment in wo
   try {
     await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
     const deadline = Date.now() + 10000;
-    let health: { joinFailures?: unknown[] } = {};
+    let health: { joinFailure?: unknown } = {};
     while (Date.now() < deadline) {
       health = (await (await mf.dispatchFetch(`${ORIGIN}/api/factory/health`)).json()) as typeof health;
-      if (joinRpc.deployed && health.joinFailures?.length === 0) break;
+      if (joinRpc.deployed && health.joinFailure === null) break;
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
     expect(joinRpc.deployed).toBe(true);
-    expect(health.joinFailures).toEqual([]);
+    expect(health.joinFailure).toBeNull();
   } finally {
     freshAccount = false;
   }

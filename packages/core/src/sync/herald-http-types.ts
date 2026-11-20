@@ -1,8 +1,10 @@
+import type { AspectId } from "@bibliothecadao/types";
 import type { PlayerLeaderboardActivityEntry } from "./leaderboard-activity";
 
 export type HeraldGameStatus = "Created" | "Registration" | "Live" | "Ended" | "Settled";
 
 export interface HeraldGameClock {
+  scheduled_end_at: number;
   end_at: number;
   end_grace_seconds: number;
 
@@ -25,7 +27,6 @@ export interface HeraldGameSettlementConfig {
   spires_layer_distance: number;
   spires_max_count: number;
   spires_settled_count: number;
-  two_player_mode: boolean;
 }
 
 /** One structure the requesting player owns in the game. */
@@ -65,9 +66,11 @@ export interface HeraldGameDirectoryEntry {
   /** One-based Frontier registry ordinal on this world, retained across finalization. */
   season_number?: number | null;
   game_id: number;
-  mode: "blitz" | "eternum" | "frontier" | "duel" | null;
+  mode: "blitz" | "eternum" | "frontier" | null;
   name: string;
   player_count: number;
+  /** Homes per Aspect; null without Aspects, absent on archived directory responses. */
+  aspect_members?: Record<AspectId, number> | null;
   player_state: HeraldPlayerGameState | null;
   /** Players on a Blitz game's fixed roster; 0 for open-entry games. */
   roster_count: number;

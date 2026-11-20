@@ -9,7 +9,7 @@ import { afterEach, expect, it, vi } from "vitest";
 const listed = vi.hoisted(() => ({ closes: 0, closed: false }));
 vi.hoisted(() =>
   vi.stubGlobal("fetch", async (input: string | URL) => {
-    if (String(input).includes("/api/directory")) return Response.json({ shards: [] });
+    if (String(input).includes("/api/directory")) return Response.json({ shard: null });
     if (String(input).includes("/api/slots"))
       return Response.json({
         slots: [

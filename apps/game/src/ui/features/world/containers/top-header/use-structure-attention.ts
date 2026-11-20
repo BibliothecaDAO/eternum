@@ -1,3 +1,4 @@
+import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
 import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -22,7 +23,7 @@ export const useStructureAttention = () => {
   const structures = useFactView(playerStructuresView);
   const arrivedIds = useUIStore((state) => state.arrivedArrivalStructureIds);
   const now = Math.floor(useNowMs() / 1000);
-  const facts = useNativeFacts(["Guard"]);
+  const facts = useNativeFacts([...GUARD_MODELS]);
   const combat = usePlayerCombatHistory();
   return useMemo(
     () =>

@@ -35,10 +35,6 @@ const press = async (words: string) => {
   if (!control) throw new Error(`No control “${words}”`);
   await act(async () => control.click());
 };
-/** The tribe's members, each a row that opens the member's card (their names wait on identity, which answers nothing here). */
-const members = () => [...host.querySelectorAll<HTMLButtonElement>(".ui-pick > button")];
-const membersShown = () => members().length === 3;
-const openMember = (index: number) => act(async () => members()[index]!.click());
 const cardShown = () => host.querySelector('[aria-label="Player details"]') !== null;
 
 /** The standings' rows, each a player who opens their card. */
@@ -46,10 +42,6 @@ const players = () => [...host.querySelectorAll<HTMLButtonElement>("[data-player
 const openPlayer = (index: number) => act(async () => players()[index]!.click());
 const tabs = () => [...host.querySelectorAll("[role=tab]")].map((tab) => tab.textContent?.trim());
 
-/**
- * A game's standings, on the lab's game: Eternum's by default, with one tribe, Ironwood, of Lord 0222 (its chief), 0333
- * and 0444; Blitz's for `?mode=blitz`.
- */
 const open = async (width: number, search = "") => {
   window.history.replaceState(null, "", `/lab/kit/standings${search}`);
   setViewportWidth(width);
@@ -65,37 +57,6 @@ const open = async (width: number, search = "") => {
   for (let tick = 0; tick < 20 && !host.querySelector("[role=tab]"); tick += 1)
     await act(async () => new Promise((resolve) => setTimeout(resolve, 20)));
 };
-
-describe("a tribe member's card has no Back (review-no-back-2)", () => {
-  it("on a phone stands in the list's place, and the lit Tribes tab steps back to the tribe's members", async () => {
-    await open(390);
-    await press("Tribes");
-    await press("Ironwood: its members");
-    expect(membersShown()).toBe(true);
-    // The tribe's list gives the window to its members: nothing stands beside them on a phone.
-    expect(host.querySelector('[aria-label="Ironwood: its members"]')).toBeNull();
-    await openMember(1);
-    expect(cardShown()).toBe(true);
-    expect(host.querySelector('[aria-label="Back"]')).toBeNull();
-    await press("Tribes");
-    expect(cardShown()).toBe(false);
-    expect(membersShown()).toBe(true);
-    // Pressed once more, the lit tab steps back to the tribes' list.
-    await press("Tribes");
-    expect(host.querySelector('[aria-label="Ironwood: its members"]')).not.toBeNull();
-  });
-
-  it("on a desktop stands beside the list, and the chosen tribe pressed again shows its members", async () => {
-    await open(1440);
-    await press("Tribes");
-    await press("Ironwood: its members");
-    await openMember(1);
-    expect(cardShown()).toBe(true);
-    await press("Ironwood: its members");
-    expect(cardShown()).toBe(false);
-    expect(membersShown()).toBe(true);
-  });
-});
 
 describe("a Blitz player's card has no Back (review-no-back-3): Players is its one tab, shown as the way back", () => {
   it("on a phone stands in the list's place, and the lit Players tab steps back to the list", async () => {

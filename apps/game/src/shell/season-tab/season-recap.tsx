@@ -1,7 +1,7 @@
 import "@/ui/design-system/kit/app-sheet.css";
 import "./season-recap.css";
 
-import { formatAmount, formatExact, formatShort, LORDS } from "@bibliothecadao/types";
+import { formatAmount, formatExact, formatShort, layerName, LORDS } from "@bibliothecadao/types";
 import type { HeraldFrontierLeaderboard, HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import type { GameRef } from "@bibliothecadao/eternum/shard";
 import { isSameStarknetAddress } from "@realms-world/identity";
@@ -25,7 +25,6 @@ import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { paintingSources } from "@/ui/design-system/kit/paintings";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import {
-  DEPTH_NUMERALS,
   ESSENCE,
   LABOR,
   PRIZE_UNHELD,
@@ -485,7 +484,7 @@ const SitesCard = ({ own }: { own: Entry }) => (
     {own.deepest_depth > 0 && (
       <span className="season-card__depth">
         <Icon name="portal" size={30} />
-        {`${RESULT_WORDS.deepest} · ${DEPTH_NUMERALS[own.deepest_depth - 1]}`}
+        {`${RESULT_WORDS.deepest} · ${layerName(own.deepest_depth)}`}
       </span>
     )}
   </Card>

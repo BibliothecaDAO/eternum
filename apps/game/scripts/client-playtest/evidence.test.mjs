@@ -45,24 +45,21 @@ describe("buildPlaytestUrl", () => {
 });
 
 describe("selectPlaytestGame", () => {
-  it("picks the newest live game of the steps' mode on the first active shard that has one", () => {
+  it("picks the newest live game of the steps' mode on the directory's shard", () => {
     const directory = {
-      shards: [
-        { chainId: "0xold", status: "retired", games: [{ game_id: 9, status: "Live", mode: "frontier" }] },
-        {
-          chainId: "0xdev",
-          status: "active",
-          games: [
-            { game_id: 1, status: "Live", mode: "frontier" },
-            { game_id: 3, status: "Live", mode: "blitz" },
-            { game_id: 2, status: "Ended", mode: "frontier" },
-          ],
-        },
-      ],
+      shard: {
+        chainId: "0xdev",
+        games: [
+          { game_id: 1, status: "Live", mode: "frontier" },
+          { game_id: 4, status: "Live", mode: "frontier" },
+          { game_id: 3, status: "Live", mode: "blitz" },
+          { game_id: 5, status: "Ended", mode: "frontier" },
+        ],
+      },
     };
-    expect(selectPlaytestGame(directory, "frontier")).toEqual({ chainId: "0xdev", gameId: 1, mode: "frontier" });
+    expect(selectPlaytestGame(directory, "frontier")).toEqual({ chainId: "0xdev", gameId: 4, mode: "frontier" });
     expect(selectPlaytestGame(directory, "blitz")).toEqual({ chainId: "0xdev", gameId: 3, mode: "blitz" });
-    expect(selectPlaytestGame({ shards: [] }, "frontier")).toBeNull();
+    expect(selectPlaytestGame({ shard: null }, "frontier")).toBeNull();
   });
 });
 

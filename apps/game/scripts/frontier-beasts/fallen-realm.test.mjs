@@ -1,10 +1,11 @@
 import { it, expect } from "vitest";
-import { StructureType } from "@bibliothecadao/types";
-import { FALLEN_REALM_DEPTHS, FALLEN_REALM_RUIN_PATH, frontierBeast } from "../../src/three/structures/frontier-beast";
+import { DEEPLESS_FOURTH_LAYER_BEASTS, StructureType, beastModel, beastsOfFamily } from "@bibliothecadao/types";
+import { FALLEN_REALM_RUIN_PATH, frontierBeast } from "../../src/three/structures/frontier-beast";
 import { measureBeastPlacement } from "../frontier/verify-beast-placement.mjs";
 
-for (const [depth, { beast, scale }] of FALLEN_REALM_DEPTHS.entries()) {
-  it(`depth ${depth}: ${beast} clears the ruin masonry at runtime scale ${scale}`, async () => {
+for (const { layer: depth, name, scale, ...row } of [...beastsOfFamily("ruin"), DEEPLESS_FOURTH_LAYER_BEASTS.ruin]) {
+  const beast = beastModel(row);
+  it(`depth ${depth}: ${name} (${beast}) clears the ruin masonry at runtime scale ${scale}`, async () => {
     const ruinPath = new URL(`../../public${FALLEN_REALM_RUIN_PATH}`, import.meta.url).pathname;
     const result = await measureBeastPlacement(beast, scale, ruinPath);
     console.log(JSON.stringify({ depth, ...result }));

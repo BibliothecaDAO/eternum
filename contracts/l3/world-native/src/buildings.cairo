@@ -134,7 +134,6 @@ pub struct BoardRules {
     pub population_step_bps: u16,
     pub ration_step: u128,
     // The number of Barracks purchases needed before building training.
-    pub training_gate_tier: u8,
     // Troop storage stays tied to deployment capacity; wheat and labor have their own per-level caps.
     pub troop_store_deploys: u8,
     pub settlement_resource_cap: u32,
@@ -162,7 +161,6 @@ pub struct CreateBuilding {
     pub directions: Span<u8>,
     pub category: u8,
     pub use_simple: bool,
-    pub scouting_kind: u8,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ChangeBuilding {
@@ -203,7 +201,8 @@ pub trait IBuildingCommands<T> {
 
 pub fn produced_resource(category: u8) -> u8 {
     match category {
-        1 | 2 | 41 | 42 | 43 | 44 => 0,
+        1 | 2 | 41 | 42 | 44 => 0,
+        43 => 32,
         39 => 38,
         40 => 57,
         _ => {

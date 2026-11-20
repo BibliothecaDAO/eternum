@@ -1,5 +1,5 @@
 import { registrationRealmsIds } from "./registration-identity";
-import { registeredShards } from "./directory";
+import { directoryShard } from "./directory";
 import { recordPayDecision, matchesPayDecision } from "./pay-decisions";
 import { createIdentityAuth } from "./auth";
 import { WorkerEntrypoint } from "cloudflare:workers";
@@ -12,11 +12,12 @@ import { heldRealms, holdsRealm } from "./realm-holdings";
 import { realmsIdsOfAccounts } from "./realms-accounts";
 import { readLinkedWallet } from "./linked-wallet";
 import { campaignTicketFor } from "./campaign-ticket-store";
+import { holdsSeal } from "./seal-codes";
 
 /** Only a service binding exposes these reads; they have no public HTTP route. */
 export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
-  shards() {
-    return registeredShards(this.env.DB);
+  shard() {
+    return directoryShard(this.env.DB);
   }
   l2ChainId() {
     return encodeChainName(identityL2Configuration(this.env).chainId);
@@ -73,6 +74,9 @@ export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
   /** The campaign ticket an account founds its home with in a game of this preset, or null when it holds none. */
   campaignTicket(realmsId: string, presetId: number) {
     return campaignTicketFor(this.env.DB, realmsId, presetId);
+  }
+  holdsSeal(realmsId: string) {
+    return holdsSeal(this.env.DB, realmsId);
   }
   async authenticate(cookie: string): Promise<{ realmsId: string } | null> {
     const session = await createIdentityAuth(this.env).api.getSession({ headers: new Headers({ cookie }) });

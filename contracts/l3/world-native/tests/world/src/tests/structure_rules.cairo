@@ -49,46 +49,6 @@ fn level_up_rejects_unowned_missing_wrong_category_unfunded_and_maximum_structur
 }
 
 #[test]
-fn ownership_transfer_rejects_zero_foreign_village_and_ended_game() {
-    let (d, home, _) = setup();
-    let original = record(d, home);
-    let transfer = |
-        owner,
-    | Command::TransferStructureOwnership(TransferOwnership { entity_id: home.entity_id, new_owner: owner });
-    assert_terminal_rejection(d, transfer(0.try_into().unwrap()), 80);
-    save(d, home, StructureRecord { owner: 999.try_into().unwrap(), ..original });
-    assert_terminal_rejection(d, transfer(d.actor), 80);
-    save(
-        d,
-        home,
-        StructureRecord { base: crate::structures::StructureBase { category: 5, ..original.base }, ..original },
-    );
-    assert_terminal_rejection(d, transfer(999.try_into().unwrap()), 80);
-    save(d, home, original);
-    assert!(execute(d, transfer(d.actor), 80));
-    assert_eq!(record(d, home), original);
-    assert_terminal_rejection(d, transfer(999.try_into().unwrap()), 200);
-    assert_eq!(record(d, home), original);
-}
-
-#[test]
-fn blitz_ownership_transfer_is_rejected_even_by_owner() {
-    let mut rules = super::play_fixture::rules();
-    rules.mode_rules = super::play_fixture::BLITZ_RULES;
-    rules.command_mask = super::play_fixture::BLITZ_COMMAND_MASK;
-    rules.entry_rule = crate::rules::ENTRY_ROSTER;
-    let (d, home, _) = setup_with_rules(rules);
-    assert_terminal_rejection(
-        d,
-        Command::TransferStructureOwnership(
-            TransferOwnership { entity_id: home.entity_id, new_owner: 999.try_into().unwrap() },
-        ),
-        80,
-    );
-    assert_eq!(record(d, home).owner, d.actor);
-}
-
-#[test]
 fn discovery_uses_pinned_weight_totals_offsets_and_layer_restrictions() {
     let config = super::play_fixture::rules().map_config;
     // Pinned Eternum/Blitz exploration: mine 1000/50000, camp 1500/50000, Bitcoin 200/10000.

@@ -4,6 +4,7 @@ import { normalizeLeaderboardAddress } from "@/services/leaderboard/landing-lead
 import { configManager } from "@bibliothecadao/eternum";
 import { fetchHeraldDayRanks, requireShard } from "@bibliothecadao/eternum/game-client";
 import { useQuery } from "@tanstack/react-query";
+import { useRacesAspects } from "../aspect/races-aspects";
 
 /** A day's closing ranks never change once Herald has them. */
 const CLOSED = Number.POSITIVE_INFINITY;
@@ -15,10 +16,15 @@ const CLOSED = Number.POSITIVE_INFINITY;
  */
 export const useClosingRankChange = (endedDay: number | undefined): { from: number; to: number } | null | undefined => {
   const player = useAccountStore((state) => state.account?.address ?? null);
+  // Only a game without race rules ranks players by the sites they cleared; a Season 1 game races Aspects, and Herald
+  // closes no player ranks for it, so nothing asks.
+  const races = useRacesAspects();
+  const ranked = races === false;
   // Days are one-based on the card and zero-based in Herald.
-  const to = useDayRank(endedDay === undefined ? undefined : endedDay - 1, player);
-  const from = useDayRank(endedDay === undefined || endedDay < 2 ? undefined : endedDay - 2, player);
-  if (from === undefined || to === undefined) return undefined;
+  const to = useDayRank(endedDay === undefined || !ranked ? undefined : endedDay - 1, player);
+  const from = useDayRank(endedDay === undefined || endedDay < 2 || !ranked ? undefined : endedDay - 2, player);
+  if (races) return null;
+  if (races === undefined || from === undefined || to === undefined) return undefined;
   return from === null || to === null ? null : { from, to };
 };
 
@@ -28,7 +34,7 @@ const useDayRank = (dayIndex: number | undefined, player: string | null): number
   const gameId = configManager.getActiveGameId();
   const ranks = useQuery({
     queryKey: ["frontierDayRanks", chainId, gameId, dayIndex],
-    queryFn: () => fetchHeraldDayRanks(requireShard(chainId), gameId, dayIndex!),
+    queryFn: () => fetchHeraldDayRanks(requireShard(), gameId, dayIndex!),
     enabled: dayIndex !== undefined,
     staleTime: CLOSED,
   });

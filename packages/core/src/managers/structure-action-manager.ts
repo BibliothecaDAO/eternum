@@ -6,7 +6,7 @@ import {
   HexEntityInfo,
   type HexPosition,
 } from "@bibliothecadao/types";
-import { FELT_CENTER } from "../utils";
+import { FELT_CENTER } from "../utils/utils";
 import { ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
 import { configManager } from "./config-manager";
 import { isViewerOwner } from "../utils/viewer";

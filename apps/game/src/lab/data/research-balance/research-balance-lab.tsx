@@ -19,7 +19,7 @@ import {
   type StudyRow,
 } from "./balance-options";
 
-/** The approved next-season rules, planned without sending a game command. */
+/** The October 2026 balance study, retained with its original replay inputs. */
 export function ResearchBalanceLab() {
   useHudMode("frontier");
   const [params, setParams] = useSearchParams();
@@ -28,7 +28,7 @@ export function ResearchBalanceLab() {
     <main className="min-h-screen bg-kit-ground p-4 text-hud-ink sm:p-8" data-lab="research-balance">
       <div className="mx-auto flex max-w-5xl flex-col gap-6">
         <header className="flex flex-col gap-2">
-          <p className="text-hud-label uppercase tracking-wide text-hud-muted">Next season · approved rules</p>
+          <p className="text-hud-label uppercase tracking-wide text-hud-muted">October 2026 · historical study</p>
           <h1 className="text-hud-display">Make each research pick count</h1>
           <p className="max-w-3xl text-hud-body text-hud-muted">
             Plan independent research levels, storage and labor from beast clears. Try a path below; nothing changes in
@@ -126,21 +126,11 @@ function TreeStudy() {
     <>
       <h2 className="text-hud-title">T1 · Separate side levels</h2>
       <div className="grid items-start gap-6 md:grid-cols-2">
-        <ResearchPlan row={2} level={1} initial={[1, 0]} />
+        <ResearchPlan row={0} level={1} initial={[1, 0]} />
         <div className="flex flex-col gap-5">
           <p className="text-hud-body">
-            Drill starts at I and Rations at 0. Each side has its own next price; both can reach V. The building’s model
-            shows the higher side. Gems run from 0 to Legendary V.
-          </p>
-          <p className="text-hud-body">
-            Two Barracks purchases in any combination open training buildings. Building a War hall, Supply yard, Scouts’
-            lodge or Hearth costs 6,000 Essence + 1,500 labor and grants Common training immediately. Choose camps,
-            rifts or beasts when building the lodge; its next four selections share the same ladder.
-          </p>
-          <p className="text-hud-body">
-            After construction, Uncommon costs 16,000 Essence + 3,000 labor. Rare costs 48,000 Essence + 9,000 labor,
-            Epic 144,000 + 24,000, and Legendary 360,000 + 60,000. Rebuilding keeps the realm’s training and grants no
-            extra level.
+            Fields and Granary have independent levels and prices. Each side can reach V; the building shows the higher
+            side. The planner uses the current Farm prices with the historical storage study below.
           </p>
           <p className="text-hud-label text-hud-muted">
             The plan records added costs. The game also checks your balances, storage capacity and standing buildings.
@@ -256,8 +246,8 @@ function BeastStudy() {
             <Reward name="Stronger beasts" guards={rules.strong} labor={range(rules.strong, 4)} />
             <Reward name="Camp / Trolls" guards={rules.camp} labor={range(rules.camp, 2)} />
             <p className="text-hud-label text-hud-muted">
-              XP stays. Labor pays once on the clear, based on the starting guard. No extra depth multiplier; deeper
-              beasts already have more guards.
+              Labor pays once on the clear, based on the starting guard. No extra depth multiplier; deeper beasts
+              already have more guards.
             </p>
           </HudPanel>
         </div>

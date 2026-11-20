@@ -1,14 +1,17 @@
-import { FRONTIER_DAY_UNIT_SECONDS } from "./clock";
-import type { NativePreset } from "../common/native-preset";
+import { BuildingType } from "../../../packages/types/src/constants";
 import {
   nativeResearchConstants as research,
   nativeRuleConstants as rule,
-} from "../../../contracts/l3/world-native/schema/client.gen";
+} from "../../../contracts/l3/world-native/schema/balance.gen";
 import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
+import type { NativePreset } from "../common/native-preset";
 import { FRONTIER_PRESET_ID } from "../common/native-preset-modes";
+import { FRONTIER_DAY_UNIT_SECONDS } from "./clock";
 
 /** Every building a Frontier board can raise, by its category id. */
-export const buildingIds = Array.from({ length: research.HEARTH }, (_, index) => index + 1);
+export const buildingIds = Object.values(BuildingType).filter(
+  (id): id is BuildingType => typeof id === "number" && id !== BuildingType.None,
+);
 
 // Common I is half the old first price; II–V retain the four established prices.
 const essenceLadder = [0.5, 1, 4, 12, 30];
@@ -16,9 +19,8 @@ const laborLadder = [0.5, 1, 3, 8, 20];
 const buildingRows = [
   { row: research.ROW_FARM, essence: 1000, labor: 1000 },
   { row: research.ROW_WORKSHOP, essence: 2000, labor: 2000 },
-  { row: research.ROW_BARRACKS, essence: 4000, labor: 3000 },
   { row: research.ROW_HUT, essence: 500, labor: 500 },
-  ...[research.ROW_WAR_HALL, research.ROW_SUPPLY_YARD, research.ROW_SCOUTS_LODGE, research.ROW_HEARTH].map((row) => ({
+  ...[research.ROW_SUPPLY_YARD].map((row) => ({
     row,
     essence: 12000,
     labor: 3000,
@@ -30,7 +32,12 @@ export const frontierPreset = {
     protocolCutBps: 0,
     mmrEnabled: false,
   },
+  orderAspects: [],
+  deep: null,
+  race: null,
   bitcoinEnabled: false,
+  dailyQuest: null,
+  banes: null,
   startingTroops: Array.from({ length: 17 }, () => "Knight" as const),
   realmResources: [],
   relics: [],
@@ -60,12 +67,13 @@ export const frontierPreset = {
       "DestroyBuilding",
       "LevelUp",
       "Research",
+      "ChooseOath",
+      "RerollOath",
+      "BuyStamina",
+      "BuySeal",
       "EnterDepth",
-      "SpendSkillPoint",
       "InteractSite",
       "OpenRelicChest",
-      "RefillStamina",
-      "WithdrawLords",
       "SetEntityName",
       "MarkGameSettled",
     ] satisfies Array<keyof typeof nativeCommandBits>
@@ -80,7 +88,6 @@ export const frontierPreset = {
     storageStepBps: 4000,
     populationStepBps: 2000,
     rationStep: 0.2,
-    trainingGateTier: 2,
     troopStoreDeploys: 2,
     resourceStoreCaps: [6000, 18000, 40000, 80000],
   },
@@ -89,15 +96,32 @@ export const frontierPreset = {
       essenceLadder.map((factor, index) => ({
         row,
         tier: index + 1,
-        essenceCost:
-          row >= research.ROW_WAR_HALL && row <= research.ROW_HEARTH && index === 1 ? 16000 : essence * factor,
+        essenceCost: row === research.ROW_SUPPLY_YARD && index === 1 ? 16000 : essence * factor,
         laborCost: labor * laborLadder[index]!,
       })),
     ),
-    { row: research.ROW_SHRINE, tier: 1, essenceCost: 2000, laborCost: 0 },
-    { row: research.ROW_WELL, tier: 1, essenceCost: 6000, laborCost: 0 },
-    ...[100000, 250000, 500000].map((essenceCost, index) => ({
-      row: research.ROW_DEPTH,
+    ...[research.ROW_CONSCRIPTION, research.ROW_RATIONS].flatMap((row) =>
+      [2500, 5000, 12500, 25000, 50000].map((essenceCost, index) => ({
+        row,
+        tier: index + 1,
+        essenceCost,
+        laborCost: [500, 1000, 2500, 5000, 12500][index]!,
+      })),
+    ),
+    ...[research.ROW_KNIGHT_OATHS, research.ROW_SCOUT_OATHS, research.ROW_CROSSBOW_OATHS].flatMap((row) =>
+      [
+        [5000, 1000],
+        [35000, 7500],
+        [150000, 35000],
+      ].map(([essenceCost, laborCost], index) => ({
+        row,
+        tier: index + 1,
+        essenceCost: essenceCost!,
+        laborCost: laborCost!,
+      })),
+    ),
+    ...[2500, 5000, 10000].map((essenceCost, index) => ({
+      row: research.ROW_LORE,
       tier: index + 1,
       essenceCost,
       laborCost: 0,
@@ -111,15 +135,6 @@ export const frontierPreset = {
     shrineBps: 300,
     wellBps: 300,
     emptyRevealLimit: 7,
-  },
-  progression: {
-    revealXp: 2,
-    revealXpPerDepth: 1,
-    commonXp: 75,
-    uncommonXp: 200,
-    rareXp: 400,
-    epicXp: 800,
-    legendaryXp: 1500,
   },
   labor: { amount: 1000, campaignEssence: 0, goldenAmount: 1000, goldenEssence: 0 },
   // Daily chest prices cannot exceed 50 LORDS per share.
@@ -135,8 +150,6 @@ export const frontierPreset = {
       revealPercent: 10,
       siteGuardLower: 1200,
       siteGuardUpper: 1400,
-      ruinGuardLower: 2700,
-      ruinGuardUpper: 3300,
       guardStep: 100,
       beastWeakLower: 380,
       beastWeakUpper: 420,
@@ -149,8 +162,6 @@ export const frontierPreset = {
       revealPercent: 15,
       siteGuardLower: 2400,
       siteGuardUpper: 2800,
-      ruinGuardLower: 4900,
-      ruinGuardUpper: 6100,
       guardStep: 100,
       beastWeakLower: 760,
       beastWeakUpper: 840,
@@ -163,8 +174,6 @@ export const frontierPreset = {
       revealPercent: 20,
       siteGuardLower: 4700,
       siteGuardUpper: 5700,
-      ruinGuardLower: 9800,
-      ruinGuardUpper: 12200,
       guardStep: 100,
       beastWeakLower: 1520,
       beastWeakUpper: 1680,
@@ -177,8 +186,6 @@ export const frontierPreset = {
       revealPercent: 25,
       siteGuardLower: 9300,
       siteGuardUpper: 11500,
-      ruinGuardLower: 19600,
-      ruinGuardUpper: 24400,
       guardStep: 100,
       beastWeakLower: 3040,
       beastWeakUpper: 3360,

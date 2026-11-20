@@ -36,18 +36,16 @@ it.each([0n, 1n, 10_000_000_000n, 550_000_000_000n])(
     const markup = renderToStaticMarkup(<SiteReceipt selected={receipt} />);
     expect(markup).toContain(`<strong>${amount === 1n ? "&lt;1" : amount / 1_000_000_000n}</strong>`);
     expect(markup).toContain("Labor");
-    expect(markup).toContain("123");
     expect(receipt.site.clear?.reward?.amount).toBe(amount);
   },
 );
 
-it("shows only XP when a beast clear has no credited labor, and no receipt for a standing site", () => {
+it("shows a cleared receipt when a beast has no credited resource, and no receipt for a standing site", () => {
   const { store } = campBeside("Beasts");
   expect(readClearedSite(store, 1, SITE_TILE)).toBeNull();
   clear(store, null);
   const markup = renderToStaticMarkup(<SiteReceipt selected={readClearedSite(store, 1, SITE_TILE)!} />);
-  expect(markup).toContain("118");
-  expect(markup).toContain("XP");
+  expect(markup).toContain("Cleared");
   expect(markup).not.toContain("Labor");
 });
 

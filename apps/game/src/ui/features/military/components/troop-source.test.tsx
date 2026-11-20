@@ -54,8 +54,12 @@ const sourceLineAfterKnightsRunOut = (store: ReturnType<typeof frontierDay>["sto
 describe("where troops come from, once a realm has none", () => {
   it("names the arena barracks' resource recipe, per troop", () => {
     const { store } = frontierDay();
+    const game = store.require("GameRegistry", { game_id: 1 });
     // Arena games have no BoardRules, so no board deployment charge.
-    store.applyFacts([{ model: "BoardRules", key: "0xa", value: null }] as never);
+    store.applyFacts([
+      { model: "GameRegistry", key: store.wireKeyOf("GameRegistry", game)!, value: { ...game, preset_id: 2 } },
+      { model: "BoardRules", key: "0xa", value: null },
+    ]);
     // Blitz Knight T1: ten trained from 2 wheat and 0.8 copper; no labor-paid path.
     store.applyFacts([
       {

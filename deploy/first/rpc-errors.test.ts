@@ -3,17 +3,13 @@ import { type RpcProvider } from "starknet";
 import { isContractRevert } from "./chain";
 import { setupCalls, setupPresenceReader } from "./ledger";
 import { environments } from "./settings";
-/** A Blitz season window for the environments that run Blitz. */
-const BLITZ_WINDOW = { start: 4000, end: 9000, seasonId: 1 };
 
 const assets = { ledger: "0x10", lords: "0x11", mmr: "0x12", chests: "0x13", cosmetics: "0x14" };
 const refused = (reason: string, code = 40) => ({ code, message: "Contract error", data: { revert_error: reason } });
-test.each([
-  ["register_preset", "Ledger: unknown preset"],
-  ["open_season", "Ledger: unknown Blitz season"],
-])("a fresh ledger's %s read reports missing on an RPC contract error", async (entrypoint, reason) => {
-  const operation = setupCalls(environments.dev, assets, "0x33", 5, BLITZ_WINDOW).find(
-    (call) => call.entrypoint === entrypoint,
+test("a fresh ledger's preset read reports missing on an RPC contract error", async () => {
+  const reason = "Ledger: unknown preset";
+  const operation = setupCalls(environments.dev, assets, "0x33", 5).find(
+    (call) => call.entrypoint === "register_preset",
   )!;
   const provider = {
     callContract: async () => {

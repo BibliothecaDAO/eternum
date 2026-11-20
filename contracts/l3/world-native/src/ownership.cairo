@@ -1,38 +1,14 @@
 use starknet::ContractAddress;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct TransferOwnership {
-    pub entity_id: u64,
-    pub new_owner: ContractAddress,
-}
-
-#[starknet::interface]
-pub trait IStructureOwnership<T> {
-    fn transfer_structure_ownership(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: TransferOwnership,
-        context: crate::commands::ActionContext,
-    );
-}
-
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct FaithPointsClaimedStory {
-    pub wonder_id: u64,
-    pub new_points: u128,
-    pub total_points: u128,
-}
-
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct StructureLevelUpStory {
     pub new_level: u8,
 }
 
-// Native history variants append independently of the legacy wire discriminants.
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub use crate::story_serde::StorySerde;
+
+#[derive(Copy, Drop, Debug, PartialEq)]
 pub enum Story {
-    FaithPointsClaimedStory: FaithPointsClaimedStory,
     StructureLevelUpStory: StructureLevelUpStory,
     RealmCreatedStory: RealmCreatedStory,
     GuardAddStory: GuardAddStory,
@@ -44,21 +20,14 @@ pub enum Story {
     BuildingPaymentStory: BuildingPaymentStory,
     BitcoinAwardStory: crate::bitcoin::BitcoinAwardStory,
     StructureCapturedStory: StructureCapturedStory,
-    TradeCreated: crate::trade::TradeListing,
-    TradeAccepted: crate::trade::TradeFill,
-    TradeCancelled: u64,
-    BankSwap: crate::market::SwapStory,
-    BankLiquidity: crate::market::LiquidityStory,
     HyperstructurePoints: crate::hyperstructures::SharePoints,
     RelicChestOpened: crate::relics::ChestOpened,
     ExplorationReward: crate::exploration_rewards::ExtractedReward,
     SeasonEnded: ContractAddress,
-    FaithPledged: crate::faith::PledgeStory,
-    FaithRemoved: crate::faith::Pledge,
     BlitzFinalized: felt252,
     RelicCrafted: u8,
     ExplorerCreateStory: crate::troop_management::ExplorerCreated,
-    ExplorerAddStory: crate::troop_management::RecruitExplorer,
+    ExplorerAddStory: crate::troop_management::ExplorerAdded,
     ExplorerDeleteStory: crate::troop_management::ExplorerRemoved,
     GuardDeleteStory: crate::troop_management::GuardSlot,
     TroopsTransferred: crate::troop_management::TransferTroops,

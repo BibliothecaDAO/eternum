@@ -1,3 +1,7 @@
+import { currentArmy } from "./deep";
+import { getBlockTimestamp } from "./timestamp";
+import { readExpeditionRules, isCurrentExpeditionArmy } from "./expeditions";
+import { armyRelicsEnabled } from "./army-relics";
 import { dayOf } from "./days";
 import type { NativeFactStore } from "../client/native-fact-store";
 import {
@@ -9,21 +13,22 @@ import { StructureType, TileOccupier } from "@bibliothecadao/types";
 import { entityHomeNamespace } from "./entity-home";
 import { type ExpeditionRules, expeditionRealmSite, seasonDay } from "./expeditions";
 import { regionInGameSyncScope } from "../sync/model-manifest";
-import { researchedDepth } from "./realm-research";
+import { reachableDepth } from "./realm-research";
 
-type RuinReader = Pick<NativeFactStore, "get" | "inGame">;
+type RuinReader = Pick<NativeFactStore, "get" | "inGame" | "subscriptionScope">;
 
-export function ruinLimitPerDepth(store: Pick<RuinReader, "get">, gameId: number): boolean {
-  const perDepth = perDepthRuins(store, gameId);
-  if (perDepth === undefined) throw new Error("A ruin requires its game release");
-  return perDepth;
-}
-
-/** Whether a home clears one ruin per depth a day (release 9 on); unknown while the game's release is. */
-const perDepthRuins = (store: Pick<RuinReader, "get">, gameId: number): boolean | undefined => {
+/** A cash ruin's daily entitlement; relic ruins have none. Unknown until the preset is authoritative. */
+export function ruinLimit(
+  store: Pick<RuinReader, "get" | "subscriptionScope">,
+  gameId: number,
+): "none" | "home" | "depth" | undefined {
+  const relics = armyRelicsEnabled(store, gameId);
+  if (relics === undefined) return undefined;
+  if (relics || store.get("SliceRules", { game_id: gameId })?.day_unit_seconds === 0) return "none";
   const release = store.get("GameRelease", { game_id: gameId });
-  return release && release.release_id >= nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE;
-};
+  if (!release) return undefined;
+  return release.release_id >= nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE ? "depth" : "home";
+}
 
 /** The band (day × 4 + depth) of a ruin the home has cleared, from its clear receipt; none for any other site. */
 const homeClearBand = (row: NativeRows["ExpeditionSite"], home: number, spacing: number): number | null =>
@@ -32,13 +37,16 @@ const homeClearBand = (row: NativeRows["ExpeditionSite"], home: number, spacing:
     : null;
 
 /** A clear closes other ruins at the same depth in its home namespace and map day; stored receipts remain visible. */
-export function ruinDisappeared(store: RuinReader, site: NativeRows["ExpeditionSite"]): boolean {
+export function ruinDisappeared(store: RuinReader, site: NativeRows["ExpeditionSite"]): boolean | undefined {
   if (site.category !== StructureType.Ruin || site.clear) return false;
+  const limit = ruinLimit(store, site.game_id);
+  if (limit === undefined) return undefined;
+  if (limit === "none") return false;
   const spacing = store.get("SettlementRules", { game_id: site.game_id })?.spacing;
   if (!spacing) throw new Error("A ruin requires its expedition spacing");
   const region = Math.floor(site.row / spacing);
   const home = entityHomeNamespace(site.entity_id);
-  if (!ruinLimitPerDepth(store, site.game_id)) {
+  if (limit === "home") {
     const day = BigInt(Math.floor(region / 4));
     return [...store.inGame("ExpeditionDiscovery", site.game_id)].some(
       (row) => row.epoch === day && entityHomeNamespace(row.structure_id) === home && row.ruin_cleared,
@@ -85,7 +93,7 @@ export function ruinChestsToday(
   history: RuinHistory = NO_HISTORY,
 ): RuinChests | null {
   const today = seasonDay(rules, nowSeconds);
-  if (today === null || !perDepthRuins(store, realm.game_id)) return null;
+  if (today === null || ruinLimit(store, realm.game_id) !== "depth") return null;
   const home = entityHomeNamespace(realm.entity_id);
   const claimed = new Set<number>();
   for (const row of store.inGame("ExpeditionSite", realm.game_id)) {
@@ -101,7 +109,7 @@ export function ruinChestsToday(
   // A history that shows no clear while the discovery row has one lags the facts: it proves nothing.
   const historyProves = history.complete && !(discovery?.ruin_cleared === true && history.cleared.size === 0);
   const held = depthRegionHeld(store, rules, home, nowSeconds);
-  const deepest = researchedDepth(store, realm.game_id, realm.entity_id) ?? 0;
+  const deepest = reachableDepth(store, realm.game_id, realm.entity_id) ?? 0;
   const chest = (depth: number): RuinChest => {
     if (depth > deepest) return "locked";
     if (claimed.has(depth) || history.cleared.has(depth)) return "claimed";
@@ -127,6 +135,17 @@ export function activeTileOccupancy(
   key: NativeKeys["TileOccupancy"],
 ): NativeRows["TileOccupancy"] | undefined {
   const occupancy = store.get("TileOccupancy", key);
+  if (occupancy && store.get("DeepArmy", { game_id: key.game_id, explorer_id: occupancy.entity_id })) {
+    const army = store.get("ExplorerTroops", { game_id: key.game_id, explorer_id: occupancy.entity_id });
+    const birth = store.get("ArmyDay", { game_id: key.game_id, explorer_id: occupancy.entity_id });
+    const calendar = readExpeditionRules(store, key.game_id);
+    if (!army || !birth || !calendar) throw new Error("Deep occupancy requires its army and calendar");
+    if (
+      !isCurrentExpeditionArmy(calendar, birth.day, getBlockTimestamp().currentDefaultTick) ||
+      currentArmy(store, army).troops.count === 0n
+    )
+      return undefined;
+  }
   if (occupancy?.category !== TileOccupier.Ruin) return occupancy;
   const site = store.get("ExpeditionSite", { game_id: key.game_id, entity_id: occupancy.entity_id });
   return site && ruinDisappeared(store, site) ? undefined : occupancy;
@@ -142,7 +161,13 @@ export function availableRuinLords(store: Pick<NativeFactStore, "get">, gameId: 
   const start = Number(game.start_main_at);
   const end = Number(game.end_at);
   const day = dayOf(
-    { startMainAt: start, endAt: end, dayUnitSeconds: rules.day_unit_seconds, seed: game.seed },
+    {
+      startMainAt: start,
+      endAt: end,
+      scheduledEndAt: Number(game.scheduled_end_at),
+      dayUnitSeconds: rules.day_unit_seconds,
+      seed: game.seed,
+    },
     timestamp,
   );
   if (!day) return 0n;

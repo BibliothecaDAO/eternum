@@ -1,6 +1,6 @@
 import { CallData } from "starknet";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { gamesAbi, response } from "../../../packages/value-ledger/test-support/abi";
+import { seasonZeroGamesAbi as gamesAbi, response } from "../../../packages/value-ledger/test-support/abi";
 import { ledgerAbi } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { memoryFinalFacts } from "./final-facts";
 import { memoryObligations } from "./obligations";
@@ -64,7 +64,12 @@ const snapshot = (id: number) => ({
   models: [
     {
       model: "GameRegistry",
-      rows: [{ key: String(id), value: { game_id: id, preset_id: 6, start_main_at: 10, end_at: end, seed: 153 } }],
+      rows: [
+        {
+          key: String(id),
+          value: { game_id: id, preset_id: 6, start_main_at: 10, scheduled_end_at: end, end_at: end, seed: 153 },
+        },
+      ],
     },
     {
       model: "ChestRules",

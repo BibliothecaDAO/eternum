@@ -27,14 +27,14 @@ async (page) => {
           await page.getByRole("button", { name: "Add Granary to plan", exact: true }).click();
           await assertText(granary, "56,000 wheat capacity → 72,000 wheat capacity");
         } else if (part === "tree") {
-          await page.getByRole("button", { name: "Add Drill to plan", exact: true }).click();
-          await assertText(page.getByRole("button", { name: /^Drill/ }), "rank 2");
-          const rations = page.getByRole("button", { name: /^Rations/ });
-          await assertText(rations, "2,000 Essence + 1,500 labor");
+          await page.getByRole("button", { name: "Add Fields to plan", exact: true }).click();
+          await assertText(page.getByRole("button", { name: /^Fields/ }), "rank 2");
+          const rations = page.getByRole("button", { name: /^Granary/ });
+          await assertText(rations, "500 Essence + 500 labor");
           await rations.click();
-          await page.getByRole("button", { name: "Add Rations to plan", exact: true }).click();
+          await page.getByRole("button", { name: "Add Granary to plan", exact: true }).click();
           await assertText(rations, "rank 1");
-          await assertText(page.locator("[data-plan-cost]"), "6,000 Essence · 4,500 labor");
+          await assertText(page.locator("[data-plan-cost]"), "1,500 Essence · 1,500 labor");
         } else {
           await assertText(page.locator("main"), "2,807.25 extra labor");
           await page.getByLabel("Depth", { exact: true }).selectOption("3");
@@ -46,30 +46,6 @@ async (page) => {
         await page.screenshot({ path: screenshot, fullPage: true });
         captures.push(screenshot);
       }
-      await page.goto(new URL("/lab/kit/hud/selected", entry).href);
-      const army = page.locator("[data-army-step]");
-      await army.waitFor();
-      await assertText(army, "620 / 900 XP");
-      if ((await army.locator('.ui-tier[data-tier="0"]').count()) !== 3)
-        throw new Error("Expected three untrained sockets");
-      const stats = `${output}/army-${viewport.width}.png`;
-      await page.screenshot({ path: stats });
-      captures.push(stats);
-      await army.getByRole("button", { name: "Level up", exact: true }).click();
-      await army.locator('[data-attribute="logistics"]').click();
-      await assertText(army, "+20");
-      const rank = `${output}/level-up-${viewport.width}.png`;
-      await page.screenshot({ path: rank });
-      captures.push(rank);
-      await army.locator('[data-attribute="stamina"]').click();
-      await army.getByRole("button", { name: "Spend III point", exact: true }).click();
-      await assertText(army, "+24");
-      if (await army.getByRole("button", { name: "Refill", exact: true }).isDisabled())
-        throw new Error("Held point cannot refill");
-      const stamina = `${output}/stamina-${viewport.width}.png`;
-      await page.screenshot({ path: stamina });
-      captures.push(stamina);
-      await page.goto("about:blank");
       await page.goto(new URL("/lab/kit/hud/research", entry).href);
       const farm = page.locator('[data-node="row-0"]');
       await farm.waitFor();

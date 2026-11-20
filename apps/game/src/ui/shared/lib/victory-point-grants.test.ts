@@ -28,11 +28,4 @@ describe("what a held hyperstructure earns", () => {
       tip: "Hold a Hyperstructure: points +60/min, split by share among its holders",
     });
   });
-
-  it("is twice its rate a minute in a Duel, split among its holders", () => {
-    expect(describeHyperstructureHold({ ...blitz, hyperstructureScale: "double" })).toEqual({
-      grant: "+120/min",
-      tip: "Hold a Hyperstructure: points +120/min, split by share among its holders",
-    });
-  });
 });

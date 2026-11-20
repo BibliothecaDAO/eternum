@@ -6,7 +6,7 @@ import { setup } from "./native/fixtures";
 import { GameSubscription } from "./game-subscription";
 import type { WorldFold } from "./world-fold";
 
-const expeditionScope = (): GameSyncScope => ({
+const expeditionScope = (extraEntities: string[] = []): GameSyncScope => ({
   actor: "0x111",
   expedition: {
     day: 0,
@@ -15,7 +15,7 @@ const expeditionScope = (): GameSyncScope => ({
     realms: new Set(["7"]),
     realmTraits: new Set(["1"]),
     regions: new Set(["0:0"]),
-    entities: new Set(["7", "70"]),
+    entities: new Set(["7", "70", ...extraEntities]),
   },
 });
 
@@ -26,6 +26,60 @@ const army = (owner: string, explorer: string) => ({
 });
 
 describe("GameSubscription", () => {
+  it.each([
+    { model: "DeepSite", key: "site", value: { game_id: "1", entity_id: "800", kind: 0, ring: 0, day: "0" } },
+    { model: "DeepGuard", key: "guard", value: { game_id: "1", explorer_id: "301", site_id: "800", slot: 1 } },
+    { model: "ArmyDay", key: "day", value: { game_id: "1", explorer_id: "70", day: "1" } },
+  ])("sends newly visible armies when $model changes scope without an occupancy diff", (changed) => {
+    const initial = expeditionScope(["800"]);
+    let scope = initial;
+    const gained = army("9", "301");
+    const bar = {
+      model: "ArmySlot",
+      key: "bar",
+      value: {
+        game_id: "1",
+        structure_id: "9",
+        epoch: "0",
+        slot: 0,
+        explorer_id: "301",
+        stamina: { amount: "120", settled_at: "100", remainder: "0" },
+      },
+    };
+    const subscriptionScope = vi.fn(() => scope);
+    const fold = {
+      subscriptionScope,
+      scopeValidUntil: () => 86_400,
+      subscriptionSnapshot: () => ({ confirmed_block: 1, game_id: "1", models: [] }),
+      scopeKeyRows: (_game: string, _spacing: number, keys: ReadonlySet<string>) =>
+        keys.has("entities:301") ? [gained, bar] : [],
+      currentRow: () => undefined,
+    } as unknown as WorldFold;
+    const subscription = new GameSubscription(
+      "1",
+      "0x111",
+      () => fold,
+      () => 1,
+      () => 100,
+      setup().decoder.registry,
+    );
+    subscription.snapshot();
+    scope = {
+      ...initial,
+      expedition: { ...initial.expedition!, entities: new Set([...initial.expedition!.entities, "301", "9"]) },
+    };
+    const published = subscription.project({ type: "diff", block: 2, preconfirmed: false, set: [changed], del: [] });
+    expect(subscriptionScope).toHaveBeenCalledTimes(2);
+    expect(
+      published.flatMap((body) =>
+        body.type === "diff" ? body.set.filter((row) => row.model === "ExplorerTroops") : [],
+      ),
+    ).toEqual([gained]);
+    expect(
+      published.flatMap((body) => (body.type === "diff" ? body.set.filter((row) => row.model === "ArmySlot") : [])),
+    ).toEqual([bar]);
+  });
+
   it("invalidates a visit when its player entry resolves to an owner", () => {
     const subscriptionScope = vi.fn(() => ({ ...expeditionScope(), visit: "0xbbb" }));
     const fold = {

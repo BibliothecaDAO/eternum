@@ -257,5 +257,8 @@ export const OPERATOR_TOKEN = "workerd-operator-token";
 
 export const waitUntil = async (condition: () => boolean, timeoutMs: number) => {
   const deadline = Date.now() + timeoutMs;
-  while (!condition() && Date.now() < deadline) await pause(100);
+  while (!condition()) {
+    if (Date.now() >= deadline) throw new Error(`waitUntil: ${condition} was still false after ${timeoutMs} ms`);
+    await pause(100);
+  }
 };

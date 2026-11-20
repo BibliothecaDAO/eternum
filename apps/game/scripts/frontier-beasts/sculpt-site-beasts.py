@@ -132,7 +132,6 @@ class SiteBeast(Creature):
                     [0.016, 0.011, 0.001],
                     "horn",
                 )
-        # Broad facial scale ridges survive the map camera and bake into the crown.
         for i in range(4):
             z = 1.10 + i * 0.026
             self.ridge("Central crown shield", [(-0.045, -0.36 + i * 0.025, z), (0.01, -0.39 + i * 0.025, z + 0.02), (0.065, -0.36 + i * 0.025, z)], [0.009, 0.017, 0.009], "skin")

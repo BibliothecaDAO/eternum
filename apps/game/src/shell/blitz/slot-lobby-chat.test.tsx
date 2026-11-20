@@ -15,7 +15,7 @@ vi.hoisted(() => {
     closed: false,
   };
   vi.stubGlobal("fetch", async (input: string | URL) => {
-    if (String(input).includes("/api/directory")) return Response.json({ shards: [] });
+    if (String(input).includes("/api/directory")) return Response.json({ shard: null });
     if (String(input).includes("/api/slots")) return Response.json({ slots: [slot] });
     return new Response(null, { status: 401 });
   });

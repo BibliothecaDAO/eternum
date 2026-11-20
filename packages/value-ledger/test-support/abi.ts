@@ -1,7 +1,9 @@
 import { CallData, hash, type Abi } from "starknet";
 import schema from "../../../contracts/l3/world-native/schema/schema.json";
+import seasonZeroAdmin from "./season-zero-admin.json";
 
 export const gamesAbi: Abi = [...schema.games.entrypoints, ...Object.values(schema.types)];
+export const seasonZeroGamesAbi: Abi = [...gamesAbi, ...seasonZeroAdmin];
 type Field = { name: string; type: string };
 type Layout = { prefix: string[]; members: (Field & { kind: string })[] };
 

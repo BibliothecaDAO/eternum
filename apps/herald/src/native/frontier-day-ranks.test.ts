@@ -40,13 +40,20 @@ function openedChest(owner: number, amount: number) {
 }
 
 const start = 1800000000;
-const calendar = { seed: 42n, startMainAt: start, endAt: start + 21 * 20 * 3600, dayUnitSeconds: 3600 };
+const calendar = {
+  seed: 42n,
+  startMainAt: start,
+  scheduledEndAt: start + 21 * 20 * 3600,
+  endAt: start + 21 * 20 * 3600,
+  dayUnitSeconds: 3600,
+};
 const game = {
   name: "0x46526f6e74696572",
   game_id: 1,
   preset_id: 5,
   seed: 42n,
   start_main_at: start,
+  scheduled_end_at: start + 1000000,
   end_at: start + 1000000,
   settled: false,
 };
@@ -98,6 +105,14 @@ it("closes every elapsed day across empty blocks, without inventing days past th
   game.end_at = second.end;
   expect(closingFrontierDays(read, start - 1, third.end, 20, []).map((day) => day.day_index)).toEqual([0, 1]);
   game.end_at = end;
+});
+
+it("closes no ranked day for a Season 1 game, which races Aspects by height", () => {
+  const day = dayOf(calendar, start)!;
+  const withRace = (model: string) =>
+    model === "RaceRules" ? [{ key: "1", value: { game_id: 1, stage_height: 100 } }] : read(model);
+  expect(closingFrontierDays(withRace, day.end - 1, day.end, 20, [])).toEqual([]);
+  expect(closingFrontierDays(read, day.end - 1, day.end, 20, [])).toHaveLength(1);
 });
 
 it("replays a checkpoint before closure, excluding changes at the boundary and rejecting partial replay", async () => {
@@ -234,7 +249,8 @@ it("never records closing ranks for a hidden check game, even without its rules"
 it.each([81, 84, 85])("records an %ih season's final ranks once, with no snapshot for an absorbed stub", (hours) => {
   const end = start + hours * 3600;
   const readPartial = (model: string): FoldRow[] => {
-    if (model === "GameRegistry") return [{ key: "1", value: { ...game, seed: 0x5eedn, end_at: end } }];
+    if (model === "GameRegistry")
+      return [{ key: "1", value: { ...game, seed: 0x5eedn, end_at: end, scheduled_end_at: end } }];
     if (model === "SliceRules") return [{ key: "1", value: { game_id: 1, day_unit_seconds: 7200 } }];
     return read(model);
   };

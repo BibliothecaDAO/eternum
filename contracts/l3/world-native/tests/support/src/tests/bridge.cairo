@@ -22,14 +22,14 @@ pub fn setup_with_platform_fees(
     village: bool, paused: bool, velords: u16, season: u16, client: u16,
 ) -> (super::Deployment, ResourceKey, ResourceKey, ContractAddress) {
     let mut rules = super::play_fixture::rules();
-    rules.mode_rules = super::play_fixture::ETERNUM_RULES;
-    rules.command_mask = super::play_fixture::ETERNUM_COMMAND_MASK;
+    rules.mode_rules = super::play_fixture::TEST_RULES;
+    rules.command_mask = super::play_fixture::BLITZ_COMMAND_MASK;
     rules.entry_rule = crate::rules::ENTRY_ENTITLEMENT;
     rules.speed_config.donkey_sec_per_km = 1;
     rules.tick_config.delivery_tick_in_seconds = 1;
     rules.capacity_config.donkey_capacity = 100;
     let d = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
-    let (mut withdrawals, token, _) = super::market::wallet_preset(d, paused);
+    let (mut withdrawals, token, _) = super::bridge::wallet_preset(d, paused);
     withdrawals
         .deposits =
             DepositRules {
@@ -98,4 +98,36 @@ pub fn arrival(d: super::Deployment, target: ResourceKey, travel: u64) -> Span<R
 }
 pub fn amount(value: u128) -> Span<ResourceAmount> {
     array![ResourceAmount { resource_type: 2, amount: value }].span()
+}
+
+pub fn wallet_preset(
+    deployment: super::Deployment, paused: bool,
+) -> (crate::presets::WithdrawalPreset, starknet::ContractAddress, starknet::ContractAddress) {
+    let (resource, _) = super::deploy("BankTokenFixture", @array![deployment.games.into()]);
+    let (lords, _) = super::deploy("BankTokenFixture", @array![deployment.games.into()]);
+    let mut retention = array![];
+    for (troop_percent, resource_percent) in array![(0, 25), (25, 50), (50, 70), (70, 85), (85, 95), (95, 95)] {
+        retention.append(crate::withdrawals::Retention { troop_percent, resource_percent });
+    }
+    let preset = crate::presets::WithdrawalPreset {
+        deposits: crate::bridge::DepositRules {
+            paused, realm_fee_bps: 0, velords_fee_bps: 0, season_fee_bps: 0, client_fee_bps: 0,
+        },
+        rules: crate::withdrawals::WithdrawalRules {
+            paused,
+            bank_fee_bps: 500,
+            velords_fee_bps: 100,
+            season_fee_bps: 200,
+            client_fee_bps: 300,
+            velords_recipient: 0x777.try_into().unwrap(),
+            season_recipient: 0x888.try_into().unwrap(),
+            retention: retention.span(),
+        },
+        tokens: array![
+            crate::withdrawals::ResourceToken { resource_type: 2, token: resource },
+            crate::withdrawals::ResourceToken { resource_type: 37, token: lords },
+        ]
+            .span(),
+    };
+    (preset, resource, lords)
 }

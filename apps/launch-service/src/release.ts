@@ -1,23 +1,27 @@
 /**
- * The release step of a deployment: a shard's running Frontier games advance to the release the deployed commit ships,
+ * The release step of a deployment: running Frontier games on supported presets advance to the deployed release,
  * signed by the launcher, which alone may apply a release. The box half registers the release and has Herald publish
  * it; this step refuses until the shard's registered release is the commit's, contents included, and Herald maps every
  * release a game moves through to the commit's schema. Then it advances each game one release at a time.
  */
 
+import { nativeReleasePresets } from "../../../config/source/native";
 import type { ShardManifest } from "@bibliothecadao/eternum/game-sync";
+import type { RegisteredShard } from "@realms-world/value-ledger";
 
 /** What advancing reads and writes on the shard, as the launcher. */
 export interface ReleaseChain {
   currentRelease(): Promise<number>;
+  releaseRegistered(releaseId: number): Promise<boolean>;
   /** The logic and migration classes registered under `releaseId`, as hex strings. */
   registeredRelease(releaseId: number): Promise<{ logic: Record<string, string>; migration: string }>;
   /** The game the launcher created under `name`, or 0 when none exists. */
   gameId(name: string): Promise<number>;
   gameRelease(gameId: number): Promise<number>;
-  isSettled(gameId: number): Promise<boolean>;
+  game(gameId: number): Promise<{ settled: boolean; preset_id: bigint }>;
   /** Applies `releaseId` to the game, waits for its receipt, and returns the transaction hash. */
   applyRelease(gameId: number, releaseId: number): Promise<string>;
+  openRelease(releaseId: number): Promise<string>;
 }
 
 /** Herald's public manifest for the shard: the schema each release it can decode maps to. */
@@ -42,6 +46,7 @@ export interface ShardRelease {
   chainId: string;
   releaseId: number;
   games: AdvancedGame[];
+  opened: string[];
 }
 
 /**
@@ -50,11 +55,11 @@ export interface ShardRelease {
  */
 export interface ApplyReleaseRequest {
   release: ReleaseIdentity | null;
+  shard: RegisteredShard | null;
 }
 
-/** What the route answers: every active shard, and each of its running Frontier games before and after. */
 export interface ReleaseReport {
-  shards: ShardRelease[];
+  shard: ShardRelease | null;
 }
 
 /** The refusals the route reports by name; anything else is an unexpected failure. */
@@ -68,6 +73,12 @@ export const RELEASE_REFUSALS = [
 ] as const;
 
 const isFelt = (value: unknown): value is string => typeof value === "string" && /^0x[0-9a-f]{1,64}$/i.test(value);
+
+export const isRegisteredShard = (value: unknown): value is RegisteredShard =>
+  typeof value === "object" &&
+  value !== null &&
+  typeof (value as RegisteredShard).chainId === "string" &&
+  typeof (value as RegisteredShard).url === "string";
 
 export const isReleaseIdentity = (value: unknown): value is ReleaseIdentity => {
   const release = value as Partial<ReleaseIdentity> | null;
@@ -87,7 +98,7 @@ export const isReleaseIdentity = (value: unknown): value is ReleaseIdentity => {
 };
 
 /**
- * Advances every running game among `gameNames` (the Frontier games the launch service created or may have created,
+ * Advances supported running games among `gameNames` (the Frontier games the launch service created or may have created,
  * whatever their launch run's state) to `release`. Every check reads before anything is sent.
  */
 export async function advanceGames(
@@ -105,11 +116,17 @@ export async function advanceGames(
   return advanced;
 }
 
+export async function openForNewGames(chain: ReleaseChain, release: ReleaseIdentity): Promise<string[]> {
+  const transactions: string[] = [];
+  for (let next = (await chain.currentRelease()) + 1; next <= release.releaseId; next++)
+    transactions.push(await chain.openRelease(next));
+  return transactions;
+}
+
 /** The shard's registered release is the commit's, number and contents: the box half registers it first. */
 async function requireRegistered(chain: ReleaseChain, release: ReleaseIdentity) {
-  const current = await chain.currentRelease();
-  if (current < release.releaseId) throw new Error("release_not_registered");
-  if (current > release.releaseId) throw new Error("release_older_than_shard");
+  if (!(await chain.releaseRegistered(release.releaseId))) throw new Error("release_not_registered");
+  if (await chain.releaseRegistered(release.releaseId + 1)) throw new Error("release_older_than_shard");
   if (!sameContents(await chain.registeredRelease(release.releaseId), release))
     throw new Error("release_contents_differ");
 }
@@ -127,13 +144,16 @@ const sameFelt = (left: string | undefined, right: string | undefined) =>
 
 /**
  * A launch run names its game before creating it, and a launch interrupted after creating it may not have recorded it
- * yet, so each name is resolved on the chain: a game that exists is advanced, a name never created is skipped.
+ * yet, so each name is resolved on the chain. Games on retired presets keep their original release.
  */
 async function runningGamePins(chain: ReleaseChain, gameNames: readonly string[]) {
   const pins: { gameId: number; releaseId: number }[] = [];
   for (const name of gameNames) {
     const gameId = await chain.gameId(name);
-    if (gameId && !(await chain.isSettled(gameId))) pins.push({ gameId, releaseId: await chain.gameRelease(gameId) });
+    if (!gameId) continue;
+    const game = await chain.game(gameId);
+    if (!game.settled && nativeReleasePresets[Number(game.preset_id)])
+      pins.push({ gameId, releaseId: await chain.gameRelease(gameId) });
   }
   return pins;
 }

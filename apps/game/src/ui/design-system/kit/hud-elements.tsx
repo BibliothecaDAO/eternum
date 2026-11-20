@@ -1544,7 +1544,7 @@ export const HudWindow = ({
   title: string;
   icon?: IconMeaning;
   size?: WindowSize;
-  onClose: () => void;
+  onClose?: () => void;
   children: ReactNode;
 }) => {
   const [foot, setFoot] = useState<HTMLElement | null>(null);
@@ -1553,7 +1553,7 @@ export const HudWindow = ({
       <header className="ui-window__bar" data-popover-drag-handle>
         {icon && <Icon name={icon} size={22} />}
         <span>{title}</span>
-        <HudIconButton icon="close" label="Close" kind="quiet" onClick={onClose} />
+        {onClose && <HudIconButton icon="close" label="Close" kind="quiet" onClick={onClose} />}
       </header>
       <WindowFootContext.Provider value={foot}>
         <div className="ui-window__body">{children}</div>
@@ -1738,14 +1738,14 @@ export const HudConfirm = ({
  * and inert, the keyboard held in it (useModalLayer, the app's modal behaviour), and `onClose` on a press beside the
  * card, Escape or the system back. It is drawn where the HUD draws it, so the card keeps the HUD's age and sizes.
  */
-export const HudModalLayer = ({ onClose, children }: { onClose: () => void; children: ReactNode }) => {
+export const HudModalLayer = ({ onClose, children }: { onClose?: () => void; children: ReactNode }) => {
   const layer = useRef<HTMLDivElement>(null);
   useModalLayer(layer, onClose);
   return (
     <div
       ref={layer}
       className="ui ui-modal pointer-events-auto fixed inset-0 z-50"
-      onClick={(event) => event.target === event.currentTarget && onClose()}
+      onClick={(event) => event.target === event.currentTarget && onClose?.()}
     >
       {children}
     </div>

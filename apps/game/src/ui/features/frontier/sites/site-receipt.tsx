@@ -1,3 +1,5 @@
+import { SupplyPostSheet } from "./supply-post-sheet";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
@@ -5,14 +7,20 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Icon } from "@/ui/design-system/icon";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { HudPanel, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { XP } from "@/ui/design-system/kit/words";
-import { configManager, siteDisplayName, siteClearXp } from "@bibliothecadao/eternum";
+
+import {
+  configManager,
+  siteDisplayName,
+  isSupplyPost,
+  readFrontierBeast,
+  type FrontierBeast,
+} from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
-import { formatCharge, formatExact, resourceName, frontierSiteName, scaledToUnits } from "@bibliothecadao/types";
+import { formatCharge, resourceName, guardedSiteKind, scaledToUnits } from "@bibliothecadao/types";
 
 const RECEIPT_MODELS = ["ExpeditionSite"] as const;
 
-type ClearedSite = { site: NativeRows["ExpeditionSite"]; xp: number };
+type ClearedSite = { site: NativeRows["ExpeditionSite"]; beast?: FrontierBeast };
 
 /** The site's receipt lives independently of whoever now occupies its tile. */
 export function readClearedSite(
@@ -23,7 +31,7 @@ export function readClearedSite(
   const site = [...store.inGame("ExpeditionSite", gameId)].find(
     (site) => site.clear !== null && site.col === hex.col && site.row === hex.row && site.alt === hex.alt,
   );
-  return site ? { site, xp: siteClearXp(store, site) } : null;
+  return site?.clear ? { site, beast: readFrontierBeast(store, gameId, Number(site.entity_id)) } : null;
 }
 
 export function useSelectedClearedSite(): ClearedSite | null {
@@ -39,11 +47,21 @@ export function useSelectedClearedSite(): ClearedSite | null {
 const clearedSiteName = (selected: ClearedSite): string => siteDisplayName(Number(selected.site.entity_id));
 
 /** A cleared site's receipt as its own sheet: titled by the site's name, what the clear credited beneath. */
-export const ClearedSiteSheet = ({ selected, onClose }: { selected: ClearedSite; onClose: () => void }) => (
-  <HudSheet label={clearedSiteName(selected)} onClose={onClose}>
-    <ReceiptLines selected={selected} />
-  </HudSheet>
-);
+export const ClearedSiteSheet = ({ selected, onClose }: { selected: ClearedSite; onClose: () => void }) => {
+  const { setup } = useGame();
+  const now = useCurrentDefaultTick();
+  if (selected.site.clear && isSupplyPost(setup.store, selected.site, selected.site.clear.home_id, now))
+    return (
+      <SupplyPostSheet site={selected.site} onClose={onClose}>
+        <ReceiptLines selected={selected} />
+      </SupplyPostSheet>
+    );
+  return (
+    <HudSheet label={clearedSiteName(selected)} onClose={onClose}>
+      <ReceiptLines selected={selected} />
+    </HudSheet>
+  );
+};
 
 /**
  * A cleared site's receipt inside another card (an army standing on the tile): a section titled by the site's name, so
@@ -67,7 +85,7 @@ function ReceiptLines({ selected }: { selected: ClearedSite }) {
     <section aria-label="Clear reward" className="flex flex-col gap-2 text-hud-body">
       <div className="flex items-center gap-2">
         <Icon name="flag" size={24} />
-        <strong>Cleared · {frontierSiteName(selected.site.category)}</strong>
+        <strong>Cleared · {guardedSiteKind(selected.site.category, selected.beast)}</strong>
       </div>
       <div className="flex items-center gap-3" data-site-rewards>
         {reward && (
@@ -76,9 +94,6 @@ function ReceiptLines({ selected }: { selected: ClearedSite }) {
             <strong>{formatCharge(scaledToUnits(BigInt(reward.amount)))}</strong> {resourceName(reward.resource_type)}
           </span>
         )}
-        <span>
-          <strong>{formatExact(selected.xp)}</strong> {XP}
-        </span>
       </div>
     </section>
   );

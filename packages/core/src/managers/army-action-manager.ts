@@ -1,3 +1,6 @@
+import { armyCombatRefusal } from "../utils/army-opponents";
+import { armyOaths, oathAttackStamina } from "../utils/oaths";
+import { currentArmy } from "../utils/deep";
 import { safeInteger } from "../utils/safe-integer";
 import { entityMapPosition } from "../utils/tile";
 import {
@@ -18,15 +21,16 @@ import {
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { Account, AccountInterface } from "starknet";
-import { divideByPrecision, FELT_CENTER, getTileAt } from "..";
+import { divideByPrecision, FELT_CENTER } from "../utils/utils";
+import { getTileAt } from "../utils/tile";
 import { type ActionPath, ActionPaths, ActionType, type OrderRefusal } from "../utils/action-paths";
 import { configManager } from "./config-manager";
 import { ResourceManager } from "./resource-manager";
 import { StaminaManager } from "./stamina-manager";
-import { computeExploreFoodCosts, computeTravelFoodCosts } from "./utils";
+import { computeExploreFoodCosts, computeTravelFoodCosts } from "./utils/army-movement-utils";
 import { isViewerOwner } from "../utils/viewer";
 import { armyRealmSpire, isAtExpeditionSpire } from "../utils/expeditions";
-import { isTileOccupierMapSite, isTileOccupierUsableSite } from "../utils/map/hex";
+import { isTileOccupierMapSite } from "../utils/map/hex";
 
 /**
  * What bounds an army's orders as chain time passes: its spendable stamina, the steps its stamina and its owner's food
@@ -58,14 +62,14 @@ export class ArmyActionManager {
       explorer_id: this.entityId,
     });
 
-    return entityArmy?.troops.category as TroopType;
+    return entityArmy.troops.category;
   }
 
   /** Whether the army can explore one hex now: its stamina and its owner's food for the explore. */
   public canExplore(currentDefaultTick: number): boolean {
     const stamina = this.staminaManager.getStamina(currentDefaultTick);
 
-    if (Number(stamina?.amount ?? 0n) < configManager.getExploreStaminaCost()) {
+    if (Number(stamina?.amount ?? 0n) < this.exploreStaminaCost()) {
       return false;
     }
 
@@ -74,7 +78,7 @@ export class ArmyActionManager {
       explorer_id: this.entityId,
     });
     const exploreFoodCosts = entityArmy
-      ? computeExploreFoodCosts(entityArmy?.troops)
+      ? computeExploreFoodCosts(currentArmy(this.store, entityArmy, currentDefaultTick).troops)
       : {
           wheatPayAmount: 0,
           fishPayAmount: 0,
@@ -103,7 +107,7 @@ export class ArmyActionManager {
       explorer_id: this.entityId,
     });
     const travelFoodCosts = entityArmy
-      ? computeTravelFoodCosts(entityArmy.troops)
+      ? computeTravelFoodCosts(currentArmy(this.store, entityArmy, currentDefaultTick).troops)
       : {
           wheatPayAmount: 0,
           fishPayAmount: 0,
@@ -154,28 +158,10 @@ export class ArmyActionManager {
     return tile?.occupier_type === TileOccupier.Spire;
   }
 
-  // A shrine, well or dormant spire holds its tile: no path enters or crosses it.
+  // A dormant spire or Deep site holds its tile: no path enters or crosses it.
   private isMapSiteHex(position: HexPosition): boolean {
     const tile = getTileAt(this.store, this._getCurrentPosition().alt, position.col, position.row);
     return tile !== undefined && isTileOccupierMapSite(tile.occupier_type);
-  }
-
-  /**
-   * A shrine or a well the game lets an army use (InteractSite): the army beside it uses it where it stands, so the
-   * order is offered from the next tile and a site further off is a step away from it.
-   */
-  private isUsableSiteHex(position: HexPosition): boolean {
-    const tile = getTileAt(this.store, this._getCurrentPosition().alt, position.col, position.row);
-    return (
-      tile !== undefined &&
-      isTileOccupierUsableSite(tile.occupier_type) &&
-      configManager.isCommandEnabled("InteractSite")
-    );
-  }
-
-  /** Why a held tile offers no order: a usable site wants the army beside it, anything else holds its tile. */
-  private heldTileRefusal(position: HexPosition): OrderRefusal {
-    return this.isUsableSiteHex(position) ? { reason: "too-far" } : { reason: "occupied" };
   }
 
   /**
@@ -188,14 +174,10 @@ export class ArmyActionManager {
     return tile !== undefined && tile.occupier_type !== TileOccupier.None;
   }
 
-  /**
-   * Another player's structure where the game lets an army attack only what nobody owns: the contract refuses the
-   * attack, so the hex is no target and no order leads onto it.
-   */
+  /** Owned structures excluded by the game's targeting rule offer no attack order. */
   private isStructureOffLimits(structure: HexEntityInfo | undefined): boolean {
-    return (
-      structure !== undefined && BigInt(structure.owner ?? 0n) !== 0n && configManager.attacksOnlyUnownedStructures()
-    );
+    if (!structure) return false;
+    return BigInt(structure.owner) !== 0n && configManager.attacksOnlyUnownedStructures();
   }
 
   /** Whether the game takes an army's attack on this target: another army (Battle), or a structure's guard (BattleGuard). */
@@ -203,14 +185,33 @@ export class ArmyActionManager {
     return configManager.isCommandEnabled(targetIsArmy ? "Battle" : "BattleGuard");
   }
 
+  private exploreStaminaCost(): number {
+    return configManager.getExploreStaminaCost(this._getTroopType(), this.oaths());
+  }
+
+  private oaths(): number {
+    return armyOaths(this.store, { game_id: configManager.getActiveGameId(), explorer_id: this.entityId });
+  }
+
   /** Why the army cannot explore now: the explore's stamina, or else its owner's food for it (canExplore). */
   private exploreRefusal(armyStamina: number): OrderRefusal {
-    const need = configManager.getExploreStaminaCost();
+    const need = this.exploreStaminaCost();
     return armyStamina < need ? { reason: "stamina", need } : { reason: "food" };
   }
 
+  private armyTargetRefusal(target: HexEntityInfo | undefined): OrderRefusal | undefined {
+    if (!target) return undefined;
+    const game_id = configManager.getActiveGameId();
+    const reason = armyCombatRefusal(
+      this.store,
+      { game_id, explorer_id: this.entityId },
+      { game_id, explorer_id: target.id },
+    );
+    return reason ? { reason } : undefined;
+  }
+
   private getAttackStaminaRequirement(): number {
-    return configManager.getCombatConfig().stamina_attack_req;
+    return oathAttackStamina(this.oaths(), configManager.getCombatConfig().stamina_attack_req);
   }
 
   private addAttackActionPaths(
@@ -237,6 +238,11 @@ export class ArmyActionManager {
       }
       if (!this.gameTakesAttackOn(army !== undefined)) {
         actionPaths.refuse(ActionPaths.posKey({ col, row }), { reason: "no-attack" });
+        continue;
+      }
+      const refusal = this.armyTargetRefusal(army);
+      if (refusal) {
+        actionPaths.refuse(ActionPaths.posKey({ col, row }), refusal);
         continue;
       }
       // A target in range the army cannot yet strike: the attack's stamina is the reason.
@@ -302,14 +308,13 @@ export class ArmyActionManager {
     const foodBoundsSteps = maxHex < this.staminaSteps(armyStamina);
 
     const troopType = this._getTroopType();
-    const alive =
-      this.store.require("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: this.entityId })
-        .troops.count > 0n;
     // One truth: paths plan from the same ExplorerTroops coord the submit
     // freshness guard checks. Callers must not substitute a visual position.
     const startPos = this._getCurrentPosition();
 
     const actionPaths = new ActionPaths();
+    if (this.store.get("DeepGuard", { game_id: configManager.getActiveGameId(), explorer_id: this.entityId }))
+      return actionPaths;
     const lowestStaminaUse = new Map<string, number>();
     const priorityQueue: Array<{
       position: HexPosition;
@@ -342,14 +347,6 @@ export class ArmyActionManager {
       const biome = exploredHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
       const key = ActionPaths.posKey({ col, row });
 
-      // A usable site beside a living army is its order there: the army stays where it stands, and the use costs nothing.
-      if (alive && this.isUsableSiteHex({ col, row })) {
-        actionPaths.set(key, [
-          { hex: { col: startPos.col, row: startPos.row }, actionType: ActionType.Move },
-          { hex: { col, row }, actionType: ActionType.UseSite, staminaCost: 0 },
-        ]);
-        continue;
-      }
       // Each tile skipped here says why (ActionPaths.refuse), so the map can name the reason where no order leads.
       if (!isSpire && !isExplored && !canExplore) {
         actionPaths.refuse(key, this.exploreRefusal(armyStamina));
@@ -389,6 +386,11 @@ export class ArmyActionManager {
           actionPaths.refuse(key, { reason: "no-attack" });
           continue;
         }
+        const refusal = this.armyTargetRefusal(armyHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER));
+        if (refusal) {
+          actionPaths.refuse(key, refusal);
+          continue;
+        }
         actionType = ActionType.Attack;
         staminaCost = this.getAttackStaminaRequirement();
       } else if (hasChest) {
@@ -409,7 +411,7 @@ export class ArmyActionManager {
         }
       } else {
         actionType = ActionType.Explore;
-        staminaCost = configManager.getExploreStaminaCost();
+        staminaCost = this.exploreStaminaCost();
       }
 
       if (staminaCost > armyStamina) {
@@ -473,7 +475,7 @@ export class ArmyActionManager {
           // A target ends a route where it stands: the attack paths or the distance decide it below.
           if (hasSpire || hasArmy || hasStructure || hasChest) continue;
           if (this.isOccupiedHex({ col, row })) {
-            actionPaths.refuse(neighborKey, this.heldTileRefusal({ col, row }));
+            actionPaths.refuse(neighborKey, { reason: "occupied" });
             continue;
           }
           if (!isExplored) continue;
@@ -527,7 +529,6 @@ export class ArmyActionManager {
 
     this.refuseTargetsBeyondStep(actionPaths, startPos, [armyHexes, structureHexes, chestHexes]);
     this.addDepthEntry(actionPaths, startPos, currentDefaultTick);
-    this.refuseSitesBeyondStep(actionPaths, startPos);
     return actionPaths;
   }
 
@@ -569,21 +570,8 @@ export class ArmyActionManager {
           const hex = { col: col + this.FELT_CENTER, row: row + this.FELT_CENTER };
           const key = ActionPaths.posKey(hex);
           if (key === startKey || actionPaths.decided(key)) continue;
-          actionPaths.refuse(key, this.isMapSiteHex(hex) ? this.heldTileRefusal(hex) : { reason: "too-far" });
+          actionPaths.refuse(key, this.isMapSiteHex(hex) ? { reason: "occupied" } : { reason: "too-far" });
         }
-  }
-
-  /**
-   * Every usable site this client holds on the army's layer that no rule above decided stands beyond its step: the
-   * army uses it from beside it, so the reason is the distance. The indexes leave these sites out, so their tiles say.
-   */
-  private refuseSitesBeyondStep(actionPaths: ActionPaths, startPos: HexPosition & { alt: boolean }) {
-    if (!configManager.isCommandEnabled("InteractSite")) return;
-    for (const occupancy of this.store.inGame("TileOccupancy", configManager.getActiveGameId())) {
-      if (occupancy.alt !== startPos.alt || !isTileOccupierUsableSite(occupancy.category)) continue;
-      const key = ActionPaths.posKey({ col: occupancy.col, row: occupancy.row });
-      if (!actionPaths.decided(key)) actionPaths.refuse(key, { reason: "too-far" });
-    }
   }
 
   private readonly _findDirection = (path: HexPosition[], spire = false) => {

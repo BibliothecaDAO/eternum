@@ -28,12 +28,7 @@ const registry = vi.hoisted(() => {
 
 vi.mock("@bibliothecadao/eternum/shard", () => ({
   openShard: registry.openShard,
-  getShards: () => [...registry.open.values()],
-  requireShard: (chainId: string) => {
-    const shard = registry.open.get(chainId);
-    if (!shard) throw new Error(`Shard for chain ${chainId} is not open`);
-    return shard;
-  },
+  getShard: () => registry.open.values().next().value ?? null,
 }));
 vi.mock("../../../../../contracts/l3/world-native/schema/client.gen", () => ({ nativeFactSchemaIdentity: "schema" }));
 
@@ -46,57 +41,53 @@ const loadShards = async () => {
 /** The manifest our directory carries for shard A, as the Worker read it from that shard. */
 const manifestA = { version: 1, chainId: "0xa", contracts: { games: "0x1" } };
 
-const directory = {
-  shards: [
-    { url: "https://shard-a.test", chainId: "0xa", status: "active", games: [], manifest: manifestA },
-    { url: "https://shard-b.test", chainId: "0xb", status: "active", games: null, error: "unavailable" },
-    { url: "https://old.test", chainId: "0xd", status: "retired", games: [] },
-    // Listed for chain 0xe, its manifest claims shard A's chain.
-    { url: "https://evil.test", chainId: "0xe", status: "active", games: [] },
-  ],
+let directory: { shard: unknown } = { shard: null };
+const listing = (shard: unknown) => {
+  directory = { shard };
 };
 
 beforeEach(() => {
   registry.open.clear();
   registry.openShard.mockClear();
+  listing({ url: "https://shard-a.test", chainId: "0xa", games: [], manifest: manifestA });
   vi.stubGlobal("fetch", async (input: string) =>
     input === "/api/directory" ? Response.json(directory) : new Response(null, { status: 404 }),
   );
 });
 
-it("opens a game's own shard from the route's chain id, taking shard URLs from our directory", async () => {
+it("opens the directory's one shard from the manifest it carries, and refuses any other chain", async () => {
   const { requireOpenShard } = await loadShards();
-  const shard = await requireOpenShard("0xb");
-  expect(shard).toEqual({ url: "https://shard-b.test", chainId: "0xb" });
-  // Entering a game on shard B opened shard B alone; shard A's Herald was not contacted.
-  expect(registry.openShard.mock.calls.map(([url]) => url)).toEqual(["https://shard-b.test"]);
-});
-
-it("opens a shard from the manifest our directory carries, and asks only a shard the directory could not read", async () => {
-  const { requireOpenShard } = await loadShards();
-  await requireOpenShard("0xa");
-  await requireOpenShard("0xb");
+  expect(await requireOpenShard("0xa")).toEqual({ url: "https://shard-a.test", chainId: "0xa" });
+  expect(await requireOpenShard("0x0a")).toEqual({ url: "https://shard-a.test", chainId: "0xa" });
   expect(registry.openShard.mock.calls.map(([url, , , manifest]) => [url, manifest])).toEqual([
     ["https://shard-a.test", manifestA],
+  ]);
+  await expect(requireOpenShard("0xb")).rejects.toThrow("Chain 0xb is not the chain our directory lists");
+});
+
+it("asks the shard itself when the directory could not read it", async () => {
+  listing({ url: "https://shard-b.test", chainId: "0xb", games: null, manifest: null, error: "unavailable" });
+  const { openDirectoryShard } = await loadShards();
+  expect(await openDirectoryShard()).toEqual({ url: "https://shard-b.test", chainId: "0xb" });
+  expect(registry.openShard.mock.calls.map(([url, , , manifest]) => [url, manifest])).toEqual([
     ["https://shard-b.test", undefined],
   ]);
 });
 
-it("names the directory when it cannot be read, and opens no shard", async () => {
+it("opens no shard while the directory lists none or cannot be read", async () => {
+  listing(null);
+  expect(await (await loadShards()).openDirectoryShard()).toBeNull();
   vi.stubGlobal("fetch", async () => new Response(null, { status: 503 }));
-  const { openKnownShards, requireOpenShard } = await loadShards();
-  const failures = await openKnownShards();
-  expect(failures.map((failure) => [failure.url, failure.error.message])).toEqual([
-    ["/api/directory", "Directory answered 503"],
-  ]);
+  const { openDirectoryShard, requireOpenShard } = await loadShards();
+  await expect(openDirectoryShard()).rejects.toThrow("Directory answered 503");
   await expect(requireOpenShard("0xa")).rejects.toThrow("Directory answered 503");
   expect(registry.open.size).toBe(0);
 });
 
-it("refuses a listed shard whose manifest names another chain before registration, and keeps official routes", async () => {
+it("refuses a listed shard whose manifest names another chain before registration", async () => {
+  listing({ url: "https://evil.test", chainId: "0xe", games: [] });
   const shards = await loadShards();
   await expect(shards.requireOpenShard("0xe")).rejects.toThrow("does not serve its listed chain 0xe");
+  await expect(shards.openDirectoryShard()).rejects.toThrow("does not serve its listed chain 0xe");
   expect(registry.open.size).toBe(0);
-  expect(await shards.openKnownShards()).toMatchObject([{ url: "https://evil.test" }]);
-  expect(await shards.requireOpenShard("0xa")).toEqual({ url: "https://shard-a.test", chainId: "0xa" });
 });

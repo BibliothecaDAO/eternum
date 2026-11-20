@@ -15,6 +15,7 @@ import {
   PRODUCTION_CHAIN,
 } from "./test-database";
 import type { ReleaseIdentity, ReleaseReport } from "./release";
+import type { RegisteredShard } from "@realms-world/value-ledger";
 
 const token = { authorization: "Bearer operator-test-token", "content-type": "application/json" };
 const session = { cookie: "session=valid", origin: "https://play.realms.party", "content-type": "application/json" };
@@ -33,17 +34,21 @@ const fixture = (chain = TEST_CHAIN) => {
   const calendar = new D1CalendarStore(database.db);
   const armFor = vi.fn();
   const wakeAt = vi.fn(async (): Promise<number | null> => 0);
-  const joinFailures = vi.fn(async (): Promise<import("./registrar").JoinFailure[]> => []);
-  const applyRelease = vi.fn(async (_release: ReleaseIdentity | null): Promise<ReleaseReport> => ({ shards: [] }));
+  const joinFailure = vi.fn(async (): Promise<import("./registrar").JoinFailure | null> => null);
+  const applyRelease = vi.fn(
+    async (_release: ReleaseIdentity | null, _shard: RegisteredShard | null): Promise<ReleaseReport> => ({
+      shard: null,
+    }),
+  );
   const app = createLaunchApp({
     config: { operatorToken: "operator-test-token" },
     deployment: { environment: "staging", version: "test", revision: "abc1234" },
     store,
     slots,
     calendar,
-    registrar: { armFor, joinFailures, wakeAt, applyRelease },
+    registrar: { armFor, joinFailure, wakeAt, applyRelease },
   });
-  return { app, store, slots, calendar, value, armFor, joinFailures, wakeAt, applyRelease };
+  return { app, store, slots, calendar, value, armFor, joinFailure, wakeAt, applyRelease };
 };
 const close = () => new Date(Math.floor(Date.now() / 1000) * 1000 + 60000).toISOString();
 test("the create-run and launcher-discovery routes are gone even for the operator", async () => {
@@ -52,7 +57,7 @@ test("the create-run and launcher-discovery routes are gone even for the operato
   expect((await app.request("/api/factory/operator/launcher/enrol", { method: "POST", headers: token })).status).toBe(
     404,
   );
-  for (const environment of ["madara.eternum", "madara.frontier", "madara.blitz"]) {
+  for (const environment of ["madara.frontier", "madara.blitz"]) {
     expect(
       (
         await app.request("/api/factory/runs", {
@@ -70,7 +75,7 @@ test.each([
   ["POST", "/api/slots/friday/refund"],
   ["PUT", "/api/factory/calendar/frontier"],
   ["POST", "/api/factory/runs/madara.frontier/frontier-7/actions/continue"],
-  ["POST", "/api/factory/runs/madara.eternum/old/actions/delete"],
+  ["POST", "/api/factory/runs/madara.frontier/old/actions/delete"],
   ["POST", "/api/factory/results/madara.blitz/old/actions/continue"],
   ["POST", "/api/factory/test-blitz"],
   ["POST", "/api/factory/release"],
@@ -133,7 +138,7 @@ test("only operator recovery continues a failed run in every format and results"
   for (const [kind, request] of [
     ["game", { environment: "madara.blitz", gameName: "paid", slotId: 12, groupIndex: 0 }],
     ["game", { environment: "madara.frontier", gameName: "frontier-fixture" }],
-    ["game", { environment: "madara.eternum", gameName: "old-factory" }],
+    ["game", { environment: "madara.frontier", gameName: "old-factory" }],
     ["result", { environment: "madara.blitz", gameName: "paid", gameId: 1 }],
   ] as const) {
     const run = await store.enqueue(kind, request);
@@ -177,12 +182,28 @@ test("health and version remain public and identify the deployment", async () =>
 });
 
 test("public health names a failed join before any run has failed", async () => {
-  const { app, joinFailures } = fixture();
+  const { app, joinFailure } = fixture();
   const failure = { chainId: TEST_CHAIN, code: "account_join_read_failed", checkedAt: 1000 };
-  joinFailures.mockResolvedValue([failure]);
+  joinFailure.mockResolvedValue(failure);
   const response = await app.request("/api/factory/health");
   expect(response.status).toBe(503);
-  expect(await response.json()).toMatchObject({ joinFailures: [failure], failedRuns: [] });
+  expect(await response.json()).toMatchObject({ joinFailure: failure, failedRuns: [] });
+});
+
+test("health answers healthy and empty before the directory lists any chain", async () => {
+  const store = new D1LaunchStore(database.db, async () => null);
+  const value = slotValueFixture(1);
+  const app = createLaunchApp({
+    config: { operatorToken: "operator-test-token" },
+    deployment: { environment: "staging", version: "test", revision: "abc1234" },
+    store,
+    slots: new D1SlotStore(database.db, store, value, slotResolver(value, registrationIdentityFixture)),
+    calendar: new D1CalendarStore(database.db),
+    registrar: { armFor: vi.fn(), joinFailure: async () => null, wakeAt: async () => 0, applyRelease: vi.fn() },
+  });
+  const response = await app.request("/api/factory/health");
+  expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({ failedRuns: [], strandedRuns: [], joinFailure: null });
 });
 
 test("health forgets retired work but names an unarmed due run on the live chain", async () => {
@@ -330,23 +351,29 @@ const RELEASE = {
   logic: { season: "0x55e0", troops: "0x77a2" },
   migration: "0x0",
 };
+const SHARD = { chainId: DEV_CHAIN, url: "https://herald.dev.test" };
 
 test("the release route hands the commit's release to the registrar and answers its report", async () => {
   const { app, applyRelease: registrar } = fixture();
   const report = {
-    shards: [{ chainId: DEV_CHAIN, releaseId: 2, games: [{ gameId: 1, from: 1, to: 2, transactions: ["0xa"] }] }],
+    shard: {
+      chainId: DEV_CHAIN,
+      releaseId: 2,
+      games: [{ gameId: 1, from: 1, to: 2, transactions: ["0xa"] }],
+      opened: ["0xb"],
+    },
   };
   registrar.mockResolvedValueOnce(report);
-  const response = await applyRelease(app, { release: RELEASE });
+  const response = await applyRelease(app, { release: RELEASE, shard: SHARD });
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual(report);
-  expect(registrar).toHaveBeenCalledWith(RELEASE);
+  expect(registrar).toHaveBeenCalledWith(RELEASE, SHARD);
 });
 
-test("a deployment whose box never built sends no release, which only a shardless directory accepts", async () => {
+test("a deployment whose box never built sends no release and no shard", async () => {
   const { app, applyRelease: registrar } = fixture();
-  expect((await applyRelease(app, { release: null })).status).toBe(200);
-  expect(registrar).toHaveBeenCalledWith(null);
+  expect((await applyRelease(app, { release: null, shard: null })).status).toBe(200);
+  expect(registrar).toHaveBeenCalledWith(null, null);
 });
 
 test.each([
@@ -357,7 +384,9 @@ test.each([
   [{ release: { ...RELEASE, schema: "0x2fbd" } }],
   [{ release: { ...RELEASE, logic: {} } }],
   [{ release: { ...RELEASE, logic: { season: "season" } } }],
-  [{ release: { ...RELEASE, migration: undefined } }],
+  [{ release: { ...RELEASE, migration: undefined }, shard: SHARD }],
+  [{ release: RELEASE }],
+  [{ release: RELEASE, shard: { chainId: DEV_CHAIN } }],
 ])("the release route refuses %j before the registrar signs anything", async (body) => {
   const { app, applyRelease: registrar } = fixture();
   const response = await applyRelease(app, body);
@@ -376,7 +405,7 @@ test.each([
 ])("the release route names the refusal %s", async (code) => {
   const { app, applyRelease: registrar } = fixture();
   registrar.mockRejectedValueOnce(new Error(code));
-  const response = await applyRelease(app, { release: RELEASE });
+  const response = await applyRelease(app, { release: RELEASE, shard: SHARD });
   expect(response.status).toBe(409);
   expect(await response.json()).toEqual({ error: code });
 });
@@ -385,7 +414,7 @@ test("an unexpected release failure is reported without its detail", async () =>
   const { app, applyRelease: registrar } = fixture();
   vi.spyOn(console, "error").mockImplementation(() => {});
   registrar.mockRejectedValueOnce(new Error("rpc https://secret.test failed"));
-  const response = await applyRelease(app, { release: RELEASE });
+  const response = await applyRelease(app, { release: RELEASE, shard: SHARD });
   expect(response.status).toBe(503);
   expect(await response.json()).toEqual({ error: "release_apply_failed" });
 });

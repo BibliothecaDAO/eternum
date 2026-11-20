@@ -11,12 +11,12 @@ pub struct StructurePreset {
     pub research: Span<crate::research::ResearchPriceConfig>,
     pub buildings: Span<crate::buildings::BuildingRuleConfig>,
     pub camps: crate::camps::CampRules,
-    pub faith: crate::faith::FaithRules,
     pub upgrade_limits: crate::upgrades::UpgradeLimits,
     pub upgrades: Span<crate::upgrades::UpgradeRecipe>,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SettlementPreset {
+    pub order_aspects: Span<u8>,
     pub mode: crate::settlement::SettlementMode,
     pub spacing: u32,
     pub depths: Span<crate::expeditions::DepthRules>,
@@ -32,13 +32,14 @@ pub struct WithdrawalPreset {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct EconomyPreset {
+    pub race: Option<crate::race::RaceRules>,
+    pub banes: Option<crate::banes::BaneRules>,
+    pub quests: Option<crate::quests::QuestRules>,
+    pub deep: Option<crate::deep::DeepRules>,
     pub labor: Option<crate::entry::LaborRules>,
-    pub trade: crate::trade::TradeRules,
-    pub banks: crate::market::BankRules,
     pub hyperstructures: crate::hyperstructures::HyperstructureRules,
     pub relics: Span<crate::relics::RelicRule>,
     pub chests: Option<crate::relics::ChestRules>,
-    pub progression: Option<crate::progression::ArmyProgressionRules>,
     pub discovery: Option<crate::expeditions::FrontierDiscoveryRules>,
     pub research_cost: u128,
     pub withdrawals: Option<WithdrawalPreset>,
@@ -56,7 +57,44 @@ pub struct PresetDefinition {
 
 pub fn validate(preset: PresetDefinition) {
     let rules = preset.rules;
-    assert!(preset.economy.labor.is_some() == (rules.day_unit_seconds != 0), "labor rules require expeditions");
+    if let Some(race) = preset.economy.race {
+        assert!(preset.season_win_points == 0, "race cannot use victory points");
+        assert!(
+            rules.mode_rules & (crate::rules::DISCOVER_HYPERSTRUCTURES | crate::rules::RESERVED_HYPERSTRUCTURES) == 0,
+            "race has no map hyperstructures",
+        );
+        let deep = preset.economy.deep.expect('race requires the Deep');
+        crate::race::validate(race);
+        assert!(deep.building_pay.alone <= race.stage_height, "Deep pay passes a stage");
+    }
+    if let Some(banes) = preset.economy.banes {
+        assert!(preset.economy.quests.is_some(), "banes require daily quests");
+        crate::banes::validate(banes);
+    }
+    if let Some(quests) = preset.economy.quests {
+        crate::quests::validate(quests);
+        assert!(
+            rules.day_unit_seconds != 0 && !preset.settlement.order_aspects.is_empty(),
+            "quests need Aspect expeditions",
+        );
+        assert!(preset.economy.labor.is_none(), "daily quests replace labor claims");
+    }
+    if let Some(deep) = preset.economy.deep {
+        assert!(
+            rules.day_unit_seconds != 0 && !preset.settlement.order_aspects.is_empty(), "Deep needs Aspect expeditions",
+        );
+        crate::deep::validate(deep, preset.settlement.spacing);
+    }
+    crate::aspects::validate(preset.settlement.order_aspects);
+    assert!(
+        preset.settlement.order_aspects.is_empty()
+            || (rules.entry_rule == crate::rules::ENTRY_OPEN && rules.day_unit_seconds != 0),
+        "Aspects require open expeditions",
+    );
+    assert!(
+        (preset.economy.labor.is_some() || preset.economy.quests.is_some()) == (rules.day_unit_seconds != 0),
+        "expeditions require daily rewards",
+    );
     if let Some(labor) = preset.economy.labor {
         assert!(labor.amount != 0, "zero daily labor grant");
         assert!(labor.golden_amount != 0, "zero golden labor grant");
@@ -65,34 +103,19 @@ pub fn validate(preset: PresetDefinition) {
         let _ = labor.golden_amount * crate::rules::RESOURCE_PRECISION;
         let _ = labor.golden_essence * crate::rules::RESOURCE_PRECISION;
     }
-    if let Some(chests) = preset.economy.chests {
-        assert!(
-            chests.claim_window_seconds > crate::days::FRONTIER_REPORT_GRACE_SECONDS,
-            "LORDS claim window needs reporting grace",
-        );
-    }
-    assert!(preset.economy.chests.is_some() == (rules.day_unit_seconds != 0), "chest rules require expedition");
+    assert!(preset.economy.chests.is_none(), "LORDS presets are retired");
     assert!(preset.economy.discovery.is_some() == (rules.day_unit_seconds != 0), "discovery requires expedition");
     if let Some(discovery) = preset.economy.discovery {
-        crate::discovery::validate_frontier(discovery);
+        crate::discovery::validate_frontier(
+            discovery,
+            crate::oaths::detected_find_percent(preset.economy.race.map(|race| race.clear_mist_percent).unwrap_or(100)),
+        );
         assert!(
             rules.map_config.camp_win_probability == 0 && rules.map_config.shards_mines_win_probability == 0,
             "expedition uses categorical odds",
         );
     }
-    assert!(preset.economy.progression.is_some() == (rules.day_unit_seconds != 0), "progression requires expedition");
-    if let Some(progression) = preset.economy.progression {
-        let _ = progression.reveal_xp + 3 * progression.reveal_xp_per_depth;
-        assert!(
-            progression.reveal_xp != 0
-                && progression.common_xp > 0
-                && progression.uncommon_xp > progression.common_xp
-                && progression.rare_xp > progression.uncommon_xp
-                && progression.epic_xp > progression.rare_xp
-                && progression.legendary_xp > progression.epic_xp,
-            "invalid progression thresholds",
-        );
-    }
+
     assert!(
         rules.day_unit_seconds == 0 || rules.troop_limit_config.t1_tier_strength == 1,
         "expedition troops must have strength one",
@@ -115,11 +138,6 @@ pub fn validate(preset: PresetDefinition) {
     }
     assert!(rules.bitcoin_mine_config.owner_cut_bps <= 10000, "invalid Bitcoin owner cut");
 
-    assert!(
-        rules.entry_rule == crate::rules::ENTRY_ROSTER
-            || preset.settlement.mode != crate::settlement::SettlementMode::Duel,
-        "Eternum does not use Duel settlement",
-    );
     let map = preset.rules.map_config;
     assert!(
         map.shards_mines_win_probability == 0 || !preset.resources.surface_mines.is_empty(), "empty enabled mine pool",
@@ -148,12 +166,6 @@ pub fn commitment(preset: PresetDefinition) -> felt252 {
     core::poseidon::poseidon_hash_span(values.span())
 }
 
-// Registration shares the season domain's code budget; Games and Registry keep their existing public ABI.
-#[starknet::interface]
-pub trait IPresetRegistration<T> {
-    fn register_preset(ref self: T, preset_id: u32, definition: PresetDefinition);
-}
-
 #[starknet::interface]
 pub trait IPresetResources<T> {
     fn store_resource_preset(
@@ -163,11 +175,6 @@ pub trait IPresetResources<T> {
         exploration: Span<crate::exploration_rewards::ExplorationReward>,
         mode_rules: u32,
     );
-}
-
-#[starknet::interface]
-pub trait IPresetValidation<T> {
-    fn validated_preset_commitment(self: @T, definition: PresetDefinition) -> felt252;
 }
 
 #[starknet::interface]

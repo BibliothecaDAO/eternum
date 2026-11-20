@@ -5,10 +5,10 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon } from "@/ui/design-system/icon";
 import { iconDefinition, orderMeaning } from "@/ui/design-system/icon-meaning";
 import { HudPortrait } from "@/ui/design-system/kit/hud-elements";
-import { DEPTH_NUMERALS, depthName, YOU } from "@/ui/design-system/kit/words";
+import { YOU } from "@/ui/design-system/kit/words";
 import { HOME_KINDS, homeKind } from "@/ui/design-system/home-icons";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
-import { rankName } from "@bibliothecadao/types";
+import { layerName, rankName } from "@bibliothecadao/types";
 
 /** Each depth's painting, I to III. */
 const DEPTH_ICONS = ["depth-1", "depth-2", "depth-3"] as const;
@@ -29,10 +29,10 @@ export const RealmBadge = ({
   skin?: RealmSkin;
   hasWonder?: boolean;
 }) => {
-  const step = Math.min(depth, DEPTH_NUMERALS.length) as 0 | 1 | 2 | 3;
+  const step = Math.min(depth, 3);
   const kind = homeKind(skin, hasWonder);
   const name = kind === "realm" ? rankName(level) : `${HOME_KINDS[kind].label} · ${rankName(level)}`;
-  const line = step === 0 ? name : `${name} · ${depthName(step)}`;
+  const line = step === 0 ? name : `${name} · ${layerName(step)}`;
   return (
     <span role="img" aria-label={line} data-tip={line} className="relative inline-flex size-7 shrink-0">
       <Icon name={realmMeaning(level, skin, hasWonder)} size={28} />

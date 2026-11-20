@@ -167,7 +167,7 @@ const resolveDefaultContext = () => {
   return {
     chain: activeGame?.chainId,
     worldName: activeGame?.name,
-    worldAddress: getShard(activeGame?.chainId)?.worldAddress,
+    worldAddress: getShard()?.worldAddress,
   };
 };
 

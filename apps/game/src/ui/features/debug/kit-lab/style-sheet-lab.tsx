@@ -821,14 +821,6 @@ const ORDER_LINES = [
   { path: [orderStep(ActionType.Move), orderStep(ActionType.Explore)], food: { wheat: 100, fish: 0 } },
   { path: [orderStep(ActionType.Move), orderStep(ActionType.Move, 10), orderStep(ActionType.Move, 10)] },
   { path: [orderStep(ActionType.Move), orderStep(ActionType.Chest)] },
-  {
-    path: [orderStep(ActionType.Move), orderStep(ActionType.UseSite)],
-    site: { kind: "Shrine", gain: 3, stamina: undefined } as const,
-  },
-  {
-    path: [orderStep(ActionType.Move), orderStep(ActionType.UseSite)],
-    site: { kind: "Well", gain: 60, stamina: { current: 120, max: 120, perExplore: 20 } } as const,
-  },
   { path: undefined, refusal: { reason: "stamina", need: 30 } as const, staminaWait: 24, staminaHeld: 12 },
 ].flatMap((order) => {
   const tip = orderTip({
@@ -838,7 +830,6 @@ const ORDER_LINES = [
     refusal: undefined,
     staminaWait: undefined,
     staminaHeld: undefined,
-    site: undefined,
     byRealm: false,
     ...order,
   });

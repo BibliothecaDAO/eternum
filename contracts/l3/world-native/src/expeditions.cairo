@@ -34,6 +34,7 @@ pub trait IExpeditionSite<T> {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SitePayout {
+    pub xp: u32,
     pub structure_id: u64,
     pub explorer_id: u64,
     pub site_id: u64,
@@ -41,19 +42,40 @@ pub struct SitePayout {
     pub reward: Option<crate::resources::ResourceAmount>,
 }
 
-// Camps and beasts pay labor on clear; a ruin pays the chest stored with it (crate::relics::SiteChest).
-pub fn site_reward(category: u8, site: ExpeditionSite, depth: u8) -> Option<crate::resources::ResourceAmount> {
-    use crate::resources::{ESSENCE, LABOR, ResourceAmount};
+// Camps pay labor, herds wheat, and rifts Essence.
+pub fn site_reward(
+    category: u8, site: ExpeditionSite, depth: u8, band: bool,
+) -> Option<crate::resources::ResourceAmount> {
+    if band {
+        return None;
+    }
+    use crate::resources::{ESSENCE, LABOR, ResourceAmount, WHEAT};
     let reward = if category == crate::taxonomy::CAMP_CATEGORY {
         Some(ResourceAmount { resource_type: LABOR, amount: site.initial_guard_count / 2 })
     } else if category == crate::taxonomy::BEASTS_CATEGORY {
-        Some(ResourceAmount { resource_type: LABOR, amount: site.initial_guard_count / 4 })
+        Some(ResourceAmount { resource_type: WHEAT, amount: site.initial_guard_count * 4 })
     } else if category == crate::taxonomy::RIFT_CATEGORY {
         Some(ResourceAmount { resource_type: ESSENCE, amount: site.initial_guard_count * 3 })
     } else {
         None
     };
     reward.map(|reward| ResourceAmount { amount: depth_reward(reward.amount, depth), ..reward })
+}
+
+
+pub fn is_band(site: ExpeditionSite, rules: DepthRules) -> bool {
+    site.category == crate::taxonomy::BEASTS_CATEGORY
+        && site.initial_guard_count > Into::<u16, u128>::into(rules.beast_weak_upper)
+        * crate::rules::RESOURCE_PRECISION
+}
+
+
+pub fn is_supply_post(site: ExpeditionSite, home: u64, today: u64, spacing: u32) -> bool {
+    !site.alt
+        && site.category == crate::taxonomy::CAMP_CATEGORY
+        && (site.row / spacing) % 4 < 3
+        && Into::<u32, u64>::into(site.row / spacing / 4) == today
+        && site.clear.map(|receipt| receipt.home_id == home).unwrap_or(false)
 }
 
 pub fn depth_reward(amount: u128, depth: u8) -> u128 {
@@ -117,12 +139,12 @@ pub fn spire(spacing: u32, region_id: u32, day: u64) -> Coord {
     crate::geometry::neighbor(site(spacing, region_id, day, 0), (day % 6).try_into().unwrap())
 }
 
-/// An army lives only on its own day's map: on any later day it is gone.
-pub fn is_current(coord: Coord, spacing: u32, day: u64) -> bool {
-    !coord.alt && region_day(coord, spacing) == day
-}
 
 pub fn assert_same_region(origin: Coord, destination: Coord, spacing: u32) {
+    assert!(inside_region(origin, destination, spacing), "outside expedition region");
+}
+
+pub fn inside_region(origin: Coord, destination: Coord, spacing: u32) -> bool {
     let same_region = origin.x / spacing == destination.x / spacing && origin.y / spacing == destination.y / spacing;
     let local_x = destination.x % spacing;
     let local_y = destination.y % spacing;
@@ -130,7 +152,7 @@ pub fn assert_same_region(origin: Coord, destination: Coord, spacing: u32) {
     let inside_region = local_x >= margin && local_x < spacing
         - margin && local_y >= margin && local_y < spacing
         - margin;
-    assert!(!destination.alt && same_region && inside_region, "outside expedition region");
+    !destination.alt && same_region && inside_region
 }
 
 // Each day's map draws its own terrain: the climate seeds move by the day, counted in units from absolute time so
@@ -154,8 +176,6 @@ pub struct DepthRules {
     pub reveal_site_neighbors: bool,
     // Each chest tier's odds, in basis points, for a ruin found at this depth.
     pub chest: crate::relics::ChestTiers,
-    pub ruin_guard_lower: u32,
-    pub ruin_guard_upper: u32,
     pub guard_step: u32,
     pub beast_weak_lower: u16,
     pub beast_weak_upper: u16,
@@ -194,13 +214,8 @@ pub struct ExpeditionDiscovery {
 }
 #[starknet::interface]
 pub trait IFrontierDiscovery<T> {
-    fn consume_frontier_site(ref self: T, key: crate::map::TileKey, explorer_id: u64) -> Option<u8>;
-    fn shrine_reward(self: @T, key: crate::resources::ResourceKey) -> Option<crate::relics::ShrineReward>;
     fn frontier_discovery_rules(self: @T, game_id: u32) -> Option<FrontierDiscoveryRules>;
     fn expedition_discovery(self: @T, key: ExpeditionDiscoveryKey) -> Option<ExpeditionDiscovery>;
-    fn discover_frontier_tile(
-        ref self: T, key: crate::map::TileKey, explorer_id: u64, seed: u256, context: crate::commands::ActionContext,
-    ) -> crate::discovery::Discovery;
 }
 
 #[starknet::interface]
@@ -210,6 +225,7 @@ pub trait ISiteRewards<T> {
         key: crate::resources::ResourceKey,
         explorer: crate::troops::ExplorerKey,
         home_id: u64,
+        clean: bool,
         context: crate::commands::ActionContext,
     );
 }

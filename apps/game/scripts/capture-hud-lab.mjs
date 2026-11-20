@@ -72,12 +72,6 @@ const READ_ARMY_LIST = `(() => {
   };
 })()`;
 
-/**
- * Every army and open slot carries a stamina bar, and the bars line up whatever each entry's words say (owner, 27
- * October): one width, and one left edge down a list (or one top along a phone's row of tokens). On a list, each figure
- * (XP, stamina) stands on the line of the words it belongs to, whether the row has one line or two (owner, 28 October:
- * "text alignment with no troop line subtext").
- */
 const armyListProblems = ({ entries, bars, rows }) => {
   if (bars.length < 2 || bars.length !== entries) return [`${bars.length} stamina bars on ${entries} armies and slots`];
   const same = (key) => bars.every((bar) => Math.abs(bar[key] - bars[0][key]) <= 0.5);
@@ -248,8 +242,12 @@ export const SURFACES = [
     "building-farm",
     "building-workshop-short",
     "building-barracks",
-    "building-war-hall",
+    "building-conscription-camp",
+    "building-rations-depot",
     "building-scouts-lodge",
+    "shop",
+    "shop-ready",
+    "shop-held",
   ].map((state) => ({
     name: `frontier-${state}`,
     path: `/lab/kit/hud/${state}`,
@@ -443,7 +441,7 @@ const main = async () => {
         run("screenshot", join(values.out, `${shot}.png`));
         if (name === "frontier-merge") {
           // Army 1 has 22 unspent XP and two upgrades; Army 3 has 20 unspent XP and one upgrade.
-          const confirmLabel = "Lose 222 XP, merge into Army 3";
+          const confirmLabel = "Confirm merge into Army 3";
           run("find", "role", "button", "click", "--name", "Merge into Army 3", "--exact");
           run("wait", "--text", confirmLabel);
 
@@ -459,7 +457,7 @@ const main = async () => {
               const box = element?.getBoundingClientRect();
               return !!box && box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight;
             };
-            return { text: sheet.textContent, totals: [...sheet.querySelectorAll('[role="group"][aria-label$="total XP"]')].map(group => group.textContent), struck: sheet.querySelector('s')?.textContent ?? null, reachable: visible(button), notice: sheet.querySelector('.ui-notice')?.textContent ?? null, typed: sheet.querySelector('input[aria-label^="Troops "]').value, slid: sheet.querySelector('input[type="range"]').value };
+            return { text: sheet.textContent, struck: sheet.querySelector('s')?.textContent ?? null, reachable: visible(button), notice: sheet.querySelector('.ui-notice')?.textContent ?? null, typed: sheet.querySelector('input[aria-label^="Troops "]').value, slid: sheet.querySelector('input[type="range"]').value };
           })()`,
               ),
             );
@@ -467,11 +465,10 @@ const main = async () => {
           writeFileSync(join(values.out, `${shot}-confirmation.json`), JSON.stringify(confirmed, null, 2));
           if (
             !confirmed.reachable ||
-            confirmed.notice !== "Army 1 loses its XP and upgrades." ||
-            confirmed.struck !== null ||
-            JSON.stringify(confirmed.totals) !== JSON.stringify(["Total XP222→0", "Total XP120→120"])
+            confirmed.notice !== "Army 1 loses its Logistics training." ||
+            confirmed.struck !== null
           ) {
-            throw new Error(`${shot}: both total XP values and their outcomes must agree with the loss confirmation`);
+            throw new Error(`${shot}: the Logistics loss must be visible and its confirmation reachable`);
           }
           // It opens at all Army 1 holds: the box and the slider both say 500, what the merge sends.
           if (confirmed.typed !== "500" || confirmed.slid !== "500") {
@@ -483,12 +480,7 @@ const main = async () => {
           run("press", "ArrowLeft");
           run("wait", "--text", "Move 499 to Army 3");
           const partial = readSheet();
-          if (
-            partial.text.includes(confirmLabel) ||
-            partial.struck !== null ||
-            partial.notice !== null ||
-            JSON.stringify(partial.totals) !== JSON.stringify(["Total XP222→222", "Total XP120→120"])
-          ) {
+          if (partial.text.includes(confirmLabel) || partial.struck !== null || partial.notice !== null) {
             throw new Error(`${shot}: changing the amount must clear confirmation and the merge's losses`);
           }
           if (partial.typed !== "499" || partial.slid !== "499") {

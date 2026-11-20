@@ -1,11 +1,5 @@
 [
   {
-    "key": "frontierChestFindBps",
-    "file": "discovery.cairo",
-    "source": "pub const FRONTIER_CHEST_FIND_BPS: u128 = 5;",
-    "value": 5
-  },
-  {
     "key": "spireFindBps",
     "file": "discovery.cairo",
     "source": "pub const SPIRE_FIND_BPS: u128 = 50;",
@@ -19,13 +13,13 @@
   },
   {
     "key": "daysPerBag",
-    "file": "days.cairo",
+    "file": "day_schedule.cairo",
     "source": "pub const DAYS_PER_BAG: u64 = 5;",
     "value": 5
   },
   {
     "key": "unitsPerBag",
-    "file": "days.cairo",
+    "file": "day_schedule.cairo",
     "source": "pub const UNITS_PER_BAG: u64 = 20;",
     "value": 20
   },
@@ -38,7 +32,7 @@
   {
     "key": "knightGuardPercent",
     "file": "combat.cairo",
-    "source": "return Self::_combat_percent_multiplier(85);",
+    "source": "if day_unit_seconds == 0 {\n                    85\n                }",
     "value": 85
   },
   {

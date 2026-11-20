@@ -1,4 +1,5 @@
 import { TransactionType } from "@bibliothecadao/provider";
+import { ANCIENT_SEAL } from "@bibliothecadao/types";
 
 /**
  * What each command reads as in the feed and its notices, in the player's words. Every command has its line: a new one
@@ -15,9 +16,8 @@ const TX_MESSAGES: Record<TransactionType, string> = {
   [TransactionType.TOGGLE_ALTERNATE]: "Army passed through a spire",
   [TransactionType.ENTER_DEPTH]: "Army went deeper",
   [TransactionType.RESEARCH]: "Research started",
-  [TransactionType.SPEND_SKILL_POINT]: "Upgrade bought",
-  [TransactionType.REFILL_STAMINA]: "Stamina refilled",
-  [TransactionType.WITHDRAW_LORDS]: "LORDS withdrawn",
+  [TransactionType.CHOOSE_OATH]: "Oath choice recorded",
+  [TransactionType.REROLL_OATH]: "Oath card redrawn",
   [TransactionType.EXPLORER_CREATE]: "Army raised",
   [TransactionType.EXPLORER_ADD]: "Army reinforced",
   [TransactionType.EXPLORER_DELETE]: "Army disbanded",
@@ -73,8 +73,11 @@ const TX_MESSAGES: Record<TransactionType, string> = {
   [TransactionType.END_GAME]: "Game ended",
   [TransactionType.OPEN_CHEST]: "Crate opened",
   [TransactionType.INTERACT_SITE]: "Site visited",
+  [TransactionType.CLAIM_DAILY_QUEST]: "Quest reward collected",
   [TransactionType.BURN_RESEARCH_FOR_RELIC]: "Relic crafted",
   [TransactionType.APPLY_RELIC]: "Relic activated",
+  [TransactionType.BUY_STAMINA]: "Stamina refilled",
+  [TransactionType.BUY_SEAL]: `${ANCIENT_SEAL} bought`,
 };
 
 export const getTxMessage = (type: TransactionType): string => TX_MESSAGES[type];

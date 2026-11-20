@@ -53,6 +53,7 @@ pub fn setup_in_deployment(
             start_settling_at: 10,
             start_main_at: 20,
             end_at: 200,
+            scheduled_end_at: 200,
             end_grace_seconds: 10,
             ..games.game(1),
         },
@@ -208,17 +209,20 @@ pub fn explorer_fixture(deployment: Deployment, id: u64, owner: u64, coord: Coor
     key
 }
 pub fn grant(deployment: Deployment, key: ResourceKey, resource_type: u8, amount: u128) {
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
+    let timestamp = resources
+        .resource_production(ResourceSlot { game_id: key.game_id, entity_id: key.entity_id, resource_type })
+        .last_settled_at
+        .into();
     start_cheat_caller_address(deployment.games, deployment.games);
-    IResourceOperationsDispatcher { contract_address: deployment.games }
+    resources
         .grant_resource(
             key,
             resource_type,
             amount,
-            30,
+            timestamp,
             crate::commands::resource_context(
-                crate::commands::ExecutionContext {
-                    timestamp: 30, ..crate::tests::context(deployment.games, (key).game_id),
-                },
+                crate::commands::ExecutionContext { timestamp, ..crate::tests::context(deployment.games, key.game_id) },
             ),
         );
     stop_cheat_caller_address(deployment.games);
@@ -284,12 +288,12 @@ pub fn troop_deposit_ownership(blitz_mode_on: bool, category: u8) {
             mode_rules: if blitz_mode_on {
                 super::play_fixture::BLITZ_RULES
             } else {
-                super::play_fixture::ETERNUM_RULES
+                super::play_fixture::TEST_RULES
             },
             command_mask: if blitz_mode_on {
                 super::play_fixture::BLITZ_COMMAND_MASK
             } else {
-                super::play_fixture::ETERNUM_COMMAND_MASK
+                super::play_fixture::BLITZ_COMMAND_MASK
             },
             entry_rule: if blitz_mode_on {
                 crate::rules::ENTRY_ROSTER

@@ -17,7 +17,15 @@ const identity = vi.hoisted(() => {
       createShare: vi.fn(async () => (owner() === "0xa" ? "AAAA2222" : "BBBB2222")),
       sharePosted: vi.fn(async () => {}),
       uploadShareCard: vi.fn(async (_code: string, _card: Blob) => {}),
-      shareTally: vi.fn(async () => ({ links: 0, posted: 0, visits: 0, joined: 0, activated: 0 })),
+      shareTally: vi.fn(async () => ({
+        links: 0,
+        posted: 0,
+        visits: 0,
+        joined: 0,
+        activated: 0,
+        friendsPaid: 0,
+        fragmentsEarned: 0,
+      })),
     },
   };
 });

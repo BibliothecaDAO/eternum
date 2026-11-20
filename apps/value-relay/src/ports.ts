@@ -234,7 +234,6 @@ export const relayServiceErrors = [
   "relay_account_join_failed",
   ...accountJoinErrors,
   "directory_shard_manifest_fetch_failed",
-  "relay_shard_inactive",
   "relay_device_approval_refused",
   "unlisted_shard",
   "directory_shard_manifest_unavailable",

@@ -13,6 +13,16 @@ const allowedIdentityConnectorPackages = [
   forbiddenScope + "penpal",
 ];
 const forbiddenHost = "cartridge" + ".gg";
+// AVNU is the one market source: no price is read from the old provider. Its name is split so this file passes its own
+// rule; permitted link references are removed before a file is scanned, so no file is exempt.
+const priceProvider = "coin" + "gecko";
+const priceProviderCodeFile = /\.(?:[cm]?[jt]sx?)$/;
+const priceProviderLinkReferences = [
+  new RegExp(`https://www\\.${priceProvider}\\.com/en/coins/lords`, "g"),
+  new RegExp(`https://assets\\.${priceProvider}\\.com/coins/images/`, "g"),
+  new RegExp(`brand-${priceProvider}`, "g"),
+  new RegExp(`(?<!\\+\\s*)(["'])${priceProvider}\\1(?!\\s*\\+)`, "g"),
+];
 const plainHttp = "http" + "://";
 
 function listRepositoryFiles() {
@@ -75,6 +85,14 @@ function isIdentityConnectorPatch(path) {
   );
 }
 
+function withoutPriceProviderLinks(contents) {
+  return priceProviderLinkReferences.reduce((rest, reference) => rest.replace(reference, ""), contents.toLowerCase());
+}
+
+function priceProviderNeedle(path) {
+  return priceProviderCodeFile.test(path) ? priceProvider : `${priceProvider}.com`;
+}
+
 function checkEnvironmentHttp(violations, path, contents, prefix) {
   for (const [index, line] of contents.split("\n").entries()) {
     const match = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(\S.*)?$/);
@@ -113,6 +131,10 @@ function runChecks() {
     }
     if (isOutsideDocumentation(path) && !isIdentityConnectorPatch(path)) {
       recordLiteralMatches(violations, path, contents, forbiddenHost, "forbidden-host");
+    }
+    if (isOutsideDocumentation(path)) {
+      const rest = withoutPriceProviderLinks(contents);
+      recordLiteralMatches(violations, path, rest, priceProviderNeedle(path), "forbidden-price-source");
     }
     checkBrowserFacingHttp(violations, path, contents);
   }

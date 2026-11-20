@@ -1068,6 +1068,19 @@ button.app-board__row:is(:hover, [data-state="hover"]) {
   white-space: normal;
   text-align: center;
 }
+.app-choice__tag {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  border-radius: var(--app-radius-control);
+  background: rgb(var(--app-gold));
+  padding: 0 theme(spacing.2);
+  color: var(--app-dark);
+  font-size: var(--app-text-label);
+  font-weight: var(--app-weight-strong);
+}
 .app-choice__title {
   font-family: var(--app-face-strong);
   font-size: var(--app-text-strong);

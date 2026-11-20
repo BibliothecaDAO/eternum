@@ -80,11 +80,12 @@ fn explorer_relics_charge_the_home_with_second_based_effects() {
 #[test]
 fn production_relics_pay_their_full_window_and_reapplication_replaces_the_bonus() {
     for (weak, strong, resource, first_output, replacement_output) in array![
-        (51_u8, 52_u8, 4_u8, 140_u128, 120_u128), (53, 54, 23, 120, 120), (55, 56, 26, 130, 115),
+        (51_u8, 52_u8, 4_u8, 280_u128, 240_u128), (53, 54, 23, 240, 240), (55, 56, 26, 260, 230),
     ] {
         for replace in array![false, true] {
             let (deployment, home, _) = setup(false);
             grant(deployment, home, 2, 1000);
+            grant(deployment, home, 3, 1000);
             assert!(execute(deployment, apply(home, strong, Recipient::StructureProduction), 47));
             let (end, output) = if replace {
                 assert!(execute(deployment, apply(home, weak, Recipient::StructureProduction), 52));
@@ -92,7 +93,7 @@ fn production_relics_pay_their_full_window_and_reapplication_replaces_the_bonus(
             } else {
                 (77_u64, first_output)
             };
-            let refill = Command::BurnLaborForResourceProduction(
+            let refill = Command::BurnResourceForResourceProduction(
                 crate::production::RefillProduction {
                     structure_id: home.entity_id,
                     resource_types: array![resource].span(),
@@ -105,7 +106,7 @@ fn production_relics_pay_their_full_window_and_reapplication_replaces_the_bonus(
             assert!(execute(deployment, refill, end - 1));
             assert_eq!(resources.resource_production(slot).output_amount_left, output);
             assert!(execute(deployment, refill, end));
-            assert_eq!(resources.resource_production(slot).output_amount_left, output + 100);
+            assert_eq!(resources.resource_production(slot).output_amount_left, output + 200);
             assert_eq!(resources.resource_balance(slot), stored_before);
             assert_eq!(balance(deployment, home, 2), 980);
         }

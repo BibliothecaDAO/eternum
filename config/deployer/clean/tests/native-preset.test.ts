@@ -1,7 +1,11 @@
+import { frontierSeasonOnePreset } from "../../../source/frontier/season-one";
+import { buildingIds } from "../../../source/frontier/native";
+import developmentRelease from "../../../../deploy/release/dev.json";
+import productionRelease from "../../../../deploy/release/production.json";
 import { registerEnvironmentPreset } from "../registrar/register-preset";
 import { buildLedgerEconomicPreset, buildRegisterLedgerPresetCalldata } from "../ledger/economics";
 import { findRegistrarGame } from "../registrar/calls";
-import { nativePresets } from "../../../source/native";
+import { nativeReleasePresets, nativePresets } from "../../../source/native";
 import { afterAll, describe, expect, test, mock, spyOn } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -11,13 +15,14 @@ import schema from "../../../../contracts/l3/world-native/schema/schema.json";
 import {
   nativeResearchConstants as research,
   nativeRuleConstants,
-} from "../../../../contracts/l3/world-native/schema/client.gen";
+} from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
 import { applyDeploymentConfigOverrides } from "../config/config-loader";
 import { buildNativePreset } from "../config/native-preset";
 import {
   FRONTIER_ACCELERATED_PRESET_ID,
   FRONTIER_PRESET_ID,
+  FRONTIER_S1_PRESET_ID,
   FRONTIER_DEVCON_PRESET_ID,
   FRONTIER_FIXTURE_PRESET_ID,
   FRONTIER_PLAYGROUND_PRESET_ID,
@@ -26,7 +31,7 @@ import {
 import { orderLengths, seasonSeconds } from "../../../../packages/core/src/utils/days";
 import { nativePresetIdFor } from "../../../source/native";
 import { clockScaled, seasonDayUnitSeconds } from "../../../source/common/season-clock";
-import { RESOURCE_PRECISION, ResourcesIds } from "../../../../packages/types/src/constants";
+import { RESOURCE_PRECISION, ResourcesIds, deepSites } from "../../../../packages/types/src/constants";
 import {
   buildNativePresetRegistration,
   registerNativePreset,
@@ -54,17 +59,42 @@ writeFileSync(
 afterAll(() => rmSync(directory, { recursive: true }));
 
 function configuration(preset: number) {
-  const config = loadNativePresetConfiguration(preset === 3 ? "madara.eternum" : "madara.blitz", preset);
+  const config = loadNativePresetConfiguration("madara.blitz", preset);
   return config;
 }
 
 describe("native presets", () => {
+  test("release registrations contain only Blitz and nonpaying Season 1", () => {
+    for (const release of [developmentRelease, productionRelease]) {
+      expect(release.presets).toEqual([2, FRONTIER_S1_PRESET_ID]);
+      for (const id of release.presets) expect(nativeReleasePresets[id]!.chests).toBeNull();
+    }
+    for (const id of [FRONTIER_PRESET_ID, FRONTIER_DEVCON_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID])
+      expect(nativeReleasePresets[id]).toBeUndefined();
+    expect(nativeCommandBits).not.toHaveProperty("RefillStamina");
+    expect(nativeCommandBits).not.toHaveProperty("WithdrawLords");
+    const mask = nativePresets[FRONTIER_S1_PRESET_ID]!.commandMask;
+    expect(mask & BigInt(nativeCommandBits.OpenRelicChest)).toBe(0n);
+    expect(mask & BigInt(nativeCommandBits.ApplyRelic)).not.toBe(0n);
+  });
+
+  test("Season 1 grants the two-army start while historical presets retain their stock", () => {
+    for (const id of [FRONTIER_S1_PRESET_ID, FRONTIER_FIXTURE_PRESET_ID, FRONTIER_PRESET_ID]) {
+      const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id);
+      const seasonOne = id !== FRONTIER_PRESET_ID;
+      expect(preset.settlement.realms.resources).toEqual([
+        { resource_type: ResourcesIds.Knight, amount: BigInt(seasonOne ? 3000 : 1500) * BigInt(RESOURCE_PRECISION) },
+        { resource_type: ResourcesIds.Wheat, amount: BigInt(seasonOne ? 6000 : 4500) * BigInt(RESOURCE_PRECISION) },
+        { resource_type: ResourcesIds.Labor, amount: 2000n * BigInt(RESOURCE_PRECISION) },
+      ]);
+    }
+  });
+
   test("the mainnet deployment plan registers only the selected economic preset", async () => {
     const log = spyOn(console, "log").mockImplementation(() => {});
     try {
       for (const [presetId, environmentId] of [
         [2, "madara.blitz"],
-        [3, "madara.eternum"],
         [5, "madara.frontier"],
         [FRONTIER_DEVCON_PRESET_ID, "madara.frontier"],
       ] as const) {
@@ -83,8 +113,8 @@ describe("native presets", () => {
     }
   });
 
-  test("every Frontier preset carries chest rules without a funding amount", () => {
-    for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, FRONTIER_FIXTURE_PRESET_ID]) {
+  test("historical paying presets carry chest rules without a funding amount", () => {
+    for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID]) {
       expect(nativePresets[id]!.chests).not.toHaveProperty("pool");
       const chests = buildNativePreset(
         loadNativePresetConfiguration("madara.frontier", id),
@@ -100,14 +130,13 @@ describe("native presets", () => {
     }
   });
 
-  test("progression presets cannot grant or import relics into an army", () => {
-    const progressionPresets = Object.values(nativePresets).filter(({ progression }) => progression !== null);
-    expect(progressionPresets.length).toBeGreaterThan(0);
-    for (const source of progressionPresets) {
+  test("Frontier presets cannot grant or import resource relics into an army", () => {
+    const frontierPresets = Object.values(nativePresets).filter(({ gameType }) => gameType === "frontier");
+    expect(frontierPresets.length).toBeGreaterThan(0);
+    for (const source of frontierPresets) {
       expect(source.gameType).toBe("frontier");
       const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id);
-      expect(preset.economy.progression.isSome()).toBe(true);
-      expect(preset.economy.chests.isSome()).toBe(true);
+      expect(preset.economy.chests.isSome()).toBe(source.chests !== null);
       expect(preset.rules.day_unit_seconds).toBeGreaterThan(0);
       expect(preset.economy.relics).toEqual([]);
       expect(preset.exploration).toEqual([]);
@@ -119,7 +148,6 @@ describe("native presets", () => {
         "OffloadArrival",
         "SendResources",
         "TransferExplorerResources",
-        "TransferStructureResourcesToExplorer",
         "TransferExplorerResourcesToStructure",
       ] as const) {
         expect(preset.rules.command_mask & BigInt(nativeCommandBits[command])).toBe(0n);
@@ -157,7 +185,7 @@ describe("native presets", () => {
         golden_essence: 0n,
       });
     }
-    for (const id of [2, 3, 4]) expect(buildNativePreset(configuration(id), id).economy.labor.isNone()).toBe(true);
+    for (const id of [2]) expect(buildNativePreset(configuration(id), id).economy.labor.isNone()).toBe(true);
   });
   test.each([-1, 0.5, Number.NaN])("refuses invalid daily home grants (%s)", (invalid) => {
     const labor = nativePresets[FRONTIER_DEVCON_PRESET_ID]!.labor!;
@@ -176,7 +204,7 @@ describe("native presets", () => {
       }
     }
   });
-  test.each([2, 4])(
+  test.each([2])(
     "a fixed-roster realm (preset %i) starts with 1,000 T1 troops garrisoned and 1,000 in reserve, its type dealt",
     (id) => {
       const preset = buildNativePreset(configuration(id), id);
@@ -187,9 +215,7 @@ describe("native presets", () => {
       ).toEqual([26, 29, 32].map((resource_type) => ({ resource_type, amount: 1_000_000_000_000n })));
     },
   );
-  test("Eternum keeps its biome troop table", () => {
-    expect(buildNativePreset(configuration(3), 3).settlement.realms.starting_troops).toHaveLength(17);
-  });
+
   test("Frontier caps daily chest prices without supplying a season duration", () => {
     const config = loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID);
     const preset = buildNativePreset(config, FRONTIER_PRESET_ID);
@@ -203,7 +229,7 @@ describe("native presets", () => {
     expect(config.season.durationSeconds).toBe(0);
   });
 
-  test.each([FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, FRONTIER_FIXTURE_PRESET_ID])(
+  test.each([FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID])(
     "Frontier preset %i removes one chest rarity at each depth and preserves the remaining proportions",
     (id) => {
       const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id);
@@ -227,8 +253,6 @@ describe("native presets", () => {
     for (const [network, id, expected] of [
       ["madara.frontier", 5, 0],
       ["madara.blitz", 2, 60],
-      ["madara.eternum", 3, 60],
-      ["madara.blitz", 4, 60],
     ] as const) {
       const config = loadNativePresetConfiguration(network, id);
       expect(buildNativePreset(config, id).rules.battle_config.cooldown_seconds).toBe(expected);
@@ -243,8 +267,8 @@ describe("native presets", () => {
 
   test("the contract Frontier command gate uses the published mask", () => {
     const preset = buildNativePreset(
-      loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
-      FRONTIER_PRESET_ID,
+      loadNativePresetConfiguration("madara.frontier", FRONTIER_FIXTURE_PRESET_ID),
+      FRONTIER_FIXTURE_PRESET_ID,
     );
     const mask = BigInt(
       readFileSync(
@@ -254,26 +278,11 @@ describe("native presets", () => {
     );
     expect(preset.rules.command_mask).toBe(mask);
     expect(mask & BigInt(nativeCommandBits.InteractSite)).not.toBe(0n);
-    for (const [network, id] of [
-      ["madara.blitz", 2],
-      ["madara.eternum", 3],
-    ] as const) {
+    for (const [network, id] of [["madara.blitz", 2]] as const) {
       const legacy = buildNativePreset(loadNativePresetConfiguration(network, id), id);
       expect(legacy.rules.command_mask & BigInt(nativeCommandBits.InteractSite)).toBe(0n);
     }
-    for (const command of [
-      "CreateTradeOrder",
-      "AcceptTradeOrder",
-      "CancelTradeOrder",
-      "BuyFromBank",
-      "SellToBank",
-      "AddBankLiquidity",
-      "RemoveBankLiquidity",
-      "SendResources",
-      "TransferStructureResourcesToExplorer",
-      "TransferExplorerResourcesToStructure",
-      "WithdrawResource",
-    ] as const)
+    for (const command of ["SendResources", "TransferExplorerResourcesToStructure", "WithdrawResource"] as const)
       expect(mask & BigInt(nativeCommandBits[command])).toBe(0n);
   });
   test("the accelerated Frontier preset is Frontier with every season clock 120 times faster, under its own id", () => {
@@ -307,7 +316,7 @@ describe("native presets", () => {
       expect(preset.exploration).toEqual([]);
       expect(preset.settlement.depths.map(({ reveal_percent }) => reveal_percent)).toEqual([10, 15, 20, 25]);
     }
-    for (const id of [2, 3, 4]) expect(buildNativePreset(configuration(id), id).exploration.length).toBeGreaterThan(0);
+    for (const id of [2]) expect(buildNativePreset(configuration(id), id).exploration.length).toBeGreaterThan(0);
   });
 
   test("Frontier sites carry no flat camp reward or rift-production table", () => {
@@ -335,36 +344,58 @@ describe("native presets", () => {
         [BigInt(price.essence) / precision, BigInt(price.labor) / precision],
       ]),
     );
-    expect(preset.structures.research).toHaveLength(45);
+    expect(preset.structures.research).toHaveLength(42);
     expect(prices).toMatchObject({
       [`${research.ROW_FARM}:1`]: [500n, 500n],
       [`${research.ROW_FARM}:5`]: [30000n, 20000n],
       [`${research.ROW_WORKSHOP}:3`]: [8000n, 6000n],
-      [`${research.ROW_BARRACKS}:4`]: [48000n, 24000n],
       [`${research.ROW_HUT}:5`]: [15000n, 10000n],
-      [`${research.ROW_WAR_HALL}:1`]: [6000n, 1500n],
-      [`${research.ROW_WAR_HALL}:2`]: [16000n, 3000n],
-      [`${research.ROW_HEARTH}:5`]: [360000n, 60000n],
-      [`${research.ROW_SHRINE}:1`]: [2000n, 0n],
-      [`${research.ROW_WELL}:1`]: [6000n, 0n],
-      [`${research.ROW_DEPTH}:1`]: [100000n, 0n],
-      [`${research.ROW_DEPTH}:2`]: [250000n, 0n],
-      [`${research.ROW_DEPTH}:3`]: [500000n, 0n],
+      [`${research.ROW_SUPPLY_YARD}:1`]: [6000n, 1500n],
+      [`${research.ROW_SUPPLY_YARD}:2`]: [16000n, 3000n],
+      [`${research.ROW_SUPPLY_YARD}:5`]: [360000n, 60000n],
+      [`${research.ROW_LORE}:1`]: [2500n, 0n],
+      [`${research.ROW_LORE}:2`]: [5000n, 0n],
+      [`${research.ROW_LORE}:3`]: [10000n, 0n],
     });
+    for (const row of [research.ROW_KNIGHT_OATHS, research.ROW_SCOUT_OATHS, research.ROW_CROSSBOW_OATHS]) {
+      expect([1, 2, 3].map((tier) => prices[`${row}:${tier}`])).toEqual([
+        [5000n, 1000n],
+        [35000n, 7500n],
+        [150000n, 35000n],
+      ]);
+      expect(prices[`${row}:4`]).toBeUndefined();
+    }
+    for (const row of [research.ROW_CONSCRIPTION, research.ROW_RATIONS]) {
+      expect([1, 2, 3, 4, 5].map((tier) => prices[`${row}:${tier}`])).toEqual([
+        [2500n, 500n],
+        [5000n, 1000n],
+        [12500n, 2500n],
+        [25000n, 5000n],
+        [50000n, 12500n],
+      ]);
+    }
+    for (const category of [research.CONSCRIPTION_CAMP, research.RATIONS_DEPOT]) {
+      expect(preset.structures.buildings.find((row) => row.category === category)!.rule.simple_cost).toEqual([
+        { resource_type: 38, amount: 2500n * precision },
+        { resource_type: 23, amount: 500n * precision },
+      ]);
+    }
+    expect(preset.structures.buildings.find((row) => row.category === research.RANGE)!.rule.simple_cost).toEqual([
+      { resource_type: 23, amount: 500n * precision },
+    ]);
     expect(preset.structures.board.unwrap()).toMatchObject({
       output_step_bps: 2000,
       storage_step_bps: 4000,
       population_step_bps: 2000,
       ration_step: precision / 5n,
-      training_gate_tier: 2,
       troop_store_deploys: 2,
       settlement_resource_cap: 6000,
       city_resource_cap: 18000,
       kingdom_resource_cap: 40000,
       empire_resource_cap: 80000,
     });
-    expect(preset.structures.buildings).toHaveLength(research.HEARTH);
-    for (const category of [research.WAR_HALL, research.SUPPLY_YARD, research.SCOUTS_LODGE, research.HEARTH]) {
+    expect(preset.structures.buildings).toHaveLength(buildingIds.length);
+    for (const category of [research.SUPPLY_YARD]) {
       const rule = preset.structures.buildings.find((row) => row.category === category)!.rule;
       expect([rule.population_cost, rule.simple_cost]).toEqual([
         2,
@@ -374,7 +405,7 @@ describe("native presets", () => {
         ],
       ]);
     }
-    for (const category of [31, 34]) {
+    for (const category of [34]) {
       const rule = preset.structures.buildings.find((row) => row.category === category)!.rule;
       expect(rule.simple_cost).toEqual([]);
       expect(rule.complex_cost).toEqual([]);
@@ -385,7 +416,7 @@ describe("native presets", () => {
   });
 
   test("A camp's labor rate is its own rule, at the rate it read from the village before", () => {
-    for (const id of [2, 3, 4]) {
+    for (const id of [2]) {
       const preset = buildNativePreset(configuration(id), id);
       const labor = preset.resources.resources.find(({ resource_type }) => resource_type === 23)!;
       expect(preset.structures.camps.labor_rate).toBe(labor.realm_rate / 2n);
@@ -432,42 +463,27 @@ describe("native presets", () => {
     expect(preset.rules.map_config.camp_win_probability).toBe(0);
     expect(preset.rules.map_config.shards_mines_win_probability).toBe(0);
     expect(
-      preset.settlement.depths.map((depth) => [
-        depth.site_guard_lower,
-        depth.site_guard_upper,
-        depth.ruin_guard_lower,
-        depth.ruin_guard_upper,
-        depth.guard_step,
-      ]),
+      preset.settlement.depths.map((depth) => [depth.site_guard_lower, depth.site_guard_upper, depth.guard_step]),
     ).toEqual([
-      [1200, 1400, 2700, 3300, 100],
-      [2400, 2800, 4900, 6100, 100],
-      [4700, 5700, 9800, 12200, 100],
-      [9300, 11500, 19600, 24400, 100],
+      [1200, 1400, 100],
+      [2400, 2800, 100],
+      [4700, 5700, 100],
+      [9300, 11500, 100],
     ]);
     for (const depth of preset.settlement.depths) {
       expect(depth.site_guard_lower).toBeLessThanOrEqual(depth.site_guard_upper);
-      expect(depth.ruin_guard_lower).toBeLessThanOrEqual(depth.ruin_guard_upper);
-      for (const bound of [
-        depth.site_guard_lower,
-        depth.site_guard_upper,
-        depth.ruin_guard_lower,
-        depth.ruin_guard_upper,
-      ])
-        expect(bound % depth.guard_step).toBe(0);
+      for (const bound of [depth.site_guard_lower, depth.site_guard_upper]) expect(bound % depth.guard_step).toBe(0);
     }
   });
 
-  test("Blitz and Duel carry no labor-paid production, while Frontier trains troops and Eternum keeps its labor path", () => {
+  test("Blitz carries no labor-paid production, while Frontier trains troops", () => {
     const laborPaid = (environment: Parameters<typeof loadNativePresetConfiguration>[0], presetId: number) =>
       buildNativePreset(loadNativePresetConfiguration(environment, presetId), presetId)
         .resources.production.filter(({ recipe }) => recipe.simple_inputs.length > 0)
         .map(({ resource_type }) => resource_type);
 
     expect(laborPaid("madara.blitz", 2)).toEqual([]);
-    expect(laborPaid("madara.blitz", 4)).toEqual([]);
-    expect(laborPaid("madara.frontier", FRONTIER_PRESET_ID)).toEqual([26]);
-    expect(laborPaid("madara.eternum", 3).length).toBeGreaterThan(0);
+    expect(laborPaid("madara.frontier", FRONTIER_PRESET_ID)).toEqual([26, 29]);
   });
 
   test("Frontier carries separate weak and stronger beast ranges at each depth", () => {
@@ -505,18 +521,6 @@ describe("native presets", () => {
       limits.kingdom_guard_slots,
       limits.empire_guard_slots,
     ]).toEqual([0, 0, 0, 0]);
-  });
-
-  test("Frontier disables both dice rules while Blitz, Eternum and Duel preserve Ethereal dice", () => {
-    const diceRules = (environment: Parameters<typeof loadNativePresetConfiguration>[0], presetId: number) => {
-      const mask = buildNativePreset(loadNativePresetConfiguration(environment, presetId), presetId).rules.mode_rules;
-      return [(mask & nativeRuleConstants.COMBAT_DICE) !== 0, (mask & nativeRuleConstants.COMBAT_DICE_ETHEREAL) !== 0];
-    };
-
-    expect(diceRules("madara.frontier", FRONTIER_PRESET_ID)).toEqual([false, false]);
-    expect(diceRules("madara.blitz", 2)).toEqual([false, true]);
-    expect(diceRules("madara.eternum", 3)).toEqual([false, true]);
-    expect(diceRules("madara.blitz", 4)).toEqual([false, true]);
   });
 
   // The HS held rule says a realm settled later counts from the next capture: a capture recounts the realms only where
@@ -566,15 +570,6 @@ describe("native presets", () => {
       stamina_paladin_max: 120,
     });
     expect(design.economy.relics).toEqual([]);
-    expect(design.economy.progression.unwrap()).toEqual({
-      common_xp: 75,
-      reveal_xp: 2,
-      reveal_xp_per_depth: 1,
-      uncommon_xp: 200,
-      rare_xp: 400,
-      epic_xp: 800,
-      legendary_xp: 1500,
-    });
     expect(design.settlement.realms.resources).toEqual([
       { resource_type: 26, amount: 1_500_000_000_000n },
       { resource_type: 35, amount: 4_500_000_000_000n },
@@ -585,6 +580,7 @@ describe("native presets", () => {
       [26, 100.8],
       [27, 0],
       [28, 0],
+      [29, 100],
       [35, 302.4],
       [23, 100.8],
     ]) {
@@ -595,7 +591,10 @@ describe("native presets", () => {
       expect(production.recipe.simple_inputs).toEqual([{ resource_type: 35, amount: 2_000_000_000n }]);
       expect(perHour(resource) * 2).toBeCloseTo(201.6, 5);
     }
-    for (const resource of [27, 28, 29, 30, 31, 32, 33, 34]) {
+    expect(design.resources.production.find(({ resource_type }) => resource_type === 29)!.recipe.simple_inputs).toEqual(
+      [{ resource_type: 35, amount: 2_000_000_000n }],
+    );
+    for (const resource of [27, 28, 30, 31, 32, 33, 34]) {
       const production = design.resources.production.find(({ resource_type }) => resource_type === resource)!;
       expect(production.recipe.simple_inputs).toEqual([]);
       expect(production.recipe.simple_output).toBe(0n);
@@ -620,24 +619,29 @@ describe("native presets", () => {
   });
 
   test("every preset id names the mode it plays, and an unknown id fails by name", () => {
-    expect([1, 2, 3, 4, FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, 102].map(nativeGameModeOf)).toEqual([
+    expect([1, 2, FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, 102].map(nativeGameModeOf)).toEqual([
       "frontier",
       "blitz",
-      "eternum",
-      "duel",
       "frontier",
       "frontier",
       "frontier",
     ]);
+    expect(() => nativeGameModeOf(4)).toThrow("Unknown native preset 4");
+    expect(() => loadNativePresetConfiguration("madara.blitz", 4)).toThrow("Unsupported native preset 4");
     expect(() => nativeGameModeOf(9)).toThrow("Unknown native preset 9");
-    expect(nativeGameModeOf(103)).toBe("eternum");
+    for (const retired of [3, 103]) {
+      expect(() => nativeGameModeOf(retired)).toThrow(`Unknown native preset ${retired}`);
+      expect(() => loadNativePresetConfiguration("madara.blitz", retired)).toThrow(
+        `Unsupported native preset ${retired}`,
+      );
+    }
     expect(nativeGameModeOf(104)).toBe("frontier");
     expect(nativeGameModeOf(105)).toBe("frontier");
     expect(() => nativeGameModeOf(106)).toThrow("Unknown native preset 106");
   });
 
   test("native balances and mine ladders come only from the selected sheet", () => {
-    const config = configuration(3);
+    const config = configuration(2);
     config.bitcoin = { prizePerPhase: 7, minimumLabor: 123, ownerCutBps: 1500 };
     config.mines!.kinds[1] = {
       resourceType: 38,
@@ -647,10 +651,10 @@ describe("native presets", () => {
       capSteps: 3,
     };
     config.mines!.surfacePool = [{ kind: 1, weight: 4 }];
-    const definition = buildNativePreset(config, 3);
+    const definition = buildNativePreset(config, 2);
     expect(definition.rules.bitcoin_mine_config).toEqual({
-      enabled: true,
-      prize_per_phase: 7_000000000n,
+      enabled: false,
+      prize_per_phase: 0n,
       min_labor_per_contribution: 123_000000000n,
       owner_cut_bps: 1500,
     });
@@ -665,39 +669,40 @@ describe("native presets", () => {
   });
 
   test("missing balances and malformed mine pools fail before registration", () => {
-    const config = configuration(3);
+    const config = configuration(2);
     delete config.bitcoin;
-    expect(() => buildNativePreset(config, 3)).toThrow("Bitcoin balance config");
-    config.bitcoin = configuration(3).bitcoin;
+    expect(() => buildNativePreset(config, 2)).toThrow("Bitcoin balance config");
+    config.bitcoin = configuration(2).bitcoin;
     delete config.mines;
-    expect(() => buildNativePreset(config, 3)).toThrow("Mine balance config");
-    config.mines = configuration(3).mines;
+    expect(() => buildNativePreset(config, 2)).toThrow("Mine balance config");
+    config.mines = configuration(2).mines;
     config.mines!.surfacePool = [{ kind: 99, weight: 1 }];
-    expect(() => buildNativePreset(config, 3)).toThrow("Invalid mine pool");
+    expect(() => buildNativePreset(config, 2)).toThrow("Invalid mine pool");
     config.mines!.surfacePool = [];
-    expect(() => buildNativePreset(config, 3)).toThrow("requires a pool");
+    expect(() => buildNativePreset(config, 2)).toThrow("requires a pool");
   });
 
   test("large resource amounts retain bigint precision and missing balance entries fail", () => {
-    const config = configuration(3);
-    expect(buildNativePreset(config, 3).economy.hyperstructures.initialize_shards).toBe(20_000_000_000000000n);
+    const config = configuration(2);
+    config.hyperstructures.hyperstructureInitializationShardsCost.amount = 20_000_000;
+    expect(buildNativePreset(config, 2).economy.hyperstructures.initialize_shards).toBe(20_000_000_000000000n);
     delete (config.resources.resourceWeightsGrams as Partial<Record<number, number>>)[3];
-    expect(() => buildNativePreset(config, 3)).toThrow("Missing resource weight for 3");
+    expect(() => buildNativePreset(config, 2)).toThrow("Missing resource weight for 3");
   });
 
   test("building a changed preset cannot mutate the next definition's tables", () => {
-    const first = buildNativePreset(configuration(3), 3);
+    const first = buildNativePreset(configuration(2), 2);
     first.settlement.villages.resource_pool[0].weight = 1;
     first.economy.relics[0].rate_bps = 1;
     first.settlement.realms.realm_resources.length = 0;
-    const next = buildNativePreset(configuration(3), 3);
+    const next = buildNativePreset(configuration(2), 2);
     expect(next.settlement.villages.resource_pool[0].weight).toBe(19815);
     expect(next.economy.relics[0].rate_bps).toBe(5000);
     expect(next.settlement.realms.realm_resources).toHaveLength(9);
   });
 
   test("registration reads the current commitment and refuses a registered id locally", async () => {
-    const registration = buildNativePresetRegistration(buildNativePreset(configuration(3), 3), 1, manifestPath);
+    const registration = buildNativePresetRegistration(buildNativePreset(configuration(2), 2), 1, manifestPath);
     let commitment = registration.commitment;
     const account = {
       getBlockNumber: async () => 10,
@@ -739,36 +744,36 @@ describe("native presets", () => {
   });
 });
 
-test("rejects missing Eternum rules and bridge tokens before registration", () => {
-  for (const [mutation, error] of [
-    [
-      (config) => {
-        delete config.faith;
-      },
-      "Native faith config is required",
-    ],
-    [
-      (config) => {
-        delete config.artificer;
-      },
-      "Native research cost",
-    ],
-    [
-      (config) => {
-        delete (config.setup!.addresses as { resources?: unknown }).resources;
-      },
-      "Eternum bridge resource tokens",
-    ],
-    [
-      (config) => {
-        config.setup!.addresses.lords = "0x0";
-      },
-      "Missing bridge token for resource 37",
-    ],
-  ] as Array<[(config: ReturnType<typeof configuration>) => void, string]>) {
-    const config = configuration(3);
-    mutation(config);
-    expect(() => buildNativePreset(config, 3)).toThrow(error);
+test("rejects missing research costs and bridge tokens before registration", () => {
+  const previous = nativePresets[2]!.bridgeResources;
+  nativePresets[2]!.bridgeResources = [37];
+  try {
+    for (const [mutation, error] of [
+      [
+        (config) => {
+          delete config.artificer;
+        },
+        "Native research cost",
+      ],
+      [
+        (config) => {
+          delete (config.setup!.addresses as { resources?: unknown }).resources;
+        },
+        "Bridge resource tokens",
+      ],
+      [
+        (config) => {
+          config.setup!.addresses.lords = "0x0";
+        },
+        "Missing bridge token for resource 37",
+      ],
+    ] as Array<[(config: ReturnType<typeof configuration>) => void, string]>) {
+      const config = configuration(2);
+      mutation(config);
+      expect(() => buildNativePreset(config, 2)).toThrow(error);
+    }
+  } finally {
+    nativePresets[2]!.bridgeResources = previous;
   }
 });
 describe("fixed Regular Blitz rosters", () => {
@@ -788,7 +793,6 @@ describe("fixed Regular Blitz rosters", () => {
     durationSeconds: 3600,
     devModeOn: false,
     singleRealmMode: false,
-    twoPlayerMode: false,
     useMapOverride: false,
   };
   test("a fixed-roster game is never created outside its closed slot", () => {
@@ -827,8 +831,13 @@ describe("scaled Frontier presets", () => {
       const ledger = buildLedgerEconomicPreset("frontier", { presetId });
       expect(world.rules.day_unit_seconds).toBe(dayUnit);
       expect(ledger.day_unit_seconds).toBe(dayUnit);
-      expect(world.economy.chests.unwrap()).toMatchObject({ claim_window_seconds: 604_800 });
-      expect(ledger.claim_window_seconds).toBe(604_800);
+      if (presetId === FRONTIER_FIXTURE_PRESET_ID || presetId === FRONTIER_PLAYGROUND_PRESET_ID) {
+        expect(world.economy.chests.isNone()).toBe(true);
+        expect(ledger.claim_window_seconds).toBe(0);
+      } else {
+        expect(world.economy.chests.unwrap()).toMatchObject({ claim_window_seconds: 604_800 });
+        expect(ledger.claim_window_seconds).toBe(604_800);
+      }
     }
   });
 
@@ -847,13 +856,12 @@ describe("Devcon's fast Frontier preset", () => {
     const normal = definition(FRONTIER_PRESET_ID);
     const fast = definition(FRONTIER_DEVCON_PRESET_ID);
     expect(nativeGameModeOf(FRONTIER_DEVCON_PRESET_ID)).toBe("frontier");
-    expect(nativePresetIdFor("frontier")).toBe(FRONTIER_PRESET_ID);
+    expect(nativePresetIdFor("frontier")).toBe(FRONTIER_S1_PRESET_ID);
     expect(fast.rules.tick_config.armies_tick_in_seconds).toBe(40);
     expect(fast.rules.troop_stamina_config).toEqual(normal.rules.troop_stamina_config);
     expect(fast.settlement.realms.resources).toEqual(normal.settlement.realms.resources);
     expect(fast.structures.buildings).toEqual(normal.structures.buildings);
     expect(fast.structures.upgrades).toEqual(normal.structures.upgrades);
-    expect(fast.economy.progression).toEqual(normal.economy.progression);
     expect(fast.resources.resources).toEqual(
       normal.resources.resources.map((resource) => ({
         ...resource,
@@ -876,14 +884,7 @@ describe("Devcon's fast Frontier preset", () => {
       golden_amount: 2_000n,
       golden_essence: 2_000n,
     });
-    expect(fast.structures.research.filter(({ row }) => row === research.ROW_DEPTH).map(({ price }) => price)).toEqual([
-      { essence: 20_000_000_000_000n, labor: 0n },
-      { essence: 50_000_000_000_000n, labor: 0n },
-      { essence: 100_000_000_000_000n, labor: 0n },
-    ]);
-    expect(fast.structures.research.filter(({ row }) => row !== research.ROW_DEPTH)).toEqual(
-      normal.structures.research.filter(({ row }) => row !== research.ROW_DEPTH),
-    );
+    expect(fast.structures.research).toEqual(normal.structures.research);
   });
 
   test("registers Devcon's 70-percent chest split and top three without changing normal Frontier", () => {
@@ -934,7 +935,6 @@ describe("Devcon's fast Frontier preset", () => {
       durationSeconds,
       devModeOn: false,
       singleRealmMode: false,
-      twoPlayerMode: false,
       useMapOverride: false,
     });
     expect(params.preset_id).toBe(6);
@@ -953,7 +953,7 @@ describe("the Frontier playground preset", () => {
 
   test("plays Frontier under its own id, which the launcher never creates from", () => {
     expect(nativeGameModeOf(FRONTIER_PLAYGROUND_PRESET_ID)).toBe("frontier");
-    expect(nativePresetIdFor("frontier")).toBe(FRONTIER_PRESET_ID);
+    expect(nativePresetIdFor("frontier")).toBe(FRONTIER_S1_PRESET_ID);
     expect(
       buildNativePresetRegistration(
         definition(FRONTIER_PLAYGROUND_PRESET_ID),
@@ -965,13 +965,15 @@ describe("the Frontier playground preset", () => {
     );
   });
 
-  test("keeps Frontier's rules, clocks, depths and research prices in Essence; only its stock and labor prices differ", () => {
+  test("keeps Season 1's rules, clocks, depths, Deep and research prices in Essence; only its stock and labor prices differ", () => {
     const playground = definition(FRONTIER_PLAYGROUND_PRESET_ID);
+    const season = definition(FRONTIER_S1_PRESET_ID);
     const frontier = definition(FRONTIER_PRESET_ID);
-    expect(playground.rules).toEqual(frontier.rules);
-    expect(playground.settlement.depths).toEqual(frontier.settlement.depths);
+    expect(playground.rules).toEqual(season.rules);
+    expect(playground.settlement.depths).toEqual(season.settlement.depths);
+    expect(playground.economy.deep.unwrap()).toEqual(season.economy.deep.unwrap());
     expect(playground.structures.research.map(({ price }) => price.essence)).toEqual(
-      frontier.structures.research.map(({ price }) => price.essence),
+      season.structures.research.map(({ price }) => price.essence),
     );
     expect(playground.structures.research.every(({ price }) => price.labor === 0n)).toBe(true);
     expect(playground.structures.upgrades.map(({ costs }) => costs.map(({ amount }) => whole(amount)))).toEqual([
@@ -984,7 +986,7 @@ describe("the Frontier playground preset", () => {
     expect(frontier.settlement.realms.resources.map(({ amount }) => whole(amount))).toEqual([1_500, 4_500, 2_000]);
   });
 
-  test("starts a realm with Essence for every research tier, Ethereal III included, and its castle's stores full", () => {
+  test("starts a realm with Essence for every research tier, Spire lore included, and its castle's stores full", () => {
     const playground = definition(FRONTIER_PLAYGROUND_PRESET_ID);
     const start = new Map(
       playground.settlement.realms.resources.map(({ resource_type, amount }) => [resource_type, whole(amount)]),
@@ -993,7 +995,7 @@ describe("the Frontier playground preset", () => {
       (sum, { price }) => sum + whole(price.essence),
       0,
     );
-    expect(essenceForEveryTier).toBe(3_510_250);
+    expect(essenceForEveryTier).toBe(1_517_750);
     expect(start.get(ResourcesIds.Essence)).toBeGreaterThan(essenceForEveryTier);
     // A castle stores two full deploys of its level; a Settlement's stores hold what the realm starts with, no more.
     const config = load(FRONTIER_PLAYGROUND_PRESET_ID);
@@ -1011,28 +1013,346 @@ test("Frontier discoveries use the approved narrow guard ranges at every depth",
     FRONTIER_DEVCON_PRESET_ID,
   );
   expect(preset.economy.discovery.unwrap()).toMatchObject({ ruin_bps: 300 });
-  expect(
-    preset.settlement.depths.map((row) => [
-      row.site_guard_lower,
-      row.site_guard_upper,
-      row.ruin_guard_lower,
-      row.ruin_guard_upper,
-    ]),
-  ).toEqual([
-    [1200, 1400, 2700, 3300],
-    [2400, 2800, 4900, 6100],
-    [4700, 5700, 9800, 12200],
-    [9300, 11500, 19600, 24400],
+  expect(preset.settlement.depths.map((row) => [row.site_guard_lower, row.site_guard_upper])).toEqual([
+    [1200, 1400],
+    [2400, 2800],
+    [4700, 5700],
+    [9300, 11500],
   ]);
   for (const row of preset.settlement.depths) {
     expect(row).not.toHaveProperty("entry_stamina");
     for (const [lower, upper] of [
       [row.site_guard_lower, row.site_guard_upper],
-      [row.ruin_guard_lower, row.ruin_guard_upper],
       [row.beast_weak_lower, row.beast_weak_upper],
       [row.beast_strong_lower, row.beast_strong_upper],
     ]) {
       expect(upper / lower).toBeLessThanOrEqual(1.25);
     }
+  }
+});
+
+test("Season 1 and its check preset share the canonical Aspect mapping", () => {
+  const season = buildNativePreset(
+    loadNativePresetConfiguration("madara.frontier", FRONTIER_S1_PRESET_ID),
+    FRONTIER_S1_PRESET_ID,
+  );
+  expect(season.settlement.order_aspects).toEqual([1, 2, 3, 4, 4, 3, 4, 4, 1, 2, 2, 1, 1, 3, 3, 2]);
+  expect(nativePresets[FRONTIER_FIXTURE_PRESET_ID]!.orderAspects).toEqual(season.settlement.order_aspects);
+  expect(nativePresets[FRONTIER_PLAYGROUND_PRESET_ID]!.orderAspects).toEqual(season.settlement.order_aspects);
+  for (const preset of Object.values(nativePresets).filter(
+    ({ id }) => ![FRONTIER_S1_PRESET_ID, FRONTIER_FIXTURE_PRESET_ID, FRONTIER_PLAYGROUND_PRESET_ID].includes(id),
+  ))
+    expect(preset.orderAspects).toEqual([]);
+});
+
+const deepFixture = () => structuredClone(frontierSeasonOnePreset.deep);
+
+test("an optional Deep preset serializes its rings, its beasts in kind order and resource precision", () => {
+  const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
+  const previous = source.deep;
+  try {
+    const deep = deepFixture();
+    source.deep = deep;
+    const built = buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id);
+    const scaled = (amount: number) => BigInt(amount) * BigInt(RESOURCE_PRECISION);
+    expect(built.economy.deep.unwrap()).toEqual({
+      gate_distance: deep.gateDistance,
+      rings: deep.rings,
+      beasts: deepSites.map(({ key }) => ({ count: scaled(deep.beasts[key].count), bow: deep.beasts[key].bow })),
+      loss_per_tick: scaled(deep.lossPerTick),
+      core_per_tick: scaled(deep.corePerTick),
+      mine_per_tick: scaled(deep.minePerTick),
+      building_pay: deep.buildingPay,
+      altar_threshold: deep.altarThreshold,
+    });
+    codec.compile("register_preset", { preset_id: source.id, definition: built });
+  } finally {
+    source.deep = previous;
+  }
+});
+
+test("the Deep codec refuses fractional or empty amounts", () => {
+  const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
+  const previous = source.deep;
+  const fixture = deepFixture();
+  const malformed = [
+    { ...fixture, beasts: { ...fixture.beasts, core: { count: 0, bow: true } } },
+    { ...fixture, rings: [{ radius: 0, realms: 0 }] },
+    { ...fixture, gateDistance: 0 },
+    { ...fixture, lossPerTick: 0.5 },
+    { ...fixture, corePerTick: 0 },
+    { ...fixture, buildingPay: { alone: 6, pair: 3, crowd: 0 } },
+    { ...fixture, buildingPay: { alone: 6, pair: 7, crowd: 2 } },
+    { ...fixture, buildingPay: { alone: 6, pair: 3, crowd: 2.5 } },
+    { ...fixture, altarThreshold: 0 },
+  ];
+  try {
+    for (const deep of malformed) {
+      source.deep = deep;
+      expect(() => buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id)).toThrow(
+        "Invalid Deep",
+      );
+    }
+  } finally {
+    source.deep = previous;
+  }
+});
+
+const questFixture = () => ({ baseCounts: [1, 1, 1, 1, 1, 2, 15], labor: 1000, essence: 1500, bonusPercent: 150 });
+
+test("the daily quest codec replaces legacy labor and preserves whole reward units", () => {
+  const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
+  const previous = { dailyQuest: source.dailyQuest, labor: source.labor };
+  try {
+    source.dailyQuest = questFixture();
+    expect(() => buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id)).toThrow(
+      "replace labor",
+    );
+    source.labor = null;
+    const built = buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id);
+    expect(built.economy.labor.isNone()).toBe(true);
+    expect(built.economy.quests.unwrap()).toEqual({
+      base_counts: [1, 1, 1, 1, 1, 2, 15],
+      labor: 1000n,
+      essence: 1500n,
+      bonus_percent: 150,
+    });
+    codec.compile("register_preset", { preset_id: source.id, definition: built });
+    for (const invalid of [
+      { ...questFixture(), baseCounts: [1] },
+      { ...questFixture(), baseCounts: [1, 1, 1, 0, 1, 2, 15] },
+      { ...questFixture(), baseCounts: [1, 1, 1, 1, 1, 2, 0x1_0000_0000] },
+      { ...questFixture(), labor: 0 },
+      { ...questFixture(), essence: 0.5 },
+      { ...questFixture(), bonusPercent: 99 },
+      { ...questFixture(), bonusPercent: 0x1_0000 },
+    ]) {
+      source.dailyQuest = invalid;
+      expect(() => buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id)).toThrow(
+        "Invalid daily quest",
+      );
+    }
+  } finally {
+    Object.assign(source, previous);
+  }
+});
+
+const baneFixture = () => ({
+  chanceStep: 20,
+  quorumPercent: 25,
+  beastPercent: 150,
+  staminaPercent: 50,
+  productionPercent: 50,
+  questCounts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10000, 15000],
+});
+
+test("the bane codec preserves whole quest units and refuses invalid effects", () => {
+  const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
+  const previous = { banes: source.banes, dailyQuest: source.dailyQuest, labor: source.labor };
+  try {
+    source.banes = baneFixture();
+    expect(() => buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id)).toThrow(
+      "Banes require daily quests",
+    );
+    source.dailyQuest = questFixture();
+    source.labor = null;
+    const built = buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id);
+    expect(built.economy.banes.unwrap()).toEqual({
+      chance_step: 20,
+      quorum_percent: 25,
+      beast_percent: 150,
+      stamina_percent: 50,
+      production_percent: 50,
+      quest_counts: [3n, 6n, 9n, 12n, 20n, 40n, 60n, 80n, 2500n, 6000n, 10000n, 15000n],
+    });
+    codec.compile("register_preset", { preset_id: source.id, definition: built });
+    for (const invalid of [
+      { ...baneFixture(), chanceStep: 0 },
+      { ...baneFixture(), chanceStep: 101 },
+      { ...baneFixture(), quorumPercent: 0 },
+      { ...baneFixture(), quorumPercent: 101 },
+      { ...baneFixture(), beastPercent: 99 },
+      { ...baneFixture(), beastPercent: 0x1_0000 },
+      { ...baneFixture(), staminaPercent: 0 },
+      { ...baneFixture(), staminaPercent: 101 },
+      { ...baneFixture(), productionPercent: 0 },
+      { ...baneFixture(), productionPercent: 101 },
+      { ...baneFixture(), chanceStep: 0.5 },
+      { ...baneFixture(), questCounts: [3] },
+      { ...baneFixture(), questCounts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10000, 0] },
+      { ...baneFixture(), questCounts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10000, 0.5] },
+    ]) {
+      source.banes = invalid;
+      expect(() => buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id)).toThrow(
+        "Invalid bane",
+      );
+    }
+  } finally {
+    Object.assign(source, previous);
+  }
+});
+
+const raceFixture = (): NonNullable<(typeof nativePresets)[number]["race"]> => ({
+  seasonDays: 50,
+  stageHeight: 2_000,
+  clearMistPercent: 200,
+  secondWindPercent: 200,
+  paleMoonPercent: 50,
+  spoilsPercent: 200,
+});
+
+test("the race codec preserves its season length, stages and Triumph rates", () => {
+  const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
+  const previous = { race: source.race, deep: source.deep };
+  try {
+    source.race = raceFixture();
+    source.deep = deepFixture();
+    const built = buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id);
+    expect(built.economy.race.unwrap()).toEqual({
+      season_days: 50n,
+      stage_height: 2_000,
+      clear_mist_percent: 200,
+      second_wind_percent: 200,
+      pale_moon_percent: 50,
+      spoils_percent: 200,
+    });
+    codec.compile("register_preset", { preset_id: source.id, definition: built });
+  } finally {
+    Object.assign(source, previous);
+  }
+});
+
+test("the race codec refuses missing Deep rules, malformed amounts and effects", () => {
+  const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
+  const previous = { race: source.race, deep: source.deep };
+  const malformed = [
+    { ...raceFixture(), seasonDays: 0 },
+    { ...raceFixture(), seasonDays: 49 },
+    { ...raceFixture(), stageHeight: 5 },
+    { ...raceFixture(), stageHeight: 0xffff_ffff },
+    { ...raceFixture(), clearMistPercent: 99 },
+    { ...raceFixture(), secondWindPercent: 201 },
+    { ...raceFixture(), paleMoonPercent: 0 },
+    { ...raceFixture(), spoilsPercent: 99 },
+  ] satisfies NonNullable<(typeof nativePresets)[number]["race"]>[];
+  try {
+    source.race = raceFixture();
+    source.deep = null;
+    expect(() => buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id)).toThrow(
+      "Race requires the Deep",
+    );
+    source.deep = deepFixture();
+    for (const race of malformed) {
+      source.race = race;
+      expect(() => buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id)).toThrow();
+    }
+  } finally {
+    Object.assign(source, previous);
+  }
+});
+
+test("Clear Mist must fit one categorical discovery draw", () => {
+  const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
+  const previous = { race: source.race, deep: source.deep, discovery: source.discovery };
+  try {
+    source.race = null;
+    source.deep = deepFixture();
+    source.discovery = { ...source.discovery!, beastsBps: 4000 };
+    const configuration = loadNativePresetConfiguration("madara.frontier", source.id);
+    expect(() => buildNativePreset(configuration, source.id)).not.toThrow();
+    source.race = raceFixture();
+    expect(() => buildNativePreset(configuration, source.id)).toThrow("Invalid categorical discovery rules");
+  } finally {
+    Object.assign(source, previous);
+  }
+});
+
+test("race registration excludes generated and reserved hyperstructures", () => {
+  const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
+  const previous = { race: source.race, deep: source.deep, modeRules: source.modeRules };
+  try {
+    source.race = raceFixture();
+    source.deep = deepFixture();
+    for (const flag of [nativeRuleConstants.DISCOVER_HYPERSTRUCTURES, nativeRuleConstants.RESERVED_HYPERSTRUCTURES]) {
+      source.modeRules = previous.modeRules | flag;
+      expect(() => buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id)).toThrow(
+        "Race has no map hyperstructures",
+      );
+    }
+  } finally {
+    Object.assign(source, previous);
+  }
+});
+
+test("preset 7 activates the complete Slice 1 rules while fixtures and historical definitions stay isolated", () => {
+  for (const source of Object.values(nativePresets)) {
+    const environment = source.gameType === "blitz" ? "madara.blitz" : "madara.frontier";
+    const built = buildNativePreset(loadNativePresetConfiguration(environment, source.id), source.id);
+    const active = source.id === FRONTIER_S1_PRESET_ID;
+    const followsSeason = active || source.id === FRONTIER_PLAYGROUND_PRESET_ID;
+    const seasonShaped = followsSeason || source.id === FRONTIER_FIXTURE_PRESET_ID;
+    for (const name of ["deep", "race"] as const) expect(built.economy[name].isSome()).toBe(seasonShaped);
+    for (const name of ["quests", "banes"] as const) expect(built.economy[name].isSome()).toBe(followsSeason);
+    if (!active) continue;
+    expect(source.dailyQuest).toEqual(questFixture());
+    expect(source.banes).toEqual(baneFixture());
+    expect(source.deep).toEqual(deepFixture());
+    expect(source.race).toEqual(raceFixture());
+    expect(built.economy.labor.isNone()).toBe(true);
+    expect(built.economy.chests.isNone()).toBe(true);
+    expect(built.rules.mode_rules & nativeRuleConstants.DISCOVER_SPIRES).not.toBe(0);
+    for (const command of [
+      "ClaimDailyQuest",
+      "Battle",
+      "BattleGuard",
+      "ApplyRelic",
+      "InteractSite",
+      "MarkGameSettled",
+    ] as const)
+      expect(built.rules.command_mask & BigInt(nativeCommandBits[command])).not.toBe(0n);
+    expect(built.rules.troop_stamina_config).toMatchObject({
+      stamina_initial: 180,
+      stamina_knight_max: 180,
+      stamina_crossbowman_max: 180,
+      stamina_paladin_max: 180,
+      stamina_defense_req: 0,
+    });
+    expect(built.rules.troop_limit_config.explore_reward_strength_cap).toBe(10000);
+    const scouts = built.resources.production.find(({ resource_type }) => resource_type === 32)!.recipe;
+    expect(scouts.simple_inputs).toEqual([{ resource_type: 35, amount: 2_000_000_000n }]);
+    expect(scouts.simple_output).toBe(1_000_000_000n);
+    expect((Number(scouts.complex_output) * 3600) / 1e9).toBeCloseTo(100, 5);
+    expect(built.structures.buildings.find(({ category }) => category === 43)!.rule.simple_cost).toEqual([
+      { resource_type: 23, amount: 500_000_000_000n },
+    ]);
+    expect(
+      built.settlement.depths.map((row) => [
+        row.beast_weak_lower,
+        row.beast_weak_upper,
+        row.beast_strong_lower,
+        row.beast_strong_upper,
+      ]),
+    ).toEqual([
+      [315, 385, 405, 495],
+      [630, 770, 810, 990],
+      [1260, 1540, 1620, 1980],
+      [2520, 3080, 3240, 3960],
+    ]);
+    expect(built.settlement.depths.map((row) => [row.site_guard_lower, row.site_guard_upper, row.guard_step])).toEqual([
+      [1170, 1430, 10],
+      [2340, 2860, 10],
+      [4680, 5720, 10],
+      [9360, 11440, 10],
+    ]);
+    expect(
+      built.settlement.depths
+        .slice(0, 3)
+        .map(({ chest }) => [chest.common, chest.uncommon, chest.rare, chest.epic, chest.legendary]),
+    ).toEqual([
+      [6000, 3000, 1000, 0, 0],
+      [0, 6000, 3000, 1000, 0],
+      [0, 0, 6000, 3000, 1000],
+    ]);
+    codec.compile("register_preset", { preset_id: source.id, definition: built });
   }
 });

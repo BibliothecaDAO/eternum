@@ -11,7 +11,6 @@ export interface Probe {
 export interface Target {
   url: string;
   chainId: string;
-  status: string;
 }
 interface Component extends Probe {
   since: number;

@@ -16,6 +16,7 @@ function game(store: NativeFactStore, endAt = 100) {
         dev_mode_on: false,
         start_settling_at: 1,
         start_main_at: 2,
+        scheduled_end_at: endAt,
         end_at: endAt,
         end_grace_seconds: 10,
         seed: 0,

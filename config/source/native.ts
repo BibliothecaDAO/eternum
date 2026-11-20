@@ -1,8 +1,8 @@
+import { nativeRuleConstants } from "../../contracts/l3/world-native/schema/balance.gen";
+import { frontierSeasonOnePreset } from "./frontier/season-one";
 import { buildingIds, frontierPreset } from "./frontier/native";
 import { frontierDevconPreset } from "./frontier/devcon";
 import { blitzPreset } from "./blitz/native";
-import { eternumPreset } from "./eternum/native";
-import { duelPreset } from "./duel/native";
 import type { NativePreset } from "./common/native-preset";
 import {
   FRONTIER_ACCELERATED_PRESET_ID,
@@ -14,10 +14,8 @@ import { ResourcesIds } from "../../packages/types/src/constants";
 import type { GameType } from "./common/types";
 
 const modes: Record<GameType, NativePreset> = {
-  frontier: frontierPreset,
+  frontier: frontierSeasonOnePreset,
   blitz: blitzPreset,
-  eternum: eternumPreset,
-  duel: duelPreset,
 };
 /**
  * Frontier 120 times faster, for automated tests only: a 1 s armies tick and a 120 s day unit, so its drawn days last 4
@@ -30,8 +28,16 @@ const frontierAcceleratedPreset: NativePreset = {
 };
 
 const frontierFixturePreset: NativePreset = {
-  ...frontierPreset,
+  ...frontierSeasonOnePreset,
   id: FRONTIER_FIXTURE_PRESET_ID,
+  balance: {
+    buildings: frontierSeasonOnePreset.balance.buildings,
+    startingResources: frontierSeasonOnePreset.balance.startingResources,
+  },
+  modeRules: frontierPreset.modeRules & ~nativeRuleConstants.DISCOVER_CHESTS,
+  dailyQuest: frontierPreset.dailyQuest,
+  banes: frontierPreset.banes,
+  labor: frontierPreset.labor,
 };
 
 /** Labor, wheat and troops a Settlement's castle stores: two full deploys of its level. A grant above it is lost. */
@@ -46,10 +52,11 @@ const PLAYGROUND_ESSENCE = 5_000_000;
  * does there is played through the real game; only prices and the starting stock differ.
  */
 const frontierPlaygroundPreset: NativePreset = {
-  ...frontierPreset,
+  ...frontierSeasonOnePreset,
   id: FRONTIER_PLAYGROUND_PRESET_ID,
-  research: frontierPreset.research.map((tier) => ({ ...tier, laborCost: 0 })),
+  research: frontierSeasonOnePreset.research.map((tier) => ({ ...tier, laborCost: 0 })),
   balance: {
+    ...frontierSeasonOnePreset.balance,
     startingResources: [
       { resource: ResourcesIds.Essence, amount: PLAYGROUND_ESSENCE },
       { resource: ResourcesIds.Labor, amount: SETTLEMENT_STORE },
@@ -66,6 +73,7 @@ const frontierPlaygroundPreset: NativePreset = {
 export const nativePresets: Record<number, NativePreset> = Object.fromEntries(
   [
     ...Object.values(modes),
+    frontierPreset,
     frontierDevconPreset,
     frontierAcceleratedPreset,
     frontierFixturePreset,
@@ -75,6 +83,11 @@ export const nativePresets: Record<number, NativePreset> = Object.fromEntries(
       throw new Error(`Native preset ${preset.id} plays ${preset.gameType}, not ${nativeGameModeOf(preset.id)}`);
     return [preset.id, preset];
   }),
+);
+
+/** Definitions supported by this release; historical paying presets remain available for decoding. */
+export const nativeReleasePresets: Record<number, NativePreset> = Object.fromEntries(
+  Object.entries(nativePresets).filter(([, preset]) => preset.chests === null),
 );
 
 export function nativePresetForId(id: number): NativePreset {

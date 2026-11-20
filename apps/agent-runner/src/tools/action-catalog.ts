@@ -86,10 +86,10 @@ export const ACTION_CATALOG: Record<ActionName, ActionCatalogEntry> = {
       structureId: EntityId("The explorer's home structure."),
       explorerId: EntityId("The explorer to reinforce."),
       troopCount: TroopCount,
-      homeDirection: HexDirection,
+      supplyPost: Type.Optional(EntityId("Cleared camp used for reinforcement instead of the home tile.")),
     }),
     preconditions:
-      "The explorer is adjacent to the structure in homeDirection; the structure holds enough troops of the explorer's type and tier.",
+      "The explorer is adjacent to its home or supplyPost, a camp its home cleared today above the Deep; the home holds enough troops of the explorer's type and tier.",
     submits: true,
   },
   addTroopsToGuard: {

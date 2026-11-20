@@ -5,16 +5,25 @@ use crate::math::PercentageValueImpl;
 use crate::rules::{RESOURCE_PRECISION, TroopDamageConfig, TroopStaminaConfig};
 use crate::stamina::StaminaSourceTrait;
 use crate::troops::{TroopTier, TroopType, Troops};
+/// The last entity this army attacked. Entity zero means no attack yet.
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct ArmyCombat {
+    pub last_target: u64,
+}
+
 #[derive(Copy, Drop, Serde)]
 pub struct CombatContext {
     pub timestamp: u64,
-    pub attacker_roll: u8,
-    pub defender_roll: u8,
+    pub day_unit_seconds: u32,
     pub attacker_biome: Biome,
     pub defender_biome: Biome,
     pub attack_distance: u32,
+    // Frontier counts player-held slots; unowned beasts receive no Knight protection.
     pub attacker_is_structure_guard: bool,
     pub defender_is_structure_guard: bool,
+    pub attacker_oaths: u16,
+    pub defender_oaths: u16,
+    pub attacker_twin_damage: u128,
 }
 
 
@@ -112,6 +121,12 @@ pub impl TroopsImpl of TroopsTrait {
     }
 
     fn _refund_multiplier(a_damage: Fixed, b_damage: Fixed) -> Fixed {
+        if a_damage == FixedTrait::ZERO() {
+            return FixedTrait::ZERO();
+        }
+        if b_damage == FixedTrait::ZERO() {
+            return FixedTrait::ONE();
+        }
         let _2_POINT_5: Fixed = FixedTrait::new(46116860184273879040, false);
         let _10_POINT_0: Fixed = FixedTrait::new(184467440737095516160, false);
 
@@ -124,6 +139,14 @@ pub impl TroopsImpl of TroopsTrait {
         }
 
         return (ratio - _2_POINT_5) / (_10_POINT_0 - _2_POINT_5);
+    }
+
+    fn _surviving_fraction(troops: Fixed, damage: Fixed) -> Fixed {
+        if damage >= troops {
+            FixedTrait::ZERO()
+        } else {
+            (troops - damage) / troops
+        }
     }
 
     fn _effective_beta() -> Fixed {
@@ -142,7 +165,7 @@ pub impl TroopsImpl of TroopsTrait {
     }
 
     fn _is_ranged_attack_context(context: CombatContext) -> bool {
-        context.attack_distance > 1
+        context.day_unit_seconds == 0 && context.attack_distance > 1
     }
 
     fn _is_ranged_crossbow_attack(ref self: Troops, context: CombatContext) -> bool {
@@ -173,7 +196,8 @@ pub impl TroopsImpl of TroopsTrait {
     }
 
     fn _knight_structure_assault_multiplier(ref self: Troops, context: CombatContext) -> Fixed {
-        if self.category == TroopType::Knight
+        if context.day_unit_seconds == 0
+            && self.category == TroopType::Knight
             && !context.attacker_is_structure_guard
             && context.defender_is_structure_guard
             && context.attack_distance == 1 {
@@ -187,14 +211,21 @@ pub impl TroopsImpl of TroopsTrait {
         self._ranged_crossbow_damage_multiplier(context) * self._knight_structure_assault_multiplier(context)
     }
 
-    fn _incoming_damage_multiplier(ref self: Troops, is_structure_guard: bool) -> Fixed {
+    fn _incoming_damage_multiplier(ref self: Troops, is_structure_guard: bool, day_unit_seconds: u32) -> Fixed {
         if is_structure_guard && self.category == TroopType::Knight {
-            return Self::_combat_percent_multiplier(85);
+            return Self::_combat_percent_multiplier(
+                if day_unit_seconds == 0 {
+                    85
+                } else {
+                    crate::rules::FRONTIER_KNIGHT_GUARD_DAMAGE_PERCENT.into()
+                },
+            );
         }
 
         1_u8.into()
     }
 
+    #[inline(never)]
     fn damage_with_context(
         ref self: Troops,
         ref bravo: Troops,
@@ -235,15 +266,18 @@ pub impl TroopsImpl of TroopsTrait {
             );
 
         // ensure alpha has enough stamina to launch attack
+        let attack_stamina = crate::oaths::attack_stamina(
+            context.attacker_oaths, troop_stamina_config.stamina_attack_req,
+        );
         assert!(
-            alpha.stamina.inline().amount >= troop_stamina_config.stamina_attack_req.into(),
+            alpha.stamina.inline().amount >= attack_stamina.into(),
             "you have {} stamina, but need {} to launch attack",
             alpha.stamina.inline().amount,
-            troop_stamina_config.stamina_attack_req,
+            attack_stamina,
         );
 
         // calculate alpha's stamina lost
-        let mut ALPHA_STAMINA_LOSS = troop_stamina_config.stamina_attack_req;
+        let mut ALPHA_STAMINA_LOSS = attack_stamina;
         let ALPHA_STAMINA_BONUS_DAMAGE_MULTIPLIER: Fixed = 1_u8.into();
         let ALPHA_BATTLE_TIMER_DAMAGE_MULTIPLIER: Fixed = 1_u8.into();
 
@@ -260,7 +294,7 @@ pub impl TroopsImpl of TroopsTrait {
         let mut BRAVO_STAMINA_LOSS: u128 = core::cmp::min(
             bravo.stamina.inline().amount.into(), defender_stamina_req.into(),
         );
-        if !is_ranged_attack && BRAVO_STAMINA_LOSS < defender_stamina_req.into() {
+        if context.day_unit_seconds == 0 && !is_ranged_attack && BRAVO_STAMINA_LOSS < defender_stamina_req.into() {
             BRAVO_STAMINA_BONUS_DAMAGE_MULTIPLIER = FixedTrait::new(7, false) / FixedTrait::new(10, false); // 0.7
         }
 
@@ -301,12 +335,21 @@ pub impl TroopsImpl of TroopsTrait {
             / BRAVO_TIER_BONUS
             / TOTAL_NUM_TROOPS.pow(EFFECTIVE_BETA));
 
-        assert!(context.attacker_roll <= 20 && context.defender_roll <= 20, "invalid combat die");
-        ALPHA_DAMAGE_DEALT *= Self::_combat_percent_multiplier(100 + context.attacker_roll.into());
-        BRAVO_DAMAGE_DEALT *= Self::_combat_percent_multiplier(100 + context.defender_roll.into());
         ALPHA_DAMAGE_DEALT *= alpha._outgoing_damage_multiplier(context);
-        ALPHA_DAMAGE_DEALT *= bravo._incoming_damage_multiplier(context.defender_is_structure_guard);
-        BRAVO_DAMAGE_DEALT *= alpha._incoming_damage_multiplier(context.attacker_is_structure_guard);
+        ALPHA_DAMAGE_DEALT *= bravo
+            ._incoming_damage_multiplier(context.defender_is_structure_guard, context.day_unit_seconds);
+        BRAVO_DAMAGE_DEALT *= alpha
+            ._incoming_damage_multiplier(context.attacker_is_structure_guard, context.day_unit_seconds);
+        if context.day_unit_seconds != 0 {
+            if alpha.category != TroopType::Knight {
+                ALPHA_DAMAGE_DEALT *=
+                    Self::_combat_percent_multiplier(crate::rules::FRONTIER_LIGHT_DAMAGE_PERCENT.into());
+            }
+            if bravo.category != TroopType::Knight {
+                BRAVO_DAMAGE_DEALT *=
+                    Self::_combat_percent_multiplier(crate::rules::FRONTIER_LIGHT_DAMAGE_PERCENT.into());
+            }
+        }
         if is_ranged_attack {
             BRAVO_DAMAGE_DEALT = FixedTrait::ZERO();
         }
@@ -349,6 +392,28 @@ pub impl TroopsImpl of TroopsTrait {
         ALPHA_DAMAGE_DEALT -= ALPHA_DAMAGE_DEALT
             * bravo.boosts.decr_damage_gotten_percent_num.into()
             / PercentageValueImpl::_100().into();
+
+        if context.day_unit_seconds != 0 {
+            ALPHA_DAMAGE_DEALT *=
+                crate::oaths::damage_multiplier(
+                    context.attacker_oaths, context.defender_oaths, context.defender_is_structure_guard,
+                );
+            ALPHA_DAMAGE_DEALT *=
+                crate::oaths::skill_multiplier(
+                    context.attacker_oaths, alpha.stamina.inline().amount - attack_stamina.into(),
+                );
+            BRAVO_DAMAGE_DEALT *=
+                crate::oaths::damage_multiplier(
+                    context.defender_oaths, context.attacker_oaths, context.attacker_is_structure_guard,
+                );
+            let alpha_bow = alpha.category == TroopType::Crossbowman;
+            let bravo_bow = bravo.category == TroopType::Crossbowman;
+            if alpha_bow && !bravo_bow {
+                BRAVO_DAMAGE_DEALT *= Self::_surviving_fraction(BRAVO_NUM_TROOPS, ALPHA_DAMAGE_DEALT);
+            } else if bravo_bow && !alpha_bow {
+                ALPHA_DAMAGE_DEALT *= Self::_surviving_fraction(ALPHA_NUM_TROOPS, BRAVO_DAMAGE_DEALT);
+            }
+        }
 
         if is_ranged_attack {
             let half_battle_timer_length: u32 = (cooldown_seconds / 2).try_into().unwrap();
@@ -412,7 +477,7 @@ pub impl TroopsImpl of TroopsTrait {
         tick_seconds: u64,
         cooldown_seconds: u32,
     ) {
-        let (alpha_damage_dealt, bravo_damage_dealt, alpha_stamina_loss, bravo_stamina_loss) = self
+        let (alpha_damage_dealt, bravo_damage_dealt, mut alpha_stamina_loss, bravo_stamina_loss) = self
             .damage_with_context(
                 ref bravo, context, troop_stamina_config, troop_damage_config, tick_seconds, cooldown_seconds,
             );
@@ -421,7 +486,12 @@ pub impl TroopsImpl of TroopsTrait {
 
         // deduct dead troops from each side
         alpha.count -= core::cmp::min(alpha.count, bravo_damage_dealt);
-        bravo.count -= core::cmp::min(bravo.count, alpha_damage_dealt);
+        bravo.count -= core::cmp::min(bravo.count, alpha_damage_dealt + context.attacker_twin_damage);
+        if bravo.count == 0 && alpha.count != 0 {
+            let cost = crate::oaths::attack_stamina(context.attacker_oaths, troop_stamina_config.stamina_attack_req);
+            alpha_stamina_loss -=
+                core::cmp::min(alpha_stamina_loss, crate::oaths::fury_refund(context.attacker_oaths, cost));
+        }
 
         // deduct stamina spent
         alpha

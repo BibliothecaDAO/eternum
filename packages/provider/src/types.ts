@@ -68,9 +68,10 @@ export enum TransactionType {
   TOGGLE_ALTERNATE = "toggle_alternate",
   ENTER_DEPTH = "enter_depth",
   RESEARCH = "research",
-  SPEND_SKILL_POINT = "spend_skill_point",
-  REFILL_STAMINA = "refill_stamina",
-  WITHDRAW_LORDS = "withdraw_lords",
+  CHOOSE_OATH = "choose_oath",
+  BUY_STAMINA = "buy_stamina",
+  BUY_SEAL = "buy_seal",
+  REROLL_OATH = "reroll_oath",
   EXPLORER_CREATE = "explorer_create",
   EXPLORER_ADD = "explorer_add",
   EXPLORER_DELETE = "explorer_delete",
@@ -146,6 +147,7 @@ export enum TransactionType {
 
   // Realms & Settlement
   SETTLE = "settle",
+  CLAIM_DAILY_QUEST = "claim_daily_quest",
 
   // Lords & Approvals
   SET_ACCESS = "set_access",

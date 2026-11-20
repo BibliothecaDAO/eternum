@@ -80,7 +80,7 @@ export const fetchHeraldGameHistory = async (
     model?: string;
     story?: string;
     offset?: number;
-    owner?: string;
+    owner?: string | readonly string[];
   } = {},
 ): Promise<HeraldHistoryPage> => {
   if (!Number.isSafeInteger(gameId) || gameId <= 0) {
@@ -92,7 +92,7 @@ export const fetchHeraldGameHistory = async (
   if (input.model) url.searchParams.set("model", input.model);
   if (input.story) url.searchParams.set("story", input.story);
   if (input.offset !== undefined) url.searchParams.set("offset", String(input.offset));
-  if (input.owner) url.searchParams.set("owner", input.owner);
+  for (const owner of [input.owner ?? []].flat()) url.searchParams.append("owner", owner);
   return fetchHeraldJson(url.toString(), `Herald history for ${shard.url} game ${gameId}`);
 };
 

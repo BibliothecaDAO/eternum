@@ -1,8 +1,8 @@
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
-import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { ResourceManager } from "../managers";
-import { realmLearned, researchPicks } from "./realm-research";
+import { ResourceManager } from "../managers/resource-manager";
+import { realmLearned, researchTier } from "./realm-research";
+import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/balance.gen";
 
 /** The contract's refusal when a structure cannot pay what deploying troops costs it. */
 export const TROOP_RAISE_SHORT_REASON = "Realm cannot pay to raise troops.";
@@ -18,7 +18,7 @@ export interface TroopRaiseCost {
 /**
  * What a structure pays, beyond the troops themselves, to deploy `troops` whole troops of `troopResource` into a new
  * army, an army it reinforces or a guard, as the contract's raise_troops charges: on a game with a building board, each
- * simple input of the troop's recipe, rounded up, its wheat cut by each Rations pick; nothing elsewhere. Each cost
+ * simple input of the troop's recipe, rounded up; nothing elsewhere. Each cost
  * carries what the structure holds of it now. Undefined while a holding is unknown.
  */
 export const readTroopRaiseCost = (
@@ -31,52 +31,30 @@ export const readTroopRaiseCost = (
 ): TroopRaiseCost[] | undefined => {
   const board = store.get("BoardRules", { game_id: gameId });
   if (!board) return [];
+  const learned = realmLearned(store, gameId, structureId);
+  if (learned === undefined) return undefined;
+  const rations = BigInt(researchTier(learned, research.ROW_RATIONS));
   const recipe = store.require("ProductionRecipe", { game_id: gameId, resource_type: troopResource });
   if (recipe.simple_output === 0n) throw new Error(`Troop ${troopResource} has no recipe to deploy from`);
   const deployed = BigInt(troops) * BigInt(RESOURCE_PRECISION);
-  const rationCut = rationCutOf(rationPicks(realmLearned(store, gameId, structureId) ?? 0n), board, recipe);
+  const denominator = recipe.simple_output * BigInt(RESOURCE_PRECISION);
   const manager = new ResourceManager(store, structureId, gameId);
   const costs: TroopRaiseCost[] = [];
   for (const input of recipe.simple_inputs) {
     const held = manager.balanceWithProduction(tick, input.resource_type)?.balance;
     if (held === undefined) return undefined;
-    const amount =
-      input.resource_type === ResourcesIds.Wheat
-        ? input.amount - (rationCut < input.amount ? rationCut : input.amount)
-        : input.amount;
+    const discount =
+      input.resource_type === ResourcesIds.Wheat ? board.ration_step * rations * recipe.simple_output : 0n;
+    const base = input.amount * BigInt(RESOURCE_PRECISION);
+    const amount = base > discount ? base - discount : 0n;
     costs.push({
       resource: input.resource_type,
-      amount: (amount * deployed + recipe.simple_output - 1n) / recipe.simple_output,
+      amount: (amount * deployed + denominator - 1n) / denominator,
       held: BigInt(held),
     });
   }
   return costs;
 };
-
-/** The wheat each Rations pick cuts from a recipe's simple output, as resources_domain.cairo's ration_cut does. */
-const rationCutOf = (picks: bigint, board: { ration_step: bigint }, recipe: { simple_output: bigint }): bigint =>
-  (picks * board.ration_step * recipe.simple_output) / BigInt(RESOURCE_PRECISION);
-
-/**
- * The wheat one troop of `troopResource` deploys for with `picks` Rations picks on the Barracks row, in whole wheat:
- * the recipe's wheat, less each pick's cut, never below nothing.
- */
-export const rationedWheatPerTroop = (
-  store: NativeFactStore,
-  gameId: number,
-  troopResource: ResourcesIds,
-  picks: number,
-): number => {
-  const board = store.require("BoardRules", { game_id: gameId });
-  const recipe = store.require("ProductionRecipe", { game_id: gameId, resource_type: troopResource });
-  const wheat = recipe.simple_inputs.find(({ resource_type }) => resource_type === ResourcesIds.Wheat)?.amount ?? 0n;
-  const cut = rationCutOf(BigInt(picks), board, recipe);
-  return Number(wheat - (cut < wheat ? cut : wheat)) / Number(recipe.simple_output);
-};
-
-// The Barracks row's Rations picks, as resources_domain.cairo's ration_cut counts them.
-const rationPicks = (learned: bigint): bigint =>
-  BigInt(researchPicks(learned, research.ROW_BARRACKS, research.CHOICE_RATIONS));
 
 /** Whether the structure holds every cost; unknown costs cannot be paid yet. */
 export const canPayTroopRaise = (costs: TroopRaiseCost[] | undefined): boolean =>

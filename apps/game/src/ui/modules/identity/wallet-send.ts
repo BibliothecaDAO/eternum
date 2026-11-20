@@ -49,7 +49,7 @@ export const sendFromWallet = async (
   owner: string,
   calls: Call[],
   provider: ProviderInterface,
-  onSigned: () => void,
+  onSigned: (hash: string) => void,
   closed: AbortSignal,
 ): Promise<WalletSendOutcome> => {
   if (!isSameStarknetAddress(account.address, owner)) throw new WrongWalletError(owner);
@@ -78,7 +78,7 @@ export const sendFromWallet = async (
     throw error;
   }
   rememberUncertain({ ...intent, hash: sent });
-  onSigned();
+  onSigned(sent);
   return settled(owner, await landedOrRefused(provider, sent));
 };
 
@@ -130,7 +130,17 @@ export const prepareDefaultWalletSend = async (
   owner: string,
   calls: Call[],
   provider: ProviderInterface,
+  lordsBought = 0n,
 ): Promise<PreparedSend> => {
+  const { execution, fee, requested } = await buildDefaultWalletSend(calls);
+  if (fee) await requireFeeRoom(provider, owner, requested, fee, lordsBought);
+  return { execution, fee };
+};
+
+export const defaultWalletFeeOf = async (calls: Call[]): Promise<WalletFee | null> =>
+  (await buildDefaultWalletSend(calls)).fee;
+
+const buildDefaultWalletSend = async (calls: Call[]) => {
   const requested = calls.map((call) => ({
     contractAddress: call.contractAddress,
     entrypoint: call.entrypoint,
@@ -140,16 +150,21 @@ export const prepareDefaultWalletSend = async (
   const execution = built.typedData as unknown as TypedData;
   const fee = built.fee && { estimated: BigInt(built.fee.estimated), max: BigInt(built.fee.max) };
   if (!buildsExactly(execution, requested, fee)) throw new UnexpectedExecutionError();
-  if (fee) await requireFeeRoom(provider, owner, requested, fee);
-  return { execution, fee };
+  return { execution, fee, requested };
 };
 
 /**
  * The fee is the execution's last call, a LORDS transfer of up to its max: it runs after the asked calls, so the
  * wallet must hold what they spend of LORDS plus that max, as the paymaster checks before it submits.
  */
-const requireFeeRoom = async (provider: ProviderInterface, owner: string, calls: AskedCall[], fee: WalletFee) => {
-  const held = await tokenBalanceOf(provider, WALLET_GAS_TOKEN, owner);
+const requireFeeRoom = async (
+  provider: ProviderInterface,
+  owner: string,
+  calls: AskedCall[],
+  fee: WalletFee,
+  lordsBought: bigint,
+) => {
+  const held = (await tokenBalanceOf(provider, WALLET_GAS_TOKEN, owner)) + lordsBought;
   if (feeTokenSpentBy(calls) + fee.max > held) throw new FeeRoomShortError(fee, held);
 };
 
@@ -167,7 +182,7 @@ export const sendFromDefaultWallet = async (
   prepared: TypedData,
   calls: string,
   provider: ProviderInterface,
-  onSigned: () => void,
+  onSigned: (hash: string) => void,
   closed: AbortSignal,
 ): Promise<WalletSendOutcome> => {
   // Its panel closed while the send was prepared again: no passkey opens for a payment no one is looking at.
@@ -203,7 +218,7 @@ export const sendFromDefaultWallet = async (
 export const submitSigned = async (
   send: SignedPasskeySend,
   provider: ProviderInterface,
-  onSigned: () => void,
+  onSigned: (hash: string) => void,
   submission: "first" | "again",
 ): Promise<WalletSendOutcome> => {
   rememberUncertain(send);
@@ -219,7 +234,7 @@ export const submitSigned = async (
     throw error;
   }
   rememberUncertain({ ...send, hash: sent });
-  onSigned();
+  onSigned(sent);
   return settled(send.owner, await landedOrRefused(provider, sent));
 };
 
@@ -290,7 +305,7 @@ const RECEIPT_POLL_MS = 1_000;
 /** The wallet's STRK, the token the network fee is paid in on the build's L2. */
 const feeBalanceOf = (provider: ProviderInterface, owner: string) => tokenBalanceOf(provider, L2_CHAIN.gasToken, owner);
 
-const tokenBalanceOf = async (provider: ProviderInterface, token: string, owner: string): Promise<bigint> => {
+export const tokenBalanceOf = async (provider: ProviderInterface, token: string, owner: string): Promise<bigint> => {
   const [low, high] = await provider.callContract({
     contractAddress: token,
     entrypoint: "balance_of",

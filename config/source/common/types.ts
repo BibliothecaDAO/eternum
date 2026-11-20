@@ -1,6 +1,6 @@
 import type { ConfigurationNetwork } from "../../shared/game-environments";
 
-export type GameType = "blitz" | "eternum" | "frontier" | "duel";
+export type GameType = "blitz" | "frontier";
 
 export interface BuildConfigOptions {
   chain: ConfigurationNetwork;

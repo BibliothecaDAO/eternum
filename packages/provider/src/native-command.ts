@@ -14,15 +14,19 @@ type AbiType = {
   type: string;
   name: string;
   members?: { name: string; type: string }[];
-  variants?: { name: string; type: string }[];
+  variants?: { name: string; type: string; wireId?: number }[];
 };
 
-/** The compiled enum supplies both the variant discriminant and every field's serialization order. */
+/** The wire registry supplies the command tag; the ABI supplies its payload layout. */
 export function encodeNativeCommand(abi: Abi, command: NativeCommand): string[] {
   const types = new Map((abi as AbiType[]).map((item) => [item.name, item]));
-  return new CallData(abi).compile("command_commitment", {
+  const encoded = new CallData(abi).compile("command_commitment", {
     command: encodeValue("world_native::commands::Command", command, types) as CairoCustomEnum,
   });
+  const variant = types.get("world_native::commands::Command")?.variants?.find(({ name }) => name === command.kind);
+  if (variant?.wireId === undefined) throw new Error(`Missing permanent command ID for ${command.kind}`);
+  encoded[0] = String(variant.wireId);
+  return encoded;
 }
 
 function encodeValue(type: string, value: unknown, types: Map<string, AbiType>): unknown {

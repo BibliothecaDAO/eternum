@@ -7,6 +7,7 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 const RENDERER_STALL_THRESHOLD_MS = 7_000;
 // Above this one-minute load average the machine, not the client, sets the numbers: such a run is not evidence.
 const MAX_LOAD_AVERAGE = 12;
+export const LOAD_REFUSAL_NOTE = "its timings are not evidence";
 const JANK_FRAME_MS = 1000 / 30;
 // A revealed tile turns from fog to terrain; the same patch of screen, unchanged, differs by a few levels at most.
 const REVEALED_TILE_CHANGE_MIN = 12;
@@ -66,16 +67,12 @@ export function buildPlayerHomeUrl({ baseUrl, rendererMode, devOverlays = false 
   return url.toString();
 }
 
-/** The newest live game of `mode` on the first active shard that has one, in the directory the client itself reads. */
 export function selectPlaytestGame(directory, mode) {
-  for (const shard of directory?.shards ?? []) {
-    if (shard.status !== "active") continue;
-    const [newest] = (shard.games ?? [])
-      .filter((game) => game.status === "Live" && game.mode === mode)
-      .toSorted((left, right) => Number(right.game_id) - Number(left.game_id));
-    if (newest) return { chainId: shard.chainId, gameId: Number(newest.game_id), mode: newest.mode };
-  }
-  return null;
+  const shard = directory?.shard;
+  const [newest] = (shard?.games ?? [])
+    .filter((game) => game.status === "Live" && game.mode === mode)
+    .toSorted((left, right) => Number(right.game_id) - Number(left.game_id));
+  return newest ? { chainId: shard.chainId, gameId: Number(newest.game_id), mode: newest.mode } : null;
 }
 
 export function deriveBootMetrics({ diagnostics, durations, elapsedMs, entered, milestones, navigationTiming }) {
@@ -644,9 +641,7 @@ export function evaluatePlaytestSummary(summary, options = {}) {
       failures.push(describeRun(result, `world-interactive exceeded ${entryReadyTimeoutMs}ms`));
     }
     if (result.machine?.loadAverageMax > MAX_LOAD_AVERAGE) {
-      failures.push(
-        describeRun(result, `load average reached ${result.machine.loadAverageMax}: its timings are not evidence`),
-      );
+      failures.push(describeRun(result, `load average reached ${result.machine.loadAverageMax}: ${LOAD_REFUSAL_NOTE}`));
     }
     if (result.errors?.length) {
       failures.push(describeRun(result, `${result.errors.length} browser errors`));

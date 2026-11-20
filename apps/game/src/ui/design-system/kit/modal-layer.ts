@@ -7,7 +7,7 @@ import { useSheetCloses } from "./sheet-closes";
  * everything outside it inert while it is mounted, the keyboard's focus held in it (taken as it opens, Tab and Shift+Tab
  * going round its controls, given back to what opened it once it closes), and `onClose` on Escape or the system back.
  */
-export const useModalLayer = (layer: RefObject<HTMLElement | null>, onClose: () => void) => {
+export const useModalLayer = (layer: RefObject<HTMLElement | null>, onClose?: () => void) => {
   useSheetCloses(onClose);
   useInertOutside(layer);
   useFocusHeld(layer);
@@ -28,12 +28,9 @@ const useFocusHeld = (layer: RefObject<HTMLElement | null>) => {
     if (!element) return;
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const dialog = element.querySelector<HTMLElement>('[role="dialog"]') ?? element;
-    if (!element.contains(document.activeElement)) {
-      if (!dialog.hasAttribute("tabindex")) dialog.setAttribute("tabindex", "-1");
-      dialog.focus({ preventScroll: true });
-    }
+    if (!element.closest("[inert]")) focusDialog(element);
     const onKey = (event: globalThis.KeyboardEvent) => {
-      if (event.key !== "Tab") return;
+      if (event.key !== "Tab" || element.closest("[inert]")) return;
       const controls = [...element.querySelectorAll<HTMLElement>(FOCUSABLE)];
       const active = document.activeElement;
       const first = controls[0];
@@ -54,17 +51,43 @@ const useFocusHeld = (layer: RefObject<HTMLElement | null>) => {
   }, [layer]);
 };
 
-/** Makes everything outside the layer inert while it is mounted: its siblings, and its ancestors' up to the body. */
+const layers = new Set<HTMLElement>();
+let restoreOutside = () => {};
+
+const refreshInertOutside = () => {
+  restoreOutside();
+  const active = [...layers]
+    .sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
+    .at(-1);
+  const made: Element[] = [];
+  for (let node = active; node?.parentElement && node !== document.body; node = node.parentElement) {
+    for (const sibling of node.parentElement.children) {
+      if (sibling === node || sibling.hasAttribute("inert")) continue;
+      sibling.setAttribute("inert", "");
+      made.push(sibling);
+    }
+  }
+  restoreOutside = () => made.forEach((element) => element.removeAttribute("inert"));
+  return active;
+};
+
+const focusDialog = (element: HTMLElement) => {
+  if (element.contains(document.activeElement)) return;
+  const dialog = element.querySelector<HTMLElement>('[role="dialog"]') ?? element;
+  if (!dialog.hasAttribute("tabindex")) dialog.setAttribute("tabindex", "-1");
+  dialog.focus({ preventScroll: true });
+};
+
 const useInertOutside = (layer: RefObject<HTMLElement | null>) => {
   useEffect(() => {
-    const made: Element[] = [];
-    for (let node = layer.current; node?.parentElement && node !== document.body; node = node.parentElement) {
-      for (const sibling of node.parentElement.children) {
-        if (sibling === node || sibling.hasAttribute("inert")) continue;
-        sibling.setAttribute("inert", "");
-        made.push(sibling);
-      }
-    }
-    return () => made.forEach((element) => element.removeAttribute("inert"));
+    const element = layer.current;
+    if (!element) return;
+    layers.add(element);
+    refreshInertOutside();
+    return () => {
+      layers.delete(element);
+      const active = refreshInertOutside();
+      if (active) focusDialog(active);
+    };
   }, [layer]);
 };

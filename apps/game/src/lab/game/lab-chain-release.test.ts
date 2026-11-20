@@ -12,9 +12,10 @@ it("serves the scenario's pinned release through the real shard decoder validati
   );
   const scenario = await installLabChain(ruinFightScenario, Date.now());
   const pin = scenario.store.require("GameRelease", { game_id: LAB_GAME.gameId });
+  expect(pin.created_release_id).toBe(pin.release_id);
   const shard = await refreshShardRelease(LAB_GAME.url, String(pin.release_id), nativeFactSchemaIdentity);
   expect(shard.releaseSchemas[String(pin.release_id)]).toBe(nativeFactSchemaIdentity);
   expect(shard.releaseSchemas[String(pin.created_release_id)]).toBe(nativeFactSchemaIdentity);
   const directory = await (await window.fetch("/api/directory")).json();
-  expect(directory.shards[0].manifest.releaseSchemas).toEqual(shard.releaseSchemas);
+  expect(directory.shard.manifest.releaseSchemas).toEqual(shard.releaseSchemas);
 });

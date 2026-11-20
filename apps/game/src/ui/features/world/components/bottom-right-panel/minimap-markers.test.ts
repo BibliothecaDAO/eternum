@@ -46,12 +46,12 @@ describe("minimap icon meanings from game facts", () => {
     const { store } = campBeside();
     const markers = minimapMarkersView.read(store, ContractAddress("0x111"));
     expect(markers.get("7")).toEqual({ name: "map-realm-0", owner: "own", value: "0" });
-    expect(markers.get(String(SITE))).toEqual({ name: "camp", owner: "neutral", value: undefined });
+    expect(markers.get(String(SITE))).toEqual({ name: "beast-troll", owner: "neutral", value: undefined });
     expect(markers.get("201")).toEqual({ name: "map-army", owner: "own", value: "••" });
     expect(minimapMarkersView.read(store, null).get("201")?.owner).toBe("enemy");
     expect(minimapMarkersView.read(store, ContractAddress("0x222")).get("201")?.owner).toBe("enemy");
   });
-  it("updates the badge when troops, a site or guild membership changes", () => {
+  it("updates troops and sites while tribe members remain enemies", () => {
     const { store } = campBeside();
     const row = store.require("Structure", { game_id: 1, entity_id: SITE });
     const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
@@ -67,7 +67,7 @@ describe("minimap icon meanings from game facts", () => {
     ]);
     const markers = minimapMarkersView.read(store, ContractAddress("0x222"));
     expect(markers.get(String(SITE))?.name).toBe("map-village");
-    expect(markers.get("201")).toEqual({ name: "map-army", owner: "ally", value: "•••" });
+    expect(markers.get("201")).toEqual({ name: "map-army", owner: "enemy", value: "•••" });
   });
 });
 

@@ -1049,10 +1049,8 @@ export default class HexceptionScene extends HexagonScene {
 
     if (producedResource) {
       const productionManager = new ResourceManager(this.game.store, this.shownRealmId);
-      const productionEndsAt = productionManager.getProductionEndsAt(producedResource as ResourcesIds);
       const currentTick = getBlockTimestamp().currentDefaultTick;
-      const isActive =
-        (productionEndsAt ?? 0) > currentTick || productionManager.isFood(producedResource as ResourcesIds);
+      const isActive = productionManager.isProducingAt(producedResource as ResourcesIds, currentTick);
       const producedName = resourceName(producedResource as ResourcesIds);
 
       this.hoverLabelManager.update(position, {

@@ -1,6 +1,8 @@
 const sweep = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock("./frontier-sweep", () => ({ sweepFrontierLords: sweep }));
 vi.mock("./frontier-prizes", () => ({ awardFrontierPrizes: vi.fn(async () => {}) }));
+const settleEnded = vi.hoisted(() => vi.fn(async () => {}));
+vi.mock("./frontier-end", () => ({ settleEndedFrontierGames: settleEnded }));
 const pools = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock("./frontier-pools", () => ({ publishFrontierPools: pools }));
 const address = vi.hoisted(() => vi.fn(() => "0x10"));
@@ -29,7 +31,7 @@ vi.mock("@realms-world/value-ledger", async (importOriginal) => ({
   rpcAt: () => ({ getChainId: async () => "0x1" }),
   requireActiveChain: async () => {},
   relayAccountAddress: () => "0x5",
-  activeShards: async () => [{ chainId: "0x1" }],
+  officialChain: async () => ({ chainId: "0x1" }),
   readRegisteredShard: async () => ({
     chainId: "0x1",
     rpcUrl: "https://shard.test",
@@ -643,6 +645,11 @@ it("continues a full confirmed page through its alarm and stops when caught up",
     undefined,
     expect.objectContaining({ address: "0x10" }),
   );
+  expect(settleEnded).toHaveBeenCalledWith(
+    expect.objectContaining({ chainId: "0x1", accountAddress: "0x5" }),
+    undefined,
+    expect.objectContaining({ address: "0x10" }),
+  );
   await relay.alarm();
   expect(shard.page).toHaveBeenLastCalledWith(0, 0, "cursor");
   expect(storage.setAlarm).toHaveBeenCalledOnce();
@@ -741,52 +748,54 @@ it("preserves player-facing registration errors across the shard object's RPC bo
   expect(await response.json()).toEqual({ error: "realm_not_owned" });
 });
 
-it.each(["recover", "upgrade"])(
-  "authenticates campaign %s and derives its account without accepting a source override",
-  async (action) => {
-    const register = vi.fn(async () => ({ entry: { campaign: "devcon-2026", tier: "regular" } }));
-    const account = vi.fn(async () => "0x3");
-    const env = {
-      ENVIRONMENT: "staging",
-      BASE_URL: "https://app.test",
-      L2_RPC_URL: "https://ledger.test",
-      OPERATOR_TOKEN: "test",
-      SHARD_LEDGER_OPERATOR_PRIVATE_KEY: "0x1",
-      COSIGNER_URL: "https://cosigner.test",
-      COSIGNER_TOKEN: "test-cosigner-token",
-      LEDGER_OPERATOR_ADDRESS: "0x2",
-      LEDGER_OPERATOR_PRIVATE_KEY: "0x3",
-      RELAY: { idFromName: (id: string) => id, get: () => ({ realmEntry: register }) },
-      IDENTITY: { accountForRealmsId: account },
-    };
-    const body = { chainId: "0x1", gameId: 7, realmsId: "0x2" };
-    const send = (payload: unknown, token = "test") =>
-      worker.fetch(
-        new Request(
-          `https://app.test/api/value/operator/${action === "recover" ? "campaign-entry" : "campaign-upgrade"}`,
-          {
-            method: "POST",
-            headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-            body: JSON.stringify(payload),
-          },
-        ),
-        env as never,
-      );
-    expect((await send(body, "wrong")).status).toBe(401);
-    expect((await send({ ...body, account: "0x9" })).status).toBe(400);
-    expect((await send({ ...body, tier: "golden" })).status).toBe(400);
-    expect(register).not.toHaveBeenCalled();
-    const result = await send(body);
-    expect([result.status, await result.json()]).toEqual([200, { campaign: "devcon-2026", tier: "regular" }]);
-    expect(account).toHaveBeenCalledExactlyOnceWith("0x2");
-    expect(register).toHaveBeenCalledExactlyOnceWith({
-      ...body,
-      account: "0x3",
-      realmId: null,
-      ...(action === "recover" ? { recoverFlyer: true } : { upgradeCampaign: true }),
-    });
-  },
-);
+const operatorEnv = (relay: Record<string, unknown>) => ({
+  ENVIRONMENT: "staging",
+  BASE_URL: "https://app.test",
+  L2_RPC_URL: "https://ledger.test",
+  OPERATOR_TOKEN: "test",
+  SHARD_LEDGER_OPERATOR_PRIVATE_KEY: "0x1",
+  COSIGNER_URL: "https://cosigner.test",
+  COSIGNER_TOKEN: "test-cosigner-token",
+  LEDGER_OPERATOR_ADDRESS: "0x2",
+  LEDGER_OPERATOR_PRIVATE_KEY: "0x3",
+  RELAY: { idFromName: (id: string) => id, get: () => relay },
+  IDENTITY: { accountForRealmsId: vi.fn(async () => "0x3") },
+});
+const operatorSend = (env: unknown, path: string, payload: unknown, token = "test") =>
+  worker.fetch(
+    new Request(`https://app.test/api/value/operator/${path}`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+    env as never,
+  );
+
+it("authenticates a Seal grant and derives its account without accepting a source override", async () => {
+  const register = vi.fn(async () => ({ entry: {} }));
+  const env = operatorEnv({ realmEntry: register });
+  const body = { chainId: "0x1", gameId: 7, realmsId: "0x2" };
+  expect((await operatorSend(env, "seal", body, "wrong")).status).toBe(401);
+  expect((await operatorSend(env, "seal", { ...body, account: "0x9" })).status).toBe(400);
+  expect(register).not.toHaveBeenCalled();
+  const result = await operatorSend(env, "seal", body);
+  expect([result.status, await result.json()]).toEqual([200, {}]);
+  expect(register).toHaveBeenCalledExactlyOnceWith({ ...body, account: "0x3", realmId: null, sealOnly: true });
+});
+
+it("authenticates a friend's Fragment credit and passes its id through unchanged", async () => {
+  const credit = vi.fn(async () => ({ entry: { id: "0x77" } }));
+  const env = operatorEnv({ creditFragments: credit });
+  const body = { chainId: "0x1", gameId: 7, realmsId: "0x2", id: "friend:0x1:7:0xabc", amount: 100 };
+  expect((await operatorSend(env, "fragments", body, "wrong")).status).toBe(401);
+  expect((await operatorSend(env, "fragments", { ...body, account: "0x9" })).status).toBe(400);
+  expect((await operatorSend(env, "fragments", { ...body, amount: 0 })).status).toBe(400);
+  expect((await operatorSend(env, "fragments", { ...body, id: "" })).status).toBe(400);
+  expect(credit).not.toHaveBeenCalled();
+  const result = await operatorSend(env, "fragments", body);
+  expect([result.status, await result.json()]).toEqual([200, { id: "0x77" }]);
+  expect(credit).toHaveBeenCalledExactlyOnceWith(body);
+});
 
 it.each([null, "deposit_head_rewritten", [{ obligation: "deposit:1", error: "source unavailable" }]])(
   "deposit progress participates in shard health: %j",
@@ -834,16 +843,17 @@ it("authenticates source retirement and refuses source overrides or unresolved o
       }),
       env as never,
     );
-  expect((await send({ chainId: "0x1" }, "wrong")).status).toBe(401);
-  for (const body of [null, { chainId: "0x1", gamesAddress: "0x9" }, { chainId: "bad" }])
+  const source = { chainId: "0x1", url: "https://herald.old.test" };
+  expect((await send(source, "wrong")).status).toBe(401);
+  for (const body of [null, { chainId: "0x1" }, { ...source, gamesAddress: "0x9" }, { ...source, chainId: "bad" }])
     expect((await send(body)).status).toBe(400);
   expect(retire).not.toHaveBeenCalled();
-  expect(await (await send({ chainId: "0x1" })).json()).toEqual({
+  expect(await (await send(source)).json()).toEqual({
     chainId: "0x1",
     gamesAddress: "0x2",
     retirementReady: true,
   });
-  expect(retire).toHaveBeenCalledWith("0x1");
+  expect(retire).toHaveBeenCalledWith("0x1", "https://herald.old.test");
   retire.mockRejectedValue(new Error("principal_return_pending"));
-  expect((await send({ chainId: "0x1" })).status).toBe(409);
+  expect((await send(source)).status).toBe(409);
 });

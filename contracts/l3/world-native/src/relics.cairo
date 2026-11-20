@@ -23,6 +23,7 @@ pub enum Recipient {
     Explorer,
     StructureProduction,
     StructureGuard,
+    ArmySlot: u8,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ApplyRelic {
@@ -185,17 +186,6 @@ pub struct LordsBudget {
     pub yesterday_ticks: u64,
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct RefillStamina {
-    pub explorer_id: u64,
-    pub amount: u64,
-}
-
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct WithdrawLords {
-    pub structure_id: u64,
-    pub amount: u128,
-}
 
 // A realm's withdrawal of whole LORDS, recorded for fulfilment on L2.
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -208,26 +198,19 @@ pub struct LordsWithdrawal {
 
 #[starknet::interface]
 pub trait ILords<T> {
-    fn sweep_lords(ref self: T, game_id: u32, structure_id: u64, context: crate::commands::ActionContext);
-    fn refill_stamina(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: RefillStamina,
-        context: crate::commands::ActionContext,
-    );
-    fn withdraw_lords(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: WithdrawLords,
-        context: crate::commands::ActionContext,
-    );
+    fn sweep_lords(ref self: T, game_id: u32, structure_id: u64);
 }
 
 #[starknet::interface]
 pub trait ICaptureRewards<T> {
-    fn grant_capture_rewards(ref self: T, site: ResourceKey, explorer_id: u64, context: crate::commands::ActionContext);
+    fn grant_capture_rewards(
+        ref self: T,
+        site: ResourceKey,
+        explorer_id: u64,
+        relic_slot: Option<u8>,
+        clean: bool,
+        context: crate::commands::ActionContext,
+    );
 }
 
 #[starknet::interface]
@@ -412,15 +395,6 @@ pub trait IFrontierSites<T> {
     );
 }
 
-// Stop debits before the ledger report deadline so confirmed receipts have time to arrive.
-pub fn assert_claim_window(game: crate::game::GameRegistry, rules: ChestRules, timestamp: u64) {
-    assert!(
-        timestamp < game.end_at
-            + Into::<u32, u64>::into(rules.claim_window_seconds - crate::days::FRONTIER_REPORT_GRACE_SECONDS),
-        "LORDS claim window closed",
-    );
-}
-
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub enum SiteBenefit {
     Shrine: u32,
@@ -428,10 +402,6 @@ pub enum SiteBenefit {
     ShrinePoint: u8,
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct ShrineReward {
-    pub rank: u8,
-}
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SiteUsed {

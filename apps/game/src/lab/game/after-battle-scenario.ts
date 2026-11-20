@@ -224,6 +224,7 @@ const answerLostFight = (command: LabCommand, chain: NativeFactStore): LabFact[]
   return [
     { model: "TileOccupancy", key: tileKey, value: null },
     { model: "ExplorerTroops", key: armyKey, value: null },
+    { model: "ArmyDay", key: chain.wireKeyOf("ArmyDay", { game_id: 1, explorer_id: attackerId })!, value: null },
   ];
 };
 

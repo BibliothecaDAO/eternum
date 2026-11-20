@@ -1,10 +1,10 @@
-import { formatAmount } from "@bibliothecadao/types";
+import { formatAmount, layerName } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudPanel, type MenuItem, useHudList } from "@/ui/design-system/kit/hud-elements";
 import { useSideways } from "@/shell/frame/layout";
 
-import { CHAT, EVENTS_WORDS, MENU, REALM, RESEARCH, WORLD } from "@/ui/design-system/kit/words";
+import { CHAT, EVENTS_WORDS, MENU, REALM, RESEARCH } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 export type Place = "realm" | "research" | "feed" | "chat" | "menu";
@@ -74,7 +74,7 @@ export const PlaceNav = ({
           switchTo={onRealm ? "world" : "realm"}
           lit={false}
           icon={views?.icon ?? (onRealm ? "map" : realmIcon)}
-          word={views?.word ?? (onRealm ? WORLD : REALM)}
+          word={views?.word ?? (onRealm ? layerName(0) : REALM)}
           badge={realmDot && <i className={cn("size-2 rounded-full", DOTS[realmDot])} />}
           marks={views?.marks}
           menu={views?.items}

@@ -1,16 +1,19 @@
 // @vitest-environment jsdom
+// @vitest-environment jsdom
+// @vitest-environment jsdom
+// @vitest-environment jsdom
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import {
   buildStoryEventPresentation,
   configManager,
   expeditionDepth,
+  frontierBeast,
   readExpeditionRules,
   siteDisplayName,
-  siteClearXp,
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { FALLEN_REALM_DEPTHS, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -234,8 +237,6 @@ const depthWithBounds = () => {
         reveal_site_neighbors: false,
         reveal_percent: 10,
         chest: { common: 5000, uncommon: 2700, rare: 1400, epic: 600, legendary: 300 },
-        ruin_guard_lower: 2000,
-        ruin_guard_upper: 4000,
         guard_step: 100,
       },
     },
@@ -245,11 +246,11 @@ const depthWithBounds = () => {
 /** Every kind of site the game guards, by its starting guard, and the beast the map paints for it at that depth. */
 const guardsAt = (depth: number) =>
   [
-    [StructureType.Camp, 1_400, "beast-troll"],
-    [StructureType.Rift, 1_400, "beast-dark-fey"],
-    [StructureType.Beasts, 320, "beast-cyclops"],
-    [StructureType.Beasts, 500, "beast-wraith"],
-    [StructureType.Ruin, 3_000, `beast-${FALLEN_REALM_DEPTHS[depth]!.beast}`],
+    [StructureType.Camp, 1_400, `beast-${frontierBeast(depth, StructureType.Camp).beast}`],
+    [StructureType.Rift, 1_400, `beast-${frontierBeast(depth, StructureType.Rift).beast}`],
+    [StructureType.Beasts, 320, `beast-${frontierBeast(depth, StructureType.Beasts, "lowly").beast}`],
+    [StructureType.Beasts, 500, `beast-${frontierBeast(depth, StructureType.Beasts, "stronger").beast}`],
+    [StructureType.Ruin, 3_000, `beast-${frontierBeast(depth).beast}`],
   ] as const;
 const hex = (value: number | bigint | string) => `0x${BigInt(value).toString(16)}`;
 
@@ -309,9 +310,10 @@ it("keeps a site's guard once the player's map lets the site go, as when their a
   expect(paintings()).toEqual(["attack", "beast-troll"]);
 });
 
-it("says a clear's XP at the row's end beside what it paid, as the site's receipt does, near or far", async () => {
-  const clear = (site: number) =>
+it("reads a clear's credited resources near or far without retired progression rewards", async () => {
+  const clear = (site: number, xp?: number) =>
     story(DJIZUS, "SitePayout", {
+      xp,
       site_id: site,
       category: StructureType.Camp,
       reward: { resource_type: ResourcesIds.Labor, amount: scaled(700) },
@@ -320,10 +322,9 @@ it("says a clear's XP at the row's end beside what it paid, as the site's receip
     [...host.querySelectorAll("[data-feed-line] .ui-feed-line__reward")].map((each) => each.textContent);
   // The camp the map holds: 1,400 guards at the start pay floor(sqrt(25 × 1,400) / 2) = 93 base XP, scaled by Ethereal I to 139.
   const near = game.store.require("ExpeditionSite", { game_id: 1, entity_id: CAMP });
-  expect(siteClearXp(game.store, near)).toBe(139);
-  const read = await draw(clear(CAMP), true);
+  const read = await draw(clear(CAMP, 139), true);
   expect(read.words).toBe(`djizus cleared ${siteDisplayName(CAMP)}`);
-  expect(xps()).toEqual(["+700", "+139 XP"]);
+  expect(xps()).toEqual(["+700"]);
   // One the map does not hold, from Herald's row of that site.
   const far = 4_400;
   herald.set(far, {
@@ -336,8 +337,8 @@ it("says a clear's XP at the row's end beside what it paid, as the site's receip
     row: hex(near.row),
     clear: null,
   });
-  await draw(clear(far));
-  expect(xps()).toEqual(["+700", "+129 XP"]);
+  await draw(clear(far, 129));
+  expect(xps()).toEqual(["+700"]);
   // Neither holds it: what it paid alone, never a guessed XP.
   await draw(clear(4_401));
   expect(xps()).toEqual(["+700"]);
@@ -355,7 +356,7 @@ const gems = () =>
     gem.getAttribute("data-size"),
   ]);
 
-it("says what an army spent its point on, the rank as its gem sized to the line", async () => {
+it("reads a historical skill purchase through the story formatter", async () => {
   const row = story(KRUMP, "SkillPointSpent", {
     explorer_id: 71,
     choice: "Battle",
@@ -363,9 +364,8 @@ it("says what an army spent its point on, the rank as its gem sized to the line"
     point_rank: 4,
     stamina: 30,
   });
-  expect((await draw(row)).words).toBe("Krump spent a point on Battle IV");
+  expect((await draw(row)).words).toBe("Krump · Battle IV");
   expect(gems()).toEqual([["IV", "line"]]);
-  expect(host.querySelector(".ui-event__text .ui-feed-line__glyph")!.getAttribute("data-icon")).toBe("order-rage");
 });
 
 it("draws a tier bought and a Shrine's point in the story's own words, each rank as its gem", async () => {

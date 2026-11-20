@@ -1,6 +1,11 @@
 import { expect, it, spyOn, afterEach } from "bun:test";
 import { deriveGameSyncScope, scopeInputKeys, rowInGameSyncScope } from "@bibliothecadao/eternum/game-sync-models";
-import { DAY_UNITS_PER_BAG, expeditionRealmSite, type ExpeditionRules } from "@bibliothecadao/eternum/expeditions";
+import {
+  DAY_UNITS_PER_BAG,
+  expeditionRealmSite,
+  seasonDay,
+  type ExpeditionRules,
+} from "@bibliothecadao/eternum/expeditions";
 import type { GameClient } from "@bibliothecadao/eternum";
 import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
 import { loadNativePresetConfiguration } from "../../../config/deployer/clean/registrar/native-preset";
@@ -11,6 +16,7 @@ const startMainAt = 7200;
 const dayUnitSeconds = Number(definition.rules.day_unit_seconds);
 const calendar: ExpeditionRules = {
   startMainAt,
+  scheduledEndAt: startMainAt + 2 * DAY_UNITS_PER_BAG * dayUnitSeconds,
   endAt: startMainAt + 2 * DAY_UNITS_PER_BAG * dayUnitSeconds,
   dayUnitSeconds,
   seed: 1n,
@@ -26,6 +32,7 @@ const rows = [
   { model: "Structure", value: { entity_id: "1", owner: "10", base: { category: 1 }, metadata: { realm_id: 1 } } },
   { model: "Structure", value: site },
   { model: "ExplorerTroops", value: { explorer_id: "2", owner: "1", troops: { count: "1" } } },
+  { model: "ArmyDay", value: { explorer_id: "2", day: String(seasonDay(calendar, timestamp)) } },
   {
     model: "TileOccupancy",
     value: { entity_id: "2", alt: false, col: home.col, row: home.row + 200, category: 15, is_structure: false },
