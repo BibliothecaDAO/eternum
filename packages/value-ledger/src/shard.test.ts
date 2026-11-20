@@ -126,7 +126,6 @@ it.each(["MarkGameSettled", "RecordBlitzResults"] as const)(
     expect(rpc.execute.mock.calls[0]![0].calldata).toEqual([
       "7",
       "2",
-      "2",
       "1",
       ...encodeNativeCommand(bindings.commandAbi, { kind: name, value: undefined }),
     ]);
