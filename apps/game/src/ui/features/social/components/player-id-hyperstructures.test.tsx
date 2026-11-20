@@ -41,7 +41,14 @@ beforeEach(() => {
   put(
     "GameRegistry",
     [23],
-    gameRegistryRow({ game_id: 23, preset_id: 2, start_settling_at: "1", start_main_at: "1", scheduled_end_at: "200", end_at: "200" }),
+    gameRegistryRow({
+      game_id: 23,
+      preset_id: 2,
+      start_settling_at: "1",
+      start_main_at: "1",
+      scheduled_end_at: "200",
+      end_at: "200",
+    }),
   );
   put("TileOpt", [23, 0, 10, 12], { game_id: 23, alt: false, col: 10, row: 12, data: 2n << 41n });
   put("TileOccupancy", [23, 0, 10, 12], {

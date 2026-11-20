@@ -494,7 +494,9 @@ pub mod StructuresLogic {
             }
             crate::logic::structures::StructureState::transfer_owner(key, owner);
             let points = if record.owner == 0.try_into().unwrap() {
-                IPointsLibraryDispatcher { class_hash: crate::logic::release::class_of(key.game_id, crate::slots::SEASON) }
+                IPointsLibraryDispatcher {
+                    class_hash: crate::logic::release::class_of(key.game_id, crate::slots::SEASON),
+                }
                     .register_capture(key.game_id, owner, crate::commands::action_context(game_context))
             } else {
                 0

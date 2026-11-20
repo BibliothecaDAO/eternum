@@ -193,7 +193,9 @@ fn discover_relic(
     cache: bool,
     timestamp: u64,
 ) -> ResourceKey {
-    super::progression::set_bar(d, key, crate::balance::rules::TROOP_STAMINA_CONFIG.stamina_knight_max.into(), timestamp);
+    super::progression::set_bar(
+        d, key, crate::balance::rules::TROOP_STAMINA_CONFIG.stamina_knight_max.into(), timestamp,
+    );
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     let destination = crate::geometry::neighbor(army.coord, 0);
     let root = relic_root(key.game_id, rules, odds, expected, cache);
