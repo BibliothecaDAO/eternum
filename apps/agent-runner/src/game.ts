@@ -47,7 +47,6 @@ export async function connectRunnerGame(config: RunnerConfig): Promise<RunnerGam
   const client = await createGameClient({
     shard,
     gameId: listing.game_id,
-    presetId: listing.preset_id,
     // The runner reads Realms profiles from nowhere, so it names no player; its prompts speak in addresses.
     playerNames: () => null,
     bindings: bindings as unknown as NativeWorldBindings,

@@ -231,7 +231,6 @@ const createEntryGameClient = async (input: EntryGameClientInput): Promise<GameC
   const client = await createBrowserGameClient({
     shard: await requireOpenShard(input.profile.chainId),
     gameId: input.profile.gameId,
-    presetId: input.profile.presetId,
     authHandler: bootstrapAuthHandler,
     observer: createGameSyncObserver({
       reportProgress,

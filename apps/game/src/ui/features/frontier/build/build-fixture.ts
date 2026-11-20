@@ -1,4 +1,5 @@
 import { gameRegistryRow } from "../../../../../../../packages/core/src/test-support/game-registry";
+import { GAME_FAMILIES } from "../../../../../../../config/source/common/native-preset-modes";
 import { NATIVE_RELEASES } from "../../../../../../../deploy/release/native-release";
 import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -24,7 +25,7 @@ export const realmBoard = () => {
   store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1 })] as never);
   store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
   store.applyFacts([
-    set("0x3", "GameRegistry", gameRegistryRow({ preset_id: 2 })),
+    set("0x3", "GameRegistry", gameRegistryRow({ family: GAME_FAMILIES.blitz })),
     set("0x1ab0", "GameRelease", {
       game_id: 1,
       release_id: NATIVE_RELEASES.frontier.release,
@@ -117,7 +118,7 @@ export const realmBoard = () => {
     }),
   ] as never);
   setBlockTimestampSource(() => 350);
-  configManager.setActiveGame(1, 2);
+  configManager.setActiveGame(1);
   configManager.setStore(store);
   return { store, realm: store.require("Structure", { game_id: 1, entity_id: 7 }) };
 };

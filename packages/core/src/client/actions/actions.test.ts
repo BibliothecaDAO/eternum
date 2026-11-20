@@ -100,7 +100,7 @@ describe("game actions", () => {
 });
 
 const createHarness = (signer: AccountInterface | null) => {
-  ClientConfigManager.instance().setActiveGame(GAME_ID, 0);
+  ClientConfigManager.instance().setActiveGame(GAME_ID);
   const store = new NativeFactStore();
   write(store, "SliceRules", [GAME_ID], { ...preset.rules, game_id: GAME_ID, map_center_offset: 2147483646 });
   ClientConfigManager.instance().setStore(store);

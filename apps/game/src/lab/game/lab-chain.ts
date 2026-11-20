@@ -7,7 +7,13 @@ import { answerLabBuildOrders } from "@/shell/lab/lab-build-orders";
 import { gameChatZoneId } from "@/ui/features/world/containers/hud-chat-window";
 import { L2_LEDGER, l2Provider } from "@/runtime/l2-rpc";
 import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
-import { homeDailyClaim, dayOf, readExpeditionRules, ResourceManager } from "@bibliothecadao/eternum";
+import {
+  homeDailyClaim,
+  dayOf,
+  nativeGameModeOfFamily,
+  readExpeditionRules,
+  ResourceManager,
+} from "@bibliothecadao/eternum";
 import { NativeFactStore, ordinaryHash, type PlayFrame } from "@bibliothecadao/eternum/game-client";
 import {
   deriveGameSyncScope,
@@ -27,11 +33,11 @@ import type { AccountInterface, Call } from "starknet";
 
 import { LAB_CHAIN_ID } from "./lab-shard";
 
-import { FRONTIER_S1_PRESET_ID, nativeGameModeOf } from "../../../../../config/source/common/native-preset-modes";
 import { releaseLine } from "../../../../../packages/core/src/test-support/releases";
 import {
   nativeFactModels,
   nativeFactSchemaIdentity,
+  nativeIdentifiers,
   type NativeModelName,
 } from "../../../../../contracts/l3/world-native/schema/client.gen";
 
@@ -39,7 +45,7 @@ import {
 export const LAB_GAME = {
   chainId: LAB_CHAIN_ID,
   gameId: 1,
-  presetId: FRONTIER_S1_PRESET_ID,
+  family: nativeIdentifiers.family.FRONTIER,
   url: "https://herald.lab.invalid",
 } as const;
 /** The lab game's end: a month of chain seconds, so a session never sees it close. */
@@ -276,7 +282,6 @@ const playerState = (chain: NativeFactStore, player: string) => {
   return {
     registered: true,
     settled: structures.length > 0,
-    roster_wallet: null,
     held_realm_id: own?.pass_kind === 2 ? own.realm_id : null,
     has_home_source: own !== undefined,
     taken_realm_ids: entitlements.filter((row) => row.pass_kind === 2).map((row) => row.realm_id),
@@ -312,9 +317,8 @@ const answerDirectory = (
   const game = {
     game_id: LAB_GAME.gameId,
     name: "lab",
-    mode: nativeGameModeOf(registry.preset_id),
+    mode: nativeGameModeOfFamily(registry.family),
     status: "Live",
-    ready: true,
     dev_mode_on: false,
     expedition: rules.day_unit_seconds
       ? { day_unit_seconds: rules.day_unit_seconds, seed: String(registry.seed) }
@@ -339,8 +343,6 @@ const answerDirectory = (
     get player_state() {
       return playerStateNow();
     },
-    roster_count: 0,
-    preset_id: registry.preset_id,
     registration: null,
     settled_realms_count: 1,
     settled_villages_count: 0,

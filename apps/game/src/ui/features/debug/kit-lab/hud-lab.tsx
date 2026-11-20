@@ -1330,7 +1330,7 @@ export const HudLab = () => {
   const chatPane = useRef<HTMLElement>(null);
   // Chat reads the game's players (its mentions), so the phone's page stands in the lab game, as the desktop's does.
   const chat = lab.chat && (
-    <LabGame preset={FRONTIER_PRESET}>
+    <LabGame mode="frontier">
       {() => <ChatPage rooms={[GLOBAL_ROOM]} signedIn onSignIn={noop} pane={chatPane} onClose={noop} />}
     </LabGame>
   );
@@ -1780,7 +1780,7 @@ const inTheRealm = (lab: LabState): boolean => lab.realmView !== undefined || la
  */
 const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & { desktop: boolean; lab: LabState }) =>
   desktop ? (
-    <LabGame preset={FRONTIER_PRESET}>
+    <LabGame mode="frontier">
       {() => (
         <FrontierDesktop
           season={{ rank: "#12", onOpen: noop }}
@@ -1827,9 +1827,6 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
   ) : (
     <HudBands {...slots} />
   );
-
-/** Frontier's preset, so the lab's game plays as a Frontier game. */
-const FRONTIER_PRESET = 5;
 
 /** The lab realm's name and its LORDS where a state names none, as the desktop's realm panel reads them. */
 const LAB_REALM_NAME = "Duskbite";

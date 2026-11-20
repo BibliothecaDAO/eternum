@@ -2,7 +2,6 @@
 export interface GameProfile {
   chainId: string;
   gameId: number;
-  presetId: number;
   /** The game's display name from its shard's directory. */
   name: string;
 }

@@ -7,6 +7,7 @@ import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { expect, it } from "vitest";
 import { BUILDINGS_CENTER, BuildingType, getProducedResource } from "@bibliothecadao/types";
 import { getGameModeConfig } from "@/config/game-modes";
+import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset-modes";
 import { BUILDINGS_GROUPS } from "../constants/scene-constants";
 import { REALM_SKIN_MODELS } from "../structures/realm-skins";
 import { FRONTIER_PAINTED_BUILDINGS } from "../structures/frontier-painted-buildings";
@@ -23,8 +24,8 @@ it("grounds every buildable kind and tier in each mode, including keeps and cosm
   const kinds = Object.values(BuildingType).filter(
     (kind): kind is BuildingType => typeof kind === "number" && kind !== BuildingType.None,
   );
-  for (const preset of [2, 5]) {
-    const mode = getGameModeConfig(preset);
+  for (const family of [GAME_FAMILIES.blitz, GAME_FAMILIES.frontier]) {
+    const mode = getGameModeConfig(family);
     for (const [group, models] of Object.entries(mode.assets.buildingModelPaths)) {
       if (group !== BUILDINGS_GROUPS.HYPERSTRUCTURE) Object.values(models).forEach((path) => paths.add(path));
     }

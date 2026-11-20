@@ -72,7 +72,7 @@ describe("worldmap exploration projection", () => {
 });
 
 function createHarness() {
-  configManager.setActiveGame(13, 1);
+  configManager.setActiveGame(13);
   const store = new NativeFactStore();
   const projection = new WorldSpatialProjection({ store });
   const write = (keys: number[], model: string, row: Record<string, unknown>) =>

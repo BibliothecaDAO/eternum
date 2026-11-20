@@ -16,33 +16,11 @@ interface RatingsResponse {
   ratings: Record<string, RatingAnswer>;
 }
 
-/**
- * Who stands behind a rated wallet, presentation only: the owner's Realms identity, or null when none is known. A null
- * name (no name chosen) and a null profile both draw the owner as an address.
- */
-export type RatingProfile = { realmsId: string; name: string | null; portrait: string | null } | null;
-
-interface RatingTopResponse {
-  block_number: number;
-  block_hash: string;
-  entries: { rank: number; player: string; rating: string; profile: RatingProfile }[];
-  self: null | { status: "rated"; player: string; rating: string; rank: number | null; profile: RatingProfile };
-}
-
 const readJson = async <T>(path: string): Promise<T> => {
   const response = await fetchApi(path);
   if (!response.ok) throw new Error(`Ratings answered ${response.status}`);
   return (await response.json()) as T;
 };
-
-/** Every rated wallet in rating order, and the reader's own rating and rank when their wallet is given. */
-export const useRatingTop = (wallet: string | null) =>
-  useQuery({
-    queryKey: ["shell", "ratings", "top", wallet],
-    queryFn: () => readJson<RatingTopResponse>(`/api/ratings/top${wallet ? `?player=${wallet}` : ""}`),
-    staleTime: 0,
-    retry: 1,
-  });
 
 /** Each wallet's rating, keyed by the wallet as sent. */
 export const useRatings = (wallets: readonly string[]) =>

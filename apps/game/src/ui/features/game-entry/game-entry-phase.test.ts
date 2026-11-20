@@ -4,10 +4,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   isGameEntryPreflightComplete,
-  resolveBlitzEntry,
   resolveGameEntryBlockingError,
   resolveGameEntryModalPhase,
-  type BlitzEntry,
 } from "./game-entry-phase";
 
 describe("game entry phase resolution", () => {
@@ -21,7 +19,7 @@ describe("game entry phase resolution", () => {
     ).toBe(true);
   });
 
-  it("waits for settlement checks before blitz play entry", () => {
+  it("waits for settlement checks before play entry", () => {
     expect(
       isGameEntryPreflightComplete({
         isSpectateMode: false,
@@ -48,13 +46,11 @@ describe("game entry phase resolution", () => {
     const phase = resolveGameEntryModalPhase({
       bootstrapStatus: "loading",
       hasPhaseError: false,
-      isBlitzMode: true,
-      blitzEntry: null,
       isSpectateMode: false,
-      worldMode: "blitz",
+      worldMode: "eternum",
       isCheckingWorldAvailability: false,
       hasWorldMeta: true,
-      isSeasonMode: false,
+      isSeasonMode: true,
       checksComplete: true,
       needsSettlement: false,
       canPlay: false,
@@ -65,44 +61,10 @@ describe("game entry phase resolution", () => {
     expect(phase).toBe("loading");
   });
 
-  const blitzInput = {
-    bootstrapStatus: "ready" as const,
-    hasPhaseError: false,
-    isBlitzMode: true,
-    isSpectateMode: false,
-    worldMode: "blitz",
-    isCheckingWorldAvailability: false,
-    hasWorldMeta: true,
-    isSeasonMode: false,
-    checksComplete: true,
-    needsSettlement: false,
-    canPlay: false,
-    isSettlementUnlocked: false,
-    hasAccount: true,
-  };
-
-  it.each<[string, boolean, boolean, boolean, BlitzEntry, string]>([
-    ["a member of an unready game waits for its realms", true, false, false, "preparing", "settlement"],
-    ["a member of a ready game plays", true, true, false, "play", "ready"],
-    ["a member of an ended game reviews", true, true, true, "review", "spectate"],
-    ["a non-member of an unready game spectates", false, false, false, "spectate", "spectate"],
-    ["a non-member of a ready game spectates", false, true, false, "spectate", "spectate"],
-    ["a non-member of an ended game reviews", false, true, true, "review", "spectate"],
-  ])("%s", (_, isMember, ready, ended, entry, phase) => {
-    expect(resolveBlitzEntry({ isMember, ready, ended })).toBe(entry);
-    expect(resolveGameEntryModalPhase({ ...blitzInput, blitzEntry: entry })).toBe(phase);
-  });
-
-  it("keeps a blitz player loading until the roster fact arrives", () => {
-    expect(resolveGameEntryModalPhase({ ...blitzInput, blitzEntry: null })).toBe("loading");
-  });
-
   it("waits for Eternum settlement to open without offering position selection", () => {
     const phase = resolveGameEntryModalPhase({
       bootstrapStatus: "ready",
       hasPhaseError: false,
-      isBlitzMode: false,
-      blitzEntry: null,
       isSpectateMode: false,
       worldMode: "eternum",
       isCheckingWorldAvailability: false,
@@ -123,8 +85,6 @@ describe("Eternum dev settlement", () => {
   const input = {
     bootstrapStatus: "ready" as const,
     hasPhaseError: false,
-    isBlitzMode: false,
-    blitzEntry: null,
     isSpectateMode: false,
     worldMode: "eternum",
     isCheckingWorldAvailability: false,
@@ -144,27 +104,12 @@ describe("Eternum dev settlement", () => {
       "ready",
     );
   });
-  it("keeps settled Blitz players in the ready phase", () => {
-    expect(
-      resolveGameEntryModalPhase({
-        ...input,
-        worldMode: "blitz",
-        isSeasonMode: false,
-        isBlitzMode: true,
-        blitzEntry: "play",
-        isEternumDevMode: true,
-        isSettlingAdditionalRealm: true,
-      }),
-    ).toBe("ready");
-  });
 });
 
 describe("the player's account at game entry", () => {
   const frontier = {
     bootstrapStatus: "ready" as const,
     hasPhaseError: false,
-    isBlitzMode: false,
-    blitzEntry: null,
     isSpectateMode: false,
     worldMode: "frontier",
     isCheckingWorldAvailability: false,
@@ -179,9 +124,6 @@ describe("the player's account at game entry", () => {
 
   it("offers no way to play before the account exists", () => {
     expect(resolveGameEntryModalPhase(frontier)).toBe("account");
-    expect(
-      resolveGameEntryModalPhase({ ...frontier, worldMode: "blitz", isSeasonMode: false, isBlitzMode: true }),
-    ).toBe("account");
   });
 
   it("founds once the account has joined", () => {

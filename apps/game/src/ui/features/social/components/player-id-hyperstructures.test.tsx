@@ -1,4 +1,5 @@
 import { gameRegistryRow } from "../../../../../../../packages/core/src/test-support/game-registry";
+import { GAME_FAMILIES } from "../../../../../../../config/source/common/native-preset-modes";
 // @vitest-environment jsdom
 import { configManager } from "@bibliothecadao/eternum";
 import { StructureType } from "@bibliothecadao/types";
@@ -32,14 +33,14 @@ beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   fixture.store = new NativeFactStore();
   fixture.store.setSnapshot({ gameId: 23, complete: true, actor: String(PLAYER), timestamp: 150 });
-  configManager.setActiveGame(23, 2);
+  configManager.setActiveGame(23);
   put("SliceRules", [23], { ...preset.rules, game_id: 23 });
   put(
     "GameRegistry",
     [23],
     gameRegistryRow({
       game_id: 23,
-      preset_id: 2,
+      family: GAME_FAMILIES.blitz,
       start_settling_at: "1",
       start_main_at: "1",
       scheduled_end_at: "200",

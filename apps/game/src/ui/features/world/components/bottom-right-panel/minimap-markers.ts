@@ -17,7 +17,6 @@ export const minimapMarkersView: FactView<Map<string, MinimapMarker>> = {
     "CampaignHome",
     "ExplorerTroops",
     "PlayerEntry",
-    "BlitzRoster",
     "GameRegistry",
     "ExpeditionSite",
     "SliceRules",
@@ -28,7 +27,7 @@ export const minimapMarkersView: FactView<Map<string, MinimapMarker>> = {
     const game = configManager.getActiveGameId();
     // Whose a mark is by the map labels' own rules: a watching viewer's seat colours, else the viewer's side.
     const ownership = (owner: bigint): MarkerOwner => {
-      const watched = watchedSide(store, owner);
+      const watched = watchedSide(owner);
       if (watched) return watched.seat === null ? "nobody" : `seat-${watched.seat}`;
       return sideOf({
         isMine: viewer !== null && owner === BigInt(viewer),

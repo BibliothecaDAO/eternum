@@ -149,35 +149,22 @@ export const useRecentResults = (limit: number, player: string | null = null, en
     retry: 1,
   });
 
-/**
- * Every settled game a player took part in, newest first: their own history followed to its last page, so nothing of
- * theirs falls off the end of a recent page. Asked only for a player (without one it would be every game ever).
- */
-export const usePlayerHistory = (player: string | null) =>
-  useQuery({
-    queryKey: ["shell", "history", "player", player],
-    queryFn: () => readHistory(player as string),
-    enabled: player !== null,
-    staleTime: 30_000,
-    retry: 1,
-  });
-
 /** Every settled game on the shards we list, newest first, followed to its last page: where a season that ended lives. */
 export const useSettledGames = () =>
   useQuery({
     queryKey: ["shell", "history", "all"],
-    queryFn: () => readHistory(null),
+    queryFn: readHistory,
     staleTime: 60_000,
     retry: 1,
   });
 
 const HISTORY_PAGE = 100;
 
-const readHistory = async (player: string | null) => {
+const readHistory = async () => {
   const games: Awaited<ReturnType<typeof fetchDirectoryHistory>>["games"] = [];
   let cursor: string | null = null;
   do {
-    const page = await fetchDirectoryHistory({ limit: HISTORY_PAGE, cursor, player });
+    const page = await fetchDirectoryHistory({ limit: HISTORY_PAGE, cursor });
     games.push(...page.games);
     cursor = page.next;
   } while (cursor !== null);

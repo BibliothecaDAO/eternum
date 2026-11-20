@@ -116,7 +116,7 @@ export const frontierDay = () => {
     }),
   ] as never);
   setBlockTimestampSource(() => 350);
-  configManager.setActiveGame(1, 2);
+  configManager.setActiveGame(1);
   configManager.setStore(store);
   return { store, row: store.require("Structure", { game_id: 1, entity_id: 7 }) };
 };

@@ -56,7 +56,7 @@ const renderInvite = async (aspect?: number) => {
       <MemoryRouter>
         <QueryClientProvider client={new QueryClient()}>
           <LabGame
-            preset={5}
+            mode="frontier"
             facts={() =>
               aspect === undefined
                 ? []

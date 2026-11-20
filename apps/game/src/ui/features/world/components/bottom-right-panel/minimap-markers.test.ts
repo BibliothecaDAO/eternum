@@ -10,6 +10,7 @@ import { setActiveGame } from "@/runtime/world";
 import { setOpenGameSeats } from "@/utils/entity-ownership";
 import { overrideSpectateIntent } from "@/utils/spectator-session";
 import { minimapMarkersView } from "./minimap-markers";
+import { GAME_FAMILIES } from "../../../../../../../../config/source/common/native-preset-modes";
 
 afterEach(() => {
   setBlockTimestampSource(null);
@@ -21,11 +22,11 @@ describe("minimap icon meanings from game facts", () => {
   it("uses the Troll in Frontier and the camp structure in Blitz", () => {
     const { store } = campBeside();
     const game = store.require("GameRegistry", { game_id: 1 });
-    for (const [preset, expected] of [
-      [5, "beast-troll"],
-      [2, "camp"],
+    for (const [family, expected] of [
+      [GAME_FAMILIES.frontier, "beast-troll"],
+      [GAME_FAMILIES.blitz, "camp"],
     ] as const) {
-      store.applyFacts([{ model: "GameRegistry", key: "0x3", value: { ...game, preset_id: preset } }]);
+      store.applyFacts([{ model: "GameRegistry", key: "0x3", value: { ...game, family } }]);
       expect(minimapMarkersView.read(store, null).get(String(SITE))?.name).toBe(expected);
     }
   });
@@ -75,7 +76,7 @@ describe("the minimap to a watching viewer (side-colours-4)", () => {
   it("marks each player's things in their seat, nobody's in grey, whatever the viewer's account", () => {
     const { store } = campBeside();
     // The open game's players in the order they joined it: 0x111 holds realm 7 and army 201.
-    setActiveGame({ chainId: "SHARD", gameId: 1, presetId: 1, name: "SHARD" });
+    setActiveGame({ chainId: "SHARD", gameId: 1, name: "SHARD" });
     setOpenGameSeats({ chainId: "SHARD", gameId: 1 }, [ContractAddress("0x111"), ContractAddress("0x222")]);
     overrideSpectateIntent(true);
     for (const viewer of [null, ContractAddress("0x111"), ContractAddress("0x222")]) {

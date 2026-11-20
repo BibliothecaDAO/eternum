@@ -186,7 +186,7 @@ const mount = async ({ map = true } = {}) => {
       <MemoryRouter>
         <QueryClientProvider client={client}>
           <LabGame
-            preset={5}
+            mode="frontier"
             facts={(store) => {
               const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
               const owner = realmsAccountAddress(ALDRIC, LAB_GUARDIAN.accountClassHash, LAB_GUARDIAN.publicKey);

@@ -19,7 +19,7 @@ import { createObserveTool, OBSERVE_FOCUSES, OBSERVE_TEXT_LIMIT, renderFocus } f
 const RIVAL = ContractAddress(0xdefn);
 
 afterEach(() => {
-  ClientConfigManager.instance().setActiveGame(28, 0);
+  ClientConfigManager.instance().setActiveGame(28);
 });
 
 describe("action catalog", () => {

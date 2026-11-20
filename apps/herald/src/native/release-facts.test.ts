@@ -104,7 +104,7 @@ describe("a release's rule rows", () => {
       world.fold.gameRows("SliceRules", "1").map(({ key, value }) => ({ model: "SliceRules", key, value })),
     );
     const manager = new ClientConfigManager();
-    manager.setActiveGame(1, preset.presetId);
+    manager.setActiveGame(1);
     manager.setStore(store);
     const rules = store.require("SliceRules", { game_id: 1 });
     const stamina = rules.troop_stamina_config;

@@ -59,7 +59,7 @@ const frontierRules = (rules: NativeRows["SliceRules"]) => {
 export const spireScenario = (ground: LabGround = GRASSLAND): LabScenario => {
   // The HUD's whole game (its buildings, rules and recipes) on the spire's day.
   // Frontier's own regions, a hundred tiles wide (config/source/frontier/native.ts).
-  const store = installLabGame(LAB_GAME.presetId, false, () => spireDay({ spacing: 100 }));
+  const store = installLabGame("frontier", false, () => spireDay({ spacing: 100 }));
   const rules = readExpeditionRules(store, 1)!;
   const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
   const site = expeditionRealmSite(rules, entityHomeNamespace(realm.entity_id), SPIRE_DAY_NOW)!;

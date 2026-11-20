@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { BuildingType, ResourcesIds, StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { campBeside, SITE } from "@/ui/features/frontier/sites/site-fixture";
 import { nativeStoryVariants } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset-modes";
 import {
   beastMeaning,
   buildingMeaning,
@@ -32,8 +33,6 @@ describe("guard and site icon meanings", () => {
 
   it("rejects encounter IDs that cannot be represented by the numeric reader", () => {
     const { store } = campBeside("Beasts");
-    const game = store.require("GameRegistry", { game_id: 1 });
-    store.applyFacts([{ model: "GameRegistry", key: "0x3", value: { ...game, preset_id: 5 } }]);
     const structure = store.require("Structure", { game_id: 1, entity_id: SITE });
     expect(() => readStructureMeaning(store, { ...structure, entity_id: 9007199254740993n })).toThrow(
       "Native integer cannot be represented as a JavaScript number: 9007199254740993",
@@ -43,7 +42,6 @@ describe("guard and site icon meanings", () => {
   it("reads the actual encounter band from native facts, unaffected by casualties, and ignores it in Blitz", () => {
     const { store } = campBeside("Beasts");
     const game = store.require("GameRegistry", { game_id: 1 });
-    store.applyFacts([{ model: "GameRegistry", key: "0x3", value: { ...game, preset_id: 5 } }]);
     const structure = store.require("Structure", { game_id: 1, entity_id: SITE });
     const site = store.require("ExpeditionSite", { game_id: 1, entity_id: SITE });
     const bounds = {
@@ -77,7 +75,7 @@ describe("guard and site icon meanings", () => {
       store.applyFacts([{ model: "Guard", key: "0x73", value: { ...guard, troops: { ...guard.troops, count: 1n } } }]);
       expect(readStructureMeaning(store, structure)).toBe(expected);
     }
-    store.applyFacts([{ model: "GameRegistry", key: "0x3", value: { ...game, preset_id: 2 } }]);
+    store.applyFacts([{ model: "GameRegistry", key: "0x3", value: { ...game, family: GAME_FAMILIES.blitz } }]);
     expect(readStructureMeaning(store, structure)).toBe("beasts");
     expect(
       readStructureMeaning(store, { ...structure, base: { ...structure.base, category: StructureType.Camp } }),

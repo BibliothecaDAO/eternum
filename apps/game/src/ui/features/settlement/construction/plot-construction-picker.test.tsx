@@ -24,10 +24,9 @@ import { PlotConstructionPicker } from "./plot-construction-picker";
 
 afterEach(() => disposeGameSyncSession());
 
-/** The lab's Blitz realm (preset 2, the owner's nine resources) as the game holds it, and its build call. */
 const installPickerGame = (stocked: boolean) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  const store = installLabGame(2, false);
+  const store = installLabGame("blitz", false);
   installBlitzBuildRealm(store, stocked);
   useUIStore.setState({ useSimpleCost: false, isSpectating: false });
   const placeBuilding = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));

@@ -41,7 +41,6 @@ const lead = (verb: "play" | "resume") => (game: DirectoryGame) => {
     when: "now",
     verb,
     mine: verb === "resume",
-    source: "game",
     game,
   };
   return <LeadCard item={item} now={1} signedIn />;

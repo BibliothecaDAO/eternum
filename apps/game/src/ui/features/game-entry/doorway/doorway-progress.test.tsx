@@ -18,7 +18,7 @@ const draw = (view: ReturnType<typeof doorwayView>, { asking = false, mode = "fr
         <DoorwayScreen
           view={view}
           realm={null}
-          game={{ mode, preset_id: 1 }}
+          game={{ mode }}
           onRetry={() => {}}
           onSignIn={() => {}}
           asking={asking}

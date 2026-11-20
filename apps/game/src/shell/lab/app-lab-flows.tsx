@@ -148,7 +148,7 @@ export const LabDoorway = () => {
       onOpenRealm={noop}
       onSignIn={noop}
       onSpectate={noop}
-      results="/lab/app/reward-sealed/results/0x5245414c4d53-7"
+      results="/lab/app/season-over/results/0x5245414c4d53-3"
       asking={
         state === "home" ||
         state === "aspect" ||

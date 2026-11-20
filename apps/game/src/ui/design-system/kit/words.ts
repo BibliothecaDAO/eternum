@@ -1565,22 +1565,7 @@ export const BLITZ_WORDS = {
   /** The next game's entry, due to open at the schedule's next tick. */
   entryOpening: "Entry opens in a moment",
   preparing: "Preparing…",
-  /** Shown only to assistive technology; the seats are drawn. */
-  seats: "Seats",
-  registered: "Registered",
-  registeredUnit: "registered",
-  /** Under a slot's registered count: why it has no seats yet. */
-  drawnAtClose: (seats: number) => `Games of ${seats}, drawn at close`,
-  /** A slot taking players: its lobby holds the paid entry. */
-  join: "Join",
-  /** A seated game still being prepared: its lobby shows the roster and Preparing until it opens. */
   lobby: "Lobby",
-  /** The lobby's players: a slot's registrations, a game's seats. */
-  whoIsIn: "Who is in",
-  /** Before the lobby's countdown. */
-  closesIn: "Entry closes in",
-  startsIn: "Starts in",
-  endsIn: "Ends in",
 } as const;
 
 /** A Blitz lobby's chat: its panel, its field and the lines that stand where a message cannot go. */

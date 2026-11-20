@@ -7,7 +7,8 @@ import { afterEach, expect, it, vi } from "vitest";
 vi.mock("@/hooks/context/identity-session", () => ({ useIdentitySession: () => ({ session: null }) }));
 vi.spyOn(console, "error").mockImplementation(() => undefined);
 
-import { BlitzBoard } from "@/shell/season-tab/blitz-board";
+import { useSeasonCalendar } from "@/shell/season-calendar";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 
 import { API_READ_TIMEOUT_MS, fetchApi } from "./app-api";
 
@@ -18,6 +19,11 @@ const hangingFetch = vi.fn(
       init?.signal?.addEventListener("abort", () => reject(init.signal!.reason)),
     ),
 );
+
+const SeasonCalendarRead = () => {
+  const calendar = useSeasonCalendar();
+  return calendar.isError ? <ServiceFailure service="season" error={calendar.error} /> : null;
+};
 
 afterEach(() => {
   vi.useRealTimers();
@@ -36,19 +42,19 @@ it("ends a read that never answers in the screen's failure line, and leaves a wr
     root.render(
       <QueryClientProvider client={client}>
         <MemoryRouter>
-          <BlitzBoard rows={10} />
+          <SeasonCalendarRead />
         </MemoryRouter>
       </QueryClientProvider>,
     ),
   );
-  expect(container.textContent).not.toContain("Ratings did not answer.");
+  expect(container.textContent).not.toContain("Season did not answer.");
   await act(async () => vi.advanceTimersByTime(API_READ_TIMEOUT_MS - 1));
-  expect(container.textContent).not.toContain("Ratings did not answer.");
+  expect(container.textContent).not.toContain("Season did not answer.");
   await act(async () => vi.advanceTimersByTime(1));
   await act(async () => vi.runOnlyPendingTimersAsync());
-  expect(container.textContent).toContain("Ratings did not answer.");
+  expect(container.textContent).toContain("Season did not answer.");
   await act(async () => root.unmount());
 
-  void fetchApi("/api/slots/blitz-1630/register", { method: "POST" });
+  void fetchApi("/api/value/chests/finish?tokenId=41", { method: "POST" });
   expect(hangingFetch.mock.lastCall?.[1]?.signal).toBeUndefined();
 });

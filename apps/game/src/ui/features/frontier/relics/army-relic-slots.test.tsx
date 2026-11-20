@@ -20,7 +20,7 @@ afterEach(() => act(() => root?.unmount()));
 /** Army 201 carrying an Uncommon Blade and a Common Plunder, a Rare Ward running until second 2,800, at second 1,000. */
 const armyWithRelics = () => {
   const { store } = campBeside();
-  configManager.setActiveGame(1, 7);
+  configManager.setActiveGame(1);
   store.applyFacts([
     {
       model: "ArmyRelics",
@@ -86,7 +86,7 @@ it("switches a relic on for free, naming its slot and the id the contract decode
 
 it("shows nothing for an army that carries and runs no relic", () => {
   const { store } = campBeside();
-  configManager.setActiveGame(1, 7);
+  configManager.setActiveGame(1);
   store.applyFacts([
     {
       model: "ArmyRelics",

@@ -105,7 +105,7 @@ const renderHud = async (width: number) => {
     root.render(
       <MemoryRouter>
         <QueryClientProvider client={new QueryClient()}>
-          <LabGame preset={5} facts={() => [LABOR_RULES]}>
+          <LabGame mode="frontier" facts={() => [LABOR_RULES]}>
             {(store) => {
               realmName = getEntityName(REALM, store)!;
               return <FrontierHud seasonOver={SeasonOver} rules={readExpeditionRules(store, 1)!} />;

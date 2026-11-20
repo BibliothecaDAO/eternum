@@ -20,13 +20,11 @@ vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
 
 import { identityClient } from "@/hooks/context/identity-session";
 
-import { PaidEntry, SignInToJoin } from "./blitz/entry-panel";
 import { AccountCard } from "./profile/account-card";
 import { SettingsPage } from "./profile/profile-pages";
 import { useConnectStore } from "./sign-in/connect";
-import { environmentLedger } from "./value/ledger";
 
-const LOBBY = "/blitz/slot-blitz-1";
+const FROM = "/season";
 const unlinked = {
   session: { id: "s", expiresAt: "2099-01-01T00:00:00.000Z", userId: "u" },
   user: { id: "u", realmsId: "0x7", name: "Maelis", email: "you@mail.test", image: "04", emailVerified: true },
@@ -82,25 +80,9 @@ const mount = async (path: string, page: () => ReactNode) => {
 const press = (word: string) =>
   act(async () => [...document.querySelectorAll("button")].find((button) => button.textContent === word)!.click());
 
-it("asks a signed-out player in a lobby to sign in over that lobby, which they never leave", async () => {
-  await mount(LOBBY, () => <SignInToJoin />);
-  await press("Sign in");
-  expect(useConnectStore.getState().request).toEqual({ next: null });
-  expect(where).toBe(LOBBY);
-});
-
-it("sends a player with no payout wallet to link one, carrying the lobby to return to", async () => {
+it("opens Settings on the payout wallet when sent to link one, and returns where it was sent from once it is linked", async () => {
   identity.session = unlinked;
-  await mount(LOBBY, () => (
-    <PaidEntry ledger={environmentLedger()!} slot={{ shard: "0x52", slotId: 1 }} owner={null} game={undefined} />
-  ));
-  await press("Link wallet");
-  expect(where).toBe(`/profile/settings?next=${encodeURIComponent(LOBBY)}`);
-});
-
-it("opens Settings on the payout wallet when sent to link one, and returns to the lobby once it is linked", async () => {
-  identity.session = unlinked;
-  const render = await mount(`/profile/settings?next=${encodeURIComponent(LOBBY)}`, () => (
+  const render = await mount(`/profile/settings?next=${encodeURIComponent(FROM)}`, () => (
     <AccountCard session={identity.session!} />
   ));
   expect(document.body.textContent).toContain("I have a wallet");
@@ -108,17 +90,17 @@ it("opens Settings on the payout wallet when sent to link one, and returns to th
 
   identity.session = linked;
   await render();
-  expect(where).toBe(LOBBY);
+  expect(where).toBe(FROM);
 });
 
 it("keeps a player on Settings when their wallet was already linked as they arrived", async () => {
   identity.session = linked;
-  await mount(`/profile/settings?next=${encodeURIComponent(LOBBY)}`, () => <AccountCard session={identity.session!} />);
-  expect(where).toBe(`/profile/settings?next=${encodeURIComponent(LOBBY)}`);
+  await mount(`/profile/settings?next=${encodeURIComponent(FROM)}`, () => <AccountCard session={identity.session!} />);
+  expect(where).toBe(`/profile/settings?next=${encodeURIComponent(FROM)}`);
 });
 
 it("keeps a player who signs in from Settings on Settings, with where it was sending them", async () => {
-  const settings = `/profile/settings?next=${encodeURIComponent(LOBBY)}`;
+  const settings = `/profile/settings?next=${encodeURIComponent(FROM)}`;
   await mount(settings, () => <SettingsPage />);
   await press("Sign in");
   expect(useConnectStore.getState().request).toEqual({ next: null });

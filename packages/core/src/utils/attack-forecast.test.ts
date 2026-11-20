@@ -47,7 +47,7 @@ type Tile = { col: number; row: number; alt?: boolean };
 type Category = "Knight" | "Crossbowman" | "Paladin";
 
 function frontier() {
-  ClientConfigManager.instance().setActiveGame(GAME_ID, 0);
+  ClientConfigManager.instance().setActiveGame(GAME_ID);
   setBlockTimestampSource(() => NOW);
   const store = new NativeFactStore();
   store.setSnapshot({ gameId: GAME_ID, complete: true, actor: `0x${PLAYER.toString(16)}`, timestamp: NOW });

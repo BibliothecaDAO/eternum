@@ -20,7 +20,7 @@ afterEach(() => {
 it("announces the game's start as it begins, with nothing to press, and lets it go by itself", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
-  const store = installLabGame(2, false);
+  const store = installLabGame("blitz", false);
   const startAt = readFactView(store, seasonClockView).gameStartMainAt!;
   const clockAt = (seconds: number) => act(() => useBlockTimestampStore.setState({ currentBlockTimestamp: seconds }));
   clockAt(startAt - 10);

@@ -13,8 +13,8 @@ vi.mock("@/hooks/context/identity-session", async (original) => ({
 }));
 
 const season = vi.hoisted(() => ({ calendar: { data: undefined as unknown } }));
-vi.mock("../blitz-slot", async (original) => ({
-  ...(await original<typeof import("../blitz-slot")>()),
+vi.mock("../season-calendar", async (original) => ({
+  ...(await original<typeof import("../season-calendar")>()),
   useSeasonCalendar: () => season.calendar,
 }));
 
@@ -114,7 +114,6 @@ it("before the season, shows the time left and asks a signed-out friend to creat
           presetId: FRONTIER_S1_PRESET_ID,
         },
       ],
-      nextBlitz: null,
     },
   };
   service.openShare.mockResolvedValue({ kind: "aspect", moment: 1, name: "Dana", order: 13, members: 39 });

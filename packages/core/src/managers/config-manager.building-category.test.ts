@@ -9,7 +9,7 @@ import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schem
 function fixture(gameId = 54) {
   const store = new NativeFactStore();
   const manager = new ClientConfigManager();
-  manager.setActiveGame(gameId, 2);
+  manager.setActiveGame(gameId);
   const write = (model: string, keys: number[], value: Record<string, unknown>) =>
     store.applyFacts([{ model, key: hash.computePoseidonHashOnElements(keys), value }]);
   write("SliceRules", [gameId], { ...preset.rules, game_id: gameId });
@@ -125,7 +125,7 @@ describe("native immutable configuration", () => {
 
   it("clears the previous game's rules before another game's snapshot", () => {
     const { manager, store } = fixture();
-    manager.setActiveGame(55, 2);
+    manager.setActiveGame(55);
     expect(() => manager.getTick(TickIds.Armies)).toThrow("not synchronized");
     expect(() => manager.setStore(store)).toThrow("not synchronized");
   });

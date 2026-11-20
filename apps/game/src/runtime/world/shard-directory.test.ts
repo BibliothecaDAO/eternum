@@ -1,7 +1,7 @@
 import { expect, it, vi } from "vitest";
 
 /** Herald's directory as the shard answers it now: a test may list a new game between reads. */
-const reads = vi.hoisted(() => ({ count: 0, games: [{ game_id: 3, name: "blitz-3", preset_id: 1 }] }));
+const reads = vi.hoisted(() => ({ count: 0, games: [{ game_id: 3, name: "blitz-3" }] }));
 vi.mock("./shards", () => ({ requireOpenShard: async (chainId: string) => ({ url: "https://shard.test", chainId }) }));
 vi.mock("@bibliothecadao/eternum/shard", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum/shard")>()),
@@ -36,11 +36,10 @@ it("builds a new game's profile on a shard whose earlier answer did not list it 
   await buildGameProfile({ chainId: "0xc", gameId: 3 });
   const before = reads.count;
   // Game 4 is created on the shard after the page read its directory.
-  reads.games = [...reads.games, { game_id: 4, name: "blitz-4", preset_id: 2 }];
+  reads.games = [...reads.games, { game_id: 4, name: "blitz-4" }];
   await expect(buildGameProfile({ chainId: "0xc", gameId: 4 })).resolves.toMatchObject({
     gameId: 4,
     name: "blitz-4",
-    presetId: 2,
   });
   expect(reads.count).toBe(before + 1);
   await buildGameProfile({ chainId: "0xc", gameId: 3 });

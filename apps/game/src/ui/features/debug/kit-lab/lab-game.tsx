@@ -8,25 +8,20 @@ import { openShard } from "@bibliothecadao/eternum/shard";
 import { type ReactNode, useEffect, useState } from "react";
 
 import { installLabGame, LAB_CHAIN, labGameProfile, PLAYER } from "./fixture-game";
+import type { GameType } from "../../../../../../../config/source/common/types";
 import { releaseLine } from "../../../../../../../packages/core/src/test-support/releases";
 
 const LAB_SCHEMA = "0xlab";
 
-/**
- * Dev only: the fixture game the HUD labs play, mounted as the game mounts it, so the HUD's own components (the top
- * bar, the rail's Next up, events and chat, the minimap) draw on it: the game's mode (its preset), whether the viewer
- * watches, and whether the game has ended. Its history reads go to a shard that answers nothing, so the panels show
- * what they show without history.
- */
 export const LabGame = ({
-  preset,
+  mode,
   spectating = false,
   finished = false,
   facts,
   systemCalls,
   children,
 }: {
-  preset: number;
+  mode: GameType;
   spectating?: boolean;
   finished?: boolean;
   /** More of the game a view needs (an army out), read from the installed store. */
@@ -36,13 +31,13 @@ export const LabGame = ({
   children: (store: NativeFactStore) => ReactNode;
 }) => {
   const [store] = useState(() => {
-    const installed = installLabGame(preset, finished);
+    const installed = installLabGame(mode, finished);
     if (facts) installed.applyFacts(facts(installed) as never);
     return installed;
   });
   useState(() => useUIStore.setState({ showBlankOverlay: false, isSpectating: spectating }));
   useLabPlayer();
-  const shardOpen = useLabShard(preset);
+  const shardOpen = useLabShard();
   return (
     <GameProvider
       value={{ store, systemCalls: systemCalls?.(store) ?? {} } as unknown as GameClientSetup}
@@ -72,7 +67,7 @@ export const useLabPlayer = () =>
     return useAccountStore.subscribe(hold);
   }, []);
 
-const useLabShard = (preset: number) => {
+const useLabShard = () => {
   const [open, setOpen] = useState(false);
   useEffect(() => {
     void openShard("https://127.0.0.1:1", LAB_SCHEMA, undefined, {
@@ -85,9 +80,9 @@ const useLabShard = (preset: number) => {
       guardianPublicKey: "0x1",
       l2GasBound: "0x1",
     }).then(() => {
-      setActiveGame(labGameProfile(preset));
+      setActiveGame(labGameProfile());
       setOpen(true);
     });
-  }, [preset]);
+  }, []);
   return open;
 };

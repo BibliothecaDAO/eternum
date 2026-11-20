@@ -15,7 +15,7 @@ export * from "./reveal-yield";
 export * from "./combat-simulator";
 export * from "./entities";
 export * from "./mode-rules";
-export { nativeGameModeOf } from "../../../../config/source/common/native-preset-modes";
+export { nativeGameModeOfFamily } from "../../../../config/source/common/native-preset-modes";
 export * from "./attribute-tiers";
 export * from "./production-path";
 export * from "./troop-raise-cost";

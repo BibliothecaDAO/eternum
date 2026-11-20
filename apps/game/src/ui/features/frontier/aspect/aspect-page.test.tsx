@@ -10,7 +10,7 @@ function fixture(finished = false) {
   const scenario = raceScenario(finished);
   const { store, player, startsAt } = scenario;
   store.setSnapshot({ gameId: 1, actor: player, timestamp: startsAt, complete: true });
-  configManager.setActiveGame(1, 7);
+  configManager.setActiveGame(1);
   return { ...scenario, read: () => readRaceBoard(store, 1, 7n, startsAt) };
 }
 

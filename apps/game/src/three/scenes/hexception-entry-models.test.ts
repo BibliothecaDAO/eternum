@@ -7,7 +7,7 @@ import { BUILDINGS_CENTER, BuildingType, StructureType } from "@bibliothecadao/t
 import { Box3, Group, Mesh, MeshStandardMaterial, BoxGeometry } from "three";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-import { FRONTIER_PRESET_ID } from "../../../../../config/source/common/native-preset-modes";
+import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset-modes";
 
 // A model as the loader hands it over: one mesh, standing for a building's file.
 const loaded = vi.hoisted(() => ({ scene: null as unknown }));
@@ -32,7 +32,7 @@ const realmBoard = (buildings: Array<{ col: number; row: number; category: Build
   const store = new NativeFactStore();
   const scene = Object.assign(Object.create(HexceptionScene.prototype), {
     game: { store },
-    mode: getGameModeConfig(FRONTIER_PRESET_ID),
+    mode: getGameModeConfig(GAME_FAMILIES.frontier),
     state: { structureEntityId: 7 },
     structureStage: 0,
     tileManager: { getWonder: () => undefined },

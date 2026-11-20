@@ -74,7 +74,7 @@ function projectLaunch(
     map_center_offset: ((params.seed + 1) % Math.floor(2147483646 / 2 / 10)) * 10,
   };
   const definitions = readReleaseDefinitions(JSON.parse(releaseDefinitionText(1, definition)));
-  return deriveReleaseFacts(decoder, releaseDefinition(definitions, 1), overrides, params.roster.length, launch);
+  return deriveReleaseFacts(decoder, releaseDefinition(definitions, 1), overrides, launch);
 }
 
 export function serializePresetRows(rows: DecodedWorldEvent[], fixtureSchema: NativeSchema = schema): string[] {

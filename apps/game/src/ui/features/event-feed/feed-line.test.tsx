@@ -47,7 +47,7 @@ let root: Root;
 let host: HTMLDivElement;
 beforeEach(() => {
   game.store = frontierDay().store;
-  configManager.setActiveGame(1, 5);
+  configManager.setActiveGame(1);
   configManager.setStore(game.store);
   // A camp the player's army fights and finds, where the map keeps it.
   game.store.applyFacts([

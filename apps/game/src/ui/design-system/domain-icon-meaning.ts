@@ -5,7 +5,7 @@ import { BuildingType, getProducedResource, StructureType, type StructureNamingM
 import {
   frontierBeast,
   isGuardedSite,
-  nativeGameModeOf,
+  nativeGameModeOfFamily,
   readFrontierBeast,
   type ArchivedStoryVariant,
 } from "@bibliothecadao/eternum";
@@ -94,7 +94,7 @@ export function readStructureMeaning(
   if (category === StructureType.Realm)
     return realmMeaning(structure.base.level, readRealmSkin(store, structure), structure.metadata.has_wonder);
   if (!isGuardedSite(category)) return structureMeaning(category);
-  const mode = nativeGameModeOf(store.require("GameRegistry", { game_id: structure.game_id }).preset_id);
+  const mode = nativeGameModeOfFamily(store.require("GameRegistry", { game_id: structure.game_id }).family);
   const guard =
     mode === "frontier"
       ? readFrontierBeast(store, structure.game_id, safeInteger(structure.entity_id))?.beast

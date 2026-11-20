@@ -10,7 +10,7 @@ import { HudNotice } from "@/ui/design-system/kit/hud-elements";
  * hand-off to the game's route, where the doorway carries on while the map boots.
  */
 
-import { ASPECT_STEP_WORDS, BLITZ_WORDS, HOME_STEP_WORDS } from "@/ui/design-system/kit/words";
+import { ASPECT_STEP_WORDS, HOME_STEP_WORDS } from "@/ui/design-system/kit/words";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -29,10 +29,9 @@ import { useGameEntry } from "@/hooks/use-game-entry";
 
 import { submitSettlement } from "@/services/settlement";
 import { fetchSettlementSnapshot, type SettlementSnapshot } from "@/runtime/world/herald-pre-session-reader";
-import { isGameOver, isMember } from "@/runtime/world/directory";
+import { isGameOver } from "@/runtime/world/directory";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { resultsHref } from "@/shell/season-tab/results-link";
-import { Pill } from "@/ui/design-system/kit/pill";
 import { ClockChip } from "@/ui/design-system/kit/clock-chip";
 import { DoorwayScreen } from "./doorway/doorway-screen";
 import { doorwayView } from "./doorway/doorway-view";
@@ -41,7 +40,6 @@ import type { GameRef } from "@bibliothecadao/eternum/game-client";
 import { Account } from "starknet";
 import {
   isGameEntryPreflightComplete,
-  resolveBlitzEntry,
   resolveGameEntryBlockingError,
   resolveGameEntryModalPhase,
   type GameEntryModalPhase as ModalPhase,
@@ -52,7 +50,6 @@ import { resolveGameEntryTarget } from "./game-entry-navigation";
 import { isSelectedWorldEntityWaitAborted, waitForSelectedWorldEntityState } from "./selected-world-entity-wait";
 
 const SETTLEMENT_SYNC_TIMEOUT_MS = 90000;
-// An Eternum settlement creates one realm; Blitz realms are settled by the launch service.
 const SEASON_SETTLEMENT_COUNT = 1;
 const ENTRY_DIRECTORY_REFETCH_MS = 10_000;
 
@@ -149,11 +146,9 @@ export const GameEntryModal = ({
   const hasWorldMeta = worldMeta !== null;
   const worldName = worldMeta?.name ?? `Game ${game.gameId}`;
   const worldMode = worldMeta?.mode ?? "unknown";
-  const isBlitzMode = worldMode === "blitz";
   const isEternumMode = worldMode === "eternum";
   const isFrontierMode = worldMode === "frontier";
   const gameOver = worldMeta ? isGameOver(worldMeta) : false;
-  // Eternum and Frontier both settle one realm from here; Blitz realms are settled by the launch service.
   const isSeasonMode = isEternumMode || isFrontierMode;
   const isDevMode = worldMeta?.dev_mode_on === true;
   const isEternumDevMode = isEternumMode && isDevMode;
@@ -255,16 +250,10 @@ export const GameEntryModal = ({
   const endAt = worldMeta?.clock.end_at;
   const seasonNotEnded = endAt == null || endAt === 0 || nowSeconds <= endAt;
   const seasonTimingValid = isDevMode || (seasonHasStarted && seasonNotEnded);
-  const blitzEntry = useMemo(() => {
-    if (!isBlitzMode || !worldMeta?.player_state) return null;
-    return resolveBlitzEntry({ isMember: isMember(worldMeta), ready: worldMeta.ready, ended: isGameOver(worldMeta) });
-  }, [isBlitzMode, worldMeta]);
-  // Blitz entry is decided by the roster fact; Eternum entry by the player's own settlement.
-  const checksComplete = isBlitzMode ? blitzEntry != null : settlementCheckComplete;
   const entryPreflightComplete = isGameEntryPreflightComplete({
     isSpectateMode,
     hasAccount: account != null,
-    settlementCheckComplete: checksComplete,
+    settlementCheckComplete,
   });
   const bootstrapStatus: "idle" | "pending-world" | "loading" | "ready" | "error" = preflightError
     ? "error"
@@ -295,15 +284,13 @@ export const GameEntryModal = ({
     const result = resolveGameEntryModalPhase({
       bootstrapStatus,
       hasPhaseError: phaseError != null,
-      isBlitzMode,
-      blitzEntry,
       isSpectateMode,
       worldMode,
       isCheckingWorldAvailability,
       hasWorldMeta: worldMeta != null,
       hasAccount: account != null,
       isSeasonMode,
-      checksComplete,
+      checksComplete: settlementCheckComplete,
       needsSettlement: needsSettlement || choosingSource,
       canPlay: canPlay && !choosingSource,
       isEternumDevMode,
@@ -318,10 +305,8 @@ export const GameEntryModal = ({
     isEternumDevMode,
     devSettlementTarget,
     phaseError,
-    isBlitzMode,
-    blitzEntry,
     isSpectateMode,
-    checksComplete,
+    settlementCheckComplete,
     needsSettlement,
     canPlay,
     choosingSource,
@@ -685,7 +670,6 @@ export const GameEntryModal = ({
     signedIn: sessionStatus === "signed-in",
     accountError,
     foundingFailed: settleStage === "error" && !isFrontierMode,
-    blitzEntry,
   });
 
   return (
@@ -719,11 +703,6 @@ export const GameEntryModal = ({
       }
     >
       {phase === "settlement-waiting" && <ClockChip prefix="starts" at={seasonStartAt ?? undefined} now={nowSeconds} />}
-      {phase === "settlement" && isBlitzMode && worldMeta && (
-        <Pill icon="hourglass">
-          {`${BLITZ_WORDS.preparing} ${Math.min(worldMeta.player_count, worldMeta.roster_count)}/${worldMeta.roster_count}`}
-        </Pill>
-      )}
       {choosingHome && warnsOfSide && side && homeRealm !== null && (
         <RealmSideWarning
           side={side}

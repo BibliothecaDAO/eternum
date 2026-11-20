@@ -118,7 +118,7 @@ describe("worldmap terrain ecology refresh", () => {
 });
 
 function createHarness() {
-  configManager.setActiveGame(11, 1);
+  configManager.setActiveGame(11);
   const store = new NativeFactStore();
   const tileKeys = new Map<string, string>();
   const projection = new WorldSpatialProjection({ store });

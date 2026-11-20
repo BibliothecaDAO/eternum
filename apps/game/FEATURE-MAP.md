@@ -78,8 +78,7 @@ reward chest at each tier, sealed and opened, among them), and links to the real
 fixtures; `pnpm --dir apps/game prove:app <base-url> <out-dir>` captures those pages on a desktop and a phone and checks
 them (nothing spills out of its block, every picture loads, one gold verb at most, the page's place the one lit, the
 painting and the bar on a desktop, each place's word whole on a phone), the bar with the longest name beside the install
-notice at 1024 and 1440 px (`/lab/app/long-name`), the phone's four places at 360 px, the lobby's entry with every
-choice taken at 1920, 1024 and 390 px, the account's pages on a desktop and a phone (`account`: sign-in's steps, You
+notice at 1024 and 1440 px (`/lab/app/long-name`), the phone's four places at 360 px, the account's pages on a desktop and a phone (`account`: sign-in's steps, You
 signed in, out and unnamed, Settings and what its Name, Portrait, Payout wallet and Sign out rows open, and each window
 over the page, the Golden ticket's, Realms' and Connect's, closed from its cross as a player presses it), the doorway
 into a game at each of its holds (`doorway`: `/lab/app/home/doorway/<state>`, the map booting, sign-in, the season
@@ -90,20 +89,17 @@ game's Results, presses **See the end map** and holds the map to its scene being
 Share on Results, a release picked on What's new, a legal page's places, a Season row's chips, Settings' Name, You with
 no finished game (`/lab/app/no-games`) and a session with no name (`/lab/app/unnamed`), the phone's own card and a
 Results board (see `boards`). The pages: Play (`/`) the lead widest and each age as a painted column, Blitz's always:
-with no Blitz open it shows the season calendar's next ranked game, its start and when its entry opens, in the player's
-local time (`nextBlitz` from the launch service's `/api/factory/calendar`, the schedule's own; `/lab/app/blitz-next`),
-and says none is scheduled only when the season has no next game (`/lab/app/no-blitz`), and otherwise ends on **Build
-orders**, naming the order the player's games follow; a mode's card with nothing to do now (no game on it with a verb;
-for Blitz's column, none on or to come), the lead or a column, is idle, dimmed with nothing to press and its one line
-saying when it opens or that none is scheduled (Blitz on `/lab/app/no-blitz`); retired Eternum games offer no entry,
-while their finished results retain their names and paintings; Build orders (`/blitz/build-orders`,
-`/lab/app/home/blitz/build-orders` on three fixture orders whose saves the tab keeps) the account's orders, and on a
-desktop the followed one's steps beside them; a Blitz lobby (`/blitz/:id`) who is in, the entry and the chat side by
-side; Season (`/season`) the player's figures over Frontier's and Blitz's boards, Frontier's the last season's final
-board while none runs (`/lab/app/no-season/season`: prod's October season, the Playtest, kept in
-`src/shell/season-tab/archive/` after its shard was torn down) and **Past seasons** under it, each row opening that
-season's Results (`/lab/app/season-running/season`); Results (`/results/:id`, with **See the end map**) a Blitz's game
-and the chest at its tier, a Frontier season's recap (Season, You and Results below); What's new (`/scroll`) a release's
+it holds the player's unopened Blitz results and then ends on **Build orders**, naming the order the player's games
+follow, else says none is scheduled (`/lab/app/no-blitz`); a mode's card with nothing to do now (no game on it with a
+verb), the lead or a column, is idle, dimmed with nothing to press and its one line saying when it opens or that none is
+scheduled (Blitz on `/lab/app/no-blitz`); retired Eternum games offer no entry, while their finished results retain
+their names and paintings; Build orders (`/blitz/build-orders`, `/lab/app/home/blitz/build-orders` on three fixture
+orders whose saves the tab keeps) the account's orders, and on a desktop the followed one's steps beside them; Season
+(`/season`) the player's figures over Frontier's board, the last season's final board while none runs
+(`/lab/app/no-season/season`: prod's October season, the Playtest, kept in `src/shell/season-tab/archive/` after its
+shard was torn down) and **Past seasons** under it, each row opening that season's Results
+(`/lab/app/season-running/season`); Results (`/results/:id`, with **See the end map**) a Blitz's game, a Frontier
+season's recap (Season, You and Results below); What's new (`/scroll`) a release's
 patch notes, a tab per section, and every release. `/lab/kit/panels` the HUD's holdings and selected-realm panels as a
 player sees them, on a fixture realm. `/lab/kit/unified/<view>` the in-game HUD every mode shares (a phone's width draws
 the compact HUD), as the game mounts it on the lab's game: `blitz` (the Build order panel under Next up, read from the
@@ -142,14 +138,13 @@ number, time or name written outside it where a player reads it, and on any stri
 long one cut with an ellipsis; and its scroll: every place in an area its rows tall, your own row waiting at its foot
 while your place is below, else standing in it.
 
-`prove:app <base-url> <out-dir> own-row` presses every board's own row as a player does, Season's Frontier and Blitz and
-the game's Season sheet, at 1920 and 390 px: at rest it waits at the foot while your place is below; scrolled to the
+`prove:app <base-url> <out-dir> own-row` presses every board's own row as a player does, Season's Frontier and the game's
+Season sheet, at 1920 and 390 px: at rest it waits at the foot while your place is below; scrolled to the
 board's end, past your place, it waits at the top (under the sheet's column names); pressed there, your place comes to
 the middle of the scroll; pressed again in its place, it does what its row does (opens your page, your realm's detail).
 
 `prove:app <base-url> <out-dir> board-load` measures a board of many players through its real path, the app lab's
-`?field=<players>` (Frontier's board read at Herald's route on its 30 s refresh, the Blitz rating with every row's
-profile): for 87, 1,000 and 3,000 players, on the desktop and a phone's viewport with the CPU slowed 4×, three runs
+`?field=<players>` (Frontier's board read at Herald's route on its 30 s refresh): for 87, 1,000 and 3,000 players, on the desktop and a phone's viewport with the CPU slowed 4×, three runs
 each, the time from a click on Season to every row drawn, the frame Herald's refresh lands in, and a scroll's frames,
 with the machine's load beside each and a summary of each field and device (median and range).
 
@@ -169,9 +164,8 @@ card beside the list on a desktop and in its place on a phone, and the lit Playe
 `prove:app … phone` plays it too.
 
 Play's paths have a command: `pnpm --dir apps/game prove:play --base-url https://127.0.0.1:<port> --out <dir>` drives
-Play against a running dev build. It opens each lab fixture and the live page signed out (once with the slots read
-failing) at desktop and phone sizes, counts what is on the page, presses each row's verb and checks that it reached that
-row's own game, lobby or results (`scripts/prove-play.mjs`, writing `play-proof.json` and screenshots into a new
+Play against a running dev build. It opens each lab fixture and the live page signed out at desktop and phone sizes,
+counts what is on the page, presses each row's verb and checks that it reached that row's own game or results (`scripts/prove-play.mjs`, writing `play-proof.json` and screenshots into a new
 directory per run, and exiting 1 unless every press arrived). The places beyond Play have their own:
 `pnpm --dir apps/game prove:shell --base-url https://127.0.0.1:<port> --out <dir> [--state <file>]` presses each flow of
 Season, What's new (from You, a section's tab chosen), the terms from the footer, You and Settings from a fresh Play at
@@ -179,7 +173,7 @@ both sizes, as a new visitor or, given a saved signed-in browser state, as a ret
 each control through the browser. You is the bar's place named You: on a desktop the player's name and portrait at the
 bar's end (named "You: <name>" for assistive technology), through which a returning player reaches Settings and Sign
 out; a Season board counts as shown with its first place or its line saying no one is on it yet. Signed out it also
-measures the lab's fixture pages (Play, a running Blitz season, a claim, a sealed chest, a paid entry, You, Settings,
+measures the lab's fixture pages (Play, You, Settings,
 What's new the legal pages, each sign-in step, the doorway's holds and an unknown path) and holds every page it passes,
 lab or live, to its content (words, controls, fields or a card's picture) starting within 64 px under the bar (or a
 phone's top row), every word displaying at 14 px or more as drawn (an SVG's scale counted), and on desktop the body
@@ -213,7 +207,7 @@ sheet's bar: the brand's lettered mark (56 px; 48 px in a phone's top row), Play
 page's notice, and the player (name and portrait, or You) at its right end. `Esc` goes back and `Enter` takes the page's
 step, neither key printed on its button (`shell/frame/page-frame.tsx`, `shell/frame/tabs.tsx`,
 `shell/frame/desktop-keys.ts`, the sheet's `AppTopBar` and `AppPageHead` in `ui/design-system/kit/app-elements.tsx`). A
-full-screen step (sign-in, a lobby) keeps the bar with the mark alone. The brand is the Realms Brand Kit v3: its palette
+full-screen step (sign-in) keeps the bar with the mark alone. The brand is the Realms Brand Kit v3: its palette
 (`src/brand/palette.json`, read by `src/tokens.ts`), its faces (Realms Titling for one game's start on its card, IM Fell
 English SC for headings, Cinzel for buttons, tabs and the bar's places, Exo 2 for everything read, the HUD included) and
 its marks by displayed size (`REALMS_MARK` in `ui/design-system/icon-meaning.ts`: the lettered mark on the first frame,
@@ -248,7 +242,7 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Play: what to do now, then each mode's games                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | `/`                                                            | Top bar **Play** (see Play below)                                                                                                                                                                                                                                              |
 | Build orders: your Blitz orders, saved on your account: make from every Blitz building (each tier's resources and troops, the biome troop's barracks and armies by tier), paste, copy as JSON or as a prompt for an AI                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | `/blitz/build-orders`                                          | **Play**, Blitz's last row (it names the order your games follow); in a Blitz, the Build order panel's pencil                                                                                                                                                                  |
-| Season: Frontier's board, Blitz's rating and its prize                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | `/season`                                                      | Top bar **Season**; a phone switches Frontier / Blitz                                                                                                                                                                                                                          |
+| Season: Frontier's board                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | `/season`                                                      | Top bar **Season**                                                                                                                                                                                                                                                             |
 | A player's card and finished games                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `/p/:address`                                                  | A row of Frontier's board (Season or a result); **Season**, lit, returns to it                                                                                                                                                                                                 |
 | You: your card, finished games, Settings, docs                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | `/profile`                                                     | Top bar **You**, the player's name at its end (signed out: **Sign in**)                                                                                                                                                                                                        |
 | Invite friends: your invite link with **Copy** and **Share**, each friend who signed up through it (signed up, founded, counted, not counted; golden), your ways to golden (a golden friend, the golden link) and a pending upgrade; shown until the Devcon season ends                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `/profile`                                                     | Top bar **You**, the **Invite friends** panel on your own card                                                                                                                                                                                                                 |
@@ -256,13 +250,11 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
 | How to play (the Frontier guide, docs.realms.party/frontier/, a new tab)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | —                                                              | You, **How to play**                                                                                                                                                                                                                                                           |
 | What's new: a release's patch notes (All modes, Frontier, Blitz, Eternum), a tab per section, every release, the full rules (docs)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `/scroll` (an old `/scroll/:post` goes to realms.world/scroll) | You, **What's new**; the footer's **What's new**; a section opens from its tab, a release from **Releases** (the page goes to its notes)                                                                                                                                       |
 | Patch notes: one file per release (`content/patch-notes/`, its `AGENTS.md`), generated by `node scripts/generate-patch-notes.mjs`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | —                                                              | What's new; the docs site's **Changelog** (`/changelog`) renders the same releases                                                                                                                                                                                             |
-| Chat: Global and **Messages**, as in a game (the same chat, one connection while signed in); signed out, **Sign in to chat**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | `/chat` (a phone's page, the chat filling it)                  | A phone's **Chat** tab, its unread counted on it; a desktop's top bar **Chat** opens it over the page at the right (its × or `Escape` closes it); on a page that draws the chat itself (`/chat`, a lobby) there is no pane, and on `/chat` the bar's **Chat** is the place lit |
+| Chat: Global and **Messages**, as in a game (the same chat, one connection while signed in); signed out, **Sign in to chat**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | `/chat` (a phone's page, the chat filling it)                  | A phone's **Chat** tab, its unread counted on it; a desktop's top bar **Chat** opens it over the page at the right (its × or `Escape` closes it); on a page that draws the chat itself (`/chat`) there is no pane         , and on `/chat` the bar's **Chat** is the place lit |
 | Market: Realms' marketplace (realms.market, a new tab)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | —                                                              | You, **Market**; the footer's **Market**                                                                                                                                                                                                                                       |
 | Terms, privacy, credits                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `/terms`, `/privacy`, `/credits`                               | The footer at the end of every app page                                                                                                                                                                                                                                        |
 | Footer: the socials realms.world links (X, Discord, Telegram, CoinGecko, GitHub, each with its official mark), realms.world, the legal pages                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | —                                                              | The end of every app page (not a full-screen step)                                                                                                                                                                                                                             |
-| Sign in (Google, Apple, Discord or X, each shown only once its OAuth app is configured, or an emailed code; a provider finished in another browser shows a code there for this one, lab: `first-visit/connect/handoff`); on a phone Discord opens the Discord app (the website without it) from a tap that already holds its address (its button reads **Preparing…** until then) and leaves the window as it was, its button reading **Opening Discord…** (lab: `first-visit/connect/opening`; another way in chosen there ends Discord's sign-in; an iPhone without the app goes on to the website after 2.5 s); back from the app, its step takes a code and offers **Continue in browser**; a provider sign-up takes its provider name (numbered when taken) and a random portrait by itself and goes straight on; an email sign-up is asked for a name, the field empty (lab: `first-visit/connect/name-email`) | `/sign-in`                                                     | You, **Sign in**; Play free; a lobby's **Sign in**                                                                                                                                                                                                                             |
-| Blitz lobby: entry, payment, countdown, chat (its tabs Lobby, Global and **Messages**; any signed-in player reads Lobby, a payout wallet registered in the slot writes there)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `/blitz/:slot`, `/blitz/game-:chain-:game`                     | Play, **Join** on a slot, **Lobby** on a seat; short of test LORDS, **Mint 1,000 test tokens** under the entry                                                                                                                                                                 |
-| Enter or watch a running Blitz                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | `/g/:chain/:game/...`                                          | Play, **Enter** (seated) or **Watch**                                                                                                                                                                                                                                          |
+| Sign in (Google, Apple, Discord or X, each shown only once its OAuth app is configured, or an emailed code; a provider finished in another browser shows a code there for this one, lab: `first-visit/connect/handoff`); on a phone Discord opens the Discord app (the website without it) from a tap that already holds its address (its button reads **Preparing…** until then) and leaves the window as it was, its button reading **Opening Discord…** (lab: `first-visit/connect/opening`; another way in chosen there ends Discord's sign-in; an iPhone without the app goes on to the website after 2.5 s); back from the app, its step takes a code and offers **Continue in browser**; a provider sign-up takes its provider name (numbered when taken) and a random portrait by itself and goes straight on; an email sign-up is asked for a name, the field empty (lab: `first-visit/connect/name-email`) | `/sign-in`                                                     | You, **Sign in**; Play free                                                                                                                                                                                                                                                    |
 | Boot diagnostics: the loading screen's timeline and renderer switch, verbose logs                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | `/g/:chain/:game/...?logs=1`                                   | Add `?logs=1` to a game's address; without it no screen shows them                                                                                                                                                                                                             |
 | Action timeline: the last actions and sends, each with its send stages (release ready, left the queue, nonce, answered and included with their source, settled) and stream phases, timed from the click                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `/g/:chain/:game/map?logs=1`                                   | Bottom right of the world map; always recorded in `window.__clientActionLatencyMeasurements`                                                                                                                                                                                   |
 | A finished game's results and review                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `/results/:chainId-:gameId`                                    | Play, **Results**; a finished game on You or a player's page; in the game, **Game finished** → **See the results**; an ended game's doorway or map address, **Results**                                                                                                        |
@@ -278,19 +270,14 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   scroll; each row one line at any width) under the podium of its top prizes (each place's medal, its LORDS and who
   holds it among players with a site cleared, else Open; a finished season's Results show the winners the ledger fixed,
   each named by its award receipt, else Pending; `/lab/app/home/season`, `/lab/app/season-unpublished/season`,
-  `/lab/app/season-over/results/0x5245414c4d53-3`) and Blitz's rating board. While a Blitz season runs, each paid rating
-  place shows what it would take of the pool if the season ended now; the pool and its end stand at the board's title.
-  Once it is over, your share and its **Claim** stand above the rows. The prize is read from your own paid games, so
-  signed out the board shows the rating alone. The rating board holds every rated wallet, in the same scroll, yours held
-  in sight the same way. A Frontier row opens that player.
+  `/lab/app/season-over/results/0x5245414c4d53-3`). A row opens that player.
 - **You** opens on your own card, your name and portrait from the session (a player not yet known shows a muted bar and
   an empty ring, never a stand-in name), and lists your last 8 finished games in every mode; with none yet, the
   desktop's games plate says they will show there. A row opens its Results, with **You** lit as the way back to the list
   (Results reached from Play or after a match have **Continue** instead). A session with no name claimed yet (an email
   sign-up that left the name step, or no free Discord name) offers **Claim name** and **Sign out**, on You and in
   Settings.
-- **Results** of a Blitz names the game and its date and, for a paid seat, the chest at its tier. A sealed chest's
-  **Open** is the page's gold button; **Continue** stands beside it in outline.
+- **Results** of a Blitz names the game and its date.
 - **A season's name** is one rule (`seasonTitle`, `src/shell/season.ts`), read by every surface that shows one (the
   Season tab's clock and calendar chips and Past seasons, the recap's header, its deck's foot and the X post's line, and
   so Results): an archived season goes by its archive entry's own name, with no number (prod's October season is the
@@ -382,7 +369,7 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   as the form opens and shown, **Max** is the balance less the most the fee may take, and a balance short of the fee
   says how much it needs; **Review**, the send's own fee shown again, then **Confirm with your passkey**). The wallet
   pays its fee in LORDS through AVNU's gasless mode; only a recovery step is sponsored. It stays listed with Send when
-  another wallet is linked. Every paid action whose wallet is the Realms wallet (Blitz entry, chest, prize) shows its
+  another wallet is linked. Every paid action whose wallet is the Realms wallet shows its
   fee and confirms with the passkey instead of opening a wallet (`shell/value/wallet-actions.tsx`, `WalletSign`).
 - **Recovery** (Settings, **Payout wallet**, under the Realms wallet): **Lost your passkey?** → **Make a new passkey**
   (refused on a device that still holds the wallet's passkey) → the emailed code; the escape starts on chain and the
@@ -409,22 +396,18 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   per site per game day. A foreground device stays quiet. `build.sh test-deep-alerts` exercises the confirmed watcher,
   timed wake, retry cancellation and restart through the real notifier. The site card's payment and join path are at
   `/lab/game?scenario=deep`; `build.sh playtest-deep` drives desktop and phone views.
-- **The Blitz lobby** counts down to one moment: entry closing while the slot takes players, then the games' start (the
-  lobby's title names the start time).
 
 ### Play
 
-- **Now** leads with the one gold step, first match wins: **Enter** a Blitz seat, **Resume** the Frontier day,
-  **Results** of a game of yours not yet opened on this device (any mode, looked up in your last 8 finished games),
-  **Lobby** of a seat whose game is still being prepared, **Play** (signed out **Play free**, which opens sign-in and
-  then the season), **Join** a Blitz, **Watch** one, Eternum's opening. Everything else under way follows, each with its
-  own verb.
+- **Now** leads with the one gold step, first match wins: **Resume** the Frontier day, **Play** (signed out **Play
+  free**, which opens sign-in and then the season), **Results** of a game of yours not yet opened on this device (any
+  mode, looked up in your last 8 finished games). Everything else under way follows, each with its own verb.
 - **Next and done** shows one mode at a time behind its switch, opening on the first with something to do; a dot marks a
-  mode holding something of yours. Blitz: slots to **Join**, a refund to **Take refund**, a seat's **Lobby**,
-  **Results**. Eternum: when it opens.
-- A read that fails (Blitz's slots, your results) says so with **Try again**; the games that answered stay usable.
-- Before the season: while the season calendar's Frontier phase has not started and Play holds nothing else (no game, no
-  Blitz to come, every read answered), Play is the season's countdown on Frontier's painting: the day it opens, **Starts
+  mode holding something of yours. Blitz: **Results**. Eternum: when it opens.
+- A read that fails (the season's calendar, your results) says so with **Try again**; the games that answered stay
+  usable.
+- Before the season: while the season calendar's Frontier phase has not started and Play holds nothing else (no game, every
+  read answered), Play is the season's countdown on Frontier's painting: the day it opens, **Starts
   in …**, the four Aspects with their Orders' crests, and signed out one verb **Create your account** (opens sign-in).
   Signed in, Play asks the account's side for the season instead, on one screen: **Choose your Aspect** (each card its
   members and about how many LORDS a player gets on average of the Aspect's total), then that Aspect's Orders below it,
@@ -467,15 +450,13 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   cannot be selected. **Continue with my free home** enters without attaching a source; with no sources to offer, entry
   resumes normally. A home can gain only one source, which cannot be replaced, except a regular Devcon home's golden
   upgrade from a golden friend or a golden link. Its identity and existing traits stay unchanged.
-- A Blitz lobby, signed out, asks to **Sign in** and returns to it. With no payout wallet, **Link wallet** opens
-  Settings on the wallet (`/profile/settings?next=…`) and returns to the lobby once one is linked. The lobby keeps the
-  places, Play lit. Sign-in from You or Settings returns to the page it was asked from.
+- Sign-in from You or Settings returns to the page it was asked from.
 - Play's former addresses, shared publicly (`/blitz`, `/frontier`, `/eternum`, `/dominion`), lead to Play: a permanent
   redirect on a full load (`public/_redirects`), and Play in the app (`RETIRED_PLAY_PATHS` in `src/app.tsx`).
 
 ## Blitz and Eternum in a match (`/g/:chain/:game/map` or `/hex`)
 
-A match opens from the lobby (**Your game**) or from home (**Enter**), on the world map in every mode (Frontier too: its
+A match opens from home, on the world map in every mode (Frontier too: its
 realm is one press of **Realm** away, except the entry that has just created it, which arrives in the realm with an open
 plot lit for the first build; a spectator's map opens on their own realm when the signed-in player has one in the game,
 else on the season leader's realm in Frontier and the first realm in Blitz). Add `?spectate=true` to watch a running
@@ -499,9 +480,8 @@ one scrolled up to read stays put with **New messages** to jump down (the lab's 
 offline. On the open pane, at 1440×900 and on a phone with touch, it reads the history's mentions and types `@` to list,
 pick and send one. It opens Aldric's card from his name and checks his realm, **Mute**, **Unmute** and **Message**, and
 the online count. On the app lab it opens the app's chat: the desktop bar's **Chat** pane over Play (`/lab/app/home`,
-Global's history and field, `Escape`), the phone's page filling `/lab/app/home/chat` between the top band and the tabs,
-and a Blitz lobby's chat (`/lab/app/entry-choose/blitz/slot-blitz-1630`: Lobby read-only for a wallet not registered,
-Global written in); and Frontier's phone Chat page (`/lab/kit/hud/chat`) filling the band from the strip to the place
+Global's history and field, `Escape`), the phone's page filling `/lab/app/home/chat` between the top band and the tabs;
+and Frontier's phone Chat page (`/lab/kit/hud/chat`) filling the band from the strip to the place
 bar, its rooms' tabs in its head row beside the players online and its cross; while the keyboard is up the strip and
 Next up step aside with the place bar, leaving the tabs, the history and the field (`prove:app <base> <out> phone`,
 `chat-typing`, under a 533 px keyboard). There too it reads the room's place chips (the lab realm's opens, a gone army's
@@ -680,11 +660,6 @@ an eligible player. The lab proof does not establish those live actions.
 
 ### Blitz rules a player meets
 
-- **Entry closes five minutes before the start.** At the close the slot splits into games of up to 24 and the launch
-  service seats every player, aiming to finish inside those five minutes; that target is unmeasured for large slots
-  (`BLITZ_SLOT_PREPARATION_SECONDS`, `packages/value-ledger/src/blitz-slots.ts`). A game opens at its scheduled time
-  once its whole roster is seated; until then its seats show **Lobby** (Preparing). If seating overruns, the game opens
-  when its last seat lands and ends at its scheduled end: the start and end never move.
 - **Starting forces.** Each of a player's three realms starts with 1,000 T1 troops garrisoned and 1,000 in reserve, one
   realm Knights, one Crossbowmen, one Paladins, in an order drawn per player. No army stands on the map at the start;
   the player creates one from the reserve.
@@ -801,9 +776,8 @@ Its source commit is pinned in the SVG. The former 44 px PNG is deleted.
 
 In `/lab/kit/icons`, search **lords** to inspect the mark at 24/32/64 px. `/lab/kit/hud/value-hud`,
 `/lab/kit/hud/season-over` and `/lab/kit/hud/withdraw` show the purse, Frontier results and withdrawal with production
-components. `pnpm icons:prove <new-evidence-dir> https://127.0.0.1:4193 --lords` also checks the lobby entry and results
-fixtures at desktop and phone widths, requiring every LORDS image to decode from the official token path. It includes
-the 96 px token prize at `/lab/app/reward-lords/results/0x5245414c4d53-7?capture=1`.
+components. `pnpm icons:prove <new-evidence-dir> https://127.0.0.1:4193 --lords` also checks the results
+fixtures at desktop and phone widths, requiring every LORDS image to decode from the official token path.
 
 ### Resource icon comparison
 
@@ -856,14 +830,12 @@ fixture on WebGPU and WebGL at 1920×1080. See `src/lab/README.md`.
 
 ## Reward chest artwork
 
-Paid Blitz Results → Chest uses the five approved rank-band chests, sealed or opened, through `rewardChestMeaning` and
-`Icon`. The entry's reward share, payout-wallet prize line and unranked results chest count use the unranked reward
-chest. In-game crates keep `chest`, the model render. `/lab/kit/reward-chests` compares all bands and links to the real
-reward panel's sealed, opening, opened and pending fixtures. Reward tests exercise every band and reject the map-crate
-artwork.
+The five approved rank-band chests, sealed or opened, are drawn through `rewardChestMeaning` and `Icon`. In-game crates
+keep `chest`, the model render. `/lab/kit/reward-chests` compares all bands. Icon tests exercise every band and reject
+the map-crate artwork.
 
-`pnpm icons:prove <new-evidence-dir> https://127.0.0.1:4193 --rewards` drives the comparison links on desktop and phone,
-decodes every tier and checks the real results page selects the right chest in each state.
+`pnpm icons:prove <new-evidence-dir> https://127.0.0.1:4193 --rewards` drives the comparison on desktop and phone and
+decodes every tier.
 
 ### Ivory relief utilities
 
@@ -877,7 +849,7 @@ app fixtures show the production components. `pnpm icons:prove <new-evidence-dir
 captures the selected-army HUD, HUD menu, app Home and Settings at desktop and phone sizes and decodes their artwork.
 `pnpm icons:check` requires the approved utility style and checks master hashes, regenerated delivery bytes and fill.
 
-`pnpm icons:prove <new-evidence-dir> https://127.0.0.1:4193 --app` checks the app entry, Play, lobby, Season, results,
+`pnpm icons:prove <new-evidence-dir> https://127.0.0.1:4193 --app` checks the app entry, Play, Season, results,
 reward, profile, Settings, news, legal and sign-in fixtures at desktop and phone sizes. Every rendered utility image
 must decode and match the committed Ivory delivery SHA-256, independently of the served manifest. The incoming app sheet
 uses the same `Icon` / `IconMeaning` contract; its page migration needs no icon migration.

@@ -10,14 +10,14 @@ import { BuildingType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
 import { blitzBalance } from "../../../../../../config/source/blitz/balance";
-import { blitzPreset } from "../../../../../../config/source/blitz/native";
+import { GAME_FAMILIES } from "../../../../../../config/source/common/native-preset-modes";
 import { buildOrderGoalIcon } from "./build-order-icons";
 
 const { getGameModeConfig } = await import("@/config/game-modes");
 
 /** Every building a Blitz realm can raise: one Blitz's config prices and its construction panel allows. */
 const buildableInBlitz = (): BuildingType[] => {
-  const mode = getGameModeConfig(blitzPreset.id);
+  const mode = getGameModeConfig(GAME_FAMILIES.blitz);
   const costs = blitzBalance.buildings!.complexBuildingCosts! as Partial<Record<BuildingType, unknown[]>>;
   return Object.values(BuildingType).filter(
     (type): type is BuildingType =>

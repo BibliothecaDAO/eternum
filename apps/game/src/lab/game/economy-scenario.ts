@@ -4,6 +4,7 @@ import { RESOURCE_PRECISION, ResourcesIds, TileOccupier } from "@bibliothecadao/
 
 import { nativeArrivalConstants } from "../../../../../contracts/l3/world-native/schema/balance.gen";
 import { blitzPreset } from "../../../../../config/source/blitz/native";
+import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset-modes";
 import { type LabCommand, type LabFact, type LabScenario, wire } from "./lab-chain";
 import { realmScenario } from "./realm-scenario";
 import { balancesPaid, besideOnOpenLand } from "./spire-scenario";
@@ -29,7 +30,7 @@ export const economyScenario = (): LabScenario => {
   };
   const destination = besideOnOpenLand(store, at);
   store.applyFacts([
-    row("GameRegistry", store.wireKeyOf("GameRegistry", { game_id: 1 })!, { ...registry, preset_id: blitzPreset.id }),
+    row("GameRegistry", store.wireKeyOf("GameRegistry", { game_id: 1 })!, { ...registry, family: GAME_FAMILIES.blitz }),
     row("SliceRules", store.wireKeyOf("SliceRules", { game_id: 1 })!, {
       ...rules,
       day_unit_seconds: 0,

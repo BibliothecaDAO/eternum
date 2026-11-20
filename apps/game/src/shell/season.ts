@@ -8,7 +8,7 @@ import { type DayClock, dayTone } from "@/ui/features/frontier/hud/day-clock";
 import { isRealmCategory } from "@bibliothecadao/eternum/expeditions";
 
 import { nativePresets } from "../../../../config/source/native";
-import type { SeasonPhase } from "./blitz-slot";
+import type { SeasonPhase } from "./season-calendar";
 import type { DirectoryGame } from "./herald";
 import { gameKey } from "./play/play-board";
 import { ARCHIVED_SEASONS, archivedSeason } from "./season-tab/archive/archive";

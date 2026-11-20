@@ -1305,7 +1305,7 @@ export class ArmyManager {
       plate: buildArmyPlate(
         {
           ...army,
-          watched: watchedSide(this.store, army.owner.address),
+          watched: watchedSide(army.owner.address),
         },
         this.resolveHomeRealmName(army),
         configManager.getExploreStaminaCost(
@@ -2764,7 +2764,7 @@ export class ArmyManager {
     const owner = army.owner.address;
     return armyPathColour(
       { isMine: army.isMine, isAlly: army.isAlly, owner: army.owner },
-      watchedSide(this.store, owner),
+      watchedSide(owner),
     );
   }
 

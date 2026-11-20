@@ -9,6 +9,6 @@ import preset from "../../../../contracts/l3/world-native/tests/fixtures/current
  */
 export function installLabGameRules(store: NativeFactStore): void {
   store.applyFacts([{ model: "SliceRules", key: "2", value: { ...preset.rules, game_id: 1 } }]);
-  configManager.setActiveGame(1, 2);
+  configManager.setActiveGame(1);
   configManager.setStore(store);
 }

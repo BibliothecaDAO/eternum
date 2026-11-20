@@ -14,7 +14,7 @@ function expectReported(deliver: () => void, message: string) {
 }
 
 function fixture() {
-  configManager.setActiveGame(1, 1);
+  configManager.setActiveGame(1);
   const store = new NativeFactStore();
   return { store, listener: new WorldUpdateListener({ store } as GameClientSetup) };
 }

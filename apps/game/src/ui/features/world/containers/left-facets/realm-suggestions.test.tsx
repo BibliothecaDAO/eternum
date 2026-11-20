@@ -49,7 +49,7 @@ const wire = (row: unknown) =>
 
 /** The lab's Blitz realm, stocked to build, as the game holds it. */
 const blitzRealm = () => {
-  const store = installLabGame(2, false);
+  const store = installLabGame("blitz", false);
   installBlitzBuildRealm(store, true);
   return store;
 };

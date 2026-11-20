@@ -87,7 +87,7 @@ describe("game views", () => {
 });
 
 const createHarness = (): { store: NativeFactStore; views: GameViews } => {
-  ClientConfigManager.instance().setActiveGame(GAME_ID, 1);
+  ClientConfigManager.instance().setActiveGame(GAME_ID);
   const store = new NativeFactStore();
   return { store, views: createGameViews(fakeClient(store), PLAYER, () => null) };
 };

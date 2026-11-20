@@ -53,10 +53,6 @@ export const subscribeSeats = (listener: () => void): (() => void) => {
   return () => seatListeners.delete(listener);
 };
 
-/**
- * Sets an open game's seat order (a Frontier or Eternum game has no roster on the chain), as `useOpenGameSeats` read it
- * for that game. Labels and marks drawn by seat are told again.
- */
 export const setOpenGameSeats = (game: GameRef, order: bigint[]): void => {
   const key = gameKey(game);
   const same =
@@ -81,14 +77,7 @@ export const onSidesChanged = (listener: () => void): (() => void) => {
   };
 };
 
-/**
- * The game's players in seat order, the same on every client and through the game: a Blitz game's roster, fixed
- * before play; else an open game's players in the order they joined it (`useOpenGameSeats`). Empty until this game's
- * own order is known: another game's, on this shard or another, never stands in while its read is on its way or failed.
- */
-export const seatOrder = (store: NativeFactStore): bigint[] => {
-  const roster = store.get("BlitzRoster", { game_id: configManager.getActiveGameId() });
-  if (roster) return roster.players.map((player) => ContractAddress(player.account));
+export const seatOrder = (): bigint[] => {
   const game = getActiveGame();
   return game && openGameSeats?.game === gameKey(game) ? openGameSeats.order : [];
 };
@@ -99,11 +88,8 @@ export const seatOrder = (store: NativeFactStore): bigint[] => {
  * minimap and the standings; nobody's things are grey. Null while the viewer plays: the three sides tell it
  * (map-plates.css).
  */
-export const watchedSide = (
-  store: NativeFactStore | null | undefined,
-  owner: bigint | string | null | undefined,
-): SeatSide | null => {
+export const watchedSide = (owner: bigint | string | null | undefined): SeatSide | null => {
   if (!isWatching()) return null;
   const address = toAddress(owner);
-  return seatSide(store && address ? seatOrder(store).indexOf(address) : null);
+  return seatSide(address ? seatOrder().indexOf(address) : null);
 };

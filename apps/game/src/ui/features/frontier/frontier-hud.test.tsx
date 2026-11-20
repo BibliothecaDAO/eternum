@@ -120,7 +120,7 @@ const renderHud = () =>
     root.render(
       <MemoryRouter>
         <QueryClientProvider client={new QueryClient()}>
-          <LabGame preset={5} facts={(store) => [LABOR_RULES, sealRelease(store)]}>
+          <LabGame mode="frontier" facts={(store) => [LABOR_RULES, sealRelease(store)]}>
             {(store) => {
               shownStore = store;
               return <FrontierHud seasonOver={SeasonOver} rules={readExpeditionRules(store, 1)!} />;
@@ -675,7 +675,7 @@ it("keeps the extended season live past its old end and reloads its final day fr
         <MemoryRouter>
           <QueryClientProvider client={new QueryClient()}>
             <LabGame
-              preset={5}
+              mode="frontier"
               facts={(store) => {
                 useChainTimeStore.getState().anchor({ timestamp: now * 1000 });
                 currentTime = now;
@@ -773,7 +773,7 @@ const renderVisit = async (facts: unknown[] = []) => {
       <MemoryRouter>
         <QueryClientProvider client={new QueryClient()}>
           <LabGame
-            preset={5}
+            mode="frontier"
             facts={(store) => {
               const visited = neighbour(store);
               names = {

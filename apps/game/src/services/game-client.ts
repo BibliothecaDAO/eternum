@@ -5,7 +5,7 @@ import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 
 type BrowserGameInput = Pick<
   Parameters<typeof createGameClient>[0],
-  "shard" | "gameId" | "presetId" | "observer" | "authHandler"
+  "shard" | "gameId" | "observer" | "authHandler"
 >;
 
 /**

@@ -7,7 +7,7 @@ import { filterPlayersByBlitzSettlement, readBlitzSettlementPlayerAddresses } fr
 describe("readBlitzSettlementPlayerAddresses", () => {
   it("reads the entered gameplay account and isolates the active game", () => {
     const store = new NativeFactStore();
-    configManager.setActiveGame(1, 1);
+    configManager.setActiveGame(1);
     store.applyFacts(
       [1, 2].map((game) => ({
         model: "PlayerEntry",

@@ -18,7 +18,6 @@ const state = vi.hoisted(() => ({
     mode: "frontier",
     dev_mode_on: false,
     preset_id: 5,
-    ready: true,
     clock: { start_settling_at: 1, start_main_at: 1, scheduled_end_at: 9999999999, end_at: 9999999999 },
     aspect_members: undefined as Record<number, number> | undefined,
   },

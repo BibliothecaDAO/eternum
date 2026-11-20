@@ -41,7 +41,7 @@ export const DoorwayScreen = ({
   view: DoorwayView;
   realm: DoorwayRealm | null;
   /** The game being entered, once the directory has it: its mode names the page, paints it and picks its advice. */
-  game?: Pick<DirectoryGame, "mode" | "preset_id">;
+  game?: Pick<DirectoryGame, "mode">;
   onRetry: () => void;
   /** Opens the realm view without the map, when the map could not be drawn. */
   onOpenRealm?: () => void;

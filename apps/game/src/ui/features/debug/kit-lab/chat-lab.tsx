@@ -97,7 +97,7 @@ const RoomPlayers = ({ children }: { children: ReactNode }) => {
 const LabPlaces = ({ select = false, children }: { select?: boolean; children: ReactNode }) => {
   const { store } = useGame().setup;
   useState(() => {
-    const profile = labGameProfile(FRONTIER_PRESET);
+    const profile = labGameProfile();
     setActiveGame(profile);
     const game = { chainId: profile.chainId, gameId: profile.gameId, name: profile.name };
     // Aldric's own realm, owned by his account as the guardian makes it from his Realms id: his card shows it.
@@ -146,7 +146,6 @@ const LabPlaces = ({ select = false, children }: { select?: boolean; children: R
 /** The lab game's realm, as the map selects it. */
 const LAB_REALM = { kind: "structure" as const, entityId: 7 };
 const ALDRIC_REALM = 77;
-const FRONTIER_PRESET = 5;
 
 const noop = () => undefined;
 

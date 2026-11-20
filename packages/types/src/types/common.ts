@@ -397,7 +397,6 @@ export interface Config {
     startMainAt: number;
 
     endGraceSeconds: number;
-    bridgeCloseAfterEndSeconds: number;
   };
   bridge: {
     velords_fee_on_dpt_percent: number;

@@ -5,6 +5,7 @@ import { useChatRevealed } from "@/ui/features/social/realtime-chat/hooks/use-ch
 import { useSeenRoom } from "@/ui/features/social/realtime-chat/hooks/use-seen-room";
 import { useRequestSignIn } from "@/shell/sign-in/connect";
 import { useChatPeople } from "@/ui/features/social/realtime-chat/hooks/use-chat-people";
+import { getGameModeId } from "@/config/game-modes";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon } from "@/ui/design-system/icon";
 import { HudChip, HudPage, HudPill } from "@/ui/design-system/kit/hud-elements";
@@ -21,7 +22,7 @@ import { chatRooms } from "@/ui/features/social/realtime-chat/model/chat-rooms";
 import { chatUnread } from "@/ui/features/social/realtime-chat/model/direct-unread";
 import { messageWords, placeOf } from "@/ui/features/social/realtime-chat/model/place";
 import { usePlaceReader } from "@/ui/features/social/realtime-chat/ui/shared/use-chat-map";
-import { configManager, nativeGameModeOf } from "@bibliothecadao/eternum";
+import { configManager } from "@bibliothecadao/eternum";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 
 import { useEffect, useMemo, useRef } from "react";
@@ -44,7 +45,7 @@ const useGameChatRoom = () => {
   const game = getActiveGame();
   const gameZoneId = game ? gameChatZoneId(game.chainId, configManager.getActiveGameId()) : "";
   const rooms = useMemo(
-    () => chatRooms(game ? { zoneId: gameZoneId, mode: nativeGameModeOf(game.presetId) } : null),
+    () => chatRooms(game ? { zoneId: gameZoneId, mode: getGameModeId() } : null),
     [game, gameZoneId],
   );
   const zoneId = useRealtimeChatSelector((state) =>

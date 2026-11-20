@@ -55,7 +55,7 @@ export class ClientConfigManager {
     return (ClientConfigManager._instance ??= new ClientConfigManager());
   }
 
-  public setActiveGame(gameId: number, _presetId: number) {
+  public setActiveGame(gameId: number) {
     if (!Number.isSafeInteger(gameId) || gameId <= 0) throw new Error("A positive game id is required");
     disposeActiveGameSyncRuntime();
     this.store = undefined;
@@ -426,6 +426,9 @@ export class ClientConfigManager {
   }
   getBuildingConfig() {
     return this.rules().building_config;
+  }
+  getFamily(): number {
+    return this.game().family;
   }
   isCommandEnabled(command: keyof typeof nativeCommandBits): boolean {
     return (this.rules().command_mask & BigInt(nativeCommandBits[command])) !== 0n;

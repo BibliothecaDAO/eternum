@@ -88,7 +88,6 @@ it("keeps chain time where Herald's head put it while a realm's production waits
       "0x2",
       "GameRegistry",
       gameRegistryRow({
-        preset_id: 1,
         start_settling_at: String(HEAD_SECONDS - 60),
         start_main_at: String(startsAt),
         scheduled_end_at: String(startsAt + 3600),
