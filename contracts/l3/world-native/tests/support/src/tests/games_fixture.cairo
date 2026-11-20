@@ -27,7 +27,7 @@ pub mod GamesFixture {
         TContractState, +Drop<TContractState>,
     > of crate::expeditions::IExpeditionRules<TContractState> {
         fn depth_rules(self: @TContractState, game_id: u32, depth: u8) -> crate::expeditions::DepthRules {
-            crate::logic::expeditions::depth_rules(game_id, depth)
+            crate::logic::expeditions::depth_rules(depth)
         }
     }
 
@@ -159,20 +159,12 @@ pub mod GamesFixture {
     pub impl ExtractionFixture<
         TContractState, +Drop<TContractState>,
     > of crate::exploration_rewards::IExtraction<TContractState> {
-        fn extraction_rewards(
-            self: @TContractState, game_id: u32,
-        ) -> Span<crate::exploration_rewards::ExplorationReward> {
-            let classes = fixture_classes(game_id);
-            crate::exploration_rewards::IExtractionDispatcherTrait::extraction_rewards(
-                crate::exploration_rewards::IExtractionLibraryDispatcher { class_hash: classes.prizes.read() }, game_id,
-            )
-        }
         fn extract_exploration_reward(
             ref self: TContractState,
             game_id: u32,
             actor: starknet::ContractAddress,
             explorer_id: u64,
-            revealed: Option<crate::troops::Coord>,
+            coord: crate::troops::Coord,
             context: crate::commands::ActionContext,
         ) {
             let classes = fixture_classes(game_id);
@@ -181,7 +173,7 @@ pub mod GamesFixture {
                 game_id,
                 actor,
                 explorer_id,
-                revealed,
+                coord,
                 context,
             )
         }

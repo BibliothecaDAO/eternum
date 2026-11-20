@@ -40,7 +40,6 @@ export const frontierPreset = {
   banes: null,
   startingTroops: Array.from({ length: 17 }, () => "Knight" as const),
   realmResources: [],
-  supplies: [],
   bridgeResources: [],
   id: FRONTIER_PRESET_ID,
   gameType: "frontier",

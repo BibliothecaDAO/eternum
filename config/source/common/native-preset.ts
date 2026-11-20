@@ -34,7 +34,6 @@ export interface NativePreset {
   /** One troop type per biome; empty for a fixed roster, which deals each player one type per realm. */
   startingTroops: readonly ("Knight" | "Paladin" | "Crossbowman")[];
   realmResources: readonly number[];
-  supplies: readonly { resource_type: number; percent: number; percent_max: number; weight: number }[];
   bridgeResources: readonly number[];
   modeRules: number;
   entryRule: number;

@@ -37,10 +37,6 @@ pub fn current_definition(name: ByteArray) -> (u32, crate::presets::PresetDefini
     assert!(registration.is_empty());
     (preset_id, definition)
 }
-pub fn frontier_discovery_rules() -> crate::expeditions::FrontierDiscoveryRules {
-    let (_, definition) = current_definition("frontier-check");
-    definition.economy.discovery.unwrap()
-}
 
 pub fn launch(address: ContractAddress, name: ByteArray) -> u32 {
     let (preset_id, definition) = current_definition(name.clone());
@@ -178,8 +174,7 @@ pub fn observe_settlement(ref rows: Array<ObservedRow>, address: ContractAddress
     }
     row(ref rows, 'RealmGrants', key, settlement_views.realm_grants(game_id));
     row(ref rows, 'VillageRules', key, villages.village_rules(game_id));
-    let depths = interact_with_state(address, || crate::logic::preset_record::for_game(game_id).depth_count.read());
-    for depth in 0..depths {
+    for depth in 0..crate::balance::expeditions::DEPTH_RULES.span().len() {
         row(
             ref rows,
             'DepthRules',
@@ -211,10 +206,7 @@ pub fn observe_economy(ref rows: Array<ObservedRow>, address: ContractAddress, g
         interact_with_state(address, || crate::logic::preset_record::for_game(game_id).labor_rules.read()) {
         row(ref rows, 'LaborRules', key, labor);
     }
-    if let Some(discovery) =
-        interact_with_state(address, || crate::logic::preset_record::for_game(game_id).discovery_rules.read()) {
-        row(ref rows, 'FrontierDiscoveryRules', key, discovery);
-    }
+    row(ref rows, 'FrontierDiscoveryRules', key, crate::balance::expeditions::FRONTIER_DISCOVERY);
     let deposits = interact_with_state(address, || crate::logic::preset_record::for_game(game_id).deposit_rules.read());
     if deposits.is_some() {
         row(ref rows, 'DepositRules', key, bridge.deposit_rules(game_id));
@@ -236,8 +228,6 @@ pub fn observe_economy(ref rows: Array<ObservedRow>, address: ContractAddress, g
 }
 pub fn observe_rewards(ref rows: Array<ObservedRow>, address: ContractAddress, game_id: u32) {
     let key = array![game_id.into()].span();
-    let extraction = IExtractionDispatcher { contract_address: address };
-    row(ref rows, 'ExtractionRewards', key, extraction.extraction_rewards(game_id));
 }
 
 fn observed_quest_rules(game_id: u32) -> Option<crate::quests::QuestRules> {

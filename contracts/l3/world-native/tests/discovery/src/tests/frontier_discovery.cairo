@@ -3,11 +3,7 @@ pub use world_test_support::tests::frontier_discovery::*;
 
 #[test]
 fn frontier_draws_the_ruled_odds_over_100k_reveals() {
-    let preset = super::preset_projection::frontier_discovery_rules();
-    assert_eq!(
-        (preset.beasts_bps, preset.camp_bps, preset.rift_bps, preset.ruin_bps, preset.shrine_bps, preset.well_bps),
-        (900, 400, 400, 300, 300, 300),
-    );
+    let preset = crate::balance::expeditions::FRONTIER_DISCOVERY;
     let mut counts: Felt252Dict<u32> = Default::default();
     for sample in 0_u64..100000 {
         let seed = 0x46524f4e54494552 + Into::<u64, u256>::into(sample);
@@ -50,7 +46,7 @@ fn a_day_without_a_chest_never_draws_a_ruin_and_its_share_stays_empty() {
 
 #[test]
 fn the_floor_draws_only_kinds_still_allowed() {
-    let unlocked = super::preset_projection::frontier_discovery_rules();
+    let unlocked = crate::balance::expeditions::FRONTIER_DISCOVERY;
     let locked = rules();
     let mut empty = 0_u8;
     for sample in 0_u64..20000 {
@@ -93,7 +89,7 @@ fn frontier_floor_is_home_day_scoped_and_relic_finds_reset_it() {
 
 #[test]
 fn shrine_and_well_appear_only_once_researched() {
-    let unlocked = super::preset_projection::frontier_discovery_rules();
+    let unlocked = crate::balance::expeditions::FRONTIER_DISCOVERY;
     let locked = rules();
     for sample in 0_u64..20000 {
         let without = frontier(locked, 100, 0, Some(RELIC), 0x5349544553 + Into::<u64, u256>::into(sample));
@@ -108,7 +104,7 @@ fn shrine_and_well_appear_only_once_researched() {
 
 #[test]
 fn locked_discoveries_stay_unavailable_even_at_the_floor() {
-    let preset = super::preset_projection::frontier_discovery_rules();
+    let preset = crate::balance::expeditions::FRONTIER_DISCOVERY;
     for sample in 0_u64..1000 {
         let seed = sample.into();
         for empty in array![0_u8, 7] {
@@ -121,24 +117,6 @@ fn locked_discoveries_stay_unavailable_even_at_the_floor() {
         }
     }
 }
-
-#[test]
-#[should_panic(expected: "discovery odds exceed 100 percent")]
-fn discovery_rejects_total_weights_above_one_hundred_percent() {
-    crate::discovery::validate_frontier(
-        FrontierDiscoveryRules {
-            beasts_bps: 1000,
-            camp_bps: 1000,
-            rift_bps: 1000,
-            shrine_bps: 4000,
-            well_bps: 4000,
-            ruin_bps: 0,
-            empty_reveal_limit: 7,
-        },
-        100,
-    );
-}
-
 
 #[test]
 fn clear_mist_doubles_every_find_weight_and_preserves_the_empty_floor() {

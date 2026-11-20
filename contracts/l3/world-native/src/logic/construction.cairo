@@ -59,13 +59,6 @@ pub mod ConstructionLogic {
 
     #[abi(embed_v0)]
     impl FrontierDiscovery of crate::expeditions::IFrontierDiscovery<ContractState> {
-        fn frontier_discovery_rules(
-            self: @ContractState, game_id: u32,
-        ) -> Option<crate::expeditions::FrontierDiscoveryRules> {
-            crate::logic::preset_record::for_game(game_id).discovery_rules.read()
-        }
-
-
         fn expedition_discovery(
             self: @ContractState, key: crate::expeditions::ExpeditionDiscoveryKey,
         ) -> Option<crate::expeditions::ExpeditionDiscovery> {

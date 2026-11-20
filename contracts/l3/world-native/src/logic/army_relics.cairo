@@ -230,7 +230,7 @@ fn reveal_and_pay(army: ExplorerKey, point: crate::troops::Coord, seed: u256, co
         game_id,
         actor,
         army.explorer_id,
-        Some(point),
+        point,
         crate::commands::ActionContext { raw_root: seed, ..context },
     );
 }

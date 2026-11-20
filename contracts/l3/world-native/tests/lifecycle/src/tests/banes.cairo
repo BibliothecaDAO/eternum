@@ -33,21 +33,6 @@ fn definition() -> crate::presets::PresetDefinition {
             );
     preset.rules.battle_config.regular_immunity_ticks = 0;
     preset.rules.battle_config.cooldown_seconds = 0;
-    let mut depths = array![];
-    for depth in preset.settlement.depths {
-        depths
-            .append(
-                crate::expeditions::DepthRules {
-                    beast_weak_lower: 1,
-                    beast_weak_upper: 1,
-                    beast_strong_lower: 2,
-                    beast_strong_upper: 2,
-                    guard_step: 1,
-                    ..*depth,
-                },
-            );
-    }
-    preset.settlement.depths = depths.span();
     let command = Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: 1, day: 0 });
     let encoded = world_test_support::tests::play_fixture::encode(command);
     let index: u32 = (*encoded.at(0)).try_into().unwrap();
@@ -115,9 +100,7 @@ fn exploration_settles_mist_tide_until_the_exact_lights_quorum_second() {
     assert!(execute_in_game(d, game_id, super::army_activity::muster(home.entity_id, 0, 0, 10), tomorrow));
     let slot = crate::troops::ArmySlotKey { game_id, structure_id: home.entity_id, epoch: 1, slot: 0 };
     let explorer_id = super::army_activity::slot_army(d, slot);
-    let discovery = interact_with_state(
-        d.games, || crate::logic::preset_record::for_game(game_id).discovery_rules.read().unwrap(),
-    );
+    let discovery = crate::balance::expeditions::FRONTIER_DISCOVERY;
     for step in 0_u64..3 {
         let root = world_test_support::tests::registrar::discovery_root(
             game_id,
@@ -207,14 +190,11 @@ pub fn complete(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) {
         assert!(execute_in_game(d, home.game_id, super::army_activity::muster(home.entity_id, 0, 0, 10), timestamp));
     }
     let explorer_id = super::army_activity::slot_army(d, slot);
-    let (kind, already_complete, rules) = interact_with_state(
+    let (kind, already_complete) = interact_with_state(
         d.games,
-        || (
-            crate::logic::banes::quest_kind(home, day),
-            crate::logic::quests::read(home, day).completed_level != 0,
-            crate::logic::preset_record::for_game(home.game_id).discovery_rules.read().unwrap(),
-        ),
+        || (crate::logic::banes::quest_kind(home, day), crate::logic::quests::read(home, day).completed_level != 0),
     );
+    let rules = crate::balance::expeditions::FRONTIER_DISCOVERY;
     let fight = !already_complete && kind != crate::quests::LIGHTS;
     let discovery = if fight {
         crate::discovery::Discovery::Beasts
@@ -246,6 +226,7 @@ pub fn complete(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) {
         }
     }
     if fight {
+        world_test_support::tests::registrar::strong_frontier_army(d, home.game_id, key);
         let site = interact_with_state(
             d.games, || crate::logic::map::occupancy(crate::geometry::tile_key(home.game_id, destination)).unwrap(),
         );
@@ -691,11 +672,7 @@ fn mist_tide_counts_each_real_reveal_once_and_keeps_the_rolled_day() {
     let explorer_id = super::army_activity::slot_army(
         d, crate::troops::ArmySlotKey { game_id, structure_id: home.entity_id, epoch: 1, slot: 0 },
     );
-    let rules = interact_with_state(
-        d.games, || {
-            crate::logic::preset_record::for_game(game_id).discovery_rules.read().unwrap()
-        },
-    );
+    let rules = crate::balance::expeditions::FRONTIER_DISCOVERY;
     let root = world_test_support::tests::registrar::discovery_root(
         game_id,
         crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, well_bps: 0, ..rules },

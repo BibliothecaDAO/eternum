@@ -4,7 +4,6 @@ description: The layout, exploring, spires, and the structures worth taking
 ---
 
 import { BLITZ } from "@/utils/blitz";
-import { ExplorationRewards } from "@/components/blitz-components/ExplorationRewards";
 import { Shot, Video } from "@/components/Media";
 
 # The map
@@ -18,11 +17,8 @@ Each player's three realms stand close together, three hexes apart.
 
 ## Exploring
 
-An army beside an unexplored tile can explore it, for {BLITZ.stamina.explore} stamina. The tile is revealed to everyone,
-scores {BLITZ.points.tile} points, and pays the army's home realm one of the finds below: a share of the army's strength
-(its troop count times its tier's strength), counted up to {BLITZ.map.exploreCap}.
-
-<ExplorationRewards />
+An army beside an unexplored tile can explore it, for {BLITZ.stamina.explore} stamina. The tile is revealed to everyone
+and scores {BLITZ.points.tile} points.
 
 <Video name="blitz/explore" caption="An army explores, and each tile it reveals is drawn as it lands." />
 

@@ -45,7 +45,7 @@ fn write_site(key: crate::resources::ResourceKey, site: ExpeditionSite) {
 }
 
 pub fn depth_rules_at(game_id: u32, coord: Coord) -> DepthRules {
-    depth_rules(game_id, depth_at(game_id, coord))
+    depth_rules(depth_at(game_id, coord))
 }
 
 pub fn depth_at(game_id: u32, coord: Coord) -> u8 {
@@ -53,8 +53,8 @@ pub fn depth_at(game_id: u32, coord: Coord) -> u8 {
     (coord.y / spacing % 4).try_into().unwrap()
 }
 
-pub fn depth_rules(game_id: u32, depth: u8) -> DepthRules {
-    crate::logic::preset_record::for_game(game_id).depth_rules.read(depth).expect('missing depth rules')
+pub fn depth_rules(depth: u8) -> DepthRules {
+    *crate::balance::expeditions::DEPTH_RULES.span().at(depth.into())
 }
 
 pub fn discovery(key: ExpeditionDiscoveryKey) -> Option<ExpeditionDiscovery> {

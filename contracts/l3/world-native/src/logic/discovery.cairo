@@ -49,17 +49,8 @@ pub fn reveal(
     result
 }
 
-fn roll(
-    key: TileKey, explorer_id: u64, seed: u256, context: crate::commands::ActionContext,
-) -> crate::discovery::Discovery {
-    let mut rules = crate::logic::preset_record::for_game(key.game_id)
-        .discovery_rules
-        .read()
-        .expect('missing discovery rules');
-    let home = crate::state::read().troops.explorers.entry((key.game_id, explorer_id)).owner.read();
-    assert!(home != 0, "missing exploring army");
-    let home_key = crate::resources::ResourceKey { game_id: key.game_id, entity_id: home };
-    let learned = crate::logic::research::require(home_key).learned;
+pub fn lore_rules(learned: u64) -> crate::expeditions::FrontierDiscoveryRules {
+    let mut rules = crate::balance::expeditions::FRONTIER_DISCOVERY;
     let lore = crate::research::tier(learned, crate::research::ROW_LORE);
     if lore < crate::research::LORE_SHRINES {
         rules.shrine_bps = 0;
@@ -67,6 +58,17 @@ fn roll(
     if lore < crate::research::LORE_WELLS {
         rules.well_bps = 0;
     }
+    rules
+}
+
+fn roll(
+    key: TileKey, explorer_id: u64, seed: u256, context: crate::commands::ActionContext,
+) -> crate::discovery::Discovery {
+    let home = crate::state::read().troops.explorers.entry((key.game_id, explorer_id)).owner.read();
+    assert!(home != 0, "missing exploring army");
+    let home_key = crate::resources::ResourceKey { game_id: key.game_id, entity_id: home };
+    let learned = crate::logic::research::require(home_key).learned;
+    let rules = lore_rules(learned);
     let counter = crate::expeditions::ExpeditionDiscoveryKey {
         game_id: key.game_id,
         structure_id: home,
@@ -87,7 +89,7 @@ fn roll(
     );
     let day = crate::logic::expeditions::discovery(counter)
         .unwrap_or(crate::expeditions::ExpeditionDiscovery { empty_reveals: 0, ruin_cleared: false });
-    let ruin = Some(crate::army_relics::draw(crate::logic::expeditions::depth_rules(key.game_id, depth).chest, seed));
+    let ruin = Some(crate::army_relics::draw(crate::logic::expeditions::depth_rules(depth).chest, seed));
     let result = if crate::logic::spires::discover_on_reveal(
         crate::spires::ExpeditionSpireKey { game_id: key.game_id, structure_id: home, epoch: counter.epoch, depth },
         Coord { alt: key.alt, x: key.col, y: key.row },

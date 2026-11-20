@@ -94,17 +94,22 @@ fn training_starts_only_later_armies_at_their_realms_tiers_and_full_at_their_log
 
 #[test]
 fn a_scout_reveals_for_ten_stamina() {
-    let discovery = crate::expeditions::FrontierDiscoveryRules {
-        camp_bps: 5000, rift_bps: 0, ruin_bps: 0, beasts_bps: 0, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
-    };
-    let (d, game_id, key) = super::registrar::setup_frontier_relics_with_rules(Some(discovery));
+    let discovery = world_test_support::tests::frontier_discovery::rules();
+    let (d, game_id, key) = super::registrar::setup_frontier_relics();
     let mut army = super::state::GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     army.troops.category = crate::troops::TroopType::Paladin;
     super::resource_commands::set_explorer_fixture(d.games, key, army);
     place_army_at_depth(d, key, 0);
     set_bar(d, key, 10, 360);
     let target = exploration_destination(d, key);
-    let root = super::registrar::discovery_root(game_id, discovery, 100, 0, None, crate::discovery::Discovery::Camp);
+    let root = super::registrar::discovery_root(
+        game_id,
+        discovery,
+        100,
+        0,
+        Some(world_test_support::tests::registrar::any_relic()),
+        crate::discovery::Discovery::Camp,
+    );
     explore(d, key, root, 360);
     assert_eq!(bar(d, key, game_id), 0);
     let map = crate::map::IMapLogicDispatcher { contract_address: d.games };

@@ -156,10 +156,7 @@ pub mod RelicState {
             if context.rules.unbox().day_unit_seconds != 0 {
                 let captured = crate::logic::expeditions::expedition_site(site).expect('missing expedition site');
                 let depth = crate::logic::expeditions::depth_at(site.game_id, explorer.coord);
-                if depth < 3
-                    && crate::expeditions::is_band(
-                        captured, crate::logic::expeditions::depth_rules(site.game_id, depth),
-                    ) {
+                if depth < 3 && crate::expeditions::is_band(captured, crate::logic::expeditions::depth_rules(depth)) {
                     crate::logic::oaths::offer(explorer_key, explorer.coord, context.raw_root);
                 }
             }

@@ -2,30 +2,6 @@ pub use world_test_support::tests::explore_rewards::*;
 use crate::registrar::IRegistrarSafeDispatcherTrait;
 
 #[test]
-fn a_pool_reveal_pays_its_row_percent_of_army_strength() {
-    // A 60 percent row is the Blitz pool's largest Essence find.
-    let strengths = limits();
-    assert_eq!((strengths.t1_tier_strength, strengths.t2_tier_strength, strengths.t3_tier_strength), (1, 3, 9));
-    let tiers = array![(TroopTier::T1, 1_u128), (TroopTier::T2, 3), (TroopTier::T3, 9)];
-    for (tier, strength) in tiers {
-        for thousands in array![1_u128, 5, 20] {
-            let reward = pool_reward(essence_row(60), army(thousands, tier), strengths, 40, 7);
-            assert_eq!(reward.resource_type, ESSENCE);
-            assert_eq!(reward.amount, thousands * 1000 * strength * 60 / 100 * RESOURCE_PRECISION);
-        }
-    }
-}
-
-#[test]
-fn an_active_exploration_relic_boosts_a_pool_reveal_and_an_expired_one_does_not() {
-    let mut troops = army(1, TroopTier::T1);
-    troops.boosts.incr_explore_reward_percent_num = 5000;
-    troops.boosts.incr_explore_reward_end_at = 100;
-    assert_eq!(pool_reward(essence_row(30), troops, limits(), 99, 7).amount, 450 * RESOURCE_PRECISION);
-    assert_eq!(pool_reward(essence_row(30), troops, limits(), 100, 7).amount, 300 * RESOURCE_PRECISION);
-}
-
-#[test]
 fn a_spire_pays_a_thousand_essence_with_only_an_active_exploration_relic_bonus() {
     let reward = spire_reward(Default::default(), 40);
     assert_eq!(reward.resource_type, ESSENCE);
@@ -101,41 +77,4 @@ fn a_dormant_spire_opens_no_portal_and_lets_no_army_onto_its_tile() {
     );
     assert_eq!(rejected_reason(d, Command::Explore(Explore { explorer_id: id, direction: 0 })), "destination occupied");
     assert_eq!(spire_stories(ref spy, d), array![]);
-}
-
-#[test]
-fn each_blitz_row_pays_its_percent_of_strength_up_to_three_thousand() {
-    // (resource, percent, draw weight) of the current Blitz pool, in its order.
-    let table = array![
-        (ESSENCE, 5_u128, 3500_u128), (ESSENCE, 10, 2500), (ESSENCE, 20, 1500), (LABOR, 10, 1500), (LABOR, 20, 500),
-        (DONKEY, 10, 500),
-    ];
-    let rows = blitz_rows();
-    assert_eq!(rows.len(), table.len());
-    let mut limits = limits();
-    limits.explore_reward_strength_cap = blitz_reward_cap();
-    // 100, 500, 1k, 3k and 20k T1 and 334 T3 (strength 3,006), and what each row pays them in whole units.
-    let armies = array![
-        (100_u128, TroopTier::T1), (500, TroopTier::T1), (1000, TroopTier::T1), (3000, TroopTier::T1),
-        (20000, TroopTier::T1), (334, TroopTier::T3),
-    ];
-    let paid = array![
-        array![5_u128, 10, 20, 10, 20, 10], array![25, 50, 100, 50, 100, 50], array![50, 100, 200, 100, 200, 100],
-        array![150, 300, 600, 300, 600, 300], array![150, 300, 600, 300, 600, 300],
-        array![150, 300, 600, 300, 600, 300],
-    ];
-    for index in 0..table.len() {
-        let (resource_type, percent, weight) = *table.at(index);
-        let row = *rows.at(index);
-        assert_eq!(
-            (row.resource_type, row.percent, row.percent_max, row.weight), (resource_type, percent, percent, weight),
-        );
-        for army in 0..armies.len() {
-            let (count, tier) = *armies.at(army);
-            let troops = Troops { count: count * RESOURCE_PRECISION, tier, ..Default::default() };
-            let reward = pool_reward(array![row].span(), troops, limits, 40, 7);
-            assert_eq!(reward.resource_type, resource_type);
-            assert_eq!(reward.amount, *paid.at(army).at(index) * RESOURCE_PRECISION);
-        }
-    }
 }

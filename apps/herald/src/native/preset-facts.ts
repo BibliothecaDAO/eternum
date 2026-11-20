@@ -31,7 +31,6 @@ export function derivePresetFacts(
   deriveStructures(emit, record(definition.structures));
   deriveSettlement(emit, record(definition.settlement));
   deriveEconomy(emit, record(definition.economy));
-  emit("ExtractionRewards", { rewards: definition.exploration });
   return rows;
 }
 

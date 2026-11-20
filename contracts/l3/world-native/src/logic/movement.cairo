@@ -143,17 +143,13 @@ pub mod MovementLogic {
                     crate::commands::action_context(context),
                 );
             }
-            if !explorer.coord.alt && !crate::logic::deep::contains(game_id, explorer.coord) {
+            if exploring && !explorer.coord.alt && !crate::logic::deep::contains(game_id, explorer.coord) {
                 crate::exploration_rewards::IExtractionDispatcherTrait::extract_exploration_reward(
                     extraction,
                     game_id,
                     actor,
                     command.explorer_id,
-                    if exploring {
-                        Some(destination)
-                    } else {
-                        None
-                    },
+                    destination,
                     crate::commands::action_context(ExecutionContext { raw_root, ..context }),
                 );
             }

@@ -32,16 +32,9 @@ pub mod PlacementLogic {
     #[abi(embed_v0)]
     impl PresetSettlement of crate::presets::IPresetSettlement<ContractState> {
         fn store_settlement_preset(
-            ref self: ContractState,
-            commitment: felt252,
-            settlement: crate::presets::SettlementPreset,
-            entry_rule: u8,
-            mode_rules: u32,
-            day_unit_seconds: u32,
+            ref self: ContractState, commitment: felt252, settlement: crate::presets::SettlementPreset, entry_rule: u8,
         ) {
-            crate::logic::preset_record::store_settlement(
-                commitment, settlement, entry_rule, mode_rules, day_unit_seconds,
-            );
+            crate::logic::preset_record::store_settlement(commitment, settlement, entry_rule);
         }
     }
     #[storage]

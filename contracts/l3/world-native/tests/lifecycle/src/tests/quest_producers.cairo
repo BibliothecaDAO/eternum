@@ -27,16 +27,6 @@ fn setup_target(kind: u8, target: u32) -> (Deployment, ExplorerKey, crate::exped
                     bonus_percent: 150,
                 },
             );
-    let discovery = crate::expeditions::FrontierDiscoveryRules {
-        beasts_bps: 800,
-        camp_bps: 800,
-        rift_bps: 800,
-        ruin_bps: 800,
-        shrine_bps: 800,
-        well_bps: 0,
-        empty_reveal_limit: 7,
-    };
-    preset.economy.discovery = Some(discovery);
     let claim = Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: 1, day: 0 });
     let encoded = world_test_support::tests::play_fixture::encode(claim);
     let index: u32 = (*encoded.at(0)).try_into().unwrap();
@@ -48,23 +38,6 @@ fn setup_target(kind: u8, target: u32) -> (Deployment, ExplorerKey, crate::exped
     preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DISCOVER_SPIRES;
     preset.rules.battle_config.regular_immunity_ticks = 0;
     preset.rules.battle_config.cooldown_seconds = 0;
-    let mut depths = array![];
-    for depth in preset.settlement.depths {
-        depths
-            .append(
-                crate::expeditions::DepthRules {
-                    beast_weak_lower: 1,
-                    beast_weak_upper: 1,
-                    beast_strong_lower: 2,
-                    beast_strong_upper: 2,
-                    site_guard_lower: 3,
-                    site_guard_upper: 3,
-                    guard_step: 1,
-                    ..*depth,
-                },
-            );
-    }
-    preset.settlement.depths = depths.span();
     let mut seed = 1_u64;
     while crate::quests::daily_quest(seed.into(), 0) != kind {
         seed += 1;
@@ -78,6 +51,12 @@ fn setup_target(kind: u8, target: u32) -> (Deployment, ExplorerKey, crate::exped
     let key = ExplorerKey {
         game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: home, epoch: 0, slot: 0 }),
     };
+    let discovery = interact_with_state(
+        d.games,
+        || crate::logic::discovery::lore_rules(
+            crate::logic::research::require(ResourceKey { game_id, entity_id: home }).learned,
+        ),
+    );
     (d, key, discovery)
 }
 
@@ -198,6 +177,7 @@ fn hunt_camp_and_rift_progress_arrives_only_after_the_guard_is_cleared() {
         let home = home(d, key);
         let site = discover(d, key, rules, expected);
         assert_eq!(progress(d, home), 0);
+        world_test_support::tests::registrar::strong_frontier_army(d, key.game_id, key);
         let clear = Command::BattleGuard(
             crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site.entity_id, relic_slot: None },
         );
@@ -227,7 +207,7 @@ fn finds_counts_a_discovery_before_its_clear_and_never_counts_the_clear_twice() 
 
 #[test]
 fn veterans_counts_each_oath_taken_and_neither_a_pass_nor_a_refused_repeat() {
-    let (d, key, rules) = setup(crate::quests::VETERANS);
+    let (d, key, _) = setup(crate::quests::VETERANS);
     let home = home(d, key);
     interact_with_state(
         d.games,
@@ -237,6 +217,9 @@ fn veterans_counts_each_oath_taken_and_neither_a_pass_nor_a_refused_repeat() {
                 learned: world_test_support::tests::registrar::lore(crate::research::LORE_SHRINES),
             },
         ),
+    );
+    let rules = interact_with_state(
+        d.games, || crate::logic::discovery::lore_rules(crate::logic::research::require(home).learned),
     );
     let root = discovery_root(key.game_id, rules, 100, 0, Some(far_eye()), Discovery::Shrine);
     let pass = crate::oaths::ChooseOath {
@@ -271,7 +254,7 @@ fn far_eye() -> crate::army_relics::ArmyRelic {
 }
 
 fn discover_far_eye(d: Deployment, key: ExplorerKey, rules: crate::expeditions::FrontierDiscoveryRules) -> ResourceKey {
-    let odds = interact_with_state(d.games, || crate::logic::expeditions::depth_rules(key.game_id, 0).chest);
+    let odds = interact_with_state(d.games, || crate::logic::expeditions::depth_rules(0).chest);
     for candidate in 0_u32..10000 {
         let mut root: u256 = candidate.into();
         let seed = crate::random::game_root(ref root, key.game_id);

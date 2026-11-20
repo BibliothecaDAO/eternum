@@ -214,7 +214,6 @@ pub struct ExpeditionDiscovery {
 }
 #[starknet::interface]
 pub trait IFrontierDiscovery<T> {
-    fn frontier_discovery_rules(self: @T, game_id: u32) -> Option<FrontierDiscoveryRules>;
     fn expedition_discovery(self: @T, key: ExpeditionDiscoveryKey) -> Option<ExpeditionDiscovery>;
 }
 

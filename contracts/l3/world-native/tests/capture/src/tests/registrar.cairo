@@ -114,10 +114,8 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
     let mut preset = definition(true);
     open_entry(ref preset);
     preset.rules.day_unit_seconds = FRONTIER_DAY_UNIT;
-    preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
     let (_, frontier) = super::preset_projection::current_definition("frontier-check");
     preset.economy.labor = frontier.economy.labor;
-    preset.settlement.depths = frontier.settlement.depths;
     preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DEPTH_CONTENTS;
     preset.rules.map_config.camp_win_probability = 0;
     preset.rules.map_config.shards_mines_win_probability = 0;
@@ -307,10 +305,8 @@ fn depth_entry_requires_spire_lore_and_keeps_stamina_at_every_depth() {
     open_entry(ref preset);
     preset.rules.day_unit_seconds = DAY_UNIT;
     preset.rules.tick_config.armies_tick_in_seconds = 60;
-    preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
     let (_, frontier) = super::preset_projection::current_definition("frontier-check");
     preset.economy.labor = frontier.economy.labor;
-    preset.settlement.depths = frontier.settlement.depths;
     preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DEPTH_CONTENTS;
     preset.rules.map_config.camp_win_probability = 0;
     preset.rules.map_config.shards_mines_win_probability = 0;
@@ -322,25 +318,6 @@ fn depth_entry_requires_spire_lore_and_keeps_stamina_at_every_depth() {
     preset.rules.troop_stamina_config.stamina_initial = 150;
     preset.rules.troop_stamina_config.stamina_knight_max = 150;
     preset.rules.troop_stamina_config.stamina_gain_per_tick = 0;
-    let mut depths = array![];
-    for depth in 0_u16..4 {
-        depths
-            .append(
-                crate::expeditions::DepthRules {
-                    guard_step: 1,
-                    beast_weak_lower: 1,
-                    beast_weak_upper: 1,
-                    beast_strong_lower: 2,
-                    beast_strong_upper: 2,
-                    reveal_percent: depth + 1,
-                    site_guard_lower: depth + 3,
-                    site_guard_upper: depth + 3,
-                    reveal_site_neighbors: false,
-                    chest: first_relic_odds(depth.into()),
-                },
-            );
-    }
-    preset.settlement.depths = depths.span();
     preset.structures.board = frontier.structures.board;
     preset.structures.research = frontier.structures.research;
     registry(d).register_preset(1, preset);
@@ -577,7 +554,7 @@ fn beast_clear_payout(full: bool, band: bool) {
         seed += 1;
     }
     let (_, frontier) = super::preset_projection::current_definition("frontier-check");
-    let (d, game_id, key) = setup_frontier_relics_with_preset(None, frontier, frontier.structures.board);
+    let (d, game_id, key) = setup_frontier_relics_with_preset(frontier, frontier.structures.board);
     let army = strong_frontier_army(d, game_id, key);
     let coord = crate::geometry::neighbor(army.coord, 0);
     let context = crate::commands::ExecutionContext { timestamp: 360, ..crate::tests::context(d.games, game_id) };
@@ -754,10 +731,8 @@ fn frontier_refuses_off_map_economy_commands_before_reading_positions() {
     let d = setup();
     let mut preset = definition(false);
     preset.rules.day_unit_seconds = FRONTIER_DAY_UNIT;
-    preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
     let (_, frontier) = super::preset_projection::current_definition("frontier-check");
     preset.economy.labor = frontier.economy.labor;
-    preset.settlement.depths = frontier.settlement.depths;
     preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DEPTH_CONTENTS;
     preset.rules.map_config.camp_win_probability = 0;
     preset.rules.map_config.shards_mines_win_probability = 0;
@@ -912,9 +887,9 @@ fn expedition_death_releases_the_slot_with_the_final_battle_bar() {
 #[test]
 fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_resets_at_the_days_end() {
     let discovery = crate::expeditions::FrontierDiscoveryRules {
-        shrine_bps: 0, well_bps: 0, ..super::preset_projection::frontier_discovery_rules(),
+        shrine_bps: 0, well_bps: 0, ..crate::balance::expeditions::FRONTIER_DISCOVERY,
     };
-    let (d, game_id, first) = setup_frontier_relics_with_rules(Some(discovery));
+    let (d, game_id, first) = setup_frontier_relics();
     assert!(
         execute_in_game(
             d,
@@ -1032,7 +1007,7 @@ fn frontier_sites_persist_the_seeded_guard_and_initial_count() {
     let context = crate::commands::ExecutionContext { timestamp: 360, ..crate::tests::context(d.games, game_id) };
     start_cheat_caller_address(d.games, d.games);
     for depth_index in 0_u32..4 {
-        let depth = *preset.settlement.depths.at(depth_index);
+        let depth = crate::logic::expeditions::depth_rules(depth_index.try_into().unwrap());
         for (discovery, category, offset) in array![
             (crate::discovery::Discovery::Camp, crate::taxonomy::CAMP_CATEGORY, 0_u32),
             (crate::discovery::Discovery::Rift, crate::taxonomy::RIFT_CATEGORY, 1),
@@ -1101,7 +1076,7 @@ fn frontier_discovery_reads_home_knowledge_without_placing_shrines_or_wells() {
     let (key, _) = expedition_armies(d, game_id, category);
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     let home = ResourceKey { game_id, entity_id: army.owner };
-    let rules = super::preset_projection::frontier_discovery_rules();
+    let rules = crate::balance::expeditions::FRONTIER_DISCOVERY;
     let discovery = crate::discovery::IExpeditionRevealLibraryDispatcher {
         class_hash: super::declare_logic("ConstructionLogic"),
     };

@@ -54,14 +54,6 @@ pub fn camp_preset(blitz: bool) -> crate::presets::PresetDefinition {
             array![ResourceAmount { resource_type: 1, amount: 100 }, ResourceAmount { resource_type: 2, amount: 20 }]
         .span();
     preset
-        .exploration =
-            array![
-                crate::exploration_rewards::ExplorationReward {
-                    resource_type: 2, percent: 10, percent_max: 10, weight: 1,
-                },
-            ]
-        .span();
-    preset
 }
 pub fn coord() -> Coord {
     Coord { alt: false, x: 2000100, y: 2000100 }

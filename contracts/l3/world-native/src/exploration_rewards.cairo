@@ -4,14 +4,6 @@ use crate::resources::{ESSENCE, LABOR, ResourceKey};
 // A dormant spire pays a flat Essence jackpot before the active Exploration relic bonus.
 pub const SPIRE_ESSENCE_AMOUNT: u128 = 1000 * crate::rules::RESOURCE_PRECISION;
 
-// A pool row pays a percent of the revealing army's reward strength; the row's own range picks that percent.
-#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
-pub struct ExplorationReward {
-    pub resource_type: u8,
-    pub percent: u128,
-    pub percent_max: u128,
-    pub weight: u128,
-}
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ExtractedReward {
     pub explorer_id: u64,
@@ -22,13 +14,12 @@ pub struct ExtractedReward {
 }
 #[starknet::interface]
 pub trait IExtraction<T> {
-    fn extraction_rewards(self: @T, game_id: u32) -> Span<ExplorationReward>;
     fn extract_exploration_reward(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         explorer_id: u64,
-        revealed: Option<crate::troops::Coord>,
+        coord: crate::troops::Coord,
         context: crate::commands::ActionContext,
     );
     fn raise_dormant_spire(
@@ -66,41 +57,6 @@ fn reward_strength(troops: crate::troops::Troops, limits: crate::rules::TroopLim
         strength
     } else {
         core::cmp::min(strength, cap * crate::rules::RESOURCE_PRECISION)
-    }
-}
-
-pub fn draw(rewards: Span<ExplorationReward>, seed: u256) -> ExplorationReward {
-    let mut total: u128 = 0;
-    for reward in rewards {
-        total += *reward.weight;
-    }
-    assert!(total != 0, "empty exploration pool");
-    let roll = crate::random::range(seed, 18, total);
-    let mut cumulative = 0;
-    for reward in rewards {
-        cumulative += *reward.weight;
-        if roll < cumulative {
-            return ExplorationReward {
-                percent: *reward.percent + crate::random::range(seed, 19, *reward.percent_max - *reward.percent + 1),
-                ..*reward,
-            };
-        }
-    }
-    panic!("invalid exploration draw")
-}
-
-/// A pool reveal: the weighted draw picks the resource and its percent of the reward strength; relics boost it.
-pub fn pool_reward(
-    rewards: Span<ExplorationReward>,
-    troops: crate::troops::Troops,
-    limits: crate::rules::TroopLimitConfig,
-    timestamp: u64,
-    seed: u256,
-) -> crate::resources::ResourceAmount {
-    let drawn = draw(rewards, seed);
-    crate::resources::ResourceAmount {
-        resource_type: drawn.resource_type,
-        amount: boosted_amount(reward_strength(troops, limits) * drawn.percent / 100, troops.boosts, timestamp),
     }
 }
 

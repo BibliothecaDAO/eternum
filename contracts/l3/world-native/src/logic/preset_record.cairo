@@ -17,8 +17,6 @@ pub fn store(commitment: felt252, definition: crate::presets::PresetDefinition) 
         crate::presets::IPresetResourcesLibraryDispatcher { class_hash: classes.production },
         commitment,
         definition.resources,
-        definition.exploration,
-        definition.rules.mode_rules,
     );
     crate::presets::IPresetStructuresDispatcherTrait::store_structure_preset(
         crate::presets::IPresetStructuresLibraryDispatcher { class_hash: classes.construction },
@@ -30,25 +28,17 @@ pub fn store(commitment: felt252, definition: crate::presets::PresetDefinition) 
         commitment,
         definition.settlement,
         definition.rules.entry_rule,
-        definition.rules.mode_rules,
-        definition.rules.day_unit_seconds,
     );
     write_economy(preset, commitment, definition.economy);
 }
 
 // Resource tables are owned by Production; registration remains one atomic transaction.
-pub fn store_resources(
-    commitment: felt252,
-    resources: crate::presets::ResourcePreset,
-    exploration: Span<crate::exploration_rewards::ExplorationReward>,
-    mode_rules: u32,
-) {
+pub fn store_resources(commitment: felt252, resources: crate::presets::ResourcePreset) {
     crate::logic::release::assert_authority();
     let preset = crate::state::write().presets.entry(commitment);
     write_resources(preset, resources.resources);
     write_production(preset, resources.production);
     write_mines(preset, resources.mine_kinds, resources.surface_mines);
-    write_exploration(preset, mode_rules, exploration);
 }
 
 pub fn store_structures(commitment: felt252, structures: crate::presets::StructurePreset) {
@@ -57,7 +47,6 @@ pub fn store_structures(commitment: felt252, structures: crate::presets::Structu
 }
 
 fn record_exists(preset: PresetWrite) -> bool {
-    // Every validated preset has a nonzero army tick, including one without an exploration pool.
     // Registration is atomic: a failed write cannot leave this marker on a partial record.
     preset.rules.tick_config.armies_tick_in_seconds.read() != 0
 }
@@ -85,13 +74,7 @@ fn write_structures(preset: PresetWrite, structures: crate::presets::StructurePr
     write_upgrades(preset, structures.upgrade_limits, structures.upgrades);
 }
 
-pub fn store_settlement(
-    commitment: felt252,
-    settlement: crate::presets::SettlementPreset,
-    entry_rule: u8,
-    mode_rules: u32,
-    day_unit_seconds: u32,
-) {
+pub fn store_settlement(commitment: felt252, settlement: crate::presets::SettlementPreset, entry_rule: u8) {
     crate::logic::release::assert_authority();
     let preset = crate::state::write().presets.entry(commitment);
     preset
@@ -105,7 +88,6 @@ pub fn store_settlement(
         );
     preset.settlement_spacing.write(settlement.spacing);
     preset.order_aspects.write(crate::aspects::pack(settlement.order_aspects));
-    write_depths(preset, mode_rules, day_unit_seconds, settlement.depths);
     write_realm_grants(preset, settlement.realms, entry_rule);
     write_villages(preset, settlement.villages);
     preset.spires.write(settlement.spires);
@@ -117,7 +99,6 @@ fn write_economy(preset: PresetWrite, commitment: felt252, economy: crate::prese
     write_banes(preset, economy.banes);
     write_deep(preset, economy.deep);
     preset.race_rules.write(economy.race);
-    preset.discovery_rules.write(economy.discovery);
     if let Some(withdrawals) = economy.withdrawals {
         let classes = crate::state::read().releases.read(crate::state::read().current_release.read()).classes;
         crate::presets::IPresetWithdrawalsDispatcherTrait::store_withdrawal_preset(
@@ -370,81 +351,6 @@ fn write_villages(preset: PresetWrite, rules: crate::village::VillageRules) {
     for index in 0..rules.resources.len() {
         preset.village_grants.write(index, *rules.resources.at(index));
     }
-}
-
-fn write_depths(
-    preset: PresetWrite, mode_rules: u32, day_unit_seconds: u32, depths: Span<crate::expeditions::DepthRules>,
-) {
-    let enabled = mode_rules & crate::rules::DEPTH_CONTENTS != 0;
-    assert!(depths.len() == if enabled {
-        4
-    } else {
-        0
-    }, "incomplete depth rules");
-    assert!(!enabled || day_unit_seconds != 0, "depths require expedition regions");
-    for index in 0..depths.len() {
-        let value = *depths.at(index);
-        let odds = value.chest;
-        assert!(
-            Into::<u16, u32>::into(odds.common)
-                + odds.uncommon.into()
-                + odds.rare.into()
-                + odds.epic.into()
-                + odds.legendary.into() == 10000,
-            "chest tier odds must sum to 100 percent",
-        );
-        assert!(value.reveal_percent != 0 && value.reveal_percent <= 100, "invalid reveal percentage");
-        assert!(
-            value.site_guard_lower != 0 && value.site_guard_lower <= value.site_guard_upper, "invalid depth guards",
-        );
-        assert!(value.guard_step != 0, "zero guard step");
-        assert!(
-            Into::<u16, u32>::into(value.site_guard_lower) % value.guard_step == 0
-                && Into::<u16, u32>::into(value.site_guard_upper) % value.guard_step == 0,
-            "guard bounds off grid",
-        );
-        validate_beast_guards(value);
-        validate_layer_relics(index.try_into().unwrap(), odds);
-        preset.depth_rules.write(index.try_into().unwrap(), Some(value));
-    }
-    preset.depth_count.write(depths.len());
-}
-
-fn validate_layer_relics(layer: u8, odds: crate::relics::ChestTiers) {
-    let tiers = array![odds.common, odds.uncommon, odds.rare, odds.epic, odds.legendary];
-    for rank in 1_u8..6 {
-        if rank <= layer || rank > layer + crate::army_relics::RELICS_PER_LAYER {
-            assert!(*tiers.at((rank - 1).into()) == 0, "a layer's ruins hold only its three relics");
-        }
-    }
-}
-
-fn validate_beast_guards(depth: crate::expeditions::DepthRules) {
-    assert!(depth.beast_weak_lower > 0 && depth.beast_weak_lower <= depth.beast_weak_upper, "invalid weak beast range");
-    assert!(depth.beast_strong_lower <= depth.beast_strong_upper, "invalid strong beast range");
-    assert!(depth.beast_weak_upper < depth.beast_strong_lower, "beast ranges overlap");
-    assert!(depth.beast_strong_upper < depth.site_guard_lower, "beasts must be weaker than sites");
-}
-
-fn write_exploration(
-    preset: PresetWrite, mode_rules: u32, rewards: Span<crate::exploration_rewards::ExplorationReward>,
-) {
-    if mode_rules & crate::rules::REVEAL_SUPPLIES != 0 {
-        assert!(mode_rules & crate::rules::DEPTH_CONTENTS != 0, "reveal yield requires depth rules");
-        assert!(rewards.is_empty(), "reveal yield replaces supply pool");
-        return;
-    }
-    assert!(!rewards.is_empty(), "empty exploration pool");
-    let mut total: u128 = 0;
-    for index in 0..rewards.len() {
-        let reward = *rewards.at(index);
-        assert!(reward.resource_type > 0 && reward.resource_type <= 58, "invalid reward resource");
-        assert!(reward.percent <= reward.percent_max, "invalid exploration reward range");
-        total += reward.weight;
-        preset.exploration_rewards.write(index, reward);
-    }
-    assert!(total != 0, "empty exploration pool");
-    preset.exploration_reward_count.write(rewards.len());
 }
 
 pub fn store_withdrawals(commitment: felt252, withdrawals: crate::presets::WithdrawalPreset) {

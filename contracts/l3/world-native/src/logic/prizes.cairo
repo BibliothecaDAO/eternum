@@ -1,7 +1,7 @@
 #[starknet::contract]
 pub mod PrizesLogic {
     use starknet::ContractAddress;
-    use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
+    use starknet::storage::StoragePointerReadAccess;
     use crate::events::RowSet;
     use crate::geometry::tile_key;
     use crate::logic::blitz_results::BlitzResultState;
@@ -48,36 +48,20 @@ pub mod PrizesLogic {
     }
     #[abi(embed_v0)]
     impl Extraction of crate::exploration_rewards::IExtraction<ContractState> {
-        fn extraction_rewards(
-            self: @ContractState, game_id: u32,
-        ) -> Span<crate::exploration_rewards::ExplorationReward> {
-            let preset = crate::logic::preset_record::for_game(game_id);
-            let count = preset.exploration_reward_count.read();
-            let mut rewards = array![];
-            for index in 0..count {
-                rewards.append(preset.exploration_rewards.read(index));
-            }
-            rewards.span()
-        }
         fn extract_exploration_reward(
             ref self: ContractState,
             game_id: u32,
             actor: ContractAddress,
             explorer_id: u64,
-            revealed: Option<Coord>,
+            coord: Coord,
             context: crate::commands::ActionContext,
         ) -> () {
             let context = crate::commands::execution_context(game_id, context);
             let explorer = self.revealing_explorer(game_id, actor, explorer_id, context);
             let rules = context.rules.unbox();
-            let coord = if crate::rules::rule_enabled(rules, crate::rules::REVEAL_SUPPLIES) {
-                match revealed {
-                    Some(coord) => coord,
-                    None => { return (); },
-                }
-            } else {
-                explorer.coord
-            };
+            if !crate::rules::rule_enabled(rules, crate::rules::REVEAL_SUPPLIES) {
+                return ();
+            }
             let key = tile_key(game_id, coord);
             let tile = crate::logic::map::tile(key).expect('unrevealed extraction tile');
             assert!(tile.data / BIOME_SCALE % BYTE_RANGE != 0, "tile must be revealed");
@@ -86,25 +70,17 @@ pub mod PrizesLogic {
             if tile.data / crate::map::REWARD_EXTRACTED_FLAG % 2 == 1 {
                 return ();
             }
-            let reward = if crate::rules::rule_enabled(rules, crate::rules::REVEAL_SUPPLIES) {
-                let reward = crate::exploration_rewards::reveal_reward(
-                    explorer.troops,
-                    rules.troop_limit_config,
-                    crate::logic::expeditions::depth_rules_at(game_id, coord).reveal_percent,
-                    seed,
-                );
-                let oaths = crate::logic::progression::held_oaths(
-                    crate::troops::ExplorerKey { game_id, explorer_id }, context,
-                );
-                crate::resources::ResourceAmount { amount: crate::oaths::reveal_pay(oaths, reward.amount), ..reward }
-            } else {
-                crate::exploration_rewards::pool_reward(
-                    self.extraction_rewards(game_id),
-                    explorer.troops,
-                    rules.troop_limit_config,
-                    context.timestamp,
-                    seed,
-                )
+            let reward = crate::exploration_rewards::reveal_reward(
+                explorer.troops,
+                rules.troop_limit_config,
+                crate::logic::expeditions::depth_rules_at(game_id, coord).reveal_percent,
+                seed,
+            );
+            let oaths = crate::logic::progression::held_oaths(
+                crate::troops::ExplorerKey { game_id, explorer_id }, context,
+            );
+            let reward = crate::resources::ResourceAmount {
+                amount: crate::oaths::reveal_pay(oaths, reward.amount), ..reward,
             };
             let paid = self.pay_reveal(game_id, explorer_id, explorer, coord, reward, context);
             crate::logic::map::MapState::mark_reward_extracted(key);

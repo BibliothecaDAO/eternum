@@ -19,6 +19,7 @@ import {
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
 import { applyDeploymentConfigOverrides } from "../config/config-loader";
 import { buildNativePreset } from "../config/native-preset";
+import { balanceModules } from "../../../../contracts/l3/world-native/scripts/balance-modules";
 import {
   FRONTIER_ACCELERATED_PRESET_ID,
   FRONTIER_PRESET_ID,
@@ -121,7 +122,6 @@ describe("native presets", () => {
       expect(source.gameType).toBe("frontier");
       const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id);
       expect(preset.rules.day_unit_seconds).toBeGreaterThan(0);
-      expect(preset.exploration).toEqual([]);
       expect(source.bridgeResources).toEqual([]);
       expect(preset.economy.withdrawals.isNone()).toBe(true);
       for (const command of [
@@ -276,17 +276,6 @@ describe("native presets", () => {
     ).not.toBe(buildNativePresetRegistration(canonical, FRONTIER_PRESET_ID, manifestPath).commitment);
   });
 
-  test("Frontier replaces the supply pool with depth reveal percentages", () => {
-    for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID]) {
-      const generated = loadNativePresetConfiguration("madara.frontier", id);
-      expect(generated.blitz.exploration.rewards).toEqual([]);
-      const preset = buildNativePreset(generated, id);
-      expect(preset.exploration).toEqual([]);
-      expect(preset.settlement.depths.map(({ reveal_percent }) => reveal_percent)).toEqual([10, 15, 20, 25]);
-    }
-    for (const id of [2]) expect(buildNativePreset(configuration(id), id).exploration.length).toBeGreaterThan(0);
-  });
-
   test("Frontier sites carry no flat camp reward or rift-production table", () => {
     const design = buildNativePreset(
       loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
@@ -388,29 +377,6 @@ describe("native presets", () => {
       const preset = buildNativePreset(configuration(id), id);
       const labor = preset.resources.resources.find(({ resource_type }) => resource_type === 23)!;
       expect(preset.structures.camps.labor_rate).toBe(labor.realm_rate / 2n);
-    }
-  });
-
-  test("discovery reserves room for Shrine and Well bonuses together", () => {
-    const preset = nativePresets[FRONTIER_PRESET_ID]!;
-    const previous = preset.discovery;
-    try {
-      preset.discovery = {
-        beastsBps: 1000,
-        campBps: 1000,
-        riftBps: 1000,
-        shrineBps: 2000,
-        wellBps: 2000,
-        ruinBps: 0,
-        emptyRevealLimit: 7,
-      };
-      const build = () =>
-        buildNativePreset(loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID), FRONTIER_PRESET_ID);
-      expect(build).toThrow("Invalid categorical discovery rules");
-      preset.discovery.beastsBps = 0;
-      expect(build().economy.discovery.unwrap()).toMatchObject({ shrine_bps: 2000, well_bps: 2000, beasts_bps: 0 });
-    } finally {
-      preset.discovery = previous;
     }
   });
 
@@ -1181,19 +1147,19 @@ test("the race codec refuses missing Deep rules, malformed amounts and effects",
   }
 });
 
-test("Clear Mist must fit one categorical discovery draw", () => {
-  const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
-  const previous = { race: source.race, deep: source.deep, discovery: source.discovery };
+test("the release's discovery must fit one draw under Clear Mist and Detection", () => {
+  const source = nativePresets[FRONTIER_S1_PRESET_ID]!;
+  const previous = source.discovery;
+  const modules = () =>
+    balanceModules(
+      buildNativePreset(loadNativePresetConfiguration("madara.frontier", FRONTIER_S1_PRESET_ID), FRONTIER_S1_PRESET_ID),
+    );
   try {
-    source.race = null;
-    source.deep = deepFixture();
-    source.discovery = { ...source.discovery!, beastsBps: 4000 };
-    const configuration = loadNativePresetConfiguration("madara.frontier", source.id);
-    expect(() => buildNativePreset(configuration, source.id)).not.toThrow();
-    source.race = raceFixture();
-    expect(() => buildNativePreset(configuration, source.id)).toThrow("Invalid categorical discovery rules");
+    expect(modules).not.toThrow();
+    source.discovery = { ...previous!, beastsBps: 4000 };
+    expect(modules).toThrow("Season 1 discovery under Clear Mist and Detection exceeds one hundred percent");
   } finally {
-    Object.assign(source, previous);
+    source.discovery = previous;
   }
 });
 

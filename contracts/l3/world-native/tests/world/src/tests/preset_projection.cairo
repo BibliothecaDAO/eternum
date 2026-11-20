@@ -16,41 +16,13 @@ fn current_frontier_check_launch_readers_match_herald_projection() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn current_frontier_rejects_a_reintroduced_supply_pool() {
+fn current_frontier_refuses_sequential_odds() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
-    let mut registration = read_txt(@FileTrait::new("../fixtures/current-presets/frontier-check-register.txt")).span();
-    let preset_id: u32 = Serde::deserialize(ref registration).unwrap();
-    let mut definition: crate::presets::PresetDefinition = Serde::deserialize(ref registration).unwrap();
-    assert!(registration.is_empty());
-    assert!(definition.exploration.is_empty());
-    definition
-        .exploration =
-            array![
-                crate::exploration_rewards::ExplorationReward {
-                    resource_type: crate::resources::ESSENCE, percent: 1, percent_max: 1, weight: 1,
-                },
-            ]
-        .span();
+    let (preset_id, mut definition) = current_definition("frontier-check");
+    definition.rules.map_config.camp_win_probability = 4;
     assert!(IRegistrarSafeDispatcher { contract_address: d.games }.register_preset(preset_id, definition).is_err());
     assert_eq!(IRegistrarDispatcher { contract_address: d.games }.preset_commitment(preset_id), 0);
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn current_frontier_requires_discovery_and_refuses_sequential_odds() {
-    let d = super::registrar::setup();
-    start_cheat_caller_address(d.games, super::authority());
-    for invalid in 0_u8..2 {
-        let (preset_id, mut definition) = current_definition("frontier-check");
-        if invalid == 0 {
-            definition.economy.discovery = None;
-        } else {
-            definition.rules.map_config.camp_win_probability = 4;
-        }
-        assert!(IRegistrarSafeDispatcher { contract_address: d.games }.register_preset(preset_id, definition).is_err());
-        assert_eq!(IRegistrarDispatcher { contract_address: d.games }.preset_commitment(preset_id), 0);
-    }
 }
 
 #[test]
@@ -319,10 +291,7 @@ fn malformed_race_rules_leave_no_preset_registered() {
         } else if invalid == 9 {
             race.spoils_percent = 99;
         } else {
-            let discovery = definition.economy.discovery.unwrap();
-            definition
-                .economy
-                .discovery = Some(crate::expeditions::FrontierDiscoveryRules { beasts_bps: 4000, ..discovery });
+            definition.rules.troop_limit_config.t1_tier_strength = 2;
         }
         definition.economy.race = Some(race);
         assert!(IRegistrarSafeDispatcher { contract_address: d.games }.register_preset(preset_id, definition).is_err());

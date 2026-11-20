@@ -78,9 +78,7 @@ fn recorded_second_wind_multiplies_mist_tide_and_changes_real_exploration_refill
     assert!(execute_in_game(d, game_id, super::army_activity::muster(home.entity_id, 0, 0, 10), tomorrow));
     let slot = crate::troops::ArmySlotKey { game_id, structure_id: home.entity_id, epoch: 1, slot: 0 };
     let explorer_id = super::army_activity::slot_army(d, slot);
-    let discovery = interact_with_state(
-        d.games, || crate::logic::preset_record::for_game(game_id).discovery_rules.read().unwrap(),
-    );
+    let discovery = crate::balance::expeditions::FRONTIER_DISCOVERY;
     for step in 0_u64..3 {
         let root = world_test_support::tests::registrar::discovery_root(
             game_id,
@@ -286,20 +284,6 @@ fn a_stage_on_the_last_tick_does_not_schedule_a_triumph_outside_the_season() {
 fn recorded_clear_mist_changes_real_reveals_only_on_its_day() {
     for spires in array![false, true] {
         let mut preset = definition(5);
-        preset
-            .economy
-            .discovery =
-                Some(
-                    crate::expeditions::FrontierDiscoveryRules {
-                        beasts_bps: 1000,
-                        camp_bps: 0,
-                        rift_bps: 0,
-                        ruin_bps: 0,
-                        shrine_bps: 0,
-                        well_bps: 0,
-                        empty_reveal_limit: 7,
-                    },
-                );
         if spires {
             preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DISCOVER_SPIRES;
         }
@@ -310,7 +294,7 @@ fn recorded_clear_mist_changes_real_reveals_only_on_its_day() {
             world_test_support::tests::registrar::learn_spire_lore(d, home, 360);
         }
         pay(d, game_id, DEEP_FOUNDATION, 1, array![DeepShare { home: home.entity_id, troops: 1 }].span(), 480);
-        let root = clear_mist_root(game_id, spires);
+        let (root, misted_site) = clear_mist_root(game_id, home_discovery(d, home), spires);
         for day in 0_u64..3 {
             let now = if day == 0 {
                 600
@@ -365,7 +349,7 @@ fn recorded_clear_mist_changes_real_reveals_only_on_its_day() {
                         let tile = crate::logic::map::occupancy(crate::geometry::tile_key(game_id, destination))
                             .unwrap();
                         assert!(tile.is_structure);
-                        assert_eq!(tile.category, crate::taxonomy::BEASTS_OCCUPIER);
+                        assert_eq!(tile.category, misted_site);
                     }
                 },
             );
@@ -373,15 +357,24 @@ fn recorded_clear_mist_changes_real_reveals_only_on_its_day() {
     }
 }
 
-fn clear_mist_root(game_id: u32, spires: bool) -> u256 {
+fn clear_mist_root(game_id: u32, rules: crate::expeditions::FrontierDiscoveryRules, spires: bool) -> (u256, u8) {
     for value in 0_u64..10000 {
         let raw: u256 = value.into();
         let mut root = raw;
         let seed = crate::random::game_root(ref root, game_id);
-        let draw = crate::random::range(seed, 29, 10000);
+        let relic = Some(world_test_support::tests::registrar::any_relic());
+        let misted = crate::discovery::frontier(rules, 200, 0, relic, seed);
+        let plain = crate::discovery::frontier(rules, 100, 0, relic, seed);
         let spire = crate::random::range(seed, 0x5350495245, 10000);
-        if (!spires && draw >= 1000 && draw < 2000) || (spires && draw >= 2000 && spire >= 1000 && spire < 2000) {
-            return raw;
+        let empty_without_mist = plain == crate::discovery::Discovery::None;
+        if !spires && empty_without_mist && misted == crate::discovery::Discovery::Camp {
+            return (raw, crate::taxonomy::CAMP_OCCUPIER);
+        }
+        if !spires && empty_without_mist && misted == crate::discovery::Discovery::Rift {
+            return (raw, crate::taxonomy::RIFT_OCCUPIER);
+        }
+        if spires && misted == crate::discovery::Discovery::None && spire >= 1000 && spire < 2000 {
+            return (raw, crate::taxonomy::NONE_OCCUPIER);
         }
     }
     panic!("missing Clear Mist reveal root")
@@ -391,21 +384,6 @@ fn clear_mist_root(game_id: u32, spires: bool) -> u256 {
 fn blood_and_pale_moons_project_each_battle_and_preserve_base_losses() {
     for (blood, pale) in array![(true, false), (false, true), (true, true)] {
         let mut preset = definition(5);
-        let mut depths = array![];
-        for depth in preset.settlement.depths {
-            depths
-                .append(
-                    crate::expeditions::DepthRules {
-                        beast_weak_lower: 20,
-                        beast_weak_upper: 20,
-                        beast_strong_lower: 21,
-                        beast_strong_upper: 21,
-                        guard_step: 1,
-                        ..*depth,
-                    },
-                );
-        }
-        preset.settlement.depths = depths.span();
         let (d, game_id) = super::aspects::setup_aspect_preset(5, preset);
         let home = ResourceKey { game_id, entity_id: found(d, game_id, 1) };
         super::banes::train(d, home, 360);
@@ -445,14 +423,19 @@ fn blood_and_pale_moons_project_each_battle_and_preserve_base_losses() {
                 d, crate::troops::ArmySlotKey { game_id, structure_id: home.entity_id, epoch: 1, slot: 0 },
             ),
         };
-        let discovery = preset.economy.discovery.unwrap();
+        let discovery = home_discovery(d, home);
         let destination = crate::geometry::neighbor(super::army_activity::army(d, key).coord, 0);
         let root = world_test_support::tests::registrar::discovery_root(
-            game_id, discovery, if pale {
+            game_id,
+            discovery,
+            if pale {
                 200
             } else {
                 100
-            }, 0, None, crate::discovery::Discovery::Beasts,
+            },
+            0,
+            Some(world_test_support::tests::registrar::any_relic()),
+            crate::discovery::Discovery::Beasts,
         );
         assert!(world_test_support::tests::registrar::explore_with_root(d, game_id, key.explorer_id, root, now));
         let site = interact_with_state(
@@ -460,6 +443,7 @@ fn blood_and_pale_moons_project_each_battle_and_preserve_base_losses() {
             || crate::logic::map::occupancy(crate::geometry::tile_key(game_id, destination)).unwrap().entity_id,
         );
         let guard = crate::guards::GuardKey { game_id, structure_id: site, slot: 0 };
+        world_test_support::tests::registrar::strong_frontier_army(d, game_id, key);
         let bps: u128 = if pale {
             if blood {
                 7500
@@ -538,23 +522,6 @@ fn recorded_site_battle(ref events: snforge_std::EventSpy, d: Deployment, site: 
 
 fn spoils_clear(category: u8) {
     let mut preset = definition(5);
-    let mut depths = array![];
-    for depth in preset.settlement.depths {
-        depths
-            .append(
-                crate::expeditions::DepthRules {
-                    site_guard_lower: 3,
-                    site_guard_upper: 3,
-                    beast_weak_lower: 1,
-                    beast_weak_upper: 1,
-                    beast_strong_lower: 2,
-                    beast_strong_upper: 2,
-                    guard_step: 1,
-                    ..*depth,
-                },
-            );
-    }
-    preset.settlement.depths = depths.span();
     let (d, game_id) = super::aspects::setup_aspect_preset(5, preset);
     let home = ResourceKey { game_id, entity_id: found(d, game_id, 1) };
     super::banes::train(d, home, 360);
@@ -607,7 +574,7 @@ fn spoils_clear(category: u8) {
     };
     let destination = crate::geometry::neighbor(super::army_activity::army(d, key).coord, 0);
     let root = world_test_support::tests::registrar::discovery_root(
-        game_id, preset.economy.discovery.unwrap(), 200, 0, Some(relic), expected,
+        game_id, home_discovery(d, home), 200, 0, Some(relic), expected,
     );
     assert!(world_test_support::tests::registrar::explore_with_root(d, game_id, key.explorer_id, root, now));
     let site_key = interact_with_state(
@@ -635,7 +602,7 @@ fn spoils_clear(category: u8) {
         d.games,
         || {
             let receipt = crate::logic::expeditions::expedition_site(site_key).unwrap().clear.unwrap();
-            let band = crate::expeditions::is_band(site, crate::logic::expeditions::depth_rules(game_id, 0));
+            let band = crate::expeditions::is_band(site, crate::logic::expeditions::depth_rules(0));
             assert_eq!(crate::logic::progression::require(key).oath_pick != 0, band);
             if category == crate::taxonomy::RUIN_CATEGORY {
                 assert_eq!(receipt.reward, None);
@@ -672,4 +639,8 @@ fn spoils_doubles_a_rift_clear() {
 #[test]
 fn spoils_keeps_a_ruin_relic() {
     spoils_clear(crate::taxonomy::RUIN_CATEGORY);
+}
+
+fn home_discovery(d: Deployment, home: ResourceKey) -> crate::expeditions::FrontierDiscoveryRules {
+    interact_with_state(d.games, || crate::logic::discovery::lore_rules(crate::logic::research::require(home).learned))
 }

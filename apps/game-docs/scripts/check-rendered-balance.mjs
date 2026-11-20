@@ -22,25 +22,11 @@ const configOf = (mode) =>
 
 const WHEAT = 35;
 const DONKEY = 25;
-const ESSENCE = 38;
 
 /** Each page's expected runs of visible text, each a label then the values its mode's config gives. */
 export const expectedRuns = (blitz) => {
-  const firstReward = blitz.blitz.exploration.rewards[0];
   const donkeyWheat = blitz.resources.productionByComplexRecipe[DONKEY].find((input) => input.resource === WHEAT);
-  if (firstReward.rewardId !== ESSENCE) throw new Error("the first Blitz exploration reward is no longer Essence");
   return [
-    {
-      page: "blitz/map",
-      runs: [
-        [
-          "Essence",
-          `${firstReward.percent}%`,
-          ((firstReward.percent * blitz.troop.limit.exploreRewardStrengthCap) / 100).toLocaleString("en-US"),
-          `${firstReward.probabilityBps / 100}%`,
-        ],
-      ],
-    },
     {
       page: "blitz/realms",
       runs: [

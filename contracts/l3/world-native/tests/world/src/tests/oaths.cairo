@@ -45,15 +45,9 @@ fn the_last_drawable_oath_comes_alone_and_none_left_opens_no_pick() {
 
 #[test]
 fn a_revealed_shrine_offers_a_new_army_three_oaths_and_an_army_holding_fourteen_the_two_it_lacks() {
-    let discovery = crate::expeditions::FrontierDiscoveryRules {
-        camp_bps: 1, rift_bps: 0, ruin_bps: 0, beasts_bps: 0, shrine_bps: 5000, well_bps: 0, empty_reveal_limit: 7,
-    };
     let fourteen = 65535 ^ crate::oaths::bit(crate::oaths::SKILL) ^ crate::oaths::bit(crate::oaths::FOX);
     for (oaths, offered) in array![(0_u16, 3_u32), (fourteen, 2)] {
-        let (d, game_id, key) = super::registrar::setup_frontier_relics_with_rules(Some(discovery));
-        let root = super::registrar::discovery_root(
-            game_id, discovery, 100, 0, None, crate::discovery::Discovery::Shrine,
-        );
+        let (d, game_id, key) = super::registrar::setup_frontier_relics();
         snforge_std::interact_with_state(
             d.games,
             || {
@@ -68,7 +62,7 @@ fn a_revealed_shrine_offers_a_new_army_three_oaths_and_an_army_holding_fourteen_
                 crate::logic::progression::write(key, progress);
             },
         );
-        explore(d, key, root, 360);
+        explore_to_shrine(d, key, 360);
         let shown = cards(read_progress(d, key).oath_pick);
         assert_eq!(shown.len(), offered);
         for oath in shown {
@@ -96,11 +90,16 @@ fn cards(pick: u16) -> Span<u8> {
 
 #[test]
 fn a_game_that_disables_choose_oath_writes_no_pick_and_keeps_the_army_exploring() {
-    let discovery = crate::expeditions::FrontierDiscoveryRules {
-        camp_bps: 1, rift_bps: 0, ruin_bps: 0, beasts_bps: 0, shrine_bps: 5000, well_bps: 0, empty_reveal_limit: 7,
-    };
-    let (d, game_id, key) = super::registrar::setup_frontier_relics_with_rules(Some(discovery));
-    let root = super::registrar::discovery_root(game_id, discovery, 100, 0, None, crate::discovery::Discovery::Shrine);
+    let discovery = crate::balance::expeditions::FRONTIER_DISCOVERY;
+    let (d, game_id, key) = super::registrar::setup_frontier_relics();
+    let root = super::registrar::discovery_root(
+        game_id,
+        discovery,
+        100,
+        0,
+        Some(world_test_support::tests::registrar::any_relic()),
+        crate::discovery::Discovery::Shrine,
+    );
     snforge_std::interact_with_state(
         d.games,
         || {
@@ -113,7 +112,7 @@ fn a_game_that_disables_choose_oath_writes_no_pick_and_keeps_the_army_exploring(
             );
         },
     );
-    explore(d, key, root, 360);
+    explore_to_shrine(d, key, 360);
     let offered = read_progress(d, key);
     let decline = ChooseOath {
         explorer_id: key.explorer_id, expected_pick: offered.oath_pick, oath: None, replace: None,
@@ -145,11 +144,7 @@ fn a_game_that_disables_choose_oath_writes_no_pick_and_keeps_the_army_exploring(
 
 #[test]
 fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_and_declines() {
-    let discovery = crate::expeditions::FrontierDiscoveryRules {
-        camp_bps: 1, rift_bps: 0, ruin_bps: 0, beasts_bps: 0, shrine_bps: 5000, well_bps: 0, empty_reveal_limit: 7,
-    };
-    let (d, game_id, key) = super::registrar::setup_frontier_relics_with_rules(Some(discovery));
-    let root = super::registrar::discovery_root(game_id, discovery, 100, 0, None, crate::discovery::Discovery::Shrine);
+    let (d, game_id, key) = super::registrar::setup_frontier_relics();
     snforge_std::interact_with_state(
         d.games,
         || {
@@ -162,7 +157,7 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
             );
         },
     );
-    explore(d, key, root, 360);
+    explore_to_shrine(d, key, 360);
     let first = read_progress(d, key);
     assert!(first.oath_pick != 0);
     assert_eq!(first.oaths, 0);
@@ -185,13 +180,13 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
     assert_eq!(chosen.oath_pick, 0);
     assert!(!super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(take), 363));
     assert_eq!(read_progress(d, key), chosen);
-    explore(d, key, root, 363);
+    explore_to_shrine(d, key, 363);
     let filling = read_progress(d, key);
     let filled = card(filling.oath_pick, 0);
     let fill = ChooseOath { expected_pick: filling.oath_pick, oath: Some(filled), ..take };
     assert!(super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(fill), 363));
     assert_eq!(read_progress(d, key).oaths, crate::oaths::bit(taken) | crate::oaths::bit(filled));
-    explore(d, key, root, 364);
+    explore_to_shrine(d, key, 364);
     let second = read_progress(d, key);
     let replacement = card(second.oath_pick, 1);
     let replace = ChooseOath { expected_pick: second.oath_pick, oath: Some(replacement), ..take };
@@ -203,7 +198,7 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
         ),
     );
     assert_eq!(read_progress(d, key).oaths, crate::oaths::bit(filled) | crate::oaths::bit(replacement));
-    explore(d, key, root, 367);
+    explore_to_shrine(d, key, 367);
     let third = read_progress(d, key);
     assert!(
         super::resource_commands::execute_in_game(
@@ -312,12 +307,17 @@ fn a_revealed_well_refills_forty_percent_of_the_bar_eighty_with_reflection_and_n
     assert_eq!(crate::oaths::well_stamina(crate::oaths::bit(crate::oaths::REFLECTION), 180), 144);
     assert_eq!(crate::oaths::well_stamina(crate::oaths::bit(crate::oaths::GIANTS), 333), 133);
     let discovery = crate::expeditions::FrontierDiscoveryRules {
-        camp_bps: 1, rift_bps: 0, ruin_bps: 0, beasts_bps: 0, shrine_bps: 0, well_bps: 5000, empty_reveal_limit: 7,
+        shrine_bps: 0, ..crate::balance::expeditions::FRONTIER_DISCOVERY,
     };
     for (reflection, left) in array![(false, 10_u64), (true, 10), (true, 100)] {
-        let (d, game_id, key) = super::registrar::setup_frontier_relics_with_rules(Some(discovery));
+        let (d, game_id, key) = super::registrar::setup_frontier_relics();
         let root = super::registrar::discovery_root(
-            game_id, discovery, 100, 0, None, crate::discovery::Discovery::Well,
+            game_id,
+            discovery,
+            100,
+            0,
+            Some(world_test_support::tests::registrar::any_relic()),
+            crate::discovery::Discovery::Well,
         );
         let (maximum, oaths) = snforge_std::interact_with_state(
             d.games,
@@ -375,7 +375,8 @@ fn a_revealed_well_refills_forty_percent_of_the_bar_eighty_with_reflection_and_n
     }
 }
 
-fn explore(d: super::Deployment, key: crate::troops::ExplorerKey, root: u256, timestamp: u64) {
+fn explore_to_shrine(d: super::Deployment, key: crate::troops::ExplorerKey, timestamp: u64) {
+    let root = shrine_root(d, key);
     for _ in 0_u8..2 {
         let command = crate::commands::Command::Explore(
             crate::commands::Explore { explorer_id: key.explorer_id, direction: 0 },
@@ -664,22 +665,22 @@ fn fight_rules_match_the_client_vectors_with_and_without_their_oaths() {
 
 #[test]
 fn detection_finds_a_camp_brilliance_raises_its_reveal_pay_and_rage_and_perfection_its_clear_pay_but_not_a_claim() {
-    let discovery = crate::expeditions::FrontierDiscoveryRules {
-        camp_bps: 5000, rift_bps: 0, ruin_bps: 0, beasts_bps: 0, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
-    };
+    let discovery = world_test_support::tests::frontier_discovery::rules();
     let detection = crate::oaths::bit(crate::oaths::DETECTION);
     let brilliance = crate::oaths::bit(crate::oaths::BRILLIANCE);
     let rage = crate::oaths::bit(crate::oaths::RAGE);
     let precision = crate::rules::RESOURCE_PRECISION;
     let perfection = detection | crate::oaths::bit(crate::oaths::PERFECTION);
-    for (oaths, found, reveal, clear, emptied) in array![
-        (detection, true, 20 * precision, 1500000000, false), (0, false, 20 * precision, 0, false),
-        (detection | brilliance | rage, true, 25 * precision, 1875000000, false),
-        (perfection, true, 20 * precision, 2250000000, false), (perfection, true, 20 * precision, 1500000000, true),
+    let army_troops = 2000 * precision;
+    let reveal_base = army_troops * crate::logic::expeditions::depth_rules(0).reveal_percent.into() / 100;
+    for (oaths, found, reveal_percent, clear_percent, emptied) in array![
+        (detection, true, 100_u128, 100_u128, false), (0, false, 100, 0, false),
+        (detection | brilliance | rage, true, 125, 125, false), (perfection, true, 100, 150, false),
+        (perfection, true, 100, 100, true),
     ] {
-        let (d, game_id, key) = super::registrar::setup_frontier_relics_with_rules(Some(discovery));
+        let (d, game_id, key) = super::registrar::setup_frontier_relics();
         let mut army = super::registrar::strong_frontier_army(d, game_id, key);
-        army.troops.count = 2000 * precision;
+        army.troops.count = army_troops;
         super::resource_commands::set_explorer_fixture(d.games, key, army);
         snforge_std::interact_with_state(
             d.games,
@@ -692,7 +693,7 @@ fn detection_finds_a_camp_brilliance_raises_its_reveal_pay_and_rage_and_perfecti
         let root = only_detection_finds(game_id, discovery);
         let mut spy = snforge_std::spy_events();
         assert!(super::registrar::explore_with_root(d, game_id, key.explorer_id, root, 360));
-        assert_eq!(reveal_paid(ref spy, d.games), reveal);
+        assert_eq!(reveal_paid(ref spy, d.games), reveal_base * reveal_percent / 100);
         let tile = crate::geometry::tile_key(game_id, crate::geometry::neighbor(army.coord, 0));
         let occupied = snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile));
         assert_eq!(occupied.map(|site| site.category) == Some(crate::taxonomy::CAMP_OCCUPIER), found);
@@ -700,6 +701,10 @@ fn detection_finds_a_camp_brilliance_raises_its_reveal_pay_and_rage_and_perfecti
             continue;
         }
         let site = crate::resources::ResourceKey { game_id, entity_id: occupied.unwrap().entity_id };
+        let guard = snforge_std::interact_with_state(
+            d.games, || crate::logic::expeditions::expedition_site(site).unwrap().initial_guard_count,
+        );
+        super::registrar::strong_frontier_army(d, game_id, key);
         if emptied {
             snforge_std::interact_with_state(d.games, || crate::logic::guards::GuardState::reset(site));
         }
@@ -712,22 +717,24 @@ fn detection_finds_a_camp_brilliance_raises_its_reveal_pay_and_rage_and_perfecti
         );
         assert_eq!(
             receipt.reward,
-            Some(crate::resources::ResourceAmount { resource_type: crate::resources::LABOR, amount: clear }),
+            Some(
+                crate::resources::ResourceAmount {
+                    resource_type: crate::resources::LABOR, amount: guard / 2 * clear_percent / 100,
+                },
+            ),
         );
     }
 }
 
 #[test]
 fn the_twins_add_a_share_of_the_adjacent_own_army_damage_and_a_one_troop_twin_adds_nothing() {
-    let discovery = crate::expeditions::FrontierDiscoveryRules {
-        camp_bps: 5000, rift_bps: 0, ruin_bps: 0, beasts_bps: 0, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
-    };
+    let discovery = world_test_support::tests::frontier_discovery::rules();
     let detection = crate::oaths::bit(crate::oaths::DETECTION);
     let twins = detection | crate::oaths::bit(crate::oaths::TWINS);
     let precision = crate::rules::RESOURCE_PRECISION;
     let mut left: Array<u128> = array![];
     for (oaths, twin_troops) in array![(detection, 300_u128), (twins, 300), (twins, 1)] {
-        let (d, game_id, key) = super::registrar::setup_frontier_relics_with_rules(Some(discovery));
+        let (d, game_id, key) = super::registrar::setup_frontier_relics();
         let mut army = super::registrar::strong_frontier_army(d, game_id, key);
         army.troops.count = 300 * precision;
         army.troops.stamina = crate::troops::Stamina { amount: 100, settled_at: 360, remainder: 0 }.into();
@@ -784,14 +791,35 @@ fn the_twins_add_a_share_of_the_adjacent_own_army_damage_and_a_one_troop_twin_ad
     assert_eq!(*left[2], *left[0]);
 }
 
+fn shrine_root(d: super::Deployment, key: crate::troops::ExplorerKey) -> u256 {
+    let owner = super::state::GameState { contract_address: d.games }.resolved_explorer(key).unwrap().owner;
+    let home = crate::resources::ResourceKey { game_id: key.game_id, entity_id: owner };
+    let (rules, find_percent) = snforge_std::interact_with_state(
+        d.games,
+        || (
+            crate::logic::discovery::lore_rules(crate::logic::research::require(home).learned),
+            crate::oaths::find_percent(crate::logic::progression::require(key).oaths, 100),
+        ),
+    );
+    super::registrar::discovery_root(
+        key.game_id,
+        rules,
+        find_percent,
+        0,
+        Some(world_test_support::tests::registrar::any_relic()),
+        crate::discovery::Discovery::Shrine,
+    )
+}
+
 fn only_detection_finds(game_id: u32, rules: crate::expeditions::FrontierDiscoveryRules) -> u256 {
     let with = crate::oaths::find_percent(crate::oaths::bit(crate::oaths::DETECTION), 100);
     for sample in 0_u64..10000 {
         let raw_root: u256 = sample.into();
         let mut root = raw_root;
         let seed = crate::random::game_root(ref root, game_id);
-        if crate::discovery::frontier(rules, with, 0, None, seed) == crate::discovery::Discovery::Camp
-            && crate::discovery::frontier(rules, 100, 0, None, seed) == crate::discovery::Discovery::None {
+        let relic = Some(world_test_support::tests::registrar::any_relic());
+        if crate::discovery::frontier(rules, with, 0, relic, seed) == crate::discovery::Discovery::Camp
+            && crate::discovery::frontier(rules, 100, 0, relic, seed) != crate::discovery::Discovery::Camp {
             return raw_root;
         }
     }

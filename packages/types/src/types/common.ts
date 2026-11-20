@@ -240,13 +240,6 @@ export interface ResourceOutputs {
   [key: number]: number;
 }
 
-/** A reveal's pool row: drawn by its weight, it pays this percent of the revealing army's strength. */
-export interface BlitzExplorationReward {
-  rewardId: ResourcesIds;
-  percent: number;
-  probabilityBps: number;
-}
-
 export interface Config {
   presetId: number;
   spireTravelEssenceCost: number;
@@ -460,9 +453,6 @@ export interface Config {
     };
   };
   blitz: {
-    exploration: {
-      rewards: BlitzExplorationReward[];
-    };
     registration: {
       registration_count_max: number;
       registration_delay_seconds: number;

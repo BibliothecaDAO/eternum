@@ -43,17 +43,6 @@ pub fn ethereal(config: MapConfig, enabled: bool, spire_adjacent: bool, seed: u2
     }
 }
 
-pub fn validate_frontier(rules: crate::expeditions::FrontierDiscoveryRules, find_percent: u16) {
-    // The floor must find a guarded site even when a draw has no ruin reward.
-    let guarded: u32 = Into::<u16, u32>::into(rules.beasts_bps) + rules.camp_bps.into() + rules.rift_bps.into();
-    assert!(guarded != 0 && rules.empty_reveal_limit != 0, "empty discovery floor");
-    assert!(
-        Into::<u32, u128>::into(guarded + rules.ruin_bps.into() + rules.shrine_bps.into() + rules.well_bps.into())
-            * find_percent.into() <= 1000000,
-        "discovery odds exceed 100 percent",
-    );
-}
-
 // One categorical draw per reveal. After `empty_reveal_limit` empty reveals in a row the draw covers only the kinds
 // still allowed. Each ruin carries its relic from discovery until the winning army clears it.
 pub fn frontier(

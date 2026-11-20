@@ -123,6 +123,12 @@ pub fn execute_in_game(deployment: Deployment, game_id: u32, command: Command, t
         deployment.games, play_fixture::TestAction { game_id, actor: deployment.actor, command }, 987654321, timestamp,
     )
 }
+pub fn assert_executes(deployment: Deployment, game_id: u32, command: Command, timestamp: u64) {
+    let mut events = snforge_std::spy_events();
+    if !execute_in_game(deployment, game_id, command, timestamp) {
+        panic!("{}", play_fixture::rejection(ref events, deployment.games).reason);
+    }
+}
 pub fn amount(resource_type: u8, amount: u128) -> Span<ResourceAmount> {
     array![ResourceAmount { resource_type, amount }].span()
 }

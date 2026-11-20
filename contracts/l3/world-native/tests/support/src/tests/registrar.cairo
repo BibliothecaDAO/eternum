@@ -147,10 +147,6 @@ pub fn definition(blitz: bool) -> PresetDefinition {
                 )
             },
         },
-        exploration: array![
-            crate::exploration_rewards::ExplorationReward { resource_type: 1, percent: 10, percent_max: 10, weight: 1 },
-        ]
-            .span(),
     }
 }
 pub fn roster(count: u32) -> Span<RosterPlayer> {
@@ -246,10 +242,8 @@ pub // The expedition preset uses seeded day bags.
         "a fixture day is whole release ticks",
     );
     preset.rules.day_unit_seconds = DAY_UNIT;
-    preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
     let (_, frontier) = super::preset_projection::current_definition("frontier-check");
     preset.economy.labor = frontier.economy.labor;
-    preset.settlement.depths = frontier.settlement.depths;
     preset.structures.board = frontier.structures.board;
     preset.structures.research = frontier.structures.research;
     preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DEPTH_CONTENTS;
@@ -447,14 +441,12 @@ pub fn assert_capture_at(
     let mut preset = definition(true);
     open_entry(ref preset);
     preset.rules.day_unit_seconds = FRONTIER_DAY_UNIT;
-    preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
     let (_, frontier) = super::preset_projection::current_definition("frontier-check");
     if labor_room.is_some() {
         preset.structures.board = frontier.structures.board;
         preset.structures.research = frontier.structures.research;
     }
     preset.economy.labor = frontier.economy.labor;
-    preset.settlement.depths = frontier.settlement.depths;
     preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DEPTH_CONTENTS;
     preset.rules.map_config.camp_win_probability = 0;
     preset.rules.map_config.shards_mines_win_probability = 0;
@@ -463,7 +455,6 @@ pub fn assert_capture_at(
         | crate::rules::UNOWNED_TARGETS
         | crate::rules::DEPTH_CONTENTS
         | crate::rules::REVEAL_SUPPLIES;
-    preset.exploration = array![].span();
     preset.settlement.spacing = 1024;
     preset.rules.troop_limit_config.camp_armies = 0;
     preset.rules.troop_limit_config.starting_guard = 0;
@@ -473,40 +464,7 @@ pub fn assert_capture_at(
     preset.rules.battle_config.regular_immunity_ticks = 0;
     preset.rules.map_config.shards_mines_win_probability = 0;
     preset.rules.map_config.shards_mines_fail_probability = 1;
-    preset
-        .economy
-        .discovery =
-            Some(
-                crate::expeditions::FrontierDiscoveryRules {
-                    camp_bps: 4000,
-                    rift_bps: 1,
-                    ruin_bps: 1,
-                    beasts_bps: 0,
-                    shrine_bps: 0,
-                    well_bps: 0,
-                    empty_reveal_limit: 7,
-                },
-            );
     preset.rules.map_config.camp_fail_probability = 0;
-    let mut depths = array![];
-    for index in 0_u16..4 {
-        depths
-            .append(
-                crate::expeditions::DepthRules {
-                    guard_step: 1,
-                    beast_weak_lower: 1,
-                    beast_weak_upper: 1,
-                    beast_strong_lower: 2,
-                    beast_strong_upper: 2,
-                    reveal_percent: 10 + index * 5,
-                    site_guard_lower: index + 3,
-                    site_guard_upper: index + 3,
-                    reveal_site_neighbors: false,
-                    chest: first_relic_odds(index.into()),
-                },
-            );
-    }
-    preset.settlement.depths = depths.span();
     registry(d).register_preset(1, preset);
     let game_id = registry(d)
         .create_game(
@@ -605,8 +563,9 @@ pub fn assert_capture_at(
         super::frontier_economy::settle(d, ResourceKey { game_id, entity_id: 1 }, resource_type, reveal_at);
     }
     let before_supplies = resources.resource_balance(labor_supply) + resources.resource_balance(essence_supply);
-    let discovery_rules = preset.economy.discovery.unwrap();
-    let root = discovery_root(game_id, discovery_rules, 100, 0, None, crate::discovery::Discovery::Camp);
+    let root = discovery_root(
+        game_id, home_discovery(d, game_id), 100, 0, Some(any_relic()), crate::discovery::Discovery::Camp,
+    );
     assert!(reveal_at < capture_at, "camp draw must precede the fixture capture");
     assert!(explore_with_root(d, game_id, explorer_id, root, reveal_at));
     let coord = crate::geometry::neighbor(army.coord, 0);
@@ -624,10 +583,8 @@ pub fn assert_capture_at(
         reveal_amount,
     );
     let guards = IGuardsDispatcher { contract_address: d.games };
-    assert_eq!(
-        guards.guard(GuardKey { game_id, structure_id: camp_id, slot: 0 }).troops.count,
-        (Into::<u8, u128>::into(depth) + 3) * RESOURCE_PRECISION,
-    );
+    let guard = guards.guard(GuardKey { game_id, structure_id: camp_id, slot: 0 }).troops.count;
+    assert_on_site_guard_grid(depth, guard);
     let essence = ResourceSlot { game_id, entity_id: 1, resource_type: 38 };
     super::frontier_economy::settle(d, home, crate::resources::LABOR, capture_at);
     if let Some(room) = labor_room {
@@ -651,7 +608,8 @@ pub fn assert_capture_at(
             crate::logic::expeditions::expedition_site(camp).unwrap()
         },
     );
-    assert_eq!(site_before.initial_guard_count, (Into::<u8, u128>::into(depth) + 3) * RESOURCE_PRECISION);
+    assert_eq!(site_before.initial_guard_count, guard);
+    strong_frontier_army(d, game_id, army_key);
     assert!(site_before.clear.is_none());
     assert_eq!(site_before.category, crate::taxonomy::CAMP_CATEGORY);
     assert_eq!((site_before.col, site_before.row, site_before.alt), (coord.x, coord.y, coord.alt));
@@ -664,7 +622,7 @@ pub fn assert_capture_at(
         crate::commands::Battle { attacker_id: explorer_id, defender_id: camp_id, relic_slot: None },
     );
     let mut payout_events = snforge_std::spy_events();
-    assert!(execute_in_game(d, game_id, attack, capture_at));
+    super::resource_commands::assert_executes(d, game_id, attack, capture_at);
     assert_site_removed(d, camp);
     assert_eq!(
         troops.resolved_explorer(army_key).unwrap().troops.stamina.inline().amount,
@@ -736,15 +694,13 @@ pub fn assert_capture_at(
         structures.structure(ResourceKey { game_id, entity_id: mine_id }).unwrap().base.category,
         crate::taxonomy::RIFT_CATEGORY,
     );
-    assert!(
-        execute_in_game(
-            d,
-            game_id,
-            Command::BattleGuard(
-                crate::commands::Battle { attacker_id: explorer_id, defender_id: mine_id, relic_slot: None },
-            ),
-            capture_at + 1,
+    super::resource_commands::assert_executes(
+        d,
+        game_id,
+        Command::BattleGuard(
+            crate::commands::Battle { attacker_id: explorer_id, defender_id: mine_id, relic_slot: None },
         ),
+        capture_at + 1,
     );
     assert_eq!(
         troops.resolved_explorer(army_key).unwrap().troops.stamina.inline().amount,
@@ -818,13 +774,14 @@ pub fn assert_capture_at(
     assert_eq!(paid, 2);
     if labor_room.is_none() && !late && depth == 0 && count == 1000
         * RESOURCE_PRECISION && tier == crate::troops::TroopTier::T1 {
-        assert!(
-            execute_in_game(
-                d,
-                game_id,
-                Command::Move(crate::commands::Move { explorer_id, directions: array![0].span() }),
-                capture_at + 140,
-            ),
+        let mut survivors = troops.resolved_explorer(army_key).unwrap();
+        survivors.troops.count = count;
+        crate::tests::resource_commands::set_explorer_fixture(d.games, army_key, survivors);
+        super::resource_commands::assert_executes(
+            d,
+            game_id,
+            Command::Move(crate::commands::Move { explorer_id, directions: array![0].span() }),
+            capture_at + 140,
         );
         assert_eq!(troops.resolved_explorer(army_key).unwrap().coord, coord);
         assert!(
@@ -841,19 +798,11 @@ pub fn assert_capture_at(
     }
 }
 pub fn setup_frontier_relics() -> (super::Deployment, u32, ExplorerKey) {
-    setup_frontier_relics_with_rules(None)
-}
-pub fn setup_frontier_relics_with_rules(
-    discovery: Option<crate::expeditions::FrontierDiscoveryRules>,
-) -> (super::Deployment, u32, ExplorerKey) {
     let (_, frontier) = super::preset_projection::current_definition("frontier-check");
-    let result = setup_frontier_relics_with_preset(discovery, frontier, None);
-    result
+    setup_frontier_relics_with_preset(frontier, None)
 }
 pub fn setup_frontier_relics_with_preset(
-    discovery: Option<crate::expeditions::FrontierDiscoveryRules>,
-    frontier: PresetDefinition,
-    board: Option<crate::buildings::BoardRules>,
+    frontier: PresetDefinition, board: Option<crate::buildings::BoardRules>,
 ) -> (super::Deployment, u32, ExplorerKey) {
     let d = setup();
     let mut preset = definition(true);
@@ -864,20 +813,6 @@ pub fn setup_frontier_relics_with_preset(
     open_entry(ref preset);
     preset.rules.day_unit_seconds = DAY_UNIT;
     preset.rules.tick_config.armies_tick_in_seconds = 60;
-    preset
-        .economy
-        .discovery =
-            Some(
-                crate::expeditions::FrontierDiscoveryRules {
-                    camp_bps: 1,
-                    rift_bps: 0,
-                    ruin_bps: 0,
-                    beasts_bps: 4000,
-                    shrine_bps: 0,
-                    well_bps: 0,
-                    empty_reveal_limit: 7,
-                },
-            );
     preset.rules.map_config.camp_win_probability = 0;
     preset.rules.map_config.shards_mines_win_probability = 0;
     preset
@@ -890,7 +825,6 @@ pub fn setup_frontier_relics_with_preset(
         | HOME_REWARDS
         | crate::rules::REVEAL_SUPPLIES
         | crate::rules::DEPTH_CONTENTS;
-    preset.exploration = array![].span();
     preset.settlement.spacing = 1024;
     preset.rules.troop_limit_config.starting_guard = 0;
     preset.rules.troop_limit_config.settlement_armies = 2;
@@ -906,29 +840,7 @@ pub fn setup_frontier_relics_with_preset(
     preset.rules.troop_stamina_config.stamina_travel_fish_cost = 0;
     preset.rules.battle_config.cooldown_seconds = 0;
     preset.rules.battle_config.regular_immunity_ticks = 0;
-    let mut depths = array![];
-    for depth in 0_u32..4 {
-        depths
-            .append(
-                crate::expeditions::DepthRules {
-                    guard_step: 1,
-                    beast_weak_lower: 1,
-                    beast_weak_upper: 1,
-                    beast_strong_lower: 2,
-                    beast_strong_upper: 2,
-                    reveal_percent: 1,
-                    site_guard_lower: 3,
-                    site_guard_upper: 3,
-                    reveal_site_neighbors: false,
-                    chest: *frontier.settlement.depths.at(depth).chest,
-                },
-            );
-    }
-    preset.settlement.depths = depths.span();
     preset.economy.labor = frontier.economy.labor;
-    if let Some(discovery) = discovery {
-        preset.economy.discovery = Some(discovery);
-    }
     registry(d).register_preset(1, preset);
     let game_id = registry(d)
         .create_game(
@@ -995,6 +907,21 @@ pub fn strong_frontier_army(d: super::Deployment, game_id: u32, key: ExplorerKey
     stop_cheat_caller_address(d.games);
     army
 }
+pub fn home_discovery(d: super::Deployment, game_id: u32) -> crate::expeditions::FrontierDiscoveryRules {
+    snforge_std::interact_with_state(
+        d.games,
+        || crate::logic::discovery::lore_rules(
+            crate::logic::research::require(ResourceKey { game_id, entity_id: 1 }).learned,
+        ),
+    )
+}
+pub fn assert_on_site_guard_grid(depth: u8, guard: u128) {
+    let rules = crate::logic::expeditions::depth_rules(depth);
+    let count = guard / RESOURCE_PRECISION;
+    let (lower, upper): (u128, u128) = (rules.site_guard_lower.into(), rules.site_guard_upper.into());
+    assert!(guard % RESOURCE_PRECISION == 0 && lower <= count && count <= upper, "guard outside the depth's range");
+    assert_eq!((count - lower) % rules.guard_step.into(), 0);
+}
 pub fn place_ruin(
     d: super::Deployment, game_id: u32, coord: crate::troops::Coord, relic: crate::army_relics::ArmyRelic,
 ) -> ResourceKey {
@@ -1012,48 +939,6 @@ pub fn place_ruin(
         );
     stop_cheat_caller_address(d.games);
     ResourceKey { game_id, entity_id: site }
-}
-pub fn ruin_discovery_rules() -> crate::expeditions::FrontierDiscoveryRules {
-    crate::expeditions::FrontierDiscoveryRules {
-        beasts_bps: 1, camp_bps: 0, rift_bps: 0, ruin_bps: 8000, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
-    }
-}
-pub fn reveal_ruin(
-    d: super::Deployment, key: ExplorerKey, rules: crate::expeditions::FrontierDiscoveryRules, timestamp: u64,
-) -> (ResourceKey, u8) {
-    let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
-    let root = discovery_root(
-        key.game_id, rules, 100, 0, Some(any_relic()), crate::discovery::Discovery::Ruin(any_relic()),
-    );
-    for direction in 0_u8..6 {
-        let tile = crate::geometry::tile_key(key.game_id, crate::geometry::neighbor(army.coord, direction));
-        let unseen = snforge_std::interact_with_state(d.games, || crate::logic::map::tile(tile).is_none());
-        if !unseen {
-            continue;
-        }
-        let mut refused = snforge_std::spy_events();
-        let applied = super::play_fixture::play(
-            d.games,
-            super::play_fixture::TestAction {
-                game_id: key.game_id,
-                actor: d.actor,
-                command: Command::Explore(Explore { explorer_id: key.explorer_id, direction }),
-            },
-            root,
-            timestamp,
-        );
-        if !applied {
-            panic!(
-                "ruin Explore at {} refused: {}",
-                timestamp,
-                super::play_fixture::rejection(ref refused, d.games).reason,
-            );
-        }
-        let occupied = snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile).unwrap());
-        assert_eq!(occupied.category, crate::taxonomy::RUIN_OCCUPIER);
-        return (ResourceKey { game_id: key.game_id, entity_id: occupied.entity_id }, direction);
-    }
-    panic!("fixture has no unrevealed adjacent tile")
 }
 pub fn next_setup_entity(d: super::Deployment, game_id: u32) -> u32 {
     snforge_std::interact_with_state(d.games, || crate::state::read().games.next_entity.read(game_id))
@@ -1081,16 +966,6 @@ pub fn setup_open_frontier_preset(name: ByteArray, bags: u64) -> (super::Deploym
 
 pub fn labor_home_definition(name: ByteArray) -> PresetDefinition {
     let (_, mut preset) = super::preset_projection::current_definition(name);
-    let mut depths = array![];
-    for index in 0..preset.settlement.depths.len() {
-        depths
-            .append(
-                crate::expeditions::DepthRules {
-                    chest: first_relic_odds(index), ..*preset.settlement.depths.at(index),
-                },
-            );
-    }
-    preset.settlement.depths = depths.span();
     preset
 }
 
@@ -1129,20 +1004,6 @@ pub fn apply_ruin_depth_release(d: super::Deployment, game_id: u32) {
         releases.apply_release(game_id, release_id);
     }
     stop_cheat_caller_address(d.games);
-}
-
-pub fn first_relic_odds(layer: u32) -> ChestTiers {
-    let mut odds = ChestTiers { common: 0, uncommon: 0, rare: 0, epic: 0, legendary: 0 };
-    if layer == 0 {
-        odds.common = 10000;
-    } else if layer == 1 {
-        odds.uncommon = 10000;
-    } else if layer == 2 {
-        odds.rare = 10000;
-    } else {
-        odds.epic = 10000;
-    }
-    odds
 }
 
 pub fn first_order_choice(d: super::Deployment, game_id: u32) -> Option<u8> {

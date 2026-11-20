@@ -977,7 +977,6 @@ const presetDerivedModels = new Set([
   "DepositRules",
   "WithdrawalRules",
   "ResourceToken",
-  "ExtractionRewards",
 ]);
 
 export function defineFactModels({ struct, model: declare }) {
@@ -1102,12 +1101,6 @@ export function defineFactModels({ struct, model: declare }) {
       "game",
       [{ name: "game_id", type: "core::integer::u32" }],
       struct("blitz_results::BlitzResult"),
-    ),
-    model(
-      "ExtractionRewards",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      [{ name: "rewards", type: "core::array::Span::<world_native::exploration_rewards::ExplorationReward>" }],
     ),
     model(
       "DepositSource",
@@ -1679,7 +1672,6 @@ export const syncScopes = {
       "SpireLayout",
       "CampRules",
       "BlitzResult",
-      "ExtractionRewards",
       "ChestRules",
       "LaborRules",
       "DeepRules",

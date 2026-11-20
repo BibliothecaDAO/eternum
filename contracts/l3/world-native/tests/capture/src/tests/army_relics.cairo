@@ -22,30 +22,11 @@ fn relic_game() -> (
             );
     }
     preset.settlement.realms.resources = stock.span();
-    let discovery = crate::expeditions::FrontierDiscoveryRules {
-        beasts_bps: 1, camp_bps: 0, rift_bps: 0, ruin_bps: 5000, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
-    };
-    preset.economy.discovery = Some(discovery);
     preset.economy.race = None;
     preset.rules.tick_config.armies_tick_in_seconds = 1;
     preset.rules.troop_stamina_config.stamina_gain_per_tick = 120;
     preset.rules.battle_config.cooldown_seconds = 0;
     preset.rules.battle_config.regular_immunity_ticks = 0;
-    let mut depths = array![];
-    for depth in preset.settlement.depths {
-        depths
-            .append(
-                crate::expeditions::DepthRules {
-                    beast_weak_lower: 1,
-                    beast_weak_upper: 1,
-                    beast_strong_lower: 2,
-                    beast_strong_upper: 2,
-                    guard_step: 1,
-                    ..*depth,
-                },
-            );
-    }
-    preset.settlement.depths = depths.span();
     let (d, game_id) = create_open_frontier(1, preset, BAG_SECONDS);
     assert!(
         execute_in_game(
@@ -61,7 +42,10 @@ fn relic_game() -> (
     let home = ResourceKey { game_id, entity_id: home_id };
     let explorer_id = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
     let key = ExplorerKey { game_id, explorer_id };
-    (d, game_id, home_id, explorer_id, key, discovery, *preset.settlement.depths.at(0).chest)
+    let discovery = snforge_std::interact_with_state(
+        d.games, || crate::logic::discovery::lore_rules(crate::logic::research::require(home).learned),
+    );
+    (d, game_id, home_id, explorer_id, key, discovery, crate::logic::expeditions::depth_rules(0).chest)
 }
 
 #[test]

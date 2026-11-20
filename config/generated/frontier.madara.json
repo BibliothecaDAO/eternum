@@ -878,9 +878,6 @@
       "collectible_timelock_address": "0x0",
       "collectibles_lootchest_address": "0x0",
       "collectibles_elitenft_address": "0x0"
-    },
-    "exploration": {
-      "rewards": []
     }
   },
   "faith": {

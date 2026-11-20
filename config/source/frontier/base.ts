@@ -56,7 +56,6 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
   presetId: frontierPreset.id,
   blitz: {
     registration: { registration_count_max: 0 },
-    exploration: { rewards: [] },
   },
   dev: { mode: { on: false } },
   season: {

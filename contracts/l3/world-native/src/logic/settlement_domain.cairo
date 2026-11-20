@@ -92,7 +92,7 @@ pub mod SettlementLogic {
     impl ExpeditionRules of crate::expeditions::IExpeditionRules<ContractState> {
         #[cfg(feature: "test_support")]
         fn depth_rules(self: @ContractState, game_id: u32, depth: u8) -> crate::expeditions::DepthRules {
-            crate::logic::expeditions::depth_rules(game_id, depth)
+            crate::logic::expeditions::depth_rules(depth)
         }
     }
     #[abi(embed_v0)]

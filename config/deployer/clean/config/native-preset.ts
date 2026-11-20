@@ -338,7 +338,6 @@ export function buildNativePreset(config: Config, presetId: number) {
     structures: buildStructures(config, preset),
     settlement: buildSettlement(config, preset),
     economy: buildEconomy(config, preset, bridgeTokens),
-    exploration: preset.supplies.map((reward) => ({ ...reward })),
   };
   if (preset.clockScale !== undefined) scaleActivityClocks(definition, preset.clockScale.activity);
   return definition;
@@ -582,22 +581,6 @@ function buildDiscovery(preset: ReturnType<typeof nativePresetForId>) {
   if (rules === undefined || (rules !== null) !== (preset.dayUnitSeconds !== 0))
     throw new Error("Explicit discovery rules are required for expedition presets only");
   if (rules === null) return new CairoOption(CairoOptionVariant.None);
-  if (
-    Object.values(rules).some((value) => !Number.isSafeInteger(value) || value < 0 || value > 10000) ||
-    rules.emptyRevealLimit < 1 ||
-    rules.emptyRevealLimit > 255 ||
-    rules.beastsBps + rules.campBps + rules.riftBps === 0 ||
-    (rules.beastsBps +
-      rules.campBps +
-      rules.riftBps +
-      rules.ruinBps +
-      rules.shrineBps +
-      rules.wellBps +
-      Math.max(rules.shrineBps + rules.wellBps, rules.campBps, rules.riftBps)) *
-      (preset.race?.clearMistPercent ?? 100) >
-      1_000_000
-  )
-    throw new Error("Invalid categorical discovery rules");
   return new CairoOption(CairoOptionVariant.Some, {
     beasts_bps: rules.beastsBps,
     camp_bps: rules.campBps,

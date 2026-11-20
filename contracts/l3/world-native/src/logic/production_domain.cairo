@@ -31,13 +31,9 @@ pub mod ProductionLogic {
     #[abi(embed_v0)]
     impl PresetResources of crate::presets::IPresetResources<ContractState> {
         fn store_resource_preset(
-            ref self: ContractState,
-            commitment: felt252,
-            resources: crate::presets::ResourcePreset,
-            exploration: Span<crate::exploration_rewards::ExplorationReward>,
-            mode_rules: u32,
+            ref self: ContractState, commitment: felt252, resources: crate::presets::ResourcePreset,
         ) {
-            crate::logic::preset_record::store_resources(commitment, resources, exploration, mode_rules);
+            crate::logic::preset_record::store_resources(commitment, resources);
         }
     }
     component!(path: BridgeState, storage: bridge, event: BridgeEvent);

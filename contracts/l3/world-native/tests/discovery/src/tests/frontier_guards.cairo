@@ -6,7 +6,7 @@ fn seeded_site_guards_keep_their_family_mark_on_the_inclusive_preset_grid() {
     let (_, preset) = super::preset_projection::current_definition("frontier-check");
     let rifts = array![(1350_u32, 1640_u32), (2690, 3290), (5380, 6580), (10760, 13160)];
     for depth_index in 0_u32..4 {
-        let depth = *preset.settlement.depths.at(depth_index);
+        let depth = crate::logic::expeditions::depth_rules(depth_index.try_into().unwrap());
         for category in array![crate::taxonomy::CAMP_CATEGORY, RIFT_CATEGORY] {
             let (lower, upper) = if category == RIFT_CATEGORY {
                 *rifts.at(depth_index)
@@ -46,7 +46,7 @@ fn beasts_draw_two_depth_scaled_ranges_below_every_other_site_guard() {
     ];
     let mut previous_stronger = 0;
     for depth_index in 0_u32..4 {
-        let depth = *preset.settlement.depths.at(depth_index);
+        let depth = crate::logic::expeditions::depth_rules(depth_index.try_into().unwrap());
         let (weak_lower, weak_upper, strong_lower, strong_upper) = *expected.at(depth_index);
         assert!(weak_lower > previous_stronger && strong_lower > weak_upper);
         assert!(strong_upper < depth.site_guard_lower.into());
@@ -135,73 +135,4 @@ fn a_ruin_refuses_a_relic_below_its_layer() {
 #[should_panic(expected: "relic outside its layer")]
 fn a_ruin_refuses_a_relic_above_its_layer() {
     crate::army_relics::ruin_strength(4, 0);
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn registration_refuses_ruin_odds_outside_a_layers_three_relics_on_every_row() {
-    let d = super::registrar::setup();
-    snforge_std::start_cheat_caller_address(d.games, super::authority());
-    for (layer, valid) in array![(0_u32, false), (1, false), (2, false), (3, false), (3, true)] {
-        let (id, mut preset) = super::preset_projection::current_definition("frontier-check");
-        let mut depths = array![];
-        for index in 0..preset.settlement.depths.len() {
-            let mut depth = *preset.settlement.depths.at(index);
-            if index == layer {
-                depth.chest = crate::relics::ChestTiers { common: 0, uncommon: 0, rare: 0, epic: 0, legendary: 0 };
-                if layer == 2 || (layer == 3 && !valid) {
-                    depth.chest.uncommon = 10000;
-                } else {
-                    depth.chest.legendary = 10000;
-                }
-            }
-            depths.append(depth);
-        }
-        preset.settlement.depths = depths.span();
-        assert_eq!(IRegistrarSafeDispatcher { contract_address: d.games }.register_preset(id, preset).is_ok(), valid);
-    }
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn frontier_registration_refuses_invalid_site_and_beast_guard_ranges() {
-    let d = super::registrar::setup();
-    snforge_std::start_cheat_caller_address(d.games, super::authority());
-    for invalid in array![0_u8, 1, 3, 5, 6, 7, 8, 9, 10] {
-        let (id, mut preset) = super::preset_projection::current_definition("frontier-check");
-        if invalid == 5 {
-            preset.rules.troop_limit_config.t1_tier_strength = 2;
-        }
-        let mut depths = array![];
-        for row in preset.settlement.depths {
-            let mut depth = *row;
-            if invalid == 0 {
-                depth.guard_step = 0;
-            }
-            if invalid == 1 {
-                depth.site_guard_upper += 1;
-            }
-            if invalid == 3 {
-                depth.site_guard_lower = depth.site_guard_upper + 100;
-            }
-            if invalid == 6 {
-                depth.beast_weak_lower = 0;
-            }
-            if invalid == 7 {
-                depth.beast_weak_lower = depth.beast_weak_upper + 1;
-            }
-            if invalid == 8 {
-                depth.beast_strong_lower = depth.beast_strong_upper + 1;
-            }
-            if invalid == 9 {
-                depth.beast_weak_upper = depth.beast_strong_lower;
-            }
-            if invalid == 10 {
-                depth.beast_strong_upper = depth.site_guard_lower;
-            }
-            depths.append(depth);
-        }
-        preset.settlement.depths = depths.span();
-        assert!(IRegistrarSafeDispatcher { contract_address: d.games }.register_preset(id, preset).is_err());
-    }
 }

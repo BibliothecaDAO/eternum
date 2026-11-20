@@ -231,7 +231,6 @@ export const BLITZ = {
     },
   },
   map: {
-    exploreCap: n(limit.exploreRewardStrengthCap),
     spireFind: pct(spireChance),
     spireEssence: n(CONTRACT.spireEssence),
     riftFind: pct(riftChance),

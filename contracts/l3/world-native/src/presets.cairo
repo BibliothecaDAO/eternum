@@ -47,7 +47,6 @@ pub struct PresetDefinition {
     pub structures: StructurePreset,
     pub settlement: SettlementPreset,
     pub economy: EconomyPreset,
-    pub exploration: Span<crate::exploration_rewards::ExplorationReward>,
 }
 
 pub fn validate(preset: PresetDefinition) {
@@ -93,12 +92,7 @@ pub fn validate(preset: PresetDefinition) {
         let _ = labor.golden_amount * crate::rules::RESOURCE_PRECISION;
         let _ = labor.golden_essence * crate::rules::RESOURCE_PRECISION;
     }
-    assert!(preset.economy.discovery.is_some() == (rules.day_unit_seconds != 0), "discovery requires expedition");
-    if let Some(discovery) = preset.economy.discovery {
-        crate::discovery::validate_frontier(
-            discovery,
-            crate::oaths::detected_find_percent(preset.economy.race.map(|race| race.clear_mist_percent).unwrap_or(100)),
-        );
+    if rules.day_unit_seconds != 0 {
         assert!(
             rules.map_config.camp_win_probability == 0 && rules.map_config.shards_mines_win_probability == 0,
             "expedition uses categorical odds",
@@ -152,13 +146,7 @@ pub fn commitment(preset: PresetDefinition) -> felt252 {
 
 #[starknet::interface]
 pub trait IPresetResources<T> {
-    fn store_resource_preset(
-        ref self: T,
-        commitment: felt252,
-        resources: ResourcePreset,
-        exploration: Span<crate::exploration_rewards::ExplorationReward>,
-        mode_rules: u32,
-    );
+    fn store_resource_preset(ref self: T, commitment: felt252, resources: ResourcePreset);
 }
 
 #[starknet::interface]
@@ -173,12 +161,5 @@ pub trait IPresetWithdrawals<T> {
 
 #[starknet::interface]
 pub trait IPresetSettlement<T> {
-    fn store_settlement_preset(
-        ref self: T,
-        commitment: felt252,
-        settlement: SettlementPreset,
-        entry_rule: u8,
-        mode_rules: u32,
-        day_unit_seconds: u32,
-    );
+    fn store_settlement_preset(ref self: T, commitment: felt252, settlement: SettlementPreset, entry_rule: u8);
 }
