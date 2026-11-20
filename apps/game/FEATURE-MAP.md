@@ -1156,9 +1156,6 @@ come from the native fact store.
 Clear Mist discovery: select the army in `/lab/game?scenario=clear-mist`; its next Spire reveal shows 20%. Canonical
 proof: `pnpm playtest --steps lab-clear-mist`, desktop and phone.
 
-Far-Eye: select the army in `/lab/game?scenario=far-eye` and switch on its Common Far-Eye. Six new tiles reveal, a Spire
-appears, and the Realm and army receive resources. Canonical proof: `pnpm playtest --steps lab-far-eye`.
-
 Site effects: `/lab/game?scenario=site-effects`; select the army and camp to read Pale Moon guards and Spoils payout.
 Canonical proof: `playtest --steps lab-site-effects`. Clear receipts and the Feed retain awarded resources after effects
 expire.

@@ -28,16 +28,6 @@ pub mod RaidLogic {
     }
     #[abi(embed_v0)]
     impl RelicMap of crate::relics::IRelicMap<ContractState> {
-        fn reveal_relic_tiles(
-            ref self: ContractState,
-            key: crate::troops::ExplorerKey,
-            coord: Coord,
-            count: u8,
-            game_context: crate::commands::ActionContext,
-        ) {
-            crate::logic::army_relics::reveal_tiles(key, coord, count, game_context)
-        }
-
         #[cfg(feature: "test_support")]
         fn relic_discovery_time(self: @ContractState, game_id: u32) -> u64 {
             self.data.map_rules.last_relic_discovery.read(game_id)

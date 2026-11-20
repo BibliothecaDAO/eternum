@@ -357,36 +357,6 @@ async function enterEtherealIIFromItsCard({ browser }) {
   return { armyId, locate };
 }
 
-const FAR_EYE_STEPS = [
-  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  {
-    name: "far-eye-reveal-and-reward",
-    settleMs: 1_000,
-    play: async ({ browser }) => {
-      await openTheArmyPanel(browser);
-      browser.run(["find", "role", "button", "click", "--name", "Switch on Common Far-Eye"]);
-      const answer = await readUntil(
-        () => browser.read(`window.__labChain?.sent.find(row => row.command.kind === 'ApplyRelic')?.answered ?? []`),
-        (rows) => rows.some((row) => row.model === "ExpeditionSpire"),
-        MERGE_WAIT_MS,
-      );
-      return {
-        answer,
-        panel: browser.read(
-          `JSON.stringify(document.querySelector('[data-kit-sheet][aria-label^="Army "]')?.textContent ?? '')`,
-        ),
-      };
-    },
-    verify: ({ played }) =>
-      played.answer.filter((row) => row.model === "TileOpt").length === 6 &&
-      played.answer.some((row) => row.model === "ResourceBalance" && BigInt(row.value.balance) > 0n) &&
-      played.answer.some((row) => row.model === "ArmyRelics" && row.value.first === null) &&
-      !played.panel.includes("Switch on Common Far-Eye")
-        ? completed(played)
-        : failed("Far-Eye must spend its slot, reveal six tiles, find the Spire and pay resources", played),
-  },
-];
-
 const RELIC_FORECAST_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   {
@@ -6464,7 +6434,6 @@ export const STEP_SETS = {
   ),
   "lab-actions-claim": { game: labSpireGame("claim"), steps: CLAIM_ACTION_STEPS },
   "lab-far-place": { game: labSpireGame("far-place"), steps: FAR_PLACE_STEPS, devOverlays: true },
-  "lab-far-eye": { game: labSpireGame("far-eye"), steps: FAR_EYE_STEPS },
   "lab-relic-forecasts": { game: labSpireGame("relics"), steps: RELIC_FORECAST_STEPS },
   "lab-race": { game: labSpireGame("race"), steps: raceBoardSteps(null) },
   "lab-race-expired": { game: labSpireGame("race-expired"), steps: raceBoardSteps("expired") },

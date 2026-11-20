@@ -2287,11 +2287,11 @@ const ARMY_RELIC_SLOTS = 3;
 export const RELIC_WORDS = {
   title: "Relics",
   cache: (fragments: number) => `Ancient cache: ${formatExact(fragments)} ${FRAGMENTS}`,
-  kinds: { Blade: "Blade", Ward: "Ward", Plunder: "Plunder", FarEye: "Far-Eye" },
+  kinds: { Blade: "Blade", Ward: "Ward", Plunder: "Plunder", StaminaRegen: "Stamina" },
   blade: (amount: string) => `+${amount} damage dealt`,
   ward: (amount: string) => `−${amount} damage taken`,
   plunder: (amount: string) => `+${amount} labor and Essence from a cleared site`,
-  farEye: (tiles: number) => `Reveals the ${tiles} nearest tiles at once`,
+  staminaRegen: (amount: string) => `+${amount} stamina regeneration`,
   empty: "Empty slot",
   switchOn: "Switch on",
   switching: "Switching on…",

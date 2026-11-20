@@ -4,7 +4,7 @@ export const nativeRuleConstants = {
   "RELIC_WARD_BPS": 500,
   "RELIC_PLUNDER_BPS": 2000,
   "RELIC_SECONDS_PER_RANK": 1800,
-  "RELIC_TILES_PER_RANK": 6,
+  "STAMINA_REGEN_RELIC_STEP_PERCENT": 20,
   "ATTRIBUTE_CAP": 5,
   "SCOUT_EXPLORE_STAMINA": 10,
   "FRONTIER_LIGHT_DAMAGE_PERCENT": 75,
@@ -166,4 +166,4 @@ export const nativeFragmentConstants = {
   "VEIL_CACHE_PERCENT": 10,
   "HOLLOW_CACHE_PERCENT": 5
 } as const;
-export const nativeBalanceIdentity = "a81cc113dc80f8ffa6a5de411072d686175cabf1e6fba5380676a9246604d2af";
+export const nativeBalanceIdentity = "33bc5448f6225872cd25d1cd411e90eea44a0e84e39edc55b7e3524a8b1a3bd9";

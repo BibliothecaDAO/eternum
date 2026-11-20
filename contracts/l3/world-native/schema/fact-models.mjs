@@ -158,7 +158,7 @@ export const factWireTypes = [
         type: "()",
       },
       {
-        name: "FarEye",
+        name: "StaminaRegen",
         type: "()",
       },
     ],

@@ -230,6 +230,11 @@ it("keeps missing army facts unavailable, reports them in development, and resum
           oath_pick: 0,
         },
       },
+      {
+        model: "ArmyRelicEffect",
+        key: "0xaa",
+        value: { game_id: 1, explorer_id: ARMY_ID, kind: "StaminaRegen", rank: 0, expires_at: "0" },
+      },
     ] as never),
   );
   expect(document.body.textContent).not.toContain("Army data unavailable");
