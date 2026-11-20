@@ -13,7 +13,7 @@ pub fn kind(game_id: u32, day: u64) -> Option<u8> {
 }
 
 pub fn quest_kind(home: ResourceKey, day: u64) -> u8 {
-    if let Some(quest) = team_quest(home, day) {
+    if let Some(quest) = crate::logic::deep_banes::team_quest(home, day) {
         return quest;
     }
     if let Some(kind) = kind(home.game_id, day) {
@@ -22,30 +22,22 @@ pub fn quest_kind(home: ResourceKey, day: u64) -> u8 {
     crate::quests::daily_quest(crate::state::read().games.games.entry(home.game_id).seed.read(), day)
 }
 
-fn team_quest(home: ResourceKey, day: u64) -> Option<u8> {
-    if crate::logic::preset_record::for_game(home.game_id).bane_rules.read().is_none() {
-        return None;
-    }
-    crate::logic::deep_banes::team_quest(home, day)
-}
-
-pub fn target(home: ResourceKey, kind: u8, level: u8) -> u128 {
-    let preset = crate::logic::preset_record::for_game(home.game_id);
+pub fn target(kind: u8, level: u8) -> u128 {
     if kind < crate::quests::QUEST_COUNT {
-        return Into::<u32, u128>::into(preset.quest_counts.read(kind)) * Into::<u8, u128>::into(level);
+        let count = *crate::balance::quests::BASE_COUNTS.span().at(kind.into());
+        return Into::<u32, u128>::into(count) * Into::<u8, u128>::into(level);
     }
     assert!(kind >= crate::quests::STAND && kind <= crate::quests::CULL, "invalid bane quest");
-    preset.bane_quest_counts.read((kind - crate::quests::STAND) * 4 + level - 1)
+    *crate::balance::banes::QUEST_COUNTS.span().at(((kind - crate::quests::STAND) * 4 + level - 1).into())
 }
 
 pub fn required(game_id: u32, aspect: u8, day: u64) -> u32 {
-    let (_, percent, _, _, _) = crate::logic::preset_record::for_game(game_id).bane_rules.read().unwrap();
     let active = if day == 0 {
         0
     } else {
         crate::state::read().troops.aspect_activity.read((game_id, aspect, day - 1))
     };
-    crate::banes::required(active, percent)
+    crate::banes::required(active, crate::balance::banes::QUORUM_PERCENT)
 }
 
 pub fn progress(game_id: u32, aspect: u8, day: u64) -> BaneProgress {
@@ -62,7 +54,7 @@ pub fn won(home: ResourceKey, day: u64) -> bool {
 }
 
 pub fn complete(home: ResourceKey, day: u64, timestamp: u64) {
-    if kind(home.game_id, day).is_none() && team_quest(home, day).is_none() {
+    if kind(home.game_id, day).is_none() && crate::logic::deep_banes::team_quest(home, day).is_none() {
         return;
     }
     let aspect = crate::logic::aspects::home_aspect(home);
@@ -88,13 +80,17 @@ pub fn complete(home: ResourceKey, day: u64, timestamp: u64) {
 }
 
 pub fn read_effects(home: ResourceKey, from: u64, until: u64) -> BaneEffects {
-    let preset = crate::logic::preset_record::for_game(home.game_id);
-    let Some((_, quorum, beast_percent, stamina_percent, production_percent)) = preset.bane_rules.read() else {
+    if !crate::logic::aspects::enabled(home.game_id) {
         return BaneEffects {
             windows: array![].span(), beast_percent: 100, stamina_percent: 100, production_percent: 100,
         };
+    }
+    let effects = BaneEffects {
+        windows: array![].span(),
+        beast_percent: crate::balance::banes::BEAST_PERCENT,
+        stamina_percent: crate::balance::banes::STAMINA_PERCENT,
+        production_percent: crate::balance::banes::PRODUCTION_PERCENT,
     };
-    let effects = BaneEffects { windows: array![].span(), beast_percent, stamina_percent, production_percent };
     if from >= until {
         return effects;
     }
@@ -113,7 +109,7 @@ pub fn read_effects(home: ResourceKey, from: u64, until: u64) -> BaneEffects {
     let game = crate::logic::game::game(home.game_id);
     let start = game.start_main_at;
     let end = game.end_at;
-    let unit = preset.rules.day_unit_seconds.read();
+    let unit = crate::logic::preset_record::for_game(home.game_id).rules.day_unit_seconds.read();
     let mut cursor = core::cmp::max(from, start);
     let until = core::cmp::min(until, end);
     let mut windows = array![];
@@ -126,7 +122,7 @@ pub fn read_effects(home: ResourceKey, from: u64, until: u64) -> BaneEffects {
             } else {
                 state.troops.aspect_activity.read((home.game_id, aspect, day.index - 1))
             };
-            let end = if crate::banes::required(active, quorum) == 0 {
+            let end = if crate::banes::required(active, crate::balance::banes::QUORUM_PERCENT) == 0 {
                 day.start
             } else if ended != 0 {
                 core::cmp::min(ended, day.end)

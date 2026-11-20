@@ -10,23 +10,7 @@ use crate::troops::{ArmySlotKey, ExplorerKey};
 use super::army_activity::{army, found, slot_army};
 
 fn setup(kind: u8) -> (Deployment, ExplorerKey, crate::expeditions::FrontierDiscoveryRules) {
-    setup_target(kind, 100)
-}
-
-fn setup_target(kind: u8, target: u32) -> (Deployment, ExplorerKey, crate::expeditions::FrontierDiscoveryRules) {
     let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("frontier-check");
-    preset.economy.labor = None;
-    preset
-        .economy
-        .quests =
-            Some(
-                crate::quests::QuestRules {
-                    base_counts: array![target, target, target, target, target, target, target].span(),
-                    labor: 1000,
-                    essence: 1500,
-                    bonus_percent: 150,
-                },
-            );
     let claim = Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: 1, day: 0 });
     let encoded = world_test_support::tests::play_fixture::encode(claim);
     let index: u32 = (*encoded.at(0)).try_into().unwrap();
@@ -119,25 +103,28 @@ fn reveals_count_new_tiles_and_neither_refused_nor_repeated_moves() {
 }
 
 #[test]
-fn a_real_reveal_completes_the_daily_quest_and_two_claims_pay_once() {
-    let (d, key, rules) = setup_target(crate::quests::REVEALS, 1);
+fn a_real_clear_completes_the_daily_hunt_and_two_claims_pay_once() {
+    let (d, key, rules) = setup(crate::quests::HUNT);
     let home = home(d, key);
     let claim = Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: home.entity_id, day: 0 });
     assert!(!execute_in_game(d, key.game_id, claim, 360));
-    let root = discovery_root(
+    let site = discover(d, key, rules, Discovery::Beasts);
+    apply(
+        d,
         key.game_id,
-        crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, ..rules },
-        100,
-        0,
-        Some(far_eye()),
-        Discovery::None,
+        Command::BattleGuard(
+            crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site.entity_id, relic_slot: None },
+        ),
     );
-    assert!(explore_with_root(d, key.game_id, key.explorer_id, root, 360));
+    let hunts = interact_with_state(d.games, || crate::logic::banes::target(crate::quests::HUNT, 1));
+    let labor = crate::balance::quests::LABOR_AMOUNT * crate::rules::RESOURCE_PRECISION;
+    let essence = crate::balance::quests::ESSENCE_AMOUNT * crate::rules::RESOURCE_PRECISION;
     let (labor_before, essence_before) = interact_with_state(
         d.games,
         || {
             assert_eq!(
-                crate::logic::quests::read(home, 0), crate::quests::QuestProgress { progress: 1, completed_level: 1 },
+                crate::logic::quests::read(home, 0),
+                crate::quests::QuestProgress { progress: hunts, completed_level: 1 },
             );
             (
                 crate::logic::resources::balance(home, crate::resources::LABOR),
@@ -150,17 +137,11 @@ fn a_real_reveal_completes_the_daily_quest_and_two_claims_pay_once() {
         interact_with_state(
             d.games,
             || {
-                assert_eq!(
-                    crate::logic::resources::balance(home, crate::resources::LABOR),
-                    labor_before + 1000 * crate::rules::RESOURCE_PRECISION,
-                );
-                assert_eq!(
-                    crate::logic::resources::balance(home, crate::resources::ESSENCE),
-                    essence_before + 1500 * crate::rules::RESOURCE_PRECISION,
-                );
+                assert_eq!(crate::logic::resources::balance(home, crate::resources::LABOR), labor_before + labor);
+                assert_eq!(crate::logic::resources::balance(home, crate::resources::ESSENCE), essence_before + essence);
                 assert_eq!(
                     crate::state::read().entry.home_labor_grants.read((key.game_id, home.entity_id, 0)),
-                    Some((d.actor, 1000 * crate::rules::RESOURCE_PRECISION, 1500 * crate::rules::RESOURCE_PRECISION)),
+                    Some((d.actor, labor, essence)),
                 );
             },
         );
@@ -372,11 +353,12 @@ fn far_eye_discovers_and_pays_for_each_new_tile_only_once() {
         } else {
             assert!(ruins >= 1);
         }
-        let expected = 1 + if spires {
+        let counted = 1 + if spires {
             payments
         } else {
             ruins
         };
+        let expected = core::cmp::min(counted, interact_with_state(d.games, || crate::logic::banes::target(kind, 1)));
         assert_eq!(progress(d, home), expected);
         assert!(!execute_in_game(d, key.game_id, activate, 360));
         assert_eq!(progress(d, home), expected);

@@ -1,10 +1,6 @@
-use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
+use starknet::storage::StorageMapReadAccess;
 use crate::quests::QuestProgress;
 use crate::resources::ResourceKey;
-
-pub fn enabled(game_id: u32) -> bool {
-    crate::logic::preset_record::for_game(game_id).quest_rewards.read().is_some()
-}
 
 pub fn read(home: ResourceKey, day: u64) -> QuestProgress {
     let (progress, completed_level) = crate::state::read().quests.progress.read((home.game_id, home.entity_id, day));
@@ -59,7 +55,7 @@ pub mod QuestState {
         fn record_quest_progress(
             ref self: ComponentState<TContractState>, home: ResourceKey, kind: u8, amount: u128, timestamp: u64,
         ) {
-            if amount == 0 || !super::enabled(home.game_id) {
+            if amount == 0 || !crate::logic::aspects::enabled(home.game_id) {
                 return;
             }
             let game = crate::logic::game::game(home.game_id);
@@ -78,7 +74,7 @@ pub mod QuestState {
             assert!(base.category == crate::taxonomy::REALM_CATEGORY, "quest requires a Realm");
             let level = base.level + 1;
             assert!(level >= 1 && level <= 4, "invalid Realm level");
-            let target = crate::logic::banes::target(home, kind, level);
+            let target = crate::logic::banes::target(kind, level);
             progress.progress += amount;
             if progress.progress >= target {
                 progress.completed_level = level;
@@ -110,11 +106,11 @@ pub mod QuestState {
                 realm.owner.read() == actor && realm.base.read().category == crate::taxonomy::REALM_CATEGORY,
                 "quest requires an owned Realm",
             );
-            assert!(super::enabled(game_id), "daily quests are disabled");
             let day = crate::days::day_of(
                 context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp,
             )
                 .index;
+            assert!(crate::logic::aspects::enabled(game_id), "daily quests are disabled");
             assert!(command.day == day, "incorrect quest day");
             let progress = super::read(home, day);
             assert!(progress.completed_level != 0, "daily quest is unfinished");
@@ -155,16 +151,13 @@ pub mod QuestState {
             level: u8,
             context: crate::commands::ExecutionContext,
         ) -> crate::entry::LaborGrant {
-            let (labor, essence, bonus) = crate::logic::preset_record::for_game(home.game_id)
-                .quest_rewards
-                .read()
-                .expect('daily quests are disabled');
+            let bonus = if super::labor_bonus(home, actor) {
+                crate::balance::quests::BONUS_PERCENT
+            } else {
+                100
+            };
             let (labor, essence) = crate::quests::reward(
-                labor, essence, if super::labor_bonus(home, actor) {
-                    bonus
-                } else {
-                    100
-                }, level,
+                crate::balance::quests::LABOR_AMOUNT, crate::balance::quests::ESSENCE_AMOUNT, bonus, level,
             );
             let resources = IResourceOperationsLibraryDispatcher {
                 class_hash: crate::logic::release::classes(home.game_id).resources.read(),

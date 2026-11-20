@@ -94,9 +94,6 @@ pub fn store_settlement(commitment: felt252, settlement: crate::presets::Settlem
 }
 
 fn write_economy(preset: PresetWrite, commitment: felt252, economy: crate::presets::EconomyPreset) {
-    preset.labor_rules.write(economy.labor);
-    write_quests(preset, economy.quests);
-    write_banes(preset, economy.banes);
     write_deep(preset, economy.deep);
     preset.race_rules.write(economy.race);
     if let Some(withdrawals) = economy.withdrawals {
@@ -121,38 +118,6 @@ fn write_deep(preset: PresetWrite, rules: Option<crate::deep::DeepRules>) {
     for index in 0..rules.beasts.len() {
         let beast = *rules.beasts.at(index);
         preset.deep_beasts.write(index.try_into().unwrap(), (beast.count, beast.bow));
-    }
-}
-
-fn write_banes(preset: PresetWrite, rules: Option<crate::banes::BaneRules>) {
-    let Some(rules) = rules else {
-        return;
-    };
-    preset
-        .bane_rules
-        .write(
-            Some(
-                (
-                    rules.chance_step,
-                    rules.quorum_percent,
-                    rules.beast_percent,
-                    rules.stamina_percent,
-                    rules.production_percent,
-                ),
-            ),
-        );
-    for index in 0..rules.quest_counts.len() {
-        preset.bane_quest_counts.write(index.try_into().unwrap(), *rules.quest_counts.at(index));
-    }
-}
-
-fn write_quests(preset: PresetWrite, rules: Option<crate::quests::QuestRules>) {
-    let Some(rules) = rules else {
-        return;
-    };
-    preset.quest_rewards.write(Some((rules.labor, rules.essence, rules.bonus_percent)));
-    for index in 0..rules.base_counts.len() {
-        preset.quest_counts.write(index.try_into().unwrap(), *rules.base_counts.at(index));
     }
 }
 

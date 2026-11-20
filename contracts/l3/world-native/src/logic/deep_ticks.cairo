@@ -40,7 +40,7 @@ struct Held {
 struct Payouts {
     race: crate::logic::race::DeepRace,
     altars: Felt252Dict<u32>,
-    altar_threshold: Option<u32>,
+    altar_threshold: u32,
     deaths: Array<u32>,
 }
 
@@ -203,12 +203,11 @@ fn held(game_id: u32, context: ExecutionContext) -> Held {
 }
 
 fn payouts(game_id: u32, boundary: u64) -> Payouts {
-    let preset = crate::logic::preset_record::for_game(game_id);
-    let altar_threshold = if preset.bane_rules.read().is_some() {
-        Some(preset.deep_rules.read().expect('missing Deep rules').altar_threshold)
-    } else {
-        None
-    };
+    let altar_threshold = crate::logic::preset_record::for_game(game_id)
+        .deep_rules
+        .read()
+        .expect('missing Deep rules')
+        .altar_threshold;
     let mut altars: Felt252Dict<u32> = Default::default();
     for aspect in 1_u8..5 {
         altars.insert(aspect.into(), crate::state::read().banes.altar_bars.read((game_id, aspect)));
@@ -320,9 +319,7 @@ fn shares(held: @Held, site: Site) -> Span<DeepShare> {
 }
 
 fn charge_altar(game_id: u32, source: u8, amount: u32, boundary: u64, ref payouts: Payouts) {
-    let Some(threshold) = payouts.altar_threshold else {
-        return;
-    };
+    let threshold = payouts.altar_threshold;
     let charge = crate::deep::altar_charge(payouts.altars.get(source.into()), amount, threshold);
     let settled = if charge == threshold {
         bridge(game_id).settle_altar(game_id, source, charge, boundary, payouts.race.heights())
@@ -337,13 +334,11 @@ fn write_payouts(game_id: u32, ref payouts: Payouts, held: Held, boundary: u64, 
         payouts.race.credit((*held.guards.at(index)).home, *held.glory.at(index), *held.contribution.at(index));
     }
     payouts.race.flush();
-    if payouts.altar_threshold.is_some() {
-        let heights = payouts.race.heights();
-        for aspect in 1_u8..5 {
-            let charge = payouts.altars.get(aspect.into());
-            if charge != crate::state::read().banes.altar_bars.read((game_id, aspect)) {
-                bridge(game_id).settle_altar(game_id, aspect, charge, boundary, heights);
-            }
+    let heights = payouts.race.heights();
+    for aspect in 1_u8..5 {
+        let charge = payouts.altars.get(aspect.into());
+        if charge != crate::state::read().banes.altar_bars.read((game_id, aspect)) {
+            bridge(game_id).settle_altar(game_id, aspect, charge, boundary, heights);
         }
     }
     grant_resources(game_id, held, boundary, context);

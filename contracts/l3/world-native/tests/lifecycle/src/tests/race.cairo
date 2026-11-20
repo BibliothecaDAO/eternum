@@ -76,6 +76,10 @@ fn recorded_second_wind_multiplies_mist_tide_and_changes_real_exploration_refill
         ),
     );
     assert!(execute_in_game(d, game_id, super::army_activity::muster(home.entity_id, 0, 0, 10), tomorrow));
+    let lights = interact_with_state(d.games, || crate::logic::banes::target(crate::quests::LIGHTS, 1));
+    interact_with_state(
+        d.games, || crate::logic::quest_progress::record(home, crate::quests::LIGHTS, lights - 2, tomorrow),
+    );
     let slot = crate::troops::ArmySlotKey { game_id, structure_id: home.entity_id, epoch: 1, slot: 0 };
     let explorer_id = super::army_activity::slot_army(d, slot);
     let discovery = crate::balance::expeditions::FRONTIER_DISCOVERY;

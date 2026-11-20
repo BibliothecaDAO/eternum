@@ -16,7 +16,6 @@ pub type Preset =
         crate::bridge::DepositRules,
         crate::withdrawals::WithdrawalTerms,
         crate::withdrawals::Retention,
-        crate::entry::LaborRules,
         crate::deep::DeepSettings,
         crate::race::RaceRules,
     >;

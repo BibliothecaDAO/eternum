@@ -193,18 +193,10 @@ pub fn observe_economy(ref rows: Array<ObservedRow>, address: ContractAddress, g
     if let Some(deep) = interact_with_state(address, || observed_deep_rules(game_id)) {
         row(ref rows, 'DeepRules', key, deep);
     }
-    if let Some(quests) = interact_with_state(address, || observed_quest_rules(game_id)) {
-        row(ref rows, 'QuestRules', key, quests);
-    }
-    if let Some(banes) = interact_with_state(address, || observed_bane_rules(game_id)) {
-        row(ref rows, 'BaneRules', key, banes);
-    }
+    row(ref rows, 'QuestRules', key, interact_with_state(address, || observed_quest_rules()));
+    row(ref rows, 'BaneRules', key, interact_with_state(address, || observed_bane_rules()));
     if let Some(race) = interact_with_state(address, || crate::logic::race::rules(game_id)) {
         row(ref rows, 'RaceRules', key, race);
-    }
-    if let Some(labor) =
-        interact_with_state(address, || crate::logic::preset_record::for_game(game_id).labor_rules.read()) {
-        row(ref rows, 'LaborRules', key, labor);
     }
     row(ref rows, 'FrontierDiscoveryRules', key, crate::balance::expeditions::FRONTIER_DISCOVERY);
     let deposits = interact_with_state(address, || crate::logic::preset_record::for_game(game_id).deposit_rules.read());
@@ -230,16 +222,17 @@ pub fn observe_rewards(ref rows: Array<ObservedRow>, address: ContractAddress, g
     let key = array![game_id.into()].span();
 }
 
-fn observed_quest_rules(game_id: u32) -> Option<crate::quests::QuestRules> {
-    let preset = crate::logic::preset_record::for_game(game_id);
-    let Some((labor, essence, bonus_percent)) = preset.quest_rewards.read() else {
-        return None;
-    };
+fn observed_quest_rules() -> crate::quests::QuestRules {
     let mut base_counts = array![];
     for kind in 0_u8..crate::quests::QUEST_COUNT {
-        base_counts.append(preset.quest_counts.read(kind));
+        base_counts.append(crate::logic::banes::target(kind, 1).try_into().unwrap());
     }
-    Some(crate::quests::QuestRules { base_counts: base_counts.span(), labor, essence, bonus_percent })
+    crate::quests::QuestRules {
+        base_counts: base_counts.span(),
+        labor: crate::balance::quests::LABOR_AMOUNT,
+        essence: crate::balance::quests::ESSENCE_AMOUNT,
+        bonus_percent: crate::balance::quests::BONUS_PERCENT,
+    }
 }
 
 fn observed_deep_rules(game_id: u32) -> Option<crate::deep::DeepRules> {
@@ -269,25 +262,19 @@ fn observed_deep_rules(game_id: u32) -> Option<crate::deep::DeepRules> {
     )
 }
 
-fn observed_bane_rules(game_id: u32) -> Option<crate::banes::BaneRules> {
-    let preset = crate::logic::preset_record::for_game(game_id);
-    let Some((chance_step, quorum_percent, beast_percent, stamina_percent, production_percent)) = preset
-        .bane_rules
-        .read() else {
-        return None;
-    };
+fn observed_bane_rules() -> crate::banes::BaneRules {
     let mut quest_counts = array![];
-    for index in 0_u8..12 {
-        quest_counts.append(preset.bane_quest_counts.read(index));
+    for kind in crate::quests::STAND..crate::quests::CULL + 1 {
+        for level in 1_u8..5 {
+            quest_counts.append(crate::logic::banes::target(kind, level));
+        }
     }
-    Some(
-        crate::banes::BaneRules {
-            chance_step,
-            quorum_percent,
-            beast_percent,
-            stamina_percent,
-            production_percent,
-            quest_counts: quest_counts.span(),
-        },
-    )
+    crate::banes::BaneRules {
+        chance_step: crate::balance::banes::CHANCE_STEP_PERCENT,
+        quorum_percent: crate::balance::banes::QUORUM_PERCENT,
+        beast_percent: crate::balance::banes::BEAST_PERCENT,
+        stamina_percent: crate::balance::banes::STAMINA_PERCENT,
+        production_percent: crate::balance::banes::PRODUCTION_PERCENT,
+        quest_counts: quest_counts.span(),
+    }
 }

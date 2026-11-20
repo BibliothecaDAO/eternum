@@ -101,32 +101,6 @@ fn optional_quest_rules() -> crate::quests::QuestRules {
 }
 
 #[test]
-fn optional_quests_store_every_target_and_reward_without_a_legacy_labor_claim() {
-    let d = super::registrar::setup();
-    start_cheat_caller_address(d.games, super::authority());
-    let (preset_id, mut definition) = current_definition("frontier-check");
-    assert!(definition.economy.quests.is_none());
-    let rules = optional_quest_rules();
-    definition.economy.quests = Some(rules);
-    definition.economy.labor = None;
-    let registrar = IRegistrarDispatcher { contract_address: d.games };
-    registrar.register_preset(preset_id, definition);
-    let commitment = registrar.preset_commitment(preset_id);
-    assert!(commitment != 0);
-    interact_with_state(
-        d.games,
-        || {
-            let preset = crate::state::read().presets.entry(commitment);
-            assert!(preset.labor_rules.read().is_none());
-            assert_eq!(preset.quest_rewards.read(), Some((1000, 1500, 150)));
-            for kind in 0_u8..crate::quests::QUEST_COUNT {
-                assert_eq!(preset.quest_counts.read(kind), *rules.base_counts.at(kind.into()));
-            }
-        },
-    );
-}
-
-#[test]
 #[feature("safe_dispatcher")]
 fn invalid_quest_rules_and_duplicate_reward_paths_refuse_registration() {
     let d = super::registrar::setup();
@@ -171,32 +145,6 @@ fn optional_bane_rules() -> crate::banes::BaneRules {
         production_percent: 50,
         quest_counts: array![3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10000, 15000].span(),
     }
-}
-
-#[test]
-fn optional_banes_store_all_effects_and_whole_unit_targets() {
-    let d = super::registrar::setup();
-    start_cheat_caller_address(d.games, super::authority());
-    let (preset_id, mut definition) = current_definition("frontier-check");
-    assert!(definition.economy.banes.is_none());
-    let rules = optional_bane_rules();
-    definition.economy.banes = Some(rules);
-    definition.economy.quests = Some(optional_quest_rules());
-    definition.economy.labor = None;
-    let registrar = IRegistrarDispatcher { contract_address: d.games };
-    registrar.register_preset(preset_id, definition);
-    let commitment = registrar.preset_commitment(preset_id);
-    assert!(commitment != 0);
-    interact_with_state(
-        d.games,
-        || {
-            let preset = crate::state::read().presets.entry(commitment);
-            assert_eq!(preset.bane_rules.read(), Some((20, 25, 150, 50, 50)));
-            for index in 0_u8..12 {
-                assert_eq!(preset.bane_quest_counts.read(index), *rules.quest_counts.at(index.into()));
-            }
-        },
-    );
 }
 
 #[test]

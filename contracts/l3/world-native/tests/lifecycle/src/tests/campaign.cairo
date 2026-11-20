@@ -1,8 +1,6 @@
 use snforge_std::{interact_with_state, start_cheat_block_timestamp};
 use world_test_support::tests::entry::*;
-use crate::entry::LaborHome;
 use crate::resources::{ESSENCE, LABOR, ResourceKey};
-use crate::rules::RESOURCE_PRECISION;
 
 fn ticket(tier: u8) -> EntryEntitlement {
     EntryEntitlement {
@@ -20,11 +18,11 @@ fn register(d: Deployment, game_id: u32, entitlement: EntryEntitlement) {
     ledger(d).register_entitlement(EntryKey { game_id, owner: d.actor }, entitlement).unwrap();
 }
 
-fn found(d: Deployment, game_id: u32) -> LaborHome {
+fn found(d: Deployment, game_id: u32) -> ResourceKey {
     found_at(d, game_id, 360)
 }
 
-fn found_at(d: Deployment, game_id: u32, timestamp: u64) -> LaborHome {
+fn found_at(d: Deployment, game_id: u32, timestamp: u64) -> ResourceKey {
     assert!(
         super::resource_commands::execute_in_game(
             d,
@@ -37,12 +35,14 @@ fn found_at(d: Deployment, game_id: u32, timestamp: u64) -> LaborHome {
             timestamp,
         ),
     );
-    LaborHome { game_id, home: interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor)) }
+    ResourceKey {
+        game_id, entity_id: interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor)),
+    }
 }
 
 #[feature("safe_dispatcher")]
-fn campaign_home(preset: ByteArray, tier: u8) -> (Deployment, LaborHome) {
-    let (d, game_id) = super::registrar::setup_labor_home_game(preset, 2);
+fn campaign_home(preset: ByteArray, tier: u8) -> (Deployment, ResourceKey) {
+    let (d, game_id) = super::registrar::setup_campaign_game(preset, 2);
     set_operator(d, authority());
     register(d, game_id, ticket(tier));
     let home = found(d, game_id);
@@ -51,17 +51,14 @@ fn campaign_home(preset: ByteArray, tier: u8) -> (Deployment, LaborHome) {
     (d, home)
 }
 
-fn balance(d: Deployment, home: LaborHome, resource: u8) -> u128 {
-    interact_with_state(
-        d.games,
-        || crate::logic::resources::balance(ResourceKey { game_id: home.game_id, entity_id: home.home }, resource),
-    )
+fn balance(d: Deployment, home: ResourceKey, resource: u8) -> u128 {
+    interact_with_state(d.games, || crate::logic::resources::balance(home, resource))
 }
 
 #[test]
 #[feature("safe_dispatcher")]
 fn campaign_homes_share_the_campaign_but_never_a_canonical_claim() {
-    let (d, game_id) = super::registrar::setup_labor_home_game("devcon", 3);
+    let (d, game_id) = super::registrar::setup_campaign_game("devcon", 3);
     let other = super::bind_authority(d);
     set_operator(d, authority());
     register(d, game_id, ticket(crate::settlement::CAMPAIGN_NORMAL));
@@ -69,12 +66,12 @@ fn campaign_homes_share_the_campaign_but_never_a_canonical_claim() {
     let mut spy = spy_events();
     let first = found(d, game_id);
     let second = found(other, game_id);
-    assert!(first.home != second.home);
+    assert!(first.entity_id != second.entity_id);
     let mut homes = 0;
     for (_, event) in spy.get_events().emitted_by(d.games).events {
         if event.keys.len() >= 3 && *event.keys.at(event.keys.len() - 1) == 'CampaignHome' {
             let home = *event.data.at(2);
-            assert!(home == first.home.into() || home == second.home.into());
+            assert!(home == first.entity_id.into() || home == second.entity_id.into());
             assert_eq!(event.data.span(), array![2, game_id.into(), home, 2, 'devcon-2026', 1].span());
             homes += 1;
         }
@@ -85,8 +82,8 @@ fn campaign_homes_share_the_campaign_but_never_a_canonical_claim() {
             d.games,
             || {
                 let state = crate::state::read();
-                assert_eq!(state.settlements.campaign_homes.read((game_id, home.home)), Some(('devcon-2026', 1)));
-                crate::logic::structures::record(ResourceKey { game_id, entity_id: home.home }).metadata.realm_id.into()
+                assert_eq!(state.settlements.campaign_homes.read((game_id, home.entity_id)), Some(('devcon-2026', 1)));
+                crate::logic::structures::record(home).metadata.realm_id.into()
             },
         );
         assert_eq!(ledger(d).settled_realm(game_id, realm_id).unwrap(), 0);
@@ -95,7 +92,7 @@ fn campaign_homes_share_the_campaign_but_never_a_canonical_claim() {
 
 #[feature("safe_dispatcher")]
 fn refuses_a_second_source(held_first: bool) {
-    let (d, game_id) = super::registrar::setup_labor_home_game("devcon", 3);
+    let (d, game_id) = super::registrar::setup_campaign_game("devcon", 3);
     set_operator(d, authority());
     let held = EntryEntitlement { realm_id: 711, metadata_1: 0, metadata_2: 0, metadata_3: 0, pass_kind: 2 };
     let campaign = ticket(crate::settlement::CAMPAIGN_GOLDEN);
@@ -120,23 +117,11 @@ fn refuses_a_second_source(held_first: bool) {
             360,
         ),
     );
-    let home = found(d, game_id);
+    found(d, game_id);
     start_cheat_caller_address(d.games, authority());
     assert!(ledger(d).register_entitlement(key, second).is_err());
     ledger(d).register_entitlement(key, first).unwrap();
     assert_eq!(ledger(d).entry_entitlement(key).unwrap(), Some(first));
-    start_cheat_block_timestamp(d.games, 360);
-    let grant = IHomeGrantsSafeDispatcher { contract_address: d.games }.grant_labor(home, 0, d.actor).unwrap();
-    assert_eq!(grant.amount, if held_first {
-        1000 * RESOURCE_PRECISION
-    } else {
-        2000 * RESOURCE_PRECISION
-    });
-    assert_eq!(grant.essence, if held_first {
-        0
-    } else {
-        2000 * RESOURCE_PRECISION
-    });
 }
 
 #[test]
@@ -154,7 +139,7 @@ fn an_interrupted_campaign_entry_cannot_switch_to_an_nft_and_can_resume() {
 #[test]
 #[feature("safe_dispatcher")]
 fn campaign_tier_and_id_are_fixed_and_malformed_tickets_do_not_lock_entry() {
-    let (d, game_id) = super::registrar::setup_labor_home_game("devcon", 3);
+    let (d, game_id) = super::registrar::setup_campaign_game("devcon", 3);
     set_operator(d, authority());
     let key = EntryKey { game_id, owner: d.actor };
     let normal = ticket(crate::settlement::CAMPAIGN_NORMAL);
@@ -177,22 +162,16 @@ fn campaign_tier_and_id_are_fixed_and_malformed_tickets_do_not_lock_entry() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn founded_free_homes_gain_one_campaign_source_without_changing_existing_claims() {
-    for (tier, amount) in array![
-        (crate::settlement::CAMPAIGN_NORMAL, 1000_u128), (crate::settlement::CAMPAIGN_GOLDEN, 2000_u128),
-    ] {
+fn founded_free_homes_gain_one_campaign_source_without_changing_their_structure_or_balances() {
+    for tier in array![crate::settlement::CAMPAIGN_NORMAL, crate::settlement::CAMPAIGN_GOLDEN] {
         let (d, home) = campaign_home("devcon", crate::settlement::CAMPAIGN_NORMAL);
-        let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
-        let previous = operator.grant_labor(home, 0, d.actor).unwrap();
         let other = super::bind_authority(d);
         let free = found(other, home.game_id);
         let key = EntryKey { game_id: home.game_id, owner: other.actor };
-        let resource = ResourceKey { game_id: free.game_id, entity_id: free.home };
-        let before = interact_with_state(d.games, || crate::logic::structures::record(resource));
+        let before = interact_with_state(d.games, || crate::logic::structures::record(free));
         let labor = balance(d, free, LABOR);
         let essence = balance(d, free, ESSENCE);
         start_cheat_caller_address(d.games, authority());
-        assert!(operator.grant_labor(free, 0, other.actor).is_err());
         assert!(ledger(d).register_entitlement(key, EntryEntitlement { metadata_2: 3, ..ticket(tier) }).is_err());
         assert!(ledger(d).entry_entitlement(key).unwrap().is_none());
         let mut events = spy_events();
@@ -203,83 +182,19 @@ fn founded_free_homes_gain_one_campaign_source_without_changing_existing_claims(
         assert_eq!(*campaign.keys.at(campaign.keys.len() - 1), 'CampaignHome');
         assert_eq!(
             campaign.data.span(),
-            array![2, free.game_id.into(), free.home.into(), 2, 'devcon-2026', tier.into()].span(),
+            array![2, free.game_id.into(), free.entity_id.into(), 2, 'devcon-2026', tier.into()].span(),
         );
         let (_, entitlement) = emitted.events.at(1);
         assert_eq!(*entitlement.keys.at(entitlement.keys.len() - 1), 'EntryEntitlement');
         assert_eq!(ledger(d).entry_entitlement(key).unwrap(), Some(ticket(tier)));
-        assert_eq!(interact_with_state(d.games, || crate::logic::structures::record(resource)), before);
+        assert_eq!(interact_with_state(d.games, || crate::logic::structures::record(free)), before);
         assert_eq!(balance(d, free, LABOR), labor);
         assert_eq!(balance(d, free, ESSENCE), essence);
-        assert_eq!(operator.labor_grant(home, 0).unwrap(), Some(previous));
-        let grant = operator.grant_labor(free, 0, other.actor).unwrap();
-        assert_eq!(grant.amount, amount * RESOURCE_PRECISION);
-        assert_eq!(grant.essence, amount * RESOURCE_PRECISION);
         let mut retry = spy_events();
         ledger(d).register_entitlement(key, ticket(tier)).unwrap();
-        assert_eq!(operator.grant_labor(free, 0, other.actor).unwrap(), grant);
-        assert_eq!(operator.grant_labor(home, 0, d.actor).unwrap(), previous);
         assert_eq!(retry.get_events().emitted_by(d.games).events.len(), 0);
-        assert_eq!(balance(d, free, LABOR), labor + grant.amount);
-        assert_eq!(balance(d, free, ESSENCE), essence + grant.essence);
         assert!(ledger(d).register_entitlement(key, EntryEntitlement { metadata_1: 'other', ..ticket(tier) }).is_err());
     }
-}
-
-#[feature("safe_dispatcher")]
-fn full_labor_store_still_claims_essence(tier: u8, expected_essence: u128) {
-    let (d, home) = campaign_home("devcon", tier);
-    interact_with_state(
-        d.games,
-        || {
-            crate::state::write()
-                .resources
-                .weights
-                .write((home.game_id, home.home), crate::resources::Weight { capacity: 0, weight: 0 });
-        },
-    );
-    let before = balance(d, home, ESSENCE);
-    let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
-    let grant = operator.grant_labor(home, 0, d.actor).unwrap();
-    assert_eq!(grant.amount, 0);
-    assert_eq!(grant.essence, expected_essence * RESOURCE_PRECISION);
-    assert_eq!(balance(d, home, ESSENCE), before + grant.essence);
-    assert_eq!(operator.grant_labor(home, 0, d.actor).unwrap(), grant);
-    assert_eq!(balance(d, home, ESSENCE), before + grant.essence);
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn a_regular_claim_records_essence_even_when_the_labor_store_is_full() {
-    full_labor_store_still_claims_essence(crate::settlement::CAMPAIGN_NORMAL, 1000);
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn a_golden_claim_records_essence_even_when_the_labor_store_is_full() {
-    full_labor_store_still_claims_essence(crate::settlement::CAMPAIGN_GOLDEN, 2000);
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn the_normal_speed_labor_fixture_does_not_pay_devcon_essence() {
-    let (d, home) = campaign_home("frontier-check", crate::settlement::CAMPAIGN_GOLDEN);
-    let grant = IHomeGrantsSafeDispatcher { contract_address: d.games }.grant_labor(home, 0, d.actor).unwrap();
-    assert_eq!(grant.amount, 1000 * RESOURCE_PRECISION);
-    assert_eq!(grant.essence, 0);
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn season_one_quests_refuse_legacy_campaign_labor_without_changing_balances() {
-    let (d, home) = campaign_home("frontier", crate::settlement::CAMPAIGN_GOLDEN);
-    let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
-    let labor = balance(d, home, LABOR);
-    let essence = balance(d, home, ESSENCE);
-    assert!(operator.grant_labor(home, 0, d.actor).is_err());
-    assert_eq!(operator.labor_grant(home, 0).unwrap(), None);
-    assert_eq!(balance(d, home, LABOR), labor);
-    assert_eq!(balance(d, home, ESSENCE), essence);
 }
 
 #[test]
@@ -293,47 +208,15 @@ fn campaign_entries_refuse_games_without_open_frontier_homes() {
 }
 
 #[test]
-#[feature("safe_dispatcher")]
-fn partial_seasons_grant_once_per_actual_day_and_stop_at_the_end() {
-    for hours in array![81_u64, 84, 85] {
-        let (d, game_id) = super::registrar::setup_labor_home_duration("devcon", hours * 3600);
-        set_operator(d, authority());
-        register(d, game_id, ticket(crate::settlement::CAMPAIGN_NORMAL));
-        let home = found(d, game_id);
-        let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
-        let game = crate::game::IGameDispatcherTrait::game(
-            crate::game::IGameDispatcher { contract_address: d.games }, game_id,
-        );
-        let last = crate::days::day_of(game, 7200, game.end_at - 1);
-        assert_eq!(last.index, if hours == 81 {
-            9
-        } else {
-            10
-        });
-        start_cheat_caller_address(d.games, authority());
-        start_cheat_block_timestamp(d.games, last.start);
-        let grant = operator.grant_labor(home, last.index, d.actor).unwrap();
-        assert_eq!(grant.essence, 1000 * RESOURCE_PRECISION);
-        let essence = balance(d, home, ESSENCE);
-        start_cheat_block_timestamp(d.games, game.end_at - 1);
-        assert_eq!(operator.grant_labor(home, last.index, d.actor).unwrap(), grant);
-        assert!(operator.grant_labor(home, last.index + 1, d.actor).is_err());
-        assert_eq!(balance(d, home, ESSENCE), essence);
-        start_cheat_block_timestamp(d.games, game.end_at);
-        assert!(operator.grant_labor(home, last.index + 1, d.actor).is_err());
-    }
-}
-
-#[test]
 #[should_panic(expected: "season does not end on a tick")]
 fn a_partial_season_still_requires_an_aligned_end() {
-    super::registrar::setup_labor_home_duration("devcon", 85 * 3600 + 1);
+    super::registrar::setup_campaign_duration("devcon", 85 * 3600 + 1);
 }
 
 #[test]
 #[feature("safe_dispatcher")]
-fn a_late_held_realm_keeps_the_home_and_grants_only_today_without_essence() {
-    let (d, game_id) = super::registrar::setup_labor_home_game("devcon", 3);
+fn a_late_held_realm_keeps_the_home_and_changes_no_balance() {
+    let (d, game_id) = super::registrar::setup_campaign_game("devcon", 3);
     let other = super::bind_authority(d);
     set_operator(d, authority());
     let game = crate::game::IGameDispatcherTrait::game(
@@ -341,10 +224,9 @@ fn a_late_held_realm_keeps_the_home_and_grants_only_today_without_essence() {
     );
     let boundary = crate::days::day_of(game, 7200, 360).end;
     let home = found_at(d, game_id, boundary - 1);
-    let second = found_at(other, game_id, boundary - 1);
+    found_at(other, game_id, boundary - 1);
     start_cheat_block_timestamp(d.games, boundary);
-    let key = ResourceKey { game_id, entity_id: home.home };
-    let before = interact_with_state(d.games, || crate::logic::structures::record(key));
+    let before = interact_with_state(d.games, || crate::logic::structures::record(home));
     let realm_id = if before.metadata.realm_id == 711 {
         712
     } else {
@@ -354,21 +236,14 @@ fn a_late_held_realm_keeps_the_home_and_grants_only_today_without_essence() {
     let labor = balance(d, home, LABOR);
     let essence = balance(d, home, ESSENCE);
     register(d, game_id, held);
-    assert_eq!(ledger(d).settled_realm(game_id, realm_id.try_into().unwrap()).unwrap(), home.home);
-    assert_eq!(interact_with_state(d.games, || crate::logic::structures::record(key)), before);
-    let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
-    assert!(operator.labor_grant(home, 0).unwrap().is_none());
+    assert_eq!(ledger(d).settled_realm(game_id, realm_id.try_into().unwrap()).unwrap(), home.entity_id);
+    assert_eq!(interact_with_state(d.games, || crate::logic::structures::record(home)), before);
     assert_eq!(balance(d, home, LABOR), labor);
     assert_eq!(balance(d, home, ESSENCE), essence);
     assert!(ledger(d).register_entitlement(EntryKey { game_id, owner: other.actor }, held).is_err());
     assert!(ledger(d).entry_entitlement(EntryKey { game_id, owner: other.actor }).unwrap().is_none());
-    assert!(operator.grant_labor(second, 1, other.actor).is_err());
-    let grant = operator.grant_labor(home, 1, d.actor).unwrap();
-    assert_eq!(grant.amount, 1000 * RESOURCE_PRECISION);
-    assert_eq!(grant.essence, 0);
     let mut retry = spy_events();
     register(d, game_id, held);
-    assert_eq!(operator.grant_labor(home, 1, d.actor).unwrap(), grant);
     assert_eq!(retry.get_events().emitted_by(d.games).events.len(), 0);
     assert!(ledger(d).register_entitlement(EntryKey { game_id, owner: d.actor }, ticket(1)).is_err());
 }
@@ -376,7 +251,7 @@ fn a_late_held_realm_keeps_the_home_and_grants_only_today_without_essence() {
 #[test]
 #[feature("safe_dispatcher")]
 fn an_ordinary_late_ticket_does_not_compensate_previous_days() {
-    let (d, game_id) = super::registrar::setup_labor_home_game("devcon", 3);
+    let (d, game_id) = super::registrar::setup_campaign_game("devcon", 3);
     set_operator(d, authority());
     let home = found(d, game_id);
     let game = crate::game::IGameDispatcherTrait::game(
@@ -386,9 +261,6 @@ fn an_ordinary_late_ticket_does_not_compensate_previous_days() {
     let labor = balance(d, home, LABOR);
     let essence = balance(d, home, ESSENCE);
     register(d, game_id, ticket(2));
-    let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
-    assert!(operator.labor_grant(home, 0).unwrap().is_none());
-    assert!(operator.labor_grant(home, 1).unwrap().is_none());
     assert_eq!(balance(d, home, LABOR), labor);
     assert_eq!(balance(d, home, ESSENCE), essence);
 }

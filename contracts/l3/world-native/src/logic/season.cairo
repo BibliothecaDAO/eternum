@@ -172,7 +172,7 @@ pub mod SeasonLogic {
             if !context.game.unbox().ready && index != crate::command_routes::SETTLE_BLITZ_ROSTER {
                 return Err(rejection('ROSTER_NOT_READY'));
             }
-            if crate::logic::preset_record::for_game(game_id).bane_rules.read().is_some() {
+            if crate::logic::aspects::enabled(game_id) {
                 crate::banes::IWorldBanesDispatcherTrait::prepare_bane_day(
                     crate::banes::IWorldBanesLibraryDispatcher {
                         class_hash: self.release.classes(game_id).bridge.read(),

@@ -12,15 +12,6 @@ use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLi
 
 fn quest_game() -> (Deployment, u32) {
     let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("frontier-check");
-    preset.economy.labor = None;
-    preset
-        .economy
-        .quests =
-            Some(
-                crate::quests::QuestRules {
-                    base_counts: array![1, 1, 1, 1, 1, 2, 15].span(), labor: 1000, essence: 1500, bonus_percent: 150,
-                },
-            );
     let command = Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: 1, day: 0 });
     let encoded = world_test_support::tests::play_fixture::encode(command);
     let index: u32 = (*encoded.at(0)).try_into().unwrap();
@@ -113,22 +104,6 @@ fn progress_observations_freeze_completion_and_the_player_collects_only_once() {
         !execute_in_game(
             d, game_id, Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: home.entity_id, day: 1 }), 360,
         ),
-    );
-}
-
-#[test]
-fn producers_are_no_ops_for_games_without_quest_rules() {
-    let (d, game_id) = super::aspects::setup_aspects(5);
-    let home = ResourceKey { game_id, entity_id: 999 };
-    observe(d, home, crate::quests::REVEALS, 15);
-    interact_with_state(
-        d.games,
-        || {
-            assert_eq!(
-                crate::logic::quests::read(home, 0), crate::quests::QuestProgress { progress: 0, completed_level: 0 },
-            );
-            assert!(crate::state::read().entry.home_labor_grants.read((game_id, home.entity_id, 0)).is_none());
-        },
     );
 }
 

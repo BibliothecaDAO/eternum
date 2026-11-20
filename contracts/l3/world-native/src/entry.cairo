@@ -29,14 +29,13 @@ pub trait IResourceContext<T> {
     fn resource_context(self: @T, game_id: u32) -> crate::commands::ResourceContext;
 }
 
-// One game-day grant belongs to the home's immutable entry source.
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct LaborHome {
     pub game_id: u32,
     pub home: u64,
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct LaborRules {
     pub amount: u128,
     pub campaign_essence: u128,

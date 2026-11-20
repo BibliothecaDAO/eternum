@@ -9,28 +9,6 @@ use crate::rules::RESOURCE_PRECISION;
 
 fn definition() -> crate::presets::PresetDefinition {
     let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("frontier-check");
-    preset.economy.labor = None;
-    preset
-        .economy
-        .quests =
-            Some(
-                crate::quests::QuestRules {
-                    base_counts: array![1, 1, 1, 1, 1, 2, 15].span(), labor: 1000, essence: 1500, bonus_percent: 150,
-                },
-            );
-    preset
-        .economy
-        .banes =
-            Some(
-                crate::banes::BaneRules {
-                    chance_step: 20,
-                    quorum_percent: 25,
-                    beast_percent: 150,
-                    stamina_percent: 50,
-                    production_percent: 50,
-                    quest_counts: array![1, 2, 3, 4, 2, 4, 6, 8, 1, 2, 3, 4].span(),
-                },
-            );
     preset.rules.battle_config.regular_immunity_ticks = 0;
     preset.rules.battle_config.cooldown_seconds = 0;
     let command = Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: 1, day: 0 });
@@ -98,6 +76,10 @@ fn exploration_settles_mist_tide_until_the_exact_lights_quorum_second() {
         ),
     );
     assert!(execute_in_game(d, game_id, super::army_activity::muster(home.entity_id, 0, 0, 10), tomorrow));
+    let lights = interact_with_state(d.games, || crate::logic::banes::target(crate::quests::LIGHTS, 1));
+    interact_with_state(
+        d.games, || crate::logic::quest_progress::record(home, crate::quests::LIGHTS, lights - 2, tomorrow),
+    );
     let slot = crate::troops::ArmySlotKey { game_id, structure_id: home.entity_id, epoch: 1, slot: 0 };
     let explorer_id = super::army_activity::slot_army(d, slot);
     let discovery = crate::balance::expeditions::FRONTIER_DISCOVERY;
@@ -139,6 +121,14 @@ fn exploration_settles_mist_tide_until_the_exact_lights_quorum_second() {
             assert_eq!(progress.ended_at, tomorrow + span);
         },
     );
+}
+
+fn labor_reward() -> u128 {
+    crate::balance::quests::LABOR_AMOUNT * RESOURCE_PRECISION
+}
+
+fn essence_reward() -> u128 {
+    crate::balance::quests::ESSENCE_AMOUNT * RESOURCE_PRECISION
 }
 
 fn rename(home: ResourceKey) -> Command {
@@ -184,77 +174,19 @@ pub fn train(d: Deployment, home: ResourceKey, timestamp: u64) {
 }
 
 pub fn complete(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) {
-    let slot = crate::troops::ArmySlotKey { game_id: home.game_id, structure_id: home.entity_id, epoch: day, slot: 0 };
-    let existing = interact_with_state(d.games, || crate::logic::army_slot_storage::read(slot));
-    if existing.is_none() {
-        assert!(execute_in_game(d, home.game_id, super::army_activity::muster(home.entity_id, 0, 0, 10), timestamp));
-    }
-    let explorer_id = super::army_activity::slot_army(d, slot);
-    let (kind, already_complete) = interact_with_state(
+    interact_with_state(
         d.games,
-        || (crate::logic::banes::quest_kind(home, day), crate::logic::quests::read(home, day).completed_level != 0),
+        || {
+            let progress = crate::logic::quests::read(home, day);
+            if progress.completed_level == 0 {
+                let kind = crate::logic::banes::quest_kind(home, day);
+                let level = crate::logic::structures::record(home).base.level + 1;
+                let remaining = crate::logic::banes::target(kind, level) - progress.progress;
+                crate::logic::quest_progress::record(home, kind, remaining, timestamp);
+            }
+            assert_eq!(crate::logic::quests::read(home, day).completed_level, 1);
+        },
     );
-    let rules = crate::balance::expeditions::FRONTIER_DISCOVERY;
-    let fight = !already_complete && kind != crate::quests::LIGHTS;
-    let discovery = if fight {
-        crate::discovery::Discovery::Beasts
-    } else {
-        crate::discovery::Discovery::None
-    };
-    let root = world_test_support::tests::registrar::discovery_root(
-        home.game_id,
-        crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, well_bps: 0, ..rules },
-        100,
-        0,
-        Some(crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::FarEye, rank: 1 }),
-        discovery,
-    );
-    let reveals: u32 = if !already_complete && kind == crate::quests::LIGHTS {
-        2
-    } else {
-        1
-    };
-    let key = crate::troops::ExplorerKey { game_id: home.game_id, explorer_id };
-    let destination = crate::geometry::neighbor(super::army_activity::army(d, key).coord, 0);
-    for _ in 0..reveals {
-        let mut events = spy_events();
-        if !world_test_support::tests::registrar::explore_with_root(d, home.game_id, explorer_id, root, timestamp) {
-            panic!(
-                "quest exploration rejected: {}",
-                world_test_support::tests::play_fixture::rejection(ref events, d.games).reason,
-            );
-        }
-    }
-    if fight {
-        world_test_support::tests::registrar::strong_frontier_army(d, home.game_id, key);
-        let site = interact_with_state(
-            d.games, || crate::logic::map::occupancy(crate::geometry::tile_key(home.game_id, destination)).unwrap(),
-        );
-        assert!(
-            execute_in_game(
-                d,
-                home.game_id,
-                Command::BattleGuard(
-                    crate::commands::Battle { attacker_id: explorer_id, defender_id: site.entity_id, relic_slot: None },
-                ),
-                timestamp,
-            ),
-        );
-    }
-    let pick = interact_with_state(d.games, || crate::logic::progression::require(key).oath_pick);
-    if pick != 0 {
-        assert!(
-            execute_in_game(
-                d,
-                home.game_id,
-                Command::ChooseOath(
-                    crate::oaths::ChooseOath { explorer_id, expected_pick: pick, oath: None, replace: None },
-                ),
-                timestamp,
-            ),
-        );
-    }
-    assert_eq!(interact_with_state(d.games, || crate::logic::quests::read(home, day).completed_level), 1);
 }
 
 #[test]
@@ -335,7 +267,10 @@ fn quorum_ends_the_effect_once_and_collection_pays_the_second_reward_once() {
             tomorrow,
         ),
     );
-    assert_eq!(interact_with_state(d.games, || crate::logic::banes::required(game_id, 1, 1)), 2);
+    assert_eq!(
+        interact_with_state(d.games, || crate::logic::banes::required(game_id, 1, 1)),
+        crate::banes::required(5, crate::balance::banes::QUORUM_PERCENT),
+    );
     complete(first, home, 1, tomorrow + 60);
     assert!(claim(first, home, 1, tomorrow + 60));
     interact_with_state(
@@ -382,15 +317,15 @@ fn quorum_ends_the_effect_once_and_collection_pays_the_second_reward_once() {
             || {
                 assert_eq!(
                     crate::state::read().banes.bonus_grants.read((game_id, target.entity_id, 1)),
-                    Some((1000 * RESOURCE_PRECISION, 1500 * RESOURCE_PRECISION)),
+                    Some((labor_reward(), essence_reward())),
                 );
                 assert_eq!(
                     crate::logic::resources::balance(target, crate::resources::LABOR),
-                    labor_before + rewards * 1000 * RESOURCE_PRECISION,
+                    labor_before + rewards * labor_reward(),
                 );
                 assert_eq!(
                     crate::logic::resources::balance(target, crate::resources::ESSENCE),
-                    essence_before + rewards * 1500 * RESOURCE_PRECISION,
+                    essence_before + rewards * essence_reward(),
                 );
             },
         );
@@ -442,18 +377,13 @@ fn real_production_splits_at_the_bane_start_and_quorum_end_and_army_stores_still
             tomorrow,
         ),
     );
-    let mut reveals = spy_events();
     complete(d, home, 1, tomorrow + 600);
-    let mut revealed_labor = 0_u128;
-    for reward in world_test_support::tests::explore_rewards::reveal_stories(ref reveals, d) {
-        if reward.receiver == home.entity_id && reward.resource_type == crate::resources::LABOR {
-            revealed_labor += reward.amount;
-        }
-    }
     let now = tomorrow + 1000;
     build(d, home, crate::research::FARM, 2, now);
     let ordinary_seconds: u128 = (tomorrow - 360 + 400).into();
-    let expected = rate * ordinary_seconds + rate * 600 / 2 + revealed_labor - 800 * RESOURCE_PRECISION;
+    let expected = rate * ordinary_seconds
+        + rate * 600 * Into::<u16, u128>::into(crate::balance::banes::PRODUCTION_PERCENT) / 100
+        - 800 * RESOURCE_PRECISION;
     interact_with_state(
         d.games,
         || {
@@ -590,7 +520,7 @@ fn altar_reserves_distinct_rivals_and_a_completed_team_quest_restores_height_wit
             assert!(crate::state::read().banes.bonus_grants.read((game_id, home.entity_id, 1)).is_none());
             assert_eq!(
                 crate::state::read().entry.home_labor_grants.read((game_id, home.entity_id, 1)),
-                Some((member.actor, 1000 * RESOURCE_PRECISION, 1500 * RESOURCE_PRECISION)),
+                Some((member.actor, labor_reward(), essence_reward())),
             );
         },
     );

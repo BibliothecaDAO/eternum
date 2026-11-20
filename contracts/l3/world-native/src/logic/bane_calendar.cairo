@@ -8,7 +8,7 @@ pub fn prepare(game_id: u32, context: crate::commands::ActionContext) {
 }
 
 pub fn initialize(game_id: u32) {
-    if crate::logic::preset_record::for_game(game_id).bane_rules.read().is_none() {
+    if !crate::logic::aspects::enabled(game_id) {
         return;
     }
     let game = crate::logic::game::game(game_id);
@@ -17,9 +17,6 @@ pub fn initialize(game_id: u32) {
 }
 
 fn prepare_at(game_id: u32, game: crate::game::GameRegistry, unit: u32, timestamp: u64, raw_root: u256) {
-    let Some((step, _, _, _, _)) = crate::logic::preset_record::for_game(game_id).bane_rules.read() else {
-        return;
-    };
     if timestamp < game.start_main_at {
         return;
     }
@@ -38,7 +35,7 @@ fn prepare_at(game_id: u32, game: crate::game::GameRegistry, unit: u32, timestam
             'WorldBane', array![game_id.into(), day.index.into()].span(), array![kind.into()].span(),
         );
         chance = if kind == 0 {
-            core::cmp::min(100, chance + step)
+            core::cmp::min(100, chance + crate::balance::banes::CHANCE_STEP_PERCENT)
         } else {
             0
         };
@@ -49,7 +46,7 @@ fn prepare_at(game_id: u32, game: crate::game::GameRegistry, unit: u32, timestam
 }
 
 pub fn kind(game_id: u32, day: u64) -> Option<u8> {
-    if crate::logic::preset_record::for_game(game_id).bane_rules.read().is_none() || world_stopped(game_id, day) {
+    if !crate::logic::aspects::enabled(game_id) || world_stopped(game_id, day) {
         return None;
     }
     let kind = crate::state::read().banes.world_days.read((game_id, day)).expect('world day is not prepared');

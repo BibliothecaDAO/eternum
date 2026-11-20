@@ -5,6 +5,10 @@ pub fn rules(game_id: u32) -> Option<u128> {
     crate::logic::preset_record::for_game(game_id).order_aspects.read()
 }
 
+pub fn enabled(game_id: u32) -> bool {
+    rules(game_id).is_some()
+}
+
 pub fn home_aspect(key: ResourceKey) -> u8 {
     let aspect = crate::state::read().settlements.home_aspects.read((key.game_id, key.entity_id));
     assert!(aspect != 0, "home has no Aspect");

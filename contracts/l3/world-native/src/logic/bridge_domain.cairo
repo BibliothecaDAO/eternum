@@ -15,7 +15,6 @@ pub mod BridgeLogic {
     impl HomeGrants = EntryAdministration::HomeGrantsImpl<ContractState>;
     #[abi(embed_v0)]
     impl ResourceContext = EntryAdministration::ResourceContextImpl<ContractState>;
-    impl AdministrationInternal = EntryAdministration::InternalImpl<ContractState>;
     component!(path: BaneState, storage: banes, event: BaneEvent);
     #[abi(embed_v0)]
     impl BaneEffects = BaneState::EffectsImpl<ContractState>;

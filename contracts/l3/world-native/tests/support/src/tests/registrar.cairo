@@ -964,18 +964,18 @@ pub fn setup_open_frontier_preset(name: ByteArray, bags: u64) -> (super::Deploym
     create_open_frontier(preset_id, preset, Into::<u32, u64>::into(preset.rules.day_unit_seconds) * 20 * bags)
 }
 
-pub fn labor_home_definition(name: ByteArray) -> PresetDefinition {
+pub fn campaign_definition(name: ByteArray) -> PresetDefinition {
     let (_, mut preset) = super::preset_projection::current_definition(name);
     preset
 }
 
-pub fn setup_labor_home_game(name: ByteArray, bags: u64) -> (super::Deployment, u32) {
-    let preset = labor_home_definition(name);
+pub fn setup_campaign_game(name: ByteArray, bags: u64) -> (super::Deployment, u32) {
+    let preset = campaign_definition(name);
     create_open_frontier(1, preset, Into::<u32, u64>::into(preset.rules.day_unit_seconds) * 20 * bags)
 }
 
-pub fn setup_labor_home_duration(name: ByteArray, duration: u64) -> (super::Deployment, u32) {
-    create_open_frontier(1, labor_home_definition(name), duration)
+pub fn setup_campaign_duration(name: ByteArray, duration: u64) -> (super::Deployment, u32) {
+    create_open_frontier(1, campaign_definition(name), duration)
 }
 
 pub fn create_open_frontier(preset_id: u32, preset: PresetDefinition, duration: u64) -> (super::Deployment, u32) {
