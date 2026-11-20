@@ -40,8 +40,8 @@ npx @bubblewrap/cli update --skipVersionUpgrade    # rewrites the project from t
 
 Bubblewrap writes an App Link filter for the whole host. Put back the two `android:pathPrefix` lines
 (`git diff app/src/main/AndroidManifest.xml`): shared `/g/` and `/results/` links open the app, every other path stays
-in the browser, and `/blitz/` is left out until Blitz is decided for the store apps (#5192). The
-`android app` workflow refuses a bundle without them.
+in the browser, and `/blitz/` is left out until Blitz is decided for the store apps (#5192). The `android app` workflow
+refuses a bundle without them.
 
 ## Release
 

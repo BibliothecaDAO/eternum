@@ -51,7 +51,9 @@ const loadCodes = (environment: Environment, file: string) => {
   const worker = resolve(dirname(new URL(import.meta.url).pathname), "..");
   const loaded = spawnSync("pnpm", d1LoadArgs(environment, file), { cwd: worker, stdio: "inherit" });
   if (loaded.status !== 0)
-    throw new Error(`Loading the codes into ${environment} failed. Run the same command again: it loads each code once.`);
+    throw new Error(
+      `Loading the codes into ${environment} failed. Run the same command again: it loads each code once.`,
+    );
 };
 
 export function readSealCodeOrder([label, count, lastDay]: (string | undefined)[], now: number): SealCodeOrder {

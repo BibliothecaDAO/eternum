@@ -47,7 +47,8 @@ describe("the operator's free Seal codes", () => {
 
   it("loads the codes into the named environment's database only, and refuses any other name", () => {
     expect(readEnvironment("production")).toBe("production");
-    for (const name of [undefined, "dev", "Production"]) expect(() => readEnvironment(name)).toThrow("Name the environment");
+    for (const name of [undefined, "dev", "Production"])
+      expect(() => readEnvironment(name)).toThrow("Name the environment");
     expect(d1LoadArgs("staging", "/tmp/codes.sql")).toEqual([
       "exec",
       "wrangler",
