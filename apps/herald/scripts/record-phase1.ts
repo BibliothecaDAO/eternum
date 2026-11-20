@@ -295,7 +295,7 @@ function decoderManifest(worldAddress: string, schema: NativeSchema, releaseId: 
       releaseId,
       releases: releaseLine(schema.identity, [releaseId]),
       schemas: { [schema.identity]: schema },
-      logic: Object.fromEntries(Object.keys(schema.logicClasses).map((name) => [name, "0x0"])),
+      logic: Object.fromEntries(schema.logicClasses.map(({ name }) => [name, "0x0"])),
     },
   };
 }

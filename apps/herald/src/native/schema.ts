@@ -31,7 +31,7 @@ export interface NativeSchema {
   identity: string;
   version: number;
   cairoVersion: string;
-  logicClasses: Record<string, string>;
+  logicClasses: { slot: number; name: string; contract: string }[];
   encoding: string;
   games: {
     contract: string;

@@ -56,7 +56,7 @@ vi.mock("./shard-client", () => ({
       return `0x0${releaseId}`;
     };
     registeredRelease = async (releaseId: number) => ({
-      logic: { season: "0x55e0", troops: "0x77a2" },
+      logic: ["0x55e0", "0x77a2"],
       migration: "0x0",
       family: 1,
       previous: releaseId - 1,

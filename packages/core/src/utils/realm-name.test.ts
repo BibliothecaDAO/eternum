@@ -86,7 +86,12 @@ describe("Realm identity", () => {
           latestReleaseOf: async () => 4,
           releaseRegistered: async (releaseId) => releaseId <= 4,
           openRelease: async () => "0x0",
-          registeredRelease: async (releaseId) => ({ logic, migration: "0x0", family: 1, previous: releaseId - 1 }),
+          registeredRelease: async (releaseId) => ({
+            logic: Object.values(logic),
+            migration: "0x0",
+            family: 1,
+            previous: releaseId - 1,
+          }),
           gameId: async (name) => (name === "running" ? 1 : 2),
           gameRelease: async (game_id) => store.require("GameRelease", { game_id }).release_id,
           game: async () => ({ settled: false, preset_id: 2n, family: 1n }),

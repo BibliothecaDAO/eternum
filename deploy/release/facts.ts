@@ -46,9 +46,7 @@ function releaseFacts() {
     schema: schema.identity,
     classes: {
       games: worldClass("Games"),
-      logic: Object.fromEntries(
-        Object.entries(schema.logicClasses).map(([name, contract]) => [name, worldClass(contract)]),
-      ),
+      logic: Object.fromEntries(schema.logicClasses.map(({ name, contract }) => [name, worldClass(contract)])),
       account: classHash(ACCOUNT),
       verifier: classHash(resolve(ROOT, "contracts/l3/vrf-verifier/target/dev/realms_vrf_verifier_Verifier")),
     },

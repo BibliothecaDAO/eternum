@@ -108,18 +108,21 @@ async function inspectRelease(
     if (!(await isRegistered(releaseId - 1))) blockers.push("Release must follow the latest registered release");
     return false;
   }
-  const raw = await provider.callContract(
-    { contractAddress: local.games.address, entrypoint: "release", calldata: [String(local.release.releaseId)] },
-    block,
-  );
-  const registered = new CallData(local.games.sierra.abi).parse("release", raw) as {
-    family: bigint;
-    classes: Record<string, bigint>;
-    migration: bigint;
-  };
+  const codec = new CallData(local.games.sierra.abi);
+  const view = async (entrypoint: string) =>
+    codec.parse(
+      entrypoint,
+      await provider.callContract(
+        { contractAddress: local.games.address, entrypoint, calldata: [String(local.release.releaseId)] },
+        block,
+      ),
+    );
+  const registered = (await view("release")) as { family: bigint; migration: bigint };
+  const classes = (await view("release_classes")) as bigint[];
   if (
     registered.family !== BigInt(NATIVE_RELEASES.frontier.family) ||
-    !local.logic.every(({ name, classHash }) => registered.classes[name] === BigInt(classHash)) ||
+    classes.length !== local.logic.length ||
+    !local.logic.every(({ classHash }, slot) => classes[slot] === BigInt(classHash)) ||
     registered.migration !== BigInt(local.release.migrationClassHash)
   )
     blockers.push("Release is immutable; registered contents differ from release facts");

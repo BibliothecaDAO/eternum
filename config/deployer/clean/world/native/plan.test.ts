@@ -12,9 +12,10 @@ import { nativeBalanceIdentity } from "../../../../../contracts/l3/world-native/
 import { NATIVE_RELEASES } from "../../../../../deploy/release/native-release";
 
 const authentication = { account_class: "0x77", guardian_public_key: "0x88" };
+const slotOf = (name: string) => schemaJson.logicClasses.findIndex((logic) => logic.name === name);
 const catalogueDigest = realmCatalogueDigest(canonicalRealmTraits.length);
 function fixture() {
-  const logic = Object.keys(schemaJson.logicClasses).map((name) => ({ name, classHash: "0x123", sierra: { abi: [] } }));
+  const logic = schemaJson.logicClasses.map(({ name }) => ({ name, classHash: "0x123", sierra: { abi: [] } }));
   const local = {
     seed: "native-test",
     authority: "0x99",
@@ -52,7 +53,7 @@ function fixture() {
     key: local.vrfPublicKey,
     bound: local.l2GasBound,
     releases: new Map([
-      [1, { family: 1, previous: 0, classes: structuredClone(local.release.classes.logic), migration: "0x0" }],
+      [1, { family: 1, previous: 0, classes: logic.map(({ classHash }) => classHash), migration: "0x0" }],
     ]),
     gamesClassHash: "0x123",
     gamePins: new Map([
@@ -84,12 +85,12 @@ function fixture() {
       if (entrypoint === "release") {
         const release = state.releases.get(Number(calldata[0]));
         if (!release) throw new Error("unknown release");
-        return [
-          String(release.family),
-          String(release.previous),
-          ...Object.keys(schemaJson.logicClasses).map((name) => release.classes[name]),
-          release.migration,
-        ];
+        return [String(release.family), String(release.previous), String(release.classes.length), release.migration];
+      }
+      if (entrypoint === "release_classes") {
+        const release = state.releases.get(Number(calldata[0]));
+        if (!release) throw new Error("unknown release");
+        return [String(release.classes.length), ...release.classes];
       }
       if (entrypoint === "latest_release_of") return [String(Math.max(0, ...[...state.releases.keys()]))];
       if (entrypoint === "realm_catalogue") return [String(catalogue.initialized), catalogue.digest];
@@ -105,12 +106,14 @@ function fixture() {
     execute: async ({ entrypoint, calldata }: { entrypoint: string; calldata: string[] }) => {
       state.operations.push(entrypoint);
       if (entrypoint === "register_release") {
-        const [id, family, previous, ...rest] = calldata;
+        const [id, family, previous, slotCount, migration, count, ...classes] = calldata;
+        if (Number(slotCount) !== classes.length || Number(count) !== classes.length)
+          throw new Error("slot count is not the class count");
         state.releases.set(Number(id), {
           family: Number(family),
           previous: Number(previous),
-          classes: Object.fromEntries(Object.keys(schemaJson.logicClasses).map((name, index) => [name, rest[index]])),
-          migration: rest[Object.keys(schemaJson.logicClasses).length],
+          classes,
+          migration: migration!,
         });
       } else if (entrypoint === "set_launcher") {
         state.launcher = calldata[0]!;
@@ -230,7 +233,7 @@ describe("native deployment planning", () => {
   test("logic release and authority mismatches block before transactions", async () => {
     const { local, rpc, state } = fixture();
     state.authority = "0x42";
-    state.releases.get(1)!.classes.map = "0x55";
+    state.releases.get(1)!.classes[slotOf("map")] = "0x55";
     const plan = await inspectNativeWorld(local, rpc as unknown as RpcProvider);
     expect(plan.synced).toBe(false);
     expect(plan.blockers).toContain("Games authority mismatch");
@@ -336,8 +339,8 @@ describe("native deployment planning", () => {
     expect(first.after.worldAddress).toBe("0x1");
     expect(transactions).toEqual(["declare", "register_release"]);
     expect(state.releases.get(2)).toMatchObject({ family: 1, previous: 1 });
-    expect(BigInt(state.releases.get(1)!.classes.movement)).toBe(0x123n);
-    expect(BigInt(state.releases.get(2)!.classes.movement)).toBe(0x456n);
+    expect(BigInt(state.releases.get(1)!.classes[slotOf("movement")]!)).toBe(0x123n);
+    expect(BigInt(state.releases.get(2)!.classes[slotOf("movement")]!)).toBe(0x456n);
     expect(state.gamePins.get(7)).toBe(1);
     const published = buildNativeManifest(local, first, shard);
     expect(published.native.releases).toEqual({
@@ -419,7 +422,7 @@ describe("native deployment planning", () => {
     local.logic.find(({ name }) => name === "movement")!.classHash = "0x456";
     await deployNativeWorld(local, rpc as unknown as Account, () => {});
     expect(state.releases.get(1)).toEqual(original);
-    expect(BigInt(state.releases.get(2)!.classes.movement)).toBe(0x456n);
+    expect(BigInt(state.releases.get(2)!.classes[slotOf("movement")]!)).toBe(0x456n);
     local.release.classes.logic.movement = "0x789";
     local.logic.find(({ name }) => name === "movement")!.classHash = "0x789";
     await expect(deployNativeWorld(local, rpc as unknown as Account, () => {})).rejects.toThrow("Release is immutable");
@@ -434,6 +437,19 @@ describe("native deployment planning", () => {
     );
     expect(state.operations).toEqual([]);
     expect(state.releases.has(2)).toBe(false);
+  });
+
+  test("a release registers its classes in the slot order of the generated schema", async () => {
+    const { local, rpc, state } = fixture();
+    local.release.releaseId = 2;
+    for (const [slot, logic] of local.logic.entries()) logic.classHash = `0x${(0x1000 + slot).toString(16)}`;
+    local.release.classes.logic = Object.fromEntries(
+      local.logic.map(({ name, classHash }) => [name, classHash]).reverse(),
+    );
+    await registerNativeRelease(local, rpc as unknown as Account, () => {});
+    expect(state.releases.get(2)!.classes.map(BigInt)).toEqual(
+      schemaJson.logicClasses.map(({ name }) => BigInt(local.release.classes.logic[name]!)),
+    );
   });
 
   test("a release older than one the shard registered, opened or not, and a skipped release are blocked", async () => {

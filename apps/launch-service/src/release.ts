@@ -28,7 +28,7 @@ export interface ReleaseChain {
 export interface RegisteredRelease {
   family: number;
   previous: number;
-  logic: Record<string, string>;
+  logic: string[];
   migration: string;
 }
 
@@ -156,10 +156,11 @@ async function releasesAfter(chain: ReleaseChain, releaseId: number, from: numbe
   return line;
 }
 
-function sameContents(registered: { logic: Record<string, string>; migration: string }, release: ReleaseIdentity) {
-  const names = new Set([...Object.keys(registered.logic), ...Object.keys(release.logic)]);
+function sameContents(registered: RegisteredRelease, release: ReleaseIdentity) {
+  const logic = Object.values(release.logic);
   return (
-    [...names].every((name) => sameFelt(registered.logic[name], release.logic[name])) &&
+    registered.logic.length === logic.length &&
+    logic.every((classHash, slot) => sameFelt(registered.logic[slot], classHash)) &&
     sameFelt(registered.migration, release.migration)
   );
 }

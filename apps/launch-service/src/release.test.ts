@@ -16,7 +16,7 @@ const candidate = (releaseId: number, changes: Partial<ReleaseIdentity> = {}): R
   ...changes,
 });
 
-type Registered = { logic: Record<string, string>; migration: string };
+type Registered = { logic: string[]; migration: string };
 const FRONTIER = 1;
 const BLITZ = 2;
 
@@ -25,7 +25,7 @@ function shard(
   pins: Record<number, number>,
   {
     settled = [] as number[],
-    registered = { logic: { ...LOGIC }, migration: "0x0" } as Registered,
+    registered = { logic: Object.values(LOGIC), migration: "0x0" } as Registered,
     blitz = [] as number[],
     blitzGames = [] as number[],
   } = {},
@@ -48,7 +48,7 @@ function shard(
       return `0x${releaseId}`;
     },
     registeredRelease: async (releaseId) => ({
-      ...(releaseId === latest ? registered : { logic: { ...LOGIC }, migration: "0x0" }),
+      ...(releaseId === latest ? registered : { logic: Object.values(LOGIC), migration: "0x0" }),
       family: familyOf(releaseId),
       previous: previousOf(releaseId),
     }),
@@ -153,19 +153,25 @@ test.each([
   ["an older commit, over a newer registered release", shard(3, { 1: 3 }), candidate(2), "release_older_than_shard"],
   [
     "the same release number registered with other logic",
-    shard(2, { 1: 1 }, { registered: { logic: { ...LOGIC, movement: "0x456" }, migration: "0x0" } }),
+    shard(2, { 1: 1 }, { registered: { logic: [LOGIC.season, LOGIC.troops, "0x456"], migration: "0x0" } }),
     candidate(2),
     "release_contents_differ",
   ],
   [
     "the same release number registered with another migration",
-    shard(2, { 1: 1 }, { registered: { logic: { ...LOGIC }, migration: "0x99" } }),
+    shard(2, { 1: 1 }, { registered: { logic: Object.values(LOGIC), migration: "0x99" } }),
     candidate(2),
     "release_contents_differ",
   ],
   [
     "a registered release missing one of the commit's logic classes",
-    shard(2, { 1: 1 }, { registered: { logic: { season: LOGIC.season, troops: LOGIC.troops }, migration: "0x0" } }),
+    shard(2, { 1: 1 }, { registered: { logic: [LOGIC.season, LOGIC.troops], migration: "0x0" } }),
+    candidate(2),
+    "release_contents_differ",
+  ],
+  [
+    "a registered release with the commit's classes in other slots",
+    shard(2, { 1: 1 }, { registered: { logic: [LOGIC.troops, LOGIC.season, LOGIC.movement], migration: "0x0" } }),
     candidate(2),
     "release_contents_differ",
   ],
@@ -234,7 +240,7 @@ describe("interrupted Frontier launches", () => {
       releaseRegistered: async (releaseId) => releaseId <= 2,
       openRelease: async () => "0x2",
       registeredRelease: async (releaseId) => ({
-        logic: { ...LOGIC },
+        logic: Object.values(LOGIC),
         migration: "0x0",
         family: 1,
         previous: releaseId - 1,

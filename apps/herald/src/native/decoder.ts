@@ -46,7 +46,13 @@ export class NativeDecoder {
     this.schema = active;
     this.emitter = normalizeFelt(manifest.world.address);
     if (BigInt(this.emitter) === 0n) throw new Error("Zero Games emitter");
-    if (Object.keys(release.logic).sort().join() !== Object.keys(active.logicClasses).sort().join())
+    if (
+      Object.keys(release.logic).sort().join() !==
+      active.logicClasses
+        .map(({ name }) => name)
+        .sort()
+        .join()
+    )
       throw new Error("Native logic class set mismatch");
     this.layouts = active.games.events;
     const codecs = active.models.map((model) => modelCodec(active, model));

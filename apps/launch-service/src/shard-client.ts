@@ -79,17 +79,13 @@ export class LaunchShard extends ShardOperator implements ReleaseChain {
     return this.view<boolean>("release_registered", [releaseId]);
   }
   async registeredRelease(releaseId: number) {
-    const release = await this.view<{
-      family: bigint;
-      previous: bigint;
-      classes: Record<string, bigint>;
-      migration: bigint;
-    }>("release", [releaseId]);
+    const release = await this.view<{ family: bigint; previous: bigint; migration: bigint }>("release", [releaseId]);
+    const classes = await this.view<bigint[]>("release_classes", [releaseId]);
     const hex = (value: bigint) => `0x${value.toString(16)}`;
     return {
       family: Number(release.family),
       previous: Number(release.previous),
-      logic: Object.fromEntries(Object.entries(release.classes).map(([name, classHash]) => [name, hex(classHash)])),
+      logic: classes.map(hex),
       migration: hex(release.migration),
     };
   }

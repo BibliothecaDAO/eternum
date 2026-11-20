@@ -37,7 +37,7 @@ export function loadNativeWorld(input: {
       resolve(input.artifacts, `world_native_${name}.contract_class.json`),
       resolve(input.artifacts, `world_native_${name}.compiled_contract_class.json`),
     );
-  const logic = Object.entries(schema.logicClasses).map(([name, contract]) => ({ name, ...readClass(contract) }));
+  const logic = schema.logicClasses.map(({ name, contract }) => ({ name, ...readClass(contract) }));
   const artifact = readClass("Games");
   const migration =
     BigInt(input.release.migrationClassHash) === 0n
@@ -64,13 +64,7 @@ export function loadNativeWorld(input: {
     vrf_public_key: input.vrfPublicKey,
     l2_gas_bound: input.l2GasBound,
     authentication: input.authentication,
-    release_id: input.release.releaseId,
-    release: {
-      family: NATIVE_RELEASES.frontier.family,
-      previous: 0,
-      classes: input.release.classes.logic,
-      migration: input.release.migrationClassHash,
-    },
+    ...releaseRegistration(input.release, schema, 0),
   });
   const publishedSchema = previous?.native.releases[String(input.release.releaseId)]?.schema;
   if (publishedSchema && publishedSchema !== input.release.schema)
@@ -93,6 +87,19 @@ export function loadNativeWorld(input: {
     migration,
     release: input.release,
     previous,
+  };
+}
+
+export function releaseRegistration(release: NativeReleaseFacts, schema: NativeSchema, previous: number) {
+  return {
+    release_id: release.releaseId,
+    release: {
+      family: NATIVE_RELEASES.frontier.family,
+      previous,
+      slot_count: schema.logicClasses.length,
+      migration: release.migrationClassHash,
+    },
+    classes: schema.logicClasses.map(({ name }) => release.classes.logic[name]),
   };
 }
 

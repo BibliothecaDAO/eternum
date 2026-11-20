@@ -23,7 +23,7 @@ function decoderFor(schema: any, gamesContract: string, releases: NativeReleases
       deploymentBlock: 0,
       activeSchema: schema.identity,
       schemas: { [schema.identity]: schema },
-      logic: schema.logicClasses,
+      logic: Object.fromEntries(schema.logicClasses.map(({ name, contract }) => [name, contract])),
       releases,
     },
   } as never);

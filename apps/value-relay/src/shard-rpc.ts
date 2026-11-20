@@ -336,6 +336,9 @@ const releaseClasses = async (
     if (answer.length !== layout.size) throw new Error("invalid_release_classes");
     // A zero migration class is a release that migrates nothing.
     for (const position of layout.classes) if (BigInt(answer[position]!) !== 0n) classes.add(felt(answer[position]!));
+    const [count, ...logic] = await call("release_classes", [release.toString()]);
+    if (logic.length !== Number(count)) throw new Error("invalid_release_classes");
+    for (const classHash of logic) classes.add(felt(classHash));
   }
   return [...classes];
 };

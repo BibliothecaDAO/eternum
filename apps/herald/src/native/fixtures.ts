@@ -23,7 +23,7 @@ export const manifest: NativeManifest = {
     gamesClassHash: "0x123",
     migrationClassHash: "0x0",
     releaseId: 1,
-    logic: Object.fromEntries(Object.keys(schema.logicClasses).map((name) => [name, "0x123"])),
+    logic: Object.fromEntries(schema.logicClasses.map(({ name }) => [name, "0x123"])),
   },
 };
 export const shardManifest = buildShardManifest(
