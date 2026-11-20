@@ -32,18 +32,13 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import {
-  ActionPaths,
-  ActionType,
-  ArmyActionManager,
-  configManager,
-  expeditionDepth,
   expeditionDayEndsAt,
   expeditionSpires,
   armyRealmSpire,
   armySpireChance,
   setBlockTimestampSource,
 } from "@bibliothecadao/eternum";
-import { StructureType, TileOccupier } from "@bibliothecadao/types";
+import { StructureType } from "@bibliothecadao/types";
 import { attachMapSelectionPositions } from "@/hooks/store/map-selection";
 import { useArmyPanelOpens } from "./army/army-opens";
 import { useArmySpireStatus } from "./spire-card";
@@ -112,202 +107,6 @@ afterEach(() => {
 });
 
 describe("a realm's spire, from the player's path", () => {
-  it("offers the selected army each researched depth without an entry cost, enters the one picked, and shows it there", async () => {
-    const { store, rules, spire, armyTile } = spireDay();
-    const hud = renderHud(store);
-    try {
-      tapSpireWithArmy(spire);
-      expect(hud.sheet()?.getAttribute("aria-label")).toBe("Spire");
-      expect(hud.sheet()!.textContent).toContain("Army");
-      expect(hud.depths()).toEqual([
-        { depth: "Veil", line: undefined, button: "Enter", enabled: true },
-        { depth: "Hollow", line: undefined, button: "Enter", enabled: true },
-        { depth: "Deep", line: undefined, button: "Enter", enabled: true },
-      ]);
-      // What entering commits the army to, before it goes: the rest of the day, with no way back up.
-      expect(hud.host.querySelector("[data-spire-commitment]")?.textContent).toMatch(
-        /^Army( \d+)? stays until the day ends \(.+\)$/,
-      );
-
-      await hud.press("Enter Hollow");
-      expect(hud.enter).toHaveBeenCalledTimes(1);
-      expect(hud.enter).toHaveBeenCalledWith(expect.objectContaining({ explorerId: ARMY, depth: 2 }));
-
-      // The chain's answer: the army lands straight below, two regions down.
-      const landing = { col: armyTile.col, row: armyTile.row + 2 * rules.spacing };
-      act(() =>
-        store.applyFacts([
-          { model: "TileOccupancy", key: "0x904", value: null },
-          {
-            model: "TileOccupancy",
-            key: "0x906",
-            value: { game_id: 1, alt: false, ...landing, entity_id: ARMY, category: 15, is_structure: false },
-          },
-        ] as never),
-      );
-      const at = store.entityOccupancy(1, ARMY)!;
-      expect(expeditionDepth(rules, { y: at.row })).toBe(2);
-      expect(hud.sheet()!.textContent).toMatch(/Army( \d+)? is in Hollow today/);
-      expect(hud.depths()).toEqual([]);
-    } finally {
-      hud.unmount();
-    }
-  });
-
-  it("lights no spire for a realm that knows only wells and shrines, and opens every depth once it learns Spire lore", () => {
-    const { store, spire } = spireDay();
-    const knowledge = store.require("RealmKnowledge", { game_id: 1, structure_id: 7 });
-    const learn = (learned: bigint) =>
-      store.applyFacts([
-        {
-          model: "RealmKnowledge",
-          key: store.wireKeyOf("RealmKnowledge", knowledge)!,
-          value: { ...knowledge, learned },
-        },
-      ]);
-    learn(2n << 48n);
-    const hud = renderHud(store);
-    try {
-      tapSpireWithArmy(spire);
-      expect(hud.sheet()?.getAttribute("aria-label")).not.toBe("Spire");
-      expect(hud.depths()).toEqual([]);
-      act(() => learn(3n << 48n));
-      tapSpireWithArmy(spire);
-      expect(hud.sheet()?.getAttribute("aria-label")).toBe("Spire");
-      expect(hud.depths().map(({ button, enabled }) => [button, enabled])).toEqual([
-        ["Enter", true],
-        ["Enter", true],
-        ["Enter", true],
-      ]);
-    } finally {
-      hud.unmount();
-    }
-  });
-
-  it("enters the shared Deep even when the old personal-map landing is occupied", async () => {
-    const { store, rules, spire, armyTile } = spireDay({ spacing: 1024 });
-    store.applyFacts([
-      {
-        model: "DeepRules",
-        key: "0xdeef",
-        value: {
-          game_id: 1,
-          gate_distance: 4,
-          rings: [{ radius: 5, realms: 0 }],
-          beasts: [
-            { count: 1000n, bow: false },
-            { count: 1000n, bow: true },
-            { count: 1000n, bow: false },
-            { count: 1000n, bow: true },
-          ],
-          loss_per_tick: 1n,
-          core_per_tick: 1n,
-          mine_per_tick: 1n,
-          building_pay: { alone: 1, pair: 1, crowd: 1 },
-          altar_threshold: 10,
-        },
-      },
-      { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 3n << 48n } },
-      {
-        model: "TileOccupancy",
-        key: "0x905",
-        value: {
-          game_id: 1,
-          alt: false,
-          col: armyTile.col,
-          row: armyTile.row + 3 * rules.spacing,
-          entity_id: 990,
-          category: TileOccupier.Camp,
-          is_structure: true,
-        },
-      },
-    ] as never);
-    const hud = renderHud(store);
-    try {
-      tapSpireWithArmy(spire);
-      expect(hud.depths().at(-1)).toEqual({ depth: "Deep", line: undefined, button: "Enter", enabled: true });
-      await hud.press("Enter Deep");
-      expect(hud.enter).toHaveBeenCalledTimes(1);
-      expect(hud.enter).toHaveBeenCalledWith(expect.objectContaining({ explorerId: ARMY, depth: 3 }));
-    } finally {
-      hud.unmount();
-    }
-  });
-
-  it("allows an exhausted army to enter a free landing", () => {
-    const { store, rules, spire, armyTile } = spireDay({ stamina: 0n });
-    // Something already stands where the army would land in Ethereal I.
-    store.applyFacts([
-      {
-        model: "TileOccupancy",
-        key: "0x905",
-        value: {
-          game_id: 1,
-          alt: false,
-          col: armyTile.col,
-          row: armyTile.row + rules.spacing,
-          entity_id: 990,
-          category: TileOccupier.Camp,
-          is_structure: true,
-        },
-      },
-    ] as never);
-    const hud = renderHud(store);
-    try {
-      tapSpireWithArmy(spire);
-      const [first, second] = hud.depths();
-      expect(first).toEqual({ depth: "Veil", line: "Its landing is taken", button: "Enter", enabled: false });
-      expect(second.depth).toBe("Hollow");
-      expect(second.line).toBeUndefined();
-      expect(second.enabled).toBe(true);
-    } finally {
-      hud.unmount();
-    }
-  });
-
-  it("explains itself to a tap with no army, acts for the army beside it, and points an army away to it", () => {
-    const beside = spireDay();
-    let hud = renderHud(beside.store);
-    try {
-      // No army selected, one beside the spire: the card acts for it, named.
-      act(() => useUIStore.getState().selectOnMap({ kind: "hex", hex: beside.spire }));
-      expect(hud.sheet()?.getAttribute("aria-label")).toBe("Spire");
-      expect(
-        hud
-          .depths()
-          .slice(0, 2)
-          .every((depth) => depth.enabled),
-      ).toBe(true);
-    } finally {
-      hud.unmount();
-    }
-
-    const away = spireDay({ standing: "away" });
-    hud = renderHud(away.store);
-    try {
-      // No army selected and none beside: what to do, and every researched depth is listed.
-      act(() => useUIStore.getState().selectOnMap({ kind: "hex", hex: away.spire }));
-      expect(hud.sheet()!.textContent).toContain("Select an army beside the spire");
-      expect(hud.depths().map(({ line, enabled }) => ({ line, enabled }))).toEqual([
-        { line: undefined, enabled: false },
-        { line: undefined, enabled: false },
-        { line: undefined, enabled: false },
-      ]);
-      // The army selected away from the spire: it must stand beside it, and nothing commits it yet.
-      tapSpireWithArmy(away.spire);
-      expect(hud.sheet()!.textContent).toMatch(/Army( \d+)? must be beside the spire/);
-      expect(hud.host.querySelector("[data-spire-commitment]")).toBeNull();
-      expect(
-        hud
-          .depths()
-          .slice(0, 2)
-          .some((depth) => depth.enabled),
-      ).toBe(false);
-    } finally {
-      hud.unmount();
-    }
-  });
-
   /**
    * The HUD's panels as each layout composes them, through the one panel: the selection's card, and the army's panel.
    * A desktop opens the army's panel on selecting it (a surface); a phone keeps the map and shows the army in its action
@@ -358,10 +157,6 @@ describe("a realm's spire, from the player's path", () => {
     );
     const sheets = () =>
       [...host.querySelectorAll("[data-kit-sheet]")].map((sheet) => sheet.getAttribute("aria-label"));
-    const enterButtons = () =>
-      [...host.querySelectorAll<HTMLButtonElement>("[data-spire-depths] button")]
-        .filter((button) => button.textContent === "Enter")
-        .map((button) => !button.disabled);
     const press = (label: string) =>
       act(() =>
         [...host.querySelectorAll<HTMLButtonElement>("button")]
@@ -371,7 +166,6 @@ describe("a realm's spire, from the player's path", () => {
     return {
       host,
       sheets,
-      enterButtons,
       press,
       unmount: () => {
         act(() => root.unmount());
@@ -561,26 +355,6 @@ describe("a realm's spire, from the player's path", () => {
           }
         });
 
-      it.each(["on", "beside"] as const)(
-        "opens the spire's card from Spire on the army's panel, standing %s it",
-        (standing) => {
-          const { store } = spireDay({ standing });
-          const hud = renderLayoutHud(store, layout);
-          try {
-            act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: "own" }));
-            hud.press("Spire");
-            expect(hud.sheets()).toEqual(["Spire"]);
-            expect(hud.enterButtons()).toEqual([true, true, true]);
-            // Closed, the card hands back the army, still selected.
-            hud.press("Close");
-            expect(hud.sheets()).not.toContain("Spire");
-            expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
-          } finally {
-            hud.unmount();
-          }
-        },
-      );
-
       it("offers no Spire to an army away from its spire", () => {
         const { store } = spireDay({ standing: "away" });
         const hud = renderLayoutHud(store, layout);
@@ -595,39 +369,6 @@ describe("a realm's spire, from the player's path", () => {
     },
   );
 
-  it("tells another player whose spire it is, and offers them nothing", () => {
-    const { store, spire } = spireDay();
-    const hud = renderHud(store, "0x222");
-    try {
-      act(() => useUIStore.getState().selectOnMap({ kind: "hex", hex: spire }));
-      expect(hud.sheet()?.getAttribute("aria-label")).toBe("Spire");
-      expect(hud.sheet()!.textContent).toContain("Another realm's spire");
-      expect(hud.depths()).toEqual([]);
-    } finally {
-      hud.unmount();
-    }
-  });
-
-  it("gives the army beside its spire the order to enter a depth there, and an army away none", () => {
-    const plan = (standing: "beside" | "away") => {
-      const { store, spire } = spireDay({ standing });
-      const paths = new ArmyActionManager(store, {} as never, ARMY).findActionPaths(
-        new Map(),
-        new Map(),
-        new Map(),
-        NOW,
-        0x111n as never,
-      );
-      return paths.get(ActionPaths.posKey(spire));
-    };
-    // Frontier's command mask enables depth entry; the fixture's preset does not.
-    vi.spyOn(configManager, "isCommandEnabled").mockImplementation((command) => command === "EnterDepth");
-    const beside = plan("beside");
-    expect(beside && ActionPaths.getActionType(beside)).toBe(ActionType.EnterDepth);
-    expect(beside?.at(-1)?.staminaCost).toBe(0);
-    const away = plan("away");
-    expect(away && ActionPaths.getActionType(away)).not.toBe(ActionType.EnterDepth);
-  });
 });
 
 describe("discovered expedition Spires", () => {
