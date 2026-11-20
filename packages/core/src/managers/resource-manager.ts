@@ -1,6 +1,9 @@
 import { currentResourceWeight } from "../utils/deep";
 import { researchPicks } from "../utils/realm-research";
-import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/balance.gen";
+import {
+  nativeResearchConstants as research,
+  nativeStructureConstants as structures,
+} from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { BANE_MODELS, readBaneEffects } from "../client/views/banes";
 import { SCOPE_INPUT_MODELS } from "../sync/model-manifest";
 import { nativeBaneConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
@@ -209,15 +212,24 @@ export class ResourceManager {
   /**
    * A board realm's base wheat/labor capacity before Granary and Storeroom research. Undefined in a game without a realm board.
    */
-  public static castleStoreLimit(store: NativeFactStore, gameId: number, level: number): bigint | undefined {
+  public static castleStoreLimit(
+    store: NativeFactStore,
+    gameId: number,
+    level: number,
+    resourceId: ResourcesIds.Wheat | ResourcesIds.Labor,
+  ): bigint | undefined {
     const board = store.get("BoardRules", { game_id: gameId });
     if (!board) return undefined;
-    const cap = [
-      board.settlement_resource_cap,
-      board.city_resource_cap,
-      board.kingdom_resource_cap,
-      board.empire_resource_cap,
-    ][level];
+    const caps =
+      resourceId === ResourcesIds.Labor
+        ? structures.LABOR_STORES
+        : [
+            board.settlement_resource_cap,
+            board.city_resource_cap,
+            board.kingdom_resource_cap,
+            board.empire_resource_cap,
+          ];
+    const cap = caps[level];
     if (cap === undefined) throw new Error(`Unknown castle level ${level}`);
     return BigInt(cap) * BigInt(RESOURCE_PRECISION);
   }
@@ -233,14 +245,7 @@ export class ResourceManager {
     if (!board) return undefined;
     const structure = this.store.get("Structure", { game_id: this.gameId, entity_id: this.entityId });
     if (structure?.base.category !== StructureType.Realm) return undefined;
-    const base = ResourceManager.castleStoreLimit(this.store, this.gameId, structure.base.level)!;
-    const row =
-      resourceId === ResourcesIds.Wheat
-        ? research.ROW_FARM
-        : resourceId === ResourcesIds.Labor
-          ? research.ROW_WORKSHOP
-          : undefined;
-    if (row === undefined) {
+    if (resourceId !== ResourcesIds.Wheat && resourceId !== ResourcesIds.Labor) {
       const limits = this.store.require("SliceRules", { game_id: this.gameId }).troop_limit_config;
       const cap = [
         limits.settlement_deployment_cap,
@@ -251,6 +256,8 @@ export class ResourceManager {
       if (cap === undefined) throw new Error(`Unknown castle level ${structure.base.level}`);
       return BigInt(cap) * BigInt(board.troop_store_deploys) * BigInt(RESOURCE_PRECISION);
     }
+    const base = ResourceManager.castleStoreLimit(this.store, this.gameId, structure.base.level, resourceId)!;
+    const row = resourceId === ResourcesIds.Wheat ? research.ROW_FARM : research.ROW_WORKSHOP;
     const learned = this.store.require("RealmKnowledge", { game_id: this.gameId, structure_id: this.entityId }).learned;
     const stores = researchPicks(learned, row, research.CHOICE_STORE);
     return (base * BigInt(10_000 + stores * board.storage_step_bps)) / 10_000n;

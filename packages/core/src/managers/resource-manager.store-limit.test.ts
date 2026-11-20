@@ -1,6 +1,7 @@
 import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
+import { nativeStructureConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { NativeFactStore } from "../client/native-fact-store";
 import type { GameSyncFact } from "../sync/game-sync-types";
 import { ResourceManager } from "./resource-manager";
@@ -56,10 +57,10 @@ const boardRealm = (wheat: bigint) => {
 describe("a board realm's store limits", () => {
   const settlementLimit = 2n * BigInt(preset.rules.troop_limit_config.settlement_deployment_cap) * PRECISION;
 
-  it("gives wheat, labor and troops each the castle's base, and Essence none", () => {
+  it("gives wheat and troops the board's base, labor the release's settlement store, and Essence none", () => {
     const { manager } = boardRealm(0n);
     expect(manager.storeLimit(ResourcesIds.Wheat)).toBe(settlementLimit);
-    expect(manager.storeLimit(ResourcesIds.Labor)).toBe(settlementLimit);
+    expect(manager.storeLimit(ResourcesIds.Labor)).toBe(5_000n * PRECISION);
     expect(manager.storeLimit(ResourcesIds.Knight)).toBe(settlementLimit);
     expect(manager.storeLimit(ResourcesIds.Essence)).toBeUndefined();
     expect(manager.storeLimit(ResourcesIds.Lords)).toBeUndefined();
@@ -74,7 +75,7 @@ describe("a board realm's store limits", () => {
       }),
     );
     expect(manager.storeLimit(ResourcesIds.Wheat)).toBe((settlementLimit * 3n) / 2n);
-    expect(manager.storeLimit(ResourcesIds.Labor)).toBe((settlementLimit * 3n) / 2n);
+    expect(manager.storeLimit(ResourcesIds.Labor)).toBe((5_000n * PRECISION * 3n) / 2n);
     expect(manager.storeLimit(ResourcesIds.Knight)).toBe(settlementLimit);
   });
 
@@ -112,7 +113,9 @@ describe("a board realm's store limits", () => {
         );
         const cap = (BigInt([6000, 18000, 40000, 80000][level]!) * PRECISION * BigInt(2 + picks)) / 2n;
         expect(manager.storeLimit(ResourcesIds.Wheat)).toBe(cap);
-        expect(manager.storeLimit(ResourcesIds.Labor)).toBe(cap);
+        expect(manager.storeLimit(ResourcesIds.Labor)).toBe(
+          (BigInt([5_000, 15_000, 50_000, 100_000][level]!) * PRECISION * BigInt(2 + picks)) / 2n,
+        );
         expect(manager.storeLimit(ResourcesIds.Knight)).toBe(BigInt([6000, 18000, 50000, 120000][level]!) * PRECISION);
       }
     }
@@ -123,6 +126,15 @@ describe("a board realm's store limits", () => {
     const wheat = manager.balanceWithProduction(100, ResourcesIds.Wheat)!;
     expect(wheat.balance).toBe(Number(settlementLimit));
     expect(wheat.hasReachedMaxCapacity).toBe(true);
+  });
+
+  it("stores at each castle level the labor the release's LABOR_STORES names, which is 5k, 15k, 50k and 100k", () => {
+    const { store } = boardRealm(0n);
+    expect(nativeStructureConstants.LABOR_STORES).toEqual([5_000, 15_000, 50_000, 100_000]);
+    nativeStructureConstants.LABOR_STORES.forEach((labor, level) =>
+      expect(ResourceManager.castleStoreLimit(store, 1, level, ResourcesIds.Labor)).toBe(BigInt(labor) * PRECISION),
+    );
+    expect(() => ResourceManager.castleStoreLimit(store, 1, 4, ResourcesIds.Labor)).toThrow("Unknown castle level 4");
   });
 
   it("has no limit of its own off a board", () => {

@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
-const TUNABLE = /_(BPS|PERCENT|STAMINA|PER_TICK|PER_RANK|PER_FRAGMENT|FRAGMENTS|LIMIT|CAP|SHARE|BASE|STEPS)$/;
+const TUNABLE = /_(BPS|PERCENT|STAMINA|PER_TICK|PER_RANK|PER_FRAGMENT|FRAGMENTS|LIMIT|CAP|SHARE|BASE|STEPS|STORES)$/;
 
 export function identifierConstants(balance) {
   return Object.fromEntries(
@@ -31,6 +31,7 @@ export async function readBalanceConstants(root) {
     nativeOathConstants: await readOathConstants(root),
     nativeResearchConstants: await readResearchConstants(root),
     nativeFragmentConstants: await readFragmentConstants(root),
+    nativeStructureConstants: await readStructureConstants(root),
   };
 }
 
@@ -61,6 +62,26 @@ function unsignedConstants(source, widths = "8|32") {
 
 async function readQuestConstants(root) {
   return unsignedConstants(await readFile(new URL("src/quests.cairo", root), "utf8"));
+}
+
+export async function readStructureConstants(root) {
+  return unsignedLists(await readFile(new URL("src/balance/structures.cairo", root), "utf8"));
+}
+
+function unsignedLists(source) {
+  return Object.fromEntries(
+    [...source.matchAll(/^pub const ([A-Z][A-Z0-9_]*): \[u(?:8|16|32); ([0-9]+)\] = \[([0-9,\s]*)\];$/gm)].map(
+      ([, name, length, body]) => {
+        const values = body
+          .split(",")
+          .map((value) => value.trim())
+          .filter(Boolean)
+          .map(Number);
+        if (values.length !== Number(length)) throw new Error(`${name} declares ${length} values and lists ${values.length}`);
+        return [name, values];
+      },
+    ),
+  );
 }
 
 async function readResearchConstants(root) {

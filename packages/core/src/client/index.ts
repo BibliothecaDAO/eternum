@@ -16,6 +16,7 @@ export {
   nativeBaneConstants,
   nativeRaceConstants,
   nativeFragmentConstants,
+  nativeStructureConstants,
 } from "../../../../contracts/l3/world-native/schema/balance.gen";
 
 export type { GameClientSetup } from "./game-client";

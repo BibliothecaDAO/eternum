@@ -527,7 +527,8 @@ export const MAX_ARMY_SIZE = "Max army size";
 export const CASTLE_GIVES = {
   plots: "Plots",
   armySlots: "Army slots",
-  storage: STORAGE,
+  wheatStorage: `${WHEAT} ${STORAGE.toLowerCase()}`,
+  laborStorage: `${LABOR} ${STORAGE.toLowerCase()}`,
   maxArmySize: MAX_ARMY_SIZE,
 } as const;
 export const SEASON = "Season";

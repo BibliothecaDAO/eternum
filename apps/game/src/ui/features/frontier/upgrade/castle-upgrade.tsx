@@ -119,7 +119,8 @@ const castleSide = (
     art,
     plots: buildablePlotCount(level),
     slots: configManager.getArmySlots(level),
-    limit: wholeOrUnknown(ResourceManager.castleStoreLimit(store, gameId, level)),
+    wheatStore: wholeOrUnknown(ResourceManager.castleStoreLimit(store, gameId, level, ResourcesIds.Wheat)),
+    laborStore: wholeOrUnknown(ResourceManager.castleStoreLimit(store, gameId, level, ResourcesIds.Labor)),
     maxArmySize: configManager.getMaxArmySize(level, TroopTier.T1),
   };
 };
