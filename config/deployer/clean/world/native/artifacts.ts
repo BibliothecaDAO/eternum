@@ -4,7 +4,6 @@ import { hash, CallData } from "starknet";
 import { schemaIdentity, type NativeSchema } from "../../../../../apps/herald/src/native/schema";
 import { readClassArtifact } from "../../shared/declare";
 import { nativeBalanceIdentity } from "../../../../../contracts/l3/world-native/schema/balance.gen";
-import { nativeIdentifiers } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { NATIVE_RELEASES } from "../../../../../deploy/release/native-release";
 import type { NativeAuthentication, NativeReleaseFacts, NativeWorld, NativeWorldManifest } from "./types";
 
@@ -67,7 +66,7 @@ export function loadNativeWorld(input: {
     authentication: input.authentication,
     release_id: input.release.releaseId,
     release: {
-      family: nativeIdentifiers.family.FRONTIER,
+      family: NATIVE_RELEASES.frontier.family,
       previous: 0,
       classes: input.release.classes.logic,
       migration: input.release.migrationClassHash,

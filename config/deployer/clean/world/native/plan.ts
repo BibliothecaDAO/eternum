@@ -4,7 +4,7 @@ import type { NativeReleases } from "@bibliothecadao/eternum/game-sync";
 import { deployedClass, isClassDeclared } from "../../shared/declare";
 import { canonicalRealmTraits, realmCatalogueDigest } from "./realm-catalogue";
 import type { NativePlan, NativeWorld } from "./types";
-import { nativeIdentifiers } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import { NATIVE_RELEASES } from "../../../../../deploy/release/native-release";
 
 export async function inspectNativeWorld(local: NativeWorld, provider: RpcProvider): Promise<NativePlan> {
   assertHotfixSchema(local.release, local.previous);
@@ -118,7 +118,7 @@ async function inspectRelease(
     migration: bigint;
   };
   if (
-    registered.family !== BigInt(nativeIdentifiers.family.FRONTIER) ||
+    registered.family !== BigInt(NATIVE_RELEASES.frontier.family) ||
     !local.logic.every(({ name, classHash }) => registered.classes[name] === BigInt(classHash)) ||
     registered.migration !== BigInt(local.release.migrationClassHash)
   )

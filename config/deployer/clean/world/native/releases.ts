@@ -1,5 +1,5 @@
 import { CallData, type Account } from "starknet";
-import { nativeIdentifiers } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import { NATIVE_RELEASES } from "../../../../../deploy/release/native-release";
 import { isClassDeclared, waitForSuccess } from "../../shared/declare";
 import type { NativeWorld } from "./types";
 
@@ -13,7 +13,7 @@ export async function registerNativeRelease(
     !(await isClassDeclared(account, local.release.migrationClassHash))
   )
     throw new Error("NATIVE_MIGRATION_NOT_DECLARED: declare the migration class before registering the release");
-  const family = nativeIdentifiers.family.FRONTIER;
+  const family = NATIVE_RELEASES.frontier.family;
   const codec = new CallData(local.games.sierra.abi);
   const result = await account.execute(
     {
