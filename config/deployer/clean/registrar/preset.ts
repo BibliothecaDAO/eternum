@@ -26,8 +26,6 @@ export function buildMapConfig(config: Config) {
     shards_mines_fail_probability: config.exploration.shardsMinesFailProbability,
     camp_win_probability: config.exploration.campFindProbability,
     camp_fail_probability: config.exploration.campFindFailProbability,
-    bitcoin_mine_win_probability: config.exploration.bitcoinMineWinProbability,
-    bitcoin_mine_fail_probability: config.exploration.bitcoinMineFailProbability,
     hyps_win_prob: config.exploration.hyperstructureWinProbAtCenter,
     hyps_fail_prob: config.exploration.hyperstructureFailProbAtCenter,
     hyps_fail_prob_increase_p_hex: config.exploration.hyperstructureFailProbIncreasePerHexDistance,
