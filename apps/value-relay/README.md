@@ -1,9 +1,9 @@
 # Value relay
 
 The relay and independent payout monitor run as Workers outside the shard hosts. Identity's private
-`ValueIdentity.shards()` method is the only membership source. Active and draining shards can produce payouts and labor.
-Herald's `/manifest` supplies each registered chain's current RPC and Games address. Retired rows remain available for
-readonly historical audits.
+`ValueIdentity.shards()` method is the only membership source. Active and draining shards can produce payouts. Herald's
+`/manifest` supplies each registered chain's current RPC and Games address. Retired rows remain available for readonly
+historical audits.
 
 Each official shard has its own durable confirmed cursor. A tick reads at most 100 blocks and one Games event page, then
 journals withdrawal and result obligations with the cursor. An unfinished page retains its confirmed anchor. Changed
@@ -18,10 +18,6 @@ Batches retain the ledger's cumulative unlock and custody checks. A refused or u
 claim queued; verified siblings can proceed. The relay journals its own signed recipient decisions before broadcast for
 the monitor's historical audit. Missing wallets appear deferred; unknown accounts retry from receipts. A confirmed
 closed season removes unpaid claims from retries. Claims are keyed by shard and withdrawal transaction hash.
-
-`POST /api/value/labor?chainId=<official shard>` accepts only a Realm in its body. Identity supplies the signed-in
-Realms id and account. The Worker reads the UTC day from the shard and `owner_of` from identity's configured L2 chain.
-The shard owns labor eligibility and limits. No daily cap is copied into services.
 
 The independent monitor checks `WithdrawalReported` against raw L3 receipts. An unknown account cannot hide a forged
 amount or block later reports. It audits paid recipients against identity's signed decision journal, plus results and
@@ -44,12 +40,12 @@ do not make `ACCEPTED_ON_L2` irreversible or reconcile relay payments already ac
 
 The ledger address and chain come from `contracts/common/addresses/dev.json` or `production.json` through the shared
 environment reader. The ledger runtime settings are the secret `L2_RPC_URL`, `LEDGER_OPERATOR_ADDRESS` and the
-`LEDGER_OPERATOR_PRIVATE_KEY` secret. Labor uses the fixed relay bot account enrolled through
+`LEDGER_OPERATOR_PRIVATE_KEY` secret. Home registration uses the fixed relay bot account enrolled through
 `POST /api/value/operator/shard/enrol` and the `SHARD_LEDGER_OPERATOR_PRIVATE_KEY` secret. The operator route accepts
 only `{chainId,heraldUrl}` for an official shard, returns `{chainId,ledgerOperatorAccount}`, and shares the shard
-signing lock with labor grants. The monitor has its own `PAUSER_ACCOUNT_ADDRESS` and `PAUSER_PRIVATE_KEY`. All ledger
-jobs verify the identity environment's L2 chain. `COSIGNER_URL` and `COSIGNER_TOKEN` reach the separate box service; its
-private key never enters Worker settings. Deploy it using the
+signing lock with home registrations. The monitor has its own `PAUSER_ACCOUNT_ADDRESS` and `PAUSER_PRIVATE_KEY`. All
+ledger jobs verify the identity environment's L2 chain. `COSIGNER_URL` and `COSIGNER_TOKEN` reach the separate box
+service; its private key never enters Worker settings. Deploy it using the
 [box procedure](../../deploy/athanor/README.md#independent-payout-co-signer).
 
 Both Workers validate their required settings before serving HTTP or starting a scheduled tick. The deployment script

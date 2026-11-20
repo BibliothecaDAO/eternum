@@ -2,7 +2,7 @@ const testSignature = { r: "0x123", s: "0x456" };
 import { Effect } from "effect";
 import { describe, expect, it, vi } from "vitest";
 import { blitzCommitment } from "@realms-world/value-ledger/commitment";
-import { runRelay, grantDailyLabor } from "./relay";
+import { runRelay } from "./relay";
 import { runMonitor, type MonitorProgress } from "./monitor";
 import { frontierPayment } from "./adapters";
 import {
@@ -126,16 +126,6 @@ const fixture = () => {
       eventsPage: () => Effect.succeed(block),
       withdrawal: () => Effect.succeed(withdrawal),
       result: () => Effect.succeed(result),
-      grantLabor: vi.fn(() =>
-        Effect.succeed({
-          gameId: 1,
-          account: "0x3",
-          home: "9",
-          amount: "1000000000000",
-          essence: "0",
-          transactionHash: "0xabc",
-        }),
-      ),
     },
     identity: {
       matchesPayDecision: (decision) => Effect.succeed(BigInt(decision.wallet) === 0x123n),
@@ -207,18 +197,6 @@ const fixture = () => {
 };
 
 describe("confirmed value relay", () => {
-  it("pays a withdrawal accepted just before a final backup's boundary, with every shard write refused after it", async () => {
-    const f = fixture();
-    // The shard refuses writes (backup.py quiesce); its reads still answer through the same public RPC.
-    const closed = () => Effect.fail(new RelayFailure({ operation: "Shard writes are closed for its final backup" }));
-    f.ports.shard.grantLabor = vi.fn(closed);
-    await f.run();
-    expect(f.single.pay).toHaveBeenCalledTimes(1);
-    expect(f.single.pay).toHaveBeenCalledWith(withdrawal, "0x123");
-    expect(f.ports.shard.grantLabor).not.toHaveBeenCalled();
-    expect(await f.store.withdrawals()).toEqual([]);
-    expect(await f.store.held()).toEqual([]);
-  });
   it("advances the cursor once and posts each confirmed obligation", async () => {
     const f = fixture();
     await f.run();
@@ -304,21 +282,6 @@ describe("confirmed value relay", () => {
       expect((await f.store.progress()).halted).toBeTruthy();
     },
   );
-  it("grants only the authenticated account's home without consulting the linked wallet", async () => {
-    const f = fixture();
-    f.ports.identity.linkedWallet = vi.fn(() => Effect.succeed(null));
-    const claim = { gameId: 1, home: "9", chainId: "0x1", day: 20000, realmsId: "0x2", account: "0x3" };
-    expect(await Effect.runPromise(grantDailyLabor(f.ports, claim))).toEqual({
-      gameId: 1,
-      account: "0x3",
-      home: "9",
-      amount: "1000000000000",
-      essence: "0",
-      transactionHash: "0xabc",
-    });
-    expect(f.ports.shard.grantLabor).toHaveBeenCalledExactlyOnceWith(claim);
-    expect(f.ports.identity.linkedWallet).not.toHaveBeenCalled();
-  });
   it("encodes the published payment interface with exact u256 limbs", async () => {
     const submit = vi.fn(async () => {});
     const pay = frontierPayment(submit);
@@ -511,23 +474,6 @@ it("sets aside a permanently refused claim and pays the next claim without retry
   expect(f.ports.ledger.postResult).toHaveBeenCalledOnce();
   await f.run();
   expect(f.single.pay).toHaveBeenCalledTimes(2);
-});
-
-it("refuses a labor claim whose recipient account is not derived from its authenticated Realms id", async () => {
-  const f = fixture();
-  Object.assign(f.ports.identity, { accountForRealmsId: () => Effect.succeed("0x3") });
-  const claim = {
-    gameId: 1,
-    home: "9",
-    chainId: "0x1",
-    day: 0,
-    realmsId: "0x2",
-    account: "0xbad",
-  };
-  await expect(Effect.runPromise(grantDailyLabor(f.ports, claim))).rejects.toMatchObject({
-    operation: "labor_account_mismatch",
-  });
-  expect(f.ports.shard.grantLabor).not.toHaveBeenCalled();
 });
 
 it("reports an unlinked player's receipt before payout and keeps an unlock refusal in the retry queue", async () => {

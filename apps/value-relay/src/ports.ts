@@ -99,23 +99,6 @@ export interface PaidClaim extends Omit<Withdrawal, "realmsId" | "confirmedAt"> 
   paidAt: number;
   paymentTransactionHash: string;
 }
-export interface LaborGrant {
-  transactionHash: string | null;
-  gameId: number;
-  account: string;
-  home: string;
-  /** The Labor granted, and a golden ticket's home's Essence (else zero), as the contract recorded them. */
-  amount: string;
-  essence: string;
-}
-export interface LaborClaim {
-  gameId: number;
-  home: string;
-  chainId: string;
-  day: number;
-  realmsId: string;
-  account: string;
-}
 export interface LedgerPage<A> {
   rows: readonly A[];
   next: string | null;
@@ -145,7 +128,6 @@ export interface RelayPorts {
     blockHash(number: number): RelayEffect<string>;
     eventsPage(from: number, to: number, cursor: string | null): RelayEffect<ConfirmedBlock>;
     withdrawal(chainId: string, transactionHash: string): RelayEffect<Withdrawal | null>;
-    grantLabor(claim: LaborClaim): RelayEffect<LaborGrant>;
   };
   identity: {
     accountForRealmsId(realmsId: string): RelayEffect<string | null>;

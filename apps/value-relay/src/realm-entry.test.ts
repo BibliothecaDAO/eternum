@@ -4,8 +4,6 @@ import { Effect } from "effect";
 import { nativeReleaseConstants } from "../../../contracts/l3/world-native/schema/client.gen";
 import { gamesAbi } from "../../../packages/value-ledger/test-support/abi";
 import { holdsRealm as identityHoldsRealm } from "../../realms/server/realm-holdings";
-import { handleLaborRequest } from "./labor-route";
-import { writeLaborGrant } from "./shard-labor";
 import {
   handleHeldRealmsRequest,
   handleRealmEntryRequest,
@@ -209,7 +207,7 @@ it("refuses a reused Realm and conflicting registration", async () => {
 });
 
 it.each(["late upgrade", "held founding"])(
-  "after A's Realm transfers to B, refuses B's %s and keeps A's daily claim",
+  "after A's Realm transfers to B, refuses B's %s and keeps A's home",
   async (entryPath) => {
     const buyer = { ...claim, realmsId: "0x3", account: "0x124" };
     io.account.mockImplementation(async (id: string) => (id === claim.realmsId ? claim.account : buyer.account));
@@ -236,36 +234,6 @@ it.each(["late upgrade", "held founding"])(
     expect(await resumed.json()).toEqual({ realmId: 711 });
     expect(io.admin).toHaveBeenCalledTimes(1);
 
-    const grant = { game_id: 7n, account: 0x123n, home: 99n, amount: 1000_000_000_000n, essence: 0n };
-    let recorded: typeof grant | undefined;
-    io.view.mockImplementation(async (method: string) =>
-      method === "ledger_operator"
-        ? 0x20n
-        : new CairoOption(recorded ? CairoOptionVariant.Some : CairoOptionVariant.None, recorded),
-    );
-    io.admin.mockImplementation(async (method: string, args: Record<string, unknown>) => {
-      new CallData(gamesAbi).compile(method, args as never);
-      expect(method).toBe("grant_labor");
-      expect(args).toEqual({ home: { game_id: 7, home: 99n }, day: 1, account: claim.account });
-      recorded = grant;
-      return { transactionHash: "0xabc" };
-    });
-    const dailyRequest = new Request("https://game.test/api/value/labor", {
-      method: "POST",
-      headers: { origin: "https://game.test", "Content-Type": "application/json" },
-      body: JSON.stringify({ gameId: 7, home: "99" }),
-    });
-    const paid = await handleLaborRequest(dailyRequest, {
-      ...firstRoute,
-      currentDay: () => Effect.succeed(1),
-      grant: (dailyClaim) => Effect.runPromise(writeLaborGrant(target, dailyClaim)),
-    });
-    expect(paid.status).toBe(200);
-    expect(await paid.json()).toMatchObject({
-      day: 1,
-      grant: { home: "99", amount: "1000000000000", essence: "0", transactionHash: "0xabc" },
-    });
-    expect(io.admin).toHaveBeenCalledTimes(2);
     expect(io.owner.mock.calls).toEqual([["711"], ["711"]]);
   },
 );

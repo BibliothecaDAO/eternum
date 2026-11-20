@@ -87,7 +87,7 @@ it("runs ledger-wide chest work independently of any configured shard", async ()
   expect(data.has("lastTick")).toBe(true);
 });
 
-const shard = vi.hoisted(() => ({ head: vi.fn(), page: vi.fn(), header: vi.fn(), grant: vi.fn() }));
+const shard = vi.hoisted(() => ({ head: vi.fn(), page: vi.fn(), header: vi.fn(), register: vi.fn() }));
 vi.mock("./shard-rpc", async (original) => ({
   ...(await original<typeof import("./shard-rpc")>()),
   ShardReader: class {
@@ -97,7 +97,10 @@ vi.mock("./shard-rpc", async (original) => ({
     page = shard.page;
   },
 }));
-vi.mock("./shard-labor", () => ({ currentLaborDay: () => Effect.succeed(4), writeLaborGrant: shard.grant }));
+vi.mock("./realm-entry", async (original) => ({
+  ...(await original<typeof import("./realm-entry")>()),
+  registerHomeSource: shard.register,
+}));
 vi.mock("./shard-account", () => ({ joinShardOperator: vi.fn(async () => "0x5") }));
 afterEach(() => {
   vi.useRealTimers();
@@ -108,7 +111,7 @@ beforeEach(() => {
   seasons.mockReturnValue(Effect.fail(new RelayFailure({ operation: "season_unavailable" })));
   address.mockReturnValue("0x10");
 });
-it("records unavailable ledger work while shard ingestion and owned Realm labor continue", async () => {
+it("records unavailable ledger work while shard ingestion and home registration continue", async () => {
   address.mockImplementation(() => {
     throw new ValuePlaneAddressMissingError("ledger", "production");
   });
@@ -148,19 +151,10 @@ it("records unavailable ledger work while shard ingestion and owned Realm labor 
   expect(await relay.tick("0x1")).toMatchObject({ value: { status: "ready" } });
   expect(data.get("progress")).toMatchObject({ nextBlock: 1 });
   expect((await relay.shardHealth()).success).toBe(false);
-  shard.grant.mockReturnValue(
-    Effect.succeed({ gameId: 7, account: "0x3", home: "0x8", amount: "1", essence: "0", transactionHash: "0xabc" }),
-  );
-  const claim = {
-    gameId: 7,
-    home: "0x8",
-    chainId: "0x1",
-    realmsId: "0x2",
-    account: "0x3",
-    day: 4,
-  };
-  await relay.labor(claim);
-  expect(shard.grant).toHaveBeenCalledWith(expect.anything(), claim);
+  shard.register.mockResolvedValue({ realmId: 711 });
+  const claim = { gameId: 7, chainId: "0x1", realmId: 711, realmsId: "0x2", account: "0x3" };
+  expect(await relay.realmEntry(claim)).toEqual({ entry: { realmId: 711 } });
+  expect(shard.register).toHaveBeenCalledWith(expect.anything(), claim);
   const tick = vi.fn();
   await worker.scheduled(
     { scheduledTime: 0 } as ScheduledController,
@@ -656,7 +650,7 @@ it("continues a full confirmed page through its alarm and stops when caught up",
   expect(data.get("progress")).toMatchObject({ nextBlock: 1 });
 });
 
-it("serializes pool publication with labor on the same shard signer", async () => {
+it("serializes pool publication with home registration on the same shard signer", async () => {
   let release!: () => void;
   let entered!: () => void;
   const holding = new Promise<void>((resolve) => {
@@ -697,27 +691,18 @@ it("serializes pool publication with labor on the same shard signer", async () =
     rows: [],
     next: null,
   });
-  shard.grant.mockReturnValue(
-    Effect.succeed({ gameId: 7, account: "0x3", home: "0x8", amount: "1", essence: "0", transactionHash: "0xabc" }),
-  );
+  shard.register.mockResolvedValue({ realmId: 711 });
   const ticking = relay.tick("0x1");
   await started;
-  const claiming = relay.labor({
-    gameId: 7,
-    home: "0x8",
-    chainId: "0x1",
-    realmsId: "0x2",
-    account: "0x3",
-    day: 4,
-  });
+  const registering = relay.realmEntry({ gameId: 7, chainId: "0x1", realmId: 711, realmsId: "0x2", account: "0x3" });
   try {
     await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(shard.grant).not.toHaveBeenCalled();
+    expect(shard.register).not.toHaveBeenCalled();
   } finally {
     release();
   }
-  await Promise.all([ticking, claiming]);
-  expect(shard.grant).toHaveBeenCalledOnce();
+  await Promise.all([ticking, registering]);
+  expect(shard.register).toHaveBeenCalledOnce();
 });
 
 it("preserves player-facing registration errors across the shard object's RPC boundary", async () => {

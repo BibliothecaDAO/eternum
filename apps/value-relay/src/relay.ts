@@ -1,6 +1,6 @@
 import { blitzCommitment } from "@realms-world/value-ledger/commitment";
 import { Effect, Result } from "effect";
-import type { ConfirmedBlock, LaborClaim, RelayPorts, Withdrawal, PayableClaim, ClaimOutcome } from "./ports";
+import type { ConfirmedBlock, RelayPorts, Withdrawal, PayableClaim, ClaimOutcome } from "./ports";
 import { RelayFailure, relayOperation } from "./ports";
 import { SHARD_PAGE_BLOCKS } from "./shard-page";
 import type { RelayProgress, RelayStore } from "./state";
@@ -301,13 +301,4 @@ const postResults = (ports: RelayPorts, store: RelayStore) =>
       yield* relayOperation("complete result", () => store.completeResult(result.gameId));
     }
     return deferred;
-  });
-
-/** Settlement proves eligibility on the shard; a later NFT transfer cannot move the home's labor. */
-export const grantDailyLabor = (ports: RelayPorts, claim: LaborClaim) =>
-  Effect.gen(function* () {
-    const account = yield* ports.identity.accountForRealmsId(claim.realmsId);
-    if (!account || BigInt(account) !== BigInt(claim.account))
-      return yield* Effect.fail(new RelayFailure({ operation: "labor_account_mismatch" }));
-    return yield* ports.shard.grantLabor(claim);
   });

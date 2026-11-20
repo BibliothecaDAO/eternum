@@ -32,8 +32,6 @@ import { isLedgerReadTick } from "@realms-world/chain";
 import { beginCause, causeDue, completeCause, raiseCause, retryCause } from "./ledger-cause";
 import { onIdentityChain } from "./ledger-chain";
 import { openSlotOnLedger, refundSlotOnLedger, markSlotRefundable } from "./blitz-launch";
-import { currentLaborDay, writeLaborGrant } from "./shard-labor";
-import { handleLaborRequest } from "./labor-route";
 import { ShardReader, shardConnection } from "./shard-rpc";
 import { publishFrontierPools } from "./frontier-pools";
 import { awardFrontierPrizes } from "./frontier-prizes";
@@ -53,9 +51,9 @@ import { ledgerResultAdapter, postVerifiedResult } from "./ledger";
 import { ledgerPaymentRead, ledgerPaymentProof, ledgerWithdrawalVoided, ledgerResetPayments } from "./chain";
 import { presentsOperatorToken } from "@realms-world/identity";
 import { identityAdapter } from "./adapters";
-import { runRelay, grantDailyLabor } from "./relay";
+import { runRelay } from "./relay";
 import { DurableRelayStore } from "./state";
-import { RelayFailure, relayOperation, type RelayPorts, type LaborClaim } from "./ports";
+import { RelayFailure, relayOperation, type RelayPorts } from "./ports";
 
 interface RelayEnv extends RelaySettings {
   IDENTITY_HTTP: Fetcher;
@@ -653,24 +651,6 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     }
     return { entry: result.success };
   }
-  async labor(claim: LaborClaim) {
-    const relay = this;
-    return Effect.runPromise(
-      this.shardSigning.withPermit(
-        Effect.gen(function* () {
-          const progress = yield* relayOperation("read relay progress", () => relay.store.progress());
-          const ports = yield* relayOperation("read official labor shard", () => relay.portsFor(claim.chainId));
-          const shard = yield* relayOperation("read official labor manifest", () =>
-            readRegisteredShard(relay.env.IDENTITY, claim.chainId),
-          );
-          if (progress.halted) return yield* Effect.fail(new Error("relay_halted_or_wrong_chain"));
-          const day = yield* currentLaborDay(shardConnection(shard), shard.url, claim.gameId);
-          if (claim.day !== day) return yield* Effect.fail(new RelayFailure({ operation: "labor_day_differs" }));
-          return yield* grantDailyLabor(ports, claim);
-        }),
-      ),
-    );
-  }
   async openSlot(key: LedgerSlotKey, window: { start: number; end: number }) {
     await this.requireLaunchSlot(key);
     await requireActiveChain(this.env.IDENTITY, key.chainId);
@@ -780,20 +760,6 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
           shard.url,
         ),
       ),
-      grantLabor: (claim) =>
-        relayOperation("grant on official shard", async () => {
-          await requireActiveChain(env.IDENTITY, claim.chainId);
-          return Effect.runPromise(
-            writeLaborGrant(
-              {
-                connection: shardConnection(shard),
-                operatorAddress: relayAccountAddress(shard),
-                privateKey: env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
-              },
-              claim,
-            ),
-          );
-        }),
     },
   };
 };
@@ -983,21 +949,6 @@ export default {
         accountForRealmsId: (id) => env.IDENTITY.accountForRealmsId(id),
         identity: env.IDENTITY,
       });
-    if (new URL(request.url).pathname === "/api/value/labor" && request.method === "POST") {
-      const chainId = new URL(request.url).searchParams.get("chainId");
-      if (!chainId || !/^0x[0-9a-f]+$/i.test(chainId))
-        return Response.json({ error: "shard_chain_required" }, { status: 400 });
-      await requireActiveChain(env.IDENTITY, chainId);
-      const shard = await readRegisteredShard(env.IDENTITY, chainId);
-      return handleLaborRequest(request, {
-        origin: env.BASE_URL,
-        chainId,
-        accountForRealmsId: (id) => env.IDENTITY.accountForRealmsId(id),
-        authenticate: (cookie) => env.IDENTITY.authenticate(cookie),
-        currentDay: (gameId) => currentLaborDay(shardConnection(shard), shard.url, gameId),
-        grant: (claim) => relayOf(env, claim.chainId).labor(claim),
-      });
-    }
     if (new URL(request.url).pathname === "/api/value/deposits" && request.method === "GET") {
       const url = new URL(request.url);
       const chain = url.searchParams.get("chainId");
