@@ -10,9 +10,6 @@ pub fn progress(d: super::Deployment, key: ExplorerKey) -> Option<ArmyProgress> 
 pub fn write_progress(d: super::Deployment, key: ExplorerKey, value: ArmyProgress) {
     snforge_std::interact_with_state(d.games, || crate::logic::progression::write(key, value));
 }
-pub fn slot(d: super::Deployment, key: ExplorerKey, index: u8) -> crate::troops::ArmySlot {
-    slot_at_home(d, key, 1, index)
-}
 pub fn slot_at_home(d: super::Deployment, key: ExplorerKey, home: u64, index: u8) -> crate::troops::ArmySlot {
     snforge_std::interact_with_state(
         d.games,
@@ -24,7 +21,8 @@ pub fn slot_at_home(d: super::Deployment, key: ExplorerKey, home: u64, index: u8
 }
 pub fn timers(d: super::Deployment, key: ExplorerKey, amount: u64, cooldown: u32) {
     let mut army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
-    army.troops.stamina = crate::troops::Stamina { amount, settled_at: 360, remainder: 0 }.into();
+    let settled_at = super::play_fixture::FIXTURE_START.try_into().unwrap();
+    army.troops.stamina = crate::troops::Stamina { amount, settled_at, remainder: 0 }.into();
     army.troops.battle_cooldown_end = cooldown;
     super::resource_commands::set_explorer_fixture(d.games, key, army);
 }

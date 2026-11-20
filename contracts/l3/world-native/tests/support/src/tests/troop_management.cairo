@@ -20,8 +20,6 @@ pub use crate::troops::{ExplorerKey, ExplorerTroops, TroopTier, TroopType};
 pub use super::resource_commands::{assert_terminal_rejection, execute, grant, set_fixture};
 pub fn setup_homes() -> (super::Deployment, ResourceKey, ResourceKey, u64, u64) {
     let (d, home, other_home) = super::resource_commands::setup();
-    super::resource_commands::fund_troops(d, home, 26, 1000 * RESOURCE_PRECISION);
-    super::resource_commands::fund_troops(d, home, 32, 1000 * RESOURCE_PRECISION);
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
     let original = structures.structure(home).unwrap();
     set_fixture(
@@ -38,25 +36,10 @@ pub fn setup_homes() -> (super::Deployment, ResourceKey, ResourceKey, u64, u64) 
             metadata: original.metadata,
         },
     );
-    for (amount, direction) in array![(10_u128, 0_u8), (5, 1)] {
-        assert!(
-            execute(
-                d,
-                Command::CreateExplorer(
-                    CreateExplorer {
-                        slot: 0,
-                        structure_id: home.entity_id,
-                        category: 0,
-                        tier: 0,
-                        amount: amount * RESOURCE_PRECISION,
-                        direction,
-                    },
-                ),
-                80,
-            ),
-        );
-    }
     let ids = structures.home_armies(home);
+    for (army, size) in array![(*ids.at(0), 10_u128), (*ids.at(1), 5)] {
+        super::resource_commands::size_army(d, ExplorerKey { game_id: 3, explorer_id: army }, size);
+    }
     (d, home, other_home, *ids.at(0), *ids.at(1))
 }
 pub fn setup() -> (super::Deployment, ResourceKey, u64, u64) {
@@ -82,10 +65,10 @@ pub fn replay_armies(record: bool) {
     super::state::assert_inline_armies_have_no_progress(d.games, 3, array![first, second].span());
     let mut spy = spy_events();
     for (command, timestamp) in array![
-        (Command::Move(Move { explorer_id: first, directions: array![0_u8].span() }), 120_u64),
-        (Command::Move(Move { explorer_id: first, directions: array![3_u8].span() }), 140),
-        (transfer(Army::Explorer(first), Army::Explorer(second), 10), 140),
-        (manage(ManageTroops::RemoveExplorer(second)), 150),
+        (Command::Move(Move { explorer_id: first, directions: array![0_u8].span() }), super::play_fixture::FIXTURE_START + 120),
+        (Command::Move(Move { explorer_id: first, directions: array![3_u8].span() }), super::play_fixture::FIXTURE_START + 140),
+        (transfer(Army::Explorer(first), Army::Explorer(second), 10), super::play_fixture::FIXTURE_START + 140),
+        (manage(ManageTroops::RemoveExplorer(second)), super::play_fixture::FIXTURE_START + 150),
     ] {
         assert!(execute(d, command, timestamp), "replay command refused at {}", timestamp);
         super::state::assert_inline_armies_have_no_progress(d.games, 3, array![first, second].span());

@@ -1,5 +1,5 @@
 pub use world_test_support::tests::registrar::*;
-use crate::tests::army_merge::{progress, slot, timers, write_progress};
+use crate::tests::army_merge::{progress, slot_at_home, timers, write_progress};
 
 #[test]
 #[feature("safe_dispatcher")]
@@ -177,9 +177,9 @@ fn expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stami
         let after = state.resolved_explorer(army).unwrap();
         assert_eq!(after.coord, before.coord);
         assert_eq!(after.troops.count, count + 2 * RESOURCE_PRECISION);
-        assert_eq!(slot(d, army, 0).stamina.amount, expected_bar);
+        assert_eq!(slot_at_home(d, army, home.entity_id, 0).stamina.amount, expected_bar);
         assert_eq!(
-            slot(d, army, 0).stamina.settled_at,
+            slot_at_home(d, army, home.entity_id, 0).stamina.settled_at,
             (super::play_fixture::FIXTURE_START + 10 + elapsed).try_into().unwrap(),
         );
         assert_eq!(after.troops.battle_cooldown_end, (super::play_fixture::FIXTURE_START + 50).try_into().unwrap());

@@ -49,6 +49,11 @@ pub fn set_fixture<T, +starknet::storage_access::Store<T>, +Drop<T>, +Copy<T>>(
     );
     snforge_std::interact_with_state(address, || starknet::storage_access::Store::<T>::write(0, base, value).unwrap());
 }
+pub fn size_army(deployment: Deployment, key: ExplorerKey, troops: u128) {
+    let mut army = GameState { contract_address: deployment.games }.resolved_explorer(key).unwrap();
+    army.troops.count = troops * crate::rules::RESOURCE_PRECISION;
+    set_explorer_fixture(deployment.games, key, army);
+}
 pub fn set_explorer_fixture(
     address: starknet::ContractAddress, key: crate::troops::ExplorerKey, explorer: crate::troops::ExplorerTroops,
 ) {

@@ -23,13 +23,7 @@ pub fn setup_with_counts(counts: (u128, u128)) -> (super::Deployment, ResourceKe
     let (attacker_count, defender_count) = counts;
     for (key, amount) in array![(home, attacker_count), (target, defender_count)] {
         let army = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(key).at(0);
-        let category = troop(d, army).unwrap().troops.category;
-        let troops = amount * RESOURCE_PRECISION;
-        super::resource_commands::fund_troops(d, key, crate::troops::troop_resource(category, 0), troops);
-        let recruit = crate::troop_management::ManageTroops::RecruitExplorer(
-            crate::troop_management::RecruitExplorer { explorer_id: army, amount: troops, supply_post: None },
-        );
-        assert!(execute(d, Command::ManageTroops(recruit), super::play_fixture::FIXTURE_START));
+        super::resource_commands::size_army(d, ExplorerKey { game_id: key.game_id, explorer_id: army }, amount);
         ids.append(army);
     }
     let attacker = *ids.at(0);
