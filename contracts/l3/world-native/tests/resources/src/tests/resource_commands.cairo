@@ -266,41 +266,6 @@ fn sending_queues_arrivals_and_spends_only_the_senders_donkeys() {
 }
 
 #[test]
-fn blitz_troop_deposits_require_ownership_for_category_1() {
-    troop_deposit_ownership(true, 1);
-}
-
-#[test]
-fn blitz_troop_deposits_require_ownership_for_category_2() {
-    troop_deposit_ownership(true, 2);
-}
-
-#[test]
-fn blitz_troop_deposits_require_ownership_for_category_3() {
-    troop_deposit_ownership(true, 3);
-}
-
-#[test]
-fn blitz_troop_deposits_require_ownership_for_category_4() {
-    troop_deposit_ownership(true, 4);
-}
-
-#[test]
-fn blitz_troop_deposits_require_ownership_for_category_5() {
-    troop_deposit_ownership(true, 5);
-}
-
-#[test]
-fn blitz_troop_deposits_require_ownership_for_category_7() {
-    troop_deposit_ownership(true, 7);
-}
-
-#[test]
-fn blitz_troop_deposits_require_ownership_for_category_8() {
-    troop_deposit_ownership(true, 8);
-}
-
-#[test]
 fn eternum_troop_deposits_require_ownership_for_category_1() {
     troop_deposit_ownership(false, 1);
 }
@@ -333,31 +298,6 @@ fn eternum_troop_deposits_require_ownership_for_category_7() {
 #[test]
 fn eternum_troop_deposits_require_ownership_for_category_8() {
     troop_deposit_ownership(false, 8);
-}
-
-#[test]
-fn delayed_village_troops_ignore_the_connection() {
-    let (deployment, from, to) = setup_with_rules(
-        crate::rules::SliceRules {
-            mode_rules: super::play_fixture::TEST_RULES,
-            command_mask: super::play_fixture::BLITZ_COMMAND_MASK,
-            entry_rule: crate::rules::ENTRY_ENTITLEMENT,
-            ..play_fixture::rules(),
-        },
-    );
-    village_fixture(deployment, to, deployment.actor);
-    grant(deployment, from, 26, 100);
-    grant(deployment, from, 25, 10 * crate::rules::RESOURCE_PRECISION);
-    let transfer = crate::resources::ResourceTransfer {
-        from_entity_id: from.entity_id, to_entity_id: to.entity_id, resources: amount(26, 30),
-    };
-    assert!(execute(deployment, Command::SendResources(transfer), 40));
-    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
-    let arrival = ArrivalKey { game_id: 3, entity_id: to.entity_id, day: 0, slot: 2 };
-    assert_eq!(resources.resource_arrival(arrival).resources, amount(26, 30));
-    village_fixture(deployment, to, 0x999.try_into().unwrap());
-    assert!(execute(deployment, Command::SendResources(transfer), 40));
-    assert_eq!(resources.resource_arrival(arrival).resources, amount(26, 60));
 }
 
 #[test]

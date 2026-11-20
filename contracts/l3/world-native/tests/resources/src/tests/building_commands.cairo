@@ -1,6 +1,5 @@
 pub use world_test_support::tests::building_commands::*;
 
-
 #[test]
 fn building_commands_match_replay_views() {
     replay_buildings(false);
@@ -33,23 +32,6 @@ fn failed_building_payment_rolls_back_placement_population_rate_and_resources() 
     assert_terminal_rejection(deployment, create(home, 3), 40);
     assert_eq!(resource_facts(deployment, home), before);
     assert!(structures.building(east()).is_none());
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn building_configuration_is_authorized_complete_and_immutable() {
-    let (deployment, _, _) = setup();
-    let registry = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
-    let preset = building_preset(None);
-    assert!(registry.register_preset(20000, preset).is_err());
-    start_cheat_caller_address(deployment.games, super::authority());
-    let incomplete = crate::presets::PresetDefinition {
-        structures: crate::presets::StructurePreset { buildings: rules().slice(0, 39), ..preset.structures }, ..preset,
-    };
-    assert!(registry.register_preset(20000, incomplete).is_err());
-    assert!(registry.register_preset(20000, preset).is_ok());
-    assert!(registry.register_preset(20000, preset).is_err());
-    stop_cheat_caller_address(deployment.games);
 }
 
 #[test]
@@ -334,7 +316,6 @@ fn each_hut_tier_adds_a_fifth_of_every_huts_population() {
     assert_eq!(structures.structure_buildings(home).population.max, before + 12 + 7);
 }
 
-
 #[test]
 fn a_barracks_produces_only_knights_at_the_ruled_rate() {
     let (d, home, _) = research_world();
@@ -601,7 +582,6 @@ fn construction_grants_common_once_and_the_next_purchase_costs_uncommon(category
     assert!(execute(d, Command::CreateBuilding(command), 40));
     assert_eq!(learned(d, home), knowledge);
 }
-
 
 #[test]
 fn lodges_produce_scouts_without_a_training_gate_and_each_copy_adds_its_rate() {

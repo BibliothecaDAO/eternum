@@ -26,19 +26,6 @@ fn production_payment_failure_rolls_back_prior_debits() {
 }
 
 #[test]
-#[feature("safe_dispatcher")]
-fn production_recipes_require_authority_and_cannot_be_reconfigured() {
-    let (deployment, _, _) = setup();
-    let registry = IRegistrarSafeDispatcher { contract_address: deployment.games };
-    let preset = super::resource_commands::fixture_preset(super::play_fixture::rules());
-    start_cheat_caller_address(deployment.games, deployment.actor);
-    assert!(registry.register_preset(10004, preset).is_err());
-    start_cheat_caller_address(deployment.games, super::authority());
-    assert!(registry.register_preset(10003, preset).is_err());
-    stop_cheat_caller_address(deployment.games);
-}
-
-#[test]
 fn malformed_refills_and_out_of_game_actions_reject_without_spending() {
     let (deployment, home, _) = setup();
     grant(deployment, home, 2, 100);

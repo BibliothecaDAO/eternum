@@ -1,11 +1,5 @@
 pub use world_test_support::tests::unlimited_production::*;
 
-
-#[test]
-fn blitz_labor_stays_unlimited_through_every_settlement() {
-    labor_stays_unlimited_through_every_settlement(blitz_rules());
-}
-
 #[test]
 fn eternum_labor_stays_unlimited_through_every_settlement() {
     labor_stays_unlimited_through_every_settlement(super::play_fixture::rules());

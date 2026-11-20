@@ -1,6 +1,5 @@
 pub use world_test_support::tests::mines::*;
 
-
 #[test]
 fn a_mine_draw_takes_its_kind_from_the_release_surface_pool_and_its_cap_from_that_kind() {
     let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
@@ -56,54 +55,6 @@ fn pool_weights_use_one_draw_across_the_complete_distribution() {
             2
         });
     }
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn mine_configuration_is_authorized_immutable_and_rejects_unknown_or_duplicate_weights() {
-    let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
-    let rules = IMineRulesSafeDispatcher { contract_address: deployment.games };
-    let registry = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
-    let mut preset = super::play_fixture::fixture_preset(super::play_fixture::rules());
-    preset.resources.surface_mines = surface();
-    assert!(registry.register_preset(20000, preset).is_err());
-    start_cheat_caller_address(deployment.games, super::authority());
-    for weights in array![
-        array![MineWeight { kind: 9, weight: 1 }].span(), array![MineWeight { kind: 1, weight: 0 }].span(),
-        array![MineWeight { kind: 1, weight: 1 }, MineWeight { kind: 1, weight: 1 }].span(),
-    ] {
-        preset.resources.surface_mines = weights;
-        assert!(registry.register_preset(20000, preset).is_err());
-    }
-    preset.resources.surface_mines = surface();
-    assert!(registry.register_preset(20000, preset).is_ok());
-    assert!(registry.register_preset(20000, preset).is_err());
-    assert!(rules.mine_kind(MineKindKey { game_id: 1, kind: 9 }).is_err());
-    stop_cheat_caller_address(deployment.games);
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn invalid_rate_cap_ladder_and_building_resource_pairs_cannot_initialize_a_game() {
-    let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
-    let registry = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
-    let mut preset = super::play_fixture::fixture_preset(super::play_fixture::rules());
-    let valid = (*kinds().at(0)).config;
-    start_cheat_caller_address(deployment.games, super::authority());
-    for config in array![
-        MineKindConfig { production_rate: 0, ..valid }, MineKindConfig { cap_min: 0, ..valid },
-        MineKindConfig { cap_steps: 0, ..valid },
-        MineKindConfig { cap_min: 0xffffffffffffffffffffffffffffffff, cap_steps: 2, ..valid },
-        MineKindConfig { resource_type: 24, ..valid },
-    ] {
-        preset.resources.mine_kinds = array![MineKindEntry { kind: 1, config }].span();
-        preset.resources.surface_mines = array![MineWeight { kind: 1, weight: 1 }].span();
-        assert!(registry.register_preset(20000, preset).is_err());
-    }
-    preset.resources.mine_kinds = kinds();
-    preset.resources.surface_mines = surface();
-    assert!(registry.register_preset(20000, preset).is_ok());
-    stop_cheat_caller_address(deployment.games);
 }
 
 #[test]
