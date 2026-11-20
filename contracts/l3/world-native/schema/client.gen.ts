@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "d1e2d02067b6f672e1441a9b3a0b83ded2478d3c8ed478b382de3588a52578b6";
+export const nativeFactSchemaIdentity = "fc7021a49f3af85dc4b8107c59ea6065bfe278463a93a4df6ca4f1e77408f0ff";
 export const nativeIdentifiers = {
   "rule": {
     "MAX_BLITZ_ROSTER_PLAYERS": 24,
@@ -291,9 +291,9 @@ export interface NativeRows {
   AspectMembers: { readonly game_id: number; readonly aspect: number; readonly members: number };
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly data: bigint };
   TileOccupancy: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly entity_id: bigint; readonly category: number; readonly is_structure: boolean };
-  ArmyRelics: { readonly game_id: number; readonly explorer_id: bigint; readonly first: ({ readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye"; readonly rank: number }) | null; readonly second: ({ readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye"; readonly rank: number }) | null; readonly third: ({ readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye"; readonly rank: number }) | null };
-  ArmyRelicEffect: { readonly game_id: number; readonly explorer_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye"; readonly rank: number; readonly expires_at: bigint };
-  RuinRelic: { readonly game_id: number; readonly entity_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye"; readonly rank: number };
+  ArmyRelics: { readonly game_id: number; readonly explorer_id: bigint; readonly first: ({ readonly kind: "Blade" | "Ward" | "Plunder" | "StaminaRegen"; readonly rank: number }) | null; readonly second: ({ readonly kind: "Blade" | "Ward" | "Plunder" | "StaminaRegen"; readonly rank: number }) | null; readonly third: ({ readonly kind: "Blade" | "Ward" | "Plunder" | "StaminaRegen"; readonly rank: number }) | null };
+  ArmyRelicEffect: { readonly game_id: number; readonly explorer_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "StaminaRegen"; readonly rank: number; readonly expires_at: bigint };
+  RuinRelic: { readonly game_id: number; readonly entity_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "StaminaRegen"; readonly rank: number };
   RuinCache: { readonly game_id: number; readonly entity_id: bigint; readonly fragments: bigint };
   ArmyCombat: { readonly game_id: number; readonly explorer_id: bigint; readonly last_target: bigint };
   ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint; readonly logistics: number; readonly oath_slots: number; readonly oaths: number; readonly oath_pick: number };
@@ -413,7 +413,7 @@ export interface NativeKeys {
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number };
   TileOccupancy: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number };
   ArmyRelics: { readonly game_id: number; readonly explorer_id: bigint };
-  ArmyRelicEffect: { readonly game_id: number; readonly explorer_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye" };
+  ArmyRelicEffect: { readonly game_id: number; readonly explorer_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "StaminaRegen" };
   RuinRelic: { readonly game_id: number; readonly entity_id: bigint };
   RuinCache: { readonly game_id: number; readonly entity_id: bigint };
   ArmyCombat: { readonly game_id: number; readonly explorer_id: bigint };
@@ -1717,7 +1717,7 @@ export const nativeFactModels = {
               "Blade",
               "Ward",
               "Plunder",
-              "FarEye"
+              "StaminaRegen"
             ]
           },
           "rank": "u8"
@@ -1730,7 +1730,7 @@ export const nativeFactModels = {
               "Blade",
               "Ward",
               "Plunder",
-              "FarEye"
+              "StaminaRegen"
             ]
           },
           "rank": "u8"
@@ -1743,7 +1743,7 @@ export const nativeFactModels = {
               "Blade",
               "Ward",
               "Plunder",
-              "FarEye"
+              "StaminaRegen"
             ]
           },
           "rank": "u8"
@@ -1775,7 +1775,7 @@ export const nativeFactModels = {
           "Blade",
           "Ward",
           "Plunder",
-          "FarEye"
+          "StaminaRegen"
         ]
       },
       "rank": "u8",
@@ -1805,7 +1805,7 @@ export const nativeFactModels = {
           "Blade",
           "Ward",
           "Plunder",
-          "FarEye"
+          "StaminaRegen"
         ]
       },
       "rank": "u8"
