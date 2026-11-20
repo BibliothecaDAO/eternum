@@ -122,101 +122,17 @@ pub fn change(home: ResourceKey) -> ChangeBuilding {
     ChangeBuilding { structure_id: home.entity_id, coord: Coord { alt: false, x: 11, y: 10 } }
 }
 pub fn replay_buildings(record: bool) {
-    let (d, home) = building_world(None);
+    let (d, home, _) = research_world();
     let entities = array![home.entity_id].span();
     let tiles = array![IStructureOperationsDispatcher { contract_address: d.games }.position(home).unwrap()].span();
     let mut frames = array![super::spatial_replay::initial(d.games, 3, entities, tiles)];
     let mut spy = snforge_std::spy_events();
-    for (command, timestamp) in array![
-        (create(home, 37), 40_u64), (Command::PauseBuildingProduction(change(home)), 70),
-        (Command::ResumeBuildingProduction(change(home)), 100), (Command::DestroyBuilding(change(home)), 130),
-    ] {
+    for (command, timestamp) in array![(create(home, 37), 40_u64), (Command::DestroyBuilding(change(home)), 130)] {
         assert!(execute(d, command, timestamp));
         super::state::assert_spatial_indexes(d.games, 3, entities, tiles);
         frames.append(super::spatial_replay::capture(d.games, 3, entities, tiles, ref spy));
     }
     super::spatial_replay::compare("buildings", frames, record);
-}
-pub /// A realm without a board, under Blitz's or Eternum's rules, whose storehouse adds one unit of storage.
- fn arena_storehouse_world(blitz: bool) -> (super::Deployment, ResourceKey) {
-    let rules = if blitz {
-        crate::rules::SliceRules {
-            mode_rules: super::play_fixture::BLITZ_RULES,
-            entry_rule: crate::rules::ENTRY_ROSTER,
-            command_mask: super::play_fixture::BLITZ_COMMAND_MASK,
-            ..super::play_fixture::rules(),
-        }
-    } else {
-        super::play_fixture::rules()
-    };
-    let mut preset = super::resource_commands::fixture_preset(rules);
-    preset.structures = building_preset(None).structures;
-    preset.rules.capacity_config.storehouse_boost_capacity = 1;
-    building_world_with_preset(preset)
-}
-pub /// Leaves `room` free in the realm's storage on top of whatever its storehouses add.
- fn leave_room(deployment: super::Deployment, home: ResourceKey, room: u128) {
-    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
-    let weight = resources.resource_weight(home).weight;
-    let storehouses: u128 = crate::buildings::category_count(
-        IStructureOperationsDispatcher { contract_address: deployment.games }.structure_buildings(home), 2,
-    )
-        .into();
-    set_fixture(
-        deployment.games,
-        selector!("resources"),
-        selector!("weights"),
-        array![home.game_id.into(), home.entity_id.into()].span(),
-        crate::resources::Weight { capacity: weight + room + storehouses * crate::rules::RESOURCE_PRECISION, weight },
-    );
-}
-pub /// The fixture realm's own producer makes two of resource 1 a second from time 30, up to 100.
- fn produced_stock(deployment: super::Deployment, home: ResourceKey, timestamp: u64) -> u128 {
-    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
-    start_cheat_caller_address(deployment.games, deployment.games);
-    crate::resources::IResourceOperationsDispatcherTrait::spend_resource(
-        resources,
-        home,
-        1,
-        0,
-        timestamp,
-        crate::commands::resource_context(super::context(deployment.games, home.game_id)),
-    );
-    stop_cheat_caller_address(deployment.games);
-    resources.resource_balance(ResourceSlot { game_id: home.game_id, entity_id: home.entity_id, resource_type: 1 })
-}
-pub fn a_new_storehouse_does_not_keep_what_there_was_no_room_for(blitz: bool) {
-    let (deployment, home) = arena_storehouse_world(blitz);
-    assert_eq!(produced_stock(deployment, home, 30), 100);
-    leave_room(deployment, home, 10);
-    // Forty seconds produce 80 where there is room for 10; the storehouse, paid with 10, cannot
-    // rescue the rest.
-    assert!(execute(deployment, create(home, 2), 70));
-    assert_eq!(produced_stock(deployment, home, 70), 100);
-}
-pub fn a_demolished_storehouse_does_not_burn_what_was_held(blitz: bool) {
-    let (deployment, home) = arena_storehouse_world(blitz);
-    assert!(execute(deployment, create(home, 2), 40));
-    let held = produced_stock(deployment, home, 40);
-    leave_room(deployment, home, 10);
-    // Thirty seconds produce 60, which the storehouse holds; without it there is room for 10, so it
-    // cannot go yet.
-    let before = resource_facts(deployment, home);
-    assert_terminal_rejection(deployment, Command::DestroyBuilding(change(home)), 70);
-    assert_eq!(resource_facts(deployment, home), before);
-    assert_eq!(produced_stock(deployment, home, 70), held + 60);
-    start_cheat_caller_address(deployment.games, deployment.games);
-    crate::resources::IResourceOperationsDispatcherTrait::spend_resource(
-        IResourceOperationsDispatcher { contract_address: deployment.games },
-        home,
-        1,
-        50,
-        70,
-        crate::commands::resource_context(super::context(deployment.games, home.game_id)),
-    );
-    stop_cheat_caller_address(deployment.games);
-    assert!(execute(deployment, Command::DestroyBuilding(change(home)), 70));
-    assert_eq!(produced_stock(deployment, home, 70), held + 10);
 }
 pub fn seed_board_castle(deployment: super::Deployment, home: ResourceKey) {
     // Workshop copy pricing excludes the castle provisioned at settlement.
@@ -255,29 +171,8 @@ pub fn board_output(deployment: super::Deployment, home: ResourceKey, category: 
 pub /// A board realm with its castle, every command open, room for many buildings and plenty of Essence and labor.
  fn research_world() -> (super::Deployment, ResourceKey, crate::presets::PresetDefinition) {
     let mut preset = building_preset(Some(board_rules()));
-    let (_, frontier) = super::preset_projection::current_definition("frontier-check");
-    preset.structures.buildings = frontier.structures.buildings;
-    preset
-        .structures
-        .board = Some(crate::buildings::BoardRules { workshop_rate: 20, ..frontier.structures.board.unwrap() });
     preset.rules.command_mask = 0xffffffffffffffffffffffffffffffff;
     preset.rules.building_config.base_population = 40;
-    // Farms and barracks make 40 a second, so each quarter of the base is whole.
-    let mut resources = array![];
-    for rule in preset.resources.resources {
-        resources
-            .append(
-                if *rule.resource_type == 26
-                    || *rule.resource_type == 29
-                    || *rule.resource_type == 32
-                    || *rule.resource_type == 35 {
-                    crate::resources::ResourceRule { realm_rate: 40, ..*rule }
-                } else {
-                    *rule
-                },
-            );
-    }
-    preset.resources.resources = resources.span();
     let (d, home) = building_world_with_preset(preset);
     seed_board_castle(d, home);
     let limits = preset.rules.troop_limit_config;
@@ -312,4 +207,18 @@ pub fn rate(d: super::Deployment, home: ResourceKey, resource_type: u8) -> u64 {
     IResourceOperationsDispatcher { contract_address: d.games }
         .resource_production(ResourceSlot { game_id: home.game_id, entity_id: home.entity_id, resource_type })
         .production_rate
+}
+pub fn balance(d: super::Deployment, home: ResourceKey, resource_type: u8) -> u128 {
+    IResourceOperationsDispatcher { contract_address: d.games }
+        .resource_balance(ResourceSlot { game_id: home.game_id, entity_id: home.entity_id, resource_type })
+}
+pub fn stepped(rate: u64, steps: u64) -> u64 {
+    rate * (10000 + steps * crate::balance::structures::BOARD.output_step_bps.into()) / 10000
+}
+pub fn level_up(d: super::Deployment, home: ResourceKey) {
+    let level = IStructureOperationsDispatcher { contract_address: d.games }.structure(home).unwrap().base.level;
+    for cost in crate::logic::upgrades::recipe(level + 1).costs {
+        super::resource_commands::grant(d, home, *cost.resource_type, *cost.amount);
+    }
+    assert!(execute(d, Command::LevelUp(home.entity_id), 40));
 }

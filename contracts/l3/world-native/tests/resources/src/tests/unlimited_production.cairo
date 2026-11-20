@@ -16,7 +16,10 @@ fn frontier_board_buildings_stay_unlimited_through_every_settlement() {
     let (deployment, home) = super::building_commands::building_world_with_preset(
         super::building_commands::building_preset(Some(super::building_commands::board_rules())),
     );
-    grant(deployment, home, LABOR, 1000);
+    let barracks = *crate::balance::structures::BUILDINGS.span().at(BARRACKS.into() - 1);
+    for cost in crate::balance::structures::BUILDING_COSTS.span().slice(barracks.first_cost, barracks.simple_count) {
+        grant(deployment, home, *cost.resource_type, *cost.amount);
+    }
     assert!(
         execute(
             deployment,

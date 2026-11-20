@@ -3,11 +3,9 @@ pub use world_test_support::tests::*;
 
 #[test]
 #[feature("safe_dispatcher")]
-fn upgrade_rules_are_immutable_complete_and_game_scoped() {
+fn upgrade_presets_need_authority_complete_recipes_and_a_new_id() {
     let deployment = setup(true);
     let settlement = deployment.games;
-    let rules = IUpgradeRulesDispatcher { contract_address: settlement };
-    let safe = IUpgradeRulesSafeDispatcher { contract_address: settlement };
     let limits = UpgradeLimits { realm_max: 1, village_max: 0 };
     let recipes = array![
         UpgradeRecipe { costs: array![crate::resources::ResourceAmount { resource_type: 23, amount: 17 }].span() },
@@ -24,21 +22,10 @@ fn upgrade_rules_are_immutable_complete_and_game_scoped() {
     invalid.structures.upgrades = array![].span();
     assert!(crate::registrar::IRegistrarSafeDispatcherTrait::register_preset(registrar, 20000, invalid).is_err());
     let games = crate::game::IGameDispatcher { contract_address: settlement };
-    play_fixture::seed_game_with_preset(settlement, 1, games.game(1), preset);
-    assert_eq!(rules.upgrade_limits(1), limits);
-    assert_eq!(rules.upgrade_recipe(1, 1), *recipes.at(0));
-    start_cheat_caller_address(settlement, authority());
     assert!(
         crate::registrar::IRegistrarSafeDispatcherTrait::register_preset(registrar, games.game(1).preset_id, preset)
             .is_err(),
     );
-    assert!(safe.upgrade_recipe(1, 2).is_err());
-    preset.structures.upgrade_limits = UpgradeLimits { realm_max: 0, village_max: 0 };
-    preset.structures.upgrades = array![].span();
-    play_fixture::seed_game_with_preset(settlement, 2, games.game(2), preset);
-    assert_eq!(rules.upgrade_limits(1), limits);
-    assert_eq!(rules.upgrade_limits(2).realm_max, 0);
-    assert!(safe.upgrade_limits(999).is_err());
 }
 
 #[test]

@@ -6,7 +6,6 @@ pub use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 pub use crate::artificer::{IArtificerDispatcher, IArtificerDispatcherTrait};
 pub use crate::bridge::{IBridgeDispatcher, IBridgeDispatcherTrait};
 pub use crate::buildings::{IBuildingRulesDispatcher, IBuildingRulesDispatcherTrait};
-pub use crate::camps::{ICampRulesDispatcher, ICampRulesDispatcherTrait};
 pub use crate::expeditions::{IExpeditionRulesDispatcher, IExpeditionRulesDispatcherTrait};
 pub use crate::exploration_rewards::{IExtractionDispatcher, IExtractionDispatcherTrait};
 pub use crate::game::{
@@ -21,7 +20,6 @@ pub use crate::registrar::{
 pub use crate::relics::{IRelicsDispatcher, IRelicsDispatcherTrait};
 pub use crate::settlement::{ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait};
 pub use crate::spires::{ISpiresDispatcher, ISpiresDispatcherTrait};
-pub use crate::upgrades::{IUpgradeRulesDispatcher, IUpgradeRulesDispatcherTrait};
 pub use crate::village::{IVillagePassesDispatcher, IVillagePassesDispatcherTrait};
 pub use crate::withdrawals::{IWithdrawalsDispatcher, IWithdrawalsDispatcherTrait};
 
@@ -155,8 +153,6 @@ pub fn observe_resources(ref rows: Array<ObservedRow>, address: ContractAddress,
 pub fn observe_structures(ref rows: Array<ObservedRow>, address: ContractAddress, game_id: u32) {
     let key = array![game_id.into()].span();
     let building_rules = IBuildingRulesDispatcher { contract_address: address };
-    let camp_rules = ICampRulesDispatcher { contract_address: address };
-    let upgrade_rules = IUpgradeRulesDispatcher { contract_address: address };
     for category in 1_u8..crate::buildings::BUILDING_CATEGORY_COUNT + 1 {
         row(
             ref rows,
@@ -165,30 +161,35 @@ pub fn observe_structures(ref rows: Array<ObservedRow>, address: ContractAddress
             building_rules.building_rule(crate::buildings::BuildingRuleKey { game_id, category }),
         );
     }
-    if let Some(board) =
-        interact_with_state(address, || crate::logic::construction::ConstructionLogic::observed_board_rules(game_id)) {
-        row(ref rows, 'BoardRules', key, board);
-        for row_ref in crate::research::ROWS.span() {
-            let research_row = *row_ref;
-            for tier in 1..crate::research::max_tier(research_row) + 1 {
-                row(
-                    ref rows,
-                    'ResearchPrice',
-                    array![game_id.into(), research_row.into(), tier.into()].span(),
-                    interact_with_state(address, || crate::logic::research::price(game_id, research_row, tier)),
-                );
-            }
+    row(ref rows, 'BoardRules', key, crate::balance::structures::BOARD);
+    for row_ref in crate::research::ROWS.span() {
+        let research_row = *row_ref;
+        for tier in 1..crate::research::max_tier(research_row) + 1 {
+            row(
+                ref rows,
+                'ResearchPrice',
+                array![game_id.into(), research_row.into(), tier.into()].span(),
+                crate::logic::research::price(research_row, tier),
+            );
         }
     }
-    row(ref rows, 'CampRules', key, camp_rules.camp_rules(game_id));
-    let limits = upgrade_rules.upgrade_limits(game_id);
+    row(
+        ref rows,
+        'CampRules',
+        key,
+        crate::camps::CampRules {
+            resources: crate::balance::structures::CAMP_GRANTS.span(),
+            labor_rate: crate::balance::structures::CAMP_LABOR_RATE,
+        },
+    );
+    let limits = crate::logic::upgrades::limits();
     row(ref rows, 'UpgradeLimits', key, limits);
     for level in 1..core::cmp::max(limits.realm_max, limits.village_max) + 1 {
         row(
             ref rows,
             'UpgradeRecipe',
             array![game_id.into(), level.into()].span(),
-            upgrade_rules.upgrade_recipe(game_id, level),
+            crate::logic::upgrades::recipe(level),
         );
     }
 }

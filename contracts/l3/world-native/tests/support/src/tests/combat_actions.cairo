@@ -62,7 +62,7 @@ pub fn setup_with_cooldown(
     let mut ids = array![];
     let (attacker_count, defender_count) = counts;
     for (key, amount) in array![(home, attacker_count), (target, defender_count)] {
-        grant(d, key, 26, amount * RESOURCE_PRECISION);
+        super::resource_commands::fund_troops(d, key, 26, amount * RESOURCE_PRECISION);
         assert!(
             execute(
                 d,

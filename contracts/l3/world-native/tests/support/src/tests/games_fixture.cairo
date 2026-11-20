@@ -436,16 +436,6 @@ pub mod GamesFixture {
     }
 
     #[starknet::embeddable]
-    pub impl CampRulesFixture<TContractState, +Drop<TContractState>> of crate::camps::ICampRules<TContractState> {
-        fn camp_rules(self: @TContractState, game_id: u32) -> crate::camps::CampRules {
-            let classes = fixture_classes(game_id);
-            crate::camps::ICampRulesDispatcherTrait::camp_rules(
-                crate::camps::ICampRulesLibraryDispatcher { class_hash: classes.structures.read() }, game_id,
-            )
-        }
-    }
-
-    #[starknet::embeddable]
     pub impl BuildingRulesFixture<
         TContractState, +Drop<TContractState>,
     > of crate::buildings::IBuildingRules<TContractState> {
@@ -638,25 +628,6 @@ pub mod GamesFixture {
                 capturing_home,
                 timestamp,
                 game_context,
-            )
-        }
-    }
-    #[starknet::embeddable]
-    pub impl UpgradeRulesFixture<
-        TContractState, +Drop<TContractState>,
-    > of crate::upgrades::IUpgradeRules<TContractState> {
-        fn upgrade_limits(self: @TContractState, game_id: u32) -> crate::upgrades::UpgradeLimits {
-            let classes = fixture_classes(game_id);
-            crate::upgrades::IUpgradeRulesDispatcherTrait::upgrade_limits(
-                crate::upgrades::IUpgradeRulesLibraryDispatcher { class_hash: classes.settlement.read() }, game_id,
-            )
-        }
-        fn upgrade_recipe(self: @TContractState, game_id: u32, level: u8) -> crate::upgrades::UpgradeRecipe {
-            let classes = fixture_classes(game_id);
-            crate::upgrades::IUpgradeRulesDispatcherTrait::upgrade_recipe(
-                crate::upgrades::IUpgradeRulesLibraryDispatcher { class_hash: classes.settlement.read() },
-                game_id,
-                level,
             )
         }
     }

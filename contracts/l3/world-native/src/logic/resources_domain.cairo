@@ -214,9 +214,7 @@ pub mod ResourcesLogic {
             game_context: crate::commands::ResourceContext,
         ) {
             self.resources.spend(key, resource_type, amount, timestamp, game_context);
-            if produces_without_inputs(key.game_id) {
-                self.pay_troop_recipe(key, resource_type, amount, timestamp, game_context);
-            }
+            self.pay_troop_recipe(key, resource_type, amount, timestamp, game_context);
         }
         fn stop_production(
             ref self: ContractState,
@@ -366,10 +364,6 @@ pub mod ResourcesLogic {
         }
     }
 
-    fn produces_without_inputs(game_id: u32) -> bool {
-        crate::logic::preset_record::for_game(game_id).board_terms.read().is_some()
-    }
-
     #[generate_trait]
     impl Internal of InternalTrait {
         fn pay_troop_recipe(
@@ -384,7 +378,7 @@ pub mod ResourcesLogic {
             let per_troops: u128 = recipe.simple_output.into();
             let denominator = per_troops * crate::rules::RESOURCE_PRECISION;
             let now: u32 = timestamp.try_into().unwrap();
-            let board = crate::logic::preset_record::for_game(key.game_id).board_terms.read().unwrap();
+            let board = crate::balance::structures::BOARD;
             let rations: u128 = crate::research::tier(
                 crate::logic::research::learned(key), crate::research::ROW_RATIONS,
             )

@@ -39,8 +39,8 @@ pub fn store_limit(key: ResourceKey, resource_type: u8) -> Option<u128> {
     if !has_castle_limit(resource_type) {
         return None;
     }
+    let board = crate::balance::structures::BOARD;
     let preset = crate::logic::preset_record::for_game(key.game_id);
-    let board = preset.board_terms.read()?;
     let base = crate::state::read().structures.structures.entry((key.game_id, key.entity_id)).base.read();
     if base.category != crate::taxonomy::REALM_CATEGORY {
         return None;

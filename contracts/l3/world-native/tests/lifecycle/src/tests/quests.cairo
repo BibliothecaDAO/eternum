@@ -292,7 +292,7 @@ fn found(d: Deployment, game_id: u32) -> ResourceKey {
 }
 
 fn upgrade(d: Deployment, home: ResourceKey, level: u8) {
-    let costs = interact_with_state(d.games, || crate::logic::upgrades::recipe(home.game_id, level).costs);
+    let costs = interact_with_state(d.games, || crate::logic::upgrades::recipe(level).costs);
     for cost in costs {
         fund(d, home, *cost.resource_type, *cost.amount);
     }

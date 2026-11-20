@@ -19,10 +19,10 @@ pub fn building_key(key: crate::resources::ResourceKey, coord: Coord) -> Buildin
 
 #[starknet::component]
 pub mod BuildingState {
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::buildings::{Building, BuildingKey, BuildingRule, BuildingRuleKey, StructureBuildings, change_count};
     use crate::events::{RowDeleted, RowSet};
-    use crate::resources::{ResourceAmount, ResourceKey};
+    use crate::resources::ResourceKey;
     use crate::structures::StructureBase;
 
     #[storage]
@@ -96,33 +96,19 @@ pub mod BuildingState {
             );
             self.write_counts(key.game_id, key.entity_id, counts);
         }
-        fn board(self: @ComponentState<TContractState>, game_id: u32) -> Option<crate::buildings::BoardRules> {
-            crate::logic::preset_record::for_game(game_id).board_terms.read()
-        }
-
         fn rule(self: @ComponentState<TContractState>, key: BuildingRuleKey) -> BuildingRule {
-            let preset = crate::logic::preset_record::for_game(key.game_id);
             assert!(
                 key.category > 0 && key.category <= crate::buildings::BUILDING_CATEGORY_COUNT,
                 "invalid building category",
             );
-            let terms = preset.building_terms.read(key.category);
+            let row = *crate::balance::structures::BUILDINGS.span().at(key.category.into() - 1);
+            let costs = crate::balance::structures::BUILDING_COSTS.span();
             BuildingRule {
-                population_cost: terms.population_cost,
-                capacity_grant: terms.capacity_grant,
-                simple_cost: self.read_costs(key, false, terms.simple_count),
-                complex_cost: self.read_costs(key, true, terms.complex_count),
+                population_cost: row.population_cost,
+                capacity_grant: row.capacity_grant,
+                simple_cost: costs.slice(row.first_cost, row.simple_count),
+                complex_cost: costs.slice(row.first_cost + row.simple_count, row.complex_count),
             }
-        }
-        fn read_costs(
-            self: @ComponentState<TContractState>, key: BuildingRuleKey, complex: bool, count: u8,
-        ) -> Span<ResourceAmount> {
-            let preset = crate::logic::preset_record::for_game(key.game_id);
-            let mut costs = array![];
-            for index in 0..count {
-                costs.append(preset.building_costs.read((key.category, complex, index)));
-            }
-            costs.span()
         }
         fn building(self: @ComponentState<TContractState>, key: BuildingKey) -> Option<Building> {
             super::building(key)

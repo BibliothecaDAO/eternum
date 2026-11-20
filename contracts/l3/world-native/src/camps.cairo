@@ -7,7 +7,3 @@ pub struct CampRules {
     pub labor_rate: u64,
 }
 
-#[starknet::interface]
-pub trait ICampRules<T> {
-    fn camp_rules(self: @T, game_id: u32) -> CampRules;
-}

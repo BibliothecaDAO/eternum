@@ -244,6 +244,4 @@ pub trait IResearch<T> {
         context: crate::commands::ActionContext,
     );
     fn realm_knowledge(self: @T, key: ResourceKey) -> Option<RealmKnowledge>;
-    #[cfg(feature: "test_support")]
-    fn research_price(self: @T, game_id: u32, row: u8, tier: u8) -> ResearchPrice;
 }

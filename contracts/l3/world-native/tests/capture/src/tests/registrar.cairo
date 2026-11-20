@@ -75,6 +75,9 @@ fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
     let elapsed: u128 = (tomorrow + 20 - 350).into();
     assert_eq!(resources.resource_balance(labor), stored + elapsed * producer.production_rate.into());
     assert_eq!(resources.resource_production(labor).production_rate, producer.production_rate);
+    for cost in crate::logic::upgrades::recipe(1).costs {
+        super::resource_commands::grant(d, home, *cost.resource_type, *cost.amount);
+    }
     assert!(execute_in_game(d, game_id, Command::LevelUp(home_id), tomorrow + 30));
     assert_eq!(structures.structure(home).unwrap().base.level, 1);
     assert!(structures.position(home).is_none());
@@ -137,16 +140,6 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
         ..preset.rules.troop_limit_config,
     };
     preset.rules.troop_limit_config = limits;
-    preset.structures.upgrade_limits.realm_max = 3;
-    preset
-        .structures
-        .upgrades =
-            array![
-                crate::upgrades::UpgradeRecipe { costs: array![].span() },
-                crate::upgrades::UpgradeRecipe { costs: array![].span() },
-                crate::upgrades::UpgradeRecipe { costs: array![].span() },
-            ]
-        .span();
     let mut grants = array![];
     for grant in preset.settlement.realms.resources {
         grants
@@ -210,6 +203,9 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
     );
     for level in 0_u8..4 {
         if level != 0 {
+            for cost in crate::logic::upgrades::recipe(level).costs {
+                super::resource_commands::grant(d, home, *cost.resource_type, *cost.amount);
+            }
             assert!(execute_in_game(d, game_id, Command::LevelUp(1), 351));
         }
         let record = structures.structure(home).unwrap();

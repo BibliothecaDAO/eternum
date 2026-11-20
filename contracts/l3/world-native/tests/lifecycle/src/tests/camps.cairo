@@ -33,9 +33,10 @@ fn a_camp_produces_labor_at_the_camp_rate_not_the_village_rate() {
     let (d, _, _) = super::resource_commands::setup_with_preset(camp_preset(true));
     let key = create(d, coord());
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
-    assert!(resources.resource_rule(crate::resources::LABOR).village_rate != 5);
+    let camp_rate = crate::balance::structures::CAMP_LABOR_RATE;
+    assert!(resources.resource_rule(crate::resources::LABOR).village_rate != camp_rate);
     let slot = ResourceSlot { game_id: 3, entity_id: key.entity_id, resource_type: crate::resources::LABOR };
-    assert_eq!(resources.resource_production(slot).production_rate, 5);
+    assert_eq!(resources.resource_production(slot).production_rate, camp_rate);
 }
 #[test]
 fn camp_reveals_six_biomes_without_neighbor_lotteries_or_points() {
@@ -53,9 +54,8 @@ fn camp_reveals_six_biomes_without_neighbor_lotteries_or_points() {
 }
 #[test]
 #[feature("safe_dispatcher")]
-fn camp_configuration_is_immutable_scoped_and_requires_authority() {
+fn camp_presets_need_authority_known_resources_and_a_new_id() {
     let (d, _, _) = setup_with_rules(rules(true));
-    let safe = ICampRulesSafeDispatcher { contract_address: d.games };
     let registrar = crate::registrar::IRegistrarSafeDispatcher { contract_address: d.games };
     let mut preset = super::resource_commands::fixture_preset(rules(true));
     preset.structures.camps.resources = array![].span();
@@ -68,10 +68,6 @@ fn camp_configuration_is_immutable_scoped_and_requires_authority() {
     assert!(registrar.register_preset(20000, preset).is_ok());
     assert!(registrar.register_preset(20000, preset).is_err());
     stop_cheat_caller_address(d.games);
-    let games = crate::game::IGameDispatcher { contract_address: d.games };
-    super::play_fixture::seed_game_with_preset(d.games, 4, games.game(3), preset);
-    assert!(safe.camp_rules(4).unwrap().resources.is_empty());
-    assert!(safe.camp_rules(999).is_err());
 }
 
 #[test]

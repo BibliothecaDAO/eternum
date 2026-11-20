@@ -220,7 +220,7 @@ pub fn learn_spire_lore(d: super::Deployment, home: crate::resources::ResourceKe
         || {
             let mut cost = 0;
             for tier in learned + 1..crate::research::LORE_SPIRES + 1 {
-                cost += crate::logic::research::price(home.game_id, crate::research::ROW_LORE, tier).essence;
+                cost += crate::logic::research::price(crate::research::ROW_LORE, tier).essence;
             }
             cost
         },
@@ -553,9 +553,7 @@ pub fn assert_capture_at(
                 },
             ),
         );
-    if labor_room.is_some() {
-        grant_troop_recipe(d, home, 26, 1000 * RESOURCE_PRECISION, opening);
-    }
+    grant_troop_recipe(d, home, 26, 1000 * RESOURCE_PRECISION, opening);
     stop_cheat_caller_address(d.games);
     assert!(
         execute_in_game(

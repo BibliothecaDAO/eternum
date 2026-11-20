@@ -1,5 +1,4 @@
 pub use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
-pub use crate::camps::{ICampRulesSafeDispatcher, ICampRulesSafeDispatcherTrait};
 pub use crate::commands::{Command, CreateExplorer, Explore};
 pub use crate::discovery::{Discovery, surface};
 pub use crate::game::{IGameDispatcherTrait, IPointsDispatcherTrait};

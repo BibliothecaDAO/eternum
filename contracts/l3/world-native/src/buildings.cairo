@@ -115,6 +115,14 @@ pub struct BuildingRuleConfig {
     pub category: u8,
     pub rule: BuildingRule,
 }
+#[derive(Copy, Drop)]
+pub struct BuildingRow {
+    pub population_cost: u8,
+    pub capacity_grant: u8,
+    pub first_cost: u32,
+    pub simple_count: u32,
+    pub complex_count: u32,
+}
 #[derive(Copy, Drop, Default, starknet::Store)]
 pub struct BuildingTerms {
     pub population_cost: u8,

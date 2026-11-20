@@ -101,8 +101,6 @@ pub mod GamesTest {
     #[abi(embed_v0)]
     impl ExploreFixture = GamesFixture::ExploreFixture<ContractState>;
     #[abi(embed_v0)]
-    impl CampRulesFixture = GamesFixture::CampRulesFixture<ContractState>;
-    #[abi(embed_v0)]
     impl BuildingRulesFixture = GamesFixture::BuildingRulesFixture<ContractState>;
     #[abi(embed_v0)]
     impl StructuresFixture = GamesFixture::StructuresFixture<ContractState>;
@@ -114,8 +112,6 @@ pub mod GamesTest {
     impl NamesFixture = GamesFixture::NamesFixture<ContractState>;
     #[abi(embed_v0)]
     impl StructureCaptureFixture = GamesFixture::StructureCaptureFixture<ContractState>;
-    #[abi(embed_v0)]
-    impl UpgradeRulesFixture = GamesFixture::UpgradeRulesFixture<ContractState>;
     #[abi(embed_v0)]
     impl SeasonRealmsFixture = GamesFixture::SeasonRealmsFixture<ContractState>;
     #[abi(embed_v0)]

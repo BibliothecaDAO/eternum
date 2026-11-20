@@ -543,7 +543,7 @@ fn unowned_target_rule_rejects_owned_sites_and_allows_capture_of_an_unowned_site
     rules.battle_config.regular_immunity_ticks = 0;
     rules.troop_stamina_config.stamina_initial = 120;
     let (d, home, target) = super::resource_commands::setup_with_rules(rules);
-    grant(d, home, 26, 100 * RESOURCE_PRECISION);
+    super::resource_commands::fund_troops(d, home, 26, 100 * RESOURCE_PRECISION);
     assert!(
         execute(
             d,

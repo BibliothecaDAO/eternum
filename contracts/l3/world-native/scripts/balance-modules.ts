@@ -12,7 +12,7 @@ const world = new URL("../", import.meta.url);
 
 /** The release's balance: one Cairo module per preset group, each a set of constant tables the classes read. */
 export function balanceModules(definition: PresetDefinition): Record<string, string> {
-  return { resources: resourcesModule(definition.resources) };
+  return { resources: resourcesModule(definition.resources), structures: structuresModule(definition.structures) };
 }
 
 export function writeBalanceModules(definition: PresetDefinition): void {
@@ -62,6 +62,64 @@ function resourcesModule(resources: PresetDefinition["resources"]): string {
     table("MINE_KINDS", "MineKindConfig", kinds),
     table("SURFACE_MINES", "MineWeight", resources.surface_mines),
   ].join("\n\n");
+}
+
+function structuresModule(structures: PresetDefinition["structures"]): string {
+  const board = structures.board.unwrap();
+  if (!board) throw new Error("The release's preset must have a realm board");
+  const buildingCosts: CairoRow[] = [];
+  const buildings = structures.buildings.map(({ category, rule }, index) => {
+    if (category !== index + 1) throw new Error(`Building categories must number 1 to ${structures.buildings.length}`);
+    const first_cost = buildingCosts.length;
+    buildingCosts.push(...rule.simple_cost, ...rule.complex_cost);
+    return {
+      population_cost: rule.population_cost,
+      capacity_grant: rule.capacity_grant,
+      first_cost,
+      simple_count: rule.simple_cost.length,
+      complex_count: rule.complex_cost.length,
+    };
+  });
+  const upgradeCosts: CairoRow[] = [];
+  const upgrades = structures.upgrades.map(({ costs }) => {
+    const first_cost = upgradeCosts.length;
+    upgradeCosts.push(...costs);
+    return { first_cost, cost_count: costs.length };
+  });
+  return [
+    "use crate::buildings::{BoardRules, BuildingRow};",
+    "use crate::research::ResearchPrice;",
+    "use crate::resources::ResourceAmount;",
+    "use crate::upgrades::UpgradeRow;",
+    record("BOARD", "BoardRules", board),
+    table("BUILDINGS", "BuildingRow", buildings),
+    table("BUILDING_COSTS", "ResourceAmount", buildingCosts),
+    table("RESEARCH_PRICES", "ResearchPrice", researchPrices(structures.research)),
+    table("CAMP_GRANTS", "ResourceAmount", structures.camps.resources),
+    number("CAMP_LABOR_RATE", "u64", structures.camps.labor_rate),
+    number("REALM_UPGRADE_MAX", "u8", structures.upgrade_limits.realm_max),
+    number("VILLAGE_UPGRADE_MAX", "u8", structures.upgrade_limits.village_max),
+    table("UPGRADES", "UpgradeRow", upgrades),
+    table("UPGRADE_COSTS", "ResourceAmount", upgradeCosts),
+  ].join("\n\n");
+}
+
+function researchPrices(research: PresetDefinition["structures"]["research"]): CairoRow[] {
+  const sorted = research.toSorted((left, right) => left.row - right.row || left.tier - right.tier);
+  sorted.forEach(({ row, tier }, index) => {
+    const previous = sorted[index - 1];
+    const expected = previous?.row === row ? previous.tier + 1 : 1;
+    if (tier !== expected) throw new Error(`Research row ${row} must price tiers from 1 in turn, found tier ${tier}`);
+  });
+  return sorted.map(({ price }) => price);
+}
+
+function record(name: string, type: string, row: CairoRow): string {
+  return `pub const ${name}: ${type} = ${struct(type, row)};`;
+}
+
+function number(name: string, type: string, value: CairoValue): string {
+  return `pub const ${name}: ${type} = ${scalar(name, type, value)};`;
 }
 
 function table(name: string, type: string, rows: CairoRow[]): string {

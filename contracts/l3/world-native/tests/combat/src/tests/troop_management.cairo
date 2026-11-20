@@ -230,7 +230,7 @@ fn biome_damage_and_travel_modifiers_retain_every_category_and_biome() {
 #[test]
 fn reinforcement_requires_target_ownership_for_realms_and_villages_without_home_lineage() {
     let (d, home, other) = super::resource_commands::setup();
-    grant(d, home, 26, 100 * RESOURCE_PRECISION);
+    super::resource_commands::fund_troops(d, home, 26, 100 * RESOURCE_PRECISION);
     assert!(
         execute(
             d,

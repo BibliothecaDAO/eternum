@@ -22,8 +22,8 @@ pub fn setup_homes() -> (super::Deployment, ResourceKey, ResourceKey, u64, u64) 
     let mut rules = super::play_fixture::rules();
     rules.troop_limit_config.guard_resurrection_delay = 60;
     let (d, home, other_home) = super::resource_commands::setup_with_rules(rules);
-    grant(d, home, 26, 1000 * RESOURCE_PRECISION);
-    grant(d, home, 32, 1000 * RESOURCE_PRECISION);
+    super::resource_commands::fund_troops(d, home, 26, 1000 * RESOURCE_PRECISION);
+    super::resource_commands::fund_troops(d, home, 32, 1000 * RESOURCE_PRECISION);
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
     let original = structures.structure(home).unwrap();
     set_fixture(

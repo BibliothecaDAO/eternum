@@ -260,19 +260,6 @@ pub mod StructuresLogic {
     }
 
     #[abi(embed_v0)]
-    impl Camps of crate::camps::ICampRules<ContractState> {
-        fn camp_rules(self: @ContractState, game_id: u32) -> crate::camps::CampRules {
-            let preset = crate::logic::preset_record::for_game(game_id);
-            let count = preset.camp_resource_count.read();
-            let mut resources = array![];
-            for index in 0..count {
-                resources.append(preset.camp_grants.read(index));
-            }
-            crate::camps::CampRules { resources: resources.span(), labor_rate: preset.camp_labor_rate.read() }
-        }
-    }
-
-    #[abi(embed_v0)]
     impl BlitzHyperstructures of crate::settlement::IBlitzHyperstructures<ContractState> {
         fn create_reserved_hyperstructure(
             ref self: ContractState,
@@ -716,8 +703,7 @@ pub mod StructuresLogic {
                             crate::rules::rule_enabled(rules, crate::rules::DISCOVER_CAMPS),
                             "camp discovery is disabled",
                         );
-                        let camp = self.camp_rules(game_id);
-                        for resource in camp.resources {
+                        for resource in crate::balance::structures::CAMP_GRANTS.span() {
                             crate::logic::structure_actions::resources_dispatcher(game_id)
                                 .grant_resource(
                                     key,
@@ -731,7 +717,7 @@ pub mod StructuresLogic {
                             .create_producer(
                                 key,
                                 crate::resources::UNLIMITED_OUTPUT,
-                                camp.labor_rate,
+                                crate::balance::structures::CAMP_LABOR_RATE,
                                 23,
                                 25,
                                 rules.building_config.base_population,
@@ -797,14 +783,7 @@ pub mod StructuresLogic {
                 };
                 crate::logic::map::MapState::occupy(tile_key(game_id, coord), key.entity_id, occupier, true);
             }
-            // A board realm has no shared weight: each of its stores has its own limit.
-            let capacity: u128 = if crate::logic::preset_record::for_game(game_id).board_terms.read().is_some() {
-                core::num::traits::Bounded::MAX
-            } else if village {
-                rules.structure_capacity_config.village_capacity.into() * RESOURCE_PRECISION
-            } else {
-                rules.structure_capacity_config.realm_capacity.into() * RESOURCE_PRECISION
-            };
+            let capacity: u128 = core::num::traits::Bounded::MAX;
             crate::logic::structure_actions::resources_dispatcher(game_id)
                 .initialize_resources(
                     key,

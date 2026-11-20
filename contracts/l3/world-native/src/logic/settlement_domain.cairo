@@ -16,8 +16,6 @@ pub mod SettlementLogic {
     };
     #[cfg(feature: "test_support")]
     use crate::settlement::{PlayerEntry, RealmGrants, SettlementProgress, SettlementRules};
-    #[cfg(feature: "test_support")]
-    use crate::upgrades::{UpgradeLimits, UpgradeRecipe};
     use crate::village::VillagePassKey;
     #[cfg(feature: "test_support")]
     use crate::village::{VillagePass, VillageRules};
@@ -28,7 +26,6 @@ pub mod SettlementLogic {
     component!(path: SettlementState, storage: settlements, event: SettlementEvent);
     impl SettlementInternal = SettlementState::InternalImpl<ContractState>;
     component!(path: UpgradeState, storage: upgrades, event: UpgradeEvent);
-    impl UpgradeInternal = UpgradeState::InternalImpl<ContractState>;
     component!(path: VillageState, storage: villages, event: VillageEvent);
     impl VillageInternal = VillageState::InternalImpl<ContractState>;
     #[abi(embed_v0)]
@@ -88,18 +85,6 @@ pub mod SettlementLogic {
             self: @ContractState, game_id: u32, region_id: u32, timestamp: u64,
         ) -> Span<(crate::troops::Coord, u8)> {
             crate::logic::terrain::expedition_home_ring(game_id, region_id, timestamp)
-        }
-    }
-
-    #[abi(embed_v0)]
-    impl UpgradeRules of crate::upgrades::IUpgradeRules<ContractState> {
-        #[cfg(feature: "test_support")]
-        fn upgrade_limits(self: @ContractState, game_id: u32) -> UpgradeLimits {
-            self.upgrades.limits(game_id)
-        }
-        #[cfg(feature: "test_support")]
-        fn upgrade_recipe(self: @ContractState, game_id: u32, level: u8) -> UpgradeRecipe {
-            self.upgrades.recipe(game_id, level)
         }
     }
 

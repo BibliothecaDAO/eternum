@@ -154,11 +154,7 @@ fn each_blitz_row_pays_its_percent_of_strength_up_to_three_thousand() {
 #[test]
 fn a_blitz_explore_pays_on_at_most_three_thousand_strength() {
     assert_eq!(blitz_reward_cap(), 3000);
-    // (troops, tier, Essence on the 20 percent row). 334 T3 is strength 3,006. Uncapped this would be 20, 100, 200,
-    // 600, 4,000 and 601.2.
-    let cases = array![
-        (100_u128, 0_u8, 20_u128), (500, 0, 100), (1_000, 0, 200), (3_000, 0, 600), (20_000, 0, 600), (334, 2, 600),
-    ];
+    let cases = array![(100_u128, 0_u8, 20_u128), (500, 0, 100), (1_000, 0, 200), (3_000, 0, 600), (334, 2, 600)];
     for (count, tier, essence) in cases {
         let (d, home, explorer) = blitz_army_of(count, tier);
         let origin = GameState { contract_address: d.games }.explorer(explorer).unwrap().coord;

@@ -115,6 +115,9 @@ fn blitz_army_of(count: u128, tier: u8) -> (super::Deployment, ResourceKey, Expl
         slot: 0, structure_id: home.entity_id, category: 0, tier, amount: count * RESOURCE_PRECISION, direction: 0,
     };
     assert!(super::resource_commands::execute(d, Command::CreateExplorer(raise), 80));
+    for food in array![35_u8, 36] {
+        super::resource_commands::grant(d, home, food, 100_000 * RESOURCE_PRECISION);
+    }
     let structures = crate::structures::IStructureOperationsDispatcher { contract_address: d.games };
     (d, home, ExplorerKey { game_id: 3, explorer_id: *structures.home_armies(home).at(0) })
 }

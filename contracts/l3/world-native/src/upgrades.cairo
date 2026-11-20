@@ -7,17 +7,15 @@ pub struct UpgradeLimits {
     pub village_max: u8,
 }
 
+#[derive(Copy, Drop)]
+pub struct UpgradeRow {
+    pub first_cost: u32,
+    pub cost_count: u32,
+}
+
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct UpgradeRecipe {
     pub costs: Span<ResourceAmount>,
-}
-
-#[starknet::interface]
-pub trait IUpgradeRules<T> {
-    #[cfg(feature: "test_support")]
-    fn upgrade_limits(self: @T, game_id: u32) -> UpgradeLimits;
-    #[cfg(feature: "test_support")]
-    fn upgrade_recipe(self: @T, game_id: u32, level: u8) -> UpgradeRecipe;
 }
 
 #[starknet::interface]

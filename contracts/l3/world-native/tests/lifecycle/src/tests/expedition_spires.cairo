@@ -89,7 +89,7 @@ fn discovered_spires_take_a_real_army_through_each_layer_to_the_shared_deep() {
         || {
             let mut cost = 0;
             for tier in 1..crate::research::LORE_SPIRES + 1 {
-                cost += crate::logic::research::price(game_id, crate::research::ROW_LORE, tier).essence;
+                cost += crate::logic::research::price(crate::research::ROW_LORE, tier).essence;
             }
             cost
         },

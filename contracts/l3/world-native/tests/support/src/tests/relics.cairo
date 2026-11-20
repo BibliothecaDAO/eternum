@@ -95,7 +95,7 @@ pub fn setup_with_reward(
     let percent = amount * 100;
     preset.exploration = array![ExplorationReward { resource_type, percent, percent_max: percent, weight: 1 }].span();
     let (deployment, home, _) = super::resource_commands::setup_with_preset(preset);
-    grant(deployment, home, 26, 10 * RESOURCE_PRECISION);
+    super::resource_commands::fund_troops(deployment, home, 26, 10 * RESOURCE_PRECISION);
     grant(deployment, home, 38, 10000 * RESOURCE_PRECISION);
     assert!(
         execute(

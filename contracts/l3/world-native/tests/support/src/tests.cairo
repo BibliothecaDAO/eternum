@@ -19,10 +19,7 @@ pub use crate::games::{
 pub use crate::logic::release::{IReleasesDispatcher, IReleasesDispatcherTrait};
 pub use crate::tests::state::{GameState, TroopObservationTrait};
 pub use crate::troops::ExplorerKey;
-pub use crate::upgrades::{
-    IUpgradeRulesDispatcher, IUpgradeRulesDispatcherTrait, IUpgradeRulesSafeDispatcher,
-    IUpgradeRulesSafeDispatcherTrait, UpgradeLimits, UpgradeRecipe,
-};
+pub use crate::upgrades::{UpgradeLimits, UpgradeRecipe};
 pub mod army_merge;
 pub mod artificer;
 pub mod bitcoin;

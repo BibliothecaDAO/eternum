@@ -3,18 +3,15 @@ pub use world_test_support::tests::structure_rules::*;
 
 #[test]
 fn level_up_rejects_unowned_missing_wrong_category_unfunded_and_maximum_structures() {
-    let mut preset = super::resource_commands::fixture_preset(super::play_fixture::rules());
-    preset.structures.upgrade_limits = UpgradeLimits { realm_max: 1, village_max: 1 };
-    preset
-        .structures
-        .upgrades = array![UpgradeRecipe { costs: array![ResourceAmount { resource_type: 23, amount: 17 }].span() }]
-        .span();
+    let preset = super::resource_commands::fixture_preset(super::play_fixture::rules());
     let (d, home, _) = super::resource_commands::setup_with_preset(preset);
     let original = record(d, home);
     assert_terminal_rejection(d, Command::LevelUp(999), 80);
     assert_terminal_rejection(d, Command::LevelUp(home.entity_id), 80);
     assert_eq!(record(d, home), original);
-    grant(d, home, 23, 17);
+    for cost in crate::logic::upgrades::recipe(1).costs {
+        grant(d, home, *cost.resource_type, *cost.amount);
+    }
     save(d, home, StructureRecord { owner: 999.try_into().unwrap(), ..original });
     assert_terminal_rejection(d, Command::LevelUp(home.entity_id), 80);
     save(
@@ -39,9 +36,16 @@ fn level_up_rejects_unowned_missing_wrong_category_unfunded_and_maximum_structur
     assert!(execute(d, Command::LevelUp(home.entity_id), 80));
     assert_eq!(record(d, home).base.level, 1);
     assert_eq!(map.tile(location).unwrap().data, tile.data);
+    let highest = crate::balance::structures::REALM_UPGRADE_MAX;
+    let levelled = record(d, home);
+    save(
+        d,
+        home,
+        StructureRecord { base: crate::structures::StructureBase { level: highest, ..levelled.base }, ..levelled },
+    );
     let mut rejection_spy = snforge_std::spy_events();
     assert_terminal_rejection(d, Command::LevelUp(home.entity_id), 80);
-    assert_eq!(record(d, home).base.level, 1);
+    assert_eq!(record(d, home).base.level, highest);
     let outcome = super::play_fixture::rejection(ref rejection_spy, d.games);
     assert_eq!(outcome.status_class, 'GAMEPLAY_REJECTED');
     // This nested library assertion is longer than a felt short string.
