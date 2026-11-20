@@ -46,8 +46,9 @@ export const nativeRuleConstants = {
   "DEEP_MINE": 2,
   "DEEP_ALTAR": 3,
   "DEEP_KIND_COUNT": 4,
-  "DEEP_RING_LIMIT": 5,
-  "DEEP_DIAGONAL_RINGS": 3,
+  "DEEP_RING_LIMIT": 4,
+  "DEEP_RING_SITES": 6,
+  "DEEP_PLAZA_RADIUS": 4,
   "DEEP_GUARD_SLOTS": 4
 } as const;
 export const nativeQuestConstants = {
@@ -164,4 +165,4 @@ export const nativeFragmentConstants = {
   "VEIL_CACHE_PERCENT": 10,
   "HOLLOW_CACHE_PERCENT": 5
 } as const;
-export const nativeBalanceIdentity = "968a2e31d8864d840aa0b69f413f060c9c1f6dde46b854a6575bcb29e1806818";
+export const nativeBalanceIdentity = "a81cc113dc80f8ffa6a5de411072d686175cabf1e6fba5380676a9246604d2af";
