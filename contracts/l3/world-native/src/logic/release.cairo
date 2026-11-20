@@ -25,6 +25,7 @@ pub fn assert_authority() {
     assert!(starknet::get_caller_address() == crate::state::read().authority.read(), "only domain authority");
 }
 
+#[inline(never)]
 pub fn family_classes(family: u8) -> games_storage::release::LogicClasses {
     let state = crate::state::read();
     let release_id = state.open_releases.read(family);
@@ -137,10 +138,6 @@ pub mod ReleaseState {
 
         fn assert_authority(self: @ComponentState<TContractState>) {
             super::assert_authority();
-        }
-
-        fn family_classes(self: @ComponentState<TContractState>, family: u8) -> LogicClasses {
-            super::family_classes(family)
         }
 
         fn classes(

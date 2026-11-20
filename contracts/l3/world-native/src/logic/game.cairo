@@ -9,6 +9,7 @@ pub enum Event {
     RowSet: RowSet,
 }
 
+#[inline(never)]
 pub fn game(game_id: u32) -> GameRegistry {
     let state = crate::state::read();
     let game = state.games.games.read(game_id);

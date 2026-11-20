@@ -116,7 +116,7 @@ pub fn seed_game_with_preset(
         registry,
         || {
             let state = crate::state::write();
-            state.game_releases.write(game_id, state.current_release.read());
+            state.game_releases.write(game_id, state.open_releases.read(crate::game::FRONTIER));
             state.games.games.write(game_id, GameRegistry { preset_id, ..game });
             state
                 .games
