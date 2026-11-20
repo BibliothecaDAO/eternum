@@ -140,7 +140,6 @@
     "prizes": "PrizesLogic",
     "registry": "RegistryLogic",
     "combat": "CombatLogic",
-    "raid": "RaidLogic",
     "bridge": "BridgeLogic",
     "relics": "RelicsLogic",
     "movement": "MovementLogic"
@@ -1367,6 +1366,74 @@
         ]
       },
       {
+        "name": "BattleEvent",
+        "prefix": [
+          "0x1f2a859ff6d82254f122800be40d0837341227d1e7d10e20a20748250947366"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "game_id",
+            "type": "core::integer::u32",
+            "kind": "key"
+          },
+          {
+            "name": "attacker_id",
+            "type": "core::integer::u64",
+            "kind": "key"
+          },
+          {
+            "name": "defender_id",
+            "type": "core::integer::u64",
+            "kind": "key"
+          },
+          {
+            "name": "attacker_owner",
+            "type": "core::integer::u64",
+            "kind": "key"
+          },
+          {
+            "name": "defender_owner",
+            "type": "core::integer::u64",
+            "kind": "key"
+          },
+          {
+            "name": "winner_id",
+            "type": "core::integer::u64",
+            "kind": "data"
+          },
+          {
+            "name": "coord",
+            "type": "world_native::troops::Coord",
+            "kind": "data"
+          },
+          {
+            "name": "max_reward",
+            "type": "core::array::Span::<world_native::resources::ResourceAmount>",
+            "kind": "data"
+          },
+          {
+            "name": "attacker",
+            "type": "world_native::combat_actions::BattleSide",
+            "kind": "data"
+          },
+          {
+            "name": "defender",
+            "type": "world_native::combat_actions::BattleSide",
+            "kind": "data"
+          },
+          {
+            "name": "timestamp",
+            "type": "core::integer::u64",
+            "kind": "data"
+          }
+        ]
+      },
+      {
         "name": "RowSet",
         "prefix": [
           "0x3928dc11165e890253f789440484151979481b14f31e18bdb3efce1debf3f99",
@@ -1522,74 +1589,6 @@
           {
             "name": "values",
             "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          }
-        ]
-      },
-      {
-        "name": "BattleEvent",
-        "prefix": [
-          "0x1f2a859ff6d82254f122800be40d0837341227d1e7d10e20a20748250947366"
-        ],
-        "members": [
-          {
-            "name": "version",
-            "type": "core::integer::u8",
-            "kind": "key"
-          },
-          {
-            "name": "game_id",
-            "type": "core::integer::u32",
-            "kind": "key"
-          },
-          {
-            "name": "attacker_id",
-            "type": "core::integer::u64",
-            "kind": "key"
-          },
-          {
-            "name": "defender_id",
-            "type": "core::integer::u64",
-            "kind": "key"
-          },
-          {
-            "name": "attacker_owner",
-            "type": "core::integer::u64",
-            "kind": "key"
-          },
-          {
-            "name": "defender_owner",
-            "type": "core::integer::u64",
-            "kind": "key"
-          },
-          {
-            "name": "winner_id",
-            "type": "core::integer::u64",
-            "kind": "data"
-          },
-          {
-            "name": "coord",
-            "type": "world_native::troops::Coord",
-            "kind": "data"
-          },
-          {
-            "name": "max_reward",
-            "type": "core::array::Span::<world_native::resources::ResourceAmount>",
-            "kind": "data"
-          },
-          {
-            "name": "attacker",
-            "type": "world_native::combat_actions::BattleSide",
-            "kind": "data"
-          },
-          {
-            "name": "defender",
-            "type": "world_native::combat_actions::BattleSide",
-            "kind": "data"
-          },
-          {
-            "name": "timestamp",
-            "type": "core::integer::u64",
             "kind": "data"
           }
         ]
@@ -8417,10 +8416,6 @@
           "type": "core::starknet::class_hash::ClassHash"
         },
         {
-          "name": "raid",
-          "type": "core::starknet::class_hash::ClassHash"
-        },
-        {
           "name": "bridge",
           "type": "core::starknet::class_hash::ClassHash"
         },
@@ -13870,5 +13865,5 @@
       ]
     }
   },
-  "identity": "6efb2e919dd1a172159bba7a9c90c0f8ae7b53992bb1835acd13acf19a1e1f1f"
+  "identity": "e921ea1119ce5dad93ff287c5a9ee4c9db5759febfd23e273898f0b2a4baa18a"
 }
