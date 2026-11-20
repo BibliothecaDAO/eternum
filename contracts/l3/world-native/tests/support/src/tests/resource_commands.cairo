@@ -209,17 +209,6 @@ pub fn fund_troops(deployment: Deployment, key: ResourceKey, troop: u8, troops: 
         stock(deployment, key, *input.resource_type, *input.amount * troops / recipe.simple_output.into());
     }
 }
-pub fn stock(deployment: Deployment, key: ResourceKey, resource_type: u8, amount: u128) {
-    let held = IResourceOperationsDispatcher { contract_address: deployment.games }
-        .resource_balance(ResourceSlot { game_id: key.game_id, entity_id: key.entity_id, resource_type });
-    set_fixture(
-        deployment.games,
-        selector!("resources"),
-        selector!("balances"),
-        array![key.game_id.into(), key.entity_id.into(), resource_type.into()].span(),
-        held + amount,
-    );
-}
 pub fn grant(deployment: Deployment, key: ResourceKey, resource_type: u8, amount: u128) {
     let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     let timestamp = resources
