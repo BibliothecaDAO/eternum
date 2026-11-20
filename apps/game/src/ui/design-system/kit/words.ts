@@ -1483,11 +1483,6 @@ export const SIGN_IN_WORDS = {
 } as const;
 
 export const JOIN_WORDS = {
-  realm: "A Devcon realm is yours",
-  sealed: "A realm waits for you",
-  stub: "Devcon · Mumbai",
-  goldenLine: "A golden realm waits",
-  goldenStub: "Golden · Devcon · Mumbai",
   laborEachDay: (amount: number) => `${formatExact(amount)} Labor ${EACH_DAY}`,
 } as const;
 

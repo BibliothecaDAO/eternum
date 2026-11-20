@@ -3511,7 +3511,7 @@ describe("shared links", () => {
     ]);
   });
 
-  it("counts a sharer's paid friends in the newest game that paid them, each game capped on its own", async () => {
+  it("counts a sharer's paid friends in the newest game that paid them, never in one whose credit still waits", async () => {
     const otherGame = gameId + 1;
     heralds.set(`${shard}/games`, {
       chain: chainId,
@@ -3535,29 +3535,28 @@ describe("shared links", () => {
     });
     const code = ((await made.json()) as { code: string }).code;
     const first = await joinBy(code, "two-games-first");
+    const third = await joinBy(code, "two-games-third");
     const second = await joinBy(code, "two-games-second");
     first.earn(100);
+    third.earn(100);
+    await minuteCron();
+    expect(await sharer.tally()).toMatchObject({ friendsPaid: 2, fragmentsEarned: 200 });
     heralds.set(`${shard}/games/${otherGame}/snapshot?models=RaceMember%2CStructure`, {
       game_id: String(otherGame),
       confirmed_block: 1,
       models: [
-        {
-          model: "RaceMember",
-          rows: [{ key: "1", value: { game_id: otherGame, entity_id: "1", glory: String(100e9) } }],
-        },
-        {
-          model: "Structure",
-          rows: [{ key: "1", value: { game_id: otherGame, entity_id: "1", owner: second.account } }],
-        },
+        { model: "RaceMember", rows: [{ key: "1", value: { game_id: otherGame, entity_id: "1", glory: String(100e9) } }] },
+        { model: "Structure", rows: [{ key: "1", value: { game_id: otherGame, entity_id: "1", owner: second.account } }] },
       ],
     });
     relay.mockClear();
+    relay.mockResolvedValueOnce(Response.json({ error: "fragment_credit_unavailable" }, { status: 503 }));
+    expect(await sharer.tally()).toMatchObject({ activated: 3, friendsPaid: 2, fragmentsEarned: 200 });
     await minuteCron();
-    expect(fragmentCredits().map(({ gameId: paidIn, amount }) => [paidIn, amount])).toEqual([
-      [gameId, 100],
-      [otherGame, 100],
-    ]);
-    expect(await sharer.tally()).toMatchObject({ activated: 2, friendsPaid: 1, fragmentsEarned: 100 });
+    expect(await sharer.tally()).toMatchObject({ friendsPaid: 2, fragmentsEarned: 200 });
+    await minuteCron();
+    expect(await sharer.tally()).toMatchObject({ friendsPaid: 1, fragmentsEarned: 100 });
+    expect(fragmentCredits().map(({ gameId: paidIn }) => paidIn)).toEqual([otherGame, otherGame]);
   });
 
   it("tells a new account the invite it came by, and nothing to an account no link brought", async () => {

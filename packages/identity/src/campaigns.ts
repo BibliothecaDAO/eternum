@@ -16,8 +16,6 @@ export const PRINTED_CODE_LENGTH = 8;
 
 export const CAMPAIGNS = {
   "devcon-2026": {
-    /** The landing its flyers' QR codes open, each with its own code after it. */
-    link: "/join/devcon",
     /** The native presets whose games found its homes: Frontier's three-times-speed Devcon season. */
     presets: [6],
     /** The clock its event keeps, which its season's dates are written in beside UTC. */
@@ -36,7 +34,6 @@ export const CAMPAIGNS = {
 } as const satisfies Record<string, Campaign>;
 
 interface Campaign {
-  link: string;
   presets: readonly number[];
   clock: { timeZone: string; zone: string };
   startsAt: number;
