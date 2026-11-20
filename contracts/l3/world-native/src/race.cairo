@@ -67,13 +67,7 @@ pub trait IRace<T> {
 
 
 pub fn validate(rules: RaceRules) {
-    assert!(rules.season_days != 0 && rules.season_days % crate::days::DAYS_PER_BAG == 0, "race needs whole day bags");
-    assert!(rules.stage_height != 0, "zero height stage");
-    assert!(rules.clear_mist_percent >= 100 && rules.clear_mist_percent <= 200, "invalid Clear Mist rate");
-    assert!(rules.second_wind_percent >= 100 && rules.second_wind_percent <= 200, "invalid Second Wind rate");
-    assert!(rules.pale_moon_percent > 0 && rules.pale_moon_percent <= 100, "invalid Pale Moon rate");
-    assert!(rules.spoils_percent >= 100 && rules.spoils_percent <= 200, "invalid Spoils rate");
-    let _ = rules.stage_height * Into::<u8, u32>::into(STAGE_COUNT);
+    assert!(rules == crate::balance::race::RACE_RULES, "race rules are not the release's");
 }
 
 // Largest remainders allocate the indivisible units; home identity breaks an exact tie.

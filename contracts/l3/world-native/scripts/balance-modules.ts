@@ -20,6 +20,7 @@ const RULE_SCALARS: Record<string, string> = { spire_travel_essence_cost: "u128"
 
 /** The release's balance: one Cairo module per preset group, each a set of constant tables the classes read. */
 export function balanceModules(definition: PresetDefinition): Record<string, string> {
+  assertPayWithinStage(definition.economy);
   return {
     resources: resourcesModule(definition.resources),
     structures: structuresModule(definition.structures),
@@ -27,6 +28,8 @@ export function balanceModules(definition: PresetDefinition): Record<string, str
     expeditions: expeditionsModule(definition),
     quests: questsModule(definition.economy.quests.unwrap()),
     banes: banesModule(definition.economy.banes.unwrap()),
+    deep: deepModule(definition.economy.deep),
+    race: raceModule(definition.economy.race),
   };
 }
 
@@ -137,8 +140,8 @@ function researchPrices(research: PresetDefinition["structures"]["research"]): C
   return sorted.map(({ price }) => price);
 }
 
-function record(name: string, type: string, row: CairoRow): string {
-  return `pub const ${name}: ${type} = ${struct(type, row)};`;
+function record(name: string, type: string, row: CairoRow, nested: Record<string, string> = {}): string {
+  return `pub const ${name}: ${type} = ${struct(type, row, nested)};`;
 }
 
 function number(name: string, type: string, value: CairoValue): string {
@@ -158,6 +161,78 @@ function rulesModule(rules: PresetDefinition["rules"]): string {
     .join("\n\n");
 }
 
+function deepModule(option: PresetDefinition["economy"]["deep"]): string {
+  const deep = option.unwrap();
+  if (!deep) throw new Error("The release's preset must have the Deep");
+  const { rings, beasts, ...settings } = deep;
+  assertDeepPlayable(deep as unknown as DeepRow);
+  return [
+    record(
+      "DEEP_SETTINGS",
+      "crate::deep::DeepSettings",
+      { ...settings, ring_count: rings.length },
+      { building_pay: "crate::deep::DeepPay" },
+    ),
+    table("DEEP_RINGS", "crate::deep::DeepRing", rings),
+    table("DEEP_BEASTS", "crate::deep::DeepBeast", beasts),
+  ].join("\n\n");
+}
+
+function raceModule(option: PresetDefinition["economy"]["race"]): string {
+  const race = option.unwrap();
+  if (!race) throw new Error("The release's preset must have the race");
+  assertRacePlayable(race as unknown as CairoRow);
+  return record("RACE_RULES", "crate::race::RaceRules", race);
+}
+
+type DeepRow = { rings: CairoRow[]; beasts: CairoRow[]; building_pay: CairoRow; [field: string]: unknown };
+
+function assertDeepPlayable(deep: DeepRow): void {
+  const precision = cairoConstant("src/rules.cairo", "RESOURCE_PRECISION");
+  const whole = (value: unknown) => Number(value) !== 0 && Number(value) % precision === 0;
+  const refuse = (reason: string) => {
+    throw new Error(`Season 1 Deep: ${reason}`);
+  };
+  if (deep.beasts.length !== cairoConstant("src/rules.cairo", "DEEP_KIND_COUNT")) refuse("a beast for every kind");
+  if (!deep.beasts.every((beast) => whole(beast.count))) refuse("a beast is whole troops");
+  if (!whole(deep.loss_per_tick)) refuse("the tick loss is whole troops");
+  if (Number(deep.core_per_tick) === 0 || Number(deep.mine_per_tick) === 0) refuse("empty payment");
+  const pay = (tier: string) => Number(deep.building_pay[tier]);
+  if (pay("crowd") === 0 || pay("pair") < pay("crowd") || pay("alone") < pay("pair")) refuse("invalid building pay");
+  if (Number(deep.altar_threshold) === 0) refuse("empty Altar bar");
+  const rings = deep.rings.map((ring) => ({ radius: Number(ring.radius), realms: Number(ring.realms) }));
+  if (rings.length === 0 || rings.length > cairoConstant("src/rules.cairo", "DEEP_RING_LIMIT")) refuse("ring count");
+  if (rings[0].realms !== 0) refuse("the first ring opens with the day");
+  if (rings.some((ring, index) => ring.radius === 0 || (index > 0 && ring.realms <= rings[index - 1].realms)))
+    refuse("rings open in order");
+}
+
+function assertPayWithinStage(economy: PresetDefinition["economy"]): void {
+  const deep = economy.deep.unwrap() as unknown as DeepRow | undefined;
+  const race = economy.race.unwrap() as unknown as CairoRow | undefined;
+  if (deep && race && Number(deep.building_pay.alone) > Number(race.stage_height))
+    throw new Error("Season 1 Deep: one tick's building pay passes a race stage");
+}
+
+function assertRacePlayable(race: CairoRow): void {
+  const n = (field: string) => Number(race[field]);
+  const refuse = (reason: string) => {
+    throw new Error(`Season 1 race: ${reason}`);
+  };
+  if (n("season_days") === 0 || n("season_days") % cairoConstant("src/day_schedule.cairo", "DAYS_PER_BAG") !== 0)
+    refuse("whole day bags");
+  if (n("stage_height") === 0) refuse("zero height stage");
+  for (const field of ["clear_mist_percent", "second_wind_percent", "spoils_percent"])
+    if (n(field) < 100 || n(field) > 200) refuse(`invalid ${field}`);
+  if (n("pale_moon_percent") <= 0 || n("pale_moon_percent") > 100) refuse("invalid pale_moon_percent");
+}
+
+function cairoConstant(path: string, name: string): number {
+  const value = readFileSync(new URL(path, world), "utf8").match(new RegExp(`pub const ${name}: u\\d+ = (\\d+);`))?.[1];
+  if (value === undefined) throw new Error(`${path} defines no ${name}`);
+  return Number(value);
+}
+
 function pascalCase(field: string): string {
   return field.replace(/(^|_)([a-z])/g, (_match, _separator, letter: string) => letter.toUpperCase());
 }
@@ -173,7 +248,7 @@ function expeditionsModule(definition: PresetDefinition): string {
   return [
     "use crate::expeditions::{DepthRules, FrontierDiscoveryRules};",
     "use crate::relics::ChestTiers;",
-    table("DEPTH_RULES", "DepthRules", depths),
+    table("DEPTH_RULES", "DepthRules", depths, { chest: "ChestTiers" }),
     `pub const FRONTIER_DISCOVERY: FrontierDiscoveryRules = ${struct("FrontierDiscoveryRules", discovery)};`,
   ].join("\n\n");
 }
@@ -198,12 +273,6 @@ function assertDepthPlayable(depth: CairoRow, layer: number): void {
   if (n("beast_strong_upper") >= n("site_guard_lower")) refuse("beasts must be weaker than sites");
 }
 
-function cairoConstant(path: string, name: string): number {
-  const value = readFileSync(new URL(path, world), "utf8").match(new RegExp(`pub const ${name}: u\\d+ = (\\d+);`))?.[1];
-  if (value === undefined) throw new Error(`${path} defines no ${name}`);
-  return Number(value);
-}
-
 function assertDiscoveryFits(rules: CairoRow, clearMistPercent: number): void {
   const bps = (field: string) => Number(rules[field]);
   const weights = ["beasts_bps", "camp_bps", "rift_bps", "ruin_bps", "shrine_bps", "well_bps"].map(bps);
@@ -219,8 +288,6 @@ function assertDiscoveryFits(rules: CairoRow, clearMistPercent: number): void {
   if (finds * clearMistPercent * detection > 100_000_000)
     throw new Error("Season 1 discovery under Clear Mist and Detection exceeds one hundred percent");
 }
-
-const NESTED: Record<string, string> = { chest: "ChestTiers" };
 
 function questsModule(quests: QuestRules | undefined): string {
   if (!quests) throw new Error("The release's preset must have daily quests");
@@ -248,22 +315,21 @@ function numbers(name: string, type: string, values: CairoValue[]): string {
   return `pub const ${name}: [${type}; ${values.length}] = [${values.map((value) => scalar(name, type, value)).join(", ")}];`;
 }
 
-function table(name: string, type: string, rows: CairoRow[]): string {
-  return `pub const ${name}: [${type}; ${rows.length}] = [${rows.map((row) => struct(type, row)).join(", ")}];`;
+function table(name: string, type: string, rows: CairoRow[], nested: Record<string, string> = {}): string {
+  return `pub const ${name}: [${type}; ${rows.length}] = [${rows.map((row) => struct(type, row, nested)).join(", ")}];`;
 }
 
-function struct(type: string, row: CairoRow): string {
+function struct(type: string, row: CairoRow, nested: Record<string, string> = {}): string {
   return `${type} { ${Object.entries(row)
-    .map(([field, value]) => `${field}: ${scalar(type, field, value)}`)
+    .map(([field, value]) => {
+      const inner = nested[field];
+      return `${field}: ${inner ? struct(inner, value as unknown as CairoRow) : scalar(type, field, value)}`;
+    })
     .join(", ")} }`;
 }
 
 function scalar(type: string, field: string, value: CairoValue): string {
-  if (typeof value === "object") {
-    const nested = NESTED[field];
-    if (!nested) throw new Error(`${type}.${field} is a struct with no Cairo type named for it`);
-    return struct(nested, value);
-  }
+  if (typeof value === "object") throw new Error(`${type}.${field} is a struct with no Cairo type named for it`);
   if (typeof value === "boolean") return String(value);
   if (typeof value === "bigint" || (typeof value === "number" && Number.isSafeInteger(value))) return String(value);
   if (typeof value === "string" && /^(0x[0-9a-f]+|[0-9]+)$/i.test(value)) return value;

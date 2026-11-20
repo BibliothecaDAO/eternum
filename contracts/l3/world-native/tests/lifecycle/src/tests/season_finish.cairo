@@ -10,8 +10,8 @@ use crate::race::{IRaceDispatcherTrait, IRaceLibraryDispatcher};
 #[test]
 #[feature("safe_dispatcher")]
 fn fifty_day_limit_finishes_once_before_a_rejected_order_and_keeps_settlement_independent() {
-    let preset = super::banes::deep_definition();
-    let rules = preset.economy.race.unwrap();
+    let preset = super::banes::definition();
+    let rules = crate::balance::race::RACE_RULES;
     let (d, _) = super::aspects::setup_aspect_preset(5, preset);
     let duration = rules.season_days
         / crate::days::DAYS_PER_BAG
@@ -90,7 +90,7 @@ fn published_season_one_starts_all_systems_and_settles_its_fiftieth_day() {
         || {
             let game = crate::logic::game::game(game_id);
             assert_eq!(game.preset_id, preset_id);
-            assert!(crate::logic::deep_sites::rules_entry(game_id).is_some());
+            assert!(crate::logic::deep_sites::enabled(game_id));
             assert_eq!(crate::state::read().banes.world_days.read((game_id, 0)), Some(0));
             assert_eq!(crate::logic::banes::kind(game_id, 0), None);
             assert_eq!(

@@ -181,7 +181,7 @@ pub mod SeasonLogic {
                     crate::commands::action_context(context),
                 );
             }
-            if crate::logic::preset_record::for_game(game_id).deep_rules.read().is_some() {
+            if crate::logic::deep_sites::enabled(game_id) {
                 crate::deep::IDeepTicksDispatcherTrait::settle_deep(
                     crate::deep::IDeepTicksLibraryDispatcher {
                         class_hash: self.release.classes(game_id).prizes.read(),

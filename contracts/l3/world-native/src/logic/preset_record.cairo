@@ -111,14 +111,6 @@ fn write_deep(preset: PresetWrite, rules: Option<crate::deep::DeepRules>) {
         return;
     };
     preset.deep_rules.write(Some(crate::deep::settings(rules)));
-    for index in 0..rules.rings.len() {
-        let ring = *rules.rings.at(index);
-        preset.deep_rings.write(index.try_into().unwrap(), (ring.radius, ring.realms));
-    }
-    for index in 0..rules.beasts.len() {
-        let beast = *rules.beasts.at(index);
-        preset.deep_beasts.write(index.try_into().unwrap(), (beast.count, beast.bow));
-    }
 }
 
 fn write_resources(preset: PresetWrite, rules: Span<ResourceRule>) {

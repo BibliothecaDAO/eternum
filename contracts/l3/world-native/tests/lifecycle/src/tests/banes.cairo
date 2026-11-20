@@ -7,7 +7,7 @@ use crate::commands::Command;
 use crate::resources::ResourceKey;
 use crate::rules::RESOURCE_PRECISION;
 
-fn definition() -> crate::presets::PresetDefinition {
+pub fn definition() -> crate::presets::PresetDefinition {
     let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("frontier-check");
     preset.rules.battle_config.regular_immunity_ticks = 0;
     preset.rules.battle_config.cooldown_seconds = 0;
@@ -396,32 +396,15 @@ fn real_production_splits_at_the_bane_start_and_quorum_end_and_army_stores_still
     );
 }
 
-pub fn deep_definition() -> crate::presets::PresetDefinition {
-    let mut preset = definition();
-    preset
-        .economy
-        .deep =
-            Some(
-                crate::deep::DeepRules {
-                    beasts: super::deep_sites::beasts(RESOURCE_PRECISION),
-                    loss_per_tick: RESOURCE_PRECISION,
-                    core_per_tick: RESOURCE_PRECISION,
-                    mine_per_tick: RESOURCE_PRECISION,
-                    building_pay: crate::deep::DeepPay { alone: 5, pair: 3, crowd: 2 },
-                    altar_threshold: 10,
-                    ..preset.economy.deep.unwrap(),
-                },
-            );
-    preset
-}
-
 pub fn altar(d: Deployment, game_id: u32, source: u8, boundary: u64) {
     interact_with_state(
         d.games,
         || {
             let state = crate::state::read();
-            let threshold = crate::logic::preset_record::for_game(game_id).deep_rules.read().unwrap().altar_threshold;
-            let charge = crate::deep::altar_charge(state.banes.altar_bars.read((game_id, source)), 5, threshold);
+            let threshold = crate::logic::deep_sites::rules().altar_threshold;
+            let charge = crate::deep::altar_charge(
+                state.banes.altar_bars.read((game_id, source)), threshold / 2, threshold,
+            );
             let mut heights = array![];
             for aspect in 1_u8..5 {
                 heights.append(state.season.aspect_heights.read((game_id, aspect)));
@@ -446,7 +429,7 @@ fn blocked(d: Deployment, game_id: u32, aspect: u8, timestamp: u64) -> bool {
 
 #[test]
 fn altar_reserves_distinct_rivals_and_a_completed_team_quest_restores_height_without_a_bonus() {
-    let (d, game_id) = super::aspects::setup_aspect_preset(5, deep_definition());
+    let (d, game_id) = super::aspects::setup_aspect_preset(5, definition());
     let mut members = array![];
     let mut homes = array![];
     for aspect in 1_u8..5 {
@@ -481,7 +464,10 @@ fn altar_reserves_distinct_rivals_and_a_completed_team_quest_restores_height_wit
     interact_with_state(
         d.games,
         || {
-            assert_eq!(crate::state::read().banes.altar_bars.read((game_id, 1)), 5);
+            assert_eq!(
+                crate::state::read().banes.altar_bars.read((game_id, 1)),
+                crate::logic::deep_sites::rules().altar_threshold / 2,
+            );
             assert!(crate::logic::deep_banes::bane(crate::deep::TeamBaneKey { game_id, aspect: 2, day: 1 }).is_none());
         },
     );
@@ -491,7 +477,10 @@ fn altar_reserves_distinct_rivals_and_a_completed_team_quest_restores_height_wit
     let first_quest = interact_with_state(
         d.games,
         || {
-            assert_eq!(crate::state::read().banes.altar_bars.read((game_id, 1)), 10);
+            assert_eq!(
+                crate::state::read().banes.altar_bars.read((game_id, 1)),
+                crate::logic::deep_sites::rules().altar_threshold,
+            );
             assert_eq!(crate::state::read().banes.first_team_day.read(game_id), Some(0));
             assert!(crate::logic::deep_banes::bane(crate::deep::TeamBaneKey { game_id, aspect: 1, day: 1 }).is_none());
             for aspect in 2_u8..5 {
@@ -537,7 +526,7 @@ fn altar_reserves_distinct_rivals_and_a_completed_team_quest_restores_height_wit
 
 #[test]
 fn issuing_a_team_bane_keeps_todays_world_quest_and_stops_future_rolls() {
-    let (d, game_id) = super::aspects::setup_aspect_preset(5, deep_definition());
+    let (d, game_id) = super::aspects::setup_aspect_preset(5, definition());
     let home = found(d, game_id, 360);
     let tomorrow = world_test_support::tests::registrar::day_start(d, game_id, 1);
     assert!(

@@ -52,9 +52,8 @@ pub struct PresetDefinition {
 pub fn validate(preset: PresetDefinition) {
     let rules = preset.rules;
     if let Some(race) = preset.economy.race {
-        let deep = preset.economy.deep.expect('race requires the Deep');
+        assert!(preset.economy.deep.is_some(), "race requires the Deep");
         crate::race::validate(race);
-        assert!(deep.building_pay.alone <= race.stage_height, "Deep pay passes a stage");
     }
     if let Some(banes) = preset.economy.banes {
         assert!(preset.economy.quests.is_some(), "banes require daily quests");

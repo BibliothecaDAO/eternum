@@ -6,7 +6,7 @@ use crate::commands::Command;
 use crate::resources::ResourceKey;
 use crate::troops::ExplorerKey;
 use super::army_activity::player;
-use super::deep_sites::{applied, beside, deployed, fight, join};
+use super::deep_sites::{applied, beside, deployed, fight, join, wound_beast};
 
 const TICK: u64 = 120;
 const START: u64 = 360;
@@ -36,26 +36,14 @@ struct Cost {
     refusal: ByteArray,
 }
 
-fn season_one_catch_up_preset(stage_height: u32) -> crate::presets::PresetDefinition {
-    let (_, season) = world_test_support::tests::preset_projection::current_definition("frontier");
+fn half_day_preset() -> crate::presets::PresetDefinition {
     let mut preset = super::deep_sites::preset();
-    let rules = season.economy.deep.unwrap();
-    preset
-        .economy
-        .deep =
-            Some(
-                crate::deep::DeepRules {
-                    loss_per_tick: rules.loss_per_tick,
-                    core_per_tick: rules.core_per_tick,
-                    mine_per_tick: rules.mine_per_tick,
-                    building_pay: rules.building_pay,
-                    altar_threshold: rules.altar_threshold,
-                    ..preset.economy.deep.unwrap(),
-                },
-            );
-    preset.economy.race = Some(crate::race::RaceRules { stage_height, ..season.economy.race.unwrap() });
     preset.rules.day_unit_seconds = 43200;
     preset
+}
+
+fn full_race() -> u32 {
+    crate::balance::race::RACE_RULES.stage_height * crate::race::STAGE_COUNT.into()
 }
 
 fn every_site_at_the_empire_cap() -> Shape {
@@ -77,10 +65,13 @@ fn the_rehearsal_guard() -> Shape {
 }
 
 fn held_deep(
-    seed: felt252, stage_height: u32, shape: Shape,
+    seed: felt252, height_left: u32, shape: Shape,
 ) -> (Deployment, u32, Span<ExplorerKey>, Deployment, Span<u64>) {
-    let held = held_deep_in(seed, season_one_catch_up_preset(stage_height), shape);
+    let held = held_deep_in(seed, half_day_preset(), shape);
     let (d, game_id, _, _, _) = held;
+    interact_with_state(
+        d.games, || crate::state::write().season.aspect_heights.write((game_id, 1), full_race() - height_left),
+    );
     let unit = crate::tests::context(d.games, game_id).rules.unbox().day_unit_seconds;
     let day = interact_with_state(d.games, || crate::days::day_at_index(crate::logic::game::game(game_id), unit, 0));
     assert!(day.end >= START + 600 * TICK, "the first day must hold the longest catch-up");
@@ -90,7 +81,7 @@ fn held_deep(
 fn held_deep_with_a_day_turn(
     seed: felt252, shape: Shape,
 ) -> (Deployment, u32, Span<ExplorerKey>, Deployment, Span<u64>) {
-    let mut preset = season_one_catch_up_preset(2000);
+    let mut preset = half_day_preset();
     preset.rules.day_unit_seconds = 21600;
     held_deep_in(seed, preset, shape)
 }
@@ -109,10 +100,9 @@ fn held_deep_in(
         let key = deployed(member, game_id, 1, 10);
         beside(d, key, first, slot);
         if slot == 0 {
-            applied(member, game_id, fight(key, first), START);
-        } else {
-            applied(member, game_id, join(d, key, first), START);
+            wound_beast(d, first, 0);
         }
+        applied(member, game_id, join(d, key, first), START);
         holders.append(key);
         members.append(member);
         homes.append(super::army_activity::army(d, key).owner);
@@ -138,7 +128,7 @@ fn held_deep_in(
 }
 
 fn site_count(d: Deployment, game_id: u32) -> u8 {
-    interact_with_state(d.games, || crate::logic::deep_sites::site_count(game_id))
+    interact_with_state(d.games, || crate::logic::deep_sites::site_count())
 }
 
 fn site_at(d: Deployment, game_id: u32, index: u8) -> ResourceKey {
@@ -273,7 +263,7 @@ fn play_until_caught_up(owner: Deployment, game_id: u32, home: u64, now: u64) ->
 }
 
 fn catch_up(seed: felt252, shape: Shape, boundaries: u64) -> Plays {
-    let (_, game_id, _, owner, homes) = held_deep(seed, 2000, shape);
+    let (_, game_id, _, owner, homes) = held_deep(seed, full_race(), shape);
     let now = START + boundaries * TICK;
     let plays = play_until_caught_up(owner, game_id, *homes.at(0), now);
     report(boundaries, shape, plays);
@@ -301,9 +291,9 @@ fn assert_within_one_transaction(plays: Plays) {
 }
 
 fn walked(
-    seed: felt252, shape: Shape, stage_height: u32, boundaries: u64, cuts: u64,
+    seed: felt252, shape: Shape, height_left: u32, boundaries: u64, cuts: u64,
 ) -> (felt252, Option<crate::race::RaceResult>) {
-    let (d, game_id, guards, owner, homes) = held_deep(seed, stage_height, shape);
+    let (d, game_id, guards, owner, homes) = held_deep(seed, height_left, shape);
     for cut in 1..cuts + 1 {
         play_until_caught_up(owner, game_id, *homes.at(0), START + boundaries * cut / cuts * TICK);
     }
@@ -342,11 +332,11 @@ fn digest(d: Deployment, game_id: u32, guards: Span<ExplorerKey>, homes: Span<u6
     )
 }
 
-const CUT_GAP_STATE: felt252 = 326843347285783243263273304284410338033452368531859052877247227966392153887;
-const CAPPED_GAP_STATE: felt252 = 1328825058377898921049014288115463798279811648524584326303591293799619234061;
-const DEATH_GAP_STATE: felt252 = 633437324640997369186971815541102509393234349237193949992288188165975843208;
-const TURNED_STATE: felt252 = 2462594603274041068735190249326170987688899945196000051547060351079568602569;
-const WON_GAP_STATE: felt252 = 549724684628771995374850167773966889653089251045040790310732263586593783937;
+const CUT_GAP_STATE: felt252 = 3343706104071198830761828345337492780761089601861165924137850894119856713658;
+const CAPPED_GAP_STATE: felt252 = 186375638238793754221924792301710939125806897668062812550461041590360227846;
+const DEATH_GAP_STATE: felt252 = 3550922644854481083071917280535175840509495039657181341603930515092543008757;
+const TURNED_STATE: felt252 = 459872942906529570200359570381465595337143825291976920555813194454859549950;
+const WON_GAP_STATE: felt252 = 2302436813207963089547681483882829228738207109982950818899230212211578869702;
 
 fn cap(guards: u64) -> u64 {
     crate::rules::DEEP_CATCH_UP_GUARD_TICKS / guards
@@ -357,7 +347,7 @@ fn guard_count(shape: Shape) -> u64 {
 }
 
 fn first_play(seed: felt252, shape: Shape, boundaries: u64) -> Plays {
-    let (_, game_id, guards, owner, homes) = held_deep(seed, 2000, shape);
+    let (_, game_id, guards, owner, homes) = held_deep(seed, full_race(), shape);
     let cost = measured(owner, game_id, nudge(*homes.at(0)), START + boundaries * TICK);
     let plays = Plays { count: 1, gas: cost.gas, events: cost.events };
     report(boundaries, shape, plays);
@@ -411,7 +401,7 @@ fn rolled_rings(d: Deployment, game_id: u32) -> u8 {
         d.games,
         || {
             let mut rolled = 0;
-            for index in 0..crate::logic::deep_sites::site_count(game_id) {
+            for index in 0..crate::logic::deep_sites::site_count() {
                 let key = ResourceKey { game_id, entity_id: crate::logic::deep_sites::site_id(game_id, index) };
                 if index % crate::rules::DEEP_RING_SITES == 0 && crate::logic::deep_sites::site(key).unwrap().day == 1 {
                     rolled += 1;
@@ -463,7 +453,7 @@ fn turn_digest(d: Deployment, game_id: u32, guards: Span<ExplorerKey>, homes: Sp
         d.games,
         || {
             let mut values = array![guarded];
-            for index in 0..crate::logic::deep_sites::site_count(game_id) {
+            for index in 0..crate::logic::deep_sites::site_count() {
                 let entity_id = crate::logic::deep_sites::site_id(game_id, index);
                 let row = crate::logic::deep_sites::site(ResourceKey { game_id, entity_id }).unwrap();
                 values.append(row.kind.into());
@@ -563,7 +553,7 @@ fn a_day_of_missed_ticks_with_the_rehearsal_guard_fits_one_play() {
 #[test]
 fn a_win_early_in_the_gap_stops_the_catch_up_with_every_site_full() {
     let shape = every_site_at_the_empire_cap();
-    let (d, game_id, _, owner, homes) = held_deep(5, 6, shape);
+    let (d, game_id, _, owner, homes) = held_deep(5, 30, shape);
     let cost = measured(owner, game_id, nudge(*homes.at(0)), START + 30 * TICK);
     report(30, shape, Plays { count: 1, gas: cost.gas, events: cost.events });
     assert!(interact_with_state(d.games, || crate::logic::race::result(game_id)).is_some());
@@ -574,7 +564,7 @@ fn a_win_early_in_the_gap_stops_the_catch_up_with_every_site_full() {
 #[test]
 fn an_oath_answered_by_a_guard_while_the_deep_catches_up_is_refused_and_still_advances_the_cursor() {
     let shape = every_site_at_the_empire_cap();
-    let (_, game_id, guards, owner, _) = held_deep(6, 2000, shape);
+    let (_, game_id, guards, owner, _) = held_deep(6, full_race(), shape);
     let guard = *guards.at(0);
     let cost = measured(
         owner,
@@ -591,7 +581,7 @@ fn an_oath_answered_by_a_guard_while_the_deep_catches_up_is_refused_and_still_ad
 
 #[test]
 fn a_command_by_a_player_outside_the_deep_advances_its_cursor() {
-    let (d, game_id, _, _, _) = held_deep(12, 2000, every_site_at_the_empire_cap());
+    let (d, game_id, _, _, _) = held_deep(12, full_race(), every_site_at_the_empire_cap());
     let stranger = player(d, 1299);
     let home = super::army_activity::found(stranger, game_id, 2);
     measured(stranger, game_id, nudge(home), START + 100 * TICK);
@@ -600,7 +590,7 @@ fn a_command_by_a_player_outside_the_deep_advances_its_cursor() {
 
 #[test]
 fn a_join_refused_while_the_deep_catches_up_still_advances_its_cursor() {
-    let (d, game_id, _, _, _) = held_deep(13, 2000, every_site_at_the_empire_cap());
+    let (d, game_id, _, _, _) = held_deep(13, full_race(), every_site_at_the_empire_cap());
     let stranger = player(d, 1399);
     let army = deployed(stranger, game_id, 1, 10);
     let target = site_at(d, game_id, 0);
@@ -614,46 +604,46 @@ fn a_join_refused_while_the_deep_catches_up_still_advances_its_cursor() {
 
 #[test]
 fn a_gap_walked_in_one_play_ends_in_the_cut_gap_state() {
-    assert_eq!(walked(21, one_guard_on_every_site(), 2000, 150, 1), (CUT_GAP_STATE, None));
+    assert_eq!(walked(21, one_guard_on_every_site(), full_race(), 150, 1), (CUT_GAP_STATE, None));
 }
 
 #[test]
 fn a_gap_cut_into_two_plays_ends_in_the_cut_gap_state() {
-    assert_eq!(walked(21, one_guard_on_every_site(), 2000, 150, 2), (CUT_GAP_STATE, None));
+    assert_eq!(walked(21, one_guard_on_every_site(), full_race(), 150, 2), (CUT_GAP_STATE, None));
 }
 
 #[test]
 fn a_gap_cut_into_three_plays_ends_in_the_cut_gap_state() {
-    assert_eq!(walked(21, one_guard_on_every_site(), 2000, 150, 3), (CUT_GAP_STATE, None));
+    assert_eq!(walked(21, one_guard_on_every_site(), full_race(), 150, 3), (CUT_GAP_STATE, None));
 }
 
 #[test]
 fn a_gap_cut_into_seven_plays_ends_in_the_cut_gap_state() {
-    assert_eq!(walked(21, one_guard_on_every_site(), 2000, 150, 7), (CUT_GAP_STATE, None));
+    assert_eq!(walked(21, one_guard_on_every_site(), full_race(), 150, 7), (CUT_GAP_STATE, None));
 }
 
 #[test]
 fn a_gap_the_cap_cuts_ends_in_the_capped_gap_state() {
     assert!(450 > cap(guard_count(one_guard_on_every_site())));
-    assert_eq!(walked(24, one_guard_on_every_site(), 2000, 450, 1), (CAPPED_GAP_STATE, None));
+    assert_eq!(walked(24, one_guard_on_every_site(), full_race(), 450, 1), (CAPPED_GAP_STATE, None));
 }
 
 #[test]
 fn the_capped_gap_cut_into_seven_timed_plays_ends_in_the_same_state() {
-    assert_eq!(walked(24, one_guard_on_every_site(), 2000, 450, 7), (CAPPED_GAP_STATE, None));
+    assert_eq!(walked(24, one_guard_on_every_site(), full_race(), 450, 7), (CAPPED_GAP_STATE, None));
 }
 
 #[test]
 fn the_rehearsal_guard_ends_in_one_state_however_its_gap_is_cut() {
     let shape = the_rehearsal_guard();
-    let whole = walked(31, shape, 2000, 12, 1);
-    assert_eq!(whole, walked(31, shape, 2000, 12, 2));
-    assert_eq!(whole, walked(31, shape, 2000, 12, 3));
-    assert_eq!(whole, walked(31, shape, 2000, 12, 7));
+    let whole = walked(31, shape, full_race(), 12, 1);
+    assert_eq!(whole, walked(31, shape, full_race(), 12, 2));
+    assert_eq!(whole, walked(31, shape, full_race(), 12, 3));
+    assert_eq!(whole, walked(31, shape, full_race(), 12, 7));
 }
 
 fn won(cuts: u64) -> felt252 {
-    let (state, result) = walked(51, one_guard_on_every_site(), 40, 40, cuts);
+    let (state, result) = walked(51, one_guard_on_every_site(), 200, 40, cuts);
     let result = result.expect('the race must finish in the gap');
     assert!(result.ended_at > START && result.ended_at < START + 40 * TICK);
     assert_eq!(result.winner, Some(1));
@@ -697,7 +687,7 @@ fn realistic_homes(d: Deployment, game_id: u32, real: u64) -> Span<u64> {
 #[test]
 fn every_guard_dying_on_the_first_tick_fits_one_play() {
     let shape = Shape { sites: 1, guards_per_site: 1, troops: ONE_TICK_OF_POISON, vitriol: false, slotted: true };
-    let (d, game_id, guards, owner, holder_homes) = held_deep(14, 2000, shape);
+    let (d, game_id, guards, owner, holder_homes) = held_deep(14, full_race(), shape);
     let homes = realistic_homes(d, game_id, *holder_homes.at(0));
     let source = *guards.at(0);
     let mut seated = array![];
@@ -728,7 +718,7 @@ fn every_guard_dying_on_the_first_tick_fits_one_play() {
 #[test]
 fn a_death_the_budget_cannot_fit_waits_for_the_next_play() {
     let shape = one_guard_on_every_site();
-    let (d, game_id, _, owner, homes) = held_deep(61, 2000, shape);
+    let (d, game_id, _, owner, homes) = held_deep(61, full_race(), shape);
     let unit = crate::tests::context(d.games, game_id).rules.unbox().day_unit_seconds;
     let day = interact_with_state(d.games, || crate::days::day_at_index(crate::logic::game::game(game_id), unit, 0));
     assert!(day.end > START + 610 * TICK);
@@ -740,10 +730,10 @@ fn a_death_the_budget_cannot_fit_waits_for_the_next_play() {
 
 #[test]
 fn a_gap_with_deaths_the_budget_cuts_ends_in_the_death_gap_state() {
-    assert_eq!(walked(61, one_guard_on_every_site(), 2000, 610, 1), (DEATH_GAP_STATE, None));
+    assert_eq!(walked(61, one_guard_on_every_site(), full_race(), 610, 1), (DEATH_GAP_STATE, None));
 }
 
 #[test]
 fn a_gap_with_deaths_cut_into_three_timed_plays_ends_in_the_same_state() {
-    assert_eq!(walked(61, one_guard_on_every_site(), 2000, 610, 3), (DEATH_GAP_STATE, None));
+    assert_eq!(walked(61, one_guard_on_every_site(), full_race(), 610, 3), (DEATH_GAP_STATE, None));
 }

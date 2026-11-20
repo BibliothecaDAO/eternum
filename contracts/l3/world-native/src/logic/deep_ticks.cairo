@@ -55,7 +55,7 @@ pub fn initialize(game_id: u32) {
 }
 
 pub fn settle(game_id: u32, context: ExecutionContext) {
-    if crate::logic::deep_sites::rules_entry(game_id).is_none() {
+    if !crate::logic::deep_sites::enabled(game_id) {
         return;
     }
     let game = context.game.unbox();
@@ -76,7 +76,7 @@ pub fn settle(game_id: u32, context: ExecutionContext) {
 }
 
 pub fn assert_caught_up(game_id: u32, context: ExecutionContext) {
-    if crate::logic::deep_sites::rules_entry(game_id).is_none() {
+    if !crate::logic::deep_sites::enabled(game_id) {
         return;
     }
     let interval = context.rules.unbox().tick_config.armies_tick_in_seconds;
@@ -138,7 +138,7 @@ fn walk(game_id: u32, cursor: u64, last: u64, context: ExecutionContext) -> u64 
 
 fn held(game_id: u32, context: ExecutionContext) -> Held {
     let state = crate::state::read();
-    let rules = crate::logic::deep_sites::rules_entry(game_id).expect('missing Deep rules');
+    let rules = crate::logic::deep_sites::rules();
     let unit = context.rules.unbox().day_unit_seconds;
     let mut sites = array![];
     let mut guards = array![];
@@ -147,7 +147,7 @@ fn held(game_id: u32, context: ExecutionContext) -> Held {
     let mut zeros = array![];
     let mut day_end = 0;
     let open = crate::logic::deep_sites::open_by_kind(game_id);
-    for index in 0..crate::logic::deep_sites::site_count(game_id) {
+    for index in 0..crate::logic::deep_sites::site_count() {
         let site_id = crate::logic::deep_sites::site_id(game_id, index);
         let site = crate::logic::deep_sites::site(ResourceKey { game_id, entity_id: site_id })
             .expect('missing Deep site');
@@ -167,7 +167,7 @@ fn held(game_id: u32, context: ExecutionContext) -> Held {
                     Guard {
                         key,
                         home: army.owner,
-                        loss: crate::oaths::deep_loss_per_tick(oaths, rules.loss_per_tick.read()),
+                        loss: crate::oaths::deep_loss_per_tick(oaths, rules.loss_per_tick),
                         end: day_end,
                     },
                 );
@@ -181,11 +181,11 @@ fn held(game_id: u32, context: ExecutionContext) -> Held {
         let holder: Guard = *guards.at(first);
         let aspect = crate::logic::aspects::home_aspect(ResourceKey { game_id, entity_id: holder.home });
         let (pay, amount) = if site.kind == crate::rules::DEEP_CORE {
-            (0, rules.core_per_tick.read())
+            (0, rules.core_per_tick)
         } else if site.kind == crate::rules::DEEP_MINE {
-            (0, rules.mine_per_tick.read())
+            (0, rules.mine_per_tick)
         } else {
-            (crate::deep::building_pay(rules.building_pay.read(), *open.at(site.kind.into())), 0)
+            (crate::deep::building_pay(rules.building_pay, *open.at(site.kind.into())), 0)
         };
         sites.append(Site { kind: site.kind, aspect, pay, amount, first, last: guards.len() });
     }
@@ -203,11 +203,7 @@ fn held(game_id: u32, context: ExecutionContext) -> Held {
 }
 
 fn payouts(game_id: u32, boundary: u64) -> Payouts {
-    let altar_threshold = crate::logic::preset_record::for_game(game_id)
-        .deep_rules
-        .read()
-        .expect('missing Deep rules')
-        .altar_threshold;
+    let altar_threshold = crate::logic::deep_sites::rules().altar_threshold;
     let mut altars: Felt252Dict<u32> = Default::default();
     for aspect in 1_u8..5 {
         altars.insert(aspect.into(), crate::state::read().banes.altar_bars.read((game_id, aspect)));

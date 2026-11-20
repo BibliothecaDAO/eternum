@@ -60,7 +60,5 @@ pub struct PresetStorage<
     pub withdrawal_retention: Map<u32, TRetention>,
     pub withdrawal_tokens: Map<u8, ContractAddress>,
     pub deep_rules: Option<TDeepRules>,
-    pub deep_rings: Map<u8, (u32, u32)>,
-    pub deep_beasts: Map<u8, (u128, bool)>,
     pub race_rules: Option<TRaceRules>,
 }

@@ -360,9 +360,8 @@ fn village_pass_registration_keeps_its_owner_in_the_games_pinned_release() {
 fn a_migration_free_release_reaches_a_populated_season_one_game_rewriting_no_fact_and_rolls_back_forward() {
     let (d, game_id) = super::aspects::setup_aspect_preset(97, super::deep_sites::preset());
     let mine = super::deep_sites::site(d, game_id, crate::rules::DEEP_MINE);
-    let guard = super::deep_sites::deployed(d, game_id, 1, 11);
-    super::deep_sites::beside(d, guard, mine, 0);
-    super::deep_sites::applied(d, game_id, super::deep_sites::fight(guard, mine), 360);
+    let guard = super::deep_sites::deployed(d, game_id, 1, 1500);
+    super::deep_sites::seize(d, guard, mine, 0);
     assert!(super::deep_sites::held(d, guard).is_some());
     let visitor = super::army_activity::player(d, 9701);
     let walker = super::deep_sites::deployed(visitor, game_id, 2, 1000);

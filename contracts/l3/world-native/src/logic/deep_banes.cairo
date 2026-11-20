@@ -36,11 +36,7 @@ pub fn height_block_end(game_id: u32, aspect: u8, timestamp: u64) -> u64 {
 
 pub fn settle_altar(game_id: u32, source: u8, charge: u32, boundary: u64, heights: Span<u32>) -> u32 {
     assert!(source >= 1 && source <= 4, "invalid Altar Aspect");
-    let threshold = crate::logic::preset_record::for_game(game_id)
-        .deep_rules
-        .read()
-        .expect('missing Deep rules')
-        .altar_threshold;
+    let threshold = crate::logic::deep_sites::rules().altar_threshold;
     assert!(charge <= threshold, "Altar charge over its threshold");
     let settled = if charge == threshold && issue_next_day(game_id, source, boundary, heights) {
         0

@@ -135,33 +135,13 @@ pub fn kind_at(draw: u256, place: u8) -> u8 {
 }
 
 pub fn validate(rules: DeepRules, spacing: u32) {
-    assert!(rules.beasts.len() == crate::rules::DEEP_KIND_COUNT.into(), "a Deep beast for every kind");
-    for beast in rules.beasts {
-        assert!(*beast.count != 0 && *beast.count % crate::rules::RESOURCE_PRECISION == 0, "invalid Deep beast");
-    }
-    assert!(rules.core_per_tick != 0 && rules.mine_per_tick != 0, "empty Deep payment");
-    let pay = rules.building_pay;
     assert!(
-        pay.crowd != 0 && pay.pair >= pay.crowd && pay.alone >= pay.pair && rules.altar_threshold != 0,
-        "invalid Deep building pay",
+        settings(rules) == crate::balance::deep::DEEP_SETTINGS
+            && rules.rings == crate::balance::deep::DEEP_RINGS.span()
+            && rules.beasts == crate::balance::deep::DEEP_BEASTS.span(),
+        "Deep rules are not the release's",
     );
-    assert!(
-        rules.loss_per_tick != 0 && rules.loss_per_tick % crate::rules::RESOURCE_PRECISION == 0,
-        "invalid Deep troop loss",
-    );
-    validate_rings(rules.rings);
     validate_layout(rules, spacing);
-}
-
-fn validate_rings(rings: Span<DeepRing>) {
-    assert!(rings.len() != 0 && rings.len() <= crate::rules::DEEP_RING_LIMIT.into(), "invalid Deep ring count");
-    assert!(*rings.at(0).realms == 0, "the first Deep ring opens with the day");
-    for index in 0..rings.len() {
-        assert!(*rings.at(index).radius != 0, "empty Deep ring");
-        if index != 0 {
-            assert!(*rings.at(index).realms > *rings.at(index - 1).realms, "Deep rings open in order");
-        }
-    }
 }
 
 fn validate_layout(rules: DeepRules, spacing: u32) {

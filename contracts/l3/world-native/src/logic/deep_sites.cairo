@@ -1,29 +1,28 @@
-use starknet::storage::{
-    StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointer, StoragePointerReadAccess,
-    SubPointersForward,
-};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::commands::ExecutionContext;
 use crate::deep::{DeepBeast, DeepRing, DeepSettings, DeepSite};
 use crate::guards::{Guard, GuardKey};
 use crate::resources::ResourceKey;
 use crate::troops::ExplorerKey;
 
-pub fn rules_entry(game_id: u32) -> Option<StoragePointer<DeepSettings>> {
-    crate::logic::preset_record::for_game(game_id).deep_rules.sub_pointers()
+pub fn enabled(game_id: u32) -> bool {
+    crate::logic::preset_record::for_game(game_id).deep_rules.read().is_some()
 }
 
-pub fn ring(game_id: u32, ring: u8) -> DeepRing {
-    let (radius, realms) = crate::logic::preset_record::for_game(game_id).deep_rings.read(ring);
-    DeepRing { radius, realms }
+pub fn rules() -> DeepSettings {
+    crate::balance::deep::DEEP_SETTINGS
 }
 
-pub fn beast(game_id: u32, kind: u8) -> DeepBeast {
-    let (count, bow) = crate::logic::preset_record::for_game(game_id).deep_beasts.read(kind);
-    DeepBeast { count, bow }
+pub fn ring(ring: u8) -> DeepRing {
+    *crate::balance::deep::DEEP_RINGS.span().at(ring.into())
 }
 
-pub fn site_count(game_id: u32) -> u8 {
-    rules_entry(game_id).expect('missing Deep rules').ring_count.read() * crate::rules::DEEP_RING_SITES
+pub fn beast(kind: u8) -> DeepBeast {
+    *crate::balance::deep::DEEP_BEASTS.span().at(kind.into())
+}
+
+pub fn site_count() -> u8 {
+    rules().ring_count * crate::rules::DEEP_RING_SITES
 }
 
 pub fn site_id(game_id: u32, index: u8) -> u64 {
@@ -35,12 +34,12 @@ pub fn site(key: ResourceKey) -> Option<DeepSite> {
 }
 
 pub fn is_open(game_id: u32, site: DeepSite) -> bool {
-    crate::state::read().deep.realms_entered.read((game_id, site.day)) >= ring(game_id, site.ring).realms
+    crate::state::read().deep.realms_entered.read((game_id, site.day)) >= ring(site.ring).realms
 }
 
 pub fn open_by_kind(game_id: u32) -> Span<u8> {
     let mut open = array![];
-    for index in 0..site_count(game_id) {
+    for index in 0..site_count() {
         let row = site(ResourceKey { game_id, entity_id: site_id(game_id, index) }).expect('missing Deep site');
         if is_open(game_id, row) {
             open.append(row.kind);
@@ -95,12 +94,12 @@ pub fn dispatcher(game_id: u32) -> crate::deep::IDeepSitesLibraryDispatcher {
 pub fn reward_beast_clear(key: ExplorerKey, home: u64, cleared: ResourceKey, timestamp: u64) {
     let kind = site(cleared).expect('missing Deep site').kind;
     crate::logic::quest_progress::guarded_site_cleared(
-        ResourceKey { game_id: key.game_id, entity_id: home }, beast(key.game_id, kind).count, timestamp,
+        ResourceKey { game_id: key.game_id, entity_id: home }, beast(kind).count, timestamp,
     );
 }
 
 fn initialize(game_id: u32) {
-    if rules_entry(game_id).is_none() {
+    if !enabled(game_id) {
         return;
     }
     let state = crate::state::write();
@@ -108,7 +107,7 @@ fn initialize(game_id: u32) {
     let start = state.games.games.entry(game_id).start_main_at.read();
     let spacing = crate::logic::preset_record::for_game(game_id).settlement_spacing.read();
     let seed: u256 = state.games.games.entry(game_id).seed.read().into();
-    for index in 0..site_count(game_id) {
+    for index in 0..site_count() {
         if state.deep.site_ids.read((game_id, index)) != 0 {
             continue;
         }
@@ -116,7 +115,7 @@ fn initialize(game_id: u32) {
         let place = index % crate::rules::DEEP_RING_SITES;
         let entity_id: u64 = crate::logic::game::allocate_setup_entity(game_id).into();
         state.deep.site_ids.write((game_id, index), entity_id);
-        let coord = crate::deep::place(ring(game_id, band).radius, place, spacing);
+        let coord = crate::deep::place(ring(band).radius, place, spacing);
         crate::logic::map::MapState::occupy(
             crate::geometry::tile_key(game_id, coord), entity_id, crate::taxonomy::DEEP_SITE_OCCUPIER, false,
         );
@@ -127,9 +126,9 @@ fn initialize(game_id: u32) {
 }
 
 pub fn rollover(game_id: u32, context: ExecutionContext) -> bool {
-    let Some(rules) = rules_entry(game_id) else {
+    if !enabled(game_id) {
         return true;
-    };
+    }
     let game = context.game.unbox();
     if context.timestamp < game.start_main_at || (game.end_at != 0 && context.timestamp >= game.end_at) {
         return true;
@@ -137,7 +136,7 @@ pub fn rollover(game_id: u32, context: ExecutionContext) -> bool {
     let day = crate::days::day_of(game, context.rules.unbox().day_unit_seconds, context.timestamp);
     let draw = day_draw(game_id, day.index, context.raw_root);
     let mut spent = 0;
-    for band in 0..rules.ring_count.read() {
+    for band in 0..rules().ring_count {
         let first = band * crate::rules::DEEP_RING_SITES;
         if site(ResourceKey { game_id, entity_id: site_id(game_id, first) }).unwrap().day == day.index {
             continue;
@@ -192,7 +191,7 @@ fn reset_beast(key: ResourceKey, value: DeepSite, timestamp: u64) {
             crate::events::RowSet { version: 1, model: 'DeepSite', keys: keys.span(), values: values.span() },
         ),
     );
-    let guard = beast(key.game_id, value.kind);
+    let guard = beast(value.kind);
     crate::logic::guards::GuardState::save(
         GuardKey { game_id: key.game_id, structure_id: key.entity_id, slot: 0 },
         Guard {

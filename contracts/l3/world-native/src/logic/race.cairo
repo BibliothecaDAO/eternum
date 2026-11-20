@@ -4,7 +4,10 @@ use crate::race::{AspectHyperstructure, AspectKey, RaceMember, RaceResult, RaceR
 use crate::resources::ResourceKey;
 
 pub fn rules(game_id: u32) -> Option<RaceRules> {
-    crate::logic::preset_record::for_game(game_id).race_rules.read()
+    if crate::logic::preset_record::for_game(game_id).race_rules.read().is_none() {
+        return None;
+    }
+    Some(crate::balance::race::RACE_RULES)
 }
 
 pub fn member(key: ResourceKey) -> RaceMember {
