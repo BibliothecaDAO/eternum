@@ -5,7 +5,7 @@ pub use crate::resources::{ResourceAmount, ResourceKey};
 pub use crate::structures::{IStructureOperationsDispatcher, StructureRecord};
 pub use crate::tests::state::{MapObservationTrait, StructureObservationTrait};
 pub use crate::upgrades::{UpgradeLimits, UpgradeRecipe};
-pub use super::resource_commands::{assert_terminal_rejection, execute, grant, set_fixture, setup, setup_with_rules};
+pub use super::resource_commands::{assert_terminal_rejection, execute, grant, set_fixture, setup};
 pub fn record(d: super::Deployment, key: ResourceKey) -> StructureRecord {
     let row = IStructureOperationsDispatcher { contract_address: d.games }.structure(key).unwrap();
     StructureRecord { owner: row.owner, base: row.base, resources_packed: row.resources_packed, metadata: row.metadata }

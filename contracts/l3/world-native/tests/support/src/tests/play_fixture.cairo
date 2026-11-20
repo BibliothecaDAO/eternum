@@ -19,6 +19,7 @@ pub trait IPlayFixture<T> {
 }
 pub const FIXTURE_START: u64 = 120;
 pub const FIXTURE_SEASON_SECONDS: u64 = 999960;
+pub const FIXTURE_REALM_TRAITS: u32 = 0x4000001;
 pub fn fixture_params(name: felt252) -> crate::registrar::CreateGameParams {
     crate::registrar::CreateGameParams {
         name,
@@ -137,6 +138,12 @@ pub fn gameplay_snapshot(games: ContractAddress) -> Array<felt252> {
 pub fn settled_home(
     d: super::Deployment, game_id: u32, actor: ContractAddress, realm_id: u32, timestamp: u64,
 ) -> crate::resources::ResourceKey {
+    super::resource_commands::set_fixture(
+        d.games, selector!("realms"), selector!("catalogue_count"), array![].span(), crate::realms::CANONICAL_REALM_COUNT,
+    );
+    super::resource_commands::set_fixture(
+        d.games, selector!("realms"), selector!("traits"), array![realm_id.into()].span(), FIXTURE_REALM_TRAITS,
+    );
     let settle = Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(realm_id), order: None });
     assert!(play(d.games, TestAction { game_id, actor, command: settle }, 987654321, timestamp), "the home settles");
     let views = crate::settlement::ISettlementViewsDispatcher { contract_address: d.games };

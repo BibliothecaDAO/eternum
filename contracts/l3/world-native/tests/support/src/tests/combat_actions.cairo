@@ -14,68 +14,23 @@ pub use crate::tests::state::{
 };
 pub use crate::troops::{Coord, ExplorerKey, ExplorerTroops, Stamina, Troops};
 pub use super::resource_commands::{assert_terminal_rejection, execute, grant, set_fixture};
-pub fn setup(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey, u64, u64) {
-    setup_with_immunity(blitz, 0)
+pub fn setup() -> (super::Deployment, ResourceKey, ResourceKey, u64, u64) {
+    setup_with_counts((100, 1))
 }
-pub fn setup_with_immunity(blitz: bool, immunity: u8) -> (super::Deployment, ResourceKey, ResourceKey, u64, u64) {
-    setup_with_mode(blitz, immunity, 0)
-}
-pub fn setup_with_mode(
-    blitz: bool, immunity: u8, extra_mode_rules: u32,
-) -> (super::Deployment, ResourceKey, ResourceKey, u64, u64) {
-    let mode_rules = extra_mode_rules
-        + if blitz {
-            super::play_fixture::BLITZ_RULES
-        } else {
-            super::play_fixture::TEST_RULES
-        };
-    setup_with_rule_mask(blitz, immunity, mode_rules)
-}
-pub fn setup_with_rule_mask(
-    blitz: bool, immunity: u8, mode_rules: u32,
-) -> (super::Deployment, ResourceKey, ResourceKey, u64, u64) {
-    setup_with_cooldown(blitz, immunity, mode_rules, 5, (100, 1))
-}
-pub fn setup_with_cooldown(
-    blitz: bool, immunity: u8, mode_rules: u32, cooldown_seconds: u32, counts: (u128, u128),
-) -> (super::Deployment, ResourceKey, ResourceKey, u64, u64) {
-    let mut rules = super::play_fixture::rules();
-    rules.mode_rules = mode_rules;
-    rules
-        .command_mask =
-            if blitz {
-                super::play_fixture::BLITZ_COMMAND_MASK
-            } else {
-                super::play_fixture::BLITZ_COMMAND_MASK
-            };
-    rules.entry_rule = crate::rules::ENTRY_ENTITLEMENT;
-    rules.battle_config.regular_immunity_ticks = immunity;
-    rules.battle_config.village_immunity_ticks = 0;
-    rules.tick_config.armies_tick_in_seconds = 5;
-    rules.battle_config.cooldown_seconds = cooldown_seconds;
-    rules.troop_stamina_config.stamina_initial = 120;
-    let (d, home, target) = super::resource_commands::setup_with_rules(rules);
+pub fn setup_with_counts(counts: (u128, u128)) -> (super::Deployment, ResourceKey, ResourceKey, u64, u64) {
+    let (d, home, target) = super::resource_commands::setup();
     let mut ids = array![];
     let (attacker_count, defender_count) = counts;
     for (key, amount) in array![(home, attacker_count), (target, defender_count)] {
-        super::resource_commands::fund_troops(d, key, 26, amount * RESOURCE_PRECISION);
-        assert!(
-            execute(
-                d,
-                Command::CreateExplorer(
-                    CreateExplorer {
-                        slot: 0,
-                        structure_id: key.entity_id,
-                        category: 0,
-                        tier: 0,
-                        amount: amount * RESOURCE_PRECISION,
-                        direction: 0,
-                    },
-                ),
-                80,
-            ),
+        let army = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(key).at(0);
+        let category = troop(d, army).unwrap().troops.category;
+        let troops = amount * RESOURCE_PRECISION;
+        super::resource_commands::fund_troops(d, key, crate::troops::troop_resource(category, 0), troops);
+        let recruit = crate::troop_management::ManageTroops::RecruitExplorer(
+            crate::troop_management::RecruitExplorer { explorer_id: army, amount: troops, supply_post: None },
         );
-        ids.append(*IStructureOperationsDispatcher { contract_address: d.games }.home_armies(key).at(0));
+        assert!(execute(d, Command::ManageTroops(recruit), super::play_fixture::FIXTURE_START));
+        ids.append(army);
     }
     let attacker = *ids.at(0);
     let defender = *ids.at(1);

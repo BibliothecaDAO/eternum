@@ -1224,29 +1224,6 @@ pub mod GamesFixture {
     }
 
     #[starknet::embeddable]
-    pub impl WithdrawalsFixture<
-        TContractState, +Drop<TContractState>,
-    > of crate::withdrawals::IWithdrawals<TContractState> {
-        fn withdrawal_rules(self: @TContractState, game_id: u32) -> crate::withdrawals::WithdrawalRules {
-            crate::withdrawals::IWithdrawalsDispatcherTrait::withdrawal_rules(
-                crate::withdrawals::IWithdrawalsLibraryDispatcher {
-                    class_hash: fixture_class(game_id, crate::slots::PRODUCTION),
-                },
-                game_id,
-            )
-        }
-        fn resource_token(
-            self: @TContractState, key: crate::withdrawals::ResourceTokenKey,
-        ) -> starknet::ContractAddress {
-            crate::withdrawals::IWithdrawalsDispatcherTrait::resource_token(
-                crate::withdrawals::IWithdrawalsLibraryDispatcher {
-                    class_hash: fixture_class(key.game_id, crate::slots::PRODUCTION),
-                },
-                key,
-            )
-        }
-    }
-    #[starknet::embeddable]
     pub impl GameSettlementFixture<
         TContractState, +Drop<TContractState>,
     > of crate::registrar::IGameSettlement<TContractState> {
@@ -1368,67 +1345,6 @@ pub mod GamesFixture {
             )
         }
     }
-    #[starknet::embeddable]
-    pub impl BridgeFixture<TContractState, +Drop<TContractState>> of crate::bridge::IBridge<TContractState> {
-        fn deposit_rules(self: @TContractState, game_id: u32) -> crate::bridge::DepositRules {
-            crate::bridge::IBridgeDispatcherTrait::deposit_rules(
-                crate::bridge::IBridgeLibraryDispatcher {
-                    class_hash: fixture_class(game_id, crate::slots::PRODUCTION),
-                },
-                game_id,
-            )
-        }
-        fn deposit_resource(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            command: crate::bridge::Deposit,
-            context: crate::commands::ActionContext,
-        ) {
-            crate::bridge::IBridgeDispatcherTrait::deposit_resource(
-                crate::bridge::IBridgeLibraryDispatcher {
-                    class_hash: fixture_class(game_id, crate::slots::PRODUCTION),
-                },
-                game_id,
-                actor,
-                command,
-                context,
-            )
-        }
-        fn withdraw_resource(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            command: crate::bridge::Withdraw,
-            context: crate::commands::ActionContext,
-        ) {
-            crate::bridge::IBridgeDispatcherTrait::withdraw_resource(
-                crate::bridge::IBridgeLibraryDispatcher {
-                    class_hash: fixture_class(game_id, crate::slots::PRODUCTION),
-                },
-                game_id,
-                actor,
-                command,
-                context,
-            )
-        }
-    }
-
-    fn current_ledger_operator_dispatcher() -> crate::entry::ILedgerOperatorLibraryDispatcher {
-        let state = crate::state::read();
-        let release_id = state.open_releases.read(crate::game::FRONTIER);
-        assert!(release_id != 0, "shard has no release");
-        crate::entry::ILedgerOperatorLibraryDispatcher {
-            class_hash: crate::logic::release::release_class(release_id, crate::slots::BRIDGE),
-        }
-    }
-
-    fn ledger_operator_dispatcher(game_id: u32) -> crate::entry::ILedgerOperatorLibraryDispatcher {
-        crate::entry::ILedgerOperatorLibraryDispatcher {
-            class_hash: crate::logic::release::class_of(game_id, crate::slots::BRIDGE),
-        }
-    }
-
     #[starknet::embeddable]
     pub impl LedgerOperatorFixture<
         TContractState, +Drop<TContractState>,

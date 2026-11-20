@@ -11,7 +11,6 @@ pub use crate::structures::IStructureOperationsDispatcher;
 pub use crate::tests::state::{ResourceObservationTrait, StructureObservationTrait};
 pub use crate::troop_management::{ManageTroops, RecruitExplorer};
 pub use crate::troops::Coord;
-pub use crate::upgrades::{UpgradeLimits, UpgradeRecipe};
 pub use super::resource_commands::{assert_terminal_rejection, execute, grant, set_fixture};
 pub const KNIGHT: u8 = 26;
 pub const WHEAT: u8 = 35;
@@ -19,15 +18,8 @@ pub const BARRACKS: u8 = 28;
 pub const FARM: u8 = 37;
 pub const EAST: u8 = 0;
 pub const WEST: u8 = 3;
-pub /// A board realm carrying Frontier's own recipes: two wheat for each troop.
- fn frontier_preset() -> crate::presets::PresetDefinition {
-    let mut preset = super::building_commands::building_preset(Some(super::building_commands::board_rules()));
-    let (_, frontier) = super::preset_projection::current_definition("frontier-check");
-    preset.rules.command_mask = frontier.rules.command_mask;
-    preset
-}
-pub fn frontier_realm(preset: crate::presets::PresetDefinition) -> (super::Deployment, ResourceKey) {
-    let (deployment, home) = super::building_commands::building_world_with_preset(preset);
+pub fn frontier_realm() -> (super::Deployment, ResourceKey) {
+    let (deployment, home) = super::building_commands::building_world();
     grant(deployment, home, crate::resources::LABOR, 1000000 * RESOURCE_PRECISION);
     (deployment, home)
 }

@@ -166,15 +166,8 @@ pub fn populated_facts(
     }
     facts
 }
-pub fn stored_release_fact(address: starknet::ContractAddress, game_id: u32) -> (u32, felt252) {
-    interact_with_state(
-        address,
-        || {
-            let state = crate::state::read();
-            let game = crate::logic::game::game(game_id);
-            (state.game_releases.read(game_id), state.registrar.presets.read(game.preset_id))
-        },
-    )
+pub fn stored_release_fact(address: starknet::ContractAddress, game_id: u32) -> u32 {
+    interact_with_state(address, || crate::state::read().game_releases.read(game_id))
 }
 pub fn gameplay_facts(address: starknet::ContractAddress) -> Array<felt252> {
     interact_with_state(

@@ -176,6 +176,11 @@ pub fn held(d: Deployment, key: ExplorerKey) -> Option<crate::deep::DeepGuard> {
 }
 
 #[test]
+fn the_release_deep_gates_and_sites_fit_the_map_apart_from_each_other() {
+    crate::deep::assert_layout_fits();
+}
+
+#[test]
 fn distinct_homes_enter_one_deep_and_move_on_its_fixed_terrain() {
     let (d, game_id) = setup(81);
     let first = deployed(d, game_id, 1, 10);

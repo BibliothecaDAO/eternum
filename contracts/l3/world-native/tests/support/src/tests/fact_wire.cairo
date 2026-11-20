@@ -8,7 +8,6 @@ pub struct FactWire {
     pub team_bane: crate::deep::TeamBane,
     pub altar_bar: crate::deep::AltarBar,
     pub quest_progress: crate::quests::QuestProgress,
-    pub resource_token_key: crate::withdrawals::ResourceTokenKey,
     pub settlement_rules: crate::settlement::SettlementRules,
     pub arrival: crate::arrivals::Arrival,
     pub arrival_key: crate::arrivals::ArrivalKey,

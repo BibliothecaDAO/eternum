@@ -3,16 +3,10 @@ pub use starknet::ContractAddress;
 pub use crate::commands::Command;
 pub use crate::guilds::{CreateGuild, IGuildsDispatcher, IGuildsDispatcherTrait, JoinGuild, SetWhitelist, WhitelistKey};
 pub use crate::resources::ResourceKey;
-pub use super::resource_commands::{execute, setup_with_rules};
+pub use super::resource_commands::execute;
 pub fn setup() -> (super::Deployment, ResourceKey, ResourceKey, ContractAddress) {
-    let (d, home, second) = setup_with_rules(super::play_fixture::rules());
-    let (friend, _) = super::deploy_player(3, super::GUARDIAN);
-    snforge_std::interact_with_state(
-        d.games, || {
-            crate::logic::structures::StructureState::transfer_owner(second, friend);
-        },
-    );
-    (d, home, second, friend)
+    let (d, home, second) = super::resource_commands::setup();
+    (d, home, second, super::player_address(3))
 }
 pub fn view(d: super::Deployment) -> IGuildsDispatcher {
     IGuildsDispatcher { contract_address: d.games }

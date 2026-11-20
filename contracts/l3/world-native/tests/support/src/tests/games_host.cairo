@@ -132,13 +132,9 @@ pub mod GamesTest {
     #[abi(embed_v0)]
     impl GameFixture = GamesFixture::GameFixture<ContractState>;
     #[abi(embed_v0)]
-    impl WithdrawalsFixture = GamesFixture::WithdrawalsFixture<ContractState>;
-    #[abi(embed_v0)]
     impl GameSettlementFixture = GamesFixture::GameSettlementFixture<ContractState>;
     #[abi(embed_v0)]
     impl GuildsFixture = GamesFixture::GuildsFixture<ContractState>;
-    #[abi(embed_v0)]
-    impl BridgeFixture = GamesFixture::BridgeFixture<ContractState>;
     #[abi(embed_v0)]
     impl LedgerOperatorFixture = GamesFixture::LedgerOperatorFixture<ContractState>;
     #[abi(embed_v0)]

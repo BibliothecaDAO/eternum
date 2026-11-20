@@ -49,9 +49,7 @@ pub mod ResourceFixture {
         fn initialize(ref self: ContractState, key: ResourceKey, capacity: u128) {
             let state = crate::state::write();
             state.game_releases.write(key.game_id, 1);
-            state.games.games.entry(key.game_id).preset_id.write(1);
-            state.registrar.presets.write(1, 1);
-            state.presets.entry(1).rules.day_unit_seconds.write(0);
+            state.games.games.entry(key.game_id).family.write(crate::game::FRONTIER);
             self.resources.initialize(key, capacity);
         }
         fn grant(ref self: ContractState, key: ResourceKey, amount: u128) {

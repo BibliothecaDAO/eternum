@@ -27,24 +27,13 @@ pub fn rules() -> SettlementRules {
         spacing: crate::balance::settlement::SETTLEMENT_SPACING_STEPS,
     }
 }
-pub fn seed_settlement(deployment: Deployment, game_id: u32, rules: SettlementRules) {
-    let games = IGameDispatcher { contract_address: deployment.games };
-    let mut preset = play_fixture::fixture_preset(games.rules(game_id));
-    play_fixture::seed_game_with_preset(deployment.games, game_id, games.game(game_id), preset);
-    snforge_std::interact_with_state(
+pub fn seed_settlement(deployment: Deployment, rules: SettlementRules) -> u32 {
+    play_fixture::create_game(
         deployment.games,
-        || {
-            let state = crate::state::write();
-            let previous = state.games.overrides.read(game_id);
-            state
-                .games
-                .overrides
-                .write(
-                    game_id, crate::game::GameOverrides { registration_start: rules.registration_start, ..previous },
-                );
-            state.registrar.roster_sizes.write(game_id, rules.registration_limit.into());
+        crate::registrar::CreateGameParams {
+            registration_start: rules.registration_start, ..play_fixture::fixture_params('settlement')
         },
-    );
+    )
 }
 pub fn remember_distinct(ref seen: Array<crate::troops::Coord>, added: Span<crate::troops::Coord>) {
     for coord in added {

@@ -21,7 +21,6 @@ pub use crate::tests::state::{GameState, TroopObservationTrait};
 pub use crate::troops::ExplorerKey;
 pub use crate::upgrades::{UpgradeLimits, UpgradeRecipe};
 pub mod army_merge;
-pub mod bridge;
 pub mod building_commands;
 pub mod camps;
 pub mod combat_actions;
@@ -30,7 +29,6 @@ pub mod days;
 pub mod discovery_guards;
 pub mod entity_ids;
 pub mod entry;
-pub mod explore_rewards;
 pub mod fact_wire;
 pub mod fixtures;
 pub mod frontier_combat_vectors;
@@ -43,7 +41,6 @@ pub mod games_host;
 pub mod guilds;
 pub mod mines;
 pub mod play_fixture;
-pub mod preset_projection;
 pub mod production;
 pub mod progression;
 pub mod random_vectors;
@@ -54,7 +51,6 @@ pub mod resource_commands;
 pub mod resources;
 pub mod roll_independence;
 pub mod rule_storage;
-pub mod season_lifecycle;
 pub mod settlement;
 pub mod shared_storage;
 pub mod spatial_replay;
@@ -157,7 +153,7 @@ pub fn setup_with_host(
     }
     start_cheat_caller_address(games, actor);
     snforge_std::start_cheat_account_contract_address(games, actor);
-    start_cheat_block_timestamp(games, 100);
+    start_cheat_block_timestamp(games, play_fixture::FIXTURE_START);
     Deployment { games, actor, account_class }
 }
 pub fn context(games: ContractAddress, game_id: u32) -> ExecutionContext {
@@ -171,7 +167,7 @@ pub fn read_context(game_id: u32) -> ExecutionContext {
     let state = crate::state::read();
     ExecutionContext {
         raw_root: 987654321,
-        timestamp: 100,
+        timestamp: play_fixture::FIXTURE_START,
         game_id,
         game: BoxTrait::new(state.games.games.read(game_id)),
         rules: BoxTrait::new(crate::logic::game::rules(game_id)),
@@ -190,7 +186,7 @@ pub fn action(deployment: Deployment, game_id: u32) -> TestAction {
     }
 }
 pub fn execute(deployment: Deployment, action: TestAction) {
-    assert!(play_fixture::play(deployment.games, action, 987654321, 100));
+    assert!(play_fixture::play(deployment.games, action, 987654321, play_fixture::FIXTURE_START));
 }
 pub fn set_launcher(deployment: Deployment, launcher: ContractAddress) {
     start_cheat_caller_address(deployment.games, authority());

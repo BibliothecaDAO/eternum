@@ -119,20 +119,6 @@ pub fn typed_commands() -> Array<Command> {
                 guard: crate::troop_management::GuardSlot { structure_id: 999999, slot: 0 }, explorer_id: 999999,
             },
         ),
-        Command::DepositResource(
-            crate::bridge::Deposit {
-                structure_id: 999999, resource_type: 1, amount: 1, client_fee_recipient: 999.try_into().unwrap(),
-            },
-        ),
-        Command::WithdrawResource(
-            crate::bridge::Withdraw {
-                structure_id: 999999,
-                recipient: 999.try_into().unwrap(),
-                resource_type: 1,
-                amount: 1,
-                client_fee_recipient: 999.try_into().unwrap(),
-            },
-        ),
         Command::ProvisionAndUpgradeRealm(999999),
         Command::SetEntityName(crate::names::SetEntityName { entity_id: 999999, name: 'route' }),
         Command::EnterDepth(crate::commands::EnterDepth { explorer_id: 999999, depth: 0 }),
@@ -144,39 +130,8 @@ pub fn typed_commands() -> Array<Command> {
         ),
     ]
 }
-pub fn fresh_world(ready: bool) -> Deployment {
-    let d = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
-    let game = crate::game::IGameDispatcherTrait::game(crate::game::IGameDispatcher { contract_address: d.games }, 1);
-    let rules = crate::rules::SliceRules {
-        command_mask: 0xffffffffffffffffffffffffffffffff,
-        entry_rule: crate::rules::ENTRY_ENTITLEMENT,
-        ..play_fixture::rules(),
-    };
-    play_fixture::seed_game(
-        d.games,
-        1,
-        crate::game::GameRegistry {
-            ready,
-            dev_mode_on: false,
-            start_settling_at: 20,
-            start_main_at: 20,
-            end_at: 200,
-            scheduled_end_at: 200,
-            ..game,
-        },
-        rules,
-    );
-    if ready {
-        super::set_launcher(d, d.actor);
-        snforge_std::interact_with_state(
-            d.games,
-            || {
-                crate::state::write().registrar.roster_sizes.write(1, 1);
-                crate::state::write().registrar.seaters.write(1, d.actor);
-            },
-        );
-    }
-    d
+pub fn fresh_world() -> Deployment {
+    super::setup_with_domains(true, "StructuresLogic", "TroopsLogic")
 }
 pub fn assert_route(command: Command, index: u32) {
     let encoded = play_fixture::encode(command);
@@ -190,24 +145,24 @@ pub fn draw_case(case: u8) -> (Deployment, TestAction, u64) {
         2 => battle_case(),
         3 => season_case(),
         4 => {
-            let (d, home) = super::village::setup(false);
+            let (d, home) = super::village::setup();
             super::village::register_pass(d, 7);
             let command = Command::SettleVillage(
                 crate::village::SettleVillage { pass_id: 7, connected_realm_entity_id: home },
             );
-            (d, TestAction { game_id: 3, actor: d.actor, command }, 100)
+            (d, TestAction { game_id: 3, actor: d.actor, command }, play_fixture::FIXTURE_START + 100)
         },
         _ => panic!("unknown draw case"),
     }
 }
 pub fn explorer_case(explore: bool) -> (Deployment, TestAction, u64) {
-    let (d, home) = super::camps::setup(false);
+    let (d, home) = super::camps::setup();
     for resource in array![26_u8, 35, 36] {
         super::resource_commands::grant(d, home, resource, 100 * crate::rules::RESOURCE_PRECISION);
     }
     let create = Command::CreateExplorer(
         crate::commands::CreateExplorer {
-            slot: 0,
+            slot: 2,
             structure_id: home.entity_id,
             category: 0,
             tier: 0,
@@ -216,7 +171,6 @@ pub fn explorer_case(explore: bool) -> (Deployment, TestAction, u64) {
         },
     );
     let command = if explore {
-        assert!(super::resource_commands::execute(d, create, 80));
         let army = crate::tests::state::StructureObservationTrait::home_armies(
             crate::structures::IStructureOperationsDispatcher { contract_address: d.games }, home,
         );
@@ -224,41 +178,31 @@ pub fn explorer_case(explore: bool) -> (Deployment, TestAction, u64) {
     } else {
         create
     };
-    (d, TestAction { game_id: 3, actor: d.actor, command }, 140)
+    (d, TestAction { game_id: 3, actor: d.actor, command }, play_fixture::FIXTURE_START + 140)
 }
 pub fn battle_case() -> (Deployment, TestAction, u64) {
-    let (d, _, _, attacker, defender) = super::combat_actions::setup_with_cooldown(
-        false, 0, super::play_fixture::TEST_RULES, 0, (1000, 1000),
-    );
+    let (d, _, _, attacker, defender) = super::combat_actions::setup_with_counts((1000, 1000));
     let command = Command::Battle(
         crate::combat_actions::AttackExplorer {
             attacker_id: attacker, defender_id: defender, steal_resources: array![].span(),
         },
     );
-    (d, TestAction { game_id: 3, actor: d.actor, command }, 80)
+    (d, TestAction { game_id: 3, actor: d.actor, command }, play_fixture::FIXTURE_START + 80)
 }
 pub fn season_case() -> (Deployment, TestAction, u64) {
     let d = super::registrar::setup();
-    let registrar = crate::registrar::IRegistrarDispatcher { contract_address: d.games };
-    snforge_std::start_cheat_caller_address(d.games, super::authority());
-    crate::registrar::IRegistrarDispatcherTrait::register_preset(registrar, 1, super::registrar::definition(false));
-    let game_id = crate::registrar::IRegistrarDispatcherTrait::create_game(
-        registrar, crate::registrar::CreateGameParams { dev_mode_on: true, ..super::registrar::params(false) },
-    );
-    play_fixture::reserve_fixture_homes(d.games, game_id, d.actor);
+    let game_id = play_fixture::create_game(d.games, play_fixture::fixture_params('season'));
     super::resource_commands::set_fixture(
-        d.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
+        d.games, selector!("realms"), selector!("catalogue_count"), array![].span(), crate::realms::CANONICAL_REALM_COUNT,
     );
     super::resource_commands::set_fixture(
-        d.games, selector!("realms"), selector!("traits"), array![1].span(), 0x4000001_u32,
+        d.games, selector!("realms"), selector!("traits"), array![1].span(), play_fixture::FIXTURE_REALM_TRAITS,
     );
     let command = Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), order: None });
-    (d, TestAction { game_id, actor: d.actor, command }, super::registrar::params(false).start_main_at + 50)
+    (d, TestAction { game_id, actor: d.actor, command }, play_fixture::FIXTURE_START + 50)
 }
 pub fn live_loot_case(insufficient: bool, full: bool) -> (Deployment, TestAction) {
-    let (d, _, _, attacker, defender) = super::combat_actions::setup_with_cooldown(
-        false, 0, super::play_fixture::TEST_RULES, 0, (1000, 1000),
-    );
+    let (d, _, _, attacker, defender) = super::combat_actions::setup_with_counts((1000, 1000));
     super::resource_commands::grant(d, crate::resources::ResourceKey { game_id: 3, entity_id: defender }, 2, 90);
     if full {
         let key = crate::resources::ResourceKey { game_id: 3, entity_id: attacker };

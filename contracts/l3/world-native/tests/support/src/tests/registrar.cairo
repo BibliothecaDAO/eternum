@@ -100,12 +100,6 @@ pub fn day_start(d: super::Deployment, game_id: u32, index: u64) -> u64 {
 }
 pub fn expedition_home(d: super::Deployment) -> (u32, ResourceKey, u8) {
     let game_id = super::play_fixture::create_game(d.games, super::play_fixture::fixture_params('expedition'));
-    super::resource_commands::set_fixture(
-        d.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
-    );
-    super::resource_commands::set_fixture(
-        d.games, selector!("realms"), selector!("traits"), array![1].span(), 0x4000001_u32,
-    );
     let home = super::play_fixture::settled_home(d, game_id, d.actor, 1, super::play_fixture::FIXTURE_START);
     (game_id, home, held_troop(d, home).into())
 }
@@ -246,12 +240,6 @@ pub fn assert_capture_at(
     } else {
         opening + 60
     };
-    super::resource_commands::set_fixture(
-        d.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
-    );
-    super::resource_commands::set_fixture(
-        d.games, selector!("realms"), selector!("traits"), array![1].span(), 0x4000001_u32,
-    );
     let home = super::play_fixture::settled_home(d, game_id, d.actor, 1, opening);
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
