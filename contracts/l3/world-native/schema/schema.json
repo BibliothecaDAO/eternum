@@ -2226,10 +2226,6 @@
             "type": "core::integer::u32"
           },
           {
-            "name": "preset_commitment",
-            "type": "core::felt252"
-          },
-          {
             "name": "command",
             "type": "core::array::Span::<core::felt252>"
           }
@@ -7074,12 +7070,6 @@
           "feltLength": 1
         },
         {
-          "name": "preset_commitment",
-          "type": "core::felt252",
-          "id": "0x7072657365745f636f6d6d69746d656e74",
-          "feltLength": 1
-        },
-        {
           "name": "created_release_id",
           "type": "core::integer::u32",
           "id": "0x637265617465645f72656c656173655f6964",
@@ -7087,7 +7077,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 3
+      "valueLength": 2
     },
     {
       "name": "GameRegistry",
@@ -13833,5 +13823,5 @@
       ]
     }
   },
-  "identity": "baaa3531fad3af4496b31a00c4e2cdc1cda23626225ff1697556b5f37b82350f"
+  "identity": "0dcaa19b709894ec2b00f2930eb6674e436d8f9b5813410cc44da71219806240"
 }
