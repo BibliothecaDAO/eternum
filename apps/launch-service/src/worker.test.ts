@@ -116,7 +116,7 @@ function blitzRpc(
       createdGames.push({ ...game, seated: 0, closedSeated: 0, seats: 0 });
     } else {
       expect(selector).toBe(BigInt(hash.getSelectorFromName("play")));
-      expect(args.slice(4).map(BigInt)).toEqual(
+      expect(args.slice(3).map(BigInt)).toEqual(
         encodeNativeCommand(bindings.commandAbi, { kind: "SettleBlitzRoster", value: undefined }).map(BigInt),
       );
       const gameId = Number(args[0]);

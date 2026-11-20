@@ -69,7 +69,7 @@ describe.each(["desktop", "phone"] as const)("daily quest on %s", (layout) => {
     await act(async () => {
       game.store.applyFacts(
         game.scenario.answer(
-          { kind: "ClaimDailyQuest", fields: { home: "7", day: "0" }, calldata: [] },
+          { kind: "ClaimDailyQuest", fields: { home: "7", day: "0" }, span: [] },
           game.store,
           350,
         ) as never,

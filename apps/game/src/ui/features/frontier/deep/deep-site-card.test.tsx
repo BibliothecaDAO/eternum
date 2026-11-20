@@ -126,7 +126,7 @@ describe("the Deep site's live native binding", () => {
         {
           kind: "InteractSite",
           fields: {},
-          calldata: ["1", "3", "0", "5", "0", "201", "0", String(site.position.x), String(site.position.y)],
+          span: ["0", "201", "0", String(site.position.x), String(site.position.y)],
         },
         hud.store,
         hud.scenario.startsAt,
@@ -288,7 +288,7 @@ it("previews the Deep guard's opening and repeated exchange before sending each 
         {
           kind: "BattleGuard",
           fields: { attacker_id: "201", defender_id: String(site.id) },
-          calldata: [],
+          span: [],
         },
         hud.store,
         hud.scenario.startsAt,
