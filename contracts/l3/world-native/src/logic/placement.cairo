@@ -16,17 +16,13 @@ pub mod PlacementLogic {
 
     #[abi(embed_v0)]
     impl CommandIngress of crate::commands::ICommandIngress<ContractState> {
-        fn validate_command(self: @ContractState, command: Span<felt252>) -> u32 {
-            let (index, _, _) = crate::commands::validated_command(command).expect('INVALID_COMMAND');
-            index
+        fn admit(ref self: ContractState, game_id: u32, actor: starknet::ContractAddress, command: Span<felt252>) {
+            crate::commands::admit(game_id, actor, command);
         }
         fn requires_oath_answer(self: @ContractState, game_id: u32, command: Span<felt252>) -> bool {
             let mut fields = command;
             let command = Serde::deserialize(ref fields).expect('INVALID_COMMAND');
             crate::logic::oath_commands::requires_answer(game_id, command)
-        }
-        fn assign_open_home(ref self: ContractState, game_id: u32, actor: starknet::ContractAddress) {
-            crate::entity_ids::assign_open_home(game_id, actor);
         }
     }
     #[abi(embed_v0)]

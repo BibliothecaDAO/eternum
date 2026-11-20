@@ -79,9 +79,9 @@ pub mod GamesEntry {
         +Drop<TContractState>,
     > of crate::games::IGamesPlay<ComponentState<TContractState>> {
         fn play(ref self: ComponentState<TContractState>, game_id: u32, release_id: u32, command: Span<felt252>) {
-            let actor = self.validate_play(game_id, release_id, command);
+            let actor = self.validate_play(game_id, release_id);
             let timestamp = starknet::get_block_timestamp();
-            self.assign_settlement_home_before_roll(game_id, actor, command);
+            self.admit(game_id, actor, command);
             let raw_root = self.verify_stamp_before_roll();
             self.apply_gameplay(game_id, actor, command, raw_root, timestamp);
         }
@@ -125,9 +125,7 @@ pub mod GamesEntry {
             self.authentication_state.authentication.write(authentication);
         }
 
-        fn validate_play(
-            self: @ComponentState<TContractState>, game_id: u32, release_id: u32, command: Span<felt252>,
-        ) -> ContractAddress {
+        fn validate_play(self: @ComponentState<TContractState>, game_id: u32, release_id: u32) -> ContractAddress {
             let actor = get_caller_address();
             assert!(
                 actor.is_non_zero() && actor == get_tx_info().unbox().account_contract_address,
@@ -135,43 +133,19 @@ pub mod GamesEntry {
             );
             self.assert_approved_account(actor);
             assert!(game_id != 0 && crate::logic::game::game_exists(game_id), "invalid game");
-            let game = crate::logic::game::game(game_id);
             assert!(release_id == self.data.game_releases.read(game_id), "stale release");
-            crate::commands::ICommandIngressDispatcherTrait::validate_command(
-                crate::commands::ICommandIngressLibraryDispatcher {
-                    class_hash: get_dep_component!(self, Release).classes(game_id).placement.read(),
-                },
-                command,
-            );
-            let (index, _, _) = crate::commands::route_command(command).expect('INVALID_COMMAND');
-            // The season class reads the game's rules once for the whole play; the ingress reads only its gate.
-            let command_mask = crate::logic::preset_record::for_game(game_id).rules.command_mask.read();
-            assert!(crate::rules::command_enabled(command_mask, index.into()), "command disabled");
-            assert!(game.ready || index == crate::command_routes::SETTLE_BLITZ_ROSTER, "roster not ready");
-            if index == crate::command_routes::SETTLE_BLITZ_ROSTER {
-                assert!(self.data.registrar.roster_sizes.read(game_id) != 0, "roster not frozen");
-                assert!(actor == self.data.registrar.seaters.read(game_id), "only the game's seater");
-            }
             actor
         }
 
-        fn assign_settlement_home_before_roll(
-            self: @ComponentState<TContractState>, game_id: u32, actor: ContractAddress, command: Span<felt252>,
-        ) {
-            let (_, route, _) = crate::commands::route_command(command).expect('INVALID_COMMAND');
-            if route.selector != selector!("settle_season") {
-                return;
-            }
-            let rules = crate::logic::preset_record::for_game(game_id).rules;
-            if rules.entry_rule.read() == crate::rules::ENTRY_OPEN && rules.day_unit_seconds.read() != 0 {
-                crate::commands::ICommandIngressDispatcherTrait::assign_open_home(
-                    crate::commands::ICommandIngressLibraryDispatcher {
-                        class_hash: get_dep_component!(self, Release).classes(game_id).placement.read(),
-                    },
-                    game_id,
-                    actor,
-                );
-            }
+        fn admit(self: @ComponentState<TContractState>, game_id: u32, actor: ContractAddress, command: Span<felt252>) {
+            crate::commands::ICommandIngressDispatcherTrait::admit(
+                crate::commands::ICommandIngressLibraryDispatcher {
+                    class_hash: get_dep_component!(self, Release).classes(game_id).placement.read(),
+                },
+                game_id,
+                actor,
+                command,
+            );
         }
 
         fn assert_approved_account(self: @ComponentState<TContractState>, actor: ContractAddress) {
