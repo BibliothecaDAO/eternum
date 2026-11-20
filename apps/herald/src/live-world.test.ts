@@ -9,6 +9,7 @@ import type { MadaraRpc } from "./madara-rpc";
 import {
   structureValue,
   explorerValue,
+  gameRegistryEvent,
   seedDerivedRows,
   receipt,
   rowEvent,

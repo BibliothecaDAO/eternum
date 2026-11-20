@@ -100,10 +100,9 @@ it("closes every elapsed day across empty blocks, without inventing days past th
   const second = dayOf(calendar, first.end)!;
   const third = dayOf(calendar, second.end)!;
   expect(closingFrontierDays(read, start - 1, third.end, 20, []).map((day) => day.day_index)).toEqual([0, 1, 2]);
-  const end = game.end_at;
-  game.end_at = second.end;
+  rows.GameRegistry = [{ key: "1", value: { ...game, end_at: String(second.end) } }];
   expect(closingFrontierDays(read, start - 1, third.end, 20, []).map((day) => day.day_index)).toEqual([0, 1]);
-  game.end_at = end;
+  rows.GameRegistry = [{ key: "1", value: game }];
 });
 
 it("closes no ranked day for a Season 1 game, which races Aspects by height", () => {
