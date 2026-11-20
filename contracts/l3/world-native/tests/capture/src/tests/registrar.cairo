@@ -1,4 +1,5 @@
 pub use world_test_support::tests::registrar::*;
+use crate::balance::settlement::SETTLEMENT_SPACING_STEPS;
 
 #[test]
 fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
@@ -44,7 +45,7 @@ fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
         array![home.entity_id, old_id, new_id].span(),
         array![yesterday, crate::geometry::neighbor(yesterday, 0), today].span(),
     );
-    assert_ne!(today.y / preset.settlement.spacing, yesterday.y / preset.settlement.spacing);
+    assert_ne!(today.y / SETTLEMENT_SPACING_STEPS, yesterday.y / SETTLEMENT_SPACING_STEPS);
     assert_eq!(
         map.tile(crate::geometry::tile_key(game_id, crate::geometry::neighbor(yesterday, 0))).unwrap().data
             / 0x20000000000,
@@ -89,12 +90,12 @@ fn expedition_regions_remain_disjoint_for_every_depth_through_a_season() {
     for day in 0_u64..105 {
         for depth in 0_u8..4 {
             for realm in array![1_u16, 2, 8000] {
-                let site = crate::expeditions::site(1024, realm.into(), day, depth);
-                let region: felt252 = Into::<u32, felt252>::into(site.x / 1024) * 0x100000000
-                    + Into::<u32, felt252>::into(site.y / 1024);
+                let site = crate::expeditions::site(SETTLEMENT_SPACING_STEPS, realm.into(), day, depth);
+                let region: felt252 = Into::<u32, felt252>::into(site.x / SETTLEMENT_SPACING_STEPS) * 0x100000000
+                    + Into::<u32, felt252>::into(site.y / SETTLEMENT_SPACING_STEPS);
                 assert_eq!(regions.get(region), 0);
                 regions.insert(region, 1);
-                assert_eq!(crate::expeditions::region_day(site, 1024), day);
+                assert_eq!(crate::expeditions::region_day(site, SETTLEMENT_SPACING_STEPS), day);
             }
         }
     }
@@ -103,15 +104,15 @@ fn expedition_regions_remain_disjoint_for_every_depth_through_a_season() {
 #[test]
 #[should_panic(expected: ("outside expedition region",))]
 fn an_expedition_cannot_move_into_yesterdays_region() {
-    let yesterday = crate::expeditions::site(1024, 1, 0, 0);
-    let today = crate::expeditions::site(1024, 1, 1, 0);
-    crate::expeditions::assert_same_region(today, yesterday, 1024);
+    let yesterday = crate::expeditions::site(SETTLEMENT_SPACING_STEPS, 1, 0, 0);
+    let today = crate::expeditions::site(SETTLEMENT_SPACING_STEPS, 1, 1, 0);
+    crate::expeditions::assert_same_region(today, yesterday, SETTLEMENT_SPACING_STEPS);
 }
 
 #[test]
 fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops() {
     let d = setup();
-    let mut preset = definition(true);
+    let mut preset = definition(false);
     open_entry(ref preset);
     preset.rules.day_unit_seconds = FRONTIER_DAY_UNIT;
     let (_, frontier) = super::preset_projection::current_definition("frontier-check");
@@ -120,21 +121,6 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
     preset.rules.map_config.camp_win_probability = 0;
     preset.rules.map_config.shards_mines_win_probability = 0;
     preset.rules.mode_rules = HOME_REWARDS | crate::rules::UNOWNED_TARGETS | crate::rules::DEPTH_CONTENTS;
-    let mut grants = array![];
-    for grant in preset.settlement.realms.resources {
-        grants
-            .append(
-                crate::resources::ResourceAmount {
-                    amount: if *grant.resource_type >= 26 && *grant.resource_type <= 34 {
-                        2000 * RESOURCE_PRECISION
-                    } else {
-                        *grant.amount
-                    },
-                    resource_type: *grant.resource_type,
-                },
-            );
-    }
-    preset.settlement.realms.resources = grants.span();
     registry(d).register_preset(1, preset);
     let game_id = registry(d)
         .create_game(
@@ -162,21 +148,12 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     let guards = IGuardsDispatcher { contract_address: d.games };
     assert_eq!(guards.guard(GuardKey { game_id, structure_id: 1, slot: 0 }).troops.count, 0);
-    let mut category = 0_u8;
-    let mut troop_resource = 0_u8;
-    let resources_by_category = array![26_u8, 32_u8, 29_u8];
-    for candidate in 0_u8..3 {
-        let balance = resources
-            .resource_balance(
-                ResourceSlot { game_id, entity_id: 1, resource_type: *resources_by_category.at(candidate.into()) },
-            );
-        if balance != 0 {
-            assert_eq!(balance, 2000 * RESOURCE_PRECISION);
-            category = candidate;
-            troop_resource = *resources_by_category.at(candidate.into());
-        }
-    }
-    assert!(troop_resource != 0, "starting garrison missing");
+    let category = 0_u8;
+    let troop_resource = 26_u8;
+    assert_eq!(
+        resources.resource_balance(ResourceSlot { game_id, entity_id: 1, resource_type: troop_resource }),
+        *crate::balance::settlement::REALM_GRANTS.span().at(0).amount,
+    );
     assert_eq!(
         crate::troops::max_army_size(crate::balance::rules::TROOP_LIMIT_CONFIG, 0, crate::troops::TroopTier::T1), 3000,
     );
@@ -278,7 +255,7 @@ fn a_clear_records_only_the_labor_that_fits_and_clears_even_when_full() {
 #[test]
 fn depth_entry_requires_spire_lore_and_keeps_stamina_at_every_depth() {
     let d = setup();
-    let mut preset = definition(true);
+    let mut preset = definition(false);
     open_entry(ref preset);
     preset.rules.day_unit_seconds = DAY_UNIT;
     let (_, frontier) = super::preset_projection::current_definition("frontier-check");
@@ -415,7 +392,7 @@ fn depth_entry_requires_spire_lore_and_keeps_stamina_at_every_depth() {
         assert_ne!(landing / 0x20000000000 % 256, 0);
         assert!(!map.occupancy(crate::geometry::tile_key(game_id, inside.coord)).unwrap().is_structure);
         assert_eq!(inside.coord.x, before.coord.x);
-        assert_eq!(inside.coord.y, before.coord.y + Into::<u8, u32>::into(depth) * preset.settlement.spacing);
+        assert_eq!(inside.coord.y, before.coord.y + Into::<u8, u32>::into(depth) * SETTLEMENT_SPACING_STEPS);
         assert_eq!(inside.troops.stamina.inline().amount, 0);
         assert_eq!(resources.resource_balance(essence), after_purchase);
         assert!(!execute_in_game(d, game_id, enter, 351));
@@ -478,7 +455,7 @@ fn an_army_enters_a_depth_only_from_its_realms_spire_which_turns_each_day() {
             );
         },
     );
-    let spacing = preset.settlement.spacing;
+    let spacing = SETTLEMENT_SPACING_STEPS;
     // The army musters at t=351, on day 0.
     let spire = crate::expeditions::spire(spacing, 1, 0);
     let site = crate::expeditions::site(spacing, 1, 0, 0);
@@ -539,33 +516,24 @@ fn beast_clear_payout(full: bool, band: bool) {
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     let home = ResourceKey { game_id, entity_id: army.owner };
     let wheat = ResourceSlot { game_id, entity_id: army.owner, resource_type: crate::resources::WHEAT };
-    start_cheat_caller_address(d.games, d.games);
-    crate::resources::IResourceOperationsDispatcherTrait::grant_resource(
-        resources,
-        home,
-        crate::resources::WHEAT,
-        if full {
-            1000000 * RESOURCE_PRECISION
-        } else {
-            0
-        },
-        361,
-        crate::commands::resource_context(context),
-    );
-    stop_cheat_caller_address(d.games);
-    let before = resources.resource_balance(wheat);
     let cap = Into::<u32, u128>::into(crate::balance::structures::BOARD.settlement_resource_cap) * RESOURCE_PRECISION;
+    if full {
+        super::resource_commands::grant(d, home, crate::resources::WHEAT, cap);
+    } else {
+        super::frontier_economy::spend(d, home, crate::resources::WHEAT, resources.resource_balance(wheat), 361);
+    }
+    let before = resources.resource_balance(wheat);
+    assert_eq!(before, if full {
+        cap
+    } else {
+        0
+    });
     assert_eq!(
         snforge_std::interact_with_state(
             d.games, || crate::logic::resources::store_limit(home, crate::resources::WHEAT),
         ),
         Some(cap),
     );
-    if full {
-        assert_eq!(before, cap);
-    } else {
-        assert!(before + 250 * RESOURCE_PRECISION <= cap);
-    }
     let attack = Command::BattleGuard(
         crate::commands::Battle { attacker_id: key.explorer_id, defender_id: id, relic_slot: None },
     );
@@ -607,10 +575,10 @@ fn beast_clear_payout(full: bool, band: bool) {
 #[test]
 fn creation_emits_release_and_overrides_without_per_game_configuration_rows() {
     let d = setup();
-    let preset = definition(true);
+    let preset = definition(false);
     registry(d).register_preset(1, preset);
     let mut spy = snforge_std::spy_events();
-    let game_id = registry(d).create_game(params(true));
+    let game_id = registry(d).create_game(params(false));
     let events = spy.get_events().emitted_by(d.games);
     let mut count = 0;
     let mut overrides_count = 0;
@@ -628,10 +596,10 @@ fn creation_emits_release_and_overrides_without_per_game_configuration_rows() {
             assert_eq!(*event.data.at(2), values.len().into());
             let overrides: crate::game::GameOverrides = Serde::deserialize(ref values).unwrap();
             assert!(values.is_empty());
-            assert_eq!(overrides.registration_start, params(true).registration_start);
-            assert_eq!(overrides.biome_climate, params(true).biome_climate);
-            assert_eq!(overrides.map, params(true).map_override);
-            assert_eq!(overrides.map_center_offset, crate::registrar::map_center_offset(game_id, params(true).seed));
+            assert_eq!(overrides.registration_start, params(false).registration_start);
+            assert_eq!(overrides.biome_climate, params(false).biome_climate);
+            assert_eq!(overrides.map, params(false).map_override);
+            assert_eq!(overrides.map_center_offset, crate::registrar::map_center_offset(game_id, params(false).seed));
             overrides_count += 1;
         }
         for model in array![
@@ -840,8 +808,8 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
             second
         };
         let mut army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
-        let centre = crate::expeditions::site(1024, 1, 0, index % 4);
-        army.coord = crate::troops::Coord { x: centre.x + 20 + Into::<u8, u32>::into(index) * 3, ..centre };
+        let centre = crate::expeditions::site(SETTLEMENT_SPACING_STEPS, 1, 0, index % 4);
+        army.coord = crate::troops::Coord { x: centre.x + 5 + Into::<u8, u32>::into(index) * 2, ..centre };
         let location = crate::geometry::tile_key(game_id, army.coord);
         snforge_std::interact_with_state(d.games, || crate::logic::map::MapState::reveal(location, 1));
         super::resource_commands::set_explorer_fixture(d.games, key, army);
@@ -946,7 +914,7 @@ fn frontier_sites_persist_the_seeded_guard_and_initial_count() {
             (crate::discovery::Discovery::Beasts, crate::taxonomy::BEASTS_CATEGORY, 3),
         ] {
             let coord = crate::troops::Coord {
-                alt: false, x: 100 + offset, y: depth_index * preset.settlement.spacing + preset.settlement.spacing / 2,
+                alt: false, x: 100 + offset, y: depth_index * SETTLEMENT_SPACING_STEPS + SETTLEMENT_SPACING_STEPS / 2,
             };
             let seed = 123 + Into::<u32, u256>::into(offset);
             let id = IStructureOperationsDispatcher { contract_address: d.games }
