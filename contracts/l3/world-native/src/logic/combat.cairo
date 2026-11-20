@@ -140,8 +140,7 @@ fn fight_guard(key: ExplorerKey, ref attacker: ExplorerTroops, ref defender: Gua
             GuardSource::Army(key) => crate::logic::progression::held_oaths(key, context),
             _ => 0,
         },
-        defender_is_structure_guard: context.rules.unbox().day_unit_seconds == 0
-            || defender.actor != 0.try_into().unwrap(),
+        defender_is_structure_guard: defender.actor != 0.try_into().unwrap(),
         ..combat_context(key.game_id, attacker, defender.army, context),
     };
     let combat = CombatContext {
@@ -393,9 +392,6 @@ pub fn explorer_owner(key: ExplorerKey, explorer: ExplorerTroops) -> ContractAdd
 }
 
 fn assert_army_opponents(game_id: u32, attacker: ExplorerTroops, defender: ExplorerTroops, rules: SliceRules) {
-    if rules.day_unit_seconds == 0 {
-        return;
-    }
     let spacing = crate::logic::settlement::spacing();
     assert!(
         crate::deep::contains(attacker.coord, spacing) && crate::deep::contains(defender.coord, spacing),
@@ -426,18 +422,6 @@ pub fn try_capture(
     if !crate::geometry::adjacent(explorer.coord, crate::structures::structure_coord(key))
         || crate::logic::guards::GuardState::next(key, target.base.troop_max_guard_count).is_some() {
         return;
-    }
-    if rules.day_unit_seconds == 0 {
-        crate::logic::guards::GuardState::reset(key);
-        crate::guards::IStructureCaptureDispatcherTrait::capture_structure(
-            crate::guards::IStructureCaptureLibraryDispatcher {
-                class_hash: crate::logic::release::class_of(key.game_id, crate::slots::STRUCTURES),
-            },
-            key,
-            explorer.owner,
-            context.timestamp,
-            crate::commands::action_context(context),
-        );
     }
     if target.owner == 0.try_into().unwrap() {
         crate::relics::ICaptureRewardsDispatcherTrait::grant_capture_rewards(
@@ -552,22 +536,10 @@ pub fn combat_context(
     let biome: crate::biome::Biome = map_dispatcher(game_id)
         .biome(tile_key(game_id, defender.coord), crate::commands::biome_context(context))
         .into();
-    let attack_distance = if attacker.coord.alt != defender.coord.alt {
-        1
-    } else {
-        let stride = if attacker.coord.alt {
-            15
-        } else {
-            1
-        };
-        (distance(attacker.coord, defender.coord) / stride).try_into().unwrap()
-    };
     CombatContext {
         timestamp: context.timestamp,
-        day_unit_seconds: context.rules.unbox().day_unit_seconds,
         attacker_biome: biome,
         defender_biome: biome,
-        attack_distance,
         attacker_is_structure_guard: false,
         defender_is_structure_guard: false,
         attacker_oaths: 0,
@@ -607,31 +579,29 @@ pub fn resolve_battle(
     game_context: crate::commands::ExecutionContext,
 ) -> (Troops, Troops) {
     let rules = game_context.rules.unbox();
-    if rules.day_unit_seconds != 0 {
-        if context.attacker_is_structure_guard {
-            attacker
-                .stamina
-                .refill(
-                    ref attacker.boosts,
-                    attacker.category,
-                    crate::troops::TroopTier::T1,
-                    rules.troop_stamina_config,
-                    rules.tick_config.armies_tick_in_seconds,
-                    context.timestamp,
-                );
-        }
-        if context.defender_is_structure_guard {
-            defender
-                .stamina
-                .refill(
-                    ref defender.boosts,
-                    defender.category,
-                    crate::troops::TroopTier::T1,
-                    rules.troop_stamina_config,
-                    rules.tick_config.armies_tick_in_seconds,
-                    context.timestamp,
-                );
-        }
+    if context.attacker_is_structure_guard {
+        attacker
+            .stamina
+            .refill(
+                ref attacker.boosts,
+                attacker.category,
+                crate::troops::TroopTier::T1,
+                rules.troop_stamina_config,
+                rules.tick_config.armies_tick_in_seconds,
+                context.timestamp,
+            );
+    }
+    if context.defender_is_structure_guard {
+        defender
+            .stamina
+            .refill(
+                ref defender.boosts,
+                defender.category,
+                crate::troops::TroopTier::T1,
+                rules.troop_stamina_config,
+                rules.tick_config.armies_tick_in_seconds,
+                context.timestamp,
+            );
     }
     attacker
         .attack_with_context(
@@ -668,7 +638,5 @@ fn emit<T, +starknet::event::Event<T>, +Into<T, crate::logic::combat_domain::Com
 }
 
 fn record_target(key: ExplorerKey, target: u64, context: ExecutionContext) {
-    if context.rules.unbox().day_unit_seconds != 0 {
-        crate::logic::army_combat::record_target(key, target);
-    }
+    crate::logic::army_combat::record_target(key, target);
 }
