@@ -142,8 +142,25 @@ pub fn settled_home(
     super::resource_commands::set_fixture(
         d.games, selector!("realms"), selector!("traits"), array![realm_id.into()].span(), FIXTURE_REALM_TRAITS,
     );
-    let settle = Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(realm_id), order: None });
-    assert!(play(d.games, TestAction { game_id, actor, command: settle }, 987654321, timestamp), "the home settles");
+    hold_realm(d, game_id, actor, realm_id);
+    let settle = Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, order: None });
+    let mut spy = snforge_std::spy_events();
+    if !play(d.games, TestAction { game_id, actor, command: settle }, 987654321, timestamp) {
+        panic!("the home does not settle: {}", rejection(ref spy, d.games).reason);
+    }
     let entry = crate::settlement::ISettlementEntryDispatcher { contract_address: d.games };
     crate::resources::ResourceKey { game_id, entity_id: entry.settled_realm(game_id, realm_id) }
+}
+pub fn hold_realm(d: super::Deployment, game_id: u32, owner: ContractAddress, realm_id: u32) {
+    super::entry::set_operator(d, super::authority());
+    let held = crate::settlement::EntryEntitlement {
+        realm_id: realm_id.into(),
+        metadata_1: 0,
+        metadata_2: 0,
+        metadata_3: 0,
+        pass_kind: crate::settlement::HELD_REALM_KIND,
+    };
+    snforge_std::cheat_caller_address(d.games, super::authority(), snforge_std::CheatSpan::TargetCalls(1));
+    crate::settlement::ISettlementEntryDispatcher { contract_address: d.games }
+        .register_entitlement(crate::settlement::EntryKey { game_id, owner }, held);
 }
