@@ -9,7 +9,15 @@ import { ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { createHeraldRequestHandler } from "./http";
 import { LiveWorld } from "./live-world";
 import type { MadaraRpc } from "./madara-rpc";
-import { gameRegistryEvent, receipt, rowEvent, rulesEvent, seedDerivedRows, setup, shardManifest } from "./native/fixtures";
+import {
+  gameRegistryEvent,
+  receipt,
+  rowEvent,
+  rulesEvent,
+  seedDerivedRows,
+  setup,
+  shardManifest,
+} from "./native/fixtures";
 import { memoryFinalFacts } from "../../value-relay/src/final-facts";
 import { memoryObligations } from "../../value-relay/src/obligations";
 import { frontierSettlementEvidence, sweepFrontierLords } from "../../value-relay/src/frontier-sweep";

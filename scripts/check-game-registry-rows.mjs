@@ -22,7 +22,9 @@ const propertyName = (property) =>
 const BUILDERS = new Set(["gameRegistryRow", "gameRegistryEvent"]);
 
 const isBuilderArgument = (node) =>
-  ts.isCallExpression(node.parent) && ts.isIdentifier(node.parent.expression) && BUILDERS.has(node.parent.expression.text);
+  ts.isCallExpression(node.parent) &&
+  ts.isIdentifier(node.parent.expression) &&
+  BUILDERS.has(node.parent.expression.text);
 
 const isWholeRow = (node, members) =>
   !isBuilderArgument(node) &&

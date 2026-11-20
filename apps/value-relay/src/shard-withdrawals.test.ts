@@ -359,6 +359,13 @@ const resultsAtBlockTen = async (firstRelease = 1) => {
   return results;
 };
 
+const LOGIC_CLASSES = (
+  gamesAbi.find((item) => item.type === "struct" && item.name === "games_storage::release::LogicClasses") as {
+    members: unknown[];
+  }
+).members.length;
+const releaseAnswer = (classes: string[]) => ["0x1", "0x0", ...classes, "0x0"];
+
 const GAME_TEN = [
   {
     chainId: DEV_CHAIN,
@@ -371,7 +378,7 @@ const GAME_TEN = [
 
 it("reads a Blitz result that a release's logic class emits under its own event enum", async () => {
   // The Games class: its events, and the committed release entrypoints and types its Release layout is read from.
-  shardWithGameTen([...abi, ...gamesAbi], [...Array(17).fill(PRIZES_LOGIC), "0x0"]);
+  shardWithGameTen([...abi, ...gamesAbi], releaseAnswer(Array(LOGIC_CLASSES).fill(PRIZES_LOGIC)));
   expect(await resultsAtBlockTen()).toEqual(GAME_TEN);
 });
 
@@ -382,7 +389,7 @@ it("reads a release laid out with one more logic class than today, from the Game
   games
     .find((item) => item.type === "struct" && item.name === "games_storage::release::LogicClasses")!
     .members!.push({ name: "season_rules", type: "core::starknet::class_hash::ClassHash" });
-  shardWithGameTen([...abi, ...games], [...Array(17).fill("0x66"), PRIZES_LOGIC, "0x0"]);
+  shardWithGameTen([...abi, ...games], releaseAnswer([...Array(LOGIC_CLASSES).fill("0x66"), PRIZES_LOGIC]));
   expect(await resultsAtBlockTen()).toEqual(GAME_TEN);
 });
 
@@ -395,14 +402,14 @@ it("reads a fresh chain from the release it began at, never asking for releases 
     if (entrypoint === "release_registered") return [calldata[0] === "5" || calldata[0] === "6" ? "0x1" : "0x0"];
     asked.push(calldata[0]!);
     if (BigInt(calldata[0]!) < 5n) throw new Error("unknown release");
-    return [...Array(17).fill(PRIZES_LOGIC), "0x0"];
+    return releaseAnswer(Array(LOGIC_CLASSES).fill(PRIZES_LOGIC));
   });
   expect(await resultsAtBlockTen(5)).toEqual(GAME_TEN);
   expect(new Set(asked)).toEqual(new Set(["5", "6"]));
 });
 
 it("refuses a chain whose current release is older than the first its manifest names", async () => {
-  shardWithGameTen([...abi, ...gamesAbi], [...Array(17).fill(PRIZES_LOGIC), "0x0"]);
+  shardWithGameTen([...abi, ...gamesAbi], releaseAnswer(Array(LOGIC_CLASSES).fill(PRIZES_LOGIC)));
   const reader = new ShardReader({
     chainId: DEV_CHAIN,
     rpcUrl: "https://shard.test/rpc",
@@ -474,7 +481,7 @@ it("pays a withdrawal the relics logic emits under its own event enum, read from
   rpc.call.mockImplementation(async ({ entrypoint, calldata }: { entrypoint: string; calldata: string[] }) => {
     if (entrypoint === "open_release_of") return ["0x1"];
     if (entrypoint === "release_registered") return [calldata[0] === "1" ? "0x1" : "0x0"];
-    return [...Array(17).fill(RELICS_LOGIC), "0x0"];
+    return releaseAnswer(Array(LOGIC_CLASSES).fill(RELICS_LOGIC));
   });
   const withdrawal = await Effect.runPromise(fixture().ports.withdrawal("0x1", "0xabc"));
   expect(withdrawal).toEqual({

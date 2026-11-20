@@ -24,7 +24,7 @@ test("the members come from the schema's GameRegistry model, its key first", () 
 });
 
 test("a whole row written by hand is refused, an older row missing a member or two included", () => {
-  const older = handWritten.replace('family: 1, ', "").replace('scheduled_end_at: "3",', "");
+  const older = handWritten.replace("family: 1, ", "").replace('scheduled_end_at: "3",', "");
   assert.deepEqual(
     lines([
       { path: "apps/herald/src/a.test.ts", text: `const game = ${handWritten};` },
