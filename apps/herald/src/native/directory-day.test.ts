@@ -102,7 +102,16 @@ it("does not require a season seed for a game without a day schedule", () => {
 });
 
 it("folds the extension row and preserves the added days through a checkpoint reload", async () => {
-  const { default: approved } = await import("../../../../config/source/frontier/extension.json");
+  const approved = {
+    chainId: "0x50524f44554354494f4e5f31386530376435323330633539393933",
+    name: "frontier-1792575960",
+    presetId: 5,
+    start: 1792575960,
+    oldEnd: 1793151960,
+    end: 1793439960,
+    seed: "0x5b0a63f717733291c17fc3ecf7ead6e4bd6ae7157150430908152aad0d4ef09",
+    dayUnit: 14400,
+  };
   const { setup, gameRegistryEvent, rowEvent, receipt, seedDerivedRows, rulesEvent } = await import("./fixtures");
   const { WorldFold } = await import("../world-fold");
   const { shortString, CairoCustomEnum } = await import("starknet");

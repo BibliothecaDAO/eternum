@@ -64,7 +64,12 @@ describe("native presets", () => {
       expect(preset.rules.day_unit_seconds).toBeGreaterThan(0);
       expect(source.bridgeResources).toEqual([]);
       expect(preset.economy.withdrawals.isNone()).toBe(true);
-      for (const command of ["OffloadArrival", "TransferExplorerResources"] as const) {
+      for (const command of [
+        "OffloadArrival",
+        "SendResources",
+        "TransferExplorerResources",
+        "TransferExplorerResourcesToStructure",
+      ] as const) {
         expect(preset.rules.command_mask & BigInt(nativeCommandBits[command])).toBe(0n);
       }
       const grants = [
@@ -174,7 +179,7 @@ describe("native presets", () => {
       const legacy = buildNativePreset(loadNativePresetConfiguration(network, id), id);
       expect(legacy.rules.command_mask & BigInt(nativeCommandBits.InteractSite)).toBe(0n);
     }
-    for (const command of ["OffloadArrival", "TransferExplorerResources"] as const)
+    for (const command of ["SendResources", "TransferExplorerResourcesToStructure"] as const)
       expect(mask & BigInt(nativeCommandBits[command])).toBe(0n);
   });
   test("the accelerated Frontier preset is Frontier with every season clock 120 times faster, under its own id", () => {
