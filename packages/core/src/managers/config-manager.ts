@@ -7,7 +7,6 @@ import {
   EntityType,
   getProducedResource,
   RESOURCE_PRECISION,
-  wholePoints,
   ResourcesIds,
   StructureType,
   TickIds,
@@ -463,13 +462,6 @@ export class ClientConfigManager {
   }
   getDevModeConfig() {
     return { dev_mode_on: this.game().dev_mode_on };
-  }
-  getVictoryPointGrants() {
-    const grants = this.rules().victory_points_grant_config;
-    return {
-      exploreTile: wholePoints(grants.explore_tiles_points),
-      claimCampFromBandits: wholePoints(grants.claim_otherstructure_points),
-    };
   }
   getBasePopulationCapacity() {
     return this.rules().building_config.base_population;

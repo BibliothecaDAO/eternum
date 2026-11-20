@@ -15,7 +15,6 @@ import { knownAmount } from "@/ui/utils/utils";
 import {
   ArmyActionManager,
   ATTACK_FORECAST_MODELS,
-  configManager,
   forecastAttack,
   getBalance,
   getTileAt,
@@ -55,7 +54,7 @@ export const useCoachSteps = (): NextStep[] => {
   const act = useCoachAct();
   const steps = useMemo(
     () =>
-      coachSteps({ holds, armies, targets, troopsOnHand, certainLoss, grants: configManager.getVictoryPointGrants() }),
+      coachSteps({ holds, armies, targets, troopsOnHand, certainLoss }),
     [holds, armies, targets, troopsOnHand, certainLoss],
   );
   return steps.map((step) => toNextStep(step, act));

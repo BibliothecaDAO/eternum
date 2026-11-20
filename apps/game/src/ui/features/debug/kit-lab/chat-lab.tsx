@@ -170,7 +170,7 @@ const RailStage = ({ chatOpen }: { chatOpen: boolean }) => (
     <canvas data-lab="map" className="absolute inset-0 z-0 h-full w-full bg-[#0b1418]" />
     <RailFrame chat={<HudChatWindow open={chatOpen} onOpenChange={noop} />} chatOpen={chatOpen}>
       <HudPanel label="Next up" title="Next up" cue="1 of 5">
-        <p className="text-hud-body text-hud-ink">Your army can explore: +5 points a tile.</p>
+        <p className="text-hud-body text-hud-ink">Your army can explore.</p>
         <HudButton kind="primary" className="mt-2 w-full">
           Select the army
         </HudButton>

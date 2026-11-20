@@ -14,10 +14,6 @@ vi.stubGlobal("localStorage", { getItem: () => null });
 beforeEach(() => {
   vi.spyOn(configManager, "getMapCenter").mockReturnValue(2147483647);
   vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
-  vi.spyOn(configManager, "getVictoryPointGrants").mockReturnValue({
-    exploreTile: 5,
-    claimCampFromBandits: 250,
-  });
 });
 
 type Event = Parameters<typeof buildStoryEventPresentation>[0];

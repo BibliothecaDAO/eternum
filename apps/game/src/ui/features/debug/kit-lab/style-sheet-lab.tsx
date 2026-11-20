@@ -880,7 +880,7 @@ const PanelSection = () => (
     sheet={
       <div className="grid grid-cols-2 gap-4">
         <HudPanel title="Next up" icon="hourglass" cue="1 of 4">
-          <HudRow title="Your army can explore" detail="+10 points a tile" />
+          <HudRow title="Your army can explore" detail="Right-click a tile beside your army" />
         </HudPanel>
         <HudPanel title="Next up" icon="hourglass" cue="1 of 4" defaultCollapsed>
           <HudRow title="Folded: the cue stays" />

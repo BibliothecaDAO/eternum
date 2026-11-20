@@ -34,10 +34,6 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
   configManager: {
     getActiveGameId: () => 1,
-    getVictoryPointGrants: () => ({
-      exploreTile: 5,
-      claimCampFromBandits: 250,
-    }),
   },
   entityMapPosition: () => ({ x: 50, y: 60 }),
   structureMapPosition: (_store: unknown, structure: { entity_id: bigint }) =>

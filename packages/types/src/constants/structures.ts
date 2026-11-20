@@ -300,7 +300,6 @@ export enum CapacityConfig {
   BankStructure = 7,
   FragmentMineStructure = 8,
   CampStructure = 10,
-  BitcoinMineStructure = 11,
 }
 
 export const isEconomyBuilding = (buildingType: BuildingType) => {

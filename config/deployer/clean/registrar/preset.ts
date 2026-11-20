@@ -118,7 +118,6 @@ export function buildStructureCapacityConfig(config: Config) {
     fragment_mine_capacity: config.carryCapacityGram[CapacityConfig.FragmentMineStructure],
     bank_structure_capacity: config.carryCapacityGram[CapacityConfig.BankStructure],
     camp_capacity: config.carryCapacityGram[CapacityConfig.CampStructure],
-    bitcoin_mine_capacity: config.carryCapacityGram[CapacityConfig.BitcoinMineStructure],
   };
 }
 

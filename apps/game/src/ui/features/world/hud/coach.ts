@@ -1,6 +1,5 @@
-import { getHexDistance, formatCount, formatExact } from "@bibliothecadao/types";
+import { getHexDistance, formatCount } from "@bibliothecadao/types";
 import type { TroopStack } from "@/ui/features/military/components/unified-army-creation-modal/types";
-import type { VictoryPointGrants } from "@/ui/shared/lib/victory-point-grants";
 
 /** A hex in contract space, as the map and its facts give it. */
 export interface CoachHex {
@@ -43,7 +42,6 @@ interface CoachState {
   troopsOnHand: TroopsOnHand | null;
   /** The army is wiped out at any roll attacking the target's guards as they stand. */
   certainLoss: (army: CoachArmy, target: CoachTarget) => boolean;
-  grants: VictoryPointGrants;
 }
 
 export type CoachAct =
@@ -63,7 +61,7 @@ export interface CoachStep {
 export const coachSteps = (state: CoachState): CoachStep[] => {
   if (state.armies.length === 0) return state.holds ? [raiseStep(state)] : [];
   const explorer = armyToExplore(state.armies);
-  return [...(explorer ? [exploreStep(explorer, state.grants)] : []), ...goForSite(state)];
+  return [...(explorer ? [exploreStep(explorer)] : []), ...goForSite(state)];
 };
 
 /** An army to raise: at the realm with the most troops on hand, or, with none anywhere, a barracks to build first. */
@@ -91,9 +89,8 @@ const armyToExplore = (armies: readonly CoachArmy[]): CoachArmy | undefined => {
   return able.find((army) => army.selected) ?? able.toSorted((left, right) => right.entityId - left.entityId)[0];
 };
 
-const exploreStep = (army: CoachArmy, grants: VictoryPointGrants): CoachStep => {
-  const points = `+${formatExact(grants.exploreTile)} points a tile`;
-  return army.selected
+const exploreStep = (army: CoachArmy): CoachStep =>
+  army.selected
     ? {
         key: `coach:explore:${army.entityId}:selected`,
         line: "Right-click a tile beside your army",
@@ -102,11 +99,10 @@ const exploreStep = (army: CoachArmy, grants: VictoryPointGrants): CoachStep => 
       }
     : {
         key: `coach:explore:${army.entityId}`,
-        line: `Your army can explore: ${points}`,
+        line: "Your army can explore",
         verb: "Select the army",
         act: { kind: "go", armyId: army.entityId, target: null },
       };
-};
 
 type Pair = { target: CoachTarget; army: CoachArmy; distance: number };
 
@@ -138,7 +134,7 @@ const goForSite = (state: CoachState): CoachStep[] => {
       ? { key: `${key}:selected`, line: `Move beside ${target.name}, then right-click to attack`, verb, act: go }
       : {
           key,
-          line: `Take ${target.name} from The Vanguard: +${formatExact(state.grants.claimCampFromBandits)} points`,
+          line: `Take ${target.name} from The Vanguard`,
           verb,
           act: go,
         },
