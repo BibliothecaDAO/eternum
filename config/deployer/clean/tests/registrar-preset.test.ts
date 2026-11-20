@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { loadEnvironmentConfiguration } from "../config/config-loader";
 import { buildCreateGameParams } from "../registrar/preset";
+import { nativeIdentifiers } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 describe("native game configuration", () => {
   const config = loadEnvironmentConfiguration("madara.blitz");
@@ -36,7 +37,7 @@ describe("native game configuration", () => {
 
       // A launcher clock ahead of the chain cannot delay recorded settlement.
       expect(params).toMatchObject({
-        preset_id: 2,
+        family: nativeIdentifiers.family.BLITZ,
         start_settling_at: 1_999_990_000,
         start_main_at: 2_000_000_000,
         duration_seconds: 7_200,

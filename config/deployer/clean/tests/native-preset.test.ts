@@ -697,7 +697,6 @@ describe("Devcon's fast Frontier preset", () => {
       singleRealmMode: false,
       useMapOverride: false,
     });
-    expect(params.preset_id).toBe(6);
     expect(params.start_main_at).toBe(1_793_687_400);
     expect(params.duration_seconds).toBe(288_000);
     expect(startMainAt + durationSeconds).toBe(Date.parse("2026-11-06T14:30:00Z") / 1_000);
