@@ -39,8 +39,6 @@ import { settleEndedFrontierGames } from "./frontier-end";
 import { sweepFrontierLords, type FrontierSettlement, type PrincipalSweep } from "./frontier-sweep";
 import { settleFrontier } from "./frontier-settlement";
 import { frontierReceiptBindings } from "./frontier-binding";
-import approvedExtension from "../../../config/source/frontier/extension.json";
-import { readFrontierExtension, requireExtendedFrontier } from "./frontier-extension";
 import { durableFinalFacts } from "./final-facts";
 import { shardWithdrawalPorts } from "./shard-withdrawals";
 import { chestLedgerReads, finishChestOnLedger } from "./chest-ledger";
@@ -805,11 +803,6 @@ export class ValueLaunch extends WorkerEntrypoint<RelayEnv> {
   }
   refundSlot(key: LedgerSlotKey) {
     return ledgerOf(this.env).refundSlot(key);
-  }
-  async verifyFrontierExtension() {
-    await requireActiveChain(this.env.IDENTITY, approvedExtension.chainId);
-    const shard = await readRegisteredShard(this.env.IDENTITY, approvedExtension.chainId);
-    return requireExtendedFrontier(await readFrontierExtension(shardConnection(shard), shard.url, this.env.L2_RPC_URL));
   }
 }
 export default {

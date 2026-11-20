@@ -1,8 +1,10 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { buildNativePreset } from "../../../../config/deployer/clean/config/native-preset";
-import { loadNativePresetConfiguration } from "../../../../config/deployer/clean/registrar/native-preset";
+import {
+  type buildNativePreset,
+  seasonOneReleaseDefinition,
+} from "../../../../config/deployer/clean/config/native-preset";
 import { FRONTIER_S1_PRESET_ID } from "../../../../config/source/common/native-preset-modes";
 import { nativePresetForId } from "../../../../config/source/native";
 import { releaseDefinitionText } from "../../../../apps/herald/src/native/release-definition";
@@ -42,14 +44,6 @@ export function balanceModules(definition: PresetDefinition): Record<string, str
     race: raceModule(present<CairoRow>(definition.economy.race, "the race")),
     settlement: settlementModule(definition.settlement),
   };
-}
-
-function seasonOneDefinition(): PresetDefinition {
-  const preset = nativePresetForId(FRONTIER_S1_PRESET_ID);
-  return buildNativePreset(
-    loadNativePresetConfiguration(`madara.${preset.environmentGameType}`, FRONTIER_S1_PRESET_ID),
-    FRONTIER_S1_PRESET_ID,
-  );
 }
 
 export function writeRelease(definition: PresetDefinition): void {
@@ -462,4 +456,4 @@ function scalar(type: string, field: string, value: CairoValue): string {
   throw new Error(`${type}.${field} is not a whole number: ${String(value)}`);
 }
 
-if (import.meta.main) writeRelease(seasonOneDefinition());
+if (import.meta.main) writeRelease(seasonOneReleaseDefinition());
