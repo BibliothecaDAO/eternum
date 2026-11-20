@@ -261,7 +261,7 @@ describe("an action's outcome", () => {
         missing === "receipt never answers"
           ? { getTransactionReceipt: vi.fn(() => new Promise<never>(() => {})) }
           : rpcAnswering(receipt());
-      const outcome = waitForActionOutcome(runtime, rpc, GAMES, TX, running, undefined, undefined, startedAt);
+      const outcome = waitForActionOutcome(runtime, rpc, GAMES, TX, running, undefined, startedAt);
       const ended = expect(outcome).rejects.toThrow("No answer");
       await vi.advanceTimersByTimeAsync(2_000);
       await ended;
