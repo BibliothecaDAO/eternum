@@ -2,15 +2,12 @@ import { frontierSeasonOnePreset } from "../../../source/frontier/season-one";
 import { buildingIds } from "../../../source/frontier/native";
 import developmentRelease from "../../../../deploy/release/dev.json";
 import productionRelease from "../../../../deploy/release/production.json";
-import { registerEnvironmentPreset } from "../registrar/register-preset";
-import { buildLedgerEconomicPreset, buildRegisterLedgerPresetCalldata } from "../ledger/economics";
+import { buildLedgerEconomicPreset } from "../ledger/economics";
 import { findRegistrarGame } from "../registrar/calls";
 import { nativeReleasePresets, nativePresets } from "../../../source/native";
-import { afterAll, describe, expect, test, mock, spyOn } from "bun:test";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { CallData, type Account, type RpcProvider } from "starknet";
+import { describe, expect, test, mock } from "bun:test";
+import { readFileSync } from "node:fs";
+import { CallData, type RpcProvider } from "starknet";
 import schema from "../../../../contracts/l3/world-native/schema/schema.json";
 import {
   nativeResearchConstants as research,
@@ -34,30 +31,12 @@ import { nativePresetIdFor } from "../../../source/native";
 import { clockScaled, seasonDayUnitSeconds } from "../../../source/common/season-clock";
 import { RESOURCE_PRECISION, ResourcesIds, deepSites } from "../../../../packages/types/src/constants";
 import {
-  buildNativePresetRegistration,
-  registerNativePreset,
   buildNativeGameParams,
   loadNativePresetConfiguration,
 } from "../registrar/native-preset";
 
 const abi = [...Object.values(schema.types), ...schema.games.entrypoints];
 const codec = new CallData(abi);
-const directory = mkdtempSync(join(tmpdir(), "native-preset-"));
-const manifestPath = join(directory, "manifest.json");
-writeFileSync(
-  manifestPath,
-  JSON.stringify({
-    world: { address: "0x123", abi },
-    abis: abi,
-    contracts: [{ address: "0x123", class_hash: "0x456" }],
-    native: {
-      version: 2,
-      activeSchema: schema.identity,
-      schemas: { [schema.identity]: schema },
-    },
-  }),
-);
-afterAll(() => rmSync(directory, { recursive: true }));
 
 function configuration(preset: number) {
   const config = loadNativePresetConfiguration("madara.blitz", preset);
@@ -89,29 +68,6 @@ describe("native presets", () => {
         { resource_type: ResourcesIds.Wheat, amount: BigInt(seasonOne ? 6000 : 4500) * BigInt(RESOURCE_PRECISION) },
         { resource_type: ResourcesIds.Labor, amount: 2000n * BigInt(RESOURCE_PRECISION) },
       ]);
-    }
-  });
-
-  test("the mainnet deployment plan registers only the selected economic preset", async () => {
-    const log = spyOn(console, "log").mockImplementation(() => {});
-    try {
-      for (const [presetId, environmentId] of [
-        [2, "madara.blitz"],
-        [5, "madara.frontier"],
-        [FRONTIER_DEVCON_PRESET_ID, "madara.frontier"],
-      ] as const) {
-        log.mockClear();
-        await registerEnvironmentPreset({ presetId, environmentId, dryRun: true, nativeManifest: manifestPath });
-        const summary = JSON.parse(String(log.mock.calls[0]![0]));
-        expect(summary.ledgerCalldata).toEqual(
-          buildRegisterLedgerPresetCalldata(
-            presetId,
-            buildLedgerEconomicPreset(nativePresets[presetId]!.gameType, { presetId }),
-          ),
-        );
-      }
-    } finally {
-      log.mockRestore();
     }
   });
 
@@ -271,9 +227,6 @@ describe("native presets", () => {
     expect(accelerated.resources.resources.map(({ realm_rate }) => realm_rate)).toEqual(
       canonical.resources.resources.map(({ realm_rate }) => realm_rate * 120n),
     );
-    expect(
-      buildNativePresetRegistration(accelerated, FRONTIER_ACCELERATED_PRESET_ID, manifestPath).commitment,
-    ).not.toBe(buildNativePresetRegistration(canonical, FRONTIER_PRESET_ID, manifestPath).commitment);
   });
 
   test("Frontier sites carry no flat camp reward or rift-production table", () => {
@@ -618,47 +571,6 @@ describe("native presets", () => {
     expect(next.settlement.realms.realm_resources).toHaveLength(9);
   });
 
-  test("registration reads the current commitment and refuses a registered id locally", async () => {
-    const registration = buildNativePresetRegistration(buildNativePreset(configuration(2), 2), 1, manifestPath);
-    let commitment = registration.commitment;
-    const account = {
-      getBlockNumber: async () => 10,
-      getClassHashAt: async () => "0x456",
-      address: "0x123",
-      signer: { getPubKey: async () => "0x456" },
-      callContract: async ({ entrypoint }: { entrypoint: string }) => [
-        entrypoint === "owner"
-          ? "0x123"
-          : entrypoint === "is_device"
-            ? "0x1"
-            : entrypoint === "l2_gas_bound"
-              ? "9000000"
-              : commitment,
-      ],
-      execute: async () => {
-        throw new Error("registration submitted");
-      },
-    } as unknown as Account;
-    expect(await registerNativePreset(account, 1, registration)).toBeNull();
-    commitment = "0x1";
-    await expect(registerNativePreset(account, 1, registration)).rejects.toThrow(
-      "Preset 1 is registered with commitment 0x1",
-    );
-    commitment = "0x0";
-    await expect(registerNativePreset(account, 1, registration)).rejects.toThrow("registration submitted");
-  });
-
-  test("a stale manifest cannot register through a replaced registrar", async () => {
-    const registration = buildNativePresetRegistration(buildNativePreset(configuration(2), 2), 2, manifestPath);
-    const account = {
-      getBlockNumber: async () => 10,
-      getClassHashAt: async () => "0x999",
-      callContract: async () => {
-        throw new Error("unexpected view");
-      },
-    } as unknown as Account;
-    await expect(registerNativePreset(account, 2, registration)).rejects.toThrow("differs from manifest");
-  });
 });
 
 test("rejects missing bridge tokens before registration", () => {
@@ -816,11 +728,6 @@ describe("Devcon's fast Frontier preset", () => {
   test("encodes a separate immutable preset and the approved noon-to-evening 80-hour game", () => {
     const presetId = FRONTIER_DEVCON_PRESET_ID;
     const fast = definition(presetId);
-    const registration = buildNativePresetRegistration(fast, presetId, manifestPath);
-    expect(registration.commitment).not.toBe(
-      buildNativePresetRegistration(definition(FRONTIER_PRESET_ID), FRONTIER_PRESET_ID, manifestPath).commitment,
-    );
-    expect(registration.calldata[0]).toBe(String(presetId));
     const startMainAt = Date.parse("2026-11-03T06:30:00Z") / 1_000;
     const durationSeconds = 80 * 3_600;
     const params = buildNativeGameParams(load(presetId), {
@@ -850,15 +757,6 @@ describe("the Frontier playground preset", () => {
   test("plays Frontier under its own id, which the launcher never creates from", () => {
     expect(nativeGameModeOf(FRONTIER_PLAYGROUND_PRESET_ID)).toBe("frontier");
     expect(nativePresetIdFor("frontier")).toBe(FRONTIER_S1_PRESET_ID);
-    expect(
-      buildNativePresetRegistration(
-        definition(FRONTIER_PLAYGROUND_PRESET_ID),
-        FRONTIER_PLAYGROUND_PRESET_ID,
-        manifestPath,
-      ).commitment,
-    ).not.toBe(
-      buildNativePresetRegistration(definition(FRONTIER_PRESET_ID), FRONTIER_PRESET_ID, manifestPath).commitment,
-    );
   });
 
   test("keeps Season 1's rules, clocks, depths, Deep and research prices in Essence; only its stock and labor prices differ", () => {

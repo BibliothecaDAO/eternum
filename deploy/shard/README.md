@@ -20,7 +20,6 @@ GUARDIAN_URL=https://identity.example.org/api/guardian
 PUBLIC_RPC_URL=https://rpc.example.org/rpc/v0_10_2
 PUBLIC_HERALD_URL=https://herald.example.org
 PLAYER_CAPACITY=2000
-PRESETS=2,5,101
 L2_GAS_BOUND=0x47868c00
 HOST_UID=1000
 HOST_GID=1000

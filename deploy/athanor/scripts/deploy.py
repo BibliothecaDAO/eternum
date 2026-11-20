@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and deploy this checkout, then prove the shard's classes, schema and presets before activation.
+"""Build and deploy this checkout, then prove the shard's classes and schema before activation.
 
     python3 deploy/athanor/scripts/operator-command.py deploy ENVIRONMENT DIRECTORY
 
@@ -24,7 +24,7 @@ from service_requests import identity_service_base, service_json
 
 ENVIRONMENTS = shard.ROOT / "deploy/release"
 INPUTS = ("shard_name", "public_rpc_url", "public_herald_url",
-          "player_capacity", "presets", "l2_gas_bound")
+          "player_capacity", "l2_gas_bound")
 
 
 def ignore_stage(_stage):
@@ -49,7 +49,7 @@ def main(environment, directory, report_stage=ignore_stage):
         start(directory, inputs, report_stage)
         publish_releases(directory, inputs, report_stage)
         report_stage("verify facts")
-        differences = release_differences(release, *deployed_facts(directory / "data"), inputs["presets"])
+        differences = release_differences(release, deployed_manifest(directory / "data"))
         if not differences:
             remove_unused_checkouts()
     if differences:
@@ -159,7 +159,7 @@ def unfinished_differences(data, inputs, release):
                 "host-accounts.json", "vrf-key.json", "gameplay-contracts.json", "chain-config.yaml", "harness.env")
     if not all((data / name).exists() for name in required):
         return [INCOMPLETE]
-    manifest, initialized = deployed_facts(data)
+    manifest = deployed_manifest(data)
     if "native" not in manifest:
         return [INCOMPLETE]
     config = json.loads((data / "init-configuration.json").read_text())
@@ -171,10 +171,9 @@ def unfinished_differences(data, inputs, release):
     guardian = shard.read_guardian_identity(inputs["guardian_url"])
     if not same(manifest.get("shard", {}).get("guardianPublicKey"), guardian["guardianPublicKey"]):
         differences.append("guardian identity differs")
-    presets = [preset for preset in inputs["presets"] if str(preset) in initialized.get("presets", {})]
     # The next release continues the running shard: init registers it. Any other release difference replaces it.
     table = [] if is_next_release(release, manifest) else release_table_differences(release, manifest)
-    return differences + table + fixed_differences(release, manifest, initialized, presets)
+    return differences + table + fixed_differences(release, manifest)
 
 
 def write_build(directory, release):
@@ -191,7 +190,7 @@ def render_environment(inputs, images):
         "PUBLIC_RPC_URL": inputs["public_rpc_url"], "PUBLIC_HERALD_URL": inputs["public_herald_url"],
         "BLOCK_TIME": inputs.get("block_time", "2s"),
         "L2_GAS_BOUND": inputs["l2_gas_bound"],
-        "PLAYER_CAPACITY": inputs["player_capacity"], "PRESETS": ",".join(str(preset) for preset in inputs["presets"]),
+        "PLAYER_CAPACITY": inputs["player_capacity"],
         # Each environment sizes its shard: a small staging playtest, a large perf or production shard.
         "HOST_UID": os.getuid(), "HOST_GID": os.getgid(),
     }
@@ -248,22 +247,22 @@ def served_releases(config):
     return service_json(config["public_herald_url"].rstrip("/") + "/manifest", timeout=10).get("releaseSchemas", {})
 
 
-def deployed_facts(data):
-    return json.loads((data / "native-world.json").read_text()), json.loads((data / "initialized.json").read_text())
+def deployed_manifest(data):
+    return json.loads((data / "native-world.json").read_text())
 
 
 def same(left, right):
     return left is not None and right is not None and int(str(left), 16) == int(str(right), 16)
 
 
-def release_differences(release, manifest, initialized, presets):
+def release_differences(release, manifest):
     """Every way the deployed shard differs from the release it was deployed from."""
-    return release_table_differences(release, manifest) + fixed_differences(release, manifest, initialized, presets)
+    return release_table_differences(release, manifest) + fixed_differences(release, manifest)
 
 
 def is_next_release(release, manifest):
     """The image ships the release after the shard's: init registers it on the running shard, and the fixed parts
-    (schema, Games, verifier and account classes, presets) must still match."""
+    (schema, Games, verifier and account classes) must still match."""
     return release["releaseId"] == manifest["native"]["releaseId"] + 1
 
 
@@ -282,8 +281,8 @@ def release_table_differences(release, manifest):
     return differences
 
 
-def fixed_differences(release, manifest, initialized, presets):
-    """What no release changes on a running shard: its schema, its Games, verifier and account classes, its presets."""
+def fixed_differences(release, manifest):
+    """What no release changes on a running shard: its schema, its Games, verifier and account classes."""
     native, classes = manifest["native"], release["classes"]
     differences = []
     if native["activeSchema"] != release["schema"]:
@@ -294,10 +293,6 @@ def fixed_differences(release, manifest, initialized, presets):
         differences.append(f"verifier class {native.get('verifierClassHash')}, release has {classes.get('verifier')}")
     if not same(manifest["shard"].get("accountClassHash"), classes["account"]):
         differences.append(f"account class {manifest['shard'].get('accountClassHash')}, release has {classes['account']}")
-    for preset in presets:
-        chain, expected = initialized.get("presets", {}).get(str(preset)), release["presets"].get(str(preset))
-        if not same(chain, expected):
-            differences.append(f"preset {preset} commitment {chain}, release has {expected}")
     return differences
 
 

@@ -29,7 +29,6 @@ const boxBuild = (buildCommit: string, releaseId = NATIVE_RELEASE_ID) => ({
   schema: "2fbdecd09f961d7b387524eef591d8a0185c2dea59c7c334560c9789a444149e",
   migrationClassHash: "0x0",
   classes: { games: "0x7c78", logic: { season: "0x55e0", troops: "0x77a2" }, account: "0x1", verifier: "0x2" },
-  presets: { "5": "0x4a07" },
   images: { init: "sha256:1" },
 });
 const IDENTITY = {

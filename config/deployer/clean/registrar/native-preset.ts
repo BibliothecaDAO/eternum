@@ -1,5 +1,3 @@
-import { resolveRegistrarExecutionDetails } from "./transaction-details";
-import { assertNativeOwnerSigner } from "../shared/native-owner";
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { resolveDeploymentEnvironment } from "../environment";
 import { mergeConfigPatches } from "../../../source/common/merge-config";
@@ -8,82 +6,10 @@ import { configurationOf, type StoredConfiguration } from "../config/config-load
 import blitz from "../../../generated/blitz.madara.json";
 import frontier from "../../../generated/frontier.madara.json";
 import type { DeploymentEnvironmentId } from "../types";
-import { readFileSync } from "node:fs";
-import { CallData, CairoOption, CairoOptionVariant, hash, shortString, type Account } from "starknet";
+import { CairoOption, CairoOptionVariant } from "starknet";
 import type { Config } from "@bibliothecadao/types";
-import { worldView } from "@bibliothecadao/eternum";
 import { buildCreateGameParams, type CreateGamePayloadInput } from "./preset";
-import { buildNativePreset } from "../config/native-preset";
 import { clockScaled } from "../../../source/common/season-clock";
-import { waitForSuccess } from "../shared/declare";
-import type { NativeWorldManifest, RegistrarWorld } from "../world/native/types";
-import { nativeGamesAbi, nativeWorldSchema } from "../world/native/manifest";
-
-export function buildNativePresetRegistration(
-  definition: ReturnType<typeof buildNativePreset>,
-  presetId: number,
-  target: string | NativeWorldManifest,
-) {
-  const manifest =
-    typeof target === "string" ? (JSON.parse(readFileSync(target, "utf8")) as NativeWorldManifest) : target;
-  const call = presetRegistrationCall(definition, presetId, manifest);
-  const contract = manifest.contracts.find((entry) => entry.address === call.address);
-  if (!contract) throw new Error("Manifest has no native registrar");
-  return { ...call, classHash: contract.class_hash };
-}
-
-/** The register_preset call for a definition and the commitment the registrar keeps for it. */
-export function presetRegistrationCall(
-  definition: ReturnType<typeof buildNativePreset>,
-  presetId: number,
-  world: RegistrarWorld,
-) {
-  const address = world.world.address;
-  const codec = new CallData(nativeGamesAbi(world));
-  const calldata = codec.compile("register_preset", { preset_id: presetId, definition });
-  const commitment = hash.computePoseidonHashOnElements([
-    shortString.encodeShortString("NATIVE_PRESET"),
-    1,
-    ...calldata.slice(1),
-  ]);
-  return { address, calldata, commitment, commitmentView: worldView(nativeWorldSchema(world), "preset_commitment") };
-}
-
-export async function registerNativePreset(
-  account: Account,
-  presetId: number,
-  registration: ReturnType<typeof buildNativePresetRegistration>,
-) {
-  const block = await account.getBlockNumber();
-  const classHash = await account.getClassHashAt(registration.address, block);
-  if (BigInt(classHash) !== BigInt(registration.classHash))
-    throw new Error("Native registrar class differs from manifest");
-  const [existing] = await account.callContract(
-    {
-      contractAddress: registration.address,
-      entrypoint: registration.commitmentView,
-      calldata: [presetId],
-    },
-    block,
-  );
-  if (BigInt(existing) === BigInt(registration.commitment)) return null;
-  // A registered id is immutable on chain; a different definition under it would only revert there.
-  if (BigInt(existing) !== 0n)
-    throw new Error(
-      `Preset ${presetId} is registered with commitment ${existing}; this definition commits to ${registration.commitment}`,
-    );
-  await assertNativeOwnerSigner(account, registration.address, block);
-  const receipt = await account.execute(
-    {
-      contractAddress: registration.address,
-      entrypoint: "register_preset",
-      calldata: registration.calldata,
-    },
-    await resolveRegistrarExecutionDetails(account, registration.address),
-  );
-  await waitForSuccess(account, receipt.transaction_hash);
-  return receipt.transaction_hash;
-}
 
 /** Open-entry games only: a fixed roster is frozen and launched by the launch service when its slot closes. */
 export function buildNativeGameParams(config: Config, input: CreateGamePayloadInput) {

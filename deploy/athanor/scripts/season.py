@@ -29,7 +29,6 @@ def open_frontier(environment, preset_id, starts_at=None, ends_at=None):
         raise ValueError("Box season opening is available only for dev")
     target = json.loads((shard.ROOT / "deploy/first/environments.json").read_text())[environment]
     directory = Path(target["runDirectory"])
-    require_deployed_preset(directory, preset_id)
     dates = season_dates(directory, preset_id, starts_at, ends_at)
     base = target["origin"] + "/api/factory/calendar"
     calendar = service_json(base)
@@ -38,12 +37,6 @@ def open_frontier(environment, preset_id, starts_at=None, ends_at=None):
             require_same_season(phase, dates, starts_at is not None)
             return phase
     return service_json(base + "/frontier", dates, method="PUT")
-
-
-def require_deployed_preset(directory, preset_id):
-    _, initialized = deploy.deployed_facts(directory / "data")
-    if str(preset_id) not in initialized["presets"]:
-        raise ValueError(f"Preset {preset_id} is not registered on the deployed dev shard")
 
 
 def season_dates(directory, preset_id, starts_at, ends_at):
