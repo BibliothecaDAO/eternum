@@ -27,7 +27,7 @@ fn explorer_transfers_keep_capacity_loss_and_reject_wrong_layers_atomically() {
     let from = explorer_fixture(deployment, 70, home.entity_id, Coord { alt: true, x: 2000000, y: 2000000 }, 100);
     let to = explorer_fixture(deployment, 71, home.entity_id, Coord { alt: true, x: 2000015, y: 2000000 }, 5);
     let surface = explorer_fixture(deployment, 72, home.entity_id, Coord { alt: false, x: 2000015, y: 2000000 }, 100);
-    grant(deployment, from, 1, 50);
+    grant(deployment, from, crate::resources::LABOR, 50);
     assert_eq!(
         GameState { contract_address: deployment.games }
             .authorized_explorer(ExplorerKey { game_id: 3, explorer_id: from.entity_id }, deployment.actor, 40)
@@ -36,15 +36,27 @@ fn explorer_transfers_keep_capacity_loss_and_reject_wrong_layers_atomically() {
     );
     let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     let command = crate::resources::ResourceTransfer {
-        from_entity_id: from.entity_id, to_entity_id: to.entity_id, resources: amount(1, 10),
+        from_entity_id: from.entity_id, to_entity_id: to.entity_id, resources: amount(crate::resources::LABOR, 10),
     };
     assert!(execute(deployment, Command::TransferExplorerResources(command), 40));
     assert_eq!(
-        resources.resource_balance(ResourceSlot { game_id: 3, entity_id: from.entity_id, resource_type: 1 }), 40,
+        resources
+            .resource_balance(
+                ResourceSlot { game_id: 3, entity_id: from.entity_id, resource_type: crate::resources::LABOR },
+            ),
+        40,
     );
-    assert_eq!(resources.resource_balance(ResourceSlot { game_id: 3, entity_id: to.entity_id, resource_type: 1 }), 5);
+    assert_eq!(
+        resources
+            .resource_balance(
+                ResourceSlot { game_id: 3, entity_id: to.entity_id, resource_type: crate::resources::LABOR },
+            ),
+        5,
+    );
     let production = resources
-        .resource_production(ResourceSlot { game_id: 3, entity_id: from.entity_id, resource_type: 1 });
+        .resource_production(
+            ResourceSlot { game_id: 3, entity_id: from.entity_id, resource_type: crate::resources::LABOR },
+        );
     assert!(
         !execute(
             deployment,
@@ -55,10 +67,17 @@ fn explorer_transfers_keep_capacity_loss_and_reject_wrong_layers_atomically() {
         ),
     );
     assert_eq!(
-        resources.resource_balance(ResourceSlot { game_id: 3, entity_id: from.entity_id, resource_type: 1 }), 40,
+        resources
+            .resource_balance(
+                ResourceSlot { game_id: 3, entity_id: from.entity_id, resource_type: crate::resources::LABOR },
+            ),
+        40,
     );
     assert_eq!(
-        resources.resource_production(ResourceSlot { game_id: 3, entity_id: from.entity_id, resource_type: 1 }),
+        resources
+            .resource_production(
+                ResourceSlot { game_id: 3, entity_id: from.entity_id, resource_type: crate::resources::LABOR },
+            ),
         production,
     );
     assert!(
@@ -127,7 +146,7 @@ fn arrivals_offload_only_the_requested_prefix_and_delete_the_last_row() {
 #[test]
 fn full_capacity_discards_offloaded_excess_as_the_original_rules_do() {
     let (deployment, home, _) = setup();
-    let key = arrival_fixture(deployment, home.entity_id, 1, amount(2, 30));
+    let key = arrival_fixture(deployment, home.entity_id, 1, amount(crate::resources::WHEAT, 30));
     set_fixture(
         deployment.games,
         selector!("resources"),
@@ -146,7 +165,13 @@ fn full_capacity_discards_offloaded_excess_as_the_original_rules_do() {
     );
     let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     assert!(resources.resource_arrival(key).resources.is_empty());
-    assert_eq!(resources.resource_balance(ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 2 }), 0);
+    assert_eq!(
+        resources
+            .resource_balance(
+                ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: crate::resources::WHEAT },
+            ),
+        0,
+    );
     assert_eq!(resources.resource_weight(home), crate::resources::Weight { capacity: 100, weight: 100 });
 }
 
@@ -258,14 +283,15 @@ fn sending_queues_arrivals_and_spends_only_the_senders_donkeys() {
     let precision = crate::rules::RESOURCE_PRECISION;
     grant(deployment, from, 25, 10 * precision);
     grant(deployment, to, 25, 10 * precision);
+    grant(deployment, from, crate::resources::LABOR, 10);
     let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     let transfer = crate::resources::ResourceTransfer {
-        from_entity_id: from.entity_id, to_entity_id: to.entity_id, resources: amount(1, 10),
+        from_entity_id: from.entity_id, to_entity_id: to.entity_id, resources: amount(crate::resources::LABOR, 10),
     };
     assert!(execute(deployment, Command::SendResources(transfer), 40));
     // Ten surface hexes at nine seconds each: arrival remains in slot one.
     let key = ArrivalKey { game_id: 3, entity_id: to.entity_id, day: 0, slot: 1 };
-    assert_eq!(resources.resource_arrival(key).resources, amount(1, 10));
+    assert_eq!(resources.resource_arrival(key).resources, amount(crate::resources::LABOR, 10));
     assert_eq!(
         resources.resource_balance(ResourceSlot { game_id: 3, entity_id: from.entity_id, resource_type: 25 }),
         9 * precision,

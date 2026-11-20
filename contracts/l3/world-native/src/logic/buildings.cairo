@@ -56,7 +56,7 @@ pub mod BuildingState {
             let base_rate: u64 = if category == crate::research::WORKSHOP {
                 board.workshop_rate
             } else {
-                let rule = crate::logic::resources::rule(key.game_id, resource_type);
+                let rule = crate::logic::resources::rule(resource_type);
                 if base.category == crate::taxonomy::REALM_CATEGORY {
                     rule.realm_rate
                 } else {

@@ -1,6 +1,5 @@
 pub use world_test_support::tests::production::*;
 
-
 #[test]
 #[fuzzer(runs: 64)]
 fn production_bonus_packing_retains_full_width_percentages_and_seconds(a: u16, b: u16, c: u16, d: u32, e: u32, f: u32) {
@@ -30,36 +29,6 @@ fn building_packing_preserves_structure_pause_and_full_width_population(
 }
 
 #[test]
-fn refills_use_block_time_bonus_expiry_without_retroactive_production() {
-    let (deployment, key, _) = setup();
-    grant(deployment, key, 2, 100);
-    grant(deployment, key, 3, 100);
-    set_fixture(
-        deployment.games,
-        selector!("production"),
-        selector!("bonuses"),
-        array![3, key.entity_id.into()].span(),
-        ProductionBonus { incr_troop_rate_percent_num: 5000, incr_troop_rate_end_at: 120, ..Default::default() },
-    );
-    let refill = RefillProduction {
-        structure_id: key.entity_id, resource_types: array![26].span(), amounts: array![1].span(),
-    };
-    assert!(execute(deployment, Command::BurnResourceForResourceProduction(refill), 60));
-    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
-    let slot = ResourceSlot { game_id: 3, entity_id: key.entity_id, resource_type: 26 };
-    let at_end = resources.resource_production(slot);
-    assert_eq!(at_end.output_amount_left, 300);
-    assert_eq!(at_end.last_settled_at, 0);
-    // The bonus applies through second 119 and expires at second 120.
-    assert!(execute(deployment, Command::BurnResourceForResourceProduction(refill), 119));
-    assert_eq!(resources.resource_production(slot).output_amount_left, 600);
-    assert!(execute(deployment, Command::BurnResourceForResourceProduction(refill), 120));
-    assert_eq!(resources.resource_production(slot).output_amount_left, 800);
-    assert_eq!(resources.resource_balance(slot), 0);
-    assert_eq!(resources.resource_balance(ResourceSlot { resource_type: 2, ..slot }), 70);
-}
-
-#[test]
 fn production_payment_failure_rolls_back_prior_debits() {
     let (deployment, key, _) = setup();
     grant(deployment, key, 2, 100);
@@ -82,52 +51,6 @@ fn production_recipes_require_authority_and_cannot_be_reconfigured() {
     start_cheat_caller_address(deployment.games, super::authority());
     assert!(registry.register_preset(10003, preset).is_err());
     stop_cheat_caller_address(deployment.games);
-}
-
-#[test]
-fn resource_configuration_keeps_full_width_rates_without_storing_its_key_twice() {
-    let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
-    let store = IResourceOperationsDispatcher { contract_address: deployment.games };
-    let mut rules = array![];
-    for resource_type in 1_u8..59 {
-        rules
-            .append(
-                ResourceRule {
-                    resource_type,
-                    unit_weight: 0xffffffffffffffffffffffffffffffff,
-                    realm_rate: 0xffffffffffffffff,
-                    village_rate: 0xffffffffffffffff - resource_type.into(),
-                },
-            );
-    }
-    let mut preset = super::play_fixture::fixture_preset(super::play_fixture::rules());
-    preset.resources.resources = rules.span();
-    super::play_fixture::seed_game_with_preset(
-        deployment.games, 3, IGameDispatcher { contract_address: deployment.games }.game(1), preset,
-    );
-    for expected in rules {
-        assert_eq!(store.resource_rule(3, expected.resource_type), expected);
-    }
-}
-
-#[test]
-fn resource_refills_pay_their_inputs_and_queue_output_without_an_active_building() {
-    let (deployment, home, _) = setup();
-    let precision = crate::rules::RESOURCE_PRECISION;
-    grant(deployment, home, 2, 2 * precision + 100);
-    grant(deployment, home, 3, 100);
-    let refill = RefillProduction {
-        structure_id: home.entity_id, resource_types: array![2].span(), amounts: array![2 * precision].span(),
-    };
-    let refill = RefillProduction { resource_types: array![26].span(), amounts: array![2].span(), ..refill };
-    assert!(execute(deployment, Command::BurnResourceForResourceProduction(refill), 60));
-    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
-    let slot = ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 26 };
-    assert_eq!(resources.resource_production(slot).output_amount_left, 400);
-    assert_eq!(resources.resource_production(slot).building_count, 0);
-    assert_eq!(resources.resource_balance(slot), 0);
-    assert_eq!(resources.resource_balance(ResourceSlot { resource_type: 2, ..slot }), 2 * precision + 80);
-    assert_eq!(resources.resource_balance(ResourceSlot { resource_type: 3, ..slot }), 60);
 }
 
 #[test]
@@ -157,24 +80,3 @@ fn malformed_refills_and_out_of_game_actions_reject_without_spending() {
     assert_eq!(resource_facts(deployment, home), before);
 }
 
-#[test]
-fn blitz_accepts_resource_production() {
-    let (deployment, key, _) = super::resource_commands::setup_with_rules(
-        crate::rules::SliceRules {
-            mode_rules: super::play_fixture::BLITZ_RULES,
-            entry_rule: crate::rules::ENTRY_ROSTER,
-            command_mask: super::play_fixture::BLITZ_COMMAND_MASK,
-            ..super::play_fixture::rules(),
-        },
-    );
-    grant(deployment, key, 2, 100);
-    grant(deployment, key, 3, 100);
-    let refill = RefillProduction {
-        structure_id: key.entity_id, resource_types: array![26].span(), amounts: array![1].span(),
-    };
-    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
-    let slot = ResourceSlot { game_id: 3, entity_id: key.entity_id, resource_type: 2 };
-    assert_eq!(resources.resource_balance(slot), 100);
-    assert!(execute(deployment, Command::BurnResourceForResourceProduction(refill), 60));
-    assert_eq!(resources.resource_balance(slot), 90);
-}

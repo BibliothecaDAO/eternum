@@ -2,30 +2,18 @@ pub use world_test_support::tests::mines::*;
 
 
 #[test]
-fn the_surface_pool_selects_only_its_configured_kinds_and_keeps_game_configuration_isolated() {
+fn a_mine_draw_takes_its_kind_from_the_release_surface_pool_and_its_cap_from_that_kind() {
     let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
     let rules = IMineRulesDispatcher { contract_address: deployment.games };
-    let rift = array![MineWeight { kind: 1, weight: 1 }].span();
-    let game = IGameDispatcher { contract_address: deployment.games }.game(1);
-    for (game_id, pool) in array![(3_u32, surface()), (4, rift)] {
-        let mut preset = super::play_fixture::fixture_preset(super::play_fixture::rules());
-        preset.resources.surface_mines = pool;
-        super::play_fixture::seed_game_with_preset(deployment.games, game_id, game, preset);
-    }
-    let mut seen_rift = false;
-    let mut seen_fragment = false;
+    let pool = crate::balance::resources::SURFACE_MINES.span();
     for root in 0_u64..32 {
         let seed = root.into();
-        let (kind, config, amount) = rules.mine_draw(MinePoolKey { game_id: 3 }, seed);
-        seen_rift = seen_rift || kind == 1;
-        seen_fragment = seen_fragment || kind == 2;
-        assert_eq!(config, rules.mine_kind(MineKindKey { game_id: 3, kind }));
+        let (kind, config, amount) = rules.mine_draw(MinePoolKey { game_id: 1 }, seed);
+        assert_eq!(kind, select_kind(pool, seed));
+        assert_eq!(config, *crate::balance::resources::MINE_KINDS.span().at(kind.into() - 1));
+        assert_eq!(config, rules.mine_kind(MineKindKey { game_id: 1, kind }));
         assert_eq!(amount, cap(config, seed));
-        let (kind, _, _) = rules.mine_draw(MinePoolKey { game_id: 4 }, seed);
-        assert_eq!(kind, 1);
     }
-    assert!(seen_rift && seen_fragment);
-    assert_eq!(rules.mine_pool(MinePoolKey { game_id: 4 }), rift);
 }
 
 #[test]
@@ -91,8 +79,6 @@ fn mine_configuration_is_authorized_immutable_and_rejects_unknown_or_duplicate_w
     assert!(registry.register_preset(20000, preset).is_ok());
     assert!(registry.register_preset(20000, preset).is_err());
     assert!(rules.mine_kind(MineKindKey { game_id: 1, kind: 9 }).is_err());
-    assert!(rules.mine_pool(MinePoolKey { game_id: 999 }).is_err());
-    assert!(rules.mine_draw(MinePoolKey { game_id: 999 }, 1).is_err());
     stop_cheat_caller_address(deployment.games);
 }
 
@@ -122,9 +108,9 @@ fn invalid_rate_cap_ladder_and_building_resource_pairs_cannot_initialize_a_game(
 
 #[test]
 fn discovered_surface_mines_use_kind_production_without_revealing_neighbors() {
-    let mut preset = super::resource_commands::fixture_preset(super::play_fixture::rules());
-    preset.resources.surface_mines = surface();
-    let (deployment, _, _) = super::resource_commands::setup_with_preset(preset);
+    let (deployment, _, _) = super::resource_commands::setup_with_preset(
+        super::resource_commands::fixture_preset(super::play_fixture::rules()),
+    );
     let mine_rules = IMineRulesDispatcher { contract_address: deployment.games };
     start_cheat_caller_address(deployment.games, deployment.games);
     let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
@@ -200,7 +186,15 @@ fn discovered_surface_mines_use_kind_production_without_revealing_neighbors() {
             2
         };
     }
-    assert_eq!(seen, 3);
+    let mut pool = 0_u8;
+    for entry in crate::balance::resources::SURFACE_MINES.span() {
+        pool = pool | if *entry.kind == 1 {
+            1
+        } else {
+            2
+        };
+    }
+    assert_eq!(seen, pool);
     stop_cheat_caller_address(deployment.games);
 }
 

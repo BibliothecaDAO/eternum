@@ -78,6 +78,9 @@ cmd = "pnpm run build:packages && pnpm --dir packages/notifications test && pnpm
 [kind.schema-write]
 cmd = 'bash contracts/l3/check-native.sh build && pnpm run schema:native && pnpm run fixtures:native-presets && git diff --binary > "$FLOW_TMP/schema.patch"'
 
+[kind.balance-write]
+cmd = 'pnpm run fixtures:native-presets && git add -N contracts/l3/world-native/src && git diff --binary > "$FLOW_TMP/balance.patch"'
+
 [kind.format-write]
 cmd = 'pnpm run format && (cd contracts/l3/world-native && scarb fmt) && (cd contracts/l3/world-native/tests && scarb fmt) && git diff --binary > "$FLOW_TMP/format.patch"'
 

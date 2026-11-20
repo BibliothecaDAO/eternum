@@ -605,7 +605,7 @@ fn real_movement_reward_stays_applied_at_full_and_fractional_stores(capacity: u1
                 let mut weight = 0;
                 for resource_type in 1_u8..59 {
                     weight += crate::logic::resources::balance(key, resource_type)
-                        * crate::logic::resources::rule(action.game_id, resource_type).unit_weight;
+                        * crate::logic::resources::rule(resource_type).unit_weight;
                 }
                 // The fixture normally has unlimited capacity and does not track weight. Reconstruct it before
                 // switching to finite stores so spending real wheat and fish cannot underflow the held weight.

@@ -3,6 +3,7 @@ pub mod army_relics;
 pub mod arrivals;
 pub mod artificer;
 pub mod aspects;
+pub mod balance;
 pub mod banes;
 pub mod biome;
 pub mod bitcoin;

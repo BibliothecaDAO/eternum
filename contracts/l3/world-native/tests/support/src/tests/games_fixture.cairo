@@ -1122,12 +1122,6 @@ pub mod GamesFixture {
                 crate::mines::IMineRulesLibraryDispatcher { class_hash: classes.production.read() }, key,
             )
         }
-        fn mine_pool(self: @TContractState, key: crate::mines::MinePoolKey) -> Span<crate::mines::MineWeight> {
-            let classes = fixture_classes(key.game_id);
-            crate::mines::IMineRulesDispatcherTrait::mine_pool(
-                crate::mines::IMineRulesLibraryDispatcher { class_hash: classes.production.read() }, key,
-            )
-        }
         fn mine_draw(
             self: @TContractState, key: crate::mines::MinePoolKey, seed: u256,
         ) -> (u8, crate::mines::MineKindConfig, u128) {

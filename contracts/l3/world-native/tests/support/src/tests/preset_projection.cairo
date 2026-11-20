@@ -131,7 +131,7 @@ pub fn observe_resources(ref rows: Array<ObservedRow>, address: ContractAddress,
     let production_rules = IProductionRulesDispatcher { contract_address: address };
     let mine_rules = IMineRulesDispatcher { contract_address: address };
     for resource_type in 1_u8..59 {
-        let rule = interact_with_state(address, || crate::logic::resources::rule(game_id, resource_type));
+        let rule = interact_with_state(address, || crate::logic::resources::rule(resource_type));
         let resource_key = array![game_id.into(), resource_type.into()].span();
         row(ref rows, 'ResourceRule', resource_key, (rule.unit_weight, rule.realm_rate, rule.village_rate));
         row(
@@ -141,18 +141,8 @@ pub fn observe_resources(ref rows: Array<ObservedRow>, address: ContractAddress,
             production_rules.production_recipe(crate::production::RecipeKey { game_id, resource_type }),
         );
     }
-    let kinds = interact_with_state(
-        address,
-        || {
-            let preset = crate::logic::preset_record::for_game(game_id);
-            let mut kinds = array![];
-            for index in 0..preset.mine_kind_count.read() {
-                kinds.append(preset.mine_kind_ids.read(index));
-            }
-            kinds
-        },
-    );
-    for kind in kinds {
+    let kinds: u8 = crate::balance::resources::MINE_KINDS.span().len().try_into().unwrap();
+    for kind in 1..kinds + 1 {
         row(
             ref rows,
             'MineKindConfig',
@@ -160,7 +150,7 @@ pub fn observe_resources(ref rows: Array<ObservedRow>, address: ContractAddress,
             mine_rules.mine_kind(crate::mines::MineKindKey { game_id, kind }),
         );
     }
-    row(ref rows, 'MinePool', key, mine_rules.mine_pool(crate::mines::MinePoolKey { game_id }));
+    row(ref rows, 'MinePool', key, crate::balance::resources::SURFACE_MINES.span());
 }
 pub fn observe_structures(ref rows: Array<ObservedRow>, address: ContractAddress, game_id: u32) {
     let key = array![game_id.into()].span();

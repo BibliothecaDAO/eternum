@@ -149,7 +149,7 @@ fn malformed_amounts_overweight_transfers_and_wrong_categories_reject_without_sp
     }
     assert_eq!(count(d, home), before);
     assert_eq!(troop(d, first).unwrap().troops.count, 10 * RESOURCE_PRECISION);
-    grant(d, ResourceKey { game_id: 3, entity_id: first }, 1, 1);
+    grant(d, ResourceKey { game_id: 3, entity_id: first }, crate::resources::LABOR, 1);
     assert_terminal_rejection(d, transfer(Army::Explorer(first), Army::Explorer(second), 10), 140);
     let mut target = troop(d, second).unwrap();
     target.troops.category = TroopType::Paladin;

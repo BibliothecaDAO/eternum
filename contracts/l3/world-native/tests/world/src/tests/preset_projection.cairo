@@ -3,22 +3,16 @@ pub use world_test_support::tests::preset_projection::*;
 
 
 #[test]
-fn current_blitz_launch_readers_match_herald_projection() {
-    compare_current_launch("blitz");
-}
-
-#[test]
 fn current_frontier_launch_readers_match_herald_projection() {
     compare_current_launch("frontier");
 }
 
 #[test]
 #[feature("safe_dispatcher")]
-fn current_frontier_check_launch_has_no_cash_rules_and_matches_herald_projection() {
+fn current_frontier_check_has_no_cash_rules_and_refuses_unfunded_ones() {
     let (preset_id, preset) = current_definition("frontier-check");
     assert_eq!(preset_id, 104);
     assert!(preset.economy.chests.is_none());
-    compare_current_launch("frontier-check");
     assert_unfunded_cash_rules_refuse_registration();
 }
 

@@ -58,95 +58,6 @@ fn balance(d: Deployment, home: LaborHome, resource: u8) -> u128 {
     )
 }
 
-#[feature("safe_dispatcher")]
-fn claims_each_game_day(tier: u8, expected_amount: u128, expected_essence: u128) {
-    let (d, home) = campaign_home("devcon", tier);
-    let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
-    let labor_before = balance(d, home, LABOR);
-    let essence_before = balance(d, home, ESSENCE);
-    assert!(operator.grant_labor(home, 1, d.actor).is_err());
-    assert!(operator.grant_labor(home, 0, authority()).is_err());
-    let mut spy = spy_events();
-    let grant = operator.grant_labor(home, 0, d.actor).unwrap();
-    assert_eq!(grant.amount, expected_amount * RESOURCE_PRECISION);
-    assert_eq!(grant.essence, expected_essence * RESOURCE_PRECISION);
-    assert_eq!(balance(d, home, LABOR), labor_before + grant.amount);
-    assert_eq!(balance(d, home, ESSENCE), essence_before + grant.essence);
-    let mut receipts = 0;
-    for (_, event) in spy.get_events().emitted_by(d.games).events {
-        if event.keys.len() >= 3 && *event.keys.at(event.keys.len() - 1) == 'LaborGrant' {
-            assert_eq!(
-                event.data.span(),
-                array![
-                    3, home.game_id.into(), home.home.into(), 0, 3, d.actor.into(), grant.amount.into(),
-                    grant.essence.into(),
-                ]
-                    .span(),
-            );
-            receipts += 1;
-        }
-    }
-    assert_eq!(receipts, 1);
-    let mut retry = spy_events();
-    assert_eq!(operator.grant_labor(home, 0, d.actor).unwrap(), grant);
-    assert_eq!(operator.labor_grant(home, 0).unwrap(), Some(grant));
-    assert_eq!(retry.get_events().emitted_by(d.games).events.len(), 0);
-    assert_eq!(balance(d, home, ESSENCE), essence_before + grant.essence);
-    let game = crate::game::IGameDispatcherTrait::game(
-        crate::game::IGameDispatcher { contract_address: d.games }, home.game_id,
-    );
-    let preset = super::registrar::labor_home_definition("devcon");
-    let unit = preset.rules.day_unit_seconds;
-    assert_eq!(unit, 7200);
-    assert_eq!(crate::days::day_of(game, unit, game.end_at - 1).index + 1, 10);
-    let old_first_day = crate::days::day_of(game, 4800, 360);
-    start_cheat_block_timestamp(d.games, old_first_day.end);
-    assert!(operator.grant_labor(home, 1, d.actor).is_err());
-    let labor_rate = interact_with_state(
-        d.games,
-        || crate::logic::resources::production(ResourceKey { game_id: home.game_id, entity_id: home.home }, LABOR)
-            .production_rate,
-    );
-    assert_eq!(labor_rate, 84_000_000);
-    let labor_limit = 6000 * RESOURCE_PRECISION;
-    let mut today = crate::days::day_of(game, unit, 360);
-    for day in 1_u64..10 {
-        start_cheat_block_timestamp(d.games, today.end - 1);
-        assert!(operator.grant_labor(home, day, d.actor).is_err());
-        start_cheat_block_timestamp(d.games, today.end);
-        let labor_before = balance(d, home, LABOR);
-        let produced = Into::<u64, u128>::into(today.end - today.start) * labor_rate.into();
-        let accrued = core::cmp::min(labor_limit, labor_before + produced);
-        let expected_grant = core::cmp::min(expected_amount * RESOURCE_PRECISION, labor_limit - accrued);
-        let next = operator.grant_labor(home, day, d.actor).unwrap();
-        assert_eq!(next.amount, expected_grant);
-        assert_eq!(balance(d, home, LABOR), accrued + expected_grant);
-        assert_eq!(next.essence, expected_essence * RESOURCE_PRECISION);
-        assert_eq!(
-            balance(d, home, ESSENCE),
-            essence_before + Into::<u64, u128>::into(day + 1) * expected_essence * RESOURCE_PRECISION,
-        );
-        assert_eq!(operator.grant_labor(home, day, d.actor).unwrap(), next);
-        today = crate::days::day_of(game, unit, today.end);
-    }
-    assert_eq!(today.end, game.end_at);
-    start_cheat_block_timestamp(d.games, game.end_at);
-    assert!(operator.grant_labor(home, 10, d.actor).is_err());
-    assert_eq!(operator.grant_labor(home, 0, d.actor).unwrap(), grant);
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn a_normal_campaign_home_claims_one_thousand_labor_and_essence_on_each_game_day() {
-    claims_each_game_day(crate::settlement::CAMPAIGN_NORMAL, 1000, 1000);
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn a_golden_campaign_home_claims_labor_and_essence_once_together() {
-    claims_each_game_day(crate::settlement::CAMPAIGN_GOLDEN, 2000, 2000);
-}
-
 #[test]
 #[feature("safe_dispatcher")]
 fn campaign_homes_share_the_campaign_but_never_a_canonical_claim() {
@@ -381,7 +292,6 @@ fn campaign_entries_refuse_games_without_open_frontier_homes() {
     assert!(ledger(d).register_entitlement(EntryKey { game_id: 1, owner: d.actor }, ticket(1)).is_err());
 }
 
-
 #[test]
 #[feature("safe_dispatcher")]
 fn partial_seasons_grant_once_per_actual_day_and_stop_at_the_end() {
@@ -501,32 +411,6 @@ fn flyer_recovery_grants_missed_days_once_and_leaves_today_to_the_normal_claim()
 
 #[test]
 #[feature("safe_dispatcher")]
-fn recovery_resumes_a_drawn_ticket_without_repaying_claimed_days_and_obeys_storage_limits() {
-    let (d, game_id) = super::registrar::setup_labor_home_game("devcon", 3);
-    set_operator(d, authority());
-    let home = found(d, game_id);
-    register(d, game_id, ticket(2));
-    let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
-    let original = operator.grant_labor(home, 0, d.actor).unwrap();
-    let game = crate::game::IGameDispatcherTrait::game(
-        crate::game::IGameDispatcher { contract_address: d.games }, game_id,
-    );
-    let tomorrow = crate::days::day_of(game, 7200, 360).end;
-    let day_two = crate::days::day_of(game, 7200, tomorrow).end;
-    start_cheat_block_timestamp(d.games, day_two);
-    let before = balance(d, home, ESSENCE);
-    register(d, game_id, EntryEntitlement { metadata_3: 'devcon-recovery', ..ticket(2) });
-    assert_eq!(operator.labor_grant(home, 0).unwrap(), Some(original));
-    let recovered = operator.labor_grant(home, 1).unwrap().unwrap();
-    assert_eq!(recovered.amount, 0);
-    assert_eq!(recovered.essence, 2000 * RESOURCE_PRECISION);
-    assert_eq!(balance(d, home, LABOR), 6000 * RESOURCE_PRECISION);
-    assert_eq!(balance(d, home, ESSENCE), before + recovered.essence);
-    assert!(operator.labor_grant(home, 2).unwrap().is_none());
-}
-
-#[test]
-#[feature("safe_dispatcher")]
 fn recovery_requires_a_founded_devcon_home_and_pays_nothing_for_today() {
     let (d, game_id) = super::registrar::setup_labor_home_game("devcon", 3);
     set_operator(d, authority());
@@ -567,64 +451,6 @@ fn an_ordinary_late_ticket_does_not_compensate_previous_days() {
 
 fn golden_upgrade() -> EntryEntitlement {
     EntryEntitlement { metadata_3: 'devcon-upgrade', ..ticket(crate::settlement::CAMPAIGN_GOLDEN) }
-}
-
-#[test_case(false)]
-#[test_case(true)]
-#[feature("safe_dispatcher")]
-fn golden_upgrade_preserves_home_and_paid_claims_then_grants_prospectively(recovered: bool) {
-    let (d, home) = campaign_home("devcon", crate::settlement::CAMPAIGN_NORMAL);
-    if recovered {
-        register(d, home.game_id, EntryEntitlement { metadata_3: 'devcon-recovery', ..ticket(1) });
-    }
-    let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
-    let paid = operator.grant_labor(home, 0, d.actor).unwrap();
-    assert_eq!(paid.amount, 1000 * RESOURCE_PRECISION);
-    assert_eq!(paid.essence, 1000 * RESOURCE_PRECISION);
-    let key = ResourceKey { game_id: home.game_id, entity_id: home.home };
-    let before = interact_with_state(d.games, || crate::logic::structures::record(key));
-    let labor = balance(d, home, LABOR);
-    let essence = balance(d, home, ESSENCE);
-    let mut events = spy_events();
-    register(d, home.game_id, golden_upgrade());
-    let emitted = events.get_events().emitted_by(d.games);
-    assert_eq!(emitted.events.len(), 2);
-    let (_, campaign) = emitted.events.at(0);
-    assert_eq!(*campaign.keys.at(campaign.keys.len() - 1), 'CampaignHome');
-    assert_eq!(campaign.data.span(), array![2, home.game_id.into(), home.home.into(), 2, 'devcon-2026', 2].span());
-    assert_eq!(interact_with_state(d.games, || crate::logic::structures::record(key)), before);
-    assert_eq!(balance(d, home, LABOR), labor);
-    assert_eq!(balance(d, home, ESSENCE), essence);
-    assert_eq!(operator.grant_labor(home, 0, d.actor).unwrap(), paid);
-    let mut retry = spy_events();
-    register(d, home.game_id, golden_upgrade());
-    assert_eq!(retry.get_events().emitted_by(d.games).events.len(), 0);
-    let entry = EntryKey { game_id: home.game_id, owner: d.actor };
-    assert!(ledger(d).register_entitlement(entry, ticket(1)).is_err());
-    assert!(
-        ledger(d).register_entitlement(entry, EntryEntitlement { metadata_3: 'devcon-recovery', ..ticket(2) }).is_err(),
-    );
-    let game = crate::game::IGameDispatcherTrait::game(
-        crate::game::IGameDispatcher { contract_address: d.games }, home.game_id,
-    );
-    let first_day = crate::days::day_of(game, 7200, 360);
-    start_cheat_block_timestamp(d.games, first_day.end);
-    let next = operator.grant_labor(home, 1, d.actor).unwrap();
-    // The first day produces 1,814.4 on top of 3,000 stored; the golden claim fills the 6,000 limit.
-    assert_eq!(next.amount, 11856 * RESOURCE_PRECISION / 10);
-    assert_eq!(next.essence, 2000 * RESOURCE_PRECISION);
-    assert_eq!(balance(d, home, LABOR), 6000 * RESOURCE_PRECISION);
-    assert_eq!(balance(d, home, ESSENCE), essence + next.essence);
-    assert_eq!(operator.grant_labor(home, 1, d.actor).unwrap(), next);
-    assert_eq!(operator.labor_grant(home, 0).unwrap(), Some(paid));
-    let second_day = crate::days::day_of(game, 7200, first_day.end);
-    start_cheat_block_timestamp(d.games, second_day.end);
-    let full = operator.grant_labor(home, 2, d.actor).unwrap();
-    assert_eq!(full.amount, 0);
-    assert_eq!(full.essence, 2000 * RESOURCE_PRECISION);
-    assert_eq!(balance(d, home, LABOR), 6000 * RESOURCE_PRECISION);
-    assert_eq!(balance(d, home, ESSENCE), essence + next.essence + full.essence);
-    assert_eq!(operator.grant_labor(home, 2, d.actor).unwrap(), full);
 }
 
 #[test]

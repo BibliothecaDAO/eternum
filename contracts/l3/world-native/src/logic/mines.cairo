@@ -1,16 +1,14 @@
-use starknet::storage::StorageMapReadAccess;
 use crate::mines::*;
 
 pub fn kind(key: MineKindKey) -> MineKindConfig {
-    let config = crate::logic::preset_record::for_game(key.game_id).mine_kinds.read(key.kind);
-    assert!(config.production_rate != 0, "unknown mine kind");
-    config
+    let kinds = crate::balance::resources::MINE_KINDS.span();
+    assert!(key.kind != 0 && key.kind.into() <= kinds.len(), "unknown mine kind");
+    *kinds.at(key.kind.into() - 1)
 }
 #[starknet::component]
 pub mod MineState {
-    use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
     use crate::events::RowSet;
-    use crate::mines::{MineKindConfig, MineKindKey, MinePoolKey, MineWeight};
+    use crate::mines::{MineKindConfig, MineKindKey, MineWeight};
 
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
@@ -29,13 +27,8 @@ pub mod MineState {
         fn kind(self: @ComponentState<TContractState>, key: MineKindKey) -> MineKindConfig {
             crate::logic::mines::kind(key)
         }
-        fn pool(self: @ComponentState<TContractState>, key: MinePoolKey) -> Span<MineWeight> {
-            let preset = crate::logic::preset_record::for_game(key.game_id);
-            let mut weights = array![];
-            for index in 0..preset.mine_pool_count.read() {
-                weights.append(preset.mine_weights.read(index));
-            }
-            weights.span()
+        fn pool(self: @ComponentState<TContractState>) -> Span<MineWeight> {
+            crate::balance::resources::SURFACE_MINES.span()
         }
     }
 }

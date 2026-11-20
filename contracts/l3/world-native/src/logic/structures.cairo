@@ -416,7 +416,7 @@ pub mod StructuresLogic {
                         .create_producer(
                             key,
                             0,
-                            crate::logic::resources::rule(key.game_id, 23).village_rate,
+                            crate::logic::resources::rule(23).village_rate,
                             23,
                             25,
                             rules.building_config.base_population,
@@ -862,7 +862,7 @@ pub mod StructuresLogic {
                 .create_producer(
                     key,
                     crate::resources::UNLIMITED_OUTPUT,
-                    crate::logic::resources::rule(key.game_id, 23).realm_rate,
+                    crate::logic::resources::rule(23).realm_rate,
                     23,
                     25,
                     rules.building_config.base_population,

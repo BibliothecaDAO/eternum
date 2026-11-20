@@ -183,7 +183,7 @@ pub mod ResourcesLogic {
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
         ) -> u128 {
-            let rule = crate::logic::resources::rule(key.game_id, resource_type);
+            let rule = crate::logic::resources::rule(resource_type);
             self
                 .resources
                 .grant_resource(
@@ -232,7 +232,7 @@ pub mod ResourcesLogic {
                     key,
                     resource_type,
                     rate,
-                    crate::logic::resources::rule(key.game_id, resource_type).unit_weight,
+                    crate::logic::resources::rule(resource_type).unit_weight,
                     timestamp.try_into().unwrap(),
                     game_context.production_start,
                 );
@@ -271,7 +271,7 @@ pub mod ResourcesLogic {
             for resource in resources {
                 let amount = *resource.amount;
                 if amount != 0 {
-                    let rule = crate::logic::resources::rule(from.game_id, *resource.resource_type);
+                    let rule = crate::logic::resources::rule(*resource.resource_type);
                     self.resources.spend(from, *resource.resource_type, amount, timestamp, game_context);
                     self
                         .resources
@@ -309,7 +309,7 @@ pub mod ResourcesLogic {
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
         ) {
-            let rule = crate::logic::resources::rule(key.game_id, resource_type);
+            let rule = crate::logic::resources::rule(resource_type);
             self
                 .resources
                 .start_production(
@@ -333,7 +333,7 @@ pub mod ResourcesLogic {
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
         ) {
-            let _ = crate::logic::resources::rule(key.game_id, resource.resource_type);
+            let _ = crate::logic::resources::rule(resource.resource_type);
 
             let arrival = crate::arrivals::arrival_key(
                 key.game_id, key.entity_id, game_context.delivery_tick, timestamp, travel_time,
@@ -352,7 +352,7 @@ pub mod ResourcesLogic {
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
         ) {
-            let rule = crate::logic::resources::rule(key.game_id, resource_type);
+            let rule = crate::logic::resources::rule(resource_type);
             self
                 .resources
                 .grant_resource(
@@ -390,7 +390,7 @@ pub mod ResourcesLogic {
             )
                 .into();
             for input in recipe.simple_inputs {
-                let unit_weight = crate::logic::resources::rule(key.game_id, *input.resource_type).unit_weight;
+                let unit_weight = crate::logic::resources::rule(*input.resource_type).unit_weight;
                 let discount = if *input.resource_type == crate::resources::WHEAT {
                     board.ration_step * rations * per_troops
                 } else {

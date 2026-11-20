@@ -368,6 +368,24 @@ pub fn free_ring_neighbor(
     }
     found.expect('no free ring neighbour')
 }
+pub fn grant_troop_recipe(d: super::Deployment, home: ResourceKey, troop: u8, troops: u128, timestamp: u64) {
+    let recipe = crate::production::IProductionRulesDispatcherTrait::production_recipe(
+        crate::production::IProductionRulesDispatcher { contract_address: d.games },
+        crate::production::RecipeKey { game_id: home.game_id, resource_type: troop },
+    );
+    for input in recipe.simple_inputs {
+        IResourceOperationsDispatcher { contract_address: d.games }
+            .grant_resource(
+                home,
+                *input.resource_type,
+                *input.amount * troops / recipe.simple_output.into(),
+                timestamp,
+                crate::commands::resource_context(
+                    crate::commands::ExecutionContext { timestamp, ..crate::tests::context(d.games, home.game_id) },
+                ),
+            );
+    }
+}
 pub fn assert_expedition_capture(depth: u8) {
     assert_capture_with_reveal(
         depth,
@@ -414,23 +432,6 @@ pub fn assert_capture_at(
 ) {
     let d = setup();
     let mut preset = definition(true);
-    // Isolate the reveal/capture delta from the realm's passive labor and Essence.
-    let mut resource_rules = array![];
-    for rule in preset.resources.resources {
-        resource_rules
-            .append(
-                ResourceRule {
-                    realm_rate: if *rule.resource_type == crate::resources::LABOR
-                        || *rule.resource_type == crate::resources::ESSENCE {
-                        0
-                    } else {
-                        *rule.realm_rate
-                    },
-                    ..*rule,
-                },
-            );
-    }
-    preset.resources.resources = resource_rules.span();
     open_entry(ref preset);
     preset.rules.day_unit_seconds = FRONTIER_DAY_UNIT;
     preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
@@ -552,6 +553,9 @@ pub fn assert_capture_at(
                 },
             ),
         );
+    if labor_room.is_some() {
+        grant_troop_recipe(d, home, 26, 1000 * RESOURCE_PRECISION, opening);
+    }
     stop_cheat_caller_address(d.games);
     assert!(
         execute_in_game(
@@ -601,10 +605,13 @@ pub fn assert_capture_at(
     );
     let labor_supply = ResourceSlot { game_id, entity_id: 1, resource_type: 23 };
     let essence_supply = ResourceSlot { game_id, entity_id: 1, resource_type: 38 };
+    let reveal_at = opening + 2;
+    for resource_type in array![crate::resources::LABOR, crate::resources::ESSENCE] {
+        super::frontier_economy::settle(d, ResourceKey { game_id, entity_id: 1 }, resource_type, reveal_at);
+    }
     let before_supplies = resources.resource_balance(labor_supply) + resources.resource_balance(essence_supply);
     let discovery_rules = preset.economy.discovery.unwrap();
     let root = discovery_root(game_id, discovery_rules, 100, 0, None, crate::discovery::Discovery::Camp);
-    let reveal_at = opening + 2;
     assert!(reveal_at < capture_at, "camp draw must precede the fixture capture");
     assert!(explore_with_root(d, game_id, explorer_id, root, reveal_at));
     let coord = crate::geometry::neighbor(army.coord, 0);
@@ -627,6 +634,7 @@ pub fn assert_capture_at(
         (Into::<u8, u128>::into(depth) + 3) * RESOURCE_PRECISION,
     );
     let essence = ResourceSlot { game_id, entity_id: 1, resource_type: 38 };
+    super::frontier_economy::settle(d, home, crate::resources::LABOR, capture_at);
     if let Some(room) = labor_room {
         let limit = snforge_std::interact_with_state(
             d.games, || crate::logic::resources::store_limit(home, crate::resources::LABOR).unwrap(),

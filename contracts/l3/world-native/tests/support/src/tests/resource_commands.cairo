@@ -17,22 +17,7 @@ pub fn setup() -> (Deployment, ResourceKey, ResourceKey) {
     setup_with_rules(play_fixture::rules())
 }
 pub fn fixture_preset(rules: crate::rules::SliceRules) -> crate::presets::PresetDefinition {
-    let mut preset = play_fixture::fixture_preset(rules);
-    let mut resources = array![];
-    for resource_type in 1_u8..59 {
-        resources
-            .append(
-                ResourceRule {
-                    resource_type, unit_weight: if resource_type == 58 {
-                        0
-                    } else {
-                        1
-                    }, realm_rate: 2, village_rate: 1,
-                },
-            );
-    }
-    preset.resources.resources = resources.span();
-    preset
+    play_fixture::fixture_preset(rules)
 }
 pub fn setup_with_rules(rules: crate::rules::SliceRules) -> (Deployment, ResourceKey, ResourceKey) {
     setup_with_preset(fixture_preset(rules))

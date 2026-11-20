@@ -74,16 +74,9 @@ pub fn store_limit(key: ResourceKey, resource_type: u8) -> Option<u128> {
     Some(castle_base * (10000 + stores * board.storage_step_bps.into()) / 10000)
 }
 
-pub fn rule(game_id: u32, resource_type: u8) -> crate::resources::ResourceRule {
-    let preset = crate::logic::preset_record::for_game(game_id);
+pub fn rule(resource_type: u8) -> crate::resources::ResourceRule {
     assert_resource(resource_type);
-    let (unit_weight, rates) = preset.resource_rules.read(resource_type);
-    crate::resources::ResourceRule {
-        resource_type,
-        unit_weight,
-        realm_rate: (rates % crate::resources::RESOURCE_RATE_SCALE).try_into().unwrap(),
-        village_rate: (rates / crate::resources::RESOURCE_RATE_SCALE).try_into().unwrap(),
-    }
+    *crate::balance::resources::RESOURCE_RULES.span().at(resource_type.into() - 1)
 }
 
 pub fn production_start(game_id: u32, game_context: crate::commands::ExecutionContext) -> u32 {
@@ -193,11 +186,7 @@ pub mod ResourceState {
                     && crate::logic::resources::production(key, resource_type).building_count != 0 {
                     self
                         .settle_resource(
-                            key,
-                            resource_type,
-                            crate::logic::resources::rule(key.game_id, resource_type).unit_weight,
-                            now,
-                            start_at,
+                            key, resource_type, crate::logic::resources::rule(resource_type).unit_weight, now, start_at,
                         );
                 }
             }
@@ -210,7 +199,7 @@ pub mod ResourceState {
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
         ) {
-            let rule = super::rule(key.game_id, resource_type);
+            let rule = super::rule(resource_type);
             self
                 .spend_resource(
                     key,

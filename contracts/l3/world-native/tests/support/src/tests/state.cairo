@@ -96,10 +96,10 @@ pub impl ResourceObservation of ResourceObservationTrait {
         })
     }
     fn resource_rule(
-        self: crate::resources::IResourceOperationsDispatcher, game_id: u32, resource_type: u8,
+        self: crate::resources::IResourceOperationsDispatcher, resource_type: u8,
     ) -> crate::resources::ResourceRule {
         interact_with_state(self.contract_address, || {
-            crate::logic::resources::rule(game_id, resource_type)
+            crate::logic::resources::rule(resource_type)
         })
     }
 }

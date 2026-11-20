@@ -100,6 +100,15 @@ pub trait IProductionCommands<T> {
     );
 }
 
+#[derive(Copy, Drop)]
+pub struct RecipeRow {
+    pub simple_output: u64,
+    pub complex_output: u64,
+    pub first_input: u32,
+    pub simple_count: u32,
+    pub complex_count: u32,
+}
+
 #[derive(Copy, Drop, Default, starknet::Store)]
 pub struct RecipeTerms {
     pub simple_output: u64,

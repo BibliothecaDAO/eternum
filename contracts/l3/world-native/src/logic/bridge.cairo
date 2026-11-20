@@ -280,7 +280,7 @@ pub mod BridgeState {
                         rules.speed_config,
                         false,
                     );
-                let weight = fee * crate::logic::resources::rule(game_id, resource_type).unit_weight;
+                let weight = fee * crate::logic::resources::rule(resource_type).unit_weight;
                 let donkeys = crate::transport::donkeys_needed(weight, rules.capacity_config.donkey_capacity.into());
                 self
                     .resources(game_id)

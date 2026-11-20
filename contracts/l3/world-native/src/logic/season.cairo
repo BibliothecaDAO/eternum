@@ -657,7 +657,7 @@ pub mod SeasonLogic {
             if amount == 0 {
                 return 0;
             }
-            let rule = crate::logic::resources::rule(destination.game_id, 58);
+            let rule = crate::logic::resources::rule(58);
             assert!(rule.unit_weight == 0, "SAT must be weightless");
             let paid = self
                 .resources(destination.game_id)

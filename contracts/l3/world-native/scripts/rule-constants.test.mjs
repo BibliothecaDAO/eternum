@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, sep } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -72,6 +72,18 @@ test("every constant is either a hashed identifier or a tunable number, and a qu
     HASHED_QUANTITIES,
     "a constant named like a quantity is hashed: rename it with a unit to make it tunable, or list it as an identifier",
   );
+});
+
+test("every release balance number outside a table or a record is named with its unit", async () => {
+  const directory = new URL("src/balance/", root);
+  const modules = (await readdir(directory)).filter((name) => name.endsWith(".cairo"));
+  assert.ok(modules.includes("resources.cairo"));
+  for (const module of modules) {
+    const source = await readFile(new URL(module, directory), "utf8");
+    for (const [, name, type] of source.matchAll(/^pub const ([A-Z][A-Z0-9_]*): ([^=]+)=/gm))
+      if (/^(u\d+|i\d+|felt252)$/.test(type.trim()))
+        assert.match(name, QUANTITY, `${module}: ${name} is tunable without a unit`);
+  }
 });
 
 test("the balance identity moves with a tunable number only, not with a rename or an identifier", () => {

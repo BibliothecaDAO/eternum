@@ -9,6 +9,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { encodeMembers } from "../../../../apps/herald/src/native/serde";
 import { currentPresetFixture, serializePresetRows } from "../../../../apps/herald/src/native/current-preset-fixture";
 import { arenaCommandMask } from "../../../../config/source/common/native-commands";
+import { writeBalanceModules } from "./balance-modules";
 import {
   FRONTIER_S1_PRESET_ID,
   FRONTIER_FIXTURE_PRESET_ID,
@@ -33,6 +34,7 @@ for (const [name, id] of [
   write(`${name}-rows.txt`, serializePresetRows(fixture.rows, schema));
   if (id === FRONTIER_S1_PRESET_ID) {
     writeFileSync(new URL("../frontier-command-mask.txt", directory), `${fixture.definition.rules.command_mask}\n`);
+    writeBalanceModules(fixture.definition);
   }
 }
 write("../oath-deep-loss.txt", oathDeepLossVectors());

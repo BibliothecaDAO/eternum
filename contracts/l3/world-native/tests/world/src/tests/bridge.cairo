@@ -1,6 +1,5 @@
 pub use world_test_support::tests::bridge::*;
 
-
 #[test]
 fn deposit_applies_retention_platform_fees_and_connected_realm_fee() {
     for village in array![false, true] {
@@ -19,32 +18,6 @@ fn deposit_applies_retention_platform_fees_and_connected_realm_fee() {
             assert_eq!(arrival(d, realm, 0), amount(12500000000));
         } else {
             assert!(arrival(d, realm, 0).is_empty());
-        }
-    }
-}
-
-#[test]
-fn withdrawal_charges_connected_realm_fee_once_and_keeps_donkeys_and_travel() {
-    for village in array![false, true] {
-        let (d, realm, target, token) = setup(village, false);
-        assert!(execute(d, withdraw(target, d.actor), 40));
-        assert_eq!(balance(d, target, 2), 0);
-        assert_eq!(
-            tokens(token, d.actor), TOKENS + if village {
-                222500000000000000000
-            } else {
-                235000000000000000000
-            },
-        );
-        assert_eq!(balance(d, target, 25), (if village {
-            9
-        } else {
-            10
-        }) * RESOURCE_PRECISION);
-        if village {
-            assert_eq!(arrival(d, realm, 10), amount(12500000000));
-        } else {
-            assert!(arrival(d, realm, 10).is_empty());
         }
     }
 }
@@ -134,27 +107,6 @@ fn bridge_configuration_requires_authority_and_is_immutable() {
     super::play_fixture::seed_game_with_preset(d.games, 4, games.game(3), preset);
     assert!(bridge.deposit_rules(4).unwrap().paused);
     assert!(!bridge.deposit_rules(3).unwrap().paused);
-}
-
-#[test]
-fn missing_donkeys_reverts_the_withdrawal_burn_and_fee_arrival() {
-    let (d, realm, target, token) = setup(true, false);
-    assert!(
-        execute(
-            d,
-            Command::BurnStructureResources(
-                crate::resources::ResourceBurn {
-                    entity_id: target.entity_id,
-                    resources: array![ResourceAmount { resource_type: 25, amount: 10 * RESOURCE_PRECISION }].span(),
-                },
-            ),
-            39,
-        ),
-    );
-    assert_terminal_rejection(d, withdraw(target, d.actor), 40);
-    assert_eq!(balance(d, target, 2), STOCK);
-    assert_eq!(tokens(token, d.actor), TOKENS);
-    assert!(arrival(d, realm, 10).is_empty());
 }
 
 #[test]

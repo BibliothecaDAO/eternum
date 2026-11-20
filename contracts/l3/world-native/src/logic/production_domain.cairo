@@ -84,14 +84,10 @@ pub mod ProductionLogic {
         fn mine_kind(self: @ContractState, key: crate::mines::MineKindKey) -> crate::mines::MineKindConfig {
             self.mines.kind(key)
         }
-        #[cfg(feature: "test_support")]
-        fn mine_pool(self: @ContractState, key: crate::mines::MinePoolKey) -> Span<crate::mines::MineWeight> {
-            self.mines.pool(key)
-        }
         fn mine_draw(
             self: @ContractState, key: crate::mines::MinePoolKey, seed: u256,
         ) -> (u8, crate::mines::MineKindConfig, u128) {
-            let kind = crate::mines::select_kind(self.mines.pool(key), seed);
+            let kind = crate::mines::select_kind(self.mines.pool(), seed);
             let config = self.mines.kind(crate::mines::MineKindKey { game_id: key.game_id, kind });
             (kind, config, crate::mines::cap(config, seed))
         }
@@ -170,7 +166,7 @@ pub mod ProductionLogic {
             let to = ResourceKey { game_id, entity_id: command.to_entity_id };
             let start_at = crate::logic::resources::production_start(game_id, game_context);
             for resource in command.resources {
-                let rule = crate::logic::resources::rule(game_id, *resource.resource_type);
+                let rule = crate::logic::resources::rule(*resource.resource_type);
                 self
                     .resources
                     .spend_resource(
@@ -221,7 +217,7 @@ pub mod ProductionLogic {
             let mut weight = 0;
             let start_at = crate::logic::resources::production_start(from.game_id, game_context);
             for resource in resources {
-                let rule = crate::logic::resources::rule(from.game_id, *resource.resource_type);
+                let rule = crate::logic::resources::rule(*resource.resource_type);
                 weight += *resource.amount * rule.unit_weight;
                 self
                     .resources
@@ -291,7 +287,7 @@ pub mod ProductionLogic {
         }
         fn burn(ref self: ContractState, key: ResourceKey, resources: Span<crate::resources::ResourceAmount>) {
             for resource in resources {
-                let rule = crate::logic::resources::rule(key.game_id, *resource.resource_type);
+                let rule = crate::logic::resources::rule(*resource.resource_type);
                 self.resources.burn_resource(key, *resource.resource_type, *resource.amount, rule.unit_weight);
             }
         }
@@ -387,7 +383,7 @@ pub mod ProductionLogic {
                     key,
                     resource_type,
                     output,
-                    crate::logic::resources::rule(key.game_id, resource_type).unit_weight,
+                    crate::logic::resources::rule(resource_type).unit_weight,
                     timestamp.try_into().unwrap(),
                     crate::logic::resources::production_start(key.game_id, game_context),
                 );
@@ -503,7 +499,7 @@ pub mod ProductionLogic {
             let delivered = arrival.resources.slice(0, count);
             let start_at = crate::logic::resources::production_start(game_id, context);
             for resource in delivered {
-                let rule = crate::logic::resources::rule(game_id, *resource.resource_type);
+                let rule = crate::logic::resources::rule(*resource.resource_type);
                 self
                     .resources
                     .grant_resource(

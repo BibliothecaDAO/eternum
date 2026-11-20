@@ -1,5 +1,5 @@
 use snforge_std::{interact_with_state, spy_events};
-use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
 use world_test_support::tests::Deployment;
 use world_test_support::tests::resource_commands::execute_in_game;
 use crate::commands::Command;
@@ -13,23 +13,18 @@ fn race_preset(stage_height: u32) -> crate::presets::PresetDefinition {
     let mut preset = super::banes::deep_definition();
     preset.rules.command_mask = preset.rules.command_mask | 4;
     preset.economy.race = Some(crate::race::RaceRules { stage_height, ..preset.economy.race.unwrap() });
-    without_passive_labor(preset)
+    preset
 }
 
-fn without_passive_labor(mut preset: crate::presets::PresetDefinition) -> crate::presets::PresetDefinition {
-    let mut resources = array![];
-    for rule in preset.resources.resources {
-        resources
-            .append(
-                if *rule.resource_type == crate::resources::LABOR {
-                    crate::resources::ResourceRule { realm_rate: 0, ..*rule }
-                } else {
-                    *rule
-                },
-            );
-    }
-    preset.resources.resources = resources.span();
-    preset
+fn stop_passive_labor(d: Deployment, home: ResourceKey) {
+    interact_with_state(
+        d.games,
+        || {
+            let productions = crate::state::write().resources.productions;
+            let key = (home.game_id, home.entity_id, crate::resources::LABOR);
+            productions.write(key, crate::resources::Production { production_rate: 0, ..productions.read(key) });
+        },
+    );
 }
 
 fn move_guard(key: ExplorerKey) -> Command {
@@ -55,6 +50,7 @@ fn a_late_rejected_move_pays_all_sites_at_the_win_then_stops_before_later_ticks(
     let homes = homes.span();
     let mine = *homes.at(crate::rules::DEEP_MINE.into());
     let core = *homes.at(crate::rules::DEEP_CORE.into());
+    stop_passive_labor(d, mine);
     let before = balance(d, mine, crate::resources::LABOR);
     let essence_before = balance(d, core, crate::resources::ESSENCE);
     let context = crate::tests::context(d.games, game_id);
@@ -219,7 +215,7 @@ fn delayed_altar_ticks_preserve_the_prepared_world_day_and_issue_for_the_followi
 }
 
 fn setup(seed: felt252) -> (Deployment, u32) {
-    let preset = without_passive_labor(super::deep_sites::preset());
+    let preset = super::deep_sites::preset();
     super::aspects::setup_aspect_preset(seed, preset)
 }
 
@@ -254,6 +250,7 @@ fn the_mine_pays_four_post_loss_shares_and_repeated_commands_do_not_pay_again() 
             join(d, key, target)
         }, 360);
         assert_eq!(army(d, key).troops.count, (Into::<u8, u128>::into(index) * 9 + 10) * RESOURCE_PRECISION);
+        stop_passive_labor(d, home);
         balances.append(balance(d, home, crate::resources::LABOR));
         guards.append(key);
         homes.append(home);
@@ -287,6 +284,7 @@ fn a_late_move_pays_every_tick_the_guard_survives_but_not_the_one_that_kills_it(
     beside(d, guard, target, 0);
     applied(d, game_id, fight(guard, target), 360);
     assert_eq!(army(d, guard).troops.count, 10 * RESOURCE_PRECISION);
+    stop_passive_labor(d, home);
     let labor_before = balance(d, home, crate::resources::LABOR);
     let visitor = player(d, 9699);
     let mover = deployed(visitor, game_id, 2, 1000);
@@ -314,6 +312,7 @@ fn a_refused_guard_move_keeps_the_tick_paid_and_cannot_pay_it_twice() {
     beside(d, guard, target, 0);
     applied(d, game_id, fight(guard, target), 360);
     assert_eq!(army(d, guard).troops.count, 10 * RESOURCE_PRECISION);
+    stop_passive_labor(d, home);
     let labor_before = balance(d, home, crate::resources::LABOR);
     let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
     let boundary = (360 / interval + 1) * interval;
@@ -342,7 +341,7 @@ fn a_refused_guard_move_keeps_the_tick_paid_and_cannot_pay_it_twice() {
 }
 
 fn vitriol_setup(seed: felt252) -> (Deployment, u32) {
-    let mut preset = without_passive_labor(super::deep_sites::preset());
+    let mut preset = super::deep_sites::preset();
     let (_, current) = world_test_support::tests::preset_projection::current_definition("frontier");
     preset
         .economy

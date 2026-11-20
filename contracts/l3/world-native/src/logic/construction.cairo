@@ -636,7 +636,7 @@ pub mod ConstructionLogic {
                 return;
             }
             let resources = self.resources_dispatcher(key.game_id);
-            let rule = crate::logic::resources::rule(key.game_id, resource_type);
+            let rule = crate::logic::resources::rule(resource_type);
             let rate = if structure_category == 1 {
                 rule.realm_rate
             } else {
