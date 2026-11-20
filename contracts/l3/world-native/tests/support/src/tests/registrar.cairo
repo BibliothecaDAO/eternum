@@ -141,16 +141,8 @@ pub fn params(blitz: bool) -> CreateGameParams {
         duration_seconds: 100,
         end_grace_seconds: 0,
         dev_mode_on: false,
-        roster: if blitz {
-            roster(2)
-        } else {
-            array![].span()
-        },
-        seater: if blitz {
-            super::authority()
-        } else {
-            0.try_into().unwrap()
-        },
+        roster: array![].span(),
+        seater: 0.try_into().unwrap(),
         registration_start: 10,
         biome_climate: super::play_fixture::rules().biome_climate_config,
         map_override: None,
@@ -943,6 +935,8 @@ pub fn setup_open_frontier_preset(name: ByteArray, bags: u64) -> (super::Deploym
 
 pub fn campaign_definition(name: ByteArray) -> PresetDefinition {
     let (_, mut preset) = super::preset_projection::current_definition(name);
+    let (_, release) = super::preset_projection::current_definition("frontier");
+    preset.settlement = release.settlement;
     preset
 }
 

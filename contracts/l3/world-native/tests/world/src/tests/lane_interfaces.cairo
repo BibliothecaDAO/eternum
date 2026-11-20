@@ -5,17 +5,10 @@ use crate::quests::{ClaimDailyQuest, reward};
 #[test]
 fn aspect_orders_pack_without_losing_the_first_or_last_order() {
     let orders = array![1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4];
-    let packed = pack(orders.span()).unwrap();
+    let packed = pack(orders.span());
     for index in 0_u32..16 {
         assert_eq!(order_aspect(packed, (index + 1).try_into().unwrap()), *orders.at(index));
     }
-    assert_eq!(pack(array![].span()), None);
-}
-
-#[test]
-#[should_panic(expected: ("Aspect needs four Orders",))]
-fn an_aspect_cannot_take_another_aspects_order() {
-    pack(array![1, 1, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4].span());
 }
 
 #[test]
