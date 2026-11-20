@@ -331,6 +331,7 @@ import {
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
 import type { AttackRefusal, RuinChest } from "@bibliothecadao/eternum";
 import {
+  FRAGMENT,
   FRAGMENTS,
   SEASON_PASS,
   BuildingType,
@@ -910,7 +911,7 @@ export const OPENING_WORDS = {
       `A Barracks raises ${formatAmount(rules.knightsAnHour)} Knights an hour. Knights fill your armies.`,
     guard: () => "Send 150% of the guard's troops to win.",
     shop: (rules: OpeningRules) =>
-      `Stamina refills ${formatRate(rules.staminaPerSecond)}. A Fragment refills ${formatAmount(rules.staminaPerFragment)} points now.`,
+      `Stamina refills ${formatRate(rules.staminaPerSecond)}. A ${FRAGMENT} refills ${formatAmount(rules.staminaPerFragment)} points now.`,
     essence: () => "Essence buys research and lores.",
     relic: (rules: OpeningRules) =>
       `A relic works for ${formatAmount(rules.relicMinutesPerTier)} minutes per tier. An army carries ${ARMY_RELIC_SLOTS}.`,
@@ -1259,7 +1260,7 @@ export const SHOP_WORDS = {
   fragmentsLine: (cents: number) => `${formatCount(cents, "cent")} each. Stamina, rerolls, the Pass.`,
   stamina: "Stamina refill",
   staminaLine: (points: number, bar: number, fragments: number, cents: number) =>
-    `1 Fragment = ${formatExact(points)} points. A bar of ${formatExact(bar)} is ${formatExact(fragments)} ${FRAGMENTS}, ${formatDollars(cents)}.`,
+    `1 ${FRAGMENT} = ${formatExact(points)} points. A bar of ${formatExact(bar)} is ${formatCount(fragments, FRAGMENT, FRAGMENTS)}, ${formatDollars(cents)}.`,
 } as const;
 
 /** LORDS leaving the game for the wallet linked to the account. */

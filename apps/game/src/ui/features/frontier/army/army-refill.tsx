@@ -16,13 +16,13 @@ export const sellsStamina = (army: Pick<DockArmy, "stamina" | "ethereal">, held:
 export const ArmyRefill = ({ army, look }: { army: DockArmy; look: "price" | "reading" | "button" }) => {
   const { setup, account } = useGame();
   const held = useFragmentsHeld();
-  const sending = useInFlight("army", army.explorerId) !== undefined;
+  const sending = useInFlight("refill", army.explorerId) !== undefined;
   const [confirming, setConfirming] = useState(false);
   if (!army.stamina || held === null || !sellsStamina(army, held)) return null;
   const stamina = army.stamina;
   const open = () => setConfirming(true);
   const buy = (fragments: number) =>
-    sendOnce("army", army.explorerId, { order: "use" }, () =>
+    sendOnce("refill", army.explorerId, true, () =>
       setup.systemCalls.buy_stamina({
         signer: account.account as unknown as Account,
         explorerId: army.explorerId,
