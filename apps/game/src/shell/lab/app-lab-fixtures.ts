@@ -6,7 +6,7 @@ import { blitzVictoryPointConfig } from "../../../../../config/source/blitz/bala
 import { VICTORY_POINTS_MULTIPLIER } from "../../../../../config/source/common/arena/points";
 import { FRONTIER_S1_PRESET_ID } from "../../../../../config/source/common/native-preset-modes";
 import { realmsAccountAddress } from "@realms-world/identity/account";
-import type { CampaignReferral, CampaignTicket, Session, ShareTally } from "@realms-world/identity";
+import type { Session, ShareTally } from "@realms-world/identity";
 
 import { orderEmblem } from "@/ui/design-system/kit/order-emblem";
 import type { DoorwayRealm } from "@/ui/features/game-entry/doorway/doorway-screen";
@@ -302,118 +302,31 @@ export const LAB_SCREENS = {
   "season-held": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "season-claimed": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "season-out": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
-  // Devcon's flyer landing (/join/devcon): an account holding no ticket, whose flyer opens a regular or a golden one, and
-  // one holding its golden ticket at the Devcon game's Realm step (doorway/home).
-  "devcon-flyer": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "devcon-golden": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "devcon-held": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  // A friend's referral link (/join/devcon/r/<code>): who sent it over the sealed ticket, which opens a regular one.
-  "devcon-referral": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  // Invite friends on You (/profile), for each home: a free home before its first friend counts, a Devcon home on its
-  // way to golden, a held Realm's, and the moments friends earn a free home its ticket and a Devcon home golden.
-  "invite-free": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "invite-devcon": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "invite-held": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "invite-earned": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "invite-golden": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "invite-pending": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "invite-link": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   // Your shared days on You (/profile): what a player's posted Frontier days brought.
   "shared-days": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
 } as const;
 
-/** The Devcon ticket each Devcon screen's account opens with any flyer's code, or already holds. */
-export const LAB_DEVCON_TICKETS: Partial<
-  Record<keyof typeof LAB_SCREENS, { tier: CampaignTicket["tier"]; held: boolean }>
-> = {
-  "devcon-flyer": { tier: "regular", held: false },
-  "devcon-golden": { tier: "golden", held: false },
-  "devcon-held": { tier: "golden", held: true },
-  "devcon-referral": { tier: "regular", held: false },
-};
-
-const LAB_REFERRAL_CODE = "7KQ2MX4D";
-/** The inviter a referral link names on the friend's landing. */
-export const LAB_REFERRER = "Isolde";
-type FriendState = CampaignReferral["friends"][number]["state"];
-/** A friend by state, with "*" after it for one whose ticket is golden. */
-type FriendSpec = FriendState | `${FriendState}*`;
-const FRIEND_NAMES = ["Corvin", "Isolde", "Tamsin", null, "Brannoc", "Wren"];
-const friends = (specs: FriendSpec[]) =>
-  specs.map((spec, index) => ({
-    name: FRIEND_NAMES[index % FRIEND_NAMES.length] ?? null,
-    state: spec.replace("*", "") as FriendState,
-    golden: spec.endsWith("*"),
-  }));
-const referral = (
-  home: CampaignReferral["home"],
-  specs: FriendSpec[],
-  {
-    tier = home === "free" || home === "held" ? null : "regular",
-    goldenPending = false,
-    linkGolden = false,
-    earned = {},
-  }: {
-    tier?: CampaignReferral["tier"];
-    goldenPending?: boolean;
-    linkGolden?: boolean;
-    earned?: Partial<CampaignReferral["earned"]>;
-  } = {},
-): CampaignReferral => ({
-  code: LAB_REFERRAL_CODE,
-  home,
-  tier,
-  goldenPending,
-  link: { counted: specs.filter((spec) => spec.startsWith("counted")).length, golden: linkGolden },
-  friends: friends(specs),
-  earned: { ticket: false, golden: false, ...earned },
-});
-
 /** What a screen's account's shared days brought; a screen this names none of has shared no day. */
-export const LAB_NO_SHARES: ShareTally = { links: 0, posted: 0, visits: 0, joined: 0, activated: 0 };
-export const LAB_SHARE_TALLIES: Partial<Record<keyof typeof LAB_SCREENS, ShareTally>> = {
-  "shared-days": { links: 9, posted: 7, visits: 1_240, joined: 31, activated: 12 },
+export const LAB_NO_SHARES: ShareTally = {
+  links: 0,
+  posted: 0,
+  visits: 0,
+  joined: 0,
+  activated: 0,
+  friendsPaid: 0,
+  fragmentsEarned: 0,
 };
-
-/** A screen's referral link on You when LAB_REFERRALS names none: a free home's, with no friend yet. */
-export const LAB_FIRST_REFERRAL = referral("free", []);
-
-/** Each screen's referral link and friends on You. */
-export const LAB_REFERRALS: Partial<Record<keyof typeof LAB_SCREENS, CampaignReferral>> = {
-  "invite-free": referral("free", ["founded", "signed*"]),
-  "invite-devcon": referral("devcon", ["counted", "counted", "excluded", "founded"]),
-  "invite-held": referral("held", ["counted*", "signed"]),
-  "invite-earned": referral("ticket", ["counted", "signed"], { earned: { ticket: true } }),
-  "invite-pending": referral("devcon", ["counted", "counted*", "founded"], {
-    tier: "golden",
-    goldenPending: true,
-    earned: { ticket: true, golden: true },
-  }),
-  "invite-golden": referral("golden", ["counted", "counted*", "founded"], {
-    tier: "golden",
-    earned: { ticket: true, golden: true },
-  }),
-  "invite-link": referral(
-    "golden",
-    [
-      "counted*",
-      "counted*",
-      "counted*",
-      "counted*",
-      "counted*",
-      "counted*",
-      "counted*",
-      "counted*",
-      "counted*",
-      "counted*",
-      "signed*",
-    ],
-    {
-      tier: "golden",
-      linkGolden: true,
-      earned: { ticket: true, golden: true },
-    },
-  ),
+export const LAB_SHARE_TALLIES: Partial<Record<keyof typeof LAB_SCREENS, ShareTally>> = {
+  "shared-days": {
+    links: 9,
+    posted: 7,
+    visits: 1_240,
+    joined: 31,
+    activated: 12,
+    friendsPaid: 8,
+    fragmentsEarned: 800,
+  },
 };
 
 /** The Realms the linked wallet holds on each screen that reads them (the relay's held-Realms answer). */

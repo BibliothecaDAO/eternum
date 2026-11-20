@@ -8,7 +8,6 @@ import {
   type PushRegistration,
 } from "@bibliothecadao/notifications";
 import { SOCIAL_PROVIDERS, type SocialProvider } from "./account-rules";
-import { TICKET_TIERS } from "./campaigns";
 import { DAY_SHARE_KINDS, SHARE_CARD, SHARE_KINDS, type ShareChannel, type ShareKind } from "./shares";
 import type { SiwsTypedData } from "./siws";
 import { buildSiwsMessage, payoutWalletStatement } from "./siws";
@@ -155,40 +154,6 @@ export type SealCodeRefusal = (typeof SEAL_CODE_REFUSALS)[number];
 export const isSealCodeRefusal = (code: string | undefined): code is SealCodeRefusal =>
   (SEAL_CODE_REFUSALS as readonly (string | undefined)[]).includes(code);
 type SealCode = typeof sealCodeSchema.Type;
-/** An account's ticket to a campaign, told to that account only. */
-const campaignTicketSchema = Schema.Struct({
-  campaign: Schema.String,
-  tier: Schema.Literals(TICKET_TIERS),
-});
-export type CampaignTicket = typeof campaignTicketSchema.Type;
-/** What opens a new ticket: the code a flyer carried, or a friend's referral link. */
-export type CampaignOpening = { code: string } | { referral: string };
-/**
- * The account's referral link to a campaign, told to that account only: its code, what its friends can still earn it
- * (a ticket for a free home, golden for a Devcon one, nothing more), each friend's public name and progress, and what
- * they earned it so far.
- */
-/**
- * The inviter's referral link as identity settles it. `home`: no ticket (free), a ticket not on a home yet (ticket), a
- * founded Devcon home the confirmed board shows regular (devcon) or golden (golden), or a claim from elsewhere (held).
- * `goldenPending`: golden earned on a Devcon home the board does not show golden yet.
- */
-const campaignReferralSchema = Schema.Struct({
-  code: Schema.String,
-  home: Schema.Literals(["free", "ticket", "devcon", "golden", "held"]),
-  tier: Schema.NullOr(Schema.Literals(TICKET_TIERS)),
-  goldenPending: Schema.Boolean,
-  link: Schema.Struct({ counted: Schema.Number, golden: Schema.Boolean }),
-  friends: Schema.Array(
-    Schema.Struct({
-      name: Schema.NullOr(Schema.String),
-      state: Schema.Literals(["signed", "founded", "counted", "excluded"]),
-      golden: Schema.Boolean,
-    }),
-  ),
-  earned: Schema.Struct({ ticket: Schema.Boolean, golden: Schema.Boolean }),
-});
-export type CampaignReferral = typeof campaignReferralSchema.Type;
 
 /**
  * A moment a player shares, as its link records it: its kind, the game it was played in, and which one (the day, or
@@ -229,16 +194,14 @@ const joinedShareSchema = Schema.NullOr(
   ]),
 );
 export type JoinedShare = typeof joinedShareSchema.Type;
-/**
- * What the account's shared links brought, told to that account only: links made, posted, opened by other browsers,
- * the new accounts they brought and how many of those founded a realm and cleared a site.
- */
 const shareTallySchema = Schema.Struct({
   links: Schema.Number,
   posted: Schema.Number,
   visits: Schema.Number,
   joined: Schema.Number,
   activated: Schema.Number,
+  friendsPaid: Schema.Number,
+  fragmentsEarned: Schema.Number,
 });
 export type ShareTally = typeof shareTallySchema.Type;
 
@@ -567,37 +530,6 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
   const redeemSealCode = async (code: string): Promise<SealCode> =>
     readJson(await request("/seal-code", { method: "POST", body: JSON.stringify({ code }) }), decode(sealCodeSchema));
 
-  /**
-   * Takes the account's one ticket to a campaign, from its flyer's code or a friend's referral link; without either, the
-   * ticket it holds. Again, the same ticket.
-   */
-  const redeemCampaignTicket = async (campaign: string, opening: CampaignOpening | null): Promise<CampaignTicket> =>
-    readJson(
-      await request("/campaigns/redeem", { method: "POST", body: JSON.stringify({ campaign, ...opening }) }),
-      decode(campaignTicketSchema),
-    );
-
-  /** The account's referral link to a campaign and what its friends earned it, settled as it is read. */
-  const campaignReferral = async (campaign: string): Promise<CampaignReferral> =>
-    readJson(
-      await request(`/campaigns/referral?campaign=${encodeURIComponent(campaign)}`, {
-        method: "GET",
-        cache: "no-store",
-      }),
-      decode(campaignReferralSchema),
-    );
-
-  /** The public name of the inviter behind a referral link; null when they chose none. */
-  const campaignReferrer = async (campaign: string, code: string): Promise<string | null> =>
-    (
-      await readJson(
-        await request(`/campaigns/referral/${encodeURIComponent(code)}?campaign=${encodeURIComponent(campaign)}`, {
-          method: "GET",
-        }),
-        decode(Schema.Struct({ name: Schema.NullOr(Schema.String) })),
-      )
-    ).name;
-
   /** The account's link for one moment, made on first ask and the same ever after. */
   const createShare = async (moment: ShareMoment): Promise<string> =>
     (
@@ -694,9 +626,6 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     chooseOrder,
     getSealCode,
     redeemSealCode,
-    redeemCampaignTicket,
-    campaignReferral,
-    campaignReferrer,
     createShare,
     sharePosted,
     uploadShareCard,

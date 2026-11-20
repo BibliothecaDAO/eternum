@@ -270,14 +270,8 @@ pub mod SettlementState {
         ) {
             let previous = self.data.settlements.entitlements.read((key.game_id, key.owner));
             if let Some(previous) = previous {
-                if previous == entitlement {
-                    return;
-                }
-                if entitlement.metadata_3 == 'devcon-upgrade' {
-                    self.upgrade_campaign_home(key, previous, entitlement);
-                } else {
-                    self.recover_registered_ticket(key, previous, entitlement);
-                }
+                assert!(previous == entitlement, "conflicting entry entitlement");
+                return;
             } else if self.data.settlements.entries.read((key.game_id, key.owner)).is_some() {
                 self.attach_source_to_founded_home(key, entitlement);
             } else if entitlement.pass_kind == crate::settlement::HELD_REALM_KIND {
@@ -298,59 +292,6 @@ pub mod SettlementState {
                     },
                 );
         }
-        fn upgrade_campaign_home(
-            ref self: ComponentState<TContractState>,
-            key: EntryKey,
-            previous: EntryEntitlement,
-            entitlement: EntryEntitlement,
-        ) {
-            self.validate_campaign_entry(key, previous);
-            assert!(
-                previous.metadata_1 == 'devcon-2026'
-                    && previous.metadata_2 == crate::settlement::CAMPAIGN_NORMAL.into()
-                    && entitlement == EntryEntitlement {
-                        metadata_2: crate::settlement::CAMPAIGN_GOLDEN.into(), metadata_3: 'devcon-upgrade', ..previous,
-                    },
-                "invalid campaign upgrade",
-            );
-            crate::game::assert_playing(crate::logic::game::game(key.game_id), starknet::get_block_timestamp());
-            assert!(self.data.settlements.entries.read((key.game_id, key.owner)).is_some(), "home is not founded");
-            let home = self.owned_open_home(key);
-            assert!(
-                self
-                    .data
-                    .settlements
-                    .campaign_homes
-                    .read((key.game_id, home)) == Some(('devcon-2026', crate::settlement::CAMPAIGN_NORMAL)),
-                "home source differs",
-            );
-            self.write_campaign_home(key, home, entitlement);
-        }
-        fn recover_registered_ticket(
-            ref self: ComponentState<TContractState>,
-            key: EntryKey,
-            previous: EntryEntitlement,
-            entitlement: EntryEntitlement,
-        ) {
-            assert!(
-                entitlement.metadata_3 == 'devcon-recovery'
-                    && previous == EntryEntitlement { metadata_3: 0, ..entitlement },
-                "conflicting entry entitlement",
-            );
-            self.validate_campaign_entry(key, entitlement);
-            let home = self.owned_open_home(key);
-            assert!(
-                self
-                    .data
-                    .settlements
-                    .campaign_homes
-                    .read(
-                        (key.game_id, home),
-                    ) == Some((entitlement.metadata_1, entitlement.metadata_2.try_into().unwrap())),
-                "home source differs",
-            );
-            crate::logic::entry::recover_flyer_days(key, home, entitlement);
-        }
         fn owned_open_home(self: @ComponentState<TContractState>, key: EntryKey) -> u64 {
             let home = self.data.games.open_homes.read((key.game_id, key.owner));
             assert!(home != 0, "owner has no open home");
@@ -369,9 +310,6 @@ pub mod SettlementState {
             } else {
                 assert!(entitlement.pass_kind == crate::settlement::CAMPAIGN_KIND, "invalid home source");
                 self.claim_campaign_home(key, home, entitlement);
-                if entitlement.metadata_3 == 'devcon-recovery' {
-                    crate::logic::entry::recover_flyer_days(key, home, entitlement);
-                }
             }
         }
 
@@ -380,13 +318,7 @@ pub mod SettlementState {
         ) {
             assert!(entitlement.pass_kind == crate::settlement::CAMPAIGN_KIND, "campaign source required");
             assert!(entitlement.realm_id == 0, "campaign has no NFT");
-            assert!(
-                entitlement.metadata_3 == 0
-                    || (entitlement.metadata_3 == 'devcon-recovery'
-                        && entitlement.metadata_1 == 'devcon-2026'
-                        && self.data.settlements.entries.read((key.game_id, key.owner)).is_some()),
-                "invalid campaign recovery",
-            );
+            assert!(entitlement.metadata_3 == 0, "invalid campaign marker");
             assert!(entitlement.metadata_1 != 0, "campaign id is required");
             assert!(
                 entitlement.metadata_2 == crate::settlement::CAMPAIGN_NORMAL.into()

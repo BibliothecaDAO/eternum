@@ -56,7 +56,6 @@ const SURFACES = [
   { name: "player", kind: "page", before: app("season-running", "season"), path: app("season-running", "p/0xb001") },
   { name: "lobby", kind: "page", before: app("entry-choose", ""), path: app("entry-choose", "blitz/slot-blitz-1630") },
   { name: "build-orders", kind: "page", before: app("home", ""), path: app("home", "blitz/build-orders") },
-  { name: "devcon", kind: "page", before: app("devcon-flyer", ""), path: app("devcon-flyer", "join/devcon/LAB-CODE") },
   {
     name: "settings-portrait",
     kind: "sheet",

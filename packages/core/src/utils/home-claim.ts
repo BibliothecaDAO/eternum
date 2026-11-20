@@ -29,7 +29,7 @@ export const campaignHomeClaim = (rules: LaborRuleAmounts, golden: boolean): Hom
  * Where a home's claim comes from, as the value relay registers it before or after the home is founded
  * (apps/value-relay/src/realm-entry.ts): a held Realm, a campaign's ticket, or nothing (a free home).
  */
-export type HomeClaimSource = { kind: "realm" } | { kind: "campaign"; golden: boolean } | { kind: "free" };
+type HomeClaimSource = { kind: "realm" } | { kind: "campaign"; golden: boolean } | { kind: "free" };
 
 /** What a home from this source claims each game day by the game's LaborRules: a held Realm its Labor, a free home none. */
 export const homeSourceClaim = (rules: LaborRuleAmounts, source: HomeClaimSource): HomeDailyClaim | null => {

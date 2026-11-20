@@ -115,6 +115,9 @@
       "SUPPLY_YARD": 42,
       "SCOUTS_LODGE": 43,
       "SCOUTS_LODGE_LEVEL": 1
+    },
+    "fragment": {
+      "FRIEND": 2
     }
   },
   "tilePackingConstants": {
@@ -1993,6 +1996,22 @@
       },
       {
         "type": "function",
+        "name": "credit_fragments",
+        "inputs": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "credit",
+            "type": "world_native::fragments::FragmentCredit"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
         "name": "register_entitlement",
         "inputs": [
           {
@@ -2984,6 +3003,45 @@
       ],
       "keyLength": 1,
       "valueLength": 4
+    },
+    {
+      "name": "FragmentCredit",
+      "identity": "0x467261676d656e74437265646974",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "id",
+          "type": "core::felt252",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "account",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x6163636f756e74",
+          "feltLength": 1
+        },
+        {
+          "name": "source",
+          "type": "core::integer::u8",
+          "id": "0x736f75726365",
+          "feltLength": 1
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128",
+          "id": "0x616d6f756e74",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 3
     },
     {
       "name": "Fragments",
@@ -10223,6 +10281,28 @@
         }
       ]
     },
+    "world_native::fragments::FragmentCredit": {
+      "type": "struct",
+      "name": "world_native::fragments::FragmentCredit",
+      "members": [
+        {
+          "name": "id",
+          "type": "core::felt252"
+        },
+        {
+          "name": "account",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "source",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
     "world_native::game::GameOverrides": {
       "type": "struct",
       "name": "world_native::game::GameOverrides",
@@ -13833,5 +13913,5 @@
       ]
     }
   },
-  "identity": "baaa3531fad3af4496b31a00c4e2cdc1cda23626225ff1697556b5f37b82350f"
+  "identity": "d1e2d02067b6f672e1441a9b3a0b83ded2478d3c8ed478b382de3588a52578b6"
 }

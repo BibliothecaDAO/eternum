@@ -28,8 +28,7 @@ const SIZES = [
 const PLACES = new Set(TABS.map((tab) => tab.to));
 /** A page that is its own scroller: on a phone it fills the page over the tabs, with no footer under it. */
 const FILL_PATHS = new Set(["/chat"]);
-/** Pages outside the shell's route that wear the same frame: a Blitz lobby and the Devcon ticket. */
-const OTHER_PATHS = ["/blitz/0x111", "/join/devcon", "/join/devcon/0x111"];
+const OTHER_PATHS = ["/blitz/0x111"];
 const CONTROLS = "a[href], button, input, select, textarea";
 
 /**

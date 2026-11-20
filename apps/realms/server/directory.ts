@@ -5,7 +5,7 @@ import type { HeraldGameDirectory, HeraldGameDirectoryEntry, ShardManifest } fro
 import type { IdentityEnv } from "./env";
 import { json } from "./http";
 
-export interface DirectoryShard {
+interface DirectoryShard {
   url: string;
   chainId: string;
 }

@@ -117,12 +117,6 @@ afterEach(() => {
   useIdentitySessionStore.setState({ status: "loading", session: null });
 });
 
-/** The account holds no campaign ticket: identity answers a ticket read with no code so. */
-const noTicket = () =>
-  vi
-    .spyOn(identityClient, "redeemCampaignTicket")
-    .mockRejectedValue(new IdentityRequestError(400, "invalid_redemption"));
-
 /** The entry modal on its game, with Settings beside it for the wallet link's detour. */
 const openEntry = async () => {
   const query = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -219,13 +213,6 @@ const held = (...realmIds: number[]) =>
 /** A held Realm's choice as the step names it: its number and its name. */
 const realmChoice = (realmId: number) => `${realmId} · ${canonicalRealm(realmId)!.name}`;
 const name = (realmId: number) => canonicalRealm(realmId)!.name;
-/** A golden Devcon ticket, in a game of the Devcon season (preset 6), the only one whose homes a Devcon ticket founds. */
-const golden = () => {
-  settlement.presetId = 6;
-  return vi
-    .spyOn(identityClient, "redeemCampaignTicket")
-    .mockResolvedValue({ campaign: "devcon-2026", tier: "golden" });
-};
 /** The relay answers held Realms from `holdings`, and records every home source registered. */
 const relay = (holdings: () => Response) => {
   const registered: unknown[] = [];
@@ -243,11 +230,10 @@ const signIn = (address: string | null) => {
   useIdentitySessionStore.setState({ status: "signed-in", session: signedIn("0x2", address) });
 };
 
-it("starts a holder with no ticket on their first Realm, wonders first, and founds with it", async () => {
+it("starts a holder on their first Realm, wonders first, and founds with it", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   setViewportWidth(1440);
   signIn("0x456");
-  noTicket();
   const registered = relay(() => held(3, 538));
   const entry = await openEntry();
   try {
@@ -263,37 +249,10 @@ it("starts a holder with no ticket on their first Realm, wonders first, and foun
   }
 });
 
-it.each(["the ticket", "a Realm"])(
-  "starts an account holding a ticket and Realms on its ticket, shows both, and founds with %s",
-  async (chosen) => {
-    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-    setViewportWidth(1440);
-    signIn("0x456");
-    golden();
-    const registered = relay(() => held(711));
-    const entry = await openEntry();
-    try {
-      await vi.waitFor(() => expect(entry.featured()).toBe("Golden Devcon ticket"));
-      expect(entry.strip()).toEqual(["Golden Devcon ticket *", realmChoice(711)]);
-      expect(entry.checked()).toEqual(["Golden Devcon ticket"]);
-      if (chosen === "a Realm") await entry.pick(realmChoice(711));
-      expect(entry.featured()).toBe(chosen === "a Realm" ? name(711) : "Golden Devcon ticket");
-      // The chosen mark follows the pick, on a golden ticket's art as on a Realm's map.
-      expect(entry.checked()).toEqual([chosen === "a Realm" ? realmChoice(711) : "Golden Devcon ticket"]);
-      await entry.press("Create your realm");
-      await vi.waitFor(() => expect(settlement.settled).toBe(true));
-      expect(registered).toEqual([chosen === "a Realm" ? { gameId: 8, realmId: 711 } : { gameId: 8 }]);
-    } finally {
-      await entry.close();
-    }
-  },
-);
-
-it.each(["the ticket", "712"])("lets a refused Realm claimant found with another choice (%s)", async (alternative) => {
+it("lets a refused Realm claimant found with another Realm", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   setViewportWidth(1440);
   signIn("0x456");
-  golden();
   const sent: unknown[] = [];
   vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
     if (url === HELD_REALMS) return held(711, 712);
@@ -305,15 +264,15 @@ it.each(["the ticket", "712"])("lets a refused Realm claimant found with another
   });
   const entry = await openEntry();
   try {
-    await vi.waitFor(() => expect(entry.featured()).toBe("Golden Devcon ticket"));
+    await vi.waitFor(() => expect(entry.strip()).toHaveLength(2));
     await entry.pick(realmChoice(711));
     await entry.press("Create your realm");
     await vi.waitFor(() => expect(entry.host.textContent).toContain("This source cannot be attached to your home."));
     expect(settlement.calls).toEqual([]);
-    await entry.pick(alternative === "712" ? realmChoice(712) : "Golden Devcon ticket");
+    await entry.pick(realmChoice(712));
     await entry.press("Create your realm");
     await vi.waitFor(() => expect(settlement.settled).toBe(true));
-    expect(sent).toEqual(alternative === "712" ? [711, 712] : [711, undefined]);
+    expect(sent).toEqual([711, 712]);
   } finally {
     await entry.close();
   }
@@ -323,7 +282,6 @@ it("shows each account its own Realms in the same tab, and lets a pick of anothe
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   setViewportWidth(1440);
   signIn("0x456");
-  noTicket();
   /** The relay answers for whichever account the session cookie names, by its linked wallet. */
   const holdings: Record<string, number[]> = { "0x456": [711, 712], "0x789": [934], "0xabc": [12] };
   const asked: string[] = [];
@@ -351,15 +309,11 @@ it("shows each account its own Realms in the same tab, and lets a pick of anothe
 });
 
 it.each([
-  { holds: "no wallet and no ticket", wallet: null, ticket: false },
-  { holds: "a wallet holding no Realm", wallet: "0x456", ticket: false },
-  { holds: "a ticket and no linked wallet", wallet: null, ticket: true },
-  { holds: "a ticket and a wallet holding no Realm", wallet: "0x456", ticket: true },
-])("creates the realm of an account holding $holds without asking: nothing to choose", async ({ wallet, ticket }) => {
+  { holds: "no wallet", wallet: null },
+  { holds: "a wallet holding no Realm", wallet: "0x456" },
+])("creates the realm of an account holding $holds without asking: nothing to choose", async ({ wallet }) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   signIn(wallet);
-  if (ticket) golden();
-  else noTicket();
   const asked: string[] = [];
   const registered: unknown[] = [];
   vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
@@ -387,7 +341,6 @@ it.each([
 it("asks with the failure said when a realm created without asking is refused, and tries no more by itself", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   signIn(null);
-  noTicket();
   let tries = 0;
   vi.stubGlobal("fetch", async () => {
     tries += 1;
@@ -405,34 +358,19 @@ it("asks with the failure said when a realm created without asking is refused, a
   }
 });
 
-it.each([
-  { failed: "the Realms", width: 1440 },
-  { failed: "the Realms", width: 390 },
-  { failed: "the ticket", width: 1440 },
-  { failed: "the ticket", width: 390 },
-])(
-  "founds nothing while $failed cannot be read, then founds the right default once Try again answers ($width px)",
-  async ({ failed, width }) => {
+it.each([1440, 390])(
+  "founds nothing while the Realms cannot be read, then founds the right default once Try again answers (%i px)",
+  async (width) => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     setViewportWidth(width);
     signIn("0x456");
     let up = false;
-    if (failed === "the ticket") {
-      settlement.presetId = 6;
-      vi.spyOn(identityClient, "redeemCampaignTicket").mockImplementation(async () => {
-        if (!up) throw new IdentityRequestError(503, "campaigns_unavailable");
-        return { campaign: "devcon-2026", tier: "golden" };
-      });
-    } else noTicket();
     const registered = relay(() =>
-      failed === "the Realms" && !up
-        ? Response.json({ error: "realm_holdings_unavailable" }, { status: 503 })
-        : held(711),
+      up ? held(711) : Response.json({ error: "realm_holdings_unavailable" }, { status: 503 }),
     );
     const entry = await openEntry();
     try {
-      const notice =
-        failed === "the Realms" ? "Your Realms cannot be read right now" : "Your ticket cannot be read right now";
+      const notice = "Your Realms cannot be read right now";
       await vi.waitFor(() => expect(entry.host.textContent).toContain(notice));
       // No home is offered around the failed read: neither a free home nor a lesser default, and nothing founds.
       expect(entry.featured()).toBeNull();
@@ -442,50 +380,20 @@ it.each([
       expect([registered, settlement.calls]).toEqual([[], []]);
       up = true;
       await entry.press("Try again");
-      const home = failed === "the Realms" ? name(711) : "Golden Devcon ticket";
-      await vi.waitFor(() => expect(entry.featured()).toBe(home));
+      await vi.waitFor(() => expect(entry.featured()).toBe(name(711)));
       expect(entry.host.textContent).not.toContain(notice);
       await entry.press("Create your realm");
       await vi.waitFor(() => expect(settlement.settled).toBe(true));
-      expect(registered).toEqual([failed === "the Realms" ? { gameId: 8, realmId: 711 } : { gameId: 8 }]);
+      expect(registered).toEqual([{ gameId: 8, realmId: 711 }]);
     } finally {
       await entry.close();
     }
   },
 );
 
-it("waits on an unreadable ticket: says so, founds nothing, and offers the ticket once Try again answers", async () => {
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  settlement.presetId = 6;
-  setViewportWidth(1440);
-  signIn("0x456");
-  let up = false;
-  vi.spyOn(identityClient, "redeemCampaignTicket").mockImplementation(async () => {
-    if (!up) throw new IdentityRequestError(503, "campaigns_unavailable");
-    return { campaign: "devcon-2026", tier: "golden" };
-  });
-  const registered = relay(() => held(711));
-  const entry = await openEntry();
-  try {
-    await vi.waitFor(() => expect(entry.host.textContent).toContain("Your ticket cannot be read right now"));
-    expect(entry.featured()).toBeNull();
-    expect(entry.found().disabled).toBe(true);
-    up = true;
-    await entry.press("Try again");
-    await vi.waitFor(() => expect(entry.featured()).toBe("Golden Devcon ticket"));
-    expect(entry.strip()).toEqual(["Golden Devcon ticket *", realmChoice(711)]);
-    await entry.press("Create your realm");
-    await vi.waitFor(() => expect(settlement.settled).toBe(true));
-    expect(registered).toEqual([{ gameId: 8 }]);
-  } finally {
-    await entry.close();
-  }
-});
-
 it("waits to found until it knows what the account holds, so a holder never founds a free home by a quick press", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   signIn("0x456");
-  noTicket();
   let answer: (response: Response) => void = () => undefined;
   const registered = relay(() => new Promise<Response>((resolve) => (answer = resolve)) as never);
   const entry = await openEntry();
@@ -511,7 +419,6 @@ it("waits to found until it knows what the account holds, so a holder never foun
 it("spins while the realm is founded and says so, at full strength, until the founding answers", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   signIn("0x456");
-  noTicket();
   // The relay holds its answer to the home's registration, the founding's first leg, with the step still on screen.
   const registered: unknown[] = [];
   let answer: () => void = () => undefined;
@@ -551,7 +458,6 @@ it.each([
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     setViewportWidth(width);
     signIn("0x456");
-    noTicket();
     const many = [...Array.from({ length: 60 }, (_, index) => index + 1), 538];
     const registered = relay(() => held(...many));
     const entry = await openEntry();
@@ -599,7 +505,6 @@ it("keeps the Realm already registered for this game, shown alone and locked, wh
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   settlement.heldRealmId = 711;
   signIn("0x456");
-  golden();
   const registered = relay(() => held(3));
   const entry = await openEntry();
   try {
@@ -621,37 +526,26 @@ it("keeps the Realm already registered for this game, shown alone and locked, wh
 /** A Devcon season's LaborRules row, as the contract holds it in a founded game. */
 const devconRules = campaignHomeFacts("regular")[0]!;
 
-it.each([
-  { home: "a regular Devcon ticket's", ticket: "regular" as const, pick: null, founded: campaignHomeFacts("regular") },
-  { home: "a golden Devcon ticket's", ticket: "golden" as const, pick: null, founded: campaignHomeFacts("golden") },
-  {
-    home: "a held Realm's, picked over a ticket",
-    ticket: "regular" as const,
-    pick: 711,
-    founded: [devconRules, { model: "SettledRealm", key: "0x1b32", value: { game_id: 1, realm_id: 711, home: 7 } }],
-  },
-])("says what $home home claims each day, as the founded home then claims it", async ({ ticket, pick, founded }) => {
+it("says what a held Realm's home claims each day, as the founded home then claims it", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   settlement.presetId = 6;
   setViewportWidth(1440);
   signIn("0x456");
-  vi.spyOn(identityClient, "redeemCampaignTicket").mockResolvedValue({ campaign: "devcon-2026", tier: ticket });
   relay(() => held(711));
+  const founded = [
+    devconRules,
+    { model: "SettledRealm", key: "0x1b32", value: { game_id: 1, realm_id: 711, home: 7 } },
+  ];
 
   // The home as the contract founds it from that source, read by the Realm sheet and the Day open push alike.
   const store = new NativeFactStore();
   store.applyFacts(founded as never);
   const claim = homeDailyClaim(store, { gameId: 1, entityId: 7 })!;
-  const lines = [
-    `${claim.labor.toLocaleString("en-US")} Labor each day`,
-    ...(claim.essence ? [`${claim.essence.toLocaleString("en-US")} Essence each day`] : []),
-  ];
+  const lines = [`${claim.labor.toLocaleString("en-US")} Labor each day`];
 
   const entry = await openEntry();
   try {
-    await vi.waitFor(() => expect(entry.strip()).toHaveLength(2));
-    if (pick) await entry.pick(realmChoice(pick));
-    // The claim sits on the featured card, which names the home a render after the strip shows.
+    await vi.waitFor(() => expect(entry.featured()).toBe(name(711)));
     const claimed = () => [...entry.host.querySelectorAll(".home-picker__claim li")].map((line) => line.textContent);
     await vi.waitFor(() => expect(claimed()).toEqual(lines));
   } finally {
@@ -659,37 +553,11 @@ it.each([
   }
 });
 
-it.each(["ticket", "711"])(
-  "a founded home holding a ticket and Realm attaches only its explicit %s pick",
-  async (pick) => {
-    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-    settlement.presetId = 6;
-    settlement.settled = true;
-    signIn("0x456");
-    vi.spyOn(identityClient, "redeemCampaignTicket").mockResolvedValue({ campaign: "devcon-2026", tier: "regular" });
-    const registered = relay(() => held(711));
-    const entry = await openEntry();
-    try {
-      await vi.waitFor(() => expect(entry.strip()).toHaveLength(2));
-      expect(registered).toEqual([]);
-      if (pick === "711") await entry.pick(realmChoice(711));
-      await entry.press("Add this daily claim");
-      await vi.waitFor(() =>
-        expect(registered).toEqual([pick === "711" ? { gameId: 8, realmId: 711 } : { gameId: 8 }]),
-      );
-      expect(settlement.calls).toEqual([]);
-    } finally {
-      await entry.close();
-    }
-  },
-);
-
 it("a founded home chooses one of two Realms, leaves the other free, and shows used Realms as taken", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   settlement.settled = true;
   settlement.taken = [713];
   signIn("0x456");
-  noTicket();
   const registered = relay(() => held(711, 712, 713));
   const entry = await openEntry();
   try {
@@ -714,7 +582,6 @@ it("offers only Continue for a founded home whose held Realm is already taken", 
   settlement.settled = true;
   settlement.taken = [711];
   signIn("0x456");
-  noTicket();
   const registered = relay(() => held(711));
   const entry = await openEntry();
   try {
@@ -744,7 +611,6 @@ describe("a founded Season 1 home attaching a held Realm (only one of its own As
     settlement.presetId = FRONTIER_S1_PRESET_ID;
     settlement.settled = true;
     signIn("0x456");
-    noTicket();
   };
 
   it("offers no Realm of another Aspect, sends no source, and goes on to the map", async () => {
@@ -783,7 +649,6 @@ it("resumes a home with an existing campaign source without offering or submitti
   settlement.settled = true;
   settlement.hasSource = true;
   signIn("0x456");
-  noTicket();
   const registered = relay(() => held(711));
   const entry = await openEntry();
   try {
@@ -810,7 +675,6 @@ describe("a friend's Aspect invite at a Season 1 campaign home's founding", () =
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     settlement.presetId = FRONTIER_S1_PRESET_ID;
     signIn(null);
-    noTicket();
     relay(() => held());
     return vi.spyOn(identityClient, "joinedShare").mockResolvedValue(joined);
   };
@@ -910,7 +774,6 @@ describe("a friend's Aspect invite at a Season 1 campaign home's founding", () =
       (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
       settlement.presetId = FRONTIER_S1_PRESET_ID;
       signIn("0x456");
-      noTicket();
       vi.spyOn(identityClient, "joinedShare").mockResolvedValue(joined);
       return relay(() => held(538));
     };

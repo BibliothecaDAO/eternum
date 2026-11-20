@@ -36,7 +36,15 @@ const alerts = vi.hoisted(() => ({ owner: null as string | null }));
 const shares = vi.hoisted(() => ({
   createShare: vi.fn(async () => "DAY2LINK"),
   sharePosted: vi.fn(async () => {}),
-  shareTally: vi.fn(async () => ({ links: 4, posted: 3, visits: 12, joined: 3, activated: 1 })),
+  shareTally: vi.fn(async () => ({
+    links: 4,
+    posted: 3,
+    visits: 12,
+    joined: 3,
+    activated: 1,
+    friendsPaid: 0,
+    fragmentsEarned: 0,
+  })),
   uploadShareCard: vi.fn(async () => {}),
 }));
 /** The card's JPEG, as the browser makes it from the drawn card (a canvas jsdom has none of). */

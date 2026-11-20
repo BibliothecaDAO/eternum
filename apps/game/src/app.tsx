@@ -18,7 +18,6 @@ import { IS_DEV_ENVIRONMENT } from "./shell/frame/environment";
 import { NotFoundPage } from "./shell/not-found";
 import { BlitzLobbyPage } from "./shell/blitz/blitz-pages";
 import { BuildOrdersPage } from "./shell/build-orders/build-orders-page";
-import { JoinDevconPage } from "./shell/join/join-devcon-page";
 import { PlayPage } from "./shell/play/play-page";
 import { PlayerPage, ProfilePage, SettingsPage } from "./shell/profile/profile-pages";
 import { ResultsPage } from "./shell/season-tab/results-page";
@@ -66,9 +65,6 @@ export const appRoutes = (
       ))}
       <Route path="blitz/build-orders" element={<BuildOrdersPage />} />
       <Route path="blitz/:id" element={<BlitzLobbyPage />} />
-      <Route path="join/devcon" element={<JoinDevconPage />} />
-      <Route path="join/devcon/:code" element={<JoinDevconPage />} />
-      <Route path="join/devcon/r/:referral" element={<JoinDevconPage />} />
       <Route path={`${SHARE_PATH.slice(1)}/:code`} element={<SharedLinkPage />} />
       <Route path="season" element={<SeasonPage />} />
       <Route path="results/:id" element={<ResultsPage />} />
