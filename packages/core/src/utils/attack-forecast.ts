@@ -427,7 +427,7 @@ function hasOpenOathPick(scene: Scene, explorerId: bigint): boolean {
 function playingRefusal(scene: Scene): AttackRefusal | undefined {
   const game = scene.store.require("GameRegistry", { game_id: scene.gameId });
   const now = BigInt(scene.chainSecond);
-  if (!game.ready || (!game.dev_mode_on && (now < game.start_main_at || now < game.start_settling_at)))
+  if (!game.dev_mode_on && (now < game.start_main_at || now < game.start_settling_at))
     return "game-not-started";
   return game.end_at !== 0n && now >= game.end_at ? "game-ended" : undefined;
 }
