@@ -90,7 +90,7 @@ describe("paged block ingestion", () => {
     const overlay = setup();
     const pending = await rpc.readBlock("pre_confirmed", manifest.world.address);
     pending.transactions.forEach(({ receipt, transaction }, index) =>
-      overlay.native.applyReceipt(overlay.fold, receipt, null, index, transaction.calldata),
+      overlay.native.applyReceipt(overlay.fold, receipt, null, index),
     );
     expect(overlay.fold.checkpoint()).toEqual(expected.fold.checkpoint());
   });
@@ -359,22 +359,3 @@ it("logs RPC method and numeric code without node payloads on bounded failure", 
   }
 });
 
-it("cold replay still fetches the exact preset preimage calldata without a status read", async () => {
-  const { presetRegistration } = await import("./native/preset-fixtures");
-  const preset = presetRegistration(2),
-    { native, fold } = setup();
-  const block: RpcBlockWithReceipts = {
-    block_number: 10,
-    timestamp: 1800,
-    transactions: [
-      { transaction: { type: "INVOKE", calldata: preset.calldata }, receipt: receipt([preset.event], "0xabc") },
-    ],
-  };
-  const { rpc, calls } = node(block);
-  await native.replay({ fold, rpc, fromBlock: 10, toBlock: 10, retainTransactions: false });
-  expect(fold.presetPreimage(preset.commitment)).toEqual(
-    preset.calldata.slice(5).map((felt) => BigInt(felt).toString()),
-  );
-  expect(calls.filter((call) => call.method === "starknet_getTransactionByHash")).toHaveLength(1);
-  expect(calls.some((call) => call.method === "starknet_getTransactionStatus")).toBe(false);
-});

@@ -7,6 +7,7 @@ import { decodeMembers, encodeMembers } from "./serde";
 import { CairoCustomEnum } from "starknet";
 import { NativeDecoder } from "./decoder";
 import { NativeIngestion } from "./ingestion";
+import type { ReleaseDefinitions } from "./release-definition";
 import type { NativeManifest, NativeSchema } from "./schema";
 import { buildShardManifest } from "../shard-manifest";
 export const schema = schemaJson as unknown as NativeSchema;
@@ -51,9 +52,9 @@ export const raw = (event: RpcEvent) => ({
   transaction_index: 0,
   event_index: 0,
 });
-export const setup = () => {
+export const setup = (definitions?: ReleaseDefinitions) => {
   const decoder = new NativeDecoder(manifest);
-  return { decoder, fold: new WorldFold(decoder.registry), native: new NativeIngestion(decoder) };
+  return { decoder, fold: new WorldFold(decoder.registry), native: new NativeIngestion(decoder, definitions) };
 };
 
 export function rowEvent(name: string, keys: string[], values: DecodedRecord): RpcEvent {

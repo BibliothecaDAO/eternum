@@ -1,11 +1,6 @@
 import { expeditionDayEndsAt, readExpeditionRules, type ExpeditionRules } from "@bibliothecadao/eternum/expeditions";
 import { hasSingleTilePosition } from "@bibliothecadao/eternum/game-client";
 import {
-  NativePresetPreimageUnavailable,
-  presetPreimageCommitment,
-  type VerifiedPreset,
-} from "./native/preset-preimages";
-import {
   deriveGameSyncScope,
   scopeInputKeys,
   SCOPE_INPUT_MODELS,
@@ -104,11 +99,6 @@ export const checkpointModelMismatch = (registry: ModelRegistry, checkpoint: Fol
   const restoredModels = new Set(checkpoint.models.map(({ model }) => model));
   const missing = [...expectedModels].filter((model) => !restoredModels.has(model));
   const unexpected = [...restoredModels].filter((model) => !expectedModels.has(model));
-  if (
-    checkpoint.models.some(({ model, rows }) => model === "Preset" && rows.length > 0) &&
-    !checkpoint.preset_preimages
-  )
-    return "preset registration preimages are absent";
   if (missing.length === 0 && unexpected.length === 0) return undefined;
   return `missing=${missing.join(",") || "none"}, unexpected=${unexpected.join(",") || "none"}`;
 };
@@ -159,8 +149,6 @@ export class WorldFold {
   private readonly registry: ModelRegistry;
 
   private readonly parent?: WorldFold;
-
-  private readonly presetPreimages = new Map<string, readonly string[]>();
 
   private readonly rowsByModel = new Map<string, Map<string, StoredModelRow | null>>();
 
@@ -258,12 +246,6 @@ export class WorldFold {
         fold.updateDirectoryIndex(model.model, row.entity_id, undefined, stored);
       }
     }
-    for (const preset of checkpoint.preset_preimages ?? []) {
-      if (presetPreimageCommitment(preset.felts) !== BigInt(preset.commitment).toString())
-        throw new Error("Checkpoint preset preimage commitment mismatch");
-      fold.rememberPreset(preset);
-    }
-    for (const { value } of fold.modelRows("Preset")) fold.presetPreimage(String(value.commitment));
     // A checkpoint may predate a game's eviction, but no write after its finalization is kept.
     for (const gameId of fold.finalizedGameIds()) fold.evictedGames.add(gameId);
     return fold;
@@ -330,26 +312,10 @@ export class WorldFold {
           .map(checkpointRow)
           .sort((left, right) => compareRowKeys(left.entity_id, right.entity_id)),
       })),
-      preset_preimages: [...this.allPresetPreimages()].map(([commitment, felts]) => ({ commitment, felts })),
       version: 2,
       native_schema_identity: this.registry.nativeSchemaIdentity,
       world_address: this.registry.worldAddress,
     };
-  }
-
-  public rememberPreset({ commitment, felts }: VerifiedPreset): void {
-    this.presetPreimages.set(BigInt(commitment).toString(), Object.freeze([...felts]));
-  }
-
-  public presetPreimage(commitment: string): readonly string[] {
-    const key = BigInt(commitment).toString();
-    const felts = this.presetPreimages.get(key) ?? this.parent?.presetPreimage(key);
-    if (!felts) throw new NativePresetPreimageUnavailable(key);
-    return felts;
-  }
-
-  private allPresetPreimages(): Map<string, readonly string[]> {
-    return new Map([...(this.parent?.allPresetPreimages() ?? []), ...this.presetPreimages]);
   }
 
   public overlay(): WorldFold {

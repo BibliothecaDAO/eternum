@@ -4,8 +4,8 @@ import { loadNativePresetConfiguration } from "../../../../config/deployer/clean
 import { nativePresetForId } from "../../../../config/source/native";
 import { NativeDecoder } from "./decoder";
 import { manifest, schema } from "./fixtures";
-import { derivePresetFacts } from "./preset-facts";
-import { decodePresetPreimage } from "./preset-preimages";
+import { readReleaseDefinitions, releaseDefinition, releaseDefinitionText } from "./release-definition";
+import { deriveReleaseFacts } from "./release-facts";
 import { encodeMembers } from "./serde";
 import type { NativeSchema } from "./schema";
 import type { DecodedWorldEvent } from "../types";
@@ -23,7 +23,7 @@ export function currentPresetFixture(presetId: number, fixtureSchema: NativeSche
     definition,
     registration,
     creation: codec.compile("create_game", { params }),
-    rows: projectLaunch(fixtureSchema, registration, params),
+    rows: projectLaunch(fixtureSchema, definition, params),
   };
 }
 
@@ -49,7 +49,11 @@ function fixtureLaunchParams(presetId: number, definition: ReturnType<typeof bui
   };
 }
 
-function projectLaunch(schema: NativeSchema, registration: string[], params: ReturnType<typeof fixtureLaunchParams>) {
+function projectLaunch(
+  schema: NativeSchema,
+  definition: ReturnType<typeof buildNativePreset>,
+  params: ReturnType<typeof fixtureLaunchParams>,
+) {
   const decoder = new NativeDecoder({
     ...manifest,
     native: {
@@ -66,13 +70,8 @@ function projectLaunch(schema: NativeSchema, registration: string[], params: Ret
     map: params.map_override.isSome() ? params.map_override.unwrap() : null,
     map_center_offset: ((params.seed + 1) % Math.floor(2147483646 / 2 / 10)) * 10,
   };
-  return derivePresetFacts(
-    decoder,
-    decodePresetPreimage(schema, registration.slice(1)),
-    overrides,
-    params.roster.length,
-    launch,
-  );
+  const definitions = readReleaseDefinitions(JSON.parse(releaseDefinitionText(1, definition)));
+  return deriveReleaseFacts(decoder, releaseDefinition(definitions, 1), overrides, params.roster.length, launch);
 }
 
 export function serializePresetRows(rows: DecodedWorldEvent[], fixtureSchema: NativeSchema = schema): string[] {
