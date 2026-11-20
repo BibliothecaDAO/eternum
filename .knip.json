@@ -225,7 +225,6 @@
       "entry": [
         "deployer/clean/cli/create.ts",
         "deployer/clean/cli/deploy-world.ts",
-        "deployer/clean/registrar/register-preset.ts",
         "utils/utils.ts"
       ]
     },

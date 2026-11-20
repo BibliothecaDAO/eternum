@@ -1,7 +1,7 @@
 import { DEPLOYMENT_ENVIRONMENTS } from "./constants";
 import type { DeploymentEnvironment, DeploymentEnvironmentId } from "./types";
 
-export function isDeploymentEnvironmentId(value: string): value is DeploymentEnvironmentId {
+function isDeploymentEnvironmentId(value: string): value is DeploymentEnvironmentId {
   return value in DEPLOYMENT_ENVIRONMENTS;
 }
 

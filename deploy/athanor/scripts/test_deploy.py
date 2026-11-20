@@ -11,15 +11,14 @@ import deploy
 
 def release():
     return {"commit": "abc", "releaseId": 1, "schema": "0xs", "migrationClassHash": "0x0",
-            "classes": {"games": "0x1", "logic": {"Season": "0x2", "Map": "0x3"}, "account": "0x4", "verifier": "0x5"},
-            "presets": {"2": "0x20", "5": "0x50", "101": "0x65"}}
+            "classes": {"games": "0x1", "logic": {"Season": "0x2", "Map": "0x3"}, "account": "0x4", "verifier": "0x5"}}
 
 
 def deployed():
     manifest = {"native": {"releaseId": 1, "activeSchema": "0xs", "gamesClassHash": "0x01", "verifierClassHash": "0x5", "migrationClassHash": "0x0",
                            "logic": {"Season": "0x2", "Map": "0x3"}},
                 "shard": {"accountClassHash": "0x4"}}
-    return manifest, {"presets": {"2": "0x20", "5": "0x050"}}
+    return manifest
 
 
 class DeployTest(unittest.TestCase):
@@ -35,28 +34,25 @@ class DeployTest(unittest.TestCase):
         self.assertEqual(commands[1][-4:], ["up", "-d", "herald", "metrics"])
 
     def test_a_shard_running_its_release_has_no_differences(self):
-        manifest, initialized = deployed()
-        self.assertEqual(deploy.release_differences(release(), manifest, initialized, [2, 5]), [])
+        self.assertEqual(deploy.release_differences(release(), deployed()), [])
 
     def test_every_difference_from_the_release_is_named(self):
-        manifest, initialized = deployed()
+        manifest = deployed()
         manifest["native"]["logic"]["Map"] = "0x9"
         manifest["native"]["logic"]["Troops"] = "0x7"
         manifest["native"]["migrationClassHash"] = "0x6"
         manifest["shard"]["accountClassHash"] = "0x8"
-        initialized["presets"].pop("5")
-        differences = deploy.release_differences(release(), manifest, initialized, [2, 5])
+        differences = deploy.release_differences(release(), manifest)
         self.assertEqual(differences, [
             "Map class 0x9, release has 0x3",
             "Troops class 0x7, release has None",
             "migration class 0x6, release has 0x0",
             "account class 0x8, release has 0x4",
-            "preset 5 commitment None, release has 0x50",
         ])
 
     def test_the_package_environment_carries_the_deployment_inputs(self):
         inputs = {"shard_name": "realms-staging-d", "chain_id": "REALMS_STAGING_D", "player_capacity": 96,
-                  "guardian_url": "https://staging.test/api/guardian", "presets": [2, 5],
+                  "guardian_url": "https://staging.test/api/guardian",
                   "public_rpc_url": "https://rpc.staging.test/rpc/v0_10_2",
                   "public_herald_url": "https://herald.staging.test", "l2_gas_bound": "0x47868c00"}
         rendered = deploy.render_environment(inputs, "SHARD_INIT_IMAGE=ghcr.io/x@sha256:1\n")
@@ -64,7 +60,6 @@ class DeployTest(unittest.TestCase):
         self.assertIn("BLOCK_TIME=2s\n", rendered)
         dev = deploy.render_environment({**inputs, "block_time": "1s"}, "")
         self.assertIn("BLOCK_TIME=1s\n", dev)
-        self.assertIn("PRESETS=2,5\n", rendered)
         self.assertIn("CHAIN_ID=REALMS_STAGING_D\n", rendered)
         self.assertNotIn("NODE_MEMORY", rendered)
         self.assertNotIn("HERALD_MEMORY", rendered)
@@ -96,7 +91,7 @@ class InputsTest(unittest.TestCase):
                 git("add", "deploy/release/dev.json")
                 git("-c", "user.name=ci", "-c", "user.email=ci@example.test", "commit", "-q", "-m", "staging inputs")
                 self.assertEqual(deploy.load_inputs("dev"), self.INPUTS)
-                inputs.write_text(json.dumps({**self.INPUTS, "presets": [9]}))
+                inputs.write_text(json.dumps({**self.INPUTS, "player_capacity": 9}))
                 with self.assertRaisesRegex(ValueError, "is not committed"):
                     deploy.load_inputs("dev")
 
@@ -116,22 +111,21 @@ class EnrolmentTest(unittest.TestCase):
 
 
 class ActivationTest(unittest.TestCase):
-    def test_matching_facts_pass_with_extra_historical_presets_and_files(self):
+    def test_matching_facts_pass_with_extra_files(self):
         for mismatch in (False, True):
             with self.subTest(mismatch=mismatch), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 data = root / "data"
                 data.mkdir()
-                manifest, initialized = deployed()
-                initialized["presets"].update({"103": "0x67", "104": "0x68"})
+                manifest = deployed()
                 if mismatch:
                     manifest["native"]["gamesClassHash"] = "0x99"
                 (data / "native-world.json").write_text(json.dumps(manifest))
-                (data / "initialized.json").write_text(json.dumps(initialized))
+                (data / "initialized.json").write_text("{}")
                 (data / "obsolete-result.json").write_text('{"passed":false}')
                 with (
                     patch.object(deploy, "deployment_target", return_value={"environment": "dev"}),
-                    patch.object(deploy, "load_inputs", return_value={"presets": [2, 5]}),
+                    patch.object(deploy, "load_inputs", return_value={}),
                     patch.object(deploy, "deployment_revision"),
                     patch.object(deploy.shard, "isolated_stack_lock", return_value=nullcontext()),
                     patch.object(deploy.shard, "build_images", return_value={**release(), "images": {"init": "sha256:1"}}),
@@ -223,13 +217,13 @@ class RestartUnfinishedTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             data = Path(temporary)
             inputs = {'chain_id': 'TEST', 'guardian_url': 'https://identity.test/api/guardian',
-                      'l2_gas_bound': '0x10', 'presets': [2, 5, 101]}
-            manifest, initialized = deployed()
+                      'l2_gas_bound': '0x10'}
+            manifest = deployed()
             manifest['shard'].update(chainId='0x54455354', guardianPublicKey='0x7')
             for name in ('host-keys.json', 'host-accounts.json', 'vrf-key.json', 'gameplay-contracts.json', 'chain-config.yaml', 'harness.env'):
                 (data / name).write_text('{}')
             (data / 'native-world.json').write_text(json.dumps(manifest))
-            (data / 'initialized.json').write_text(json.dumps(initialized))
+            (data / 'initialized.json').write_text('{}')
             (data / 'init-configuration.json').write_text(json.dumps({
                 'shard': 'test', 'chain_id': 'TEST', 'guardian_url': inputs['guardian_url'], 'l2_gas_bound': '0x10'}))
             with patch.object(deploy.shard, 'read_guardian_identity', return_value={'guardianPublicKey': '0x7'}):
@@ -247,13 +241,13 @@ class RestartUnfinishedTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             data = Path(temporary)
             inputs = {'chain_id': 'TEST', 'guardian_url': 'https://identity.test/api/guardian',
-                      'l2_gas_bound': '0x10', 'presets': [2, 5]}
-            manifest, initialized = deployed()
+                      'l2_gas_bound': '0x10'}
+            manifest = deployed()
             manifest['shard'].update(chainId='0x54455354', guardianPublicKey='0x7')
             for name in ('host-keys.json', 'host-accounts.json', 'vrf-key.json', 'gameplay-contracts.json', 'chain-config.yaml', 'harness.env'):
                 (data / name).write_text('{}')
             (data / 'native-world.json').write_text(json.dumps(manifest))
-            (data / 'initialized.json').write_text(json.dumps(initialized))
+            (data / 'initialized.json').write_text('{}')
             (data / 'init-configuration.json').write_text(json.dumps({
                 'shard': 'test', 'chain_id': 'TEST', 'guardian_url': inputs['guardian_url'], 'l2_gas_bound': '0x10'}))
 
@@ -277,10 +271,8 @@ class RestartUnfinishedTest(unittest.TestCase):
                     'migration class 0x0, release has 0x23'])
                 self.assertEqual(differences(candidate(2, games='0x99')), ['Games class 0x01, release has 0x99'])
                 self.assertEqual(differences(candidate(2, schema='0xother')), ['schema 0xs, release has 0xother'])
-                self.assertEqual(differences(candidate(2, presets={'2': '0x20', '5': '0x51'})),
-                                 ['preset 5 commitment 0x050, release has 0x51'])
             # After the run the shard must run this release exactly: verification never accepts the previous one.
-            self.assertEqual(deploy.release_differences(candidate(2), manifest, initialized, [2, 5]), [
+            self.assertEqual(deploy.release_differences(candidate(2), manifest), [
                 'release id 1, release has 2', 'Season class 0x2, release has 0x22',
                 'migration class 0x0, release has 0x23'])
 

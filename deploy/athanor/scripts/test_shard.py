@@ -50,7 +50,6 @@ def configuration():
         "public_rpc_url": "https://rpc.test/rpc/v0_10_2",
         "public_herald_url": "https://herald.test", "l2_gas_bound": "0x47868c00",
         "node_flags": ["--enable-native-execution=true", "--native-compilation-mode=async"],
-        "presets": [2],
     }
 
 
@@ -86,21 +85,6 @@ class ShardTest(unittest.TestCase):
         ):
             with self.subTest(key=key, value=value), self.assertRaises(ValueError):
                 shard.validate_runtime_configuration({**config, key: value})
-
-    def test_package_init_refuses_a_preset_outside_the_release_catalogue(self):
-        package = load_package_script("init")
-        facts = {"presets": {"2": "0x2", "3": "0x3", "5": "0x5", "101": "0x65"}}
-        self.assertEqual(package.requested_presets({"PRESETS": "2,5"}, facts), {2: "0x2", 5: "0x5"})
-        with self.assertRaisesRegex(ValueError, r"Presets \[1\] are not in this release's catalogue"):
-            package.requested_presets({"PRESETS": "2,1"}, facts)
-        with self.assertRaisesRegex(ValueError, "PRESETS must name"):
-            package.requested_presets({"PRESETS": ""}, facts)
-
-    def test_package_init_refuses_a_preset_whose_chain_commitment_is_not_the_release(self):
-        package = load_package_script("init")
-        self.assertEqual(package.chain_commitment(2, "0x02", "0x2"), "0x02")
-        with self.assertRaisesRegex(ValueError, "Preset 2 commits to 0x3 on chain; this release's facts say 0x2"):
-            package.chain_commitment(2, "0x3", "0x2")
 
     def test_package_backup_restores_the_node_without_its_collector_and_names_missing_tables(self):
         backup = load_package_script("backup")
@@ -580,7 +564,7 @@ class PackageStartTest(unittest.TestCase):
         with patch.dict(shard.os.environ, {**self.environ, **settings}), redirect_stdout(io.StringIO()):
             config = self.package.configuration()
             self.package.prepare(config)
-            self.package.deploy(config, {})
+            self.package.deploy(config)
 
     def published(self, volume, name):
         return self.volumes[volume] / name

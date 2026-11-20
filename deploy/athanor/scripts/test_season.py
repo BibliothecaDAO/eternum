@@ -34,7 +34,6 @@ class SeasonCommandTest(unittest.TestCase):
         data = self.directory / "data"
         data.mkdir(parents=True)
         (data / "native-world.json").write_text("{}")
-        (data / "initialized.json").write_text(json.dumps({"presets": {"2": "0x2", "5": "0x5", "6": "0x6"}}))
         settings.write_text(json.dumps({"dev": {"origin": "https://dev.test", "runDirectory": str(self.directory)}}))
         self.phases = []
         self.writes = []
@@ -130,13 +129,6 @@ class SeasonCommandTest(unittest.TestCase):
                 season.open_frontier("dev", preset, start, end)
         self.assertEqual(self.writes, [])
 
-    def test_unregistered_preset_fails_before_docker_or_calendar(self):
-        (self.directory / "data/initialized.json").write_text(json.dumps({"presets": {"5": "0x5"}}))
-        with self.assertRaisesRegex(ValueError, "Preset 6 is not registered"):
-            season.open_frontier("dev", 6)
-        self.assertEqual(self.commands, [])
-        self.assertEqual(self.writes, [])
-
     def test_other_environments_are_refused_before_files_or_services(self):
         with self.assertRaisesRegex(ValueError, "only for dev"):
             season.open_frontier("production", 6)
@@ -165,8 +157,3 @@ class OperatorSeasonTest(unittest.TestCase):
                 finally:
                     credential.assert_not_called()
 
-    def test_reviewed_dev_inputs_register_current_presets_through_the_normal_deployer(self):
-        with patch.object(deploy, "committed", return_value=True):
-            inputs = deploy.load_inputs("dev")
-        rendered = deploy.render_environment({**inputs, "chain_id": "DEV_REHEARSAL"}, "")
-        self.assertIn("PRESETS=2,7\n", rendered)

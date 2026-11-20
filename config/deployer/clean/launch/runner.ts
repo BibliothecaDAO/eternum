@@ -1,5 +1,4 @@
 import { buildNativeGameParams, loadNativePresetConfiguration } from "../registrar/native-preset";
-import { buildNativePreset } from "../config/native-preset";
 import { setTimeout as sleep } from "node:timers/promises";
 import { type Account, RpcProvider, shortString } from "starknet";
 import { createOperatorAccount } from "../shared/madara-account";
@@ -220,16 +219,7 @@ async function createGame(launch: PreparedLaunch): Promise<void> {
   const params = await buildRegistrarGameParams(launch);
   const result = await launch.runtime.progress.run(
     "create_game",
-    () =>
-      createRegistrarGame(
-        createLaunchAccount(launch),
-        params,
-        launch.request.manifest,
-        buildNativePreset(
-          loadNativePresetConfiguration(launch.runtime.environment.id, launch.runtime.presetId),
-          launch.runtime.presetId,
-        ),
-      ),
+    () => createRegistrarGame(createLaunchAccount(launch), params, launch.request.manifest),
     {
       start: `Creating "${launch.request.gameName}" through the persistent registrar`,
       success: (created, elapsedMs) =>

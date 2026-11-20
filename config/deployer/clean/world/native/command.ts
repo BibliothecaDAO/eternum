@@ -8,13 +8,7 @@ import { createOperatorAccount } from "../../shared/madara-account";
 import { confirmedTransactionReceipt } from "../../shared/transaction";
 import type { RegistrarWorld } from "./types";
 
-const administrativeCommands = new Set<NativeCommand["kind"]>([
-  "SettleBlitzRoster",
-  "MarkGameSettled",
-  "RecordBlitzResults",
-]);
-
-const repeatableBatches = new Set<NativeCommand["kind"]>(["SettleBlitzRoster", "MarkGameSettled"]);
+const administrativeCommands = new Set<NativeCommand["kind"]>(["MarkGameSettled"]);
 
 type AdminCommandInput = {
   provider: RpcProvider;
@@ -27,19 +21,15 @@ type AdminCommandInput = {
 
 export interface CompletedAdminCommand {
   transactionHash: string;
-  remaining?: string;
-  /** Transactions the command took to complete: one, or one per batch of a repeatable command. */
+  remaining: string;
   transactions: number;
 }
 
 export async function completeNativeAdminCommand(input: AdminCommandInput): Promise<CompletedAdminCommand> {
-  if (!repeatableBatches.has(input.command.kind))
-    return { ...(await executeNativeAdminCommand(input)), transactions: 1 };
   let transactions = 0;
   const result = await completeNativeBatches(async () => {
     transactions += 1;
     const result = await executeNativeAdminCommand(input);
-    if (result.remaining === undefined) throw new Error("Native administrative batch has no remaining count");
     return { ...result, remaining: BigInt(result.remaining) };
   });
   return { ...result, remaining: result.remaining.toString(), transactions };
@@ -47,7 +37,7 @@ export async function completeNativeAdminCommand(input: AdminCommandInput): Prom
 
 export async function executeNativeAdminCommand(
   input: AdminCommandInput,
-): Promise<{ transactionHash: string; remaining?: string }> {
+): Promise<{ transactionHash: string; remaining: string }> {
   if (!administrativeCommands.has(input.command.kind)) throw new Error("Not an administrative command");
   if (!Number.isSafeInteger(input.gameId) || input.gameId <= 0) throw new Error("Native command requires a game id");
   const games = input.manifest.world.address;
@@ -65,9 +55,8 @@ export async function executeNativeAdminCommand(
     ...scope,
     missing: "allow",
   })?.toString();
-  if (repeatableBatches.has(input.command.kind) && remaining === undefined)
-    throw new Error("Native administrative batch has no remaining count");
-  return { transactionHash: accepted.transaction_hash, ...(remaining !== undefined ? { remaining } : {}) };
+  if (remaining === undefined) throw new Error("Native administrative batch has no remaining count");
+  return { transactionHash: accepted.transaction_hash, remaining };
 }
 
 function adminPlayShard(manifest: RegistrarWorld) {

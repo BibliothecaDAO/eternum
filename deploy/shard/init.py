@@ -45,18 +45,6 @@ def configuration():
     return config
 
 
-def requested_presets(environ, facts):
-    """The presets this shard registers, from PRESETS, with the commitment the release gives each; an id outside the
-    release's catalogue is refused before anything deploys."""
-    ids = [int(value) for value in environ.get("PRESETS", "").split(",") if value.strip()]
-    if not ids:
-        raise ValueError("PRESETS must name the preset ids this shard registers, e.g. PRESETS=2,7")
-    unknown = [preset for preset in ids if str(preset) not in facts["presets"]]
-    if unknown:
-        raise ValueError(f"Presets {unknown} are not in this release's catalogue {sorted(facts['presets'], key=int)}")
-    return {preset: facts["presets"][str(preset)] for preset in ids}
-
-
 def default_gateway(route_table):
     """The IPv4 default route's gateway in /proc/net/route text: on the shard's Compose network, the host side
     that every connection to a published port arrives from."""
@@ -149,7 +137,7 @@ def publish(name, destination):
     os.replace(temporary, target)
 
 
-def deploy(config, presets):
+def deploy(config):
     env = environment(config)
     shard.wait_for_endpoint(env["RPC_URL"], rpc=True)
     complete = DATA / "initialized.json"
@@ -160,7 +148,6 @@ def deploy(config, presets):
     else:
         record = deploy_world_once(config, env)
     publish_deployed_config(config)
-    record["presets"] = register_presets(env, presets)
     shard.write_json(complete, record)
     warm_native_classes(env)
     print(complete.read_text())
@@ -188,26 +175,6 @@ def register_next_release(config, env):
     shard_release = json.loads((DATA / "native-world.json").read_text())["native"]["releaseId"]
     if json.loads(RELEASE_FACTS.read_text())["releaseId"] != shard_release:
         shard.register_world_release(config, DATA, env, logs=f"release-{shard_release + 1}")
-
-
-# Registration is idempotent, so every start registers the listed presets: one added later registers without
-# touching the shard's identity. The record holds the commitment each preset has on chain, which must be the release's.
-def register_presets(env, presets):
-    operator = json.loads((DATA / "gameplay-contracts.json").read_text())["operatorAccountAddress"]
-    env = {**env, "DEPLOYER_ACCOUNT_ADDRESS": operator}
-    commitments = {}
-    for preset, released in presets.items():
-        record = DATA / f"preset-{preset}.json"
-        shard.run(["bun", "config/deployer/clean/registrar/register-preset.ts", "--preset-id", str(preset),
-                   "--record", str(record)], DATA, f"preset-{preset}", env)
-        commitments[str(preset)] = chain_commitment(preset, json.loads(record.read_text())["commitment"], released)
-    return commitments
-
-
-def chain_commitment(preset, on_chain, released):
-    if int(on_chain, 16) != int(released, 16):
-        raise ValueError(f"Preset {preset} commits to {on_chain} on chain; this release's facts say {released}")
-    return on_chain
 
 
 def harness_invocation(args, environ, data=DATA, started=None):
@@ -254,10 +221,9 @@ if __name__ == "__main__":
         argv, environment = harness_invocation(sys.argv[2:], os.environ)
         os.execvpe(argv[0], argv, environment)
     config = configuration()
-    presets = requested_presets(os.environ, json.loads(RELEASE_FACTS.read_text()))
     if action == "prepare":
         prepare(config)
     elif action == "deploy":
-        deploy(config, presets)
+        deploy(config)
     else:
         raise ValueError("Expected prepare or deploy")
