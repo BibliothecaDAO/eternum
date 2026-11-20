@@ -55,13 +55,6 @@ test("Games exposes the published player frame, roles and frozen roster ABI", as
     { name: "game_id", type: "core::integer::u32" },
     { name: "structure_id", type: "core::integer::u64" },
   ]);
-  assert.deepEqual(abi.find(({ name }) => name === "world_native::relics::ChestRules").members, [
-    { name: "price_ceiling", type: "core::integer::u128" },
-    { name: "shares", type: "world_native::relics::ChestTiers" },
-    { name: "claim_window_seconds", type: "core::integer::u32" },
-    { name: "pool_bps", type: "core::integer::u16" },
-    { name: "top_n", type: "core::integer::u16" },
-  ]);
   const relics = JSON.parse(
     await readFile(new URL("../target/dev/world_native_RelicsLogic.contract_class.json", import.meta.url), "utf8"),
   ).abi;

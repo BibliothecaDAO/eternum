@@ -3,6 +3,7 @@ use snforge_std::signature::stark_curve::{StarkCurveKeyPair, StarkCurveKeyPairIm
 use snforge_std::{start_cheat_block_timestamp, start_cheat_caller_address, start_cheat_chain_id};
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use world_test_support::tests::state::ResourceObservationTrait;
+use crate::commands::Command;
 use crate::deposits::{DepositSource, LordsDeposit, SpendLords, authorization_hash, deposit_hash};
 use crate::entry::{
     ILedgerOperatorDispatcher, ILedgerOperatorDispatcherTrait, ILedgerOperatorSafeDispatcher,

@@ -80,7 +80,6 @@ pub fn observe(address: ContractAddress, game_id: u32) -> Array<ObservedRow> {
     observe_structures(ref rows, address, game_id);
     observe_settlement(ref rows, address, game_id);
     observe_economy(ref rows, address, game_id);
-    observe_rewards(ref rows, address, game_id);
     rows
 }
 pub fn observe_game_rules(ref rows: Array<ObservedRow>, address: ContractAddress, game_id: u32) {
@@ -217,9 +216,6 @@ pub fn observe_economy(ref rows: Array<ObservedRow>, address: ContractAddress, g
             }
         }
     }
-}
-pub fn observe_rewards(ref rows: Array<ObservedRow>, address: ContractAddress, game_id: u32) {
-    let key = array![game_id.into()].span();
 }
 
 fn observed_quest_rules() -> crate::quests::QuestRules {

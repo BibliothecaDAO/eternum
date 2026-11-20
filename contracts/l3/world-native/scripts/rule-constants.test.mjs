@@ -27,7 +27,7 @@ test("the schema identity hashes every identifier and no tunable number", async 
   assert.deepEqual(wire.identifierConstants, identifiers);
   const identifierNames = new Set(Object.values(identifiers).flatMap(Object.keys));
   assert.ok(
-    ["SEASON_CLOSE", "ENTRY_OPEN", "ENTRY_ROSTER", "DISCOVER_CHESTS", "ASH_FALL", "POWER"].every((name) =>
+    ["ENTRY_OPEN", "ENTRY_ROSTER", "ASH_FALL", "POWER"].every((name) =>
       identifierNames.has(name),
     ),
   );
