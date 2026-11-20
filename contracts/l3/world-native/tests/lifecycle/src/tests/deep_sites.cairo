@@ -93,12 +93,7 @@ pub fn descend(d: Deployment, key: ExplorerKey, now: u64) {
             set_explorer_fixture(d.games, key, ExplorerTroops { coord: crate::geometry::neighbor(spire, 0), ..army(d, key) });
         } else {
             let spire = crate::geometry::neighbor(army(d, key).coord, 0);
-            interact_with_state(
-                d.games,
-                || {
-                    while !crate::logic::spires::discover(spire_key, spire, 100, 0) {}
-                },
-            );
+            assert!(interact_with_state(d.games, || crate::logic::spires::discover(spire_key, spire, 1000, 0)));
         }
         applied(
             d,
