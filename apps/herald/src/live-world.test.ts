@@ -512,4 +512,3 @@ it("validates the whole rebuilt overlay before publishing any of its actions", a
   expect(native.receiptFailures).toBe(1);
   expect(live.snapshot("1").models.find((model) => model.model === "TileOpt")!.rows).toEqual([]);
 });
-

@@ -324,12 +324,12 @@ it("projects optional Deep rules from verified registration and publishes no row
     const preset = registration(FRONTIER_FIXTURE_PRESET_ID, (definition) => {
       if (enabled) {
         definition.economy.deep = new CairoOption(CairoOptionVariant.Some, deep);
-    const world = setup(preset.definitions);
       } else {
         definition.economy.deep = new CairoOption(CairoOptionVariant.None);
         definition.economy.race = new CairoOption(CairoOptionVariant.None);
       }
     });
+    const world = setup(preset.definitions);
     world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
     const store = new NativeFactStore();
     store.applyFacts(
@@ -345,10 +345,10 @@ it("projects daily quest rules from verified registration, without a legacy clai
     const preset = registration(FRONTIER_FIXTURE_PRESET_ID, (definition) => {
       if (enabled) {
         definition.economy.quests = new CairoOption(CairoOptionVariant.Some, rules);
-    const world = setup(preset.definitions);
         definition.economy.labor = new CairoOption(CairoOptionVariant.None);
       }
     });
+    const world = setup(preset.definitions);
     world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
     const store = new NativeFactStore();
     store.applyFacts(
@@ -372,7 +372,6 @@ it("projects optional bane rules from the verified preset with whole Cull counts
     const preset = registration(FRONTIER_FIXTURE_PRESET_ID, (definition) => {
       if (enabled) {
         definition.economy.banes = new CairoOption(CairoOptionVariant.Some, rules);
-    const world = setup(preset.definitions);
         definition.economy.quests = new CairoOption(CairoOptionVariant.Some, {
           base_counts: [1, 1, 1, 1, 1, 2, 15],
           labor: 1000n,
@@ -382,6 +381,7 @@ it("projects optional bane rules from the verified preset with whole Cull counts
         definition.economy.labor = new CairoOption(CairoOptionVariant.None);
       }
     });
+    const world = setup(preset.definitions);
     world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
     const store = new NativeFactStore();
     store.applyFacts(
@@ -404,7 +404,6 @@ it("projects optional race rules from verified registration into the native fact
     const preset = registration(FRONTIER_FIXTURE_PRESET_ID, (definition) => {
       if (enabled) {
         definition.economy.race = new CairoOption(CairoOptionVariant.Some, rules);
-    const world = setup(preset.definitions);
         definition.economy.deep = new CairoOption(CairoOptionVariant.Some, {
           gate_distance: 4,
           rings: [{ radius: 5, realms: 0 }],
@@ -424,6 +423,7 @@ it("projects optional race rules from verified registration into the native fact
         definition.economy.race = new CairoOption(CairoOptionVariant.None);
       }
     });
+    const world = setup(preset.definitions);
     world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
     const store = new NativeFactStore();
     store.applyFacts(

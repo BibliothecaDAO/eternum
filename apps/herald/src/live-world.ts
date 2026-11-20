@@ -618,7 +618,6 @@ export class LiveWorld {
       setBoundedTransactionEntry(this.transactionCalldata, identity, transaction.calldata);
   }
 
-
   private publishTransactionReceipt(hash: string, _sender: string | null | undefined, receipt: RpcReceipt): void {
     // Sent after the receipt's facts were handled: REVERTED before the roll, REJECTED by the game, else its finality.
     const status =

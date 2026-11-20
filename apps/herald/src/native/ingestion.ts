@@ -149,13 +149,7 @@ export class NativeIngestion {
       await input.beforeBlock?.(preview, block, events);
       block.transactions.forEach(({ receipt, transaction }, index) => {
         try {
-          const validated = this.validateReceipt(
-            preview,
-            receipt,
-            number,
-            index,
-            input.preconfirmed?.(receipt),
-          );
+          const validated = this.validateReceipt(preview, receipt, number, index, input.preconfirmed?.(receipt));
           events.push(...validated.events);
           if (input.retainTransactions !== false)
             transactions.push({

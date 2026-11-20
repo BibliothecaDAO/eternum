@@ -2,7 +2,7 @@ import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import releaseFile from "../../../../contracts/l3/world-native/schema/release-definition.json";
 import type { DecodedRecord } from "../types";
 
-export class NativeReleaseDefinitionUnknown extends Error {
+class NativeReleaseDefinitionUnknown extends Error {
   constructor(release: number) {
     super(`No rule definition for release ${release}`);
     this.name = "NativeReleaseDefinitionUnknown";
@@ -12,7 +12,13 @@ export class NativeReleaseDefinitionUnknown extends Error {
 export type ReleaseDefinitions = ReadonlyMap<number, DecodedRecord>;
 
 export function releaseDefinitionText(release: number, definition: unknown): string {
-  return JSON.stringify({ release, definition }, (_key, value) => (typeof value === "bigint" ? value.toString() : value), 2) + "\n";
+  return (
+    JSON.stringify(
+      { release, definition },
+      (_key, value) => (typeof value === "bigint" ? value.toString() : value),
+      2,
+    ) + "\n"
+  );
 }
 
 export function readReleaseDefinitions(...files: unknown[]): ReleaseDefinitions {

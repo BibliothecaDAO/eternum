@@ -358,4 +358,3 @@ it("logs RPC method and numeric code without node payloads on bounded failure", 
     error.mockRestore();
   }
 });
-
