@@ -1,6 +1,5 @@
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { getActiveGame } from "@/runtime/world";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { configManager, siteFrontierBeast } from "@bibliothecadao/eternum";
@@ -23,7 +22,7 @@ const useSiteFacts = (siteId: number): SiteFacts | undefined => {
   useNativeRevision(SITES);
   const gameId = configManager.getActiveGameId();
   const held = store.get("ExpeditionSite", { game_id: gameId, entity_id: siteId });
-  const shard = requireShard(getActiveGame()?.chainId);
+  const shard = requireShard();
   // A site's kind, place and starting guard never change, so its row is read once.
   const far = useQuery({
     queryKey: ["herald-site", shard.url, gameId, siteId],

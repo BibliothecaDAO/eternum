@@ -8,7 +8,6 @@ const points = vi.hoisted(() => ({ revision: 0, listeners: new Set<() => void>()
 
 vi.mock("@bibliothecadao/eternum", () => ({ configManager: { getActiveGameId: () => 1 } }));
 vi.mock("@bibliothecadao/eternum/game-client", () => ({ requireShard: () => ({ url: "http://herald.test" }) }));
-vi.mock("@/runtime/world", () => ({ getActiveGame: () => ({ chainId: "0x1" }) }));
 vi.mock("@/services/leaderboard/player-activity-breakdown-service", () => ({
   fetchLeaderboardActivityBreakdowns: fetchBreakdowns,
 }));

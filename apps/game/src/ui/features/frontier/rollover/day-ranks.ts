@@ -34,7 +34,7 @@ const useDayRank = (dayIndex: number | undefined, player: string | null): number
   const gameId = configManager.getActiveGameId();
   const ranks = useQuery({
     queryKey: ["frontierDayRanks", chainId, gameId, dayIndex],
-    queryFn: () => fetchHeraldDayRanks(requireShard(chainId), gameId, dayIndex!),
+    queryFn: () => fetchHeraldDayRanks(requireShard(), gameId, dayIndex!),
     enabled: dayIndex !== undefined,
     staleTime: CLOSED,
   });
