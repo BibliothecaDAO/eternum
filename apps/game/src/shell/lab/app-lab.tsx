@@ -17,6 +17,7 @@ import { WhatsNewPage } from "../news/news";
 import { NotFoundPage } from "../not-found";
 import { PlayPage } from "../play/play-page";
 import { SharedLinkPage } from "../share/shared-link-page";
+import { FragmentsPage } from "../shop/fragments-page";
 import { PlayerPage, ProfilePage, SettingsPage } from "../profile/profile-pages";
 import { ResultsPage } from "../season-tab/results-page";
 import { SeasonPage } from "../season-tab/season-page";
@@ -62,6 +63,7 @@ import {
   LAB_INVITE,
   labJoinedShare,
   labSealCode,
+  LAB_FRAGMENT_QUOTE,
   LAB_SEAL_CODE,
   LAB_SHARE_CODE,
   labSlots,
@@ -134,6 +136,7 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
         <Route path="doorway/:state" element={<LabDoorway />} />
         <Route path="season-end-devcon/:step/:who" element={<LabSeasonEndDevcon />} />
         <Route path="s/:code" element={<SharedLinkPage />} />
+        <Route path="shop/fragments" element={<FragmentsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </PageAddress.Provider>
@@ -297,6 +300,16 @@ const answerIdentity = (screen: LabScreen) => {
     sealCode = { held: true };
     return sealCode;
   };
+  identityClient.priceFragments = async (_game, fragments) => ({
+    fragments,
+    cents: fragments,
+    quote: {
+      ...LAB_FRAGMENT_QUOTE,
+      lordsWei: String((BigInt(LAB_FRAGMENT_QUOTE.lordsWei) * BigInt(fragments)) / 1_000n),
+    },
+  });
+  identityClient.payFragments = async () => ({ state: "delivering" });
+  identityClient.fragmentPayment = async () => ({ state: "delivered", fragments: 1_000 });
   // The lab's player has made no Realms wallet, so the payout window offers Create my wallet.
   identityClient.readDefaultWallet = async () => null;
   answerLabBuildOrders();

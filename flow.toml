@@ -61,7 +61,7 @@ cmd = "bash contracts/l3/check-native.sh test-world"
 paths = "contracts/ .tool-versions !contracts/l3/world-native/tests/capture/ !contracts/l3/world-native/tests/combat/ !contracts/l3/world-native/tests/discovery/ !contracts/l3/world-native/tests/discovery-roots/ !contracts/l3/world-native/tests/economy/ !contracts/l3/world-native/tests/lifecycle/ !contracts/l3/world-native/tests/registration/ !contracts/l3/world-native/tests/resources/"
 
 [kind.prove-season-one]
-cmd = "pnpm run build:packages && pnpm --dir apps/game exec node ./scripts/prove-season-one.mjs"
+cmd = 'pnpm run build:packages && pnpm --dir apps/game exec node ./scripts/prove-season-one.mjs --out "$FLOW_TMP/proof"'
 paths = "apps/game/scripts/prove-season-one.mjs"
 
 [gate]

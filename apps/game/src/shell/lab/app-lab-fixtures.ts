@@ -241,6 +241,7 @@ export const LAB_SCREENS = {
   "preseason-sealed": { signedIn: true, games: [] },
   "preseason-invited": { signedIn: false, games: [] },
   "preseason-invited-pick": { signedIn: true, games: [] },
+  fragments: { signedIn: true, games: [] },
   home: { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   // Play for a player with the longest name an account takes (packages/identity account-rules), with the install
   // notice: the desktop bar must hold both at its narrowest width.
@@ -348,6 +349,7 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, string
   "preseason-chosen": LAB_WALLET,
   "preseason-sealed": LAB_WALLET,
   "preseason-invited-pick": LAB_WALLET,
+  fragments: LAB_WALLET,
   "entry-choose": LAB_WALLET,
   "entry-short": LAB_WALLET,
   "entry-registered": LAB_WALLET,
@@ -503,6 +505,13 @@ export const labJoinedShare = (screen: LabScreen) =>
     ? ({ kind: "aspect", chainId: null, gameId: null, moment: LAB_INVITE.moment, name: LAB_INVITE.name } as const)
     : null;
 export const labSealCode = (screen: LabScreen) => ({ held: screen === "preseason-sealed" });
+export const LAB_FRAGMENT_QUOTE = {
+  id: "lab-quote",
+  lordsWei: String(2_750n * 10n ** 18n),
+  token: "0x10e5",
+  treasury: "0x7a",
+  expiresAt: NOW + 600,
+};
 
 const SEASON_ONE_PHASE = (at: (minutes: number) => string) => ({
   phase: "frontier" as const,

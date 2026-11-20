@@ -1070,8 +1070,16 @@ reached (an army out of stamina, or Fragments held). The Ancient Seal row: what 
 `QuestRules`; an account whose Realm or campaign ticket already pays it reads **Your Realm gives this bonus already**),
 **Get the Ancient Seal** for 1,000 Fragments, or while short how many more and their price in dollars, and the code
 field (the waiting screen's redeem, granted at once in a running game); once the account's Seal row exists it says the
-Ancient Seal is held. Then the Fragments row (a cent each) and the stamina refill rate. Kit lab: `shop`, `shop-ready`,
-`shop-held`.
+Ancient Seal is held. Then the Fragments row (a cent each) with **Get Fragments**, and the stamina refill rate. Kit lab:
+`shop`, `shop-ready`, `shop-held`.
+
+**Get Fragments** (`/shop/fragments?chain=<chain>&game=<game>&next=<game path>#shop`, from the shop's Fragments row):
+the store's packs (100, 500, 1,000 Fragments; the 1,000 pack is the Ancient Seal's) priced in dollars, the Seal's
+chosen, and **Pay $10.00**: the price is quoted in LORDS (shown under the dollars), paid as one LORDS transfer to the
+treasury from the account's default wallet (its passkey) or else its linked wallet, then followed until the Fragments
+are delivered; **Back to the shop** returns to the game with the shop open. LORDS only: no other token is swapped yet.
+Lab: `/lab/app/fragments/shop/fragments?chain=0x5245414c4d53&game=1&next=%2F`; stills: `build.sh prove-season-one`
+(`fragments-packs`, `fragments-pay`, desktop and phone).
 
 `pnpm --dir apps/game playtest --steps lab-no-lords --iterations 1 --out <evidence>` checks the army panel and HUD.
 
