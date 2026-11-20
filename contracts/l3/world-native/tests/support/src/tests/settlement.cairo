@@ -31,7 +31,7 @@ pub fn seed_settlement(deployment: Deployment, rules: SettlementRules) -> u32 {
     play_fixture::create_game(
         deployment.games,
         crate::registrar::CreateGameParams {
-            registration_start: rules.registration_start, ..play_fixture::fixture_params('settlement')
+            registration_start: rules.registration_start, ..play_fixture::fixture_params('settlement'),
         },
     )
 }

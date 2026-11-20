@@ -193,7 +193,11 @@ pub fn season_case() -> (Deployment, TestAction, u64) {
     let d = super::registrar::setup();
     let game_id = play_fixture::create_game(d.games, play_fixture::fixture_params('season'));
     super::resource_commands::set_fixture(
-        d.games, selector!("realms"), selector!("catalogue_count"), array![].span(), crate::realms::CANONICAL_REALM_COUNT,
+        d.games,
+        selector!("realms"),
+        selector!("catalogue_count"),
+        array![].span(),
+        crate::realms::CANONICAL_REALM_COUNT,
     );
     super::resource_commands::set_fixture(
         d.games, selector!("realms"), selector!("traits"), array![1].span(), play_fixture::FIXTURE_REALM_TRAITS,

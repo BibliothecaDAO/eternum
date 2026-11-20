@@ -21,8 +21,8 @@ pub use crate::resources::{
 };
 pub use crate::rules::{DISCOVER_CAMPS, HOME_REWARDS, RESOURCE_PRECISION};
 pub use crate::settlement::{
-    ISettlementCreationDispatcher, ISettlementCreationDispatcherTrait,
-    ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait, RealmCreation, SettlementCreation, SettlementMode,
+    ISettlementCreationDispatcher, ISettlementCreationDispatcherTrait, ISettlementViewsDispatcher,
+    ISettlementViewsDispatcherTrait, RealmCreation, SettlementCreation, SettlementMode,
 };
 pub use crate::stamina::StaminaSourceTrait;
 pub use crate::structures::{IStructureOperationsDispatcher, IStructureOperationsDispatcherTrait};
@@ -104,9 +104,7 @@ pub fn held_troop(d: super::Deployment, home: ResourceKey) -> crate::troops::Tro
 }
 pub fn muster_command(home: ResourceKey, category: u8, direction: u8, slot: u8) -> Command {
     Command::CreateExplorer(
-        CreateExplorer {
-            slot, structure_id: home.entity_id, category, tier: 0, amount: RESOURCE_PRECISION, direction,
-        },
+        CreateExplorer { slot, structure_id: home.entity_id, category, tier: 0, amount: RESOURCE_PRECISION, direction },
     )
 }
 pub fn expedition_armies(d: super::Deployment, home: ResourceKey) -> (ExplorerKey, ExplorerKey) {
@@ -548,7 +546,10 @@ pub fn assert_on_site_guard_grid(depth: u8, guard: u128) {
     assert_eq!((count - lower) % rules.guard_step.into(), 0);
 }
 pub fn place_ruin(
-    d: super::Deployment, home: ResourceKey, coord: crate::troops::Coord, relic: crate::army_relics::ArmyRelic,
+    d: super::Deployment,
+    home: ResourceKey,
+    coord: crate::troops::Coord,
+    relic: crate::army_relics::ArmyRelic,
     timestamp: u64,
 ) -> ResourceKey {
     let context = crate::commands::ExecutionContext { timestamp, ..crate::tests::context(d.games, home.game_id) };

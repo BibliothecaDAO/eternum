@@ -104,5 +104,4 @@ describe("player command callers", () => {
     expect(submit.mock.calls.at(-1)![1]).toMatchObject({ entrypoint: "CreateExplorer" });
     expect(decoded()).toEqual({ structure_id: 12n, category: 0n, tier: 0n, amount: 100n, direction: 4n, slot: 2n });
   });
-
 });

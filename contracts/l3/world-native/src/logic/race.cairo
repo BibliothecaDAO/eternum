@@ -200,9 +200,7 @@ fn schedule_triumph(key: AspectKey, before: u32, height: u32, timestamp: u64) {
         return;
     }
     let game = crate::logic::game::game(key.game_id);
-    let day = crate::days::day_of(
-        game, crate::balance::rules::SWITCHES.day_unit_seconds, timestamp - 1,
-    );
+    let day = crate::days::day_of(game, crate::balance::rules::SWITCHES.day_unit_seconds, timestamp - 1);
     if day.end >= game.end_at {
         return;
     }

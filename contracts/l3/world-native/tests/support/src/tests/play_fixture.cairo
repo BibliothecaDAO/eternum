@@ -136,7 +136,11 @@ pub fn settled_home(
     d: super::Deployment, game_id: u32, actor: ContractAddress, realm_id: u32, timestamp: u64,
 ) -> crate::resources::ResourceKey {
     super::resource_commands::set_fixture(
-        d.games, selector!("realms"), selector!("catalogue_count"), array![].span(), crate::realms::CANONICAL_REALM_COUNT,
+        d.games,
+        selector!("realms"),
+        selector!("catalogue_count"),
+        array![].span(),
+        crate::realms::CANONICAL_REALM_COUNT,
     );
     super::resource_commands::set_fixture(
         d.games, selector!("realms"), selector!("traits"), array![realm_id.into()].span(), FIXTURE_REALM_TRAITS,

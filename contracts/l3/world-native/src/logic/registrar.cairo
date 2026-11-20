@@ -23,8 +23,7 @@ fn initialize_gameplay(game_id: u32) {
 #[starknet::component]
 pub mod RegistrarState {
     use starknet::storage::{
-        StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
-        StoragePointerWriteAccess,
+        StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
     use crate::events::RowSet;
     use crate::logic::release::ReleaseState;

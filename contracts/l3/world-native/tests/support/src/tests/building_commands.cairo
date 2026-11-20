@@ -30,7 +30,9 @@ pub fn replay_buildings(record: bool) {
     let mut frames = array![super::spatial_replay::initial(d.games, 3, entities, tiles)];
     let mut spy = snforge_std::spy_events();
     let start = super::play_fixture::FIXTURE_START;
-    for (command, timestamp) in array![(create(home, 37), start + 40), (Command::DestroyBuilding(change(home)), start + 130)] {
+    for (command, timestamp) in array![
+        (create(home, 37), start + 40), (Command::DestroyBuilding(change(home)), start + 130),
+    ] {
         assert!(execute(d, command, timestamp));
         super::state::assert_spatial_indexes(d.games, 3, entities, tiles);
         frames.append(super::spatial_replay::capture(d.games, 3, entities, tiles, ref spy));

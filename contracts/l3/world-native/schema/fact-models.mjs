@@ -217,9 +217,7 @@ export const factWireTypes = [
   {
     type: "struct",
     name: "world_native::upgrades::UpgradeRecipe",
-    members: [
-      { name: "costs", type: "core::array::Span::<world_native::resources::ResourceAmount>" },
-    ],
+    members: [{ name: "costs", type: "core::array::Span::<world_native::resources::ResourceAmount>" }],
   },
   {
     type: "struct",

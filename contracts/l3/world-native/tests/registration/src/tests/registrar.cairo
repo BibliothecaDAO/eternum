@@ -46,7 +46,8 @@ fn launch_retries_return_the_same_game_and_a_changed_request_rejects() {
     assert_eq!(registry(d).next_game_id(), first + 1);
     assert_eq!(registry(d).game_id_by_name(request.name), first);
     assert!(
-        safe(d, super::authority()).create_game(CreateGameParams { duration_seconds: request.duration_seconds + 120, ..request })
+        safe(d, super::authority())
+            .create_game(CreateGameParams { duration_seconds: request.duration_seconds + 120, ..request })
             .is_err(),
     );
     assert_eq!(registry(d).next_game_id(), first + 1);
@@ -58,11 +59,19 @@ fn a_season_starts_and_ends_on_an_army_tick() {
     let d = setup();
     let season = super::play_fixture::fixture_params('native');
     let tick = crate::balance::rules::TICK_CONFIG.armies_tick_in_seconds;
-    let off_tick = CreateGameParams { start_settling_at: season.start_main_at + 1, start_main_at: season.start_main_at + 1, ..season };
+    let off_tick = CreateGameParams {
+        start_settling_at: season.start_main_at + 1, start_main_at: season.start_main_at + 1, ..season,
+    };
     assert!(safe(d, super::authority()).create_game(off_tick).is_err());
-    assert!(safe(d, super::authority()).create_game(CreateGameParams { duration_seconds: season.duration_seconds + 1, ..season }).is_err());
+    assert!(
+        safe(d, super::authority())
+            .create_game(CreateGameParams { duration_seconds: season.duration_seconds + 1, ..season })
+            .is_err(),
+    );
     assert_eq!(registry(d).next_game_id(), 1);
-    assert_eq!(registry(d).create_game(CreateGameParams { start_settling_at: tick * 3, start_main_at: tick * 3, ..season }), 1);
+    assert_eq!(
+        registry(d).create_game(CreateGameParams { start_settling_at: tick * 3, start_main_at: tick * 3, ..season }), 1,
+    );
 }
 
 #[test]
@@ -94,11 +103,7 @@ fn expedition_armies_merge_into_the_lower_stamina_and_never_past_the_size_limit(
 
     // An army at its size limit takes no more troops.
     let rules = IGameDispatcher { contract_address: d.games }.rules(game_id);
-    let level = IStructureOperationsDispatcher { contract_address: d.games }
-        .structure(home)
-        .unwrap()
-        .base
-        .level;
+    let level = IStructureOperationsDispatcher { contract_address: d.games }.structure(home).unwrap().base.level;
     let limit: u128 = crate::troops::max_army_size(rules.troop_limit_config, level, merged.troops.tier).into()
         * RESOURCE_PRECISION;
     let mut full = merged;
@@ -162,13 +167,21 @@ fn expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stami
             bar
         };
         assert!(
-            execute_in_game(d, game_id, crate::tests::frontier_economy::reinforce(army.explorer_id, 2), super::play_fixture::FIXTURE_START + 10 + elapsed),
+            execute_in_game(
+                d,
+                game_id,
+                crate::tests::frontier_economy::reinforce(army.explorer_id, 2),
+                super::play_fixture::FIXTURE_START + 10 + elapsed,
+            ),
         );
         let after = state.resolved_explorer(army).unwrap();
         assert_eq!(after.coord, before.coord);
         assert_eq!(after.troops.count, 5 * RESOURCE_PRECISION);
         assert_eq!(slot(d, army, 0).stamina.amount, expected_bar);
-        assert_eq!(slot(d, army, 0).stamina.settled_at, (super::play_fixture::FIXTURE_START + 10 + elapsed).try_into().unwrap());
+        assert_eq!(
+            slot(d, army, 0).stamina.settled_at,
+            (super::play_fixture::FIXTURE_START + 10 + elapsed).try_into().unwrap(),
+        );
         assert_eq!(after.troops.battle_cooldown_end, (super::play_fixture::FIXTURE_START + 50).try_into().unwrap());
         assert_eq!(progress(d, army), Some(veteran));
         assert_eq!(resources.resource_balance(stock_key), stock - 2 * RESOURCE_PRECISION);
@@ -225,7 +238,9 @@ fn guard_management_is_refused_past_the_home_guard_slots() {
             1000 * RESOURCE_PRECISION,
             super::play_fixture::FIXTURE_START + 1,
             crate::commands::resource_context(
-                crate::commands::ExecutionContext { timestamp: super::play_fixture::FIXTURE_START + 1, ..crate::tests::context(d.games, (home).game_id) },
+                crate::commands::ExecutionContext {
+                    timestamp: super::play_fixture::FIXTURE_START + 1, ..crate::tests::context(d.games, (home).game_id),
+                },
             ),
         );
     stop_cheat_caller_address(d.games);
@@ -243,12 +258,18 @@ fn guard_management_is_refused_past_the_home_guard_slots() {
     };
     assert!(
         !execute_in_game(
-            d, game_id, Command::ManageTroops(crate::troop_management::ManageTroops::RecruitGuard(recruit)), super::play_fixture::FIXTURE_START + 2,
+            d,
+            game_id,
+            Command::ManageTroops(crate::troop_management::ManageTroops::RecruitGuard(recruit)),
+            super::play_fixture::FIXTURE_START + 2,
         ),
     );
     assert!(
         !execute_in_game(
-            d, game_id, Command::ManageTroops(crate::troop_management::ManageTroops::RemoveGuard(slot)), super::play_fixture::FIXTURE_START + 3,
+            d,
+            game_id,
+            Command::ManageTroops(crate::troop_management::ManageTroops::RemoveGuard(slot)),
+            super::play_fixture::FIXTURE_START + 3,
         ),
     );
 }
@@ -285,9 +306,7 @@ fn a_materialized_home_ring_moves_and_explores_without_a_roll() {
     let troops = GameState { contract_address: d.games };
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
-    let key = ExplorerKey {
-        game_id, explorer_id: *structures.home_armies(home).at(0),
-    };
+    let key = ExplorerKey { game_id, explorer_id: *structures.home_armies(home).at(0) };
     let spawn = troops.resolved_explorer(key).unwrap().coord;
     let site = crate::geometry::neighbor(spawn, 3);
 
@@ -335,7 +354,11 @@ fn a_materialized_home_ring_moves_and_explores_without_a_roll() {
     );
     let mut balances = array![];
     for resource in array![23_u8, 26, 38].span() {
-        balances.append(resources.resource_balance(ResourceSlot { game_id, entity_id: home.entity_id, resource_type: *resource }));
+        balances
+            .append(
+                resources
+                    .resource_balance(ResourceSlot { game_id, entity_id: home.entity_id, resource_type: *resource }),
+            );
     }
     let target_key = crate::geometry::tile_key(game_id, target);
     let mut troops_before = before.troops;
@@ -360,7 +383,12 @@ fn a_materialized_home_ring_moves_and_explores_without_a_roll() {
         travel - bonus.into()
     };
     assert!(
-        execute_in_game(d, game_id, Command::Explore(Explore { explorer_id: key.explorer_id, direction: step }), super::play_fixture::FIXTURE_START + 3),
+        execute_in_game(
+            d,
+            game_id,
+            Command::Explore(Explore { explorer_id: key.explorer_id, direction: step }),
+            super::play_fixture::FIXTURE_START + 3,
+        ),
     );
     let after = troops.resolved_explorer(key).unwrap();
     assert_eq!(progress_before, snforge_std::interact_with_state(d.games, || crate::logic::progression::read(key)));
@@ -402,7 +430,9 @@ fn a_level_up_doubles_the_castle_labor_from_that_second() {
     assert!(execute_in_game(d, game_id, Command::LevelUp(home.entity_id), super::play_fixture::FIXTURE_START + 50));
     assert_eq!(resources.resource_balance(labor), before - cost);
     assert_eq!(resources.resource_production(labor).production_rate.into(), 2 * base);
-    crate::tests::frontier_economy::settle(d, home, crate::resources::LABOR, super::play_fixture::FIXTURE_START + 50 + 3600);
+    crate::tests::frontier_economy::settle(
+        d, home, crate::resources::LABOR, super::play_fixture::FIXTURE_START + 50 + 3600,
+    );
     assert_eq!(resources.resource_balance(labor), before - cost + 3600 * 2 * base);
 }
 
