@@ -1,4 +1,5 @@
 pub use world_test_support::tests::progression::*;
+use super::play_fixture::FIXTURE_START;
 
 #[test]
 fn logistics_tiers_set_the_maximum_stamina_by_the_ruled_table() {
@@ -29,8 +30,8 @@ fn added_stamina_stops_at_the_armys_own_maximum() {
 #[test]
 fn an_armys_own_maximum_reads_its_logistics_tier_and_a_troops_without_progress() {
     let d = super::registrar::setup();
-    let (game_id, _, category) = super::registrar::expedition_home(d);
-    let (key, _) = super::registrar::expedition_armies(d, game_id, category);
+    let (game_id, home, _) = super::registrar::expedition_home(d);
+    let (key, _) = super::registrar::expedition_armies(d, home);
     let rules = crate::balance::rules::TROOP_STAMINA_CONFIG;
     write_progress(d, key, ArmyProgress { logistics: 3, oath_slots: 1, ..Default::default() });
     let (troops, own, other) = snforge_std::interact_with_state(
@@ -52,32 +53,33 @@ fn an_armys_own_maximum_reads_its_logistics_tier_and_a_troops_without_progress()
 #[test]
 fn training_starts_only_later_armies_at_their_realms_tiers_and_full_at_their_logistics_maximum() {
     let d = super::registrar::setup();
-    let (game_id, _, category) = super::registrar::expedition_home(d);
-    let home = crate::resources::ResourceKey { game_id, entity_id: 1 };
+    let (game_id, home, category) = super::registrar::expedition_home(d);
     snforge_std::start_cheat_caller_address(d.games, d.games);
     crate::resources::IResourceOperationsDispatcher { contract_address: d.games }
         .grant_resource(
             home,
             26,
             1000 * crate::rules::RESOURCE_PRECISION,
-            351,
+            FIXTURE_START + 1,
             crate::commands::resource_context(
-                crate::commands::ExecutionContext { timestamp: 351, ..crate::tests::context(d.games, game_id) },
+                crate::commands::ExecutionContext {
+                    timestamp: FIXTURE_START + 1, ..crate::tests::context(d.games, game_id),
+                },
             ),
         );
     snforge_std::stop_cheat_caller_address(d.games);
-    let untrained = deploy(d, game_id, category, 0);
+    let untrained = deploy(d, home, category, 2, FIXTURE_START + 1);
     assert_eq!(read_progress(d, untrained), ArmyProgress { logistics: 0, oath_slots: 2, ..Default::default() });
 
     let learned = crate::research::learn(0, crate::research::ROW_SUPPLY_YARD, 0);
     snforge_std::interact_with_state(
         d.games, || crate::logic::research::write(home, crate::research::RealmKnowledge { learned }),
     );
-    let trained = deploy(d, game_id, category, 1);
+    assert_eq!(read_progress(d, untrained), ArmyProgress { logistics: 0, oath_slots: 2, ..Default::default() });
+    let trained = deploy(d, home, category, 2, super::registrar::day_start(d, game_id, 1) + 1);
     let progress = read_progress(d, trained);
     assert_eq!(progress.logistics, 1);
-    // Training changes no army already deployed.
-    assert_eq!(read_progress(d, untrained), ArmyProgress { logistics: 0, oath_slots: 2, ..Default::default() });
+    assert!(snforge_std::interact_with_state(d.games, || crate::logic::progression::read(untrained)).is_none());
     let troops = super::state::GameState { contract_address: d.games }.resolved_explorer(trained).unwrap().troops;
     assert_eq!(
         troops.stamina.inline().amount,
@@ -100,7 +102,7 @@ fn a_scout_reveals_for_ten_stamina() {
     army.troops.category = crate::troops::TroopType::Paladin;
     super::resource_commands::set_explorer_fixture(d.games, key, army);
     place_army_at_depth(d, key, 0);
-    set_bar(d, key, 10, 360);
+    set_bar(d, key, 10, FIXTURE_START + 10);
     let target = exploration_destination(d, key);
     let root = super::registrar::discovery_root(
         game_id,
@@ -110,7 +112,7 @@ fn a_scout_reveals_for_ten_stamina() {
         Some(world_test_support::tests::registrar::any_relic()),
         crate::discovery::Discovery::Camp,
     );
-    explore(d, key, root, 360);
+    explore(d, key, root, FIXTURE_START + 10);
     assert_eq!(bar(d, key, game_id), 0);
     let map = crate::map::IMapLogicDispatcher { contract_address: d.games };
     assert!(map.tile(crate::geometry::tile_key(game_id, target)).is_some());
@@ -124,8 +126,7 @@ fn deployed_armies_keep_their_troops_oath_count_after_home_research_changes() {
         (2, crate::research::ROW_CROSSBOW_OATHS, crate::research::RANGE),
     ] {
         let d = super::registrar::setup();
-        let (game_id, _, _) = super::registrar::expedition_home(d);
-        let home = crate::resources::ResourceKey { game_id, entity_id: 1 };
+        let (game_id, home, _) = super::registrar::expedition_home(d);
         snforge_std::interact_with_state(
             d.games,
             || {
@@ -140,30 +141,28 @@ fn deployed_armies_keep_their_troops_oath_count_after_home_research_changes() {
         for resource in array![1_u8, 26, 29, 32, 35, crate::resources::LABOR, crate::resources::ESSENCE] {
             super::resource_commands::grant(d, home, resource, 1000000 * crate::rules::RESOURCE_PRECISION);
         }
-        let old = deploy(d, game_id, category, 0);
+        let old = deploy(d, home, category, 2, FIXTURE_START + 1);
         assert_eq!(read_progress(d, old).oath_slots, 2);
         assert!(
             super::resource_commands::execute_in_game(
-                d, game_id, super::building_commands::build_toward(home, building, 2), 351,
+                d, game_id, super::building_commands::build_toward(home, building, 2), FIXTURE_START + 1,
             ),
         );
         assert!(
             super::resource_commands::execute_in_game(
-                d, game_id, super::building_commands::research(home, row, 0), 351,
+                d, game_id, super::building_commands::research(home, row, 0), FIXTURE_START + 1,
             ),
         );
-        let new = deploy(d, game_id, category, 1);
-        assert_eq!(read_progress(d, new).oath_slots, 3);
-        assert_eq!(read_progress(d, old).oath_slots, 2);
-        assert_eq!(read_progress(d, new).logistics, 0);
         assert!(
             super::resource_commands::execute_in_game(
-                d, game_id, super::frontier_economy::reinforce(old.explorer_id, 2), 351,
+                d, game_id, super::frontier_economy::reinforce(old.explorer_id, 2), FIXTURE_START + 1,
             ),
         );
         let troops = super::state::GameState { contract_address: d.games }.resolved_explorer(old).unwrap().troops;
-        assert_eq!(troops.count, 5 * crate::rules::RESOURCE_PRECISION);
+        assert_eq!(troops.count, 3 * crate::rules::RESOURCE_PRECISION);
         assert_eq!(read_progress(d, old).oath_slots, 2);
+        let new = deploy(d, home, category, 2, super::registrar::day_start(d, game_id, 1) + 1);
         assert_eq!(read_progress(d, new).oath_slots, 3);
+        assert_eq!(read_progress(d, new).logistics, 0);
     }
 }

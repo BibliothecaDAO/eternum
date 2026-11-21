@@ -4,10 +4,7 @@ pub use world_test_support::tests::frontier_reveal::*;
 #[test]
 fn frontier_reveal_keeps_scaled_precision_and_ignores_boosts() {
     let limits = crate::rules::TroopLimitConfig {
-        t1_tier_strength: 1,
-        t2_tier_strength: 3,
-        t3_tier_strength: 9,
-        ..super::play_fixture::rules().troop_limit_config,
+        t1_tier_strength: 1, t2_tier_strength: 3, t3_tier_strength: 9, ..crate::balance::rules::TROOP_LIMIT_CONFIG,
     };
     let mut troops = Troops {
         count: 1500 * RESOURCE_PRECISION + RESOURCE_PRECISION / 2, tier: TroopTier::T1, ..Default::default(),
@@ -26,7 +23,7 @@ fn frontier_reveal_keeps_scaled_precision_and_ignores_boosts() {
 
 #[test]
 fn frontier_reveal_draws_only_essence_or_labor_evenly_over_ten_thousand_reveals() {
-    let limits = super::play_fixture::rules().troop_limit_config;
+    let limits = crate::balance::rules::TROOP_LIMIT_CONFIG;
     let troops = Troops { count: 1500 * RESOURCE_PRECISION, tier: TroopTier::T1, ..Default::default() };
     let mut essence = 0_u32;
     let mut labor = 0_u32;
@@ -117,17 +114,19 @@ fn site_payout_counts_all_initial_guard_troops_without_tier_weighting() {
 #[test]
 fn every_guarded_site_keeps_terrain_and_receipt_and_removes_structure_and_guards() {
     let d = super::setup(true);
+    let unallocated: u64 = super::registrar::next_setup_entity(d, 1).into();
     snforge_std::interact_with_state(
         d.games,
         || {
-            for (entity_id, category, occupier) in array![
-                (1_u64, crate::taxonomy::CAMP_CATEGORY, crate::taxonomy::CAMP_OCCUPIER),
-                (2_u64, crate::taxonomy::RIFT_CATEGORY, crate::taxonomy::RIFT_OCCUPIER),
-                (3_u64, crate::taxonomy::RUIN_CATEGORY, crate::taxonomy::RUIN_OCCUPIER),
-                (4_u64, crate::taxonomy::BEASTS_CATEGORY, crate::taxonomy::BEASTS_OCCUPIER),
+            for (x, category, occupier) in array![
+                (1_u32, crate::taxonomy::CAMP_CATEGORY, crate::taxonomy::CAMP_OCCUPIER),
+                (2_u32, crate::taxonomy::RIFT_CATEGORY, crate::taxonomy::RIFT_OCCUPIER),
+                (3_u32, crate::taxonomy::RUIN_CATEGORY, crate::taxonomy::RUIN_OCCUPIER),
+                (4_u32, crate::taxonomy::BEASTS_CATEGORY, crate::taxonomy::BEASTS_OCCUPIER),
             ] {
+                let entity_id = unallocated + x.into();
                 let key = crate::resources::ResourceKey { game_id: 1, entity_id };
-                let coord = crate::troops::Coord { alt: false, x: entity_id.try_into().unwrap(), y: 10 };
+                let coord = crate::troops::Coord { alt: false, x, y: 10 };
                 let tile = crate::geometry::tile_key(key.game_id, coord);
                 crate::logic::map::MapState::reveal(tile, 5);
                 let terrain = crate::logic::map::tile(tile);
@@ -160,9 +159,10 @@ fn every_guarded_site_keeps_terrain_and_receipt_and_removes_structure_and_guards
                 }
                 assert_eq!((site.col, site.row, site.alt), (coord.x, coord.y, coord.alt));
                 assert!(crate::logic::map::occupancy(tile).is_none());
-                crate::logic::map::MapState::occupy(tile, 20, crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER, false);
+                let army = unallocated + 5;
+                crate::logic::map::MapState::occupy(tile, army, crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER, false);
                 assert_eq!(crate::logic::expeditions::expedition_site(key), Some(site));
-                crate::logic::map::MapState::vacate(tile, 20);
+                crate::logic::map::MapState::vacate(tile, army);
             }
         },
     );

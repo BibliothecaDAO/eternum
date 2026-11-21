@@ -3,7 +3,7 @@ pub use world_test_support::tests::frontier_guards::*;
 
 #[test]
 fn seeded_site_guards_keep_their_family_mark_on_the_inclusive_preset_grid() {
-    let (_, preset) = super::preset_projection::current_definition("frontier-check");
+    let rules = release_rules();
     let rifts = array![(1350_u32, 1640_u32), (2690, 3290), (5380, 6580), (10760, 13160)];
     for depth_index in 0_u32..4 {
         let depth = crate::logic::expeditions::depth_rules(depth_index.try_into().unwrap());
@@ -16,7 +16,7 @@ fn seeded_site_guards_keep_their_family_mark_on_the_inclusive_preset_grid() {
             let mut saw_lower = false;
             let mut saw_upper = false;
             for seed in 0_u32..10000 {
-                let guard = frontier_guard(category, depth, seed.into(), preset.rules, 360);
+                let guard = frontier_guard(category, depth, seed.into(), rules, 360);
                 let count = guard.count / RESOURCE_PRECISION;
                 assert_eq!(guard.count % RESOURCE_PRECISION, 0);
                 assert!(count >= lower.into() && count <= upper.into(), "guard outside inclusive bounds");
@@ -39,7 +39,7 @@ fn seeded_site_guards_keep_their_family_mark_on_the_inclusive_preset_grid() {
 
 #[test]
 fn beasts_draw_two_depth_scaled_ranges_below_every_other_site_guard() {
-    let (_, preset) = super::preset_projection::current_definition("frontier-check");
+    let rules = release_rules();
     let expected = array![
         (315_u128, 385_u128, 405_u128, 495_u128), (630, 770, 810, 990), (1260, 1540, 1620, 1980),
         (2520, 3080, 3240, 3960),
@@ -59,7 +59,7 @@ fn beasts_draw_two_depth_scaled_ranges_below_every_other_site_guard() {
         let mut strong_min = strong_upper;
         let mut strong_max = strong_lower;
         for seed in 0_u32..2000 {
-            let guard = frontier_guard(BEASTS_CATEGORY, depth, seed.into(), preset.rules, 360);
+            let guard = frontier_guard(BEASTS_CATEGORY, depth, seed.into(), rules, 360);
             assert_eq!(
                 guard.category,
                 if guard.count / RESOURCE_PRECISION <= weak_upper {
@@ -96,7 +96,7 @@ fn beasts_draw_two_depth_scaled_ranges_below_every_other_site_guard() {
 
 #[test]
 fn ruin_guards_follow_their_relics_place_on_the_layer_doubled_each_layer_down() {
-    let (_, preset) = super::preset_projection::current_definition("frontier-check");
+    let rules = release_rules();
     for (depth, rank, base) in array![
         (0_u8, 1_u8, 1000_u128), (0, 2, 1500), (0, 3, 2500), (1, 2, 2000), (1, 3, 3000), (1, 4, 5000), (2, 3, 4000),
         (2, 4, 6000), (2, 5, 10000),
@@ -110,7 +110,7 @@ fn ruin_guards_follow_their_relics_place_on_the_layer_doubled_each_layer_down() 
                 crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::Blade, rank },
                 depth,
                 seed.into(),
-                preset.rules,
+                rules,
                 360,
             );
             let count = guard.count / RESOURCE_PRECISION;
@@ -135,4 +135,10 @@ fn a_ruin_refuses_a_relic_below_its_layer() {
 #[should_panic(expected: "relic outside its layer")]
 fn a_ruin_refuses_a_relic_above_its_layer() {
     crate::army_relics::ruin_strength(4, 0);
+}
+
+fn release_rules() -> crate::rules::SliceRules {
+    crate::game::IGameDispatcherTrait::rules(
+        crate::game::IGameDispatcher { contract_address: super::setup(true).games }, 1,
+    )
 }

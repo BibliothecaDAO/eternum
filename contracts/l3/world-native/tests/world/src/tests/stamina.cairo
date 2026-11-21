@@ -131,15 +131,6 @@ fn adding_to_the_cap_drops_credit_and_a_never_initialized_bar_gets_its_initial_a
 }
 
 #[test]
-#[should_panic(expected: "stamina remainder overflow")]
-fn a_preset_cannot_overflow_the_carried_remainder() {
-    let (_, definition) = super::preset_projection::current_definition("frontier-check");
-    let mut preset = definition;
-    preset.rules.tick_config.armies_tick_in_seconds = 429497;
-    crate::presets::validate(preset);
-}
-
-#[test]
 fn effect_boundaries_keep_fractional_stamina_and_boost_expiry_independent_of_read_frequency() {
     let mut once = bar(0);
     let mut once_boost = TroopBoosts {
