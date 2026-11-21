@@ -1,30 +1,11 @@
 use snforge_std::{interact_with_state, spy_events};
 use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use world_test_support::tests::Deployment;
-use world_test_support::tests::play_fixture::{TestAction, play};
+use world_test_support::tests::play_fixture::{FIXTURE_START, TestAction, play};
 use world_test_support::tests::resource_commands::execute_in_game;
 use crate::commands::Command;
 use crate::resources::ResourceKey;
 use crate::rules::RESOURCE_PRECISION;
-
-pub fn definition() -> crate::presets::PresetDefinition {
-    let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("frontier-check");
-    preset.rules.battle_config.regular_immunity_ticks = 0;
-    preset.rules.battle_config.cooldown_seconds = 0;
-    let command = Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: 1, day: 0 });
-    let encoded = world_test_support::tests::play_fixture::encode(command);
-    let index: u32 = (*encoded.at(0)).try_into().unwrap();
-    let mut bit = 1_u128;
-    for _ in 0..index {
-        bit *= 2;
-    }
-    preset.rules.command_mask = preset.rules.command_mask | bit;
-    preset
-}
-
-fn setup() -> (Deployment, u32) {
-    super::aspects::setup_aspect_preset(5, definition())
-}
 
 fn found(d: Deployment, game_id: u32, timestamp: u64) -> ResourceKey {
     assert!(
@@ -56,15 +37,14 @@ pub fn root_for(game_id: u32, day: u64, chance: u16, kind: u8) -> u256 {
 
 #[test]
 fn exploration_settles_mist_tide_until_the_exact_lights_quorum_second() {
-    let preset = definition();
     let stamina = crate::balance::rules::TROOP_STAMINA_CONFIG;
     let maximum: u64 = stamina.stamina_knight_max.into();
     let cost: u64 = stamina.stamina_explore_stamina_cost.into();
     let span = 2 * crate::balance::rules::TICK_CONFIG.armies_tick_in_seconds;
     let full: u64 = 2 * stamina.stamina_gain_per_tick.into();
-    let (d, game_id) = super::aspects::setup_aspect_preset(5, preset);
-    let home = found(d, game_id, 360);
-    train(d, home, 360);
+    let (d, game_id) = super::aspects::setup_aspects(5);
+    let home = found(d, game_id, FIXTURE_START);
+    train(d, home, FIXTURE_START);
     let tomorrow = world_test_support::tests::registrar::day_start(d, game_id, 1);
     assert!(
         play(
@@ -190,8 +170,8 @@ pub fn complete(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) {
 
 #[test]
 fn a_rejected_action_records_the_world_roll_and_a_different_root_cannot_replace_it() {
-    let (d, game_id) = setup();
-    let home = found(d, game_id, 360);
+    let (d, game_id) = super::aspects::setup_aspects(5);
+    let home = found(d, game_id, FIXTURE_START);
     interact_with_state(
         d.games,
         || {
@@ -242,7 +222,7 @@ fn a_rejected_action_records_the_world_roll_and_a_different_root_cannot_replace_
 
 #[test]
 fn quorum_ends_the_effect_once_and_collection_pays_the_second_reward_once() {
-    let (d, game_id) = super::aspects::setup_aspect_preset(5, definition());
+    let (d, game_id) = super::aspects::setup_aspects(5);
     let mut members = array![];
     let mut homes = array![];
     for index in 0_u32..5 {
@@ -251,8 +231,8 @@ fn quorum_ends_the_effect_once_and_collection_pays_the_second_reward_once() {
         );
         let member = Deployment { actor, account_class, ..d };
         members.append(member);
-        let home = found(member, game_id, 360);
-        train(member, home, 360);
+        let home = found(member, game_id, FIXTURE_START);
+        train(member, home, FIXTURE_START);
         homes.append(home);
     }
     let first = *members.at(0);
@@ -333,9 +313,9 @@ fn quorum_ends_the_effect_once_and_collection_pays_the_second_reward_once() {
 
 #[test]
 fn real_production_splits_at_the_bane_start_and_quorum_end_and_army_stores_still_work() {
-    let (d, game_id) = setup();
-    let home = found(d, game_id, 360);
-    build(d, home, crate::research::WORKSHOP, 0, 360);
+    let (d, game_id) = super::aspects::setup_aspects(5);
+    let home = found(d, game_id, FIXTURE_START);
+    build(d, home, crate::research::WORKSHOP, 0, FIXTURE_START);
     let rate: u128 = interact_with_state(
         d.games,
         || {
@@ -345,7 +325,7 @@ fn real_production_splits_at_the_bane_start_and_quorum_end_and_army_stores_still
     )
         .into();
     assert!(rate > 0);
-    train(d, home, 6360);
+    train(d, home, FIXTURE_START + 6000);
     interact_with_state(
         d.games,
         || {
@@ -364,7 +344,7 @@ fn real_production_splits_at_the_bane_start_and_quorum_end_and_army_stores_still
                 army,
                 crate::resources::ESSENCE,
                 RESOURCE_PRECISION,
-                360,
+                FIXTURE_START,
                 context,
             );
             assert_eq!(credited, RESOURCE_PRECISION);
@@ -383,7 +363,7 @@ fn real_production_splits_at_the_bane_start_and_quorum_end_and_army_stores_still
     complete(d, home, 1, tomorrow + 600);
     let now = tomorrow + 1000;
     build(d, home, crate::research::FARM, 2, now);
-    let ordinary_seconds: u128 = (tomorrow - 360 + 400).into();
+    let ordinary_seconds: u128 = (tomorrow - FIXTURE_START + 400).into();
     let expected = rate * ordinary_seconds
         + rate * 600 * Into::<u16, u128>::into(crate::balance::banes::PRODUCTION_PERCENT) / 100
         - 800 * RESOURCE_PRECISION;
@@ -432,7 +412,7 @@ fn blocked(d: Deployment, game_id: u32, aspect: u8, timestamp: u64) -> bool {
 
 #[test]
 fn altar_reserves_distinct_rivals_and_a_completed_team_quest_restores_height_without_a_bonus() {
-    let (d, game_id) = super::aspects::setup_aspect_preset(5, definition());
+    let (d, game_id) = super::aspects::setup_aspects(5);
     let mut members = array![];
     let mut homes = array![];
     for aspect in 1_u8..5 {
@@ -449,7 +429,7 @@ fn altar_reserves_distinct_rivals_and_a_completed_team_quest_restores_height_wit
                         selected_realm: None, order: Some(world_test_support::tests::registrar::aspect_order(aspect)),
                     },
                 ),
-                360,
+                FIXTURE_START,
             ),
         );
         homes
@@ -459,10 +439,10 @@ fn altar_reserves_distinct_rivals_and_a_completed_team_quest_restores_height_wit
                     entity_id: interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, actor)),
                 },
             );
-        train(member, *homes.at((aspect - 1).into()), 360);
+        train(member, *homes.at((aspect - 1).into()), FIXTURE_START);
         members.append(member);
     }
-    altar(d, game_id, 1, 480);
+    altar(d, game_id, 1, FIXTURE_START + 120);
     interact_with_state(
         d.games,
         || {
@@ -473,8 +453,8 @@ fn altar_reserves_distinct_rivals_and_a_completed_team_quest_restores_height_wit
             assert!(crate::logic::deep_banes::bane(crate::deep::TeamBaneKey { game_id, aspect: 2, day: 1 }).is_none());
         },
     );
-    for boundary in array![600_u64, 720, 840, 960, 1080, 1200, 1320] {
-        altar(d, game_id, 1, boundary);
+    for step in 2_u64..9 {
+        altar(d, game_id, 1, FIXTURE_START + step * 120);
     }
     let first_quest = interact_with_state(
         d.games,
@@ -528,8 +508,8 @@ fn altar_reserves_distinct_rivals_and_a_completed_team_quest_restores_height_wit
 
 #[test]
 fn issuing_a_team_bane_keeps_todays_world_quest_and_stops_future_rolls() {
-    let (d, game_id) = super::aspects::setup_aspect_preset(5, definition());
-    let home = found(d, game_id, 360);
+    let (d, game_id) = super::aspects::setup_aspects(5);
+    let home = found(d, game_id, FIXTURE_START);
     let tomorrow = world_test_support::tests::registrar::day_start(d, game_id, 1);
     assert!(
         play(
@@ -573,11 +553,14 @@ fn issuing_a_team_bane_keeps_todays_world_quest_and_stops_future_rolls() {
 
 #[test]
 fn mist_tide_counts_each_real_reveal_once_and_keeps_the_rolled_day() {
-    let (d, game_id) = setup();
-    let home = found(d, game_id, 360);
+    let (d, game_id) = super::aspects::setup_aspects(5);
+    let home = found(d, game_id, FIXTURE_START);
     assert!(
         execute_in_game(
-            d, game_id, world_test_support::tests::building_commands::create(home, crate::research::BARRACKS), 360,
+            d,
+            game_id,
+            world_test_support::tests::building_commands::create(home, crate::research::BARRACKS),
+            FIXTURE_START,
         ),
     );
     let tomorrow = world_test_support::tests::registrar::day_start(d, game_id, 1);
@@ -621,10 +604,10 @@ fn mist_tide_counts_each_real_reveal_once_and_keeps_the_rolled_day() {
 
 #[test]
 fn missed_world_rolls_stop_at_the_fiftieth_day_and_never_roll_past_the_season() {
-    let mut preset = definition();
-    preset.rules.day_unit_seconds = 1440;
-    let (d, game_id) = super::aspects::setup_aspect_preset(5, preset);
-    let home = found(d, game_id, 360);
+    let (d, game_id) = super::aspects::setup_aspects_lasting(
+        5, crate::balance::race::RACE_RULES.season_days / crate::days::DAYS_PER_BAG * super::registrar::bag_seconds(),
+    );
+    let home = found(d, game_id, FIXTURE_START);
     let end = interact_with_state(d.games, || crate::logic::game::game(game_id).end_at);
     assert!(execute_in_game(d, game_id, rename(home), end - 1));
     interact_with_state(

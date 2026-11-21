@@ -4,7 +4,6 @@ mod army_activity;
 mod aspects;
 
 mod banes;
-mod camps;
 mod deep_catch_up;
 mod deep_sites;
 mod deep_ticks;

@@ -4,6 +4,7 @@ use world_test_support::tests::Deployment;
 use world_test_support::tests::entry::{
     EventSpyTrait, EventsFilterTrait, IHomeGrantsSafeDispatcherTrait, ISettlementEntrySafeDispatcherTrait,
 };
+use world_test_support::tests::play_fixture::FIXTURE_START;
 use world_test_support::tests::resource_commands::execute_in_game;
 use crate::commands::Command;
 use crate::entry::{IResourceContextDispatcherTrait, IResourceContextLibraryDispatcher};
@@ -11,16 +12,7 @@ use crate::quests::{IQuestProgressDispatcherTrait, IQuestProgressLibraryDispatch
 use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
 
 fn quest_game() -> (Deployment, u32) {
-    let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("frontier-check");
-    let command = Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: 1, day: 0 });
-    let encoded = world_test_support::tests::play_fixture::encode(command);
-    let index: u32 = (*encoded.at(0)).try_into().unwrap();
-    let mut bit = 1_u128;
-    for _ in 0..index {
-        bit *= 2;
-    }
-    preset.rules.command_mask = preset.rules.command_mask | bit;
-    super::aspects::setup_aspect_preset(5, preset)
+    super::aspects::setup_aspects(5)
 }
 
 fn observe(d: Deployment, home: ResourceKey, kind: u8, amount: u128) {
@@ -30,7 +22,7 @@ fn observe(d: Deployment, home: ResourceKey, kind: u8, amount: u128) {
             IQuestProgressLibraryDispatcher {
                 class_hash: crate::logic::release::class_of(home.game_id, crate::slots::BRIDGE),
             }
-                .record_quest_progress(home, kind, amount, 360);
+                .record_quest_progress(home, kind, amount, FIXTURE_START);
         },
     );
 }
@@ -47,7 +39,7 @@ fn progress_observations_freeze_completion_and_the_player_collects_only_once() {
                     selected_realm: None, order: Some(world_test_support::tests::registrar::aspect_order(1)),
                 },
             ),
-            360,
+            FIXTURE_START,
         ),
     );
     let home = ResourceKey {
@@ -55,7 +47,7 @@ fn progress_observations_freeze_completion_and_the_player_collects_only_once() {
     };
     assert_eq!(crate::quests::daily_quest(5, 0), crate::quests::REVEALS);
     let claim = Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: home.entity_id, day: 0 });
-    assert!(!execute_in_game(d, game_id, claim, 360));
+    assert!(!execute_in_game(d, game_id, claim, FIXTURE_START));
     observe(d, home, crate::quests::HUNT, 99);
     observe(d, home, crate::quests::REVEALS, 14);
     interact_with_state(
@@ -66,7 +58,7 @@ fn progress_observations_freeze_completion_and_the_player_collects_only_once() {
             );
         },
     );
-    assert!(!execute_in_game(d, game_id, claim, 360));
+    assert!(!execute_in_game(d, game_id, claim, FIXTURE_START));
     observe(d, home, crate::quests::REVEALS, 1);
     observe(d, home, crate::quests::REVEALS, 100);
     let (labor_before, essence_before) = interact_with_state(
@@ -76,8 +68,8 @@ fn progress_observations_freeze_completion_and_the_player_collects_only_once() {
             crate::logic::resources::balance(home, crate::resources::ESSENCE),
         ),
     );
-    assert!(execute_in_game(d, game_id, claim, 360));
-    assert!(execute_in_game(d, game_id, claim, 360));
+    assert!(execute_in_game(d, game_id, claim, FIXTURE_START));
+    assert!(execute_in_game(d, game_id, claim, FIXTURE_START));
     interact_with_state(
         d.games,
         || {
@@ -100,22 +92,15 @@ fn progress_observations_freeze_completion_and_the_player_collects_only_once() {
     );
     let (actor, account_class) = world_test_support::tests::deploy_player(777, world_test_support::tests::GUARDIAN);
     let stranger = Deployment { actor, account_class, ..d };
-    assert!(!execute_in_game(stranger, game_id, claim, 360));
+    assert!(!execute_in_game(stranger, game_id, claim, FIXTURE_START));
     assert!(
         !execute_in_game(
-            d, game_id, Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: home.entity_id, day: 1 }), 360,
+            d,
+            game_id,
+            Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: home.entity_id, day: 1 }),
+            FIXTURE_START,
         ),
     );
-}
-
-fn ticket() -> world_test_support::tests::entry::EntryEntitlement {
-    world_test_support::tests::entry::EntryEntitlement {
-        realm_id: 0,
-        metadata_1: 'devcon-2026',
-        metadata_2: crate::settlement::CAMPAIGN_NORMAL.into(),
-        metadata_3: 0,
-        pass_kind: crate::settlement::CAMPAIGN_KIND,
-    }
 }
 
 fn held_realm() -> world_test_support::tests::entry::EntryEntitlement {
@@ -167,7 +152,7 @@ fn quest_labor(
                     },
                 },
             ),
-            360,
+            FIXTURE_START,
         ),
     );
     let home = ResourceKey {
@@ -176,7 +161,10 @@ fn quest_labor(
     observe(d, home, crate::quests::REVEALS, 15);
     assert!(
         execute_in_game(
-            d, game_id, Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: home.entity_id, day: 0 }), 360,
+            d,
+            game_id,
+            Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: home.entity_id, day: 0 }),
+            FIXTURE_START,
         ),
     );
     let (_, labor, essence) = interact_with_state(
@@ -187,15 +175,11 @@ fn quest_labor(
 }
 
 #[test]
-fn a_seal_a_held_realm_or_a_ticket_home_pays_the_labor_bonus() {
+fn a_seal_or_a_held_realm_pays_the_labor_bonus() {
     let (d, game_id) = quest_game();
     assert_eq!(quest_labor(d, game_id, None, true), 1500);
     let (d, game_id) = quest_game();
     assert_eq!(quest_labor(d, game_id, Some(held_realm()), false), 1500);
-    let (d, game_id) = quest_game();
-    assert_eq!(quest_labor(d, game_id, Some(ticket()), false), 1500);
-    let (d, game_id) = quest_game();
-    assert_eq!(quest_labor(d, game_id, Some(ticket()), true), 1500);
     let (d, game_id) = quest_game();
     assert_eq!(quest_labor(d, game_id, None, false), 1000);
 }
@@ -210,10 +194,10 @@ fn only_the_ledger_operator_grants_one_seal_an_account_while_the_game_runs() {
     snforge_std::stop_cheat_caller_address(d.games);
     assert!(!grant_seal(d, game_id, 0.try_into().unwrap()));
     assert!(!grant_seal(d, game_id + 1, d.actor));
-    snforge_std::start_cheat_block_timestamp(d.games, 400);
+    snforge_std::start_cheat_block_timestamp(d.games, FIXTURE_START + 40);
     let mut spy = snforge_std::spy_events();
     assert!(grant_seal(d, game_id, d.actor));
-    snforge_std::start_cheat_block_timestamp(d.games, 500);
+    snforge_std::start_cheat_block_timestamp(d.games, FIXTURE_START + 100);
     assert!(grant_seal(d, game_id, d.actor));
     let mut rows = array![];
     for (_, event) in spy.get_events().emitted_by(d.games).events {
@@ -221,10 +205,13 @@ fn only_the_ledger_operator_grants_one_seal_an_account_while_the_game_runs() {
             rows.append(event.data.span());
         }
     }
-    assert_eq!(rows.span(), array![array![2, game_id.into(), d.actor.into(), 1, 400].span()].span());
+    assert_eq!(
+        rows.span(), array![array![2, game_id.into(), d.actor.into(), 1, (FIXTURE_START + 40).into()].span()].span(),
+    );
     interact_with_state(
-        d.games, || {
-            assert_eq!(crate::state::read().entry.seals.read((game_id, d.actor)), Some(400));
+        d.games,
+        || {
+            assert_eq!(crate::state::read().entry.seals.read((game_id, d.actor)), Some(FIXTURE_START + 40));
         },
     );
     let game = crate::game::IGameDispatcherTrait::game(
@@ -246,7 +233,7 @@ fn fund(d: Deployment, home: ResourceKey, resource_type: u8, amount: u128) {
             IResourceOperationsLibraryDispatcher {
                 class_hash: crate::logic::release::class_of(home.game_id, crate::slots::RESOURCES),
             }
-                .grant_resource(home, resource_type, amount, 360, context);
+                .grant_resource(home, resource_type, amount, FIXTURE_START, context);
         },
     );
 }
@@ -261,7 +248,7 @@ fn found(d: Deployment, game_id: u32) -> ResourceKey {
                     selected_realm: None, order: Some(world_test_support::tests::registrar::aspect_order(1)),
                 },
             ),
-            360,
+            FIXTURE_START,
         ),
     );
     ResourceKey {
@@ -274,7 +261,7 @@ fn upgrade(d: Deployment, home: ResourceKey, level: u8) {
     for cost in costs {
         fund(d, home, *cost.resource_type, *cost.amount);
     }
-    assert!(execute_in_game(d, home.game_id, Command::LevelUp(home.entity_id), 360));
+    assert!(execute_in_game(d, home.game_id, Command::LevelUp(home.entity_id), FIXTURE_START));
     interact_with_state(d.games, || {
         assert_eq!(crate::logic::structures::record(home).base.level, level);
     });
@@ -299,7 +286,10 @@ fn a_level_up_resizes_unfinished_progress_but_not_a_completed_reward() {
     upgrade(d, home, 2);
     assert!(
         execute_in_game(
-            d, game_id, Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: home.entity_id, day: 0 }), 360,
+            d,
+            game_id,
+            Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: home.entity_id, day: 0 }),
+            FIXTURE_START,
         ),
     );
     interact_with_state(
@@ -323,8 +313,8 @@ fn a_full_labor_store_still_collects_essence_and_records_the_actual_grant_once()
     fund(d, home, crate::resources::LABOR, 1000000 * crate::rules::RESOURCE_PRECISION);
     observe(d, home, crate::quests::REVEALS, 15);
     let claim = Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: home.entity_id, day: 0 });
-    assert!(execute_in_game(d, game_id, claim, 360));
-    assert!(execute_in_game(d, game_id, claim, 360));
+    assert!(execute_in_game(d, game_id, claim, FIXTURE_START));
+    assert!(execute_in_game(d, game_id, claim, FIXTURE_START));
     interact_with_state(
         d.games,
         || {
@@ -338,33 +328,19 @@ fn a_full_labor_store_still_collects_essence_and_records_the_actual_grant_once()
 
 #[test]
 #[feature("safe_dispatcher")]
-fn a_late_campaign_ticket_attaches_the_bonus_without_bypassing_any_quest() {
+fn a_late_seal_attaches_the_bonus_without_bypassing_any_quest() {
     let (d, game_id) = quest_game();
     let home = found(d, game_id);
     let tomorrow = interact_with_state(
         d.games,
         || crate::days::day_of(
-            crate::logic::game::game(game_id),
-            crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read(),
-            360,
+            crate::logic::game::game(game_id), crate::balance::rules::SWITCHES.day_unit_seconds, FIXTURE_START,
         )
             .end,
     );
-    let entitlement = world_test_support::tests::entry::EntryEntitlement {
-        realm_id: 0,
-        metadata_1: 'devcon-2026',
-        metadata_2: crate::settlement::CAMPAIGN_NORMAL.into(),
-        metadata_3: 0,
-        pass_kind: crate::settlement::CAMPAIGN_KIND,
-    };
     snforge_std::start_cheat_block_timestamp(d.games, tomorrow);
-    snforge_std::start_cheat_caller_address(d.games, world_test_support::tests::authority());
-    for _ in 0_u32..2 {
-        world_test_support::tests::entry::ledger(d)
-            .register_entitlement(world_test_support::tests::entry::EntryKey { game_id, owner: d.actor }, entitlement)
-            .unwrap();
-    }
-    snforge_std::stop_cheat_caller_address(d.games);
+    assert!(grant_seal(d, game_id, d.actor));
+    assert!(grant_seal(d, game_id, d.actor));
     interact_with_state(
         d.games,
         || {
@@ -391,13 +367,15 @@ fn held_quest_fragments(wonder: u32) -> u128 {
     assert_eq!(quest_labor(d, game_id, Some(held_realm()), false), 1500);
     let home = interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
     assert!(
-        execute_in_game(d, game_id, Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home, day: 0 }), 360),
+        execute_in_game(
+            d, game_id, Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home, day: 0 }), FIXTURE_START,
+        ),
     );
     interact_with_state(d.games, || crate::state::read().entry.fragments.read((game_id, d.actor)))
 }
 
 #[test]
 fn a_held_wonder_pays_ten_fragments_for_a_quest_once_and_a_realm_without_one_pays_none() {
-    assert_eq!(held_quest_fragments(2), 10);
+    assert_eq!(held_quest_fragments(2), crate::fragments::WONDER_QUEST_FRAGMENTS.into());
     assert_eq!(held_quest_fragments(1), 0);
 }

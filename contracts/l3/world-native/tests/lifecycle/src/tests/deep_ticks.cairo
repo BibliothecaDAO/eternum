@@ -1,6 +1,7 @@
 use snforge_std::{interact_with_state, spy_events};
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use world_test_support::tests::Deployment;
+use world_test_support::tests::play_fixture::FIXTURE_START;
 use world_test_support::tests::resource_commands::execute_in_game;
 use crate::commands::Command;
 use crate::resources::ResourceKey;
@@ -8,12 +9,6 @@ use crate::rules::RESOURCE_PRECISION;
 use crate::troops::ExplorerKey;
 use super::army_activity::{army, player};
 use super::deep_sites::{applied, deployed, held, seize, site};
-
-fn race_setup(seed: felt252) -> (Deployment, u32) {
-    let mut preset = super::banes::definition();
-    preset.rules.command_mask = preset.rules.command_mask | 4;
-    super::aspects::setup_aspect_preset(seed, preset)
-}
 
 fn finish_height() -> u32 {
     crate::balance::race::RACE_RULES.stage_height * crate::race::STAGE_COUNT.into()
@@ -36,7 +31,7 @@ fn move_guard(key: ExplorerKey) -> Command {
 
 #[test]
 fn a_late_rejected_move_pays_all_sites_at_the_win_then_stops_before_later_ticks() {
-    let (d, game_id) = race_setup(98);
+    let (d, game_id) = setup(98);
     let rules = crate::logic::deep_sites::rules();
     let mut guards = array![];
     let mut homes = array![];
@@ -57,7 +52,7 @@ fn a_late_rejected_move_pays_all_sites_at_the_win_then_stops_before_later_ticks(
     let essence_before = balance(d, core, crate::resources::ESSENCE);
     let context = crate::tests::context(d.games, game_id);
     let interval = context.rules.unbox().tick_config.armies_tick_in_seconds;
-    let finish = (360 / interval + 5) * interval;
+    let finish = (FIXTURE_START / interval + 5) * interval;
     interact_with_state(
         d.games,
         || crate::state::write()
@@ -120,14 +115,14 @@ fn held_pay(game_id: u32, kind: u8, rings_open: u8) -> u32 {
 #[test]
 fn a_held_foundation_pays_alone_pair_or_crowd_by_the_foundations_open_that_day() {
     for rings_open in 1_u8..crate::logic::deep_sites::rules().ring_count + 1 {
-        let (d, game_id) = race_setup(99);
+        let (d, game_id) = setup(99);
         let guard = deployed(d, game_id, 1, 1500);
         seize(d, guard, site(d, game_id, crate::rules::DEEP_FOUNDATION), 0);
         let realms = core::cmp::max(1, crate::logic::deep_sites::ring(rings_open - 1).realms);
         interact_with_state(d.games, || crate::state::write().deep.realms_entered.write((game_id, 0), realms));
         let home = ResourceKey { game_id, entity_id: army(d, guard).owner };
         let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
-        let boundary = (360 / interval + 1) * interval;
+        let boundary = (FIXTURE_START / interval + 1) * interval;
         applied(
             d,
             game_id,
@@ -151,7 +146,7 @@ fn a_held_foundation_pays_alone_pair_or_crowd_by_the_foundations_open_that_day()
 
 #[test]
 fn delayed_altar_ticks_preserve_the_prepared_world_day_and_issue_for_the_following_day() {
-    let (d, game_id) = race_setup(5);
+    let (d, game_id) = setup(5);
     let key = deployed(d, game_id, 1, 300);
     let home = ResourceKey { game_id, entity_id: army(d, key).owner };
     seize(d, key, site(d, game_id, crate::rules::DEEP_ALTAR), 0);
@@ -216,8 +211,7 @@ fn delayed_altar_ticks_preserve_the_prepared_world_day_and_issue_for_the_followi
 }
 
 fn setup(seed: felt252) -> (Deployment, u32) {
-    let preset = super::deep_sites::preset();
-    super::aspects::setup_aspect_preset(seed, preset)
+    super::aspects::setup_aspects(seed)
 }
 
 fn balance(d: Deployment, home: ResourceKey, resource: u8) -> u128 {
@@ -254,7 +248,7 @@ fn the_mine_pays_four_post_loss_shares_and_repeated_commands_do_not_pay_again() 
     let visitor = player(d, 9599);
     let mover = deployed(visitor, game_id, 2, 1000);
     let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
-    let boundary = (360 / interval + 1) * interval;
+    let boundary = (FIXTURE_START / interval + 1) * interval;
     advance(visitor, mover, 3, boundary);
     advance(visitor, mover, 0, boundary + 1);
     for index in 0_u32..4 {
@@ -285,7 +279,7 @@ fn a_late_move_pays_every_tick_the_guard_survives_but_not_the_one_that_kills_it(
     let visitor = player(d, 9699);
     let mover = deployed(visitor, game_id, 2, 1000);
     let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
-    let boundary = (360 / interval + 3) * interval;
+    let boundary = (FIXTURE_START / interval + 3) * interval;
     advance(visitor, mover, 3, boundary);
     assert!(held(d, guard).is_none());
     assert!(interact_with_state(d.games, || crate::logic::troops::explorer(guard)).is_none());
@@ -310,7 +304,7 @@ fn a_refused_guard_move_keeps_the_tick_paid_and_cannot_pay_it_twice() {
     stop_passive_labor(d, home);
     let labor_before = balance(d, home, crate::resources::LABOR);
     let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
-    let boundary = (360 / interval + 1) * interval;
+    let boundary = (FIXTURE_START / interval + 1) * interval;
     for now in array![boundary, boundary + 1] {
         let mut events = spy_events();
         assert!(
@@ -360,7 +354,7 @@ fn choosing_and_replacing_vitriol_settles_field_ticks_under_the_previous_oath() 
     let key = deployed(d, game_id, 1, 1500);
     let choice = waiting_oath(d, key, crate::oaths::VITRIOL);
     let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
-    let boundary = (360 / interval + 1) * interval;
+    let boundary = (FIXTURE_START / interval + 1) * interval;
     applied(d, game_id, Command::ChooseOath(choice), boundary);
     assert_eq!(army(d, key).troops.count, initial - base);
     advance(d, key, 0, boundary + interval);
@@ -392,13 +386,13 @@ fn vitriol_guards_lose_the_rule_amount_per_tick_while_the_beast_is_unchanged() {
     let loss = loss * RESOURCE_PRECISION;
     let key = deployed(d, game_id, 1, 1000);
     let choice = waiting_oath(d, key, crate::oaths::VITRIOL);
-    applied(d, game_id, Command::ChooseOath(choice), 360);
+    applied(d, game_id, Command::ChooseOath(choice), FIXTURE_START);
     seize(d, key, site(d, game_id, crate::rules::DEEP_MINE), 0);
     let before = army(d, key).troops.count;
     assert!(held(d, key).is_some());
     let home = army(d, key).owner;
     let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
-    let boundary = (360 / interval + 2) * interval;
+    let boundary = (FIXTURE_START / interval + 2) * interval;
     let touch = Command::SetEntityName(crate::names::SetEntityName { entity_id: home, name: 'Vitriol' });
     applied(d, game_id, touch, boundary);
     assert_eq!(army(d, key).troops.count, before - 2 * loss);

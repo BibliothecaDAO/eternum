@@ -23,10 +23,8 @@ fn fresh_shard_uses_the_published_release_without_running_its_upgrade_migration(
     assert_eq!(releases.release(7), release);
     assert!(safe.release(1).is_err());
     let registrar = IRegistrarDispatcher { contract_address: games };
-    let preset = super::registrar::definition(true);
     start_cheat_caller_address(games, authority());
-    registrar.register_preset(1, preset);
-    let game_id = registrar.create_game(super::registrar::params(true));
+    let game_id = registrar.create_game(super::play_fixture::fixture_params('native'));
     assert_eq!(releases.game_release(game_id), 7);
     releases.register_release(7, release, releases.release_classes(7));
     releases.apply_release(game_id, 7);
@@ -41,8 +39,7 @@ fn a_blitz_release_neither_moves_a_frontier_game_nor_applies_to_it() {
     let safe = IReleasesSafeDispatcher { contract_address: d.games };
     let registrar = IRegistrarDispatcher { contract_address: d.games };
     start_cheat_caller_address(d.games, authority());
-    registrar.register_preset(1, super::registrar::definition(true));
-    let game_id = registrar.create_game(super::registrar::params(true));
+    let game_id = registrar.create_game(super::play_fixture::fixture_params('native'));
     let frontier = releases.release(1);
     let blitz = crate::logic::release::Release { family: crate::game::BLITZ, previous: 0, ..frontier };
     releases.register_release(2, blitz, releases.release_classes(1));
@@ -74,10 +71,8 @@ fn a_registered_release_reaches_new_games_only_once_the_launcher_opens_it() {
     let releases = IReleasesDispatcher { contract_address: d.games };
     let safe = IReleasesSafeDispatcher { contract_address: d.games };
     let registrar = IRegistrarDispatcher { contract_address: d.games };
-    let preset = super::registrar::definition(true);
-    let params = super::registrar::params(true);
+    let params = super::play_fixture::fixture_params('native');
     start_cheat_caller_address(d.games, authority());
-    registrar.register_preset(1, preset);
     let first = registrar.create_game(params);
     let original = releases.release(1);
     let original_classes = releases.release_classes(1);
@@ -212,57 +207,22 @@ fn grown_release() -> (super::Deployment, u8) {
 #[feature("safe_dispatcher")]
 fn launcher_hotfix_migrates_a_populated_frontier_day_once_and_play_continues() {
     let d = super::registrar::setup();
-    let (game_id, _, category) = super::registrar::expedition_home(d);
-    let (first, second) = super::registrar::expedition_armies(d, game_id, category);
+    let (game_id, home, _) = super::registrar::expedition_home(d);
+    let (first, second) = super::registrar::expedition_armies(d, home);
     let other = super::bind_authority(d);
-    super::resource_commands::set_fixture(
-        d.games, selector!("realms"), selector!("traits"), array![2].span(), 0x4000001_u32,
-    );
-    let other_home = ResourceKey {
-        game_id,
-        entity_id: interact_with_state(d.games, || crate::state::read().games.next_entity.read(game_id)).into(),
-    };
-    super::play_fixture::reserve_fixture_homes(d.games, game_id, other.actor);
-    assert!(
-        super::resource_commands::execute_in_game(
-            other,
-            game_id,
-            crate::commands::Command::SettleSeason(
-                crate::realms::SettleSeason { selected_realm: Some(2), order: None },
-            ),
-            351,
-        ),
-    );
+    let other_home = super::play_fixture::settled_home(d, game_id, other.actor, 2, super::play_fixture::FIXTURE_START);
     let home_state = crate::structures::IStructureOperationsDispatcher { contract_address: d.games }
         .structure(other_home)
         .unwrap();
     assert_eq!(home_state.owner, other.actor);
     assert_eq!(home_state.metadata.realm_id, 2);
-    let troop = world_test_support::tests::registrar::held_troop(d, other_home);
-    assert!(
-        super::resource_commands::execute_in_game(
-            other,
-            game_id,
-            crate::commands::Command::CreateExplorer(
-                crate::commands::CreateExplorer {
-                    slot: 0,
-                    structure_id: other_home.entity_id,
-                    category: troop.into(),
-                    tier: 0,
-                    amount: crate::rules::RESOURCE_PRECISION,
-                    direction: 0,
-                },
-            ),
-            351,
-        ),
-    );
     let third = ExplorerKey {
         game_id,
         explorer_id: *crate::structures::IStructureOperationsDispatcher { contract_address: d.games }
             .home_armies(other_home)
             .at(0),
     };
-    let homes = array![ResourceKey { game_id, entity_id: 1 }, other_home].span();
+    let homes = array![home, other_home].span();
     let armies = array![first, second, third].span();
     super::set_launcher(d, d.actor);
     let releases = IReleasesDispatcher { contract_address: d.games };
@@ -298,7 +258,11 @@ fn launcher_hotfix_migrates_a_populated_frontier_day_once_and_play_continues() {
     assert_eq!(games.game(game_id).seed, seed + 1);
     assert!(safe.apply_release(game_id, 1).is_err());
     assert!(safe.apply_release(game_id, 3).is_err());
-    assert!(super::resource_commands::execute_in_game(d, game_id, super::registrar::transfer(first, second, 1), 352));
+    assert!(
+        super::resource_commands::execute_in_game(
+            d, game_id, super::registrar::transfer(first, second, 1), super::play_fixture::FIXTURE_START + 1,
+        ),
+    );
 }
 
 #[test]
@@ -330,29 +294,25 @@ fn failing_migration_rolls_back_pin_and_data() {
 #[test]
 #[feature("safe_dispatcher")]
 fn hotfix_refuses_old_release_pins_and_accepts_current_pins() {
-    let d = super::setup(true);
-    super::execute(d, super::action(d, 1));
-    let action = super::play_fixture::TestAction {
-        command: crate::commands::Command::CreateExplorer(
-            crate::commands::CreateExplorer { slot: 0, structure_id: 8, category: 0, tier: 0, amount: 0, direction: 0 },
-        ),
-        ..super::action(d, 1),
-    };
-    let old_release = super::play_fixture::pins(d.games, 1);
+    let (d, game_id) = super::registrar::setup_open_frontier();
+    let home = super::play_fixture::settled_home(d, game_id, d.actor, 1, super::play_fixture::FIXTURE_START);
+    super::execute(d, rename(d, home, 'pinned'));
+    let action = rename(d, home, 'current');
+    let old_release = super::play_fixture::pins(d.games, game_id);
     let releases = IReleasesDispatcher { contract_address: d.games };
     start_cheat_caller_address(d.games, authority());
     releases
         .register_release(
             2, crate::logic::release::Release { previous: 1, ..releases.release(1) }, releases.release_classes(1),
         );
-    releases.apply_release(1, 2);
+    releases.apply_release(game_id, 2);
     let before = gameplay_facts(d.games);
-    super::play_fixture::caller(d.games, d.actor, 100);
+    super::play_fixture::caller(d.games, d.actor, super::play_fixture::FIXTURE_START);
     let mut spy = spy_events();
     assert!(
         super::play_fixture::IPlayFixtureSafeDispatcherTrait::play_with_root(
             super::play_fixture::IPlayFixtureSafeDispatcher { contract_address: d.games },
-            1,
+            game_id,
             old_release,
             super::play_fixture::encode(action.command),
             987654321,
@@ -360,10 +320,19 @@ fn hotfix_refuses_old_release_pins_and_accepts_current_pins() {
             .is_err(),
     );
     assert_eq!(gameplay_facts(d.games), before);
-    assert_eq!(super::play_fixture::pins(d.games, 1), 2);
+    assert_eq!(super::play_fixture::pins(d.games, game_id), 2);
     assert!(spy.get_events().emitted_by(d.games).events.is_empty());
     super::execute(d, action);
-    assert!(GameState { contract_address: d.games }.explorer(ExplorerKey { game_id: 1, explorer_id: 8 }).is_some());
+}
+
+fn rename(d: super::Deployment, home: ResourceKey, name: felt252) -> super::play_fixture::TestAction {
+    super::play_fixture::TestAction {
+        game_id: home.game_id,
+        actor: d.actor,
+        command: crate::commands::Command::SetEntityName(
+            crate::names::SetEntityName { entity_id: home.entity_id, name },
+        ),
+    }
 }
 
 #[test]
@@ -409,10 +378,8 @@ fn creation_release_survives_hotfixes_and_retried_launches() {
     let d = super::registrar::setup();
     let releases = IReleasesDispatcher { contract_address: d.games };
     let registrar = IRegistrarDispatcher { contract_address: d.games };
-    let preset = super::registrar::definition(true);
-    let params = super::registrar::params(true);
+    let params = super::play_fixture::fixture_params('native');
     start_cheat_caller_address(d.games, authority());
-    registrar.register_preset(1, preset);
     let logic = releases.release(1);
     releases.register_release(2, crate::logic::release::Release { previous: 1, ..logic }, releases.release_classes(1));
     releases.open_release(2);
@@ -451,8 +418,7 @@ fn village_pass_registration_keeps_its_owner_in_the_games_pinned_release() {
     super::entry::set_operator(d, authority());
     start_cheat_caller_address(d.games, authority());
     let registrar = IRegistrarDispatcher { contract_address: d.games };
-    registrar.register_preset(1, super::registrar::definition(true));
-    let game_id = registrar.create_game(super::registrar::params(true));
+    let game_id = registrar.create_game(super::play_fixture::fixture_params('native'));
     let releases = IReleasesDispatcher { contract_address: d.games };
     let original = releases.release(1);
     let without_village_passes = declare_logic("TroopFixture");
@@ -483,7 +449,7 @@ fn village_pass_registration_keeps_its_owner_in_the_games_pinned_release() {
 
 #[test]
 fn a_migration_free_release_reaches_a_populated_season_one_game_rewriting_no_fact_and_rolls_back_forward() {
-    let (d, game_id) = super::aspects::setup_aspect_preset(97, super::deep_sites::preset());
+    let (d, game_id) = super::aspects::setup_aspects(97);
     let mine = super::deep_sites::site(d, game_id, crate::rules::DEEP_MINE);
     let guard = super::deep_sites::deployed(d, game_id, 1, 1500);
     super::deep_sites::seize(d, guard, mine, 0);
@@ -514,7 +480,7 @@ fn a_migration_free_release_reaches_a_populated_season_one_game_rewriting_no_fac
     assert_eq!(season_facts(d, game_id, armies), before);
     assert_eq!(releases.open_release_of(crate::game::FRONTIER), 1);
     let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
-    let tick = (360 / interval + 1) * interval;
+    let tick = (super::play_fixture::FIXTURE_START / interval + 1) * interval;
     super::deep_sites::applied(
         visitor,
         game_id,
@@ -539,7 +505,7 @@ fn a_migration_free_release_reaches_a_populated_season_one_game_rewriting_no_fac
 
 #[test]
 fn a_game_stuck_at_its_deep_boundary_plays_again_once_the_launcher_applies_a_cheaper_release() {
-    let (d, game_id) = super::aspects::setup_aspect_preset(98, super::deep_sites::preset());
+    let (d, game_id) = super::aspects::setup_aspects(98);
     let walker = super::deep_sites::deployed(d, game_id, 2, 1000);
     super::set_launcher(d, d.actor);
     let releases = IReleasesDispatcher { contract_address: d.games };
@@ -552,7 +518,7 @@ fn a_game_stuck_at_its_deep_boundary_plays_again_once_the_launcher_applies_a_che
     start_cheat_caller_address(d.games, d.actor);
     releases.apply_release(game_id, 2);
     let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
-    let tick = (360 / interval + 1) * interval;
+    let tick = (super::play_fixture::FIXTURE_START / interval + 1) * interval;
     let before = interact_with_state(d.games, || crate::logic::troops::explorer(walker).unwrap().coord);
     let mut stuck_play = spy_events();
     assert!(!world_test_support::tests::resource_commands::execute_in_game(d, game_id, step(walker), tick));

@@ -1,30 +1,26 @@
 use snforge_std::{interact_with_state, start_cheat_caller_address, stop_cheat_caller_address};
 use starknet::storage::StorageMapReadAccess;
 use world_test_support::tests::entry::{EntryEntitlement, EntryKey, ISettlementEntrySafeDispatcherTrait, ledger};
-use world_test_support::tests::registrar::{CreateGameParams, IRegistrarDispatcherTrait, params, registry, setup};
+use world_test_support::tests::play_fixture::{
+    FIXTURE_REALM_TRAITS, FIXTURE_SEASON_SECONDS, FIXTURE_START, create_game, fixture_params,
+};
+use world_test_support::tests::registrar::{CreateGameParams, setup};
 use world_test_support::tests::{Deployment, authority};
 use crate::commands::Command;
 use crate::realms::SettleSeason;
 use crate::resources::ResourceKey;
 
 pub fn setup_aspects(seed: felt252) -> (Deployment, u32) {
-    let (_, preset) = world_test_support::tests::preset_projection::current_definition("frontier-check");
-    setup_aspect_preset(seed, preset)
+    setup_aspects_lasting(seed, FIXTURE_SEASON_SECONDS)
 }
 
-pub fn setup_aspect_preset(seed: felt252, preset: crate::presets::PresetDefinition) -> (Deployment, u32) {
+pub fn setup_aspects_lasting(seed: felt252, duration_seconds: u64) -> (Deployment, u32) {
     let d = setup();
     world_test_support::tests::entry::set_operator(d, authority());
-    registry(d).register_preset(1, preset);
-    let game_id = registry(d)
-        .create_game(
-            CreateGameParams {
-                start_main_at: 360, duration_seconds: 288000, end_grace_seconds: 0, seed, ..params(false),
-            },
-        );
+    let game_id = create_game(d.games, CreateGameParams { seed, duration_seconds, ..fixture_params('aspects') });
     let mut traits = array![];
-    for index in 0_u32..8000 {
-        traits.append(0x4000001 + (index % 16) * 0x400000);
+    for index in 0_u32..crate::realms::CANONICAL_REALM_COUNT {
+        traits.append(FIXTURE_REALM_TRAITS + (index % 16) * 0x400000);
     }
     world_test_support::tests::realms::seed_catalogue(d, traits.span());
     (d, game_id)
@@ -32,7 +28,7 @@ pub fn setup_aspect_preset(seed: felt252, preset: crate::presets::PresetDefiniti
 
 fn settle(d: Deployment, game_id: u32, order: Option<u8>) -> bool {
     world_test_support::tests::resource_commands::execute_in_game(
-        d, game_id, Command::SettleSeason(SettleSeason { selected_realm: None, order }), 360,
+        d, game_id, Command::SettleSeason(SettleSeason { selected_realm: None, order }), FIXTURE_START,
     )
 }
 
@@ -123,13 +119,10 @@ fn held_realm_plays_its_own_order_and_refuses_a_chosen_one() {
 
 #[test]
 fn orders_round_trip_without_loot_suffix_order() {
-    let (_, preset) = world_test_support::tests::preset_projection::current_definition("frontier-check");
-    let packed = crate::aspects::pack(preset.settlement.order_aspects);
+    let order_aspects = crate::balance::settlement::ORDER_ASPECTS.span();
+    let packed = crate::aspects::pack(order_aspects);
     for index in 0_u32..16 {
-        assert_eq!(
-            crate::aspects::order_aspect(packed, (index + 1).try_into().unwrap()),
-            *preset.settlement.order_aspects.at(index),
-        );
+        assert_eq!(crate::aspects::order_aspect(packed, (index + 1).try_into().unwrap()), *order_aspects.at(index));
     }
     assert_eq!(crate::aspects::order_aspect(packed, 12), 1);
     assert_eq!(crate::aspects::order_aspect(packed, 16), 2);

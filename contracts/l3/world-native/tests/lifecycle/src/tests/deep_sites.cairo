@@ -1,6 +1,7 @@
 use snforge_std::{interact_with_state, spy_events};
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use world_test_support::tests::Deployment;
+use world_test_support::tests::play_fixture::FIXTURE_START;
 use world_test_support::tests::resource_commands::{execute_in_game, set_explorer_fixture};
 use crate::commands::Command;
 use crate::resources::ResourceKey;
@@ -8,14 +9,7 @@ use crate::troops::{ArmySlotKey, ExplorerKey, ExplorerTroops};
 use super::army_activity::{army, found, muster, player, slot_army};
 
 fn setup(seed: felt252) -> (Deployment, u32) {
-    super::aspects::setup_aspect_preset(seed, preset())
-}
-
-pub fn preset() -> crate::presets::PresetDefinition {
-    let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("frontier-check");
-    preset.rules.command_mask = preset.rules.command_mask | 4;
-    preset.rules.battle_config.regular_immunity_ticks = 0;
-    preset
+    super::aspects::setup_aspects(seed)
 }
 
 pub fn beast(d: Deployment, target: ResourceKey) -> u128 {
@@ -49,7 +43,7 @@ pub fn wound_beast(d: Deployment, target: ResourceKey, troops: u128) {
 pub fn seize(d: Deployment, key: ExplorerKey, target: ResourceKey, direction: u8) {
     beside(d, key, target, direction);
     wound_beast(d, target, 0);
-    applied(d, key.game_id, join(d, key, target), 360);
+    applied(d, key.game_id, join(d, key, target), FIXTURE_START);
 }
 
 pub fn deployed(d: Deployment, game_id: u32, aspect: u8, count: u128) -> ExplorerKey {
@@ -70,13 +64,13 @@ pub fn deployed(d: Deployment, game_id: u32, aspect: u8, count: u128) -> Explore
                     },
                 ),
             ),
-            360,
+            FIXTURE_START,
         );
     }
     let key = ExplorerKey {
         game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: home, epoch: 0, slot: 0 }),
     };
-    descend(d, key, 360);
+    descend(d, key, FIXTURE_START);
     key
 }
 
@@ -236,7 +230,7 @@ fn distinct_homes_enter_one_deep_and_move_on_its_fixed_terrain() {
         d,
         game_id,
         Command::Move(crate::commands::Move { explorer_id: first.explorer_id, directions: array![direction].span() }),
-        360,
+        FIXTURE_START,
     );
     assert_eq!(army(d, first).coord, crate::geometry::neighbor(a, direction));
     assert_eq!(army(d, first).troops.count, 10 * crate::rules::RESOURCE_PRECISION);
@@ -250,19 +244,19 @@ fn a_later_ring_refuses_moves_joins_and_attacks_until_enough_realms_entered_toda
     interact_with_state(d.games, || crate::state::write().deep.realms_entered.write((game_id, 0), needed - 1));
     let target = ring_site(d, game_id, 1, crate::rules::DEEP_FOUNDATION);
     beside(d, first, target, 0);
-    refused(d, game_id, walk(first, array![3].span()), 360, "movement tile occupied");
-    refused(d, game_id, walk(first, array![3, 3].span()), 360, "movement tile occupied");
+    refused(d, game_id, walk(first, array![3].span()), FIXTURE_START, "movement tile occupied");
+    refused(d, game_id, walk(first, array![3, 3].span()), FIXTURE_START, "movement tile occupied");
     let across = interact_with_state(
         d.games, || crate::geometry::neighbor(crate::logic::map::entity_coord(target).unwrap(), 3),
     );
-    applied(d, game_id, walk(first, array![4, 3, 2].span()), 360);
+    applied(d, game_id, walk(first, array![4, 3, 2].span()), FIXTURE_START);
     assert_eq!(army(d, first).coord, across);
     beside(d, first, target, 0);
-    refused(d, game_id, join(d, first, target), 360, "Deep ring closed");
-    refused(d, game_id, fight(first, target), 360, "Deep ring closed");
+    refused(d, game_id, join(d, first, target), FIXTURE_START, "Deep ring closed");
+    refused(d, game_id, fight(first, target), FIXTURE_START, "Deep ring closed");
     deployed(player(d, 8801), game_id, 2, 10);
     wound_beast(d, target, 0);
-    applied(d, game_id, fight(first, target), 360);
+    applied(d, game_id, fight(first, target), FIXTURE_START);
     assert_eq!(held(d, first), Some(crate::deep::DeepGuard { site_id: target.entity_id, slot: 0 }));
 }
 
@@ -276,10 +270,10 @@ fn four_allies_guard_one_site_and_a_rival_fights_exactly_one_slot_per_attack() {
         let key = deployed(member, game_id, 1, 10);
         beside(d, key, target, slot);
         if slot == 0 {
-            refused(member, game_id, join(d, key, target), 360, "Deep beast still guards site");
+            refused(member, game_id, join(d, key, target), FIXTURE_START, "Deep beast still guards site");
             wound_beast(d, target, 0);
         }
-        applied(member, game_id, join(d, key, target), 360);
+        applied(member, game_id, join(d, key, target), FIXTURE_START);
         assert_eq!(held(d, key), Some(crate::deep::DeepGuard { site_id: target.entity_id, slot }));
         let field = crate::geometry::tile_key(
             game_id,
@@ -292,7 +286,7 @@ fn four_allies_guard_one_site_and_a_rival_fights_exactly_one_slot_per_attack() {
             member,
             game_id,
             Command::Move(crate::commands::Move { explorer_id: key.explorer_id, directions: array![0].span() }),
-            360,
+            FIXTURE_START,
             "army is guarding a Deep site",
         );
         guards.append(key);
@@ -300,16 +294,16 @@ fn four_allies_guard_one_site_and_a_rival_fights_exactly_one_slot_per_attack() {
     let fifth = player(d, 8204);
     let waiting = deployed(fifth, game_id, 1, 10);
     beside(d, waiting, target, 4);
-    refused(fifth, game_id, join(d, waiting, target), 360, "Deep site has four guards");
-    refused(fifth, game_id, fight(waiting, target), 360, "cannot attack an allied army");
+    refused(fifth, game_id, join(d, waiting, target), FIXTURE_START, "Deep site has four guards");
+    refused(fifth, game_id, fight(waiting, target), FIXTURE_START, "cannot attack an allied army");
     let rival = player(d, 8205);
     let attacker = deployed(rival, game_id, 2, 1000);
     beside(d, attacker, target, 5);
-    refused(rival, game_id, join(d, attacker, target), 360, "Deep site belongs to another Aspect");
+    refused(rival, game_id, join(d, attacker, target), FIXTURE_START, "Deep site belongs to another Aspect");
     for remaining in 0_u8..crate::rules::DEEP_GUARD_SLOTS {
         let slot = crate::rules::DEEP_GUARD_SLOTS - 1 - remaining;
         let before = army(d, *guards.at(0));
-        applied(rival, game_id, fight(attacker, target), 360);
+        applied(rival, game_id, fight(attacker, target), FIXTURE_START);
         assert!(held(d, *guards.at(slot.into())).is_none());
         for lower in 0..slot {
             assert_eq!(held(d, *guards.at(lower.into())).unwrap().slot, lower);
@@ -333,14 +327,14 @@ fn exhausted_guards_release_slots_before_a_new_holder_joins() {
     let next = deployed(rival, game_id, 2, 1000);
     beside(d, next, target, 1);
     let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
-    let now = 360 + 3 * interval;
+    let now = FIXTURE_START + 3 * interval;
     applied(rival, game_id, join(d, next, target), now);
     assert!(held(d, first).is_none());
     assert!(interact_with_state(d.games, || crate::logic::troops::explorer(first)).is_none());
     assert_eq!(held(d, next), Some(crate::deep::DeepGuard { site_id: target.entity_id, slot: 0 }));
     let expected = crate::deep::troops_after_ticks(
         1000 * crate::rules::RESOURCE_PRECISION,
-        360 / interval,
+        FIXTURE_START / interval,
         now / interval,
         crate::logic::deep_sites::rules().loss_per_tick,
     );
@@ -360,14 +354,14 @@ fn one_player_cannot_fill_two_slots_and_day_rollover_restores_every_beast() {
         world_test_support::tests::building_commands::create(
             ResourceKey { game_id, entity_id: home }, crate::research::BARRACKS,
         ),
-        360,
+        FIXTURE_START,
     );
     let second = ExplorerKey {
         game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: home, epoch: 0, slot: 1 }),
     };
-    descend(d, second, 360);
+    descend(d, second, FIXTURE_START);
     beside(d, second, target, 1);
-    refused(d, game_id, join(d, second, target), 360, "player already guards site");
+    refused(d, game_id, join(d, second, target), FIXTURE_START, "player already guards site");
     assert!(held(d, second).is_none());
 
     let context = crate::tests::context(d.games, game_id);
@@ -395,15 +389,12 @@ fn one_player_cannot_fill_two_slots_and_day_rollover_restores_every_beast() {
 #[test]
 fn deep_beast_marks_control_public_attacks_without_knight_slot_protection() {
     for kind in 0..crate::rules::DEEP_KIND_COUNT {
-        let mut definition = preset();
-        definition.rules.troop_damage_config.damage_scaling_factor = 36893488147419103232;
-        definition.rules.troop_damage_config.damage_biome_bonus_num = 0;
-        let (d, game_id) = super::aspects::setup_aspect_preset(860 + kind.into(), definition);
+        let (d, game_id) = setup(860 + kind.into());
         let attacker = deployed(d, game_id, 1, 1500);
         let target = site(d, game_id, kind);
         beside(d, attacker, target, 0);
         wound_beast(d, target, 1000);
-        applied(d, game_id, fight(attacker, target), 360);
+        applied(d, game_id, fight(attacker, target), FIXTURE_START);
         let guard = interact_with_state(
             d.games,
             || crate::logic::guards::guard(
@@ -426,11 +417,11 @@ fn public_attacks_apply_held_oaths_to_the_army_and_the_rival_guard() {
     let values = snforge_std::fs::read_txt(@snforge_std::fs::FileTrait::new("../fixtures/oath-damage.txt"));
     let mut fields = values.span();
     for guarding in array![false, true] {
-        let (d, game_id) = super::aspects::setup_aspect_preset(if guarding {
+        let (d, game_id) = setup(if guarding {
             870
         } else {
             871
-        }, oath_vector_preset());
+        });
         let target = site(d, game_id, crate::rules::DEEP_MINE);
         let defender = if guarding {
             let guard = deployed(d, game_id, 1, 1000);
@@ -459,7 +450,7 @@ fn public_attacks_apply_held_oaths_to_the_army_and_the_rival_guard() {
                 }
             }
             assert_eq!(army(d, attacker).troops.count, before_a * crate::rules::RESOURCE_PRECISION);
-            applied(rival, game_id, fight(attacker, target), 360);
+            applied(rival, game_id, fight(attacker, target), FIXTURE_START);
             assert_eq!(army(d, attacker).troops.count, after_a * crate::rules::RESOURCE_PRECISION);
             let defender_count = match defender {
                 Some(key) => army(d, key).troops.count,
@@ -510,7 +501,7 @@ fn public_field_battle(nth: felt252) {
             battles += 1;
             continue;
         }
-        let (d, game_id) = super::aspects::setup_aspect_preset(872 + battles, oath_vector_preset());
+        let (d, game_id) = setup(872 + battles);
         let defender = deployed(d, game_id, 1, 1000);
         let rival = player(d, 8721);
         let attacker = deployed(rival, game_id, 2, 1000);
@@ -528,25 +519,13 @@ fn public_field_battle(nth: felt252) {
                     steal_resources: array![].span(),
                 },
             ),
-            360,
+            FIXTURE_START,
         );
         assert_eq!(army(d, attacker).troops.count, after_a * crate::rules::RESOURCE_PRECISION);
         assert_eq!(army(d, defender).troops.count, after_b * crate::rules::RESOURCE_PRECISION);
         return;
     }
     panic!("the oath vectors hold too few public field battles");
-}
-
-fn oath_vector_preset() -> crate::presets::PresetDefinition {
-    let mut definition = preset();
-    definition.rules.troop_damage_config.damage_scaling_factor = 36893488147419103232;
-    definition.rules.troop_damage_config.damage_biome_bonus_num = 0;
-    definition.rules.battle_config.cooldown_seconds = 0;
-    definition.rules.troop_stamina_config.stamina_attack_req = 10;
-    definition.rules.troop_stamina_config.stamina_defense_req = 0;
-    definition.rules.troop_stamina_config.stamina_gain_per_tick = 0;
-    definition.rules.troop_stamina_config.damage_stamina_refund = false;
-    definition
 }
 
 fn prepare_oath_combatant(

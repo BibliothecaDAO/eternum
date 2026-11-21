@@ -79,8 +79,7 @@ fn follow_surface_path(d: Deployment, key: ExplorerKey, path: Span<Coord>, now: 
 
 #[test]
 fn discovered_spires_take_a_real_army_through_each_layer_to_the_shared_deep() {
-    let (_, preset) = world_test_support::tests::preset_projection::current_definition("frontier-check");
-    let (d, game_id) = super::aspects::setup_aspect_preset(93, preset);
+    let (d, game_id) = super::aspects::setup_aspects(93);
     let home = found(d, game_id, 1);
     let realm = ResourceKey { game_id, entity_id: home };
     let lore_price = interact_with_state(
@@ -95,7 +94,9 @@ fn discovered_spires_take_a_real_army_through_each_layer_to_the_shared_deep() {
     );
     assert_eq!(lore_price, 17_500 * crate::rules::RESOURCE_PRECISION);
     let essence = interact_with_state(d.games, || crate::logic::resources::balance(realm, crate::resources::ESSENCE));
-    world_test_support::tests::registrar::learn_spire_lore(d, realm, 360);
+    world_test_support::tests::registrar::learn_spire_lore(
+        d, realm, world_test_support::tests::play_fixture::FIXTURE_START,
+    );
     assert_eq!(
         interact_with_state(d.games, || crate::logic::resources::balance(realm, crate::resources::ESSENCE)), essence,
     );
@@ -103,7 +104,7 @@ fn discovered_spires_take_a_real_army_through_each_layer_to_the_shared_deep() {
         game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: home, epoch: 0, slot: 0 }),
     };
     let mut surface_path = array![army(d, key).coord];
-    let mut now = 360;
+    let mut now = world_test_support::tests::play_fixture::FIXTURE_START;
     for depth in 0_u8..3 {
         let spire_key = ExpeditionSpireKey { game_id, structure_id: home, epoch: 0, depth };
         assert!(interact_with_state(d.games, || crate::logic::spires::read(spire_key)).is_none());
