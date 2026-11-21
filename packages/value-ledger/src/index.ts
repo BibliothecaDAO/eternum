@@ -33,8 +33,6 @@ export {
   RELAY_LABEL,
   launcherAccountAddress,
   relayAccountAddress,
-  seaterLabels,
-  seaterAccountAddresses,
 } from "./shard-accounts";
 
 export { cosigningHash, decodeCosignRequest, decodeCosigner } from "./cosigning";

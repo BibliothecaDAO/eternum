@@ -275,7 +275,7 @@ export class D1LaunchStore implements LaunchServiceStore {
     if (isCalendarFrontier(environment, name)) return false;
     const result = await this.db
       .prepare(
-        "DELETE FROM launch_runs WHERE chain_id = ? AND kind = 'game' AND environment = ? AND name = ? AND status <> 'running'",
+        "DELETE FROM launch_runs WHERE chain_id = ? AND kind = 'game' AND environment = ? AND name = ? AND status IN ('queued', 'failed')",
       )
       .bind(await this.chainId(), environment, name)
       .run();

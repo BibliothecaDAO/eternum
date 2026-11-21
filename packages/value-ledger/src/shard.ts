@@ -55,15 +55,7 @@ export class ShardOperator {
     ) as A;
   }
   async admin(entrypoint: AdminEntrypointName, args: Record<string, unknown>) {
-    return this.invoke(entrypoint, ...(await this.adminCall(entrypoint, args)), closedBlockReceipt);
-  }
-  /** Sends an administrative call at this nonce and returns its hash without waiting; see `awaitClosed`. */
-  async sendAdmin(entrypoint: AdminEntrypointName, args: Record<string, unknown>, nonce: bigint): Promise<string> {
-    return (await this.submit(entrypoint, ...(await this.adminCall(entrypoint, args)), nonce)).transaction_hash;
-  }
-  /** Waits until a sent transaction is in a closed block, and refuses one that reverted. */
-  async awaitClosed(transactionHash: string) {
-    await closedBlockReceipt(this.provider, transactionHash);
+    return this.invoke(entrypoint, ...(await this.adminCall(entrypoint, args)));
   }
   private async adminCall(entrypoint: AdminEntrypointName, args: Record<string, unknown>): Promise<[string[], bigint]> {
     this.adminCodec ??= this.head().then(({ block_number }) => this.codec(block_number));
@@ -83,7 +75,7 @@ export class ShardOperator {
     };
   }
   async markGameSettled(gameId: number) {
-    return this.play(await this.pins(gameId), "MarkGameSettled", closedBlockReceipt);
+    return this.play(await this.pins(gameId), "MarkGameSettled");
   }
   async settleGame(gameId: number) {
     while (!(await this.view<{ settled: boolean }>("game", [gameId])).settled) {
@@ -96,24 +88,20 @@ export class ShardOperator {
         throw new Error("point_settlement_not_complete");
     }
   }
-  /** The first nonce the chain has not taken from this account, counting pre-confirmed transactions. */
-  async pendingNonce() {
-    return BigInt(await this.provider.getNonceForAddress(this.target.accountAddress, "pre_confirmed"));
-  }
-  private play(pins: PlayPins, name: AdminPlay, receiptOf: ReceiptWait) {
-    return this.invoke("play", playCalldata(pins, name), pins.l2GasBound, receiptOf);
+  private play(pins: PlayPins, name: AdminPlay) {
+    return this.invoke("play", playCalldata(pins, name), pins.l2GasBound);
   }
   private async codec(head: BlockIdentifier) {
     return new CallData(await readShardAbi(this.provider, this.target.gamesAddress, head));
   }
-  private async invoke(entrypoint: GameEntrypointName, calldata: string[], bound: bigint, receiptOf: ReceiptWait) {
+  private async invoke(entrypoint: GameEntrypointName, calldata: string[], bound: bigint) {
     const submitted = await this.submit(entrypoint, calldata, bound);
-    const receipt = await receiptOf(this.provider, submitted.transaction_hash);
+    const receipt = await closedBlockReceipt(this.provider, submitted.transaction_hash);
     const refusal = gameplayRejection(receipt.events, this.target.gamesAddress, submitted.transaction_hash);
     if (refusal) throw new Error(`gameplay_refused:${refusal.reason}`);
     return { transactionHash: submitted.transaction_hash, events: receipt.events };
   }
-  private submit(entrypoint: GameEntrypointName, calldata: string[], bound: bigint, nonce?: bigint) {
+  private submit(entrypoint: GameEntrypointName, calldata: string[], bound: bigint) {
     return this.account.execute(
       { contractAddress: this.target.gamesAddress, entrypoint, calldata },
       {
@@ -123,7 +111,6 @@ export class ShardOperator {
         accountDeploymentData: [],
         nonceDataAvailabilityMode: "L1",
         feeDataAvailabilityMode: "L1",
-        ...(nonce === undefined ? {} : { nonce }),
       },
     );
   }
@@ -140,10 +127,9 @@ export interface PlayPins {
   l2GasBound: bigint;
 }
 type AdminPlay = "MarkGameSettled";
-type ReceiptWait = (provider: RpcProvider, transactionHash: string) => ReturnType<typeof pollReceipt>;
 
 const CLOSED = ["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"] as const;
-const closedBlockReceipt: ReceiptWait = (provider, transactionHash) =>
+const closedBlockReceipt = (provider: RpcProvider, transactionHash: string) =>
   pollReceipt(provider, transactionHash, CLOSED, 250, 30_000);
 
 /** The public proxy masks missing receipts; polling transport errors is bounded and never assumes inclusion. */

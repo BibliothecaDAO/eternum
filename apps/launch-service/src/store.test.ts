@@ -3,7 +3,7 @@ import { frontierSeasonEnd } from "./test-dates";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { scheduleFrontierSeason } from "./schedule";
 import { D1LaunchStore } from "./store";
-import { completeFreeFixture, createLaunchTestDatabase, testChain } from "./test-database";
+import { completeFreeFixture, createLaunchTestDatabase, testChain, TEST_CHAIN } from "./test-database";
 
 let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
 beforeEach(async () => {
@@ -177,6 +177,30 @@ test("pre-chain migration archives neither block a cutover nor enter the directo
     .bind(JSON.stringify({ gameId: 7 }), archived.id)
     .run();
   expect(await store.playerDirectoryGames()).toEqual([]);
+});
+
+test("a completed game, paid or free, cannot be deleted out of the directory", async () => {
+  const store = new D1LaunchStore(database.db, testChain());
+  await database.db.batch(
+    [
+      { name: "blitz-20261016-1400-1", slot: 3, gameId: 7 },
+      { name: "free-game", slot: null, gameId: 9 },
+    ].map(({ name, slot, gameId }) =>
+      database.db
+        .prepare(
+          `INSERT INTO launch_runs (id, chain_id, kind, environment, name, request, status, available_at, created_at, updated_at, summary, slot_id) VALUES (?, ?, 'game', 'madara.blitz', ?, '{}', 'complete', 0, 0, 0, ?, ?)`,
+        )
+        .bind(name, TEST_CHAIN, name, JSON.stringify({ gameId }), slot),
+    ),
+  );
+  expect(await store.delete("madara.blitz", "blitz-20261016-1400-1")).toBe(false);
+  expect(await store.delete("madara.blitz", "free-game")).toBe(false);
+  expect(await store.playerDirectoryGames()).toEqual([
+    { chainId: TEST_CHAIN, games: [
+      { gameId: 7, slotId: 3 },
+      { gameId: 9, slotId: null },
+    ] },
+  ]);
 });
 
 test("directory reads retain both chains and log invalid summaries without reading a manifest", async () => {

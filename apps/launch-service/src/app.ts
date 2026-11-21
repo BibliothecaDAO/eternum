@@ -84,7 +84,7 @@ const deleteRun = async (context: Context, store: LaunchServiceStore, name: stri
   const deleted = await store.delete(environment, name);
   return deleted
     ? context.json({ deleted: true })
-    : context.json({ error: "Run is missing, active, or a calendar season." }, 409);
+    : context.json({ error: "Run is missing, active, complete, or a calendar season." }, 409);
 };
 
 const failedRunReport = (run: LaunchRun) => ({

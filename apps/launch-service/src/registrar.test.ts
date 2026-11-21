@@ -1,7 +1,6 @@
 import { Effect, Layer } from "effect";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { Registrar } from "./registrar";
-import { LAUNCHER_LABEL } from "@realms-world/value-ledger";
 import { releaseLine } from "../../../packages/core/src/test-support/releases";
 const mock = vi.hoisted(() => ({
   account: vi.fn(),
@@ -24,7 +23,7 @@ vi.mock("cloudflare:workers", () => ({
   },
 }));
 vi.mock("./env", () => ({ decodeLaunchEnv: (env: unknown) => env }));
-vi.mock("./launcher-account", () => ({ joinBotAccount: mock.account }));
+vi.mock("./launcher-account", () => ({ joinLauncherAccount: mock.account }));
 vi.mock("@realms-world/value-ledger", async (original) => ({
   ...(await original<typeof import("@realms-world/value-ledger")>()),
   readRegisteredShard: mock.manifest,
@@ -177,7 +176,7 @@ it("advances each running Frontier game as the joined launcher, then opens the r
   const [deployed, chain] = mock.manifest.mock.calls[0]!;
   expect(chain).toBe("0x1");
   expect(await deployed.shard()).toEqual(SHARD);
-  expect(mock.account).toHaveBeenCalledWith(expect.anything(), deployed, "0x1", LAUNCHER_LABEL);
+  expect(mock.account).toHaveBeenCalledWith(expect.anything(), deployed, "0x1");
   expect(mock.launched).toHaveBeenCalledWith("madara.frontier");
   expect(mock.shard).toHaveBeenCalledWith(
     expect.objectContaining({ accountAddress: "0x2", gamesAddress: "0x9", rpcUrl: "https://rpc.shard.test" }),

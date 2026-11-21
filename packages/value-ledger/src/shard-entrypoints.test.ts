@@ -19,9 +19,9 @@ describe("shard entrypoints", () => {
     const unlisted = (operator: ShardOperator) =>
       // @ts-expect-error not on GAME_ENTRYPOINTS
       operator.admin("not_on_the_proxy_list", {});
-    const play = (operator: ShardOperator, nonce: bigint) =>
+    const play = (operator: ShardOperator) =>
       // @ts-expect-error play is stamped by the proxy, never sent as an administrative call
-      operator.sendAdmin("play", {}, nonce);
+      operator.admin("play", {});
     expect([unlisted, play].every((call) => typeof call === "function")).toBe(true);
   });
 });
