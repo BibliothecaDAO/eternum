@@ -12,15 +12,13 @@ import { COSIGNER_WALLETS, readWalletRecords, type WalletRecord } from "./wallet
  * leaves it only when Discord accepts its message, so no alert is dropped; a crash or a lost answer can repeat one.
  */
 const ALERT_STATE = "/var/lib/payout-cosigner/alerts.json";
-/** The co-signer restarts within seconds; only a silence this long is an outage. */
-const COSIGNER_DOWN_SECONDS = 3 * 60;
 /** Discord refuses a message over 2,000 characters. */
 const MESSAGE_LIMIT = 2_000;
 const HEADER = "Production payouts:";
 /** A Realms ID with more accounts names this many and counts the rest, so one alert always fits one message. */
 const ACCOUNTS_SHOWN = 3;
 
-/** One minute's reading of the box. A source that could not be read is null and changes nothing. */
+/** One minute's reading of the box. A source that could not be read is null. */
 interface PayoutSnapshot {
   cosignerAnswers: boolean;
   ledgerPaused: boolean | null;
@@ -36,19 +34,43 @@ interface Alert {
   text: string;
   wires?: string;
 }
+interface Source {
+  silentSeconds: number;
+  silent: (since: string) => string;
+  back: (since: string) => string;
+}
+const SOURCES = {
+  cosigner: {
+    silentSeconds: 3 * 60,
+    silent: (since) =>
+      `The co-signer has not answered on the box since ${since}. Withdrawals and prizes wait until it is back.`,
+    back: (since) => `The co-signer answers again; it was silent from ${since}.`,
+  },
+  ledger: {
+    silentSeconds: 10 * 60,
+    silent: (since) =>
+      `The box has not read the ledger RPC since ${since}. A pause would go unseen, and the co-signer signs nothing it cannot check.`,
+    back: (since) => `The ledger RPC reads again; it was unreadable from ${since}.`,
+  },
+  wallets: {
+    silentSeconds: 10 * 60,
+    silent: (since) => `The box has not read its wallet history since ${since}. A held wallet change would go unseen.`,
+    back: (since) => `The wallet history reads again; it was unreadable from ${since}.`,
+  },
+} satisfies Record<string, Source>;
+type SourceName = keyof typeof SOURCES;
+type Silences = Partial<Record<SourceName, { since: number; announced: boolean }>>;
 interface AlertState {
   held: Record<string, { wallet: string; since: number }>;
   ledgerPaused: boolean;
-  cosignerSilentSince: number | null;
-  cosignerDownAnnounced: boolean;
+  silences: Silences;
   outbox: Alert[];
   wiredTo: string | null;
 }
 const QUIET: AlertState = {
   held: {},
   ledgerPaused: false,
-  cosignerSilentSince: null,
-  cosignerDownAnnounced: false,
+  silences: {},
   outbox: [],
   wiredTo: null,
 };
@@ -61,16 +83,16 @@ export const channelOf = (webhook: string, ledger: string): Channel => ({
 function nextAlerts(previous: AlertState, snapshot: PayoutSnapshot, now: number, channel: Channel): AlertState {
   const wallets = walletChanges(previous.held, snapshot.wallets);
   const ledger = ledgerPause(previous.ledgerPaused, snapshot.ledgerPaused);
-  const cosigner = cosignerSilence(previous, snapshot.cosignerAnswers, now);
+  const sources = sourceSilences(previous.silences, answering(snapshot), now);
   const owed = [
     ...wiring(previous, channel),
-    ...[...wallets.lines, ...ledger.lines, ...cosigner.lines].map((text) => ({ text })),
+    ...[...wallets.lines, ...ledger.lines, ...sources.lines].map((text) => ({ text })),
   ];
   return {
     ...previous,
     held: wallets.held,
     ledgerPaused: ledger.paused,
-    ...cosigner.state,
+    silences: sources.silences,
     outbox: [...previous.outbox, ...owed],
   };
 }
@@ -187,22 +209,28 @@ function ledgerPause(previous: boolean, paused: boolean | null) {
   };
 }
 
-function cosignerSilence(previous: AlertState, answers: boolean, now: number) {
-  if (answers)
-    return {
-      state: { cosignerSilentSince: null, cosignerDownAnnounced: false },
-      lines: previous.cosignerDownAnnounced
-        ? [`The co-signer answers again; it was silent from ${utc(previous.cosignerSilentSince!)}.`]
-        : [],
-    };
-  const since = previous.cosignerSilentSince ?? now;
-  const announce = !previous.cosignerDownAnnounced && now - since >= COSIGNER_DOWN_SECONDS;
-  return {
-    state: { cosignerSilentSince: since, cosignerDownAnnounced: previous.cosignerDownAnnounced || announce },
-    lines: announce
-      ? [`The co-signer has not answered on the box since ${utc(since)}. Withdrawals and prizes wait until it is back.`]
-      : [],
-  };
+const answering = (snapshot: PayoutSnapshot): Record<SourceName, boolean> => ({
+  cosigner: snapshot.cosignerAnswers,
+  ledger: snapshot.ledgerPaused !== null,
+  wallets: snapshot.wallets !== null,
+});
+
+function sourceSilences(previous: Silences, answers: Record<SourceName, boolean>, now: number) {
+  const silences: Silences = {};
+  const lines: string[] = [];
+  for (const name of Object.keys(SOURCES) as SourceName[]) {
+    const source: Source = SOURCES[name];
+    const was = previous[name];
+    if (answers[name]) {
+      if (was?.announced) lines.push(source.back(utc(was.since)));
+      continue;
+    }
+    const since = was?.since ?? now;
+    const announce = !was?.announced && now - since >= source.silentSeconds;
+    if (announce) lines.push(source.silent(utc(since)));
+    silences[name] = { since, announced: Boolean(was?.announced) || announce };
+  }
+  return { silences, lines };
 }
 
 /** The outbox in order, cut into runs of whole alerts that each fit one Discord message. */
@@ -238,7 +266,6 @@ async function readLedgerPaused(rpcUrl: string, ledgerAddress: string) {
     });
     return row.length === 1 ? BigInt(row[0]!) !== 0n : null;
   } catch {
-    // The RPC URL holds its provider key; an unreadable minute stays silent and the next one reads again.
     return null;
   }
 }
