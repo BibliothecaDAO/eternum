@@ -1,4 +1,5 @@
 import { Effect, Layer } from "effect";
+import { hash } from "starknet";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { gameRegistryRow, type GameRegistryWire } from "../../../packages/core/src/test-support/game-registry";
 import { argument, gamesAbi as abi, response } from "../../../packages/value-ledger/test-support/abi";
@@ -10,24 +11,6 @@ import { LaunchShard } from "./shard-client";
 import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore, databaseLayer } from "./store";
 import { createLaunchTestDatabase, DEV_CHAIN, slotValueFixture, testChain } from "./test-database";
-
-const rpc = vi.hoisted(() => ({ call: vi.fn(), execute: vi.fn() }));
-vi.mock("../../../packages/value-ledger/src/rpc", () => ({
-  rpcAt: () => ({
-    getChainId: async () => DEV_CHAIN,
-    getBlock: async () => ({ block_number: 10, block_hash: "0xa", timestamp: 100, status: "ACCEPTED_ON_L2" }),
-    callContract: rpc.call,
-    getTransactionReceipt: async () => ({ finality_status: "ACCEPTED_ON_L2", isReverted: () => false, events: [] }),
-    getClassHashAt: async () => "0xabc",
-    getClassByHash: async () => ({ abi }),
-  }),
-}));
-vi.mock("starknet", async (original) => ({
-  ...(await original<typeof import("starknet")>()),
-  Account: vi.fn(function () {
-    return { execute: rpc.execute };
-  }),
-}));
 
 interface HeldGame {
   launch: string;
@@ -54,12 +37,80 @@ const createGame = (calldata: string[]) => {
   if (previous && previous.launch !== launch) throw new Error("conflicting game launch");
   if (!previous) held.push({ launch, row });
 };
-const viewGames = (query: { entrypoint: string; calldata: string[] }) => {
-  if (query.entrypoint === "l2_gas_bound") return ["1000000"];
-  if (query.entrypoint === "game_id_by_name")
-    return [String(held.findIndex((game) => BigInt(game.row.name) === BigInt(query.calldata[0]!)) + 1)];
-  if (query.entrypoint === "game") return response(abi, "game", held[Number(query.calldata[0]) - 1]!.row);
-  throw new Error(`unexpected view ${query.entrypoint}`);
+const VIEWS = ["l2_gas_bound", "game_id_by_name", "game"] as const;
+const viewGames = (selector: string, calldata: string[]) => {
+  const view = VIEWS.find((name) => BigInt(hash.getSelectorFromName(name)) === BigInt(selector));
+  if (view === "l2_gas_bound") return ["0xf4240"];
+  if (view === "game_id_by_name")
+    return [String(held.findIndex((game) => BigInt(game.row.name) === BigInt(calldata[0]!)) + 1)];
+  if (view === "game") return response(abi, "game", held[Number(calldata[0]) - 1]!.row);
+  throw new Error(`unexpected view ${selector}`);
+};
+const receipt = {
+  type: "INVOKE",
+  transaction_hash: "0xabc",
+  actual_fee: { amount: "0x0", unit: "FRI" },
+  finality_status: "ACCEPTED_ON_L2",
+  execution_status: "SUCCEEDED",
+  block_hash: "0xb",
+  block_number: 11,
+  messages_sent: [],
+  events: [],
+  execution_resources: { l1_gas: 0, l1_data_gas: 0, l2_gas: 0 },
+};
+const block = {
+  status: "ACCEPTED_ON_L2",
+  block_number: 10,
+  block_hash: "0xa",
+  parent_hash: "0x9",
+  timestamp: 100,
+  new_root: "0x1",
+  sequencer_address: "0x1",
+  starknet_version: "0.14.0",
+  l1_da_mode: "BLOB",
+  l1_gas_price: { price_in_fri: "0x1", price_in_wei: "0x1" },
+  l1_data_gas_price: { price_in_fri: "0x1", price_in_wei: "0x1" },
+  l2_gas_price: { price_in_fri: "0x1", price_in_wei: "0x1" },
+  transactions: [],
+};
+type RpcParams = {
+  request?: { entry_point_selector: string; calldata: string[] };
+  invoke_transaction?: { calldata: string[] };
+};
+const shardRpc = (method: string, params: RpcParams) => {
+  if (method === "starknet_call") return viewGames(params.request!.entry_point_selector, params.request!.calldata);
+  if (method === "starknet_addInvokeTransaction") {
+    createGame(params.invoke_transaction!.calldata.slice(4));
+    return { transaction_hash: receipt.transaction_hash };
+  }
+  const answers: Record<string, unknown> = {
+    starknet_specVersion: "0.10.0",
+    starknet_chainId: DEV_CHAIN,
+    starknet_getNonce: "0x0",
+    starknet_getBlockWithTxHashes: block,
+    starknet_getClassHashAt: "0xabc",
+    starknet_getClass: { abi: JSON.stringify(abi), sierra_program: [], contract_class_version: "0.1.0" },
+    starknet_getTransactionReceipt: receipt,
+  };
+  return answers[method];
+};
+const manifest = {
+  version: 1,
+  chainId: DEV_CHAIN,
+  rpcUrl: "https://shard.test/rpc",
+  accountClassHash: "0x2",
+  guardianPublicKey: "0x9",
+  contracts: { games: "0x77" },
+};
+const shardNetwork = async (input: RequestInfo | URL, init?: RequestInit) => {
+  if (String(input instanceof Request ? input.url : input).endsWith("/manifest")) return Response.json(manifest);
+  const { id, method, params } = JSON.parse(String(init?.body)) as { id: number; method: string; params: RpcParams };
+  const result = shardRpc(method, params);
+  return Response.json(
+    result === undefined
+      ? { jsonrpc: "2.0", id, error: { code: -32601, message: `unanswered ${method}` } }
+      : { jsonrpc: "2.0", id, result },
+  );
 };
 
 const season = {
@@ -79,24 +130,7 @@ const launchShard = () =>
 let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
 beforeEach(async () => {
   held = [];
-  rpc.call.mockImplementation(async (query) => viewGames(query));
-  rpc.execute.mockImplementation(async (call) => {
-    createGame(call.calldata);
-    return { transaction_hash: "0xabc" };
-  });
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async () =>
-      Response.json({
-        version: 1,
-        chainId: DEV_CHAIN,
-        rpcUrl: "https://shard.test/rpc",
-        accountClassHash: "0x2",
-        guardianPublicKey: "0x9",
-        contracts: { games: "0x77" },
-      }),
-    ),
-  );
+  vi.stubGlobal("fetch", vi.fn(shardNetwork));
   database = await createLaunchTestDatabase();
 });
 afterEach(async () => {
