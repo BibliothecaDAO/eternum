@@ -168,9 +168,7 @@ export const routeIdentityRequest = async (
     });
   if (pathname === "/api/operator/campaign-draw" && request.method === "POST") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
-    return handleCampaignDraw(request, env.DB, (realmsId) =>
-      hasCampaignHomeSource(env, platform.fetchShard, realmsId),
-    );
+    return handleCampaignDraw(request, env.DB, (realmsId) => hasCampaignHomeSource(env, platform.fetchShard, realmsId));
   }
   if (pathname === "/api/campaigns/redeem") {
     const world = referralWorld(env, platform);
