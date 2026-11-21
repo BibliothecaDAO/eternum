@@ -25,9 +25,9 @@ test("plays only a live game listed for the shard, and refuses absent or ambiguo
     games = [game, { ...game, game_id: 8 }];
     await expect(read()).rejects.toThrow("Several live Frontier games");
     expect((await read(8)).gameId).toBe(8);
-    await expect(
-      listedFrontierGame(server.url.origin, { chainId: "0x2" }, "https://herald.example"),
-    ).rejects.toThrow("No live Frontier game is listed");
+    await expect(listedFrontierGame(server.url.origin, { chainId: "0x2" }, "https://herald.example")).rejects.toThrow(
+      "No live Frontier game is listed",
+    );
   } finally {
     server.stop(true);
   }

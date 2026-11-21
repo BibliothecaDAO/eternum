@@ -183,16 +183,16 @@ and, per game, the number of transactions its settlement burst took at start. Wo
 gates of their own. Reports are committed at process exit after client and socket teardown; their verdict includes late
 callback failures and the exit code. The console names the report path without announcing an earlier PASS.
 
-The capacity campaign's shapes are run configurations of the same harness. The Frontier shape is `--game-type frontier` without `--functional`:
-production-length days, every player settling then mustering and exploring in the first minutes, with the latency gates
-and, measured from the host, the close-cost evidence. `--game-type frontier --functional` is FR11's design run instead:
-the season is created with twelve-minute days so the bots play through rollovers, and the design gates (token cap, fresh
-armies after at least three rollovers) apply while the latency gates do not.
-`--game-type frontier --functional` on a game with production-length days is the real-speed pass on the preset players play: every bot founds its
-realm, raises the troops its wheat pays for and explores, and the run checks, from the chain's facts, each producing
-building's rate against preset 5's, that raising took exactly the recipe's 2 wheat per troop and each explore or step
-exactly its food per troop, and that no submitted action was a gameplay rejection. Latency is reported, not gated. A day
-lasts a day there, so the multi-day gates stay with the design run.
+The capacity campaign's shapes are run configurations of the same harness. The Frontier shape is `--game-type frontier`
+without `--functional`: production-length days, every player settling then mustering and exploring in the first minutes,
+with the latency gates and, measured from the host, the close-cost evidence. `--game-type frontier --functional` is
+FR11's design run instead: the season is created with twelve-minute days so the bots play through rollovers, and the
+design gates (token cap, fresh armies after at least three rollovers) apply while the latency gates do not.
+`--game-type frontier --functional` on a game with production-length days is the real-speed pass on the preset players
+play: every bot founds its realm, raises the troops its wheat pays for and explores, and the run checks, from the
+chain's facts, each producing building's rate against preset 5's, that raising took exactly the recipe's 2 wheat per
+troop and each explore or step exactly its food per troop, and that no submitted action was a gameplay rejection.
+Latency is reported, not gated. A day lasts a day there, so the multi-day gates stay with the design run.
 
 Preserve the baseline image and chain data until final acceptance and the approved cutover.
 

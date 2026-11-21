@@ -20,10 +20,7 @@ export async function listedFrontierGame(
     new URL(row.url).origin === new URL(heraldUrl).origin;
   const games = listed ? row.games : null;
   const candidates = (games ?? []).filter(
-    (game) =>
-      game.mode === "frontier" &&
-      game.status === "Live" &&
-      (gameId === undefined || game.game_id === gameId),
+    (game) => game.mode === "frontier" && game.status === "Live" && (gameId === undefined || game.game_id === gameId),
   );
   console.log(
     JSON.stringify({
