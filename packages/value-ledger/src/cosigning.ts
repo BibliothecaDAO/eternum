@@ -24,14 +24,34 @@ export interface SettlementTerms {
   prize: string;
   treasuryAmount: string;
 }
-export type CosignRequest = PayoutTerms | SettlementTerms;
+export interface RacePostTerms {
+  kind: "race-post";
+  shard: string;
+  season: number;
+  total: string;
+}
+export interface RacePayTerms {
+  kind: "race-pay";
+  shard: string;
+  season: number;
+  home: string;
+  wallet: string;
+  amount: string;
+}
+export type RaceTerms = RacePostTerms | RacePayTerms;
+export type CosignRequest = PayoutTerms | SettlementTerms | RaceTerms;
+export interface RaceCosigningDomain {
+  chainId: string;
+  rewards: string;
+  epoch: number;
+}
 export interface Cosignature {
   r: string;
   s: string;
 }
 
 /** Same domain-separated Poseidon message as GameLedger; a rotation invalidates every old signature. */
-export function cosigningHash(domain: CosigningDomain, request: CosignRequest): string {
+export function cosigningHash(domain: CosigningDomain, request: PayoutTerms | SettlementTerms): string {
   return hash.computePoseidonHashOnElements([
     shortString.encodeShortString(request.kind === "pay" ? "ETERNUM_PAY_V1" : "ETERNUM_SETTLE_V2"),
     domain.chainId,
@@ -42,6 +62,19 @@ export function cosigningHash(domain: CosigningDomain, request: CosignRequest): 
     ...(request.kind === "pay"
       ? [request.claim, request.wallet, ...u256Parts(request.amount), request.rank, request.count]
       : [...u256Parts(request.chest), ...u256Parts(request.prize), ...u256Parts(request.treasuryAmount)]),
+  ]);
+}
+export function raceCosigningHash(domain: RaceCosigningDomain, request: RaceTerms): string {
+  return hash.computePoseidonHashOnElements([
+    shortString.encodeShortString(request.kind === "race-post" ? "ETERNUM_RACE_POST_V1" : "ETERNUM_RACE_PAY_V1"),
+    domain.chainId,
+    domain.rewards,
+    domain.epoch,
+    request.shard,
+    request.season,
+    ...(request.kind === "race-post"
+      ? u256Parts(request.total)
+      : [request.home, request.wallet, ...u256Parts(request.amount)]),
   ]);
 }
 const u256Parts = (value: string) => {
@@ -71,6 +104,16 @@ export function decodeCosignRequest(input: unknown): CosignRequest {
     const [low, high] = u256Parts(row[name]);
     return ledgerU256(low!, high!);
   };
+  const home = () => {
+    if (typeof row.home !== "string" || !/^[1-9][0-9]*$/.test(row.home) || BigInt(row.home) >= 2n ** 64n)
+      throw new Error("invalid_cosigning_home");
+    return row.home;
+  };
+  const paid = (name: string) => {
+    const value = amount(name);
+    if (BigInt(value) === 0n) throw new Error("invalid_cosigning_payment");
+    return value;
+  };
   const shard = felt("shard"),
     season = number("season", 2 ** 32 - 1);
   if (!season) throw new Error("invalid_cosigning_season");
@@ -91,6 +134,10 @@ export function decodeCosignRequest(input: unknown): CosignRequest {
       prize: amount("prize"),
       treasuryAmount: amount("treasuryAmount"),
     };
+  if (row.kind === "race-post" && Object.keys(row).length === 4)
+    return { kind: "race-post", shard, season, total: amount("total") };
+  if (row.kind === "race-pay" && Object.keys(row).length === 6)
+    return { kind: "race-pay", shard, season, home: home(), wallet: felt("wallet"), amount: paid("amount") };
   throw new Error("invalid_cosigning_request");
 }
 export function decodeCosigner(fields: readonly string[]) {

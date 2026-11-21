@@ -1,6 +1,7 @@
 import { decodeDepositSigningRequest, depositReader, type DepositAnchors } from "@realms-world/value-ledger/deposits";
 import { verifiedDepositHash } from "./deposit-verifier";
 import { ec } from "starknet";
+import { raceRewardsBeside } from "@realms-world/chain";
 import { isLoopbackHttp } from "./source-url";
 import { Effect } from "effect";
 import {
@@ -8,16 +9,21 @@ import {
   readConfirmedLedgerHead,
   decodeWithdrawalPayment,
   decodeCosigner,
+  decodeRaceSeason,
   cosigningHash,
+  raceCosigningHash,
   decodeCosignRequest,
   type Cosignature,
   type PayoutTerms,
+  type RacePayTerms,
+  type RacePostTerms,
   type SettlementTerms,
 } from "@realms-world/value-ledger";
 import { ShardReader, type ShardConnection } from "./shard-rpc";
 import { frontierReceiptBindings } from "./frontier-binding";
 import { shardWithdrawalPorts } from "./shard-withdrawals";
 import { frontierSettlementEvidence } from "./frontier-sweep";
+import { readFinishedRace } from "./race-facts";
 
 export interface CosignerConfig {
   l2RpcUrl: string;
@@ -59,13 +65,23 @@ export function createCosigner(
       if (BigInt(await provider.getChainId()) !== BigInt(config.l2ChainId))
         throw new Error("cosigner_l2_chain_differs");
       const head = await readConfirmedLedgerHead(provider);
-      const read = (entrypoint: string, calldata: string[]) =>
-        provider.callContract({ contractAddress: config.ledgerAddress, entrypoint, calldata }, head.number);
+      const readAt = (contractAddress: string) => (entrypoint: string, calldata: string[]) =>
+        provider.callContract({ contractAddress, entrypoint, calldata }, head.number);
+      const read = readAt(config.ledgerAddress);
       const [key, paused] = await Promise.all([read("cosigner", []), read("is_paused", [])]);
       const domain = decodeCosigner(key);
       if (BigInt(domain.publicKey) !== BigInt(publicKey)) throw new Error("cosigner_key_differs");
       if (paused.length !== 1 || BigInt(paused[0]!) !== 0n) throw new Error("cosigner_ledger_paused");
       const signingDomain = { chainId: config.l2ChainId, ledger: config.ledgerAddress, epoch: domain.epoch };
+      if (request.kind === "race-post" || request.kind === "race-pay") {
+        const rewards = raceRewardsBeside(config.ledgerAddress);
+        if (request.kind === "race-post") await verifyRacePost(shard, request);
+        else await verifyRacePay(shard, request, identity, wallets, readAt(rewards));
+        return signatureOf(
+          raceCosigningHash({ chainId: config.l2ChainId, rewards, epoch: domain.epoch }, request),
+          privateKey,
+        );
+      }
       if (request.kind !== "pay" && request.kind !== "settle") {
         const anchorKey = `ledger:${BigInt(config.l2ChainId)}:${BigInt(config.ledgerAddress)}`;
         const ledger = await depositReader(
@@ -95,21 +111,40 @@ export function createCosigner(
         );
         await ledger.assertCanonical();
         await wallets.putAnchor(anchorKey, ledger.head);
-        const signature = ec.starkCurve.sign(digest, privateKey);
-        return { r: `0x${signature.r.toString(16)}`, s: `0x${signature.s.toString(16)}` };
+        return signatureOf(digest, privateKey);
       }
       if (request.kind === "pay") {
         await verifyPayment(config, shard, request, identity, read, wallets);
       } else {
         await verifySettlement(config, shard, request);
       }
-      const signature = ec.starkCurve.sign(
-        cosigningHash({ chainId: config.l2ChainId, ledger: config.ledgerAddress, epoch: domain.epoch }, request),
-        privateKey,
-      );
-      return { r: `0x${signature.r.toString(16)}`, s: `0x${signature.s.toString(16)}` };
+      return signatureOf(cosigningHash(signingDomain, request), privateKey);
     },
   };
+}
+function signatureOf(digest: string, privateKey: string): Cosignature {
+  const signature = ec.starkCurve.sign(digest, privateKey);
+  return { r: `0x${signature.r.toString(16)}`, s: `0x${signature.s.toString(16)}` };
+}
+async function verifyRacePost(shard: CosignerConfig["shards"][number], request: RacePostTerms) {
+  const race = await readFinishedRace(shard, shard.heraldUrl, request.season);
+  if (!race) throw new Error("cosigner_race_unfinished");
+  if (race.total !== BigInt(request.total)) throw new Error("cosigner_race_differs");
+}
+async function verifyRacePay(
+  shard: CosignerConfig["shards"][number],
+  request: RacePayTerms,
+  identity: (account: string) => ReturnType<typeof readPayoutIdentity>,
+  wallets: CosignerWallets,
+  readRewards: (entrypoint: string, calldata: string[]) => Promise<string[]>,
+) {
+  const race = await readFinishedRace(shard, shard.heraldUrl, request.season);
+  if (!race) throw new Error("cosigner_race_unfinished");
+  const posted = decodeRaceSeason(await readRewards("get_race", [request.shard, String(request.season)]));
+  if (!posted.posted || posted.closed || posted.total !== race.total) throw new Error("cosigner_race_differs");
+  const reward = race.rewards.find((owed) => owed.home === BigInt(request.home));
+  if (!reward || reward.amount !== BigInt(request.amount)) throw new Error("cosigner_race_differs");
+  await verifyPayoutWallet(identity, wallets, reward.owner, request.wallet);
 }
 async function verifyPayment(
   config: CosignerConfig,

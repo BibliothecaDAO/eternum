@@ -5,6 +5,7 @@ import { LORDS } from "./contracts";
 
 export type ValuePlaneContract =
   | "ledger"
+  | "raceRewards"
   | "vault"
   | "realms"
   | "lords"
@@ -52,6 +53,19 @@ export const valuePlaneAddress = (
   if (value === null)
     throw new ValuePlaneAddressMissingError(contract, environment);
   return value;
+};
+
+export const raceRewardsBeside = (ledger: string): string => {
+  const book = Object.values(addressBooks).find(
+    ({ addresses }) =>
+      addresses.ledger && BigInt(addresses.ledger) === BigInt(ledger),
+  );
+  const rewards = book?.addresses.raceRewards;
+  if (!rewards || BigInt(rewards) === BigInt(0))
+    throw new Error(
+      `No race rewards address is written beside the ledger ${ledger} in contracts/common/addresses`,
+    );
+  return rewards;
 };
 
 /**

@@ -8,6 +8,7 @@ import {
   environmentL2,
   isTestLords,
   ledgerDeploymentBlock,
+  raceRewardsBeside,
   valuePlaneAddress,
 } from "./value-plane";
 
@@ -93,5 +94,11 @@ describe("test LORDS", () => {
         "0x0124AEB495B947201F5FAC96FD1138E326AD86195B98DF6DEC9009158A533B49",
       ),
     ).toBe(false);
+  });
+
+  it("names no race rewards beside a ledger no environment book holds", () => {
+    expect(() => raceRewardsBeside("0x1")).toThrow(
+      "No race rewards address is written beside the ledger 0x1",
+    );
   });
 });

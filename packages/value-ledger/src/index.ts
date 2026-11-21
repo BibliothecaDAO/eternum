@@ -4,6 +4,7 @@ export {
   ledgerBool,
   ledgerU256,
   decodeFrontierSeason,
+  decodeRaceSeason,
   decodeWithdrawalPayment,
   decodeChest,
   chestDrawBlocksLeft,
@@ -30,5 +31,13 @@ export { readFrontierFunding, frontierTreasuryAmount, type FrontierFundingTerms 
 export { ServiceResponseFailure, serviceError, serviceFailure, serviceResponseFailure } from "./service-error";
 export { LAUNCHER_LABEL, RELAY_LABEL, launcherAccountAddress, relayAccountAddress } from "./shard-accounts";
 
-export { cosigningHash, decodeCosignRequest, decodeCosigner } from "./cosigning";
-export type { CosigningDomain, PayoutTerms, SettlementTerms, CosignRequest, Cosignature } from "./cosigning";
+export { cosigningHash, raceCosigningHash, decodeCosignRequest, decodeCosigner } from "./cosigning";
+export type {
+  CosigningDomain,
+  PayoutTerms,
+  SettlementTerms,
+  RacePostTerms,
+  RacePayTerms,
+  CosignRequest,
+  Cosignature,
+} from "./cosigning";

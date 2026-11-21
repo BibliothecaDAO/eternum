@@ -1,5 +1,13 @@
 import { expect, it } from "vitest";
-import { cosigningHash, decodeCosignRequest, decodeCosigner, type PayoutTerms } from "./cosigning";
+import {
+  cosigningHash,
+  decodeCosignRequest,
+  decodeCosigner,
+  raceCosigningHash,
+  type PayoutTerms,
+  type RacePayTerms,
+  type RacePostTerms,
+} from "./cosigning";
 
 const domain = { chainId: "0x534e5f54455354", ledger: "0x123", epoch: 2 };
 const payment: PayoutTerms = {
@@ -64,4 +72,43 @@ it("binds the treasury remainder and rejects requests missing it", () => {
   const { treasuryAmount, ...oldTerms } = terms;
   expect(() => decodeCosignRequest(oldTerms)).toThrow("invalid_cosigning_request");
   expect(() => decodeCosignRequest({ ...terms, treasuryAmount: "-1" })).toThrow();
+});
+
+const raceDomain = { chainId: domain.chainId, rewards: "0x123", epoch: 2 };
+const racePost: RacePostTerms = { kind: "race-post", shard: "0x456", season: 7, total: String((1n << 128n) + 17n) };
+const racePay: RacePayTerms = {
+  kind: "race-pay",
+  shard: "0x456",
+  season: 7,
+  home: "99",
+  wallet: "0x789",
+  amount: String((1n << 128n) + 17n),
+};
+it("matches the race rewards class's signing vectors", () => {
+  expect(raceCosigningHash(raceDomain, racePost)).toBe(
+    "0x2ebe8455f4383ba73e746fbd44791199c7947a9ffc6b669cc5c54fe81bb1d5d",
+  );
+  expect(raceCosigningHash(raceDomain, racePay)).toBe(
+    "0x83622bef47143aadf665cc91179038cd781cc9ebbea1ae741afc2e9bedb460",
+  );
+});
+it("decodes exact race terms", () => {
+  expect(decodeCosignRequest({ ...racePost })).toEqual(racePost);
+  expect(decodeCosignRequest({ ...racePost, total: "0" })).toEqual({ ...racePost, total: "0" });
+  expect(decodeCosignRequest({ ...racePay, wallet: "1929" })).toEqual(racePay);
+});
+it.each([
+  [racePost, { total: "-1" }],
+  [racePost, { total: String(2n ** 256n) }],
+  [racePost, { season: 0 }],
+  [racePost, { rewards: "0x999" }],
+  [racePay, { home: "0" }],
+  [racePay, { home: "0x63" }],
+  [racePay, { home: 99 }],
+  [racePay, { home: String(2n ** 64n) }],
+  [racePay, { wallet: "0" }],
+  [racePay, { amount: "0" }],
+  [racePay, { total: "17" }],
+])("rejects invalid race terms %j %j", (terms, change) => {
+  expect(() => decodeCosignRequest({ ...terms, ...change })).toThrow();
 });
