@@ -20,6 +20,15 @@ export function response(abi: Abi, entrypoint: string, value: unknown) {
   if (!entry || entry.outputs.length !== 1) throw new Error(`Missing single-output entry: ${entrypoint}`);
   return serialize(abi, [{ name: "value", type: entry.outputs[0].type }], { value });
 }
+export function argument(abi: Abi, entrypoint: string, calldata: string[]) {
+  const entries = abi.flatMap((item) => (item.type === "interface" ? item.items : [item]));
+  const entry = entries.find((item) => item.type === "function" && item.name === entrypoint);
+  if (!entry || entry.inputs.length !== 1) throw new Error(`Missing single-input entry: ${entrypoint}`);
+  return new CallData([
+    ...abi,
+    { type: "function", name: "parse_fixture", inputs: [], outputs: entry.inputs, state_mutability: "view" },
+  ]).parse("parse_fixture", calldata);
+}
 export function eventFields(abi: Abi, layout: Layout, values: Record<string, unknown>) {
   if (
     Object.keys(values).sort().join() !==
