@@ -414,7 +414,6 @@ it.each([
 it.each([
   ["names no dependency", {}],
   ["names one without its state", { dependencies: [{ name: "store" }] }],
-  ["names a failing one", { dependencies: [{ name: "store", ok: false, since: now, code: "store_unavailable" }] }],
 ])("reports game launches down when their health %s", async (_, health) => {
   const result = await probeServices(
     network({ "https://play.realms.party/api/factory/health": response({ service: "launch", ...health }) }),

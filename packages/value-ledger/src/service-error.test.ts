@@ -91,6 +91,7 @@ it("keeps the host of a failing URL and drops the path, query and login that can
     "fetch failed: http://127.0.0.1:8545/[redacted]",
   );
   expect(stored("unreachable https://herald.test")).toBe("unreachable https://herald.test");
+  expect(stored("fetch failed: https://user:k1@rpc.provider.test")).toBe("fetch failed: https://rpc.provider.test");
 });
 
 it("recognizes only a leading legacy code before diagnostic text", () => {

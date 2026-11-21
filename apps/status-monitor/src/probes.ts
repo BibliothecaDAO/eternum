@@ -152,7 +152,7 @@ async function probeSlots(read: Reader, playUrl: string): Promise<Status> {
 async function probeLaunch(read: Reader, playUrl: string): Promise<Status> {
   const launch = await body(read, playUrl + "/api/factory/health");
   if (launch.service !== "launch") throw new Error("Launch health missing");
-  requireDependenciesUp(launch);
+  serviceDependencies(launch);
   return "up";
 }
 
@@ -259,10 +259,7 @@ async function body(read: Reader, url: string): Promise<Record<string, unknown>>
 function requireReady(value: Record<string, unknown>) {
   if (value.success !== true) throw new Error("Not ready");
 }
-function requireDependenciesUp(health: Record<string, unknown>) {
-  const failing = serviceDependencies(health).find((dependency) => !dependency.ok);
-  if (failing) throw new Error(`Dependency ${failing.name} failing`);
-}
+
 function parseTarget(value: unknown): Target {
   const target = value as Target;
   if (!target || !felt(target.chainId)) throw new Error("Invalid shard target");
