@@ -22,7 +22,6 @@ export const MenuPage = ({
   rank,
   onToday,
   onSeason,
-  realms,
   onSettings,
   guide,
   onExit,
@@ -31,7 +30,6 @@ export const MenuPage = ({
   rank: string;
   onToday: () => void;
   onSeason: () => void;
-  realms?: { waiting: boolean; onOpen: () => void };
   onSettings: () => void;
   /** The game's guide on the docs site (useHowToPlay). */
   guide: string;
@@ -44,13 +42,6 @@ export const MenuPage = ({
       <OpeningPartGate part="aspects">
         <MenuRow icon="victory" badge={<span className="text-hud-body tabular-nums">{rank}</span>} onClick={onSeason} />
       </OpeningPartGate>
-      {realms && (
-        <MenuRow
-          icon="realm"
-          badge={realms.waiting && <i aria-hidden className="size-2 rounded-full bg-hud-gold" />}
-          onClick={realms.onOpen}
-        />
-      )}
       <MenuRow icon="settings" onClick={onSettings} />
       <HowToPlayRow guide={guide} />
     </nav>
