@@ -67,6 +67,10 @@ interface AlertState {
   outbox: Alert[];
   wiredTo: string | null;
 }
+interface SilenceBeforeSources {
+  cosignerSilentSince?: number | null;
+  cosignerDownAnnounced?: boolean;
+}
 const QUIET: AlertState = {
   held: {},
   ledgerPaused: false,
@@ -279,7 +283,13 @@ function readWalletsOrNull(path: string, realmsIds: string[]) {
 
 function readState(path: string): AlertState {
   if (!existsSync(path)) return QUIET;
-  return { ...QUIET, ...(JSON.parse(privateFile(path)) as Partial<AlertState>) };
+  const stored = JSON.parse(privateFile(path)) as Partial<AlertState> & SilenceBeforeSources;
+  const { cosignerSilentSince, cosignerDownAnnounced, ...state } = stored;
+  const carried: Silences =
+    typeof cosignerSilentSince === "number"
+      ? { cosigner: { since: cosignerSilentSince, announced: cosignerDownAnnounced === true } }
+      : {};
+  return { ...QUIET, ...state, silences: { ...carried, ...state.silences } };
 }
 function writeState(path: string, state: AlertState) {
   const temporary = `${path}.tmp`;

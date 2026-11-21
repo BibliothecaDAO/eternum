@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { mkdtempSync, rmSync, statSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { channelOf, checkPayoutAlerts, postToDiscord } from "./alerts";
@@ -163,6 +163,15 @@ test("a wallet history unreadable for ten minutes is announced once, and once wh
     `${header}The box has not read its wallet history since 1970-01-01 00:16 UTC. A held wallet change would go unseen.`,
     `${header}The wallet history reads again; it was unreadable from 1970-01-01 00:16 UTC.`,
   ]);
+});
+
+test("a silence recorded before the sources shared one rule is still closed with its own start", async () => {
+  const recorded = JSON.parse(readFileSync(statePath, "utf8"));
+  delete recorded.silences;
+  writeFileSync(statePath, JSON.stringify({ ...recorded, cosignerSilentSince: 400, cosignerDownAnnounced: true }));
+  await check();
+  await check();
+  expect(posts).toEqual([`${header}The co-signer answers again; it was silent from 1970-01-01 00:06 UTC.`]);
 });
 
 test("a busy minute is sent whole, in messages Discord accepts, and each alert once", async () => {
