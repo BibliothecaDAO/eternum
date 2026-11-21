@@ -24,12 +24,6 @@ const blitzModeConfig: ConfigPatch = {
   },
 };
 
-const blitzSeasonConfig: ConfigPatch = {
-  season: {
-    endGraceSeconds: 0,
-  },
-};
-
 const blitzVillageConfig: ConfigPatch = {
   village: {
     village_pass_nft_address: "0x0",
@@ -82,7 +76,6 @@ export const arenaBaseConfig: ConfigPatch = mergeConfigPatches(
   arenaRealmLevelConfig,
   arenaVictoryPointConfig,
   blitzModeConfig,
-  blitzSeasonConfig,
   blitzVillageConfig,
   blitzTradeConfig,
   blitzSettlementConfig,

@@ -22,7 +22,7 @@ const assertLaunchIdentity = (game: ShardGame, params: ReturnType<typeof launchG
     [game.seed, params.seed],
     [game.start_settling_at, params.start_settling_at],
     [game.start_main_at, params.start_main_at],
-    [game.end_at, params.start_main_at + Number(params.duration_seconds)],
+    [game.scheduled_end_at, params.start_main_at + Number(params.duration_seconds)],
   ] as const;
   if (launched.some(([held, requested]) => held !== BigInt(String(requested))))
     throw new Error("game_launch_identity_differs");

@@ -395,8 +395,6 @@ export interface Config {
     // startMainAt takes precedence
     startMainAfterSeconds: number;
     startMainAt: number;
-
-    endGraceSeconds: number;
   };
   bridge: {
     velords_fee_on_dpt_percent: number;

@@ -45,7 +45,6 @@ describe("native game configuration", () => {
         registration_count_max: config.blitz.registration.registration_count_max,
         dev_mode_on: true,
         use_map_override: true,
-        end_grace_seconds: 0,
       });
       expect(BigInt(params.seed as string)).not.toBe(0n);
       expect(params).not.toHaveProperty("fee_amount");

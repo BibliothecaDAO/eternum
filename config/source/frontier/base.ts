@@ -61,7 +61,6 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
   season: {
     // Unset until the operator supplies the calendar; the launch boundary refuses zero.
     durationSeconds: 0,
-    endGraceSeconds: 0,
     startSettlingAfterSeconds: 0,
     startMainAfterSeconds: 0,
   },

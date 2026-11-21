@@ -150,19 +150,6 @@ function resolveRegistrationCountMax(config: Config, presetId: number): number {
   return registrationCountMax;
 }
 
-function resolveEndGraceSeconds(config: Config): number {
-  const endGraceSeconds = config.season.endGraceSeconds;
-  if (
-    typeof endGraceSeconds !== "number" ||
-    !Number.isInteger(endGraceSeconds) ||
-    endGraceSeconds < 0 ||
-    endGraceSeconds > 0xffff_ffff
-  ) {
-    throw new Error("Season endGraceSeconds must be an integer between 0 and 4294967295");
-  }
-  return endGraceSeconds;
-}
-
 function deriveGameSeed(input: CreateGamePayloadInput): string {
   const seed = hash.computePoseidonHashOnElements([shortString.encodeShortString(input.gameName), input.startMainAt]);
   return BigInt(seed) === 0n ? "0x1" : seed;
@@ -180,8 +167,6 @@ export function buildCreateGameParams(config: Config, input: CreateGamePayloadIn
     start_settling_at: startSettlingAt,
     start_main_at: input.startMainAt,
     duration_seconds: input.durationSeconds,
-    end_grace_seconds: resolveEndGraceSeconds(config),
-
     dev_mode_on: input.devModeOn,
     single_realm_mode: nativePresetForId(input.presetId).settlementMode === "Single" || input.singleRealmMode,
     registration_count_max: registrationCountMax,
