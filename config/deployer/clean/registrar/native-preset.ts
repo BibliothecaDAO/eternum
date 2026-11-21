@@ -22,7 +22,6 @@ export function buildNativeGameParams(config: Config, input: CreateGamePayloadIn
     start_settling_at: common.start_settling_at,
     start_main_at: common.start_main_at,
     duration_seconds: common.duration_seconds,
-    end_grace_seconds: common.end_grace_seconds,
     dev_mode_on: common.dev_mode_on,
     registration_start: common.registration_start_at,
     biome_climate: common.biome_climate_config,

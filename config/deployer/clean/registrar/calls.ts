@@ -5,6 +5,7 @@ import { nativeGamesAbi, nativeWorldSchema } from "../world/native/manifest";
 import type { RegistrarWorld } from "../world/native/types";
 import { worldView } from "@bibliothecadao/eternum";
 import { Account, CallData, shortString, type Call, type RawArgs, RpcProvider } from "starknet";
+import { assertAbiArguments } from "../../../../packages/value-ledger/src/shard-abi";
 import { loadRepoJsonFile } from "../shared/repo";
 import type { DeploymentEnvironmentId } from "../types";
 
@@ -199,9 +200,9 @@ export async function createRegistrarGame(
   target: RegistrarTarget,
 ): Promise<CreateRegistrarGameResult> {
   const context = resolveRegistrarContext(target);
-  const calldata = new CallData(nativeGamesAbi(context.manifest)).compile("create_game", {
-    params: params as RawArgs,
-  });
+  const abi = nativeGamesAbi(context.manifest);
+  assertAbiArguments(abi, "create_game", { params });
+  const calldata = new CallData(abi).compile("create_game", { params: params as RawArgs });
   const result = await executeRegistrarCall(account, buildRegistrarCall("create_game", calldata, target), target);
   return { ...result, gameId: resolveCreatedGameId(result.receipt, target) };
 }

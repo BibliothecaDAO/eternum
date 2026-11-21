@@ -86,7 +86,6 @@
     "startSettlingAfterSeconds": 0,
     "startMainAfterSeconds": 0,
     "durationSeconds": 0,
-    "endGraceSeconds": 0,
     "startSettlingAt": 0,
     "startMainAt": 0
   },
