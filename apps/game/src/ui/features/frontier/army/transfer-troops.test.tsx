@@ -160,8 +160,8 @@ it("confirms the loss of stronger Logistics in a 500 into 1,500 merge", async ()
     ["Army 3", "2,000"],
   ]);
   expect(amount()).toBe("500");
-  expect(host.textContent).toContain("5/165");
-  expect(host.textContent).toContain("15/140→5");
+  expect(host.textContent).toContain("5/225");
+  expect(host.textContent).toContain("15/200→5");
   expect(host.textContent).toContain("Army 1 loses its Logistics, Oath slots and held Oaths.");
   expect(host.querySelector("s")).toBeNull();
   await act(async () => button("Merge into Army 3")!.click());
@@ -204,22 +204,32 @@ it("merges into the more trained army in one click when the map reverses the pai
 
 it("opens at all the tapped army can take, and sends the amount the player slides", async () => {
   const store = twoArmies();
+  const first = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
+  store.applyFacts([
+    {
+      model: "ExplorerTroops",
+      key: "0x74",
+      value: JSON.parse(
+        JSON.stringify({ ...first, troops: { ...first.troops, count: 2998n * PRECISION } }, (_, field) =>
+          typeof field === "bigint" ? field.toString() : field,
+        ),
+      ),
+    },
+  ]);
   const { swap, close } = render(store);
   const [[picked], [tapped]] = sides() as [string, string][];
-  // Everything into the army tapped, up to the 1,500 a Settlement's army holds: 298 stay.
   expect(sides()).toEqual([
     [picked, "298"],
-    [tapped, "1,500"],
+    [tapped, "3,000"],
   ]);
-  expect(amount()).toBe("1,200");
-  expect(button(`Move 1,200 to ${tapped}`)).toBeDefined();
-  expect(host.textContent).toContain("An army holds at most 1,500.");
+  expect(amount()).toBe("2,700");
+  expect(button(`Move 2,700 to ${tapped}`)).toBeDefined();
+  expect(host.textContent).toContain("An army holds at most 3,000.");
 
-  // 599 leave the picked army: 899 each.
   slide(599);
   expect(amount()).toBe("599");
   expect(sides()).toEqual([
-    [picked, "899"],
+    [picked, "2,399"],
     [tapped, "899"],
   ]);
   await act(async () => button(`Move 599 to ${tapped}`)!.click());
@@ -339,7 +349,7 @@ it.each([2, 3, 4])(
       ["Army 2", "1,100"],
     ]);
     // Army 2 holds 100 stamina; the merge leaves it Army 1's 7.
-    expect(host.textContent).toContain(`100/${120 + [0, 20, 45, 75, 110, 150][tappedLogistics]!}→7`);
+    expect(host.textContent).toContain(`100/${180 + [0, 20, 45, 75, 110, 150][tappedLogistics]!}→7`);
     expect(swap).not.toHaveBeenCalled();
     await act(async () => button("Merge into Army 2")!.click());
     expect(button("Confirm merge into Army 2")).toBeDefined();

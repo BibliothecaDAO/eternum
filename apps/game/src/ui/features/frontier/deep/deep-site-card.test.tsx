@@ -143,14 +143,20 @@ describe("the Deep site's live native binding", () => {
       const resolved = resolveExplorerTroops(hud.store, army, hud.scenario.startsAt);
       expect(resolved).toBeDefined();
       const rules = hud.store.require("SliceRules", { game_id: 1 });
-      expect(staminaAt(resolved!, hud.scenario.startsAt, rules.troop_stamina_config, 60).amount).toBe(60n);
+      const refilled = 40 + rules.troop_stamina_config.stamina_gain_per_tick;
+      const tickSeconds = Number(rules.tick_config.armies_tick_in_seconds);
+      expect(staminaAt(resolved!, hud.scenario.startsAt, rules.troop_stamina_config, tickSeconds).amount).toBe(
+        BigInt(refilled),
+      );
       hud.render(
         <FrontierArmy
           realm={hud.store.require("Structure", { game_id: 1, entity_id: army.owner })}
           onClose={() => {}}
         />,
       );
-      expect(hud.host.querySelector("[data-stamina-line]")?.textContent).toContain("60/140");
+      expect(hud.host.querySelector("[data-stamina-line]")?.textContent).toContain(
+        `${refilled}/${rules.troop_stamina_config.stamina_knight_max + 20}`,
+      );
     } finally {
       hud.unmount();
     }
@@ -183,8 +189,9 @@ describe("the Deep site's live native binding", () => {
 it("refreshes stamina from guard membership alone and keeps a missing position unknown", () => {
   const hud = draw();
   try {
+    const refilled = String(40 + hud.store.require("SliceRules", { game_id: 1 }).troop_stamina_config.stamina_gain_per_tick);
     hud.render(<StaminaReading />);
-    expect(hud.host.textContent).toBe("60");
+    expect(hud.host.textContent).toBe(refilled);
     const personalTile = hud.store.entityOccupancy(1, 201)!;
     act(() =>
       hud.store.applyFacts([
@@ -197,13 +204,13 @@ it("refreshes stamina from guard membership alone and keeps a missing position u
     )!;
     const membership = { game_id: 1, explorer_id: 201n, site_id: site.id, slot: 1 };
     act(() => hud.store.applyFacts([{ model: "DeepGuard", key: "0xdeed", value: membership }]));
-    expect(hud.host.textContent).toBe("60");
+    expect(hud.host.textContent).toBe(refilled);
     const siteTile = hud.store.entityOccupancy(1, site.id)!;
     const siteKey = hud.store.wireKeyOf("TileOccupancy", siteTile)!;
     act(() => hud.store.applyFacts([{ model: "TileOccupancy", key: siteKey, value: null }]));
     expect(hud.host.textContent).toBe("unknown");
     act(() => hud.store.applyFacts([{ model: "TileOccupancy", key: siteKey, value: siteTile }]));
-    expect(hud.host.textContent).toBe("60");
+    expect(hud.host.textContent).toBe(refilled);
   } finally {
     hud.unmount();
   }
