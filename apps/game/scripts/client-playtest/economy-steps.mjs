@@ -28,7 +28,7 @@ export const ECONOMY_STEPS = [
       return { preview, sent, shown: textOf(browser, PRODUCTION) };
     },
     verify: ({ played }) => {
-      const payload = played.sent?.command.calldata.slice(4).map(String);
+      const payload = played.sent?.command.span.map(String);
       const production = fact(played.sent, "ResourceProduction");
       const wheat = facts(played.sent, "ResourceBalance").find((row) => Number(row.resource_type) === 35);
       return payload?.slice(1).join(",") === "7,1,26,1,3" &&
@@ -70,7 +70,7 @@ export const ECONOMY_STEPS = [
       return { preview, sent, shown: `${arrivalText} ${resourceName}` };
     },
     verify: ({ played }) => {
-      const payload = played.sent?.command.calldata.slice(4).map(String);
+      const payload = played.sent?.command.span.map(String);
       const arrival = fact(played.sent, "ResourceArrival");
       const wheat = facts(played.sent, "ResourceBalance").find((row) => Number(row.resource_type) === 35);
       return payload?.slice(1).join(",") === "7,8,1,35,50000000000" &&

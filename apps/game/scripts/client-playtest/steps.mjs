@@ -820,7 +820,7 @@ const chooseFirstOrder = async (browser) => {
 };
 const ASPECT_SETTLES = `JSON.stringify((window.__labChain?.sent ?? [])
   .filter(({ command }) => command.kind === "SettleSeason")
-  .map(({ command }) => command.calldata.slice(5).map((felt) => BigInt(felt).toString())))`;
+  .map(({ command }) => command.span.slice(1).map((felt) => BigInt(felt).toString())))`;
 const FOUNDED_ASPECTS = `JSON.stringify((window.__labChain?.sent ?? [])
   .filter(({ command }) => command.kind === "SettleSeason")
   .map(({ answered }) => Number((answered ?? []).find(({ model }) => model === "HomeAspect")?.value?.aspect)))`;
@@ -917,7 +917,7 @@ const ASPECT_SETTLE_STEPS = [
         played.choice.cards?.length === 4 &&
         played.choice.cards.includes("Join Havoc") &&
         played.founded?.length === 1 &&
-        founded.command.calldata.slice(5).map(Number).join(",") === `1,0,${played.orders?.[0]?.order}` &&
+        founded.command.span.slice(1).map(Number).join(",") === `1,0,${played.orders?.[0]?.order}` &&
         Number(home?.home) === 7 &&
         Number(home?.aspect) === 3 &&
         Number(members?.aspect) === 3 &&
@@ -4739,7 +4739,7 @@ const LAB_SUPPLY_POST_STEPS = [
     play: async (context) => {
       const result = await reinforceWithMax(context);
       const calldata = context.browser.read(
-        `JSON.stringify(window.__labChain?.sent.find(({command}) => command.kind === "ManageTroops")?.command.calldata)`,
+        `JSON.stringify(window.__labChain?.sent.find(({command}) => command.kind === "ManageTroops")?.command.span)`,
       );
       return { ...result, calldata };
     },
