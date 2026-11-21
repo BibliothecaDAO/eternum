@@ -182,7 +182,7 @@ it("uses the largest army across all of the player's homes without substituting 
 });
 
 it("forecasts the same opportunity regardless of the last attacked guard", () => {
-  const f = fixture([siteGuardTroops(1), 1]);
+  const f = fixture([siteGuardTroops(1, 800), 1]);
   const rules = f.store.require("SliceRules", { game_id: 1 });
   f.change(
     "SliceRules",
