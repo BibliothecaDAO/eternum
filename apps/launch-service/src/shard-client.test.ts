@@ -1,5 +1,5 @@
 import { Effect, Layer } from "effect";
-import { hash } from "starknet";
+import { hash, RpcProvider } from "starknet";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { gameRegistryRow, type GameRegistryWire } from "../../../packages/core/src/test-support/game-registry";
 import { argument, gamesAbi as abi, response } from "../../../packages/value-ledger/test-support/abi";
@@ -12,15 +12,10 @@ import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore, databaseLayer } from "./store";
 import { createLaunchTestDatabase, DEV_CHAIN, slotValueFixture, testChain } from "./test-database";
 
-vi.mock("../../../packages/value-ledger/src/rpc", async (original) => {
-  const actual = await original<typeof import("../../../packages/value-ledger/src/rpc")>();
-  const rpcAt = (url: string) => {
-    const provider = actual.rpcAt(url);
-    provider.channel.baseFetch = shardNetwork;
-    return provider;
-  };
-  return { ...actual, rpcAt };
-});
+vi.mock("../../../packages/value-ledger/src/rpc", async (original) => ({
+  ...(await original<typeof import("../../../packages/value-ledger/src/rpc")>()),
+  rpcAt: (nodeUrl: string) => new RpcProvider({ nodeUrl, baseFetch: shardNetwork }),
+}));
 
 interface HeldGame {
   launch: string;
