@@ -36,7 +36,7 @@ import {
   nativeRuleConstants as rules,
 } from "../../../../contracts/l3/world-native/schema/balance.gen.ts";
 import { openOrderSendGate, touchAt, VIEWPORT } from "./browser-session.mjs";
-import { ENTRY_BUTTON, findHomeCardEntry } from "./player-entry.mjs";
+import { answerStandingPrompts, ENTRY_BUTTON, findHomeCardEntry } from "./player-entry.mjs";
 import { allApplied, gameShardOf, receiptsOf, SENT_ACTIONS, sentSince } from "./chain-receipts.mjs";
 import { judgeClickToResult, measureClickToResult } from "./click-latency.mjs";
 import { proveResultOnScreen, startResultCapture } from "./result-capture.mjs";
@@ -6246,8 +6246,10 @@ function rehearsalStep({ name, as, play, sends = 1 }) {
     verify: ({ played }) => {
       if (played.blocked) return blocked(played.blocked, played);
       if (played.failed) return failed(played.failed, played);
-      if (sends > 0 && !played.already && !allApplied(played.receipts ?? []))
-        return failed("the chain did not apply every action the step sent", played);
+      if (sends === 0 || played.already) return completed(played);
+      if (played.receipts.length < sends)
+        return failed(`the page sent ${played.receipts.length} of the step's ${sends} actions`, played);
+      if (!allApplied(played.receipts)) return failed("the chain did not apply every action the step sent", played);
       return completed(played);
     },
   };
@@ -6334,6 +6336,7 @@ async function foundFromInvite({ browser, owner, extraScreenshot }, shared) {
   browser.run(["open", shared.link]);
   const landing = await readUntil(() => browser.read(SHARED_LINK_TITLE), Boolean, PLAYABLE_WAIT_MS);
   extraScreenshot("invite-landing");
+  await answerStandingPrompts(browser, owner);
   browser.click(REHEARSAL_WORDS.startAdventure);
   const game = { chainId: shared.game.chainId, gameId: shared.game.gameId };
   await findHomeCardEntry(browser, owner, PLAYABLE_WAIT_MS, { card: FRONTIER.card, game });

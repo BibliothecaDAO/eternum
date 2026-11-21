@@ -51,6 +51,7 @@ import {
 } from "./client-playtest/integrated-gpu.mjs";
 import {
   continuePastTheDaySummary,
+  answerStandingPrompts,
   continueWithoutWallet,
   enterAsPlayer,
   signInIfSignedOut,
@@ -358,7 +359,14 @@ async function playRun(context) {
   const { cpuThrottle, game, iteration, owner, player, rendererMode, runDir, timeoutMs } = context;
   const label = `${player ? "player" : "spectator"}-${rendererMode}-${iteration}`;
   const { game: stepsGame, steps } = STEP_SETS[context.stepSet];
-  const record = { iteration, rendererMode, label, steps: [], expectedSteps: steps.map((step) => step.name) };
+  const record = {
+    iteration,
+    rendererMode,
+    label,
+    steps: [],
+    answeredPrompts: [],
+    expectedSteps: steps.map((step) => step.name),
+  };
   record.loadSamples = [loadavg()[0]];
   const sampler = setInterval(() => record.loadSamples.push(loadavg()[0]), LOAD_SAMPLE_MS);
   // A spectator starts with a cold cache, as a first visit does; a player keeps the profile that signed them in.
@@ -385,8 +393,11 @@ async function playRun(context) {
       for (const [index, step] of played.entries()) {
         owner.throwIfCancelled();
         const base = join(runDir, `${label}-${String(first + index + 1).padStart(2, "0")}-${step.name}`);
+        const stepPage = step.as === "ally" ? ally : page;
+        const answered = await answerStandingPrompts(stepPage.browser, owner);
+        if (answered.wallet || answered.alerts) record.answeredPrompts.push({ step: step.name, ...answered });
         const result = await playStep({
-          ...(step.as === "ally" ? ally : page),
+          ...stepPage,
           captureResults: context.captureResults,
           owner,
           step,
@@ -644,6 +655,7 @@ function writeRunEvidence({ browser, context, record }) {
     signIn: record.signIn ?? null,
     daySummary: record.daySummary ?? null,
     walletInvitation: record.walletInvitation ?? false,
+    answeredPrompts: record.answeredPrompts,
     workerErrors: record.workerErrors ?? [],
     steps: record.steps.map(({ summary }) => summary),
     url: record.url,

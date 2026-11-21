@@ -1,7 +1,10 @@
 import { JSDOM } from "jsdom";
 import { describe, expect, it, vi } from "vitest";
 
+import { ALERTS_POPUP } from "../../src/ui/design-system/kit/words";
 import {
+  ALERTS_PROMPT,
+  answerStandingPrompts,
   continueWithoutWallet,
   findHomeCardEntry,
   CONNECT_PLACE,
@@ -129,6 +132,32 @@ describe("the optional wallet invitation", () => {
     const browser = { read: (expression) => dom.window.eval(expression), run: vi.fn() };
     expect(await continueWithoutWallet(browser, { sleep: vi.fn() })).toBe(false);
     expect(browser.run).not.toHaveBeenCalled();
+    expect(dom.window.document.querySelector('[role="dialog"]')).not.toBeNull();
+  });
+});
+
+describe("the alerts popup over a clear map", () => {
+  const popup = `<section role="dialog" aria-label="${ALERTS_POPUP.title}"><button>Not now</button></section>`;
+  const pageWith = (html) => {
+    const dom = page(html);
+    const press = vi.fn((key) => {
+      expect(key).toBe("Escape");
+      dom.window.document.querySelector(ALERTS_PROMPT)?.remove();
+    });
+    return { dom, browser: { read: (expression) => dom.window.eval(expression), run: vi.fn(), press } };
+  };
+
+  it("is declined with Escape and reported as shown", async () => {
+    const { dom, browser } = pageWith(popup);
+    expect(await answerStandingPrompts(browser, { sleep: vi.fn() })).toEqual({ wallet: false, alerts: true });
+    expect(browser.press).toHaveBeenCalledOnce();
+    expect(dom.window.document.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it("leaves a page without standing prompts untouched", async () => {
+    const { dom, browser } = pageWith('<section role="dialog" aria-label="Army 1"></section>');
+    expect(await answerStandingPrompts(browser, { sleep: vi.fn() })).toEqual({ wallet: false, alerts: false });
+    expect(browser.press).not.toHaveBeenCalled();
     expect(dom.window.document.querySelector('[role="dialog"]')).not.toBeNull();
   });
 });

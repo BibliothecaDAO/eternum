@@ -1250,6 +1250,18 @@ describe("the Season 1 rehearsal", () => {
   const steps = STEP_SETS["s1-rehearsal"].steps;
   const step = (name) => steps.find((candidate) => candidate.name === name);
 
+  it("tells a step whose page sent nothing from one the chain refused", () => {
+    const refused = { hash: "0x1", confirmed: true, succeeded: false, rejection: "out of gas", applied: false };
+    expect(step("build-barracks").verify({ played: { receipts: [] } })).toMatchObject({
+      status: "failed",
+      reason: "the page sent 0 of the step's 1 actions",
+    });
+    expect(step("build-barracks").verify({ played: { receipts: [refused] } })).toMatchObject({
+      status: "failed",
+      reason: "the chain did not apply every action the step sent",
+    });
+  });
+
   it("presses and reads the app's own words", () => {
     expect(REHEARSAL_WORDS.startAdventure).toBe(SHARED_LINK_WORDS.play);
     expect(REHEARSAL_WORDS.copyLink).toBe(INVITE_WORDS.copy);

@@ -112,6 +112,26 @@ export async function findHomeCardEntry(browser, owner, timeoutMs, { card, game 
   }
 }
 
+/** The alerts popup as the page names it: words.ts ALERTS_POPUP.title, which player-entry.test.mjs holds it to. */
+export const ALERTS_PROMPT = '[role="dialog"][aria-label="Know when to come back"]';
+
+/**
+ * The prompts that stand over a player's page until answered, answered as a player who plays on does: the wallet
+ * invitation closed and the alerts popup declined. Returns which were shown.
+ */
+export async function answerStandingPrompts(browser, owner) {
+  return { wallet: await continueWithoutWallet(browser, owner), alerts: await declineAlerts(browser, owner) };
+}
+
+/** Declines the alerts popup over a player's clear map: Escape is its Not now. Returns whether it was shown. */
+async function declineAlerts(browser, owner) {
+  const shown = () => browser.read(`Boolean(document.querySelector(${JSON.stringify(ALERTS_PROMPT)}))`);
+  if (!shown()) return false;
+  browser.press("Escape");
+  await waitUntil(owner, () => !shown(), "the alerts popup did not close on Escape");
+  return true;
+}
+
 /** Closes the optional wallet invitation through its visible close button before playing the map. */
 export async function continueWithoutWallet(browser, owner) {
   const prompt = '[role="dialog"][aria-label="Your wallet"]';
