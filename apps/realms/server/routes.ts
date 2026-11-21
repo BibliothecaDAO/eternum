@@ -1,5 +1,5 @@
 import { handlePayoutIdentity } from "./payout-identity";
-import { presentsOperatorToken, SHARE_PATH, VISIT_RECORD_SECONDS } from "@realms-world/identity";
+import { presentsOperatorToken, SHARE_PATH } from "@realms-world/identity";
 
 import { handleAccountDeletion } from "./account-deletion";
 import type { IdentityAuth } from "./auth";
@@ -299,10 +299,6 @@ const sendCodeWithExpiry = async (request: Request, auth: IdentityAuth): Promise
   );
 };
 
-/**
- * Sessions always expose the current link, with no cached eligibility state. The app reads its session each time it
- * opens, so this is where the browser gets its id and where the account's visit, and the browser it was on, are written.
- */
 const accountSession = async (request: Request, auth: IdentityAuth, db: D1Database): Promise<Response> => {
   const response = await auth.handler(request);
   const body = await response.text();
@@ -311,14 +307,7 @@ const accountSession = async (request: Request, auth: IdentityAuth, db: D1Databa
   const browser = keepBrowser(request, headers);
   const user = (JSON.parse(body || "null") as { user?: { id?: unknown; realmsId?: unknown } } | null)?.user;
   if (response.ok && typeof user?.id === "string" && typeof user.realmsId === "string")
-    await db.batch([noteVisit(db, user.id, Date.now()), noteBrowser(db, user.realmsId, browser)]);
+    await noteBrowser(db, user.realmsId, browser).run();
   return new Response(body, { status: response.status, headers });
 };
 
-/** Writes the account's last visit, at most once per VISIT_RECORD_SECONDS so a page load costs no write most times. */
-const noteVisit = (db: D1Database, userId: string, now: number) =>
-  db
-    .prepare(
-      `UPDATE "user" SET "lastSeenAt" = ?1 WHERE "id" = ?2 AND ("lastSeenAt" IS NULL OR "lastSeenAt" <= ?1 - ?3)`,
-    )
-    .bind(now, userId, VISIT_RECORD_SECONDS * 1000);
