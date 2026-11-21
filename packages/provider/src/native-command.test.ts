@@ -42,7 +42,7 @@ describe("compiled native commands", () => {
   );
   it("preserves command IDs on both sides of retired holes", () => {
     expect(encodeNativeCommand(abi, { kind: "LevelUp", value: 7 })).toEqual(["6", "7"]);
-    expect(encodeNativeCommand(abi, { kind: "SettleBlitzRoster", value: undefined })).toEqual(["7"]);
+    expect(encodeNativeCommand(abi, { kind: "ProvisionRealm", value: 9 })).toEqual(["8", "9"]);
     expect(encodeNativeCommand(abi, { kind: "MarkGameSettled", value: undefined })).toEqual(["58"]);
   });
   it("rejects unknown variants and missing or extra named fields", () => {

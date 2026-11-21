@@ -57,7 +57,6 @@ const calendar = {
 };
 const game = gameRegistryRow({
   name: "0x46526f6e74696572",
-  preset_id: 5,
   seed: "42",
   start_main_at: String(start),
   scheduled_end_at: String(start + 1000000),

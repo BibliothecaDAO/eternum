@@ -14,13 +14,15 @@ const calendar = {
   dayUnitSeconds: 14_400,
 };
 const input = (timestamp: number): DirectoryInput => {
-  const games = [
-    { game_id: 1, preset_id: 5, settled: true },
-    { game_id: 2, preset_id: 2, settled: false },
-    { game_id: 3, preset_id: 5, settled: false },
-  ].map((game) =>
+  const dayUnits = [
+    { game_id: 1, settled: true, day_unit_seconds: 14_400 },
+    { game_id: 2, settled: false, day_unit_seconds: 0 },
+    { game_id: 3, settled: false, day_unit_seconds: 14_400 },
+  ];
+  const games = dayUnits.map(({ game_id, settled }) =>
     gameRegistryRow({
-      ...game,
+      game_id,
+      settled,
       name: "0x536561736f6e",
       start_settling_at: String(start - 100),
       start_main_at: String(start),
@@ -31,7 +33,7 @@ const input = (timestamp: number): DirectoryInput => {
   );
   const rows: Record<string, Record<string, unknown>[]> = {
     GameRegistry: games,
-    SliceRules: games.map((game) => ({ game_id: game.game_id, day_unit_seconds: game.preset_id === 5 ? 14_400 : 0 })),
+    SliceRules: dayUnits.map(({ game_id, day_unit_seconds }) => ({ game_id, day_unit_seconds })),
     SettlementRules: games.map((game) => ({
       game_id: game.game_id,
       registration_limit: 0,
@@ -105,7 +107,6 @@ it("folds the extension row and preserves the added days through a checkpoint re
   const approved = {
     chainId: "0x50524f44554354494f4e5f31386530376435323330633539393933",
     name: "frontier-1792575960",
-    presetId: 5,
     start: 1792575960,
     oldEnd: 1793151960,
     end: 1793439960,
@@ -118,7 +119,6 @@ it("folds the extension row and preserves the added days through a checkpoint re
   const { fold, native, decoder } = setup();
   const game = {
     name: shortString.encodeShortString(approved.name),
-    preset_id: approved.presetId,
     start_main_at: String(approved.start),
     start_settling_at: String(approved.start),
     scheduled_end_at: String(approved.oldEnd),

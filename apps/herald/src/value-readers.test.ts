@@ -73,7 +73,6 @@ async function endedSeason() {
   apply([
     rulesEvent("1", "14400"),
     gameRegistryEvent({
-      preset_id: 6,
       start_settling_at: String(season.start),
       start_main_at: String(season.start),
       scheduled_end_at: String(season.end),

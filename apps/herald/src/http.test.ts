@@ -42,7 +42,6 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
             value: gameRegistryRow({
               game_id: 7,
               name: "0x74657374",
-              preset_id: 2,
               start_settling_at: "0x1",
               start_main_at: "0x2",
               scheduled_end_at: "0x3",
@@ -316,22 +315,6 @@ it("derives directory phases from advancing chain time with no registry write", 
   expect(await status()).toBe("Live");
   timestamp = 3;
   expect(await status()).toBe("Ended");
-});
-
-it("keeps an incomplete roster in registration beyond its scheduled end", async () => {
-  const handler = createHeraldRequestHandler({
-    ...httpState,
-    fold: {
-      ...httpState.fold,
-      modelRows: (model) =>
-        httpState.fold
-          .modelRows(model)
-          .map((row) => (model === "GameRegistry" ? { ...row, value: { ...row.value, ready: false } } : row)),
-    },
-  });
-  const response = await handler(new Request("http://herald/games"));
-  expect(response.status).toBe(200);
-  expect((await response.json()).games[0]).toMatchObject({ ready: false, status: "Registration" });
 });
 
 it("caches directory responses and shared row reads within one confirmed block", async () => {
