@@ -1,6 +1,5 @@
 import { nativeFragmentConstants, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
-import { nativeReleaseConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
 
 import { wire, type LabCommand, type LabFact, type LabScenario } from "./lab-chain";
 import { armySpent, spireScenario } from "./spire-scenario";
@@ -53,19 +52,7 @@ const sealBought = (chain: NativeFactStore, player: string, now: number): LabFac
 };
 
 export const holdFragments = (store: NativeFactStore, player: string, balance: bigint) => {
-  const release = store.require("GameRelease", { game_id: 1 });
-  store.applyFacts([
-    {
-      model: "GameRelease",
-      key: store.wireKeyOf("GameRelease", release)!,
-      value: wire({
-        ...release,
-        release_id: nativeReleaseConstants.SEAL_RELEASE,
-        created_release_id: nativeReleaseConstants.SEAL_RELEASE,
-      }),
-    },
-    fragmentsHeld(player, balance),
-  ] as never);
+  store.applyFacts([fragmentsHeld(player, balance)] as never);
 };
 
 export const fragmentsSpent = (chain: NativeFactStore, player: string, fragments: bigint): LabFact => {
