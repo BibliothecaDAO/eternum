@@ -26,7 +26,6 @@ export function presetLaunch(
   preset: ReturnType<typeof presetRelease>,
   gameId: number,
   timestamp: number,
-  roster: number[] = [],
 ) {
   const game = String(gameId);
   const overrides = {
@@ -36,13 +35,9 @@ export function presetLaunch(
     map_center_offset: 0,
   };
   return [
-    ...(roster.length
-      ? [rowEvent("BlitzRoster", [game], { players: roster.map((account) => ({ account, wallet: account })) })]
-      : []),
     gameRegistryEvent({
       game_id: gameId,
       name: "0x706172697479",
-      preset_id: preset.presetId,
       start_settling_at: String(timestamp),
       start_main_at: String(timestamp),
       scheduled_end_at: String(timestamp + PRESET_FIXTURE_DURATION_SECONDS),
