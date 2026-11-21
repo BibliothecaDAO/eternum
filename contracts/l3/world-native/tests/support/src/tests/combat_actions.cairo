@@ -49,7 +49,9 @@ pub fn into_deep(d: super::Deployment, home: ResourceKey, target: ResourceKey, a
     let center = crate::deep::center(crate::logic::settlement::spacing());
     move_to(d, attacker, center);
     move_to(d, defender, crate::geometry::neighbor(center, 0));
-    let context = crate::commands::ExecutionContext { timestamp: super::play_fixture::FIXTURE_START, ..crate::tests::context(d.games, 3) };
+    let context = crate::commands::ExecutionContext {
+        timestamp: super::play_fixture::FIXTURE_START, ..crate::tests::context(d.games, 3),
+    };
     snforge_std::interact_with_state(
         d.games,
         || {

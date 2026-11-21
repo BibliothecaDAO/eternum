@@ -371,7 +371,13 @@ fn all_real_domain_verdicts_are_root_independent(index: u32, start: u64) {
     assert_eq!(refused, !release_enables(index), "route {}", index);
     let settled = play_fixture::gameplay_snapshot(d.games);
     for root in start..start + 8 {
-        assert_eq!(verdict(d.games, action, root.into(), play_fixture::FIXTURE_START), expected, "route {} root {}", index, root);
+        assert_eq!(
+            verdict(d.games, action, root.into(), play_fixture::FIXTURE_START),
+            expected,
+            "route {} root {}",
+            index,
+            root,
+        );
         assert_eq!(play_fixture::gameplay_snapshot(d.games), settled);
     }
 }
