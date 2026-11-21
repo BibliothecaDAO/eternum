@@ -1,10 +1,5 @@
 import { accountJoinErrors } from "@bibliothecadao/eternum/realms-account";
-import {
-  officialChain,
-  readRegisteredShard,
-  serviceFailure,
-  type RegisteredShard,
-} from "@realms-world/value-ledger";
+import { officialChain, readRegisteredShard, serviceFailure, type RegisteredShard } from "@realms-world/value-ledger";
 import { DurableObject } from "cloudflare:workers";
 import { Effect, Layer, Semaphore } from "effect";
 import { decodeLaunchEnv, type LaunchEnv } from "./env";

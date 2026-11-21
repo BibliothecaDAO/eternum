@@ -430,8 +430,7 @@ async function forwardRequest(
       );
       // Retrying the same accepted transaction uses the same root.
       if (felt(accountClass) !== felt(identity.accountClassHash)) return transactionRefused(call, "validation");
-      if (!admitsNonce(felt(play.nonce), felt(nonce)))
-        return transactionRefused(call, "nonce");
+      if (!admitsNonce(felt(play.nonce), felt(nonce))) return transactionRefused(call, "nonce");
       assertBeforeForward(preparation);
       stage = "stamp";
       const stamp = stamper.stamp(play);

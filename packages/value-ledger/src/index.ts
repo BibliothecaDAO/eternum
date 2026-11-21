@@ -28,12 +28,7 @@ export { computeSeasonTop } from "./season-top";
 export { readFrontierFunding, frontierTreasuryAmount, type FrontierFundingTerms } from "./frontier-funding";
 
 export { ServiceResponseFailure, serviceError, serviceFailure, serviceResponseFailure } from "./service-error";
-export {
-  LAUNCHER_LABEL,
-  RELAY_LABEL,
-  launcherAccountAddress,
-  relayAccountAddress,
-} from "./shard-accounts";
+export { LAUNCHER_LABEL, RELAY_LABEL, launcherAccountAddress, relayAccountAddress } from "./shard-accounts";
 
 export { cosigningHash, decodeCosignRequest, decodeCosigner } from "./cosigning";
 export type { CosigningDomain, PayoutTerms, SettlementTerms, CosignRequest, Cosignature } from "./cosigning";

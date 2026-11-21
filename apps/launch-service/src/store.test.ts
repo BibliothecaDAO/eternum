@@ -196,10 +196,13 @@ test("a completed game, paid or free, cannot be deleted out of the directory", a
   expect(await store.delete("madara.blitz", "blitz-20261016-1400-1")).toBe(false);
   expect(await store.delete("madara.blitz", "free-game")).toBe(false);
   expect(await store.playerDirectoryGames()).toEqual([
-    { chainId: TEST_CHAIN, games: [
-      { gameId: 7, slotId: 3 },
-      { gameId: 9, slotId: null },
-    ] },
+    {
+      chainId: TEST_CHAIN,
+      games: [
+        { gameId: 7, slotId: 3 },
+        { gameId: 9, slotId: null },
+      ],
+    },
   ]);
 });
 
