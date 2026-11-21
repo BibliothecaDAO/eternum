@@ -1,6 +1,7 @@
 use snforge_std::{EventSpyTrait, EventsFilterTrait, interact_with_state, spy_events};
 use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use world_test_support::tests::Deployment;
+use world_test_support::tests::play_fixture::{FIXTURE_SEASON_SECONDS, FIXTURE_START};
 use world_test_support::tests::resource_commands::execute_in_game;
 use crate::commands::Command;
 use crate::deep::DeepShare;
@@ -15,7 +16,7 @@ fn stage() -> u32 {
 }
 
 fn setup() -> (Deployment, u32) {
-    super::aspects::setup_aspect_preset(5, super::banes::definition())
+    super::aspects::setup_aspects(5)
 }
 
 fn race(game_id: u32) -> IRaceLibraryDispatcher {
@@ -46,18 +47,17 @@ fn height(d: Deployment, game_id: u32, aspect: u8) -> u32 {
 
 #[test]
 fn recorded_second_wind_multiplies_mist_tide_and_changes_real_exploration_refills() {
-    let preset = super::banes::definition();
     let stamina = crate::balance::rules::TROOP_STAMINA_CONFIG;
     let maximum: u64 = stamina.stamina_knight_max.into();
     let cost: u64 = stamina.stamina_explore_stamina_cost.into();
     let span = 2 * crate::balance::rules::TICK_CONFIG.armies_tick_in_seconds;
     let full: u64 = 2 * stamina.stamina_gain_per_tick.into();
-    let (d, game_id) = super::aspects::setup_aspect_preset(5, preset);
+    let (d, game_id) = setup();
     let home = ResourceKey { game_id, entity_id: found(d, game_id, 1) };
-    super::banes::train(d, home, 360);
+    super::banes::train(d, home, FIXTURE_START);
     let shares = array![DeepShare { home: home.entity_id, troops: 1 }].span();
-    pay(d, game_id, DEEP_FOUNDATION, 1, shares, stage(), 480);
-    pay(d, game_id, DEEP_FOUNDATION, 1, shares, stage(), 600);
+    pay(d, game_id, DEEP_FOUNDATION, 1, shares, stage(), FIXTURE_START + 120);
+    pay(d, game_id, DEEP_FOUNDATION, 1, shares, stage(), FIXTURE_START + 240);
     let tomorrow = world_test_support::tests::registrar::day_start(d, game_id, 1);
     assert!(
         world_test_support::tests::play_fixture::play(
@@ -171,7 +171,7 @@ fn foundation_splits_raw_glory_and_height_by_troops_while_altar_pays_only_glory(
     let shares = array![DeepShare { home: first.entity_id, troops: 1 }, DeepShare { home: second.entity_id, troops: 3 }]
         .span();
     let mut events = spy_events();
-    pay(d, game_id, DEEP_FOUNDATION, 1, shares, 5, 480);
+    pay(d, game_id, DEEP_FOUNDATION, 1, shares, 5, FIXTURE_START + 120);
     let quarter = 5 * RESOURCE_PRECISION / 4;
     let emitted = events.get_events();
     assert_eq!(emitted.events.len(), 3);
@@ -184,7 +184,7 @@ fn foundation_splits_raw_glory_and_height_by_troops_while_altar_pays_only_glory(
     assert_eq!(member(d, first), RaceMember { glory: quarter, contribution: quarter });
     assert_eq!(member(d, second), RaceMember { glory: quarter * 3, contribution: quarter * 3 });
     assert_eq!(height(d, game_id, 1), 5);
-    pay(d, game_id, DEEP_ALTAR, 1, shares, 5, 480);
+    pay(d, game_id, DEEP_ALTAR, 1, shares, 5, FIXTURE_START + 120);
     assert_eq!(member(d, first), RaceMember { glory: quarter * 2, contribution: quarter });
     assert_eq!(member(d, second), RaceMember { glory: quarter * 6, contribution: quarter * 3 });
     assert_eq!(height(d, game_id, 1), 5);
@@ -195,11 +195,11 @@ fn foundation_splits_raw_glory_and_height_by_troops_while_altar_pays_only_glory(
 fn a_real_team_bane_blocks_height_but_not_glory_until_its_quest_is_completed() {
     let (d, game_id) = setup();
     let home = ResourceKey { game_id, entity_id: found(d, game_id, 2) };
-    super::banes::train(d, home, 360);
+    super::banes::train(d, home, FIXTURE_START);
     let shares = array![DeepShare { home: home.entity_id, troops: 1 }].span();
-    pay(d, game_id, DEEP_FOUNDATION, 2, shares, 5, 480);
-    super::banes::altar(d, game_id, 1, 600);
-    super::banes::altar(d, game_id, 1, 720);
+    pay(d, game_id, DEEP_FOUNDATION, 2, shares, 5, FIXTURE_START + 120);
+    super::banes::altar(d, game_id, 1, FIXTURE_START + 240);
+    super::banes::altar(d, game_id, 1, FIXTURE_START + 360);
     let tomorrow = world_test_support::tests::registrar::day_start(d, game_id, 1);
     pay(d, game_id, DEEP_FOUNDATION, 2, shares, 5, tomorrow + 120);
     assert_eq!(height(d, game_id, 2), 5);
@@ -218,7 +218,7 @@ fn four_stages_schedule_triumphs_and_the_fifth_finishes_at_a_tick_inside_the_nex
     let step = stage() / 4;
     let paid: u128 = step.into() * RESOURCE_PRECISION;
     for tick in 1_u64..20 {
-        pay(d, game_id, DEEP_FOUNDATION, 1, shares, step, 360 + tick * 120);
+        pay(d, game_id, DEEP_FOUNDATION, 1, shares, step, FIXTURE_START + tick * 120);
     }
     assert_eq!(height(d, game_id, 1), 19 * step);
     interact_with_state(
@@ -241,7 +241,7 @@ fn four_stages_schedule_triumphs_and_the_fifth_finishes_at_a_tick_inside_the_nex
         || {
             let game = crate::logic::game::game(game_id);
             assert_eq!(game.end_at, finish);
-            assert_eq!(game.scheduled_end_at, 288360);
+            assert_eq!(game.scheduled_end_at, FIXTURE_START + FIXTURE_SEASON_SECONDS);
             assert_eq!(
                 race(game_id).race_result(game_id),
                 Some(
@@ -265,7 +265,15 @@ fn four_stages_schedule_triumphs_and_the_fifth_finishes_at_a_tick_inside_the_nex
 fn a_stage_on_the_last_tick_does_not_schedule_a_triumph_outside_the_season() {
     let (d, game_id) = setup();
     let home = found(d, game_id, 1);
-    pay(d, game_id, DEEP_FOUNDATION, 1, array![DeepShare { home, troops: 1 }].span(), stage(), 288360);
+    pay(
+        d,
+        game_id,
+        DEEP_FOUNDATION,
+        1,
+        array![DeepShare { home, troops: 1 }].span(),
+        stage(),
+        FIXTURE_START + FIXTURE_SEASON_SECONDS,
+    );
     assert_eq!(height(d, game_id, 1), stage());
     interact_with_state(
         d.games, || {
@@ -277,17 +285,25 @@ fn a_stage_on_the_last_tick_does_not_schedule_a_triumph_outside_the_season() {
 #[test]
 fn recorded_clear_mist_changes_real_reveals_only_on_its_day() {
     for spires in array![false, true] {
-        let (d, game_id) = super::aspects::setup_aspect_preset(5, super::banes::definition());
+        let (d, game_id) = setup();
         let home = ResourceKey { game_id, entity_id: found(d, game_id, 1) };
-        super::banes::train(d, home, 360);
+        super::banes::train(d, home, FIXTURE_START);
         if spires {
-            world_test_support::tests::registrar::learn_spire_lore(d, home, 360);
+            world_test_support::tests::registrar::learn_spire_lore(d, home, FIXTURE_START);
         }
-        pay(d, game_id, DEEP_FOUNDATION, 1, array![DeepShare { home: home.entity_id, troops: 1 }].span(), stage(), 480);
+        pay(
+            d,
+            game_id,
+            DEEP_FOUNDATION,
+            1,
+            array![DeepShare { home: home.entity_id, troops: 1 }].span(),
+            stage(),
+            FIXTURE_START + 120,
+        );
         let (root, misted_site) = clear_mist_root(game_id, home_discovery(d, home), spires);
         for day in 0_u64..3 {
             let now = if day == 0 {
-                600
+                FIXTURE_START + 240
             } else {
                 world_test_support::tests::registrar::day_start(d, game_id, day)
             };
@@ -373,10 +389,9 @@ fn clear_mist_root(game_id: u32, rules: crate::expeditions::FrontierDiscoveryRul
 #[test]
 fn blood_and_pale_moons_project_each_battle_and_preserve_base_losses() {
     for (blood, pale) in array![(true, false), (false, true), (true, true)] {
-        let mut preset = super::banes::definition();
-        let (d, game_id) = super::aspects::setup_aspect_preset(5, preset);
+        let (d, game_id) = setup();
         let home = ResourceKey { game_id, entity_id: found(d, game_id, 1) };
-        super::banes::train(d, home, 360);
+        super::banes::train(d, home, FIXTURE_START);
         if pale {
             for tick in 1_u64..4 {
                 pay(
@@ -386,7 +401,7 @@ fn blood_and_pale_moons_project_each_battle_and_preserve_base_losses() {
                     1,
                     array![DeepShare { home: home.entity_id, troops: 1 }].span(),
                     stage(),
-                    360 + tick * 120,
+                    FIXTURE_START + tick * 120,
                 );
             }
         }
@@ -512,10 +527,9 @@ fn recorded_site_battle(ref events: snforge_std::EventSpy, d: Deployment, site: 
 }
 
 fn spoils_clear(category: u8) {
-    let mut preset = super::banes::definition();
-    let (d, game_id) = super::aspects::setup_aspect_preset(5, preset);
+    let (d, game_id) = setup();
     let home = ResourceKey { game_id, entity_id: found(d, game_id, 1) };
-    super::banes::train(d, home, 360);
+    super::banes::train(d, home, FIXTURE_START);
     for tick in 1_u64..5 {
         pay(
             d,
@@ -524,7 +538,7 @@ fn spoils_clear(category: u8) {
             1,
             array![DeepShare { home: home.entity_id, troops: 1 }].span(),
             stage(),
-            360 + tick * 120,
+            FIXTURE_START + tick * 120,
         );
     }
     let now = world_test_support::tests::registrar::day_start(d, game_id, 1);
@@ -549,7 +563,7 @@ fn spoils_clear(category: u8) {
         ),
     };
     let units = super::army_activity::army(d, key).troops.count / RESOURCE_PRECISION;
-    let stamina = preset.rules.troop_stamina_config;
+    let stamina = crate::balance::rules::TROOP_STAMINA_CONFIG;
     assert_eq!(stamina.stamina_explore_fish_cost, 0);
     world_test_support::tests::resource_commands::grant(
         d, home, crate::resources::WHEAT, units * stamina.stamina_explore_wheat_cost.into(),

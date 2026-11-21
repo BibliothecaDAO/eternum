@@ -105,7 +105,7 @@ fn held_realm_settlement_uses_catalogue_traits_and_cannot_be_repeated() {
     let command = crate::commands::Command::SettleSeason(
         crate::realms::SettleSeason { selected_realm: None, order: None },
     );
-    assert!(super::resource_commands::execute_in_game(d, game_id, command, 360));
+    assert!(super::resource_commands::execute_in_game(d, game_id, command, super::play_fixture::FIXTURE_START));
     let home = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
     assert_eq!(ledger(d).settled_realm(game_id, 711).unwrap(), home);
     snforge_std::interact_with_state(
@@ -117,7 +117,7 @@ fn held_realm_settlement_uses_catalogue_traits_and_cannot_be_repeated() {
             assert_eq!(record.owner, d.actor);
         },
     );
-    assert!(!super::resource_commands::execute_in_game(d, game_id, command, 360));
+    assert!(!super::resource_commands::execute_in_game(d, game_id, command, super::play_fixture::FIXTURE_START));
     let other = super::bind_authority(d);
     start_cheat_caller_address(d.games, authority());
     let other_key = EntryKey { game_id, owner: other.actor };
@@ -126,8 +126,8 @@ fn held_realm_settlement_uses_catalogue_traits_and_cannot_be_repeated() {
     let free = crate::commands::Command::SettleSeason(
         crate::realms::SettleSeason { selected_realm: None, order: Some(super::registrar::aspect_order(1)) },
     );
-    assert!(!super::resource_commands::execute_in_game(other, game_id, command, 360));
-    assert!(super::resource_commands::execute_in_game(other, game_id, free, 360));
+    assert!(!super::resource_commands::execute_in_game(other, game_id, command, super::play_fixture::FIXTURE_START));
+    assert!(super::resource_commands::execute_in_game(other, game_id, free, super::play_fixture::FIXTURE_START));
     assert_eq!(ledger(d).settled_realm(game_id, 711).unwrap(), home);
 }
 
@@ -159,8 +159,10 @@ fn resume_reserved_realm_after_a_second_owner_attempts_entry(alternative: Option
             crate::realms::SettleSeason { selected_realm: None, order: Some(super::registrar::aspect_order(1)) },
         )
     };
-    assert!(super::resource_commands::execute_in_game(buyer, game_id, buyer_command, 360));
-    assert!(super::resource_commands::execute_in_game(d, game_id, held_command, 360));
+    assert!(
+        super::resource_commands::execute_in_game(buyer, game_id, buyer_command, super::play_fixture::FIXTURE_START),
+    );
+    assert!(super::resource_commands::execute_in_game(d, game_id, held_command, super::play_fixture::FIXTURE_START));
     let first_home = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
     let second_home = snforge_std::interact_with_state(
         d.games, || crate::entity_ids::home_for_actor(game_id, buyer.actor),
@@ -193,7 +195,7 @@ fn a_free_settlement_attaches_only_the_chosen_held_realm_once() {
     let command = crate::commands::Command::SettleSeason(
         crate::realms::SettleSeason { selected_realm: None, order: Some(super::registrar::aspect_order(1)) },
     );
-    assert!(super::resource_commands::execute_in_game(d, game_id, command, 360));
+    assert!(super::resource_commands::execute_in_game(d, game_id, command, super::play_fixture::FIXTURE_START));
     let home = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
     set_operator(d, authority());
     start_cheat_caller_address(d.games, authority());

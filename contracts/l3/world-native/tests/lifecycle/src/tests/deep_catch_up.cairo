@@ -9,15 +9,14 @@ use super::army_activity::player;
 use super::deep_sites::{applied, beside, deployed, fight, join, wound_beast};
 
 const TICK: u64 = 120;
-const START: u64 = 360;
-const EMPIRE_CAP: u128 = 60000;
-const SETTLEMENT_CAP: u128 = 3000;
+const START: u64 = world_test_support::tests::play_fixture::FIXTURE_START;
 const ONE_TICK_OF_POISON: u128 = 200;
 const RINGS_OPEN: u32 = 240;
 const MAX_EVENTS: u32 = 1000;
 const EXECUTE_MAX_SIERRA_GAS: u128 = 1100000000;
 const CEILING_EVENTS: u32 = 900;
 const CEILING_GAS: u128 = 880000000;
+const TURN_TICKS: u64 = 30;
 
 #[derive(Copy, Drop)]
 struct Shape {
@@ -36,10 +35,12 @@ struct Cost {
     refusal: ByteArray,
 }
 
-fn half_day_preset() -> crate::presets::PresetDefinition {
-    let mut preset = super::deep_sites::preset();
-    preset.rules.day_unit_seconds = 43200;
-    preset
+fn empire_cap() -> u128 {
+    crate::balance::rules::TROOP_LIMIT_CONFIG.empire_deployment_cap.into()
+}
+
+fn settlement_cap() -> u128 {
+    crate::balance::rules::TROOP_LIMIT_CONFIG.settlement_deployment_cap.into()
 }
 
 fn full_race() -> u32 {
@@ -48,26 +49,30 @@ fn full_race() -> u32 {
 
 fn every_site_at_the_empire_cap() -> Shape {
     Shape {
-        sites: 24, guards_per_site: crate::rules::DEEP_GUARD_SLOTS, troops: EMPIRE_CAP, vitriol: true, slotted: true,
+        sites: 24, guards_per_site: crate::rules::DEEP_GUARD_SLOTS, troops: empire_cap(), vitriol: true, slotted: true,
     }
 }
 
 fn every_site_held_by_two_settlement_armies() -> Shape {
-    Shape { sites: 24, guards_per_site: 2, troops: SETTLEMENT_CAP, vitriol: false, slotted: true }
+    Shape { sites: 24, guards_per_site: 2, troops: settlement_cap(), vitriol: false, slotted: true }
 }
 
 fn one_guard_on_every_site() -> Shape {
-    Shape { sites: 24, guards_per_site: 1, troops: EMPIRE_CAP, vitriol: true, slotted: false }
+    Shape { sites: 24, guards_per_site: 1, troops: empire_cap(), vitriol: true, slotted: false }
+}
+
+fn guards_dying_on_tick(tick: u128) -> Shape {
+    Shape { troops: tick * crate::oaths::VITRIOL_LOSS_PER_TICK.into(), ..one_guard_on_every_site() }
 }
 
 fn the_rehearsal_guard() -> Shape {
-    Shape { sites: 1, guards_per_site: 1, troops: SETTLEMENT_CAP, vitriol: false, slotted: false }
+    Shape { sites: 1, guards_per_site: 1, troops: settlement_cap(), vitriol: false, slotted: false }
 }
 
 fn held_deep(
     seed: felt252, height_left: u32, shape: Shape,
 ) -> (Deployment, u32, Span<ExplorerKey>, Deployment, Span<u64>) {
-    let held = held_deep_in(seed, half_day_preset(), shape);
+    let held = held_deep_in(long_first_day(seed), shape);
     let (d, game_id, _, _, _) = held;
     interact_with_state(
         d.games, || crate::state::write().season.aspect_heights.write((game_id, 1), full_race() - height_left),
@@ -78,18 +83,38 @@ fn held_deep(
     held
 }
 
+fn long_first_day(seed: felt252) -> felt252 {
+    let mut seed = seed;
+    while first_day_end(seed) <= START + 610 * TICK {
+        seed += 1;
+    }
+    seed
+}
+
+fn first_day_end(seed: felt252) -> u64 {
+    let end = START + world_test_support::tests::play_fixture::FIXTURE_SEASON_SECONDS;
+    let game = crate::game::GameRegistry {
+        name: 0,
+        family: crate::game::FRONTIER,
+        settled: false,
+        dev_mode_on: false,
+        start_settling_at: START,
+        start_main_at: START,
+        end_at: end,
+        seed,
+        scheduled_end_at: end,
+    };
+    crate::days::day_at_index(game, crate::balance::rules::SWITCHES.day_unit_seconds, 0).end
+}
+
 fn held_deep_with_a_day_turn(
     seed: felt252, shape: Shape,
 ) -> (Deployment, u32, Span<ExplorerKey>, Deployment, Span<u64>) {
-    let mut preset = half_day_preset();
-    preset.rules.day_unit_seconds = 21600;
-    held_deep_in(seed, preset, shape)
+    held_deep_in(seed, shape)
 }
 
-fn held_deep_in(
-    seed: felt252, preset: crate::presets::PresetDefinition, shape: Shape,
-) -> (Deployment, u32, Span<ExplorerKey>, Deployment, Span<u64>) {
-    let (d, game_id) = super::aspects::setup_aspect_preset(seed, preset);
+fn held_deep_in(seed: felt252, shape: Shape) -> (Deployment, u32, Span<ExplorerKey>, Deployment, Span<u64>) {
+    let (d, game_id) = super::aspects::setup_aspects(seed);
     assert!(shape.sites <= site_count(d, game_id), "more sites than the Deep holds");
     let first = site_at(d, game_id, 0);
     let mut holders = array![];
@@ -332,11 +357,11 @@ fn digest(d: Deployment, game_id: u32, guards: Span<ExplorerKey>, homes: Span<u6
     )
 }
 
-const CUT_GAP_STATE: felt252 = 3007868916305821502283106329935686358287556694239829770008322173291862796105;
-const CAPPED_GAP_STATE: felt252 = 2809098642477545538659705605747216919514768209002509098999892177337347186436;
-const DEATH_GAP_STATE: felt252 = 114898866988607930557507626944480850105944118127853216210579847523027783797;
-const TURNED_STATE: felt252 = 2993990728256589821611862872560935156247228044426871219814628881119209332766;
-const WON_GAP_STATE: felt252 = 1894984870667674842407942761077474833752027671329238320471129369066097481606;
+const CUT_GAP_STATE: felt252 = 1673731733158721546613794772649270542849283164678128925706615378988613616369;
+const CAPPED_GAP_STATE: felt252 = 2376911865723451719479719704514318580604827670827512065391711585911566667029;
+const DEATH_GAP_STATE: felt252 = 2440879224849652595673558022242804693394882308903186369631140244771463531365;
+const TURNED_STATE: felt252 = 505830386639354082581926203778591038233508464900890755066067638461591003639;
+const WON_GAP_STATE: felt252 = 1897419826473698187294239919237326959646005435595192003963819847202845662719;
 
 fn cap(guards: u64) -> u64 {
     crate::rules::DEEP_CATCH_UP_GUARD_TICKS / guards
@@ -497,18 +522,21 @@ fn a_play_after_the_turn_rolls_one_full_ring_under_the_ceiling() {
 }
 
 #[test]
-fn an_attack_on_a_ring_not_yet_rolled_is_refused_then_lands_once_the_next_play_rolls_it() {
+fn an_attack_on_a_ring_not_yet_rolled_is_refused_until_the_play_that_rolls_it() {
     let (d, game_id, guards, owner, _) = held_deep_with_a_day_turn(18, one_guard_on_every_site());
-    let end = to_the_day_turn(d, game_id, guards, 80);
+    let end = to_the_day_turn(d, game_id, guards, TURN_TICKS);
     let last_ring = site_at(d, game_id, 3 * crate::rules::DEEP_RING_SITES);
     let attacker = fresh_army(d, *guards.at(0), 9910001, end, last_ring);
     let refused = measured(owner, game_id, fight(attacker, last_ring), end + TICK);
     assert_eq!(refused.refusal, "Deep is settling, try again");
     assert_eq!(rolled_rings(d, game_id), 0);
-    let landed = measured(owner, game_id, fight(attacker, last_ring), end + TICK + 1);
+    let still_refused = measured(owner, game_id, fight(attacker, last_ring), end + TICK + 1);
+    assert_eq!(still_refused.refusal, "Deep is settling, try again");
+    assert_eq!(rolled_rings(d, game_id), 2);
+    let landed = measured(owner, game_id, fight(attacker, last_ring), end + TICK + 2);
     assert_eq!(landed.refusal, "");
     assert_eq!(rolled_rings(d, game_id), 4);
-    assert_eq!(landed.paid_ticks, (end + TICK + 1) / TICK);
+    assert_eq!(landed.paid_ticks, (end + TICK + 2) / TICK);
 }
 
 #[test]
@@ -522,26 +550,30 @@ fn an_attack_on_a_rolled_ring_waits_while_later_rings_roll_and_keeps_the_ring_it
     assert_eq!(rolled_rings(d, game_id), 1);
 }
 
+fn roll_the_turn(d: Deployment, game_id: u32, owner: Deployment, home: u64, end: u64) {
+    measured(owner, game_id, nudge(home), end + TICK);
+    assert_eq!(rolled_rings(d, game_id), 0);
+    measured(owner, game_id, nudge(home), end + TICK + 1);
+    assert_eq!(rolled_rings(d, game_id), 2);
+    measured(owner, game_id, nudge(home), end + TICK + 2);
+    assert_eq!(rolled_rings(d, game_id), 4);
+}
+
 #[test]
 fn a_turn_rolled_over_two_plays_ends_in_the_turned_state() {
     let (d, game_id, guards, owner, homes) = held_deep_with_a_day_turn(20, one_guard_on_every_site());
-    let end = to_the_day_turn(d, game_id, guards, 80);
-    measured(owner, game_id, nudge(*homes.at(0)), end + TICK);
-    assert_eq!(rolled_rings(d, game_id), 0);
-    measured(owner, game_id, nudge(*homes.at(0)), end + TICK + 1);
-    assert_eq!(rolled_rings(d, game_id), 4);
+    let end = to_the_day_turn(d, game_id, guards, TURN_TICKS);
+    roll_the_turn(d, game_id, owner, *homes.at(0), end);
     assert_eq!(turn_digest(d, game_id, guards, homes), TURNED_STATE);
 }
 
 #[test]
 fn a_turn_paid_over_three_plays_ends_in_the_turned_state() {
     let (d, game_id, guards, owner, homes) = held_deep_with_a_day_turn(20, one_guard_on_every_site());
-    let end = to_the_day_turn(d, game_id, guards, 80);
-    measured(owner, game_id, nudge(*homes.at(0)), end - 40 * TICK);
-    measured(owner, game_id, nudge(*homes.at(0)), end + TICK);
-    assert_eq!(rolled_rings(d, game_id), 0);
-    measured(owner, game_id, nudge(*homes.at(0)), end + TICK + 1);
-    assert_eq!(rolled_rings(d, game_id), 4);
+    let end = to_the_day_turn(d, game_id, guards, TURN_TICKS);
+    measured(owner, game_id, nudge(*homes.at(0)), end - 20 * TICK);
+    measured(owner, game_id, nudge(*homes.at(0)), end - 10 * TICK);
+    roll_the_turn(d, game_id, owner, *homes.at(0), end);
     assert_eq!(turn_digest(d, game_id, guards, homes), TURNED_STATE);
 }
 
@@ -624,13 +656,13 @@ fn a_gap_cut_into_seven_plays_ends_in_the_cut_gap_state() {
 
 #[test]
 fn a_gap_the_cap_cuts_ends_in_the_capped_gap_state() {
-    assert!(450 > cap(guard_count(one_guard_on_every_site())));
-    assert_eq!(walked(24, one_guard_on_every_site(), full_race(), 450, 1), (CAPPED_GAP_STATE, None));
+    assert!(120 > cap(guard_count(one_guard_on_every_site())));
+    assert_eq!(walked(24, one_guard_on_every_site(), full_race(), 120, 1), (CAPPED_GAP_STATE, None));
 }
 
 #[test]
 fn the_capped_gap_cut_into_seven_timed_plays_ends_in_the_same_state() {
-    assert_eq!(walked(24, one_guard_on_every_site(), full_race(), 450, 7), (CAPPED_GAP_STATE, None));
+    assert_eq!(walked(24, one_guard_on_every_site(), full_race(), 120, 7), (CAPPED_GAP_STATE, None));
 }
 
 #[test]
@@ -717,23 +749,26 @@ fn every_guard_dying_on_the_first_tick_fits_one_play() {
 
 #[test]
 fn a_death_the_budget_cannot_fit_waits_for_the_next_play() {
-    let shape = one_guard_on_every_site();
-    let (d, game_id, _, owner, homes) = held_deep(61, full_race(), shape);
-    let unit = crate::tests::context(d.games, game_id).rules.unbox().day_unit_seconds;
-    let day = interact_with_state(d.games, || crate::days::day_at_index(crate::logic::game::game(game_id), unit, 0));
-    assert!(day.end > START + 610 * TICK);
-    let plays = play_until_caught_up(owner, game_id, *homes.at(0), START + 610 * TICK);
-    report(610, shape, plays);
-    assert_eq!(plays.count, 8);
+    let shape = guards_dying_on_tick(20);
+    let death = guard_count(shape) * (1 + crate::rules::DEEP_CATCH_UP_DEATH_TICKS);
+    assert!(death > crate::rules::DEEP_CATCH_UP_GUARD_TICKS);
+    let (d, game_id, guards, owner, homes) = held_deep(61, full_race(), shape);
+    let plays = play_until_caught_up(owner, game_id, *homes.at(0), START + 30 * TICK);
+    report(30, shape, plays);
+    assert_eq!(plays.count, 2);
+    assert_eq!(paid(owner, game_id), (START + 30 * TICK) / TICK);
+    for key in guards {
+        assert!(interact_with_state(d.games, || crate::logic::troops::explorer(*key)).is_none());
+    }
     assert_within_one_transaction(plays);
 }
 
 #[test]
 fn a_gap_with_deaths_the_budget_cuts_ends_in_the_death_gap_state() {
-    assert_eq!(walked(61, one_guard_on_every_site(), full_race(), 610, 1), (DEATH_GAP_STATE, None));
+    assert_eq!(walked(61, guards_dying_on_tick(20), full_race(), 30, 1), (DEATH_GAP_STATE, None));
 }
 
 #[test]
 fn a_gap_with_deaths_cut_into_three_timed_plays_ends_in_the_same_state() {
-    assert_eq!(walked(61, one_guard_on_every_site(), full_race(), 610, 3), (DEATH_GAP_STATE, None));
+    assert_eq!(walked(61, guards_dying_on_tick(20), full_race(), 30, 3), (DEATH_GAP_STATE, None));
 }

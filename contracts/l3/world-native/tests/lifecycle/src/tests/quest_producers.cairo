@@ -1,6 +1,7 @@
 use snforge_std::{EventSpyTrait, EventsFilterTrait, interact_with_state, spy_events};
 use starknet::storage::StorageMapReadAccess;
 use world_test_support::tests::Deployment;
+use world_test_support::tests::play_fixture::FIXTURE_START;
 use world_test_support::tests::registrar::{discovery_root, explore_with_root};
 use world_test_support::tests::resource_commands::{execute_in_game, grant};
 use crate::commands::Command;
@@ -10,23 +11,12 @@ use crate::troops::{ArmySlotKey, ExplorerKey};
 use super::army_activity::{army, found, slot_army};
 
 fn setup(kind: u8) -> (Deployment, ExplorerKey, crate::expeditions::FrontierDiscoveryRules) {
-    let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("frontier-check");
-    let claim = Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: 1, day: 0 });
-    let encoded = world_test_support::tests::play_fixture::encode(claim);
-    let index: u32 = (*encoded.at(0)).try_into().unwrap();
-    let mut claim_bit = 1_u128;
-    for _ in 0..index {
-        claim_bit *= 2;
-    }
-    preset.rules.command_mask = preset.rules.command_mask | claim_bit;
-    preset.rules.battle_config.regular_immunity_ticks = 0;
-    preset.rules.battle_config.cooldown_seconds = 0;
     let mut seed = 1_u64;
     while crate::quests::daily_quest(seed.into(), 0) != kind {
         seed += 1;
         assert!(seed < 1000, "missing quest seed");
     }
-    let (d, game_id) = super::aspects::setup_aspect_preset(seed.into(), preset);
+    let (d, game_id) = super::aspects::setup_aspects(seed.into());
     let home = found(d, game_id, 1);
     grant(
         d, ResourceKey { game_id, entity_id: home }, crate::resources::WHEAT, 10000 * crate::rules::RESOURCE_PRECISION,
@@ -45,7 +35,7 @@ fn setup(kind: u8) -> (Deployment, ExplorerKey, crate::expeditions::FrontierDisc
 
 fn apply(d: Deployment, game_id: u32, command: Command) {
     let mut events = spy_events();
-    if !execute_in_game(d, game_id, command, 360) {
+    if !execute_in_game(d, game_id, command, FIXTURE_START) {
         panic!("{}", world_test_support::tests::play_fixture::rejection(ref events, d.games).reason);
     }
 }
@@ -64,7 +54,7 @@ fn discover(
     let destination = crate::geometry::neighbor(army(d, key).coord, 0);
     let root = discovery_root(key.game_id, rules, 100, 0, Some(far_eye()), expected);
     let mut events = spy_events();
-    if !explore_with_root(d, key.game_id, key.explorer_id, root, 360) {
+    if !explore_with_root(d, key.game_id, key.explorer_id, root, FIXTURE_START) {
         panic!("{}", world_test_support::tests::play_fixture::rejection(ref events, d.games).reason);
     }
     let occupied = interact_with_state(
@@ -83,7 +73,7 @@ fn reveals_count_new_tiles_and_neither_refused_nor_repeated_moves() {
             d,
             key.game_id,
             Command::Explore(crate::commands::Explore { explorer_id: key.explorer_id, direction: 6 }),
-            360,
+            FIXTURE_START,
         ),
     );
     assert_eq!(progress(d, home), 0);
@@ -95,7 +85,7 @@ fn reveals_count_new_tiles_and_neither_refused_nor_repeated_moves() {
         Some(far_eye()),
         Discovery::None,
     );
-    assert!(explore_with_root(d, key.game_id, key.explorer_id, root, 360));
+    assert!(explore_with_root(d, key.game_id, key.explorer_id, root, FIXTURE_START));
     assert_eq!(progress(d, home), 1);
     apply(d, key.game_id, Command::Explore(crate::commands::Explore { explorer_id: key.explorer_id, direction: 3 }));
     assert_eq!(progress(d, home), 1);
@@ -106,7 +96,7 @@ fn a_real_clear_completes_the_daily_hunt_and_two_claims_pay_once() {
     let (d, key, rules) = setup(crate::quests::HUNT);
     let home = home(d, key);
     let claim = Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: home.entity_id, day: 0 });
-    assert!(!execute_in_game(d, key.game_id, claim, 360));
+    assert!(!execute_in_game(d, key.game_id, claim, FIXTURE_START));
     let site = discover(d, key, rules, Discovery::Beasts);
     apply(
         d,
@@ -132,7 +122,7 @@ fn a_real_clear_completes_the_daily_hunt_and_two_claims_pay_once() {
         },
     );
     for _ in 0_u8..2 {
-        assert!(execute_in_game(d, key.game_id, claim, 360));
+        assert!(execute_in_game(d, key.game_id, claim, FIXTURE_START));
         interact_with_state(
             d.games,
             || {
@@ -163,7 +153,7 @@ fn hunt_camp_and_rift_progress_arrives_only_after_the_guard_is_cleared() {
         );
         apply(d, key.game_id, clear);
         assert_eq!(progress(d, home), 1);
-        let _ = execute_in_game(d, key.game_id, clear, 360);
+        let _ = execute_in_game(d, key.game_id, clear, FIXTURE_START);
         assert_eq!(progress(d, home), 1);
     }
 }
@@ -211,14 +201,14 @@ fn veterans_counts_each_oath_taken_and_neither_a_pass_nor_a_refused_repeat() {
     let take = crate::oaths::ChooseOath { expected_pick: pick, oath: Some(crate::oaths::card(pick, 0)), ..pass };
     apply(d, key.game_id, Command::ChooseOath(take));
     assert_eq!(progress(d, home), 1);
-    assert!(!execute_in_game(d, key.game_id, Command::ChooseOath(take), 360));
+    assert!(!execute_in_game(d, key.game_id, Command::ChooseOath(take), FIXTURE_START));
     assert_eq!(progress(d, home), 1);
 }
 
 fn shrine_pick(d: Deployment, key: ExplorerKey, root: u256) -> u16 {
     for _ in 0_u8..2 {
         let mut events = spy_events();
-        if !explore_with_root(d, key.game_id, key.explorer_id, root, 360) {
+        if !explore_with_root(d, key.game_id, key.explorer_id, root, FIXTURE_START) {
             panic!("{}", world_test_support::tests::play_fixture::rejection(ref events, d.games).reason);
         }
         let pick = interact_with_state(d.games, || crate::logic::progression::require(key).oath_pick);
@@ -245,7 +235,7 @@ fn discover_far_eye(d: Deployment, key: ExplorerKey, rules: crate::expeditions::
             continue;
         }
         let destination = crate::geometry::neighbor(army(d, key).coord, 0);
-        assert!(explore_with_root(d, key.game_id, key.explorer_id, candidate.into(), 360));
+        assert!(explore_with_root(d, key.game_id, key.explorer_id, candidate.into(), FIXTURE_START));
         let occupied = interact_with_state(
             d.games, || crate::logic::map::occupancy(crate::geometry::tile_key(key.game_id, destination)).unwrap(),
         );
@@ -286,7 +276,7 @@ fn far_eye_discovers_and_pays_for_each_new_tile_only_once() {
         );
         let spires = kind == crate::quests::REVEALS;
         if spires {
-            world_test_support::tests::registrar::learn_spire_lore(d, home, 360);
+            world_test_support::tests::registrar::learn_spire_lore(d, home, FIXTURE_START);
         }
         let before = far_eye_totals(d, home);
         let troops = army(d, key).troops.count;
@@ -304,7 +294,7 @@ fn far_eye_discovers_and_pays_for_each_new_tile_only_once() {
                 game_id: key.game_id, actor: d.actor, command: activate,
             },
             far_eye_root(key.game_id, rules, spires),
-            360,
+            FIXTURE_START,
         ) {
             panic!("{}", world_test_support::tests::play_fixture::rejection(ref events, d.games).reason);
         }
@@ -359,7 +349,7 @@ fn far_eye_discovers_and_pays_for_each_new_tile_only_once() {
         };
         let expected = core::cmp::min(counted, interact_with_state(d.games, || crate::logic::banes::target(kind, 1)));
         assert_eq!(progress(d, home), expected);
-        assert!(!execute_in_game(d, key.game_id, activate, 360));
+        assert!(!execute_in_game(d, key.game_id, activate, FIXTURE_START));
         assert_eq!(progress(d, home), expected);
         assert_eq!(far_eye_totals(d, home), after);
     }

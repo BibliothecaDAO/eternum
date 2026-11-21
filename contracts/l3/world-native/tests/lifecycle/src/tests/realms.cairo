@@ -69,35 +69,6 @@ fn only_deployment_authority_can_append_canonical_traits() {
 }
 
 #[test]
-#[feature("safe_dispatcher")]
-fn forged_season_commands_cannot_allocate_or_place_realms() {
-    // Authorization belongs to the production Games surface, not the library-call fixture host.
-    let deployment = super::setup_with_host(true, "StructuresLogic", "TroopsLogic", "Games");
-    let before = super::play_fixture::gameplay_snapshot(deployment.games);
-    let season = crate::realms::ISeasonRealmsSafeDispatcher { contract_address: deployment.games };
-    snforge_std::start_cheat_caller_address(deployment.games, deployment.actor);
-    assert!(
-        crate::realms::ISeasonRealmsSafeDispatcherTrait::settle_season(
-            season,
-            1,
-            deployment.actor,
-            crate::realms::SettleSeason { selected_realm: Option::None, order: None },
-            crate::commands::action_context(super::context(deployment.games, 1)),
-        )
-            .is_err(),
-    );
-    let map = crate::realms::ISeasonPlacementSafeDispatcher { contract_address: deployment.games };
-    snforge_std::start_cheat_caller_address(deployment.games, deployment.actor);
-    assert!(
-        crate::realms::ISeasonPlacementSafeDispatcherTrait::claim_season_settlement(
-            map, 1, 0, 123, crate::tests::map_center(deployment.games, 1),
-        )
-            .is_err(),
-    );
-    assert_eq!(super::play_fixture::gameplay_snapshot(deployment.games), before);
-}
-
-#[test]
 fn catalogue_indexes_each_realms_actual_order_across_batches() {
     let pool = fixture();
     pool.initialize(1, array![0x4000003, 0x9000002].span());

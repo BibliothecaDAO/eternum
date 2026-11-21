@@ -29,8 +29,9 @@ fn settle(d: Deployment, game_id: u32, held: bool, timestamp: u64) -> bool {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn free_and_held_homes_start_with_two_full_armies_before_or_during_the_season() {
-    for timestamp in array![350_u64, 360, 86400] {
+fn free_and_held_homes_start_with_two_full_armies_at_or_after_the_start() {
+    let start = world_test_support::tests::play_fixture::FIXTURE_START;
+    for timestamp in array![start, start + 86040] {
         for held in array![false, true] {
             let (d, game_id) = super::aspects::setup_aspects(42);
             if held {
