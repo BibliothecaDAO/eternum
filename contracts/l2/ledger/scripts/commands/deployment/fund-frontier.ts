@@ -15,6 +15,7 @@ import {
 import { buildFrontierFundingCalls } from "./frontier.js";
 import { readConfirmedSnapshot, singleRow } from "../../../../../../apps/value-relay/src/shard-snapshot";
 import { readFirstRelease, type ShardConnection } from "../../../../../../apps/value-relay/src/shard-rpc";
+import { presetIdForEnvironment } from "../../../../../../config/deployer/clean/constants";
 
 export async function readFrontierGame(
   provider: RpcProvider,
@@ -44,14 +45,13 @@ export async function readFrontierGame(
   if (!parsed || typeof parsed !== "object") throw new Error("Invalid confirmed game");
   const game = parsed as Record<string, unknown>;
   const projected = singleRow(snapshot, "GameRegistry");
-  for (const field of ["preset_id", "start_main_at", "end_at", "seed"]) {
+  for (const field of ["start_main_at", "end_at", "seed"]) {
     if (BigInt(String(projected[field])) !== BigInt(String(game[field])))
       throw new Error("Herald game differs from shard");
   }
   const rules = singleRow(snapshot, "SliceRules");
   const chests = singleRow(snapshot, "ChestRules");
   return {
-    presetId: ledgerInteger(String(game.preset_id)),
     start: ledgerInteger(String(game.start_main_at)),
     end: ledgerInteger(String(game.end_at)),
     seed: String(game.seed),
@@ -76,7 +76,7 @@ export async function fundFrontier(
   await assertProviderChain(account, target.network, "STARKNET_RPC");
   const { ledger, token } = target;
   const native = await readFrontierGame(provider, shard, heraldUrl, gameId);
-  const presetId = native.presetId;
+  const presetId = presetIdForEnvironment("madara.frontier");
   const head = await readConfirmedLedgerHead(account);
   const preset = decodeLedgerPreset(
     await account.callContract(
