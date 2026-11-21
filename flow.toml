@@ -342,3 +342,6 @@ paths = ".github/actions/checkout-without-media/ .github/workflows/test-docs.yml
 
 [kind.record-goldens]
 cmd = '''set -o pipefail && (cd contracts/l3/world-native/tests && RAYON_NUM_THREADS=1 scarb build --test --package 'world_tests_resources*' && RAYON_NUM_THREADS=1 scarb build --test --package 'world_tests_combat*') && { bash contracts/l3/test-native.sh --package world_tests_resources record_ --include-ignored && bash contracts/l3/test-native.sh --package world_tests_combat record_ --include-ignored; } | tee "$FLOW_TMP/record.log" && python3 -c 'import re, sys; [open(f"contracts/l3/world-native/src/tests/fixtures/spatial-replay/{name}.txt", "w").write(values.replace(", ", "\n") + "\n") for name, values in re.findall(r"SPATIAL_REPLAY (\w+) \[(.*?)\]", open(sys.argv[1]).read())]' "$FLOW_TMP/record.log" && bun contracts/l3/world-native/scripts/frontier-combat-vectors.ts record "$FLOW_TMP/record.log" && git diff --binary > "$FLOW_TMP/goldens.patch"'''
+
+[kind.test-deep-catch-up]
+cmd = "bash contracts/l3/test-native.sh --package world_tests_lifecycle* ::tests::deep_catch_up::"
