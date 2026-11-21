@@ -92,6 +92,10 @@ it("keeps the host of a failing URL and drops the path, query and login that can
   );
   expect(stored("unreachable https://herald.test")).toBe("unreachable https://herald.test");
   expect(stored("fetch failed: https://user:k1@rpc.provider.test")).toBe("fetch failed: https://rpc.provider.test");
+  const configured = "https://rpc.provider.test";
+  expect(
+    serviceFailure(new Error(`HTTP 429 from ${configured}/v2/shortkey1`), [], "fallback", [configured]).message,
+  ).toBe("HTTP 429 from [redacted]/[redacted]");
 });
 
 it("recognizes only a leading legacy code before diagnostic text", () => {

@@ -46,12 +46,12 @@ export function serviceFailure(error: unknown, codes: readonly string[], fallbac
   const chain = failureChain(error);
   const cause = chain[0];
   const redact = (text: string) => {
+    text = text.replace(
+      /\b(https?:\/\/)(?:[^\s\/"'@]*@)?([^\s\/"'?#,;@]+)([\/?#][^\s"',;]*)?/gi,
+      (_, scheme: string, host: string, rest?: string) => `${scheme}${host}${rest ? "/[redacted]" : ""}`,
+    );
     for (const secret of secrets) if (secret) text = text.replaceAll(secret, "[redacted]");
     return text
-      .replace(
-        /\b(https?:\/\/)(?:[^\s\/"'@]*@)?([^\s\/"'?#,;@]+)([\/?#][^\s"',;]*)?/gi,
-        (_, scheme: string, host: string, rest?: string) => `${scheme}${host}${rest ? "/[redacted]" : ""}`,
-      )
       .replace(/\b(?:Bearer|Basic)\s+[^\s"',;]+/gi, "[redacted]")
       .replace(
         /\b(?:token|secret|password|private[_-]?key|authorization)["']?\s*[:=]\s*["']?[^\s"',;}]+/gi,
