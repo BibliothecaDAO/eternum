@@ -20,7 +20,6 @@ const now = Date.parse("2027-01-01T00:00:00Z");
 const input = {
   frontierStart: "2027-02-01T00:00:00Z",
   frontierEnd: "2027-02-21T00:00:00Z",
-  amount: "1000",
 } as Inputs;
 type Phase = { phase: string; startsAt: string; endsAt: string };
 function setup(phases: Phase[], target: (typeof environments)[keyof typeof environments] = environments.dev) {

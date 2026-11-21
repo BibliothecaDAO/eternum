@@ -29,12 +29,7 @@ export async function classAt(provider: RpcProvider, address: string) {
     throw error;
   }
 }
-export async function balance(
-  provider: RpcProvider,
-  token: string,
-  address: string,
-  block: number | "latest" = "latest",
-) {
+async function balance(provider: RpcProvider, token: string, address: string, block: number | "latest" = "latest") {
   const row = await provider.callContract(
     { contractAddress: token, entrypoint: "balance_of", calldata: [address] },
     block,

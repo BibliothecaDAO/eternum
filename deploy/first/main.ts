@@ -59,7 +59,7 @@ export interface Deployment {
   assets?: Assets;
   output: (line: string) => void;
 }
-export function signer(context: Pick<Deployment, "provider" | "keys">) {
+function signer(context: Pick<Deployment, "provider" | "keys">) {
   if (!context.provider || !context.keys) throw new PublicError("Account preparation has not completed");
   return new Account({
     provider: context.provider,
@@ -120,8 +120,7 @@ async function collectInputs(context: Deployment) {
 }
 const waiting = (detail: string) => ({ done: false, waiting: detail, detail });
 /** The seasons setup was given, as it reads them back to the operator. */
-const seasonSummary = (inputs: Inputs) =>
-  `Frontier ${inputs.frontierStart} to ${inputs.frontierEnd}, pool ${inputs.amount}.`;
+const seasonSummary = (inputs: Inputs) => `Frontier ${inputs.frontierStart} to ${inputs.frontierEnd}.`;
 export function preparationSteps(context: Deployment): Step[] {
   let readSetup: ReturnType<typeof setupPresenceReader> | undefined;
   return [
@@ -132,7 +131,7 @@ export function preparationSteps(context: Deployment): Step[] {
       inspect: async () => ({
         done: !!context.inputs,
         detail:
-          "three credentials, the Discord application, deposit and four explicit season dates saved privately; production also needs two public account addresses",
+          "three credentials, the Discord application and four explicit season dates saved privately; production also needs two public account addresses",
       }),
       apply: () => collectInputs(context),
     },
