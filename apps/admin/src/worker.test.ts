@@ -243,7 +243,10 @@ describe("who may call", () => {
 
   it("lets production's operators read, and only its writers act", async () => {
     expect((await call(production, "/api/games", await operator())).status).toBe(200);
-    const phase = { method: "PUT", body: JSON.stringify({ startsAt: "2026-11-03T06:30:00Z", endsAt: "2026-11-06T14:30:00Z" }) };
+    const phase = {
+      method: "PUT",
+      body: JSON.stringify({ startsAt: "2026-11-03T06:30:00Z", endsAt: "2026-11-06T14:30:00Z" }),
+    };
     expect(await call(production, "/api/actions/calendar/frontier", await operator(), phase)).toEqual({
       status: 403,
       body: { error: "Production actions are open to the owner's list only" },
@@ -257,9 +260,15 @@ describe("who may call", () => {
   });
 
   it("refuses a write another site sends with the operator's cookie, sending and logging nothing", async () => {
-    const phase = { method: "PUT", body: JSON.stringify({ startsAt: "2026-11-03T06:30:00Z", endsAt: "2026-11-06T14:30:00Z" }) };
+    const phase = {
+      method: "PUT",
+      body: JSON.stringify({ startsAt: "2026-11-03T06:30:00Z", endsAt: "2026-11-06T14:30:00Z" }),
+    };
     for (const origin of ["https://attacker.test", "null", ""])
-      expect(await call(production, "/api/actions/calendar/frontier", await owner(), { ...phase, origin }), origin).toEqual({
+      expect(
+        await call(production, "/api/actions/calendar/frontier", await owner(), { ...phase, origin }),
+        origin,
+      ).toEqual({
         status: 403,
         body: { error: "Actions are sent from the admin page only" },
       });

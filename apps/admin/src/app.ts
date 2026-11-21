@@ -53,9 +53,7 @@ const WRITES: Action[] = [
     pattern: "calendar/:phase",
     carriesBody: true,
     route: ({ phase }) =>
-      phase === "frontier"
-        ? { path: `/api/factory/calendar/${phase}`, action: `Set ${phase} phase` }
-        : null,
+      phase === "frontier" ? { path: `/api/factory/calendar/${phase}`, action: `Set ${phase} phase` } : null,
   },
   {
     method: "POST",

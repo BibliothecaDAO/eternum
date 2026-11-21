@@ -168,4 +168,3 @@ test("schedule failures log the fixed underlying code", async () => {
   );
   expect(JSON.stringify(log.mock.calls)).not.toContain("secret-value");
 });
-

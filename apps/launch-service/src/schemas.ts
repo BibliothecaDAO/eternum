@@ -3,7 +3,7 @@ import { assertFrontierSeason, CalendarConflict, type FrontierSeasonPhase } from
 export const isCalendarFrontier = (environment: string, name: string) =>
   environment === "madara.frontier" && /^frontier-\d+$/.test(name);
 
-export const isPublicGameName = (name: string) => !name.startsWith("check-");
+const isPublicGameName = (name: string) => !name.startsWith("check-");
 interface SharedLaunchOptions {
   environment: "madara.blitz" | "madara.frontier";
   devModeOn?: boolean;

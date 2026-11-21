@@ -20,7 +20,9 @@ test.each(["startsAt", "endsAt"])("rejects sub-second %s before persisting the c
 });
 
 test("reads the season's phases and refuses a Blitz phase as unknown", async () => {
-  const phases = [{ phase: "frontier" as const, startsAt: "2027-01-01T00:00:00.000Z", endsAt: "2027-02-01T00:00:00.000Z" }];
+  const phases = [
+    { phase: "frontier" as const, startsAt: "2027-01-01T00:00:00.000Z", endsAt: "2027-02-01T00:00:00.000Z" },
+  ];
   const set = vi.fn();
   const app = new Hono();
   app.route("/", createCalendarRoutes({ list: async () => phases, set }));
