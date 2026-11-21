@@ -1,4 +1,4 @@
-import { readFileSync, mkdtempSync, symlinkSync } from "node:fs";
+import { readFileSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
 import { delimiter, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import {
@@ -42,6 +42,15 @@ function installRuntime(pin: NonNullable<ReturnType<typeof runtimePin>>, env: En
   const actual = command([pin.name, "--version"], env, root, true);
   if (!runtimeMatches(pin.version, actual)) throw new Error(`${pin.name}: wanted ${pin.version}, got ${actual}`);
   console.log(JSON.stringify({ runtime: pin.name, requested: pin.version, actual }));
+}
+
+function hideToolchainsUntilSetUp(env: Environment) {
+  const bin = mkdtempSync(join(env.RUNNER_TEMP!, "unset-toolchains-"));
+  for (const tool of ["scarb", "snforge"]) {
+    const refusal = `echo "${tool} is not set up in this job: add its setup action before the step" >&2; exit 127`;
+    writeFileSync(join(bin, tool), `#!/bin/sh\n${refusal}\n`, { mode: 0o755 });
+  }
+  env.PATH = [bin, env.PATH].join(delimiter);
 }
 
 function installToolchain(step: Step, context: Record<string, Environment>, env: Environment) {
@@ -154,6 +163,7 @@ async function runJob(id: string) {
   if (job.job["runs-on"] !== "ubuntu-latest") throw new Error(`Unsupported validation platform: ${job.job["runs-on"]}`);
   const env: Environment = { ...inherited, ...stepEnvironment(job.job.env, { matrix: job.matrix }), CI: "true" };
   env.RUNNER_TEMP ??= mkdtempSync(join(env.FLOW_TMP ?? tmpdir(), "ci-"));
+  hideToolchainsUntilSetUp(env);
   const stop = await startPostgres(job, env);
   const interrupted = () => {
     stop();
