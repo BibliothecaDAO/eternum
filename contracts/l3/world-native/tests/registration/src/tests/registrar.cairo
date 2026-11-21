@@ -124,7 +124,9 @@ fn expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stami
         let (army, _) = expedition_armies(d, home);
         let state = GameState { contract_address: d.games };
         let mut before = state.resolved_explorer(army).unwrap();
-        let center = crate::expeditions::site(crate::logic::settlement::spacing(), crate::entity_ids::namespace(home.entity_id), 0, 0);
+        let center = crate::expeditions::site(
+            crate::logic::settlement::spacing(), crate::entity_ids::namespace(home.entity_id), 0, 0,
+        );
         // Direction 1 is occupied by the second army; use the first army there only after removing it.
         if direction == 1 {
             let armies = IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home);
@@ -200,11 +202,23 @@ fn expedition_recruitment_refuses_other_regions_depths_and_expired_armies_withou
         let (army, _) = expedition_armies(d, home);
         let state = GameState { contract_address: d.games };
         let mut explorer = state.resolved_explorer(army).unwrap();
-        let site = crate::expeditions::site(crate::logic::settlement::spacing(), crate::entity_ids::namespace(home.entity_id), 0, 0);
+        let site = crate::expeditions::site(
+            crate::logic::settlement::spacing(), crate::entity_ids::namespace(home.entity_id), 0, 0,
+        );
         explorer.coord = match location {
             0 => crate::geometry::neighbor(crate::geometry::neighbor(site, 0), 0),
-            1 => crate::geometry::neighbor(crate::expeditions::site(crate::logic::settlement::spacing(), crate::entity_ids::namespace(home.entity_id) + 1, 0, 0), 0),
-            2 => crate::geometry::neighbor(crate::expeditions::site(crate::logic::settlement::spacing(), crate::entity_ids::namespace(home.entity_id), 0, 1), 0),
+            1 => crate::geometry::neighbor(
+                crate::expeditions::site(
+                    crate::logic::settlement::spacing(), crate::entity_ids::namespace(home.entity_id) + 1, 0, 0,
+                ),
+                0,
+            ),
+            2 => crate::geometry::neighbor(
+                crate::expeditions::site(
+                    crate::logic::settlement::spacing(), crate::entity_ids::namespace(home.entity_id), 0, 1,
+                ),
+                0,
+            ),
             _ => explorer.coord,
         };
         crate::tests::resource_commands::set_explorer_fixture(d.games, army, explorer);

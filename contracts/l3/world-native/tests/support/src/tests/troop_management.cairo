@@ -44,8 +44,14 @@ pub fn replay_armies(record: bool) {
     let mut frames = array![super::spatial_replay::initial(d.games, 3, entities, tiles)];
     let mut spy = spy_events();
     for (command, timestamp) in array![
-        (Command::Move(Move { explorer_id: first, directions: array![0_u8].span() }), super::play_fixture::FIXTURE_START + 120),
-        (Command::Move(Move { explorer_id: first, directions: array![3_u8].span() }), super::play_fixture::FIXTURE_START + 140),
+        (
+            Command::Move(Move { explorer_id: first, directions: array![0_u8].span() }),
+            super::play_fixture::FIXTURE_START + 120,
+        ),
+        (
+            Command::Move(Move { explorer_id: first, directions: array![3_u8].span() }),
+            super::play_fixture::FIXTURE_START + 140,
+        ),
         (transfer(Army::Explorer(first), Army::Explorer(second), 10), super::play_fixture::FIXTURE_START + 140),
         (manage(ManageTroops::RemoveExplorer(second)), super::play_fixture::FIXTURE_START + 150),
     ] {
