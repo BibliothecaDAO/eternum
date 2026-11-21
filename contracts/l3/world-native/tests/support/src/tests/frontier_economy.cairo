@@ -89,9 +89,6 @@ pub fn spend(deployment: super::Deployment, home: ResourceKey, resource_type: u8
         );
     stop_cheat_caller_address(deployment.games);
 }
-pub fn labor_store(level: u8) -> u128 {
-    Into::<u32, u128>::into(*crate::balance::structures::LABOR_STORES.span().at(level.into())) * RESOURCE_PRECISION
-}
 pub fn castle_limit(level: u8) -> u128 {
     let cap = crate::troops::deployment_cap(crate::balance::rules::TROOP_LIMIT_CONFIG, level);
     2 * Into::<u32, u128>::into(cap) * RESOURCE_PRECISION

@@ -120,6 +120,11 @@ pub fn setup_with_domains(seed_games: bool, structures_class: ByteArray, troops_
 pub fn setup_with_host(
     seed_games: bool, structures_class: ByteArray, troops_class: ByteArray, host: ByteArray,
 ) -> Deployment {
+    setup_family(seed_games, structures_class, troops_class, host, crate::game::FRONTIER)
+}
+pub fn setup_family(
+    seed_games: bool, structures_class: ByteArray, troops_class: ByteArray, host: ByteArray, family: u8,
+) -> Deployment {
     let (actor, account_class) = deploy_player(1, GUARDIAN);
     let movement = if troops_class == "TroopFixture" {
         declare_logic("TroopFixture")
@@ -138,10 +143,7 @@ pub fn setup_with_host(
     authentication.serialize(ref calldata);
     calldata.append(1);
     crate::logic::release::Release {
-        family: crate::game::FRONTIER,
-        previous: 0,
-        slot_count: crate::slots::FRONTIER_SLOTS,
-        migration: 0.try_into().unwrap(),
+        family, previous: 0, slot_count: crate::slots::required_slots(family), migration: 0.try_into().unwrap(),
     }
         .serialize(ref calldata);
     classes.span().serialize(ref calldata);

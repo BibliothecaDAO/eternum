@@ -3,6 +3,10 @@ pub use world_test_support::tests::frontier_economy::*;
 use super::play_fixture::FIXTURE_START;
 
 
+fn labor_store(level: u8) -> u128 {
+    Into::<u32, u128>::into(*crate::balance::structures::LABOR_STORES.span().at(level.into())) * RESOURCE_PRECISION
+}
+
 #[test]
 fn a_farm_produces_wheat_from_nothing_and_barracks_take_none_of_it() {
     let (deployment, home) = frontier_realm();

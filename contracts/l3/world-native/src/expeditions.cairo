@@ -86,6 +86,14 @@ pub fn validate_game(start: u64, duration: u64) {
     let tick = crate::balance::rules::TICK_CONFIG.armies_tick_in_seconds;
     assert!(start % tick == 0, "season does not start on a tick");
     assert!(duration > 0 && duration % tick == 0, "season does not end on a tick");
+    assert_season_fits_map(duration);
+}
+
+#[cfg(feature: "blitz")]
+fn assert_season_fits_map(duration: u64) {}
+
+#[cfg(not(feature: "blitz"))]
+fn assert_season_fits_map(duration: u64) {
     let spacing: u128 = crate::logic::settlement::spacing().into();
     // Before the seed is drawn, bound the map using the shortest possible day.
     let season_days: u128 = (duration / (2 * Into::<u32, u64>::into(crate::balance::rules::SWITCHES.day_unit_seconds)))

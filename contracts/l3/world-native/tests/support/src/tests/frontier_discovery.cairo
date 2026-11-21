@@ -5,7 +5,7 @@ pub const RELIC: crate::army_relics::ArmyRelic = crate::army_relics::ArmyRelic {
     kind: crate::army_relics::RelicKind::Blade, rank: 1,
 };
 pub fn rules() -> FrontierDiscoveryRules {
-    FrontierDiscoveryRules { shrine_bps: 0, well_bps: 0, ..crate::balance::expeditions::FRONTIER_DISCOVERY }
+    crate::logic::discovery::lore_rules(0)
 }
 pub fn bucket(result: Discovery) -> felt252 {
     match result {

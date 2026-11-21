@@ -97,9 +97,6 @@ pub fn balance(d: super::Deployment, home: ResourceKey, resource_type: u8) -> u1
     IResourceOperationsDispatcher { contract_address: d.games }
         .resource_balance(ResourceSlot { game_id: home.game_id, entity_id: home.entity_id, resource_type })
 }
-pub fn stepped(rate: u64, steps: u64) -> u64 {
-    rate * (10000 + steps * crate::balance::structures::BOARD.output_step_bps.into()) / 10000
-}
 pub fn level_up(d: super::Deployment, home: ResourceKey, timestamp: u64) {
     let level = IStructureOperationsDispatcher { contract_address: d.games }.structure(home).unwrap().base.level;
     for cost in crate::logic::upgrades::recipe(level + 1).costs {

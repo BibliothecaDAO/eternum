@@ -1,5 +1,9 @@
 pub use world_test_support::tests::building_commands::*;
 use super::play_fixture::FIXTURE_START;
+fn stepped(rate: u64, steps: u64) -> u64 {
+    rate * (10000 + steps * crate::balance::structures::BOARD.output_step_bps.into()) / 10000
+}
+
 #[test]
 fn building_commands_match_replay_views() {
     replay_buildings(false);

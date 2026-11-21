@@ -69,6 +69,7 @@ check_drift() {
   pnpm run fixtures:native
   (cd "$world" && scarb fmt)
   (cd "$world/tests" && scarb fmt)
+  (cd "$world/tests/blitz" && scarb fmt)
   git diff --exit-code -- "$world/schema" "$world/src" "$world/storage" "$world/tests"
 }
 
@@ -86,6 +87,11 @@ test_package() {
   fi
 }
 
+test_blitz() {
+  (cd "$world/tests/blitz" && RAYON_NUM_THREADS=1 scarb build --test --workspace)
+  NATIVE_TEST_WORKSPACE=tests/blitz bash contracts/l3/test-native.sh --package "world_tests_blitz_*"
+}
+
 case "${1:-all}" in
   all) bash contracts/l3/check-native-plan.sh ;;
   prelude) prelude ;;
@@ -98,5 +104,6 @@ case "${1:-all}" in
   drift) check_drift ;;
   test-capture|test-combat|test-discovery|test-economy|test-lifecycle|test-registration|test-resources|test-world)
     test_package "${1#test-}" ;;
+  test-blitz) test_blitz ;;
   *) echo "Unknown native gate stage: $1" >&2; exit 2 ;;
 esac
