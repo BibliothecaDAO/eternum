@@ -117,15 +117,14 @@ async function eachCampaignGame<T>(
   if (!shard) return [];
   try {
     const games = await fetchShardGames(shard, gamesUrl(shard, player), fetchShard);
-    const running = games.filter(isRunningCampaignGame);
+    const running = games.filter(isCampaignGame);
     return await Promise.all(running.map((game) => read(shard, game)));
   } catch {
     return null;
   }
 }
 
-const isRunningCampaignGame = (game: HeraldGameDirectoryEntry) =>
-  game.mode === "frontier" && (game.status === "Registration" || game.status === "Live");
+export const isCampaignGame = (_game: HeraldGameDirectoryEntry): boolean => false;
 
 async function seasonBoard(shardUrl: string, gameId: number, fetchShard: typeof fetch) {
   const url = new URL(`/games/${gameId}/leaderboard`, shardUrl);
