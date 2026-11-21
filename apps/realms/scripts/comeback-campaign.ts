@@ -43,7 +43,7 @@ export function awaySince(now: number, visitsSince: number | null): number | nul
  * than VISIT_RECORD_SECONDS before it) and no confirmed action, for a player who acts without the app reading the
  * session again (a tab kept open, a bot device).
  */
-export function isAway(account: Pick<Account, "lastAction" | "lastVisit">, now: number, visitsSince: number | null) {
+function isAway(account: Pick<Account, "lastAction" | "lastVisit">, now: number, visitsSince: number | null) {
   const since = awaySince(now, visitsSince);
   return since !== null && account.lastVisit < since - VISIT_RECORD_SECONDS && account.lastAction < since;
 }
@@ -191,7 +191,7 @@ export interface Delivery {
 }
 
 /** What a reservation found: this run holds the account now, another run or attempt holds it, or it stopped news. */
-export type Reservation = "reserved" | "taken" | "opted_out";
+type Reservation = "reserved" | "taken" | "opted_out";
 
 /** What the provider said: accepted, refused outright (nothing was sent), or no clear answer (it may have been sent). */
 export type Handoff = { kind: "accepted"; id: string | null } | { kind: "refused" } | { kind: "unknown" };

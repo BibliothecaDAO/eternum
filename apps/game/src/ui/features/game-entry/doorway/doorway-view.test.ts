@@ -99,16 +99,6 @@ describe("the doorway", () => {
     expect(view.blocker).toEqual({ kind: "retry", line: "The world did not answer." });
   });
 
-  it("offers Watch when a Blitz has no seat for the player, and its results once it has ended", () => {
-    expect(doorwayView({ source: "entry", phase: "spectate", audience: "player", signedIn: true }).spectating).toBe(
-      "watch",
-    );
-    expect(
-      doorwayView({ source: "entry", phase: "spectate", audience: "player", signedIn: true, blitzEntry: "review" })
-        .spectating,
-    ).toBe("results");
-  });
-
   it("fills one bar across the track, the map's span following its model loads", () => {
     const boot = (phase: Parameters<typeof doorwayView>[0]["phase"], modelShare?: number) =>
       doorwayView({ source: "boot", phase: phase as never, audience: "player", modelShare }).percent;

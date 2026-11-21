@@ -4,12 +4,8 @@ import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import { FeedLine } from "@/ui/features/event-feed/feed-line";
 
-import { canonicalRealm, homeSourceClaim } from "@bibliothecadao/eternum";
 import { BuildingType } from "@bibliothecadao/types";
-import type { AlertsAsk, AlertsPopupAsk } from "@/shell/profile/alerts-ask";
-import { DEVCON_LABOR_RULES } from "@/shell/join/devcon";
-import { homeIcon } from "@/ui/design-system/home-icons";
-import { REALM_SKINS } from "@/three/structures/realm-skins";
+import type { AlertsPopupAsk } from "@/shell/profile/alerts-ask";
 import { GameProvider } from "@/hooks/context/game-context";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { transferTrainedArmies, TRANSFER_TAPPED } from "@/ui/features/frontier/army/transfer-fixture";
@@ -92,14 +88,10 @@ import {
   RefillPrice,
   StaminaRefill,
 } from "@/ui/features/frontier/army/refill";
-import { LordsPurse, PurseRow, RealmsChip } from "@/ui/features/frontier/value/lords-purse";
+import { LordsPurse, PurseRow } from "@/ui/features/frontier/value/lords-purse";
 import { ShopCodeField, ShopView } from "@/ui/features/frontier/shop/shop-sheet";
-import type { DailyClaimWaiting } from "@/ui/features/frontier/value/realm-labor";
 import { DayPill } from "@/ui/features/frontier/hud/day-pill";
 import { RealmPanel } from "@/ui/features/frontier/hud/realm-panel";
-import { planRealmLabor, seasonStrip } from "@/ui/features/frontier/value/realm-labor";
-import type { RealmLaborFacts } from "@/ui/features/frontier/value/use-realm-labor";
-import { RealmsSheet } from "@/ui/features/frontier/value/realms-sheet";
 import { type WithdrawStep, WithdrawSheet } from "@/ui/features/frontier/value/withdraw-sheet";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 
@@ -254,17 +246,6 @@ const RUIN_CARD: LabSite = {
 
 const WALLET_ADDRESS = "0x04a1d2c3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f99f3c";
 type LabWithdraw = { held: number; wallet: string | null; refusal?: string; step: WithdrawStep; amount: number };
-/**
- * The Realm Labor sheet's home and day: a golden or regular Devcon home, one founded with a held Realm, or one with no
- * claim; today claimed or not, the Labor store's room left, the reminder's state once claimed, the season's last day.
- */
-type LabRealms = {
-  home: "golden" | "devcon" | "held" | "none";
-  claimed?: boolean;
-  room?: number;
-  ask?: "remind" | "install" | "on";
-  lastDay?: boolean;
-};
 const WITHDRAW_500: LabWithdraw = { held: 1_240, wallet: WALLET_ADDRESS, step: { kind: "pick" }, amount: 500 };
 /** Day 13 at 22:30: an 8-hour day from 21:40 that ends in the night, at 05:40; tomorrow lasts 20h. */
 const NIGHT: DayClock = {
@@ -277,10 +258,9 @@ const NIGHT: DayClock = {
 };
 const LAST_HOUR: DayClock = { ...CLOCK, secondsLeft: 42 * 60, shareLeft: 42 / 960, tone: "ember" };
 const FINAL_MINUTES: DayClock = { ...CLOCK, secondsLeft: 9 * 60, shareLeft: 9 / 960, tone: "ember" };
-/** The lab realm's day end: its claim waiting, today's camp, and an army that can still explore. */
 const labDayEnd = (clock: DayClock): DayEnd => ({
   clock,
-  items: dayEndItems({ claimWaiting: true, camp: { x: 4, y: 9 }, armyCanExplore: true }),
+  items: dayEndItems({ camp: { x: 4, y: 9 }, armyCanExplore: true }),
   run: noop,
 });
 const UNKNOWN_TOTALS = {
@@ -1089,40 +1069,23 @@ const STATES = {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    purse: { lords: 1_240, realms: { labor: 2_000, essence: 0 } },
+    purse: { lords: 1_240 },
   },
   // A Devcon player signed in by email, LORDS in the realm and no wallet linked: the purse marked, its name saying why.
   "purse-no-wallet": {
     clock: CLOCK,
     stores: STORES,
     armies: [],
-    purse: { lords: 1_240, realms: { labor: 2_000, essence: 0 } },
+    purse: { lords: 1_240 },
     noWallet: true,
-  },
-  // The owner's realm on 26 October 2026: a Kingdom at 27/42 with 1,000 labor to claim, its row the realm card's widest.
-  "realm-claim": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1_240, realms: { labor: 1_000, essence: 0 } },
-    realm: { level: 2, population: { used: 27, total: 42 } },
-  },
-  // A golden Devcon home's day: its Labor and its Essence, both on the chip.
-  "realm-claim-essence": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1_240, realms: { labor: 2_000, essence: 2_000 } },
-    realm: { level: 2, population: { used: 27, total: 42 } },
   },
   "value-hud-claimed": { clock: CLOCK, stores: STORES, armies: ARMIES, purse: { lords: 1_240 } },
   "value-menu": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    purse: { lords: 1_240, realms: { labor: 2_000, essence: 0 } },
+    purse: { lords: 1_240 },
     menu: true,
-    menuRealms: true,
   },
   withdraw: { clock: CLOCK, stores: STORES, armies: ARMIES, purse: { lords: 1_240 }, withdraw: WITHDRAW_500 },
   "withdraw-no-wallet": {
@@ -1171,69 +1134,6 @@ const STATES = {
     armies: ARMIES,
     purse: { lords: 740 },
     withdraw: { ...WITHDRAW_500, held: 740, step: { kind: "waiting", amount: 500 } },
-  },
-  realms: {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1240 },
-    realms: { home: "golden" },
-  },
-  "realms-devcon": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1240 },
-    realms: { home: "devcon" },
-  },
-  "realms-held": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1240 },
-    realms: { home: "held" },
-  },
-  "realms-none": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1240 },
-    realms: { home: "none" },
-  },
-  "realms-full": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1240 },
-    realms: { home: "golden", room: 1_400 },
-  },
-  "realms-remind": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1240 },
-    realms: { home: "golden", claimed: true, ask: "remind" },
-  },
-  "realms-install": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1240 },
-    realms: { home: "golden", claimed: true, ask: "install" },
-  },
-  "realms-on": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1240 },
-    realms: { home: "golden", claimed: true, ask: "on" },
-  },
-  "realms-last-day": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1240 },
-    realms: { home: "golden", claimed: true, ask: "on", lastDay: true },
   },
 } as const;
 
@@ -1296,13 +1196,10 @@ type LabState = {
   menu?: boolean;
   /** Chat open: a page on a phone, docked on desktop. Its controls are there to be measured for touch. */
   chat?: boolean;
-  /** The LORDS count under the strip, what a chest just added, and the labor the player's Realms have waiting. */
-  purse?: { lords: number; gain?: number; realms?: DailyClaimWaiting };
+  purse?: { lords: number; gain?: number };
   /** The realm's rank and population, in place of the lab's City at 9/18. */
   realm?: { level: number; population: { used: number; total: number } };
-  menuRealms?: boolean;
   withdraw?: LabWithdraw;
-  realms?: LabRealms;
 };
 
 /** Every state the HUD lab draws, by the name in its address: the HUD room lists them. */
@@ -1330,7 +1227,7 @@ export const HudLab = () => {
   const chatPane = useRef<HTMLElement>(null);
   // Chat reads the game's players (its mentions), so the phone's page stands in the lab game, as the desktop's does.
   const chat = lab.chat && (
-    <LabGame preset={FRONTIER_PRESET}>
+    <LabGame mode="frontier">
       {() => <ChatPage rooms={[GLOBAL_ROOM]} signedIn onSignIn={noop} pane={chatPane} onClose={noop} />}
     </LabGame>
   );
@@ -1361,7 +1258,6 @@ export const HudLab = () => {
         purse={
           lab.purse && (
             <PurseRow>
-              {lab.purse.realms && <RealmsChip waiting={lab.purse.realms} narrow onOpen={noop} />}
               <LordsPurse
                 lords={lab.purse.lords}
                 gain={lab.purse.gain}
@@ -1381,7 +1277,6 @@ export const HudLab = () => {
               rank="#12"
               onToday={noop}
               onSeason={noop}
-              realms={lab.menuRealms ? { waiting: true, onOpen: noop } : undefined}
               onSettings={noop}
               guide={HOW_TO_PLAY_BY_MODE.frontier}
               onExit={noop}
@@ -1544,7 +1439,6 @@ export const HudLab = () => {
         {lab.site && <SiteCardView {...lab.site} onRealm={noop} onClose={noop} />}
         {lab.feed && <LabFeed />}
         {lab.withdraw && <LabWithdrawSheet withdraw={lab.withdraw} />}
-        {lab.realms && <LabRealmsSheet realms={lab.realms} />}
       </LabBands>
       {/* The game's one tooltip, as world.tsx mounts it, so a hover line shows here too. */}
       <Tooltip />
@@ -1780,7 +1674,7 @@ const inTheRealm = (lab: LabState): boolean => lab.realmView !== undefined || la
  */
 const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & { desktop: boolean; lab: LabState }) =>
   desktop ? (
-    <LabGame preset={FRONTIER_PRESET}>
+    <LabGame mode="frontier">
       {() => (
         <FrontierDesktop
           season={{ rank: "#12", onOpen: noop }}
@@ -1796,7 +1690,6 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
               {...(!lab.visiting && {
                 lords: lab.purse?.lords ?? LAB_LORDS,
                 linkWalletLine: lab.noWallet ? LINK_WALLET_FOR_LORDS : null,
-                waiting: lab.purse?.realms,
                 storeCards: lab.storeCard && {
                   kinds: MADE_STORES,
                   open: lab.storeCard.kind,
@@ -1804,7 +1697,6 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
                   card: <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />,
                 },
                 onWithdraw: noop,
-                onRealms: noop,
               })}
             />
           }
@@ -1827,9 +1719,6 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
   ) : (
     <HudBands {...slots} />
   );
-
-/** Frontier's preset, so the lab's game plays as a Frontier game. */
-const FRONTIER_PRESET = 5;
 
 /** The lab realm's name and its LORDS where a state names none, as the desktop's realm panel reads them. */
 const LAB_REALM_NAME = "Duskbite";
@@ -1990,80 +1879,6 @@ const LabWithdrawSheet = ({ withdraw }: { withdraw: LabWithdraw }) => {
     />
   );
 };
-
-/** The Realm Labor sheet on the fiction: the Devcon preset's amounts, the lab's Day 12, a held Realm's real map. */
-const LabRealmsSheet = ({ realms }: { realms: LabRealms }) => (
-  <RealmsSheet
-    labor={labRealmLabor(realms)}
-    map={realms.home === "held" ? LAB_REALM_MAP : null}
-    ask={labAlertsAsk(realms.ask)}
-    sending={false}
-    onClaim={noop}
-    onClose={noop}
-  />
-);
-
-/** Realm 3's map, as the Realm index serves it. */
-const LAB_REALM_MAP =
-  "https://web-production-2a4cb.up.railway.app/api/marketplace/v1/chains/SN_MAIN/assets/ecbc308f79704c8c36cb0c9eba19545ded12c2409b406f4dcc1bc3f802625cc9.svg";
-const LAB_SEASON_LAST_DAY = 104;
-const LAB_CLAIMED_DAYS = [6, 7, 9, 10];
-const LAB_LABOR_LIMIT = 18_000;
-
-const labRealmLabor = ({
-  home,
-  claimed = false,
-  room = LAB_LABOR_LIMIT,
-  lastDay = false,
-}: LabRealms): RealmLaborFacts => {
-  const daily = labDailyClaim(home);
-  const today = CLOCK.day - 1;
-  return {
-    plan: planRealmLabor({
-      eligible: daily !== null,
-      claimed,
-      amount: daily?.labor ?? 0,
-      essence: daily?.essence ?? 0,
-      held: LAB_LABOR_LIMIT - room,
-      limit: LAB_LABOR_LIMIT,
-    }),
-    dailyAmount: daily?.labor ?? 0,
-    dailyEssence: daily?.essence ?? 0,
-    home: labLaborHome(home),
-    days: seasonStrip({
-      today,
-      last: lastDay ? today : LAB_SEASON_LAST_DAY,
-      founded: 0,
-      claimed: (index) => LAB_CLAIMED_DAYS.includes(index),
-      claimedToday: claimed,
-    }),
-    secondsLeft: CLOCK.secondsLeft,
-    nextDay: lastDay ? null : today + 2,
-  };
-};
-
-const labDailyClaim = (home: LabRealms["home"]) =>
-  homeSourceClaim(
-    DEVCON_LABOR_RULES,
-    home === "none"
-      ? { kind: "free" }
-      : home === "held"
-        ? { kind: "realm" }
-        : { kind: "campaign", golden: home === "golden" },
-  );
-
-const labLaborHome = (home: LabRealms["home"]): RealmLaborFacts["home"] => {
-  if (home === "none") return null;
-  if (home === "held") return { kind: "realm", realmId: 3, name: canonicalRealm(3).name };
-  const skin = home === "golden" ? "devcon-golden" : "devcon";
-  return {
-    kind: "campaign",
-    mark: { line: REALM_SKINS[skin].label, golden: home === "golden", icon: homeIcon(skin, 0) },
-  };
-};
-
-const labAlertsAsk = (ask: LabRealms["ask"]): AlertsAsk =>
-  ask === undefined ? null : ask === "on" ? { kind: "on" } : { kind: ask, busy: false, act: noop };
 
 /** The day's summary where the game draws it: over the map at the day's end, in its summary phase. */
 function LabDaySummary({ card }: { card: Parameters<typeof DayDoneCard>[0] }) {

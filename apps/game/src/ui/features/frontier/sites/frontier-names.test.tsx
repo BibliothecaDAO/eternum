@@ -2,6 +2,7 @@ import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it } from "vitest";
 import { getGameModeConfig } from "@/config/game-modes";
+import { GAME_FAMILIES } from "../../../../../../../config/source/common/native-preset-modes";
 import { Plate } from "@/three/map-plates/map-plates";
 import { buildStructurePlate } from "@/three/map-plates/map-plate-model";
 import { kindsHeld } from "@/ui/features/world/hud/holdings-model";
@@ -37,7 +38,7 @@ const publicText = (view: ReactNode) => {
 
 it("names a known camp by its beast on the plate, cards, receipt and Events, and the kind alone by its family", () => {
   const { store, site, structure } = campBeside();
-  const mode = getGameModeConfig(5);
+  const mode = getGameModeConfig(GAME_FAMILIES.frontier);
   const beast = readFrontierBeast(store, 1, SITE)!;
   expect(beast.name).toBe("Golem");
   const identity = { ...beast, art: "beast-troll" as const, combatClass: "Knight" as const };
@@ -74,7 +75,7 @@ it("names a known camp by its beast on the plate, cards, receipt and Events, and
       store,
     ),
   ];
-  const dayEnd = dayEndItems({ claimWaiting: false, camp: { x: 40, y: 12 }, armyCanExplore: false });
+  const dayEnd = dayEndItems({ camp: { x: 40, y: 12 }, armyCanExplore: false });
   const kindWords = {
     listHeading: kindsHeld([{ category: StructureType.Camp, structure }], mode.id)[0].plural,
     unknownGuard: attackTargetName("Camp"),
@@ -117,7 +118,7 @@ it("names a known camp by its beast on the plate, cards, receipt and Events, and
 
 it("retains site proper names and Camp for Blitz kind lines and lists", () => {
   const { structure } = campBeside();
-  const mode = getGameModeConfig(2);
+  const mode = getGameModeConfig(GAME_FAMILIES.blitz);
   expect(mode.structure.getName(structure, {} as never).name).toBe(siteDisplayName(Number(structure.entity_id)));
   expect(mode.structure.getTypeName(StructureType.Camp)).toBe("Camp");
   expect(kindsHeld([{ category: StructureType.Camp, structure }], mode.id)[0].plural).toBe("Camps");

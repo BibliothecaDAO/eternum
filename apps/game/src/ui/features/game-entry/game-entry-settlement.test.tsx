@@ -17,8 +17,6 @@ const state = vi.hoisted(() => ({
     name: "frontier",
     mode: "frontier",
     dev_mode_on: false,
-    preset_id: 5,
-    ready: true,
     clock: { start_settling_at: 1, start_main_at: 1, scheduled_end_at: 9999999999, end_at: 9999999999 },
     aspect_members: undefined as Record<number, number> | undefined,
   },
@@ -74,7 +72,6 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { ASPECT_STEP_WORDS } from "@/ui/design-system/kit/words";
 import { GameEntryModal } from "./game-entry-modal";
-import { FRONTIER_S1_PRESET_ID } from "../../../../../../config/source/common/native-preset-modes";
 
 afterEach(() => {
   vi.useRealTimers();
@@ -160,7 +157,7 @@ it("asks a Season 1 free home for its Aspect, then its Order, and founds in the 
   const joined = vi.spyOn(identityClient, "joinedShare").mockResolvedValue(null);
   const kept = vi.spyOn(identityClient, "getOrderIntent").mockResolvedValue({ order: null, members: {} });
   // Herald's directory row counts each Aspect's homes (AspectMembers), every Aspect named.
-  state.entry = { ...state.entry, preset_id: FRONTIER_S1_PRESET_ID, aspect_members: { 1: 12, 2: 9, 3: 0, 4: 31 } };
+  state.entry = { ...state.entry, aspect_members: { 1: 12, 2: 9, 3: 0, 4: 31 } };
   const { host, close } = await openEntry("settle");
   try {
     await act(async () => vi.advanceTimersByTimeAsync(100));
@@ -198,7 +195,7 @@ it("asks a Season 1 free home for its Aspect, then its Order, and founds in the 
     await close();
     joined.mockRestore();
     kept.mockRestore();
-    state.entry = { ...state.entry, preset_id: 5, aspect_members: undefined };
+    state.entry = { ...state.entry, aspect_members: undefined };
   }
 });
 

@@ -1,6 +1,6 @@
 import { gameRegistryRow } from "../test-support/game-registry";
 import { expect, it } from "vitest";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../contracts/l3/world-native/schema/release-definition.json";
 import { nativeBaneConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { NativeFactStore } from "../client/native-fact-store";
 import { dayOf } from "../utils/days";
@@ -17,7 +17,7 @@ function baneProduction() {
     {
       model: "SliceRules",
       key: "0xd000",
-      value: { ...preset.rules, game_id: 1, day_unit_seconds: 100, mode_rules: 0 },
+      value: { ...release.definition.rules, game_id: 1, day_unit_seconds: 100, mode_rules: 0 },
     },
     {
       model: "GameRegistry",

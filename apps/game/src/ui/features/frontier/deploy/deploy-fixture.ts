@@ -3,7 +3,7 @@ import { NATIVE_RELEASES } from "../../../../../../../deploy/release/native-rele
 import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
 
 const DEPLOY_SLOT_KEY = "0x9";
 
@@ -39,11 +39,11 @@ export const frontierDay = () => {
   const store = new NativeFactStore();
   store.applyFacts([
     set("0x100", "SliceRules", {
-      ...preset.rules,
+      ...release.definition.rules,
       game_id: 1,
       day_unit_seconds: 100,
       troop_stamina_config: {
-        ...preset.rules.troop_stamina_config,
+        ...release.definition.rules.troop_stamina_config,
         stamina_initial: 150,
         stamina_knight_max: 150,
         stamina_paladin_max: 150,
@@ -68,7 +68,9 @@ export const frontierDay = () => {
       created_release_id: NATIVE_RELEASES.frontier.release,
     }),
     set("0x7", "Structure", realm),
-    ...preset.resources.map((rule) => set(`0x5${rule.resource_type}`, "ResourceRule", { ...rule, game_id: 1 })),
+    ...release.definition.resources.resources.map((rule) =>
+      set(`0x5${rule.resource_type}`, "ResourceRule", { ...rule, game_id: 1 }),
+    ),
     set("0x6", "ResourceWeight", { game_id: 1, entity_id: 7, capacity: "100000000000000", weight: "0" }),
     set("0x8", "ResourceBalance", {
       game_id: 1,
@@ -116,7 +118,7 @@ export const frontierDay = () => {
     }),
   ] as never);
   setBlockTimestampSource(() => 350);
-  configManager.setActiveGame(1, 2);
+  configManager.setActiveGame(1);
   configManager.setStore(store);
   return { store, row: store.require("Structure", { game_id: 1, entity_id: 7 }) };
 };

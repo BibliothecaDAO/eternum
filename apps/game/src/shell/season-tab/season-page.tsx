@@ -1,17 +1,8 @@
 import { formatAmount, formatDate } from "@bibliothecadao/types";
-import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { isGameOver } from "@/runtime/world/directory";
-import {
-  AppButton,
-  AppChip,
-  AppEmpty,
-  AppFigure,
-  AppPanel,
-  AppRow,
-  AppTabs,
-} from "@/ui/design-system/kit/app-elements";
+import { AppButton, AppChip, AppEmpty, AppFigure, AppPanel, AppRow } from "@/ui/design-system/kit/app-elements";
 import { HudPlaceMedal } from "@/ui/design-system/kit/hud-elements";
 import { RowThumb } from "@/ui/design-system/kit/list-row";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
@@ -35,62 +26,22 @@ import { ageOf } from "../play/ages";
 import { chooseSeason, directoryDay, endedSeasons, seasonEnded, seasonTitle } from "../season";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { useNowSeconds } from "../use-now";
-import { BlitzBoard } from "./blitz-board";
 import { FrontierRows } from "./frontier-rows";
 import { resultsHref } from "./results-link";
 import { SeasonPodium } from "./season-podium";
 
-type SeasonView = "frontier" | "blitz";
-
-/** How many rows tall each board's scroll area stands, by layout: every place is on it, the rest a scroll away. */
 const BOARD_ROWS = { phone: 12, desktop: 10 } as const;
 
-/**
- * Season (the owner's pick, A · Launcher): where the player stands this season, in figures at the top (their place on
- * Frontier's board, the LORDS their realm earned), then one board per mode under its mode's painting: Frontier's
- * season board, and Blitz's rating with the season prize each place would take. With no Frontier season running, its
- * board is the last one's as it ended, an archived one at the least; the seasons before it are under Past seasons, each
- * opening its Results. The desktop shows both side by side; a phone switches between them. The player's own finished
- * games are on You.
- */
 export const SeasonPage = () => {
   const phone = useLayout() === "phone";
-  // Frontier and Blitz each run their own season: the page is Season, and each board names its own.
   return (
     <PageFrame title={WORDS.season} painting="season-citadel">
       <div className="flex flex-col gap-6">
         {phone && <h1 className="text-app-title text-app-ink">{WORDS.season}</h1>}
         <Standing />
-        {phone ? <PhoneBoards /> : <DesktopBoards />}
+        <FrontierPanel rows={phone ? BOARD_ROWS.phone : BOARD_ROWS.desktop} />
       </div>
     </PageFrame>
-  );
-};
-
-const DesktopBoards = () => (
-  <div className="grid grid-cols-2 items-start gap-6">
-    <FrontierPanel rows={BOARD_ROWS.desktop} />
-    <BlitzBoard rows={BOARD_ROWS.desktop} />
-  </div>
-);
-
-/** A phone: the sheet's tabs above the one board. */
-const PhoneBoards = () => {
-  const [view, setView] = useState<SeasonView>("frontier");
-  return (
-    <>
-      <AppTabs
-        label={SEASON_WORDS.views}
-        value={view}
-        onChange={setView}
-        tabs={[
-          { key: "frontier", label: ageOf("frontier").name },
-          { key: "blitz", label: ageOf("blitz").name },
-        ]}
-      >
-        {view === "frontier" ? <FrontierPanel rows={BOARD_ROWS.phone} /> : <BlitzBoard rows={BOARD_ROWS.phone} />}
-      </AppTabs>
-    </>
   );
 };
 
@@ -123,10 +74,6 @@ const useSeason = () => {
   return { season, past: season ? ended.filter((game) => game !== season) : [], failure };
 };
 
-/**
- * Where the player stands on Frontier this season, in figures with their pictures: their place on the board, and the
- * LORDS their realm has earned. Their Blitz rating stands on Blitz's board. With no realm in the season, nothing.
- */
 const Standing = () => {
   const { season } = useSeason();
   const { data: player } = useRealmsPlayer();

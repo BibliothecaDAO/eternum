@@ -1,8 +1,5 @@
 import { StaminaReading } from "./hud/army-token";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useHeldTicket } from "@/hooks/use-holdings";
-import { getActiveGame } from "@/runtime/world";
-import { campaignOfPreset } from "@/services/home-claim-rules";
 import { canIssueOrders, isWatching } from "@/utils/can-issue-orders";
 import { useRealmVisit } from "@/sync/active-game-client";
 import { dropNextOrder } from "@/three/scenes/worldmap-next-order";
@@ -52,14 +49,10 @@ import { RealmPanel } from "./hud/realm-panel";
 import { HudBands } from "./hud/hud-bands";
 import { MenuPage } from "./hud/menu-page";
 import { useHowToPlay } from "@/ui/modules/how-to-play";
-import { FrontierRealms } from "./value/frontier-realms";
-import { FragmentsPurse, PurseRow, RealmsChip } from "./value/lords-purse";
+import { FragmentsPurse, PurseRow } from "./value/lords-purse";
 import { useFragmentsHeld } from "./value/fragments";
 import { ShopSheet } from "./shop/shop-sheet";
-import { useHomeKind } from "@/hooks/helpers/use-home-kind";
-import { useCampaignMark } from "./value/campaign-home";
-import { dailyClaimWaiting, type DailyClaimWaiting } from "./value/realm-labor";
-import { useRealmLabor } from "./value/use-realm-labor";
+import { homeKind } from "@/ui/design-system/home-icons";
 import { OfflineNotice } from "./hud/offline-notice";
 import { SceneFailureNotice } from "./hud/scene-failure-notice";
 import { NextOrderBar, OrderBar } from "./hud/order-bar";
@@ -86,11 +79,7 @@ type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 
 type FrontierHudProps = {
   rules: ExpeditionRules;
-  /** The host owns the shell recap; the HUD supplies the player's realm and pending payout. */
-  seasonOver: ComponentType<{
-    realm: NativeRows["Structure"] | null;
-    withdraw?: ReactNode;
-  }>;
+  seasonOver: ComponentType<{ withdraw?: ReactNode }>;
 };
 
 /**
@@ -121,9 +110,6 @@ const FrontierHudBody = ({
   useDocumentClass("frontier-hud");
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const spectating = useUIStore(isWatching);
-  // A player's ticket to this season's campaign, read as they play: the read settles what friends earned and asks for
-  // a golden upgrade earned for this home, so it lands without a visit to You.
-  useHeldTicket(spectating ? null : campaignOfPreset(getActiveGame()?.presetId ?? -1));
   const realm = useFrontierRealm();
   // The realm on the board: on a visit (a spectator's watch is one too) the visited realm, whose strip, panel and
   // armies the HUD shows; no order renders for a realm the player does not own.
@@ -149,8 +135,6 @@ const FrontierHudBody = ({
   });
   const desktop = useLayout() === "desktop";
   const { surface, openSurface: setSurface, showsCard } = useOnePanel(card?.key ?? null, !desktop);
-  const realmLabor = useRealmLabor(rules, realm);
-  const claimWaiting = dailyClaimWaiting(realmLabor?.plan);
   const research = useResearchTree(realm);
   useEffect(() => {
     if (surface !== "research") setResearchPick(undefined);
@@ -173,8 +157,6 @@ const FrontierHudBody = ({
   // dock picks one: a desktop opens the army's panel in Today's place, even for the army already selected; a phone puts
   // Today away and shows the army in the action row, the map first.
   const dayEnd = useDayEnd(rules, visit ? null : realm, {
-    claimWaiting: claimWaiting !== null,
-    onClaim: () => setSurface("realms"),
     onPickArmy: desktop
       ? openArmy
       : (explorerId) => {
@@ -214,10 +196,9 @@ const FrontierHudBody = ({
     <IdentityChip compact />
   ) : (
     own &&
-    (claimWaiting || fragments !== null) && (
+    fragments !== null && (
       <PurseRow>
-        {fragments !== null && <FragmentsPurse fragments={fragments} onOpen={() => setSurface("shop")} />}
-        {claimWaiting && <RealmsChip waiting={claimWaiting} narrow onOpen={() => setSurface("realms")} />}
+        <FragmentsPurse fragments={fragments} onOpen={() => setSurface("shop")} />
       </PurseRow>
     )
   );
@@ -229,7 +210,7 @@ const FrontierHudBody = ({
     ) : surface === "feed" ? (
       <FrontierFeed onClose={close} />
     ) : surface === "menu" ? (
-      <HudMenu realm={realm} claimWaiting={claimWaiting !== null} onOpen={setSurface} onClose={close} />
+      <HudMenu onOpen={setSurface} onClose={close} />
     ) : undefined;
   const notices = (
     <>
@@ -255,7 +236,6 @@ const FrontierHudBody = ({
     <>
       <FrontierSurfaces realm={realm} rules={rules} />
       {showsCard && card?.sheet}
-      {surface === "realms" && realm && !visit && <FrontierRealms labor={realmLabor} onClose={close} />}
       {surface === "army" && realm && !visit && <FrontierArmy realm={realm} onClose={close} />}
       {surface === "army-lost" && <ArmyLostSheet onClose={close} />}
       {surface === "shop" && own && <ShopSheet onClose={close} />}
@@ -273,7 +253,7 @@ const FrontierHudBody = ({
           onClose={close}
         />
       )}
-      {surface !== "season" && <SeasonOver realm={visit ? null : realm} />}
+      {surface !== "season" && <SeasonOver />}
       {realm && <DayDone rules={rules} realm={realm} visiting={Boolean(visit)} />}
       <BuildingsInFlight />
       <FrontierOathPick realm={realm} />
@@ -287,14 +267,7 @@ const FrontierHudBody = ({
       worldTab={layers ? layerTab(layers) : undefined}
       realm={
         shown && (
-          <FrontierRealmPanel
-            rules={rules}
-            realm={shown}
-            own={own}
-            waiting={claimWaiting}
-            storeCards={storeCards}
-            onSurface={setSurface}
-          />
+          <FrontierRealmPanel rules={rules} realm={shown} own={own} storeCards={storeCards} onSurface={setSurface} />
         )
       }
       armies={dock}
@@ -512,18 +485,7 @@ const PendingOrder = ({
 };
 
 /** The Menu page over the game: each row opens its way and closes the menu; Exit leaves for the app. */
-const HudMenu = ({
-  realm,
-  claimWaiting,
-  onOpen,
-  onClose,
-}: {
-  realm: NativeRows["Structure"] | null;
-  /** Whether the home's daily claim has Labor or Essence waiting today: the Realms row wears a dot. */
-  claimWaiting: boolean;
-  onOpen: (surface: HudSurface | null) => void;
-  onClose: () => void;
-}) => {
+const HudMenu = ({ onOpen, onClose }: { onOpen: (surface: HudSurface | null) => void; onClose: () => void }) => {
   const navigate = useNavigate();
   const rank = useSeasonRank();
   const guide = useHowToPlay();
@@ -532,7 +494,6 @@ const HudMenu = ({
       rank={rank}
       onToday={() => onOpen("today")}
       onSeason={() => onOpen("season")}
-      realms={realm ? { waiting: claimWaiting, onOpen: () => onOpen("realms") } : undefined}
       onSettings={() => onOpen("settings")}
       guide={guide}
       onExit={() => navigate("/")}
@@ -541,16 +502,10 @@ const HudMenu = ({
   );
 };
 
-/**
- * The desktop's realm panel over the realm the HUD reads (the player's, or the one watched or visited): its name and
- * rank's steps in a header that takes the map home to it, its population and stores, and for the player's own realm
- * its daily home claim and each store's card.
- */
 const FrontierRealmPanel = ({
   rules,
   realm,
   own,
-  waiting,
   storeCards,
   onSurface,
 }: {
@@ -558,7 +513,6 @@ const FrontierRealmPanel = ({
   realm: NativeRows["Structure"];
   /** The player's own realm, the one read; null while watching or visiting. */
   own: NativeRows["Structure"] | null;
-  waiting: DailyClaimWaiting | null;
   storeCards: ComponentProps<typeof RealmPanel>["storeCards"];
   onSurface: (surface: HudSurface) => void;
 }) => {
@@ -566,23 +520,18 @@ const FrontierRealmPanel = ({
   const stores = useStoreReadings(realm, rules);
   const population = useRealmPopulation(realm);
   const goToPlace = useGoToFrontierPlace(realm);
-  const mark = useCampaignMark(realm);
-  const kind = useHomeKind(realm);
   const fragments = useFragmentsChip();
   return (
     <RealmPanel
       name={name}
-      mark={mark}
-      kind={kind}
+      kind={homeKind(realm.metadata.has_wonder)}
       level={realm.base.level}
       highest={configManager.getMaxLevel(StructureType.Realm)}
       population={population}
       stores={stores}
       onHome={() => goToPlace(true)}
       {...(own && {
-        waiting,
         storeCards,
-        onRealms: () => onSurface("realms"),
         ...(fragments !== null && { fragments, onShop: () => onSurface("shop") }),
       })}
     />

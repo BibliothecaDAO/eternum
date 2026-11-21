@@ -10,7 +10,7 @@ import { AppCountdownChip } from "@/ui/design-system/kit/clock-chip";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { ASPECT_STEP_WORDS, SHARED_LINK_WORDS } from "@/ui/design-system/kit/words";
 
-import { useSeasonCalendar } from "../blitz-slot";
+import { useSeasonCalendar } from "../season-calendar";
 import { StageFrame } from "../frame/stage-frame";
 import { ageOf } from "../play/ages";
 import { CreateAccount } from "../play/season-countdown";

@@ -6,11 +6,7 @@ import { identityClient, useIdentitySessionStore } from "@/hooks/context/identit
 import { IdentityRequestError, SOCIAL_PROVIDERS, type SealCodeRefusal } from "@realms-world/identity";
 import { answerLabBuildOrders } from "./lab-build-orders";
 
-import { BlitzLobbyPage } from "../blitz/blitz-pages";
 import { BuildOrdersPage } from "../build-orders/build-orders-page";
-import { entryTermsKey, refundOwedKey, registeredSlotsKey, slotRegisteredKey } from "../blitz/entry";
-import { seasonPrizeKey } from "../season-tab/blitz-season";
-import { rewardKey } from "../season-tab/reward";
 import { PageAddress } from "../frame/page-address";
 import { CreditsPage, PrivacyPage, TermsPage } from "../legal";
 import { WhatsNewPage } from "../news/news";
@@ -40,26 +36,15 @@ import {
   LAB_PLAYER,
   LAB_PROFILES,
   LAB_CHAT_PROFILES,
-  LAB_RATING_TOP,
   LAB_SHARD_MANIFEST,
   labFrontierBoard,
-  labRatingTop,
   LAB_NO_HISTORY_SCREENS,
   LAB_SCREENS,
-  LAB_SEAT_PROFILES,
   LAB_SESSION,
-  LAB_CHAT,
   LAB_GLOBAL_CHAT,
   LAB_EMAIL_CODE,
-  LAB_ENTRY_TERMS,
-  LAB_GAME_KEYS,
   LAB_NAMES,
-  LAB_REWARDS,
-  LAB_SEASON_PRIZES,
   LAB_PAYOUT_WALLETS,
-  LAB_SLOT_KEY,
-  LAB_SLOT_REGISTERED,
-  LAB_WALLET,
   labRatings,
   labCalendar,
   labOrderIntent,
@@ -68,21 +53,13 @@ import {
   labSealCode,
   LAB_SEAL_CODE,
   LAB_SHARE_CODE,
-  labSlots,
   type LabScreen,
 } from "./app-lab-fixtures";
 import { LabConnect, LabDoorway } from "./app-lab-flows";
-import { LabSeasonEndDevcon } from "./season-end-devcon-lab";
 import { answerLabChat } from "./lab-chat";
 import { AppChatConnection } from "../chat/app-chat";
 import { ChatPage } from "../chat/chat-page";
 
-/**
- * The dev build's app lab: the real pages over one fixture state per screen, for the painted pass's captures of states
- * the dev stack cannot hold (Day 12 of a season, a full lobby, a season just over). Opened as /lab/app/<screen>/<page>;
- * the lab answers the app's own /api reads and seeds the shard boards, so nothing leaves the tab. Beside the pages:
- * Connect's steps, the doorway's holds (app-lab-flows.tsx), the reading pages and an unknown path's.
- */
 export const AppLabView = () => {
   const { screen } = useParams();
   if (!isLabScreen(screen)) return <Navigate to="/lab/app/home" replace />;
@@ -123,7 +100,6 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
       <Routes>
         <Route index element={<PlayPage />} />
         <Route path="blitz/build-orders" element={<BuildOrdersPage />} />
-        <Route path="blitz/:id" element={<BlitzLobbyPage />} />
         <Route path="season" element={<SeasonPage />} />
         <Route path="results/:id" element={<ResultsPage />} />
         <Route path="profile" element={<ProfilePage />} />
@@ -136,7 +112,6 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
         <Route path="credits" element={<CreditsPage />} />
         <Route path="connect/:step" element={<LabConnect />} />
         <Route path="doorway/:state" element={<LabDoorway />} />
-        <Route path="season-end-devcon/:step/:who" element={<LabSeasonEndDevcon />} />
         <Route path="s/:code" element={<SharedLinkPage />} />
         <Route path="join/devcon" element={<JoinDevconPage />} />
         <Route path="join/devcon/:code" element={<JoinDevconPage />} />
@@ -163,11 +138,6 @@ const useLabSession = (screen: LabScreen) => {
   }, [screen]);
 };
 
-/**
- * The field the lab's Season boards hold: `?field=<players>` sizes Frontier's board and the Blitz rating to that many,
- * Frontier's read through Herald's own route on its refresh (its shard listed with its manifest, so it opens with no
- * read of its own), to measure a board of many players (prove:app board-load). Without it, the painted boards.
- */
 const labField = (): number | null => {
   const field = Number(new URLSearchParams(window.location.search).get("field"));
   return Number.isSafeInteger(field) && field >= LAB_FIELD_MIN ? field : null;
@@ -185,19 +155,6 @@ const createLabClient = (screen: LabScreen, field: number | null) => {
       screen === "season-unpublished" ? LAB_FRONTIER_UNPUBLISHED_BOARD : LAB_FRONTIER_BOARD,
     );
   client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 3], LAB_FINAL_BOARDS[screen] ?? LAB_FRONTIER_FINAL_BOARD);
-  const wallet = LAB_PAYOUT_WALLETS[screen];
-  const terms = LAB_ENTRY_TERMS[screen];
-  if (terms && wallet) client.setQueryData(entryTermsKey(LAB_SLOT_KEY, wallet), terms);
-  client.setQueryData(slotRegisteredKey(LAB_SLOT_KEY), LAB_SLOT_REGISTERED);
-  // The list's refund row: the closed slot owes the wallet on the screen that left it unseated.
-  if (wallet) {
-    client.setQueryData(registeredSlotsKey(wallet), [LAB_SLOT_KEY]);
-    client.setQueryData(refundOwedKey(LAB_SLOT_KEY, wallet), screen === "entry-unseated");
-  }
-  const reward = LAB_REWARDS[screen];
-  const prize = LAB_SEASON_PRIZES[screen];
-  if (reward) client.setQueryData(rewardKey(LAB_GAME_KEYS, LAB_WALLET), reward);
-  if (prize) client.setQueryData(seasonPrizeKey([{ slot: LAB_SLOT_KEY, wallet: LAB_WALLET }]), prize);
   return client;
 };
 
@@ -224,7 +181,7 @@ function installLabFixtures(screen: LabScreen, field: number | null): () => void
     (name) => [name, Object.getOwnPropertyDescriptor(identityClient, name)] as const,
   );
   answerAppReads(screen, field);
-  answerChat(screen);
+  answerLabChat({ history: () => LAB_GLOBAL_CHAT });
   answerIdentity(screen);
   return () => {
     window.fetch = previousFetch;
@@ -259,11 +216,9 @@ const answerAppReads = (screen: LabScreen, field: number | null) => {
         failures: [],
       }),
     "/api/guardian": () => json(LAB_GUARDIAN),
-    "/api/slots": () => json(labSlots(screen)),
     "/api/factory/calendar": () => json(labCalendar(screen)),
     "/api/profiles": (url) =>
       json({ profiles: profilesOf(screen, url.searchParams.get("accounts")?.split(",") ?? []) }),
-    "/api/ratings/top": () => json(field === null ? LAB_RATING_TOP : labRatingTop(field)),
     "/api/ratings": (url) => json(labRatings(url.searchParams.get("players")?.split(",") ?? [])),
     "/api/value/held-realms": () => {
       const held = LAB_HELD_REALMS[screen] ?? [];
@@ -331,21 +286,6 @@ const answerIdentity = (screen: LabScreen) => {
   });
 };
 
-/** The chat's rooms, answered in the tab: Global writes, and a lobby's room for a wallet registered in its slot, not refunded. */
-const answerChat = (screen: LabScreen) => {
-  const registration = LAB_ENTRY_TERMS[screen]?.registration;
-  const canWrite =
-    LAB_ENTRY_TERMS[screen]?.cancelled !== true &&
-    registration?.registered === true &&
-    registration.paid > 0n &&
-    !registration.refundable;
-  // A lobby's room has its lobby's lines, Global its own.
-  answerLabChat({
-    lobbyWrites: canWrite,
-    history: (zoneId) => (zoneId.startsWith("slot:") ? LAB_CHAT : LAB_GLOBAL_CHAT),
-  });
-};
-
 /** The screen's player by name: the one their session carries and the one identity answers for them. */
 const labPlayerName = (screen: LabScreen) => LAB_NAMES[screen] ?? LAB_SESSION.user.name;
 
@@ -355,7 +295,7 @@ const profilesOf = (screen: LabScreen, accounts: readonly string[]) =>
       const profile =
         BigInt(account) === BigInt(LAB_PLAYER)
           ? { name: labPlayerName(screen), portrait: LAB_SESSION.user.image }
-          : (LAB_PROFILES[account] ?? LAB_SEAT_PROFILES[account] ?? LAB_CHAT_PROFILES.get(BigInt(account)));
+          : (LAB_PROFILES[account] ?? LAB_CHAT_PROFILES.get(BigInt(account)));
       return profile ? [[account, profile]] : [];
     }),
   );

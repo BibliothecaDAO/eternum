@@ -42,7 +42,7 @@ import { ShardReleaseMismatchError } from "@bibliothecadao/eternum/game-client";
 import { readReleaseCatalogue, type ReleaseCatalogue } from "./game-facts";
 import { readDeepAlerts, type DeepRingOpening, type DeepSiteWatch } from "./deep-site-watch";
 import { decodeIdentityEnv, type IdentityEnv } from "./env";
-import { planDayOpenings, readEnrolledAccounts, readHomeClaim, type DayOpening } from "./day-open";
+import { planDayOpenings, readEnrolledAccounts, type DayOpening } from "./day-open";
 import { NotificationPreferenceStore } from "./notification-preference-store";
 import { PushSubscriptionStore, type PushSubscriptionRow } from "./push-subscription-store";
 import { realmsIdsOfAccounts } from "./realms-accounts";
@@ -733,13 +733,11 @@ const dayOpenAlerts = async (env: IdentityEnv, shard: Required<WatchedShard>, op
     for (const [account, owner] of realmsIds) {
       const owned = devices.filter((device) => device.owner === owner);
       if (owned.length === 0 || (levels.get(owner) ?? "off") === "off") continue;
-      const claim = await readHomeClaim(shard.url, opening.gameId, account);
       const push: DayOpenPush = {
         ...opening,
         chainId: shard.chainId,
         worldAddress: shard.worldAddress,
         owner,
-        claim,
       };
       for (const device of owned) {
         const notification = buildDayOpen({ ...push, sendAt: push.opensAt, timeZone: device.timeZone });

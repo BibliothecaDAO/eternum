@@ -137,8 +137,6 @@ export const fetchHeraldLeaderboard = async (shard: Shard, gameId: number): Prom
     buildHeraldUrl(shard, `/games/${gameId}/leaderboard`),
     `Herald leaderboard for ${shard.url} game ${gameId}`,
   );
-  if (board.entries.some((entry) => entry.campaign === undefined))
-    throw new Error("Herald Frontier leaderboard is missing campaign identity");
   return board;
 };
 

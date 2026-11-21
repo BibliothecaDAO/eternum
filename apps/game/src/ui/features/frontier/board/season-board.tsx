@@ -1,4 +1,3 @@
-import { realmSkinOf } from "@/three/structures/realm-skins";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { type PlayerNames, usePlayerDisplayName, usePlayerNames } from "@/hooks/use-player-profile";
@@ -153,9 +152,6 @@ const useSeasonListRows = (entries: readonly Entry[] | undefined): SeasonListRow
   return (entries ?? []).map((entry) => listRow(entry, entry === own, names));
 };
 
-/**
- * The board carries each realm's rank, depth and founding identity, including homes outside the viewer's scope.
- */
 const listRow = (entry: Entry, own: boolean, names: PlayerNames): SeasonListRow => ({
   key: entry.address,
   rank: entry.rank,
@@ -163,7 +159,6 @@ const listRow = (entry: Entry, own: boolean, names: PlayerNames): SeasonListRow 
   realm: {
     level: entry.level,
     depth: entry.deepest_depth,
-    skin: realmSkinOf(entry.campaign),
     hasWonder: entry.has_wonder,
   },
   name: (

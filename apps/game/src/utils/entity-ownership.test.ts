@@ -5,10 +5,10 @@ import { hash } from "starknet";
 import { afterEach, describe, expect, it } from "vitest";
 import { SEAT_COLOURS, seatSide } from "@/tokens";
 import { overrideSpectateIntent } from "./spectator-session";
-import { isEntityOwnedByAccount, seatOrder, watchedSide } from "./entity-ownership";
+import { isEntityOwnedByAccount, watchedSide } from "./entity-ownership";
 
 const fixture = () => {
-  configManager.setActiveGame(1, 1);
+  configManager.setActiveGame(1);
   const store = new NativeFactStore();
   const write = (model: string, keys: (number | bigint)[], row: Record<string, unknown>) =>
     store.applyFacts([{ model: model, key: hash.computePoseidonHashOnElements(keys), value: row }]);
@@ -52,50 +52,15 @@ describe("native ownership", () => {
   });
   it("does not reuse ownership from another game", () => {
     const { store } = fixture();
-    configManager.setActiveGame(2, 1);
+    configManager.setActiveGame(2);
     expect(isEntityOwnedByAccount(store, 1, "0xabc")).toBe(false);
   });
 });
 
 describe("seats (side-colours-4: a watching viewer sees each player in their seat's colour)", () => {
   afterEach(() => overrideSpectateIntent(false));
-  /** A game whose structures are `[entity id, owner]`, with the given registered players and Blitz roster. */
-  const game = ({
-    structures = [],
-    players = [],
-    roster,
-  }: {
-    structures?: [bigint, bigint][];
-    players?: bigint[];
-    roster?: bigint[];
-  }) => {
-    const { store, write } = fixture();
-    // The fixture's own structure 1 (owner 0xabc) is replaced by the game's.
-    write("Structure", [1, 1], { ...structureRow(1n, 0n) });
-    for (const [entity, owner] of structures) write("Structure", [1, entity], structureRow(entity, owner));
-    for (const player of players) write("PlayerEntry", [1, player], { game_id: 1, owner: player, player });
-    if (roster)
-      write("BlitzRoster", [1], {
-        game_id: 1,
-        players: roster.map((account) => ({ account, wallet: account + 1000n })),
-      });
-    return { store, write };
-  };
-
-  it("seats a Blitz game in its roster's order, whatever its realms' ids", () => {
-    const { store } = game({
-      structures: [
-        [1n, 0xbn],
-        [2n, 0xan],
-      ],
-      roster: [0xbn, 0xcn, 0xan],
-    });
-    expect(seatOrder(store)).toEqual([0xbn, 0xcn, 0xan]);
-  });
-
   it("tells nothing by seat while the viewer plays", () => {
-    const { store } = game({ structures: [[2n, 0xbn]], players: [0xbn] });
-    expect(watchedSide(store, 0xbn)).toBeNull();
+    expect(watchedSide(0xbn)).toBeNull();
   });
 
   it("starts the 24 colours again past the 24th seat, and writes each initial in the ink its colour reads in", () => {
@@ -104,21 +69,4 @@ describe("seats (side-colours-4: a watching viewer sees each player in their sea
     expect(SEAT_COLOURS.map((_, seat) => (seatSide(seat) as { ink: string }).ink)).toContain("light");
     expect(new Set(SEAT_COLOURS).size).toBe(24);
   });
-});
-
-/** A level-0 realm `entity` held by `owner`, as the chain writes it. */
-const structureRow = (entity: bigint, owner: bigint) => ({
-  game_id: 1,
-  entity_id: entity,
-  owner,
-  resources_packed: "0",
-  base: {
-    category: 1,
-    level: 0,
-    created_at: 0,
-    troop_max_guard_count: 1,
-    troop_max_explorer_count: 1,
-    starting_troops_granted: false,
-  },
-  metadata: { realm_id: 1, order: 0, has_wonder: false, village_realm: 0, mine_kind: 0, deepest_depth: 0 },
 });

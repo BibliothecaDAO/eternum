@@ -4,12 +4,9 @@ import { useLocation, useParams } from "react-router-dom";
 import type { GameRef } from "@bibliothecadao/eternum/shard";
 import type { HeraldFrontierLeaderboard } from "@bibliothecadao/eternum/game-sync";
 import { AppButton, AppPanel } from "@/ui/design-system/kit/app-elements";
-import { CONTINUE, RESULT_WORDS, WITHDRAW, REWARD_WORDS, WORDS } from "@/ui/design-system/kit/words";
+import { CONTINUE, RESULT_WORDS, WITHDRAW, WORDS } from "@/ui/design-system/kit/words";
 import { findOwnEntry } from "@/ui/features/frontier/board/standings";
 
-import { rosterWalletOf } from "@/runtime/world/directory";
-
-import { gameKeyOf, gameSlotKeyOf } from "../blitz-rows";
 import { clockLine } from "@/ui/design-system/kit/clock-chip";
 import { entryHref } from "../game-links";
 import { useLayout } from "../frame/layout";
@@ -23,23 +20,12 @@ import { gameKey } from "../play/play-board";
 import { markResultsSeen } from "../play/seen-results";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { useNowSeconds } from "../use-now";
-import { environmentLedger } from "../value/ledger";
-import { FailureLine } from "../sign-in/failure-line";
 import { gameTitle } from "./history-row";
 import { gameOfResults } from "./results-link";
 import { archivedSeason } from "./archive/archive";
-import { type RewardSeat, useSealedChest } from "./reward";
-import { RewardPanel } from "./reward-panel";
 import { useFinishedGame } from "./finished-game";
 import { SeasonRecap } from "./season-recap";
 
-/**
- * A finished game's Results (spec 08; the owner's pick, C · Ledger): the outcome first (a Blitz player's place and
- * points, or the season's ending), the board with every place and the player's own lit, and Continue; Share for Blitz,
- * Season for Frontier. Opened from a list it has no Continue (its place, lit, leads back to the list); after a match
- * (or from Play) it has Continue. A sealed chest's Open is the page's one gold step, and Continue stands beside it in
- * outline. Opening it marks the result seen on this device.
- */
 export const ResultsPage = () => {
   const { id } = useParams();
   const fromList = isOpenedFrom(useLocation());
@@ -136,7 +122,6 @@ const EndMapButton = ({ gameRef }: { gameRef: GameRef }) => (
   </AppButton>
 );
 
-/** Continue to Play after a match: the page's step, unless another verb leads (a sealed chest's Open, Share my season). */
 const ContinueButton = ({ fromList, leads = true }: { fromList: boolean; leads?: boolean }) =>
   fromList ? null : (
     <AppButton kind={leads ? "primary" : "secondary"} icon="play" step={leads} to="/">
@@ -146,25 +131,17 @@ const ContinueButton = ({ fromList, leads = true }: { fromList: boolean; leads?:
 
 const BlitzResult = ({ gameRef, game, fromList }: { gameRef: GameRef; game: DirectoryGame; fromList: boolean }) => {
   const now = useNowSeconds();
-  const chestToOpen = useSealedChest(rewardSeatOf(game));
   const buttons = (
     <span className="flex flex-wrap gap-2">
       <EndMapButton gameRef={gameRef} />
-      <ContinueButton fromList={fromList} leads={!chestToOpen} />
+      <ContinueButton fromList={fromList} />
     </span>
   );
   return (
     <ResultsFrame painting="blitz-aftermath" buttons={buttons}>
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
-        <AppPanel className="lg:col-span-8">
-          <p className="text-app-label text-app-age">
-            {`${gameTitle(game)} · ${clockLine(null, game.clock.end_at, now)}`}
-          </p>
-        </AppPanel>
-        <div className="flex flex-col gap-6 lg:col-span-4">
-          <GameReward game={game} />
-        </div>
-      </div>
+      <AppPanel>
+        <p className="text-app-label text-app-age">{`${gameTitle(game)} · ${clockLine(null, game.clock.end_at, now)}`}</p>
+      </AppPanel>
     </ResultsFrame>
   );
 };
@@ -214,24 +191,4 @@ const FrontierResult = ({
       <SeasonRecap gameRef={gameRef} game={game} board={board} viewer={player} ending="lifted" actions={actions} />
     </ResultsFrame>
   );
-};
-
-/**
- * Under a paid Blitz's board: the rating change and chest of the player's seat, read on the environment's ledger by
- * the game's key, for the wallet the shard's roster froze for the player. Nothing for a game outside a slot or a
- * player off its roster; a ledger not deployed on this environment is said so.
- */
-const GameReward = ({ game }: { game: DirectoryGame }) => {
-  if (!gameSlotKeyOf(game) || !rosterWalletOf(game)) return null;
-  const seat = rewardSeatOf(game);
-  if (!seat) return <FailureLine line={REWARD_WORDS.unreadable} />;
-  return <RewardPanel ledger={seat.ledger} keys={seat.keys} owner={seat.owner} />;
-};
-
-/** The seat a paid Blitz rewards, on this environment's ledger; null outside a slot, off its roster, or with no ledger. */
-const rewardSeatOf = (game: DirectoryGame): RewardSeat | null => {
-  const slot = gameSlotKeyOf(game);
-  const owner = rosterWalletOf(game);
-  const ledger = environmentLedger();
-  return slot && owner && ledger ? { ledger, keys: { game: gameKeyOf(game), slot }, owner } : null;
 };

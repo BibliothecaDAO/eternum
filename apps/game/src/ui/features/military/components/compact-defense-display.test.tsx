@@ -13,8 +13,6 @@ import { ARMY_DEPLOYMENT_SURFACE_ID } from "../utils/open-army-deployment";
 import { structureGuardSlots } from "../utils/defense-slot-utils";
 import { CompactDefenseDisplay } from "./compact-defense-display";
 
-const BLITZ_PRESET_ID = 2;
-
 const roots: Root[] = [];
 
 afterEach(() => {
@@ -31,9 +29,7 @@ afterEach(() => {
 const mountGuards = ({ owner }: { owner: boolean }) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store, realm } = realmBoard();
-  const game = store.require("GameRegistry", { game_id: 1 });
   store.applyFacts([
-    { model: "GameRegistry", key: "0x3", value: { ...game, preset_id: BLITZ_PRESET_ID } },
     { model: "Structure", key: "0x7", value: { ...realm, base: { ...realm.base, troop_max_guard_count: 4 } } },
     {
       model: "Guard",

@@ -3,7 +3,6 @@ import type { AspectId } from "@bibliothecadao/types";
 import { BLITZ_WORDS, SIGN_IN_PROVIDER_NAMES, SIGN_IN_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { failureSentence } from "@/ui/modules/identity/identity-failures";
 import { IdentityRequestError, SOCIAL_PROVIDERS } from "@realms-world/identity";
-import { CAMPAIGNS } from "@realms-world/identity";
 import { useState, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
 
@@ -18,7 +17,6 @@ import { ClockChip } from "@/ui/design-system/kit/clock-chip";
 import { PlayPage } from "../play/play-page";
 import { PageAddress } from "../frame/page-address";
 import { ShellWindow } from "../frame/shell-window";
-import { DEVCON } from "../join/devcon";
 import { HandoffStep } from "../sign-in/handoff-step";
 import { NotFoundPage } from "../not-found";
 import { CodeStep } from "../sign-in/code-step";
@@ -131,7 +129,7 @@ export const LabConnect = () => {
 };
 
 /** The Frontier game the lab's doorway enters: the campaign's season, as the home step's picker reads it. */
-const LAB_FRONTIER = { mode: "frontier", preset_id: CAMPAIGNS[DEVCON.campaign].presets[0] } as const;
+const LAB_FRONTIER = { mode: "frontier" } as const;
 
 /** The doorway into Frontier at one of its holds (/lab/app/<screen>/doorway/<state>), as entering a game draws it. */
 export const LabDoorway = () => {
@@ -147,8 +145,7 @@ export const LabDoorway = () => {
       onRetry={noop}
       onOpenRealm={noop}
       onSignIn={noop}
-      onSpectate={noop}
-      results="/lab/app/reward-sealed/results/0x5245414c4d53-7"
+      results="/lab/app/season-over/results/0x5245414c4d53-3"
       asking={
         state === "home" ||
         state === "aspect" ||
@@ -204,14 +201,7 @@ const LabHomeStep = () => {
   const [value, setValue] = useState("");
   return (
     <>
-      <HomeSourcePicker
-        presetId={LAB_FRONTIER.preset_id}
-        registered={null}
-        value={value}
-        onChange={setValue}
-        onSettled={noop}
-        disabled={false}
-      />
+      <HomeSourcePicker registered={null} value={value} onChange={setValue} onSettled={noop} disabled={false} />
       <PlaysAs />
     </>
   );

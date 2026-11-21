@@ -179,9 +179,7 @@ function nameOne(t: Transaction, mode: Mode | null, owners: Owners, knowledge: M
 function nameSystem(t: Transaction): Named | null {
   if (t.has("GameplayRejected"))
     return ["(rejected)", { reason: t.story("GameplayRejected").reason }, t.stories[0].event.key.actor];
-  const setup = ["GameRegistry", "Preset", "RealmTraits", "BlitzRoster", "GameRelease", "LordsBudget"].some((m) =>
-    t.wrote("set", m),
-  );
+  const setup = ["GameRegistry", "RealmTraits", "GameRelease", "LordsBudget"].some((m) => t.wrote("set", m));
   const playerSet = t.writes.some((w) => w.model === "ArmySlot");
   if (
     t.has("BlitzFinalized") ||

@@ -7,7 +7,6 @@ import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { shortString } from "starknet";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { nativeReleaseConstants } from "../../../../../../contracts/l3/world-native/schema/client.gen";
 import type { HudSurface } from "./hud/frontier-nav";
@@ -120,7 +119,7 @@ const renderHud = () =>
     root.render(
       <MemoryRouter>
         <QueryClientProvider client={new QueryClient()}>
-          <LabGame preset={5} facts={(store) => [LABOR_RULES, sealRelease(store)]}>
+          <LabGame mode="frontier" facts={(store) => [sealRelease(store)]}>
             {(store) => {
               shownStore = store;
               return <FrontierHud seasonOver={SeasonOver} rules={readExpeditionRules(store, 1)!} />;
@@ -143,23 +142,6 @@ const sealRelease = (store: NativeFactStore) => {
     },
   };
 };
-
-const LABOR_RULES = {
-  model: "LaborRules",
-  key: "0x1ab",
-  value: { game_id: 1, amount: "1000", campaign_essence: "0", golden_amount: "1000", golden_essence: "0" },
-};
-
-it("opens Realm Labor from the desktop panel and explains why a free home has no claim", async () => {
-  viewport.set(1440);
-  await renderHud();
-  const realms = [...host.querySelectorAll("button")].find(
-    (button) => button.getAttribute("aria-label") === "Realm Labor",
-  );
-  expect(realms).toBeDefined();
-  await act(async () => realms!.click());
-  expect(host.textContent).toContain("No daily Labor claim");
-});
 
 it("keeps one chat connection and its unread count from desktop to phone and back, through the Frontier HUD", async () => {
   viewport.set(1440);
@@ -280,64 +262,48 @@ it("keeps a refused order in sight on a desktop, over the feed and over a panel 
   }
 });
 
-it.each([false, true])(
-  "draws Season ranks, depths and campaign icons outside streamed scope (campaigns: %s)",
-  async (campaigns) => {
-    // Four homes the lab's game streams none of: their Structure rows are absent from the store.
-    const entry = (rank: number, level: number, depth: number) => ({
-      has_wonder: rank === 4,
-      address: `0x${(0xa00 + rank).toString(16)}`,
-      structure_id: String(900 + rank),
-      rank,
-      sites_cleared: { total: 10 - rank, camps: 0, rifts: 0, ruins: 0, beasts: 0 },
-      chests_earned: 0,
-      rewards: { lords: "0", essence: "0", labor: "0" },
-      deepest_depth: depth,
-      level,
-      order: rank,
-      campaign:
-        campaigns && rank < 3 ? { campaign_id: shortString.encodeShortString("devcon-2026"), tier: rank } : null,
-    });
-    const board = {
-      game_id: "1",
-      mode: "frontier",
-      entries: [entry(1, 3, 3), entry(2, 1, 2), entry(3, 0, 0), entry(4, 2, 1)],
-    };
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (url: string | URL) =>
-        String(url).includes("/leaderboard")
-          ? new Response(JSON.stringify(board), { status: 200 })
-          : new Response(JSON.stringify({ blocked: [], version: 0 }), { status: 200 }),
-      ),
-    );
-    viewport.set(1920);
-    await renderHud();
-    expect([...shownStore.rows("CampaignHome")]).toEqual([]);
-    for (const entry of board.entries)
-      expect(shownStore.get("Structure", { game_id: 1, entity_id: BigInt(entry.structure_id) })).toBeUndefined();
-    const season = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Season"]')!;
-    await act(async () => season.click());
-    await act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
-    const badges = [...host.querySelectorAll('section[aria-label="Season"] [role="img"]')]
-      .map((badge) => badge.getAttribute("aria-label"))
-      .filter((label) => /Settlement|City|Kingdom|Empire/.test(label ?? ""));
-    expect(badges).toEqual([
-      `${campaigns ? "Devcon · " : ""}Empire · Deep`,
-      `${campaigns ? "Golden Devcon · " : ""}City · Hollow`,
-      "Settlement",
-      "Wonder · Kingdom · Veil",
-    ]);
-    const paintings = [...host.querySelectorAll('section[aria-label="Season"] [role="img"]')]
-      .filter((badge) => /Settlement|City|Kingdom|Empire/.test(badge.getAttribute("aria-label") ?? ""))
-      .map((badge) => badge.querySelector("img")?.getAttribute("src")?.split("/").pop());
-    expect(paintings).toEqual(
-      campaigns
-        ? ["devcon-realm-3.webp", "devcon-golden-realm-1.webp", "realm-0.webp", "wonder-realm-2.webp"]
-        : ["realm-3.webp", "realm-1.webp", "realm-0.webp", "wonder-realm-2.webp"],
-    );
-  },
-);
+it("draws Season ranks and depths outside streamed scope", async () => {
+  const entry = (rank: number, level: number, depth: number) => ({
+    has_wonder: rank === 4,
+    address: `0x${(0xa00 + rank).toString(16)}`,
+    structure_id: String(900 + rank),
+    rank,
+    sites_cleared: { total: 10 - rank, camps: 0, rifts: 0, ruins: 0, beasts: 0 },
+    chests_earned: 0,
+    rewards: { lords: "0", essence: "0", labor: "0" },
+    deepest_depth: depth,
+    level,
+    order: rank,
+  });
+  const board = {
+    game_id: "1",
+    mode: "frontier",
+    entries: [entry(1, 3, 3), entry(2, 1, 2), entry(3, 0, 0), entry(4, 2, 1)],
+  };
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string | URL) =>
+      String(url).includes("/leaderboard")
+        ? new Response(JSON.stringify(board), { status: 200 })
+        : new Response(JSON.stringify({ blocked: [], version: 0 }), { status: 200 }),
+    ),
+  );
+  viewport.set(1920);
+  await renderHud();
+  for (const entry of board.entries)
+    expect(shownStore.get("Structure", { game_id: 1, entity_id: BigInt(entry.structure_id) })).toBeUndefined();
+  const season = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Season"]')!;
+  await act(async () => season.click());
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
+  const badges = [...host.querySelectorAll('section[aria-label="Season"] [role="img"]')]
+    .map((badge) => badge.getAttribute("aria-label"))
+    .filter((label) => /Settlement|City|Kingdom|Empire/.test(label ?? ""));
+  expect(badges).toEqual(["Empire · Deep", "City · Hollow", "Settlement", "Wonder · Kingdom · Veil"]);
+  const paintings = [...host.querySelectorAll('section[aria-label="Season"] [role="img"]')]
+    .filter((badge) => /Settlement|City|Kingdom|Empire/.test(badge.getAttribute("aria-label") ?? ""))
+    .map((badge) => badge.querySelector("img")?.getAttribute("src")?.split("/").pop());
+  expect(paintings).toEqual(["realm-3.webp", "realm-1.webp", "realm-0.webp", "wonder-realm-2.webp"]);
+});
 
 /**
  * The real HUD with Herald's Frontier board answering `prize`, its Season opened and, on a phone, its folded prizes
@@ -354,7 +320,6 @@ const openSeasonWith = async (prize: unknown) => {
     deepest_depth: 1,
     level: 1,
     order: rank,
-    campaign: null,
   });
   const board = { game_id: "1", mode: "frontier", entries: [entry("0xa01", 1, 9), entry("0xa02", 2, 0)], prize };
   vi.stubGlobal(
@@ -505,7 +470,6 @@ it("opens a phone's Menu as a page on the place bar in the one frame, which its 
 it.each([
   ["Today", "Today"],
   ["Season", "Season"],
-  ["Realm Labor", "Realm Labor"],
   ["Settings", "Settings"],
 ])(
   "opens %s from a phone's Menu whichever part of its row is tapped: its icon, its words or its chevron",
@@ -545,7 +509,6 @@ const PHONE_SURFACES = {
   menu: { label: "Menu", open: () => pressPlace("Menu") },
   today: { label: "Today", open: () => fromMenu("Today") },
   season: { label: "Season", open: () => fromMenu("Season") },
-  realms: { label: "Realm Labor", open: () => fromMenu("Realm Labor") },
   settings: { label: "Settings", open: () => fromMenu("Settings") },
   shop: {
     label: "Shop",
@@ -675,14 +638,13 @@ it("keeps the extended season live past its old end and reloads its final day fr
         <MemoryRouter>
           <QueryClientProvider client={new QueryClient()}>
             <LabGame
-              preset={5}
+              mode="frontier"
               facts={(store) => {
                 useChainTimeStore.getState().anchor({ timestamp: now * 1000 });
                 currentTime = now;
                 setBlockTimestampSource(() => currentTime);
                 useBlockTimestampStore.setState({ currentBlockTimestamp: now });
                 return [
-                  LABOR_RULES,
                   {
                     model: "GameRegistry",
                     key: "0x3",
@@ -773,7 +735,7 @@ const renderVisit = async (facts: unknown[] = []) => {
       <MemoryRouter>
         <QueryClientProvider client={new QueryClient()}>
           <LabGame
-            preset={5}
+            mode="frontier"
             facts={(store) => {
               const visited = neighbour(store);
               names = {
@@ -781,7 +743,6 @@ const renderVisit = async (facts: unknown[] = []) => {
                 visited: getStructureName(visited, store).name,
               };
               return [
-                LABOR_RULES,
                 { model: "Structure", key: "0x1ad0", value: wireRow(visited) },
                 {
                   model: "RealmKnowledge",
@@ -901,12 +862,12 @@ it("opens chat on Global over the game when a mention's alert is pressed, the ga
     // Chat closed, Messages the last view: the press opens it on Global.
     await act(async () => useRealtimeChatStore.getState().actions.showMessages());
     expect(chatOpen()).toBe(false);
-    const labor = host.querySelector('[aria-label="Realm Labor"]') !== null;
+    const places = host.querySelector('nav[aria-label="Places"]') !== null;
     await pressAlert("mention", "/chat", "mention:global");
     expect(chatOpen()).toBe(true);
     expect(useRealtimeChatStore.getState().view).toEqual({ kind: "room", zoneId: "world:global" });
     // The game stays where it was: its HUD, not another page.
-    expect(host.querySelector('[aria-label="Realm Labor"]') !== null).toBe(labor);
+    expect(host.querySelector('nav[aria-label="Places"]') !== null).toBe(places);
     act(() => root.unmount());
     root = createRoot(host);
   }

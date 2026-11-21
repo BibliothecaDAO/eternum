@@ -1,5 +1,5 @@
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { configManager, getEntityInfo, getStructureName, nativeGameModeOf } from "@bibliothecadao/eternum";
+import { configManager, getEntityInfo, getStructureName, nativeGameModeOfFamily } from "@bibliothecadao/eternum";
 import {
   BuildingType,
   isFrontierBuilding,
@@ -216,7 +216,7 @@ const GAME_MODE_CONFIGS: Record<GameModeId, GameModeConfig> = {
   eternum: eternumConfig,
 };
 
-export function getGameModeConfig(presetId = configManager.getPresetId()): GameModeConfig {
-  return GAME_MODE_CONFIGS[nativeGameModeOf(presetId)];
+export function getGameModeConfig(family = configManager.getFamily()): GameModeConfig {
+  return GAME_MODE_CONFIGS[nativeGameModeOfFamily(family)];
 }
 export const getGameModeId = (): GameModeId => getGameModeConfig().id;

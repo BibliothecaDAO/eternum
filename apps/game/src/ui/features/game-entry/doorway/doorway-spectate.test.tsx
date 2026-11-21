@@ -11,34 +11,6 @@ import { doorwayView, type GameRefusal } from "./doorway-view";
 
 const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
 
-it.each([
-  ["spectate", "Not on this game.", "Watch"],
-  ["review", "This game has ended.", "Results"],
-] as const)(
-  "explains Blitz %s in one line with its one step, past a finished account step",
-  (blitzEntry, line, step) => {
-    const view = doorwayView({ source: "entry", phase: "spectate", audience: "player", signedIn: true, blitzEntry });
-    expect(view.steps[0]).toEqual({ step: "account", state: "done" });
-    const markup = renderToStaticMarkup(
-      <MemoryRouter>
-        <DoorwayScreen
-          view={view}
-          realm={null}
-          onRetry={() => {}}
-          onSignIn={() => {}}
-          onSpectate={() => {}}
-          results="/results/0xa-5"
-        />
-      </MemoryRouter>,
-    );
-    expect(text(markup)).toContain(line);
-    expect(text(markup)).toContain(step);
-    // No Back: the places return to the app at any step.
-    expect(markup).not.toContain('data-role="back"');
-    expect(markup).toContain('data-role="tab"');
-  },
-);
-
 it("says the map could not be drawn and offers the realm beside Try again, in place of the world not answering", () => {
   const boot = { source: "boot", phase: "error", audience: "player", failedScene: "map" } as const;
   const render = (realmCanOpen: boolean) =>
@@ -62,51 +34,6 @@ it("says the map could not be drawn and offers the realm beside Try again, in pl
   expect(withRealm).not.toContain("did not answer");
   // With no realm to open there is nothing to offer but the retry.
   expect(render(false)).not.toContain("Open realm");
-});
-
-it("leads an ended game's Results to its Results page, not to watching its map", async () => {
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  const view = doorwayView({
-    source: "entry",
-    phase: "spectate",
-    audience: "player",
-    signedIn: true,
-    blitzEntry: "review",
-  });
-  const watched: string[] = [];
-  const ResultsProbe = () => <p data-testid="results">{useParams().id}</p>;
-  const container = document.createElement("div");
-  const root = createRoot(container);
-  await act(async () =>
-    root.render(
-      <MemoryRouter initialEntries={["/g/0xa/5"]}>
-        <Routes>
-          <Route
-            path="/g/:chain/:game"
-            element={
-              <DoorwayScreen
-                view={view}
-                realm={null}
-                onRetry={() => {}}
-                onSignIn={() => {}}
-                onSpectate={() => watched.push("map")}
-                results="/results/0xa-5"
-              />
-            }
-          />
-          <Route path="/results/:id" element={<ResultsProbe />} />
-        </Routes>
-      </MemoryRouter>,
-    ),
-  );
-  try {
-    const results = [...container.querySelectorAll("button")].find((button) => button.textContent === "Results");
-    await act(async () => results?.click());
-    expect(container.querySelector('[data-testid="results"]')?.textContent).toBe("0xa-5");
-    expect(watched).toEqual([]);
-  } finally {
-    await act(async () => root.unmount());
-  }
 });
 
 it("leads a finalized game's boot to its Results, in place of the world not answering", async () => {

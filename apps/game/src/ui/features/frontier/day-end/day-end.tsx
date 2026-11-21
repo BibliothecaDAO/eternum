@@ -16,20 +16,15 @@ type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 
 /** One thing the day's end would take that the player can still do, with the button that does it. */
 export interface DayEndItem {
-  key: "claim" | "camp" | "explore";
+  key: "camp" | "explore";
   icon: IconMeaning;
   line: string;
   verb: string;
 }
 
 /** What the player can still do before the day ends, each only while it is still to do. */
-export const dayEndItems = ({
-  claimWaiting,
-  camp,
-  armyCanExplore,
-}: DayEndFacts & { claimWaiting: boolean }): DayEndItem[] => {
+export const dayEndItems = ({ camp, armyCanExplore }: DayEndFacts): DayEndItem[] => {
   const items: DayEndItem[] = [];
-  if (claimWaiting) items.push({ key: "claim", icon: "labor", line: DAY_END.claim, verb: DAY_END.claimVerb });
   if (camp)
     items.push({
       key: "camp",
@@ -48,30 +43,20 @@ export interface DayEnd {
   run: (key: DayEndItem["key"]) => void;
 }
 
-/**
- * The player's day end: today's clock and the list, a claim opening Realms (`onClaim`), today's camp shown on the map,
- * and the readiest army picked as the HUD picks one (`onPickArmy`, the dock's own pick), so an army already selected is
- * handed back too.
- */
 export const useDayEnd = (
   rules: ExpeditionRules,
   realm: NativeRows["Structure"] | null,
-  {
-    claimWaiting,
-    onClaim,
-    onPickArmy,
-  }: { claimWaiting: boolean; onClaim: () => void; onPickArmy: (explorerId: number) => void },
+  { onPickArmy }: { onPickArmy: (explorerId: number) => void },
 ): DayEnd => {
   const clock = dayClock(rules, useNowSeconds());
   const facts = useDayEndFacts(rules, realm);
   const armies = useDockArmies(realm);
   const run = (key: DayEndItem["key"]) => {
-    if (key === "claim") return onClaim();
     if (key === "camp") return facts.camp && openOnMap(Position.fromContract(facts.camp), "tile");
     const readiest = readiestArmy(armies);
     return readiest && onPickArmy(readiest.explorerId);
   };
-  return { clock, items: dayEndItems({ ...facts, claimWaiting }), run };
+  return { clock, items: dayEndItems(facts), run };
 };
 
 /** The army with the most stamina left: the one that can act. */

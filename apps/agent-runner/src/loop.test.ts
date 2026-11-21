@@ -31,7 +31,7 @@ afterEach(async () => {
     await loop.done.catch(() => undefined);
   }
   vi.restoreAllMocks();
-  ClientConfigManager.instance().setActiveGame(28, 0);
+  ClientConfigManager.instance().setActiveGame(28);
   await Promise.all(dataDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
 

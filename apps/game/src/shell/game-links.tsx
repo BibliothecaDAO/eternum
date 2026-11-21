@@ -5,28 +5,9 @@ import type { DirectoryGame } from "./herald";
 import type { Painting } from "@/ui/design-system/kit/paintings";
 import { ageOf } from "./play/ages";
 
-export const modeLabel = (game: Pick<DirectoryGame, "mode" | "preset_id">): string => {
-  switch (game.mode) {
-    case "frontier":
-    case "blitz":
-    case "eternum":
-      return GAME_MODE_NAMES[game.mode];
-    default:
-      return `Preset ${game.preset_id}`;
-  }
-};
+export const modeLabel = (game: Pick<DirectoryGame, "mode">): string => GAME_MODE_NAMES[game.mode];
 
-/** The age painting a game's doorway stands on; an unknown mode has none. */
-export const gamePainting = (game: Pick<DirectoryGame, "mode">): Painting | undefined => {
-  switch (game.mode) {
-    case "frontier":
-    case "blitz":
-    case "eternum":
-      return ageOf(game.mode).painting;
-    default:
-      return undefined;
-  }
-};
+export const gamePainting = (game: Pick<DirectoryGame, "mode">): Painting => ageOf(game.mode).painting;
 
 export const entryHref = (game: Pick<DirectoryGame, "chainId" | "game_id">, intent: "play" | "spectate"): string =>
   buildEntryHref({ chainId: game.chainId, gameId: game.game_id, intent, autoSettle: false });

@@ -1,6 +1,6 @@
 import { fetchHeraldGameSnapshot, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
-import { dayOf, homeDailyClaim, isRealmCategory, type HomeDailyClaim } from "@bibliothecadao/eternum/expeditions";
+import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import type { PushGame } from "@bibliothecadao/notifications";
 
 export type DayOpenGame = Pick<HeraldGameDirectoryEntry, "game_id" | "mode" | "status" | "expedition"> & {
@@ -100,29 +100,4 @@ export async function readEnrolledAccounts(shardUrl: string, gameId: number): Pr
   const store = new NativeFactStore();
   store.applyFacts(enrollment.rows.map((row) => ({ model: "PlayerEntry", key: row.key, value: row.value })));
   return [...new Set([...store.inGame("PlayerEntry", gameId)].map((entry) => `0x${entry.owner.toString(16)}`))];
-}
-
-/** What the account's realm claims each day in this game, as the game's Realm sheet reads it; null for none. */
-export async function readHomeClaim(shardUrl: string, gameId: number, account: string): Promise<HomeDailyClaim | null> {
-  const snapshot = await fetchHeraldGameSnapshot(
-    { url: shardUrl },
-    gameId,
-    ["Structure", "SettledRealm", "CampaignHome", "LaborRules"],
-    account,
-    account,
-  );
-  if (BigInt(snapshot.game_id) !== BigInt(gameId)) throw new Error(`Game ${gameId} snapshot named another game`);
-  const store = new NativeFactStore();
-  store.applyFacts(
-    snapshot.models.flatMap(({ model, rows }) => rows.map((row) => ({ model, key: row.key, value: row.value }))),
-  );
-  for (const structure of store.inGame("Structure", gameId)) {
-    if (!isRealmCategory(structure.base.category) || structure.owner !== BigInt(account)) continue;
-    const claim = homeDailyClaim(store, {
-      gameId,
-      entityId: structure.entity_id,
-    });
-    if (claim) return claim;
-  }
-  return null;
 }

@@ -18,6 +18,7 @@ import {
 } from "@bibliothecadao/types";
 import { getStructureModelPaths } from "../constants/scene-constants";
 import { getGameModeConfig } from "@/config/game-modes";
+import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset-modes";
 import { resolveStructureRotationY } from "./structure-orientation";
 import {
   FRONTIER_BEASTS,
@@ -65,7 +66,7 @@ describe("Frontier guard identity", () => {
     const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({
       "draco3d.decoder": await createDecoderModule(),
     });
-    const paths = getGameModeConfig(5).assets.structureModelPaths[StructureType.Rift];
+    const paths = getGameModeConfig(GAME_FAMILIES.frontier).assets.structureModelPaths[StructureType.Rift];
     const root = (await io.readBinary(readFileSync(new URL(`../../../public${paths[0]}`, import.meta.url)))).getRoot();
     const composition = frontierSiteComposition(StructureType.Rift);
     const points = root.listMeshes().flatMap((mesh) =>

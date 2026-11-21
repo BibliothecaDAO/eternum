@@ -607,7 +607,7 @@ describe("GameSyncRuntime lifecycle", () => {
     const harness = createSessionHarness({});
     await runtime.startSession(harness.session);
 
-    configManager.setActiveGame(14, 6);
+    configManager.setActiveGame(14);
 
     expect(harness.writers[0].cancel).toHaveBeenCalledOnce();
     expect(getActiveGameSyncRuntime()).toBeNull();

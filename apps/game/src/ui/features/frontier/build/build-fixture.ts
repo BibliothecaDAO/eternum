@@ -1,4 +1,5 @@
 import { gameRegistryRow } from "../../../../../../../packages/core/src/test-support/game-registry";
+import { GAME_FAMILIES } from "../../../../../../../config/source/common/native-preset-modes";
 import { NATIVE_RELEASES } from "../../../../../../../deploy/release/native-release";
 import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -9,7 +10,7 @@ import {
   StructureType,
   TileOccupier,
 } from "@bibliothecadao/types";
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
 
 const set = (key: string, model: string, value: Record<string, unknown>) => ({ model, key, value });
 export const HOUR = 3600;
@@ -21,17 +22,19 @@ const PRECISION = BigInt(RESOURCE_PRECISION);
  */
 export const realmBoard = () => {
   const store = new NativeFactStore();
-  store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1 })] as never);
+  store.applyFacts([set("0x100", "SliceRules", { ...release.definition.rules, game_id: 1 })] as never);
   store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
   store.applyFacts([
-    set("0x3", "GameRegistry", gameRegistryRow({ preset_id: 2 })),
+    set("0x3", "GameRegistry", gameRegistryRow({ family: GAME_FAMILIES.blitz })),
     set("0x1ab0", "GameRelease", {
       game_id: 1,
       release_id: NATIVE_RELEASES.frontier.release,
       created_release_id: NATIVE_RELEASES.frontier.release,
     }),
-    ...preset.resources.map((rule) => set(`0x5${rule.resource_type}`, "ResourceRule", { ...rule, game_id: 1 })),
-    ...preset.buildings.map(({ category, rule }) =>
+    ...release.definition.resources.resources.map((rule) =>
+      set(`0x5${rule.resource_type}`, "ResourceRule", { ...rule, game_id: 1 }),
+    ),
+    ...release.definition.structures.buildings.map(({ category, rule }) =>
       set(`0x6${category}`, "BuildingRule", { ...rule, category, game_id: 1 }),
     ),
     set("0x70", "BoardRules", {
@@ -117,7 +120,7 @@ export const realmBoard = () => {
     }),
   ] as never);
   setBlockTimestampSource(() => 350);
-  configManager.setActiveGame(1, 2);
+  configManager.setActiveGame(1);
   configManager.setStore(store);
   return { store, realm: store.require("Structure", { game_id: 1, entity_id: 7 }) };
 };

@@ -4,9 +4,7 @@ import { type IconMeaning } from "@/ui/design-system/icon";
 import { AppButton, AppChip, AppGameCard, AppGameName, AppRow } from "@/ui/design-system/kit/app-elements";
 import { AppClockChip, clockLine } from "@/ui/design-system/kit/clock-chip";
 import {
-  BLITZ_WORDS,
   DAY,
-  ENTRY_WORDS,
   PITCH,
   PLAY_WORDS,
   WORDS,
@@ -16,8 +14,6 @@ import {
   tomorrowLasts,
 } from "@/ui/design-system/kit/words";
 
-import { lobbyId, lobbyStart, lobbyTitle } from "../blitz/lobby";
-import { SeatsChip } from "../blitz/seats-chip";
 import { entryHref } from "../game-links";
 import { type DirectoryGame, gameRefOf } from "../herald";
 import { gameStart, gameTitle } from "../season-tab/history-row";
@@ -35,82 +31,33 @@ import { primeGameEntry } from "@/game-entry-preload";
  */
 type ItemVerb = { word: string; icon: IconMeaning; to: string; connectFirst?: true; entersGame?: true };
 
-/** The directory game an item stands for; a slot still taking players has none. */
-const gameOf = (item: PlayItem): DirectoryGame | undefined =>
-  item.source === "game" ? item.game : item.row.kind === "game" ? item.row.game : undefined;
-
-const lobbyHref = (item: PlayItem) => (item.source === "row" ? `/blitz/${lobbyId(item.row)}` : "/");
-
 /**
  * An item's verb as a route. Signed out, Play free opens Connect over Play, which then enters the season: the doorway
  * would only stop to ask for it.
  */
 const verbOf = (item: PlayItem, signedIn: boolean): ItemVerb | null => {
-  const game = gameOf(item);
+  const { game } = item;
   switch (item.verb) {
-    case "enter":
-      return game ? { word: WORDS.enter, icon: "play", to: entryHref(game, "play"), entersGame: true } : null;
     case "resume":
-      return game ? { word: WORDS.resume, icon: "play", to: entryHref(game, "play"), entersGame: true } : null;
+      return { word: WORDS.resume, icon: "play", to: entryHref(game, "play"), entersGame: true };
     case "play": {
-      if (!game) return null;
       const entry = entryHref(game, "play");
       return signedIn
         ? { word: WORDS.play, icon: "play", to: entry, entersGame: true }
         : { word: WORDS.playFree, icon: "play", to: entry, connectFirst: true, entersGame: true };
     }
-    case "watch":
-      return game ? { word: WORDS.watch, icon: "watch", to: entryHref(game, "spectate"), entersGame: true } : null;
-    case "join":
-      return { word: BLITZ_WORDS.join, icon: "plus", to: lobbyHref(item) };
-    case "refund":
-      return { word: ENTRY_WORDS.takeRefund, icon: "refresh", to: lobbyHref(item) };
-    case "lobby":
-      return { word: BLITZ_WORDS.lobby, icon: "people", to: lobbyHref(item) };
     case "results":
-      return game ? { word: WORDS.results, icon: "leaderboard", to: resultsHref(gameRefOf(game)) } : null;
+      return { word: WORDS.results, icon: "leaderboard", to: resultsHref(gameRefOf(game)) };
     case null:
       return null;
   }
 };
 
-/** An item's title: a Blitz by its start ("Blitz 19:15"), a finished game the same way, a season by its mode. */
-const titleOf = (item: PlayItem): string => {
-  if (item.source === "row") return lobbyTitle(item.row);
-  if (item.verb === "results") return gameTitle(item.game);
-  return ageOf(item.mode).name;
-};
+const titleOf = (item: PlayItem): string => (item.verb === "results" ? gameTitle(item.game) : ageOf(item.mode).name);
 
-/** One game's start, where the item is one game of its age (a Blitz, a finished game); a season has none. */
-const startOf = (item: PlayItem): string | undefined => {
-  if (item.source === "row") return lobbyStart(item.row);
-  if (item.verb === "results") return gameStart(item.game);
-  return undefined;
-};
+const startOf = (item: PlayItem): string | undefined => (item.verb === "results" ? gameStart(item.game) : undefined);
 
-/** What is so of an item, as its chips: live or when, and its seats; a season's day; a result's end. */
 const ItemFacts = ({ item, now, firstVisit }: { item: PlayItem; now: number; firstVisit: boolean }) => {
-  if (item.source === "row") {
-    const { row } = item;
-    if (row.action === "refund") return <AppChip icon="lock">{ENTRY_WORDS.closed}</AppChip>;
-    return (
-      <>
-        {row.startsAt === null ? (
-          <>
-            <AppChip tone="good" live>
-              {WORDS.live}
-            </AppChip>
-            {row.kind === "game" && <AppClockChip prefix="ends" at={row.game.clock.end_at} now={now} />}
-          </>
-        ) : row.kind === "slot" ? (
-          <AppClockChip prefix="closes" at={row.closesAt} now={now} />
-        ) : (
-          <AppClockChip prefix="starts" at={row.startsAt} now={now} />
-        )}
-        {row.action === "registered" ? <AppChip icon="check">{WORDS.joined}</AppChip> : <SeatsChip row={row} />}
-      </>
-    );
-  }
   const { game } = item;
   if (item.verb === "results")
     return <AppChip icon="victory">{`${PLAY_WORDS.ended} ${clockLine(null, game.clock.end_at, now)}`}</AppChip>;
@@ -137,8 +84,7 @@ const SeasonDay = ({ game, now, withPlayers }: { game: DirectoryGame; now: numbe
 /** The verb, or where a shard could not be read, the failure in its place. */
 const ItemVerbButton = ({ item, signedIn, lead }: { item: PlayItem; signedIn: boolean; lead: boolean }) => {
   const requestSignIn = useRequestSignIn();
-  const game = gameOf(item);
-  if (game?.error) return <ServiceFailure service="directory" error={game.error} />;
+  if (item.game.error) return <ServiceFailure service="directory" error={item.game.error} />;
   const verb = verbOf(item, signedIn);
   if (!verb) return null;
   // The verb by its name, whatever its word: what a script presses to take the game's step (the playtest runner).
@@ -195,16 +141,6 @@ export const LeadCard = ({ item, now, signedIn, className }: ItemProps & { class
 const ItemLine = ({ item, now }: { item: PlayItem; now: number }) => lineParts(item, now).join(" · ");
 
 const lineParts = (item: PlayItem, now: number): string[] => {
-  if (item.source === "row") {
-    const { row } = item;
-    if (row.action === "refund") return [ENTRY_WORDS.closed];
-    if (row.kind === "slot") return [clockLine("closes", row.closesAt, now)];
-    const seats = `${row.seats.filled}/${row.seats.total}`;
-    // A live row's Live is its chip.
-    if (row.startsAt === null) return [clockLine("ends", row.game.clock.end_at, now), seats];
-    if (row.action === "registered") return [clockLine("starts", row.startsAt, now), WORDS.joined];
-    return [clockLine("starts", row.startsAt, now), seats];
-  }
   const { game } = item;
   if (item.verb === "results") return [`${PLAY_WORDS.ended} ${clockLine(null, game.clock.end_at, now)}`];
   if (game.status !== "Live") return [clockLine("starts", game.clock.start_main_at, now)];
@@ -212,7 +148,6 @@ const lineParts = (item: PlayItem, now: number): string[] => {
   return [`${DAY} ${day.day ?? "—"}`, clockLine("ends", day.endsAt, now)];
 };
 
-/** Any other item: its title and line, a slot's registered count, its live mark, and its verb, or none. */
 const ItemRow = ({ item, now, signedIn }: ItemProps) => (
   <li data-play-item={item.key}>
     <AppRow
@@ -224,9 +159,6 @@ const ItemRow = ({ item, now, signedIn }: ItemProps) => (
             <AppChip tone="good" live>
               {WORDS.live}
             </AppChip>
-          )}
-          {item.source === "row" && item.row.kind === "slot" && item.row.action !== "refund" && (
-            <SeatsChip row={item.row} />
           )}
           <ItemVerbButton item={item} signedIn={signedIn} lead={false} />
         </>

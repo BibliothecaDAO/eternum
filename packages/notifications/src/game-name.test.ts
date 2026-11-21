@@ -34,7 +34,6 @@ it("never puts the registry's name, a season's number or another id in a game pu
       endsAt: NOW + 6 * 3_600_000,
       last: false,
       owner: "0x1",
-      claim: { labor: 1000, essence: 1000 },
       sendAt: NOW,
       timeZone: "Asia/Kolkata",
     }),
@@ -58,7 +57,7 @@ it("never puts the registry's name, a season's number or another id in a game pu
     })!,
   ];
   expect(alerts.map(({ title, body }) => `${title} / ${body}`)).toEqual([
-    "Day 2 is open / Frontier: claim 1,000 Labor and 1,000 Essence before 20:00.",
+    "Day 2 is open / Frontier: it ends at 20:00.",
     "Your armies are rested / Frontier: their stamina is full.",
     "Your Blitz is settled / Blitz: see where you finished.",
   ]);

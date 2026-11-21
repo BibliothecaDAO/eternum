@@ -7,8 +7,8 @@ import { lordsWorth } from "@/ui/features/frontier/aspect/aspect-worth";
 import { type DayClock, dayTone } from "@/ui/features/frontier/hud/day-clock";
 import { isRealmCategory } from "@bibliothecadao/eternum/expeditions";
 
-import { nativePresets } from "../../../../config/source/native";
-import type { SeasonPhase } from "./blitz-slot";
+import release from "../../../../contracts/l3/world-native/schema/release-definition.json";
+import type { SeasonPhase } from "./season-calendar";
 import type { DirectoryGame } from "./herald";
 import { gameKey } from "./play/play-board";
 import { ARCHIVED_SEASONS, archivedSeason } from "./season-tab/archive/archive";
@@ -85,12 +85,10 @@ export const seasonOpening = (phases: readonly SeasonPhase[], now: number): Seas
   if (frontier?.phase !== "frontier") return null;
   const startsAt = Date.parse(frontier.startsAt) / 1000;
   if (!(startsAt > now)) return null;
-  const preset = nativePresets[frontier.presetId];
-  if (!preset) throw new Error(`The calendar's Frontier preset ${frontier.presetId} is not registered`);
-  const race = preset.race;
+  const race = release.definition.economy.race.Some;
   return {
     startsAt,
-    seasonDays: race?.seasonDays ?? null,
-    aspectLords: race ? lordsWorth(raceFinishHeight(race.stageHeight), false) : null,
+    seasonDays: Number(race.season_days),
+    aspectLords: lordsWorth(raceFinishHeight(race.stage_height), false),
   };
 };

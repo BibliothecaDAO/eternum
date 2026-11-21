@@ -1,4 +1,4 @@
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../contracts/l3/world-native/schema/release-definition.json";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import { nativeStructureConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
@@ -29,7 +29,7 @@ const boardRealm = (wheat: bigint) => {
   const store = new NativeFactStore();
   store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 100 });
   store.applyFacts([
-    ...upsert("0x1", { SliceRules: { ...preset.rules, game_id: 1, mode_rules: 0 } }),
+    ...upsert("0x1", { SliceRules: { ...release.definition.rules, game_id: 1, mode_rules: 0 } }),
     ...upsert("0x2", {
       BoardRules: {
         game_id: 1,
@@ -55,7 +55,8 @@ const boardRealm = (wheat: bigint) => {
 };
 
 describe("a board realm's store limits", () => {
-  const settlementLimit = 2n * BigInt(preset.rules.troop_limit_config.settlement_deployment_cap) * PRECISION;
+  const settlementLimit =
+    2n * BigInt(release.definition.rules.troop_limit_config.settlement_deployment_cap) * PRECISION;
 
   it("gives wheat and troops the board's base, labor the release's settlement store, and Essence none", () => {
     const { manager } = boardRealm(0n);
@@ -90,11 +91,11 @@ describe("a board realm's store limits", () => {
     store.applyFacts(
       upsert("0x1", {
         SliceRules: {
-          ...preset.rules,
+          ...release.definition.rules,
           game_id: 1,
           mode_rules: 0,
           troop_limit_config: {
-            ...preset.rules.troop_limit_config,
+            ...release.definition.rules.troop_limit_config,
             settlement_deployment_cap: 3000,
             city_deployment_cap: 9000,
             kingdom_deployment_cap: 25000,

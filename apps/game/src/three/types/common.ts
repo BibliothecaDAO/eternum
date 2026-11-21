@@ -1,4 +1,3 @@
-import type { RealmSkin } from "../structures/realm-skins";
 import { Position } from "@bibliothecadao/eternum";
 import type { IncomingTroopArrival, SiteKind } from "@bibliothecadao/eternum";
 
@@ -36,7 +35,6 @@ export interface StructureInfo {
   /** The standing site's beast identity shared by its model and plate. */
   frontierBeast?: FrontierBeast;
   realmOrder?: number;
-  realmSkin?: RealmSkin;
   cosmeticId?: string;
   cosmeticAssetPaths?: string[];
   usesFallbackCosmeticSkin?: boolean;

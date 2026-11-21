@@ -53,20 +53,11 @@ const SHEET_PAGES = {
   play: { path: "home", place: "Play", cards: { lead: "live", blitz: "live", eternum: "idle" } },
   // Play with no Blitz left in the season: Blitz's column idle, no Build orders; and with the next one scheduled.
   "play-no-blitz": { path: "no-blitz", place: "Play", cards: { lead: "live", blitz: "idle", eternum: "idle" } },
-  "play-next-blitz": { path: "blitz-next", place: "Play", cards: { lead: "live", blitz: "live", eternum: "idle" } },
   // Only Eternum: before it opens it leads idle, as its column would be; open, its lead offers Enter.
   "play-eternum-lead": { path: "eternum-lead", place: "Play", cards: { lead: "idle", blitz: "idle" } },
   "play-eternum-open": { path: "eternum-open", place: "Play", cards: { lead: "live", blitz: "idle" } },
-  // Play as a seated player sees it: the seat's Blitz leads, the open slot's Join in Blitz's column under it.
-  "play-seated": { path: "blitz-seat", place: "Play" },
-  // The same with the slot's entry closing hours away: the longer clock QA met on dev, wrapping on a phone.
-  "play-seated-late-slot": { path: "blitz-seat-late-slot", place: "Play" },
-  lobby: { path: "entry-choose/blitz/slot-blitz-1630", place: "Play" },
-  // A launched game's lobby: its roster, the player's own seat ringed, and Enter.
-  "lobby-game": { path: "blitz-seat/blitz/game-0x5245414c4d53-7", place: "Play" },
   season: { path: "season-running/season", place: "Season" },
-  results: { path: "reward-sealed/results/0x5245414c4d53-7", place: "You" },
-  "results-opened": { path: "reward-lords/results/0x5245414c4d53-7", place: "You" },
+  results: { path: "season-over/results/0x5245414c4d53-3", place: "You" },
   // What's new is read from You: You is lit there.
   "whats-new": { path: "home/scroll", place: "You" },
 };
@@ -95,53 +86,6 @@ const BAR_CASES = [
   { name: "tabs-phone-360", path: "home/scroll", viewport: ["360", "640"], desktop: false, place: "You" },
   { name: "notice-phone-360", path: "home", viewport: ["360", "640"], desktop: false, place: "Play" },
 ];
-
-/**
- * The lobby's entry with every choice taken (the sword and the shield beside the seat), at a desktop, the desktop's
- * narrowest width and a phone: each choice's price or credit stays inside its choice, and the entry's balance and total
- * inside its panel.
- */
-const ENTRY_CASES = [
-  { name: "entry-all-1920", viewport: ["1920", "1080"] },
-  { name: "entry-all-1024", viewport: ["1024", "768"] },
-  { name: "entry-all-390", viewport: ["390", "844"] },
-].map((entry) => ({ ...entry, path: "/lab/app/entry-choose/blitz/slot-blitz-1630?capture=1" }));
-
-/** Takes every choice of the entry not yet taken, as a player's clicks would. */
-const takeEveryChoice = async (b) => {
-  const untaken = b.evaluate(`[...document.querySelectorAll('.app-choice[aria-pressed="false"]:enabled')].length`);
-  for (let index = 0; index < untaken; index += 1) {
-    b.run("click", '.app-choice[aria-pressed="false"]:enabled');
-    await sleep(300);
-  }
-};
-
-const entryChecks = (b) => {
-  const entry = b.evaluate(`(() => {
-    const inside = (outer, element) => {
-      const box = outer.getBoundingClientRect();
-      return [...element.querySelectorAll("*")].map((part) => part.getBoundingClientRect()).filter((rect) => rect.width > 0)
-        .every((rect) => rect.left >= box.left - 1 && rect.right <= box.right + 1 && rect.top >= box.top - 1 && rect.bottom <= box.bottom + 1);
-    };
-    const choices = [...document.querySelectorAll(".app-choice")];
-    const panel = choices[0]?.closest(".app-panel");
-    return {
-      taken: choices.map((choice) => choice.getAttribute("aria-pressed")),
-      choicesHold: choices.map((choice) => ({ word: choice.querySelector(".app-choice__title")?.textContent, holds: inside(choice, choice) })),
-      total: panel?.querySelector(".app-figure__value")?.textContent ?? null,
-      panelHolds: panel ? inside(panel, panel) : false,
-    };
-  })()`);
-  return [
-    {
-      check: "every choice taken",
-      ok: entry.taken.length === 3 && entry.taken.every((taken) => taken === "true"),
-      entry,
-    },
-    { check: "each price or credit stays inside its choice", ok: entry.choicesHold.every((choice) => choice.holds) },
-    { check: "the balance and the total stay inside the entry", ok: entry.panelHolds },
-  ];
-};
 
 /**
  * The account's pages (Connect's steps, You, Settings), each at its fixture state and, where a row opens a step, with
@@ -536,8 +480,8 @@ const MARK_END_MAP = `(() => {
  * a live one.
  */
 const END_MAP_ADDRESS = {
-  path: "/lab/app/reward-sealed/results/0x5245414c4d53-7?capture=1",
-  leads: "/g/0x5245414c4d53/7?spectate=true",
+  path: "/lab/app/season-over/results/0x5245414c4d53-3?capture=1",
+  leads: "/g/0x5245414c4d53/3?spectate=true",
 };
 
 const proveEndMapAddress = async (b, baseUrl) => {
@@ -660,7 +604,7 @@ const QA1_CASES = [
   },
   {
     name: "share-results",
-    path: "reward-sealed/results/0x5245414c4d53-7",
+    path: "season-over/results/0x5245414c4d53-3",
     act: (b, record) => press(b, record, "Share"),
     more: (b) => {
       const seen = b.evaluate(`({
@@ -1578,10 +1522,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
           records.push(await shoot(b, baseUrl, out, bar));
         }
         records.push(await proveEndMapAddress(b, baseUrl));
-        for (const entry of ENTRY_CASES) {
-          b.run("set", "viewport", ...entry.viewport);
-          records.push(await shoot(b, baseUrl, out, { ...entry, act: takeEveryChoice, more: entryChecks }));
-        }
         b.run("set", "viewport", ...PHONE);
         for (const page of sheetPages(false)) records.push(await shoot(b, baseUrl, out, page));
         b.run("set", "viewport", ...VIEWPORT);

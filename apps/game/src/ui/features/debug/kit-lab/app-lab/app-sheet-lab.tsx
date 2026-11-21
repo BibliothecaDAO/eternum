@@ -647,7 +647,7 @@ const ChoiceSection = () => (
     }
     today={
       <p className="text-sm text-white/70">
-        The lobby's Tile: rounded-well border-2, gold when on, a check badge, drawn in entry-panel.tsx alone.
+        The Tile: rounded-well border-2, gold when on, a check badge, drawn in payout-wallet-panel.tsx.
       </p>
     }
   />
@@ -783,18 +783,8 @@ const ChestSection = () => (
  */
 const APP_PAGES = [
   { name: "Play", direction: "B · Ages", path: "/lab/app/home" },
-  { name: "Blitz lobby", direction: "C · Ledger", path: "/lab/app/entry-choose/blitz/slot-blitz-1630" },
   { name: "Season", direction: "A · Launcher", path: "/lab/app/season-running/season" },
-  {
-    name: "Results, the chest sealed",
-    direction: "C · Ledger",
-    path: "/lab/app/reward-sealed/results/0x5245414c4d53-7",
-  },
-  {
-    name: "Results, the chest opened",
-    direction: "C · Ledger",
-    path: "/lab/app/reward-lords/results/0x5245414c4d53-7",
-  },
+  { name: "Results", direction: "C · Ledger", path: "/lab/app/season-over/results/0x5245414c4d53-3" },
 ] as const;
 
 const PagesSection = () => (

@@ -181,12 +181,7 @@ const frontierArmy = (game: number, player: number, army: number, x: number) => 
 function gameRows(game: number): RpcEvent[] {
   if (FRONTIER) return frontierRows(game);
   // Blitz: no expedition epochs, so every subscriber sees the whole game.
-  const events = presetLaunch(
-    preset,
-    game,
-    Math.floor(now / 1000),
-    Array.from({ length: PLAYERS_PER_GAME }, (_, player) => owner(game, player)),
-  );
+  const events = presetLaunch(preset, game, Math.floor(now / 1000));
   for (let player = 0; player < PLAYERS_PER_GAME; player++) {
     const structure = realm(game, player);
     events.push(

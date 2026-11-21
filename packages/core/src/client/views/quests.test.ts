@@ -2,7 +2,7 @@ import { gameRegistryRow } from "../../test-support/game-registry";
 import { readFileSync } from "node:fs";
 import { readBaneDay, readBaneEffects } from "./banes";
 import { describe, expect, it } from "vitest";
-import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../../contracts/l3/world-native/schema/release-definition.json";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { nativeBaneConstants, nativeQuestConstants } from "../../../../../contracts/l3/world-native/schema/balance.gen";
 import { dayOf } from "../../utils/days";
@@ -11,7 +11,6 @@ import { readDailyQuest } from "./quests";
 
 const BONUS_SOURCES = {
   seals: { model: "Seal", key: "1:0x111", value: { game_id: 1, account: "0x111", granted_at: 100 } },
-  campaign_homes: { model: "CampaignHome", key: "1:7", value: { game_id: 1, home: 7, campaign_id: 9, tier: 1 } },
   holds_realm: { model: "SettledRealm", key: "1:123", value: { game_id: 1, realm_id: 123, home: 7 } },
 } satisfies Record<string, Parameters<NativeFactStore["applyFacts"]>[0][number]>;
 
@@ -27,7 +26,7 @@ function chainBonusSources(): string[] {
 function fixture() {
   const store = new NativeFactStore();
   store.applyFacts([
-    { model: "SliceRules", key: "1", value: { ...preset.rules, game_id: 1, day_unit_seconds: 100 } },
+    { model: "SliceRules", key: "1", value: { ...release.definition.rules, game_id: 1, day_unit_seconds: 100 } },
     {
       model: "GameRegistry",
       key: "1",

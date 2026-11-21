@@ -28,11 +28,9 @@ const Surface = ({ name, children }: { name: string; children: ReactNode }) => (
   </section>
 );
 
-/** The Realm step's tiles: a golden ticket (chosen), a ticket and a held Realm. */
 const HOME_CHOICES: { choice: Choice; picked: boolean }[] = [
-  { choice: { kind: "ticket", campaign: "devcon-2026", golden: true }, picked: true },
-  { choice: { kind: "ticket", campaign: "devcon-2026", golden: false }, picked: false },
-  { choice: realmChoice({ realmId: 4786, map: null }), picked: false },
+  { choice: realmChoice({ realmId: 4786, map: null }), picked: true },
+  { choice: realmChoice({ realmId: 711, map: null }), picked: false },
 ];
 
 const suggestion = (id: string, label: string): EmpireSuggestion => ({
@@ -74,13 +72,7 @@ export const ChosenLab = () => {
         <Surface name="home">
           <div className="home-picker__strip">
             {HOME_CHOICES.map(({ choice, picked }) => (
-              <ChoiceButton
-                key={choice.kind === "ticket" ? String(choice.golden) : choice.realmId}
-                choice={choice}
-                picked={picked}
-                onPick={noop}
-                disabled={false}
-              />
+              <ChoiceButton key={choice.realmId} choice={choice} picked={picked} onPick={noop} disabled={false} />
             ))}
           </div>
         </Surface>

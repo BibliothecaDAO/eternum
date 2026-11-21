@@ -7,7 +7,7 @@ import { answerLabBuildOrders } from "@/shell/lab/lab-build-orders";
 import { gameChatZoneId } from "@/ui/features/world/containers/hud-chat-window";
 import { L2_LEDGER, l2Provider } from "@/runtime/l2-rpc";
 import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
-import { homeDailyClaim, dayOf, readExpeditionRules, ResourceManager } from "@bibliothecadao/eternum";
+import { dayOf, nativeGameModeOfFamily, readExpeditionRules } from "@bibliothecadao/eternum";
 import { NativeFactStore, ordinaryHash, type PlayFrame } from "@bibliothecadao/eternum/game-client";
 import {
   deriveGameSyncScope,
@@ -16,22 +16,16 @@ import {
   rowInGameSyncScope,
   scopeInputKeys,
 } from "@bibliothecadao/eternum/game-sync";
-import {
-  aspects,
-  RESOURCE_PRECISION,
-  ResourcesIds,
-  type NativeWorldBindings,
-  type WorldChatMessage,
-} from "@bibliothecadao/types";
+import { aspects, type NativeWorldBindings, type WorldChatMessage } from "@bibliothecadao/types";
 import type { AccountInterface, Call } from "starknet";
 
 import { LAB_CHAIN_ID } from "./lab-shard";
 
-import { FRONTIER_S1_PRESET_ID, nativeGameModeOf } from "../../../../../config/source/common/native-preset-modes";
 import { releaseLine } from "../../../../../packages/core/src/test-support/releases";
 import {
   nativeFactModels,
   nativeFactSchemaIdentity,
+  nativeIdentifiers,
   type NativeModelName,
 } from "../../../../../contracts/l3/world-native/schema/client.gen";
 
@@ -39,7 +33,7 @@ import {
 export const LAB_GAME = {
   chainId: LAB_CHAIN_ID,
   gameId: 1,
-  presetId: FRONTIER_S1_PRESET_ID,
+  family: nativeIdentifiers.family.FRONTIER,
   url: "https://herald.lab.invalid",
 } as const;
 /** The lab game's end: a month of chain seconds, so a session never sees it close. */
@@ -229,7 +223,6 @@ const installOnce = async (makeScenario: () => LabScenario, startedAt: number): 
   );
   answerAccountJoin(LAB_SHARD_RPC, LAB_ACCOUNT_CLASS);
   answerHeraldSocket(herald);
-  answerLaborClaims(scenario, chain, record, herald, now);
   if (scenario.entersFromHome) answerHomeEntry(scenario);
   answerLedgerReads(now);
   answerLabChat({ gameRooms: [gameChatZoneId(LAB_GAME.chainId, LAB_GAME.gameId)], history: scenario.chat });
@@ -276,7 +269,6 @@ const playerState = (chain: NativeFactStore, player: string) => {
   return {
     registered: true,
     settled: structures.length > 0,
-    roster_wallet: null,
     held_realm_id: own?.pass_kind === 2 ? own.realm_id : null,
     has_home_source: own !== undefined,
     taken_realm_ids: entitlements.filter((row) => row.pass_kind === 2).map((row) => row.realm_id),
@@ -312,9 +304,8 @@ const answerDirectory = (
   const game = {
     game_id: LAB_GAME.gameId,
     name: "lab",
-    mode: nativeGameModeOf(registry.preset_id),
+    mode: nativeGameModeOfFamily(registry.family),
     status: "Live",
-    ready: true,
     dev_mode_on: false,
     expedition: rules.day_unit_seconds
       ? { day_unit_seconds: rules.day_unit_seconds, seed: String(registry.seed) }
@@ -324,7 +315,6 @@ const answerDirectory = (
       start_main_at: 100 + clockOffset,
       scheduled_end_at: LAB_GAME_ENDS_AT + clockOffset,
       end_at: LAB_GAME_ENDS_AT + clockOffset,
-      end_grace_seconds: 0,
     },
     player_count: 1,
     get aspect_members() {
@@ -339,8 +329,6 @@ const answerDirectory = (
     get player_state() {
       return playerStateNow();
     },
-    roster_count: 0,
-    preset_id: registry.preset_id,
     registration: null,
     settled_realms_count: 1,
     settled_villages_count: 0,
@@ -354,9 +342,7 @@ const answerDirectory = (
   window.fetch = (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);
     if (url.pathname === "/api/guardian") return json(LAB_GUARDIAN);
-    // The lab's season has no Blitz: no slot open, none scheduled.
-    if (url.pathname === "/api/slots") return json({ slots: [] });
-    if (url.pathname === "/api/factory/calendar") return json({ phases: [], nextBlitz: null });
+    if (url.pathname === "/api/factory/calendar") return json({ phases: [] });
     if (url.pathname === "/api/directory")
       return json({ shard: { url: LAB_GAME.url, chainId: LAB_GAME.chainId, games: [game], manifest } });
     if (url.host !== shard.host) return network(input, init);
@@ -421,79 +407,6 @@ const answerHomeEntry = (scenario: LabScenario) => {
       return Response.json({ error: "realm_registration_refused" }, { status: 409 });
     return Response.json({});
   };
-};
-
-/** The lab's home claim follows the current relay: game day, grant facts, then the receipt's transaction. */
-const answerLaborClaims = (
-  scenario: LabScenario,
-  chain: NativeFactStore,
-  record: LabChainRecord,
-  herald: LabHerald,
-  now: () => number,
-) => {
-  const network = window.fetch.bind(window);
-  window.fetch = async (input, init) => {
-    const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);
-    if (url.pathname !== "/api/value/labor" || init?.method !== "POST") return network(input, init);
-    const { gameId, home } = JSON.parse(String(init.body)) as { gameId: number; home: string };
-    const rules = readExpeditionRules(chain, gameId);
-    if (!rules) throw new Error("The lab claim has no season rules");
-    const day = dayOf(rules, now())!.index;
-    const hash = `0x1ab${(record.sent.length + 1).toString(16).padStart(4, "0")}de1a`;
-    const command: LabCommand = { kind: "GrantLabor", fields: { day: String(day) }, span: [] };
-    const answered = grantLabor(chain, scenario.player, gameId, BigInt(home), day).map(keyedAsHeldOnChain);
-    record.sent.push({ hash, command, answered });
-    await new Promise((applied) => setTimeout(applied, LAB_BLOCK_MS));
-    herald.apply(hash, answered);
-    await new Promise((closed) => setTimeout(closed, LAB_BLOCK_MS));
-    const grant = answered.find(({ model }) => model === "LaborGrant")!.value as { amount: string; essence: string };
-    return Response.json({
-      day,
-      grant: {
-        gameId,
-        home,
-        account: scenario.player,
-        amount: grant.amount,
-        essence: grant.essence,
-        transactionHash: hash,
-      },
-    });
-  };
-};
-
-/** The home's daily receipt and balances, derived from the same eligibility rules the claim button reads. */
-const grantLabor = (chain: NativeFactStore, account: string, gameId: number, home: bigint, day: number): LabFact[] => {
-  const daily = homeDailyClaim(chain, { gameId, entityId: home });
-  if (!daily) throw new Error("The lab's home has no daily claim");
-  const amount = BigInt(daily.labor) * BigInt(RESOURCE_PRECISION);
-  const essence = BigInt(daily.essence) * BigInt(RESOURCE_PRECISION);
-  const grant: LabFact = {
-    model: "LaborGrant",
-    key: `0x1ab6${day.toString(16)}`,
-    value: wire({ game_id: gameId, home, day, account, amount, essence }),
-  };
-  const balances = [
-    [ResourcesIds.Labor, amount],
-    [ResourcesIds.Essence, essence],
-  ] as const;
-  return [
-    grant,
-    ...balances
-      .filter(([, added]) => added > 0n)
-      .map(([resource, added]): LabFact => {
-        const held = [...chain.entries("ResourceBalance")].find(
-          ([, row]) => row.entity_id === home && row.resource_type === resource,
-        );
-        const balance = (held?.[1].balance ?? 0n) + added;
-        const limit = new ResourceManager(chain, Number(home), gameId).storeLimit(resource);
-        if (limit !== undefined && balance > limit) throw new Error(`The lab's home ${home} has no room for the claim`);
-        return {
-          model: "ResourceBalance",
-          key: held?.[0] ?? `0x1b${resource.toString(16)}`,
-          value: wire({ game_id: gameId, entity_id: home, resource_type: resource, balance }),
-        };
-      }),
-  ];
 };
 
 /**

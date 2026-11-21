@@ -10,7 +10,7 @@ const HOME = { x: 100, y: 100 };
 const FAR_AWAY = { x: 160, y: 160 };
 
 afterEach(() => {
-  ClientConfigManager.instance().setActiveGame(28, 0);
+  ClientConfigManager.instance().setActiveGame(28);
 });
 
 const settledGame = () => {

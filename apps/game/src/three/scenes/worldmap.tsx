@@ -1424,14 +1424,6 @@ export default class WorldmapScene extends WarpTravel {
       this.handleProjectedArmyChanges(changes);
       this.syncArmyMarkers(changes);
     });
-    const unsubscribeCampaigns = this.game.store.subscribe((changes) => {
-      for (const change of changes) {
-        if (change.model !== "CampaignHome") continue;
-        const home = change.current ?? change.previous;
-        if (home?.game_id === configManager.getActiveGameId())
-          this.refreshStructureMarkersForEntity(safeInteger(home.home));
-      }
-    });
     const unsubscribeSelectedArmyMap = this.worldSpatialProjection.subscribe((published) => {
       if (projectionChangesForLayer(published, activeMapLayer()).length > 0) this.refreshSelectedArmyOrders();
     });
@@ -1441,7 +1433,6 @@ export default class WorldmapScene extends WarpTravel {
       unsubscribeStructures();
       unsubscribeTerrainEcology();
       unsubscribeArmies();
-      unsubscribeCampaigns();
     };
   }
 

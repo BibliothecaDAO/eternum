@@ -21,7 +21,7 @@ const NO_EMPIRE = { structures: [], explorers: [] };
 const dataDirs: string[] = [];
 
 afterEach(async () => {
-  ClientConfigManager.instance().setActiveGame(28, 0);
+  ClientConfigManager.instance().setActiveGame(28);
   await Promise.all(dataDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
 

@@ -1,4 +1,3 @@
-import type { RealmSkin } from "@/three/structures/realm-skins";
 import { usePlayerName, usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -21,21 +20,19 @@ const DEPTH_ICONS = ["depth-1", "depth-2", "depth-3"] as const;
 export const RealmBadge = ({
   level,
   depth,
-  skin,
   hasWonder = false,
 }: {
   level: number;
   depth: number;
-  skin?: RealmSkin;
   hasWonder?: boolean;
 }) => {
   const step = Math.min(depth, 3);
-  const kind = homeKind(skin, hasWonder);
+  const kind = homeKind(hasWonder);
   const name = kind === "realm" ? rankName(level) : `${HOME_KINDS[kind].label} · ${rankName(level)}`;
   const line = step === 0 ? name : `${name} · ${layerName(step)}`;
   return (
     <span role="img" aria-label={line} data-tip={line} className="relative inline-flex size-7 shrink-0">
-      <Icon name={realmMeaning(level, skin, hasWonder)} size={28} />
+      <Icon name={realmMeaning(level, hasWonder)} size={28} />
       {step > 0 && (
         <span
           aria-hidden

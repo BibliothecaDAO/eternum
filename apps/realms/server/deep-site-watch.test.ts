@@ -18,7 +18,7 @@ const player = { gameId: GAME_ID, actor: PLAYER_ACCOUNT, owner: PLAYER_ACCOUNT }
 function equalArmies(lastTarget: number | undefined, guardTroops = siteGuardTroops(1)) {
   const timestamp = Math.floor(Date.now() / 1000);
   const bar = { amount: 120, settledAt: timestamp, day: TODAY };
-  const facts = siteSnapshot(snapshot(bar, bar, null, [], "realm", null), {
+  const facts = siteSnapshot(snapshot(bar, bar, null, [], null), {
     troops: guardTroops,
     aspect: 2,
     lore: true,

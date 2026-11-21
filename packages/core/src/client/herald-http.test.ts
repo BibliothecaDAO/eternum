@@ -110,12 +110,6 @@ it("shares a directory stream, notifies each consumer, and closes after the last
 });
 
 describe("Herald leaderboards", () => {
-  it("refuses a Frontier board that omits campaign identity rather than declaring its homes ordinary", async () => {
-    vi.stubGlobal("fetch", mockFetch);
-    mockFetch.mockResolvedValue(new Response(JSON.stringify({ mode: "frontier", entries: [{ structure_id: "42" }] })));
-    await expect(fetchHeraldLeaderboard(world, 3)).rejects.toThrow("missing campaign identity");
-  });
-
   it("reads a Frontier season board as Herald serves it", async () => {
     vi.stubGlobal("fetch", mockFetch);
     const frontier = {
@@ -125,7 +119,6 @@ describe("Herald leaderboards", () => {
         {
           address: "0x111",
           structure_id: "42",
-          campaign: { campaign_id: "123", tier: 2 },
           rank: 1,
           sites_cleared: { total: 5, camps: 3, rifts: 1, ruins: 1, beasts: 0 },
           chests_earned: 4,

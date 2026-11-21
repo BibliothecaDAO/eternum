@@ -1,30 +1,4 @@
 #!/usr/bin/env node
-/**
- * Play's proof: drives the real client the way a player does and keeps what it saw. Against a running dev build
- * (`pnpm --dir apps/game dev --host 127.0.0.1 --port <port>`):
- *
- *   pnpm --dir apps/game prove:play --base-url https://127.0.0.1:<port> --out <dir>
- *
- * For each state, at desktop (1440×900) and phone (390×844), it opens Play, counts what is on it, then presses each of
- * its actions from a fresh load, scrolled to and clicked by the browser as a player would (so a control the pointer
- * cannot reach fails), and records where the press led. An action is a game's row and its verb (`data-play-item`), so
- * two rows with the same word are two presses, and each must reach its own game's address: a Watch on game 3 that opens
- * game 2 fails. States: the app lab's fixtures (`/lab/app/<screen>?capture=1`, so the lab's own header is off and the
- * page has the whole viewport) and the live root page signed out, once as it is and once with Blitz's slots read
- * failing (the request aborted). It needs no account and changes nothing: it stops at the first address a press reaches
- * (a lobby's Sign in excepted, which must return to that lobby), and leaves a game's page the moment its address is
- * recorded.
- *
- * With `--game <chain>:<game> --profile <dir>` it proves that game's own paths instead, signed in: its views counted at
- * rest, a crate opened and read back after a reload, Game finished → See the results, and an ended game's two Results
- * entrances (scripts/prove-play-game.mjs).
- *
- * Each run writes a new directory under <out>, named by its start time, so an earlier run's evidence is never replaced:
- * play-proof.json and one screenshot per state and viewport, whatever happens. The run is complete only when every page
- * became ready and every action reached its own address; otherwise the record lists the problems and the command exits
- * 1. A press whose row is gone on the fresh load is recorded as unavailable (live data moved), apart from a press that
- * failed.
- */
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -33,7 +7,7 @@ import { proveGame } from "./prove-play-game.mjs";
 import { clickAsPlayer, pathOf, runProof, sleep, waitFor } from "./prove-run.mjs";
 
 const VIEWPORTS = { desktop: [1440, 900], phone: [390, 844] };
-const LAB_SCREENS = ["first-visit", "home", "no-realm", "blitz-seat", "blitz-preparing", "season-over"];
+const LAB_SCREENS = ["first-visit", "home", "no-realm", "season-over"];
 const SETTLE_MS = 1500;
 const READY_TIMEOUT_MS = 20_000;
 const PRESS_TIMEOUT_MS = 5_000;
@@ -47,8 +21,6 @@ const gameOfItem = (item) => {
 };
 
 const gamePath = (item) => `/g/${gameOfItem(item).chain}/${gameOfItem(item).game}`;
-/** A slot's or a Blitz game's lobby: its key with `-` for `:` (shell/blitz/lobby.ts). */
-const lobbyPath = (item) => `/blitz/${item.replaceAll(":", "-")}`;
 const resultsPath = (item) => `/results/${gameOfItem(item).chain}-${gameOfItem(item).game}`;
 
 /** What a press that signs the player in reaches: the Connect window over the page, the address unchanged. */
@@ -64,9 +36,6 @@ const DESTINATIONS = {
   Resume: gamePath,
   Enter: gamePath,
   Watch: (item) => `${gamePath(item)}?spectate=true`,
-  Join: lobbyPath,
-  "Take refund": lobbyPath,
-  Lobby: lobbyPath,
   Results: resultsPath,
 };
 
@@ -79,11 +48,9 @@ export const destinationOf = (word, { item, from }) => {
   return item && DESTINATIONS[word] ? DESTINATIONS[word](item) : null;
 };
 
-/** Play's states: where each opens, and the steps that continue past a verb's first page (a lobby's Sign in). */
 const states = (baseUrl) => [
   ...LAB_SCREENS.map((screen) => ({ name: `lab-${screen}`, url: `${baseUrl}/lab/app/${screen}?capture=1` })),
-  { name: "live-signed-out", url: `${baseUrl}/`, then: { Join: ["Sign in"] } },
-  { name: "live-slots-failing", url: `${baseUrl}/`, abort: "**/api/slots*" },
+  { name: "live-signed-out", url: `${baseUrl}/` },
 ];
 
 /** Measured in the page: what a first-time viewer meets on Play, read from the page's own bands. */
@@ -154,8 +121,6 @@ export const parseArgs = (argv) => {
  */
 const openState = async (b, state) => {
   b.run("open", "about:blank");
-  if (state.abort) b.run("network", "route", state.abort, "--abort");
-  else b.run("network", "unroute");
   b.run("open", state.url, "--ignore-https-errors");
   b.evaluate(`localStorage.removeItem(${JSON.stringify(SEEN_RESULTS_KEY)})`);
   b.run("open", state.url, "--ignore-https-errors");
@@ -209,16 +174,6 @@ export const judge = (word, expected, before, after, connect = false) => {
   return { word, status: "led", expected, led };
 };
 
-/** A later step's control: a lobby's own button by its word, in its body (desktop) or its foot (phone). */
-const stepSelector = (b, word) =>
-  b.evaluate(`(() => {
-    const buttons = [...document.querySelectorAll('[data-band="body"] button, [data-band="foot"] button')];
-    const index = buttons.findIndex((el) => el.innerText.replace(/\\s+/g, " ").trim() === ${JSON.stringify(word)});
-    if (index < 0) return null;
-    buttons[index].setAttribute("data-proof-step", ${JSON.stringify(word)});
-    return '[data-proof-step="' + ${JSON.stringify(word)} + '"]';
-  })()`);
-
 const leaveGamePage = (b) => {
   if (new URL(b.url()).pathname.startsWith("/g/")) b.run("open", "about:blank");
 };
@@ -237,12 +192,6 @@ const proveState = async (b, state, layout, out) => {
     const selector = `[data-play-item="${action.item}"] button`;
     const expected = destinationOf(action.word, { item: action.item });
     const steps = [{ item: action.item, ...(await press(b, { selector, word: action.word, expected })) }];
-    for (const word of steps[0].status === "led" ? (state.then?.[action.word] ?? []) : []) {
-      await sleep(SETTLE_MS);
-      const next = stepSelector(b, word);
-      const expected = destinationOf(word, { from: steps.at(-1).led });
-      steps.push(next ? await press(b, { selector: next, word, expected }) : { word, status: "unavailable" });
-    }
     leaveGamePage(b);
     presses.push(steps);
   }

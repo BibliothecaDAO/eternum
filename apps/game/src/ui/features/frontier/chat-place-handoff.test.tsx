@@ -92,12 +92,6 @@ afterEach(() => {
   act(() => useUIStore.getState().selectOnMap(null));
 });
 
-const LABOR_RULES = {
-  model: "LaborRules",
-  key: "0x1ab",
-  value: { game_id: 1, amount: "1000", campaign_essence: "0", golden_amount: "1000", golden_essence: "0" },
-};
-
 /** The real Frontier HUD over the lab's game. */
 const renderHud = async (width: number) => {
   viewport.set(width);
@@ -105,7 +99,7 @@ const renderHud = async (width: number) => {
     root.render(
       <MemoryRouter>
         <QueryClientProvider client={new QueryClient()}>
-          <LabGame preset={5} facts={() => [LABOR_RULES]}>
+          <LabGame mode="frontier" facts={() => []}>
             {(store) => {
               realmName = getEntityName(REALM, store)!;
               return <FrontierHud seasonOver={SeasonOver} rules={readExpeditionRules(store, 1)!} />;

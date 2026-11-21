@@ -9,7 +9,7 @@ import {
   type SystemCalls,
 } from "@bibliothecadao/types";
 import { NativeFactStore } from "../native-fact-store";
-import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../../contracts/l3/world-native/schema/release-definition.json";
 import explorerFixture from "../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import { hash } from "starknet";
 import type { AccountInterface } from "starknet";
@@ -100,9 +100,13 @@ describe("game actions", () => {
 });
 
 const createHarness = (signer: AccountInterface | null) => {
-  ClientConfigManager.instance().setActiveGame(GAME_ID, 0);
+  ClientConfigManager.instance().setActiveGame(GAME_ID);
   const store = new NativeFactStore();
-  write(store, "SliceRules", [GAME_ID], { ...preset.rules, game_id: GAME_ID, map_center_offset: 2147483646 });
+  write(store, "SliceRules", [GAME_ID], {
+    ...release.definition.rules,
+    game_id: GAME_ID,
+    map_center_offset: 2147483646,
+  });
   ClientConfigManager.instance().setStore(store);
   const systemCalls = {
     explorer_create: vi.fn(async () => ({ transaction_hash: "0x3" })),

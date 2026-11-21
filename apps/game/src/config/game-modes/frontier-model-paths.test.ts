@@ -1,12 +1,13 @@
 import { expect, it } from "vitest";
 import { BuildingType, StructureType, BUILDINGS_CENTER } from "@bibliothecadao/types";
 import { getGameModeConfig } from "./index";
+import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset-modes";
 import { buildingModelPaths, BUILDINGS_GROUPS, getStructureModelPaths } from "@/three/constants/scene-constants";
 import { resolveBuildingModelSelection } from "@/three/scenes/hexception-building-model";
 import { frontierPaintedBuildingPath, frontierPaintedPath } from "@/three/structures/frontier-painted-buildings";
 
 it("uses painted Frontier buildings on the board and in placement preview, without changing other modes", () => {
-  const frontier = getGameModeConfig(5).assets;
+  const frontier = getGameModeConfig(GAME_FAMILIES.frontier).assets;
   const types = [
     BuildingType.ResourceWheat,
     BuildingType.ResourceLabor,
@@ -20,10 +21,10 @@ it("uses painted Frontier buildings on the board and in placement preview, witho
   for (const type of types) {
     expect(frontier.buildingModelPaths[BUILDINGS_GROUPS.BUILDINGS][type]).toBe(frontierPaintedBuildingPath(type));
   }
-  for (const preset of [2]) {
-    expect(getGameModeConfig(preset).assets.structureModelPaths).toEqual(getStructureModelPaths());
+  for (const family of [GAME_FAMILIES.blitz]) {
+    expect(getGameModeConfig(family).assets.structureModelPaths).toEqual(getStructureModelPaths());
     for (const type of types) {
-      expect(getGameModeConfig(preset).assets.buildingModelPaths[BUILDINGS_GROUPS.BUILDINGS][type]).toBe(
+      expect(getGameModeConfig(family).assets.buildingModelPaths[BUILDINGS_GROUPS.BUILDINGS][type]).toBe(
         buildingModelPaths()[BUILDINGS_GROUPS.BUILDINGS][type],
       );
     }
@@ -60,7 +61,8 @@ it("selects all five painted tiers while retaining the central keep and the exis
         { stage: 0, structureId: 1, wonder: false, frontier: true },
       );
       expect(
-        selected.tierPath ?? getGameModeConfig(5).assets.buildingModelPaths[BUILDINGS_GROUPS.BUILDINGS][type],
+        selected.tierPath ??
+          getGameModeConfig(GAME_FAMILIES.frontier).assets.buildingModelPaths[BUILDINGS_GROUPS.BUILDINGS][type],
       ).toBe(frontierPaintedBuildingPath(type, tier));
     }
   }
@@ -76,7 +78,7 @@ it("selects all five painted tiers while retaining the central keep and the exis
       { stage: 0, structureId: 1, wonder: false, frontier: true },
     ).tierPath,
   ).toBe("/models/frontier/buildings/storehouse-3.glb");
-  expect(getGameModeConfig(5).assets.buildingModelPaths[BUILDINGS_GROUPS.REALMS].Kingdom).toBe(
+  expect(getGameModeConfig(GAME_FAMILIES.frontier).assets.buildingModelPaths[BUILDINGS_GROUPS.REALMS].Kingdom).toBe(
     buildingModelPaths()[BUILDINGS_GROUPS.REALMS].Kingdom,
   );
 });

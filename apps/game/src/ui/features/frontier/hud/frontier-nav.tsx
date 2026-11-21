@@ -1,5 +1,4 @@
-import { useHomeKind } from "@/hooks/helpers/use-home-kind";
-import { homeIcon } from "@/ui/design-system/home-icons";
+import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { useQuery } from "@/hooks/helpers/use-query";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
@@ -23,7 +22,6 @@ export type HudSurface =
   | "season"
   | "army"
   | "army-lost"
-  | "realms"
   | "shop";
 
 /**
@@ -59,7 +57,6 @@ export const FrontierNav = ({
   unread: number;
 }) => {
   const { isMapView } = useQuery();
-  const kind = useHomeKind(board);
   const place: Place | null =
     surface === "research" || surface === "feed" || surface === "chat" || surface === "menu"
       ? surface
@@ -80,7 +77,7 @@ export const FrontierNav = ({
     }
     onSurface(surface === to ? null : to);
   };
-  const realmIcon = board ? homeIcon(kind, board.base.level) : "realm";
+  const realmIcon = board ? realmMeaning(board.base.level, board.metadata.has_wonder) : "realm";
   return (
     <PlaceNav
       realmIcon={realmIcon}

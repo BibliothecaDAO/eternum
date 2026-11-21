@@ -1,4 +1,3 @@
-import { REALM_SKIN_MODELS } from "../structures/realm-skins";
 import { StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { MODEL_TYPE_TO_FILE, TROOP_TO_MODEL } from "../constants/army-constants";
 import { getStructureModelPaths } from "../constants/scene-constants";
@@ -449,12 +448,6 @@ const DEFAULT_ENTRIES: CosmeticRegistryEntry[] = [
   ...DEFAULT_ATTACHMENT_ENTRIES,
   ...DEFAULT_EXTRA_ARMY_SKINS,
   ...DEFAULT_EXTRA_STRUCTURE_SKINS,
-  ...REALM_SKIN_MODELS.map(({ cosmeticId, path, level }) => ({
-    id: cosmeticId,
-    category: "structure-skin" as const,
-    appliesTo: [formatStructureCosmeticTarget(StructureType.Realm, level)],
-    assetPaths: [path],
-  })),
 ];
 
 export function seedDefaultCosmetics(options?: { force?: boolean }) {

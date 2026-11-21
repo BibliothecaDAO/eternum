@@ -23,7 +23,7 @@ import { ActorType, BuildingType, ResourcesIds, StructureType, TileOccupier } fr
 import { type ReactNode, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
 import { installFixtureGame, PLAYER } from "./fixture-game";
 import { LAB_ARMY_ID, labArmyOut } from "./unified-hud-lab";
 
@@ -92,6 +92,9 @@ const automatedRecipes = () =>
   }));
 
 /** Opens a window on the popover host, as the game's buttons open it. */
+const withBigAmounts = (costs: readonly { resource_type: number; amount: string }[]) =>
+  costs.map((cost) => ({ ...cost, amount: BigInt(cost.amount) }));
+
 const openWindow = (id: string, content: ReactNode) => usePopoverStore.getState().openSurface({ id, content });
 
 /** Opens a window that lives on the popover host, the way its button opens it in the game. */
@@ -108,7 +111,7 @@ const armyRelics = (): unknown[] => [
     key: `0x9c${resource}`,
     value: { game_id: 1, entity_id: LAB_ARMY_ID, resource_type: resource, balance: String(2n * 1_000_000_000n) },
   })),
-  ...preset.resources
+  ...release.definition.resources.resources
     .filter((rule) => ARMY_RELICS.includes(rule.resource_type))
     .map((rule) => ({ model: "ResourceRule", key: `0x5${rule.resource_type}`, value: { ...rule, game_id: 1 } })),
 ];
@@ -170,7 +173,7 @@ const secondArmyAndRelics = (store: NativeFactStore): unknown[] => {
       key: `0x9e${resource}`,
       value: { game_id: 1, entity_id: LAB_ARMY_ID, resource_type: resource, balance: String(3n * 1_000_000_000n) },
     })),
-    ...preset.resources
+    ...release.definition.resources.resources
       .filter((rule) => ARMY_ONLY_RELICS.includes(rule.resource_type))
       .map((rule) => ({ model: "ResourceRule", key: `0x5${rule.resource_type}`, value: { ...rule, game_id: 1 } })),
   ];
@@ -279,15 +282,15 @@ export const WindowsLab = () => {
     const fixture = installFixtureGame();
     fixture.applyFacts([
       ...automatedRecipes(),
-      ...preset.buildings.map(({ category, rule }) => ({
+      ...release.definition.structures.buildings.map(({ category, rule }) => ({
         model: "BuildingRule",
         key: `0xb${category}`,
         value: {
           ...rule,
           game_id: 1,
           category,
-          simple_cost: rule.simple_cost.map((cost) => ({ ...cost, amount: BigInt(cost.amount) })),
-          complex_cost: rule.complex_cost.map((cost) => ({ ...cost, amount: BigInt(cost.amount) })),
+          simple_cost: withBigAmounts(rule.simple_cost),
+          complex_cost: withBigAmounts(rule.complex_cost),
         },
       })),
     ] as never);

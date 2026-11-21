@@ -16,9 +16,6 @@ import type { ReactNode } from "react";
 
 import { RankSteps } from "../realm/rank-steps";
 import type { RealmPopulation } from "../realm/realm-population";
-import type { CampaignMark } from "../value/campaign-home";
-import { RealmsChip } from "../value/lords-purse";
-import type { DailyClaimWaiting } from "../value/realm-labor";
 import { FRONTIER_STORES } from "../stores";
 import { LandingDelta, STORE_TONES, type StoreReading, storeLine } from "./status-strip";
 
@@ -38,14 +35,11 @@ export const RealmPanel = ({
   stores,
   lords,
   linkWalletLine = null,
-  waiting = null,
   onHome,
   storeCards,
   onWithdraw,
-  onRealms,
   fragments,
   onShop,
-  mark,
   kind = "realm",
 }: {
   kind?: HomeKind;
@@ -60,8 +54,6 @@ export const RealmPanel = ({
   lords?: number;
   /** What an account with no linked wallet is told about its LORDS (useLinkWalletPrompt): their ring's mark and tip. */
   linkWalletLine?: string | null;
-  /** What the home's daily claim has waiting today, which the Realms chip wears. */
-  waiting?: DailyClaimWaiting | null;
   /** The header's press: the map centred on the realm. */
   onHome?: () => void;
   /** The stores whose ring opens their card, the one open, and that card under the rings. */
@@ -72,11 +64,8 @@ export const RealmPanel = ({
     card: ReactNode;
   };
   onWithdraw?: () => void;
-  onRealms?: () => void;
   fragments?: number;
   onShop?: () => void;
-  /** The campaign that founded the home, worn beside its rank by every viewer. */
-  mark?: CampaignMark | null;
 }) => (
   <HudPanel
     label={REALM}
@@ -92,27 +81,19 @@ export const RealmPanel = ({
     className="pointer-events-auto"
     bodyClassName="flex flex-col gap-2"
   >
-    {/* Its readings vary in length (a rank's name, a population, the labor waiting): the row wraps rather than run
-        past the card, the Realms chip keeping to the right on whichever line it lands. */}
     <div className="flex min-h-9 flex-wrap items-center gap-x-2 gap-y-1 text-hud-strong text-hud-ink">
       {level !== undefined && (
         <span className="flex items-center gap-2">
-          {/* The home's family follows its rank; the tip names its founding identity. */}
           <SemanticIcon
             name={homeIcon(kind, level)}
             size={24}
-            alt={mark?.line ?? (kind === "wonder" ? HOME_KINDS[kind].label : undefined)}
-            data-tip={mark?.line ?? (kind === "wonder" ? HOME_KINDS[kind].label : undefined)}
+            alt={kind === "wonder" ? HOME_KINDS[kind].label : undefined}
+            data-tip={kind === "wonder" ? HOME_KINDS[kind].label : undefined}
           />
           {rankName(level)}
         </span>
       )}
       {population && <PopulationReading population={population} />}
-      {onRealms && (
-        <span className="ml-auto">
-          <RealmsChip waiting={waiting} onOpen={onRealms} />
-        </span>
-      )}
     </div>
     <ul aria-label="Stores" className="grid grid-cols-5 justify-items-center gap-y-5 pb-2 pt-2">
       {stores.map((store) => (

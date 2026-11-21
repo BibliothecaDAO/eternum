@@ -12,7 +12,7 @@ import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-p
 import { ArenaHud } from "@/ui/features/world/hud/arena-hud";
 import { gameStartHeadline } from "@/ui/features/news-headlines/news-headline-bridge";
 import { NewsHeadlineBanner } from "@/ui/features/news-headlines/news-headline-banner";
-import { nativeGameModeOf, readExpeditionRules, structureMapPosition } from "@bibliothecadao/eternum";
+import { readExpeditionRules, structureMapPosition } from "@bibliothecadao/eternum";
 import { nativeResearchConstants, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { ActorType, RESOURCE_PRECISION, ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { useEffect } from "react";
@@ -23,10 +23,10 @@ import { PLAYER } from "./fixture-game";
 import { LabGame } from "./lab-game";
 
 const VIEWS = {
-  blitz: { preset: 2, spectating: false, finished: false, army: false, attack: false },
-  "blitz-build": { preset: 2, spectating: false, finished: false, army: false, attack: false, stocked: true },
+  blitz: { mode: "blitz", spectating: false, finished: false, army: false, attack: false },
+  "blitz-build": { mode: "blitz", spectating: false, finished: false, army: false, attack: false, stocked: true },
   "blitz-start": {
-    preset: 2,
+    mode: "blitz",
     spectating: false,
     finished: false,
     army: false,
@@ -34,22 +34,22 @@ const VIEWS = {
     stocked: true,
     start: true,
   },
-  "blitz-attack": { preset: 2, spectating: false, finished: false, army: true, attack: true },
+  "blitz-attack": { mode: "blitz", spectating: false, finished: false, army: true, attack: true },
   // The same attack with the army at 5 stamina: no forecast, the sides with a dash and the shortfall under them.
-  "blitz-attack-short": { preset: 2, spectating: false, finished: false, army: true, attack: true, tired: true },
-  frontier: { preset: 5, spectating: false, finished: false, army: false, attack: false },
-  "frontier-army": { preset: 5, spectating: false, finished: false, army: true, attack: false },
-  "blitz-spectator": { preset: 2, spectating: true, finished: false, army: false, attack: false },
-  "blitz-finished": { preset: 2, spectating: true, finished: true, army: false, attack: false },
-  "blitz-out": { preset: 2, spectating: false, finished: false, army: false, attack: false, out: true },
-  "blitz-out-watching": { preset: 2, spectating: true, finished: false, army: false, attack: false, out: true },
+  "blitz-attack-short": { mode: "blitz", spectating: false, finished: false, army: true, attack: true, tired: true },
+  frontier: { mode: "frontier", spectating: false, finished: false, army: false, attack: false },
+  "frontier-army": { mode: "frontier", spectating: false, finished: false, army: true, attack: false },
+  "blitz-spectator": { mode: "blitz", spectating: true, finished: false, army: false, attack: false },
+  "blitz-finished": { mode: "blitz", spectating: true, finished: true, army: false, attack: false },
+  "blitz-out": { mode: "blitz", spectating: false, finished: false, army: false, attack: false, out: true },
+  "blitz-out-watching": { mode: "blitz", spectating: true, finished: false, army: false, attack: false, out: true },
 } as const;
 
 type View = keyof typeof VIEWS;
 /** Every view, by the name in its address, with the game it plays: the HUD room lists them. */
 export const UNIFIED_VIEWS = (Object.keys(VIEWS) as View[]).map((name) => ({
   name,
-  frontier: VIEWS[name].preset === VIEWS.frontier.preset,
+  frontier: VIEWS[name].mode === "frontier",
 }));
 
 /**
@@ -65,12 +65,11 @@ export const UnifiedHudLab = () => {
 };
 
 const ViewLab = ({ view }: { view: View }) => {
-  const { preset, spectating, finished, army, attack } = VIEWS[view];
+  const { mode, spectating, finished, army, attack } = VIEWS[view];
   const stocked = "stocked" in VIEWS[view];
   const start = "start" in VIEWS[view];
   const out = "out" in VIEWS[view];
   const tired = "tired" in VIEWS[view];
-  const mode = nativeGameModeOf(preset);
   const frontier = mode === "frontier";
   useDocumentClass(frontier ? "frontier-hud" : "classic-hud");
   useHudMode(mode);
@@ -88,7 +87,7 @@ const ViewLab = ({ view }: { view: View }) => {
         className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,theme(colors.kit.line),theme(colors.kit.ground))]"
       />
       <LabGame
-        preset={preset}
+        mode={mode}
         spectating={spectating}
         finished={finished}
         facts={

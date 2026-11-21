@@ -107,10 +107,6 @@ const createHerald = () => {
     /** The season's end, when a test ends it early; else 420 day units after its start. */
     seasonEnd: null as number | null,
     members: [PLAYER_ACCOUNT],
-    /** What founded the player's realm, which decides its daily claim. */
-    homeSource: "golden" as "realm" | "campaign" | "golden" | null,
-    /** The accounts snapshot reads were narrowed to, in order. */
-    ownerReads: [] as string[],
     /** The players the snapshot reads were scoped to as actors, in order. */
     actorReads: [] as string[],
     /** The players whose scoped stream has been sent its whole snapshot. */
@@ -159,7 +155,6 @@ const createHerald = () => {
     if (url.pathname === `/games/${GAME_ID}/snapshot`) {
       state.snapshotReads++;
       state.requestedModels.push(url.searchParams.get("models") ?? "");
-      if (url.searchParams.get("owner")) state.ownerReads.push(url.searchParams.get("owner")!);
       if (url.searchParams.get("actor")) {
         state.actorReads.push(url.searchParams.get("actor")!);
         state.reads.push("snapshot");
@@ -178,7 +173,6 @@ const createHerald = () => {
         state.neighbourArmy,
         url.searchParams.get("owner"),
         state.members,
-        state.homeSource,
         state.secondArmy,
       );
       const scoped = siteSnapshot(
@@ -278,7 +272,7 @@ const createHerald = () => {
     server.addEventListener("message", (event) => {
       if (JSON.parse(String(event.data)).type !== "resume") return;
       const snap = siteSnapshot(
-        snapshot(state.army, state.neighbourArmy, null, state.members, state.homeSource, state.secondArmy),
+        snapshot(state.army, state.neighbourArmy, null, state.members, state.secondArmy),
         state.site,
       );
       for (const model of snap.models)
@@ -293,7 +287,7 @@ const createHerald = () => {
   };
   const siteChanged = (preconfirmed = false) => {
     const snap = siteSnapshot(
-      snapshot(state.army, state.neighbourArmy, null, state.members, state.homeSource, state.secondArmy),
+      snapshot(state.army, state.neighbourArmy, null, state.members, state.secondArmy),
       state.site,
     );
     const model = snap.models.find(({ model }) => model === "DeepGuard")!;
@@ -312,7 +306,7 @@ const createHerald = () => {
   };
   const researchChanged = () => {
     const snap = siteSnapshot(
-      snapshot(state.army, state.neighbourArmy, null, state.members, state.homeSource, state.secondArmy),
+      snapshot(state.army, state.neighbourArmy, null, state.members, state.secondArmy),
       state.site,
     );
     const model = snap.models.find(({ model }) => model === "RealmKnowledge")!;
@@ -896,12 +890,8 @@ describe.concurrent("shard notifications", () => {
       expect(push.received).toEqual([201]);
       expect(push.times[0]).toBeGreaterThanOrEqual(opensAt);
       expect(push.times[0]).toBeLessThan(opensAt + 1000);
-      // The player's golden Devcon realm, read as its owner sees it, names what it claims; the phone has no zone yet.
-      expect(herald.state.ownerReads).toContain(PLAYER_ACCOUNT);
       expect(await push.words()).toEqual([
-        expect.stringMatching(
-          /^Day 2 is open \/ Frontier: claim 2,000 Labor and 2,000 Essence before \d\d:\d\d UTC\.$/,
-        ),
+        expect.stringMatching(/^Day 2 is open \/ Frontier: it ends at \d\d:\d\d UTC\.$/),
       ]);
       await worker.dispose();
       const restarted = await start();
@@ -1374,7 +1364,8 @@ describe.concurrent("shard notifications", () => {
     const { herald, push, worker, start } = await createHarness("important");
     const opensAt = openSoon(herald, 8);
     await worker.runCron();
-    await waitUntil(() => herald.state.ownerReads.length > 0, 6000); // the opening is prepared and stored
+    await waitUntil(() => herald.state.requestedModels.includes("PlayerEntry"), 6000);
+    await pause(1000);
     await worker.dispose();
     herald.state.status = "Settled";
     await pause(Math.max(0, opensAt + 1000 - Date.now()));
@@ -1389,33 +1380,13 @@ describe.concurrent("shard notifications", () => {
   }, 45_000);
 
   it.each([
-    ["a held Realm", "realm", false, (ends: string) => `Day 2 is open / Frontier: claim 1,000 Labor before ${ends}.`],
-    [
-      "an ordinary Devcon realm",
-      "campaign",
-      false,
-      (ends: string) => `Day 2 is open / Frontier: claim 1,000 Labor and 1,000 Essence before ${ends}.`,
-    ],
-    [
-      "a golden Devcon realm",
-      "golden",
-      false,
-      (ends: string) => `Day 2 is open / Frontier: claim 2,000 Labor and 2,000 Essence before ${ends}.`,
-    ],
-    ["a home with no claim", null, false, (ends: string) => `Day 2 is open / Frontier: it ends at ${ends}.`],
-    [
-      "the season's last day",
-      "golden",
-      true,
-      (ends: string) =>
-        `The last day is open / Frontier: claim 2,000 Labor and 2,000 Essence. The season ends at ${ends}.`,
-    ],
+    ["a day", false, (ends: string) => `Day 2 is open / Frontier: it ends at ${ends}.`],
+    ["the season's last day", true, (ends: string) => `The last day is open / Frontier: the season ends at ${ends}.`],
   ] as const)(
     "Day open names its day's end on the phone's clock as it is sent, after the phone changed zone: %s",
-    async (_case, homeSource, last, words) => {
+    async (_case, last, words) => {
       const { herald, push, worker } = await createHarness("important");
       try {
-        herald.state.homeSource = homeSource;
         const [prepared, sent] = twoDayZones();
         await worker.db.prepare('UPDATE "notification_push_subscriptions" SET "timeZone" = ?').bind(prepared).run();
         const opensAt = openSoon(herald, 8);
@@ -1429,7 +1400,8 @@ describe.concurrent("shard notifications", () => {
         const dayEnd = dayOf(calendar, opensAt / 1000)!.end;
         if (last) herald.state.seasonEnd = dayEnd;
         await worker.runCron();
-        await waitUntil(() => herald.state.ownerReads.length > 0, 6000); // worded once, in the first zone
+        await waitUntil(() => herald.state.requestedModels.includes("PlayerEntry"), 6000);
+        await pause(1000);
         await worker.db.prepare('UPDATE "notification_push_subscriptions" SET "timeZone" = ?').bind(sent).run();
         await waitUntil(() => push.received.length > 0, 15_000);
         expect(await push.words()).toEqual([words(clockIn(sent, dayEnd * 1000))]);

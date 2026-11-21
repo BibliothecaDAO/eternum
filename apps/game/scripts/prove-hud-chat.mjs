@@ -865,8 +865,6 @@ const APP_CHAT = `(() => {
   };
 })()`;
 const APP_CHAT_PLACE = '[data-band="bar"] button[data-role="tab"]';
-const READ_ONLY = "Players registered in this Blitz write here.";
-const LOBBY = "/lab/app/entry-choose/blitz/slot-blitz-1630?capture=1";
 
 const openApp = async (b, url, viewport, ready) => {
   b.run("set", "viewport", ...viewport);
@@ -965,44 +963,6 @@ const proveDesktopChatPage = (b, out, record, still) => {
 };
 
 /** A Blitz lobby's chat on its page: Lobby first, read-only for a wallet not registered; Global written in. */
-const proveLobbyChat = async (b, out, record, phone) => {
-  b.evaluate(
-    `(() => { document.querySelector('section[aria-label="Chat"]')?.scrollIntoView({ block: "center" }); return true; })()`,
-  );
-  await sleep(300);
-  const lobby = b.evaluate(APP_CHAT);
-  record.measures = { lobby };
-  record.checks.push(
-    {
-      check: "its tabs are Lobby, Global, then Messages, on Lobby",
-      ok: JSON.stringify(lobby.tabs) === JSON.stringify(["Lobby", "Global", "Messages"]) && lobby.current === "Lobby",
-    },
-    { check: "Lobby shows its history", ok: lobby.rows >= 3 },
-    {
-      check: "a wallet not registered reads Lobby with no field, told who writes there",
-      ok: lobby.field === null && lobby.words.includes(READ_ONLY),
-    },
-    {
-      check: "the chat is whole across the screen",
-      ok: lobby.chat !== null && lobby.chat.left >= 0 && lobby.chat.right <= lobby.viewport.width,
-    },
-  );
-  if (!phone)
-    record.checks.push({
-      check: "the page shows its chat, so the bar offers no Chat over it",
-      ok: lobby.place === null,
-    });
-  b.run("screenshot", join(out, `app-chat-lobby-${phone ? "phone" : "desktop"}.png`));
-  record.presses.push({ press: "Global", status: b.evaluate(pressTab("Global")) ? "led" : "missing" });
-  await sleep(500);
-  record.measures.global = b.evaluate(APP_CHAT);
-  record.checks.push({
-    check: "Global, on the same chat, is written in",
-    ok: record.measures.global.field !== null && !record.measures.global.words.includes(READ_ONLY),
-  });
-};
-
-/** The Frontier phone's Chat page: the whole band from the strip to the place bar. */
 const FRONTIER_PAGE = `(() => {
   const rect = (element) => element ? JSON.parse(JSON.stringify(element.getBoundingClientRect())) : null;
   const hud = document.querySelector('[aria-label="Frontier HUD"]');
@@ -1356,26 +1316,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
           `document.querySelector('[data-band="body"] input[aria-label="Message"]') !== null`,
         );
         if (desktopPage.ready) proveDesktopChatPage(b, out, desktopPage, "app-chat-page-desktop.png");
-
-        for (const [viewport, phone] of [
-          [["1440", "900"], false],
-          [["390", "844"], true],
-        ]) {
-          const lobby = {
-            state: `app, Blitz lobby chat, ${viewport.join("×")}`,
-            ready: false,
-            presses: [],
-            checks: [],
-          };
-          records.push(lobby);
-          lobby.ready = await openApp(
-            b,
-            `${baseUrl}${LOBBY}`,
-            viewport,
-            `document.querySelector('section[aria-label="Chat"] li[data-message-id]') !== null`,
-          );
-          if (lobby.ready) await proveLobbyChat(b, out, lobby, phone);
-        }
 
         const frontier = { state: "Frontier phone, Chat page, 390×844", ready: false, presses: [], checks: [] };
         records.push(frontier);

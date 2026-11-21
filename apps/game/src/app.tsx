@@ -16,7 +16,6 @@ import { WhatsNewPage } from "./shell/news/news";
 import { ChatPage } from "./shell/chat/chat-page";
 import { IS_DEV_ENVIRONMENT } from "./shell/frame/environment";
 import { NotFoundPage } from "./shell/not-found";
-import { BlitzLobbyPage } from "./shell/blitz/blitz-pages";
 import { BuildOrdersPage } from "./shell/build-orders/build-orders-page";
 import { JoinDevconPage } from "./shell/join/join-devcon-page";
 import { PlayPage } from "./shell/play/play-page";
@@ -65,7 +64,6 @@ export const appRoutes = (
         <Route key={path} path={path.slice(1)} element={<Navigate to="/" replace />} />
       ))}
       <Route path="blitz/build-orders" element={<BuildOrdersPage />} />
-      <Route path="blitz/:id" element={<BlitzLobbyPage />} />
       <Route path="join/devcon" element={<JoinDevconPage />} />
       <Route path="join/devcon/:code" element={<JoinDevconPage />} />
       <Route path="join/devcon/r/:referral" element={<JoinDevconPage />} />

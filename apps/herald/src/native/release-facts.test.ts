@@ -22,7 +22,7 @@ import { readReleaseDefinitions, releaseDefinitionText } from "./release-definit
 const registration = (presetId = 5, amend?: (definition: ReturnType<typeof buildNativePreset>) => void) =>
   presetRelease(presetId, 1, amend);
 
-function launch(preset: ReturnType<typeof registration>, gameId = 1, rosterSize = 0, overrideMap = true): RpcEvent[] {
+function launch(preset: ReturnType<typeof registration>, gameId = 1, overrideMap = true): RpcEvent[] {
   const overrides = {
     registration_start: 1234,
     biome_climate: preset.definition.rules.biome_climate_config,
@@ -32,19 +32,10 @@ function launch(preset: ReturnType<typeof registration>, gameId = 1, rosterSize 
     }),
     map_center_offset: 4321,
   };
-  const roster = Array.from({ length: rosterSize }, (_, index) => [String(0x100 + index)]);
   return [
-    ...(rosterSize
-      ? [
-          rowEvent("BlitzRoster", [String(gameId)], {
-            players: roster.map(([account]) => ({ account, wallet: account })),
-          }),
-        ]
-      : []),
     gameRegistryEvent({
       game_id: gameId,
       name: "0x123",
-      preset_id: preset.presetId,
       start_settling_at: "1800",
       start_main_at: "1800",
       scheduled_end_at: "999999",
@@ -104,7 +95,7 @@ describe("a release's rule rows", () => {
       world.fold.gameRows("SliceRules", "1").map(({ key, value }) => ({ model: "SliceRules", key, value })),
     );
     const manager = new ClientConfigManager();
-    manager.setActiveGame(1, preset.presetId);
+    manager.setActiveGame(1);
     manager.setStore(store);
     const rules = store.require("SliceRules", { game_id: 1 });
     const stamina = rules.troop_stamina_config;
@@ -192,13 +183,6 @@ describe("a release's rule rows", () => {
     expect(BigInt(settlement.registration_limit as string)).toBe(0n);
   });
 
-  it("takes Blitz registration_limit from the immutable launch roster", () => {
-    const preset = registration(2);
-    const world = setup(preset.definitions);
-    world.native.applyReceipt(world.fold, receipt(launch(preset, 1, 2)), 11, 0);
-    expect(BigInt(world.fold.gameRows("SettlementRules", "1")[0]!.value.registration_limit as string)).toBe(2n);
-  });
-
   it("refuses a launch whose release has no rule definition, without partial state", () => {
     const preset = registration();
     const world = setup(presetRelease(5, 2).definitions);
@@ -284,7 +268,7 @@ describe("a release's rule rows", () => {
   it("uses the preset map only when the chain explicitly records no map override", () => {
     const preset = registration();
     const world = setup(preset.definitions);
-    world.native.applyReceipt(world.fold, receipt(launch(preset, 1, 0, false)), 11, 0);
+    world.native.applyReceipt(world.fold, receipt(launch(preset, 1, false)), 11, 0);
     const rules = world.fold.gameRows("SliceRules", "1")[0]!.value;
     expect(BigInt((rules.map_config as Record<string, string>).shards_mines_win_probability)).toBe(
       BigInt(preset.definition.rules.map_config.shards_mines_win_probability),
@@ -343,7 +327,6 @@ it("projects daily quest rules from verified registration, without a legacy clai
       world.fold.gameRows("QuestRules", "1").map(({ key, value }) => ({ model: "QuestRules", key, value })),
     );
     expect(store.get("QuestRules", { game_id: 1 })).toEqual(enabled ? { game_id: 1, ...rules } : undefined);
-    expect(world.fold.gameRows("LaborRules", "1")).toHaveLength(enabled ? 0 : 1);
   }
 });
 
@@ -437,5 +420,4 @@ it("publishes every active Season 1 rule through verified registration and launc
     expect(game_id).toBe(1);
     expect(actual).toEqual(rules.unwrap());
   }
-  expect(world.fold.gameRows("LaborRules", "1")).toEqual([]);
 });

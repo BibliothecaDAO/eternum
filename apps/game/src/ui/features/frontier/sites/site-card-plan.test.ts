@@ -10,7 +10,7 @@ import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stami
 import { afterEach, describe, expect, it } from "vitest";
 import { armyRelicReward, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
 import { readDeepSiteFight, readArmyCard, readSiteCard } from "./site-card-plan";
 import {
   blightglowRift,
@@ -37,7 +37,7 @@ describe("Frontier's tile card", () => {
     expect(plan.beast?.beast).toBe("troll");
     expect(plan.guard).toEqual({ type: TroopType.Knight, tier: TroopTier.T1, count: 1_100 });
     expect(plan.payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 825, fits: 825 });
-    expect(plan.attackStamina).toBe(preset.rules.troop_stamina_config.stamina_attack_req);
+    expect(plan.attackStamina).toBe(release.definition.rules.troop_stamina_config.stamina_attack_req);
     // The one attack Attack sends now, as the contract resolves it and its result will show it: this attack's losses
     // and the guard it leaves standing (a second attack would clear the camp; the card speaks of none but this one).
     expect(plan.fight).toEqual({ troopsLost: 457, guardLeft: 478 });
@@ -47,7 +47,7 @@ describe("Frontier's tile card", () => {
     const { store, site, structure, attack } = campBeside("Camp", true, 0n);
     const plan = readSiteCard(store, site, structure, attack({ col: 41, row: 12, alt: false }));
     expect(plan.fight).toEqual({ refused: true });
-    expect(plan.attackStamina).toBe(preset.rules.troop_stamina_config.stamina_attack_req);
+    expect(plan.attackStamina).toBe(release.definition.rules.troop_stamina_config.stamina_attack_req);
   });
 
   it("forecasts an army out of reach as it would attack from beside the site, and none with no army selected", () => {

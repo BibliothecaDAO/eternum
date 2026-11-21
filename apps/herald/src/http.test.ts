@@ -42,12 +42,10 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
             value: gameRegistryRow({
               game_id: 7,
               name: "0x74657374",
-              preset_id: 2,
               start_settling_at: "0x1",
               start_main_at: "0x2",
               scheduled_end_at: "0x3",
               end_at: "0x3",
-              end_grace_seconds: 4,
             }),
           },
         ];
@@ -318,22 +316,6 @@ it("derives directory phases from advancing chain time with no registry write", 
   expect(await status()).toBe("Ended");
 });
 
-it("keeps an incomplete roster in registration beyond its scheduled end", async () => {
-  const handler = createHeraldRequestHandler({
-    ...httpState,
-    fold: {
-      ...httpState.fold,
-      modelRows: (model) =>
-        httpState.fold
-          .modelRows(model)
-          .map((row) => (model === "GameRegistry" ? { ...row, value: { ...row.value, ready: false } } : row)),
-    },
-  });
-  const response = await handler(new Request("http://herald/games"));
-  expect(response.status).toBe(200);
-  expect((await response.json()).games[0]).toMatchObject({ ready: false, status: "Registration" });
-});
-
 it("caches directory responses and shared row reads within one confirmed block", async () => {
   let block = 12;
   const modelRows = vi.fn(httpState.fold.modelRows);
@@ -438,7 +420,6 @@ it("caches each leaderboard once per confirmed head and drops all previous-head 
 it("serves Frontier history at one confirmed head, caches successes only and keeps captured realm facts", async () => {
   let head = 12;
   let depth = 1;
-  let campaignTier = 1;
   let release!: (value: Awaited<ReturnType<NonNullable<typeof httpState.history>["frontierHistory"]>>) => void;
   const frontierHistory = vi.fn(
     () =>
@@ -448,8 +429,6 @@ it("serves Frontier history at one confirmed head, caches successes only and kee
   );
   const modelRows = (model: string) => {
     if (model === "SliceRules") return [{ key: "7", value: { game_id: "7", day_unit_seconds: 14400 } }];
-    if (model === "CampaignHome")
-      return [{ key: "1", value: { game_id: "7", home: "1", campaign_id: "123", tier: campaignTier } }];
     if (model === "Structure")
       return [
         {
@@ -477,21 +456,20 @@ it("serves Frontier history at one confirmed head, caches successes only and kee
   const pending = read(new Request(url));
   await vi.waitFor(() => expect(frontierHistory).toHaveBeenCalledWith("7", 12));
   depth = 2;
-  campaignTier = 2;
   head = 13;
   release([]);
   const completed = await pending;
   expect(completed.headers.get("X-Confirmed-Block")).toBe("12");
   expect(await completed.json()).toMatchObject({
     mode: "frontier",
-    entries: [{ deepest_depth: 1, level: 2, campaign: { campaign_id: "123", tier: 1 } }],
+    entries: [{ deepest_depth: 1, level: 2 }],
   });
   const next = read(new Request(url));
   await vi.waitFor(() => expect(frontierHistory).toHaveBeenCalledWith("7", 13));
   release([]);
   expect(await (await next).json()).toMatchObject({
     mode: "frontier",
-    entries: [{ deepest_depth: 2, campaign: { campaign_id: "123", tier: 2 } }],
+    entries: [{ deepest_depth: 2 }],
   });
   await read(new Request(url));
   expect(frontierHistory).toHaveBeenCalledTimes(2);

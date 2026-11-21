@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { NativeFactStore } from "../client/native-fact-store";
 import { armyRelicsEnabled } from "./army-relics";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../contracts/l3/world-native/schema/release-definition.json";
 
 const sliceRules = (day_unit_seconds: number) => ({
   model: "SliceRules" as const,
   key: "0x1",
-  value: { ...preset.rules, game_id: 1, day_unit_seconds },
+  value: { ...release.definition.rules, game_id: 1, day_unit_seconds },
 });
 
 const storeWith = (facts: readonly object[]) => {

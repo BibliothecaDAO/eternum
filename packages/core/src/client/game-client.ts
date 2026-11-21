@@ -44,7 +44,6 @@ export interface CreateGameClientInput {
   bindings: NativeWorldBindings;
   shard: Shard;
   gameId: number;
-  presetId: number;
   authHandler?: SystemCallAuthHandler;
   scheduler: GameSyncScheduler;
   socketFactory?: (url: string) => HeraldSocket;
@@ -62,7 +61,6 @@ export interface CreateGameClientInput {
 export interface GameClient {
   shard: Shard;
   gameId: number;
-  presetId: number;
   setup: GameClientSetup;
   runtime: GameSyncRuntime;
   projection: WorldSpatialProjection;
@@ -110,8 +108,8 @@ export async function createGameClient(input: CreateGameClientInput): Promise<Ga
 }
 
 /** setActiveGame disposes the previous game's runtime, so it must run before this game's session starts. */
-const selectGame = ({ gameId, presetId }: CreateGameClientInput): void => {
-  configManager.setActiveGame(gameId, presetId);
+const selectGame = ({ gameId }: CreateGameClientInput): void => {
+  configManager.setActiveGame(gameId);
   setGameScope(gameId);
 };
 
@@ -258,7 +256,6 @@ const buildGameClient = (
   const client: GameClient = {
     shard: input.shard,
     gameId: input.gameId,
-    presetId: input.presetId,
     setup: setupResult,
     runtime,
     projection,

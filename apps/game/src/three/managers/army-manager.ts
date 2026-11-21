@@ -1305,7 +1305,7 @@ export class ArmyManager {
       plate: buildArmyPlate(
         {
           ...army,
-          watched: watchedSide(this.store, army.owner.address),
+          watched: watchedSide(army.owner.address),
         },
         this.resolveHomeRealmName(army),
         configManager.getExploreStaminaCost(
@@ -2762,10 +2762,7 @@ export class ArmyManager {
   /** The army's path colour, as its plate tells its side: its side's, or its owner's seat colour to a watcher. */
   private pathColourOf(army: ArmyData): Color {
     const owner = army.owner.address;
-    return armyPathColour(
-      { isMine: army.isMine, isAlly: army.isAlly, owner: army.owner },
-      watchedSide(this.store, owner),
-    );
+    return armyPathColour({ isMine: army.isMine, isAlly: army.isAlly, owner: army.owner }, watchedSide(owner));
   }
 
   /** How the viewer stands to an army, the one reading every visual of it takes: its side flags and its model's colour. */

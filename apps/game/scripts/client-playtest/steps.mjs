@@ -10,11 +10,8 @@ import {
   RESOURCE_PRECISION,
 } from "@bibliothecadao/types";
 import depthLooks from "../../src/three/terrain/ethereal-depths.json" with { type: "json" };
-import homeIcons from "../../src/ui/design-system/home-icons.json" with { type: "json" };
 import iconMeanings from "../../asset-sources/facets/semantic-map.json" with { type: "json" };
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import realmAssets from "../../src/three/structures/realm-assets.json" with { type: "json" };
-import realmSkins from "../../src/three/structures/realm-skins.json" with { type: "json" };
 import sharp from "sharp";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -111,7 +108,6 @@ export const HUD_WORDS = {
   feed: "Feed",
   close: "Close",
   chat: "Chat",
-  realmLabor: "Realm Labor",
 };
 
 // A game's card on Play takes its step by the verb's name (`data-play-verb`, src/shell/play/play-item.tsx).
@@ -1539,11 +1535,6 @@ const buttonNamed = (name) => `JSON.stringify((() => {
   return { offset: [Math.round(rect.left + rect.width / 2 - innerWidth / 2), Math.round(rect.top + rect.height / 2 - innerHeight / 2)] };
 })())`;
 
-/**
- * A Realm's labor claimed (the lab's claim game, whose relay the tab answers): Realms opened (a desktop's purse, a
- * phone's Menu), then its daily Claim; the result is the sheet saying that Realm's labor was claimed today, once the
- * chain has granted it.
- */
 const DAILY_QUEST_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   {
@@ -1690,56 +1681,6 @@ const baneCollectionSteps = (expected) => [
     },
   },
 ];
-
-const CLAIM_ACTION_STEPS = [
-  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  clickToResultStep("claim", "GrantLabor", claimARealmsLabor, ({ played }) => played.watching && { watch: "claimed" }),
-];
-
-const REALMS_SHEET = `[data-kit-sheet][aria-label="${HUD_WORDS.realmLabor}"]`;
-
-async function openRealmLabor(browser) {
-  if (browser.read(SHEET_NAME) === HUD_WORDS.realmLabor) return HUD_WORDS.realmLabor;
-  // A desktop's purse chip opens Realm Labor (its name goes on with what waits); a phone's Menu holds it.
-  if (onADesktop()) {
-    const chip = await readUntil(
-      () => browser.read(buttonLabelled(`^${HUD_WORDS.realmLabor}`)),
-      Boolean,
-      SHEET_WAIT_MS,
-    );
-    if (!chip) return { chip };
-    browser.tap(chip.offset);
-  } else {
-    browser.click(HUD_WORDS.menu);
-    await readUntil(() => browser.read(buttonNamed(HUD_WORDS.realmLabor)), Boolean, SHEET_WAIT_MS);
-    browser.click(HUD_WORDS.realmLabor);
-  }
-  const sheet = await readUntil(
-    () => browser.read(SHEET_NAME),
-    (name) => name === HUD_WORDS.realmLabor,
-    SHEET_WAIT_MS,
-  );
-  return sheet;
-}
-
-async function claimARealmsLabor({ browser }) {
-  const sheet = await openRealmLabor(browser);
-  if (sheet !== HUD_WORDS.realmLabor) return { sheet };
-  const claim = await readUntil(() => browser.read(sheetButton("^Claim [0-9,]+ Labor")), Boolean, SHEET_WAIT_MS);
-  if (!claim) return { sheet, claim };
-  const region = browser.read(sheetRegion(REALMS_SHEET));
-  watchFor(browser, "claimed", realmClaimed);
-  browser.tap(claim.offset);
-  return { sheet, watching: true, region };
-}
-
-/** The lab chain granted the Realm's labor, and the Realm Labor sheet's strip shows today claimed. */
-const realmClaimed = `(() => {
-  const grant = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "GrantLabor").at(-1)
-    ?.answered.find(({ model }) => model === "LaborGrant");
-  const today = document.querySelector(${JSON.stringify(REALMS_SHEET)})?.querySelector('[aria-current="date"]');
-  return String(grant?.value.home) === "7" && today?.getAttribute("data-state") === "claimed";
-})()`;
 
 const CLEAR_MIST_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
@@ -5914,108 +5855,6 @@ function reloadOn(place, scene, labScenario = null) {
   };
 }
 
-/** Each approved family through the real map, HUD and local keep, opened through the lab game's route. */
-const devconArtSteps = Object.entries(realmSkins).flatMap(([skin, { directory, label }]) =>
-  realmAssets
-    .filter((asset) => !asset.wonder)
-    .flatMap(({ id, level }) => {
-      const expected = { path: `/models/realms/devcon/${directory}/${id}.glb`, icon: homeIcons[skin][level], label };
-      return [
-        {
-          name: `${skin}-${id}-map`,
-          settleMs: 1_000,
-          play: async ({ browser }) => {
-            const url = new URL(browser.run(["get", "url"]));
-            url.pathname = "/lab/game";
-            url.search = new URLSearchParams({ scenario: `${skin}-${level}` }).toString();
-            browser.run(["open", url.href]);
-            await waitFor(browser, (seen) => seen.playable && isIn(seen, "Map", "map"), PLAYABLE_WAIT_MS);
-            await sleep(SCENE_HOLD_MS);
-            return readDevconArt(browser, expected);
-          },
-          verify: devconArtShown("map"),
-        },
-        {
-          name: `${skin}-${id}-realm`,
-          settleMs: 1_000,
-          play: async (context) => {
-            await goTo("Realm", "hex")(context);
-            await sleep(SCENE_HOLD_MS);
-            context.extraScreenshot("scene");
-            context.browser.tap([0, 0]);
-            await sleep(1_000);
-            const castle = context.browser.read("JSON.stringify(!!document.querySelector('[data-castle-card]'))");
-            context.extraScreenshot("castle");
-            context.browser.run(["press", "Escape"]);
-            if (!onADesktop()) {
-              context.browser.click(HUD_WORDS.menu);
-              await sleep(500);
-              context.browser.click(HUD_WORDS.realmLabor);
-              await sleep(1_000);
-            }
-            return { ...readDevconArt(context.browser, expected), castle };
-          },
-          verify: devconArtShown("hex"),
-        },
-      ];
-    }),
-);
-
-function readDevconArt(browser, expected) {
-  return {
-    expected,
-    ...browser.read(`JSON.stringify({
-    assets: JSON.parse(window.__playtest.read()).resources.map(entry => entry.url.replace(/[.][0-9a-f]{12}(?=[.]glb$)/, "")),
-    icons: [...document.querySelectorAll('img')].filter(img => img.complete && img.naturalWidth > 0).map(img => new URL(img.currentSrc).pathname),
-    text: document.body.innerText,
-    markers: [...document.querySelectorAll('[data-marker]')].map(node => node.dataset.marker),
-  })`),
-  };
-}
-
-function devconArtShown(scene) {
-  return ({ seen, played }) => {
-    const view = inScene(scene)({ seen });
-    if (view.status !== "completed") return view;
-    const { expected, assets, icons, text } = played;
-    if (scene === "hex" && !played.castle) return failed("the central keep did not open its castle card", played);
-    if (!assets.includes(expected.path)) return failed("approved realm model was not loaded", played);
-    if (!icons.some((path) => path.endsWith(`/${expected.icon}.webp`)))
-      return failed("campaign HUD icon is missing", played);
-    if (onADesktop() && !text.includes(expected.label))
-      return failed("campaign identity is missing from the HUD", played);
-    return completed(played);
-  };
-}
-
-const devconSeasonStep = {
-  name: "devcon-season",
-  play: async ({ browser }) => {
-    if (!onADesktop()) {
-      browser.click(HUD_WORDS.menu);
-      await sleep(500);
-    }
-    browser.click(HUD_WORDS.season);
-    await sleep(2_000);
-    return browser.read(
-      `JSON.stringify([...document.querySelectorAll('section[aria-label="${HUD_WORDS.season}"] img')].map(img => img.complete && img.naturalWidth > 0 ? new URL(img.currentSrc).pathname.split('/').pop() : null))`,
-    );
-  },
-  verify: ({ seen, played }) => {
-    if (!seen.panels.includes(HUD_WORDS.season)) return failed("Season did not open", played);
-    const campaigns = Object.keys(realmSkins).map((skin) =>
-      Object.values(homeIcons[skin]).map((icon) => `${icon}.webp`),
-    );
-    if (
-      !campaigns.every((icons) => icons.some((icon) => played.includes(icon))) ||
-      !played.some((icon) => /^realm-[0-3][.]webp$/.test(icon)) ||
-      !Object.values(homeIcons.wonder).some((icon) => played.includes(`${icon}.webp`))
-    )
-      return failed("Season must distinguish both unvisited campaign homes, the ordinary home, and the Wonder", played);
-    return completed(played);
-  },
-};
-
 /**
  * The game entered, cold then warm, and what keeps running once it is: the boot (a fresh profile), then a still window
  * read for the frame callbacks, timers, CSS animations, hidden full-screen layers and canvases still alive after the
@@ -6211,160 +6050,6 @@ export const STEP_SETS = {
   "knight-spectator": { game: FRONTIER, steps: knightSteps(FRONTIER_MAP) },
   "knight-blitz-spectator": { game: BLITZ, steps: knightSteps(BLITZ_MAP) },
   player: { game: FRONTIER, steps: PLAYER_STEPS },
-  "home-found-regular": {
-    game: { ...FRONTIER, entersFromHome: true },
-    steps: [
-      {
-        name: "found-regular-campaign-home",
-        play: async ({ browser, extraScreenshot }) => {
-          const tier = await readUntil(
-            () =>
-              browser.read(
-                `JSON.stringify(document.querySelector('.home-picker__featured .home-art')?.getAttribute('data-tier') ?? null)`,
-              ),
-            Boolean,
-            PLAYABLE_WAIT_MS,
-          );
-          extraScreenshot("source-choice");
-          if (tier !== "regular") return { tier, founded: false };
-          browser.click("Create your realm");
-          return { tier, founded: true };
-        },
-        settleMs: 5_000,
-        verify: ({ played }) =>
-          played.tier === "regular" && played.founded
-            ? completed(played)
-            : failed("regular campaign source was not offered", played),
-      },
-      ...FRONTIER_MAP.opening,
-      {
-        name: "read-founded-regular-home",
-        play: async ({ browser }) => {
-          await openRealmLabor(browser);
-          return readCampaignClaim(browser);
-        },
-        settleMs: 1_000,
-        verify: ({ played }) =>
-          played.tier === "regular" && !played.claimed
-            ? completed(played)
-            : failed("founded regular home with an unpaid claim was not confirmed", played),
-      },
-    ],
-  },
-  "home-upgrade": {
-    game: FRONTIER,
-    steps: [
-      ...FRONTIER_MAP.opening,
-      {
-        name: "upgrade-campaign-home",
-        play: async ({ base, browser, owner, extraScreenshot }) => {
-          await openRealmLabor(browser);
-          const before = readCampaignClaim(browser);
-          extraScreenshot("regular");
-          if (before.tier !== "regular" || before.claimed) return { before };
-          writeFileSync(`${base}-upgrade-ready.json`, JSON.stringify({ ready: true, before }), {
-            mode: 0o600,
-            flag: "wx",
-          });
-          const applied = await waitUntil(() => {
-            owner.throwIfCancelled();
-            return existsSync(`${base}-upgrade-applied.json`);
-          }, 180_000);
-          if (!applied) throw new Error("operator upgrade deadline");
-          const upgraded = await readUntil(
-            () => readCampaignClaim(browser),
-            (state) => state.tier === "golden",
-            ORDER_OUTCOME_WAIT_MS,
-          );
-          extraScreenshot("golden");
-          if (!upgraded || upgraded.claimed) return { before, upgraded };
-          const claim = await claimFoundedHome({ browser });
-          return { before, upgraded, claimed: claim.claimed, after: readCampaignClaim(browser) };
-        },
-        settleMs: 3_000,
-        verify: ({ played }) =>
-          played.before?.tier === "regular" &&
-          played.upgraded?.tier === "golden" &&
-          played.claimed &&
-          played.after?.claimed
-            ? completed(played)
-            : failed("golden upgrade and prospective claim did not settle", played),
-      },
-    ],
-  },
-  "home-golden": {
-    game: FRONTIER,
-    steps: [
-      ...FRONTIER_MAP.opening,
-      {
-        name: "read-golden-home-after-reload",
-        play: async ({ browser }) => {
-          await openRealmLabor(browser);
-          return readCampaignClaim(browser);
-        },
-        settleMs: 1_000,
-        verify: ({ played }) =>
-          played.tier === "golden" && played.claimed
-            ? completed(played)
-            : failed("golden claim did not survive a fresh load", played),
-      },
-    ],
-  },
-  "home-recovery": {
-    game: { ...FRONTIER, entersFromHome: true },
-    steps: [
-      {
-        name: "inspect-daily-source-choice",
-        play: async ({ browser, extraScreenshot }) => {
-          const offered = await readUntil(
-            () =>
-              browser.read(`JSON.stringify(document.querySelector('.home-picker__featured h3')?.textContent ?? null)`),
-            (name) => Boolean(name && name !== "A free home"),
-            PLAYABLE_WAIT_MS,
-          );
-          if (!offered) return { offered };
-          const screenshot = extraScreenshot("choice");
-          browser.click("Continue with my free home");
-          return { offered, screenshot };
-        },
-        settleMs: 5_000,
-        verify: ({ played }) =>
-          played.offered ? completed(played) : failed("daily source choice not offered", played),
-      },
-      {
-        name: "recover-and-claim-home",
-        play: async ({ base, browser, owner }) => {
-          const ready = `${base}-registration-ready.json`;
-          const registered = `${base}-registered.json`;
-          writeFileSync(ready, JSON.stringify({ ready: true }), { mode: 0o600, flag: "wx" });
-          if (
-            !(await waitUntil(() => {
-              owner.throwIfCancelled();
-              return existsSync(registered);
-            }, 180_000))
-          )
-            throw new Error("operator registration deadline");
-          return claimFoundedHome({ browser });
-        },
-        settleMs: 3_000,
-        verify: ({ played }) =>
-          played.claimed ? completed(played) : failed("daily claim not shown as claimed", played),
-      },
-    ],
-  },
-  "home-claim": {
-    game: FRONTIER,
-    steps: [
-      ...FRONTIER_MAP.opening,
-      {
-        name: "claim-founded-home",
-        play: claimFoundedHome,
-        settleMs: 3_000,
-        verify: ({ played }) =>
-          played.claimed ? completed(played) : failed("the daily claim did not become claimed in the sheet", played),
-      },
-    ],
-  },
   "stale-release": {
     game: FRONTIER,
     steps: [
@@ -6397,8 +6082,6 @@ export const STEP_SETS = {
     steps: plateSteps(FRONTIER_MAP, { selectArmy: true }),
     devOverlays: true,
   },
-  "lab-devcon-art": { game: { ...LAB_SPIRE, lab: "devcon-0" }, steps: devconArtSteps },
-  "lab-devcon-season": { game: { ...LAB_SPIRE, lab: "devcon-season" }, steps: [devconSeasonStep] },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
   "lab-site-effects": { game: labSpireGame("site-effects"), steps: SITE_EFFECT_STEPS },
   "lab-clear-mist": { game: labSpireGame("clear-mist"), steps: CLEAR_MIST_STEPS },
@@ -6449,7 +6132,6 @@ export const STEP_SETS = {
       { game: labSpireGame(`bane-${stage}`), steps: baneCollectionSteps(expected) },
     ]),
   ),
-  "lab-actions-claim": { game: labSpireGame("claim"), steps: CLAIM_ACTION_STEPS },
   "lab-far-place": { game: labSpireGame("far-place"), steps: FAR_PLACE_STEPS, devOverlays: true },
   "lab-far-eye": { game: labSpireGame("far-eye"), steps: FAR_EYE_STEPS },
   "lab-relic-forecasts": { game: labSpireGame("relics"), steps: RELIC_FORECAST_STEPS },
@@ -6592,40 +6274,6 @@ async function clearTheSelection({ browser }) {
 async function tapTheCentre({ browser }) {
   browser.tap([0, 0]);
   return {};
-}
-
-/** The live daily claim, verified by the same claimed-day state the player reads. */
-function readCampaignClaim(browser) {
-  return browser.read(`JSON.stringify((() => {
-    const sheet = document.querySelector(${JSON.stringify(REALMS_SHEET)});
-    return {
-      tier: sheet?.querySelector('.home-art')?.getAttribute('data-tier') ?? null,
-      claimed: sheet?.querySelector('[aria-current="date"]')?.getAttribute('data-state') === 'claimed',
-      days: sheet?.querySelectorAll('.realm-labor__days li').length ?? 0,
-      text: sheet?.innerText ?? null,
-    };
-  })())`);
-}
-
-async function claimFoundedHome({ browser }) {
-  const pressed = await claimARealmsLabor({ browser });
-  const claimed =
-    pressed.watching &&
-    (await readUntil(
-      () =>
-        browser.read(
-          `document.querySelector(${JSON.stringify(REALMS_SHEET)})?.querySelector('[aria-current="date"]')?.getAttribute('data-state') === 'claimed'`,
-        ),
-      Boolean,
-      ORDER_OUTCOME_WAIT_MS,
-    ));
-  return {
-    ...pressed,
-    claimed: Boolean(claimed),
-    sheetText: browser.read(
-      `JSON.stringify(document.querySelector(${JSON.stringify(REALMS_SHEET)})?.innerText ?? null)`,
-    ),
-  };
 }
 
 /** Holds a real signed move until the operator applies a compatible release; no RPC answer is fabricated. */

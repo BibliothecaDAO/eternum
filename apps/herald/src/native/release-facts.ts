@@ -17,14 +17,13 @@ export function deriveReleaseFacts(
   decoder: NativeDecoder,
   definition: DecodedRecord,
   overrides: DecodedRecord,
-  registrationLimit: number,
   launch: DecodedWorldEvent,
 ): DecodedWorldEvent[] {
   const rows: DecodedWorldEvent[] = [];
   const emit: EmitRule = (name, value, keys = {}) => {
     rows.push(derivedRow(decoder, launch, name, value, keys));
   };
-  deriveGameRules(emit, definition, overrides, registrationLimit);
+  deriveGameRules(emit, definition, overrides);
   deriveResources(emit, record(definition.resources));
   deriveStructures(emit, record(definition.structures));
   deriveSettlement(emit, record(definition.settlement));
@@ -50,12 +49,7 @@ function derivedRow(
   return { ...row, position: launch.position };
 }
 
-function deriveGameRules(
-  emit: EmitRule,
-  definition: DecodedRecord,
-  overrides: DecodedRecord,
-  registrationLimit: number,
-) {
+function deriveGameRules(emit: EmitRule, definition: DecodedRecord, overrides: DecodedRecord) {
   const rules = record(definition.rules);
   const settlement = record(definition.settlement);
   emit("SliceRules", {
@@ -66,7 +60,7 @@ function deriveGameRules(
   });
   emit("SettlementRules", {
     registration_start: overrides.registration_start,
-    registration_limit: registrationLimit,
+    registration_limit: 0,
     mode:
       BigInt(rules.entry_rule as bigint) === BigInt(nativeIdentifiers.rule.ENTRY_ROSTER)
         ? settlement.mode
@@ -100,9 +94,6 @@ function deriveStructures(emit: EmitRule, structures: PresetRecord) {
     emit("BuildingTierRule", record(rule), { category, tier });
   const board = some(structures.board);
   if (board) emit("BoardRules", board);
-  // Registrations before CampRules carry the camp's grants alone.
-  if (Array.isArray(structures.camps)) emit("CampResources", { resources: structures.camps });
-  else emit("CampRules", record(structures.camps));
   if ("faith" in structures) emit("FaithRules", record(structures.faith));
   emit("UpgradeLimits", record(structures.upgrade_limits));
   records(structures.upgrades).forEach((recipe, index) => emit("UpgradeRecipe", recipe, { level: index + 1 }));
@@ -114,8 +105,6 @@ function deriveSettlement(emit: EmitRule, settlement: PresetRecord) {
     emit("AspectRules", { orders: settlement.order_aspects });
   emit("VillageRules", record(settlement.villages));
   records(settlement.depths).forEach((rules, depth) => emit("DepthRules", rules, { depth }));
-  const spires = some(settlement.spires);
-  if (spires) emit("SpireLayout", spires);
 }
 
 function deriveEconomy(emit: EmitRule, economy: PresetRecord) {
@@ -137,19 +126,8 @@ function deriveEconomy(emit: EmitRule, economy: PresetRecord) {
     const quests = some(economy.quests);
     if (quests) emit("QuestRules", quests);
   }
-  if ("labor" in economy) {
-    const labor = some(economy.labor);
-    if (labor) emit("LaborRules", labor);
-  }
   if ("discovery" in economy) {
     const discovery = some(economy.discovery);
     if (discovery) emit("FrontierDiscoveryRules", discovery);
-  }
-  const withdrawals = some(economy.withdrawals);
-  if (withdrawals) {
-    emit("DepositRules", record(withdrawals.deposits));
-    emit("WithdrawalRules", record(withdrawals.rules));
-    for (const { resource_type, token } of records(withdrawals.tokens))
-      emit("ResourceToken", { token }, { resource_type });
   }
 }

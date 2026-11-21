@@ -7,6 +7,7 @@ import { seatSide, type Side } from "@/tokens";
 import { HexMarker, type MarkerOwner } from "@/ui/design-system/hex-marker";
 import { campBeside, SITE } from "@/ui/features/frontier/sites/site-fixture";
 import { minimapMarkersView } from "./minimap-markers";
+import { GAME_FAMILIES } from "../../../../../../../../config/source/common/native-preset-modes";
 
 /** The colour a minimap mark's hex frame is drawn in. */
 const frameColour = (owner: MarkerOwner) =>
@@ -40,14 +41,14 @@ describe("the minimap draws each thing in its map label's colour", () => {
 
 describe("enemies are red on the minimap", () => {
   it.each([
-    ["Frontier", 5, "beast-troll"],
-    ["Blitz", 2, "camp"],
+    ["Frontier", GAME_FAMILIES.frontier, "beast-troll"],
+    ["Blitz", GAME_FAMILIES.blitz, "camp"],
   ] as const)(
     "in %s, another player's realm and army and a beast's camp are red; yours are green",
-    (_, preset, camp) => {
+    (_, family, camp) => {
       const { store } = campBeside();
       const game = store.require("GameRegistry", { game_id: 1 });
-      store.applyFacts([{ model: "GameRegistry", key: "0x3", value: { ...game, preset_id: preset } }]);
+      store.applyFacts([{ model: "GameRegistry", key: "0x3", value: { ...game, family } }]);
       const marks = (viewer: string) => {
         const markers = minimapMarkersView.read(store, ContractAddress(viewer));
         return ["7", "201", String(SITE)].map(

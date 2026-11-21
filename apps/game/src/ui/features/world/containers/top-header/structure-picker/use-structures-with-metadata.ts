@@ -1,5 +1,4 @@
 import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
-import { readRealmSkin } from "@/three/structures/realm-skins";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useFactView } from "@/hooks/use-fact-view";
 import { buildingTilesView } from "@/sync/fact-views";
@@ -41,7 +40,7 @@ export const useStructuresWithMetadata = ({
   nameUpdateVersion = 0,
 }: UseStructuresWithMetadataArgs): StructureWithMetadata[] => {
   const mode = useGameModeConfig();
-  const facts = useNativeFacts(["StructureBuildings", ...GUARD_MODELS, "ExplorerTroops", "CampaignHome"]);
+  const facts = useNativeFacts(["StructureBuildings", ...GUARD_MODELS, "ExplorerTroops"]);
   // A day's rollover ends yesterday's armies with no row changing, so the live-army count also follows the clock.
   const armiesClock = useCoarseCurrentDefaultTick(10);
   const { favorites } = useFavoriteStructures();
@@ -118,7 +117,6 @@ export const useStructuresWithMetadata = ({
         displayName: name,
         originalName,
         realmLevel: normalizedLevel,
-        realmSkin: readRealmSkin(facts.store, structure.structure),
         realmLevelLabel,
         population,
         guardCount: getGuardsByStructure(structure.structure, facts.store)?.filter((guard) => guard.troops.count > 0n)

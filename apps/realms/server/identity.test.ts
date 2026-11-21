@@ -4075,7 +4075,6 @@ describe("shared links", () => {
       entries: [...board].map(([address, sites], index) => ({
         address,
         structure_id: String(index + 1),
-        campaign: null,
         rank: index + 1,
         sites_cleared: { total: sites, camps: sites, rifts: 0, ruins: 0, beasts: 0 },
         chests_earned: 0,

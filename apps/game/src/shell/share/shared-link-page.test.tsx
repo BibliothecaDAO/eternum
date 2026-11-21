@@ -13,15 +13,13 @@ vi.mock("@/hooks/context/identity-session", async (original) => ({
 }));
 
 const season = vi.hoisted(() => ({ calendar: { data: undefined as unknown } }));
-vi.mock("../blitz-slot", async (original) => ({
-  ...(await original<typeof import("../blitz-slot")>()),
+vi.mock("../season-calendar", async (original) => ({
+  ...(await original<typeof import("../season-calendar")>()),
   useSeasonCalendar: () => season.calendar,
 }));
 
 import { IdentityRequestError } from "@realms-world/identity";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-
-import { FRONTIER_S1_PRESET_ID } from "../../../../../config/source/common/native-preset-modes";
 
 import { setViewportWidth } from "../frame/test-viewport";
 import { SharedLinkPage } from "./shared-link-page";
@@ -111,10 +109,8 @@ it("before the season, shows the time left and asks a signed-out friend to creat
           phase: "frontier",
           startsAt: new Date((now + 14 * 86_400) * 1000).toISOString(),
           endsAt: new Date((now + 64 * 86_400) * 1000).toISOString(),
-          presetId: FRONTIER_S1_PRESET_ID,
         },
       ],
-      nextBlitz: null,
     },
   };
   service.openShare.mockResolvedValue({ kind: "aspect", moment: 1, name: "Dana", order: 13, members: 39 });

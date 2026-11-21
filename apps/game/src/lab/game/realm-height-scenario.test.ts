@@ -11,7 +11,7 @@ it("places every catalogued building kind on its own plot, plus the central keep
     (type): type is BuildingType => typeof type === "number" && type !== BuildingType.None,
   );
   const buildings = [...store.rows("Building")];
-  const mode = getGameModeConfig(LAB_GAME.presetId);
+  const mode = getGameModeConfig(LAB_GAME.family);
   for (const category of expected.filter((category) => mode.rules.isBuildingTypeAllowed(BuildingType[category]))) {
     expect(
       buildings.some((building) => building.category === category),

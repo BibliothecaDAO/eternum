@@ -22,13 +22,6 @@ export const APP_SPEC: readonly SpecPage[] = [
     why: "The index, the first visit's landing and the most-used page.",
   },
   {
-    page: "Blitz lobby",
-    route: "/blitz/:id",
-    job: "One Blitz before it starts: its clock, who is in, the paid entry, the chat.",
-    primary: "Pay and join; then Enter when the game opens; its Results once it is over.",
-    verdict: "keep",
-  },
-  {
     page: "Season",
     route: "/season",
     job: "Where the player stands this season: Frontier's board and Blitz's rating with its prize.",

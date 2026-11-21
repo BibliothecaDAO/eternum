@@ -16,10 +16,8 @@ export function questScenario(): LabScenario {
       key: "0x100",
       value: { ...rules, command_mask: rules.command_mask | BigInt(nativeCommandBits.ClaimDailyQuest) },
     },
-    ...[...store.entries("LaborRules")].map(([key]) => ({ model: "LaborRules", key, value: null })),
     ...[...store.entries("SettledRealm")].map(([key]) => ({ model: "SettledRealm", key, value: null })),
     ...[...store.entries("Seal")].map(([key]) => ({ model: "Seal", key, value: null })),
-    ...[...store.entries("CampaignHome")].map(([key]) => ({ model: "CampaignHome", key, value: null })),
     {
       model: "QuestRules",
       key: "0xa70",

@@ -218,11 +218,8 @@ export class NativeIngestion {
     const release = fold.currentRow("GameRelease", key)?.value;
     if (!release) throw new Error("GameOverrides requires GameRelease");
     const definition = releaseDefinition(this.definitions, Number(release.release_id));
-    const roster = fold.currentRow("BlitzRoster", key)?.value.players as unknown[] | undefined;
-    // A5 settlement::rules reads registrar.roster_sizes; a launch without a roster leaves it zero.
-    const registrationLimit = roster?.length ?? 0;
     const overrides = fold.currentRow("GameOverrides", key)!.value;
-    return deriveReleaseFacts(this.decoder, definition, overrides, registrationLimit, launch);
+    return deriveReleaseFacts(this.decoder, definition, overrides, launch);
   }
 
   /**

@@ -32,7 +32,6 @@ export const DoorwayScreen = ({
   onRetry,
   onOpenRealm,
   onSignIn,
-  onSpectate,
   results,
   asking = false,
   verb,
@@ -41,12 +40,11 @@ export const DoorwayScreen = ({
   view: DoorwayView;
   realm: DoorwayRealm | null;
   /** The game being entered, once the directory has it: its mode names the page, paints it and picks its advice. */
-  game?: Pick<DirectoryGame, "mode" | "preset_id">;
+  game?: Pick<DirectoryGame, "mode">;
   onRetry: () => void;
   /** Opens the realm view without the map, when the map could not be drawn. */
   onOpenRealm?: () => void;
   onSignIn: () => void;
-  onSpectate?: () => void;
   /** The finished game's Results page, where an ended game's doorway leads. */
   results?: string;
   /** The step asks the player to choose (the Realm step's homes): what they choose from stands in the bar's place. */
@@ -61,16 +59,7 @@ export const DoorwayScreen = ({
   const loadingMap = view.steps.some(({ step, state }) => (step === "map" || step === "play") && state === "running");
   const progress = !asking && <EntryProgress view={view} />;
   const comingUp = game?.mode === "frontier" && player && loadingMap && view.blocker === null && <ComingUp />;
-  const hold = (
-    <Hold
-      view={view}
-      onRetry={onRetry}
-      onOpenRealm={onOpenRealm}
-      onSignIn={onSignIn}
-      onSpectate={onSpectate}
-      results={results}
-    />
-  );
+  const hold = <Hold view={view} onRetry={onRetry} onOpenRealm={onOpenRealm} onSignIn={onSignIn} results={results} />;
   return (
     // The shell's surface from the window's edge, so the ground behind the frame is the shell's too.
     <div data-surface="shell" className="fixed inset-0 z-50 overflow-y-auto bg-app-ground">
@@ -124,14 +113,12 @@ const Hold = ({
   onRetry,
   onOpenRealm,
   onSignIn,
-  onSpectate,
   results,
 }: {
   view: DoorwayView;
   onRetry: () => void;
   onOpenRealm?: () => void;
   onSignIn: () => void;
-  onSpectate?: () => void;
   results?: string;
 }) => {
   const navigate = useNavigate();
@@ -181,13 +168,6 @@ const Hold = ({
         retry("primary"),
       );
   }
-  if (view.spectating === "watch" && onSpectate)
-    return hold(
-      <AppNotice line={DOORWAY_WORDS.notOnThisGame} />,
-      <AppButton kind="primary" size="lg" icon="watch" step onClick={onSpectate}>
-        {WORDS.watch}
-      </AppButton>,
-    );
   if (view.spectating === "results" && results)
     return hold(
       <AppNotice line={DOORWAY_WORDS.ended} />,

@@ -34,7 +34,7 @@ const caught = () => readReleaseCatalogue(SHARD);
 const SITE = { troops: 1000, aspect: 2, lore: true, lastTick: 0 };
 const world = (owner: string | null = null) => {
   const bar = { amount: 120, settledAt: Math.floor(Date.now() / 1000), day: TODAY };
-  const read = snapshot(bar, bar, owner, [PLAYER_ACCOUNT], "golden", null);
+  const read = snapshot(bar, bar, owner, [PLAYER_ACCOUNT], null);
   return siteSnapshot({ ...read, models: [...read.models, ...mistFacts(undefined)] }, SITE, owner);
 };
 

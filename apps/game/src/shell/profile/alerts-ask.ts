@@ -14,14 +14,14 @@ export const ASKED_LEVEL: NotificationLevel = "important";
  * The game's ask to turn alerts on: what its button does; "on" once this device gets the day's push; null when nothing
  * can be asked (signed out, its preferences unread, a device that blocks alerts or cannot show them).
  */
-export type AlertsAsk = { kind: "remind" | "install"; busy: boolean; act: () => void } | { kind: "on" } | null;
+type AlertsAsk = { kind: "remind" | "install"; busy: boolean; act: () => void } | { kind: "on" } | null;
 
 /**
  * Offered while this device would not get the day's push: alerts off on it, or the account's level Off. One tap turns
  * this device on (its permission asked inside the tap) and lifts an Off level to Important, the level Settings offers
  * for the day's push. An iPhone's browser installs first; a device that blocks alerts or cannot show them is not asked.
  */
-export const useAlertsAsk = (): AlertsAsk => {
+const useAlertsAsk = (): AlertsAsk => {
   const owner = notificationOwnerOf(useIdentitySession().session);
   const preferences = useNotificationPreferences(owner);
   const device = useThisDevice(owner);

@@ -4,7 +4,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { configManager, getBlockTimestamp, ResourceManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../contracts/l3/world-native/schema/release-definition.json";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { bindChainTime } from "./chain-time-binding";
 import { createGameSyncObserver } from "./game-sync-observer";
@@ -83,12 +83,15 @@ it("keeps chain time where Herald's head put it while a realm's production waits
       output_amount_left: 10n,
       last_settled_at: HEAD_SECONDS - 60,
     }),
-    fact("0x2", "SliceRules", { ...preset.rules, game_id: 1, mode_rules: nativeRuleConstants.PRODUCTION_START }),
+    fact("0x2", "SliceRules", {
+      ...release.definition.rules,
+      game_id: 1,
+      mode_rules: nativeRuleConstants.PRODUCTION_START,
+    }),
     fact(
       "0x2",
       "GameRegistry",
       gameRegistryRow({
-        preset_id: 1,
         start_settling_at: String(HEAD_SECONDS - 60),
         start_main_at: String(startsAt),
         scheduled_end_at: String(startsAt + 3600),

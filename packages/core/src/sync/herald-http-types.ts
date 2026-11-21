@@ -5,7 +5,6 @@ export type HeraldGameStatus = "Created" | "Registration" | "Live" | "Ended" | "
 export interface HeraldGameClock {
   scheduled_end_at: number;
   end_at: number;
-  end_grace_seconds: number;
 
   start_main_at: number;
   start_settling_at: number;
@@ -44,8 +43,6 @@ export interface HeraldPlayerStructure {
 export interface HeraldPlayerGameState {
   registered: boolean;
   settled: boolean;
-  /** The wallet frozen for this account at slot close, or null outside its roster. */
-  roster_wallet: string | null;
   held_realm_id: number | null;
   has_home_source: boolean;
   taken_realm_ids: number[];
@@ -53,7 +50,6 @@ export interface HeraldPlayerGameState {
 }
 
 export interface HeraldGameDirectoryEntry {
-  ready: boolean;
   clock: HeraldGameClock;
   dev_mode_on: boolean;
   /** A game with days: its day unit and the seed its bags of days are drawn from (decimal). */
@@ -65,17 +61,12 @@ export interface HeraldGameDirectoryEntry {
   /** One-based Frontier registry ordinal on this world, retained across finalization. */
   season_number?: number | null;
   game_id: number;
-  mode: "blitz" | "eternum" | "frontier" | null;
+  mode: "blitz" | "eternum" | "frontier";
   name: string;
   player_count: number;
   /** Homes per Aspect; null without Aspects, absent on archived directory responses. */
   aspect_members?: Record<AspectId, number> | null;
   player_state: HeraldPlayerGameState | null;
-  /** Players on a Blitz game's fixed roster; 0 for open-entry games. */
-  roster_count: number;
-  /** Frozen seat account and wallet; prepared means the account has an entry and its own settled realm. */
-  roster?: { account: string; wallet: string; prepared: boolean }[];
-  preset_id: number;
   registration: HeraldGameRegistration | null;
   settled_realms_count: number;
   settled_villages_count: number;
@@ -147,7 +138,6 @@ export interface HeraldFrontierLeaderboardEntry {
   address: string;
   structure_id: string;
   /** Immutable founding identity from the complete game; null explicitly identifies an ordinary home. */
-  campaign: { campaign_id: string; tier: number } | null;
   rank: number;
   sites_cleared: { total: number; camps: number; rifts: number; ruins: number; beasts: number };
   chests_earned: number;

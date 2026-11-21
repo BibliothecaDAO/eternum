@@ -34,8 +34,6 @@ vi.hoisted(() =>
   }),
 );
 
-// Blitz's board has its own test; this page test reads Frontier's board and the switch.
-vi.mock("./blitz-board", () => ({ BlitzBoard: () => <p>Blitz board</p> }));
 // Each shard game's board is the test's; an archived season's is the real read, from its file and never a shard.
 vi.mock("../herald", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../herald")>();
@@ -90,17 +88,12 @@ const mount = async (width: number) => {
   return { container, unmount: () => act(async () => root.unmount()) };
 };
 
-it("says Season did not answer in the glossary's words, with Try again, and the switch still works", async () => {
+it("says Season did not answer in the glossary's words, with Try again", async () => {
   const { container, unmount } = await mount(390);
   try {
     const body = container.querySelector('[data-band="body"]')!;
     expect(body.textContent).toContain("Season did not answer.");
     expect(body.textContent).not.toContain("502");
-    const blitz = [...body.querySelectorAll('[role="tab"]')].find((tab) => tab.textContent === "Blitz")!;
-    await act(async () => (blitz as HTMLButtonElement).click());
-    expect(blitz.getAttribute("aria-selected")).toBe("true");
-    expect(body.textContent).toContain("Blitz board");
-    expect(body.textContent).not.toContain("Season did not answer.");
   } finally {
     await unmount();
   }
@@ -141,7 +134,6 @@ const entry = (address: string, rank: number, sites: number) => ({
   rank,
   order: 1,
   structure_id: String(rank),
-  campaign: null,
   sites_cleared: { total: sites, camps: sites, rifts: 0, ruins: 0, beasts: 0 },
   chests_earned: 0,
   rewards: { lords: "0", essence: "0", labor: "0" },
@@ -393,10 +385,6 @@ it.each([390, 1440])(
     const pastRow = async (board: unknown) => {
       reads.boards = { 2: board };
       const { container, unmount } = await mount(width);
-      if (width === 390) {
-        const tab = [...container.querySelectorAll('[role="tab"]')].find((each) => each.textContent === "Frontier");
-        expect(tab?.getAttribute("aria-selected")).toBe("true");
-      }
       const row = pastRows(container)[0];
       await unmount();
       return row;

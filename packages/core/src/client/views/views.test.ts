@@ -7,7 +7,7 @@ import { setBlockTimestampSource } from "../../utils/timestamp";
 import { NativeFactStore } from "../native-fact-store";
 import type { GameClient } from "../game-client";
 import explorerFixture from "../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
-import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../../contracts/l3/world-native/schema/release-definition.json";
 
 const GAME_ID = 28;
 const PLAYER = ContractAddress(0xabc);
@@ -87,7 +87,7 @@ describe("game views", () => {
 });
 
 const createHarness = (): { store: NativeFactStore; views: GameViews } => {
-  ClientConfigManager.instance().setActiveGame(GAME_ID, 1);
+  ClientConfigManager.instance().setActiveGame(GAME_ID);
   const store = new NativeFactStore();
   return { store, views: createGameViews(fakeClient(store), PLAYER, () => null) };
 };
@@ -143,7 +143,11 @@ const seedStructure = (
 /** A Frontier game's rules: hour-long day units from `startMainAt`, regions `spacing` tiles wide. */
 const seedFrontierRules = (store: NativeFactStore, input: { startMainAt: number; spacing: number }) =>
   store.applyFacts([
-    { model: "SliceRules", key: "0x100", value: { ...preset.rules, game_id: GAME_ID, day_unit_seconds: 3600 } },
+    {
+      model: "SliceRules",
+      key: "0x100",
+      value: { ...release.definition.rules, game_id: GAME_ID, day_unit_seconds: 3600 },
+    },
     {
       model: "SettlementRules",
       key: "0x101",

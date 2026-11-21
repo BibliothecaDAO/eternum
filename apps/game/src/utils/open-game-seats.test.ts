@@ -14,8 +14,8 @@ const B = { chainId: "SHARD_B", gameId: 1 };
 
 /** Enters a game as the client does (its profile as the active game), watching it, on its own native store. */
 const enter = (game: typeof A) => {
-  setActiveGame({ ...game, presetId: 5, name: game.chainId });
-  configManager.setActiveGame(game.gameId, 5);
+  setActiveGame({ ...game, name: game.chainId });
+  configManager.setActiveGame(game.gameId);
   overrideSpectateIntent(true);
   return new NativeFactStore();
 };
@@ -27,33 +27,33 @@ afterEach(() => {
 
 describe("an open game's seats are its own (review-side-colours-4 P2)", () => {
   it("leaves shard B's game 1 unseated while its own order is on its way or failed, never shard A's", () => {
-    const a = enter(A);
+    enter(A);
     setOpenGameSeats(A, [0xan, 0xbn]);
-    expect(watchedSide(a, 0xan)).toMatchObject({ seat: 0, colour: SEAT_COLOURS[0] });
+    expect(watchedSide(0xan)).toMatchObject({ seat: 0, colour: SEAT_COLOURS[0] });
 
     // Shard B's game 1, its order not read yet (or its read failed: nothing is published either way).
-    const b = enter(B);
-    expect(seatOrder(b)).toEqual([]);
-    expect(watchedSide(b, 0xan)).toEqual({ seat: null, colour: HUD_SHEET.neutral });
+    enter(B);
+    expect(seatOrder()).toEqual([]);
+    expect(watchedSide(0xan)).toEqual({ seat: null, colour: HUD_SHEET.neutral });
 
     // Its own order arrives: its seats, not A's.
     setOpenGameSeats(B, [0xbn, 0xan]);
-    expect(watchedSide(b, 0xan)).toMatchObject({ seat: 1, colour: SEAT_COLOURS[1] });
+    expect(watchedSide(0xan)).toMatchObject({ seat: 1, colour: SEAT_COLOURS[1] });
   });
 
   it("refuses an order that arrives late for a game the viewer has left", () => {
     enter(A);
-    const b = enter(B);
+    enter(B);
     // Shard A's read, started before the viewer moved to B, answers now.
     setOpenGameSeats(A, [0xan, 0xbn]);
-    expect(watchedSide(b, 0xan)).toEqual({ seat: null, colour: HUD_SHEET.neutral });
+    expect(watchedSide(0xan)).toEqual({ seat: null, colour: HUD_SHEET.neutral });
     // Back on A, its order is the one published for it.
-    const a = enter(A);
-    expect(watchedSide(a, 0xbn)).toMatchObject({ seat: 1 });
+    enter(A);
+    expect(watchedSide(0xbn)).toMatchObject({ seat: 1 });
   });
 
   it("tells labels again only when the order changes, and nothing by seat while the viewer plays", () => {
-    const a = enter(A);
+    enter(A);
     const heard = vi.fn();
     const stop = onSidesChanged(heard);
     setOpenGameSeats(A, [0xan]);
@@ -62,8 +62,8 @@ describe("an open game's seats are its own (review-side-colours-4 P2)", () => {
     setOpenGameSeats(A, [0xan, 0xbn]);
     expect(heard).toHaveBeenCalledTimes(2);
     stop();
-    expect(watchedSide(a, 0n)).toEqual({ seat: null, colour: HUD_SHEET.neutral });
+    expect(watchedSide(0n)).toEqual({ seat: null, colour: HUD_SHEET.neutral });
     overrideSpectateIntent(false);
-    expect(watchedSide(a, 0xan)).toBeNull();
+    expect(watchedSide(0xan)).toBeNull();
   });
 });

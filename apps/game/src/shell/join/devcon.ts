@@ -1,19 +1,7 @@
-import { campaignHomeClaim, type LaborRuleAmounts } from "@bibliothecadao/eternum";
 import { CAMPAIGNS, type CampaignKey, type CampaignOpening } from "@realms-world/identity";
-
-import { laborRulesOf } from "@/services/home-claim-rules";
-import { frontierDevconPreset } from "../../../../../config/source/frontier/devcon";
-
-/** The Devcon preset's LaborRules row, as the deployer writes it onchain for the Devcon season's games. */
-export const DEVCON_LABOR_RULES: LaborRuleAmounts = laborRulesOf(frontierDevconPreset.labor);
 
 const CAMPAIGN = "devcon-2026" satisfies CampaignKey;
 
-/**
- * Devcon's campaign as its landing shows it: the campaign's public facts (@realms-world/identity's CAMPAIGNS, which the
- * identity Worker and the flyer generator read too) and what a ticket's home claims each Frontier day, by the same rule
- * the game's Realm sheet and the Day open push read it with (homeDailyClaim).
- */
 export const DEVCON = {
   campaign: CAMPAIGN,
   path: CAMPAIGNS[CAMPAIGN].link,
@@ -24,7 +12,6 @@ export const DEVCON = {
   goldenOneIn: Math.round(1 / CAMPAIGNS[CAMPAIGN].referral.goldenOdds),
   /** Counted friends that turn the inviter's link golden. */
   goldenLinkAt: CAMPAIGNS[CAMPAIGN].referral.goldenLinkAt,
-  claim: (golden: boolean) => campaignHomeClaim(DEVCON_LABOR_RULES, golden),
 } as const;
 
 /** One key per kind of opening; the latest link opened replaces the other. */

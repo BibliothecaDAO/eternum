@@ -37,7 +37,7 @@ export function nativeGameModeOf(presetId: number): GameType {
   return mode;
 }
 
-const GAME_FAMILIES = {
+export const GAME_FAMILIES = {
   frontier: nativeIdentifiers.family.FRONTIER,
   blitz: nativeIdentifiers.family.BLITZ,
 } satisfies Record<GameType, number>;
@@ -46,3 +46,9 @@ export const isGameType = (mode: unknown): mode is GameType =>
   typeof mode === "string" && Object.hasOwn(GAME_FAMILIES, mode);
 
 export const nativeFamilyOf = (presetId: number): number => GAME_FAMILIES[nativeGameModeOf(presetId)];
+
+export const nativeGameModeOfFamily = (family: number): GameType => {
+  const mode = (Object.keys(GAME_FAMILIES) as GameType[]).find((type) => GAME_FAMILIES[type] === family);
+  if (!mode) throw new Error(`Unknown game family ${family}`);
+  return mode;
+};

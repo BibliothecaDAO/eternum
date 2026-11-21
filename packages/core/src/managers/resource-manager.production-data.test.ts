@@ -1,6 +1,6 @@
 import { ResourcesIds } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../contracts/l3/world-native/schema/release-definition.json";
 import { NativeFactStore } from "../client/native-fact-store";
 import { ResourceManager } from "./resource-manager";
 
@@ -10,7 +10,7 @@ function productionManager(resourceId: ResourcesIds, outputAmountLeft: bigint) {
   const store = new NativeFactStore();
   store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 100 });
   store.applyFacts([
-    { model: "SliceRules", key: "0xd000", value: { ...preset.rules, game_id: 1, mode_rules: 0 } },
+    { model: "SliceRules", key: "0xd000", value: { ...release.definition.rules, game_id: 1, mode_rules: 0 } },
     {
       model: "ResourceWeight",
       key: "0xd001",

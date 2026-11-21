@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../contracts/l3/world-native/schema/release-definition.json";
 import { type CombatRules } from "./combat-exchange";
 import { type Army, CombatSimulator, type CombatParameters } from "./combat-simulator";
 
-const damage = preset.rules.troop_damage_config;
+const damage = release.definition.rules.troop_damage_config;
 const rules: CombatRules = {
   cooldownSeconds: 0,
-  tickSeconds: preset.rules.tick_config.armies_tick_in_seconds,
+  tickSeconds: release.definition.rules.tick_config.armies_tick_in_seconds,
   damage: {
     ...damage,
     damage_biome_bonus_num: 0,
@@ -17,7 +17,7 @@ const rules: CombatRules = {
     t3_damage_multiplier: BigInt(damage.t3_damage_multiplier),
   },
   stamina: {
-    ...preset.rules.troop_stamina_config,
+    ...release.definition.rules.troop_stamina_config,
     stamina_attack_req: 10,
     stamina_defense_req: 0,
     damage_stamina_refund: false,

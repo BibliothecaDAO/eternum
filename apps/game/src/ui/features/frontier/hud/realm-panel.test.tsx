@@ -1,5 +1,3 @@
-import { homeIcon } from "@/ui/design-system/home-icons";
-import { REALM_SKIN_MODELS, REALM_SKINS } from "@/three/structures/realm-skins";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -52,19 +50,8 @@ const named = () => [...host.querySelectorAll("[aria-label]")].map((element) => 
 
 it("reads the player's realm as Blitz's card reads a holding: name, rank, a ring per store and its LORDS", () => {
   const onWithdraw = vi.fn();
-  const onRealms = vi.fn();
   act(() =>
-    root.render(
-      <RealmPanel
-        name="Duskbite"
-        level={1}
-        stores={STORES}
-        lords={1_240}
-        waiting={{ labor: 2_000, essence: 0 }}
-        onWithdraw={onWithdraw}
-        onRealms={onRealms}
-      />,
-    ),
+    root.render(<RealmPanel name="Duskbite" level={1} stores={STORES} lords={1_240} onWithdraw={onWithdraw} />),
   );
   const panel = host.querySelector('section[aria-label="Realm"]')!;
   expect(panel.textContent).toMatch(/^Duskbite.*City/);
@@ -80,8 +67,6 @@ it("reads the player's realm as Blitz's card reads a holding: name, rank, a ring
   );
   act(() => (host.querySelector('[aria-label="LORDS 1,240"]') as HTMLButtonElement).click());
   expect(onWithdraw).toHaveBeenCalledTimes(1);
-  act(() => (host.querySelector('[aria-label="Realm Labor +2,000 Labor"]') as HTMLButtonElement).click());
-  expect(onRealms).toHaveBeenCalledTimes(1);
 });
 
 it("marks the LORDS of an account with no linked wallet, its name and hover saying why, still opening Withdraw", () => {
@@ -152,7 +137,7 @@ it("opens a store's card under the rings from the ring of a store that has one",
 it("shows a realm watched or visited by its stores alone: no LORDS and no Realms", () => {
   act(() => root.render(<RealmPanel name="Duskbite" level={2} stores={STORES} />));
   expect(host.textContent).toContain("Kingdom");
-  expect(named().filter((name) => name?.startsWith("LORDS") || name?.startsWith("Realm Labor"))).toEqual([]);
+  expect(named().filter((name) => name?.startsWith("LORDS"))).toEqual([]);
   expect(host.querySelectorAll("button.ui-ring")).toHaveLength(0);
 });
 
@@ -203,28 +188,3 @@ it("offers a desktop's places, Research, the Feed and the Season, each a panel i
   act(() => feed[2].click());
   expect(onSurface).toHaveBeenLastCalledWith("season");
 });
-
-it.each(REALM_SKIN_MODELS)(
-  "shows the $skin painting on the HUD at level $level, its name as a tip",
-  ({ skin, level }) => {
-    const icon = homeIcon(skin, level);
-    act(() =>
-      root.render(
-        <RealmPanel
-          name="Duskbite"
-          level={level}
-          highest={3}
-          stores={STORES}
-          kind={skin}
-          mark={{ line: REALM_SKINS[skin].label, golden: skin === "devcon-golden", icon }}
-        />,
-      ),
-    );
-    const panel = host.querySelector('section[aria-label="Realm"]')!;
-    // The painting alone carries the campaign: no tag spells its name beside the rank, the tip names it.
-    const paintings = [...panel.querySelectorAll(`img[src$="/${icon}.webp"][data-tip]`)];
-    expect(paintings.map((painting) => painting.getAttribute("data-tip"))).toEqual([REALM_SKINS[skin].label]);
-    expect(paintings[0].getAttribute("alt")).toBe(REALM_SKINS[skin].label);
-    expect(panel.textContent).not.toContain(REALM_SKINS[skin].label);
-  },
-);

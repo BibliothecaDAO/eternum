@@ -12,7 +12,7 @@ vi.stubGlobal("fetch", async (input: string) => {
     shard: {
       url: "https://shard-a.test",
       chainId: "0xa",
-      games: [{ game_id: 1, mode: "blitz", status: "Live", player_state: { roster_wallet: "0x4a1" } }],
+      games: [{ game_id: 1, mode: "blitz", status: "Live", player_state: { registered: true } }],
       held_realm_id: null,
       has_home_source: false,
       taken_realm_ids: [],
@@ -31,8 +31,8 @@ it("asks our directory for the signed-in player's state on every shard, and for 
   expect(realmsPlayerOf(undefined, guardian)).toBeNull();
   const signedIn = await fetchDirectories(player);
   expect(requests).toEqual([`/api/directory?player=${player}`]);
-  expect(signedIn.games.map((game) => [game.chainId, game.game_id, game.player_state?.roster_wallet])).toEqual([
-    ["0xa", 1, "0x4a1"],
+  expect(signedIn.games.map((game) => [game.chainId, game.game_id, game.player_state?.registered])).toEqual([
+    ["0xa", 1, true],
   ]);
 
   requests.splice(0);
@@ -63,7 +63,6 @@ it("points the player at a game they can enter now, a live Frontier season first
       game_id: 1,
       mode: "blitz",
       status: "Registration",
-      ready: false,
       clock: { start_main_at: 500 },
       ...overrides,
     }) as DirectoryGame;
@@ -72,19 +71,15 @@ it("points the player at a game they can enter now, a live Frontier season first
     game_id: 3,
     mode: "frontier",
     status: "Live",
-    ready: true,
     clock: { start_main_at: 100 },
   } as Partial<DirectoryGame>);
   // A live Blitz without the player on its roster is theirs to watch, not to enter.
   const othersBlitz = game({
     game_id: 4,
     status: "Live",
-    ready: true,
     clock: { start_main_at: 50 },
   } as Partial<DirectoryGame>);
   expect(nextOpenGame([registering, othersBlitz, season])?.game_id).toBe(3);
   expect(nextOpenGame([registering, othersBlitz])?.game_id).toBe(2);
-  // A season still being prepared cannot be entered yet.
-  expect(nextOpenGame([{ ...season, ready: false }, registering])?.game_id).toBe(2);
   expect(nextOpenGame([othersBlitz])).toBeUndefined();
 });

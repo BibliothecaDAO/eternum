@@ -14,7 +14,7 @@ import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-g
 import { configManager, type GameClient, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { type GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { buildingName, BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
 import { buildingCounts, realmBoard } from "./build-fixture";
 import { BuildingsInFlight, BuildSheet } from "./build-sheet";
 
@@ -317,7 +317,9 @@ describe("the build sheet", () => {
   it("offers Build for a Workshop on a realm whose own resources make no labor, as the contract allows on a board", () => {
     const { store, realm } = realmBoard();
     labor(store, 50_000n);
-    const workshop = preset.buildings.find(({ category }) => category === BuildingType.ResourceLabor)!;
+    const workshop = release.definition.structures.buildings.find(
+      ({ category }) => category === BuildingType.ResourceLabor,
+    )!;
     store.applyFacts([
       fact(`0x6${BuildingType.ResourceLabor}`, "BuildingRule", {
         ...workshop.rule,

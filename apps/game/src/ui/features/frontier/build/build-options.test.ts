@@ -2,7 +2,7 @@ import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { nativeResearchConstants } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it } from "vitest";
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
 import { HOUR, realmBoard } from "./build-fixture";
 import { readBuildOptions } from "./build-options";
 
@@ -26,11 +26,13 @@ describe("Frontier's build options", () => {
     expect(options.get(BuildingType.ResourceLabor)?.effect).toMatchObject({ resource: ResourcesIds.Labor });
     expect((options.get(BuildingType.ResourceLabor)?.effect as { perHour: number }).perHour).toBeCloseTo(50, 0);
     expect(options.has(BuildingType.Storehouse)).toBe(false);
-    const hut = preset.buildings.find(({ category }) => category === BuildingType.WorkersHut)!.rule.capacity_grant;
+    const hut = release.definition.structures.buildings.find(({ category }) => category === BuildingType.WorkersHut)!
+      .rule.capacity_grant;
     expect(options.get(BuildingType.WorkersHut)?.effect).toEqual({ kind: "population", amount: hut });
     expect(options.get(BuildingType.ResourceWheat)?.cost.length).toBeGreaterThan(0);
     expect(options.get(BuildingType.ResourceWheat)?.populationCost).toBe(
-      preset.buildings.find(({ category }) => category === BuildingType.ResourceWheat)!.rule.population_cost,
+      release.definition.structures.buildings.find(({ category }) => category === BuildingType.ResourceWheat)!.rule
+        .population_cost,
     );
   });
 

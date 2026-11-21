@@ -104,7 +104,6 @@ async function expeditionWorld() {
       seedDerivedRows(fold, decoder, [
         gameRegistryEvent({
           name: "7",
-          preset_id: 1,
           start_settling_at: String(dayStart + 120),
           start_main_at: String(dayStart + 120),
           scheduled_end_at: String(dayStart + 120 + 2 * 288_000),

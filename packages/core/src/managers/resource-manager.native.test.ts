@@ -1,6 +1,6 @@
 import { gameRegistryRow } from "../test-support/game-registry";
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../contracts/l3/world-native/schema/release-definition.json";
 import { describe, expect, it } from "vitest";
 import { NativeFactStore } from "../client/native-fact-store";
 import { waitForWorldState } from "../client/wait-for-world-state";
@@ -8,7 +8,7 @@ import { ResourceManager } from "./resource-manager";
 import type { GameSyncFact } from "../sync/game-sync-types";
 import { ResourcesIds } from "@bibliothecadao/types";
 
-const rules = preset.rules;
+const rules = release.definition.rules;
 const upsert = (key: string, models: Record<string, Record<string, unknown>>): GameSyncFact[] =>
   Object.entries(models).map(([model, value]) => ({ model, key, value }));
 const weight = (game = 1) => ({ game_id: game, entity_id: 7, capacity: 1000n, weight: 0n });
@@ -110,7 +110,9 @@ describe("native resource facts", () => {
     const store = new NativeFactStore();
     store.setSnapshot({ gameId: 1, complete: false, actor: "0xaaa", timestamp: 350 });
     store.applyFacts([
-      ...upsert("0x100", { SliceRules: { ...preset.rules, game_id: 1, day_unit_seconds: 100, mode_rules: 0 } }),
+      ...upsert("0x100", {
+        SliceRules: { ...release.definition.rules, game_id: 1, day_unit_seconds: 100, mode_rules: 0 },
+      }),
       ...upsert("0x101", { GameRegistry: { ...game, ready: true } }),
       ...upsert("0x102", {
         SettlementRules: {
@@ -282,10 +284,10 @@ it.each([60, 120])("pays every second with an unchanged %s-second armies tick", 
   store.applyFacts([
     ...upsert("0x1", {
       SliceRules: {
-        ...preset.rules,
+        ...release.definition.rules,
         game_id: 1,
         mode_rules: 0,
-        tick_config: { ...preset.rules.tick_config, armies_tick_in_seconds: armiesTick },
+        tick_config: { ...release.definition.rules.tick_config, armies_tick_in_seconds: armiesTick },
       },
     }),
     ...upsert("0x2", { ResourceWeight: { ...weight(), capacity: (1n << 128n) - 1n } }),

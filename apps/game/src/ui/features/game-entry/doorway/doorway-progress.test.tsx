@@ -18,7 +18,7 @@ const draw = (view: ReturnType<typeof doorwayView>, { asking = false, mode = "fr
         <DoorwayScreen
           view={view}
           realm={null}
-          game={{ mode, preset_id: 1 }}
+          game={{ mode }}
           onRetry={() => {}}
           onSignIn={() => {}}
           asking={asking}
@@ -39,7 +39,6 @@ it("shows a Frontier player's map loading as one bar with its share and step, an
   expect(page.textContent).toContain("71%");
   expect(page.textContent).toContain("Step 3 of 4");
   expect(page.textContent).toContain("First: build a Barracks");
-  expect(page.textContent).toContain("Claim Labor every day");
   // A meter, not a control: nothing on the page but the places can be pressed while it loads.
   expect([...page.querySelectorAll("button")].filter((button) => !button.closest('[data-band="tabs"]'))).toEqual([]);
 });
@@ -47,7 +46,6 @@ it("shows a Frontier player's map loading as one bar with its share and step, an
 it.each(["blitz", "eternum"] as const)("keeps Frontier's first minutes out of a %s entry: the bar alone", (mode) => {
   const page = draw(loadingMap(), { mode });
   expect(page.textContent).toContain("Loading the map");
-  expect(page.textContent).not.toContain("Claim Labor every day");
   expect(page.textContent).not.toContain("First: build a Barracks");
 });
 

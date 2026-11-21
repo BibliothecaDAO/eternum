@@ -5,26 +5,17 @@ import { ContractAddress } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useSyncExternalStore } from "react";
 
-import { useGame } from "@/hooks/context/game-context";
-import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { getActiveGame } from "@/runtime/world";
 import type { SeatSide } from "@/tokens";
 import { SeatMark } from "@/ui/design-system/seat-mark";
 import { useIsWatching } from "@/utils/can-issue-orders";
 import { readSeatsRevision, setOpenGameSeats, subscribeSeats, watchedSide } from "@/utils/entity-ownership";
 
-/** The seat's facts: a Blitz game's roster (an open game's seats are Herald's, `useOpenGameSeats`). */
-const SEAT_FACTS = ["BlitzRoster"] as const;
-
 /** `watchedSide` for a rendered surface: a player's seat while the viewer watches, null while they play. */
 const useWatchedSide = (owner: bigint | string | null | undefined): SeatSide | null => {
-  const {
-    setup: { store },
-  } = useGame();
-  useNativeRevision(SEAT_FACTS);
   useSyncExternalStore(subscribeSeats, readSeatsRevision, readSeatsRevision);
   const watching = useIsWatching();
-  return watching ? watchedSide(store, owner) : null;
+  return watching ? watchedSide(owner) : null;
 };
 
 /** A player's seat mark beside their name on a list (the standings), while the viewer watches; nothing while they play. */
@@ -70,19 +61,14 @@ const fetchRealmsCreated = async (chainId: string, game: number): Promise<Herald
   }
 };
 
-/**
- * Keeps an open game's seats while the viewer watches it (`setOpenGameSeats`), for that game alone: its shard's chain id
- * and its id. A Blitz game seats by its roster, on the chain. Mounted once, beside whichever HUD draws.
- */
 export const useOpenGameSeats = (): void => {
   const watching = useIsWatching();
   const game = configManager.getActiveGameId();
-  const roster = useNativeRow("BlitzRoster", { game_id: game });
   const chainId = getActiveGame()?.chainId;
   const stories = useQuery({
     queryKey: ["openGameSeats", chainId, game],
     queryFn: () => fetchRealmsCreated(chainId!, game),
-    enabled: watching && !roster && chainId !== undefined,
+    enabled: watching && chainId !== undefined,
     refetchInterval: OPEN_SEATS_REFRESH_MS,
   });
   useEffect(() => {

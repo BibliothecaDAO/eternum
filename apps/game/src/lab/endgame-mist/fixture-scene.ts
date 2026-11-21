@@ -1,4 +1,5 @@
 import { gameRegistryRow } from "../../../../../packages/core/src/test-support/game-registry";
+import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset-modes";
 import { Euler, Group, Matrix4, Vector3, type Camera, type Scene } from "three";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
@@ -80,7 +81,7 @@ export class EndgameFixtureScene {
         model: "GameRegistry",
         key: "1",
         value: gameRegistryRow({
-          preset_id: 2,
+          family: GAME_FAMILIES.blitz,
           start_main_at: "1",
           scheduled_end_at: "0",
           end_at: "0",

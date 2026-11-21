@@ -1,4 +1,3 @@
-import { readRealmSkin } from "@/three/structures/realm-skins";
 import { configManager, getExplorerOwner } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import type { FactView } from "@/sync/fact-views";
@@ -14,10 +13,8 @@ export interface MinimapMarker {
 export const minimapMarkersView: FactView<Map<string, MinimapMarker>> = {
   models: [
     "Structure",
-    "CampaignHome",
     "ExplorerTroops",
     "PlayerEntry",
-    "BlitzRoster",
     "GameRegistry",
     "ExpeditionSite",
     "SliceRules",
@@ -28,7 +25,7 @@ export const minimapMarkersView: FactView<Map<string, MinimapMarker>> = {
     const game = configManager.getActiveGameId();
     // Whose a mark is by the map labels' own rules: a watching viewer's seat colours, else the viewer's side.
     const ownership = (owner: bigint): MarkerOwner => {
-      const watched = watchedSide(store, owner);
+      const watched = watchedSide(owner);
       if (watched) return watched.seat === null ? "nobody" : `seat-${watched.seat}`;
       return sideOf({
         isMine: viewer !== null && owner === BigInt(viewer),
@@ -41,7 +38,7 @@ export const minimapMarkersView: FactView<Map<string, MinimapMarker>> = {
       const category = row.base.category;
       const name =
         category === StructureType.Realm
-          ? realmMarkerMeaning(row.base.level, readRealmSkin(store, row), row.metadata.has_wonder)
+          ? realmMarkerMeaning(row.base.level, row.metadata.has_wonder)
           : category === StructureType.Village
             ? "map-village"
             : category === StructureType.Mine

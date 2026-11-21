@@ -1,8 +1,5 @@
 import type { HeraldFrontierLeaderboard } from "@bibliothecadao/eternum/game-sync";
 import { StructureType } from "@bibliothecadao/types";
-import { uint256 } from "starknet";
-import { buildLedgerEconomicPreset, chestPresetFor } from "../../../../../config/deployer/clean/ledger/economics";
-import { FRONTIER_S1_PRESET_ID } from "../../../../../config/source/common/native-preset-modes";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import type { CampaignReferral, CampaignTicket, Session, ShareTally } from "@realms-world/identity";
 
@@ -15,30 +12,15 @@ import type { DirectoryGame } from "../herald";
 import { nativeFactSchemaIdentity } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { ARCHIVED_SEASONS, archivedSeason } from "../season-tab/archive/archive";
 
-import type { EntryTerms } from "../blitz/entry";
-import type { SlotKey } from "../value/ledger";
-import type { PlayedGameKeys } from "../season-tab/reward";
-import type { SeasonPrize } from "../season-tab/blitz-season";
-import type { Reward } from "../season-tab/reward";
 import { releaseLine } from "../../../../../packages/core/src/test-support/releases";
 
-/**
- * The app lab's one fiction, the handoff's: Day 12 of a Frontier season, today ends with 7h 14m left, the player
- * (Maelis) ranks 12th of 1,240 with a realm; a Blitz slot takes entries until 16:30 with 31 registered, another Blitz is live; Eternum
- * opens in a week; Dominion waits. Nothing here reaches a shard.
- */
 const NOW = Math.floor(Date.now() / 1000);
 const DAY = 86_400;
 const LEFT_TODAY = 7 * 3600 + 14 * 60;
 
 export const LAB_CHAIN = "0x5245414c4d53";
 
-/** The lab's payout wallet, which also holds its Blitz seat. */
-export const LAB_WALLET = "0x04a1c0de5eed000000000000000000000000000000000000000000000009c2e";
-
-/** The slot the lab's Blitz is registered in, and the game it filled, on the environment's ledger. */
-export const LAB_SLOT_KEY: SlotKey = { shard: LAB_CHAIN, slotId: 3 };
-export const LAB_GAME_KEYS: PlayedGameKeys = { game: { shard: LAB_CHAIN, gameId: 7 }, slot: LAB_SLOT_KEY };
+const LAB_WALLET = "0x04a1c0de5eed000000000000000000000000000000000000000000000009c2e";
 
 export const LAB_GUARDIAN = { publicKey: "0x1a2b", accountClassHash: "0x3c4d" };
 const REALMS_ID = "0x7";
@@ -72,7 +54,6 @@ const game = (over: Partial<DirectoryGame>): DirectoryGame => ({
   name: "frontier-1",
   mode: "frontier",
   status: "Live",
-  ready: true,
   dev_mode_on: false,
   expedition: null,
   clock: {
@@ -80,20 +61,16 @@ const game = (over: Partial<DirectoryGame>): DirectoryGame => ({
     start_main_at: NOW - DAY,
     scheduled_end_at: NOW + 7 * DAY,
     end_at: NOW + 7 * DAY,
-    end_grace_seconds: 0,
   },
   player_count: 0,
   player_state: {
     registered: false,
     settled: false,
-    roster_wallet: null,
     held_realm_id: null,
     has_home_source: false,
     taken_realm_ids: [],
     structures: [],
   },
-  roster_count: 0,
-  preset_id: 0,
   registration: null,
   settled_realms_count: 0,
   settled_villages_count: 0,
@@ -104,7 +81,6 @@ const game = (over: Partial<DirectoryGame>): DirectoryGame => ({
 const owned = {
   registered: true,
   settled: true,
-  roster_wallet: LAB_WALLET,
   held_realm_id: null,
   has_home_source: false,
   taken_realm_ids: [],
@@ -126,7 +102,6 @@ const frontier = (withRealm: boolean) =>
       start_main_at: NOW - 12 * DAY + LEFT_TODAY,
       scheduled_end_at: NOW + 20 * DAY,
       end_at: NOW + 20 * DAY,
-      end_grace_seconds: 0,
     },
     player_count: 1240,
     player_state: withRealm ? owned : null,
@@ -143,7 +118,6 @@ const endedFrontier = game({
     start_main_at: NOW - 21 * DAY,
     scheduled_end_at: NOW - 3600,
     end_at: NOW - 3600,
-    end_grace_seconds: 0,
   },
   player_count: 1240,
   player_state: owned,
@@ -159,52 +133,20 @@ const liveBlitz = (member: boolean) =>
       start_main_at: NOW - 2400,
       scheduled_end_at: NOW + 5040,
       end_at: NOW + 5040,
-      end_grace_seconds: 0,
     },
     player_count: 24,
-    roster_count: 24,
     player_state: member ? owned : null,
-    slotId: LAB_SLOT_KEY.slotId,
   });
-/** A seat on a Blitz roster whose game is still being prepared: it opens in two hours, the player's realm not ready yet. */
-const preparingBlitz = game({
-  game_id: 8,
-  name: "blitz-1900-1",
-  mode: "blitz",
-  status: "Registration",
-  ready: false,
-  clock: {
-    start_settling_at: NOW + 3600,
-    start_main_at: NOW + 7200,
-    scheduled_end_at: NOW + 14_400,
-    end_at: NOW + 14_400,
-    end_grace_seconds: 0,
-  },
-  player_count: 18,
-  roster_count: 24,
-  player_state: {
-    registered: true,
-    settled: false,
-    roster_wallet: LAB_WALLET,
-    held_realm_id: null,
-    has_home_source: false,
-    taken_realm_ids: [],
-    structures: [],
-  },
-  slotId: LAB_SLOT_KEY.slotId,
-});
 const eternum = game({
   game_id: 9,
   name: "eternum-1",
   mode: "eternum",
   status: "Registration",
-  ready: false,
   clock: {
     start_settling_at: NOW + 7 * DAY,
     start_main_at: NOW + 7 * DAY,
     scheduled_end_at: NOW + 60 * DAY,
     end_at: NOW + 60 * DAY,
-    end_grace_seconds: 0,
   },
 });
 
@@ -212,18 +154,15 @@ const eternum = game({
 const openEternum = game({
   ...eternum,
   status: "Live",
-  ready: true,
   clock: {
     start_settling_at: NOW - DAY,
     start_main_at: NOW - DAY,
     scheduled_end_at: NOW + 60 * DAY,
     end_at: NOW + 60 * DAY,
-    end_grace_seconds: 0,
   },
   player_state: {
     registered: true,
     settled: false,
-    roster_wallet: null,
     held_realm_id: null,
     has_home_source: false,
     taken_realm_ids: [],
@@ -252,18 +191,11 @@ export const LAB_SCREENS = {
   // The player's finished Blitz, its results not yet opened, leads Play: no Blitz open and the Frontier season over
   // (audit-1027 play 10: Blitz's column, and the way to the build orders, went with it).
   "blitz-results-lead": { signedIn: true, games: [endedFrontier, eternum] },
-  // No Blitz open, the calendar's next ranked game due: its column shows the start and when entry opens (the owner's
-  // 10:08, before the 12:00 game's entry opens at 10:25).
-  "blitz-next": { signedIn: true, games: [frontier(true), eternum] },
   // Only Eternum, not open yet: it leads Play, idle as its column would be, beside an idle Blitz; then open, to enter.
   "eternum-lead": { signedIn: true, games: [eternum] },
   "eternum-open": { signedIn: true, games: [openEternum] },
   unnamed: { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "no-realm": { signedIn: true, games: [frontier(false), liveBlitz(false), eternum] },
-  "blitz-seat": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
-  // The seat's Blitz leads, and the next slot's entry closes hours away: its row reads the longer clock QA met on dev
-  // ("Entry closes 12:55 · 10h 46m left"), which wraps on a phone.
-  "blitz-seat-late-slot": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "season-over": { signedIn: true, games: [endedFrontier, liveBlitz(false), eternum] },
   // The same season's Results with a podium of one place (the owner's dev season of 2 November: the player alone and
   // paid) and of two.
@@ -271,36 +203,11 @@ export const LAB_SCREENS = {
   "season-over-two": { signedIn: true, games: [endedFrontier, liveBlitz(false), eternum] },
   // No Frontier season listed, the last one settled into the history: production after its first season (10-31).
   "no-season": { signedIn: true, games: [liveBlitz(false), eternum] },
-  // A seat in a game still being prepared: Play leads with its lobby, never Enter before the game opens.
-  "blitz-preparing": { signedIn: true, games: [frontier(false), preparingBlitz, liveBlitz(false), eternum] },
   "wallet-none": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "wallet-ready": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "entry-choose": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "entry-short": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "entry-registered": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  // Past the close, before a game's roster names the wallet.
-  "entry-drawing": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  // The slot's game is live and its roster seats the player: the ledger binds no game until the result.
-  "entry-seated": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
-  "entry-unseated": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "entry-cancelled": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "entry-refunded": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "entry-no-wallet": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "reward-pending": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
-  "reward-sealed": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
-  "reward-after-season": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
-  "reward-opening": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
-  "reward-epic": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
-  "reward-lords": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
-  "reward-credit": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "season-running": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   // Frontier's season before its prize pool is published.
   "season-unpublished": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "season-review": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
-  "season-claim": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
-  "season-held": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
-  "season-claimed": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
-  "season-out": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   // Devcon's flyer landing (/join/devcon): an account holding no ticket, whose flyer opens a regular or a golden one, and
   // one holding its golden ticket at the Devcon game's Realm step (doorway/home).
   "devcon-flyer": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
@@ -434,112 +341,8 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, string
   "preseason-chosen": LAB_WALLET,
   "preseason-sealed": LAB_WALLET,
   "preseason-invited-pick": LAB_WALLET,
-  "entry-choose": LAB_WALLET,
-  "entry-short": LAB_WALLET,
-  "entry-registered": LAB_WALLET,
-  "entry-drawing": LAB_WALLET,
-  "entry-seated": LAB_WALLET,
-  "entry-unseated": LAB_WALLET,
-  "entry-cancelled": LAB_WALLET,
-  "entry-refunded": LAB_WALLET,
-  "reward-pending": LAB_WALLET,
-  "reward-sealed": LAB_WALLET,
-  "reward-after-season": LAB_WALLET,
-  "reward-opening": LAB_WALLET,
-  "reward-epic": LAB_WALLET,
-  "reward-lords": LAB_WALLET,
-  "reward-credit": LAB_WALLET,
   "season-running": LAB_WALLET,
-  "season-review": LAB_WALLET,
-  "season-claim": LAB_WALLET,
-  "season-held": LAB_WALLET,
-  "season-claimed": LAB_WALLET,
-  "season-out": LAB_WALLET,
   "devcon-held": LAB_WALLET,
-};
-
-const WEI = 10n ** 18n;
-
-/**
- * Blitz's money as production registers it (its ledger and chest presets), so every entry and reward screen, and every
- * docs capture of one, states the live entry, split and chest.
- */
-const PRODUCTION_CHESTS = chestPresetFor("production");
-const PRODUCTION_LEDGER = buildLedgerEconomicPreset("blitz", { environment: "production", chests: PRODUCTION_CHESTS });
-const ENTRY_FEE = uint256.uint256ToBN(PRODUCTION_LEDGER.entry_fee);
-const SWORD_PRICE = uint256.uint256ToBN(PRODUCTION_LEDGER.sword_price);
-const SHIELD_PRICE = uint256.uint256ToBN(PRODUCTION_LEDGER.shield_price);
-/** The payout wallet's LORDS before it joins the slot. */
-const WALLET_LORDS = 2_140n * WEI;
-const NOT_REGISTERED = {
-  registered: false,
-  sword: false,
-  shield: false,
-  swordCredit: false,
-  shieldCredit: false,
-  paid: 0n,
-  refundable: false,
-  gameId: 0,
-  registeredAt: 0,
-};
-const SEATED = {
-  registered: true,
-  sword: true,
-  shield: true,
-  swordCredit: true,
-  shieldCredit: false,
-  // The seat and the shield in LORDS; the sword from a credit.
-  paid: ENTRY_FEE + SHIELD_PRICE,
-  refundable: false,
-  gameId: 0,
-  registeredAt: 0,
-};
-const SEATED_WALLET_LORDS = WALLET_LORDS - SEATED.paid;
-const ENTRY: EntryTerms = {
-  prices: { seat: ENTRY_FEE, sword: SWORD_PRICE, shield: SHIELD_PRICE },
-  split: { protocolCutBps: PRODUCTION_LEDGER.protocol_cut_bps, chestLordsBps: PRODUCTION_LEDGER.chest_lords_bps },
-  cancelled: false,
-  close: NOW + 2 * 3600 + 4 * 60,
-  credits: { swords: 2, shields: 0 },
-  registration: NOT_REGISTERED,
-  lordsToken: "0x10e5",
-  lords: WALLET_LORDS,
-};
-
-/** The same slot past its close, its games drawn. */
-const CLOSED_ENTRY: EntryTerms = {
-  ...ENTRY,
-  close: NOW - 20 * 60,
-  credits: { swords: 1, shields: 0 },
-  lords: SEATED_WALLET_LORDS,
-};
-
-/** Screens whose slot has closed: its lobby is reached by its address once the list no longer shows it. */
-/** A slot whose entry closes hours away, as QA met dev's 11:00Z slot: 10h 46m. */
-const LATE_SLOT_CLOSE = NOW + 10 * 3600 + 46 * 60;
-
-const CLOSED_SLOT_SCREENS: readonly LabScreen[] = ["entry-drawing", "entry-seated", "entry-unseated", "entry-refunded"];
-
-/** How many registered in the slot, as the ledger counts them. */
-export const LAB_SLOT_REGISTERED = 31;
-
-/** A paid Blitz's terms for the payout wallet on each entry screen: what the ledger and the tokens would answer. */
-export const LAB_ENTRY_TERMS: Partial<Record<keyof typeof LAB_SCREENS, EntryTerms>> = {
-  "entry-choose": ENTRY,
-  // Short of the seat itself: Mint is the way on.
-  "entry-short": { ...ENTRY, credits: { swords: 0, shields: 0 }, lords: ENTRY_FEE / 2n },
-  "entry-registered": {
-    ...ENTRY,
-    credits: { swords: 1, shields: 0 },
-    registration: SEATED,
-    lords: SEATED_WALLET_LORDS,
-  },
-  "entry-drawing": { ...CLOSED_ENTRY, registration: SEATED },
-  "entry-seated": { ...CLOSED_ENTRY, registration: SEATED },
-  "entry-unseated": { ...CLOSED_ENTRY, registration: { ...SEATED, refundable: true } },
-  "entry-cancelled": { ...ENTRY, cancelled: true, registration: SEATED, lords: SEATED_WALLET_LORDS },
-  "entry-refunded": { ...CLOSED_ENTRY, registration: { ...SEATED, refundable: true, swordCredit: false, paid: 0n } },
-  "entry-no-wallet": ENTRY,
 };
 
 /** The lab's emailed code: this one is right, any other is refused as the identity service refuses it. */
@@ -547,10 +350,6 @@ export const LAB_EMAIL_CODE = "111111";
 
 export type LabScreen = keyof typeof LAB_SCREENS;
 
-/**
- * The season calendar as the launch service answers it: on `blitz-next`, the next ranked game starting in 1h 52m with
- * its entry opening in 17m; on `no-blitz`, none left in the season. Elsewhere a game is open, so the column shows it.
- */
 const PRESEASON_SCREENS: readonly LabScreen[] = [
   "preseason",
   "preseason-member",
@@ -594,36 +393,17 @@ const SEASON_ONE_PHASE = (at: (minutes: number) => string) => ({
   phase: "frontier" as const,
   startsAt: at(14 * 24 * 60 + 3 * 60 + 20),
   endsAt: at(64 * 24 * 60),
-  presetId: FRONTIER_S1_PRESET_ID,
 });
 
 export const labCalendar = (screen: LabScreen) => {
   const at = (minutes: number) => new Date((NOW + minutes * 60) * 1000).toISOString();
-  if (PRESEASON_SCREENS.includes(screen)) return { phases: [SEASON_ONE_PHASE(at)], nextBlitz: null };
-  if (screen !== "blitz-next") return { phases: [], nextBlitz: null };
-  return { phases: [], nextBlitz: { name: "blitz-next", startsAt: at(112), closesAt: at(107), opensAt: at(17) } };
+  return { phases: PRESEASON_SCREENS.includes(screen) ? [SEASON_ONE_PHASE(at)] : [] };
 };
-
-/** The screens with no Blitz slot open. */
-const QUIET_BLITZ_SCREENS: readonly LabScreen[] = [
-  "no-blitz",
-  "blitz-next",
-  "blitz-results-lead",
-  "eternum-lead",
-  "eternum-open",
-  "preseason",
-  "preseason-member",
-  "preseason-chosen",
-  "preseason-sealed",
-  "preseason-invited",
-  "preseason-invited-pick",
-];
 
 /** The screens whose player has no finished game to open. */
 export const LAB_NO_HISTORY_SCREENS: readonly LabScreen[] = [
   "no-games",
   "no-blitz",
-  "blitz-next",
   "eternum-lead",
   "eternum-open",
   "preseason",
@@ -633,24 +413,6 @@ export const LAB_NO_HISTORY_SCREENS: readonly LabScreen[] = [
   "preseason-invited",
   "preseason-invited-pick",
 ];
-
-/** The slot closing at 16:30, two hours away, on the lab's shard; on the after-close screens, closed and split. */
-export const labSlots = (screen: LabScreen) => {
-  if (QUIET_BLITZ_SCREENS.includes(screen)) return { slots: [] };
-  const closed = CLOSED_SLOT_SCREENS.includes(screen);
-  const closesAt = closed ? CLOSED_ENTRY.close : screen === "blitz-seat-late-slot" ? LATE_SLOT_CLOSE : ENTRY.close;
-  return {
-    slots: [
-      {
-        slotId: LAB_SLOT_KEY.slotId,
-        chainId: LAB_CHAIN,
-        name: "blitz-1630",
-        closesAt: new Date(closesAt * 1000).toISOString(),
-        closed,
-      },
-    ],
-  };
-};
 
 const NAMES = [
   "Ysabeau",
@@ -727,7 +489,6 @@ export const labFrontierBoard = (realms: number, read = 0): HeraldFrontierLeader
     ].map(({ address, sites, chests, lords }, index) => ({
       address,
       structure_id: String(index + 1),
-      campaign: null,
       rank: index + 1,
       sites_cleared: { total: sites, camps: 0, rifts: 0, ruins: 0, beasts: 0 },
       chests_earned: chests,
@@ -831,57 +592,6 @@ export const LAB_FINISHED_BLITZ = {
   shardUrl: "https://lab",
 };
 
-/** A rated wallet's L2 address, by its index on the board. */
-const ratedWallet = (index: number) =>
-  `0x0${(0xe000 + index).toString(16)}${"7c4b".repeat(14)}${(0x9a10 + index * 0x111).toString(16).slice(-4)}`;
-
-/** How many wallets the lab's Blitz rating holds. */
-const RATED_WALLETS = 120;
-
-/**
- * The Blitz rating's whole board of `wallets` rated wallets (/api/ratings/top; 120 painted, or a larger field to
- * measure): each row's L2 owner with the Realms profile behind it, the player 41st of 120 and the same share of any
- * larger field. Of the leading six, the fourth wallet is linked to no Realms identity and the sixth chose no name, so
- * both read as their addresses; the field below them is named by number.
- */
-export const labRatingTop = (wallets: number) => {
-  const place = Math.max(7, Math.round((wallets * 41) / 120));
-  const self = {
-    status: "rated" as const,
-    player: LAB_WALLET,
-    rating: "1744",
-    rank: place,
-    profile: { realmsId: REALMS_ID, name: LAB_SESSION.user.name, portrait: LAB_SESSION.user.image },
-  };
-  const entries = Array.from({ length: wallets }, (_, index) => {
-    const rank = index + 1;
-    if (rank === place) return { rank, player: self.player, rating: self.rating, profile: self.profile };
-    return {
-      rank,
-      player: ratedWallet(index),
-      rating: String(Math.max(0, 2480 - index * 18)),
-      profile: ratedProfile(index),
-    };
-  });
-  return { block_number: 812_345, block_hash: "0x5ea1", entries, self };
-};
-
-/** The painted rating: 120 wallets, the player 41st. */
-export const LAB_RATING_TOP = labRatingTop(RATED_WALLETS);
-
-/**
- * A rated wallet's profile: the leading six as named, the fourth unlinked and the sixth unnamed; the field by number.
- */
-function ratedProfile(index: number) {
-  if (index === 3) return null;
-  return {
-    realmsId: `0x${(0x200 + index).toString(16)}`,
-    name: index === 5 ? null : (NAMES[index] ?? `Rider ${index + 1}`),
-    portrait: `0${(index % 9) + 1}`,
-  };
-}
-
-/** The 16:30 lobby's seated players' names (their gameplay accounts resolve like any player's). */
 const SEAT_NAMES = ["Ysabeau", "Aldric", "Corwin", "Tybalt", "Isolde", "Brannoc", "Caradoc", "Gwenllian", "Osric"];
 export const LAB_SEAT_PROFILES = Object.fromEntries(
   SEAT_NAMES.map((name, position) => [
@@ -911,21 +621,6 @@ export const labRatings = (wallets: readonly string[]) => ({
   ratings: Object.fromEntries(wallets.map((wallet) => [wallet, { status: "rated", player: wallet, rating: "1744" }])),
 });
 
-/** The lobby's chat so far (/api/chat/world), oldest first, from seated players. */
-export const LAB_CHAT = [
-  ["Aldric", "gl hf"],
-  ["Tybalt", "who takes the north ridge?"],
-  ["Brannoc", "storm lords keep together"],
-  ["Osric", "see you at the spires"],
-  ["Ysabeau", "two minutes"],
-].map(([name, content], index) => ({
-  id: `lab-chat-${index}`,
-  sender: { playerId: chatPlayerId(name), displayName: name },
-  zoneId: "slot:blitz-1630",
-  content,
-  createdAt: new Date((NOW - 600 + index * 60) * 1000).toISOString(),
-}));
-
 /** Global's chat so far, oldest first: the room every player has, in the app as in a game. */
 export const LAB_GLOBAL_CHAT = [
   ["Isolde", "anyone up for the next Blitz?"],
@@ -938,113 +633,6 @@ export const LAB_GLOBAL_CHAT = [
   content,
   createdAt: new Date((NOW - 900 + index * 120) * 1000).toISOString(),
 }));
-
-const RESULT = { rank: 3, chestId: 41n, mmrBefore: 1744, mmrAfter: 1780 };
-const SWORD = {
-  registered: true,
-  sword: true,
-  shield: false,
-  swordCredit: false,
-  shieldCredit: false,
-  paid: 0n,
-  refundable: false,
-  gameId: 7,
-  registeredAt: 0,
-};
-const CHEST = { seasonId: 3, band: 0, requested: false, finished: false, requester: "0x0", requestBlock: 0 };
-const OPENED = { ...CHEST, requested: true, finished: true, requester: LAB_WALLET, requestBlock: 812_300 };
-/** Each rank band's token reward in entries, best band first, as production's chest preset pays it. */
-const TOKEN_SHARES = PRODUCTION_CHESTS.bands.map((band) => band.lords_shares);
-const SEALED: Reward = {
-  result: RESULT,
-  collection: "0xc4e57",
-  chest: CHEST,
-  held: true,
-  content: null,
-  drawBlocksLeft: null,
-  seasonEnd: NOW + 52 * DAY,
-  token: { shares: TOKEN_SHARES[CHEST.band], entryFee: ENTRY_FEE },
-  registration: SWORD,
-};
-/** A sealed chest of a rank band, with that band's token reward. */
-const sealedOf = (band: number): Reward => ({
-  ...SEALED,
-  chest: { ...CHEST, band },
-  token: { shares: TOKEN_SHARES[band], entryFee: ENTRY_FEE },
-});
-
-/** The payout wallet's result and chest on each reward screen: what the ledger would answer. */
-export const LAB_REWARDS: Partial<Record<keyof typeof LAB_SCREENS, Reward>> = {
-  "reward-pending": { ...SEALED, result: { ...RESULT, rank: 0, chestId: 0n }, chest: null },
-  // The middle band, the chest the owner picked.
-  "reward-sealed": sealedOf(2),
-  "reward-after-season": { ...sealedOf(1), seasonEnd: NOW - DAY },
-  // The draw part-way: 4 of its 11 blocks still to come.
-  "reward-opening": { ...SEALED, chest: { ...OPENED, band: 2, finished: false }, held: false, drawBlocksLeft: 4 },
-  "reward-epic": { ...SEALED, chest: OPENED, held: false, content: { kind: "cosmetic", attributes: "0x4040d01" } },
-  // The best band's token reward.
-  "reward-lords": {
-    ...SEALED,
-    chest: OPENED,
-    held: false,
-    content: { kind: "lords", amount: BigInt(TOKEN_SHARES[CHEST.band]) * ENTRY_FEE },
-  },
-  "reward-credit": {
-    ...SEALED,
-    result: { ...RESULT, mmrAfter: 1732 },
-    registration: { ...SWORD, sword: false, shield: true },
-    chest: { ...OPENED, band: 3 },
-    held: false,
-    content: { kind: "shield" },
-  },
-};
-
-/**
- * The Blitz season on Season: day 18 of 70 with 765,900 LORDS pooled and 500 ranked, then the season over with
- * 2,933,300 and the player on the posted list.
- */
-const RUNNING: SeasonPrize = {
-  ledger: "0x1ed9e7",
-  seasonId: 3,
-  season: {
-    participants: 500,
-    winners: 50,
-    posted: false,
-    challenged: false,
-    reviewUntil: 0,
-    presetId: 4,
-    start: NOW - 18 * DAY,
-    end: NOW + 52 * DAY,
-    pool: 765_900n * WEI,
-  },
-  curve: { paidFractionBps: 1000, decayBps: 9600 },
-  wallet: LAB_WALLET,
-  share: null,
-  position: null,
-  claimed: false,
-};
-const OVER = { ...RUNNING.season, posted: true, start: NOW - 70 * DAY, end: NOW - 2 * 3600, pool: 2_933_300n * WEI };
-const SHARE = 46_569n * WEI;
-
-export const LAB_SEASON_PRIZES: Partial<Record<keyof typeof LAB_SCREENS, SeasonPrize>> = {
-  "season-running": RUNNING,
-  "season-review": { ...RUNNING, season: { ...OVER, reviewUntil: NOW + 42 * 60 }, share: SHARE, position: 11 },
-  "season-claim": { ...RUNNING, season: { ...OVER, reviewUntil: NOW - 60 }, share: SHARE, position: 11 },
-  "season-held": {
-    ...RUNNING,
-    season: { ...OVER, challenged: true, reviewUntil: NOW + 600 },
-    share: SHARE,
-    position: 11,
-  },
-  "season-claimed": {
-    ...RUNNING,
-    season: { ...OVER, reviewUntil: NOW - 60 },
-    share: SHARE,
-    position: 11,
-    claimed: true,
-  },
-  "season-out": { ...RUNNING, season: { ...OVER, reviewUntil: NOW - 60 } },
-};
 
 /**
  * A new account at its one step (sign-in's name and portrait): the Discord name suggested at sign-up, which passes the
@@ -1086,7 +674,6 @@ export const LAB_DOORWAYS = {
     view: doorwayView({ source: "entry", phase: "settlement", audience: "player", signedIn: true }),
     realm: null,
   },
-  // The holds with a step: the map failed with the realm to open, the device limit, a Blitz to watch, one ended.
   "map-failed": {
     view: doorwayView({ source: "boot", phase: "error", audience: "player", failedScene: "map", realmCanOpen: true }),
     realm: { name: "Stolsli", emblem: orderEmblem(1) },
@@ -1098,10 +685,6 @@ export const LAB_DOORWAYS = {
       audience: "player",
       accountError: DEVICE_LIMIT_REACHED,
     }),
-    realm: null,
-  },
-  watch: {
-    view: doorwayView({ source: "entry", phase: "spectate", audience: "player", signedIn: true }),
     realm: null,
   },
   ended: {

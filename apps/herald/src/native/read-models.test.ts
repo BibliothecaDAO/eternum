@@ -1,5 +1,7 @@
 import { buildNativePreset } from "../../../../config/deployer/clean/config/native-preset";
 import { loadNativePresetConfiguration } from "../../../../config/deployer/clean/registrar/native-preset";
+import { GAME_FAMILIES } from "../../../../config/source/common/native-preset-modes";
+import type { GameType } from "../../../../config/source/common/types";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import { createHeraldRequestHandler } from "../http";
 import { WorldFold } from "../world-fold";
@@ -19,18 +21,17 @@ import {
   shardManifest,
 } from "./fixtures";
 
-function gameEvent(game = "1", settled = "0", dev = "0", preset = "2", name = "Blitz") {
+function gameEvent(game = "1", settled = "0", dev = "0", mode: GameType = "blitz", name = "Blitz") {
   return gameRegistryEvent({
     game_id: Number(game),
     name: "0x" + Buffer.from(name).toString("hex"),
-    preset_id: Number(preset),
+    family: GAME_FAMILIES[mode],
     settled: BigInt(settled) !== 0n,
     dev_mode_on: BigInt(dev) !== 0n,
     start_settling_at: "10",
     start_main_at: "20",
     scheduled_end_at: "200",
     end_at: "200",
-    end_grace_seconds: 10,
     seed: "42",
   });
 }
@@ -60,12 +61,6 @@ function world() {
         rowEvent("PlayerEntry", ["1", "0xaaa"], { player: 273n }),
         rowEvent("PlayerEntry", ["1", "0xbbb"], { player: 546n }),
         rowEvent("PlayerEntry", ["2", "0xccc"], { player: 819n }),
-        rowEvent("BlitzRoster", ["1"], {
-          players: [
-            { account: 273n, wallet: 1000n },
-            { account: 546n, wallet: 1001n },
-          ],
-        }),
       ]),
     ),
     10,
@@ -89,12 +84,10 @@ it("never lists deployment check games or counts them as Frontier seasons", () =
     receipt([
       gameRegistryEvent({
         name: String(name),
-        preset_id: 5,
         start_settling_at: "10",
         start_main_at: "20",
         scheduled_end_at: "200",
         end_at: "200",
-        end_grace_seconds: 10,
         seed: "42",
       }),
     ]),
@@ -170,27 +163,6 @@ it("projects a late campaign source without marking any NFT as taken", () => {
 });
 
 describe("native directory", () => {
-  it("keeps each player's frozen payout wallet after the game ends and has none for a nonmember", () => {
-    const { fold, native } = world();
-    native.applyReceipt(fold, receipt([gameEvent("1", "1")]), 12, 0);
-    for (const [playerAddress, wallet] of [
-      ["0x111", "0x3e8"],
-      ["0x222", "0x3e9"],
-      ["0x333", null],
-    ]) {
-      const directory = buildNativeDirectory({
-        chain: "madara",
-        confirmedBlock: 12,
-        timestamp: 201,
-        fold,
-        playerAddress: playerAddress!,
-      });
-      const game = directory.games.find(({ game_id }) => game_id === 1)!;
-      expect(game.player_state?.roster_wallet).toBe(wallet);
-      expect(game.status).toBe("Settled");
-    }
-  });
-
   it("reads native entries, structures and the clock without mirrored configuration rows", () => {
     const { fold, native } = world();
     native.applyReceipt(
@@ -221,14 +193,12 @@ describe("native directory", () => {
       player_state: {
         registered: true,
         settled: true,
-        roster_wallet: "0x3e8",
         held_realm_id: null,
         structures: [
           { entity_id: 7, category: 1, level: 0, realm_id: 0, coord_x: 7, coord_y: 0, resources_packed: "0" },
           { entity_id: 8, category: 5, level: 0, realm_id: 0, coord_x: 8, coord_y: 0, resources_packed: "0" },
         ],
       },
-      roster_count: 2,
       registration: { count: 2, max: 96, start_at: 5 },
       settled_realms_count: 1,
       settled_villages_count: 1,
@@ -242,16 +212,16 @@ describe("native directory", () => {
     for (const name of ["LastBattle", "WorldConfig", "PresetConfig", "BlitzSettlement"])
       expect(models).not.toContain(name);
     expect(models).toContain("ResourceProduction");
-    native.applyReceipt(fold, receipt([gameEvent("1", "1", "0", "1")]), 13, 0);
+    native.applyReceipt(fold, receipt([gameEvent("1", "1", "0", "frontier")]), 13, 0);
     expect(buildNativeDirectory(input).games.find((game) => game.game_id === 1)?.mode).toBe("frontier");
   });
 
   it("publishes each expedition's day unit and seed, and null for Blitz", () => {
     const { fold, native, decoder } = world();
     const derived = seedDerivedRows(fold, decoder, [
-      gameEvent("1", "0", "0", "101"),
-      gameEvent("2", "0", "0", "5"),
-      gameEvent("3", "0", "0", "2"),
+      gameEvent("1", "0", "0", "frontier"),
+      gameEvent("2", "0", "0", "frontier"),
+      gameEvent("3", "0", "0", "blitz"),
       rulesEvent("1", "120"),
       rulesEvent("2", "14400"),
       rulesEvent("3", "0"),
@@ -266,17 +236,14 @@ describe("native directory", () => {
 
     const games = buildNativeDirectory({ chain: "madara", confirmedBlock: 12, timestamp: 30, fold }).games;
     expect(games.find(({ game_id }) => game_id === 1)).toMatchObject({
-      preset_id: 101,
       mode: "frontier",
       expedition: { day_unit_seconds: 120, seed: "42" },
     });
     expect(games.find(({ game_id }) => game_id === 2)).toMatchObject({
-      preset_id: 5,
       mode: "frontier",
       expedition: { day_unit_seconds: 14400, seed: "42" },
     });
     expect(games.find(({ game_id }) => game_id === 3)).toMatchObject({
-      preset_id: 2,
       mode: "blitz",
       expedition: null,
     });
@@ -295,7 +262,7 @@ describe("native directory", () => {
     native.applyReceipt(
       fold,
       receipt([
-        ...seedDerivedRows(fold, decoder, [gameEvent("1", "0", "0", "101"), rulesEvent("1", "120")]),
+        ...seedDerivedRows(fold, decoder, [gameEvent("1", "0", "0", "frontier"), rulesEvent("1", "120")]),
         structure("7", "1", "0x111"),
         structure("6", "9", "0x0"),
         rowEvent("ExpeditionSite", ["1", "6"], site),
@@ -353,7 +320,7 @@ describe("native directory", () => {
     const restored = WorldFold.restore(decoder.registry, fold.checkpoint());
     expect(restored.modelRows("ExpeditionSite")).toEqual(retained);
     expect(buildNativeDirectory({ ...input, fold: restored })).toEqual(buildNativeDirectory(input));
-    native.applyReceipt(fold, receipt([gameEvent("1", "1", "0", "101")]), 13, 0);
+    native.applyReceipt(fold, receipt([gameEvent("1", "1", "0", "frontier")]), 13, 0);
     fold.evictFinalizedGames();
     expect(buildNativeDirectory(input).games.find(({ game_id }) => game_id === 1)!.player_state!.structures).toEqual(
       after!.structures,
@@ -424,7 +391,7 @@ describe("native directory", () => {
     const { fold, native, decoder } = world();
     native.applyReceipt(
       fold,
-      receipt(seedDerivedRows(fold, decoder, [gameEvent("1", "0", "0", "101"), rulesEvent("1", "120")])),
+      receipt(seedDerivedRows(fold, decoder, [gameEvent("1", "0", "0", "frontier"), rulesEvent("1", "120")])),
       11,
       0,
     );
@@ -482,7 +449,7 @@ describe("native directory", () => {
     );
 
     // The season closes and its rows beyond the directory are evicted: the player's directory still answers.
-    native.applyReceipt(fold, receipt([gameEvent("1", "1", "0", "101")]), 14, 0);
+    native.applyReceipt(fold, receipt([gameEvent("1", "1", "0", "frontier")]), 14, 0);
     expect(fold.finalizedGameIds()).toContain("1");
     fold.evictFinalizedGames();
     const closed = buildNativeDirectory({ ...input, confirmedBlock: 14 }).games.find((game) => game.game_id === 1)!;
@@ -517,8 +484,8 @@ it.each(["Blitz", "check-blitz-abc"])(
       rowEvent("TileOccupancy", ["1", "0", "7", "0"], { entity_id: 7n, category: 1n, is_structure: true }),
       rowEvent("TileOpt", ["1", "0", "5", "5"], { data: 1n }),
       rowEvent("TileOpt", ["2", "0", "5", "5"], { data: 1n }),
-      gameEvent("2", "0", "0", "1"),
-      gameEvent("1", "1", "0", "2", name),
+      gameEvent("2", "0", "0", "frontier"),
+      gameEvent("1", "1", "0", "blitz", name),
     ];
     const readModels = (fold: WorldFold) =>
       buildNativeDirectory({
@@ -555,25 +522,6 @@ it.each(["Blitz", "check-blitz-abc"])(
   },
 );
 
-it("preserves frozen roster wallets through preparation and checkpoint recovery", () => {
-  const { native, fold, decoder } = world();
-  const input = { chain: "madara", confirmedBlock: 10, timestamp: 15, fold };
-  expect(buildNativeDirectory(input).games.find((game) => game.game_id === 1)!.roster).toEqual([
-    { account: "0x111", wallet: "0x3e8", prepared: false },
-    { account: "0x222", wallet: "0x3e9", prepared: false },
-  ]);
-  native.applyReceipt(fold, receipt([structure("7", "1", "0x111")]), 11, 0);
-  const prepared = buildNativeDirectory(input).games.find((game) => game.game_id === 1)!.roster;
-  expect(prepared).toEqual([
-    { account: "0x111", wallet: "0x3e8", prepared: true },
-    { account: "0x222", wallet: "0x3e9", prepared: false },
-  ]);
-  const restored = WorldFold.restore(decoder.registry, fold.checkpoint());
-  expect(buildNativeDirectory({ ...input, fold: restored }).games.find((game) => game.game_id === 1)!.roster).toEqual(
-    prepared,
-  );
-});
-
 it.each(["Frontier", "check-frontier-abc"])(
   "finalizes %s and keeps custody facts through checkpoint recovery",
   (name) => {
@@ -609,7 +557,7 @@ it.each(["Frontier", "check-frontier-abc"])(
           rowEvent("LordsBudget", ["1"], budget),
           rowEvent("FrontierPrize", ["1"], { pool: 300n, issued: 0n, count: new CairoOption(CairoOptionVariant.None) }),
           rowEvent("LordsWithdrawal", ["1", "85"], { account: 273n, amount: 100n, prize_rank: 0, prize_count: 0 }),
-          gameEvent("1", "1", "0", "5", name),
+          gameEvent("1", "1", "0", "frontier", name),
         ]),
       ),
       11,
@@ -667,7 +615,7 @@ describe("the player directory over HTTP", () => {
     const { fold, native, decoder } = world();
     native.applyReceipt(
       fold,
-      receipt(seedDerivedRows(fold, decoder, [gameEvent("1", "0", "0", "101"), rulesEvent("1", "120")])),
+      receipt(seedDerivedRows(fold, decoder, [gameEvent("1", "0", "0", "frontier"), rulesEvent("1", "120")])),
       11,
       0,
     );

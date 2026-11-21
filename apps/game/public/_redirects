@@ -7,7 +7,6 @@
 /dominion / 301
 /sign-in / 301
 /blitz/build-orders / 200
-/blitz/:id / 200
 /join/devcon / 200
 /join/devcon/:code / 200
 /join/devcon/r/:referral / 200

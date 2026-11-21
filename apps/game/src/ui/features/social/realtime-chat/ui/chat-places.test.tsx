@@ -166,17 +166,13 @@ let root: Root;
 let undoLayout: () => void;
 let game: { realmName: string; realmIcon: string; store: Store };
 
-/**
- * The lab game, mounted as the game mounts it: Frontier (preset 5, its map built again each day), or a game with one map
- * all game (Blitz, preset 2: no day, the realm on its own tile). Each map site stands on its tile.
- */
 const mount = async (mode: "frontier" | "blitz") => {
   await act(async () =>
     root.render(
       <MemoryRouter>
         <QueryClientProvider client={new QueryClient()}>
           <LabGame
-            preset={mode === "frontier" ? 5 : 2}
+            mode={mode}
             facts={(store) => {
               const realm = store.require("Structure", { game_id: 1, entity_id: REALM });
               const rules = store.require("SliceRules", { game_id: 1 });

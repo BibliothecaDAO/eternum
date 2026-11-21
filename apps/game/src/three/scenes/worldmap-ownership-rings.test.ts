@@ -21,7 +21,7 @@ const DAY = 86_400;
 
 const disposers: Array<() => void> = [];
 beforeEach(() => {
-  configManager.setActiveGame(GAME, 1);
+  configManager.setActiveGame(GAME);
   // A map centred on 0: a contract hex and its scene hex are the same numbers.
   vi.spyOn(configManager, "getMapCenter").mockReturnValue(0);
   useUIStore.setState({ mapLayer: false });

@@ -1,13 +1,11 @@
-import { BLITZ_WORDS, CLOCK_WORDS, LORE_LINE, WORDS } from "@/ui/design-system/kit/words";
+import { BLITZ_WORDS, LORE_LINE, WORDS } from "@/ui/design-system/kit/words";
 import type { CSSProperties, ReactNode } from "react";
 
-import { AppAgeColumn, AppButton, AppGameCard, AppRow } from "@/ui/design-system/kit/app-elements";
-import { clockAt, clockLine } from "@/ui/design-system/kit/clock-chip";
+import { AppAgeColumn, AppButton, AppGameCard } from "@/ui/design-system/kit/app-elements";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 
 import { PageFrame } from "../frame/page-frame";
 import { Loading } from "../loading";
-import type { NextBlitzGame } from "../blitz-slot";
 import { ageOf } from "./ages";
 import { holdsNothing, idleCard, type PlayBoard, PLAY_MODES, type PlayMode } from "./play-board";
 import { type PlayFacts, type SourceGap, usePlayFacts } from "./play-facts";
@@ -31,7 +29,7 @@ export const PlayPage = () => {
       <SeasonCountdown opening={facts.opening} now={facts.now} />
     );
   const firstVisit = !facts.signedIn && facts.board?.lead?.verb === "play";
-  const ages = facts.board ? agesShown(facts.board, facts.gaps) : [];
+  const ages = facts.board ? agesShown(facts.board) : [];
   return (
     <PageFrame painting={firstVisit ? "dark-plains" : "brooding-plains"} stage={firstVisit} offersInstall>
       {/* On a short phone (a browser's toolbars showing) the line draws at title size, so Play free stays on the first
@@ -59,19 +57,10 @@ export const PlayPage = () => {
 };
 
 const isPlayEmpty = (facts: PlayFacts) =>
-  facts.board !== undefined && holdsNothing(facts.board) && facts.nextBlitz === null && facts.gaps.length === 0;
+  facts.board !== undefined && holdsNothing(facts.board) && facts.gaps.length === 0;
 
-/**
- * The ages holding a game besides the lead, in Play's order; and Blitz's always once its slots and the season's calendar
- * answered (an outage of either stands as its gap, never as "none"), so its way to the build orders is always there, a
- * Blitz in the lead or not.
- */
-const agesShown = (board: PlayBoard, gaps: readonly SourceGap[]): PlayMode[] =>
-  PLAY_MODES.filter(
-    (mode) =>
-      board.ages[mode].length > 0 ||
-      (mode === "blitz" && !gaps.some((gap) => gap.service === "slots" || gap.service === "season")),
-  );
+const agesShown = (board: PlayBoard): PlayMode[] =>
+  PLAY_MODES.filter((mode) => board.ages[mode].length > 0 || mode === "blitz");
 
 /** The lead; the directory's failure, the wait, or the quiet card in its place. */
 const LeadOrState = ({ facts }: { facts: PlayFacts }) => {
@@ -104,10 +93,6 @@ const QuietLead = ({ title, children }: { title: string; children?: ReactNode })
   <AppGameCard age="frontier" painting="frontier-mist" size="lead" className="h-full" title={title} verb={children} />
 );
 
-/**
- * The reads Play has not had in full, each in its own words with Try again: Blitz's slots, the player's results. The
- * games that did answer stay usable beside them.
- */
 const SourceGaps = ({ gaps }: { gaps: readonly SourceGap[] }) =>
   gaps.length === 0 ? null : (
     <div className="flex flex-col gap-2">
@@ -121,12 +106,6 @@ const SourceGaps = ({ gaps }: { gaps: readonly SourceGap[] }) =>
     </div>
   );
 
-/**
- * One age's column: its painting and its name, then its games in its well (Blitz's, with none and no Blitz in the lead:
- * the calendar's next game, or none left in the season); Blitz's ends on the way to the player's build orders while a
- * Blitz is on or to come. With nothing to do now it is idle (`idleCard`, as the lead is): dimmed, its one line alone
- * (owner, 29 October 2026: "for blitz if no season dont display the build orders, and maybe dim the panel").
- */
 const AgeColumn = ({
   mode,
   facts,
@@ -138,36 +117,16 @@ const AgeColumn = ({
 }) => {
   const age = ageOf(mode);
   const blitzLeads = facts.board?.lead?.mode === "blitz";
-  const buildOrders = mode === "blitz" && (items.length > 0 || blitzLeads || facts.nextBlitz !== null);
+  const buildOrders = mode === "blitz" && (items.length > 0 || blitzLeads);
   const idle = idleCard(items, buildOrders);
   return (
     <AppAgeColumn age={mode} painting={age.painting} name={age.name} idle={idle}>
       {items.length > 0 ? (
         <ItemRows items={items} now={facts.now} signedIn={facts.signedIn} />
       ) : (
-        !blitzLeads && <NextBlitz next={facts.nextBlitz} now={facts.now} />
+        !blitzLeads && <p className="text-app-body text-app-muted">{BLITZ_WORDS.noneScheduled}</p>
       )}
       {buildOrders && <BuildOrdersRow />}
     </AppAgeColumn>
-  );
-};
-
-/**
- * Blitz's column with no game open (owner, 2026-10-21: the card shows the next start until the game is published): the
- * season calendar's next game, its start and when its entry opens, in the player's local time; "No Blitz" only when the
- * season has none left.
- */
-const NextBlitz = ({ next, now }: { next: NextBlitzGame | null | undefined; now: number }) => {
-  if (next === undefined) return null;
-  if (next === null) return <p className="text-app-body text-app-muted">{BLITZ_WORDS.noneScheduled}</p>;
-  const startsAt = Date.parse(next.startsAt) / 1000;
-  const opensAt = Date.parse(next.opensAt) / 1000;
-  const entry = opensAt > now ? clockLine("entryOpens", opensAt, now) : BLITZ_WORDS.entryOpening;
-  return (
-    <ul className="app-well">
-      <li data-play-item={`next:${next.name}`}>
-        <AppRow title={BLITZ_WORDS.nextRanked} detail={`${CLOCK_WORDS.starts} ${clockAt(startsAt, now)} · ${entry}`} />
-      </li>
-    </ul>
   );
 };

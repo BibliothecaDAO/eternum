@@ -1,11 +1,4 @@
 import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
-import {
-  readRealmSkin,
-  realmSkinModel,
-  isRealmSkinPath,
-  DEVCON_BANNER_ART,
-  type RealmSkin,
-} from "../structures/realm-skins";
 import { FrontierModel, frontierModelKind } from "../structures/frontier-model";
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { realmModelIndex, isWonderModelPath } from "../structures/realm-design";
@@ -441,10 +434,7 @@ export class StructureManager {
               GUARD_MODELS.some((model) => model === change.model),
           );
         for (const change of changes) {
-          if (change.model === "CampaignHome") {
-            const home = change.current ?? change.previous;
-            if (home?.game_id === configManager.getActiveGameId()) touched.add(safeInteger(home.home));
-          } else if (change.model === "Guard") {
+          if (change.model === "Guard") {
             const guard = change.current ?? change.previous;
             if (!guard || guard.game_id !== configManager.getActiveGameId()) continue;
             const structureId = safeInteger(guard.structure_id);
@@ -491,7 +481,6 @@ export class StructureManager {
         isMine: boolean;
         ownerAddress: bigint;
         structureType: StructureType;
-        realmSkin?: RealmSkin;
         hasWonder: boolean;
       }
     | undefined {
@@ -502,7 +491,6 @@ export class StructureManager {
       isMine: structure.isMine,
       ownerAddress: structure.owner.address,
       structureType: structure.structureType,
-      realmSkin: structure.realmSkin,
       hasWonder: structure.hasWonder,
     };
   }
@@ -581,7 +569,6 @@ export class StructureManager {
     const ownerName = this.resolveLiveStructureOwnerName(ownerAddress, "");
     const cosmetic = this.resolveStructureCosmeticSelection({
       owner: ownerAddress,
-      realm: structureComponent,
       structureType: renderInfo.type,
       stage: renderInfo.stage,
     });
@@ -611,10 +598,6 @@ export class StructureManager {
       frontierBeast: this.store
         ? readStandingFrontierBeast(this.store, configManager.getActiveGameId(), renderable.entityId)
         : undefined,
-      realmSkin:
-        renderInfo.type === StructureType.Realm && this.store
-          ? readRealmSkin(this.store, structureComponent)
-          : undefined,
       realmOrder: renderInfo.type === StructureType.Realm ? structureComponent?.metadata.order : undefined,
       cosmeticId: cosmetic.skin.cosmeticId,
       cosmeticAssetPaths: cosmetic.skin.assetPaths,
@@ -1067,27 +1050,7 @@ export class StructureManager {
       registryEntry: findCosmeticById(cosmeticId),
     });
 
-    return Promise.all(
-      gltfs.map(async (gltf, index) => {
-        if (!isRealmSkinPath(assetPaths[index]))
-          return new InstancedModel(gltf, STRUCTURE_INSTANCE_CAPACITY, false, cosmeticId, "cache");
-        const model = new SettlementModel(
-          gltf,
-          STRUCTURE_INSTANCE_CAPACITY,
-          "realm",
-          false,
-          DEVCON_BANNER_ART,
-          "cache",
-        );
-        try {
-          await model.prepare();
-          return model;
-        } catch (error) {
-          model.dispose();
-          throw error;
-        }
-      }),
-    );
+    return gltfs.map((gltf) => new InstancedModel(gltf, STRUCTURE_INSTANCE_CAPACITY, false, cosmeticId, "cache"));
   }
 
   private resolveLiveStructureOwnerName(ownerAddress: bigint, fallbackOwnerName: string): string {
@@ -1097,23 +1060,17 @@ export class StructureManager {
 
   private resolveStructureCosmeticSelection(input: {
     owner: bigint;
-    realm: NativeRows["Structure"];
     structureType: StructureType;
     stage: number;
   }): ReturnType<typeof resolveStructureCosmetic> {
     const enumName = StructureType[input.structureType as unknown as keyof typeof StructureType];
     const defaultModelKey = typeof enumName === "string" ? enumName : String(input.structureType);
-    const selection = resolveStructureCosmetic({
+    return resolveStructureCosmetic({
       owner: input.owner,
       structureType: input.structureType,
       stage: input.stage,
       defaultModelKey,
     });
-    const skin =
-      input.structureType === StructureType.Realm && this.store ? readRealmSkin(this.store, input.realm) : undefined;
-    if (!skin) return selection;
-    const model = realmSkinModel(skin, input.realm.base.level);
-    return { ...selection, skin: { cosmeticId: model.cosmeticId, assetPaths: [model.path], isFallback: false } };
   }
 
   /** Contract-space bounds of the structures presented for a chunk, matching the projection's coordinates. */
@@ -1806,7 +1763,7 @@ export class StructureManager {
       entityId: structure.entityId,
       position,
       plate: buildStructurePlate(
-        { ...this.withLiveGuards(structure), watched: watchedSide(this.store, structure.owner.address) },
+        { ...this.withLiveGuards(structure), watched: watchedSide(structure.owner.address) },
         useChainTimeStore.getState().getNowSeconds(),
         this.store && readPlateReward(this.store, structure),
       ),

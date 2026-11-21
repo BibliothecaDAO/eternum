@@ -1,4 +1,5 @@
 import { gameRegistryRow } from "../../../../../../../packages/core/src/test-support/game-registry";
+import { GAME_FAMILIES } from "../../../../../../../config/source/common/native-preset-modes";
 // @vitest-environment jsdom
 import { configManager } from "@bibliothecadao/eternum";
 import { StructureType } from "@bibliothecadao/types";
@@ -8,7 +9,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { hash } from "starknet";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
 
 const fixture = vi.hoisted(() => ({ store: null as unknown as NativeFactStore }));
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: fixture.store } }) }));
@@ -32,14 +33,14 @@ beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   fixture.store = new NativeFactStore();
   fixture.store.setSnapshot({ gameId: 23, complete: true, actor: String(PLAYER), timestamp: 150 });
-  configManager.setActiveGame(23, 2);
-  put("SliceRules", [23], { ...preset.rules, game_id: 23 });
+  configManager.setActiveGame(23);
+  put("SliceRules", [23], { ...release.definition.rules, game_id: 23 });
   put(
     "GameRegistry",
     [23],
     gameRegistryRow({
       game_id: 23,
-      preset_id: 2,
+      family: GAME_FAMILIES.blitz,
       start_settling_at: "1",
       start_main_at: "1",
       scheduled_end_at: "200",

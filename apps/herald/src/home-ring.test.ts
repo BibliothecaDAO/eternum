@@ -95,7 +95,6 @@ const frontierWorld = (homeRingView?: HomeRingView, call?: MadaraRpc["call"]) =>
       seedDerivedRows(fold, decoder, [
         gameRegistryEvent({
           name: "7",
-          preset_id: 1,
           start_settling_at: String(DAY_START + 120),
           start_main_at: String(DAY_START + 120),
           scheduled_end_at: String(DAY_START + 120 + 2 * 288_000),
@@ -194,61 +193,13 @@ it("streams held Realm identity wherever its home is visible, including to a spe
   live.detach(connection);
 });
 
-it("streams campaign identity with its visible home in snapshots and confirmed diffs", async () => {
-  const { live, fold, native, confirmed } = frontierWorld(async () => []);
-  native.applyReceipt(
-    fold,
-    receipt([
-      rowEvent("CampaignHome", ["1", "1"], { campaign_id: 2026n, tier: 2 }),
-      rowEvent("CampaignHome", ["1", "2"], { campaign_id: 2026n, tier: 1 }),
-      rowEvent("CampaignHome", ["2", "1"], { campaign_id: 2027n, tier: 1 }),
-    ]),
-    9,
-    1,
-  );
-  await live.acceptSubscribedHead({ block_number: 10, timestamp: MID_DAY });
-  const messages: HeraldStreamMessage[] = [];
-  const connection = live.attach("1", { send: (text) => messages.push(JSON.parse(text)) }, undefined, "0xa");
-  live.resume(connection, { type: "resume", epoch: "", seq: 0 });
-  const store = new NativeFactStore();
-  applyMessages(store, messages);
-  expect([...store.rows("CampaignHome")]).toEqual([{ game_id: 1, home: 1n, campaign_id: 2026n, tier: 2 }]);
-  messages.length = 0;
-  confirmed.block_number = 11;
-  confirmed.transactions = [
-    {
-      transaction: { type: "INVOKE" },
-      receipt: receipt([
-        rowEvent("CampaignHome", ["1", "2"], { campaign_id: 2028n, tier: 2 }),
-        rowEvent("CampaignHome", ["1", "1"], { campaign_id: 2028n, tier: 1 }),
-      ]),
-    },
-  ];
-  await live.acceptSubscribedHead({ block_number: 11, timestamp: MID_DAY });
-  applyMessages(store, messages);
-  expect([...store.rows("CampaignHome")]).toEqual([{ game_id: 1, home: 1n, campaign_id: 2028n, tier: 1 }]);
-  live.detach(connection);
-});
-
-it("delivers game labor rules and that game's account grants through snapshots and confirmed diffs", async () => {
+it("delivers that game's account labor grants through snapshots and confirmed diffs", async () => {
   const { live, fold, native, decoder, confirmed } = frontierWorld(async () => []);
   const day = Math.floor(MID_DAY / 86_400);
   native.applyReceipt(
     fold,
     receipt(
       seedDerivedRows(fold, decoder, [
-        rowEvent("LaborRules", ["1"], {
-          amount: 7n,
-          campaign_essence: 1000n,
-          golden_amount: 2000n,
-          golden_essence: 2000n,
-        }),
-        rowEvent("LaborRules", ["2"], {
-          amount: 99n,
-          campaign_essence: 1000n,
-          golden_amount: 2000n,
-          golden_essence: 2000n,
-        }),
         rowEvent("LaborGrant", ["2", "700", String(day)], { account: 10n, amount: 99n, essence: 1000n }),
         rowEvent("LaborGrant", ["1", "1", String(day - 1)], { account: 10n, amount: 33n, essence: 1000n }),
         rowEvent("LaborGrant", ["1", "2", String(day)], { account: 11n, amount: 44n, essence: 1000n }),
@@ -263,9 +214,6 @@ it("delivers game labor rules and that game's account grants through snapshots a
   const store = new NativeFactStore();
   applyMessages(store, messages);
 
-  expect([...store.rows("LaborRules")]).toEqual([
-    { game_id: 1, amount: 7n, campaign_essence: 1000n, golden_amount: 2000n, golden_essence: 2000n },
-  ]);
   expect([...store.rows("LaborGrant")]).toEqual([
     { day: BigInt(day - 1), game_id: 1, account: 10n, home: 1n, amount: 33n, essence: 1000n },
   ]);

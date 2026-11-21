@@ -7,7 +7,9 @@ import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { type BuildingType, getProducedResource, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
+import { GAME_FAMILIES } from "../../../../../../../config/source/common/native-preset-modes";
+import type { GameType } from "../../../../../../../config/source/common/types";
 
 /** The panels lab's and the style sheet's fixture game: the deploy fixture's realm, its player, and Events rows. */
 
@@ -15,8 +17,7 @@ import preset from "../../../../../../../contracts/l3/world-native/tests/fixture
 /** The lab game's chain: a shard at an address that answers nothing, so every history read fails as an offline one. */
 export const LAB_CHAIN = "0x1ab";
 
-/** The lab game as the page plays it (setActiveGame): its chain, game 1 there, its preset. */
-export const labGameProfile = (preset: number) => ({ chainId: LAB_CHAIN, gameId: 1, presetId: preset, name: "Lab" });
+export const labGameProfile = () => ({ chainId: LAB_CHAIN, gameId: 1, name: "Lab" });
 
 export const PLAYER = "0x111";
 
@@ -45,7 +46,7 @@ export const installBuildingRules = (store: NativeFactStore, buildings: readonly
     (resource) => !store.get("ProductionRecipe", { game_id: 1, resource_type: resource }),
   );
   store.applyFacts([
-    ...preset.buildings.map(({ category, rule }) => ({
+    ...release.definition.structures.buildings.map(({ category, rule }) => ({
       model: "BuildingRule",
       key: `0x6${category}`,
       value: { ...rule, category, game_id: 1 },
@@ -115,13 +116,8 @@ export const eventStories = (store: NativeFactStore): ProcessedStoryEvent[] => {
   ];
 };
 
-/**
- * The fixture game as the mode plays it (its preset), ended a while ago for a finished game, with what the whole HUD
- * reads that the fixture leaves out: the realm's buildings and population, the preset's building rules, and the realm's
- * upgrade recipes (labor and wheat, more each level). Its day is the deploy fixture's, or the one given.
- */
 export const installLabGame = (
-  presetId: number,
+  mode: GameType,
   finished: boolean,
   day: () => { store: NativeFactStore } = frontierDay,
 ): NativeFactStore => {
@@ -131,7 +127,7 @@ export const installLabGame = (
     {
       model: "GameRegistry",
       key: "0x3",
-      value: { ...registry, preset_id: presetId, ...(finished ? { end_at: "300" } : {}) },
+      value: { ...registry, family: GAME_FAMILIES[mode], ...(finished ? { end_at: "300" } : {}) },
     },
     {
       model: "StructureBuildings",
@@ -145,7 +141,7 @@ export const installLabGame = (
         population: { current: 2, max: 6 },
       },
     },
-    ...preset.buildings.map(({ category, rule }) => ({
+    ...release.definition.structures.buildings.map(({ category, rule }) => ({
       model: "BuildingRule",
       key: `0x6${category}`,
       value: { ...rule, category, game_id: 1 },

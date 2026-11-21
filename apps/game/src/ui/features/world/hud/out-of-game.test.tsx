@@ -64,7 +64,7 @@ const enteredGame = () => {
 const takeRealm = (store: NativeFactStore) => store.applyFacts([structure(REALM, StructureType.Realm, RIVAL)] as never);
 
 describe("out of the game", () => {
-  beforeEach(() => configManager.setActiveGame(1, 1));
+  beforeEach(() => configManager.setActiveGame(1));
 
   it("is a player who entered and lost the last realm, though a Hyperstructure of theirs remains", () => {
     const store = enteredGame();
@@ -99,7 +99,7 @@ describe("the desktop column", () => {
 
   beforeEach(() => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-    configManager.setActiveGame(1, 1);
+    configManager.setActiveGame(1);
     host = document.createElement("div");
     root = createRoot(host);
     useAccountStore.getState().setGameplayAccount(signer as never, signer.address);

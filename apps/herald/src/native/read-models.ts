@@ -3,7 +3,7 @@ import type {
   HeraldGameDirectoryEntry,
   HeraldPlayerStructure,
 } from "@bibliothecadao/eternum/game-sync";
-import { nativeGameModeOf } from "@bibliothecadao/eternum";
+import { nativeGameModeOfFamily } from "@bibliothecadao/eternum";
 import { dayOf, expeditionRealmSite, entityHomeNamespace, isRealmCategory } from "@bibliothecadao/eternum/expeditions";
 import { aspects, type AspectId, StructureType } from "@bibliothecadao/types";
 import { isCheckGame, resolveDirectoryStatus, type DirectoryInput } from "../game-directory";
@@ -20,7 +20,6 @@ export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
   "PlayerEntry",
   "AspectRules",
   "AspectMembers",
-  "BlitzRoster",
   "ChestRules",
   "LordsBudget",
   "FrontierPrize",
@@ -41,7 +40,6 @@ interface DirectoryRows {
   progress: FoldRow[];
   entries: FoldRow[];
   entitlements: FoldRow[];
-  rosters: FoldRow[];
   aspectRules: FoldRow[];
   aspectMembers: FoldRow[];
 }
@@ -52,7 +50,7 @@ export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory
   // Launcher-created check names are reserved for deployment; they never offer a player a joinable listing.
   const publicGames = rows("GameRegistry").filter(({ value }) => !isCheckGame(value));
   const seasons = publicGames
-    .filter(({ value }) => nativeGameModeOf(number(value.preset_id)) === "frontier")
+    .filter(({ value }) => nativeGameModeOfFamily(number(value.family)) === "frontier")
     .sort((a, b) => number(a.value.game_id) - number(b.value.game_id));
   // A chain's first Frontier season is Season 0 (Devcon's on the Nov 2 chain), the next Season 1 (owner, 2 November
   // 2026: "devcon season is s0").
@@ -93,7 +91,6 @@ function directoryRows(input: DirectoryInput): DirectoryRows {
     progress: rows("SettlementProgress"),
     entries: rows("PlayerEntry"),
     entitlements: rows("EntryEntitlement"),
-    rosters: rows("BlitzRoster"),
     aspectRules: rows("AspectRules"),
     aspectMembers: rows("AspectMembers"),
   };
@@ -107,8 +104,6 @@ function directoryPlayerState(
   if (!input.playerAddress) return null;
   const player = address(input.playerAddress);
   const structures = gameRows(facts.structures, game.game_id).filter((row) => address(row.owner) === player);
-  const roster = (gameRows(facts.rosters, game.game_id)[0]?.players as Row[] | undefined) ?? [];
-  const seat = roster.find((row) => address(row.account) === player);
   const entitlements = gameRows(facts.entitlements, game.game_id);
   const own = entitlements.find((row) => address(row.owner) === player);
   const held = own && number(own.pass_kind) === 2 ? own : null;
@@ -116,7 +111,6 @@ function directoryPlayerState(
   return {
     registered: gameRows(facts.entries, game.game_id).some((row) => address(row.player) === player),
     settled: structures.some((row) => isRealmCategory(number(record(row.base).category))),
-    roster_wallet: seat ? address(seat.wallet) : null,
     held_realm_id: held ? number(held.realm_id) : null,
     has_home_source: own !== undefined,
     taken_realm_ids: entitlements.filter((row) => number(row.pass_kind) === 2).map((row) => number(row.realm_id)),
@@ -140,8 +134,6 @@ export function directoryFact(model: string, row: Row | undefined): unknown {
       return row;
     case "PlayerEntry":
       return row.player;
-    case "BlitzRoster":
-      return row.players;
     case "AspectRules":
       return row.orders;
     case "AspectMembers":
@@ -160,7 +152,6 @@ export function directoryFact(model: string, row: Row | undefined): unknown {
 }
 
 export function directoryStatus(game: Row, timestamp: number) {
-  if (game.ready !== true) return "Registration";
   return resolveDirectoryStatus(
     game.settled ? "Settled" : "Registration",
     { start_main_at: number(game.start_main_at), end_at: number(game.end_at) },
@@ -172,8 +163,8 @@ export function directoryStatus(game: Row, timestamp: number) {
 const SETTLEMENT_CATEGORIES: readonly number[] = [StructureType.Realm, StructureType.Village];
 
 function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput): HeraldGameDirectoryEntry {
-  const { settlementRules, progress, structures, rosters } = facts;
-  const mode = nativeGameModeOf(number(game.preset_id));
+  const { settlementRules, progress, structures } = facts;
+  const mode = nativeGameModeOfFamily(number(game.family));
   const settlement = required(settlementRules, game.game_id, "SettlementRules");
   const dayUnitSeconds = number(required(facts.rules, game.game_id, "SliceRules").day_unit_seconds);
   const state = gameRows(progress, game.game_id)[0];
@@ -181,13 +172,11 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     (row) => SETTLEMENT_CATEGORIES.includes(number(record(row.base).category)) && integer(row.owner) !== 0n,
   );
   const realms = settlements.filter((row) => isRealmCategory(number(record(row.base).category)));
-  const roster = (gameRows(rosters, game.game_id)[0]?.players as Row[] | undefined) ?? [];
   const clock = {
     start_settling_at: number(game.start_settling_at),
     start_main_at: number(game.start_main_at),
     end_at: number(game.end_at),
     scheduled_end_at: number(game.scheduled_end_at),
-    end_grace_seconds: number(game.end_grace_seconds),
   };
   const calendar =
     mode === "frontier" && dayUnitSeconds !== 0
@@ -205,29 +194,17 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
   return {
     game_id: number(game.game_id),
     name: shortString(game.name),
-    preset_id: number(game.preset_id),
     mode,
     day_index: day?.index ?? null,
     day_ends_at: day?.end ?? null,
     next_day_length: nextDay ? nextDay.end - nextDay.start : null,
     expedition: dayUnitSeconds === 0 ? null : { day_unit_seconds: dayUnitSeconds, seed: integer(game.seed).toString() },
     dev_mode_on: game.dev_mode_on === true,
-    ready: game.ready === true,
     status: directoryStatus(game, input.timestamp),
     clock,
     player_count: new Set(settlements.map((row) => address(row.owner))).size,
     aspect_members: aspectMembersOf(facts, game.game_id),
     player_state: directoryPlayerState(game, facts, input),
-    roster_count: roster.length,
-    roster: roster.map((row) => {
-      const account = address(row.account);
-      const entered = gameRows(facts.entries, game.game_id).some((entry) => address(entry.player) === account);
-      return {
-        account,
-        wallet: address(row.wallet),
-        prepared: entered && realms.some((realm) => address(realm.owner) === account),
-      };
-    }),
     registration: {
       count:
         mode === "frontier"

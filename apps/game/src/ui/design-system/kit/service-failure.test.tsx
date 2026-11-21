@@ -8,7 +8,6 @@ const text = (markup: string) => new DOMParser().parseFromString(markup, "text/h
 describe("the failure owner", () => {
   it.each([
     ["directory", "Games did not answer."],
-    ["slots", "Blitz did not answer."],
     ["season", "Season did not answer."],
     ["results", "Results did not answer."],
   ] as const)("names %s in its one line, with Try again on it", (service, line) => {

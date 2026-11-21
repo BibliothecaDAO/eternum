@@ -4,7 +4,7 @@ import { gameRegistryRow } from "../test-support/game-registry";
 import { TransactionType } from "@bibliothecadao/provider";
 import type { NativeWorldBindings } from "@bibliothecadao/types";
 import bindings from "../../../../contracts/l3/world-native/schema/bindings.json";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../contracts/l3/world-native/schema/release-definition.json";
 import { EDAMode, hash, transaction, type AccountInterface, type InvocationsSignerDetails } from "starknet";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -59,7 +59,7 @@ const rulesSnapshot = {
   epoch: "epoch-a",
   seq: 0,
   model: "SliceRules",
-  rows: [{ key: hash.computePoseidonHashOnElements([54]), value: { ...preset.rules, game_id: 54 } }],
+  rows: [{ key: hash.computePoseidonHashOnElements([54]), value: { ...release.definition.rules, game_id: 54 } }],
 };
 const releaseSnapshot = {
   type: "snapshot",

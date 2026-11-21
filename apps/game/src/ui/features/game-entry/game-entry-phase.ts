@@ -1,16 +1,6 @@
 type GameEntryBootstrapStatus = "idle" | "pending-world" | "loading" | "ready" | "error";
 
-export type GameEntryModalPhase =
-  | "loading"
-  | "account"
-  | "settlement-waiting"
-  | "settlement"
-  | "spectate"
-  | "ready"
-  | "error";
-
-/** What a Blitz game offers the connected player: play, wait for the roster's realms, or watch. */
-export type BlitzEntry = "play" | "preparing" | "spectate" | "review";
+export type GameEntryModalPhase = "loading" | "account" | "settlement-waiting" | "settlement" | "ready" | "error";
 
 interface ResolveGameEntryBlockingErrorInput {
   worldAvailabilityErrorMessage: string | null;
@@ -23,8 +13,6 @@ interface ResolveGameEntryBlockingErrorInput {
 interface ResolveGameEntryModalPhaseInput {
   bootstrapStatus: GameEntryBootstrapStatus;
   hasPhaseError: boolean;
-  isBlitzMode: boolean;
-  blitzEntry: BlitzEntry | null;
   isSpectateMode: boolean;
   worldMode: string;
   isCheckingWorldAvailability: boolean;
@@ -52,27 +40,6 @@ export const isGameEntryPreflightComplete = ({
   hasAccount,
   settlementCheckComplete,
 }: GameEntryPreflightInput): boolean => isSpectateMode || !hasAccount || settlementCheckComplete;
-
-/** Membership is the roster fact; readiness and the end of the game decide what a member may do. */
-export const resolveBlitzEntry = ({
-  isMember,
-  ready,
-  ended,
-}: {
-  isMember: boolean;
-  ready: boolean;
-  ended: boolean;
-}): BlitzEntry => {
-  if (ended) return "review";
-  if (!isMember) return "spectate";
-  return ready ? "play" : "preparing";
-};
-
-const resolveBlitzPhase = (entry: BlitzEntry): Extract<GameEntryModalPhase, "ready" | "settlement" | "spectate"> => {
-  if (entry === "play") return "ready";
-  if (entry === "preparing") return "settlement";
-  return "spectate";
-};
 
 const resolveEternumSettlementPhase = ({
   canPlay,
@@ -117,8 +84,6 @@ export const resolveGameEntryBlockingError = ({
 export const resolveGameEntryModalPhase = ({
   bootstrapStatus,
   hasPhaseError,
-  isBlitzMode,
-  blitzEntry,
   isSpectateMode,
   worldMode,
   isCheckingWorldAvailability,
@@ -164,10 +129,6 @@ export const resolveGameEntryModalPhase = ({
 
   if (!checksComplete) {
     return "loading";
-  }
-
-  if (isBlitzMode) {
-    return blitzEntry ? resolveBlitzPhase(blitzEntry) : "loading";
   }
 
   if (needsSettlement) {
