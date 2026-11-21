@@ -9,6 +9,7 @@ import { join } from "node:path";
 const script = new URL("./install.sh", import.meta.url).pathname;
 const OLD = "a".repeat(40);
 const NEW = "b".repeat(40);
+const PINNED = "9.8.7";
 const STANDINS: Record<string, string> = {
   sudo: `while [ "$1" = -n ] || [ "$1" = -u ]; do [ "$1" = -u ] && shift; shift; done; exec "$@"`,
   useradd: "exit 0",
@@ -19,11 +20,13 @@ if [ -n "$dir" ]; then mkdir -p "$1"; else cp "$1" "$2"; fi`,
 case "$1" in
   clone) mkdir -p "$4/.git";;
   fetch) [ "$FAIL" = fetch ] && exit 1;;
-  checkout) [ "$FAIL" = checkout ] && exit 1; [ "$FAIL" = stays ] || echo "$3" > "$repo/.git/HEAD";;
+  checkout) [ "$FAIL" = checkout ] && exit 1; [ "$FAIL" = stays ] || echo "$3" > "$repo/.git/HEAD"
+    [ "$FAIL" = unpinned ] || echo '{"packageManager":"pnpm@${PINNED}"}' > "$repo/package.json";;
   rev-parse) cat "$repo/.git/HEAD";;
 esac
 exit 0`,
-  pnpm: `echo "pnpm $*" >> "$PAYOUT_COSIGNER_ROOT/calls"`,
+  pnpm: `echo "pnpm on PATH $*" >> "$PAYOUT_COSIGNER_ROOT/calls"`,
+  npx: `echo "npx $*" >> "$PAYOUT_COSIGNER_ROOT/calls"`,
 };
 const BUN = `key=$3; [ -f "$key" ] || echo "0xnew" > "$key"; echo "{\\"publicKey\\":\\"pk-$(cat "$key")\\"}"`;
 
@@ -70,13 +73,22 @@ test.each([
   expect(calls()).not.toContain("pnpm");
 });
 
+test("a revision that pins no pnpm version stops before installing and prints no key", () => {
+  const run = prepare("unpinned");
+  expect(run.code).not.toBe(0);
+  expect(run.stderr).toContain("pins no pnpm version");
+  expect(run.stdout).toBe("");
+  expect(calls()).not.toContain("pnpm");
+});
+
 test("a retry after a failed update installs the requested revision, builds it and keeps the key", () => {
   expect(prepare("fetch").code).not.toBe(0);
   const run = prepare();
   expect(run.code).toBe(0);
   expect(JSON.parse(run.stdout)).toEqual({ publicKey: "pk-0xkept" });
   expect(head()).toBe(NEW);
-  expect(calls()).toContain(`pnpm --dir ${root}/opt/eternum install --frozen-lockfile`);
-  expect(calls()).toContain(`pnpm --dir ${root}/opt/eternum run build:packages`);
+  expect(calls()).toContain(`npx --yes pnpm@${PINNED} --dir ${root}/opt/eternum install --frozen-lockfile`);
+  expect(calls()).toContain(`npx --yes pnpm@${PINNED} --dir ${root}/opt/eternum run build:packages`);
+  expect(calls()).not.toContain("pnpm on PATH");
   expect(readFileSync(join(root, "etc/payout-cosigner/key"), "utf8")).toBe("0xkept\n");
 });

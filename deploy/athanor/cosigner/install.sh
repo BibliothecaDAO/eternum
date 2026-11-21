@@ -22,8 +22,15 @@ step() {
   "$@" >>"$LOG" 2>&1 || { echo "Co-signer install failed at: $*; see $LOG on the box" >&2; exit 1; }
 }
 
+pinned_pnpm() {
+  local pin
+  pin=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("packageManager", ""))' "$CHECKOUT/package.json" 2>>"$LOG") || pin=
+  [[ $pin =~ ^pnpm@[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "$CHECKOUT/package.json pins no pnpm version (packageManager: '$pin')" >&2; exit 1; }
+  echo "$pin"
+}
+
 prepare() {
-  local revision=$1
+  local revision=$1 pnpm
   [[ $revision =~ ^[0-9a-f]{40}$ ]] || { echo "prepare needs a 40-character commit" >&2; exit 1; }
   id "$USER_NAME" >/dev/null 2>&1 || sudo useradd --system --home-dir /nonexistent --shell /usr/sbin/nologin "$USER_NAME"
   [ -x "$BUN" ] || sudo install -m 0755 "$HOME/.bun/bin/bun" "$BUN"
@@ -33,8 +40,9 @@ prepare() {
   step git -C "$CHECKOUT" fetch origin "$revision"
   step git -C "$CHECKOUT" checkout --detach "$revision"
   [ "$(git -C "$CHECKOUT" rev-parse HEAD)" = "$revision" ] || { echo "$CHECKOUT is not at $revision" >&2; exit 1; }
-  step pnpm --dir "$CHECKOUT" install --frozen-lockfile
-  step pnpm --dir "$CHECKOUT" run build:packages
+  pnpm=$(pinned_pnpm)
+  step npx --yes "$pnpm" --dir "$CHECKOUT" install --frozen-lockfile
+  step npx --yes "$pnpm" --dir "$CHECKOUT" run build:packages
   sudo install -d -m 0700 -o "$USER_NAME" -g "$USER_NAME" "$SETTINGS"
   sudo -u "$USER_NAME" "$BUN" "$CHECKOUT/deploy/athanor/cosigner/main.ts" init-key "$SETTINGS/key"
 }
