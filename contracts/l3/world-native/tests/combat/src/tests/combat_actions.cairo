@@ -344,35 +344,6 @@ fn season_one_allows_back_to_back_attacks_without_a_cooldown() {
     assert!(execute(d, attack, NOW), "second attack failed");
 }
 
-fn into_deep(d: super::Deployment, home: ResourceKey, target: ResourceKey, attacker: u64, defender: u64) {
-    let center = crate::deep::center(crate::logic::settlement::spacing());
-    move_to(d, attacker, center);
-    move_to(d, defender, crate::geometry::neighbor(center, 0));
-    let context = crate::commands::ExecutionContext { timestamp: NOW, ..crate::tests::context(d.games, 3) };
-    snforge_std::interact_with_state(
-        d.games,
-        || {
-            crate::logic::deep_armies::enter(
-                ExplorerKey { game_id: 3, explorer_id: attacker }, home.entity_id, context,
-            );
-            crate::logic::deep_armies::enter(
-                ExplorerKey { game_id: 3, explorer_id: defender }, target.entity_id, context,
-            );
-            let own = crate::logic::aspects::home_aspect(home);
-            let packed = crate::logic::aspects::rules();
-            let mut order = 1;
-            while crate::aspects::order_aspect(packed, order) == own {
-                order += 1;
-            }
-            starknet::storage::StorageMapWriteAccess::write(
-                crate::state::write().settlements.home_aspects,
-                (target.game_id, target.entity_id),
-                crate::aspects::order_aspect(packed, order),
-            );
-        },
-    );
-}
-
 fn camp(d: super::Deployment, attacker: u64) -> ResourceKey {
     let army = troop(d, attacker).unwrap();
     let context = crate::commands::ExecutionContext { timestamp: NOW, ..crate::tests::context(d.games, 3) };

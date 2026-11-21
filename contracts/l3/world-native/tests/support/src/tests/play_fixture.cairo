@@ -135,6 +135,15 @@ pub fn gameplay_snapshot(games: ContractAddress) -> Array<felt252> {
 pub fn settled_home(
     d: super::Deployment, game_id: u32, actor: ContractAddress, realm_id: u32, timestamp: u64,
 ) -> crate::resources::ResourceKey {
+    let settle = settle_action(d, game_id, actor, realm_id);
+    let mut spy = snforge_std::spy_events();
+    if !play(d.games, settle, 987654321, timestamp) {
+        panic!("the home does not settle: {}", rejection(ref spy, d.games).reason);
+    }
+    let entry = crate::settlement::ISettlementEntryDispatcher { contract_address: d.games };
+    crate::resources::ResourceKey { game_id, entity_id: entry.settled_realm(game_id, realm_id) }
+}
+pub fn settle_action(d: super::Deployment, game_id: u32, actor: ContractAddress, realm_id: u32) -> TestAction {
     super::resource_commands::set_fixture(
         d.games,
         selector!("realms"),
@@ -146,13 +155,8 @@ pub fn settled_home(
         d.games, selector!("realms"), selector!("traits"), array![realm_id.into()].span(), FIXTURE_REALM_TRAITS,
     );
     hold_realm(d, game_id, actor, realm_id);
-    let settle = Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, order: None });
-    let mut spy = snforge_std::spy_events();
-    if !play(d.games, TestAction { game_id, actor, command: settle }, 987654321, timestamp) {
-        panic!("the home does not settle: {}", rejection(ref spy, d.games).reason);
-    }
-    let entry = crate::settlement::ISettlementEntryDispatcher { contract_address: d.games };
-    crate::resources::ResourceKey { game_id, entity_id: entry.settled_realm(game_id, realm_id) }
+    let command = Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, order: None });
+    TestAction { game_id, actor, command }
 }
 pub fn hold_realm(d: super::Deployment, game_id: u32, owner: ContractAddress, realm_id: u32) {
     super::entry::set_operator(d, super::authority());

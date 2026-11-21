@@ -45,6 +45,34 @@ pub fn setup_with_counts(counts: (u128, u128)) -> (super::Deployment, ResourceKe
     );
     (d, home, target, attacker, defender)
 }
+pub fn into_deep(d: super::Deployment, home: ResourceKey, target: ResourceKey, attacker: u64, defender: u64) {
+    let center = crate::deep::center(crate::logic::settlement::spacing());
+    move_to(d, attacker, center);
+    move_to(d, defender, crate::geometry::neighbor(center, 0));
+    let context = crate::commands::ExecutionContext { timestamp: super::play_fixture::FIXTURE_START, ..crate::tests::context(d.games, 3) };
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            crate::logic::deep_armies::enter(
+                ExplorerKey { game_id: 3, explorer_id: attacker }, home.entity_id, context,
+            );
+            crate::logic::deep_armies::enter(
+                ExplorerKey { game_id: 3, explorer_id: defender }, target.entity_id, context,
+            );
+            let own = crate::logic::aspects::home_aspect(home);
+            let packed = crate::logic::aspects::rules();
+            let mut order = 1;
+            while crate::aspects::order_aspect(packed, order) == own {
+                order += 1;
+            }
+            starknet::storage::StorageMapWriteAccess::write(
+                crate::state::write().settlements.home_aspects,
+                (target.game_id, target.entity_id),
+                crate::aspects::order_aspect(packed, order),
+            );
+        },
+    );
+}
 pub fn troop(d: super::Deployment, id: u64) -> Option<ExplorerTroops> {
     GameState { contract_address: d.games }.explorer(ExplorerKey { game_id: 3, explorer_id: id })
 }

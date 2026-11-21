@@ -133,6 +133,35 @@ pub fn typed_commands() -> Array<Command> {
 pub fn fresh_world() -> Deployment {
     super::setup_with_domains(true, "StructuresLogic", "TroopsLogic")
 }
+#[derive(Drop, PartialEq, Debug)]
+pub enum Verdict {
+    Applied,
+    Rejected: ByteArray,
+    Refused: Array<felt252>,
+}
+#[feature("safe_dispatcher")]
+pub fn verdict(games: starknet::ContractAddress, action: TestAction, root: u256, timestamp: u64) -> Verdict {
+    let release = play_fixture::pins(games, action.game_id);
+    play_fixture::caller(games, action.actor, timestamp);
+    let fixture = IPlayFixtureSafeDispatcher { contract_address: games };
+    let mut spy = snforge_std::spy_events();
+    let played = fixture.play_with_root(action.game_id, release, play_fixture::encode(action.command), root);
+    match played {
+        Ok(()) => if fixture.last_applied().unwrap() {
+            Verdict::Applied
+        } else {
+            let rejected = play_fixture::rejection(ref spy, games);
+            assert_eq!(rejected.status_class, 'GAMEPLAY_REJECTED');
+            assert_eq!(rejected.actor, action.actor);
+            Verdict::Rejected(rejected.reason)
+        },
+        Err(error) => Verdict::Refused(error),
+    }
+}
+pub fn release_enables(index: u32) -> bool {
+    let id = *crate::command_routes::COMMAND_IDS.span().at(index);
+    crate::rules::command_enabled(crate::balance::rules::SWITCHES.command_mask, id.into())
+}
 pub fn assert_route(command: Command, index: u32) {
     let encoded = play_fixture::encode(command);
     let (actual, _, _) = crate::commands::validated_command(encoded).expect('INVALID_TYPED_VECTOR');
@@ -144,14 +173,6 @@ pub fn draw_case(case: u8) -> (Deployment, TestAction, u64) {
         1 => explorer_case(true),
         2 => battle_case(),
         3 => season_case(),
-        4 => {
-            let (d, home) = super::village::setup();
-            super::village::register_pass(d, 7);
-            let command = Command::SettleVillage(
-                crate::village::SettleVillage { pass_id: 7, connected_realm_entity_id: home },
-            );
-            (d, TestAction { game_id: 3, actor: d.actor, command }, play_fixture::FIXTURE_START + 100)
-        },
         _ => panic!("unknown draw case"),
     }
 }
@@ -167,7 +188,7 @@ pub fn explorer_case(explore: bool) -> (Deployment, TestAction, u64) {
             category: 0,
             tier: 0,
             amount: crate::rules::RESOURCE_PRECISION,
-            direction: 0,
+            direction: 2,
         },
     );
     let command = if explore {
@@ -181,32 +202,26 @@ pub fn explorer_case(explore: bool) -> (Deployment, TestAction, u64) {
     (d, TestAction { game_id: 3, actor: d.actor, command }, play_fixture::FIXTURE_START + 140)
 }
 pub fn battle_case() -> (Deployment, TestAction, u64) {
-    let (d, _, _, attacker, defender) = super::combat_actions::setup_with_counts((1000, 1000));
+    let (d, attacker, defender) = deep_armies();
     let command = Command::Battle(
         crate::combat_actions::AttackExplorer {
             attacker_id: attacker, defender_id: defender, steal_resources: array![].span(),
         },
     );
-    (d, TestAction { game_id: 3, actor: d.actor, command }, play_fixture::FIXTURE_START + 80)
+    (d, TestAction { game_id: 3, actor: d.actor, command }, play_fixture::FIXTURE_START)
 }
 pub fn season_case() -> (Deployment, TestAction, u64) {
     let d = super::registrar::setup();
     let game_id = play_fixture::create_game(d.games, play_fixture::fixture_params('season'));
-    super::resource_commands::set_fixture(
-        d.games,
-        selector!("realms"),
-        selector!("catalogue_count"),
-        array![].span(),
-        crate::realms::CANONICAL_REALM_COUNT,
-    );
-    super::resource_commands::set_fixture(
-        d.games, selector!("realms"), selector!("traits"), array![1].span(), play_fixture::FIXTURE_REALM_TRAITS,
-    );
-    let command = Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), order: None });
-    (d, TestAction { game_id, actor: d.actor, command }, play_fixture::FIXTURE_START + 50)
+    (d, play_fixture::settle_action(d, game_id, d.actor, 1), play_fixture::FIXTURE_START + 50)
+}
+pub fn deep_armies() -> (Deployment, u64, u64) {
+    let (d, home, target, attacker, defender) = super::combat_actions::setup_with_counts((1000, 1000));
+    super::combat_actions::into_deep(d, home, target, attacker, defender);
+    (d, attacker, defender)
 }
 pub fn live_loot_case(insufficient: bool, full: bool) -> (Deployment, TestAction) {
-    let (d, _, _, attacker, defender) = super::combat_actions::setup_with_counts((1000, 1000));
+    let (d, attacker, defender) = deep_armies();
     super::resource_commands::grant(d, crate::resources::ResourceKey { game_id: 3, entity_id: defender }, 2, 90);
     if full {
         let key = crate::resources::ResourceKey { game_id: 3, entity_id: attacker };
