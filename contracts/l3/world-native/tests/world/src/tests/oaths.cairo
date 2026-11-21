@@ -4,9 +4,9 @@ use crate::guards::IGuardsDispatcherTrait;
 use crate::oaths::{ChooseOath, RerollOath, card, draw, held};
 use crate::stamina::{StaminaSourceTrait, StaminaTrait};
 use crate::troops::{ExplorerRecordTrait, StaminaSource};
+use super::play_fixture::FIXTURE_START;
 use super::progression::read_progress;
 use super::state::{GameState, TroopObservationTrait};
-use super::play_fixture::FIXTURE_START;
 
 #[test]
 fn every_draw_offers_three_distinct_oaths_the_army_does_not_hold_and_fewer_only_when_fewer_remain() {
@@ -116,31 +116,52 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
     let other = super::bind_authority(d);
     let mut refused = snforge_std::spy_events();
     assert!(
-        !super::resource_commands::execute_in_game(other, game_id, crate::commands::Command::ChooseOath(take), FIXTURE_START + 12),
+        !super::resource_commands::execute_in_game(
+            other, game_id, crate::commands::Command::ChooseOath(take), FIXTURE_START + 12,
+        ),
     );
     assert_eq!(super::play_fixture::rejection(ref refused, d.games).reason, "actor does not own structure");
     assert_eq!(read_progress(d, key), first);
-    assert!(super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(take), FIXTURE_START + 12));
+    assert!(
+        super::resource_commands::execute_in_game(
+            d, game_id, crate::commands::Command::ChooseOath(take), FIXTURE_START + 12,
+        ),
+    );
     let chosen = read_progress(d, key);
     assert_eq!(chosen.oaths, crate::oaths::bit(taken));
     assert_eq!(chosen.oath_pick, 0);
-    assert!(!super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(take), FIXTURE_START + 13));
+    assert!(
+        !super::resource_commands::execute_in_game(
+            d, game_id, crate::commands::Command::ChooseOath(take), FIXTURE_START + 13,
+        ),
+    );
     assert_eq!(read_progress(d, key), chosen);
     explore_to_shrine(d, key, FIXTURE_START + 13);
     let filling = read_progress(d, key);
     let filled = card(filling.oath_pick, 0);
     let fill = ChooseOath { expected_pick: filling.oath_pick, oath: Some(filled), ..take };
-    assert!(super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(fill), FIXTURE_START + 13));
+    assert!(
+        super::resource_commands::execute_in_game(
+            d, game_id, crate::commands::Command::ChooseOath(fill), FIXTURE_START + 13,
+        ),
+    );
     assert_eq!(read_progress(d, key).oaths, crate::oaths::bit(taken) | crate::oaths::bit(filled));
     explore_to_shrine(d, key, FIXTURE_START + 14);
     let second = read_progress(d, key);
     let replacement = card(second.oath_pick, 1);
     let replace = ChooseOath { expected_pick: second.oath_pick, oath: Some(replacement), ..take };
-    assert!(!super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(replace), FIXTURE_START + 15));
+    assert!(
+        !super::resource_commands::execute_in_game(
+            d, game_id, crate::commands::Command::ChooseOath(replace), FIXTURE_START + 15,
+        ),
+    );
     assert_eq!(read_progress(d, key), second);
     assert!(
         super::resource_commands::execute_in_game(
-            d, game_id, crate::commands::Command::ChooseOath(ChooseOath { replace: Some(taken), ..replace }), FIXTURE_START + 16,
+            d,
+            game_id,
+            crate::commands::Command::ChooseOath(ChooseOath { replace: Some(taken), ..replace }),
+            FIXTURE_START + 16,
         ),
     );
     assert_eq!(read_progress(d, key).oaths, crate::oaths::bit(filled) | crate::oaths::bit(replacement));
@@ -200,7 +221,10 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
     );
     assert!(
         super::resource_commands::execute_in_game(
-            d, game_id, super::registrar::muster_command(home, army.troops.category.into(), 0, slot), FIXTURE_START + 19,
+            d,
+            game_id,
+            super::registrar::muster_command(home, army.troops.category.into(), 0, slot),
+            FIXTURE_START + 19,
         ),
     );
     let remustered = read_slot();
@@ -488,7 +512,11 @@ fn a_new_army_holds_two_oaths_before_any_research_and_refuses_a_third_without_a_
     for oath in array![crate::oaths::POWER, crate::oaths::FOX] {
         open_pick(d, key, offer);
         let take = ChooseOath { explorer_id: key.explorer_id, expected_pick: offer, oath: Some(oath), replace: None };
-        assert!(super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(take), FIXTURE_START + 10));
+        assert!(
+            super::resource_commands::execute_in_game(
+                d, game_id, crate::commands::Command::ChooseOath(take), FIXTURE_START + 10,
+            ),
+        );
     }
     assert_eq!(
         read_progress(d, key).oaths, crate::oaths::bit(crate::oaths::POWER) | crate::oaths::bit(crate::oaths::FOX),
@@ -497,9 +525,17 @@ fn a_new_army_holds_two_oaths_before_any_research_and_refuses_a_third_without_a_
     let third = ChooseOath {
         explorer_id: key.explorer_id, expected_pick: offer, oath: Some(crate::oaths::RAGE), replace: None,
     };
-    assert!(!super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(third), FIXTURE_START + 11));
+    assert!(
+        !super::resource_commands::execute_in_game(
+            d, game_id, crate::commands::Command::ChooseOath(third), FIXTURE_START + 11,
+        ),
+    );
     let swap = ChooseOath { replace: Some(crate::oaths::POWER), ..third };
-    assert!(super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(swap), FIXTURE_START + 12));
+    assert!(
+        super::resource_commands::execute_in_game(
+            d, game_id, crate::commands::Command::ChooseOath(swap), FIXTURE_START + 12,
+        ),
+    );
     assert_eq!(
         read_progress(d, key).oaths, crate::oaths::bit(crate::oaths::FOX) | crate::oaths::bit(crate::oaths::RAGE),
     );
@@ -530,7 +566,11 @@ fn a_reroll_costs_its_fragments_and_redraws_one_card_of_a_pick_once_from_the_oat
     assert!(!reroll_card(d, key, offer, 0, FIXTURE_START + 11));
     assert_eq!(fragments(d, game_id), price);
     let take = ChooseOath { explorer_id: key.explorer_id, expected_pick: rerolled, oath: Some(redrawn), replace: None };
-    assert!(super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::ChooseOath(take), FIXTURE_START + 12));
+    assert!(
+        super::resource_commands::execute_in_game(
+            d, game_id, crate::commands::Command::ChooseOath(take), FIXTURE_START + 12,
+        ),
+    );
     assert_eq!(read_progress(d, key).oaths, crate::oaths::bit(redrawn));
     assert_eq!(read_progress(d, key).oath_pick, 0);
     let shown = crate::oaths::bit(crate::oaths::POWER)
@@ -687,7 +727,13 @@ fn the_twins_add_a_share_of_the_adjacent_own_army_damage_and_a_one_troop_twin_ad
         let (d, game_id, key) = super::registrar::setup_frontier_relics();
         let mut army = super::registrar::strong_frontier_army(d, game_id, key);
         army.troops.count = 300 * precision;
-        army.troops.stamina = crate::troops::Stamina { amount: 100, settled_at: (FIXTURE_START + 10).try_into().unwrap(), remainder: 0 }.into();
+        army
+            .troops
+            .stamina =
+                crate::troops::Stamina {
+                    amount: 100, settled_at: (FIXTURE_START + 10).try_into().unwrap(), remainder: 0,
+                }
+            .into();
         super::resource_commands::set_explorer_fixture(d.games, key, army);
         snforge_std::interact_with_state(
             d.games,
@@ -725,7 +771,9 @@ fn the_twins_add_a_share_of_the_adjacent_own_army_damage_and_a_one_troop_twin_ad
         super::resource_commands::set_explorer_fixture(d.games, twin_key, twin);
         let battle = crate::commands::Battle { attacker_id: key.explorer_id, defender_id: camp, relic_slot: None };
         assert!(
-            super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::BattleGuard(battle), FIXTURE_START + 11),
+            super::resource_commands::execute_in_game(
+                d, game_id, crate::commands::Command::BattleGuard(battle), FIXTURE_START + 11,
+            ),
         );
         let guards = crate::guards::IGuardsDispatcher { contract_address: d.games };
         let mut standing = 0;
@@ -943,7 +991,9 @@ fn stamina_of(d: super::Deployment, key: crate::troops::ExplorerKey) -> u64 {
 }
 
 fn place_camp(d: super::Deployment, game_id: u32, coord: crate::troops::Coord) -> u64 {
-    let context = crate::commands::ExecutionContext { timestamp: FIXTURE_START + 10, ..crate::tests::context(d.games, game_id) };
+    let context = crate::commands::ExecutionContext {
+        timestamp: FIXTURE_START + 10, ..crate::tests::context(d.games, game_id),
+    };
     snforge_std::start_cheat_caller_address(d.games, d.games);
     let site = crate::structures::IStructureOperationsDispatcherTrait::create_discovery(
         crate::structures::IStructureOperationsDispatcher { contract_address: d.games },
@@ -960,5 +1010,7 @@ fn place_camp(d: super::Deployment, game_id: u32, coord: crate::troops::Coord) -
 }
 
 fn army_home(key: crate::troops::ExplorerKey) -> crate::resources::ResourceKey {
-    crate::resources::ResourceKey { game_id: key.game_id, entity_id: crate::logic::troops::explorer(key).unwrap().owner }
+    crate::resources::ResourceKey {
+        game_id: key.game_id, entity_id: crate::logic::troops::explorer(key).unwrap().owner,
+    }
 }

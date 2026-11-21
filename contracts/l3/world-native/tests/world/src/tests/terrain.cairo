@@ -159,12 +159,7 @@ fn deploy_refuses_a_missing_neighbour_after_the_ring_is_materialized() {
     assert_eq!(super::play_fixture::rejection(ref refused, d.games).reason, "deployment tile unexplored");
     assert_eq!(resources.resource_balance(troops), before);
     assert!(map.tile(key).is_none());
-    assert_eq!(
-        IStructureOperationsDispatcher { contract_address: d.games }
-            .home_armies(home)
-            .len(),
-        0,
-    );
+    assert_eq!(IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).len(), 0);
 }
 
 #[test]
@@ -287,7 +282,9 @@ fn an_entity_at_the_origin_cannot_be_placed_twice() {
 fn send_starting_armies_home(d: super::Deployment, home: ResourceKey, timestamp: u64) {
     let armies = IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home);
     for army in armies {
-        let remove = crate::commands::Command::ManageTroops(crate::troop_management::ManageTroops::RemoveExplorer(*army));
+        let remove = crate::commands::Command::ManageTroops(
+            crate::troop_management::ManageTroops::RemoveExplorer(*army),
+        );
         assert!(execute_in_game(d, home.game_id, remove, timestamp));
     }
 }

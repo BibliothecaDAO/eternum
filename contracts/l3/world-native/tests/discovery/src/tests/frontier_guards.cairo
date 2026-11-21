@@ -138,5 +138,7 @@ fn a_ruin_refuses_a_relic_above_its_layer() {
 }
 
 fn release_rules() -> crate::rules::SliceRules {
-    crate::game::IGameDispatcherTrait::rules(crate::game::IGameDispatcher { contract_address: super::setup(true).games }, 1)
+    crate::game::IGameDispatcherTrait::rules(
+        crate::game::IGameDispatcher { contract_address: super::setup(true).games }, 1,
+    )
 }

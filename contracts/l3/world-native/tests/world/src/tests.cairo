@@ -265,7 +265,9 @@ fn post_root_failure_rolls_back_child_storage_and_emits_rejection_wire() {
         snforge_std::interact_with_state(
             d.games,
             || {
-                !crate::logic::structures::exists(crate::resources::ResourceKey { game_id: 1, entity_id: army.explorer_id })
+                !crate::logic::structures::exists(
+                    crate::resources::ResourceKey { game_id: 1, entity_id: army.explorer_id },
+                )
             },
         ),
     );
@@ -289,12 +291,7 @@ fn post_root_failure_rolls_back_child_storage_and_emits_rejection_wire() {
     }
     assert_eq!(rejection_count, 1);
     // Source rows verify that every child write rolled back.
-    assert!(
-        snforge_std::interact_with_state(
-            d.games, || crate::logic::map::occupancy(acting_tile(army)),
-        )
-            .is_none(),
-    );
+    assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(acting_tile(army))).is_none());
     execute(d, action(d, 1));
 }
 
@@ -425,7 +422,10 @@ fn owner_registration_and_launcher_game_creation_have_separate_roles() {
     start_cheat_caller_address(d.games, authority());
     releases
         .register_release(2, crate::logic::release::Release { previous: 1, ..release }, releases.release_classes(1));
-    assert!(crate::registrar::IRegistrarSafeDispatcherTrait::create_game(safe, play_fixture::fixture_params('launcher')).is_err());
+    assert!(
+        crate::registrar::IRegistrarSafeDispatcherTrait::create_game(safe, play_fixture::fixture_params('launcher'))
+            .is_err(),
+    );
     assert!(
         crate::logic::release::IReleasesSafeDispatcherTrait::open_release(
             crate::logic::release::IReleasesSafeDispatcher { contract_address: d.games }, 2,
@@ -434,7 +434,9 @@ fn owner_registration_and_launcher_game_creation_have_separate_roles() {
     );
     start_cheat_caller_address(d.games, d.actor);
     releases.open_release(2);
-    let game_id = crate::registrar::IRegistrarDispatcherTrait::create_game(registry, play_fixture::fixture_params('launcher'));
+    let game_id = crate::registrar::IRegistrarDispatcherTrait::create_game(
+        registry, play_fixture::fixture_params('launcher'),
+    );
     assert_eq!(releases.game_release(game_id), 2);
     assert_eq!(IGamesRolesDispatcher { contract_address: d.games }.owner(), authority());
     assert_eq!(IGamesRolesDispatcher { contract_address: d.games }.launcher(), d.actor);
@@ -526,7 +528,5 @@ fn acting_army(d: Deployment, game_id: u32) -> ExplorerKey {
 }
 
 fn acting_tile(army: ExplorerKey) -> crate::map::TileKey {
-    crate::map::TileKey {
-        game_id: army.game_id, alt: false, col: (army.explorer_id + 5).try_into().unwrap(), row: 34,
-    }
+    crate::map::TileKey { game_id: army.game_id, alt: false, col: (army.explorer_id + 5).try_into().unwrap(), row: 34 }
 }

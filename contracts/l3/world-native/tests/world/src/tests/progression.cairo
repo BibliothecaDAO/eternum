@@ -62,7 +62,9 @@ fn training_starts_only_later_armies_at_their_realms_tiers_and_full_at_their_log
             1000 * crate::rules::RESOURCE_PRECISION,
             FIXTURE_START + 1,
             crate::commands::resource_context(
-                crate::commands::ExecutionContext { timestamp: FIXTURE_START + 1, ..crate::tests::context(d.games, game_id) },
+                crate::commands::ExecutionContext {
+                    timestamp: FIXTURE_START + 1, ..crate::tests::context(d.games, game_id),
+                },
             ),
         );
     snforge_std::stop_cheat_caller_address(d.games);
