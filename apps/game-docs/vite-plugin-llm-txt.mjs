@@ -15,11 +15,7 @@ const processor = remark().use(remarkMdx).use(remarkInclude).use(remarkGfm).use(
 
 const EXPRESSION_TYPES = new Set(["mdxTextExpression", "mdxFlowExpression"]);
 
-const stableDocumentationPath = (file) =>
-  path
-    .relative(docsDir, file)
-    .replace("pages/blitz/military/", "pages/blitz/0-military/")
-    .replace("pages/blitz/materials/", "pages/blitz/1-materials/");
+const stableDocumentationPath = (file) => path.relative(docsDir, file);
 
 /** Every `{expression}` in a page, with the node that holds it, in document order. */
 const expressionsOf = (tree) => {

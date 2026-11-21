@@ -17,65 +17,11 @@ import { LAYER_NAMES, beastOf, resourceName, BuildingType } from "@bibliothecada
 import { playableDepths } from "../docs/utils/playable-depths.mjs";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
-const configOf = (mode) =>
-  JSON.parse(readFileSync(join(here, `../../../config/generated/${mode}.madara.json`), "utf8")).configuration;
-
-const WHEAT = 35;
-const DONKEY = 25;
-
-/** Each page's expected runs of visible text, each a label then the values its mode's config gives. */
-export const expectedRuns = (blitz) => {
-  const donkeyWheat = blitz.resources.productionByComplexRecipe[DONKEY].find((input) => input.resource === WHEAT);
-  return [
-    {
-      page: "blitz/realms",
-      runs: [
-        [
-          "Donkeys",
-          "Resource",
-          "Input Materials (units/s)",
-          "Output (units/s)",
-          "Donkey",
-          String(donkeyWheat.amount),
-          String(blitz.resources.productionByComplexRecipeOutputs[DONKEY]),
-        ],
-      ],
-    },
-  ];
-};
 
 /** Thousands with commas, as the pages write them. */
 const n = (value) => value.toLocaleString("en-US");
 const pct = (bps) => `${n(bps / 100)}%`;
 const TIERS = ["common", "uncommon", "rare", "epic", "legendary"];
-
-/** A tier's damage multiplier over T1's, from its 64.64 fixed-point config value. */
-const tierWeight = (multiplier) => n(Number(BigInt(multiplier) / 2n ** 64n));
-
-/**
- * Blitz's stamina and battle timer as its armies page states them: per army tick, in seconds. A fight adds its time to
- * what is left on each timer; the page's even T1 fight, against a defender with a full timer to run, refunds none of it.
- */
-
-const blitzStaminaPhrases = (config) => {
-  const stamina = config.troop.stamina;
-  const damage = config.troop.damage;
-  const cooldown = config.battle.cooldownSeconds;
-  return [
-    {
-      page: "blitz/armies",
-      phrases: [
-        `recovers ${stamina.staminaGainPerTick} every ${config.tick.armiesTickIntervalInSeconds} seconds`,
-        `Exploring a tile costs ${stamina.staminaExploreStaminaCost}`,
-        `Attacking takes ${stamina.staminaAttackReq} stamina`,
-        `The defender spends ${stamina.staminaDefenseReq} stamina`,
-        `adds up to ${n(cooldown)} seconds to each side's timer`,
-        `with ${n(cooldown)} seconds left on their timer: the defenders then wait ${n(cooldown * 2)} seconds and the attackers ${n(cooldown)}.`,
-        `The tier weights are 1 for T1, ${tierWeight(damage.t2DamageMultiplier)} for T2 and ${tierWeight(damage.t3DamageMultiplier)} for T3.`,
-      ],
-    },
-  ];
-};
 
 /** A building's price as the realm page states it: every resource it takes, by the catalog's name. */
 const buildingPrice = (config, id) =>
@@ -168,75 +114,6 @@ const historicalChestPhrases = (preset) => [
   },
 ];
 
-/**
- * The entry page says a sword and a shield each cost one entry: true only while both registered prices equal the entry
- * fee. Otherwise the page must state the prices themselves, which it does not, so the check fails.
- */
-const flagPrices = (ledger) => {
-  const entry = lordsOf(ledger.entry_fee);
-  const sword = lordsOf(ledger.sword_price);
-  const shield = lordsOf(ledger.shield_price);
-  return sword === entry && shield === entry
-    ? "Each costs one entry."
-    : `A sword costs ${sword} LORDS and a shield ${shield} LORDS.`;
-};
-
-const lordsOf = (amount) => n(Number(BigInt(amount.low) + (BigInt(amount.high) << 128n)) / 1e18);
-
-/** Where an entry goes, as the page states it: all of it to the chest reserve and the treasury. */
-const entrySplit = (ledger) => {
-  if (ledger.chest_lords_bps + ledger.protocol_cut_bps !== 10_000)
-    throw new Error("Blitz's entry also funds the prize pool: the prize page states a two-way split");
-  return `split two ways: ${pct(ledger.chest_lords_bps)} to the chest reserve and ${pct(ledger.protocol_cut_bps)} to the treasury`;
-};
-
-/**
- * The one chest every band draws, as the page states it. The page has no band table and names no cosmetic, so chests
- * whose bands differ, or that can draw a cosmetic, fail here rather than let the page go stale.
- */
-const chestDraw = (chests) => {
-  const [band] = chests.bands;
-  const same = chests.bands.every(
-    (each) => JSON.stringify(each) === JSON.stringify({ ...band, metadata: each.metadata }),
-  );
-  if (!same) throw new Error("Blitz's chest bands differ: the prize page states one chest for every band");
-  if (TIERS.some((tier) => band.odds[tier] > 0))
-    throw new Error("Blitz's chests can draw a cosmetic: the prize page names none");
-  const worth = band.lords_shares === 1 ? "one entry's worth" : `${n(band.lords_shares)} entries' worth`;
-  return `${worth} of LORDS (${pct(band.odds.lords)}), a sword credit (${pct(band.odds.sword)}) or a shield credit (${pct(band.odds.shield)})`;
-};
-
-/**
- * Blitz's entry and prizes, from the ledger and chest presets production registers (config/deployer/clean/ledger/
- * economics.ts, chestPresetFor), as the entry, prize and armies pages state them.
- */
-const blitzLedgerPhrases = (blitz, ledger, chests) => {
-  const reserve = blitz.startingResources.find((stack) => stack.resource === 26).amount;
-  return [
-    {
-      page: "blitz/entry",
-      phrases: [`at the season's entry fee (${lordsOf(ledger.entry_fee)} LORDS this season)`, flagPrices(ledger)],
-    },
-    {
-      page: "blitz/scoring",
-      phrases: [
-        entrySplit(ledger),
-        chestDraw(chests),
-        `Ratings are measured against a reference mean of ${n(ledger.mmr.mean)}`,
-        `A game's base rating change is capped at ${ledger.mmr.max_delta}, less in a small game; then a sword doubles a gain and a shield halves a loss`,
-        `The best ${pct(ledger.paid_fraction_bps)} of the season's players`,
-        `each place after it ${pct(ledger.decay_bps)} of the share above`,
-      ],
-    },
-    {
-      page: "blitz/armies",
-      phrases: [
-        `Each starts with ${n(blitz.troop.limit.startingGuard)} T1 troops of its type garrisoned and ${n(reserve)} in reserve`,
-      ],
-    },
-  ];
-};
-
 /** The Payout wallet page's statement of the co-signer's hold on a replaced wallet. */
 export const payoutWalletPhrases = (changeHoldSeconds) => [
   {
@@ -246,10 +123,8 @@ export const payoutWalletPhrases = (changeHoldSeconds) => [
 ];
 
 /** The phrases every rules page that states a stamina, guard, chest or points number must show. */
-export const expectedPhrases = (blitz, frontier, frontierPreset, ledger, chests, riftGuardBound, nativeRules) => [
-  ...blitzStaminaPhrases(blitz),
+export const expectedPhrases = (frontier, frontierPreset, riftGuardBound, nativeRules) => [
   ...frontierPhrases(frontier, frontierPreset, riftGuardBound, nativeRules),
-  ...blitzLedgerPhrases(blitz, ledger, chests),
 ];
 
 /**
@@ -280,20 +155,12 @@ export const loadBalanceSources = async () => {
     const { PAYOUT_WALLET_CHANGE_SECONDS } = await server.ssrLoadModule(
       join(here, "../../../packages/value-ledger/src/payout-wallet.ts"),
     );
-    const { buildLedgerEconomicPreset, chestPresetFor } = await server.ssrLoadModule(
-      join(here, "../../../config/deployer/clean/ledger/economics.ts"),
-    );
-    // The pages describe production: its chests and ledger preset, as setup registers them.
-    const chests = chestPresetFor("production");
-    const ledger = buildLedgerEconomicPreset("blitz", { environment: "production", chests });
     return {
       frontierPreset,
       frontierConfig,
       historicalFrontierPreset,
       previewRiftGuardBound,
       nativeRules,
-      ledger,
-      chests,
       payoutWalletChangeSeconds: PAYOUT_WALLET_CHANGE_SECONDS,
     };
   } finally {
@@ -316,9 +183,6 @@ export const visibleText = (html) =>
         .trim(),
     )
     .filter(Boolean);
-
-const containsRun = (text, run) =>
-  text.some((_, start) => run.every((expected, offset) => text[start + offset] === expected));
 
 /** A built page's visible text as one line: nodes joined by a space, whitespace collapsed, none before punctuation. */
 export const pageLine = (html) =>
@@ -417,41 +281,23 @@ export const tableSizeOverrides = (dist) =>
       })),
   );
 
-/** The runs a built site does not show, each with its page. */
-export const missingRuns = (dist, pages) =>
-  pages.flatMap(({ page, runs }) => {
-    const text = visibleText(readFileSync(join(dist, page, "index.html"), "utf8"));
-    return runs.filter((run) => !containsRun(text, run)).map((run) => ({ page, run }));
-  });
-
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const dist = resolve(process.argv[2] ?? join(here, "../dist"));
   const {
     frontierPreset,
     frontierConfig,
     historicalFrontierPreset,
-    ledger,
-    chests,
     previewRiftGuardBound,
     nativeRules,
     payoutWalletChangeSeconds,
   } = await loadBalanceSources();
   const llm = readFileSync(join(dist, "llm.txt"), "utf8");
   const phrases = [
-    ...expectedPhrases(
-      configOf("blitz"),
-      frontierConfig,
-      frontierPreset,
-      ledger,
-      chests,
-      previewRiftGuardBound,
-      nativeRules,
-    ),
+    ...expectedPhrases(frontierConfig, frontierPreset, previewRiftGuardBound, nativeRules),
     ...historicalChestPhrases(historicalFrontierPreset),
     ...payoutWalletPhrases(payoutWalletChangeSeconds),
   ];
   const missing = [
-    ...missingRuns(dist, expectedRuns(configOf("blitz"))),
     ...missingPhrases(dist, phrases),
     ...exportProblems(llm, phrases),
     ...forbiddenValues(dist, llm),

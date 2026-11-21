@@ -1,6 +1,6 @@
 # Game Documentation
 
-The documentation site for Realms (Frontier and Blitz), built with Vocs, a React-based documentation framework.
+The documentation site for Realms (Frontier), built with Vocs, a React-based documentation framework.
 
 ## Getting Started
 
@@ -30,12 +30,12 @@ publishes it with the client from the same commit (dev: docs.dev-realms.party); 
 The pages say what the game does, read from the game's own code: never a number or a rule written by hand when the code
 holds it.
 
-- **Pages** (`docs/pages`): Start, Your account (sign-in, payout wallet, LORDS), Frontier, Blitz, and More (What's new,
-  and the developer pages). The retired Frontier chest page is explicitly historical.
+- **Pages** (`docs/pages`): Start, Your account (sign-in, payout wallet, LORDS), Frontier, and More (What's new, and the
+  developer pages). The retired Frontier chest page is explicitly historical.
 - **Numbers** come from each mode's active preset, including its generated configuration overrides:
-  `docs/utils/frontier.ts` and `docs/utils/blitz.ts` read them, `docs/utils/config.ts` fails the build on a key a mode's
-  config lacks, and `docs/utils/contract-constants.json` holds the few rules the contracts keep as literals, each beside
-  the Cairo line it copies (`scripts/contract-constants.test.mjs` fails when that line changes).
+  `docs/utils/frontier.ts` reads them, `docs/utils/config.ts` fails the build on a key a mode's config lacks, and
+  `docs/utils/contract-constants.json` holds the few rules the contracts keep as literals, each beside the Cairo line it
+  copies (`scripts/contract-constants.test.mjs` fails when that line changes).
 - **Media** (`docs/components/Media.tsx`): every video and screenshot is captured from the game by one command, from the
   list in `media.json`, into `apps/game/public/docs-media`:
 

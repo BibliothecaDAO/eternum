@@ -33,17 +33,3 @@ const strict = <T>(value: T, path: string): T => {
     },
   });
 };
-
-/** The resource id of T1 Knights; each realm's reserve is the same count of whichever type it is dealt. */
-const KNIGHT_T1 = 26;
-
-/** A Blitz realm's starting forces as the pages state them: its garrison and its reserve. */
-export const startingForcesOf = (gameType: GameType) => {
-  const config = ETERNUM_CONFIG(gameType);
-  const reserve = config.startingResources.find((stack: { resource: number }) => stack.resource === KNIGHT_T1);
-  if (!reserve) throw new Error(`The ${gameType} config starts no realm with troops in reserve`);
-  return {
-    garrison: Number(config.troop.limit.startingGuard).toLocaleString("en-US"),
-    reserve: Number(reserve.amount).toLocaleString("en-US"),
-  };
-};

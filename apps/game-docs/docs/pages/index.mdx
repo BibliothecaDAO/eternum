@@ -3,7 +3,6 @@ layout: landing
 ---
 
 import { HomePage } from "vocs/components";
-import { BLITZ } from "@/utils/blitz";
 
 <HomePage.Root>
   <div className="realms-homepage-background" aria-hidden="true">
@@ -12,8 +11,7 @@ import { BLITZ } from "@/utils/blitz";
 
 <img src="/images/logos/realms-lettered.webp" alt="Realms" width="240" />
 <HomePage.Description>
-  Two strategy games, played onchain. Frontier is free: a new map every day, and nobody can attack you. Blitz is a{" "}
-  {BLITZ.game.minutes}-minute game for up to {BLITZ.game.players} players, paid in LORDS.
+  A strategy game, played onchain. Frontier is free: a new map every day, and nobody can attack you.
 </HomePage.Description>
 <HomePage.Buttons>
   <HomePage.Button href="/frontier/devcon" variant="primary">
@@ -21,9 +19,6 @@ import { BLITZ } from "@/utils/blitz";
   </HomePage.Button>
   <HomePage.Button href="/frontier" variant="outline">
     Frontier
-  </HomePage.Button>
-  <HomePage.Button href="/blitz" variant="outline">
-    Blitz
   </HomePage.Button>
   <HomePage.Button href="https://play.realms.party" variant="outline">
     Play
