@@ -94,9 +94,7 @@ const memoryBucket = () => {
   };
 };
 const shareCards = memoryBucket();
-const relay = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
-  Response.json({}),
-);
+const relay = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => Response.json({}));
 let env: IdentityEnv;
 const notifierCalls: [string, string][] = [];
 const notifiers = {

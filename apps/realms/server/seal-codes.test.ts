@@ -90,4 +90,3 @@ it("holds a code redeemed before the season without a grant: entering the game g
   expect(await holdsSeal(db, PLAYER)).toBe(true);
   expect(await holdsSeal(db, "0xb2")).toBe(false);
 });
-

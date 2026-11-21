@@ -20,4 +20,3 @@ it("writes the served page with the fixtures loaded before it, and can write it 
     rmSync(out, { recursive: true, force: true });
   }
 });
-

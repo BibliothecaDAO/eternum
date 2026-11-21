@@ -73,58 +73,57 @@ them (nothing spills out of its block, every picture loads, one gold verb at mos
 painting and the bar on a desktop, each place's word whole on a phone), the bar with the longest name beside the install
 notice at 1024 and 1440 px (`/lab/app/long-name`), the phone's four places at 360 px, the account's pages on a desktop
 and a phone (`account`: sign-in's steps, You signed in, out and unnamed, Settings and what its Name, Portrait, Payout
-wallet and Sign out rows open, and each window over the page, Realms' and Connect's, closed from
-its cross as a player presses it), the doorway into a game at each of its holds (`doorway`:
-`/lab/app/home/doorway/<state>`, the map booting, sign-in, the season awaited, a roster filling, the map failed with the
-realm to open, the device limit, a Blitz to watch, one ended), and every element of the sheet;
-`prove:app <base-url> <out-dir> end-map`, on the live stack, opens the newest finished game's Results, presses **See the
-end map** and holds the map to its scene being ready, watched and finished. `prove:app <base-url> <out-dir> qa1` presses
-qa-app-1's findings on the real pages over the fixtures, desktop and phone: Share on Results, a release picked on What's
-new, a legal page's places, a Season row's chips, Settings' Name, You with no finished game (`/lab/app/no-games`) and a
-session with no name (`/lab/app/unnamed`), the phone's own card and a Results board (see `boards`). The pages: Play
-(`/`) the lead widest and each age as a painted column, Blitz's always: it holds the player's unopened Blitz results and
-then ends on **Build orders**, naming the order the player's games follow, else says none is scheduled
-(`/lab/app/no-blitz`); a mode's card with nothing to do now (no game on it with a verb), the lead or a column, is idle,
-dimmed with nothing to press and its one line saying when it opens or that none is scheduled (Blitz on
-`/lab/app/no-blitz`); retired Eternum games offer no entry, while their finished results retain their names and
-paintings; Build orders (`/blitz/build-orders`, `/lab/app/home/blitz/build-orders` on three fixture orders whose saves
-the tab keeps) the account's orders, and on a desktop the followed one's steps beside them; Season (`/season`) the
-player's figures over Frontier's board, the last season's final board while none runs (`/lab/app/no-season/season`:
-prod's October season, the Playtest, kept in `src/shell/season-tab/archive/` after its shard was torn down) and **Past
-seasons** under it, each row opening that season's Results (`/lab/app/season-running/season`); Results (`/results/:id`,
-with **See the end map**) a Blitz's game, a Frontier season's recap (Season, You and Results below); What's new
-(`/scroll`) a release's patch notes, a tab per section, and every release. `/lab/kit/panels` the HUD's holdings and
-selected-realm panels as a player sees them, on a fixture realm. `/lab/kit/unified/<view>` the in-game HUD every mode
-shares (a phone's width draws the compact HUD), as the game mounts it on the lab's game: `blitz` (the Build order panel
-under Next up, read from the lab realm, which has nothing to build now), `blitz-start` (the same realm stocked to build,
-as the game begins: its news over the HUD, every control under it still taking its clicks), `blitz-attack` (the lab
-army's attack forecast on an enemy army beside it, opened as the map opens it), `frontier`, `frontier-army` (an army’s
-stamina, troops and relics), `blitz-spectator`, `blitz-finished`, `blitz-out` and `blitz-out-watching` (the lab player's
-last realm lost, a Hyperstructure still held, playing then watching);
-`pnpm --dir apps/game capture:hud-lab --hud-layout --base-url <url> --out <dir>` holds it and Frontier's states at 1024,
-1280, 1440 and 1920 px (every part whole on the page, none over another, none with content past its edge, every control
-reachable, at most seven parts a region); `/lab/kit/hud/realm-claim` is the owner's Kingdom at 27/42 with 1,000 labor to
-claim, the realm card's widest row. `/lab/kit/guidance` the guidance (Next up's route, Events rows with outcomes).
-`/lab/kit/build-order` the Build order panel: Next up for a newcomer (no build steps), and the panel as built on a
-fixture account holding two orders (its choice of order saves nothing there; each row the game's own rule on a realm's
-case: population short or not, an army short of full, a full army). `/lab/kit/progression` Frontier's Research tree and
-the army's panel (the owner's picks), the game's own panels on the Frontier preset's numbers, on the owner's realm or
-one some days in (`?realm=mid`); `?part=research|army` one alone at a phone's width. `/lab/kit/windows/settings` the
-header's Settings at its popover's width (a Quality, Frame rate or Shadows change is saved at once and shows **Applies
-after a reload** with **Reload** under them, in game as here; a game loads the address's `rendererMode`, else the
-build's WebGPU with its own WebGL2 fallback; Haptics only on a phone that vibrates, the keys only where there is a
-keyboard); `pnpm --dir apps/game prove:windows <base-url> <out-dir> settings` measures it against a 1080 px screen and
-opens its keys with Show, with no Back among them; every window it draws must keep each tab strip inside its panel.
-`/lab/kit/windows/transfer-holdings` Transfer for a player holding five kinds (realms, villages, a camp, rifts, a
-Hyperstructure). `/lab/kit/windows/army-transfer` Blitz's Transfer Troops & Relics between an army out beside the lab
-realm and the realm (**Swap** for realm → army). `/lab/kit/windows/army-to-army` shows the receiving army’s relic load;
-`/lab/kit/windows/frontier-build` shows a raised building price. `/lab/kit/area-d` the rings, players, tribes, Military
-picker and window body and Combat as the game draws them, on the deploy fixture's realm; capture them with
-`pnpm hud:capture <dir> <base-url> --page /lab/kit/area-d [surface ...]`. `/lab/kit/words` the words sheet: every voice,
-number, time, noun and name rule of the words module (the rules in `packages/types/src/words`, shared with core's story
-text; the client's phrases in `src/ui/design-system/kit/words.ts`) on sample inputs. `pnpm words:check` fails on any
-number, time or name written outside it where a player reads it, and on any string that breaks a voice rule;
-`node scripts/words/check.mjs` counts them by kind.
+wallet and Sign out rows open, and each window over the page, Realms' and Connect's, closed from its cross as a player
+presses it), the doorway into a game at each of its holds (`doorway`: `/lab/app/home/doorway/<state>`, the map booting,
+sign-in, the season awaited, a roster filling, the map failed with the realm to open, the device limit, a Blitz to
+watch, one ended), and every element of the sheet; `prove:app <base-url> <out-dir> end-map`, on the live stack, opens
+the newest finished game's Results, presses **See the end map** and holds the map to its scene being ready, watched and
+finished. `prove:app <base-url> <out-dir> qa1` presses qa-app-1's findings on the real pages over the fixtures, desktop
+and phone: Share on Results, a release picked on What's new, a legal page's places, a Season row's chips, Settings'
+Name, You with no finished game (`/lab/app/no-games`) and a session with no name (`/lab/app/unnamed`), the phone's own
+card and a Results board (see `boards`). The pages: Play (`/`) the lead widest and each age as a painted column, Blitz's
+always: it holds the player's unopened Blitz results and then ends on **Build orders**, naming the order the player's
+games follow, else says none is scheduled (`/lab/app/no-blitz`); a mode's card with nothing to do now (no game on it
+with a verb), the lead or a column, is idle, dimmed with nothing to press and its one line saying when it opens or that
+none is scheduled (Blitz on `/lab/app/no-blitz`); retired Eternum games offer no entry, while their finished results
+retain their names and paintings; Build orders (`/blitz/build-orders`, `/lab/app/home/blitz/build-orders` on three
+fixture orders whose saves the tab keeps) the account's orders, and on a desktop the followed one's steps beside them;
+Season (`/season`) the player's figures over Frontier's board, the last season's final board while none runs
+(`/lab/app/no-season/season`: prod's October season, the Playtest, kept in `src/shell/season-tab/archive/` after its
+shard was torn down) and **Past seasons** under it, each row opening that season's Results
+(`/lab/app/season-running/season`); Results (`/results/:id`, with **See the end map**) a Blitz's game, a Frontier
+season's recap (Season, You and Results below); What's new (`/scroll`) a release's patch notes, a tab per section, and
+every release. `/lab/kit/panels` the HUD's holdings and selected-realm panels as a player sees them, on a fixture realm.
+`/lab/kit/unified/<view>` the in-game HUD every mode shares (a phone's width draws the compact HUD), as the game mounts
+it on the lab's game: `blitz` (the Build order panel under Next up, read from the lab realm, which has nothing to build
+now), `blitz-start` (the same realm stocked to build, as the game begins: its news over the HUD, every control under it
+still taking its clicks), `blitz-attack` (the lab army's attack forecast on an enemy army beside it, opened as the map
+opens it), `frontier`, `frontier-army` (an army’s stamina, troops and relics), `blitz-spectator`, `blitz-finished`,
+`blitz-out` and `blitz-out-watching` (the lab player's last realm lost, a Hyperstructure still held, playing then
+watching); `pnpm --dir apps/game capture:hud-lab --hud-layout --base-url <url> --out <dir>` holds it and Frontier's
+states at 1024, 1280, 1440 and 1920 px (every part whole on the page, none over another, none with content past its
+edge, every control reachable, at most seven parts a region); `/lab/kit/hud/realm-claim` is the owner's Kingdom at 27/42
+with 1,000 labor to claim, the realm card's widest row. `/lab/kit/guidance` the guidance (Next up's route, Events rows
+with outcomes). `/lab/kit/build-order` the Build order panel: Next up for a newcomer (no build steps), and the panel as
+built on a fixture account holding two orders (its choice of order saves nothing there; each row the game's own rule on
+a realm's case: population short or not, an army short of full, a full army). `/lab/kit/progression` Frontier's Research
+tree and the army's panel (the owner's picks), the game's own panels on the Frontier preset's numbers, on the owner's
+realm or one some days in (`?realm=mid`); `?part=research|army` one alone at a phone's width.
+`/lab/kit/windows/settings` the header's Settings at its popover's width (a Quality, Frame rate or Shadows change is
+saved at once and shows **Applies after a reload** with **Reload** under them, in game as here; a game loads the
+address's `rendererMode`, else the build's WebGPU with its own WebGL2 fallback; Haptics only on a phone that vibrates,
+the keys only where there is a keyboard); `pnpm --dir apps/game prove:windows <base-url> <out-dir> settings` measures it
+against a 1080 px screen and opens its keys with Show, with no Back among them; every window it draws must keep each tab
+strip inside its panel. `/lab/kit/windows/transfer-holdings` Transfer for a player holding five kinds (realms, villages,
+a camp, rifts, a Hyperstructure). `/lab/kit/windows/army-transfer` Blitz's Transfer Troops & Relics between an army out
+beside the lab realm and the realm (**Swap** for realm → army). `/lab/kit/windows/army-to-army` shows the receiving
+army’s relic load; `/lab/kit/windows/frontier-build` shows a raised building price. `/lab/kit/area-d` the rings,
+players, tribes, Military picker and window body and Combat as the game draws them, on the deploy fixture's realm;
+capture them with `pnpm hud:capture <dir> <base-url> --page /lab/kit/area-d [surface ...]`. `/lab/kit/words` the words
+sheet: every voice, number, time, noun and name rule of the words module (the rules in `packages/types/src/words`,
+shared with core's story text; the client's phrases in `src/ui/design-system/kit/words.ts`) on sample inputs.
+`pnpm words:check` fails on any number, time or name written outside it where a player reads it, and on any string that
+breaks a voice rule; `node scripts/words/check.mjs` counts them by kind.
 
 `prove:app <base-url> <out-dir> boards` measures every board (`AppBoard`) row by row, Season's Frontier and Blitz, at
 1920 and 390 px: each column at one x down the board, each value ending on one line, no name run into its figures and a
@@ -999,11 +998,11 @@ buys up to the account's Fragments. Kit lab: `army-refill`, `army-refill-ready`,
 
 **Shop**: the Fragments chip (the phone's purse row; the desktop realm panel's ring) opens it once the "shop" moment is
 reached (an army out of stamina, or Fragments held). The Ancient Seal row: what it gives (the daily quest's bonus from
-`QuestRules`; an account whose Realm already pays it reads **Your Realm gives this bonus already**),
-**Get the Ancient Seal** for 1,000 Fragments, or while short how many more and their price in dollars, and the code
-field (the waiting screen's redeem, granted at once in a running game); once the account's Seal row exists it says the
-Ancient Seal is held. Then the Fragments row (a cent each) with **Get Fragments**, and the stamina refill rate. Kit lab:
-`shop`, `shop-ready`, `shop-held`.
+`QuestRules`; an account whose Realm already pays it reads **Your Realm gives this bonus already**), **Get the Ancient
+Seal** for 1,000 Fragments, or while short how many more and their price in dollars, and the code field (the waiting
+screen's redeem, granted at once in a running game); once the account's Seal row exists it says the Ancient Seal is
+held. Then the Fragments row (a cent each) with **Get Fragments**, and the stamina refill rate. Kit lab: `shop`,
+`shop-ready`, `shop-held`.
 
 **Get Fragments** (`/shop/fragments?chain=<chain>&game=<game>&next=<game path>#shop`, from the shop's Fragments row):
 the store's packs (100, 500, 1,000 Fragments; the 1,000 pack is the Ancient Seal's) priced in dollars, the Seal's
@@ -1057,12 +1056,12 @@ also cover Ward, Plunder, expiry and incomplete snapshots in the site-card regre
 
 ## Season 1 Aspect founding
 
-A Season 1 free home chooses one of four Aspects on the game entry screen. Tap its card to found the home;
-its four Orders and current member count come from the shared catalog and Herald's directory. A held Realm inherits its
-Order's Aspect. A founded home can attach only a held Realm from that Aspect. An account that kept an Order before the
-season founds in that Order's Aspect (its Orders offered, the other Aspects shut). A held Realm in another Aspect than
-the kept Order or a friend's invite is warned once: **Play my Realm** (keeps the quest bonus) or **Join <Aspect> for
-free** (a free home in that Aspect, no Realm sent).
+A Season 1 free home chooses one of four Aspects on the game entry screen. Tap its card to found the home; its four
+Orders and current member count come from the shared catalog and Herald's directory. A held Realm inherits its Order's
+Aspect. A founded home can attach only a held Realm from that Aspect. An account that kept an Order before the season
+founds in that Order's Aspect (its Orders offered, the other Aspects shut). A held Realm in another Aspect than the kept
+Order or a friend's invite is warned once: **Play my Realm** (keeps the quest bonus) or **Join <Aspect> for free** (a
+free home in that Aspect, no Realm sent).
 
 Presentation: `/lab/app/wallet-ready/doorway/aspect`, `aspect-realm`, `aspect-kept` and `realm-side` (the warning) under
 `/lab/app/wallet-ready/doorway/` mount the production picker; `build.sh prove-season-one` stills the last two. The full
@@ -1075,8 +1074,8 @@ Essence). Both armies appear in the production HUD.
 
 Games with quest rules show today's shared quest on the Frontier HUD, with the home's progress and reward. Complete the
 count, then press Collect. The collected mark appears when the grant receipt arrives. A completed quest keeps the level
-at which it finished; upgrading before completion increases the required count. Held-Realm homes receive
-the configured labor bonus. Published presets keep quests disabled until their action producers are wired.
+at which it finished; upgrading before completion increases the required count. Held-Realm homes receive the configured
+labor bonus. Published presets keep quests disabled until their action producers are wired.
 
 `/lab/game?scenario=quest` opens a completed quest on the real HUD. The canonical
 `pnpm playtest --steps lab-daily-quest` run presses Collect, checks the provider's home/day payload, the receipt and
