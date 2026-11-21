@@ -12,8 +12,6 @@ vi.mock("@/sync/action-outcome", async (original) => ({
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
-import { shortString } from "starknet";
-import { REALM_SKINS } from "@/three/structures/realm-skins";
 import { configManager } from "@bibliothecadao/eternum";
 import { nativeReleaseConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import { GameProvider } from "@/hooks/context/game-context";
@@ -110,16 +108,6 @@ describe("the shop", () => {
     renderShop([{ model: "SettledRealm", key: "0x5e7", value: { game_id: 1, realm_id: 42, home: "7" } }]);
     expect(host.querySelector("[data-shop=pass]")?.textContent).toContain("Your Realm gives this bonus already");
     expect(getPass()).toBeDefined();
-  });
-
-  it("tells a campaign ticket home that its ticket pays the quest bonus already", () => {
-    const campaign = shortString.encodeShortString("devcon-2026");
-    renderShop([
-      { model: "CampaignHome", key: "0xca7", value: { game_id: 1, home: "7", campaign_id: campaign, tier: 1 } },
-    ]);
-    expect(host.querySelector("[data-shop=pass]")?.textContent).toContain(
-      `Your ${REALM_SKINS.devcon.label} ticket gives this bonus already`,
-    );
   });
 
   it("opens Get Fragments for this game, coming back to the game's shop", () => {

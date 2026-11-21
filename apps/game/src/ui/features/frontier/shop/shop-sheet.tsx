@@ -19,7 +19,6 @@ import { fragmentsHref } from "@/shell/shop/fragments-route";
 import { toast } from "@/ui/features/event-feed/notify";
 
 import { fragmentsToFill } from "../army/refill";
-import { campaignMarkOf } from "../value/campaign-home";
 import { useFragmentsHeld } from "../value/fragments";
 
 const SHOP_MODELS = ["Seal", "QuestRules", "SliceRules", "CampaignHome", "SettledRealm"] as const;
@@ -208,12 +207,8 @@ function freeBonusHolder(
   realm: NativeRows["Structure"],
   owner: bigint,
 ): string | null {
-  const home = Number(realm.entity_id);
-  const source = readLaborBonus(store, realm.game_id, home, owner).known?.source;
-  if (source === "realm") return REALM;
-  if (source !== "campaign") return null;
-  const mark = campaignMarkOf(store.get("CampaignHome", { game_id: realm.game_id, home }), realm.base.level);
-  return mark && SHOP_WORDS.ticket(mark.line);
+  const source = readLaborBonus(store, realm.game_id, Number(realm.entity_id), owner).known?.source;
+  return source === "realm" ? REALM : null;
 }
 
 const fragmentsForBar = (bar: number): number => fragmentsToFill({ current: 0, max: bar });

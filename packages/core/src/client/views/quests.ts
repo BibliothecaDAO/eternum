@@ -135,7 +135,7 @@ function readReceipt(
   return absent.known ? { known: { row: undefined } } : { unknown: absent.unknown };
 }
 
-export type LaborBonusSource = "seal" | "campaign" | "realm" | null;
+export type LaborBonusSource = "seal" | "realm" | null;
 
 export function readLaborBonus(
   store: NativeFactStore,
@@ -144,7 +144,8 @@ export function readLaborBonus(
   owner: bigint,
 ): NativeFactResult<{ source: LaborBonusSource }> {
   const seal = readSeasonPass(store, gameId, owner);
-  if (!seal.known || seal.known.present) return seal;
+  if (!seal.known) return seal;
+  if (seal.known.present) return { known: { source: "seal" } };
   const held = heldRealmForHome(store, { gameId, entityId: home }) !== null;
   const realm = presentOrKnownAbsent(store, "SettledRealm", held || undefined, { game_id: gameId, home });
   return realm.known ? { known: { source: realm.known.present ? "realm" : null } } : realm;
