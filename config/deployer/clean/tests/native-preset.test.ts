@@ -8,9 +8,10 @@ import type { RpcProvider } from "starknet";
 import schema from "../../../../contracts/l3/world-native/schema/schema.json";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
+import { blitzPendingCommandMask } from "../../../source/common/native-commands";
 import { applyDeploymentConfigOverrides } from "../config/config-loader";
-import { buildNativePreset, seasonOneReleaseDefinition } from "../config/native-preset";
-import { balanceModules } from "../../../../contracts/l3/world-native/scripts/balance-modules";
+import { blitzReleaseDefinition, buildNativePreset, seasonOneReleaseDefinition } from "../config/native-preset";
+import { balanceModules, blitzBalanceModules } from "../../../../contracts/l3/world-native/scripts/balance-modules";
 import {
   FRONTIER_ACCELERATED_PRESET_ID,
   FRONTIER_PRESET_ID,
@@ -1080,4 +1081,19 @@ test("preset 7 activates the complete Slice 1 rules while fixtures and historica
       [0, 0, 6000, 3000, 1000],
     ]);
   }
+});
+
+test("the Blitz balance holds its own switches and spacing, and none of the tables only the Frontier reads", () => {
+  const modules = blitzBalanceModules(blitzReleaseDefinition());
+  expect(Object.keys(modules)).toEqual(["resources", "structures", "rules", "settlement"]);
+  expect(modules.rules).toContain("day_unit_seconds: 0");
+  expect(modules.rules).toContain("entry_rule: 2");
+  expect(modules.rules).toContain(`pub const PENDING_COMMANDS: u128 = ${blitzPendingCommandMask};`);
+  expect(modules.settlement).toContain("pub const SETTLEMENT_SPACING_STEPS: u32 = 6;");
+  for (const absent of ["BOARD", "LABOR_STORES", "RESEARCH_PRICES"]) expect(modules.structures).not.toContain(absent);
+  for (const absent of ["ORDER_ASPECTS", "STARTING_TROOPS"]) expect(modules.settlement).not.toContain(absent);
+});
+
+test("the Blitz balance refuses the Frontier's definition", () => {
+  expect(() => blitzBalanceModules(seasonOneReleaseDefinition())).toThrow("Blitz has no realm board and no research");
 });

@@ -321,7 +321,7 @@ pub mod ResourcesLogic {
             let per_troops: u128 = recipe.simple_output.into();
             let denominator = per_troops * crate::rules::RESOURCE_PRECISION;
             let now: u32 = timestamp.try_into().unwrap();
-            let board = crate::balance::structures::BOARD;
+            let board = crate::logic::buildings::board();
             let rations: u128 = crate::research::tier(
                 crate::logic::research::learned(key), crate::research::ROW_RATIONS,
             )

@@ -1,5 +1,9 @@
-use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
-use crate::resources::{Production, ResourceKey, Weight, assert_resource, has_castle_limit, has_production};
+use starknet::storage::StorageMapReadAccess;
+#[cfg(not(feature: "blitz"))]
+use starknet::storage::{StoragePathEntry, StoragePointerReadAccess};
+#[cfg(not(feature: "blitz"))]
+use crate::resources::has_castle_limit;
+use crate::resources::{Production, ResourceKey, Weight, assert_resource, has_production};
 
 #[inline(never)]
 pub fn assert_exists(key: ResourceKey) {
@@ -35,6 +39,13 @@ pub fn weight(key: ResourceKey) -> Weight {
 /// Board realms have separate wheat/labor and troop bases. Every other store, and every store off a board, has no
 /// limit.
 #[inline(never)]
+#[cfg(feature: "blitz")]
+pub fn store_limit(key: ResourceKey, resource_type: u8) -> Option<u128> {
+    None
+}
+
+#[inline(never)]
+#[cfg(not(feature: "blitz"))]
 pub fn store_limit(key: ResourceKey, resource_type: u8) -> Option<u128> {
     if !has_castle_limit(resource_type) {
         return None;

@@ -4,6 +4,8 @@ import { hash, CallData } from "starknet";
 import { schemaIdentity, type NativeSchema } from "../../../../../apps/herald/src/native/schema";
 import { readClassArtifact } from "../../shared/declare";
 import { nativeBalanceIdentity } from "../../../../../contracts/l3/world-native/schema/balance.gen";
+import { nativeIdentifiers } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import { blitzPendingCommands } from "../../../../source/common/native-commands";
 import { NATIVE_RELEASES } from "../../../../../deploy/release/native-release";
 import type { NativeAuthentication, NativeReleaseFacts, NativeWorld, NativeWorldManifest } from "./types";
 
@@ -91,16 +93,23 @@ export function loadNativeWorld(input: {
 }
 
 export function releaseRegistration(release: NativeReleaseFacts, schema: NativeSchema, previous: number) {
+  const family = NATIVE_RELEASES.frontier.family;
+  assertFamilyLogicReturned(family);
   return {
     release_id: release.releaseId,
     release: {
-      family: NATIVE_RELEASES.frontier.family,
+      family,
       previous,
       slot_count: schema.logicClasses.length,
       migration: release.migrationClassHash,
     },
     classes: schema.logicClasses.map(({ name }) => release.classes.logic[name]),
   };
+}
+
+export function assertFamilyLogicReturned(family: number): void {
+  if (family === nativeIdentifiers.family.BLITZ && blitzPendingCommands.length > 0)
+    throw new Error(`NATIVE_BLITZ_PENDING: the Blitz logic has not returned for ${blitzPendingCommands.join(", ")}`);
 }
 
 function validateReleaseArtifacts(

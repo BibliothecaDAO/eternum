@@ -53,6 +53,12 @@ pub fn depth_at(game_id: u32, coord: Coord) -> u8 {
     (coord.y / spacing % 4).try_into().unwrap()
 }
 
+#[cfg(feature: "blitz")]
+pub fn depth_rules(depth: u8) -> DepthRules {
+    panic!("Blitz has no depth rules")
+}
+
+#[cfg(not(feature: "blitz"))]
 pub fn depth_rules(depth: u8) -> DepthRules {
     *crate::balance::expeditions::DEPTH_RULES.span().at(depth.into())
 }

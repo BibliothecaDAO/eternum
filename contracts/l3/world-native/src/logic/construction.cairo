@@ -84,7 +84,7 @@ pub mod ConstructionLogic {
             let coord = self.resolve_building_coord(game_id, base, command.directions);
             let location = crate::logic::buildings::building_key(key, coord);
             let rule = self.buildings.rule(crate::buildings::BuildingRuleKey { game_id, category: command.category });
-            let board = crate::balance::structures::BOARD;
+            let board = crate::logic::buildings::board();
             self.assert_board_category(key, command.category, board);
             self.erect_building(key, actor, base, location, coord, command.category, rule, context.timestamp, context);
             self.change_board_building(key, base, command.category, board, true, context);
@@ -136,7 +136,7 @@ pub mod ConstructionLogic {
             );
             let rule = self.buildings.rule(crate::buildings::BuildingRuleKey { game_id, category: building.category });
             self.buildings.remove(location, building, rule, context.rules.unbox().building_config.base_population);
-            let board = crate::balance::structures::BOARD;
+            let board = crate::logic::buildings::board();
             self.change_board_building(key, base, building.category, board, false, context);
             let refund = crate::math::PercentageImpl::get(building.labor_paid, board.demolition_refund_bps.into());
             self
@@ -199,7 +199,7 @@ pub mod ConstructionLogic {
                 );
             self.settle_store_choice(key, command, context);
             crate::logic::research::write(key, crate::research::RealmKnowledge { learned });
-            self.apply_research(key, base, command.row, crate::balance::structures::BOARD, before, learned, context);
+            self.apply_research(key, base, command.row, crate::logic::buildings::board(), before, learned, context);
         }
         fn realm_knowledge(self: @ContractState, key: ResourceKey) -> Option<crate::research::RealmKnowledge> {
             crate::logic::research::knowledge(key)

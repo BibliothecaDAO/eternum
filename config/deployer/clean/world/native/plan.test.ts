@@ -2,13 +2,15 @@ import { describe, expect, test } from "bun:test";
 import { type Account, type RpcProvider } from "starknet";
 import schemaJson from "../../../../../contracts/l3/world-native/schema/schema.json";
 import { canonicalRealmTraits, realmCatalogueDigest } from "./realm-catalogue";
-import { assertBalanceSince, loadNativeWorld } from "./artifacts";
+import { assertBalanceSince, assertFamilyLogicReturned, loadNativeWorld } from "./artifacts";
 import { inspectNativeWorld } from "./plan";
 import { deployNativeWorld } from "./deploy";
 import { registerNativeRelease } from "./releases";
 import { buildNativeManifest } from "./manifest";
 import type { NativeWorld } from "./types";
 import { nativeBalanceIdentity } from "../../../../../contracts/l3/world-native/schema/balance.gen";
+import { nativeIdentifiers } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import { blitzPendingCommands } from "../../../../source/common/native-commands";
 import { NATIVE_RELEASES } from "../../../../../deploy/release/native-release";
 
 const authentication = { account_class: "0x77", guardian_public_key: "0x88" };
@@ -475,4 +477,12 @@ describe("native deployment planning", () => {
     expect(state.operations).toEqual(["declare:0x456", "register_release"]);
     expect(BigInt(state.releases.get(2)!.migration)).toBe(0x456n);
   });
+});
+
+test("a Blitz release is refused while a Blitz command waits for its logic", () => {
+  expect(() => assertFamilyLogicReturned(nativeIdentifiers.family.BLITZ)).toThrow(
+    `NATIVE_BLITZ_PENDING: the Blitz logic has not returned for ${blitzPendingCommands.join(", ")}`,
+  );
+  expect(() => assertFamilyLogicReturned(nativeIdentifiers.family.FRONTIER)).not.toThrow();
+  expect(Object.keys(NATIVE_RELEASES)).not.toContain("blitz");
 });

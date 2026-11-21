@@ -4,10 +4,20 @@ import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/com
 export const arenaModeRules =
   rule.HOME_REWARDS | rule.DISCOVER_CAMPS | rule.CAPTURE_VILLAGES | rule.SAME_OWNER_TRANSFER | rule.PRODUCTION_START;
 
-function commandMask(disabled: Array<keyof typeof nativeCommandBits>): bigint {
-  let mask = Object.values(nativeCommandBits).reduce((mask, bit) => mask | BigInt(bit), 0n);
-  for (const command of disabled) mask &= ~BigInt(nativeCommandBits[command]);
-  return mask;
+type NativeCommand = keyof typeof nativeCommandBits;
+
+function commandBits(commands: NativeCommand[]): bigint {
+  return commands.reduce((mask, command) => mask | BigInt(nativeCommandBits[command]), 0n);
 }
 
-export const arenaCommandMask = commandMask(["EnterDepth", "Research", "InteractSite"]);
+const allCommands = Object.keys(nativeCommandBits) as NativeCommand[];
+const arenaClosedCommands: NativeCommand[] = ["EnterDepth", "Research", "InteractSite"];
+const blitzReturnedCommands: NativeCommand[] = [];
+
+export const arenaCommandMask = commandBits(allCommands) & ~commandBits(arenaClosedCommands);
+
+export const blitzPendingCommands = allCommands.filter(
+  (command) => !arenaClosedCommands.includes(command) && !blitzReturnedCommands.includes(command),
+);
+
+export const blitzPendingCommandMask = commandBits(blitzPendingCommands);

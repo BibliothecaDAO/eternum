@@ -46,6 +46,12 @@ pub fn reveal(
     result
 }
 
+#[cfg(feature: "blitz")]
+pub fn lore_rules(learned: u64) -> crate::expeditions::FrontierDiscoveryRules {
+    panic!("Blitz discovers no sites")
+}
+
+#[cfg(not(feature: "blitz"))]
 pub fn lore_rules(learned: u64) -> crate::expeditions::FrontierDiscoveryRules {
     let mut rules = crate::balance::expeditions::FRONTIER_DISCOVERY;
     let lore = crate::research::tier(learned, crate::research::ROW_LORE);

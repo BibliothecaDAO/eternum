@@ -308,11 +308,22 @@ pub fn validated_command(
     Ok(route)
 }
 
+#[cfg(feature: "blitz")]
+fn assert_logic_returned(index: u32) {
+    assert!(
+        !crate::rules::command_enabled(crate::balance::rules::PENDING_COMMANDS, index.into()), "Blitz logic pending",
+    );
+}
+
+#[cfg(not(feature: "blitz"))]
+fn assert_logic_returned(index: u32) {}
+
 pub fn admit(game_id: u32, actor: ContractAddress, command: Span<felt252>) {
     let (index, route, _) = validated_command(command).expect('INVALID_COMMAND');
     assert!(
         crate::rules::command_enabled(crate::balance::rules::SWITCHES.command_mask, index.into()), "command disabled",
     );
+    assert_logic_returned(index);
     assert!(crate::logic::game::game_exists(game_id), "game does not exist");
     if route.selector == selector!("settle_season") {
         crate::entity_ids::assign_open_home(game_id, actor);

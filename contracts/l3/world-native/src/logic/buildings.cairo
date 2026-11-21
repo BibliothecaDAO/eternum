@@ -17,6 +17,16 @@ pub fn building_key(key: crate::resources::ResourceKey, coord: Coord) -> Buildin
     BuildingKey { game_id: key.game_id, structure_id: key.entity_id, inner_col: coord.x, inner_row: coord.y }
 }
 
+#[cfg(feature: "blitz")]
+pub fn board() -> crate::buildings::BoardRules {
+    panic!("Blitz has no realm board")
+}
+
+#[cfg(not(feature: "blitz"))]
+pub fn board() -> crate::buildings::BoardRules {
+    crate::balance::structures::BOARD
+}
+
 #[starknet::component]
 pub mod BuildingState {
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};

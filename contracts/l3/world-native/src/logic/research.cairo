@@ -32,6 +32,12 @@ pub fn write(key: ResourceKey, value: RealmKnowledge) {
     crate::logic::structures::StructureState::emit(event);
 }
 
+#[cfg(feature: "blitz")]
+pub fn price(row: u8, tier: u8) -> ResearchPrice {
+    panic!("Blitz has no research")
+}
+
+#[cfg(not(feature: "blitz"))]
 pub fn price(row: u8, tier: u8) -> ResearchPrice {
     assert!(tier > 0 && tier <= crate::research::max_tier(row), "invalid research tier");
     let mut first = 0_u32;

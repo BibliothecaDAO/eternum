@@ -311,6 +311,11 @@ export function seasonOneReleaseDefinition() {
   return buildNativePreset(loadNativePresetConfiguration("madara.frontier", presetId), presetId);
 }
 
+export function blitzReleaseDefinition() {
+  const presetId = nativePresetIdFor("blitz");
+  return buildNativePreset(loadNativePresetConfiguration("madara.blitz", presetId), presetId);
+}
+
 export function buildNativePreset(config: Config, presetId: number) {
   const preset = nativePresetForId(presetId);
   validateRequiredNativeConfig(config);

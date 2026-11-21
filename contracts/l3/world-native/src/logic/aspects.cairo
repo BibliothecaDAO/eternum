@@ -1,6 +1,12 @@
 use starknet::storage::StorageMapReadAccess;
 use crate::resources::ResourceKey;
 
+#[cfg(feature: "blitz")]
+pub fn rules() -> u128 {
+    panic!("Blitz has no Aspects")
+}
+
+#[cfg(not(feature: "blitz"))]
 pub fn rules() -> u128 {
     crate::aspects::pack(crate::balance::settlement::ORDER_ASPECTS.span())
 }
