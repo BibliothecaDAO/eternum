@@ -114,6 +114,13 @@ test("a retried launch finds the game its first attempt created", async () => {
   expect(held).toHaveLength(1);
 });
 
+test("a retried launch still finds its game after the race ended it early", async () => {
+  const createdAt = Date.parse("2026-11-20T00:00:00.000Z");
+  await launchShard().create(season, createdAt);
+  held[0]!.row = { ...held[0]!.row, end_at: "1795300000" };
+  expect(await launchShard().create(season, createdAt)).toMatchObject({ gameId: 1, durationSeconds: 80_800 });
+});
+
 test("a name the registry holds under another seed is not this launch", async () => {
   const createdAt = Date.parse("2026-11-20T00:00:00.000Z");
   await launchShard().create(season, createdAt);
