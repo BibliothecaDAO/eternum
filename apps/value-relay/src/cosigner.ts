@@ -10,6 +10,7 @@ import {
   decodeWithdrawalPayment,
   decodeCosigner,
   decodeRaceSeason,
+  raceCalldata,
   cosigningHash,
   raceCosigningHash,
   decodeCosignRequest,
@@ -140,7 +141,9 @@ async function verifyRacePay(
 ) {
   const race = await readFinishedRace(shard, shard.heraldUrl, request.season);
   if (!race) throw new Error("cosigner_race_unfinished");
-  const posted = decodeRaceSeason(await readRewards("get_race", [request.shard, String(request.season)]));
+  const posted = decodeRaceSeason(
+    await readRewards("get_race", raceCalldata("get_race", { shard: request.shard, season_id: request.season })),
+  );
   if (!posted.posted || posted.closed || posted.total !== race.total) throw new Error("cosigner_race_differs");
   const reward = race.rewards.find((owed) => owed.home === BigInt(request.home));
   if (!reward || reward.amount !== BigInt(request.amount)) throw new Error("cosigner_race_differs");

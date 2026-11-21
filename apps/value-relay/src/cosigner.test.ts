@@ -2,6 +2,8 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { Effect } from "effect";
 import { ec } from "starknet";
 import { cosigningHash, raceCosigningHash, type PayoutTerms } from "@realms-world/value-ledger";
+import { response } from "../../../packages/value-ledger/test-support/abi";
+import { raceRewardsAbi } from "../../../packages/value-ledger/src/race-rewards-abi";
 import { createCosigner, handleCosignRequest, type CosignerConfig } from "./cosigner";
 import { RelayFailure } from "./ports";
 
@@ -67,7 +69,16 @@ const wallets = {
   assertWallet: vi.fn(),
   pendingChanges: () => ({ count: 0, oldestSince: null }),
 };
-const postedRace = ["1", "500", "0", "1", "1000", "30", "0", "0", "0", "0"];
+const raceSeason = (state: { posted?: boolean; total?: number; closed?: boolean } = {}) =>
+  response(raceRewardsAbi, "get_race", {
+    funded: true,
+    pool: { low: 500, high: 0 },
+    posted: state.posted ?? true,
+    posted_at: state.posted === false ? 0 : 1000,
+    total: { low: state.total ?? 30, high: 0 },
+    paid: { low: 0, high: 0 },
+    closed: state.closed ?? false,
+  });
 const racePost = { kind: "race-post" as const, shard: "0x2", season: 7, total: "30" };
 const racePay = { kind: "race-pay" as const, shard: "0x2", season: 7, home: "5", wallet: "0x123", amount: "10" };
 const signedBy = (signature: { r: string; s: string }, digest: string) =>
@@ -86,7 +97,7 @@ beforeEach(() => {
     if (entrypoint === "cosigner") return [ec.starkCurve.getStarkKey(key), "2"];
     if (entrypoint === "is_paused") return ["0"];
     if (entrypoint === "get_payment") return ["0", "7", "0", "17", "0", "0", "0", "1000"];
-    if (entrypoint === "get_race") return postedRace;
+    if (entrypoint === "get_race") return raceSeason();
     throw new Error("unexpected read");
   });
   calls.receipt.mockReturnValue(
@@ -255,7 +266,7 @@ it("signs a race total and a home's reward only as it recomputes them from its o
   expect(calls.race).toHaveBeenCalledWith(config.shards[0], "http://127.0.0.1:8081", 7);
   expect(calls.rewards).toHaveBeenCalledWith(config.ledgerAddress);
   expect(calls.read).toHaveBeenCalledWith(
-    { contractAddress: "0x30", entrypoint: "get_race", calldata: ["0x2", "7"] },
+    { contractAddress: "0x30", entrypoint: "get_race", calldata: ["2", "7"] },
     10,
   );
   expect(wallets.assertWallet).toHaveBeenCalledExactlyOnceWith("0x456", "0x1", "0x123");
@@ -286,9 +297,9 @@ it("signs nothing for a race with no confirmed result or no rewards address", as
   await expect(run(racePost)).rejects.toThrow("no race rewards address");
 });
 it.each([
-  ["unposted", ["1", "500", "0", "0", "0", "0", "0", "0", "0", "0"]],
-  ["closed", ["1", "500", "0", "1", "1000", "30", "0", "0", "0", "1"]],
-  ["posted with another total", ["1", "500", "0", "1", "1000", "29", "0", "0", "0", "0"]],
+  ["unposted", raceSeason({ posted: false, total: 0 })],
+  ["closed", raceSeason({ closed: true })],
+  ["posted with another total", raceSeason({ total: 29 })],
 ])("refuses a race payment while the race is %s", async (_, season) => {
   const read = calls.read.getMockImplementation()!;
   calls.read.mockImplementation((query) => (query.entrypoint === "get_race" ? season : read(query)));

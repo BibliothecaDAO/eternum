@@ -8,8 +8,6 @@ import {
   decodeChestContent,
   decodeCredits,
   decodeFrontierSeason,
-  decodeRaceSeason,
-  decodeRaceReward,
   decodeLedgerPreset,
   decodeLedgerSlot,
   decodeMmrPreviews,
@@ -305,26 +303,4 @@ it("counts a chest's draw down to the block where open_finish may run: the reque
   expect(chestDrawBlocksLeft(100, 110)).toBe(1);
   expect(chestDrawBlocksLeft(100, 111)).toBe(0);
   expect(chestDrawBlocksLeft(100, 140)).toBe(0);
-});
-
-it("decodes a race season in the rewards class's field order", () => {
-  const posted = ["1", "500", "0", "1", "1000", "17", "1", "3", "0", "0"];
-  expect(decodeRaceSeason(posted)).toEqual({
-    funded: true,
-    pool: 500n,
-    posted: true,
-    postedAt: 1000,
-    total: (1n << 128n) + 17n,
-    paid: 3n,
-    closed: false,
-  });
-  expect(decodeRaceSeason(Array(10).fill("0"))).toMatchObject({ funded: false, posted: false, total: 0n });
-  expect(() => decodeRaceSeason(posted.slice(1))).toThrow("invalid_race_season");
-  expect(() => decodeRaceSeason(["2", ...posted.slice(1)])).toThrow("invalid_ledger_bool");
-});
-
-it("reads a home's race reward as unpaid until an amount is written", () => {
-  expect(decodeRaceReward(["0x789", "17", "1"])).toEqual({ wallet: "0x789", amount: 17n + (1n << 128n) });
-  expect(decodeRaceReward(["0x0", "0", "0"])).toBeNull();
-  expect(() => decodeRaceReward(["0x789", "17"])).toThrow("invalid_race_reward");
 });

@@ -16,6 +16,7 @@ export {
   readConfirmedLedgerHead,
   readFinalLedgerHead,
 } from "./codecs";
+export { raceCalldata } from "./race-rewards-abi";
 export { rpcAt, isDeploymentBlock, isContractRevert } from "./rpc";
 export { BLITZ_SLOT_PREPARATION_SECONDS } from "./blitz-timetable";
 export { readLedgerSlot, readLedgerRegistration } from "./blitz-slots";

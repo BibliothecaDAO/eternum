@@ -88,6 +88,9 @@ cmd = 'bash contracts/l3/check-native.sh build && pnpm run schema:native && pnpm
 [kind.balance-write]
 cmd = 'pnpm run build:packages && bun contracts/l3/world-native/scripts/balance-modules.ts && git add -N contracts/l3/world-native/src && git diff --binary > "$FLOW_TMP/balance.patch"'
 
+[kind.ledger-abi-write]
+cmd = 'cd contracts/l2/ledger && scarb build && node generate-abi.mjs && git add -N schema && git diff --binary -- schema > "$FLOW_TMP/ledger-abi.patch"'
+
 [kind.format-write]
 cmd = 'pnpm run format && (cd contracts/l3/world-native && scarb fmt) && (cd contracts/l3/world-native/tests && scarb fmt) && git diff --binary > "$FLOW_TMP/format.patch"'
 

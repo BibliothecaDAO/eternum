@@ -1,8 +1,9 @@
-import { Account, CallData, cairo, hash, type RpcProvider } from "starknet";
+import { Account, cairo, hash, type RpcProvider } from "starknet";
 import {
   RACE_CLAIM_WINDOW_SECONDS,
   decodeRaceReward,
   decodeRaceSeason,
+  raceCalldata,
   readConfirmedLedgerHead,
   readFinalLedgerHead,
   rpcAt,
@@ -122,7 +123,9 @@ export async function settleRace(
     closedAt: head.time,
     unpaid: owed.unpaid,
   });
-  await sendRaceCalls(ledger, provider, [{ entrypoint: "close_race", calldata: raceKey(settlement) }]);
+  await sendRaceCalls(ledger, provider, [
+    { entrypoint: "close_race", calldata: raceCalldata("close_race", raceKey(settlement)) },
+  ]);
   return null;
 }
 
@@ -133,7 +136,7 @@ function refuseUnfunded(ledger: RaceLedger): null {
   return null;
 }
 
-const raceKey = ({ chainId, gameId }: RaceSettlement) => [chainId, String(gameId)];
+const raceKey = ({ chainId, gameId }: RaceSettlement) => ({ shard: chainId, season_id: gameId });
 
 async function readRaceSeason(
   provider: RpcProvider,
@@ -143,7 +146,11 @@ async function readRaceSeason(
 ) {
   return decodeRaceSeason(
     await provider.callContract(
-      { contractAddress: ledger.rewardsAddress, entrypoint: "get_race", calldata: raceKey(settlement) },
+      {
+        contractAddress: ledger.rewardsAddress,
+        entrypoint: "get_race",
+        calldata: raceCalldata("get_race", raceKey(settlement)),
+      },
       block,
     ),
   );
@@ -168,7 +175,7 @@ async function paidHomes(ledger: FundedRaceLedger, settlement: RaceSettlement, b
         request: {
           contract_address: ledger.rewardsAddress,
           entry_point_selector: selector,
-          calldata: [settlement.chainId, settlement.gameId, home].map(hexFelt),
+          calldata: raceCalldata("get_race_reward", { ...raceKey(settlement), home }).map(hexFelt),
         },
         block_id: { block_number: block },
       })),
@@ -231,9 +238,8 @@ async function postCall(settlement: RaceSettlement, cosigner: RaceCosigner): Pro
   const signature = await cosigner.postRace({ shard: settlement.chainId, season: settlement.gameId, total });
   return {
     entrypoint: "post_race",
-    calldata: CallData.compile({
-      shard: settlement.chainId,
-      season_id: settlement.gameId,
+    calldata: raceCalldata("post_race", {
+      ...raceKey(settlement),
       total: cairo.uint256(total),
       signature_r: signature.r,
       signature_s: signature.s,
@@ -251,9 +257,8 @@ async function payCall(
   const signature = await cosigner.payRace({ shard: settlement.chainId, season: settlement.gameId, ...terms });
   return {
     entrypoint: "pay_race",
-    calldata: CallData.compile({
-      shard: settlement.chainId,
-      season_id: settlement.gameId,
+    calldata: raceCalldata("pay_race", {
+      ...raceKey(settlement),
       home: terms.home,
       wallet,
       amount: cairo.uint256(terms.amount),

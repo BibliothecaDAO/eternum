@@ -1,4 +1,6 @@
 import { beforeEach, expect, it, vi } from "vitest";
+import { response } from "../../../packages/value-ledger/test-support/abi";
+import { raceRewardsAbi } from "../../../packages/value-ledger/src/race-rewards-abi";
 import { memoryFinalFacts } from "./final-facts";
 import { settleFinishedRaces, settleRace, type RaceReceipt } from "./race-rewards";
 
@@ -51,18 +53,15 @@ const season = (
   state: Partial<Record<"funded" | "pool" | "posted" | "postedAt" | "total" | "paid" | "closed", string>>,
 ) => {
   const fields = { funded: "1", pool: "500", posted: "0", postedAt: "0", total: "0", paid: "0", closed: "0", ...state };
-  return [
-    fields.funded,
-    fields.pool,
-    "0",
-    fields.posted,
-    fields.postedAt,
-    fields.total,
-    "0",
-    fields.paid,
-    "0",
-    fields.closed,
-  ];
+  return response(raceRewardsAbi, "get_race", {
+    funded: fields.funded === "1",
+    pool: { low: fields.pool, high: 0 },
+    posted: fields.posted === "1",
+    posted_at: fields.postedAt,
+    total: { low: fields.total, high: 0 },
+    paid: { low: fields.paid, high: 0 },
+    closed: fields.closed === "1",
+  });
 };
 const posted = (state: Parameters<typeof season>[0] = {}) =>
   season({ posted: "1", postedAt: "1000", total: "30", ...state });
@@ -83,7 +82,7 @@ const payOf = (home: string, wallet: string, amount: string) => ({
   entrypoint: "pay_race",
   calldata: ["2", "7", home, String(BigInt(wallet)), amount, "0", ...signed],
 });
-const close = { contractAddress: "0x40", entrypoint: "close_race", calldata: ["0x2", "7"] };
+const close = { contractAddress: "0x40", entrypoint: "close_race", calldata: ["2", "7"] };
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -104,10 +103,7 @@ beforeEach(() => {
 it("posts a funded race's total once, under the co-signature, and pays nothing in that pass", async () => {
   rpc.read.mockResolvedValue(season({}));
   expect(await run()).toBeNull();
-  expect(rpc.read).toHaveBeenCalledWith(
-    { contractAddress: "0x40", entrypoint: "get_race", calldata: ["0x2", "7"] },
-    10,
-  );
+  expect(rpc.read).toHaveBeenCalledWith({ contractAddress: "0x40", entrypoint: "get_race", calldata: ["2", "7"] }, 10);
   expect(cosigner.postRace).toHaveBeenCalledWith({ shard: "0x2", season: 7, total: "30" });
   expect(sentCalls()).toEqual([
     { contractAddress: "0x40", entrypoint: "post_race", calldata: ["2", "7", "30", "0", ...signed] },
