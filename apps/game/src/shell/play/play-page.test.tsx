@@ -152,7 +152,6 @@ const slot: PlaytestSlot = {
   chainId: "0xa",
   name: "blitz-1",
   closesAt: new Date(4_000_000_000 * 1000).toISOString(),
-  frozenAt: null,
   closed: false,
 };
 /** A seat on a Blitz roster whose game is still being prepared (not ready), and the same game once it opens. */

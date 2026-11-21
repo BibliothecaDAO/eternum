@@ -124,7 +124,7 @@ test("the operator sets calendar phases while reads stay public", async () => {
 test("only operator recovery continues a failed run in every format", async () => {
   const { app, store, armFor } = fixture();
   for (const request of [
-    { environment: "madara.blitz", gameName: "paid", slotId: 12, groupIndex: 0 },
+    { environment: "madara.blitz", gameName: "blitz-fixture" },
     { environment: "madara.frontier", gameName: "frontier-fixture" },
     { environment: "madara.frontier", gameName: "old-factory" },
   ] as const) {
@@ -138,13 +138,8 @@ test("only operator recovery continues a failed run in every format", async () =
   }
   expect(armFor).toHaveBeenCalledTimes(3);
 });
-test("operator deletion refuses paid slots and allows an ordinary failed run", async () => {
+test("only the operator deletes an ordinary queued run", async () => {
   const { app, store } = fixture();
-  await store.enqueue({ environment: "madara.blitz", gameName: "paid", slotId: 12, groupIndex: 0 });
-  expect(
-    (await app.request("/api/factory/runs/madara.blitz/paid/actions/delete", { method: "POST", headers: token }))
-      .status,
-  ).toBe(409);
   await store.enqueue({ environment: "madara.frontier", gameName: "frontier-fixture" });
   const url = "/api/factory/runs/madara.frontier/frontier-fixture/actions/delete";
   expect((await app.request(url, { method: "POST", headers: session })).status).toBe(403);

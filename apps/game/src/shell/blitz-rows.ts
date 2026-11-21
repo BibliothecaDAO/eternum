@@ -126,4 +126,4 @@ export const slotRow = (slot: PlaytestSlot): BlitzRow => {
   };
 };
 
-const isFilling = (slot: PlaytestSlot): boolean => !slot.closed && !slot.frozenAt;
+const isFilling = (slot: PlaytestSlot): boolean => !slot.closed;

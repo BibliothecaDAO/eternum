@@ -1,8 +1,8 @@
 # Player-signed bot runs
 
 The supported launch formats are Blitz (preset 2) and Frontier. The long-format Eternum presets 3 and 103 and their
-faith, market, trade and raid commands are retired from this release. `lab:harness` plays Frontier; `lab:harness:split`
-checks Blitz launches. Each game is encoded with its own release schema.
+faith, market, trade and raid commands are retired from this release. `lab:harness` plays Frontier. Each game is
+encoded with its own release schema.
 
 `pnpm lab:harness` uses each bot's approved device to sign one v3 `Games.play` invoke at its RPC nonce. The manifest
 supplies the immutable gas bound. The public proxy adds the randomness proof. There is one action in flight per account
@@ -20,10 +20,6 @@ checkout's command bindings rather than another checkout's built packages. Run c
 `flock /tmp/eternum-client.lock` on a shared development machine.
 
 ## Ops timing commands
-
-`pnpm lab:harness:split --out <launches.json>` splits the roster and compiles each game's `create_game` calldata through
-the launch service's payload builder. It needs no credentials and sends no requests. The output keeps the preset ID,
-player count and calldata for each game. This checks launch encoding, not execution or seating.
 
 `pnpm lab:harness:burst --out <public-result.json> --receipt-checkpoint <checkpoint.json>` releases 2,000 ordinary
 signed invokes with the spike's warmed worker barrier. The built-in `wave-fixture.ts` plays the directory's Frontier

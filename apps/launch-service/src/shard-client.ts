@@ -23,19 +23,6 @@ export interface ShardGame {
   seed: bigint;
 }
 
-type RosterSeat = { account: string; wallet: string };
-
-/**
- * One game a Blitz launch creates and seats: its durable request, its frozen roster, when its run was queued, and the
- * pool account that seats it.
- */
-export interface BlitzLaunch {
-  request: CreateGameRequest;
-  players: readonly RosterSeat[];
-  createdAt: number;
-  seater: string;
-}
-
 interface CreationParams {
   preset_id: number;
   seed: unknown;
@@ -90,7 +77,7 @@ export class LaunchShard extends ShardOperator implements ReleaseChain {
     return (await this.admin("open_release", { release_id: releaseId })).transactionHash;
   }
   async create(request: CreateGameRequest, createdAt: number): Promise<LaunchGameSummary> {
-    const params = buildLaunchGameParams(request, createdAt, [], "0x0");
+    const params = launchGameParams(request, createdAt);
     const { transactionHash } = await this.admin("create_game", { params });
     const gameId = await this.gameId(request.gameName);
     if (!gameId) throw new Error("created_game_not_readable");
@@ -117,13 +104,7 @@ export class LaunchShard extends ShardOperator implements ReleaseChain {
   }
 }
 
-/** The immutable game payload shared by live launches and the offline rehearsal. */
-export function buildLaunchGameParams(
-  request: CreateGameRequest,
-  createdAt: number,
-  players: readonly RosterSeat[],
-  seater: string,
-) {
+function launchGameParams(request: CreateGameRequest, createdAt: number) {
   if (!request.gameStartTime) throw new Error("durable_launch_parameters_missing");
   const presetId = presetIdForEnvironment(request.environment);
   const config = applyDeploymentConfigOverrides(loadNativePresetConfiguration(request.environment, presetId), {
@@ -155,8 +136,8 @@ export function buildLaunchGameParams(
     duration_seconds: common.duration_seconds,
     end_grace_seconds: common.end_grace_seconds,
     dev_mode_on: common.dev_mode_on,
-    roster: players,
-    seater,
+    roster: [],
+    seater: "0x0",
     registration_start: Math.min(Math.floor(createdAt / 1000), startSettlingAt - 1),
     biome_climate: common.biome_climate_config,
     map_override: new CairoOption(

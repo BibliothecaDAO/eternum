@@ -55,7 +55,6 @@ const iso = (time: number) => new Date(time).toISOString();
 
 const toRun = (row: LaunchRunRow): LaunchRun => ({
   id: row.id,
-  slotId: row.slot_id,
   chainId: row.chain_id,
   environment: row.environment,
   name: row.name,
@@ -276,7 +275,7 @@ export class D1LaunchStore implements LaunchServiceStore {
     if (isCalendarFrontier(environment, name)) return false;
     const result = await this.db
       .prepare(
-        "DELETE FROM launch_runs WHERE chain_id = ? AND kind = 'game' AND environment = ? AND name = ? AND status <> 'running' AND slot_id IS NULL",
+        "DELETE FROM launch_runs WHERE chain_id = ? AND kind = 'game' AND environment = ? AND name = ? AND status <> 'running'",
       )
       .bind(await this.chainId(), environment, name)
       .run();
@@ -320,9 +319,9 @@ export class D1LaunchStore implements LaunchServiceStore {
     return this.db
       .prepare(
         `INSERT INTO launch_runs
-           (id, chain_id, kind, environment, name, request, status, available_at, created_at, updated_at, slot_id)
-         SELECT ?1, ?2, 'game', ?3, ?4, ?5, 'queued', ?6, ?7, ?8, ?9
-         WHERE ?10 = 0 OR EXISTS (
+           (id, chain_id, kind, environment, name, request, status, available_at, created_at, updated_at)
+         SELECT ?1, ?2, 'game', ?3, ?4, ?5, 'queued', ?6, ?7, ?8
+         WHERE ?9 = 0 OR EXISTS (
            SELECT 1 FROM season_phases WHERE phase = 'frontier'
              AND 'frontier-' || CAST(starts_at / 1000 AS INTEGER) = ?4
              AND starts_at = unixepoch(json_extract(?5, '$.gameStartTime')) * 1000
@@ -341,7 +340,6 @@ export class D1LaunchStore implements LaunchServiceStore {
         now,
         now,
         now,
-        request.slotId ?? null,
         calendarSeason ? 1 : 0,
       );
   }

@@ -43,7 +43,7 @@ describe("a Blitz lobby", () => {
 
   it("keeps a slot's lobby past its close, when the list no longer shows it, so its outcome stays in reach", () => {
     const closed = { slotId: 3, chainId: "0xa", name: "blitz-1630", closesAt: new Date(0).toISOString() };
-    const slot = { ...closed, frozenAt: "x", closed: true } as PlaytestSlot;
+    const slot = { ...closed, closed: true } as PlaytestSlot;
     expect(lobbyRowOf([], [slot], "slot-blitz-1630")).toMatchObject({ kind: "slot", slot });
     expect(lobbyRowOf([], [slot], "slot-blitz-1700")).toBeUndefined();
   });

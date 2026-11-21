@@ -23,7 +23,8 @@ close the operator's refund cancels it, after its end it aborts it, and every re
 from the ledger. D1 keeps schedule and job metadata, never a copy of a paid roster.
 
 The registrar serializes its device's shard writes and creates open-entry games. The launch service records no game
-results, and nothing posts one: the value monitor pauses payouts on any result the ledger records.
+results, and nothing posts one: the value monitor pauses payouts on any result the ledger records. Migration 0015 deletes every
+paid-slot game run that never launched, so none can run or be continued as an open-entry game.
 
 Normal game names cannot start with `check-`. Operator-only `/api/factory/operator/launcher/enrol` enrolls the Worker's
 own signer. Deployment registers the shard as pending, enrolls the Worker, hands it the launcher role, and reads that

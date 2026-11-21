@@ -11,7 +11,6 @@ vi.hoisted(() => {
     chainId: "0x52",
     name: "blitz-1630",
     closesAt: new Date(Date.now() + 3_600_000).toISOString(),
-    frozenAt: null,
     closed: false,
   };
   vi.stubGlobal("fetch", async (input: string | URL) => {

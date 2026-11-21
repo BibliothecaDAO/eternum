@@ -15,7 +15,6 @@ export interface PlaytestSlot {
   slotId: number;
   name: string;
   closesAt: string;
-  frozenAt: string | null;
   closed: boolean;
 }
 

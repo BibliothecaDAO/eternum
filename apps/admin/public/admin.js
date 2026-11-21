@@ -67,7 +67,7 @@ function renderGames(view) {
           .map(
             (slot) =>
               `<tr><td>${esc(slot.name)}</td><td><span class="state ${slot.closed ? "complete" : "open"}">${
-                slot.closed ? "closed" : slot.frozenAt ? "frozen" : "open"
+                slot.closed ? "closed" : "open"
               }</span></td><td class="end">${
                 slot.closed ? "" : `<button class="quiet" data-refund="${esc(slot.name)}">Refund</button>`
               }</td></tr>`,
@@ -256,7 +256,7 @@ document.addEventListener("click", (event) => {
       method: "POST",
       route: `${kind}/${environment}/${name}/${verb}`,
       launchPath: `/api/factory/${kind}/${environment}/${name}/actions/${verb}`,
-      note: verb === "delete" ? "Only a run that is not active and not in a paid slot can be deleted." : undefined,
+      note: verb === "delete" ? "Only a run that is not active and not a calendar season can be deleted." : undefined,
     });
   }
 });

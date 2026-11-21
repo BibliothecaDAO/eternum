@@ -15,11 +15,9 @@ export {
 } from "./codecs";
 export { rpcAt, isDeploymentBlock, isContractRevert } from "./rpc";
 export { BLITZ_SLOT_INTERVAL_SECONDS, BLITZ_SLOT_PREPARATION_SECONDS } from "./blitz-timetable";
-export { blitzSlotFitsSeason, readLedgerSlot, readLedgerRegistration, readRegistrationPage } from "./blitz-slots";
-export type { LedgerSlotKey, SlotRegistration, RegistrationPage, RegistrationQuery } from "./blitz-slots";
+export { blitzSlotFitsSeason, readLedgerSlot, readLedgerRegistration } from "./blitz-slots";
+export type { LedgerSlotKey } from "./blitz-slots";
 export type { LedgerSlot } from "./codecs";
-export { resolveBlitzRoster, splitPlaytestRoster } from "./blitz-roster";
-export type { RegistrationIdentity } from "./blitz-roster";
 
 export { officialChain, requireActiveChain, readRegisteredShard } from "./official-shards";
 export { isDevShardChain } from "./dev-shard";

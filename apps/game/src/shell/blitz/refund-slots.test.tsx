@@ -66,7 +66,6 @@ const slot = (slotId: number, closed = true): PlaytestSlot => ({
   chainId: "0x52",
   name: `slot-${slotId}`,
   closesAt: new Date(0).toISOString(),
-  frozenAt: closed ? "x" : null,
   closed,
 });
 

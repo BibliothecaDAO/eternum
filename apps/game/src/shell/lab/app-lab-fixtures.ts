@@ -646,7 +646,6 @@ export const labSlots = (screen: LabScreen) => {
         chainId: LAB_CHAIN,
         name: "blitz-1630",
         closesAt: new Date(closesAt * 1000).toISOString(),
-        frozenAt: closed ? new Date((closesAt + 60) * 1000).toISOString() : null,
         closed,
       },
     ],

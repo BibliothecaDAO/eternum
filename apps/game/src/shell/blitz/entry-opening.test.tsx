@@ -56,7 +56,6 @@ const SLOT_ROW: PlaytestSlot = {
   chainId: "0x52",
   name: "blitz-7",
   closesAt: new Date(Date.now() + 3_600_000).toISOString(),
-  frozenAt: "x",
   closed: false,
 };
 

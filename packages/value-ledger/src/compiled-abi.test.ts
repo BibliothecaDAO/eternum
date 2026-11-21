@@ -1,4 +1,4 @@
-import { gamesAbi, response } from "../test-support/abi";
+import { response } from "../test-support/abi";
 import { ledgerAbi } from "../test-support/ledger-abi";
 import { describe, expect, it, vi } from "vitest";
 import { CallData, type RpcProvider } from "starknet";
@@ -14,7 +14,6 @@ import {
   decodeSeasonWinner,
   decodeWithdrawalPayment,
 } from "./codecs";
-import { readBlitzRoster } from "./shard-roster";
 
 describe("committed contract readbacks", () => {
   it("reads absent registrations, payments, credits and results as the stored defaults", async () => {
@@ -289,17 +288,5 @@ describe("committed contract readbacks", () => {
       presetId: 9,
       seed: "22",
     });
-  });
-  it("reads the Games roster serialized by its compiled player type", async () => {
-    const callContract = vi.fn().mockResolvedValue(
-      response(gamesAbi, "blitz_roster", [
-        { account: 17, wallet: 18 },
-        { account: 19, wallet: 20 },
-      ]),
-    );
-    expect(await readBlitzRoster({ callContract } as unknown as RpcProvider, "0x10", 7, 20)).toEqual([
-      { account: "17", wallet: "18" },
-      { account: "19", wallet: "20" },
-    ]);
   });
 });

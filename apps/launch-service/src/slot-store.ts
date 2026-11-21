@@ -9,7 +9,6 @@ interface SlotRow {
   slot_id: number;
   name: string;
   closes_at: number;
-  frozen_at: number | null;
 }
 
 /** D1 stores scheduling metadata only; paid player ownership never lives in this database. */
@@ -88,6 +87,5 @@ const toSlot = (row: SlotRow, now: number): PlaytestSlot => ({
   slotId: row.slot_id,
   name: row.name,
   closesAt: new Date(row.closes_at).toISOString(),
-  frozenAt: row.frozen_at === null ? null : new Date(row.frozen_at).toISOString(),
   closed: row.closes_at <= now,
 });

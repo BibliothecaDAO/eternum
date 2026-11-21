@@ -15,8 +15,6 @@ interface SharedLaunchOptions {
 }
 
 export interface CreateGameRequest extends SharedLaunchOptions {
-  slotId?: number;
-  groupIndex?: number;
   gameName: string;
   gameStartTime?: string;
 }
