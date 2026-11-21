@@ -11,6 +11,20 @@ const layerRuinOdds = [
   { common: 0, uncommon: 0, rare: 6000, epic: 3000, legendary: 1000 },
 ];
 
+const fieldsAndToolsPrices = [500, 1000, 2500, 5000, 10000].map((cost) => ({ essenceCost: cost, laborCost: cost }));
+const logisticsPrices = [
+  [5000, 1000],
+  [10000, 2500],
+  [25000, 5000],
+  [50000, 10000],
+  [100000, 25000],
+].map(([essenceCost, laborCost]) => ({ essenceCost: essenceCost!, laborCost: laborCost! }));
+const researchPrices: Record<number, { essenceCost: number; laborCost: number }[]> = {
+  [research.ROW_FARM]: fieldsAndToolsPrices,
+  [research.ROW_WORKSHOP]: fieldsAndToolsPrices,
+  [research.ROW_SUPPLY_YARD]: logisticsPrices,
+};
+
 const orderAspects: NativePreset["orderAspects"] = orders
   .filter(({ aspect }) => aspect !== null)
   .map(({ aspect }) => aspect!);
@@ -36,10 +50,20 @@ export const frontierSeasonOnePreset = {
         [ResourcesIds.Paladin]: 100 / 3600,
         [ResourcesIds.Knight]: 100 / 3600,
         [ResourcesIds.Labor]: 100 / 3600,
+        [ResourcesIds.Wheat]: 300 / 3600,
       },
     },
     buildings: {
-      simpleBuildingCost: { [research.SCOUTS_LODGE]: [{ resource: ResourcesIds.Labor, amount: 500 }] },
+      simpleBuildingCost: {
+        [research.FARM]: [{ resource: ResourcesIds.Labor, amount: 500 }],
+        [research.BARRACKS]: [{ resource: ResourcesIds.Labor, amount: 500 }],
+        [research.SCOUTS_LODGE]: [{ resource: ResourcesIds.Labor, amount: 500 }],
+        [research.WORKSHOP]: [{ resource: ResourcesIds.Labor, amount: 1000 }],
+        [research.SUPPLY_YARD]: [
+          { resource: ResourcesIds.Essence, amount: 5000 },
+          { resource: ResourcesIds.Labor, amount: 1000 },
+        ],
+      },
     },
     startingResources: [
       { resource: ResourcesIds.Knight, amount: 3000 },
@@ -64,7 +88,8 @@ export const frontierSeasonOnePreset = {
     beastStrongUpper: 495 * 2 ** index,
     chest: layerRuinOdds[index] ?? depth.chest,
   })),
-  board: { ...frontierPreset.board!, laborStoreCaps: [5000, 15000, 50000, 100000] },
+  board: { ...frontierPreset.board!, workshopRate: 200 / 3600, laborStoreCaps: [5000, 15000, 50000, 100000] },
+  research: frontierPreset.research.map((price) => ({ ...price, ...researchPrices[price.row]?.[price.tier - 1] })),
   labor: null,
   discovery: { ...frontierPreset.discovery, beastsBps: 900 },
   dailyQuest: { baseCounts: [1, 1, 1, 1, 1, 2, 15], labor: 1000, essence: 1500, bonusPercent: 150 },
