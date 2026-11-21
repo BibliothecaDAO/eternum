@@ -10,14 +10,10 @@ pub trait IResourceFixture<T> {
     fn start(ref self: T, key: ResourceKey);
     fn settle(ref self: T, key: ResourceKey);
     fn destroy(ref self: T, key: ResourceKey);
-    fn change_capacity(ref self: T, key: ResourceKey, amount: u128, increase: bool);
-    fn stop_at(ref self: T, key: ResourceKey, resource_type: u8, rate: u64, now: u32);
     fn balance(self: @T, key: ResourceKey) -> u128;
-    fn production(self: @T, key: ResourceKey) -> Production;
     fn weight(self: @T, key: ResourceKey) -> Weight;
     fn grant_at(ref self: T, key: ResourceKey, resource_type: u8, amount: u128, unit_weight: u128, now: u32) -> u128;
     fn spend_at(ref self: T, key: ResourceKey, resource_type: u8, amount: u128, unit_weight: u128, now: u32);
-    fn start_at(ref self: T, key: ResourceKey, resource_type: u8, rate: u64, output: u128, now: u32);
     fn read_slot(self: @T, key: ResourceKey, resource_type: u8) -> (u128, Production, Weight);
 }
 
@@ -67,17 +63,8 @@ pub mod ResourceFixture {
         fn destroy(ref self: ContractState, key: ResourceKey) {
             self.resources.destroy(key);
         }
-        fn change_capacity(ref self: ContractState, key: ResourceKey, amount: u128, increase: bool) {
-            self.resources.change_capacity(key, amount, increase);
-        }
-        fn stop_at(ref self: ContractState, key: ResourceKey, resource_type: u8, rate: u64, now: u32) {
-            self.resources.stop_production(key, resource_type, rate, 1, now, 0);
-        }
         fn balance(self: @ContractState, key: ResourceKey) -> u128 {
             crate::logic::resources::balance(key, 23)
-        }
-        fn production(self: @ContractState, key: ResourceKey) -> Production {
-            crate::logic::resources::production(key, 23)
         }
         fn weight(self: @ContractState, key: ResourceKey) -> Weight {
             crate::logic::resources::weight(key)
@@ -91,9 +78,6 @@ pub mod ResourceFixture {
             ref self: ContractState, key: ResourceKey, resource_type: u8, amount: u128, unit_weight: u128, now: u32,
         ) {
             self.resources.spend_resource(key, resource_type, amount, unit_weight, now, 0);
-        }
-        fn start_at(ref self: ContractState, key: ResourceKey, resource_type: u8, rate: u64, output: u128, now: u32) {
-            self.resources.start_production(key, resource_type, rate, output, 1, now, 0);
         }
         fn read_slot(self: @ContractState, key: ResourceKey, resource_type: u8) -> (u128, Production, Weight) {
             (
