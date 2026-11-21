@@ -1,9 +1,10 @@
 pub use world_test_support::tests::combat_actions::*;
-
+const NOW: u64 = super::play_fixture::FIXTURE_START;
 
 #[test]
 fn a_surviving_explorer_loots_the_defeated_army_before_its_resources_are_deleted() {
-    let (d, home, target, attacker, defender) = setup(false);
+    let (d, home, target, attacker, defender) = setup();
+    into_deep(d, home, target, attacker, defender);
     grant(d, ResourceKey { game_id: 3, entity_id: defender }, 2, 90);
     let attacker_before = troop(d, attacker).unwrap();
     let defender_before = troop(d, defender).unwrap();
@@ -14,7 +15,7 @@ fn a_surviving_explorer_loots_the_defeated_army_before_its_resources_are_deleted
             Command::Battle(
                 AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: resources(70) },
             ),
-            80,
+            NOW,
         ),
     );
     assert!(troop(d, defender).is_none());
@@ -36,7 +37,7 @@ fn a_surviving_explorer_loots_the_defeated_army_before_its_resources_are_deleted
         999.try_into().unwrap(), defender_before.troops.count, Troops { count: 0, ..defender_before.troops },
     )
         .serialize(ref expected);
-    80_u64.serialize(ref expected);
+    NOW.serialize(ref expected);
     let mut found = false;
     for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
         if *event.keys.at(0) == selector!("BattleEvent") {
@@ -53,7 +54,8 @@ fn a_surviving_explorer_loots_the_defeated_army_before_its_resources_are_deleted
 
 #[test]
 fn a_won_battle_moves_exactly_the_requested_loot_of_each_resource_onto_the_attackers_balance() {
-    let (d, _, _, attacker, defender) = setup(false);
+    let (d, home, target, attacker, defender) = setup();
+    into_deep(d, home, target, attacker, defender);
     grant(d, ResourceKey { game_id: 3, entity_id: attacker }, 2, 5);
     grant(d, ResourceKey { game_id: 3, entity_id: defender }, 2, 90);
     grant(d, ResourceKey { game_id: 3, entity_id: defender }, 3, 40);
@@ -63,7 +65,7 @@ fn a_won_battle_moves_exactly_the_requested_loot_of_each_resource_onto_the_attac
         execute(
             d,
             Command::Battle(AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: loot }),
-            80,
+            NOW,
         ),
     );
     assert!(troop(d, defender).is_none());
@@ -77,7 +79,8 @@ fn a_won_battle_moves_exactly_the_requested_loot_of_each_resource_onto_the_attac
 
 #[test]
 fn failed_loot_and_duplicate_resources_roll_back_combat() {
-    let (d, _, _, attacker, defender) = setup(false);
+    let (d, home, target, attacker, defender) = setup();
+    into_deep(d, home, target, attacker, defender);
     grant(d, ResourceKey { game_id: 3, entity_id: defender }, 2, 90);
     let before_attacker = troop(d, attacker);
     let before_defender = troop(d, defender);
@@ -88,7 +91,7 @@ fn failed_loot_and_duplicate_resources_roll_back_combat() {
         assert_terminal_rejection(
             d,
             Command::Battle(AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: amounts }),
-            80,
+            NOW,
         );
         assert_eq!(troop(d, attacker), before_attacker);
         assert_eq!(troop(d, defender), before_defender);
@@ -97,142 +100,58 @@ fn failed_loot_and_duplicate_resources_roll_back_combat() {
 }
 
 #[test]
-fn blitz_ethereal_battle_records_exact_damage_and_zero_rolls() {
-    let (d, _, _, attacker, defender) = setup(true);
-    move_to(d, attacker, Coord { alt: true, x: 2000000, y: 2000000 });
-    move_to(d, defender, Coord { alt: true, x: 2000015, y: 2000000 });
-    super::state::assert_inline_armies_have_no_progress(d.games, 3, array![attacker, defender].span());
-    let before_attacker = troop(d, attacker).unwrap();
-    let before_defender = troop(d, defender).unwrap();
-    let game = crate::game::IGameDispatcher { contract_address: d.games };
-    let rules = crate::game::IGameDispatcherTrait::rules(game, 3);
-    let mut expected_attacker = before_attacker.troops;
-    let mut expected_defender = before_defender.troops;
-    expected_attacker
-        .attack_with_context(
-            ref expected_defender,
-            crate::combat::CombatContext {
-                day_unit_seconds: 0,
-                timestamp: 80,
-                attacker_biome: crate::biome::Biome::Underground,
-                defender_biome: crate::biome::Biome::Underground,
-                attack_distance: 1,
-                attacker_is_structure_guard: false,
-                defender_is_structure_guard: false,
-                attacker_oaths: 0,
-                defender_oaths: 0,
-                attacker_twin_damage: 0,
+fn combat_outcomes_ignore_random_roots_in_the_deep() {
+    let (d, home, target, attacker, defender) = setup();
+    into_deep(d, home, target, attacker, defender);
+    let attacker = resolved(d, attacker).unwrap();
+    let defender = resolved(d, defender).unwrap();
+    let mut previous = None;
+    for raw_root in array![123_u256, 987654321_u256] {
+        let context = snforge_std::interact_with_state(
+            d.games,
+            || {
+                let execution = crate::commands::load_context(3, raw_root, NOW);
+                crate::logic::combat::combat_context(3, attacker, defender, execution)
             },
-            rules.troop_stamina_config,
-            rules.troop_damage_config,
-            rules.tick_config.armies_tick_in_seconds,
-            5,
         );
-    let mut spy = spy_events();
-    assert!(
-        execute(
-            d,
-            Command::Battle(
-                AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: array![].span() },
-            ),
-            80,
-        ),
-    );
-    assert_eq!(troop(d, attacker).unwrap().troops, expected_attacker);
-    assert_eq!(expected_defender.count, 0);
-    assert!(troop(d, defender).is_none());
-    super::state::assert_inline_armies_have_no_progress(d.games, 3, array![attacker, defender].span());
-    let mut expected = array![];
-    before_attacker.owner.serialize(ref expected);
-    before_defender.coord.serialize(ref expected);
-    let empty: Span<ResourceAmount> = array![].span();
-    empty.serialize(ref expected);
-    crate::combat_actions::battle_side(d.actor, before_attacker.troops.count, expected_attacker)
-        .serialize(ref expected);
-    crate::combat_actions::battle_side(999.try_into().unwrap(), before_defender.troops.count, expected_defender)
-        .serialize(ref expected);
-    80_u64.serialize(ref expected);
-    let mut found = false;
-    for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
-        for key in event.keys.span() {
-            assert!(*key != 'ArmyProgress', "inline death emitted progress");
-        }
-        if *event.keys.at(0) == selector!("BattleEvent") {
-            assert_eq!(event.data.span(), expected.span());
-            found = true;
-        }
-    }
-    assert!(found);
-}
-
-#[test]
-fn combat_outcomes_ignore_random_roots_on_surface_and_ethereal() {
-    let (d, _, _, attacker, defender) = setup_with_rule_mask(false, 0, 0);
-    for alt in array![false, true] {
-        let stride = if alt {
-            15
-        } else {
-            1
-        };
-        move_to(d, attacker, Coord { alt, x: 2000500, y: 2000500 });
-        move_to(d, defender, Coord { alt, x: 2000500 + stride, y: 2000500 });
-        let attacker = troop(d, attacker).unwrap();
-        let defender = troop(d, defender).unwrap();
-        let mut previous = None;
-        for raw_root in array![123_u256, 987654321_u256] {
-            let context = snforge_std::interact_with_state(
-                d.games,
-                || {
-                    let execution = crate::commands::load_context(3, raw_root, 80);
-                    crate::logic::combat::combat_context(3, attacker, defender, execution)
-                },
+        let mut alpha = attacker.troops;
+        let mut bravo = defender.troops;
+        let rules = crate::game::IGameDispatcherTrait::rules(
+            crate::game::IGameDispatcher { contract_address: d.games }, 3,
+        );
+        alpha
+            .attack_with_context(
+                ref bravo,
+                context,
+                rules.troop_stamina_config,
+                rules.troop_damage_config,
+                rules.tick_config.armies_tick_in_seconds,
+                0,
             );
-            let mut alpha = attacker.troops;
-            let mut bravo = defender.troops;
-            let rules = crate::game::IGameDispatcherTrait::rules(
-                crate::game::IGameDispatcher { contract_address: d.games }, 3,
-            );
-            alpha
-                .attack_with_context(
-                    ref bravo,
-                    context,
-                    rules.troop_stamina_config,
-                    rules.troop_damage_config,
-                    rules.tick_config.armies_tick_in_seconds,
-                    0,
-                );
-            let outcome = (alpha.count, bravo.count);
-            assert!(outcome != (attacker.troops.count, defender.troops.count));
-            if let Some(expected) = previous {
-                assert_eq!(outcome, expected);
-            }
-            previous = Some(outcome);
+        let outcome = (alpha.count, bravo.count);
+        assert!(outcome != (attacker.troops.count, defender.troops.count));
+        if let Some(expected) = previous {
+            assert_eq!(outcome, expected);
         }
+        previous = Some(outcome);
     }
 }
 
 #[test]
-fn surface_battle_records_exact_damage_and_zero_rolls() {
-    let (d, _, _, attacker, defender) = setup_with_mode(false, 0, 0);
-    // Away from the realms the fixture settles around (2000000, 2000000), so both armies stand on open surface.
-    let origin = Coord { alt: false, x: 2000500, y: 2000500 };
-    move_to(d, attacker, origin);
-    move_to(d, defender, crate::geometry::neighbor(origin, 0));
-    let surface: crate::biome::Biome = IMapLogicDispatcher { contract_address: d.games }
+fn a_deep_battle_records_exact_damage_and_zero_rolls() {
+    let (d, home, target, attacker, defender) = setup();
+    into_deep(d, home, target, attacker, defender);
+    let tile = crate::geometry::tile_key(3, troop(d, defender).unwrap().coord);
+    let biome: crate::biome::Biome = IMapLogicDispatcher { contract_address: d.games }
         .biome(
-            crate::geometry::tile_key(3, crate::geometry::neighbor(origin, 0)),
+            tile,
             crate::commands::biome_context(
-                crate::commands::ExecutionContext {
-                    timestamp: 100,
-                    ..crate::tests::context(
-                        d.games, (crate::geometry::tile_key(3, crate::geometry::neighbor(origin, 0))).game_id,
-                    ),
-                },
+                crate::commands::ExecutionContext { timestamp: NOW, ..crate::tests::context(d.games, 3) },
             ),
         )
         .into();
-    let before_attacker = troop(d, attacker).unwrap();
-    let before_defender = troop(d, defender).unwrap();
+    let before_attacker = resolved(d, attacker).unwrap();
+    let before_defender = resolved(d, defender).unwrap();
     let game = crate::game::IGameDispatcher { contract_address: d.games };
     let rules = crate::game::IGameDispatcherTrait::rules(game, 3);
     let mut expected_attacker = before_attacker.troops;
@@ -241,11 +160,9 @@ fn surface_battle_records_exact_damage_and_zero_rolls() {
         .attack_with_context(
             ref expected_defender,
             crate::combat::CombatContext {
-                day_unit_seconds: 0,
-                timestamp: 80,
-                attacker_biome: surface,
-                defender_biome: surface,
-                attack_distance: 1,
+                timestamp: NOW,
+                attacker_biome: biome,
+                defender_biome: biome,
                 attacker_is_structure_guard: false,
                 defender_is_structure_guard: false,
                 attacker_oaths: 0,
@@ -264,12 +181,12 @@ fn surface_battle_records_exact_damage_and_zero_rolls() {
             Command::Battle(
                 AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: array![].span() },
             ),
-            80,
+            NOW,
         ),
     );
-    assert_eq!(troop(d, attacker).unwrap().troops, expected_attacker);
+    assert_eq!(resolved(d, attacker).unwrap().troops, expected_attacker);
     assert_eq!(expected_defender.count, 0);
-    assert!(troop(d, defender).is_none());
+    assert!(resolved(d, defender).is_none());
     let mut expected = array![];
     before_attacker.owner.serialize(ref expected);
     before_defender.coord.serialize(ref expected);
@@ -279,7 +196,7 @@ fn surface_battle_records_exact_damage_and_zero_rolls() {
         .serialize(ref expected);
     crate::combat_actions::battle_side(999.try_into().unwrap(), before_defender.troops.count, expected_defender)
         .serialize(ref expected);
-    80_u64.serialize(ref expected);
+    NOW.serialize(ref expected);
     let mut found = false;
     for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
         if *event.keys.at(0) == selector!("BattleEvent") {
@@ -288,33 +205,11 @@ fn surface_battle_records_exact_damage_and_zero_rolls() {
         }
     }
     assert!(found);
-}
-
-#[test]
-fn cross_layer_battles_require_matching_coordinates_and_an_adjacent_spire() {
-    let (d, _, _, attacker, defender) = setup(false);
-    let origin = troop(d, attacker).unwrap().coord;
-    let command = Command::Battle(
-        AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: array![].span() },
-    );
-    move_to(d, defender, Coord { alt: true, ..origin });
-    assert_terminal_rejection(d, command, 80);
-    let map = IMapLogicDispatcher { contract_address: d.games };
-    let spire = crate::geometry::spire_neighbor(origin, 1);
-    start_cheat_caller_address(d.games, d.games);
-    map.occupy(crate::geometry::tile_key(3, spire), 888, 35, true);
-    stop_cheat_caller_address(d.games);
-    move_to(d, defender, Coord { alt: true, x: origin.x + 1, ..origin });
-    assert_terminal_rejection(d, command, 80);
-    move_to(d, defender, Coord { alt: true, ..origin });
-    assert!(execute(d, command, 80));
-    assert!(troop(d, attacker).is_some());
-    assert!(troop(d, defender).is_none());
 }
 
 #[test]
 fn guard_attacks_reject_slots_outside_the_structures_limit() {
-    let (d, home, _, _, defender) = setup(false);
+    let (d, home, _, _, defender) = setup();
     let original = IStructureOperationsDispatcher { contract_address: d.games }.structure(home).unwrap();
     set_fixture(
         d.games,
@@ -339,7 +234,7 @@ fn guard_attacks_reject_slots_outside_the_structures_limit() {
                 explorer_id: defender,
             },
         ),
-        80,
+        NOW,
     );
     assert_eq!(troop(d, defender), before);
     assert_eq!(guard(d, home, 1).troops.count, 100 * RESOURCE_PRECISION);
@@ -347,7 +242,8 @@ fn guard_attacks_reject_slots_outside_the_structures_limit() {
 
 #[test]
 fn mutual_destruction_does_not_recreate_resource_rows_for_loot() {
-    let (d, _, _, attacker, defender) = setup(false);
+    let (d, home, target, attacker, defender) = setup();
+    into_deep(d, home, target, attacker, defender);
     let mut explorer = troop(d, attacker).unwrap();
     explorer.troops.count = RESOURCE_PRECISION;
     crate::tests::resource_commands::set_explorer_fixture(
@@ -361,7 +257,7 @@ fn mutual_destruction_does_not_recreate_resource_rows_for_loot() {
             Command::Battle(
                 AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: resources(90) },
             ),
-            80,
+            NOW,
         ),
     );
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
@@ -377,88 +273,57 @@ fn mutual_destruction_does_not_recreate_resource_rows_for_loot() {
 }
 
 #[test]
-fn structure_capture_ignores_guards_outside_the_slot_limit() {
-    let (d, home, target, attacker, defender) = setup(false);
-    limit_guards(d, target, 1);
-    set_guard(d, target, 3, 100000);
+fn a_site_clear_ignores_guards_outside_the_slot_limit() {
+    let (d, _, _, attacker, _) = setup();
+    let site = camp(d, attacker);
+    limit_guards(d, site, 1);
+    set_guard(d, site, 3, 100000);
     let before = troop(d, attacker).unwrap().troops.count;
     assert!(
         execute(
             d,
             Command::BattleGuard(
-                crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id, relic_slot: None },
+                crate::commands::Battle { attacker_id: attacker, defender_id: site.entity_id, relic_slot: None },
             ),
-            80,
+            NOW,
         ),
     );
-    assert_eq!(IStructureOperationsDispatcher { contract_address: d.games }.structure(target).unwrap().owner, d.actor);
+    assert!(IStructureOperationsDispatcher { contract_address: d.games }.structure(site).is_none());
     assert_eq!(troop(d, attacker).unwrap().troops.count, before);
-    crate::tests::state::assert_spatial_indexes(
-        d.games,
-        3,
-        array![home.entity_id, target.entity_id, attacker, defender].span(),
-        array![troop(d, attacker).unwrap().coord, troop(d, defender).unwrap().coord].span(),
-    );
-}
-
-#[test]
-fn capturing_a_players_realm_records_both_owners_in_one_capture_story() {
-    let (d, _, target, attacker, _) = setup(false);
-    let before = IStructureOperationsDispatcher { contract_address: d.games }.structure(target).unwrap();
-    assert_eq!(before.base.category, 1);
-    assert_eq!(before.owner, 999.try_into().unwrap());
-    let mut spy = spy_events();
-    assert!(
-        execute(
-            d,
-            Command::BattleGuard(
-                crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id, relic_slot: None },
-            ),
-            80,
-        ),
-    );
-    let mut captures = 0;
-    let mut stories = 0_u32;
-    for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
-        if *event.keys.at(0) != selector!("StoryEvent") {
-            continue;
-        }
-        let mut keys = event.keys.span().slice(1, event.keys.len() - 1);
-        let mut data = event.data.span();
-        let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
-
-        stories += 1;
-        if let crate::ownership::Story::StructureCapturedStory(capture) = story.story {
-            assert_eq!(capture.previous_owner, before.owner);
-            assert_eq!(capture.new_owner, d.actor);
-            assert_eq!(story.entity_id, Some(target.entity_id));
-            assert_eq!(story.owner, Some(d.actor));
-            assert_eq!(story.timestamp, 80);
-            captures += 1;
-        }
-    }
-    assert_eq!(captures, 1);
-    assert_eq!(IStructureOperationsDispatcher { contract_address: d.games }.structure(target).unwrap().owner, d.actor);
 }
 
 #[test]
 fn guard_targeting_preserves_highest_occupied_functional_slot_first() {
-    let (d, _, target, attacker, _) = setup(false);
-    limit_guards(d, target, 4);
-    set_guard(d, target, 0, 1000);
-    set_guard(d, target, 2, 1);
-    let delta = guard(d, target, 0);
+    let (d, _, _, attacker, _) = setup();
+    let site = camp(d, attacker);
+    limit_guards(d, site, 4);
+    set_guard(d, site, 0, 1000);
+    set_guard(d, site, 2, 1);
+    let delta = guard(d, site, 0);
     assert!(
         execute(
             d,
             Command::BattleGuard(
-                crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id, relic_slot: None },
+                crate::commands::Battle { attacker_id: attacker, defender_id: site.entity_id, relic_slot: None },
             ),
-            80,
+            NOW,
         ),
     );
-    assert_eq!(guard(d, target, 0), delta);
-    assert_eq!(guard(d, target, 2).troops.count, 0);
+    assert_eq!(guard(d, site, 0), delta);
+    assert_eq!(guard(d, site, 2).troops.count, 0);
+    assert!(IStructureOperationsDispatcher { contract_address: d.games }.structure(site).is_some());
+}
+
+#[test]
+fn season_one_refuses_an_owned_target_without_spending() {
+    assert!(crate::balance::rules::SWITCHES.mode_rules & crate::rules::UNOWNED_TARGETS != 0);
+    let (d, _, target, attacker, _) = setup();
+    let command = Command::BattleGuard(
+        crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id, relic_slot: None },
+    );
+    let before = troop(d, attacker);
+    assert_terminal_rejection(d, command, NOW);
+    assert_eq!(troop(d, attacker), before);
     assert_eq!(
         IStructureOperationsDispatcher { contract_address: d.games }.structure(target).unwrap().owner,
         999.try_into().unwrap(),
@@ -466,79 +331,70 @@ fn guard_targeting_preserves_highest_occupied_functional_slot_first() {
 }
 
 #[test]
-fn unowned_target_rule_rejects_owned_sites_and_allows_capture_of_an_unowned_site() {
-    let mut rules = super::play_fixture::rules();
-    rules.mode_rules = crate::rules::UNOWNED_TARGETS;
-    rules.battle_config.regular_immunity_ticks = 0;
-    rules.troop_stamina_config.stamina_initial = 120;
-    let (d, home, target) = super::resource_commands::setup_with_rules(rules);
-    super::resource_commands::fund_troops(d, home, 26, 100 * RESOURCE_PRECISION);
-    assert!(
-        execute(
-            d,
-            Command::CreateExplorer(
-                CreateExplorer {
-                    slot: 0,
-                    structure_id: home.entity_id,
-                    category: 0,
-                    tier: 0,
-                    amount: 100 * RESOURCE_PRECISION,
-                    direction: 0,
-                },
-            ),
-            80,
-        ),
-    );
-    let structures = IStructureOperationsDispatcher { contract_address: d.games };
-    let attacker = *structures.home_armies(home).at(0);
-    move_fixture(d, attacker, 2000009);
-    let mut record = structures.structure(target).unwrap();
-    record.owner = 999.try_into().unwrap();
-    set_fixture(
-        d.games,
-        selector!("structures"),
-        selector!("structures"),
-        array![3, target.entity_id.into()].span(),
-        StructureRecord {
-            owner: record.owner,
-            base: record.base,
-            resources_packed: record.resources_packed,
-            metadata: record.metadata,
-        },
-    );
-    let command = Command::BattleGuard(
-        crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id, relic_slot: None },
-    );
-    let before = troop(d, attacker);
-    assert_terminal_rejection(d, command, 80);
-    assert_eq!(troop(d, attacker), before);
-    assert_eq!(structures.structure(target).unwrap().owner, record.owner);
-    record.owner = 0.try_into().unwrap();
-    set_fixture(
-        d.games,
-        selector!("structures"),
-        selector!("structures"),
-        array![3, target.entity_id.into()].span(),
-        StructureRecord {
-            owner: record.owner,
-            base: record.base,
-            resources_packed: record.resources_packed,
-            metadata: record.metadata,
-        },
-    );
-    assert!(execute(d, command, 80));
-    assert_eq!(structures.structure(target).unwrap().owner, d.actor);
-}
-
-#[test]
 fn season_one_allows_back_to_back_attacks_without_a_cooldown() {
-    let (d, _, _, attacker, defender) = setup_with_cooldown(false, 0, 0, 0, (1000, 1000));
-    assert_eq!(crate::tests::context(d.games, 3).rules.unbox().battle_config.cooldown_seconds, 0);
+    assert_eq!(crate::balance::rules::BATTLE_CONFIG.cooldown_seconds, 0);
+    let (d, home, target, attacker, defender) = setup_with_counts((1000, 1000));
+    into_deep(d, home, target, attacker, defender);
     let attack = Command::Battle(
         AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: array![].span() },
     );
-    assert!(execute(d, attack, 80), "first attack failed");
+    super::resource_commands::assert_executes(d, 3, attack, NOW);
     assert!(troop(d, attacker).is_some() && troop(d, defender).is_some());
-    assert_eq!(troop(d, attacker).unwrap().troops.battle_cooldown_end, 80);
-    assert!(execute(d, attack, 80), "second attack failed");
+    assert_eq!(troop(d, attacker).unwrap().troops.battle_cooldown_end, NOW.try_into().unwrap());
+    assert!(execute(d, attack, NOW), "second attack failed");
+}
+
+fn into_deep(d: super::Deployment, home: ResourceKey, target: ResourceKey, attacker: u64, defender: u64) {
+    let center = crate::deep::center(crate::logic::settlement::spacing());
+    move_to(d, attacker, center);
+    move_to(d, defender, crate::geometry::neighbor(center, 0));
+    let context = crate::commands::ExecutionContext { timestamp: NOW, ..crate::tests::context(d.games, 3) };
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            crate::logic::deep_armies::enter(
+                ExplorerKey { game_id: 3, explorer_id: attacker }, home.entity_id, context,
+            );
+            crate::logic::deep_armies::enter(
+                ExplorerKey { game_id: 3, explorer_id: defender }, target.entity_id, context,
+            );
+            let own = crate::logic::aspects::home_aspect(home);
+            let packed = crate::logic::aspects::rules();
+            let mut order = 1;
+            while crate::aspects::order_aspect(packed, order) == own {
+                order += 1;
+            }
+            starknet::storage::StorageMapWriteAccess::write(
+                crate::state::write().settlements.home_aspects,
+                (target.game_id, target.entity_id),
+                crate::aspects::order_aspect(packed, order),
+            );
+        },
+    );
+}
+
+fn camp(d: super::Deployment, attacker: u64) -> ResourceKey {
+    let army = troop(d, attacker).unwrap();
+    let context = crate::commands::ExecutionContext { timestamp: NOW, ..crate::tests::context(d.games, 3) };
+    start_cheat_caller_address(d.games, d.games);
+    let site = crate::structures::IStructureOperationsDispatcherTrait::create_discovery(
+        IStructureOperationsDispatcher { contract_address: d.games },
+        3,
+        army.owner,
+        crate::geometry::neighbor(army.coord, 0),
+        crate::discovery::Discovery::Camp,
+        0,
+        NOW,
+        crate::commands::action_context(context),
+    );
+    stop_cheat_caller_address(d.games);
+    let site = ResourceKey { game_id: 3, entity_id: site };
+    for slot in 0_u8..4 {
+        set_guard(d, site, slot, 0);
+    }
+    site
+}
+
+fn resolved(d: super::Deployment, id: u64) -> Option<ExplorerTroops> {
+    GameState { contract_address: d.games }.resolved_explorer(ExplorerKey { game_id: 3, explorer_id: id })
 }
