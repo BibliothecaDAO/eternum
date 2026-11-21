@@ -1055,7 +1055,7 @@ it("requires the selected Aspect in both the founding command and its membership
     ].map(([resource_type, balance]) => ({ model: "ResourceBalance", value: { resource_type, balance } })),
   ];
   const founded = {
-    command: { calldata: ["1", "0", "0", "0", "10", "1", "0", "3"] },
+    command: { span: ["10", "1", "0", "3"] },
     answered: [
       { model: "HomeAspect", value: { home: 7, aspect: 3 } },
       { model: "AspectMembers", value: { aspect: 3, members: 1 } },
@@ -1077,7 +1077,7 @@ it("requires the selected Aspect in both the founding command and its membership
         armyButtons,
         orders,
         choice,
-        founded: [{ ...founded, command: { calldata: ["1", "0", "0", "0", "10", "1", "0", "2"] } }],
+        founded: [{ ...founded, command: { span: ["10", "1", "0", "2"] } }],
       },
     }).status,
   ).toBe("failed");
