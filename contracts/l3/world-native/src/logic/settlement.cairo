@@ -38,7 +38,7 @@ pub mod SettlementPoolState {
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::RowSet;
     use crate::settlement::{SettlementLocation, SettlementPool, SettlementRules};
-    use crate::settlement_grid::{settlement_location, target_pool_size};
+    use crate::settlement_grid::settlement_location;
     use crate::troops::Coord;
 
     #[storage]
@@ -88,17 +88,8 @@ pub mod SettlementPoolState {
             }
         }
         fn claim_village(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            center: Coord,
-            rules: SettlementRules,
-            registered: u16,
-            seed: u256,
+            ref self: ComponentState<TContractState>, game_id: u32, center: Coord, rules: SettlementRules, seed: u256,
         ) -> Coord {
-            let target = target_pool_size(registered, rules.registration_limit);
-            if self.prepare_pool(game_id, false, center, rules, target) {
-                self.emit_pool(game_id, false, center, rules);
-            }
             // Village passes have no registration quota. Six candidates is the planner's initial window.
             self.prepare_pool(game_id, true, center, rules, 6);
             self.take_candidate(game_id, true, center, rules, seed)

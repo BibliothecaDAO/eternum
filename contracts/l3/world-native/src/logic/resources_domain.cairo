@@ -163,16 +163,7 @@ pub mod ResourcesLogic {
             game_context: crate::commands::ResourceContext,
         ) -> u128 {
             let rule = crate::logic::resources::rule(resource_type);
-            self
-                .resources
-                .grant_resource(
-                    key,
-                    resource_type,
-                    amount,
-                    rule.unit_weight,
-                    timestamp.try_into().unwrap(),
-                    game_context.production_start,
-                )
+            self.resources.grant_resource(key, resource_type, amount, rule.unit_weight, timestamp.try_into().unwrap())
         }
         fn spend_resource(
             ref self: ContractState,
@@ -211,13 +202,12 @@ pub mod ResourcesLogic {
                     rate,
                     crate::logic::resources::rule(resource_type).unit_weight,
                     timestamp.try_into().unwrap(),
-                    game_context.production_start,
                 );
         }
         fn settle_production(
             ref self: ContractState, key: ResourceKey, timestamp: u64, game_context: crate::commands::ResourceContext,
         ) {
-            self.resources.settle_production(key, timestamp.try_into().unwrap(), game_context.production_start);
+            self.resources.settle_production(key, timestamp.try_into().unwrap());
         }
         fn assert_loot_available(
             ref self: ContractState,
@@ -229,7 +219,7 @@ pub mod ResourcesLogic {
             if resources.is_empty() {
                 return;
             }
-            self.resources.settle_production(from, timestamp.try_into().unwrap(), game_context.production_start);
+            self.resources.settle_production(from, timestamp.try_into().unwrap());
             for resource in resources {
                 assert!(
                     crate::logic::resources::balance(from, *resource.resource_type) >= *resource.amount,
@@ -253,12 +243,7 @@ pub mod ResourcesLogic {
                     self
                         .resources
                         .grant_resource(
-                            to,
-                            *resource.resource_type,
-                            amount,
-                            rule.unit_weight,
-                            timestamp.try_into().unwrap(),
-                            game_context.production_start,
+                            to, *resource.resource_type, amount, rule.unit_weight, timestamp.try_into().unwrap(),
                         );
                 }
             }
@@ -271,11 +256,7 @@ pub mod ResourcesLogic {
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
         ) {
-            self
-                .resources
-                .change_structure_capacity(
-                    key, amount, adding, timestamp.try_into().unwrap(), game_context.production_start,
-                );
+            self.resources.change_structure_capacity(key, amount, adding, timestamp.try_into().unwrap());
         }
         fn start_production(
             ref self: ContractState,
@@ -289,15 +270,7 @@ pub mod ResourcesLogic {
             let rule = crate::logic::resources::rule(resource_type);
             self
                 .resources
-                .start_production(
-                    key,
-                    resource_type,
-                    rate,
-                    output,
-                    rule.unit_weight,
-                    timestamp.try_into().unwrap(),
-                    game_context.production_start,
-                );
+                .start_production(key, resource_type, rate, output, rule.unit_weight, timestamp.try_into().unwrap());
         }
     }
     #[abi(embed_v0)]
@@ -330,16 +303,7 @@ pub mod ResourcesLogic {
             game_context: crate::commands::ResourceContext,
         ) {
             let rule = crate::logic::resources::rule(resource_type);
-            self
-                .resources
-                .grant_resource(
-                    key,
-                    resource_type,
-                    amount,
-                    rule.unit_weight,
-                    timestamp.try_into().unwrap(),
-                    game_context.production_start,
-                );
+            self.resources.grant_resource(key, resource_type, amount, rule.unit_weight, timestamp.try_into().unwrap());
         }
     }
 
@@ -373,9 +337,7 @@ pub mod ResourcesLogic {
                 let amount = amount - core::cmp::min(amount, discount);
                 // A realm never underpays a fraction of a recipe.
                 let cost = (amount * troops + denominator - 1) / denominator;
-                let (previous, mut stock) = self
-                    .resources
-                    .load_settled(key, *input.resource_type, unit_weight, now, game_context.production_start);
+                let (previous, mut stock) = self.resources.load_settled(key, *input.resource_type, unit_weight, now);
                 assert!(stock.balance >= cost, "realm cannot pay to raise troops");
                 crate::resources::spend(*input.resource_type, ref stock.balance, ref stock.weight, cost, unit_weight);
                 self.resources.commit_resource(key, *input.resource_type, previous, stock);

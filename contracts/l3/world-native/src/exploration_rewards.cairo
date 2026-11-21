@@ -65,8 +65,8 @@ pub fn reveal_reward(
         amount: reward_strength(troops, limits) * percent.into() / 100,
     }
 }
-pub fn receiver(home_rewards: bool, explorer_id: u64, home: u64, resource_type: u8) -> u64 {
-    if !home_rewards || (resource_type >= 39 && resource_type <= 56) {
+pub fn receiver(explorer_id: u64, home: u64, resource_type: u8) -> u64 {
+    if resource_type >= 39 && resource_type <= 56 {
         explorer_id
     } else {
         home

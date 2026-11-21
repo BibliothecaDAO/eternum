@@ -216,7 +216,6 @@ pub mod MapLogic {
             // Every guarded structure an expedition discovers is a site whose guard follows its kind and depth.
             assert!(crate::expeditions::is_site_category(category), "invalid guarded structure category");
             let guards = {
-                assert!(crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS), "site requires depth rules");
                 let depth = crate::logic::expeditions::depth_rules_at(
                     key.game_id, crate::structures::structure_coord(key),
                 );

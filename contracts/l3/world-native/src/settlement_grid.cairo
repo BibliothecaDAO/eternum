@@ -24,21 +24,6 @@ fn distances(spacing: u32) -> Distances {
     Distances { base: spacing, step: spacing * 3 / 2 + 3, mirror_first: spacing + 3, mirror_second: spacing / 2 }
 }
 
-pub fn target_pool_size(registered: u16, limit: u16) -> u16 {
-    if registered >= limit {
-        return 0;
-    }
-    let remaining = limit - registered;
-    let window = if registered < 3 {
-        6
-    } else if registered < 15 {
-        9
-    } else {
-        12
-    };
-    core::cmp::min(window, remaining)
-}
-
 // A candidate's ordinal replaces the mutable side/ring/point cursor and stored coordinates.
 pub fn settlement_location(center: Coord, spacing: u32, candidate: u32) -> Coord {
     let distances = distances(spacing);

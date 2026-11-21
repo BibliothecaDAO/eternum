@@ -8,8 +8,6 @@ pub struct CommandRoute {
     pub batch: bool,
 }
 
-pub const CHOOSE_OATH: u32 = 73;
-
 pub const COMMAND_IDS: [u32; 40] = [
     74, 75, 73, 76, 72, 0, 1, 2, 3, 4, 6, 8, 10, 11, 12, 13, 14, 16, 17, 18, 20, 21, 22, 23, 24, 29, 43, 53, 54, 55, 56,
     57, 58, 59, 60, 64, 65, 66, 67, 69,

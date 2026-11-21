@@ -136,11 +136,8 @@ pub fn discovered_structure(
     timestamp: u64,
 ) -> (StructureRecord, u8, u128) {
     let (category, occupier, level, capacity) = match discovery {
-        Discovery::Mine => (
-            crate::taxonomy::MINE_CATEGORY, crate::taxonomy::MINE_OCCUPIER, 0_u8, capacities.fragment_mine_capacity,
-        ),
         Discovery::Camp => (
-            crate::taxonomy::CAMP_CATEGORY, crate::taxonomy::CAMP_OCCUPIER, 0, capacities.camp_capacity,
+            crate::taxonomy::CAMP_CATEGORY, crate::taxonomy::CAMP_OCCUPIER, 0_u8, capacities.camp_capacity,
         ),
         // Frontier's other guarded sites hold nothing; they share the camp's capacity.
         Discovery::Rift => (
@@ -155,7 +152,7 @@ pub fn discovered_structure(
         Discovery::None | Discovery::Shrine | Discovery::Well |
         Discovery::Spire => panic!("discovery is not a structure"),
     };
-    assert!(discovery == Discovery::Mine || !coord.alt, "invalid discovery layer");
+    assert!(!coord.alt, "invalid discovery layer");
     let base = StructureBase {
         troop_max_guard_count: 1,
         troop_max_explorer_count: if discovery == Discovery::Camp {

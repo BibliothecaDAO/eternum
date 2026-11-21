@@ -37,9 +37,7 @@ pub fn structure(key: ResourceKey) -> Option<Structure> {
 
 pub mod StructureState {
     use starknet::Event as EventTrait;
-    use starknet::storage::{
-        StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
-    };
+    use starknet::storage::{StorageMapWriteAccess, StoragePathEntry, StoragePointerWriteAccess};
     use crate::events::{RowDeleted, RowMemberSet, RowSet};
     use crate::resources::ResourceKey;
     use crate::structures::StructureRecord;
@@ -530,24 +528,14 @@ pub mod StructuresLogic {
             let (mut record, occupier, capacity) = crate::structures::discovered_structure(
                 coord, discovery, rules.structure_capacity_config, rules.troop_limit_config.camp_armies, timestamp,
             );
-            let depth = if crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS) {
-                Some(crate::logic::expeditions::depth_rules_at(game_id, coord))
-            } else {
-                None
-            };
             self.reveal_structure_tile(game_id, coord, game_context);
-            let reveal_neighbors = match depth {
-                Some(value) => value.reveal_site_neighbors,
-                None => discovery != Discovery::Mine,
-            };
-            if reveal_neighbors {
+            if crate::logic::expeditions::depth_rules_at(game_id, coord).reveal_site_neighbors {
                 crate::logic::structure_actions::map_dispatcher(game_id)
                     .reveal_structure_surroundings(game_id, coord, crate::commands::biome_context(game_context));
             }
             crate::logic::structure_actions::resources_dispatcher(game_id)
                 .initialize_resources(key, capacity * RESOURCE_PRECISION);
             match discovery {
-                Discovery::Mine => {},
                 Discovery::Camp => {},
                 Discovery::Rift | Discovery::Beasts => {},
                 Discovery::Ruin(reward) => {
@@ -614,7 +602,7 @@ pub mod StructuresLogic {
                 return;
             }
             let today = crate::days::day_of(
-                context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp,
+                context.game.unbox(), crate::balance::rules::SWITCHES.day_unit_seconds, context.timestamp,
             )
                 .index;
             let origin = crate::expeditions::site(crate::logic::settlement::spacing(), realm_id, today, 0);

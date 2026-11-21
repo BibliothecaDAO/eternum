@@ -67,7 +67,9 @@ fn guard_target(
 ) -> GuardTarget {
     let rules = context.rules.unbox();
     if let Some(site) = crate::logic::deep_sites::site(key) {
-        let day = crate::days::day_of(context.game.unbox(), rules.day_unit_seconds, context.timestamp);
+        let day = crate::days::day_of(
+            context.game.unbox(), crate::balance::rules::SWITCHES.day_unit_seconds, context.timestamp,
+        );
         assert!(site.day == day.index, "Deep is settling, try again");
         crate::logic::deep_sites::assert_open(key.game_id, site);
         let coord = crate::logic::map::entity_coord(key).expect('missing Deep site position');
@@ -76,10 +78,7 @@ fn guard_target(
     }
     let structure = crate::logic::structures::structure(key).expect('missing guarded structure');
 
-    if crate::rules::rule_enabled(rules, crate::rules::UNOWNED_TARGETS) {
-        assert!(structure.owner == 0.try_into().unwrap(), "target must be unowned");
-    }
-    assert!(structure.owner != actor, "actor owns defender");
+    assert!(structure.owner == 0.try_into().unwrap(), "target must be unowned");
     assert_battle_immunity(key.game_id, key.entity_id, rules, context.timestamp, context);
     GuardTarget { key, coord: crate::structures::structure_coord(key), structure: Some(structure) }
 }
@@ -197,7 +196,7 @@ fn complete_guard_capture(
     context: ExecutionContext,
 ) {
     if let Some(structure) = target.structure {
-        try_capture(key, attacker, target.key, structure, context.rules.unbox(), relic_slot, clean, context);
+        try_capture(key, attacker, target.key, structure, relic_slot, clean, context);
         return;
     }
     if attacker.troops.count == 0
@@ -364,7 +363,6 @@ pub fn guard_attack(
         defender,
         ResourceKey { game_id, entity_id: command.guard.structure_id },
         home,
-        rules,
         None,
         false,
         context,
@@ -408,33 +406,29 @@ pub fn try_capture(
     explorer: ExplorerTroops,
     key: ResourceKey,
     target: Structure,
-    rules: SliceRules,
     relic_slot: Option<u8>,
     clean: bool,
     context: ExecutionContext,
 ) {
     if explorer.troops.count == 0
-        || (crate::rules::rule_enabled(rules, crate::rules::UNOWNED_TARGETS) && target.owner != 0.try_into().unwrap())
-        || (target.base.category == crate::taxonomy::VILLAGE_CATEGORY
-            && !crate::rules::rule_enabled(rules, crate::rules::CAPTURE_VILLAGES)) {
+        || target.owner != 0.try_into().unwrap()
+        || target.base.category == crate::taxonomy::VILLAGE_CATEGORY {
         return;
     }
     if !crate::geometry::adjacent(explorer.coord, crate::structures::structure_coord(key))
         || crate::logic::guards::GuardState::next(key, target.base.troop_max_guard_count).is_some() {
         return;
     }
-    if target.owner == 0.try_into().unwrap() {
-        crate::relics::ICaptureRewardsDispatcherTrait::grant_capture_rewards(
-            crate::relics::ICaptureRewardsLibraryDispatcher {
-                class_hash: crate::logic::release::class_of(key.game_id, crate::slots::RELICS),
-            },
-            key,
-            explorer_key.explorer_id,
-            relic_slot,
-            clean,
-            crate::commands::action_context(context),
-        );
-    }
+    crate::relics::ICaptureRewardsDispatcherTrait::grant_capture_rewards(
+        crate::relics::ICaptureRewardsLibraryDispatcher {
+            class_hash: crate::logic::release::class_of(key.game_id, crate::slots::RELICS),
+        },
+        key,
+        explorer_key.explorer_id,
+        relic_slot,
+        clean,
+        crate::commands::action_context(context),
+    );
 }
 
 pub fn assert_structure_range(attacker: Coord, defender: Coord, range: u32) {

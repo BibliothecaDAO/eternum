@@ -103,7 +103,6 @@ pub mod ProductionLogic {
             crate::resources::assert_unique_resources(command.resources);
             let from = ResourceKey { game_id, entity_id: command.from_entity_id };
             let to = ResourceKey { game_id, entity_id: command.to_entity_id };
-            let start_at = crate::logic::resources::production_start(game_id, game_context);
             for resource in command.resources {
                 let rule = crate::logic::resources::rule(*resource.resource_type);
                 self
@@ -114,17 +113,11 @@ pub mod ProductionLogic {
                         *resource.amount,
                         rule.unit_weight,
                         timestamp.try_into().unwrap(),
-                        start_at,
                     );
                 self
                     .resources
                     .grant_resource(
-                        to,
-                        *resource.resource_type,
-                        *resource.amount,
-                        rule.unit_weight,
-                        timestamp.try_into().unwrap(),
-                        start_at,
+                        to, *resource.resource_type, *resource.amount, rule.unit_weight, timestamp.try_into().unwrap(),
                     );
             }
             let recipient = crate::logic::structures::owner(to);
@@ -154,7 +147,6 @@ pub mod ProductionLogic {
             game_context: crate::commands::ExecutionContext,
         ) -> u128 {
             let mut weight = 0;
-            let start_at = crate::logic::resources::production_start(from.game_id, game_context);
             for resource in resources {
                 let rule = crate::logic::resources::rule(*resource.resource_type);
                 weight += *resource.amount * rule.unit_weight;
@@ -166,7 +158,6 @@ pub mod ProductionLogic {
                         *resource.amount,
                         rule.unit_weight,
                         timestamp.try_into().unwrap(),
-                        start_at,
                     );
             }
             weight
@@ -186,11 +177,6 @@ pub mod ProductionLogic {
             let source = crate::logic::structures::structure(from).expect('missing sending structure');
             let destination = crate::logic::structures::structure(to).expect('missing recipient structure');
             let rules = game_context.rules.unbox();
-            assert!(
-                !crate::rules::rule_enabled(rules, crate::rules::SAME_OWNER_TRANSFER)
-                    || source.owner == destination.owner,
-                "transfers require the same owner",
-            );
             let travel_time = crate::transport::travel_time(
                 crate::structures::structure_coord(from),
                 crate::structures::structure_coord(to),
@@ -323,7 +309,6 @@ pub mod ProductionLogic {
                     output,
                     crate::logic::resources::rule(resource_type).unit_weight,
                     timestamp.try_into().unwrap(),
-                    crate::logic::resources::production_start(key.game_id, game_context),
                 );
             crate::logic::stories::emit_entity_story(
                 key,
@@ -416,7 +401,6 @@ pub mod ProductionLogic {
             let arrival = self.arrivals.read(key);
             let count = core::cmp::min(command.resource_count.into(), arrival.resources.len());
             let delivered = arrival.resources.slice(0, count);
-            let start_at = crate::logic::resources::production_start(game_id, context);
             for resource in delivered {
                 let rule = crate::logic::resources::rule(*resource.resource_type);
                 self
@@ -427,7 +411,6 @@ pub mod ProductionLogic {
                         *resource.amount,
                         rule.unit_weight,
                         context.timestamp.try_into().unwrap(),
-                        start_at,
                     );
             }
             self.arrivals.remove_prefix(key, count);

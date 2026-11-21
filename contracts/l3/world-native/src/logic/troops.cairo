@@ -7,7 +7,10 @@ pub fn active_explorer(
 ) -> ExplorerTroops {
     let explorer = crate::logic::troops::explorer(key).expect('missing explorer');
     let rules = game_context.rules.unbox();
-    let today = crate::days::day_of(game_context.game.unbox(), rules.day_unit_seconds, timestamp).index;
+    let today = crate::days::day_of(
+        game_context.game.unbox(), crate::balance::rules::SWITCHES.day_unit_seconds, timestamp,
+    )
+        .index;
     assert!(crate::logic::army_days::require(key) == today, "EXPIRED_ARMY");
     let refill = crate::troops::StaminaRefill {
         timestamp,
@@ -641,11 +644,11 @@ pub mod TroopsLogic {
         ) -> () {
             let context = crate::commands::execution_context(game_id, context);
 
-            let rules = self.authorize(game_id, context);
+            self.authorize(game_id, context);
             crate::logic::troops::owned_structure(game_id, command.structure_id, actor);
             self
                 .expire_home_armies(
-                    ResourceKey { game_id, entity_id: command.structure_id }, rules, context.timestamp, context,
+                    ResourceKey { game_id, entity_id: command.structure_id }, context.timestamp, context,
                 );
             self
                 .pay_troops(
@@ -677,7 +680,10 @@ pub mod TroopsLogic {
             let category = troop_type(command.category);
             let tier = troop_tier(command.tier);
             let id = crate::entity_ids::allocate_home(game_id, command.structure_id);
-            let today = crate::days::day_of(context.game.unbox(), rules.day_unit_seconds, context.timestamp).index;
+            let today = crate::days::day_of(
+                context.game.unbox(), crate::balance::rules::SWITCHES.day_unit_seconds, context.timestamp,
+            )
+                .index;
             let origin = self.army_home(ResourceKey { game_id, entity_id: command.structure_id }, context);
             let coord = neighbor(origin, command.direction);
             crate::logic::map::raise_expedition_home(
@@ -878,10 +884,12 @@ pub mod troop_helpers {
             let Some(site_id) = supply_post else {
                 return self.army_home(home, context);
             };
-            let rules = context.rules.unbox();
             let site = crate::logic::expeditions::expedition_site(ResourceKey { entity_id: site_id, ..home })
                 .expect('missing supply post');
-            let today = crate::days::day_of(context.game.unbox(), rules.day_unit_seconds, context.timestamp).index;
+            let today = crate::days::day_of(
+                context.game.unbox(), crate::balance::rules::SWITCHES.day_unit_seconds, context.timestamp,
+            )
+                .index;
             let spacing = self.expedition_spacing(home.game_id);
             let coord = Coord { alt: site.alt, x: site.col, y: site.row };
             assert!(
@@ -892,8 +900,10 @@ pub mod troop_helpers {
         }
 
         fn army_home(self: @TContractState, home: ResourceKey, context: ExecutionContext) -> Coord {
-            let rules = context.rules.unbox();
-            let today = crate::days::day_of(context.game.unbox(), rules.day_unit_seconds, context.timestamp).index;
+            let today = crate::days::day_of(
+                context.game.unbox(), crate::balance::rules::SWITCHES.day_unit_seconds, context.timestamp,
+            )
+                .index;
             crate::expeditions::site(
                 self.expedition_spacing(home.game_id), crate::entity_ids::namespace(home.entity_id), today, 0,
             )
@@ -906,11 +916,13 @@ pub mod troop_helpers {
         fn expire_home_armies(
             ref self: TContractState,
             home: ResourceKey,
-            rules: SliceRules,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
         ) {
-            let today = crate::days::day_of(game_context.game.unbox(), rules.day_unit_seconds, timestamp).index;
+            let today = crate::days::day_of(
+                game_context.game.unbox(), crate::balance::rules::SWITCHES.day_unit_seconds, timestamp,
+            )
+                .index;
             for id in crate::logic::troops::home_armies(home) {
                 let key = ExplorerKey { game_id: home.game_id, explorer_id: *id };
                 let explorer = crate::logic::troops::explorer(key).expect('missing home army');
@@ -1014,7 +1026,9 @@ pub fn command_explorer(
 }
 
 fn expire_explorer(key: ExplorerKey, mut explorer: ExplorerTroops, context: crate::commands::ExecutionContext) {
-    let today = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp)
+    let today = crate::days::day_of(
+        context.game.unbox(), crate::balance::rules::SWITCHES.day_unit_seconds, context.timestamp,
+    )
         .index;
     assert!(crate::logic::army_days::require(key) < today, "army has not expired");
     explorer = crate::logic::army_slots::resolve(key, explorer, None);
@@ -1042,7 +1056,9 @@ pub fn twins_companion(
     key: ExplorerKey, attacker: ExplorerTroops, context: crate::commands::ExecutionContext,
 ) -> Option<crate::troops::Troops> {
     let owner = crate::logic::combat::explorer_owner(key, attacker);
-    let today = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp)
+    let today = crate::days::day_of(
+        context.game.unbox(), crate::balance::rules::SWITCHES.day_unit_seconds, context.timestamp,
+    )
         .index;
     let mut largest: Option<crate::troops::Troops> = None;
     for direction in 0_u8..6 {

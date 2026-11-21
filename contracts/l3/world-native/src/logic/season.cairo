@@ -12,7 +12,6 @@ pub trait IGameplay<T> {
 
 #[starknet::contract]
 pub mod SeasonLogic {
-    use starknet::storage::StorageMapReadAccess;
     use starknet::{ContractAddress, get_tx_info};
     use crate::commands::{ExecutionContext as DomainContext, domain_rejection, rejection};
     use crate::logic::release::ReleaseState;
@@ -93,8 +92,7 @@ pub mod SeasonLogic {
             let mut context = crate::commands::load_context(game_id, raw_root, timestamp);
 
             let (index, route, payload) = crate::commands::route_command(arguments).map_err(|code| rejection(code))?;
-            let rules = context.rules.unbox();
-            if !crate::rules::command_enabled(rules.command_mask, index.into()) {
+            if !crate::rules::command_enabled(crate::balance::rules::SWITCHES.command_mask, index.into()) {
                 return Err(rejection('COMMAND_DISABLED'));
             }
             crate::banes::IWorldBanesDispatcherTrait::prepare_bane_day(
@@ -151,27 +149,19 @@ pub mod SeasonLogic {
 
             let owner = actor;
             let game = context.game.unbox();
-            let rules = context.rules.unbox();
             assert!(game.dev_mode_on || context.timestamp >= game.start_settling_at, "settling not started");
             assert!(game.end_at == 0 || context.timestamp < game.end_at, "game ended");
-            let dev_entry = game.dev_mode_on && crate::rules::rule_enabled(rules, crate::rules::DEV_VILLAGE_ENTRY);
             let pass = VillagePassKey { game_id, pass_id: command.pass_id };
-            if !dev_entry {
-                self.villages.require_pass(pass, owner);
-            }
+            self.villages.require_pass(pass, owner);
             let mut raw_root = context.raw_root;
             let seed = crate::random::game_root(ref raw_root, game_id);
             let village_rules = self.villages.rules(game_id);
             let resource = crate::village::select_resource(village_rules.resource_pool, seed);
-            let progress = self.data.settlements.progress.read(game_id);
             let coord = ISettlementPoolLibraryDispatcher {
                 class_hash: crate::logic::release::class_of(game_id, crate::slots::PLACEMENT),
             }
                 .claim_village(
-                    game_id,
-                    progress.registered,
-                    seed,
-                    crate::settlement_grid::map_center(context.rules.unbox().map_center_offset),
+                    game_id, seed, crate::settlement_grid::map_center(context.rules.unbox().map_center_offset),
                 );
             let village_id = ISettlementCreationLibraryDispatcher {
                 class_hash: crate::logic::release::class_of(game_id, crate::slots::STRUCTURES),
@@ -185,9 +175,7 @@ pub mod SeasonLogic {
                     ),
                     crate::commands::action_context(context),
                 );
-            if !dev_entry {
-                self.villages.consume(pass, owner, village_id);
-            }
+            self.villages.consume(pass, owner, village_id);
             ()
         }
     }

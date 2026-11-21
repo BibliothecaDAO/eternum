@@ -80,7 +80,7 @@ pub trait ISettlementPool<T> {
     fn settlement_pool(self: @T, game_id: u32, center: Coord) -> SettlementPool;
     #[cfg(feature: "test_support")]
     fn village_pool(self: @T, game_id: u32, center: Coord) -> SettlementPool;
-    fn claim_village(ref self: T, game_id: u32, registered: u16, seed: u256, center: Coord) -> Coord;
+    fn claim_village(ref self: T, game_id: u32, seed: u256, center: Coord) -> Coord;
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

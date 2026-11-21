@@ -44,13 +44,7 @@ pub mod LordsState {
             if balance == 0 {
                 return;
             }
-            let rules = crate::balance::rules::SWITCHES;
             let context = ResourceContext {
-                production_start: if rules.mode_rules & crate::rules::PRODUCTION_START != 0 {
-                    game.start_main_at.read().try_into().unwrap()
-                } else {
-                    0
-                },
                 troop_capacity: crate::balance::rules::CAPACITY_CONFIG.troop_capacity,
                 spire_fee: crate::balance::rules::SPIRE_TRAVEL_ESSENCE_COST,
                 delivery_tick: crate::balance::rules::TICK_CONFIG.delivery_tick_in_seconds,

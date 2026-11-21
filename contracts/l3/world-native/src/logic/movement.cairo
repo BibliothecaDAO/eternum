@@ -159,7 +159,7 @@ pub mod MovementLogic {
         ) {
             let context = crate::commands::execution_context(game_id, context);
 
-            let rules = self.authorize(game_id, context);
+            self.authorize(game_id, context);
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let mut explorer = crate::logic::troops::field_explorer(key, actor, context.timestamp, context);
             assert!(explorer.troops.count != 0, "explorer is dead");
@@ -173,7 +173,10 @@ pub mod MovementLogic {
                 "Spire lore is not learned",
             );
             let spacing = self.expedition_spacing(game_id);
-            let today = crate::days::day_of(context.game.unbox(), rules.day_unit_seconds, context.timestamp).index;
+            let today = crate::days::day_of(
+                context.game.unbox(), crate::balance::rules::SWITCHES.day_unit_seconds, context.timestamp,
+            )
+                .index;
             let source_depth = crate::logic::expeditions::depth_at(game_id, explorer.coord);
             let origin = crate::logic::spires::descent_origin(
                 crate::spires::ExpeditionSpireKey {

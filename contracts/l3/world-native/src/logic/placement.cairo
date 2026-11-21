@@ -50,8 +50,8 @@ pub mod PlacementLogic {
         fn village_pool(self: @ContractState, game_id: u32, center: Coord) -> SettlementPool {
             self.settlements.village_pool(game_id, center, crate::logic::settlement::rules(game_id))
         }
-        fn claim_village(ref self: ContractState, game_id: u32, registered: u16, seed: u256, center: Coord) -> Coord {
-            self.settlements.claim_village(game_id, center, crate::logic::settlement::rules(game_id), registered, seed)
+        fn claim_village(ref self: ContractState, game_id: u32, seed: u256, center: Coord) -> Coord {
+            self.settlements.claim_village(game_id, center, crate::logic::settlement::rules(game_id), seed)
         }
     }
 }

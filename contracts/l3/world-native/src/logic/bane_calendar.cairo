@@ -5,7 +5,11 @@ use starknet::storage::StorageMapWriteAccess;
 pub fn prepare(game_id: u32, context: crate::commands::ActionContext) {
     let context = crate::commands::execution_context(game_id, context);
     prepare_at(
-        game_id, context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp, context.raw_root,
+        game_id,
+        context.game.unbox(),
+        crate::balance::rules::SWITCHES.day_unit_seconds,
+        context.timestamp,
+        context.raw_root,
     );
 }
 

@@ -23,7 +23,11 @@ fn settlement_terrain_keeps_map_biomes_and_daily_home_rings() {
                 assert_eq!(coord, crate::geometry::neighbor(site, (index - 1).try_into().unwrap()));
             }
             let climate = crate::expeditions::climate(
-                context.climate, coord, context.start_main_at, context.day_unit_seconds, SETTLEMENT_SPACING_STEPS,
+                context.climate,
+                coord,
+                context.start_main_at,
+                crate::balance::rules::SWITCHES.day_unit_seconds,
+                SETTLEMENT_SPACING_STEPS,
             );
             let expected: u8 = crate::biome::get_biome_with_climate(coord.alt, coord.x.into(), coord.y.into(), climate)
                 .into();
@@ -42,7 +46,11 @@ fn a_revealed_tile_answers_its_stored_biome_and_an_unrevealed_one_derives_it() {
     let coord = crate::troops::Coord { alt: false, x: 3000, y: 3000 };
     let key = crate::geometry::tile_key(game_id, coord);
     let climate = crate::expeditions::climate(
-        context.climate, coord, context.start_main_at, context.day_unit_seconds, SETTLEMENT_SPACING_STEPS,
+        context.climate,
+        coord,
+        context.start_main_at,
+        crate::balance::rules::SWITCHES.day_unit_seconds,
+        SETTLEMENT_SPACING_STEPS,
     );
     let derived: u8 = crate::biome::get_biome_with_climate(coord.alt, coord.x.into(), coord.y.into(), climate).into();
     assert_eq!(map.biome(key, context), derived);
@@ -293,8 +301,6 @@ fn biome_context(d: super::Deployment, game_id: u32) -> crate::commands::BiomeCo
     let games = IGameDispatcher { contract_address: d.games };
     let rules = games.rules(game_id);
     crate::commands::BiomeContext {
-        climate: rules.biome_climate_config,
-        day_unit_seconds: rules.day_unit_seconds,
-        start_main_at: games.game(game_id).start_main_at,
+        climate: rules.biome_climate_config, start_main_at: games.game(game_id).start_main_at,
     }
 }

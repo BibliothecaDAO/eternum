@@ -1,7 +1,6 @@
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub enum Discovery {
     None,
-    Mine,
     Camp,
     Rift,
     Ruin: crate::army_relics::ArmyRelic,

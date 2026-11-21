@@ -79,7 +79,9 @@ pub fn assert_open(game_id: u32, site: DeepSite) {
 }
 
 pub fn count_entry(game_id: u32, home: u64, context: ExecutionContext) {
-    let day = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp)
+    let day = crate::days::day_of(
+        context.game.unbox(), crate::balance::rules::SWITCHES.day_unit_seconds, context.timestamp,
+    )
         .index;
     let state = crate::state::write();
     if state.deep.realm_entered.read((game_id, day, home)) {
@@ -155,7 +157,7 @@ pub fn rollover(game_id: u32, context: ExecutionContext) -> bool {
     if context.timestamp < game.start_main_at || (game.end_at != 0 && context.timestamp >= game.end_at) {
         return true;
     }
-    let day = crate::days::day_of(game, context.rules.unbox().day_unit_seconds, context.timestamp);
+    let day = crate::days::day_of(game, crate::balance::rules::SWITCHES.day_unit_seconds, context.timestamp);
     let draw = day_draw(game_id, day.index, context.raw_root);
     let mut spent = 0;
     for band in 0..rules().ring_count {

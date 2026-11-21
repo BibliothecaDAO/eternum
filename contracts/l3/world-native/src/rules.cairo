@@ -203,10 +203,6 @@ pub const SAME_OWNER_TRANSFER: u32 = 256;
 pub const DEV_VILLAGE_ENTRY: u32 = 8192;
 pub const PRODUCTION_START: u32 = 131072;
 
-pub fn rule_enabled(rules: SliceRules, rule: u32) -> bool {
-    rules.mode_rules & rule != 0
-}
-
 pub fn command_enabled(mask: u128, index: u128) -> bool {
     // Cairo lowers a dense integer match to a jump table.
     let bit = match index {

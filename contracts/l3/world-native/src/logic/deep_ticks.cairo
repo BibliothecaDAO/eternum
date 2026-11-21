@@ -137,7 +137,7 @@ fn walk(game_id: u32, cursor: u64, last: u64, context: ExecutionContext) -> u64 
 fn held(game_id: u32, context: ExecutionContext) -> Held {
     let state = crate::state::read();
     let rules = crate::logic::deep_sites::rules();
-    let unit = context.rules.unbox().day_unit_seconds;
+    let unit = crate::balance::rules::SWITCHES.day_unit_seconds;
     let mut sites = array![];
     let mut guards = array![];
     let mut counts = array![];

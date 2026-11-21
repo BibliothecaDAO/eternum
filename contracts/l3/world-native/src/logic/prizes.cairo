@@ -51,9 +51,6 @@ pub mod PrizesLogic {
             let context = crate::commands::execution_context(game_id, context);
             let explorer = self.revealing_explorer(game_id, actor, explorer_id, context);
             let rules = context.rules.unbox();
-            if !crate::rules::rule_enabled(rules, crate::rules::REVEAL_SUPPLIES) {
-                return ();
-            }
             let key = tile_key(game_id, coord);
             let tile = crate::logic::map::tile(key).expect('unrevealed extraction tile');
             assert!(tile.data / BIOME_SCALE % BYTE_RANGE != 0, "tile must be revealed");
@@ -116,12 +113,7 @@ pub mod PrizesLogic {
             reward: crate::resources::ResourceAmount,
             context: crate::commands::ExecutionContext,
         ) -> crate::exploration_rewards::ExtractedReward {
-            let receiver = crate::exploration_rewards::receiver(
-                crate::rules::rule_enabled(context.rules.unbox(), crate::rules::HOME_REWARDS),
-                explorer_id,
-                explorer.owner,
-                reward.resource_type,
-            );
+            let receiver = crate::exploration_rewards::receiver(explorer_id, explorer.owner, reward.resource_type);
             crate::exploration_rewards::IExplorationGrantDispatcherTrait::grant_exploration_reward(
                 crate::exploration_rewards::IExplorationGrantLibraryDispatcher {
                     class_hash: crate::logic::release::class_of(game_id, crate::slots::RESOURCES),

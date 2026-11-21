@@ -119,7 +119,7 @@ pub mod QuestState {
                 "quest requires an owned Realm",
             );
             let day = crate::days::day_of(
-                context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp,
+                context.game.unbox(), crate::balance::rules::SWITCHES.day_unit_seconds, context.timestamp,
             )
                 .index;
             assert!(command.day == day, "incorrect quest day");

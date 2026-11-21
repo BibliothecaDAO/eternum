@@ -58,14 +58,13 @@ pub mod GamesFixture {
             )
         }
         fn claim_village(
-            ref self: TContractState, game_id: u32, registered: u16, seed: u256, center: crate::troops::Coord,
+            ref self: TContractState, game_id: u32, seed: u256, center: crate::troops::Coord,
         ) -> crate::troops::Coord {
             crate::settlement::ISettlementPoolDispatcherTrait::claim_village(
                 crate::settlement::ISettlementPoolLibraryDispatcher {
                     class_hash: fixture_class(game_id, crate::slots::PLACEMENT),
                 },
                 game_id,
-                registered,
                 seed,
                 center,
             )

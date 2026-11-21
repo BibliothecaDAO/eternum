@@ -1,5 +1,5 @@
 use starknet::Event;
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
 
 pub fn assert_ledger_operator() {
     let operator = crate::state::read().entry.operator.read();
@@ -111,7 +111,7 @@ pub mod EntryAdministration {
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of crate::entry::IResourceContext<ComponentState<TContractState>> {
         fn resource_context(self: @ComponentState<TContractState>, game_id: u32) -> crate::commands::ResourceContext {
-            super::grant_resource_context(game_id)
+            super::grant_resource_context()
         }
     }
 }
@@ -157,14 +157,8 @@ pub fn record_labor_grant(day: u64, grant: crate::entry::LaborGrant) {
 }
 
 #[inline(never)]
-fn grant_resource_context(game_id: u32) -> crate::commands::ResourceContext {
-    let rules = crate::balance::rules::SWITCHES;
+fn grant_resource_context() -> crate::commands::ResourceContext {
     crate::commands::ResourceContext {
-        production_start: if rules.mode_rules & crate::rules::PRODUCTION_START != 0 {
-            crate::state::read().games.games.entry(game_id).start_main_at.read().try_into().unwrap()
-        } else {
-            0
-        },
         troop_capacity: crate::balance::rules::CAPACITY_CONFIG.troop_capacity,
         spire_fee: crate::balance::rules::SPIRE_TRAVEL_ESSENCE_COST,
         delivery_tick: crate::balance::rules::TICK_CONFIG.delivery_tick_in_seconds,

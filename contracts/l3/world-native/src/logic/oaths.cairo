@@ -5,10 +5,6 @@ pub fn offer(key: ExplorerKey, coord: crate::troops::Coord, seed: u256) {
     if crate::logic::expeditions::depth_at(key.game_id, coord) >= 3 {
         return;
     }
-    let mask = crate::balance::rules::SWITCHES.command_mask;
-    if !crate::rules::command_enabled(mask, crate::command_routes::CHOOSE_OATH.into()) {
-        return;
-    }
     let mut progress = crate::logic::progression::require(key);
     if progress.oath_pick != 0 {
         return;
