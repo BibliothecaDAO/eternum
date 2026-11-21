@@ -5,6 +5,3 @@
 
 /** Registration freezes before the common game clock starts, leaving time to create and seat every group. */
 export const BLITZ_SLOT_PREPARATION_SECONDS = 300;
-
-/** A slot's games start on this grid of the UTC day: 00:00, 01:30, ... 22:30, while the season's Blitz window is open. */
-export const BLITZ_SLOT_INTERVAL_SECONDS = 90 * 60;

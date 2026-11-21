@@ -1,7 +1,7 @@
 import { absentLedgerSlot, ledgerCall } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
-import { openSlotOnLedger, refundSlotOnLedger } from "./blitz-launch";
+import { refundSlotOnLedger } from "./blitz-launch";
 
 const rpc = vi.hoisted(() => ({
   block: vi.fn(),
@@ -50,14 +50,6 @@ beforeEach(() => {
     return "0xc1a55";
   });
 });
-it("refuses to open a new paid Blitz slot and still answers the retry of one already open", async () => {
-  rpc.call.mockResolvedValue(absentLedgerSlot());
-  const open = () => Effect.runPromise(openSlotOnLedger(credentials, key, { start: 100, end: 160 }));
-  await expect(open()).rejects.toMatchObject({ operation: "paid_blitz_slots_closed" });
-  rpc.call.mockResolvedValue(game());
-  await expect(open()).resolves.toBeUndefined();
-  expect(rpc.execute).not.toHaveBeenCalled();
-});
 it("cancels before start and automatically waits until the earliest legal abort after start", async () => {
   let cancelled = false;
   rpc.call.mockImplementation(async () => game(cancelled));
@@ -81,11 +73,8 @@ it("cancels before start and automatically waits until the earliest legal abort 
   );
 });
 
-it("does not submit an open or refund when the slot view fails", async () => {
+it("does not submit a refund when the slot view fails", async () => {
   rpc.call.mockRejectedValue(new Error("RPC unavailable"));
-  await expect(Effect.runPromise(openSlotOnLedger(credentials, key, { start: 100, end: 160 }))).rejects.toMatchObject({
-    operation: "open ledger Blitz registration",
-  });
   await expect(Effect.runPromise(refundSlotOnLedger(credentials, key))).rejects.toMatchObject({
     operation: "unlock failed Blitz refunds",
   });

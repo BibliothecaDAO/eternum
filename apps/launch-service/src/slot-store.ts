@@ -1,6 +1,6 @@
 import type { BlitzValuePort } from "./paid-blitz";
 import type { D1LaunchStore } from "./store";
-import { blitzSlotWindow, SlotConflict, SlotNotFound, type PlaytestSlot, type SlotStore } from "./slots";
+import { SlotNotFound, type PlaytestSlot, type SlotStore } from "./slots";
 
 const SELECT_SLOTS = "SELECT * FROM playtest_slots";
 
@@ -18,47 +18,6 @@ export class D1SlotStore implements SlotStore {
     private readonly launches: D1LaunchStore,
     private readonly value: BlitzValuePort,
   ) {}
-
-  async create(name: string, closesAt: string): Promise<void> {
-    if (
-      (await this.launches.find("madara.blitz", `${name}-1`)) &&
-      !(await this.db
-        .prepare("SELECT name FROM playtest_slots WHERE name = ? AND chain_id=?")
-        .bind(name, await this.launches.targetChain())
-        .first())
-    ) {
-      throw new SlotConflict("Slot name was already used for a launch");
-    }
-    const closes = Date.parse(closesAt);
-    if (!Number.isSafeInteger(closes) || closes % 1000 !== 0)
-      throw new SlotConflict("Slot close must be a whole second");
-    await this.db
-      .prepare(
-        `INSERT INTO playtest_slots (name,closes_at,chain_id) SELECT ?1,?2,?3 WHERE ?2 > ?4 ON CONFLICT (chain_id,name) DO NOTHING`,
-      )
-      .bind(name, closes, await this.launches.targetChain(), Date.now())
-      .run();
-    const slot = await this.get(name).catch((error: unknown) => {
-      if (error instanceof SlotNotFound) throw new SlotConflict("Registration deadline has passed");
-      throw error;
-    });
-    if (Date.parse(slot.closesAt) !== closes) throw new SlotConflict("Slot schedule is immutable");
-    const key = { chainId: slot.chainId, slotId: slot.slotId };
-    try {
-      await this.value.openSlot(key, blitzSlotWindow(slot.closesAt));
-    } catch (error) {
-      // A lost receipt or unavailable read must preserve the key for recovery.
-      const recorded = await this.value.slot(key).catch(() => {
-        throw error;
-      });
-      if (!recorded.exists)
-        await this.db
-          .prepare("DELETE FROM playtest_slots WHERE chain_id=? AND slot_id=?")
-          .bind(slot.chainId, slot.slotId)
-          .run();
-      throw error;
-    }
-  }
 
   async get(name: string): Promise<PlaytestSlot> {
     const row = await this.db

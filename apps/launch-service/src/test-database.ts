@@ -43,20 +43,6 @@ export const completeFreeFixture = async (
   await store.complete(runId, summary);
 };
 
-export const slotValueFixture = () => {
-  const slot = {
-    exists: true,
-    seasonId: 1,
-    presetId: 1,
-    close: 100,
-    end: 460,
-    pool: "0",
-    registeredCount: 0,
-    cancelled: false,
-  };
-  return {
-    slot: async () => slot,
-    openSlot: async () => {},
-    refundSlot: async (): Promise<number | null> => null,
-  };
-};
+export const slotValueFixture = () => ({
+  refundSlot: async (): Promise<number | null> => null,
+});

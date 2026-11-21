@@ -19,9 +19,3 @@ export const frontierSeasonEnd = (startsAt: Date | string, bags = SEASON_BAGS) =
   new Date(
     new Date(startsAt).getTime() + seasonSeconds(bags, frontierSeasonOnePreset.dayUnitSeconds) * 1_000,
   ).toISOString();
-
-/** The name the timetable gives the Blitz slot whose game starts at this instant. */
-export const blitzSlotName = (startsAt: Date) => {
-  const iso = startsAt.toISOString();
-  return `blitz-${iso.slice(0, 10).replaceAll("-", "")}-${iso.slice(11, 16).replace(":", "")}`;
-};

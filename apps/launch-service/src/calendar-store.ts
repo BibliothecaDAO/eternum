@@ -31,13 +31,12 @@ export class D1CalendarStore implements CalendarStore {
   async set(phase: SeasonPhase, now: number): Promise<SeasonPhase> {
     const startsAt = Date.parse(phase.startsAt);
     const endsAt = Date.parse(phase.endsAt);
-    if (phase.phase !== "frontier" && !(endsAt > startsAt)) throw new CalendarConflict("A phase ends after it starts");
     const current = await this.db
       .prepare("SELECT * FROM season_phases WHERE phase = ?")
       .bind(phase.phase)
       .first<PhaseRow>();
     rejectChangeToStartedPhase(current, startsAt, endsAt, now);
-    if (phase.phase === "frontier") assertFrontierSeason(startsAt, endsAt);
+    assertFrontierSeason(startsAt, endsAt);
     if (!(endsAt > now)) throw new CalendarConflict(PHASE_END_ERROR);
     return this.writePhase({ ...phase, startsAt: iso(startsAt), endsAt: iso(endsAt) }, current, now);
   }

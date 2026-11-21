@@ -17,11 +17,5 @@ export type { GameEnvironmentId, PlaytestSlot, SeasonPhase, SeasonPhaseName };
 /** `POST /api/factory/release` and its answer. */
 export type { ApplyReleaseRequest, ReleaseIdentity, ReleaseReport } from "./release";
 
-/** `POST /api/slots`. */
-export interface OpenSlotRequest {
-  name: string;
-  closesAt: string;
-}
-
 /** `PUT /api/factory/calendar/:phase`. */
 export type SetPhaseRequest<Phase extends SeasonPhaseName> = Omit<Extract<SeasonPhase, { phase: Phase }>, "phase">;

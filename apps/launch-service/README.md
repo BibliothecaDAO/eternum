@@ -5,22 +5,16 @@ membership. `IDENTITY` supplies the directory; `VALUE_RELAY` supplies confirmed,
 writes. A request can select `?chainId=<official shard>`; with one live shard the selection is unique. Multiple live
 shards require a chain. No Worker shard URL or separate ledger URL/address is configured.
 
-Every Worker write requires the operator token. The operator opens Blitz slots; players register on the ledger. The
-schedule's `frontier-<start timestamp>` names are reserved. There is no general factory create-run route or wallet
-authority; the dev shard's test Blitz route is the one exception. The timetable exposes `slotId`; completed game
-directory rows carry that same field: null for every game outside a paid slot (Frontier, Eternum, and a dev shard's test
-Blitz). The environment address book supplies the ledger and L2 chain. No directory row carries economic addresses or a
-free/paid entry payload.
+Every Worker write requires the operator token. No route opens a paid Blitz slot. The schedule's
+`frontier-<start timestamp>` names are reserved. There is no general factory create-run route or wallet authority; the
+dev shard's test Blitz route is the one exception. The timetable exposes `slotId`; completed game directory rows carry
+that same field: null for every game outside a paid slot (Frontier, Eternum, and a dev shard's test Blitz). The
+environment address book supplies the ledger and L2 chain. No directory row carries economic addresses or a free/paid
+entry payload.
 
-Blitz registration belongs to an uncapped ledger slot. It closes five minutes before the common game start; official
-games start every 90 minutes on the UTC grid: 00:00, 01:30, 03:00, through 22:30, every day. The minute cron publishes
-the next slot still open for registration. Preparation, the preset's full game duration and strictly more than ten
-minutes for result settlement must fit inside the calendar window; the relay checks the same bounds against the
-confirmed ledger season before signing. A calendar extension cannot extend that ledger season. Published slots keep
-their original times when the timetable changes. A new paid slot is refused until the Blitz family returns: only a slot
-the ledger already holds is answered. Such a slot never freezes or launches; its only way out is the refund. Before
-close the operator's refund cancels it, after its end it aborts it, and every registrant then reclaims the exact payment
-from the ledger. D1 keeps schedule and job metadata, never a copy of a paid roster.
+A paid Blitz slot the ledger already holds never freezes or launches; its only way out is the refund. Before close the
+operator's refund cancels it, after its end it aborts it, and every registrant then reclaims the exact payment from the
+ledger. D1 keeps schedule and job metadata, never a copy of a paid roster.
 
 The registrar serializes its device's shard writes and creates open-entry games. The launch service records no game
 results, and nothing posts one: the value monitor pauses payouts on any result the ledger records. Migration 0015

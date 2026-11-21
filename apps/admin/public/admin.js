@@ -51,14 +51,12 @@ function renderGames(view) {
   state.phases = phases;
   $("#calendar").innerHTML =
     failed(view.calendar, 3) ??
-    ["frontier", "blitz"]
-      .map((name) => {
-        const phase = phases.find((entry) => entry.phase === name);
-        return `<tr><td>${name === "frontier" ? `Frontier${phase ? ` · Preset ${esc(phase.presetId)}` : ""}` : "Blitz"}</td><td class="quiet-cell">${
-          phase ? `${when(phase.startsAt)} → ${when(phase.endsAt)}` : "Not set"
-        }</td><td class="end"><button class="quiet" data-phase="${name}">${phase ? "Edit" : "Set"}</button></td></tr>`;
-      })
-      .join("");
+    (() => {
+      const phase = phases.find((entry) => entry.phase === "frontier");
+      return `<tr><td>Frontier${phase ? ` · Preset ${esc(phase.presetId)}` : ""}</td><td class="quiet-cell">${
+        phase ? `${when(phase.startsAt)} → ${when(phase.endsAt)}` : "Not set"
+      }</td><td class="end"><button class="quiet" data-phase="frontier">${phase ? "Edit" : "Set"}</button></td></tr>`;
+    })();
 
   $("#slots").innerHTML =
     failed(view.slots, 3) ??
@@ -188,18 +186,6 @@ function openAction({ title, fields = [], method, route, launchPath, body, note 
 }
 
 const NEW_GAME = {
-  "open-slot": () =>
-    openAction({
-      title: "Open a paid Blitz slot",
-      fields: [
-        ["Slot name (blitz-YYYYMMDD-HHMM)", "name", ""],
-        ["Registration closes (UTC, ISO)", "closesAt", ""],
-      ],
-      method: "POST",
-      route: "slots",
-      launchPath: "/api/slots",
-      body: (v) => ({ name: v.name, closesAt: v.closesAt }),
-    }),
   frontier: () => setPhase("frontier"),
 };
 

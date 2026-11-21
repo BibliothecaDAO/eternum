@@ -44,12 +44,6 @@ const named = (value: string | undefined): value is string => value !== undefine
 const WRITES: Action[] = [
   {
     method: "POST",
-    pattern: "slots",
-    carriesBody: true,
-    route: () => ({ path: "/api/slots", action: "Open Blitz slot" }),
-  },
-  {
-    method: "POST",
     pattern: "slots/:name/refund",
     carriesBody: false,
     route: ({ name }) => (named(name) ? { path: `/api/slots/${name}/refund`, action: `Refund slot ${name}` } : null),
@@ -59,9 +53,7 @@ const WRITES: Action[] = [
     pattern: "calendar/:phase",
     carriesBody: true,
     route: ({ phase }) =>
-      phase === "frontier" || phase === "blitz"
-        ? { path: `/api/factory/calendar/${phase}`, action: `Set ${phase} phase` }
-        : null,
+      phase === "frontier" ? { path: `/api/factory/calendar/${phase}`, action: `Set ${phase} phase` } : null,
   },
   {
     method: "POST",
