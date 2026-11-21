@@ -50,7 +50,7 @@ import { DESKTOP_MIN_WIDTH, judgeHudLayout, MAP_LEAST_SHARE } from "./hud-layout
  * evidence for what they name.
  */
 
-const KNIGHT_STAMINA_MAX = release.definition.rules.troop_stamina_config.stamina_knight_max;
+const T2_KNIGHT_STAMINA_MAX = release.definition.rules.troop_stamina_config.stamina_knight_max + 20;
 const SCENE_WAIT_MS = 15_000;
 const SCENE_HOLD_MS = 3_000;
 const PLACE_PRESSES = 2;
@@ -1695,7 +1695,7 @@ function staminaEffectSteps(wind) {
         return reading.visible &&
           reading.current >= minimum &&
           reading.current < minimum + 10 &&
-          reading.maximum === KNIGHT_STAMINA_MAX &&
+          reading.maximum === T2_KNIGHT_STAMINA_MAX &&
           reading.text.includes("Full in")
           ? completed(played)
           : failed("Army bar and refill time must reflect the recorded stamina effects", played);
@@ -4544,8 +4544,8 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
       played.panel.sheet === played.panel.army &&
       played.reading.visible &&
       played.reading.current >= minimumStamina &&
-      played.reading.current <= KNIGHT_STAMINA_MAX &&
-      played.reading.maximum === KNIGHT_STAMINA_MAX
+      played.reading.current <= T2_KNIGHT_STAMINA_MAX &&
+      played.reading.maximum === T2_KNIGHT_STAMINA_MAX
         ? completed(played)
         : failed("The joined slot army must reopen from the dock with its refilled stamina visible", played),
   },
