@@ -12,6 +12,7 @@ import { toFactoryRunRecord, type LaunchRun } from "./model";
 import type { CreateGameRequest } from "./schemas";
 import type { LaunchServiceStore } from "./store";
 import type { RegisteredShard } from "@realms-world/value-ledger";
+import { readThroughDependency } from "@realms-world/chain";
 import {
   isRegisteredShard,
   isReleaseIdentity,
@@ -87,6 +88,12 @@ const deleteRun = async (context: Context, store: LaunchServiceStore, name: stri
     : context.json({ error: "Run is missing, active, complete, or a calendar season." }, 409);
 };
 
+const readHealthDependency = <Value>(name: string, now: number, read: () => Promise<Value>) =>
+  readThroughDependency(name, Math.floor(now / 1000), read, (error) => {
+    console.error("factory_health_dependency_failed", name, error);
+    return `${name}_unavailable`;
+  });
+
 const failedRunReport = (run: LaunchRun) => ({
   environment: run.environment,
   name: run.name,
@@ -114,30 +121,33 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
 
   // The schedule never requeues a failed season; its operator must continue it. Health names every failed run.
   app.get("/api/factory/health", async (context) => {
-    try {
-      const [failed, pending, joinFailure, wakeAt] = await Promise.all([
-        dependencies.store.failed(),
-        dependencies.store.pending(),
-        dependencies.registrar.joinFailure(),
-        dependencies.registrar.wakeAt(),
-      ]);
-      const now = Date.now();
-      const stranded = pending.filter(
-        (run) => (run.status === "running" || Date.parse(run.dueAt) <= now) && (wakeAt === null || wakeAt > now),
-      );
-      return context.json(
-        {
-          service: "launch",
-          ...dependencies.deployment,
-          failedRuns: failed.map(failedRunReport),
-          joinFailure,
-          strandedRuns: stranded.map(strandedRunReport),
-        },
-        failed.length || stranded.length || joinFailure ? 503 : 200,
-      );
-    } catch {
-      return context.json({ status: "unavailable" }, 503);
-    }
+    const now = Date.now();
+    const [runs, registrar] = await Promise.all([
+      readHealthDependency("store", now, () =>
+        Promise.all([dependencies.store.failed(), dependencies.store.pending()]),
+      ),
+      readHealthDependency("registrar", now, () =>
+        Promise.all([dependencies.registrar.joinFailure(), dependencies.registrar.wakeAt()]),
+      ),
+    ]);
+    const identity = { service: "launch", ...dependencies.deployment };
+    const named = { dependencies: [runs.dependency, registrar.dependency] };
+    if (!runs.value || !registrar.value) return context.json({ ...identity, ...named }, 503);
+    const [failed, pending] = runs.value;
+    const [joinFailure, wakeAt] = registrar.value;
+    const stranded = pending.filter(
+      (run) => (run.status === "running" || Date.parse(run.dueAt) <= now) && (wakeAt === null || wakeAt > now),
+    );
+    return context.json(
+      {
+        ...identity,
+        ...named,
+        failedRuns: failed.map(failedRunReport),
+        joinFailure,
+        strandedRuns: stranded.map(strandedRunReport),
+      },
+      failed.length || stranded.length || joinFailure ? 503 : 200,
+    );
   });
 
   app.get("/api/factory/directory-games", async (context) => {

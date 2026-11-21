@@ -1,4 +1,4 @@
-import { LEDGER_READ_STALE_SECONDS } from "@realms-world/chain";
+import { dependencyUp, LEDGER_READ_STALE_SECONDS } from "@realms-world/chain";
 import { disposeWorker } from "../../../packages/value-ledger/test-support/workerd";
 import * as chain from "@realms-world/chain";
 import { expect, it, vi } from "vitest";
@@ -26,6 +26,7 @@ const valueTargets = {
   ledgerAddress: "0x123",
 };
 const response = (value: unknown) => Response.json(value);
+const dependencies = [dependencyUp("store"), dependencyUp("registrar")];
 const network =
   (overrides: Record<string, Response> = {}) =>
   async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -47,7 +48,7 @@ const network =
     if (url.endsWith("/api/directory")) return response({ shard: { ...world, games: [] } });
     if (url.endsWith("/api/slots")) return response({ slots: [] });
     if (url.endsWith("/api/factory/health"))
-      return response({ service: "launch", failedRuns: [], joinFailure: null, strandedRuns: [] });
+      return response({ service: "launch", dependencies, failedRuns: [], joinFailure: null, strandedRuns: [] });
     if (url.endsWith("/api/guardian")) return response({ publicKey: "0x1", accountClassHash: "0x2" });
     if (url.endsWith("/api/health/accounts") || url.endsWith("/api/chat/health")) return response({ success: true });
     if (url.endsWith("/manifest"))
@@ -408,6 +409,20 @@ it.each([
 ] as const)("reports malformed or stale %s health as down", async (id, path, body) => {
   const result = await probeServices(network({ [valueTargets.playUrl + path]: response(body) }), now, [], valueTargets);
   expect(result.probes.find((probe) => probe.id === id)!.status).toBe("down");
+});
+
+it.each([
+  ["names no dependency", {}],
+  ["names one without its state", { dependencies: [{ name: "store" }] }],
+  ["names a failing one", { dependencies: [{ name: "store", ok: false, since: now, code: "store_unavailable" }] }],
+])("reports game launches down when their health %s", async (_, health) => {
+  const result = await probeServices(
+    network({ "https://play.realms.party/api/factory/health": response({ service: "launch", ...health }) }),
+    now,
+    [],
+    valueTargets,
+  );
+  expect(result.probes.find((probe) => probe.id === "launch")).toMatchObject({ status: "down", latency_ms: null });
 });
 
 it("reports game launches down while a run has failed or is stranded", async () => {

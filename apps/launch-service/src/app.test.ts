@@ -7,6 +7,7 @@ import { D1CalendarStore } from "./calendar-store";
 import { createLaunchTestDatabase, testChain, slotValueFixture, TEST_CHAIN, DEV_CHAIN } from "./test-database";
 import type { ReleaseIdentity, ReleaseReport } from "./release";
 import type { RegisteredShard } from "@realms-world/value-ledger";
+import { serviceDependencies } from "@realms-world/chain";
 
 const token = { authorization: "Bearer operator-test-token", "content-type": "application/json" };
 const session = { cookie: "session=valid", origin: "https://play.realms.party", "content-type": "application/json" };
@@ -147,6 +148,27 @@ test("health and version remain public and identify the deployment", async () =>
       environment: "staging",
       version: "test",
     });
+});
+
+test("health names the dependency it could not read, and every dependency when all read", async () => {
+  const { app, joinFailure } = fixture();
+  const healthy = await app.request("/api/factory/health");
+  expect(healthy.status).toBe(200);
+  expect(serviceDependencies((await healthy.json()) as { dependencies?: unknown })).toEqual([
+    { name: "store", ok: true, since: null, code: null },
+    { name: "registrar", ok: true, since: null, code: null },
+  ]);
+  joinFailure.mockRejectedValue(new Error("Durable Object reset at https://internal.test/key"));
+  const before = Math.floor(Date.now() / 1000);
+  const failing = await app.request("/api/factory/health");
+  expect(failing.status).toBe(503);
+  const body = (await failing.json()) as { dependencies?: unknown; failedRuns?: unknown };
+  expect(body.failedRuns).toBeUndefined();
+  expect(JSON.stringify(body)).not.toContain("internal.test");
+  const [store, registrar] = serviceDependencies(body);
+  expect(store).toEqual({ name: "store", ok: true, since: null, code: null });
+  expect(registrar).toMatchObject({ name: "registrar", ok: false, code: "registrar_unavailable" });
+  expect(registrar!.since).toBeGreaterThanOrEqual(before);
 });
 
 test("public health names a failed join before any run has failed", async () => {

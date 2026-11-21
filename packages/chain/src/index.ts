@@ -7,6 +7,7 @@ export * from "./community";
 export * from "./contracts";
 export * from "./endpoints";
 export * from "./marketplace";
+export * from "./service-health";
 export * from "./value-plane";
 export * from "./tokens";
 export {

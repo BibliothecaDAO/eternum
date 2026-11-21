@@ -1,4 +1,4 @@
-import { LEDGER_READ_STALE_SECONDS } from "@realms-world/chain";
+import { LEDGER_READ_STALE_SECONDS, serviceDependencies } from "@realms-world/chain";
 import type { Probe, Status, Target } from "./model";
 
 const DEADLINE_MS = 5000;
@@ -150,8 +150,9 @@ async function probeSlots(read: Reader, playUrl: string): Promise<Status> {
 }
 
 async function probeLaunch(read: Reader, playUrl: string): Promise<Status> {
-  if ((await body(read, playUrl + "/api/factory/health")).service !== "launch")
-    throw new Error("Launch health missing");
+  const launch = await body(read, playUrl + "/api/factory/health");
+  if (launch.service !== "launch") throw new Error("Launch health missing");
+  requireDependenciesUp(launch);
   return "up";
 }
 
@@ -257,6 +258,10 @@ async function body(read: Reader, url: string): Promise<Record<string, unknown>>
 }
 function requireReady(value: Record<string, unknown>) {
   if (value.success !== true) throw new Error("Not ready");
+}
+function requireDependenciesUp(health: Record<string, unknown>) {
+  const failing = serviceDependencies(health).find((dependency) => !dependency.ok);
+  if (failing) throw new Error(`Dependency ${failing.name} failing`);
 }
 function parseTarget(value: unknown): Target {
   const target = value as Target;
