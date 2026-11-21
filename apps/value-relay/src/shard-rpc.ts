@@ -38,7 +38,7 @@ export const readFirstRelease = async (heraldUrl: string, chainId: string, netwo
 };
 
 /** Releases are registered one after another from the chain's first, so the manifest's lowest is where it began. */
-export const firstReleaseOf = (releases: Record<string, unknown>) => {
+const firstReleaseOf = (releases: Record<string, unknown>) => {
   const ids = Object.keys(releases ?? {}).map(Number);
   if (!ids.length || !ids.every((release) => Number.isSafeInteger(release) && release > 0))
     throw new Error("invalid_shard_manifest_releases");

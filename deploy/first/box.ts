@@ -13,8 +13,8 @@ export const artifactFiles = [
 ].flatMap(([packageName, base]) =>
   ["contract_class.json", "compiled_contract_class.json"].map((suffix) => ({ packageName, file: `${base}.${suffix}` })),
 );
-export const remoteCheckout = (revision: string) => `/home/ubuntu/cairo-suite/first-release-${revision}`;
-export function releaseDirectory(target: Target) {
+const remoteCheckout = (revision: string) => `/home/ubuntu/cairo-suite/first-release-${revision}`;
+function releaseDirectory(target: Target) {
   return target.runDirectory;
 }
 /** One non-interactive SSH command on the target's box: a pinned host key, no shared connection. */

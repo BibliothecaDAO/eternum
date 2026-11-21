@@ -64,7 +64,6 @@ const input: Inputs = {
   cosignerToken: "test-cosigner-token",
   discordClientSecret: "fake-discord-secret",
   avnuPaymasterApiKey: "fake-avnu-key",
-  amount: "1000000",
   frontierStart: "2027-01-01T00:00:00Z",
   frontierEnd: "2027-01-21T00:00:00Z",
 };
@@ -120,9 +119,7 @@ test.each([
   expect(() => validateInputs({ ...input, rpc }, environments.dev)).toThrow();
 });
 
-test("positive integral deposit and duration required; a cold environment asks for its public cold accounts only", () => {
-  for (const amount of ["0", "-1", "1.1", "1e6", (2n ** 128n).toString()])
-    expect(() => validateInputs({ ...input, amount }, environments.dev)).toThrow();
+test("a cold environment asks for its public cold accounts only", () => {
   const cold = { ...environments.production, coldAdmin: true } as Target;
   expect(() => validateInputs({ ...input, alertEmail: "oncall@example.test" }, cold)).toThrow("public cold");
   const coldInputs = { ...input, admin: "0x9", treasury: "0xa", alertEmail: "oncall@example.test" };
@@ -536,7 +533,6 @@ test("setup asks for an alert email on production only, and dev's inputs can nev
     "cosignerToken",
     "discordClientId",
     "discordClientSecret",
-    "amount",
     "frontierStart",
     "frontierEnd",
   ]);

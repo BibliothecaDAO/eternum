@@ -85,7 +85,6 @@ export interface Inputs extends SeasonDates, SignInClients, ApnsKeyInputs {
   avnuPaymasterApiKey?: string;
   /** Where the status monitor emails incidents: production's only, required there and refused on dev. */
   alertEmail?: string;
-  amount: string;
   admin?: string;
   treasury?: string;
 }

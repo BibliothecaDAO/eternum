@@ -1,7 +1,7 @@
 import { assertFrontierSeason, CalendarConflict } from "../../apps/launch-service/src/calendar";
 
 import { PublicError } from "./errors";
-import { apnsKeyOf, signInClientsOf, WEI, type Inputs, type Target } from "./settings";
+import { apnsKeyOf, signInClientsOf, type Inputs, type Target } from "./settings";
 export interface SeasonDates {
   frontierStart: string;
   frontierEnd: string;
@@ -44,7 +44,6 @@ export function setupQuestions(target: Target): [keyof Inputs, string][] {
     ...(sendsAlerts(target)
       ? [["alertEmail", "Alert email (where the status monitor reports incidents)"] as [keyof Inputs, string]]
       : []),
-    ["amount", "Frontier deposit in whole tokens"],
     ["frontierStart", "Frontier start, YYYY-MM-DDTHH:MM:SSZ"],
     ["frontierEnd", "Frontier end, YYYY-MM-DDTHH:MM:SSZ"],
     ...(target.coldAdmin
@@ -83,8 +82,6 @@ export function validateInputs(input: Inputs, target: Target) {
     throw new PublicError("Dev sends no alert email; remove alertEmail from inputs.json");
   if (sendsAlerts(target) && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(input.alertEmail ?? ""))
     throw new PublicError("Production needs the alert email address");
-  if (!/^[1-9][0-9]*$/.test(input.amount) || BigInt(input.amount) * WEI >= 1n << 128n)
-    throw new PublicError("Deposit must be positive whole tokens fitting u128 wei");
   validateDates(input);
   if (target.coldAdmin && (!input.admin || BigInt(input.admin) <= 0n))
     throw new PublicError("Production needs the public cold admin and treasury addresses, never their keys");

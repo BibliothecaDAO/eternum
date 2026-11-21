@@ -39,7 +39,7 @@ export async function readFrontierFunding(
 }
 
 /** Compare the immutable day rules before funding and when checking an existing pool. */
-export function assertFrontierPreset(preset: ReturnType<typeof decodeLedgerPreset>, native: FrontierFundingTerms) {
+function assertFrontierPreset(preset: ReturnType<typeof decodeLedgerPreset>, native: FrontierFundingTerms) {
   if (
     ![native.start, native.end, native.dayUnit, native.claimWindow, native.topN, native.chestPoolBps].every(
       Number.isSafeInteger,

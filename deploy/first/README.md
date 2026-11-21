@@ -14,13 +14,12 @@ than guessing their values. A fresh dry run cannot inspect Alchemy or Cloudflare
 entered; it reports those steps as unavailable. Later dry runs use the saved credentials and inspect remote results.
 
 The first apply asks for the Cloudflare token, one Alchemy mainnet URL, the Resend key, the Discord application's client
-ID and secret (every environment offers Discord sign-in), the whole-token Frontier deposit, and two UTC dates: Frontier
-start and end. Dates use `YYYY-MM-DDTHH:MM:SSZ`; none has a default. The Frontier start must be on its army tick, with a
-positive duration. Invalid dates are rejected without changing it. Both dates and the deposit are shown before
-transactions. Production additionally asks for its **public** treasury address, never its key: the treasury is fixed in
-the ledger's constructor. The deployer is the ledger's admin and funding payer on dev and production; an environment
-marked `coldAdmin` in `environments.json` instead asks for its public cold-admin address, and setup refuses a saved
-`admin` anywhere else.
+ID and secret (every environment offers Discord sign-in), and two UTC dates: Frontier start and end. Dates use
+`YYYY-MM-DDTHH:MM:SSZ`; none has a default. The Frontier start must be on its army tick, with a positive duration.
+Invalid dates are rejected without changing it. Both dates are shown before transactions. Production additionally asks
+for its **public** treasury address, never its key: the treasury is fixed in the ledger's constructor. The deployer is
+the ledger's admin on dev and production; an environment marked `coldAdmin` in `environments.json` instead asks for its
+public cold-admin address, and setup refuses a saved `admin` anywhere else.
 
 Setup does not ask for AVNU's paymaster key. To let the identity Worker sponsor default wallets' recovery steps, add it
 to the environment's `inputs.json` as `avnuPaymasterApiKey`, then run setup's apply
@@ -236,12 +235,8 @@ pnpm run season dev "$HOME/.realms-dev"
 ```
 
 This reads the existing private directory without migration: `inputs.json`, `keys.json` and `secrets.json`. It sets the
-missing calendar phases from the saved dates, preserves and displays existing published phases, waits for the launch
-cron's Frontier game, deposits the saved whole-LORDS amount, then watches pool publication. Dev mints missing test
-LORDS. Production refuses a missing or noncanonical LORDS address; its payer must hold real LORDS before funding. Clear
-the retired production ledger address and deployment block before fresh setup, and fund only a new shard/game identity
-never funded on the retired ledger. It uses the public address book written by setup. An existing deposit is verified
-rather than repeated. Mainnet funding remains an owner operation, including dev funding.
+missing calendar phases from the saved dates and preserves and displays existing published phases. It makes no ledger
+deposit. Clear the retired production ledger address and deployment block before fresh setup.
 
 The dev box can open the free Frontier phase at the current armies tick, for one complete bag of days:
 
@@ -302,16 +297,14 @@ retry: that would generate different accounts. Restore its backup. The process l
 sharing an account nonce.
 
 If a calendar phase's start has passed but its end is still in the future, rerun with the same dates. For future
-seasons, edit the two dates and the Frontier deposit in `inputs.json`, then run season; the calendar replaces its ended
-phases. Running or future seasons are never replaced. Existing deposits are never changed. If a production collection or
-rating token needs an upgrade, its cold owner must complete the reviewed upgrade first; this command grants no new
-upgrade power and never obtains the upgrade key.
+seasons, edit the two dates in `inputs.json`, then run season; the calendar replaces its ended phases. Running or future
+seasons are never replaced. If a production collection or rating token needs an upgrade, its cold owner must complete
+the reviewed upgrade first; this command grants no new upgrade power and never obtains the upgrade key.
 
-Declarations, contract deployments, transfers, successful setup and funding cannot be undone. Check the public book,
-roles and two displayed dates before applying. A wrong published contract or immutable preset causes a refusal; changing
-private state does not repair it. If the funding game, token, start, end or pool differs, the command refuses rather
-than sending another deposit. A proven pool mismatch remains an error. D1 migrations and DNS also affect running
-services: keep the former active shard’s retained data for recovery.
+Declarations, contract deployments, transfers and successful setup cannot be undone. Check the public book, roles and
+two displayed dates before applying. A wrong published contract or immutable preset causes a refusal; changing private
+state does not repair it. D1 migrations and DNS also affect running services: keep the former active shard’s retained
+data for recovery.
 
 Dev chest metadata uses the public test CID already committed in
 `contracts/l2/collectibles/ext/scripts/deployment/data/example.json`. All five chest bands and the test cosmetics use
