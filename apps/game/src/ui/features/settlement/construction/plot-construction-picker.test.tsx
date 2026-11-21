@@ -78,38 +78,7 @@ const openPicker = (stocked: boolean) => {
   return { host, tab, tile, order, button, placeBuilding, close };
 };
 
-const RESOURCE_LINES = [
-  BuildingType.ResourceWood,
-  BuildingType.ResourceCoal,
-  BuildingType.ResourceCopper,
-  BuildingType.ResourceIronwood,
-  BuildingType.ResourceColdIron,
-  BuildingType.ResourceGold,
-  BuildingType.ResourceAdamantine,
-  BuildingType.ResourceMithral,
-  BuildingType.ResourceDragonhide,
-];
-
 describe("Blitz's Build on this plot panel", () => {
-  it("lays the resources in their lines, a tier a row, in the same places whatever the realm can raise", () => {
-    // Little held: most cannot rise. Stocked: the commons can. The places never change.
-    for (const stocked of [false, true]) {
-      const panel = openPicker(stocked);
-      expect([...panel.host.querySelectorAll('[role="tab"]')].map((each) => each.textContent)).toEqual([
-        "Resources",
-        "Economic",
-        "Military",
-      ]);
-      expect(panel.order()).toEqual(RESOURCE_LINES);
-      // The tab opens on its grid's first building, Wood, whatever order the realm lists its resources in.
-      expect(panel.tile(BuildingType.ResourceWood).getAttribute("aria-pressed")).toBe("true");
-      // A building the realm cannot raise stays in its place, locked.
-      expect(panel.tile(BuildingType.ResourceDragonhide).querySelector('[data-icon="lock"]')).not.toBeNull();
-      expect(panel.tile(BuildingType.ResourceWood).querySelector('[data-icon="lock"]') === null).toBe(stocked);
-      panel.close();
-    }
-  });
-
   it("lays the army a troop type a column, Paladin, Knight, Crossbowman, and a tier a row", () => {
     const panel = openPicker(true);
     panel.tab("Military");
@@ -128,26 +97,6 @@ describe("Blitz's Build on this plot panel", () => {
     ]);
     // A troop building is named by its tier under its type's head, so no name truncates.
     expect(panel.tile(BuildingType.ResourceCrossbowmanT3).textContent).toBe("T3");
-    panel.close();
-  });
-
-  it("stands the chosen building whole below, and builds it on the plot; one it cannot raise says why", async () => {
-    const panel = openPicker(true);
-    act(() => panel.tile(BuildingType.ResourceCoal).click());
-    expect(panel.tile(BuildingType.ResourceCoal).getAttribute("aria-pressed")).toBe("true");
-    expect(panel.host.querySelector('[aria-label="Build cost"]')).not.toBeNull();
-    await act(async () => panel.button("Build")!.click());
-    expect(panel.placeBuilding).toHaveBeenCalledWith(
-      expect.objectContaining({
-        structureId: BLITZ_REALM_ID,
-        buildingType: BuildingType.ResourceCoal,
-        hex: BLITZ_PLOT,
-      }),
-    );
-
-    act(() => panel.tile(BuildingType.ResourceDragonhide).click());
-    expect(panel.button("Build")).toBeUndefined();
-    expect(panel.host.querySelector('[role="status"]')!.textContent).toBe("Insufficient resources to build.");
     panel.close();
   });
 

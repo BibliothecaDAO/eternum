@@ -19,7 +19,7 @@ function fixture() {
     {
       model: "GameRegistry",
       key: "1",
-      value: gameRegistryRow({ preset_id: 7, seed: "5", scheduled_end_at: "10000", end_at: "10000" }),
+      value: gameRegistryRow({ seed: "5", scheduled_end_at: "10000", end_at: "10000" }),
     },
     {
       model: "SettlementRules",

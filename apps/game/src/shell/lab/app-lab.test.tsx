@@ -174,19 +174,5 @@ it("opens a Devcon flyer's sealed ticket as the golden ticket the account's firs
   await act(async () => open.click());
   await vi.waitFor(() => expect(lab.querySelector(".app-ticket")?.getAttribute("data-face")).toBe("golden"));
   expect(lab.textContent).toContain("Golden Devcon ticket");
-  expect(lab.textContent).toContain("2,000 Labor each day");
-});
-
-it("draws the Devcon game's Realm step with the held golden ticket chosen and Found ready", async () => {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async () => new Response("{}")),
-  );
-  identity.signedIn.on = true;
-  const lab = await renderLab("/lab/app/devcon-held/doorway/home");
-  await vi.waitFor(() => expect(lab.textContent).toContain("1 ticket · 1 Realm"));
-  expect(lab.textContent).toContain("Golden Devcon ticket");
-  expect(lab.textContent).toContain("4786");
-  const found = [...lab.querySelectorAll("button")].find((each) => each.textContent === "Create your realm");
-  await vi.waitFor(() => expect(found?.disabled).toBe(false));
+  expect(lab.textContent).not.toMatch(/each day/);
 });

@@ -61,7 +61,7 @@ it("opens How to play, the game's guide on the docs site, in a new tab with the 
           onToday={() => {}}
           onSeason={() => {}}
           onSettings={() => {}}
-          guide="https://docs.realms.party/blitz/"
+          guide="https://docs.realms.party/frontier/"
           onExit={() => {}}
           onClose={() => {}}
         />,
@@ -70,7 +70,7 @@ it("opens How to play, the game's guide on the docs site, in a new tab with the 
     const link = [...host.querySelectorAll<HTMLAnchorElement>("nav a")].find((a) =>
       a.textContent?.includes("How to play"),
     )!;
-    expect(link.href).toBe("https://docs.realms.party/blitz/");
+    expect(link.href).toBe("https://docs.realms.party/frontier/");
     expect(link.target).toBe("_blank");
     expect(link.rel).toBe("noopener noreferrer");
     expect(link.textContent).toBe("How to playdocs.realms.party");

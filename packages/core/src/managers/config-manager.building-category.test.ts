@@ -156,12 +156,13 @@ describe("native immutable configuration", () => {
 
   it("reads whether terrain changes combat from the game's damage rule", () => {
     const { manager, write } = fixture();
-    expect(manager.hasBiomeCombatEffects()).toBe(true);
-    expect(manager.getBiomeCombatBonus(TroopType.Knight, BiomeType.Beach)).toBe(0.7);
-
-    const neutral = { ...release.definition.rules.troop_damage_config, damage_biome_bonus_num: 0 };
-    write("SliceRules", [54], { ...release.definition.rules, game_id: 54, troop_damage_config: neutral });
+    expect(release.definition.rules.troop_damage_config.damage_biome_bonus_num).toBe(0);
     expect(manager.hasBiomeCombatEffects()).toBe(false);
     expect(manager.getBiomeCombatBonus(TroopType.Knight, BiomeType.Beach)).toBe(1);
+
+    const terrain = { ...release.definition.rules.troop_damage_config, damage_biome_bonus_num: 3000 };
+    write("SliceRules", [54], { ...release.definition.rules, game_id: 54, troop_damage_config: terrain });
+    expect(manager.hasBiomeCombatEffects()).toBe(true);
+    expect(manager.getBiomeCombatBonus(TroopType.Knight, BiomeType.Beach)).toBe(0.7);
   });
 });

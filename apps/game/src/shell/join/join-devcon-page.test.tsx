@@ -139,9 +139,7 @@ it("shows every visitor the sealed ticket alone, and opens it as soon as sign-in
   expect(text()).toContain("Golden Devcon ticket");
   // Golden tickets are no longer counted: the stub names the event only.
   expect(text()).toContain("Golden · Devcon · Mumbai");
-  expect(text()).not.toMatch(/One of/);
-  expect(text()).toContain("2,000 Labor each day");
-  expect(text()).toContain("2,000 Essence each day");
+  expect(text()).not.toMatch(/One of|each day/);
   expect(kept()).toBeNull();
   await press("Start your adventure");
   expect(path()).toBe(entryHref(SEASON as never, "play"));
@@ -169,8 +167,7 @@ it("lets an account already signed in open its ticket with a deliberate press, a
   expect(host.querySelector(".app-ticket")?.getAttribute("data-face")).toBe("opened");
   expect(text()).toContain("Devcon ticket");
   expect(text()).toContain("A Devcon realm is yours");
-  expect(text()).toContain("1,000 Labor each day");
-  expect(text()).toContain("1,000 Essence each day");
+  expect(text()).not.toMatch(/each day/);
   expect(text()).not.toMatch(/golden/i);
 });
 
@@ -180,7 +177,6 @@ it("says plainly that an account already holds its ticket, shows that one, and n
   await visit("/join/devcon/K7M2QX4R");
   await vi.waitFor(() => expect(text()).toContain("You already hold your Devcon ticket"));
   expect(host.querySelector(".app-ticket")?.getAttribute("data-face")).toBe("golden");
-  expect(text()).toContain("2,000 Labor each day");
   // The second flyer's code is never redeemed, and leaves this browser for someone else.
   expect(redeemedCodes()).toEqual([]);
   expect(kept()).toBeNull();

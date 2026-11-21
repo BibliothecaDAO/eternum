@@ -20,6 +20,7 @@ vi.mock("@/ui/features/social/realtime-chat/hooks/use-chat-people", () => ({
   useChatPeople: () => ({ nameOf: () => "Ada" }),
 }));
 vi.mock("@/runtime/world", () => ({ getActiveGame: () => null }));
+vi.mock("@/config/game-modes", () => ({ getGameModeId: () => "frontier" }));
 // No game here: a place reads as its message has it (chat-places.test.tsx reads places in a game).
 vi.mock("@/ui/features/social/realtime-chat/ui/shared/use-chat-map", () => ({
   usePlaceReader: () => (place: { name: string; icon: string }) => ({ ...place, open: null, elsewhere: true }),

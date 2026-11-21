@@ -22,7 +22,7 @@ function baneProduction() {
     {
       model: "GameRegistry",
       key: "0xd001",
-      value: gameRegistryRow({ preset_id: 7, scheduled_end_at: "10000", end_at: "10000", seed: "5" }),
+      value: gameRegistryRow({ scheduled_end_at: "10000", end_at: "10000", seed: "5" }),
     },
     {
       model: "Structure",
