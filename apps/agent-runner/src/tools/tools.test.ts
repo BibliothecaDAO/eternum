@@ -79,7 +79,8 @@ describe("observe_game", () => {
 
     expect(renderFocus(game, "empire")).toContain(`#12 Realm L1 at (${site.x},${site.y})`);
     expect(renderFocus(game, "empire")).not.toContain("#13");
-    expect(renderFocus(game, "armies")).toContain("#101 (home #12): 10 Knight T1, stamina 20");
+    const { stamina_knight_max } = game.store.require("SliceRules", { game_id: 28 }).troop_stamina_config;
+    expect(renderFocus(game, "armies")).toContain(`#101 (home #12): 10 Knight T1, stamina ${stamina_knight_max}`);
     expect(renderFocus(game, "armies")).toContain("at home");
     expect(renderFocus(game, "nearby")).toContain(`Explorer #101 at (${homeHex.col},${homeHex.row})`);
     expect(renderFocus(game, "nearby")).toContain(`army #201 Knight T1 at (${rivalHex.col},${rivalHex.row})`);

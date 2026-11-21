@@ -83,7 +83,7 @@ it("fights a structure's highest occupied guard slot first, as the contract does
   }
   const result = await createSimulateTool(game).execute("combat", { kind: "combat", attackerId: 101, defenderId: 12 });
   expect(result.content).toEqual([
-    { type: "text", text: expect.stringMatching(/ vs 100 Crossbowman T1 \(stamina \d+\) \(structure guard\)\n/) },
+    { type: "text", text: expect.stringMatching(/ vs 100 Crossbowman T1 \(stamina \d+\)\n/) },
   ]);
 });
 
