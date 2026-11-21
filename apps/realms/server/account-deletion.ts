@@ -161,7 +161,7 @@ const anonymiseUser = (db: D1Database, userId: string, now: number) =>
   db
     .prepare(
       `UPDATE "user" SET "email" = 'deleted:' || "id", "emailVerified" = 0, "name" = "id", "image" = NULL,
-       "suggestedName" = NULL, "address" = NULL, "walletLinkedAt" = NULL, "lastSeenAt" = NULL,
+       "suggestedName" = NULL, "address" = NULL, "walletLinkedAt" = NULL,
        "newsEmailOptOutAt" = ?1, "updatedAt" = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE "id" = ?2`,
     )
     .bind(now, userId);
