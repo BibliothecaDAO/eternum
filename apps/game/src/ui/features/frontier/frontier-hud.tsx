@@ -51,7 +51,7 @@ import { MenuPage } from "./hud/menu-page";
 import { useHowToPlay } from "@/ui/modules/how-to-play";
 import { FragmentsPurse, PurseRow } from "./value/lords-purse";
 import { useFragmentsHeld } from "./value/fragments";
-import { ShopSheet } from "./shop/shop-sheet";
+import { ShopSheet, useReturnToShop } from "./shop/shop-sheet";
 import { homeKind } from "@/ui/design-system/home-icons";
 import { OfflineNotice } from "./hud/offline-notice";
 import { SceneFailureNotice } from "./hud/scene-failure-notice";
@@ -135,6 +135,7 @@ const FrontierHudBody = ({
   });
   const desktop = useLayout() === "desktop";
   const { surface, openSurface: setSurface, showsCard } = useOnePanel(card?.key ?? null, !desktop);
+  useReturnToShop(() => setSurface("shop"));
   const research = useResearchTree(realm);
   useEffect(() => {
     if (surface !== "research") setResearchPick(undefined);
@@ -238,7 +239,7 @@ const FrontierHudBody = ({
       {showsCard && card?.sheet}
       {surface === "army" && realm && !visit && <FrontierArmy realm={realm} onClose={close} />}
       {surface === "army-lost" && <ArmyLostSheet onClose={close} />}
-      {surface === "shop" && own && <ShopSheet onClose={close} />}
+      {surface === "shop" && own && <ShopSheet realm={own} onClose={close} />}
       {surface === "settings" && (
         <HudSheet label={SETTINGS} onClose={close}>
           <SettingsPanel />

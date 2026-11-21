@@ -347,8 +347,8 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(step()).toBe("pick");
     expect(page.container.querySelector("[data-order]")).toBeNull();
     expect(page.text()).not.toContain("Create your account");
-    expect(card("Might").textContent).toBe("Might39 membersabout 2.5K LORDSa player on average, of 100K");
-    expect(card("Guile").textContent).toContain("0 membersabout 100K LORDS");
+    expect(card("Prowess").textContent).toBe("Prowess39 membersabout 2.5K LORDSa player on average, of 100K");
+    expect(card("Insight").textContent).toContain("0 membersabout 100K LORDS");
     expect(page.container.querySelector("[data-aspect-shared]")?.textContent).toBe(
       "The Aspect's 100,000 LORDS are shared by Glory: your share follows your Glory, not an equal split. The first to finish adds 100,000 more.",
     );
@@ -357,10 +357,10 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     ).toBe(true);
     expect(button("Choose your side")?.disabled).toBe(true);
 
-    await act(async () => card("Harmony").click());
-    await act(async () => card("Might").click());
-    expect(card("Might").getAttribute("aria-pressed")).toBe("true");
-    expect(card("Harmony").getAttribute("aria-pressed")).toBe("false");
+    await act(async () => card("Luminary").click());
+    await act(async () => card("Prowess").click());
+    expect(card("Prowess").getAttribute("aria-pressed")).toBe("true");
+    expect(card("Luminary").getAttribute("aria-pressed")).toBe("false");
     expect([...page.container.querySelectorAll("[data-order]")].map((row) => row.getAttribute("data-order"))).toEqual(
       ordersOfAspect(1).map(({ fullOrderName }) => fullOrderName),
     );
@@ -374,7 +374,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     await settle();
     expect(reads.chosen).toEqual([giants!.orderId]);
     expect(step()).toBe("waiting");
-    expect(page.container.querySelector("h1")?.textContent).toBe("You're in Might");
+    expect(page.container.querySelector("h1")?.textContent).toBe("You're in Prowess");
     expect(page.text()).toContain(`${giants!.fullOrderName} · opens ${formatDate(startsAt, now)}`);
     expect(page.container.querySelector(".app-chip")?.textContent).toBe("Starts in 14d 4h");
   });
@@ -387,7 +387,12 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     const page = await mount();
     await settle();
     const cards = () => [...page.container.querySelectorAll("[data-aspect]")];
-    expect(cards().map((card) => card.getAttribute("data-aspect"))).toEqual(["Chaos", "Might", "Harmony", "Guile"]);
+    expect(cards().map((card) => card.getAttribute("data-aspect"))).toEqual([
+      "Havoc",
+      "Prowess",
+      "Luminary",
+      "Insight",
+    ]);
     expect(cards()[0]!.getAttribute("aria-pressed")).toBe("true");
     expect(page.container.querySelectorAll("[data-aspect-invited]")).toHaveLength(1);
     expect(cards()[0]!.querySelector("[data-aspect-invited]")?.textContent).toBe("Dana invited you");
@@ -406,7 +411,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(again.container.querySelector('[aria-pressed="true"]')).toBeNull();
   });
 
-  it("holds a free Season Pass code on the waiting screen: a refused code says so in its field, a good one is held", async () => {
+  it("holds a free Ancient Seal code on the waiting screen: a refused code says so in its field, a good one is held", async () => {
     reads.directory = answered({ games: [] });
     reads.calendar = answered(seasonOne(startsAt));
     reads.intent = { order: ordersOfAspect(1)[0]!.orderId, members: {} };
@@ -422,7 +427,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
         input.dispatchEvent(new Event("input", { bubbles: true }));
       });
     expect(card()?.getAttribute("data-seal-code")).toBe("open");
-    expect(card()?.textContent).toContain("Free Season Pass?");
+    expect(card()?.textContent).toContain("Free Ancient Seal?");
     expect(card()?.textContent).toContain("Quest bonus and a Realm skin. One code, one account.");
 
     await type("TAKEN234");
@@ -437,7 +442,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     await settle();
     expect(reads.redeemed).toEqual(["TAKEN234", "seal2345"]);
     expect(card()?.getAttribute("data-seal-code")).toBe("held");
-    expect(card()?.textContent).toBe("Your Season Pass is heldIt is yours when the season opens.");
+    expect(card()?.textContent).toBe("Your Ancient Seal is heldIt is yours when the season opens.");
     expect(card()?.querySelector("input")).toBeNull();
   });
 
@@ -456,7 +461,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     await settle();
     expect(reads.shared).toEqual([{ kind: "aspect", chainId: null, gameId: null, moment: 1 }]);
     expect(page.container.querySelector("[data-season-invite]")?.textContent).toBe(
-      "Bring friendsCopy your Might link. A friend who opens it starts in Might.",
+      "Bring friendsCopy your Prowess link. A friend who opens it starts in Prowess.",
     );
     await press(page.container, "Copy invite link");
     await settle();
@@ -476,7 +481,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
       const page = await mount();
       await settle();
       const [giants] = ordersOfAspect(1);
-      await act(async () => page.container.querySelector<HTMLButtonElement>('[data-aspect="Might"]')!.click());
+      await act(async () => page.container.querySelector<HTMLButtonElement>('[data-aspect="Prowess"]')!.click());
       await act(async () =>
         page.container.querySelector<HTMLButtonElement>(`[data-order="${giants!.fullOrderName}"]`)!.click(),
       );
@@ -512,7 +517,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
       const page = await mount();
       await settle();
       const [perfection] = ordersOfAspect(2);
-      await act(async () => page.container.querySelector<HTMLButtonElement>('[data-aspect="Harmony"]')!.click());
+      await act(async () => page.container.querySelector<HTMLButtonElement>('[data-aspect="Luminary"]')!.click());
       await act(async () =>
         page.container.querySelector<HTMLButtonElement>(`[data-order="${perfection!.fullOrderName}"]`)!.click(),
       );
@@ -522,7 +527,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
       expect(page.container.querySelector("[data-preseason-step]")?.getAttribute("data-preseason-step")).toBe(
         "waiting",
       );
-      expect(page.container.querySelector("h1")?.textContent).toBe("You're in Might");
+      expect(page.container.querySelector("h1")?.textContent).toBe("You're in Prowess");
     } finally {
       identityClient.chooseOrder = keep;
     }

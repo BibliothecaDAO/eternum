@@ -1,26 +1,40 @@
-import { aspects, catalogAspectId, type AspectId } from "@bibliothecadao/types";
+import { aspects, catalogAspectId, FRIEND_GLORY, type AspectId } from "@bibliothecadao/types";
 import { isShareChannel, isShareKind } from "@realms-world/identity";
 import type { ShareChannel, ShareMoment } from "@realms-world/identity";
 
 import type { IdentityAuth } from "./auth";
 import { keepBrowser } from "./browsers";
 import { readCampaignCode } from "./campaigns";
-import { accountKey } from "./campaign-entry";
+import { aspectOn } from "./account-aspect";
+import { accountKey, gloryOn, playerAccounts } from "./campaign-entry";
+import type { IdentityEnv } from "./env";
+import { creditFragmentsOf } from "./fragment-credit";
 import { json } from "./http";
 import { intendedAspect, inviteSide } from "./order-intent";
 import { createShareStore } from "./share-store";
-import type { PendingJoin, SharedLink } from "./share-store";
+import { openFrontierGames } from "./shop-game";
+import type { PendingJoin, ShareGame, SharedLink, SharePayout } from "./share-store";
 
-/**
- * What shares read beyond D1: each game's season board, the Aspect an account plays for in a game (its Herald;
- * throws while it cannot answer), and the account each Realms id plays with.
- */
 export interface ShareWorld {
   db: D1Database;
-  sitesCleared: (game: { chainId: string; gameId: number }) => Promise<Map<string, number> | null>;
-  aspectOf: (game: { chainId: string; gameId: number }, account: string) => Promise<AspectId | null>;
+  glory: (game: ShareGame) => Promise<Map<string, number> | null>;
+  seasonGames: () => Promise<ShareGame[]>;
+  aspectOf: (game: ShareGame, account: string) => Promise<AspectId | null>;
   accountOf: (realmsId: string) => Promise<string>;
+  creditFragments: (payout: SharePayout) => Promise<Response>;
 }
+
+export const shareWorldOf = (
+  env: Pick<IdentityEnv, "DB" | "GUARDIAN" | "VALUE_RELAY" | "OPERATOR_TOKEN">,
+  fetchShard: typeof fetch,
+): ShareWorld => ({
+  db: env.DB,
+  glory: (game) => gloryOn(env, fetchShard, game),
+  seasonGames: () => openFrontierGames(env, fetchShard, Math.floor(Date.now() / 1000)),
+  aspectOf: (game, account) => aspectOn(env, fetchShard, game, account),
+  accountOf: playerAccounts(env),
+  creditFragments: (payout) => creditFragmentsOf(env)(payout),
+});
 
 /** How many sharers the operator's report ranks. */
 const TOP_SHARERS = 20;
@@ -130,46 +144,60 @@ export async function handleShareReport(world: ShareWorld) {
   });
 }
 
-/**
- * Settles what shared links brought: new accounts become joins of the link their browser opened first, then each join
- * (every sharer's, or one sharer's) counts as activated once its link's season board shows it with a site cleared. The
- * board is the window: a site cleared there was cleared in the season the link was shared from, however late it is
- * read. Every step is safe to repeat, so any read may settle; a board that cannot answer leaves its joins for the next.
- */
+export async function settleShareInvites(world: ShareWorld) {
+  const now = nowSeconds();
+  const { games } = await settleShares(world, now);
+  await deliverSharePayouts(world, games, now);
+}
+
 async function settleShares(world: ShareWorld, now: number, sharer?: string) {
   const store = createShareStore(world.db);
   await store.settleJoins();
   const pending = await store.pendingJoins(sharer);
-  let unsettled = 0;
-  const activated: string[] = [];
-  for (const [game, joins] of joinsByGame(pending)) {
-    const board = await world.sitesCleared(game);
-    if (board === null) unsettled += joins.length;
-    else activated.push(...(await friendsWithAClear(world, joins, board)));
+  let games: ShareGame[];
+  try {
+    games = await world.seasonGames();
+  } catch {
+    return { unsettled: pending.length, games: [] };
   }
-  await store.markActivated(activated, now);
-  return { unsettled };
+  const unsettled = new Set<string>();
+  const activated = new Set<string>();
+  for (const game of games) {
+    const joins = pending.filter((join) => isDecidedIn(join, game) && !activated.has(join.friend));
+    if (joins.length === 0) continue;
+    const glory = await world.glory(game);
+    if (glory === null) for (const join of joins) unsettled.add(join.friend);
+    else
+      for (const join of await friendsWithGlory(world, joins, glory)) {
+        if (join.kind === "aspect") await store.recordFriendPayout(join, game, now);
+        activated.add(join.friend);
+      }
+  }
+  await store.markActivated([...activated], now);
+  return { unsettled: [...unsettled].filter((friend) => !activated.has(friend)).length, games };
 }
 
-/** The joins the season board shows with at least one site cleared. */
-const friendsWithAClear = async (world: ShareWorld, joins: readonly PendingJoin[], board: Map<string, number>) => {
-  const cleared: string[] = [];
+const isDecidedIn = (join: PendingJoin, game: ShareGame) =>
+  join.chainId === null || (join.chainId === game.chainId && join.gameId === game.gameId);
+
+const friendsWithGlory = async (world: ShareWorld, joins: readonly PendingJoin[], glory: Map<string, number>) => {
+  const earned: PendingJoin[] = [];
   for (const join of joins)
-    if ((board.get(accountKey(await world.accountOf(join.friend))) ?? 0) >= 1) cleared.push(join.friend);
-  return cleared;
+    if ((glory.get(accountKey(await world.accountOf(join.friend))) ?? 0) >= FRIEND_GLORY) earned.push(join);
+  return earned;
 };
 
-/** Pending joins grouped by the game whose board decides them, so each board is read once. */
-const joinsByGame = (joins: readonly PendingJoin[]) => {
-  const games = new Map<string, { game: { chainId: string; gameId: number }; joins: PendingJoin[] }>();
-  for (const join of joins) {
-    const key = `${join.chainId}:${join.gameId}`;
-    const entry = games.get(key) ?? { game: { chainId: join.chainId, gameId: join.gameId }, joins: [] };
-    entry.joins.push(join);
-    games.set(key, entry);
+async function deliverSharePayouts(world: ShareWorld, games: readonly ShareGame[], now: number) {
+  const store = createShareStore(world.db);
+  for (const payout of await store.unpaidPayouts(games)) {
+    try {
+      if (!(await world.creditFragments(payout)).ok) throw new Error(`the relay refused payout ${payout.id}`);
+      await store.markPaid(payout.id, now);
+    } catch (error) {
+      console.warn("[shares] an invite's Fragments wait for the next settle", payout.id, error);
+    }
   }
-  return [...games.values()].map(({ game, joins: grouped }) => [game, grouped] as const);
-};
+}
 
 /**
  * A moment as the share sheet sends it, a day or an Aspect by its kind; null for anything else. The chain is kept in

@@ -85,10 +85,3 @@ pub fn refill_at_well(key: ExplorerKey, ref troops: crate::troops::Troops, rules
     stamina.clamp(maximum);
     troops.stamina = crate::troops::StaminaSource::Inline(stamina);
 }
-
-pub fn refill_stored_army_at_well(key: ExplorerKey, context: crate::commands::ActionContext) {
-    let execution = crate::commands::execution_context(key.game_id, context);
-    let mut army = crate::logic::troops::command_explorer(key, None, context.timestamp, execution);
-    refill_at_well(key, ref army.troops, execution.rules.unbox().troop_stamina_config);
-    crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(army));
-}

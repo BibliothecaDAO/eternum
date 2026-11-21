@@ -378,7 +378,6 @@ describe("native directory", () => {
     expect(members(1)).toEqual({ 1: 3, 2: 0, 3: 1, 4: 0 });
     expect(members(2)).toBeNull();
 
-    // A home joining Harmony rebuilds the shared directory, which every player's founding step reads.
     const revision = fold.directoryRevision();
     native.applyReceipt(fold, receipt([rowEvent("AspectMembers", ["1", "2"], { members: 1n })]), 12, 0);
     expect(fold.directoryRevision()).not.toBe(revision);

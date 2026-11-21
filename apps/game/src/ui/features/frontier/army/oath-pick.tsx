@@ -3,15 +3,7 @@ import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { configManager } from "@bibliothecadao/eternum";
 import { useDockArmies } from "../hud/dock-armies";
 import type { Account } from "starknet";
-import {
-  DEEP_DEPTH,
-  heldOaths,
-  oathCards,
-  oathColour,
-  type oathColours,
-  oathPassStamina,
-  oathRerollIndex,
-} from "@bibliothecadao/eternum";
+import { DEEP_DEPTH, heldOaths, oathCards, oathPassStamina, oathRerollIndex } from "@bibliothecadao/eternum";
 import { nativeFragmentConstants, nativeOathConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useGame } from "@/hooks/context/game-context";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
@@ -24,12 +16,6 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { formatCount, FRAGMENT, FRAGMENTS } from "@bibliothecadao/types";
 import { useFragmentsHeld } from "../value/fragments";
 import { oathEffectDescription, oathName } from "./oath-details";
-
-const colourClass = {
-  red: "border-hud-bad text-hud-bad",
-  blue: "border-hud-ally text-hud-ally",
-  gold: "border-hud-gold text-hud-gold",
-} satisfies Record<(typeof oathColours)[number]["colour"], string>;
 
 const REDRAW_PRICE = formatCount(nativeFragmentConstants.OATH_REROLL_FRAGMENTS, FRAGMENT, FRAGMENTS);
 
@@ -121,16 +107,12 @@ function ArmyOathPick({
           {oathCards(progress.oath_pick).map((id) => {
             const rerollIndex = oathRerollIndex(progress.oath_pick, progress.oaths, id);
             return (
-              <div
-                key={id}
-                data-oath-id={id}
-                className={`flex min-w-0 flex-col gap-1 rounded border-t-4 ${colourClass[oathColour(id).colour]}`}
-              >
+              <div key={id} data-oath-id={id} className="flex min-w-0 flex-col gap-1">
                 <HudCard
                   size="sm"
                   title={oathName(id)}
                   picture={<Icon name={orderMeaning(id)} size={40} />}
-                  detail={<span className={colourClass[oathColour(id).colour]}>{oathEffectDescription(id)}</span>}
+                  detail={oathEffectDescription(id)}
                   disabled={!allowed || sending}
                   onClick={() => (full ? setPicked(id) : choose(id))}
                 />

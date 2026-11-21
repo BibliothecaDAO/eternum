@@ -9,6 +9,7 @@ import {
   registerHomeSource,
   type RealmEntryClaim,
 } from "./realm-entry";
+import { creditFriendFragments, FriendCredit } from "./fragment-credit";
 import { PlayerRequestError } from "./player-request";
 import { joinShardOperator } from "./shard-account";
 import { decodeRelaySettings, ledgerAddress, ledgerContractOf, type RelaySettings } from "./environment";
@@ -42,7 +43,7 @@ import { shardWithdrawalPorts } from "./shard-withdrawals";
 import { chestLedgerReads, finishChestOnLedger } from "./chest-ledger";
 import { DurableChestStore, finishChestNow, finishRequestedChests } from "./chests";
 import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
-import { Effect, Result, Semaphore } from "effect";
+import { Effect, Option, Result, Schema, Semaphore } from "effect";
 import { ledgerPaymentRead, ledgerPaymentProof, ledgerWithdrawalVoided, ledgerResetPayments } from "./chain";
 import { presentsOperatorToken } from "@realms-world/identity";
 import { identityAdapter } from "./adapters";
@@ -583,26 +584,46 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       jobs: observation ?? null,
     };
   }
-  async realmEntry(claim: RealmEntryClaim) {
+  realmEntry(claim: RealmEntryClaim) {
+    return this.operateShard(claim.chainId, (shard) =>
+      registerHomeSource(
+        {
+          connection: shardConnection(shard),
+          heraldUrl: shard.url,
+          operatorAddress: relayAccountAddress(shard),
+          privateKey: this.env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
+          identity: this.env.IDENTITY,
+        },
+        claim,
+      ),
+    );
+  }
+  creditFragments(credit: FriendCredit) {
+    return this.operateShard(credit.chainId, (shard) =>
+      creditFriendFragments(
+        {
+          connection: shardConnection(shard),
+          operatorAddress: relayAccountAddress(shard),
+          privateKey: this.env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
+          identity: this.env.IDENTITY,
+        },
+        credit,
+      ),
+    );
+  }
+  private async operateShard<T>(
+    chainId: string,
+    operate: (shard: Awaited<ReturnType<typeof readRegisteredShard>>) => Promise<T>,
+  ) {
     const result = await Effect.runPromise(
       this.shardSigning.withPermit(
         Effect.result(
           Effect.tryPromise({
             try: async () => {
-              await this.portsFor(claim.chainId);
+              await this.portsFor(chainId);
               const progress = await this.store.progress();
               if (progress.halted) throw new Error("relay_halted_or_wrong_chain");
-              const shard = await readRegisteredShard(this.env.IDENTITY, claim.chainId);
-              return registerHomeSource(
-                {
-                  connection: shardConnection(shard),
-                  heraldUrl: shard.url,
-                  operatorAddress: relayAccountAddress(shard),
-                  privateKey: this.env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
-                  identity: this.env.IDENTITY,
-                },
-                claim,
-              );
+              return operate(await readRegisteredShard(this.env.IDENTITY, chainId));
             },
             catch: (error) => error,
           }),
@@ -777,6 +798,8 @@ export default {
     const env = { ...raw, ...decodeRelaySettings(raw) };
     if (new URL(request.url).pathname === "/api/value/operator/seal" && request.method === "POST")
       return operatorSealGrant(request, env);
+    if (new URL(request.url).pathname === "/api/value/operator/fragments" && request.method === "POST")
+      return operatorFragmentCredit(request, env);
     if (new URL(request.url).pathname === "/api/value/operator/deposit-retirement" && request.method === "POST") {
       if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN))) return new Response(null, { status: 401 });
       const body = (await request.json().catch(() => null)) as { chainId?: unknown; url?: unknown } | null;
@@ -956,6 +979,23 @@ const deliverDepositsResponse = async (request: Request, env: RelayEnv) => {
 
 const relayEffect = <A, E>(operation: string, make: () => Effect.Effect<A, E>) =>
   relayOperation(operation, () => Effect.runPromise(make()));
+
+/** Identity supplies the awarded ticket; operator requests cannot choose a tier, account or held Realm. */
+async function operatorFragmentCredit(request: Request, env: RelayEnv): Promise<Response> {
+  if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN)))
+    return Response.json({ error: "unauthorized" }, { status: 401 });
+  const credit = Schema.decodeUnknownOption(FriendCredit, { onExcessProperty: "error" })(
+    await request.json().catch(() => null),
+  );
+  if (Option.isNone(credit)) return Response.json({ error: "invalid_fragment_credit" }, { status: 400 });
+  try {
+    const result = await relayOf(env, credit.value.chainId).creditFragments(credit.value);
+    if (result.error) return Response.json({ error: result.error.code }, { status: result.error.status });
+    return Response.json(result.entry);
+  } catch {
+    return Response.json({ error: "value_service_unavailable" }, { status: 503 });
+  }
+}
 
 async function operatorSealGrant(request: Request, env: RelayEnv): Promise<Response> {
   if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN)))

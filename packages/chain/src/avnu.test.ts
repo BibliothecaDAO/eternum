@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { avnuLordsWeiFor, avnuUsdPrices, LORDS_ADDRESS } from "./avnu";
+import {
+  avnuLordsPurchase,
+  avnuLordsWeiFor,
+  avnuUsdPrices,
+  LORDS_ADDRESS,
+} from "./avnu";
+import builtPurchase from "./fixtures/avnu-lords-build.json";
+import purchaseQuote from "./fixtures/avnu-lords-quote.json";
 
 afterEach(() => vi.useRealTimers());
 
@@ -140,5 +147,122 @@ describe("AVNU prices", () => {
     await expect(
       avnuUsdPrices([LORDS_ADDRESS], answering([]).get),
     ).rejects.toThrow("no price");
+  });
+});
+
+describe("AVNU LORDS purchase", () => {
+  const STRK =
+    "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
+  const TAKER =
+    "0x39f0fd8bec01515b543461fb41331cb5e6814c2343439e7f9e9c3dd1159f7c7";
+  const purchase = {
+    sellToken: STRK,
+    lordsWei: 1_000n * 10n ** 18n,
+    taker: TAKER,
+    slippage: 0.01,
+  };
+  const NOT_ASKED = "not the LORDS purchase asked";
+
+  const answering = (quotes: unknown, built: unknown) => {
+    const asked: { url: string; init?: RequestInit }[] = [];
+    const get = (async (url: string, init?: RequestInit) => {
+      asked.push({ url: String(url), init });
+      return Response.json(init?.method === "POST" ? built : quotes);
+    }) as typeof fetch;
+    return { get, asked };
+  };
+  const swapWith = (change: (calldata: string[]) => void) => {
+    const calls = structuredClone(builtPurchase.calls);
+    change(calls[1]!.calldata);
+    return { ...builtPurchase, calls };
+  };
+
+  it("gives AVNU's own calls that buy exactly the LORDS asked for the taker, with the quoted and the most sold", async () => {
+    const { get, asked } = answering([purchaseQuote], builtPurchase);
+    const bought = await avnuLordsPurchase(purchase, get);
+    expect(bought).toEqual({
+      sellAmount: 0x5ac887faf1a640000n,
+      maxSellAmount: 0x5bb0efbd7410df600n,
+      calls: builtPurchase.calls,
+    });
+    expect(bought.calls.map(({ entrypoint }) => entrypoint)).toEqual([
+      "approve",
+      "swap_exact_token_to",
+      "approve",
+    ]);
+    const url = new URL(asked[0]!.url);
+    expect(url.origin + url.pathname).toBe(
+      "https://starknet.api.avnu.fi/swap/v3/quotes",
+    );
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      sellTokenAddress: STRK,
+      buyTokenAddress: LORDS_ADDRESS,
+      buyAmount: "0x3635c9adc5dea00000",
+      takerAddress: TAKER,
+      size: "1",
+    });
+    expect(asked[1]!.url).toBe("https://starknet.api.avnu.fi/swap/v3/build");
+    expect(JSON.parse(String(asked[1]!.init?.body))).toEqual({
+      quoteId: purchaseQuote.quoteId,
+      takerAddress: TAKER,
+      slippage: 0.01,
+      includeApprove: true,
+    });
+  });
+
+  it("refuses a quote for another token, amount or chain, or with no route", async () => {
+    const refused = [
+      [],
+      [{ ...purchaseQuote, sellTokenAddress: LORDS_ADDRESS }],
+      [{ ...purchaseQuote, buyTokenAddress: STRK }],
+      [{ ...purchaseQuote, buyAmount: "0x3635c9adc5dea00001" }],
+      [{ ...purchaseQuote, chainId: "0x534e5f5345504f4c4941" }],
+      [{ ...purchaseQuote, routes: [] }],
+      [{ ...purchaseQuote, sellAmount: "0x0" }],
+      [{ ...purchaseQuote, quoteId: undefined }],
+    ];
+    for (const quotes of refused)
+      await expect(
+        avnuLordsPurchase(purchase, answering(quotes, builtPurchase).get),
+      ).rejects.toThrow("no quote buys the LORDS asked");
+  });
+
+  it("refuses built calls that buy something else, pay someone else, or touch anything but the sold token and AVNU's router", async () => {
+    const [approve, swap, reset] = builtPurchase.calls;
+    const refused = [
+      { ...builtPurchase, chainId: "0x534e5f5345504f4c4941" },
+      { ...builtPurchase, calls: [approve, reset] },
+      { ...builtPurchase, calls: [approve, swap, swap] },
+      { ...builtPurchase, calls: [approve, { ...swap, entrypoint: "swap" }] },
+      {
+        ...builtPurchase,
+        calls: [swap, { ...approve, contractAddress: LORDS_ADDRESS }],
+      },
+      {
+        ...builtPurchase,
+        calls: [swap, { ...approve, entrypoint: "transfer" }],
+      },
+      {
+        ...builtPurchase,
+        calls: [swap, { ...approve, calldata: [TAKER, "0x1", "0x0"] }],
+      },
+      {
+        ...builtPurchase,
+        calls: [
+          swap,
+          { ...approve, calldata: [approve!.calldata[0], "0x0", "0x1"] },
+        ],
+      },
+      swapWith((calldata) => (calldata[0] = LORDS_ADDRESS)),
+      swapWith((calldata) => (calldata[5] = STRK)),
+      swapWith((calldata) => (calldata[6] = "0x3635c9adc5dea00001")),
+      swapWith((calldata) => (calldata[8] = "0x7a")),
+      swapWith((calldata) => (calldata[3] = "0x1")),
+      { ...builtPurchase, calls: "none" },
+    ];
+    for (const built of refused)
+      await expect(
+        avnuLordsPurchase(purchase, answering([purchaseQuote], built).get),
+      ).rejects.toThrow(NOT_ASKED);
   });
 });

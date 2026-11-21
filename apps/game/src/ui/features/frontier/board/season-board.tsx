@@ -1,7 +1,6 @@
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { type PlayerNames, usePlayerDisplayName, usePlayerNames } from "@/hooks/use-player-profile";
-import { getActiveGame } from "@/runtime/world";
 import { startRealmVisit } from "@/sync/active-game-client";
 import { PlayerSeatMark } from "@/hooks/use-watched-side";
 import { LordName } from "./realm-marks";
@@ -33,7 +32,7 @@ export const useSeasonBoard = (enabled = true) => useFrontierBoard((board) => bo
 export const useFrontierBoard = <T,>(select: (board: HeraldFrontierLeaderboard) => T, enabled = true) => {
   // A Season 1 game races Aspects: Herald serves no player ranking for it, so nothing asks.
   const races = useRacesAspects();
-  const shard = requireShard(getActiveGame()?.chainId);
+  const shard = requireShard();
   const gameId = configManager.getActiveGameId();
   return useQuery({
     enabled: enabled && races === false,

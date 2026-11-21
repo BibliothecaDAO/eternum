@@ -17,7 +17,7 @@ fn three_slots_fill_and_the_fourth_replaces_only_the_chosen_slot() {
     for index in 0_u8..3 {
         receive(ref loadout, decode(index + 1), None);
     }
-    receive(ref loadout, ArmyRelic { kind: RelicKind::FarEye, rank: 5 }, Some(1));
+    receive(ref loadout, ArmyRelic { kind: RelicKind::StaminaRegen, rank: 5 }, Some(1));
     assert_eq!(loadout, ArmyRelics { first: Some(decode(1)), second: Some(decode(20)), third: Some(decode(3)) });
 }
 

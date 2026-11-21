@@ -89,14 +89,12 @@ async function readShard(url: string): Promise<Shard> {
   return buildShard(shardUrl, (await response.json()) as ShardManifest);
 }
 
-export const getShard = (chainId: string | null | undefined): Shard | null =>
-  chainId && opened?.chainId === normalizeChainId(chainId) ? opened : null;
+export const getShard = (): Shard | null => opened;
 
 /** A game is always played on its own shard; never redirect it to another. */
-export const requireShard = (chainId: string | null | undefined): Shard => {
-  const shard = getShard(chainId);
-  if (!shard) throw new Error(`Shard for chain ${chainId ?? ""} is not open`);
-  return shard;
+export const requireShard = (): Shard => {
+  if (!opened) throw new Error("No shard is open");
+  return opened;
 };
 
 const buildShard = (url: string, manifest: ShardManifest): Shard => {

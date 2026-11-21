@@ -97,21 +97,19 @@ pub fn activate(key: ExplorerKey, index: u8, expected: u8, timestamp: u64) -> Ar
     assert!(crate::army_relics::encode(relic) == expected, "relic slot changed");
     crate::army_relics::set_slot(ref loadout, index, None);
     write(key, loadout);
-    if relic.kind != RelicKind::FarEye {
-        let effect_key = ArmyRelicEffectKey { game_id: key.game_id, explorer_id: key.explorer_id, kind: relic.kind };
-        let value = ArmyRelicEffect {
-            rank: relic.rank,
-            expires_at: timestamp + Into::<u32, u64>::into(crate::rules::RELIC_SECONDS_PER_RANK) * relic.rank.into(),
-        };
-        crate::state::write()
-            .relics
-            .army_relic_effects
-            .write(
-                (key.game_id, key.explorer_id, crate::army_relics::kind_id(relic.kind)),
-                Some((value.rank, value.expires_at)),
-            );
-        emit_row('ArmyRelicEffect', effect_key, value);
-    }
+    let effect_key = ArmyRelicEffectKey { game_id: key.game_id, explorer_id: key.explorer_id, kind: relic.kind };
+    let value = ArmyRelicEffect {
+        rank: relic.rank,
+        expires_at: timestamp + Into::<u32, u64>::into(crate::rules::RELIC_SECONDS_PER_RANK) * relic.rank.into(),
+    };
+    crate::state::write()
+        .relics
+        .army_relic_effects
+        .write(
+            (key.game_id, key.explorer_id, crate::army_relics::kind_id(relic.kind)),
+            Some((value.rank, value.expires_at)),
+        );
+    emit_row('ArmyRelicEffect', effect_key, value);
     relic
 }
 
@@ -125,7 +123,7 @@ pub fn destroy(key: ExplorerKey) {
         crate::state::write().relics.army_relics.write((key.game_id, key.explorer_id), 0);
         delete_row('ArmyRelics', key);
     }
-    for kind_id in 0_u8..4 {
+    for kind_id in 0_u8..crate::army_relics::RELIC_KIND_COUNT {
         let effect_key = ArmyRelicEffectKey {
             game_id: key.game_id, explorer_id: key.explorer_id, kind: crate::army_relics::kind_at(kind_id),
         };
@@ -166,72 +164,27 @@ pub fn site_reward(
     crate::resources::ResourceAmount { amount: reward.amount * (10_000 + extra) / 10_000, ..reward }
 }
 
-pub fn reveal_tiles(
-    army: ExplorerKey, origin: crate::troops::Coord, count: u8, context: crate::commands::ActionContext,
-) {
-    let game_id = army.game_id;
-    assert!(count > 0 && count <= 5 * crate::rules::RELIC_TILES_PER_RANK, "invalid relic tile count");
-    if crate::logic::deep::contains(game_id, origin) {
-        return;
-    }
-    let spacing = crate::logic::settlement::spacing();
-    let mut revealed = 0;
-    let mut raw_root = context.raw_root;
-    for radius in 1..spacing {
-        for direction in 0_u8..6 {
-            for step in 0..radius {
-                let Some(point) = crate::geometry::checked_neighbor_at_distance(origin, direction, radius)
-                    .and_then(
-                        |corner| crate::geometry::checked_neighbor_at_distance(corner, (direction + 2) % 6, step),
-                    ) else {
-                    continue;
-                };
-                if !crate::expeditions::inside_region(origin, point, spacing) {
-                    continue;
-                }
-                let key = crate::geometry::tile_key(game_id, point);
-                if crate::logic::map::tile(key)
-                    .map(|tile| tile.data / crate::map::BIOME_SCALE % crate::map::BYTE_RANGE != 0)
-                    .unwrap_or(false) {
-                    continue;
-                }
-                let seed = crate::random::game_root(ref raw_root, game_id);
-                reveal_and_pay(army, point, seed, context);
-                revealed += 1;
-                if revealed == count {
-                    return;
-                }
-            }
-        }
-    }
+pub fn start_stamina_regen(key: ExplorerKey, settled: crate::troops::ExplorerTroops) {
+    let stored = crate::logic::troops::explorer(key).expect('missing explorer');
+    let army = crate::troops::ExplorerTroops {
+        troops: crate::troops::Troops { boosts: stored.troops.boosts, ..settled.troops }, ..settled,
+    };
+    crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(army));
 }
 
-fn reveal_and_pay(army: ExplorerKey, point: crate::troops::Coord, seed: u256, context: crate::commands::ActionContext) {
-    let game_id = army.game_id;
-    let found = crate::discovery::IExpeditionRevealDispatcherTrait::reveal_expedition_tile(
-        crate::discovery::IExpeditionRevealLibraryDispatcher {
-            class_hash: crate::logic::release::class_of(game_id, crate::slots::CONSTRUCTION),
-        },
-        crate::geometry::tile_key(game_id, point),
-        army.explorer_id,
-        seed,
-        context,
-    );
-    if found == crate::discovery::Discovery::Well {
-        crate::logic::oaths::refill_stored_army_at_well(army, context);
+pub fn stamina_regen_boost(key: ExplorerKey, settled_at: u64) -> (u16, u16) {
+    let Some(active) = effect(
+        ArmyRelicEffectKey { game_id: key.game_id, explorer_id: key.explorer_id, kind: RelicKind::StaminaRegen },
+    ) else {
+        return (0, 0);
+    };
+    if active.expires_at <= settled_at {
+        return (0, 0);
     }
-    let explorer = crate::logic::troops::explorer(army).expect('missing revealing army');
-    let actor = crate::logic::structures::owner(ResourceKey { game_id, entity_id: explorer.owner });
-    crate::exploration_rewards::IExtractionDispatcherTrait::extract_exploration_reward(
-        crate::exploration_rewards::IExtractionLibraryDispatcher {
-            class_hash: crate::logic::release::class_of(game_id, crate::slots::PRIZES),
-        },
-        game_id,
-        actor,
-        army.explorer_id,
-        point,
-        crate::commands::ActionContext { raw_root: seed, ..context },
-    );
+    (
+        crate::army_relics::bonus_bps(RelicKind::StaminaRegen, active.rank).try_into().unwrap(),
+        (active.expires_at - settled_at).try_into().unwrap(),
+    )
 }
 
 #[starknet::component]

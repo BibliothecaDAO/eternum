@@ -80,9 +80,9 @@ const pageLine = () => host.querySelector("p")?.textContent;
 it("names who invites the friend to which Aspect, its members and its four Orders, by the catalog's names", async () => {
   service.openShare.mockResolvedValue({ kind: "aspect", moment: 2, name: "Linden", order: null, members: 31 });
   await open("/s/ABCD2347");
-  expect(frontierNames()).toEqual(["Join Harmony", "Frontier"]);
+  expect(frontierNames()).toEqual(["Join Luminary", "Frontier"]);
   expect(invite()).toBe(
-    "Linden invites youJoin Harmony31 members · Order of Perfection, Brilliance, Protection, Enlightenment",
+    "Linden invites youJoin Luminary31 members · Order of Perfection, Brilliance, Protection, Enlightenment",
   );
   expect(pageLine()).toBe("Members of one Aspect never fight each other.");
 });
@@ -90,13 +90,13 @@ it("names who invites the friend to which Aspect, its members and its four Order
 it("names no members for an invite into a running game, whose members the game counts", async () => {
   service.openShare.mockResolvedValue({ kind: "aspect", moment: 4, name: "Orrin", order: null, members: null });
   await open("/s/ABCD2350");
-  expect(invite()).toBe("Orrin invites youJoin GuileOrder of Fox, Twins, Reflection, Detection");
+  expect(invite()).toBe("Orrin invites youJoin InsightOrder of Fox, Twins, Reflection, Detection");
 });
 
 it("says which Order the sharer kept, and names a sharer with no public name as a player", async () => {
   service.openShare.mockResolvedValue({ kind: "aspect", moment: 1, name: null, order: 13, members: 1 });
   await open("/s/ABCD2348");
-  expect(invite()).toContain("A player invites youJoin Might1 member · ");
+  expect(invite()).toContain("A player invites youJoin Prowess1 member · ");
   expect(pageLine()).toBe("Members of one Aspect never fight each other. A player plays Order of Titans.");
 });
 

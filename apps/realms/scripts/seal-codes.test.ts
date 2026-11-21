@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { codeHashInScope, readCampaignCode } from "../server/campaigns";
-import { readSealCodeOrder, sealCodeFiles } from "./seal-codes";
+import { d1LoadArgs, readEnvironment, readSealCodeOrder, sealCodeFiles } from "./seal-codes";
 
 const SEED = "a seed of at least thirty-two secret characters";
 const NOW = Date.UTC(2026, 10, 18, 12);
@@ -43,5 +43,23 @@ describe("the operator's free Seal codes", () => {
     expect(await sealCodeFiles(order, SEED)).toEqual({ codes, sql });
     const other = await sealCodeFiles({ ...order, label: "playtest-dec" }, SEED);
     expect(other.codes.some((code) => codes.includes(code))).toBe(false);
+  });
+
+  it("loads the codes into the named environment's database only, and refuses any other name", () => {
+    expect(readEnvironment("production")).toBe("production");
+    for (const name of [undefined, "dev", "Production"])
+      expect(() => readEnvironment(name)).toThrow("Name the environment");
+    expect(d1LoadArgs("staging", "/tmp/codes.sql")).toEqual([
+      "exec",
+      "wrangler",
+      "d1",
+      "execute",
+      "DB",
+      "--remote",
+      "--env",
+      "staging",
+      "--file",
+      "/tmp/codes.sql",
+    ]);
   });
 });

@@ -60,8 +60,8 @@ it("tells each fight by the troops each side kept, whatever its emitter wrote as
     "standoff",
     "mutual",
   ]);
-  expect(wins!.attacker).toMatchObject({ aspect: "Might", before: 100, after: 80 });
-  expect(wins!.defender).toMatchObject({ aspect: "Harmony", before: 60, after: 0 });
+  expect(wins!.attacker).toMatchObject({ aspect: "Prowess", before: 100, after: 80 });
+  expect(wins!.defender).toMatchObject({ aspect: "Luminary", before: 60, after: 0 });
   expect(wipedOut(wins!.defender)).toBe(true);
   expect(wipedOut(wins!.attacker)).toBe(false);
 });

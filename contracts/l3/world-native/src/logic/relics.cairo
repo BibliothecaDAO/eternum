@@ -4,7 +4,7 @@ pub mod RelicState {
     use crate::commands::ExecutionContext;
     use crate::game::assert_playing;
     use crate::logic::release::ReleaseState;
-    use crate::relics::{ApplyRelic, IRelicMapDispatcherTrait, IRelicMapLibraryDispatcher, Recipient};
+    use crate::relics::{ApplyRelic, Recipient};
     use crate::resources::ResourceKey;
     use crate::stamina::StaminaSourceTrait;
     use crate::troops::{ExplorerKey, ExplorerRecordTrait};
@@ -186,16 +186,8 @@ pub mod RelicState {
             let key = ExplorerKey { game_id, explorer_id: command.entity_id };
             let explorer = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
             let relic = crate::logic::army_relics::activate(key, index, command.relic_id, context.timestamp);
-            if relic.kind == crate::army_relics::RelicKind::FarEye {
-                IRelicMapLibraryDispatcher {
-                    class_hash: crate::logic::release::class_of(game_id, crate::slots::ECONOMY),
-                }
-                    .reveal_relic_tiles(
-                        key,
-                        explorer.coord,
-                        relic.rank * crate::rules::RELIC_TILES_PER_RANK,
-                        crate::commands::action_context(context),
-                    );
+            if relic.kind == crate::army_relics::RelicKind::StaminaRegen {
+                crate::logic::army_relics::start_stamina_regen(key, explorer);
             }
         }
 

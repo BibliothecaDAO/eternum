@@ -46,8 +46,8 @@ const HISTORY_PAGE = 500;
 const OPEN_SEATS_REFRESH_MS = 30_000;
 
 /** Every realm created in a game, page by page from Herald's history: each a `RealmCreatedStory` event. */
-const fetchRealmsCreated = async (chainId: string, game: number): Promise<HeraldHistoryEvent[]> => {
-  const shard = requireShard(chainId);
+const fetchRealmsCreated = async (game: number): Promise<HeraldHistoryEvent[]> => {
+  const shard = requireShard();
   const stories: HeraldHistoryEvent[] = [];
   for (let offset = 0; ; offset += HISTORY_PAGE) {
     const page = await fetchHeraldGameHistory(shard, game, {
@@ -67,7 +67,7 @@ export const useOpenGameSeats = (): void => {
   const chainId = getActiveGame()?.chainId;
   const stories = useQuery({
     queryKey: ["openGameSeats", chainId, game],
-    queryFn: () => fetchRealmsCreated(chainId!, game),
+    queryFn: () => fetchRealmsCreated(game),
     enabled: watching && chainId !== undefined,
     refetchInterval: OPEN_SEATS_REFRESH_MS,
   });

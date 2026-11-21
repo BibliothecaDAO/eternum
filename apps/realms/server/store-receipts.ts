@@ -101,7 +101,7 @@ const settleReceipt = async (
         recorded
           ? resolvePending(world.db, { receipt, owner, outcome })
           : ledgerRow(world.db, { receipt, owner, productId, outcome, now }),
-        ...fulfilment(world.db, { receipt, owner, product, outcome, now }),
+        ...fulfilment(world.db, { receipt, owner, product, outcome, now, game }),
       ]);
     } catch (error) {
       lastError = error;
@@ -169,18 +169,19 @@ const resolvePending = (db: D1Database, row: { receipt: string; owner: string; o
 /** Written in the same batch as the ledger row, and only where that row stands as this outcome for this owner. */
 const fulfilment = (
   db: D1Database,
-  buy: { receipt: string; owner: string; product: Product | undefined; outcome: Outcome; now: number },
+  buy: { receipt: string; owner: string; product: Product | undefined; outcome: Outcome; now: number; game: NamedGame },
 ) => {
-  const { receipt, owner, product, outcome, now } = buy;
+  const { receipt, owner, product, outcome, now, game } = buy;
   const stands =
     'WHERE EXISTS (SELECT 1 FROM "store_receipts" WHERE "receipt" = ?1 AND "owner" = ?2 AND "outcome" = ?3)';
   if (outcome === "fragments" && product)
     return [
       db
         .prepare(
-          `INSERT INTO "fragment_credits" ("receipt", "owner", "fragments", "created_at") SELECT ?1, ?2, ?4, ?5 ${stands}`,
+          `INSERT INTO "fragment_credits" ("receipt", "owner", "fragments", "created_at", "chain_id", "game_id")
+           SELECT ?1, ?2, ?4, ?5, ?6, ?7 ${stands}`,
         )
-        .bind(receipt, owner, outcome, product.fragments, now),
+        .bind(receipt, owner, outcome, product.fragments, now, game.chainId, game.gameId),
     ];
   return [];
 };

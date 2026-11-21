@@ -8,7 +8,6 @@ import { AspectPicker, aspectOffer, type AspectMembers } from "./aspect-picker";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const MEMBERS: AspectMembers = { 1: 38, 2: 21, 3: 1, 4: 0 };
-/** The Order of the Fox, a Guile Order (orders.ts). */
 const FOX = 4;
 
 let root: Root | null = null;
@@ -54,10 +53,10 @@ describe("AspectPicker", () => {
   it("offers the four Aspects in the design's order, each with its four crests and its members", () => {
     const { cards } = draw();
     expect(cards.map((card) => card.getAttribute("aria-label"))).toEqual([
-      "Join Might",
-      "Join Harmony",
-      "Join Chaos",
-      "Join Guile",
+      "Join Prowess",
+      "Join Luminary",
+      "Join Havoc",
+      "Join Insight",
     ]);
     expect(cards.map((card) => card.querySelector(".aspect-picker__members")?.textContent)).toEqual([
       "38 members",
@@ -77,23 +76,23 @@ describe("AspectPicker", () => {
   });
 
   it("offers the chosen Aspect's four Orders and founds in the Order tapped", () => {
-    const chaos = ordersOfAspect(3);
+    const havoc = ordersOfAspect(3);
     const { onFound, cards, orders } = draw({ chosen: 3 });
     expect(cards.map((card) => card.hasAttribute("data-chosen"))).toEqual([false, false, true, false]);
     expect(orders.map((order) => order.getAttribute("aria-label"))).toEqual(
-      chaos.map(({ fullOrderName }) => `Play as ${fullOrderName}`),
+      havoc.map(({ fullOrderName }) => `Play as ${fullOrderName}`),
     );
     act(() => orders[1]!.click());
     expect(onFound).toHaveBeenCalledTimes(1);
-    expect(onFound).toHaveBeenCalledWith(chaos[1]!.orderId);
+    expect(onFound).toHaveBeenCalledWith(havoc[1]!.orderId);
   });
 
   it("spins the Order being founded in and lets nothing else be tapped", () => {
-    const harmony = ordersOfAspect(2)[0]!;
-    const { onChoose, onFound, cards, orders } = draw({ chosen: 2, joining: harmony.orderId });
-    expect(cards[1]!.getAttribute("aria-label")).toBe("Joining Harmony…");
+    const luminary = ordersOfAspect(2)[0]!;
+    const { onChoose, onFound, cards, orders } = draw({ chosen: 2, joining: luminary.orderId });
+    expect(cards[1]!.getAttribute("aria-label")).toBe("Joining Luminary…");
     expect(cards[1]!.getAttribute("aria-busy")).toBe("true");
-    expect(orders[0]!.getAttribute("aria-label")).toBe(`Founding as ${harmony.fullOrderName}…`);
+    expect(orders[0]!.getAttribute("aria-label")).toBe(`Founding as ${luminary.fullOrderName}…`);
     expect([...cards, ...orders].every((button) => button.disabled)).toBe(true);
     act(() => cards[3]!.click());
     act(() => orders[1]!.click());
@@ -106,7 +105,7 @@ describe("AspectPicker", () => {
     expect(orders).toHaveLength(0);
     expect(host!.querySelector(".aspect-picker__head h2")?.textContent).toBe("Your Aspect");
     expect(host!.querySelector(".aspect-picker__head p")?.textContent).toBe(
-      "Your Realm's Order of the Fox plays for Guile",
+      "Your Realm's Order of the Fox plays for Insight",
     );
     expect(cards.map((card) => card.hasAttribute("data-chosen"))).toEqual([false, false, false, true]);
     expect(cards.every((card) => card.disabled)).toBe(true);
@@ -120,10 +119,10 @@ describe("AspectPicker", () => {
   it("lists a friend's invited Aspect first, marked, names who invited, every card still open", () => {
     const { onChoose, cards } = draw({ offered: { aspect: 3, sender: "Linden" } });
     expect(cards.map((card) => card.getAttribute("aria-label"))).toEqual([
-      "Join Chaos",
-      "Join Might",
-      "Join Harmony",
-      "Join Guile",
+      "Join Havoc",
+      "Join Prowess",
+      "Join Luminary",
+      "Join Insight",
     ]);
     expect(cards.map((card) => card.querySelector(".aspect-picker__invite")?.textContent ?? null)).toEqual([
       "Invited",
@@ -131,7 +130,7 @@ describe("AspectPicker", () => {
       null,
       null,
     ]);
-    expect(host!.querySelector(".aspect-picker__invited")?.textContent).toBe("Linden invited you to Chaos");
+    expect(host!.querySelector(".aspect-picker__invited")?.textContent).toBe("Linden invited you to Havoc");
     expect(cards.every((card) => !card.disabled)).toBe(true);
     act(() => cards[3]!.click());
     expect(onChoose).toHaveBeenCalledWith(4);
@@ -139,16 +138,16 @@ describe("AspectPicker", () => {
 
   it("names no sender when the invite's sender has no name yet", () => {
     draw({ offered: { aspect: 2, sender: null } });
-    expect(host!.querySelector(".aspect-picker__invited")?.textContent).toBe("You were invited to Harmony");
+    expect(host!.querySelector(".aspect-picker__invited")?.textContent).toBe("You were invited to Luminary");
   });
 
   it("keeps a held Realm's Aspect and the plain order whatever a link invited to", () => {
     const { cards } = draw({ realmOrder: FOX, offered: { aspect: 3, sender: "Linden" } });
     expect(cards.map((card) => card.getAttribute("aria-label"))).toEqual([
-      "Join Might",
-      "Join Harmony",
-      "Join Chaos",
-      "Join Guile",
+      "Join Prowess",
+      "Join Luminary",
+      "Join Havoc",
+      "Join Insight",
     ]);
     expect(host!.querySelector(".aspect-picker__invite")).toBeNull();
     expect(host!.querySelector(".aspect-picker__invited")).toBeNull();

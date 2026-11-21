@@ -49,6 +49,11 @@ pub fn resolve(key: ExplorerKey, mut explorer: ExplorerTroops, refill: Option<St
         if let Some(refill) = refill {
             let progress = crate::logic::progression::require(key);
             let maximum = crate::progression::stamina_max(progress, explorer.troops.category, refill.stamina_config);
+            let (regen_bps, regen_seconds) = crate::logic::army_relics::stamina_regen_boost(
+                key, stamina.settled_at.into(),
+            );
+            explorer.troops.boosts.incr_stamina_regen_percent_num = regen_bps;
+            explorer.troops.boosts.incr_stamina_regen_seconds_left = regen_seconds;
             crate::logic::stamina_effects::refill(
                 crate::resources::ResourceKey { game_id: key.game_id, entity_id: explorer.owner },
                 explorer.coord,

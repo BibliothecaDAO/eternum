@@ -1,11 +1,14 @@
+import { MAINNET_TOKENS } from "./tokens";
+
 /** The one market source: AVNU, on Starknet mainnet. Nothing else is asked what a token is worth. */
 const QUOTES_URL = "https://starknet.api.avnu.fi/swap/v3/quotes";
+const BUILD_URL = "https://starknet.api.avnu.fi/swap/v3/build";
 const PRICES_URL = "https://starknet.impulse.avnu.fi/v3/tokens/prices";
 
-export const LORDS_ADDRESS =
-  "0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49";
-const USDC_ADDRESS =
-  "0x053c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8";
+export const LORDS_ADDRESS = MAINNET_TOKENS.lords.address;
+export const AVNU_ROUTER =
+  "0x04270219d365d6b017231b52e92b3fb5d7c8378b05e9abc97724537a80e93b0f";
+const USDC_ADDRESS = MAINNET_TOKENS.usdc.address;
 /** A cent in USDC's smallest unit (6 decimals). */
 const USDC_PER_CENT = 10_000n;
 
@@ -56,6 +59,7 @@ const isAddress = (value: unknown, expected: string) =>
   normalized(String(value)) === normalized(expected);
 
 interface Quote {
+  quoteId?: unknown;
   sellTokenAddress?: unknown;
   sellAmount?: unknown;
   buyTokenAddress?: unknown;
@@ -145,4 +149,138 @@ export const avnuUsdPrices = async (
     prices[address] = usd;
   }
   return prices;
+};
+
+export interface LordsPurchase {
+  sellToken: string;
+  lordsWei: bigint;
+  taker: string;
+  slippage: number;
+}
+
+export interface AvnuCall {
+  contractAddress: string;
+  entrypoint: string;
+  calldata: string[];
+}
+
+export const avnuLordsPurchase = async (
+  purchase: LordsPurchase,
+  get: typeof fetch = fetch,
+): Promise<{
+  sellAmount: bigint;
+  maxSellAmount: bigint;
+  calls: AvnuCall[];
+}> => {
+  const quote = await lordsPurchaseQuote(purchase, get);
+  const calls = await builtCalls(quote.quoteId, purchase, get);
+  const maxSellAmount = maxSoldBy(calls, purchase);
+  if (maxSellAmount === null || maxSellAmount < quote.sellAmount)
+    throw new Error("AVNU: built calls are not the LORDS purchase asked");
+  return { sellAmount: quote.sellAmount, maxSellAmount, calls };
+};
+
+const lordsPurchaseQuote = async (
+  { sellToken, lordsWei, taker }: LordsPurchase,
+  get: typeof fetch,
+) => {
+  const query = new URLSearchParams({
+    sellTokenAddress: sellToken,
+    buyTokenAddress: LORDS_ADDRESS,
+    buyAmount: `0x${lordsWei.toString(16)}`,
+    takerAddress: taker,
+    size: "1",
+  });
+  const quotes = await fetchJson(get, `${QUOTES_URL}?${query}`);
+  const quote = Array.isArray(quotes)
+    ? (quotes[0] as Quote | undefined)
+    : undefined;
+  const sellAmount = hexAmount(quote?.sellAmount);
+  if (
+    typeof quote !== "object" ||
+    quote === null ||
+    typeof quote.quoteId !== "string" ||
+    !isAddress(quote.sellTokenAddress, sellToken) ||
+    !isAddress(quote.buyTokenAddress, LORDS_ADDRESS) ||
+    hexAmount(quote.buyAmount) !== lordsWei ||
+    quote.chainId !== MAINNET_CHAIN_ID ||
+    !isUsableRoutes(quote.routes) ||
+    sellAmount === null ||
+    sellAmount <= 0n
+  )
+    throw new Error("AVNU: no quote buys the LORDS asked");
+  return { quoteId: quote.quoteId, sellAmount };
+};
+
+const builtCalls = async (
+  quoteId: string,
+  { taker, slippage }: LordsPurchase,
+  get: typeof fetch,
+): Promise<AvnuCall[]> => {
+  const built = (await fetchJson(get, BUILD_URL, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      quoteId,
+      takerAddress: taker,
+      slippage,
+      includeApprove: true,
+    }),
+  })) as { chainId?: unknown; calls?: unknown } | null;
+  if (
+    built?.chainId !== MAINNET_CHAIN_ID ||
+    !Array.isArray(built.calls) ||
+    !built.calls.every(isCall)
+  )
+    throw new Error("AVNU: built calls are not the LORDS purchase asked");
+  return built.calls;
+};
+
+const isCall = (call: unknown): call is AvnuCall => {
+  const { contractAddress, entrypoint, calldata } = (call ?? {}) as Record<
+    string,
+    unknown
+  >;
+  return (
+    hexAmount(contractAddress) !== null &&
+    typeof entrypoint === "string" &&
+    Array.isArray(calldata) &&
+    calldata.every((value) => hexAmount(value) !== null)
+  );
+};
+
+const u256 = (low: string | undefined, high: string | undefined) =>
+  low === undefined || high === undefined
+    ? null
+    : BigInt(low) + (BigInt(high) << 128n);
+
+const maxSoldBy = (
+  calls: readonly AvnuCall[],
+  { sellToken, lordsWei, taker }: LordsPurchase,
+): bigint | null => {
+  const swaps = calls.filter((call) =>
+    isAddress(call.contractAddress, AVNU_ROUTER),
+  );
+  const [swap] = swaps;
+  if (swaps.length !== 1 || swap!.entrypoint !== "swap_exact_token_to")
+    return null;
+  const [sold, , , maxLow, maxHigh, bought, buyLow, buyHigh, beneficiary] =
+    swap!.calldata;
+  const max = u256(maxLow, maxHigh);
+  const buysTheLordsAsked =
+    isAddress(sold, sellToken) &&
+    isAddress(bought, LORDS_ADDRESS) &&
+    u256(buyLow, buyHigh) === lordsWei &&
+    isAddress(beneficiary, taker);
+  const approvesOnlyTheRouter = calls
+    .filter((call) => call !== swap)
+    .every(
+      ({ contractAddress, entrypoint, calldata: [spender, low, high] }) =>
+        isAddress(contractAddress, sellToken) &&
+        entrypoint === "approve" &&
+        isAddress(spender, AVNU_ROUTER) &&
+        max !== null &&
+        (u256(low, high) ?? max + 1n) <= max,
+    );
+  return buysTheLordsAsked && approvesOnlyTheRouter ? max : null;
 };

@@ -157,7 +157,6 @@ const doorwayPages = (desktop) =>
  * the window must be gone.
  */
 const WINDOW_CLOSES = {
-  "golden-ticket": { path: "devcon-held/profile", holding: "Golden ticket" },
   realms: { path: "devcon-held/profile", holding: "Realms" },
   connect: { path: "first-visit/profile", words: "Connect" },
 };

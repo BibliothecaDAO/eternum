@@ -80,16 +80,6 @@ pub trait IRelics<T> {
         ref self: T, game_id: u32, actor: ContractAddress, command: ApplyRelic, context: crate::commands::ActionContext,
     );
 }
-#[starknet::interface]
-pub trait IRelicMap<T> {
-    fn reveal_relic_tiles(
-        ref self: T,
-        key: crate::troops::ExplorerKey,
-        coord: Coord,
-        count: u8,
-        game_context: crate::commands::ActionContext,
-    );
-}
 pub fn bonus_active(end_at: u32, timestamp: u64) -> bool {
     timestamp < end_at.into()
 }

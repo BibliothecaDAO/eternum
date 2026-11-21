@@ -980,6 +980,16 @@
     "reason": "Nothing shipped for CoinGecko in the footer before. The official mark as realms.world shows it, geometry unchanged from its source (apps/web/src/site/data/socials.ts); white currentColor, as LORDS.",
     "officialSource": "apps/web/src/site/data/socials.ts"
   },
+  "official/brand-eth": {
+    "verdict": "beats shipped",
+    "reason": "Nothing shipped for ETH before; the Fragments page's Pay with needs it. Ethereum's coin mark as realms.world ships it, geometry and colours unchanged (the lead's ruling of 2026-11-20: each token's official mark, as-is).",
+    "officialSource": "apps/web/src/components/icons/ethereum.svg"
+  },
+  "official/brand-usdc": {
+    "verdict": "beats shipped",
+    "reason": "Nothing shipped for USDC before; the Fragments page's Pay with needs it. Circle's USDC coin as the repo ships it (apps/game/public/tokens/usdc.png), unchanged but for its size, set in an SVG frame (the lead's ruling of 2026-11-20: each token's official mark, as-is).",
+    "officialSource": "apps/game/public/tokens/usdc.png"
+  },
   "official/brand-google": {
     "verdict": "beats shipped",
     "reason": "Nothing shipped for Google before; its sign-in button needs it. Google's standard G as its sign-in branding guidelines publish it, geometry and colours unchanged.",

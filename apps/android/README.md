@@ -38,10 +38,10 @@ Edit `twa-manifest.json`, never the site, for a value the app needs differently,
 npx @bubblewrap/cli update --skipVersionUpgrade    # rewrites the project from twa-manifest.json
 ```
 
-Bubblewrap writes an App Link filter for the whole host. Put back the three `android:pathPrefix` lines
-(`git diff app/src/main/AndroidManifest.xml`): shared `/g/`, `/join/devcon/` and `/results/` links open the app, every
-other path stays in the browser, and `/blitz/` is left out until Blitz is decided for the store apps (#5192). The
-`android app` workflow refuses a bundle without them.
+Bubblewrap writes an App Link filter for the whole host. Put back the two `android:pathPrefix` lines
+(`git diff app/src/main/AndroidManifest.xml`): shared `/g/` and `/results/` links open the app, every other path stays
+in the browser, and `/blitz/` is left out until Blitz is decided for the store apps (#5192). The `android app` workflow
+refuses a bundle without them.
 
 ## Release
 
@@ -115,8 +115,8 @@ game (`src/ui/features/frontier/frontier-hud.test.tsx`). On a phone with a Play 
 - [ ] Launched from the icon, the home page opens full screen. Back closes the app; it never shows a blank page.
 - [ ] In a game, on the map: back returns to the home page, and back again closes the app.
 - [ ] On the map with a sheet open (the Menu, the Season): back closes the sheet and the map stays.
-- [ ] A `https://play.realms.party/join/devcon/<code>` link tapped in Messages opens the app on that page; back returns
-      to Messages. A `/g/` and a `/results/` link do the same. A `/blitz/` link opens in Chrome.
+- [ ] A `https://play.realms.party/g/<code>` link tapped in Messages opens the app on that page; back returns to
+      Messages. A `/results/` link does the same. A `/blitz/` link opens in Chrome.
 - [ ] Turning alerts on in the game shows Android's notification prompt for Realms (Android 13+), and the "Alerts are
       on" push arrives under Realms with the white badge icon.
 - [ ] With the app swiped away, an "army under attack" alert (`apps/realms/server/shard-notifier.ts`, sent through

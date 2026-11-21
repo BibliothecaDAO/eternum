@@ -324,7 +324,6 @@ import {
   PRINTED_CODE_LENGTH,
   SHARED_MOMENT_WORDS,
   sharerName,
-  type CampaignKey,
   type SealCodeRefusal,
   type SocialProvider,
 } from "@realms-world/identity";
@@ -332,14 +331,21 @@ import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifi
 import type { AttackRefusal } from "@bibliothecadao/eternum";
 import {
   FRAGMENT,
+  FRAGMENT_CENTS,
   FRAGMENTS,
-  SEASON_PASS,
+  ANCIENT_SEAL,
   BuildingType,
   buildingName,
   formatAmount,
   formatDollars,
   formatExact,
+  formatFigure,
   formatCount,
+  formatOrdinal,
+  FRIEND_FRAGMENTS,
+  FRIEND_GLORY,
+  FRIENDS_BONUS_FRAGMENTS,
+  FRIENDS_LIMIT,
   formatClockTime,
   formatDuration,
   getRelicInfo,
@@ -451,18 +457,18 @@ export const SEASON_INVITE_WORDS = {
   copy: "Copy invite link",
 } as const;
 export const SEAL_CODE_WORDS = {
-  title: `Free ${SEASON_PASS}?`,
+  title: `Free ${ANCIENT_SEAL}?`,
   line: "Quest bonus and a Realm skin. One code, one account.",
   label: "Your code",
   placeholder: `${PRINTED_CODE_LENGTH} letters and digits`,
   redeem: "Redeem",
   redeeming: "Redeeming",
-  held: `Your ${SEASON_PASS} is held`,
+  held: `Your ${ANCIENT_SEAL} is held`,
   heldLine: "It is yours when the season opens.",
   refused: {
     invalid_code: `A code is ${PRINTED_CODE_LENGTH} letters and digits.`,
     code_unavailable: "That code is taken, expired or not one of ours.",
-    seal_owned: `This account has the ${SEASON_PASS} already.`,
+    seal_owned: `This account has the ${ANCIENT_SEAL} already.`,
   } satisfies Record<SealCodeRefusal, string>,
 } as const;
 /** The day-done card: "Day 12 done · Realm kept · Day 13 is open", and its one verb. */
@@ -1155,8 +1161,12 @@ export const SHARED_DAYS_WORDS = {
     posted: "Days posted",
     visits: "Opened by friends",
     joined: "Friends who joined",
-    activated: "Cleared a site",
+    activated: `Reached ${formatExact(FRIEND_GLORY)} ${ASPECT_PAGE_WORDS.glory}`,
   },
+  friendsPaid: "Friends paid",
+  fragmentsEarned: `${FRAGMENTS} earned`,
+  ofLimit: (paid: number) => `${formatExact(paid)}/${formatExact(FRIENDS_LIMIT)}`,
+  friendRule: `A friend who joins by your Aspect link and reaches ${formatExact(FRIEND_GLORY)} ${ASPECT_PAGE_WORDS.glory} pays you ${formatCount(FRIEND_FRAGMENTS, FRAGMENT, FRAGMENTS)}. Your ${formatOrdinal(FRIENDS_LIMIT)} adds ${formatExact(FRIENDS_BONUS_FRAGMENTS)}.`,
 } as const;
 
 /** A shared link's landing: who shared which day, and the way into Frontier. */
@@ -1192,20 +1202,53 @@ export const REFILL_FAILED = "The refill could not be bought.";
 export const SHOP_WORDS = {
   title: "Shop",
   fragments: (held: number) => `${FRAGMENTS} ${formatExact(held)}`,
-  pass: SEASON_PASS,
+  pass: ANCIENT_SEAL,
   passFor: "For the whole season",
   questBonus: (percent: number) => `Daily quest pays ${formatExact(percent)}% more`,
-  getPass: "Get the Pass",
+  bonusHeld: (holder: string) => `Your ${holder} gives this bonus already`,
+  ticket: (campaign: string) => `${campaign} ticket`,
+  getPass: `Get the ${ANCIENT_SEAL}`,
   getting: "Getting…",
-  passFailed: `The ${SEASON_PASS} could not be bought.`,
+  passFailed: `The ${ANCIENT_SEAL} could not be bought.`,
   short: (held: number, more: number, cents: number) =>
     `You have ${formatExact(held)}. Get ${formatExact(more)} more for ${formatDollars(cents)}.`,
-  held: `You have the ${SEASON_PASS}`,
+  held: `You have the ${ANCIENT_SEAL}`,
   haveCode: "Have a code?",
-  fragmentsLine: (cents: number) => `${formatCount(cents, "cent")} each. Stamina, rerolls, the Pass.`,
+  fragmentsLine: (cents: number) => `${formatCount(cents, "cent")} each. Stamina, rerolls, the ${ANCIENT_SEAL}.`,
   stamina: "Stamina refill",
   staminaLine: (points: number, bar: number, fragments: number, cents: number) =>
     `Each ${FRAGMENT} refills ${formatExact(points)} points. A bar of ${formatExact(bar)} is ${formatCount(fragments, FRAGMENT, FRAGMENTS)}, ${formatDollars(cents)}.`,
+} as const;
+
+export const FRAGMENTS_PAGE_WORDS = {
+  title: `Get ${FRAGMENTS}`,
+  pack: (fragments: number) => formatCount(fragments, FRAGMENT, FRAGMENTS),
+  sealPack: `The ${ANCIENT_SEAL}`,
+  price: (fragments: number) => formatDollars(fragments * FRAGMENT_CENTS),
+  pay: (fragments: number) => `Pay ${formatDollars(fragments * FRAGMENT_CENTS)}`,
+  pricing: "Getting your price…",
+  paidAs: (lords: number) => `Paid as ${formatExact(lords)} LORDS`,
+  noPrice: "No price right now. Try again in a minute.",
+  dailyCap: `That is more ${FRAGMENTS} than one day allows.`,
+  delivering: `Your ${FRAGMENTS} are on their way…`,
+  delivered: (fragments: number) => `+${formatCount(fragments, FRAGMENT, FRAGMENTS)}`,
+  backToShop: "Back to the shop",
+  linkWallet: "Link a wallet to pay",
+  payWith: "Pay with",
+  tokenCost: (amount: number, symbol: string) => `≈ ${formatFigure(amount)} ${symbol}`,
+  lordsCost: (lords: number) => `${formatExact(lords)} LORDS`,
+  holds: (amount: number) => `You hold ${formatFigure(amount)}`,
+  pricingTokens: "Reading your wallet…",
+  tooLittle: (cents: number, symbols: readonly string[]) =>
+    `Your wallet holds too little to pay ${formatDollars(cents)}. Add ${symbols.join(", ")} to it.`,
+  refused: {
+    payment_refused: "The payment was refused.",
+    refund_due: "The payment came short or late. Your LORDS will be refunded.",
+    quote_expired: "The price expired. Choose again.",
+    quote_paid: "This price was paid already.",
+    transaction_used: `That payment bought ${FRAGMENTS} already.`,
+    unknown_quote: "This price is no longer known. Choose again.",
+  },
 } as const;
 
 /** LORDS leaving the game for the wallet linked to the account. */
@@ -1226,8 +1269,6 @@ export const PAYOUTS_UNREADABLE = "Payouts cannot be read right now";
 /** A withdrawal with no answer from the game: it may still apply, so it is never sent again on its own. */
 export const withdrawalUnknown = (amount: string) => `No answer yet for these ${amount}`;
 
-/** A campaign home's mark beside its realm's rank: the event that founded it, golden for a golden ticket's. */
-export const DEVCON = "Devcon";
 /** The phone's own time zone: the server words a push's times by this clock. */
 export const deviceTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 /** The same ask on an iPhone in its browser, which sends push only to the installed app. */
@@ -1248,12 +1289,7 @@ export const numberedRealm = (realmId: number, name: string | undefined) =>
   name ? `${realmId} · ${name}` : String(realmId);
 export const NO_HELD_REALMS = "Your linked wallet holds no Realm";
 export const HELD_REALMS_UNREADABLE = "Your Realms cannot be read right now";
-export const TICKET_UNREADABLE = "Your ticket cannot be read right now";
 export const INVALID_REALM_NUMBER = "Enter a Realm number from 1–8,000.";
-/** A campaign's name where its tickets are named: on the Realm step, the ticket a home can be founded with. */
-const CAMPAIGN_NAMES: Record<CampaignKey, string> = { "devcon-2026": DEVCON };
-export const campaignTicketName = (campaign: CampaignKey, golden: boolean) =>
-  `${golden ? "Golden " : ""}${CAMPAIGN_NAMES[campaign]} ticket`;
 /** The Realm step: its one job, the home the player founds, and what it offers to found it with. */
 export const HOME_STEP_WORDS = {
   title: "Choose your home",
@@ -1263,10 +1299,9 @@ export const HOME_STEP_WORDS = {
   /** The name a new account was given at sign-up, said where the player first chooses something of their own. */
   playsAs: (name: string) => `You play as ${name}`,
   changeOnYou: "Change it on You",
-  /** While the account's Realms and ticket are read: the step offers nothing yet, and says why. */
   loading: "Reading what you hold…",
   freeHome: "A free home",
-  freeHomeLine: "Hold a Realm or a Devcon ticket to add a daily claim.",
+  freeHomeLine: "Hold a Realm to add a daily claim.",
   taken: "Taken",
   keepFree: "Continue with my free home",
   attachTitle: "Choose a daily claim",
@@ -1391,108 +1426,7 @@ export const SIGN_IN_WORDS = {
   continueInBrowser: "Continue in browser",
 } as const;
 
-/** Devcon's landing and its ticket: the realm it promises, the ticket opened, and what each tier gives each day. */
 export const JOIN_WORDS = {
-  realm: "A Devcon realm is yours",
-  yourTicket: "Your ticket",
-  /** A second flyer on an account that already holds its ticket: the held one, never the flyer's. */
-  alreadyHeld: "You already hold your Devcon ticket",
-  open: "Open your ticket",
-  opening: "Opening…",
-  sealed: "A realm waits for you",
-  stub: "Devcon · Mumbai",
-  golden: "Golden ticket",
-  goldenLine: "A golden realm waits",
-  goldenStub: "Golden · Devcon · Mumbai",
-  /** The reveal's way on, into the Devcon game's Realm step. */
-  startAdventure: "Start your adventure",
-  continue: "Continue",
-  closed: "Devcon tickets have closed.",
-  taken: "Another player already opened this ticket.",
-  founded: "Your realm already has a daily claim. Give this flyer to a friend.",
-  noTicket: "This link holds no ticket. Scan the QR on your Devcon flyer.",
-  failed: "Your ticket could not be opened.",
-  /** Over a friend's referral link: who sent it, by their chosen name. */
-  sentYou: (name: string | null) => `${name ?? "A friend"} sent you a Devcon realm`,
-  /** Under the sealed ticket: the season's end, in the event's clock. */
-  openUntil: (moment: string) => `Open it until ${moment}.`,
-  selfReferral: "This is your own invite link. Share it with a friend.",
-  referralUnknown: "This invite link holds no ticket.",
-} as const;
-
-/** Invite friends, on You: the referral link, its friends' progress, and what they earn the inviter. */
-export const REFERRAL_WORDS = {
-  title: "Invite friends",
-  /** What the inviter's friends get and can still earn them, by their home. */
-  promise: {
-    free: (oneIn: number) =>
-      `Each friend who signs up through your link gets a Devcon realm, 1 in ${oneIn} of them golden. When a friend founds a realm and clears a site, you get a Devcon realm too.`,
-    ticket: "Your friends earned you a Devcon ticket. Add it to your home from its daily claim.",
-    devcon: (oneIn: number) =>
-      `Each friend who signs up through your link gets a Devcon realm, 1 in ${oneIn} of them golden. A golden friend who founds a realm and clears a site turns your realm golden.`,
-    golden: "Your realm is golden. Each friend who signs up through your link still gets a Devcon realm.",
-    held: "Each friend who signs up through your link gets a Devcon realm. Your home already has its daily claim, so it earns nothing more.",
-  },
-  /** Golden earned on a Devcon home the game has not confirmed yet: nothing is promised for a claim before it is. */
-  pending: "Golden earned. Your realm turns golden once the game confirms it; until then it claims as it does now.",
-  copy: "Copy",
-  copied: "Copied",
-  share: "Share",
-  shareText: "A Devcon realm for you in Realms: Frontier",
-  /** The link's way to golden, counted friends of the number that turns it. */
-  toGoldenLink: (counted: number, of: number) => `${counted} of ${of} friends`,
-  goldenLinkChip: "Golden link",
-  forEachFriend: "A Devcon realm",
-  forEachFriendDetail: "for each friend",
-  yourRealm: "Your Devcon realm",
-  yourRealmDetail: "when a friend founds and clears a site",
-  goldenFriend: "A golden friend",
-  goldenFriendDetail: (oneIn: number) => `1 in ${oneIn} tickets, once that friend counts`,
-  goldenLink: "A golden link",
-  goldenLinkDetail: (of: number) => `at ${of} friends: you and every friend`,
-  friend: {
-    signed: "Signed up, not founded yet",
-    founded: "Founded, clearing a first site",
-    counted: "Founded and cleared a site",
-    excluded: "Same email or device as another player, so not counted",
-  },
-  /** A friend whose name is not chosen yet. */
-  unnamed: "A friend",
-  counted: "Counted",
-  waiting: "Waiting",
-  notCounted: "Not counted",
-  golden: "Golden",
-  unreadable: "Your invite link could not be loaded.",
-  ticketTitle: (name: string | null) => `${name ?? "A friend"} counted: your Devcon realm`,
-  ticketBody: "Your friend founded a realm and cleared a site. Add this ticket to your home from its daily claim.",
-  ticketAction: "Add it to my home",
-  /** Golden said once the realm is golden on the board, or the golden ticket waits to be added to a home. */
-  goldenTitle: (linkGolden: boolean) => (linkGolden ? "Your link went golden" : "A golden friend counted"),
-  goldenBody: {
-    ticket: "Your Devcon ticket is golden. Add it to your home from its daily claim.",
-    golden: "Your Devcon realm is golden from your next daily claim. Days you already claimed stay as they were.",
-  },
-  goldenAction: { ticket: "Add it to my home", golden: "Open my realm" },
-  /** A phone's compact panel: the same facts in a line each. */
-  compact: {
-    promise: {
-      free: (oneIn: number) =>
-        `Each friend gets a Devcon realm, 1 in ${oneIn} golden. Your first counted friend gets you one.`,
-      ticket: "Friends earned you a Devcon ticket: add it from your daily claim.",
-      devcon: (oneIn: number) =>
-        `Each friend gets a Devcon realm, 1 in ${oneIn} golden. A golden friend who counts makes yours golden.`,
-      golden: "Your realm is golden. Each friend still gets a Devcon realm.",
-      held: "Each friend gets a Devcon realm. Your home earns nothing more.",
-    },
-    pending: "Golden earned: waiting for the game to confirm it.",
-    /** What counts a friend, said where the slots count them: the rule the statuses below name the next step of. */
-    linkRule: (at: number) =>
-      `Friends count once they found a realm and clear a site. At ${at}, your link turns golden.`,
-    linkGolden: "Your link is golden: every friend on it too.",
-    /** Each friend's next step to count, or why they never will. */
-    status: { signed: "Not founded yet", founded: "No site cleared yet", excluded: "Not counted" },
-    excluded: "Same email or device as another player",
-  },
 } as const;
 
 /** Blitz's rows and lobby: the steps on Join, the seat's cost, and what stands where an action cannot. */
@@ -1638,7 +1572,6 @@ export const PROFILE_WORDS = {
   /** The counts at the foot of the player's own card, each opening its sheet. */
   holdings: "Holdings",
   realms: "Realms",
-  ticket: "Ticket",
   /** Under a count the holdings could not read: it says why in its sheet. */
   unknownCount: "—",
   /** Recent games with none finished yet: the player's own, and another player's. */
@@ -1718,7 +1651,7 @@ export const WALLET_WORDS = {
   braavos: "Braavos",
   controller: "Controller",
   extension: "extension",
-  byEmail: "by email",
+  byEmail: "email wallet",
   yourWallet: "Your wallet",
   realmsWallet: "Realms wallet",
   createWallet: "Create my wallet",
@@ -1772,7 +1705,7 @@ export const WALLET_WORDS = {
   wrongWallet: (owner: string) => `Only ${owner} can sign this`,
   paymentFailed: "The wallet did not confirm it",
   tryAgain: "Try again",
-  whichHolds: (owner: string) => `Which wallet holds ${owner}?`,
+  chooseWallet: "Choose your wallet",
 } as const;
 
 /** What every value screen shares: a fee the payout wallet cannot pay yet. */
@@ -2179,11 +2112,11 @@ const ARMY_RELIC_SLOTS = 3;
 export const RELIC_WORDS = {
   title: "Relics",
   cache: (fragments: number) => `Ancient cache: ${formatExact(fragments)} ${FRAGMENTS}`,
-  kinds: { Blade: "Blade", Ward: "Ward", Plunder: "Plunder", FarEye: "Far-Eye" },
+  kinds: { Blade: "Blade", Ward: "Ward", Plunder: "Plunder", StaminaRegen: "Stamina" },
   blade: (amount: string) => `+${amount} damage dealt`,
   ward: (amount: string) => `−${amount} damage taken`,
   plunder: (amount: string) => `+${amount} labor and Essence from a cleared site`,
-  farEye: (tiles: number) => `Reveals the ${tiles} nearest tiles at once`,
+  staminaRegen: (amount: string) => `+${amount} stamina regeneration`,
   empty: "Empty slot",
   switchOn: "Switch on",
   switching: "Switching on…",

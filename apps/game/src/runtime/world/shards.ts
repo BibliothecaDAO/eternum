@@ -1,4 +1,4 @@
-import { getShard, openShard, requireShard, type Shard } from "@bibliothecadao/eternum/shard";
+import { getShard, openShard, type Shard } from "@bibliothecadao/eternum/shard";
 
 import { nativeFactSchemaIdentity } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { fetchDirectory, type DirectoryShard } from "./directory";
@@ -12,14 +12,11 @@ const directoryListing = (): Promise<DirectoryShard | null> =>
     throw error;
   }));
 
-/**
- * A game route names only a chain id. Its shard is found in our directory and opened alone, so entering a game talks
- * to that game's Herald and no other. A chain our directory does not list plays only on a shard already open here.
- */
 export const requireOpenShard = async (chainId: string): Promise<Shard> => {
   const listed = await directoryListing();
-  if (!listed || BigInt(listed.chainId) !== BigInt(chainId)) return requireShard(chainId);
-  const open = getShard(chainId);
+  if (!listed || BigInt(listed.chainId) !== BigInt(chainId))
+    throw new Error(`Chain ${chainId} is not the chain our directory lists`);
+  const open = getShard();
   return open && new URL(open.url).href === new URL(listed.url).href ? open : openListedShard(listed);
 };
 

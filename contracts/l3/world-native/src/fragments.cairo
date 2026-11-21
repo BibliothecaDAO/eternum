@@ -10,6 +10,13 @@ pub const VEIL_CACHE_PERCENT: u8 = 10;
 pub const HOLLOW_CACHE_PERCENT: u8 = 5;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct FragmentCredit {
+    pub id: felt252,
+    pub account: ContractAddress,
+    pub amount: u128,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct BuyStamina {
     pub explorer_id: u64,
     pub fragments: u64,

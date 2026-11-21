@@ -10,10 +10,11 @@ import { BuildOrdersPage } from "../build-orders/build-orders-page";
 import { PageAddress } from "../frame/page-address";
 import { CreditsPage, PrivacyPage, TermsPage } from "../legal";
 import { WhatsNewPage } from "../news/news";
-import { JoinDevconPage } from "../join/join-devcon-page";
 import { NotFoundPage } from "../not-found";
 import { PlayPage } from "../play/play-page";
 import { SharedLinkPage } from "../share/shared-link-page";
+import { FragmentsPage } from "../shop/fragments-page";
+import { answerAvnuRead, answerTokenBalances, isAvnuRead } from "./lab-pay-tokens";
 import { PlayerPage, ProfilePage, SettingsPage } from "../profile/profile-pages";
 import { ResultsPage } from "../season-tab/results-page";
 import { SeasonPage } from "../season-tab/season-page";
@@ -25,10 +26,6 @@ import {
   LAB_FINAL_BOARDS,
   LAB_FRONTIER_FINAL_BOARD,
   LAB_FRONTIER_UNPUBLISHED_BOARD,
-  LAB_DEVCON_TICKETS,
-  LAB_FIRST_REFERRAL,
-  LAB_REFERRALS,
-  LAB_REFERRER,
   LAB_NO_SHARES,
   LAB_SHARE_TALLIES,
   LAB_GUARDIAN,
@@ -51,6 +48,7 @@ import {
   LAB_INVITE,
   labJoinedShare,
   labSealCode,
+  LAB_FRAGMENT_QUOTE,
   LAB_SEAL_CODE,
   LAB_SHARE_CODE,
   type LabScreen,
@@ -113,9 +111,7 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
         <Route path="connect/:step" element={<LabConnect />} />
         <Route path="doorway/:state" element={<LabDoorway />} />
         <Route path="s/:code" element={<SharedLinkPage />} />
-        <Route path="join/devcon" element={<JoinDevconPage />} />
-        <Route path="join/devcon/:code" element={<JoinDevconPage />} />
-        <Route path="join/devcon/r/:referral" element={<JoinDevconPage />} />
+        <Route path="shop/fragments" element={<FragmentsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </PageAddress.Provider>
@@ -170,12 +166,12 @@ function installLabFixtures(screen: LabScreen, field: number | null): () => void
     "linkWallet",
     "getBuildOrders",
     "saveBuildOrders",
-    "redeemCampaignTicket",
-    "campaignReferral",
-    "campaignReferrer",
     "shareTally",
     "readDefaultWallet",
     "deleteAccount",
+    "priceFragments",
+    "payFragments",
+    "fragmentPayment",
   ];
   const descriptors = identityMethods.map(
     (name) => [name, Object.getOwnPropertyDescriptor(identityClient, name)] as const,
@@ -183,7 +179,9 @@ function installLabFixtures(screen: LabScreen, field: number | null): () => void
   answerAppReads(screen, field);
   answerLabChat({ history: () => LAB_GLOBAL_CHAT });
   answerIdentity(screen);
+  const restoreBalances = answerTokenBalances();
   return () => {
+    restoreBalances();
     window.fetch = previousFetch;
     window.WebSocket = previousWebSocket;
     for (const [name, descriptor] of descriptors) {
@@ -228,17 +226,12 @@ const answerAppReads = (screen: LabScreen, field: number | null) => {
   if (field !== null) answers["/games/1/leaderboard"] = () => json(labFrontierBoard(field, boardReads++));
   window.fetch = (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);
+    if (isAvnuRead(url)) return Promise.resolve(answerAvnuRead(url, init?.body?.toString()));
     const answer = answers[url.pathname];
     return answer ? Promise.resolve(answer(url)) : network(input, init);
   };
 };
 
-/**
- * The identity service's answers for the account page: a code is always sent, and a wallet change or the account's
- * deletion spends the lab's one code and refuses any other, as the service refuses it. A Devcon screen's account holds its ticket, or opens it
- * with any flyer's code, as the service answers a first redemption. The client holds its own fetch, so its calls are
- * answered on the client itself.
- */
 const answerIdentity = (screen: LabScreen) => {
   identityClient.listSignInProviders = async () => ["discord"];
   identityClient.availableSignInProviders = async () => [...SOCIAL_PROVIDERS];
@@ -246,15 +239,6 @@ const answerIdentity = (screen: LabScreen) => {
   const spend = async (code: unknown) => {
     if (code !== LAB_EMAIL_CODE) throw new IdentityRequestError(400, "INVALID_OTP");
   };
-  const ticket = LAB_DEVCON_TICKETS[screen];
-  let held = ticket?.held === true;
-  identityClient.redeemCampaignTicket = async (campaign, opening) => {
-    if (!ticket || (opening === null && !held)) throw new IdentityRequestError(400, "invalid_redemption");
-    held = true;
-    return { campaign, tier: ticket.tier };
-  };
-  identityClient.campaignReferral = async () => LAB_REFERRALS[screen] ?? LAB_FIRST_REFERRAL;
-  identityClient.campaignReferrer = async () => LAB_REFERRER;
   identityClient.shareTally = async () => LAB_SHARE_TALLIES[screen] ?? LAB_NO_SHARES;
   let intent = labOrderIntent(screen);
   identityClient.getOrderIntent = async () => intent;
@@ -276,6 +260,16 @@ const answerIdentity = (screen: LabScreen) => {
     sealCode = { held: true };
     return sealCode;
   };
+  identityClient.priceFragments = async (_game, fragments) => ({
+    fragments,
+    cents: fragments,
+    quote: {
+      ...LAB_FRAGMENT_QUOTE,
+      lordsWei: String((BigInt(LAB_FRAGMENT_QUOTE.lordsWei) * BigInt(fragments)) / 1_000n),
+    },
+  });
+  identityClient.payFragments = async () => ({ state: "delivering" });
+  identityClient.fragmentPayment = async () => ({ state: "delivered", fragments: 1_000 });
   // The lab's player has made no Realms wallet, so the payout window offers Create my wallet.
   identityClient.readDefaultWallet = async () => null;
   answerLabBuildOrders();

@@ -68,7 +68,7 @@ fn exploration_settles_mist_tide_until_the_exact_lights_quorum_second() {
             crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, well_bps: 0, ..discovery },
             100,
             step.try_into().unwrap(),
-            Some(crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::FarEye, rank: 1 }),
+            Some(crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::Blade, rank: 1 }),
             crate::discovery::Discovery::None,
         );
         assert!(
@@ -582,7 +582,7 @@ fn mist_tide_counts_each_real_reveal_once_and_keeps_the_rolled_day() {
         crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, well_bps: 0, ..rules },
         100,
         0,
-        Some(crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::FarEye, rank: 1 }),
+        Some(crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::Blade, rank: 1 }),
         crate::discovery::Discovery::None,
     );
     assert!(world_test_support::tests::registrar::explore_with_root(d, game_id, explorer_id, root, tomorrow));

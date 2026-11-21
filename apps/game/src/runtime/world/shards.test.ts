@@ -28,12 +28,7 @@ const registry = vi.hoisted(() => {
 
 vi.mock("@bibliothecadao/eternum/shard", () => ({
   openShard: registry.openShard,
-  getShard: (chainId: string) => registry.open.get(`0x${BigInt(chainId).toString(16)}`) ?? null,
-  requireShard: (chainId: string) => {
-    const shard = registry.open.get(chainId);
-    if (!shard) throw new Error(`Shard for chain ${chainId} is not open`);
-    return shard;
-  },
+  getShard: () => registry.open.values().next().value ?? null,
 }));
 vi.mock("../../../../../contracts/l3/world-native/schema/client.gen", () => ({ nativeFactSchemaIdentity: "schema" }));
 
@@ -60,14 +55,14 @@ beforeEach(() => {
   );
 });
 
-it("opens the directory's shard from the manifest it carries, and refuses a chain that is not the listed one", async () => {
+it("opens the directory's one shard from the manifest it carries, and refuses any other chain", async () => {
   const { requireOpenShard } = await loadShards();
   expect(await requireOpenShard("0xa")).toEqual({ url: "https://shard-a.test", chainId: "0xa" });
   expect(await requireOpenShard("0x0a")).toEqual({ url: "https://shard-a.test", chainId: "0xa" });
   expect(registry.openShard.mock.calls.map(([url, , , manifest]) => [url, manifest])).toEqual([
     ["https://shard-a.test", manifestA],
   ]);
-  await expect(requireOpenShard("0xb")).rejects.toThrow("Shard for chain 0xb is not open");
+  await expect(requireOpenShard("0xb")).rejects.toThrow("Chain 0xb is not the chain our directory lists");
 });
 
 it("asks the shard itself when the directory could not read it", async () => {

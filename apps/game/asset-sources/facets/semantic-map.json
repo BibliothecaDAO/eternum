@@ -1455,6 +1455,16 @@
     "label": "CoinGecko",
     "family": "Brands"
   },
+  "brand-eth": {
+    "token": "brand-eth",
+    "label": "ETH",
+    "family": "Brands"
+  },
+  "brand-usdc": {
+    "token": "brand-usdc",
+    "label": "USDC",
+    "family": "Brands"
+  },
   "brand-google": {
     "token": "brand-google",
     "label": "Google",

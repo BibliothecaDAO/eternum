@@ -30,11 +30,11 @@ it("refuses a shard with no release this client can read", async () => {
   serve(manifest("0x1"));
   await expect(openShard("https://one.shard.test", "schema-b")).rejects.toBeInstanceOf(ShardReleaseMismatchError);
 });
-it("reads one manifest, without downloading a schema, and keys the shard by its chain", async () => {
+it("reads one manifest, without downloading a schema, and holds the shard it opened", async () => {
   const { openShard, requireShard } = await freshPage();
   serve(manifest("0x0a"));
   const shard = await openShard("https://two.shard.test", schemaHash);
-  expect(requireShard("0xa")).toBe(shard);
+  expect(requireShard()).toBe(shard);
   expect(shard).toMatchObject({ chainId: "0xa", worldAddress: "0x77" });
   expect(fetch).toHaveBeenCalledOnce();
   expect(fetch).toHaveBeenCalledWith("https://two.shard.test/manifest", expect.any(Object));
@@ -44,12 +44,11 @@ it("keeps one shard open: it opens again, and another chain or another URL for i
   serve(manifest("0x0a"));
   await openShard("https://two.shard.test", schemaHash);
   const again = await openShard("https://two.shard.test", schemaHash);
-  expect(getShard("0xa")).toBe(again);
+  expect(getShard()).toBe(again);
   await expect(openShard("https://three.shard.test", schemaHash)).rejects.toThrow("cannot open beside it");
   serve(manifest("0x0b"));
   await expect(openShard("https://two.shard.test", schemaHash)).rejects.toThrow("cannot open beside it");
-  expect(getShard("0xb")).toBeNull();
-  expect(getShard("0xa")).toBe(again);
+  expect(getShard()).toBe(again);
 });
 it("opens a shard from the manifest its listing carries, without asking the shard again", async () => {
   const { openShard, requireShard } = await freshPage();
@@ -57,7 +56,7 @@ it("opens a shard from the manifest its listing carries, without asking the shar
   const shard = await openShard("https://four.shard.test", schemaHash, undefined, manifest("0x1d"));
   expect(fetch).not.toHaveBeenCalled();
   expect(shard).toMatchObject({ url: "https://four.shard.test", chainId: "0x1d", worldAddress: "0x77" });
-  expect(requireShard("0x1d")).toBe(shard);
+  expect(requireShard()).toBe(shard);
 });
 it("resolves the game's release and leaves the shared shard registry unchanged on refresh", async () => {
   const { openShard, refreshShardRelease, requireShard } = await freshPage();
@@ -69,7 +68,7 @@ it("resolves the game's release and leaves the shared shard registry unchanged o
   });
   const refreshed = await refreshShardRelease(opened.url, "8", schemaHash);
   expect(refreshed.releases["8"]?.schema).toBe(schemaHash);
-  expect(requireShard("0xb")).toBe(opened);
+  expect(requireShard()).toBe(opened);
   expect(opened.releases).toEqual(releaseLine(schemaHash, [7]));
   await expect(refreshShardRelease(opened.url, "7", schemaHash)).resolves.toBeDefined();
   await expect(refreshShardRelease(opened.url, "9", schemaHash)).rejects.toThrow("release 9");
@@ -95,7 +94,7 @@ it("validates shard authority before inserting a manifest into the registry", as
       throw new Error("reserved chain");
     }),
   ).rejects.toThrow("reserved chain");
-  expect(() => requireShard("0xc")).toThrow("not open");
+  expect(() => requireShard()).toThrow("No shard is open");
   await expect(openShard("https://trusted.test", schemaHash)).resolves.toMatchObject({ chainId: "0xc" });
 });
 

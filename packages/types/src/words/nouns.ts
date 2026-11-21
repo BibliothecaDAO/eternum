@@ -27,7 +27,7 @@ const UNKNOWN = "—";
 export const LORDS = "LORDS";
 export const FRAGMENT = "Fragment";
 export const FRAGMENTS = "Fragments";
-export const SEASON_PASS = "Season Pass";
+export const ANCIENT_SEAL = "Ancient Seal";
 /** A chest's rarity, common to legendary. */
 export const TIER_WORDS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"] as const;
 

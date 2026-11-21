@@ -353,36 +353,6 @@ async function enterEtherealIIFromItsCard({ browser }) {
   return { armyId, locate };
 }
 
-const FAR_EYE_STEPS = [
-  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  {
-    name: "far-eye-reveal-and-reward",
-    settleMs: 1_000,
-    play: async ({ browser }) => {
-      await openTheArmyPanel(browser);
-      browser.run(["find", "role", "button", "click", "--name", "Switch on Common Far-Eye"]);
-      const answer = await readUntil(
-        () => browser.read(`window.__labChain?.sent.find(row => row.command.kind === 'ApplyRelic')?.answered ?? []`),
-        (rows) => rows.some((row) => row.model === "ExpeditionSpire"),
-        MERGE_WAIT_MS,
-      );
-      return {
-        answer,
-        panel: browser.read(
-          `JSON.stringify(document.querySelector('[data-kit-sheet][aria-label^="Army "]')?.textContent ?? '')`,
-        ),
-      };
-    },
-    verify: ({ played }) =>
-      played.answer.filter((row) => row.model === "TileOpt").length === 6 &&
-      played.answer.some((row) => row.model === "ResourceBalance" && BigInt(row.value.balance) > 0n) &&
-      played.answer.some((row) => row.model === "ArmyRelics" && row.value.first === null) &&
-      !played.panel.includes("Switch on Common Far-Eye")
-        ? completed(played)
-        : failed("Far-Eye must spend its slot, reveal six tiles, find the Spire and pay resources", played),
-  },
-];
-
 const RELIC_FORECAST_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   {
@@ -855,10 +825,6 @@ const FOUNDED_ASPECTS = `JSON.stringify((window.__labChain?.sent ?? [])
   .filter(({ command }) => command.kind === "SettleSeason")
   .map(({ answered }) => Number((answered ?? []).find(({ model }) => model === "HomeAspect")?.value?.aspect)))`;
 
-/**
- * A founding by an account a friend's Aspect invite brought: the Aspect step opens with Harmony first, tagged Invited and
- * naming Linden, every card open only once the invite is read; tapping Harmony signs SettleSeason with that Aspect.
- */
 const ASPECT_SETTLE_INVITED_STEPS = [
   {
     name: "found-from-the-invite",
@@ -874,7 +840,7 @@ const ASPECT_SETTLE_INVITED_STEPS = [
         `JSON.stringify(document.querySelector(".aspect-picker__invited")?.textContent ?? null)`,
       );
       extraScreenshot("invited-aspect-step");
-      browser.click("Join Harmony");
+      browser.click("Join Luminary");
       const orders = await chooseFirstOrder(browser);
       const settles = await readUntil(
         () => browser.read(ASPECT_SETTLES),
@@ -891,18 +857,18 @@ const ASPECT_SETTLE_INVITED_STEPS = [
     verify: ({ played }) =>
       JSON.stringify(played.cards.map(({ label, invite }) => [label, invite])) ===
         JSON.stringify([
-          ["Join Harmony", "Invited"],
-          ["Join Might", null],
-          ["Join Chaos", null],
-          ["Join Guile", null],
+          ["Join Luminary", "Invited"],
+          ["Join Prowess", null],
+          ["Join Havoc", null],
+          ["Join Insight", null],
         ]) &&
-      played.line === "Linden invited you to Harmony" &&
+      played.line === "Linden invited you to Luminary" &&
       played.settles.length === 1 &&
       JSON.stringify(played.settles[0]) === JSON.stringify(["1", "0", played.orders?.[0]?.order]) &&
       JSON.stringify(played.aspects) === JSON.stringify([2])
         ? completed(played)
         : failed(
-            "The invited player must meet Harmony first, tagged and named, and found in the Order tapped inside it",
+            "The invited player must meet Luminary first, tagged and named, and found in the Order tapped inside it",
             played,
           ),
   },
@@ -923,7 +889,7 @@ const ASPECT_SETTLE_STEPS = [
       })`);
       const choosing = extraScreenshot("aspect-choice");
       if (choice.sent !== 0 || choice.cards.length !== 4) return { choice, choosing };
-      browser.click("Join Chaos");
+      browser.click("Join Havoc");
       const orders = await chooseFirstOrder(browser);
       await waitFor(browser, (seen) => seen.playable && seen.scene === "hex", PLAYABLE_WAIT_MS);
       const founded = browser.read(`JSON.stringify(
@@ -949,7 +915,7 @@ const ASPECT_SETTLE_STEPS = [
       const members = founded?.answered.find(({ model }) => model === "AspectMembers")?.value;
       return played.choice?.sent === 0 &&
         played.choice.cards?.length === 4 &&
-        played.choice.cards.includes("Join Chaos") &&
+        played.choice.cards.includes("Join Havoc") &&
         played.founded?.length === 1 &&
         founded.command.calldata.slice(5).map(Number).join(",") === `1,0,${played.orders?.[0]?.order}` &&
         Number(home?.home) === 7 &&
@@ -960,7 +926,7 @@ const ASPECT_SETTLE_STEPS = [
         seen.playable &&
         isIn(seen, "Realm", "hex")
         ? completed(played)
-        : failed("The Order chosen inside Chaos must be submitted and its Aspect become the home's membership", played);
+        : failed("The Order chosen inside Havoc must be submitted and its Aspect become the home's membership", played);
     },
   },
 ];
@@ -1092,7 +1058,7 @@ async function getThePass({ browser }) {
   const shop = await readUntil(() => browser.read(buttonLabelled("^Fragments [0-9,]+$")), Boolean, SHEET_WAIT_MS);
   if (!shop) return { shop };
   browser.tap(shop.offset);
-  const pass = await readUntil(() => browser.read(sheetButton("Get the Pass$")), Boolean, SHEET_WAIT_MS);
+  const pass = await readUntil(() => browser.read(sheetButton("Get the Ancient Seal$")), Boolean, SHEET_WAIT_MS);
   if (!pass) return { shop: shop.name, pass };
   watchFor(browser, "pass-held", passHeld);
   browser.tap(pass.offset);
@@ -1106,7 +1072,7 @@ async function getThePass({ browser }) {
 const passHeld = `(() => {
   const answer = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "BuySeal").at(-1);
   return answer?.answered.some(({ model }) => model === "Seal") === true &&
-    document.querySelector('[data-kit-sheet] [data-shop="pass"]')?.textContent.includes("You have the Season Pass") === true;
+    document.querySelector('[data-kit-sheet] [data-shop="pass"]')?.textContent.includes("You have the Ancient Seal") === true;
 })()`;
 
 function deleteOathArmyStep() {
@@ -1619,7 +1585,7 @@ const BANE_COLLECTIONS = {
     essence: "1500000000000",
     quest: "The Stand",
     count: "3 of 3 sites",
-    head: "Might's bane",
+    head: "Prowess's bane",
   },
 };
 
@@ -4248,14 +4214,14 @@ function raceBoardSteps(result) {
         const scoped = played.race?.scopes?.at(-1)?.structures ?? [];
         return race?.visible &&
           members?.visible &&
-          race.text.includes("Harmony") &&
-          race.text.includes("Might") &&
-          race.text.includes("Chaos") &&
-          race.text.includes("Guile") &&
+          race.text.includes("Luminary") &&
+          race.text.includes("Prowess") &&
+          race.text.includes("Havoc") &&
+          race.text.includes("Insight") &&
           race.text.includes(result === "won" ? "10,000 of 10,000" : "6,400 of 10,000") &&
           (result !== "expired" || race.text.includes("No Aspect finished its hyperstructure")) &&
           race.text.includes(result === "won" ? "200K" : "64K") &&
-          played.invite?.invite.text.includes("Invite a friend to Might") &&
+          played.invite?.invite.text.includes("Invite a friend to Prowess") &&
           members.text.includes("1.3K") &&
           members.text.includes("3.8K") &&
           scoped.includes(7) &&
@@ -4285,11 +4251,11 @@ function raceBoardSteps(result) {
             verify: ({ played }) => {
               const text = played.feed.rows.join(" | ");
               return played.feed.visible &&
-                text.includes("Might beat Harmony") &&
-                text.includes("Harmony beat Might") &&
-                text.includes("Might and Harmony fought to a stand") &&
-                text.includes("Might and Harmony wiped each other out") &&
-                text.includes("Harmony wiped out") &&
+                text.includes("Prowess beat Luminary") &&
+                text.includes("Luminary beat Prowess") &&
+                text.includes("Prowess and Luminary fought to a stand") &&
+                text.includes("Prowess and Luminary wiped each other out") &&
+                text.includes("Luminary wiped out") &&
                 played.feed.rows.length === 4
                 ? completed(played)
                 : failed(
@@ -6133,7 +6099,6 @@ export const STEP_SETS = {
     ]),
   ),
   "lab-far-place": { game: labSpireGame("far-place"), steps: FAR_PLACE_STEPS, devOverlays: true },
-  "lab-far-eye": { game: labSpireGame("far-eye"), steps: FAR_EYE_STEPS },
   "lab-relic-forecasts": { game: labSpireGame("relics"), steps: RELIC_FORECAST_STEPS },
   "lab-race": { game: labSpireGame("race"), steps: raceBoardSteps(null) },
   "lab-race-expired": { game: labSpireGame("race-expired"), steps: raceBoardSteps("expired") },

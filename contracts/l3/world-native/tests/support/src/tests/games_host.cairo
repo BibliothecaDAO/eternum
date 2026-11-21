@@ -78,8 +78,6 @@ pub mod GamesTest {
     #[abi(embed_v0)]
     impl ExtractionFixture = GamesFixture::ExtractionFixture<ContractState>;
     #[abi(embed_v0)]
-    impl RelicMapFixture = GamesFixture::RelicMapFixture<ContractState>;
-    #[abi(embed_v0)]
     impl GuardsFixture = GamesFixture::GuardsFixture<ContractState>;
     #[abi(embed_v0)]
     impl GuardInitializationFixture = GamesFixture::GuardInitializationFixture<ContractState>;

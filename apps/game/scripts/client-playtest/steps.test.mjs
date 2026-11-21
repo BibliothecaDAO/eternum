@@ -1024,7 +1024,7 @@ it("requires an opened army panel and no retired LORDS controls", () => {
 
 it("requires the selected Aspect in both the founding command and its membership result", () => {
   const verify = STEP_SETS["lab-aspect-settle"].steps[0].verify;
-  const choice = { sent: 0, cards: ["Join Might", "Join Harmony", "Join Chaos", "Join Guile"] };
+  const choice = { sent: 0, cards: ["Join Prowess", "Join Luminary", "Join Havoc", "Join Insight"] };
   const seen = { scene: "hex", rendered: "hex", place: "Realm", playable: true };
   const orders = [{ label: "Play as the Order shown first", order: "3" }];
   const armyButtons = [1, 2].map((number) => ({
@@ -1173,7 +1173,7 @@ it.each([
   ["world", ["LaborGrant"], "1500000000000", "1500000000000", "The Cull: 2,500 of 2,500 troops. Ash Fall"],
   ["again", ["BaneGrant"], "2500000000000", "3000000000000", "The Cull: 2,500 of 2,500 troops. Ash Fall"],
   ["late", ["LaborGrant", "BaneGrant"], "2500000000000", "3000000000000", "The Cull: 2,500 of 2,500 troops. Ash Fall"],
-  ["team", ["LaborGrant"], "1500000000000", "1500000000000", "The Stand: 3 of 3 sites. Might's bane"],
+  ["team", ["LaborGrant"], "1500000000000", "1500000000000", "The Stand: 3 of 3 sites. Prowess's bane"],
 ])("requires exact %s bane receipts, balances, identity and collected UI", (stage, models, labor, essence, text) => {
   const verify = STEP_SETS[`lab-bane-${stage}`].steps[1].verify;
   const sent = {

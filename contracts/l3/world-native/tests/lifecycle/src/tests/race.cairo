@@ -87,7 +87,7 @@ fn recorded_second_wind_multiplies_mist_tide_and_changes_real_exploration_refill
             crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, well_bps: 0, ..discovery },
             200,
             step.try_into().unwrap(),
-            Some(crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::FarEye, rank: 1 }),
+            Some(crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::Blade, rank: 1 }),
             crate::discovery::Discovery::None,
         );
         assert!(
@@ -568,7 +568,7 @@ fn spoils_clear(category: u8) {
     world_test_support::tests::resource_commands::grant(
         d, home, crate::resources::WHEAT, units * stamina.stamina_explore_wheat_cost.into(),
     );
-    let relic = crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::FarEye, rank: 1 };
+    let relic = crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::Blade, rank: 1 };
     let expected = if category == crate::taxonomy::BEASTS_CATEGORY {
         crate::discovery::Discovery::Beasts
     } else if category == crate::taxonomy::CAMP_CATEGORY {

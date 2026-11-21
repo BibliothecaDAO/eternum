@@ -550,6 +550,13 @@ describe("declared fact absence", () => {
         category: 15,
         is_structure: false,
       }),
+      set("0x75", "ArmyRelicEffect", {
+        game_id: 1,
+        explorer_id: army.explorer_id,
+        kind: "StaminaRegen",
+        rank: 0,
+        expires_at: "0",
+      }),
     ]);
     expect(resolveExplorerTroops(store, army)?.stamina).toEqual({ amount: 7n, settled_at: 17, remainder: 0 });
     expect(resolveExplorerTroops(store, army)?.staminaMax).toBe(

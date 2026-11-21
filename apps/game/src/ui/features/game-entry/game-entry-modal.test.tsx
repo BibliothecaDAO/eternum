@@ -644,7 +644,6 @@ it("resumes a home with an existing source without offering or submitting anothe
 });
 
 describe("a friend's Aspect invite at a Season 1 home's founding", () => {
-  /** The link identity says the account came by: an Aspect invite into Harmony (2) from Linden, for `game`. */
   const invite = (game: { chainId: string; gameId: number }, kind: "aspect" | "frontier-day" = "aspect") => ({
     kind,
     chainId: game.chainId,
@@ -679,10 +678,10 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
   };
   const firstOrderOf = (aspect: AspectId) => expect.objectContaining({ order: ordersOfAspect(aspect)[0]!.orderId });
   const plainOrder = [
-    { label: "Join Might", invite: null },
-    { label: "Join Harmony", invite: null },
-    { label: "Join Chaos", invite: null },
-    { label: "Join Guile", invite: null },
+    { label: "Join Prowess", invite: null },
+    { label: "Join Luminary", invite: null },
+    { label: "Join Havoc", invite: null },
+    { label: "Join Insight", invite: null },
   ];
 
   it("offers the invited Aspect first, naming its sender, and founds into the Aspect tapped", async () => {
@@ -691,14 +690,14 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
     try {
       await vi.waitFor(() =>
         expect(cards(entry.host)).toEqual([
-          { label: "Join Harmony", invite: "Invited" },
-          { label: "Join Might", invite: null },
-          { label: "Join Chaos", invite: null },
-          { label: "Join Guile", invite: null },
+          { label: "Join Luminary", invite: "Invited" },
+          { label: "Join Prowess", invite: null },
+          { label: "Join Havoc", invite: null },
+          { label: "Join Insight", invite: null },
         ]),
       );
-      expect(entry.host.querySelector(".aspect-picker__invited")?.textContent).toBe("Linden invited you to Harmony");
-      await join(entry.host, "Harmony");
+      expect(entry.host.querySelector(".aspect-picker__invited")?.textContent).toBe("Linden invited you to Luminary");
+      await join(entry.host, "Luminary");
       await vi.waitFor(() => expect(settlement.calls).toEqual([firstOrderOf(2)]));
       expect(joined).toHaveBeenCalledTimes(1);
     } finally {
@@ -712,7 +711,7 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
     const entry = await openEntry();
     try {
       await vi.waitFor(() => expect(entry.host.querySelectorAll(".aspect-picker__order")).toHaveLength(4));
-      expect(entry.host.textContent).toContain("You chose Might before the season. Choose your Order in it.");
+      expect(entry.host.textContent).toContain("You chose Prowess before the season. Choose your Order in it.");
       expect(cards(entry.host)).toEqual(plainOrder);
       expect(
         [...entry.host.querySelectorAll<HTMLButtonElement>(".aspect-picker__card")].every((card) => card.disabled),
@@ -766,7 +765,7 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
       try {
         await vi.waitFor(() => expect(warning(entry.host)).not.toBeNull());
         expect(warning(entry.host)?.querySelector("h2")?.textContent).toBe(
-          "Linden plays Harmony. Your Realm plays Chaos.",
+          "Linden plays Luminary. Your Realm plays Havoc.",
         );
         expect(warning(entry.host)?.textContent).toContain(name(538));
         expect(warning(entry.host)?.textContent).toContain("You keep the quest bonus. Linden is in another Aspect.");
@@ -789,9 +788,9 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
       try {
         await vi.waitFor(() => expect(warning(entry.host)).not.toBeNull());
         expect(warning(entry.host)?.querySelector("h2")?.textContent).toBe(
-          "You chose Might before the season. Your Realm plays Chaos.",
+          "You chose Prowess before the season. Your Realm plays Havoc.",
         );
-        await entry.press("Join Might for free");
+        await entry.press("Join Prowess for free");
         expect(warning(entry.host)).toBeNull();
         expect(entry.host.querySelector(".home-picker__featured")).toBeNull();
         const titans = await vi.waitFor(() => {
@@ -865,7 +864,7 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
     const entry = await openEntry();
     try {
       await vi.waitFor(() => expect(cards(entry.host)[0]?.invite).toBe("Invited"));
-      await join(entry.host, "Guile");
+      await join(entry.host, "Insight");
       await vi.waitFor(() => expect(settlement.calls).toEqual([firstOrderOf(4)]));
     } finally {
       await entry.close();
@@ -887,8 +886,8 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
       expect(shut).toEqual([true, true, true, true]);
       expect(settlement.calls).toEqual([]);
       await act(async () => answer(invite(GAME)));
-      await vi.waitFor(() => expect(cards(entry.host)[0]).toEqual({ label: "Join Harmony", invite: "Invited" }));
-      await join(entry.host, "Harmony");
+      await vi.waitFor(() => expect(cards(entry.host)[0]).toEqual({ label: "Join Luminary", invite: "Invited" }));
+      await join(entry.host, "Luminary");
       await vi.waitFor(() => expect(settlement.calls).toEqual([firstOrderOf(2)]));
     } finally {
       await entry.close();
@@ -909,7 +908,7 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
       await act(async () =>
         [...entry.host.querySelectorAll("button")].find((button) => button.textContent === "Try again")!.click(),
       );
-      await vi.waitFor(() => expect(cards(entry.host)[0]).toEqual({ label: "Join Harmony", invite: "Invited" }));
+      await vi.waitFor(() => expect(cards(entry.host)[0]).toEqual({ label: "Join Luminary", invite: "Invited" }));
     } finally {
       await entry.close();
     }
@@ -940,7 +939,7 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
     try {
       await vi.waitFor(() => expect(cards(entry.host)).toEqual(plainOrder));
       expect(entry.host.querySelector(".aspect-picker__invited")).toBeNull();
-      await join(entry.host, "Chaos");
+      await join(entry.host, "Havoc");
       await vi.waitFor(() => expect(settlement.calls).toEqual([firstOrderOf(3)]));
     } finally {
       await entry.close();

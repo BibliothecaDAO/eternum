@@ -138,26 +138,6 @@ pub mod GamesFixture {
         }
     }
     #[starknet::embeddable]
-    pub impl RelicMapFixture<TContractState, +Drop<TContractState>> of crate::relics::IRelicMap<TContractState> {
-        fn reveal_relic_tiles(
-            ref self: TContractState,
-            key: crate::troops::ExplorerKey,
-            coord: crate::troops::Coord,
-            count: u8,
-            game_context: crate::commands::ActionContext,
-        ) {
-            crate::relics::IRelicMapDispatcherTrait::reveal_relic_tiles(
-                crate::relics::IRelicMapLibraryDispatcher {
-                    class_hash: fixture_class(key.game_id, crate::slots::ECONOMY),
-                },
-                key,
-                coord,
-                count,
-                game_context,
-            )
-        }
-    }
-    #[starknet::embeddable]
     pub impl GuardInitializationFixture<
         TContractState, +Drop<TContractState>,
     > of crate::guards::IGuardInitialization<TContractState> {
@@ -1330,6 +1310,15 @@ pub mod GamesFixture {
                 },
                 game_id,
                 account,
+            )
+        }
+        fn credit_fragments(ref self: TContractState, game_id: u32, credit: crate::fragments::FragmentCredit) {
+            crate::entry::IHomeGrantsDispatcherTrait::credit_fragments(
+                crate::entry::IHomeGrantsLibraryDispatcher {
+                    class_hash: crate::logic::release::classes(game_id).bridge.read(),
+                },
+                game_id,
+                credit,
             )
         }
     }

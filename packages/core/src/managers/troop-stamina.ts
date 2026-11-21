@@ -6,7 +6,7 @@ import { currentArmy } from "../utils/deep";
 import { entityMapOccupancy } from "../utils/tile";
 import { troopTierIndex, TroopTier, TroopType, type Troops, type StaminaEffects } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { armyRelicBonus } from "../utils/army-relics";
+import { armyRelicBonus, staminaRegenBoost } from "../utils/army-relics";
 import { logisticsStamina } from "../utils/attribute-tiers";
 import { oathStaminaBonus } from "../utils/oaths";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
@@ -188,9 +188,13 @@ export function resolveExplorerTroops(
     progress.oaths,
   );
   if (!effects.known) return undefined;
+  const regen = staminaRegenBoost(store, explorer, result.known.stamina.settled_at);
+  if (!regen) return undefined;
   const base = troopStaminaLimits(rules.troop_stamina_config, explorer.troops.category, TroopTier.T1).staminaMax;
   return {
     ...explorer.troops,
+    boosts:
+      regen.incr_stamina_regen_seconds_left > 0 ? { ...explorer.troops.boosts, ...regen } : explorer.troops.boosts,
     stamina: result.known.stamina,
     staminaMax: base + logisticsStamina(progress.logistics) + oathStaminaBonus(progress.oaths),
     staminaEffects: effects.known,

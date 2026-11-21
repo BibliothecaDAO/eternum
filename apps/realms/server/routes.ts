@@ -1,5 +1,4 @@
 import { handlePayoutIdentity } from "./payout-identity";
-import { aspectOn } from "./account-aspect";
 import { presentsOperatorToken, SHARE_PATH, VISIT_RECORD_SECONDS } from "@realms-world/identity";
 
 import { handleAccountDeletion } from "./account-deletion";
@@ -21,25 +20,19 @@ import { keepBrowser, noteBrowser } from "./browsers";
 import { handleBuildOrders } from "./build-orders";
 import { avnuQuote } from "./lords-price";
 import { handleFragmentPrice } from "./fragment-price";
+import {
+  fragmentPaymentWorldOf,
+  handleFragmentPay,
+  handleFragmentPayment,
+  handleShopRefunded,
+  handleShopRefunds,
+  lordsPayeeOf,
+} from "./fragment-payments";
 import { shopAccessOf } from "./shop-game";
 import { handlePurchaseCheck, handleStoreReceipt, storeVerifiersOf } from "./store-receipts";
 import { handleOpeningProgress } from "./opening-progress";
 import { handleOrderIntent } from "./order-intent";
 import { handleSealCode, sealCodeWorldOf } from "./seal-codes";
-import {
-  campaignStandings,
-  hasCampaignHomeSource,
-  homeSourceOf,
-  playerAccounts,
-  sitesClearedOn,
-} from "./campaign-entry";
-import {
-  handleCampaignReferral,
-  handleCampaignReferrer,
-  settleReferrals,
-  type ReferralWorld,
-} from "./campaign-referrals";
-import { handleCampaignDraw, handleCampaignRedeem } from "./campaign-tickets";
 import { handleNotificationPreferences } from "./notification-preferences";
 import { handleNewsEmailOptOut, NEWS_EMAIL_OPT_OUT_PATH } from "./news-email-opt-out";
 import { handleProfile, handleProfiles } from "./profiles";
@@ -55,7 +48,7 @@ import {
   handleSharePosted,
   handleShareTally,
   handleShareVisit,
-  type ShareWorld,
+  shareWorldOf,
 } from "./shares";
 import { handleWalletCounts } from "./wallet-counts";
 
@@ -70,10 +63,6 @@ interface WorkerPlatform {
   }>;
 }
 
-/**
- * Every /api route: identity under /api/auth, a news email's stop link, then the account's deletion, devices, profiles,
- * chat, notification settings, build orders, campaign tickets and the directory.
- */
 export const routeIdentityRequest = async (
   request: Request,
   env: IdentityEnv,
@@ -163,27 +152,18 @@ export const routeIdentityRequest = async (
     });
   if (pathname === "/api/shop/fragments")
     return handleFragmentPrice(request, auth, {
+      db: env.DB,
       access: shopAccessOf(env, platform.fetchShard, nowSeconds),
       readLordsQuote: avnuQuote,
+      payee: lordsPayeeOf(env),
+      now: nowSeconds,
     });
-  if (pathname === "/api/operator/campaign-draw" && request.method === "POST") {
+  if (pathname === "/api/shop/fragments/pay") return handleFragmentPay(request, auth, fragmentPaymentWorldOf(env));
+  if (pathname.startsWith("/api/shop/fragments/pay/"))
+    return handleFragmentPayment(request, auth, fragmentPaymentWorldOf(env));
+  if (pathname === "/api/operator/shop/refunds" && (request.method === "GET" || request.method === "POST")) {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
-    return handleCampaignDraw(request, env.DB, (realmsId) =>
-      hasCampaignHomeSource(env, platform.fetchShard, realmsId),
-    );
-  }
-  if (pathname === "/api/campaigns/redeem") {
-    const world = referralWorld(env, platform);
-    return handleCampaignRedeem(request, auth, env.DB, {
-      hasSource: (realmsId) => hasCampaignHomeSource(env, platform.fetchShard, realmsId),
-      settle: (realmsId, campaign) => settleReferrals(world, campaign, realmsId, Math.floor(Date.now() / 1000)),
-    });
-  }
-  if (pathname === "/api/campaigns/referral" && request.method === "GET")
-    return handleCampaignReferral(request, auth, referralWorld(env, platform));
-  if (pathname.startsWith("/api/campaigns/referral/") && request.method === "GET") {
-    if (!(await withinPublicBudget(env, "referral", request))) return json({ error: "too_many_requests" }, 429);
-    return handleCampaignReferrer(env.DB, new URL(request.url), pathname.slice("/api/campaigns/referral/".length));
+    return request.method === "GET" ? handleShopRefunds(env.DB) : handleShopRefunded(request, env.DB);
   }
   if (pathname.startsWith("/api/shares") || pathname === "/api/operator/shares")
     return routeShares(request, env, auth, platform, pathname);
@@ -266,13 +246,13 @@ const routeShares = async (
   const [, , , code, action] = pathname.split("/");
   if (pathname === "/api/operator/shares" && request.method === "GET") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
-    return handleShareReport(shareWorld(env, platform));
+    return handleShareReport(shareWorldOf(env, platform.fetchShard));
   }
   if (pathname === "/api/shares" && request.method === "POST")
-    return handleCreateShare(request, auth, shareWorld(env, platform));
+    return handleCreateShare(request, auth, shareWorldOf(env, platform.fetchShard));
   if (pathname === "/api/shares/joined" && request.method === "GET") return handleJoinedShare(request, auth, env.DB);
   if (pathname === "/api/shares" && request.method === "GET")
-    return handleShareTally(request, auth, shareWorld(env, platform));
+    return handleShareTally(request, auth, shareWorldOf(env, platform.fetchShard));
   if (code && action === "posted" && request.method === "POST") return handleSharePosted(request, auth, env.DB, code);
   if (code && action === "card" && request.method === "PUT")
     return handleShareCardUpload(request, auth, env.DB, env.SHARE_CARDS, code);
@@ -283,21 +263,6 @@ const routeShares = async (
   }
   return json({ error: "not_found" }, 404);
 };
-
-/** What share settlement reaches: each link's season board on its shard's Herald. */
-const shareWorld = (env: IdentityEnv, platform: WorkerPlatform): ShareWorld => ({
-  db: env.DB,
-  sitesCleared: (game) => sitesClearedOn(env, platform.fetchShard, game),
-  aspectOf: (game, account) => aspectOn(env, platform.fetchShard, game, account),
-  accountOf: playerAccounts(env),
-});
-
-const referralWorld = (env: IdentityEnv, platform: WorkerPlatform): ReferralWorld => ({
-  db: env.DB,
-  homeSource: (realmsId) => homeSourceOf(env, platform.fetchShard, realmsId),
-  standings: () => campaignStandings(env, platform.fetchShard),
-  accountOf: playerAccounts(env),
-});
 
 /**
  * Cookie authority is accepted only from the app itself; every operator route authenticates a bearer token, which a

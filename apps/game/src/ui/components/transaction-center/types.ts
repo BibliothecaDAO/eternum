@@ -1,5 +1,5 @@
 import { TransactionType } from "@bibliothecadao/provider";
-import { SEASON_PASS } from "@bibliothecadao/types";
+import { ANCIENT_SEAL } from "@bibliothecadao/types";
 
 /**
  * What each command reads as in the feed and its notices, in the player's words. Every command has its line: a new one
@@ -64,7 +64,7 @@ const TX_MESSAGES: Record<TransactionType, string> = {
   [TransactionType.CLAIM_DAILY_QUEST]: "Quest reward collected",
   [TransactionType.APPLY_RELIC]: "Relic activated",
   [TransactionType.BUY_STAMINA]: "Stamina refilled",
-  [TransactionType.BUY_SEAL]: `${SEASON_PASS} bought`,
+  [TransactionType.BUY_SEAL]: `${ANCIENT_SEAL} bought`,
 };
 
 export const getTxMessage = (type: TransactionType): string => TX_MESSAGES[type];

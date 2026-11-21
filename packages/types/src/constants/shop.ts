@@ -1,5 +1,10 @@
 export const FRAGMENT_CENTS = 1;
 export const MIN_FRAGMENTS = 100;
+export const FRAGMENTS_A_DAY = 10_000;
+export const FRIEND_GLORY = 100;
+export const FRIEND_FRAGMENTS = 100;
+export const FRIENDS_LIMIT = 10;
+export const FRIENDS_BONUS_FRAGMENTS = 1_000;
 
 /** Every LORDS amount the shop shows or charges is a multiple of this, so a price ends in 5 or 0. */
 const LORDS_STEP = 5;

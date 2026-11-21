@@ -1,8 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { IdentityRequestError, type Session } from "@realms-world/identity";
-import { act, useState } from "react";
+import type { Session } from "@realms-world/identity";
+import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { canonicalRealm } from "@bibliothecadao/eternum";
 
@@ -30,11 +30,8 @@ vi.mock("../herald", () => ({
   useLeaderboard: () => ({ data: undefined }),
 }));
 
-import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
-import { HomeSourcePicker } from "@/ui/features/game-entry/home-source-picker";
+import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { setViewportWidth } from "../frame/test-viewport";
-import { DEVCON } from "../join/devcon";
-import { JoinDevconPage } from "../join/join-devcon-page";
 import { ProfilePage } from "./profile-pages";
 
 const HELD_REALMS = "/api/value/held-realms";
@@ -68,31 +65,7 @@ const relay = (...answers: (() => Response)[]) => {
   });
   return asked;
 };
-const ticket = (tier: "regular" | "golden" | null) =>
-  vi
-    .spyOn(identityClient, "redeemCampaignTicket")
-    .mockImplementation(async () =>
-      tier ? { campaign: DEVCON.campaign, tier } : Promise.reject(new IdentityRequestError(400, "invalid_redemption")),
-    );
 
-/** A Devcon game's Realm step on its own, as the doorway mounts it: the second screen that shows the account's ticket. */
-const RealmStep = () => {
-  const [value, setValue] = useState("");
-  return (
-    <HomeSourcePicker
-      registered={null}
-      value={value}
-      onChange={setValue}
-      onSettled={() => undefined}
-      disabled={false}
-    />
-  );
-};
-
-/**
- * The player's own You page, with Settings beside it for the wallet link's detour, and the Devcon landing and a Devcon
- * game's Realm step one link away, all on one query client as the app has.
- */
 const openYou = async (width: number) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   setViewportWidth(width);
@@ -104,14 +77,9 @@ const openYou = async (width: number) => {
     root.render(
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
         <MemoryRouter initialEntries={["/profile"]}>
-          <Link to="/join/devcon/TEST0000">Test flyer</Link>
-          <Link to="/profile">Test you</Link>
-          <Link to="/play/devcon">Test step</Link>
           <Routes>
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/profile/settings" element={<p>Settings page</p>} />
-            <Route path="/join/devcon/:code" element={<JoinDevconPage />} />
-            <Route path="/play/devcon" element={<RealmStep />} />
           </Routes>
         </MemoryRouter>
       </QueryClientProvider>,
@@ -127,16 +95,13 @@ const openYou = async (width: number) => {
     );
   const press = async (text: string) =>
     act(async () => [...document.querySelectorAll("button")].find((button) => button.textContent === text)!.click());
-  const follow = async (text: string) =>
-    act(async () => [...container.querySelectorAll("a")].find((link) => link.textContent === text)!.click());
-  return { container, strip, press, follow, sheet: () => document.querySelector('[role="dialog"]') };
+  return { container, strip, press, sheet: () => document.querySelector('[role="dialog"]') };
 };
 
 describe.each([1440, 390])("Holdings on the player's own card, at %i px", (width) => {
   it("counts the linked wallet's Realms and lists them by number and name in their sheet", async () => {
     signedIn.wallet = "0x269c";
     relay(() => held(3, 4786));
-    ticket(null);
     const you = await openYou(width);
     await vi.waitFor(() => expect(you.strip()).toEqual(["2Realms"]));
     await you.press("2Realms");
@@ -148,26 +113,11 @@ describe.each([1440, 390])("Holdings on the player's own card, at %i px", (width
 
   it("offers the way to link a wallet when none is linked, and asks for no Realms", async () => {
     const asked = relay(() => held());
-    ticket(null);
     const you = await openYou(width);
     await vi.waitFor(() => expect(you.strip()).toEqual(["Link a wallet for your Realms and LORDS"]));
     expect(asked).not.toContain(HELD_REALMS);
     await you.press("Link a wallet for your Realms and LORDS");
     expect(you.container.textContent).toContain("Settings page");
-  });
-
-  it.each([
-    { tier: "regular" as const, cell: "DevconTicket", face: "opened" },
-    { tier: "golden" as const, cell: "DevconGolden ticket", face: "golden" },
-  ])("shows a $tier Devcon ticket, and in its sheet the ticket", async ({ tier, cell, face }) => {
-    signedIn.wallet = "0x269c";
-    relay(() => held());
-    ticket(tier);
-    const you = await openYou(width);
-    await vi.waitFor(() => expect(you.strip()).toEqual(["0Realms", cell]));
-    await you.press(cell);
-    const sheet = you.sheet()!;
-    expect(sheet.querySelector(".app-ticket")?.getAttribute("data-face")).toBe(face);
   });
 });
 
@@ -177,7 +127,6 @@ it("says the Realms could not be read, and reads them again on Try again", async
     () => Response.json({ error: "realm_holdings_unavailable" }, { status: 503 }),
     () => held(4786),
   );
-  ticket(null);
   const you = await openYou(1440);
   await vi.waitFor(() => expect(you.strip()).toEqual(["—Realms"]));
   await you.press("—Realms");
@@ -192,98 +141,8 @@ it("says the Realms could not be read, and reads them again on Try again", async
 it("says a linked wallet holding no Realm holds none", async () => {
   signedIn.wallet = "0x269c";
   relay(() => held());
-  ticket(null);
   const you = await openYou(390);
   await vi.waitFor(() => expect(you.strip()).toEqual(["0Realms"]));
   await you.press("0Realms");
   expect(you.sheet()!.textContent).toContain("Your linked wallet holds no Realm");
-});
-
-it("shows a ticket just opened on the landing on You and on a game's Realm step at once, with no read again", async () => {
-  relay(() => held());
-  let opened = false;
-  const reads = vi.spyOn(identityClient, "redeemCampaignTicket").mockImplementation(async (_campaign, opening) => {
-    if (opening) opened = true;
-    if (opened) return { campaign: DEVCON.campaign, tier: "golden" };
-    throw new IdentityRequestError(400, "invalid_redemption");
-  });
-  const you = await openYou(390);
-  await vi.waitFor(() => expect(reads).toHaveBeenCalledTimes(1));
-  expect(you.strip()).toEqual(["Link a wallet for your Realms and LORDS"]);
-
-  await you.follow("Test flyer");
-  await you.press("Open your ticket");
-  await vi.waitFor(() => expect(you.container.querySelector('.app-ticket[data-face="golden"]')).not.toBeNull());
-  await you.follow("Test you");
-  expect(you.strip()).toEqual(["Link a wallet for your Realms and LORDS", "DevconGolden ticket"]);
-  await you.follow("Test step");
-  expect(you.container.querySelector(".home-picker__featured h3")?.textContent).toBe("Golden Devcon ticket");
-  // You's read, the landing's check for a ticket already held, then its one redeem, which told every screen: no
-  // screen read the ticket again.
-  expect(reads.mock.calls.map(([, opening]) => opening)).toEqual([null, null, { code: "TEST0000" }]);
-});
-
-it.each([1440, 390])(
-  "keeps a ticket opened on the landing when a read sent before the opening answers late, at %i px",
-  async (width) => {
-    relay(() => held());
-    let answerFirstRead: (reason: unknown) => void = () => undefined;
-    const reads = vi.spyOn(identityClient, "redeemCampaignTicket").mockImplementation(async (_campaign, opening) => {
-      if (opening) return { campaign: DEVCON.campaign, tier: "golden" };
-      // You's read stays out; the landing's own check for a held ticket answers none, as it did before the opening.
-      if (reads.mock.calls.length === 1) return new Promise((_resolve, reject) => (answerFirstRead = reject)) as never;
-      throw new IdentityRequestError(400, "invalid_redemption");
-    });
-    const you = await openYou(width);
-    await vi.waitFor(() => expect(reads).toHaveBeenCalledTimes(1));
-
-    await you.follow("Test flyer");
-    await you.press("Open your ticket");
-    await vi.waitFor(() => expect(you.container.querySelector('.app-ticket[data-face="golden"]')).not.toBeNull());
-    await you.follow("Test you");
-    expect(you.strip()).toEqual(["Link a wallet for your Realms and LORDS", "DevconGolden ticket"]);
-
-    // The read You sent before the opening answers now, for that earlier moment: no ticket.
-    await act(async () => answerFirstRead(new IdentityRequestError(400, "invalid_redemption")));
-    await act(async () => new Promise((resolve) => setTimeout(resolve, 20)));
-    expect(you.strip()).toEqual(["Link a wallet for your Realms and LORDS", "DevconGolden ticket"]);
-    await you.follow("Test step");
-    expect(you.container.querySelector(".home-picker__featured h3")?.textContent).toBe("Golden Devcon ticket");
-    expect(reads.mock.calls.map(([, opening]) => opening)).toEqual([null, null, { code: "TEST0000" }]);
-  },
-);
-
-it("says an unreadable ticket cannot be read, and shows it once Try again answers", async () => {
-  relay(() => held());
-  const reads = vi
-    .spyOn(identityClient, "redeemCampaignTicket")
-    .mockRejectedValueOnce(new IdentityRequestError(503, "campaigns_unavailable"))
-    .mockResolvedValue({ campaign: DEVCON.campaign, tier: "regular" });
-  const you = await openYou(1440);
-  await vi.waitFor(() => expect(you.strip()).toEqual(["Link a wallet for your Realms and LORDS", "—Ticket"]));
-  await you.press("—Ticket");
-  expect(you.sheet()!.textContent).toContain("Your ticket cannot be read right now");
-  await you.press("Try again");
-  await vi.waitFor(() => expect(you.strip()).toEqual(["Link a wallet for your Realms and LORDS", "DevconTicket"]));
-  expect(you.sheet()!.querySelector(".app-ticket")?.getAttribute("data-face")).toBe("opened");
-  expect(reads).toHaveBeenCalledTimes(2);
-});
-
-it("never shows another account's ticket: a new account's own answer decides", async () => {
-  relay(() => held());
-  let answerSecond: (value: unknown) => void = () => undefined;
-  vi.spyOn(identityClient, "redeemCampaignTicket").mockImplementation(async () => {
-    if (useIdentitySessionStore.getState().session?.user.realmsId === "0x7")
-      return { campaign: DEVCON.campaign, tier: "golden" };
-    return new Promise((resolve) => (answerSecond = resolve)) as never;
-  });
-  const you = await openYou(390);
-  await vi.waitFor(() =>
-    expect(you.strip()).toEqual(["Link a wallet for your Realms and LORDS", "DevconGolden ticket"]),
-  );
-  signedIn.realmsId = "0x8";
-  await act(async () => useIdentitySessionStore.setState({ session: session() }));
-  expect(you.strip()).toEqual(["Link a wallet for your Realms and LORDS"]);
-  await act(async () => answerSecond(Promise.reject(new IdentityRequestError(400, "invalid_redemption"))));
-  expect(you.strip()).toEqual(["Link a wallet for your Realms and LORDS"]);
 });

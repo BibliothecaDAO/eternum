@@ -23,6 +23,7 @@ const ENTRY_STEPS = [
   ["aspect-kept", "[data-order]"],
   ["realm-side", "[data-realm-side-warning]"],
 ];
+const FRAGMENTS_URL = "/lab/app/fragments/shop/fragments?chain=0x5245414c4d53&game=1&next=%2F&capture=1";
 const PAGES = [
   ...VIEWS.flatMap(({ name, path, cases, shown }) =>
     cases.map((each) => ({ file: `${name}-${each}`, url: `${path}?case=${each}`, shown })),
@@ -37,6 +38,13 @@ const PAGES = [
     url: `/lab/app/wallet-ready/doorway/${state}?capture=1`,
     shown,
   })),
+  { file: "fragments-packs", url: FRAGMENTS_URL, shown: "[data-fragment-packs]" },
+  {
+    file: "fragments-pay",
+    url: FRAGMENTS_URL,
+    press: { after: "[data-fragment-packs]", button: "Pay $10.00" },
+    shown: "[data-pay-tokens]",
+  },
 ];
 const SIZES = [
   ["desktop", "1920", "1080"],
@@ -53,9 +61,13 @@ await withDevClient({ base: option("--base-url", null), port, out }, async (base
   try {
     for (const [device, width, height] of SIZES) {
       browser.run(["set", "viewport", width, height]);
-      for (const { file, url, shown } of PAGES) {
+      for (const { file, url, shown, press } of PAGES) {
         browser.run(["open", `${baseUrl}${url}`]);
         try {
+          if (press) {
+            browser.run(["wait", "--fn", `!!document.querySelector('${press.after}')`]);
+            browser.run(["find", "role", "button", "click", "--name", press.button]);
+          }
           browser.run(["wait", "--fn", `!!document.querySelector('${shown}')`]);
         } catch (error) {
           writeFileSync(join(out, `${file}-${device}-errors.txt`), browser.run(["errors"]));

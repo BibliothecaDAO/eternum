@@ -30,7 +30,7 @@ const Surface = ({ name, children }: { name: string; children: ReactNode }) => (
 
 const HOME_CHOICES: { choice: Choice; picked: boolean }[] = [
   { choice: realmChoice({ realmId: 4786, map: null }), picked: true },
-  { choice: realmChoice({ realmId: 711, map: null }), picked: false },
+  { choice: realmChoice({ realmId: 3, map: null }), picked: false },
 ];
 
 const suggestion = (id: string, label: string): EmpireSuggestion => ({

@@ -163,10 +163,10 @@ it("asks a Season 1 free home for its Aspect, then its Order, and founds in the 
     await act(async () => vi.advanceTimersByTimeAsync(100));
     const cards = [...host.querySelectorAll<HTMLButtonElement>(".aspect-picker__card")];
     expect(cards.map((card) => card.getAttribute("aria-label"))).toEqual([
-      "Join Might",
-      "Join Harmony",
-      "Join Chaos",
-      "Join Guile",
+      "Join Prowess",
+      "Join Luminary",
+      "Join Havoc",
+      "Join Insight",
     ]);
     expect(cards.map((card) => card.querySelector(".aspect-picker__members")?.textContent)).toEqual([
       ASPECT_STEP_WORDS.members(12),
@@ -184,12 +184,12 @@ it("asks a Season 1 free home for its Aspect, then its Order, and founds in the 
     await act(async () => cards[2]!.click());
     await act(async () => vi.advanceTimersByTimeAsync(100));
     expect(state.founded).toEqual([]);
-    const chaos = ordersOfAspect(3);
+    const havoc = ordersOfAspect(3);
     const orderButtons = [...host.querySelectorAll<HTMLButtonElement>(".aspect-picker__order")];
-    expect(orderButtons.map((button) => Number(button.dataset.order))).toEqual(chaos.map(({ orderId }) => orderId));
+    expect(orderButtons.map((button) => Number(button.dataset.order))).toEqual(havoc.map(({ orderId }) => orderId));
     await act(async () => orderButtons[2]!.click());
     await act(async () => vi.advanceTimersByTimeAsync(100));
-    expect(state.founded).toEqual([{ order: chaos[2]!.orderId, selectedRealm: undefined }]);
+    expect(state.founded).toEqual([{ order: havoc[2]!.orderId, selectedRealm: undefined }]);
     expect(state.navigate).toHaveBeenCalledTimes(1);
   } finally {
     await close();

@@ -20,7 +20,15 @@ const viewer = vi.hoisted(() => ({ address: null as string | null }));
 const shares = vi.hoisted(() => ({
   createShare: vi.fn(async () => "DAY2LINK"),
   sharePosted: vi.fn(async () => {}),
-  shareTally: vi.fn(async () => ({ links: 1, posted: 0, visits: 0, joined: 0, activated: 0 })),
+  shareTally: vi.fn(async () => ({
+    links: 1,
+    posted: 0,
+    visits: 0,
+    joined: 0,
+    activated: 0,
+    friendsPaid: 0,
+    fragmentsEarned: 0,
+  })),
   uploadShareCard: vi.fn(async () => {}),
 }));
 

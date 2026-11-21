@@ -181,7 +181,7 @@ function frontier() {
       oath_pick: oathPick,
     });
     write("ArmyDay", { game_id: GAME_ID, explorer_id, day: BigInt(day) });
-    for (const kind of ["Blade", "Ward", "Plunder", "FarEye"]) {
+    for (const kind of ["Blade", "Ward", "Plunder", "StaminaRegen"]) {
       const rank = kind === "Blade" ? bladeRank : 0;
       write("ArmyRelicEffect", { game_id: GAME_ID, explorer_id, kind, rank, expires_at: rank ? BigInt(NOW + 60) : 0n });
     }

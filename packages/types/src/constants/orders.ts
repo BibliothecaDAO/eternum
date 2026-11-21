@@ -123,10 +123,10 @@ export const orders: IOrder[] = [
 ];
 
 export const aspects = [
-  { id: 1, name: "Might" },
-  { id: 2, name: "Harmony" },
-  { id: 3, name: "Chaos" },
-  { id: 4, name: "Guile" },
+  { id: 1, name: "Prowess" },
+  { id: 2, name: "Luminary" },
+  { id: 3, name: "Havoc" },
+  { id: 4, name: "Insight" },
 ] as const satisfies readonly { id: AspectId; name: string }[];
 
 /** What an Aspect's hyperstructure height is worth, in whole LORDS: a rate per point, and a bonus for the first finish. */

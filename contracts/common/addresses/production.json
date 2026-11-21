@@ -6,5 +6,6 @@
   "mmrToken": "0x3f30b9914671a1c39d2f5c49602acb389db6b2abadff72fd165c573479dd419",
   "lootChests": "0x759982c9bcbb17d75ba410182ca4605929d545d91a05faa13fcd3c3a9aa8e06",
   "cosmetics": "0x57f9901492e943db7e19219aa505e48490b9919ec569dc6353ff012d75e1ebe",
-  "ledgerDeploymentBlock": 17325401
+  "ledgerDeploymentBlock": 17325401,
+  "treasury": "0x038190434b4afa188bdfa0b671c079d7772f84b90318b89e6d2a97f30374e231"
 }

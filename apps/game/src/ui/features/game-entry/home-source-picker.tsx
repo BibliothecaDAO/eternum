@@ -126,7 +126,7 @@ function usePickOffered(
 
 function Featured({ choice, locked }: { choice: Choice; locked: boolean }) {
   return (
-    <div className="home-picker__featured" data-kind={choice.kind}>
+    <div className="home-picker__featured" data-kind="realm">
       <ChoiceArt choice={choice} eager />
       <div className="home-picker__about">
         <h3>{choice.name}</h3>

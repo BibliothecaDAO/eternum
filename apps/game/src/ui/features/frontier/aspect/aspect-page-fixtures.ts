@@ -41,8 +41,8 @@ const member = (id: string, realm: string, glory: number, guards: string | null,
 });
 const [foundation, core, mine, altar] = deepSites.map(({ name }) => name);
 
-const harmony = (height: number, charge: number): OwnAspect => ({
-  aspect: "Harmony",
+const luminary = (height: number, charge: number): OwnAspect => ({
+  aspect: "Luminary",
   triumphs: triumphs(height, { 1: 12, 2: 19, 3: 26, 4: 33 }),
   bar: { charge, threshold: BANE_THRESHOLD },
   members: [
@@ -59,25 +59,25 @@ const harmony = (height: number, charge: number): OwnAspect => ({
 export const ASPECT_PAGE_CASES = {
   "Mid-season, the player's Aspect second": {
     race: {
-      standings: standings({ Might: 6_400, Harmony: 5_200, Chaos: 2_800, Guile: 900 }, "Harmony"),
+      standings: standings({ Prowess: 6_400, Luminary: 5_200, Havoc: 2_800, Insight: 900 }, "Luminary"),
       finishHeight: FINISH,
       stages: STAGES,
       result: null,
     },
-    own: harmony(5_200, 300),
+    own: luminary(5_200, 300),
   },
   "Age won by another Aspect": {
     race: {
-      standings: standings({ Might: 10_000, Harmony: 7_600, Chaos: 4_100, Guile: 3_900 }, "Harmony", "Might"),
+      standings: standings({ Prowess: 10_000, Luminary: 7_600, Havoc: 4_100, Insight: 3_900 }, "Luminary", "Prowess"),
       finishHeight: FINISH,
       stages: STAGES,
-      result: { winner: "Might" },
+      result: { winner: "Prowess" },
     },
-    own: harmony(7_600, 1_200),
+    own: luminary(7_600, 1_200),
   },
   "No Aspect": {
     race: {
-      standings: standings({ Might: 3_000, Harmony: 2_400, Chaos: 1_100, Guile: 0 }, ""),
+      standings: standings({ Prowess: 3_000, Luminary: 2_400, Havoc: 1_100, Insight: 0 }, ""),
       finishHeight: FINISH,
       stages: STAGES,
       result: null,

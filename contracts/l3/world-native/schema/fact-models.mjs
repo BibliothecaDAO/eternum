@@ -400,7 +400,7 @@ export const factWireTypes = [
         type: "()",
       },
       {
-        name: "FarEye",
+        name: "StaminaRegen",
         type: "()",
       },
     ],
@@ -1208,6 +1208,15 @@ export function defineFactModels({ struct, model: declare }) {
       struct("expeditions::ExpeditionDiscovery"),
     ),
     model(
+      "FragmentCredit",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "id", type: "core::felt252" },
+      ],
+      struct("fragments::FragmentCredit").filter(({ name }) => name !== "id"),
+    ),
+    model(
       "Fragments",
       "game",
       [
@@ -1726,6 +1735,7 @@ export const syncScopes = {
   GuildWhitelist: byPlayer,
   LordsWithdrawal: { owners: ["account"] },
   LaborGrant: { owners: ["account"] },
+  FragmentCredit: { owners: ["account"] },
   Fragments: { owners: ["account"] },
   Seal: { owners: ["account"] },
   SpendLords: { owners: ["account"] },

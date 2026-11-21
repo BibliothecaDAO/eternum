@@ -2,7 +2,7 @@ import { orders, TroopTier, TroopType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import { type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { nativeOathConstants as oaths } from "../../../../contracts/l3/world-native/schema/balance.gen";
-import { chooseOath, oathCards, oathColour, oathColours, oathRerollIndex, rerollOath } from "./oaths";
+import { chooseOath, oathCards, oathRerollIndex, rerollOath } from "./oaths";
 
 const pick = oaths.POWER - 1 + ((oaths.FOX - 1) << 4) + ((oaths.RAGE - 1) << 8);
 const progress: NativeRows["ArmyProgress"] = {
@@ -28,8 +28,7 @@ describe("Oath picks", () => {
       expect(orders.find(({ orderId }) => orderId === id)?.orderName.toUpperCase()).toBe(name);
     }
   });
-  it("reads the cards of any colours, a repeated card as one fewer, and each Oath's colour as its look", () => {
-    expect(oathColours.reduce((mask, colour) => mask | colour.mask, 0)).toBe(65535);
+  it("reads the three cards of a pick from the one bag of sixteen, a repeated card as one fewer", () => {
     expect(oathCards(pick)).toEqual([oaths.POWER, oaths.FOX, oaths.RAGE]);
     expect(oathCards(oaths.SKILL - 1 + ((oaths.POWER - 1) << 4) + ((oaths.GIANTS - 1) << 8))).toEqual([
       oaths.SKILL,
@@ -41,9 +40,6 @@ describe("Oath picks", () => {
       oaths.FOX,
     ]);
     expect(oathCards(0)).toEqual([]);
-    expect(oathColour(oaths.POWER).colour).toBe("red");
-    expect(oathColour(oaths.FOX).colour).toBe("blue");
-    expect(oathColour(oaths.RAGE).colour).toBe("gold");
   });
   it("takes, replaces and declines without changing capacity or logistics", () => {
     const chosen = chooseOath(progress, pick, oaths.POWER, null);

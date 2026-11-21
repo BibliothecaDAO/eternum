@@ -1,4 +1,4 @@
-import { encodeChainName, environmentL2 } from "@realms-world/chain";
+import { encodeChainName, environmentL2, type PaymentReceipt } from "@realms-world/chain";
 import { RpcProvider } from "starknet";
 
 interface L2Environment {
@@ -77,4 +77,31 @@ export const fetchIdentityRpc = async (input: RequestInfo | URL, init?: RequestI
   const response = await fetch(input, { ...init, redirect: "manual" });
   if (response.status >= 300 && response.status < 400) throw new Error("identity_l2_redirect_refused");
   return response;
+};
+
+const TRANSACTION_NOT_FOUND = 29;
+
+export const readPaymentReceipt = async (env: L2Environment, transactionHash: string) => {
+  const receipt = await l2Call<PaymentReceipt & { block_number?: number }>(env, "starknet_getTransactionReceipt", {
+    transaction_hash: transactionHash,
+  });
+  if (!receipt || receipt.block_number === undefined) return null;
+  const block = await l2Call<{ timestamp: number }>(env, "starknet_getBlockWithTxHashes", {
+    block_id: { block_number: receipt.block_number },
+  });
+  if (!block) throw new Error("identity_l2_block_missing");
+  return { receipt, timestamp: block.timestamp };
+};
+
+const l2Call = async <T>(env: L2Environment, method: string, params: Record<string, unknown>): Promise<T | null> => {
+  const response = await fetchIdentityRpc(identityL2Configuration(env).rpcUrl, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+  });
+  if (!response.ok) throw new Error(`identity_l2_${response.status}`);
+  const body = (await response.json()) as { result?: T; error?: { code?: number } };
+  if (body.error?.code === TRANSACTION_NOT_FOUND) return null;
+  if (body.result === undefined) throw new Error(`identity_l2_error_${body.error?.code ?? "unknown"}`);
+  return body.result;
 };

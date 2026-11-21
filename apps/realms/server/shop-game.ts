@@ -39,15 +39,27 @@ export const enteredGamesOf = (
 ): EnteredGames => {
   const accountOf = playerAccounts(env);
   return async (realmsId) => {
-    const chain = await directoryShard(env.DB);
-    if (!chain) return [];
     const account = await accountOf(realmsId);
     const entered: NamedGame[] = [];
-    for (const gameId of openFrontierGameIds(await fetchShardGames(chain, gamesUrl(chain, null), fetchShard), now()))
-      if (await isEnrolled(chain.url, gameId, account)) entered.push({ chainId: gameKey(chain.chainId), gameId });
+    for (const { shardUrl, ...game } of await openFrontierGames(env, fetchShard, now()))
+      if (await isEnrolled(shardUrl, game.gameId, account)) entered.push(game);
     return entered;
   };
 };
+
+export async function openFrontierGames(
+  env: Pick<IdentityEnv, "DB">,
+  fetchShard: typeof fetch,
+  now: number,
+): Promise<(NamedGame & { shardUrl: string })[]> {
+  const shard = await directoryShard(env.DB);
+  if (!shard) return [];
+  return openFrontierGameIds(await fetchShardGames(shard, gamesUrl(shard, null), fetchShard), now).map((gameId) => ({
+    chainId: gameKey(shard.chainId),
+    gameId,
+    shardUrl: shard.url,
+  }));
+}
 
 /** The shop's rule, read from the game's shard: its directory says the game runs, its enrollment says who plays. */
 export const shopAccessOf = (

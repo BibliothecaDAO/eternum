@@ -200,6 +200,13 @@ pub mod Games {
                 account,
             )
         }
+        fn credit_fragments(ref self: ContractState, game_id: u32, credit: crate::fragments::FragmentCredit) {
+            crate::entry::IHomeGrantsDispatcherTrait::credit_fragments(
+                crate::entry::IHomeGrantsLibraryDispatcher { class_hash: self.release.classes(game_id).bridge.read() },
+                game_id,
+                credit,
+            )
+        }
     }
     #[storage]
     #[allow(starknet::colliding_storage_paths)]

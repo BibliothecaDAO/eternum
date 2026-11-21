@@ -1,8 +1,23 @@
 use starknet::storage::StorageMapReadAccess;
-use crate::fragments::BuyStamina;
+use crate::fragments::{BuyStamina, FragmentCredit};
 use crate::stamina::StaminaSourceTrait;
 use crate::troops::{ExplorerRecordTrait, StaminaSource};
 use super::play_fixture::FIXTURE_START;
+use super::entry::IHomeGrantsSafeDispatcherTrait;
+
+#[feature("safe_dispatcher")]
+fn credit(d: super::Deployment, game_id: u32, credit: FragmentCredit) -> bool {
+    snforge_std::start_cheat_caller_address(d.games, super::authority());
+    let credited = super::entry::IHomeGrantsSafeDispatcher { contract_address: d.games }
+        .credit_fragments(game_id, credit)
+        .is_ok();
+    snforge_std::stop_cheat_caller_address(d.games);
+    credited
+}
+
+fn friend(d: super::Deployment, id: felt252, amount: u128) -> FragmentCredit {
+    FragmentCredit { id, account: d.actor, amount }
+}
 
 fn earn(d: super::Deployment, game_id: u32, amount: u128) {
     snforge_std::interact_with_state(d.games, || crate::logic::fragments::add(game_id, d.actor, amount));
@@ -53,6 +68,26 @@ fn buy_stamina(d: super::Deployment, key: crate::troops::ExplorerKey, fragments:
         crate::commands::Command::BuyStamina(BuyStamina { explorer_id: key.explorer_id, fragments }),
         FIXTURE_START + 10,
     )
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn only_the_ledger_operator_credits_a_friend_s_fragments_once_for_each_credit_id() {
+    let (d, game_id, _) = super::registrar::setup_frontier_relics();
+    super::entry::set_operator(d, super::authority());
+    snforge_std::start_cheat_caller_address(d.games, d.actor);
+    assert!(
+        super::entry::IHomeGrantsSafeDispatcher { contract_address: d.games }
+            .credit_fragments(game_id, friend(d, 'friend-1', 100))
+            .is_err(),
+    );
+    snforge_std::stop_cheat_caller_address(d.games);
+    assert!(credit(d, game_id, friend(d, 'friend-1', 100)));
+    assert!(credit(d, game_id, friend(d, 'friend-1', 100)));
+    assert!(!credit(d, game_id, friend(d, 'friend-1', 1000)));
+    assert!(!credit(d, game_id, friend(d, 'friend-2', 0)));
+    assert!(credit(d, game_id, friend(d, 'friends-10', 1000)));
+    assert_eq!(balance(d, game_id), 1100);
 }
 
 #[test]

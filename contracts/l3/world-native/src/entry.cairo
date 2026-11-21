@@ -20,6 +20,7 @@ pub trait ILedgerOperator<T> {
 #[starknet::interface]
 pub trait IHomeGrants<T> {
     fn grant_seal(ref self: T, game_id: u32, account: ContractAddress);
+    fn credit_fragments(ref self: T, game_id: u32, credit: crate::fragments::FragmentCredit);
 }
 
 #[starknet::interface]

@@ -1,5 +1,6 @@
 use starknet::ContractAddress;
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
+use crate::fragments::FragmentCredit;
 use crate::stamina::{StaminaSourceTrait, StaminaTrait};
 
 pub fn balance(game_id: u32, account: ContractAddress) -> u128 {
@@ -8,6 +9,21 @@ pub fn balance(game_id: u32, account: ContractAddress) -> u128 {
 
 pub fn add(game_id: u32, account: ContractAddress, amount: u128) {
     write(game_id, account, balance(game_id, account) + amount);
+}
+
+pub fn credit(game_id: u32, credit: FragmentCredit) {
+    assert!(credit.id != 0 && credit.amount != 0, "empty fragment credit");
+    assert!(credit.account != 0.try_into().unwrap(), "invalid fragment account");
+    let receipt = (credit.account, credit.amount);
+    if let Some(previous) = crate::state::read().entry.fragment_credits.read((game_id, credit.id)) {
+        assert!(previous == receipt, "fragment credit differs");
+        return;
+    }
+    let game = crate::logic::game::game(game_id);
+    assert!(game.end_at == 0 || starknet::get_block_timestamp() < game.end_at, "game ended");
+    crate::state::write().entry.fragment_credits.write((game_id, credit.id), Some(receipt));
+    emit('FragmentCredit', array![game_id.into(), credit.id], array![credit.account.into(), credit.amount.into()]);
+    add(game_id, credit.account, credit.amount);
 }
 
 pub fn buy_seal(game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext) {

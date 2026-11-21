@@ -1,4 +1,4 @@
-import { AGE_LOCKUP, REALMS_MARK } from "@/ui/design-system/icon-meaning";
+import { REALMS_MARK } from "@/ui/design-system/icon-meaning";
 import "@/ui/design-system/kit/app-sheet.css";
 
 import {
@@ -7,7 +7,6 @@ import {
   AppButton,
   AppChip,
   AppChoice,
-  AppTicket,
   AppCode,
   AppDialog,
   AppEmpty,
@@ -32,7 +31,7 @@ import { APP_SHEET, APP_TYPE, HUD_MODES, TYPE } from "@/tokens";
 import { type ReactNode, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { JOIN_WORDS, REWARD_WORDS } from "@/ui/design-system/kit/words";
+import { REWARD_WORDS } from "@/ui/design-system/kit/words";
 
 import { Element } from "../sheet-element";
 import { Icon } from "@/ui/design-system/icon";
@@ -79,7 +78,6 @@ export const AppSheetLab = () => (
       <NoticeSection />
       <SettingSection />
       <ChoiceSection />
-      <TicketSection />
       <PortraitSection />
       <PageHeadSection />
       <EmptySection />
@@ -652,23 +650,6 @@ const ChoiceSection = () => (
     }
   />
 );
-
-const TicketSection = () => {
-  const art = <img src={AGE_LOCKUP.frontier} alt="Frontier" className="h-24 w-auto" />;
-  return (
-    <Element
-      name="Ticket"
-      rule="A campaign's flyer in small: its art, its line, its stub. Sealed, then turned over once; gold under rays."
-      sheet={
-        <div className="flex flex-wrap items-start gap-6 p-6">
-          <AppTicket art={art} line={JOIN_WORDS.sealed} stub={JOIN_WORDS.stub} />
-          <AppTicket art={art} face="opened" line={JOIN_WORDS.realm} stub={JOIN_WORDS.stub} />
-          <AppTicket art={art} face="golden" line={JOIN_WORDS.goldenLine} stub={JOIN_WORDS.goldenStub} />
-        </div>
-      }
-    />
-  );
-};
 
 const PortraitSection = () => (
   <Element

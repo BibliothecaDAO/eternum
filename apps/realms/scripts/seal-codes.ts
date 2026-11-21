@@ -1,26 +1,59 @@
+import { spawnSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { codeHashInScope } from "../server/campaigns";
 import { generateCodes, readCodeSeed } from "./printed-codes";
 
 const USAGE =
-  "CAMPAIGN_CODE_SEED=<secret> pnpm --dir apps/realms seal-codes <label> <count> <out> [last day YYYY-MM-DD]";
+  "CAMPAIGN_CODE_SEED=<secret> pnpm --dir apps/realms seal-codes <staging|production> <label> <count> <out> [last day YYYY-MM-DD]";
+const ENVIRONMENTS = ["staging", "production"] as const;
+type Environment = (typeof ENVIRONMENTS)[number];
 const MOST_CODES = 10_000;
 const SQL_ROWS_A_STATEMENT = 100;
 
 type SealCodeOrder = { label: string; count: number; expiresAt: number | null };
 
 const main = async () => {
-  const [label, count, out, lastDay] = process.argv.slice(2);
+  const [environment, label, count, out, lastDay] = process.argv.slice(2);
+  const target = readEnvironment(environment);
   if (!out) throw new Error(`Name the directory to write into. ${USAGE}`);
   const order = readSealCodeOrder([label, count, lastDay], Date.now());
   const { codes, sql } = await sealCodeFiles(order, readCodeSeed(process.env.CAMPAIGN_CODE_SEED));
   mkdirSync(out, { recursive: true });
   writeFileSync(join(out, "codes.txt"), `${codes.join("\n")}\n`, { mode: 0o600 });
   writeFileSync(join(out, "codes.sql"), sql);
-  console.log(JSON.stringify({ ...order, out }));
+  loadCodes(target, resolve(out, "codes.sql"));
+  console.log(JSON.stringify({ ...order, environment: target, out }));
+};
+
+export function readEnvironment(value: string | undefined): Environment {
+  const environment = ENVIRONMENTS.find((name) => name === value);
+  if (!environment) throw new Error(`Name the environment whose players redeem the codes. ${USAGE}`);
+  return environment;
+}
+
+export const d1LoadArgs = (environment: Environment, file: string) => [
+  "exec",
+  "wrangler",
+  "d1",
+  "execute",
+  "DB",
+  "--remote",
+  "--env",
+  environment,
+  "--file",
+  file,
+];
+
+const loadCodes = (environment: Environment, file: string) => {
+  const worker = resolve(dirname(new URL(import.meta.url).pathname), "..");
+  const loaded = spawnSync("pnpm", d1LoadArgs(environment, file), { cwd: worker, stdio: "inherit" });
+  if (loaded.status !== 0)
+    throw new Error(
+      `Loading the codes into ${environment} failed. Run the same command again: it loads each code once.`,
+    );
 };
 
 export function readSealCodeOrder([label, count, lastDay]: (string | undefined)[], now: number): SealCodeOrder {

@@ -28,7 +28,10 @@ const RELICS = {
     icon: "exploration-reward-relic-2",
     effect: (rank) => RELIC_WORDS.plunder(percent(rule.RELIC_PLUNDER_BPS, rank)),
   },
-  FarEye: { icon: "exploration-relic-2", effect: (rank) => RELIC_WORDS.farEye(rule.RELIC_TILES_PER_RANK * rank) },
+  StaminaRegen: {
+    icon: "stamina-relic-2",
+    effect: (rank) => RELIC_WORDS.staminaRegen(percent(rule.STAMINA_REGEN_RELIC_STEP_PERCENT * 100, rank)),
+  },
 } satisfies Record<RelicKind, { icon: IconMeaning; effect: (rank: number) => string }>;
 
 /** Each kind's word, held to every kind the contract has. */
@@ -42,9 +45,7 @@ export const relicEffect = ({ kind, rank }: ArmyRelic): string => RELICS[kind].e
 
 export const relicIcon = (kind: RelicKind): IconMeaning => RELICS[kind].icon;
 
-/** How long a switched-on relic works: 30 minutes a tier. The Far-Eye reveals at once and has no duration. */
-export const relicSeconds = ({ kind, rank }: ArmyRelic): number | null =>
-  kind === "FarEye" ? null : rule.RELIC_SECONDS_PER_RANK * rank;
+export const relicSeconds = ({ rank }: ArmyRelic): number => rule.RELIC_SECONDS_PER_RANK * rank;
 
 /** The relic's id in ApplyRelic: its kind's index in the contract's order × 5 + its tier. */
 export const relicId = ({ kind, rank }: ArmyRelic): number => RELIC_KINDS.indexOf(kind) * 5 + rank;

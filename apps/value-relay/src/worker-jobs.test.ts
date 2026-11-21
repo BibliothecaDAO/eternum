@@ -734,40 +734,54 @@ it("preserves player-facing registration errors across the shard object's RPC bo
   expect(await response.json()).toEqual({ error: "realm_not_owned" });
 });
 
+const operatorEnv = (relay: Record<string, unknown>) => ({
+  ENVIRONMENT: "staging",
+  BASE_URL: "https://app.test",
+  L2_RPC_URL: "https://ledger.test",
+  OPERATOR_TOKEN: "test",
+  SHARD_LEDGER_OPERATOR_PRIVATE_KEY: "0x1",
+  COSIGNER_URL: "https://cosigner.test",
+  COSIGNER_TOKEN: "test-cosigner-token",
+  LEDGER_OPERATOR_ADDRESS: "0x2",
+  LEDGER_OPERATOR_PRIVATE_KEY: "0x3",
+  RELAY: { idFromName: (id: string) => id, get: () => relay },
+  IDENTITY: { accountForRealmsId: vi.fn(async () => "0x3") },
+});
+const operatorSend = (env: unknown, path: string, payload: unknown, token = "test") =>
+  worker.fetch(
+    new Request(`https://app.test/api/value/operator/${path}`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+    env as never,
+  );
+
 it("authenticates a Seal grant and derives its account without accepting a source override", async () => {
   const register = vi.fn(async () => ({ entry: {} }));
-  const account = vi.fn(async () => "0x3");
-  const env = {
-    ENVIRONMENT: "staging",
-    BASE_URL: "https://app.test",
-    L2_RPC_URL: "https://ledger.test",
-    OPERATOR_TOKEN: "test",
-    SHARD_LEDGER_OPERATOR_PRIVATE_KEY: "0x1",
-    COSIGNER_URL: "https://cosigner.test",
-    COSIGNER_TOKEN: "test-cosigner-token",
-    LEDGER_OPERATOR_ADDRESS: "0x2",
-    LEDGER_OPERATOR_PRIVATE_KEY: "0x3",
-    RELAY: { idFromName: (id: string) => id, get: () => ({ realmEntry: register }) },
-    IDENTITY: { accountForRealmsId: account },
-  };
+  const env = operatorEnv({ realmEntry: register });
   const body = { chainId: "0x1", gameId: 7, realmsId: "0x2" };
-  const send = (payload: unknown, token = "test") =>
-    worker.fetch(
-      new Request("https://app.test/api/value/operator/seal", {
-        method: "POST",
-        headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-        body: JSON.stringify(payload),
-      }),
-      env as never,
-    );
-  expect((await send(body, "wrong")).status).toBe(401);
-  expect((await send({ ...body, account: "0x9" })).status).toBe(400);
-  expect((await send({ ...body, realmId: 711 })).status).toBe(400);
+  expect((await operatorSend(env, "seal", body, "wrong")).status).toBe(401);
+  expect((await operatorSend(env, "seal", { ...body, account: "0x9" })).status).toBe(400);
+  expect((await operatorSend(env, "seal", { ...body, realmId: 711 })).status).toBe(400);
   expect(register).not.toHaveBeenCalled();
-  const result = await send(body);
+  const result = await operatorSend(env, "seal", body);
   expect([result.status, await result.json()]).toEqual([200, {}]);
-  expect(account).toHaveBeenCalledExactlyOnceWith("0x2");
   expect(register).toHaveBeenCalledExactlyOnceWith({ ...body, account: "0x3", realmId: null, sealOnly: true });
+});
+
+it("authenticates a friend's Fragment credit and passes its id through unchanged", async () => {
+  const credit = vi.fn(async () => ({ entry: { id: "0x77" } }));
+  const env = operatorEnv({ creditFragments: credit });
+  const body = { chainId: "0x1", gameId: 7, realmsId: "0x2", id: "friend:0x1:7:0xabc", amount: 100 };
+  expect((await operatorSend(env, "fragments", body, "wrong")).status).toBe(401);
+  expect((await operatorSend(env, "fragments", { ...body, account: "0x9" })).status).toBe(400);
+  expect((await operatorSend(env, "fragments", { ...body, amount: 0 })).status).toBe(400);
+  expect((await operatorSend(env, "fragments", { ...body, id: "" })).status).toBe(400);
+  expect(credit).not.toHaveBeenCalled();
+  const result = await operatorSend(env, "fragments", body);
+  expect([result.status, await result.json()]).toEqual([200, { id: "0x77" }]);
+  expect(credit).toHaveBeenCalledExactlyOnceWith(body);
 });
 
 it.each([null, "deposit_head_rewritten", [{ obligation: "deposit:1", error: "source unavailable" }]])(

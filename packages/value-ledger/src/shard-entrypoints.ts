@@ -12,6 +12,7 @@ export const GAME_ENTRYPOINTS = [
   { name: "set_launcher", stamp: false },
   { name: "set_ledger_operator", stamp: false },
   { name: "grant_seal", stamp: false },
+  { name: "credit_fragments", stamp: false },
   { name: "publish_frontier_pool", stamp: false },
   { name: "deliver_deposit", stamp: false },
   { name: "post_frontier_top", stamp: false },
