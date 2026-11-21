@@ -1,11 +1,11 @@
 import { DeviceSigner } from "@bibliothecadao/eternum/device-signer";
 import { batchRemaining } from "@bibliothecadao/provider/batch-progress";
-import { Account, CallData, ec, type BlockIdentifier, type RpcProvider } from "starknet";
+import { Account, CallData, ec, type Abi, type BlockIdentifier, type RpcProvider } from "starknet";
 import { encodeNativeCommand, gameplayRejection } from "@bibliothecadao/provider";
 import { resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum/shard-fees";
 import { readConfirmedLedgerHead } from "./codecs";
 import { rpcAt } from "./rpc";
-import { readShardAbi } from "./shard-abi";
+import { assertAbiArguments, readShardAbi } from "./shard-abi";
 import type { AdminEntrypointName, GameEntrypointName } from "./shard-entrypoints";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 
@@ -21,7 +21,7 @@ export interface ShardTarget {
 export class ShardOperator {
   readonly provider: RpcProvider;
   private readonly account: Account;
-  private adminCodec?: Promise<CallData>;
+  private adminAbi?: Promise<Abi>;
   private bound?: Promise<bigint>;
   constructor(readonly target: ShardTarget) {
     this.provider = rpcAt(target.rpcUrl);
@@ -58,8 +58,12 @@ export class ShardOperator {
     return this.invoke(entrypoint, ...(await this.adminCall(entrypoint, args)));
   }
   private async adminCall(entrypoint: AdminEntrypointName, args: Record<string, unknown>): Promise<[string[], bigint]> {
-    this.adminCodec ??= this.head().then(({ block_number }) => this.codec(block_number));
-    const calldata = (await this.adminCodec).compile(entrypoint, args as Parameters<CallData["compile"]>[1]);
+    this.adminAbi ??= this.head().then(({ block_number }) =>
+      readShardAbi(this.provider, this.target.gamesAddress, block_number),
+    );
+    const abi = await this.adminAbi;
+    assertAbiArguments(abi, entrypoint, args);
+    const calldata = new CallData(abi).compile(entrypoint, args as Parameters<CallData["compile"]>[1]);
     return [calldata, await this.gasBound()];
   }
   /** The shard's per-transaction gas bound, fixed at its deployment: read once per operator. */

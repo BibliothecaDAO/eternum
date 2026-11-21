@@ -22,3 +22,26 @@ export async function readShardAbi(provider: RpcProvider, address: string, block
   cached.set(hash, abi);
   return abi;
 }
+
+type AbiField = { name: string; type: string };
+
+export function assertAbiArguments(abi: Abi, entrypoint: string, args: Record<string, unknown>) {
+  const entry = abi
+    .flatMap((item) => (item.type === "interface" ? item.items : [item]))
+    .find((item) => item.type === "function" && item.name === entrypoint);
+  if (!entry) throw new Error(`shard_entrypoint_unknown:${entrypoint}`);
+  assertAbiFields(abi, entry.inputs, args);
+}
+
+function assertAbiFields(abi: Abi, fields: AbiField[], value: Record<string, unknown>) {
+  const unknown = Object.keys(value).find((key) => !fields.some((field) => field.name === key));
+  if (unknown) throw new Error(`shard_argument_unknown:${unknown}`);
+  for (const { name, type } of fields) {
+    const members = abi.find((item) => item.type === "struct" && item.name === type)?.members;
+    const nested = value[name];
+    if (members && isRecord(nested)) assertAbiFields(abi, members, nested);
+  }
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && Object.getPrototypeOf(value) === Object.prototype;

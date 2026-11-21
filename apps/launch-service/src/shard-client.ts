@@ -9,30 +9,22 @@ import { resolveDeploymentEnvironment } from "../../../config/deployer/clean/env
 import type { CreateGameRequest } from "./schemas";
 import type { ReleaseChain } from "./release";
 import type { LaunchGameSummary } from "../../../config/deployer/clean/types";
+import type { NativeRows } from "../../../contracts/l3/world-native/schema/client.gen";
 
-export interface ShardGame {
-  name: bigint;
-  family: bigint;
-  preset_id: bigint;
-  settled: boolean;
-  ready: boolean;
-  start_settling_at: bigint;
-  start_main_at: bigint;
-  end_at: bigint;
-  end_grace_seconds: bigint;
-  seed: bigint;
-}
-
-interface CreationParams {
-  preset_id: number;
-  seed: unknown;
-  start_settling_at: number;
-  [field: string]: unknown;
-}
+type RegistryRow = Omit<NativeRows["GameRegistry"], "game_id">;
+type ShardGame = { [Field in keyof RegistryRow]: RegistryRow[Field] extends boolean ? boolean : bigint };
 
 /** Contract-side name commitment checks the entire immutable request; a retry must find the same identity. */
-const assertLaunchIdentity = (game: ShardGame, params: CreationParams) => {
-  if (game.preset_id !== BigInt(String(params.preset_id)) || game.seed !== BigInt(String(params.seed)))
+const assertLaunchIdentity = (game: ShardGame, params: ReturnType<typeof launchGameParams>) => {
+  const launched = [
+    [game.name, params.name],
+    [game.family, params.family],
+    [game.seed, params.seed],
+    [game.start_settling_at, params.start_settling_at],
+    [game.start_main_at, params.start_main_at],
+    [game.end_at, params.start_main_at + Number(params.duration_seconds)],
+  ] as const;
+  if (launched.some(([held, requested]) => held !== BigInt(String(requested))))
     throw new Error("game_launch_identity_differs");
 };
 
@@ -130,14 +122,10 @@ function launchGameParams(request: CreateGameRequest, createdAt: number) {
   return {
     name: common.name,
     family: common.family,
-    preset_id: presetId,
     start_settling_at: startSettlingAt,
     start_main_at: startMainAt,
     duration_seconds: common.duration_seconds,
-    end_grace_seconds: common.end_grace_seconds,
     dev_mode_on: common.dev_mode_on,
-    roster: [],
-    seater: "0x0",
     registration_start: Math.min(Math.floor(createdAt / 1000), startSettlingAt - 1),
     biome_climate: common.biome_climate_config,
     map_override: new CairoOption(

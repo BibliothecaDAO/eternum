@@ -244,3 +244,19 @@ it("refuses a settlement batch that reports nothing left while the game still re
   });
   await expect(operator.settleGame(7)).rejects.toThrow("point_settlement_not_complete");
 });
+it("refuses an administrative argument the Games ABI does not name", async () => {
+  const operator = new ShardOperator({
+    chainId: "0x1",
+    rpcUrl: "https://shard.test",
+    gamesAddress: "0x10",
+    accountAddress: "0x20",
+    privateKey: "0x12345",
+  });
+  await expect(operator.admin("apply_release", { game_id: 1, release_id: 2, preset_id: 7 })).rejects.toThrow(
+    "shard_argument_unknown:preset_id",
+  );
+  await expect(operator.admin("create_game", { params: { name: "0x1", roster: [] } })).rejects.toThrow(
+    "shard_argument_unknown:roster",
+  );
+  expect(rpc.execute).not.toHaveBeenCalled();
+});
