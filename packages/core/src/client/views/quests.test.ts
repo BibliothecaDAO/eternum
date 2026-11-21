@@ -11,7 +11,6 @@ import { readDailyQuest } from "./quests";
 
 const BONUS_SOURCES = {
   seals: { model: "Seal", key: "1:0x111", value: { game_id: 1, account: "0x111", granted_at: 100 } },
-  campaign_homes: { model: "CampaignHome", key: "1:7", value: { game_id: 1, home: 7, campaign_id: 9, tier: 1 } },
   holds_realm: { model: "SettledRealm", key: "1:123", value: { game_id: 1, realm_id: 123, home: 7 } },
 } satisfies Record<string, Parameters<NativeFactStore["applyFacts"]>[0][number]>;
 

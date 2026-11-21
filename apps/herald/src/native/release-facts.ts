@@ -94,7 +94,6 @@ function deriveStructures(emit: EmitRule, structures: PresetRecord) {
     emit("BuildingTierRule", record(rule), { category, tier });
   const board = some(structures.board);
   if (board) emit("BoardRules", board);
-  emit("CampResources", { resources: structures.camps });
   if ("faith" in structures) emit("FaithRules", record(structures.faith));
   emit("UpgradeLimits", record(structures.upgrade_limits));
   records(structures.upgrades).forEach((recipe, index) => emit("UpgradeRecipe", recipe, { level: index + 1 }));

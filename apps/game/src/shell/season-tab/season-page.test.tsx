@@ -134,7 +134,6 @@ const entry = (address: string, rank: number, sites: number) => ({
   rank,
   order: 1,
   structure_id: String(rank),
-  campaign: null,
   sites_cleared: { total: sites, camps: sites, rifts: 0, ruins: 0, beasts: 0 },
   chests_earned: 0,
   rewards: { lords: "0", essence: "0", labor: "0" },

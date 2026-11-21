@@ -15,7 +15,6 @@
   "apps/game/src/three/terrain/terrain-palette.ts": 2,
   "apps/game/src/three/terrain/terrain-props.ts": 2,
   "apps/game/src/ui/design-system/kit/paintings.ts": 1,
-  "apps/game/src/ui/features/cosmetics/chest-opening/utils/cosmetics.ts": 1,
   "apps/game/src/ui/features/economy/resources/entity-resource-table/utils.ts": 1,
   "apps/game/src/ui/features/frontier/build/build-options.ts": 1,
   "apps/game/src/ui/features/frontier/log/day-line.ts": 1,

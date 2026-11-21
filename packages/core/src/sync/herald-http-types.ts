@@ -138,7 +138,6 @@ export interface HeraldFrontierLeaderboardEntry {
   address: string;
   structure_id: string;
   /** Immutable founding identity from the complete game; null explicitly identifies an ordinary home. */
-  campaign: { campaign_id: string; tier: number } | null;
   rank: number;
   sites_cleared: { total: number; camps: number; rifts: number; ruins: number; beasts: number };
   chests_earned: number;

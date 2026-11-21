@@ -14,7 +14,7 @@ export const ASKED_LEVEL: NotificationLevel = "important";
  * The game's ask to turn alerts on: what its button does; "on" once this device gets the day's push; null when nothing
  * can be asked (signed out, its preferences unread, a device that blocks alerts or cannot show them).
  */
-export type AlertsAsk = { kind: "remind" | "install"; busy: boolean; act: () => void } | { kind: "on" } | null;
+type AlertsAsk = { kind: "remind" | "install"; busy: boolean; act: () => void } | { kind: "on" } | null;
 
 /**
  * Offered while this device would not get the day's push: alerts off on it, or the account's level Off. One tap turns

@@ -77,22 +77,6 @@ describe("Frontier season standings", () => {
     expect(buildFrontierLeaderboard(read, "1", []).prize).toBeNull();
   });
 
-  it("includes each home's campaign identity from the complete game, including ordinary homes", () => {
-    const { read, rows } = facts([0, 0, 0]);
-    rows.CampaignHome = [
-      { key: "regular", value: { game_id: "1", home: "0x1", campaign_id: "0x123", tier: 1 } },
-      { key: "golden", value: { game_id: "1", home: "2", campaign_id: "0x123", tier: 2 } },
-      { key: "other-game", value: { game_id: "2", home: "3", campaign_id: "0x456", tier: 2 } },
-    ];
-    expect(
-      buildFrontierLeaderboard(read, "1", []).entries.map(({ structure_id, campaign }) => ({ structure_id, campaign })),
-    ).toEqual([
-      { structure_id: "1", campaign: { campaign_id: "291", tier: 1 } },
-      { structure_id: "2", campaign: { campaign_id: "291", tier: 2 } },
-      { structure_id: "3", campaign: null },
-    ]);
-  });
-
   it("counts a ruin's clear as its chest and its stored LORDS in whole units", () => {
     const { read } = facts();
     const [entry] = buildFrontierLeaderboard(read, "1", [clear("Ruin", 0), clear("Ruin", 1)]).entries;

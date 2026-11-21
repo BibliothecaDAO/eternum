@@ -23,7 +23,7 @@ export function buildFrontierLeaderboard(
 ): HeraldFrontierLeaderboard {
   required(modelRows("GameRegistry"), gameId, "GameRegistry");
   if (isSeasonOneGame(modelRows, gameId)) throw new Error("Season 1 ranks Aspects by height, not players by sites");
-  const players = settledPlayers(gameRows(modelRows("Structure"), gameId), gameRows(modelRows("CampaignHome"), gameId));
+  const players = settledPlayers(gameRows(modelRows("Structure"), gameId));
   const receipts = new Set<string>();
   for (const event of history) {
     if (integer(event.game_id) !== integer(gameId)) throw new Error("Frontier history game mismatch");
@@ -72,13 +72,7 @@ function prizeOf(modelRows: (model: string) => FoldRow[], gameId: string): Heral
   };
 }
 
-function settledPlayers(structures: Row[], campaignHomes: Row[]): Map<string, Standing> {
-  const campaigns = new Map(
-    campaignHomes.map((home) => [
-      integer(home.home),
-      { campaign_id: integer(home.campaign_id).toString(), tier: number(home.tier) },
-    ]),
-  );
+function settledPlayers(structures: Row[]): Map<string, Standing> {
   const players = new Map<string, Standing>();
   for (const structure of structures) {
     if (!isRealmCategory(number(record(structure.base).category))) continue;
@@ -91,7 +85,6 @@ function settledPlayers(structures: Row[], campaignHomes: Row[]): Map<string, St
         address: owner,
         structure_id: integer(structure.entity_id).toString(),
         has_wonder: metadata.has_wonder,
-        campaign: campaigns.get(integer(structure.entity_id)) ?? null,
         rank: 0,
         sites_cleared: { total: 0, camps: 0, rifts: 0, ruins: 0, beasts: 0 },
         chests_earned: 0,

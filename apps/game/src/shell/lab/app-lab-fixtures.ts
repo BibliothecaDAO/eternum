@@ -489,7 +489,6 @@ export const labFrontierBoard = (realms: number, read = 0): HeraldFrontierLeader
     ].map(({ address, sites, chests, lords }, index) => ({
       address,
       structure_id: String(index + 1),
-      campaign: null,
       rank: index + 1,
       sites_cleared: { total: sites, camps: 0, rifts: 0, ruins: 0, beasts: 0 },
       chests_earned: chests,

@@ -4,6 +4,7 @@ import { buildNativeDirectory } from "./read-models";
 import type { DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
 import { gameRegistryRow } from "../../../../packages/core/src/test-support/game-registry";
+import { GAME_FAMILIES } from "../../../../config/source/common/native-preset-modes";
 
 const start = 1_800_000_000;
 const calendar = {
@@ -15,14 +16,15 @@ const calendar = {
 };
 const input = (timestamp: number): DirectoryInput => {
   const dayUnits = [
-    { game_id: 1, settled: true, day_unit_seconds: 14_400 },
-    { game_id: 2, settled: false, day_unit_seconds: 0 },
-    { game_id: 3, settled: false, day_unit_seconds: 14_400 },
+    { game_id: 1, settled: true, family: GAME_FAMILIES.frontier, day_unit_seconds: 14_400 },
+    { game_id: 2, settled: false, family: GAME_FAMILIES.blitz, day_unit_seconds: 0 },
+    { game_id: 3, settled: false, family: GAME_FAMILIES.frontier, day_unit_seconds: 14_400 },
   ];
-  const games = dayUnits.map(({ game_id, settled }) =>
+  const games = dayUnits.map(({ game_id, settled, family }) =>
     gameRegistryRow({
       game_id,
       settled,
+      family,
       name: "0x536561736f6e",
       start_settling_at: String(start - 100),
       start_main_at: String(start),
