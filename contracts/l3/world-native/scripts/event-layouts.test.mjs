@@ -3,7 +3,7 @@ import test from "node:test";
 import { readFile } from "node:fs/promises";
 import { eventLayouts, uniqueEventLayouts } from "./event-layouts.mjs";
 
-test("Games exposes the published player frame, roles and frozen roster ABI", async () => {
+test("Games exposes the published player frame and roles", async () => {
   const { abi } = JSON.parse(
     await readFile(new URL("../target/dev/world_native_Games.contract_class.json", import.meta.url), "utf8"),
   );
@@ -30,7 +30,6 @@ test("Games exposes the published player frame, roles and frozen roster ABI", as
     "set_launcher",
     "set_ledger_operator",
     "create_game",
-    "register_preset",
     "release_classes",
     "view_call",
     "authority_call",
@@ -39,11 +38,12 @@ test("Games exposes the published player frame, roles and frozen roster ABI", as
   assert.deepEqual(method("create_game").inputs, [
     { name: "params", type: "world_native::registrar::CreateGameParams" },
   ]);
-  assert.deepEqual(abi.find(({ name }) => name === "world_native::registrar::RosterPlayer").members, [
-    { name: "account", type: "core::starknet::contract_address::ContractAddress" },
-    { name: "wallet", type: "core::starknet::contract_address::ContractAddress" },
-  ]);
+  assert.equal(
+    abi.some(({ name }) => name === "world_native::registrar::RosterPlayer"),
+    false,
+  );
   for (const retired of [
+    "register_preset",
     "publish_frontier_pool",
     "post_frontier_top",
     "award_frontier_prize",

@@ -5,6 +5,7 @@ fn a_mine_draw_takes_its_kind_from_the_release_surface_pool_and_its_cap_from_tha
     let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
     let rules = IMineRulesDispatcher { contract_address: deployment.games };
     let pool = crate::balance::resources::SURFACE_MINES.span();
+    assert!(rules.mine_pool(MinePoolKey { game_id: 1 }) == pool);
     for root in 0_u64..32 {
         let seed = root.into();
         let (kind, config, amount) = rules.mine_draw(MinePoolKey { game_id: 1 }, seed);
