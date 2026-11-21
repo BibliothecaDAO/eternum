@@ -22,16 +22,6 @@ pub trait IGuardCombat<T> {
     );
 }
 #[starknet::interface]
-pub trait IStructureCapture<T> {
-    fn capture_structure(
-        ref self: T,
-        key: crate::resources::ResourceKey,
-        capturing_home: u64,
-        timestamp: u64,
-        game_context: crate::commands::ActionContext,
-    );
-}
-#[starknet::interface]
 pub trait IGuards<T> {
     fn guard(self: @T, key: GuardKey) -> Guard;
     fn add_starting_guard(

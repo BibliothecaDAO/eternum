@@ -140,25 +140,6 @@ pub mod StructureState {
         );
     }
 
-    pub fn transfer_owner(key: ResourceKey, owner: starknet::ContractAddress) {
-        let state = crate::state::write();
-        assert!(crate::logic::structures::exists(key), "missing structure");
-        if state.structures.structures.entry((key.game_id, key.entity_id)).owner.read() == owner {
-            return;
-        }
-        state.structures.structures.entry((key.game_id, key.entity_id)).owner.write(owner);
-        emit(
-            Event::RowMemberSet(
-                RowMemberSet {
-                    version: 1,
-                    model: 'Structure',
-                    member: 'owner',
-                    keys: array![key.game_id.into(), key.entity_id.into()].span(),
-                    values: array![owner.into()].span(),
-                },
-            ),
-        );
-    }
     pub fn upgrade(
         key: ResourceKey, mut base: crate::structures::StructureBase, config: crate::rules::TroopLimitConfig,
     ) {
@@ -462,33 +443,6 @@ pub mod StructuresLogic {
         }
     }
 
-    #[abi(embed_v0)]
-    impl Capture of crate::guards::IStructureCapture<ContractState> {
-        fn capture_structure(
-            ref self: ContractState,
-            key: ResourceKey,
-            capturing_home: u64,
-            timestamp: u64,
-            game_context: crate::commands::ActionContext,
-        ) -> () {
-            let record = crate::logic::structures::record(key);
-            let owner = crate::logic::structures::record(
-                ResourceKey { game_id: key.game_id, entity_id: capturing_home },
-            )
-                .owner;
-            assert!(owner != 0.try_into().unwrap(), "capturing home is unowned");
-            crate::logic::structures::StructureState::transfer_owner(key, owner);
-            crate::logic::stories::emit_entity_story(
-                key,
-                owner,
-                Story::StructureCapturedStory(
-                    crate::ownership::StructureCapturedStory { previous_owner: record.owner, new_owner: owner },
-                ),
-                timestamp,
-            );
-            ()
-        }
-    }
     #[inline(never)]
     fn pack_realm_resources(resources: Span<u8>) -> u128 {
         let mut packed = 0;

@@ -459,28 +459,6 @@ pub mod GamesFixture {
         }
     }
     #[starknet::embeddable]
-    pub impl StructureCaptureFixture<
-        TContractState, +Drop<TContractState>,
-    > of crate::guards::IStructureCapture<TContractState> {
-        fn capture_structure(
-            ref self: TContractState,
-            key: crate::resources::ResourceKey,
-            capturing_home: u64,
-            timestamp: u64,
-            game_context: crate::commands::ActionContext,
-        ) {
-            crate::guards::IStructureCaptureDispatcherTrait::capture_structure(
-                crate::guards::IStructureCaptureLibraryDispatcher {
-                    class_hash: fixture_class(key.game_id, crate::slots::STRUCTURES),
-                },
-                key,
-                capturing_home,
-                timestamp,
-                game_context,
-            )
-        }
-    }
-    #[starknet::embeddable]
     pub impl SeasonRealmsFixture<
         TContractState, +Drop<TContractState>,
     > of crate::realms::ISeasonRealms<TContractState> {
