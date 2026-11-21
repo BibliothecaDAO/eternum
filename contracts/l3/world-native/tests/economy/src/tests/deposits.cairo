@@ -11,7 +11,7 @@ use crate::entry::{
 };
 use crate::registrar::{CreateGameParams, IRegistrarDispatcherTrait};
 use crate::resources::{IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceKey, ResourceSlot};
-use super::play_fixture::IPlayFixtureSafeDispatcherTrait;
+use super::play_fixture::{FIXTURE_START, IPlayFixtureSafeDispatcherTrait};
 use super::{GameState, IReleasesDispatcher, IReleasesDispatcherTrait, TroopObservationTrait};
 
 fn key() -> StarkCurveKeyPair {
@@ -28,28 +28,9 @@ fn sign(
 fn credit_cancel_rotation_and_season_sweep_have_one_irreversible_outcome() {
     let (d, game_id, army) = super::registrar::setup_frontier_relics();
     let realm = GameState { contract_address: d.games }.resolved_explorer(army).unwrap().owner;
-    let other_game = super::registrar::registry(d)
-        .create_game(
-            CreateGameParams {
-                name: 'other-deposits',
-                dev_mode_on: true,
-                end_grace_seconds: 0,
-                duration_seconds: 2 * super::registrar::BAG_SECONDS,
-                ..super::registrar::params(false),
-            },
-        );
+    let other_game = super::play_fixture::create_game(d.games, super::play_fixture::fixture_params('other-deposits'));
     assert!(other_game != game_id);
-    super::play_fixture::reserve_fixture_homes(d.games, other_game, d.actor);
-    assert!(
-        super::registrar::execute_in_game(
-            d,
-            other_game,
-            crate::commands::Command::SettleSeason(
-                crate::realms::SettleSeason { selected_realm: Some(1), order: None },
-            ),
-            350,
-        ),
-    );
+    let other_home = super::play_fixture::settled_home(d, other_game, d.actor, 1, FIXTURE_START);
     let source = DepositSource {
         chain: 'SN_TEST', ledger: 'ledger'.try_into().unwrap(), signer: key().public_key, epoch: 0,
     };
@@ -58,7 +39,7 @@ fn credit_cancel_rotation_and_season_sweep_have_one_irreversible_outcome() {
     super::entry::set_operator(d, super::authority());
     start_cheat_caller_address(d.games, super::authority());
     start_cheat_chain_id(d.games, 'shard');
-    start_cheat_block_timestamp(d.games, 362);
+    start_cheat_block_timestamp(d.games, FIXTURE_START + 362);
     seed_deposit_source(d.games, game_id, source);
     seed_deposit_source(d.games, other_game, source);
     let payment = LordsDeposit {
@@ -80,17 +61,19 @@ fn credit_cancel_rotation_and_season_sweep_have_one_irreversible_outcome() {
     signature_message.serialize(ref signature_error);
     signature_error.append('ENTRYPOINT_FAILED');
     signature_error.append('ENTRYPOINT_FAILED');
-    assert_eq!(safe.deliver_deposit(other_game, payment, r, s, false).unwrap_err(), signature_error);
-    assert!(entry.deposit_receipt(other_game, payment.id).is_none());
+    let other_payment = LordsDeposit { home: other_home.entity_id, ..payment };
+    let (cross_r, cross_s) = sign(source, d.games, game_id, other_payment, false);
+    assert_eq!(safe.deliver_deposit(other_game, other_payment, cross_r, cross_s, false).unwrap_err(), signature_error);
+    assert!(entry.deposit_receipt(other_game, other_payment.id).is_none());
     assert_eq!(entry.spend_lords(other_game, d.actor), SpendLords { available: 0, consumed: 0, swept: 0 });
-    let (other_r, other_s) = sign(source, d.games, other_game, payment, false);
-    entry.deliver_deposit(other_game, payment, other_r, other_s, false);
-    entry.deliver_deposit(other_game, payment, other_r, other_s, false);
+    let (other_r, other_s) = sign(source, d.games, other_game, other_payment, false);
+    entry.deliver_deposit(other_game, other_payment, other_r, other_s, false);
+    entry.deliver_deposit(other_game, other_payment, other_r, other_s, false);
     assert_eq!(entry.spend_lords(other_game, d.actor), SpendLords { available: 40, consumed: 0, swept: 0 });
     assert_eq!(entry.spend_lords(game_id, d.actor), SpendLords { available: 40, consumed: 0, swept: 0 });
     assert_eq!(
-        entry.deposit_receipt(other_game, payment.id).unwrap().commitment,
-        deposit_hash(source, 'shard', d.games, other_game, payment),
+        entry.deposit_receipt(other_game, other_payment.id).unwrap().commitment,
+        deposit_hash(source, 'shard', d.games, other_game, other_payment),
     );
     let (r, s) = sign(source, d.games, game_id, payment, true);
     assert!(safe.deliver_deposit(game_id, payment, r, s, true).is_err());
@@ -137,7 +120,7 @@ fn principal_only_sweep_returns_deposits_once_after_the_season_end() {
     super::entry::set_operator(d, super::authority());
     start_cheat_caller_address(d.games, super::authority());
     start_cheat_chain_id(d.games, 'shard');
-    start_cheat_block_timestamp(d.games, 362);
+    start_cheat_block_timestamp(d.games, FIXTURE_START + 362);
     seed_deposit_source(d.games, game_id, source);
     let payment = LordsDeposit {
         id: 1,
@@ -176,7 +159,7 @@ fn mixed_sweep_keeps_both_balances_game_pinned_until_applied() {
             realm,
             crate::resources::LORDS,
             30 * crate::rules::RESOURCE_PRECISION,
-            362,
+            FIXTURE_START + 362,
             crate::commands::resource_context(context),
         );
     let entry = ILedgerOperatorDispatcher { contract_address: d.games };
@@ -186,7 +169,7 @@ fn mixed_sweep_keeps_both_balances_game_pinned_until_applied() {
     super::entry::set_operator(d, super::authority());
     start_cheat_caller_address(d.games, super::authority());
     start_cheat_chain_id(d.games, 'shard');
-    start_cheat_block_timestamp(d.games, 362);
+    start_cheat_block_timestamp(d.games, FIXTURE_START + 362);
     seed_deposit_source(d.games, game_id, source);
     let payment = LordsDeposit {
         id: 1,
@@ -266,13 +249,16 @@ fn mixed_sweep_keeps_both_balances_game_pinned_until_applied() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn season_one_refuses_bridge_commands() {
-    let (d, game_id) = super::registrar::setup_open_frontier_preset("frontier", 1);
+fn retired_bridge_command_ids_decode_to_no_command() {
+    let (d, game_id) = super::registrar::setup_open_frontier();
     let release = super::play_fixture::pins(d.games, game_id);
-    super::play_fixture::caller(d.games, d.actor, 360);
-    let home = ResourceKey { game_id, entity_id: 1 };
-    for command in array![super::bridge::deposit(home), super::bridge::withdraw(home, d.actor)] {
-        super::assert_entry_refusal(d, game_id, release, super::play_fixture::encode(command), "command disabled");
+    super::play_fixture::caller(d.games, d.actor, FIXTURE_START);
+    for retired in array![62_felt252, 63] {
+        let before = super::play_fixture::gameplay_snapshot(d.games);
+        let result = super::play_fixture::IPlayFixtureSafeDispatcher { contract_address: d.games }
+            .play_with_root(game_id, release, array![retired, 1, 1].span(), 123);
+        assert!(result.is_err());
+        assert_eq!(super::play_fixture::gameplay_snapshot(d.games), before);
     }
 }
 
@@ -293,9 +279,9 @@ fn seed_deposit_source(games: starknet::ContractAddress, game_id: u32, source: D
 #[feature("safe_dispatcher")]
 fn unknown_command_tags_refuse_before_a_roll(offset: u32) {
     let index: felt252 = (crate::command_routes::COMMAND_ROUTES.span().len() + offset).into();
-    let (d, game_id) = super::registrar::setup_open_frontier_preset("frontier", 1);
+    let (d, game_id) = super::registrar::setup_open_frontier();
     let release = super::play_fixture::pins(d.games, game_id);
-    super::play_fixture::caller(d.games, d.actor, 360);
+    super::play_fixture::caller(d.games, d.actor, FIXTURE_START);
     let before = super::play_fixture::gameplay_snapshot(d.games);
     let result = super::play_fixture::IPlayFixtureSafeDispatcher { contract_address: d.games }
         .play_with_root(game_id, release, array![index, 1, 1].span(), 123);
