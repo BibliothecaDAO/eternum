@@ -21,21 +21,6 @@ pub use super::resource_commands::{assert_terminal_rejection, execute, grant, se
 pub fn setup_homes() -> (super::Deployment, ResourceKey, ResourceKey, u64, u64) {
     let (d, home, other_home) = super::resource_commands::setup();
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
-    let original = structures.structure(home).unwrap();
-    set_fixture(
-        d.games,
-        selector!("structures"),
-        selector!("structures"),
-        array![3, home.entity_id.into()].span(),
-        crate::structures::StructureRecord {
-            owner: original.owner,
-            base: crate::structures::StructureBase {
-                troop_max_explorer_count: 4, troop_max_guard_count: 1, ..original.base,
-            },
-            resources_packed: original.resources_packed,
-            metadata: original.metadata,
-        },
-    );
     let ids = structures.home_armies(home);
     for (army, size) in array![(*ids.at(0), 10_u128), (*ids.at(1), 5)] {
         super::resource_commands::size_army(d, ExplorerKey { game_id: 3, explorer_id: army }, size);
