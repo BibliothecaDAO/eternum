@@ -35,7 +35,7 @@ export function handleCampaignRedeem(
 type SettleReferrals = (realmsId: string, campaign: CampaignKey) => Promise<unknown>;
 
 /** Whether the account already has a home source in a running campaign game; null when unknown. */
-type CampaignHomeSource = (realmsId: string, presets: readonly number[]) => Promise<boolean | null>;
+type CampaignHomeSource = (realmsId: string) => Promise<boolean | null>;
 
 /** Operator recovery draws as a shared flyer does, with the same eligibility check. */
 export function handleCampaignDraw(request: Request, db: D1Database, hasSource: CampaignHomeSource) {
@@ -68,7 +68,7 @@ function drawTicket(request: Request, db: D1Database, hasSource: CampaignHomeSou
     if (held) return json({ campaign: held.campaign, tier: held.tier });
     const now = Math.floor(Date.now() / 1000);
     if (now >= CAMPAIGNS[asked.campaign].redeemUntil) return json({ error: "campaign_closed" }, 410);
-    const refusal = yield* sourceRefusal(asked.realmsId, asked.campaign, hasSource);
+    const refusal = yield* sourceRefusal(asked.realmsId, hasSource);
     if (refusal) return refusal;
     const ticket = yield* store.draw(asked.campaign, asked.realmsId, now);
     return json({ campaign: ticket.campaign, tier: ticket.tier });
@@ -87,10 +87,10 @@ async function readOperatorDraw(request: Request): Promise<{ campaign: CampaignK
   return body;
 }
 
-function sourceRefusal(realmsId: string, campaign: CampaignKey, hasSource: CampaignHomeSource) {
+function sourceRefusal(realmsId: string, hasSource: CampaignHomeSource) {
   return Effect.gen(function* () {
     const sourced = yield* Effect.tryPromise({
-      try: () => hasSource(realmsId, CAMPAIGNS[campaign].presets),
+      try: () => hasSource(realmsId),
       catch: () => new CampaignRequestError({ code: "campaigns_unavailable", status: 503 }),
     });
     if (sourced === null) return json({ error: "campaigns_unavailable" }, 503);
@@ -151,7 +151,7 @@ function openFlyerTicket(
     const codeHash = yield* Effect.promise(() => codeHashInScope(campaign, code));
     const source = yield* store.source(campaign, codeHash);
     if (!source) return json({ error: "ticket_taken" }, 410);
-    const refusal = yield* sourceRefusal(realmsId, campaign, hasSource);
+    const refusal = yield* sourceRefusal(realmsId, hasSource);
     if (refusal) return refusal;
     const ticket = yield* source.kind === "shared"
       ? store.draw(campaign, realmsId, now)
@@ -178,7 +178,7 @@ function openReferralTicket(
     const inviter = yield* campaignStorage(() => referrals.inviterOf(campaign, referral));
     if (!inviter) return json({ error: "referral_unknown" }, 404);
     if (inviter.referrer === friend.realmsId) return json({ error: "self_referral" }, 409);
-    const refusal = yield* sourceRefusal(friend.realmsId, campaign, hasSource);
+    const refusal = yield* sourceRefusal(friend.realmsId, hasSource);
     if (refusal) return refusal;
     const identity = { realmsId: friend.realmsId, mailbox: mailboxOf(friend.email), browser: friend.browser };
     const given = yield* campaignStorage(() =>

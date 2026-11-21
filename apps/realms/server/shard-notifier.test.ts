@@ -12,6 +12,7 @@ import {
   ARMY,
   ARMIES_TICK_SECONDS,
   DAY_UNIT_SECONDS,
+  REST_TICKS,
   SEASON_START,
   TODAY,
 } from "./fixtures/shard-world";
@@ -53,7 +54,6 @@ const OWNER = realmsIdOf("player-one");
 /** The notifier uses its deployed three-second interval; its retries wait 1, 2, 4, then 8 polls. */
 const POLL_MS = 3_000;
 const polls = (count: number) => count * POLL_MS;
-const REST_TICKS = 3;
 const ticks = (count: number) => count * ARMIES_TICK_SECONDS * 1000;
 
 let bundle: string;

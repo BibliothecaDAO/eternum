@@ -33,9 +33,8 @@ export async function hasCampaignHomeSource(
   env: IdentityShards,
   fetchShard: typeof fetch,
   realmsId: string,
-  presets: readonly number[],
 ): Promise<boolean | null> {
-  const source = await homeSourceOf(env, fetchShard, realmsId, presets);
+  const source = await homeSourceOf(env, fetchShard, realmsId);
   return source === null ? null : source !== "none";
 }
 
@@ -47,10 +46,9 @@ export async function homeSourceOf(
   env: IdentityShards,
   fetchShard: typeof fetch,
   realmsId: string,
-  presets: readonly number[],
 ): Promise<HomeSource | null> {
   const account = await playerAccount(env, realmsId);
-  const sources = await eachCampaignGame(env, fetchShard, presets, account, (shard, game) =>
+  const sources = await eachCampaignGame(env, fetchShard, account, (shard, game) =>
     sourceIn(shard.url, game.game_id, account, fetchShard),
   );
   if (sources === null) return null;
@@ -63,8 +61,6 @@ export interface CampaignStanding {
   chainId: string;
   gameId: number;
   sitesCleared: number;
-  /** The home's campaign tier as the board shows it: 1 regular, 2 golden; null for a home founded without a ticket. */
-  tier: number | null;
 }
 
 /**
@@ -74,16 +70,14 @@ export interface CampaignStanding {
 export async function campaignStandings(
   env: IdentityShards,
   fetchShard: typeof fetch,
-  presets: readonly number[],
 ): Promise<Map<string, CampaignStanding> | null> {
-  const boards = await eachCampaignGame(env, fetchShard, presets, null, async (shard, game) =>
+  const boards = await eachCampaignGame(env, fetchShard, null, async (shard, game) =>
     (await seasonBoard(shard.url, game.game_id, fetchShard)).entries.map((entry): [string, CampaignStanding] => [
       accountKey(entry.address),
       {
         chainId: shard.chainId,
         gameId: game.game_id,
         sitesCleared: entry.sites_cleared.total,
-        tier: entry.campaign?.tier ?? null,
       },
     ]),
   );
@@ -116,7 +110,6 @@ export const accountKey = (address: string) => `0x${BigInt(address).toString(16)
 async function eachCampaignGame<T>(
   env: IdentityShards,
   fetchShard: typeof fetch,
-  presets: readonly number[],
   player: string | null,
   read: (shard: DirectoryShard, game: HeraldGameDirectoryEntry) => Promise<T>,
 ): Promise<T[] | null> {
@@ -124,15 +117,15 @@ async function eachCampaignGame<T>(
   if (!shard) return [];
   try {
     const games = await fetchShardGames(shard, gamesUrl(shard, player), fetchShard);
-    const running = games.filter((game) => isRunningCampaignGame(game, presets));
+    const running = games.filter(isRunningCampaignGame);
     return await Promise.all(running.map((game) => read(shard, game)));
   } catch {
     return null;
   }
 }
 
-const isRunningCampaignGame = (game: HeraldGameDirectoryEntry, presets: readonly number[]) =>
-  presets.includes(game.preset_id) && (game.status === "Registration" || game.status === "Live");
+const isRunningCampaignGame = (game: HeraldGameDirectoryEntry) =>
+  game.mode === "frontier" && (game.status === "Registration" || game.status === "Live");
 
 async function seasonBoard(shardUrl: string, gameId: number, fetchShard: typeof fetch) {
   const url = new URL(`/games/${gameId}/leaderboard`, shardUrl);
@@ -151,13 +144,12 @@ async function sourceIn(shardUrl: string, gameId: number, account: string, fetch
   const homes = new Set(
     [...store.inGame("Structure", gameId)].filter((row) => row.owner === BigInt(account)).map((row) => row.entity_id),
   );
-  if ([...store.inGame("CampaignHome", gameId)].some((row) => homes.has(row.home))) return "campaign";
   return [...store.inGame("SettledRealm", gameId)].some((row) => homes.has(row.home)) ? "realm" : "none";
 }
 
 /** The confirmed facts that name a home's source, read from the game's snapshot. */
 async function homeFacts(shardUrl: string, gameId: number, fetchShard: typeof fetch) {
-  const models = ["EntryEntitlement", "Structure", "CampaignHome", "SettledRealm"];
+  const models = ["EntryEntitlement", "Structure", "SettledRealm"];
   const url = new URL(`/games/${gameId}/snapshot`, shardUrl);
   url.searchParams.set("models", models.join(","));
   const response = await fetchShard(url, { redirect: "manual", signal: AbortSignal.timeout(5000) });

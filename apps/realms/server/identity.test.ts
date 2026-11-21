@@ -109,7 +109,6 @@ const memoryBucket = () => {
   };
 };
 const shareCards = memoryBucket();
-/** The value relay's golden upgrade route, as identity calls it through its service binding. */
 const relay = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
   Response.json({ campaign: "devcon-2026", tier: "golden" }),
 );
@@ -1512,7 +1511,6 @@ describe("identity Worker", () => {
     game_id: 41,
     name: "devcon",
     mode: "frontier",
-    preset_id: 6,
     status: "Live",
     player_state: {
       registered: entered,
@@ -1535,7 +1533,7 @@ describe("identity Worker", () => {
       const games = url in devcon ? [devconGame(devcon[url]!)] : [];
       heralds.set(`${url}/games?player=${account}`, { chain: chainId, games });
       if (url in devcon)
-        heralds.set(`${url}/games/41/snapshot?models=EntryEntitlement%2CStructure%2CCampaignHome%2CSettledRealm`, {
+        heralds.set(`${url}/games/41/snapshot?models=EntryEntitlement%2CStructure%2CSettledRealm`, {
           game_id: "41",
           confirmed_block: 1,
           models: [
@@ -1559,7 +1557,6 @@ describe("identity Worker", () => {
                 : [],
             },
             { model: "Structure", rows: [] },
-            { model: "CampaignHome", rows: [] },
             { model: "SettledRealm", rows: [] },
           ],
         });
@@ -1860,7 +1857,7 @@ describe("identity Worker", () => {
     const shard = "https://referral-season.test";
     const campaign = "devcon-2026";
     /** Homes founded in the referral shard's Devcon game, by account: their source and the season board's view of them. */
-    const founded = new Map<string, { source: "free" | "realm" | "campaign"; sites: number; tier: number | null }>();
+    const founded = new Map<string, { source: "free" | "realm" | "campaign"; sites: number }>();
     let boardAnswers = true;
     /** The next tiers referral links draw, oldest first; regular once none is queued. */
     const draws: ("regular" | "golden")[] = [];
@@ -1891,7 +1888,7 @@ describe("identity Worker", () => {
       for (const { url, chainId } of results)
         heralds.set(`${url}/games`, { chain: chainId, games: url === shard ? [devconGame(true)] : [] });
       const entitled = [...founded].filter(([, home]) => home.source !== "free");
-      heralds.set(`${shard}/games/41/snapshot?models=EntryEntitlement%2CStructure%2CCampaignHome%2CSettledRealm`, {
+      heralds.set(`${shard}/games/41/snapshot?models=EntryEntitlement%2CStructure%2CSettledRealm`, {
         game_id: "41",
         confirmed_block: 1,
         models: [
@@ -1911,7 +1908,6 @@ describe("identity Worker", () => {
             })),
           },
           { model: "Structure", rows: [] },
-          { model: "CampaignHome", rows: [] },
           { model: "SettledRealm", rows: [] },
         ],
       });
@@ -1924,7 +1920,6 @@ describe("identity Worker", () => {
         entries: [...founded].map(([address, home], index) => ({
           address,
           structure_id: String(index + 1),
-          campaign: home.tier === null ? null : { campaign_id: "0x646576636f6e2d32303236", tier: home.tier },
           rank: index + 1,
           sites_cleared: { total: home.sites, camps: home.sites, rifts: 0, ruins: 0, beasts: 0 },
           chests_earned: 0,
@@ -1986,8 +1981,7 @@ describe("identity Worker", () => {
         redeem: (body: Record<string, unknown> = {}) => call("/api/campaigns/redeem", { campaign, ...body }),
         referral: () => call(`/api/campaigns/referral?campaign=${campaign}`),
         code: async () => (await call(`/api/campaigns/referral?campaign=${campaign}`))[1].code as string,
-        found: (source: "free" | "realm" | "campaign", sites = 0, tier: number | null = null) =>
-          void founded.set(account, { source, sites, tier: source === "campaign" ? (tier ?? 1) : tier }),
+        found: (source: "free" | "realm" | "campaign", sites = 0) => void founded.set(account, { source, sites }),
         clear: (sites = 1) => void founded.set(account, { ...founded.get(account)!, sites }),
       };
     };
@@ -2031,7 +2025,7 @@ describe("identity Worker", () => {
         const friend = await player(name);
         draws.push(tier);
         expect(await friend.redeem({ referral: code })).toEqual(ticket(tier));
-        friend.found("campaign", 1, tier === "golden" ? 2 : 1);
+        friend.found("campaign", 1);
         friends.push(friend);
       }
       return friends;
@@ -2333,7 +2327,7 @@ describe("identity Worker", () => {
       expect(await friend.redeem({ referral: code })).toEqual(ticket("golden"));
       expect(await friend.redeem()).toEqual(ticket("golden"));
       expect((await inviter.referral())[1]).toEqual(answer("free", [{ state: "signed", golden: true }]));
-      friend.found("campaign", 1, 2);
+      friend.found("campaign", 1);
       relay.mockClear();
       expect((await inviter.referral())[1]).toEqual(
         answer("ticket", [{ state: "counted", golden: true }], {
@@ -2345,49 +2339,9 @@ describe("identity Worker", () => {
       expect(relay).not.toHaveBeenCalled();
     });
 
-    it("upgrades a regular Devcon home through the relay, and says golden only once the board shows it", async () => {
-      const inviter = await player("ref-drop-home");
-      inviter.found("free");
-      await countedFriends(inviter, ["ref-drop-home-a"]);
-      expect((await inviter.referral())[1]).toEqual(
-        answer("ticket", ["counted"], { tier: "regular", earned: { ticket: true } }),
-      );
-      // The inviter adds the earned ticket to their free home: the board shows a regular Devcon home.
-      inviter.found("campaign", 0, 1);
-      expect((await inviter.referral())[1]).toEqual(
-        answer("devcon", ["counted"], { tier: "regular", earned: { ticket: true } }),
-      );
-      await countedFriends(inviter, ["ref-drop-home-b"], "golden");
-      relay.mockClear();
-      relay.mockResolvedValueOnce(Response.json({ error: "upgrade_requires_release_8" }, { status: 409 }));
-      const pending = answer("devcon", ["counted", { state: "counted", golden: true }], {
-        tier: "golden",
-        goldenPending: true,
-        earned: { ticket: true, golden: true },
-      });
-      expect((await inviter.referral())[1]).toEqual(pending);
-      expect(await campaignTicketFor(env.DB, inviter.realmsId, 6)).toEqual({ campaign, tier: "golden" });
-      expect(relay).toHaveBeenCalledTimes(1);
-      const [url, init] = relay.mock.calls[0]!;
-      expect(new URL(String(url)).pathname).toBe("/api/value/operator/campaign-upgrade");
-      expect(new Headers(init!.headers).get("authorization")).toBe(`Bearer ${OPERATOR_TOKEN}`);
-      expect(JSON.parse(String(init!.body))).toEqual({ chainId: "0xd5", gameId: 41, realmsId: inviter.realmsId });
-      // Refused, unreachable, or accepted but not on the board yet: still pending, and the next read asks again.
-      relay.mockRejectedValueOnce(new Error("relay unreachable"));
-      expect((await inviter.referral())[1]).toEqual(pending);
-      expect((await inviter.referral())[1]).toEqual(pending);
-      expect(relay).toHaveBeenCalledTimes(3);
-      // Once the board shows the home golden, it is golden and no read asks.
-      inviter.found("campaign", 0, 2);
-      const golden = { ...pending, home: "golden", goldenPending: false };
-      expect((await inviter.referral())[1]).toEqual(golden);
-      expect(await inviter.redeem()).toEqual(ticket("golden"));
-      expect(relay).toHaveBeenCalledTimes(3);
-    });
-
-    it("turns the link golden at ten counted friends: the inviter, every friend before and after, each home upgraded on its own read", async () => {
+    it("turns the link golden at ten counted friends: the inviter and every friend before and after", async () => {
       const inviter = await player("ref-link");
-      inviter.found("campaign", 0, 1);
+      inviter.found("campaign");
       await env.DB.prepare(
         `INSERT INTO "campaign_tickets" ("campaign", "owner", "code_hash", "tier", "redeemed_at") VALUES (?, ?, NULL, 'regular', 1)`,
       )
@@ -2402,7 +2356,6 @@ describe("identity Worker", () => {
       expect(nine.link).toEqual({ counted: 9, golden: false });
       expect(nine.tier).toBe("regular");
       const [last] = await countedFriends(inviter, ["ref-link-tenth"]);
-      relay.mockClear();
       const linked = (await inviter.referral())[1];
       expect(linked).toMatchObject({
         home: "devcon",
@@ -2412,18 +2365,9 @@ describe("identity Worker", () => {
         earned: { golden: true },
       });
       expect(linked.friends.every(({ golden }: { golden: boolean }) => golden)).toBe(true);
-      expect(relay).toHaveBeenCalledTimes(1);
-      // Every friend's ticket is golden, counted or not; a founded friend's home upgrades on that friend's own read.
       for (const friend of [early, last!, ...friends])
         expect(await campaignTicketFor(env.DB, friend.realmsId, 6)).toEqual({ campaign, tier: "golden" });
-      relay.mockClear();
       expect(await last!.redeem()).toEqual(ticket("golden"));
-      expect(relay).toHaveBeenCalledTimes(1);
-      expect(JSON.parse(String(relay.mock.calls[0]![1]!.body))).toEqual({
-        chainId: "0xd5",
-        gameId: 41,
-        realmsId: last!.realmsId,
-      });
       // A ticket the link gives later is golden, whatever the draw.
       const later = await player("ref-link-later");
       expect(await later.redeem({ referral: code })).toEqual(ticket("golden"));

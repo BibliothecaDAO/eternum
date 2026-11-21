@@ -7,7 +7,7 @@ import release from "../../../../contracts/l3/world-native/schema/release-defini
 import explorerFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import { gameRegistryRow } from "../../../../packages/core/src/test-support/game-registry";
 
-export const siteGuardTroops = (ticksUntilClear: number, clearableTroops = 800) =>
+export const siteGuardTroops = (ticksUntilClear: number, clearableTroops = 1200) =>
   clearableTroops + ticksUntilClear * frontierSeasonOnePreset.deep.lossPerTick;
 
 export const GAME_ID = 1;
@@ -19,7 +19,8 @@ const NEIGHBOUR_HOME = 6;
 const NEIGHBOUR_ARMY = 8;
 const SECOND_ARMY = 10;
 export const ARMIES_TICK_SECONDS = 10;
-const STAMINA_GAIN_PER_TICK = 40;
+export const REST_TICKS = 3;
+const STAMINA_GAIN_PER_TICK = release.definition.rules.troop_stamina_config.stamina_knight_max / REST_TICKS;
 export const DAY_UNIT_SECONDS = 14_400;
 const REGION_SPACING = 100;
 export const SEASON_START = Math.floor(Date.now() / 1000) - 13 * 3_600;

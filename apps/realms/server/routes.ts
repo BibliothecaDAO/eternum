@@ -168,14 +168,14 @@ export const routeIdentityRequest = async (
     });
   if (pathname === "/api/operator/campaign-draw" && request.method === "POST") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
-    return handleCampaignDraw(request, env.DB, (realmsId, presets) =>
-      hasCampaignHomeSource(env, platform.fetchShard, realmsId, presets),
+    return handleCampaignDraw(request, env.DB, (realmsId) =>
+      hasCampaignHomeSource(env, platform.fetchShard, realmsId),
     );
   }
   if (pathname === "/api/campaigns/redeem") {
     const world = referralWorld(env, platform);
     return handleCampaignRedeem(request, auth, env.DB, {
-      hasSource: (realmsId, presets) => hasCampaignHomeSource(env, platform.fetchShard, realmsId, presets),
+      hasSource: (realmsId) => hasCampaignHomeSource(env, platform.fetchShard, realmsId),
       settle: (realmsId, campaign) => settleReferrals(world, campaign, realmsId, Math.floor(Date.now() / 1000)),
     });
   }
@@ -292,19 +292,11 @@ const shareWorld = (env: IdentityEnv, platform: WorkerPlatform): ShareWorld => (
   accountOf: playerAccounts(env),
 });
 
-/** What referral settlement reaches: the shards' Heralds for home sources and season boards, and the relay. */
 const referralWorld = (env: IdentityEnv, platform: WorkerPlatform): ReferralWorld => ({
   db: env.DB,
-  homeSource: (realmsId, presets) => homeSourceOf(env, platform.fetchShard, realmsId, presets),
-  standings: (presets) => campaignStandings(env, platform.fetchShard, presets),
+  homeSource: (realmsId) => homeSourceOf(env, platform.fetchShard, realmsId),
+  standings: () => campaignStandings(env, platform.fetchShard),
   accountOf: playerAccounts(env),
-  upgradeHome: (home) =>
-    env.VALUE_RELAY.fetch("https://value-relay/api/value/operator/campaign-upgrade", {
-      method: "POST",
-      redirect: "manual",
-      headers: { authorization: `Bearer ${env.OPERATOR_TOKEN}`, "content-type": "application/json" },
-      body: JSON.stringify(home),
-    }),
 });
 
 /**
