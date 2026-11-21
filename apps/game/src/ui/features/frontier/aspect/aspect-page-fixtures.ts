@@ -1,6 +1,5 @@
-import { deepSites } from "@bibliothecadao/types";
+import { aspectLordsWorth, deepSites } from "@bibliothecadao/types";
 
-import { lordsWorth } from "./aspect-worth";
 import type { AspectMember, AspectPageProps, AspectStanding, AspectTriumph, OwnAspect } from "./aspect-page-view";
 
 /** Season 1's race: a hyperstructure of 10,000 in 5 stages of 2,000; each of the first 4 stages is a Triumph. */
@@ -22,7 +21,7 @@ const standings = (heights: Record<string, number>, own: string, winner?: string
       stage: Math.min(STAGES, Math.floor(height / STAGE) + 1),
       finished: height >= FINISH,
       own: aspect === own,
-      lords: lordsWorth(height, aspect === winner),
+      lords: aspectLordsWorth(height, aspect === winner),
     }));
 
 /**

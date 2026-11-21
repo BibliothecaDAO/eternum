@@ -129,8 +129,10 @@ export const aspects = [
   { id: 4, name: "Insight" },
 ] as const satisfies readonly { id: AspectId; name: string }[];
 
-/** What an Aspect's hyperstructure height is worth, in whole LORDS: a rate per point, and a bonus for the first finish. */
-export const ASPECT_REWARD = { lordsPerHeight: 10, finishBonus: 100_000 } as const;
+export const ASPECT_REWARD = { lordsPerHeight: 10, finishBonus: 100_000, gloryToShare: 100 } as const;
+
+export const aspectLordsWorth = (height: number, finishedFirst: boolean): number =>
+  height * ASPECT_REWARD.lordsPerHeight + (finishedFirst ? ASPECT_REWARD.finishBonus : 0);
 
 export const ordersOfAspect = (aspect: AspectId): IOrder[] => orders.filter((order) => order.aspect === aspect);
 

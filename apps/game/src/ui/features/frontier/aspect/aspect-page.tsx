@@ -4,9 +4,8 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ASPECT_PAGE_WORDS } from "@/ui/design-system/kit/words";
 import { configManager, getStructureName } from "@bibliothecadao/eternum";
 import { RACE_MODELS, readRaceBoard, nativeRaceConstants, type RaceBoard } from "@bibliothecadao/eternum/game-client";
-import { aspects, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { aspectLordsWorth, aspects, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useFrontierRealm } from "../frontier-home";
-import { lordsWorth } from "./aspect-worth";
 import { AspectInvite } from "../invite/aspect-invite";
 import { AspectFeedView } from "./aspect-feed-view";
 import { useAspectFights } from "./use-aspect-fights";
@@ -51,7 +50,7 @@ export function aspectPage(
         stage: row.stage,
         finished: row.finished,
         own: row.aspect === board.own?.aspect,
-        lords: lordsWorth(row.height, board.result?.winner === row.aspect),
+        lords: aspectLordsWorth(row.height, board.result?.winner === row.aspect),
       })),
       finishHeight: board.rules.stage_height * nativeRaceConstants.STAGE_COUNT,
       stages: nativeRaceConstants.STAGE_COUNT,

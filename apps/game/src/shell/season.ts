@@ -1,9 +1,8 @@
-import { formatDate } from "@bibliothecadao/types";
+import { aspectLordsWorth, formatDate } from "@bibliothecadao/types";
 import { raceFinishHeight } from "@bibliothecadao/eternum/game-client";
 
 import { isGameOver } from "@/runtime/world/directory";
 import { PLAY_WORDS, SEASON } from "@/ui/design-system/kit/words";
-import { lordsWorth } from "@/ui/features/frontier/aspect/aspect-worth";
 import { type DayClock, dayTone } from "@/ui/features/frontier/hud/day-clock";
 import { isRealmCategory } from "@bibliothecadao/eternum/expeditions";
 
@@ -89,6 +88,6 @@ export const seasonOpening = (phases: readonly SeasonPhase[], now: number): Seas
   return {
     startsAt,
     seasonDays: Number(race.season_days),
-    aspectLords: lordsWorth(raceFinishHeight(race.stage_height), false),
+    aspectLords: aspectLordsWorth(raceFinishHeight(race.stage_height), false),
   };
 };
