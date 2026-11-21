@@ -12,7 +12,12 @@ function commandBits(commands: NativeCommand[]): bigint {
 
 const allCommands = Object.keys(nativeCommandBits) as NativeCommand[];
 const arenaClosedCommands: NativeCommand[] = ["EnterDepth", "Research", "InteractSite"];
-const blitzReturnedCommands: NativeCommand[] = [];
+const blitzReturnedCommands: NativeCommand[] = [
+  "CreateBuilding",
+  "DestroyBuilding",
+  "PauseBuildingProduction",
+  "ResumeBuildingProduction",
+];
 
 export const arenaCommandMask = commandBits(allCommands) & ~commandBits(arenaClosedCommands);
 

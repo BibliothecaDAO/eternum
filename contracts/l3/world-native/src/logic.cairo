@@ -8,10 +8,13 @@ pub mod aspect_activity;
 pub mod aspects;
 pub mod bane_calendar;
 pub mod banes;
+#[cfg(feature: "blitz")]
+pub mod blitz;
 pub mod bridge_domain;
 pub mod buildings;
 pub mod combat;
 pub mod combat_domain;
+#[cfg(not(feature: "blitz"))]
 pub mod construction;
 pub mod deep;
 pub mod deep_armies;

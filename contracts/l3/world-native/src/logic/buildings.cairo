@@ -1,5 +1,6 @@
-use starknet::storage::StorageMapReadAccess;
+use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::buildings::Building;
+use crate::resources::IResourceOperationsDispatcherTrait;
 
 pub fn building(key: BuildingKey) -> Option<Building> {
     let storage_key = (key.game_id, key.structure_id, key.inner_col, key.inner_row);
@@ -15,6 +16,100 @@ use crate::troops::Coord;
 
 pub fn building_key(key: crate::resources::ResourceKey, coord: Coord) -> BuildingKey {
     BuildingKey { game_id: key.game_id, structure_id: key.entity_id, inner_col: coord.x, inner_row: coord.y }
+}
+
+pub fn assert_building_command(
+    key: crate::resources::ResourceKey,
+    actor: starknet::ContractAddress,
+    timestamp: u64,
+    game_context: crate::commands::ExecutionContext,
+) -> crate::structures::StructureBase {
+    crate::game::assert_playing(game_context.game.unbox(), timestamp);
+    assert!(crate::logic::structures::owner(key) == actor, "actor does not own structure");
+    let base = crate::state::read().structures.structures.entry((key.game_id, key.entity_id)).base.read();
+    assert!(
+        base.category == crate::taxonomy::REALM_CATEGORY
+            || base.category == crate::taxonomy::VILLAGE_CATEGORY
+            || base.category == crate::taxonomy::CAMP_CATEGORY,
+        "structure does not support production",
+    );
+    base
+}
+
+pub fn resolve_building_coord(base: crate::structures::StructureBase, directions: Span<u8>) -> Coord {
+    let limits = crate::logic::upgrades::limits();
+    let maximum = if base.category == crate::taxonomy::REALM_CATEGORY {
+        limits.realm_max
+    } else if base.category == crate::taxonomy::VILLAGE_CATEGORY {
+        limits.village_max
+    } else {
+        0
+    };
+    assert!(!directions.is_empty(), "building path is empty");
+    assert!(directions.len() <= Into::<u8, u32>::into(maximum) + 1, "building outside maximum level");
+    assert!(directions.len() <= Into::<u8, u32>::into(base.level) + 1, "building outside current level");
+    let mut coord = Coord { alt: false, x: 10, y: 10 };
+    for direction in directions {
+        coord = crate::geometry::neighbor(coord, *direction);
+    }
+    coord
+}
+
+pub fn emit_building_change(
+    key: crate::resources::ResourceKey,
+    actor: starknet::ContractAddress,
+    coord: Coord,
+    category: u8,
+    change: crate::ownership::BuildingChange,
+    timestamp: u64,
+) {
+    crate::logic::stories::emit_entity_story(
+        key,
+        actor,
+        crate::ownership::Story::BuildingPlacementStory(
+            crate::ownership::BuildingPlacementStory { coord, category, change },
+        ),
+        timestamp,
+    );
+}
+
+pub fn pay_building_costs(
+    key: crate::resources::ResourceKey,
+    actor: starknet::ContractAddress,
+    coord: Coord,
+    category: u8,
+    count: u8,
+    costs: Span<crate::resources::ResourceAmount>,
+    increase: u16,
+    timestamp: u64,
+    game_context: crate::commands::ExecutionContext,
+) -> u128 {
+    assert!(!costs.is_empty(), "missing building erection cost");
+    let resources = crate::logic::structure_actions::resources_dispatcher(key.game_id);
+    let scale: u128 = (count - 1).into();
+    let mut paid = array![];
+    let mut labor_paid = 0;
+    for cost in costs {
+        let amount = *cost.amount + scale * scale * crate::math::PercentageImpl::get(*cost.amount, increase.into());
+        assert!(amount != 0, "zero building erection cost");
+        resources
+            .spend_resource(
+                key, *cost.resource_type, amount, timestamp, crate::commands::resource_context(game_context),
+            );
+        if *cost.resource_type == crate::resources::LABOR {
+            labor_paid += amount;
+        }
+        paid.append(crate::resources::ResourceAmount { resource_type: *cost.resource_type, amount });
+    }
+    crate::logic::stories::emit_entity_story(
+        key,
+        actor,
+        crate::ownership::Story::BuildingPaymentStory(
+            crate::ownership::BuildingPaymentStory { coord, category, cost: paid.span() },
+        ),
+        timestamp,
+    );
+    labor_paid
 }
 
 #[cfg(feature: "blitz")]

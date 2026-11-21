@@ -103,4 +103,4 @@ pub const SWITCHES: crate::rules::ReleaseSwitches = crate::rules::ReleaseSwitche
     command_mask: 146450998045786752122207, mode_rules: 131395, day_unit_seconds: 0, entry_rule: 2,
 };
 
-pub const PENDING_COMMANDS: u128 = 146450998045786752122207;
+pub const PENDING_COMMANDS: u128 = 146450998045786720664927;
