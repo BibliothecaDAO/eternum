@@ -310,4 +310,3 @@ const accountSession = async (request: Request, auth: IdentityAuth, db: D1Databa
     await noteBrowser(db, user.realmsId, browser).run();
   return new Response(body, { status: response.status, headers });
 };
-
