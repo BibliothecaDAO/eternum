@@ -50,7 +50,7 @@ fn raising_troops_pays_two_wheat_each_from_settled_wheat_and_fails_when_the_real
     let wheat = rate(deployment, home, WHEAT);
     assert!(50 * wheat >= 8 * RESOURCE_PRECISION && 50 * wheat < 16 * RESOURCE_PRECISION);
 
-    assert!(execute(deployment, raise(home, 3, 0, 2), FIXTURE_START + 90));
+    assert!(execute(deployment, raise(home, 3, 2, 2), FIXTURE_START + 90));
     assert_eq!(stored(deployment, home, KNIGHT), 17 * RESOURCE_PRECISION);
     assert_eq!(stored(deployment, home, WHEAT), 50 * wheat - 6 * RESOURCE_PRECISION);
     let army = newest_army(deployment, home);
@@ -60,7 +60,7 @@ fn raising_troops_pays_two_wheat_each_from_settled_wheat_and_fails_when_the_real
 
     let before = super::resource_commands::resource_facts(deployment, home);
     let mut rejected = snforge_std::spy_events();
-    assert_terminal_rejection(deployment, raise(home, 4, 1, 3), FIXTURE_START + 90);
+    assert_terminal_rejection(deployment, raise(home, 4, 3, 3), FIXTURE_START + 90);
     assert_eq!(
         super::play_fixture::rejection(ref rejected, deployment.games).reason, "realm cannot pay to raise troops",
     );
@@ -74,7 +74,7 @@ fn raising_troops_pays_two_wheat_each_from_settled_wheat_and_fails_when_the_real
         IStructureOperationsDispatcher { contract_address: deployment.games }.home_armies(home).len(), starting + 1,
     );
 
-    assert!(execute(deployment, raise(home, 4, 1, 3), FIXTURE_START + 140));
+    assert!(execute(deployment, raise(home, 4, 3, 3), FIXTURE_START + 140));
     assert_eq!(stored(deployment, home, KNIGHT), 12 * RESOURCE_PRECISION);
     assert_eq!(stored(deployment, home, WHEAT), 100 * wheat - 16 * RESOURCE_PRECISION);
 }
@@ -98,9 +98,9 @@ fn each_muster_pays_the_wheat_price_for_its_troops() {
     allow_armies(deployment, home);
     store_exactly(deployment, home, KNIGHT, 20 * RESOURCE_PRECISION);
     store_exactly(deployment, home, WHEAT, 20 * RESOURCE_PRECISION);
-    assert!(execute(deployment, raise(home, 4, 0, 2), FIXTURE_START + 40));
+    assert!(execute(deployment, raise(home, 4, 2, 2), FIXTURE_START + 40));
     assert_eq!(stored(deployment, home, WHEAT), 12 * RESOURCE_PRECISION);
-    assert!(execute(deployment, raise(home, 4, 1, 3), FIXTURE_START + 40));
+    assert!(execute(deployment, raise(home, 4, 3, 3), FIXTURE_START + 40));
     assert_eq!(stored(deployment, home, WHEAT), 4 * RESOURCE_PRECISION);
 }
 
@@ -227,7 +227,7 @@ fn a_city_builds_lodges_and_deploys_their_scout_stock_at_two_wheat_each() {
                     category: 1,
                     tier: 0,
                     amount: 400 * RESOURCE_PRECISION,
-                    direction: EAST,
+                    direction: 2,
                 },
             ),
             FIXTURE_START + 40,
@@ -275,7 +275,7 @@ fn range_produces_deployable_crossbows_and_depot_prices_deployment_and_reinforce
                             category: 2,
                             tier: 0,
                             amount: 5 * RESOURCE_PRECISION,
-                            direction: EAST,
+                            direction: 2,
                         },
                     ),
                     FIXTURE_START + 100,

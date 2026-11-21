@@ -73,11 +73,11 @@ fn training_starts_only_later_armies_at_their_realms_tiers_and_full_at_their_log
     snforge_std::interact_with_state(
         d.games, || crate::logic::research::write(home, crate::research::RealmKnowledge { learned }),
     );
+    assert_eq!(read_progress(d, untrained), ArmyProgress { logistics: 0, oath_slots: 2, ..Default::default() });
     let trained = deploy(d, home, category, 2, super::registrar::day_start(d, game_id, 1) + 1);
     let progress = read_progress(d, trained);
     assert_eq!(progress.logistics, 1);
-    // Training changes no army already deployed.
-    assert_eq!(read_progress(d, untrained), ArmyProgress { logistics: 0, oath_slots: 2, ..Default::default() });
+    assert!(snforge_std::interact_with_state(d.games, || crate::logic::progression::read(untrained)).is_none());
     let troops = super::state::GameState { contract_address: d.games }.resolved_explorer(trained).unwrap().troops;
     assert_eq!(
         troops.stamina.inline().amount,
@@ -151,18 +151,16 @@ fn deployed_armies_keep_their_troops_oath_count_after_home_research_changes() {
                 d, game_id, super::building_commands::research(home, row, 0), FIXTURE_START + 1,
             ),
         );
-        let new = deploy(d, home, category, 2, super::registrar::day_start(d, game_id, 1) + 1);
-        assert_eq!(read_progress(d, new).oath_slots, 3);
-        assert_eq!(read_progress(d, old).oath_slots, 2);
-        assert_eq!(read_progress(d, new).logistics, 0);
         assert!(
             super::resource_commands::execute_in_game(
                 d, game_id, super::frontier_economy::reinforce(old.explorer_id, 2), FIXTURE_START + 1,
             ),
         );
         let troops = super::state::GameState { contract_address: d.games }.resolved_explorer(old).unwrap().troops;
-        assert_eq!(troops.count, 5 * crate::rules::RESOURCE_PRECISION);
+        assert_eq!(troops.count, 3 * crate::rules::RESOURCE_PRECISION);
         assert_eq!(read_progress(d, old).oath_slots, 2);
+        let new = deploy(d, home, category, 2, super::registrar::day_start(d, game_id, 1) + 1);
         assert_eq!(read_progress(d, new).oath_slots, 3);
+        assert_eq!(read_progress(d, new).logistics, 0);
     }
 }
