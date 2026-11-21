@@ -15,7 +15,7 @@ import {
 
 const player = { gameId: GAME_ID, actor: PLAYER_ACCOUNT, owner: PLAYER_ACCOUNT };
 
-function equalArmies(lastTarget: number | undefined, guardTroops = siteGuardTroops(1)) {
+function equalArmies(lastTarget: number | undefined, guardTroops = siteGuardTroops(1, 800)) {
   const timestamp = Math.floor(Date.now() / 1000);
   const bar = { amount: 120, settledAt: timestamp, day: TODAY };
   const facts = siteSnapshot(snapshot(bar, bar, null, [], null), {
@@ -70,7 +70,7 @@ it.each([0, -1, undefined])("plans an exact Deep opportunity independently of la
 });
 
 it.each([false, true])("uses held damage Oaths when planning a Deep alert, defending %s", (defending) => {
-  const { store, timestamp } = equalArmies(0, defending ? siteGuardTroops(1, 600) : siteGuardTroops(1));
+  const { store, timestamp } = equalArmies(0, defending ? siteGuardTroops(1, 600) : siteGuardTroops(1, 800));
   const army = [...store.inGame("ExplorerTroops", GAME_ID)].find(({ explorer_id }) =>
     defending ? explorer_id !== BigInt(ARMY) : explorer_id === BigInt(ARMY),
   )!;
