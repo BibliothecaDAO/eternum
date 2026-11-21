@@ -10,7 +10,7 @@ const paths = validationPaths();
 
 test("every concrete validation job runs through its workflow with the same selection", () => {
   expect(jobs.map((job) => job.id)).toContain("runtime/offline-tests/harness");
-  expect(jobs.filter((job) => job.id.startsWith("native/service-class-sizes/"))).toHaveLength(2);
+  expect(jobs.filter((job) => job.id.startsWith("native/service-class-sizes/"))).toHaveLength(1);
   expect(parityProblems(source, jobs, paths)).toEqual([]);
 });
 
