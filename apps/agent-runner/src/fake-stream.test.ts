@@ -9,7 +9,14 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { createOfflineStreamFn, resolveOfflineScout, type OfflineScout } from "./fake-stream";
 import { createRunManifest } from "./manifest";
-import { createFakeGame, PLAYER, seedExplorer, seedGameRegistry, seedStructure } from "./test-support/fake-game";
+import {
+  createFakeGame,
+  liveWindow,
+  PLAYER,
+  seedExplorer,
+  seedGameRegistry,
+  seedStructure,
+} from "./test-support/fake-game";
 import { installToolTape } from "./tool-tape";
 import { createRunnerTools } from "./tools";
 
@@ -29,7 +36,7 @@ type FakeGame = ReturnType<typeof createFakeGame>;
 
 /** A world with one explorer that can explore one hex; the planner and the move are stubbed like the tools tests. */
 const seedScoutingWorld = (game: FakeGame, owner: ContractAddress): void => {
-  seedGameRegistry(game.store, { status: "Live", startMainAt: 0, endAt: 0 });
+  seedGameRegistry(game.store, { status: "Live", ...liveWindow() });
   seedStructure(game.store, { entityId: 12, owner, x: 100, y: 100 });
   seedExplorer(game.store, { explorerId: 101, owner: 12, x: SCOUT_HEX.x, y: SCOUT_HEX.y });
   game.actions.armyPaths.mockImplementation(() => {

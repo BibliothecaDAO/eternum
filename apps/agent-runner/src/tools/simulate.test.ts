@@ -5,6 +5,7 @@ import {
   ContractAddress,
   deepSites,
   RESOURCE_PRECISION,
+  StructureType,
   TileOccupier,
 } from "@bibliothecadao/types";
 import { nativeTilePackingConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
@@ -54,7 +55,7 @@ it("fights a structure's highest occupied guard slot first, as the contract does
     battle_config: { ...rules.battle_config, regular_immunity_ticks: 0 },
     troop_stamina_config: { ...rules.troop_stamina_config, stamina_attack_req: 10, stamina_defense_req: 0 },
   });
-  seedStructure(game.store, { entityId: 12, owner: ContractAddress(0x999n), x: 100, y: 100 });
+  seedStructure(game.store, { entityId: 12, owner: ContractAddress(0n), x: 100, y: 100, category: StructureType.Camp });
   writeFact(game.store, "TileOpt", [28, 0, 100, 100], {
     game_id: 28,
     alt: false,
@@ -82,7 +83,7 @@ it("fights a structure's highest occupied guard slot first, as the contract does
   }
   const result = await createSimulateTool(game).execute("combat", { kind: "combat", attackerId: 101, defenderId: 12 });
   expect(result.content).toEqual([
-    { type: "text", text: expect.stringMatching(/ vs 100 Crossbowman T1 \(stamina \d+\) \(structure guard\)\n/) },
+    { type: "text", text: expect.stringMatching(/ vs 100 Crossbowman T1 \(stamina \d+\)\n/) },
   ]);
 });
 
@@ -140,7 +141,6 @@ it.each([4, 5, 6, 7, 8, 9])("reports the field or garrison survivors from Knight
       count: BigInt(count) * BigInt(RESOURCE_PRECISION),
       oaths,
     });
-    writeFact(game.store, "ArmyDay", [gameId, id], { game_id: gameId, explorer_id: id, day: 0 });
     const tick = BigInt(now) / BigInt(rules.tick_config.armies_tick_in_seconds);
     writeFact(game.store, "DeepArmy", [gameId, id], { game_id: gameId, explorer_id: id, last_tick: tick });
   }

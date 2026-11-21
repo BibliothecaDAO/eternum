@@ -236,6 +236,7 @@ export const seedExplorer = (
     oaths: input.oaths ?? 0,
     oath_pick: 0,
   });
+  writeFact(store, "ArmyDay", [GAME_ID, input.explorerId], { game_id: GAME_ID, explorer_id: input.explorerId, day: 0 });
   for (const [index, kind] of nativeFactModels.ArmyRelicEffect.fields.kind.enum.entries()) {
     writeFact(store, "ArmyRelicEffect", [GAME_ID, input.explorerId, index], {
       game_id: GAME_ID,
@@ -245,6 +246,11 @@ export const seedExplorer = (
       expires_at: 0,
     });
   }
+};
+
+export const liveWindow = (): { startMainAt: number; endAt: number } => {
+  const now = Math.floor(Date.now() / 1_000);
+  return { startMainAt: now - 1, endAt: now + 86_400 };
 };
 
 export const seedGameRegistry = (

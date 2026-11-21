@@ -3,7 +3,14 @@ import { ContractAddress, getNeighborHexes } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { isActionable, observeWorld, summariseDelta } from "./delta";
-import { createFakeGame, PLAYER, seedExplorer, seedGameRegistry, seedStructure } from "./test-support/fake-game";
+import {
+  createFakeGame,
+  liveWindow,
+  PLAYER,
+  seedExplorer,
+  seedGameRegistry,
+  seedStructure,
+} from "./test-support/fake-game";
 
 const RIVAL = ContractAddress(0xdefn);
 const HOME = { x: 100, y: 100 };
@@ -15,7 +22,7 @@ afterEach(() => {
 
 const settledGame = () => {
   const game = createFakeGame();
-  seedGameRegistry(game.store, { status: "Live", startMainAt: 0, endAt: 0 });
+  seedGameRegistry(game.store, { status: "Live", ...liveWindow() });
   seedStructure(game.store, { entityId: 12, owner: PLAYER, x: HOME.x, y: HOME.y });
   seedStructure(game.store, { entityId: 13, owner: RIVAL, x: FAR_AWAY.x, y: FAR_AWAY.y });
   const spawn = getNeighborHexes(HOME.x, HOME.y)[0]!;
@@ -86,7 +93,7 @@ describe("delta gate", () => {
     const game = settledGame();
     const before = observeWorld(game);
 
-    seedGameRegistry(game.store, { status: "Ended", startMainAt: 0, endAt: 0 });
+    seedGameRegistry(game.store, { status: "Ended", ...liveWindow() });
     const delta = summariseDelta(before, observeWorld(game));
 
     expect(delta.phase).toEqual({ from: "live", to: "ended" });

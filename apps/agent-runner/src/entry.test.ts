@@ -9,6 +9,7 @@ import {
   writeFact,
   seedExplorer,
   seedStructure,
+  liveWindow,
   seedGameRegistry,
 } from "./test-support/fake-game";
 
@@ -16,7 +17,7 @@ afterEach(() => ClientConfigManager.instance().setActiveGame(28));
 
 const settledGame = (provisioned: boolean, troops: bigint, hasExplorer: boolean) => {
   const game = createFakeGame();
-  seedGameRegistry(game.store, { status: "Live", startMainAt: 0, endAt: 1000 });
+  seedGameRegistry(game.store, { status: "Live", ...liveWindow() });
   seedStructure(game.store, { entityId: 12, owner: PLAYER, x: 100, y: 100 });
   writeFact(game.store, "PlayerEntry", [28, PLAYER], { game_id: 28, owner: PLAYER, player: PLAYER });
   const packed = setBuildingCount(BuildingType.ResourceLabor, [0n, 0n, 0n], provisioned ? 1 : 0);
