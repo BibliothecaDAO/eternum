@@ -146,7 +146,7 @@ test("a ledger RPC unreadable for ten minutes is announced once, without its add
   await check();
   expect(posts).toEqual([
     `${header}The box has not read the ledger RPC since 1970-01-01 00:16 UTC. A pause would go unseen, and the co-signer signs nothing it cannot check.`,
-    `${header}The ledger RPC reads again; it was unreadable from 1970-01-01 00:16 UTC.\n- ${paused}`,
+    `${header}${paused}\n- The ledger RPC reads again; it was unreadable from 1970-01-01 00:16 UTC.`,
   ]);
 });
 
