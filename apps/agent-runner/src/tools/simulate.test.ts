@@ -5,6 +5,7 @@ import {
   ContractAddress,
   deepSites,
   RESOURCE_PRECISION,
+  StructureType,
   TileOccupier,
 } from "@bibliothecadao/types";
 import { nativeTilePackingConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
@@ -54,7 +55,7 @@ it("fights a structure's highest occupied guard slot first, as the contract does
     battle_config: { ...rules.battle_config, regular_immunity_ticks: 0 },
     troop_stamina_config: { ...rules.troop_stamina_config, stamina_attack_req: 10, stamina_defense_req: 0 },
   });
-  seedStructure(game.store, { entityId: 12, owner: ContractAddress(0x999n), x: 100, y: 100 });
+  seedStructure(game.store, { entityId: 12, owner: ContractAddress(0n), x: 100, y: 100, category: StructureType.Camp });
   writeFact(game.store, "TileOpt", [28, 0, 100, 100], {
     game_id: 28,
     alt: false,

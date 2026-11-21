@@ -3,6 +3,7 @@ import {
   ActionType,
   ClientConfigManager,
   createGameActions,
+  structureMapPosition,
   type GameClient,
 } from "@bibliothecadao/eternum";
 import { ContractAddress, getNeighborHexes } from "@bibliothecadao/types";
@@ -61,9 +62,11 @@ describe("observe_game", () => {
     seedGameRegistry(game.store, { status: "Live", ...liveWindow() });
     seedStructure(game.store, { entityId: 12, owner: PLAYER, x: 100, y: 100 });
     seedStructure(game.store, { entityId: 13, owner: RIVAL, x: 102, y: 100 });
-    const homeHex = getNeighborHexes(100, 100)[0]!;
+    const site = structureMapPosition(game.store, game.store.require("Structure", { game_id: 28, entity_id: 12 }))!;
+    const homeHex = getNeighborHexes(site.x, site.y)[0]!;
+    const rivalHex = getNeighborHexes(homeHex.col, homeHex.row)[1]!;
     seedExplorer(game.store, { explorerId: 101, owner: 12, x: homeHex.col, y: homeHex.row });
-    seedExplorer(game.store, { explorerId: 201, owner: 13, x: 101, y: 101 });
+    seedExplorer(game.store, { explorerId: 201, owner: 13, x: rivalHex.col, y: rivalHex.row });
     game.events.push({ at: 0, models: ["StoryEvent"], summary: "{}" });
     const tool = createObserveTool(game);
 
@@ -74,12 +77,12 @@ describe("observe_game", () => {
       expect(text, focus).toContain('Game 28 "lab-game" | phase live');
     }
 
-    expect(renderFocus(game, "empire")).toContain("#12 Realm L1 at (100,100)");
+    expect(renderFocus(game, "empire")).toContain(`#12 Realm L1 at (${site.x},${site.y})`);
     expect(renderFocus(game, "empire")).not.toContain("#13");
     expect(renderFocus(game, "armies")).toContain("#101 (home #12): 10 Knight T1, stamina 20");
     expect(renderFocus(game, "armies")).toContain("at home");
-    expect(renderFocus(game, "nearby")).toContain("Explorer #101 at (101,100)");
-    expect(renderFocus(game, "nearby")).toContain("army #201 Knight T1 at (101,101)");
+    expect(renderFocus(game, "nearby")).toContain(`Explorer #101 at (${homeHex.col},${homeHex.row})`);
+    expect(renderFocus(game, "nearby")).toContain(`army #201 Knight T1 at (${rivalHex.col},${rivalHex.row})`);
     expect(renderFocus(game, "events")).toContain("StoryEvent");
   });
 
