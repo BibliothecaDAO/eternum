@@ -124,7 +124,6 @@ function createHeraldConfirmations() {
   };
 }
 
-/** A game launched moments ago reaches Herald's directory once its registry row is folded. */
 async function waitForHeraldToListGame(world: Shard, gameId: number): Promise<void> {
   const deadline = Date.now() + GAME_LISTING_TIMEOUT_MS;
   while (Date.now() <= deadline) {

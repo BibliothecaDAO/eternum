@@ -30,7 +30,6 @@ const GAME_OVERRIDES = new Set(["biome_climate_config", "map_center_offset"]);
 const SWITCHES = new Set(["command_mask", "mode_rules", "day_unit_seconds", "entry_rule"]);
 const RULE_SCALARS: Record<string, string> = { spire_travel_essence_cost: "u128" };
 
-/** The release's balance: one Cairo module per preset group, each a set of constant tables the classes read. */
 export function balanceModules(definition: PresetDefinition): Record<string, string> {
   assertPayWithinStage(definition.economy);
   return {
