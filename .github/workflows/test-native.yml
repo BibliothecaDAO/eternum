@@ -50,9 +50,13 @@ jobs:
         with:
           sparse-checkout: .github/actions
       - uses: ./.github/actions/checkout-without-media
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
       - uses: software-mansion/setup-scarb@v1
         with:
           tool-versions: .tool-versions
