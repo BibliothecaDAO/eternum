@@ -10,6 +10,10 @@ use game_ledger::deposits::{
     IDepositsDispatcherTrait, IDepositsSafeDispatcher, IDepositsSafeDispatcherTrait, LORDS_UNIT, commitment,
     principal_hash, resolution_hash,
 };
+use game_ledger::race::{
+    IRaceRewardsDispatcher, IRaceRewardsDispatcherTrait, IRaceRewardsSafeDispatcher, IRaceRewardsSafeDispatcherTrait,
+    RACE_CLAIM_WINDOW_SECONDS, race_pay_hash, race_post_hash,
+};
 use game_ledger::test_lords::{ITestLordsDispatcher, ITestLordsDispatcherTrait};
 use game_ledger::types::{ChestBandPreset, ChestOdds, GameKey, MmrParams, Preset, RankedPlayer, SlotKey};
 use openzeppelin::access::accesscontrol::interface::{IAccessControlDispatcher, IAccessControlDispatcherTrait};
@@ -3408,4 +3412,250 @@ fn unused_principal_returns_once_after_reward_close_without_expiry_or_treasury_r
     assert!(deposits.deposit_principal() == (100 * LORDS_UNIT, 0, 60 * LORDS_UNIT));
     let (r, s) = cosigner_key().sign(resolution_hash(COSIGN_CHAIN, fixture.ledger_address, 0, digest, true)).unwrap();
     assert!(safe.resolve_deposit('shard', id, true, r, s).is_err());
+}
+
+const RACE: u32 = 9;
+
+#[derive(Copy, Drop)]
+struct RaceFixture {
+    ledger: Fixture,
+    address: ContractAddress,
+    rewards: IRaceRewardsDispatcher,
+    safe: IRaceRewardsSafeDispatcher,
+}
+
+fn deploy_race() -> RaceFixture {
+    let ledger = deploy_ledger();
+    let mut constructor = array![];
+    ledger.ledger_address.serialize(ref constructor);
+    TREASURY().serialize(ref constructor);
+    let (address, _) = declare("RaceRewards").unwrap().contract_class().deploy(@constructor).unwrap();
+    snforge_std::start_cheat_chain_id(address, COSIGN_CHAIN);
+    RaceFixture {
+        ledger,
+        address,
+        rewards: IRaceRewardsDispatcher { contract_address: address },
+        safe: IRaceRewardsSafeDispatcher { contract_address: address },
+    }
+}
+
+fn race_caller(race: @RaceFixture, caller: ContractAddress) {
+    start_cheat_caller_address(*race.address, caller);
+    start_cheat_caller_address(*race.ledger.ledger_address, caller);
+}
+
+fn approve_race_funding(race: @RaceFixture, amount: u256) {
+    (*race.ledger.lords_minter).mint(ADMIN(), amount);
+    start_cheat_caller_address(*race.ledger.lords_address, ADMIN());
+    (*race.ledger.lords).approve(*race.address, amount);
+    stop_cheat_caller_address(*race.ledger.lords_address);
+}
+
+fn funded_race() -> RaceFixture {
+    let race = deploy_race();
+    approve_race_funding(@race, 1000);
+    race_caller(@race, ADMIN());
+    race.rewards.fund_race('shard', RACE, 1000);
+    race_caller(@race, OPERATOR());
+    start_cheat_block_timestamp(race.address, END);
+    race
+}
+
+fn race_post_signature(race: @RaceFixture, total: u256) -> (felt252, felt252) {
+    let (_, epoch) = (*race.ledger.ledger).cosigner();
+    cosigner_key().sign(race_post_hash(COSIGN_CHAIN, *race.address, epoch, 'shard', RACE, total)).unwrap()
+}
+
+fn race_pay_signature(race: @RaceFixture, home: u64, wallet: ContractAddress, amount: u256) -> (felt252, felt252) {
+    let (_, epoch) = (*race.ledger.ledger).cosigner();
+    cosigner_key().sign(race_pay_hash(COSIGN_CHAIN, *race.address, epoch, 'shard', RACE, home, wallet, amount)).unwrap()
+}
+
+fn post_race(race: @RaceFixture, total: u256) {
+    let (r, s) = race_post_signature(race, total);
+    (*race.rewards).post_race('shard', RACE, total, r, s);
+}
+
+fn pay_race(race: @RaceFixture, home: u64, wallet: ContractAddress, amount: u256) {
+    let (r, s) = race_pay_signature(race, home, wallet, amount);
+    (*race.rewards).pay_race('shard', RACE, home, wallet, amount, r, s);
+}
+
+fn lords_of(race: @RaceFixture, owner: ContractAddress) -> u256 {
+    (*race.ledger.lords).balance_of(owner)
+}
+
+#[test]
+fn a_race_pays_its_posted_amounts_and_returns_the_rest_to_the_treasury() {
+    let race = funded_race();
+    post_race(@race, 700);
+    pay_race(@race, 11, player(0), 400);
+    pay_race(@race, 12, player(1), 300);
+    race.rewards.close_race('shard', RACE);
+    assert!(lords_of(@race, player(0)) == 400 && lords_of(@race, player(1)) == 300);
+    assert!(lords_of(@race, TREASURY()) == 300 && lords_of(@race, race.address) == 0);
+    let season = race.rewards.get_race('shard', RACE);
+    assert!(season.pool == 1000 && season.total == 700 && season.paid == 700 && season.closed);
+    assert!(season.posted_at == END);
+    let reward = race.rewards.get_race_reward('shard', RACE, 11);
+    assert!(reward.wallet == player(0) && reward.amount == 400);
+    assert!(race.rewards.ledger() == race.ledger.ledger_address && race.rewards.treasury() == TREASURY());
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn a_race_is_funded_once_by_the_ledgers_admin() {
+    let race = funded_race();
+    approve_race_funding(@race, 10);
+    assert!(race.safe.fund_race('shard', RACE + 1, 10).is_err());
+    race_caller(@race, ADMIN());
+    assert!(race.safe.fund_race('shard', RACE, 10).is_err());
+    assert!(race.safe.fund_race(0, RACE + 1, 10).is_err());
+    assert!(race.safe.fund_race('shard', RACE + 1, 0).is_err());
+    assert!(race.rewards.get_race('shard', RACE).pool == 1000);
+    assert!(!race.rewards.get_race('shard', RACE + 1).funded);
+    assert!(lords_of(@race, race.address) == 1000);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn a_race_post_needs_funding_the_operator_and_the_cosigner_and_fits_the_pool() {
+    let race = funded_race();
+    let (r, s) = race_post_signature(@race, 700);
+    assert!(race.safe.post_race('shard', RACE + 1, 700, r, s).is_err());
+    assert!(race.safe.post_race('shard', RACE, 701, r, s).is_err());
+    let (over_r, over_s) = race_post_signature(@race, 1001);
+    assert!(race.safe.post_race('shard', RACE, 1001, over_r, over_s).is_err());
+    race_caller(@race, ADMIN());
+    assert!(race.safe.post_race('shard', RACE, 700, r, s).is_err());
+    assert!(!race.rewards.get_race('shard', RACE).posted);
+    race_caller(@race, OPERATOR());
+    race.rewards.post_race('shard', RACE, 700, r, s);
+    start_cheat_block_timestamp(race.address, END + 50);
+    race.rewards.post_race('shard', RACE, 700, r, s);
+    assert!(race.rewards.get_race('shard', RACE).posted_at == END);
+    let (other_r, other_s) = race_post_signature(@race, 600);
+    assert!(race.safe.post_race('shard', RACE, 600, other_r, other_s).is_err());
+    assert!(race.rewards.get_race('shard', RACE).total == 700);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn a_race_payment_follows_the_post_and_its_signed_home_wallet_and_amount() {
+    let race = funded_race();
+    let (r, s) = race_pay_signature(@race, 11, player(0), 400);
+    assert!(race.safe.pay_race('shard', RACE, 11, player(0), 400, r, s).is_err());
+    post_race(@race, 700);
+    assert!(race.safe.pay_race('shard', RACE, 12, player(0), 400, r, s).is_err());
+    assert!(race.safe.pay_race('shard', RACE, 11, player(1), 400, r, s).is_err());
+    assert!(race.safe.pay_race('shard', RACE, 11, player(0), 401, r, s).is_err());
+    race_caller(@race, ADMIN());
+    assert!(race.safe.pay_race('shard', RACE, 11, player(0), 400, r, s).is_err());
+    race_caller(@race, OPERATOR());
+    assert!(lords_of(@race, player(0)) == 0 && lords_of(@race, player(1)) == 0);
+    race.rewards.pay_race('shard', RACE, 11, player(0), 400, r, s);
+    assert!(lords_of(@race, player(0)) == 400);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn a_race_home_is_paid_once_and_the_posted_total_is_never_exceeded() {
+    let race = funded_race();
+    post_race(@race, 700);
+    pay_race(@race, 11, player(0), 400);
+    pay_race(@race, 11, player(0), 400);
+    assert!(lords_of(@race, player(0)) == 400);
+    let (r, s) = race_pay_signature(@race, 11, player(0), 100);
+    assert!(race.safe.pay_race('shard', RACE, 11, player(0), 100, r, s).is_err());
+    let (r, s) = race_pay_signature(@race, 11, player(1), 400);
+    assert!(race.safe.pay_race('shard', RACE, 11, player(1), 400, r, s).is_err());
+    let (r, s) = race_pay_signature(@race, 12, player(1), 301);
+    assert!(race.safe.pay_race('shard', RACE, 12, player(1), 301, r, s).is_err());
+    pay_race(@race, 12, player(1), 300);
+    assert!(race.rewards.get_race('shard', RACE).paid == 700);
+    assert!(lords_of(@race, race.address) == 300);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn a_race_with_unpaid_homes_closes_only_after_the_claim_window() {
+    let race = funded_race();
+    assert!(race.safe.close_race('shard', RACE).is_err());
+    post_race(@race, 700);
+    pay_race(@race, 11, player(0), 400);
+    start_cheat_block_timestamp(race.address, END + RACE_CLAIM_WINDOW_SECONDS - 1);
+    assert!(race.safe.close_race('shard', RACE).is_err());
+    pay_race(@race, 12, player(1), 100);
+    start_cheat_block_timestamp(race.address, END + RACE_CLAIM_WINDOW_SECONDS);
+    race_caller(@race, ADMIN());
+    assert!(race.safe.close_race('shard', RACE).is_err());
+    race_caller(@race, OPERATOR());
+    race.rewards.close_race('shard', RACE);
+    assert!(lords_of(@race, TREASURY()) == 500);
+    race.rewards.close_race('shard', RACE);
+    assert!(lords_of(@race, TREASURY()) == 500);
+    let (r, s) = race_pay_signature(@race, 13, player(2), 200);
+    assert!(race.safe.pay_race('shard', RACE, 13, player(2), 200, r, s).is_err());
+    assert!(lords_of(@race, player(2)) == 0);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn pausing_the_ledger_stops_a_race_and_unpausing_resumes_it() {
+    let race = funded_race();
+    let (post_r, post_s) = race_post_signature(@race, 700);
+    race_caller(@race, ADMIN());
+    race.ledger.ledger.pause();
+    race_caller(@race, OPERATOR());
+    assert!(race.safe.post_race('shard', RACE, 700, post_r, post_s).is_err());
+    race_caller(@race, ADMIN());
+    race.ledger.ledger.unpause();
+    race_caller(@race, OPERATOR());
+    race.rewards.post_race('shard', RACE, 700, post_r, post_s);
+    let (r, s) = race_pay_signature(@race, 11, player(0), 400);
+    race_caller(@race, ADMIN());
+    race.ledger.ledger.pause();
+    race_caller(@race, OPERATOR());
+    assert!(race.safe.pay_race('shard', RACE, 11, player(0), 400, r, s).is_err());
+    assert!(race.safe.close_race('shard', RACE).is_err());
+    assert!(lords_of(@race, race.address) == 1000);
+    race_caller(@race, ADMIN());
+    race.ledger.ledger.unpause();
+    race_caller(@race, OPERATOR());
+    race.rewards.pay_race('shard', RACE, 11, player(0), 400, r, s);
+    assert!(lords_of(@race, player(0)) == 400);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn rotating_the_ledgers_cosigner_voids_earlier_race_signatures() {
+    let race = funded_race();
+    let (post_r, post_s) = race_post_signature(@race, 700);
+    race_caller(@race, ADMIN());
+    race.ledger.ledger.set_cosigner(cosigner_key().public_key);
+    race_caller(@race, OPERATOR());
+    assert!(race.safe.post_race('shard', RACE, 700, post_r, post_s).is_err());
+    post_race(@race, 700);
+    assert!(race.rewards.get_race('shard', RACE).posted);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn only_the_ledgers_admin_upgrades_the_race_rewards_and_the_pool_stays() {
+    let race = funded_race();
+    let class_hash = get_class_hash(race.address);
+    assert!(race.safe.upgrade(class_hash).is_err());
+    race_caller(@race, ADMIN());
+    race.rewards.upgrade(class_hash);
+    assert!(race.rewards.get_race('shard', RACE).pool == 1000 && lords_of(@race, race.address) == 1000);
+}
+
+#[test]
+fn race_cosigning_matches_the_typescript_vectors() {
+    let post = race_post_hash(COSIGN_CHAIN, 0x123.try_into().unwrap(), 2, 0x456, 7, u256 { low: 17, high: 1 });
+    let pay = race_pay_hash(
+        COSIGN_CHAIN, 0x123.try_into().unwrap(), 2, 0x456, 7, 99, 0x789.try_into().unwrap(), u256 { low: 17, high: 1 },
+    );
+    assert!(post == 0x2ebe8455f4383ba73e746fbd44791199c7947a9ffc6b669cc5c54fe81bb1d5d);
+    assert!(pay == 0x83622bef47143aadf665cc91179038cd781cc9ebbea1ae741afc2e9bedb460);
 }

@@ -7,6 +7,7 @@ pub mod deposits;
 
 mod frontier_prizes;
 pub mod mmr;
+pub mod race;
 
 pub mod test_lords;
 
