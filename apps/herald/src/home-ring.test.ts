@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import releaseFile from "../../../contracts/l3/world-native/schema/release-definition.json";
 import { CairoCustomEnum } from "starknet";
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import { GameSubscription } from "./game-subscription";
@@ -437,12 +438,13 @@ describe("home ring", () => {
       .map(BigInt);
     expect(values.slice(0, 2)).toEqual([1n, 21n]);
     expect(values).toHaveLength(2 + 21 * 5);
+    const fixtureStart = Number(values[2]) - 50;
     const fixtureSeason = {
-      seed: 42n,
-      startMainAt: 240,
-      scheduledEndAt: 240 + 21 * 20 * 60,
-      endAt: 240 + 21 * 20 * 60,
-      dayUnitSeconds: 240,
+      seed: 1n,
+      startMainAt: fixtureStart,
+      scheduledEndAt: fixtureStart + 999_960,
+      endAt: fixtureStart + 999_960,
+      dayUnitSeconds: releaseFile.definition.rules.day_unit_seconds,
     };
     let dayStart = fixtureSeason.startMainAt;
     for (let day = 0; day < 3; day++) {
