@@ -59,7 +59,7 @@ const rulesSnapshot = {
   epoch: "epoch-a",
   seq: 0,
   model: "SliceRules",
-  rows: [{ key: hash.computePoseidonHashOnElements([54]), value: { ...release.definition.rules, game_id: 54 } }],
+  rows: [{ key: hash.computePoseidonHashOnElements([54]), value: { ...release.definition.rules, game_id: 54, day_unit_seconds: 0 } }],
 };
 const releaseSnapshot = {
   type: "snapshot",

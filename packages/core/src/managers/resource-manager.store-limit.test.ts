@@ -29,7 +29,7 @@ const boardRealm = (wheat: bigint) => {
   const store = new NativeFactStore();
   store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 100 });
   store.applyFacts([
-    ...upsert("0x1", { SliceRules: { ...release.definition.rules, game_id: 1, mode_rules: 0 } }),
+    ...upsert("0x1", { SliceRules: { ...release.definition.rules, game_id: 1, mode_rules: 0, day_unit_seconds: 0 } }),
     ...upsert("0x2", {
       BoardRules: {
         game_id: 1,
@@ -94,6 +94,7 @@ describe("a board realm's store limits", () => {
           ...release.definition.rules,
           game_id: 1,
           mode_rules: 0,
+          day_unit_seconds: 0,
           troop_limit_config: {
             ...release.definition.rules.troop_limit_config,
             settlement_deployment_cap: 3000,

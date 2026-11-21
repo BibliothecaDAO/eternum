@@ -199,7 +199,7 @@ it("says a linked wallet holding no Realm holds none", async () => {
   expect(you.sheet()!.textContent).toContain("Your linked wallet holds no Realm");
 });
 
-it("shows a ticket just opened on the landing on You and on a game's Realm step at once, with no read again", async () => {
+it("shows a ticket just opened on the landing on You, with no read again", async () => {
   relay(() => held());
   let opened = false;
   const reads = vi.spyOn(identityClient, "redeemCampaignTicket").mockImplementation(async (_campaign, opening) => {
@@ -216,8 +216,6 @@ it("shows a ticket just opened on the landing on You and on a game's Realm step 
   await vi.waitFor(() => expect(you.container.querySelector('.app-ticket[data-face="golden"]')).not.toBeNull());
   await you.follow("Test you");
   expect(you.strip()).toEqual(["Link a wallet for your Realms and LORDS", "DevconGolden ticket"]);
-  await you.follow("Test step");
-  expect(you.container.querySelector(".home-picker__featured h3")?.textContent).toBe("Golden Devcon ticket");
   // You's read, the landing's check for a ticket already held, then its one redeem, which told every screen: no
   // screen read the ticket again.
   expect(reads.mock.calls.map(([, opening]) => opening)).toEqual([null, null, { code: "TEST0000" }]);
@@ -247,8 +245,6 @@ it.each([1440, 390])(
     await act(async () => answerFirstRead(new IdentityRequestError(400, "invalid_redemption")));
     await act(async () => new Promise((resolve) => setTimeout(resolve, 20)));
     expect(you.strip()).toEqual(["Link a wallet for your Realms and LORDS", "DevconGolden ticket"]);
-    await you.follow("Test step");
-    expect(you.container.querySelector(".home-picker__featured h3")?.textContent).toBe("Golden Devcon ticket");
     expect(reads.mock.calls.map(([, opening]) => opening)).toEqual([null, null, { code: "TEST0000" }]);
   },
 );

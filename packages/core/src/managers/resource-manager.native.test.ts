@@ -8,7 +8,7 @@ import { ResourceManager } from "./resource-manager";
 import type { GameSyncFact } from "../sync/game-sync-types";
 import { ResourcesIds } from "@bibliothecadao/types";
 
-const rules = release.definition.rules;
+const rules = { ...release.definition.rules, day_unit_seconds: 0 };
 const upsert = (key: string, models: Record<string, Record<string, unknown>>): GameSyncFact[] =>
   Object.entries(models).map(([model, value]) => ({ model, key, value }));
 const weight = (game = 1) => ({ game_id: game, entity_id: 7, capacity: 1000n, weight: 0n });
