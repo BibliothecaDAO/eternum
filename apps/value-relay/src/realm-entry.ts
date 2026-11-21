@@ -2,7 +2,6 @@ import { nativeIdentifiers, nativeReleaseConstants } from "../../../contracts/l3
 import { Schema } from "effect";
 import type { HeldRealm, HeldRealmsAnswer } from "@realms-world/identity";
 import { ShardOperator, type ShardTarget } from "@realms-world/value-ledger/shard";
-import { shortString } from "starknet";
 import { ShardReader, sameFelt, type ShardConnection } from "./shard-rpc";
 import { readConfirmedSnapshot, singleRow, type ConfirmedSnapshot } from "./shard-snapshot";
 import { playerRequest, readPlayerBody, PlayerRequestError, type PlayerIdentity } from "./player-request";
@@ -14,19 +13,12 @@ const RealmEntryRequest = Schema.Struct({
 export interface RealmEntryClaim {
   chainId: string;
   gameId: number;
-  /** The held Realm the player names; null registers the campaign ticket identity holds for them, if any. */
   realmId: number | null;
   realmsId: string;
   account: string;
-  /** Set only by the authenticated flyer-recovery route, never from a player request. */
-  recoverFlyer?: true;
-  /** Set only by the authenticated campaign-upgrade route after identity awards a golden ticket. */
-  upgradeCampaign?: true;
   sealOnly?: true;
 }
-/** The source a Frontier home claims from: a held Realm, a campaign's ticket, or none (a free home). */
-export type HomeSource = { realmId: number } | { campaign: string; tier: TicketTier } | Record<string, never>;
-type TicketTier = "regular" | "golden";
+export type HomeSource = { realmId: number } | Record<string, never>;
 interface RealmEntryRoute extends PlayerIdentity {
   chainId: string;
   register(claim: RealmEntryClaim): Promise<HomeSource>;
@@ -73,117 +65,22 @@ interface RealmEntryTarget {
     accountForRealmsId(id: string): Promise<string | null>;
     linkedWallet(id: string): Promise<string | null>;
     holdsRealm(wallet: string, realmId: number): Promise<boolean>;
-    campaignTicket(realmsId: string, presetId: number): Promise<{ campaign: string; tier: TicketTier } | null>;
     holdsSeal(realmsId: string): Promise<boolean>;
   };
 }
 type Entitlement = { realm_id: bigint; metadata_1: bigint; metadata_2: bigint; metadata_3: bigint; pass_kind: bigint };
 
-/** The entitlement kinds and campaign tiers as the contract reads them (settlement.cairo). */
 const HELD_REALM_KIND = 2;
-const CAMPAIGN_KIND = 3;
-const CAMPAIGN_TIERS: Record<TicketTier, number> = { regular: 1, golden: 2 };
 
-/**
- * A Frontier home's source: the held Realm the
- * player names (ownership proved here), else the campaign ticket identity holds for this game's preset, else none.
- * An exact retry answers the registered source without another write. Only an attested Devcon golden upgrade changes tier.
- */
 export async function registerHomeSource(target: RealmEntryTarget, claim: RealmEntryClaim): Promise<HomeSource> {
   const entry = await openEntry(target, claim);
   await grantHeldSeal(target, claim, entry);
   if (claim.sealOnly) return {};
   const previous = readEntitlement(entry.snapshot, claim.account);
-  if (claim.upgradeCampaign) return upgradeCampaignHome(target, claim, entry, previous);
   const { realmId } = claim;
   if (realmId !== null)
     return previous ? matchingEntry(previous, realmId) : registerHeldRealm(target, { ...claim, realmId }, entry);
-  if (previous && !claim.recoverFlyer) return sourceOf(previous);
-  const presetId = Number(singleRow(entry.snapshot, "GameRegistry").preset_id);
-  const ticket = await target.identity.campaignTicket(claim.realmsId, presetId);
-  if (!ticket) {
-    if (claim.recoverFlyer) throw new PlayerRequestError(409, "recovery_ticket_missing");
-    return {};
-  }
-  const entitlement = campaignEntitlement(ticket, claim.recoverFlyer === true);
-  if (claim.recoverFlyer && recoveredEntry(entry, claim, ticket.campaign, entitlement, previous))
-    return sourceOf(previous!);
-  return writeEntry(entry, claim, entitlement);
-}
-
-async function upgradeCampaignHome(
-  target: RealmEntryTarget,
-  claim: RealmEntryClaim,
-  entry: OpenEntry,
-  previous: Entitlement | undefined,
-): Promise<HomeSource> {
-  if (Number(singleRow(entry.snapshot, "GameRelease").release_id) < 8)
-    throw new PlayerRequestError(409, "upgrade_requires_release_8");
-  const presetId = Number(singleRow(entry.snapshot, "GameRegistry").preset_id);
-  const ticket = await target.identity.campaignTicket(claim.realmsId, presetId);
-  if (ticket?.campaign !== "devcon-2026" || ticket.tier !== "golden")
-    throw new PlayerRequestError(409, "upgrade_ticket_missing");
-  if (claim.realmId !== null || claim.recoverFlyer || !hasEntered(entry.snapshot, claim.account) || !previous)
-    throw new PlayerRequestError(409, "upgrade_requires_founded_devcon_home");
-  if (!isDevconUpgradeSource(previous)) throw new PlayerRequestError(409, "conflicting_entry_entitlement");
-  requireOwnedCampaignHome(entry.snapshot, claim.account, previous);
-  if (previous.metadata_2 === BigInt(CAMPAIGN_TIERS.golden)) return sourceOf(previous);
-  return writeEntry(entry, claim, {
-    ...campaignEntitlement(ticket, false),
-    metadata_3: shortString.encodeShortString("devcon-upgrade"),
-  });
-}
-
-function isDevconUpgradeSource(previous: Entitlement): boolean {
-  const recovery = BigInt(shortString.encodeShortString("devcon-recovery"));
-  const upgrade = BigInt(shortString.encodeShortString("devcon-upgrade"));
-  return (
-    previous.pass_kind === BigInt(CAMPAIGN_KIND) &&
-    previous.realm_id === 0n &&
-    previous.metadata_1 === BigInt(shortString.encodeShortString("devcon-2026")) &&
-    Object.values(CAMPAIGN_TIERS).map(BigInt).includes(previous.metadata_2) &&
-    [0n, recovery, upgrade].includes(previous.metadata_3) &&
-    !(previous.metadata_2 === BigInt(CAMPAIGN_TIERS.regular) && previous.metadata_3 === upgrade)
-  );
-}
-
-function requireOwnedCampaignHome(snapshot: ConfirmedSnapshot, account: string, entitlement: Entitlement) {
-  const structures = snapshot.models.find((model) => model.model === "Structure")!.rows;
-  const homes = snapshot.models
-    .find((model) => model.model === "CampaignHome")!
-    .rows.filter(({ value }) =>
-      structures.some(
-        ({ value: structure }) =>
-          sameFelt(String(structure.entity_id), String(value.home)) && sameFelt(String(structure.owner), account),
-      ),
-    );
-  if (
-    homes.length !== 1 ||
-    BigInt(String(homes[0]!.value.campaign_id)) !== entitlement.metadata_1 ||
-    BigInt(String(homes[0]!.value.tier)) !== entitlement.metadata_2
-  )
-    throw new PlayerRequestError(409, "upgrade_requires_founded_devcon_home");
-}
-
-/** Recovery can finish after the player attached the drawn ticket, but cannot replace their source. */
-function recoveredEntry(
-  entry: OpenEntry,
-  claim: RealmEntryClaim,
-  campaign: string,
-  entitlement: ReturnType<typeof campaignEntitlement>,
-  previous: Entitlement | undefined,
-): boolean {
-  if (campaign !== "devcon-2026" || !hasEntered(entry.snapshot, claim.account))
-    throw new PlayerRequestError(409, "recovery_requires_founded_devcon_home");
-  if (!previous) return false;
-  if (
-    previous.pass_kind !== BigInt(CAMPAIGN_KIND) ||
-    previous.metadata_1 !== BigInt(entitlement.metadata_1) ||
-    previous.metadata_2 !== BigInt(entitlement.metadata_2) ||
-    previous.metadata_3 === BigInt(shortString.encodeShortString("devcon-upgrade"))
-  )
-    throw new PlayerRequestError(409, "conflicting_entry_entitlement");
-  return previous.metadata_3 === BigInt(entitlement.metadata_3);
+  return previous ? sourceOf(previous) : {};
 }
 
 /** The game open for settling, the account the session's, and the operator that reads and writes its entitlement. */
@@ -195,11 +92,9 @@ async function openEntry(target: RealmEntryTarget, claim: RealmEntryClaim) {
     "GameRegistry",
     "SliceRules",
     "GameRelease",
-    "PlayerEntry",
     "EntryEntitlement",
     "SettledRealm",
     "Seal",
-    ...(claim.upgradeCampaign ? ["CampaignHome", "Structure"] : []),
   ]);
   await requireOpenFrontier(target.connection, snapshot);
   const operator = new ShardOperator({
@@ -244,14 +139,6 @@ async function registerHeldRealm(
   return writeEntry(entry, claim, held);
 }
 
-const campaignEntitlement = (ticket: { campaign: string; tier: TicketTier }, recoverFlyer: boolean) => ({
-  realm_id: 0,
-  metadata_1: shortString.encodeShortString(ticket.campaign),
-  metadata_2: CAMPAIGN_TIERS[ticket.tier],
-  metadata_3: recoverFlyer ? shortString.encodeShortString("devcon-recovery") : 0,
-  pass_kind: CAMPAIGN_KIND,
-});
-
 async function writeEntry(
   entry: OpenEntry,
   claim: RealmEntryClaim,
@@ -288,11 +175,6 @@ function readEntitlement(snapshot: ConfirmedSnapshot, account: string): Entitlem
       }
     : undefined;
 }
-
-const hasEntered = (snapshot: ConfirmedSnapshot, account: string) =>
-  snapshot.models
-    .find((model) => model.model === "PlayerEntry")!
-    .rows.some(({ value }) => sameFelt(String(value.player), account));
 
 async function requireOpenFrontier(connection: ShardConnection, snapshot: ConfirmedSnapshot) {
   const game = singleRow(snapshot, "GameRegistry");
@@ -337,10 +219,5 @@ function matchingEntry(entry: Entitlement, realmId: number): HomeSource {
 /** The source a registered entitlement names. */
 function sourceOf(entry: Entitlement): HomeSource {
   if (BigInt(entry.pass_kind) === BigInt(HELD_REALM_KIND)) return { realmId: Number(entry.realm_id) };
-  if (BigInt(entry.pass_kind) === BigInt(CAMPAIGN_KIND))
-    return {
-      campaign: shortString.decodeShortString(`0x${BigInt(entry.metadata_1).toString(16)}`),
-      tier: BigInt(entry.metadata_2) === BigInt(CAMPAIGN_TIERS.golden) ? "golden" : "regular",
-    };
   throw new PlayerRequestError(409, "conflicting_entry_entitlement");
 }

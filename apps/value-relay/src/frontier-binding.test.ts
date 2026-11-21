@@ -59,7 +59,6 @@ beforeEach(() => {
                 key: "7",
                 value: {
                   game_id: 7,
-                  preset_id: 6,
                   start_main_at: game[6],
                   scheduled_end_at: game[7],
                   end_at: game[7],
@@ -174,7 +173,6 @@ it("keeps a funding mismatch unavailable when the snapshot pool differs", async 
                 key: "7",
                 value: {
                   game_id: 7,
-                  preset_id: 6,
                   start_main_at: 10,
                   scheduled_end_at: 110,
                   end_at: 110,

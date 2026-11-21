@@ -42,4 +42,7 @@ const GAME_FAMILIES = {
   blitz: nativeIdentifiers.family.BLITZ,
 } satisfies Record<GameType, number>;
 
+export const isGameType = (mode: unknown): mode is GameType =>
+  typeof mode === "string" && Object.hasOwn(GAME_FAMILIES, mode);
+
 export const nativeFamilyOf = (presetId: number): number => GAME_FAMILIES[nativeGameModeOf(presetId)];

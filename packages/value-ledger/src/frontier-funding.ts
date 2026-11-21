@@ -4,7 +4,6 @@ import { decodeFrontierSeason, decodeLedgerPreset, readConfirmedLedgerHead } fro
 
 /** Immutable confirmed GameRegistry, ChestRules and SliceRules facts. */
 export interface FrontierFundingTerms {
-  presetId: number;
   start: number;
   end: number;
   seed: string;
@@ -34,12 +33,7 @@ export async function readFrontierFunding(
   );
   const preset = decodeLedgerPreset(await read("get_preset", [String(season.presetId)]));
   assertFrontierPreset(preset, native);
-  if (
-    season.presetId !== native.presetId ||
-    season.start !== native.start ||
-    season.end !== native.end ||
-    BigInt(season.seed) !== BigInt(native.seed)
-  )
+  if (season.start !== native.start || season.end !== native.end || BigInt(season.seed) !== BigInt(native.seed))
     throw new Error("frontier_funding_differs_from_game");
   return { ...season, claimDeadline: season.end + preset.claimWindow, confirmedBlock: head };
 }
