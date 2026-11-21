@@ -274,7 +274,6 @@ it("draws Season ranks and depths outside streamed scope", async () => {
     deepest_depth: depth,
     level,
     order: rank,
-    campaign: null,
   });
   const board = {
     game_id: "1",
@@ -321,7 +320,6 @@ const openSeasonWith = async (prize: unknown) => {
     deepest_depth: 1,
     level: 1,
     order: rank,
-    campaign: null,
   });
   const board = { game_id: "1", mode: "frontier", entries: [entry("0xa01", 1, 9), entry("0xa02", 2, 0)], prize };
   vi.stubGlobal(
