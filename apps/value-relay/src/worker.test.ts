@@ -189,6 +189,11 @@ export default {fetch(){return new Response(null,{status:404})}};`,
     expect((await deliver("0x1", { ...page, origin: "https://elsewhere.test" })).status).toBe(403);
     expect((await deliver("0x1", { origin: page.origin })).status).toBe(401);
     expect((await deliver("one", page)).status).toBe(400);
+    const receipt = (query: string) =>
+      mf.dispatchFetch(`https://play.dev-realms.party/api/value/race-receipt?${query}`);
+    expect((await receipt("chainId=one&gameId=7")).status).toBe(400);
+    const unclosed = await receipt("chainId=0x1&gameId=7");
+    expect([unclosed.status, await unclosed.json()]).toEqual([404, { error: "race_not_closed" }]);
     const drawing = await ask("41", page);
     expect([drawing.status, await drawing.json()]).toEqual([200, { status: "drawing", blocksLeft: 6 }]);
   } finally {

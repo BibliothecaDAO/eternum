@@ -9,6 +9,7 @@ import {
   decodeCredits,
   decodeFrontierSeason,
   decodeRaceSeason,
+  decodeRaceReward,
   decodeLedgerPreset,
   decodeLedgerSlot,
   decodeMmrPreviews,
@@ -320,4 +321,10 @@ it("decodes a race season in the rewards class's field order", () => {
   expect(decodeRaceSeason(Array(10).fill("0"))).toMatchObject({ funded: false, posted: false, total: 0n });
   expect(() => decodeRaceSeason(posted.slice(1))).toThrow("invalid_race_season");
   expect(() => decodeRaceSeason(["2", ...posted.slice(1)])).toThrow("invalid_ledger_bool");
+});
+
+it("reads a home's race reward as unpaid until an amount is written", () => {
+  expect(decodeRaceReward(["0x789", "17", "1"])).toEqual({ wallet: "0x789", amount: 17n + (1n << 128n) });
+  expect(decodeRaceReward(["0x0", "0", "0"])).toBeNull();
+  expect(() => decodeRaceReward(["0x789", "17"])).toThrow("invalid_race_reward");
 });

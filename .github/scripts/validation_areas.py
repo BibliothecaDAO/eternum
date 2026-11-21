@@ -147,6 +147,8 @@ AREAS = {
         "contracts/l2/ledger/scripts/chest-preset.js",
         "contracts/l2/ledger/schema/**",
         "contracts/l2/ledger/src/contract.cairo",
+        "contracts/l2/ledger/src/race.cairo",
+        "contracts/l3/world-native/src/**",
         *NATIVE_FACT_SCHEMA,
         "contracts/l3/world-native/tests/fixtures/**",
         "contracts/common/addresses/**",
@@ -236,6 +238,7 @@ AREAS = {
         "contracts/l3/world-native/scripts/balance-modules.ts",
         "deploy/first/environments.json",
         "contracts/l2/ledger/schema/**",
+        "contracts/l2/ledger/src/race.cairo",
         "contracts/l2/ledger/scripts/chest-preset.js"
     ],
     "amm": [

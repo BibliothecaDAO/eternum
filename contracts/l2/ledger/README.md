@@ -176,6 +176,40 @@ at that position and pays its geometric preset share once. Pause blocks withdraw
 settlement, registrations, refunds, result settlement, chest finishes and season claims. Frontier funding, chest
 requests and challenges remain available. Settlement's input treasury transfer continues to its fixed address.
 
+## Race rewards
+
+`RaceRewards` (`src/race.cairo`) is a separate class that holds one race's LORDS apart from deposit custody. It
+configures nothing of its own: the operator role, the co-signer key and epoch, and the pause are read from the ledger,
+and its treasury is fixed at construction to the ledger's. The holder of the ledger's `DEFAULT_ADMIN_ROLE` funds it and
+may upgrade it in place, so a fix never moves a funded pool.
+
+The owner runs three steps from `contracts/l2/ledger/scripts`, each with `--addresses dev` or `--addresses production`.
+Without `--execute` a step reads the chain and prints the transaction it would send; with it, it sends that one
+transaction. A step already applied prints so and sends nothing.
+
+```sh
+pnpm race declare --addresses dev
+pnpm race deploy --addresses dev
+pnpm race fund --addresses dev --shard 0x… --game 7 --amount 500000
+pnpm race status --addresses dev --shard 0x… --game 7
+```
+
+- `declare` builds the class and declares it.
+- `deploy` refuses a ledger whose stored treasury differs from the address book's, deploys the class bound to that
+  ledger and treasury, and writes `raceRewards` into `contracts/common/addresses/<book>.json`. Commit that file and
+  redeploy the relay and the co-signer box from it: until then the relay skips races and the co-signer refuses race
+  signatures. If the step stops after its deployment printed the address, write that address into the book by hand
+  rather than deploying a second class.
+- `fund` approves and funds one race in a single transaction, once, in whole LORDS, from the ledger admin account.
+- `status` prints the race as the class answers it and, with `VALUE_RELAY_URL` set to the game's origin, the relay's
+  receipt of the rewards that were still unpaid when it closed (home, amount, reason).
+
+The relay sends everything after funding. Once Herald confirms a race's result it posts the total, pays each home's
+linked wallet, at most 20 homes a pass, and closes when every reward is paid. A home with no payout wallet is tried
+again every pass for seven days after the post; then the relay keeps the receipt and closes, and what is left goes to
+the treasury. An unfunded race is skipped on staging and reported as a fault on production. No script posts, pays or
+closes: the relay is the only sender, under the co-signer's recomputation.
+
 ## Package checks
 
 Run only these package checks for this ledger work; do not run the world suite:

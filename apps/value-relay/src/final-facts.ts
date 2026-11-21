@@ -79,6 +79,7 @@ export async function fundingAt(
 export const closedSeason = (chainId: string, gameId: number) => `closed:${BigInt(chainId)}:${gameId}`;
 /** A season is funded once; the shard's pool is kept as matching only once the funding block is final. */
 export const verifiedPool = (chainId: string, gameId: number) => `pool:${BigInt(chainId)}:${gameId}`;
+export const closedRace = (chainId: string, gameId: number) => `race-closed:${BigInt(chainId)}:${gameId}`;
 
 export const memoryFinalFacts = (): FinalFacts => {
   const known = new Map<string, FinalEvidence>();

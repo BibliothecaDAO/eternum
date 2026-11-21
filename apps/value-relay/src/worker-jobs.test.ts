@@ -3,6 +3,11 @@ vi.mock("./frontier-sweep", () => ({ sweepFrontierLords: sweep }));
 vi.mock("./frontier-prizes", () => ({ awardFrontierPrizes: vi.fn(async () => {}) }));
 const settleEnded = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock("./frontier-end", () => ({ settleEndedFrontierGames: settleEnded }));
+const races = vi.hoisted(() => vi.fn(async () => {}));
+vi.mock("./race-rewards", async (original) => ({
+  ...(await original<typeof import("./race-rewards")>()),
+  settleFinishedRaces: races,
+}));
 const pools = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock("./frontier-pools", () => ({ publishFrontierPools: pools }));
 const address = vi.hoisted(() => vi.fn(() => "0x10"));
@@ -644,6 +649,12 @@ it("continues a full confirmed page through its alarm and stops when caught up",
     expect.objectContaining({ chainId: "0x1", accountAddress: "0x5" }),
     undefined,
     expect.objectContaining({ address: "0x10" }),
+  );
+  expect(races).toHaveBeenCalledWith(
+    expect.objectContaining({ chainId: "0x1", accountAddress: "0x5" }),
+    undefined,
+    expect.objectContaining({ has: expect.any(Function), mark: expect.any(Function) }),
+    expect.any(Function),
   );
   await relay.alarm();
   expect(shard.page).toHaveBeenLastCalledWith(0, 0, "cursor");

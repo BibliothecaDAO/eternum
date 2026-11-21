@@ -5,6 +5,8 @@ export {
   ledgerU256,
   decodeFrontierSeason,
   decodeRaceSeason,
+  decodeRaceReward,
+  RACE_CLAIM_WINDOW_SECONDS,
   decodeWithdrawalPayment,
   decodeChest,
   chestDrawBlocksLeft,

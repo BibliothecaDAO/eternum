@@ -25,7 +25,7 @@ import {
 import { processSeasonTops } from "./season-tops";
 import { seasonLedgerReads, postSeasonTop } from "./season-ledger";
 import { ledgerBatches } from "./ledger-batches";
-import { isLedgerReadTick } from "@realms-world/chain";
+import { isLedgerReadTick, valuePlaneAddress } from "@realms-world/chain";
 import { beginCause, causeDue, completeCause, raiseCause, retryCause } from "./ledger-cause";
 import { onIdentityChain } from "./ledger-chain";
 import { refundSlotOnLedger } from "./blitz-launch";
@@ -35,6 +35,7 @@ import { awardFrontierPrizes } from "./frontier-prizes";
 import { settleEndedFrontierGames } from "./frontier-end";
 import { sweepFrontierLords, type FrontierSettlement, type PrincipalSweep } from "./frontier-sweep";
 import { settleFrontier } from "./frontier-settlement";
+import { raceReceiptKey, settleFinishedRaces, settleRace, type RaceReceipt, type RaceSettlement } from "./race-rewards";
 import { frontierReceiptBindings } from "./frontier-binding";
 import { durableFinalFacts } from "./final-facts";
 import { shardWithdrawalPorts } from "./shard-withdrawals";
@@ -415,33 +416,42 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       obligations: this.ctx.storage,
       proofs,
     };
+    const jobs = [
+      ...[publishFrontierPools, settleEndedFrontierGames, awardFrontierPrizes].map(
+        (publish) => () => publish(target, shard.url, ledger),
+      ),
+      () =>
+        sweepFrontierLords(
+          target,
+          shard.url,
+          ledger,
+          (settlement) => ledgerOf(this.env).settleFrontier(settlement),
+          (claim) => this.payPrincipal(claim),
+        ),
+      () =>
+        settleFinishedRaces(target, shard.url, ledger.finals, (settlement) =>
+          ledgerOf(this.env).settleRace(settlement),
+        ),
+    ];
     let unavailable: unknown;
-    for (const publish of [publishFrontierPools, settleEndedFrontierGames, awardFrontierPrizes]) {
+    for (const job of jobs) {
       try {
-        await publish(target, shard.url, ledger);
+        await job();
       } catch (error) {
         unavailable ??= error;
       }
-    }
-    try {
-      await sweepFrontierLords(
-        target,
-        shard.url,
-        ledger,
-        (settlement) => ledgerOf(this.env).settleFrontier(settlement),
-        (claim) => this.payPrincipal(claim),
-      );
-    } catch (error) {
-      unavailable ??= error;
     }
     if (unavailable) throw unavailable;
   }
   /** Identity answers for free: a principal whose player has no wallet is not read on the ledger. */
   private async principalWallet(account: string) {
-    const realmsId = await this.env.IDENTITY.realmsIdForAccount(account);
-    const wallet = realmsId ? await this.env.IDENTITY.linkedWallet(realmsId) : null;
+    const wallet = await this.linkedWalletOf(account);
     if (!wallet) throw new Error("principal_wallet_unavailable");
     return wallet;
+  }
+  private async linkedWalletOf(account: string) {
+    const realmsId = await this.env.IDENTITY.realmsIdForAccount(account);
+    return realmsId ? this.env.IDENTITY.linkedWallet(realmsId) : null;
   }
   /**
    * Identity answers for free, so a principal never tried and with no linked wallet costs the ledger nothing. Once a
@@ -476,6 +486,23 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       ),
     );
     await this.ledgerWritten();
+  }
+  async settleRace(settlement: RaceSettlement) {
+    return Effect.runPromise(
+      this.ledgerPermit(
+        relayOperation("settle race rewards", () =>
+          settleRace(raceLedgerOf(this.env), settlement, {
+            cosigner: cosignerClient(this.env.COSIGNER_URL, this.env.COSIGNER_TOKEN),
+            payoutWallet: (owner) => this.linkedWalletOf(owner),
+            keepReceipt: (receipt) => this.ctx.storage.put(raceReceiptKey(receipt.chainId, receipt.gameId), receipt),
+          }),
+        ),
+        [settlement.chainId],
+      ),
+    );
+  }
+  async raceReceipt(chainId: string, gameId: number) {
+    return (await this.ctx.storage.get<RaceReceipt>(raceReceiptKey(chainId, gameId))) ?? null;
   }
   async alarm() {
     await this.tick();
@@ -713,6 +740,14 @@ const ledgerCredentialsOf = (env: RelayEnv) => ({
   privateKey: env.LEDGER_OPERATOR_PRIVATE_KEY,
 });
 
+const raceLedgerOf = (env: RelayEnv) => ({
+  rpcUrl: env.L2_RPC_URL,
+  rewardsAddress: ledgerOrNull(() => valuePlaneAddress("raceRewards", env.ENVIRONMENT)),
+  accountAddress: env.LEDGER_OPERATOR_ADDRESS,
+  privateKey: env.LEDGER_OPERATOR_PRIVATE_KEY,
+  unfundedIsFault: env.ENVIRONMENT === "production",
+});
+
 const chestPortsOf = (env: RelayEnv, permit: LedgerPermit) => ({
   ...chestLedgerReads({ rpcUrl: env.L2_RPC_URL, ...ledgerContractOf(env.ENVIRONMENT) }),
   finish: (tokenId: string) => permit(finishChestOnLedger(ledgerCredentialsOf(env), tokenId)),
@@ -847,6 +882,8 @@ export default {
       }
     }
 
+    if (new URL(request.url).pathname === "/api/value/race-receipt" && request.method === "GET")
+      return raceReceiptResponse(new URL(request.url).searchParams, env);
     if (new URL(request.url).pathname === "/api/value/chests/finish" && request.method === "POST")
       return finishChestResponse(request, env);
 
@@ -927,6 +964,16 @@ const finishChestResponse = async (request: Request, env: RelayEnv) => {
     console.error("chest_finish_unavailable", { tokenId });
     return Response.json({ error: "chest_finish_unavailable" }, { status: 503 });
   }
+};
+
+const raceReceiptResponse = async (query: URLSearchParams, env: RelayEnv) => {
+  const chain = query.get("chainId");
+  const game = Number(query.get("gameId"));
+  if (!chain || !/^0x[0-9a-f]+$/i.test(chain) || !Number.isSafeInteger(game) || game <= 0)
+    return Response.json({ error: "invalid_race" }, { status: 400 });
+  const receipt = await ledgerOf(env).raceReceipt(chain, game);
+  if (!receipt) return Response.json({ error: "race_not_closed" }, { status: 404 });
+  return Response.json(receipt, { headers: { "cache-control": "no-store" } });
 };
 
 /** POST /api/value/deposits/deliver?chainId=0x…, from a signed-in player's page on our origin once its deposit landed. */

@@ -62,6 +62,16 @@ it("requests only exact payment and settlement terms from the independent host",
     },
   ]);
 });
+it("asks for a race's total and one home's reward under their own kinds", async () => {
+  const network = vi.fn<typeof fetch>(async () => Response.json({ r: "0x12", s: "0x34" }));
+  const client = cosignerClient("https://cosigner.test", "token", network);
+  await client.postRace({ shard: "0x1", season: 7, total: "30" });
+  await client.payRace({ shard: "0x1", season: 7, home: "5", wallet: "0xb", amount: "10" });
+  expect(network.mock.calls.map(([, options]) => JSON.parse(String(options?.body)))).toEqual([
+    { kind: "race-post", shard: "0x1", season: 7, total: "30" },
+    { kind: "race-pay", shard: "0x1", season: 7, home: "5", wallet: "0xb", amount: "10" },
+  ]);
+});
 it.each([
   new Response(null, { status: 503 }),
   Response.json({ r: "0", s: "1" }),

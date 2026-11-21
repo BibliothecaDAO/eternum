@@ -10,4 +10,5 @@ export PATH="$(dirname -- "$ledger_scarb"):$PATH"
 node ../../utils/check-class-sizes.mjs target/dev game_ledger GameLedger RaceRewards RealmsCollectible
 # Regenerate after an intentional ABI change with: node generate-abi.mjs
 node generate-abi.mjs --check
+node --test scripts/commands/race/race-plan.test.js
 "${LEDGER_SNFORGE:-snforge}" test
