@@ -65,7 +65,11 @@ describe("battle lab exchange", () => {
       ok: true,
       attackerStamina: 190,
     });
-    expect(simulate({ ...army, stamina: 200 }, army)).toMatchObject({ ok: true, attackerStamina: 110 });
+    expect(simulate({ ...army, stamina: 200 }, army)).toMatchObject({
+      ok: true,
+      attackerStamina: rules.stamina.stamina_knight_max - rules.stamina.stamina_attack_req,
+    });
+    expect(rules.stamina.stamina_knight_max).toBe(180);
   });
 
   it("keeps Scouts at three quarters damage", () => {

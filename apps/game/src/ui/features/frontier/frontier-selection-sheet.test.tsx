@@ -324,7 +324,7 @@ it("the map's actual transfer selection shows the survivor before the player con
         "Army 1 loses its Logistics, Oath slots and held Oaths.",
       );
       expect(host.querySelector("s")).toBeNull();
-      expect(host.textContent).toContain("100/120→7");
+      expect(host.textContent).toContain("100/180→7");
     };
     expectMergePreview();
     expect(swap).not.toHaveBeenCalled();

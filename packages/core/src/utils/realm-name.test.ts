@@ -94,7 +94,7 @@ describe("Realm identity", () => {
           }),
           gameId: async (name) => (name === "running" ? 1 : 2),
           gameRelease: async (game_id) => store.require("GameRelease", { game_id }).release_id,
-          game: async () => ({ settled: false, preset_id: 2n, family: 1n }),
+          game: async () => ({ settled: false, family: 1n }),
           applyRelease,
         },
         { releases: releaseLine(schema, [2, 3, 4]) },

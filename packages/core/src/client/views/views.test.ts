@@ -158,7 +158,6 @@ const seedFrontierRules = (store: NativeFactStore, input: { startMainAt: number;
       key: "0x102",
       value: gameRegistryRow({
         game_id: GAME_ID,
-        preset_id: 2,
         start_main_at: String(input.startMainAt),
         scheduled_end_at: "1000000",
         end_at: "1000000",

@@ -82,7 +82,6 @@ function frontier() {
     gameRegistryRow({
       game_id: GAME_ID,
       name: "0",
-      preset_id: 7,
       start_settling_at: "0",
       start_main_at: String(START),
       scheduled_end_at: String(START + DAY * 50),

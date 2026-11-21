@@ -106,6 +106,7 @@ const createHarness = (signer: AccountInterface | null) => {
     ...release.definition.rules,
     game_id: GAME_ID,
     map_center_offset: 2147483646,
+    day_unit_seconds: 0,
   });
   ClientConfigManager.instance().setStore(store);
   const systemCalls = {

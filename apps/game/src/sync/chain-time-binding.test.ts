@@ -87,6 +87,7 @@ it("keeps chain time where Herald's head put it while a realm's production waits
       ...release.definition.rules,
       game_id: 1,
       mode_rules: nativeRuleConstants.PRODUCTION_START,
+      day_unit_seconds: 0,
     }),
     fact(
       "0x2",
