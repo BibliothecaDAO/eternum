@@ -67,7 +67,6 @@ test("a launch interrupted while running is resumed, not queued twice", async ()
   expect(await store.list("madara.blitz")).toHaveLength(1);
 });
 
-/** The calendar uses Season 1's full race. */
 const season = (startsAt: string) => ({
   phase: "frontier" as const,
   startsAt,

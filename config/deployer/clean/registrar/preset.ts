@@ -177,7 +177,6 @@ export function buildCreateGameParams(config: Config, input: CreateGamePayloadIn
   return {
     name: shortString.encodeShortString(input.gameName),
     family: nativeFamilyOf(input.presetId),
-    preset_id: input.presetId,
     start_settling_at: startSettlingAt,
     start_main_at: input.startMainAt,
     duration_seconds: input.durationSeconds,

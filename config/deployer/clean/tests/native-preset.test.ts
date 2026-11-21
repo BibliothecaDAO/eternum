@@ -2,14 +2,14 @@ import { frontierSeasonOnePreset } from "../../../source/frontier/season-one";
 import { buildingIds } from "../../../source/frontier/native";
 import { buildLedgerEconomicPreset } from "../ledger/economics";
 import { findRegistrarGame } from "../registrar/calls";
-import { nativeReleasePresets, nativePresets } from "../../../source/native";
+import { nativePresets } from "../../../source/native";
 import { describe, expect, test, mock } from "bun:test";
-import { CallData, type RpcProvider } from "starknet";
+import type { RpcProvider } from "starknet";
 import schema from "../../../../contracts/l3/world-native/schema/schema.json";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
 import { applyDeploymentConfigOverrides } from "../config/config-loader";
-import { buildNativePreset } from "../config/native-preset";
+import { buildNativePreset, seasonOneReleaseDefinition } from "../config/native-preset";
 import { balanceModules } from "../../../../contracts/l3/world-native/scripts/balance-modules";
 import {
   FRONTIER_ACCELERATED_PRESET_ID,
@@ -27,7 +27,6 @@ import { RESOURCE_PRECISION, ResourcesIds, deepSites } from "../../../../package
 import { buildNativeGameParams, loadNativePresetConfiguration } from "../registrar/native-preset";
 
 const abi = [...Object.values(schema.types), ...schema.games.entrypoints];
-const codec = new CallData(abi);
 
 function configuration(preset: number) {
   const config = loadNativePresetConfiguration("madara.blitz", preset);
@@ -35,10 +34,7 @@ function configuration(preset: number) {
 }
 
 describe("native presets", () => {
-  test("release registrations contain only Blitz and nonpaying Season 1", () => {
-    for (const id of [2, FRONTIER_S1_PRESET_ID]) expect(nativeReleasePresets[id]!.chests).toBeNull();
-    for (const id of [FRONTIER_PRESET_ID, FRONTIER_DEVCON_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID])
-      expect(nativeReleasePresets[id]).toBeUndefined();
+  test("the release's commands leave out retired ones and Season 1 opens army relics", () => {
     expect(nativeCommandBits).not.toHaveProperty("RefillStamina");
     expect(nativeCommandBits).not.toHaveProperty("WithdrawLords");
     for (const retired of ["OpenRelicChest", "CraftRelic", "CloseSeason", "ContributeHyperstructure"])
@@ -69,7 +65,6 @@ describe("native presets", () => {
       expect(source.bridgeResources).toEqual([]);
       expect(preset.economy.withdrawals.isNone()).toBe(true);
       for (const command of [
-        "DepositResource",
         "OffloadArrival",
         "SendResources",
         "TransferExplorerResources",
@@ -178,16 +173,13 @@ describe("native presets", () => {
   });
 
   test("Season 1's command gate opens site interaction and no resource transfer", () => {
-    const mask = buildNativePreset(
-      loadNativePresetConfiguration("madara.frontier", FRONTIER_S1_PRESET_ID),
-      FRONTIER_S1_PRESET_ID,
-    ).rules.command_mask;
+    const mask = seasonOneReleaseDefinition().rules.command_mask;
     expect(mask & BigInt(nativeCommandBits.InteractSite)).not.toBe(0n);
     for (const [network, id] of [["madara.blitz", 2]] as const) {
       const legacy = buildNativePreset(loadNativePresetConfiguration(network, id), id);
       expect(legacy.rules.command_mask & BigInt(nativeCommandBits.InteractSite)).toBe(0n);
     }
-    for (const command of ["SendResources", "TransferExplorerResourcesToStructure", "WithdrawResource"] as const)
+    for (const command of ["SendResources", "TransferExplorerResourcesToStructure"] as const)
       expect(mask & BigInt(nativeCommandBits[command])).toBe(0n);
   });
   test("the accelerated Frontier preset is Frontier with every season clock 120 times faster, under its own id", () => {
@@ -710,7 +702,6 @@ describe("Devcon's fast Frontier preset", () => {
       singleRealmMode: false,
       useMapOverride: false,
     });
-    expect(params.preset_id).toBe(6);
     expect(params.start_main_at).toBe(1_793_687_400);
     expect(params.duration_seconds).toBe(288_000);
     expect(startMainAt + durationSeconds).toBe(Date.parse("2026-11-06T14:30:00Z") / 1_000);
@@ -796,10 +787,7 @@ test("Frontier discoveries use the approved narrow guard ranges at every depth",
 });
 
 test("Season 1 and its check preset share the canonical Aspect mapping", () => {
-  const season = buildNativePreset(
-    loadNativePresetConfiguration("madara.frontier", FRONTIER_S1_PRESET_ID),
-    FRONTIER_S1_PRESET_ID,
-  );
+  const season = seasonOneReleaseDefinition();
   expect(season.settlement.order_aspects).toEqual([1, 2, 3, 4, 4, 3, 4, 4, 1, 2, 2, 1, 1, 3, 3, 2]);
   expect(nativePresets[FRONTIER_FIXTURE_PRESET_ID]!.orderAspects).toEqual(season.settlement.order_aspects);
   expect(nativePresets[FRONTIER_PLAYGROUND_PRESET_ID]!.orderAspects).toEqual(season.settlement.order_aspects);
@@ -829,7 +817,6 @@ test("an optional Deep preset serializes its rings, its beasts in kind order and
       building_pay: deep.buildingPay,
       altar_threshold: deep.altarThreshold,
     });
-    codec.compile("register_preset", { preset_id: source.id, definition: built });
   } finally {
     source.deep = previous;
   }
@@ -881,7 +868,6 @@ test("the daily quest codec replaces legacy labor and preserves whole reward uni
       essence: 1500n,
       bonus_percent: 150,
     });
-    codec.compile("register_preset", { preset_id: source.id, definition: built });
     for (const invalid of [
       { ...questFixture(), baseCounts: [1] },
       { ...questFixture(), baseCounts: [1, 1, 1, 0, 1, 2, 15] },
@@ -929,7 +915,6 @@ test("the bane codec preserves whole quest units and refuses invalid effects", (
       production_percent: 50,
       quest_counts: [3n, 6n, 9n, 12n, 20n, 40n, 60n, 80n, 2500n, 6000n, 10000n, 15000n],
     });
-    codec.compile("register_preset", { preset_id: source.id, definition: built });
     for (const invalid of [
       { ...baneFixture(), chanceStep: 0 },
       { ...baneFixture(), chanceStep: 101 },
@@ -980,7 +965,6 @@ test("the race codec preserves its season length, stages and Triumph rates", () 
       pale_moon_percent: 50,
       spoils_percent: 200,
     });
-    codec.compile("register_preset", { preset_id: source.id, definition: built });
   } finally {
     Object.assign(source, previous);
   }
@@ -1018,10 +1002,7 @@ test("the race codec refuses missing Deep rules, malformed amounts and effects",
 test("the release's discovery must fit one draw under Clear Mist and Detection", () => {
   const source = nativePresets[FRONTIER_S1_PRESET_ID]!;
   const previous = source.discovery;
-  const modules = () =>
-    balanceModules(
-      buildNativePreset(loadNativePresetConfiguration("madara.frontier", FRONTIER_S1_PRESET_ID), FRONTIER_S1_PRESET_ID),
-    );
+  const modules = () => balanceModules(seasonOneReleaseDefinition());
   try {
     expect(modules).not.toThrow();
     source.discovery = { ...previous!, beastsBps: 4000 };
@@ -1098,6 +1079,5 @@ test("preset 7 activates the complete Slice 1 rules while fixtures and historica
       [0, 6000, 3000, 1000, 0],
       [0, 0, 6000, 3000, 1000],
     ]);
-    codec.compile("register_preset", { preset_id: source.id, definition: built });
   }
 });

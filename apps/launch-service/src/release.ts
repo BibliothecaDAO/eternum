@@ -5,7 +5,6 @@
  * release a game moves through to the commit's schema. Then it advances each game one release at a time.
  */
 
-import { nativeReleasePresets } from "../../../config/source/native";
 import type { ShardManifest } from "@bibliothecadao/eternum/game-sync";
 import type { RegisteredShard } from "@realms-world/value-ledger";
 
@@ -19,7 +18,7 @@ export interface ReleaseChain {
   /** The game the launcher created under `name`, or 0 when none exists. */
   gameId(name: string): Promise<number>;
   gameRelease(gameId: number): Promise<number>;
-  game(gameId: number): Promise<{ settled: boolean; preset_id: bigint; family: bigint }>;
+  game(gameId: number): Promise<{ settled: boolean; family: bigint }>;
   /** Applies `releaseId` to the game, waits for its receipt, and returns the transaction hash. */
   applyRelease(gameId: number, releaseId: number): Promise<string>;
   openRelease(releaseId: number): Promise<string>;
@@ -168,17 +167,13 @@ function sameContents(registered: RegisteredRelease, release: ReleaseIdentity) {
 const sameFelt = (left: string | undefined, right: string | undefined) =>
   left !== undefined && right !== undefined && BigInt(left) === BigInt(right);
 
-/**
- * A launch run names its game before creating it, and a launch interrupted after creating it may not have recorded it
- * yet, so each name is resolved on the chain. Games on retired presets keep their original release.
- */
 async function runningGamePins(chain: ReleaseChain, gameNames: readonly string[], family: number) {
   const pins: { gameId: number; releaseId: number }[] = [];
   for (const name of gameNames) {
     const gameId = await chain.gameId(name);
     if (!gameId) continue;
     const game = await chain.game(gameId);
-    if (!game.settled && Number(game.family) === family && nativeReleasePresets[Number(game.preset_id)])
+    if (!game.settled && Number(game.family) === family)
       pins.push({ gameId, releaseId: await chain.gameRelease(gameId) });
   }
   return pins;

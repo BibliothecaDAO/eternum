@@ -28,9 +28,7 @@ export interface LaunchServiceStore extends LaunchRunStore {
   /** The shard chain this store's runs launch on, as the directory selects it. */
   targetChain(): Promise<string>;
   officialChain(): Promise<string | null>;
-  /** Queues a run, retaining running/complete runs. Frontier retries must keep their window. */
   enqueue(request: CreateGameRequest): Promise<LaunchRun>;
-  /** Creates a run once; an existing run is untouched, and a different Frontier window is refused. */
   schedule(request: CreateGameRequest): Promise<LaunchRun>;
   list(environment: GameEnvironmentId): Promise<LaunchRun[]>;
   playerDirectoryGames(): Promise<{ chainId: string; games: { gameId: number; slotId: number | null }[] }[]>;

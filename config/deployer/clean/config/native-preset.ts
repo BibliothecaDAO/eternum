@@ -4,7 +4,8 @@ import {
 } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { DAYS_PER_BAG } from "@bibliothecadao/eternum/expeditions";
 import { buildingIds } from "../../../source/frontier/native";
-import { nativePresetForId } from "../../../source/native";
+import { nativePresetForId, nativePresetIdFor } from "../../../source/native";
+import { loadNativePresetConfiguration } from "../registrar/native-preset";
 import { clockScaled, seasonDayUnitSeconds } from "../../../source/common/season-clock";
 import { RESOURCE_PRECISION, ResourcesIds, deepSites, type Config } from "@bibliothecadao/types";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
@@ -303,6 +304,11 @@ function buildWithdrawals(config: Config, tokens: Array<{ resource_type: number;
     },
     tokens,
   };
+}
+
+export function seasonOneReleaseDefinition() {
+  const presetId = nativePresetIdFor("frontier");
+  return buildNativePreset(loadNativePresetConfiguration("madara.frontier", presetId), presetId);
 }
 
 export function buildNativePreset(config: Config, presetId: number) {

@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { layerName } from "@bibliothecadao/types";
 import { SeasonOver } from "@/shell/season-tab/season-over";
-import approvedExtension from "../../../../../../config/source/frontier/extension.json";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -655,7 +654,13 @@ it("keeps the extended season live past its old end and reloads its final day fr
     "fetch",
     vi.fn(async () => Response.json({ blocked: [], entries: [], games: [] })),
   );
-  const approved = approvedExtension;
+  const approved = {
+    start: 1792575960,
+    oldEnd: 1793151960,
+    end: 1793439960,
+    seed: "0x5b0a63f717733291c17fc3ecf7ead6e4bd6ae7157150430908152aad0d4ef09",
+    dayUnit: 14400,
+  };
   let currentTime = approved.start;
   const advance = async (now: number) =>
     act(async () => {
