@@ -738,7 +738,6 @@ const dayOpenAlerts = async (env: IdentityEnv, shard: Required<WatchedShard>, op
         chainId: shard.chainId,
         worldAddress: shard.worldAddress,
         owner,
-        claim: null,
       };
       for (const device of owned) {
         const notification = buildDayOpen({ ...push, sendAt: push.opensAt, timeZone: device.timeZone });

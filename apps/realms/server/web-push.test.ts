@@ -20,7 +20,6 @@ const notification = () =>
     endsAt: now + 5 * 3_600_000,
     last: false,
     owner: "0x1",
-    claim: null,
     sendAt: now,
     timeZone: null,
   });

@@ -15,21 +15,15 @@ const day = {
   endsAt: opensAt + 6 * HOUR,
   last: false,
   owner: "0x1",
-  claim: { labor: 1000, essence: 0 },
   sendAt: opensAt,
   timeZone: "Asia/Kolkata",
 };
 
-it.each([
-  ["a held Realm", { labor: 1000, essence: 0 }, "Frontier: claim 1,000 Labor before 20:00."],
-  ["a Devcon realm", { labor: 1000, essence: 1000 }, "Frontier: claim 1,000 Labor and 1,000 Essence before 20:00."],
-  ["a golden ticket", { labor: 2000, essence: 2000 }, "Frontier: claim 2,000 Labor and 2,000 Essence before 20:00."],
-  ["a home with no claim", null, "Frontier: it ends at 20:00."],
-] as const)("tells %s's player the day is open, what to claim and when it ends", (_home, claim, body) => {
-  expect(buildDayOpen({ ...day, claim })).toMatchObject({
+it("tells the player the day is open and when it ends", () => {
+  expect(buildDayOpen(day)).toMatchObject({
     kind: "day-open",
     title: "Day 2 is open",
-    body,
+    body: "Frontier: it ends at 20:00.",
     target: "/g/0x0a/6",
     createdAt: opensAt,
     expiresAt: opensAt + 5 * HOUR,
@@ -39,15 +33,15 @@ it.each([
 it("names the last day with the season's end", () => {
   expect(buildDayOpen({ ...day, day: 9, last: true })).toMatchObject({
     title: "The last day is open",
-    body: "Frontier: claim 1,000 Labor. The season ends at 20:00.",
+    body: "Frontier: the season ends at 20:00.",
   });
 });
 
 it.each([
-  ["Asia/Kolkata", "Frontier: claim 1,000 Labor before 20:00."],
-  ["UTC", "Frontier: claim 1,000 Labor before 14:30."],
-  ["America/New_York", "Frontier: claim 1,000 Labor before 09:30."],
-  [null, "Frontier: claim 1,000 Labor before 14:30 UTC."],
+  ["Asia/Kolkata", "Frontier: it ends at 20:00."],
+  ["UTC", "Frontier: it ends at 14:30."],
+  ["America/New_York", "Frontier: it ends at 09:30."],
+  [null, "Frontier: it ends at 14:30 UTC."],
 ] as const)("names the day's end on the clock of the phone it goes to (%s), with one id and expiry", (zone, body) => {
   const sent = buildDayOpen({ ...day, timeZone: zone, sendAt: opensAt + HOUR });
   expect(sent).toMatchObject({ body, createdAt: opensAt + HOUR, expiresAt: opensAt + 5 * HOUR });
