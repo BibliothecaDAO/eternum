@@ -20,7 +20,6 @@ pub struct Exchange {
     pub id: u32,
     pub alt: bool,
     pub biome: u8,
-    pub attack_distance: u8,
     pub timestamp: u64,
     pub current_tick: u64,
     pub attacker_is_structure_guard: bool,

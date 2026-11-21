@@ -17,7 +17,7 @@ import {
  */
 const FIXTURE = new URL("../../../../contracts/l3/world-native/tests/fixtures/frontier-combat-v2.txt", import.meta.url);
 const HEADER_FELTS = 24;
-const RECORD_FELTS = 24;
+const RECORD_FELTS = 23;
 const CATEGORIES = ["Knight", "Paladin", "Crossbowman"] as const;
 const TIERS = ["T1", "T2", "T3"] as const;
 const BIOMES = new Map(Object.entries(BiomeTypeToId).map(([biome, id]) => [id, biome as BiomeType]));
@@ -105,7 +105,6 @@ const readCase = (next: () => bigint, tickSeconds: number) => {
   const alt = next() === 1n;
   const biome = BIOMES.get(Number(next()));
   if (!biome) throw new Error("Unknown biome in the combat fixture");
-  const attackDistance = Number(next());
   const timestamp = Number(next());
   const currentTick = next();
   const attackerIsStructureGuard = next() === 1n;
@@ -120,7 +119,6 @@ const readCase = (next: () => bigint, tickSeconds: number) => {
   };
   const context = {
     timestamp,
-    attackDistance,
     attackerBiome: biome,
     defenderBiome: biome,
     attackerIsStructureGuard,
