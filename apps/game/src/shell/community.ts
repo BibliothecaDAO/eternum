@@ -30,7 +30,7 @@ export const X_HANDLE = REALMS_X_TAG;
  */
 export const HOW_TO_PLAY_BY_MODE = {
   frontier: `${DOCS_ADDRESS}/frontier/`,
-  blitz: `${DOCS_ADDRESS}/blitz/`,
+  blitz: `${DOCS_ADDRESS}/`,
   eternum: `${DOCS_ADDRESS}/`,
 } satisfies Record<GameModeId, string>;
 
