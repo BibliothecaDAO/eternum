@@ -11,27 +11,6 @@ import { doorwayView, type GameRefusal } from "./doorway-view";
 
 const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
 
-it("explains spectating in one line with its one step, past a finished account step", () => {
-  const view = doorwayView({ source: "entry", phase: "spectate", audience: "player", signedIn: true });
-  expect(view.steps[0]).toEqual({ step: "account", state: "done" });
-  const markup = renderToStaticMarkup(
-    <MemoryRouter>
-      <DoorwayScreen
-        view={view}
-        realm={null}
-        onRetry={() => {}}
-        onSignIn={() => {}}
-        onSpectate={() => {}}
-        results="/results/0xa-5"
-      />
-    </MemoryRouter>,
-  );
-  expect(text(markup)).toContain("Not on this game.");
-  expect(text(markup)).toContain("Watch");
-  expect(markup).not.toContain('data-role="back"');
-  expect(markup).toContain('data-role="tab"');
-});
-
 it("says the map could not be drawn and offers the realm beside Try again, in place of the world not answering", () => {
   const boot = { source: "boot", phase: "error", audience: "player", failedScene: "map" } as const;
   const render = (realmCanOpen: boolean) =>

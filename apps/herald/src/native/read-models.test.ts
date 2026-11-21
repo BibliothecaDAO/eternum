@@ -32,7 +32,6 @@ function gameEvent(game = "1", settled = "0", dev = "0", mode: GameType = "blitz
     start_main_at: "20",
     scheduled_end_at: "200",
     end_at: "200",
-    end_grace_seconds: 10,
     seed: "42",
   });
 }
@@ -89,7 +88,6 @@ it("never lists deployment check games or counts them as Frontier seasons", () =
         start_main_at: "20",
         scheduled_end_at: "200",
         end_at: "200",
-        end_grace_seconds: 10,
         seed: "42",
       }),
     ]),

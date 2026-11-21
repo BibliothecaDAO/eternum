@@ -464,7 +464,6 @@ export const GameEntryModal = ({
     () => enterGame(navigationEntryContext?.intent === "spectate"),
     [enterGame, navigationEntryContext?.intent],
   );
-  const handleSpectate = useCallback(() => enterGame(true), [enterGame]);
 
   const finalizeSuccessfulSettlement = useCallback(() => {
     setSettleStage("done");
@@ -685,7 +684,6 @@ export const GameEntryModal = ({
             : handleRetry
       }
       onSignIn={() => requestSignIn()}
-      onSpectate={handleSpectate}
       results={resultsHref(game)}
       asking={choosingHome}
       verb={

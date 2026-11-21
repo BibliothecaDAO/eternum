@@ -99,12 +99,6 @@ describe("the doorway", () => {
     expect(view.blocker).toEqual({ kind: "retry", line: "The world did not answer." });
   });
 
-  it("offers Watch to a spectating entry", () => {
-    expect(doorwayView({ source: "entry", phase: "spectate", audience: "player", signedIn: true }).spectating).toBe(
-      "watch",
-    );
-  });
-
   it("fills one bar across the track, the map's span following its model loads", () => {
     const boot = (phase: Parameters<typeof doorwayView>[0]["phase"], modelShare?: number) =>
       doorwayView({ source: "boot", phase: phase as never, audience: "player", modelShare }).percent;

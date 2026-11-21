@@ -36,7 +36,7 @@ export interface DoorwayView {
   /** How far through the track the entry is, 0 to 100, for the doorway's one bar. */
   percent: number;
   blocker: DoorwayBlocker | null;
-  spectating: "watch" | "results" | null;
+  spectating: "results" | null;
 }
 
 /** The entry's side of the doorway: before the game's route, while the account and the realm come to be. */
@@ -146,8 +146,6 @@ const entryPlace = ({ phase, signedIn, accountError, foundingFailed = false }: E
       return place("realm");
     case "settlement":
       return place("realm", { blocker: foundingFailed ? WORLD_DID_NOT_ANSWER : null });
-    case "spectate":
-      return place("account", { done: true, spectating: "watch" });
     case "ready":
       // The realm stands; the entry now hands over to the game's route, where the map boots.
       return place("map");

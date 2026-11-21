@@ -5,7 +5,6 @@ export type GameEntryModalPhase =
   | "account"
   | "settlement-waiting"
   | "settlement"
-  | "spectate"
   | "ready"
   | "error";
 

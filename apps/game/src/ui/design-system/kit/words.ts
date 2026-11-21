@@ -1582,7 +1582,6 @@ export const DOORWAY_WORDS = {
   /** The bar, named for assistive technology. */
   entering: "Entering the game",
   signInToPlay: "Sign in to play.",
-  notOnThisGame: "Not on this game.",
   ended: "This game has ended.",
   gameRefused: "This game ran on a different version of the game and cannot be opened here.",
   gameOnOlderNumbers:

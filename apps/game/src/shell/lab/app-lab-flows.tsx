@@ -145,7 +145,6 @@ export const LabDoorway = () => {
       onRetry={noop}
       onOpenRealm={noop}
       onSignIn={noop}
-      onSpectate={noop}
       results="/lab/app/season-over/results/0x5245414c4d53-3"
       asking={
         state === "home" ||
