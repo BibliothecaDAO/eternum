@@ -19,8 +19,8 @@ const directory = () => ({
   world_address: "0x10",
   confirmed_block: 10,
   games: [
-    { game_id: 7, preset_id: 5, mode: "frontier", status: "Live", clock: { end_at: 9000 } },
-    { game_id: 8, preset_id: 2, mode: "blitz" },
+    { game_id: 7, mode: "frontier", status: "Live", clock: { end_at: 9000 } },
+    { game_id: 8, mode: "blitz" },
   ],
 });
 const snapshot = (poolLeft = "83", amount = "17"): ConfirmedSnapshot => ({
@@ -181,11 +181,11 @@ it("rejects previous receipt and budget schemas, duplicate claims, wrong games a
     Effect.runPromise(shardConservationPort(connection, "https://shard.test", network())()),
   ).rejects.toThrow();
 });
-it("binds the directory to the chain/world and the exact preset mode instead of skipping unrecognized games", async () => {
+it("binds the directory to the chain/world and a known game mode instead of skipping unrecognized games", async () => {
   const malformed = [directory(), directory(), directory()];
   malformed[0]!.chain = "0x2";
   malformed[1]!.world_address = "0x20";
-  malformed[2]!.games[0]!.mode = "blitz";
+  malformed[2]!.games[0]!.mode = "eternum";
   for (const games of malformed)
     await expect(
       Effect.runPromise(shardConservationPort(connection, "https://shard.test", network(snapshot(), games))()),
@@ -313,7 +313,6 @@ it("bounds first-time conservation snapshots and rotates unfinished games", asyn
   const games = directory();
   games.games = Array.from({ length: 30 }, (_, index) => ({
     game_id: index + 1,
-    preset_id: 5,
     mode: "frontier",
     status: "Live",
     clock: { end_at: 9000 },

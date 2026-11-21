@@ -1,4 +1,4 @@
-import { nativeGameModeOf } from "../../../config/source/common/native-preset-modes";
+import { isGameType } from "../../../config/source/common/native-preset-modes";
 import { ledgerInteger, type FrontierFundingTerms } from "@realms-world/value-ledger";
 import { ShardReader, sameFelt, uint, type ShardConnection } from "./shard-rpc";
 import { readHeraldJson, singleRow, type ConfirmedSnapshot } from "./shard-snapshot";
@@ -7,7 +7,7 @@ interface Directory {
   chain: string;
   world_address: string;
   confirmed_block: number;
-  games: { game_id: number; preset_id: number; mode: string; status: string; clock: { end_at: number } }[];
+  games: { game_id: number; mode: string; status: string; clock: { end_at: number } }[];
 }
 
 export async function readFrontierGames(connection: ShardConnection, heraldUrl: string, network = fetch) {
@@ -24,8 +24,7 @@ export async function readFrontierGames(connection: ShardConnection, heraldUrl: 
   const ids = new Set<number>();
   for (const game of directory.games) {
     const id = Number(uint(String(game.game_id), 32));
-    if (!id || ids.has(id) || nativeGameModeOf(Number(uint(String(game.preset_id), 32))) !== game.mode)
-      throw new Error("invalid_frontier_game");
+    if (!id || ids.has(id) || !isGameType(game.mode)) throw new Error("invalid_frontier_game");
     ids.add(id);
     if (
       game.mode === "frontier" &&
@@ -46,7 +45,6 @@ export function frontierTerms(snapshot: ConfirmedSnapshot): FrontierFundingTerms
   const chests = singleRow(snapshot, "ChestRules");
   const rules = singleRow(snapshot, "SliceRules");
   return {
-    presetId: ledgerInteger(String(game.preset_id)),
     start: ledgerInteger(String(game.start_main_at)),
     end: ledgerInteger(String(game.end_at)),
     seed: String(game.seed),

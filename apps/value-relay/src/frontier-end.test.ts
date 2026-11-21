@@ -25,7 +25,6 @@ const target = {
 };
 const game = (game_id: number, end_at: number, status: string) => ({
   game_id,
-  preset_id: 7,
   mode: "frontier",
   status,
   clock: { end_at },

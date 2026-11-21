@@ -125,7 +125,6 @@ vi.mock("./shard-rpc", async (original) => ({
 vi.mock("./frontier-games", () => ({
   readFrontierGames: shard.games,
   frontierTerms: () => ({
-    presetId: 6,
     start: 10,
     end: 100,
     seed: "153",

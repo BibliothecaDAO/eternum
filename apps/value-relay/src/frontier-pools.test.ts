@@ -67,7 +67,7 @@ const snapshot = (id: number) => ({
       rows: [
         {
           key: String(id),
-          value: { game_id: id, preset_id: 6, start_main_at: 10, scheduled_end_at: end, end_at: end, seed: 153 },
+          value: { game_id: id, start_main_at: 10, scheduled_end_at: end, end_at: end, seed: 153 },
         },
       ],
     },
@@ -142,7 +142,6 @@ beforeEach(() => {
               confirmed_block: 10,
               games: ids.map((id) => ({
                 game_id: id,
-                preset_id: 6,
                 mode: "frontier",
                 status: "Live",
                 clock: { end_at: end },
