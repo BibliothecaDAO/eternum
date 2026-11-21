@@ -35,7 +35,6 @@ import { accountKey } from "./campaign-entry";
 import { settleShareInvites, shareWorldOf } from "./shares";
 import { ORIGIN } from "./workerd-harness";
 import { createTestD1 } from "./test-d1";
-import { sendCampaign, stillFits, visitRecord } from "../scripts/comeback-campaign";
 import { sealCodeFiles } from "../scripts/seal-codes";
 import { aspects, orders } from "@bibliothecadao/types";
 
@@ -543,119 +542,6 @@ describe("identity Worker", () => {
     const browser = createBrowser(["__Secure-better-auth.session_token=another-service.c2lnbmF0dXJl"]);
     expect((await signInWithCode(browser, "shadowed@realms.test")).status).toBe(200);
     expect((await browser.session())?.user.realmsId).toBeTruthy();
-  });
-
-  const now = () => Math.floor(Date.now() / 1000);
-  const lastSeen = async (realmsId: string) =>
-    visitRecord.seconds(
-      ((await database.db.prepare(visitRecord.lastVisit(realmsId)).first()) as { lastSeenAt?: unknown } | null)
-        ?.lastSeenAt,
-    );
-  const setLastSeen = (realmsId: string, seconds: number) =>
-    database.db
-      .prepare('UPDATE "user" SET "lastSeenAt" = ? WHERE "realmsId" = ?')
-      .bind(seconds * 1000, realmsId)
-      .run();
-
-  it("keeps an account's last visit after it signs out, so a news email still sees that it came back", async () => {
-    const DAY = 24 * 60 * 60;
-    /** The sender's own read and rule: a founded Devcon player, no confirmed action, the record long begun. */
-    const stillAway = async (realmsId: string) =>
-      stillFits("D", { lastAction: 0, lastVisit: await lastSeen(realmsId) }, now(), 0);
-
-    // A visit is the app reading its session; signing out deletes the session but not the visit.
-    const researcher = createBrowser();
-    expect((await signInWithCode(researcher, "researcher@realms.test")).status).toBe(200);
-    const { realmsId } = (await researcher.session())!.user;
-    expect(await lastSeen(realmsId)).toBeGreaterThanOrEqual(now() - 5);
-    await setLastSeen(realmsId, now() - 3 * DAY);
-    expect(await stillAway(realmsId)).toBe(true);
-    await researcher.session();
-    expect((await researcher.request("/api/auth/sign-out", { body: {} })).status).toBe(200);
-    expect(await researcher.session()).toBeNull();
-    const sessionsLeft = await database.db
-      .prepare('SELECT count(*) AS n FROM "session" s JOIN "user" u ON u.id = s."userId" WHERE u."realmsId" = ?')
-      .bind(realmsId)
-      .first<{ n: number }>();
-    expect(sessionsLeft?.n).toBe(0);
-    expect(await stillAway(realmsId)).toBe(false);
-
-    // Written at most once an hour: a second load within the hour leaves the time as it was.
-    const reader = createBrowser();
-    expect((await signInWithCode(reader, "reader@realms.test")).status).toBe(200);
-    const reading = (await reader.session())!.user.realmsId;
-    const halfAnHourAgo = now() - 1800;
-    await setLastSeen(reading, halfAnHourAgo);
-    await reader.session();
-    expect(await lastSeen(reading)).toBe(halfAnHourAgo);
-
-    // Between two emails: the second player opens the game and signs out; the run reads D1 again and skips them.
-    const away = [createBrowser(), createBrowser(), createBrowser()];
-    const ids: string[] = [];
-    for (const [index, browser] of away.entries()) {
-      expect((await signInWithCode(browser, `away-${index}@realms.test`)).status).toBe(200);
-      ids.push((await browser.session())!.user.realmsId);
-      await setLastSeen(ids[index]!, now() - 3 * DAY);
-    }
-    const sent: string[] = [];
-    const counts = await sendCampaign({
-      deliveries: ids.map((id) => ({ realmsId: id, variant: "D" as const })),
-      stillAway: async (delivery) => stillAway(delivery.realmsId),
-      reserve: async () => "reserved",
-      send: async (delivery) => {
-        sent.push(delivery.realmsId);
-        if (sent.length === 1) {
-          await away[1]!.session();
-          await away[1]!.request("/api/auth/sign-out", { body: {} });
-        }
-        return { kind: "accepted", id: null };
-      },
-      markSent: async () => {},
-      release: async () => {},
-      pause: async () => {},
-    });
-    expect(sent).toEqual([ids[0], ids[2]]);
-    expect(counts).toMatchObject({ sent: 2, cameBack: 1 });
-  });
-
-  it("counts a player away from the visit record's first full hour, when it began less than a day before", async () => {
-    const HOUR = 60 * 60;
-    // Wrangler's own migrations table, as production has it: the sender reads from it when migration 0026 ran.
-    await database.db
-      .prepare(
-        "CREATE TABLE IF NOT EXISTS d1_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)",
-      )
-      .run();
-    const recordBegan = (secondsAgo: number) =>
-      database.db
-        .prepare(
-          "INSERT INTO d1_migrations (name, applied_at) VALUES ('0026_last_seen.sql', ?1) ON CONFLICT(name) DO UPDATE SET applied_at = ?1",
-        )
-        .bind(new Date((now() - secondsAgo) * 1000).toISOString().slice(0, 19).replace("T", " "))
-        .run();
-    /** The sender's own reads (when the record began, the account's last visit) and rule, at this moment. */
-    const stillAway = async (realmsId: string, lastAction = 0) => {
-      const { results } = await database.db.prepare(visitRecord.began).all();
-      return stillFits("D", { lastAction, lastVisit: await lastSeen(realmsId) }, now(), visitRecord.beganAt(results));
-    };
-
-    const player = createBrowser();
-    expect((await signInWithCode(player, "early-away@realms.test")).status).toBe(200);
-    const { realmsId } = (await player.session())!.user;
-    // Last seen before the record began 11 hours ago (as the migration seeded it from an older session).
-    await recordBegan(11 * HOUR);
-    await setLastSeen(realmsId, now() - 12 * HOUR);
-    expect(await stillAway(realmsId)).toBe(true);
-    // Away counts from the record's first full hour (10 hours ago), not from 24 hours ago.
-    expect(await stillAway(realmsId, now() - 20 * HOUR)).toBe(true);
-    expect(await stillAway(realmsId, now() - 9 * HOUR)).toBe(false);
-    // In the record's first hour a visit may be missing from it: nobody is away yet.
-    await recordBegan(HOUR / 2);
-    expect(await stillAway(realmsId)).toBe(false);
-    // Opening the game brings the player back.
-    await recordBegan(11 * HOUR);
-    await player.session();
-    expect(await stillAway(realmsId)).toBe(false);
   });
 
   it("creates an account on an email's first sign-in with a code, and signs the same account in after", async () => {

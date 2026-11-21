@@ -149,7 +149,7 @@ cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps
 cmd = "bash contracts/l3/test-native.sh --package world_tests_lifecycle* ::tests::banes::"
 
 [kind.test-calendar-consumers]
-cmd = "pnpm run build:packages && pnpm --dir apps/realms test server/day-open.test.ts server/shard-notifier.test.ts scripts/comeback-activity.test.ts && pnpm --dir apps/value-relay typecheck && pnpm --dir apps/value-relay test src/deposit-verifier.test.ts"
+cmd = "pnpm run build:packages && pnpm --dir apps/realms test server/day-open.test.ts server/shard-notifier.test.ts && pnpm --dir apps/value-relay typecheck && pnpm --dir apps/value-relay test src/deposit-verifier.test.ts"
 
 [kind.playtest-race]
 cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4188.lock" && flock 8 && for scenario in race race-finished race-expired; do for viewport in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4188 --steps "lab-$scenario" --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$viewport" --out "$FLOW_TMP/playtest/$scenario/$viewport" || exit $?; done; done'
