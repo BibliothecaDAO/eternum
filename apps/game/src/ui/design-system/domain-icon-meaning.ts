@@ -1,5 +1,4 @@
 import { homeIcon, homeKind } from "./home-icons";
-import { readRealmSkin, type RealmSkin } from "@/three/structures/realm-skins";
 import type { FrontierSpecies } from "@/three/structures/frontier-beast";
 import { BuildingType, getProducedResource, StructureType, type StructureNamingMode } from "@bibliothecadao/types";
 import {
@@ -91,8 +90,7 @@ export function readStructureMeaning(
   structure: NativeRows["Structure"],
 ): IconMeaning {
   const category = structure.base.category;
-  if (category === StructureType.Realm)
-    return realmMeaning(structure.base.level, readRealmSkin(store, structure), structure.metadata.has_wonder);
+  if (category === StructureType.Realm) return realmMeaning(structure.base.level, structure.metadata.has_wonder);
   if (!isGuardedSite(category)) return structureMeaning(category);
   const mode = nativeGameModeOfFamily(store.require("GameRegistry", { game_id: structure.game_id }).family);
   const guard =
@@ -107,12 +105,12 @@ export function mineMeaning(kind: number): IconMeaning {
   if (kind === 2) return "mine";
   throw new Error(`Unknown mine icon: ${kind}`);
 }
-export function realmMeaning(level: number, skin?: RealmSkin, hasWonder = false): IconMeaning {
-  return homeIcon(homeKind(skin, hasWonder), level);
+export function realmMeaning(level: number, hasWonder = false): IconMeaning {
+  return homeIcon(homeKind(hasWonder), level);
 }
 
-export function realmMarkerMeaning(level: number, skin?: RealmSkin, hasWonder = false): IconMeaning {
-  if (skin || hasWonder) return realmMeaning(level, skin, hasWonder);
+export function realmMarkerMeaning(level: number, hasWonder = false): IconMeaning {
+  if (hasWonder) return realmMeaning(level, hasWonder);
   return `map-${realmMeaning(level)}` as IconMeaning;
 }
 

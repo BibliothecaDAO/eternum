@@ -28,10 +28,9 @@ const reportedUnknownCategories = new Set<number>();
  */
 export function structureMarkerKind({
   structureType,
-  realmSkin,
   hasWonder,
-}: Pick<StructureInfo, "structureType" | "realmSkin" | "hasWonder">): StrategicStructureMarkerKind {
-  if (structureType === StructureType.Realm) return homeKind(realmSkin, hasWonder);
+}: Pick<StructureInfo, "structureType" | "hasWonder">): StrategicStructureMarkerKind {
+  if (structureType === StructureType.Realm) return homeKind(hasWonder);
   const kind = STRUCTURE_MARKER_KIND[structureType] as StrategicStructureMarkerKind | undefined;
   if (kind !== undefined) return kind;
   if (!reportedUnknownCategories.has(structureType)) {

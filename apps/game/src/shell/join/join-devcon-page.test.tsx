@@ -18,7 +18,6 @@ vi.mock("@/hooks/context/identity-session", async (original) => ({
   identityClient: service,
   useIdentitySession: () => service.session,
 }));
-/** The games the directory lists: the Devcon season (preset 6) beside an ordinary Frontier one. */
 const directory = vi.hoisted(() => ({ games: [] as unknown[] | undefined }));
 vi.mock("../herald", async (original) => ({
   ...(await original<typeof import("../herald")>()),
@@ -32,19 +31,14 @@ import { setViewportWidth } from "../frame/test-viewport";
 import { entryHref } from "../game-links";
 import { useConnectStore } from "../sign-in/connect";
 import { JoinDevconPage } from "./join-devcon-page";
-import { homeDailyClaim } from "@bibliothecadao/eternum";
-import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { campaignHomeFacts } from "@/lab/game/campaign-scenario";
 
-const season = (gameId: number, presetId: number) => ({
+const SEASON = {
   chainId: "0x52",
-  game_id: gameId,
+  game_id: 1,
   mode: "frontier",
-  preset_id: presetId,
   status: "Live",
   clock: { start_main_at: 100 },
-});
-const DEVCON_SEASON = season(1, 6);
+};
 
 let host: HTMLDivElement;
 let root: Root;
@@ -55,7 +49,7 @@ beforeEach(() => {
   service.session = { status: "signed-out", session: null };
   service.redeemCampaignTicket.mockReset();
   service.campaignReferrer.mockReset();
-  directory.games = [season(2, 5), DEVCON_SEASON];
+  directory.games = [SEASON];
   useConnectStore.setState({ request: null });
   host = document.createElement("div");
   document.body.append(host);
@@ -150,7 +144,7 @@ it("shows every visitor the sealed ticket alone, and opens it as soon as sign-in
   expect(text()).toContain("2,000 Essence each day");
   expect(kept()).toBeNull();
   await press("Start your adventure");
-  expect(path()).toBe(entryHref(DEVCON_SEASON as never, "play"));
+  expect(path()).toBe(entryHref(SEASON as never, "play"));
 });
 
 it("lets an account already signed in open its ticket with a deliberate press, and spins while it opens", async () => {
@@ -191,7 +185,7 @@ it("says plainly that an account already holds its ticket, shows that one, and n
   expect(redeemedCodes()).toEqual([]);
   expect(kept()).toBeNull();
   await press("Start your adventure");
-  expect(path()).toBe(entryHref(DEVCON_SEASON as never, "play"));
+  expect(path()).toBe(entryHref(SEASON as never, "play"));
 });
 
 it("checks for a held ticket again when Open is pressed before the account's ticket could be read", async () => {
@@ -279,36 +273,18 @@ it("holds Start your adventure until the directory says where the Devcon game is
   expect(waiting.disabled).toBe(true);
   expect(waiting.querySelector(".ui-spinner")).not.toBeNull();
   // The directory answers: the same reveal, now leading to the Devcon game.
-  directory.games = [DEVCON_SEASON];
+  directory.games = [SEASON];
   await visit("/join/devcon/K7M2QX4R");
   await press("Start your adventure");
-  expect(path()).toBe(entryHref(DEVCON_SEASON as never, "play"));
+  expect(path()).toBe(entryHref(SEASON as never, "play"));
 });
 
-it("leads Start your adventure to Play while no Devcon game runs", async () => {
-  directory.games = [season(2, 5)];
+it("leads Start your adventure to Play while no season runs", async () => {
+  directory.games = [];
   signIn();
   tickets({ opens: "regular" });
   await visit("/join/devcon/K7M2QX4R");
   await press("Open your ticket");
   await press("Start your adventure");
   expect(path()).toBe("/");
-});
-
-it.each([
-  ["regular", "opened", { labor: 1_000, essence: 1_000 }],
-  ["golden", "golden", { labor: 2_000, essence: 2_000 }],
-] as const)("promises a %s ticket what its realm then claims in the game", async (tier, face, claim) => {
-  // The realm as the contract founds it, read by the game's Realm sheet and the Day open push alike.
-  const store = new NativeFactStore();
-  store.applyFacts(campaignHomeFacts(tier) as never);
-  expect(homeDailyClaim(store, { gameId: 1, entityId: 7 })).toEqual(claim);
-
-  signIn();
-  tickets({ opens: tier });
-  await visit("/join/devcon/K7M2QX4R");
-  await press("Open your ticket");
-  expect(host.querySelector(".app-ticket")?.getAttribute("data-face")).toBe(face);
-  expect(text()).toContain(`${claim.labor.toLocaleString("en-US")} Labor each day`);
-  expect(text()).toContain(`${claim.essence.toLocaleString("en-US")} Essence each day`);
 });

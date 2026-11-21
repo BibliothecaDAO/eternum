@@ -16,7 +16,7 @@ type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 
 /** One thing the day's end would take that the player can still do, with the button that does it. */
 export interface DayEndItem {
-  key: "claim" | "camp" | "explore";
+  key: "camp" | "explore";
   icon: IconMeaning;
   line: string;
   verb: string;

@@ -8,13 +8,10 @@ import { chooseSeason, directoryDay, seasonTitle } from "./season";
 import { ARCHIVED_SEASONS } from "./season-tab/archive/archive";
 
 const season = (gameId: number, startMainAt: number, ownRealm: boolean): DirectoryGame => ({
-  ready: true,
   dev_mode_on: false,
   expedition: null,
   name: "Season",
-  preset_id: 6,
   player_count: ownRealm ? 1 : 0,
-  roster_count: 0,
   registration: null,
   settlement: null,
   settled_realms_count: ownRealm ? 1 : 0,
@@ -28,12 +25,10 @@ const season = (gameId: number, startMainAt: number, ownRealm: boolean): Directo
     start_main_at: startMainAt,
     scheduled_end_at: 9_000_000_000,
     end_at: 9_000_000_000,
-    end_grace_seconds: 0,
   },
   player_state: {
     registered: ownRealm,
     settled: ownRealm,
-    roster_wallet: null,
     held_realm_id: null,
     has_home_source: false,
     taken_realm_ids: [],

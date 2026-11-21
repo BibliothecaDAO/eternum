@@ -6,7 +6,7 @@ import { Vector3 } from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import rowFixture from "../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
-import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../../contracts/l3/world-native/schema/release-definition.json";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import type { StructurePlate } from "../map-plates/map-plate-model";
@@ -46,7 +46,7 @@ const realmWithGuard = (
   const { store, row } = frontierDay();
   store.applyFacts([
     ...(game === "eternum"
-      ? [{ model: "SliceRules", key: "0x100", value: { ...preset.rules, game_id: 1, day_unit_seconds: 0 } }]
+      ? [{ model: "SliceRules", key: "0x100", value: { ...release.definition.rules, game_id: 1, day_unit_seconds: 0 } }]
       : []),
     { model: "Structure", key: "0x7", value: { ...row, base: { ...row.base, troop_max_guard_count: 1 } } },
     {

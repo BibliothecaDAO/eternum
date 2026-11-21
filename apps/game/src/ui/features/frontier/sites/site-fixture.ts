@@ -9,7 +9,7 @@ import {
 } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
 import frontierConfig from "../../../../../../../config/generated/frontier.madara.json";
 import { frontierDay } from "../deploy/deploy-fixture";
 import type { SiteAttack } from "./site-card-plan";
@@ -71,11 +71,11 @@ export const campBeside = (
       beast_strong_upper: 1650,
     }),
     set("0x100", "SliceRules", {
-      ...preset.rules,
+      ...release.definition.rules,
       game_id: 1,
       day_unit_seconds: 100,
-      mode_rules: preset.rules.mode_rules,
-      battle_config: { ...preset.rules.battle_config, cooldown_seconds: 0, regular_immunity_ticks: 0 },
+      mode_rules: release.definition.rules.mode_rules,
+      battle_config: { ...release.definition.rules.battle_config, cooldown_seconds: 0, regular_immunity_ticks: 0 },
     }),
     set("0x71", "Structure", {
       ...store.require("Structure", { game_id: 1, entity_id: 7 }),
@@ -178,7 +178,7 @@ export const frontierCombatRules = () => {
       stamina_travel_fish_cost: units(stamina.staminaTravelFishCost),
     },
     tick_config: {
-      ...preset.rules.tick_config,
+      ...release.definition.rules.tick_config,
       armies_tick_in_seconds: frontierConfig.configuration.tick.armiesTickIntervalInSeconds,
     },
   };

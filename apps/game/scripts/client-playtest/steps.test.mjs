@@ -1,8 +1,5 @@
 import { JSDOM } from "jsdom";
 import { runInNewContext } from "node:vm";
-import homeIcons from "../../src/ui/design-system/home-icons.json" with { type: "json" };
-import realmAssets from "../../src/three/structures/realm-assets.json" with { type: "json" };
-import realmSkins from "../../src/three/structures/realm-skins.json" with { type: "json" };
 import { describe, expect, it, vi } from "vitest";
 
 import { WORLDMAP_CAMERA_ZOOM } from "../../src/three/scenes/worldmap-camera-view-profile";
@@ -10,7 +7,7 @@ import { ARMY_PLATE_HEIGHT } from "../../src/three/constants/army-constants";
 import { ARMY_LABEL_POINT } from "./plates.mjs";
 import { MAP_LEAST_SHARE } from "./hud-layout.mjs";
 import { HUD_MAP_LEAST_SHARE } from "../../src/tokens";
-import { CHAT, CLOSE, EVENTS_WORDS, MENU, REALM_LABOR, SEASON } from "../../src/ui/design-system/kit/words";
+import { CHAT, CLOSE, EVENTS_WORDS, MENU, SEASON } from "../../src/ui/design-system/kit/words";
 import {
   CLOSEST_CAMERA_DISTANCE,
   FARTHEST_CAMERA_DISTANCE,
@@ -34,7 +31,6 @@ describe("the HUD's words the steps press and read", () => {
       feed: EVENTS_WORDS.feed,
       close: CLOSE,
       chat: CHAT,
-      realmLabor: REALM_LABOR,
     });
   });
 });
@@ -977,51 +973,6 @@ describe("the player's Wheat store card", () => {
   });
 });
 
-describe("Devcon delivery through the game", () => {
-  it("requires the Season to show both campaign paintings, the ordinary control, and the Wonder", () => {
-    const verify = STEP_SETS["lab-devcon-season"].steps[0].verify;
-    const seen = { panels: ["Season"] };
-    const played = [
-      ...Object.keys(realmSkins).flatMap((skin) => Object.values(homeIcons[skin]).map((icon) => `${icon}.webp`)),
-      "realm-3.webp",
-      `${homeIcons.wonder[0]}.webp`,
-    ];
-    expect(verify({ seen, played }).status).toBe("completed");
-    expect(verify({ seen, played: played.filter((icon) => !icon.startsWith("wonder-")) }).status).toBe("failed");
-    expect(verify({ seen, played: ["realm-3.webp"] }).status).toBe("failed");
-    expect(verify({ seen, played: played.slice(0, 2) }).status).toBe("failed");
-    expect(verify({ seen: { panels: [] }, played }).status).toBe("failed");
-  });
-
-  const steps = STEP_SETS["lab-devcon-art"].steps;
-  it("visits every registered tier of both families on the map and in the realm", () => {
-    expect(steps.map((step) => step.name)).toEqual(
-      Object.keys(realmSkins).flatMap((skin) =>
-        realmAssets.filter((asset) => !asset.wonder).flatMap(({ id }) => [`${skin}-${id}-map`, `${skin}-${id}-realm`]),
-      ),
-    );
-  });
-  it("rejects a playable screen with the wrong family or an absent HUD icon", () => {
-    const verify = steps[0].verify;
-    const expected = {
-      path: "/models/realms/devcon/regular/settlement.glb",
-      icon: homeIcons.devcon[0],
-      label: "Devcon",
-    };
-    const played = {
-      expected,
-      assets: [expected.path],
-      icons: [`/icons/facets/64/${homeIcons.devcon[0]}.webp`],
-      text: "Devcon",
-    };
-    expect(verify({ seen: onTheMap, played }).status).toBe("completed");
-    expect(verify({ seen: onTheMap, played: { ...played, assets: [] } }).status).toBe("failed");
-    expect(verify({ seen: onTheMap, played: { ...played, icons: ["/icons/facets/64/realm.webp"] } }).status).toBe(
-      "failed",
-    );
-  });
-});
-
 // A failed preparation must never delete some other army left selected on the map.
 it("delete-rehearsal-army refuses to act before the rehearsal army is identified", async () => {
   const step = STEP_SETS["army-management"].steps.find((step) => step.name === "delete-rehearsal-army");
@@ -1036,19 +987,6 @@ it("has no Reinforce in the army-management rehearsal: deploy, then delete", () 
     "deploy-rehearsal-army",
     "delete-rehearsal-army",
   ]);
-});
-
-it("requires a real regular-to-golden transition and confirmed claim in the upgrade rehearsal", () => {
-  const verify = STEP_SETS["home-upgrade"].steps.find((step) => step.name === "upgrade-campaign-home").verify;
-  const played = { before: { tier: "regular" }, upgraded: { tier: "golden" }, claimed: true, after: { claimed: true } };
-  expect(verify({ played })).toEqual(expect.objectContaining({ status: "completed" }));
-  for (const bad of [
-    { ...played, claimed: false },
-    { ...played, upgraded: { tier: "regular" } },
-    { ...played, after: { claimed: false } },
-  ]) {
-    expect(verify({ played: bad })).toEqual(expect.objectContaining({ status: "failed" }));
-  }
 });
 
 describe("lab-hud-devices", () => {

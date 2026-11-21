@@ -418,9 +418,12 @@ const main = async () => {
           }))`,
             ),
           );
-          const expected = Object.entries(homeIcons).flatMap(([kind, levels]) =>
-            Object.entries(levels).map(([level, icon]) => ({ kind, level: Number(level), icon, decoded: true })),
-          );
+          const shown = new Set(cells.map((cell) => cell.kind));
+          const expected = Object.entries(homeIcons)
+            .filter(([kind]) => shown.has(kind))
+            .flatMap(([kind, levels]) =>
+              Object.entries(levels).map(([level, icon]) => ({ kind, level: Number(level), icon, decoded: true })),
+            );
           if (
             cells.length !== expected.length ||
             expected.some((cell, index) =>

@@ -61,7 +61,7 @@ export interface HeraldGameDirectoryEntry {
   /** One-based Frontier registry ordinal on this world, retained across finalization. */
   season_number?: number | null;
   game_id: number;
-  mode: "blitz" | "eternum" | "frontier" | null;
+  mode: "blitz" | "eternum" | "frontier";
   name: string;
   player_count: number;
   /** Homes per Aspect; null without Aspects, absent on archived directory responses. */

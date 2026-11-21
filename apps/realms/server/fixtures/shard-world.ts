@@ -3,7 +3,7 @@ import { NATIVE_RELEASES } from "../../../../deploy/release/native-release";
 import type { HeraldGameSnapshot } from "@bibliothecadao/eternum/game-sync";
 import { nativeBaneConstants, nativeRuleConstants } from "@bibliothecadao/eternum/game-client";
 import { deepSites, RESOURCE_PRECISION, TileOccupier } from "@bibliothecadao/types";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../contracts/l3/world-native/schema/release-definition.json";
 import explorerFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import { gameRegistryRow } from "../../../../packages/core/src/test-support/game-registry";
 
@@ -161,11 +161,11 @@ export const snapshot = (
         {
           key: "0x1",
           value: {
-            ...preset.rules,
+            ...release.definition.rules,
             game_id: GAME_ID,
-            tick_config: { ...preset.rules.tick_config, armies_tick_in_seconds: ARMIES_TICK_SECONDS },
+            tick_config: { ...release.definition.rules.tick_config, armies_tick_in_seconds: ARMIES_TICK_SECONDS },
             troop_stamina_config: {
-              ...preset.rules.troop_stamina_config,
+              ...release.definition.rules.troop_stamina_config,
               stamina_gain_per_tick: STAMINA_GAIN_PER_TICK,
             },
             day_unit_seconds: DAY_UNIT_SECONDS,
@@ -196,7 +196,6 @@ export const snapshot = (
           value: gameRegistryRow({
             game_id: GAME_ID,
             name: "0x1",
-            preset_id: 1,
             start_settling_at: String(SEASON_START),
             start_main_at: String(SEASON_START),
             scheduled_end_at: String(SEASON_START + 2 * 20 * DAY_UNIT_SECONDS),
@@ -419,7 +418,7 @@ export function siteSnapshot(
     ),
   );
   const rules = base.models.find(({ model }) => model === "SliceRules")!.rows[0]!.value;
-  rules.battle_config = { ...preset.rules.battle_config, cooldown_seconds: 0 };
+  rules.battle_config = { ...release.definition.rules.battle_config, cooldown_seconds: 0 };
   if (!owner) return base;
   const homes = new Set(
     [...STRUCTURE_OWNERS].filter(([, account]) => BigInt(account) === BigInt(owner)).map(([home]) => BigInt(home)),

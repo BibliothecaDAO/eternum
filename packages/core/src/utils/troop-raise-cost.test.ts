@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { NativeFactStore } from "../client/native-fact-store";
 import type { GameSyncFact } from "../sync/game-sync-types";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../contracts/l3/world-native/schema/release-definition.json";
 import { canPayTroopRaise, readTroopRaiseCost } from "./troop-raise-cost";
 import { followGameRelease } from "../client/game-release";
 import { nativeFactSchemaIdentity } from "../../../../contracts/l3/world-native/schema/client.gen";
@@ -22,7 +22,7 @@ const realm = (board: boolean, wheat: bigint) => {
   store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 100 });
   store.applyFacts([
     upsert("0x8", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: 0n }),
-    upsert("0x1", "SliceRules", { ...preset.rules, game_id: 1, mode_rules: 0 }),
+    upsert("0x1", "SliceRules", { ...release.definition.rules, game_id: 1, mode_rules: 0 }),
     upsert("0x2", "ResourceWeight", { game_id: 1, entity_id: 7, capacity: 1000n * PRECISION, weight: 0n }),
     upsert("0x3", "ResourceBalance", { game_id: 1, entity_id: 7, resource_type: 35, balance: wheat }),
     upsert("0x4", "ResourceProduction", {

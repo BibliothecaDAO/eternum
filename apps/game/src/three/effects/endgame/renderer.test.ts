@@ -17,7 +17,7 @@ import { ClientConfigManager } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { TileOccupier } from "@bibliothecadao/types";
-import preset from "../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../../../contracts/l3/world-native/schema/release-definition.json";
 import { runRendererFrame } from "../../renderer-frame-runtime";
 import { SpireManager } from "../../managers/spire-manager";
 import { SceneName } from "../../types";
@@ -69,7 +69,7 @@ async function harness(ended = false, discovered = false, revealWhilePreparing =
       },
     ]);
   registry(ended);
-  store.applyFacts([{ model: "SliceRules", key: "2", value: { ...preset.rules, game_id: 13 } }]);
+  store.applyFacts([{ model: "SliceRules", key: "2", value: { ...release.definition.rules, game_id: 13 } }]);
   store.applyFacts(
     Array.from({ length: 20 }, (_, i) => ({
       model: "TileOpt",

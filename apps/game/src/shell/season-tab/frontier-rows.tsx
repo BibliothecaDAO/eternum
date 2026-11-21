@@ -4,7 +4,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import { AppBoard, type AppBoardEntry, AppRank } from "@/ui/design-system/kit/app-elements";
 import { RealmBadge } from "@/ui/features/frontier/board/realm-marks";
-import { realmSkinOf } from "@/three/structures/realm-skins";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { SEASON_WORDS } from "@/ui/design-system/kit/words";
 import { wholeLords } from "@/ui/features/frontier/board/standings";
@@ -43,12 +42,7 @@ const frontierEntry = (entry: HeraldFrontierLeaderboardEntry, own: boolean, onCl
   lead: (
     <>
       <AppRank rank={entry.rank} medal />
-      <RealmBadge
-        level={entry.level}
-        depth={entry.deepest_depth}
-        skin={realmSkinOf(entry.campaign)}
-        hasWonder={entry.has_wonder}
-      />
+      <RealmBadge level={entry.level} depth={entry.deepest_depth} hasWonder={entry.has_wonder} />
     </>
   ),
   name: <PlayerName account={entry.address} you={own} portrait />,

@@ -10,7 +10,7 @@ import {
   StructureType,
   TileOccupier,
 } from "@bibliothecadao/types";
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
 
 const set = (key: string, model: string, value: Record<string, unknown>) => ({ model, key, value });
 export const HOUR = 3600;
@@ -22,7 +22,7 @@ const PRECISION = BigInt(RESOURCE_PRECISION);
  */
 export const realmBoard = () => {
   const store = new NativeFactStore();
-  store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1 })] as never);
+  store.applyFacts([set("0x100", "SliceRules", { ...release.definition.rules, game_id: 1 })] as never);
   store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
   store.applyFacts([
     set("0x3", "GameRegistry", gameRegistryRow({ family: GAME_FAMILIES.blitz })),
@@ -31,8 +31,8 @@ export const realmBoard = () => {
       release_id: NATIVE_RELEASES.frontier.release,
       created_release_id: NATIVE_RELEASES.frontier.release,
     }),
-    ...preset.resources.map((rule) => set(`0x5${rule.resource_type}`, "ResourceRule", { ...rule, game_id: 1 })),
-    ...preset.buildings.map(({ category, rule }) =>
+    ...release.definition.resources.resources.map((rule) => set(`0x5${rule.resource_type}`, "ResourceRule", { ...rule, game_id: 1 })),
+    ...release.definition.structures.buildings.map(({ category, rule }) =>
       set(`0x6${category}`, "BuildingRule", { ...rule, category, game_id: 1 }),
     ),
     set("0x70", "BoardRules", {

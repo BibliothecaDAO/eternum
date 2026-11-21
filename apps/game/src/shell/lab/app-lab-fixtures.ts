@@ -1,6 +1,5 @@
 import type { HeraldFrontierLeaderboard } from "@bibliothecadao/eternum/game-sync";
 import { StructureType } from "@bibliothecadao/types";
-import { FRONTIER_S1_PRESET_ID } from "../../../../../config/source/common/native-preset-modes";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import type { CampaignReferral, CampaignTicket, Session, ShareTally } from "@realms-world/identity";
 
@@ -63,20 +62,16 @@ const game = (over: Partial<DirectoryGame>): DirectoryGame => ({
     start_main_at: NOW - DAY,
     scheduled_end_at: NOW + 7 * DAY,
     end_at: NOW + 7 * DAY,
-    end_grace_seconds: 0,
   },
   player_count: 0,
   player_state: {
     registered: false,
     settled: false,
-    roster_wallet: null,
     held_realm_id: null,
     has_home_source: false,
     taken_realm_ids: [],
     structures: [],
   },
-  roster_count: 0,
-  preset_id: 0,
   registration: null,
   settled_realms_count: 0,
   settled_villages_count: 0,
@@ -87,7 +82,6 @@ const game = (over: Partial<DirectoryGame>): DirectoryGame => ({
 const owned = {
   registered: true,
   settled: true,
-  roster_wallet: LAB_WALLET,
   held_realm_id: null,
   has_home_source: false,
   taken_realm_ids: [],
@@ -109,7 +103,6 @@ const frontier = (withRealm: boolean) =>
       start_main_at: NOW - 12 * DAY + LEFT_TODAY,
       scheduled_end_at: NOW + 20 * DAY,
       end_at: NOW + 20 * DAY,
-      end_grace_seconds: 0,
     },
     player_count: 1240,
     player_state: withRealm ? owned : null,
@@ -126,7 +119,6 @@ const endedFrontier = game({
     start_main_at: NOW - 21 * DAY,
     scheduled_end_at: NOW - 3600,
     end_at: NOW - 3600,
-    end_grace_seconds: 0,
   },
   player_count: 1240,
   player_state: owned,
@@ -142,10 +134,8 @@ const liveBlitz = (member: boolean) =>
       start_main_at: NOW - 2400,
       scheduled_end_at: NOW + 5040,
       end_at: NOW + 5040,
-      end_grace_seconds: 0,
     },
     player_count: 24,
-    roster_count: 24,
     player_state: member ? owned : null,
   });
 const eternum = game({
@@ -159,7 +149,6 @@ const eternum = game({
     start_main_at: NOW + 7 * DAY,
     scheduled_end_at: NOW + 60 * DAY,
     end_at: NOW + 60 * DAY,
-    end_grace_seconds: 0,
   },
 });
 
@@ -173,12 +162,10 @@ const openEternum = game({
     start_main_at: NOW - DAY,
     scheduled_end_at: NOW + 60 * DAY,
     end_at: NOW + 60 * DAY,
-    end_grace_seconds: 0,
   },
   player_state: {
     registered: true,
     settled: false,
-    roster_wallet: null,
     held_realm_id: null,
     has_home_source: false,
     taken_realm_ids: [],
@@ -409,7 +396,6 @@ const SEASON_ONE_PHASE = (at: (minutes: number) => string) => ({
   phase: "frontier" as const,
   startsAt: at(14 * 24 * 60 + 3 * 60 + 20),
   endsAt: at(64 * 24 * 60),
-  presetId: FRONTIER_S1_PRESET_ID,
 });
 
 export const labCalendar = (screen: LabScreen) => {

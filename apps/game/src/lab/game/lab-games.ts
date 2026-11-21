@@ -17,8 +17,6 @@ import { actionsScenario } from "./actions-scenario";
 import { economyScenario } from "./economy-scenario";
 import { relicsScenario } from "./relics-scenario";
 import { etherealDepthsScenario } from "./ethereal-depths-scenario";
-import { REALM_SKIN_MODELS } from "@/three/structures/realm-skins";
-import { campaignScenario, devconSeasonScenario, fullLaborCampaignScenario } from "./campaign-scenario";
 import { dayEndScenario } from "./day-end-scenario";
 import {
   afterBattleScenario,
@@ -28,7 +26,6 @@ import {
   pointSpentScenario,
 } from "./after-battle-scenario";
 import { campScenario } from "./camp-scenario";
-import { claimScenario } from "./claim-scenario";
 import { clearedCampScenario } from "./cleared-camp-scenario";
 import { dayTurnScenario } from "./day-turn-scenario";
 import { exploreScenario } from "./explore-scenario";
@@ -97,7 +94,6 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "fight-lost": fightLostScenario,
   research: researchScenario,
   shop: shopScenario,
-  claim: claimScenario,
   quest: questScenario,
   "bane-world": () => baneScenario("world"),
   "bane-again": () => baneScenario("again"),
@@ -123,16 +119,6 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "day-later-skipped": dayTurnScenario("later", "skipped"),
   "day-later-played-on": dayTurnScenario("later", "played-on"),
   "season-opens": seasonOpensScenario,
-  ...Object.fromEntries(
-    REALM_SKIN_MODELS.map(({ skin, level }) => [
-      `${skin}-${level}`,
-      campaignScenario(skin === "devcon" ? "regular" : "golden", level),
-    ]),
-  ),
-  devcon: campaignScenario("regular"),
-  "devcon-golden": campaignScenario("golden"),
-  "devcon-golden-full": fullLaborCampaignScenario,
-  "devcon-season": devconSeasonScenario,
 };
 
 /** The lab game this tab plays: its scenario and the wall time its chain's clock started at. */

@@ -1,4 +1,3 @@
-import { realmSkinModel, type RealmSkin } from "../structures/realm-skins";
 import { ResourceIdToMiningType, StructureProgress } from "@bibliothecadao/eternum";
 import {
   BUILDINGS_CENTER,
@@ -95,7 +94,6 @@ export function resolveBuildingModelSelection(
     mainStructureType?: StructureType;
     wonder: boolean;
     frontier?: boolean;
-    realmSkin?: RealmSkin;
   },
 ): BuildingModelSelection {
   const { stage, structureId, mainStructureType, wonder } = context;
@@ -127,17 +125,15 @@ export function resolveBuildingModelSelection(
   }
 
   const tierPath =
-    group === BUILDINGS_GROUPS.REALMS && context.realmSkin
-      ? realmSkinModel(context.realmSkin, stage).path
-      : group === BUILDINGS_GROUPS.REALMS && wonder
-        ? REALM_PATHS[realmModelIndex(stage, true, structureId)]
-        : group === BUILDINGS_GROUPS.BUILDINGS
-          ? context.frontier
-            ? (building.tier ?? 1) > 1
-              ? (frontierPaintedBuildingPath(type as BuildingType, building.tier) ??
-                buildingTierModelPath(type as BuildingType, building.tier))
-              : undefined
-            : buildingTierModelPath(type as BuildingType, building.tier)
-          : undefined;
+    group === BUILDINGS_GROUPS.REALMS && wonder
+      ? REALM_PATHS[realmModelIndex(stage, true, structureId)]
+      : group === BUILDINGS_GROUPS.BUILDINGS
+        ? context.frontier
+          ? (building.tier ?? 1) > 1
+            ? (frontierPaintedBuildingPath(type as BuildingType, building.tier) ??
+              buildingTierModelPath(type as BuildingType, building.tier))
+            : undefined
+          : buildingTierModelPath(type as BuildingType, building.tier)
+        : undefined;
   return { group, type, tierPath };
 }

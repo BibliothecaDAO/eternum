@@ -1,4 +1,3 @@
-import type { RealmSkin } from "@/three/structures/realm-skins";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { heldAgainstNeed } from "@/ui/design-system/kit/words";
 import { describeCastleLevel } from "@/ui/modules/entity-details/realm/castle-level";
@@ -16,7 +15,6 @@ export type StructureWithMetadata = Structure & {
   displayName: string;
   originalName: string;
   realmLevel: number;
-  realmSkin?: RealmSkin;
   realmLevelLabel: string | null;
   population: number;
   guardCount: number | undefined;

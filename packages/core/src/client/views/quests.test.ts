@@ -2,7 +2,7 @@ import { gameRegistryRow } from "../../test-support/game-registry";
 import { readFileSync } from "node:fs";
 import { readBaneDay, readBaneEffects } from "./banes";
 import { describe, expect, it } from "vitest";
-import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../../contracts/l3/world-native/schema/release-definition.json";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { nativeBaneConstants, nativeQuestConstants } from "../../../../../contracts/l3/world-native/schema/balance.gen";
 import { dayOf } from "../../utils/days";
@@ -27,7 +27,7 @@ function chainBonusSources(): string[] {
 function fixture() {
   const store = new NativeFactStore();
   store.applyFacts([
-    { model: "SliceRules", key: "1", value: { ...preset.rules, game_id: 1, day_unit_seconds: 100 } },
+    { model: "SliceRules", key: "1", value: { ...release.definition.rules, game_id: 1, day_unit_seconds: 100 } },
     {
       model: "GameRegistry",
       key: "1",

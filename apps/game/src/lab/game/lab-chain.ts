@@ -8,11 +8,9 @@ import { gameChatZoneId } from "@/ui/features/world/containers/hud-chat-window";
 import { L2_LEDGER, l2Provider } from "@/runtime/l2-rpc";
 import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
 import {
-  homeDailyClaim,
   dayOf,
   nativeGameModeOfFamily,
   readExpeditionRules,
-  ResourceManager,
 } from "@bibliothecadao/eternum";
 import { NativeFactStore, ordinaryHash, type PlayFrame } from "@bibliothecadao/eternum/game-client";
 import {
@@ -24,8 +22,6 @@ import {
 } from "@bibliothecadao/eternum/game-sync";
 import {
   aspects,
-  RESOURCE_PRECISION,
-  ResourcesIds,
   type NativeWorldBindings,
   type WorldChatMessage,
 } from "@bibliothecadao/types";
@@ -235,7 +231,6 @@ const installOnce = async (makeScenario: () => LabScenario, startedAt: number): 
   );
   answerAccountJoin(LAB_SHARD_RPC, LAB_ACCOUNT_CLASS);
   answerHeraldSocket(herald);
-  answerLaborClaims(scenario, chain, record, herald, now);
   if (scenario.entersFromHome) answerHomeEntry(scenario);
   answerLedgerReads(now);
   answerLabChat({ gameRooms: [gameChatZoneId(LAB_GAME.chainId, LAB_GAME.gameId)], history: scenario.chat });
@@ -423,79 +418,6 @@ const answerHomeEntry = (scenario: LabScenario) => {
       return Response.json({ error: "realm_registration_refused" }, { status: 409 });
     return Response.json({});
   };
-};
-
-/** The lab's home claim follows the current relay: game day, grant facts, then the receipt's transaction. */
-const answerLaborClaims = (
-  scenario: LabScenario,
-  chain: NativeFactStore,
-  record: LabChainRecord,
-  herald: LabHerald,
-  now: () => number,
-) => {
-  const network = window.fetch.bind(window);
-  window.fetch = async (input, init) => {
-    const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);
-    if (url.pathname !== "/api/value/labor" || init?.method !== "POST") return network(input, init);
-    const { gameId, home } = JSON.parse(String(init.body)) as { gameId: number; home: string };
-    const rules = readExpeditionRules(chain, gameId);
-    if (!rules) throw new Error("The lab claim has no season rules");
-    const day = dayOf(rules, now())!.index;
-    const hash = `0x1ab${(record.sent.length + 1).toString(16).padStart(4, "0")}de1a`;
-    const command: LabCommand = { kind: "GrantLabor", fields: { day: String(day) }, span: [] };
-    const answered = grantLabor(chain, scenario.player, gameId, BigInt(home), day).map(keyedAsHeldOnChain);
-    record.sent.push({ hash, command, answered });
-    await new Promise((applied) => setTimeout(applied, LAB_BLOCK_MS));
-    herald.apply(hash, answered);
-    await new Promise((closed) => setTimeout(closed, LAB_BLOCK_MS));
-    const grant = answered.find(({ model }) => model === "LaborGrant")!.value as { amount: string; essence: string };
-    return Response.json({
-      day,
-      grant: {
-        gameId,
-        home,
-        account: scenario.player,
-        amount: grant.amount,
-        essence: grant.essence,
-        transactionHash: hash,
-      },
-    });
-  };
-};
-
-/** The home's daily receipt and balances, derived from the same eligibility rules the claim button reads. */
-const grantLabor = (chain: NativeFactStore, account: string, gameId: number, home: bigint, day: number): LabFact[] => {
-  const daily = homeDailyClaim(chain, { gameId, entityId: home });
-  if (!daily) throw new Error("The lab's home has no daily claim");
-  const amount = BigInt(daily.labor) * BigInt(RESOURCE_PRECISION);
-  const essence = BigInt(daily.essence) * BigInt(RESOURCE_PRECISION);
-  const grant: LabFact = {
-    model: "LaborGrant",
-    key: `0x1ab6${day.toString(16)}`,
-    value: wire({ game_id: gameId, home, day, account, amount, essence }),
-  };
-  const balances = [
-    [ResourcesIds.Labor, amount],
-    [ResourcesIds.Essence, essence],
-  ] as const;
-  return [
-    grant,
-    ...balances
-      .filter(([, added]) => added > 0n)
-      .map(([resource, added]): LabFact => {
-        const held = [...chain.entries("ResourceBalance")].find(
-          ([, row]) => row.entity_id === home && row.resource_type === resource,
-        );
-        const balance = (held?.[1].balance ?? 0n) + added;
-        const limit = new ResourceManager(chain, Number(home), gameId).storeLimit(resource);
-        if (limit !== undefined && balance > limit) throw new Error(`The lab's home ${home} has no room for the claim`);
-        return {
-          model: "ResourceBalance",
-          key: held?.[0] ?? `0x1b${resource.toString(16)}`,
-          value: wire({ game_id: gameId, entity_id: home, resource_type: resource, balance }),
-        };
-      }),
-  ];
 };
 
 /**

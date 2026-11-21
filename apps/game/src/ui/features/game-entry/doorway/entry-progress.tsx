@@ -46,11 +46,9 @@ export const EntryProgress = ({ view }: { view: DoorwayView }) => {
   );
 };
 
-/** What a Frontier player's first minutes hold, said while their map loads: the day's claim, then the first build. */
 export const ComingUp = () => (
   <AppPanel className="w-full">
     <ul className="flex flex-col gap-3 text-left text-app-ink">
-      <Tip icon="labor" title={DOORWAY_WORDS.claimTitle} detail={DOORWAY_WORDS.claimDetail} />
       <Tip icon="barracks" title={DOORWAY_WORDS.firstTitle} detail={DOORWAY_WORDS.firstDetail} />
     </ul>
   </AppPanel>

@@ -599,7 +599,7 @@ export const GameEntryModal = ({
 
   // A Frontier player with nothing to choose (a ticket or a free home, no Realm) has their realm created without a press;
   // an Eternum entry founds by itself when its link asks (autoSettle).
-  const nothingToChoose = useNothingToChoose(worldMeta?.preset_id ?? null);
+  const nothingToChoose = useNothingToChoose();
   const choosesAspect = isFrontierMode && worldMeta?.aspect_members != null;
   const foundsOnItsOwn =
     (isEternumMode && autoSettleEnabled) ||
@@ -715,7 +715,6 @@ export const GameEntryModal = ({
         <>
           {isFrontierMode && worldMeta && sideAnswer !== "free" && (
             <HomeSourcePicker
-              presetId={worldMeta.preset_id}
               title={choosingSource ? HOME_STEP_WORDS.attachTitle : undefined}
               takenRealmIds={takenRealmIds}
               requireSource={choosingSource}

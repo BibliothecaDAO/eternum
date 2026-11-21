@@ -1,8 +1,6 @@
 // @vitest-environment jsdom
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { configManager } from "@bibliothecadao/eternum";
-import { shortString } from "starknet";
-import { DEVCON } from "@/shell/join/devcon";
 import { BUILDINGS_CENTER, BuildingType, StructureType } from "@bibliothecadao/types";
 import { Box3, Group, Mesh, MeshStandardMaterial, BoxGeometry } from "three";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -64,31 +62,6 @@ it("loads the models a realm's keep and buildings draw, each once and at its tie
     "/models/frontier/painted/workers-hut-1.glb",
     "/models/realms/settlement.glb",
   ]);
-});
-
-it.each([
-  { tier: 1, directory: "regular" },
-  { tier: 2, directory: "gold" },
-])("loads the $directory Devcon keep from the home's confirmed campaign identity", async ({ tier, directory }) => {
-  const board = realmBoard([
-    { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1], category: BuildingType.ResourceLabor },
-  ]);
-  board.store.applyFacts([
-    {
-      model: "CampaignHome",
-      key: "0x7",
-      value: {
-        game_id: configManager.getActiveGameId(),
-        home: "7",
-        campaign_id: shortString.encodeShortString(DEVCON.campaign),
-        tier,
-      },
-    },
-  ]);
-
-  await board.scene.loadLaidOutModels(StructureType.Realm);
-
-  expect(board.requested).toEqual([`/models/realms/devcon/${directory}/settlement.glb`]);
 });
 
 it("compiles a loaded model's pipelines against the realm scene before it hands the model to the board", async () => {

@@ -7,7 +7,6 @@ import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { shortString } from "starknet";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { nativeReleaseConstants } from "../../../../../../contracts/l3/world-native/schema/client.gen";
 import type { HudSurface } from "./hud/frontier-nav";
@@ -280,64 +279,49 @@ it("keeps a refused order in sight on a desktop, over the feed and over a panel 
   }
 });
 
-it.each([false, true])(
-  "draws Season ranks, depths and campaign icons outside streamed scope (campaigns: %s)",
-  async (campaigns) => {
-    // Four homes the lab's game streams none of: their Structure rows are absent from the store.
-    const entry = (rank: number, level: number, depth: number) => ({
-      has_wonder: rank === 4,
-      address: `0x${(0xa00 + rank).toString(16)}`,
-      structure_id: String(900 + rank),
-      rank,
-      sites_cleared: { total: 10 - rank, camps: 0, rifts: 0, ruins: 0, beasts: 0 },
-      chests_earned: 0,
-      rewards: { lords: "0", essence: "0", labor: "0" },
-      deepest_depth: depth,
-      level,
-      order: rank,
-      campaign:
-        campaigns && rank < 3 ? { campaign_id: shortString.encodeShortString("devcon-2026"), tier: rank } : null,
-    });
-    const board = {
-      game_id: "1",
-      mode: "frontier",
-      entries: [entry(1, 3, 3), entry(2, 1, 2), entry(3, 0, 0), entry(4, 2, 1)],
-    };
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (url: string | URL) =>
-        String(url).includes("/leaderboard")
-          ? new Response(JSON.stringify(board), { status: 200 })
-          : new Response(JSON.stringify({ blocked: [], version: 0 }), { status: 200 }),
-      ),
-    );
-    viewport.set(1920);
-    await renderHud();
-    expect([...shownStore.rows("CampaignHome")]).toEqual([]);
-    for (const entry of board.entries)
-      expect(shownStore.get("Structure", { game_id: 1, entity_id: BigInt(entry.structure_id) })).toBeUndefined();
-    const season = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Season"]')!;
-    await act(async () => season.click());
-    await act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
-    const badges = [...host.querySelectorAll('section[aria-label="Season"] [role="img"]')]
-      .map((badge) => badge.getAttribute("aria-label"))
-      .filter((label) => /Settlement|City|Kingdom|Empire/.test(label ?? ""));
-    expect(badges).toEqual([
-      `${campaigns ? "Devcon · " : ""}Empire · Deep`,
-      `${campaigns ? "Golden Devcon · " : ""}City · Hollow`,
-      "Settlement",
-      "Wonder · Kingdom · Veil",
-    ]);
-    const paintings = [...host.querySelectorAll('section[aria-label="Season"] [role="img"]')]
-      .filter((badge) => /Settlement|City|Kingdom|Empire/.test(badge.getAttribute("aria-label") ?? ""))
-      .map((badge) => badge.querySelector("img")?.getAttribute("src")?.split("/").pop());
-    expect(paintings).toEqual(
-      campaigns
-        ? ["devcon-realm-3.webp", "devcon-golden-realm-1.webp", "realm-0.webp", "wonder-realm-2.webp"]
-        : ["realm-3.webp", "realm-1.webp", "realm-0.webp", "wonder-realm-2.webp"],
-    );
-  },
-);
+it("draws Season ranks and depths outside streamed scope", async () => {
+  const entry = (rank: number, level: number, depth: number) => ({
+    has_wonder: rank === 4,
+    address: `0x${(0xa00 + rank).toString(16)}`,
+    structure_id: String(900 + rank),
+    rank,
+    sites_cleared: { total: 10 - rank, camps: 0, rifts: 0, ruins: 0, beasts: 0 },
+    chests_earned: 0,
+    rewards: { lords: "0", essence: "0", labor: "0" },
+    deepest_depth: depth,
+    level,
+    order: rank,
+    campaign: null,
+  });
+  const board = {
+    game_id: "1",
+    mode: "frontier",
+    entries: [entry(1, 3, 3), entry(2, 1, 2), entry(3, 0, 0), entry(4, 2, 1)],
+  };
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string | URL) =>
+      String(url).includes("/leaderboard")
+        ? new Response(JSON.stringify(board), { status: 200 })
+        : new Response(JSON.stringify({ blocked: [], version: 0 }), { status: 200 }),
+    ),
+  );
+  viewport.set(1920);
+  await renderHud();
+  for (const entry of board.entries)
+    expect(shownStore.get("Structure", { game_id: 1, entity_id: BigInt(entry.structure_id) })).toBeUndefined();
+  const season = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Season"]')!;
+  await act(async () => season.click());
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
+  const badges = [...host.querySelectorAll('section[aria-label="Season"] [role="img"]')]
+    .map((badge) => badge.getAttribute("aria-label"))
+    .filter((label) => /Settlement|City|Kingdom|Empire/.test(label ?? ""));
+  expect(badges).toEqual(["Empire · Deep", "City · Hollow", "Settlement", "Wonder · Kingdom · Veil"]);
+  const paintings = [...host.querySelectorAll('section[aria-label="Season"] [role="img"]')]
+    .filter((badge) => /Settlement|City|Kingdom|Empire/.test(badge.getAttribute("aria-label") ?? ""))
+    .map((badge) => badge.querySelector("img")?.getAttribute("src")?.split("/").pop());
+  expect(paintings).toEqual(["realm-3.webp", "realm-1.webp", "realm-0.webp", "wonder-realm-2.webp"]);
+});
 
 /**
  * The real HUD with Herald's Frontier board answering `prize`, its Season opened and, on a phone, its folded prizes

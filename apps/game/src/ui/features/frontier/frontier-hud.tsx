@@ -52,7 +52,7 @@ import { useHowToPlay } from "@/ui/modules/how-to-play";
 import { FragmentsPurse, PurseRow } from "./value/lords-purse";
 import { useFragmentsHeld } from "./value/fragments";
 import { ShopSheet } from "./shop/shop-sheet";
-import { useHomeKind } from "@/hooks/helpers/use-home-kind";
+import { homeKind } from "@/ui/design-system/home-icons";
 import { OfflineNotice } from "./hud/offline-notice";
 import { SceneFailureNotice } from "./hud/scene-failure-notice";
 import { NextOrderBar, OrderBar } from "./hud/order-bar";
@@ -257,7 +257,7 @@ const FrontierHudBody = ({
           onClose={close}
         />
       )}
-      {surface !== "season" && <SeasonOver realm={visit ? null : realm} />}
+      {surface !== "season" && <SeasonOver />}
       {realm && <DayDone rules={rules} realm={realm} visiting={Boolean(visit)} />}
       <BuildingsInFlight />
       <FrontierOathPick realm={realm} />
@@ -536,12 +536,11 @@ const FrontierRealmPanel = ({
   const stores = useStoreReadings(realm, rules);
   const population = useRealmPopulation(realm);
   const goToPlace = useGoToFrontierPlace(realm);
-  const kind = useHomeKind(realm);
   const fragments = useFragmentsChip();
   return (
     <RealmPanel
       name={name}
-      kind={kind}
+      kind={homeKind(realm.metadata.has_wonder)}
       level={realm.base.level}
       highest={configManager.getMaxLevel(StructureType.Realm)}
       population={population}

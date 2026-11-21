@@ -9,18 +9,17 @@ import { BUILDINGS_CENTER, BuildingType, getProducedResource } from "@bibliothec
 import { getGameModeConfig } from "@/config/game-modes";
 import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset-modes";
 import { BUILDINGS_GROUPS } from "../constants/scene-constants";
-import { REALM_SKIN_MODELS } from "../structures/realm-skins";
 import { FRONTIER_PAINTED_BUILDINGS } from "../structures/frontier-painted-buildings";
 import { prepareBuildingModel } from "./hexception-models";
 import { resolveBuildingModelSelection } from "./hexception-building-model";
 
-it("grounds every buildable kind and tier in each mode, including keeps and cosmetic skins", async () => {
+it("grounds every buildable kind and tier in each mode, including keeps", async () => {
   const { createDecoderModule } = createRequire(import.meta.url)("draco3dgltf");
   const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({
     "draco3d.decoder": await createDecoderModule(),
     "meshopt.decoder": MeshoptDecoder,
   });
-  const paths = new Set([...REALM_SKIN_MODELS, ...FRONTIER_PAINTED_BUILDINGS].map(({ path }) => path));
+  const paths = new Set(FRONTIER_PAINTED_BUILDINGS.map(({ path }) => path));
   const kinds = Object.values(BuildingType).filter(
     (kind): kind is BuildingType => typeof kind === "number" && kind !== BuildingType.None,
   );

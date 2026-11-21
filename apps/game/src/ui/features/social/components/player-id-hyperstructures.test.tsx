@@ -9,7 +9,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { hash } from "starknet";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
 
 const fixture = vi.hoisted(() => ({ store: null as unknown as NativeFactStore }));
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: fixture.store } }) }));
@@ -34,7 +34,7 @@ beforeEach(() => {
   fixture.store = new NativeFactStore();
   fixture.store.setSnapshot({ gameId: 23, complete: true, actor: String(PLAYER), timestamp: 150 });
   configManager.setActiveGame(23);
-  put("SliceRules", [23], { ...preset.rules, game_id: 23 });
+  put("SliceRules", [23], { ...release.definition.rules, game_id: 23 });
   put(
     "GameRegistry",
     [23],

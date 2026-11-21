@@ -75,7 +75,7 @@ it("names a known camp by its beast on the plate, cards, receipt and Events, and
       store,
     ),
   ];
-  const dayEnd = dayEndItems({ claimWaiting: false, camp: { x: 40, y: 12 }, armyCanExplore: false });
+  const dayEnd = dayEndItems({ camp: { x: 40, y: 12 }, armyCanExplore: false });
   const kindWords = {
     listHeading: kindsHeld([{ category: StructureType.Camp, structure }], mode.id)[0].plural,
     unknownGuard: attackTargetName("Camp"),

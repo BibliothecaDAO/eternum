@@ -80,7 +80,6 @@ const RealmStep = () => {
   const [value, setValue] = useState("");
   return (
     <HomeSourcePicker
-      presetId={6}
       registered={null}
       value={value}
       onChange={setValue}

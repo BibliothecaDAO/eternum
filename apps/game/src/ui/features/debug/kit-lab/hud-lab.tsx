@@ -4,12 +4,9 @@ import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import { FeedLine } from "@/ui/features/event-feed/feed-line";
 
-import { canonicalRealm, homeSourceClaim } from "@bibliothecadao/eternum";
+import { canonicalRealm } from "@bibliothecadao/eternum";
 import { BuildingType } from "@bibliothecadao/types";
 import type { AlertsAsk, AlertsPopupAsk } from "@/shell/profile/alerts-ask";
-import { DEVCON_LABOR_RULES } from "@/shell/join/devcon";
-import { homeIcon } from "@/ui/design-system/home-icons";
-import { REALM_SKINS } from "@/three/structures/realm-skins";
 import { GameProvider } from "@/hooks/context/game-context";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { transferTrainedArmies, TRANSFER_TAPPED } from "@/ui/features/frontier/army/transfer-fixture";

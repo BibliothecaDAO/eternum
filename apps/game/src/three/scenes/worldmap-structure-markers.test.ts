@@ -7,15 +7,12 @@ import { HOME_KINDS, homeIcon, type HomeKind } from "@/ui/design-system/home-ico
 import { iconUrl } from "@/ui/design-system/icon-meaning";
 import { StrategicMarkerLayer } from "../managers/strategic-marker-layer";
 import { StructureManager } from "../managers/structure-manager";
-import type { RealmSkin } from "../structures/realm-skins";
 import WorldmapScene from "./worldmap";
 
 const homes = {
   realm: { hasWonder: false },
   wonder: { hasWonder: true },
-  devcon: { hasWonder: false, realmSkin: "devcon" },
-  "devcon-golden": { hasWonder: false, realmSkin: "devcon-golden" },
-} satisfies Record<HomeKind, { hasWonder: boolean; realmSkin?: RealmSkin }>;
+} satisfies Record<HomeKind, { hasWonder: boolean }>;
 
 it("writes every far-view home to its own Settlement painting through the manager and scene, at every realm level", async () => {
   const kinds = Object.keys(HOME_KINDS) as HomeKind[];

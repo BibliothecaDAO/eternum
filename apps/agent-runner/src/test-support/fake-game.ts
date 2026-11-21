@@ -12,7 +12,7 @@ import { WorldSpatialProjection, type HeraldGameDirectoryEntry } from "@biblioth
 import { ContractAddress, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { hash, type AccountInterface } from "starknet";
 import { vi } from "vitest";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../contracts/l3/world-native/schema/release-definition.json";
 import explorer from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import { nativeFactModels, nativeIdentifiers } from "../../../../contracts/l3/world-native/schema/client.gen";
 import type { RecentStoryEvent, RunnerGame } from "../game";
@@ -51,7 +51,7 @@ export const createFakeGame = (signer: AccountInterface | null = PLAYER_SIGNER):
     timestamp: Math.floor(Date.now() / 1_000),
   });
   let snapshotTimestamp = Math.floor(Date.now() / 1_000);
-  writeFact(store, "SliceRules", [GAME_ID], { ...preset.rules, game_id: GAME_ID, map_center_offset: 2147483646 });
+  writeFact(store, "SliceRules", [GAME_ID], { ...release.definition.rules, game_id: GAME_ID, map_center_offset: 2147483646 });
   writeFact(store, "SettlementRules", [GAME_ID], {
     game_id: GAME_ID,
     registration_start: 0,

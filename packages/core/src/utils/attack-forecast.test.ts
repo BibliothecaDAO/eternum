@@ -8,7 +8,7 @@ import {
   TileOccupier,
 } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it } from "vitest";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../contracts/l3/world-native/schema/release-definition.json";
 import {
   nativeTilePackingConstants,
   type NativeModelName,
@@ -59,11 +59,11 @@ function frontier() {
     store.applyFacts([{ model, key: id, value }]);
   };
   write("SliceRules", {
-    ...preset.rules,
+    ...release.definition.rules,
     game_id: GAME_ID,
     day_unit_seconds: DAY,
-    battle_config: { ...preset.rules.battle_config, regular_immunity_ticks: 0 },
-    troop_stamina_config: { ...preset.rules.troop_stamina_config, stamina_attack_req: 10, stamina_defense_req: 0 },
+    battle_config: { ...release.definition.rules.battle_config, regular_immunity_ticks: 0 },
+    troop_stamina_config: { ...release.definition.rules.troop_stamina_config, stamina_attack_req: 10, stamina_defense_req: 0 },
   });
   ClientConfigManager.instance().setStore(store);
   write("SettlementRules", {
@@ -449,7 +449,7 @@ describe("one attack forecast for every combat surface", () => {
     const game = frontier();
     game.home(1, PLAYER, 1);
     game.deepSite(50, DEEP, 300);
-    const base = preset.rules.troop_stamina_config.stamina_knight_max;
+    const base = release.definition.rules.troop_stamina_config.stamina_knight_max;
     const maximum = base + logisticsStamina(5);
     game.army(10, 1, beside(DEEP), { logistics: 5, stamina: BigInt(maximum) });
     const forecast = game.forecast(10, 50);

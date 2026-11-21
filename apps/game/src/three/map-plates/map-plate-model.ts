@@ -171,7 +171,6 @@ export const buildStructurePlate = (
     | "guardArmies"
     | "incomingTroopArrivals"
     | "frontierBeast"
-    | "realmSkin"
     | "level"
     | "hasWonder"
     | "battleTimerLeft"
@@ -211,7 +210,7 @@ export const buildStructurePlate = (
       : structure.structureType === StructureType.Mine && structure.mineKind !== undefined
         ? mineMeaning(structure.mineKind)
         : structure.structureType === StructureType.Realm
-          ? realmMeaning(structure.level, structure.realmSkin, structure.hasWonder)
+          ? realmMeaning(structure.level, structure.hasWonder)
           : structureMeaning(structure.structureType),
     guards,
     ...(inBattle(structure.battleTimerLeft) ? { inBattle: true } : {}),

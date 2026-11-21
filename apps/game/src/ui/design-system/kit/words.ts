@@ -405,8 +405,6 @@ export const DAY_END = {
     `${DAY} ${day ?? "—"} ends in ${dayLength(secondsLeft)}`,
   open: "Open",
   goes: "At day end, today's map and armies go",
-  claim: "Claim today's Labor",
-  claimVerb: "Claim",
   site: (name: string) => `Clear today's ${name}`,
   siteVerb: "Show",
   explore: "Your army can explore",
@@ -863,8 +861,6 @@ export const DAY_BANNER_WORDS = {
   /** How many members of the Aspect finished the bane's quest: "4 of 6 members". */
   members: (completed: number, required: number) => `${formatExact(completed)} of ${formatExact(required)} members`,
   membersShort: (completed: number, required: number) => `${formatExact(completed)} of ${formatExact(required)}`,
-  /** Today's claim waiting at the realm: "Labor and Essence waiting". */
-  claimWaiting: "Waiting in Realms",
   triumph: "Triumph",
   /** What the Aspect's active Triumph does, by its stage, at the percent the game's rules set. */
   triumphRule: {
@@ -1179,21 +1175,6 @@ export const SHARED_LINK_WORDS = {
 /** A season's end, told one of two ways (story): the mist lifted, or it grew too strong. */
 export const SEASON_ENDINGS = { lifted: "The mist lifted", strong: "The mist grew too strong" } as const;
 
-/**
- * Season 0's end, the weekend of Diwali, for a Devcon realm's owner (every other player meets the season's usual end):
- * thanks, the festival, and the Season 1 ticket the owner promised (11-04: a special ticket with a special realm, on the
- * same account; no tier is named). Plain words for players who read English as a second language.
- */
-export const FESTIVAL_WORDS = {
-  thanks: "Thanks for playing",
-  enjoy: "Happy Diwali! Go enjoy it with the people you love.",
-  ticketFor: "For Devcon realm owners",
-  ticketTitle: "You get a special Season 1 ticket",
-  ticketLine: "With a special realm",
-  ticketStub: "Season 1 · Devcon",
-  ticketHow: "It will be on this account. Nothing to do.",
-  seeSeason: "See my season",
-} as const;
 export const SEASON_ERROR = "Season did not answer.";
 export const TODAY_ERROR = "Today did not answer.";
 /** A day's totals the player's history cannot give: the read keeps only the newest stories, or did not answer. */
@@ -1245,37 +1226,8 @@ export const PAYOUTS_UNREADABLE = "Payouts cannot be read right now";
 /** A withdrawal with no answer from the game: it may still apply, so it is never sent again on its own. */
 export const withdrawalUnknown = (amount: string) => `No answer yet for these ${amount}`;
 
-export const REALM_LABOR = "Realm Labor";
-export const NO_REALM_LABOR = "No daily Labor claim";
-/** What a home's claim gives each game day, after its amounts. */
-export const EACH_DAY = "each day";
-/** The claim's step: what it gives, its Labor that fits and a golden ticket's Essence, each only when there is some. */
-export const claimRealmLaborLabel = (amount: number, essence = 0) =>
-  `Claim ${[
-    ...(amount > 0 ? [`${formatExact(amount)} Labor`] : []),
-    ...(essence > 0 ? [`${formatExact(essence)} Essence`] : []),
-  ].join(" · ")}`;
 /** A campaign home's mark beside its realm's rank: the event that founded it, golden for a golden ticket's. */
 export const DEVCON = "Devcon";
-export const CLAIMING_LABOR = "Claiming";
-/** Today's Labor against a full store: what of it lands, the rest is lost with the claim. */
-export const laborFits = (fits: number, total: number) =>
-  `${formatExact(fits)} of ${formatExact(total)} Labor fit · storage full`;
-/** Once claimed: when the next game day, and its claim, opens. */
-export const dayOpensIn = (day: number, secondsLeft: number | undefined) =>
-  `Day ${day} opens in ${dayLength(secondsLeft)}`;
-/** Once claimed on the season's last day: no day follows, only the season's end. */
-export const seasonEndsIn = (secondsLeft: number | undefined) => `Season ends in ${dayLength(secondsLeft)}`;
-/** Each state of a season day on the Realm Labor sheet's strip, as assistive technology names it after the day. */
-export const SEASON_DAY_STATES = {
-  claimed: "claimed",
-  missed: "missed",
-  open: "to claim",
-  ahead: "ahead",
-  before: "before your home",
-} as const;
-export const seasonDayLabel = (day: number, state: keyof typeof SEASON_DAY_STATES) =>
-  `Day ${day} ${SEASON_DAY_STATES[state]}`;
 /** The phone's own time zone: the server words a push's times by this clock. */
 export const deviceTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 /** The claimed sheet's ask for a push when the next game day opens, on this device, and its state once on. */
@@ -1333,11 +1285,7 @@ export const HOME_STEP_WORDS = {
   /** The strip's last tile: every choice, in a grid with search. */
   all: (count: number) => `All ${count}`,
   search: (count: number) => `Search ${count} Realms`,
-  /** Over the choices: "1 ticket · 3 Realms". */
-  count: (tickets: number, realms: number) =>
-    [tickets ? formatCount(tickets, "ticket") : null, realms ? formatCount(realms, "Realm") : null]
-      .filter(Boolean)
-      .join(" · "),
+  count: (realms: number) => formatCount(realms, "Realm"),
 } as const;
 
 export const POOL_NOT_PUBLISHED = "Pool not published yet";
@@ -1460,8 +1408,6 @@ export const JOIN_WORDS = {
   golden: "Golden ticket",
   goldenLine: "A golden realm waits",
   goldenStub: "Golden · Devcon · Mumbai",
-  laborEachDay: (amount: number) => `${formatExact(amount)} Labor ${EACH_DAY}`,
-  essenceEachDay: (amount: number) => `${formatExact(amount)} Essence ${EACH_DAY}`,
   /** The reveal's way on, into the Devcon game's Realm step. */
   startAdventure: "Start your adventure",
   continue: "Continue",
@@ -1631,8 +1577,6 @@ export const DOORWAY_WORDS = {
   stepOf: (step: number, of: number) => `Step ${step} of ${of}`,
   secondsLeft: (seconds: number) => `About ${seconds} s left`,
   /** What the first minutes hold, said while a player's map loads. */
-  claimTitle: "Claim Labor every day",
-  claimDetail: "Your realm's daily claim, free each Frontier day",
   firstTitle: "First: build a Barracks",
   firstDetail: "Then send your first army to explore",
   /** The bar, named for assistive technology. */

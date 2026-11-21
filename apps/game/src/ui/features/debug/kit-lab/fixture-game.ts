@@ -7,7 +7,7 @@ import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { type BuildingType, getProducedResource, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
 import { GAME_FAMILIES } from "../../../../../../../config/source/common/native-preset-modes";
 import type { GameType } from "../../../../../../../config/source/common/types";
 
@@ -46,7 +46,7 @@ export const installBuildingRules = (store: NativeFactStore, buildings: readonly
     (resource) => !store.get("ProductionRecipe", { game_id: 1, resource_type: resource }),
   );
   store.applyFacts([
-    ...preset.buildings.map(({ category, rule }) => ({
+    ...release.definition.structures.buildings.map(({ category, rule }) => ({
       model: "BuildingRule",
       key: `0x6${category}`,
       value: { ...rule, category, game_id: 1 },
@@ -141,7 +141,7 @@ export const installLabGame = (
         population: { current: 2, max: 6 },
       },
     },
-    ...preset.buildings.map(({ category, rule }) => ({
+    ...release.definition.structures.buildings.map(({ category, rule }) => ({
       model: "BuildingRule",
       key: `0x6${category}`,
       value: { ...rule, category, game_id: 1 },

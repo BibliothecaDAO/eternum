@@ -6,8 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { aspects, formatDate, formatLongDate, ordersOfAspect } from "@bibliothecadao/types";
 
-import { FRONTIER_S1_PRESET_ID } from "../../../../../config/source/common/native-preset-modes";
-import { nativePresets } from "../../../../../config/source/native";
+import release from "../../../../../contracts/l3/world-native/schema/release-definition.json";
 
 import type { SeasonCalendar } from "../season-calendar";
 import type { DirectoryGame } from "../herald";
@@ -106,21 +105,17 @@ const game = (over: Partial<DirectoryGame>): DirectoryGame =>
     name: "frontier-1",
     mode: "frontier",
     status: "Live",
-    ready: true,
     expedition: null,
     clock: {
       start_settling_at: 0,
       start_main_at: 100,
       scheduled_end_at: 4_000_000_000,
       end_at: 4_000_000_000,
-      end_grace_seconds: 0,
     },
     player_count: 10,
-    roster_count: 0,
     player_state: {
       registered: false,
       settled: false,
-      roster_wallet: null,
       held_realm_id: null,
       has_home_source: false,
       taken_realm_ids: [],
@@ -132,7 +127,6 @@ const ownSeason = game({
   player_state: {
     registered: true,
     settled: true,
-    roster_wallet: null,
     held_realm_id: null,
     has_home_source: false,
     taken_realm_ids: [],
@@ -240,7 +234,6 @@ it.each(["Registration", "Live"] as const)("offers no entry for a retired Eternu
     game_id: 9,
     mode: "eternum",
     status,
-    ready: true,
     player_state: { ...ownSeason.player_state, registered: true },
   } as Partial<DirectoryGame>);
   reads.directory = answered({ games: [ownSeason, retired] });
@@ -308,7 +301,6 @@ describe("the season's countdown, while its first day is ahead and Play has no g
         phase: "frontier",
         startsAt: new Date(from * 1000).toISOString(),
         endsAt: new Date((from + 50 * DAY) * 1000).toISOString(),
-        presetId: FRONTIER_S1_PRESET_ID,
       },
     ],
   });
@@ -326,7 +318,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(countdown.querySelector("h1")?.textContent).toBe(`The season opens ${formatLongDate(startsAt, now)}`);
     expect(countdown.querySelector(".app-chip")?.textContent).toBe("Starts in 14d 4h");
     expect(countdown.textContent).toContain(
-      `Pick your side before it starts. 4 Aspects, ${nativePresets[FRONTIER_S1_PRESET_ID]!.race!.seasonDays} days`,
+      `Pick your side before it starts. 4 Aspects, ${Number(release.definition.economy.race.Some.season_days)} days`,
     );
     expect(
       [...countdown.querySelectorAll("[data-aspect]")].map((aspect) => [
