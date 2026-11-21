@@ -54,7 +54,6 @@ const game = (over: Partial<DirectoryGame>): DirectoryGame => ({
   name: "frontier-1",
   mode: "frontier",
   status: "Live",
-  ready: true,
   dev_mode_on: false,
   expedition: null,
   clock: {
@@ -143,7 +142,6 @@ const eternum = game({
   name: "eternum-1",
   mode: "eternum",
   status: "Registration",
-  ready: false,
   clock: {
     start_settling_at: NOW + 7 * DAY,
     start_main_at: NOW + 7 * DAY,
@@ -156,7 +154,6 @@ const eternum = game({
 const openEternum = game({
   ...eternum,
   status: "Live",
-  ready: true,
   clock: {
     start_settling_at: NOW - DAY,
     start_main_at: NOW - DAY,

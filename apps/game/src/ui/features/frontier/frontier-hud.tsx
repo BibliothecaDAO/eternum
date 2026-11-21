@@ -79,11 +79,7 @@ type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 
 type FrontierHudProps = {
   rules: ExpeditionRules;
-  /** The host owns the shell recap; the HUD supplies the player's realm and pending payout. */
-  seasonOver: ComponentType<{
-    realm: NativeRows["Structure"] | null;
-    withdraw?: ReactNode;
-  }>;
+  seasonOver: ComponentType<{ withdraw?: ReactNode }>;
 };
 
 /**

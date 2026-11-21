@@ -26,7 +26,6 @@ const season = {
   roster_count: 0,
   player_state: {
     registered: true,
-    roster_wallet: null,
     held_realm_id: null,
     has_home_source: false,
     taken_realm_ids: [],

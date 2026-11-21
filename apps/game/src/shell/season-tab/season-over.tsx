@@ -10,6 +10,7 @@ import { configManager } from "@bibliothecadao/eternum";
 import { useState, type ComponentProps, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { useLayout } from "../frame/layout";
 import { useFinishedGame } from "./finished-game";
 import { SeasonRecap } from "./season-recap";
 

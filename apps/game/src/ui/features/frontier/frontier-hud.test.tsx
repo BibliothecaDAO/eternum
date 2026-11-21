@@ -119,7 +119,7 @@ const renderHud = () =>
     root.render(
       <MemoryRouter>
         <QueryClientProvider client={new QueryClient()}>
-          <LabGame mode="frontier" facts={(store) => [LABOR_RULES, sealRelease(store)]}>
+          <LabGame mode="frontier" facts={(store) => [sealRelease(store)]}>
             {(store) => {
               shownStore = store;
               return <FrontierHud seasonOver={SeasonOver} rules={readExpeditionRules(store, 1)!} />;
@@ -142,23 +142,6 @@ const sealRelease = (store: NativeFactStore) => {
     },
   };
 };
-
-const LABOR_RULES = {
-  model: "LaborRules",
-  key: "0x1ab",
-  value: { game_id: 1, amount: "1000", campaign_essence: "0", golden_amount: "1000", golden_essence: "0" },
-};
-
-it("opens Realm Labor from the desktop panel and explains why a free home has no claim", async () => {
-  viewport.set(1440);
-  await renderHud();
-  const realms = [...host.querySelectorAll("button")].find(
-    (button) => button.getAttribute("aria-label") === "Realm Labor",
-  );
-  expect(realms).toBeDefined();
-  await act(async () => realms!.click());
-  expect(host.textContent).toContain("No daily Labor claim");
-});
 
 it("keeps one chat connection and its unread count from desktop to phone and back, through the Frontier HUD", async () => {
   viewport.set(1440);
@@ -489,7 +472,6 @@ it("opens a phone's Menu as a page on the place bar in the one frame, which its 
 it.each([
   ["Today", "Today"],
   ["Season", "Season"],
-  ["Realm Labor", "Realm Labor"],
   ["Settings", "Settings"],
 ])(
   "opens %s from a phone's Menu whichever part of its row is tapped: its icon, its words or its chevron",
@@ -529,7 +511,6 @@ const PHONE_SURFACES = {
   menu: { label: "Menu", open: () => pressPlace("Menu") },
   today: { label: "Today", open: () => fromMenu("Today") },
   season: { label: "Season", open: () => fromMenu("Season") },
-  realms: { label: "Realm Labor", open: () => fromMenu("Realm Labor") },
   settings: { label: "Settings", open: () => fromMenu("Settings") },
   shop: {
     label: "Shop",
@@ -666,7 +647,6 @@ it("keeps the extended season live past its old end and reloads its final day fr
                 setBlockTimestampSource(() => currentTime);
                 useBlockTimestampStore.setState({ currentBlockTimestamp: now });
                 return [
-                  LABOR_RULES,
                   {
                     model: "GameRegistry",
                     key: "0x3",
@@ -765,7 +745,6 @@ const renderVisit = async (facts: unknown[] = []) => {
                 visited: getStructureName(visited, store).name,
               };
               return [
-                LABOR_RULES,
                 { model: "Structure", key: "0x1ad0", value: wireRow(visited) },
                 {
                   model: "RealmKnowledge",
@@ -885,12 +864,12 @@ it("opens chat on Global over the game when a mention's alert is pressed, the ga
     // Chat closed, Messages the last view: the press opens it on Global.
     await act(async () => useRealtimeChatStore.getState().actions.showMessages());
     expect(chatOpen()).toBe(false);
-    const labor = host.querySelector('[aria-label="Realm Labor"]') !== null;
+    const places = host.querySelector('nav[aria-label="Places"]') !== null;
     await pressAlert("mention", "/chat", "mention:global");
     expect(chatOpen()).toBe(true);
     expect(useRealtimeChatStore.getState().view).toEqual({ kind: "room", zoneId: "world:global" });
     // The game stays where it was: its HUD, not another page.
-    expect(host.querySelector('[aria-label="Realm Labor"]') !== null).toBe(labor);
+    expect(host.querySelector('nav[aria-label="Places"]') !== null).toBe(places);
     act(() => root.unmount());
     root = createRoot(host);
   }

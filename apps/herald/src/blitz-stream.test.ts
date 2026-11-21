@@ -18,7 +18,6 @@ it("preserves the whole Blitz game's facts through snapshot, overlay, confirmati
       seedDerivedRows(fold, decoder, [
         gameRegistryEvent({
           name: "7",
-          preset_id: 2,
           start_settling_at: "120",
           start_main_at: "120",
           scheduled_end_at: "999999",

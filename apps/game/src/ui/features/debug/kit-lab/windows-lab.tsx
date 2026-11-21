@@ -92,6 +92,9 @@ const automatedRecipes = () =>
   }));
 
 /** Opens a window on the popover host, as the game's buttons open it. */
+const withBigAmounts = (costs: readonly { resource_type: number; amount: string }[]) =>
+  costs.map((cost) => ({ ...cost, amount: BigInt(cost.amount) }));
+
 const openWindow = (id: string, content: ReactNode) => usePopoverStore.getState().openSurface({ id, content });
 
 /** Opens a window that lives on the popover host, the way its button opens it in the game. */
@@ -286,8 +289,8 @@ export const WindowsLab = () => {
           ...rule,
           game_id: 1,
           category,
-          simple_cost: rule.simple_cost.map((cost) => ({ ...cost, amount: BigInt(cost.amount) })),
-          complex_cost: rule.complex_cost.map((cost) => ({ ...cost, amount: BigInt(cost.amount) })),
+          simple_cost: withBigAmounts(rule.simple_cost),
+          complex_cost: withBigAmounts(rule.complex_cost),
         },
       })),
     ] as never);

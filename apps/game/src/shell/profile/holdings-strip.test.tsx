@@ -157,11 +157,11 @@ describe.each([1440, 390])("Holdings on the player's own card, at %i px", (width
   });
 
   it.each([
-    { tier: "regular" as const, cell: "DevconTicket", face: "opened", claim: "1,000 Labor each day" },
-    { tier: "golden" as const, cell: "DevconGolden ticket", face: "golden", claim: "2,000 Labor each day" },
+    { tier: "regular" as const, cell: "DevconTicket", face: "opened" },
+    { tier: "golden" as const, cell: "DevconGolden ticket", face: "golden" },
   ])(
-    "shows a $tier Devcon ticket, and in its sheet the ticket and its realm's daily claim",
-    async ({ tier, cell, face, claim }) => {
+    "shows a $tier Devcon ticket, and in its sheet the ticket",
+    async ({ tier, cell, face }) => {
       signedIn.wallet = "0x269c";
       relay(() => held());
       ticket(tier);
@@ -170,8 +170,6 @@ describe.each([1440, 390])("Holdings on the player's own card, at %i px", (width
       await you.press(cell);
       const sheet = you.sheet()!;
       expect(sheet.querySelector(".app-ticket")?.getAttribute("data-face")).toBe(face);
-      expect(sheet.textContent).toContain(claim);
-      expect(DEVCON.claim(tier === "golden").labor.toLocaleString("en-US")).toBe(claim.split(" ")[0]);
     },
   );
 });

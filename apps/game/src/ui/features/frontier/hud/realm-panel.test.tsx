@@ -50,7 +50,6 @@ const named = () => [...host.querySelectorAll("[aria-label]")].map((element) => 
 
 it("reads the player's realm as Blitz's card reads a holding: name, rank, a ring per store and its LORDS", () => {
   const onWithdraw = vi.fn();
-  const onRealms = vi.fn();
   act(() =>
     root.render(
       <RealmPanel
@@ -58,9 +57,7 @@ it("reads the player's realm as Blitz's card reads a holding: name, rank, a ring
         level={1}
         stores={STORES}
         lords={1_240}
-        waiting={{ labor: 2_000, essence: 0 }}
         onWithdraw={onWithdraw}
-        onRealms={onRealms}
       />,
     ),
   );
@@ -78,8 +75,6 @@ it("reads the player's realm as Blitz's card reads a holding: name, rank, a ring
   );
   act(() => (host.querySelector('[aria-label="LORDS 1,240"]') as HTMLButtonElement).click());
   expect(onWithdraw).toHaveBeenCalledTimes(1);
-  act(() => (host.querySelector('[aria-label="Realm Labor +2,000 Labor"]') as HTMLButtonElement).click());
-  expect(onRealms).toHaveBeenCalledTimes(1);
 });
 
 it("marks the LORDS of an account with no linked wallet, its name and hover saying why, still opening Withdraw", () => {
@@ -150,7 +145,7 @@ it("opens a store's card under the rings from the ring of a store that has one",
 it("shows a realm watched or visited by its stores alone: no LORDS and no Realms", () => {
   act(() => root.render(<RealmPanel name="Duskbite" level={2} stores={STORES} />));
   expect(host.textContent).toContain("Kingdom");
-  expect(named().filter((name) => name?.startsWith("LORDS") || name?.startsWith("Realm Labor"))).toEqual([]);
+  expect(named().filter((name) => name?.startsWith("LORDS"))).toEqual([]);
   expect(host.querySelectorAll("button.ui-ring")).toHaveLength(0);
 });
 
