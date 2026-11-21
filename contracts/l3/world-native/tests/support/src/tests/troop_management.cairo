@@ -54,13 +54,8 @@ pub fn replay_armies(record: bool) {
     let destination = crate::geometry::neighbor(origin, 0);
     let map = IMapLogicDispatcher { contract_address: d.games };
     map.reveal(crate::geometry::tile_key(3, destination), 11);
-    let views = IStructureOperationsDispatcher { contract_address: d.games };
     let entities = array![home.entity_id, other.entity_id, first, second].span();
-    let tiles = array![
-        views.position(home).unwrap(), views.position(other).unwrap(), origin, troop(d, second).unwrap().coord,
-        destination,
-    ]
-        .span();
+    let tiles = array![origin, troop(d, second).unwrap().coord, destination].span();
     let mut frames = array![super::spatial_replay::initial(d.games, 3, entities, tiles)];
     super::state::assert_inline_armies_have_no_progress(d.games, 3, array![first, second].span());
     let mut spy = spy_events();

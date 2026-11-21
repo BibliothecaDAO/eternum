@@ -26,7 +26,7 @@ pub fn change(home: ResourceKey) -> ChangeBuilding {
 pub fn replay_buildings(record: bool) {
     let (d, home) = research_world();
     let entities = array![home.entity_id].span();
-    let tiles = array![IStructureOperationsDispatcher { contract_address: d.games }.position(home).unwrap()].span();
+    let tiles = array![].span();
     let mut frames = array![super::spatial_replay::initial(d.games, 3, entities, tiles)];
     let mut spy = snforge_std::spy_events();
     let start = super::play_fixture::FIXTURE_START;
