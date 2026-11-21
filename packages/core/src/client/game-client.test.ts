@@ -78,7 +78,7 @@ const registrySnapshot = {
   epoch: "epoch-a",
   seq: 0,
   model: "GameRegistry",
-  rows: [{ key: "0x36", value: gameRegistryRow({ game_id: 54, preset_id: 2 }) }],
+  rows: [{ key: "0x36", value: gameRegistryRow({ game_id: 54 }) }],
 };
 const reviewRegistry = {
   model: "GameRegistry",
@@ -92,7 +92,6 @@ const reviewRegistry = {
         end_at: "0x6ad5da80",
         game_id: 54,
         settled: true,
-        preset_id: 2,
         start_main_at: "0x6ad5cf60",
         start_settling_at: "0x6ad5ce34",
       }),
@@ -122,7 +121,6 @@ const createHarness = (overrides: Partial<CreateGameClientInput> = {}) => {
       l2GasBound: 0x47868c00n,
     },
     gameId: 54,
-    presetId: 2,
     bindings: bindings as unknown as NativeWorldBindings,
     scheduler,
     socketFactory: () => {

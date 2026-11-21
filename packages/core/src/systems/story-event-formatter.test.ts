@@ -649,7 +649,6 @@ describe("a story's subject", () => {
 
 describe("a resource transfer", () => {
   it("names each end as the structure or the army it is, and leaves out an end the store no longer holds", () => {
-    vi.spyOn(configManager, "getPresetId").mockReturnValue(2);
     const { store, setHeldRealm, setExplorer } = buildStore();
     setHeldRealm(5, 1, 1);
     setExplorer(7, 5, "T1");
@@ -677,7 +676,6 @@ describe("a delivery's story", () => {
   /** QA run 3: wheat sent at 02:50:57 local with 27 s on the road landed at 02:54. */
   const sentAt = (hours: number, minutes: number, seconds: number) => new Date(2026, 9, 17, hours, minutes, seconds);
   const told = (sent: Date, travel: number) => {
-    vi.spyOn(configManager, "getPresetId").mockReturnValue(2);
     vi.spyOn(configManager, "getTick").mockReturnValue(180);
     const { store } = buildStore();
     return buildStoryEventPresentation(

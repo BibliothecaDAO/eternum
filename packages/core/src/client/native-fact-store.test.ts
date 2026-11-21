@@ -505,7 +505,7 @@ describe("declared fact absence", () => {
         spacing: 10,
         mode: "Single",
       }),
-      set("0x3", "GameRegistry", gameRegistryRow({ preset_id: 2 })),
+      set("0x3", "GameRegistry", gameRegistryRow()),
     ]);
     setBlockTimestampSource(() => 350);
     store.applyFacts([set("0x7", "Structure", structure("0x111"))]);
@@ -600,7 +600,7 @@ describe("declared fact absence", () => {
         spacing: 10,
         mode: "Single",
       }),
-      set("0x3", "GameRegistry", gameRegistryRow({ preset_id: 2 })),
+      set("0x3", "GameRegistry", gameRegistryRow()),
       set("0x7", "Structure", structure("0x111")),
     ]);
     setBlockTimestampSource(() => 350);
@@ -655,7 +655,7 @@ describe("declared fact absence", () => {
         spacing: 10,
         mode: "Single",
       }),
-      set("0x3", "GameRegistry", gameRegistryRow({ preset_id: 2 })),
+      set("0x3", "GameRegistry", gameRegistryRow()),
       set("0x7", "Structure", structure("0x111")),
       set("0x80", "ArmySlot", {
         game_id: 1,
@@ -695,7 +695,7 @@ describe("declared fact absence", () => {
         spacing: 10,
         mode: "Single",
       }),
-      set("0x3", "GameRegistry", gameRegistryRow({ preset_id: 2 })),
+      set("0x3", "GameRegistry", gameRegistryRow()),
     ]);
     store.applyFacts([
       set("0x7", "Structure", structure("0x111")),

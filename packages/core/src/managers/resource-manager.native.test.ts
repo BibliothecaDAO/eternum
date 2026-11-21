@@ -14,8 +14,6 @@ const upsert = (key: string, models: Record<string, Record<string, unknown>>): G
 const weight = (game = 1) => ({ game_id: game, entity_id: 7, capacity: 1000n, weight: 0n });
 const balance = (game = 1) => ({ game_id: game, entity_id: 7, resource_type: 23, balance: 9007199254740993n });
 const game = gameRegistryRow({
-  preset_id: 1,
-  ready: false,
   start_settling_at: "0",
   start_main_at: "200",
   scheduled_end_at: "1100",
@@ -113,7 +111,7 @@ describe("native resource facts", () => {
       ...upsert("0x100", {
         SliceRules: { ...release.definition.rules, game_id: 1, day_unit_seconds: 100, mode_rules: 0 },
       }),
-      ...upsert("0x101", { GameRegistry: { ...game, ready: true } }),
+      ...upsert("0x101", { GameRegistry: game }),
       ...upsert("0x102", {
         SettlementRules: {
           game_id: 1,
@@ -202,7 +200,7 @@ describe("native resource facts", () => {
     expect(observed).toBeUndefined();
     expect(() => second.current(0)).toThrow("Invalid resource");
   });
-  it("starts every Blitz producer at the fixed main clock, even while the roster is still being seated", () => {
+  it("starts every producer at the fixed main clock under the production-start rule", () => {
     const store = new NativeFactStore();
     store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 350 });
     store.applyFacts([
@@ -212,7 +210,7 @@ describe("native resource facts", () => {
       }),
       ...upsert("0x2", {
         SliceRules: { ...rules, game_id: 1, mode_rules: nativeRuleConstants.PRODUCTION_START },
-        GameRegistry: { ...game, ready: false, start_main_at: 1000n },
+        GameRegistry: { ...game, start_main_at: "1000" },
       }),
     ]);
     const manager = new ResourceManager(store, 7, 1);
