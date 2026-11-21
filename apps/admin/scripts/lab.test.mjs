@@ -41,7 +41,6 @@ it("answers production's calendar with the Devcon season's dates from its campai
     expect(calendar.value).toEqual([
       {
         phase: "frontier",
-        presetId: 6,
         startsAt: new Date(devcon.startsAt * 1000).toISOString(),
         endsAt: new Date(devcon.redeemUntil * 1000).toISOString(),
       },
