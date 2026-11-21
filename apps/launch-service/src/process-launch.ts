@@ -1,5 +1,3 @@
-import { SlotCancelled } from "./paid-blitz";
-import { RegistrationOpen } from "./blitz-roster";
 import { Effect, Result } from "effect";
 import { describeFailure } from "./errors";
 import { LaunchExecutor } from "./executor";
@@ -14,7 +12,7 @@ export const processNextLaunch = (now: number) =>
     const executor = yield* LaunchExecutor;
     const run = yield* databaseOperation("start launch", () => store.startNext(now));
     if (!run) return false;
-    if (run.slotId === null && run.attempts > MAX_ATTEMPTS) {
+    if (run.attempts > MAX_ATTEMPTS) {
       const message = `Launch interrupted after ${run.attempts - 1} attempts`;
       yield* databaseOperation("fail launch", () => store.fail(run.id, message));
       yield* Effect.logError("launch_failed", { runId: run.id, error: message });
@@ -31,22 +29,9 @@ export const processNextLaunch = (now: number) =>
       return true;
     }
 
-    if (result.failure.cause instanceof RegistrationOpen) {
-      const delayMs = result.failure.cause.secondsUntilClose * 1_000;
-      yield* databaseOperation("defer launch", () => store.defer(run.id, delayMs));
-      yield* Effect.logInfo("launch_deferred", { runId: run.id, name: run.name, delayMs });
-      return true;
-    }
-
     const message = describeFailure(result.failure.cause);
-    if (result.failure.cause instanceof SlotCancelled) {
-      yield* databaseOperation("cancel slot launch", () => store.fail(run.id, message));
-      return true;
-    }
-    const paid = run.slotId !== null;
-    if (paid || run.attempts < MAX_ATTEMPTS) {
-      const backoff = Math.min(300000, RETRY_DELAY_MS * 2 ** Math.min(run.attempts - 1, 6));
-      yield* databaseOperation("retry launch", () => store.retry(run.id, message, paid ? backoff : RETRY_DELAY_MS));
+    if (run.attempts < MAX_ATTEMPTS) {
+      yield* databaseOperation("retry launch", () => store.retry(run.id, message, RETRY_DELAY_MS));
       yield* Effect.logWarning("launch_retry_queued", { runId: run.id, attempt: run.attempts, error: message });
     } else {
       yield* databaseOperation("fail launch", () => store.fail(run.id, message));

@@ -33,7 +33,6 @@ const ENVIRONMENTS = {
         slotId: 4,
         name: "blitz-20261016-1600",
         closesAt: "2026-10-16T15:55:00Z",
-        frozenAt: null,
         closed: false,
       },
       {
@@ -41,7 +40,6 @@ const ENVIRONMENTS = {
         slotId: 3,
         name: "blitz-20261016-1400",
         closesAt: "2026-10-16T13:55:00Z",
-        frozenAt: "2026-10-16T13:55:00Z",
         closed: true,
       },
     ],
@@ -126,7 +124,6 @@ const write = (environment, route, body) => {
       slotId: env.slots.length + 1,
       name: body.name,
       closesAt: body.closesAt,
-      frozenAt: null,
       closed: false,
     });
     action = "Open Blitz slot";

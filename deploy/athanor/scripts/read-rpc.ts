@@ -11,7 +11,6 @@ import {
   SHARD_RPC_MAX_BATCH_CALLS as MAX_BATCH_CALLS,
   SHARD_RPC_MAX_REQUEST_BYTES as MAX_REQUEST_BYTES,
 } from "../../../packages/value-ledger/src/shard-rpc-limits";
-import { seaterAccountAddresses } from "../../../packages/value-ledger/src/shard-accounts";
 import {
   PLAY_REFUSED_CODE,
   PLAYS_IN_FLIGHT,
@@ -23,13 +22,6 @@ const FORWARD_TIMEOUT_MS = 5000;
 type Preparation = { signal: AbortSignal; deadline: number };
 type ProxyIdentity = ShardIdentity & PlayIdentity & { playerCapacity: number };
 type AccountClassReader = (sender: string, signal: AbortSignal) => Promise<string>;
-/**
- * A player's play may run PLAYS_IN_FLIGHT - 1 nonces past its account's current one, so a burst of orders waits on a
- * round trip per play, not on each play's inclusion; the mempool holds at most PLAYS_IN_FLIGHT of its plays. A stamp
- * ahead of the current nonce is not readable before it executes: no public method returns a transaction's body. A
- * seater, one of the pool accounts that seat fixed rosters, may queue its seats this far ahead.
- */
-const SEATER_NONCE_WINDOW = 48n;
 const PLAYER_NONCE_WINDOW = BigInt(PLAYS_IN_FLIGHT - 1);
 
 /** The preparation ran out of time before the play could be forwarded. */
@@ -147,7 +139,6 @@ export function startReadRpc(
   }
   assertPlayerCapacity(identity.playerCapacity);
   const readAccountClass = accountClassReader(node, identity);
-  const seaters = new Set(seaterAccountAddresses(identity).map((address) => felt(address)!));
   const allowance = accountRequestLimiter();
   const inFlightAccounts = new Set<string>();
   // Browsers hide a cross-origin request's connect, TLS and wait timings unless the response allows it. Only a dev chain
@@ -169,7 +160,6 @@ export function startReadRpc(
         allowance,
         inFlightAccounts,
         readAccountClass,
-        seaters,
         writesClosed,
       );
       if (timingAllowed) response.headers.set("Timing-Allow-Origin", "*");
@@ -217,7 +207,6 @@ async function handlePublicRequest(
   allowance: ReturnType<typeof accountRequestLimiter>,
   inFlightAccounts: Set<string>,
   readAccountClass: AccountClassReader,
-  seaters: ReadonlySet<bigint>,
   writesClosed: () => boolean,
 ): Promise<Response> {
   const preparation: Preparation = {
@@ -274,7 +263,6 @@ async function handlePublicRequest(
         preparation,
         request.signal,
         readAccountClass,
-        seaters,
       ),
     ),
   );
@@ -419,7 +407,6 @@ async function forwardRequest(
   preparation: Preparation,
   clientSignal: AbortSignal,
   readAccountClass: AccountClassReader,
-  seaters: ReadonlySet<bigint>,
 ): Promise<unknown> {
   const { call, game } = admitted;
   const play = game?.entrypoint.stamp ? game.transaction : undefined;
@@ -443,8 +430,7 @@ async function forwardRequest(
       );
       // Retrying the same accepted transaction uses the same root.
       if (felt(accountClass) !== felt(identity.accountClassHash)) return transactionRefused(call, "validation");
-      if (!admitsNonce(felt(play.nonce), felt(nonce), seaters.has(felt(play.sender_address)!)))
-        return transactionRefused(call, "nonce");
+      if (!admitsNonce(felt(play.nonce), felt(nonce))) return transactionRefused(call, "nonce");
       assertBeforeForward(preparation);
       stage = "stamp";
       const stamp = stamper.stamp(play);
@@ -479,9 +465,9 @@ async function forwardRequest(
   }
 }
 
-function admitsNonce(sent: bigint | undefined, current: bigint | undefined, isSeater: boolean): boolean {
+function admitsNonce(sent: bigint | undefined, current: bigint | undefined): boolean {
   if (sent === undefined || current === undefined) return false;
-  return sent >= current && sent <= current + (isSeater ? SEATER_NONCE_WINDOW : PLAYER_NONCE_WINDOW);
+  return sent >= current && sent <= current + PLAYER_NONCE_WINDOW;
 }
 
 async function assertChainIdentity(node: URL, identity: PlayIdentity, limit: bigint) {

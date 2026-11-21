@@ -32,7 +32,6 @@ const slot = (name: string, closesAtSeconds: number, over: Partial<PlaytestSlot>
   chainId: "0xa",
   name,
   closesAt: new Date(closesAtSeconds * 1000).toISOString(),
-  frozenAt: null,
   closed: false,
   ...over,
 });
@@ -77,7 +76,7 @@ describe("the lobby's Blitz rows", () => {
         blitz(4, { status: "Settled" }),
         { ...blitz(5, {}), mode: "frontier" },
       ],
-      [slot("late", 5_000), slot("soon", 1_042), slot("frozen", 900, { frozenAt: "x", closed: true })],
+      [slot("late", 5_000), slot("soon", 1_042), slot("closed", 900, { closed: true })],
     );
     expect(rows.map((row) => [row.key, row.startsAt, row.action])).toEqual([
       ["game:0xa:1", null, "spectate"],
@@ -159,7 +158,7 @@ describe("the game that seats a wallet", () => {
 });
 
 describe("a closed slot that owes the player a refund", () => {
-  const closed = slot("closed", 900, { frozenAt: "x", closed: true });
+  const closed = slot("closed", 900, { closed: true });
 
   it("keeps its row, last, with the refund as its one action, until the refund is taken", () => {
     const rows = blitzRows([], [closed, slot("open", 1_042)], new Map([["closed", "0x4a1"]]));

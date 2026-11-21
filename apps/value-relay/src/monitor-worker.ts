@@ -22,12 +22,11 @@ import { relayOperation, type MonitorPorts } from "./ports";
 import { runMonitor, resetMonitorRow, type MonitorProgress } from "./monitor";
 
 interface MonitorEnv extends MonitorSettings {
-  IDENTITY: ShardDirectory &
-    import("@realms-world/value-ledger").RegistrationIdentity & {
-      l2ChainId(): Promise<string>;
-      realmsIdForAccount(account: string): Promise<string | null>;
-      matchesPayDecision(decision: import("@realms-world/identity").LedgerPayDecision): Promise<boolean>;
-    };
+  IDENTITY: ShardDirectory & {
+    l2ChainId(): Promise<string>;
+    realmsIdForAccount(account: string): Promise<string | null>;
+    matchesPayDecision(decision: import("@realms-world/identity").LedgerPayDecision): Promise<boolean>;
+  };
   RELAY_REPORT: {
     held(): Promise<{ kind: string; reason: string; transactionHash: string | null }[]>;
     recoverHeld(): Promise<void>;

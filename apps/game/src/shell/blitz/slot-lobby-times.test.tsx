@@ -18,7 +18,6 @@ vi.hoisted(() =>
             chainId: "0x52",
             name: "blitz-1630",
             closesAt: new Date(listed.closes * 1000).toISOString(),
-            frozenAt: listed.closed ? "x" : null,
             closed: listed.closed,
           },
         ],

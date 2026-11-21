@@ -16,11 +16,6 @@ import { frontierSeasonRequest } from "./schemas";
 import { blitzSlotWindow, type SlotStore } from "./slots";
 import { databaseOperation, type LaunchServiceStore } from "./store";
 
-/**
- * One cron tick, read from the season calendar: the Frontier season game exists once its season has started, and the
- * next Blitz slot exists when preparation, play and settlement fit inside the Blitz window. The registrar freezes
- * it at its close and launches it from that one read of the ledger. Every step is idempotent, so overlapping ticks agree.
- */
 export const runLaunchSchedule = (store: LaunchServiceStore, slots: SlotStore, calendar: CalendarStore) =>
   Effect.gen(function* () {
     const now = new Date(Date.now());

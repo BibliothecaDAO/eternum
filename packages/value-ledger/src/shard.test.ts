@@ -49,7 +49,6 @@ beforeEach(() => {
             "game",
             gameRegistryRow({
               name: "0",
-              ready: false,
               start_settling_at: "0",
               start_main_at: "0",
               scheduled_end_at: "0",
@@ -171,23 +170,6 @@ it("sweeps one structure's LORDS through the generated Games ABI with its full u
     entrypoint: "sweep_lords",
     calldata: ["7", "36028797018963977"],
   });
-});
-
-it("sends an administrative call at a given nonce without waiting, then waits once for its closed block", async () => {
-  const operator = new ShardOperator({
-    chainId: "0x1",
-    rpcUrl: "https://shard.test",
-    gamesAddress: "0x10",
-    accountAddress: "0x20",
-    privateKey: "0x1",
-  });
-  expect(await operator.sendAdmin("set_launcher", { launcher: "0x5" }, 12n)).toBe("0xabc");
-  expect(rpc.execute.mock.calls[0]![1]).toMatchObject({ nonce: 12n });
-  expect(rpc.receipt).not.toHaveBeenCalled();
-  await operator.awaitClosed("0xabc");
-  expect(rpc.receipt).toHaveBeenCalledWith("0xabc");
-  rpc.receipt.mockResolvedValueOnce({ block_number: 12, finality_status: "ACCEPTED_ON_L2", isReverted: () => true });
-  await expect(operator.awaitClosed("0xdef")).rejects.toThrow("shard_invoke_reverted");
 });
 
 it("settles an ended game one batch at a time until it reads settled, and sends nothing for a settled game", async () => {

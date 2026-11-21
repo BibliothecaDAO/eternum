@@ -84,7 +84,7 @@ const deleteRun = async (context: Context, store: LaunchServiceStore, name: stri
   const deleted = await store.delete(environment, name);
   return deleted
     ? context.json({ deleted: true })
-    : context.json({ error: "Run is missing, active, or retains a calendar or paid-slot identity." }, 409);
+    : context.json({ error: "Run is missing, active, complete, or a calendar season." }, 409);
 };
 
 const failedRunReport = (run: LaunchRun) => ({
@@ -115,12 +115,11 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   // The schedule never requeues a failed season; its operator must continue it. Health names every failed run.
   app.get("/api/factory/health", async (context) => {
     try {
-      const [failed, pending, joinFailure, wakeAt, freezes] = await Promise.all([
+      const [failed, pending, joinFailure, wakeAt] = await Promise.all([
         dependencies.store.failed(),
         dependencies.store.pending(),
         dependencies.registrar.joinFailure(),
         dependencies.registrar.wakeAt(),
-        dependencies.slots.freezeFailures(),
       ]);
       const now = Date.now();
       const stranded = pending.filter(
@@ -132,10 +131,9 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
           ...dependencies.deployment,
           failedRuns: failed.map(failedRunReport),
           joinFailure,
-          freezeFailures: freezes,
           strandedRuns: stranded.map(strandedRunReport),
         },
-        failed.length || stranded.length || joinFailure || freezes.length ? 503 : 200,
+        failed.length || stranded.length || joinFailure ? 503 : 200,
       );
     } catch {
       return context.json({ status: "unavailable" }, 503);

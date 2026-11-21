@@ -2,8 +2,6 @@ import { BLITZ_SLOT_PREPARATION_SECONDS } from "@realms-world/value-ledger";
 import { loadNativePresetConfiguration } from "../../../config/deployer/clean/registrar/native-preset";
 import { presetIdForEnvironment } from "../../../config/deployer/clean/constants";
 
-export { splitPlaytestRoster } from "@realms-world/value-ledger";
-
 export const blitzSlotWindow = (closesAt: string): { start: number; end: number } => {
   const start = Date.parse(closesAt) / 1000;
   const duration = loadNativePresetConfiguration("madara.blitz", presetIdForEnvironment("madara.blitz")).season
@@ -16,17 +14,7 @@ export interface PlaytestSlot {
   slotId: number;
   name: string;
   closesAt: string;
-  frozenAt: string | null;
   closed: boolean;
-}
-
-export interface SlotFreezeFailure {
-  chainId: string;
-  slotId: number;
-  name: string;
-  code: string;
-  checkedAt: number;
-  secondsUntilClose?: number;
 }
 
 export interface SlotStore {
@@ -35,9 +23,6 @@ export interface SlotStore {
   get(name: string): Promise<PlaytestSlot>;
   list(): Promise<PlaytestSlot[]>;
   refund(name: string): Promise<number | null>;
-  freeze(name: string): Promise<PlaytestSlot>;
-  freezeDueSlots(): Promise<void>;
-  freezeFailures(): Promise<SlotFreezeFailure[]>;
 }
 
 export class SlotConflict extends Error {}

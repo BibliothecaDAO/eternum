@@ -6,7 +6,6 @@ import { isCalendarFrontier, type CreateGameRequest } from "./schemas";
 export type LaunchJobStatus = "queued" | "running" | "complete" | "failed";
 
 export interface LaunchRun {
-  slotId: number | null;
   id: string;
   chainId: string;
   environment: GameEnvironmentId;
@@ -76,10 +75,7 @@ export const toFactoryRunRecord = (run: LaunchRun) => {
     recovery: {
       state: run.status === "complete" ? "complete" : run.status === "failed" ? "failed" : "active",
       canDelete:
-        run.slotId === null &&
-        run.status !== "running" &&
-        run.status !== "complete" &&
-        !isCalendarFrontier(run.environment, run.name),
+        run.status !== "running" && run.status !== "complete" && !isCalendarFrontier(run.environment, run.name),
       canContinue: run.status === "failed",
       continueStepId: run.status === "failed" ? GAME_STEPS[0][0] : null,
     },

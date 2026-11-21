@@ -47,7 +47,7 @@ const network =
     if (url.endsWith("/api/directory")) return response({ shard: { ...world, games: [] } });
     if (url.endsWith("/api/slots")) return response({ slots: [] });
     if (url.endsWith("/api/factory/health"))
-      return response({ service: "launch", failedRuns: [], joinFailure: null, freezeFailures: [], strandedRuns: [] });
+      return response({ service: "launch", failedRuns: [], joinFailure: null, strandedRuns: [] });
     if (url.endsWith("/api/guardian")) return response({ publicKey: "0x1", accountClassHash: "0x2" });
     if (url.endsWith("/api/health/accounts") || url.endsWith("/api/chat/health")) return response({ success: true });
     if (url.endsWith("/manifest"))
@@ -414,7 +414,7 @@ it("reports game launches down while a run has failed or is stranded", async () 
   const stranded = await probeServices(
     network({
       "https://play.realms.party/api/factory/health": Response.json(
-        { service: "launch", failedRuns: [], joinFailure: null, freezeFailures: [], strandedRuns: [{ id: 7 }] },
+        { service: "launch", failedRuns: [], joinFailure: null, strandedRuns: [{ id: 7 }] },
         { status: 503 },
       ),
     }),

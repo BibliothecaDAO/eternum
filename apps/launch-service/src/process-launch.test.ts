@@ -1,7 +1,6 @@
-import { RegistrationOpen } from "./blitz-roster";
 import { Effect, Layer } from "effect";
 import { RpcError } from "starknet";
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { LaunchExecutionFailure } from "./errors";
 import { LaunchExecutor } from "./executor";
 import { processNextLaunch } from "./process-launch";
@@ -67,23 +66,6 @@ describe("the registrar's launch step", () => {
     }
   });
 
-  test("defers a Blitz launch while ledger registration is open without spending an attempt", async () => {
-    await store.enqueue(request);
-    const services = Layer.mergeAll(
-      databaseLayer(store),
-      Layer.succeed(LaunchExecutor, {
-        execute: (run) =>
-          Effect.fail(
-            new LaunchExecutionFailure({ runId: run.id, cause: new RegistrationOpen({ secondsUntilClose: 90 }) }),
-          ),
-      }),
-    );
-    await Effect.runPromise(processNextLaunch(Date.now()).pipe(Effect.provide(services)));
-    expect(await store.find("madara.blitz", request.gameName)).toMatchObject({ status: "queued", attempts: 0 });
-    expect(await store.startNext(Date.now())).toBeNull();
-    expect(await store.nextDue()).toBeGreaterThanOrEqual(Date.now() + 80_000);
-  });
-
   test("completes a started launch through the injected executor and store", async () => {
     await store.enqueue(request);
     const executor = {
@@ -134,32 +116,4 @@ test("three interrupted attempts fail before execution and release the queue", a
   expect(executions).toBe(0);
   expect(await store.failed()).toMatchObject([{ id: stuck.id, errorMessage: "Launch interrupted after 3 attempts" }]);
   expect(await store.startNext(Date.now())).toMatchObject({ id: next.id, attempts: 1 });
-});
-
-test("paid runs keep retrying transient failures beyond the ordinary attempt limit", async () => {
-  await store.enqueue({ ...request, gameName: "paid-transient", slotId: 7, groupIndex: 0 });
-  await store.saveGame({
-    environment: "madara.blitz",
-    chain: "madara",
-    gameType: "blitz",
-    gameName: "paid-transient",
-    gameId: 7,
-    startTime: 1,
-    startTimeIso: "1970-01-01T00:00:01.000Z",
-    rpcUrl: "https://shard.test",
-    configMode: "batched",
-    configSteps: [],
-    dryRun: false,
-  });
-  const execute = vi.fn(() =>
-    Effect.fail(new LaunchExecutionFailure({ runId: "paid", cause: new Error("Herald temporarily down") })),
-  );
-  const services = Layer.mergeAll(databaseLayer(store), Layer.succeed(LaunchExecutor, { execute }));
-  for (let index = 0; index < 4; index++)
-    await Effect.runPromise(processNextLaunch(Date.now() + 1000000).pipe(Effect.provide(services)));
-  expect(execute).toHaveBeenCalledTimes(4);
-  for (let index = 0; index < 6; index++)
-    await Effect.runPromise(processNextLaunch(Date.now() + 1000000).pipe(Effect.provide(services)));
-  expect(execute).toHaveBeenCalledTimes(10);
-  expect((await store.find("madara.blitz", "paid-transient"))?.status).toBe("queued");
 });

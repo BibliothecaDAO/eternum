@@ -42,13 +42,7 @@ export interface LaunchServiceStore extends LaunchRunStore {
   /** When the next queued run falls due, if any. */
   nextDue(): Promise<number | null>;
   complete(runId: string, summary: LaunchGameSummary): Promise<void>;
-  /** A paid slot's game runs on this chain, one per group, in group order. */
-  slotGames(slotId: number): Promise<LaunchRun[]>;
-  /** Completes the other game runs a slot launch settled alongside the run it executed, whatever their queue state. */
-  completeGames(games: readonly { runId: string; summary: LaunchGameSummary }[]): Promise<void>;
   retry(runId: string, errorMessage: string, retryDelayMs: number): Promise<void>;
-  /** Requeues a run that ran too early; the attempt is given back. */
-  defer(runId: string, delayMs: number): Promise<void>;
   fail(runId: string, errorMessage: string): Promise<void>;
   delete(environment: GameEnvironmentId, name: string): Promise<boolean>;
 }
@@ -59,7 +53,6 @@ const iso = (time: number) => new Date(time).toISOString();
 
 const toRun = (row: LaunchRunRow): LaunchRun => ({
   id: row.id,
-  slotId: row.slot_id,
   chainId: row.chain_id,
   environment: row.environment,
   name: row.name,
@@ -256,31 +249,6 @@ export class D1LaunchStore implements LaunchServiceStore {
       .run();
   }
 
-  async slotGames(slotId: number): Promise<LaunchRun[]> {
-    const { results } = await this.db
-      .prepare(
-        "SELECT * FROM launch_runs WHERE chain_id = ? AND kind = 'game' AND slot_id = ? ORDER BY json_extract(request,'$.groupIndex')",
-      )
-      .bind(await this.chainId(), slotId)
-      .all<LaunchRunRow>();
-    return results.map(toRun);
-  }
-
-  async completeGames(games: readonly { runId: string; summary: LaunchGameSummary }[]): Promise<void> {
-    if (!games.length) return;
-    const now = Date.now();
-    await this.db.batch(
-      games.map(({ runId, summary }) =>
-        this.db
-          .prepare(
-            `UPDATE launch_runs SET status = 'complete', summary = ?, error_message = NULL, completed_at = ?, updated_at = ?
-             WHERE id = ? AND status IN ('queued', 'running')`,
-          )
-          .bind(JSON.stringify(storedSummary(runId, summary)), now, now, runId),
-      ),
-    );
-  }
-
   async retry(runId: string, errorMessage: string, retryDelayMs: number): Promise<void> {
     const now = Date.now();
     await this.db
@@ -289,18 +257,6 @@ export class D1LaunchStore implements LaunchServiceStore {
          WHERE id = ? AND status = 'running'`,
       )
       .bind(now + retryDelayMs, errorMessage, now, runId)
-      .run();
-  }
-
-  async defer(runId: string, delayMs: number): Promise<void> {
-    const now = Date.now();
-    await this.db
-      .prepare(
-        `UPDATE launch_runs SET status = 'queued', attempts = attempts - 1, available_at = ?, error_message = NULL,
-           updated_at = ?
-         WHERE id = ? AND status = 'running'`,
-      )
-      .bind(now + delayMs, now, runId)
       .run();
   }
 
@@ -317,7 +273,7 @@ export class D1LaunchStore implements LaunchServiceStore {
     if (isCalendarFrontier(environment, name)) return false;
     const result = await this.db
       .prepare(
-        "DELETE FROM launch_runs WHERE chain_id = ? AND kind = 'game' AND environment = ? AND name = ? AND status <> 'running' AND slot_id IS NULL",
+        "DELETE FROM launch_runs WHERE chain_id = ? AND kind = 'game' AND environment = ? AND name = ? AND status IN ('queued', 'failed')",
       )
       .bind(await this.chainId(), environment, name)
       .run();
@@ -338,14 +294,6 @@ export class D1LaunchStore implements LaunchServiceStore {
       .bind(JSON.stringify(stored), Date.now(), run.id)
       .run();
     return stored;
-  }
-
-  /**
-   * The statement that queues a run once, for a caller that must write it inside its own atomic batch (a slot's freeze
-   * queues its games with the roster). This store stays the only writer of launch runs.
-   */
-  async scheduleStatement(request: CreateGameRequest): Promise<D1PreparedStatement> {
-    return this.insertStatement(await this.chainId(), applyDurableLaunchDefaults(request), SCHEDULE_ONCE);
   }
 
   private async insertRun(request: CreateGameRequest, conflict: string): Promise<LaunchRun> {
@@ -369,9 +317,9 @@ export class D1LaunchStore implements LaunchServiceStore {
     return this.db
       .prepare(
         `INSERT INTO launch_runs
-           (id, chain_id, kind, environment, name, request, status, available_at, created_at, updated_at, slot_id)
-         SELECT ?1, ?2, 'game', ?3, ?4, ?5, 'queued', ?6, ?7, ?8, ?9
-         WHERE ?10 = 0 OR EXISTS (
+           (id, chain_id, kind, environment, name, request, status, available_at, created_at, updated_at)
+         SELECT ?1, ?2, 'game', ?3, ?4, ?5, 'queued', ?6, ?7, ?8
+         WHERE ?9 = 0 OR EXISTS (
            SELECT 1 FROM season_phases WHERE phase = 'frontier'
              AND 'frontier-' || CAST(starts_at / 1000 AS INTEGER) = ?4
              AND starts_at = unixepoch(json_extract(?5, '$.gameStartTime')) * 1000
@@ -390,7 +338,6 @@ export class D1LaunchStore implements LaunchServiceStore {
         now,
         now,
         now,
-        request.slotId ?? null,
         calendarSeason ? 1 : 0,
       );
   }

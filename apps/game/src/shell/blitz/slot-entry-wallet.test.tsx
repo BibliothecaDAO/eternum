@@ -49,7 +49,6 @@ const closedSlot = (slotId: number): PlaytestSlot => ({
   chainId: "0x52",
   name: `blitz-${slotId}`,
   closesAt: new Date(0).toISOString(),
-  frozenAt: "x",
   closed: true,
 });
 const SLOTS = [closedSlot(1), closedSlot(2)];

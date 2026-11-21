@@ -1,12 +1,10 @@
-import { slotResolver } from "./paid-blitz";
-import { slotValueFixture, registrationIdentityFixture } from "./test-database";
 import { Effect } from "effect";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { D1CalendarStore } from "./calendar-store";
 import { nextBlitzGame, runLaunchSchedule } from "./schedule";
 import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore } from "./store";
-import { createLaunchTestDatabase, testChain } from "./test-database";
+import { createLaunchTestDatabase, slotValueFixture, testChain } from "./test-database";
 import { blitzSlotName, day, frontierSeasonEnd } from "./test-dates";
 
 let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
@@ -20,8 +18,8 @@ afterEach(async () => {
 
 const stores = () => {
   const launches = new D1LaunchStore(database.db, testChain());
-  const value = slotValueFixture(1);
-  const slots = new D1SlotStore(database.db, launches, value, slotResolver(value, registrationIdentityFixture));
+  const value = slotValueFixture();
+  const slots = new D1SlotStore(database.db, launches, value);
   const calendar = new D1CalendarStore(database.db);
   const tick = (now: Date) => {
     vi.spyOn(Date, "now").mockReturnValue(now.getTime());
@@ -287,13 +285,11 @@ test("a late-opened Frontier phase still keeps its running end", async () => {
   expect(await calendar.list()).toEqual([entered]);
 });
 
-test("schedule failures log the fixed underlying code, and the tick leaves freezing to the registrar", async () => {
-  const { slots, calendar, tick } = stores();
+test("schedule failures log the fixed underlying code", async () => {
+  const { calendar, tick } = stores();
   vi.spyOn(calendar, "list").mockRejectedValue(new Error("ledger_head_unconfirmed: Bearer secret-value"));
-  const freeze = vi.spyOn(slots, "freezeDueSlots");
   const log = vi.spyOn(console, "error").mockImplementation(() => {});
   await tick(day(1));
-  expect(freeze).not.toHaveBeenCalled();
   expect(log).toHaveBeenCalledWith(
     "launch_schedule_step_failed",
     expect.objectContaining({ code: "ledger_head_unconfirmed" }),

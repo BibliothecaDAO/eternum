@@ -57,7 +57,7 @@ const gameRow = (id: number, action: BlitzRow["action"], startsAt: number | null
 const slotRow = (name: string): BlitzRow => ({
   kind: "slot",
   key: `slot:${name}`,
-  slot: { slotId: 3, chainId: "0xa", name, closesAt: new Date(2_000_000).toISOString(), frozenAt: null, closed: false },
+  slot: { slotId: 3, chainId: "0xa", name, closesAt: new Date(2_000_000).toISOString(), closed: false },
   closesAt: 2_000,
   startsAt: 2_300,
   action: "open",
