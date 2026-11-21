@@ -38,10 +38,10 @@ pub fn demolish(home: ResourceKey, direction: u8) -> Command {
         },
     )
 }
-pub fn raise(home: ResourceKey, troops: u128, direction: u8) -> Command {
+pub fn raise(home: ResourceKey, troops: u128, direction: u8, slot: u8) -> Command {
     Command::CreateExplorer(
         CreateExplorer {
-            slot: 0, structure_id: home.entity_id, category: 0, tier: 0, amount: troops * RESOURCE_PRECISION, direction,
+            slot, structure_id: home.entity_id, category: 0, tier: 0, amount: troops * RESOURCE_PRECISION, direction,
         },
     )
 }
