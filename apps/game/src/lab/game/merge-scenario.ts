@@ -8,8 +8,7 @@ import { armyProgress, besideOnOpenLand, spireScenario } from "./spire-scenario"
 const MERGE_ARMY = 202;
 /** The second army's troops, at the chain's precision: with the spire's 1,498 they make the owner's 4,015. */
 const SECOND_ARMY_TROOPS = 2_517_000_000_000n;
-/** The realm's army limit raised from the fixture's 1,500 to 4,500, as a grown realm's is, so the two can merge. */
-const LIMIT_RAISED = 3;
+const LIMIT_RAISED = 2;
 
 /**
  * Which army holds the progression: the army picked, so merging it into the other loses its Logistics training and the card asks twice,
