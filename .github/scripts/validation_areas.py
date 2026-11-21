@@ -134,8 +134,10 @@ AREAS = {
         "apps/status/**",
         "apps/guardian/**",
         "apps/web/**",
+        "apps/herald/src/native/release-definition.ts",
         "apps/herald/src/native/schema.ts",
         "apps/herald/src/shard-manifest.ts",
+        "apps/herald/src/types.ts",
         "packages/**",
         "config/**",
         "contracts/l3/world-native/scripts/balance-modules.ts",
@@ -203,8 +205,10 @@ AREAS = {
         MEDIA_FREE_CHECKOUT,
         "apps/agent-runner/**",
         "apps/launch-service/**",
+        "apps/herald/src/native/release-definition.ts",
         "apps/herald/src/native/schema.ts",
         "apps/herald/src/shard-manifest.ts",
+        "apps/herald/src/types.ts",
         *NATIVE_FACT_SCHEMA,
         "contracts/l3/world-native/tests/fixtures/**",
         "contracts/common/addresses/**",
@@ -290,8 +294,10 @@ AREAS = {
         "contracts/l3/world-native/tests/fixtures/**",
         "contracts/common/addresses/**",
         "contracts/utils/**",
+        "apps/herald/src/native/release-definition.ts",
         "apps/herald/src/native/schema.ts",
         "apps/herald/src/shard-manifest.ts",
+        "apps/herald/src/types.ts",
         # The game files the docs draw on: its icon set and meanings (with the Diwali sprites' manifest icon-meaning.ts
         # reads), the patch notes the changelog page shows, the LaborRules a preset writes, which the Devcon page states a
         # ticket's claim from, and the link preview's address.

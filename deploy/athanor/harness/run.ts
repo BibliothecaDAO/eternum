@@ -2,9 +2,7 @@
 import { listedFrontierGame } from "./directory-game";
 import { observeHarnessWorker, sendPreparedReport, superviseHarnessProcess } from "./terminal-report";
 import { runFrontierWorkload, type FrontierBurst } from "./frontier";
-import { FRONTIER_FIXTURE_PRESET_ID } from "../../../config/source/common/native-preset-modes";
 import { catchUncaughtFailures, recordWorkerFailure } from "./worker-boundary";
-import { nativePresetForId, nativePresetIdFor } from "../../../config/source/native";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { Worker, isMainThread, parentPort, workerData } from "node:worker_threads";
 import path from "node:path";
@@ -33,7 +31,6 @@ interface HarnessCliOptions {
   workload: "burst" | "cadence" | "frontier";
   functional: boolean;
   gameType: HarnessGameType;
-  presetId: number;
   /** A campaign burst on the Frontier shape instead of its day-long play. */
   frontierBurst?: FrontierBurst;
   /** Worker threads that share one Frontier season, each playing its own slice of the accounts. */
@@ -77,9 +74,6 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   if (workload === "frontier" && values["interval-seconds"] !== undefined)
     throw new Error("--interval-seconds paces a cadence; Frontier paces with --frontier-burst and its window");
   const functional = values.functional === "true";
-  const presetId =
-    values.preset === undefined ? defaultPresetFor(gameType, functional) : positiveInteger(values.preset, "preset");
-  nativePresetForId(presetId);
   if (gameType === "frontier" && functional && bots < 2)
     throw new Error("Frontier design run requires both player profiles");
   const frontierBurst = resolveFrontierBurst(values, gameType);
@@ -93,7 +87,6 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
     gameType,
     workload,
     functional,
-    presetId,
     frontierBurst,
     workers,
     bots,
@@ -284,7 +277,6 @@ function parseFlags(args: string[]): Record<string, string> {
         "game-type",
         "rpc-url",
         "herald-url",
-        "preset",
         "frontier-burst",
         "burst-window-seconds",
         "workers",
@@ -337,7 +329,6 @@ async function prepareGames(
     requiredEnvironmentValue("IDENTITY_URL", "game discovery"),
     shard,
     options.heraldUrl,
-    options.presetId,
     options.gameId,
   );
   const setupProvider = createHarnessAdminProvider();
@@ -495,8 +486,6 @@ export function workerArguments(options: HarnessCliOptions, bots: number, file: 
           String(options.frontierBurst.windowSeconds),
         ]
       : []),
-    "--preset",
-    String(options.presetId),
     "--rpc-url",
     options.rpcUrl,
     "--herald-url",
@@ -609,11 +598,6 @@ async function waitForWorkloadStart(): Promise<void> {
   });
 }
 
-/** A Frontier design run plays the supported fixture preset; every other run plays its mode's own. */
-function defaultPresetFor(gameType: HarnessGameType, functional: boolean): number {
-  return gameType === "frontier" && functional ? FRONTIER_FIXTURE_PRESET_ID : nativePresetIdFor(gameType);
-}
-
 /** A shard endpoint has no default: a lab port that answers for the wrong shard is worse than a loud stop. */
 function requiredEndpoint(flagValue: string | undefined, flag: string, environmentName: string): string {
   const value = flagValue ?? process.env[environmentName]?.trim();
@@ -653,14 +637,13 @@ Usage: bun deploy/athanor/harness/run.ts [options]
   --interval-seconds <seconds>   default: 15
   --setup-concurrency <count>    default: 6
   --workload <burst|cadence|frontier> default: the game type’s workload; burst submits every plan at once
-  --preset <id>                  preset to play; default: the game type’s preset
   --frontier-burst <booth|rollover>  Frontier campaign burst, measured as the workload: booth founds every bot's
                                  realm inside the window; rollover waits for the next day and has every bot muster
-                                 and move inside the window (use the 720 s day of --preset 101 on perf shards)
+                                 and move inside the window
   --burst-window-seconds <s>     with --frontier-burst; default: 600 for booth, 120 for rollover
   --workers <count>              Frontier: split the season's bots across this many worker threads; default: 1
   --functional                  omit request counts and the latency gates; for Frontier, the accelerated design run,
-                                 or with --preset 5 the real-speed pass on the preset's own rates and charges
+                                 or on production-length days the real-speed pass on the season's rates and charges
   --prepared-game <path>         resume a prepared roster using its private account file
   --game-id <id>                 select a listed Frontier game
   --rpc-url <url>                required, or RPC_URL; the published RPC named by the Herald manifest

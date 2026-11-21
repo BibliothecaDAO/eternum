@@ -5,7 +5,6 @@ export async function listedFrontierGame(
   identityUrl: string,
   shard: { chainId: string },
   heraldUrl: string,
-  presetId: number,
   gameId?: number,
 ) {
   const url = `${identityUrl.replace(/\/$/, "")}/directory`;
@@ -24,7 +23,6 @@ export async function listedFrontierGame(
     (game) =>
       game.mode === "frontier" &&
       game.status === "Live" &&
-      game.preset_id === presetId &&
       (gameId === undefined || game.game_id === gameId),
   );
   console.log(

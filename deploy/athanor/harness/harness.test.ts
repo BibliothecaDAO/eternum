@@ -218,23 +218,15 @@ describe("Madara harness workload", () => {
     expect(bots[0].explorers.map(({ explorerId }) => explorerId)).toEqual(resumed ? [11, 21] : [11]);
   });
 
-  it("rejects retired presets and deferred ledger options", () => {
+  it("rejects retired options and modes", () => {
     expect(() => parseHarnessArgs(["--game-type", "frontier", "--interval-seconds", "30"])).toThrow(
       "--interval-seconds paces a cadence",
     );
     expect(parseHarnessArgs([]).gameType).toBe("frontier");
     expect(() => parseHarnessArgs(["--game-type", "eternum"])).toThrow("--game-type must be frontier");
-    for (const preset of ["3", "103"]) {
-      expect(() => parseHarnessArgs(["--preset", preset])).toThrow(`Unsupported native preset ${preset}`);
-    }
-    expect(() => parseHarnessArgs(["--preset", "9"])).toThrow("Unsupported native preset 9");
-    expect(parseHarnessArgs(["--game-type", "frontier", "--bots", "1"])).toMatchObject({
-      presetId: 7,
-      functional: false,
-    });
-    // The design run plays the supported fixture preset; it never edits Frontier's own preset.
+    expect(() => parseHarnessArgs(["--preset", "7"])).toThrow("Unsupported harness option --preset");
+    expect(parseHarnessArgs(["--game-type", "frontier", "--bots", "1"])).toMatchObject({ functional: false });
     expect(parseHarnessArgs(["--game-type", "frontier", "--bots", "2", "--functional"])).toMatchObject({
-      presetId: 104,
       functional: true,
     });
     expect(() => parseHarnessArgs(["--game-type", "frontier", "--bots", "1", "--functional"])).toThrow(

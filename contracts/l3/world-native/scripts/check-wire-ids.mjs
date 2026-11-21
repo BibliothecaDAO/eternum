@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { wireIds, validateWireIds } from "./wire-ids.mjs";
 
 const path = "contracts/l3/world-native/schema/wire-ids.json";
-const commits = execFileSync("git", ["log", "--reverse", "--format=%H", "--", path], { encoding: "utf8" })
+const commits = execFileSync("git", ["log", "--first-parent", "--reverse", "--format=%H", "--", path], { encoding: "utf8" })
   .trim()
   .split("\n")
   .filter(Boolean);

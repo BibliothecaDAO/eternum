@@ -40,7 +40,7 @@ const fixture: WaveFixturePort = {
     };
     try {
       await assertProviderChain(provider, manifest, "public wave RPC");
-      const game = await listedFrontierGame(required("IDENTITY_URL"), shard, required("HERALD_URL"), 5);
+      const game = await listedFrontierGame(required("IDENTITY_URL"), shard, required("HERALD_URL"));
       const accounts = await createHarnessAccounts({
         count: players,
         concurrency: 6,
