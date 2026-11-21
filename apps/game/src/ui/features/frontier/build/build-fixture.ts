@@ -22,7 +22,9 @@ const PRECISION = BigInt(RESOURCE_PRECISION);
  */
 export const realmBoard = () => {
   const store = new NativeFactStore();
-  store.applyFacts([set("0x100", "SliceRules", { ...release.definition.rules, game_id: 1, day_unit_seconds: 0 })] as never);
+  store.applyFacts([
+    set("0x100", "SliceRules", { ...release.definition.rules, game_id: 1, day_unit_seconds: 0 }),
+  ] as never);
   store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
   store.applyFacts([
     set("0x3", "GameRegistry", gameRegistryRow({ family: GAME_FAMILIES.blitz })),

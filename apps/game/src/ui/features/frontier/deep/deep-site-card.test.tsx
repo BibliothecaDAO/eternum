@@ -189,7 +189,9 @@ describe("the Deep site's live native binding", () => {
 it("refreshes stamina from guard membership alone and keeps a missing position unknown", () => {
   const hud = draw();
   try {
-    const refilled = String(40 + hud.store.require("SliceRules", { game_id: 1 }).troop_stamina_config.stamina_gain_per_tick);
+    const refilled = String(
+      40 + hud.store.require("SliceRules", { game_id: 1 }).troop_stamina_config.stamina_gain_per_tick,
+    );
     hud.render(<StaminaReading />);
     expect(hud.host.textContent).toBe(refilled);
     const personalTile = hud.store.entityOccupancy(1, 201)!;
