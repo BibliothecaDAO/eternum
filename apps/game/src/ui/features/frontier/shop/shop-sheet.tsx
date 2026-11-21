@@ -21,7 +21,7 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { fragmentsToFill } from "../army/refill";
 import { useFragmentsHeld } from "../value/fragments";
 
-const SHOP_MODELS = ["Seal", "QuestRules", "SliceRules", "CampaignHome", "SettledRealm"] as const;
+const SHOP_MODELS = ["Seal", "QuestRules", "SliceRules", "SettledRealm"] as const;
 const PASS_PRICE = nativeFragmentConstants.SEAL_FRAGMENTS;
 const POINTS = nativeFragmentConstants.STAMINA_PER_FRAGMENT;
 const PASS_KEY = 0;
