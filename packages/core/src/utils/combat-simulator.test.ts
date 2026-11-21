@@ -6,7 +6,6 @@ import { type Army, CombatSimulator, type CombatParameters } from "./combat-simu
 
 const damage = preset.rules.troop_damage_config;
 const rules: CombatRules = {
-  dayUnitSeconds: 100,
   cooldownSeconds: 0,
   tickSeconds: preset.rules.tick_config.armies_tick_in_seconds,
   damage: {
@@ -26,7 +25,6 @@ const rules: CombatRules = {
 };
 const parameters: CombatParameters = {
   ...rules.damage,
-  day_unit_seconds: rules.dayUnitSeconds,
   stamina_attack_req: rules.stamina.stamina_attack_req,
   stamina_defense_req: rules.stamina.stamina_defense_req,
   tick_interval_seconds: rules.tickSeconds,
@@ -80,28 +78,5 @@ describe("battle lab exchange", () => {
     expect(simulate({ ...army, stamina: 0 }, army)).toEqual({ ok: false, refusal: "insufficient-stamina" });
     expect(simulate({ ...army, battle_cooldown_end: 101 }, army)).toEqual({ ok: false, refusal: "cooldown" });
     expect(simulate(army, { ...army, troopCount: 0 })).toEqual({ ok: false, refusal: "no-troops" });
-  });
-
-  it("keeps Blitz ranged costs, cooldowns and structure reduction", () => {
-    const blitz = new CombatSimulator(
-      { ...parameters, day_unit_seconds: 0, stamina_attack_req: 50, stamina_defense_req: 40 },
-      { ...rules, cooldownSeconds: 60 },
-    );
-    const result = blitz.simulateBattle(
-      100,
-      { ...army, troopType: TroopType.Crossbowman },
-      { ...army, troopType: TroopType.Paladin },
-      BiomeType.None,
-      { attackDistance: 2, defenderIsStructureGuard: true },
-    );
-    expect(result).toEqual({
-      ok: true,
-      attackerDamage: 131,
-      defenderDamage: 0,
-      attackerStamina: 50,
-      defenderStamina: 80,
-      attackerCooldownEnd: 130,
-      defenderCooldownEnd: 130,
-    });
   });
 });

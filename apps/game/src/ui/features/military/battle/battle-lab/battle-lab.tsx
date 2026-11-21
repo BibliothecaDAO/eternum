@@ -6,7 +6,6 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { HudCheck, HudNotice, HudWindow } from "@/ui/design-system/kit/hud-elements";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import {
-  attackDistance,
   type AttackForecast,
   CombatParameters,
   CombatSimulator,
@@ -122,7 +121,6 @@ export const BattleLab = ({
   const combatContext = useMemo(
     () => ({
       defenderAlt: state.defenderAlt,
-      attackDistance: sides?.defender ? attackDistance(sides.attacker.tile, sides.defender.tile) : 1,
       attackerIsStructureGuard: sides?.attacker.guarding ?? false,
       defenderIsStructureGuard: sides?.defender?.guarding ?? false,
     }),

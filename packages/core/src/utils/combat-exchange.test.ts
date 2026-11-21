@@ -43,7 +43,6 @@ const readRules = (felts: bigint[]): CombatRules => {
   const [biomeBonus, scaling, t1, t2, t3, ...stamina] = felts;
   const flags = stamina.map(Number);
   return {
-    dayUnitSeconds: 0,
     cooldownSeconds: 0,
     tickSeconds: flags[16]!,
     damage: {
@@ -208,10 +207,6 @@ describe("an exchange resolves as the contract resolves it", () => {
 it("protects Frontier Knights only when they hold a guard slot", () => {
   const { rules, cases } = readFixture();
   const recorded = cases[0]!;
-  const expeditionRules: CombatRules = {
-    ...rules,
-    dayUnitSeconds: 14_400,
-  };
   const army: ExchangeTroops = {
     ...recorded.attacker,
     category: "Knight",
@@ -221,19 +216,14 @@ it("protects Frontier Knights only when they hold a guard slot", () => {
   };
   const defender: ExchangeTroops = { ...army, count: 1_000n * 1_000_000_000n };
   const context = { ...recorded.context, attackerIsStructureGuard: false, defenderIsStructureGuard: false };
-  const field = resolveExchange(army, defender, context, expeditionRules);
+  const field = resolveExchange(army, defender, context, rules);
   if (!field.ok) throw new Error(field.refusal);
   expect(field.attackerLoss).toBe(418n * 1_000_000_000n);
   expect(field.defenderLoss).toBe(627n * 1_000_000_000n);
   for (const attackerIsStructureGuard of [false, true]) {
     for (const defenderIsStructureGuard of [false, true]) {
       expect(
-        resolveExchange(
-          army,
-          defender,
-          { ...context, attackerIsStructureGuard, defenderIsStructureGuard },
-          expeditionRules,
-        ),
+        resolveExchange(army, defender, { ...context, attackerIsStructureGuard, defenderIsStructureGuard }, rules),
       ).toMatchObject({
         ok: true,
         attackerLoss: (attackerIsStructureGuard ? 314n : 418n) * 1_000_000_000n,
@@ -242,43 +232,33 @@ it("protects Frontier Knights only when they hold a guard slot", () => {
     }
   }
   const exhausted = { ...defender, stamina: { ...defender.stamina, amount: 0n } };
-  const result = resolveExchange(army, exhausted, context, expeditionRules);
+  const result = resolveExchange(army, exhausted, context, rules);
   if (!result.ok) throw new Error(result.refusal);
   expect(result.attackerLoss).toBe(field.attackerLoss);
   expect(result.defenderLoss).toBe(field.defenderLoss);
 });
 
-it("stops a Blitz forecast at the cooldown after this attack", () => {
+it("stops a forecast at the cooldown after this attack", () => {
   const { rules, cases } = readFixture();
   const recorded = cases.find(
-    (c) =>
-      c.context.attackDistance === 1 &&
-      c.expected.defenderLoss < c.defender.count &&
-      c.expected.attackerLoss < c.attacker.count,
+    (c) => c.expected.defenderLoss < c.defender.count && c.expected.attackerLoss < c.attacker.count,
   )!;
-  const blitz = { ...rules, cooldownSeconds: 60 };
-  const result = resolveExchange(recorded.attacker, recorded.defender, recorded.context, blitz);
+  const cooled = { ...rules, cooldownSeconds: 60 };
+  const result = resolveExchange(recorded.attacker, recorded.defender, recorded.context, cooled);
   expect(result.ok).toBe(true);
   if (!result.ok) return;
   expect(result.attacker.battle_cooldown_end).toBeGreaterThan(recorded.context.timestamp);
   expect(result.defender.battle_cooldown_end).toBeGreaterThan(recorded.context.timestamp);
-  expect(forecastFight(recorded.attacker, recorded.defender, recorded.context, blitz)).toMatchObject({
+  expect(forecastFight(recorded.attacker, recorded.defender, recorded.context, cooled)).toMatchObject({
     outcome: "stalls",
     exchanges: 1,
     stoppedBy: "cooldown",
     attackerLoss: result.attackerLoss,
     defenderLoss: result.defenderLoss,
   });
-  const ranged = resolveExchange(
-    recorded.attacker,
-    recorded.defender,
-    { ...recorded.context, attackDistance: 2 },
-    blitz,
-  );
-  expect(ranged.ok && ranged.attacker.battle_cooldown_end).toBe(recorded.context.timestamp + 30);
 });
 
-it("applies the Scout damage reduction to attacker and defender only in Frontier", () => {
+it("applies the Scout damage reduction to attacker and defender", () => {
   const { rules, cases } = readFixture();
   const base = cases[0]!;
   const troops = (category: ExchangeTroops["category"]): ExchangeTroops => ({
@@ -292,32 +272,28 @@ it("applies the Scout damage reduction to attacker and defender only in Frontier
   });
   const context = {
     ...base.context,
-    attackDistance: 1,
     attackerBiome: BiomeType.Grassland,
     defenderBiome: BiomeType.Grassland,
     attackerIsStructureGuard: false,
     defenderIsStructureGuard: false,
   };
-  for (const dayUnitSeconds of [0, 100]) {
-    for (const [attacker, outgoing] of [
+  for (const [attacker, outgoing] of [
+    ["Knight", 437n],
+    ["Paladin", 328n],
+  ] as const) {
+    for (const [defender, incoming] of [
       ["Knight", 437n],
       ["Paladin", 328n],
     ] as const) {
-      for (const [defender, incoming] of [
-        ["Knight", 437n],
-        ["Paladin", 328n],
-      ] as const) {
-        const result = resolveExchange(troops(attacker), troops(defender), context, {
-          ...rules,
-          dayUnitSeconds,
-          damage: { ...rules.damage, damage_scaling_factor: 36893488147419103232n, damage_biome_bonus_num: 0 },
-        });
-        expect(result).toMatchObject({
-          ok: true,
-          defenderLoss: (dayUnitSeconds === 0 ? 437n : outgoing) * 1_000_000_000n,
-          attackerLoss: (dayUnitSeconds === 0 ? 437n : incoming) * 1_000_000_000n,
-        });
-      }
+      const result = resolveExchange(troops(attacker), troops(defender), context, {
+        ...rules,
+        damage: { ...rules.damage, damage_scaling_factor: 36893488147419103232n, damage_biome_bonus_num: 0 },
+      });
+      expect(result).toMatchObject({
+        ok: true,
+        defenderLoss: outgoing * 1_000_000_000n,
+        attackerLoss: incoming * 1_000_000_000n,
+      });
     }
   }
 });
@@ -327,7 +303,6 @@ it("matches native refunds and cooldowns when an attack wipes the defender or ne
   const base = fixture.cases[0]!;
   const rules: CombatRules = {
     ...fixture.rules,
-    dayUnitSeconds: 100,
     cooldownSeconds: 100,
     damage: { ...fixture.rules.damage, damage_scaling_factor: 36893488147419103232n, damage_biome_bonus_num: 0 },
     stamina: {
@@ -340,7 +315,6 @@ it("matches native refunds and cooldowns when an attack wipes the defender or ne
   };
   const context = {
     ...base.context,
-    attackDistance: 1,
     attackerBiome: BiomeType.Grassland,
     defenderBiome: BiomeType.Grassland,
     attackerIsStructureGuard: false,
@@ -384,7 +358,6 @@ it("resolves bow-first exchanges in both directions, including annihilation and 
   const base = fixture.cases[0]!;
   const rules: CombatRules = {
     ...fixture.rules,
-    dayUnitSeconds: 100,
     cooldownSeconds: 0,
     damage: { ...fixture.rules.damage, damage_scaling_factor: 36893488147419103232n, damage_biome_bonus_num: 0 },
     stamina: { ...fixture.rules.stamina, stamina_attack_req: 30, damage_stamina_refund: false },
@@ -405,21 +378,20 @@ it("resolves bow-first exchanges in both directions, including annihilation and 
     ["Paladin", "Crossbowman", 220n, 328n],
     ["Crossbowman", "Crossbowman", 328n, 328n],
   ];
-  for (const [a, b, dealt, taken] of cases)
-    for (const attackDistance of [1, 2]) {
-      const result = resolveExchange(army(a), army(b), { ...context, attackDistance }, rules);
-      expect(result).toMatchObject({
-        ok: true,
-        attackerLoss: taken * 1_000_000_000n,
-        defenderLoss: dealt * 1_000_000_000n,
-      });
-      if (!result.ok) throw new Error(result.refusal);
-      expect(result.attacker.stamina.amount).toBe(70n);
-      const next = resolveExchange(result.attacker, result.defender, { ...context, attackDistance }, rules);
-      expect(next.ok && next.attacker.stamina.amount).toBe(40n);
-      expect(next.ok && next.attackerLoss).not.toBe(0n);
-      expect(next.ok && next.defenderLoss).not.toBe(0n);
-    }
+  for (const [a, b, dealt, taken] of cases) {
+    const result = resolveExchange(army(a), army(b), context, rules);
+    expect(result).toMatchObject({
+      ok: true,
+      attackerLoss: taken * 1_000_000_000n,
+      defenderLoss: dealt * 1_000_000_000n,
+    });
+    if (!result.ok) throw new Error(result.refusal);
+    expect(result.attacker.stamina.amount).toBe(70n);
+    const next = resolveExchange(result.attacker, result.defender, context, rules);
+    expect(next.ok && next.attacker.stamina.amount).toBe(40n);
+    expect(next.ok && next.attackerLoss).not.toBe(0n);
+    expect(next.ok && next.defenderLoss).not.toBe(0n);
+  }
   for (const bowAttacks of [false, true]) {
     const bow = army("Crossbowman");
     const blade = army("Knight", 1n);
@@ -432,11 +404,10 @@ it("resolves bow-first exchanges in both directions, including annihilation and 
   }
 });
 
-it("separates a Frontier beast from a player guard without changing Blitz guards", () => {
-  expect(isCombatGuard(0n, 100)).toBe(false);
-  expect(isCombatGuard(1n, 100)).toBe(true);
-  expect(isCombatGuard(0n, 0)).toBe(true);
-  expect(() => isCombatGuard(null, 100)).toThrow("Combat guard owner is missing");
+it("separates a beast from a player guard", () => {
+  expect(isCombatGuard(0n)).toBe(false);
+  expect(isCombatGuard(1n)).toBe(true);
+  expect(() => isCombatGuard(null)).toThrow("Combat guard owner is missing");
 });
 
 it("matches all Oath damage vectors on both sides, including bows and stacked slot protection", () => {
@@ -452,7 +423,6 @@ it("matches all Oath damage vectors on both sides, including bows and stacked sl
   expect(fields).toHaveLength(280);
   const oathRules: CombatRules = {
     ...rules,
-    dayUnitSeconds: 100,
     damage: { ...rules.damage, damage_biome_bonus_num: 0, damage_scaling_factor: 36893488147419103232n },
     stamina: {
       ...rules.stamina,
@@ -465,7 +435,6 @@ it("matches all Oath damage vectors on both sides, including bows and stacked sl
   const simulator = new CombatSimulator(
     {
       ...oathRules.damage,
-      day_unit_seconds: oathRules.dayUnitSeconds,
       tick_interval_seconds: oathRules.tickSeconds,
       stamina_attack_req: oathRules.stamina.stamina_attack_req,
       stamina_defense_req: oathRules.stamina.stamina_defense_req,
@@ -487,7 +456,6 @@ it("matches all Oath damage vectors on both sides, including bows and stacked sl
       army(b!, beforeB!),
       {
         timestamp: 1,
-        attackDistance: 1,
         attackerBiome: BiomeType.Underground,
         defenderBiome: BiomeType.Underground,
         attackerIsStructureGuard: ag === 1n,
@@ -534,7 +502,6 @@ describe("the fight Oaths", () => {
   const base = cases[0]!;
   const oathRules: CombatRules = {
     ...rules,
-    dayUnitSeconds: 100,
     damage: { ...rules.damage, damage_biome_bonus_num: 0, damage_scaling_factor: 36893488147419103232n },
     stamina: {
       ...rules.stamina,
@@ -555,7 +522,6 @@ describe("the fight Oaths", () => {
   });
   const context = {
     timestamp: 1,
-    attackDistance: 1,
     attackerBiome: BiomeType.Underground,
     defenderBiome: BiomeType.Underground,
     attackerIsStructureGuard: false,

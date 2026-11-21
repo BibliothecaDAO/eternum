@@ -1,7 +1,6 @@
 import { type CombatRules, type ExchangeTroops, resolveExchange } from "@bibliothecadao/eternum/combat-exchange";
 import { BiomeType, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { buildTroopDamageConfig, buildTroopStaminaConfig } from "../../../../config/deployer/clean/registrar/preset";
-import { blitzPreset } from "../../../../config/source/blitz/native";
 import { nativeRuleConstants as rule } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { buildablePlotCount } from "../../../../packages/core/src/utils/castle-reach";
 
@@ -58,7 +57,6 @@ const campChance =
 const FIXED_ONE = 2n ** 64n;
 const damageRules = buildTroopDamageConfig(config);
 const combatRules: CombatRules = {
-  dayUnitSeconds: blitzPreset.dayUnitSeconds,
   cooldownSeconds: config.battle.cooldownSeconds,
   tickSeconds,
   damage: {
@@ -82,20 +80,11 @@ const EXAMPLE_TROOPS = 1_000;
 // The moment of the example fight; each bar is settled then, at its army's full stamina.
 const FIGHT_AT = 1_000;
 const TROOP_TIERS = ["T1", "T2", "T3"] as const;
-type ExampleCategory = "Knight" | "Crossbowman";
-const FULL_STAMINA: Record<ExampleCategory, number> = {
-  Knight: stamina.staminaKnightMax,
-  Crossbowman: stamina.staminaCrossbowmanMax,
-};
-const restedArmy = (
-  category: ExampleCategory,
-  tier: (typeof TROOP_TIERS)[number],
-  battleCooldownEnd = FIGHT_AT,
-): ExchangeTroops => ({
-  category,
+const restedKnights = (tier: (typeof TROOP_TIERS)[number], battleCooldownEnd = FIGHT_AT): ExchangeTroops => ({
+  category: "Knight",
   tier,
   count: BigInt(EXAMPLE_TROOPS) * BigInt(RESOURCE_PRECISION),
-  stamina: { amount: BigInt(FULL_STAMINA[category]), settled_at: FIGHT_AT, remainder: 0 },
+  stamina: { amount: BigInt(stamina.staminaKnightMax), settled_at: FIGHT_AT, remainder: 0 },
   boosts: {
     incr_damage_dealt_percent_num: 0,
     incr_damage_dealt_end_at: 0,
@@ -108,13 +97,12 @@ const restedArmy = (
   },
   battle_cooldown_end: battleCooldownEnd,
 });
-const fightOnGrassland = (attacker: ExchangeTroops, defender: ExchangeTroops, attackDistance: number) => {
+const fightOnGrassland = (attacker: ExchangeTroops, defender: ExchangeTroops) => {
   const result = resolveExchange(
     attacker,
     defender,
     {
       timestamp: FIGHT_AT,
-      attackDistance,
       attackerBiome: BiomeType.Grassland,
       defenderBiome: BiomeType.Grassland,
       attackerOaths: 0,
@@ -130,8 +118,8 @@ const fightOnGrassland = (attacker: ExchangeTroops, defender: ExchangeTroops, at
 };
 const secondsLeft = (troops: ExchangeTroops) => n(troops.battle_cooldown_end - FIGHT_AT);
 const exampleFight = (tier: (typeof TROOP_TIERS)[number]) => {
-  const attacker = restedArmy("Knight", tier);
-  const result = fightOnGrassland(attacker, restedArmy("Knight", "T1"), 1);
+  const attacker = restedKnights(tier);
+  const result = fightOnGrassland(attacker, restedKnights("T1"));
   const troops = (loss: bigint) => n(Number(loss / BigInt(RESOURCE_PRECISION)));
   return {
     tier,
@@ -143,9 +131,9 @@ const exampleFight = (tier: (typeof TROOP_TIERS)[number]) => {
 };
 // A fight adds to the timer an army already has (combat.cairo `update_timer`, then `+=`): the defender here is attacked
 // again with a full timer still to run.
-const waitingDefenderFight = (category: ExampleCategory, attackDistance: number) => {
-  const defender = restedArmy("Knight", "T1", FIGHT_AT + config.battle.cooldownSeconds);
-  const result = fightOnGrassland(restedArmy(category, "T1"), defender, attackDistance);
+const waitingDefenderFight = () => {
+  const defender = restedKnights("T1", FIGHT_AT + config.battle.cooldownSeconds);
+  const result = fightOnGrassland(restedKnights("T1"), defender);
   return {
     defenderBefore: secondsLeft(defender),
     defenderAfter: secondsLeft(result.defender),
@@ -197,7 +185,6 @@ export const BLITZ = {
     biomeStep: n(stamina.staminaBonusValue),
     attack: n(stamina.staminaAttackReq),
     defense: n(stamina.staminaDefenseReq),
-    rangedDefense: n(stamina.staminaDefenseReq / 2),
     wheatPerTroop: n(stamina.staminaExploreWheatCost),
   },
   troops: {
@@ -207,11 +194,7 @@ export const BLITZ = {
     cooldownSeconds: n(config.battle.cooldownSeconds),
     guardRefillMinutes: n(limit.guardResurrectionDelay / 60),
     timerPenalty: `${100 - CONTRACT.battleTimerPenaltyPercent}%`,
-    lowStaminaPenalty: `${100 - CONTRACT.lowStaminaTenths * 10}%`,
-    knightAssault: `${CONTRACT.knightAssaultPercent - 100}%`,
-    knightGuard: `${100 - CONTRACT.knightGuardPercent}%`,
-    rangedOnArmies: `${CONTRACT.rangedOnArmiesPercent}%`,
-    rangedOnGuards: `${CONTRACT.rangedOnGuardsPercent}%`,
+    knightGuard: `${100 - rule.FRONTIER_KNIGHT_GUARD_DAMAGE_PERCENT}%`,
     crossbowRange: n(CONTRACT.crossbowRange),
   },
   combat: {
@@ -222,13 +205,9 @@ export const BLITZ = {
     ),
     refundFrom: n(CONTRACT.timerRefundFloorRatio),
     refundFull: n(CONTRACT.timerRefundCeilingRatio),
-    rangedWaitSeconds: n(Math.floor(config.battle.cooldownSeconds / 2)),
     exampleTroops: n(EXAMPLE_TROOPS),
     example: TROOP_TIERS.map(exampleFight),
-    waitingDefender: {
-      melee: waitingDefenderFight("Knight", 1),
-      ranged: waitingDefenderFight("Crossbowman", CONTRACT.crossbowRange),
-    },
+    waitingDefender: waitingDefenderFight(),
   },
   map: {
     spireFind: pct(spireChance),

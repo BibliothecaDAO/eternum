@@ -24,30 +24,6 @@
     "value": 20
   },
   {
-    "key": "knightAssaultPercent",
-    "file": "combat.cairo",
-    "source": "return Self::_combat_percent_multiplier(115);",
-    "value": 115
-  },
-  {
-    "key": "knightGuardPercent",
-    "file": "combat.cairo",
-    "source": "if day_unit_seconds == 0 {\n                    85\n                }",
-    "value": 85
-  },
-  {
-    "key": "rangedOnGuardsPercent",
-    "file": "combat.cairo",
-    "source": "return Self::_combat_percent_multiplier(30);",
-    "value": 30
-  },
-  {
-    "key": "rangedOnArmiesPercent",
-    "file": "combat.cairo",
-    "source": "Self::_combat_percent_multiplier(70)",
-    "value": 70
-  },
-  {
     "key": "battleTimerPenaltyPercent",
     "file": "combat.cairo",
     "source": "BRAVO_BATTLE_TIMER_DAMAGE_MULTIPLIER = FixedTrait::new(85, false) / FixedTrait::new(100, false);",
@@ -70,12 +46,6 @@
     "file": "stamina.cairo",
     "source": "TroopTier::T3 => initial_max + 40,",
     "value": 40
-  },
-  {
-    "key": "lowStaminaTenths",
-    "file": "combat.cairo",
-    "source": "BRAVO_STAMINA_BONUS_DAMAGE_MULTIPLIER = FixedTrait::new(7, false) / FixedTrait::new(10, false);",
-    "value": 7
   },
   {
     "key": "sizeExponentTenths",

@@ -383,7 +383,6 @@ export class ClientConfigManager {
   getCombatConfig() {
     const rules = this.rules();
     return {
-      day_unit_seconds: rules.day_unit_seconds,
       ...rules.troop_damage_config,
       stamina_bonus_value: rules.troop_stamina_config.stamina_bonus_value,
       stamina_attack_req: rules.troop_stamina_config.stamina_attack_req,

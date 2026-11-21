@@ -61,7 +61,6 @@ const blitzStaminaPhrases = (config) => {
   const stamina = config.troop.stamina;
   const damage = config.troop.damage;
   const cooldown = config.battle.cooldownSeconds;
-  const rangedCooldown = Math.floor(cooldown / 2);
   return [
     {
       page: "blitz/armies",
@@ -71,9 +70,7 @@ const blitzStaminaPhrases = (config) => {
         `Attacking takes ${stamina.staminaAttackReq} stamina`,
         `The defender spends ${stamina.staminaDefenseReq} stamina`,
         `adds up to ${n(cooldown)} seconds to each side's timer`,
-        `A ranged attack adds ${n(rangedCooldown)} seconds to both timers.`,
         `with ${n(cooldown)} seconds left on their timer: the defenders then wait ${n(cooldown * 2)} seconds and the attackers ${n(cooldown)}.`,
-        `the defenders wait ${n(cooldown + rangedCooldown)} seconds and the Crossbowmen ${n(rangedCooldown)}.`,
         `The tier weights are 1 for T1, ${tierWeight(damage.t2DamageMultiplier)} for T2 and ${tierWeight(damage.t3DamageMultiplier)} for T3.`,
       ],
     },

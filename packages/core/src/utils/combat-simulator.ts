@@ -12,7 +12,6 @@ export interface Army {
 }
 
 export interface CombatSimulationContext {
-  attackDistance?: number;
   attackerBiome?: BiomeType;
   defenderBiome?: BiomeType;
   defenderAlt?: boolean;
@@ -21,7 +20,6 @@ export interface CombatSimulationContext {
 }
 
 export interface CombatParameters {
-  day_unit_seconds: number;
   damage_biome_bonus_num: number;
   damage_scaling_factor: bigint;
   t1_damage_value: bigint;
@@ -51,7 +49,6 @@ export class CombatSimulator {
   constructor(params: CombatParameters, rules: CombatRules) {
     this.rules = {
       ...rules,
-      dayUnitSeconds: params.day_unit_seconds,
       tickSeconds: params.tick_interval_seconds,
       damage: {
         damage_biome_bonus_num: params.damage_biome_bonus_num,
@@ -83,7 +80,6 @@ export class CombatSimulator {
         attackerOaths: attacker.oaths,
         defenderOaths: defender.oaths,
         attackerTwin: null,
-        attackDistance: context.attackDistance ?? 1,
         attackerBiome: context.defenderAlt ? BiomeType.Underground : (context.attackerBiome ?? biome),
         defenderBiome: context.defenderAlt ? BiomeType.Underground : (context.defenderBiome ?? biome),
         attackerIsStructureGuard: context.attackerIsStructureGuard ?? false,

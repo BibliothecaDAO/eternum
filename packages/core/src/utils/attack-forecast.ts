@@ -175,7 +175,6 @@ const exchangeContext = (
   attackerTwin: Troops | null,
 ) => ({
   timestamp: chainSecond,
-  attackDistance: attackDistance(attacker.tile, defender.tile),
   attackerBiome: biome,
   defenderBiome: biome,
   attackerIsStructureGuard: attacker.guarding,
@@ -356,7 +355,7 @@ function structureDefence(scene: Scene, attacker: Combatant, structure: NativeRo
   if (!guards) return undefined;
   const [first, ...queued] = guards;
   if (!first) return { claims: attacker, target: tile };
-  const guarding = isCombatGuard(structure.owner, scene.rules.dayUnitSeconds);
+  const guarding = isCombatGuard(structure.owner);
   const standing = (troops: Troops) => ({ troops, exact: true, oaths: 0, guarding, tile, home: structure.entity_id });
   return {
     sides: { attacker, defender: standing(first.troops), queued: queued.map((guard) => standing(guard.troops)) },
@@ -420,7 +419,6 @@ function deepGuardCombatant(scene: Scene, army: NativeRows["ExplorerTroops"], ti
 }
 
 function hasOpenOathPick(scene: Scene, explorerId: bigint): boolean {
-  if (scene.rules.dayUnitSeconds === 0) return false;
   return scene.store.require("ArmyProgress", { game_id: scene.gameId, explorer_id: explorerId }).oath_pick !== 0;
 }
 
@@ -455,7 +453,7 @@ function immunityRefusal(scene: Scene, home: bigint): AttackRefusal | undefined 
   return tick < founded + battle.village_immunity_ticks ? "village-immunity" : undefined;
 }
 
-export const attackDistance = (attacker: Tile, defender: Tile): number =>
+const attackDistance = (attacker: Tile, defender: Tile): number =>
   Math.floor(getLayeredAttackDistance(attacker, defender));
 
 const isAdjacent = (attacker: Tile, defender: Tile): boolean =>
