@@ -149,7 +149,7 @@ const orderIntentSchema = Schema.Struct({
 });
 export type OrderIntent = typeof orderIntentSchema.Type;
 const sealCodeSchema = Schema.Struct({ held: Schema.Boolean });
-export const SEAL_CODE_REFUSALS = ["invalid_code", "code_unavailable", "seal_owned"] as const;
+export const SEAL_CODE_REFUSALS = ["invalid_code", "code_unavailable"] as const;
 export type SealCodeRefusal = (typeof SEAL_CODE_REFUSALS)[number];
 export const isSealCodeRefusal = (code: string | undefined): code is SealCodeRefusal =>
   (SEAL_CODE_REFUSALS as readonly (string | undefined)[]).includes(code);

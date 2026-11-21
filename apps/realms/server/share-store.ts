@@ -2,7 +2,7 @@ import { FRIEND_FRAGMENTS, FRIENDS_BONUS_FRAGMENTS, FRIENDS_LIMIT } from "@bibli
 import { profileOfIdentityUser } from "@realms-world/identity";
 import type { ShareKind, ShareChannel, ShareMoment, ShareTally } from "@realms-world/identity";
 
-import { newPublicCode } from "./campaigns";
+import { newPublicCode } from "./public-codes";
 
 /** A shared link as a friend's landing reads it. */
 export interface SharedLink {

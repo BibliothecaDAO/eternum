@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { codeHashInScope, readCampaignCode } from "../server/campaigns";
+import { sealCodeHash, readPublicCode } from "../server/public-codes";
 import { d1LoadArgs, readEnvironment, readSealCodeOrder, sealCodeFiles } from "./seal-codes";
 
 const SEED = "a seed of at least thirty-two secret characters";
@@ -34,10 +34,10 @@ describe("the operator's free Seal codes", () => {
     const { codes, sql } = await sealCodeFiles(order, SEED);
 
     expect(new Set(codes).size).toBe(150);
-    expect(codes.every((code) => readCampaignCode(code) === code)).toBe(true);
+    expect(codes.every((code) => readPublicCode(code) === code)).toBe(true);
     for (const code of codes) {
       expect(sql).not.toContain(code);
-      expect(sql).toContain(`('${await codeHashInScope("seal", code)}', 'playtest-nov', 1800000000)`);
+      expect(sql).toContain(`('${await sealCodeHash(code)}', 'playtest-nov', 1800000000)`);
     }
     expect(sql.match(/ON CONFLICT DO NOTHING;/g)).toHaveLength(2);
     expect(await sealCodeFiles(order, SEED)).toEqual({ codes, sql });

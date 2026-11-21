@@ -57,7 +57,6 @@ export interface IdentityEnv extends Schema.Schema.Type<typeof IdentityVars> {
   GUARDIAN: Guardian;
   /** The launch Worker, reached by service binding only. */
   LAUNCH: { fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> };
-  /** The value relay, reached by service binding only: it turns a founded Devcon home golden for its inviter's friends. */
   VALUE_RELAY: { fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> };
   RATING_READER: DurableObjectNamespace<import("./rating-reader").RatingReader>;
   PUBLIC_RATE_LIMIT: RateLimit;

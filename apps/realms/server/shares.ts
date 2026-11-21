@@ -4,9 +4,9 @@ import type { ShareChannel, ShareMoment } from "@realms-world/identity";
 
 import type { IdentityAuth } from "./auth";
 import { keepBrowser } from "./browsers";
-import { readCampaignCode } from "./campaigns";
+import { readPublicCode } from "./public-codes";
 import { aspectOn } from "./account-aspect";
-import { accountKey, gloryOn, playerAccounts } from "./campaign-entry";
+import { accountKey, gloryOn, playerAccounts } from "./player-accounts";
 import type { IdentityEnv } from "./env";
 import { creditFragmentsOf } from "./fragment-credit";
 import { json } from "./http";
@@ -84,7 +84,7 @@ export async function handleJoinedShare(request: Request, auth: IdentityAuth, db
 export async function handleSharePosted(request: Request, auth: IdentityAuth, db: D1Database, code: string) {
   const sharer = await signedInRealmsId(request, auth);
   if (typeof sharer !== "string") return sharer;
-  const link = readCampaignCode(code);
+  const link = readPublicCode(code);
   if (!link || !(await createShareStore(db).markPosted(sharer, link, nowSeconds())))
     return json({ error: "share_unknown" }, 404);
   return new Response(null, { status: 204 });
@@ -97,7 +97,7 @@ export async function handleSharePosted(request: Request, auth: IdentityAuth, db
  */
 export async function handleShareVisit(request: Request, db: D1Database, code: string) {
   const store = createShareStore(db);
-  const link = readCampaignCode(code);
+  const link = readPublicCode(code);
   const shared = link ? await store.sharedLink(link) : null;
   if (!link || !shared) return json({ error: "share_unknown" }, 404);
   const headers = new Headers({ "cache-control": "no-store" });

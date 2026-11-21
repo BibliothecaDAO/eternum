@@ -2,7 +2,7 @@ import { Data, Effect } from "effect";
 import type { SealCodeRefusal } from "@realms-world/identity";
 
 import type { IdentityAuth } from "./auth";
-import { codeHashInScope, readCampaignCode } from "./campaigns";
+import { sealCodeHash, readPublicCode } from "./public-codes";
 import { json, readBody } from "./http";
 import type { IdentityEnv } from "./env";
 import { enteredGamesOf, type EnteredGames, type NamedGame } from "./shop-game";
@@ -54,17 +54,15 @@ function serveSealCode(request: Request, auth: IdentityAuth, world: SealCodeWorl
     });
     if (!session?.user.realmsId) return json({ error: "unauthorized" }, 401);
     const owner = session.user.realmsId;
-    if (request.method === "GET") return json({ held: yield* sealStorage(() => holdsSeal(db, owner)) });
+    if (request.method === "GET") return json({ held: yield* holdsCode(db, owner) });
     if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
     if (request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json")
       return json({ error: "json_required" }, 415);
     const code = yield* Effect.tryPromise({
-      try: async () => readCampaignCode((JSON.parse(await readBody(request, BODY_BYTES)) as { code?: unknown }).code),
+      try: async () => readPublicCode((JSON.parse(await readBody(request, BODY_BYTES)) as { code?: unknown }).code),
       catch: () => new SealCodeError({ code: "invalid_code", status: 400 }),
     });
     if (code === null) return refuse("invalid_code", 400);
-    const holdsOtherSeal = (yield* sealStorage(() => holdsSeal(db, owner))) && !(yield* holdsCode(db, owner));
-    if (holdsOtherSeal) return refuse("seal_owned", 409);
     yield* holdCode(db, owner, code);
     if (!(yield* holdsCode(db, owner))) return refuse("code_unavailable", 410);
     yield* sealStorage(() =>
@@ -78,15 +76,10 @@ function serveSealCode(request: Request, auth: IdentityAuth, world: SealCodeWorl
   });
 }
 
-const refuse = (refusal: SealCodeRefusal, status: 400 | 409 | 410) => json({ error: refusal }, status);
+const refuse = (refusal: SealCodeRefusal, status: 400 | 410) => json({ error: refusal }, status);
 
 export const holdsSeal = async (db: D1Database, owner: string) =>
-  (await db
-    .prepare(
-      `SELECT 1 FROM "seal_codes" WHERE "owner" = ?1 UNION ALL SELECT 1 FROM "campaign_tickets" WHERE "owner" = ?1`,
-    )
-    .bind(owner)
-    .first()) !== null;
+  (await db.prepare('SELECT 1 FROM "seal_codes" WHERE "owner" = ?').bind(owner).first()) !== null;
 
 const deliverSealGrant = async (world: SealCodeWorld, owner: string) => {
   try {
@@ -99,11 +92,7 @@ const deliverSealGrant = async (world: SealCodeWorld, owner: string) => {
   }
 };
 
-const holdsCode = (db: D1Database, owner: string) =>
-  sealStorage(async () => {
-    const held = await db.prepare('SELECT 1 FROM "seal_codes" WHERE "owner" = ?').bind(owner).first();
-    return held !== null;
-  });
+const holdsCode = (db: D1Database, owner: string) => sealStorage(() => holdsSeal(db, owner));
 
 const holdCode = (db: D1Database, owner: string, code: string) =>
   sealStorage(async () => {
@@ -114,7 +103,7 @@ const holdCode = (db: D1Database, owner: string, code: string) =>
          WHERE "code_hash" = ?3 AND "owner" IS NULL AND ("expires_at" IS NULL OR "expires_at" > ?2)
          AND NOT EXISTS (SELECT 1 FROM "seal_codes" WHERE "owner" = ?1)`,
       )
-      .bind(owner, now, await codeHashInScope("seal", code))
+      .bind(owner, now, await sealCodeHash(code))
       .run();
   });
 

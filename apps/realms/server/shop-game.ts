@@ -3,7 +3,7 @@ import { openFrontierGameIds, readEnrolledAccounts, runningFrontierGameIds } fro
 import { directoryShard, directoryShardOf, fetchShardGames, gamesUrl } from "./directory";
 import type { IdentityEnv } from "./env";
 import { json } from "./http";
-import { playerAccounts } from "./campaign-entry";
+import { playerAccounts } from "./player-accounts";
 
 /** The game a shop request names: the chain of its shard and its id. */
 export interface NamedGame {

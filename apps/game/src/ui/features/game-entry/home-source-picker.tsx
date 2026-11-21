@@ -317,7 +317,7 @@ const Wonder = ({ wonder }: { wonder: string }) => (
 function FreeHome({ unlinked }: { unlinked: boolean }) {
   return (
     <div className="home-picker__featured" data-kind="free">
-      <HomeArt icon="realm" size={96} tier="free" />
+      <HomeArt icon="realm" size={96} />
       <div className="home-picker__about">
         <h3>{HOME_STEP_WORDS.freeHome}</h3>
         <p className="home-picker__sub">{HOME_STEP_WORDS.freeHomeLine}</p>

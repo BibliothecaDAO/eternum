@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 
 import type { IdentityAuth } from "./auth";
-import { codeHashInScope } from "./campaigns";
+import { sealCodeHash } from "./public-codes";
 import { deliverQueuedSealGrants, handleSealCode, holdsSeal, type SealCodeWorld } from "./seal-codes";
 import type { EnteredGames, NamedGame } from "./shop-game";
 import { createTestD1 } from "./test-d1";
@@ -31,7 +31,7 @@ const sealCodes = async (entered: NamedGame[] | EnteredGames) => {
   for (const code of ["CHARM234", "BRAVE234"])
     await db
       .prepare('INSERT INTO "seal_codes" ("code_hash", "label") VALUES (?, ?)')
-      .bind(await codeHashInScope("seal", code), "playtest")
+      .bind(await sealCodeHash(code), "playtest")
       .run();
   const grantSeal = vi.fn(async (_game: NamedGame, _realmsId: string) => Response.json({}));
   const world: SealCodeWorld = {
@@ -91,16 +91,3 @@ it("holds a code redeemed before the season without a grant: entering the game g
   expect(await holdsSeal(db, "0xb2")).toBe(false);
 });
 
-it("counts a campaign ticket as a held Seal, and spends no code on it", async () => {
-  const { db, grantSeal, redeem } = await sealCodes([GAME]);
-  await db
-    .prepare(
-      `INSERT INTO "campaign_tickets" ("campaign", "owner", "code_hash", "tier", "redeemed_at") VALUES ('devcon-2026', ?, NULL, 'regular', 1)`,
-    )
-    .bind("0xc3")
-    .run();
-  expect([await holdsSeal(db, "0xb2"), await holdsSeal(db, "0xc3")]).toEqual([false, true]);
-  expect(await redeem("0xc3", "CHARM234")).toEqual([409, { error: "seal_owned" }]);
-  expect(grantSeal).not.toHaveBeenCalled();
-  expect(await redeem(PLAYER, "CHARM234")).toEqual([200, { held: true }]);
-});

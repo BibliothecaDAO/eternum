@@ -1,4 +1,4 @@
-/* A home's picture: a Realm's map in the parchment's tones, a ticket's realm on its colour, lit from the middle. */
+/* A home's picture: a Realm's map in the parchment's tones. */
 .home-art {
   display: grid;
   overflow: hidden;
@@ -14,20 +14,4 @@
 }
 .home-art[data-map="drawn"] {
   background: rgb(var(--hud-ink));
-}
-.home-art[data-tier="golden"] {
-  background: radial-gradient(
-    circle at 50% 40%,
-    color-mix(in srgb, rgb(var(--hud-gold)) 55%, rgb(var(--hud-ink))),
-    rgb(var(--hud-gold)) 60%,
-    color-mix(in srgb, rgb(var(--hud-gold)) 50%, rgb(var(--hud-dark)))
-  );
-}
-.home-art[data-tier="regular"] {
-  background: radial-gradient(
-    circle at 50% 40%,
-    color-mix(in srgb, rgb(var(--hud-ink)) 85%, rgb(var(--hud-gold))),
-    color-mix(in srgb, rgb(var(--hud-gold)) 45%, rgb(var(--hud-dark))) 60%,
-    color-mix(in srgb, rgb(var(--hud-gold)) 20%, rgb(var(--hud-dark)))
-  );
 }

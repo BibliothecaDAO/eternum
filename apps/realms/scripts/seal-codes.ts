@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { codeHashInScope } from "../server/campaigns";
+import { sealCodeHash } from "../server/public-codes";
 import { generateCodes, readCodeSeed } from "./printed-codes";
 
 const USAGE =
@@ -77,7 +77,7 @@ const endOfDay = (lastDay: string, now: number) => {
 export async function sealCodeFiles({ label, count, expiresAt }: SealCodeOrder, seed: string) {
   const codes = generateCodes(`seal:${label}`, count, seed);
   const rows = await Promise.all(
-    codes.map(async (code) => `('${await codeHashInScope("seal", code)}', '${label}', ${expiresAt ?? "NULL"})`),
+    codes.map(async (code) => `('${await sealCodeHash(code)}', '${label}', ${expiresAt ?? "NULL"})`),
   );
   rows.sort();
   const statements = [];

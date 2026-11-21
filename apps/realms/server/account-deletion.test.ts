@@ -18,8 +18,6 @@ import {
 
 /**
  * Deleting an account as Cloudflare runs it: the Worker, its D1 and the chat inboxes in workerd. The emailed code is
- * the account's confirmation; once it is spent, the old session opens nothing and the account's rows are gone, except
- * the ledger's and the campaign's, which stay keyed to an anonymous tombstone.
  */
 let bundle: string;
 beforeAll(() => {
@@ -90,15 +88,6 @@ const seedAccount = (worker: Worker, realmsId: string) =>
         `INSERT INTO "fragment_credits" ("receipt", "owner", "fragments", "created_at") VALUES ('apple:tx-bundle', ?, 500, 1)`,
       )
       .bind(realmsId),
-    worker.db.prepare(
-      `INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES ('devcon-2026', 'golden-hash', 'golden')`,
-    ),
-    worker.db
-      .prepare(
-        `INSERT INTO "campaign_tickets" ("campaign", "owner", "code_hash", "tier", "redeemed_at")
-         VALUES ('devcon-2026', ?, 'golden-hash', 'golden', 1)`,
-      )
-      .bind(realmsId),
     worker.db
       .prepare(`INSERT INTO "wallet_link_history" ("account", "wallet", "linked_at") VALUES (?, '0xabc', 1)`)
       .bind(realmsId),
@@ -166,8 +155,6 @@ it("deletes an account only with its emailed code: its old session opens nothing
       .first(),
   ).toEqual({ closed: 1 });
 
-  // The ledger's and the campaign's rows stay, with an anonymous tombstone their Realms id still names.
-  expect(await countOf(worker, "campaign_tickets", "owner", leaving.realmsId)).toBe(1);
   expect(await countOf(worker, "seal_codes", "owner", leaving.realmsId)).toBe(1);
   expect(
     await worker.db

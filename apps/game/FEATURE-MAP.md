@@ -73,7 +73,7 @@ them (nothing spills out of its block, every picture loads, one gold verb at mos
 painting and the bar on a desktop, each place's word whole on a phone), the bar with the longest name beside the install
 notice at 1024 and 1440 px (`/lab/app/long-name`), the phone's four places at 360 px, the account's pages on a desktop
 and a phone (`account`: sign-in's steps, You signed in, out and unnamed, Settings and what its Name, Portrait, Payout
-wallet and Sign out rows open, and each window over the page, the Golden ticket's, Realms' and Connect's, closed from
+wallet and Sign out rows open, and each window over the page, Realms' and Connect's, closed from
 its cross as a player presses it), the doorway into a game at each of its holds (`doorway`:
 `/lab/app/home/doorway/<state>`, the map booting, sign-in, the season awaited, a roster filling, the map failed with the
 realm to open, the device limit, a Blitz to watch, one ended), and every element of the sheet;
@@ -328,9 +328,7 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
       image's size and the post's address.
 
 - **Holdings** (You, the foot of your own card): **Realms**, how many your linked wallet holds, opens their sheet (each
-  by number and name, **Market**; "cannot be read right now" with **Try again** when the index fails); your **Devcon**
-  ticket (regular or **Golden ticket**) opens it with **Play**; a ticket just opened on the Devcon landing shows here at
-  once; when the ticket cannot be read the count is **— Ticket**, whose sheet says so with **Try again**. With no linked
+  by number and name, **Market**; "cannot be read right now" with **Try again** when the index fails). With no linked
   wallet the first count is **Link wallet** (Settings, then back). LORDS, chests and cosmetics are not shown yet.
 - **Settings**: **Name** offers **Claim name** once the name differs from the one held; **Devices** lists this device as
   soon as you are signed in. It opens the payout wallet directly when a page sent you to link one
@@ -1001,7 +999,7 @@ buys up to the account's Fragments. Kit lab: `army-refill`, `army-refill-ready`,
 
 **Shop**: the Fragments chip (the phone's purse row; the desktop realm panel's ring) opens it once the "shop" moment is
 reached (an army out of stamina, or Fragments held). The Ancient Seal row: what it gives (the daily quest's bonus from
-`QuestRules`; an account whose Realm or campaign ticket already pays it reads **Your Realm gives this bonus already**),
+`QuestRules`; an account whose Realm already pays it reads **Your Realm gives this bonus already**),
 **Get the Ancient Seal** for 1,000 Fragments, or while short how many more and their price in dollars, and the code
 field (the waiting screen's redeem, granted at once in a running game); once the account's Seal row exists it says the
 Ancient Seal is held. Then the Fragments row (a cent each) with **Get Fragments**, and the stamina refill rate. Kit lab:
@@ -1059,7 +1057,7 @@ also cover Ward, Plunder, expiry and incomplete snapshots in the site-card regre
 
 ## Season 1 Aspect founding
 
-A Season 1 free or campaign home chooses one of four Aspects on the game entry screen. Tap its card to found the home;
+A Season 1 free home chooses one of four Aspects on the game entry screen. Tap its card to found the home;
 its four Orders and current member count come from the shared catalog and Herald's directory. A held Realm inherits its
 Order's Aspect. A founded home can attach only a held Realm from that Aspect. An account that kept an Order before the
 season founds in that Order's Aspect (its Orders offered, the other Aspects shut). A held Realm in another Aspect than
@@ -1077,7 +1075,7 @@ Essence). Both armies appear in the production HUD.
 
 Games with quest rules show today's shared quest on the Frontier HUD, with the home's progress and reward. Complete the
 count, then press Collect. The collected mark appears when the grant receipt arrives. A completed quest keeps the level
-at which it finished; upgrading before completion increases the required count. Held-Realm and campaign homes receive
+at which it finished; upgrading before completion increases the required count. Held-Realm homes receive
 the configured labor bonus. Published presets keep quests disabled until their action producers are wired.
 
 `/lab/game?scenario=quest` opens a completed quest on the real HUD. The canonical

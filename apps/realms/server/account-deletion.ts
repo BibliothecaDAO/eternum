@@ -19,9 +19,6 @@ import { spendSignInCode } from "./wallet-changes";
  * finishes it from the recorded deletion (`finishAccountDeletions`). Until then the account has no session, so it opens
  * no new socket.
  *
- * The `user` row stays as an anonymous tombstone holding only its id, Realms id and creation time, because rows that
- * must stay reference its Realms id (and `campaign_tickets` would cascade away with it).
- *
  * | Store                                                              | Decision                                       |
  * | ------------------------------------------------------------------ | ---------------------------------------------- |
  * | `user`                                                             | anonymised: email, name, portrait, suggested   |
@@ -41,8 +38,6 @@ import { spendSignInCode } from "./wallet-changes";
  * | chat sockets (the inbox's and each room's)                         | closed                                         |
  * | `account_deletions`                                                | written: the Realms id, when, and when chat    |
  * |                                                                    | was closed                                     |
- * | `campaign_tickets`                                                 | kept: a spent flyer code stays spent, and the  |
- * |                                                                    | home it gave its source to is on chain         |
  * | `wallet_link_history`                                              | kept, its open link closed now: it says which  |
  * |                                                                    | account a wallet paid for in a past game       |
  * | `pay_decisions`                                                    | kept: the ledger's record of signed payouts    |

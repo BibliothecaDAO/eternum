@@ -28,10 +28,10 @@ import { defaultWalletDeployment, passkeySigner, passkeySignerGuid } from "@real
 import { generateKeyPairSync } from "node:crypto";
 import { realmsIdOf } from "./realms-id";
 import { routeIdentityRequest } from "./routes";
-import { codeHashInScope } from "./campaigns";
+import { sealCodeHash } from "./public-codes";
 import type { User } from "better-auth";
 import { accountDeletion } from "./account-deletion";
-import { accountKey } from "./campaign-entry";
+import { accountKey } from "./player-accounts";
 import { settleShareInvites, shareWorldOf } from "./shares";
 import { ORIGIN } from "./workerd-harness";
 import { createTestD1 } from "./test-d1";
@@ -95,7 +95,7 @@ const memoryBucket = () => {
 };
 const shareCards = memoryBucket();
 const relay = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
-  Response.json({ campaign: "devcon-2026", tier: "golden" }),
+  Response.json({}),
 );
 let env: IdentityEnv;
 const notifierCalls: [string, string][] = [];
@@ -1317,7 +1317,7 @@ describe("identity Worker", () => {
     expect((await createBrowser().request("/api/order-intent")).status).toBe(401);
   });
 
-  it("holds one free Seal code on an account: case-blind, the same answer again, none from a taken, expired or unknown code, and no code spent on an account that has the Seal or a campaign ticket", async () => {
+  it("holds one free Seal code on an account: case-blind, the same answer again, none from a taken, expired or unknown code, and no code spent on an account that has the Seal", async () => {
     const { codes, sql } = await sealCodeFiles(
       { label: "playtest", count: 3, expiresAt: null },
       "a seed of at least thirty-two secret characters",
@@ -1330,7 +1330,7 @@ describe("identity Worker", () => {
     await runOperatorFile();
     await runOperatorFile();
     await env.DB.prepare('INSERT INTO "seal_codes" ("code_hash", "label", "expires_at") VALUES (?, ?, 1)')
-      .bind(await codeHashInScope("seal", "LATE2345"), "playtest")
+      .bind(await sealCodeHash("LATE2345"), "playtest")
       .run();
     const player = async (name: string) => {
       const browser = createBrowser();
@@ -1358,23 +1358,8 @@ describe("identity Worker", () => {
     expect(await third.redeem("UNKN2345")).toEqual([410, { error: "code_unavailable" }]);
     expect(await third.redeem("NOPE")).toEqual([400, { error: "invalid_code" }]);
     expect(await third.redeem(42)).toEqual([400, { error: "invalid_code" }]);
-    await env.DB.prepare(
-      `INSERT INTO "campaign_tickets" ("campaign", "owner", "code_hash", "tier", "redeemed_at") VALUES ('devcon-2026', ?, NULL, 'regular', 1)`,
-    )
-      .bind(third.realmsId)
-      .run();
-    expect(await third.held()).toEqual({ held: true });
-    expect(await third.redeem(charm)).toEqual([409, { error: "seal_owned" }]);
-    const fourth = await player("seal-four");
-    expect(await fourth.redeem(charm)).toEqual([200, { held: true }]);
-    const ticketed = await player("seal-ticket");
-    await env.DB.prepare(
-      `INSERT INTO "campaign_tickets" ("campaign", "owner", "code_hash", "tier", "redeemed_at") VALUES ('devcon-2026', ?, NULL, 'golden', 1)`,
-    )
-      .bind(ticketed.realmsId)
-      .run();
-    expect(await ticketed.held()).toEqual({ held: true });
-    expect(await ticketed.redeem("LATE2345")).toEqual([409, { error: "seal_owned" }]);
+    expect(await first.redeem(charm)).toEqual([200, { held: true }]);
+    expect(await third.redeem(charm)).toEqual([200, { held: true }]);
     expect((await createBrowser().request("/api/seal-code")).status).toBe(401);
   });
 

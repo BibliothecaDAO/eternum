@@ -468,7 +468,6 @@ export const SEAL_CODE_WORDS = {
   refused: {
     invalid_code: `A code is ${PRINTED_CODE_LENGTH} letters and digits.`,
     code_unavailable: "That code is taken, expired or not one of ours.",
-    seal_owned: `This account has the ${ANCIENT_SEAL} already.`,
   } satisfies Record<SealCodeRefusal, string>,
 } as const;
 /** The day-done card: "Day 12 done · Realm kept · Day 13 is open", and its one verb. */
@@ -1618,7 +1617,7 @@ export const ACCOUNT_DELETION_WORDS = {
     "Your game accounts stay on chain with their progress. No one can sign in to them or add a device to them again; a device already added keeps its key on chain.",
     "Ratings stay on chain under the wallets that played.",
     "Messages you sent stay with the players who got them and in chat rooms until they are 30 days old, then they are deleted.",
-    "Campaign tickets, past wallet links and payout records stay under an anonymous id, so past games and payouts still add up.",
+    "Past wallet links and payout records stay under an anonymous id, so past games and payouts still add up.",
   ],
   confirm: "We email you a code. Enter it to delete your account.",
   sendCode: "Email me a code",

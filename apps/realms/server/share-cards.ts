@@ -9,7 +9,7 @@ import {
 } from "@realms-world/identity";
 
 import type { IdentityAuth } from "./auth";
-import { readCampaignCode } from "./campaigns";
+import { readPublicCode } from "./public-codes";
 import { json } from "./http";
 import { createShareStore } from "./share-store";
 import { signedInRealmsId } from "./shares";
@@ -38,7 +38,7 @@ export async function handleShareCardUpload(
 ) {
   const sharer = await signedInRealmsId(request, auth);
   if (typeof sharer !== "string") return sharer;
-  const link = readCampaignCode(code);
+  const link = readPublicCode(code);
   const shared = link ? await createShareStore(db).sharedLink(link) : null;
   if (!link || shared?.sharer !== sharer) return json({ error: "share_unknown" }, 404);
   const image = await readCard(request);
@@ -52,7 +52,7 @@ export async function handleShareCardUpload(
  * is gone (its account's rows cascade), whatever R2 still holds.
  */
 export async function handleShareCard(db: D1Database, cards: ShareCards, code: string) {
-  const link = readCampaignCode(code);
+  const link = readPublicCode(code);
   const shared = link ? await createShareStore(db).sharedLink(link) : null;
   const card = link && shared ? await cards.get(cardKey(link)) : null;
   if (!card) return json({ error: "card_unknown" }, 404);
@@ -71,7 +71,7 @@ export async function handleSharedPage(
   fetchPage: (request: Request) => Promise<Response>,
 ) {
   const page = await fetchPage(request);
-  const link = readCampaignCode(new URL(request.url).pathname.slice(SHARE_PATH.length + 1));
+  const link = readPublicCode(new URL(request.url).pathname.slice(SHARE_PATH.length + 1));
   const shared = link ? await createShareStore(db).sharedLink(link) : null;
   if (!link || !shared || !page.ok || !page.headers.get("content-type")?.includes("text/html")) return page;
   const card = await cards.head(cardKey(link));
