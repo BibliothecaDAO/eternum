@@ -98,11 +98,14 @@ fn different_logistics_caps_and_exhausted_slots_never_refill_a_merge() {
             other_max
         }, 0);
         assert!(execute_in_game(d, game_id, transfer(source, target, count(d, source) / RESOURCE_PRECISION), NOW));
-        assert_eq!(slot_at_home(d, target, home.entity_id, 1).stamina.amount, if tired {
-            0
-        } else {
-            core::cmp::min(maximum, other_max)
-        });
+        assert_eq!(
+            slot_at_home(d, target, home.entity_id, 1).stamina.amount,
+            if tired {
+                0
+            } else {
+                core::cmp::min(maximum, other_max)
+            },
+        );
         assert_eq!(slot_at_home(d, source, home.entity_id, 0).stamina.amount, if tired {
             0
         } else {

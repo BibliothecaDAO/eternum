@@ -352,7 +352,9 @@ fn into_deep(d: super::Deployment, home: ResourceKey, target: ResourceKey, attac
     snforge_std::interact_with_state(
         d.games,
         || {
-            crate::logic::deep_armies::enter(ExplorerKey { game_id: 3, explorer_id: attacker }, home.entity_id, context);
+            crate::logic::deep_armies::enter(
+                ExplorerKey { game_id: 3, explorer_id: attacker }, home.entity_id, context,
+            );
             crate::logic::deep_armies::enter(
                 ExplorerKey { game_id: 3, explorer_id: defender }, target.entity_id, context,
             );
@@ -377,12 +379,12 @@ fn camp(d: super::Deployment, attacker: u64) -> ResourceKey {
     start_cheat_caller_address(d.games, d.games);
     let site = crate::structures::IStructureOperationsDispatcherTrait::create_discovery(
         IStructureOperationsDispatcher { contract_address: d.games },
-            3,
-            army.owner,
-            crate::geometry::neighbor(army.coord, 0),
-            crate::discovery::Discovery::Camp,
-            0,
-            NOW,
+        3,
+        army.owner,
+        crate::geometry::neighbor(army.coord, 0),
+        crate::discovery::Discovery::Camp,
+        0,
+        NOW,
         crate::commands::action_context(context),
     );
     stop_cheat_caller_address(d.games);

@@ -108,9 +108,15 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
                 crate::army_relics::ArmyRelicEffectKey { game_id, explorer_id, kind: RelicKind::Blade },
             ),
         ),
-        Some(crate::army_relics::ArmyRelicEffect { rank: 1, expires_at: START + 400 + crate::rules::RELIC_SECONDS_PER_RANK.into() }),
+        Some(
+            crate::army_relics::ArmyRelicEffect {
+                rank: 1, expires_at: START + 400 + crate::rules::RELIC_SECONDS_PER_RANK.into(),
+            },
+        ),
     );
-    let site = discover_relic(d, key, discovery, chest, ArmyRelic { kind: RelicKind::FarEye, rank: 1 }, false, START + 430);
+    let site = discover_relic(
+        d, key, discovery, chest, ArmyRelic { kind: RelicKind::FarEye, rank: 1 }, false, START + 430,
+    );
     assert!(
         execute_in_game(
             d,

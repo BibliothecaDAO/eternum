@@ -223,7 +223,13 @@ fn beast_clear_payout(full: bool, band: bool) {
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
     let id = structures
         .create_discovery(
-            game_id, army.owner, coord, crate::discovery::Discovery::Beasts, seed, NOW, crate::commands::action_context(context),
+            game_id,
+            army.owner,
+            coord,
+            crate::discovery::Discovery::Beasts,
+            seed,
+            NOW,
+            crate::commands::action_context(context),
         );
     stop_cheat_caller_address(d.games);
     let site_key = ResourceKey { game_id, entity_id: id };
@@ -544,7 +550,9 @@ fn frontier_sites_persist_the_seeded_guard_and_initial_count() {
             };
             let seed = 123 + Into::<u32, u256>::into(offset);
             let id = IStructureOperationsDispatcher { contract_address: d.games }
-                .create_discovery(game_id, home.entity_id, coord, discovery, seed, NOW, crate::commands::action_context(context));
+                .create_discovery(
+                    game_id, home.entity_id, coord, discovery, seed, NOW, crate::commands::action_context(context),
+                );
             let guard = IGuardsDispatcher { contract_address: d.games }
                 .guard(GuardKey { game_id, structure_id: id, slot: 0 });
             let expected = if let crate::discovery::Discovery::Ruin(relic) = discovery {
@@ -838,10 +846,14 @@ fn army_allowance(level: u8) -> u16 {
 }
 
 fn is_open(d: super::Deployment, game_id: u32, coord: crate::troops::Coord) -> bool {
-    snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(crate::geometry::tile_key(game_id, coord)))
+    snforge_std::interact_with_state(
+        d.games, || crate::logic::map::occupancy(crate::geometry::tile_key(game_id, coord)),
+    )
         .is_none()
 }
 
 fn fund(d: super::Deployment, home: ResourceKey) {
-    super::resource_commands::fund_troops(d, home, crate::troops::troop_resource(held_troop(d, home), 0), RESOURCE_PRECISION);
+    super::resource_commands::fund_troops(
+        d, home, crate::troops::troop_resource(held_troop(d, home), 0), RESOURCE_PRECISION,
+    );
 }

@@ -70,9 +70,7 @@ fn frontier_knights_take_less_damage_in_guard_slots_even_without_stamina() {
                     .attack_with_context(
                         ref defender,
                         CombatContext {
-                            attacker_is_structure_guard,
-                            defender_is_structure_guard,
-                            ..context(Biome::Underground),
+                            attacker_is_structure_guard, defender_is_structure_guard, ..context(Biome::Underground),
                         },
                         stamina,
                         damage,
@@ -114,17 +112,10 @@ fn scouts_deal_three_quarters_damage_on_either_side() {
             let mut alpha = test_troops(attacker, TroopTier::T1, 1000, 100);
             let mut bravo = test_troops(defender, TroopTier::T1, 1000, 100);
             let (dealt, taken, _, _) = alpha
-                .damage_with_context(
-                    ref bravo,
-                    context(Biome::Grassland),
-                    stamina_config(),
-                    damage,
-                    1,
-                    0,
-                );
+                .damage_with_context(ref bravo, context(Biome::Grassland), stamina_config(), damage, 1, 0);
             assert_eq!(dealt, outgoing * RESOURCE_PRECISION);
             assert_eq!(taken, incoming * RESOURCE_PRECISION);
-    }
+        }
     }
 }
 
@@ -354,12 +345,7 @@ fn oath_attack(attacker_oaths: u16, bar: u64, defenders: u128) -> (Troops, Troop
     let mut defender = test_troops(TroopType::Knight, TroopTier::T1, defenders, 100);
     attacker
         .attack_with_context(
-            ref defender,
-            CombatContext { attacker_oaths, ..context(Biome::Underground) },
-            stamina,
-            damage,
-            120,
-            0,
+            ref defender, CombatContext { attacker_oaths, ..context(Biome::Underground) }, stamina, damage, 120, 0,
         );
     (attacker, defender)
 }
