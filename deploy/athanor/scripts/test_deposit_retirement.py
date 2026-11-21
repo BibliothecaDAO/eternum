@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -10,14 +11,14 @@ import teardown
 
 
 class DepositRetirementTest(unittest.TestCase):
-    def fixture(self, directory):
+    def fixture(self, directory, chain_id="S1_DEPOSIT_TEST"):
         data = directory / "data"
         data.mkdir(exist_ok=True)
-        config = {"chain_id": "S1_DEPOSIT_TEST", "guardian_url": "https://candidate.test/api/identity/guardian",
+        config = {"chain_id": chain_id, "guardian_url": "https://candidate.test/api/identity/guardian",
                   "shard_name": "s1-deposit-test", "public_herald_url": "https://herald.candidate.test"}
         chain = "0x" + config["chain_id"].encode().hex()
         (data / "native-world.json").write_text(json.dumps({"shard": {"chainId": chain}, "world": {"address": "0x20"}}))
-        (directory / "configuration.json").write_text(json.dumps(config))
+        (directory / ".env").write_text(f"SHARD_NAME={config['shard_name']}\nCHAIN_ID={config['chain_id']}\n")
         return config, {"chainId": chain, "gamesAddress": "0x20", "retirementReady": True}
 
     def test_only_matching_ready_source_can_leave_durable_evidence(self):
@@ -47,20 +48,27 @@ class DepositRetirementTest(unittest.TestCase):
                 deposit_retirement.require_deposit_retirement(config, directory)
                 request.assert_not_called()
 
-    def test_official_teardown_runs_the_same_gate_before_removal(self):
+    def test_teardown_asks_for_the_run_directory_chain_with_the_committed_inputs_before_removal(self):
         from contextlib import nullcontext
+        environment = json.loads((teardown.shard.ROOT / "deploy/first/environments.json").read_text())["dev"]
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            directory = root / "run"
-            directory.mkdir()
-            config, _ = self.fixture(directory)
-            settings = root / "deploy/first"
-            settings.mkdir(parents=True)
-            (settings / "environments.json").write_text(json.dumps({"dev": {"runDirectory": str(directory), "environment": "dev"}}))
-            with patch.object(teardown.shard, "ROOT", root), patch.object(teardown.shard, "isolated_stack_lock", return_value=nullcontext()), patch.object(teardown.deploy, "load_inputs", return_value=config), patch.object(deposit_retirement, "service_json", side_effect=RuntimeError("principal return pending")), patch.object(teardown.subprocess, "run") as command, patch.object(teardown.shutil, "rmtree") as remove:
+            directory = Path(temporary)
+            _, result = self.fixture(directory, "DEV_19a2b3c4d5e6f")
+            def at_run_directory(path):
+                return directory if path == environment["runDirectory"] else Path(path)
+            run, box_commands = subprocess.run, []
+            def only_git_runs(command, **options):
+                if command[0] == "git":
+                    return run(command, **options)
+                box_commands.append(command)
+                return subprocess.CompletedProcess(command, 0, "", "")
+            with patch.object(teardown, "Path", side_effect=at_run_directory), patch.object(teardown.shard, "isolated_stack_lock", return_value=nullcontext()), patch.object(deposit_retirement, "service_json", side_effect=RuntimeError("principal return pending")) as request, patch.object(subprocess, "run", side_effect=only_git_runs), patch.object(teardown.shutil, "rmtree") as remove:
                 with self.assertRaisesRegex(RuntimeError, "principal return pending"):
                     teardown.teardown(["dev"], lambda _: None)
-                command.assert_not_called()
+                request.assert_called_once_with(environment["origin"] + "/api/value/operator/deposit-retirement",
+                                                {"chainId": result["chainId"], "url": "https://herald.dev-realms.party"},
+                                                timeout=120)
+                self.assertEqual(box_commands, [])
                 remove.assert_not_called()
 
     def test_unfinished_reinitialization_cannot_remove_unpaid_principal(self):

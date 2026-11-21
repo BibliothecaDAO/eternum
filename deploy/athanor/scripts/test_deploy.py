@@ -334,5 +334,5 @@ class ChainIdentityTest(unittest.TestCase):
             second = deploy.chain_identity(root, "dev")
             self.assertNotEqual(first, second)
             self.assertLessEqual(len(first.encode("ascii")), 31)
-            (root / ".env").write_text(f"CHAIN_ID={first}\n")
+            (root / ".env").write_text(f"SHARD_NAME=realms-dev\nCHAIN_ID={first}\n")
             self.assertEqual(deploy.chain_identity(root, "dev"), first)

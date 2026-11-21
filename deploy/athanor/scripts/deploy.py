@@ -67,10 +67,8 @@ def remove_unused_checkouts():
 
 
 def chain_identity(directory, environment):
-    environment_file = directory / ".env"
-    if environment_file.exists():
-        values = dict(line.split("=", 1) for line in environment_file.read_text().splitlines() if "=" in line)
-        return values["CHAIN_ID"]
+    if (directory / ".env").exists():
+        return shard.run_identity(directory)["chain_id"]
     return f"{environment.upper()}_{time.time_ns():x}"
 
 

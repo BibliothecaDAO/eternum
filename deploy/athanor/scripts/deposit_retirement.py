@@ -3,10 +3,11 @@ import json
 import subprocess
 from urllib.parse import urlsplit
 
+import shard
 from service_requests import identity_service_base, service_json
 
 
-def require_deposit_retirement(config, directory):
+def require_deposit_retirement(inputs, directory):
     data = directory / "data"
     manifest_path = data / "native-world.json"
     if not manifest_path.exists():
@@ -17,16 +18,16 @@ def require_deposit_retirement(config, directory):
         if (data / "initialized.json").exists():
             raise ValueError("Initialized shard has no Games identity")
         return
-    chain = "0x" + config["chain_id"].encode("ascii").hex()
+    chain = "0x" + shard.run_identity(directory)["chain_id"].encode("ascii").hex()
     if int(manifest["shard"]["chainId"], 16) != int(chain, 16):
         raise ValueError("Deposit retirement manifest names another chain")
     record = directory / "deposit-retirement.json"
-    if record.exists() and not chain_volume_exists(config):
+    if record.exists() and not chain_volume_exists(inputs):
         require_matching_result(json.loads(record.read_text()), chain, games)
         return
-    source = urlsplit(identity_service_base(config["guardian_url"]))
+    source = urlsplit(identity_service_base(inputs["guardian_url"]))
     endpoint = f"{source.scheme}://{source.netloc}/api/value/operator/deposit-retirement"
-    result = service_json(endpoint, {"chainId": chain, "url": config["public_herald_url"]}, timeout=120)
+    result = service_json(endpoint, {"chainId": chain, "url": inputs["public_herald_url"]}, timeout=120)
     require_matching_result(result, chain, games)
     temporary = record.with_suffix(".tmp")
     temporary.write_text(json.dumps(result, indent=2) + "\n")
@@ -40,8 +41,8 @@ def require_matching_result(result, chain, games):
         raise ValueError("Deposit retirement did not verify this source shard")
 
 
-def chain_volume_exists(config):
-    volume = f"{config['shard_name']}_chain"
+def chain_volume_exists(inputs):
+    volume = f"{inputs['shard_name']}_chain"
     result = subprocess.run(["sudo", "-n", "docker", "volume", "ls", "--quiet", "--filter", f"name={volume}"],
                             capture_output=True, text=True, check=True)
     return volume in result.stdout.split()

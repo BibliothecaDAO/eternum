@@ -40,12 +40,6 @@ def parse_arguments(arguments):
     raise ValueError(USAGE)
 
 
-def shard_identity(directory):
-    """The shard this run directory holds: its name and its chain."""
-    values = dict(line.split("=", 1) for line in (directory / ".env").read_text().splitlines() if "=" in line)
-    return {"project": values["SHARD_NAME"], "chain_id": values["CHAIN_ID"]}
-
-
 LOGS = Path("/opt/athanor/logs")
 
 
@@ -80,7 +74,7 @@ def require_verified_backup(environment, directory, backup):
             return
         raise ValueError("This shard can no longer be identified and no teardown of it verified this backup; "
                          "nothing more was removed")
-    identity = shard_identity(directory)
+    identity = shard.run_identity(directory)
     expected = {**identity, "backup": str(backup)}
     if not chain_data_exists(identity["project"]):
         if recorded == expected:
@@ -121,18 +115,18 @@ def teardown(arguments, report_stage):
     environment, backup = parse_arguments(arguments)
     target = json.loads((shard.ROOT / "deploy/first/environments.json").read_text())[environment]
     directory = Path(target["runDirectory"])
-    config = deploy.load_inputs(target["environment"])
+    inputs = deploy.load_inputs(target["environment"])
     with shard.isolated_stack_lock(f"teardown {environment}"):
         if directory.exists() and backup is not None:
             report_stage("verify backup")
             require_verified_backup(environment, directory, backup)
         if directory.exists():
             report_stage("verify deposit retirement")
-            require_deposit_retirement(config, directory)
+            require_deposit_retirement(inputs, directory)
             report_stage("stop and remove volumes")
             if (directory / "compose.yml").exists():
                 if (directory / ".env").exists():
-                    remove_strays(shard_identity(directory)["project"])
+                    remove_strays(shard.run_identity(directory)["project"])
                 subprocess.run([*deploy.compose(directory), "down", "--volumes", "--remove-orphans"], check=True,
                                stdout=sys.stdout, stderr=sys.stderr)
             report_stage("keep deployment logs")

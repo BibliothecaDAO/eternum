@@ -39,6 +39,12 @@ def validate_runtime_configuration(config):
         raise ValueError("l2_gas_bound must be nonzero hex u64")
 
 
+def run_identity(directory):
+    """The shard a run directory holds: its name and its chain."""
+    values = dict(line.split("=", 1) for line in (directory / ".env").read_text().splitlines() if "=" in line)
+    return {"project": values["SHARD_NAME"], "chain_id": values["CHAIN_ID"]}
+
+
 def validate_shard_identity(config):
     if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{0,30}", config.get("chain_id", "")):
         raise ValueError("chain_id must be a unique 1-31 character ASCII shard name")
