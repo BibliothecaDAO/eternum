@@ -43,5 +43,4 @@ export function buildDayOpen(
   );
 }
 
-const dayLine = (ends: string, last: boolean): string =>
-  last ? `the season ends at ${ends}.` : `it ends at ${ends}.`;
+const dayLine = (ends: string, last: boolean): string => (last ? `the season ends at ${ends}.` : `it ends at ${ends}.`);

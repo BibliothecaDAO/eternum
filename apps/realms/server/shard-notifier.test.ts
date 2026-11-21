@@ -890,7 +890,9 @@ describe.concurrent("shard notifications", () => {
       expect(push.received).toEqual([201]);
       expect(push.times[0]).toBeGreaterThanOrEqual(opensAt);
       expect(push.times[0]).toBeLessThan(opensAt + 1000);
-      expect(await push.words()).toEqual([expect.stringMatching(/^Day 2 is open \/ Frontier: it ends at \d\d:\d\d UTC\.$/)]);
+      expect(await push.words()).toEqual([
+        expect.stringMatching(/^Day 2 is open \/ Frontier: it ends at \d\d:\d\d UTC\.$/),
+      ]);
       await worker.dispose();
       const restarted = await start();
       await restarted.runCron();
