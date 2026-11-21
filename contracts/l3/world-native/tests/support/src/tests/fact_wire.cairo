@@ -43,6 +43,18 @@ pub struct FactWire {
     pub structure_base: crate::structures::StructureBase,
     pub structure_metadata: crate::structures::StructureMetadata,
     pub village_pass: crate::village::VillagePass,
+    pub mine_weight: crate::mines::MineWeight,
+    pub board_rules: crate::buildings::BoardRules,
+    pub frontier_discovery_rules: crate::expeditions::FrontierDiscoveryRules,
+    pub race_rules: crate::race::RaceRules,
+    pub research_price: crate::research::ResearchPrice,
+    pub resource_rule: crate::resources::ResourceRule,
+    pub resource_slot: crate::resources::ResourceSlot,
+    pub upgrade_limits: crate::upgrades::UpgradeLimits,
+    pub upgrade_recipe: crate::upgrades::UpgradeRecipe,
+    pub deep_ring: crate::deep::DeepRing,
+    pub deep_beast: crate::deep::DeepBeast,
+    pub deep_pay: crate::deep::DeepPay,
 }
 
 #[starknet::contract]

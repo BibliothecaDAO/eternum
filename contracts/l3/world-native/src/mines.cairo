@@ -28,8 +28,6 @@ pub struct MineWeight {
 pub trait IMineRules<T> {
     #[cfg(feature: "test_support")]
     fn mine_kind(self: @T, key: MineKindKey) -> MineKindConfig;
-    #[cfg(feature: "test_support")]
-    fn mine_pool(self: @T, _key: MinePoolKey) -> Span<MineWeight>;
     fn mine_draw(self: @T, key: MinePoolKey, seed: u256) -> (u8, MineKindConfig, u128);
 }
 

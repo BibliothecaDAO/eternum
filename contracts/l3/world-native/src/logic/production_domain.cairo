@@ -58,10 +58,6 @@ pub mod ProductionLogic {
         fn mine_kind(self: @ContractState, key: crate::mines::MineKindKey) -> crate::mines::MineKindConfig {
             self.mines.kind(key)
         }
-        #[cfg(feature: "test_support")]
-        fn mine_pool(self: @ContractState, _key: crate::mines::MinePoolKey) -> Span<crate::mines::MineWeight> {
-            self.mines.pool()
-        }
         fn mine_draw(
             self: @ContractState, key: crate::mines::MinePoolKey, seed: u256,
         ) -> (u8, crate::mines::MineKindConfig, u128) {

@@ -23,6 +23,22 @@ async function currentTestTypes(directory) {
   return types;
 }
 
+export async function declaredByWorld(sources, name) {
+  const [crate, ...modules] = name.split("::");
+  const type = modules.pop();
+  if (crate !== "world_native") return true;
+  const declaration = new RegExp(`pub (?:struct|enum) ${type}\\b`);
+  for (let depth = modules.length; depth > 0; depth -= 1) {
+    const file = new URL(`${modules.slice(0, depth).join("/")}.cairo`, sources);
+    const source = await readFile(file, "utf8").catch((error) => {
+      if (error.code === "ENOENT") return "";
+      throw error;
+    });
+    if (declaration.test(source)) return true;
+  }
+  return false;
+}
+
 export async function checkFactWire(directory, declarations) {
   const types = await currentTestTypes(directory);
   for (const declared of declarations) {
@@ -34,6 +50,11 @@ export async function checkFactWire(directory, declarations) {
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const count = await checkFactWire(new URL("../tests/target/dev/", import.meta.url), factWireTypes);
-  console.log(`Verified all ${count} fact wire types against the test contract ABI (field order and types)`);
+  const sources = new URL("../src/", import.meta.url);
+  const declared = [];
+  for (const type of factWireTypes) if (await declaredByWorld(sources, type.name)) declared.push(type);
+  const count = await checkFactWire(new URL("../tests/target/dev/", import.meta.url), declared);
+  console.log(
+    `Verified all ${count} world-declared fact wire types against the test contract ABI (field order and types); ${factWireTypes.length - count} are Herald's own rows`,
+  );
 }
