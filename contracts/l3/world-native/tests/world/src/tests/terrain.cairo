@@ -285,7 +285,8 @@ fn an_entity_at_the_origin_cannot_be_placed_twice() {
 }
 
 fn send_starting_armies_home(d: super::Deployment, home: ResourceKey, timestamp: u64) {
-    for army in IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home) {
+    let armies = IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home);
+    for army in armies {
         let remove = crate::commands::Command::ManageTroops(crate::troop_management::ManageTroops::RemoveExplorer(*army));
         assert!(execute_in_game(d, home.game_id, remove, timestamp));
     }

@@ -4,10 +4,10 @@ pub use world_test_support::tests::*;
 #[test]
 fn row_set_member_and_deleted_have_exact_wire_shapes_and_zero_is_present() {
     let deployment = setup(true);
+    let key = acting_army(deployment, 1);
     let mut spy = spy_events();
     execute(deployment, action(deployment, 1));
     let fixture = IFixtureDispatcher { contract_address: deployment.games };
-    let key = ExplorerKey { game_id: 1, explorer_id: 7 };
     let mut explorer = GameState { contract_address: deployment.games }.explorer(key).unwrap();
     assert_eq!(explorer.troops.count, 0);
     let mut values = array![];
@@ -22,7 +22,7 @@ fn row_set_member_and_deleted_have_exact_wire_shapes_and_zero_is_present() {
     assert_eq!(matched.len(), 1);
     let (_, event) = matched.at(0);
     assert_eq!(event.keys.span(), array![selector!("TroopEvent"), selector!("RowSet"), 1, 'ExplorerTroops'].span());
-    let mut expected = array![2, 1, 7, values.len().into()];
+    let mut expected = array![2, 1, key.explorer_id.into(), values.len().into()];
     expected.append_span(values.span());
     assert_eq!(event.data.span(), expected.span());
     let mut spy = spy_events();
@@ -37,7 +37,7 @@ fn row_set_member_and_deleted_have_exact_wire_shapes_and_zero_is_present() {
         occupancy_deleted.keys.span(),
         array![selector!("MapEvent"), selector!("RowDeleted"), 1, 'TileOccupancy'].span(),
     );
-    assert_eq!(occupancy_deleted.data.span(), array![4, 1, 0, 12, 34].span());
+    assert_eq!(occupancy_deleted.data.span(), array![4, 1, 0, acting_tile(key).col.into(), 34].span());
     let (_, deleted) = events.events.at(2);
     assert_eq!(
         member.keys.span(),
@@ -45,13 +45,13 @@ fn row_set_member_and_deleted_have_exact_wire_shapes_and_zero_is_present() {
     );
     let mut troop_values = array![];
     explorer.troops.serialize(ref troop_values);
-    let mut expected = array![2, 1, 7, troop_values.len().into()];
+    let mut expected = array![2, 1, key.explorer_id.into(), troop_values.len().into()];
     expected.append_span(troop_values.span());
     assert_eq!(member.data.span(), expected.span());
     assert_eq!(
         deleted.keys.span(), array![selector!("TroopEvent"), selector!("RowDeleted"), 1, 'ExplorerTroops'].span(),
     );
-    assert_eq!(deleted.data.span(), array![2, 1, 7].span());
+    assert_eq!(deleted.data.span(), array![2, 1, key.explorer_id.into()].span());
     assert!(GameState { contract_address: deployment.games }.explorer(key).is_none());
     execute(deployment, action(deployment, 1));
     assert_eq!(GameState { contract_address: deployment.games }.explorer(key).unwrap().troops.count, 0);
@@ -107,12 +107,13 @@ fn initializer_refuses_zero_owner_launcher_class_and_guardian() {
 fn direct_actor_root_and_block_time_reach_each_game_domain() {
     let d = setup(true);
     for game_id in array![1, 2] {
+        let army = acting_army(d, game_id);
         assert!(play_fixture::play(d.games, action(d, game_id), 987654321, 123));
         let fixture = IFixtureDispatcher { contract_address: d.games };
         assert_eq!(fixture.received_actor(), d.actor);
         assert_eq!(fixture.received_root(), 987654321);
         assert_eq!(fixture.received_timestamp(), 123);
-        assert!(GameState { contract_address: d.games }.explorer(ExplorerKey { game_id, explorer_id: 7 }).is_some());
+        assert!(GameState { contract_address: d.games }.explorer(army).is_some());
     }
 }
 
@@ -124,7 +125,7 @@ fn a_domain_refuses_a_context_carried_for_another_game() {
         panic!("wrong command")
     };
     let troops = ICreateExplorerSafeLibraryDispatcher { class_hash: declare_logic("TroopFixture") };
-    let explorer = ExplorerKey { game_id: 1, explorer_id: 7 };
+    let explorer = acting_army(d, 1);
     let foreign = crate::commands::action_context(ExecutionContext { raw_root: 5, ..context(d.games, 2) });
     let refused = snforge_std::interact_with_state(
         d.games, || troops.create_explorer(1, d.actor, command, foreign).unwrap_err(),
@@ -216,6 +217,7 @@ fn production_play_refuses_a_missing_stamp_and_exposes_no_domain_routes() {
     let d = setup_with_host(true, "MapLogic", "TroopFixture", "Games");
     let release = play_fixture::pins(d.games, 1);
     play_fixture::caller(d.games, d.actor, 100);
+    let army = acting_army(d, 1);
     let mut spy = spy_events();
     assert!(
         IGamesPlaySafeDispatcher { contract_address: d.games }
@@ -223,7 +225,7 @@ fn production_play_refuses_a_missing_stamp_and_exposes_no_domain_routes() {
             .is_err(),
     );
     assert!(spy.get_events().emitted_by(d.games).events.is_empty());
-    assert!(GameState { contract_address: d.games }.explorer(ExplorerKey { game_id: 1, explorer_id: 7 }).is_none());
+    assert!(GameState { contract_address: d.games }.explorer(army).is_none());
     let Command::CreateExplorer(command) = action(d, 1).command else {
         panic!("wrong command")
     };
@@ -238,7 +240,9 @@ fn production_play_refuses_a_missing_stamp_and_exposes_no_domain_routes() {
             .is_err(),
     );
     assert!(
-        starknet::syscalls::call_contract_syscall(d.games, selector!("reveal"), array![1, 0, 12, 34, 11].span())
+        starknet::syscalls::call_contract_syscall(
+            d.games, selector!("reveal"), array![1, 0, acting_tile(army).col.into(), 34, 11].span(),
+        )
             .is_err(),
     );
 }
@@ -247,11 +251,12 @@ fn production_play_refuses_a_missing_stamp_and_exposes_no_domain_routes() {
 fn post_root_failure_rolls_back_child_storage_and_emits_rejection_wire() {
     let d = setup(true);
     let before = play_fixture::pins(d.games, 1);
+    let army = acting_army(d, 1);
     snforge_std::start_cheat_transaction_hash(d.games, 123456);
     let mut spy = spy_events();
     assert!(!play_fixture::play(d.games, action(d, 1), 0, 100));
     assert_eq!(play_fixture::pins(d.games, 1), before);
-    assert!(GameState { contract_address: d.games }.explorer(ExplorerKey { game_id: 1, explorer_id: 7 }).is_none());
+    assert!(GameState { contract_address: d.games }.explorer(army).is_none());
     let fixture = IFixtureDispatcher { contract_address: d.games };
     assert_eq!(fixture.received_actor(), 0.try_into().unwrap());
     assert_eq!(fixture.received_root(), 0);
@@ -260,7 +265,7 @@ fn post_root_failure_rolls_back_child_storage_and_emits_rejection_wire() {
         snforge_std::interact_with_state(
             d.games,
             || {
-                !crate::logic::structures::exists(crate::resources::ResourceKey { game_id: 1, entity_id: 7 })
+                !crate::logic::structures::exists(crate::resources::ResourceKey { game_id: 1, entity_id: army.explorer_id })
             },
         ),
     );
@@ -286,7 +291,7 @@ fn post_root_failure_rolls_back_child_storage_and_emits_rejection_wire() {
     // Source rows verify that every child write rolled back.
     assert!(
         snforge_std::interact_with_state(
-            d.games, || crate::logic::map::occupancy(crate::map::TileKey { game_id: 1, alt: false, col: 12, row: 34 }),
+            d.games, || crate::logic::map::occupancy(acting_tile(army)),
         )
             .is_none(),
     );
@@ -374,6 +379,7 @@ fn a_command_the_release_disables_reverts_before_root() {
 fn command_list_and_calldata_limits_are_checked_before_root() {
     let d = setup(true);
     let release = play_fixture::pins(d.games, 1);
+    let army = acting_army(d, 1);
     play_fixture::caller(d.games, d.actor, 100);
     let mut directions = array![];
     for _ in 0_u32..65 {
@@ -392,7 +398,7 @@ fn command_list_and_calldata_limits_are_checked_before_root() {
             IPlayFixtureSafeDispatcher { contract_address: d.games }.play_with_root(1, release, command, 1).is_err(),
         );
         assert_eq!(play_fixture::pins(d.games, 1), release);
-        assert!(GameState { contract_address: d.games }.explorer(ExplorerKey { game_id: 1, explorer_id: 7 }).is_none());
+        assert!(GameState { contract_address: d.games }.explorer(army).is_none());
         assert!(spy.get_events().emitted_by(d.games).events.is_empty());
     }
 }
@@ -511,3 +517,16 @@ mod structure_rules;
 mod structure_storage;
 mod terrain;
 mod wire_ids;
+
+fn acting_army(d: Deployment, game_id: u32) -> ExplorerKey {
+    let Command::CreateExplorer(command) = action(d, game_id).command else {
+        panic!("wrong command")
+    };
+    ExplorerKey { game_id, explorer_id: command.structure_id }
+}
+
+fn acting_tile(army: ExplorerKey) -> crate::map::TileKey {
+    crate::map::TileKey {
+        game_id: army.game_id, alt: false, col: (army.explorer_id + 5).try_into().unwrap(), row: 34,
+    }
+}
