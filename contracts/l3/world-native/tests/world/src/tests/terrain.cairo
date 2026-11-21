@@ -64,21 +64,23 @@ fn home_ring_materializes_once_each_day_and_all_six_deployments_work() {
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
     let state = GameState { contract_address: d.games };
     let context = biome_context(d, game_id);
+    let troop = crate::troops::troop_resource(super::registrar::held_troop(d, home), 0);
+    super::resource_commands::grant(d, home, troop, 18 * crate::rules::RESOURCE_PRECISION);
+    send_starting_armies_home(d, home, FIXTURE_START + 1);
     let mut serialized = array![1_felt252, 21];
     for day in 0_u64..3 {
         let timestamp = super::registrar::day_start(d, game_id, day) + 50;
         let ring = map.expedition_home_ring(game_id, region, timestamp);
         let (center, _) = *ring.at(0);
         let mut spy = snforge_std::spy_events();
-        let resources = IResourceOperationsDispatcher { contract_address: d.games };
-        let before = ring_reward_balances(resources, game_id);
+        let before = super::resource_commands::resource_facts(d, home);
         interact_with_state(
             d.games,
             || {
                 crate::logic::terrain::raise_expedition_home(crate::geometry::tile_key(game_id, center), context);
             },
         );
-        assert_eq!(before, ring_reward_balances(resources, game_id));
+        assert_eq!(before, super::resource_commands::resource_facts(d, home));
         for (_, event) in spy.get_events().emitted_by(d.games).events {
             assert_eq!(*event.keys.at(0), selector!("RowSet"));
             assert_eq!(*event.keys.at(2), 'TileOpt');
@@ -149,8 +151,12 @@ fn deploy_refuses_a_missing_neighbour_after_the_ring_is_materialized() {
             0,
         ),
     };
+    super::resource_commands::grant(d, home, troops.resource_type, crate::rules::RESOURCE_PRECISION);
+    send_starting_armies_home(d, home, FIXTURE_START + 1);
     let before = resources.resource_balance(troops);
+    let mut refused = snforge_std::spy_events();
     assert!(!execute_in_game(d, game_id, muster_command(home, category, 0, 0), FIXTURE_START + 1));
+    assert_eq!(super::play_fixture::rejection(ref refused, d.games).reason, "deployment tile unexplored");
     assert_eq!(resources.resource_balance(troops), before);
     assert!(map.tile(key).is_none());
     assert_eq!(
@@ -276,6 +282,13 @@ fn an_entity_at_the_origin_cannot_be_placed_twice() {
             );
         },
     );
+}
+
+fn send_starting_armies_home(d: super::Deployment, home: ResourceKey, timestamp: u64) {
+    for army in IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home) {
+        let remove = crate::commands::Command::ManageTroops(crate::troop_management::ManageTroops::RemoveExplorer(*army));
+        assert!(execute_in_game(d, home.game_id, remove, timestamp));
+    }
 }
 
 fn biome_context(d: super::Deployment, game_id: u32) -> crate::commands::BiomeContext {

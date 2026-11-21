@@ -194,11 +194,13 @@ fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_an
     assert!(snforge_std::interact_with_state(d.games, || crate::logic::progression::read(key)).is_none());
     assert_eq!(read_slot().explorer_id, 0);
     assert_eq!(read_slot().stamina, stamina);
+    let home = crate::resources::ResourceKey { game_id, entity_id: army.owner };
+    super::resource_commands::grant(
+        d, home, crate::troops::troop_resource(army.troops.category, 0), crate::rules::RESOURCE_PRECISION,
+    );
     assert!(
         super::resource_commands::execute_in_game(
-            d, game_id, super::registrar::muster_command(
-                crate::resources::ResourceKey { game_id, entity_id: army.owner }, army.troops.category.into(), 0, slot,
-            ), FIXTURE_START + 19,
+            d, game_id, super::registrar::muster_command(home, army.troops.category.into(), 0, slot), FIXTURE_START + 19,
         ),
     );
     let remustered = read_slot();
@@ -405,11 +407,11 @@ fn assert_army_commands_refused(d: super::Deployment, key: crate::troops::Explor
 fn passing_matches_client_vectors_and_cannot_be_replayed_with_empty_or_full_slots() {
     let fields = read_txt(@FileTrait::new("../fixtures/oath-pass-stamina.txt"));
     assert_eq!(fields.len(), 8);
+    let (d, game_id, key) = super::registrar::setup_frontier_relics();
     for full in array![false, true] {
         let mut values = fields.span();
         while !values.is_empty() {
             let (deficit, gain): (u64, u64) = Serde::deserialize(ref values).unwrap();
-            let (d, game_id, key) = super::registrar::setup_frontier_relics();
             let (before, maximum, pick) = snforge_std::interact_with_state(
                 d.games,
                 || {
@@ -713,16 +715,14 @@ fn the_twins_add_a_share_of_the_adjacent_own_army_damage_and_a_one_troop_twin_ad
                 crate::guards::GuardKey { game_id, structure_id: camp, slot: 0 }, guard,
             ),
         );
-        let twin_key = crate::troops::ExplorerKey { game_id, explorer_id: 9999 };
+        let home = snforge_std::interact_with_state(d.games, || army_home(key));
+        let (_, twin_key) = super::registrar::expedition_armies(d, home);
         let twin = crate::troops::ExplorerTroops {
             coord: crate::geometry::neighbor(army.coord, 3),
             troops: crate::troops::Troops { count: twin_troops * precision, ..army.troops },
             ..army,
         };
         super::resource_commands::set_explorer_fixture(d.games, twin_key, twin);
-        snforge_std::interact_with_state(
-            d.games, || crate::logic::army_days::create(twin_key, crate::logic::army_days::require(key)),
-        );
         let battle = crate::commands::Battle { attacker_id: key.explorer_id, defender_id: camp, relic_slot: None };
         assert!(
             super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::BattleGuard(battle), FIXTURE_START + 11),
