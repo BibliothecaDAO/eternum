@@ -7,6 +7,7 @@ import { buildFrontierFundingCalls } from "../../contracts/l2/ledger/scripts/com
 import { readFrontierGame } from "../../contracts/l2/ledger/scripts/commands/deployment/fund-frontier";
 import { readFrontierFunding, assertFrontierPreset } from "../../packages/value-ledger/src/frontier-funding";
 import { isTestLords } from "../../packages/chain/src/value-plane";
+import { presetIdForEnvironment } from "../../config/deployer/clean/constants";
 import { send, balance } from "./chain";
 import { nativeDocument } from "./box";
 import { seconds } from "./dates";
@@ -101,7 +102,7 @@ async function funding(context: Season) {
       {
         contractAddress: context.assets!.ledger,
         entrypoint: "get_preset",
-        calldata: [String(native.presetId)],
+        calldata: [String(presetIdForEnvironment("madara.frontier"))],
       },
       block,
     ),
@@ -204,7 +205,7 @@ export function seasonSteps(context: Season): Step[] {
         const calls = buildFrontierFundingCalls(context.assets!.ledger, lords, {
           shard: state.shard.chainId,
           frontierSeasonId: state.gameId,
-          presetId: state.native.presetId,
+          presetId: presetIdForEnvironment("madara.frontier"),
           start: state.native.start,
           end: state.native.end,
           seed: state.native.seed,

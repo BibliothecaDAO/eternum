@@ -8,23 +8,22 @@ import productionBook from "../../../../../common/addresses/production.json";
 import { fundFrontier } from "./fund-frontier";
 import { frontierDevconPreset } from "../../../../../../config/source/frontier/devcon";
 import { seasonDayUnitSeconds } from "../../../../../../config/source/common/season-clock";
+import { presetIdForEnvironment } from "../../../../../../config/deployer/clean/constants";
+import { gameRegistryRow } from "../../../../../../packages/core/src/test-support/game-registry";
 
 const savedDev = { ...devBook };
 const savedProduction = { ...productionBook };
 const shard = { chainId: "0x7", gamesAddress: "0x77", rpcUrl: "https://shard.test" };
 const head = { status: "ACCEPTED_ON_L2", block_number: 10, block_hash: "0xaa", parent_hash: "0x9", timestamp: 150 };
-const game = {
-  name: 1,
-  preset_id: 6,
-  settled: false,
-  ready: true,
-  dev_mode_on: false,
-  start_settling_at: 100,
-  start_main_at: 100,
-  end_at: 300,
-  end_grace_seconds: 0,
-  seed: 99,
-};
+const ledgerPresetId = presetIdForEnvironment("madara.frontier");
+const game = gameRegistryRow({
+  game_id: 42,
+  start_settling_at: "100",
+  start_main_at: "100",
+  end_at: "300",
+  seed: "99",
+  scheduled_end_at: "300",
+});
 let models: { model: string; rows: { key: string; value: Record<string, unknown> }[] }[];
 let block = head;
 let preset: string[];
@@ -71,7 +70,7 @@ beforeEach(() => {
   receipt.mockResolvedValue({ execution_status: "SUCCEEDED", block_number: 11 });
   shardCall.mockImplementation(async () => response(gamesAbi, "game", game));
   models = [
-    { model: "GameRegistry", rows: [{ key: "42", value: { game_id: 42, ...game } }] },
+    { model: "GameRegistry", rows: [{ key: "42", value: { ...game } }] },
     {
       model: "ChestRules",
       rows: [
@@ -111,7 +110,7 @@ beforeEach(() => {
     pool: { low: 7n * 10n ** 23n, high: 0 },
     paid: { low: 0, high: 0 },
     closed: false,
-    preset_id: 6,
+    preset_id: ledgerPresetId,
     seed: 99,
   });
   header = spyOn(ShardReader.prototype, "header").mockResolvedValue(head as never);
@@ -150,7 +149,7 @@ test("funds a confirmed running game, with exactly the requested deposit and com
       calldata: ledgerCall("fund_frontier", {
         shard: 7,
         season_id: 42,
-        preset_id: 6,
+        preset_id: ledgerPresetId,
         start: 100,
         end: 300,
         seed: 99,
@@ -169,14 +168,11 @@ test.each([16, 17])("refuses mismatched ledger day/window terms before signing (
   await expect(run()).rejects.toThrow("frontier_funding_differs_from_game");
   expect(execute).not.toHaveBeenCalled();
 });
-test.each(["start_main_at", "end_at", "seed", "preset_id"])(
-  "refuses a mismatched confirmed game field %s",
-  async (field) => {
-    models[0]!.rows[0]!.value[field] = 999;
-    await expect(run()).rejects.toThrow("Herald game differs");
-    expect(execute).not.toHaveBeenCalled();
-  },
-);
+test.each(["start_main_at", "end_at", "seed"])("refuses a mismatched confirmed game field %s", async (field) => {
+  models[0]!.rows[0]!.value[field] = 999;
+  await expect(run()).rejects.toThrow("Herald game differs");
+  expect(execute).not.toHaveBeenCalled();
+});
 test.each(["0", "-1", "1.5", "1e6", "0x10", "", " 1", "01"])(
   "refuses nonpositive or nondecimal whole amount %s before reads",
   async (amount) => {
@@ -246,13 +242,15 @@ test.each([0, -1, 0x100000000, 1.5])("refuses invalid game id %s before reads", 
   expect(execute).not.toHaveBeenCalled();
 });
 
-test("production funding uses only its own book and the native preset ID", async () => {
+test("production funding uses only its own book and the Frontier ledger preset ID", async () => {
   ledgerRead.mockResolvedValueOnce(preset).mockResolvedValueOnce(["0x222"]);
-  season[8] = "6";
   await fundFrontier(account, provider, shard, "https://herald.test", 42, "production", "1000000");
-  expect(ledgerRead).toHaveBeenCalledWith({ contractAddress: "0x456", entrypoint: "get_preset", calldata: ["6"] }, 11);
+  expect(ledgerRead).toHaveBeenCalledWith(
+    { contractAddress: "0x456", entrypoint: "get_preset", calldata: [String(ledgerPresetId)] },
+    11,
+  );
   const calls = execute.mock.calls[0]![0] as { calldata: string[] }[];
-  expect(calls[1]!.calldata[2]).toBe("6");
+  expect(calls[1]!.calldata[2]).toBe(String(ledgerPresetId));
   expect(execute.mock.calls[0]![0]).toMatchObject([
     { contractAddress: "0x222", calldata: ["1110", String(10n ** 24n), "0"] },
     { contractAddress: "0x456" },
@@ -308,8 +306,8 @@ test.each(["dev", "production"] as const)(
   async (environment) => {
     const startsAt = 1793687400;
     const endsAt = 1793975400;
-    const devcon = { ...game, start_main_at: startsAt, end_at: endsAt };
-    models[0]!.rows[0]!.value = { game_id: 42, ...devcon };
+    const devcon = { ...game, start_main_at: String(startsAt), end_at: String(endsAt) };
+    models[0]!.rows[0]!.value = { ...devcon };
     models[2]!.rows[0]!.value.day_unit_seconds = seasonDayUnitSeconds(frontierDevconPreset);
     shardCall.mockImplementation(async () => response(gamesAbi, "game", devcon));
     preset[16] = String(seasonDayUnitSeconds(frontierDevconPreset));
@@ -324,7 +322,7 @@ test.each(["dev", "production"] as const)(
     );
     const result = await fundFrontier(account, provider, shard, "https://herald.test", 42, environment, "300000");
     expect(result.frontier).toMatchObject({
-      presetId: 6,
+      presetId: ledgerPresetId,
       start: startsAt,
       end: endsAt,
       pool: String(210000n * 10n ** 18n),
@@ -342,7 +340,7 @@ test.each(["dev", "production"] as const)(
         calldata: ledgerCall("fund_frontier", {
           shard: 7,
           season_id: 42,
-          preset_id: 6,
+          preset_id: ledgerPresetId,
           start: startsAt,
           end: endsAt,
           seed: 99,

@@ -15,13 +15,14 @@ import { environments, WEI } from "./settings";
 import { frontierDevconPreset } from "../../config/source/frontier/devcon";
 import { seasonDayUnitSeconds } from "../../config/source/common/season-clock";
 import { buildLedgerEconomicPreset } from "../../config/deployer/clean/ledger/economics";
+import { presetIdForEnvironment } from "../../config/deployer/clean/constants";
 import { releaseLine } from "../../packages/core/src/test-support/releases";
 
 const preset = frontierDevconPreset;
+const ledgerPresetId = presetIdForEnvironment("madara.frontier");
 const dayUnit = seasonDayUnitSeconds(preset);
 const ledgerPreset = CallData.compile({ ...buildLedgerEconomicPreset("frontier", { presetId: preset.id }) });
 const nativeTerms = {
-  presetId: preset.id,
   chestPoolBps: preset.chests.poolBps,
   topN: preset.chests.topN,
   dayUnit,
@@ -85,7 +86,7 @@ test.each([
       if (operation === "deposit") {
         const calldata = calls[1]!.calldata;
         if (!Array.isArray(calldata)) throw new Error("Funding must use compiled calldata");
-        expect(calldata[2]).toBe(String(preset.id));
+        expect(calldata[2]).toBe(String(ledgerPresetId));
         funded = true;
       }
       held = calls[0]!.entrypoint === "mint" ? 1000n * WEI : 0n;
@@ -101,7 +102,6 @@ test.each([
   spyOn(box, "nativeDocument").mockImplementation(async () => ({ shard: { chainId }, world: { address: "0x20" } }));
   spyOn(native, "readFrontierGame").mockResolvedValue({
     ...nativeTerms,
-    presetId: preset.id,
     start: startSeconds,
     end: startSeconds + 40 * dayUnit + (changes === "wrong end" ? 40 : 0),
     seed: "1",
@@ -114,7 +114,7 @@ test.each([
       prizePaid: "0",
       paid: "0",
       closed: false,
-      presetId: preset.id,
+      presetId: ledgerPresetId,
       seed: "1",
       start: startSeconds,
       end: startSeconds + 40 * dayUnit,
@@ -129,7 +129,6 @@ test.each([
         phases: [
           {
             phase: "frontier",
-            presetId: preset.id,
             startsAt: start,
             endsAt: new Date((startSeconds + 40 * dayUnit) * 1000).toISOString(),
           },
@@ -242,7 +241,6 @@ async function coldFunding(lords: string, held: bigint) {
         phases: [
           {
             phase: "frontier",
-            presetId: preset.id,
             startsAt: start,
             endsAt: new Date((startSeconds + 40 * dayUnit) * 1000).toISOString(),
           },
@@ -289,7 +287,7 @@ test.each([
   const written = run.written()!;
   expect(run.balanceOwners).toEqual([run.coldAdmin]);
   expect(written.account).toBe(run.coldAdmin);
-  expect((written.calls.at(-1)!.calldata as string[])[2]).toBe(String(preset.id));
+  expect((written.calls.at(-1)!.calldata as string[])[2]).toBe(String(ledgerPresetId));
   expect(written.calls.map((call) => call.entrypoint)).toEqual([...calls]);
   if (held === 0n)
     expect(written.calls[0]).toEqual({
