@@ -321,8 +321,8 @@
         {
           "resource_type": 35,
           "unit_weight": 1,
-          "realm_rate": "84000000",
-          "village_rate": "42000000"
+          "realm_rate": "83333333",
+          "village_rate": "41666666"
         },
         {
           "resource_type": 36,
@@ -790,7 +790,7 @@
           "recipe": {
             "simple_output": "0",
             "simple_inputs": [],
-            "complex_output": "84000000",
+            "complex_output": "83333333",
             "complex_inputs": []
           }
         },
@@ -1035,7 +1035,7 @@
       "board": {
         "Some": {
           "demolition_refund_bps": 5000,
-          "workshop_rate": "56000000",
+          "workshop_rate": "55555556",
           "output_step_bps": 2000,
           "storage_step_bps": 4000,
           "population_step_bps": 2000,
@@ -1068,29 +1068,37 @@
           "row": 0,
           "tier": 3,
           "price": {
-            "essence": "4000000000000",
-            "labor": "3000000000000"
+            "essence": "2500000000000",
+            "labor": "2500000000000"
           }
         },
         {
           "row": 0,
           "tier": 4,
           "price": {
-            "essence": "12000000000000",
-            "labor": "8000000000000"
+            "essence": "5000000000000",
+            "labor": "5000000000000"
           }
         },
         {
           "row": 0,
           "tier": 5,
           "price": {
-            "essence": "30000000000000",
-            "labor": "20000000000000"
+            "essence": "10000000000000",
+            "labor": "10000000000000"
           }
         },
         {
           "row": 1,
           "tier": 1,
+          "price": {
+            "essence": "500000000000",
+            "labor": "500000000000"
+          }
+        },
+        {
+          "row": 1,
+          "tier": 2,
           "price": {
             "essence": "1000000000000",
             "labor": "1000000000000"
@@ -1098,34 +1106,26 @@
         },
         {
           "row": 1,
-          "tier": 2,
-          "price": {
-            "essence": "2000000000000",
-            "labor": "2000000000000"
-          }
-        },
-        {
-          "row": 1,
           "tier": 3,
           "price": {
-            "essence": "8000000000000",
-            "labor": "6000000000000"
+            "essence": "2500000000000",
+            "labor": "2500000000000"
           }
         },
         {
           "row": 1,
           "tier": 4,
           "price": {
-            "essence": "24000000000000",
-            "labor": "16000000000000"
+            "essence": "5000000000000",
+            "labor": "5000000000000"
           }
         },
         {
           "row": 1,
           "tier": 5,
           "price": {
-            "essence": "60000000000000",
-            "labor": "40000000000000"
+            "essence": "10000000000000",
+            "labor": "10000000000000"
           }
         },
         {
@@ -1172,40 +1172,40 @@
           "row": 5,
           "tier": 1,
           "price": {
-            "essence": "6000000000000",
-            "labor": "1500000000000"
+            "essence": "5000000000000",
+            "labor": "1000000000000"
           }
         },
         {
           "row": 5,
           "tier": 2,
           "price": {
-            "essence": "16000000000000",
-            "labor": "3000000000000"
+            "essence": "10000000000000",
+            "labor": "2500000000000"
           }
         },
         {
           "row": 5,
           "tier": 3,
           "price": {
-            "essence": "48000000000000",
-            "labor": "9000000000000"
+            "essence": "25000000000000",
+            "labor": "5000000000000"
           }
         },
         {
           "row": 5,
           "tier": 4,
           "price": {
-            "essence": "144000000000000",
-            "labor": "24000000000000"
+            "essence": "50000000000000",
+            "labor": "10000000000000"
           }
         },
         {
           "row": 5,
           "tier": 5,
           "price": {
-            "essence": "360000000000000",
-            "labor": "60000000000000"
+            "essence": "100000000000000",
+            "labor": "25000000000000"
           }
         },
         {
@@ -1615,7 +1615,7 @@
             "simple_cost": [
               {
                 "resource_type": 23,
-                "amount": "2000000000000"
+                "amount": "1000000000000"
               }
             ],
             "complex_cost": []
@@ -1647,7 +1647,7 @@
             "simple_cost": [
               {
                 "resource_type": 23,
-                "amount": "400000000000"
+                "amount": "500000000000"
               }
             ],
             "complex_cost": []
@@ -1738,7 +1738,7 @@
             "simple_cost": [
               {
                 "resource_type": 23,
-                "amount": "400000000000"
+                "amount": "500000000000"
               }
             ],
             "complex_cost": []
@@ -1797,11 +1797,11 @@
             "simple_cost": [
               {
                 "resource_type": 38,
-                "amount": "6000000000000"
+                "amount": "5000000000000"
               },
               {
                 "resource_type": 23,
-                "amount": "1500000000000"
+                "amount": "1000000000000"
               }
             ],
             "complex_cost": []
