@@ -14,8 +14,8 @@ export {
   readFinalLedgerHead,
 } from "./codecs";
 export { rpcAt, isDeploymentBlock, isContractRevert } from "./rpc";
-export { BLITZ_SLOT_INTERVAL_SECONDS, BLITZ_SLOT_PREPARATION_SECONDS } from "./blitz-timetable";
-export { blitzSlotFitsSeason, readLedgerSlot, readLedgerRegistration } from "./blitz-slots";
+export { BLITZ_SLOT_PREPARATION_SECONDS } from "./blitz-timetable";
+export { readLedgerSlot, readLedgerRegistration } from "./blitz-slots";
 export type { LedgerSlotKey } from "./blitz-slots";
 export type { LedgerSlot } from "./codecs";
 

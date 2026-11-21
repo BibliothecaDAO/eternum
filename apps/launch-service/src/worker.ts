@@ -17,8 +17,8 @@ export default {
     try {
       const chain = await officialChain(env.IDENTITY);
       if (chain) {
-        const { launches, slots, calendar } = launchStoresOf(env, chain.chainId);
-        await Effect.runPromise(runLaunchSchedule(launches, slots, calendar));
+        const { launches, calendar } = launchStoresOf(env, chain.chainId);
+        await Effect.runPromise(runLaunchSchedule(launches, calendar));
       }
     } finally {
       await registrarOf(env).armFor(Date.now());

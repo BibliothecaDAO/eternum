@@ -38,7 +38,6 @@ export const launchFailure = (error: unknown) => {
       "ledger_head_unconfirmed",
       "invalid_ledger_slot",
       "ledger_launch_mutation_reverted",
-      "ledger_slot_window_differs",
       "invalid_ledger_integer",
       "invalid_ledger_bool",
       "invalid_u256_limb",

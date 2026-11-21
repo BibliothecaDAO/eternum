@@ -20,8 +20,6 @@ import {
   requireActiveChain,
   readRegisteredShard,
   type ShardDirectory,
-  rpcAt,
-  readLedgerSlot,
   type LedgerSlotKey,
 } from "@realms-world/value-ledger";
 import { processSeasonTops } from "./season-tops";
@@ -30,7 +28,7 @@ import { ledgerBatches } from "./ledger-batches";
 import { isLedgerReadTick } from "@realms-world/chain";
 import { beginCause, causeDue, completeCause, raiseCause, retryCause } from "./ledger-cause";
 import { onIdentityChain } from "./ledger-chain";
-import { openSlotOnLedger, refundSlotOnLedger } from "./blitz-launch";
+import { refundSlotOnLedger } from "./blitz-launch";
 import { ShardReader, shardConnection } from "./shard-rpc";
 import { publishFrontierPools } from "./frontier-pools";
 import { awardFrontierPrizes } from "./frontier-prizes";
@@ -641,28 +639,6 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     }
     return { entry: result.success };
   }
-  async openSlot(key: LedgerSlotKey, window: { start: number; end: number }) {
-    await this.requireLaunchSlot(key);
-    await requireActiveChain(this.env.IDENTITY, key.chainId);
-    return Effect.runPromise(
-      this.ledgerPermit(
-        relayEffect("write ledger slot", () => openSlotOnLedger(ledgerCredentialsOf(this.env), key, window)),
-        [key.chainId],
-      ),
-    );
-  }
-  async slot(key: LedgerSlotKey) {
-    await this.requireLaunchSlot(key);
-    return Effect.runPromise(
-      onIdentityChain(
-        this.env.L2_RPC_URL,
-        this.env.IDENTITY,
-        relayOperation("read ledger slot", () =>
-          readLedgerSlot(rpcAt(this.env.L2_RPC_URL), ledgerAddress(this.env.ENVIRONMENT), key, "latest"),
-        ),
-      ),
-    );
-  }
   async refundSlot(key: LedgerSlotKey) {
     await this.requireLaunchSlot(key);
     return Effect.runPromise(
@@ -782,12 +758,6 @@ export class RelayDiagnostics extends WorkerEntrypoint<RelayEnv> {
 export class ValueLaunch extends WorkerEntrypoint<RelayEnv> {
   override fetch() {
     return new Response(null, { status: 404 });
-  }
-  slot(key: LedgerSlotKey) {
-    return ledgerOf(this.env).slot(key);
-  }
-  openSlot(key: LedgerSlotKey, window: { start: number; end: number }) {
-    return ledgerOf(this.env).openSlot(key, window);
   }
   refundSlot(key: LedgerSlotKey) {
     return ledgerOf(this.env).refundSlot(key);

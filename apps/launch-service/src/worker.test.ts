@@ -163,13 +163,8 @@ beforeAll(async () => {
         name: "directory",
         modules: true,
         script: `import { WorkerEntrypoint } from "cloudflare:workers";
-          const slots = new Map();
           export class ValueRelay extends WorkerEntrypoint {
-            openSlot(key, window) {
-              slots.set(key.slotId, {exists:true, seasonId:1, presetId:1, close:window.start, end:window.end,
-                pool:"0", registeredCount:0, cancelled:false});
-            }
-            slot(key) { return slots.get(key.slotId); }
+            refundSlot() { return null; }
           }
           export class ValueIdentity extends WorkerEntrypoint {
             shard(){return {chainId:${JSON.stringify(SHARD_CHAIN)},url:${JSON.stringify(SHARD_URL)}};}
@@ -210,23 +205,21 @@ const setWorkerClock = (now: string | null) => {
   return mf.dispatchFetch(`${ORIGIN}/__clock`, { method: "POST", body: JSON.stringify(workerNow) });
 };
 
-it("opens the calendar's next Blitz slot on the cron tick through workerd", async () => {
+it("refuses a Blitz window and opens no slot on the cron tick through workerd", async () => {
   await setWorkerClock("2000-01-01T10:00:00Z");
   const window = {
     startsAt: "2000-01-01T07:00:00.000Z",
     endsAt: "2000-01-02T23:00:00.000Z",
   };
-  const opened = await mf.dispatchFetch(`${ORIGIN}/api/factory/calendar/blitz`, {
+  const refused = await mf.dispatchFetch(`${ORIGIN}/api/factory/calendar/blitz`, {
     method: "PUT",
     headers: { origin: ORIGIN, authorization: "Bearer operator-test-token", "content-type": "application/json" },
     body: JSON.stringify(window),
   });
-  expect(opened.status).toBe(200);
+  expect(refused.status).toBe(404);
   await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
-  const slots = (await (await mf.dispatchFetch(`${ORIGIN}/api/slots`)).json()) as { slots: { name: string }[] };
-  expect(slots.slots).toHaveLength(1);
-  const waiting = await db.prepare("SELECT name FROM playtest_slots").first<{ name: string }>();
-  expect(waiting?.name).toBe("blitz-20000101-1030");
+  expect(await (await mf.dispatchFetch(`${ORIGIN}/api/slots`)).json()).toEqual({ slots: [] });
+  expect(await db.prepare("SELECT COUNT(*) AS count FROM playtest_slots").first("count")).toBe(0);
   expect(await db.prepare("SELECT COUNT(*) AS count FROM launch_runs").first("count")).toBe(0);
 
   expect(await (await mf.dispatchFetch(`${ORIGIN}/api/factory/health`)).json()).toMatchObject({

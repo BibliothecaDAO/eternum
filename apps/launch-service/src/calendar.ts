@@ -7,7 +7,7 @@ import { FRONTIER_ARMIES_TICK_SECONDS } from "../../../config/source/frontier/cl
  * The season calendar: when each phase of the season runs. The operator sets each phase's start and end, and the cron tick
  * reads them. Frontier season boundaries align to army ticks.
  */
-export type SeasonPhaseName = "frontier" | "blitz";
+export type SeasonPhaseName = "frontier";
 
 interface PhaseDates {
   startsAt: string;
@@ -15,18 +15,7 @@ interface PhaseDates {
 }
 
 export type FrontierSeasonPhase = PhaseDates & { phase: "frontier" };
-export type SeasonPhase = FrontierSeasonPhase | (PhaseDates & { phase: "blitz" });
-
-/**
- * The next Blitz game the schedule opens (`nextBlitzGame`, schedule.ts): its slot's name, its start, when its entry
- * closes, and when the schedule opens it for entry, every one an ISO instant. The client shows it until it is opened.
- */
-export interface NextBlitzGame {
-  name: string;
-  startsAt: string;
-  closesAt: string;
-  opensAt: string;
-}
+export type SeasonPhase = FrontierSeasonPhase;
 
 export interface CalendarStore {
   list(): Promise<SeasonPhase[]>;

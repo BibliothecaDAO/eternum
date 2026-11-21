@@ -8,21 +8,6 @@ interface Credentials extends LedgerContract {
   accountAddress: string;
   privateKey: string;
 }
-interface Window {
-  start: number;
-  end: number;
-}
-
-export const openSlotOnLedger = (credentials: Credentials, key: LedgerSlotKey, window: Window) =>
-  relayOperation("open ledger Blitz registration", async () => {
-    const provider = rpcAt(credentials.rpcUrl);
-    const head = await readConfirmedLedgerHead(provider);
-    const slot = await readLedgerSlot(provider, credentials.contractAddress, key, head.number);
-    if (!slot.exists) throw new Error("paid_blitz_slots_closed");
-    if (slot.close !== window.start || slot.end !== window.end || slot.cancelled)
-      throw new Error("ledger_slot_window_differs");
-  });
-
 /** Recovery may cancel before close or abort after end; return the remaining wait between those boundaries. */
 export const refundSlotOnLedger = (credentials: Credentials, key: LedgerSlotKey) =>
   relayOperation("unlock failed Blitz refunds", async (): Promise<number | null> => {

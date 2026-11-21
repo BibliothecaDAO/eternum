@@ -42,9 +42,17 @@ const fixture = (chain = TEST_CHAIN) => {
   return { app, store, slots, calendar, value, armFor, joinFailure, wakeAt, applyRelease };
 };
 const close = () => new Date(Math.floor(Date.now() / 1000) * 1000 + 60000).toISOString();
-test("the create-run and launcher-discovery routes are gone even for the operator", async () => {
-  const { app, store } = fixture();
+const openedSlot = (name: string, closesAt: string) =>
+  database.db
+    .prepare("INSERT INTO playtest_slots (name, closes_at, chain_id) VALUES (?, ?, ?)")
+    .bind(name, Date.parse(closesAt), TEST_CHAIN)
+    .run();
+test("the create-run, slot-opening and launcher-discovery routes are gone even for the operator", async () => {
+  const { app, store, slots } = fixture();
   expect((await app.request("/api/factory/launcher")).status).toBe(404);
+  const opening = { method: "POST", headers: token, body: JSON.stringify({ name: "friday", closesAt: close() }) };
+  expect((await app.request("/api/slots", opening)).status).toBe(404);
+  expect(await slots.list()).toEqual([]);
   expect((await app.request("/api/factory/operator/launcher/enrol", { method: "POST", headers: token })).status).toBe(
     404,
   );
@@ -62,7 +70,6 @@ test("the create-run and launcher-discovery routes are gone even for the operato
   }
 });
 test.each([
-  ["POST", "/api/slots"],
   ["POST", "/api/slots/friday/refund"],
   ["PUT", "/api/factory/calendar/frontier"],
   ["POST", "/api/factory/runs/madara.frontier/frontier-7/actions/continue"],
@@ -73,37 +80,16 @@ test.each([
   for (const headers of [session, {}, { authorization: "Bearer wrong" }] as Record<string, string>[])
     expect((await app.request(url, { method, headers, body: "{}" })).status).toBe(403);
 });
-test("operator slots and public discovery preserve the shard key and immutable schedule", async () => {
+test("public discovery reads an opened slot under its shard key", async () => {
   const { app, slots } = fixture();
   const closesAt = close();
-  expect(
-    (
-      await app.request("/api/slots", {
-        method: "POST",
-        headers: token,
-        body: JSON.stringify({ name: "friday", closesAt }),
-      })
-    ).status,
-  ).toBe(202);
+  await openedSlot("friday", closesAt);
   const found = await app.request("/api/slots/friday");
   expect(await found.json()).toMatchObject({ chainId: TEST_CHAIN, name: "friday", closesAt });
   expect(found.headers.get("cache-control")).toBe("no-store");
   vi.spyOn(slots, "list").mockRejectedValue(new Error("no scan"));
   expect((await app.request("/api/slots/friday")).status).toBe(200);
   expect((await app.request("/api/slots/missing")).status).toBe(404);
-});
-test.each(["check-probe", "frontier-123"])("reserves %s before inserting a slot", async (name) => {
-  const { app, slots } = fixture();
-  expect(
-    (
-      await app.request("/api/slots", {
-        method: "POST",
-        headers: token,
-        body: JSON.stringify({ name, closesAt: close() }),
-      })
-    ).status,
-  ).toBe(400);
-  expect(await slots.list()).toEqual([]);
 });
 test("the operator sets calendar phases while reads stay public", async () => {
   const { app } = fixture();
@@ -146,8 +132,8 @@ test("only the operator deletes an ordinary queued run", async () => {
   expect((await app.request(url, { method: "POST", headers: token })).status).toBe(200);
 });
 test("operator refunds retain the ledger's retry boundary", async () => {
-  const { app, slots, value } = fixture();
-  await slots.create("friday", close());
+  const { app, value } = fixture();
+  await openedSlot("friday", close());
   const refund = vi.spyOn(value, "refundSlot").mockResolvedValueOnce(60).mockResolvedValueOnce(null);
   expect((await app.request("/api/slots/friday/refund", { method: "POST", headers: token })).status).toBe(409);
   expect((await app.request("/api/slots/friday/refund", { method: "POST", headers: token })).status).toBe(200);

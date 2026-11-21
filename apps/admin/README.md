@@ -17,9 +17,8 @@ and is sent again is logged, and sent, twice):
 
 | Action                  | Launch route                                                         | Environments |
 | ----------------------- | -------------------------------------------------------------------- | ------------ |
-| Open a paid Blitz slot  | `POST /api/slots`                                                    | both         |
 | Refund a slot           | `POST /api/slots/:name/refund`                                       | both         |
-| Set a phase             | `PUT /api/factory/calendar/frontier\|blitz`                          | both         |
+| Set a phase             | `PUT /api/factory/calendar/frontier`                                 | both         |
 | Continue / delete a run | `POST /api/factory/runs/:environment/:name/actions/continue\|delete` | both         |
 
 The request and answer types come from `@bibliothecadao/launch-service/operator-api`; the status record's from

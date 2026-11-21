@@ -191,7 +191,6 @@ export const relayOperation = <A>(operation: string, run: () => Promise<A>): Rel
   });
 
 export const relayServiceErrors = [
-  "paid_blitz_slots_closed",
   "ledger_head_behind_anchor",
   "ledger_deployment_block_wrong",
   "ledger_state_belongs_to_another_ledger",
