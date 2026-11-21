@@ -53,7 +53,7 @@ function renderGames(view) {
     failed(view.calendar, 3) ??
     (() => {
       const phase = phases.find((entry) => entry.phase === "frontier");
-      return `<tr><td>Frontier${phase ? ` · Preset ${esc(phase.presetId)}` : ""}</td><td class="quiet-cell">${
+      return `<tr><td>Frontier</td><td class="quiet-cell">${
         phase ? `${when(phase.startsAt)} → ${when(phase.endsAt)}` : "Not set"
       }</td><td class="end"><button class="quiet" data-phase="frontier">${phase ? "Edit" : "Set"}</button></td></tr>`;
     })();
@@ -194,18 +194,13 @@ const setPhase = (phase) => {
   openAction({
     title: `Set the ${phase} phase`,
     fields: [
-      ...(phase === "frontier" ? [["Preset ID", "presetId", current?.presetId ?? ""]] : []),
       ["Starts (UTC, whole second)", "startsAt", current?.startsAt ?? ""],
       ["Ends (UTC, whole second)", "endsAt", current?.endsAt ?? ""],
     ],
     method: "PUT",
     route: `calendar/${phase}`,
     launchPath: `/api/factory/calendar/${phase}`,
-    body: (v) => ({
-      startsAt: v.startsAt,
-      endsAt: v.endsAt,
-      ...(phase === "frontier" ? { presetId: Number(v.presetId) } : {}),
-    }),
+    body: (v) => ({ startsAt: v.startsAt, endsAt: v.endsAt }),
   });
 };
 

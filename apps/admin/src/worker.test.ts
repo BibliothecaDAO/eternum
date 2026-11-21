@@ -73,7 +73,7 @@ const launchAnswer = (request: Request, body: string): Response => {
   if (request.method !== "GET") return Response.json({ status: "queued" }, { status: 202 });
   if (url.pathname === "/api/factory/calendar")
     return Response.json({
-      phases: [{ phase: "frontier", presetId: 5, startsAt: "2026-10-15T20:00:00Z", endsAt: "2026-10-22T20:00:00Z" }],
+      phases: [{ phase: "frontier", startsAt: "2026-10-15T20:00:00Z", endsAt: "2026-10-22T20:00:00Z" }],
     });
   if (url.pathname === "/api/slots") return Response.json({ slots: [] });
   if (url.pathname === "/api/factory/runs") {
@@ -315,7 +315,7 @@ describe("screens", () => {
       },
     });
     expect(body.calendar.value).toEqual([
-      { phase: "frontier", presetId: 5, startsAt: "2026-10-15T20:00:00Z", endsAt: "2026-10-22T20:00:00Z" },
+      { phase: "frontier", startsAt: "2026-10-15T20:00:00Z", endsAt: "2026-10-22T20:00:00Z" },
     ]);
     expect(body.runs.value.map((run: { gameName: string }) => run.gameName)).toEqual(
       GAME_ENVIRONMENTS.map((environment) => `${environment}-run`),
@@ -414,8 +414,8 @@ describe("actions", () => {
     ]);
   });
 
-  it("forwards the selected calendar preset and dates unchanged and records the request", async () => {
-    const body = JSON.stringify({ presetId: 6, startsAt: "2026-11-03T06:30:00Z", endsAt: "2026-11-06T14:30:00Z" });
+  it("forwards the calendar dates unchanged and records the request", async () => {
+    const body = JSON.stringify({ startsAt: "2026-11-03T06:30:00Z", endsAt: "2026-11-06T14:30:00Z" });
     const response = await call(dev, "/api/actions/calendar/frontier", await owner(), { method: "PUT", body });
     expect(response.status).toBe(202);
     expect(launchCalls).toMatchObject([{ method: "PUT", body }]);
@@ -430,7 +430,7 @@ describe("actions", () => {
 
   it("keeps a sent action in the log as failed when the launch service answers with a redirect it refuses", async () => {
     launchRedirects = true;
-    const body = JSON.stringify({ presetId: 5, startsAt: "2026-10-22T20:00:00Z", endsAt: "2026-10-29T20:00:00Z" });
+    const body = JSON.stringify({ startsAt: "2026-10-22T20:00:00Z", endsAt: "2026-10-29T20:00:00Z" });
     expect((await call(dev, "/api/actions/calendar/frontier", await owner(), { method: "PUT", body })).status).toBe(
       502,
     );
