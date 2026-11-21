@@ -140,7 +140,6 @@ it.each([4, 5, 6, 7, 8, 9])("reports the field or garrison survivors from Knight
       count: BigInt(count) * BigInt(RESOURCE_PRECISION),
       oaths,
     });
-    writeFact(game.store, "ArmyDay", [gameId, id], { game_id: gameId, explorer_id: id, day: 0 });
     const tick = BigInt(now) / BigInt(rules.tick_config.armies_tick_in_seconds);
     writeFact(game.store, "DeepArmy", [gameId, id], { game_id: gameId, explorer_id: id, last_tick: tick });
   }

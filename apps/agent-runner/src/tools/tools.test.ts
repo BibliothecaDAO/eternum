@@ -9,7 +9,14 @@ import { ContractAddress, getNeighborHexes } from "@bibliothecadao/types";
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createFakeGame, PLAYER, seedExplorer, seedGameRegistry, seedStructure } from "../test-support/fake-game";
+import {
+  createFakeGame,
+  liveWindow,
+  PLAYER,
+  seedExplorer,
+  seedGameRegistry,
+  seedStructure,
+} from "../test-support/fake-game";
 import { ACTION_CATALOG, ACTION_NAMES } from "./action-catalog";
 import { createActTool, runAction } from "./act";
 import { createRunnerTools } from "./index";
@@ -51,7 +58,7 @@ describe("list_actions", () => {
 describe("observe_game", () => {
   it("renders every focus for a settled player and stays under the size cap", async () => {
     const game = createFakeGame();
-    seedGameRegistry(game.store, { status: "Live", startMainAt: 0, endAt: 0 });
+    seedGameRegistry(game.store, { status: "Live", ...liveWindow() });
     seedStructure(game.store, { entityId: 12, owner: PLAYER, x: 100, y: 100 });
     seedStructure(game.store, { entityId: 13, owner: RIVAL, x: 102, y: 100 });
     const homeHex = getNeighborHexes(100, 100)[0]!;
