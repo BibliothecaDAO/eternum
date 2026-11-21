@@ -1,8 +1,7 @@
 pub use world_test_support::tests::roll_independence::*;
 
-
-// Independent fixtures keep each VM below the event bound; every root group also compares against root zero.
 const NO_GAME: u32 = 99;
+const FRESH_WORLD_ROOTS: u64 = 2;
 
 #[test_case(name: "route_00_roots_00_07", 0, 0)]
 #[test_case(name: "route_00_roots_08_15", 0, 8)]
@@ -172,14 +171,13 @@ fn all_typed_entry_refusals_are_root_independent(index: u32, start: u64) {
     assert_route(command, index);
     let mut expected = None;
     assert!(start + 8 <= ROOTS);
+    let d = fresh_world();
     for sample in 0_u64..9 {
         let root = if sample == 0 {
             0
         } else {
             start + sample - 1
         };
-        let d = fresh_world();
-
         let before = play_fixture::gameplay_snapshot(d.games);
         let release = play_fixture::pins(d.games, 1);
         play_fixture::caller(d.games, d.actor, play_fixture::FIXTURE_START);
@@ -361,86 +359,171 @@ fn all_real_domain_verdicts_are_root_independent(index: u32, start: u64) {
     assert_eq!(commands.len(), routes());
     let command = *commands.at(index);
     assert_route(command, index);
-    let mut expected = None;
     assert!(start + 8 <= ROOTS);
-    for sample in 0_u64..9 {
-        let root = if sample == 0 {
-            0
-        } else {
-            start + sample - 1
-        };
-        let d = fresh_world();
-
-        let mut spy = snforge_std::spy_events();
-        let applied = play_fixture::play(
-            d.games, TestAction { game_id: 1, actor: d.actor, command }, root.into(), play_fixture::FIXTURE_START,
+    let d = fresh_world();
+    let action = TestAction { game_id: 1, actor: d.actor, command };
+    let expected = verdict(d.games, action, 0, play_fixture::FIXTURE_START);
+    assert_ne!(expected, Verdict::Applied, "route {} applies, so its roots need fresh worlds", index);
+    let refused = match @expected {
+        Verdict::Refused(_) => true,
+        _ => false,
+    };
+    assert_eq!(refused, !release_enables(index), "route {}", index);
+    let settled = play_fixture::gameplay_snapshot(d.games);
+    for root in start..start + 8 {
+        assert_eq!(
+            verdict(d.games, action, root.into(), play_fixture::FIXTURE_START),
+            expected,
+            "route {} root {}",
+            index,
+            root,
         );
-        if let Some(previous) = expected {
-            assert_eq!(applied, previous, "route {} root {}", index, root);
-        }
-        expected = Some(applied);
-        if !applied {
-            let rejected = play_fixture::rejection(ref spy, d.games);
-            assert_eq!(rejected.status_class, 'GAMEPLAY_REJECTED');
-            assert_eq!(rejected.actor, d.actor);
-        }
+        assert_eq!(play_fixture::gameplay_snapshot(d.games), settled);
     }
 }
 
-#[test_case(name: "route_00_roots_00_07", 0, 0)]
-#[test_case(name: "route_00_roots_08_15", 0, 8)]
-#[test_case(name: "route_00_roots_16_23", 0, 16)]
-#[test_case(name: "route_00_roots_24_31", 0, 24)]
-#[test_case(name: "route_01_roots_00_07", 1, 0)]
-#[test_case(name: "route_01_roots_08_15", 1, 8)]
-#[test_case(name: "route_01_roots_16_23", 1, 16)]
-#[test_case(name: "route_01_roots_24_31", 1, 24)]
-#[test_case(name: "route_02_roots_00_07", 2, 0)]
-#[test_case(name: "route_02_roots_08_15", 2, 8)]
-#[test_case(name: "route_02_roots_16_23", 2, 16)]
-#[test_case(name: "route_02_roots_24_31", 2, 24)]
-#[test_case(name: "route_03_roots_00_07", 3, 0)]
-#[test_case(name: "route_03_roots_08_15", 3, 8)]
-#[test_case(name: "route_03_roots_16_23", 3, 16)]
-#[test_case(name: "route_03_roots_24_31", 3, 24)]
-#[test_case(name: "route_04_roots_00_07", 4, 0)]
-#[test_case(name: "route_04_roots_08_15", 4, 8)]
-#[test_case(name: "route_04_roots_16_23", 4, 16)]
-#[test_case(name: "route_04_roots_24_31", 4, 24)]
+#[test_case(name: "case_0_roots_00_01", 0, 0)]
+#[test_case(name: "case_0_roots_02_03", 0, 2)]
+#[test_case(name: "case_0_roots_04_05", 0, 4)]
+#[test_case(name: "case_0_roots_06_07", 0, 6)]
+#[test_case(name: "case_0_roots_08_09", 0, 8)]
+#[test_case(name: "case_0_roots_10_11", 0, 10)]
+#[test_case(name: "case_0_roots_12_13", 0, 12)]
+#[test_case(name: "case_0_roots_14_15", 0, 14)]
+#[test_case(name: "case_0_roots_16_17", 0, 16)]
+#[test_case(name: "case_0_roots_18_19", 0, 18)]
+#[test_case(name: "case_0_roots_20_21", 0, 20)]
+#[test_case(name: "case_0_roots_22_23", 0, 22)]
+#[test_case(name: "case_0_roots_24_25", 0, 24)]
+#[test_case(name: "case_0_roots_26_27", 0, 26)]
+#[test_case(name: "case_0_roots_28_29", 0, 28)]
+#[test_case(name: "case_0_roots_30_31", 0, 30)]
+#[test_case(name: "case_1_roots_00_01", 1, 0)]
+#[test_case(name: "case_1_roots_02_03", 1, 2)]
+#[test_case(name: "case_1_roots_04_05", 1, 4)]
+#[test_case(name: "case_1_roots_06_07", 1, 6)]
+#[test_case(name: "case_1_roots_08_09", 1, 8)]
+#[test_case(name: "case_1_roots_10_11", 1, 10)]
+#[test_case(name: "case_1_roots_12_13", 1, 12)]
+#[test_case(name: "case_1_roots_14_15", 1, 14)]
+#[test_case(name: "case_1_roots_16_17", 1, 16)]
+#[test_case(name: "case_1_roots_18_19", 1, 18)]
+#[test_case(name: "case_1_roots_20_21", 1, 20)]
+#[test_case(name: "case_1_roots_22_23", 1, 22)]
+#[test_case(name: "case_1_roots_24_25", 1, 24)]
+#[test_case(name: "case_1_roots_26_27", 1, 26)]
+#[test_case(name: "case_1_roots_28_29", 1, 28)]
+#[test_case(name: "case_1_roots_30_31", 1, 30)]
+#[test_case(name: "case_2_roots_00_01", 2, 0)]
+#[test_case(name: "case_2_roots_02_03", 2, 2)]
+#[test_case(name: "case_2_roots_04_05", 2, 4)]
+#[test_case(name: "case_2_roots_06_07", 2, 6)]
+#[test_case(name: "case_2_roots_08_09", 2, 8)]
+#[test_case(name: "case_2_roots_10_11", 2, 10)]
+#[test_case(name: "case_2_roots_12_13", 2, 12)]
+#[test_case(name: "case_2_roots_14_15", 2, 14)]
+#[test_case(name: "case_2_roots_16_17", 2, 16)]
+#[test_case(name: "case_2_roots_18_19", 2, 18)]
+#[test_case(name: "case_2_roots_20_21", 2, 20)]
+#[test_case(name: "case_2_roots_22_23", 2, 22)]
+#[test_case(name: "case_2_roots_24_25", 2, 24)]
+#[test_case(name: "case_2_roots_26_27", 2, 26)]
+#[test_case(name: "case_2_roots_28_29", 2, 28)]
+#[test_case(name: "case_2_roots_30_31", 2, 30)]
+#[test_case(name: "case_3_roots_00_01", 3, 0)]
+#[test_case(name: "case_3_roots_02_03", 3, 2)]
+#[test_case(name: "case_3_roots_04_05", 3, 4)]
+#[test_case(name: "case_3_roots_06_07", 3, 6)]
+#[test_case(name: "case_3_roots_08_09", 3, 8)]
+#[test_case(name: "case_3_roots_10_11", 3, 10)]
+#[test_case(name: "case_3_roots_12_13", 3, 12)]
+#[test_case(name: "case_3_roots_14_15", 3, 14)]
+#[test_case(name: "case_3_roots_16_17", 3, 16)]
+#[test_case(name: "case_3_roots_18_19", 3, 18)]
+#[test_case(name: "case_3_roots_20_21", 3, 20)]
+#[test_case(name: "case_3_roots_22_23", 3, 22)]
+#[test_case(name: "case_3_roots_24_25", 3, 24)]
+#[test_case(name: "case_3_roots_26_27", 3, 26)]
+#[test_case(name: "case_3_roots_28_29", 3, 28)]
+#[test_case(name: "case_3_roots_30_31", 3, 30)]
 fn successful_real_draw_paths_stay_applied_across_32_roots(case: u8, start: u64) {
-    assert!(start + 8 <= ROOTS);
-    for root in start..start + 8 {
+    assert!(start + FRESH_WORLD_ROOTS <= ROOTS);
+    for root in start..start + FRESH_WORLD_ROOTS {
         let (d, action, timestamp) = draw_case(case);
-        let mut spy = snforge_std::spy_events();
-        assert!(play_fixture::play(d.games, action, root.into(), timestamp), "case {} root {}", case, root);
-        for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
-            assert_ne!(*event.keys.at(0), selector!("GameplayRejected"));
-        }
+        assert_eq!(verdict(d.games, action, root.into(), timestamp), Verdict::Applied, "case {} root {}", case, root);
     }
 }
 
-#[test_case(name: "battle_missing_0_full_0_roots_0", false, false, 0)]
-#[test_case(name: "battle_missing_0_full_0_roots_8", false, false, 8)]
-#[test_case(name: "battle_missing_0_full_0_roots_16", false, false, 16)]
-#[test_case(name: "battle_missing_0_full_0_roots_24", false, false, 24)]
-#[test_case(name: "battle_missing_0_full_1_roots_0", false, true, 0)]
-#[test_case(name: "battle_missing_0_full_1_roots_8", false, true, 8)]
-#[test_case(name: "battle_missing_0_full_1_roots_16", false, true, 16)]
-#[test_case(name: "battle_missing_0_full_1_roots_24", false, true, 24)]
-#[test_case(name: "battle_missing_1_full_0_roots_0", true, false, 0)]
-#[test_case(name: "battle_missing_1_full_0_roots_8", true, false, 8)]
-#[test_case(name: "battle_missing_1_full_0_roots_16", true, false, 16)]
-#[test_case(name: "battle_missing_1_full_0_roots_24", true, false, 24)]
-#[test_case(name: "battle_missing_1_full_1_roots_0", true, true, 0)]
-#[test_case(name: "battle_missing_1_full_1_roots_8", true, true, 8)]
-#[test_case(name: "battle_missing_1_full_1_roots_16", true, true, 16)]
-#[test_case(name: "battle_missing_1_full_1_roots_24", true, true, 24)]
+#[test_case(name: "battle_missing_0_full_0_roots_00_01", false, false, 0)]
+#[test_case(name: "battle_missing_0_full_0_roots_02_03", false, false, 2)]
+#[test_case(name: "battle_missing_0_full_0_roots_04_05", false, false, 4)]
+#[test_case(name: "battle_missing_0_full_0_roots_06_07", false, false, 6)]
+#[test_case(name: "battle_missing_0_full_0_roots_08_09", false, false, 8)]
+#[test_case(name: "battle_missing_0_full_0_roots_10_11", false, false, 10)]
+#[test_case(name: "battle_missing_0_full_0_roots_12_13", false, false, 12)]
+#[test_case(name: "battle_missing_0_full_0_roots_14_15", false, false, 14)]
+#[test_case(name: "battle_missing_0_full_0_roots_16_17", false, false, 16)]
+#[test_case(name: "battle_missing_0_full_0_roots_18_19", false, false, 18)]
+#[test_case(name: "battle_missing_0_full_0_roots_20_21", false, false, 20)]
+#[test_case(name: "battle_missing_0_full_0_roots_22_23", false, false, 22)]
+#[test_case(name: "battle_missing_0_full_0_roots_24_25", false, false, 24)]
+#[test_case(name: "battle_missing_0_full_0_roots_26_27", false, false, 26)]
+#[test_case(name: "battle_missing_0_full_0_roots_28_29", false, false, 28)]
+#[test_case(name: "battle_missing_0_full_0_roots_30_31", false, false, 30)]
+#[test_case(name: "battle_missing_0_full_1_roots_00_01", false, true, 0)]
+#[test_case(name: "battle_missing_0_full_1_roots_02_03", false, true, 2)]
+#[test_case(name: "battle_missing_0_full_1_roots_04_05", false, true, 4)]
+#[test_case(name: "battle_missing_0_full_1_roots_06_07", false, true, 6)]
+#[test_case(name: "battle_missing_0_full_1_roots_08_09", false, true, 8)]
+#[test_case(name: "battle_missing_0_full_1_roots_10_11", false, true, 10)]
+#[test_case(name: "battle_missing_0_full_1_roots_12_13", false, true, 12)]
+#[test_case(name: "battle_missing_0_full_1_roots_14_15", false, true, 14)]
+#[test_case(name: "battle_missing_0_full_1_roots_16_17", false, true, 16)]
+#[test_case(name: "battle_missing_0_full_1_roots_18_19", false, true, 18)]
+#[test_case(name: "battle_missing_0_full_1_roots_20_21", false, true, 20)]
+#[test_case(name: "battle_missing_0_full_1_roots_22_23", false, true, 22)]
+#[test_case(name: "battle_missing_0_full_1_roots_24_25", false, true, 24)]
+#[test_case(name: "battle_missing_0_full_1_roots_26_27", false, true, 26)]
+#[test_case(name: "battle_missing_0_full_1_roots_28_29", false, true, 28)]
+#[test_case(name: "battle_missing_0_full_1_roots_30_31", false, true, 30)]
+#[test_case(name: "battle_missing_1_full_0_roots_00_01", true, false, 0)]
+#[test_case(name: "battle_missing_1_full_0_roots_02_03", true, false, 2)]
+#[test_case(name: "battle_missing_1_full_0_roots_04_05", true, false, 4)]
+#[test_case(name: "battle_missing_1_full_0_roots_06_07", true, false, 6)]
+#[test_case(name: "battle_missing_1_full_0_roots_08_09", true, false, 8)]
+#[test_case(name: "battle_missing_1_full_0_roots_10_11", true, false, 10)]
+#[test_case(name: "battle_missing_1_full_0_roots_12_13", true, false, 12)]
+#[test_case(name: "battle_missing_1_full_0_roots_14_15", true, false, 14)]
+#[test_case(name: "battle_missing_1_full_0_roots_16_17", true, false, 16)]
+#[test_case(name: "battle_missing_1_full_0_roots_18_19", true, false, 18)]
+#[test_case(name: "battle_missing_1_full_0_roots_20_21", true, false, 20)]
+#[test_case(name: "battle_missing_1_full_0_roots_22_23", true, false, 22)]
+#[test_case(name: "battle_missing_1_full_0_roots_24_25", true, false, 24)]
+#[test_case(name: "battle_missing_1_full_0_roots_26_27", true, false, 26)]
+#[test_case(name: "battle_missing_1_full_0_roots_28_29", true, false, 28)]
+#[test_case(name: "battle_missing_1_full_0_roots_30_31", true, false, 30)]
+#[test_case(name: "battle_missing_1_full_1_roots_00_01", true, true, 0)]
+#[test_case(name: "battle_missing_1_full_1_roots_02_03", true, true, 2)]
+#[test_case(name: "battle_missing_1_full_1_roots_04_05", true, true, 4)]
+#[test_case(name: "battle_missing_1_full_1_roots_06_07", true, true, 6)]
+#[test_case(name: "battle_missing_1_full_1_roots_08_09", true, true, 8)]
+#[test_case(name: "battle_missing_1_full_1_roots_10_11", true, true, 10)]
+#[test_case(name: "battle_missing_1_full_1_roots_12_13", true, true, 12)]
+#[test_case(name: "battle_missing_1_full_1_roots_14_15", true, true, 14)]
+#[test_case(name: "battle_missing_1_full_1_roots_16_17", true, true, 16)]
+#[test_case(name: "battle_missing_1_full_1_roots_18_19", true, true, 18)]
+#[test_case(name: "battle_missing_1_full_1_roots_20_21", true, true, 20)]
+#[test_case(name: "battle_missing_1_full_1_roots_22_23", true, true, 22)]
+#[test_case(name: "battle_missing_1_full_1_roots_24_25", true, true, 24)]
+#[test_case(name: "battle_missing_1_full_1_roots_26_27", true, true, 26)]
+#[test_case(name: "battle_missing_1_full_1_roots_28_29", true, true, 28)]
+#[test_case(name: "battle_missing_1_full_1_roots_30_31", true, true, 30)]
 fn real_battle_loot_verdicts_do_not_select_a_roll(insufficient: bool, full: bool, start: u64) {
-    assert!(start + 8 <= ROOTS);
-    for root in start..start + 8 {
+    assert!(start + FRESH_WORLD_ROOTS <= ROOTS);
+    for root in start..start + FRESH_WORLD_ROOTS {
         let (d, action) = live_loot_case(insufficient, full);
         let before = play_fixture::gameplay_snapshot(d.games);
-        let applied = play_fixture::play(d.games, action, root.into(), 80);
+        let applied = play_fixture::play(d.games, action, root.into(), play_fixture::FIXTURE_START);
         assert_eq!(applied, !insufficient, "missing {} full {} root {}", insufficient, full, root);
         if !applied {
             assert_eq!(play_fixture::gameplay_snapshot(d.games), before);
@@ -448,17 +531,41 @@ fn real_battle_loot_verdicts_do_not_select_a_roll(insufficient: bool, full: bool
     }
 }
 
-#[test_case(name: "capacity_full_roots_0", 0, 0)]
-#[test_case(name: "capacity_full_roots_8", 0, 8)]
-#[test_case(name: "capacity_full_roots_16", 0, 16)]
-#[test_case(name: "capacity_full_roots_24", 0, 24)]
-#[test_case(name: "capacity_fractional_roots_0", crate::rules::RESOURCE_PRECISION - 1, 0)]
-#[test_case(name: "capacity_fractional_roots_8", crate::rules::RESOURCE_PRECISION - 1, 8)]
-#[test_case(name: "capacity_fractional_roots_16", crate::rules::RESOURCE_PRECISION - 1, 16)]
-#[test_case(name: "capacity_fractional_roots_24", crate::rules::RESOURCE_PRECISION - 1, 24)]
+#[test_case(name: "capacity_full_roots_00_01", 0, 0)]
+#[test_case(name: "capacity_full_roots_02_03", 0, 2)]
+#[test_case(name: "capacity_full_roots_04_05", 0, 4)]
+#[test_case(name: "capacity_full_roots_06_07", 0, 6)]
+#[test_case(name: "capacity_full_roots_08_09", 0, 8)]
+#[test_case(name: "capacity_full_roots_10_11", 0, 10)]
+#[test_case(name: "capacity_full_roots_12_13", 0, 12)]
+#[test_case(name: "capacity_full_roots_14_15", 0, 14)]
+#[test_case(name: "capacity_full_roots_16_17", 0, 16)]
+#[test_case(name: "capacity_full_roots_18_19", 0, 18)]
+#[test_case(name: "capacity_full_roots_20_21", 0, 20)]
+#[test_case(name: "capacity_full_roots_22_23", 0, 22)]
+#[test_case(name: "capacity_full_roots_24_25", 0, 24)]
+#[test_case(name: "capacity_full_roots_26_27", 0, 26)]
+#[test_case(name: "capacity_full_roots_28_29", 0, 28)]
+#[test_case(name: "capacity_full_roots_30_31", 0, 30)]
+#[test_case(name: "capacity_fractional_roots_00_01", crate::rules::RESOURCE_PRECISION - 1, 0)]
+#[test_case(name: "capacity_fractional_roots_02_03", crate::rules::RESOURCE_PRECISION - 1, 2)]
+#[test_case(name: "capacity_fractional_roots_04_05", crate::rules::RESOURCE_PRECISION - 1, 4)]
+#[test_case(name: "capacity_fractional_roots_06_07", crate::rules::RESOURCE_PRECISION - 1, 6)]
+#[test_case(name: "capacity_fractional_roots_08_09", crate::rules::RESOURCE_PRECISION - 1, 8)]
+#[test_case(name: "capacity_fractional_roots_10_11", crate::rules::RESOURCE_PRECISION - 1, 10)]
+#[test_case(name: "capacity_fractional_roots_12_13", crate::rules::RESOURCE_PRECISION - 1, 12)]
+#[test_case(name: "capacity_fractional_roots_14_15", crate::rules::RESOURCE_PRECISION - 1, 14)]
+#[test_case(name: "capacity_fractional_roots_16_17", crate::rules::RESOURCE_PRECISION - 1, 16)]
+#[test_case(name: "capacity_fractional_roots_18_19", crate::rules::RESOURCE_PRECISION - 1, 18)]
+#[test_case(name: "capacity_fractional_roots_20_21", crate::rules::RESOURCE_PRECISION - 1, 20)]
+#[test_case(name: "capacity_fractional_roots_22_23", crate::rules::RESOURCE_PRECISION - 1, 22)]
+#[test_case(name: "capacity_fractional_roots_24_25", crate::rules::RESOURCE_PRECISION - 1, 24)]
+#[test_case(name: "capacity_fractional_roots_26_27", crate::rules::RESOURCE_PRECISION - 1, 26)]
+#[test_case(name: "capacity_fractional_roots_28_29", crate::rules::RESOURCE_PRECISION - 1, 28)]
+#[test_case(name: "capacity_fractional_roots_30_31", crate::rules::RESOURCE_PRECISION - 1, 30)]
 fn real_movement_reward_stays_applied_at_full_and_fractional_stores(capacity: u128, start: u64) {
-    assert!(start + 8 <= ROOTS);
-    for root in start..start + 8 {
+    assert!(start + FRESH_WORLD_ROOTS <= ROOTS);
+    for root in start..start + FRESH_WORLD_ROOTS {
         let (d, action, timestamp) = explorer_case(true);
         snforge_std::interact_with_state(
             d.games,
