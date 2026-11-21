@@ -35,7 +35,7 @@ export default defineConfig({
     },
   },
 
-  description: "How to play Realms: Frontier and Blitz, your account, and LORDS",
+  description: "How to play Realms: Frontier, your account, and LORDS",
   iconUrl: BRAND.marks.small,
   logoUrl: BRAND.marks.small,
   // The game's link preview, served by the environment's own app: the deployment sets the build constant the client's
@@ -95,23 +95,10 @@ export default defineConfig({
       text: "Frontier",
       items: [
         { text: "Frontier", link: "/frontier" },
-        { text: "Devcon season", link: "/frontier/devcon" },
         { text: "Your realm", link: "/frontier/realm" },
         { text: "Armies", link: "/frontier/armies" },
         { text: "The expedition", link: "/frontier/expedition" },
         { text: "Historical chests", link: "/frontier/chests" },
-      ],
-    },
-    {
-      text: "Blitz",
-      items: [
-        { text: "Blitz", link: "/blitz" },
-        { text: "Entry and the lobby", link: "/blitz/entry" },
-        { text: "Realms and production", link: "/blitz/realms" },
-        { text: "Transfers and donkeys", link: "/blitz/transport" },
-        { text: "Armies and combat", link: "/blitz/armies" },
-        { text: "The map", link: "/blitz/map" },
-        { text: "Points, results and prizes", link: "/blitz/scoring" },
       ],
     },
     {
