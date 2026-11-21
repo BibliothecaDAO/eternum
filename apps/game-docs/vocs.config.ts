@@ -95,7 +95,6 @@ export default defineConfig({
       text: "Frontier",
       items: [
         { text: "Frontier", link: "/frontier" },
-        { text: "Devcon season", link: "/frontier/devcon" },
         { text: "Your realm", link: "/frontier/realm" },
         { text: "Armies", link: "/frontier/armies" },
         { text: "The expedition", link: "/frontier/expedition" },

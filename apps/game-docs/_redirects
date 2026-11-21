@@ -23,8 +23,10 @@
 /overview/agora/ / 301
 /frontier/introduction /frontier 301
 /frontier/introduction/ /frontier 301
-/devcon /frontier/devcon 301
-/devcon/ /frontier/devcon 301
+/devcon /frontier 301
+/devcon/ /frontier 301
+/frontier/devcon /frontier 301
+/frontier/devcon/ /frontier 301
 /blitz / 301
 /blitz/ / 301
 /blitz/entry / 301
